@@ -1,0 +1,1203 @@
+/* ReactFlow's own stylesheet first; the dark overrides below layer on top. */
+
+
+
+@font-face {
+  font-family: "Intel One Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/intel-one-mono-regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Intel One Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/intel-one-mono-medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Intel One Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/intel-one-mono-bold.woff2") format("woff2");
+}
+
+/*
+ * Text-node typefaces bundled with the editor (all OFL; license texts sit
+ * next to the files in public/fonts). Variable files declare their full
+ * weight range so the bold toggle renders a real bold instead of a
+ * synthesised one. Keep in sync with BUNDLED_FONTS in editor/font_loader.js.
+ */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Playfair Display";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("/fonts/playfair-display.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Bitter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/bitter.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Archivo Black";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/archivo-black.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Caveat";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/caveat.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "ZCOOL KuaiLe";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/zcool-kuaile.woff2") format("woff2");
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    background: #000;
+    color: #e5e5e5;
+    /*
+     * Intel One Mono carries no CJK glyphs, so Chinese text was falling back
+     * to whatever the browser picked — different on every machine. Name the
+     * platform's own face explicitly: PingFang on Apple, Microsoft YaHei on
+     * Windows. One list covers both, because the browser takes the first
+     * family it can actually resolve and PingFang is absent on Windows.
+     */
+    font-family:
+      "Intel One Mono", ui-monospace, "SFMono-Regular", Menlo, monospace,
+      "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑",
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+    /*
+     * `outline: none` on its own is what made the app un-navigable by
+     * keyboard: it was `!important`, so it also beat the UA's own focus ring,
+     * and 191 elements carried a `focus-visible:ring` to compensate while the
+     * rest showed nothing at all. Scoping the reset to pointer focus keeps the
+     * flat look on click (Design.md §1) and lets `:focus-visible` below put a
+     * ring back for the keyboard.
+     */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+
+  button:focus:not(:focus-visible),
+  input:focus:not(:focus-visible),
+  textarea:focus:not(:focus-visible),
+  select:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  select::-ms-expand {
+    display: none;
+  }
+
+  *:focus:not(:focus-visible) {
+    outline: none !important;
+  }
+
+  /*
+   * Keyboard focus has to be visible on every control (Design.md §11, WCAG
+   * 2.4.7). 191 elements carry their own `focus-visible:ring`, but the ones
+   * that did not were left with `outline: none` above and nothing to replace
+   * it — so tabbing through the app moved a focus ring nobody could see.
+   *
+   * Mint is the focus colour by design contract (§2: system and flow), which
+   * is why the per-component rings use `#a7ffd4` too. The outline is drawn
+   * with `outline` rather than a ring so it follows border-radius and costs
+   * no layout.
+   *
+   * `scroll-margin` keeps the browser from scrolling a newly focused control
+   * flush against the viewport edge.
+   */
+  :focus-visible {
+    /* Utilities such as outline-none must not hide the focused control. */
+    outline: 2px solid var(--focus-ring, #a7ffd4) !important;
+    outline-offset: 1px;
+    scroll-margin: 8px;
+  }
+
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 2px solid var(--focus-ring, #a7ffd4);
+    outline-offset: 0;
+  }
+
+  /*
+   * POINTER MODALITY. A pointer click into a text prompt must not paint the forced mint ring: the
+   * browser's `:focus-visible` heuristic matches text-entry surfaces even for a click, which is the
+   * artefact the user reported. The ring above is untouched for keyboard navigation (Design.md §11,
+   * WCAG 2.4.7) and this is NOT a global `outline: none` — it applies only while `useInputModality`
+   * says the last interaction was a pointer, and it stops applying the moment a navigation key is used.
+   */
+  html[data-input-modality="pointer"] :focus-visible {
+    outline: none !important;
+    outline-offset: 0;
+  }
+}
+
+@layer components {
+  /*
+   * Node bodies are custom-rendered, so strip ReactFlow's default card.
+   * The `-default/-input/-output/-group` variants are listed explicitly: those
+   * built-in rules carry the same specificity as `.react-flow__node`, so
+   * matching them by name is what guarantees the white card never shows.
+   */
+  .react-flow__node,
+  .react-flow__node-default,
+  .react-flow__node-input,
+  .react-flow__node-output,
+  .react-flow__node-group {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    width: auto;
+    color: inherit;
+    font-size: inherit;
+    text-align: initial;
+  }
+
+  /* Group frames sit at the very bottom layer so connection wires and child
+   * nodes stay in front and interactive, even when the group is selected. */
+  .react-flow__node-group {
+    z-index: -1 !important;
+  }
+
+  .react-flow__edgelabel-renderer {
+    z-index: 10;
+  }
+
+  /* A second, perfectly aligned ReactFlow dot layer is revealed through a
+     cursor-following radial mask. Pointer coordinates live on the canvas
+     element, so moving the cursor never triggers a React render. */
+  .canvas-grid-focus {
+    opacity: var(--grid-focus-opacity, 0);
+    pointer-events: none;
+    -webkit-mask-image: radial-gradient(
+      circle 190px at var(--grid-focus-x, 50%) var(--grid-focus-y, 50%),
+      #000 0%,
+      rgba(0, 0, 0, 0.86) 30%,
+      rgba(0, 0, 0, 0.44) 56%,
+      transparent 82%
+    );
+    mask-image: radial-gradient(
+      circle 190px at var(--grid-focus-x, 50%) var(--grid-focus-y, 50%),
+      #000 0%,
+      rgba(0, 0, 0, 0.86) 30%,
+      rgba(0, 0, 0, 0.44) 56%,
+      transparent 82%
+    );
+    transition: opacity 180ms ease-out;
+  }
+
+  /* Ports mirror the official website homepage hero ports:
+     - Output point (source handle): hollow ring (15px diameter, 1px border stroke, transparent fill)
+     - Input point (target handle): ring (15px diameter, 1px border stroke, transparent fill) with a 7px solid center dot */
+  .ciw-port {
+    display: flex;
+    width: 15px;
+    height: 15px;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border: 1px solid var(--port-colour, rgb(122, 122, 122));
+    border-radius: 9999px;
+    background: transparent;
+    transition:
+      transform 0.12s ease,
+      box-shadow 0.12s ease;
+  }
+
+  .ciw-port::after {
+    display: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+    background: var(--port-colour, rgb(122, 122, 122));
+    content: "";
+    transition:
+      background 0.12s ease,
+      transform 0.12s ease;
+  }
+
+  /* Connected ports have a solid center dot; unconnected ports stay hollow rings */
+  .ciw-port.is-connected::after {
+    display: block;
+  }
+
+  .ciw-port:hover {
+    transform: scale(1.35);
+    box-shadow: 0 0 0 3px rgb(from var(--port-colour) r g b / 0.25);
+  }
+
+  /* Unconnected ports stay invisible until the node is hovered or focused,
+     keeping the resting canvas clean while still allowing new connections. */
+  .ciw-port:not(.is-connected) {
+    opacity: 0;
+    transition:
+      transform 0.12s ease,
+      box-shadow 0.12s ease,
+      opacity 0.16s ease;
+  }
+
+  .react-flow__node:hover .ciw-port:not(.is-connected),
+  .react-flow__node.selected .ciw-port:not(.is-connected),
+  .react-flow__node:focus-within .ciw-port:not(.is-connected),
+  .canvas-stage.is-connecting .ciw-port:not(.is-connected),
+  .react-flow__handle-connecting.ciw-port,
+  .react-flow__handle-valid.ciw-port {
+    opacity: 1;
+  }
+
+  /* Magnetic snap highlight when hovering over a valid target port */
+  .react-flow__handle-valid.ciw-port {
+    transform: scale(1.4);
+    box-shadow: 0 0 0 3px rgb(from var(--port-colour) r g b / 0.35);
+  }
+
+  .react-flow__edge-path {
+    stroke: var(--edge-colour, rgba(255, 255, 255, 0.28));
+    stroke-width: 1.875;
+  }
+
+  .workflow-edge-pulse {
+    animation: workflow-edge-flow 2.4s linear infinite;
+  }
+
+  .react-flow__edge.selected .react-flow__edge-path,
+  .react-flow__edge:hover .react-flow__edge-path {
+    stroke: #fafafa;
+  }
+
+  .react-flow__connectionline .react-flow__connection-path {
+    stroke: rgba(255, 255, 255, 0.65);
+    stroke-width: 1.5;
+  }
+
+  .react-flow__minimap {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+}
+
+@keyframes workflow-edge-flow {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workflow-edge-pulse {
+    animation: none;
+    stroke-dasharray: none;
+    opacity: 0.55;
+  }
+}
+
+.canvas-stage {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #525252;
+}
+
+.canvas-stage.is-selection-mode .react-flow__pane {
+  cursor: default !important;
+}
+
+.canvas-stage.is-space-panning,
+.canvas-stage.is-space-panning *,
+.canvas-stage.is-space-panning .react-flow__pane,
+.canvas-stage.is-space-panning .react-flow__node,
+.canvas-stage.is-space-panning .react-flow__edge {
+  cursor: grab !important;
+}
+
+.canvas-stage.is-space-panning:active,
+.canvas-stage.is-space-panning.is-mouse-down,
+.canvas-stage.is-space-panning.is-mouse-down *,
+.canvas-stage.is-space-panning.is-mouse-down .react-flow__pane,
+.canvas-stage.is-space-panning.is-mouse-down .react-flow__node,
+.canvas-stage.is-space-panning.is-mouse-down .react-flow__edge {
+  cursor: grabbing !important;
+}
+
+.editor-shell {
+  box-sizing: border-box;
+  border: 2px solid #b2ffd6;
+  border-radius: 16px;
+  isolation: isolate;
+  transition: border-color 0.25s ease;
+}
+
+.editor-shell::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(
+    -90deg,
+    rgb(0, 0, 0) 70.123%,
+    rgb(178, 255, 214) 89.855%
+  );
+  content: "";
+  transition: opacity 0.25s ease;
+}
+
+.editor-shell.theme-video {
+  border-color: #e5b2ff;
+}
+
+.editor-shell.theme-video::before {
+  background: linear-gradient(
+    -90deg,
+    rgb(0, 0, 0) 70.123%,
+    rgb(229, 178, 255) 89.855%
+  );
+}
+
+/* The asset-library page: the same frame, bleeding yellow instead of green. */
+.editor-shell.theme-library {
+  border-color: #ffe066;
+}
+
+.editor-shell.theme-library::before {
+  background: linear-gradient(
+    -90deg,
+    rgb(0, 0, 0) 70.123%,
+    rgb(255, 224, 102) 89.855%
+  );
+}
+
+.app-title-bar {
+  -webkit-app-region: drag;
+}
+
+.top-bar {
+  background: transparent;
+  -webkit-app-region: drag;
+}
+
+.top-bar button,
+.top-bar input,
+.top-bar a,
+.top-bar [role="button"],
+.top-bar .workflow-title {
+  -webkit-app-region: no-drag;
+}
+
+.top-bar-actions {
+  margin-right: 0;
+}
+
+.top-bar-icon-button {
+  display: flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.56);
+  transition:
+    color 120ms ease,
+    background 120ms ease;
+}
+
+.top-bar-icon-button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.settings-control.top-bar-icon-button {
+  width: 20px;
+  height: 20px;
+  border-radius: 0;
+}
+
+.settings-control.top-bar-icon-button:hover {
+  background: transparent;
+  opacity: 0.72;
+}
+
+.run-button {
+  background: #fff;
+}
+
+.run-button:hover {
+  background: #e9e9e9;
+}
+
+.node-shell-context {
+  --node-accent: #a3a3a3;
+}
+
+.node-shell-text {
+  --node-accent: #b2ccff;
+}
+
+.node-shell-image {
+  --node-accent: #b2ffd6;
+}
+
+.node-shell-video {
+  --node-accent: #e5b2ff;
+}
+
+.node-shell-audio {
+  --node-accent: #a7ffd4;
+}
+
+/* AI & editor purple: the Agent node is a conversational generator. */
+.node-shell-violet {
+  --node-accent: #e5b2ff;
+}
+
+.node-accent {
+  color: var(--node-accent);
+  background: transparent;
+}
+
+.node-eyebrow {
+  padding-inline: 0;
+}
+
+.node-eyebrow button {
+  opacity: 0;
+}
+
+.node-shell:hover .node-eyebrow button,
+.react-flow__node.selected .node-eyebrow button,
+.node-eyebrow button:focus-visible {
+  opacity: 1;
+}
+
+.node-eyebrow {
+  padding-inline: 0;
+  color: #fff;
+}
+
+.node-eyebrow-title {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.node-shell:hover .node-eyebrow-title,
+.react-flow__node.selected .node-eyebrow-title {
+  color: #fff;
+  font-weight: 600;
+}
+
+.node-card-header {
+  background: #262626;
+}
+
+.node-card-body {
+  background: #262626;
+}
+
+.node-card {
+  position: relative;
+  overflow: visible;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background-color: #262626;
+  box-shadow: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.node-card:hover:not(.is-selected) {
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: none;
+}
+
+.node-card.is-flush {
+  overflow: hidden;
+}
+
+.node-card.is-running .node-card-body {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.node-card.is-running .loading-shimmer {
+  border-radius: 16px;
+}
+
+@property --node-selection-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.node-card.is-selected {
+  border-color: transparent;
+  /*
+   * Selection lifts the card a little, nothing more. The animated accent ring
+   * already says "selected" — a wide, dark shadow underneath only reads as a
+   * smudge on the canvas and muddies the ports sitting on the card's edge, so
+   * the spread is short and the alpha is low.
+   */
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.26),
+    0 1px 5px rgba(0, 0, 0, 0.16);
+  border-radius: 16px;
+  background-image:
+    linear-gradient(#262626, #262626),
+    conic-gradient(
+      from var(--node-selection-angle),
+      var(--node-accent, #b2ffd6),
+      rgba(255, 255, 255, 0.8),
+      var(--node-accent, #b2ffd6),
+      rgba(255, 255, 255, 0.3),
+      var(--node-accent, #b2ffd6)
+    );
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  animation: node-selection-flow 4s linear infinite;
+}
+
+@keyframes node-selection-flow {
+  to {
+    --node-selection-angle: 360deg;
+  }
+}
+
+/*
+ * A Design editor node is a legal merge-drop target: enlarge the border ring
+ * and lift it so the user can tell a droppable node at a glance, distinct from
+ * the thin animated selection ring. Static (no conic flow) so a held drag is
+ * readable without the motion competing with it.
+ */
+.is-drop-target {
+  border: 3px solid var(--node-accent, #b2ffd6);
+  background-clip: padding-box;
+  box-shadow: 0 0 22px rgba(178, 255, 214, 0.45);
+}
+
+.node-editor-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: none;
+}
+
+.prompt-editor-scroll {
+  max-height: min(560px, calc(100vh - 120px));
+  overflow: visible;
+}
+
+.node-editor-enter {
+  animation: node-editor-reveal 150ms ease-out both;
+  transform-origin: top center;
+}
+
+/*
+ * Editor open guard (plan-design-editor-fixes A6): right after the editor
+ * mounts — and again when the first engine reports ready — the floating
+ * panels must not intercept the first pointer interaction, so they yield to
+ * the stage. The stage (data-testid="editor-pages") stays fully interactive;
+ * everything floating around it goes pointer-transparent for the window.
+ */
+.editor-open-guard > :not([data-testid="editor-pages"]) {
+  pointer-events: none;
+}
+
+@keyframes node-editor-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.node-editor-floating.node-editor-enter {
+  animation-name: node-editor-floating-reveal;
+}
+
+/* Centring now lives on the wrapper, so the reveal only moves on Y. */
+@keyframes node-editor-floating-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.editor-action-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.editor-send,
+/* The primary action reads as a solid chip, not another ghost glyph. */
+.rail-add {
+  color: #111;
+  background: #e5e5e5;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.28);
+}
+
+.rail-add:hover {
+  background: #ffffff;
+}
+
+.editor-send {
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.08);
+}
+
+.canvas-rail,
+.node-palette {
+  background: rgba(0, 0, 0, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.viewport-tools {
+  background: #e3e3e3;
+  color: #000;
+  border: 0;
+}
+
+.node-chip {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  padding: 3px 7px;
+  font-size: 9px;
+  color: rgba(212, 219, 217, 0.48);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.context-orbit {
+  position: relative;
+  height: 52px;
+  border-radius: 12px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(110, 231, 183, 0.07), transparent 60%),
+    rgba(0, 0, 0, 0.18);
+}
+
+.context-orbit::before,
+.context-orbit::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px solid rgba(110, 231, 183, 0.16);
+  border-radius: 50%;
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+.context-orbit::before {
+  width: 74px;
+  height: 74px;
+}
+
+.context-orbit::after {
+  width: 116px;
+  height: 116px;
+}
+
+.context-orbit span {
+  position: absolute;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #a7ffd4;
+  box-shadow: 0 0 10px rgba(167, 255, 212, 0.6);
+}
+
+.context-orbit span:nth-child(1) {
+  left: 31%;
+}
+.context-orbit span:nth-child(2) {
+  left: 50%;
+  opacity: 0.55;
+}
+.context-orbit span:nth-child(3) {
+  left: 68%;
+  opacity: 0.3;
+}
+
+.react-flow__minimap {
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
+  bottom: auto !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  background: rgba(18, 18, 18, 0.92) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.react-flow__minimap-svg {
+  border-radius: 0 !important;
+  display: block;
+}
+
+.react-flow__minimap-mask {
+  fill: rgba(0, 0, 0, 0.65) !important;
+}
+
+.react-flow__minimap-node {
+  fill-opacity: 0.85;
+  stroke: none !important;
+  rx: 3px;
+  ry: 3px;
+}
+
+@media (max-width: 920px) {
+  .react-flow__minimap {
+    display: none !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .top-bar {
+    padding-inline: 12px;
+  }
+
+  .top-bar-actions {
+    gap: 4px;
+    margin-right: 0;
+  }
+
+  .settings-control,
+  .brand-lockup > span {
+    display: none;
+  }
+
+  .workflow-title {
+    right: 124px;
+    left: 48px;
+    width: auto;
+    transform: translateY(-50%);
+  }
+
+  .canvas-rail {
+    left: 8px;
+    transform: translateY(-50%) scale(0.9);
+    transform-origin: left center;
+  }
+
+  .viewport-tools {
+    bottom: 8px;
+  }
+
+  .resource-button-label {
+    display: none;
+  }
+
+  .rail-flyout {
+    bottom: 8px;
+    left: 60px;
+    top: 8px;
+    width: min(280px, calc(100% - 68px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .node-editor-enter {
+    animation: none;
+  }
+
+  .node-card.is-selected::before {
+    animation: none;
+  }
+}
+
+/*
+ * One quiet scrollbar treatment across drawers, editors and node bodies.
+ * The transparent thumb border creates breathing room from the panel edge
+ * without adding another wrapper around every scroll surface.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 14%) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  min-height: 32px;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 14%);
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 24%);
+  background-clip: content-box;
+}
+
+.ui-scroll {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+/*
+ * Flat range slider (see Design.md — controls are flat, no bevel/shadow).
+ * The native thumb/track pseudo-elements must be restyled per engine; the
+ * `accent-color` default renders a platform-styled 3D thumb.
+ */
+.flat-range {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 16px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.flat-range:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.flat-range::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 14%);
+}
+
+.flat-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px; /* (track 3px - thumb 12px) / 2 */
+  border: 0;
+  border-radius: 999px;
+  background: #f5f5f5;
+  box-shadow: none;
+  transition: transform 120ms ease;
+}
+
+.flat-range:not(:disabled):hover::-webkit-slider-thumb,
+.flat-range:not(:disabled):active::-webkit-slider-thumb {
+  transform: scale(1.25);
+}
+
+.flat-range::-moz-range-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 14%);
+}
+
+.flat-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #f5f5f5;
+  box-shadow: none;
+}
+
+/* Flat checkbox to match: square, thin border, no platform chrome. */
+.flat-check {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  border: 1px solid rgb(255 255 255 / 30%);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  display: inline-grid;
+  place-content: center;
+}
+
+.flat-check:checked {
+  border-color: #f5f5f5;
+  background: #f5f5f5;
+}
+
+.flat-check:checked::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  /* checkmark drawn with a clip-path so it stays crisp at any scale */
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  background: #171717;
+}
+
+/*
+ * Port geometry lives outside @layer on purpose. Tailwind prunes layered rules
+ * whose selectors mention class names it cannot find in the source, and
+ * ReactFlow only adds `react-flow__handle-left` / `-right` at runtime — inside
+ * a layer these rules were dropped from the build entirely.
+ */
+/* One palette drives both ends of a connection and the line between them. */
+.ciw-port-text {
+  --port-colour: #b2ccff;
+}
+
+.ciw-port-image {
+  --port-colour: #b2ffd6;
+}
+
+.ciw-port-video {
+  --port-colour: #e5b2ff;
+}
+
+.ciw-port-storyboard {
+  --port-colour: #e5b2ff;
+}
+
+.ciw-port-audio {
+  --port-colour: #a7ffd4;
+}
+
+/* The merged accept-any media input of the Design / Clip editors. */
+.ciw-port-media {
+  --port-colour: #e5b2ff;
+}
+
+.ciw-port-all,
+.ciw-port-artifact {
+  --port-colour: #e5b2ff;
+}
+
+.react-flow__handle-left.ciw-port {
+  left: -7.5px;
+}
+
+.react-flow__handle-right.ciw-port {
+  right: -7.5px;
+}
+
+/* Flush tiles paint edge to edge, so a port near the boundary needs to sit
+   above the card rather than under it. */
+.react-flow__handle.ciw-port {
+  z-index: 5;
+  background: transparent;
+}
+
+.ciw-port-label {
+  position: absolute;
+  font-family: inherit;
+  z-index: 4;
+  max-width: 92px;
+  overflow: hidden;
+  color: rgb(156, 163, 175);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  text-overflow: ellipsis;
+  transform: translateY(calc(-100% - 7px))
+    translateX(var(--port-label-shift, 0));
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+  white-space: nowrap;
+}
+
+.react-flow__node:hover .ciw-port-label,
+.react-flow__node:focus-within .ciw-port-label,
+.ciw-port:hover + .ciw-port-label,
+.ciw-port:focus-visible + .ciw-port-label {
+  opacity: 1;
+  transform: translateY(calc(-100% - 7px)) translateX(0);
+}
+
+.ciw-port-label-left {
+  --port-label-shift: 4px;
+  right: calc(100% + 10px);
+  text-align: right;
+}
+
+.ciw-port-label-right {
+  --port-label-shift: -4px;
+  left: calc(100% + 10px);
+  text-align: left;
+}
+
+.ciw-port-label-text {
+  color: #b2ccff;
+}
+
+.ciw-port-label-image {
+  color: #a7ffd4;
+}
+
+.ciw-port-label-video,
+.ciw-port-label-storyboard,
+.ciw-port-label-media,
+.ciw-port-label-all,
+.ciw-port-label-artifact {
+  color: #e5b2ff;
+}
+
+.ciw-port-label-audio {
+  color: #a7ffd4;
+}
+
+/*
+ * Pictures inside nodes must not start a native drag: the browser would carry
+ * off a ghost of the image while ReactFlow never sees the gesture, so the node
+ * stays put. The resource drawer is deliberately excluded — dragging its
+ * thumbnails onto the canvas is how resources get added.
+ */
+.react-flow__node img,
+.react-flow__node video {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Floating chrome scrolls without advertising it. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide native number input stepper spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Native color input cleanups: remove default borders, add subtle rounded corners */
+input[type="color"] {
+  -webkit-appearance: none;
+  border: none;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 6px;
+}
+
+input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: 6px;
+}
+
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: none;
+}
+
+/* Pure flowing gradient shimmer for generation loading states */
+@keyframes flowing-gradient-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.14) 50%,
+    rgba(255, 255, 255, 0.05) 75%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  background-size: 200% 100%;
+  animation: flowing-gradient-shimmer 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/*
+ * Global prefers-reduced-motion guard.
+ * Collapses all animations and transitions across the canvas into static states
+ * by completing their duration and iteration immediately, without altering final
+ * transforms, opacities, or layout geometry.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Shimmer animations freeze on an arbitrary gradient slice under reduced motion;
+     replace with a calm static surface tone from the design scale (#262626). */
+  .loading-shimmer {
+    background: #262626 !important;
+  }
+}

@@ -1,0 +1,116 @@
+import { describe, it, expect, beforeEach } from "vitest";
+import {
+  getRecentFiles,
+  addRecentFile,
+  removeRecentFile,
+  clearRecentFiles,
+} from "../../src/canvas/store/recent_files.js";
+import { useDesignStore } from "../../src/store/design_store.js";
+import { CANVAS_TYPE } from "../../src/canvas/editor/scene_doc_factory.js";
+
+// Node environment localStorage mock
+const mockStorage = (() => {
+  let store = {};
+  return {
+    getItem: (key) => store[key] || null,
+    setItem: (key, val) => {
+      store[key] = String(val);
+    },
+    removeItem: (key) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
+  };
+})();
+
+if (!globalThis.window) {
+  globalThis.window = globalThis;
+}
+globalThis.window.localStorage = mockStorage;
+globalThis.localStorage = mockStorage;
+
+describe("Recent Files Management & Welcome Dashboard State", () => {
+  beforeEach(() => {
+    mockStorage.clear();
+  });
+
+  it("adds and retrieves recent files correctly", () => {
+    const item1 = addRecentFile({
+      name: "Poster.voo",
+      path: "/Users/test/Poster.voo",
+      preview: "data:image/png;base64,mock1",
+    });
+
+    const item2 = addRecentFile({
+      name: "WebLayout.voo",
+      path: "/Users/test/WebLayout.voo",
+      preview: "data:image/png;base64,mock2",
+    });
+
+    const list = getRecentFiles();
+    expect(list).toHaveLength(2);
+    // Most recent should be first
+    expect(list[0].name).toBe("WebLayout.voo");
+    expect(list[1].name).toBe("Poster.voo");
+  });
+
+  it("updates existing item if the same path or name is added again", () => {
+    addRecentFile({
+      name: "Poster.voo",
+      path: "/Users/test/Poster.voo",
+    });
+
+    addRecentFile({
+      name: "Poster.voo",
+      path: "/Users/test/Poster.voo",
+      preview: "data:image/png;base64,updated",
+    });
+
+    const list = getRecentFiles();
+    expect(list).toHaveLength(1);
+    expect(list[0].preview).toBe("data:image/png;base64,updated");
+  });
+
+  it("removes a specific recent file", () => {
+    const item1 = addRecentFile({ name: "Doc1.voo" });
+    const item2 = addRecentFile({ name: "Doc2.voo" });
+
+    const updated = removeRecentFile(item1.id);
+    expect(updated).toHaveLength(1);
+    expect(updated[0].name).toBe("Doc2.voo");
+  });
+
+  it("clears all recent files", () => {
+    addRecentFile({ name: "Doc1.voo" });
+    addRecentFile({ name: "Doc2.voo" });
+    clearRecentFiles();
+    expect(getRecentFiles()).toHaveLength(0);
+  });
+
+  it("toggles welcomeOpen state and creates new project from templates", () => {
+    useDesignStore.setState({ welcomeOpen: true });
+    expect(useDesignStore.getState().welcomeOpen).toBe(true);
+
+    useDesignStore.getState().setWelcomeOpen(false);
+    expect(useDesignStore.getState().welcomeOpen).toBe(false);
+
+    // Creating new project closes welcome dashboard automatically
+    useDesignStore.setState({ welcomeOpen: true });
+    useDesignStore.getState().newVooProject({
+      label: "iPhone 16 Pro Mock",
+      width: 393,
+      height: 852,
+      canvasType: CANVAS_TYPE.DESIGN,
+    });
+
+    const state = useDesignStore.getState();
+    expect(state.welcomeOpen).toBe(false);
+    expect(state.fileName).toBe("iPhone 16 Pro Mock.voo");
+    expect(state.nodes).toHaveLength(1);
+    expect(state.nodes[0].data.label).toBe("iPhone 16 Pro Mock");
+    expect(state.editorArtboardLayouts[state.editingNodeId].width).toBe(393);
+    expect(state.editorArtboardLayouts[state.editingNodeId].height).toBe(852);
+  });
+});

@@ -1,0 +1,22 @@
+{
+  "name": "@voo/canvas-core",
+  "version": "0.1.0",
+  "description": "The Skia scene renderer shared by voo-canvas and the VOO.run editor",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./lib/*": {
+      "types": "./dist/lib/*.d.ts",
+      "default": "./dist/lib/*.js"
+    },
+    "./package.json": "./package.json"
+  }
+}

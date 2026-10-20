@@ -1,0 +1,1 @@
+export const MAX_GAME_ASSET_ELEMENTS = 12;
