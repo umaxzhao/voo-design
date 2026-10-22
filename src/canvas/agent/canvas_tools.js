@@ -411,12 +411,15 @@ function sanitizeNode(node) {
     rotation: node.rotation ?? 0,
     opacity: node.opacity ?? 1,
     cornerRadius: node.cornerRadius ?? 0,
-    fills: node.fills || [],
-    strokes: node.strokes || [],
+    fills: node.fills || (node.fill ? [node.fill] : []),
+    strokes: node.strokes || (node.stroke && node.strokeWidth ? [node.stroke] : []),
     strokeWidth: node.strokeWidth || 0,
     textContent: node.text || node.textContent || "",
     fontSize: node.fontSize,
     autoLayout: node.autoLayout || null,
+    ...(node.fillVariableId ? { fillVariableId: node.fillVariableId } : {}),
+    ...(node.strokeVariableId ? { strokeVariableId: node.strokeVariableId } : {}),
+    ...(node.styleIds ? { styleIds: node.styleIds } : {}),
   };
 }
 
