@@ -1143,6 +1143,7 @@ export default {
   "editor.unlockPosition": "Lock position (off)",
   "editor.group": "Group",
   "editor.props.transform": "Transform",
+  "editor.props.repeatArray": "Repeat / Array",
   "api.provider": "Provider",
   "api.model": "Model ID",
   "api.customModelOption": "Custom...",

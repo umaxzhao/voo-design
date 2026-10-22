@@ -1121,6 +1121,7 @@ export default {
   "editor.unlockPosition": "锁定位置（关）",
   "editor.group": "编组",
   "editor.props.transform": "变换",
+  "editor.props.repeatArray": "重复 / 阵列",
   "api.provider": "服务商",
   "api.model": "模型ID",
   "api.customModelOption": "自定义...",
