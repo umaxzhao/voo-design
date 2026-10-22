@@ -45,20 +45,20 @@ VOO Design Canvas Engine delivers an ultra-high performance, 60 FPS vector and r
 | 12 | WebGL Texture Deallocation Hook | Wire `onEvict` callback in `createBitmapCache` to call `glAdjustments.release` and pyramid cleanup | M3 | DONE |
 | 13 | Incremental History Image Pinning | Replace 50-snapshot `JSON.parse` pin refresh with active-document / ref-counted image pinning | M3 | DONE |
 | 14 | Structural Sharing in Undo History | Store in-memory document snapshots with structural sharing, eliminating deep JSON stringify overhead | M3 | DONE |
-| 15 | Design Token Compliance Fix | Fix 3 `shadow-sm` violations in `src/canvas/components/editor_toolbar.jsx` to use `shadow-pop` | M4 | Survey R4 |
-| 16 | Flaky Test Race Condition Fix | Eliminate millisecond timestamp race in `tests/unit/adversarial_welcome_dashboard_challenge.test.js` | M4 | Survey R4 |
-| 17 | Specialized Performance Test Suite | Add automated tests for 1,000+ node culling, neighborhood snapping, and LRU eviction | M4 | Survey R4 |
-| 18 | Full 60+ Suites Regression Gate | Execute and pass 100% of all unit and integration test suites via `npm test` | M4 | Survey R4 |
-| 19 | Production Build Gate | Clean production bundle generation via `npm run build` | M4 | Survey R4 |
-| 20 | Server `la` Automated Deployment | Deploy bundle to `la` (`103.114.160.86`) via `scripts/deploy-editor.sh` and verify live HTTP 200 | M4 | Survey R4 |
+| 15 | Design Token Compliance Fix | Fix 3 `shadow-sm` violations in `src/canvas/components/editor_toolbar.jsx` to use `shadow-pop` | M4 | DONE |
+| 16 | Flaky Test Race Condition Fix | Eliminate millisecond timestamp race in `tests/unit/adversarial_welcome_dashboard_challenge.test.js` | M4 | DONE |
+| 17 | Specialized Performance Test Suite | Add automated tests for 1,000+ node culling, neighborhood snapping, and LRU eviction | M4 | DONE |
+| 18 | Full 60+ Suites Regression Gate | Execute and pass 100% of all unit and integration test suites via `npm test` | M4 | DONE |
+| 19 | Production Build Gate | Clean production bundle generation via `npm run build` | M4 | DONE |
+| 20 | Server `la` Automated Deployment | Deploy bundle to `la` (`103.114.160.86`) via `scripts/deploy-editor.sh` and verify live HTTP 200 | M4 | BLOCKED (SSH) |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| M1 | Viewport Culling & Layer Caching Engine | Features 1–5: Visual bounds (`nodeVisualAABB`), SpatialIndex integration in `chrome_draw.js`, and `layer_cache.js` | none | IN_PROGRESS |
-| M2 | Gesture & Snapping Optimization | Features 6–10: rAF pointer move throttling, Local AABB neighborhood snapping query in `scene_snapping.js`, batch node updates | M1 | PLANNED |
+| M1 | Viewport Culling & Layer Caching Engine | Features 1–5: Visual bounds (`nodeVisualAABB`), SpatialIndex integration in `chrome_draw.js`, and `layer_cache.js` | none | DONE |
+| M2 | Gesture & Snapping Optimization | Features 6–10: rAF pointer move throttling, Local AABB neighborhood snapping query in `scene_snapping.js`, batch node updates | M1 | DONE |
 | M3 | Memory, Texture & Undo/Redo Management | Features 11–14: Byte-budgeted LRU cache, WebGL texture cleanup on eviction, ref-counted pinning, structural sharing undo | M1 | DONE |
-| M4 | Verification, Quality Gate & Production Deployment | Features 15–20: Toolbar design token fix, test race fix, performance tests, 100% test pass, build, deploy to `la`, HTTP 200 | M1, M2, M3 | PLANNED |
+| M4 | Verification, Quality Gate & Production Deployment | Features 15–20: Toolbar design token fix, test race fix, performance tests, 100% test pass, build, deploy to `la`, HTTP 200 | M1, M2, M3 | DONE (deploy blocked) |
 
 ## Interface Contracts
 
