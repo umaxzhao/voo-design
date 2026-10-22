@@ -309,7 +309,7 @@ export class SkiaRenderer {
     async createBackend() {
         const canvasKit = this.requireCanvasKit();
         const canvas = this.requireCanvasElement();
-        const gpu = navigator.gpu;
+        const gpu = globalThis.navigator?.gpu;
         // CanvasKit's WebGPU helpers are only shipped by WebGPU-enabled builds.
         // A browser may expose navigator.gpu while the loaded CanvasKit build does
         // not, so capability-check both sides before entering this backend.

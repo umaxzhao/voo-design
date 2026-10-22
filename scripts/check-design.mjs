@@ -21,7 +21,7 @@
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { relative, join, resolve } from "node:path";
-import { readFileSync, globSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
@@ -87,6 +87,16 @@ export async function runDesignSelfTest() {
 }
 
 /** Files to judge, and the source to judge them by. */
+function walkFiles(dir, matches) {
+  const found = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) found.push(...walkFiles(full, matches));
+    else if (matches(entry.name)) found.push(full);
+  }
+  return found;
+}
+
 async function collect(staged, paths) {
   if (staged) {
     // Judge the version going IN, not the working tree: several agents write
@@ -119,7 +129,7 @@ async function collect(staged, paths) {
   // two parallel checks would drift apart.
   const sheets = paths.length
     ? paths.filter((p) => p.endsWith(".css"))
-    : globSync("src/**/*.css", { cwd: ROOT });
+    : walkFiles("src", (name) => name.endsWith(".css"));
   return js.concat(
     sheets.map((f) => ({
       path: f,

@@ -1,5 +1,9 @@
 import { getSetting, setSetting } from "../../../shared/settings.js";
 
+if (typeof globalThis.navigator === "undefined") {
+  globalThis.navigator = {};
+}
+
 export const ONBOARDING_COMPLETED_KEY = "voo.onboarding.completedVersion";
 export const ONBOARDING_AGENT_CHOICE_KEY = "voo.agent.llmProvider";
 export const ONBOARDING_MODEL_CHOICE_KEY = "voo.agent.llmModel";
@@ -50,7 +54,7 @@ export function openOnboardingGuide() {
  * true if onboarding was never completed OR if no valid non-empty workspace directory has been configured.
  */
 export function shouldShowOnboarding() {
-  if (typeof navigator !== "undefined" && navigator.webdriver) return false;
+  if (globalThis.navigator?.webdriver) return false;
   const p = getSetting(ONBOARDING_WORKSPACE_PATH_KEY);
   return !isOnboardingCompleted() || !p || typeof p !== "string" || !p.trim();
 }
