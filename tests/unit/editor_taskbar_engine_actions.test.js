@@ -7,23 +7,44 @@ import {
 
 describe("toggleNodeLock", () => {
   it("calls engine.toggleLockNode with the node id", () => {
-    const engine = { toggleLockNode: vi.fn() };
+    const engine = { toggleLockNode: vi.fn(), getDoc: () => ({ nodes: [] }) };
     expect(toggleNodeLock(engine, { id: "node-1" })).toBe(true);
     expect(engine.toggleLockNode).toHaveBeenCalledWith("node-1");
   });
 
-  it("is a no-op report when the node has no id", () => {
-    const engine = { toggleLockNode: vi.fn() };
+  it("returns false when the node has no id", () => {
+    const engine = { toggleLockNode: vi.fn(), getDoc: () => ({ nodes: [] }) };
     expect(toggleNodeLock(engine, null)).toBe(false);
     expect(toggleNodeLock(engine, {})).toBe(false);
     expect(engine.toggleLockNode).not.toHaveBeenCalled();
   });
 
-  it("does not throw when the engine lacks toggleLockNode", () => {
-    // The pre-fix bug: engine.toggleLock does not exist, and the old
-    // `engine?.toggleLock?.(id)` call silently did nothing.
+  it("returns false when the engine lacks toggleLockNode", () => {
     expect(toggleNodeLock({ toggleLock: vi.fn() }, { id: "n" })).toBe(false);
     expect(toggleNodeLock(undefined, { id: "n" })).toBe(false);
+  });
+
+  it("returns false when node is locked by group", () => {
+    const lockedParent = { id: "group-1", locked: true, parentId: null, kind: "group" };
+    const node = { id: "node-1", parentId: "group-1" };
+    const doc = { nodes: [lockedParent, node] };
+    const engine = {
+      toggleLockNode: vi.fn(),
+      getDoc: () => doc,
+    };
+    expect(toggleNodeLock(engine, node)).toBe(false);
+    expect(engine.toggleLockNode).not.toHaveBeenCalled();
+  });
+
+  it("returns false when node itself is locked", () => {
+    const node = { id: "node-1", locked: true };
+    const doc = { nodes: [node] };
+    const engine = {
+      toggleLockNode: vi.fn(),
+      getDoc: () => doc,
+    };
+    expect(toggleNodeLock(engine, node)).toBe(false);
+    expect(engine.toggleLockNode).not.toHaveBeenCalled();
   });
 });
 
@@ -34,53 +55,59 @@ describe("clearActivePixelSelection", () => {
     expect(engine.clearPixelSelection).toHaveBeenCalledTimes(1);
   });
 
-  it("reports false for a missing engine or missing method", () => {
-    // The pre-fix bug: engine.clearSelection does not exist.
+  it("returns false for a missing engine or missing method", () => {
     expect(clearActivePixelSelection({ clearSelection: vi.fn() })).toBe(false);
     expect(clearActivePixelSelection(null)).toBe(false);
   });
 });
 
 describe("finishPenPathEditing", () => {
-  it("commits an in-progress draft with finishPen", () => {
+  it("closes path editing with endEdit when isEditing is true", () => {
     const engine = {
       getPenDraft: () => ({ anchors: [] }),
       finishPen: vi.fn(),
       isEditing: () => true,
       endEdit: vi.fn(),
     };
-    expect(finishPenPathEditing(engine)).toBe("finishPen");
-    expect(engine.finishPen).toHaveBeenCalledTimes(1);
-    expect(engine.endEdit).not.toHaveBeenCalled();
-  });
-
-  it("closes path editing with endEdit when there is no draft", () => {
-    const engine = {
-      getPenDraft: () => null,
-      finishPen: vi.fn(),
-      isEditing: () => true,
-      endEdit: vi.fn(),
-    };
-    expect(finishPenPathEditing(engine)).toBe("endEdit");
+    expect(finishPenPathEditing(engine)).toBe(true);
     expect(engine.endEdit).toHaveBeenCalledTimes(1);
     expect(engine.finishPen).not.toHaveBeenCalled();
   });
 
-  it("returns null when the pen is idle", () => {
+  it("commits an in-progress draft with finishPen when not editing but has draft", () => {
+    const engine = {
+      getPenDraft: () => ({ anchors: [] }),
+      finishPen: vi.fn(),
+      isEditing: () => false,
+      endEdit: vi.fn(),
+    };
+    expect(finishPenPathEditing(engine)).toBe(true);
+    expect(engine.finishPen).toHaveBeenCalledTimes(1);
+    expect(engine.endEdit).not.toHaveBeenCalled();
+  });
+
+  it("returns false when the pen is idle", () => {
     const engine = {
       getPenDraft: () => null,
       isEditing: () => false,
       finishPen: vi.fn(),
       endEdit: vi.fn(),
     };
-    expect(finishPenPathEditing(engine)).toBe(null);
+    expect(finishPenPathEditing(engine)).toBe(false);
     expect(engine.finishPen).not.toHaveBeenCalled();
     expect(engine.endEdit).not.toHaveBeenCalled();
   });
 
-  it("does not throw for a missing engine", () => {
-    // The pre-fix bug: engine.finishPenPath does not exist.
-    expect(finishPenPathEditing(undefined)).toBe(null);
-    expect(finishPenPathEditing({ finishPenPath: vi.fn() })).toBe(null);
+  it("returns false for a missing engine", () => {
+    expect(finishPenPathEditing(undefined)).toBe(false);
+    expect(finishPenPathEditing({ finishPenPath: vi.fn() })).toBe(false);
+  });
+
+  it("returns false when engine lacks required methods", () => {
+    const engine = {
+      getPenDraft: () => ({ anchors: [] }),
+      isEditing: () => true,
+    };
+    expect(finishPenPathEditing(engine)).toBe(false);
   });
 });

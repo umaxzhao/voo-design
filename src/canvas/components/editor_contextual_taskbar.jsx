@@ -1546,7 +1546,6 @@ EditorContextualTaskBar.propTypes = {
   onApplyPreset: PropTypes.func,
   getBitmap: PropTypes.func,
   docRect: PropTypes.object,
-  stageRef: PropTypes.object,
   onEditSvg: PropTypes.func,
   onCreateComponent: PropTypes.func,
   onDetachInstance: PropTypes.func,

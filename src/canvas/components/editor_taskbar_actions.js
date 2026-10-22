@@ -6,16 +6,27 @@
  * editor engine and reports whether it ran.
  */
 
+import { isLockedByGroup } from "../editor/scene_model_groups.js";
+
 /**
  * Toggle the `locked` flag on a node. The engine exposes `toggleLockNode`
  * (editor_engine_node_ops.js); there is no `engine.toggleLock`.
  *
- * @returns {boolean} true when a lock toggle was requested.
+ * Respects locked-by-group: if the node (or any ancestor folder) is locked,
+ * the toggle is not performed.
+ *
+ * @param {Object} engine - Editor engine instance
+ * @param {Object} node - Target node to toggle lock on
+ * @returns {boolean} true when a lock toggle was requested, false otherwise
  */
 export function toggleNodeLock(engine, node) {
   const id = node?.id;
   if (!id) return false;
   if (typeof engine?.toggleLockNode !== "function") return false;
+  const doc = engine.getDoc?.();
+  if (doc && node && (node.locked || isLockedByGroup(doc, node))) {
+    return false;
+  }
   engine.toggleLockNode(id);
   return true;
 }
@@ -25,7 +36,8 @@ export function toggleNodeLock(engine, node) {
  * The engine exposes `clearPixelSelection` (editor_engine_selection.js);
  * there is no `engine.clearSelection`.
  *
- * @returns {boolean} true when a clear was requested.
+ * @param {Object} engine - Editor engine instance
+ * @returns {boolean} true when a clear was requested, false otherwise
  */
 export function clearActivePixelSelection(engine) {
   if (typeof engine?.clearPixelSelection !== "function") return false;
@@ -36,20 +48,27 @@ export function clearActivePixelSelection(engine) {
 /**
  * Finish the pen gesture behind the taskbar's check button, mirroring the
  * Enter-key behaviour in use_editor_shortcuts.js:
- * - an in-progress draft is committed with `finishPen`,
- * - an open path-editing session is closed with `endEdit`.
+ * - an in-progress draft is committed with `finishPen`
+ * - an open path-editing session is closed with `endEdit`
  *
- * @returns {"finishPen"|"endEdit"|null} which action ran, or null when there
- * was nothing to finish.
+ * Prefers `engine.endEdit` when path editing, `finishPen` when drafting.
+ *
+ * @param {Object} engine - Editor engine instance
+ * @returns {boolean} true when an action was performed, false otherwise
  */
 export function finishPenPathEditing(engine) {
-  if (engine?.getPenDraft?.()) {
-    engine.finishPen?.();
-    return "finishPen";
+  if (!engine) return false;
+  if (engine.isEditing?.()) {
+    if (typeof engine.endEdit === "function") {
+      engine.endEdit();
+      return true;
+    }
   }
-  if (engine?.isEditing?.()) {
-    engine.endEdit?.();
-    return "endEdit";
+  if (engine.getPenDraft?.()) {
+    if (typeof engine.finishPen === "function") {
+      engine.finishPen();
+      return true;
+    }
   }
-  return null;
+  return false;
 }

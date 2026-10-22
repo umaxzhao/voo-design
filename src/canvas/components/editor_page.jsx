@@ -1198,7 +1198,6 @@ export default function EditorPage({
                 getBitmap={getBitmap}
                 doc={doc}
                 docRect={docRect}
-                stageRef={stageRef}
                 onEditSvg={onEditSvg}
                 onCreateComponent={onCreateComponent}
                 onDetachInstance={onDetachInstance}

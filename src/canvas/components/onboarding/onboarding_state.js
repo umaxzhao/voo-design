@@ -1,9 +1,5 @@
 import { getSetting, setSetting } from "../../../shared/settings.js";
 
-if (typeof globalThis.navigator === "undefined") {
-  globalThis.navigator = {};
-}
-
 export const ONBOARDING_COMPLETED_KEY = "voo.onboarding.completedVersion";
 export const ONBOARDING_AGENT_CHOICE_KEY = "voo.agent.llmProvider";
 export const ONBOARDING_MODEL_CHOICE_KEY = "voo.agent.llmModel";

@@ -346,8 +346,6 @@ export default function EditorToolbar({
 EditorToolbar.propTypes = {
   tool: PropTypes.string.isRequired,
   onTool: PropTypes.func.isRequired,
-  onRemoveBackground: PropTypes.func,
-  onSelectSubject: PropTypes.func,
   regionMode: PropTypes.string,
   onRegionMode: PropTypes.func,
   healingMode: PropTypes.oneOf(["spot", "aiRepair", "patch", "clone"]),
