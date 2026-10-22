@@ -117,6 +117,9 @@ export async function runAgentTurn({
 
   const runSteps = async () => {
     for (let step = 0; step < maxSteps; step += 1) {
+      if (turnSignal.aborted) {
+        throw new DOMException("Aborted", "AbortError");
+      }
       const { text, toolCalls } = await streamStep({
         config,
         messages,
@@ -136,6 +139,9 @@ export async function runAgentTurn({
         })),
       });
       for (const call of toolCalls) {
+        if (turnSignal.aborted) {
+          throw new DOMException("Aborted", "AbortError");
+        }
         if (!READ_ONLY_TOOLS.has(call.name)) mutated = true;
         let args = {};
         try {
@@ -173,6 +179,8 @@ export async function runAgentTurn({
   let endBatch = null;
   let restoreCommits = null;
   let result;
+  let error = null;
+  let wasCancelled = false;
   try {
     if (editor && typeof editor.beginBatch === "function" && typeof editor.endBatch === "function") {
       editor.beginBatch();
@@ -188,14 +196,22 @@ export async function runAgentTurn({
       restoreCommits = suppressPerCallCommits(editor);
       result = await runSteps();
     }
+  } catch (e) {
+    error = e;
+    wasCancelled = e instanceof DOMException && e.name === "AbortError" || (turnSignal?.aborted === true);
+    throw e;
   } finally {
     restoreCommits?.();
     endBatch?.();
     const after = documentFingerprint(editor);
     const changed = before !== null && after !== null && before !== after;
     if (editor && typeof editor.commit === "function" && (mutated || changed)) {
-      editor.commit("AI: Agent turn");
+      let message = "AI: Agent turn";
+      if (wasCancelled) message = "AI: Agent turn (cancelled)";
+      else if (error) message = "AI: Agent turn (failed)";
+      editor.commit(message);
     }
+    if (error) throw error;
   }
   return result;
 }
