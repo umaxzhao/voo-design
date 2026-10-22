@@ -24,6 +24,9 @@ import {
   DESIGN_TOOL_SCHEMAS,
 } from "./canvas_tools_design_system.js";
 
+import { COMPONENT_TOOL_SCHEMAS, COMPONENT_TOOL_EXECUTORS } from "./canvas_tools_components.js";
+import { TEXT_PATH_TOOL_SCHEMAS, TEXT_PATH_TOOL_EXECUTORS } from "./canvas_tools_text_path.js";
+
 export const AGENT_SETTING = Object.freeze({
   API_KEY: "agent.apiKey",
   BASE_URL: "agent.baseUrl",
@@ -340,6 +343,8 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
   },
   ...DESIGN_TOOL_SCHEMAS,
   ...CANVAS_TOOL_GEOMETRY_SCHEMAS,
+  ...COMPONENT_TOOL_SCHEMAS,
+  ...TEXT_PATH_TOOL_SCHEMAS,
 ]);
 
 function requireEditor() {
@@ -805,6 +810,8 @@ const EXECUTORS = Object.freeze({
   reorder_layer: reorderLayer,
   rename_layer: renameLayer,
   ...DESIGN_TOOL_EXECUTORS,
+  ...COMPONENT_TOOL_EXECUTORS,
+  ...TEXT_PATH_TOOL_EXECUTORS,
   create_path: createPath,
   place_image: placeImage,
   capture_canvas: captureCanvas,
