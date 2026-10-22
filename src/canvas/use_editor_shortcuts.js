@@ -705,7 +705,7 @@ export function useEditorShortcuts({
           case "KeyD":
             event.preventDefault();
             if (engine.getPixelSelection?.()?.contours?.length) {
-              engine.clearSelection?.();
+              engine.clearPixelSelection?.();
               return;
             }
             if (event.shiftKey) {

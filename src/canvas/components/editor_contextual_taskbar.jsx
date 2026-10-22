@@ -39,6 +39,11 @@ import {
   ICON_BTN_DEFAULT,
 } from "./editor_ai_taskbar_buttons.jsx";
 import EditorUpscaleButton from "./editor_upscale_button.jsx";
+import {
+  clearActivePixelSelection,
+  finishPenPathEditing,
+  toggleNodeLock,
+} from "./editor_taskbar_actions.js";
 import EditorContextualAiInput, {
   extractNodeContext,
   dispatchToAgent,
@@ -388,7 +393,7 @@ function EditorContextualTaskBar({
           <EditorTooltip title={t("editor.taskbar.deselect")}>
             <button
               type="button"
-              onClick={() => engine?.clearSelection?.()}
+              onClick={() => clearActivePixelSelection(engine)}
               aria-label={t("editor.taskbar.deselect")}
               className={`${ICON_BTN} text-neutral-400 hover:bg-white/10 hover:text-white`}
             >
@@ -678,7 +683,7 @@ function EditorContextualTaskBar({
                   <button
                     type="button"
                     onClick={() => {
-                      if (selected?.id) engine?.toggleLock?.(selected.id);
+                      toggleNodeLock(engine, selected);
                       setMoreOpen(false);
                     }}
                     className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-neutral-200 transition-colors hover:bg-white/[0.08] hover:text-white"
@@ -831,7 +836,7 @@ function EditorContextualTaskBar({
             <button
               type="button"
               onClick={() => {
-                if (selected?.id) engine?.toggleLock?.(selected.id);
+                toggleNodeLock(engine, selected);
               }}
               aria-label={isLocked ? t("editor.taskbar.unlock") : t("editor.taskbar.lock")}
               className={ICON_BTN_DEFAULT}
@@ -1013,7 +1018,7 @@ function EditorContextualTaskBar({
             <button
               type="button"
               onClick={() => {
-                if (selected?.id) engine?.toggleLock?.(selected.id);
+                toggleNodeLock(engine, selected);
               }}
               aria-label={isLocked ? t("editor.taskbar.unlock") : t("editor.taskbar.lock")}
               className={ICON_BTN_DEFAULT}
@@ -1299,7 +1304,7 @@ function EditorContextualTaskBar({
           <EditorTooltip title={t("editor.pen.closeEdit")}>
             <button
               type="button"
-              onClick={() => engine?.finishPenPath?.()}
+              onClick={() => finishPenPathEditing(engine)}
               aria-label={t("editor.pen.closeEdit")}
               className={`${ICON_BTN} text-white hover:bg-white/15`}
             >
@@ -1429,7 +1434,7 @@ function EditorContextualTaskBar({
             <button
               type="button"
               onClick={() => {
-                if (selected?.id) engine?.toggleLock?.(selected.id);
+                toggleNodeLock(engine, selected);
               }}
               aria-label={isLocked ? t("editor.taskbar.unlock") : t("editor.taskbar.lock")}
               className={ICON_BTN_DEFAULT}
