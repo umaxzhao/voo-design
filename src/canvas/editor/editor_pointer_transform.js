@@ -511,10 +511,14 @@ export function createTransformPointerGestures(ctx) {
               // Grid snapping needs the explicit option; guide snapping is on
               // unless the guides are hidden in the ruler overlay.
               options: {
-                ...editorSnapOptions({ grid: api.getGrid?.() ?? null }),
+                ...editorSnapOptions({
+                  grid: api.getGrid?.() ?? null,
+                  activeSnap: Boolean(gesture.activeSnap),
+                }),
                 spatialIndex: api.getSpatialIndex?.() ?? doc.spatialIndex,
               },
             });
+        gesture.activeSnap = Boolean(snap.guides && snap.guides.length > 0);
         if (snap.guides.length > 0) {
           snapGuides = snap.guides;
           effectiveDelta.x += snap.deltaX;
@@ -633,10 +637,14 @@ export function createTransformPointerGestures(ctx) {
             handle: gesture.handle,
             // Same option plumbing as the multi-node resize above.
             options: {
-              ...editorSnapOptions({ grid: api.getGrid?.() ?? null }),
+              ...editorSnapOptions({
+                grid: api.getGrid?.() ?? null,
+                activeSnap: Boolean(gesture.activeSnap),
+              }),
               spatialIndex: api.getSpatialIndex?.() ?? doc.spatialIndex,
             },
           });
+      gesture.activeSnap = Boolean(snap.guides && snap.guides.length > 0);
       if (snap.guides.length > 0) {
         snapGuides = snap.guides;
         effectiveDelta.x += snap.deltaX;
