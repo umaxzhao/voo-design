@@ -46,6 +46,7 @@ export const TOOL_ERROR = Object.freeze({
   NO_IMAGE_MODEL: "agentNoImageModel",
   CANCELLED: "agentCancelled",
   NODE_NOT_FOUND: "agentNodeNotFound",
+  INVALID_ARGS: "agentInvalidArgs",
 });
 
 export const CANVAS_TOOL_SCHEMAS = Object.freeze([
@@ -209,6 +210,119 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
           },
         },
         required: ["mutations"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_shape",
+      description: "Create a new rectangle, ellipse, or text layer on the canvas.",
+      parameters: {
+        type: "object",
+        properties: {
+          kind: { type: "string", enum: ["rect", "ellipse", "text"] },
+          x: { type: "number" },
+          y: { type: "number" },
+          width: { type: "number" },
+          height: { type: "number" },
+          text: { type: "string", description: "Text content for text layers." },
+          fill: { type: "string" },
+          name: { type: "string" },
+        },
+        required: ["kind", "x", "y", "width", "height"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_layers",
+      description: "Delete one or more layers from the canvas.",
+      parameters: {
+        type: "object",
+        properties: {
+          layerIds: { type: "array", items: { type: "string" } },
+        },
+        required: ["layerIds"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "duplicate_layer",
+      description: "Duplicate a single layer and select the copy.",
+      parameters: {
+        type: "object",
+        properties: {
+          layerId: { type: "string" },
+        },
+        required: ["layerId"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "select_layers",
+      description: "Replace the current selection with the given layers.",
+      parameters: {
+        type: "object",
+        properties: {
+          layerIds: { type: "array", items: { type: "string" } },
+        },
+        required: ["layerIds"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "group_layers",
+      description: "Group two or more layers into a new folder.",
+      parameters: {
+        type: "object",
+        properties: {
+          layerIds: { type: "array", items: { type: "string" } },
+          name: { type: "string" },
+        },
+        required: ["layerIds"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "reorder_layer",
+      description: "Move a layer to the front, back, or a specific stack index.",
+      parameters: {
+        type: "object",
+        properties: {
+          layerId: { type: "string" },
+          position: {
+            anyOf: [
+              { type: "string", enum: ["front", "back"] },
+              { type: "number" },
+            ],
+          },
+        },
+        required: ["layerId", "position"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "rename_layer",
+      description: "Rename a layer.",
+      parameters: {
+        type: "object",
+        properties: {
+          layerId: { type: "string" },
+          name: { type: "string" },
+        },
+        required: ["layerId", "name"],
       },
     },
   },
@@ -441,6 +555,194 @@ function batchMutateLayers(args) {
   return { ok: true, count: updates.length };
 }
 
+function invalidArgs() {
+  throw Object.assign(new Error(TOOL_ERROR.INVALID_ARGS), { code: TOOL_ERROR.INVALID_ARGS });
+}
+
+function nodeNotFound() {
+  throw Object.assign(new Error(TOOL_ERROR.NODE_NOT_FOUND), { code: TOOL_ERROR.NODE_NOT_FOUND });
+}
+
+function requireLayerId(value) {
+  if (typeof value !== "string" || value.trim() === "") {
+    invalidArgs();
+  }
+  return value;
+}
+
+function requireLayerIds(value, { min = 1 } = {}) {
+  if (!Array.isArray(value) || value.length < min) {
+    invalidArgs();
+  }
+  const ids = [...new Set(value)];
+  if (ids.some((id) => typeof id !== "string" || id.trim() === "")) {
+    invalidArgs();
+  }
+  return ids;
+}
+
+function requireNode(editor, layerId) {
+  const node = editor.getNode?.(layerId);
+  if (!node) nodeNotFound();
+  return node;
+}
+
+function isGroupNode(node) {
+  return node?.kind === "group" || node?.type === "group";
+}
+
+function createShape(args = {}) {
+  const editor = requireEditor();
+  const { kind, x, y, width, height, text, fill, name } = args;
+  if (!["rect", "ellipse", "text"].includes(kind)) {
+    invalidArgs();
+  }
+  if (![x, y, width, height].every((value) => Number.isFinite(value))) {
+    invalidArgs();
+  }
+  if (text !== undefined && typeof text !== "string") {
+    invalidArgs();
+  }
+  if (fill !== undefined && typeof fill !== "string") {
+    invalidArgs();
+  }
+  if (name !== undefined && typeof name !== "string") {
+    invalidArgs();
+  }
+
+  let node;
+  if (kind === "rect") {
+    node = editor.addRectAt?.({ x, y });
+  } else if (kind === "ellipse") {
+    node = editor.addEllipseAt?.({ x, y });
+  } else {
+    node = editor.addTextAt?.({ x, y }, text ?? "");
+  }
+  if (!node?.id) invalidArgs();
+
+  const patch = { width, height };
+  if (name !== undefined) patch.name = name;
+  if (fill !== undefined) patch.fill = fill;
+  editor.updateNode?.(node.id, patch);
+  editor.commitEditorDocument?.({ message: "AI: Create shape" });
+
+  return { ok: true, layerId: node.id };
+}
+
+function deleteLayers(args = {}) {
+  const editor = requireEditor();
+  const layerIds = requireLayerIds(args.layerIds);
+  layerIds.forEach((layerId) => requireNode(editor, layerId));
+
+  if (typeof editor.removeIds === "function") {
+    editor.removeIds(layerIds);
+  } else {
+    layerIds.forEach((layerId) => editor.removeNode?.(layerId));
+  }
+  editor.commitEditorDocument?.({ message: "AI: Delete layers" });
+
+  return { ok: true, count: layerIds.length };
+}
+
+function duplicateLayer(args = {}) {
+  const editor = requireEditor();
+  const layerId = requireLayerId(args.layerId);
+  requireNode(editor, layerId);
+
+  editor.selectExactly?.([layerId]);
+  editor.duplicateSelected?.();
+  const newLayerId = editor.getSelectedId?.() ?? null;
+
+  return { ok: true, layerId: newLayerId };
+}
+
+function selectLayers(args = {}) {
+  const editor = requireEditor();
+  const layerIds = requireLayerIds(args.layerIds, { min: 0 });
+  layerIds.forEach((layerId) => requireNode(editor, layerId));
+
+  editor.selectExactly?.(layerIds);
+  return { ok: true, layerIds };
+}
+
+function groupLayers(args = {}) {
+  const editor = requireEditor();
+  const layerIds = requireLayerIds(args.layerIds, { min: 2 });
+  layerIds.forEach((layerId) => requireNode(editor, layerId));
+  if (args.name !== undefined && typeof args.name !== "string") {
+    invalidArgs();
+  }
+
+  const docBefore = editor.getDoc?.();
+  const groupsBefore = new Set((docBefore?.nodes || []).filter(isGroupNode).map((node) => node.id));
+
+  editor.selectExactly?.(layerIds);
+  const result = editor.groupSelection?.();
+
+  let groupId = typeof result === "string" ? result : result?.id ?? null;
+  if (!groupId) {
+    const selectedId = editor.getSelectedId?.();
+    if (selectedId && !layerIds.includes(selectedId)) groupId = selectedId;
+  }
+  if (!groupId) {
+    const nodesAfter = editor.getDoc?.()?.nodes || [];
+    const newGroups = nodesAfter.filter((node) => isGroupNode(node) && !groupsBefore.has(node.id));
+    const containing = newGroups.find((group) =>
+      nodesAfter.some((node) => node.parentId === group.id && layerIds.includes(node.id)),
+    );
+    groupId = containing?.id ?? newGroups.at(-1)?.id ?? null;
+  }
+
+  if (groupId && args.name !== undefined) {
+    editor.updateNode?.(groupId, { name: args.name });
+    editor.commitEditorDocument?.({ message: "AI: Group Layers" });
+  }
+
+  return { ok: true, groupId };
+}
+
+function reorderLayer(args = {}) {
+  const editor = requireEditor();
+  const layerId = requireLayerId(args.layerId);
+  requireNode(editor, layerId);
+
+  let position = args.position;
+  if (typeof position === "string") {
+    position = position.toLowerCase();
+    if (position !== "front" && position !== "back") {
+      invalidArgs();
+    }
+  } else if (typeof position === "number" && Number.isFinite(position)) {
+    position = Math.round(position);
+  } else {
+    invalidArgs();
+  }
+
+  if (position === "front") {
+    editor.moveToFront?.([layerId]);
+  } else if (position === "back") {
+    editor.moveToBack?.([layerId]);
+  } else {
+    editor.reorderNodeTo?.(layerId, position);
+  }
+
+  return { ok: true, layerId, position };
+}
+
+function renameLayer(args = {}) {
+  const editor = requireEditor();
+  const layerId = requireLayerId(args.layerId);
+  requireNode(editor, layerId);
+  if (typeof args.name !== "string" || args.name.trim() === "") {
+    invalidArgs();
+  }
+
+  editor.updateNode?.(layerId, { name: args.name });
+  editor.commitEditorDocument?.({ message: "AI: Rename Layer" });
+
+  return { ok: true, layerId, name: args.name };
+}
+
 const EXECUTORS = Object.freeze({
   generate_image: generateImage,
   describe_selection: describeSelection,
@@ -450,6 +752,13 @@ const EXECUTORS = Object.freeze({
   mutate_layer_text: mutateLayerText,
   mutate_auto_layout: mutateAutoLayout,
   batch_mutate_layers: batchMutateLayers,
+  create_shape: createShape,
+  delete_layers: deleteLayers,
+  duplicate_layer: duplicateLayer,
+  select_layers: selectLayers,
+  group_layers: groupLayers,
+  reorder_layer: reorderLayer,
+  rename_layer: renameLayer,
 });
 
 /** Runs a canvas tool by name; an unknown name is an error, not a silent no-op. */
