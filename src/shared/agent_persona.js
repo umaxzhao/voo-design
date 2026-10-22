@@ -113,7 +113,10 @@ export const BUILTIN_PERSONAS = [
     nameKey: "agent.persona.designer.name",
     descKey: "agent.persona.designer.desc",
     instructions:
-      "Focus on clean visual hierarchy, balanced whitespace, and purposeful layout composition. Avoid generic AI aesthetics and maintain strong typography contrast.",
+      "Focus on clean visual hierarchy, balanced whitespace, and purposeful layout composition. " +
+      "Workflow: inspect_layer_tree first, build layouts with create_shape, then style/" +
+      "auto-layout mutations, group logically, and name layers. " +
+      "Avoid generic AI aesthetics; keep strong typography contrast.",
   },
   {
     id: "art_director",

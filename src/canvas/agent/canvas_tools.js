@@ -80,12 +80,14 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
     function: {
       name: "inspect_layer_tree",
       description:
-        "Inspect the canvas hierarchy and metadata of a specific layer or the whole canvas document.",
+        "Inspect the canvas hierarchy and metadata of a specific layer or the whole canvas document. " +
+        "Each returned node has id, kind, parentId, geometry, style, and nested children up to depth. " +
+        "Call this before editing so you know the existing layers.",
       parameters: {
         type: "object",
         properties: {
           layerId: { type: "string", description: "Optional target layer ID. If omitted, inspects root or selection." },
-          depth: { type: "number", description: "Optional max traversal depth, default 4." },
+          depth: { type: "number", description: "Optional max traversal depth below the target (default 4)." },
         },
       },
     },
@@ -382,6 +384,8 @@ function sanitizeNode(node) {
   return {
     id: node.id,
     name: node.name || node.type || "Layer",
+    kind: node.kind || node.type || "node",
+    parentId: node.parentId || null,
     type: node.type || "node",
     x: node.x ?? 0,
     y: node.y ?? 0,
@@ -399,10 +403,35 @@ function sanitizeNode(node) {
   };
 }
 
+/** Default traversal depth below the inspected root (schema and README agree on 4). */
+const INSPECT_DEFAULT_DEPTH = 4;
+
 function inspectLayerTree(args = {}) {
   const editor = requireEditor();
   const doc = editor.getDoc?.() || null;
   const nodes = doc?.nodes || [];
+
+  const depthArg = Number(args.depth);
+  const depth = Number.isFinite(depthArg) ? Math.max(0, Math.floor(depthArg)) : INSPECT_DEFAULT_DEPTH;
+
+  // Children index, so recursion is O(nodes) instead of rescanning per node.
+  const childrenOf = new Map();
+  for (const node of nodes) {
+    if (!node.parentId || node.parentId === node.id) continue;
+    const list = childrenOf.get(node.parentId);
+    if (list) list.push(node);
+    else childrenOf.set(node.parentId, [node]);
+  }
+
+  const buildSubtree = (node, remainingDepth) => {
+    const sanitized = sanitizeNode(node);
+    if (remainingDepth > 0) {
+      sanitized.children = (childrenOf.get(node.id) || []).map((child) =>
+        buildSubtree(child, remainingDepth - 1),
+      );
+    }
+    return sanitized;
+  };
 
   const targetId = args.layerId || editor.getSelectedId?.();
   if (targetId) {
@@ -410,19 +439,23 @@ function inspectLayerTree(args = {}) {
     if (!target) {
       throw Object.assign(new Error(TOOL_ERROR.NODE_NOT_FOUND), { code: TOOL_ERROR.NODE_NOT_FOUND });
     }
-    const children = nodes.filter((n) => n.parentId === targetId).map(sanitizeNode);
+    const root = buildSubtree(target, depth);
     return {
-      root: sanitizeNode(target),
-      children,
+      root,
+      children: root.children ?? [],
       totalCount: nodes.length,
+      depth,
     };
   }
 
-  // If no targetId, return top-level layers
-  const topLevel = nodes.filter((n) => !n.parentId).map(sanitizeNode);
+  // If no targetId, return top-level layers as nested subtrees
+  const topLevel = nodes
+    .filter((n) => !n.parentId)
+    .map((n) => buildSubtree(n, depth));
   return {
     layers: topLevel,
     totalCount: nodes.length,
+    depth,
   };
 }
 
