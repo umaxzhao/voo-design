@@ -1,0 +1,251 @@
+ but no parent key was present in 
+ pageview
+$pageleave
+$pageview
+${c.pageName}
+,children:[C&&wt.isElectron&&f.jsx(FZn,{onRequestPanel:pr,onOpenPage:Dt,onPanelReady:Y}),f.jsxs(
+,n.agentPresence);if(d.error)return{success:!1,error:d.error};const h=i.pageState();return{success:!0,error:
+,onClick:()=>n.startPresentation(),children:[f.jsx(fce,{className:
+,style:{backgroundImage:`url(${s}${N.thumbnailMobile})`}})]}),f.jsx(
+,style:{backgroundImage:`url(${s}${N.thumbnailWeb})`}}),f.jsx(
+,t[t.pageZoom=46]=
+,this.handleDidNavigateInPage),n.addEventListener(
+,thumbnail:
+,thumbnailFit:
+,thumbnailMobile:
+,thumbnailWeb:
+,thumbnailWebApp:
+,xHt=Ud.presentation,rT=
+-//metrius//dtd metrius presentational//
+/api/workspace/:workspaceId/items/:itemId/thumbnail
+:{(p??={}).pageZoom=g;break}case
+;const r=`${KMe(n)}embed/error-page/`;let i=`dsn=${$A(n)}`;for(const s in e)if(s!==
+<declaration>? [; <page-body>]?|<page-margin-box> <page-body>
+<length [0,∞]>{1,2}|auto|[<page-size>||[portrait|landscape]]
+<length>{1,2}|auto|[<page-size>||[portrait|landscape]]
+<page-margin-box-type> '{' <declaration-list> '}'
+<page-selector-list>
+<pseudo-page>+|<ident> <pseudo-page>*
+A CSS selector executed in the page. Required when target is "query".
+An http(s) or file URL to load. Used when action is "load-page".
+BigInt literals cannot be represented in JSON Schema
+Browsing pages requires the pen.dev desktop app.
+Close this page
+Control variants leave the page unmodified.
+Create a frame to start a presentation
+Custom types cannot be represented in JSON Schema
+Date cannot be represented in JSON Schema
+Drag to clip import height, double-click to import the full page
+Failed to import the page!
+Id of a browser node in the document to drive. Omit to drive the browser sidebar's own page.
+Import page
+Imported Page
+Include HTML metadata when importing pages
+Landing page
+Literal `undefined` cannot be represented in JSON Schema
+Open a webpage and reproduce it on the canvas
+Page
+Page.captureScreenshot
+PageDown
+PageUp
+Present
+Retro-futuristic landing page for a private space tourism company
+Select Figma page to import
+Select an element in the page
+Sign in to Google AI Studio and create a key on the API Keys page.
+Sign in to Z.AI and create a key on the API Keys page.
+Sign in to kimi.com with a Kimi For Coding subscription and copy the API key from the coding page.
+Sign in to the DeepSeek platform and create a key on the API Keys page.
+Sign in to the OpenAI platform and create a key on the API Keys page.
+Slider
+Slides
+Stop Presenting
+Syntax module requires highlight.js. Please include the library on the page before Quill.
+The page did not finish loading in time.
+The page was closed.
+The page was too large to capture fully — the import is truncated.
+The sidebar has no page.
+Transforms cannot be represented in JSON Schema
+Undefined cannot be represented in JSON Schema
+What to act on (default full-page).
+What to do: load-page, import-to-canvas, screenshot-to-canvas, return-element, return-screenshot, or cdp.
+[<page-selector>#]?
+[data-base-ui-slider-control]
+[data-base-ui-slider-indicator]
+action 'load-page' requires a 'url'.
+animate-in fade-in slide-in-from-bottom-2 duration-300
+animate-in fade-in slide-in-from-bottom-8
+animate-out fade-out slide-out-to-bottom-2 duration-150 fill-mode-forwards
+animate-out fade-out slide-out-to-bottom-8 fill-mode-forwards
+auto|avoid|always|all|avoid-page|page|left|right|recto|verso|avoid-column|column|avoid-region|region
+auto|avoid|avoid-page|avoid-column|avoid-region
+avoid-page
+browser-node:await-presented
+browser-node:capture-page
+cancel_presentation
+co_present
+contact_page
+data-base-ui-slider-control
+data-base-ui-slider-indicator
+device-mobile-speaker
+device-mobile-speaker-bold
+device-mobile-speaker-fill
+device-mobile-speaker-light
+device-mobile-speaker-thin
+device-tablet-speaker
+device-tablet-speaker-bold
+device-tablet-speaker-fill
+device-tablet-speaker-light
+device-tablet-speaker-thin
+file-sliders
+file_present
+find_in_page
+first_page
+fit_page
+fit_page_height
+fit_page_width
+flex flex-1 min-h-0 flex-col animate-in fade-in slide-in-from-bottom-1 duration-300
+full-page
+gallery-thumbnails
+gallery_thumbnail
+heap_snapshot_thumbnail
+home_speaker
+https://fonts.gstatic.com/s/barlowsemicondensed/v16/wlpigxjLBV1hqnzfr-F8sEYMB0Yybp0mudRf-62PAGEki52WfA.ttf
+https://fonts.gstatic.com/s/barlowsemicondensed/v16/wlpigxjLBV1hqnzfr-F8sEYMB0Yybp0mudRf06iPAGEki52WfA.ttf
+https://fonts.gstatic.com/s/barlowsemicondensed/v16/wlpigxjLBV1hqnzfr-F8sEYMB0Yybp0mudRf36yPAGEki52WfA.ttf
+https://fonts.gstatic.com/s/barlowsemicondensed/v16/wlpigxjLBV1hqnzfr-F8sEYMB0Yybp0mudRfi6mPAGEki52WfA.ttf
+https://fonts.gstatic.com/s/barlowsemicondensed/v16/wlpigxjLBV1hqnzfr-F8sEYMB0Yybp0mudRfp66PAGEki52WfA.ttf
+https://fonts.gstatic.com/s/barlowsemicondensed/v16/wlpigxjLBV1hqnzfr-F8sEYMB0Yybp0mudRft6uPAGEki52WfA.ttf
+https://fonts.gstatic.com/s/barlowsemicondensed/v16/wlpigxjLBV1hqnzfr-F8sEYMB0Yybp0mudRfw6-PAGEki52WfA.ttf
+if_capture_pageview
+insert_page_break
+landing-page
+last_page
+load-page
+max-w-lg gap-3 p-4 outline-none !slide-in-from-top-0 !slide-in-from-left-0 !slide-out-to-top-0 !slide-out-to-left-0
+mobile_speaker
+monitor-speaker
+movie_speaker
+mt-3 flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 animate-in fade-in slide-in-from-top-1 duration-300
+next-slide
+none|always|column|page|spread
+page-body
+page-break-after
+page-break-before
+page-break-inside
+page-margin-box
+page-margin-box-type
+page-orientation
+page-selector
+page-selector-list
+page-size
+pageZoom
+page_control
+page_footer
+page_header
+page_info
+page_menu_ios
+pause_presentation
+phone_bluetooth_speaker
+present_to_all
+presentation-bold
+presentation-chart
+presentation-chart-bold
+presentation-chart-fill
+presentation-chart-light
+presentation-chart-thin
+presentation-fill
+presentation-light
+presentation-thin
+presentationZoom
+previous-slide
+pseudo-page
+removes non-inheritable group's presentational attributes
+request_page
+restore_page
+screenshot:full-page
+slide_library
+slider-control
+slider-indicator
+slider-thumb
+slider-track
+sliders-bold
+sliders-fill
+sliders-horizontal
+sliders-horizontal-bold
+sliders-horizontal-fill
+sliders-horizontal-light
+sliders-horizontal-thin
+sliders-light
+sliders-thin
+sliders-vertical
+sm:max-w-4xl !slide-in-from-top-0 !slide-in-from-left-0 !slide-out-to-top-0 !slide-out-to-left-0 pr-0
+sm:max-w-sm !slide-in-from-top-0 !slide-in-from-left-0 !slide-out-to-top-0 !slide-out-to-left-0
+space-y-1 animate-in fade-in slide-in-from-top-1 duration-200
+space-y-2.5 rounded-xl border border-border bg-muted/40 p-4 animate-in fade-in slide-in-from-top-1 duration-300
+spatial_speaker
+speaker-high
+speaker-high-bold
+speaker-high-fill
+speaker-high-light
+speaker-high-thin
+speaker-low
+speaker-low-bold
+speaker-low-fill
+speaker-low-light
+speaker-low-thin
+speaker-none
+speaker-none-bold
+speaker-none-fill
+speaker-none-light
+speaker-none-thin
+speaker-simple-high
+speaker-simple-high-bold
+speaker-simple-high-fill
+speaker-simple-high-light
+speaker-simple-high-thin
+speaker-simple-low
+speaker-simple-low-bold
+speaker-simple-low-fill
+speaker-simple-low-light
+speaker-simple-low-thin
+speaker-simple-none
+speaker-simple-none-bold
+speaker-simple-none-fill
+speaker-simple-none-light
+speaker-simple-none-thin
+speaker-simple-slash
+speaker-simple-slash-bold
+speaker-simple-slash-fill
+speaker-simple-slash-light
+speaker-simple-slash-thin
+speaker-simple-x
+speaker-simple-x-bold
+speaker-simple-x-fill
+speaker-simple-x-light
+speaker-simple-x-thin
+speaker-slash
+speaker-slash-bold
+speaker-slash-fill
+speaker-slash-light
+speaker-slash-thin
+speaker-x
+speaker-x-bold
+speaker-x-fill
+speaker-x-light
+speaker-x-thin
+speaker_group
+speaker_notes
+speaker_notes_off
+speaker_phone
+stop-presenting
+the page
+thumbnail_bar
+toggle-presentation-zoom
+transition_slide
+two_pager
+two_pager_store
+wallpaper_slideshow
+} has no page loaded. Use action 'load-page' with a url first.`};const a=n.action,l=_mn[a]??3e4,c=d=>t.request(
+} in ${s}.`}}}const o=await i.waitForPage();if(o==null)return{success:!1,error:`${n.nodeId?`Browser node 
+}get isEnabled(){return this._instance.config.capture_pageview===

@@ -1,0 +1,17 @@
+--- electron/main.cjs
++++ electron/main.cjs
+@@ -330,6 +330,13 @@
+   registerLocalCliIpc(ipcMain);
+ }).catch((err) => {
+   console.warn("[electron] Could not register local CLI IPC:", err);
++});
++
++// Register Workspace Manager IPC Handlers
++try {
++  const { registerWorkspaceIpc } = require("./workspace_manager.cjs");
++  registerWorkspaceIpc(ipcMain, () => mainWindow);
++} catch (err) {
++  console.warn("[electron] Could not register workspace IPC:", err);
+ });
+ 
+ app.whenReady().then(() => {

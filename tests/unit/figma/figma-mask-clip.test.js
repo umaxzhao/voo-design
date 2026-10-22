@@ -69,6 +69,17 @@ describe("Figma mask import", () => {
     expect(nodes.indexOf(mask)).toBeLessThan(nodes.indexOf(photo));
   });
 
+  it("marks a luminance mask and leaves alpha masks unmarked", () => {
+    const alpha = flatNodes(maskedFrame()).find((node) => node.name === "Fade mask");
+    expect(alpha.maskType).toBeUndefined();
+
+    const message = maskedFrame();
+    message.nodeChanges[4].maskType = "LUMINANCE";
+    const lum = flatNodes(message).find((node) => node.name === "Fade mask");
+    expect(lum.maskBase).toBe(true);
+    expect(lum.maskType).toBe("luminance");
+  });
+
   it("does not turn a frame's own clip flag into a mask", () => {
     const message = maskedFrame();
     message.nodeChanges[4].mask = false;

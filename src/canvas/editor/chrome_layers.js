@@ -25,6 +25,24 @@ export function adjustmentLayerFailure(doc, nodeId) {
 }
 
 /**
+ * Turns straight-alpha RGBA pixels into a luminance mask in place: each
+ * pixel's alpha becomes its luminance times its alpha, so white keeps, black
+ * and transparent hide. Same weights as SVG's luminanceToAlpha, so the stage
+ * and the SVG export of a luminance mask agree.
+ *
+ * @param {Uint8ClampedArray} data
+ */
+export function luminanceToAlpha(data) {
+  for (let i = 0; i < data.length; i += 4) {
+    const luminance = 0.2125 * data[i] + 0.7154 * data[i + 1] + 0.0721 * data[i + 2];
+    data[i + 3] = Math.round((luminance * data[i + 3]) / 255);
+    data[i] = 0;
+    data[i + 1] = 0;
+    data[i + 2] = 0;
+  }
+}
+
+/**
  * Paints one clipping-mask chain (Photoshop's Alt+⌘G).
  *
  * `startIndex` is the first node whose `clipTo` names `baseId`. Every
@@ -116,6 +134,11 @@ export function drawClippingChain(
       backdropGeneration: `${docVersion}:mask`,
       outputKey: `${maskCanvas.width}x${maskCanvas.height}|mask`,
     });
+    if (base.maskType === "luminance") {
+      const pixels = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+      luminanceToAlpha(pixels.data);
+      maskCtx.putImageData(pixels, 0, 0);
+    }
   }
   offCtx.save();
   offCtx.globalCompositeOperation = "destination-in";

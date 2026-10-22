@@ -368,7 +368,9 @@ export function createEditor({
       getEffectiveNode,
       mixedLayerMode,
       spatialIndex: getSpatialIndex(evaluatedDoc),
-      layerCache,
+      // Off until it measures faster: in Chrome, blitting 400 cached shadow
+      // surfaces during a pan was slower than painting the shadows directly.
+      layerCache: null,
     });
     for (const listener of renderListeners) listener();
   }

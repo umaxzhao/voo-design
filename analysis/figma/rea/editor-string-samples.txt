@@ -1,0 +1,564 @@
+# Selected English UI strings from recovered Figma editor i18n bundle
+# source: /tmp/figma_web/figma_app-61e97149e8b9c012.min.en.json.br (33,116 keys)
+
+## motion (465 keys)
+motion.audio.callout.body	Add audio files to your timeline to sync sound with motion.
+motion.audio.callout.title	Bring audio to your animation
+motion.audio.cancel_preparation	Cancel
+motion.audio.clip.delete	Delete audio
+motion.audio.clip.mute	Mute audio
+motion.audio.clip.toggle_mute	Toggle audio mute
+motion.audio.clip.tooltip_mute	Mute audio
+motion.audio.clip.tooltip_unmute	Unmute audio
+motion.audio.clip.unmute	Unmute audio
+motion.audio.import.failed_batch_too_large	That's too much audio to add at once. Try adding fewer files.
+motion.audio.import.failed_decode	{fileName} couldn't be read.
+motion.audio.import.failed_decode_unknown	That audio couldn't be read.
+motion.audio.import.failed_target	Couldn't add audio here. Try selecting the clip again.
+motion.audio.import.failed_too_large	{fileName} is too large to add. Audio files must be 50 MB or smaller.
+motion.audio.import.failed_unsupported	{fileName} isn't a supported audio format. Try MP3, WAV, M4A, or AAC.
+motion.audio.import.failed_upload	Couldn't upload audio. Check your connection and try again.
+motion.audio.import.unsupported_target	Couldn’t add audio here. Add it to a frame, component, instance, or the timeline.
+motion.audio.loading	Loading audio…
+
+## transition_overrides (122 keys)
+transition_overrides.easing_bar.spring	Spring
+transition_overrides.timeline.binding.effect_row	Effect {index}: {property}
+transition_overrides.timeline.binding.fill_color	Fill {index}: Color
+transition_overrides.timeline.binding.generic_field	Field {field}
+transition_overrides.timeline.binding.stroke_color	Stroke {index}: Color
+transition_overrides.timeline.binding.unknown_location	Unknown
+transition_overrides.timeline.binding.unknown_property	Unknown Property
+transition_overrides.timeline.context_menu.separate_dimensions	Separate dimensions
+transition_overrides.timeline.effect_field.chromatic_aberration	Chromatic Aberration
+transition_overrides.timeline.effect_field.color	Color
+transition_overrides.timeline.effect_field.density	Density
+transition_overrides.timeline.effect_field.effect_opacity	Opacity
+transition_overrides.timeline.effect_field.end_offset_x	End Offset X
+transition_overrides.timeline.effect_field.end_offset_y	End Offset Y
+transition_overrides.timeline.effect_field.missing	Missing
+transition_overrides.timeline.effect_field.noise_size_x	Size X
+transition_overrides.timeline.effect_field.noise_size_y	Size Y
+transition_overrides.timeline.effect_field.offset_x	Offset X
+
+## variables (263 keys)
+variables.authoring_modal.breadcrumbs.go_to_collection	Go to collection
+variables.authoring_modal.breadcrumbs.more_collections	More collections
+variables.authoring_modal.context_menu.clear_alias	Clear alias
+variables.authoring_modal.context_menu.create_alias	Create alias
+variables.authoring_modal.context_menu.create_group	New group with selection
+variables.authoring_modal.context_menu.delete	Delete variable
+variables.authoring_modal.context_menu.delete_multiple	Delete variables
+variables.authoring_modal.context_menu.duplicate	{count, plural, one {Duplicate variable} other {Duplicate variables}}
+variables.authoring_modal.context_menu.edit	{count, plural, one {Edit variable} other {Edit variables}}
+variables.authoring_modal.context_menu.reorder.move_down	Move down
+variables.authoring_modal.context_menu.reorder.move_to_bottom	Move to bottom
+variables.authoring_modal.context_menu.reorder.move_to_top	Move to top
+variables.authoring_modal.context_menu.reorder.move_up	Move up
+variables.authoring_modal.create	Create
+variables.authoring_modal.create_variable_button_label	Create variable button
+variables.authoring_modal.default_collection_name	Collection 1
+variables.authoring_modal.default_mode_changed	The default mode was changed.
+variables.authoring_modal.edit_variable_button_tooltip	Edit variable
+
+## tokens (143 keys)
+tokens.categories.design_systems	Design systems
+tokens.categories.development	Development
+tokens.categories.files	Files
+tokens.categories.labels	Labels
+tokens.categories.mcp	MCP
+tokens.categories.organizations	Organizations
+tokens.categories.projects	Projects
+tokens.categories.projects.fmr	Folders
+tokens.categories.teams	Teams
+tokens.categories.users	Users
+tokens.categories.webhooks	Webhooks
+tokens.oauth.create_and_modify_dev_resources	Create and modify dev resources for files you can access
+tokens.oauth.create_and_modify_variables_for_files_you_have_access_to	Create and modify variables for files you can access
+tokens.oauth.create_and_modify_webhooks	Create and modify webhooks
+tokens.oauth.create_files	Create files on your behalf
+tokens.oauth.discovery_scope_description	See all text communication within Figma files for your organization.
+tokens.oauth.enumerate_files	View a list of all files you have access to, including recent files
+tokens.oauth.modify_comments_for_files_you_have_access_to	Modify comments for files you can access
+
+## type_settings (189 keys)
+type_settings.alignment	Alignment
+type_settings.bidi_and_explicit_update_tooltip	The new rendering supports bidirectional text and improved paragraph spacing options.
+type_settings.bidi_update_desc	Update this selection to get bidirectional text support
+type_settings.bidi_update_tooltip	To use Figma’s native RTL support, older text needs to be updated.
+
+Any text you reversed using a plugin may appear backwards.
+type_settings.case	Case
+type_settings.case.as_typed	As typed
+type_settings.case.lowercase	Lowercase
+type_settings.case.title_case	Title case
+type_settings.case.uppercase	Uppercase
+type_settings.character_variants	Character variants
+type_settings.decoration	Decoration
+type_settings.decoration.custom_color	Color
+type_settings.decoration.decoration_style	Style
+type_settings.decoration.decoration_style.dotted	Dotted
+type_settings.decoration.decoration_style.solid	Solid
+type_settings.decoration.decoration_style.wavy	Wavy
+type_settings.decoration.details	Underline details
+type_settings.decoration.list_spacing	List spacing
+
+## inspect_panel (284 keys)
+inspect_panel.code.code	Code
+inspect_panel.code.effect	Effect
+inspect_panel.code.error	{plugin} ran into an issue
+inspect_panel.code.error_details	This plugin is created by a third party and not maintained by Figma, so to give feedback please reach out to the developer.
+inspect_panel.code.error_link	Go to community page
+inspect_panel.code.error_this_plugin	This plugin
+inspect_panel.code.font_size	Font size
+inspect_panel.code.font_size_value	Copy font size: {value}
+inspect_panel.code.font_style	Font style
+inspect_panel.code.keyframes	Keyframes
+inspect_panel.code.modifier	Modifier
+inspect_panel.code.other	Other
+inspect_panel.code.position	Position
+inspect_panel.code.promo_image_alt	Mock box model and css code snippet
+inspect_panel.code.style	Style
+inspect_panel.code.variables	Variables
+inspect_panel.colors.blend	Blend
+inspect_panel.colors.blend_mode	Blend mode: {blendMode}
+
+## ai_assistant (833 keys)
+ai_assistant.a11y.question_card_options	{count, plural, one {# option: {options}} other {# options: {options}}}
+ai_assistant.attachments.attach_a_figjam	Attach from FigJam
+ai_assistant.attachments.attach_a_figma_file	Attach Figma files
+ai_assistant.attachments.attach_figjam_modal_body	Paste a page from FigJam to attach it
+ai_assistant.attachments.attach_figma_file_modal_body	Paste a Figma file link to attach
+ai_assistant.attachments.attach_figma_file_modal_secondary_body	Figma Design, FigJam, Slides files
+ai_assistant.attachments.different_plan	You can only attach files from this plan
+ai_assistant.attachments.figjam_attach_error	Couldn’t attach FigJam, try again
+ai_assistant.attachments.figjam_url_error	Paste a FigJam link
+ai_assistant.attachments.figjam_url_placeholder	Link to a FigJam page
+ai_assistant.attachments.figma_file_already_open	You can’t attach the file you’re currently in
+ai_assistant.attachments.figma_file_attach_error	Couldn’t attach Figma file, try again
+ai_assistant.attachments.figma_file_type_not_supported	Figma file type not supported
+ai_assistant.attachments.figma_file_url_error	Link to a Figma file
+ai_assistant.attachments.figma_file_url_placeholder	Link to a Figma Design, Slides, or FigJam file
+ai_assistant.attachments.hint_banner_cta	Attach files
+ai_assistant.attachments.hint_banner_message	Get better results
+ai_assistant.attachments.image_mode.unsupported_file_type_toast	Only PNG, JPG, and GIF images can be attached
+
+## figmake (2460 keys)
+figmake.a11y.blank_line	Blank line
+figmake.a11y.empty_state_prompt_label	Make prompt
+figmake.a11y.more_options_for_version	More options for {version}
+figmake.a11y.node_link_opens_in_new_tab	{name}, opens in new tab
+figmake.add_animation_preset_to_file.cta.status.available	Available in your animation styles
+figmake.add_custom_effect_or_fill_to_node_v2.cta.add	Add
+figmake.add_custom_effect_or_fill_to_node_v2.cta.applied	Applied
+figmake.add_custom_effect_or_fill_to_node_v2.cta.button	Apply
+figmake.add_custom_effect_or_fill_to_node_v2.cta.header	{name}
+figmake.add_custom_effect_or_fill_to_node_v2.cta.read_only_message.effect	Shader effect must be applied in this file for you to use it
+figmake.add_custom_effect_or_fill_to_node_v2.cta.read_only_message.fill	Shader fill must be applied in this file for you to use it
+figmake.add_custom_effect_or_fill_to_node_v2.cta.view_button	Go to tools
+figmake.add_payload_backend.cta.cancel	Cancel
+figmake.add_payload_backend.cta.collapsed.cancelled	Backend creation cancelled
+figmake.add_payload_backend.cta.collapsed.failed	Backend creation failed
+figmake.add_payload_backend.cta.collapsed.retry	Retry
+figmake.add_payload_backend.cta.collapsed.success	Backend created
+figmake.add_payload_backend.cta.create	Create
+
+## sites (1286 keys)
+sites.accessibility.tag.a	Link
+sites.accessibility.tag.article	Article
+sites.accessibility.tag.aside	Aside
+sites.accessibility.tag.button	Button
+sites.accessibility.tag.div	Container
+sites.accessibility.tag.figure	Media container
+sites.accessibility.tag.footer	Footer
+sites.accessibility.tag.h1	Heading 1
+sites.accessibility.tag.h2	Heading 2
+sites.accessibility.tag.h3	Heading 3
+sites.accessibility.tag.h4	Heading 4
+sites.accessibility.tag.h5	Heading 5
+sites.accessibility.tag.h6	Heading 6
+sites.accessibility.tag.header	Header
+sites.accessibility.tag.iframe	Embed
+sites.accessibility.tag.img	Image
+sites.accessibility.tag.li	List item
+sites.accessibility.tag.main	Main content
+
+## slides (605 keys)
+slides.a11y.node_type.slide	Slide {orderNum}
+slides.a11y.node_type.video	Video selected. Press Enter to access playback controls.
+slides.a11y.scroll-to-bottom.label	Scroll to bottom
+slides.canvas.slide_number	Slide number
+slides.carousel.add-blank-slide	Add blank slide
+slides.carousel.add-slide-from-template	Add slide from template
+slides.carousel.back_to_current_slide	Scroll to current slide
+slides.carousel.comments.aria_label	{numComments, plural, one {1 comment} other {{numComments} comments}}
+slides.carousel.error	An error occurred.
+slides.carousel.error_solution	Please reload to try again.
+slides.carousel.item_aria_label_slides	Slide {number}
+slides.carousel.item_aria_label_slides_section_collapsed	Slide {number}, beginning of section containing {sectionSlideCount} slides, collapsed
+slides.carousel.item_aria_label_slides_section_expanded	Slide {number}, beginning of section containing {sectionSlideCount} slides, expanded
+slides.carousel.item_aria_label_slides_skipped	Skipped slide
+slides.carousel.multi_selection_announcement	{count, plural, one {1 slide selected} other {{count} slides selected}}
+slides.carousel.new_slide	New slide
+slides.carousel.slide_stack_tooltip	Slides {min} - {max}
+slides.charts.bar_chart	Bar chart
+
+## proto (406 keys)
+proto.action	Action
+proto.action_back	Back
+proto.action_back_interaction	Back interaction
+proto.action_change_to	Change to
+proto.action_change_to_interaction	Change to interaction
+proto.action_close_overlay	Close overlay
+proto.action_close_overlay_interaction	Close overlay interaction
+proto.action_conditional	Conditional
+proto.action_conditional_interaction	Conditional interaction
+proto.action_conditional_title	If
+proto.action_navigate_to	Navigate to
+proto.action_navigate_to_interaction	Navigate to interaction
+proto.action_navigate_to_layer	Navigate to {layerName}
+proto.action_none	None
+proto.action_none_interaction	None interaction
+proto.action_open_link	Open link
+proto.action_open_link_interaction	Open link interaction
+proto.action_open_overlay	Open overlay
+
+## collaboration (812 keys)
+collaboration.branching.a_merge_request_is_already_open_for_this_branch	A merge request is already open for this branch
+collaboration.branching.an_error_occurred_while_deleting_these_files	An error occurred while deleting these files.
+collaboration.branching.an_error_occurred_while_renaming_this_file	An error occurred while renaming this file.
+collaboration.branching.an_error_occurred_while_restoring_these_files	An error occurred while restoring these files.
+collaboration.branching.an_error_occurred_while_updating_this_file	An error occurred while updating this file.
+collaboration.branching.applying_update	Applying update
+collaboration.branching.approved	Approved
+collaboration.branching.approved_review	Approved review
+collaboration.branching.archive	Archive
+collaboration.branching.archive_label	Archive {branchName}
+collaboration.branching.archived	Archived
+collaboration.branching.archived_v2	{userHandle} · Archived {relativeTimestamp}
+collaboration.branching.branch_archived	Branch archived
+collaboration.branching.branches_restored	{branchCount, plural, one {Branch restored} other {Branches restored}}
+collaboration.branching.changes_suggested	Changes suggested
+collaboration.branching.checking_for_changes	Checking for changes
+collaboration.branching.checking_for_conflicts	Checking for conflicts
+collaboration.branching.closing_other_tabs_and_reloading_figma_may_reduce_browser_memory_and_allow_you_to_continue_reviewing_and_merging_this_branch	Closing other tabs and reloading Figma may reduce browser memory and allow you to continue reviewing and merging this branch.
+
+## comments (180 keys)
+comments.accessibility_pin_region_name	Comments on canvas
+comments.accessibility_reply_added	Reply added
+comments.add_a_comment	Add a comment
+comments.add_and_share	Add and share
+comments.add_comment_and_share_file	Add comment and share file?
+comments.add_description	Add description
+comments.add_emoji	Add emoji
+comments.add_mention	Add mention
+comments.add_reaction	Add reaction
+comments.alt_text	Alt text
+comments.alt_text_label	Alt text:
+comments.an_error_occurred	An error occurred
+comments.an_error_occurred_while_adding_a_comment_reaction	An error occurred while adding a comment reaction.
+comments.an_error_occurred_while_adding_a_comment_reply	An error occurred while adding a comment reply.
+comments.an_error_occurred_while_deleting_this_comment	An error occurred while deleting this comment.
+comments.an_error_occurred_while_editing_this_comment	An error occurred while editing this comment.
+comments.an_error_occurred_while_marking_a_comment_as_read	An error occurred while marking a comment as read.
+comments.an_error_occurred_while_marking_a_comment_as_unread	An error occurred while marking a comment as unread.
+
+## plugins (15 keys)
+plugins.cancel_loading_pages	Cancel
+plugins.cannot_run_plugin_logged_out	Cannot run plugin while logged out
+plugins.cannot_run_widget_logged_out	Cannot run widget while logged out
+plugins.error_loading_environment_plugin	An error occurred while loading the plugin environment
+plugins.error_loading_environment_tool	An error occurred while loading the tool environment
+plugins.error_loading_environment_widget	An error occurred while loading the widget environment
+plugins.error_occured_while_running_plugin	An error occurred while running this plugin
+plugins.error_occured_while_running_tool	An error occurred while running this tool
+plugins.error_occured_while_running_tool_with_count	{count, plural, one {An error occurred while running this tool ({count} error total)} other {An error occurred while running this tool ({count} errors total)}}
+plugins.error_occured_while_running_widget	An error occurred while running this widget
+plugins.loading_pages_for_plugin	{numUnloadedPages, plural, one {Loading {numUnloadedPages} page for plugin…} other {Loading {numUnloadedPages} pages for plugin…}}
+plugins.loading_pages_for_widget	{numUnloadedPages, plural, one {Loading {numUnloadedPages} page for widget…} other {Loading {numUnloadedPages} pages for widget…}}
+plugins.loading_plugin	Loading {pluginName}…
+plugins.no_code_found_for_plugin	No code found for plugin version
+plugins.no_code_found_for_widget	No code found for widget version
+
+## design_linter (125 keys)
+design_linter.alpha_value	{alpha}%
+design_linter.component_suggestion_row.deleted_component_description	Detached layer: {layerName}, source component deleted
+design_linter.component_suggestion_row.description	Component: {componentName}, Library: {libraryName}
+design_linter.contrast_setting.description	Check color contrast
+design_linter.dropdown.search_placeholder	Search libraries
+design_linter.dropdown.suggested	Suggested
+design_linter.footer.apply_category_btn	Apply
+design_linter.footer.apply_category_btn.aria_label	{count, plural, one {Apply {count} suggestion} other {Apply {count} suggestions}}
+design_linter.landing_page.loading_error.cta_button	Try again
+design_linter.landing_page.loading_error.title	Couldn’t load suggestions
+design_linter.landing_page.revamped.exceeds_limit.subtitle	Reduce the number of selected layers.
+design_linter.landing_page.revamped.exceeds_limit.title	Too many layers selected
+design_linter.landing_page.revamped.no_selection.subtitle	Select the layers or sections you want to check.
+design_linter.landing_page.revamped.no_selection.title	Make a selection
+design_linter.landing_page.revamped.valid_selection.subtitle	{count, plural, one {1 layer selected and ready to check.} other {# layers selected and ready to check.}}
+design_linter.landing_page.revamped.valid_selection.title	Let’s begin
+design_linter.libraries.created_in_this_file	Created in this file
+design_linter.loading_text.checking_for_hardcoded_values	Checking for hardcoded values...
+
+## image_ai (97 keys)
+image_ai.background_remove.failed	Failed to remove background
+image_ai.background_remove.instruction	First, select one image
+image_ai.background_remove.only_one_image	Select one image
+image_ai.buzz_intro.description	Now, you can isolate objects, turn images into editable vectors, and more, right in Buzz.
+image_ai.buzz_intro.title	New image tools are here
+image_ai.compare.add_model	Compare with {modelName}
+image_ai.compare.add_model_tooltip	Add to comparison
+image_ai.compare.image_count	{count, plural, one {{count} image · one per model} other {{count} images · one per model}}
+image_ai.compare.model_count	{count, plural, one {{count} model} other {{count} models}}
+image_ai.done_pill.compare	Compare
+image_ai.done_pill.edit_image	{count, plural, one {Image edited} other {Images edited}}
+image_ai.done_pill.expand_image	Image expanded
+image_ai.done_pill.generate_image	{count, plural, one {Image generated} other {Images generated}}
+image_ai.done_pill.remove_background	Background removed
+image_ai.done_pill.remove_object	Erased
+image_ai.done_pill.separate_object	Layers separated
+image_ai.done_pill.upscale_image	Resolution boosted
+image_ai.done_pill.vectorize_image	Vectorized
+
+## generated_tools (97 keys)
+generated_tools.actions.edit	Edit with agent
+generated_tools.actions.open_in_code_named	Open {toolName} in code
+generated_tools.actions.remove_named	Remove {toolName}
+generated_tools.actions.run_named	Run {toolName}
+generated_tools.actions.update_to_latest	Update available
+generated_tools.actions.updating	Updating
+generated_tools.actions.view_version_history	View version history
+generated_tools.code_editing.artifact_load_error	This file failed to load. Refresh the page to retry.
+generated_tools.code_editor.files	Files
+generated_tools.code_editor.load_error	We couldn’t load this code.
+generated_tools.code_editor.save	Save
+generated_tools.code_editor.save_shortcut_mac_aria	Command S
+generated_tools.code_editor.save_shortcut_non_mac_aria	Control S
+generated_tools.code_editor.saving	Saving…
+generated_tools.code_editor.try_again	Try again
+generated_tools.code_viewer.download_complete	Download complete
+generated_tools.code_viewer.download_error	Download failed
+generated_tools.code_viewer.download_in_progress	Downloading files…
+
+## dev_handoff (1260 keys)
+dev_handoff.add_dev_resource	Add dev resources
+dev_handoff.ai_assistant.code_block.copy_to_clipboard_toast	Copied to clipboard
+dev_handoff.ai_assistant.code_block.copy_to_clipboard_tooltip	Copy to clipboard
+dev_handoff.ai_assistant.code_block.download_tooltip	Download
+dev_handoff.ai_assistant.code_block.show_more	Show more
+dev_handoff.ai_assistant.code_block.title_for_language	{language} code
+dev_handoff.ai_assistant.code_block.title_no_language	Code block
+dev_handoff.ai_assistant.code_block.toggle_wrap_tooltip	Toggle word wrap
+dev_handoff.alternative_units.description_scale_factor_android	Scale factor for scaling dimensions into Android dp/sp
+dev_handoff.alternative_units.description_scale_factor_ios	Scale factor for scaling dimensions into iOS points
+dev_handoff.alternative_units.description_scale_factor_third_party	Scale factor for scaling pixels into {unitName} units
+dev_handoff.alternative_units.description_scale_factor_web	Root font size for scaling pixels into CSS rems
+dev_handoff.alternative_units.dimension_unit	Unit
+dev_handoff.alternative_units.dimension_unit_named	Unit: {unit}
+dev_handoff.alternative_units.dp_unit	dp/sp
+dev_handoff.alternative_units.inspection_scale_factor	Unit scale
+dev_handoff.alternative_units.no_scale	No scaling
+dev_handoff.alternative_units.only_apply_rem_on_text	Only apply {rem} on text properties
+
+## fullscreen (2055 keys)
+fullscreen.accessibility.annotation_measurement.edit_mode	Editing measurement label
+fullscreen.accessibility.annotation_measurement.selected.bottom_to_bottom	Measurement selected: from bottom edge of {fromNodeName} to bottom edge of {toNodeName}, distance {distance}
+fullscreen.accessibility.annotation_measurement.selected.bottom_to_top	Measurement selected: from bottom edge of {fromNodeName} to top edge of {toNodeName}, distance {distance}
+fullscreen.accessibility.annotation_measurement.selected.left_to_left	Measurement selected: from left edge of {fromNodeName} to left edge of {toNodeName}, distance {distance}
+fullscreen.accessibility.annotation_measurement.selected.left_to_right	Measurement selected: from left edge of {fromNodeName} to right edge of {toNodeName}, distance {distance}
+fullscreen.accessibility.annotation_measurement.selected.right_to_left	Measurement selected: from right edge of {fromNodeName} to left edge of {toNodeName}, distance {distance}
+fullscreen.accessibility.annotation_measurement.selected.right_to_right	Measurement selected: from right edge of {fromNodeName} to right edge of {toNodeName}, distance {distance}
+fullscreen.accessibility.annotation_measurement.selected.top_to_bottom	Measurement selected: from top edge of {fromNodeName} to bottom edge of {toNodeName}, distance {distance}
+fullscreen.accessibility.annotation_measurement.selected.top_to_top	Measurement selected: from top edge of {fromNodeName} to top edge of {toNodeName}, distance {distance}
+fullscreen.accessibility.author	Author: {authorName}
+fullscreen.accessibility.auto_layout_added	{numNodes, plural, one { Auto layout added to one node} other { Auto layout added to # nodes.}}
+fullscreen.accessibility.auto_layout_removed	{numNodes, plural, one { Auto layout removed from one node} other { Auto layout removed from # nodes.}}
+fullscreen.accessibility.auto_layout_toggled	Toggle auto layout
+fullscreen.accessibility.brought_forward	{numLayers, plural, one {One layer brought forward} other {# layers brought forward}}
+fullscreen.accessibility.brought_to_front	{numLayers, plural, one {One layer brought to front} other {# layers brought to front}}
+fullscreen.accessibility.chit_emoji	Emoji
+fullscreen.accessibility.chit_gif	GIF
+fullscreen.accessibility.chit_gradient_angular	Angular gradient
+
+## tools_panel (234 keys)
+tools_panel.add	Add
+tools_panel.agent_built.label	Generative
+tools_panel.animation_preset.aria_label	Animation preset
+tools_panel.apply	Apply
+tools_panel.browse_empty_state.clear_filters	Clear filters
+tools_panel.browse_empty_state.title	No tools found
+tools_panel.by_figma.aria_label	By Figma
+tools_panel.category_filter.clear_all	Clear all
+tools_panel.category_filter.editing	Editing
+tools_panel.category_filter.generative	Expressive
+tools_panel.category_filter.menu_title	Filter by category
+tools_panel.category_filter.social_media_and_print	Social media & print
+tools_panel.category_filter.software_development	Software development
+tools_panel.category_filter.trigger_all	Category
+tools_panel.category_filter.trigger_aria_label	Filter by category
+tools_panel.category_filter.trigger_aria_label_with_count	Filter by category, {count} selected
+tools_panel.category_filter.trigger_aria_label_with_selection	Filter by category: {selection}
+tools_panel.create_menu.build_with_agents	Build with agents
+
+## file_browser (789 keys)
+file_browser.about	About
+file_browser.ai_chats.empty_state_description	Once you do, your chats will show up here
+file_browser.ai_chats.empty_state_title	You haven’t chatted with the Figma agent yet
+file_browser.ai_chats.greetings.how_can_i_help	How can I help?
+file_browser.ai_chats.greetings.lets_get_started	Let’s get started
+file_browser.ai_chats.greetings.ready_when_you_are	Ready when you are
+file_browser.ai_chats.greetings.what_can_i_do	What can I do for you?
+file_browser.ai_chats.greetings.what_do_you_need	What do you need?
+file_browser.ai_chats.greetings.whats_next	What’s next?
+file_browser.ai_chats.greetings.where_should_we_start	Where should we start?
+file_browser.ai_chats.input_placeholder	Do anything
+file_browser.ai_chats.input_placeholder_follow_up	Follow up
+file_browser.ai_chats.starter_prompt_categories.ask	Ask
+file_browser.ai_chats.starter_prompt_categories.build	Build
+file_browser.ai_chats.starter_prompt_categories.create	Create
+file_browser.ai_chats.starter_prompt_categories.find	Find
+file_browser.ai_chats.starter_prompts.ask_catch_up_in_folder	Catch me up with everything I need to know about what’s happening in
+file_browser.ai_chats.starter_prompts.ask_comments_waiting	Which files from last week have open comments for me?
+
+## asset_transfers (142 keys)
+asset_transfers.blocked_modal.cancel_cta	{count, plural, one {Cancel the request before transferring this folder.} other {Cancel these requests before transferring this folder.}}
+asset_transfers.blocked_modal.requested_to_transfer_the_parent_folder_folder_name_to_destination	{initiator} requested to transfer the parent folder {folderName} to {destination}.
+asset_transfers.blocked_modal.requested_to_transfer_the_team_team_name_to_destination	{initiator} requested to transfer the team {teamName} to {destination}.
+asset_transfers.blocked_modal.title	This folder can’t be transferred
+asset_transfers.destination_type.organization	organization
+asset_transfers.destination_type.team	team
+asset_transfers.editor_admin_list_modal.admins_at_entity	Admins at {entity}
+asset_transfers.editor_admin_list_modal.any_of_these_admins_can_transfer_this_project_to_an_external_organization	Any of these admins can transfer this project to an external organization. They'll need the email of a contact person or admin at that organization to get started.
+asset_transfers.editor_admin_list_modal.any_of_these_admins_can_transfer_this_project_to_an_external_organization.fmr	Any of these admins can transfer this folder to an external organization. They’ll need the email of a contact person or admin at that organization to get started.
+asset_transfers.editor_admin_list_modal.any_of_these_admins_can_transfer_this_team_to_an_external_organization	Any of these admins can transfer this team to an external organization. They'll need the email of a contact person or admin at that organization to get started.
+asset_transfers.error_message.something_went_wrong_check_your_connection	Something went wrong - check your connection and try again
+asset_transfers.error_message.transfer_already_initiated_for_project_or_parent	A transfer was already initiated for this project or one of its parent folders.
+asset_transfers.error_message.transfer_already_initiated_for_project_or_parent.fmr	A transfer was already initiated for this folder or one of its parent folders.
+asset_transfers.handle_request_modal.a_source_user_email_wants_to_transfer_the_copy_project_name_to_the_team_name_team	{sourceUserName} ({sourceUserEmail}) wants to transfer a copy of the {projectName} project to the {teamName} team. {learnMore}
+asset_transfers.handle_request_modal.a_source_user_email_wants_to_transfer_the_copy_project_name_to_the_team_name_team.fmr	{sourceUserName} ({sourceUserEmail}) wants to transfer a copy of the {projectName} folder to the {teamName} team. {learnMore}
+asset_transfers.handle_request_modal.a_source_user_email_wants_to_transfer_the_project_name_to_the_team_name_team	{sourceUserName} ({sourceUserEmail}) wants to transfer the {projectName} project to the {teamName} team. If you accept, you and your other admins will manage this project and its content. {learnMore}
+asset_transfers.handle_request_modal.a_source_user_email_wants_to_transfer_the_project_name_to_the_team_name_team.fmr	{sourceUserName} ({sourceUserEmail}) wants to transfer the {projectName} folder to the {teamName} team. If you accept, you and your other admins will manage this folder and its content. {learnMore}
+asset_transfers.handle_request_modal.a_source_user_email_wants_to_transfer_the_team_name_to_your_organization	{sourceUserName} ({sourceUserEmail}) wants to transfer the {teamName} team to your organization. If you accept, you and your other admins will manage this team and its content. {learnMore}
+
+## whiteboard (1081 keys)
+whiteboard.ai.ai_opt_out_error	AI features are turned off for your organization
+whiteboard.ai.inappropriate_input_error	FigJam blocked potentially harmful results
+whiteboard.ai.offline_error	Looks like you’re offline—to use FigJam AI, you’ll need to reconnect
+whiteboard.ai.reload	Reload
+whiteboard.ai.service_issue_error	AI features are currently unavailable—mind trying later?
+whiteboard.ai.summary.summary_footer_disclaimer	Heads up: AI outputs can be misleading, or even flat-out wrong.
+whiteboard.ai.summary.summary_header_disclaimer	Summarized with AI - {summaryGenerationDate, date, long}
+whiteboard.ai.summary.summary_header_disclaimer_no_date	Summarized with AI
+whiteboard.ai_cluster.content_length_limit_exceeded_error	Couldn’t sort stickies. Try a smaller selection.
+whiteboard.ai_cluster.generic_error	Couldn’t sort stickies—mind trying again?
+whiteboard.ai_cluster.loading_section_base	Sorting it out
+whiteboard.ai_cluster.other_cluster_name	Other
+whiteboard.ai_cluster.rate_limit_exceeded_error	Can’t sort stickies right now—wait a bit before trying again
+whiteboard.ai_expand_mindmap.generation_success	Here are some ideas!
+whiteboard.ai_expand_mindmap.generic_error	Couldn’t generate—mind trying again?
+whiteboard.ai_expand_mindmap.retry	Try again
+whiteboard.ai_feature_announcement.more_prompts.community_button	Browse in Community
+whiteboard.ai_feature_announcement.more_prompts.description	Jump start your file with one of these ready-to-go prompts.
+
+## buzz (282 keys)
+buzz.approvals.active_review_title	Active review
+buzz.approvals.add_comment	Add a comment
+buzz.approvals.all_assets_reviewed	All assets have been reviewed
+buzz.approvals.approvals_button_tooltip	Reviews
+buzz.approvals.approvals_panel_overview_title	Reviews
+buzz.approvals.approve	Approve
+buzz.approvals.approvers_label	Approvers
+buzz.approvals.assets_label	Assets
+buzz.approvals.back	Back
+buzz.approvals.begin_review	Begin review
+buzz.approvals.cancel_review	Cancel review
+buzz.approvals.changes_needed_count	{count, plural, one {{count} change needed} other {{count} changes needed}}
+buzz.approvals.completed_reviews_subtitle	Completed reviews
+buzz.approvals.copy_link	Copy link
+buzz.approvals.count_approved	{count, plural, one {{count} approved} other {{count} approved}}
+buzz.approvals.create_request_description_label	Add a note
+buzz.approvals.create_request_reviewers_label	Reviewers
+buzz.approvals.create_request_reviewers_placeholder	Add reviewers
+
+## cooper (319 keys)
+cooper.carousel.asset_stack_tooltip	Assets {min} - {max}
+cooper.carousel.back_to_current_asset	Scroll to current asset
+cooper.carousel.item_aria_label.numbered	Carousel item {number}
+cooper.carousel.multi_selection_announcement	{count, plural, one {1 asset selected} other {{count} assets selected}}
+cooper.carousel.row_title_caret_label	Expand or collapse section
+cooper.fields.empty_selection	Select an asset to see text and image fields.
+cooper.fields.multiple_selection_warning	Select a single asset to edit text or image fields.
+cooper.fields.no_content_swappable_fields_for_brand_template	No text or image to edit.
+cooper.fields.no_content_swappable_fields_for_freeform_template	Nothing to edit. Add text or an image to the asset first.
+cooper.grid_mode.locked_template_label	Template locked
+cooper.inline_menu.ai_edit	Edit
+cooper.inline_menu.ai_tools	AI tools
+cooper.inline_menu.blur	Blur
+cooper.inline_menu.blur_strength	Blur strength
+cooper.inline_menu.bold	Toggle bold
+cooper.inline_menu.border	Border
+cooper.inline_menu.border_width	Border width
+cooper.inline_menu.corners	Corners
+
+## dakota (211 keys)
+dakota.ai.close	Close
+dakota.ai.generate_collection	Generate a collection
+dakota.ai.prompt_placeholder	Describe your content
+dakota.ai.suggestion.blog_prompt	A blog with title, date, hero image, and rich text
+dakota.ai.suggestion.blog_suggestion	Blog
+dakota.ai.suggestion.job_posting_prompt	A job posting page with a job title, job description, location and apply link
+dakota.ai.suggestion.job_posting_suggestion	Job posting
+dakota.ai.suggestion.product_listing_prompt	A product listing with prices, images, and descriptions
+dakota.ai.suggestion.product_listing_suggestion	Product listing
+dakota.ai.visual_bell.done	Done!
+dakota.ai.visual_bell.working	Working...
+dakota.api.error.collection_usage_limit_reached	Collection usage limit reached
+dakota.api.error.field_usage_limit_reached	Field usage limit reached
+dakota.api.error.invalid_format	Slugs must be formatted correctly
+dakota.api.error.item_usage_limit_reached	Item usage limit reached
+dakota.api.error.missing_field_schema	Missing field schema
+dakota.api.error.not_unique_slug	Slugs must be unique in a collection
+dakota.api.error.slug_cannot_be_nil	Slug cannot be empty
+
+## make_local (577 keys)
+make_local.annotations.delete	Delete annotation
+make_local.assets.back_to_libraries	Back to libraries
+make_local.assets.component_count	{assetCount, plural, one {# component} other {# components}}
+make_local.assets.insert_asset_aria_label	Insert {assetName}
+make_local.assets.loading	Loading assets...
+make_local.assets.no_code_connected_assets	No code-connected assets found.
+make_local.assets.no_libraries	No libraries added.
+make_local.assets.open_library_aria_label	Open {libraryName}
+make_local.assets.search_aria_label	Search assets
+make_local.assets.search_placeholder	Search in this library
+make_local.assets.title	Assets
+make_local.assets.toggle_panel	Assets
+make_local.auto_mode.auto	Auto-approve
+make_local.auto_mode.auto_description	Only ask when risk is high
+make_local.auto_mode.auto_unavailable_description	Not available with the selected model
+make_local.auto_mode.contextual_cta	Change settings
+make_local.auto_mode.contextual_dismiss	Dismiss auto-approve suggestion
+make_local.auto_mode.contextual_prompt	Skip approving tool calls?
+
+## settings_tab (460 keys)
+settings_tab.add_workspace_label	Add a workspace
+settings_tab.agent_network_access_core_services_link	core services
+settings_tab.agent_network_access_custom_access	Custom access
+settings_tab.agent_network_access_essentials_description	Agent and sandboxes can always access {coreServicesLink}
+settings_tab.agent_network_access_essentials_label	Essential access
+settings_tab.agent_network_access_host_placeholder	Add hostnames, e.g. figma.com
+settings_tab.agent_network_access_hosts_saved	Network access hostnames updated
+settings_tab.agent_network_access_invalid_host	Enter an Internet-accessible FQDN such as figma.com, without a scheme, port, path, or wildcard. IP addresses and local hostnames aren’t supported.
+settings_tab.agent_network_access_modal_title	Internet access
+settings_tab.agent_network_access_no_access	Essentials only
+settings_tab.agent_network_access_read_access	Read access
+settings_tab.agent_network_access_save_error	Couldn’t save network access settings. Try again.
+settings_tab.agent_network_access_section_description	Allow the Figma agent to write to specific hosts
+settings_tab.agent_network_access_section_description_without_read_access	Allow the Figma agent to read from and write to specific hosts
+settings_tab.agent_network_access_section_label	Write access
+settings_tab.agent_network_access_section_label_without_read_access	Read and write access
+settings_tab.agent_network_access_toggle_description	Allow the Figma agent to read all websites’ data and use web search
+settings_tab.agent_network_access_toggle_label	Read and web search access
+
+## shortcuts (0 keys)
+

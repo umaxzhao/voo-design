@@ -1,0 +1,464 @@
+ useInsertionEffect 
+&&C.current?.blur())}}),f.jsx(
+&&i.shadowType!==
+&&s.currentTarget.blur()},className:
+&&s.gradientType!==
+&&t()))},onBlur:()=>{u()},placeholder:
+)&&this.manager?.shaderManager.load(this),e===
+))},[v.codex.apiKeyStored]),S.useEffect(()=>{v.gemini.apiKeyStored&&(Y(!1),te(
+))},[v.gemini.apiKeyStored]),S.useEffect(()=>{v.cursor?.apiKeyStored&&(re(!1),pe(
+),[o,a]=S.useState(!1);S.useEffect(()=>{s(t??
+),_S)},[n,r,JSON.stringify(i)]);return S.useEffect(function(){if(!n){var a=s.current;a?(r!==a.apiKey&&console.warn(
+),i.shadowType!==void 0&&i.shadowType!==
+),q=wt.isElectronMac&&!r,G=YS.indexOf(e),V=KTe(e,-1),Q=KTe(e,1);S.useLayoutEffect(()=>(document.body.classList.add(
+),s.blendMode!==void 0&&YC(s.blendMode,e,n+
+),s.gradientType!==void 0&&s.gradientType!==
+),t.effects!=null&&dze(t.effects,r,
+);return S.useEffect(()=>{!o||r||h.current||(h.current=!0,u())},[o,r,u]),r?f.jsxs(
+);return S.useEffect(()=>{const m=l.current;m&&p((m.textContent??
+)}),[]),S.useEffect(()=>{!E||E.dataset.step!==e||(I.current?.scrollTo({top:0}),E.classList.remove(
+)})`},stops:s};case ut.AngularGradient:throw new Error(
+)},r5e=function(t,e){var n=e.ownerDocument,r=e;do{typeof ShadowRoot<
+)};S.useEffect(()=>{const Dt=({webContentsId:Sn,action:hn})=>{if(!(!mt||Sn!==d?.webContentsId())){if(hn===
+)}else for(const o of s.errors)e.errors.push(o)}i.blendMode!==void 0&&YC(i.blendMode,e,n+
+)}if(i.blur!==void 0&&_i(i.blur,e,n+
++JSON.stringify(t)});else{const r=t;r.effect!==void 0&&dze(r.effect,e,n+
+, got '+JSON.stringify(i.shadowType)}),i.offset!==void 0)if(typeof i.offset!=
+, got '+JSON.stringify(s.gradientType)}),s.opacity!==void 0&&_i(s.opacity,e,n+
+,$t)}},[h,d,mt,Zr,Pn]),S.useEffect(()=>{},[h]);const Ei=async Dt=>{const $t=p.current;if(!$t)return{success:!1,error:
+,Bt()},[Ye,re,Bt]),S.useLayoutEffect(()=>{_t.current=xe,yt.current=
+,E_(a.effects,r,!1));break}case
+,Ot)}},[n,C]),S.useEffect(()=>{const at=()=>{kn(!0)};return n.on(
+,`, ${n})`);return`radial-gradient(ellipse ${r.size.split(
+,at)},[n]),S.useEffect(()=>{const at=()=>{C&&MQe(C)},Ot=()=>{_st()};return n.on(
+,at)},[n]),S.useEffect(()=>{const at=Ot=>{Dr(
+,at)},[n]),S.useEffect(()=>{if(!wt.isElectron||wt.isVSCode)return;const at=()=>{en(
+,glslFile:
+,gradientType:
+,mode:ei.Cover},4:{type:ut.Shader,enabled:!0,opacityPercent:100,url:
+,opacityPercent:o,uniforms:a,blendMode:i.blendMode});break}case
+,shader:
+,shaderlab:
+,style:{backgroundImage:`linear-gradient(to right, transparent, rgb(${u.r}, ${u.g}, ${u.b}))`}}),f.jsx(
+,t[t.effects=34]=
+,u_lightAngle:43.2,u_scatter:.1074,u_density:5.44,u_ambient:.2,u_softness:13.95,u_noise:.32,u_noiseScale:.902}},{kind:
+,u_lightAngle:54,u_scatter:.0466,u_density:4.015,u_ambient:.32,u_softness:22.5,u_noise:.25,u_noiseScale:1.526}},{kind:
+,u_lightAngle:75.6,u_scatter:.21,u_density:9.905,u_ambient:.09,u_softness:35.55,u_noise:.25,u_noiseScale:2}},{kind:
+,u_lightAngle:75.6,u_scatter:.3164,u_density:8.575,u_ambient:.14,u_softness:23.4,u_noise:.35,u_noiseScale:1.136}},{kind:
+,value:n,onChange:s=>r(s.target.value),onBlur:i,onKeyDown:s=>{s.key===
+-legacy-gradient
+-legacy-linear-gradient
+-legacy-linear-gradient-arguments
+-legacy-radial-gradient
+-legacy-radial-gradient-arguments
+-legacy-radial-gradient-shape
+-legacy-radial-gradient-size
+-legacy-repeating-linear-gradient
+-legacy-repeating-radial-gradient
+-moz-window-shadow
+-ms-scrollbar-darkshadow-color
+-ms-scrollbar-shadow-color
+-webkit-gradient()
+-webkit-gradient-color-stop
+-webkit-gradient-point
+-webkit-gradient-radius
+-webkit-gradient-type
+. Please file a bug against @shaderfrog/glsl-parser and incldue your source grammar.
+.glsl,.frag,.fs,.vert,text/plain
+:[{outline:J()}],shadow:[{shadow:[
+:return`${e} shader${e===1?
+:{(p??={}).effects=CS(r,g);break}case
+;S.useEffect(()=>{if(s!==
+;gradients=new Map;gradient=void 0;elements=[];scopes=[{name:
+<blend-mode>#
+<blend-mode>|plus-darker|plus-lighter
+<blend-mode>|plus-lighter
+<url>|<image()>|<image-set()>|<element()>|<paint()>|<cross-fade()>|<gradient>
+><feDropShadow dx=
+?S.useLayoutEffect:S.useEffect;function l$n({useFlushSync:t=!0,directDomUpdates:e=!1,directDomUpdatesMode:n=
+?S.useLayoutEffect:dbt;function hbt(t,e){return function(r,...i){const s=new URL(t);return s.searchParams.set(
+?ft.useLayoutEffect:ft.useEffect;function Cee(t){return
+@container text-card-foreground relative select-none shadow-none z-10 h-full rounded-none antialiased flex flex-col
+Abstract Chromatic Gradients
+Add effect
+AngularGradient
+Animations & effects (turn off to save GPU/CPU)
+Apply shader
+BACKGROUND_BLUR
+Background Blur
+BackgroundBlur
+Blend mode
+Blur
+Blurry Lens
+Couldn't load the shader.
+Couldn't use this shader.
+DROP_SHADOW
+Drop Shadow
+DropShadow
+EXT_float_blend
+EXT_texture_compression_bptc
+EXT_texture_compression_rgtc
+EXT_texture_filter_anisotropic
+EXT_texture_norm16
+Effects
+FOREGROUND_BLUR
+Failed to copy shader fill:
+Failed to create RuntimeEffect!
+Failed to import shader.
+Fluid Ribbon Gradients
+GRADIENT_ANGULAR
+GRADIENT_DIAMOND
+GRADIENT_LINEAR
+GRADIENT_RADIAL
+Gradient
+Gradient Aurora 1
+Gradient Bubble 2
+Gradient Editorial 5
+Gradient Halftone 3
+Gradient Haze 4
+Gradient Prompt Stack
+INNER_SHADOW
+Import shader file
+Inner Shadow
+InnerShadow
+Jacques Francois Shadow
+KHR_parallel_shader_compile
+Layer Blur
+LayerBlur
+LinearGradient
+Mesh
+Mesh Cloud Gradients
+MeshGradient
+Missing shader status in Skia renderer:
+Mixed effects
+NOISE
+NV_shader_noperspective_interpolation
+OES_texture_float_linear
+RadialGradient
+Remove effect
+Shader
+Shader Gallery...
+Shader path or URL
+Shaders
+Texture.baseTexture is now Texture.source
+TextureStyle.wrapMode is now TextureStyle.addressMode
+Textured — Aurora Bloom
+Textured — Champagne
+Textured — Ember Tide
+Textured — Graphite Study
+Textured — Mauve
+Textured — Methane Ice
+Textured — Original
+Textured — Plasma Storm
+Textured — Rose Nebula
+Textured — Sage
+Textured — Slate
+Textured — Solar Variant
+The shader must not use anything but gl_FragCoord and uniforms!
+This shader has no image input.
+Tile Gradient
+Tip: You can ask agent to generate a shader for you based on your description or find more shaders in Goodies...
+Tune Into Noise
+WEBGL_blend_func_extended
+WEBGL_compressed_texture_astc
+WEBGL_compressed_texture_etc
+WEBGL_compressed_texture_etc1
+WEBGL_compressed_texture_s3tc
+WEBGL_compressed_texture_s3tc_srgb
+WEBGL_debug_shaders
+You should call navigate() in a React.useEffect(), not when your component is first rendered.
+[<url>|<gradient>|none] [<length-percentage>{4} <-webkit-mask-box-repeat>{2}]?
+_pencil_runtime_effect_make_for_blender
+_pencil_runtime_effect_make_for_color_filter
+_pencil_runtime_effect_make_for_shader
+absolute inset-0 h-full w-full cursor-default bg-gradient-to-b from-transparent via-black/50 to-black/90 duration-300
+absolute inset-y-0 left-0 w-16 bg-[linear-gradient(to_right,var(--canvas-bg)_8px,transparent)]
+animationsAndEffectsEnabled
+backdrop-blur
+background-blend-mode
+backgroundBlendMode
+background_blur
+bg-background text-foreground shadow-sm
+bg-blend
+bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm
+bg-popover text-foreground shadow-sm dark:bg-accent
+blend-mode
+blendMode
+blur( <length> )
+blur( <length>? )
+blur()
+blur(8px)
+blur_circular
+blur_linear
+blur_medium
+blur_off
+blur_on
+blur_short
+blurred background texture,
+blurry-lens
+border-input shadow-xs dark:bg-input/30 hover:bg-accent/40 dark:hover:bg-input/50
+box-shadow
+boxShadow
+cacheAsBitmap is deprecated, use cacheAsTexture instead.
+cinematic_blur
+conic-gradient( [<conic-gradient-syntax>] )
+conic-gradient( [from <angle>]? [at <position>]? , <angular-color-stop-list> )
+conic-gradient()
+conic-gradient-syntax
+convertOneStopGradients
+converts one-stop (single color) gradients to a plain color
+createTexture
+drop-shadow
+drop-shadow( <length>{2,3} <color>? )
+drop-shadow( [<color>?&&<length>{2,3}] )
+drop-shadow()
+drop-shadow-color
+ev_shadow
+ev_shadow_add
+ev_shadow_minus
+feBlend
+feDisplacementMap
+feDropShadow
+feGaussianBlur
+filter: blur(6px);
+fixed inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm
+flex items-center gap-2 px-3 py-1.5 rounded-full bg-card shadow-md border max-w-lg
+font-medium text-[10px] leading-none text-foreground shadow-md
+goodies/images/shaders/amber-crt.webp
+goodies/images/shaders/aperture.webp
+goodies/images/shaders/arctic-1.webp
+goodies/images/shaders/arctic.webp
+goodies/images/shaders/atlas.webp
+goodies/images/shaders/aurora.webp
+goodies/images/shaders/blocky-mono.webp
+goodies/images/shaders/blurry-lens.webp
+goodies/images/shaders/blush-dusk.webp
+goodies/images/shaders/bold-press.webp
+goodies/images/shaders/chip-3.webp
+goodies/images/shaders/chip-5.webp
+goodies/images/shaders/chip-8.webp
+goodies/images/shaders/chlorophyll-gummy.webp
+goodies/images/shaders/cold-gummy.webp
+goodies/images/shaders/color-bloom.webp
+goodies/images/shaders/color-grove.webp
+goodies/images/shaders/contemporarylight-folded.webp
+goodies/images/shaders/czlion.webp
+goodies/images/shaders/dancer.webp
+goodies/images/shaders/deep-ocean.webp
+goodies/images/shaders/dissolve.webp
+goodies/images/shaders/dither-green.webp
+goodies/images/shaders/dolphin.webp
+goodies/images/shaders/dot-grid-dense-neon.webp
+goodies/images/shaders/dot-grid-light-shrink.webp
+goodies/images/shaders/dot-grid-mint-paper.webp
+goodies/images/shaders/dot-grid-pinpoint.webp
+goodies/images/shaders/dot-grid-tight-spotlight.webp
+goodies/images/shaders/dot-grid-touching-tiles.webp
+goodies/images/shaders/dot-grid-warm-amber.webp
+goodies/images/shaders/dot-grid.webp
+goodies/images/shaders/ember-1.webp
+goodies/images/shaders/ember.webp
+goodies/images/shaders/faded-riso.webp
+goodies/images/shaders/frequency.webp
+goodies/images/shaders/glass.webp
+goodies/images/shaders/gradient.webp
+goodies/images/shaders/ink-on-paper.webp
+goodies/images/shaders/ink.webp
+goodies/images/shaders/jade.webp
+goodies/images/shaders/lion.webp
+goodies/images/shaders/magazine.webp
+goodies/images/shaders/margin.webp
+goodies/images/shaders/offset.webp
+goodies/images/shaders/panel-1.webp
+goodies/images/shaders/panel-2.webp
+goodies/images/shaders/panel.webp
+goodies/images/shaders/ripple.webp
+goodies/images/shaders/rose.webp
+goodies/images/shaders/rosewood-1.webp
+goodies/images/shaders/rosewood.webp
+goodies/images/shaders/sandstone-1.webp
+goodies/images/shaders/sandstone.webp
+goodies/images/shaders/snake.webp
+goodies/images/shaders/solo.webp
+goodies/images/shaders/soundthatnever.webp
+goodies/images/shaders/static-nights.webp
+goodies/images/shaders/stones.webp
+goodies/images/shaders/sun.webp
+goodies/images/shaders/textured-aurora-bloom.webp
+goodies/images/shaders/textured-champagne.webp
+goodies/images/shaders/textured-ember-tide.webp
+goodies/images/shaders/textured-graphite-study.webp
+goodies/images/shaders/textured-mauve.webp
+goodies/images/shaders/textured-methane-ice.webp
+goodies/images/shaders/textured-original.webp
+goodies/images/shaders/textured-plasma-storm.webp
+goodies/images/shaders/textured-rose-nebula.webp
+goodies/images/shaders/textured-sage.webp
+goodies/images/shaders/textured-slate.webp
+goodies/images/shaders/textured-solar-variant.webp
+goodies/images/shaders/tuneintonoise.webp
+goodies/images/shaders/var-1.webp
+goodies/images/shaders/var-17.webp
+goodies/images/shaders/var-2.webp
+goodies/images/shaders/warm-clay-1.webp
+goodies/images/shaders/warm-clay.webp
+goodies/images/shaders/warm-gummy.webp
+goodies/images/shaders/weave.webp
+goodies/shaders/aurora-background.glsl
+goodies/shaders/aurora-shape.glsl
+goodies/shaders/dither-gradient.glsl
+goodies/shaders/dither-image.glsl
+goodies/shaders/film-leak.glsl
+goodies/shaders/fluted-glass.glsl
+goodies/shaders/geo-pattern.glsl
+goodies/shaders/glass.glsl
+goodies/shaders/gummy.glsl
+goodies/shaders/halftone.glsl
+goodies/shaders/mercury-shape.glsl
+goodies/shaders/ripple.glsl
+goodies/shaders/silk.glsl
+goodies/shaders/tile-gradient.glsl
+gradient(
+gradient-bold
+gradient-fill
+gradient-light
+gradient-thin
+gradientTransform
+gradientUnits
+h-6 border-0 shadow-none text-[11px]
+h-7 gap-1.5 px-3 shadow-none
+h-7 w-7 rounded-md p-0 shadow-none
+h-7 w-7 shrink-0 rounded-md bg-popover p-0 shadow-none
+handcraft texture,
+hasBackdropShaders
+hasBlurEffects
+hover:bg-light-blue hover:text-white hover:border-light-blue hover:shadow-lg
+https://fonts.gstatic.com/s/jacquesfrancoisshadow/v27/KR1FBtOz8PKTMk-kqdkLVrvR0ECFrB6Pin-2_q8VsHuV5ULS.ttf
+inline-block w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0 shadow-[0_0_4px_rgba(96,165,250,0.9)]
+inset-shadow
+inset-shadow-color
+jacques francois shadow
+lens_blur
+linear-gradient( [<angle>|to <side-or-corner>]? , <color-stop-list> )
+linear-gradient( [<linear-gradient-syntax>] )
+linear-gradient()
+linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)
+linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent)
+linear-gradient-syntax
+linearGradient
+londrina shadow
+m-auto shrink-0 shadow-sm ring-1 ring-border
+mask-effect
+max-w-60 px-3.5 py-2.5 text-[11px] bg-popover text-popover-foreground border border-border shadow-md
+meshGradient
+meshPatch
+meshRow
+mesh_gradient
+mix-blend
+mix-blend-mode
+mixBlendMode
+motion_blur
+noise_aware
+noise_control_off
+noise_control_on
+none|<shadow-t>#
+none|<shadow>#
+onBlur
+pointer-events-none block h-3 w-3 rounded-full bg-background shadow-lg ring-0 transition-transform
+radial-gradient
+radial-gradient( [<ending-shape>||<size>]? [at <position>]? , <color-stop-list> )
+radial-gradient( [<radial-gradient-syntax>] )
+radial-gradient()
+radial-gradient-syntax
+radialGradient
+relative flex min-h-20 flex-col rounded-xl border border-border bg-background shadow-sm transition-colors
+relative h-full overflow-hidden rounded-island island-shine bg-island shadow-island pointer-events-auto
+relative inline-flex h-2 w-2 rounded-full bg-gradient-to-br from-amber-400 to-orange-500
+relative inline-flex rounded-full h-2 w-2 bg-gradient-to-br from-amber-400 to-orange-500
+relative ml-2 rounded-island island-shine bg-island p-1 shadow-island pointer-events-auto
+relative mx-4 flex w-full max-w-md flex-col gap-4 rounded-xl border bg-background p-6 shadow-lg
+repeating-conic-gradient( [<conic-gradient-syntax>] )
+repeating-conic-gradient( [from <angle>]? [at <position>]? , <angular-color-stop-list> )
+repeating-conic-gradient()
+repeating-linear-gradient( [<angle>|to <side-or-corner>]? , <color-stop-list> )
+repeating-linear-gradient( [<linear-gradient-syntax>] )
+repeating-linear-gradient()
+repeating-radial-gradient( [<ending-shape>||<size>]? [at <position>]? , <color-stop-list> )
+repeating-radial-gradient( [<radial-gradient-syntax>] )
+repeating-radial-gradient()
+reset_shadow
+rounded-lg bg-background/90 px-4 py-2 text-sm font-medium shadow-sm
+rubik doodle shadow
+sampler1DArrayShadow
+sampler1DShadow
+sampler2DArrayShadow
+sampler2DRectShadow
+sampler2DShadow
+samplerCubeArrayShadow
+samplerCubeShadow
+settings_cinematic_blur
+shader-changed
+shader-parse
+shadow-color
+shadow-t
+shadow.lg
+shadow.md
+shadow.sm
+shadow.xl
+shadow_add
+shadow_minus
+shadows into light
+shadows into light two
+stone texture close-up,
+text-shadow
+text-shadow-color
+texture-source
+texture2D
+textureCube
+textureGather
+textureGatherOffset
+textureGatherOffsets
+textureGrad
+textureGradOffset
+textureLod
+textureLodOffset
+textureOffset
+textureProj
+textureProjGrad
+textureProjGradOffset
+textureProjLod
+textureProjLodOffset
+textureProjOffset
+textureQueryLevels
+textureQueryLod
+textureSampler
+textureSamples
+textureSize
+textureSource
+texture_add
+texture_minus
+textured-aurora-bloom
+textured-champagne
+textured-ember-tide
+textured-graphite-study
+textured-mauve
+textured-methane-ice
+textured-original
+textured-plasma-storm
+textured-rose-nebula
+textured-sage
+textured-slate
+textured-solar-variant
+tools-panel relative flex flex-col gap-1 bg-island rounded-island island-shine p-1 shadow-island pointer-events-auto
+tools-panel relative flex flex-col space-y-1 bg-island rounded-island island-shine p-1 shadow-island pointer-events-auto
+uTextureSize
+vast shadow
+vector-effect
+vectorEffect
+w-7 h-7 bg-background/60 backdrop-blur-xl backdrop-saturate-150 no-drag
+w-auto p-4 border-1 shadow-lg bg-popover rounded-lg
+z-100 w-7 h-7 shrink-0 gap-[5px] rounded-md px-2.5 text-xs font-medium shadow-none no-drag
+});return Te.observe(Ne),()=>Te.disconnect()},[]),S.useEffect(()=>{if(e!==
+})})})}function _Dn({styles:t}){return t?.boxShadow?f.jsx(CA,{label:
+};function DQn(t){const[e,n]=S.useState(t.status);return S.useEffect(()=>{n(t.status);const r=i=>n(i);return t.on(
+}]];function Stt({blendMode:t,size:e=xT.Small,onCommit:n}){const r=t!==
