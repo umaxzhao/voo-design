@@ -16,17 +16,9 @@ import {
   addGridArrayModifier,
   updateGridArrayModifier,
   removeGridArrayModifier,
-  upsertGridArrayKeyframe,
-  removeGridArrayKeyframe,
 } from "../../editor/doc-ops-grid-array.js";
-import { keyframeAtTimeForModifier } from "../../editor/scene-motion.js";
-import {
-  toggleModifierMotionField,
-  editModifierMotionField,
-} from "../editor_motion/motion_properties.js";
-import MotionKeyframeControls from "../editor_motion/motion_keyframe_controls.jsx";
 import { CollapsibleSection } from "./property_section.jsx";
-import { InspectorGroup } from "../editor-3d/three-inspector.jsx";
+import { InspectorGroup } from "../inspector_primitives.jsx";
 import { IconGrid3x3, IconTrash } from "../../icons.jsx";
 
 const FIELD_CLASS =
@@ -197,56 +189,9 @@ export default function GridArraySection({
 
   if (!targetId) return null;
 
-  const playback = engine?.getPlaybackState?.() ?? null;
-  const currentTime = playback?.time ?? 0;
-  const currentFps = playback?.fps ?? 30;
+  const evaluatedModifier = activeModifier;
 
-  const evaluatedDoc = engine?.getEvaluatedDocument?.(currentTime) ?? null;
-  const evaluatedModifier =
-    evaluatedDoc?.modifiers?.find((m) => m.id === activeModifier?.id) ??
-    activeModifier;
 
-  const createMotionField = (property) => {
-    if (!activeModifier || !engine) return null;
-    const track = activeModifier.animations?.find(
-      (t) => t.property === property,
-    );
-    const keyframe = keyframeAtTimeForModifier(
-      activeModifier,
-      property,
-      currentTime,
-      currentFps,
-    );
-    return {
-      active: Boolean(keyframe),
-      animated: Boolean(track && track.keyframes?.length),
-      toggle: () =>
-        toggleModifierMotionField(
-          engine,
-          activeModifier.id,
-          property,
-          upsertGridArrayKeyframe,
-          removeGridArrayKeyframe,
-        ),
-      edit: (value) => {
-        if (
-          !editModifierMotionField(
-            engine,
-            activeModifier.id,
-            property,
-            value,
-            upsertGridArrayKeyframe,
-          )
-        ) {
-          handleUpdate({ step: { [property.slice("step.".length)]: value } });
-        }
-      },
-    };
-  };
-
-  const motionStepX = createMotionField("step.x");
-  const motionStepY = createMotionField("step.y");
-  const motionStepZ = is3d ? createMotionField("step.z") : null;
 
   const content = !activeModifier ? (
     <button
@@ -287,37 +232,25 @@ export default function GridArraySection({
         <div className="min-w-0 flex-1">
           <NumberInput
             label={t("editor.gridArray.stepX")}
-            value={evaluatedModifier?.step?.x ?? activeModifier.step?.x ?? 0}
+            value={activeModifier.step?.x ?? 0}
             step={1}
             testId="editor-grid-array-step-x"
             ariaLabel={t("editor.gridArray.stepX")}
-            onChange={(x) => motionStepX.edit(x)}
+            onChange={(x) => handleUpdate({ step: { ...activeModifier.step, x: x } })}
           />
         </div>
-        {motionStepX ? (
-          <MotionKeyframeControls
-            property="modifier.step.x"
-            motion={motionStepX}
-          />
-        ) : null}
       </div>
       <div className="flex items-center gap-1">
         <div className="min-w-0 flex-1">
           <NumberInput
             label={t("editor.gridArray.stepY")}
-            value={evaluatedModifier?.step?.y ?? activeModifier.step?.y ?? 0}
+            value={activeModifier.step?.y ?? 0}
             step={1}
             testId="editor-grid-array-step-y"
             ariaLabel={t("editor.gridArray.stepY")}
-            onChange={(y) => motionStepY.edit(y)}
+            onChange={(y) => handleUpdate({ step: { ...activeModifier.step, y: y } })}
           />
         </div>
-        {motionStepY ? (
-          <MotionKeyframeControls
-            property="modifier.step.y"
-            motion={motionStepY}
-          />
-        ) : null}
       </div>
       {is3d ? (
         <>
@@ -336,20 +269,14 @@ export default function GridArraySection({
               <NumberInput
                 label={t("editor.gridArray.stepZ")}
                 value={
-                  evaluatedModifier?.step?.z ?? activeModifier.step?.z ?? 0
+                  activeModifier.step?.z ?? 0
                 }
                 step={1}
                 testId="editor-grid-array-step-z"
                 ariaLabel={t("editor.gridArray.stepZ")}
-                onChange={(z) => motionStepZ.edit(z)}
+                onChange={(z) => handleUpdate({ step: { ...activeModifier.step, z: z } })}
               />
             </div>
-            {motionStepZ ? (
-              <MotionKeyframeControls
-                property="modifier.step.z"
-                motion={motionStepZ}
-              />
-            ) : null}
           </div>
         </>
       ) : null}

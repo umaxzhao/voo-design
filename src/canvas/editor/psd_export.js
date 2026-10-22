@@ -22,7 +22,7 @@ import { NODE_KIND, groupChildren } from "./scene_model.js";
 import { nodeAABB } from "./scene_geometry.js";
 
 /** Editor blend mode → ag-psd's string name (inverse of psd_import's map). */
-const BLEND_MODE_TO_PSD = {
+export const BLEND_MODE_TO_PSD = {
   "source-over": "normal",
   dissolve: "dissolve",
   darken: "darken",

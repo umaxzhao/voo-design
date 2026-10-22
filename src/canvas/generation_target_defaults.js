@@ -5,11 +5,7 @@
  * NOT the same as an empty listing — see the fall-through in
  * `resolveGenerationTarget` below.
  */
-import {
-  EXECUTION_MODE,
-  NODE_TYPE,
-  PLATFORM_TARGET,
-} from "./nodes/node_enums.js";
+import { EXECUTION_MODE, PLATFORM_TARGET } from "./generation_routes.js";
 import { PROVIDER_ID, TRIPO_WEB_MODEL_ID } from "../shared/providers.js";
 
 // Keep the image order aligned with PlatformSelect's website list.
@@ -45,16 +41,8 @@ function normalizePlatformId(value) {
 }
 
 export function generationMediaType(type) {
-  // A storyboard's route renders its keyframes, so it defaults like an image node.
-  if (
-    type === "image" ||
-    type === NODE_TYPE.GENERATE ||
-    type === NODE_TYPE.STORYBOARD
-  ) {
-    return "image";
-  }
-  if (type === "video" || type === NODE_TYPE.VIDEO) return "video";
-  if (["model3d", "3d", NODE_TYPE.API_3D].includes(type)) return "model3d";
+  if (type === "image" || type === "generate") return "image";
+  if (type === "video") return "video";
   return null;
 }
 

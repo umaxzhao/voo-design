@@ -16,6 +16,7 @@ import {
   drawStrokeOverlay,
 } from "./node_effects.js";
 import { drawImageNode } from "./render_image_node.js";
+import { drawVideoNode } from "./render_video_node.js";
 import { drawRectNode, drawEllipseNode } from "./render_basic_shapes.js";
 import { drawPathNode } from "./render_path_node.js";
 import { drawPenNode } from "./render_pen_node.js";
@@ -25,6 +26,11 @@ import {
   applyNodeTransform,
   drawCustomBlendNode,
 } from "./render_custom_blend.js";
+import {
+  deviceScaleOf,
+  drawBackgroundBlur,
+  drawNoiseOverlay,
+} from "./render_figma_effects.js";
 
 export function drawNode(
   ctx,
@@ -62,11 +68,8 @@ export function drawNode(
         );
         break;
       case NODE_KIND.VIDEO:
-      case NODE_KIND.MODEL_3D: {
-        const frame = bitmapOf(node);
-        if (frame) targetCtx.drawImage(frame, node.x, node.y, node.width, node.height);
+        drawVideoNode(targetCtx, node, renderState?.videoFrameOf?.(node));
         break;
-      }
       case NODE_KIND.RECT:
         drawRectNode(targetCtx, node);
         break;
@@ -102,13 +105,38 @@ export function drawNode(
   ctx.globalCompositeOperation = node.blendMode ?? DEFAULT_BLEND_MODE;
   applyNodeTransform(ctx, node);
 
+  // Background blur reads what is already painted under the node, so it runs
+  // before the node paints. Layer blur filters everything this node draws.
+  if (node.backgroundBlur > 0) drawBackgroundBlur(ctx, node, node.backgroundBlur);
+  if (node.layerBlur > 0) {
+    ctx.filter = `blur(${node.layerBlur * deviceScaleOf(ctx)}px)`;
+  }
+
   // Shadow and glow paint behind the body, each as its own silhouette pass;
   // the body then paints clean on top with the node's blend mode.
-  if (hasShadow && effects.shadow) {
-    paintShadowBehind(ctx, node, effects.shadow, paintBody);
-  }
-  if (hasGlow && effects.glow) {
-    paintShadowBehind(ctx, node, effects.glow, paintBody);
+  // The shadow is part of the layer but sits beneath it, so it composites
+  // normally; the layer's blend mode applies to the body alone. Multiplying the
+  // silhouette too turned a multiply layer's shadow into a black box.
+  if (hasShadow || hasGlow) {
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over";
+    // Under a non-normal blend mode the body multiplies (or screens, …) with
+    // whatever lies beneath it, so a shadow under the body would tint the body.
+    // Figma shows a drop shadow only outside the shape, so it is knocked out
+    // of the box here.
+    if (hasShadow && node.blendMode && node.blendMode !== "source-over") {
+      const knockout = new Path2D();
+      knockout.rect(node.x - 1e6, node.y - 1e6, 2e6, 2e6);
+      knockout.rect(node.x, node.y, node.width, node.height);
+      ctx.clip(knockout, "evenodd");
+    }
+    if (hasShadow && effects.shadow) {
+      paintShadowBehind(ctx, node, effects.shadow, paintBody);
+    }
+    if (hasGlow && effects.glow) {
+      paintShadowBehind(ctx, node, effects.glow, paintBody);
+    }
+    ctx.restore();
   }
   if (hasShadow || hasGlow) {
     ctx.save();
@@ -147,6 +175,9 @@ export function drawNode(
   }
   if (hasBevel && effects.bevel) {
     drawBevelOverlay(ctx, node, effects.bevel);
+  }
+  if (node.noise?.opacity > 0) {
+    drawNoiseOverlay(ctx, node, node.noise);
   }
   ctx.restore();
 }

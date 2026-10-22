@@ -1,5 +1,5 @@
 import { CANVAS_MODE } from "../environment.js";
-import { EXECUTION_MODE } from "../nodes/node_enums.js";
+import { EXECUTION_MODE } from "../generation_routes.js";
 
 /**
  * Route decision for the layer Repaint action.

@@ -271,6 +271,36 @@ export function IconCornerRadius({
   );
 }
 
+/** Opacity / transparency icon: circle with half solid, half transparent. */
+export function IconOpacity({
+  size = 16,
+  className = "",
+  strokeWidth = ICON_STROKE_WIDTH,
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="8"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+      />
+      <path
+        d="M12 4A8 8 0 0 0 12 20Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 /**
  * Healing family glyphs (spot / AI repair / patch / clone stamp).
  *
@@ -648,6 +678,9 @@ export { Astroid as IconAstroid } from "lucide-react";
 export { CircleDot as IconPoint } from "lucide-react";
 export { Scissors as IconCutout } from "lucide-react";
 export { RotateCcw as IconRotateCcw } from "lucide-react";
+export { RotateCw as IconRotateCw } from "lucide-react";
+export { BringToFront as IconBringToFront } from "lucide-react";
+export { SendToBack as IconSendToBack } from "lucide-react";
 export { FlipHorizontal2 as IconFlipH } from "lucide-react";
 export { FlipVertical2 as IconFlipV } from "lucide-react";
 export { AlignLeft as IconAlignLeft } from "lucide-react";
@@ -791,6 +824,12 @@ IconSelectionPolygon.propTypes = {
 };
 
 IconCornerRadius.propTypes = {
+  size: PropTypes.number,
+  className: PropTypes.string,
+  strokeWidth: PropTypes.number,
+};
+
+IconOpacity.propTypes = {
   size: PropTypes.number,
   className: PropTypes.string,
   strokeWidth: PropTypes.number,

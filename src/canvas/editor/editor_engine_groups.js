@@ -207,9 +207,72 @@ export function createEngineGroups({
     commitEditorDocument("editor.layout.selection", setDoc, next);
   }
 
+  function toggleAutoLayoutSelection() {
+    const doc = getDoc();
+    const ids = selection.getIds();
+    if (!ids || ids.length === 0) return;
+
+    if (ids.length === 1) {
+      const node = findNode(doc, ids[0]);
+      if (!node) return;
+      if (node.kind === NODE_KIND.GROUP || node.isFrame) {
+        const nextLayout = node.autoLayout
+          ? null
+          : {
+              direction: "vertical",
+              gap: 8,
+              padding: 0,
+              alignItems: "start",
+              justifyContent: "start",
+              widthMode: "fixed",
+              heightMode: "hug",
+            };
+        commitEditorDocument(
+          "editor.autolayout.toggle",
+          setDoc,
+          ops.updateNode(doc, node.id, { autoLayout: nextLayout }),
+        );
+        return;
+      }
+    }
+
+    const units = selectionUnits();
+    if (units.length === 0) return;
+
+    const left = Math.min(...units.map((node) => node.x));
+    const top = Math.min(...units.map((node) => node.y));
+    const right = Math.max(...units.map((node) => node.x + node.width));
+    const bottom = Math.max(...units.map((node) => node.y + node.height));
+
+    const folder = createGroupNode({
+      x: left,
+      y: top,
+      width: right - left,
+      height: bottom - top,
+      autoLayout: {
+        direction: "horizontal",
+        gap: 8,
+        padding: 0,
+        alignItems: "start",
+        justifyContent: "start",
+        widthMode: "hug",
+        heightMode: "hug",
+      },
+    });
+
+    const nextDoc = ops.insertGroup(
+      doc,
+      folder,
+      units.map((node) => node.id),
+    );
+    commitEditorDocument("editor.autolayout.create", setDoc, nextDoc);
+    select?.(folder.id);
+  }
+
   return {
     groupSelection,
     ungroupSelection,
+    toggleAutoLayoutSelection,
     createClippingMask,
     releaseClippingMask,
     clipNodeInto,

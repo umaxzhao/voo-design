@@ -5,9 +5,84 @@
  */
 
 import { nodeAABB } from "./scene_geometry.js";
+import { getSetting } from "../../shared/settings.js";
 
 const SNAP_THRESHOLD_PX = 6;
 const SQRT3_OVER_2 = Math.sqrt(3) / 2;
+
+/** Persisted settings keys that drive the snapping options below. */
+export const SNAP_SETTING_KEYS = Object.freeze({
+  snapToGrid: "voo.editor.snapToGrid",
+  showGuides: "voo.editor.showGuides",
+});
+
+/** Size used when "snap to grid" is on but no grid overlay has been drawn. */
+export const DEFAULT_GRID_SNAP_SIZE = 32;
+
+/**
+ * Builds the `options` object `snapNodeBounds` expects.
+ *
+ * Kept pure so the reachability of grid/guide snapping is unit-testable
+ * without an engine or a settings store. `snapToObjects` and guide snapping
+ * stay on by default: the ruler only adds reachability, it must not regress
+ * the object/guide snapping the editor already had.
+ */
+export function buildSnapOptions({
+  grid = null,
+  snapToGrid = false,
+  showGuides = true,
+} = {}) {
+  const size = Number(grid?.size);
+  return {
+    enabled: true,
+    snapToObjects: true,
+    snapToGuides: showGuides !== false,
+    snapToGrid: snapToGrid === true,
+    grid: {
+      type: grid?.type === "isometric" ? "isometric" : "rectangular",
+      size: Number.isFinite(size) && size > 0 ? size : DEFAULT_GRID_SNAP_SIZE,
+    },
+  };
+}
+
+/**
+ * The snapping options the pointer handlers should pass right now.
+ *
+ * Reads the persisted toggles synchronously (the settings module keeps a
+ * module-load cache), so flipping "Snap to grid" in the zoom bar takes effect
+ * on the very next gesture without restarting the engine; the grid overlay
+ * only supplies the grid type/size.
+ */
+export function editorSnapOptions({ grid = null } = {}) {
+  return buildSnapOptions({
+    grid,
+    snapToGrid: getSetting(SNAP_SETTING_KEYS.snapToGrid) === true,
+    showGuides: getSetting(SNAP_SETTING_KEYS.showGuides) !== false,
+  });
+}
+
+function getOverlapCenter(min1, size1, min2, size2) {
+  const overlapMin = Math.max(min1, min2);
+  const overlapMax = Math.min(min1 + size1, min2 + size2);
+  if (overlapMax > overlapMin) {
+    return (overlapMin + overlapMax) / 2;
+  }
+  return (min1 + size1 / 2 + min2 + size2 / 2) / 2;
+}
+
+function hasVerticalProximity(b1, b2, maxDist = 450) {
+  const overlap = Math.min(b1.y + b1.height, b2.y + b2.height) - Math.max(b1.y, b2.y);
+  if (overlap > 0) return true;
+  const vertDist = Math.max(b1.y, b2.y) - Math.min(b1.y + b1.height, b2.y + b2.height);
+  return vertDist <= maxDist;
+}
+
+function hasHorizontalProximity(b1, b2, maxDist = 450) {
+  const overlap = Math.min(b1.x + b1.width, b2.x + b2.width) - Math.max(b1.x, b2.x);
+  if (overlap > 0) return true;
+  const horizDist = Math.max(b1.x, b2.x) - Math.min(b1.x + b1.width, b2.x + b2.width);
+  return horizDist <= maxDist;
+}
 
 /**
  * Snaps bounding box coordinates and generates guide lines.
@@ -82,10 +157,27 @@ export function snapNodeBounds({
 
   // Sibling nodes
   if (snapToObjects) {
+    const totalNodes = doc.nodes?.length ?? 0;
+    // Local neighborhood radius for equidistant spacing candidates (prevents quadratic explosion on 1000+ nodes)
+    const neighborRadius = Math.max(rect.width * 3, rect.height * 3, 1200 / (zoom || 1));
+    const neighborMinX = rect.x - neighborRadius;
+    const neighborMaxX = rect.x + rect.width + neighborRadius;
+    const neighborMinY = rect.y - neighborRadius;
+    const neighborMaxY = rect.y + rect.height + neighborRadius;
+
     for (const node of doc.nodes ?? []) {
       if (moving.has(node.id) || node.visible === false) continue;
       const box = nodeAABB(node);
-      siblingBoxes.push(box);
+
+      if (
+        totalNodes <= 32 ||
+        (box.x + box.width >= neighborMinX &&
+          box.x <= neighborMaxX &&
+          box.y + box.height >= neighborMinY &&
+          box.y <= neighborMaxY)
+      ) {
+        siblingBoxes.push(box);
+      }
 
       targetsX.push(
         { pos: box.x },
@@ -119,6 +211,8 @@ export function snapNodeBounds({
   let bestDistY = Infinity;
   let activeGuideX = null;
   let activeGuideY = null;
+  let gapGuidesX = null;
+  let gapGuidesY = null;
 
   // 1. Evaluate Rectangular Grid Snapping
   if (snapToGrid && gridType === "rectangular") {
@@ -348,48 +442,424 @@ export function snapNodeBounds({
     if (snapEqualSpacing && siblingBoxes.length >= 2) {
       // Horizontal equidistant gaps
       const sortedX = [...siblingBoxes].sort((a, b) => a.x - b.x);
-      for (let i = 0; i < sortedX.length - 1; i += 1) {
+      const hPairs = [];
+      for (let i = 0; i < sortedX.length; i += 1) {
         const b1 = sortedX[i];
-        const b2 = sortedX[i + 1];
-        const gap = b2.x - (b1.x + b1.width);
+        for (let j = i + 1; j < sortedX.length; j += 1) {
+          const b2 = sortedX[j];
+          if (b2.x < b1.x + b1.width) continue;
+          if (hasVerticalProximity(b1, b2, 100)) {
+            hPairs.push({ b1, b2, gap: b2.x - (b1.x + b1.width) });
+            break;
+          }
+        }
+      }
+
+      const candidateHPairs = hPairs.filter(
+        ({ b1, b2 }) =>
+          hasVerticalProximity(b1, rect, 450) || hasVerticalProximity(b2, rect, 450),
+      );
+
+      for (const { b1, b2, gap } of candidateHPairs) {
+        // Append Right: b1 -> b2 -> rect
         if (gap > 4) {
           const targetRight = b2.x + b2.width + gap;
           const distRight = Math.abs(rect.x - targetRight);
-          if (distRight <= threshold && distRight < bestDistX) {
+          if (distRight <= threshold && distRight <= bestDistX) {
             bestDistX = distRight;
             snappedX = targetRight;
             activeGuideX = targetRight;
+
+            const allMinY = Math.max(b1.y, b2.y, rect.y);
+            const allMaxY = Math.min(
+              b1.y + b1.height,
+              b2.y + b2.height,
+              rect.y + rect.height,
+            );
+            const commonY = allMaxY > allMinY ? (allMinY + allMaxY) / 2 : null;
+            const yA =
+              commonY ?? getOverlapCenter(b1.y, b1.height, b2.y, b2.height);
+            const yB =
+              commonY ?? getOverlapCenter(b2.y, b2.height, rect.y, rect.height);
+            const roundedGap = Math.round(gap);
+
+            // Chain discovery to the left of b1
+            let currLeft = b1;
+            const chainLeft = [];
+            for (let k = sortedX.indexOf(b1) - 1; k >= 0; k -= 1) {
+              const prev = sortedX[k];
+              if (hasVerticalProximity(prev, currLeft, 100)) {
+                const prevGap = currLeft.x - (prev.x + prev.width);
+                if (Math.abs(prevGap - gap) <= 1.5) {
+                  const prevY =
+                    commonY ??
+                    getOverlapCenter(prev.y, prev.height, currLeft.y, currLeft.height);
+                  chainLeft.unshift({
+                    type: "gap_h",
+                    x1: prev.x + prev.width,
+                    x2: currLeft.x,
+                    y: prevY,
+                    gap: roundedGap,
+                    label: `${roundedGap}px`,
+                    pos: Math.round((prev.x + prev.width + currLeft.x) / 2),
+                  });
+                  currLeft = prev;
+                } else {
+                  break;
+                }
+              }
+            }
+
+            gapGuidesX = [
+              ...chainLeft,
+              {
+                type: "gap_h",
+                x1: b1.x + b1.width,
+                x2: b2.x,
+                y: yA,
+                gap: roundedGap,
+                label: `${roundedGap}px`,
+                pos: Math.round((b1.x + b1.width + b2.x) / 2),
+              },
+              {
+                type: "gap_h",
+                x1: b2.x + b2.width,
+                x2: targetRight,
+                y: yB,
+                gap: roundedGap,
+                label: `${roundedGap}px`,
+                pos: Math.round((b2.x + b2.width + targetRight) / 2),
+              },
+            ];
           }
+
+          // Append Left: rect -> b1 -> b2
           const targetLeft = b1.x - gap - rect.width;
           const distLeft = Math.abs(rect.x - targetLeft);
-          if (distLeft <= threshold && distLeft < bestDistX) {
+          if (distLeft <= threshold && distLeft <= bestDistX) {
             bestDistX = distLeft;
             snappedX = targetLeft;
-            activeGuideX = targetLeft + rect.width;
+            activeGuideX = targetLeft;
+
+            const allMinY = Math.max(b1.y, b2.y, rect.y);
+            const allMaxY = Math.min(
+              b1.y + b1.height,
+              b2.y + b2.height,
+              rect.y + rect.height,
+            );
+            const commonY = allMaxY > allMinY ? (allMinY + allMaxY) / 2 : null;
+            const yA =
+              commonY ?? getOverlapCenter(rect.y, rect.height, b1.y, b1.height);
+            const yB =
+              commonY ?? getOverlapCenter(b1.y, b1.height, b2.y, b2.height);
+            const roundedGap = Math.round(gap);
+
+            // Chain discovery to the right of b2
+            let currRight = b2;
+            const chainRight = [];
+            for (let k = sortedX.indexOf(b2) + 1; k < sortedX.length; k += 1) {
+              const next = sortedX[k];
+              if (hasVerticalProximity(currRight, next, 100)) {
+                const nextGap = next.x - (currRight.x + currRight.width);
+                if (Math.abs(nextGap - gap) <= 1.5) {
+                  const nextY =
+                    commonY ??
+                    getOverlapCenter(currRight.y, currRight.height, next.y, next.height);
+                  chainRight.push({
+                    type: "gap_h",
+                    x1: currRight.x + currRight.width,
+                    x2: next.x,
+                    y: nextY,
+                    gap: roundedGap,
+                    label: `${roundedGap}px`,
+                    pos: Math.round((currRight.x + currRight.width + next.x) / 2),
+                  });
+                  currRight = next;
+                } else {
+                  break;
+                }
+              }
+            }
+
+            gapGuidesX = [
+              {
+                type: "gap_h",
+                x1: targetLeft + rect.width,
+                x2: b1.x,
+                y: yA,
+                gap: roundedGap,
+                label: `${roundedGap}px`,
+                pos: Math.round((targetLeft + rect.width + b1.x) / 2),
+              },
+              {
+                type: "gap_h",
+                x1: b1.x + b1.width,
+                x2: b2.x,
+                y: yB,
+                gap: roundedGap,
+                label: `${roundedGap}px`,
+                pos: Math.round((b1.x + b1.width + b2.x) / 2),
+              },
+              ...chainRight,
+            ];
+          }
+        }
+
+        // In-Between Insertion: b1 -> rect -> b2
+        if (gap > rect.width + 8) {
+          const midGap = (gap - rect.width) / 2;
+          const targetMid = b1.x + b1.width + midGap;
+          const distMid = Math.abs(rect.x - targetMid);
+          if (distMid <= threshold && distMid <= bestDistX) {
+            bestDistX = distMid;
+            snappedX = targetMid;
+            activeGuideX = targetMid;
+
+            const allMinY = Math.max(b1.y, b2.y, rect.y);
+            const allMaxY = Math.min(
+              b1.y + b1.height,
+              b2.y + b2.height,
+              rect.y + rect.height,
+            );
+            const commonY = allMaxY > allMinY ? (allMinY + allMaxY) / 2 : null;
+            const yA =
+              commonY ?? getOverlapCenter(b1.y, b1.height, rect.y, rect.height);
+            const yB =
+              commonY ?? getOverlapCenter(rect.y, rect.height, b2.y, b2.height);
+            const roundedGap = Math.round(midGap);
+
+            gapGuidesX = [
+              {
+                type: "gap_h",
+                x1: b1.x + b1.width,
+                x2: targetMid,
+                y: yA,
+                gap: roundedGap,
+                label: `${roundedGap}px`,
+                pos: Math.round((b1.x + b1.width + targetMid) / 2),
+              },
+              {
+                type: "gap_h",
+                x1: targetMid + rect.width,
+                x2: b2.x,
+                y: yB,
+                gap: roundedGap,
+                label: `${roundedGap}px`,
+                pos: Math.round((targetMid + rect.width + b2.x) / 2),
+              },
+            ];
           }
         }
       }
 
       // Vertical equidistant gaps
       const sortedY = [...siblingBoxes].sort((a, b) => a.y - b.y);
-      for (let i = 0; i < sortedY.length - 1; i += 1) {
+      const vPairs = [];
+      for (let i = 0; i < sortedY.length; i += 1) {
         const b1 = sortedY[i];
-        const b2 = sortedY[i + 1];
-        const gap = b2.y - (b1.y + b1.height);
+        for (let j = i + 1; j < sortedY.length; j += 1) {
+          const b2 = sortedY[j];
+          if (b2.y < b1.y + b1.height) continue;
+          if (hasHorizontalProximity(b1, b2, 100)) {
+            vPairs.push({ b1, b2, gap: b2.y - (b1.y + b1.height) });
+            break;
+          }
+        }
+      }
+
+      const candidateVPairs = vPairs.filter(
+        ({ b1, b2 }) =>
+          hasHorizontalProximity(b1, rect, 450) || hasHorizontalProximity(b2, rect, 450),
+      );
+
+      for (const { b1, b2, gap } of candidateVPairs) {
+        // Append Below: b1 -> b2 -> rect
         if (gap > 4) {
           const targetBelow = b2.y + b2.height + gap;
           const distBelow = Math.abs(rect.y - targetBelow);
-          if (distBelow <= threshold && distBelow < bestDistY) {
+          if (distBelow <= threshold && distBelow <= bestDistY) {
             bestDistY = distBelow;
             snappedY = targetBelow;
             activeGuideY = targetBelow;
+
+            const allMinX = Math.max(b1.x, b2.x, rect.x);
+            const allMaxX = Math.min(
+              b1.x + b1.width,
+              b2.x + b2.width,
+              rect.x + rect.width,
+            );
+            const commonX = allMaxX > allMinX ? (allMinX + allMaxX) / 2 : null;
+            const xA =
+              commonX ?? getOverlapCenter(b1.x, b1.width, b2.x, b2.width);
+            const xB =
+              commonX ?? getOverlapCenter(b2.x, b2.width, rect.x, rect.width);
+            const roundedGap = Math.round(gap);
+
+            // Chain discovery above b1
+            let currAbove = b1;
+            const chainAbove = [];
+            for (let k = sortedY.indexOf(b1) - 1; k >= 0; k -= 1) {
+              const prev = sortedY[k];
+              if (hasHorizontalProximity(prev, currAbove, 100)) {
+                const prevGap = currAbove.y - (prev.y + prev.height);
+                if (Math.abs(prevGap - gap) <= 1.5) {
+                  const prevX =
+                    commonX ??
+                    getOverlapCenter(prev.x, prev.width, currAbove.x, currAbove.width);
+                  chainAbove.unshift({
+                    type: "gap_v",
+                    y1: prev.y + prev.height,
+                    y2: currAbove.y,
+                    x: prevX,
+                    gap: roundedGap,
+                    label: `${roundedGap}px`,
+                    pos: Math.round((prev.y + prev.height + currAbove.y) / 2),
+                  });
+                  currAbove = prev;
+                } else {
+                  break;
+                }
+              }
+            }
+
+            gapGuidesY = [
+              ...chainAbove,
+              {
+                type: "gap_v",
+                y1: b1.y + b1.height,
+                y2: b2.y,
+                x: xA,
+                gap: roundedGap,
+                label: `${roundedGap}px`,
+                pos: Math.round((b1.y + b1.height + b2.y) / 2),
+              },
+              {
+                type: "gap_v",
+                y1: b2.y + b2.height,
+                y2: targetBelow,
+                x: xB,
+                gap: roundedGap,
+                label: `${roundedGap}px`,
+                pos: Math.round((b2.y + b2.height + targetBelow) / 2),
+              },
+            ];
           }
+
+          // Append Above: rect -> b1 -> b2
           const targetAbove = b1.y - gap - rect.height;
           const distAbove = Math.abs(rect.y - targetAbove);
-          if (distAbove <= threshold && distAbove < bestDistY) {
+          if (distAbove <= threshold && distAbove <= bestDistY) {
             bestDistY = distAbove;
             snappedY = targetAbove;
-            activeGuideY = targetAbove + rect.height;
+            activeGuideY = targetAbove;
+
+            const allMinX = Math.max(b1.x, b2.x, rect.x);
+            const allMaxX = Math.min(
+              b1.x + b1.width,
+              b2.x + b2.width,
+              rect.x + rect.width,
+            );
+            const commonX = allMaxX > allMinX ? (allMinX + allMaxX) / 2 : null;
+            const xA =
+              commonX ?? getOverlapCenter(rect.x, rect.width, b1.x, b1.width);
+            const xB =
+              commonX ?? getOverlapCenter(b1.x, b1.width, b2.x, b2.width);
+            const roundedGap = Math.round(gap);
+
+            // Chain discovery below b2
+            let currBelow = b2;
+            const chainBelow = [];
+            for (let k = sortedY.indexOf(b2) + 1; k < sortedY.length; k += 1) {
+              const next = sortedY[k];
+              if (hasHorizontalProximity(currBelow, next, 100)) {
+                const nextGap = next.y - (currBelow.y + currBelow.height);
+                if (Math.abs(nextGap - gap) <= 1.5) {
+                  const nextX =
+                    commonX ??
+                    getOverlapCenter(currBelow.x, currBelow.width, next.x, next.width);
+                  chainBelow.push({
+                    type: "gap_v",
+                    y1: currBelow.y + currBelow.height,
+                    y2: next.y,
+                    x: nextX,
+                    gap: roundedGap,
+                    label: `${roundedGap}px`,
+                    pos: Math.round((currBelow.y + currBelow.height + next.y) / 2),
+                  });
+                  currBelow = next;
+                } else {
+                  break;
+                }
+              }
+            }
+
+            gapGuidesY = [
+              {
+                type: "gap_v",
+                y1: targetAbove + rect.height,
+                y2: b1.y,
+                x: xA,
+                gap: roundedGap,
+                label: `${roundedGap}px`,
+                pos: Math.round((targetAbove + rect.height + b1.y) / 2),
+              },
+              {
+                type: "gap_v",
+                y1: b1.y + b1.height,
+                y2: b2.y,
+                x: xB,
+                gap: roundedGap,
+                label: `${roundedGap}px`,
+                pos: Math.round((b1.y + b1.height + b2.y) / 2),
+              },
+              ...chainBelow,
+            ];
+          }
+        }
+
+        // In-Between Insertion: b1 -> rect -> b2
+        if (gap > rect.height + 8) {
+          const midGap = (gap - rect.height) / 2;
+          const targetMid = b1.y + b1.height + midGap;
+          const distMid = Math.abs(rect.y - targetMid);
+          if (distMid <= threshold && distMid <= bestDistY) {
+            bestDistY = distMid;
+            snappedY = targetMid;
+            activeGuideY = targetMid;
+
+            const allMinX = Math.max(b1.x, b2.x, rect.x);
+            const allMaxX = Math.min(
+              b1.x + b1.width,
+              b2.x + b2.width,
+              rect.x + rect.width,
+            );
+            const commonX = allMaxX > allMinX ? (allMinX + allMaxX) / 2 : null;
+            const xA =
+              commonX ?? getOverlapCenter(b1.x, b1.width, rect.x, rect.width);
+            const xB =
+              commonX ?? getOverlapCenter(rect.x, rect.width, b2.x, b2.width);
+            const roundedGap = Math.round(midGap);
+
+            gapGuidesY = [
+              {
+                type: "gap_v",
+                y1: b1.y + b1.height,
+                y2: targetMid,
+                x: xA,
+                gap: roundedGap,
+                label: `${roundedGap}px`,
+                pos: Math.round((b1.y + b1.height + targetMid) / 2),
+              },
+              {
+                type: "gap_v",
+                y1: targetMid + rect.height,
+                y2: b2.y,
+                x: xB,
+                gap: roundedGap,
+                label: `${roundedGap}px`,
+                pos: Math.round((targetMid + rect.height + b2.y) / 2),
+              },
+            ];
           }
         }
       }
@@ -407,8 +877,45 @@ export function snapNodeBounds({
   if (activeGuideX !== null) {
     guides.push({ type: "v", pos: activeGuideX });
   }
+  if (gapGuidesX && gapGuidesX.length > 0) {
+    guides.push(...gapGuidesX);
+    const firstGap = gapGuidesX[0];
+    guides.push({
+      type: "gap",
+      axis: "h",
+      gap: firstGap.gap,
+      label: firstGap.label,
+      pos: firstGap.gap,
+      spans: gapGuidesX.map((g) => ({
+        start: g.x1,
+        end: g.x2,
+        cross: g.y,
+        gap: g.gap,
+        label: g.label,
+      })),
+    });
+  }
+
   if (activeGuideY !== null) {
     guides.push({ type: "h", pos: activeGuideY });
+  }
+  if (gapGuidesY && gapGuidesY.length > 0) {
+    guides.push(...gapGuidesY);
+    const firstGap = gapGuidesY[0];
+    guides.push({
+      type: "gap",
+      axis: "v",
+      gap: firstGap.gap,
+      label: firstGap.label,
+      pos: firstGap.gap,
+      spans: gapGuidesY.map((g) => ({
+        start: g.y1,
+        end: g.y2,
+        cross: g.x,
+        gap: g.gap,
+        label: g.label,
+      })),
+    });
   }
 
   return {

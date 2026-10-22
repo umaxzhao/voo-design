@@ -9,8 +9,8 @@ import {
   setInstanceView,
   VIEW_FIELDS,
 } from "../editor/instance-view.js";
-import { InspectorGroup, InspectorRow } from "./editor-3d/three-inspector.jsx";
-import VectorRow from "./editor-3d/three-vector-row.jsx";
+import { InspectorGroup, InspectorRow } from "./inspector_primitives.jsx";
+import VectorRow from "./vector_row.jsx";
 import EditorInstanceOverrides from "./editor_instance_overrides.jsx";
 
 const FIELD_CLASS =

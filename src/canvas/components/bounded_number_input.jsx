@@ -153,6 +153,9 @@ BoundedNumberInput.propTypes = {
   onCommit: PropTypes.func,
   className: PropTypes.string,
   ariaLabel: PropTypes.string.isRequired,
-  inputRef: PropTypes.shape({ current: PropTypes.instanceOf(Element) }),
+  inputRef: PropTypes.oneOfType([
+    PropTypes.func,
+    PropTypes.shape({ current: PropTypes.any }),
+  ]),
   disabled: PropTypes.bool,
 };

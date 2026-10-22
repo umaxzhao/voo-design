@@ -190,7 +190,7 @@ export default function PresentationPageMenu({
                 aria-modal="true"
                 aria-labelledby={`presentation-${editMode}-heading-${pageId}`}
                 tabIndex={-1}
-                className="flex w-full max-w-sm flex-col gap-3 rounded-2xl bg-[#141414] p-4 shadow-panel outline-none"
+                className="flex w-full max-w-sm flex-col gap-3 rounded-3xl bg-[#141414] p-4 shadow-panel outline-none"
                 onSubmit={submitEdit}
                 onPointerDown={(event) => event.stopPropagation()}
               >

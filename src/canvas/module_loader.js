@@ -250,10 +250,16 @@ export async function ensureModule(moduleId, { onProgress, _deps = {} } = {}) {
       globalThis.window?.vooElectron?.modules ??
       globalThis.window?.vooDesktop?.modules;
 
-    if (!electronModules || typeof electronModules.ensure !== "function") {
+    // The desktop app ships these modules inside its bundle (see electron-builder
+    // extraResources), so when no installer IPC exists there is nothing to install.
+    if (!electronModules) {
+      moduleStateCache.set(moduleId, MODULE_STATE.INSTALLED);
+      return { ok: true };
+    }
+    if (typeof electronModules.ensure !== "function") {
       return {
         ok: false,
-        reason: "Electron module installer IPC is unavailable (window.vooElectron.modules missing).",
+        reason: "Electron module installer IPC is unavailable (window.vooElectron.modules.ensure missing).",
       };
     }
 

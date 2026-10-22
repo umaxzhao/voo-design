@@ -1,8 +1,13 @@
 import PropTypes from "prop-types";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../use_i18n.js";
 import { executeEditorCommand } from "../editor/command_table.js";
+import { generateCode } from "../codegen/index.js";
 import { copyEditorHtml } from "../editor/editor_html_clipboard.js";
+import EditorCodeExportDialog, {
+  resolveCodegenAssets,
+  tOr,
+} from "./editor_code_export_dialog.jsx";
 import { canConvertToPath } from "../editor/scene_model.js";
 import EditorPathMenuItems from "./editor_path_menu_items.jsx";
 import { isMacPlatform } from "../use_window_controls.js";
@@ -45,6 +50,7 @@ export default function EditorContextMenu({
     engine?.getCanvasType?.() === "3d" ||
     engine?.getDocument?.()?.canvasType === "3d";
   const ref = useRef(null);
+  const [codeDialogOpen, setCodeDialogOpen] = useState(false);
   const activeTargetNodeId =
     targetNodeId ?? engine?.sourceWorkflowNodeId ?? null;
 
@@ -58,6 +64,9 @@ export default function EditorContextMenu({
 
   useEffect(() => {
     const onPointerDown = (event) => {
+      // The code dialog is a portal sibling: clicking inside it must not
+      // dismiss the menu that owns it.
+      if (codeDialogOpen) return;
       if (ref.current?.contains(event.target)) return;
       onClose();
     };
@@ -99,11 +108,38 @@ export default function EditorContextMenu({
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [onClose]);
+  }, [onClose, codeDialogOpen]);
 
   const run = (fn) => {
     fn?.();
     onClose();
+  };
+
+  /** Copies Tailwind HTML for the current selection (falling back to the page). */
+  const copyCode = async () => {
+    try {
+      const doc = engine.getDocument?.() ?? null;
+      const selectedIds = engine.getSelectedIds?.() ?? [];
+      const scope = selectedIds.length > 0 ? "selection" : "page";
+      const { imageSources, imageSizes } = await resolveCodegenAssets(doc, {
+        selectedIds,
+        scope,
+      });
+      const result = generateCode({
+        doc,
+        selectedIds,
+        format: "html",
+        scope,
+        imageSources,
+        imageSizes,
+      });
+      if (!navigator.clipboard?.writeText) throw new Error("codegen-no-clipboard");
+      await navigator.clipboard.writeText(result.code);
+    } catch {
+      window.alert(
+        tOr(t, "editor.codegen.copyFailed", "Could not copy code."),
+      );
+    }
   };
 
   const itemClass =
@@ -126,14 +162,26 @@ export default function EditorContextMenu({
     selectedCount >= 1 &&
     ((selectedNode && canConvertToPath(selectedNode)) ||
       (engine.getSelectedNodes?.()?.some?.(canConvertToPath) ?? false));
+  const selectedNodes =
+    engine.getSelectedNodes?.() ?? (selectedNode ? [selectedNode] : []);
+  const canTypeOnPath = selectedCount === 1 && selectedNode?.kind === "path";
+  const canAttachTextToPath =
+    selectedCount === 2 &&
+    selectedNodes.some((n) => n.kind === "text") &&
+    selectedNodes.some((n) => n.kind === "path");
+  const canDetachTextFromPath =
+    selectedCount === 1 &&
+    selectedNode?.kind === "text" &&
+    Boolean(selectedNode?.textPath);
 
   return (
     <div
       ref={ref}
-      className="fixed z-50 rounded-2xl bg-neutral-900 p-1 shadow-menu ring-1 ring-white/10 font-mono"
+      className={`fixed z-50 rounded-2xl bg-neutral-900 p-1 shadow-menu ring-1 ring-white/10 font-mono ${codeDialogOpen ? "hidden" : ""}`}
       style={{ left: x, top: y }}
       role="menu"
       aria-label={t("editor.menu.canvasMenu")}
+      aria-hidden={codeDialogOpen || undefined}
     >
       {hasPixelSelection ? (
         <>
@@ -293,6 +341,45 @@ export default function EditorContextMenu({
         run={run}
         itemClass={itemClass}
       />
+      {canTypeOnPath && (
+        <>
+          <button
+            type="button"
+            role="menuitem"
+            className={itemClass}
+            onClick={() => run(() => engine.typeOnSelectedPath?.())}
+          >
+            <span>{t("editor.menu.path.typeOnPath")}</span>
+          </button>
+          <div className="mx-1 my-0.5 h-px bg-white/10" />
+        </>
+      )}
+      {canAttachTextToPath && (
+        <>
+          <button
+            type="button"
+            role="menuitem"
+            className={itemClass}
+            onClick={() => run(() => engine.attachTextToPath?.())}
+          >
+            <span>{t("editor.menu.path.attachText")}</span>
+          </button>
+          <div className="mx-1 my-0.5 h-px bg-white/10" />
+        </>
+      )}
+      {canDetachTextFromPath && (
+        <>
+          <button
+            type="button"
+            role="menuitem"
+            className={itemClass}
+            onClick={() => run(() => engine.detachTextFromPath?.())}
+          >
+            <span>{t("editor.menu.path.detachText")}</span>
+          </button>
+          <div className="mx-1 my-0.5 h-px bg-white/10" />
+        </>
+      )}
       {selectedCount >= 1 ? (
         <>
           <button
@@ -361,6 +448,15 @@ export default function EditorContextMenu({
             }
           >
             <span>{t("editor.menu.copyHtmlCss")}</span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            data-testid="editor-menu-copy-code"
+            className={itemClass}
+            onClick={() => run(() => void copyCode())}
+          >
+            <span>{tOr(t, "editor.codegen.copyAction", "Copy code")}</span>
           </button>
           {selectedCount === 1 && onEditSvg ? (
             <button
@@ -535,6 +631,32 @@ export default function EditorContextMenu({
         <span>{t("editor.menu.selectAll")}</span>
         <span className="text-[9px] text-neutral-500">{formatShortcut("⌘A", isMac)}</span>
       </button>
+
+      <div className="mx-1 my-0.5 h-px bg-white/10" />
+
+      <button
+        type="button"
+        role="menuitem"
+        data-testid="editor-menu-export-code"
+        className={itemClass}
+        onClick={() => setCodeDialogOpen(true)}
+      >
+        <span>
+          {tOr(t, "editor.codegen.exportAction", "Export design to code...")}
+        </span>
+      </button>
+
+      {codeDialogOpen ? (
+        <EditorCodeExportDialog
+          doc={engine.getDocument?.() ?? null}
+          selectedIds={engine.getSelectedIds?.() ?? []}
+          selectedCount={selectedCount}
+          onClose={() => {
+            setCodeDialogOpen(false);
+            onClose();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

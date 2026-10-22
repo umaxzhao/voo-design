@@ -164,6 +164,15 @@ export function paintShadowBehind(ctx, node, effect, paintBody) {
     ctx.globalAlpha = alpha;
     ctx.fillStyle = effect.color;
     ctx.fill(outline);
+    // Spread grows the silhouette outward by the same amount on every side: a
+    // stroke of twice the spread in the shadow colour, joined round.
+    const spread = effect.spread ?? 0;
+    if (spread > 0) {
+      ctx.strokeStyle = effect.color;
+      ctx.lineWidth = spread * 2;
+      ctx.lineJoin = "round";
+      ctx.stroke(outline);
+    }
   } else {
     // Fall back to painting the body itself with the shadow attached — the
     // only way to shadow content with no closed outline.

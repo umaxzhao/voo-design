@@ -6,10 +6,16 @@
  * Intermediate writes are uncommitted, so a drag costs exactly one undo step.
  */
 
-import { NODE_KIND } from "./scene_model.js";
-import { TOOL } from "./editor_constants.js";
-import { orbitCameraFromDrag } from "./editor_pointer_model_orbit.js";
-import { createPanPointerGestures } from "./editor_pointer_pan_zoom.js";
+import {
+  createPanPointerGestures,
+  screenToWorld,
+  worldToScreen,
+  worldToFrame,
+  frameToWorld,
+  screenToFrame,
+  frameToScreen,
+  createCameraMatrixTransformer,
+} from "./editor_pointer_pan_zoom.js";
 import { createSelectionPointerGestures } from "./editor_pointer_selection.js";
 import { createMarqueePointerGestures } from "./editor_pointer_marquee.js";
 import {
@@ -51,6 +57,13 @@ export {
   dragGradientStop,
   dragGradientEndpoint,
   dragGradientLine,
+  screenToWorld,
+  worldToScreen,
+  worldToFrame,
+  frameToWorld,
+  screenToFrame,
+  frameToScreen,
+  createCameraMatrixTransformer,
 };
 
 export function attachPointerHandlers({
@@ -58,12 +71,13 @@ export function attachPointerHandlers({
   canvas,
   api,
   cameraMode = "page",
+  camera = null,
+  frameBounds = null,
 }) {
   const shared = cameraMode === "shared";
   let gesture = null;
   let spaceDown = false;
   let lastBrushPoint = null;
-  let orbitModelId = null;
   let lastPointerEvent = null;
 
   const onCanvas = (event) => {
@@ -230,6 +244,9 @@ export function attachPointerHandlers({
 
   const onPointerDown = (event) => {
     if (event.button !== 0 && event.button !== 1) return;
+    if (event.button === 1) {
+      event.preventDefault();
+    }
     if (gesture) {
       if (
         gesture.pointerId !== undefined &&
@@ -244,25 +261,6 @@ export function attachPointerHandlers({
 
     lastPointerEvent = event;
 
-    if (orbitModelId && !spaceDown && event.button === 0) {
-      const hit = api.nodeAtPoint(api.toDocPoint(event.clientX, event.clientY));
-      if (hit?.id === orbitModelId && api.getTool() === TOOL.SELECT) {
-        gesture = {
-          kind: "modelOrbit",
-          id: orbitModelId,
-          clientX: event.clientX,
-          clientY: event.clientY,
-          camera: { ...hit.model?.camera },
-          moved: false,
-          pointerId: event.pointerId,
-        };
-        stage.setPointerCapture(event.pointerId);
-        stage.style.cursor = "grabbing";
-        return;
-      }
-      orbitModelId = null;
-    }
-
     dispatchDown(event, spaceDown);
 
     if (gesture) {
@@ -271,19 +269,28 @@ export function attachPointerHandlers({
     }
   };
 
+  let moveRafId = 0;
+  let pendingMoveEvent = null;
+  let pendingGesture = null;
+
+  const flushPendingMove = () => {
+    if (moveRafId) {
+      cancelAnimationFrame(moveRafId);
+      moveRafId = 0;
+    }
+    if (pendingMoveEvent && pendingGesture) {
+      const evt = pendingMoveEvent;
+      const g = pendingGesture;
+      pendingMoveEvent = null;
+      pendingGesture = null;
+      dispatchMove(evt, g);
+    }
+  };
+
   const onPointerMove = (event) => {
     lastPointerEvent = event;
     if (!gesture) {
       if (onCanvas(event)) {
-        if (orbitModelId) {
-          const hit = api.nodeAtPoint(
-            api.toDocPoint(event.clientX, event.clientY),
-          );
-          if (hit?.id === orbitModelId) {
-            stage.style.cursor = "grab";
-            return;
-          }
-        }
         if (api.getPolygonDraft?.()) {
           api.updatePolygonPreview(
             api.toDocPoint(event.clientX, event.clientY),
@@ -313,20 +320,13 @@ export function attachPointerHandlers({
       return;
     }
 
-    if (gesture.kind === "modelOrbit") {
-      const deltaX = event.clientX - gesture.clientX;
-      const deltaY = event.clientY - gesture.clientY;
-      if (Math.hypot(deltaX, deltaY) < 2 && !gesture.moved) return;
-      gesture.moved = true;
-      api.updateNode(
-        gesture.id,
-        {
-          model: {
-            camera: orbitCameraFromDrag(gesture.camera, deltaX, deltaY),
-          },
-        },
-        { commit: false },
-      );
+    // Heavy geometric & snapping gestures coalesce with rAF to sustain rock-solid 60/120FPS
+    if (gesture.kind === "move" || gesture.kind === "transform" || gesture.kind === "pan") {
+      pendingMoveEvent = event;
+      pendingGesture = gesture;
+      if (!moveRafId) {
+        moveRafId = requestAnimationFrame(flushPendingMove);
+      }
       return;
     }
 
@@ -334,6 +334,7 @@ export function attachPointerHandlers({
   };
 
   const onPointerUp = (event) => {
+    flushPendingMove();
     lastPointerEvent = null;
     if (stage.hasPointerCapture(event.pointerId)) {
       stage.releasePointerCapture(event.pointerId);
@@ -351,33 +352,18 @@ export function attachPointerHandlers({
 
     const finished = gesture;
     gesture = null;
-    stage.style.cursor = spaceDown || orbitModelId ? "grab" : "default";
+    stage.style.cursor = spaceDown ? "grab" : "default";
 
     finishGesture(event, finished);
   };
 
   const onDoubleClick = (event) => {
     if (!onCanvasAfterCapture(event)) return;
-    if (api.getTool() === TOOL.SELECT) {
-      const hit = api.nodeAtPoint(api.toDocPoint(event.clientX, event.clientY));
-      if (hit?.kind === NODE_KIND.MODEL_3D) {
-        orbitModelId = hit.id;
-        api.select(hit.id);
-        stage.style.cursor = "grab";
-        return;
-      }
-    }
     handleEditorDoubleClick(event, { api });
   };
 
   const onKeyDown = (event) => {
     if (event.repeat) return;
-    if (event.code === "Escape" && orbitModelId) {
-      orbitModelId = null;
-      stage.style.cursor = "default";
-      event.preventDefault();
-      return;
-    }
     const isModifier =
       event.key === "Shift" ||
       event.key === "Alt" ||
@@ -455,6 +441,12 @@ export function attachPointerHandlers({
     api.setClonePreview?.(null);
   };
 
+  const onAuxClick = (event) => {
+    if (event.button === 1) {
+      event.preventDefault();
+    }
+  };
+
   if (!shared) {
     stage.addEventListener("wheel", pan.onWheel, { passive: false });
   }
@@ -463,6 +455,7 @@ export function attachPointerHandlers({
   stage.addEventListener("pointerup", onPointerUp);
   stage.addEventListener("pointercancel", onPointerUp);
   stage.addEventListener("pointerleave", onPointerLeave);
+  stage.addEventListener("auxclick", onAuxClick);
   stage.addEventListener("dblclick", onDoubleClick);
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
@@ -476,6 +469,7 @@ export function attachPointerHandlers({
     stage.removeEventListener("pointerup", onPointerUp);
     stage.removeEventListener("pointercancel", onPointerUp);
     stage.removeEventListener("pointerleave", onPointerLeave);
+    stage.removeEventListener("auxclick", onAuxClick);
     stage.removeEventListener("dblclick", onDoubleClick);
     window.removeEventListener("keydown", onKeyDown);
     window.removeEventListener("keyup", onKeyUp);

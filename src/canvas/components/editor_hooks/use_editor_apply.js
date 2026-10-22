@@ -6,16 +6,13 @@
  *
  */
 import { useCallback, useEffect, useRef } from "react";
-import { useWorkflowStore } from "../../store/workflow_store.js";
-import { RUN_STATUS } from "../../nodes/types.js";
+import { useDesignStore } from "../../../store/design_store.js";
 import { buildVooFile, saveVooProject, openVooProject } from "../../store/project_io.js";
 import { useEditorExport } from "./use_editor_export.js";
 export { assertExportableDocument } from "./export_editor_image.js";
 import { isQuotaError } from "../../../shared/persistence_contract.js";
 import { flushEditorPendingWrites } from "./editor-autosave.js";
 import { useEditorAutosave } from "./use_editor_autosave.js";
-import { getCanvasType } from "../../editor/canvas-composition-model.js";
-import { captureThreeScenePreviewOrFallback } from "./three-scene-preview.js";
 
 /** How long the save-and-exit path keeps retrying a refused (busy) apply. */
 export const MAX_SAVE_EXIT_RETRIES = 8;
@@ -126,12 +123,7 @@ export function useEditorApply({
     // ⌘S bridge event — refuses to save a moving picture, not just the Tab
     // path. Same status read as handleSaveAndExit; the node's "Generating
     // layout…" status line already explains why.
-    const running = nodeIds.some(
-      (id) =>
-        useWorkflowStore.getState().nodes.find((node) => node.id === id)?.data
-          ?.status === RUN_STATUS.RUNNING,
-    );
-    if (streamingPreview || running) return "busy";
+    if (streamingPreview) return "busy";
     applying.current = true;
     setBusy(true);
     setApplyError(false);
@@ -145,7 +137,7 @@ export function useEditorApply({
           : null;
         if (live) {
           await flushEditorPendingWrites(live, { commitSelection: true });
-          const previewDirty = useWorkflowStore
+          const previewDirty = useDesignStore
             .getState()
             .nodes.find((node) => node.id === nodeId)?.data?.editorPreviewDirty;
           if (!live.isDirty() && !previewDirty) continue;
@@ -155,9 +147,6 @@ export function useEditorApply({
           // serialising before it lands would save the previous maskId.
           await live.prepareFrame?.(live.getPlaybackState?.().time ?? 0);
           const editorDoc = live.serialise();
-          const previousPreview = useWorkflowStore
-            .getState()
-            .nodes.find((node) => node.id === nodeId)?.data?.dataUrl;
           entries.push({
             nodeId,
             // A very large picture is edited from a reduced preview; save must
@@ -165,12 +154,7 @@ export function useEditorApply({
             // node's picture would be permanently downscaled. Falls back to the
             // sync export when the engine has no full-res path.
             dataUrl:
-              getCanvasType(editorDoc) === "3d"
-                ? captureThreeScenePreviewOrFallback(
-                    nodeId,
-                    () => previousPreview || live.exportPng(),
-                  )
-                : ((await live.exportFullResPng?.()) ?? live.exportPng()),
+              (await live.exportFullResPng?.()) ?? live.exportPng(),
             editorDoc,
             regions: live.getRegions(),
             promptLayers: live.getPromptLayers(),
@@ -247,15 +231,9 @@ export function useEditorApply({
   const handleSaveAndExit = useCallback(async () => {
     if (!mounted.current || savingExit.current) return;
     // Do not apply a blank or partial streaming document over its real source.
-    const running = nodeIds.some(
-      (id) =>
-        useWorkflowStore.getState().nodes.find((node) => node.id === id)?.data
-          ?.status === RUN_STATUS.RUNNING,
-    );
-    if (streamingPreview || running) {
-      // Tab can leave a running layout without saving its partial preview.
+    if (streamingPreview) {
+      // Tab can leave a streaming preview without saving its partial result.
       // Keep the editor session mounted so the completed page remains available.
-      useWorkflowStore.getState().setEditorSurface("workflow");
       return;
     }
     savingExit.current = true;
@@ -300,7 +278,7 @@ export function useEditorApply({
         setBusy(true);
         setApplyError(false);
         const res = await saveVooProject({
-          store: useWorkflowStore.getState(),
+          store: useDesignStore.getState(),
           enginesRef,
           snapshotsRef,
           saveAs,
@@ -328,7 +306,7 @@ export function useEditorApply({
         setBusy(true);
         setApplyError(false);
         const res = await openVooProject({
-          store: useWorkflowStore.getState(),
+          store: useDesignStore.getState(),
           fileOrPath,
         });
         if (res?.success) {
@@ -348,7 +326,7 @@ export function useEditorApply({
   );
 
   const newVooDocument = useCallback(() => {
-    useWorkflowStore.getState().newVooProject?.();
+    useDesignStore.getState().newVooProject?.();
     setSavedNotice(false);
     setApplyError(false);
   }, [setSavedNotice, setApplyError]);
@@ -411,7 +389,7 @@ export function useEditorApply({
 
     // Browser refresh / tab close protection: prompt the user if there are unsaved edits
     const onBeforeUnload = (e) => {
-      const isDirty = useWorkflowStore.getState().isDirty || dirtyIds.length > 0;
+      const isDirty = useDesignStore.getState().isDirty || dirtyIds.length > 0;
       if (
         busy ||
         maskBusy ||

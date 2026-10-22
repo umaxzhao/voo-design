@@ -88,7 +88,7 @@ export default function AdjustmentPopover({
         onClick={onClose}
       />
       <div
-        className={`absolute top-1/2 -translate-y-1/2 z-50 w-80 max-w-[calc(100vw-32px)] rounded-2xl bg-neutral-900 border border-white/10 p-4 shadow-panel font-mono text-neutral-200 ${
+        className={`absolute top-1/2 -translate-y-1/2 z-50 w-80 max-w-[calc(100vw-32px)] rounded-3xl bg-neutral-900 border border-white/10 p-4 shadow-panel font-mono text-neutral-200 ${
           side === "right" ? "right-full mr-3" : "left-full ml-3"
         } max-md:fixed max-md:left-1/2 max-md:top-1/2 max-md:-translate-x-1/2 max-md:m-0`}
       >

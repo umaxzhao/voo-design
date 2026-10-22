@@ -1,4 +1,3 @@
-import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
 import PropTypes from "prop-types";
 import { useRef } from "react";
 import { createPortal } from "react-dom";
@@ -13,8 +12,6 @@ const FORMATS = [
   ["svg", "editor.exportSvg"],
   ["psd", "editor.exportPsd"],
   ["pdf", "editor.exportPdf"],
-  ["html", "editor.exportHtml"],
-  ["video", "editor.motion.exportVideo"],
 ];
 
 /** Mirrors exportEditorImage: raster scales; vector and web formats keep document size. */
@@ -26,7 +23,7 @@ export function designExportDimensions({ width, height, format, scale }) {
     height <= 0
   )
     return null;
-  const factor = ["svg", "psd", "pdf", "html", "video"].includes(format)
+  const factor = ["svg", "psd", "pdf"].includes(format)
     ? 1
     : scale;
   if (!Number.isFinite(factor) || factor <= 0) return null;
@@ -78,6 +75,7 @@ export default function EditorExportDialog({
   documentWidth,
   documentHeight,
   selectedCount = 0,
+  slicesCount = 0,
   selectionBounds = null,
   exportRange = "frame",
   onExportRange = null,
@@ -122,12 +120,12 @@ export default function EditorExportDialog({
         aria-modal="true"
         aria-labelledby="design-export-title"
         data-testid="design-export-dialog"
-        className="ui-scroll flex max-h-[calc(100dvh-80px)] w-64 max-w-full flex-col gap-3 overflow-y-auto rounded-2xl bg-neutral-900 border border-white/10 p-4 font-mono shadow-menu"
+        className="ui-scroll flex max-h-[calc(100dvh-80px)] w-64 max-w-full flex-col gap-3 overflow-y-auto rounded-3xl bg-neutral-900 border border-white/10 p-4 font-mono shadow-menu"
       >
         <h2 id="design-export-title" className="text-xs text-neutral-200">
           {t("editor.exportTitle")}
         </h2>
-        {selectedCount > 0 && onExportRange ? (
+        {(selectedCount > 0 || slicesCount > 0) && onExportRange ? (
           <div
             className="flex gap-1 rounded-xl bg-white/[0.04] p-0.5 text-[11px]"
             role="radiogroup"
@@ -142,15 +140,28 @@ export default function EditorExportDialog({
             >
               {t("editor.exportRange.frame")}
             </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={exportRange === "selection"}
-              onClick={() => onExportRange("selection")}
-              className={`flex-1 rounded-lg py-1.5 text-center transition-colors ${exportRange === "selection" ? "bg-white/[0.12] text-white" : "text-neutral-400 hover:text-white"}`}
-            >
-              {t("editor.exportRange.selection")}
-            </button>
+            {selectedCount > 0 && (
+              <button
+                type="button"
+                role="radio"
+                aria-checked={exportRange === "selection"}
+                onClick={() => onExportRange("selection")}
+                className={`flex-1 rounded-lg py-1.5 text-center transition-colors ${exportRange === "selection" ? "bg-white/[0.12] text-white" : "text-neutral-400 hover:text-white"}`}
+              >
+                {t("editor.exportRange.selection")}
+              </button>
+            )}
+            {slicesCount > 0 && (
+              <button
+                type="button"
+                role="radio"
+                aria-checked={exportRange === "slices"}
+                onClick={() => onExportRange("slices")}
+                className={`flex-1 rounded-lg py-1.5 text-center transition-colors ${exportRange === "slices" ? "bg-white/[0.12] text-white" : "text-neutral-400 hover:text-white"}`}
+              >
+                {t("editor.exportRange.slices")}
+              </button>
+            )}
           </div>
         ) : null}
         <fieldset
@@ -158,9 +169,7 @@ export default function EditorExportDialog({
           className="flex min-w-0 flex-col gap-3 disabled:opacity-40"
         >
           <div className="flex flex-col gap-1">
-            {FORMATS.filter(
-              ([id]) => EDITOR_BETA_ENABLED || id !== "video",
-            ).map(([id, label]) => (
+            {FORMATS.map(([id, label]) => (
               <button
                 key={id}
                 type="button"
@@ -194,7 +203,7 @@ export default function EditorExportDialog({
               </span>
             </label>
           )}
-          {!["svg", "psd", "html", "video"].includes(format) && (
+          {!["svg", "psd"].includes(format) && (
             <div className="flex gap-2">
               {[1, 2, 3].map((value) => (
                 <button
@@ -214,16 +223,6 @@ export default function EditorExportDialog({
           dimensions={dimensions}
           canChooseSaveLocation={canChooseSaveLocation}
         />
-        {busy && format === "video" && Number.isFinite(exportProgress) ? (
-          <p
-            role="status"
-            className="text-[11px] tabular-nums text-neutral-300"
-          >
-            {t("editor.motion.exportProgress", {
-              percent: Math.round(exportProgress * 100),
-            })}
-          </p>
-        ) : null}
         <div className="flex gap-2">
           <button
             type="button"
@@ -234,11 +233,13 @@ export default function EditorExportDialog({
           </button>
           <button
             type="button"
-            disabled={busy || !dimensions}
+            disabled={busy || (!dimensions && exportRange !== "slices")}
             onClick={onExport}
             className="min-h-8 flex-1 rounded-lg bg-white px-3 text-[11px] font-semibold text-black hover:bg-neutral-200 transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
           >
-            {t("editor.export")}
+            {exportRange === "slices"
+              ? t("editor.exportSlicesAction", { count: slicesCount })
+              : t("editor.export")}
           </button>
         </div>
       </div>
@@ -254,6 +255,7 @@ EditorExportDialog.propTypes = {
   documentWidth: PropTypes.number,
   documentHeight: PropTypes.number,
   selectedCount: PropTypes.number,
+  slicesCount: PropTypes.number,
   selectionBounds: PropTypes.shape({
     width: PropTypes.number,
     height: PropTypes.number,

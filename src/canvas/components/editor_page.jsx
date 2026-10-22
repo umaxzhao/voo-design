@@ -1,8 +1,4 @@
-import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
-import { layoutCanvasSize } from "../layout_geometry.js";
-import PropTypes from "prop-types";
-import { createPortal } from "react-dom";
-import {
+import React, {
   lazy,
   Suspense,
   useCallback,
@@ -12,15 +8,15 @@ import {
   useState,
 } from "react";
 import EditorCanvasPresets from "./editor_canvas_presets.jsx";
-import EditorCanvasTypeSelect, {
-  CANVAS_TYPE_TONES,
-} from "./editor_canvas_type_select.jsx";
+import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
+import { layoutCanvasSize } from "../layout_geometry.js";
+import PropTypes from "prop-types";
+import { createPortal } from "react-dom";
 import {
   EDITOR_PAGE_HEADER_INSET,
   EDITOR_PAGE_TOOLBAR_GAP,
 } from "./editor_panel_layout.js";
 import EditorRegionLabel from "./editor_region_label.jsx";
-import EditorObject3dGizmo from "./editor_object3d_gizmo.jsx";
 import { instanceSnapshotUrl } from "../editor/instance-snapshot.js";
 import EditorPageTitle from "./editor_page_title.jsx";
 import EditorResizeHandles from "./editor_resize_handles.jsx";
@@ -37,38 +33,23 @@ import { CANVAS_TYPE } from "../editor/scene_doc_factory.js";
 import { getCanvasType } from "../editor/canvas-composition-model.js";
 import { setInstanceCamera } from "../editor/instance-view.js";
 import {
-  changeEngineCanvasType,
   confirmCanvasDelete,
 } from "../editor/doc_ops_canvas.js";
-import { patchThreeSceneNode } from "../editor/three-scene-node-patch.js";
-import { patchThreeScene } from "../editor/three-scene-patch.js";
-import { readCurrentThreeSceneDocument } from "./editor-3d/three-scene-document.js";
 import { docToScreenRect } from "../editor/scene_renderer.js";
-import { collectImageInputs } from "../engine/graph.js";
 import { useEditorEngine } from "../use_editor_engine.js";
 import { collectExternalImageLayers } from "../editor_open_state.js";
 import { useSkiaPage } from "../use_skia_page.js";
 import { skiaRendererEnabled } from "../editor/renderer_flag.js";
 import { requiresCanvas2dMediaFallback } from "../editor/skia_scene_adapter.js";
 import { useI18n } from "../use_i18n.js";
-import { useWorkflowStore } from "../store/workflow_store.js";
+import { useDesignStore } from "../../store/design_store.js";
 import {
   computeSaliencyMap,
   SALIENCY_ANALYSIS_MAX_EDGE,
 } from "../editor/saliency_map.js";
 import { suggestOutpaintPlan } from "../editor/outpaint_direction.js";
-import {
-  mediaAssetIdsInSource,
-  withHydratedMediaSources,
-} from "./editor_motion/editor_media_source.js";
 
 const EditorMixedLayers = lazy(() => import("./editor_mixed_layers.jsx"));
-const ThreeSceneViewport = lazy(
-  () => import("./editor-3d/three-scene-viewport.jsx"),
-);
-const ThreeSceneFocusStage = lazy(
-  () => import("./editor-3d/three-scene-focus-stage.jsx"),
-);
 
 /**
  * The saliency-driven default direction for the outpaint overlay, or null.
@@ -179,15 +160,11 @@ BrushPreviewOverlay.propTypes = {
  * left off instead of reverting to the last applied state.
  */
 function buildEditorSource(nodeId, snapshot) {
-  const { nodes, edges, images } = useWorkflowStore.getState();
+  const { nodes } = useDesignStore.getState();
   const node = nodes.find((candidate) => candidate.id === nodeId);
   const ownImageId = node?.data?.imageId ?? null;
-  const connectedLayers = collectImageInputs(nodeId, nodes, edges)
-    .filter((entry) => entry.imageId && entry.imageId !== ownImageId)
-    .map((entry) => ({
-      src: images[entry.imageId] ?? null,
-      imageId: entry.imageId,
-    }));
+  // Reference layers come from the canvas itself now, not from graph edges.
+  const connectedLayers = [];
   const layoutWidth = node?.data?.layoutWidth;
   const layoutHeight = node?.data?.layoutHeight;
   const hasPinnedSize =
@@ -235,6 +212,30 @@ function buildEditorSource(nodeId, snapshot) {
  * Colours for the frame header icon circle matching the frame's canvas type.
  * Unifies with CANVAS_TYPE_TONES in editor_canvas_type_select.jsx.
  */
+export const CANVAS_TYPE_TONES = Object.freeze({
+  [CANVAS_TYPE.DESIGN]: {
+    wash: "bg-[#a7ffd4]/10",
+    bar: "bg-[#a7ffd4]/50",
+    text: "text-[#a7ffd4]",
+    solid: "bg-[#a7ffd4] text-black",
+    label: "editor.canvasType.design",
+  },
+  [CANVAS_TYPE.MOTION]: {
+    wash: "bg-[#E5B2FF]/10",
+    bar: "bg-[#E5B2FF]/50",
+    text: "text-[#eed0ff]",
+    solid: "bg-[#E5B2FF] text-black",
+    label: "editor.canvasType.motion",
+  },
+  [CANVAS_TYPE.THREE_D]: {
+    wash: "bg-[#b2ccff]/10",
+    bar: "bg-[#b2ccff]/50",
+    text: "text-[#b2ccff]",
+    solid: "bg-[#b2ccff] text-black",
+    label: "editor.canvasType.threeD",
+  },
+});
+
 export const FRAME_TYPE_ICON_TONES = CANVAS_TYPE_TONES;
 
 export default function EditorPage({
@@ -286,6 +287,7 @@ export default function EditorPage({
   onRenamePage = null,
   /** Pointer handlers for the title label drag-to-pan handle, or null. */
   titlePanHandlers = null,
+  onBodyPointerDown = null,
   pageTitleActions = null,
   resolveCanvas = null,
   selectedInstanceChild = null,
@@ -298,8 +300,6 @@ export default function EditorPage({
   onCanvasTypeChanged = null,
   streamingLayout = null,
   /** Gizmo mode for a 3D page, controlled by the editor's 3D toolbar. */
-  threeToolMode = null,
-  onThreeToolMode = null,
   /** (stageWidth) => { left, right }: stage the fit keeps clear. */
   getFitInsets = null,
 }) {
@@ -311,14 +311,18 @@ export default function EditorPage({
   const titleRef = useRef(null);
   // Skia paints onto its own canvas so the engine keeps the 2D one it
   // measures text against and sizes from the stage.
-  const skiaCanvasRef = useRef(null);
-
   const free = mode === "free";
 
-  const setEditorArtboardLayout = useWorkflowStore(
+  // In free mode, use an unmounted offscreen canvas for font metrics and text
+  // measurement so no DOM <canvas> elements are mounted per artboard.
+  if (free && !canvasRef.current && typeof document !== "undefined") {
+    canvasRef.current = document.createElement("canvas");
+  }
+
+  const setEditorArtboardLayout = useDesignStore(
     (state) => state.setEditorArtboardLayout,
   );
-  const moveEditorArtboard = useWorkflowStore(
+  const moveEditorArtboard = useDesignStore(
     (state) => state.moveEditorArtboard,
   );
   // Holds the pending doc-space position to persist when the resize commits.
@@ -376,7 +380,6 @@ export default function EditorPage({
 
   // The layer being outpainted, while its grow-frame gesture is active.
   const [renaming, setRenaming] = useState(false);
-  const [stageFocus, setStageFocus] = useState(false);
   // Double-clicking the header renames the frame, except on its own controls.
   const startRename = (event) => {
     if (!onRenamePage || event.target.closest("button, input, [role=menu]"))
@@ -405,7 +408,7 @@ export default function EditorPage({
   // Updates root div position directly for direct artboard mutations without re-rendering.
   useEffect(() => {
     if (!free) return undefined;
-    const store = useWorkflowStore.getState();
+    const store = useDesignStore.getState();
     const unsubscribe = store.subscribeArtboardNotification?.(
       nodeId,
       ({ rect: updatedRect, localRect, isDirectTarget }) => {
@@ -431,45 +434,6 @@ export default function EditorPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [nodeId, active, mode],
   );
-  const mediaAssetIds = useMemo(() => mediaAssetIdsInSource(source), [source]);
-  const [, setMediaHydrationVersion] = useState(0);
-  const [mediaRetryToken, setMediaRetryToken] = useState(0);
-  const [mediaHydrationError, setMediaHydrationError] = useState(null);
-  const mediaAssetsReady = mediaAssetIds.every((id) =>
-    Boolean(useWorkflowStore.getState().images[id]),
-  );
-
-  useEffect(() => {
-    if (!active || mediaAssetsReady) return undefined;
-    let cancelled = false;
-    setMediaHydrationError(null);
-    void useWorkflowStore
-      .getState()
-      .hydrateImages(mediaAssetIds)
-      .then(() => {
-        if (cancelled) return;
-        const images = useWorkflowStore.getState().images;
-        if (mediaAssetIds.some((id) => !images[id])) {
-          setMediaHydrationError({ code: "missingMediaAsset" });
-          return;
-        }
-        setMediaHydrationVersion((version) => version + 1);
-      })
-      .catch((cause) => {
-        if (!cancelled) setMediaHydrationError(cause);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [active, mediaAssetsReady, mediaAssetIds, mediaRetryToken]);
-
-  const hydratedSource = useMemo(
-    () =>
-      mediaAssetIds.length && mediaAssetsReady
-        ? withHydratedMediaSources(source, useWorkflowStore.getState().images)
-        : source,
-    [source, mediaAssetIds, mediaAssetsReady],
-  );
 
   // Held in a ref so the dispose callback can read the latest readiness
   // without re-creating the engine every time it changes.
@@ -494,8 +458,8 @@ export default function EditorPage({
     registerCommands: !readOnly,
     canvasRef,
     stageRef,
-    source: hydratedSource,
-    active: active && mediaAssetsReady,
+    source: source,
+    active,
     onChange,
     onBeforeDispose: beforeDispose,
     onGeneratedOutput,
@@ -506,14 +470,16 @@ export default function EditorPage({
   const handleResizeCommit = useCallback(() => {
     engine?.commit("editor.history.entry.resize");
     if (free && resizePositionRef.current) {
+      setEditorArtboardLayout(nodeId, {
+        x: Math.round(resizePositionRef.current.x),
+        y: Math.round(resizePositionRef.current.y),
+      });
       moveEditorArtboard(nodeId, resizePositionRef.current);
       resizePositionRef.current = null;
     }
-  }, [engine, free, nodeId, moveEditorArtboard]);
-  const pageError = mediaHydrationError || error;
+  }, [engine, free, nodeId, moveEditorArtboard, setEditorArtboardLayout]);
+  const pageError = error;
   const retryPage = () => {
-    setMediaHydrationError(null);
-    setMediaRetryToken((token) => token + 1);
     retry();
   };
   const canvasType = doc
@@ -523,16 +489,10 @@ export default function EditorPage({
   const iconTone =
     FRAME_TYPE_ICON_TONES[canvasType] ||
     FRAME_TYPE_ICON_TONES[CANVAS_TYPE.DESIGN];
-  const hasThreeNodes = doc?.nodes.some(
-    (node) => node.kind === "mesh3d" || node.kind === "model3d",
-  );
   const hasCanvasInstances = doc?.nodes.some(
     (node) => node.kind === "canvasInstance",
   );
-  const mixedLayers =
-    Boolean(doc) &&
-    canvasType !== "3d" &&
-    (hasThreeNodes || hasCanvasInstances);
+  const mixedLayers = Boolean(doc) && canvasType !== "3d" && hasCanvasInstances;
 
   useEffect(() => {
     if (!engine) return undefined;
@@ -589,7 +549,7 @@ export default function EditorPage({
     const settle = (layers) => {
       for (const layer of layers) ingesting.delete(layer.imageId);
     };
-    return useWorkflowStore.subscribe((state) => {
+    return useDesignStore.subscribe((state) => {
       const node = state.nodes.find((candidate) => candidate.id === nodeId);
       const live = engine.getDocument();
       const knownLayers = (live?.nodes ?? [])
@@ -655,27 +615,22 @@ export default function EditorPage({
   const revisionRef = useRef(0);
   revisionRef.current += 1;
   const { status: skiaStatus } = useSkiaPage({
-    enabled: skiaEnabled,
+    enabled: skiaEnabled && !free,
     engine,
     doc,
-    canvasRef: skiaCanvasRef,
+    canvasRef,
     stageRef,
     revision: revisionRef.current,
   });
-  const skiaPainting = skiaEnabled && skiaStatus === "ready";
-  const evaluatedThreeDoc =
-    doc && canvasType === "3d"
-      ? (engine?.getEvaluatedDocument?.() ?? doc)
-      : doc;
-  const viewport = engine?.getViewport() ?? { zoom: 1, panX: 0, panY: 0 };
+  const skiaPainting = skiaEnabled && !free && skiaStatus === "ready";
+  const viewport = free
+    ? { zoom: sharedZoom ?? 1, panX: 0, panY: 0 }
+    : (engine?.getViewport() ?? { zoom: 1, panX: 0, panY: 0 });
   const pageRect = doc ? docToScreenRect(effectivePage(doc), viewport) : null;
   // Full-stage scene editing must reserve the same panel bands as page Fit.
   // Free artboards already sit inside the parent's fitted clear area.
   const sceneEditingInsets =
     mode === "free" ? null : getFitInsets?.(stageRef.current?.clientWidth ?? 0);
-  const changeCanvasType = (nextType) => {
-    changeEngineCanvasType(engine, nodeId, nextType, onCanvasTypeChanged);
-  };
   const openInstanceAtPoint = (event) => {
     if (!mixedLayers || !engine) return;
     const point = engine.toDocPoint(event.clientX, event.clientY);
@@ -720,10 +675,40 @@ export default function EditorPage({
     }
   };
 
-  // One definition for both layouts: the single-page branch and the
-  // multi-page one each render a stage, and a canvas added to only one of
-  // them is the kind of difference nothing catches until it is on screen.
-  const canvases = (
+  // In single canvas architecture (free mode), individual artboards do not mount
+  // DOM canvas elements. The single global workspace canvas renders all artboards.
+  const canvases = free ? (
+    doc && mixedLayers ? (
+      <Suspense fallback={null}>
+        <EditorMixedLayers
+          doc={doc}
+          engine={engine}
+          resolveCanvas={resolveCanvas}
+          selectedId={selected?.id ?? null}
+          selectedInstanceChild={selectedInstanceChild}
+          adjustingInstanceId={adjustingInstanceId}
+          onInstanceCameraChange={(camera) => {
+            const current = engine
+              ?.getDocument()
+              ?.nodes.find((node) => node.id === adjustingInstanceId);
+            if (!current) return;
+            const baseCamera =
+              current.instance?.overrides?.camera ??
+              resolveCanvas?.(current.sourceCanvasId)?.scene3d?.camera;
+            if (!baseCamera)
+              throw new Error("Instance camera source is unavailable");
+            const instance = setInstanceCamera(current.instance, {
+              ...baseCamera,
+              ...camera,
+            });
+            engine.updateNode(current.id, { instance }, { commit: false });
+          }}
+          active={focused}
+          onSelectInstanceChild={onSelectInstanceChild}
+        />
+      </Suspense>
+    ) : null
+  ) : (
     <>
       <canvas
         ref={canvasRef}
@@ -739,72 +724,6 @@ export default function EditorPage({
           data-renderer-active={skiaPainting ? "true" : "false"}
           className={`absolute left-0 top-0 ${skiaPainting ? "" : "invisible"}`}
         />
-      ) : null}
-      {doc && canvasType === "3d" && pageRect ? (
-        <div
-          data-testid="editor-3d-canvas"
-          className="absolute z-10 overflow-hidden"
-          style={
-            focused &&
-            !stageFocus &&
-            !readOnly &&
-            doc.scene3d?.frame?.cameraPreview !== true
-              ? {
-                  left: sceneEditingInsets?.left ?? 0,
-                  top: sceneEditingInsets?.top ?? 0,
-                  right: sceneEditingInsets?.right ?? 0,
-                  bottom: sceneEditingInsets?.bottom ?? 0,
-                }
-              : {
-                  left: pageRect.x,
-                  top: pageRect.y,
-                  width: pageRect.width,
-                  height: pageRect.height,
-                }
-          }
-        >
-          <Suspense fallback={null}>
-            <ThreeSceneViewport
-              doc={evaluatedThreeDoc}
-              getDocument={() =>
-                readCurrentThreeSceneDocument(engine, evaluatedThreeDoc)
-              }
-              selectedId={selected?.id ?? null}
-              selectedIds={selectedIds}
-              readOnly={readOnly || !EDITOR_BETA_ENABLED}
-              interactive={EDITOR_BETA_ENABLED && !stageFocus}
-              toolMode={threeToolMode}
-              onToolMode={onThreeToolMode}
-              showToolGroup={EDITOR_BETA_ENABLED && threeToolMode == null}
-              viewControls={EDITOR_BETA_ENABLED && focused && !stageFocus}
-              resolveAsset={(node) =>
-                node.kind === "canvasInstance"
-                  ? instanceSnapshotUrl(
-                      resolveCanvas?.(node.sourceCanvasId),
-                      node.instance,
-                      resolveCanvas,
-                    )
-                  : node.src
-              }
-              onSelect={(id, meta = {}) => {
-                if (!id) {
-                  if (!meta.shiftKey && !meta.metaKey && !meta.ctrlKey) {
-                    engine?.selectExactly([]);
-                  }
-                } else if (meta.shiftKey || meta.metaKey || meta.ctrlKey) {
-                  engine?.toggleExactly(id);
-                } else {
-                  engine?.selectExactly([id]);
-                }
-              }}
-              onPatchNode={(id, patch) =>
-                patchThreeSceneNode(engine, id, patch)
-              }
-              onPatchScene={(patch) => patchThreeScene(engine, patch)}
-              onCommit={() => engine?.commit("editor.history.entry.layer")}
-            />
-          </Suspense>
-        </div>
       ) : null}
       {doc && mixedLayers ? (
         <Suspense fallback={null}>
@@ -854,46 +773,9 @@ export default function EditorPage({
     ? doc?.nodes.find((candidate) => candidate.id === editingRegionId)
     : null;
 
-  // Objects the rotation rings can turn: a mesh in this frame, or an instance
-  // of a 3D frame (which turns its own view). A model turns by dragging it.
-  const ringTarget =
-    (selected?.kind === "mesh3d" && !mixedLayers) ||
-    (selected?.kind === "canvasInstance" &&
-      adjustingInstanceId === selected.id &&
-      getCanvasType(resolveCanvas?.(selected.sourceCanvasId)) === "3d" &&
-      selected.instance?.overrides?.viewLocked !== true)
-      ? selected
-      : null;
-  const gizmoPortalTarget =
-    stageRef.current?.closest('[data-testid="editor-pages"]') ??
-    stageRef.current;
-  const gizmoPortalBounds = gizmoPortalTarget?.getBoundingClientRect();
-
   const overlays =
     focused && ready && canvasType !== "3d" ? (
       <>
-        {EDITOR_BETA_ENABLED &&
-        tool === TOOL.SELECT &&
-        !readOnly &&
-        !selected?.locked &&
-        ringTarget ? (
-          <EditorObject3dGizmo
-            key={ringTarget.id}
-            engine={engine}
-            node={ringTarget}
-            viewport={viewport}
-            portalTarget={gizmoPortalTarget}
-            containerSize={{
-              width: gizmoPortalTarget?.clientWidth ?? 0,
-              height: gizmoPortalTarget?.clientHeight ?? 0,
-            }}
-            portalOffset={{
-              x: gizmoPortalBounds?.left ?? 0,
-              y: gizmoPortalBounds?.top ?? 0,
-            }}
-            interactive
-          />
-        ) : null}
         <EditorResizeHandles
           engine={engine}
           docRect={doc ? docToScreenRect(effectivePage(doc), viewport) : null}
@@ -983,7 +865,10 @@ export default function EditorPage({
         data-editor-artboard
         data-testid="editor-page"
         data-node-id={nodeId}
-        onPointerDownCapture={() => onFocus(nodeId)}
+        onPointerDownCapture={(event) => {
+          onFocus(nodeId);
+          onBodyPointerDown?.(event);
+        }}
         // isolate: the frame's own z-index ladder (header, tool row, add
         // button) stays inside the frame, so floating panels (z-30) always
         // cover it. The focused frame sits above its neighbours so its menus
@@ -1005,6 +890,10 @@ export default function EditorPage({
           className={`absolute inset-0 touch-none overflow-hidden transition-colors ${
             focused ? "ring-1 ring-[#b2ffd6]/60" : "ring-1 ring-white/10"
           }`}
+          style={{
+            borderRadius: doc?.cornerRadius ? `${doc.cornerRadius}px` : undefined,
+            outline: doc?.stroke && doc?.strokeWidth ? `${doc.strokeWidth}px solid ${doc.stroke}` : undefined,
+          }}
         >
           {canvases}
           {streamingContent ? (
@@ -1016,69 +905,7 @@ export default function EditorPage({
             <div aria-hidden className="pointer-events-none absolute inset-0" />
           ) : null}
           {overlays}
-          {EDITOR_BETA_ENABLED && stageFocus && doc && canvasType === "3d" ? (
-            <Suspense fallback={null}>
-              {(() => {
-                const focusStage = (
-                  <ThreeSceneFocusStage
-                    nodeId={nodeId}
-                    title={title}
-                    doc={evaluatedThreeDoc}
-                    getDocument={() =>
-                      readCurrentThreeSceneDocument(engine, evaluatedThreeDoc)
-                    }
-                    selectedId={selected?.id ?? null}
-                    selectedIds={selectedIds}
-                    readOnly={readOnly}
-                    toolMode={threeToolMode}
-                    onToolMode={onThreeToolMode}
-                    onPatchNode={(id, patch) =>
-                      patchThreeSceneNode(engine, id, patch)
-                    }
-                    onPatchScene={(patch) => patchThreeScene(engine, patch)}
-                    onCommit={() =>
-                      engine?.commit("editor.history.entry.layer")
-                    }
-                    onSelect={(id, meta = {}) => {
-                      if (!id) {
-                        if (!meta.shiftKey && !meta.metaKey && !meta.ctrlKey) {
-                          engine?.selectExactly([]);
-                        }
-                      } else if (
-                        meta.shiftKey ||
-                        meta.metaKey ||
-                        meta.ctrlKey
-                      ) {
-                        engine?.toggleExactly(id);
-                      } else {
-                        engine?.selectExactly([id]);
-                      }
-                    }}
-                    resolveAsset={(node) =>
-                      node.kind === "canvasInstance"
-                        ? instanceSnapshotUrl(
-                            resolveCanvas?.(node.sourceCanvasId),
-                            node.instance,
-                            resolveCanvas,
-                          )
-                        : node.src
-                    }
-                    onExit={() => setStageFocus(false)}
-                    t={t}
-                  />
-                );
-                const portalTarget =
-                  stageRef.current?.closest('[data-testid="editor-pages"]') ??
-                  (typeof document !== "undefined"
-                    ? document.querySelector?.('[data-testid="editor-pages"]')
-                    : null);
-                return portalTarget
-                  ? createPortal(focusStage, portalTarget)
-                  : focusStage;
-              })()}
-            </Suspense>
-          ) : null}
-          {!active ? (
+                    {!active ? (
             <div className="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-neutral-500">
               …
             </div>
@@ -1123,34 +950,7 @@ export default function EditorPage({
               {t("editor.component.uses", { count: componentUses })}
             </span>
           ) : null}
-          {EDITOR_BETA_ENABLED && canvasType === "3d" && !readOnly ? (
-            <button
-              type="button"
-              data-testid="editor-enter-3d-focus-btn"
-              title={t("editor.three.enterFocus")}
-              aria-label={t("editor.three.enterFocus")}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!focused) onFocus?.(nodeId);
-                setStageFocus(true);
-              }}
-              className={`flex h-6 items-center gap-1 rounded-md px-1.5 text-[10px] font-mono transition-colors ${
-                focused
-                  ? "bg-black/10 text-black hover:bg-black/20"
-                  : "text-neutral-400 hover:bg-white/10 hover:text-neutral-200"
-              }`}
-            >
-              <IconExpand size={12} strokeWidth={1.5} />
-              <span>{t("editor.three.enterFocus")}</span>
-            </button>
-          ) : null}
-          {doc && !readOnly ? (
-            <EditorCanvasTypeSelect
-              value={canvasType}
-              onChange={changeCanvasType}
-            />
-          ) : null}
-          {pageTitleActions}
+                              {pageTitleActions}
         </div>
         {/* Page tool row: the contextual task bar and the canvas delete sit
             one row above the header, centred on the frame, so neither covers
@@ -1158,9 +958,7 @@ export default function EditorPage({
         <div
           data-testid="editor-page-toolbar"
           className="absolute left-1/2 z-40 flex -translate-x-1/2 items-center gap-1"
-          style={{
-            bottom: `calc(100% + ${EDITOR_PAGE_HEADER_INSET + EDITOR_PAGE_TOOLBAR_GAP}px)`,
-          }}
+          style={{ top: "calc(100% + 8px)" }}
         >
           {doc && focused ? (
             <EditorContextualTaskBar
@@ -1190,9 +988,9 @@ export default function EditorPage({
               onDetachInstance={onDetachInstance}
             />
           ) : null}
-          {onDeleteCanvas ? (
+          {onDeleteCanvas && !selected ? (
             <div
-              className={`flex items-center rounded-xl border border-white/10 bg-neutral-900/95 p-1 shadow-pop backdrop-blur-md transition-opacity ${
+              className={`flex items-center gap-0.5 rounded-lg bg-neutral-900/95 p-0.5 backdrop-blur-md transition-opacity ${
                 focused
                   ? "opacity-100"
                   : "pointer-events-none opacity-0 group-hover/artboard:pointer-events-auto group-hover/artboard:opacity-100"
@@ -1218,7 +1016,7 @@ export default function EditorPage({
                 }}
                 title={t("editor.pages.deleteCanvas")}
                 aria-label={t("editor.pages.deleteCanvas")}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-rose-500/10 hover:text-rose-400"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-neutral-100"
               >
                 <IconTrash size={14} strokeWidth={1.5} />
               </button>
@@ -1236,7 +1034,7 @@ export default function EditorPage({
               onAddCanvas(nodeId);
             }}
             title={t("editor.addCanvas")}
-            className="group/add-canvas absolute -right-12 top-1/2 z-40 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#1e1e1e]/90 text-white/80 shadow-pop backdrop-blur-md transition-colors hover:bg-white hover:text-black border border-white/15"
+            className="group/add-canvas absolute -right-12 top-1/2 z-40 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#2a2a2a]/80 text-white/80 backdrop-blur-md transition-colors hover:bg-white hover:text-black"
           >
             <IconAdd size={18} />
           </button>
@@ -1363,39 +1161,14 @@ export default function EditorPage({
                   {t("editor.component.uses", { count: componentUses })}
                 </span>
               ) : null}
-              {EDITOR_BETA_ENABLED && canvasType === "3d" && !readOnly ? (
-                <button
-                  type="button"
-                  data-testid="editor-enter-3d-focus-btn"
-                  title={t("editor.three.enterFocus")}
-                  aria-label={t("editor.three.enterFocus")}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!focused) onFocus?.(nodeId);
-                    setStageFocus(true);
-                  }}
-                  className={`flex h-6 items-center gap-1 rounded-md px-1.5 text-[10px] font-mono transition-colors ${
-                    focused
-                      ? "bg-black/10 text-black hover:bg-black/20"
-                      : "text-neutral-400 hover:bg-white/10 hover:text-neutral-200"
-                  }`}
-                >
-                  <IconExpand size={12} strokeWidth={1.5} />
-                  <span>{t("editor.three.enterFocus")}</span>
-                </button>
-              ) : null}
-              {doc ? (
-                <EditorCanvasTypeSelect
-                  value={canvasType}
-                  onChange={changeCanvasType}
-                />
-              ) : null}
-            </div>
+                                        </div>
+            {/* Canvas size presets sit above the artboard; the task bar takes the
+                space below it. */}
             <div
-              className="absolute z-20 flex -translate-x-1/2 items-center gap-1 text-[10px] font-mono pt-2"
+              className="absolute z-20 flex -translate-x-1/2 -translate-y-full items-center gap-1 text-[10px] font-mono pb-2"
               style={{
                 left: docRect.x + docRect.width / 2,
-                top: docRect.y + docRect.height,
+                top: docRect.y - EDITOR_PAGE_HEADER_INSET - EDITOR_PAGE_TOOLBAR_GAP,
               }}
             >
               <EditorCanvasPresets engine={engine} doc={doc} />
@@ -1442,7 +1215,7 @@ export default function EditorPage({
                   onAddCanvas(nodeId);
                 }}
                 title={t("editor.addCanvas")}
-                className="group/add-canvas absolute z-40 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#1e1e1e]/90 text-white/80 shadow-pop backdrop-blur-md transition-colors hover:bg-white hover:text-black border border-white/15"
+                className="group/add-canvas absolute z-40 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#2a2a2a]/80 text-white/80 backdrop-blur-md transition-colors hover:bg-white hover:text-black"
                 style={{
                   left: docRect.x + docRect.width + 24,
                   top: docRect.y + docRect.height / 2,
@@ -1454,51 +1227,7 @@ export default function EditorPage({
           </>
         ) : null}
 
-        {EDITOR_BETA_ENABLED && stageFocus && doc && canvasType === "3d" ? (
-          <Suspense fallback={null}>
-            <ThreeSceneFocusStage
-              nodeId={nodeId}
-              title={title}
-              doc={evaluatedThreeDoc}
-              getDocument={() =>
-                readCurrentThreeSceneDocument(engine, evaluatedThreeDoc)
-              }
-              selectedId={selected?.id ?? null}
-              selectedIds={selectedIds}
-              readOnly={readOnly}
-              toolMode={threeToolMode}
-              onToolMode={onThreeToolMode}
-              onPatchNode={(id, patch) =>
-                patchThreeSceneNode(engine, id, patch)
-              }
-              onPatchScene={(patch) => patchThreeScene(engine, patch)}
-              onCommit={() => engine?.commit("editor.history.entry.layer")}
-              onSelect={(id, meta = {}) => {
-                if (!id) {
-                  if (!meta.shiftKey && !meta.metaKey && !meta.ctrlKey) {
-                    engine?.selectExactly([]);
-                  }
-                } else if (meta.shiftKey || meta.metaKey || meta.ctrlKey) {
-                  engine?.toggleExactly(id);
-                } else {
-                  engine?.selectExactly([id]);
-                }
-              }}
-              resolveAsset={(node) =>
-                node.kind === "canvasInstance"
-                  ? instanceSnapshotUrl(
-                      resolveCanvas?.(node.sourceCanvasId),
-                      node.instance,
-                      resolveCanvas,
-                    )
-                  : node.src
-              }
-              onExit={() => setStageFocus(false)}
-              t={t}
-            />
-          </Suspense>
-        ) : null}
-
+        
         {overlays}
       </div>
     </section>
@@ -1560,6 +1289,7 @@ EditorPage.propTypes = {
   onRenamePage: PropTypes.func,
   /** Pointer handlers for the title label drag-to-pan handle, or null. */
   titlePanHandlers: PropTypes.object,
+  onBodyPointerDown: PropTypes.func,
   pageTitleActions: PropTypes.node,
   resolveCanvas: PropTypes.func,
   selectedInstanceChild: PropTypes.shape({
@@ -1574,8 +1304,6 @@ EditorPage.propTypes = {
   onFinishAdjustView: PropTypes.func,
   onCancelAdjustView: PropTypes.func,
   onCanvasTypeChanged: PropTypes.func,
-  threeToolMode: PropTypes.oneOf(["translate", "rotate", "scale"]),
-  onThreeToolMode: PropTypes.func,
   streamingLayout: PropTypes.shape({
     html: PropTypes.string.isRequired,
     width: PropTypes.number.isRequired,

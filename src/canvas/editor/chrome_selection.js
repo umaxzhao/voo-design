@@ -11,7 +11,6 @@ import {
   selectionHandlePoints,
 } from "./scene_geometry.js";
 import { isCssGradient, parseGradient } from "../color_picker/gradient_fill.js";
-import { isBoxlessNode } from "./scene-media.js";
 import { absolutePathEndpoints, isEndpointEditable } from "./shape_geometry.js";
 import { HANDLE_SIZE, SELECTION_COLOR } from "./render_nodes.js";
 import { docToScreenPoint, docToScreenRect } from "./chrome_coords.js";
@@ -161,7 +160,6 @@ export function drawSelection(
   selectedPuppetPin = null,
 ) {
   // A boxless layer (audio) has nothing to outline and no handles to grab.
-  if (isBoxlessNode(node)) return;
   const isRegion = node?.kind === NODE_KIND.REGION;
   const strokeColor = isRegion ? node.color || REGION_COLOR : SELECTION_COLOR;
   // A rotated or sheared node needs its true outline rather than the axis-
@@ -363,7 +361,7 @@ export function drawGradientOverlay(ctx, node, viewport) {
  * corner resize handles around the combined bounds to scale the set as a whole.
  */
 export function drawSelectionSet(ctx, nodes, viewport) {
-  const boxed = (nodes ?? []).filter((node) => !isBoxlessNode(node));
+  const boxed = nodes ?? [];
   if (boxed.length === 0) return;
 
   ctx.save();

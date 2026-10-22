@@ -61,7 +61,7 @@ export default function EditorLocalRepaintButton({
           aria-label={t("editor.taskbar.repaint") || "Repaint"}
           disabled={busy}
         >
-          <IconSparkles className="w-4 h-4" />
+          <IconSparkles size={12} />
         </button>
       </EditorTooltip>
       {open && (

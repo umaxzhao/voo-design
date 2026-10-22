@@ -33,7 +33,6 @@ export function renderSelectionPng(
   nodes,
   bounds,
   options,
-  instanceBitmaps,
   { bitmapSourceOf, cache, maskSourceOf, glRenderer },
 ) {
   if (!bounds) return null;
@@ -51,9 +50,7 @@ export function renderSelectionPng(
   if (scale !== 1) ctx.scale(scale, scale);
   ctx.translate(-originX, -originY);
   for (const node of nodes) {
-    const bitmap =
-      instanceBitmaps.get(node.id) ??
-      (bitmapSourceOf ? bitmapSourceOf(node) : cache.get(node));
+    const bitmap = bitmapSourceOf ? bitmapSourceOf(node) : cache.get(node);
     if (node.kind === NODE_KIND.IMAGE && !bitmap) continue;
     drawNode(
       ctx,

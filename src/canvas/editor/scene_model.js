@@ -158,6 +158,4 @@ export {
   addCircularArrayModifier,
   updateCircularArrayModifier,
   removeCircularArrayModifier,
-  upsertCircularArrayKeyframe,
-  removeCircularArrayKeyframe,
 } from "./doc-ops-circular-array.js";

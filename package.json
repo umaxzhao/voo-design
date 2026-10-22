@@ -7,29 +7,33 @@
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
+    "copy:ort": "node scripts/copy-ort-wasm.mjs",
+    "copy:canvaskit": "node scripts/copy-canvaskit-wasm.mjs",
+    "predev": "npm run copy:ort && npm run copy:canvaskit",
     "dev": "vite",
+    "prebuild": "npm run copy:ort && npm run copy:canvaskit",
     "build": "vite build",
     "preview": "vite preview",
-    "electron:dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
-    "electron:build": "vite build && electron-builder --dir",
+    "electron:dev": "npm run copy:ort && npm run copy:canvaskit && concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "electron:build": "npm run copy:ort && npm run copy:canvaskit && vite build && electron-builder --dir",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint:design": "node scripts/check-design.mjs"
+    "lint:design": "node scripts/check-design.mjs",
+    "bridge": "node scripts/cli-bridge.mjs"
   },
   "dependencies": {
-    "@remotion/bundler": "4.0.514",
-    "@remotion/renderer": "4.0.514",
     "@voo/canvas-core": "file:vendor/voo-canvas-core",
     "ag-psd": "^31.0.2",
     "canvaskit-wasm": "^0.41.1",
     "fs-extra": "^10.1.0",
+    "fzstd": "^0.1.1",
     "lucide-react": "^1.47.0",
     "onnxruntime-web": "^1.27.0",
     "prop-types": "^15.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "remotion": "4.0.514",
-    "three": "0.186.0",
+    "uzip": "^0.20201231.0",
+    "ws": "^8.22.0",
     "zustand": "^4.5.5"
   },
   "devDependencies": {
@@ -69,6 +73,7 @@
     ],
     "mac": {
       "category": "public.app-category.graphics-design",
+      "icon": "build/icon.icns",
       "target": [
         "dir"
       ]

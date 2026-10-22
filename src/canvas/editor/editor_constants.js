@@ -20,7 +20,7 @@ export const TOOL_KEYS = {
   KeyV: TOOL.SELECT,
   KeyA: TOOL.SELECT,
   KeyQ: TOOL.PERSPECTIVE,
-  KeyM: TOOL.REGION,
+  KeyM: TOOL.MARQUEE,
   KeyZ: TOOL.REGION,
   // W arms the magic wand, matching the toolbar label and Photoshop (the
   // object-selection tool lives in the region menu, reachable with G).
@@ -291,7 +291,8 @@ export function bracketReorderDirection({
   return grow ? 1 : -1;
 }
 
-export const ZOOM_MIN = 0.05;
+// Low enough that zoom-to-fit can frame a large imported page (e.g. a 46000 px frame).
+export const ZOOM_MIN = 0.01;
 export const ZOOM_MAX = 8;
 export const ZOOM_STEP = 1.25;
 

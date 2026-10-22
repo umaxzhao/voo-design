@@ -11,6 +11,8 @@ import { nodeAABB } from "./scene_geometry_bounds.js";
 import {
   cullableNodeIds,
   isBoxOffscreen,
+  nodeVisualAABB,
+  visibleNodeIds,
   visibleWorldRect,
 } from "./viewport_culling.js";
 import {
@@ -100,6 +102,7 @@ export function draw(
     bypassAdjustments = false,
     bitmapOf,
     maskOf,
+    videoFrameOf = null,
     penDraft = null,
     penEdit = null,
     penEditNode = null,
@@ -107,6 +110,7 @@ export function draw(
     glRenderer = null,
     fullResolution = false,
     docVersion = 0,
+    spatialIndex = null,
     // Skip off-screen nodes. Only the on-screen stage asks for it: exports and
     // mask sources paint the whole page and must not lose any node.
     cullOffscreen = false,
@@ -160,14 +164,22 @@ export function draw(
   const visibleRect = culledIds
     ? visibleWorldRect(viewport, canvas.width / dpr, canvas.height / dpr)
     : null;
+  const activeSpatialIndex =
+    cullOffscreen ? (spatialIndex ?? doc.spatialIndex ?? doc._spatialIndex ?? null) : null;
+  const visibleSet =
+    activeSpatialIndex && visibleRect
+      ? visibleNodeIds(doc, visibleRect, activeSpatialIndex)
+      : null;
 
   for (let i = 0; i < doc.nodes.length; i += 1) {
     const node = doc.nodes[i];
     if (paintNodeIds && !paintNodeIds.has(node.id)) continue;
     if (node.id === hiddenNodeId) continue;
+    if (visibleSet && !visibleSet.has(node.id)) continue;
     if (
+      !visibleSet &&
       culledIds?.has(node.id) &&
-      isBoxOffscreen(nodeAABB(node), visibleRect)
+      isBoxOffscreen(nodeVisualAABB(node), visibleRect)
     )
       continue;
     // A hidden folder hides everything inside it, and the folder row itself
@@ -224,6 +236,7 @@ export function draw(
       backdropGeneration: `${docVersion}:${i}`,
       outputKey: `${canvas.width}x${canvas.height}|${fullResolution ? 1 : 0}`,
       selectionTransform: selectionTransformBox,
+      videoFrameOf,
     });
   }
 

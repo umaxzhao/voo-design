@@ -13,6 +13,7 @@
 
 import { assetUrl } from "../asset_url.js";
 import { documentsToScene } from "./skia_scene_adapter.js";
+import { visibleWorldRect } from "./viewport_culling.js";
 
 /** How long a frame waits on pictures before painting without them. */
 const RESOURCE_TIMEOUT_MS = 3000;
@@ -50,8 +51,12 @@ export async function createSkiaHost(canvas) {
   const instance = new core.SkiaRenderer();
   const backend = await instance.initialize(canvas);
 
+  let lastPixelWidth = 0;
+  let lastPixelHeight = 0;
+
   return {
     backend,
+    instance,
 
     /**
      * Hands Skia a typeface. It ships with none, so text draws nothing until
@@ -62,12 +67,22 @@ export async function createSkiaHost(canvas) {
       instance.registerFont(family, bytes);
     },
 
+    /**
+     * Resizes the surface only when physical pixel dimensions change.
+     * Prevents expensive GPU context and surface recreation during pan/zoom.
+     */
     resize(width, height, devicePixelRatio) {
-      instance.resize(width, height, devicePixelRatio);
+      const dpr = devicePixelRatio || 1;
+      const pw = Math.max(1, Math.round(width * dpr));
+      const ph = Math.max(1, Math.round(height * dpr));
+      if (pw === lastPixelWidth && ph === lastPixelHeight) return;
+      lastPixelWidth = pw;
+      lastPixelHeight = ph;
+      instance.resize(width, height, dpr);
     },
 
     /**
-     * Paints the given documents as frames laid out along one axis.
+     * Paints the given documents as frames laid out along one axis or explicit layouts.
      *
      * `revision` only has to change when the scene does; the renderer uses it
      * to decide whether its resource cache is still valid.
@@ -75,22 +90,57 @@ export async function createSkiaHost(canvas) {
     async draw({
       docs,
       viewport,
-      axis,
+      axis = "horizontal",
       resolveImageUrl,
       backgroundColor,
       revision,
+      layouts = null,
+      spatialIndex = null,
     }) {
+      const panX = viewport?.panX ?? viewport?.x ?? 0;
+      const panY = viewport?.panY ?? viewport?.y ?? 0;
+      const zoom = viewport?.zoom ?? 1;
+      const dpr =
+        viewport?.devicePixelRatio ??
+        (typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1);
+
+      const skiaViewport = {
+        x: panX,
+        y: panY,
+        zoom,
+        panX,
+        panY,
+        width: viewport?.width ?? 1024,
+        height: viewport?.height ?? 768,
+        devicePixelRatio: dpr,
+      };
+
+      let visibleRect = null;
+      if (skiaViewport.width && skiaViewport.height) {
+        visibleRect = visibleWorldRect(
+          skiaViewport,
+          skiaViewport.width,
+          skiaViewport.height,
+        );
+      }
+
       const snapshot = {
         revision,
         backgroundColor: backgroundColor ?? "#1c1c1c",
         gridMode: "none",
-        elements: documentsToScene(docs, { axis, resolveImageUrl }),
+        elements: documentsToScene(docs, {
+          axis,
+          resolveImageUrl,
+          layouts,
+          spatialIndex,
+          visibleRect,
+        }),
       };
       instance.updateResources(snapshot);
       // Pictures decode off-thread; drawing before they land paints holes.
       // The wait is bounded so one unreachable picture cannot stall the frame.
       await instance.waitForResources(snapshot, RESOURCE_TIMEOUT_MS);
-      instance.render(snapshot, viewport);
+      instance.render(snapshot, skiaViewport);
       return snapshot;
     },
 

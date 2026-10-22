@@ -2,6 +2,7 @@
 
 import PropTypes from "prop-types";
 import AdjustmentControls from "./adjustment_controls.jsx";
+import AffinityAdjustmentSection from "./affinity_adjustment_section.jsx";
 import AlignSection from "./align_section.jsx";
 import ColourSection from "./colour_section.jsx";
 import CombineSection from "./combine_section.jsx";
@@ -13,7 +14,9 @@ import PuppetPinSection from "./puppet_pin_section.jsx";
 import WarpSection from "./warp_section.jsx";
 import AutoLayoutSection from "./auto_layout_section.jsx";
 import AutoLayoutChildSection from "./auto_layout_child_section.jsx";
+import ConstraintsSection from "./constraints_section.jsx";
 import ColorVariablesSection from "./color_variables_section.jsx";
+import StyleSection from "./style_section.jsx";
 import MediaSection from "./media_section.jsx";
 import {
   isRegionNode,
@@ -27,6 +30,7 @@ export default function PropertiesPanelSections({
   engine,
   parentLayout,
   colorVariableActions,
+  styleActions,
   docSize,
   tool,
   isWarpTool,
@@ -69,8 +73,12 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {!isWarpTool && onLayout ? (
-        <AlignSection count={selectionCount} onLayout={onLayout} />
+      {!isWarpTool && onLayout && object.kind !== "adjustment" ? (
+        <AlignSection
+          count={selectionCount}
+          onLayout={onLayout}
+          selectedNodes={selectedNodes}
+        />
       ) : null}
       {!isWarpTool && onCombine ? (
         <CombineSection
@@ -107,6 +115,19 @@ export default function PropertiesPanelSections({
           selectedNodes={selectedNodes}
           transformActions={transformActions}
         />
+      ) : null}
+
+      {/* Resize constraints: how this node follows its parent's resize. Frames
+          (the page itself) and adjustments/regions/audio have no parent box;
+          an auto-layout flow child is positioned by reflowAutoLayout instead. */}
+      {!isWarpTool &&
+      !object.isFrame &&
+      object.kind !== "adjustment" &&
+      object.kind !== "audio" &&
+      !isRegionNode(object) &&
+      !(parentLayout && object.layoutPosition !== "absolute") &&
+      (selectionCount ?? 1) <= 1 ? (
+        <ConstraintsSection object={object} editAndCommit={editAndCommit} />
       ) : null}
 
 
@@ -155,17 +176,15 @@ export default function PropertiesPanelSections({
       ) : null}
 
       {object.kind === "adjustment" ? (
-        <div className="px-1 py-1 flex flex-col gap-3">
-          <AdjustmentControls
-            kind={object.adjustmentKind ?? "brightness"}
-            adjustments={normalizeAdjustments(object.adjustments)}
-            edit={edit}
-            editAndCommit={editAndCommit}
-            commitNow={commitNow}
-            bitmap={getBitmap?.(object) ?? null}
-            t={t}
-          />
-        </div>
+        <AffinityAdjustmentSection
+          object={object}
+          adjustments={normalizeAdjustments(object.adjustments)}
+          edit={edit}
+          editAndCommit={editAndCommit}
+          commitNow={commitNow}
+          bitmap={getBitmap?.(object) ?? null}
+          t={t}
+        />
       ) : null}
 
       {!isWarpTool && supportsColour(object) ? (
@@ -190,6 +209,20 @@ export default function PropertiesPanelSections({
           onCreate={colorVariableActions.create}
           onBind={colorVariableActions.bind}
           onUpdate={colorVariableActions.update}
+          variablesV2={colorVariableActions.variablesV2 ?? null}
+          variableActions={colorVariableActions.variableActions ?? null}
+        />
+      ) : null}
+
+      {!isWarpTool &&
+      styleActions &&
+      object.kind !== "adjustment" &&
+      !isMedia &&
+      (selectionCount ?? 1) === 1 ? (
+        <StyleSection
+          object={object}
+          styles={styleActions.styles ?? null}
+          styleActions={styleActions.actions ?? null}
         />
       ) : null}
 
@@ -215,6 +248,7 @@ PropertiesPanelSections.propTypes = {
   engine: PropTypes.object,
   parentLayout: PropTypes.object,
   colorVariableActions: PropTypes.object,
+  styleActions: PropTypes.object,
   docSize: PropTypes.object,
   tool: PropTypes.string,
   isWarpTool: PropTypes.bool,

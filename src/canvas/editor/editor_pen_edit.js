@@ -113,32 +113,23 @@ export function createPenEdit({
       };
       return fromNodeLocal(node, local);
     };
-    const unrotated = (anchor, handle) => ({
-      x: node.x + (anchor.x + (handle ? handle[0] : 0)) * scaleX,
-      y: node.y + (anchor.y + (handle ? handle[1] : 0)) * scaleY,
-    });
     let best = null;
     let bestD = Infinity;
     node.points.forEach((anchor, index) => {
       const a = world(anchor);
-      const ua = unrotated(anchor);
-      const da = distance(point, a);
-      const dua = distance(point, ua);
-      const d = Math.min(da, dua);
+      const d = distance(point, a);
       if (d < bestD) {
         bestD = d;
-        best = { anchor, index, handle: null, point: da <= dua ? a : ua };
+        best = { anchor, index, handle: null, point: a };
       }
       for (const key of ["in", "out"]) {
-        if (!anchor[key]) continue;
-        const h = world(anchor, anchor[key]);
-        const uh = unrotated(anchor, anchor[key]);
-        const dh = distance(point, h);
-        const duh = distance(point, uh);
-        const hd = Math.min(dh, duh);
+        const handle = anchor[key];
+        if (!handle || (handle[0] === 0 && handle[1] === 0)) continue;
+        const h = world(anchor, handle);
+        const hd = distance(point, h);
         if (hd < bestD) {
           bestD = hd;
-          best = { anchor, index, handle: key, point: dh <= duh ? h : uh };
+          best = { anchor, index, handle: key, point: h };
         }
       }
     });

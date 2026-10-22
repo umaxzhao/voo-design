@@ -12,4 +12,4 @@ export const HOSTED_SIGNALING_URL = "wss://la.voo.run/collab";
 export const MEDIA_UPLOAD_URL = `${VPS_ORIGIN}/upload`;
 
 /** Hostnames that serve the site itself and therefore have no signalling socket of their own. */
-export const SITE_HOSTNAMES = ["voo.run", "www.voo.run"];
+export const SITE_HOSTNAMES = ["voo.run", "www.voo.run", "la.voo.run"];

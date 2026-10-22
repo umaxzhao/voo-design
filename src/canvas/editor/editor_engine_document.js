@@ -24,6 +24,7 @@ export function createEngineDocumentController({
   let backgroundColor = "#ffffff";
   let guides = [];
   let grid = null;
+  let snappingEnabled = true;
 
   function resizeDocumentEdges(edges, deltaX, deltaY, options) {
     const doc = getDoc();
@@ -78,6 +79,20 @@ export function createEngineDocumentController({
     );
   }
 
+  function updateDocument(patch, options = {}) {
+    const current = getDoc();
+    const next = ops.updateDocument(current, patch);
+    if (patch.backgroundColor !== undefined) {
+      backgroundColor = patch.backgroundColor;
+    }
+    return commitOrPreviewEditorDocument(
+      "editor.document.update",
+      setDoc,
+      next,
+      options,
+    );
+  }
+
   return {
     getBackgroundColor: () => backgroundColor,
     setBackgroundColor: (next) => {
@@ -85,6 +100,7 @@ export function createEngineDocumentController({
       notify();
     },
     setDocumentBackgroundColor,
+    updateDocument,
     resizeDocumentEdges,
     setDocumentSize,
     minDocSize: MIN_DOC_SIZE,
@@ -106,6 +122,18 @@ export function createEngineDocumentController({
       if (d) d.guides = nextGuides ? [...nextGuides] : [];
       requestRender();
       notify();
+    },
+
+    // Snapping
+    getSnappingEnabled: () => snappingEnabled,
+    setSnappingEnabled: (enabled) => {
+      snappingEnabled = Boolean(enabled);
+      notify();
+    },
+    toggleSnapping: () => {
+      snappingEnabled = !snappingEnabled;
+      notify();
+      return snappingEnabled;
     },
 
     // Grid

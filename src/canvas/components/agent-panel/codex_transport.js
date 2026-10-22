@@ -160,9 +160,13 @@ export async function* streamCodexCompletion({
   } finally {
     unsubscribe();
     signal?.removeEventListener("abort", abort);
-    if (!finished || !signal) {
+    // Cancel only an unfinished turn. A completed turn has nothing to tear down,
+    // and a teardown failure after success must not be reported as the turn failing.
+    if (!finished) {
       if (signal) sessions.delete(signal);
       await cancelNativeRequest(entry, failed);
+    } else if (signal) {
+      sessions.delete(signal);
     }
   }
 }

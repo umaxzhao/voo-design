@@ -97,7 +97,12 @@ export function createEngineHistoryState({
       }
     };
     collect(getDoc());
-    for (const snapshot of history.getSnapshots()) {
+    // Only parse and pin recent history snapshots (up to 10 steps) to avoid parsing 50 snapshots
+    // on every edit and to allow LRU eviction of images deleted long ago. Older snapshots restore
+    // on-demand via cache.preload(nodes).
+    const snapshots = history.getSnapshots();
+    const recentSnapshots = snapshots.slice(-10);
+    for (const snapshot of recentSnapshots) {
       try {
         const raw = JSON.parse(snapshot);
         collect(raw?.doc ?? raw);

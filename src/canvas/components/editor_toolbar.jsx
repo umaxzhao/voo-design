@@ -12,6 +12,7 @@ import {
   IconEraser,
   IconGrid3x3,
   IconHistory,
+  IconMagnet,
   IconMinus,
   IconPerspective,
   IconPointer,
@@ -28,6 +29,7 @@ import {
 } from "../icons.jsx";
 import ShapeToolsMenu from "./editor_shape_menu.jsx";
 import EditorMarqueeMenu from "./editor_marquee_menu.jsx";
+import EditorLassoMenu from "./editor_lasso_menu.jsx";
 import EditorHealingMenu from "./editor_healing_menu.jsx";
 import EditorObject3dMenu from "./editor_object3d_menu.jsx";
 import EditorPenMenu from "./editor_pen_menu.jsx";

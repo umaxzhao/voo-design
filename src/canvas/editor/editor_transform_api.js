@@ -140,11 +140,91 @@ export function createTransformApi(deps) {
     return false;
   }
 
+  async function rotateClockwise(targetId = null) {
+    const ids = targetId
+      ? [targetId]
+      : (deps.getSelectedIds?.() ??
+        (deps.getSelectedId?.() ? [deps.getSelectedId()] : []));
+    if (!ids || ids.length === 0) return false;
+    const allPatches = [];
+    for (const id of ids) {
+      const node = findNode(deps.getDoc(), id);
+      if (!node) continue;
+      if (node.kind === NODE_KIND.IMAGE) {
+        const fn =
+          deps.getTransformNodeBitmap?.() ??
+          deps.transformNodeBitmap ??
+          bakeApi.transformNodeBitmap;
+        const res = await fn(id, "rotate90", { commit: false });
+        if (res?.patch) {
+          allPatches.push({ nodeId: id, patch: res.patch });
+        }
+      } else {
+        const curRot = typeof node.rotation === "number" ? node.rotation : 0;
+        const nextRot = (curRot + 90) % 360;
+        allPatches.push({ nodeId: id, patch: { rotation: nextRot } });
+      }
+    }
+    if (allPatches.length === 0) return false;
+    let nextDoc = deps.getDoc();
+    for (const { nodeId, patch } of allPatches) {
+      nextDoc = ops.updateNode(nextDoc, nodeId, patch);
+    }
+    if (nextDoc !== deps.getDoc()) {
+      commitTransformChange(deps.setDoc, nextDoc);
+      deps.requestRender?.();
+      deps.notify?.();
+      return true;
+    }
+    return false;
+  }
+
+  async function rotateCounterClockwise(targetId = null) {
+    const ids = targetId
+      ? [targetId]
+      : (deps.getSelectedIds?.() ??
+        (deps.getSelectedId?.() ? [deps.getSelectedId()] : []));
+    if (!ids || ids.length === 0) return false;
+    const allPatches = [];
+    for (const id of ids) {
+      const node = findNode(deps.getDoc(), id);
+      if (!node) continue;
+      if (node.kind === NODE_KIND.IMAGE) {
+        const fn =
+          deps.getTransformNodeBitmap?.() ??
+          deps.transformNodeBitmap ??
+          bakeApi.transformNodeBitmap;
+        const res = await fn(id, "rotate270", { commit: false });
+        if (res?.patch) {
+          allPatches.push({ nodeId: id, patch: res.patch });
+        }
+      } else {
+        const curRot = typeof node.rotation === "number" ? node.rotation : 0;
+        const nextRot = (curRot - 90 + 360) % 360;
+        allPatches.push({ nodeId: id, patch: { rotation: nextRot } });
+      }
+    }
+    if (allPatches.length === 0) return false;
+    let nextDoc = deps.getDoc();
+    for (const { nodeId, patch } of allPatches) {
+      nextDoc = ops.updateNode(nextDoc, nodeId, patch);
+    }
+    if (nextDoc !== deps.getDoc()) {
+      commitTransformChange(deps.setDoc, nextDoc);
+      deps.requestRender?.();
+      deps.notify?.();
+      return true;
+    }
+    return false;
+  }
+
   return {
     ...bakeApi,
     ...puppetApi,
     ...selectionApi,
     flipHorizontal,
     flipVertical,
+    rotateClockwise,
+    rotateCounterClockwise,
   };
 }

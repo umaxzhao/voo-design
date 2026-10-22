@@ -64,6 +64,16 @@ export const MARQUEE_MODE_IDS = Object.freeze(
   MARQUEE_TOOL_ITEMS.map((item) => item.id),
 );
 
+export const MARQUEE_FAMILY_ITEMS = Object.freeze(
+  MARQUEE_TOOL_ITEMS.filter((item) => item.id === "rect" || item.id === "ellipse"),
+);
+
+export const LASSO_FAMILY_ITEMS = Object.freeze(
+  MARQUEE_TOOL_ITEMS.filter(
+    (item) => item.id === "lasso" || item.id === "poly" || item.id === "magnetic",
+  ),
+);
+
 export function marqueeItemForMode(mode) {
   return MARQUEE_TOOL_ITEMS.find((item) => item.id === mode) ?? null;
 }
@@ -131,18 +141,40 @@ export const TOOL_FAMILIES = {
 
   marquee: {
     id: "marquee",
-    key: "Z",
-    codes: ["KeyZ", "KeyM", "KeyL", "KeyW"],
-    code: "KeyZ",
-    matchTool: (tool) =>
-      [TOOL.MARQUEE, TOOL.LASSO, TOOL.WAND, TOOL.REGION].includes(tool),
-    items: MARQUEE_TOOL_ITEMS,
+    key: "M",
+    codes: ["KeyM"],
+    code: "KeyM",
+    matchTool: (tool) => tool === TOOL.MARQUEE,
+    items: MARQUEE_FAMILY_ITEMS,
     isActiveItem: (item, { tool, marqueeMode }) =>
-      tool === item.toolId &&
-      (item.toolId !== TOOL.MARQUEE || marqueeMode === item.id),
+      tool === TOOL.MARQUEE && marqueeMode === item.id,
     applyItem: (item, { onTool, onMarqueeMode }) => {
-      if (item.toolId === TOOL.MARQUEE) onMarqueeMode?.(item.id);
-      onTool(item.toolId);
+      onMarqueeMode?.(item.id);
+      onTool(TOOL.MARQUEE);
+    },
+  },
+
+  lasso: {
+    id: "lasso",
+    key: "L",
+    codes: ["KeyL"],
+    code: "KeyL",
+    matchTool: (tool) =>
+      tool === TOOL.LASSO ||
+      (tool === TOOL.MARQUEE &&
+        (marqueeMode === "poly" || marqueeMode === "magnetic")),
+    items: LASSO_FAMILY_ITEMS,
+    isActiveItem: (item, { tool, marqueeMode }) =>
+      item.id === "lasso"
+        ? tool === TOOL.LASSO
+        : tool === TOOL.MARQUEE && marqueeMode === item.id,
+    applyItem: (item, { onTool, onMarqueeMode }) => {
+      if (item.id === "lasso") {
+        onTool(TOOL.LASSO);
+      } else {
+        onMarqueeMode?.(item.id);
+        onTool(TOOL.MARQUEE);
+      }
     },
   },
 
@@ -367,8 +399,9 @@ export function getFamilyByCode(code) {
     case "KeyZ":
     case "KeyM":
     case "KeyW":
-    case "KeyL":
       return TOOL_FAMILIES.marquee;
+    case "KeyL":
+      return TOOL_FAMILIES.lasso;
     case "KeyG":
       return TOOL_FAMILIES.fill;
     case "KeyB":

@@ -37,8 +37,47 @@ function nodeIntersectsMarquee(node, rect) {
  * AABB, preventing empty corners from erroneously triggering selection.
  * Locked and hidden nodes are not selectable and never appear.
  */
-export function nodesWithin(doc, rect) {
-  if (!rect || !doc) return [];
+export function nodesWithin(doc, rect, { spatialIndex = null } = {}) {
+  if (!rect || !doc?.nodes || doc.nodes.length === 0) return [];
+
+  const index = spatialIndex ?? doc.spatialIndex ?? doc._spatialIndex;
+  if (index) {
+    const box = {
+      minX: rect.x,
+      minY: rect.y,
+      maxX: rect.x + rect.width,
+      maxY: rect.y + rect.height,
+    };
+    const candidates = index.search(box);
+    if (candidates.length === 0) return [];
+
+    const candidateIdSet = new Set(candidates.map((c) => c.id));
+    if (candidates.length < 100 && doc.nodes.length > 200) {
+      const candidateNodes = [];
+      for (let i = 0; i < doc.nodes.length; i += 1) {
+        const node = doc.nodes[i];
+        if (candidateIdSet.has(node.id)) {
+          candidateNodes.push(node);
+          if (candidateNodes.length === candidateIdSet.size) break;
+        }
+      }
+      return candidateNodes.filter((node) => {
+        if (isGroupNode(node)) return false;
+        if (node.visible === false || node.locked) return false;
+        if (isHiddenByGroup(doc, node) || isLockedByGroup(doc, node)) return false;
+        return nodeIntersectsMarquee(node, rect);
+      });
+    }
+
+    return doc.nodes.filter((node) => {
+      if (!candidateIdSet.has(node.id)) return false;
+      if (isGroupNode(node)) return false;
+      if (node.visible === false || node.locked) return false;
+      if (isHiddenByGroup(doc, node) || isLockedByGroup(doc, node)) return false;
+      return nodeIntersectsMarquee(node, rect);
+    });
+  }
+
   return doc.nodes.filter((node) => {
     if (isGroupNode(node)) return false;
     if (node.visible === false || node.locked) return false;

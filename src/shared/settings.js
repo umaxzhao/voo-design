@@ -39,6 +39,15 @@ const STORAGE_KEYS = [
   "voo.globalMemory.preferences",
   "voo.onboarding.completedVersion",
   "voo.agent.experimental.antigravity",
+  "voo.workspace.path",
+  "voo.workspace.type",
+  "voo.workspace.name",
+  "voo.workspace.lastScannedAt",
+  // Canvas view aids: the ruler overlay, its guides, and whether dragging
+  // snaps to the document grid. Read synchronously by the pointer handlers.
+  "voo.editor.showRulers",
+  "voo.editor.showGuides",
+  "voo.editor.snapToGrid",
 ];
 
 const cache = new Map();

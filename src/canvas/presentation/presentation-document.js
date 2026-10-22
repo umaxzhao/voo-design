@@ -1,4 +1,5 @@
-import { NODE_TYPE } from "../nodes/types.js";
+/** Page type of an image-editor page in a presentation document. */
+const IMAGE_EDITOR_PAGE_TYPE = "imageAsset";
 
 const PRESENTATION_VERSION = 1;
 
@@ -61,7 +62,7 @@ export function getPresentationPages(nodes, ownerId) {
       throw new Error("Presentation owner cannot be a page");
     const page = byId.get(pageId);
     if (!page) throw new Error(`Presentation page not found: ${pageId}`);
-    if (page.type !== NODE_TYPE.IMAGE_EDITOR) {
+    if (page.type !== IMAGE_EDITOR_PAGE_TYPE) {
       throw new Error(`Presentation page is not a Design node: ${pageId}`);
     }
     if (page.data?.presentationOwnerId !== ownerId) {

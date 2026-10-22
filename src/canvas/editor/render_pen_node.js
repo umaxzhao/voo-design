@@ -19,9 +19,23 @@ import { arrowheadSize } from "./render_path_node.js";
  * being a straight line. Shared by the fill/stroke pass and by the selection
  * tint, which re-strokes the same outline in green.
  */
+// Outlines are rebuilt only when the anchors or the box they are scaled into
+// change. Pan and zoom reuse the cached Path2D, which is what a pen node draws.
+const outlineCache = new WeakMap();
+
 export function penOutlinePath(node) {
   const points = node.points;
   if (!points || points.length === 0) return new Path2D();
+  const signature = `${node.x},${node.y},${node.width},${node.height},${node.baseWidth},${node.baseHeight}`;
+  const cached = outlineCache.get(points);
+  if (cached && cached.signature === signature) return cached.path;
+  const path = buildPenOutline(node);
+  outlineCache.set(points, { signature, path });
+  return path;
+}
+
+function buildPenOutline(node) {
+  const points = node.points;
 
   const scaleX = node.baseWidth ? node.width / node.baseWidth : 1;
   const scaleY = node.baseHeight ? node.height / node.baseHeight : 1;

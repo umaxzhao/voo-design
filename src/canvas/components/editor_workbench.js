@@ -32,26 +32,6 @@ export const WORKBENCHES = Object.freeze({
     timelineInspector: false,
     wideLayersRail: false,
   }),
-  [CANVAS_TYPE.MOTION]: Object.freeze({
-    timelineOpen: true,
-    inspectorAlwaysOpen: true,
-    toolbar: "motion",
-    subbar: true,
-    pieMenu: true,
-    sceneInspector: false,
-    timelineInspector: true,
-    wideLayersRail: true,
-  }),
-  [CANVAS_TYPE.THREE_D]: Object.freeze({
-    timelineOpen: true,
-    inspectorAlwaysOpen: true,
-    toolbar: "three",
-    subbar: false,
-    pieMenu: false,
-    sceneInspector: true,
-    timelineInspector: false,
-    wideLayersRail: true,
-  }),
 });
 
 /** Unknown types fail loudly: a silent design fallback would hide bad data. */

@@ -4,7 +4,7 @@
 
 import { constrainAxisDelta } from "./axis_constraint.js";
 import { DRAG_SLOP_PX } from "./editor_constants.js";
-import { snapNodeBounds } from "./scene_snapping.js";
+import { editorSnapOptions, snapNodeBounds } from "./scene_snapping.js";
 import {
   combinedBounds,
   cornerRadiusInwardDirection,
@@ -17,7 +17,6 @@ import {
   normalizeCornerRadius,
   resolveCornerRadii,
 } from "./scene_model_core.js";
-import { positionPatchAtPlayhead } from "./editor_pointer_motion.js";
 import {
   dragGradientEndpoint,
   dragGradientLine,
@@ -331,7 +330,7 @@ export function createPointerMoveDispatcher({
             break;
           }
           const doc = api.getDocument();
-          const visibleDoc = api.getEvaluatedDocument?.() ?? doc;
+          const visibleDoc = doc;
           const moved = gesture.origins.flatMap((origin) => {
             const savedNode = doc.nodes.find((each) => each.id === origin.id);
             const visibleNode = visibleDoc.nodes.find(
@@ -354,7 +353,9 @@ export function createPointerMoveDispatcher({
             nodeAABB({ ...entry.node, x: entry.x, y: entry.y }),
           );
           const bounds = combinedBounds(boxes);
-          const bypassSnap = Boolean(event.metaKey || event.ctrlKey);
+          const bypassSnap =
+            Boolean(event.metaKey || event.ctrlKey) ||
+            api.getSnappingEnabled?.() === false;
           const snap = bypassSnap
             ? { x: bounds.x, y: bounds.y, guides: [] }
             : snapNodeBounds({
@@ -362,58 +363,30 @@ export function createPointerMoveDispatcher({
                 activeIds: gesture.origins.map((origin) => origin.id),
                 rect: bounds,
                 zoom,
+                // Grid snapping is unreachable without this: the flag lives in
+                // settings and the grid overlay supplies type/size.
+                options: editorSnapOptions({
+                  grid: api.getGrid?.() ?? null,
+                  activeSnap: Boolean(gesture.activeSnap),
+                }),
               });
+          gesture.activeSnap = Boolean(snap.guides && snap.guides.length > 0);
           const correctionX = snap.x - bounds.x;
           const correctionY = snap.y - bounds.y;
-          for (const entry of moved) {
-            api.updateNode(
-              entry.node.id,
-              positionPatchAtPlayhead(
-                entry.savedNode,
-                entry.node,
-                { x: entry.x + correctionX, y: entry.y + correctionY },
-                gesture.time,
-                gesture.fps,
-              ),
-              { commit: false },
-            );
-          }
+          const updates = moved.map((entry) => ({
+            id: entry.node.id,
+            x: entry.x + correctionX,
+            y: entry.y + correctionY,
+          }));
+          api.updateNodes(updates, { commit: false, preview: true });
           api.setGuides(snap.guides);
         } else {
-          const savedNode = api
-            .getDocument()
-            .nodes.find((node) => node.id === gesture.id);
-          const hasPositionTrack = savedNode?.animations?.some(
-            (track) =>
-              (track.property === "x" || track.property === "y") &&
-              track.keyframes?.length,
-          );
-          if (hasPositionTrack) {
-            const visibleNode = api
-              .getEvaluatedDocument()
-              .nodes.find((node) => node.id === gesture.id);
-            if (visibleNode) {
-              api.updateNode(
-                gesture.id,
-                positionPatchAtPlayhead(
-                  savedNode,
-                  visibleNode,
-                  {
-                    x: visibleNode.x + point.x - gesture.lastX,
-                    y: visibleNode.y + point.y - gesture.lastY,
-                  },
-                  gesture.time,
-                  gesture.fps,
-                ),
-                { commit: false },
-              );
-            }
-          } else {
+          {
             api.moveNodeBy(
               gesture.id,
               point.x - gesture.lastX,
               point.y - gesture.lastY,
-              { commit: false },
+              { commit: false, preview: true },
             );
           }
         }

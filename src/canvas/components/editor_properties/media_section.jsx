@@ -1,10 +1,6 @@
 import { EDITOR_BETA_ENABLED } from "../../editor-beta-features.js";
 import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
-import { useMotionField } from "../editor_motion/motion-field-context.jsx";
-import MotionKeyframeControls from "../editor_motion/motion_keyframe_controls.jsx";
-import { retimeVideoClipPatch } from "../editor_motion/motion-clip-edit.js";
-import { normalizeTimeline } from "../../editor/scene-motion.js";
 import { CollapsibleSection, fieldClass } from "./property_section.jsx";
 
 const NUMBER_FIELDS = {
@@ -39,7 +35,6 @@ const NUMBER_FIELDS = {
 };
 
 function NumberField({
-  motionProperty,
   label,
   value,
   min,
@@ -50,8 +45,7 @@ function NumberField({
   onCommit,
   t,
 }) {
-  const field = useMotionField(motionProperty, value, onChange, onCommit);
-  const displayValue = field.value;
+  const displayValue = value;
   const [draft, setDraft] = useState(
     displayValue == null ? "" : String(displayValue),
   );
@@ -75,7 +69,7 @@ function NumberField({
           const raw = event.target.value;
           setDraft(raw);
           if (nullable && raw === "") {
-            field.onChange(null);
+            onChange(null);
             return;
           }
           const next = Number(raw);
@@ -85,30 +79,23 @@ function NumberField({
             next >= min &&
             next <= max
           ) {
-            field.onChange(next);
+            onChange(next);
           }
         }}
         onBlur={() => {
           setDraft(displayValue == null ? "" : String(displayValue));
-          field.onCommit?.();
+          onCommit?.();
         }}
         onKeyDown={(event) => {
           event.stopPropagation();
           if (event.key === "Enter") event.currentTarget.blur();
         }}
       />
-      {field.motion ? (
-        <MotionKeyframeControls
-          property={motionProperty}
-          motion={field.motion}
-        />
-      ) : null}
     </div>
   );
 }
 
 NumberField.propTypes = {
-  motionProperty: PropTypes.string,
   label: PropTypes.string.isRequired,
   value: PropTypes.number,
   min: PropTypes.number.isRequired,
@@ -127,12 +114,10 @@ function MediaFields({
   onCommit,
   t,
   nullableField = null,
-  motionPrefix = null,
 }) {
   return fields.map(([key, label, min, max, step]) => (
     <NumberField
       key={key}
-      motionProperty={motionPrefix ? `${motionPrefix}.${key}` : undefined}
       label={label}
       value={values?.[key] ?? null}
       min={min}
@@ -147,7 +132,6 @@ function MediaFields({
 }
 
 MediaFields.propTypes = {
-  motionPrefix: PropTypes.string,
   fields: PropTypes.array.isRequired,
   values: PropTypes.object,
   onChange: PropTypes.func.isRequired,
@@ -186,27 +170,6 @@ export default function MediaSection({
     const next = { ...current.media, [key]: value };
     if (next.outPoint !== null && next.outPoint <= (next.inPoint ?? 0)) {
       setFieldError(t("editor.media.invalidTrim"));
-      return;
-    }
-    if (key === "speed" && engine) {
-      try {
-        // A design canvas has no timeline of its own; use the default span.
-        const { duration } = normalizeTimeline(engine.getDocument().timeline);
-        const mediaDuration = engine.getMediaPlaybackMetadata(
-          object.id,
-        )?.duration;
-        const patch = retimeVideoClipPatch(
-          current,
-          value,
-          duration,
-          mediaDuration,
-        );
-        setFieldError(null);
-        edit(patch);
-      } catch (cause) {
-        if (!(cause instanceof RangeError)) throw cause;
-        setFieldError(t("editor.media.speedExceedsDuration"));
-      }
       return;
     }
     setFieldError(null);
@@ -293,14 +256,12 @@ export default function MediaSection({
         <div className="flex flex-col gap-2">
           <MediaFields
             fields={NUMBER_FIELDS.rotation}
-            motionPrefix="model.rotation"
             values={model.rotation}
             onChange={(key, value) => patchNested("rotation", key, value)}
             onCommit={commitNow}
             t={t}
           />
           <NumberField
-            motionProperty="model.scale"
             label="editor.media.scale"
             value={model.scale ?? 1}
             min={0.01}
@@ -312,7 +273,6 @@ export default function MediaSection({
           />
           <MediaFields
             fields={NUMBER_FIELDS.camera}
-            motionPrefix="model.camera"
             values={model.camera}
             onChange={(key, value) => patchNested("camera", key, value)}
             onCommit={commitNow}
@@ -343,7 +303,6 @@ export default function MediaSection({
             t={t}
           />
           <NumberField
-            motionProperty="model.exposure"
             label="editor.media.exposure"
             value={model.exposure ?? 1}
             min={0}

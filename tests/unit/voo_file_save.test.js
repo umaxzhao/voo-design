@@ -13,6 +13,7 @@ if (!globalThis.document) {
 import { useDesignStore } from "../../src/store/design_store.js";
 import { saveVooProject, openVooProject } from "../../src/canvas/store/project_io.js";
 import { isValidVooFile } from "../../electron/voo_format.js";
+import { decodeVooBinary, isVooBinary } from "../../src/canvas/store/voo_binary.js";
 import { useEditorAutosave } from "../../src/canvas/components/editor_hooks/use_editor_autosave.js";
 
 describe("Photoshop-style .voo File Save Mechanism", () => {
@@ -83,9 +84,9 @@ describe("Photoshop-style .voo File Save Mechanism", () => {
 
     window.electronAPI = {
       saveFileDialog: vi.fn().mockResolvedValue("/Users/test/Documents/MyDesign.voo"),
-      writeFile: vi.fn().mockImplementation(async (path, content) => {
+      writeFileBytes: vi.fn().mockImplementation(async (path, bytes) => {
         writtenPath = path;
-        writtenContent = content;
+        writtenContent = bytes;
         return true;
       }),
     };
@@ -101,10 +102,11 @@ describe("Photoshop-style .voo File Save Mechanism", () => {
         filters: [{ name: "VOO Design Document", extensions: ["voo"] }],
       }),
     );
-    expect(window.electronAPI.writeFile).toHaveBeenCalled();
+    expect(window.electronAPI.writeFileBytes).toHaveBeenCalled();
     expect(writtenPath).toBe("/Users/test/Documents/MyDesign.voo");
 
-    const parsed = JSON.parse(writtenContent);
+    expect(isVooBinary(writtenContent)).toBe(true);
+    const parsed = decodeVooBinary(writtenContent);
     expect(isValidVooFile(parsed)).toBe(true);
     expect(parsed.format).toBe("voo-editor");
     expect(parsed.version).toBe(2);
@@ -125,7 +127,7 @@ describe("Photoshop-style .voo File Save Mechanism", () => {
 
     window.electronAPI = {
       saveFileDialog: vi.fn(),
-      writeFile: vi.fn().mockResolvedValue(true),
+      writeFileBytes: vi.fn().mockResolvedValue(true),
     };
 
     const res = await saveVooProject({
@@ -134,9 +136,9 @@ describe("Photoshop-style .voo File Save Mechanism", () => {
     });
 
     expect(window.electronAPI.saveFileDialog).not.toHaveBeenCalled();
-    expect(window.electronAPI.writeFile).toHaveBeenCalledWith(
+    expect(window.electronAPI.writeFileBytes).toHaveBeenCalledWith(
       "/Users/test/Documents/MyDesign.voo",
-      expect.any(String),
+      expect.any(Uint8Array),
     );
     expect(useDesignStore.getState().isDirty).toBe(false);
   });
@@ -150,7 +152,7 @@ describe("Photoshop-style .voo File Save Mechanism", () => {
 
     window.electronAPI = {
       saveFileDialog: vi.fn().mockResolvedValue("/Users/test/Documents/Copy.voo"),
-      writeFile: vi.fn().mockResolvedValue(true),
+      writeFileBytes: vi.fn().mockResolvedValue(true),
     };
 
     const res = await saveVooProject({
@@ -159,9 +161,9 @@ describe("Photoshop-style .voo File Save Mechanism", () => {
     });
 
     expect(window.electronAPI.saveFileDialog).toHaveBeenCalled();
-    expect(window.electronAPI.writeFile).toHaveBeenCalledWith(
+    expect(window.electronAPI.writeFileBytes).toHaveBeenCalledWith(
       "/Users/test/Documents/Copy.voo",
-      expect.any(String),
+      expect.any(Uint8Array),
     );
     expect(useDesignStore.getState().filePath).toBe("/Users/test/Documents/Copy.voo");
     expect(useDesignStore.getState().fileName).toBe("Copy.voo");
@@ -199,9 +201,10 @@ describe("Photoshop-style .voo File Save Mechanism", () => {
       assets: {},
     };
 
+    // Legacy JSON .voo files stay readable next to the binary container.
     const file = {
       name: "PosterProject.voo",
-      text: async () => JSON.stringify(testVooData),
+      arrayBuffer: async () => new TextEncoder().encode(JSON.stringify(testVooData)).buffer,
     };
 
     const res = await openVooProject({
@@ -216,5 +219,29 @@ describe("Photoshop-style .voo File Save Mechanism", () => {
     expect(updated.nodes[1].data.label).toBe("Mobile Variant");
     expect(updated.fileName).toBe("PosterProject.voo");
     expect(updated.isDirty).toBe(false);
+  });
+
+  it("saves a binary .voo and opens the same bytes back to the same pages", async () => {
+    let savedBytes = null;
+    window.electronAPI = {
+      saveFileDialog: vi.fn().mockResolvedValue("/Users/test/Documents/RoundTrip.voo"),
+      writeFileBytes: vi.fn().mockImplementation(async (_path, bytes) => {
+        savedBytes = bytes;
+        return true;
+      }),
+    };
+    await saveVooProject({ store: useDesignStore.getState(), saveAs: false });
+    const pagesBefore = useDesignStore.getState().nodes.length;
+
+    useDesignStore.setState({ nodes: [], editingNodeIds: [], editingNodeId: null });
+    const file = {
+      name: "RoundTrip.voo",
+      arrayBuffer: async () => savedBytes.buffer.slice(savedBytes.byteOffset, savedBytes.byteOffset + savedBytes.byteLength),
+    };
+    const res = await openVooProject({ store: useDesignStore.getState(), fileOrPath: file });
+
+    expect(res.success).toBe(true);
+    expect(useDesignStore.getState().nodes).toHaveLength(pagesBefore);
+    expect(useDesignStore.getState().nodes[0].data.editorDoc.nodes).toHaveLength(1);
   });
 });

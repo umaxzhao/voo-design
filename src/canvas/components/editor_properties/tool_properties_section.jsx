@@ -18,6 +18,8 @@ import EyedropperProperties from "./eyedropper_properties.jsx";
 import PenProperties from "./pen_properties.jsx";
 import ShapeProperties from "./shape_properties.jsx";
 import CropProperties from "./crop_properties.jsx";
+import TextToolProperties from "./text_tool_properties.jsx";
+import GradientProperties from "./gradient_properties.jsx";
 
 export {
   ToolColorProperties,
@@ -29,6 +31,8 @@ export {
   PenProperties,
   ShapeProperties,
   CropProperties,
+  TextToolProperties,
+  GradientProperties,
 };
 
 export default function ToolPropertiesSection({
@@ -142,6 +146,52 @@ export default function ToolPropertiesSection({
   onLassoKeepInside,
   onLassoCancel,
   swapColorsRef = null,
+  // Text tool props (Affinity Style)
+  fontFamily,
+  onFontFamily,
+  fontWeight,
+  onFontWeight,
+  fontSize,
+  onFontSize,
+  italic,
+  onItalic,
+  underline,
+  onUnderline,
+  align,
+  onAlign,
+  lineHeight,
+  onLineHeight,
+  letterSpacing,
+  onLetterSpacing,
+  // Shape tool props (Affinity Style)
+  strokeWidth,
+  onStrokeWidth,
+  strokeStyle,
+  onStrokeStyle,
+  cornerRadius,
+  onCornerRadius,
+  cornerType,
+  onCornerType,
+  sides,
+  onSides,
+  starRatio,
+  onStarRatio,
+  arrowStart,
+  onArrowStart,
+  arrowEnd,
+  onArrowEnd,
+  arrowSize,
+  onArrowSize,
+  // Fill & Gradient props (Affinity Style)
+  gradientType,
+  onGradientType,
+  fillTolerance,
+  onFillTolerance,
+  fillContiguous,
+  onFillContiguous,
+  fillSampleAll,
+  onFillSampleAll,
+  onReverseGradient,
 }) {
   const isSelectionTool =
     tool === TOOL.MARQUEE ||
@@ -164,13 +214,22 @@ export default function ToolPropertiesSection({
   const isPen =
     tool === TOOL.PEN || tool === TOOL.CURVATURE_PEN || tool === TOOL.FREE_PEN;
   const isArrow = tool === TOOL.ARROW;
+  const isShape =
+    tool === TOOL.RECT ||
+    tool === TOOL.ELLIPSE ||
+    tool === TOOL.POLYGON ||
+    tool === TOOL.STAR ||
+    tool === TOOL.LINE ||
+    tool === TOOL.ARROW;
   const isWand = tool === TOOL.WAND;
   const isDropper = tool === TOOL.DROPPER;
   const isCrop = tool === TOOL.CROP;
 
   const hasColor =
     (tool === TOOL.BRUSH && brushModeHasColor(brushMode)) ||
-    tool === TOOL.ARROW ||
+    isShape ||
+    isPen ||
+    tool === TOOL.TEXT ||
     tool === TOOL.FILL ||
     tool === TOOL.GRADIENT;
   const showBrushPresets =
@@ -189,12 +248,52 @@ export default function ToolPropertiesSection({
         />
       )}
 
-      {/* 2. Shape / Arrow properties */}
-      {isArrow && (
+      {/* 2. Shape / Arrow properties (Affinity Style) */}
+      {isShape && (
         <ShapeProperties
           tool={tool}
           brushWidth={brushWidth}
           onBrushWidth={onBrushWidth}
+          strokeWidth={strokeWidth}
+          onStrokeWidth={onStrokeWidth}
+          strokeStyle={strokeStyle}
+          onStrokeStyle={onStrokeStyle}
+          cornerRadius={cornerRadius}
+          onCornerRadius={onCornerRadius}
+          cornerType={cornerType}
+          onCornerType={onCornerType}
+          sides={sides}
+          onSides={onSides}
+          starRatio={starRatio}
+          onStarRatio={onStarRatio}
+          arrowStart={arrowStart}
+          onArrowStart={onArrowStart}
+          arrowEnd={arrowEnd}
+          onArrowEnd={onArrowEnd}
+          arrowSize={arrowSize}
+          onArrowSize={onArrowSize}
+        />
+      )}
+
+      {/* 2b. Text Tool Typography properties (Affinity Style) */}
+      {tool === TOOL.TEXT && (
+        <TextToolProperties
+          fontFamily={fontFamily}
+          onFontFamily={onFontFamily}
+          fontWeight={fontWeight}
+          onFontWeight={onFontWeight}
+          fontSize={fontSize}
+          onFontSize={onFontSize}
+          italic={italic}
+          onItalic={onItalic}
+          underline={underline}
+          onUnderline={onUnderline}
+          align={align}
+          onAlign={onAlign}
+          lineHeight={lineHeight}
+          onLineHeight={onLineHeight}
+          letterSpacing={letterSpacing}
+          onLetterSpacing={onLetterSpacing}
         />
       )}
 
@@ -348,6 +447,22 @@ export default function ToolPropertiesSection({
           onApplyDestructiveCrop={onApplyDestructiveCrop}
           onCancelCrop={onCancelCrop}
           imageCropMode={imageCropMode}
+        />
+      )}
+
+      {/* 8. Fill & Gradient Options (Affinity Style) */}
+      {(tool === TOOL.FILL || tool === TOOL.GRADIENT) && (
+        <GradientProperties
+          tool={tool}
+          gradientType={gradientType}
+          onGradientType={onGradientType}
+          fillTolerance={fillTolerance}
+          onFillTolerance={onFillTolerance}
+          fillContiguous={fillContiguous}
+          onFillContiguous={onFillContiguous}
+          fillSampleAll={fillSampleAll}
+          onFillSampleAll={onFillSampleAll}
+          onReverseGradient={onReverseGradient}
         />
       )}
     </div>

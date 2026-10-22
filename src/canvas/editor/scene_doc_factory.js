@@ -11,8 +11,6 @@ export const DOC_VERSION = 2;
 // Canvas type is additive in v2 so previously saved documents remain readable.
 export const CANVAS_TYPE = Object.freeze({
   DESIGN: "design",
-  MOTION: "motion",
-  THREE_D: "3d",
 });
 
 export const NODE_KIND = Object.freeze({
@@ -25,11 +23,8 @@ export const NODE_KIND = Object.freeze({
   BOOLEAN: "boolean",
   GROUP: "group",
   ADJUSTMENT: "adjustment",
+  /** Footage on the canvas: a playable video layer with its own frame. */
   VIDEO: "video",
-  /** Sound with a clip span but no box: it is drawn and hit-tested nowhere. */
-  AUDIO: "audio",
-  MODEL_3D: "model3d",
-  MESH_3D: "mesh3d",
   CANVAS_INSTANCE: "canvasInstance",
 });
 

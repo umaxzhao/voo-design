@@ -140,7 +140,7 @@ export function boxBlur(src, width, height, radius) {
  * @param {number} offsetY light shift, px
  * @param {number} blur softness radius, px
  */
-export function buildInnerShadow(alpha, width, height, offsetX, offsetY, blur) {
+export function buildInnerShadow(alpha, width, height, offsetX, offsetY, blur, spread = 0) {
   const size = width * height;
   const dx = Math.round(offsetX);
   const dy = Math.round(offsetY);
@@ -164,10 +164,15 @@ export function buildInnerShadow(alpha, width, height, offsetX, offsetY, blur) {
   }
   if (!any) return null;
   const blurred = blur > 0 ? boxBlur(crisp, width, height, blur) : crisp;
+  // Spread is the share of the band that stays solid instead of fading out:
+  // 0 keeps the blur as it is, 100 keeps the crisp band. Approximates Figma's
+  // inner spread, which widens the solid part of the shadow.
+  const solid = Math.min(1, Math.max(0, spread / 100));
   const out = new Uint8Array(size);
   for (let i = 0; i < size; i += 1) {
     // Clip to the shape and scale back to a byte.
-    const v = (blurred[i] * alpha[i]) / 255;
+    const mixed = blurred[i] + (crisp[i] - blurred[i]) * solid;
+    const v = (mixed * alpha[i]) / 255;
     out[i] = Math.min(255, Math.round(v));
   }
   return out;

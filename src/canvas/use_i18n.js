@@ -7,8 +7,19 @@ import { getLocale, onLocaleChange, t, toggleLocale } from "../shared/i18n.js";
  */
 export function useI18n() {
   const [locale, setLocaleState] = useState(getLocale);
+  // The full dictionary can finish loading after first paint without changing
+  // the locale name, so a plain setState would bail out and keep raw keys on
+  // screen. Bump a counter on every notification to force a re-render.
+  const [, setRevision] = useState(0);
 
-  useEffect(() => onLocaleChange(setLocaleState), []);
+  useEffect(
+    () =>
+      onLocaleChange((next) => {
+        setLocaleState(next);
+        setRevision((revision) => revision + 1);
+      }),
+    [],
+  );
 
   return { t, locale, toggleLocale };
 }

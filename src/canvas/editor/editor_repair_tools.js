@@ -5,15 +5,10 @@
  * Every stroke rasterizes a mask from the pointer path, clips it to the
  * active pixel selection (a hard boundary for every pixel tool here), then
  * hands source+mask to the matching pure algorithm in local_inpaint.js /
- * local_ai_repair.js. AI Repair emits a generated-output result to its owner;
- * deterministic tools still commit ordinary local bitmap edits directly.
+ * local_ai_repair.js. Every tool commits its result as an ordinary local bitmap edit.
  */
 import { findNode, NODE_KIND } from "./scene_model.js";
 import { clipMaskToSelection } from "./pixel_selection.js";
-import {
-  createEditorGeneratedOutput,
-  EDITOR_GENERATED_OPERATION,
-} from "./editor_generated_output.js";
 import { createRepairHealingTools } from "./repair_tools_healing.js";
 import { toNodeLocal } from "./scene_geometry.js";
 
@@ -24,12 +19,9 @@ export function createRepairTools({
   cache,
   getPixelSelection,
   getAiRepairDownload,
-  getSourceSnapshot,
-  onGeneratedOutput,
   setAiRepairDownload,
   setBitmapPreview,
   replaceNodeBitmap,
-  sourceWorkflowNodeId,
   isDisposed,
   requestRender,
   notify,
@@ -149,7 +141,6 @@ export function createRepairTools({
     const doc = getDoc();
     const node = findNode(doc, nodeId);
     if (!node || node.kind !== NODE_KIND.IMAGE) return false;
-    const sourceSnapshot = getSourceSnapshot();
     const bitmap = cache.get(node);
     if (!bitmap) return false;
 
@@ -248,22 +239,9 @@ export function createRepairTools({
     }
     if (!repairedDataUrl) return false;
 
-    const effectiveWorkflowNodeId = sourceWorkflowNodeId || nodeId;
-    const result = createEditorGeneratedOutput({
-      dataUrl: repairedDataUrl,
-      operation: EDITOR_GENERATED_OPERATION.AI_REPAIR,
-      parameters: {
-        diameter,
-        points: docPoints.map((point) => ({ x: point.x, y: point.y })),
-      },
-      sourceSceneNodeId: nodeId,
-      sourceSnapshot,
-      sourceWorkflowNodeId: effectiveWorkflowNodeId,
-    });
-    if (typeof onGeneratedOutput === "function") {
-      await onGeneratedOutput(result);
-    }
-    return result;
+    // Write back in place, like Spot. The generated-output sink is a no-op in the
+    // design store, so routing the result there silently discarded the repair.
+    return await replaceNodeBitmap(nodeId, repairedDataUrl);
   }
 
   /** Downloads AI Repair on explicit user confirmation, then resumes its stroke. */

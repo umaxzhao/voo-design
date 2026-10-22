@@ -195,13 +195,6 @@ function ImageThumb({ object, getBitmap = null, className }) {
           draggable={false}
           className="h-full w-full object-cover"
         />
-      ) : object.kind === NODE_KIND.VIDEO ||
-        object.kind === NODE_KIND.MODEL_3D ? (
-        object.kind === NODE_KIND.VIDEO ? (
-          <IconVideo size={12} strokeWidth={1.5} />
-        ) : (
-          <IconBox3 size={12} strokeWidth={1.5} />
-        )
       ) : null}
     </div>
   );
@@ -359,23 +352,9 @@ export default function EditorLayerThumb({ object, getBitmap = null }) {
 
   switch (object.kind) {
     case NODE_KIND.IMAGE:
-    case NODE_KIND.VIDEO:
-    case NODE_KIND.MODEL_3D:
       return (
         <ImageThumb object={object} getBitmap={getBitmap} className={tile} />
       );
-    case NODE_KIND.MESH_3D: {
-      const geoType = object.geometry?.type ?? "box";
-      const Glyph = MESH_3D_ICONS[geoType] ?? IconBox3;
-      return (
-        <div
-          data-media-placeholder
-          className={`${tile} bg-neutral-800 text-neutral-300`}
-        >
-          <Glyph size={12} strokeWidth={1.5} />
-        </div>
-      );
-    }
     case NODE_KIND.TEXT:
       return (
         <div className={`${tile} bg-neutral-800`}>
@@ -420,17 +399,6 @@ export default function EditorLayerThumb({ object, getBitmap = null }) {
           className={`${tile} bg-neutral-800 text-neutral-300`}
         >
           <IconBrush size={11} />
-        </div>
-      );
-    case NODE_KIND.AUDIO:
-      // Sound has no bitmap and no box, so the row carries the glyph that
-      // says what it is instead of an empty tile.
-      return (
-        <div
-          data-media-placeholder
-          className={`${tile} bg-neutral-800 text-neutral-300`}
-        >
-          <IconMusic size={11} strokeWidth={1.5} />
         </div>
       );
     case NODE_KIND.REGION: {

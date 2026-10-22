@@ -21,7 +21,6 @@ import { createRegionExport } from "./editor_export_regions.js";
 import { normalizeImageCrop } from "./image_layer_crop.js";
 import {
   expandInstancesForRaster,
-  expandInstancesForRasterAsync,
 } from "./editor_export_instances.js";
 import {
   renderSelectionPng,
@@ -45,7 +44,7 @@ export function createExport({
    * sampler wants the pixels themselves. Encoding to PNG only to decode it
    * again would be the same picture, slower.
    */
-  function renderPngCanvas(doc, scale, instanceBitmaps) {
+  function renderPngCanvas(doc, scale) {
     // A non-destructive crop exports the visible page: the output is the crop
     // rect's size, rendered through the same page the stage shows.
     const page = effectivePage(doc);
@@ -75,8 +74,7 @@ export function createExport({
       // The live paint canvas when a stroke is mid-persist, the decoded
       // bitmap otherwise — exactly what the stage composes with.
       bitmapOf: (node) =>
-        instanceBitmaps.get(node.id) ??
-        (bitmapSourceOf ? bitmapSourceOf(node) : cache.get(node)),
+        bitmapSourceOf ? bitmapSourceOf(node) : cache.get(node),
       maskOf: maskSourceOf,
       glRenderer,
       // Never the preview resolution: an export renders every bitmap at its
@@ -87,30 +85,12 @@ export function createExport({
   }
 
   function exportPngCanvas(scale = 1, canvasResolver = resolveCanvas) {
-    const instanceBitmaps = new Map();
-    const doc = expandInstancesForRaster(
-      getDoc(),
-      canvasResolver,
-      instanceBitmaps,
-      scale,
-    );
-    return renderPngCanvas(doc, scale, instanceBitmaps);
+    const doc = expandInstancesForRaster(getDoc(), canvasResolver);
+    return renderPngCanvas(doc, scale);
   }
 
-  async function exportPngCanvasAsync(
-    scale = 1,
-    canvasResolver = resolveCanvas,
-    frameTime = 0,
-  ) {
-    const instanceBitmaps = new Map();
-    const doc = await expandInstancesForRasterAsync(
-      getDoc(),
-      canvasResolver,
-      instanceBitmaps,
-      scale,
-      frameTime,
-    );
-    return renderPngCanvas(doc, scale, instanceBitmaps);
+  function exportPngCanvasAsync(scale = 1, canvasResolver = resolveCanvas) {
+    return exportPngCanvas(scale, canvasResolver);
   }
 
   function exportPng() {
@@ -273,17 +253,14 @@ export function createExport({
     const selected = selectedExportNodes(doc, ids);
     const bounds = selectionBounds(selected);
     if (!bounds) return null;
-    const instanceBitmaps = new Map();
     const expanded = expandInstancesForRaster(
       { ...doc, nodes: selected },
       options.resolveCanvas ?? resolveCanvas,
-      instanceBitmaps,
-      Number.isFinite(options.scale) && options.scale > 0 ? options.scale : 1,
     );
     const nodes = expanded.nodes.filter((node) =>
       RENDERABLE_KINDS.has(node.kind),
     );
-    return renderSelectionPng(doc, nodes, bounds, options, instanceBitmaps, {
+    return renderSelectionPng(doc, nodes, bounds, options, {
       bitmapSourceOf,
       cache,
       maskSourceOf,
@@ -296,17 +273,14 @@ export function createExport({
     const selected = selectedExportNodes(doc, ids);
     const bounds = selectionBounds(selected);
     if (!bounds) return null;
-    const instanceBitmaps = new Map();
-    const expanded = await expandInstancesForRasterAsync(
+    const expanded = expandInstancesForRaster(
       { ...doc, nodes: selected },
       options.resolveCanvas ?? resolveCanvas,
-      instanceBitmaps,
-      Number.isFinite(options.scale) && options.scale > 0 ? options.scale : 1,
     );
     const nodes = expanded.nodes.filter((node) =>
       RENDERABLE_KINDS.has(node.kind),
     );
-    return renderSelectionPng(doc, nodes, bounds, options, instanceBitmaps, {
+    return renderSelectionPng(doc, nodes, bounds, options, {
       bitmapSourceOf,
       cache,
       maskSourceOf,

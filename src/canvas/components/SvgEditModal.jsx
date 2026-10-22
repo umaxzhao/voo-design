@@ -110,7 +110,7 @@ function SvgEditModal({
       onClick={onClose}
     >
       <div
-        className="relative flex w-full max-w-2xl max-h-[85vh] flex-col rounded-2xl border border-white/10 bg-[#181818] p-5 shadow-panel text-neutral-200"
+        className="relative flex w-full max-w-2xl max-h-[85vh] flex-col rounded-3xl border border-white/10 bg-[#181818] p-5 shadow-panel text-neutral-200"
         onClick={(event) => event.stopPropagation()}
       >
         {/* Header */}

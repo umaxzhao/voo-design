@@ -24,11 +24,8 @@ import { TOOL } from "./editor_constants.js";
 import { createWarpPointerGestures } from "./editor_pointer_warp.js";
 import { createCropPointerGestures } from "./editor_pointer_crop.js";
 import { visibleSelectedNode } from "./editor_pointer_hit_test.js";
-import {
-  captureMoveGestureFrame,
-  moveGestureIds,
-} from "./editor_pointer_motion.js";
-import { snapNodeBounds } from "./scene_snapping.js";
+import { captureMoveGestureFrame, moveGestureIds } from "./move_gesture.js";
+import { editorSnapOptions, snapNodeBounds } from "./scene_snapping.js";
 import { rotationCursorForPoint } from "./editor-cursors.js";
 
 export function scaleNodePoints(points, scaleX, scaleY) {
@@ -373,30 +370,6 @@ export function createTransformPointerGestures(ctx) {
     }
 
     let hit = api.nodeAtPoint(point);
-    if (!hit) {
-      const draggable = api
-        .getSelectedNodes()
-        .map(
-          (node) => frame.nodes.find((entry) => entry.id === node.id) ?? node,
-        )
-        .filter(
-          (node) =>
-            !node.locked && !node.lockPosition && node.visible !== false,
-        );
-      const bounds =
-        draggable.length > 0
-          ? combinedBounds(draggable.map((node) => nodeAABB(node)))
-          : null;
-      if (
-        bounds &&
-        point.x >= bounds.x &&
-        point.x <= bounds.x + bounds.width &&
-        point.y >= bounds.y &&
-        point.y <= bounds.y + bounds.height
-      ) {
-        hit = draggable[0];
-      }
-    }
 
     if (hit) {
       const altTargetLocked =
@@ -448,15 +421,13 @@ export function createTransformPointerGestures(ctx) {
       const docNow = api.getDocument();
       const setIds = moveGestureIds(api, docNow, base);
       if (setIds.length === 0) return;
-      const frame = captureMoveGestureFrame(api, docNow, setIds);
+      const frame = captureMoveGestureFrame(docNow, setIds);
 
       if (frame.origins.length > 0) {
         setGesture({
           kind: "move",
           id: target.id,
           origins: frame.origins,
-          time: frame.time,
-          fps: frame.fps,
           start: point,
           origin: { x: hit.x, y: hit.y },
           lastX: point.x,
@@ -528,13 +499,19 @@ export function createTransformPointerGestures(ctx) {
           },
         );
         const doc = api.getEvaluatedDocument?.() ?? api.getDocument();
-        const snap = snapNodeBounds({
-          doc,
-          activeIds: gesture.nodes.map((n) => n.id),
-          rect: proposedCombined,
-          zoom: api.getViewport().zoom,
-          handle: gesture.handle,
-        });
+        const snapDisabled = api.getSnappingEnabled?.() === false;
+        const snap = snapDisabled
+          ? { guides: [], deltaX: 0, deltaY: 0 }
+          : snapNodeBounds({
+              doc,
+              activeIds: gesture.nodes.map((n) => n.id),
+              rect: proposedCombined,
+              zoom: api.getViewport().zoom,
+              handle: gesture.handle,
+              // Grid snapping needs the explicit option; guide snapping is on
+              // unless the guides are hidden in the ruler overlay.
+              options: editorSnapOptions({ grid: api.getGrid?.() ?? null }),
+            });
         if (snap.guides.length > 0) {
           snapGuides = snap.guides;
           effectiveDelta.x += snap.deltaX;
@@ -560,6 +537,7 @@ export function createTransformPointerGestures(ctx) {
       const scaleX = origW > 0 ? newCombined.width / origW : 1;
       const scaleY = origH > 0 ? newCombined.height / origH : 1;
 
+      const updates = [];
       for (const initial of gesture.nodes) {
         const relX = initial.x - gesture.rect.x;
         const relY = initial.y - gesture.rect.y;
@@ -606,7 +584,14 @@ export function createTransformPointerGestures(ctx) {
           patch.points = scaleNodePoints(initial.points, nodeScaleX, nodeScaleY);
         }
 
-        api.updateNode(initial.id, patch, { commit: false });
+        updates.push({ id: initial.id, ...patch });
+      }
+      if (typeof api.updateNodes === "function") {
+        api.updateNodes(updates, { commit: false, preview: true });
+      } else {
+        for (const item of updates) {
+          api.updateNode(item.id, item, { commit: false, preview: true });
+        }
       }
       return;
     }
@@ -634,13 +619,18 @@ export function createTransformPointerGestures(ctx) {
         },
       );
       const doc = api.getEvaluatedDocument?.() ?? api.getDocument();
-      const snap = snapNodeBounds({
-        doc,
-        activeId: node?.id ?? gesture.id,
-        rect: proposedRect,
-        zoom: api.getViewport().zoom,
-        handle: gesture.handle,
-      });
+      const snapDisabled = api.getSnappingEnabled?.() === false;
+      const snap = snapDisabled
+        ? { guides: [], deltaX: 0, deltaY: 0 }
+        : snapNodeBounds({
+            doc,
+            activeId: node?.id ?? gesture.id,
+            rect: proposedRect,
+            zoom: api.getViewport().zoom,
+            handle: gesture.handle,
+            // Same option plumbing as the multi-node resize above.
+            options: editorSnapOptions({ grid: api.getGrid?.() ?? null }),
+          });
       if (snap.guides.length > 0) {
         snapGuides = snap.guides;
         effectiveDelta.x += snap.deltaX;
@@ -694,7 +684,7 @@ export function createTransformPointerGestures(ctx) {
         patch.points = scaleNodePoints(gesture.points, sX, sY);
       }
     }
-    api.updateNode(gesture.id, patch, { commit: false });
+    api.updateNode(gesture.id, patch, { commit: false, preview: true });
   }
 
   function dragRotate(event) {
@@ -734,6 +724,7 @@ export function createTransformPointerGestures(ctx) {
       const cx = gesture.center.x;
       const cy = gesture.center.y;
 
+      const updates = [];
       for (const origin of gesture.nodes) {
         const origCenterX = origin.x + origin.width / 2;
         const origCenterY = origin.y + origin.height / 2;
@@ -747,17 +738,25 @@ export function createTransformPointerGestures(ctx) {
         if (nodeRot < 0) nodeRot += 360;
         if (nodeRot > 180) nodeRot -= 360;
 
-        api.updateNode(
-          origin.id,
-          { x: newX, y: newY, rotation: nodeRot },
-          { commit: false },
-        );
+        updates.push({
+          id: origin.id,
+          x: newX,
+          y: newY,
+          rotation: nodeRot,
+        });
+      }
+      if (typeof api.updateNodes === "function") {
+        api.updateNodes(updates, { commit: false, preview: true });
+      } else {
+        for (const item of updates) {
+          api.updateNode(item.id, item, { commit: false, preview: true });
+        }
       }
     } else {
       api.updateNode(
         gesture.id,
         { rotation: nextRotation },
-        { commit: false },
+        { commit: false, preview: true },
       );
     }
   }

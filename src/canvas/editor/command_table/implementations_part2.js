@@ -2,7 +2,7 @@ import { editorCommandError } from "./errors.js";
 import { downscaleDataUrl, hasPixelSelection } from "./helpers.js";
 import { COMMAND_DEFINITIONS } from "./definitions.js";
 import { marqueeItemForMode } from "../tool_families.js";
-import { assertPatchAllowed } from "../../agent-runtime/content-constraints.js";
+import { assertPatchAllowed } from "../content_constraints.js";
 
 /**
  * Command implementations part 2 (zone split).

@@ -12,10 +12,21 @@ import adminZh from "./admin-zh.js";
 import accountAvatarZh from "./account-avatar-zh.js";
 import hunyuan3dZh from "./hunyuan3d-zh.js";
 import feedbackZh from "./feedback-zh.js";
+import welcomeZh from "./welcome-zh.js";
 
 import sceneEditorZh from "./scene-editor-zh.js";
 import presentationZh from "./presentation-zh.js";
 import creationTypesZh from "./creation-types-zh.js";
+import codegenZh from "./codegen-zh.js";
+import rulersZh from "./rulers-zh.js";
+import penImportZh from "./pen-import-zh.js";
+import autolayoutZh from "./autolayout-zh.js";
+import variablesZh from "./variables-zh.js";
+import commentsZh from "./comments-zh.js";
+import stylesZh from "./styles-zh.js";
+import constraintsZh from "./constraints-zh.js";
+import commandPaletteZh from "./command-palette-zh.js";
+import findReplaceZh from "./find-replace-zh.js";
 
 export default {
   "canvas.start.loading": "正在加载模板…",
@@ -33,6 +44,16 @@ export default {
   ...sceneEditorZh,
   ...presentationZh,
   ...creationTypesZh,
+  ...codegenZh,
+  ...rulersZh,
+  ...penImportZh,
+  ...autolayoutZh,
+  ...variablesZh,
+  ...commentsZh,
+  ...stylesZh,
+  ...constraintsZh,
+  ...commandPaletteZh,
+  ...findReplaceZh,
   ...adminZh,
   ...accountAvatarZh,
   ...hunyuan3dZh,
@@ -422,6 +443,7 @@ export default {
   ...gameAssetsZh,
   ...designAssetsZh,
   ...feedbackZh,
+  ...welcomeZh,
   "node.continueWithAgent": "Agent",
   "agent.continueFromStagePrompt": "从所选阶段继续生成：",
   "agent.connection.requiresDesktopApp": "需下载VOO桌面版使用",
@@ -616,4 +638,28 @@ export default {
   "editor.circularArray.startAngle": "起始角度",
   "editor.circularArray.arcSpan": "弧跨度",
   "editor.circularArray.remove": "移除圆形阵列",
+  "onboarding.stepWorkspace.title": "工作区设置",
+  "onboarding.stepWorkspace.subtitle": "设置设计工程文件存储与同步目录",
+  "onboarding.stepWorkspace.nativeOption": "本地磁盘工作区 (原生推荐)",
+  "onboarding.stepWorkspace.nativeDesc": "直接读写本地磁盘文件，支持系统原生废纸篓与文件系统监听。",
+  "onboarding.stepWorkspace.chooseFolder": "自定义目录...",
+  "onboarding.stepWorkspace.useDefault": "使用推荐默认目录",
+  "onboarding.stepWorkspace.fsaOption": "本地文件夹挂载 (File System Access API)",
+  "onboarding.stepWorkspace.fsaDesc": "通过浏览器文件系统 API 授权并挂载物理文件夹，设计文件保存在本地磁盘。",
+  "onboarding.stepWorkspace.fsaChoose": "选择本地文件夹",
+  "onboarding.stepWorkspace.virtualOption": "浏览器虚拟工作区 (IndexedDB / 沙盒存储)",
+  "onboarding.stepWorkspace.virtualDesc": "在浏览器内置沙盒数据库中存储设计工程，无需本地文件夹权限。",
+  "onboarding.stepWorkspace.useVirtual": "使用虚拟工作区",
+  "onboarding.stepWorkspace.currentSelected": "已选工作区：",
+  "settings.workspace.title": "项目工作区",
+  "settings.workspace.hint": "管理设计工程文件（.voo、.fig、.psd、.svg）存储与同步的本地物理目录。",
+  "settings.workspace.activePath": "当前工作区",
+  "settings.workspace.changeDir": "更换目录",
+  "settings.workspace.rescan": "重新扫描",
+  "settings.workspace.scanning": "正在扫描...",
+  "settings.workspace.rescanSuccess": "扫描完成",
+  "settings.workspace.revealInFinder": "在访达中显示",
+  "settings.workspace.badgeDesktop": "[macOS 原生]",
+  "settings.workspace.badgeFsa": "[浏览器挂载]",
+  "settings.workspace.badgeVirtual": "[虚拟工作区]",
 };

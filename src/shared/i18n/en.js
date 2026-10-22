@@ -12,10 +12,21 @@ import adminEn from "./admin-en.js";
 import accountAvatarEn from "./account-avatar-en.js";
 import hunyuan3dEn from "./hunyuan3d-en.js";
 import feedbackEn from "./feedback-en.js";
+import welcomeEn from "./welcome-en.js";
 
 import sceneEditorEn from "./scene-editor-en.js";
 import presentationEn from "./presentation-en.js";
 import creationTypesEn from "./creation-types-en.js";
+import codegenEn from "./codegen-en.js";
+import rulersEn from "./rulers-en.js";
+import penImportEn from "./pen-import-en.js";
+import autolayoutEn from "./autolayout-en.js";
+import variablesEn from "./variables-en.js";
+import commentsEn from "./comments-en.js";
+import stylesEn from "./styles-en.js";
+import constraintsEn from "./constraints-en.js";
+import commandPaletteEn from "./command-palette-en.js";
+import findReplaceEn from "./find-replace-en.js";
 
 export default {
   "canvas.start.loading": "Loading template…",
@@ -37,6 +48,16 @@ export default {
   ...sceneEditorEn,
   ...presentationEn,
   ...creationTypesEn,
+  ...codegenEn,
+  ...rulersEn,
+  ...penImportEn,
+  ...autolayoutEn,
+  ...variablesEn,
+  ...commentsEn,
+  ...stylesEn,
+  ...constraintsEn,
+  ...commandPaletteEn,
+  ...findReplaceEn,
   ...adminEn,
   ...accountAvatarEn,
   ...hunyuan3dEn,
@@ -460,6 +481,7 @@ export default {
   ...gameAssetsEn,
   ...designAssetsEn,
   ...feedbackEn,
+  ...welcomeEn,
   "node.continueWithAgent": "Agent",
   "agent.continueFromStagePrompt": "Continue from the selected stage: ",
   "agent.connection.requiresDesktopApp": "Requires the VOO desktop app",
@@ -660,4 +682,28 @@ export default {
   "editor.circularArray.startAngle": "Start angle",
   "editor.circularArray.arcSpan": "Arc span",
   "editor.circularArray.remove": "Remove circular array",
+  "onboarding.stepWorkspace.title": "Workspace Setup",
+  "onboarding.stepWorkspace.subtitle": "Configure design file storage and synchronization directory",
+  "onboarding.stepWorkspace.nativeOption": "Native Disk Workspace (Recommended)",
+  "onboarding.stepWorkspace.nativeDesc": "Directly read and write local files with native trash and filesystem watching.",
+  "onboarding.stepWorkspace.chooseFolder": "Choose Directory...",
+  "onboarding.stepWorkspace.useDefault": "Use Recommended Default",
+  "onboarding.stepWorkspace.fsaOption": "Local Folder Mount (File System Access API)",
+  "onboarding.stepWorkspace.fsaDesc": "Authorize and mount physical directory via File System Access API with local storage.",
+  "onboarding.stepWorkspace.fsaChoose": "Choose Local Folder",
+  "onboarding.stepWorkspace.virtualOption": "Browser Virtual Workspace (IndexedDB / Sandbox)",
+  "onboarding.stepWorkspace.virtualDesc": "Store design projects in sandboxed browser database without filesystem permissions.",
+  "onboarding.stepWorkspace.useVirtual": "Use Virtual Workspace",
+  "onboarding.stepWorkspace.currentSelected": "Selected workspace:",
+  "settings.workspace.title": "Project Workspace",
+  "settings.workspace.hint": "Manage local physical directory for design project files (.voo, .fig, .psd, .svg).",
+  "settings.workspace.activePath": "Active Workspace",
+  "settings.workspace.changeDir": "Change Directory",
+  "settings.workspace.rescan": "Rescan",
+  "settings.workspace.scanning": "Scanning...",
+  "settings.workspace.rescanSuccess": "Scan completed",
+  "settings.workspace.revealInFinder": "Reveal in Finder",
+  "settings.workspace.badgeDesktop": "[macOS Native]",
+  "settings.workspace.badgeFsa": "[Browser Mount]",
+  "settings.workspace.badgeVirtual": "[Virtual Workspace]",
 };

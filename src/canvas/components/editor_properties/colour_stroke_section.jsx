@@ -77,9 +77,10 @@ export function StrokeSection({
               strokeWidth: Math.max(1, strokeWidth || 1),
             })
           }
-          className="rounded-xl border border-dashed border-white/[0.08] p-2.5 text-center text-[11px] font-mono text-neutral-500 hover:border-white/20 hover:text-neutral-300 transition-colors cursor-pointer w-full"
+          className="flex h-7 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/10 text-[11px] font-mono text-neutral-400 hover:border-white/20 hover:text-white transition-colors cursor-pointer"
         >
-          {t("editor.layers.noEffects")}
+          <span>＋</span>
+          <span>{t("editor.props.stroke")}</span>
         </button>
       ) : (
         <>

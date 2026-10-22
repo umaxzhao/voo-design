@@ -5,12 +5,14 @@ const fs = require("node:fs");
 let mainWindow = null;
 
 function createMainWindow() {
+  const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1024,
     minHeight: 700,
     backgroundColor: "#000000",
+    show: isDev,
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     trafficLightPosition: { x: 14, y: 14 },
     webPreferences: {
@@ -21,7 +23,17 @@ function createMainWindow() {
     },
   });
 
-  const devServerUrl = process.env.VITE_DEV_SERVER_URL || (process.env.NODE_ENV === "development" || !app.isPackaged ? "http://localhost:5173" : null);
+  const showWindow = () => {
+    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+  };
+
+  mainWindow.once("ready-to-show", showWindow);
+  // Guarantee window becomes visible even if ready-to-show is delayed or skipped
+  setTimeout(showWindow, 1200);
+
+  const devServerUrl = process.env.VITE_DEV_SERVER_URL || (isDev ? "http://localhost:5173" : null);
 
   if (devServerUrl) {
     const loadPromise = mainWindow.loadURL(devServerUrl);
@@ -31,6 +43,7 @@ function createMainWindow() {
         if (fs.existsSync(indexPath)) {
           mainWindow.loadFile(indexPath);
         }
+        showWindow();
       });
     }
 
@@ -42,6 +55,7 @@ function createMainWindow() {
             mainWindow.loadFile(indexPath);
           }
         }
+        showWindow();
       });
     }
   } else {
@@ -228,13 +242,14 @@ ipcMain.handle("dialog:openFile", async (_, options = {}) => {
     filters: options.filters || [
       { name: "VOO Design Document", extensions: ["voo", "json"] },
       { name: "Image Files", extensions: ["png", "jpg", "jpeg", "webp", "svg", "psd"] },
+      { name: "Figma Files", extensions: ["fig"] },
       { name: "All Files", extensions: ["*"] },
     ],
   });
   if (result.canceled || !result.filePaths.length) return null;
   const filePath = result.filePaths[0];
-  const content = await fs.promises.readFile(filePath, "utf-8");
-  return { filePath, content };
+  // Bytes for every format: the renderer decodes text, binary .voo and images itself.
+  return { filePath, bytes: await fs.promises.readFile(filePath) };
 });
 
 ipcMain.handle("dialog:saveFile", async (_, { content, defaultPath, filters } = {}) => {
@@ -254,6 +269,15 @@ ipcMain.handle("dialog:saveFile", async (_, { content, defaultPath, filters } = 
 
 ipcMain.handle("fs:readFile", async (_, filePath) => {
   return await fs.promises.readFile(filePath, "utf-8");
+});
+
+ipcMain.handle("fs:readBinary", async (_, filePath) => {
+  return await fs.promises.readFile(filePath);
+});
+
+ipcMain.handle("fs:writeBinary", async (_, filePath, bytes) => {
+  await fs.promises.writeFile(filePath, bytes);
+  return true;
 });
 
 ipcMain.handle("fs:writeFile", async (_, filePath, content) => {
@@ -306,6 +330,21 @@ ipcMain.handle("model:loadBytes", async (_, modelName) => {
   const buf = await fs.promises.readFile(fullPath);
   return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
 });
+
+// Register Local CLI Bridge IPC Handlers
+import("./local_backend_bridge.js").then(({ registerLocalCliIpc }) => {
+  registerLocalCliIpc(ipcMain, { app });
+}).catch((err) => {
+  console.warn("[electron] Could not register local CLI IPC:", err);
+});
+
+// Register Workspace Manager IPC Handlers
+try {
+  const { registerWorkspaceIpc } = require("./workspace_manager.cjs");
+  registerWorkspaceIpc(ipcMain, () => mainWindow);
+} catch (err) {
+  console.warn("[electron] Could not register workspace IPC:", err);
+}
 
 app.whenReady().then(() => {
   createMainWindow();

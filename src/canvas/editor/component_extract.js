@@ -7,7 +7,7 @@
  * layers. Both are pure: the editor shell decides where the new frame goes.
  */
 import { moveAffectedIds } from "./doc_ops_move.js";
-import { createDocument, CANVAS_TYPE } from "./scene_doc_factory.js";
+import { createDocument } from "./scene_doc_factory.js";
 import { normalizeCornerRadius } from "./scene_model_core.js";
 import {
   createCanvasInstanceNode,
@@ -81,8 +81,6 @@ function unionBounds(nodes) {
  */
 export function extractComponent(hostDoc, selectedIds, { name }) {
   const hostType = getCanvasType(hostDoc);
-  if (hostType === CANVAS_TYPE.THREE_D)
-    throw new RangeError("Components are made from Design or Motion frames");
   const ids = new Set(moveAffectedIds(hostDoc, selectedIds));
   if (ids.size === 0) throw new RangeError("Select at least one layer");
   const members = hostDoc.nodes.filter((node) => ids.has(node.id));
@@ -96,9 +94,6 @@ export function extractComponent(hostDoc, selectedIds, { name }) {
   });
   const master = {
     ...frame,
-    ...(hostType === CANVAS_TYPE.MOTION && hostDoc.timeline
-      ? { timeline: hostDoc.timeline }
-      : {}),
     nodes: members.map((node) => ({
       ...node,
       x: node.x - bounds.x,

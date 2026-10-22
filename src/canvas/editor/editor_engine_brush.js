@@ -50,45 +50,105 @@ export function createEngineBrushController({
     getSelectedId,
     selectMany,
     getColor: () => color,
-    setColor: (next) => { color = next; },
+    setColor: (next) => {
+      color = next;
+      notify?.();
+    },
     getBrushWidth: () => brushWidth,
-    setBrushWidth: (next) => { brushWidth = next; },
+    setBrushWidth: (next) => {
+      brushWidth = next;
+      notify?.();
+    },
     getBrushHardness: () => brushHardness,
-    setBrushHardness: (next) => { brushHardness = next; },
+    setBrushHardness: (next) => {
+      brushHardness = next;
+      notify?.();
+    },
     getBrushOpacity: () => brushOpacity,
-    setBrushOpacity: (next) => { brushOpacity = next; },
+    setBrushOpacity: (next) => {
+      brushOpacity = next;
+      notify?.();
+    },
     getBrushFlow: () => brushFlow,
-    setBrushFlow: (next) => { brushFlow = next; },
+    setBrushFlow: (next) => {
+      brushFlow = next;
+      notify?.();
+    },
     getBrushSmoothing: () => brushSmoothing,
-    setBrushSmoothing: (next) => { brushSmoothing = next; },
+    setBrushSmoothing: (next) => {
+      brushSmoothing = next;
+      notify?.();
+    },
     getBrushStrength: () => brushStrength,
-    setBrushStrength: (next) => { brushStrength = next; },
+    setBrushStrength: (next) => {
+      brushStrength = next;
+      notify?.();
+    },
     getBrushExposure: () => brushExposure,
-    setBrushExposure: (next) => { brushExposure = next; },
+    setBrushExposure: (next) => {
+      brushExposure = next;
+      notify?.();
+    },
     getBrushTonalRange: () => brushTonalRange,
-    setBrushTonalRange: (next) => { brushTonalRange = next; },
+    setBrushTonalRange: (next) => {
+      brushTonalRange = next;
+      notify?.();
+    },
     getBrushProtectLuminosity: () => brushProtectLuminosity,
-    setBrushProtectLuminosity: (next) => { brushProtectLuminosity = next; },
+    setBrushProtectLuminosity: (next) => {
+      brushProtectLuminosity = next;
+      notify?.();
+    },
     getBrushSaturating: () => brushSaturating,
-    setBrushSaturating: (next) => { brushSaturating = next; },
+    setBrushSaturating: (next) => {
+      brushSaturating = next;
+      notify?.();
+    },
     getBrushPreset: () => brushPreset,
-    setBrushPreset: (next) => { brushPreset = next; },
+    setBrushPreset: (next) => {
+      brushPreset = next;
+      notify?.();
+    },
     getPressureSize: () => pressureSize,
-    setPressureSize: (next) => { pressureSize = next; },
+    setPressureSize: (next) => {
+      pressureSize = next;
+      notify?.();
+    },
     getPressureOpacity: () => pressureOpacity,
-    setPressureOpacity: (next) => { pressureOpacity = next; },
+    setPressureOpacity: (next) => {
+      pressureOpacity = next;
+      notify?.();
+    },
     getBrushRoundness: () => brushRoundness,
-    setBrushRoundness: (next) => { brushRoundness = next; },
+    setBrushRoundness: (next) => {
+      brushRoundness = next;
+      notify?.();
+    },
     getBrushAngle: () => brushAngle,
-    setBrushAngle: (next) => { brushAngle = next; },
+    setBrushAngle: (next) => {
+      brushAngle = next;
+      notify?.();
+    },
     getBrushBlendMode: () => brushBlendMode,
-    setBrushBlendMode: (next) => { brushBlendMode = next; },
+    setBrushBlendMode: (next) => {
+      brushBlendMode = next;
+      notify?.();
+    },
     getPenStrokeWidth: () => penStrokeWidth,
-    setPenStrokeWidth: (next) => { penStrokeWidth = next; },
+    setPenStrokeWidth: (next) => {
+      penStrokeWidth = next;
+      notify?.();
+    },
     getArrowSize: () => arrowSize,
-    setArrowSize: (next) => { arrowSize = next; },
+    setArrowSize: (next) => {
+      arrowSize = next;
+      notify?.();
+    },
     getArrowStart: () => arrowStart,
-    setArrowStart: (next) => { arrowStart = next; },
+    setArrowStart: (next) => {
+      arrowStart = next;
+      notify?.();
+    },
     requestRender,
     notify,
   });

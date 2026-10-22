@@ -38,11 +38,23 @@ import {
 } from "./scene_model_core.js";
 import { normalizeAdjustments } from "./scene_model_adjustments.js";
 import { normalizeColorVariables } from "./scene_color_variables.js";
+import {
+  deserializeVariables,
+  resolveDocumentVariables,
+  serializeVariables,
+} from "./scene_variables.js";
+import {
+  deserializeComments,
+  serializeComments,
+} from "../comments/comment_model.js";
+import {
+  deserializeStyles,
+  resolveStyleBindings,
+  serializeStyles,
+} from "./scene_styles.js";
 import { normalizeBooleanNode } from "./scene-boolean-serialization.js";
 import { normalizeStoredImageCrop } from "./image_layer_crop.js";
 export { normalizeBooleanNode } from "./scene-boolean-serialization.js";
-import { isMediaNode, normalizeMediaNode } from "./scene-media.js";
-import { normalizeTimeline } from "./scene-motion.js";
 import { validateAndNormalizeModifierCollection } from "./scene-linear-array-validation.js";
 import { assertNotEvaluatedFrame } from "./scene-evaluated-frame.js";
 import * as canvasComposition from "./canvas-composition-model.js";
@@ -140,19 +152,26 @@ export function findNode(doc, id) {
 export function serialiseDocument(doc) {
   assertNotEvaluatedFrame(doc);
   const colorVariables = normalizeColorVariables(doc.colorVariables);
+  const comments = serializeComments(doc);
   return {
     version: DOC_VERSION,
     ...canvasComposition.serializeCanvasFields(doc),
     width: doc.width,
     height: doc.height,
     backgroundColor: doc.backgroundColor ?? "transparent",
-    ...(doc.timeline ? { timeline: normalizeTimeline(doc.timeline) } : {}),
     ...(colorVariables.length > 0 ? { colorVariables } : {}),
     // A non-destructive crop travels with the document; without it the full
     // canvas is shown.
     ...(doc.crop ? { crop: doc.crop } : {}),
     // Guide lines from the rulers persist with the document.
     ...(Array.isArray(doc.guides) ? { guides: doc.guides } : {}),
+    // Variables v2 (collections, modes and their values) are document tokens.
+    ...serializeVariables(doc),
+    // Named paint / text / effect styles are document-level tokens too; each
+    // node keeps its `styleIds` refs on the node record itself.
+    ...serializeStyles(doc),
+    // Canvas comment threads belong to the page, like guides do.
+    ...(comments.length > 0 ? { comments } : {}),
     ...(doc.modifiers !== undefined
       ? (() => {
           const valid = validateAndNormalizeModifierCollection(
@@ -166,7 +185,7 @@ export function serialiseDocument(doc) {
       const copy = canvasComposition.serializeCanvasNode(node);
       // Image object URLs are session-only. Media may carry a durable URL;
       // blob URLs still resolve through assetId after hydration.
-      if (!isMediaNode(copy) || copy.src?.startsWith("blob:")) delete copy.src;
+      if (copy.src?.startsWith("blob:")) delete copy.src;
       // v2: don't persist a node's neutral adjustments — an unchanged layer
       // carries no signal, and dropping the default per node is what shrinks
       // the record. `deserialiseDocument` restores the default on read.
@@ -275,13 +294,13 @@ export function deserialiseDocument(value) {
     if (readableNode.paint !== true || node.kind !== NODE_KIND.IMAGE) {
       delete readableNode.paint;
     }
-    return canvasComposition.normalizeCanvasNode(
-      isMediaNode(readableNode)
-        ? normalizeMediaNode(readableNode)
-        : readableNode,
-    );
+    // Keyframe tracks belonged to the removed animation editor; old files drop them.
+    delete readableNode.animations;
+    return canvasComposition.normalizeCanvasNode(readableNode);
   });
-  const colorVariables = normalizeColorVariables(value.colorVariables);
+  const variablesPatch = deserializeVariables(value);
+  const colorVariables = variablesPatch.colorVariables ?? [];
+  const comments = deserializeComments(value);
   const colorById = new Map(colorVariables.map((item) => [item.id, item]));
   for (const node of readable) {
     if (node.fillVariableId) {
@@ -362,13 +381,12 @@ export function deserialiseDocument(value) {
       delete node.clipTo;
     }
   }
-  return {
+  const nextDocument = {
     version: DOC_VERSION,
     ...canvasComposition.deserializeCanvasFields(value),
     width: value.width,
     height: value.height,
     backgroundColor: value.backgroundColor ?? "transparent",
-    ...(value.timeline ? { timeline: normalizeTimeline(value.timeline) } : {}),
     ...(colorVariables.length > 0 ? { colorVariables } : {}),
     // A non-destructive crop comes back only when it is a sane, in-bounds
     // rect; anything else is dropped so the full canvas shows instead.
@@ -393,6 +411,20 @@ export function deserialiseDocument(value) {
       ...readable.filter(isRegionNode),
     ],
   };
+  // v2 variables, named styles and comment threads are restored after the node
+  // graph is sound. Named styles materialise first, then variables resolve —
+  // a variable bound to a property wins over the style value while both keep
+  // their binding ids intact.
+  return resolveDocumentVariables(
+    resolveStyleBindings({
+      ...nextDocument,
+      ...(variablesPatch.variablesV2
+        ? { variablesV2: variablesPatch.variablesV2 }
+        : {}),
+      ...deserializeStyles(value),
+      ...(comments.length > 0 ? { comments } : {}),
+    }),
+  );
 }
 
 /** Whether a serialised crop is worth keeping: finite and inside the canvas. */
@@ -457,13 +489,14 @@ export function describeNode(node, index, labels) {
   if (node.kind === NODE_KIND.RECT) return labels.rect;
   if (node.kind === NODE_KIND.ELLIPSE) return labels.ellipse;
   if (node.kind === NODE_KIND.IMAGE) return labels.image;
-  if (node.kind === NODE_KIND.VIDEO) return labels.video ?? labels.layer;
-  if (node.kind === NODE_KIND.AUDIO) return labels.audio ?? labels.layer;
-  if (node.kind === NODE_KIND.MODEL_3D) return labels.model3d ?? labels.layer;
-  if (node.kind === NODE_KIND.MESH_3D) return labels.mesh3d ?? labels.layer;
   if (node.kind === NODE_KIND.CANVAS_INSTANCE)
     return labels.canvasInstance ?? labels.layer;
-  if (node.kind === NODE_KIND.GROUP) return labels.group ?? labels.layer;
+  if (node.kind === NODE_KIND.GROUP) {
+    if (node.frame || node.isFrame || node.containerType === "frame") {
+      return labels.frame ?? "Frame";
+    }
+    return labels.group ?? labels.layer;
+  }
   if (node.kind === NODE_KIND.BOOLEAN) {
     const opKey = `combine.${node.operation ?? "union"}`;
     return labels[opKey] ?? labels.boolean ?? labels.layer;

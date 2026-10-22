@@ -10,12 +10,6 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
   function finishGesture(event, finished) {
     if (!finished) return;
 
-    if (finished.kind === "modelOrbit") {
-      if (finished.moved)
-        commitEditorAction("editor.pointer.transform", () => api.commit());
-      return;
-    }
-
     if (
       finished.kind === "gradientStop" ||
       finished.kind === "gradientEndpoint" ||

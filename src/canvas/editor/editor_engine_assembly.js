@@ -11,7 +11,6 @@ import { createMaskTools } from "./editor_mask.js";
 import { createPaintTools } from "./editor_paint.js";
 import { createPenTools } from "./editor_pen.js";
 import { createExport, createExportApi } from "./editor_export.js";
-import { configureRasterThreeFrameSession } from "./editor_export_instances.js";
 import { createBitmapWriter } from "./editor_bitmap_write.js";
 import { createHistoryApi } from "./editor_history_api.js";
 import { createTransformApi } from "./editor_transform_api.js";
@@ -28,8 +27,6 @@ import { emitLocalStroke } from "../collab/stroke_bus.js";
 export function assembleEngineControllers({
   ctx,
   getDoc,
-  getRenderDoc,
-  mediaBitmapOf,
   setDoc,
   snapshotDoc,
   snapshotState,
@@ -133,18 +130,11 @@ export function assembleEngineControllers({
   });
 
   const exporter = createExport({
-    // Export reads the same evaluated frame and media bitmaps as the stage.
-    getDoc: getRenderDoc ?? getDoc,
+    getDoc,
     cache,
-    bitmapSourceOf: (n) => mediaBitmapOf?.(n) ?? paintTools.bitmapSourceOf(n),
+    bitmapSourceOf: (n) => paintTools.bitmapSourceOf(n),
     maskSourceOf: (n) => maskTools.maskSourceOf(n),
     glRenderer: glAdjustments,
-  });
-  // Ordinary 2D editors must not load the offscreen 3D renderer at startup.
-  configureRasterThreeFrameSession(async (canvas) => {
-    const { createThreeFrameSession } =
-      await import("../components/editor_motion/motion-three-frame.js");
-    return createThreeFrameSession(canvas);
   });
   const exportApi = createExportApi({
     getDoc,
@@ -240,7 +230,6 @@ export function assembleEngineControllers({
 
   nodesController = createEngineNodesController({
     getDoc,
-    getRenderDoc,
     setDoc,
     selection,
     cache,

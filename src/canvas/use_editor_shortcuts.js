@@ -186,6 +186,16 @@ export function useEditorShortcuts({
   onZoomToFit,
   onZoomToHundred,
   onToggleShortcuts,
+  onToggleRulers,
+  onToggleGuides,
+  onClearGuides,
+  onToggleSnapToGrid,
+  onToggleComments,
+  onToggleCommentMode,
+  onToggleCommandPalette,
+  onOpenFindReplace,
+  selectedGuideId = null,
+  onDeleteGuide,
   onSwapColors,
   onDeleteCanvas,
   onDuplicateCanvas,
@@ -337,6 +347,33 @@ export function useEditorShortcuts({
     };
 
     const onKeyDown = (event) => {
+      // Editor-owned overlays are handled before the modal guard: ⌘K/⌘F must
+      // never reach the browser's own find dialog while the user is typing in
+      // the find bar, and ⌘K has to toggle the palette even though the palette
+      // itself counts as a modal. Other single-key shortcuts stay paused.
+      if (
+        !event.altKey &&
+        !event.shiftKey &&
+        !event.isComposing &&
+        (event.metaKey || event.ctrlKey)
+      ) {
+        if (event.code === "KeyK" && onToggleCommandPalette) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          // Toggle even while the palette is open: ⌘K is its own close key.
+          // Other modals do not block it, because the palette floats above
+          // them and Esc returns to whatever was underneath.
+          onToggleCommandPalette();
+          return;
+        }
+        if (event.code === "KeyF" && onOpenFindReplace) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          if (!modalOpen) onOpenFindReplace();
+          return;
+        }
+      }
+
       // A capture listener sees events before a dialog's DOM handlers. Pause
       // editor actions explicitly so export controls, dialogs, drawers, and menus retain their native keys.
       if (
@@ -511,14 +548,96 @@ export function useEditorShortcuts({
         return;
       }
 
+      // Canvas view aids. Bindings avoid the browser's own ⌘R reload and the
+      // grid/snap pair already taken by ⌘' and ⇧⌘':
+      //   ⇧R        show/hide rulers          (Figma's binding)
+      //   ⌘;        show/hide guides
+      //   ⌥⌘;       clear all guides
+      //   ⌥⌘'       snap to grid
+      {
+        const modifier = event.metaKey || event.ctrlKey;
+        if (
+          !modifier &&
+          !event.altKey &&
+          event.shiftKey &&
+          event.code === "KeyR" &&
+          onToggleRulers
+        ) {
+          event.preventDefault();
+          onToggleRulers();
+          return;
+        }
+        if (
+          modifier &&
+          !event.altKey &&
+          !event.shiftKey &&
+          event.code === "Semicolon" &&
+          onToggleGuides
+        ) {
+          event.preventDefault();
+          onToggleGuides();
+          return;
+        }
+        if (
+          modifier &&
+          event.altKey &&
+          !event.shiftKey &&
+          event.code === "Semicolon" &&
+          onClearGuides
+        ) {
+          event.preventDefault();
+          onClearGuides();
+          return;
+        }
+        if (
+          modifier &&
+          event.altKey &&
+          !event.shiftKey &&
+          (event.code === "Quote" || event.key === "'") &&
+          onToggleSnapToGrid
+        ) {
+          event.preventDefault();
+          onToggleSnapToGrid();
+          return;
+        }
+        // Comments: ⌥⌘M opens the thread list, ⌥⌘⇧M arms placement. Alt is
+        // required because ⌘M is the OS "minimise window" on macOS.
+        if (
+          modifier &&
+          event.altKey &&
+          event.shiftKey &&
+          event.code === "KeyM" &&
+          onToggleCommentMode
+        ) {
+          event.preventDefault();
+          onToggleCommentMode();
+          return;
+        }
+        if (
+          modifier &&
+          event.altKey &&
+          !event.shiftKey &&
+          event.code === "KeyM" &&
+          onToggleComments
+        ) {
+          event.preventDefault();
+          onToggleComments();
+          return;
+        }
+      }
+
       if (
         (event.metaKey || event.ctrlKey) &&
         event.shiftKey &&
         event.code === "KeyI"
       ) {
+        event.preventDefault();
+        if (engine.getPixelSelection?.()?.contours?.length) {
+          void engine.invertPixelSelection?.();
+          return;
+        }
         const selected = engine.getSelected?.();
         if (selected?.id) {
-          event.preventDefault();
           void engine.invertMask?.(selected.id);
         }
         return;
@@ -585,6 +704,10 @@ export function useEditorShortcuts({
             break;
           case "KeyD":
             event.preventDefault();
+            if (engine.getPixelSelection?.()?.contours?.length) {
+              engine.clearSelection?.();
+              return;
+            }
             if (event.shiftKey) {
               engine.select(null);
               return;
@@ -798,6 +921,11 @@ export function useEditorShortcuts({
         else engine.zoomToFit();
         return;
       }
+      if (event.shiftKey && event.code === "Digit2") {
+        event.preventDefault();
+        engine.zoomToSelection?.();
+        return;
+      }
       if (event.shiftKey && event.code === "Digit0") {
         event.preventDefault();
         if (onZoomToHundred) onZoomToHundred();
@@ -902,6 +1030,13 @@ export function useEditorShortcuts({
       }
 
       if (event.key === "Backspace" || event.key === "Delete") {
+        // A selected guide owns Delete: removing it must not also remove the
+        // selected layer underneath (the ruler overlay selects guides only).
+        if (selectedGuideId && onDeleteGuide) {
+          event.preventDefault();
+          onDeleteGuide(selectedGuideId);
+          return;
+        }
         if (event.altKey && !event.metaKey && !event.ctrlKey) {
           event.preventDefault();
           const fg = engine.getColor?.() || "#000000";
@@ -1038,6 +1173,32 @@ export function useEditorShortcuts({
         }
       }
 
+      // Cmd/Ctrl + Quote: 切换网格 (Affinity / Figma ⌘')
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        !event.shiftKey &&
+        (event.code === "Quote" || event.key === "'")
+      ) {
+        event.preventDefault();
+        const currentGrid = engine.getGrid?.();
+        engine.setGrid?.(currentGrid ? null : { enabled: true, size: 32 });
+        return;
+      }
+
+      // Shift + Cmd/Ctrl + Semicolon or Quote: 切换智能吸附 (Affinity ⇧⌘;')
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        event.shiftKey &&
+        (event.code === "Semicolon" ||
+          event.code === "Quote" ||
+          event.key === ";" ||
+          event.key === "'")
+      ) {
+        event.preventDefault();
+        engine.toggleSnapping?.();
+        return;
+      }
+
       if (event.metaKey || event.ctrlKey) return;
 
       // Photoshop-style number keys for opacity
@@ -1101,8 +1262,23 @@ export function useEditorShortcuts({
         return;
       }
 
-      // Shifted tool keys
+      // Shifted tool keys and geometry actions
       if (event.shiftKey) {
+        if (event.code === "KeyA") {
+          event.preventDefault();
+          void engine.toggleAutoLayoutSelection?.();
+          return;
+        }
+        if (event.code === "KeyH") {
+          event.preventDefault();
+          void engine.flipHorizontal?.();
+          return;
+        }
+        if (event.code === "KeyV") {
+          event.preventDefault();
+          void engine.flipVertical?.();
+          return;
+        }
         const shiftedTool = TOOL_SHIFT_KEYS[event.code];
         if (shiftedTool) {
           event.preventDefault();
@@ -1206,6 +1382,16 @@ export function useEditorShortcuts({
     onZoomToFit,
     onZoomToHundred,
     onToggleShortcuts,
+    onToggleRulers,
+    onToggleGuides,
+    onClearGuides,
+    onToggleSnapToGrid,
+    onToggleComments,
+    onToggleCommentMode,
+    onToggleCommandPalette,
+    onOpenFindReplace,
+    selectedGuideId,
+    onDeleteGuide,
     onSwapColors,
     onDeleteCanvas,
     onDuplicateCanvas,

@@ -130,6 +130,7 @@ export function normalizeDropShadow(value) {
     blur: parseAdjustmentValue(value.blur, 0, 100, 8),
     offsetX: parseAdjustmentValue(value.offsetX, -200, 200, 4),
     offsetY: parseAdjustmentValue(value.offsetY, -200, 200, 4),
+    spread: parseAdjustmentValue(value.spread, 0, 100, 0),
     opacity: parseAdjustmentValue(value.opacity, 0, 100, 80),
   };
 }
@@ -208,6 +209,7 @@ export function normalizeInnerShadow(value) {
     blur: parseAdjustmentValue(value.blur, 0, 100, 8),
     offsetX: parseAdjustmentValue(value.offsetX, -200, 200, 0),
     offsetY: parseAdjustmentValue(value.offsetY, -200, 200, 0),
+    spread: parseAdjustmentValue(value.spread, 0, 100, 0),
     opacity: parseAdjustmentValue(value.opacity, 0, 100, 75),
   };
 }

@@ -1,9 +1,19 @@
 import PropTypes from "prop-types";
-import { useLayoutEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../../use_i18n.js";
 import { HEX_COLOUR, HexField } from "./colour_swatch.jsx";
 import { CollapsibleSection } from "./property_section.jsx";
-import { IconChevronDown, IconMinus, IconTrash } from "../../icons.jsx";
+import {
+  IconChevronDown,
+  IconMinus,
+  IconSliders,
+  IconTrash,
+} from "../../icons.jsx";
+import VariablesPanel from "./variables_panel.jsx";
+import {
+  VARIABLE_TYPES,
+  variablesFromLegacyColorVariables,
+} from "../../editor/scene_variables.js";
 
 export default function ColorVariablesSection({
   object,
@@ -13,10 +23,69 @@ export default function ColorVariablesSection({
   onBind,
   onUpdate,
   onDelete,
+  /**
+   * Optional variables-v2 wiring (the Lead mounts these from the parent):
+   * `variablesV2` is `doc.variablesV2`, `variableActions` is an object of
+   * document-level handlers — see `variables_panel.jsx` for the contract.
+   * Without them the panel falls back to the legacy colour list and the
+   * existing create/bind/update callbacks (one engine commit per action).
+   * With `variableActions` but no `variablesV2` yet (first use), the panel
+   * still shows the full v2 surface against a legacy-derived model; the first
+   * action seeds `doc.variablesV2` from the legacy colours (one undo entry).
+   */
+  variablesV2 = null,
+  variableActions = null,
 }) {
   const { t } = useI18n();
-  const active = variables.find((item) => item.id === object.fillVariableId);
+  const [managerOpen, setManagerOpen] = useState(false);
+  const closeManager = useCallback(() => setManagerOpen(false), []);
   const canCreate = HEX_COLOUR.test(object.fill ?? "");
+
+  // A live v2 model may arrive as a prop or on the actions bag. When the
+  // document does not have one yet, `variableActions` can still mutate it: the
+  // action factory seeds `variablesV2` from the legacy colours on first use,
+  // so the panel must present the full v2 surface against a legacy-derived
+  // model instead of falling back to the read-only colour list.
+  const liveModel =
+    variablesV2?.collections?.length > 0
+      ? variablesV2
+      : variableActions?.model?.collections?.length > 0
+        ? variableActions.model
+        : null;
+  const canMutateVariables = Boolean(variableActions);
+
+  const panelModel = useMemo(
+    () => liveModel ?? variablesFromLegacyColorVariables(variables),
+    [liveModel, variables],
+  );
+
+  const panelActions = useMemo(() => {
+    if (variableActions) return { close: closeManager, ...variableActions };
+    const fallback = {
+      close: closeManager,
+      // The legacy host exposes exactly create/bind/update; each of these is
+      // one engine.setDoc commit (one undo entry) in image_editor.jsx.
+      updateValue: (id, _modeId, value) => onUpdate(id, { value }),
+      renameVariable: (id, name) => onUpdate(id, { name }),
+      bind: (id) => onBind(id),
+      addVariable: (_collectionId, type) => {
+        // Legacy hosts can only derive a variable from the current fill.
+        if (type === "color" && canCreate) onCreate();
+      },
+    };
+    if (onDelete) fallback.deleteVariable = (id) => onDelete(id);
+    return fallback;
+  }, [
+    variableActions,
+    closeManager,
+    onCreate,
+    onBind,
+    onUpdate,
+    onDelete,
+    canCreate,
+  ]);
+
+  const active = variables.find((item) => item.id === object.fillVariableId);
   const displayName = (item) =>
     item.id.startsWith("system:") && item.name === item.id.split(":").at(-1)
       ? t(`editor.variables.token.${item.name}`)
@@ -33,20 +102,34 @@ export default function ColorVariablesSection({
   }, [documentId, activeId, activeName]);
 
   return (
+    <>
     <CollapsibleSection
       title={t("editor.variables.title")}
       storageKey="editor.colorVariables"
       extra={
-        canCreate ? (
+        <div className="flex items-center gap-0.5">
+          {canCreate ? (
+            <button
+              type="button"
+              onClick={onCreate}
+              title={t("editor.variables.create")}
+              className="flex h-5 w-5 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white transition-colors text-xs font-mono"
+            >
+              ＋
+            </button>
+          ) : null}
           <button
             type="button"
-            onClick={onCreate}
-            title={t("editor.variables.create")}
-            className="flex h-5 w-5 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white transition-colors text-xs font-mono"
+            data-testid="editor-variables-manage"
+            onClick={() => setManagerOpen(true)}
+            title={t("editor.variables.panel.manage")}
+            aria-label={t("editor.variables.panel.manage")}
+            aria-haspopup="dialog"
+            className="flex h-5 w-5 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white transition-colors"
           >
-            ＋
+            <IconSliders size={12} strokeWidth={1.5} />
           </button>
-        ) : null
+        </div>
       }
     >
       <div className="flex flex-col gap-2">
@@ -146,6 +229,16 @@ export default function ColorVariablesSection({
         </button>
       </div>
     </CollapsibleSection>
+    {/* Portalled: kept outside the fold so the manager never unmounts with it. */}
+    <VariablesPanel
+      open={managerOpen}
+      model={panelModel}
+      activeBindingId={active?.id ?? null}
+      supportedTypes={canMutateVariables ? VARIABLE_TYPES : ["color"]}
+      canAddVariable={canMutateVariables ? true : canCreate}
+      actions={panelActions}
+    />
+    </>
   );
 }
 
@@ -157,4 +250,9 @@ ColorVariablesSection.propTypes = {
   onBind: PropTypes.func.isRequired,
   onUpdate: PropTypes.func.isRequired,
   onDelete: PropTypes.func,
+  variablesV2: PropTypes.shape({
+    collections: PropTypes.array,
+    activeModeByCollection: PropTypes.object,
+  }),
+  variableActions: PropTypes.object,
 };

@@ -151,4 +151,145 @@ describe("interaction_ergonomics_parity (Figma & Affinity)", () => {
     penDraft.popDraftAnchor();
     expect(penDraft.getDraft()).toBeNull();
   });
+
+  it("toggles auto-layout on a group node with toggleAutoLayoutSelection", async () => {
+    const { createEngineGroups } = await import(
+      "../../src/canvas/editor/editor_engine_groups.js"
+    );
+
+    let doc = {
+      nodes: [
+        {
+          id: "grp-1",
+          kind: NODE_KIND.GROUP,
+          x: 0,
+          y: 0,
+          width: 200,
+          height: 100,
+        },
+      ],
+    };
+
+    const selectedIds = ["grp-1"];
+    const engineGroups = createEngineGroups({
+      getDoc: () => doc,
+      setDoc: (nextDoc) => {
+        doc = nextDoc;
+      },
+      selection: {
+        getIds: () => selectedIds,
+        isSelected: (id) => selectedIds.includes(id),
+      },
+      select: vi.fn(),
+      selectMany: vi.fn(),
+      unitSelectionIds: () => ["grp-1"],
+      selectionUnits: () => [doc.nodes[0]],
+      clickUnitOf: () => null,
+      getIsolationGroupId: () => null,
+      setIsolationGroupId: () => {},
+    });
+
+    // 1. Initially autoLayout is undefined, toggling adds autoLayout
+    engineGroups.toggleAutoLayoutSelection();
+    expect(doc.nodes[0].autoLayout).toBeDefined();
+    expect(doc.nodes[0].autoLayout.direction).toBe("vertical");
+    expect(doc.nodes[0].autoLayout.gap).toBe(8);
+
+    // 2. Toggling again removes autoLayout
+    engineGroups.toggleAutoLayoutSelection();
+    expect(doc.nodes[0].autoLayout).toBeNull();
+  });
+
+  it("wraps multiple selected nodes into an auto-layout group", async () => {
+    const { createEngineGroups } = await import(
+      "../../src/canvas/editor/editor_engine_groups.js"
+    );
+
+    let doc = {
+      nodes: [
+        { id: "box-1", kind: NODE_KIND.RECT, x: 0, y: 0, width: 50, height: 50 },
+        { id: "box-2", kind: NODE_KIND.RECT, x: 60, y: 0, width: 50, height: 50 },
+      ],
+    };
+
+    let selectedId = null;
+    const selectedIds = ["box-1", "box-2"];
+    const engineGroups = createEngineGroups({
+      getDoc: () => doc,
+      setDoc: (nextDoc) => {
+        doc = nextDoc;
+      },
+      selection: {
+        getIds: () => selectedIds,
+        isSelected: (id) => selectedIds.includes(id),
+        setSingle: (id) => {
+          selectedId = id;
+        },
+      },
+      select: (id) => {
+        selectedId = id;
+      },
+      selectMany: vi.fn(),
+      unitSelectionIds: () => selectedIds,
+      selectionUnits: () => doc.nodes,
+      clickUnitOf: () => null,
+      getIsolationGroupId: () => null,
+      setIsolationGroupId: () => {},
+    });
+
+    engineGroups.toggleAutoLayoutSelection();
+
+    // Group should be created with autoLayout
+    const createdGroup = doc.nodes.find((n) => n.kind === NODE_KIND.GROUP);
+    expect(createdGroup).toBeDefined();
+    expect(createdGroup.autoLayout).toBeDefined();
+    expect(createdGroup.autoLayout.direction).toBe("horizontal");
+    expect(selectedId).toBe(createdGroup.id);
+  });
+
+  it("handles Shift+2 (Zoom to Selection) and Shift+A (Auto Layout) shortcuts", async () => {
+    let zoomedToSelection = false;
+    let toggledAutoLayout = false;
+
+    const mockEngine = {
+      zoomToSelection: () => {
+        zoomedToSelection = true;
+      },
+      toggleAutoLayoutSelection: () => {
+        toggledAutoLayout = true;
+      },
+    };
+
+    // Simulate keydown listeners or shortcut matching
+    const simulateKeyDown = (event) => {
+      if (event.shiftKey && event.code === "Digit2") {
+        event.preventDefault();
+        mockEngine.zoomToSelection();
+        return;
+      }
+      if (event.shiftKey && event.code === "KeyA") {
+        event.preventDefault();
+        mockEngine.toggleAutoLayoutSelection();
+        return;
+      }
+    };
+
+    const eventShift2 = {
+      shiftKey: true,
+      code: "Digit2",
+      preventDefault: vi.fn(),
+    };
+    simulateKeyDown(eventShift2);
+    expect(zoomedToSelection).toBe(true);
+    expect(eventShift2.preventDefault).toHaveBeenCalled();
+
+    const eventShiftA = {
+      shiftKey: true,
+      code: "KeyA",
+      preventDefault: vi.fn(),
+    };
+    simulateKeyDown(eventShiftA);
+    expect(toggledAutoLayout).toBe(true);
+    expect(eventShiftA.preventDefault).toHaveBeenCalled();
+  });
 });

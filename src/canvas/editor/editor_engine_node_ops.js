@@ -32,7 +32,6 @@ import { newId } from "./scene_model_core.js";
 
 export function createEngineNodeOps({
   getDoc,
-  getRenderDoc = getDoc,
   setDoc,
   selection,
   releaseNodeTextures,
@@ -42,6 +41,7 @@ export function createEngineNodeOps({
   getEffectiveNode,
   requestRender,
   notify,
+  getZoom,
 }) {
   function removeIds(ids) {
     const doc = getDoc();
@@ -84,6 +84,15 @@ export function createEngineNodeOps({
       "editor.document.set",
       setDoc,
       ops.updateNode(getDoc(), id, patch),
+      options,
+    );
+  }
+
+  function updateNodes(updates, options) {
+    return commitOrPreviewEditorDocument(
+      "editor.document.set",
+      setDoc,
+      ops.updateNodes(getDoc(), updates),
       options,
     );
   }
@@ -152,8 +161,10 @@ export function createEngineNodeOps({
   function nodeAtPoint(point, options = {}) {
     // Hit testing must use the frame painted on the stage. A saved X/Y value
     // can be far from an animated node's visible position at the playhead.
-    const doc = getRenderDoc();
+    const doc = getDoc();
+    const zoom = options.zoom ?? (typeof getZoom === "function" ? getZoom() : 1);
     return ops.nodeAtPoint(doc, point, {
+      zoom,
       ...options,
       reject: (node, at) => {
         if (node.paint === true && !paintTools.api.isPaintOpaqueAt(node, at)) {
@@ -459,6 +470,7 @@ export function createEngineNodeOps({
     removeIds,
     removeNode,
     updateNode,
+    updateNodes,
     reorderNode,
     reorderNodeTo,
     moveToFront,

@@ -10,6 +10,25 @@ import {
 } from "./render_cache.js";
 
 /**
+ * The last exact tile per node. While the view is moving (zoom / pan), a cache
+ * miss draws this tile stretched to the new box instead of re-compositing every
+ * pixel on each frame. The viewport ends the interaction once it settles, and
+ * the next render then rebuilds the exact tile.
+ */
+const lastExactTiles = new Map();
+let viewInteracting = false;
+
+/** Marks the start of a viewport gesture; exact blend tiles wait for settle. */
+export function beginCustomBlendInteraction() {
+  viewInteracting = true;
+}
+
+/** Marks the view as settled; the next render composites exact tiles again. */
+export function endCustomBlendInteraction() {
+  viewInteracting = false;
+}
+
+/**
  * Applies a node's render-time transform (rotation + shear + flip around its box
  * centre) to a context. Shared by the direct draw and the offscreen pass of
  * the per-pixel blend modes.
@@ -140,6 +159,17 @@ export function drawCustomBlendNode(ctx, node, paintBody, renderState) {
     ctx.drawImage(cached, x, y);
     return;
   }
+  if (viewInteracting) {
+    // No exact tile yet: paint with source-over for now; the exact pass runs after settle.
+    const lastTile = lastExactTiles.get(node.id);
+    if (lastTile) {
+      ctx.drawImage(lastTile, x, y, w, h);
+    } else {
+      applyNodeTransform(ctx, node);
+      paintBody(ctx);
+    }
+    return;
+  }
 
   const off = document.createElement("canvas");
   off.width = w;
@@ -161,6 +191,7 @@ export function drawCustomBlendNode(ctx, node, paintBody, renderState) {
     if (resultCtx) {
       resultCtx.putImageData(backdrop, 0, 0);
       setRenderCache("customBlend", cacheKey, result);
+      lastExactTiles.set(node.id, result);
       ctx.drawImage(result, x, y);
       return;
     }

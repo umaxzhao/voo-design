@@ -357,13 +357,13 @@ export async function runTiledUpscale(bitmap, { ort, session, width, height, sca
  * @param {(state: object) => void} [options.onProgress] Progress reporting callback
  * @returns {Promise<Blob>} Upscaled PNG blob
  */
-export async function runLocalUpscale(bitmap, { scale = 2, onProgress, denoise = false, shouldStop } = {}) {
+export async function runLocalUpscale(bitmap, { scale = 2, modelId = null, model: customModel = null, onProgress, denoise = false, shouldStop } = {}) {
   if (shouldStop?.()) {
     throw new Error("stopped");
   }
   const width = bitmap.naturalWidth ?? bitmap.width;
   const height = bitmap.naturalHeight ?? bitmap.height;
-  const model = resolveUpscaleModel(scale);
+  const model = customModel ?? resolveUpscaleModel(modelId || scale);
 
   let handle;
   try {

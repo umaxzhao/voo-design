@@ -1,3 +1,5 @@
+import { googleWeightSpecOf } from "./google_fonts_index.js";
+
 /**
  * Bundled editor typefaces and their lazy loading.
  *
@@ -112,7 +114,7 @@ export function googleFontUrl(family, weightSpec) {
   const spec =
     weightSpec !== undefined
       ? weightSpec
-      : (GOOGLE_FONT_WEIGHT_SPECS[family] ?? "");
+      : (GOOGLE_FONT_WEIGHT_SPECS[family] ?? googleWeightSpecOf(family));
   return `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}${spec}&display=swap`;
 }
 
@@ -133,7 +135,7 @@ export function ensureFontLoaded(fontStack) {
   if (typeof document === "undefined" || !document.fonts?.load) return null;
   if (!loadCache.has(family)) {
     const fontId = `gfont-${family.toLowerCase().replace(/\s+/g, "-")}`;
-    const initialSpec = GOOGLE_FONT_WEIGHT_SPECS[family] ?? "";
+    const initialSpec = GOOGLE_FONT_WEIGHT_SPECS[family] ?? googleWeightSpecOf(family);
     let link = document.getElementById(fontId);
     if (!link) {
       link = document.createElement("link");

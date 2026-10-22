@@ -178,6 +178,22 @@
     outline: none !important;
     outline-offset: 0;
   }
+
+  /* The layers list shows its selection on the rows, not as a frame around the list. */
+  [data-layers-list]:focus-visible {
+    outline: none !important;
+  }
+
+  /* The file search field lights up on focus instead of drawing a green frame. */
+  input[data-search-field]:focus-visible {
+    outline: none !important;
+  }
+
+  /* The AI prompt never paints a focus rim: typing must not add a green edge. */
+  .prompt-composer textarea:focus-visible,
+  .prompt-composer:focus-within {
+    outline: none !important;
+  }
 }
 
 @layer components {
@@ -366,50 +382,104 @@
   cursor: grabbing !important;
 }
 
+/*
+ * The app frame, matching VOO-Run's editor-shell: a solid 2px mint border on a
+ * 16px radius. Pages sit inside .editor-shell-inner, which fills the border box
+ * and clips to the inner radius.
+ */
 .editor-shell {
   box-sizing: border-box;
   border: 2px solid #b2ffd6;
   border-radius: 16px;
-  isolation: isolate;
+  overflow: hidden;
   transition: border-color 0.25s ease;
 }
 
-.editor-shell::before {
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  background: linear-gradient(
-    -90deg,
-    rgb(0, 0, 0) 70.123%,
-    rgb(178, 255, 214) 89.855%
-  );
+.editor-shell-inner {
+  box-sizing: border-box;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #000;
+}
+
+/*
+ * The AI prompt box: a 1px rim that runs mint, then purple, then fades out.
+ * It only shows at rest; while the user types the rim goes plain.
+ */
+/* Rim of the prompt composer: a rotating gradient ring drawn outside the box.
+   It is faint when idle, stronger while focused, and full once text is typed. */
+@property --prompt-rim-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* Agent panel composer: deeper than the shared prompt box so it reads as a well. */
+.agent-composer {
+  background: linear-gradient(#0a0a0a, #0a0a0a) padding-box;
+}
+
+.prompt-composer {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid transparent;
+  background: linear-gradient(rgb(23 23 23), rgb(23 23 23)) padding-box;
+  box-shadow:
+    0 0 18px rgb(178 255 214 / 0.16),
+    0 0 36px rgb(229 178 255 / 0.12);
+}
+
+.prompt-composer::before {
+  --prompt-rim-angle: 0deg;
   content: "";
-  transition: opacity 0.25s ease;
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--prompt-rim-angle), #b2ffd6, #e5b2ff, transparent 35%, #b2ffd6);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.35;
+  transition: opacity 0.2s ease;
+  animation: prompt-rim-spin 6s linear infinite;
+}
+
+.prompt-composer:focus-within::before {
+  opacity: 0.8;
+}
+
+.prompt-composer:has(textarea:not(:placeholder-shown))::before {
+  opacity: 1;
+}
+
+@keyframes prompt-rim-spin {
+  to {
+    --prompt-rim-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prompt-composer::before {
+    animation: none;
+  }
+}
+
+.prompt-composer:focus-within * {
+  outline: none;
 }
 
 .editor-shell.theme-video {
   border-color: #e5b2ff;
 }
 
-.editor-shell.theme-video::before {
-  background: linear-gradient(
-    -90deg,
-    rgb(0, 0, 0) 70.123%,
-    rgb(229, 178, 255) 89.855%
-  );
-}
-
-/* The asset-library page: the same frame, bleeding yellow instead of green. */
+/* The asset-library page: the same frame, in yellow instead of mint. */
 .editor-shell.theme-library {
   border-color: #ffe066;
-}
-
-.editor-shell.theme-library::before {
-  background: linear-gradient(
-    -90deg,
-    rgb(0, 0, 0) 70.123%,
-    rgb(255, 224, 102) 89.855%
-  );
 }
 
 .app-title-bar {
@@ -1199,5 +1269,59 @@ select {
      replace with a calm static surface tone from the design scale (#262626). */
   .loading-shimmer {
     background: #262626 !important;
+  }
+}
+
+/*
+ * Floating AI button (bottom-right). Same rhythm as the VOOrun Chrome launcher:
+ * the fill steps through solid colours with holds, and the VOO icon turns one
+ * full revolution in the first quarter of its cycle, then rests.
+ */
+@keyframes voo-ai-fab-palette {
+  0% {
+    background-color: #e5b2ff;
+  }
+  8.333%,
+  33.333% {
+    background-color: #e5b2ff;
+  }
+  41.666%,
+  66.666% {
+    background-color: #b2ffd6;
+  }
+  75%,
+  100% {
+    background-color: #e5b2ff;
+  }
+}
+
+@keyframes voo-ai-fab-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  25%,
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.voo-ai-fab {
+  animation: voo-ai-fab-palette 12s linear infinite;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.voo-ai-fab:hover {
+  transform: scale(1.08);
+}
+
+.voo-ai-fab-icon {
+  animation: voo-ai-fab-spin 4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voo-ai-fab,
+  .voo-ai-fab-icon {
+    animation: none;
   }
 }

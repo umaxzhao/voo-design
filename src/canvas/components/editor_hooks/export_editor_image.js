@@ -2,9 +2,8 @@ import { documentToSvg, nodesToSvg } from "../../editor/editor_svg.js";
 import { saveMediaExport } from "../../media_export.js";
 import { effectivePage } from "../../editor/scene_model_geometry.js";
 import { jpegPageToPdf } from "./export_editor_pdf.js";
-import { captureThreeScenePreview } from "./three-scene-preview.js";
 import { getCanvasType } from "../../editor/canvas-composition-model.js";
-import { expandInstancesForRasterAsync } from "../../editor/editor_export_instances.js";
+import { expandInstancesForRaster } from "../../editor/editor_export_instances.js";
 import {
   bytesToDataUrl,
   mediaExportFormat,
@@ -117,41 +116,77 @@ export async function exportEditorImage({
   let dataUrl;
   const canCaptureScenePage =
     (mime.startsWith("image/") && format !== "psd") || format === "pdf";
-  const scenePageCapture =
-    canCaptureScenePage &&
-    range !== "selection" &&
-    getCanvasType(editorDocument) === "3d";
-  if (scenePageCapture) {
-    const page = effectivePage(editorDocument);
-    const exportScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
-    const preview = captureThreeScenePreview(
-      editorDocument.canvasId,
-      document,
-      Math.max(1, Math.round(page.width * exportScale)),
-      Math.max(1, Math.round(page.height * exportScale)),
+  if (range === "slices") {
+    const regions = (editorDocument.nodes ?? []).filter(
+      (node) => node.kind === "region" && node.visible !== false,
     );
-    if (format === "svg") {
-      const page = effectivePage(editorDocument);
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${page.width}" height="${page.height}" viewBox="0 0 ${page.width} ${page.height}"><image width="${page.width}" height="${page.height}" href="${preview}"/></svg>`;
-      dataUrl = bytesToDataUrl(new TextEncoder().encode(svg), "image/svg+xml");
-    } else if (format === "pdf") {
-      const page = effectivePage(editorDocument);
-      dataUrl = await jpegPageToPdf({
-        dataUrl: preview,
-        width: page.width,
-        height: page.height,
-      });
-    } else if (mime === "image/png" && (scale ?? 1) === 1) {
-      dataUrl = preview;
-    } else if (mime.startsWith("image/")) {
-      dataUrl = await encodeScenePreview({
-        preview,
-        editorDocument,
-        mime,
-        quality,
-        scale,
+    if (regions.length === 0) {
+      throw new Error("EXPORT_SELECTION_EMPTY");
+    }
+    const fullPagePng = await exportRaster(engine, {
+      type: "image/png",
+      scale,
+      resolveCanvas,
+    });
+    if (!fullPagePng) throw new Error("EXPORT_TOO_LARGE");
+
+    const fullImg = typeof Image !== "undefined" ? new Image() : null;
+    if (fullImg) {
+      await new Promise((resolve, reject) => {
+        fullImg.onload = resolve;
+        fullImg.onerror = reject;
+        fullImg.src = fullPagePng;
       });
     }
+
+    const page = effectivePage(editorDocument);
+    const exportScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+    const slices = [];
+
+    for (const region of regions) {
+      const rx = (region.x - page.x) * exportScale;
+      const ry = (region.y - page.y) * exportScale;
+      const rw = Math.max(1, Math.round(region.width * exportScale));
+      const rh = Math.max(1, Math.round(region.height * exportScale));
+
+      let sliceDataUrl = fullPagePng;
+      if (typeof document !== "undefined") {
+        const sliceCanvas = document.createElement("canvas");
+        sliceCanvas.width = rw;
+        sliceCanvas.height = rh;
+        const sctx = sliceCanvas.getContext("2d");
+        if (sctx && fullImg) {
+          sctx.drawImage(fullImg, rx, ry, rw, rh, 0, 0, rw, rh);
+        }
+        sliceDataUrl = sliceCanvas.toDataURL(
+          mime,
+          mime === "image/png" ? undefined : quality,
+        );
+      }
+      const sliceName = (region.label || region.name || `slice-${region.id}`)
+        .trim()
+        .replace(/[\\/:*?"<>|]/g, "_");
+      slices.push({
+        id: region.id,
+        name: `${name}-${sliceName}`,
+        dataUrl: sliceDataUrl,
+      });
+    }
+
+    for (const slice of slices) {
+      await saveMediaExport({
+        dataUrl: slice.dataUrl,
+        name: slice.name,
+        format,
+        title,
+        signal,
+      });
+    }
+
+    return {
+      path: slices.map((s) => s.name).join(", "),
+      slices,
+    };
   } else if (
     range === "selection" &&
     Array.isArray(selectedIds) &&
@@ -180,17 +215,12 @@ export async function exportEditorImage({
         editorDocument,
         engine,
       );
-      const instanceBitmaps = new Map();
-      const expanded = await expandInstancesForRasterAsync(
+      const expanded = expandInstancesForRaster(
         { ...editorDocument, nodes: selectedNodes },
         resolveCanvas,
-        instanceBitmaps,
-        Number.isFinite(scale) && scale > 0 ? scale : 1,
       );
       const svg = nodesToSvg(expanded.nodes, {
-        bitmapOf: (imageId) =>
-          instanceBitmaps.get(imageId)?.toDataURL("image/png") ??
-          bitmapOf(imageId),
+        bitmapOf,
         bitmapSizeOf,
         maskOf,
         resolveCanvas,
@@ -252,17 +282,9 @@ export async function exportEditorImage({
       editorDocument,
       engine,
     );
-    const instanceBitmaps = new Map();
-    const expanded = await expandInstancesForRasterAsync(
-      editorDocument,
-      resolveCanvas,
-      instanceBitmaps,
-      Number.isFinite(scale) && scale > 0 ? scale : 1,
-    );
+    const expanded = expandInstancesForRaster(editorDocument, resolveCanvas);
     const svg = documentToSvg(expanded, {
-      bitmapOf: (imageId) =>
-        instanceBitmaps.get(imageId)?.toDataURL("image/png") ??
-        bitmapOf(imageId),
+      bitmapOf,
       bitmapSizeOf,
       maskOf,
     });
@@ -311,4 +333,18 @@ async function encodeScenePreview({
   }
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
   return canvas.toDataURL(mime, quality);
+}
+
+/**
+ * Renders the live engine's focused page as an SVG string, with the same bitmap
+ * and mask resolvers the export dialog uses, so raster content is embedded.
+ */
+export function renderEngineSvg(engine) {
+  const editorDocument = assertExportableDocument(engine.getDocument?.());
+  const { bitmapOf, bitmapSizeOf, maskOf } = createSvgAssetResolvers(
+    editorDocument,
+    engine,
+  );
+  const expanded = expandInstancesForRaster(editorDocument, null);
+  return documentToSvg(expanded, { bitmapOf, bitmapSizeOf, maskOf });
 }

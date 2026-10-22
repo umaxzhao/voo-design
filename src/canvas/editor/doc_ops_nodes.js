@@ -8,8 +8,8 @@ import {
   syncBooleanNode,
 } from "./scene_model.js";
 import { toNodeLocal } from "./scene_geometry.js";
-import { isBoxlessNode } from "./scene-media.js";
 import { regionLocalPoint } from "./doc_ops_regions.js";
+import { projectOntoPath } from "./editor_pen_math.js";
 
 export function withNodes(doc, rawNodes) {
   let nodes = rawNodes;
@@ -121,6 +121,65 @@ export function updateNode(doc, id, patch) {
   );
 }
 
+export function updateNodes(doc, updates) {
+  if (!updates) return doc;
+  let patchMap;
+  if (updates instanceof Map) {
+    patchMap = updates;
+  } else if (Array.isArray(updates)) {
+    if (updates.length === 0) return doc;
+    patchMap = new Map();
+    for (const item of updates) {
+      if (!item || !item.id) continue;
+      patchMap.set(item.id, item.patch ?? item);
+    }
+  } else if (typeof updates === "object") {
+    patchMap = new Map();
+    for (const [id, patch] of Object.entries(updates)) {
+      patchMap.set(id, patch);
+    }
+  } else {
+    return doc;
+  }
+
+  if (patchMap.size === 0) return doc;
+
+  return withNodes(
+    doc,
+    doc.nodes.map((node) => {
+      const patch = patchMap.get(node.id);
+      if (!patch) return node;
+      const updated = {
+        ...node,
+        ...patch,
+        ...(Object.hasOwn(patch, "fill") &&
+        !Object.hasOwn(patch, "fillVariableId")
+          ? { fillVariableId: null }
+          : {}),
+        ...(Object.hasOwn(patch, "stroke") &&
+        !Object.hasOwn(patch, "strokeVariableId")
+          ? { strokeVariableId: null }
+          : {}),
+      };
+      if (patch.pen === true || (patch.kind === "path" && node.kind !== "path")) {
+        delete updated.cornerRadius;
+        delete updated.poly;
+        delete updated.polyKind;
+        delete updated.sides;
+        delete updated.spikes;
+        delete updated.innerRatio;
+        delete updated.line;
+      }
+      for (const key of Object.keys(patch)) {
+        if (patch[key] === undefined) {
+          delete updated[key];
+        }
+      }
+      return updated;
+    }),
+  );
+}
+
 export function removeNode(doc, id) {
   const target = doc.nodes.find((node) => node.id === id);
   if (!target || target.locked || isLockedByGroup(doc, target)) return doc;
@@ -161,10 +220,57 @@ export function duplicateNode(doc, id, offset) {
 export function nodeAtPoint(
   doc,
   point,
-  { includeLocked = false, reject = null } = {},
+  { includeLocked = false, reject = null, spatialIndex = null, zoom = 1 } = {},
 ) {
-  for (let index = doc.nodes.length - 1; index >= 0; index -= 1) {
-    const node = doc.nodes[index];
+  if (!doc?.nodes || doc.nodes.length === 0) return null;
+
+  const index = spatialIndex ?? doc.spatialIndex ?? doc._spatialIndex;
+  let candidateNodes = null;
+
+  if (index) {
+    const querySlop = Math.max(24, 24 / Math.max(0.1, zoom));
+    const candidates = index.pointQuery
+      ? index.pointQuery(point, querySlop)
+      : index.search({
+          minX: point.x - querySlop,
+          minY: point.y - querySlop,
+          maxX: point.x + querySlop,
+          maxY: point.y + querySlop,
+        });
+
+    const hasFillInstance = doc.nodes.some(
+      (n) => n.kind === NODE_KIND.CANVAS_INSTANCE && n.instance?.layoutMode === "fill",
+    );
+
+    if (candidates.length === 0 && !hasFillInstance) {
+      return null;
+    }
+
+    const candidateIdSet = new Set(candidates.map((c) => c.id));
+    candidateNodes = [];
+    for (let i = doc.nodes.length - 1; i >= 0; i -= 1) {
+      const node = doc.nodes[i];
+      if (
+        candidateIdSet.has(node.id) ||
+        (node.kind === NODE_KIND.CANVAS_INSTANCE && node.instance?.layoutMode === "fill")
+      ) {
+        candidateNodes.push(node);
+        if (
+          candidateNodes.length ===
+          candidateIdSet.size + (hasFillInstance ? 1 : 0)
+        ) {
+          break;
+        }
+      }
+    }
+  }
+
+  const nodesToTest = candidateNodes ?? doc.nodes;
+  const isReverse = !candidateNodes;
+  const length = nodesToTest.length;
+
+  for (let i = 0; i < length; i += 1) {
+    const node = isReverse ? nodesToTest[length - 1 - i] : nodesToTest[i];
     // A group is a folder, not a mark: its box covers its members, so testing
     // it would swallow every click meant for them.
     if (isGroupNode(node)) continue;
@@ -179,7 +285,6 @@ export function nodeAtPoint(
     if (!node.visible || isHiddenByGroup(doc, node)) continue;
     // Sound has no box to be inside: it is reached from Layers and the
     // timeline, never from the stage.
-    if (isBoxlessNode(node)) continue;
     if ((node.locked || isLockedByGroup(doc, node)) && !includeLocked) continue;
     if (isRegionNode(node)) {
       // A region lives in its host image's pixels, so the hit test has to go
@@ -216,10 +321,12 @@ export function nodeAtPoint(
     // where it is actually painted; identity-transformed nodes (regions
     // included) get the plain axis-aligned test back.
     const local = toNodeLocal(node, point);
-    const slop = Math.max(
-      node.width <= 2 || node.height <= 2 ? 6 : 4,
+    const screenTolerance = node.width <= 2 || node.height <= 2 ? 6 : 4;
+    const effectiveSlop = Math.max(
+      screenTolerance / Math.max(0.1, zoom),
       ((node.strokeWidth ?? 0) / 2),
     );
+    const slop = effectiveSlop;
     if (
       local.x >= -slop &&
       local.x <= node.width + slop &&
@@ -233,6 +340,18 @@ export function nodeAtPoint(
         const nx = (local.x - rx) / rx;
         const ny = (local.y - ry) / ry;
         if (nx * nx + ny * ny > 1) continue;
+      }
+      if (
+        node.kind === NODE_KIND.PATH &&
+        node.points &&
+        node.points.length >= 2 &&
+        (!node.fill || node.fill === "none" || node.fill === "transparent")
+      ) {
+        const scaleX = node.baseWidth ? node.width / node.baseWidth : 1;
+        const scaleY = node.baseHeight ? node.height / node.baseHeight : 1;
+        const scaledLocal = { x: local.x / scaleX, y: local.y / scaleY };
+        const best = projectOntoPath(node.points, scaledLocal);
+        if (!best || best.dist * Math.min(scaleX, scaleY) > slop) continue;
       }
       // The pixel-level veto: paint layers are mostly transparent, so their
       // transparent texels must let the click fall through to nodes below.

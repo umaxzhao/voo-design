@@ -8,7 +8,6 @@
  * is drawn or exported. Layers that no longer exist are ignored.
  */
 
-import { isAnimatableProperty, upsertNodeKeyframe } from "./scene-motion.js";
 
 export const OVERRIDE_FIELDS = Object.freeze(["text", "fill", "visible"]);
 
@@ -36,21 +35,6 @@ function validate(field, value) {
 
 function nodeMap(instance) {
   return instance?.overrides?.nodes ?? {};
-}
-
-function normalizeAnimationTrackOverride(node, property, track) {
-  if (track === null) return null;
-  if (track?.property !== property || !Array.isArray(track?.keyframes))
-    throw new TypeError("An animation override must match its property");
-  let normalizedNode = { ...node, animations: [] };
-  for (const frame of track.keyframes)
-    normalizedNode = upsertNodeKeyframe(normalizedNode, property, frame);
-  return (
-    normalizedNode.animations[0] ?? {
-      property,
-      keyframes: [],
-    }
-  );
 }
 
 export function getNodeOverride(instance, nodeId) {
@@ -90,44 +74,6 @@ export function setNodeOverride(instance, nodeId, patch) {
   return withNodes(instance, nodes);
 }
 
-/** Store a property-specific animation track without replacing other tracks. */
-export function setNodeAnimationTrackOverride(instance, node, property, track) {
-  if (typeof node?.id !== "string" || !node.id)
-    throw new TypeError("A layer id is required");
-  if (!isAnimatableProperty(node, property))
-    throw new TypeError(`Unsupported animated property: ${property}`);
-  const normalizedTrack = normalizeAnimationTrackOverride(
-    node,
-    property,
-    track,
-  );
-
-  const current = getNodeOverride(instance, node.id);
-  const animationTracks = {
-    ...current.animationTracks,
-    [property]: normalizedTrack,
-  };
-  const nodes = { ...nodeMap(instance) };
-  nodes[node.id] = { ...current, animationTracks };
-  return withNodes(instance, nodes);
-}
-
-/** Remove a local property override so the component's track is inherited. */
-export function clearNodeAnimationTrackOverride(instance, nodeId, property) {
-  const current = getNodeOverride(instance, nodeId);
-  if (!Object.hasOwn(current.animationTracks ?? {}, property)) return instance;
-  const animationTracks = { ...current.animationTracks };
-  delete animationTracks[property];
-  const patch = { ...current };
-  if (Object.keys(animationTracks).length)
-    patch.animationTracks = animationTracks;
-  else delete patch.animationTracks;
-  const nodes = { ...nodeMap(instance) };
-  if (Object.keys(patch).length) nodes[nodeId] = patch;
-  else delete nodes[nodeId];
-  return withNodes(instance, nodes);
-}
-
 export function clearNodeOverride(instance, nodeId) {
   const nodes = { ...nodeMap(instance) };
   delete nodes[nodeId];
@@ -154,30 +100,7 @@ export function applyInstanceOverrides(sourceDoc, instance) {
     const entry = overrides[node.id];
     if (!entry) return node;
     changed = true;
-    const { animationTracks, ...fields } = entry;
-    const result = { ...node, ...fields };
-    if (animationTracks !== undefined) {
-      if (
-        animationTracks === null ||
-        typeof animationTracks !== "object" ||
-        Array.isArray(animationTracks)
-      )
-        throw new TypeError("Animation track overrides must be a property map");
-      const tracks = new Map(
-        (node.animations ?? []).map((track) => [track.property, track]),
-      );
-      for (const [property, track] of Object.entries(animationTracks)) {
-        if (!isAnimatableProperty(node, property))
-          throw new TypeError(`Unsupported animated property: ${property}`);
-        if (track === null) tracks.delete(property);
-        else
-          tracks.set(
-            property,
-            normalizeAnimationTrackOverride(node, property, track),
-          );
-      }
-      result.animations = [...tracks.values()];
-    }
+    const result = { ...node, ...entry };
     return result;
   });
   return changed ? { ...sourceDoc, nodes } : sourceDoc;

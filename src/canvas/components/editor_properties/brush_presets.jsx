@@ -7,6 +7,15 @@ import { StaticSection } from "./property_section.jsx";
 import { parseABR } from "../../editor/abr_parser.js";
 import { DEFAULT_BRUSH_PRESETS } from "../../editor/brush_presets.js";
 
+const PRESET_NAMES = {
+  soft_round: "软边圆笔",
+  medium_round: "中硬圆笔",
+  hard_round: "硬边圆笔",
+  flat_pen: "平头笔刷",
+  airbrush: "柔和喷枪",
+  pencil: "精细铅笔",
+};
+
 export default function BrushPresets({
   brushPreset = "medium_round",
   onBrushPreset,
@@ -17,8 +26,10 @@ export default function BrushPresets({
   const { t } = useI18n();
   const fileInputRef = useRef(null);
   const [customBrushes, setCustomBrushes] = useState([]);
-  const [activePresetId, setActivePresetId] = useState("medium_round");
+  const [activePresetId, setActivePresetId] = useState(brushPreset || "medium_round");
   const [importError, setImportError] = useState(null);
+
+  const effectiveActive = brushPreset || activePresetId;
 
   const handleImportABR = async (e) => {
     const file = e.target.files?.[0];
@@ -63,8 +74,8 @@ export default function BrushPresets({
 
       <div className="grid grid-cols-3 gap-1.5">
         {DEFAULT_BRUSH_PRESETS.map((preset) => {
-          const isActive =
-            activePresetId === preset.id || brushPreset === preset.id;
+          const isActive = effectiveActive === preset.id;
+          const displayName = (preset.labelKey ? t(preset.labelKey) : null) || PRESET_NAMES[preset.id] || preset.name;
           return (
             <button
               key={preset.id}
@@ -78,13 +89,13 @@ export default function BrushPresets({
               }}
               className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2 transition-all ${
                 isActive
-                  ? "bg-[#333333] text-white ring-1 ring-white/20 font-medium"
-                  : "bg-[#222222] text-neutral-400 hover:bg-[#2a2a2a] hover:text-neutral-200"
+                  ? "bg-[#a7ffd4]/15 border border-[#a7ffd4]/50 text-white font-medium ring-1 ring-[#a7ffd4]/30"
+                  : "bg-[#222222] border border-white/5 text-neutral-400 hover:bg-[#2a2a2a] hover:text-neutral-200"
               }`}
             >
               {/* Stylized Brush Tip Preview */}
               <div
-                className="rounded-full bg-white"
+                className="rounded-full bg-white transition-transform"
                 style={{
                   width: Math.min(18, Math.max(6, preset.width / 2)),
                   height: Math.min(18, Math.max(6, preset.width / 2)),
@@ -98,7 +109,7 @@ export default function BrushPresets({
                 }}
               />
               <span className="text-[9px] truncate w-full text-center">
-                {preset.labelKey ? t(preset.labelKey) : preset.name}
+                {displayName}
               </span>
             </button>
           );

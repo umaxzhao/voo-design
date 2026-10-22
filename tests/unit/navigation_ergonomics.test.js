@@ -76,4 +76,21 @@ describe("Navigation Ergonomics (Figma & Photoshop Parity)", () => {
     expect(vp.getZoom()).toBeGreaterThan(1);
     expect(vp.getViewport().zoom).toBeLessThan(5);
   });
+
+  it("panEditorCamera supports both positional arguments (dx, dy) and object ({ dx, dy })", async () => {
+    const { default: useDesignStore } = await import("../../src/store/design_store.js");
+    useDesignStore.setState({
+      editorCamera: { zoom: 1, panX: 0, panY: 0 },
+    });
+
+    // Test object argument
+    useDesignStore.getState().panEditorCamera({ dx: 25, dy: 15 });
+    expect(useDesignStore.getState().editorCamera.panX).toBe(25);
+    expect(useDesignStore.getState().editorCamera.panY).toBe(15);
+
+    // Test positional arguments (from pointer / wheel gestures)
+    useDesignStore.getState().panEditorCamera(-10, 20);
+    expect(useDesignStore.getState().editorCamera.panX).toBe(15);
+    expect(useDesignStore.getState().editorCamera.panY).toBe(35);
+  });
 });

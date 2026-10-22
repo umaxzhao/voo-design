@@ -14,7 +14,7 @@ import {
   overridableNodes,
   setNodeOverride,
 } from "../editor/instance-overrides.js";
-import { ColorRow, InspectorGroup } from "./editor-3d/three-inspector.jsx";
+import { ColorRow, InspectorGroup } from "./inspector_primitives.jsx";
 
 const ICON_BUTTON =
   "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-white/[0.06] hover:text-neutral-100 disabled:opacity-40";

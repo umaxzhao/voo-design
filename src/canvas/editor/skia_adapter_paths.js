@@ -18,7 +18,27 @@ import { forEachSoftStamp, softBrushGradientStops } from "./soft_brush.js";
  * renderers draw the same documents and a different smoothing would make a
  * stroke visibly shift the moment the renderer is switched.
  */
+/**
+ * Path data per points array. The geometry depends only on the points and the
+ * node's size, base size and pen flag, so frames reuse the string instead of
+ * rebuilding it for every path on every pan or zoom.
+ */
+const pathDataCache = new WeakMap();
+
 export function pathDataFor(node) {
+  const points = node.points;
+  if (!Array.isArray(points) || points.length === 0) return buildPathData(node);
+  const key = `${node.width}|${node.height}|${node.baseWidth}|${node.baseHeight}|${Boolean(node.pen)}`;
+  let byKey = pathDataCache.get(points);
+  if (!byKey) {
+    byKey = new Map();
+    pathDataCache.set(points, byKey);
+  }
+  if (!byKey.has(key)) byKey.set(key, buildPathData(node));
+  return byKey.get(key);
+}
+
+function buildPathData(node) {
   const points = node.points ?? [];
   if (points.length === 0) return null;
 

@@ -30,9 +30,9 @@ import {
 
 /** Compact icon-only button used throughout the taskbar. */
 export const ICON_BTN =
-  "flex h-7 w-7 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
-export const ICON_BTN_DEFAULT = `${ICON_BTN} text-neutral-300 hover:bg-white/10 hover:text-white`;
-export const ICON_BTN_AI = `${ICON_BTN} bg-white/[0.06] text-[#E5B2FF] hover:bg-[#E5B2FF]/20 hover:text-[#eed0ff]`;
+  "flex h-6 w-6 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20";
+export const ICON_BTN_DEFAULT = `${ICON_BTN} text-neutral-400 hover:bg-white/10 hover:text-neutral-200`;
+export const ICON_BTN_AI = `${ICON_BTN} bg-[#E5B2FF]/10 text-[#E5B2FF] hover:bg-[#E5B2FF]/20 hover:text-[#eed0ff]`;
 
 /** One retouch slider row: name, current percent, and the range input. */
 function RetouchSlider({ slider, value, disabled, onChange, t }) {
@@ -103,7 +103,7 @@ function PortraitRetouchPanel({ busy = false, onApply }) {
         data-testid="more-retouch-apply"
         disabled={busy || !ready}
         onClick={() => onApply(strengths)}
-        className="rounded-lg bg-white py-1.5 text-[11px] font-semibold text-black transition-colors hover:bg-neutral-200 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+        className="rounded-lg bg-white py-1.5 text-[11px] font-semibold text-black transition-colors hover:bg-neutral-200 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20"
       >
         {busy ? t("editor.retouch.working") : t("editor.apply")}
       </button>
@@ -202,6 +202,14 @@ export function EditorAiMenuSection({
             testId="more-upscale-4x"
             disabled={upscaleBusy}
             onClick={run(() => onUpscale(4))}
+          />
+          <AiMenuItem
+            icon={IconHd}
+            label={t("editor.upscale.anime")}
+            title={t("editor.upscale.animeHint")}
+            testId="more-upscale-anime"
+            disabled={upscaleBusy}
+            onClick={run(() => onUpscale({ scale: 4, modelId: "realesrgan-anime-4x" }))}
           />
         </>
       ) : null}

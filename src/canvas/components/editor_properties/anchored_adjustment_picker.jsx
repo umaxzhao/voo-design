@@ -97,7 +97,7 @@ export default function AnchoredAdjustmentPicker({
             aria-label={t("editor.layers.addAdjustment")}
             data-editor-adjustment-picker="true"
             data-testid="editor-adjustment-picker"
-            className={`fixed z-50 flex max-h-[calc(100dvh-24px)] max-w-[calc(100vw-24px)] flex-col gap-3 rounded-2xl bg-neutral-900 p-4 shadow-panel font-mono text-neutral-200 border border-white/10 ${showPresets ? "w-[30rem]" : "w-[21rem]"}`}
+            className={`fixed z-50 flex max-h-[calc(100dvh-24px)] max-w-[calc(100vw-24px)] flex-col gap-3 rounded-3xl bg-neutral-900 p-4 shadow-panel font-mono text-neutral-200 border border-white/10 ${showPresets ? "w-[30rem]" : "w-[21rem]"}`}
             style={{
               left: position?.left ?? VIEWPORT_INSET,
               top: position?.top ?? VIEWPORT_INSET,

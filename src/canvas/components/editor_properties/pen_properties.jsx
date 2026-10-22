@@ -28,7 +28,7 @@ export default function PenProperties({
                 aria-pressed={penMode === mode}
                 className={`rounded-xl py-1.5 text-[11px] font-mono transition-all ${
                   penMode === mode
-                    ? "bg-white text-black font-semibold"
+                    ? "bg-white text-black font-medium"
                     : "bg-[#222222] text-neutral-400 hover:bg-[#2a2a2a] hover:text-neutral-200"
                 }`}
               >
@@ -43,34 +43,56 @@ export default function PenProperties({
 
       {onPenStrokeWidth && (
         <StaticSection title={t("editor.strokeStyle.weight")}>
-          <ScrubField
-            prefix={
-              <svg
-                className="w-3.5 h-3.5 text-neutral-400"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <line
-                  x1="3"
-                  y1="12"
-                  x2="21"
-                  y2="12"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-              </svg>
-            }
-            suffix="px"
-            min={1}
-            max={256}
-            step={1}
-            value={Math.round(penStrokeWidth)}
-            onValueChange={(val) => onPenStrokeWidth(val)}
-            ariaLabel={t("editor.strokeStyle.weight")}
-            scrubHint={t("editor.props.dragToAdjust")}
-          />
+          <div className="flex flex-col gap-1.5">
+            <ScrubField
+              prefix={
+                <svg
+                  className="w-3.5 h-3.5 text-neutral-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <line
+                    x1="3"
+                    y1="12"
+                    x2="21"
+                    y2="12"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              }
+              suffix="px"
+              min={1}
+              max={256}
+              step={1}
+              value={Math.round(penStrokeWidth)}
+              onValueChange={(val) => onPenStrokeWidth(val)}
+              ariaLabel={t("editor.strokeStyle.weight")}
+              scrubHint={t("editor.props.dragToAdjust")}
+            />
+            {/* Quick stroke width pills (Affinity style) */}
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+              {[1, 2, 4, 8, 16].map((sz) => {
+                const isActive = Math.round(penStrokeWidth) === sz;
+                return (
+                  <button
+                    key={sz}
+                    type="button"
+                    onClick={() => onPenStrokeWidth(sz)}
+                    className={`h-5 min-w-[24px] px-1.5 flex items-center justify-center rounded-md text-[10px] font-mono transition-all ${
+                      isActive
+                        ? "bg-[#a7ffd4] text-black font-semibold shadow-pop"
+                        : "bg-white/[0.06] text-neutral-400 hover:bg-white/[0.12] hover:text-neutral-200"
+                    }`}
+                  >
+                    {sz}px
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </StaticSection>
       )}
 
@@ -84,7 +106,7 @@ export default function PenProperties({
                 onClick={() => onPenAnchorType(type)}
                 className={`rounded-xl py-1.5 text-[11px] font-mono transition-all ${
                   penAnchorType === type
-                    ? "bg-white text-black font-semibold"
+                    ? "bg-white text-black font-medium"
                     : "bg-[#222222] text-neutral-400 hover:bg-[#2a2a2a] hover:text-neutral-200"
                 }`}
               >

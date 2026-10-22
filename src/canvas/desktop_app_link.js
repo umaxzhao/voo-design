@@ -42,7 +42,11 @@ export function desktopAppWsUrl() {
 
 /** True on the hosted editor, the only page origin the app admits. */
 export function isHostedEditorPage(origin = globalThis.location?.origin) {
-  return origin === HOSTED_EDITOR_ORIGIN;
+  return (
+    origin === HOSTED_EDITOR_ORIGIN ||
+    origin === "https://la.voo.run" ||
+    origin === "https://www.voo.run"
+  );
 }
 
 /**

@@ -6,7 +6,7 @@ import {
   layerDisplayName,
 } from "./helpers.js";
 import { COMMAND_DEFINITIONS, listCommandCapabilities } from "./definitions.js";
-import { extractEditorConstraintsSummary } from "../../agent-runtime/content-constraints.js";
+import { extractEditorConstraintsSummary } from "../content_constraints.js";
 import {
   COMMAND_DOMAIN,
   createExecutionReceipt,

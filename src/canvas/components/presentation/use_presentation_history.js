@@ -1,9 +1,9 @@
-import { useWorkflowStore } from "../../store/workflow_store.js";
+import { useDesignStore } from "../../../store/design_store.js";
 import { presentationHistoryTarget } from "../../presentation/presentation-history.js";
 
 export function usePresentationHistory(ownerId, engine, activePageIds = []) {
-  const undoStack = useWorkflowStore((state) => state.undoStack);
-  const redoStack = useWorkflowStore((state) => state.redoStack);
+  const undoStack = useDesignStore((state) => state.undoStack);
+  const redoStack = useDesignStore((state) => state.redoStack);
   const target = (direction) =>
     presentationHistoryTarget(
       { undoStack, redoStack },
@@ -13,7 +13,7 @@ export function usePresentationHistory(ownerId, engine, activePageIds = []) {
       activePageIds,
     );
   const run = (direction) => {
-    const store = useWorkflowStore.getState();
+    const store = useDesignStore.getState();
     if (
       presentationHistoryTarget(
         store,

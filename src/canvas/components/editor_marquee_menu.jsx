@@ -22,36 +22,33 @@ export default function EditorMarqueeMenu({
   onTool,
   marqueeMode = "rect",
   onMarqueeMode,
+  onOpenFamily,
 }) {
   const { t } = useI18n();
   const isMarqueeActive =
-    tool === TOOL.MARQUEE || tool === TOOL.LASSO || tool === TOOL.WAND;
-  const currentMode =
-    tool === TOOL.LASSO
-      ? "lasso"
-      : tool === TOOL.WAND
-        ? "wand"
-        : marqueeMode === "region"
-          ? "rect"
-          : marqueeMode;
+    tool === TOOL.MARQUEE &&
+    marqueeMode !== "poly" &&
+    marqueeMode !== "magnetic";
+
+  const currentMode = marqueeMode === "ellipse" ? "ellipse" : "rect";
   const currentItem = marqueeItemForMode(currentMode);
-  const ActiveIcon = toolFamilyIcon(currentItem?.icon);
+  const ActiveIcon = toolFamilyIcon(currentItem?.icon || "selectionRect");
 
   const handleMainClick = () => {
-    if (currentItem?.toolId === TOOL.MARQUEE) {
-      onMarqueeMode?.(currentMode);
-    }
-    onTool(currentItem?.toolId ?? TOOL.MARQUEE);
+    onMarqueeMode?.(currentMode);
+    onTool(TOOL.MARQUEE);
   };
+
+  const label = t("editor.tool.marquee") || "选区";
 
   return (
     <div className="relative flex items-center">
       {/* 主选择工具按钮 */}
-      <EditorTooltip title={t("editor.selectMode")} shortcut="M" side="top">
+      <EditorTooltip title={label} shortcut="M" side="top">
         <button
           type="button"
           onClick={handleMainClick}
-          aria-label={t("editor.selectMode")}
+          aria-label={label}
           aria-pressed={isMarqueeActive}
           className={toolButtonClass(isMarqueeActive)}
         >
@@ -71,6 +68,7 @@ export default function EditorMarqueeMenu({
 EditorMarqueeMenu.propTypes = {
   tool: PropTypes.string.isRequired,
   onTool: PropTypes.func.isRequired,
-  marqueeMode: PropTypes.oneOf(MARQUEE_MODE_IDS),
+  marqueeMode: PropTypes.string,
   onMarqueeMode: PropTypes.func,
+  onOpenFamily: PropTypes.func,
 };

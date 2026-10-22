@@ -18,10 +18,62 @@
         user-select: none;
         -webkit-user-select: none;
       }
+
+      /* Boot splash: shown until React replaces #root on first render. */
+      .boot-splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #000000;
+      }
+      /* Same rhythm as the floating AI button (.voo-ai-fab-icon in index.css):
+       * one full turn in the first quarter of a 4s cycle, then rest. */
+      .boot-splash-mark {
+        width: 48px;
+        height: 48px;
+        color: #ffffff;
+        transform-origin: center;
+        animation: boot-splash-spin 4s ease-in-out infinite;
+      }
+      @keyframes boot-splash-spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        25%,
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .boot-splash-mark {
+          animation: none;
+        }
+      }
     </style>
   </head>
   <body class="bg-black text-neutral-100 select-none">
-    <div id="root" class="w-full h-full"></div>
+    <div id="root" class="w-full h-full">
+      <div class="boot-splash" role="status" aria-busy="true">
+        <svg class="boot-splash-mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+          <path d="M21 6.25V16.75L11.5 22L2 16.75V6.25L11.5 1L21 6.25ZM11.5 22L21 6.25H2L11.5 22ZM11.5 6.66016C14.2777 6.66016 16.5294 8.82703 16.5294 11.5C16.5294 14.173 14.2777 16.3398 11.5 16.3398C8.72233 16.3398 6.47059 14.173 6.47059 11.5C6.47059 8.82703 8.72233 6.66016 11.5 6.66016Z" />
+        </svg>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      setTimeout(function() {
+        var splash = document.querySelector(".boot-splash");
+        if (splash && !splash.dataset.reloaded) {
+          splash.dataset.reloaded = "true";
+          var hint = document.createElement("div");
+          hint.style.cssText = "position:fixed;bottom:28px;left:50%;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,0.45);cursor:pointer;text-decoration:underline;";
+          hint.innerText = "加载较慢？点击重新加载";
+          hint.onclick = function() { window.location.reload(); };
+          splash.appendChild(hint);
+        }
+      }, 5000);
+    </script>
   </body>
 </html>

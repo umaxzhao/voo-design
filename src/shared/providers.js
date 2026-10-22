@@ -1,4 +1,4 @@
-import { CODEX_MODELS, DEFAULT_AGENT_MODEL } from "./agent-defaults.js";
+import { CLAUDE_MODELS, CODEX_MODELS, DEFAULT_AGENT_MODEL } from "./agent-defaults.js";
 import {
   HUNYUAN3D_LOCAL_MODEL_ID,
   HUNYUAN3D_LOCAL_MODEL_LABEL,
@@ -727,10 +727,26 @@ export const LOCAL_ENGINE_DEFAULT_MODEL_ID = "qwen-image-2.1-q4";
  * that VOO can be a client of; Claude Code / Antigravity are not served the
  * same way, so they are not listed here.
  */
-export const CLI_TEXT_MODELS = CODEX_MODELS.map((model) => ({
-  id: `codex:${model.id}`,
-  label: `Codex · ${model.label}`,
-}));
+export const ANTIGRAVITY_TEXT_MODELS = [
+  { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+  { id: "claude-3-7-sonnet", label: "Claude 3.7 Sonnet" },
+];
+
+export const CLI_TEXT_MODELS = [
+  ...CLAUDE_MODELS.map((model) => ({
+    id: `claude:${model.id}`,
+    label: `Claude · ${model.label}`,
+  })),
+  ...CODEX_MODELS.map((model) => ({
+    id: `codex:${model.id}`,
+    label: `Codex · ${model.label}`,
+  })),
+  ...ANTIGRAVITY_TEXT_MODELS.map((model) => ({
+    id: `antigravity:${model.id}`,
+    label: `Antigravity · ${model.label}`,
+  })),
+];
 export const CLI_TEXT_MODEL_ID = DEFAULT_AGENT_MODEL;
 
 /** DeepSeek text models, OpenAI-compatible chat completions. */

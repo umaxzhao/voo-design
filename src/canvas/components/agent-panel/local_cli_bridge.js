@@ -68,6 +68,12 @@ export function resetDesktopLinkCliBridge() {
   desktopLinkBridge = null;
 }
 
+/** Closes the cached loopback socket and forgets it, so the next call dials again. */
+export function resetWebCliBridge() {
+  webBridge?.close();
+  webBridge = null;
+}
+
 /**
  * The page's link and what it can do with a CLI, probed once.
  *
@@ -234,7 +240,14 @@ export function createWebCliBridge({
       frame.type === CLI_BRIDGE_MESSAGE.EVENT &&
       frame.channel === CLI_BRIDGE_EVENT.TEXT
     ) {
-      for (const listener of textListeners) listener(frame.payload);
+      for (const listener of textListeners) {
+        try {
+          listener(frame.payload);
+        } catch (error) {
+          // One faulty listener must not stop the others or the socket.
+          console.warn("[cli-bridge] Text listener failed", error);
+        }
+      }
     }
   }
 
@@ -287,10 +300,30 @@ export function createWebCliBridge({
   return {
     isOpen: () => socket?.readyState === SOCKET_OPEN,
     open,
-    connect: () => invoke(CLI_BRIDGE_CHANNEL.CONNECT),
+    /** Dials if needed, then connects. Failures are reported in the result, never thrown. */
+    async connect() {
+      try {
+        if (!(await open())) {
+          return { ok: false, transport: "web_loopback", error: "cli.bridgeDisconnected" };
+        }
+        const value = await invoke(CLI_BRIDGE_CHANNEL.CONNECT);
+        return { ok: true, transport: "web_loopback", value };
+      } catch (error) {
+        return { ok: false, transport: "web_loopback", error: error.message };
+      }
+    },
+    close() {
+      const current = socket;
+      socket = null;
+      failPending("cli.bridgeClosed");
+      current?.close();
+    },
     advance: (options) => invoke(CLI_BRIDGE_CHANNEL.ADVANCE, options),
     cancel: (options) => invoke(CLI_BRIDGE_CHANNEL.CANCEL, options),
-    checkAll: () => invoke(CLI_BRIDGE_CHANNEL.CHECK_ALL),
+    checkAll: async () => {
+      await open();
+      return invoke(CLI_BRIDGE_CHANNEL.CHECK_ALL);
+    },
     onText(listener) {
       textListeners.add(listener);
       return () => textListeners.delete(listener);

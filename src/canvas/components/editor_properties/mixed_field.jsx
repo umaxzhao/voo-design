@@ -15,7 +15,7 @@ export default function MixedField({ label, suffix = "", bare = false }) {
       }`}
       title={t("editor.props.mixedValues")}
     >
-      <span className="shrink-0 pr-1 text-[10px] font-mono uppercase tracking-wide text-neutral-500">
+      <span className="inline-flex items-center shrink-0 pr-1 text-[10px] font-mono uppercase tracking-wide text-neutral-500">
         {label}
       </span>
       <span className="ml-auto">{suffix ? `—${suffix}` : "—"}</span>
@@ -24,7 +24,7 @@ export default function MixedField({ label, suffix = "", bare = false }) {
 }
 
 MixedField.propTypes = {
-  label: PropTypes.string.isRequired,
+  label: PropTypes.node.isRequired,
   suffix: PropTypes.string,
   bare: PropTypes.bool,
 };

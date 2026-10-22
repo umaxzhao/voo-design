@@ -1,24 +1,19 @@
 import PropTypes from "prop-types";
 import { docToScreenRect } from "../editor/chrome_coords.js";
-import { getCanvasType } from "../editor/canvas-composition-model.js";
 import { useI18n } from "../use_i18n.js";
 import CanvasInstanceContent from "./editor_canvas_instance_content.jsx";
 
+/** Component instances on the page, each showing its source canvas. */
 export default function EditorCanvasInstances({
   doc,
   viewport,
   selectedId,
   selectedInstanceChild = null,
-  hostTime = null,
   nodeIds = null,
   interactive = true,
-  threeInputTarget = null,
-  onSelectThreeNode = null,
   resolveCanvas,
   onSelect,
   onOpenSource,
-  adjustingInstanceId = null,
-  onInstanceCameraChange = null,
 }) {
   const { t } = useI18n();
   return (doc.nodes ?? [])
@@ -37,6 +32,9 @@ export default function EditorCanvasInstances({
           : node,
         viewport,
       );
+      const childSelected =
+        selectedInstanceChild?.instanceId === node.id &&
+        selectedInstanceChild?.sourceCanvasId === node.sourceCanvasId;
       return (
         <div
           key={node.id}
@@ -46,7 +44,7 @@ export default function EditorCanvasInstances({
           role={interactive ? "button" : undefined}
           tabIndex={interactive ? 0 : -1}
           aria-label={node.name || t("editor.instance.label")}
-          className={`absolute z-10 overflow-hidden ${interactive ? "" : "pointer-events-none"} ${selectedId === node.id && adjustingInstanceId !== node.id ? "ring-1 ring-[#E5B2FF]" : ""} ${adjustingInstanceId === node.id ? "ring-2 ring-[#a7ffd4]" : ""}`}
+          className={`absolute z-10 overflow-hidden ${interactive ? "" : "pointer-events-none"}`}
           style={{
             left: rect.x,
             top: rect.y,
@@ -81,20 +79,13 @@ export default function EditorCanvasInstances({
               : undefined
           }
         >
-          {sourceDoc &&
-          (getCanvasType(sourceDoc) !== "3d" || threeInputTarget) ? (
+          {sourceDoc ? (
             <div className="pointer-events-none absolute inset-0">
               <CanvasInstanceContent
                 sourceDoc={sourceDoc}
-                selectedNodeId={
-                  selectedInstanceChild?.instanceId === node.id &&
-                  selectedInstanceChild?.sourceCanvasId === node.sourceCanvasId
-                    ? selectedInstanceChild.nodeId
-                    : null
-                }
+                selectedNodeId={childSelected ? selectedInstanceChild.nodeId : null}
                 selectedNodeIds={
-                  selectedInstanceChild?.instanceId === node.id &&
-                  selectedInstanceChild?.sourceCanvasId === node.sourceCanvasId
+                  childSelected
                     ? Array.isArray(selectedInstanceChild.nodeIds) &&
                       selectedInstanceChild.nodeIds.length > 0
                       ? selectedInstanceChild.nodeIds
@@ -102,20 +93,6 @@ export default function EditorCanvasInstances({
                         ? [selectedInstanceChild.nodeId]
                         : []
                     : []
-                }
-                hostTime={hostTime}
-                threeInputTarget={threeInputTarget}
-                adjustingView={adjustingInstanceId === node.id}
-                onInstanceCameraChange={onInstanceCameraChange}
-                threeInteractionEnabled={
-                  selectedId === node.id ||
-                  selectedInstanceChild?.instanceId === node.id
-                }
-                onSelectThreeNode={
-                  onSelectThreeNode
-                    ? (sourceNodeId, meta) =>
-                        onSelectThreeNode(node, sourceNodeId, meta)
-                    : null
                 }
                 instance={node.instance}
                 width={rect.width}
@@ -125,16 +102,11 @@ export default function EditorCanvasInstances({
                 depth={0}
               />
             </div>
-          ) : sourceDoc ? null : (
+          ) : (
             <div className="flex h-full w-full items-center justify-center bg-neutral-900 text-[10px] text-neutral-400">
               {t("editor.instance.missingSource")}
             </div>
           )}
-          {adjustingInstanceId === node.id ? (
-            <div className="pointer-events-none absolute left-2 top-2 rounded-lg bg-neutral-900/90 px-2 py-1 text-[10px] text-[#a7ffd4]">
-              {t("editor.instance.adjustingView")}
-            </div>
-          ) : null}
         </div>
       );
     });
@@ -144,19 +116,10 @@ EditorCanvasInstances.propTypes = {
   doc: PropTypes.object.isRequired,
   viewport: PropTypes.object.isRequired,
   selectedId: PropTypes.string,
-  selectedInstanceChild: PropTypes.shape({
-    instanceId: PropTypes.string.isRequired,
-    sourceCanvasId: PropTypes.string.isRequired,
-    nodeId: PropTypes.string.isRequired,
-  }),
-  hostTime: PropTypes.number,
+  selectedInstanceChild: PropTypes.object,
   nodeIds: PropTypes.arrayOf(PropTypes.string),
   interactive: PropTypes.bool,
-  threeInputTarget: PropTypes.instanceOf(Element),
-  onSelectThreeNode: PropTypes.func,
   resolveCanvas: PropTypes.func.isRequired,
   onSelect: PropTypes.func,
   onOpenSource: PropTypes.func,
-  adjustingInstanceId: PropTypes.string,
-  onInstanceCameraChange: PropTypes.func,
 };

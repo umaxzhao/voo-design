@@ -13,8 +13,27 @@
 
 import { getImageDataUrl, putImage } from "./db.js";
 import { dataUrlToBlob } from "../../shared/db_wire.js";
-import { useWorkflowStore } from "./workflow_store.js";
+import { useDesignStore } from "../../store/design_store.js";
 import { addRecentFile } from "./recent_files.js";
+import { psdBytesToVooFile } from "./psd_to_voo.js";
+import { isSvgFileName, svgBytesToVooFile } from "./svg_document_io.js";
+import { buildFigContainer } from "../figma/voo-to-fig.js";
+import { serializeFigArchive } from "../figma/fig-file.js";
+import {
+  SAVE_FORMATS,
+  formatSaveLosses,
+  isPenFileName,
+  isPsdFileName,
+  replaceDocumentExtension,
+  saveFormatOf,
+} from "./save_formats.js";
+import { penBytesToVooFile } from "../pen/pen_import_client.js";
+import { renderEngineSvg } from "../components/editor_hooks/export_editor_image.js";
+import { documentToSvg } from "../editor/editor_svg.js";
+import { workspaceStorage } from "../../services/workspace_storage.js";
+import { t } from "../../shared/i18n.js";
+import { decodeVooBinary, encodeVooBinary, isVooBinary } from "./voo_binary.js";
+import { importFigFile } from "../figma/figma_import_client.js";
 import {
   VOO_FILE_FORMAT,
   VOO_FILE_VERSION,
@@ -25,7 +44,7 @@ import { flushEditorPendingWrites } from "../components/editor_hooks/editor-auto
 
 export async function readRequiredAsset(id) {
   // Check memory store first
-  const memoryImage = useWorkflowStore.getState?.()?.images?.[id];
+  const memoryImage = useDesignStore.getState?.()?.images?.[id];
   if (typeof memoryImage === "string" && memoryImage.startsWith("data:")) {
     return memoryImage;
   }
@@ -144,7 +163,7 @@ export async function hydrateVooImages(vooFile, publication) {
   }
   const entries = [...assetsById];
   for (const [id, dataUrl] of entries) {
-    useWorkflowStore.getState().putImageState?.(id, dataUrl);
+    useDesignStore.getState().putImageState?.(id, dataUrl);
   }
   if (entries.length === 0) return async () => {};
   const { deleteImages, getImageBlobMap } = await import("./db.js");
@@ -207,8 +226,35 @@ export function vooMainImageId(document) {
  * In Electron: uses dialog:saveFile / fs:writeFile, remembering filePath.
  * In Web: uses showSaveFilePicker if available (writing to FileSystemFileHandle), or falls back to file download.
  */
+/**
+ * Asks before a save that would drop content. Returns false when the user
+ * declines, so the document stays as it is instead of losing content silently.
+ */
+function confirmSaveLosses(losses) {
+  const lines = losses.map((loss) => `• ${t(loss.key, loss.params)}`).join("\n");
+  return window.confirm(`${t("save.loss.intro")}\n${lines}\n\n${t("save.loss.confirm")}`);
+}
+
+/** Encodes the document in the format its file name asks for. */
+async function encodeForFormat(format, { vooFile, engine, sceneDoc, figSource, pageName, fileName }) {
+  if (format === "svg") {
+    return new TextEncoder().encode(engine ? renderEngineSvg(engine) : documentToSvg(sceneDoc));
+  }
+  if (format === "psd") {
+    if (!engine) throw new Error("psd-save-needs-live-engine");
+    return new Uint8Array(await engine.exportPsd());
+  }
+  if (format === "fig") {
+    // Only a `.fig` that was opened has the schema a Figma file needs.
+    if (!figSource) throw new Error("fig-save-needs-source");
+    const container = buildFigContainer(sceneDoc, figSource, { pageName });
+    return serializeFigArchive(container, { name: fileName });
+  }
+  return encodeVooBinary(vooFile);
+}
+
 export async function saveVooProject({
-  store = useWorkflowStore.getState(),
+  store = useDesignStore.getState(),
   enginesRef = null,
   snapshotsRef = null,
   saveAs = false,
@@ -250,7 +296,7 @@ export async function saveVooProject({
     } else if (snapshotsRef?.current?.get(node.id)?.doc) {
       sceneDoc = snapshotsRef.current.get(node.id).doc;
     } else {
-      sceneDoc = node.data?.sceneDoc || {};
+      sceneDoc = node.data?.editorDoc ?? node.data?.sceneDoc ?? {};
     }
     return {
       id: node.id,
@@ -284,28 +330,38 @@ export async function saveVooProject({
     version: 2,
   });
 
-  const jsonContent = JSON.stringify(vooFile, null, 2);
+  // The file name decides the format: a `.svg` or `.psd` document saves back as itself.
+  const format = saveFormatOf(store.fileName);
+  const losses = formatSaveLosses(format, { pageCount: pages.length, sceneDoc: primaryDoc });
+  if (losses.length > 0 && !confirmSaveLosses(losses)) return { canceled: true };
+  const fileBytes = await encodeForFormat(format, {
+    vooFile,
+    engine: focusedEngine,
+    sceneDoc: primaryDoc,
+    figSource: store.figSource,
+    pageName: primaryPage?.label,
+    fileName: store.fileName,
+  });
 
   const rawSuggestedName =
     store.fileName ||
     (pageTitle
       ? `${pageTitle()}.voo`
       : `${primaryPage?.label || "Untitled"}.voo`);
-  const finalSuggestedName = rawSuggestedName.endsWith(".voo")
-    ? rawSuggestedName
-    : `${rawSuggestedName}.voo`;
+  const finalSuggestedName = replaceDocumentExtension(rawSuggestedName, SAVE_FORMATS[format].extension);
 
   // 1. Electron Desktop
-  if (window.electronAPI?.saveFileDialog && window.electronAPI?.writeFile) {
+  if (window.electronAPI?.saveFileDialog && window.electronAPI?.writeFileBytes) {
     let targetPath = store.filePath;
     if (saveAs || !targetPath) {
+      const defaultPath = await resolveWorkspaceDefaultSavePath(finalSuggestedName);
       targetPath = await window.electronAPI.saveFileDialog({
-        defaultPath: finalSuggestedName,
-        filters: [{ name: "VOO Design Document", extensions: ["voo"] }],
+        defaultPath,
+        filters: [SAVE_FORMATS[format].electronFilter],
       });
       if (!targetPath) return { canceled: true };
     }
-    await window.electronAPI.writeFile(targetPath, jsonContent);
+    await window.electronAPI.writeFileBytes(targetPath, fileBytes);
     const fileName = targetPath.split(/[/\\]/).pop();
     store.setFilePath?.(targetPath);
     store.setFileName?.(fileName);
@@ -328,15 +384,18 @@ export async function saveVooProject({
     let handle = store.fileHandle;
     if (saveAs || !handle) {
       try {
-        handle = await window.showSaveFilePicker({
+        const pickerOptions = {
           suggestedName: finalSuggestedName,
-          types: [
-            {
-              description: "VOO Design Document (*.voo)",
-              accept: { "application/json": [".voo"] },
-            },
-          ],
-        });
+          types: [SAVE_FORMATS[format].pickerType],
+        };
+        const driver =
+          typeof workspaceStorage?.getDriver === "function"
+            ? workspaceStorage.getDriver()
+            : null;
+        if (driver?.dirHandle) {
+          pickerOptions.startIn = driver.dirHandle;
+        }
+        handle = await window.showSaveFilePicker(pickerOptions);
       } catch (err) {
         if (err.name === "AbortError") return { canceled: true };
         console.warn(
@@ -347,7 +406,7 @@ export async function saveVooProject({
     }
     if (handle) {
       const writable = await handle.createWritable();
-      await writable.write(jsonContent);
+      await writable.write(fileBytes);
       await writable.close();
 
       store.setFileHandle?.(handle);
@@ -365,7 +424,7 @@ export async function saveVooProject({
   }
 
   // 3. Fallback Web Browser Download
-  const blob = new Blob([jsonContent], { type: "application/json" });
+  const blob = new Blob([fileBytes], { type: SAVE_FORMATS[format].mime });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -389,36 +448,153 @@ export async function saveVooProject({
 /**
  * Opens a .voo file into the current VOO Design application.
  */
-export async function openVooProject({
-  store = useWorkflowStore.getState(),
+/** PSD is binary, so it is read as bytes; `.voo` / `.json` stay text. */
+function isBinaryDesignName(name) {
+  return /\.(psd|fig)$/i.test(name ?? "");
+}
+
+/** Converts a picked PSD or Figma file to a `.voo` envelope, by extension. */
+async function binaryDesignToVooFile(bytes, sourceName, callbacks = {}) {
+  if (/\.fig$/i.test(sourceName)) {
+    const { vooFile, fonts, figSource } = await importFigFile(bytes, callbacks);
+    return { vooFile, fonts, figSource };
+  }
+  return { vooFile: psdBytesToVooFile(bytes), fonts: [], figSource: null };
+}
+
+/** Opens a picked PSD as a new, unsaved design: its layers become editable nodes. */
+async function openBinaryDesignSource({ store, bytes, sourceName, sourcePath, handle, onProgress: userOnProgress, onChunk }) {
+  const onProgress = (p) => {
+    if (/\.fig$/i.test(sourceName)) {
+      const pct = typeof p?.percent === "number" ? Math.round(p.percent) : null;
+      const baseLabel = t("loading.importingFigma");
+      const progressLabel = pct !== null ? `${baseLabel} (${pct}%)` : baseLabel;
+      store.setDocumentLoading?.(progressLabel);
+    }
+    userOnProgress?.(p);
+  };
+  if (/\.fig$/i.test(sourceName)) {
+    store.setDocumentLoading?.(t("loading.importingFigma"));
+  }
+  const { vooFile, fonts, figSource } = await binaryDesignToVooFile(bytes, sourceName, {
+    onProgress,
+    onChunk,
+  });
+  await hydrateVooImages(vooFile);
+  // A PSD keeps its name and location, so saving writes it back in place.
+  // A Figma file saves as a copy: its name gets a "(VOO)" suffix and no filePath,
+  // so saving asks for a location and never overwrites the source.
+  const keepsSource = isPsdFileName(sourceName);
+  const fileName = keepsSource
+    ? sourceName
+    : `${sourceName.replace(/\.fig$/i, "")} (VOO).fig`;
+  store.loadVooProject?.({
+    vooData: vooFile,
+    filePath: keepsSource ? sourcePath : null,
+    fileName,
+    fileHandle: keepsSource ? handle : null,
+    figSource,
+  });
+  addRecentFile({ name: sourceName, path: sourcePath, preview: null });
+  // Families the editor does not ship: they show in the design with a fallback face.
+  const missingFonts = fonts.filter((font) => !font.available);
+  return { success: true, fileName, filePath: keepsSource ? sourcePath : null, missingFonts };
+}
+
+/** Lets the user pick one file through a hidden input when no native picker is available. */
+function pickFileFromInput() {
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".voo,.json,.psd,.fig,.svg,.pen";
+    input.onchange = (e) => resolve(e.target.files?.[0] ?? null);
+    input.click();
+  });
+}
+
+/** Bytes of a file-like value, whatever the host hands back. */
+function toBytes(value) {
+  return value instanceof Uint8Array ? value : new Uint8Array(value);
+}
+
+/**
+ * Opens a `.voo` (binary or legacy JSON), a PSD or a Figma file from a picked
+ * file, a recent path, or the native dialog.
+ */
+/**
+ * Waits for the document to reach the screen before the overlay lifts. Frames
+ * are preferred, but browsers pause requestAnimationFrame in hidden or occluded
+ * windows, so a timer caps the wait: the overlay must never stay up for good.
+ */
+function waitForPaint() {
+  const frames = new Promise((resolve) => {
+    if (typeof requestAnimationFrame !== "function") {
+      resolve();
+      return;
+    }
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+  const cap = new Promise((resolve) => setTimeout(resolve, 150));
+  return Promise.race([frames, cap]);
+}
+
+/**
+ * Opens a document behind a loading overlay. The overlay stays up while the file
+ * is read, converted (a Figma import can take seconds) and loaded, and lifts only
+ * after the canvas has painted, so a half-imported document is never shown.
+ */
+export async function openVooProject(options = {}) {
+  const store = options.store ?? useDesignStore.getState();
+  store.setDocumentLoading?.(t("loading.openingDocument"));
+  try {
+    return await openVooProjectUnlocked(options);
+  } finally {
+    await waitForPaint();
+    store.setDocumentLoading?.(null);
+  }
+}
+
+async function openVooProjectUnlocked({
+  store = useDesignStore.getState(),
   fileOrPath = null,
 } = {}) {
-  let fileContent = null;
-  let targetPath = null;
-  let targetName = null;
-  let fileHandle = null;
+  let source = null;
 
   if (
     (typeof File !== "undefined" && fileOrPath instanceof File) ||
     (typeof Blob !== "undefined" && fileOrPath instanceof Blob) ||
-    (fileOrPath && typeof fileOrPath.text === "function")
+    (fileOrPath && typeof fileOrPath.arrayBuffer === "function")
   ) {
-    fileContent = await fileOrPath.text();
-    targetName = fileOrPath.name || "Untitled.voo";
+    source = {
+      bytes: new Uint8Array(await fileOrPath.arrayBuffer()),
+      name: fileOrPath.name || "Untitled.voo",
+      path: null,
+      handle: null,
+    };
   } else if (typeof fileOrPath === "string") {
-    if (window.electronAPI?.readFile) {
-      fileContent = await window.electronAPI.readFile(fileOrPath);
-      targetPath = fileOrPath;
-      targetName = fileOrPath.split(/[/\\]/).pop();
-    }
+    if (!window.electronAPI?.readFileBytes) return { canceled: true };
+    source = {
+      bytes: toBytes(await window.electronAPI.readFileBytes(fileOrPath)),
+      name: fileOrPath.split(/[/\\]/).pop(),
+      path: fileOrPath,
+      handle: null,
+    };
   } else if (window.electronAPI?.openFileDialog) {
     const result = await window.electronAPI.openFileDialog({
-      filters: [{ name: "VOO Design Document", extensions: ["voo", "json"] }],
+      filters: [
+        {
+          name: "VOO Design Document / PSD / Figma / SVG / Pen",
+          extensions: ["voo", "json", "psd", "fig", "svg", "pen"],
+        },
+      ],
     });
-    if (!result || !result.content) return { canceled: true };
-    fileContent = result.content;
-    targetPath = result.filePath;
-    targetName = result.filePath.split(/[/\\]/).pop();
+    if (!result?.bytes) return { canceled: true };
+    source = {
+      bytes: toBytes(result.bytes),
+      name: result.filePath.split(/[/\\]/).pop(),
+      path: result.filePath,
+      handle: null,
+    };
   } else if (
     typeof window !== "undefined" &&
     typeof window.showOpenFilePicker === "function"
@@ -427,45 +603,115 @@ export async function openVooProject({
       const [handle] = await window.showOpenFilePicker({
         types: [
           {
-            description: "VOO Design Document (*.voo, *.json)",
-            accept: { "application/json": [".voo", ".json"] },
+            description:
+              "VOO Design Document / PSD / Figma / SVG / Pen (*.voo, *.json, *.psd, *.fig, *.svg, *.pen)",
+            accept: {
+              "application/json": [".voo", ".json", ".pen"],
+              "image/vnd.adobe.photoshop": [".psd"],
+              "application/octet-stream": [".fig"],
+              "image/svg+xml": [".svg"],
+            },
           },
         ],
       });
       if (!handle) return { canceled: true };
       const file = await handle.getFile();
-      fileContent = await file.text();
-      fileHandle = handle;
-      targetName = file.name;
+      source = {
+        bytes: new Uint8Array(await file.arrayBuffer()),
+        name: file.name,
+        path: null,
+        handle,
+      };
     } catch (err) {
       if (err.name === "AbortError") return { canceled: true };
-      console.warn(
-        "[VOO] showOpenFilePicker failed, falling back to input:",
-        err,
-      );
+      console.warn("[VOO] showOpenFilePicker failed, falling back to input:", err);
     }
   }
 
-  if (!fileContent && typeof document !== "undefined") {
-    fileContent = await new Promise((resolve) => {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = ".voo,.json";
-      input.onchange = async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return resolve(null);
-        targetName = file.name;
-        const text = await file.text();
-        resolve(text);
-      };
-      input.click();
-    });
-    if (!fileContent) return { canceled: true };
+  if (!source && typeof document !== "undefined") {
+    const file = await pickFileFromInput();
+    if (!file) return { canceled: true };
+    source = {
+      bytes: new Uint8Array(await file.arrayBuffer()),
+      name: file.name,
+      path: null,
+      handle: null,
+    };
+  }
+  if (!source) return { canceled: true };
+
+  return openVooSource({ store, ...source });
+}
+
+/**
+ * Opens an SVG as an editable design. It keeps the `.svg` name and its file
+ * location, so saving writes back to the same file.
+ */
+async function openSvgSource({ store, bytes, name, path, handle }) {
+  const vooFile = svgBytesToVooFile(bytes);
+  store.loadVooProject?.({
+    vooData: vooFile,
+    filePath: path,
+    fileName: name,
+    fileHandle: handle,
+  });
+  addRecentFile({ name, path, preview: null });
+  return { success: true, fileName: name, filePath: path };
+}
+
+/**
+ * Opens a Pen `.pen` document as a new, unsaved VOO design. The source name
+ * keeps a "(Pen)" suffix (and the `.pen` extension) so Save As proposes a
+ * `.voo` beside it and never writes over the Pen file itself.
+ */
+async function openPenSource({ store, bytes, name, path, handle }) {
+  // `penImport.*` ships in its own dictionary slice; before that slice is
+  // wired into the locale, keep showing the generic opening label.
+  const importing = t("penImport.importing");
+  store.setDocumentLoading?.(
+    importing === "penImport.importing" ? t("loading.openingDocument") : importing,
+  );
+  const base = name.replace(/\.pen$/i, "").trim() || "Pen Import";
+  const result = await penBytesToVooFile(bytes, {
+    fileName: name,
+    filePath: path,
+    dirHandle: handle?.kind === "directory" ? handle : null,
+    fileHandle: handle?.kind === "file" ? handle : null,
+    pageLabel: base,
+  });
+  await hydrateVooImages(result.vooFile);
+  const fileName = `${base} (Pen).pen`;
+  store.loadVooProject?.({
+    vooData: result.vooFile,
+    filePath: null,
+    fileName,
+    fileHandle: null,
+  });
+  addRecentFile({ name, path, preview: null });
+  return {
+    success: true,
+    fileName,
+    filePath: null,
+    warnings: result.warnings,
+    missingFonts: result.missingFonts,
+  };
+}
+
+/** Loads one already-read file: PSD, Figma and Pen convert; `.voo` parses by its format. */
+async function openVooSource({ store, bytes, name, path, handle }) {
+  if (isSvgFileName(name)) {
+    return openSvgSource({ store, bytes, name, path, handle });
+  }
+  if (isPenFileName(name)) {
+    return openPenSource({ store, bytes, name, path, handle });
+  }
+  if (isBinaryDesignName(name)) {
+    return openBinaryDesignSource({ store, bytes, sourceName: name, sourcePath: path, handle });
   }
 
-  if (!fileContent) return { canceled: true };
-
-  const parsed = JSON.parse(fileContent);
+  const parsed = isVooBinary(bytes)
+    ? decodeVooBinary(bytes)
+    : JSON.parse(new TextDecoder().decode(bytes));
   if (!isValidVooFile(parsed)) {
     throw new Error("Invalid .voo file format");
   }
@@ -474,21 +720,21 @@ export async function openVooProject({
 
   store.loadVooProject?.({
     vooData: parsed,
-    filePath: targetPath,
-    fileName: targetName || "Untitled.voo",
-    fileHandle,
+    filePath: path,
+    fileName: name || "Untitled.voo",
+    fileHandle: handle,
   });
 
   addRecentFile({
-    name: targetName || "Untitled.voo",
-    path: targetPath,
+    name: name || "Untitled.voo",
+    path,
     preview: parsed?.preview || null,
   });
 
   return {
     success: true,
-    fileName: targetName || "Untitled.voo",
-    filePath: targetPath,
+    fileName: name || "Untitled.voo",
+    filePath: path,
   };
 }
 
@@ -496,3 +742,34 @@ export async function openVooProject({
 export function localFilesAvailable() {
   return true;
 }
+
+/**
+ * Resolves the default save path inside the active workspace directory.
+ */
+export async function resolveWorkspaceDefaultSavePath(suggestedName) {
+  try {
+    const config = await workspaceStorage.getConfig();
+    if (config?.type === "electron" && config?.path) {
+      const sep = config.path.includes("\\") ? "\\" : "/";
+      const trimmed = config.path.endsWith(sep)
+        ? config.path.slice(0, -1)
+        : config.path;
+      return `${trimmed}${sep}${suggestedName}`;
+    }
+    if (
+      config?.path &&
+      config.type !== "web-idb" &&
+      config.type !== "web-fsa" &&
+      !config.path.startsWith("Virtual") &&
+      !config.path.startsWith("Browser")
+    ) {
+      const sep = config.path.includes("\\") ? "\\" : "/";
+      const trimmed = config.path.endsWith(sep)
+        ? config.path.slice(0, -1)
+        : config.path;
+      return `${trimmed}${sep}${suggestedName}`;
+    }
+  } catch {}
+  return suggestedName;
+}
+

@@ -17,17 +17,9 @@ import {
   addCircularArrayModifier,
   updateCircularArrayModifier,
   removeCircularArrayModifier,
-  upsertCircularArrayKeyframe,
-  removeCircularArrayKeyframe,
 } from "../../editor/doc-ops-circular-array.js";
-import { keyframeAtTimeForModifier } from "../../editor/scene-motion.js";
-import {
-  toggleModifierMotionField,
-  editModifierMotionField,
-} from "../editor_motion/motion_properties.js";
-import MotionKeyframeControls from "../editor_motion/motion_keyframe_controls.jsx";
 import { CollapsibleSection } from "./property_section.jsx";
-import { InspectorGroup } from "../editor-3d/three-inspector.jsx";
+import { InspectorGroup } from "../inspector_primitives.jsx";
 import { IconTrash } from "../../icons.jsx";
 
 const DEFAULT_RADIUS = 100;
@@ -145,55 +137,8 @@ export default function CircularArraySection({
   // The circular array animates ONLY radius and startAngle, through the same accepted mechanism the linear
   // array uses for its step. `count` and `arcSpan` are structural and deliberately have no motion control
   // here, which is why an animation on either is rejected rather than silently ignored.
-  const playback = engine?.getPlaybackState?.() ?? null;
-  const currentTime = playback?.time ?? 0;
-  const currentFps = playback?.fps ?? 30;
-  const evaluatedDoc = engine?.getEvaluatedDocument?.(currentTime) ?? null;
-  const evaluatedModifier =
-    evaluatedDoc?.modifiers?.find((m) => m.id === activeModifier?.id) ??
-    activeModifier;
+  const evaluatedModifier = activeModifier;
 
-  const createMotionField = (property) => {
-    if (!activeModifier || !engine) return null;
-    const track = activeModifier.animations?.find(
-      (x) => x.property === property,
-    );
-    const keyframe = keyframeAtTimeForModifier(
-      activeModifier,
-      property,
-      currentTime,
-      currentFps,
-    );
-    return {
-      active: Boolean(keyframe),
-      animated: Boolean(track && track.keyframes?.length),
-      toggle: () =>
-        toggleModifierMotionField(
-          engine,
-          activeModifier.id,
-          property,
-          upsertCircularArrayKeyframe,
-          removeCircularArrayKeyframe,
-        ),
-      edit: (value) => {
-        // When the field is keyed the edit lands on the track; otherwise it edits the STATIC canonical
-        // parameter. The source value is never flattened into a sampled frame.
-        if (
-          !editModifierMotionField(
-            engine,
-            activeModifier.id,
-            property,
-            value,
-            upsertCircularArrayKeyframe,
-          )
-        ) {
-          handleUpdate({ [property]: value });
-        }
-      },
-    };
-  };
-  const motionRadius = createMotionField("radius");
-  const motionStartAngle = createMotionField("startAngle");
 
   const content = (
     <div data-modifier={activeModifier ? "present" : "absent"}>
@@ -221,43 +166,27 @@ export default function CircularArraySection({
               <NumberInput
                 testId="editor-circular-array-radius"
                 label={t("editor.circularArray.radius")}
-                value={evaluatedModifier.radius}
+                value={activeModifier.radius}
                 min={0}
                 step={1}
                 onChange={(radius) =>
-                  motionRadius
-                    ? motionRadius.edit(radius)
-                    : handleUpdate({ radius })
+                  handleUpdate({ radius })
                 }
               />
             </div>
-            {motionRadius ? (
-              <MotionKeyframeControls
-                property="modifier.radius"
-                motion={motionRadius}
-              />
-            ) : null}
           </div>
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1">
               <NumberInput
                 testId="editor-circular-array-start-angle"
                 label={t("editor.circularArray.startAngle")}
-                value={evaluatedModifier.startAngle}
+                value={activeModifier.startAngle}
                 step={1}
                 onChange={(startAngle) =>
-                  motionStartAngle
-                    ? motionStartAngle.edit(startAngle)
-                    : handleUpdate({ startAngle })
+                  handleUpdate({ startAngle })
                 }
               />
             </div>
-            {motionStartAngle ? (
-              <MotionKeyframeControls
-                property="modifier.startAngle"
-                motion={motionStartAngle}
-              />
-            ) : null}
           </div>
           <NumberInput
             testId="editor-circular-array-arc-span"

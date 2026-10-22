@@ -312,6 +312,70 @@ export default function TextSection({
             />
           )}
         </div>
+
+        {object.textPath && (
+          <div className="flex flex-col gap-2 rounded-xl bg-neutral-900 p-2">
+            <span className="text-[11px] font-medium text-neutral-300">
+              {t("editor.props.pathText")}
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              <ScrubField
+                prefix={<span className="text-[10px] text-neutral-400">Offset</span>}
+                suffix="px"
+                min={-500}
+                max={2000}
+                step={1}
+                value={object.textPath.startOffset ?? 0}
+                onValueChange={(val) =>
+                  edit({
+                    textPath: { ...object.textPath, startOffset: Math.round(val) },
+                  })
+                }
+                onCommit={commitNow}
+                ariaLabel={t("editor.props.pathTextOffset")}
+                scrubHint={t("editor.props.dragToAdjust")}
+              />
+              <div className="flex gap-1">
+                <ToggleButton
+                  active={(object.textPath.side ?? "top") === "top"}
+                  onClick={() =>
+                    editAndCommit({
+                      textPath: { ...object.textPath, side: "top" },
+                    })
+                  }
+                  label={t("editor.props.pathTextSideTop")}
+                >
+                  <span className="text-[10px]">Top</span>
+                </ToggleButton>
+                <ToggleButton
+                  active={object.textPath.side === "bottom"}
+                  onClick={() =>
+                    editAndCommit({
+                      textPath: { ...object.textPath, side: "bottom" },
+                    })
+                  }
+                  label={t("editor.props.pathTextSideBottom")}
+                >
+                  <span className="text-[10px]">Btm</span>
+                </ToggleButton>
+                <ToggleButton
+                  active={Boolean(object.textPath.reverse)}
+                  onClick={() =>
+                    editAndCommit({
+                      textPath: {
+                        ...object.textPath,
+                        reverse: !object.textPath.reverse,
+                      },
+                    })
+                  }
+                  label={t("editor.props.pathTextReverse")}
+                >
+                  <span className="text-[10px]">Rev</span>
+                </ToggleButton>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </CollapsibleSection>
   );

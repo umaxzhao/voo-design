@@ -54,8 +54,8 @@ describe("useDesignStore Standalone Decoupled Store", () => {
 
     const newPage = updated.nodes.find((n) => n.id === newPageId);
     expect(newPage.data.label).toBe("Poster Layout");
-    expect(newPage.data.sceneDoc.width).toBe(1920);
-    expect(newPage.data.sceneDoc.height).toBe(1080);
+    expect(newPage.data.editorDoc.width).toBe(1920);
+    expect(newPage.data.editorDoc.height).toBe(1080);
   });
 
   it("duplicates an existing artboard with cloned document data", () => {
@@ -67,7 +67,7 @@ describe("useDesignStore Standalone Decoupled Store", () => {
     const duplicatedNode = updated.nodes.find((n) => n.id === dupId);
     expect(duplicatedNode).toBeDefined();
     expect(duplicatedNode.data.label).toBe("Design 1 Copy");
-    expect(duplicatedNode.data.sceneDoc.width).toBe(1200);
+    expect(duplicatedNode.data.editorDoc.width).toBe(1200);
     expect(updated.editingNodeId).toBe(dupId);
   });
 
@@ -118,5 +118,25 @@ describe("useDesignStore Standalone Decoupled Store", () => {
     expect(useDesignStore.getState().isDirty).toBe(true);
     store.applyImageEdits();
     expect(useDesignStore.getState().isDirty).toBe(false);
+  });
+
+  it("handles newVooProject and closeProject transitions", () => {
+    const store = useDesignStore.getState();
+    store.newVooProject({ label: "App Redesign" });
+
+    let state = useDesignStore.getState();
+    expect(state.fileName).toBe("App Redesign.voo");
+    expect(state.welcomeOpen).toBe(false);
+    expect(state.nodes).toHaveLength(1);
+    expect(state.nodes[0].data.label).toBe("App Redesign");
+
+    store.closeProject();
+    state = useDesignStore.getState();
+    expect(state.welcomeOpen).toBe(true);
+    expect(state.fileName).toBeNull();
+    expect(state.nodes).toHaveLength(0);
+
+    store.closeImageEditor();
+    expect(useDesignStore.getState().welcomeOpen).toBe(true);
   });
 });

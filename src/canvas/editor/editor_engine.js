@@ -4,6 +4,7 @@
  */
 
 import { createBitmapCache } from "./bitmap_cache.js";
+import { buildSpatialIndex } from "./viewport_culling.js";
 import {
   createEditorHost,
   createNullEditorHost,
@@ -56,6 +57,7 @@ import {
   renderEngineStage,
 } from "./editor_engine_render.js";
 import { assembleEngineControllers } from "./editor_engine_assembly.js";
+import { createVideoLayerRuntime } from "./video-layer-runtime.js";
 import {
   createEngineHistoryState,
   HISTORY_TOOL_NAMES,
@@ -75,7 +77,6 @@ import {
   updateCircularArrayModifier,
   removeCircularArrayModifier,
 } from "./doc-ops-circular-array.js";
-import { createEditorMediaBridge } from "./editor-media-bridge.js";
 
 export { pngDataUrlToBlob } from "./editor_clipboard.js";
 export { PUPPET_MESH_SPAN } from "./editor_engine_warp.js";
@@ -115,11 +116,29 @@ export function createEditor({
       history.updateCurrentSelection(ids);
     },
   });
-  const cache = createBitmapCache();
   const glAdjustments = acquireAdjustmentRenderer();
+  const cache = createBitmapCache({
+    onEvict: (image) => {
+      glAdjustments?.release?.(image);
+    },
+  });
+  const videoLayers = createVideoLayerRuntime(
+    () => requestRender(),
+    (nodeId, error) => console.error(`Video layer ${nodeId} failed`, error),
+  );
   const getDoc = () => doc;
   const isDisposed = () => disposed;
-  const snapshotDoc = () => JSON.stringify(serialiseDocument(doc));
+  // The document is replaced on every edit (setDoc), never mutated, so its
+  // serialised form is reused until the object changes. Dirty checks run on
+  // every view change, and serialising the whole page each time made zoom and
+  // pan expensive on large documents.
+  let snapshotCache = { doc: null, text: null };
+  const snapshotDoc = () => {
+    if (snapshotCache.doc !== doc) {
+      snapshotCache = { doc, text: JSON.stringify(serialiseDocument(doc)) };
+    }
+    return snapshotCache.text;
+  };
   let appliedSnapshot = snapshotDoc();
 
   const viewportTools = createViewport({
@@ -130,6 +149,8 @@ export function createEditor({
     getFitInsets,
   });
 
+  let cachedStageWidth = stage?.clientWidth ?? 0;
+  let cachedStageHeight = stage?.clientHeight ?? 0;
   let paintSourceAccessor = null;
   let maskSourceAccessor = null;
 
@@ -166,16 +187,6 @@ export function createEditor({
   }
 
   let ctrl;
-  const media = createEditorMediaBridge({
-    getDoc,
-    setDoc,
-    getNodesController: () => ctrl.nodesController,
-    requestRender: () => requestRender(),
-    notify: () => notify(),
-    isDisposed: () => disposed,
-    host: hostAdapter,
-  });
-
   const historyState = createEngineHistoryState({
     getDoc,
     setDoc,
@@ -200,9 +211,14 @@ export function createEditor({
       ctrl?.selectionController?.setSelectionTransform?.(null),
   });
 
-  function setDoc(next, { commit = true, name = null } = {}) {
+  function setDoc(next, { commit = true, name = null, preview = false } = {}) {
+    if (preview) {
+      doc = next;
+      docVersion += 1;
+      requestRender();
+      return;
+    }
     doc = ctrl.initController.measureTextNodes(next);
-    media.reconcile(doc);
     docVersion += 1;
     ctrl.initController.queueFontLoads(doc);
     const currentIds = selection.getIds();
@@ -231,8 +247,6 @@ export function createEditor({
   ctrl = assembleEngineControllers({
     ctx,
     getDoc,
-    getRenderDoc: media.getEvaluatedDocument,
-    mediaBitmapOf: media.bitmapOf,
     setDoc,
     snapshotDoc,
     snapshotState: historyState.snapshotState,
@@ -283,12 +297,33 @@ export function createEditor({
   paintSourceAccessor = ctrl.paintTools.bitmapSourceOf;
   maskSourceAccessor = ctrl.maskTools.maskSourceOf;
 
+  let cachedSpatialIndex = null;
+  let cachedSpatialIndexDoc = null;
+  function getSpatialIndex(currentDoc) {
+    if (cachedSpatialIndex && cachedSpatialIndexDoc === currentDoc) {
+      return cachedSpatialIndex;
+    }
+    cachedSpatialIndex = buildSpatialIndex(currentDoc.nodes);
+    cachedSpatialIndexDoc = currentDoc;
+    currentDoc.spatialIndex = cachedSpatialIndex;
+    return cachedSpatialIndex;
+  }
+
   function render() {
-    const evaluatedDoc = media.getEvaluatedDocument();
+    const evaluatedDoc = getDoc();
+    const videoIds = new Set();
+    for (const node of evaluatedDoc.nodes) {
+      if (node.kind !== NODE_KIND.VIDEO) continue;
+      videoIds.add(node.id);
+      videoLayers.ensure(node);
+    }
+    videoLayers.prune(videoIds);
     renderedDpr = renderEngineStage({
       ctx,
       canvas,
       stage,
+      stageWidth: cachedStageWidth || stage.clientWidth,
+      stageHeight: cachedStageHeight || stage.clientHeight,
       doc: evaluatedDoc,
       viewportTools,
       selection,
@@ -305,6 +340,7 @@ export function createEditor({
       paintTools: ctrl.paintTools,
       penTools: ctrl.penTools,
       glAdjustments,
+      videoFrameOf: videoLayers.frame,
       pixelSelection: ctrl.selectionController.getPixelSelection(),
       polygonDraft: ctrl.selectionController.getPolygonDraft(),
       magneticLassoDraft: ctrl.selectionController.getMagneticLassoDraft(),
@@ -323,8 +359,8 @@ export function createEditor({
       renderVersion,
       draftRender,
       getEffectiveNode,
-      mediaBitmapOf: media.bitmapOf,
       mixedLayerMode,
+      spatialIndex: getSpatialIndex(evaluatedDoc),
     });
     for (const listener of renderListeners) listener();
   }
@@ -428,6 +464,29 @@ export function createEditor({
     ...ctrl.documentController,
     ...ctrl.selectionController,
     ...ctrl.nodesController,
+    updateNodes: (updates, options) =>
+      ctrl.nodesController.updateNodes(updates, options),
+    updateNode: (id, patch, options) =>
+      ctrl.nodesController.updateNodes([{ id, ...patch }], options),
+    getNode: (id) => getDoc()?.nodes?.find((n) => n.id === id) ?? null,
+    getDoc: () => getDoc(),
+    getSelectedIds: () =>
+      ctrl.selectionController.getSelectedIds?.() ??
+      (ctrl.selectionController.getSelectedId?.()
+        ? [ctrl.selectionController.getSelectedId()]
+        : []),
+    getSelectedId: () => ctrl.selectionController.getSelectedId?.(),
+    commitEditorDocument: (options) =>
+      ctrl.documentController.commitEditorDocument?.(options),
+    zoomToFit: () => viewportTools.zoomToFit?.(),
+    zoomToHundred: () => viewportTools.zoomToHundred?.(),
+    zoomIn: () => viewportTools.zoomIn?.(),
+    zoomOut: () => viewportTools.zoomOut?.(),
+    nodeAtPoint: (point, options = {}) =>
+      ctrl.nodesController.nodeAtPoint(point, {
+        zoom: viewportTools.getZoom(),
+        ...options,
+      }),
     ...ctrl.toolsController,
     ...ctrl.brushController,
     ...ctrl.historyApi,
@@ -441,7 +500,6 @@ export function createEditor({
     ...ctrl.penTools.api,
     ...ctrl.annotations.api,
     ...ctrl.sampler,
-    ...media.api,
 
     // Pen aliases
     getPenDraft: () => ctrl.penTools.api.getDraft(),
@@ -598,10 +656,9 @@ export function createEditor({
         targetCanvas,
         stage,
         nodeIds,
-        doc: media.getEvaluatedDocument(),
+        doc: getDoc(),
         viewport: viewportTools.getViewport(),
         dpr: renderedDpr,
-        mediaBitmapOf: media.bitmapOf,
         paintTools: ctrl.paintTools,
         maskTools: ctrl.maskTools,
         glAdjustments,
@@ -646,7 +703,7 @@ export function createEditor({
     // Node reads
     getEffectiveNode,
     getNodeBitmap: (node) =>
-      node ? (media.bitmapOf(node) ?? cache.get(node)) : undefined,
+      node ? (cache.get(node)) : undefined,
     getNodeMask: (node) =>
       node
         ? ctrl.maskTools.maskSourceOf(node) || cache.getMask(node)
@@ -693,10 +750,12 @@ export function createEditor({
       cameraMode !== "shared" &&
       w > 0 &&
       h > 0 &&
-      (lastStageWidth === 0 || lastStageHeight === 0)
+      (cachedStageWidth === 0 || cachedStageHeight === 0)
     ) {
       viewportTools.zoomToFit();
     }
+    cachedStageWidth = w;
+    cachedStageHeight = h;
     lastStageWidth = w;
     lastStageHeight = h;
     requestRender();
@@ -707,7 +766,7 @@ export function createEditor({
   api.dispose = () => {
     disposed = true;
     renderListeners.clear();
-    media.dispose();
+    
     if (frame) cancelAnimationFrame(frame);
     if (notifyFrame) cancelAnimationFrame(notifyFrame);
     ctrl.selectionController.dispose();
@@ -722,6 +781,7 @@ export function createEditor({
     ctrl.paintTools.clear();
     ctrl.penTools.clear();
     cache.dispose();
+    videoLayers.dispose();
     releaseAdjustmentRenderer();
   };
 

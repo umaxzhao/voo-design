@@ -20,7 +20,7 @@ export default function LoadingModal({
   return (
     <div
       data-testid="loading-modal"
-      className={`flex flex-col items-center gap-3 rounded-2xl bg-neutral-900/90 border border-white/10 px-8 py-6 shadow-panel backdrop-blur-md ${className}`}
+      className={`flex flex-col items-center gap-3 rounded-3xl bg-neutral-900/90 border border-white/10 px-8 py-6 shadow-panel backdrop-blur-md ${className}`}
     >
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#E5B2FF]" />
       {label ? (

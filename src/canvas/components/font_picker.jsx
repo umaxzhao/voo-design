@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { IconChevronDown } from "../icons.jsx";
 import { ensureFontLoaded } from "../editor/font_loader.js";
+import { GOOGLE_FONT_INDEX } from "../editor/google_fonts_index.js";
 import { useI18n } from "../use_i18n.js";
 
 /**
@@ -15,7 +16,7 @@ import { useI18n } from "../use_i18n.js";
  */
 const SPECIMEN = "System \u00b7 Aa Bb Gg 123 \u4e2d\u6587";
 
-export const GOOGLE_FONTS_CATALOG = [
+const CURATED_GOOGLE_FONTS = [
   // Popular Sans Serif
   {
     family: "Inter",
@@ -339,6 +340,17 @@ export const GOOGLE_FONTS_CATALOG = [
     category: "Chinese",
     stack: "'Liu Jian Mao Cao', cursive",
   },
+];
+
+/**
+ * Every Google family, curated entries first (they carry hand-picked stacks).
+ * The rest come from the committed index, with a quoted-family stack.
+ */
+export const GOOGLE_FONTS_CATALOG = [
+  ...CURATED_GOOGLE_FONTS,
+  ...GOOGLE_FONT_INDEX.filter(
+    ([family]) => !CURATED_GOOGLE_FONTS.some((font) => font.family === family),
+  ).map(([family, category]) => ({ family, category, stack: `'${family}', sans-serif` })),
 ];
 
 export const SYSTEM_FONTS_CATALOG = [

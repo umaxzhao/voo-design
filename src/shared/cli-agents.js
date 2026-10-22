@@ -64,11 +64,11 @@ export const CLI_AGENTS = [
     labelKey: "agent.connection.antigravity",
     // The installed `agy models` command determines this account's models.
     // With no list, omit --model and let Antigravity use its own default.
-    defaultModel: "",
+    defaultModel: "gemini-3.8-flash-high",
     models: [],
     installCmd: "npm install -g @google/antigravity-cli",
-    supported: false,
-    experimental: true,
+    supported: true,
+    experimental: false,
   },
 ];
 

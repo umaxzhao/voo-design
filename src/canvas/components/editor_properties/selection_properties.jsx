@@ -73,7 +73,7 @@ export default function SelectionProperties({
 
         {/* Feathering */}
         {onFeatherSelection ? (
-          <div className="pt-0.5">
+          <div className="flex flex-col gap-1.5 pt-0.5">
             <ScrubField
               prefix={
                 <span className="text-[10px] font-mono text-neutral-400">
@@ -92,6 +92,29 @@ export default function SelectionProperties({
               scrubHint={t("editor.props.dragToAdjust")}
               showRange
             />
+            {/* Quick Feather Pills (Affinity style) */}
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+              {[0, 2, 5, 10, 20].map((fVal) => {
+                const isActive = selectionFeather === fVal;
+                return (
+                  <button
+                    key={fVal}
+                    type="button"
+                    onClick={() => {
+                      setSelectionFeather(fVal);
+                      onFeatherSelection(fVal);
+                    }}
+                    className={`h-5 min-w-[24px] px-1.5 flex items-center justify-center rounded-md text-[10px] font-mono transition-all ${
+                      isActive
+                        ? "bg-[#a7ffd4] text-black font-semibold shadow-pop"
+                        : "bg-white/[0.06] text-neutral-400 hover:bg-white/[0.12] hover:text-neutral-200"
+                    }`}
+                  >
+                    {fVal}px
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ) : null}
 

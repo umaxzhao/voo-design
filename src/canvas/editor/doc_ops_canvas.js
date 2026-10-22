@@ -9,7 +9,7 @@ import {
 import { nodeAABB, resizeDocument as resizeSize } from "./scene_geometry.js";
 import { MAX_CANVAS_SIZE } from "./canvas_presets.js";
 import { TOOL } from "./editor_constants.js";
-import { getCanvasType, setCanvasType } from "./canvas-composition-model.js";
+import { getCanvasType } from "./canvas-composition-model.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
 
 /**
@@ -190,54 +190,6 @@ export function setDocumentSize(doc, width, height, options = {}) {
   return { ...doc, width: w, height: h, nodes };
 }
 
-const engine2dToolMemory = new WeakMap();
-
-/**
- * Switches the document canvas type on an engine instance, preserving 2D drawing
- * tools across mode round trips while keeping SELECT active in 3D to prevent
- * pointer gesture conflicts with spatial controls.
- */
-export function changeEngineCanvasType(
-  engine,
-  nodeId,
-  nextType,
-  onCanvasTypeChanged,
-) {
-  if (!engine) return null;
-  const currentDoc = engine.getDocument?.();
-  if (!currentDoc || nextType === getCanvasType(currentDoc)) return null;
-  const currentType = getCanvasType(currentDoc);
-
-  if (nextType === "3d") {
-    // Entering 3D: remember active 2D tool and switch to SELECT to avoid gesture conflicts.
-    if (engine.getTool) {
-      const currentTool = engine.getTool();
-      engine2dToolMemory.set(engine, currentTool);
-      if (currentTool !== TOOL.SELECT) {
-        engine.setTool?.(TOOL.SELECT);
-      }
-    }
-  } else if (currentType === "3d") {
-    // Leaving 3D: restore previously saved 2D tool, or fall back to SELECT.
-    const savedTool = engine2dToolMemory.get(engine);
-    if (savedTool) {
-      if (engine.getTool?.() !== savedTool) {
-        engine.setTool?.(savedTool);
-      }
-    } else if (engine.getTool && engine.getTool() !== TOOL.SELECT) {
-      engine.setTool?.(TOOL.SELECT);
-    }
-  }
-
-  const nextDoc = setCanvasType(currentDoc, nextType);
-  commitEditorDocument(
-    "editor.canvas.changeType",
-    (doc, options) => engine.setDoc(doc, options),
-    nextDoc,
-  );
-  onCanvasTypeChanged?.(nodeId, nextType);
-  return nextDoc;
-}
 
 /**
  * Prompts user confirmation before deleting a canvas frame when it contains

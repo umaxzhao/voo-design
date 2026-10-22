@@ -15,7 +15,7 @@ export default function AnchorPointGrid({ value, onChange, label }) {
       role="radiogroup"
       aria-label={label}
       title={label}
-      className="grid shrink-0 h-9 w-9 grid-cols-3 content-center items-center justify-items-center rounded-xl bg-[#222222] p-1.5"
+      className="grid shrink-0 h-9 w-9 grid-cols-3 content-center items-center justify-items-center rounded-xl bg-neutral-800 p-1.5"
     >
       {ANCHOR_KEYS.map((key) => {
         const isSelected = value === key;
@@ -34,7 +34,7 @@ export default function AnchorPointGrid({ value, onChange, label }) {
             <span
               className={`rounded-full transition-all ${
                 isSelected
-                  ? "h-1.5 w-1.5 bg-[#b2ffd6]"
+                  ? "h-1.5 w-1.5 bg-[#a7ffd4]"
                   : "h-1 w-1 bg-neutral-600 hover:bg-neutral-300"
               }`}
             />

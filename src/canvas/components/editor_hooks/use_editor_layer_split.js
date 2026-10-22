@@ -8,7 +8,7 @@
 import { useCallback, useState } from "react";
 import { callHost } from "../../rpc.js";
 import { RPC } from "../../../shared/messages.js";
-import { PLATFORM_TARGET } from "../../nodes/types.js";
+import { PLATFORM_TARGET } from "../../generation_routes.js";
 import { getImageDataUrl } from "../../store/db.js";
 import {
   CAPABILITY,

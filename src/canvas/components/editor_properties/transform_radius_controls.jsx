@@ -5,7 +5,7 @@
 
 import PropTypes from "prop-types";
 import { useState } from "react";
-import ScrubField from "../editor_motion/motion-scrub-field.jsx";
+import ScrubField from "../scrub_field.jsx";
 import MixedField from "./mixed_field.jsx";
 import EditorTooltip from "../editor_tooltip.jsx";
 import { resolveCornerRadii } from "../../editor/scene_model_core.js";
@@ -94,7 +94,7 @@ export default function TransformRadiusControls({
                   : t("editor.props.unlinkCorners")
               }
               aria-pressed={unlinkedRadii}
-              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+              className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
                 unlinkedRadii
                   ? "bg-white/10 text-white"
                   : "text-neutral-400 hover:bg-white/[0.06] hover:text-white"

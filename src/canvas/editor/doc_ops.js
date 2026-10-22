@@ -13,6 +13,7 @@ export {
   removeNode,
   updateDocument,
   updateNode,
+  updateNodes,
   withNodes,
 } from "./doc_ops_nodes.js";
 

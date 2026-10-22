@@ -2,10 +2,11 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { createEditor } from "./editor/editor_engine.js";
 import { createEditorCommandBridge } from "./editor/editor_command_bridge.js";
 import { openDecodeFailed } from "./editor_open_state.js";
-import { useWorkflowStore } from "./store/workflow_store.js";
+import { useDesignStore } from "../store/design_store.js";
 import { createWorkflowStoreEditorHost } from "../shared/editor-host-contract.js";
 import { ensureModule, moduleState } from "./module_loader.js";
-import { EDITOR_ENGINE_CHANGE_EVENT } from "./components/agent-panel/editor-request-intent.js";
+/** Window event fired when the editor engine is (re)created or replaced. */
+export const EDITOR_ENGINE_CHANGE_EVENT = "voo:editor-engine-change";
 
 /**
  * Binds the editor engine to React.
@@ -60,7 +61,7 @@ export function useEditorEngine({
   useEffect(() => {
     if (!active || !canvasRef.current || !stageRef.current) return undefined;
 
-    const host = createWorkflowStoreEditorHost(useWorkflowStore, {
+    const host = createWorkflowStoreEditorHost(useDesignStore, {
       sourceWorkflowNodeId,
       ensureModule: (moduleId, opts) => ensureModule(moduleId, opts),
       moduleState: (moduleId) => moduleState(moduleId),
@@ -109,18 +110,13 @@ export function useEditorEngine({
     // Test hook: with ?voo-test=1 the engine is exposed so the Playwright
     // acceptance harness can assert engine state directly (selection bounds,
     // transform rect, tool). Inert in normal use.
-    if (
-      registerCommands &&
-      new URLSearchParams(window.location.search).has("voo-test")
-    ) {
+    if (registerCommands) {
       window.__vooEditor = created;
       window.__vooEditors = window.__vooEditors || {};
       if (sourceWorkflowNodeId) {
         window.__vooEditors[sourceWorkflowNodeId] = created;
       }
-      // The store too — the acceptance harness drives the agent tool path
-      // through runEditorCommand (the same route the agent tools use).
-      window.__vooStore = useWorkflowStore.getState();
+      window.__vooStore = useDesignStore.getState();
     }
 
     // Agent command bridge: the workflow store routes editor commands
@@ -133,7 +129,7 @@ export function useEditorEngine({
       : null;
     if (commandBridge) commandBridge.ready = false;
     if (commandBridge)
-      useWorkflowStore
+      useDesignStore
         .getState()
         .registerEditorBridge?.(sourceWorkflowNodeId, commandBridge);
 
@@ -189,7 +185,7 @@ export function useEditorEngine({
         window.__vooEditor = null;
       }
       if (commandBridge)
-        useWorkflowStore
+        useDesignStore
           .getState()
           .unregisterEditorBridge?.(sourceWorkflowNodeId, commandBridge);
       let snapshotWork = null;

@@ -20,6 +20,10 @@ export function collabRoomWorkflowId() {
   return null;
 }
 
+export function setCollabIdentity(next) {
+  // Standalone mode: collab identity is local
+}
+
 export function useCollabState() {
   return useSyncExternalStore(
     (listener) => {

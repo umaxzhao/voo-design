@@ -1,9 +1,7 @@
 import { useEffect, useRef } from "react";
-import { useWorkflowStore } from "../../store/workflow_store.js";
-import { RUN_STATUS } from "../../nodes/types.js";
+import { useDesignStore } from "../../../store/design_store.js";
 import { isQuotaError } from "../../../shared/persistence_contract.js";
 import { createEditorDraftSaver } from "./editor-autosave.js";
-import { captureThreeScenePreview } from "./three-scene-preview.js";
 
 /** Debounced durable scene snapshots; no PNG export on typing/dragging/playback. */
 export function useEditorAutosave({
@@ -42,13 +40,7 @@ export function useEditorAutosave({
       getPages: () => {
         const current = latest.current;
         if (current.disabled) return [];
-        const state = useWorkflowStore.getState();
         return current.nodeIds.flatMap((nodeId) => {
-          if (
-            state.nodes.find((node) => node.id === nodeId)?.data?.status ===
-            RUN_STATUS.RUNNING
-          )
-            return [];
           const live = current.enginesRef.current.get(nodeId);
           const snapshot = current.snapshotsRef.current.get(nodeId);
           return live?.ready
@@ -59,8 +51,7 @@ export function useEditorAutosave({
         });
       },
       persist: (entries) =>
-        useWorkflowStore.getState().saveEditorDrafts(entries),
-      capturePreview: (nodeId) => captureThreeScenePreview(nodeId),
+        useDesignStore.getState().saveEditorDrafts(entries),
       onError: (error) =>
         latest.current.setApplyError(
           isQuotaError(error) ? "quotaExceeded" : true,

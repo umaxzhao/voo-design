@@ -4,7 +4,8 @@ import {
   settleImagePublication,
 } from "../store/image-publication.js";
 import { applySceneOperations } from "../editor/scene-composition-operations.js";
-import { DEFAULT_OBJECT_EDGE } from "../editor/object3d_master.js";
+/** Largest default edge (px) for an imported 3D model before the frame is clamped. */
+const DEFAULT_MODEL_EDGE = 240;
 import { t } from "../../shared/i18n.js";
 
 export function editorMediaFileKind(file) {
@@ -42,7 +43,7 @@ export async function createEditorMediaNode(engine, file, store, options = {}) {
     const properties = { name: file.name, ...options.properties };
     if (kind === "model3d") {
       const edge = Math.min(
-        DEFAULT_OBJECT_EDGE,
+        DEFAULT_MODEL_EDGE,
         Math.max(1, (doc.width || 800) * 0.5),
         Math.max(1, (doc.height || 600) * 0.5),
       );

@@ -7,7 +7,8 @@
 import { resolveCornerRadii } from "./scene_model_core.js";
 import { isGroupNode, isHiddenByGroup } from "./scene_model.js";
 import { elementFor } from "./skia_adapter_elements.js";
-import { toSkiaBlendMode } from "./skia_adapter_paint.js";
+import { toSkiaBlendMode, strokeOf } from "./skia_adapter_paint.js";
+import { isBoxOffscreen } from "./viewport_culling.js";
 
 /** Where a page sits in world space when several are laid out at once. */
 export const PAGE_GAP = 80;
@@ -58,7 +59,7 @@ export function requiresCanvas2dMediaFallback(doc) {
  */
 export function documentToScene(
   doc,
-  { offsetX = 0, offsetY = 0, resolveImageUrl },
+  { offsetX = 0, offsetY = 0, resolveImageUrl, visibleRect },
 ) {
   if (requiresCanvas2dMediaFallback(doc)) {
     throw new Error("Media and motion documents require the Canvas2D renderer");
@@ -70,19 +71,33 @@ export function documentToScene(
     title: doc.title ?? "Canvas",
     bounds: { x: offsetX, y: offsetY, width: doc.width, height: doc.height },
     visible: true,
-    opacity: 1,
-    rotation: 0,
-    flipX: false,
-    flipY: false,
+    opacity: doc.opacity ?? 1,
+    rotation: doc.rotation ?? 0,
+    flipX: doc.flipX ?? false,
+    flipY: doc.flipY ?? false,
     zIndex: 0,
-    clipContent: true,
+    clipContent: doc.clipContent ?? true,
+    cornerRadius: doc.cornerRadius ?? 0,
+    cornerRadii: doc.cornerRadii ?? null,
+    stroke: doc.stroke ? strokeOf(doc) : undefined,
+    effects: doc.effects ?? [],
     fills:
-      doc.backgroundColor && doc.backgroundColor !== "transparent"
-        ? [{ color: doc.backgroundColor, opacity: 1 }]
-        : [{ color: "#ffffff", opacity: 1 }],
+      doc.fills && doc.fills.length > 0
+        ? doc.fills
+        : doc.backgroundColor && doc.backgroundColor !== "transparent"
+          ? [{ color: doc.backgroundColor, opacity: 1 }]
+          : [{ color: "#ffffff", opacity: 1 }],
   };
 
-  const nodes = doc.nodes
+  // Frustum culling: if frame is entirely offscreen, omit its children
+  if (visibleRect) {
+    const frameBox = { x: offsetX, y: offsetY, width: doc.width, height: doc.height };
+    if (isBoxOffscreen(frameBox, visibleRect)) {
+      return [frame];
+    }
+  }
+
+  const nodes = (doc.nodes || [])
     // A folder is chrome — a row in the layers panel — not artwork, so it has
     // nothing to paint itself. What it does carry is state for everything
     // inside it: hiding a folder hides its contents, and that reaches them
@@ -90,19 +105,35 @@ export function documentToScene(
     // rules are the ones drawNode applies, so the two renderers agree about
     // what is on screen.
     .filter((node) => !isGroupNode(node) && !isHiddenByGroup(doc, node))
+    .filter((node) => {
+      if (!visibleRect) return true;
+      const nodeBox = {
+        x: (node.x ?? 0) + offsetX,
+        y: (node.y ?? 0) + offsetY,
+        width: node.width ?? 0,
+        height: node.height ?? 0,
+      };
+      return !isBoxOffscreen(nodeBox, visibleRect);
+    })
     .map((node, index) =>
       elementFor(node, index, offsetX, offsetY, resolveImageUrl, doc),
     )
     .filter(Boolean)
     // A stroke can unfold into many elements — one soft stamp each, plus
     // arrowheads — where every other node is a single element.
-    .flat();
+    .flat()
+    .map((el) => {
+      if (!el.parentId) {
+        return { ...el, parentId: frame.id };
+      }
+      return el;
+    });
 
   return [frame, ...nodes];
 }
 
 /**
- * Several documents laid out along one axis, as a single scene.
+ * Several documents laid out along one axis or by layout map, as a single scene.
  *
  * This is the whole reason for the move: pages are positions in one scene, so
  * opening another costs a few elements rather than a canvas, an engine and a
@@ -110,15 +141,58 @@ export function documentToScene(
  */
 export function documentsToScene(
   docs,
-  { axis = "horizontal", resolveImageUrl },
+  { axis = "horizontal", resolveImageUrl, layouts, spatialIndex, visibleRect } = {},
 ) {
   const elements = [];
   let offsetX = 0;
   let offsetY = 0;
+
+  let visibleIds = null;
+  if (spatialIndex && visibleRect) {
+    const hits = spatialIndex.search(visibleRect);
+    if (hits && hits.length > 0) {
+      visibleIds = new Set(hits.map((h) => h.id));
+    }
+  }
+
   for (const doc of docs) {
+    if (!doc) continue;
+    let docOffsetX = offsetX;
+    let docOffsetY = offsetY;
+
+    if (layouts) {
+      const docId = doc.id || doc.canvasId;
+      const layout =
+        layouts instanceof Map
+          ? (layouts.get(docId) ?? (doc.id ? layouts.get(doc.id) : null))
+          : (layouts[docId] ?? (doc.id ? layouts[doc.id] : null));
+      if (layout) {
+        docOffsetX = layout.x ?? docOffsetX;
+        docOffsetY = layout.y ?? docOffsetY;
+      }
+    } else if (doc.layout || doc.bounds) {
+      const l = doc.layout || doc.bounds;
+      docOffsetX = l.x ?? docOffsetX;
+      docOffsetY = l.y ?? docOffsetY;
+    }
+
+    let docToRender = doc;
+    if (visibleIds && doc.nodes) {
+      docToRender = {
+        ...doc,
+        nodes: doc.nodes.filter((n) => visibleIds.has(n.id)),
+      };
+    }
+
     elements.push(
-      ...documentToScene(doc, { offsetX, offsetY, resolveImageUrl }),
+      ...documentToScene(docToRender, {
+        offsetX: docOffsetX,
+        offsetY: docOffsetY,
+        resolveImageUrl,
+        visibleRect,
+      }),
     );
+
     if (axis === "horizontal") offsetX += doc.width + PAGE_GAP;
     else offsetY += doc.height + PAGE_GAP;
   }

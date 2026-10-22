@@ -5,7 +5,8 @@
 
 import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
-import ScrubField from "../editor_motion/motion-scrub-field.jsx";
+import { Contrast } from "lucide-react";
+import ScrubField from "../scrub_field.jsx";
 import MixedField from "./mixed_field.jsx";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
 import { StaticSection } from "./property_section.jsx";
@@ -21,6 +22,7 @@ import {
 import {
   IconFlipH,
   IconFlipV,
+  IconOpacity,
 } from "../../icons.jsx";
 import { useI18n } from "../../use_i18n.js";
 import EditorTooltip from "../editor_tooltip.jsx";
@@ -101,14 +103,6 @@ export default function TransformSection({
   // X/Y report and edit the anchor's document position, not always the
   // top-left corner — with the default "nw" anchor they are exactly x and y.
 
-  /** An X/Y edit positions the anchor itself; the rest of the box follows. */
-  // Keyframes store top-left scene coordinates while these fields expose
-  // the chosen anchor; convert against evaluated geometry during Motion.
-  const motionPositionAdapter = (axis) => ({
-    toDisplay: (_value, node) => anchorDocPoint(node, anchor)[axis],
-    fromDisplay: (value, node) =>
-      value - (anchorDocPoint(node, anchor)[axis] - node[axis]),
-  });
   const editPosition = (axis, value) => {
     edit(resizeWithAnchor(object, { [axis]: value }, anchor));
   };
@@ -174,7 +168,7 @@ export default function TransformSection({
             <div className="grid grid-cols-2 gap-2">
               {commonX.mixed ? <MixedField label="X" /> : (
                 <ScrubField
-                  prefix="X" motionProperty="x" motionAdapter={motionPositionAdapter("x")}
+                  prefix="X"
                   min={-COORD_LIMIT} max={COORD_LIMIT} value={commonX.value}
                   onValueChange={(value) => editPosition("x", value)} onCommit={commitNow}
                   ariaLabel="X" scrubHint={t("editor.props.dragToAdjust")}
@@ -182,7 +176,7 @@ export default function TransformSection({
               )}
               {commonY.mixed ? <MixedField label="Y" /> : (
                 <ScrubField
-                  prefix="Y" motionProperty="y" motionAdapter={motionPositionAdapter("y")}
+                  prefix="Y"
                   min={-COORD_LIMIT} max={COORD_LIMIT} value={commonY.value}
                   onValueChange={(value) => editPosition("y", value)} onCommit={commitNow}
                   ariaLabel="Y" scrubHint={t("editor.props.dragToAdjust")}
@@ -209,7 +203,7 @@ export default function TransformSection({
             <div className="grid min-w-0 flex-1 grid-cols-2 gap-2">
               {commonR.mixed ? <MixedField label="R" suffix="°" /> : (
                 <ScrubField
-                  prefix="R" motionProperty="rotation" suffix="°"
+                  prefix="R" suffix="°"
                   min={-180} max={180} value={commonR.value}
                   onValueChange={(value) => edit({ rotation: value })} onCommit={commitNow}
                   ariaLabel={t("editor.props.rotation")} scrubHint={t("editor.props.dragToAdjust")}
@@ -252,19 +246,17 @@ export default function TransformSection({
 
         <div className="grid grid-cols-2 gap-2 items-center">
           {commonOpacity.mixed ? (
-            <MixedField label={t("editor.motion.propertyOpacity")} suffix="%" />
+            <MixedField label={<IconOpacity size={12} />} suffix="%" />
           ) : (
             <ScrubField
-              motionProperty="opacity"
-              motionScale={100}
-              prefix={t("editor.motion.propertyOpacity")}
+              prefix={<IconOpacity size={12} />}
               suffix="%"
               min={0}
               max={100}
               value={Math.round((commonOpacity.value ?? 1) * 100)}
               onValueChange={(value) => edit({ opacity: value / 100 })}
               onCommit={commitNow}
-              ariaLabel={t("editor.motion.propertyOpacity")}
+              ariaLabel={t("editor.props.opacity")}
               scrubHint={t("editor.props.dragToAdjust")}
             />
           )}
@@ -281,7 +273,7 @@ export default function TransformSection({
           />
         </div>
 
-        {object.kind === "rect" || object.kind === "image" ? (
+        {object.kind === "rect" || object.kind === "image" || object.isFrame || object.kind === "frame" ? (
           <TransformRadiusControls
             object={object}
             commonCornerRadius={commonCornerRadius}
@@ -293,7 +285,7 @@ export default function TransformSection({
         ) : null}
 
         {(object.warpMesh || object.perspectiveCorners) && (
-          <div className="pt-2 border-t border-white/[0.06]">
+          <div className="pt-1">
             <button
               type="button"
               onClick={() => {

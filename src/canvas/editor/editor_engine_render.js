@@ -21,6 +21,8 @@ export function renderEngineStage({
   ctx,
   canvas,
   stage,
+  stageWidth = null,
+  stageHeight = null,
   doc,
   viewportTools,
   selection,
@@ -55,11 +57,14 @@ export function renderEngineStage({
   renderVersion,
   draftRender,
   getEffectiveNode,
-  mediaBitmapOf,
+  videoFrameOf = null,
   mixedLayerMode = false,
+  spatialIndex = null,
 }) {
   const dpr = draftRender ? 1 : window.devicePixelRatio || 1;
-  resizeCanvas(canvas, stage.clientWidth, stage.clientHeight, dpr);
+  const width = stageWidth || stage.clientWidth;
+  const height = stageHeight || stage.clientHeight;
+  resizeCanvas(canvas, width, height, dpr);
   const selectedId = selection.getId();
   const selectedNode = selectedId ? findNode(doc, selectedId) : null;
   const hideSelection =
@@ -127,6 +132,7 @@ export function renderEngineStage({
     viewport: viewportTools.getViewport(),
     dpr,
     cullOffscreen: true,
+    spatialIndex,
     pageBackground: !mixedLayerMode,
     paintNodeIds: mixedLayerMode ? new Set() : null,
     selectionRect: selRect,
@@ -178,8 +184,9 @@ export function renderEngineStage({
     selectionTransformBox: selectionTransform,
     bypassAdjustments,
     bitmapOf: (node) =>
-      mediaBitmapOf?.(node) ?? paintTools.bitmapSourceOf(node),
+      paintTools.bitmapSourceOf(node),
     maskOf: maskTools.maskSourceOf,
+    videoFrameOf,
     penDraft: penTools.api.getDraft(),
     penEdit: penTools.api.getEdit(),
     penEditNode: penTools.api.getEdit()
@@ -197,11 +204,12 @@ export function renderEngineStage({
 export function renderEngineLayerPass({
   targetCanvas,
   stage,
+  stageWidth = null,
+  stageHeight = null,
   doc,
   nodeIds,
   viewport,
   dpr,
-  mediaBitmapOf,
   paintTools,
   maskTools,
   glAdjustments,
@@ -211,7 +219,9 @@ export function renderEngineLayerPass({
 }) {
   const ctx = targetCanvas.getContext("2d");
   if (!ctx) throw new Error("Mixed layer canvas requires a 2D context");
-  resizeCanvas(targetCanvas, stage.clientWidth, stage.clientHeight, dpr);
+  const width = stageWidth || stage.clientWidth;
+  const height = stageHeight || stage.clientHeight;
+  resizeCanvas(targetCanvas, width, height, dpr);
   const paintNodeIds = new Set(nodeIds);
   // Backdrop effects and clipping chains must not pull lower runs above a 3D layer.
   const passNodes = doc.nodes
@@ -235,7 +245,7 @@ export function renderEngineLayerPass({
     paintNodeIds,
     bypassAdjustments,
     bitmapOf: (node) =>
-      mediaBitmapOf?.(node) ?? paintTools.bitmapSourceOf(node),
+      paintTools.bitmapSourceOf(node),
     maskOf: maskTools.maskSourceOf,
     glRenderer: glAdjustments,
     docVersion: `${docVersion}:${renderVersion}`,

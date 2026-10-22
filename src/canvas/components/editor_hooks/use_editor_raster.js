@@ -17,7 +17,7 @@ import {
   LOCAL_ENGINE_DEFAULT_MODEL_ID,
   PROVIDER_ID,
 } from "../../../shared/providers.js";
-import { EXECUTION_MODE, PLATFORM_TARGET } from "../../nodes/types.js";
+import { EXECUTION_MODE, PLATFORM_TARGET } from "../../generation_routes.js";
 import { getProviderConfig } from "../../provider_client.js";
 import { resolveRepaintRoute } from "../../editor/repaint_route.js";
 import { compositePlan } from "../../editor/outpaint_geometry.js";
@@ -46,7 +46,7 @@ import {
 import { dataUrlToBlob } from "../../store/db.js";
 import { regionHost } from "../../editor/doc_ops.js";
 import { maskErrorCode } from "../../editor/mask_error.js";
-import { useWorkflowStore } from "../../store/workflow_store.js";
+import { useDesignStore } from "../../../store/design_store.js";
 import {
   MODEL_ROUTE_ID,
   PERFORMANCE_TIER_KEY,
@@ -772,7 +772,7 @@ export function useEditorRaster({
 
     const scratchDataUrl = scratch.toDataURL("image/png");
     let painted;
-    const settings = useWorkflowStore.getState().settings;
+    const settings = useDesignStore.getState().settings;
 
     // This legacy removal operation sends its prepared pixels to the host chat.
     try {
@@ -1179,7 +1179,7 @@ export function useEditorRaster({
       } else if (route.route === "chat") {
         // Send directly to the web platform chat session (ChatGPT / Gemini / Jimeng),
         // asking for a transparent background so the returned PNG keeps its alpha.
-        const settings = useWorkflowStore.getState().settings;
+        const settings = useDesignStore.getState().settings;
         const result = await callHost(
           RPC.GENERATE,
           {
@@ -1344,7 +1344,7 @@ export function useEditorRaster({
           },
         });
       } else if (route.route === "chat") {
-        const settings = useWorkflowStore.getState().settings;
+        const settings = useDesignStore.getState().settings;
         const result = await callHost(
           RPC.GENERATE,
           {
@@ -1498,7 +1498,7 @@ export function useEditorRaster({
         return;
       }
 
-      const settings = useWorkflowStore.getState().settings;
+      const settings = useDesignStore.getState().settings;
       const paint = makeSelectionRepaintPaint({
         route,
         nodeId: engine?.getPixelSelection?.()?.nodeId ?? selected?.id,
@@ -1538,7 +1538,19 @@ export function useEditorRaster({
   /**
    * Produces a high-resolution candidate for the selected image layer.
    */
-  const upscaleImage = async (scale = 2) => {
+  const upscaleImage = async (scaleOrOptions = 2) => {
+    let scale = 2;
+    let modelId = null;
+    if (typeof scaleOrOptions === "number") {
+      scale = scaleOrOptions;
+    } else if (typeof scaleOrOptions === "string") {
+      modelId = scaleOrOptions;
+      scale = scaleOrOptions.includes("4x") ? 4 : 2;
+    } else if (typeof scaleOrOptions === "object" && scaleOrOptions !== null) {
+      scale = typeof scaleOrOptions.scale === "number" ? scaleOrOptions.scale : 2;
+      modelId = scaleOrOptions.modelId ?? null;
+    }
+
     const target =
       selected ||
       engine?.getSelected?.() ||
@@ -1570,6 +1582,7 @@ export function useEditorRaster({
       const { runLocalUpscale } = await import("../../editor/local_upscale.js");
       const blob = await runLocalUpscale(bitmap, {
         scale,
+        modelId,
         onProgress: (p) => setUpscaleProgress(p),
         shouldStop: () => abortController.signal.aborted,
       });
@@ -1584,7 +1597,7 @@ export function useEditorRaster({
         {
           dataUrl,
           operation: EDITOR_GENERATED_OPERATION.UPSCALE,
-          parameters: { scale },
+          parameters: { scale, modelId },
           scenePatch: { type: EDITOR_SCENE_PATCH.REPLACE_BITMAP },
           sourceSceneNodeId: target.id,
           sourceSnapshot,

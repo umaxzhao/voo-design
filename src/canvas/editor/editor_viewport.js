@@ -8,9 +8,16 @@
 
 import { ZOOM_STEP, clampZoom, fitScale } from "./editor_constants.js";
 import { effectivePage } from "./scene_model.js";
+import {
+  beginCustomBlendInteraction,
+  endCustomBlendInteraction,
+} from "./render_custom_blend.js";
 
 /** Below this a side's insets are ignored: overlap, not a sliver fit. */
 const MIN_FIT_SPAN = 160;
+
+/** Quiet time after the last view change before exact blend tiles return. */
+const VIEW_SETTLE_MS = 250;
 
 /**
  * @param {object} options
@@ -27,9 +34,16 @@ export function createViewport({
   getFitInsets = null,
 }) {
   let viewport = { zoom: 1, panX: 0, panY: 0 };
+  let settleTimer = 0;
 
   function setViewport(next) {
     viewport = next;
+    beginCustomBlendInteraction();
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => {
+      endCustomBlendInteraction();
+      requestRender();
+    }, VIEW_SETTLE_MS);
     requestRender();
     notify();
   }

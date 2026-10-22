@@ -6,7 +6,7 @@ import {
   createImageNode,
 } from "../../editor/scene_doc_factory.js";
 import { createWorkflowStoreEditorHost } from "../../../shared/editor-host-contract.js";
-import { useWorkflowStore } from "../../store/workflow_store.js";
+import { useDesignStore } from "../../../store/design_store.js";
 import {
   getPresentationOwner,
   getPresentationPages,
@@ -76,8 +76,8 @@ async function pngPayload(canvas) {
 
 export async function resolvePresentationImage(imageId) {
   if (!/^(blob:|data:|https?:)/.test(imageId))
-    await useWorkflowStore.getState().hydrateImages([imageId]);
-  const src = useWorkflowStore.getState().images[imageId] ?? imageId;
+    await useDesignStore.getState().hydrateImages([imageId]);
+  const src = useDesignStore.getState().images[imageId] ?? imageId;
   if (typeof src !== "string" || !/^(blob:|data:|https?:)/.test(src))
     throw new Error("Presentation image is missing");
   const response = await fetch(src);
@@ -100,11 +100,11 @@ export async function renderPresentationPage(
   { resolveCanvas = null } = {},
 ) {
   if (getCanvasType(page.doc) === "3d") {
-    return renderThreeScenePresentationPage(page);
+    throw new Error("PRESENTATION_3D_UNSUPPORTED");
   }
   const canvas = document.createElement("canvas");
   const stage = document.createElement("div");
-  const host = createWorkflowStoreEditorHost(useWorkflowStore, {
+  const host = createWorkflowStoreEditorHost(useDesignStore, {
     sourceWorkflowNodeId: page.id,
   });
   const engine = createEditor({ canvas, stage, host, onChange() {} });
@@ -130,75 +130,5 @@ export async function renderPresentationPage(
     return await pngPayload(output);
   } finally {
     engine.dispose();
-  }
-}
-
-/** Render a 3D slide with the same viewport and postprocessing path as the editor. */
-export async function renderThreeScenePresentationPage(
-  page,
-  { root = document, createRuntime } = {},
-) {
-  const { doc } = page;
-  const host = root.createElement("div");
-  Object.assign(host.style, {
-    position: "fixed",
-    left: "-100000px",
-    top: "0",
-    width: `${doc.width}px`,
-    height: `${doc.height}px`,
-    pointerEvents: "none",
-  });
-  const canvas = root.createElement("canvas");
-  canvas.width = doc.width;
-  canvas.height = doc.height;
-  canvas.style.width = `${doc.width}px`;
-  canvas.style.height = `${doc.height}px`;
-  host.appendChild(canvas);
-  root.body.appendChild(host);
-
-  let runtime = null;
-  try {
-    // Importing presentation helpers must not load WebGL into ordinary 2D editors.
-    const runtimeFactory =
-      createRuntime === undefined
-        ? (await import("../../editor/three-scene-runtime.js"))
-            .createThreeSceneRuntime
-        : createRuntime;
-    runtime = runtimeFactory(canvas, {
-      interactive: false,
-      enableTransform: false,
-    });
-    runtime.setDocument(doc);
-    await waitForThreeSceneRuntime(canvas);
-    const dataUrl = canvas.captureThreeScenePreview(doc.width, doc.height);
-    const response = await fetch(dataUrl);
-    if (!response.ok)
-      throw new Error("Presentation 3D frame could not be read");
-    const blob = await response.blob();
-    return {
-      bytes: new Uint8Array(await blob.arrayBuffer()),
-      mimeType: "image/png",
-      width: doc.width,
-      height: doc.height,
-    };
-  } finally {
-    runtime?.dispose();
-    host.remove();
-  }
-}
-
-async function waitForThreeSceneRuntime(canvas) {
-  const deadline = Date.now() + 15_000;
-  while (
-    !canvas.dataset.threeObjectCount ||
-    canvas.dataset.threeEffectsReady !== "true"
-  ) {
-    if (Date.now() >= deadline)
-      throw new Error("Presentation 3D scene did not finish rendering");
-    await new Promise((resolve) => {
-      if (typeof requestAnimationFrame === "function")
-        requestAnimationFrame(resolve);
-      else setTimeout(resolve, 16);
-    });
   }
 }

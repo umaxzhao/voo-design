@@ -126,6 +126,7 @@ export function drawInnerShadowOverlay(ctx, node, effect, paintBody) {
         effect.offsetX ?? 0,
         effect.offsetY ?? 0,
         effect.blur ?? 8,
+        effect.spread ?? 0,
       ),
     effect.color,
     (effect.opacity ?? 100) / 100,

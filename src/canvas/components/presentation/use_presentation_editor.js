@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import { useWorkflowStore } from "../../store/workflow_store.js";
+import { useDesignStore } from "../../../store/design_store.js";
 import { buildPresentationPptx } from "../../presentation/presentation-pptx.js";
 import { buildPresentationPdf } from "../../presentation/presentation-pdf.js";
 import { flushEditorPendingWrites } from "../editor_hooks/editor-autosave.js";
@@ -36,7 +36,7 @@ export function usePresentationEditor({
   const getPageDocument = useCallback(
     (pageId) =>
       readPresentationPage(
-        useWorkflowStore.getState(),
+        useDesignStore.getState(),
         pageId,
         enginesRef.current,
         snapshotsRef.current,
@@ -46,7 +46,7 @@ export function usePresentationEditor({
   const collect = useCallback(
     () =>
       readPresentationDeck(
-        useWorkflowStore.getState(),
+        useDesignStore.getState(),
         ownerId,
         getPageDocument,
       ),
@@ -56,13 +56,13 @@ export function usePresentationEditor({
   useEffect(() => {
     if (!ownerId) return undefined;
     const getPageEngine = async (pageId) => {
-      const store = useWorkflowStore.getState();
+      const store = useDesignStore.getState();
       if (!store.editingNodeIds.includes(pageId))
         throw new Error("Page is outside the presentation session");
       store.focusEditorPage(pageId);
       const deadline = Date.now() + 15000;
       while (mountedRef.current && Date.now() < deadline) {
-        const current = useWorkflowStore.getState();
+        const current = useDesignStore.getState();
         if (
           current.editingPresentationId !== ownerId ||
           !current.editingNodeIds.includes(pageId)
@@ -75,10 +75,10 @@ export function usePresentationEditor({
       throw new Error("Presentation page could not be activated");
     };
     const session = { ownerId, getPageDocument, getPageEngine };
-    useWorkflowStore.setState({ presentationSession: session });
+    useDesignStore.setState({ presentationSession: session });
     return () => {
-      if (useWorkflowStore.getState().presentationSession === session)
-        useWorkflowStore.setState({ presentationSession: null });
+      if (useDesignStore.getState().presentationSession === session)
+        useDesignStore.setState({ presentationSession: null });
     };
   }, [ownerId, getPageDocument, enginesRef]);
 
@@ -114,7 +114,7 @@ export function usePresentationEditor({
           await engine?.flushMasks?.();
           next.doc = getPageDocument(next.pageId);
         }
-        if (!useWorkflowStore.getState().editPresentationPage(ownerId, next))
+        if (!useDesignStore.getState().editPresentationPage(ownerId, next))
           throw new Error("Presentation is read-only");
         patch({ error: null });
       } catch (error) {

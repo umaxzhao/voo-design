@@ -27,7 +27,7 @@ function ShortcutReferenceModal({
   groups,
   closeLabelKey = "editor.cancel",
   overlayClassName = "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm",
-  panelClassName = "relative z-10 w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#181818] p-6 shadow-panel font-mono text-neutral-200",
+  panelClassName = "relative z-10 w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-3xl border border-white/10 bg-[#181818] p-6 shadow-panel font-mono text-neutral-200",
 }) {
   const { t } = useI18n();
 

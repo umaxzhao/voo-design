@@ -14,22 +14,45 @@
 
 import { isGroupNode } from "./scene_model.js";
 
-/** Every artwork id inside a folder, at any depth — its selection test. */
-export function groupArtworkIds(objects, groupId) {
+/**
+ * Lookup tables for one objects array, built once and reused by every row of
+ * the same render. Without them each row rescans the whole document, which is
+ * quadratic on a page with thousands of layers.
+ */
+const indexCache = new WeakMap();
+
+function indexOf(objects) {
+  let index = indexCache.get(objects);
+  if (index) return index;
+  const byId = new Map();
+  const position = new Map();
   const childrenMap = new Map();
-  for (const object of objects) {
-    if (!object.parentId) continue;
+  objects.forEach((object, at) => {
+    byId.set(object.id, object);
+    position.set(object.id, at);
+    if (!object.parentId) return;
     if (!childrenMap.has(object.parentId)) childrenMap.set(object.parentId, []);
     childrenMap.get(object.parentId).push(object);
-  }
+  });
+  index = { byId, position, childrenMap, artworkIds: new Map() };
+  indexCache.set(objects, index);
+  return index;
+}
+
+/** Every artwork id inside a folder, at any depth — its selection test. */
+export function groupArtworkIds(objects, groupId) {
+  const index = indexOf(objects);
+  const cached = index.artworkIds.get(groupId);
+  if (cached) return cached;
   const out = [];
   const walk = (id) => {
-    for (const child of childrenMap.get(id) ?? []) {
+    for (const child of index.childrenMap.get(id) ?? []) {
       if (isGroupNode(child)) walk(child.id);
       else out.push(child.id);
     }
   };
   walk(groupId);
+  index.artworkIds.set(groupId, out);
   return out;
 }
 
@@ -40,10 +63,9 @@ export function groupArtworkIds(objects, groupId) {
  * Checks every ancestor, not just the immediate parent, so a member nested
  * two folders deep still defers to the outermost folder that is wholly lit.
  */
-function coveredByWholeFolder(objects, node, selectedIds) {
-  if (selectedIds.length === 0) return false;
-  const byId = new Map(objects.map((object) => [object.id, object]));
-  const chosen = new Set(selectedIds);
+function coveredByWholeFolder(objects, node, chosen) {
+  if (chosen.size === 0) return false;
+  const { byId } = indexOf(objects);
   let parentId = node.parentId;
   const seen = new Set();
   while (parentId && !seen.has(parentId)) {
@@ -53,6 +75,18 @@ function coveredByWholeFolder(objects, node, selectedIds) {
     parentId = byId.get(parentId)?.parentId ?? null;
   }
   return false;
+}
+
+/** The selected-id set for `selectedIds`, cached per array so rows share it. */
+const chosenCache = new WeakMap();
+
+function chosenOf(selectedIds) {
+  let chosen = chosenCache.get(selectedIds);
+  if (!chosen) {
+    chosen = new Set(selectedIds);
+    chosenCache.set(selectedIds, chosen);
+  }
+  return chosen;
 }
 
 /**
@@ -87,13 +121,14 @@ export function isRowSelected(
     isolationGroupId = null,
   } = {},
 ) {
+  const chosen = chosenOf(selectedIds);
   if (!isGroupNode(node)) {
     // A member whose folder is lit as a whole unit defers to that folder's
     // row, so a group selection reads as one selected thing.
-    if (coveredByWholeFolder(objects, node, selectedIds)) return false;
-    const docIndex = objects.findIndex((object) => object.id === node.id);
+    if (coveredByWholeFolder(objects, node, chosen)) return false;
+    const docIndex = indexOf(objects).position.get(node.id) ?? -1;
     return (
-      selectedIds.includes(node.id) ||
+      chosen.has(node.id) ||
       (docIndex === activeIndex && !isBackgroundSelected)
     );
   }
@@ -101,6 +136,6 @@ export function isRowSelected(
   const ids = groupArtworkIds(objects, node.id);
   return (
     node.id === isolationGroupId ||
-    (ids.length > 0 && ids.every((id) => selectedIds.includes(id)))
+    (ids.length > 0 && ids.every((id) => chosen.has(id)))
   );
 }

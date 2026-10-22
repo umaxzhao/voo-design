@@ -39,8 +39,64 @@ import {
 import { normalizeAdjustments } from "./scene_model_adjustments.js";
 import { normalizeGradientStops, normalizeMixerRow, normalizeInkRow, normalizeColorBalanceZone, normalizeHexColor, BASE_DEFAULTS, DEFAULT_PAGE_BACKGROUND, effectivePage } from "./scene_model_geometry.js";
 
+/**
+ * Lookup tables for one node list, built once and reused. Group and boolean
+ * children, and id lookups, would otherwise scan the whole list on every call,
+ * which made per-node work quadratic on large pages. Keyed by the array itself,
+ * so a changed list (a new array, or a different length) rebuilds the tables.
+ */
+const nodeIndexCache = new WeakMap();
+
+function nodeIndexOf(nodes) {
+  const cached = nodeIndexCache.get(nodes);
+  if (cached && cached.length === nodes.length) return cached;
+  const byId = new Map();
+  const childrenByParent = new Map();
+  for (const node of nodes) {
+    // First match wins, as Array.prototype.find would have returned it.
+    if (!byId.has(node.id)) byId.set(node.id, node);
+    if (!node.parentId) continue;
+    const siblings = childrenByParent.get(node.parentId);
+    if (siblings) siblings.push(node);
+    else childrenByParent.set(node.parentId, [node]);
+  }
+  const index = { length: nodes.length, byId, childrenByParent };
+  nodeIndexCache.set(nodes, index);
+  return index;
+}
+
+/**
+ * Whether a node sits under a hidden folder, and whether it sits inside a boolean
+ * container, both read from the parent chain. Computed once per node list and
+ * remembered, so the paint loop does not walk the chain for every node on every frame.
+ */
+function ancestryOf(doc, node) {
+  const index = nodeIndexOf(doc.nodes);
+  if (!index.ancestry) index.ancestry = new Map();
+  return ancestryFor(doc, index, node, new Set());
+}
+
+function ancestryFor(doc, index, node, visiting) {
+  const known = index.ancestry.get(node.id);
+  if (known) return known;
+  if (!node.parentId || visiting.has(node.id)) return { hidden: false, inBoolean: false };
+  visiting.add(node.id);
+  const parent = index.byId.get(node.parentId);
+  let result = { hidden: false, inBoolean: false };
+  if (parent) {
+    const up = ancestryFor(doc, index, parent, visiting);
+    result = {
+      hidden: parent.visible === false || up.hidden,
+      inBoolean: parent.kind === NODE_KIND.BOOLEAN || up.inBoolean,
+    };
+  }
+  visiting.delete(node.id);
+  index.ancestry.set(node.id, result);
+  return result;
+}
+
 function findNode(doc, id) {
-  return doc.nodes.find((node) => node.id === id) ?? null;
+  return nodeIndexOf(doc.nodes).byId.get(id) ?? null;
 }
 import { createAdjustmentNode, isAdjustmentNode, createRectNode, createEllipseNode, BOOLEAN_OPERATIONS, BOOLEAN_SOURCE_KINDS, canCombine, booleanSourceOf, syncBooleanNode, createBooleanNode, DEFAULT_BRUSH_HARDNESS, DEFAULT_SOFT_BRUSH_HARDNESS, normalizePathHardness } from "./scene_model_node_builders.js";
 import { createPathNode, pathBounds, normalisePenAnchor, cubicExtrema1D, penAnchorsBounds, createPenNode } from "./scene_model_paths.js";
@@ -181,7 +237,14 @@ export function isRegionNode(node) {
  * selection outline. Groups nest: a group's own `parentId` points at the
  * folder above it.
  */
-export function createGroupNode({ x, y, width, height, parentId = null }) {
+export function createGroupNode({
+  x,
+  y,
+  width,
+  height,
+  parentId = null,
+  autoLayout = null,
+}) {
   return {
     ...getBaseDefaults(),
     id: newId(),
@@ -191,6 +254,7 @@ export function createGroupNode({ x, y, width, height, parentId = null }) {
     width,
     height,
     parentId,
+    ...(autoLayout ? { autoLayout } : {}),
   };
 }
 
@@ -208,25 +272,16 @@ export function isContainerNode(node) {
 
 /** The direct children of a group or boolean node, in document (paint) order. */
 export function groupChildren(doc, groupId) {
-  return doc.nodes.filter((node) => node.parentId === groupId);
+  return [...(nodeIndexOf(doc.nodes).childrenByParent.get(groupId) ?? [])];
 }
 
 export function booleanChildren(doc, booleanId) {
-  return doc.nodes.filter((node) => node.parentId === booleanId);
+  return [...(nodeIndexOf(doc.nodes).childrenByParent.get(booleanId) ?? [])];
 }
 
 /** True when the node is a child of any boolean container. */
 export function isInsideBooleanGroup(doc, node) {
-  let current = node;
-  const seen = new Set([node?.id]);
-  while (current?.parentId && !seen.has(current.parentId)) {
-    seen.add(current.parentId);
-    const parent = findNode(doc, current.parentId);
-    if (!parent) return false;
-    if (parent.kind === NODE_KIND.BOOLEAN) return true;
-    current = parent;
-  }
-  return false;
+  return ancestryOf(doc, node).inBoolean;
 }
 
 /**
@@ -265,16 +320,7 @@ export function topLevelGroupOf(doc, node) {
 
 /** True when any folder above the node is hidden — the node paints nothing. */
 export function isHiddenByGroup(doc, node) {
-  let current = node;
-  const seen = new Set();
-  while (current?.parentId && !seen.has(current.parentId)) {
-    seen.add(current.parentId);
-    const parent = findNode(doc, current.parentId);
-    if (!parent) return false;
-    if (parent.visible === false) return true;
-    current = parent;
-  }
-  return false;
+  return ancestryOf(doc, node).hidden;
 }
 
 /** True when any folder above the node is locked — the node must not move. */

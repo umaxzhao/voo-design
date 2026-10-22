@@ -16,7 +16,6 @@ export function useEditorExport({
   setExportOpen,
   resolveCanvas,
   onExportWarnings,
-  exportMotion,
   setExportProgress,
 }) {
   const attemptRef = useRef(null);
@@ -62,42 +61,18 @@ export function useEditorExport({
     // update the dialog or release busy state belonging to a newer export.
     attempt.promise = (async () => {
       try {
-        let receipt;
-        if (exportFormat === "video") {
-          if (!exportMotion) throw new Error(t("editor.motion.exportFailed"));
-          const result = await exportMotion((value) => {
-            if (attemptRef.current === attempt) setExportProgress?.(value);
-          }, attempt.controller.signal);
-          receipt = result === null ? null : { path: result ?? null };
-        } else if (exportFormat === "html") {
-          const { exportEditorWebPage } =
-            await import("./export_editor_web_page.js");
-          receipt = await exportEditorWebPage({
-            engine,
-            name: pageTitle(),
-            title: t("editor.export"),
-            resolveCanvas,
-            assetSourceOf: (assetId) =>
-              engine.getHost?.()?.resolveImage?.(assetId) ?? null,
-            threeModuleUrl: import.meta.env.VITE_THREE_EXPORT_MODULE_URL,
-            gltfLoaderModuleUrl: import.meta.env
-              .VITE_THREE_EXPORT_GLTF_LOADER_URL,
-            signal: attempt.controller.signal,
-          });
-        } else {
-          receipt = await exportEditorImage({
-            engine,
-            format: exportFormat,
-            quality: exportQuality,
-            scale: exportScale,
-            name: pageTitle(),
-            title: t("editor.export"),
-            signal: attempt.controller.signal,
-            range: exportRange,
-            selectedIds,
-            resolveCanvas,
-          });
-        }
+        const receipt = await exportEditorImage({
+          engine,
+          format: exportFormat,
+          quality: exportQuality,
+          scale: exportScale,
+          name: pageTitle(),
+          title: t("editor.export"),
+          signal: attempt.controller.signal,
+          range: exportRange,
+          selectedIds,
+          resolveCanvas,
+        });
         if (attemptRef.current !== attempt) return null;
         if (receipt) {
           setExportOpen(false);
@@ -143,7 +118,6 @@ export function useEditorExport({
     pageTitle,
     resolveCanvas,
     onExportWarnings,
-    exportMotion,
     setBusy,
     setApplyError,
     setExportOpen,

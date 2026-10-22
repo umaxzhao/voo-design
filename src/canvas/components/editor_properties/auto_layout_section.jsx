@@ -13,8 +13,17 @@ const DEFAULT_LAYOUT = {
   heightMode: "hug",
 };
 
+const DISTRIBUTIONS = [
+  "start",
+  "center",
+  "end",
+  "space-between",
+  "space-around",
+  "space-evenly",
+];
+
 const FIELD_CLASS =
-  "w-full min-w-0 rounded-lg bg-[#222222] px-2 py-1.5 text-[11px] tabular-nums text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#E5B2FF]/40";
+  "w-full min-w-0 rounded-lg bg-neutral-800 px-2 py-1.5 text-[11px] tabular-nums text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
 
 export default function AutoLayoutSection({ object, editAndCommit }) {
   const { t } = useI18n();
@@ -39,6 +48,54 @@ export default function AutoLayoutSection({ object, editAndCommit }) {
           if (Number.isFinite(next)) onChange(Math.max(0, next));
         }}
       />
+    </label>
+  );
+  // Min/max are optional: clearing the field removes the constraint instead of
+  // snapping it to 0, which is what a plain numeric input would do.
+  const optionalField = (key, label, value, onChange) => (
+    <label
+      key={key}
+      className="flex min-w-0 flex-col gap-1 text-[10px] text-neutral-400"
+    >
+      <span>{label}</span>
+      <input
+        type="number"
+        min="0"
+        step="1"
+        className={FIELD_CLASS}
+        aria-label={label}
+        value={value === null ? "" : value}
+        onChange={(event) => {
+          const raw = event.target.value;
+          if (raw === "") {
+            onChange(null);
+            return;
+          }
+          const next = Number(raw);
+          if (Number.isFinite(next)) onChange(Math.max(0, next));
+        }}
+      />
+    </label>
+  );
+  const selectRow = (key, label, value, options, onChange) => (
+    <label
+      key={key}
+      className="flex items-center justify-between gap-2 text-[10px] text-neutral-400"
+    >
+      <span>{label}</span>
+      <select
+        data-testid={`editor-auto-layout-${key}`}
+        aria-label={label}
+        className={FIELD_CLASS}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {t(`editor.autoLayout.${option}`)}
+          </option>
+        ))}
+      </select>
     </label>
   );
 
@@ -75,6 +132,25 @@ export default function AutoLayoutSection({ object, editAndCommit }) {
               </button>
             ))}
           </div>
+          <label className="flex items-center justify-between gap-2 text-[10px] text-neutral-400">
+            <span>{t("editor.autoLayout.wrap")}</span>
+            <button
+              type="button"
+              data-testid="editor-auto-layout-wrap"
+              aria-label={t("editor.autoLayout.wrap")}
+              aria-pressed={layout.wrap}
+              onClick={() => change({ wrap: !layout.wrap })}
+              className={`rounded-lg px-3 py-1 text-[10px] ${
+                layout.wrap
+                  ? "bg-[#E5B2FF]/20 text-[#eed0ff]"
+                  : "bg-white/[0.06] text-neutral-400"
+              }`}
+            >
+              {layout.wrap
+                ? t("editor.autoLayout.on")
+                : t("editor.autoLayout.off")}
+            </button>
+          </label>
           <div className="grid grid-cols-2 gap-2">
             {numericField(
               "gap",
@@ -82,6 +158,13 @@ export default function AutoLayoutSection({ object, editAndCommit }) {
               layout.gap,
               (gap) => change({ gap }),
             )}
+            {layout.wrap &&
+              numericField(
+                "crossGap",
+                t("editor.autoLayout.crossGap"),
+                layout.crossGap,
+                (crossGap) => change({ crossGap }),
+              )}
             {numericField(
               "paddingTop",
               t("editor.autoLayout.paddingTop"),
@@ -107,58 +190,68 @@ export default function AutoLayoutSection({ object, editAndCommit }) {
               (left) => change({ padding: { ...layout.padding, left } }),
             )}
           </div>
-          <label className="flex items-center justify-between gap-2 text-[10px] text-neutral-400">
-            <span>{t("editor.autoLayout.align")}</span>
-            <select
-              aria-label={t("editor.autoLayout.align")}
-              className={FIELD_CLASS}
-              value={layout.alignItems}
-              onChange={(event) => change({ alignItems: event.target.value })}
-            >
-              {["start", "center", "end"].map((value) => (
-                <option key={value} value={value}>
-                  {t(`editor.autoLayout.${value}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex items-center justify-between gap-2 text-[10px] text-neutral-400">
-            <span>{t("editor.autoLayout.justify")}</span>
-            <select
-              aria-label={t("editor.autoLayout.justify")}
-              className={FIELD_CLASS}
-              value={layout.justifyContent}
-              onChange={(event) =>
-                change({ justifyContent: event.target.value })
-              }
-            >
-              {["start", "center", "end", "space-between"].map((value) => (
-                <option key={value} value={value}>
-                  {t(`editor.autoLayout.${value}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-          {["widthMode", "heightMode"].map((key) => (
-            <label
-              key={key}
-              className="flex items-center justify-between gap-2 text-[10px] text-neutral-400"
-            >
-              <span>{t(`editor.autoLayout.${key}`)}</span>
-              <select
-                aria-label={t(`editor.autoLayout.${key}`)}
-                className={FIELD_CLASS}
-                value={layout[key]}
-                onChange={(event) => change({ [key]: event.target.value })}
-              >
-                {["fixed", "hug"].map((value) => (
-                  <option key={value} value={value}>
-                    {t(`editor.autoLayout.${value}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
+          {selectRow(
+            "alignItems",
+            t("editor.autoLayout.align"),
+            layout.alignItems,
+            ["start", "center", "end"],
+            (alignItems) => change({ alignItems }),
+          )}
+          {selectRow(
+            "justifyContent",
+            t("editor.autoLayout.justify"),
+            layout.justifyContent,
+            DISTRIBUTIONS,
+            (justifyContent) => change({ justifyContent }),
+          )}
+          {layout.wrap &&
+            selectRow(
+              "alignContent",
+              t("editor.autoLayout.alignContent"),
+              layout.alignContent,
+              DISTRIBUTIONS,
+              (alignContent) => change({ alignContent }),
+            )}
+          {["widthMode", "heightMode"].map((key) =>
+            selectRow(
+              key,
+              t(`editor.autoLayout.${key}`),
+              layout[key],
+              ["fixed", "hug"],
+              (mode) => change({ [key]: mode }),
+            ),
+          )}
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] text-neutral-400">
+              {t("editor.autoLayout.constraints")}
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              {optionalField(
+                "minWidth",
+                t("editor.autoLayout.minWidth"),
+                layout.minWidth,
+                (minWidth) => change({ minWidth }),
+              )}
+              {optionalField(
+                "maxWidth",
+                t("editor.autoLayout.maxWidth"),
+                layout.maxWidth,
+                (maxWidth) => change({ maxWidth }),
+              )}
+              {optionalField(
+                "minHeight",
+                t("editor.autoLayout.minHeight"),
+                layout.minHeight,
+                (minHeight) => change({ minHeight }),
+              )}
+              {optionalField(
+                "maxHeight",
+                t("editor.autoLayout.maxHeight"),
+                layout.maxHeight,
+                (maxHeight) => change({ maxHeight }),
+              )}
+            </div>
+          </div>
           <button
             type="button"
             onClick={() => editAndCommit({ autoLayout: null })}

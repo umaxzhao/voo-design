@@ -1,7 +1,7 @@
 /** Unified full-width dimension bar: W | [Link/Unlink] | H. */
 
 import PropTypes from "prop-types";
-import ScrubField from "../editor_motion/motion-scrub-field.jsx";
+import ScrubField from "../scrub_field.jsx";
 import MixedField from "./mixed_field.jsx";
 import { IconLink, IconUnlink } from "../../icons.jsx";
 import EditorTooltip from "../editor_tooltip.jsx";
@@ -25,7 +25,6 @@ export default function TransformDimensionBar({
       ) : (
         <ScrubField
           prefix="W"
-          motionProperty="width"
           min={1}
           max={COORD_LIMIT}
           value={commonW.value}
@@ -68,7 +67,6 @@ export default function TransformDimensionBar({
       ) : (
         <ScrubField
           prefix="H"
-          motionProperty="height"
           min={1}
           max={COORD_LIMIT}
           value={commonH.value}

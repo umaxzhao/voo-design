@@ -77,7 +77,7 @@ export default function PresentationExportDialog({
         aria-labelledby="presentation-export-heading"
         aria-busy={busy}
         tabIndex={-1}
-        className="flex w-full max-w-md flex-col gap-4 rounded-2xl bg-[#141414] p-4 shadow-panel outline-none"
+        className="flex w-full max-w-md flex-col gap-4 rounded-3xl bg-[#141414] p-4 shadow-panel outline-none"
       >
         <header className="flex items-center justify-between gap-3">
           <h2

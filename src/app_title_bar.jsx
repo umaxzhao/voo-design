@@ -1,97 +1,163 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import CanvasTabBar from "./canvas/components/canvas_tab_bar.jsx";
+import { Bolt, Sparkles } from "lucide-react";
 import { useDesignStore } from "./store/design_store.js";
+import { useI18n } from "./canvas/use_i18n.js";
+import SettingsDrawer from "./canvas/components/settings_drawer.jsx";
 
 /** Brand name shown in the title bar. A product name, not translatable copy. */
 export const APP_DISPLAY_NAME = "VOO Design";
 
 /** Space kept clear of the native macOS traffic lights (close/minimise/zoom). */
-const MAC_TRAFFIC_LIGHT_INSET_PX = 78;
+const MAC_TRAFFIC_LIGHT_INSET_PX = 96;
 
 /** Canonical VOO brand hexagon logo with inscribed triangle & circle */
-export function VooBrandLogo({ className = "size-4 text-[#a7ffd4]" }) {
+export function VooBrandLogo({ className = "size-5 text-black" }) {
   return (
     <svg
       className={className}
-      viewBox="0 0 34 34"
+      viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M31.6094 8.5V25.5L16.9336 34L2.25781 25.5V8.5L16.9336 0L31.6094 8.5ZM16.9336 34L31.6094 8.5H2.25781L16.9336 34ZM16.9336 9.16406C21.2246 9.16406 24.7031 12.6723 24.7031 17C24.7031 21.3277 21.2246 24.8359 16.9336 24.8359C12.6426 24.8359 9.16406 21.3277 9.16406 17C9.16406 12.6723 12.6426 9.16406 16.9336 9.16406Z"
+        d="M21 6.25V16.75L11.5 22L2 16.75V6.25L11.5 1L21 6.25ZM11.5 22L21 6.25H2L11.5 22ZM11.5 6.66016C14.2777 6.66016 16.5294 8.82703 16.5294 11.5C16.5294 14.173 14.2777 16.3398 11.5 16.3398C8.72233 16.3398 6.47059 14.173 6.47059 11.5C6.47059 8.82703 8.72233 6.66016 11.5 6.66016Z"
         fill="currentColor"
       />
     </svg>
   );
 }
 
-/**
- * Window title strip.
- * Features the signature VOO emerald green to pitch black gradient.
- */
 export default function AppTitleBar() {
   const isMac = window.electronAPI?.platform === "darwin";
-  const fileName = useDesignStore((state) => state.fileName) || "Untitled.voo";
-  const isDirty = useDesignStore((state) => state.isDirty);
   const welcomeOpen = useDesignStore((state) => state.welcomeOpen);
   const setWelcomeOpen = useDesignStore((state) => state.setWelcomeOpen);
+  const { t } = useI18n();
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState("general");
+
+  useEffect(() => {
+    const handleOpenSettings = (e) => {
+      if (e.detail?.tab) setSettingsTab(e.detail.tab);
+      setSettingsOpen(true);
+    };
+
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+        e.preventDefault();
+        setSettingsOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("voo:open-settings", handleOpenSettings);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("voo:open-settings", handleOpenSettings);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   return (
-    <header
-      className="app-title-bar flex h-[36px] shrink-0 items-center justify-between px-4 text-xs font-medium tracking-wide text-neutral-400 select-none border-b border-[#a7ffd4]/15"
-      style={{
-        ...(isMac ? { paddingLeft: MAC_TRAFFIC_LIGHT_INSET_PX } : {}),
-        WebkitAppRegion: "drag",
-        background: "linear-gradient(90deg, #07382c 0%, #05261e 22%, #0a1713 45%, #000000 100%)",
-      }}
-    >
-      <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" }}>
-        <button
-          type="button"
-          onClick={() => setWelcomeOpen(!welcomeOpen)}
-          className="flex items-center gap-1.5 font-semibold text-white tracking-normal hover:text-[#a7ffd4] transition-colors cursor-pointer rounded-lg px-1.5 py-0.5 hover:bg-white/5"
-          title={welcomeOpen ? "返回画布" : "主页 / 欢迎界面"}
-        >
-          <VooBrandLogo className="size-4 text-[#a7ffd4]" />
-          <span>{APP_DISPLAY_NAME}</span>
-        </button>
-
-        {!welcomeOpen && (
-          <>
-            <span className="text-neutral-500">/</span>
-            <span className="text-neutral-300 flex items-center gap-1 font-mono text-[11px]">
-              {fileName}
-              {isDirty && (
-                <span
-                  className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400 ml-0.5"
-                  title="未保存更改 (Ctrl+S / ⌘S 保存)"
-                />
-              )}
-            </span>
-          </>
-        )}
-      </div>
-
-      <div
-        className="flex items-center gap-2 text-neutral-400 text-[11px]"
-        style={{ WebkitAppRegion: "no-drag" }}
+    <>
+      <header
+        className="app-title-bar flex h-[40px] shrink-0 items-center justify-between px-4 text-xs font-medium tracking-wide select-none border-b border-white/10"
+        style={{
+          ...(isMac ? { paddingLeft: MAC_TRAFFIC_LIGHT_INSET_PX } : {}),
+          WebkitAppRegion: "drag",
+          background: "linear-gradient(-90deg, rgb(0, 0, 0) 70.123%, rgb(178, 255, 214) 89.855%)",
+        }}
       >
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new CustomEvent("voo:file-save"))}
-          className="hover:text-neutral-100 transition-colors cursor-pointer px-2 py-0.5 rounded-lg hover:bg-white/5 text-neutral-300"
-          title="保存工程文件 (⌘S / Ctrl+S)"
-        >
-          保存 (.voo)
-        </button>
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new CustomEvent("voo:file-open"))}
-          className="hover:text-neutral-100 transition-colors cursor-pointer px-2 py-0.5 rounded-lg hover:bg-white/5 text-neutral-400"
-          title="打开工程文件 (⌘O / Ctrl+O)"
-        >
-          打开
-        </button>
-      </div>
-    </header>
+        <div className="flex h-full items-center gap-2 leading-none" style={{ WebkitAppRegion: "no-drag" }}>
+          <button
+            type="button"
+            onClick={() => setWelcomeOpen(!welcomeOpen)}
+            className="flex h-7 items-center gap-1.5 font-medium text-black tracking-normal hover:opacity-80 transition-opacity cursor-pointer rounded-lg px-1.5"
+            title={welcomeOpen ? "返回画布" : "主页 / 欢迎界面"}
+          >
+            <VooBrandLogo className="size-5 text-black" />
+            <span className="text-[12px] font-medium text-black tracking-tight">{APP_DISPLAY_NAME}</span>
+          </button>
+
+          {(
+            <div className="flex min-w-0 flex-1 items-center pl-3">
+              <CanvasTabBar />
+            </div>
+          )}
+        </div>
+
+        {welcomeOpen ? (
+          <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" }}>
+            <button
+              type="button"
+              data-testid="titlebar-open-onboarding-btn"
+              aria-label="本地 CLI 配置向导"
+              title="本地 CLI 配置向导 (Claude / Codex / Antigravity)"
+              onClick={() => window.dispatchEvent(new CustomEvent("voo:open-onboarding"))}
+              className="flex size-5 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-[#a7ffd4]"
+            >
+              <Sparkles size={14} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              aria-label={t("welcome.settings.open") || "设置"}
+              title="设置 (⌘,)"
+              onClick={() => setSettingsOpen(true)}
+              className="flex size-5 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-white"
+            >
+              <Bolt size={14} aria-hidden="true" />
+            </button>
+          </div>
+        ) : (
+          <div
+            className="flex items-center gap-2 text-neutral-300 text-[11px]"
+            style={{ WebkitAppRegion: "no-drag" }}
+          >
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("voo:file-save"))}
+              className="cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
+              title="保存 (⌘S / Ctrl+S)"
+            >
+              保存
+            </button>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("voo:file-open"))}
+              className="cursor-pointer rounded-lg px-2.5 py-1 text-neutral-400 transition-colors hover:bg-white/10 hover:text-neutral-200 font-medium"
+              title="打开工程文件 (⌘O / Ctrl+O)"
+            >
+              打开
+            </button>
+            <button
+              type="button"
+              data-testid="titlebar-open-onboarding-btn"
+              aria-label="本地 CLI 配置向导"
+              title="本地 CLI 配置向导 (Claude / Codex / Antigravity)"
+              onClick={() => window.dispatchEvent(new CustomEvent("voo:open-onboarding"))}
+              className="flex size-5 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-[#a7ffd4]"
+            >
+              <Sparkles size={14} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              aria-label="设置"
+              title="偏好设置与 AI 供应商 (⌘,)"
+              onClick={() => setSettingsOpen(true)}
+              className="flex size-5 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-white"
+            >
+              <Bolt size={14} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+      </header>
+
+      {/* Settings Modal Drawer */}
+      <SettingsDrawer
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        initialTab={settingsTab}
+      />
+    </>
   );
 }

@@ -32,18 +32,16 @@ import {
   extractComponent,
 } from "../editor/component_extract.js";
 import { effectivePage } from "../editor/scene_model_geometry.js";
-import { selectionBounds } from "../editor/editor_export_bounds.js";
+import { setDocumentSize as resizePageDocument } from "../editor/doc_ops_canvas.js";
 import {
-  createObject3dNode,
-  DEFAULT_OBJECT_EDGE,
-  instanceForObject,
-  masterDocForObject,
-} from "../editor/object3d_master.js";
+  hasConstraints,
+  reflowConstraints,
+} from "../editor/scene_constraints.js";
+import { selectionBounds } from "../editor/editor_export_bounds.js";
+import { alignNodes, distributeNodes } from "../editor/align_ops.js";
 import EditorPage from "./editor_page.jsx";
 import LoadingModal from "./loading_modal.jsx";
 import EditorProperties from "./editor_properties/index.jsx";
-import useMotionExport from "./editor_motion/use_motion_export.js";
-import { zoomShiftForTimeline } from "./editor_motion/motion_layout.js";
 import { layoutPresentationPages } from "../presentation/presentation-document.js";
 import { usePresentationHistory } from "./presentation/use_presentation_history.js";
 import { usePresentationEditor } from "./presentation/use_presentation_editor.js";
@@ -56,14 +54,34 @@ import {
   importEditorMediaFile,
 } from "./editor_media_import.js";
 import EditorToolbar, { EditorZoom } from "./editor_toolbar.jsx";
-import EditorToolbar3D from "./editor_toolbar_3d.jsx";
+import EditorRulers, { EditorCanvasAids } from "./editor_rulers.jsx";
+import EditorComments from "./editor_comments.jsx";
 import EditorToolSubbar from "./editor_tool_subbar.jsx";
 import EditorPieMenu from "./editor_pie_menu.jsx";
 import EditorPenSubbar from "./editor_pen_subbar.jsx";
 import EditorContextMenu from "./editor_context_menu.jsx";
+import EditorCommandPalette from "./editor_command_palette.jsx";
+import EditorFindReplace from "./editor_find_replace.jsx";
 import ShortcutReferenceModal from "./shortcut_reference_modal.jsx";
 import SvgEditModal from "./SvgEditModal.jsx";
 import { DESIGN_SHORTCUT_GROUPS } from "../../shared/editor-shortcut-catalog.js";
+import { getSetting, setSetting } from "../../shared/settings.js";
+import {
+  addGuide,
+  createGuide,
+  readDocumentGuides,
+  removeGuide,
+  serialiseGuides,
+  updateGuide,
+} from "../editor/rulers_geometry.js";
+import {
+  addComment,
+  addReply,
+  deleteComment,
+  normalizeComments,
+  serializeComments,
+  setResolved,
+} from "../comments/comment_model.js";
 import {
   TOOL,
   ZOOM_STEP,
@@ -73,21 +91,18 @@ import {
 } from "../editor/editor_constants.js";
 import { marqueeItemForMode } from "../editor/tool_families.js";
 import { executeEditorCommand } from "../editor/command_table.js";
-import { getCanvasInsertErrorKey } from "./editor_canvas_tree_nav.js";
 import { PendingCanvasSelectionManager } from "./editor_pending_canvas_selection.js";
 import { useEditorShortcuts } from "../use_editor_shortcuts.js";
 import { useEditorDnd } from "./use_editor_dnd.js";
 import { useI18n } from "../use_i18n.js";
-import { useWorkflowStore } from "../store/workflow_store.js";
+import { useDesignStore } from "../../store/design_store.js";
+import { useWorkspaceSkia } from "../use_skia_page.js";
+import { SpatialIndex } from "../editor/spatial_index.js";
 import { requestCollabOriginal } from "../collab/use_collab.js";
 import { regionHost } from "../editor/doc_ops.js";
 import {
-  createCanvasInstanceNode,
-  createMesh3dNode,
   getCanvasType,
 } from "../editor/canvas-composition-model.js";
-import { patchThreeSceneNode } from "../editor/three-scene-node-patch.js";
-import { patchThreeScene } from "../editor/three-scene-patch.js";
 import {
   clearInstanceCamera,
   getInstanceCamera,
@@ -104,9 +119,9 @@ import {
   bindColorVariable,
   updateColorVariable,
 } from "../editor/scene_color_variables.js";
+import { createVariablesPanelActions } from "../editor/scene_variables.js";
+import { createStylePanelActions } from "../editor/scene_styles.js";
 import { useEditorApply } from "./editor_hooks/use_editor_apply.js";
-import { captureThreeScenePreviewOrFallback } from "./editor_hooks/three-scene-preview.js";
-import { useEditorPreview } from "./editor_hooks/use_editor_preview.js";
 import { readImageRgba } from "./bitmap_pixels.js";
 import {
   ENHANCE_SAMPLE_EDGE,
@@ -131,16 +146,6 @@ const EditorCanvasInstanceProperties = lazy(
 );
 const EditorExportDialog = lazy(() => import("./editor_export_dialog.jsx"));
 const EditorHistoryPanel = lazy(() => import("./editor_history_panel.jsx"));
-const EditorScenePreview = lazy(() => import("./editor_scene_preview.jsx"));
-const EditorCanvasMotionProperties = lazy(
-  () => import("./editor_canvas_motion_properties.jsx"),
-);
-const ThreeSceneProperties = lazy(
-  () => import("./editor-3d/three-scene-properties.jsx"),
-);
-const MotionTimeline = lazy(
-  () => import("./editor_motion/motion_timeline.jsx"),
-);
 
 /**
  * How many pages keep a live engine at once.
@@ -157,6 +162,45 @@ const MAX_LIVE_PAGES = 12;
 const FREE_GUTTER = 64;
 /** Free-canvas padding around the artboard row. */
 const FREE_PADDING = 48;
+/** Artboards without a saved position fill a grid this many columns wide. */
+const FREE_COLUMNS = 3;
+
+/**
+ * Persisted view-aid keys. The pointer/snapping modules read the same keys
+ * synchronously, so a toggle here changes the very next drag.
+ */
+const SHOW_RULERS_SETTING = "voo.editor.showRulers";
+const SHOW_GUIDES_SETTING = "voo.editor.showGuides";
+const SNAP_TO_GRID_SETTING = "voo.editor.snapToGrid";
+/** History label for every guide edit (one entry per completed gesture). */
+const GUIDES_HISTORY_NAME = "editor.history.entry.guides";
+/** History label for every comment edit (create/reply/resolve/delete). */
+const COMMENTS_HISTORY_NAME = "editor.history.entry.comments";
+/** History label for find-and-replace commits (one entry per Replace All). */
+const FIND_REPLACE_HISTORY_NAME = "editor.history.entry.replaceText";
+
+/**
+ * Default free-canvas placement: a grid of equal cells in reading order, each
+ * artboard centred in its cell. Saved positions still win over this.
+ */
+function gridArtboardLayouts(sizes) {
+  const cellWidth = Math.max(...sizes.map((size) => size.width));
+  const cellHeight = Math.max(...sizes.map((size) => size.height));
+  return sizes.map((size, index) => {
+    const column = index % FREE_COLUMNS;
+    const row = Math.floor(index / FREE_COLUMNS);
+    return {
+      ...size,
+      x: FREE_PADDING + column * (cellWidth + FREE_GUTTER) + (cellWidth - size.width) / 2,
+      y: FREE_PADDING + row * (cellHeight + FREE_GUTTER) + (cellHeight - size.height) / 2,
+    };
+  });
+}
+
+/** Left edge of the presentation row for the page at `index`. */
+function presentationRowX(sizes, index) {
+  return sizes.slice(0, index).reduce((x, size) => x + size.width + FREE_GUTTER, FREE_PADDING);
+}
 
 /**
  * Zooms a camera around a stage-space point, keeping it under the cursor —
@@ -186,56 +230,59 @@ function zoomCameraAt(camera, factor, point) {
 export default function ImageEditor({ agentVisible = false, visible = true }) {
   const { t } = useI18n();
 
-  const nodeIds = useWorkflowStore((state) => state.editingNodeIds);
-  const focusedId = useWorkflowStore((state) => state.editingNodeId);
-  const nodes = useWorkflowStore((state) => state.nodes);
-  const presentationId = useWorkflowStore(
+  const nodeIds = useDesignStore((state) => state.editingNodeIds);
+  const focusedId = useDesignStore((state) => state.editingNodeId);
+  const nodes = useDesignStore((state) => state.nodes);
+  const presentationId = useDesignStore(
     (state) => state.editingPresentationId,
   );
   const presentationOwner = nodes.find((node) => node.id === presentationId);
-  const rawFocusEditorPage = useWorkflowStore((state) => state.focusEditorPage);
-  const addEditorPage = useWorkflowStore((state) => state.addEditorPage);
-  const createComponentPage = useWorkflowStore(
+  const rawFocusEditorPage = useDesignStore((state) => state.focusEditorPage);
+  const addEditorPage = useDesignStore((state) => state.addEditorPage);
+  const createComponentPage = useDesignStore(
     (state) => state.createComponentPage,
   );
-  const openExistingEditorPage = useWorkflowStore(
+  const openExistingEditorPage = useDesignStore(
     (state) => state.openExistingEditorPage,
   );
-  const deleteEditorPage = useWorkflowStore((state) => state.deleteEditorPage);
-  const duplicateEditorPage = useWorkflowStore(
+  const deleteEditorPage = useDesignStore((state) => state.deleteEditorPage);
+  const duplicateEditorPage = useDesignStore(
     (state) => state.duplicateEditorPage,
   );
-  const renameEditorPage = useWorkflowStore((state) => state.renameEditorPage);
+  const renameEditorPage = useDesignStore((state) => state.renameEditorPage);
   /** Group whose free-canvas view is remembered; null for hand multi-selects. */
-  const editingGroupId = useWorkflowStore((state) => state.editingGroupId);
-  const editorRememberCamera = useWorkflowStore(
+  const editingGroupId = useDesignStore((state) => state.editingGroupId);
+  const editorRememberCamera = useDesignStore(
     (state) => state.editorRememberCamera,
   );
-  const getGroupCamera = useWorkflowStore((state) => state.getGroupCamera);
-  const saveGroupCamera = useWorkflowStore((state) => state.saveGroupCamera);
+  const getGroupCamera = useDesignStore((state) => state.getGroupCamera);
+  const saveGroupCamera = useDesignStore((state) => state.saveGroupCamera);
   /** Accumulated HTML of a streaming layout generation, shown live. */
-  const streamingPreview = useWorkflowStore((state) => state.streamingPreview);
-  const streamingPreviewNodeId = useWorkflowStore(
+  const streamingPreview = useDesignStore((state) => state.streamingPreview);
+  const streamingPreviewNodeId = useDesignStore(
     (state) => state.streamingPreviewNodeId,
   );
-  const closeImageEditor = useWorkflowStore((state) => state.closeImageEditor);
-  const applyImageEdits = useWorkflowStore((state) => state.applyImageEdits);
-  const materializeEditorGeneratedOutput = useWorkflowStore(
+  const closeImageEditor = useDesignStore((state) => state.closeImageEditor);
+  const applyImageEdits = useDesignStore((state) => state.applyImageEdits);
+  const materializeEditorGeneratedOutput = useDesignStore(
     (state) => state.materializeEditorGeneratedOutput,
   );
-  const cameraZoom = useWorkflowStore((state) => state.editorCamera?.zoom ?? 1);
-  const setEditorCamera = useWorkflowStore((state) => state.setEditorCamera);
-  const panEditorCamera = useWorkflowStore((state) => state.panEditorCamera);
-  const setEditorArtboardLayouts = useWorkflowStore(
+  const cameraZoom = useDesignStore((state) => state.editorCamera?.zoom ?? 1);
+  const editorArtboardLayouts = useDesignStore(
+    (state) => state.editorArtboardLayouts,
+  );
+  const setEditorCamera = useDesignStore((state) => state.setEditorCamera);
+  const panEditorCamera = useDesignStore((state) => state.panEditorCamera);
+  const setEditorArtboardLayouts = useDesignStore(
     (state) => state.setEditorArtboardLayouts,
   );
-  const setEditorArtboardLayout = useWorkflowStore(
+  const setEditorArtboardLayout = useDesignStore(
     (state) => state.setEditorArtboardLayout,
   );
-  const moveEditorArtboard = useWorkflowStore(
+  const moveEditorArtboard = useDesignStore(
     (state) => state.moveEditorArtboard,
   );
-  const setEditorViewport = useWorkflowStore(
+  const setEditorViewport = useDesignStore(
     (state) => state.setEditorViewport,
   );
 
@@ -276,11 +323,17 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const [visibleIds, setVisibleIds] = useState(() => new Set());
   // Any engine reporting a change re-renders the shared panels, which read
   // straight from the focused engine rather than mirroring its state.
-  const [, bump] = useReducer((count) => count + 1, 0);
+  // Every engine report bumps this; the workspace documents read the live engines, so they follow it.
+  const [engineVersion, bump] = useReducer((count) => count + 1, 0);
 
   const freeStageRef = useRef(null);
+  const workspaceCanvasRef = useRef(null);
   const artboardLayerRef = useRef(null);
   const panGestureRef = useRef(null);
+  const pointerPanRafRef = useRef(null);
+  const pendingPointerPanRef = useRef({ dx: 0, dy: 0 });
+  const wheelRafRef = useRef(null);
+  const pendingWheelPanRef = useRef({ dx: 0, dy: 0 });
   const artboardDragRef = useRef(null);
   const spaceRef = useRef(false);
   const [busy, setBusy] = useState(false);
@@ -295,30 +348,30 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   /** Whether this browser can run the matting model in-page. */
   const [localMattingSupported] = useState(() => isLocalMattingSupported());
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [motionOpen, setMotionOpen] = useState(false);
-  const [threeToolMode, setThreeToolMode] = useState("translate");
-  const threeToolModesRef = useRef(new Map());
-  const handleThreeToolMode = useCallback(
-    (mode) => {
-      setThreeToolMode((prev) => {
-        const next = typeof mode === "function" ? mode(prev) : mode;
-        if (focusedId) {
-          threeToolModesRef.current.set(focusedId, next);
-        }
-        return next;
-      });
-    },
-    [focusedId],
-  );
   const [selectedInstanceChild, setSelectedInstanceChild] = useState(null);
+  // Rulers/guides/snap-to-grid view aids. Persisted, not document state: they
+  // describe how the user looks at a canvas, not what the canvas contains.
+  const [showRulers, setShowRulers] = useState(
+    () => getSetting(SHOW_RULERS_SETTING) !== false,
+  );
+  const [showGuides, setShowGuides] = useState(
+    () => getSetting(SHOW_GUIDES_SETTING) !== false,
+  );
+  const [snapToGrid, setSnapToGrid] = useState(
+    () => getSetting(SNAP_TO_GRID_SETTING) === true,
+  );
+  const [selectedGuideId, setSelectedGuideId] = useState(null);
+  /** Document snapshot taken when a guide drag begins; the whole drag is one undo. */
+  const guideDragOriginRef = useRef(null);
+  // Comments panel/placement mode are view state, like rulers: the threads
+  // themselves live in the page document (`doc.comments`).
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentMode, setCommentMode] = useState(false);
   const [adjustingInstance, setAdjustingInstance] = useState(null);
   const [returnCanvasId, setReturnCanvasId] = useState(null);
   const [navigationError, setNavigationError] = useState(false);
-  const [canvasInsertError, setCanvasInsertError] = useState(false);
   const returnCanvasStackRef = useRef([]);
   const pendingNavigationRef = useRef(null);
-  const [motionTimelineHeight, setMotionTimelineHeight] = useState(0);
-  const motionTriggerRef = useRef(null);
   const [mediaImportBusy, setMediaImportBusy] = useState(false);
   const [mediaImportError, setMediaImportError] = useState(null);
   const mediaInputRef = useRef(null);
@@ -359,11 +412,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   /** Export popover state: open flag, chosen format and quality. */
   const [exportOpen, setExportOpen] = useState(false);
   const [exportNotice, setExportNotice] = useState(false);
-  const [renderingInstanceId, setRenderingInstanceId] = useState(null);
-  const [renderInstanceError, setRenderInstanceError] = useState(null);
   const renderInstanceAbortRef = useRef(null);
   const [exportFormat, setExportFormat] = useState("png");
-  const [exportProgress, setExportProgress] = useState(null);
   const [exportQuality, setExportQuality] = useState(0.92);
   const [exportScale, setExportScale] = useState(1);
   const [exportRange, setExportRange] = useState("frame");
@@ -380,6 +430,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const hoverLeaveTimerRef = useRef(null);
   /** Pie Menu state: active family and screen coordinates { family, position: { x, y } } */
   const [pieMenu, setPieMenu] = useState(null);
+  /** ⌘K palette / ⌘F find bar: editor overlays, not document state. */
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [findReplaceOpen, setFindReplaceOpen] = useState(false);
 
   /**
    * Open guard (plan-design-editor-fixes A6): for a short window after the
@@ -433,17 +486,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const handleBeforeDispose = useCallback(async (nodeId, engine, ready) => {
     if (!ready) return;
 
-    const isThreeScene = getCanvasType(engine.getDocument()) === "3d";
-    const previousPreview = useWorkflowStore
-      .getState()
-      .nodes.find((node) => node.id === nodeId)?.data?.dataUrl;
-    const capturePreview = () =>
-      isThreeScene
-        ? captureThreeScenePreviewOrFallback(
-            nodeId,
-            () => previousPreview || engine.exportPng(),
-          )
-        : engine.exportPng();
 
     const writeSnapshot = (png) => {
       const dirty = engine.isDirty();
@@ -460,7 +502,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
 
     // Publish a synchronous fallback first so a failed async flush never
     // discards the user's latest in-memory edit.
-    writeSnapshot(capturePreview());
+    writeSnapshot(engine.exportPng());
     try {
       if (engine.getSelectionTransform?.()) {
         await engine.applySelectionTransform?.();
@@ -470,9 +512,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       await engine.flushMasks?.();
       const dirty = engine.isDirty();
       const png = dirty
-        ? isThreeScene
-          ? capturePreview()
-          : ((await engine.exportFullResPng?.()) ?? engine.exportPng())
+        ? ((await engine.exportFullResPng?.()) ?? engine.exportPng())
         : null;
       writeSnapshot(png);
     } catch (err) {
@@ -552,6 +592,239 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   }, []);
 
   const engine = enginesRef.current.get(focusedId)?.engine ?? null;
+
+  /** The focused page's engine — the only document guides live in. */
+  const focusedPageEngine = useCallback(
+    () => enginesRef.current.get(focusedId)?.engine ?? null,
+    [focusedId],
+  );
+
+  /**
+   * Writes the guide list through the same `setDoc` path every node edit uses,
+   * so it persists in `.voo` (scene serialisation already carries `guides`)
+   * and lands in undo history exactly once per call.
+   */
+  const writeDocumentGuides = useCallback(
+    (nextGuides, { commit = true } = {}) => {
+      const pageEngine = focusedPageEngine();
+      if (!pageEngine) return;
+      const pageDoc = pageEngine.getDocument();
+      if (!pageDoc) return;
+      const guides = serialiseGuides(nextGuides);
+      pageEngine.setDoc(
+        { ...pageDoc, guides },
+        commit ? { name: GUIDES_HISTORY_NAME } : { commit: false },
+      );
+      bump();
+    },
+    [focusedPageEngine],
+  );
+
+  /** Drag out of the ruler: create one guide and one history entry. */
+  const handleCreateGuide = useCallback(
+    ({ type, pos }) => {
+      const pageEngine = focusedPageEngine();
+      if (!pageEngine) return;
+      const existing = readDocumentGuides(pageEngine.getDocument());
+      const created = createGuide({ type, pos }, existing);
+      if (!created) return;
+      writeDocumentGuides(addGuide(existing, created));
+      setSelectedGuideId(created.id);
+    },
+    [focusedPageEngine, writeDocumentGuides],
+  );
+
+  /**
+   * Move phases keep the drag atomic: `begin` snapshots the document, the
+   * previews write without committing, and `commit` pushes a single entry.
+   * `cancel` restores the snapshot (used by Escape and by drop-on-ruler).
+   */
+  const handleMoveGuide = useCallback(
+    (id, pos, phase) => {
+      const pageEngine = focusedPageEngine();
+      if (!pageEngine) return;
+      if (phase === "begin") {
+        guideDragOriginRef.current = pageEngine.getDocument();
+        return;
+      }
+      if (phase === "cancel" || phase === "preview") {
+        // Previews are drawn by the overlay from its own draft state; the
+        // document is untouched until release, so a drag never re-renders the
+        // whole editor on every pointer move and never spams history.
+        if (phase === "cancel") guideDragOriginRef.current = null;
+        return;
+      }
+      // Commit from the drag's origin snapshot so a multi-step move is one
+      // entry; keyboard nudges have no snapshot and commit from the live doc.
+      const baseDoc = guideDragOriginRef.current ?? pageEngine.getDocument();
+      guideDragOriginRef.current = null;
+      const guides = readDocumentGuides(baseDoc);
+      writeDocumentGuides(updateGuide(guides, id, pos));
+    },
+    [focusedPageEngine, writeDocumentGuides],
+  );
+
+  const handleRemoveGuide = useCallback(
+    (id) => {
+      const pageEngine = focusedPageEngine();
+      if (!pageEngine) return;
+      const guides = readDocumentGuides(pageEngine.getDocument());
+      if (!guides.some((guide) => guide.id === id)) return;
+      writeDocumentGuides(removeGuide(guides, id));
+      setSelectedGuideId((current) => (current === id ? null : current));
+    },
+    [focusedPageEngine, writeDocumentGuides],
+  );
+
+  const handleClearGuides = useCallback(() => {
+    const pageEngine = focusedPageEngine();
+    if (!pageEngine) return;
+    if (readDocumentGuides(pageEngine.getDocument()).length === 0) return;
+    writeDocumentGuides([]);
+    setSelectedGuideId(null);
+  }, [focusedPageEngine, writeDocumentGuides]);
+
+  /**
+   * Comment edits go through the focused page's `setDoc` exactly once, named
+   * so Undo reads "Comments". The mutator returns the same document for a
+   * no-op (empty body, unknown thread), which skips the history entry.
+   */
+  const mutateDocumentComments = useCallback(
+    (mutate) => {
+      const pageEngine = focusedPageEngine();
+      if (!pageEngine) return false;
+      const pageDoc = pageEngine.getDocument();
+      if (!pageDoc) return false;
+      const base = {
+        ...pageDoc,
+        comments: normalizeComments(pageDoc.comments),
+      };
+      const nextDoc = mutate(base);
+      if (!nextDoc || nextDoc === base) return false;
+      pageEngine.setDoc(
+        { ...nextDoc, comments: serializeComments(nextDoc) },
+        { name: COMMENTS_HISTORY_NAME },
+      );
+      bump();
+      return true;
+    },
+    [focusedPageEngine],
+  );
+
+  const handleCreateComment = useCallback(
+    (x, y, body, author) => {
+      mutateDocumentComments((pageDoc) =>
+        addComment(pageDoc, { x, y, body, author }),
+      );
+    },
+    [mutateDocumentComments],
+  );
+
+  const handleReplyComment = useCallback(
+    (commentId, body, author) => {
+      mutateDocumentComments((pageDoc) =>
+        addReply(pageDoc, commentId, { body, author }),
+      );
+    },
+    [mutateDocumentComments],
+  );
+
+  const handleResolveComment = useCallback(
+    (commentId, resolved) => {
+      mutateDocumentComments((pageDoc) =>
+        setResolved(pageDoc, commentId, resolved),
+      );
+    },
+    [mutateDocumentComments],
+  );
+
+  const handleDeleteComment = useCallback(
+    (commentId) => {
+      mutateDocumentComments((pageDoc) => deleteComment(pageDoc, commentId));
+    },
+    [mutateDocumentComments],
+  );
+
+  const closeComments = useCallback(() => {
+    setCommentsOpen(false);
+    setCommentMode(false);
+  }, []);
+
+  const toggleCommentsPanel = useCallback(() => {
+    setCommentsOpen((previous) => !previous);
+  }, []);
+
+  const toggleCommentMode = useCallback(() => {
+    setCommentMode((previous) => !previous);
+  }, []);
+
+  // Closing the panel disarms placement too, so the canvas never stays in a
+  // click-to-comment mode with no visible way out.
+  useEffect(() => {
+    if (!commentsOpen) setCommentMode(false);
+  }, [commentsOpen]);
+
+  const toggleRulers = useCallback(() => {
+    setShowRulers((previous) => {
+      const next = !previous;
+      void setSetting(SHOW_RULERS_SETTING, next);
+      return next;
+    });
+  }, []);
+
+  const toggleGuides = useCallback(() => {
+    setShowGuides((previous) => {
+      const next = !previous;
+      void setSetting(SHOW_GUIDES_SETTING, next);
+      if (!next) setSelectedGuideId(null);
+      return next;
+    });
+  }, []);
+
+  // ⌘K palette and ⌘F find bar. Both are editor overlays rather than document
+  // state, so their open flags never reach `.voo` serialisation.
+  const toggleCommandPalette = useCallback(() => {
+    setCommandPaletteOpen((previous) => !previous);
+  }, []);
+
+  const closeCommandPalette = useCallback(() => {
+    setCommandPaletteOpen(false);
+  }, []);
+
+  const openFindReplace = useCallback(() => {
+    setFindReplaceOpen(true);
+  }, []);
+
+  const closeFindReplace = useCallback(() => {
+    setFindReplaceOpen(false);
+  }, []);
+
+  /** Selects the text layer that owns a find match, leaving the bar focused. */
+  const focusFindMatch = useCallback(
+    (match) => {
+      if (!match?.nodeId) return;
+      const pageEngine = focusedPageEngine();
+      pageEngine?.selectNode?.(match.nodeId);
+    },
+    [focusedPageEngine],
+  );
+
+  /**
+   * Commits a find & replace document through the focused page engine, named so
+   * Undo reads "Find and replace" and Replace All lands as exactly one entry.
+   */
+  const applyFindReplaceDoc = useCallback(
+    (nextDoc) => {
+      if (!nextDoc) return;
+      const pageEngine = focusedPageEngine();
+      if (!pageEngine) return;
+      if (pageEngine.getDocument?.() === nextDoc) return;
+      pageEngine.setDoc(nextDoc, { name: FIND_REPLACE_HISTORY_NAME });
+      bump();
+    },
+    [focusedPageEngine, bump],
+  );
+
   const beginInstanceCameraAdjustment = (instanceId) => {
     if (!EDITOR_BETA_ENABLED) return;
     const node = engine
@@ -647,6 +920,43 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const color = engine?.getColor() ?? null;
   const zoom = engine?.getZoom() ?? 1;
   const grid = engine?.getGrid?.() ?? null;
+  const snappingEnabled = engine?.getSnappingEnabled?.() !== false;
+  const toggleSnapping = useCallback(() => {
+    if (multi) {
+      for (const entry of enginesRef.current.values()) {
+        entry.engine?.toggleSnapping?.();
+      }
+    } else {
+      engine?.toggleSnapping?.();
+    }
+    bump();
+  }, [engine, multi]);
+  /**
+   * Turning snapping on also surfaces the grid overlay: snapping to an
+   * invisible grid reads as a bug, and the overlay is the only thing that
+   * tells the user which lines the drag is obeying. Turning it off leaves the
+   * overlay alone.
+   */
+  const toggleSnapToGrid = useCallback(() => {
+    setSnapToGrid((previous) => {
+      const next = !previous;
+      void setSetting(SNAP_TO_GRID_SETTING, next);
+      if (next) {
+        const nextGrid = grid
+          ? { ...grid, enabled: true }
+          : { enabled: true, size: 32 };
+        if (multi) {
+          for (const entry of enginesRef.current.values()) {
+            entry.engine?.setGrid?.(nextGrid);
+          }
+        } else {
+          engine?.setGrid?.(nextGrid);
+        }
+        bump();
+      }
+      return next;
+    });
+  }, [bump, engine, grid, multi]);
   const selected = engine?.getSelected() ?? null;
   const mediaErrors = engine?.getMediaErrors?.() ?? null;
   const rawMediaError = selected
@@ -688,7 +998,277 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     : 0;
 
   const layers = doc ? doc.nodes : [];
-  const propertyObject = selectedGroup ?? selected;
+  const canvasBackgroundColor =
+    useDesignStore((state) => state.canvasBackgroundColor) || "#1e1e1e";
+  const setCanvasBackgroundColor = useDesignStore(
+    (state) => state.setCanvasBackgroundColor,
+  );
+  const [canvasBackgroundSelected, setCanvasBackgroundSelected] = useState(false);
+
+  useEffect(() => {
+    if (selected || selectedIds.length > 0 || selectedGroup) {
+      setCanvasBackgroundSelected(false);
+    }
+  }, [selected, selectedIds.length, selectedGroup]);
+
+  const isFrameSelected = Boolean(
+    focusedId &&
+    !selected &&
+    !selectedGroup &&
+    !canvasBackgroundSelected,
+  );
+
+  /**
+   * Free-canvas layout: artboards laid out left to right in camera-space,
+   * each vertically centred against the tallest. Docs are read live because
+   * their sizes settle as engines finish opening.
+   */
+  const readySignature = nodeIds
+    .map((id) => {
+      const state = enginesRef.current.get(id);
+      return state?.ready ? `${state.width}x${state.height}` : "pending";
+    })
+    .join(",");
+  const savedPositionById = useMemo(() => {
+    const map = new Map();
+    for (const node of nodes) {
+      const saved =
+        (editorArtboardLayouts instanceof Map
+          ? editorArtboardLayouts.get(node.id)
+          : editorArtboardLayouts?.[node.id]) ||
+        node.data?.editorCanvasPosition;
+      if (saved && (saved.x !== undefined || saved.y !== undefined)) {
+        map.set(node.id, saved);
+      }
+    }
+    return map;
+  }, [nodes, editorArtboardLayouts]);
+  const positionSignature = nodeIds
+    .map((id) => {
+      const position = savedPositionById.get(id);
+      return `${position?.x ?? "auto"},${position?.y ?? "auto"}`;
+    })
+    .join(";");
+  const freeLayouts = useMemo(() => {
+    if (!multi) return [];
+    const sizes = nodeIds.map((nodeId) => {
+      const state = enginesRef.current.get(nodeId);
+      const width = state?.ready
+        ? state.width
+        : (presentationOwner?.data.presentation.width ?? 1024);
+      const height = state?.ready
+        ? state.height
+        : (presentationOwner?.data.presentation.height ?? 1024);
+      return { nodeId, width, height };
+    });
+    const automatic = presentationId
+      ? layoutPresentationPages(
+          sizes.map((size, index) => ({ ...size, x: presentationRowX(sizes, index) })),
+          { padding: FREE_PADDING, gap: FREE_GUTTER },
+        )
+      : gridArtboardLayouts(sizes);
+    return automatic.map((layout) =>
+      positionArtboard(layout, savedPositionById.get(layout.nodeId)),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    multi,
+    nodeIds,
+    readySignature,
+    positionSignature,
+    presentationId,
+    presentationOwner?.data.presentation.width,
+    presentationOwner?.data.presentation.height,
+  ]);
+
+  const layoutById = useMemo(
+    () => new Map(freeLayouts.map((entry) => [entry.nodeId, entry])),
+    [freeLayouts],
+  );
+
+  const frameLayout = layoutById.get(focusedId) ?? {
+    x: FREE_PADDING,
+    y: FREE_PADDING,
+    width: doc?.width ?? 1024,
+    height: doc?.height ?? 1024,
+  };
+
+  const frameObject = useMemo(() => {
+    if (!doc || !isFrameSelected) return null;
+    return {
+      id: focusedId,
+      name: doc.title || "Frame",
+      kind: "rect",
+      isFrame: true,
+      x: frameLayout.x ?? 0,
+      y: frameLayout.y ?? 0,
+      width: doc.width ?? 1024,
+      height: doc.height ?? 1024,
+      rotation: doc.rotation ?? 0,
+      flipX: doc.flipX ?? false,
+      flipY: doc.flipY ?? false,
+      opacity: doc.opacity ?? 1,
+      blendMode: doc.blendMode ?? "normal",
+      fill: doc.backgroundColor || "#ffffff",
+      fills:
+        doc.fills && doc.fills.length > 0
+          ? doc.fills
+          : doc.backgroundColor && doc.backgroundColor !== "transparent"
+            ? [{ color: doc.backgroundColor, opacity: 1, type: "solid" }]
+            : [{ color: "#ffffff", opacity: 1, type: "solid" }],
+      stroke: doc.stroke ?? null,
+      strokes:
+        doc.strokes ??
+        (doc.stroke
+          ? [
+              {
+                color: doc.stroke,
+                opacity: doc.strokeOpacity ?? 1,
+                width: doc.strokeWidth ?? 1,
+              },
+            ]
+          : []),
+      strokeWidth: doc.strokeWidth ?? 1,
+      strokeAlign: doc.strokeAlign ?? "inside",
+      cornerRadius: doc.cornerRadius ?? 0,
+      cornerRadii: doc.cornerRadii ?? null,
+      effects: doc.effects ?? [],
+      clipContent: doc.clipContent ?? true,
+      visible: true,
+      locked: false,
+    };
+  }, [doc, focusedId, isFrameSelected, frameLayout.x, frameLayout.y]);
+
+  /**
+   * Page/frame resize through the engine's document path.
+   *
+   * When top-level nodes carry explicit resize constraints, the resize and
+   * their reflow are resolved together and committed once, so one undo entry
+   * covers both. Documents without constraints keep the historical
+   * `setDocumentSize` path (which centres contents and refits the viewport).
+   */
+  const applyPageResize = useCallback(
+    (nextW, nextH, options = {}) => {
+      const current = engine?.getDocument?.();
+      const constrained = Boolean(
+        current?.nodes?.some(
+          (entry) => !entry.parentId && hasConstraints(entry),
+        ),
+      );
+      if (!current || !constrained) {
+        engine?.setDocumentSize?.(nextW, nextH);
+        return;
+      }
+      const oldBox = {
+        x: 0,
+        y: 0,
+        width: current.width,
+        height: current.height,
+      };
+      // The resize op historically centres every top-level node, so capture
+      // the pre-resize boxes and let the constraints resolve from those.
+      const beforeBoxes = new Map(
+        current.nodes
+          .filter((entry) => !entry.parentId)
+          .map((entry) => [
+            entry.id,
+            {
+              x: entry.x,
+              y: entry.y,
+              width: entry.width,
+              height: entry.height,
+            },
+          ]),
+      );
+      const resized = resizePageDocument(current, nextW, nextH);
+      const next = reflowConstraints(resized, {
+        parentId: null,
+        oldBox,
+        newBox: { x: 0, y: 0, width: resized.width, height: resized.height },
+        beforeBoxes,
+      });
+      // Same doc path as setDocumentSize: text measurement, auto-layout
+      // reflow, render, history and persistence all stay in sync.
+      engine.updateDocument(
+        { width: next.width, height: next.height, nodes: next.nodes },
+        options,
+      );
+      if (!multi) engine?.zoomToFit?.();
+    },
+    [engine, multi],
+  );
+
+  const handleMutateFrame = useCallback(
+    (patch, options = {}) => {
+      if (!focusedId || !doc) return;
+
+      if (patch.x !== undefined || patch.y !== undefined) {
+        const layout = layoutById.get(focusedId);
+        if (layout) {
+          setEditorArtboardLayout(focusedId, {
+            ...layout,
+            ...(patch.x !== undefined ? { x: patch.x } : {}),
+            ...(patch.y !== undefined ? { y: patch.y } : {}),
+          });
+        }
+      }
+
+      if (patch.width !== undefined || patch.height !== undefined) {
+        const nextW = patch.width ?? doc.width;
+        const nextH = patch.height ?? doc.height;
+        applyPageResize(nextW, nextH, options);
+        const layout = layoutById.get(focusedId);
+        if (layout) {
+          setEditorArtboardLayout(focusedId, {
+            ...layout,
+            width: nextW,
+            height: nextH,
+          });
+        }
+      }
+
+      if (patch.fill !== undefined) {
+        engine?.setBackgroundColor?.(patch.fill);
+        engine?.setDocumentBackgroundColor?.(patch.fill);
+      }
+      if (patch.fills !== undefined) {
+        const primaryColor = patch.fills?.[0]?.color;
+        if (primaryColor) {
+          engine?.setBackgroundColor?.(primaryColor);
+          engine?.setDocumentBackgroundColor?.(primaryColor);
+        }
+      }
+
+      const docPatch = {};
+      for (const [key, val] of Object.entries(patch)) {
+        if (key === "x" || key === "y" || key === "width" || key === "height") continue;
+        if (key === "fill") {
+          docPatch.backgroundColor = val;
+        } else {
+          docPatch[key] = val;
+        }
+      }
+
+      if (Object.keys(docPatch).length > 0) {
+        if (typeof engine?.updateDocument === "function") {
+          engine.updateDocument(docPatch, options);
+        } else if (typeof engine?.setDoc === "function") {
+          engine.setDoc({ ...engine.getDocument(), ...docPatch });
+        }
+      }
+    },
+    [
+      focusedId,
+      doc,
+      layoutById,
+      engine,
+      setEditorArtboardLayout,
+      applyPageResize,
+    ],
+  );
+
+  const propertyObject =
+    selectedGroup ?? selected ?? (isFrameSelected ? frameObject : null);
   const parentLayout = propertyObject?.parentId
     ? layers.find((node) => node.id === propertyObject.parentId)?.autoLayout
     : null;
@@ -696,6 +1276,15 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     ? {
         documentId: doc?.canvasId,
         variables: doc?.colorVariables ?? [],
+        // Variables v2 wiring: collections, modes and typed variables are
+        // document-scoped, so every action commits the focused page once.
+        variablesV2: doc?.variablesV2 ?? null,
+        variableActions: createVariablesPanelActions({
+          getDocument: () => engine.getDocument(),
+          commit: (next, options) => engine.setDoc(next, options),
+          getNodeId: () => propertyObject.id,
+          historyName: "editor.history.entry.variables",
+        }),
         create: () => {
           const current = engine.getDocument();
           const id = crypto.randomUUID();
@@ -715,6 +1304,19 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           ),
         update: (id, patch) =>
           engine.setDoc(updateColorVariable(engine.getDocument(), id, patch)),
+      }
+    : null;
+  // Named styles: document-scoped paint/text/effect library. Actions commit the
+  // focused page once (one undo entry), mirroring the variables wiring above.
+  const styleActions = propertyObject
+    ? {
+        styles: doc?.styles ?? null,
+        actions: createStylePanelActions({
+          getDocument: () => engine.getDocument(),
+          commit: (next, options) => engine.setDoc(next, options),
+          getNodeId: () => propertyObject.id,
+          historyName: "editor.history.entry.styles",
+        }),
       }
     : null;
   const activeIndex = selected
@@ -749,7 +1351,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         return snap.doc;
       }
     }
-    const state = useWorkflowStore.getState();
+    const state = useDesignStore.getState();
     const source = state.nodes.find(
       (candidate) =>
         candidate.id === sourceId ||
@@ -857,6 +1459,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       nestedNode ||
       selectedGroup ||
       backgroundSelected ||
+      canvasBackgroundSelected ||
+      selectedCanvasIds.length > 0 ||
       (tool &&
         tool !== TOOL.SELECT &&
         tool !== "perspective" &&
@@ -882,8 +1486,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         layersPanelShown,
         propertiesOpen,
         historyOpen,
-        motionOpen,
-        motionTimelineHeight,
       }),
     [
       swapPanels,
@@ -891,14 +1493,11 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       layersPanelShown,
       propertiesOpen,
       historyOpen,
-      motionOpen,
-      motionTimelineHeight,
     ],
   );
   const handleSelectCanvasLayer = useCallback(
     (canvasId, layerId) => {
       setSelectedInstanceChild(null);
-      setCanvasInsertError(false);
       if (canvasId !== focusedId) {
         pendingCanvasSelectionRef.current.clear();
         focusEditorPage(canvasId);
@@ -927,7 +1526,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const handleFocusCanvas = useCallback(
     (canvasId) => {
       setSelectedInstanceChild(null);
-      setCanvasInsertError(false);
+      setCanvasBackgroundSelected(false);
       if (canvasId !== focusedId) {
         pendingCanvasSelectionRef.current.clear();
         focusEditorPage(canvasId);
@@ -955,7 +1554,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   }, [focusedId, engine]);
   const openCanvasSource = useCallback(
     (sourceId, instanceId = null) => {
-      const source = useWorkflowStore
+      const source = useDesignStore
         .getState()
         .nodes.find(
           (candidate) =>
@@ -975,7 +1574,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         playback: hostEngine?.getPlaybackState?.() ?? null,
         cameraMode: multi ? "shared" : "local",
         camera: multi
-          ? useWorkflowStore.getState().editorCamera
+          ? useDesignStore.getState().editorCamera
           : (hostEngine?.getViewport?.() ?? null),
       };
       pendingNavigationRef.current = { kind: "enter", pageId: source.id };
@@ -998,7 +1597,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     const stack = returnCanvasStackRef.current;
     const context = stack[stack.length - 1];
     if (!context) return;
-    const exists = useWorkflowStore
+    const exists = useDesignStore
       .getState()
       .nodes.some((candidate) => candidate.id === context.pageId);
     if (!exists) {
@@ -1049,7 +1648,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       }
       engine.selectExactly([]);
       setSelectedInstanceChild(selection);
-      setMotionOpen(EDITOR_BETA_ENABLED);
     },
     [
       engine,
@@ -1063,11 +1661,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   );
   useEffect(() => {
     if (!hasDoc) return;
-    setMotionOpen(workbench.timelineOpen);
-    const rememberedMode = focusedId
-      ? threeToolModesRef.current.get(focusedId) || "translate"
-      : "translate";
-    setThreeToolMode(rememberedMode);
     // A family the new mode's toolbar does not carry must not keep its subbar.
     setHoveredFamily(null);
   }, [focusedId, workbench, hasDoc]);
@@ -1076,32 +1669,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     // overlay is not mounted to catch the keyup that would close it.
     if (!workbench.pieMenu) setPieMenu(null);
   }, [workbench]);
-  const toggleMotionPanel = useCallback(() => {
-    if (motionOpen) engine?.pause();
-    setMotionOpen((open) => EDITOR_BETA_ENABLED && !open);
-  }, [motionOpen, engine]);
-  // One creation path for the 3D toolbar's primitives.
-  const addThreePrimitive = useCallback(
-    (geometryType) => {
-      const current = engine?.getDocument();
-      if (!current) return;
-      const mesh = createMesh3dNode({
-        x: current.width / 2 - 50,
-        y: current.height / 2 - 50,
-        geometry: { type: geometryType },
-      });
-      engine.setDoc({ ...current, nodes: [...current.nodes, mesh] });
-      engine.selectExactly([mesh.id]);
-    },
-    [engine],
-  );
-  const exportMotion = useMotionExport(engine, pageTitle(), resolveCanvas);
-  const scenePreview = useEditorPreview({
-    visible,
-    focusedId,
-    engine,
-    pageTitle,
-  });
   /** Bitmap access for thumbnails and preset swatches; stable across renders. */
   const getNodeBitmap = useCallback(
     (node) => engine?.getNodeBitmap(node) ?? null,
@@ -1141,70 +1708,92 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     [engine, svgEditModal.node],
   );
 
-  /**
-   * Free-canvas layout: artboards laid out left to right in camera-space,
-   * each vertically centred against the tallest. Docs are read live because
-   * their sizes settle as engines finish opening.
-   */
-  const readySignature = nodeIds
-    .map((id) => {
-      const state = enginesRef.current.get(id);
-      return state?.ready ? `${state.width}x${state.height}` : "pending";
-    })
-    .join(",");
-  const savedPositionById = new Map(
-    nodes.map((node) => [node.id, node.data?.editorCanvasPosition]),
-  );
-  const positionSignature = nodeIds
-    .map((id) => {
-      const position = savedPositionById.get(id);
-      return `${position?.x ?? "auto"},${position?.y ?? "auto"}`;
-    })
-    .join(";");
-  const freeLayouts = useMemo(() => {
-    if (!multi) return [];
-    let cursorX = FREE_PADDING;
-    let maxH = 0;
-    const entries = nodeIds.map((nodeId) => {
-      const state = enginesRef.current.get(nodeId);
-      const width = state?.ready
-        ? state.width
-        : (presentationOwner?.data.presentation.width ?? 1024);
-      const height = state?.ready
-        ? state.height
-        : (presentationOwner?.data.presentation.height ?? 1024);
-      const layout = { nodeId, x: cursorX, width, height };
-      cursorX += width + FREE_GUTTER;
-      maxH = Math.max(maxH, height);
-      return layout;
-    });
-    const automatic = presentationId
-      ? layoutPresentationPages(entries, {
-          padding: FREE_PADDING,
-          gap: FREE_GUTTER,
-        })
-      : entries.map((layout) => ({
-          ...layout,
-          y: FREE_PADDING + (maxH - layout.height) / 2,
-        }));
-    return automatic.map((layout) =>
-      positionArtboard(layout, savedPositionById.get(layout.nodeId)),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    multi,
-    nodeIds,
-    readySignature,
-    positionSignature,
-    presentationId,
-    presentationOwner?.data.presentation.width,
-    presentationOwner?.data.presentation.height,
-  ]);
+  const workspaceDocs = useMemo(() => {
+    if (!multi || nodeIds.length === 0) return [];
+    return nodeIds
+      .map((id) => {
+        const liveEngine = enginesRef.current.get(id)?.engine;
+        const liveDoc = liveEngine?.getDocument?.();
+        if (liveDoc) return { ...liveDoc, id: liveDoc.id || liveDoc.canvasId || id };
+        const canvasDoc = nodes.find((n) => n.id === id)?.data?.canvasDoc;
+        if (canvasDoc) return { ...canvasDoc, id: canvasDoc.id || canvasDoc.canvasId || id };
+        const rawNode = nodes.find((n) => n.id === id);
+        if (rawNode) {
+          return {
+            id,
+            title: rawNode.data?.label || rawNode.name || "Artboard",
+            width: rawNode.width || 1024,
+            height: rawNode.height || 1024,
+            nodes: rawNode.data?.nodes || [],
+            backgroundColor: rawNode.data?.backgroundColor || "#ffffff",
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+  }, [multi, nodeIds, nodes, engineVersion]);
 
-  const layoutById = useMemo(
-    () => new Map(freeLayouts.map((entry) => [entry.nodeId, entry])),
-    [freeLayouts],
-  );
+  const workspaceSpatialIndex = useMemo(() => {
+    if (!workspaceDocs.length) return null;
+    const index = new SpatialIndex();
+    for (const doc of workspaceDocs) {
+      const docId = doc.id || doc.canvasId;
+      const layout = (docId ? layoutById.get(docId) : null) ?? {
+        x: FREE_PADDING,
+        y: FREE_PADDING,
+      };
+      const offsetX = layout.x ?? 0;
+      const offsetY = layout.y ?? 0;
+      index.insert({
+        id: `frame-${docId}`,
+        minX: offsetX,
+        minY: offsetY,
+        maxX: offsetX + (doc.width || 1024),
+        maxY: offsetY + (doc.height || 1024),
+        isFrame: true,
+        docId: docId,
+      });
+      for (const node of doc.nodes || []) {
+        if (!node) continue;
+        const nx = (node.x ?? 0) + offsetX;
+        const ny = (node.y ?? 0) + offsetY;
+        const nw = node.width ?? 0;
+        const nh = node.height ?? 0;
+        index.insert({
+          id: node.id,
+          minX: nx,
+          minY: ny,
+          maxX: nx + nw,
+          maxY: ny + nh,
+          node,
+          docId: docId,
+        });
+      }
+    }
+    return index;
+  }, [workspaceDocs, layoutById]);
+
+  const editorCamera = useDesignStore((state) => state.editorCamera);
+  useWorkspaceSkia({
+    enabled: multi,
+    canvasRef: workspaceCanvasRef,
+    stageRef: freeStageRef,
+    docs: workspaceDocs,
+    layouts: layoutById,
+    camera: editorCamera,
+    revision: `${positionSignature}|${engineVersion}`,
+    spatialIndex: workspaceSpatialIndex,
+    resolveImageUrl: useCallback((node) => {
+      if (!node) return null;
+      for (const entry of enginesRef.current.values()) {
+        const bmp = entry?.engine?.getNodeBitmap?.(node);
+        if (bmp?.src) return bmp.src;
+        const png = entry?.engine?.exportNodePng?.(node.id);
+        if (png) return png;
+      }
+      return node?.dataUrl || node?.url || node?.src || node?.fill || null;
+    }, []),
+  });
 
   // Sync artboard layouts and viewport dimensions into workflow store for target resolution.
   useEffect(() => {
@@ -1235,9 +1824,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       if (!el || !cam) return;
       el.style.transform = `translate3d(${cam.panX || 0}px, ${cam.panY || 0}px, 0)`;
     };
-    syncTransform(useWorkflowStore.getState().editorCamera);
-    let lastCamera = useWorkflowStore.getState().editorCamera;
-    return useWorkflowStore.subscribe((state) => {
+    syncTransform(useDesignStore.getState().editorCamera);
+    let lastCamera = useDesignStore.getState().editorCamera;
+    return useDesignStore.subscribe((state) => {
       const cam = state.editorCamera;
       if (cam && cam !== lastCamera) {
         lastCamera = cam;
@@ -1388,8 +1977,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       setHistoryOpen,
       resolveCanvas,
       onExportWarnings: (warnings) => setExportNotice(warnings || true),
-      exportMotion,
-      setExportProgress,
     });
 
   /**
@@ -1454,7 +2041,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       if (renameEditorPage) {
         renameEditorPage(id, name);
       } else {
-        useWorkflowStore.getState().updateNodeData(id, { label: name });
+        useDesignStore.getState().updateNodeData(id, { label: name });
       }
     },
     [renameEditorPage],
@@ -1508,6 +2095,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
    * Put a component's frame beside this one and swap the host's document for
    * the version that holds its instance. Focus stays on this frame.
    */
+  /**
+   * Put a component's frame beside this one and swap the host's document for
+   * the version that holds its instance. Focus stays on this frame.
+   */
   const commitComponent = useCallback(
     ({ doc, master, instanceId, label }) => {
       if (!engine || !focusedId) return null;
@@ -1525,7 +2116,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       engine.setDoc(doc, { name: label });
       engine.selectExactly([instanceId]);
       if (presentationId) {
-        useWorkflowStore
+        useDesignStore
           .getState()
           .updateNodeData(masterId, { editorDoc: master, label });
         focusEditorPage(hostId);
@@ -1542,36 +2133,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     ],
   );
 
-  /**
-   * A 3D object in a Design or Motion frame is an instance of a 3D frame that
-   * is created beside it: edit the frame (the main component) and every
-   * instance follows.
-   */
-  const placeObject3dFrame = useCallback(
-    (object, { replace = false } = {}) => {
-      if (!engine) return null;
-      const host = engine.getDocument();
-      const master = masterDocForObject(object);
-      const label = t("editor.three.addObject3d");
-      const instance = instanceForObject(object, master.canvasId, label);
-      return commitComponent({
-        doc: {
-          ...host,
-          nodes: replace
-            ? host.nodes.map((node) =>
-                node.id === object.id ? instance : node,
-              )
-            : [...host.nodes, instance],
-        },
-        master,
-        instanceId: instance.id,
-        label,
-      });
-    },
-    [engine, commitComponent, t],
-  );
-
-  /** Figma's "Create component": the selected layers become a frame. */
   const handleCreateComponent = useCallback(() => {
     if (!engine) return;
     const host = engine.getDocument();
@@ -1609,31 +2170,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     [engine, resolveCanvas, t],
   );
 
-  const handleAddObject3d = useCallback(
-    (geometryType) => {
-      if (!engine) return;
-      const host = engine.getDocument();
-      if (getCanvasType(host) === "3d") {
-        addThreePrimitive(geometryType);
-        return;
-      }
-      const edge = Math.min(
-        DEFAULT_OBJECT_EDGE,
-        host.width * 0.5,
-        host.height * 0.5,
-      );
-      placeObject3dFrame(
-        createObject3dNode(geometryType, {
-          x: (host.width - edge) / 2,
-          y: (host.height - edge) / 2,
-          width: edge,
-          height: edge,
-        }),
-      );
-    },
-    [engine, addThreePrimitive, placeObject3dFrame],
-  );
-
   const importMediaFiles = useCallback(
     (files, { point = null, targetEngine = null } = {}) => {
       const activeEngine = targetEngine || engine;
@@ -1645,7 +2181,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           await importEditorMediaFile(
             activeEngine,
             file,
-            useWorkflowStore.getState(),
+            useDesignStore.getState(),
             { point },
           );
         }
@@ -1653,11 +2189,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         .then(() => {
           activeEngine.setTool(TOOL.SELECT);
           // Sound has no box on the stage, so the timeline is the only place
-          // the layer exists: without this the import reads as a no-op.
-          const timelineBearing = files.some((file) =>
-            ["video", "audio"].includes(editorMediaFileKind(file)),
-          );
-          if (timelineBearing) setMotionOpen(EDITOR_BETA_ENABLED);
         })
         .catch((error) => {
           console.error("[Design Editor] Media import failed", error);
@@ -1709,107 +2240,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     [engine, focusedId, focusEditorPage, importMediaFiles],
   );
 
-  const handleInsertCanvas = useCallback(
-    (sourceId) => {
-      if (!engine || !focusedId) return;
-      if (getCanvasInsertErrorKey(focusedId, sourceId, resolveCanvas)) {
-        setCanvasInsertError(true);
-        return;
-      }
-      const sourceDoc = resolveCanvas(sourceId);
-      if (!sourceDoc) return;
-      setCanvasInsertError(false);
-      const current = engine.getDocument();
-      const width = Math.min(sourceDoc.width, current.width * 0.8);
-      const height = Math.min(
-        sourceDoc.height,
-        (width * sourceDoc.height) / sourceDoc.width,
-      );
-      const instance = createCanvasInstanceNode({
-        sourceCanvasId: sourceId,
-        x: (current.width - width) / 2,
-        y: (current.height - height) / 2,
-        width,
-        height,
-        name: pageTitle(sourceId),
-      });
-      engine.setDoc({ ...current, nodes: [...current.nodes, instance] });
-      engine.selectExactly([instance.id]);
-    },
-    [engine, focusedId, resolveCanvas, pageTitle],
-  );
-
-  const handleRenderInstanceVideo = useCallback(
-    async (instanceId, sourceId) => {
-      if (!engine || renderInstanceAbortRef.current) return;
-      const sourceState = enginesRef.current.get(sourceId);
-      if (
-        !sourceState?.ready ||
-        getCanvasType(sourceState.engine.getDocument()) !== "motion"
-      ) {
-        setRenderInstanceError(instanceId);
-        return;
-      }
-      const controller = new AbortController();
-      renderInstanceAbortRef.current = controller;
-      setRenderingInstanceId(instanceId);
-      setRenderInstanceError(null);
-      let pendingSource;
-      try {
-        const { exportSceneVideo } =
-          await import("../editor/scene-video-export.js");
-        const { blob, extension } = await exportSceneVideo(sourceState.engine, {
-          signal: controller.signal,
-        });
-        controller.signal.throwIfAborted();
-        const file = new File([blob], `${pageTitle(sourceId)}.${extension}`, {
-          type: blob.type || `video/${extension}`,
-        });
-        pendingSource = await useWorkflowStore
-          .getState()
-          .ingestEditorMediaFile(file);
-        const source = pendingSource;
-        pendingSource = null;
-        await consumeImagePublication(source, engine, () => {
-          controller.signal.throwIfAborted();
-          const current = engine
-            .getDocument()
-            .nodes.find((node) => node.id === instanceId);
-          if (!current || current.kind !== "canvasInstance") return false;
-          engine.updateNode(instanceId, {
-            instance: {
-              ...current.instance,
-              videoAssetId: source.assetId,
-              videoSrc: source.src,
-              playbackMode: "video",
-            },
-          });
-          return true;
-        });
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          console.error("Instance video render failed", error);
-          setRenderInstanceError(instanceId);
-        }
-      } finally {
-        if (pendingSource) await settleImagePublication(pendingSource);
-        if (renderInstanceAbortRef.current === controller) {
-          renderInstanceAbortRef.current = null;
-          setRenderingInstanceId(null);
-        }
-      }
-    },
-    [engine, pageTitle],
-  );
-
-  useEffect(() => () => renderInstanceAbortRef.current?.abort(), []);
-
   const handleCanvasTypeChanged = useCallback(
     (_id, type) => {
       if (_id === focusedId) {
-        setMotionOpen(
-          EDITOR_BETA_ENABLED && (type === "motion" || type === "3d"),
-        );
+        void type;
       }
     },
     [focusedId],
@@ -1870,10 +2304,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           historyOpen,
         }),
     });
-    const insets = calculateFitInsets(panel.insets, {
-      motionOpen,
-      motionTimelineHeight,
-    });
+    const insets = panel.insets;
     const camera = fitEditorPageCamera({
       stageWidth: stage.clientWidth,
       stageHeight: stage.clientHeight,
@@ -1890,8 +2321,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     focusedId,
     layoutById,
     swapPanels,
-    motionOpen,
-    motionTimelineHeight,
     layersPanelShown,
     propertiesOpen,
     historyOpen,
@@ -1921,6 +2350,152 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         return zoomCameraAt(prev, 1 / prev.zoom, stageCentre());
       }),
     [stageCentre, setEditorCamera, focusedId, layoutById],
+  );
+
+  /**
+   * Non-command-table actions the palette exposes: view toggles, zoom, panel
+   * openers. Handlers are closures over the live editor state, so a palette row
+   * always acts on the page the user is looking at.
+   */
+  const paletteActions = useMemo(
+    () => [
+      {
+        id: "undo",
+        labelKey: "editor.undo",
+        label: "Undo",
+        catalogKey: "editor.undo",
+        run: () => void presentationHistory.undo(),
+      },
+      {
+        id: "redo",
+        labelKey: "editor.redo",
+        label: "Redo",
+        catalogKey: "editor.redo",
+        run: () => void presentationHistory.redo(),
+      },
+      {
+        id: "zoom-in",
+        labelKey: "editor.zoomIn",
+        label: "Zoom in",
+        run: () => (multi ? zoomSharedStep(1) : engine?.zoomStep?.(1)),
+      },
+      {
+        id: "zoom-out",
+        labelKey: "editor.zoomOut",
+        label: "Zoom out",
+        run: () => (multi ? zoomSharedStep(-1) : engine?.zoomStep?.(-1)),
+      },
+      {
+        id: "zoom-fit",
+        labelKey: "editor.zoomFit",
+        label: "Zoom to fit",
+        run: () => (multi ? fitAll() : engine?.zoomToFit?.()),
+      },
+      {
+        id: "zoom-100",
+        labelKey: "editor.shortcut.zoom100",
+        label: "Zoom to 100%",
+        run: () =>
+          multi ? zoomSharedHundred() : engine?.zoomToHundred?.(),
+      },
+      {
+        id: "toggle-rulers",
+        labelKey: "editor.rulers.toggle",
+        label: "Show/hide rulers",
+        catalogKey: "editor.rulers.toggle",
+        run: toggleRulers,
+      },
+      {
+        id: "toggle-guides",
+        labelKey: "editor.guides.toggle",
+        label: "Show/hide guides",
+        catalogKey: "editor.guides.toggle",
+        run: toggleGuides,
+      },
+      {
+        id: "clear-guides",
+        labelKey: "editor.guides.clearAll",
+        label: "Clear all guides",
+        run: handleClearGuides,
+      },
+      {
+        id: "snap-to-grid",
+        labelKey: "editor.snapping.toGrid",
+        label: "Snap to grid",
+        catalogKey: "editor.snapping.toGrid",
+        run: toggleSnapToGrid,
+      },
+      {
+        id: "toggle-comments",
+        labelKey: "editor.comments.toggle",
+        label: "Show/hide comments",
+        catalogKey: "editor.comments.toggle",
+        run: toggleCommentsPanel,
+      },
+      {
+        id: "comment-mode",
+        labelKey: "editor.comments.toggleAddMode",
+        label: "Comment mode",
+        run: toggleCommentMode,
+      },
+      {
+        id: "find-replace",
+        labelKey: "findReplace.title",
+        label: "Find and replace",
+        catalogKey: "findReplace.title",
+        run: openFindReplace,
+      },
+      {
+        id: "export",
+        labelKey: "editor.exportTitle",
+        label: "Export",
+        run: () => setExportOpen(true),
+      },
+      {
+        id: "shortcuts",
+        labelKey: "editor.shortcuts.title",
+        label: "Keyboard shortcuts",
+        run: () => setShortcutsOpen(true),
+      },
+    ],
+    [
+      presentationHistory,
+      multi,
+      zoomSharedStep,
+      zoomSharedHundred,
+      engine,
+      fitAll,
+      toggleRulers,
+      toggleGuides,
+      handleClearGuides,
+      toggleSnapToGrid,
+      toggleCommentsPanel,
+      toggleCommentMode,
+      openFindReplace,
+    ],
+  );
+
+  /**
+   * Runs a palette row. Commands come from the editor's own command table, so
+   * palette execution and agent execution share one implementation; actions
+   * carry their handler from `paletteActions`.
+   */
+  const runPaletteCommand = useCallback(
+    (command) => {
+      setCommandPaletteOpen(false);
+      if (!command) return;
+      if (command.kind === "action") {
+        command.run?.();
+        return;
+      }
+      void executeEditorCommand(command.sourceId, engine).catch((error) => {
+        if (error?.code === "NO_SELECTION" || error?.code === "EDITOR_NOT_OPEN") {
+          return;
+        }
+        console.error(`command palette: ${command.sourceId} failed`, error);
+      });
+    },
+    [engine],
   );
 
   // The saved notice hides itself. Owning the timer in an effect means closing
@@ -2004,6 +2579,16 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     const onWheel = (event) => {
       event.preventDefault();
       if (event.ctrlKey || event.metaKey) {
+        if (wheelRafRef.current) {
+          cancelAnimationFrame(wheelRafRef.current);
+          wheelRafRef.current = null;
+        }
+        const { dx: pdx, dy: pdy } = pendingWheelPanRef.current;
+        pendingWheelPanRef.current = { dx: 0, dy: 0 };
+        if (pdx !== 0 || pdy !== 0) {
+          panEditorCamera(pdx, pdy);
+        }
+
         const bounds = stage.getBoundingClientRect();
         setEditorCamera((prev) =>
           zoomCameraAt(prev, wheelZoomFactor(event.deltaY), {
@@ -2014,10 +2599,34 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         return;
       }
       const { dx, dy } = wheelPanDelta(event);
-      panEditorCamera(dx, dy);
+      pendingWheelPanRef.current.dx += dx;
+      pendingWheelPanRef.current.dy += dy;
+
+      const el = artboardLayerRef.current;
+      if (el) {
+        const cur = useDesignStore.getState().editorCamera;
+        el.style.transform = `translate3d(${(cur?.panX || 0) + pendingWheelPanRef.current.dx}px, ${(cur?.panY || 0) + pendingWheelPanRef.current.dy}px, 0)`;
+      }
+
+      if (!wheelRafRef.current) {
+        wheelRafRef.current = requestAnimationFrame(() => {
+          wheelRafRef.current = null;
+          const { dx: pdx, dy: pdy } = pendingWheelPanRef.current;
+          pendingWheelPanRef.current = { dx: 0, dy: 0 };
+          if (pdx !== 0 || pdy !== 0) {
+            panEditorCamera(pdx, pdy);
+          }
+        });
+      }
     };
     stage.addEventListener("wheel", onWheel, { passive: false });
-    return () => stage.removeEventListener("wheel", onWheel);
+    return () => {
+      stage.removeEventListener("wheel", onWheel);
+      if (wheelRafRef.current) {
+        cancelAnimationFrame(wheelRafRef.current);
+        wheelRafRef.current = null;
+      }
+    };
   }, [multi, visible, panEditorCamera, setEditorCamera]);
 
   // Fit the whole row once every page has finished opening.
@@ -2074,15 +2683,11 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       const layout = layoutById.get(focusedId);
       if (!stage || !layout) return;
       if (navigation.kind === "enter") {
-        if (workbench.timelineOpen && motionTimelineHeight <= 0) return;
         const panel = editorPanelLayout({
           stageWidth: stage.clientWidth,
           swapped: swapPanels,
         });
-        const insets = calculateFitInsets(panel.insets, {
-          motionOpen: workbench.timelineOpen,
-          motionTimelineHeight,
-        });
+        const insets = panel.insets;
         const camera = fitEditorPageCamera({
           stageWidth: stage.clientWidth,
           stageHeight: stage.clientHeight,
@@ -2126,8 +2731,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     multi,
     readySignature,
     layoutById,
-    workbench.timelineOpen,
-    motionTimelineHeight,
     swapPanels,
     setEditorCamera,
   ]);
@@ -2135,8 +2738,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   // Remember the free-canvas view for a group: when the editor closes (or the
   // set of pages changes), write the camera back onto the group node so the
   // next open restores it. A hand multi-select (no group) is never written.
-  const cameraRef = useRef(useWorkflowStore.getState().editorCamera);
-  cameraRef.current = useWorkflowStore.getState().editorCamera;
+  const cameraRef = useRef(useDesignStore.getState().editorCamera);
+  cameraRef.current = useDesignStore.getState().editorCamera;
   const rememberedRef = useRef({ groupId: null, active: false });
   useEffect(() => {
     if (multi && editorRememberCamera && editingGroupId) {
@@ -2190,51 +2793,90 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   // canvas (not over any artboard) also pans the free view — a view-only camera
   // offset that never writes back to workflow node positions.
   const onFreePointerDown = useCallback((event) => {
+    const isPanTrigger = event.button === 1 || spaceRef.current;
+    const isLeftClick = event.button === 0;
+
+    if (!isPanTrigger && !isLeftClick) return;
+
+    // Never pan when interacting with UI panels, menus, dialogs, form controls
     if (
       event.target.closest?.(
-        '[data-editor-artboard], [role="dialog"], [role="menu"], [data-testid="editor-top-bar"], [data-testid="editor-toolbar"], [data-testid="editor-layers-panel"], [data-testid="editor-properties-panel"], [data-testid="agent-panel"], button, input, textarea, select',
+        '[role="dialog"], [role="menu"], [data-testid="editor-top-bar"], [data-testid="editor-toolbar"], [data-testid="editor-layers-panel"], [data-testid="editor-properties-panel"], [data-testid="agent-panel"], button, input, textarea, select',
       )
     ) {
       return;
     }
-    if (spaceRef.current || event.button === 1 || event.button === 0) {
-      event.preventDefault();
-      try {
-        freeStageRef.current?.setPointerCapture?.(event.pointerId);
-      } catch {
-        // Synthetic pointers and already-released ids cannot be captured;
-        // the move/up handlers below still work without capture.
-      }
-      panGestureRef.current = {
-        pointerId: event.pointerId,
-        lastX: event.clientX,
-        lastY: event.clientY,
-        startX: event.clientX,
-        startY: event.clientY,
-        moved: false,
-        button: event.button,
-      };
+
+    // For plain left clicks without Space, let artboards handle their own selection/drawing/tools
+    if (!isPanTrigger && event.target.closest?.("[data-editor-artboard]")) {
       return;
     }
+
+    // Middle-button drag, space+drag, or drag on empty canvas: start panning camera
+    event.preventDefault();
+    if (isPanTrigger) {
+      event.stopPropagation();
+    }
+
+    try {
+      freeStageRef.current?.setPointerCapture?.(event.pointerId);
+    } catch {
+      // Synthetic pointers and already-released ids cannot be captured;
+      // the move/up handlers below still work without capture.
+    }
+
+    const stage = freeStageRef.current;
+    if (stage) stage.style.cursor = "grabbing";
+
+    panGestureRef.current = {
+      pointerId: event.pointerId,
+      lastX: event.clientX,
+      lastY: event.clientY,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
+      button: event.button,
+    };
   }, []);
   const onFreePointerMove = useCallback(
     (event) => {
       const gesture = panGestureRef.current;
       if (!gesture || gesture.pointerId !== event.pointerId) return;
-      // Capture the deltas up front: the setCamera updater runs at render time,
-      // by which point later moves will have advanced gesture.lastX/Y — reading
-      // them inside the updater would compute a zero (or wrong) delta.
       const dx = event.clientX - gesture.lastX;
       const dy = event.clientY - gesture.lastY;
       gesture.lastX = event.clientX;
       gesture.lastY = event.clientY;
-      const totalDist = Math.hypot(
-        event.clientX - (gesture.startX ?? gesture.lastX),
-        event.clientY - (gesture.startY ?? gesture.lastY),
-      );
-      if (!gesture.moved && totalDist < 4) return;
-      gesture.moved = true;
-      panEditorCamera(dx, dy);
+
+      if (!gesture.moved) {
+        const totalDist = Math.hypot(
+          event.clientX - (gesture.startX ?? gesture.lastX),
+          event.clientY - (gesture.startY ?? gesture.lastY),
+        );
+        // Middle button or space drag pans immediately (threshold 1px)
+        const threshold = gesture.button === 1 || spaceRef.current ? 1 : 4;
+        if (totalDist < threshold) return;
+        gesture.moved = true;
+      }
+
+      pendingPointerPanRef.current.dx += dx;
+      pendingPointerPanRef.current.dy += dy;
+
+      const el = artboardLayerRef.current;
+      if (el) {
+        const cur = useDesignStore.getState().editorCamera;
+        el.style.transform = `translate3d(${(cur?.panX || 0) + pendingPointerPanRef.current.dx}px, ${(cur?.panY || 0) + pendingPointerPanRef.current.dy}px, 0)`;
+      }
+
+      if (!pointerPanRafRef.current) {
+        pointerPanRafRef.current = requestAnimationFrame(() => {
+          pointerPanRafRef.current = null;
+          const { dx: pdx, dy: pdy } = pendingPointerPanRef.current;
+          pendingPointerPanRef.current = { dx: 0, dy: 0 };
+          if (pdx !== 0 || pdy !== 0) {
+            panEditorCamera(pdx, pdy);
+          }
+        });
+      }
     },
     [panEditorCamera],
   );
@@ -2243,19 +2885,34 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       const gesture = panGestureRef.current;
       if (gesture?.pointerId !== event.pointerId) return;
       panGestureRef.current = null;
+
+      if (pointerPanRafRef.current) {
+        cancelAnimationFrame(pointerPanRafRef.current);
+        pointerPanRafRef.current = null;
+      }
+      const { dx: pdx, dy: pdy } = pendingPointerPanRef.current;
+      pendingPointerPanRef.current = { dx: 0, dy: 0 };
+      if (pdx !== 0 || pdy !== 0) {
+        panEditorCamera(pdx, pdy);
+      }
+
       try {
         freeStageRef.current?.releasePointerCapture?.(event.pointerId);
       } catch {
         // The pointer may already be gone; nothing left to release.
       }
+      const stage = freeStageRef.current;
+      if (stage) stage.style.cursor = spaceRef.current ? "grab" : "default";
+
       // A bare left-click on empty canvas (never dragged) deselects the focused
       // page and its selection, like Figma.
       if (!gesture.moved && gesture.button === 0 && !spaceRef.current) {
+        setCanvasBackgroundSelected(true);
         enginesRef.current.get(focusedId)?.engine?.select?.(null);
         focusEditorPage(null);
       }
     },
-    [focusedId, focusEditorPage],
+    [focusedId, focusEditorPage, panEditorCamera],
   );
 
   // Ref populated by ToolPropertiesSection so the X shortcut can swap colours.
@@ -2367,7 +3024,11 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         // The browser may release capture before pointercancel arrives.
       }
       const cancelled = event.type === "pointercancel";
-      if (!gesture.moved) return;
+      if (!gesture.moved) {
+        // A plain click on a frame title selects that frame, as Figma does.
+        if (!cancelled) handleFocusCanvas(gesture.nodeId);
+        return;
+      }
       if (cancelled) {
         const board = event.currentTarget.closest("[data-editor-artboard]");
         if (board) {
@@ -2382,11 +3043,46 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     },
     [
       cameraZoom,
+      handleFocusCanvas,
       layoutById,
       moveEditorArtboard,
       onFreePointerUp,
       setEditorArtboardLayout,
     ],
+  );
+
+  /**
+   * Figma-like: with the Select tool and nothing selected in a frame, pressing
+   * on the frame body drags the frame. It runs the same gesture as the title
+   * bar, listening on the artboard element while the pointer is captured.
+   */
+  const onArtboardBodyPointerDown = useCallback(
+    (nodeId, event) => {
+      if (event.button !== 0 || spaceRef.current) return;
+      if (
+        event.target.closest?.(
+          "[data-editor-artboard-title], button, input, textarea, [role=dialog], [role=menu], [role=separator], [data-interactive]",
+        )
+      )
+        return;
+      if (tool !== TOOL.SELECT) return;
+      const isFocused = nodeId === focusedId;
+      if (isFocused && (engine?.getSelectedIds?.().length ?? 0) > 0) return;
+      const board = event.currentTarget;
+      onTitlePointerDown(nodeId, event);
+      if (!artboardDragRef.current) return;
+      const move = (e) => onTitlePointerMove(e);
+      const up = (e) => {
+        onTitlePointerUp(e);
+        board.removeEventListener("pointermove", move);
+        board.removeEventListener("pointerup", up);
+        board.removeEventListener("pointercancel", up);
+      };
+      board.addEventListener("pointermove", move);
+      board.addEventListener("pointerup", up);
+      board.addEventListener("pointercancel", up);
+    },
+    [engine, focusedId, tool, onTitlePointerDown, onTitlePointerMove, onTitlePointerUp],
   );
 
   // Keyboard zoom steps the shared camera when several pages are open, and the
@@ -2403,12 +3099,11 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     // §10: Esc exits the current operation one layer at a time, then stops.
     modalOpen:
       Boolean(presentation.preview) ||
-      Boolean(scenePreview.preview) ||
-      scenePreview.preparing ||
       exportOpen ||
       Boolean(contextMenu) ||
       shortcutsOpen ||
       svgEditModal.isOpen ||
+      commandPaletteOpen ||
       Boolean(pieMenu),
     targetNodeId: focusedId,
     tool,
@@ -2425,6 +3120,16 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     onZoomToFit: multi ? fitAll : undefined,
     onZoomToHundred: multi ? zoomSharedHundred : undefined,
     onToggleShortcuts: () => setShortcutsOpen((open) => !open),
+    onToggleRulers: toggleRulers,
+    onToggleGuides: toggleGuides,
+    onClearGuides: handleClearGuides,
+    onToggleSnapToGrid: toggleSnapToGrid,
+    onToggleComments: toggleCommentsPanel,
+    onToggleCommentMode: toggleCommentMode,
+    onToggleCommandPalette: toggleCommandPalette,
+    onOpenFindReplace: openFindReplace,
+    selectedGuideId,
+    onDeleteGuide: handleRemoveGuide,
     onSwapColors: () => swapColorsRef.current?.(),
     onDeleteCanvas: multi ? () => handleDeleteCanvas(focusedId) : undefined,
     onDuplicateCanvas: multi
@@ -2636,12 +3341,35 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       : containerWidth >= 696;
   const dockAgent = agentVisible && hasDockSpace;
 
+  // The ruler reads the focused page's document coordinates: the shared camera
+  // places that page at `layout * zoom + camera.pan` inside the stage, so that
+  // offset is the page origin on screen. No second camera is introduced.
+  const focusedLayout = layoutById.get(focusedId) ?? null;
+  const rulerOffsetX =
+    (focusedLayout?.x ?? 0) * cameraZoom + (editorCamera?.panX ?? 0);
+  const rulerOffsetY =
+    (focusedLayout?.y ?? 0) * cameraZoom + (editorCamera?.panY ?? 0);
+  const documentGuides = doc ? readDocumentGuides(doc) : [];
+  const documentComments = doc ? normalizeComments(doc.comments) : [];
+  // Presentation playback and 3D canvases have no 2D document space to measure.
+  // Rulers measure the focused document, so they are independent of the
+  // free-canvas (multi-artboard) mode.
+  const rulersVisible =
+    Boolean(focusedId) &&
+    canvasType !== "3d" &&
+    !presentation.preview;
+  // Comment pins share the focused document's 2D space with the rulers.
+  const commentsVisible =
+    Boolean(focusedId) &&
+    canvasType !== "3d" &&
+    !presentation.preview;
+
   return (
     <div
       ref={editorRootRef}
       data-testid="design-editor"
       aria-hidden={!visible}
-      className={`absolute bottom-0 left-0 top-[43px] z-50 flex flex-col overflow-hidden rounded-2xl bg-surface-canvas ${
+      className={`absolute bottom-0 left-0 top-0 z-50 flex flex-col overflow-hidden rounded-b-2xl bg-surface-canvas ${
         dockAgent ? "right-[376px]" : "right-0"
       } ${visible ? "" : "invisible pointer-events-none"}`}
       {...dropHandlers}
@@ -2671,19 +3399,39 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             ref={freeStageRef}
             data-testid="editor-pages"
             className="absolute inset-0 overflow-clip"
-            onPointerDown={onFreePointerDown}
+            onPointerDownCapture={onFreePointerDown}
             onPointerMove={onFreePointerMove}
             onPointerUp={onFreePointerUp}
             onPointerCancel={onFreePointerUp}
+            onAuxClick={(event) => {
+              if (event.button === 1) event.preventDefault();
+            }}
           >
+            <canvas
+              ref={workspaceCanvasRef}
+              data-testid="workspace-skia-canvas"
+              className="pointer-events-none absolute inset-0 h-full w-full"
+            />
+            <div
+              aria-hidden
+              data-testid="editor-free-grid"
+              className="pointer-events-none absolute inset-0 transition-opacity duration-200"
+              style={{
+                opacity: cameraZoom >= 1 && cameraZoom <= 1.5 ? 1 : 0,
+                backgroundImage:
+                  "radial-gradient(rgba(255, 255, 255, 0.14) 1.2px, transparent 1.2px)",
+                backgroundSize: `${20 * cameraZoom}px ${20 * cameraZoom}px`,
+                backgroundPosition: `${useDesignStore.getState().editorCamera?.panX || 0}px ${useDesignStore.getState().editorCamera?.panY || 0}px`,
+              }}
+            />
             <div
               ref={artboardLayerRef}
               data-testid="editor-artboards-layer"
               className="pointer-events-none absolute inset-0 will-change-transform"
               style={{
                 transform: `translate3d(${
-                  useWorkflowStore.getState().editorCamera?.panX || 0
-                }px, ${useWorkflowStore.getState().editorCamera?.panY || 0}px, 0)`,
+                  useDesignStore.getState().editorCamera?.panX || 0
+                }px, ${useDesignStore.getState().editorCamera?.panY || 0}px, 0)`,
               }}
             >
               {nodeIds.map((nodeId, index) => {
@@ -2748,8 +3496,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                       finishInstanceCameraAdjustment(true)
                     }
                     onCanvasTypeChanged={handleCanvasTypeChanged}
-                    threeToolMode={threeToolMode}
-                    onThreeToolMode={handleThreeToolMode}
                     onEngine={handleEngine}
                     onBeforeDispose={handleBeforeDispose}
                     onChange={bump}
@@ -2773,6 +3519,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                     portraitRetouchBusy={retouchBusy}
                     onSplitLayers={splitLayers}
                     splitLayersBusy={splitLayersBusy}
+                    onBodyPointerDown={(event) =>
+                      onArtboardBodyPointerDown(nodeId, event)
+                    }
                     titlePanHandlers={{
                       onPointerDown: (event) =>
                         onTitlePointerDown(nodeId, event),
@@ -2928,8 +3677,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 onFinishAdjustView={() => finishInstanceCameraAdjustment(false)}
                 onCancelAdjustView={() => finishInstanceCameraAdjustment(true)}
                 onCanvasTypeChanged={handleCanvasTypeChanged}
-                threeToolMode={threeToolMode}
-                onThreeToolMode={handleThreeToolMode}
                 onEngine={handleEngine}
                 onBeforeDispose={handleBeforeDispose}
                 onChange={bump}
@@ -3060,6 +3807,48 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             ))}
           </div>
         )}
+
+        {/* Rulers + guides overlay. Sits above the canvas but below panels and
+            toasts (z-20); only its 20px strips and guide hit bands take pointer
+            events, so drawing/selecting on the canvas is unchanged. */}
+        {rulersVisible ? (
+          <EditorRulers
+            showRulers={showRulers}
+            showGuides={showGuides}
+            guides={documentGuides}
+            selectedGuideId={selectedGuideId}
+            zoom={cameraZoom}
+            offsetX={rulerOffsetX}
+            offsetY={rulerOffsetY}
+            onSelectGuide={setSelectedGuideId}
+            onCreateGuide={handleCreateGuide}
+            onMoveGuide={handleMoveGuide}
+            onRemoveGuide={handleRemoveGuide}
+            t={t}
+          />
+        ) : null}
+
+        {/* Comment pins, thread popovers and the thread list share the focused
+            page's document space. The root is pointer-events-none; only pins,
+            popovers, the panel and the placement layer take the pointer. */}
+        {commentsVisible ? (
+          <EditorComments
+            open={commentsOpen}
+            addMode={commentMode}
+            comments={documentComments}
+            zoom={cameraZoom}
+            offsetX={rulerOffsetX}
+            offsetY={rulerOffsetY}
+            onOpen={() => setCommentsOpen(true)}
+            onClose={closeComments}
+            onToggleAddMode={toggleCommentMode}
+            onCreate={handleCreateComment}
+            onReply={handleReplyComment}
+            onResolve={handleResolveComment}
+            onDelete={handleDeleteComment}
+            t={t}
+          />
+        ) : null}
 
         {/* Centre-of-canvas AI progress: a model run (auto mask, object
             selection, lasso cutout, repaint, upscale) is seconds-long and silent
@@ -3199,11 +3988,15 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               documentWidth={exportPage?.width ?? exportDocument?.width}
               documentHeight={exportPage?.height ?? exportDocument?.height}
               selectedCount={selectedIds.length}
+              slicesCount={
+                exportDocument?.nodes?.filter(
+                  (n) => n.kind === "region" && n.visible !== false,
+                ).length ?? 0
+              }
               selectionBounds={exportSelectionBounds}
               exportRange={exportRange}
               onExportRange={setExportRange}
               busy={busy}
-              exportProgress={exportProgress}
               onFormat={setExportFormat}
               onQuality={setExportQuality}
               onScale={setExportScale}
@@ -3213,26 +4006,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           </Suspense>
         ) : null}
 
-        {scenePreview.preview ? (
-          <Suspense fallback={null}>
-            <EditorScenePreview
-              {...scenePreview.preview}
-              onClose={scenePreview.close}
-            />
-          </Suspense>
-        ) : null}
-        {scenePreview.preparing || scenePreview.failed ? (
-          <p
-            role={scenePreview.failed ? "alert" : "status"}
-            className="absolute bottom-16 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-surface-raised px-3 py-2 text-[11px] text-neutral-200"
-          >
-            {t(
-              scenePreview.failed
-                ? "editor.preview.failed"
-                : "editor.preview.preparing",
-            )}
-          </p>
-        ) : null}
         {presentation.preview ? (
           <PresentationViewer
             pages={presentation.preview.pages}
@@ -3254,41 +4027,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         ) : null}
 
         {propertiesOpen && nestedNode && nestedEngine ? (
-          EDITOR_BETA_ENABLED &&
-          (nestedNode.kind === "mesh3d" ||
-            nestedNode.kind === "model3d" ||
-            getCanvasType(nestedDoc) === "3d") ? (
+          nestedNode.kind === "canvasInstance" ? (
             <PropertiesPanelShell
               swapSide={inspectorSwap}
-              bottomInset={motionOpen ? motionTimelineHeight + 24 : 0}
-              onToggleMotion={toggleMotionPanel}
-              motionTriggerRef={motionTriggerRef}
-              motionOpen={motionOpen}
-              onToggleSide={toggleSwapPanels}
-            >
-              <Suspense fallback={null}>
-                <ThreeSceneProperties
-                  engine={nestedEngine}
-                  doc={nestedDoc}
-                  selectedId={nestedNode.id}
-                  selectedIds={nestedNodeIds}
-                  onPatchScene={(patch) => patchThreeScene(nestedEngine, patch)}
-                  onPatchNode={(id, patch) =>
-                    patchThreeSceneNode(nestedEngine, id, patch)
-                  }
-                  onCommit={() =>
-                    nestedEngine.commit("editor.history.entry.layer")
-                  }
-                />
-              </Suspense>
-            </PropertiesPanelShell>
-          ) : nestedNode.kind === "canvasInstance" ? (
-            <PropertiesPanelShell
-              swapSide={inspectorSwap}
-              bottomInset={motionOpen ? motionTimelineHeight + 24 : 0}
-              onToggleMotion={toggleMotionPanel}
-              motionTriggerRef={motionTriggerRef}
-              motionOpen={motionOpen}
               onToggleSide={toggleSwapPanels}
             >
               <Suspense fallback={null}>
@@ -3333,84 +4074,21 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 />
               </Suspense>
             </PropertiesPanelShell>
-          ) : EDITOR_BETA_ENABLED && getCanvasType(nestedDoc) === "motion" ? (
-            <PropertiesPanelShell
-              swapSide={inspectorSwap}
-              bottomInset={motionOpen ? motionTimelineHeight + 24 : 0}
-              onToggleMotion={toggleMotionPanel}
-              motionTriggerRef={motionTriggerRef}
-              motionOpen={motionOpen}
-              onToggleSide={toggleSwapPanels}
-            >
-              <Suspense fallback={null}>
-                <EditorCanvasMotionProperties
-                  engine={nestedEngine}
-                  doc={nestedDoc}
-                  selected={nestedNode}
-                  onPatchTimeline={(patch) =>
-                    nestedEngine.setDoc({
-                      ...nestedEngine.getDocument(),
-                      timeline: {
-                        ...nestedEngine.getDocument().timeline,
-                        ...patch,
-                      },
-                    })
-                  }
-                  onPatchNode={(id, patch) =>
-                    nestedEngine.updateNode(id, patch)
-                  }
-                />
-              </Suspense>
-            </PropertiesPanelShell>
           ) : (
             <EditorProperties
               engine={nestedEngine}
               object={nestedNode}
               docSize={nestedDoc}
               tool={TOOL.SELECT}
-              motionOpen={motionOpen}
-              bottomInset={motionOpen ? motionTimelineHeight + 24 : 0}
-              onToggleMotion={() => setMotionOpen((open) => !open)}
               onMutate={(patch) =>
                 nestedEngine.updateNode(nestedNode.id, patch, { commit: false })
               }
               onCommit={() => nestedEngine.commit("editor.history.entry.layer")}
             />
           )
-        ) : propertiesOpen &&
-          EDITOR_BETA_ENABLED &&
-          (workbench.sceneInspector ||
-            propertyObject?.kind === "mesh3d" ||
-            propertyObject?.kind === "model3d") ? (
-          <PropertiesPanelShell
-            swapSide={inspectorSwap}
-            bottomInset={motionOpen ? motionTimelineHeight + 24 : 0}
-            onToggleMotion={toggleMotionPanel}
-            motionTriggerRef={motionTriggerRef}
-            motionOpen={motionOpen}
-            onToggleSide={toggleSwapPanels}
-          >
-            <Suspense fallback={null}>
-              <ThreeSceneProperties
-                engine={engine}
-                doc={doc}
-                selectedId={selected?.id ?? null}
-                selectedIds={selectedIds}
-                onPatchScene={(patch) => patchThreeScene(engine, patch)}
-                onPatchNode={(id, patch) =>
-                  patchThreeSceneNode(engine, id, patch)
-                }
-                onCommit={() => engine?.commit("editor.history.entry.layer")}
-              />
-            </Suspense>
-          </PropertiesPanelShell>
         ) : propertiesOpen && propertyObject?.kind === "canvasInstance" ? (
           <PropertiesPanelShell
             swapSide={inspectorSwap}
-            bottomInset={motionOpen ? motionTimelineHeight + 24 : 0}
-            onToggleMotion={toggleMotionPanel}
-            motionTriggerRef={motionTriggerRef}
-            motionOpen={motionOpen}
             onToggleSide={toggleSwapPanels}
           >
             <Suspense fallback={null}>
@@ -3462,58 +4140,26 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                     ),
                   });
                 }}
-                onRenderVideo={() =>
-                  void handleRenderInstanceVideo(
-                    propertyObject.id,
-                    propertyObject.sourceCanvasId,
-                  )
-                }
-                renderBusy={renderingInstanceId === propertyObject.id}
-                renderError={renderInstanceError === propertyObject.id}
-              />
-            </Suspense>
-          </PropertiesPanelShell>
-        ) : propertiesOpen && workbench.timelineInspector ? (
-          <PropertiesPanelShell
-            swapSide={inspectorSwap}
-            bottomInset={motionOpen ? motionTimelineHeight + 24 : 0}
-            onToggleMotion={toggleMotionPanel}
-            motionTriggerRef={motionTriggerRef}
-            motionOpen={motionOpen}
-            onToggleSide={toggleSwapPanels}
-          >
-            <Suspense fallback={null}>
-              <EditorCanvasMotionProperties
-                engine={engine}
-                doc={doc}
-                selected={selected}
-                onPatchTimeline={(patch) =>
-                  engine?.setDoc({
-                    ...engine.getDocument(),
-                    timeline: { ...engine.getDocument().timeline, ...patch },
-                  })
-                }
-                onPatchNode={(id, patch) => engine?.updateNode(id, patch)}
               />
             </Suspense>
           </PropertiesPanelShell>
         ) : propertiesOpen ? (
           <EditorProperties
             engine={engine}
-            bottomInset={motionOpen ? motionTimelineHeight + 24 : 0}
             object={propertyObject}
             parentLayout={parentLayout}
             colorVariableActions={colorVariableActions}
-            onToggleMotion={toggleMotionPanel}
-            motionTriggerRef={motionTriggerRef}
-            motionOpen={motionOpen}
-            mediaError={mediaError}
+            styleActions={styleActions}
             index={activeIndex}
-            selectionCount={selectedGroup ? 1 : selectedIds.length}
+            selectionCount={
+              isFrameSelected ? 1 : selectedGroup ? 1 : selectedIds.length
+            }
             selectedNodes={
-              !selectedGroup && selectedIds.length > 1
-                ? layers.filter((node) => selectedIds.includes(node.id))
-                : []
+              isFrameSelected && frameObject
+                ? [frameObject]
+                : !selectedGroup && selectedIds.length > 1
+                  ? layers.filter((node) => selectedIds.includes(node.id))
+                  : []
             }
             tool={tool}
             onTransformMode={(mode) => engine?.setTool(mode)}
@@ -3734,8 +4380,91 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 engine?.cancelCrop?.();
                 engine?.setTool?.(TOOL.SELECT);
               },
-              arrowSize: engine?.getArrowSize?.() ?? null,
-              onArrowSize: (size) => engine?.setArrowSize?.(size),
+              arrowSize: selected?.arrowSize ?? (engine?.getArrowSize?.() ?? 24),
+              onArrowSize: (size) => {
+                if (selected?.id) engine?.updateNode(selected.id, { arrowSize: size });
+                else engine?.setArrowSize?.(size);
+              },
+              arrowStart: selected?.arrowStart ?? (engine?.getArrowStart?.() ?? false),
+              onArrowStart: (val) => {
+                if (selected?.id) engine?.updateNode(selected.id, { arrowStart: val });
+                else engine?.setArrowStart?.(val);
+              },
+              arrowEnd: selected?.arrowEnd ?? true,
+              onArrowEnd: (val) => {
+                if (selected?.id) engine?.updateNode(selected.id, { arrowEnd: val });
+              },
+              strokeWidth: selected?.strokeWidth ?? (engine?.getStrokeWidth?.() ?? 1),
+              onStrokeWidth: (val) => {
+                if (selected?.id) engine?.updateNode(selected.id, { strokeWidth: val });
+                else engine?.setStrokeWidth?.(val);
+              },
+              strokeStyle: selected?.strokeStyle || (selected?.strokeDashed ? "dashed" : "solid"),
+              onStrokeStyle: (style) => {
+                if (selected?.id) engine?.updateNode(selected.id, { strokeStyle: style, strokeDashed: style === "dashed" });
+              },
+              cornerRadius: selected?.cornerRadius ?? selected?.radius ?? 0,
+              onCornerRadius: (val) => {
+                if (selected?.id) engine?.updateNode(selected.id, { cornerRadius: val });
+              },
+              cornerType: selected?.cornerType || "round",
+              onCornerType: (type) => {
+                if (selected?.id) engine?.updateNode(selected.id, { cornerType: type });
+              },
+              sides: selected?.spikes ?? selected?.sides ?? 5,
+              onSides: (val) => {
+                if (selected?.id) engine?.updateNode(selected.id, { spikes: val, sides: val });
+              },
+              starRatio: selected?.ratio ?? 0.5,
+              onStarRatio: (val) => {
+                if (selected?.id) engine?.updateNode(selected.id, { ratio: val });
+              },
+              // Text Tool properties (Affinity Style)
+              fontFamily: selected?.fontFamily || engine?.getDefaultFontFamily?.() || "Inter",
+              onFontFamily: (family) => {
+                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { fontFamily: family });
+                else engine?.setDefaultFontFamily?.(family);
+              },
+              fontWeight: selected?.fontWeight || 400,
+              onFontWeight: (weight) => {
+                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { fontWeight: weight });
+                else engine?.setDefaultFontWeight?.(weight);
+              },
+              fontSize: selected?.fontSize || 16,
+              onFontSize: (sz) => {
+                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { fontSize: sz });
+                else engine?.setDefaultFontSize?.(sz);
+              },
+              italic: selected?.italic || false,
+              onItalic: (val) => {
+                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { italic: val });
+              },
+              underline: selected?.underline || false,
+              onUnderline: (val) => {
+                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { underline: val });
+              },
+              align: selected?.align || "left",
+              onAlign: (val) => {
+                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { align: val });
+              },
+              lineHeight: selected?.lineHeight || 1.25,
+              onLineHeight: (val) => {
+                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { lineHeight: val });
+              },
+              letterSpacing: selected?.letterSpacing || 0,
+              onLetterSpacing: (val) => {
+                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { letterSpacing: val });
+              },
+              // Gradient & Fill properties (Affinity Style)
+              gradientType: engine?.getGradientType?.() ?? "linear",
+              onGradientType: (type) => engine?.setGradientType?.(type),
+              fillTolerance: engine?.getFillTolerance?.() ?? 32,
+              onFillTolerance: (val) => engine?.setFillTolerance?.(val),
+              fillContiguous: engine?.getFillContiguous?.() ?? true,
+              onFillContiguous: (val) => engine?.setFillContiguous?.(val),
+              fillSampleAll: engine?.getFillSampleAll?.() ?? false,
+              onFillSampleAll: (val) => engine?.setFillSampleAll?.(val),
+              onReverseGradient: () => engine?.reverseGradient?.(),
               lassoSaved: lasso?.pending,
               lassoBusy,
               localMattingSupported,
@@ -3764,11 +4493,16 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 : null
             }
             docSize={doc}
-            isBackground={backgroundSelected}
-            backgroundColor={doc?.backgroundColor || "#262626"}
+            isBackground={canvasBackgroundSelected}
+            backgroundColor={canvasBackgroundColor}
+            onSetDocumentSize={applyPageResize}
+            framePosition={layoutById.get(focusedId) ?? null}
+            onSetFramePosition={(x, y) => {
+              const layout = layoutById.get(focusedId);
+              if (layout) setEditorArtboardLayout(focusedId, { ...layout, x, y });
+            }}
             onSetBackgroundColor={(next) => {
-              engine?.setBackgroundColor?.(next);
-              engine?.setDocumentBackgroundColor?.(next);
+              setCanvasBackgroundColor?.(next);
             }}
             maskActions={
               selected &&
@@ -3842,6 +4576,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 engine?.updateNode(selectedGroup.id, patch, { commit: false });
                 return;
               }
+              if (isFrameSelected) {
+                handleMutateFrame(patch, { commit: false });
+                return;
+              }
               if (!selected) return;
               // With several layers selected an edit reaches every selected
               // layer of the same kind (plan 1.9): a text-style patch must
@@ -3860,38 +4598,17 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 engine?.updateNode(id, patch, { commit: false });
               }
             }}
-            onCommit={() => engine?.commit("editor.history.entry.layer")}
+            onCommit={() => {
+              if (isFrameSelected) {
+                engine?.commit?.("editor.frame.update");
+                return;
+              }
+              engine?.commit("editor.history.entry.layer");
+            }}
           />
         ) : null}
 
-        {EDITOR_BETA_ENABLED && motionOpen && engine ? (
-          <div
-            className="absolute inset-x-4 bottom-4 z-[65] transition-[top,max-height,transform] duration-200 ease-out"
-            data-testid="editor-motion-host"
-          >
-            <Suspense fallback={null}>
-              <MotionTimeline
-                engine={engine}
-                doc={doc}
-                selectedNode={selected}
-                selectedInstanceChild={selectedInstanceChild}
-                sourceEngine={nestedEngine}
-                sourceDoc={nestedDoc}
-                instanceSources={instanceSources}
-                onSelectInstanceChild={selectInstanceChild}
-                mediaError={mediaError}
-                onExport={exportMotion}
-                onHeightChange={setMotionTimelineHeight}
-                onClose={() => {
-                  engine.pause();
-                  setMotionOpen(false);
-                  motionTriggerRef.current?.focus();
-                }}
-              />
-            </Suspense>
-          </div>
-        ) : null}
-        {otherMediaErrorText ? (
+                {otherMediaErrorText ? (
           <p
             role="alert"
             className="absolute left-1/2 top-16 z-[65] max-w-[min(32rem,90vw)] -translate-x-1/2 rounded-xl bg-rose-500/10 px-3 py-2 text-[11px] text-rose-400 shadow-pop"
@@ -3915,38 +4632,40 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             activeCanvasId={focusedId}
             onFocusCanvas={handleFocusCanvas}
             onSelectCanvasLayer={handleSelectCanvasLayer}
-            onInsertCanvas={handleInsertCanvas}
-            canvasInsertError={canvasInsertError}
             onOpenCanvasInstance={openCanvasSource}
             resolveCanvas={resolveCanvas}
             selectedInstanceChild={selectedInstanceChild}
             onSelectInstanceChild={selectInstanceChild}
-            bottomInset={motionOpen ? motionTimelineHeight + 24 : 0}
             objects={layers}
             activeIndex={activeIndex}
             selectedIds={selectedIds}
-            backgroundColor={frameBackground}
-            isBackgroundSelected={backgroundSelected}
+            backgroundColor={canvasBackgroundColor}
+            isBackgroundSelected={canvasBackgroundSelected}
             isolationGroupId={isolationGroupId}
             swapSide={swapPanels}
             onToggleSide={toggleSwapPanels}
             onSelect={(index) => {
+              setCanvasBackgroundSelected(false);
               setSelectedInstanceChild(null);
               engine?.selectExactly([layers[index].id]);
             }}
             onToggleSelect={(index) => {
+              setCanvasBackgroundSelected(false);
               setSelectedInstanceChild(null);
               engine?.toggleExactly(layers[index].id);
             }}
             onSelectExactly={(ids) => {
+              setCanvasBackgroundSelected(false);
               setSelectedInstanceChild(null);
               engine?.selectExactly(ids);
             }}
             onSelectBackground={() => {
               setSelectedInstanceChild(null);
-              engine?.selectBackground();
+              setCanvasBackgroundSelected(true);
+              engine?.selectExactly?.([]);
             }}
             onSelectGroup={(id) => {
+              setCanvasBackgroundSelected(false);
               setSelectedInstanceChild(null);
               engine?.selectGroup(id);
             }}
@@ -4055,21 +4774,78 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           </Suspense>
         ) : null}
 
-        {workbench.toolbar === "three" ? (
-          <>
-            <EditorToolbar3D
-              mode={threeToolMode}
-              onMode={handleThreeToolMode}
-              onAddPrimitive={addThreePrimitive}
-            />
-          </>
-        ) : (
+        {(
           <EditorToolbar
             variant={workbench.toolbar === "motion" ? "motion" : "design"}
-            onAddObject3d={handleAddObject3d}
             tool={tool}
             onTool={runTool}
             selectedNode={engine?.getSelected()}
+            selectedNodes={engine?.getSelectedNodes?.() ?? []}
+            snapping={snappingEnabled}
+            onToggleSnapping={toggleSnapping}
+            onFlipHorizontal={() => {
+              void engine?.flipHorizontal?.();
+              bump();
+            }}
+            onFlipVertical={() => {
+              void engine?.flipVertical?.();
+              bump();
+            }}
+            onRotateClockwise={() => {
+              void engine?.rotateClockwise?.();
+              bump();
+            }}
+            onRotateCounterClockwise={() => {
+              void engine?.rotateCounterClockwise?.();
+              bump();
+            }}
+            canCombine={canCombineSelection || engine?.getSelected()?.kind === "boolean"}
+            onCombine={(op) => {
+              engine?.combineSelected?.(op);
+              bump();
+            }}
+            selectedBooleanOp={engine?.getSelected()?.kind === "boolean" ? engine.getSelected().operation : null}
+            onAlign={(type) => {
+              engine?.layoutSelection?.(alignNodes, type);
+              bump();
+            }}
+            onDistribute={(axis) => {
+              engine?.layoutSelection?.(distributeNodes, axis);
+              bump();
+            }}
+            onMoveToFront={() => {
+              const ids = engine?.getSelectedIds?.() ?? (engine?.getSelected() ? [engine.getSelected().id] : []);
+              if (ids.length) {
+                engine?.moveToFront?.(ids);
+                bump();
+              }
+            }}
+            onMoveForward={() => {
+              const ids = engine?.getSelectedIds?.() ?? (engine?.getSelected() ? [engine.getSelected().id] : []);
+              if (ids.length) {
+                for (const id of ids) engine?.reorderNode?.(id, "up");
+                bump();
+              }
+            }}
+            onMoveBackward={() => {
+              const ids = engine?.getSelectedIds?.() ?? (engine?.getSelected() ? [engine.getSelected().id] : []);
+              if (ids.length) {
+                for (const id of ids) engine?.reorderNode?.(id, "down");
+                bump();
+              }
+            }}
+            onMoveToBack={() => {
+              const ids = engine?.getSelectedIds?.() ?? (engine?.getSelected() ? [engine.getSelected().id] : []);
+              if (ids.length) {
+                engine?.moveToBack?.(ids);
+                bump();
+              }
+            }}
+            canConvertToCurves={Boolean(engine?.getSelected() && !["path", "image", "group", "frame"].includes(engine.getSelected().kind))}
+            onConvertToCurves={() => {
+              engine?.convertSelectedToPath?.();
+              bump();
+            }}
             onRemoveBackground={removeBackground}
             onSelectSubject={() => selectSubject(engine?.getSelected())}
             regionMode={engine?.getRegionMode() ?? "object"}
@@ -4159,13 +4935,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         <div
           data-testid="editor-zoom-position"
           className="pointer-events-none absolute inset-x-0 bottom-0 z-30 h-0"
-          style={
-            motionOpen
-              ? {
-                  transform: `translateY(-${zoomShiftForTimeline(motionTimelineHeight)}px)`,
-                }
-              : undefined
-          }
         >
           <div className="pointer-events-auto relative h-0">
             <EditorZoom
@@ -4196,7 +4965,24 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 }
                 bump();
               }}
+              snapping={snappingEnabled}
+              onToggleSnapping={toggleSnapping}
             />
+            {/* Rulers / guides / snap-to-grid sit beside the zoom cluster, a
+                short reach from the existing grid-overlay toggle. */}
+            {rulersVisible ? (
+              <EditorCanvasAids
+                showRulers={showRulers}
+                showGuides={showGuides}
+                snapToGrid={snapToGrid}
+                canClearGuides={documentGuides.length > 0}
+                onToggleRulers={toggleRulers}
+                onToggleGuides={toggleGuides}
+                onToggleSnapToGrid={toggleSnapToGrid}
+                onClearGuides={handleClearGuides}
+                t={t}
+              />
+            ) : null}
           </div>
         </div>
 
@@ -4401,6 +5187,21 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           initialSvg={svgEditModal.svgString}
           onApply={handleApplySvgEdit}
         />
+
+        <EditorCommandPalette
+          open={commandPaletteOpen}
+          actions={paletteActions}
+          onRun={runPaletteCommand}
+          onClose={closeCommandPalette}
+        />
+
+        <EditorFindReplace
+          open={findReplaceOpen}
+          doc={engine?.getDocument?.() ?? null}
+          onClose={closeFindReplace}
+          onFocusMatch={focusFindMatch}
+          onApplyDoc={applyFindReplaceDoc}
+        />
       </div>
     </div>
   );
@@ -4436,7 +5237,7 @@ function AiRepairDownloadDialog({ state, onDownload, onCancel }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="ai-repair-download-title"
-        className="w-full max-w-xs rounded-2xl border border-white/10 bg-neutral-900 p-4 shadow-panel"
+        className="w-full max-w-xs rounded-3xl border border-white/10 bg-neutral-900 p-4 shadow-panel"
       >
         <h2
           id="ai-repair-download-title"

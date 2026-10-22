@@ -57,7 +57,6 @@ export default function AdjustmentSimpleControls({
     const slider = (
       <Slider
         label={t(meta.labelKey)}
-        hideLabel
         unit={meta.unit}
         min={meta.min}
         max={meta.max}

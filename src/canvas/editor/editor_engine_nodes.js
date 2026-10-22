@@ -19,7 +19,6 @@ import * as ops from "./doc_ops.js";
 
 export function createEngineNodesController({
   getDoc,
-  getRenderDoc = getDoc,
   setDoc,
   selection,
   cache,
@@ -153,7 +152,6 @@ export function createEngineNodesController({
 
   const nodeOps = createEngineNodeOps({
     getDoc,
-    getRenderDoc,
     setDoc,
     selection,
     releaseNodeTextures,

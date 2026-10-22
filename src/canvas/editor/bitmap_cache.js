@@ -17,13 +17,23 @@ import {
 
 export { isAssetFailed, retryAssetLoad } from "./asset_unavailable.js";
 
-const BITMAP_CACHE_MAX = 128;
+export const BITMAP_CACHE_MAX = 128;
+export const BITMAP_BYTE_BUDGET_MAX = 256 * 1024 * 1024; // 256MB budget
+
+export function estimateImageBytes(image) {
+  if (!image) return 0;
+  const w = image.naturalWidth || image.width || 0;
+  const h = image.naturalHeight || image.height || 0;
+  return w * h * 4;
+}
 
 export function createBitmapCache({
   onLoad,
   onEvict,
   host = null,
   resolveImage = null,
+  maxEntries = BITMAP_CACHE_MAX,
+  maxBytes = BITMAP_BYTE_BUDGET_MAX,
 } = {}) {
   /** id or src → HTMLImageElement, once decoded. */
   const bitmaps = new Map();
@@ -34,6 +44,7 @@ export function createBitmapCache({
   const urlByKey = new Map();
   let disposed = false;
   let pinnedKeys = new Set();
+  let totalBytes = 0;
 
   function revokeKeyUrl(key) {
     const url = urlByKey.get(key);
@@ -52,18 +63,26 @@ export function createBitmapCache({
   const keyOf = (node) => node.imageId ?? node.src ?? null;
 
   function touch(key, image) {
+    const prev = bitmaps.get(key);
+    if (prev) {
+      totalBytes -= estimateImageBytes(prev);
+    }
     bitmaps.delete(key);
     bitmaps.set(key, image);
+    totalBytes += estimateImageBytes(image);
   }
 
   function evict() {
-    while (bitmaps.size > BITMAP_CACHE_MAX) {
+    while (bitmaps.size > maxEntries || totalBytes > maxBytes) {
       const key = [...bitmaps.keys()].find(
         (candidate) => !pinnedKeys.has(candidate),
       );
       if (!key) return;
       const image = bitmaps.get(key);
       bitmaps.delete(key);
+      if (image) {
+        totalBytes = Math.max(0, totalBytes - estimateImageBytes(image));
+      }
       revokeKeyUrl(key);
       onEvict?.(image);
     }
@@ -116,7 +135,7 @@ export function createBitmapCache({
         markAssetFailed(key, node);
         return;
       }
-      const image = await decode(url);
+      const image = downscaleForDisplay(await decode(url));
       if (disposed) {
         revokeKeyUrl(key);
         return;
@@ -216,7 +235,10 @@ export function createBitmapCache({
       bitmaps.delete(key);
       pinnedKeys.delete(key);
       revokeKeyUrl(key);
-      if (image) onEvict?.(image);
+      if (image) {
+        totalBytes = Math.max(0, totalBytes - estimateImageBytes(image));
+        onEvict?.(image);
+      }
     },
 
     /** Protect current-document and history-referenced images from LRU eviction. */
@@ -254,6 +276,32 @@ export function createBitmapCache({
       pending.clear();
     },
   };
+}
+
+/** Longest side, in pixels, a picture keeps on the editor canvas. */
+export const DISPLAY_MAX_SIDE = 2048;
+
+/**
+ * A picture larger than DISPLAY_MAX_SIDE is drawn once onto a canvas at that
+ * size, so the editor holds and draws far fewer pixels. The stored file keeps
+ * full resolution; only the decoded copy in the editor is smaller. Smaller
+ * pictures are returned as they are.
+ */
+export function downscaleForDisplay(image, maxSide = DISPLAY_MAX_SIDE) {
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+  const longest = Math.max(width, height);
+  if (!(longest > maxSide) || typeof document === "undefined") return image;
+  const scale = maxSide / longest;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(width * scale);
+  canvas.height = Math.round(height * scale);
+  const context = canvas.getContext("2d");
+  if (!context) return image;
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return canvas;
 }
 
 /** Decodes a File/Blob into a bitmap plus the object URL that has to be revoked. */

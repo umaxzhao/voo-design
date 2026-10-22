@@ -105,17 +105,9 @@ describe("Adversarial Challenger: Runtime Isolation & Artifact Leaks", () => {
     expect(missing).toEqual([]);
   });
 
-  it("WASM binaries (Draco & ONNX Runtime) exist and are non-empty", () => {
-    const dracoDecoderWasm1 = path.join(assetsDir, "draco_decoder-Z1_iN-Ht.wasm");
-    const dracoDecoderWasm2 = path.join(assetsDir, "draco_decoder-C32yEggz.wasm");
+  it("ONNX Runtime WASM exists and is non-empty", () => {
+    // The Draco decoder went with the 3D editor; only the ONNX runtime ships now.
     const onnxWasm = path.join(assetsDir, "ort-wasm-simd-threaded.jsep-MDYUKy93.wasm");
-
-    expect(fs.existsSync(dracoDecoderWasm1)).toBe(true);
-    expect(fs.statSync(dracoDecoderWasm1).size).toBeGreaterThan(100000);
-
-    expect(fs.existsSync(dracoDecoderWasm2)).toBe(true);
-    expect(fs.statSync(dracoDecoderWasm2).size).toBeGreaterThan(200000);
-
     expect(fs.existsSync(onnxWasm)).toBe(true);
     expect(fs.statSync(onnxWasm).size).toBeGreaterThan(20000000);
   });
@@ -175,6 +167,8 @@ describe("Adversarial Challenger: Electron Headless Boot & IPC Contracts", () =>
         this.loadedFile = file;
       }
       on() {}
+      once() {}
+      show() {}
       isDestroyed() {
         return this.destroyed;
       }

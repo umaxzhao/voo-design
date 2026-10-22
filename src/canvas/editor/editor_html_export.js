@@ -4,7 +4,6 @@ import { applyInstanceOverrides } from "./instance-overrides.js";
 import { withInstanceCamera, withInstanceView } from "./instance-view.js";
 import { NODE_KIND, effectivePage } from "./scene_model.js";
 import { resolveCornerRadii } from "./scene_model_core.js";
-import { getCanvasType } from "./canvas-composition-model.js";
 import { documentToSvg } from "./editor_svg.js";
 import { estimateTextSize } from "./text_fidelity.js";
 import {
@@ -13,9 +12,7 @@ import {
   safeCssValue,
   safeFontFamily,
   safeImageSource,
-  audioMarkup,
-  videoMarkup,
-  animationCss,
+  safeVideoSource,
 } from "./editor_html_elements.js";
 export { safeImageSource, safeVideoSource } from "./editor_html_elements.js";
 
@@ -73,10 +70,6 @@ function exportBounds(doc, nodes, selectedIds) {
       (node) =>
         node.kind === NODE_KIND.CANVAS_INSTANCE &&
         node.instance?.layoutMode === "fill",
-    ) ||
-    nodes.some(
-      (node) =>
-        node.kind === NODE_KIND.MODEL_3D || node.kind === NODE_KIND.MESH_3D,
     )
   ) {
     const page = effectivePage(doc);
@@ -236,15 +229,12 @@ export function documentToHtml(
     selectedIds = null,
     imageSourceOf = (node) => node.src,
     imageSizeOf = () => null,
-    maskSourceOf = () => null,
     videoSourceOf = (node) => node.src,
-    scenePosterOf = () => null,
+    maskSourceOf = () => null,
     resolveCanvas = null,
-    onScene = null,
     scope = "root",
     activeDocs = new WeakSet(),
     activeSources = new Set(),
-    playbackStart = 0,
   } = {},
 ) {
   if (!doc || !Array.isArray(doc.nodes))
@@ -257,7 +247,6 @@ export function documentToHtml(
   );
   const included = new Set(nodes.map((node) => node.id));
   const bounds = exportBounds(doc, nodes, selectedIds);
-  const canvasType = getCanvasType(doc);
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const children = new Map();
   for (const node of nodes) {
@@ -269,85 +258,19 @@ export function documentToHtml(
     if (!children.has(parentId)) children.set(parentId, []);
     children.get(parentId).push(node);
   }
-  const sceneBackgroundTransparent =
-    canvasType === "3d" &&
-    (doc.scene3d?.backgroundColor ?? "transparent") === "transparent";
-  const translucentThreeScene =
-    canvasType === "3d" &&
-    Number.isFinite(doc.scene3d?.backgroundOpacity) &&
-    doc.scene3d.backgroundOpacity < 1;
-  const sceneShowsPageBackground =
-    sceneBackgroundTransparent || translucentThreeScene;
   const pageBackground = selectedIds?.length
     ? "transparent"
-    : sceneShowsPageBackground
-      ? safeCssValue(doc.backgroundColor, "transparent")
-      : safeCssValue(
-          canvasType === "3d"
-            ? (doc.scene3d?.backgroundColor ?? doc.backgroundColor)
-            : doc.backgroundColor,
-          "transparent",
-        );
+    : safeCssValue(doc.backgroundColor, "transparent");
   const css = [
     `.voo-design-${safeScope}{position:relative;overflow:hidden;width:${cssNumber(bounds.width)}px;height:${cssNumber(bounds.height)}px;background:${pageBackground}}`,
   ];
-  if (canvasType === "3d") {
-    onScene?.({ id: safeScope, doc, nodes, playbackStart });
-    const poster = safeImageSource(scenePosterOf(doc));
-    css.push(
-      `.voo-design-${safeScope}>canvas{position:relative;z-index:1;display:block;width:100%;height:100%;visibility:hidden}`,
-    );
-    css.push(
-      `.voo-design-${safeScope}>canvas[data-voo-ready]{visibility:visible}`,
-    );
-    if (poster)
-      css.push(
-        `.voo-design-${safeScope}>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}`,
-      );
-    activeDocs.delete(doc);
-    return `<style>\n${css.join("\n")}\n</style>\n<div class="voo-design voo-design-${safeScope}">${poster ? `<img src="${escapeHtml(poster)}" alt="" />` : ""}<canvas data-voo-scene="${safeScope}" aria-hidden="true"></canvas></div>`;
-  }
   let index = 0;
-  const duration =
-    Number.isFinite(doc.timeline?.duration) && doc.timeline.duration > 0
-      ? Math.max(0.01, cssNumber(doc.timeline.duration))
-      : 5;
-  const spatialNodes = nodes.filter(
-    (node) =>
-      node.kind === NODE_KIND.MODEL_3D || node.kind === NODE_KIND.MESH_3D,
-  );
-  if (spatialNodes.length > 0) {
-    onScene?.({
-      id: `${safeScope}-spatial`,
-      doc,
-      nodes: spatialNodes,
-      playbackStart,
-      transparentBackground: true,
-    });
-    css.push(
-      `.voo-design-${safeScope}>canvas{position:absolute;inset:0;width:100%;height:100%;visibility:hidden;pointer-events:none}`,
-      `.voo-design-${safeScope}>canvas[data-voo-ready]{visibility:visible}`,
-    );
-  }
-
   function render(node, parent = null) {
     if (
       node.kind === NODE_KIND.REGION ||
-      node.kind === NODE_KIND.ADJUSTMENT ||
-      node.kind === NODE_KIND.MODEL_3D ||
-      node.kind === NODE_KIND.MESH_3D
+      node.kind === NODE_KIND.ADJUSTMENT
     )
       return "";
-    // Sound has no box, so it never joins the CSS or animation lists: it is
-    // emitted whole, with its clip data, and the page runtime drives it.
-    if (node.kind === NODE_KIND.AUDIO)
-      return audioMarkup(
-        videoSourceOf(node),
-        "",
-        node.name ? ` data-layer-name="${escapeHtml(node.name)}"` : "",
-        node.media,
-        node.timing,
-      );
     const className = `voo-${safeScope}-layer-${index++}`;
     const fullscreen =
       node.kind === NODE_KIND.CANVAS_INSTANCE &&
@@ -365,16 +288,6 @@ export function documentToHtml(
     css.push(
       `.${className}{${nodeCss(boxNode, fullscreen ? null : parent, bounds, { maskSourceOf })}}`,
     );
-    animationCss(
-      boxNode,
-      className,
-      fullscreen ? null : parent,
-      bounds,
-      duration,
-      playbackStart,
-      css,
-      doc.timeline?.loop === true,
-    );
     const layerName = node.name
       ? ` data-layer-name="${escapeHtml(node.name)}"`
       : "";
@@ -388,25 +301,15 @@ export function documentToHtml(
       return `<div class="${className}"${layerName}>${escapeHtml(node.text ?? "")}</div>`;
     if (node.kind === NODE_KIND.RECT || node.kind === NODE_KIND.ELLIPSE)
       return `<div class="${className}"${layerName}></div>`;
-    if (node.kind === NODE_KIND.VIDEO)
-      return videoMarkup(
-        videoSourceOf(node),
-        className,
-        layerName,
-        node.media,
-        node.poster,
-      );
+    if (node.kind === NODE_KIND.VIDEO) {
+      // Canvas video layers loop silently and autoplay: browsers only allow
+      // autoplay when muted, and the artwork carries no transport controls.
+      const videoSource = safeVideoSource(videoSourceOf(node));
+      if (!videoSource) throw new Error("html-export-video-source");
+      return `<video class="${className}"${layerName} src="${escapeHtml(videoSource)}" autoplay muted loop playsinline preload="auto"></video>`;
+    }
     if (node.kind === NODE_KIND.CANVAS_INSTANCE) {
       const instance = node.instance ?? {};
-      if (instance.playbackMode === "video") {
-        return videoMarkup(
-          videoSourceOf(node) ?? instance.videoSrc,
-          className,
-          layerName,
-          { inPoint: instance.playbackStart },
-          instance.poster,
-        );
-      }
       if (typeof resolveCanvas !== "function")
         throw new Error("html-export-canvas-resolver");
       const sourceId = node.sourceCanvasId;
@@ -427,15 +330,12 @@ export function documentToHtml(
         nested = documentToHtml(source, {
           imageSourceOf,
           imageSizeOf,
-          maskSourceOf,
           videoSourceOf,
-          scenePosterOf,
+          maskSourceOf,
           resolveCanvas,
-          onScene,
           scope: `${safeScope}-${index}`,
           activeDocs,
           activeSources,
-          playbackStart: instance.playbackStart ?? 0,
         });
       } finally {
         activeSources.delete(sourceId);
@@ -497,8 +397,5 @@ export function documentToHtml(
     .filter(Boolean)
     .join("\n");
   activeDocs.delete(doc);
-  const spatialCanvas = spatialNodes.length
-    ? `<canvas data-voo-scene="${safeScope}-spatial" aria-hidden="true"></canvas>`
-    : "";
-  return `<style>\n${css.join("\n")}\n</style>\n<div class="voo-design voo-design-${safeScope}">\n${spatialCanvas}${content}\n</div>`;
+  return `<style>\n${css.join("\n")}\n</style>\n<div class="voo-design voo-design-${safeScope}">\n${content}\n</div>`;
 }

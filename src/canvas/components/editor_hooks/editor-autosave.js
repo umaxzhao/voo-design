@@ -23,7 +23,6 @@ export const EDITOR_AUTOSAVE_DELAY_MS = 600;
 export function createEditorDraftSaver({
   getPages,
   persist,
-  capturePreview = null,
   onError,
   onSaved,
   schedule = setTimeout,
@@ -68,16 +67,6 @@ export function createEditorDraftSaver({
         page.engine?.getDocument?.() ?? page.snapshot?.doc,
       );
       if (saved.get(page.nodeId) === signature) continue;
-      if (capturePreview && getCanvasType(entry.editorDoc) === "3d") {
-        try {
-          const png = capturePreview(page.nodeId);
-          if (png?.startsWith("data:image/png;")) {
-            entry.previewDataUrl = png;
-          }
-        } catch {
-          // A loading or lost WebGL view cannot block the scene document save.
-        }
-      }
       entries.push(entry);
       signatures.set(page.nodeId, signature);
     }

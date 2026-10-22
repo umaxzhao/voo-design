@@ -8,6 +8,7 @@ import {
   IconEye,
   IconEyeOff,
   IconFolder,
+  IconFrame,
   IconLock,
   IconMask,
   IconMove,
@@ -16,6 +17,7 @@ import {
   IconSearch,
   IconSwap,
   IconTransparency,
+  IconOpacity,
   IconTrash,
   IconUnlock,
   ICON_STROKE_WIDTH,
@@ -215,8 +217,6 @@ export default function EditorLayers({
   activeCanvasId = null,
   onFocusCanvas = null,
   onSelectCanvasLayer = null,
-  onInsertCanvas = null,
-  canvasInsertError = false,
   onOpenCanvasInstance = null,
   resolveCanvas = null,
   selectedInstanceChild = null,
@@ -241,6 +241,7 @@ export default function EditorLayers({
     region: t("editor.layer.region"),
     layer: t("editor.layer.generic"),
     group: t("editor.layer.group"),
+    frame: t("editor.layer.frame") || "Frame",
     adjustment: t("editor.layer.adjustment"),
     arrow: t("editor.tool.arrow"),
     line: t("editor.tool.line"),
@@ -504,7 +505,7 @@ export default function EditorLayers({
   for (let i = dragUnits.length - 1; i >= 0; i -= 1) pushRow(dragUnits[i], 0);
 
   /** The background pseudo-row matches when its label or shown colour does. */
-  const backgroundLabel = t("editor.layer.background");
+  const backgroundLabel = t("editor.layer.canvasBackground") || t("editor.layer.background");
   // A transparent page says so; a stand-in colour would read as applied.
   const backgroundTransparent =
     !backgroundColor || backgroundColor === "transparent";
@@ -564,7 +565,7 @@ export default function EditorLayers({
     selectedIds.length === 1
       ? `layer-${effectiveCanvasId}-${selectedIds[0]}`
       : isBackgroundSelected
-        ? `background-${effectiveCanvasId}`
+        ? "canvas-background"
         : activeIndex >= 0
           ? `layer-${effectiveCanvasId}-${objects[activeIndex]?.id}`
           : activeCanvasId
@@ -872,7 +873,7 @@ export default function EditorLayers({
           : undefined
       }
     >
-      <div className="flex items-center justify-between px-2 pb-2.5 pt-1 border-b border-white/10 mb-2">
+      <div className="flex items-center justify-between px-2 pb-1.5 pt-1 mb-2">
         <h2 className="text-[11px] font-mono tracking-wider text-neutral-400 font-medium uppercase">
           {t("editor.layers")}
         </h2>
@@ -940,8 +941,9 @@ export default function EditorLayers({
         />
       ) : null}
 
-      <div className="grid grid-cols-2 gap-1.5 pb-2 border-b border-white/10 mb-2">
+      <div className="grid grid-cols-2 gap-1.5 mb-2">
         <ScrubField
+          prefix={<IconOpacity size={12} />}
           suffix="%"
           min={0}
           max={100}
@@ -970,6 +972,7 @@ export default function EditorLayers({
 
       <div
         ref={listRef}
+        data-layers-list
         tabIndex={0}
         role="listbox"
         aria-label={t("editor.layers")}
@@ -1172,7 +1175,7 @@ export default function EditorLayers({
                                               rowSelectedOf(object)
                                             ? "bg-[#E5B2FF]/10 text-[#eed0ff]"
                                             : rowSelectedOf(object)
-                                              ? "bg-neutral-800 text-white ring-1 ring-inset ring-[#a7ffd4]/60 font-medium"
+                                              ? "bg-[#a7ffd4]/10 text-[#a7ffd4] font-medium"
                                               : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"
                                       } ${draggable ? "touch-none cursor-default" : ""}`}
                                       style={{
@@ -1240,6 +1243,8 @@ export default function EditorLayers({
                                                     object.operation ?? "union"
                                                   }
                                                 />
+                                              ) : object.frame || object.isFrame || object.containerType === "frame" ? (
+                                                <IconFrame size={13} />
                                               ) : (
                                                 <IconFolder size={13} />
                                               )}
@@ -1398,16 +1403,16 @@ export default function EditorLayers({
 
                                       {/* Lock buttons cluster: For group nodes, only show the master lock;
                     For ordinary layers, master lock is visible on layer hover, and the 3 granular locks
-                    (transparency, pixels, position) unfold when hovering the lock cluster, or stay visible if enabled. */}
+                    (transparency, pixels, position) fly out in an absolute floating toolbar without shifting the row layout. */}
                                       <div
-                                        className="group/locks flex items-center shrink-0 -my-1 py-1 px-0.5 rounded-lg transition-colors hover:bg-neutral-800/80"
+                                        className="group/locks relative flex items-center shrink-0 -my-1 py-1 px-0.5 rounded-lg transition-colors hover:bg-neutral-800/80"
                                         data-no-drag
                                         onPointerDown={(e) =>
                                           e.stopPropagation()
                                         }
                                       >
                                         {!grouped ? (
-                                          <>
+                                          <div className="absolute right-full mr-1 top-1/2 -translate-y-1/2 hidden group-hover/locks:flex items-center gap-0.5 rounded-lg bg-neutral-800 p-0.5 shadow-pop border border-white/10 z-30">
                                             {/* Photoshop-style "lock transparent pixels": painting may
                           only mix colour into existing content. */}
                                             <button
@@ -1426,19 +1431,14 @@ export default function EditorLayers({
                                                   ? "editor.lockTransparency"
                                                   : "editor.unlockTransparency",
                                               )}
-                                              className={`shrink-0 p-0.5 text-neutral-400 hover:text-neutral-100 transition-all ${
+                                              className={`shrink-0 p-1 rounded-md transition-colors ${
                                                 object.lockTransparency
-                                                  ? "text-neutral-200"
-                                                  : "hidden group-hover/locks:block text-neutral-400 hover:text-white"
+                                                  ? "bg-neutral-700 text-white"
+                                                  : "text-neutral-400 hover:text-white hover:bg-neutral-700/50"
                                               }`}
                                             >
                                               <IconTransparency
                                                 size={12}
-                                                className={
-                                                  object.lockTransparency
-                                                    ? "text-neutral-200"
-                                                    : ""
-                                                }
                                               />
                                             </button>
 
@@ -1459,19 +1459,14 @@ export default function EditorLayers({
                                                   ? "editor.lockImagePixels"
                                                   : "editor.unlockImagePixels",
                                               )}
-                                              className={`shrink-0 p-0.5 text-neutral-400 hover:text-neutral-100 transition-all ${
+                                              className={`shrink-0 p-1 rounded-md transition-colors ${
                                                 object.lockImagePixels
-                                                  ? "text-neutral-200"
-                                                  : "hidden group-hover/locks:block text-neutral-400 hover:text-white"
+                                                  ? "bg-neutral-700 text-white"
+                                                  : "text-neutral-400 hover:text-white hover:bg-neutral-700/50"
                                               }`}
                                             >
                                               <IconPaint
                                                 size={12}
-                                                className={
-                                                  object.lockImagePixels
-                                                    ? "text-neutral-200"
-                                                    : ""
-                                                }
                                               />
                                             </button>
 
@@ -1492,22 +1487,17 @@ export default function EditorLayers({
                                                   ? "editor.lockPosition"
                                                   : "editor.unlockPosition",
                                               )}
-                                              className={`shrink-0 p-0.5 text-neutral-400 hover:text-neutral-100 transition-all ${
+                                              className={`shrink-0 p-1 rounded-md transition-colors ${
                                                 object.lockPosition
-                                                  ? "text-neutral-200"
-                                                  : "hidden group-hover/locks:block text-neutral-400 hover:text-white"
+                                                  ? "bg-neutral-700 text-white"
+                                                  : "text-neutral-400 hover:text-white hover:bg-neutral-700/50"
                                               }`}
                                             >
                                               <IconMove
                                                 size={12}
-                                                className={
-                                                  object.lockPosition
-                                                    ? "text-neutral-200"
-                                                    : ""
-                                                }
                                               />
                                             </button>
-                                          </>
+                                          </div>
                                         ) : null}
 
                                         <button
@@ -1526,7 +1516,10 @@ export default function EditorLayers({
                                           )}
                                           className="shrink-0 p-0.5 text-neutral-400 hover:text-neutral-100"
                                         >
-                                          {object.locked ? (
+                                          {object.locked ||
+                                          object.lockTransparency ||
+                                          object.lockImagePixels ||
+                                          object.lockPosition ? (
                                             <IconLock
                                               size={12}
                                               className="text-neutral-300"
@@ -1578,45 +1571,6 @@ export default function EditorLayers({
                               );
                             },
                           )}
-
-                          {/* Background layer row at the bottom */}
-                          {showBackgroundRow ? (
-                            <div
-                              role="option"
-                              id="layer-row-background"
-                              aria-selected={isBackgroundSelected}
-                              tabIndex={-1}
-                              className={`group/layer flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all cursor-pointer ${
-                                isBackgroundSelected
-                                  ? "bg-neutral-800 text-white ring-1 ring-inset ring-[#a7ffd4]/60 font-medium"
-                                  : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"
-                              }`}
-                              onClick={onSelectBackground}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  onSelectBackground?.();
-                                }
-                              }}
-                            >
-                              <div
-                                className="h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-white/20"
-                                style={{
-                                  backgroundColor: backgroundTransparent
-                                    ? "transparent"
-                                    : displayBg,
-                                }}
-                              />
-                              <span className="min-w-0 flex-1 truncate text-left text-[11px] font-mono font-medium text-neutral-200">
-                                {t("editor.layer.background")}
-                              </span>
-                              <span
-                                className={`text-[10px] font-mono text-neutral-400 ${backgroundTransparent ? "" : "uppercase"}`}
-                              >
-                                {displayBg}
-                              </span>
-                            </div>
-                          ) : null}
                         </>
                       ) : (
                         <EditorCanvasInactiveLayers
@@ -1638,37 +1592,47 @@ export default function EditorLayers({
                 </div>
               );
             })}
-            {onInsertCanvas && canvasPages.length > 1 ? (
-              <div className="flex flex-col gap-1 pt-2">
-                <select
-                  aria-label={t("editor.instance.insert")}
-                  value=""
-                  onChange={(event) => {
-                    if (event.target.value) onInsertCanvas(event.target.value);
-                  }}
-                  className="min-h-7 w-full rounded-lg bg-neutral-800 px-2 text-[10px] text-neutral-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
-                >
-                  <option value="">{t("editor.instance.insert")}</option>
-                  {canvasPages
-                    .filter((page) => page.id !== activeCanvasId)
-                    .map((page) => (
-                      <option key={page.id} value={page.id}>
-                        {page.title}
-                      </option>
-                    ))}
-                </select>
-                {canvasInsertError ? (
-                  <p
-                    role="alert"
-                    className="rounded-lg bg-amber-500/10 px-2 py-1 text-[10px] text-amber-400"
-                  >
-                    {t("editor.instance.cycleInsertBlocked")}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
           </>
         )}
+
+        {/* Canvas background layer row at the very bottom */}
+        {showBackgroundRow ? (
+          <div
+            role="option"
+            id="layer-row-canvas-background"
+            aria-selected={isBackgroundSelected}
+            tabIndex={-1}
+            className={`group/layer flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all cursor-pointer ${
+              isBackgroundSelected
+                ? "bg-[#a7ffd4]/10 text-[#a7ffd4] font-medium"
+                : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"
+            }`}
+            onClick={onSelectBackground}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelectBackground?.();
+              }
+            }}
+          >
+            <div
+              className="h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-white/20"
+              style={{
+                backgroundColor: backgroundTransparent
+                  ? "transparent"
+                  : displayBg,
+              }}
+            />
+            <span className="min-w-0 flex-1 truncate text-left text-[11px] font-mono font-medium text-neutral-200">
+              {t("editor.layer.canvasBackground")}
+            </span>
+            <span
+              className={`text-[10px] font-mono text-neutral-400 ${backgroundTransparent ? "" : "uppercase"}`}
+            >
+              {displayBg}
+            </span>
+          </div>
+        ) : null}
       </div>
 
       {/* Dynamic bottom toolbar: Multiple layers selected -> Group + Merge + New Layer; Single layer/group -> Mask + Adjustment + New Layer */}
@@ -1825,7 +1789,7 @@ export default function EditorLayers({
             aria-label={
               maskEdit?.nodeId ? t("editor.mask.delete") : t("node.delete")
             }
-            className="flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-rose-400 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-neutral-400"
+            className="flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-neutral-400"
           >
             <IconTrash size={13} />
           </button>
@@ -2027,8 +1991,6 @@ EditorLayers.propTypes = {
   activeCanvasId: PropTypes.string,
   onFocusCanvas: PropTypes.func,
   onSelectCanvasLayer: PropTypes.func,
-  onInsertCanvas: PropTypes.func,
-  canvasInsertError: PropTypes.bool,
   onOpenCanvasInstance: PropTypes.func,
   resolveCanvas: PropTypes.func,
   selectedInstanceChild: PropTypes.shape({

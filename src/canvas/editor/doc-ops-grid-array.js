@@ -17,10 +17,6 @@ import {
   validateGridModifierPatch,
 } from "./scene-grid-array.js";
 import { validateAndNormalizeModifierCollection } from "./scene-linear-array-validation.js";
-import {
-  upsertModifierKeyframe,
-  removeModifierKeyframe,
-} from "./scene-motion.js";
 
 function getDocument(engineOrDoc) {
   if (typeof engineOrDoc?.getDocument === "function") {
@@ -204,94 +200,3 @@ export function removeGridArrayModifier(engineOrDoc, modifierId, options = {}) {
   });
 }
 
-/**
- * Upserts a keyframe on a grid array modifier's spacing track (step.x, step.y, or step.z).
- */
-export function upsertGridArrayKeyframe(
-  engineOrDoc,
-  modifierId,
-  property,
-  frame,
-  options = {},
-) {
-  if (typeof modifierId !== "string" || !modifierId) {
-    throw new TypeError("modifierId must be a non-empty string");
-  }
-  const doc = getDocument(engineOrDoc);
-  validateAndNormalizeModifierCollection(doc.modifiers, doc.nodes);
-
-  const existing = doc.modifiers ?? [];
-  const index = existing.findIndex((m) => m.id === modifierId);
-  if (index === -1) {
-    throw new TypeError(`Modifier not found: "${modifierId}"`);
-  }
-
-  const current = existing[index];
-  const targetNode = doc.nodes.find((n) => n.id === current.targetId);
-  if (!targetNode) {
-    throw new TypeError(`Target node not found: "${current.targetId}"`);
-  }
-
-  const updatedMod = upsertModifierKeyframe(current, property, frame);
-  const normalized = normalizeGridArrayModifier(updatedMod, targetNode);
-
-  const candidateModifiers = [...existing];
-  candidateModifiers[index] = normalized;
-  validateAndNormalizeModifierCollection(candidateModifiers, doc.nodes);
-
-  const nextDoc = {
-    ...doc,
-    modifiers: candidateModifiers,
-  };
-
-  return commitDocument(engineOrDoc, nextDoc, {
-    commit: options.commit !== false,
-    name: options.name ?? "editor.history.entry.layer",
-  });
-}
-
-/**
- * Removes a keyframe from a grid array modifier's spacing track.
- */
-export function removeGridArrayKeyframe(
-  engineOrDoc,
-  modifierId,
-  property,
-  time,
-  options = {},
-) {
-  if (typeof modifierId !== "string" || !modifierId) {
-    throw new TypeError("modifierId must be a non-empty string");
-  }
-  const doc = getDocument(engineOrDoc);
-  validateAndNormalizeModifierCollection(doc.modifiers, doc.nodes);
-
-  const existing = doc.modifiers ?? [];
-  const index = existing.findIndex((m) => m.id === modifierId);
-  if (index === -1) {
-    throw new TypeError(`Modifier not found: "${modifierId}"`);
-  }
-
-  const current = existing[index];
-  const targetNode = doc.nodes.find((n) => n.id === current.targetId);
-  if (!targetNode) {
-    throw new TypeError(`Target node not found: "${current.targetId}"`);
-  }
-
-  const updatedMod = removeModifierKeyframe(current, property, time);
-  const normalized = normalizeGridArrayModifier(updatedMod, targetNode);
-
-  const candidateModifiers = [...existing];
-  candidateModifiers[index] = normalized;
-  validateAndNormalizeModifierCollection(candidateModifiers, doc.nodes);
-
-  const nextDoc = {
-    ...doc,
-    modifiers: candidateModifiers,
-  };
-
-  return commitDocument(engineOrDoc, nextDoc, {
-    commit: options.commit !== false,
-    name: options.name ?? "editor.history.entry.layer",
-  });
-}

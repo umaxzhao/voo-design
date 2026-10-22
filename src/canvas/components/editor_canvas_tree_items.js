@@ -69,16 +69,6 @@ export function buildVisibleTreeItems({
             parentId: row.node.parentId || null,
           });
         }
-        if (showBackgroundRow) {
-          items.push({
-            key: `background-${page.id}`,
-            domId: "layer-row-background",
-            type: "background",
-            canvasId: page.id,
-            depth: page.isFallback ? 0 : 1,
-            isActiveCanvas: true,
-          });
-        }
       } else {
         const collapsedForCanvas =
           collapsedGroupIdsByCanvas.get(page.id) ?? new Set();
@@ -107,6 +97,17 @@ export function buildVisibleTreeItems({
         }
       }
     }
+  }
+
+  if (showBackgroundRow) {
+    items.push({
+      key: "canvas-background",
+      domId: "layer-row-canvas-background",
+      type: "background",
+      canvasId: null,
+      depth: 0,
+      isActiveCanvas: true,
+    });
   }
 
   return items;

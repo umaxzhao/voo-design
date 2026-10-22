@@ -1,6 +1,7 @@
 // Shared streaming, image, and canvas-size helpers for layout actions.
 import { streamCodexCompletion } from "../components/agent-panel/codex_transport.js";
 import { DEFAULT_AGENT_MODEL } from "../../shared/agent-defaults.js";
+import { parseCliModelId } from "../../shared/providers/provider_cli.js";
 
 import { layoutCanvasSize } from "../layout_geometry.js";
 import { dataUrlToBlob, getImageBlobMap, putImage } from "./db.js";
@@ -50,8 +51,9 @@ export async function streamLayoutText({
   referenceImage,
   onChunk,
 }) {
-  // Codex model IDs use the native subscription connection on desktop.
-  const isCliModel = (model ?? DEFAULT_AGENT_MODEL).startsWith("codex:");
+  // CLI model IDs (claude:, codex:, antigravity:) use the native CLI bridge.
+  const { cliId } = parseCliModelId(model ?? DEFAULT_AGENT_MODEL);
+  const isCliModel = Boolean(cliId);
   const effectiveProviderId = isCliModel
     ? PROVIDER_ID.CLI
     : providerId || PROVIDER_ID.DEEPSEEK;

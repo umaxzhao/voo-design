@@ -4,8 +4,9 @@
  */
 
 import { useState, useRef } from "react";
-import { MotionFieldProvider } from "../editor_motion/motion-field-context.jsx";
 import BackgroundSection from "./background_section.jsx";
+import FrameSizeSection from "./frame_size_section.jsx";
+import { ColorRow, InspectorGroup } from "../inspector_primitives.jsx";
 import PenEditSection from "./pen_edit_section.jsx";
 import ToolPropertiesSection from "./tool_properties_section.jsx";
 import { usePropertyCommit } from "./use_property_commit.js";
@@ -27,11 +28,15 @@ export default function EditorProperties({
   object = null,
   parentLayout = null,
   colorVariableActions = null,
+  styleActions = null,
   index: _index = -1,
   docSize = null,
   isBackground = false,
   backgroundColor = "#262626",
   onSetBackgroundColor = null,
+  onSetDocumentSize = null,
+  framePosition = null,
+  onSetFramePosition = null,
   maskActions = null,
   transformActions = null,
   getBitmap = null,
@@ -129,8 +134,42 @@ export default function EditorProperties({
     control.title = control.getAttribute("aria-label");
   };
 
+  // Dedicated Tool Properties apply to raster brush / selection / crop / wand
+  // / region tools, shapes, and to the pen family.
+  const isDedicatedToolActive =
+    !penEditing &&
+    (tool === TOOL.MARQUEE ||
+      tool === TOOL.LASSO ||
+      tool === TOOL.WAND ||
+      tool === TOOL.REGION ||
+      tool === TOOL.BRUSH ||
+      tool === TOOL.ERASER ||
+      tool === TOOL.HEALING ||
+      tool === TOOL.BLUR ||
+      tool === TOOL.SHARPEN ||
+      tool === TOOL.SMUDGE ||
+      tool === TOOL.DODGE ||
+      tool === TOOL.BURN ||
+      tool === TOOL.SPONGE ||
+      tool === TOOL.DROPPER ||
+      tool === TOOL.CROP ||
+      tool === TOOL.PEN ||
+      tool === TOOL.CURVATURE_PEN ||
+      tool === TOOL.FREE_PEN ||
+      tool === TOOL.RECT ||
+      tool === TOOL.ELLIPSE ||
+      tool === TOOL.POLYGON ||
+      tool === TOOL.STAR ||
+      tool === TOOL.LINE ||
+      tool === TOOL.ARROW ||
+      tool === TOOL.FILL ||
+      tool === TOOL.GRADIENT ||
+      tool === TOOL.TEXT);
+
   const header = (
     <PropertiesPanelHeader
+      tool={tool}
+      isToolActive={isDedicatedToolActive}
       showMaskBtn={showMaskBtn}
       hasMask={hasMask}
       maskActions={maskActions}
@@ -156,48 +195,6 @@ export default function EditorProperties({
     />
   );
 
-  if (isBackground) {
-    return (
-      <aside
-        data-testid="editor-properties-panel"
-        className={dynamicPanelClass}
-        style={panelStyle}
-        onMouseOver={promoteTitleOnHover}
-      >
-        {header}
-        <div className={backgroundContentClass}>
-          <BackgroundSection
-            backgroundColor={backgroundColor}
-            onSetBackgroundColor={onSetBackgroundColor}
-          />
-        </div>
-      </aside>
-    );
-  }
-
-  // Dedicated Tool Properties apply to raster brush / selection / crop / wand
-  // / region tools, and to the pen family.
-  const isDedicatedToolActive =
-    !penEditing &&
-    (tool === TOOL.MARQUEE ||
-      tool === TOOL.LASSO ||
-      tool === TOOL.WAND ||
-      tool === TOOL.REGION ||
-      tool === TOOL.BRUSH ||
-      tool === TOOL.ERASER ||
-      tool === TOOL.HEALING ||
-      tool === TOOL.BLUR ||
-      tool === TOOL.SHARPEN ||
-      tool === TOOL.SMUDGE ||
-      tool === TOOL.DODGE ||
-      tool === TOOL.BURN ||
-      tool === TOOL.SPONGE ||
-      tool === TOOL.DROPPER ||
-      tool === TOOL.CROP ||
-      tool === TOOL.PEN ||
-      tool === TOOL.CURVATURE_PEN ||
-      tool === TOOL.FREE_PEN);
-
   if (isDedicatedToolActive && toolProps) {
     return (
       <aside
@@ -210,6 +207,43 @@ export default function EditorProperties({
         {header}
         <div className={contentClass}>
           <ToolPropertiesSection tool={tool} {...toolProps} />
+        </div>
+      </aside>
+    );
+  }
+
+  if (isBackground) {
+    return (
+      <aside
+        data-testid="editor-properties-panel"
+        className={dynamicPanelClass}
+        style={panelStyle}
+        onMouseOver={promoteTitleOnHover}
+      >
+        {header}
+        <div className={backgroundContentClass}>
+          {docSize && onSetDocumentSize && framePosition && onSetFramePosition && (
+            <InspectorGroup title={t("editor.frame.transform")}>
+              <FrameSizeSection
+                x={framePosition.x}
+                y={framePosition.y}
+                width={docSize.width}
+                height={docSize.height}
+                onSetPosition={onSetFramePosition}
+                onSetSize={onSetDocumentSize}
+              />
+            </InspectorGroup>
+          )}
+          <InspectorGroup title={t("editor.layer.canvasBackground") || t("editor.props.fill")}>
+            <div className="px-3 py-2">
+              <ColorRow
+                label={t("editor.layer.canvasBackground") || t("editor.props.fill")}
+                value={backgroundColor}
+                onChange={(next) => onSetBackgroundColor?.(next)}
+                onCommit={(next) => onSetBackgroundColor?.(next)}
+              />
+            </div>
+          </InspectorGroup>
         </div>
       </aside>
     );
@@ -271,16 +305,12 @@ export default function EditorProperties({
       {header}
       <div className={contentClass}>
         {maskToolbar}
-        <MotionFieldProvider
-          engine={engine}
-          enabled={motionOpen && selectionCount === 1}
-          nodeId={object.id}
-        >
           <PropertiesPanelSections
             object={object}
             engine={engine}
             parentLayout={parentLayout}
             colorVariableActions={colorVariableActions}
+            styleActions={styleActions}
             docSize={docSize}
             tool={tool}
             isWarpTool={isWarpTool}
@@ -306,7 +336,6 @@ export default function EditorProperties({
             mediaError={mediaError}
             t={t}
           />
-        </MotionFieldProvider>
       </div>
     </aside>
   );
