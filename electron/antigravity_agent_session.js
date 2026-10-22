@@ -8,26 +8,41 @@ import {
 
 const STDERR_TAIL_CHARS = 2000;
 
+export const ANTIGRAVITY_MODEL_ALIASES = Object.freeze({
+  "gemini-2.5-flash": "gemini-3.8-flash-high",
+  "gemini-2.5-pro": "gemini-3.8-flash-high",
+  "claude-3-7-sonnet": "claude-sonnet-4-6",
+});
+
 /**
  * Builds the argv for spawning Antigravity in headless sandboxed stream mode.
  */
 export function antigravityArgs({ model, effort } = {}) {
+  const resolvedModel = (model && ANTIGRAVITY_MODEL_ALIASES[model]) || model;
   return [
     "--sandbox",
     "--input-format",
     "stream-json",
     "--output-format",
     "stream-json",
-    ...(model ? ["--model", model] : []),
+    ...(resolvedModel ? ["--model", resolvedModel] : []),
     ...(effort !== undefined ? ["--effort", effort] : []),
   ];
 }
+
+export const AGENT_INSTRUCTIONS =
+  "You are VOO's primary design agent. Operate the live canvas exclusively through the voo MCP server: call list_tools to inspect the available tool schemas, then call_tool to execute them. Tool results are real execution receipts.";
 
 /**
  * Normalizes messages into the NDJSON user event that agy stream-json expects.
  */
 export function antigravityInput(messages) {
-  const content = [];
+  const content = [
+    {
+      type: "text",
+      text: `[system instruction]\n${AGENT_INSTRUCTIONS}`,
+    },
+  ];
   for (const message of messages ?? []) {
     if (message.role === "system") {
       content.push({
@@ -100,6 +115,13 @@ export function createAntigravityAgentSession({
     }
     if (event.event === "result") {
       const result = event.result;
+      if (result?.response) {
+        const currentLen = turn.appendText("");
+        if (currentLen === 0) {
+          turn.appendText(result.response);
+          onText?.(result.response, 0);
+        }
+      }
       finish(result?.status === "ERROR" ? result.error || "cli.failed" : null);
     }
   };

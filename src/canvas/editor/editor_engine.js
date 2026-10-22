@@ -4,7 +4,8 @@
  */
 
 import { createBitmapCache } from "./bitmap_cache.js";
-import { buildSpatialIndex } from "./viewport_culling.js";
+import { attachSpatialIndex, syncSpatialIndex } from "./viewport_culling.js";
+import { createLayerCache } from "./layer_cache.js";
 import {
   createEditorHost,
   createNullEditorHost,
@@ -297,15 +298,21 @@ export function createEditor({
   paintSourceAccessor = ctrl.paintTools.bitmapSourceOf;
   maskSourceAccessor = ctrl.maskTools.maskSourceOf;
 
+  const layerCache = createLayerCache();
   let cachedSpatialIndex = null;
   let cachedSpatialIndexDoc = null;
   function getSpatialIndex(currentDoc) {
     if (cachedSpatialIndex && cachedSpatialIndexDoc === currentDoc) {
       return cachedSpatialIndex;
     }
-    cachedSpatialIndex = buildSpatialIndex(currentDoc.nodes);
+    // The index is updated in place, so it no longer describes the previous
+    // document: detach it there before handing it to the new one.
+    if (cachedSpatialIndexDoc && cachedSpatialIndexDoc.spatialIndex === cachedSpatialIndex) {
+      attachSpatialIndex(cachedSpatialIndexDoc, null);
+    }
+    cachedSpatialIndex = syncSpatialIndex(cachedSpatialIndex, currentDoc.nodes);
     cachedSpatialIndexDoc = currentDoc;
-    currentDoc.spatialIndex = cachedSpatialIndex;
+    attachSpatialIndex(currentDoc, cachedSpatialIndex);
     return cachedSpatialIndex;
   }
 
@@ -361,6 +368,7 @@ export function createEditor({
       getEffectiveNode,
       mixedLayerMode,
       spatialIndex: getSpatialIndex(evaluatedDoc),
+      layerCache,
     });
     for (const listener of renderListeners) listener();
   }
@@ -485,6 +493,7 @@ export function createEditor({
     nodeAtPoint: (point, options = {}) =>
       ctrl.nodesController.nodeAtPoint(point, {
         zoom: viewportTools.getZoom(),
+        spatialIndex: getSpatialIndex(getDoc()),
         ...options,
       }),
     ...ctrl.toolsController,
@@ -781,6 +790,7 @@ export function createEditor({
     ctrl.paintTools.clear();
     ctrl.penTools.clear();
     cache.dispose();
+    layerCache.dispose();
     videoLayers.dispose();
     releaseAdjustmentRenderer();
   };

@@ -320,6 +320,7 @@ export function createWebCliBridge({
     },
     advance: (options) => invoke(CLI_BRIDGE_CHANNEL.ADVANCE, options),
     cancel: (options) => invoke(CLI_BRIDGE_CHANNEL.CANCEL, options),
+    runText: (cliId, options) => invoke(CLI_BRIDGE_CHANNEL.RUN_TEXT, cliId, options),
     checkAll: async () => {
       await open();
       return invoke(CLI_BRIDGE_CHANNEL.CHECK_ALL);

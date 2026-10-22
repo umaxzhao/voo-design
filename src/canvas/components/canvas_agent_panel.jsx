@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { ArrowUp, History, PanelLeft, Plus, X } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, History, PanelLeft, Plus, X } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
-import { getSetting } from "../../shared/settings.js";
+import { getSetting, setSetting } from "../../shared/settings.js";
+import { DEFAULT_AGENT_MODEL } from "../../shared/agent-defaults.js";
 import { runAgentTurn } from "../agent/canvas_agent.js";
 import {
   AGENT_DEFAULTS,
@@ -22,6 +23,62 @@ import {
 } from "../agent/session_history.js";
 import { VooBrandLogo } from "../../app_title_bar.jsx";
 import ToolCallCard from "./tool_call_card.jsx";
+
+/** Available CLI agent model groups for selection */
+export const CLI_MODEL_GROUPS = [
+  {
+    cliId: "claude",
+    name: "Claude Code",
+    models: [
+      { id: "claude:claude-opus-5-5", label: "Claude Opus 5.5" },
+      { id: "claude:sonnet", label: "Claude Sonnet" },
+      { id: "claude:haiku", label: "Claude Haiku" },
+      { id: "claude:opus", label: "Claude Opus" },
+      { id: "claude:best", label: "Claude Best" },
+      { id: "claude:default", label: "Claude Default" },
+    ],
+  },
+  {
+    cliId: "codex",
+    name: "Codex",
+    models: [
+      { id: "codex:gpt-6-astra", label: "GPT-6 Astra" },
+      { id: "codex:gpt-5.6-terra", label: "GPT-5.6 Terra" },
+      { id: "codex:gpt-5.6-sol", label: "GPT-5.6 Sol" },
+      { id: "codex:gpt-5.6-luna", label: "GPT-5.6 Luna" },
+    ],
+  },
+  {
+    cliId: "antigravity",
+    name: "Antigravity",
+    models: [
+      { id: "antigravity:gemini-3.8-flash-high", label: "Gemini 3.8 Flash (High)" },
+      { id: "antigravity:gemini-3.8-flash-medium", label: "Gemini 3.8 Flash (Medium)" },
+      { id: "antigravity:gemini-3.8-flash-low", label: "Gemini 3.8 Flash (Low)" },
+      { id: "antigravity:claude-sonnet-4-6", label: "Claude Sonnet 4.6 (Thinking)" },
+      { id: "antigravity:claude-opus-4-6-thinking", label: "Claude Opus 4.6 (Thinking)" },
+      { id: "antigravity:gpt-oss-120b-medium", label: "GPT-OSS 120B (Medium)" },
+    ],
+  },
+];
+
+export function getModelDisplayLabel(modelId) {
+  if (!modelId) return "Flash";
+  for (const group of CLI_MODEL_GROUPS) {
+    for (const m of group.models) {
+      if (m.id === modelId) {
+        return `${group.name} · ${m.label.replace(/^Claude\s+|Gemini\s+/, "")}`;
+      }
+    }
+  }
+  const parts = String(modelId).split(":");
+  if (parts.length >= 2) {
+    const cli = parts[0];
+    const rest = parts.slice(1).join(":");
+    return `${cli.charAt(0).toUpperCase() + cli.slice(1)} · ${rest}`;
+  }
+  return modelId;
+}
 
 /** Starter prompts shown on an empty conversation; each fills the composer. */
 const SUGGESTION_KEYS = [
@@ -67,6 +124,10 @@ export default function CanvasAgentPanel({ onClose }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(
+    () => getSetting(AGENT_SETTING.MODEL) || DEFAULT_AGENT_MODEL,
+  );
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [activeContext, setActiveContext] = useState(null);
   const historyRef = useRef([]);
   const sessionsRef = useRef(sessions);
@@ -96,6 +157,7 @@ export default function CanvasAgentPanel({ onClose }) {
     historyRef.current = session.history ?? [];
     setError(null);
     setHistoryOpen(false);
+    setModelMenuOpen(false);
   };
 
   const startNewSession = () => {
@@ -105,6 +167,13 @@ export default function CanvasAgentPanel({ onClose }) {
     historyRef.current = [];
     setError(null);
     setHistoryOpen(false);
+    setModelMenuOpen(false);
+  };
+
+  const handleSelectModel = (modelId) => {
+    setSetting(AGENT_SETTING.MODEL, modelId);
+    setSelectedModel(modelId);
+    setModelMenuOpen(false);
   };
 
   const removeSession = (sessionId) => {
@@ -152,7 +221,7 @@ export default function CanvasAgentPanel({ onClose }) {
             })]\n${text}`
           : text;
 
-        const model = getSetting(AGENT_SETTING.MODEL);
+        const model = selectedModel || getSetting(AGENT_SETTING.MODEL);
         const reply = await runAgentTurn({
           streamStep: isCliAgentModel(model) ? streamCliStep : streamChatTurn,
           config: {
@@ -190,7 +259,7 @@ export default function CanvasAgentPanel({ onClose }) {
         setBusy(false);
       }
     },
-    [busy, input, activeId, activeContext],
+    [busy, input, activeId, activeContext, selectedModel],
   );
 
   // Listen for Pen-style contextual island prompts and panel open events
@@ -232,7 +301,7 @@ export default function CanvasAgentPanel({ onClose }) {
 
   const isEmpty = transcript.length === 0 && !busy;
   const activeTitle = sessions.find((session) => session.id === activeId)?.title;
-  const modelName = getSetting(AGENT_SETTING.MODEL);
+  const currentModel = selectedModel || getSetting(AGENT_SETTING.MODEL);
 
   return (
     <section
@@ -249,15 +318,35 @@ export default function CanvasAgentPanel({ onClose }) {
         <h2 className="min-w-0 flex-1 truncate text-[12px] font-semibold text-neutral-100">
           {activeTitle || t("agent.history.untitled")}
         </h2>
-        {/* Pen App Model Status Pill */}
-        <div className="flex items-center gap-1.5 rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-neutral-300">
+        {/* Model Selector Pill */}
+        <button
+          type="button"
+          onClick={() => {
+            setModelMenuOpen((open) => !open);
+            setHistoryOpen(false);
+          }}
+          data-testid="agent-model-pill"
+          aria-label={t("agent.panel.selectModel")}
+          aria-expanded={modelMenuOpen}
+          aria-haspopup="true"
+          className="flex items-center gap-1.5 rounded-full bg-white/[0.06] px-2.5 py-1 text-[10px] text-neutral-300 transition-colors hover:bg-white/[0.12] focus:outline-none"
+        >
           <span className="size-1.5 rounded-full bg-[#a7ffd4] animate-pulse" aria-hidden="true" />
-          <span className="font-mono text-[9px] text-neutral-300 max-w-[80px] truncate">{modelName || "Flash"}</span>
-          <span className="text-[9px] text-[#a7ffd4] uppercase tracking-wider font-semibold">Active</span>
-        </div>
+          <span className="font-mono text-[9px] text-neutral-200 max-w-[100px] truncate font-medium">
+            {getModelDisplayLabel(currentModel)}
+          </span>
+          <ChevronDown
+            size={11}
+            className={`text-neutral-400 transition-transform ${modelMenuOpen ? "rotate-180" : ""}`}
+            aria-hidden="true"
+          />
+        </button>
         <HeaderButton
           label={t("agent.history.title")}
-          onClick={() => setHistoryOpen((value) => !value)}
+          onClick={() => {
+            setHistoryOpen((value) => !value);
+            setModelMenuOpen(false);
+          }}
           active={historyOpen}
           expanded={historyOpen}
         >
@@ -270,6 +359,51 @@ export default function CanvasAgentPanel({ onClose }) {
           <PanelLeft size={16} strokeWidth={1.5} aria-hidden="true" />
         </HeaderButton>
       </header>
+
+      {modelMenuOpen && (
+        <div
+          data-testid="agent-model-menu"
+          aria-label={t("agent.panel.selectModel")}
+          className="absolute inset-x-2 top-12 z-20 flex max-h-[70%] flex-col gap-2 overflow-y-auto rounded-2xl bg-[#171717] p-2.5 shadow-panel border border-white/10"
+        >
+          <div className="flex items-center justify-between px-2 py-1 text-[11px] font-semibold text-neutral-400 border-b border-white/[0.06]">
+            <span>{t("agent.panel.selectModel")}</span>
+            <button
+              type="button"
+              onClick={() => setModelMenuOpen(false)}
+              className="rounded-lg p-0.5 text-neutral-500 hover:text-white"
+              aria-label={t("agent.panel.collapse")}
+            >
+              <X size={12} />
+            </button>
+          </div>
+          {CLI_MODEL_GROUPS.map((group) => (
+            <div key={group.cliId} className="flex flex-col gap-0.5">
+              <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-mono uppercase tracking-wider text-neutral-400">
+                {group.name}
+              </div>
+              {group.models.map((m) => {
+                const isSelected = currentModel === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    data-testid={`model-option-${m.id}`}
+                    onClick={() => handleSelectModel(m.id)}
+                    aria-current={isSelected}
+                    className={`flex items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-[12px] transition-colors hover:bg-white/[0.08] ${
+                      isSelected ? "bg-[#E5B2FF]/15 text-[#eed0ff] font-medium" : "text-neutral-300"
+                    }`}
+                  >
+                    <span className="truncate">{m.label}</span>
+                    {isSelected && <Check size={13} className="text-[#E5B2FF] shrink-0 ml-2" />}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
 
       {historyOpen && (
         <ul
@@ -413,13 +547,19 @@ export default function CanvasAgentPanel({ onClose }) {
         />
         <div className="flex items-center gap-2 pt-2">
           <span className="min-w-0 flex-1" aria-hidden="true" />
-          {modelName && (
-            <span
-              title={modelName}
-              className="max-w-[140px] truncate rounded-lg px-2 py-1 text-[11px] text-neutral-400"
+          {currentModel && (
+            <button
+              type="button"
+              onClick={() => {
+                setModelMenuOpen((open) => !open);
+                setHistoryOpen(false);
+              }}
+              title={currentModel}
+              data-testid="agent-composer-model-pill"
+              className="max-w-[150px] truncate rounded-lg bg-white/[0.05] px-2 py-1 text-[11px] text-neutral-400 hover:bg-white/[0.1] hover:text-neutral-200 transition-colors"
             >
-              {modelName}
-            </span>
+              {getModelDisplayLabel(currentModel)}
+            </button>
           )}
           <button
             type="submit"

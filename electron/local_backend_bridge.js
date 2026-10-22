@@ -296,7 +296,11 @@ export function isAuthorizedSender(event) {
   const frameUrl = event?.senderFrame?.url || event?.sender?.getURL?.() || "";
   if (typeof frameUrl !== "string" || !frameUrl) return false;
   const devUrl = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
-  return frameUrl.startsWith("file://") || frameUrl.startsWith(devUrl);
+  return (
+    frameUrl.startsWith("file://") ||
+    frameUrl.startsWith(devUrl) ||
+    frameUrl.startsWith("http://127.0.0.1:5173")
+  );
 }
 
 const SAFE_MODEL_RE = /^[a-zA-Z0-9._-]+$/;
@@ -338,8 +342,77 @@ class ErrorCodeError extends Error {
 }
 
 /**
+ * Runs one Codex turn through `codex exec` in non-interactive JSON mode.
+ */
+export async function runCodexExec(bin, { prompt, model, cwd }) {
+  const args = [
+    "exec",
+    "--ephemeral",
+    "--skip-git-repo-check",
+    "-s",
+    "read-only",
+    "--json",
+    ...(model ? ["-m", model] : []),
+    prompt,
+  ];
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(bin, args, {
+      cwd,
+      stdio: ["pipe", "pipe", "pipe"],
+      env: { ...process.env, NO_COLOR: "1" },
+    });
+    // Immediately close stdin so codex exec does not block on stdin pipe
+    child.stdin.end();
+
+    let output = "";
+    let errorOutput = "";
+    child.stdout.on("data", (chunk) => {
+      output += String(chunk);
+    });
+    child.stderr.on("data", (chunk) => {
+      errorOutput += String(chunk);
+    });
+    child.on("error", (err) => reject(new ErrorCodeError("cli.notInstalled", err)));
+    child.on("close", (code) => {
+      if (code !== 0) {
+        return reject(
+          new ErrorCodeError(
+            "cli.failed",
+            errorOutput || `codex exited with code ${code}`,
+          ),
+        );
+      }
+      let text = "";
+      for (const line of output.split("\n")) {
+        if (!line.trim()) continue;
+        try {
+          const frame = JSON.parse(line);
+          if (
+            frame.type === "item.completed" &&
+            frame.item?.type === "agent_message" &&
+            frame.item.text
+          ) {
+            text += frame.item.text;
+          }
+        } catch {}
+      }
+      if (!text.trim()) {
+        if (output.trim()) {
+          resolve(output.trim());
+        } else {
+          reject(new ErrorCodeError("cli.noOutput", errorOutput));
+        }
+      } else {
+        resolve(text);
+      }
+    });
+  });
+}
+
+/**
  * Runs one Codex turn through `codex mcp-server` over stdio and returns its text.
- * Codex is the server and VOO the client; the child is killed when the turn ends.
+ * Falls back to `codex exec` if MCP initialize times out or is unsupported.
  *
  * @returns {Promise<string>} the assistant's text answer.
  */
@@ -354,7 +427,11 @@ export async function runCodexMcpSession(bin, { prompt, model, cwd }) {
   });
 
   const client = createMcpClient({
-    write: (line) => child.stdin.write(line + "\n"),
+    write: (line) => {
+      try {
+        child.stdin.write(line + "\n");
+      } catch {}
+    },
     onEvent: () => {},
   });
 
@@ -365,6 +442,10 @@ export async function runCodexMcpSession(bin, { prompt, model, cwd }) {
   let errorOutput = "";
   child.stderr.on("data", (chunk) => {
     errorOutput += String(chunk);
+  });
+
+  child.on("close", () => {
+    client.close();
   });
 
   const spawnError = new Promise((_resolve, reject) => {
@@ -379,16 +460,26 @@ export async function runCodexMcpSession(bin, { prompt, model, cwd }) {
       new Promise((resolve) => child.once("spawn", resolve)),
     ]);
 
-    await client.call("initialize", {
-      protocolVersion: "2024-11-05",
-      capabilities: {},
-      clientInfo: { name: "voo", version: "1" },
-    });
+    await client.call(
+      "initialize",
+      {
+        protocolVersion: "2024-11-05",
+        capabilities: {},
+        clientInfo: { name: "voo", version: "1" },
+      },
+      undefined,
+      2000,
+    );
 
-    const result = await client.call("tools/call", {
-      name: "codex",
-      arguments: codexSessionArgs({ prompt, cwd, model }),
-    });
+    const result = await client.call(
+      "tools/call",
+      {
+        name: "codex",
+        arguments: codexSessionArgs({ prompt, cwd, model }),
+      },
+      undefined,
+      15000,
+    );
 
     const text = textFromToolResult(result);
     if (!text) {
@@ -396,11 +487,9 @@ export async function runCodexMcpSession(bin, { prompt, model, cwd }) {
     }
     return text;
   } catch (error) {
-    if (error?.code) throw error;
-    throw new ErrorCodeError(
-      "cli.failed",
-      String(error?.message || error || errorOutput),
-    );
+    if (error?.code === "cli.notInstalled") throw error;
+    // Fall back to direct codex exec execution when MCP server is unsupported or timed out
+    return await runCodexExec(bin, { prompt, model, cwd });
   } finally {
     client.close();
     try {

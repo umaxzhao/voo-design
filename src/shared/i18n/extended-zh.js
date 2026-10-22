@@ -1864,6 +1864,7 @@ export default {
   "agent.panel.notConfigured": "请先在设置中配置 Agent 的 API Key、Base URL 和模型。",
   "agent.panel.failed": "Agent 未能完成本次请求。",
   "agent.panel.close": "关闭",
+  "agent.panel.selectModel": "切换 CLI 助手与模型",
   "agent.tool.generateVideo.inTimeline": "视频已加入当前时间线",
   "agent.tool.runBatch.call": "运行{count}个节点…",
   "agent.tool.runBatch.pending": "等待确认以运行{count}个节点",

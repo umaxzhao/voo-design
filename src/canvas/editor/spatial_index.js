@@ -81,6 +81,28 @@ function contains(box, point, tolerance = 0) {
   );
 }
 
+function boxHint(item) {
+  const { minX, minY, maxX, maxY } = item;
+  if (
+    !Number.isFinite(minX) ||
+    !Number.isFinite(minY) ||
+    !Number.isFinite(maxX) ||
+    !Number.isFinite(maxY)
+  ) {
+    return null;
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+function containsBox(outer, inner) {
+  return (
+    outer.minX <= inner.minX &&
+    outer.minY <= inner.minY &&
+    outer.maxX >= inner.maxX &&
+    outer.maxY >= inner.maxY
+  );
+}
+
 function calcNodeBBox(node) {
   let minX = Infinity;
   let minY = Infinity;
@@ -174,13 +196,16 @@ export class SpatialIndex {
   /**
    * Inserts an item into the R-Tree.
    * @param {{ id: string, minX: number, minY: number, maxX: number, maxY: number, node?: any }} rawItem
+   * @returns {object | null} The stored item; passing it back to `remove`
+   *   lets the removal descend only into branches whose box contains it.
    */
   insert(rawItem) {
     const item = normalizeItem(rawItem);
-    if (!item) return;
+    if (!item) return null;
 
     this._insert(item);
     this._size += 1;
+    return item;
   }
 
   _insert(item) {
@@ -341,7 +366,13 @@ export class SpatialIndex {
     const targetId = typeof item === "string" ? item : item.id;
     if (targetId == null) return false;
 
-    const removed = this._remove(this.data, targetId, item);
+    const hint = typeof item === "object" ? boxHint(item) : null;
+    // A box hint skips every branch that cannot hold the item; a stale hint
+    // (the caller's box no longer matches the stored one) falls back to a
+    // full walk, so removal never misses.
+    const removed =
+      (hint && this._remove(this.data, targetId, item, hint)) ||
+      this._remove(this.data, targetId, item, null);
     if (removed) {
       this._size -= 1;
       // Condense root if it only has 1 non-leaf child
@@ -352,7 +383,8 @@ export class SpatialIndex {
     return removed;
   }
 
-  _remove(node, targetId, rawItem) {
+  _remove(node, targetId, rawItem, hint) {
+    if (hint && !containsBox(node, hint)) return false;
     if (node.leaf) {
       const idx = node.children.findIndex(
         (child) => child.id === targetId || child === rawItem,
@@ -368,7 +400,7 @@ export class SpatialIndex {
     // Target may be in any child whose bbox might contain it
     for (let i = 0; i < node.children.length; i += 1) {
       const child = node.children[i];
-      if (this._remove(child, targetId, rawItem)) {
+      if (this._remove(child, targetId, rawItem, hint)) {
         if (child.children.length === 0) {
           node.children.splice(i, 1);
           i -= 1;

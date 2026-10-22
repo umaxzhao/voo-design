@@ -9,6 +9,7 @@ import {
 } from "./scene_model.js";
 import { nodeAABB } from "./scene_geometry_bounds.js";
 import {
+  cullMarginWorld,
   cullableNodeIds,
   isBoxOffscreen,
   nodeVisualAABB,
@@ -114,6 +115,8 @@ export function draw(
     // Skip off-screen nodes. Only the on-screen stage asks for it: exports and
     // mask sources paint the whole page and must not lose any node.
     cullOffscreen = false,
+    // Stage-only too: exports must paint every node exactly, never a blit.
+    layerCache = null,
   },
 ) {
   // The camera metadata rides even when no GL renderer was found: the CPU
@@ -162,7 +165,12 @@ export function draw(
 
   const culledIds = cullOffscreen ? cullableNodeIds(doc) : null;
   const visibleRect = culledIds
-    ? visibleWorldRect(viewport, canvas.width / dpr, canvas.height / dpr)
+    ? visibleWorldRect(
+        viewport,
+        canvas.width / dpr,
+        canvas.height / dpr,
+        cullMarginWorld(doc, viewport.zoom, dpr),
+      )
     : null;
   const activeSpatialIndex =
     cullOffscreen ? (spatialIndex ?? doc.spatialIndex ?? doc._spatialIndex ?? null) : null;
@@ -170,6 +178,8 @@ export function draw(
     activeSpatialIndex && visibleRect
       ? visibleNodeIds(doc, visibleRect, activeSpatialIndex)
       : null;
+  const stageCache = cullOffscreen ? layerCache : null;
+  stageCache?.beginFrame(ctx);
 
   for (let i = 0; i < doc.nodes.length; i += 1) {
     const node = doc.nodes[i];
@@ -191,6 +201,9 @@ export function draw(
       isInsideBooleanGroup(doc, node)
     )
       continue;
+    // A mask base only clips the layers above it (Figma masks): it paints nothing
+    // itself, and its shape becomes the alpha of its clipping chain below.
+    if (node.maskBase) continue;
     // A clipped layer is painted as part of its clipping chain: the chain is
     // collected below and drawn in one pass, so the loop skips every member.
     if (node.clipTo) {
@@ -229,7 +242,7 @@ export function draw(
       });
       continue;
     }
-    drawNode(ctx, node, bitmapOf, maskOf, gpu, bypassAdjustments, {
+    const renderState = {
       docVersion,
       // Nodes are painted bottom-up. The revision plus their position makes a
       // custom blend tile depend on exactly the backdrop generation beneath it.
@@ -237,7 +250,10 @@ export function draw(
       outputKey: `${canvas.width}x${canvas.height}|${fullResolution ? 1 : 0}`,
       selectionTransform: selectionTransformBox,
       videoFrameOf,
-    });
+    };
+    const paintNode = (target) =>
+      drawNode(target, node, bitmapOf, maskOf, gpu, bypassAdjustments, renderState);
+    if (!stageCache?.paint(ctx, node, paintNode)) paintNode(ctx);
   }
 
   if (penDraft || penEdit) {

@@ -12,6 +12,10 @@ import {
   beginCustomBlendInteraction,
   endCustomBlendInteraction,
 } from "./render_custom_blend.js";
+import {
+  beginLayerCacheInteraction,
+  endLayerCacheInteraction,
+} from "./layer_cache.js";
 
 /** Below this a side's insets are ignored: overlap, not a sliver fit. */
 const MIN_FIT_SPAN = 160;
@@ -39,9 +43,11 @@ export function createViewport({
   function setViewport(next) {
     viewport = next;
     beginCustomBlendInteraction();
+    beginLayerCacheInteraction();
     clearTimeout(settleTimer);
     settleTimer = setTimeout(() => {
       endCustomBlendInteraction();
+      endLayerCacheInteraction();
       requestRender();
     }, VIEW_SETTLE_MS);
     requestRender();

@@ -31,6 +31,7 @@ export const CLI_BRIDGE_CHANNEL = Object.freeze({
   ADVANCE: "voo:codex-advance",
   CANCEL: "voo:codex-cancel",
   CHECK_ALL: "voo:cli-check-all",
+  RUN_TEXT: "voo:cli-run-text",
 });
 
 /** Events the bridge pushes without being asked. */

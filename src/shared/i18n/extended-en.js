@@ -1937,6 +1937,7 @@ export default {
   "agent.panel.notConfigured": "Set the agent API key, base URL and model in settings first.",
   "agent.panel.failed": "The agent could not finish this request.",
   "agent.panel.close": "Close",
+  "agent.panel.selectModel": "Select CLI Agent & Model",
   "agent.tool.generateVideo.inTimeline": "Video added to the open timeline",
   "agent.tool.runBatch.call": "Run {count} nodes…",
   "agent.tool.runBatch.pending": "Run {count} nodes after confirmation",

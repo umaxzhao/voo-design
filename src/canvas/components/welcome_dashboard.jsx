@@ -37,6 +37,7 @@ import {
   deletePermanently,
   emptyTrash,
 } from "../store/recent_files.js";
+import { folderOfFile, setFileFolder } from "../store/file_folders.js";
 import { createDocument, CANVAS_TYPE } from "../editor/scene_doc_factory.js";
 import { encodeVooBinary } from "../store/voo_binary.js";
 import { useI18n } from "../use_i18n.js";
@@ -136,6 +137,7 @@ export default function WelcomeDashboard() {
   // Navigation tabs: "recents" | "drafts" | "starred" | "trash" | "design-systems" | "shortcuts"
   const [activeTab, setActiveTab] = useState("recents");
   const [folders, setFolders] = useState([]);
+  const [activeFolder, setActiveFolder] = useState(null);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [folderError, setFolderError] = useState("");
@@ -261,6 +263,11 @@ export default function WelcomeDashboard() {
         }
       }
 
+      // A project folder shows only the files moved into it.
+      if (activeFolder) {
+        files = (files || []).filter((file) => folderOfFile(file.id) === activeFolder);
+      }
+
       // Sort merged list
       if (files && files.length > 0) {
         files.sort((a, b) => {
@@ -290,7 +297,7 @@ export default function WelcomeDashboard() {
         setFileList(getTrashFiles(options));
       }
     }
-  }, [activeTab, searchQuery, sortBy]);
+  }, [activeTab, searchQuery, sortBy, activeFolder]);
 
   // Initial load and subscriptions to workspace changes
   useEffect(() => {
@@ -597,6 +604,12 @@ export default function WelcomeDashboard() {
     setActiveMenuId(null);
   };
 
+  const handleMoveToFolder = async (e, id, folderName) => {
+    e?.stopPropagation?.();
+    setFileFolder(id, folderName);
+    await reloadFiles();
+  };
+
   const handleStartRename = (e, item) => {
     e.stopPropagation();
     setRenameItem(item);
@@ -812,7 +825,10 @@ export default function WelcomeDashboard() {
           <div className="space-y-0.5">
             <button
               type="button"
-              onClick={() => setActiveTab("recents")}
+              onClick={() => {
+                setActiveFolder(null);
+                setActiveTab("recents");
+              }}
               className={`w-full flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
                 activeTab === "recents"
                   ? "bg-neutral-800/90 text-white"
@@ -908,14 +924,23 @@ export default function WelcomeDashboard() {
             )}
 
             {folders.map((folder) => (
-              <div
+              <button
                 key={folder.id}
+                type="button"
                 data-testid="sidebar-folder"
-                className="flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium text-neutral-400"
+                onClick={() => {
+                  setActiveFolder(folder.name);
+                  setActiveTab("recents");
+                }}
+                className={`w-full flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+                  activeFolder === folder.name
+                    ? "bg-neutral-800/90 text-white"
+                    : "text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200"
+                }`}
               >
                 <FolderOpen size={14} className="shrink-0 text-neutral-400" />
                 <span className="truncate">{folder.name}</span>
-              </div>
+              </button>
             ))}
           </div>
 
@@ -1548,6 +1573,17 @@ export default function WelcomeDashboard() {
                                 <Star size={12} className={item.starred ? "text-neutral-100 fill-neutral-100" : "text-neutral-400"} />
                                 <span>{item.starred ? t("welcome.actions.unstar") : t("welcome.actions.star")}</span>
                               </button>
+                              {folders.map((folder) => (
+                                <button
+                                  key={folder.id}
+                                  type="button"
+                                  onClick={(e) => handleMoveToFolder(e, item.id, folder.name)}
+                                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 cursor-pointer"
+                                >
+                                  <FolderOpen size={12} className="text-neutral-400" />
+                                  <span>{`${t("welcome.folders.moveTo")} ${folder.name}`}</span>
+                                </button>
+                              ))}
                               <button
                                 type="button"
                                 onClick={(e) => handleStartRename(e, item)}
@@ -1742,6 +1778,17 @@ export default function WelcomeDashboard() {
                             <Star size={12} className={item.starred ? "text-neutral-100 fill-neutral-100" : "text-neutral-400"} />
                             <span>{item.starred ? t("welcome.actions.unstar") : t("welcome.actions.star")}</span>
                           </button>
+                            {folders.map((folder) => (
+                              <button
+                                key={folder.id}
+                                type="button"
+                                onClick={(e) => handleMoveToFolder(e, item.id, folder.name)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 cursor-pointer"
+                              >
+                                <FolderOpen size={12} className="text-neutral-400" />
+                                <span>{`${t("welcome.folders.moveTo")} ${folder.name}`}</span>
+                              </button>
+                            ))}
                           <button
                             type="button"
                             onClick={(e) => handleStartRename(e, item)}

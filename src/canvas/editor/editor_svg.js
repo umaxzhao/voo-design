@@ -329,7 +329,9 @@ export function nodesToSvg(
     resolveCanvas = null,
   } = {},
 ) {
-  const list = Array.isArray(nodes) ? nodes : [nodes].filter(Boolean);
+  // A Figma mask base only clips layers on the canvas; SVG has no clip chain here,
+  // so the base is left out rather than painted as a visible shape.
+  const list = (Array.isArray(nodes) ? nodes : [nodes].filter(Boolean)).filter((node) => !node.maskBase);
   if (list.length === 0) return "";
 
   let minX = Infinity;

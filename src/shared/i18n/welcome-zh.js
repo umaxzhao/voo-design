@@ -41,6 +41,7 @@ export default {
   "welcome.community.sortNewest": "最新发布",
   "welcome.community.sortCurated": "官方精选",
   "welcome.community.copiedSuccess": "已成功复制模板至工作区！",
+  "welcome.folders.moveTo": "移到",
   "welcome.folders.title": "项目",
   "welcome.folders.new": "新建文件夹",
   "welcome.folders.placeholder": "文件夹名称",

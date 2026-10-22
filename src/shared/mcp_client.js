@@ -92,13 +92,30 @@ export function createMcpClient({ write, onEvent }) {
       }
     },
 
-    call(method, params = {}, idOverride) {
-      const id = idOverride ?? nextId++;
+    call(method, params = {}, idOverride, timeoutMs = 2500) {
+      const id = typeof idOverride === "number" ? idOverride : nextId++;
       return new Promise((resolve, reject) => {
-        pending.set(id, { resolve, reject });
+        let timer = null;
+        if (timeoutMs > 0) {
+          timer = setTimeout(() => {
+            pending.delete(id);
+            reject(new Error("mcp.timeout"));
+          }, timeoutMs);
+        }
+        pending.set(id, {
+          resolve: (val) => {
+            if (timer) clearTimeout(timer);
+            resolve(val);
+          },
+          reject: (err) => {
+            if (timer) clearTimeout(timer);
+            reject(err);
+          },
+        });
         try {
           write(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
         } catch (error) {
+          if (timer) clearTimeout(timer);
           pending.delete(id);
           reject(error);
         }

@@ -60,6 +60,7 @@ export function renderEngineStage({
   videoFrameOf = null,
   mixedLayerMode = false,
   spatialIndex = null,
+  layerCache = null,
 }) {
   const dpr = draftRender ? 1 : window.devicePixelRatio || 1;
   const width = stageWidth || stage.clientWidth;
@@ -133,6 +134,7 @@ export function renderEngineStage({
     dpr,
     cullOffscreen: true,
     spatialIndex,
+    layerCache,
     pageBackground: !mixedLayerMode,
     paintNodeIds: mixedLayerMode ? new Set() : null,
     selectionRect: selRect,

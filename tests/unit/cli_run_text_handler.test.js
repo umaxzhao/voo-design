@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import os from "node:os";
-import { registerLocalCliIpc, validateCwd } from "../../electron/local_backend_bridge.js";
+import {
+  registerLocalCliIpc,
+  validateCwd,
+  runCodexExec,
+  runCodexMcpSession,
+} from "../../electron/local_backend_bridge.js";
 
 /** Captures ipcMain.handle registrations so a handler can be called directly. */
 function fakeIpcMain() {
@@ -63,5 +68,17 @@ describe("voo:cli-run-text handler", () => {
     const res = await register()({}, "codex", { prompt: "hi", model: "gpt;rm" });
     expect(res.ok).toBe(false);
     expect(["cli.invalidModel", "cli.notInstalled"]).toContain(res.code);
+  });
+
+  it("handles non-existent binary gracefully in runCodexExec", async () => {
+    await expect(
+      runCodexExec("/non/existent/bin", { prompt: "hi", cwd: process.cwd() }),
+    ).rejects.toThrow();
+  });
+
+  it("handles non-existent binary gracefully in runCodexMcpSession", async () => {
+    await expect(
+      runCodexMcpSession("/non/existent/bin", { prompt: "hi", cwd: process.cwd() }),
+    ).rejects.toThrow();
   });
 });

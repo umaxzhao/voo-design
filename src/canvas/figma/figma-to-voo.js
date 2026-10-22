@@ -22,6 +22,7 @@ import {
   createRectNode,
 } from "../editor/scene_model_node_builders.js";
 import { createGroupNode } from "../editor/scene_model_groups.js";
+import { NODE_KIND } from "../editor/scene_model_core.js";
 import { createTextNode } from "../editor/scene_model_text_effects.js";
 import { imageBytesToDataUrl, parseFigFile } from "./fig-file.js";
 import { isFigContainer, parseFigContainer } from "./fig-kiwi.js";
@@ -29,6 +30,7 @@ import { extractFigZip } from "./fig-zip-reader.js";
 import { penNodeFromPathText, vectorToPenNode } from "./figma-path-nodes.js";
 import { textOutlinePath } from "./figma-glyph-outline.js";
 import { textStyleOf } from "./figma-text.js";
+import { formatGradient } from "../color_picker/gradient_fill.js";
 import { blendModeOf, effectsOf, paintBlendOf } from "./figma-effects.js";
 import { expandInstances } from "./figma-instances.js";
 import { BUNDLED_FONTS } from "../editor/font_loader.js";
@@ -110,6 +112,67 @@ function solidPaintHex(paints) {
     const alpha = asNumber(color.a, 1) * asNumber(paint.opacity, 1);
     const rgb = `#${channelHex(asNumber(color.r))}${channelHex(asNumber(color.g))}${channelHex(asNumber(color.b))}`;
     return alpha >= 0.999 ? rgb : `${rgb}${channelHex(alpha)}`;
+  }
+  return null;
+}
+
+/** Figma gradient paint types the editor can draw, mapped to the editor gradient kind. */
+const GRADIENT_KINDS = Object.freeze({
+  GRADIENT_LINEAR: "linear",
+  GRADIENT_RADIAL: "radial",
+  GRADIENT_ANGULAR: "angular",
+  GRADIENT_DIAMOND: "diamond",
+});
+
+/** Converts one gradient stop; stops without a colour are dropped. */
+function gradientStopOf(stop) {
+  const color = asObject(stop?.color);
+  if (!color) return null;
+  const rgb = `#${channelHex(asNumber(color.r))}${channelHex(asNumber(color.g))}${channelHex(asNumber(color.b))}`;
+  return {
+    color: rgb,
+    opacity: asNumber(color.a, 1) * 100,
+    position: asNumber(stop.position) * 100,
+  };
+}
+
+/**
+ * The editor CSS gradient for the first visible gradient paint, or null.
+ *
+ * Figma places a gradient with a transform from its unit space to the node box;
+ * the gradient axis runs from (0, 0.5) to (1, 0.5) in that space. Linear
+ * gradients keep that axis as their start and end points (percent of the box),
+ * so the editor draws the same direction the designer set.
+ */
+function gradientPaintFill(paints) {
+  for (const entry of asArray(paints)) {
+    const paint = asObject(entry);
+    if (!paint || paint.visible === false) continue;
+    const kind = GRADIENT_KINDS[paint.type];
+    if (!kind) continue;
+    // Decoded paints carry the stops as `stops`; older exports name them `gradientStops`.
+    const stops = asArray(paint.stops ?? paint.gradientStops).map(gradientStopOf).filter(Boolean);
+    if (stops.length < 2) continue;
+    const matrix = asObject(paint.transform) ?? {};
+    const m = (key, fallback) => asNumber(matrix[key], fallback);
+    if (kind === "linear") {
+      const geometry = {
+        centerX: 50,
+        centerY: 50,
+        startX: (m("m02", 0) + m("m01", 0) * 0.5) * 100,
+        startY: (m("m12", 0) + m("m11", 1) * 0.5) * 100,
+        endX: (m("m00", 1) + m("m01", 0) * 0.5 + m("m02", 0)) * 100,
+        endY: (m("m10", 0) + m("m11", 1) * 0.5 + m("m12", 0)) * 100,
+      };
+      return formatGradient("linear", "90deg", stops, geometry);
+    }
+    const geometry = {
+      centerX: (m("m02", 0) + (m("m00", 1) + m("m01", 0)) / 2) * 100,
+      centerY: (m("m12", 0) + (m("m10", 0) + m("m11", 1)) / 2) * 100,
+      width: 100,
+      height: 100,
+    };
+    return formatGradient(kind, "0deg", stops, geometry);
   }
   return null;
 }
@@ -260,7 +323,7 @@ function buildLeaf(node, box, ctx) {
     note(ctx, `approximated:${node.type}`);
   }
 
-  const fill = solidPaintHex(fills) ?? "transparent";
+  const fill = solidPaintHex(fills) ?? gradientPaintFill(fills) ?? "transparent";
   const strokeColor = solidPaintHex(strokes);
   const stroke = strokeColor ?? "transparent";
   const strokeWidth = strokeColor && asNumber(node.raw.strokeWeight) > 0 ? asNumber(node.raw.strokeWeight) : 0;
@@ -319,6 +382,43 @@ function isFrameContainer(type) {
  * and full multi-level container nesting. `originX/Y` is the coordinate origin
  * of the node's parent space; `parentId` links to a parent Frame or Group.
  */
+/**
+ * A Figma mask is a node flagged `mask: true`. Only leaf shapes mask: a frame's
+ * `maskType` is a clip of its own children, which the editor already does with
+ * `clipContent`.
+ */
+function isMaskLeaf(node) {
+  return node.raw.mask === true && !CONTAINER_TYPES.has(node.type);
+}
+
+/**
+ * Emits a container's children in stacking order. A Figma mask clips the
+ * siblings above it (up to the next mask), and the editor's `clipTo` needs its
+ * clip base below the layers it clips, which is the order Figma already gives.
+ * Each covered sibling therefore points `clipTo` at the mask.
+ */
+function emitChildren(children, originX, originY, parentId, out, ctx) {
+  let activeMask = null;
+  for (const child of children) {
+    if (isMaskLeaf(child)) {
+      const before = out.length;
+      emitNode(child, originX, originY, parentId, out, ctx);
+      activeMask = out[before] ?? null;
+      if (activeMask) {
+        activeMask.maskBase = true;
+        note(ctx, "mask-applied");
+      }
+      continue;
+    }
+    const before = out.length;
+    emitNode(child, originX, originY, parentId, out, ctx);
+    if (!activeMask) continue;
+    for (const emitted of out.slice(before)) {
+      if (emitted.kind !== NODE_KIND.GROUP) emitted.clipTo = activeMask.id;
+    }
+  }
+}
+
 function emitNode(node, originX, originY, parentId, out, ctx) {
   const absX = originX + node.x;
   const absY = originY + node.y;
@@ -349,9 +449,7 @@ function emitNode(node, originX, originY, parentId, out, ctx) {
         });
       }
     }
-    for (const child of node.children) {
-      emitNode(child, childOriginX, childOriginY, group.id, out, ctx);
-    }
+    emitChildren(node.children, childOriginX, childOriginY, group.id, out, ctx);
     return;
   }
 

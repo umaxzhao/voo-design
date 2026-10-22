@@ -41,6 +41,7 @@ export default {
   "welcome.community.sortNewest": "Newest",
   "welcome.community.sortCurated": "Curated",
   "welcome.community.copiedSuccess": "Template copied to workspace!",
+  "welcome.folders.moveTo": "Move to",
   "welcome.folders.title": "Projects",
   "welcome.folders.new": "New folder",
   "welcome.folders.placeholder": "Folder name",
