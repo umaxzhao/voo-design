@@ -41,10 +41,10 @@ VOO Design Canvas Engine delivers an ultra-high performance, 60 FPS vector and r
 | 8 | Local AABB Neighborhood Snapping | Constrain alignment and guide searches in `scene_snapping.js` to spatial neighborhood box | M2 | Survey R2 |
 | 9 | Local Equidistant Gap Pairing | Reduce equidistant gap candidate discovery from $O(N^2)$ to $O(K^2)$ using local sibling box | M2 | Survey R2 |
 | 10 | Batch Multi-Node Move Updates | Provide batched update (`api.updateNodes`) in `editor_pointer_move.js` avoiding repeated clone | M2 | Survey R2 |
-| 11 | Byte-Budgeted LRU Bitmap Cache | Add byte tracking (`maxBytes: 256MB`) and evict oldest unpinned images in `bitmap_cache.js` | M3 | Survey R3 |
-| 12 | WebGL Texture Deallocation Hook | Wire `onEvict` callback in `createBitmapCache` to call `glAdjustments.release` and pyramid cleanup | M3 | Survey R3 |
-| 13 | Incremental History Image Pinning | Replace 50-snapshot `JSON.parse` pin refresh with active-document / ref-counted image pinning | M3 | Survey R3 |
-| 14 | Structural Sharing in Undo History | Store in-memory document snapshots with structural sharing, eliminating deep JSON stringify overhead | M3 | Survey R3 |
+| 11 | Byte-Budgeted LRU Bitmap Cache | Add byte tracking (`maxBytes: 256MB`) and evict oldest unpinned images in `bitmap_cache.js` | M3 | DONE |
+| 12 | WebGL Texture Deallocation Hook | Wire `onEvict` callback in `createBitmapCache` to call `glAdjustments.release` and pyramid cleanup | M3 | DONE |
+| 13 | Incremental History Image Pinning | Replace 50-snapshot `JSON.parse` pin refresh with active-document / ref-counted image pinning | M3 | DONE |
+| 14 | Structural Sharing in Undo History | Store in-memory document snapshots with structural sharing, eliminating deep JSON stringify overhead | M3 | DONE |
 | 15 | Design Token Compliance Fix | Fix 3 `shadow-sm` violations in `src/canvas/components/editor_toolbar.jsx` to use `shadow-pop` | M4 | Survey R4 |
 | 16 | Flaky Test Race Condition Fix | Eliminate millisecond timestamp race in `tests/unit/adversarial_welcome_dashboard_challenge.test.js` | M4 | Survey R4 |
 | 17 | Specialized Performance Test Suite | Add automated tests for 1,000+ node culling, neighborhood snapping, and LRU eviction | M4 | Survey R4 |
@@ -57,7 +57,7 @@ VOO Design Canvas Engine delivers an ultra-high performance, 60 FPS vector and r
 |---|------|-------|-------------|--------|
 | M1 | Viewport Culling & Layer Caching Engine | Features 1–5: Visual bounds (`nodeVisualAABB`), SpatialIndex integration in `chrome_draw.js`, and `layer_cache.js` | none | IN_PROGRESS |
 | M2 | Gesture & Snapping Optimization | Features 6–10: rAF pointer move throttling, Local AABB neighborhood snapping query in `scene_snapping.js`, batch node updates | M1 | PLANNED |
-| M3 | Memory, Texture & Undo/Redo Management | Features 11–14: Byte-budgeted LRU cache, WebGL texture cleanup on eviction, ref-counted pinning, structural sharing undo | M1 | PLANNED |
+| M3 | Memory, Texture & Undo/Redo Management | Features 11–14: Byte-budgeted LRU cache, WebGL texture cleanup on eviction, ref-counted pinning, structural sharing undo | M1 | DONE |
 | M4 | Verification, Quality Gate & Production Deployment | Features 15–20: Toolbar design token fix, test race fix, performance tests, 100% test pass, build, deploy to `la`, HTTP 200 | M1, M2, M3 | PLANNED |
 
 ## Interface Contracts

@@ -111,7 +111,7 @@ export function createEditor({
   let mixedLayerMode = false;
   const renderListeners = new Set();
 
-  const history = createHistory(100);
+  const history = createHistory();
   const selection = createSelection({
     onChange: (ids) => {
       history.updateCurrentSelection(ids);
@@ -120,6 +120,7 @@ export function createEditor({
   const glAdjustments = acquireAdjustmentRenderer();
   const cache = createBitmapCache({
     onEvict: (image) => {
+      releaseImagePyramid(image, glAdjustments);
       glAdjustments?.release?.(image);
     },
   });

@@ -33,9 +33,36 @@ export function createHistory({
   let muted = false;
   let gestureTransaction = null;
 
+  function snapshotsMatch(a, b) {
+    if (a === b) return true;
+    if (!a || !b || typeof a !== "object" || typeof b !== "object") {
+      return false;
+    }
+    if (a.doc !== b.doc) return false;
+    const aIds = a.selectedIds;
+    const bIds = b.selectedIds;
+    if (aIds !== bIds) {
+      if (!Array.isArray(aIds) || !Array.isArray(bIds) || aIds.length !== bIds.length) {
+        return false;
+      }
+      for (let i = 0; i < aIds.length; i += 1) {
+        if (aIds[i] !== bIds[i]) return false;
+      }
+    }
+    const aSel = a.pixelSelection;
+    const bSel = b.pixelSelection;
+    if (aSel === bSel) return true;
+    if (!aSel || !bSel) return aSel === bSel;
+    return (
+      aSel.contoursRef === bSel.contoursRef &&
+      aSel.mode === bSel.mode &&
+      aSel.inverted === bSel.inverted
+    );
+  }
+
   function pushEntry(snapshot, name = null) {
     if (muted) return;
-    if (currentIndex >= 0 && entries[currentIndex]?.snapshot === snapshot)
+    if (currentIndex >= 0 && snapshotsMatch(entries[currentIndex]?.snapshot, snapshot))
       return;
 
     if (validateSnapshot) {
@@ -171,11 +198,17 @@ export function createHistory({
     updateCurrentSelection(selectedIds) {
       if (muted) return;
       const entry = entries[currentIndex];
-      if (!entry || typeof entry.snapshot !== "string") return;
+      if (!entry) return;
+      const nextIds = Array.isArray(selectedIds) ? [...selectedIds] : [];
+      if (entry.snapshot && typeof entry.snapshot === "object") {
+        entry.snapshot.selectedIds = nextIds;
+        return;
+      }
+      if (typeof entry.snapshot !== "string") return;
       try {
         const raw = JSON.parse(entry.snapshot);
         if (raw && typeof raw === "object") {
-          raw.selectedIds = Array.isArray(selectedIds) ? [...selectedIds] : [];
+          raw.selectedIds = nextIds;
           entry.snapshot = JSON.stringify(raw);
         }
       } catch {
