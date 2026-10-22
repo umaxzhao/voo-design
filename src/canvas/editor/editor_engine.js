@@ -492,6 +492,7 @@ export function createEditor({
     zoomToHundred: () => viewportTools.zoomToHundred?.(),
     zoomIn: () => viewportTools.zoomIn?.(),
     zoomOut: () => viewportTools.zoomOut?.(),
+    getSpatialIndex: () => getSpatialIndex(getDoc()),
     nodeAtPoint: (point, options = {}) =>
       ctrl.nodesController.nodeAtPoint(point, {
         zoom: viewportTools.getZoom(),

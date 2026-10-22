@@ -155,30 +155,49 @@ export function snapNodeBounds({
   const moving = new Set(activeIds ?? (activeId ? [activeId] : []));
   const siblingBoxes = [];
 
-  // Sibling nodes
+  // Sibling nodes — only a local neighborhood. Full-document scans made every
+  // drag frame O(N) for alignment and O(N²) for gaps on 1000+ node pages.
   if (snapToObjects) {
     const totalNodes = doc.nodes?.length ?? 0;
-    // Local neighborhood radius for equidistant spacing candidates (prevents quadratic explosion on 1000+ nodes)
-    const neighborRadius = Math.max(rect.width * 3, rect.height * 3, 1200 / (zoom || 1));
-    const neighborMinX = rect.x - neighborRadius;
-    const neighborMaxX = rect.x + rect.width + neighborRadius;
-    const neighborMinY = rect.y - neighborRadius;
-    const neighborMaxY = rect.y + rect.height + neighborRadius;
+    const neighborMargin = Math.max(
+      0,
+      Number(options.neighborhoodMargin) ||
+        Math.max(rect.width * 3, rect.height * 3, 1000 / Math.max(zoom || 1, 1e-6)),
+    );
+    const neighborBox = {
+      minX: rect.x - neighborMargin,
+      minY: rect.y - neighborMargin,
+      maxX: rect.x + rect.width + neighborMargin,
+      maxY: rect.y + rect.height + neighborMargin,
+    };
 
-    for (const node of doc.nodes ?? []) {
+    const index = options.spatialIndex ?? doc.spatialIndex ?? doc._spatialIndex;
+    let candidates = null;
+    if (index && typeof index.search === "function" && totalNodes > 32) {
+      const hits = index.search(neighborBox);
+      candidates = [];
+      for (let i = 0; i < hits.length; i += 1) {
+        const node = hits[i].node ?? hits[i];
+        if (!node?.id || moving.has(node.id) || node.visible === false) continue;
+        candidates.push(node);
+      }
+    }
+
+    const nodes = candidates ?? doc.nodes ?? [];
+    for (const node of nodes) {
       if (moving.has(node.id) || node.visible === false) continue;
       const box = nodeAABB(node);
-
       if (
-        totalNodes <= 32 ||
-        (box.x + box.width >= neighborMinX &&
-          box.x <= neighborMaxX &&
-          box.y + box.height >= neighborMinY &&
-          box.y <= neighborMaxY)
+        candidates == null &&
+        totalNodes > 32 &&
+        (box.x + box.width < neighborBox.minX ||
+          box.x > neighborBox.maxX ||
+          box.y + box.height < neighborBox.minY ||
+          box.y > neighborBox.maxY)
       ) {
-        siblingBoxes.push(box);
+        continue;
       }
-
+      siblingBoxes.push(box);
       targetsX.push(
         { pos: box.x },
         { pos: box.x + box.width / 2 },
