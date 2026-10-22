@@ -20,6 +20,9 @@ const ALL_TOOL_NAMES = [
   "inspect_layer_tree",
   "describe_selection",
   "generate_image",
+  "create_path",
+  "place_image",
+  "capture_canvas",
 ];
 
 describe("CANVAS_TOOL_SCHEMAS completeness", () => {

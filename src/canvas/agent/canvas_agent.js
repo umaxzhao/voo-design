@@ -16,11 +16,14 @@ export const SYSTEM_PROMPT =
   "calling tools: inspect_layer_tree, describe_selection, create_shape, generate_image, " +
   "mutate_layer_layout, mutate_layer_style, mutate_layer_text, mutate_auto_layout, " +
   "batch_mutate_layers, select_layers, duplicate_layer, delete_layers, group_layers, " +
-  "reorder_layer, and rename_layer.\n\n" +
+  "reorder_layer, rename_layer, create_path, place_image, and capture_canvas.\n\n" +
   "Workflow for design tasks:\n" +
   "1. Inspect first: call inspect_layer_tree (optionally with layerId and depth) to see the " +
   "existing layers, their kinds, and parentIds before changing anything.\n" +
-  "2. Build layouts with create_shape (rect, ellipse, or text) placed with x/y/width/height.\n" +
+  "2. Build layouts with create_shape (rect, ellipse, or text) placed with x/y/width/height. " +
+  "Draw precise vector artwork with create_path, giving an SVG path 'd' string plus optional " +
+  "x/y and fill/stroke/strokeWidth. Put raster imagery at exact geometry with place_image " +
+  "(url, x, y, width, height).\n" +
   "3. Style and arrange: refine shapes with mutate_layer_layout, mutate_layer_style, and " +
   "mutate_layer_text; lay out frames with mutate_auto_layout; combine several edits into one " +
   "batch_mutate_layers call.\n" +
@@ -28,7 +31,9 @@ export const SYSTEM_PROMPT =
   "keep every layer clearly named with rename_layer.\n" +
   "5. Imagery: use generate_image for raster content, passing useSelection only when a " +
   "selected layer should be the reference.\n\n" +
-  "After multi-step edits, verify the result with inspect_layer_tree. Keep replies short.";
+  "After multi-step edits, verify the result with inspect_layer_tree or look at the canvas " +
+  "itself with capture_canvas (whole page, or a single image layer via layerId) — its PNG " +
+  "image is returned to you so you can check it visually. Keep replies short.";
 
 /**
  * Runs one user turn. `executeTool(name, args)` performs a canvas tool and
@@ -84,17 +89,31 @@ export async function runAgentTurn({
         args = { raw: call.arguments };
       }
       onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "in_progress" });
-      let content;
       try {
         const result = await executeTool(call.name, args);
-        content = JSON.stringify(result);
+        const { dataUrl, ...rest } = result && typeof result === "object" ? result : {};
+        const hasImage = typeof dataUrl === "string" && dataUrl.startsWith("data:image");
+        const content = JSON.stringify(hasImage ? { ...rest, imageAttached: true } : result);
+        messages.push({ role: "tool", tool_call_id: call.id, content });
+        if (hasImage) {
+          messages.push({
+            role: "user",
+            content: [
+              { type: "text", text: `PNG capture returned by ${call.name}; review it visually.` },
+              { type: "image_url", image_url: { url: dataUrl } },
+            ],
+          });
+        }
         onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "completed", result });
       } catch (error) {
         const code = error?.code ?? error?.message ?? "toolFailed";
-        content = JSON.stringify({ error: code });
+        messages.push({
+          role: "tool",
+          tool_call_id: call.id,
+          content: JSON.stringify({ error: code }),
+        });
         onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "failed", error: code });
       }
-      messages.push({ role: "tool", tool_call_id: call.id, content });
     }
   }
   throw Object.assign(new Error(AGENT_ERROR.STEP_LIMIT), { code: AGENT_ERROR.STEP_LIMIT });

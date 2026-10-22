@@ -11,6 +11,12 @@ import {
   runImageJob,
 } from "./image_generation.js";
 import {
+  CANVAS_TOOL_GEOMETRY_SCHEMAS,
+  captureCanvas,
+  createPath,
+  placeImage,
+} from "./canvas_tools_geometry.js";
+import {
   setAgentFocusNode,
 } from "../editor/chrome_stage_overlays.js";
 
@@ -328,6 +334,7 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
       },
     },
   },
+  ...CANVAS_TOOL_GEOMETRY_SCHEMAS,
 ]);
 
 function requireEditor() {
@@ -792,6 +799,9 @@ const EXECUTORS = Object.freeze({
   group_layers: groupLayers,
   reorder_layer: reorderLayer,
   rename_layer: renameLayer,
+  create_path: createPath,
+  place_image: placeImage,
+  capture_canvas: captureCanvas,
 });
 
 /** Runs a canvas tool by name; an unknown name is an error, not a silent no-op. */
