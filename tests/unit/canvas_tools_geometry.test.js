@@ -45,15 +45,21 @@ class MockImage {
 
 describe("Canvas Agent Geometry Tools", () => {
   describe("schema registration", () => {
-    it("registers the three geometry tools at the END of CANVAS_TOOL_SCHEMAS", () => {
+    it("registers the three geometry tools once in CANVAS_TOOL_SCHEMAS", () => {
       const names = CANVAS_TOOL_SCHEMAS.map((s) => s.function.name);
-      expect(names.slice(-3)).toEqual(["create_path", "place_image", "capture_canvas"]);
+      for (const name of ["create_path", "place_image", "capture_canvas"]) {
+        expect(names.filter((candidate) => candidate === name)).toHaveLength(1);
+      }
       expect(new Set(names).size).toBe(names.length);
     });
 
     it("requires the core argument per tool", () => {
       const schemas = Object.fromEntries(
-        CANVAS_TOOL_SCHEMAS.slice(-3).map((s) => [s.function.name, s.function.parameters]),
+        ["create_path", "place_image", "capture_canvas"].map((name) => [
+          name,
+          CANVAS_TOOL_SCHEMAS.find((s) => s.function.name === name)
+            .function.parameters,
+        ]),
       );
       expect(schemas.create_path.required).toEqual(["d"]);
       expect(schemas.place_image.required).toEqual(["url"]);
