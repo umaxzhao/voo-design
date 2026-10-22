@@ -38,6 +38,9 @@ const ALL_TOOL_NAMES = [
   "create_path",
   "place_image",
   "capture_canvas",
+  "set_text_range_style",
+  "get_path_nodes",
+  "edit_path_nodes",
 ];
 
 describe("CANVAS_TOOL_SCHEMAS completeness", () => {
