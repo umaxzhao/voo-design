@@ -5,7 +5,11 @@
  * for headless Node.js Vitest test suites.
  */
 
-import { guessCategory } from "../workspace_storage.js";
+import {
+  guessCategory,
+  parseWorkspaceRelativeId,
+  workspaceRelativeId,
+} from "../workspace_storage.js";
 
 const IDB_NAME = "voo_virtual_workspace_db";
 const IDB_VERSION = 2;
@@ -217,6 +221,101 @@ export class WebIdbWorkspaceDriver {
     });
   }
 
+  async _getFileRecord(fileId) {
+    const db = await this._openDatabase();
+    if (!db) return this.memFiles.get(fileId) || null;
+    return new Promise((resolve) => {
+      const req = db.transaction(STORE_FILES, "readonly").objectStore(STORE_FILES).get(fileId);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  }
+
+  async _putFileRecord(record, previousId = null) {
+    const db = await this._openDatabase();
+    if (!db) {
+      if (previousId && previousId !== record.id) this.memFiles.delete(previousId);
+      this.memFiles.set(record.id, record);
+      this._emitChange("change", record.id);
+      return;
+    }
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_FILES, "readwrite");
+      const store = tx.objectStore(STORE_FILES);
+      if (previousId && previousId !== record.id) store.delete(previousId);
+      store.put(record);
+      tx.oncomplete = () => {
+        this._emitChange("change", record.id);
+        resolve();
+      };
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  /**
+   * Moves a sandbox file into a project folder (or back to the root). The
+   * record's `folder` field is the membership; the id becomes `folder/name`.
+   */
+  async moveToFolder(fileId, folderName) {
+    const safeFolder =
+      folderName == null || folderName === ""
+        ? null
+        : String(folderName).trim();
+    if (
+      folderName &&
+      (!safeFolder || safeFolder.startsWith(".") || /[/\\:*?"<>|]/.test(safeFolder))
+    ) {
+      return { ok: false, error: "invalid_name" };
+    }
+    if (safeFolder) {
+      const folders = await this.listFolders();
+      if (!folders.some((folder) => folder.name === safeFolder)) {
+        const created = await this.createFolder(safeFolder);
+        if (!created.ok && created.error !== "already_exists") return created;
+      }
+    }
+
+    const rec = await this._getFileRecord(fileId);
+    if (!rec) return { ok: false, error: "file_not_found" };
+    const currentFolder = rec.folder ?? parseWorkspaceRelativeId(rec.id).folder;
+    if ((currentFolder || null) === safeFolder) {
+      return {
+        ok: true,
+        file: {
+          id: rec.id,
+          name: rec.name,
+          folder: safeFolder,
+        },
+      };
+    }
+
+    let targetName = rec.name;
+    let nextId = workspaceRelativeId(targetName, safeFolder);
+    const collide = await this._getFileRecord(nextId);
+    if (collide && nextId !== fileId) {
+      const match = targetName.match(/^(.*)\.([a-zA-Z0-9]+)$/);
+      const stem = match ? match[1] : targetName;
+      const ext = match ? match[2] : "voo";
+      let n = 2;
+      while (await this._getFileRecord(workspaceRelativeId(`${stem}-${n}.${ext}`, safeFolder))) {
+        n += 1;
+      }
+      targetName = `${stem}-${n}.${ext}`;
+      nextId = workspaceRelativeId(targetName, safeFolder);
+    }
+
+    const updated = {
+      ...rec,
+      id: nextId,
+      name: targetName,
+      folder: safeFolder,
+      updatedAt: Date.now(),
+    };
+    await this._putFileRecord(updated, fileId);
+    const { bytes: _, ...summary } = updated;
+    return { ok: true, file: summary };
+  }
+
   async scanFiles(options = {}) {
     const db = await this._openDatabase();
     let files = [];
@@ -274,6 +373,7 @@ export class WebIdbWorkspaceDriver {
     // Strip raw bytes from scan summaries for performance and cleanliness
     filtered = filtered.map(({ bytes, ...rest }) => ({
       ...rest,
+      folder: rest.folder ?? parseWorkspaceRelativeId(rest.id).folder,
       category: rest.category || guessCategory(rest.name),
     }));
 
@@ -321,10 +421,15 @@ export class WebIdbWorkspaceDriver {
     const formattedName = extMatch ? name : `${name}.voo`;
     const uintBytes = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
 
+    const folder =
+      options.folder == null || options.folder === ""
+        ? null
+        : String(options.folder);
     const record = {
-      id: formattedName,
+      id: workspaceRelativeId(formattedName, folder),
       name: formattedName,
       path: null,
+      folder,
       extension,
       size: uintBytes.byteLength,
       bytes: uintBytes,
@@ -360,58 +465,23 @@ export class WebIdbWorkspaceDriver {
   async renameFile(id, newName) {
     const extMatch = newName.toLowerCase().match(/\.(voo|fig|psd|svg)$/);
     const formattedName = extMatch ? newName : `${newName}.voo`;
-
-    const db = await this._openDatabase();
-    if (!db) {
-      const rec = this.memFiles.get(id);
-      if (!rec) return { ok: false, error: "File not found" };
-      if (this.memFiles.has(formattedName) && formattedName !== id) {
-        return { ok: false, error: "A file with this name already exists" };
-      }
-      this.memFiles.delete(id);
-      const updated = {
-        ...rec,
-        id: formattedName,
-        name: formattedName,
-        extension: formattedName.split(".").pop().toLowerCase(),
-        updatedAt: Date.now(),
-      };
-      this.memFiles.set(formattedName, updated);
-      this._emitChange("change", formattedName);
-      return { ok: true, file: updated };
+    const rec = await this._getFileRecord(id);
+    if (!rec) return { ok: false, error: "File not found" };
+    const folder = rec.folder ?? parseWorkspaceRelativeId(rec.id).folder;
+    const nextId = workspaceRelativeId(formattedName, folder);
+    if (nextId !== id && (await this._getFileRecord(nextId))) {
+      return { ok: false, error: "A file with this name already exists" };
     }
-
-    return new Promise((resolve) => {
-      const tx = db.transaction(STORE_FILES, "readwrite");
-      const store = tx.objectStore(STORE_FILES);
-      const checkReq = store.get(formattedName);
-      checkReq.onsuccess = () => {
-        if (checkReq.result && formattedName !== id) {
-          return resolve({ ok: false, error: "A file with this name already exists" });
-        }
-        const req = store.get(id);
-        req.onsuccess = () => {
-          const rec = req.result;
-          if (!rec) return resolve({ ok: false, error: "File not found" });
-          store.delete(id);
-          const updated = {
-            ...rec,
-            id: formattedName,
-            name: formattedName,
-            extension: formattedName.split(".").pop().toLowerCase(),
-            updatedAt: Date.now(),
-          };
-          store.put(updated);
-          tx.oncomplete = () => {
-            this._emitChange("change", formattedName);
-            resolve({ ok: true, file: updated });
-          };
-          tx.onerror = () => resolve({ ok: false, error: tx.error?.message });
-        };
-        req.onerror = () => resolve({ ok: false, error: req.error?.message });
-      };
-      checkReq.onerror = () => resolve({ ok: false, error: checkReq.error?.message });
-    });
+    const updated = {
+      ...rec,
+      id: nextId,
+      name: formattedName,
+      folder: folder || null,
+      extension: formattedName.split(".").pop().toLowerCase(),
+      updatedAt: Date.now(),
+    };
+    await this._putFileRecord(updated, id);
+    return { ok: true, file: updated };
   }
 
   async moveToTrash(id) {

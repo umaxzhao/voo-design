@@ -42,6 +42,7 @@ export default {
   "welcome.community.sortCurated": "Curated",
   "welcome.community.copiedSuccess": "Template copied to workspace!",
   "welcome.folders.moveTo": "Move to",
+  "welcome.folders.moveToRoot": "Move to root",
   "welcome.folders.title": "Projects",
   "welcome.folders.new": "New folder",
   "welcome.folders.placeholder": "Folder name",
