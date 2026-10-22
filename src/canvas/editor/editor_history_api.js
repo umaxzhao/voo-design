@@ -60,6 +60,8 @@ export function createHistoryApi({
         history.push(snapshotState(), name),
       ),
     mute: (run) => history.mute(run),
+    beginBatch: () => history.beginBatch?.(),
+    endBatch: () => history.endBatch?.(),
     /**
      * Flushes any pending mask-stroke persists so the history entry lands
      * before stepping back. Without this, a stroke painted and immediately

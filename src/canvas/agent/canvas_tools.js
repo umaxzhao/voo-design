@@ -19,6 +19,10 @@ import {
 import {
   setAgentFocusNode,
 } from "../editor/chrome_stage_overlays.js";
+import {
+  DESIGN_TOOL_EXECUTORS,
+  DESIGN_TOOL_SCHEMAS,
+} from "./canvas_tools_design_system.js";
 
 export const AGENT_SETTING = Object.freeze({
   API_KEY: "agent.apiKey",
@@ -334,6 +338,7 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
       },
     },
   },
+  ...DESIGN_TOOL_SCHEMAS,
   ...CANVAS_TOOL_GEOMETRY_SCHEMAS,
 ]);
 
@@ -799,6 +804,7 @@ const EXECUTORS = Object.freeze({
   group_layers: groupLayers,
   reorder_layer: reorderLayer,
   rename_layer: renameLayer,
+  ...DESIGN_TOOL_EXECUTORS,
   create_path: createPath,
   place_image: placeImage,
   capture_canvas: captureCanvas,

@@ -30,11 +30,16 @@ export function createHistory({
    */
   let entries = [];
   let currentIndex = -1;
-  let muted = false;
+  let muteDepth = 0;
+  let batchDepth = 0;
   let gestureTransaction = null;
 
+  function isMuted() {
+    return muteDepth > 0 || batchDepth > 0;
+  }
+
   function pushEntry(snapshot, name = null) {
-    if (muted) return;
+    if (isMuted()) return;
     if (currentIndex >= 0 && entries[currentIndex]?.snapshot === snapshot)
       return;
 
@@ -98,18 +103,35 @@ export function createHistory({
     },
 
     mute(run) {
-      const previous = muted;
-      muted = true;
+      muteDepth += 1;
+      let result;
       try {
-        return run();
-      } finally {
-        muted = previous;
+        result = run();
+      } catch (error) {
+        muteDepth -= 1;
+        throw error;
       }
+      if (result && typeof result.then === "function") {
+        return Promise.resolve(result).finally(() => {
+          muteDepth = Math.max(0, muteDepth - 1);
+        });
+      }
+      muteDepth = Math.max(0, muteDepth - 1);
+      return result;
     },
 
-    isMuted() {
-      return muted;
+    /** Starts suppressing history pushes until the matching endBatch(). */
+    beginBatch() {
+      batchDepth += 1;
+      return batchDepth;
     },
+
+    endBatch() {
+      batchDepth = Math.max(0, batchDepth - 1);
+      return batchDepth;
+    },
+
+    isMuted,
 
     push(snapshot, name = null) {
       pushEntry(snapshot, name);
@@ -169,7 +191,7 @@ export function createHistory({
     },
 
     updateCurrentSelection(selectedIds) {
-      if (muted) return;
+      if (isMuted()) return;
       const entry = entries[currentIndex];
       if (!entry || typeof entry.snapshot !== "string") return;
       try {
