@@ -15,3 +15,5 @@ public/LICENSE
 public/EULA.md
 
 analysis/
+
+/native/voo-engine/target/

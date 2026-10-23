@@ -35,7 +35,8 @@
     "dist:all": "npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build && node scripts/signing-env.mjs -mwl --publish never",
     "test:e2e:fps": "node tests/e2e/canvas_fps.e2e.mjs",
     "notices": "node scripts/generate-third-party-notices.mjs",
-    "smoke:packaged": "node scripts/smoke-packaged.mjs"
+    "smoke:packaged": "node scripts/smoke-packaged.mjs",
+    "bench:wasm-engine": "node scripts/bench-wasm-engine.mjs"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
