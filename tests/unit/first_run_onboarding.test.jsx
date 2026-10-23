@@ -30,7 +30,7 @@ import { AGENT_SETTING } from "../../src/canvas/agent/canvas_tools.js";
 import { AGENT_DEFAULT_MODELS } from "../../src/canvas/components/onboarding/onboarding_agent_model.js";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import FirstRunOnboarding from "../../src/canvas/components/first_run_onboarding.jsx";
+import FirstRunOnboarding, { syncFirstRunDialog } from "../../src/canvas/components/first_run_onboarding.jsx";
 import { FIRST_RUN_KEY, finishFirstRun, shouldShowFirstRun } from "../../src/canvas/components/first_run_state.js";
 import { getSetting, setSetting } from "../../src/shared/settings.js";
 import { loadLocale } from "../../src/shared/i18n.js";
@@ -67,6 +67,7 @@ describe("commercial first run", () => {
     expect(app).toContain('removeEventListener("voo:open-first-run", handleOpenFirstRun)');
     expect(app).toContain('case "help:onboarding":');
     expect(app).toContain('setFirstRunReopened(true); setFirstRunOpen(true)');
+    expect(app).toContain('if (firstRunOpen) return;');
     expect(app).toContain('reopened={firstRunReopened}');
   });
   it("bypasses browser automation", () => {
@@ -89,6 +90,30 @@ describe("commercial first run", () => {
     expect(app).toContain("[onboardingOpen, setOnboardingOpen] = useState(false)");
     expect(app).toContain('addEventListener("voo:open-onboarding"');
     expect(app).not.toContain("shouldShowOnboarding");
+  });
+});
+
+describe("first-run dialog sync", () => {
+  it("only shows the modal when the dialog is closed", () => {
+    const dialog = {
+      open: false,
+      showModal: vi.fn(() => {
+        if (dialog.open) throw new Error("InvalidStateError");
+        dialog.open = true;
+      }),
+      close: vi.fn(() => { dialog.open = false; }),
+    };
+    syncFirstRunDialog(dialog, true);
+    syncFirstRunDialog(dialog, true);
+    expect(dialog.showModal).toHaveBeenCalledOnce();
+    syncFirstRunDialog(dialog, false);
+    expect(dialog.close).toHaveBeenCalledOnce();
+    syncFirstRunDialog(dialog, true);
+    expect(dialog.showModal).toHaveBeenCalledTimes(2);
+  });
+  it("accepts an unmounted dialog", () => {
+    expect(() => syncFirstRunDialog(null, false)).not.toThrow();
+    expect(() => syncFirstRunDialog(null, true)).not.toThrow();
   });
 });
 

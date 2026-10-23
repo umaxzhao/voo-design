@@ -29,7 +29,10 @@ export default function App() {
   // Listen for Electron native menu actions and Agent panel trigger events
   useEffect(() => {
     const handleOpenAgent = () => setAgentOpen(true);
-    const handleOpenFirstRun = () => { setFirstRunReopened(true); setFirstRunOpen(true); };
+    const handleOpenFirstRun = () => {
+      if (firstRunOpen) return;
+      setFirstRunReopened(true); setFirstRunOpen(true);
+    };
     window.addEventListener("voo:open-first-run", handleOpenFirstRun);
     const handleOpenOnboarding = () => setOnboardingOpen(true);
     window.addEventListener("voo:open-agent-panel", handleOpenAgent);
@@ -81,7 +84,7 @@ export default function App() {
       window.removeEventListener("voo:open-onboarding", handleOpenOnboarding);
       if (unsubscribeMenu) unsubscribeMenu();
     };
-  }, []);
+  }, [firstRunOpen]);
 
   return (
     <main

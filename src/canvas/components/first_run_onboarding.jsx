@@ -17,6 +17,13 @@ const steps = ["welcome", "start", "tour", "provider"];
 export const FIRST_RUN_TEMPLATES = COMMUNITY_TEMPLATES.filter(({ category }) => ["dashboard", "mobile", "slides"].includes(category));
 const focusClass = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E5B2FF]";
 
+export function syncFirstRunDialog(dialog, open) {
+  if (!dialog) return;
+  if (open) {
+    if (!dialog.open) dialog.showModal();
+  } else if (dialog.open) dialog.close();
+}
+
 export default function FirstRunOnboarding({ open, reopened = false, onClose, onStart }) {
   const dialog = useRef(null);
   const title = useRef(null);
@@ -41,9 +48,9 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
       setProvider("");
       setCustomModel("");
       setError(false);
-      dialog.current?.showModal();
-    } else dialog.current?.close();
+    }
   }, [open, reopened]);
+  useEffect(() => { syncFirstRunDialog(dialog.current, open); }, [open]);
   useEffect(() => { if (open) title.current?.focus(); }, [step, open]);
   useEffect(() => {
     setCliStatus(null);
@@ -53,8 +60,8 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
     let active = true;
     Promise.resolve().then(() => cli.checkStatus(provider)).then(result => {
       if (active) setCliStatus(getProviderStatusInfo(t, {
-        configured: Boolean(result.installed || result.ready || result.ok),
-        verification: { status: result.ready || result.ok ? "verified" : "untested" },
+        configured: Boolean(result.installed || result.ready),
+        verification: { status: result.ready ? "verified" : "untested" },
       }));
     }).catch(() => { /* The full guide offers detection and connection diagnostics. */ });
     return () => { active = false; };
