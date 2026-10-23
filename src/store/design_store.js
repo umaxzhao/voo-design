@@ -70,11 +70,11 @@ export const useDesignStore = create((set, get) => {
   editorPageSession: 0,
 
   // Page / Artboard actions
-  focusEditorPage: (id) => {
+  focusEditorPage: (id, { rememberCamera = get().editingNodeIds.length > 1 || Boolean(get().editingPresentationId) } = {}) => {
     if (!id || !get().nodes.some((node) => node.id === id) || id === get().editingNodeId) return;
     cameraBatcher.flush();
     set((state) => ({
-      editorPageCameras: { ...state.editorPageCameras, ...(state.editingNodeId ? { [state.editingNodeId]: { ...state.editorCamera } } : {}) },
+      editorPageCameras: { ...state.editorPageCameras, ...(rememberCamera && state.editingNodeId ? { [state.editingNodeId]: { ...state.editorCamera } } : {}) },
       editorCamera: state.editorPageCameras[id] || state.editorCamera,
       pendingArtboardFitId: state.editorPageCameras[id] ? null : id,
       editingNodeId: id,
@@ -84,6 +84,9 @@ export const useDesignStore = create((set, get) => {
   },
 
   addEditorPage: ({ label = "Untitled", canvasType = CANVAS_TYPE.DESIGN, width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT } = {}) => {
+    // Capture the outgoing mode before adding a second visible page.
+    // Local page cameras live in page_camera.js, not editorCamera.
+    const rememberCamera = get().editingNodeIds.length > 1 || Boolean(get().editingPresentationId);
     const id = `page-${Date.now().toString(36)}-${(++pageCounter).toString(36)}`;
     const newPage = {
       id,
@@ -100,7 +103,7 @@ export const useDesignStore = create((set, get) => {
       editingNodeIds: [...state.editingNodeIds, id],
       isDirty: true,
     }));
-    get().focusEditorPage(id);
+    get().focusEditorPage(id, { rememberCamera });
     return id;
   },
 
@@ -133,6 +136,7 @@ export const useDesignStore = create((set, get) => {
     const state = get();
     const sourceNode = state.nodes.find((n) => n.id === sourceId);
     if (!sourceNode) return null;
+    const rememberCamera = state.editingNodeIds.length > 1 || Boolean(state.editingPresentationId);
     const newId = `page-${Date.now().toString(36)}-${(++pageCounter).toString(36)}`;
     const duplicatedNode = {
       ...sourceNode,
@@ -148,7 +152,7 @@ export const useDesignStore = create((set, get) => {
       editingNodeIds: [...s.editingNodeIds, newId],
       isDirty: true,
     }));
-    get().focusEditorPage(newId);
+    get().focusEditorPage(newId, { rememberCamera });
     return newId;
   },
 

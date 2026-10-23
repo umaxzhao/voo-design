@@ -26,6 +26,7 @@ vi.mock("../../src/store/design_store.js", async (importOriginal) => {
 describe("page list polish", () => {
   beforeEach(() =>
     store.setState({
+      editorPageSession: store.getState().editorPageSession + 1,
       nodes: [],
       editingNodeId: null,
       editingNodeIds: [],
@@ -37,15 +38,47 @@ describe("page list polish", () => {
   );
   it("preserves the shared camera and requests a fit for unseen pages", () => {
     const a = store.getState().addEditorPage();
+    store.getState().addEditorPage();
+    store.getState().focusEditorPage(a);
     const camera = { panX: -1400, panY: 80, zoom: 0.7 };
     store.getState().setEditorCamera(camera);
     const b = store.getState().addEditorPage({ width: 393, height: 852 });
     expect(store.getState().editorCamera).toEqual(camera);
     expect(store.getState().pendingArtboardFitId).toBe(b);
-    expect(store.getState().nodes[1].data.editorDoc).toMatchObject({ width: 393, height: 852 });
+    expect(store.getState().nodes[2].data.editorDoc).toMatchObject({ width: 393, height: 852 });
     store.getState().focusEditorPage(a);
     expect(store.getState().pendingArtboardFitId).toBeNull();
   });
+  it.each(["addEditorPage", "duplicateEditorPage"])(
+    "requests a fit when returning to a local page after %s",
+    (action) => {
+      // A fresh document has a real page and focus, but its store camera is unused.
+      store.getState().loadVooProject({
+        vooData: { document: { width: 1200, height: 800, nodes: [] } },
+      });
+      const original = store.getState().editingNodeId;
+      expect(store.getState().nodes).toHaveLength(1);
+      expect(store.getState().editingNodeIds).toEqual([original]);
+      rememberPageCamera(pageCameraCache(store.getState().editorPageSession), original,
+        { panX: 240, panY: 160, zoom: 0.6 });
+
+      const added = action === "addEditorPage"
+        ? store.getState().addEditorPage()
+        : store.getState().duplicateEditorPage(original);
+      expect(store.getState().editingNodeId).toBe(added);
+      expect(store.getState().pendingArtboardFitId).toBe(added);
+      expect(store.getState().editorPageCameras[original]).toBeUndefined();
+
+      // Simulate the shared canvas completing the new page's requested fit.
+      store.getState().setEditorCamera({ panX: -1400, panY: 80, zoom: 0.7 });
+      store.setState({ pendingArtboardFitId: null });
+      store.getState().focusEditorPage(original);
+      // The canvas consumes this request to fit the original artboard at its layout.
+      expect(store.getState().pendingArtboardFitId).toBe(original);
+      expect(store.getState().editorPageCameras[original]).toBeUndefined();
+      expect(store.getState().editorCamera).toEqual({ panX: -1400, panY: 80, zoom: 0.7 });
+    },
+  );
   it("provides bounded phone and desktop presets", () => {
     for (const group of ["phone", "desktop"]) {
       expect(PRESET_GROUPS.find((g) => g.titleKey.endsWith(`.${group}`)).items.length).toBeGreaterThanOrEqual(3);
