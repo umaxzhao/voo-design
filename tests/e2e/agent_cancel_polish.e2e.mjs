@@ -7,14 +7,24 @@ await mkdir(shots, { recursive: true });
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
 try {
   const page = await browser.newPage({ viewport: { width: 1000, height: 800 } });
+  page.on('pageerror', error => console.error(error.message));
   await page.route('**/cancel-test.html', route => route.fulfill({ contentType: 'text/html', body: `
     <html><body style="margin:0;background:#242424"><div id="root" style="width:420px;height:760px;margin:20px auto"></div>
+    <script type="module">
+      import RefreshRuntime from '/@react-refresh';
+      RefreshRuntime.injectIntoGlobalHook(window);
+      window.$RefreshReg$ = () => {};
+      window.$RefreshSig$ = () => type => type;
+      window.__vite_plugin_react_preamble_installed__ = true;
+    </script>
     <script type="module">
       import React from '/node_modules/.vite/deps/react.js';
       import {createRoot} from '/node_modules/.vite/deps/react-dom_client.js';
       import Panel from '/src/canvas/components/canvas_agent_panel.jsx';
       import {loadLocale} from '/src/shared/i18n.js';
       import '/src/index.css';
+      import {useDesignStore} from '/src/store/design_store.js';
+      window.agentState = () => useDesignStore.getState().agentGenerating;
       await loadLocale('en');
       createRoot(document.getElementById('root')).render(React.createElement(Panel));
     </script></body></html>` }));
@@ -36,6 +46,7 @@ try {
   await page.getByTestId('agent-cancel').click();
   await page.getByRole('status').filter({hasText:'Cancelled.'}).waitFor();
   assert.equal(await page.getByRole('alert').count(), 0);
+  assert.equal(await page.evaluate(() => window.agentState()), false);
   await page.screenshot({path:`${shots}/cancelled.png`});
   await page.getByRole('button', {name:'Resume',exact:true}).click();
   await page.getByText('Inspecting the current canvas…').waitFor();
@@ -44,6 +55,7 @@ try {
   await page.getByTestId('agent-cancel').click();
   await page.getByRole('button', {name:'Retry last prompt',exact:true}).click();
   await page.getByText('Inspecting the current canvas…').waitFor();
+  assert.equal(await page.evaluate(() => window.testPrompts.at(-1)), 'Create a simple landing page');
   await page.getByTestId('agent-cancel').click();
   console.log('Passed: cancellation message, no error dump, resume, retry; screenshots:', shots);
 } finally { await browser.close(); }

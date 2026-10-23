@@ -75,7 +75,7 @@ it("does not fetch an already cancelled request", async () => {
   expect(fetch).not.toHaveBeenCalled();
 });
 
-it("discards buffered events and partial Unicode when cancelled from onText", async () => {
+it("discards buffered events when cancelled from onText", async () => {
   const controller = new AbortController();
   const cancel = vi.fn();
   const body = new ReadableStream({ start(c) {
@@ -85,5 +85,23 @@ it("discards buffered events and partial Unicode when cancelled from onText", as
   const onText = vi.fn(() => controller.abort());
   await expect(streamChatTurn({ config, messages: [], tools: [], signal: controller.signal, onText })).rejects.toMatchObject({ name: "AbortError" });
   expect(onText).toHaveBeenCalledTimes(1);
+  expect(body.locked).toBe(false);
+});
+
+
+it("discards an incomplete UTF-8 codepoint on abort and ignores a hanging cancel promise", async () => {
+  const controller = new AbortController();
+  const cancel = vi.fn(() => new Promise(() => {}));
+  const body = new ReadableStream({ start(c) {
+    c.enqueue(Uint8Array.of(0xf0, 0x9f));
+  }, cancel });
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(body)));
+  const onText = vi.fn();
+  const pending = streamChatTurn({ config, messages: [], tools: [], signal: controller.signal, onText });
+  await vi.waitFor(() => expect(body.locked).toBe(true));
+  controller.abort();
+  await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+  expect(onText).not.toHaveBeenCalled();
+  expect(cancel).toHaveBeenCalledOnce();
   expect(body.locked).toBe(false);
 });
