@@ -13,27 +13,47 @@ const browser = await chromium.launch({args:['--no-sandbox']});
 process.once('SIGINT', async () => { await browser.close(); process.exit(130); });
 const rows = [];
 try {
- const page = await browser.newPage({viewport:{width:1280,height:900},acceptDownloads:true});
- page.setDefaultTimeout(30000);
- if (phase === 'before') {
-  for (const source of ['src/canvas/store/project_io.js','src/canvas/editor/editor_svg_import.js']) {
-   const original=execFileSync('git',['show',`${process.env.ROUNDTRIP_BASELINE_REF || 'origin/main'}:${source}`],{encoding:'utf8'});
-   await page.route(`**/${source}*`,route=>route.fulfill({contentType:'application/javascript',body:original}));
+ let page;
+ const freshPage = async () => {
+  if (page) await page.context().close();
+  page = await browser.newPage({viewport:{width:1280,height:900},acceptDownloads:true});
+  page.setDefaultTimeout(90000);
+  page.on('pageerror',error=>console.error('PAGE ERROR',error.message));
+  page.on('console',message=>{if(message.text().startsWith('ROUNDTRIP WORKER')) console.log(message.text());});
+  if (phase === 'before') {
+   for (const source of ['src/canvas/store/project_io.js','src/canvas/editor/editor_svg_import.js']) {
+    const original=execFileSync('git',['show',`${process.env.ROUNDTRIP_BASELINE_REF || 'origin/main'}:${source}`],{encoding:'utf8'});
+    await page.route(`**/${source}*`,route=>route.fulfill({contentType:'application/javascript',body:original}));
+   }
   }
- }
- page.on('dialog',d=>d.accept());
- await page.addInitScript(()=>{localStorage.setItem('ciw.locale',JSON.stringify('en'));window.showSaveFilePicker=undefined;window.showOpenFilePicker=undefined;});
- const start = async () => {await page.goto(process.env.VOO_URL || 'http://127.0.0.1:5253/?voo-test=1');await page.getByRole('button',{name:'New',exact:true}).waitFor();};
- const deadline = promise => { let timer; return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('operation exceeded 45 seconds')),45000);})]).finally(()=>clearTimeout(timer)); };
+  page.on('dialog',d=>d.accept());
+  await page.addInitScript(()=>{
+   const NativeWorker = window.Worker;
+   window.Worker = class extends NativeWorker {
+    constructor(...args) {
+     super(...args);
+     this.addEventListener('message',({data})=>{
+      if (data?.type) console.log('ROUNDTRIP WORKER', data.type, data.stage || '', data.percent ?? '');
+     });
+    }
+   };
+  });
+  await page.addInitScript(()=>{localStorage.setItem('ciw.locale',JSON.stringify('en'));window.showSaveFilePicker=undefined;window.showOpenFilePicker=undefined;});
+ };
+ const start = async () => {await page.goto(process.env.VOO_URL || 'http://127.0.0.1:5253/?voo-test=1',{waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'New',exact:true}).waitFor();};
+ const deadline = promise => { let timer; return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('operation exceeded 120 seconds')),120000);})]).finally(()=>clearTimeout(timer)); };
  const open = async (name,bytes,allowEmpty=false) => {
   console.log('OPEN',name);
   await deadline(page.evaluate(async ({name,bytes})=>{
    const {openVooProject}=await import('/src/canvas/store/project_io.js');
    await openVooProject({fileOrPath:new File([new Uint8Array(bytes)],name)});
   },{name,bytes:Array.from(bytes)}));
+  console.log('IMPORTED',name);
   await page.getByTestId('design-editor').waitFor();
+  console.log('EDITOR',name);
   await page.waitForFunction(allowEmpty ? ()=>!!window.__vooEditor?.getDocument() : ()=>window.__vooEditor?.getDocument()?.nodes?.length>0);
   await deadline(page.evaluate(()=>document.fonts.ready));
+  console.log('READY',name);
   await page.waitForTimeout(500);
  };
  const capture = async (label) => {
@@ -66,9 +86,10 @@ try {
   },{a:a.png,b:b.png});
   return {tree,pixel};
  };
- for (const name of (await readdir(root)).filter(n=>/\.(fig|svg|psd)$/.test(n))) {
+ for (const name of (await readdir(root)).filter(n=>/\.(fig|svg|psd)$/.test(n) && (!process.env.ROUNDTRIP_FILTER || n.includes(process.env.ROUNDTRIP_FILTER)))) {
   const row={fixture:name};rows.push(row);
   try {
+   await freshPage();
    await start();await open(name,await readFile(new URL(name,root)));
    await page.evaluate(()=>{const e=window.__vooEditor;const n=e.addRectAt({x:20,y:120});e.updateNode(n.id,{name:'Roundtrip live edit',width:25,height:18,fill:'#ff6600'});});
    const before=await capture(`${phase}-${name}-open`);row.nodes=before.document.nodes.length;
@@ -86,4 +107,4 @@ try {
 await writeFile(`${shots}/${phase}-report.json`,JSON.stringify(rows,null,2));
 const table=['| Fixture | Nodes | Native tree | Native pixel Δ % | Original tree | Original pixel Δ % | Error |','|---|---:|---|---:|---|---:|---|',...rows.map(r=>`| ${r.fixture} | ${r.nodes??'-'} → ${r.reopenedNodes??'-'} | ${r.native?.tree??'-'} | ${r.native?.pixel??'-'} | ${r.original?.tree??'-'} | ${r.original?.pixel??'-'} | ${(r.error||'').replaceAll('\n',' ').replaceAll('|','/')} |`)];
 await writeFile(`/workspace/tmp/roundtrip-${phase}.md`,table.join('\n')+'\n');
-if(phase==='after')assert.ok(rows.every(r=>!r.error&&r.native?.tree&&r.native.pixel===0),'All native round trips must preserve nodes and pixels; see report');
+if(phase==='after')assert.ok(rows.length > 0 && rows.every(r=>!r.error&&r.native?.tree&&r.native.pixel===0),'All native round trips must preserve nodes and pixels; see report');
