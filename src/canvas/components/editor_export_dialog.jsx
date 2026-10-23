@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "../use_i18n.js";
 import { CAPABILITY, isCapabilitySupported } from "../platform_capabilities.js";
@@ -89,6 +89,7 @@ export default function EditorExportDialog({
 }) {
   const { t } = useI18n();
   const dialogRef = useRef(null);
+  const [transparent, setTransparent] = useState(true);
   const targetWidth =
     exportRange === "selection" && selectionBounds?.width
       ? selectionBounds.width
@@ -223,6 +224,12 @@ export default function EditorExportDialog({
           dimensions={dimensions}
           canChooseSaveLocation={canChooseSaveLocation}
         />
+        {["png", "webp", "svg", "pdf"].includes(format) && (
+          <label className="flex items-center gap-2 text-[11px] text-neutral-300">
+            <input type="checkbox" checked={transparent} onChange={(event) => setTransparent(event.target.checked)} />
+            Transparent background
+          </label>
+        )}
         <div className="flex gap-2">
           <button
             type="button"
@@ -234,7 +241,7 @@ export default function EditorExportDialog({
           <button
             type="button"
             disabled={busy || (!dimensions && exportRange !== "slices")}
-            onClick={onExport}
+            onClick={() => onExport({ transparent })}
             className="min-h-8 flex-1 rounded-lg bg-white px-3 text-[11px] font-semibold text-black hover:bg-neutral-200 transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
           >
             {exportRange === "slices"

@@ -14,6 +14,9 @@ import { draw } from "./scene_renderer.js";
 import { drawNode } from "./render_nodes.js";
 import {
   RENDERABLE_KINDS,
+  exportPixelSize,
+  exportPageBackground,
+  exportBackdropDocument,
   encodeCanvas,
   selectionBounds,
 } from "./editor_export_bounds.js";
@@ -44,7 +47,9 @@ export function createExport({
    * sampler wants the pixels themselves. Encoding to PNG only to decode it
    * again would be the same picture, slower.
    */
-  function renderPngCanvas(doc, scale) {
+  function renderPngCanvas(doc, scale, options = {}) {
+    doc = exportBackdropDocument(doc, options.transparent);
+    scale = exportPixelSize(effectivePage(doc), scale).scale;
     // A non-destructive crop exports the visible page: the output is the crop
     // rect's size, rendered through the same page the stage shows.
     const page = effectivePage(doc);
@@ -64,13 +69,8 @@ export function createExport({
       hiddenNodeId: null,
       // Regions are instructions about the picture, never part of it.
       includeRegions: false,
-      // The white page is on-screen dressing only — eraser, lasso and cutout
-      // pixels must survive the export as transparency. The exception is a
-      // document with blend modes: those composite against the backdrop, so
-      // the export paints the same page the preview showed (draw() fills it
-      // with doc.backgroundColor, falling back to the white page) or the
-      // blended colours would come out different over transparent black.
-      pageBackground: hasBlendModes(doc),
+      // Explicit transparency suppresses the sheet, including blend-mode backdrops.
+      pageBackground: exportPageBackground(options.transparent, hasBlendModes(doc)),
       // The live paint canvas when a stroke is mid-persist, the decoded
       // bitmap otherwise — exactly what the stage composes with.
       bitmapOf: (node) =>
@@ -84,13 +84,13 @@ export function createExport({
     return output;
   }
 
-  function exportPngCanvas(scale = 1, canvasResolver = resolveCanvas) {
+  function exportPngCanvas(scale = 1, canvasResolver = resolveCanvas, options = {}) {
     const doc = expandInstancesForRaster(getDoc(), canvasResolver);
-    return renderPngCanvas(doc, scale);
+    return renderPngCanvas(doc, scale, options);
   }
 
-  function exportPngCanvasAsync(scale = 1, canvasResolver = resolveCanvas) {
-    return exportPngCanvas(scale, canvasResolver);
+  function exportPngCanvasAsync(scale = 1, canvasResolver = resolveCanvas, options = {}) {
+    return exportPngCanvas(scale, canvasResolver, options);
   }
 
   function exportPng() {
@@ -108,6 +108,7 @@ export function createExport({
     const canvas = exportPngCanvas(
       options?.scale ?? 1,
       options?.resolveCanvas ?? resolveCanvas,
+      options,
     );
     if (!canvas) return null;
     if (options?.type !== "image/jpeg") return encodeCanvas(canvas, options);
@@ -132,6 +133,7 @@ export function createExport({
     const canvas = await exportPngCanvasAsync(
       options?.scale ?? 1,
       options?.resolveCanvas ?? resolveCanvas,
+      options,
     );
     if (!canvas) return null;
     if (options?.type !== "image/jpeg") return encodeCanvas(canvas, options);

@@ -3951,7 +3951,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               onFormat={setExportFormat}
               onQuality={setExportQuality}
               onScale={setExportScale}
-              onExport={() => void exportImage()}
+              onExport={(options) => void exportImage(options)}
               onClose={cancelExport}
             />
           </Suspense>
