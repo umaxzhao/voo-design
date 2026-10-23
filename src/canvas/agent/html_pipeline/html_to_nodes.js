@@ -77,6 +77,7 @@ function gradientPaint(value, parse) {
   return count >= 2 && normalized.every(Boolean) ? value.slice(0, value.indexOf('(') + 1) + normalized.join(', ') + ')' : null;
 }
 export function elementKey(el) {
+  if (el.dataset?.vooSrc) return el.dataset.vooSrc;
   if (el.dataset?.vooId) return el.dataset.vooId;
   return el.parentElement ? `${elementKey(el.parentElement)}/${el.tagName.toLowerCase()}:${Array.from(el.parentElement.children).indexOf(el)}` : el.tagName.toLowerCase();
 }
@@ -86,7 +87,8 @@ export function htmlToNodes(doc, frame = {}) {
     if (['SCRIPT', 'STYLE', 'META', 'LINK', 'HEAD'].includes(el.tagName)) return;
     const css = view.getComputedStyle(el), r = el.getBoundingClientRect();
     if (css.display === 'none' || css.visibility === 'hidden' || Number.parseFloat(css.opacity) === 0) return;
-    const key = elementKey(el), base = { name: el.getAttribute('aria-label') || el.dataset?.vooId || el.tagName.toLowerCase(), x: Math.round(r.x + (frame.x || 0)), y: Math.round(r.y + (frame.y || 0)), width: Math.ceil(r.width), height: Math.ceil(r.height), opacity: inheritedOpacity * ( css.opacity === '' ? 1 : Math.max(0, Math.min(1, Number(css.opacity || 1)))) };
+    const key = elementKey(el), base = { htmlSource: { id: el.dataset?.vooSrc || key, selector: `[data-voo-src=${JSON.stringify(el.dataset?.vooSrc || key)}]` }, name: el.getAttribute('aria-label') || el.dataset?.vooId || el.tagName.toLowerCase(), x: Math.round(r.x + (frame.x || 0)), y: Math.round(r.y + (frame.y || 0)), width: Math.ceil(r.width), height: Math.ceil(r.height), opacity: inheritedOpacity * ( css.opacity === '' ? 1 : Math.max(0, Math.min(1, Number(css.opacity || 1)))) };
+    el.setAttribute?.('data-voo-src', key);
     const gradient = gradientPaint(css.backgroundImage, parseColor);
     const textClip = (css.backgroundClip || css.webkitBackgroundClip) === 'text';
     // Masks and blurred glows cannot be represented as a plain opaque rectangle.
@@ -132,13 +134,21 @@ export function htmlToNodes(doc, frame = {}) {
       const lineHeight = number(css.lineHeight, fontSize * 1.2);
       const lines = new Set(rects.map(r => Math.round(r.y))).size;
       const multiline = lines > 1 || css.whiteSpace?.startsWith('pre') && text.includes('\n') || (!lines && rect.height > lineHeight * 1.5);
-      const contentWidth = Math.max(0, r.width - number(css.paddingLeft) - number(css.paddingRight) - number(css.borderLeftWidth) - number(css.borderRightWidth));
-      const boxWidth = multiline ? Math.ceil(Math.max(contentWidth, rect.width) + 4) : 0;
-      const button = el.tagName === 'BUTTON' || el.getAttribute('role') === 'button';
-      const height = Math.ceil(Math.max(rect.height, lineHeight));
+      // Inline fragments wrap against their containing block, not their Range.
+      let block = el;
+      while (view.getComputedStyle(block).display === 'inline' && block.parentElement) block = block.parentElement;
+      const blockCss = view.getComputedStyle(block), blockRect = block.getBoundingClientRect();
+      const contentWidth = Math.max(0, blockRect.width - number(blockCss.paddingLeft) - number(blockCss.paddingRight) - number(blockCss.borderLeftWidth) - number(blockCss.borderRightWidth));
+      const boxWidth = multiline ? contentWidth : 0;
+      const first = rects[0] || rect;
+      // Range rectangles cover font glyph metrics, not CSS leading. Removing
+      // half the leading also preserves the browser's button/flex alignment.
+      const top = first.y - (lineHeight - first.height) / 2;
+      const height = (lines || Math.max(1, Math.round(rect.height / lineHeight))) * lineHeight;
       nodes.push({ ...base, key: `${key}/text:${index}`, htmlKey: `${key}/text:${index}`, type: 'text',
-        x: Math.round(rect.x + (frame.x || 0)), y: Math.round((button && !multiline ? r.y + (r.height - height) / 2 : rect.y) + (frame.y || 0)),
-        width: Math.ceil(Math.max(rect.width, boxWidth)), height, boxWidth,
+        x: (multiline ? blockRect.x + number(blockCss.borderLeftWidth) + number(blockCss.paddingLeft) : rect.x) + (frame.x || 0),
+        y: top + (frame.y || 0),
+        width: multiline ? boxWidth : rect.width, height, boxWidth,
         text: css.whiteSpace?.startsWith('pre') ? text : text.replace(/\s+/g, ' ').trim(),
         fontFamily: css.fontFamily, fontSize, fontWeight: css.fontWeight || '400', fill: textClip && gradient ? gradient : parseColor(css.color)?.color || 'transparent', fillOpacity: textClip && gradient ? 1 : parseColor(css.color)?.alpha ?? 0,
         letterSpacing: number(css.letterSpacing), lineHeight: lineHeight / fontSize,

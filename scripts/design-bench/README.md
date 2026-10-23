@@ -22,3 +22,15 @@ Dedicated server defaults are bridge port 4290 and Vite port 5199. Override with
 Repaint saved documents with `node scripts/design-bench/recapture.mjs --label=after --repaint [--tasks=id1,id2] [--out=<dir>]`. Recapture starts Vite without a bridge, loads each JSON into the real app in a fresh headless Chromium browser, waits 1.5 seconds for fonts, and uses the runner’s canvas export path (maximum side 960px). The default recapture also repaints; `--score-only` or the exported `scoreOnly(options)` preserves existing PNGs and renders missing ones. `--repaint` forces rendering even with `--score-only`.
 
 On timeout, the latest checkpoint is restored in a fresh editor page and rendered through the same canvas export path. Judge output is validated as JSON with eight numeric scores from 1–5, with one retry for invalid output; each judged task records `judgeMean`. Reports include per-task scores, available-score means, and up to three positive and negative judge changes.
+
+HTML pipeline runs also save the final reviewed source as `<label>/<id>.html` and record `sourceHtml` in the manifest. Fidelity can replay that source without calling a model:
+
+```sh
+node scripts/design-bench/fidelity.mjs --file=/workspace/tmp/design-bench/after/saas-dashboard.html --out=/tmp/fidelity
+node scripts/design-bench/fidelity.mjs --fixtures=tests/fixtures/html_fidelity --frame=480x320 --out=/tmp/quality-real/fidelity/before
+node scripts/design-bench/fidelity.mjs '--html=<body style="margin:0">Hello</body>' --frame=320x200 --out=/tmp/fidelity
+```
+
+The exported `fidelity({ inputs: [{ id, html /* or file */, frame: { width, height } }], out })` accepts strings programmatically. Task filenames inherit task dimensions; other fixtures default to 480×320. Explicit `--frame=WIDTHxHEIGHT` overrides task dimensions. All browser work is serialized with `flock /tmp/voo-e2e.lock`; the worker closes Chromium and its own Vite process group in `finally`.
+
+Each input produces `.html.png`, `.canvas.png`, `.diff.png` (pink marks channel differences >16), `.sbs.png` (HTML left, canvas right), and `.diff.json`. The JSON retains computed DOM styles, direct text Range rects, converter nodes, app nodes before/after batch completion, real text wrapping metrics, and mismatches with a strict >1px geometry tolerance. Discrete wrap/alignment differences are reported regardless of that tolerance. Source metadata uses `htmlSource.id`/`selector` and stable `htmlKey` suffixes for text and border pieces. Padding and gap are compared as effective content/sibling offsets because the current converter bakes CSS layout into flat absolute geometry. Baselines are inferred from DOM Range rectangles and browser font ascent, and compared with the renderer's baseline formula; they are metric evidence, not OCR of exported pixels. Pixel differences include antialiasing and should be reviewed alongside the geometry and layout records before assigning renderer blame.

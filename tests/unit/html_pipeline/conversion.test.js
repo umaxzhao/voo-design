@@ -27,9 +27,9 @@ function fixture({ css = {}, children, rect = { x: 10.4, y: 20.6, width: 120.3, 
   const doc = { body, defaultView: { getComputedStyle: el => el.css }, createRange: () => ({ selectNodeContents() {}, getBoundingClientRect: () => textRect, getClientRects: () => rects || [textRect] }) };
   return { doc, element };
 }
-it('keeps single-line labels unwrapped and centers button text with whole-pixel geometry', () => {
+it('keeps single-line labels unwrapped and uses the measured line box without centering button text twice', () => {
   const { doc } = fixture();
-  expect(htmlToNodes(doc)[0]).toMatchObject({ text: 'Get started', boxWidth: 0, width: 81, height: 24, x: 14, y: 29 });
+  expect(htmlToNodes(doc)[0]).toMatchObject({ text: 'Get started', boxWidth: 0, width: 80.2, height: 24, x: 14.2, y: 22.4 });
 });
 it('keeps parent direct text separate from inline descendants with DOM line height', () => {
   const { doc, element } = fixture({ css: { paddingLeft: '4px', paddingRight: '4px' }, textRect: { x: 14, y: 24, width: 100.7, height: 48 }, rects: [{ x: 14, y: 24, width: 100, height: 20 }, { x: 14, y: 48, width: 80, height: 20 }] });
@@ -38,7 +38,7 @@ it('keeps parent direct text separate from inline descendants with DOM line heig
   const nodes = htmlToNodes(doc);
   expect(nodes).toHaveLength(2);
   expect(nodes.map(n => n.text)).toEqual(['One', 'shared orbit']);
-  expect(nodes[0]).toMatchObject({ boxWidth: 117, width: 117, lineHeight: 1.5 });
+  expect(nodes[0]).toMatchObject({ boxWidth: 112.3, width: 112.3, lineHeight: 1.5 });
 });
 it('preserves translucent radial and linear fills and skips invisible or unsupported decorations', () => {
   for (const backgroundImage of ['radial-gradient(rgba(255,255,255,0.1), transparent)', 'linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0))']) {
@@ -58,4 +58,52 @@ it('applies background-clip text gradients without emitting a covering rectangle
   const gradient = 'linear-gradient(white, rgba(255,255,255,0.5))';
   const { doc } = fixture({ css: { backgroundImage: gradient, backgroundClip: 'text', color: 'transparent', backgroundColor: 'white' } });
   expect(htmlToNodes(doc)).toEqual([expect.objectContaining({ type: 'text', fill: 'linear-gradient(#ffffffff, #ffffff80)' })]);
+});
+
+it('preserves fractional content width and removes multiline leading before the first baseline', async () => {
+  const { layoutTextLines, measureText } = await import('../../../src/canvas/editor/text_metrics.js');
+  const { paintTextBody } = await import('../../../src/canvas/editor/render_text_node.js');
+  const { doc } = fixture({
+    css: { display: 'block', fontSize: '18px', lineHeight: '30px', paddingLeft: '12px', paddingRight: '12px', borderLeftWidth: '1px', borderRightWidth: '1px' },
+    rect: { x: 24, y: 24, width: 260.25, height: 146 },
+    textRect: { x: 37, y: 42, width: 231.8, height: 110 },
+    rects: [0, 1, 2, 3].map(i => ({ x: 37, y: 42 + i * 30, width: 231.8, height: 20 })),
+    children: [{ nodeType: 3, textContent: 'alpha beta gamma delta' }],
+  });
+  const [node] = htmlToNodes(doc);
+  expect(node).toMatchObject({ x: 37, y: 37, height: 120, width: 234.25, boxWidth: 234.25, lineHeight: 30 / 18 });
+  const painted = [];
+  const ctx = { save() {}, restore() {}, measureText: text => ({ width: text.length * 16.7, fontBoundingBoxAscent: 16, fontBoundingBoxDescent: 4 }), fillText: (...args) => painted.push(args) };
+  expect(layoutTextLines(ctx, node)).toEqual(['alpha beta', 'gamma delta']);
+  expect(measureText(ctx, node).height).toBe(60);
+  paintTextBody(ctx, node);
+  expect(painted.map(args => args[2])).toEqual([58, 88]);
+  // Widening the box by the old four-pixel allowance changes the break.
+  ctx.measureText = text => ({ width: text === 'alpha beta gamma' ? 236 : text.length * 10 });
+  expect(layoutTextLines(ctx, node)[0]).toBe('alpha beta');
+});
+
+it('uses an inline text fragment’s containing block width for wrapping', () => {
+  const { doc, element } = fixture({ css: { display: 'block', paddingLeft: '3px', paddingRight: '5px' },
+    textRect: { x: 14, y: 24, width: 80, height: 44 },
+    rects: [{ x: 14, y: 24, width: 80, height: 20 }, { x: 14, y: 48, width: 60, height: 20 }] });
+  const span = element('SPAN', 'inline', { display: 'inline' }, [{ nodeType: 3, textContent: 'wrapped words' }]);
+  span.getBoundingClientRect = () => ({ x: 14, y: 24, width: 80, height: 44 });
+  span.parentElement = doc.body;
+  doc.body.childNodes = [span]; doc.body.children = [span];
+  expect(htmlToNodes(doc)[0].boxWidth).toBe(112.3);
+});
+
+it('preserves flex-centered single-line text using its Range rather than the container center', () => {
+  const { doc } = fixture({
+    css: { display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: '24px' },
+    rect: { x: 0, y: 0, width: 200, height: 100 },
+    textRect: { x: 60, y: 41.5, width: 80, height: 17 },
+  });
+  doc.body.tagName = 'DIV';
+  expect(htmlToNodes(doc)[0]).toMatchObject({ x: 60, y: 38, height: 24, boxWidth: 0 });
+  // Asymmetric button padding can put the label off the border-box center.
+  doc.body.tagName = 'BUTTON';
+  doc.body.css.paddingTop = '20px';
+  expect(htmlToNodes(doc)[0]).toMatchObject({ y: 38, height: 24 });
 });

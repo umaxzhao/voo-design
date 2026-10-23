@@ -232,6 +232,10 @@ export async function main(args = process.argv.slice(2)) {
               await writeFile(resolve(framesDir, filename), Buffer.from(png.split(',')[1], 'base64'));
             });
           }
+          await page.exposeFunction('__vooBenchSourceHtml', async html => {
+            await writeFile(`${output}/${id}.html`, html);
+            record.sourceHtml = `${output}/${id}.html`;
+          });
           await page.exposeFunction('__vooBenchCheckpoint', payload => {
             if (payload?.nodes?.length) lastCheckpoint = payload;
           });

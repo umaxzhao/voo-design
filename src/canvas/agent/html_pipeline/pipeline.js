@@ -44,6 +44,7 @@ export async function runHtmlPipeline({ brief, frame, editor, streamStep, config
       } finally { clearTimeout(timeout); controller.abort(); signal?.removeEventListener('abort', abort); }
       signal?.throwIfAborted(); progress(stage, 'completed');
     }
+    await globalThis.__vooBenchSourceHtml?.(reviewed.html);
     return { html: reviewed.html, directionId: direction.id, nodeCount: streamer.previous.size, trace };
   } catch (error) { progress(stage, signal?.aborted ? 'cancelled' : 'failed'); throw error; }
   finally { if (streamer) { try { await streamer.flush(); } finally { streamer.finish(); } } }
