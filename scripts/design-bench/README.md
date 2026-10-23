@@ -18,3 +18,5 @@ Outputs live in `/workspace/tmp/design-bench/<before|after>/`: `<id>.png` is a c
 Each task gets a fresh browser context and a fresh document. `--critique` uses the shared design quality loop with threshold 85 and at most two additional agent turns. When the shared linter has not landed yet, lint scoring and critique are skipped with a warning; document and screenshot capture still run. Scoring can be repeated later without regenerating the design.
 
 Dedicated server defaults are bridge port 4290 and Vite port 5199. Override with `VOO_DESIGN_BENCH_BRIDGE_PORT` / `VOO_DESIGN_BENCH_VITE_PORT` (or the E2E's `VOO_CODEX_BRIDGE_PORT` / `VOO_CODEX_VITE_PORT`). `VOO_DESIGN_BENCH_TIMEOUT_MS` defaults to 900000 per task, including critique turns. The runner starts its own servers with strict ports and shuts down their process groups when finished.
+
+Recapture saved documents with `node scripts/design-bench/recapture.mjs --label=after [--tasks=id1,id2]` (port `VOO_DESIGN_BENCH_RECAPTURE_PORT`, default 5299); `--score-only` or the exported `scoreOnly(options)` preserves existing PNGs.
