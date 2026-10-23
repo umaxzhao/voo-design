@@ -50,8 +50,8 @@ describe("textOutlinePath", () => {
   });
 });
 
-describe("text as glyph outlines in the mapper", () => {
-  it("turns a laid-out text into one filled path that keeps the source text", () => {
+describe("editable text with glyph data in the mapper", () => {
+  it.each([ ["Unavailable Test Face", true], ["Inter", false] ])("keeps %s editable (missing: %s)", (family, missing) => {
     const message = {
       blobs: [triangle],
       nodeChanges: [
@@ -64,7 +64,7 @@ describe("text as glyph outlines in the mapper", () => {
           transform: { m02: 0, m12: 0 },
           size: { x: 100, y: 40 },
           textData: { characters: "A" },
-          fontName: { family: "Microsoft YaHei", style: "Bold" },
+          fontName: { family, style: "Bold" },
           fontSize: 20,
           fillPaints: [{ type: "SOLID", color: { r: 1, g: 0, b: 0, a: 1 }, visible: true }],
           derivedTextData: { glyphs: [{ commandsBlob: 0, fontSize: 20, position: { x: 0, y: 20 } }] },
@@ -73,9 +73,12 @@ describe("text as glyph outlines in the mapper", () => {
     };
     const [node] = figmaMessageToPages(message).pages[0].nodes;
 
-    expect(node.kind).toBe("path");
-    expect(node.pen).toBe(true);
+    expect(node.kind).toBe("text");
+    expect(node.pen).toBeUndefined();
+    expect(node.fontFamily).toContain(family);
+    expect(node.figmaFont).toEqual({ family, style: "Bold" });
+    expect(node.fontMissing).toBe(missing);
     expect(node.fill).toBe("#ff0000");
-    expect(node.figmaText).toBe("A");
+    expect(node.text).toBe("A");
   });
 });

@@ -6,6 +6,7 @@ export default {
   "penImport.failed": "无法打开这个 Pen 文档",
   "penImport.unsupportedNode": "已跳过不支持的 Pen 图层：{type}",
   "penImport.missingAsset": "缺少 Pen 资源：{url}",
+  "textEdit.missingFont": "缺少字体：{family}",
   "penImport.missingFont": "缺少字体：{family}",
   "penImport.refExpanded": "组件实例已展开为独立图层",
   "penImport.clip": "未保留画框的裁剪效果",

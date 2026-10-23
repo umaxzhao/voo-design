@@ -10,6 +10,13 @@
 import { TEXT_LETTER_SPACING_BOUNDS, LINE_HEIGHT_RATIO } from "../editor/scene_model_core.js";
 import { BUNDLED_FONTS } from "../editor/font_loader.js";
 
+import { isGoogleFamily } from "../editor/google_fonts_index.js";
+
+/** Families the editor bundles or can load on demand. */
+export function isFigmaFontAvailable(family) {
+  return BUNDLED_FONTS.some((font) => font.family === family) || isGoogleFamily(family);
+}
+
 const WEIGHT_KEYWORDS = [
   [/extra\s*-?\s*bold|ultra\s*-?\s*bold/i, "800"],
   [/extra\s*-?\s*light|ultra\s*-?\s*light/i, "200"],
