@@ -370,6 +370,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const [snapToGrid, setSnapToGrid] = useState(
     () => getSetting(SNAP_TO_GRID_SETTING) === true,
   );
+  const lastGridSizeRef = useRef(32);
   const [selectedGuideId, setSelectedGuideId] = useState(null);
   /** Document snapshot taken when a guide drag begins; the whole drag is one undo. */
   const guideDragOriginRef = useRef(null);
@@ -4969,7 +4970,37 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               }
               onFit={multi ? fitAll : () => engine?.zoomToFit()}
               grid={grid}
-              onToggleGrid={toggleGrid}
+              gridSize={grid?.size ?? lastGridSizeRef.current}
+              snapToGrid={snapToGrid}
+              onToggleSnapToGrid={toggleSnapToGrid}
+              onSetGridSize={(size) => {
+                lastGridSizeRef.current = size;
+                const next = { enabled: grid ? grid.enabled !== false : true, size };
+                if (multi) {
+                  for (const entry of enginesRef.current.values()) {
+                    entry.engine?.setGrid?.(next);
+                  }
+                } else {
+                  engine?.setGrid?.(next);
+                }
+                bump();
+              }}
+              onToggleGrid={() => {
+                if (grid?.size) lastGridSizeRef.current = grid.size;
+                const next = {
+                  ...grid,
+                  enabled: !grid || grid.enabled === false,
+                  size: grid?.size ?? lastGridSizeRef.current,
+                };
+                if (multi) {
+                  for (const entry of enginesRef.current.values()) {
+                    entry.engine?.setGrid?.(next);
+                  }
+                } else {
+                  engine?.setGrid?.(next);
+                }
+                bump();
+              }}
               snapping={snappingEnabled}
               onToggleSnapping={toggleSnapping}
             >
@@ -4977,11 +5008,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 <EditorCanvasAids
                   showRulers={showRulers}
                   showGuides={showGuides}
-                  snapToGrid={snapToGrid}
                   canClearGuides={documentGuides.length > 0}
                   onToggleRulers={toggleRulers}
                   onToggleGuides={toggleGuides}
-                  onToggleSnapToGrid={toggleSnapToGrid}
                   onClearGuides={handleClearGuides}
                   t={t}
                 />

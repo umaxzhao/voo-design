@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
 import PropTypes from "prop-types";
 import {
@@ -12,8 +13,8 @@ import {
   IconEraser,
   IconGrid3x3,
   IconHistory,
-  IconMagnet,
   IconMinus,
+  IconMagnet,
   IconPerspective,
   IconPointer,
   IconCone,
@@ -202,7 +203,7 @@ export default function EditorToolbar({
         <div
           data-family-id="select"
           onMouseEnter={() => onHoverFamily?.("select")}
-          className="relative flex items-center"
+          className="relative flex items-center rounded-lg border border-white/10"
         >
           <EditorTooltip
             title={t("editor.tool.select")}
@@ -614,10 +615,37 @@ export function EditorZoom({
   onFit,
   grid,
   onToggleGrid,
+  snapToGrid = false,
+  onToggleSnapToGrid,
+  gridSize = 32,
+  onSetGridSize,
   onAddCanvas = null,
   children = null,
 }) {
   const { t } = useI18n();
+  const [gridMenuOpen, setGridMenuOpen] = useState(false);
+  const gridControlRef = useRef(null);
+  const gridMenuTriggerRef = useRef(null);
+  const gridMenuRef = useRef(null);
+  useEffect(() => {
+    if (!gridMenuOpen) return;
+    gridMenuRef.current?.querySelector('[role^="menuitem"]')?.focus();
+    const onOutside = (event) => {
+      if (!gridControlRef.current?.contains(event.target)) setGridMenuOpen(false);
+    };
+    const onKey = (event) => {
+      if (event.key === "Escape") {
+        setGridMenuOpen(false);
+        gridMenuTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", onOutside);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onOutside);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [gridMenuOpen]);
 
   return (
     <div
@@ -661,20 +689,94 @@ export function EditorZoom({
 
       <div className="h-3.5 w-[1px] bg-black/15 mx-0.5" />
 
-      <button
-        type="button"
-        onClick={onToggleGrid}
-        title={t("editor.view.grid")}
-        aria-label={t("editor.view.grid")}
-        aria-pressed={Boolean(grid)}
-        className={`flex h-7 w-7 items-center justify-center rounded-lg outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
-          grid ? "text-black" : "text-black/40"
-        }`}
-      >
-        <IconGrid3x3 size={13} />
-      </button>
+      <div ref={gridControlRef} className="relative flex items-center">
+        <button
+          type="button"
+          onContextMenu={(event) => {
+            event.preventDefault();
+            setGridMenuOpen(true);
+          }}
+          onClick={onToggleGrid}
+          title={t("editor.view.grid")}
+          aria-label={t("editor.view.grid")}
+          aria-pressed={Boolean(grid && grid.enabled !== false)}
+          className={`flex h-7 w-7 items-center justify-center rounded-l-lg outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
+            grid && grid.enabled !== false ? "text-black" : "text-black/40"
+          }`}
+        >
+          <IconGrid3x3 size={13} />
+        </button>
 
-      {/* Rulers / guides / snap-to-grid live inside this one bar. */}
+        <button
+          ref={gridMenuTriggerRef}
+          type="button"
+          data-testid="editor-grid-menu-trigger"
+          aria-haspopup="menu"
+          aria-expanded={gridMenuOpen}
+          aria-controls="editor-grid-menu"
+          aria-label={t("editor.grid.options")}
+          title={t("editor.grid.options")}
+          onClick={() => setGridMenuOpen((open) => !open)}
+          className="flex h-7 w-5 items-center justify-center rounded-r-lg border-l border-black/10 text-black hover:bg-black/10 focus-visible:ring-1 focus-visible:ring-black/30 outline-none"
+        >
+          <IconChevronDown size={13} />
+        </button>
+        {gridMenuOpen ? (
+          <div
+            ref={gridMenuRef}
+            onKeyDown={(event) => {
+              if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+              const items = Array.from(event.currentTarget.querySelectorAll('[role^="menuitem"]'));
+              if (!items.length) return;
+              event.preventDefault();
+              const index = items.indexOf(event.target);
+              const next = event.key === "Home" ? 0
+                : event.key === "End" ? items.length - 1
+                : (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+              items[next].focus();
+            }}
+            id="editor-grid-menu"
+            data-testid="editor-grid-menu"
+            role="menu"
+            aria-label={t("editor.grid.options")}
+            className="absolute bottom-full left-0 mb-2 min-w-40 rounded-xl bg-[#e3e3e3] p-1.5 text-[11px] text-black shadow-pop"
+          >
+            <button
+              type="button"
+              role="menuitemcheckbox"
+              data-testid="editor-grid-menu-snap"
+              aria-checked={snapToGrid}
+              onClick={onToggleSnapToGrid}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-white focus-visible:bg-white outline-none"
+            >
+              <IconMagnet size={13} />
+              {t("editor.snapping.toGrid")}
+              <span aria-hidden="true" className="ml-auto">{snapToGrid ? "✓" : ""}</span>
+            </button>
+            <div className="my-1 border-t border-black/10" role="separator" />
+            <div className="px-2 py-1 text-black/60">{t("editor.grid.size")}</div>
+            {[8, 16, 32, 64].map((size) => (
+              <button
+                key={size}
+                type="button"
+                role="menuitemradio"
+                aria-checked={gridSize === size}
+                data-testid={`editor-grid-size-${size}`}
+                onClick={() => {
+                  onSetGridSize?.(size);
+                  setGridMenuOpen(false);
+                }}
+                className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 hover:bg-white focus-visible:bg-white outline-none"
+              >
+                {t("editor.grid.sizeLabel", { size })}
+                <span aria-hidden="true">{gridSize === size ? "✓" : ""}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      {/* Rulers and guides live inside this one bar. */}
       {children ? (
         <>
           <div className="h-3.5 w-[1px] bg-black/15 mx-0.5" />
@@ -727,5 +829,9 @@ EditorZoom.propTypes = {
   onFit: PropTypes.func.isRequired,
   grid: PropTypes.object,
   onToggleGrid: PropTypes.func,
+  snapToGrid: PropTypes.bool,
+  onToggleSnapToGrid: PropTypes.func,
+  gridSize: PropTypes.number,
+  onSetGridSize: PropTypes.func,
   children: PropTypes.node,
 };

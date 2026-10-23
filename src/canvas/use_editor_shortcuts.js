@@ -1187,7 +1187,12 @@ export function useEditorShortcuts({
       ) {
         event.preventDefault();
         const currentGrid = engine.getGrid?.();
-        engine.setGrid?.(currentGrid ? null : { enabled: true, size: 32 });
+        const gridEnabled = currentGrid && currentGrid?.enabled !== false;
+        engine.setGrid?.({
+          ...currentGrid,
+          enabled: !gridEnabled,
+          size: currentGrid?.size ?? 32,
+        });
         return;
       }
 

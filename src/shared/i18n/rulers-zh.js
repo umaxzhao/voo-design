@@ -23,6 +23,9 @@ export default {
   "editor.guides.clear": "清除参考线",
   "editor.guides.clearAll": "清除全部参考线",
 
+  "editor.grid.sizeLabel": "{size} 像素",
+  "editor.grid.options": "网格选项",
+  "editor.grid.size": "网格大小",
   "editor.snapping.toGrid": "对齐网格",
   "editor.snapping.toGridOn": "对齐网格（开）",
   "editor.snapping.toGridOff": "对齐网格（关）",
