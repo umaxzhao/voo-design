@@ -9,6 +9,7 @@ import { useI18n } from "../use_i18n.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import { DEFAULT_AGENT_MODEL } from "../../shared/agent-defaults.js";
 import { runAgentTurn } from "../agent/canvas_agent.js";
+import { errorText } from "../error_text.js";
 import { abortable } from "../agent/abortable.js";
 import {
   AGENT_DEFAULTS,
@@ -297,7 +298,7 @@ export default function CanvasAgentPanel({ onClose }) {
           createdAt: Date.now(),
         });
       } catch (caught) {
-        if (!controller.signal.aborted) setError(caught?.code === CHAT_ERROR.NOT_CONFIGURED ? "notConfigured" : "failed");
+        if (!controller.signal.aborted) setError(caught?.code === CHAT_ERROR.NOT_CONFIGURED ? t("agent.panel.notConfigured") : errorText({ code: caught?.code ?? caught?.message, message: caught?.message }));
       } finally {
         turnRef.current = null;
         useDesignStore.setState({ agentGenerating: false });
@@ -597,7 +598,7 @@ export default function CanvasAgentPanel({ onClose }) {
 
       {error && (
         <p role="alert" className="mx-4 mb-2 rounded-xl bg-[#E5B2FF]/10 px-3 py-2 text-[12px] text-[#eed0ff]">
-          {t(`agent.panel.${error}`)}
+          {error}
         </p>
       )}
       <form onSubmit={onSubmit} className="prompt-composer agent-composer relative mx-3 mb-3 rounded-2xl p-3">
