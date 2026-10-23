@@ -941,7 +941,7 @@ export default function EditorLayers({
         />
       ) : null}
 
-      <div className="grid grid-cols-2 gap-1.5 mb-2">
+      <div className="flex flex-row-reverse items-center gap-2 mb-2 border-b border-white/[0.08] pb-2 [&>*:first-child]:w-20 [&>*:last-child]:min-w-0 [&>*:last-child]:flex-1">
         <ScrubField
           prefix={<IconOpacity size={12} />}
           suffix="%"
@@ -965,7 +965,7 @@ export default function EditorLayers({
             value: mode,
             label: t(blendModeLabelKey(mode)),
           }))}
-          triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2.5 !text-[10px] !font-mono !tabular-nums !text-neutral-100 hover:!bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+          triggerClassName="!h-7 !w-full !rounded !bg-transparent !px-2.5 !text-[10px] !font-mono !tabular-nums !text-neutral-100 hover:!bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
           widthClass="w-44"
         />
       </div>
@@ -1165,19 +1165,16 @@ export default function EditorLayers({
                                               })
                                           : undefined
                                       }
-                                      className={`group/layer flex select-none items-center gap-2 rounded-xl py-1.5 transition-all ${
+                                      className={`group/layer relative flex min-h-8 select-none items-center gap-1.5 rounded py-1 transition-colors ${
                                         dragId === object.id
                                           ? "opacity-40 "
                                           : ""
                                       }${
-                                        overId === object.id
-                                          ? "bg-neutral-800 ring-1 ring-inset ring-[#a7ffd4]/70"
-                                          : isGroupNode(object) &&
-                                              rowSelected
-                                            ? "bg-neutral-800 text-[#eed0ff]"
-                                            : rowSelected
-                                              ? "bg-neutral-800 text-[#a7ffd4] font-medium"
-                                              : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"
+                                        rowSelectedOf(object)
+                                          ? `bg-neutral-800 text-neutral-100 ${isRowSelected(objects, object, { selectedIds, activeIndex, isBackgroundSelected }) ? "shadow-[inset_0_0_0_1px_#a7ffd4]" : ""}`
+                                          : overId === object.id
+                                            ? "bg-neutral-800 ring-1 ring-inset ring-[#a7ffd4]"
+                                            : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"
                                       } ${draggable ? "touch-none cursor-default" : ""}`}
                                       style={{
                                         boxShadow:
@@ -1186,11 +1183,40 @@ export default function EditorLayers({
                                             : undefined,
                                         paddingLeft:
                                           8 +
-                                          depth * 14 +
-                                          (object.clipTo ? 14 : 0),
+                                          depth * 16,
                                         paddingRight: 8,
                                       }}
                                     >
+                                      {depth > 0 && <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 border-l border-white/10" style={{ left: 8 + (depth - 1) * 16 }} />}
+                                      {expandable ? (
+                                        <button
+                                          type="button"
+                                          tabIndex={-1}
+                                          data-no-drag
+                                          onMouseDown={(event) =>
+                                            event.preventDefault()
+                                          }
+                                          onClick={() =>
+                                            toggleGroupCollapse(
+                                              object.id,
+                                              activeCanvasId,
+                                            )
+                                          }
+                                          aria-label={
+                                            collapsed
+                                              ? t("editor.layer.expandGroup")
+                                              : t("editor.layer.collapseGroup")
+                                          }
+                                          aria-expanded={!collapsed}
+                                          className="shrink-0 p-0.5 text-neutral-400 transition-colors hover:text-neutral-100"
+                                        >
+                                          {collapsed ? (
+                                            <IconChevronRight size={12} />
+                                          ) : (
+                                            <IconChevronDown size={12} />
+                                          )}
+                                        </button>
+                                      ) : <span className="w-4 shrink-0" aria-hidden="true" />}
                                       <button
                                         type="button"
                                         data-no-drag
@@ -1241,7 +1267,7 @@ export default function EditorLayers({
                                           className="shrink-0"
                                         >
                                           {grouped ? (
-                                            <span className="flex h-7 w-7 items-center justify-center rounded-md text-neutral-300">
+                                            <span className="flex h-5 w-7 items-center justify-center text-neutral-400">
                                               {isBoolean ? (
                                                 <OperationIcon
                                                   operation={
@@ -1376,35 +1402,7 @@ export default function EditorLayers({
                                         </button>
                                       )}
 
-                                      {expandable ? (
-                                        <button
-                                          type="button"
-                                          tabIndex={-1}
-                                          data-no-drag
-                                          onMouseDown={(event) =>
-                                            event.preventDefault()
-                                          }
-                                          onClick={() =>
-                                            toggleGroupCollapse(
-                                              object.id,
-                                              activeCanvasId,
-                                            )
-                                          }
-                                          aria-label={
-                                            collapsed
-                                              ? t("editor.layer.expandGroup")
-                                              : t("editor.layer.collapseGroup")
-                                          }
-                                          aria-expanded={!collapsed}
-                                          className="shrink-0 p-0.5 text-neutral-400 transition-colors hover:text-neutral-100"
-                                        >
-                                          {collapsed ? (
-                                            <IconChevronRight size={12} />
-                                          ) : (
-                                            <IconChevronDown size={12} />
-                                          )}
-                                        </button>
-                                      ) : null}
+
 
                                       {/* Lock buttons cluster: For group nodes, only show the master lock;
                     For ordinary layers, master lock is visible on layer hover, and the 3 granular locks
@@ -1609,7 +1607,7 @@ export default function EditorLayers({
             tabIndex={-1}
             className={`group/layer flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all cursor-pointer ${
               isBackgroundSelected
-                ? "bg-neutral-800 text-[#a7ffd4] font-medium"
+                ? "bg-neutral-800 text-neutral-100 shadow-[inset_0_0_0_1px_#a7ffd4]"
                 : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"
             }`}
             style={{

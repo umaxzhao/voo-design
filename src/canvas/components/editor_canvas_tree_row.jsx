@@ -21,7 +21,7 @@ export function getCanvasTypeIcon(type, isComponent = false) {
  * Displays frame icon, title, type badge, expand/collapse chevron,
  * and handles canvas selection/focus.
  *
- * Default frame uses green (#a7ffd4). Component objects use purple (#E5B2FF).
+ * Canvas roots share the neutral highlight used by the nested layer rows.
  */
 export default function EditorCanvasTreeRow({
   page,
@@ -45,14 +45,8 @@ export default function EditorCanvasTreeRow({
       data-testid="editor-canvas-row"
       data-canvas-id={page.id}
       onClick={() => onFocusCanvas?.(page.id)}
-      className={`group/canvas flex min-h-7 items-center gap-1 rounded-lg px-1.5 transition-colors cursor-pointer ${
-        isActive
-          ? isComponent
-            ? "bg-neutral-800 text-[#eed0ff]"
-            : "bg-neutral-800 text-[#a7ffd4]"
-          : isComponent
-            ? "text-neutral-400 hover:bg-white/[0.06] hover:text-[#eed0ff]"
-            : "text-neutral-400 hover:bg-white/[0.06] hover:text-neutral-200"
+      className={`group/canvas flex min-h-8 items-center gap-1 rounded px-1.5 transition-colors cursor-pointer text-neutral-200 ${
+        isActive ? "bg-neutral-800" : "hover:bg-white/[0.06]"
       }`}
     >
       <button
@@ -109,7 +103,7 @@ export default function EditorCanvasTreeRow({
         </div>
 
         {isComponent ? (
-          <span className="ml-2 shrink-0 text-[10px] text-[#eed0ff]/80 font-mono">
+          <span className="ml-2 shrink-0 text-[10px] text-neutral-400 font-mono">
             {t("editor.component.label")}
           </span>
         ) : page.type === "3d" || page.type === "motion" ? (

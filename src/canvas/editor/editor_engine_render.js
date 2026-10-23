@@ -26,6 +26,7 @@ export function renderEngineStage({
   doc,
   viewportTools,
   selection,
+  selectedContainer = null,
   tool,
   healingMode,
   selectedPuppetPinId,
@@ -69,14 +70,14 @@ export function renderEngineStage({
   const height = stageHeight || stage.clientHeight;
   resizeCanvas(canvas, width, height, dpr);
   const selectedId = selection.getId();
-  const selectedNode = selectedId ? findNode(doc, selectedId) : null;
+  const selectedNode = selectedContainer ?? (selectedId ? findNode(doc, selectedId) : null);
   const hideSelection =
     tool === TOOL.BRUSH ||
     tool === TOOL.ERASER ||
     tool === TOOL.REGION ||
     tool === TOOL.LASSO;
   const selectedIds = selection.getIds();
-  const multiple = selectedIds.length > 1;
+  const multiple = !selectedContainer && selectedIds.length > 1;
   let selRect = null;
   let selNode = selectedNode;
   const isAdjustmentNode = selectedNode?.kind === NODE_KIND.ADJUSTMENT;

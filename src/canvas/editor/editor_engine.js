@@ -370,6 +370,7 @@ export function createEditor({
       doc: evaluatedDoc,
       viewportTools,
       selection,
+      selectedContainer: ctrl.nodesController?.getSelectedGroup?.() ?? null,
       tool: ctrl.toolsController.getTool(),
       healingMode: ctrl.toolsController.getHealingMode(),
       selectedPuppetPinId,
