@@ -288,10 +288,11 @@ export async function saveVooProject({
   }
 
   const pages = nodes.map((node) => {
-    const live = enginesRef?.current?.get(node.id)?.engine;
+    const entry = enginesRef?.current?.get(node.id);
     let sceneDoc;
-    if (live?.ready) {
-      sceneDoc = live.serialise();
+    // Readiness belongs to the registry entry, not the engine instance.
+    if (entry?.ready && entry.engine) {
+      sceneDoc = entry.engine.serialise();
     } else if (snapshotsRef?.current?.get(node.id)?.doc) {
       sceneDoc = snapshotsRef.current.get(node.id).doc;
     } else {

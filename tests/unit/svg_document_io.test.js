@@ -57,3 +57,14 @@ describe("svg document io", () => {
     expect(losses[1].params.kinds).toBe("unknown-kind");
   });
 });
+
+describe('SVG text save/reopen coordinates', () => {
+  it('converts a translated SVG baseline to editor top coordinates and keeps it stable', () => {
+    const source = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120"><g transform="translate(10 20)"><text x="12" y="50" font-size="24" fill="#112233">Hello</text></g></svg>';
+    const first = svgBytesToVooFile(new TextEncoder().encode(source)).document;
+    const text = first.nodes.find(n => n.kind === 'text');
+    expect(text).toMatchObject({x:22,y:46,fontSize:24,text:'Hello'});
+    const reopened = svgBytesToVooFile(new TextEncoder().encode(documentToSvg(first))).document;
+    expect(reopened.nodes.find(n => n.kind === 'text')).toMatchObject({x:text.x,y:text.y,fontSize:text.fontSize,text:text.text,fill:text.fill});
+  });
+});
