@@ -290,3 +290,60 @@ describe("command palette recents", () => {
     ]);
   });
 });
+
+import { buildExtendedPaletteActions } from "../../src/canvas/commands/palette_actions.js";
+import { TOOL } from "../../src/canvas/editor/tool_ids.js";
+
+describe("extended palette coverage", () => {
+  const setup = () => {
+    const engine = { flipHorizontal: vi.fn(), flipVertical: vi.fn(), canCombineSelection: () => true, combineSelected: vi.fn() };
+    const host = { engine, onTool: vi.fn(), onCreateComponent: vi.fn(), onToggleGrid: vi.fn(), onOpenAgent: vi.fn(), setLocale: vi.fn() };
+    return { host, index: buildCommandIndex({ definitions: {}, actions: buildExtendedPaletteActions(host) }) };
+  };
+  it("indexes all 30 real host actions with unique ids", () => {
+    const { index } = setup();
+    expect(index).toHaveLength(30);
+    expect(new Set(index.map(row => row.id)).size).toBe(30);
+    expect(index.some(row => /hand|theme|frame/.test(row.sourceId))).toBe(false);
+  });
+  it("routes tools, booleans, flip, component, grid, agent and locale to existing handlers", () => {
+    const { host, index } = setup();
+    const run = id => index.find(row => row.sourceId === id).run();
+    run("tool-rect"); expect(host.onTool).toHaveBeenCalledWith(TOOL.RECT);
+    run("boolean-union"); expect(host.engine.combineSelected).toHaveBeenCalledWith("union");
+    run("flip-horizontal"); expect(host.engine.flipHorizontal).toHaveBeenCalledOnce();
+    run("flip-vertical"); expect(host.engine.flipVertical).toHaveBeenCalledOnce();
+    run("create-component"); expect(host.onCreateComponent).toHaveBeenCalledOnce();
+    run("toggle-grid"); expect(host.onToggleGrid).toHaveBeenCalledOnce();
+    run("open-agent"); expect(host.onOpenAgent).toHaveBeenCalledOnce();
+    run("language-zh"); expect(host.setLocale).toHaveBeenCalledWith("zh");
+  });
+  it("fuzzy-filters the new actions and wraps selection over results", () => {
+    const { index } = setup();
+    const rows = filterCommands(index, "blnun");
+    expect(rows.some(row => row.sourceId === "boolean-union")).toBe(true);
+    expect(moveSelection(rows.length - 1, 1, rows.length)).toBe(0);
+    expect(filterCommands(index, "language")).toHaveLength(2);
+  });
+  it("does not combine an incompatible selection", () => {
+    const { host, index } = setup();
+    host.engine.canCombineSelection = () => false;
+    index.find(row => row.sourceId === "boolean-union").run();
+    expect(host.engine.combineSelected).not.toHaveBeenCalled();
+  });
+});
+
+import en from "../../src/shared/i18n/en.js";
+import zh from "../../src/shared/i18n/zh.js";
+
+it("translates every extended action label in English and Chinese", () => {
+  const actions = buildExtendedPaletteActions({ onTool: vi.fn(), onCreateComponent: vi.fn(), onToggleGrid: vi.fn(), onOpenAgent: vi.fn(), setLocale: vi.fn() });
+  for (const dictionary of [en, zh]) {
+    for (const action of actions) {
+      expect(dictionary[action.labelKey], action.labelKey).toBeTruthy();
+    }
+    const index = buildCommandIndex({ definitions: {}, actions, t: key => dictionary[key] ?? key });
+    expect(index).toHaveLength(30);
+    expect(index.every(row => row.label !== row.sourceId)).toBe(true);
+  }
+});

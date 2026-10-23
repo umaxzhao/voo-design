@@ -31,6 +31,8 @@ import { CANVAS_TOOL_LAYOUT_SCHEMAS, LAYOUT_TOOL_EXECUTORS } from "./canvas_tool
 import { CANVAS_TOOL_PLAN_SCHEMAS, PLAN_TOOL_EXECUTORS } from "./canvas_tools_plan.js";
 import { SCENE_OPS_TOOL_SCHEMAS, SCENE_OPS_TOOL_EXECUTORS } from "./canvas_tools_scene_ops.js";
 
+import { LINT_TOOL_SCHEMA, lintDesignTool } from "./design_quality/lint_tool.js";
+
 export const AGENT_SETTING = Object.freeze({
   API_KEY: "agent.apiKey",
   BASE_URL: "agent.baseUrl",
@@ -371,7 +373,7 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
   ...TEXT_PATH_TOOL_SCHEMAS,
   ...CANVAS_TOOL_LAYOUT_SCHEMAS,
   ...CANVAS_TOOL_PLAN_SCHEMAS,
-  ...SCENE_OPS_TOOL_SCHEMAS,
+  ...SCENE_OPS_TOOL_SCHEMAS, LINT_TOOL_SCHEMA,
 ]);
 
 function requireEditor() {
@@ -903,7 +905,7 @@ const EXECUTORS = Object.freeze({
   ...TEXT_PATH_TOOL_EXECUTORS,
   ...LAYOUT_TOOL_EXECUTORS,
   ...PLAN_TOOL_EXECUTORS,
-  ...SCENE_OPS_TOOL_EXECUTORS,
+  ...SCENE_OPS_TOOL_EXECUTORS, lint_design: lintDesignTool,
   create_path: createPath,
   place_image: placeImage,
   capture_canvas: captureCanvas,

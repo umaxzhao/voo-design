@@ -430,7 +430,7 @@ public class CanvasStageView: NSView {
     /// True while the node tool is editing the anchors of a selected path.
     public var isPathEditing: Bool { pathEditingNodeId != nil }
 
-    public var showRulers: Bool = true {
+    public var showRulers: Bool = false {
         didSet {
             horizontalRuler.isHidden = !showRulers
             verticalRuler.isHidden = !showRulers
@@ -3898,7 +3898,7 @@ public final class CanvasCreationPreviewView: NSView {
         didSet { if oldValue != panOffset { needsDisplay = true } }
     }
 
-    public var showsRulers: Bool = true {
+    public var showsRulers: Bool = false {
         didSet { if oldValue != showsRulers { needsDisplay = true } }
     }
 

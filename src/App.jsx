@@ -42,10 +42,12 @@ export default function App() {
     let unsubscribeMenu = null;
     if (window.electronAPI?.onMenuAction) {
       unsubscribeMenu = window.electronAPI.onMenuAction((action) => {
-        const store = useDesignStore.getState();
         switch (action) {
-          case "help:onboarding":
+          case "help:first-run":
             handleOpenFirstRun();
+            break;
+          case "help:onboarding":
+            window.dispatchEvent(new CustomEvent("voo:open-onboarding"));
             break;
           case "file:new":
             window.dispatchEvent(new CustomEvent("voo:file-new"));
