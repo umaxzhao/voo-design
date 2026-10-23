@@ -1,6 +1,5 @@
 import PropTypes from "prop-types";
 import { useMemo } from "react";
-import KindIcon from "./kind_icons.jsx";
 import AdjustmentControls from "./adjustment_controls.jsx";
 import AdjustmentSlider from "./adjustment_slider.jsx";
 import { createDefaultAdjustments } from "../../editor/scene_model.js";
@@ -175,9 +174,6 @@ export default function AffinityAdjustmentSection({
       {/* 1. Affinity-Style Header Card */}
       <div className="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#a7ffd4]/10 text-[#a7ffd4] border border-[#a7ffd4]/20">
-            <KindIcon kind={kind} size={15} />
-          </div>
           <div className="flex flex-col min-w-0">
             <span className="text-xs font-medium text-neutral-100 tracking-tight truncate">
               {localizedTitle}

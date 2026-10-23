@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import { useEffect, useLayoutEffect, useState } from "react";
-import { IconCheck, IconClose, IconCredits, IconExpand } from "../icons.jsx";
+import { IconCheck, IconClose, IconCredits } from "../icons.jsx";
 import { useI18n } from "../use_i18n.js";
 import { expandRectByHandle } from "../editor/outpaint_geometry.js";
 import { defaultOutpaintRect } from "../editor/outpaint_direction.js";
@@ -238,7 +238,6 @@ export default function EditorOutpaintOverlay({
         onMouseDown={(event) => event.stopPropagation()}
         className="nodrag fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/10 bg-neutral-900/95 p-2.5 pl-3.5 shadow-menu backdrop-blur-2xl"
       >
-        <IconExpand size={13} className="shrink-0 text-[#E5B2FF]" />
         <span className="whitespace-nowrap pr-1 text-[12px] text-neutral-300">
           {t("editor.outpaint.title")}
         </span>

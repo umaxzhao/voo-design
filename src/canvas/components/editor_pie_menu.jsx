@@ -254,10 +254,10 @@ export default function EditorPieMenu({
                       : "bg-white text-black font-medium"
                     : isActive
                       ? isAi
-                        ? "bg-[#E5B2FF]/40 text-[#eed0ff]"
+                        ? "bg-[#E5B2FF]/40 text-neutral-200"
                         : "bg-white/30 text-white"
                       : isAi
-                        ? "bg-black/60 text-[#E5B2FF] hover:bg-[#E5B2FF]/20"
+                        ? "bg-black/60 text-neutral-300 hover:bg-[#E5B2FF]/20"
                         : "bg-black/60 text-neutral-300 hover:bg-white/20 hover:text-white"
                 }`}
               >

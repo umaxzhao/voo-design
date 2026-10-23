@@ -101,15 +101,7 @@ export default function EditorCanvasTreeRow({
           <TypeIcon
             size={13}
             strokeWidth={ICON_STROKE_WIDTH}
-            className={`shrink-0 ${
-              isActive
-                ? isComponent
-                  ? "text-[#eed0ff]"
-                  : "text-[#a7ffd4]"
-                : isComponent
-                  ? "text-[#E5B2FF]/70 group-hover/canvas:text-[#eed0ff]"
-                  : "text-neutral-400 group-hover/canvas:text-[#a7ffd4]"
-            }`}
+            className={`shrink-0 ${isActive ? "text-neutral-200" : "text-neutral-400 group-hover/canvas:text-neutral-200"}`}
           />
           <span className="truncate text-[11px] font-medium leading-none">
             {page.title}

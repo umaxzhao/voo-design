@@ -37,7 +37,7 @@ export default function AgentMcpSettings() {
       <label className="text-xs text-neutral-300">{t(type === 'stdio' ? 'agent.mcp.command' : 'agent.mcp.url')}<input className={SETTINGS_INPUT_CLASS} value={target} onChange={e => setTarget(e.target.value)} required /></label>
       {type === 'stdio' && <label className="text-xs text-neutral-300">{t('agent.mcp.args')}<input className={SETTINGS_INPUT_CLASS} value={args} onChange={e => setArgs(e.target.value)} /></label>}
       <label className="text-xs text-neutral-300">{t(type === 'stdio' ? 'agent.mcp.env' : 'agent.mcp.headers')}<textarea className={SETTINGS_INPUT_CLASS} value={values} onChange={e => setValues(e.target.value)} /></label>
-      {error && <p role="alert" className="text-xs text-red-300">{t('agent.mcp.invalid')}</p>}
+      {error && <p role="alert" className="text-xs text-rose-300">{t('agent.mcp.invalid')}</p>}
       <button type="submit" className="rounded-xl bg-white/[0.06] p-3 text-xs text-neutral-200 hover:bg-white/10">{t('agent.mcp.add')}</button>
     </form>
   </SettingsSection>;

@@ -25,7 +25,7 @@ function Action({
   active,
   ...props
 }) {
-  return <EditorTooltip title={label} shortcut={shortcut}><button type="button" aria-label={label} data-testid={`editor-taskbar-${id}`} aria-pressed={active} className={`${BUTTON} ${active ? "bg-white/15 text-[#a7ffd4]" : ""}`} {...props}>{icon}</button></EditorTooltip>;
+  return <EditorTooltip title={label} shortcut={shortcut}><button type="button" aria-label={label} data-testid={`editor-taskbar-${id}`} aria-pressed={active} className={`${BUTTON} ${active ? "bg-white/15 text-neutral-200" : ""}`} {...props}>{icon}</button></EditorTooltip>;
 }
 
 // Coordinates are in the editor overlay's viewport coordinate system.
@@ -151,7 +151,7 @@ function EditorContextualTaskBar({
     onDispatch?.(payload);
     setAiInputOpen(false);
   };
-  const ai = <>{action("ai-sparkle", <IconSparkles size={14} className="text-[#E5B2FF]" />, () => setAiInputOpen(open => !open), {
+  const ai = <>{action("ai-sparkle", <IconSparkles size={14} className="text-neutral-300" />, () => setAiInputOpen(open => !open), {
       label: label("askAgent"),
       active: aiInputOpen,
       "aria-expanded": aiInputOpen
@@ -172,13 +172,13 @@ function EditorContextualTaskBar({
       {pen && <>{action("finishPath", <IconCheck size={14} />, () => finishPenPathEditing(engine), { label: t("editor.pen.closeEdit") })}{action("deleteAnchor", <IconTrash size={14} />, () => engine?.deleteActiveAnchor?.())}<Divider /></>}
       {!node && !count && selectionTool ? <>{action("marquee", <IconCrop size={14} />, () => engine?.setTool?.(TOOL.MARQUEE))}{action("lasso", <IconUnlink size={14} />, () => engine?.setTool?.(TOOL.LASSO))}</> : <>
       {type === "text" && <>
-        <EditorTooltip title={label("fontFamily")}><select data-testid="editor-taskbar-font-family" aria-label={label("fontFamily")} className="h-7 max-w-24 rounded bg-transparent px-1 outline-none" value={node?.fontFamily || "Inter"} onChange={event => edit({
+        <EditorTooltip title={label("fontFamily")}><select data-testid="editor-taskbar-font-family" aria-label={label("fontFamily")} className="h-7 max-w-24 rounded-lg bg-transparent px-1 outline-none" value={node?.fontFamily || "Inter"} onChange={event => edit({
                 fontFamily: event.target.value
               })}>{Array.from(new Set([node?.fontFamily || "Inter", "Inter", "Arial", "Georgia", "monospace"])).map(font => <option className="bg-neutral-900" key={font}>{font}</option>)}</select></EditorTooltip>
         {action("fontDecrease", "−", () => edit({
               fontSize: Math.max(1, fontSize - 1)
             }))}
-        <input data-testid="editor-taskbar-font-size" aria-label={label("fontSize")} type="number" min="1" max="999" value={fontSize} className="h-7 w-10 rounded bg-white/5 text-center outline-none" onChange={event => {
+        <input data-testid="editor-taskbar-font-size" aria-label={label("fontSize")} type="number" min="1" max="999" value={fontSize} className="h-7 w-10 rounded-lg bg-white/5 text-center outline-none" onChange={event => {
               const value = Number(event.target.value);
               if (value > 0 && value <= 999) edit({
                 fontSize: value
@@ -233,7 +233,7 @@ function EditorContextualTaskBar({
             })}
       </>}
       {type === "shape" && <>
-        {["fill", "stroke"].map(paint => <EditorTooltip key={paint} title={label(paint)}><label className={`${BUTTON} relative`}><span className={`h-3.5 w-3.5 rounded-sm border ${paint === "stroke" ? "border-2 border-white" : "border-white/40"}`} style={{
+        {["fill", "stroke"].map(paint => <EditorTooltip key={paint} title={label(paint)}><label className={`${BUTTON} relative`}><span className={`h-3.5 w-3.5 rounded-md border ${paint === "stroke" ? "border-2 border-white" : "border-white/40"}`} style={{
                   background: paint === "fill" && typeof node?.fill === "string" ? node.fill : undefined
                 }} /><input type="color" data-testid={`editor-taskbar-${paint}`} aria-label={label(paint)} value={/^#[0-9a-f]{6}$/i.test(node?.[paint]) ? node[paint] : "#ffffff"} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" onChange={event => edit({
                   [paint]: event.target.value,

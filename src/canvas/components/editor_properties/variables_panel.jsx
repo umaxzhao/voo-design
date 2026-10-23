@@ -295,7 +295,7 @@ export default function VariablesPanel({
                 title={tv("editor.variables.panel.addCollection")}
                 className={`${GHOST_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-40`}
               >
-                <IconAdd size={12} strokeWidth={1.5} />
+                <IconAdd className="text-neutral-300" size={12} strokeWidth={1.5} />
               </button>
             </div>
             {collections.length === 0 ? (
@@ -375,7 +375,7 @@ export default function VariablesPanel({
                       title={tv("editor.variables.panel.addMode")}
                       className={`${GHOST_BUTTON_CLASS} disabled:cursor-not-allowed disabled:opacity-40`}
                     >
-                      <IconAdd size={12} strokeWidth={1.5} />
+                      <IconAdd className="text-neutral-300" size={12} strokeWidth={1.5} />
                     </button>
                   </div>
                   <div className="flex flex-wrap items-center gap-1">
@@ -542,7 +542,7 @@ export default function VariablesPanel({
                     }
                     className="flex items-center gap-1 rounded-lg bg-[#a7ffd4]/15 px-2.5 py-1 text-[10px] text-[#a7ffd4] transition-colors hover:bg-[#a7ffd4]/25 disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    <IconAdd size={11} strokeWidth={1.5} />
+                    <IconAdd className="text-neutral-300" size={11} strokeWidth={1.5} />
                     <span>{tv("editor.variables.panel.addVariable")}</span>
                   </button>
                 </div>

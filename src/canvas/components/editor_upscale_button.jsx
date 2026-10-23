@@ -75,10 +75,10 @@ export default function EditorUpscaleButton({
           aria-expanded={open}
           aria-label={t("editor.upscale.button") || "HD Upscale"}
           className={`${ICON_BTN_AI} disabled:opacity-40 ${
-            open ? "bg-[#E5B2FF]/25 text-[#E5B2FF] ring-1 ring-[#E5B2FF]" : ""
+            open ? "bg-[#E5B2FF]/25 text-neutral-300 ring-1 ring-[#E5B2FF]" : ""
           }`}
         >
-          <IconHd size={12} className={`text-[#E5B2FF] ${busy ? "animate-pulse" : ""}`} />
+          <IconHd size={12} className={`text-neutral-300 ${busy ? "animate-pulse" : ""}`} />
         </button>
       </EditorTooltip>
 

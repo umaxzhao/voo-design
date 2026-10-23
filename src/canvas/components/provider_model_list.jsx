@@ -241,7 +241,7 @@ function MediaSection({ providerId, mediaType, stored, configured, onStore }) {
                     }
                     className="rounded-md p-1 text-neutral-500 transition-colors hover:bg-rose-500/15 hover:text-rose-400"
                   >
-                    <IconTrash size={11} />
+                    <IconTrash className="text-neutral-400" size={11} />
                   </button>
                 </div>
               </div>

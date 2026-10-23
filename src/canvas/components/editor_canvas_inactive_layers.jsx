@@ -155,7 +155,7 @@ export default function EditorCanvasInactiveLayers({
                   <IconFolder
                     size={12}
                     strokeWidth={ICON_STROKE_WIDTH}
-                    className={`shrink-0 ${selectedGroup ? "text-[#eed0ff]" : "text-neutral-500"}`}
+                    className={`shrink-0 ${selectedGroup ? "text-neutral-200" : "text-neutral-500"}`}
                   />
                 ) : null}
                 <span className="truncate">{label}</span>

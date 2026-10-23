@@ -216,7 +216,7 @@ function StyleTypeRow({
             aria-label={tv("styles.delete")}
             className={`${ICON_BUTTON_CLASS} hover:bg-rose-500/10 hover:text-rose-400`}
           >
-            <IconTrash size={12} strokeWidth={1.5} />
+            <IconTrash className="text-neutral-400" size={12} strokeWidth={1.5} />
           </button>
         </div>
       ) : styles.length === 0 ? (

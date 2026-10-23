@@ -11,7 +11,7 @@ export function subscribeImageSizeNotice(show) {
 export function ImageSizeMessage({ message }) {
   const { t } = useI18n();
   if (!message) return null;
-  return <div role="alert" className="fixed top-28 left-1/2 z-[210] max-w-[90vw] -translate-x-1/2 rounded-2xl bg-black/90 px-4 py-3 text-sm text-rose-300 shadow-pop backdrop-blur-md">{t(message)}</div>;
+  return <div role="alert" className="fixed top-28 left-1/2 z-[210] max-w-[90vw] -translate-x-1/2 rounded-2xl bg-black/90 px-4 py-3 text-xs text-rose-300 shadow-pop backdrop-blur-md">{t(message)}</div>;
 }
 
 /** Uses the editor alert bus and toast styling, above both welcome and editor UI. */

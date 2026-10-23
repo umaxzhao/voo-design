@@ -10,7 +10,6 @@ import {
 } from "../collab/identity.js";
 import { initialsFor } from "../collab/presence.js";
 import {
-  IconFolder,
   IconFolderOpen,
   IconRefresh,
   IconExternalLink,
@@ -159,7 +158,6 @@ export function WorkspaceSettingsSection() {
         <div className="flex flex-col gap-2 rounded-xl bg-white/[0.04] p-3.5 border border-white/5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <IconFolder size={15} className="text-[#a7ffd4] shrink-0" />
               <span className="text-[10px] uppercase tracking-wide text-neutral-400 font-medium">
                 {t("settings.workspace.activePath") || "当前工作区"}
               </span>

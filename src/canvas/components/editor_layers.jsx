@@ -135,7 +135,7 @@ function LayerAssetReload({ assetKey }) {
       }}
       title={t("editor.assets.reloadAsset")}
       aria-label={t("editor.assets.reloadAsset")}
-      className="flex h-7 w-4 shrink-0 items-center justify-center rounded-md text-amber-400 transition-colors hover:bg-white/5"
+      className="flex h-7 w-4 shrink-0 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-white/5"
     >
       <IconRefresh
         size={11}

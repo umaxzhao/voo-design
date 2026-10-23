@@ -164,7 +164,7 @@ function SvgEditModal({
           >
             {copied ? (
               <>
-                <IconCheck size={13} className="text-emerald-400" />
+                <IconCheck size={13} className="text-neutral-300" />
                 <span>{t("editor.svgModal.copied")}</span>
               </>
             ) : (

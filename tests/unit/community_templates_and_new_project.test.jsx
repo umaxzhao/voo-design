@@ -103,6 +103,8 @@ describe("Community Templates and New Project Workbench Experience", () => {
     // Verify action buttons appear
     expect(html).toContain("使用模板");
     expect(html).toContain("预览详情");
+    expect(html).not.toContain("lucide-sparkles");
+    expect(html).not.toMatch(/\p{Extended_Pictographic}/u);
   });
 
   it("instantiating a community template produces a valid .voo file and registers in workspace", async () => {
@@ -177,8 +179,14 @@ describe("Community Templates and New Project Workbench Experience", () => {
   it("welcome dashboard renders AI generation types row without 'All' filter pill", () => {
     const html = renderToStaticMarkup(React.createElement(WelcomeDashboard));
 
-    // Verify AI generation header label
-    expect(html).toContain("AI 生成类型");
+    // Keep the accessible group name while removing the visible heading.
+    expect(html).not.toContain("AI 生成类型");
+    expect(html).toContain('aria-label="生成类型"');
+    expect(html).toMatch(/class="flex justify-center"><div class="[^"]*justify-center" role="radiogroup"/);
+    const pillsMarkup = html.match(/<div[^>]*role="radiogroup"[^>]*>([\s\S]*?)<\/div>/)?.[1];
+    expect(pillsMarkup).toBeDefined();
+    expect(pillsMarkup).not.toContain("text-mint");
+    expect(pillsMarkup).not.toContain("text-amber");
 
     // Verify generation types are present
     expect(html).toContain("落地页");
@@ -189,8 +197,7 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(html).toContain("其他创意…");
 
     // Verify '全部' is NOT in the AI generation radiogroup
-    // (radiogroup has role="radiogroup" aria-label="AI 生成类型")
-    expect(html).not.toMatch(/role="radiogroup"[^>]*>[\s\S]*<span>全部<\/span>/);
+    expect(pillsMarkup).not.toContain("全部");
   });
 
   it("AI_GEN_TYPES defines tailored dimensions, categories, and placeholders for AI generation", () => {

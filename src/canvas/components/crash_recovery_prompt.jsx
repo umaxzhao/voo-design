@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { RotateCcw } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
 import { useDesignStore } from "../../store/design_store.js";
 import { clearCrashDraft, loadLatestCrashDraft } from "../../shared/crash_recovery.js";
@@ -34,13 +33,12 @@ export function CrashRecoveryDialog({ draft, onRestore, onDiscard, busy = false 
           }
         }}
         className="w-full max-w-md rounded-3xl border border-white/10 bg-neutral-900/95 p-7 text-neutral-200 shadow-panel backdrop-blur-md">
-        <div className="mb-5 flex size-11 items-center justify-center rounded-2xl bg-[#E5B2FF]/10 text-[#E5B2FF]"><RotateCcw size={22} aria-hidden="true" /></div>
-        <h2 id="crash-recovery-title" className="text-lg font-semibold text-white">{t("app.crashRecovery.title")}</h2>
-        <p id="crash-recovery-body" className="mt-2 text-sm leading-relaxed text-neutral-400">{t("app.crashRecovery.body")}</p>
-        {draft.label && <p className="mt-4 truncate rounded-xl bg-white/5 px-3 py-2 text-sm">{draft.label}</p>}
+        <h2 id="crash-recovery-title" className="text-[15px] font-semibold text-white">{t("app.crashRecovery.title")}</h2>
+        <p id="crash-recovery-body" className="mt-2 text-xs leading-relaxed text-neutral-400">{t("app.crashRecovery.body")}</p>
+        {draft.label && <p className="mt-4 truncate rounded-xl bg-white/5 px-3 py-2 text-xs">{draft.label}</p>}
         <div className="mt-7 flex justify-end gap-3">
-          <button type="button" disabled={busy} onClick={onDiscard} className="rounded-xl px-4 py-2 text-sm hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-[#E5B2FF] disabled:opacity-50">{t("app.crashRecovery.discard")}</button>
-          <button type="button" disabled={busy} onClick={onRestore} className="rounded-xl bg-[#E5B2FF] px-4 py-2 text-sm font-semibold text-black hover:brightness-110 focus-visible:ring-2 focus-visible:ring-white disabled:opacity-50">{t("app.crashRecovery.restore")}</button>
+          <button type="button" disabled={busy} onClick={onDiscard} className="rounded-xl px-4 py-2 text-xs hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-[#E5B2FF] disabled:opacity-50">{t("app.crashRecovery.discard")}</button>
+          <button type="button" disabled={busy} onClick={onRestore} className="rounded-xl bg-[#E5B2FF] px-4 py-2 text-xs font-semibold text-black hover:brightness-110 focus-visible:ring-2 focus-visible:ring-white disabled:opacity-50">{t("app.crashRecovery.restore")}</button>
         </div>
       </section>
     </div>

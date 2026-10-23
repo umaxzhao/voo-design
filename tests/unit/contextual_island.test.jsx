@@ -177,7 +177,8 @@ describe("Contextual Island & Agent Dispatch (Pen App Style)", () => {
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy.mock.calls[0][0].detail).toEqual(payload);
 
-      expect(promptSpy).toHaveBeenCalledTimes(1);
+      // Store dispatch already queued the prompt; the fallback event must not duplicate it.
+      expect(promptSpy).not.toHaveBeenCalled();
       expect(openSpy).toHaveBeenCalledTimes(1);
 
       expect(storeDispatch).toHaveBeenCalledWith(payload);
@@ -201,7 +202,7 @@ describe("Contextual Island & Agent Dispatch (Pen App Style)", () => {
   });
 
   describe("Tier 3: EditorContextualAiInput Component", () => {
-    it("renders sparkles icon and contextual placeholder for image", () => {
+    it("renders contextual placeholder without a decorative sparkles icon", () => {
       const node = { id: "1", kind: "image", name: "Cover" };
       const html = renderToStaticMarkup(
         <EditorContextualAiInput selectedNode={node} />
@@ -209,7 +210,8 @@ describe("Contextual Island & Agent Dispatch (Pen App Style)", () => {
 
       expect(html).toContain('data-testid="editor-contextual-ai-form"');
       expect(html).toContain('placeholder="Ask AI to edit @Cover..."');
-      expect(html).toContain("text-[#E5B2FF]");
+      expect(html).not.toContain("lucide-sparkles");
+      expect(html).toContain("px-2.5");
     });
 
     it("renders contextual placeholder for text and frame nodes", () => {

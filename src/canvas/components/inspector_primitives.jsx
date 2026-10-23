@@ -104,7 +104,7 @@ export function ColorRow({
             <svg
               aria-hidden
               viewBox="0 0 20 20"
-              className="pointer-events-none absolute inset-0 z-10 h-full w-full rounded-md bg-neutral-800 text-rose-400"
+              className="pointer-events-none absolute inset-0 z-10 h-full w-full rounded-md bg-neutral-800 text-neutral-400"
             >
               <line
                 x1="3"

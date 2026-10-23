@@ -112,7 +112,7 @@ export default function LiveFilterSection({
                 type="button"
                 onClick={() => removeEntry(entry.id)}
                 aria-label={t("editor.liveFilters.remove")}
-                className="px-1 text-[11px] text-neutral-400 hover:text-[#ff8a8a]"
+                className="px-1 text-[11px] text-neutral-400 hover:text-neutral-200"
               >
                 ×
               </button>

@@ -338,7 +338,7 @@ export default function ProviderCard({
           title={t("provider.remove")}
           className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a1a1a] text-neutral-500 transition-colors hover:bg-[#242424] hover:text-rose-300 disabled:opacity-30"
         >
-          <IconTrash size={14} />
+          <IconTrash className="text-neutral-400" size={14} />
         </button>
       </div>
 
@@ -364,7 +364,7 @@ export default function ProviderCard({
               onClick={onDeleteCustom}
               className="flex items-center gap-1 text-[10px] text-rose-400/80 transition-colors hover:text-rose-300"
             >
-              <IconTrash size={11} strokeWidth={1.5} />
+              <IconTrash className="text-neutral-400" size={11} strokeWidth={1.5} />
               <span>{t("settings.deleteCustomProvider")}</span>
             </button>
           )}

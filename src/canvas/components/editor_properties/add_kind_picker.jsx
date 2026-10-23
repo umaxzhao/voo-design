@@ -12,7 +12,7 @@ import { useI18n } from "../../use_i18n.js";
 import { usePresetThumbs, useActivePresetKey } from "./use_preset_thumbs.js";
 import KindIcon from "./kind_icons.jsx";
 
-/** Dot colours, shared with the effects list so a kind keeps its identity. */
+/** Category heading accents; functional glyphs use neutral tones. */
 const ACCENT = {
   adjustment: "#7fd4a8",
   filter: "#38bdf8",
@@ -21,16 +21,16 @@ const ACCENT = {
 
 /**
  * One tappable kind in the left column. The glyph carries what the kind does
- * and the accent carries which group it belongs to, so the row needs no dot.
+ * and the group heading identifies the category.
  */
-function KindButton({ kind, accent, label, onClick }) {
+function KindButton({ kind, label, onClick }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className="flex items-center gap-1.5 rounded-xl bg-neutral-800 px-2.5 py-1.5 text-left text-[11px] font-mono text-neutral-200 hover:bg-neutral-700 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
     >
-      <span className="shrink-0" style={{ color: accent }}>
+      <span className="shrink-0 text-neutral-300">
         <KindIcon kind={kind} />
       </span>
       <span className="truncate">{label}</span>
@@ -40,7 +40,6 @@ function KindButton({ kind, accent, label, onClick }) {
 
 KindButton.propTypes = {
   kind: PropTypes.string.isRequired,
-  accent: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
   onClick: PropTypes.func.isRequired,
 };
@@ -60,7 +59,6 @@ function KindGroup({ title, accent, kinds, labelOf, onPick }) {
           <KindButton
             key={kind}
             kind={kind}
-            accent={accent}
             label={labelOf(kind)}
             onClick={() => onPick(kind)}
           />
