@@ -262,3 +262,13 @@ describe("canvas agent design quality hook", () => {
     expect(system).toContain("=== Design quality (follow strictly) ===");
   });
 });
+
+ it("makes auto-layout the UI default while preserving generation guidance", () => {
+   expect(SYSTEM_PROMPT).toContain("Default to auto-layout frames for UI and composed layouts");
+   expect(SYSTEM_PROMPT).toContain('layout: "none"');
+   for (const text of ["Lucide icons, never emoji", "Tailwind utility classes", "short copy for on-canvas UI text"]) expect(SYSTEM_PROMPT).toContain(text);
+   const prompt = buildDesignQualityPrompt({ userText: "dashboard" });
+   expect(prompt).toContain("default to auto-layout frames for UI generation");
+   expect(prompt).toContain("4-multiple gap and padding");
+   expect(prompt).toContain("intentional absolute placement");
+ });

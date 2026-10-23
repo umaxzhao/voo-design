@@ -212,6 +212,8 @@ describe("Canvas Agent Layout Tools", () => {
     const create = CANVAS_TOOL_LAYOUT_SCHEMAS.find(
       (schema) => schema.function.name === "create_frame",
     );
+    expect(create.function.description).toContain("For UI containers, default to Auto-Layout");
+    expect(create.function.parameters.properties.layout.description).toContain("Omission preserves the legacy unmanaged fallback");
     expect(create.function.parameters.required).toEqual([
       "x",
       "y",
@@ -372,6 +374,12 @@ describe("Canvas Agent Layout Tools", () => {
     });
     expect(frame.autoLayout).toBeUndefined();
     expect(committedActions).toContain("AI: Create frame");
+  });
+
+  it("keeps explicit none unmanaged for intentional absolute placement", () => {
+    const { layerId } = run("create_frame", { x: 0, y: 0, width: 800, height: 1200, layout: "none" });
+    expect(mockDoc.nodes.find(node => node.id === layerId).autoLayout).toBeUndefined();
+    expect(committedActions).not.toContain("AI: Mutate Auto Layout");
   });
 
   it("creates a frame and applies Auto-Layout", () => {

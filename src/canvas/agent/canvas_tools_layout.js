@@ -454,8 +454,8 @@ export const CANVAS_TOOL_LAYOUT_SCHEMAS = Object.freeze([
     function: {
       name: "create_frame",
       description:
-        "Create a rectangle/frame at exact geometry and optionally enable Auto-Layout " +
-        "(horizontal or vertical) with a gap and padding.",
+        "Create a rectangle/frame at exact geometry. For UI containers, default to Auto-Layout " +
+        "(horizontal or vertical): pass layout explicitly with 4-multiple gap and padding. Reserve layout none for posters, free-form art, or intentional absolute placement.",
       parameters: {
         type: "object",
         properties: {
@@ -468,7 +468,7 @@ export const CANVAS_TOOL_LAYOUT_SCHEMAS = Object.freeze([
           layout: {
             type: "string",
             enum: [...FRAME_LAYOUTS],
-            description: "Auto-Layout direction; 'none' leaves the frame unmanaged.",
+            description: "For UI containers pass 'horizontal' or 'vertical'. Omission preserves the legacy unmanaged fallback; use 'none' explicitly for posters, free-form art, or intentional absolute placement.",
           },
           gap: {
             type: "number",

@@ -112,7 +112,7 @@ describe("poster content recovery", () => {
     expect(SYSTEM_PROMPT).toContain("Lucide");
     expect(SYSTEM_PROMPT).toContain("Tailwind utility classes");
     expect(SYSTEM_PROMPT).toContain("never emoji as icons");
-    expect(SYSTEM_PROMPT).toContain("Prefer auto layout frames for composed layouts");
+    expect(SYSTEM_PROMPT).toContain("Default to auto-layout frames for UI and composed layouts");
     expect(SYSTEM_PROMPT).toContain("short copy for on-canvas UI text");
     expect(SYSTEM_PROMPT).toContain("concise labels, headlines and body text");
     expect(SYSTEM_PROMPT).toContain("avoid chatty paragraphs");
