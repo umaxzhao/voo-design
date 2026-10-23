@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isEditorImageFile } from "./editor_import_files.js";
 import { TOOL } from "../editor/editor_constants.js";
 
 const WEB_IMAGE_TYPES = [
@@ -30,7 +31,7 @@ function selectBestImageFile(files) {
 
 import { isSvgString } from "../editor/editor_svg.js";
 
-function isSvgFile(file) {
+export function isSvgFile(file) {
   if (!file) return false;
   if (file.type === "image/svg+xml") return true;
   if (
@@ -269,7 +270,7 @@ export function useEditorDnd({
 
       // 1. Local files (support vector SVG as well as images)
       const rawFiles = Array.from(event.dataTransfer.files ?? []).filter(
-        (file) => file.type.startsWith("image/") || isSvgFile(file),
+        isEditorImageFile,
       );
       if (rawFiles.length > 0) {
         rawFiles.forEach((file) => {

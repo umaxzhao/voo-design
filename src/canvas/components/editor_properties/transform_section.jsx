@@ -168,6 +168,7 @@ export default function TransformSection({
             <div className="grid grid-cols-2 gap-2">
               {commonX.mixed ? <MixedField label="X" /> : (
                 <ScrubField
+                  key={`${object.id}:x`}
                   prefix="X"
                   min={-COORD_LIMIT} max={COORD_LIMIT} value={commonX.value}
                   onValueChange={(value) => editPosition("x", value)} onCommit={commitNow}
@@ -176,6 +177,7 @@ export default function TransformSection({
               )}
               {commonY.mixed ? <MixedField label="Y" /> : (
                 <ScrubField
+                  key={`${object.id}:y`}
                   prefix="Y"
                   min={-COORD_LIMIT} max={COORD_LIMIT} value={commonY.value}
                   onValueChange={(value) => editPosition("y", value)} onCommit={commitNow}

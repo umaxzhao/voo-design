@@ -93,6 +93,7 @@ import { marqueeItemForMode } from "../editor/tool_families.js";
 import { executeEditorCommand } from "../editor/command_table.js";
 import { PendingCanvasSelectionManager } from "./editor_pending_canvas_selection.js";
 import { useEditorShortcuts } from "../use_editor_shortcuts.js";
+import { EDITOR_MEDIA_ACCEPT, importPickedEditorFile } from "./editor_import_files.js";
 import { useEditorDnd } from "./use_editor_dnd.js";
 import { useI18n } from "../use_i18n.js";
 import { useDesignStore } from "../../store/design_store.js";
@@ -2184,12 +2185,13 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       setMediaImportError(null);
       void (async () => {
         for (const file of files) {
-          await importEditorMediaFile(
-            activeEngine,
-            file,
-            useDesignStore.getState(),
-            { point },
-          );
+          await importPickedEditorFile(activeEngine, file, {
+            point,
+            openDocument: openVooDocument,
+            importMedia: (file) => importEditorMediaFile(
+              activeEngine, file, useDesignStore.getState(), { point },
+            ),
+          });
         }
       })()
         .then(() => {
@@ -2202,7 +2204,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         })
         .finally(() => setMediaImportBusy(false));
     },
-    [engine, mediaImportBusy, t],
+    [engine, mediaImportBusy, t, openVooDocument],
   );
 
   const handleMediaDrop = useCallback(
@@ -5104,7 +5106,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           ref={mediaInputRef}
           type="file"
           multiple
-          accept="audio/*,video/*,.glb,.obj"
+          accept={EDITOR_MEDIA_ACCEPT}
           // Rendered but invisible: a display:none file input does not raise
           // a picker when clicked, and the menu drives it programmatically.
           data-testid="editor-media-file-input"

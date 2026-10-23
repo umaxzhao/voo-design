@@ -119,7 +119,7 @@ export default function LiveFilterSection({
             </div>
             <ToolSliderField
               label={t(PARAM_VALUE_LABELS[entry.kind] ?? "editor.liveFilters.value")}
-              labelClassName="w-full"
+              labelClassName="w-[48px]"
               fieldClassName="w-[72px]"
               min={0}
               max={100}
@@ -133,7 +133,7 @@ export default function LiveFilterSection({
             {entry.kind === "motionBlur" ? (
               <ToolSliderField
                 label={t("editor.liveFilters.angle")}
-                labelClassName="w-full"
+                labelClassName="w-[48px]"
                 fieldClassName="w-[72px]"
                 min={0}
                 max={359}
@@ -147,7 +147,7 @@ export default function LiveFilterSection({
             ) : null}
             <ToolSliderField
               label={t("editor.liveFilters.opacity")}
-              labelClassName="w-full"
+              labelClassName="w-[48px]"
               fieldClassName="w-[72px]"
               suffix="%"
               min={0}
