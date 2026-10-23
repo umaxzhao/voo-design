@@ -224,7 +224,10 @@ export async function runAgentTurn({
           }
           onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "completed", result });
         } catch (error) {
-          if (turnSignal.aborted) throw error;
+          if (turnSignal.aborted) {
+            onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "cancelled" });
+            throw error;
+          }
           failurePending = true;
           const code = error?.code ?? error?.message ?? "toolFailed";
           messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: code }) });

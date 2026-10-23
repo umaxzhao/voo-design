@@ -1,3 +1,5 @@
+import { abortable } from "./abortable.js";
+
 /**
  * Streams one OpenAI-compatible chat completion and folds it into the reply
  * text plus the tool calls the model asked for. Stateless: the caller owns the
@@ -31,13 +33,22 @@ export const CHAT_ERROR = Object.freeze({
 });
 
 /** Reads an SSE body, yielding each parsed JSON event. */
-async function* readSseJson(body) {
+async function* readSseJson(body, signal) {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let finished = false;
+  let cancellation;
+  const cancel = () => {
+    try { cancellation ??= Promise.resolve(reader.cancel(signal?.reason)).catch(() => {}); } catch {}
+  };
+  signal?.addEventListener("abort", cancel, { once: true });
   try {
     for (;;) {
-      const { value, done } = await reader.read();
+      signal?.throwIfAborted();
+      const { value, done } = await abortable(() => reader.read(), signal);
+      signal?.throwIfAborted();
+      finished = done;
       buffer += done ? decoder.decode() : decoder.decode(value, { stream: true });
       // Some compatible endpoints close immediately after their last JSON event.
       // Treat EOF as a line boundary so its text/tool call is not silently lost.
@@ -48,13 +59,17 @@ async function* readSseJson(body) {
         buffer = buffer.slice(index + 1);
         if (line.startsWith(DATA_PREFIX)) {
           const payload = line.slice(DATA_PREFIX.length).trim();
-          if (payload && payload !== "[DONE]") yield JSON.parse(payload);
+          if (payload === "[DONE]") return;
+          if (payload) yield JSON.parse(payload);
         }
         index = buffer.indexOf("\n");
       }
       if (done) break;
     }
   } finally {
+    signal?.removeEventListener("abort", cancel);
+    if (!finished) cancel();
+    // Do not let a broken source's cancel promise keep the UI generating.
     reader.releaseLock();
   }
 }
@@ -85,6 +100,7 @@ export async function streamChatTurn({ config, messages, tools, signal, onText }
       code: CHAT_ERROR.NOT_CONFIGURED,
     });
   }
+  signal?.throwIfAborted();
   const response = await fetch(`${config.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
     method: "POST",
     headers: buildChatHeaders(config),
@@ -103,7 +119,8 @@ export async function streamChatTurn({ config, messages, tools, signal, onText }
   }
   let text = "";
   const toolCalls = [];
-  for await (const event of readSseJson(response.body)) {
+  for await (const event of readSseJson(response.body, signal)) {
+    signal?.throwIfAborted();
     const delta = event.choices?.[0]?.delta;
     if (!delta) continue;
     if (typeof delta.content === "string" && delta.content) {
@@ -112,5 +129,6 @@ export async function streamChatTurn({ config, messages, tools, signal, onText }
     }
     if (Array.isArray(delta.tool_calls)) mergeToolCalls(toolCalls, delta.tool_calls);
   }
+  signal?.throwIfAborted();
   return { text, toolCalls: toolCalls.filter(Boolean) };
 }

@@ -557,3 +557,26 @@ describe("runAgentTurn undo grouping on cancel/fail", () => {
     expect(committed.filter((c) => c.startsWith("AI: Agent turn"))).toHaveLength(1);
   });
 });
+it("marks an interrupted tool cancelled, closes the batch, and skips queued calls", async () => {
+  const previous = globalThis.window;
+  const editor = createMockEditor();
+  globalThis.window = { __vooEditor: editor };
+  const controller = new AbortController();
+  const events = [];
+  const executeTool = vi.fn(() => new Promise(() => {}));
+  try {
+    const pending = runAgentTurn({ history: [], userText: "draw", tools: [],
+      signal: controller.signal, executeTool, onToolEvent: event => events.push(event),
+      streamStep: async () => ({ text: "", toolCalls: [
+        { id: "first", name: "create_shape", arguments: "{}" },
+        { id: "second", name: "create_shape", arguments: "{}" },
+      ] }),
+    });
+    await vi.waitFor(() => expect(executeTool).toHaveBeenCalledOnce());
+    controller.abort();
+    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    expect(events.map(event => event.status)).toEqual(["in_progress", "cancelled"]);
+    expect(executeTool).toHaveBeenCalledOnce();
+    expect(editor.__test.getBatchDepth()).toBe(0);
+  } finally { globalThis.window = previous; }
+});
