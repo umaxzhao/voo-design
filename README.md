@@ -57,6 +57,8 @@ The models run locally through ONNX Runtime Web. See [AI models](#ai-models) bel
 
 ---
 
+Use the canvas from Claude Code or Codex with the [MCP server](docs/mcp-server.md).
+
 ## Getting started
 
 Requires Node.js 20+ and npm.

@@ -1337,6 +1337,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     [nodes, focusedId, t],
   );
   const resolveCanvas = useCallback((sourceId) => {
+    for (const entry of enginesRef.current.values()) {
+      const component = entry?.engine?.getDocument?.()?.components?.[sourceId];
+      if (component) return component;
+    }
     const fromLive = enginesRef.current.get(sourceId)?.engine?.getDocument?.();
     if (fromLive) return fromLive;
     for (const entry of enginesRef.current.values()) {
@@ -3982,6 +3986,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               <Suspense fallback={null}>
                 <EditorCanvasInstanceProperties
                   node={nestedNode}
+                  engine={nestedEngine}
                   sourceDoc={resolveCanvas(nestedNode.sourceCanvasId)}
                   onPatch={(patch) =>
                     nestedEngine.updateNode(nestedNode.id, patch)
@@ -4041,6 +4046,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             <Suspense fallback={null}>
               <EditorCanvasInstanceProperties
                 node={propertyObject}
+                engine={engine}
                 sourceDoc={resolveCanvas(propertyObject.sourceCanvasId)}
                 onPatch={(patch) =>
                   engine?.updateNode(propertyObject.id, patch)
@@ -4092,6 +4098,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           </PropertiesPanelShell>
         ) : propertiesOpen ? (
           <EditorProperties
+            isMainComponent={(instanceCounts.get(doc?.canvasId) ?? 0) > 0}
             engine={engine}
             object={propertyObject}
             parentLayout={parentLayout}

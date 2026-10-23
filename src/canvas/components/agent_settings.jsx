@@ -1,3 +1,4 @@
+import AgentMcpSettings from "./agent_mcp_settings.jsx";
 import { useEffect, useState } from "react";
 import { useI18n } from "../use_i18n.js";
 import { useProviderConfigs } from "../use_provider_state.js";
@@ -124,6 +125,7 @@ export default function AgentSettings() {
 
   return (
     <>
+      <AgentMcpSettings />
       <SettingsSection title={t("settings.assistant.modelsTitle")} hint={t("settings.assistant.modelsHint")}>
         {configuredIds.length === 0 && (
           <p className="text-[12px] text-neutral-400">{t("settings.assistant.noProviders")}</p>

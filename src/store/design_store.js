@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { createDocument, CANVAS_TYPE } from "../canvas/editor/scene_doc_factory.js";
 import { addRecentFile } from "../canvas/store/recent_files.js";
 import { guessCategory } from "../services/workspace_storage.js";
+import { saveCrashDraft } from "../shared/crash_recovery.js";
 
 const DEFAULT_PAGE_ID = "page-1";
 const DEFAULT_WIDTH = 1200;
@@ -237,8 +238,24 @@ export const useDesignStore = create((set, get) => {
   setWelcomeOpen: (welcomeOpen) => set({ welcomeOpen }),
   setDocumentLoading: (documentLoading) => set({ documentLoading }),
 
-  // Standalone app: no-op for draft autosave
-  saveEditorDrafts: async () => {},
+  restoreCrashDraft: (draft) => {
+    if (!draft?.document) return;
+    get().loadVooProject({ vooData: { document: draft.document, kind: draft.document.canvasType }, fileName: draft.label || "Untitled.voo" });
+    set({ isDirty: true, editingGroupId: null, images: {}, streamingPreview: null, streamingPreviewNodeId: null });
+  },
+
+  // Structure-only crash draft (no image bytes) for unexpected-exit recovery.
+  saveEditorDrafts: async () => {
+    const state = get();
+    const focused = state.editingNodeId;
+    const node = (state.nodes || []).find((n) => n.id === focused);
+    const doc = node?.data?.editorDoc;
+    if (!focused || !doc) return;
+    const { images: _images, ...safeDoc } = doc;
+    await saveCrashDraft(focused, safeDoc, {
+      label: state.fileName || node?.data?.label || "",
+    });
+  },
 
   loadVooProject: ({ vooData, filePath = null, fileName = "Untitled.voo", fileHandle = null, figSource = null }) => {
     const doc = vooData?.document;

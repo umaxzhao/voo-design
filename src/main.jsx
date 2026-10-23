@@ -7,6 +7,8 @@ import {
   loadLocale,
   resolveInitialLocale,
 } from "./shared/i18n.js";
+import { AppErrorBoundary } from "./shared/app_error_boundary.jsx";
+import { installGlobalErrorHandlers } from "./shared/error_collector.js";
 
 function storedLocale() {
   try {
@@ -16,62 +18,9 @@ function storedLocale() {
   }
 }
 
-class AppErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-  componentDidCatch(error, errorInfo) {
-    console.error("[VOO] Uncaught rendering exception:", error, errorInfo);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
-          width: "100%",
-          backgroundColor: "#121212",
-          color: "#f0f0f0",
-          fontFamily: "sans-serif",
-          padding: "24px",
-          textAlign: "center",
-        }}>
-          <h2 style={{ fontSize: "20px", marginBottom: "12px", color: "#ff6b6b" }}>
-            应用程序遇到意外错误
-          </h2>
-          <p style={{ fontSize: "14px", color: "#aaa", maxWidth: "480px", marginBottom: "20px" }}>
-            {this.state.error?.message || "Unknown error occurred"}
-          </p>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "8px",
-              backgroundColor: "#2563eb",
-              color: "#fff",
-              border: "none",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-          >
-            重新加载应用
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
 async function bootstrap() {
+  installGlobalErrorHandlers();
+
   let locale = "en";
   try {
     locale = resolveInitialLocale({
@@ -79,8 +28,6 @@ async function bootstrap() {
       languages: navigator.languages,
       automated: navigator.webdriver,
     });
-    // The dictionary must be in memory before the first render, otherwise t()
-    // falls back to raw keys. Critical slice first, full table in the background.
     await loadCriticalLocale(locale).catch(() => {});
   } catch (err) {
     console.warn("[bootstrap] Locale initialization fallback:", err);
@@ -105,3 +52,21 @@ async function bootstrap() {
 }
 
 bootstrap();
+
+// Keep the MCP link outside the agent UI and load the tool executor on demand.
+if (typeof window !== "undefined" && typeof WebSocket !== "undefined" && !import.meta.env?.VITEST) {
+  let enabled = true;
+  try { enabled = localStorage.getItem("voo.mcpLink") !== "off"; } catch {}
+  if (enabled) {
+    void import("./canvas/mcp/canvas_mcp_link.js").then(({ startCanvasMcpLink }) => {
+      const stop = startCanvasMcpLink({
+        executeTool: async (name, args) => {
+          const { executeCanvasTool } = await import("./canvas/agent/canvas_tools.js");
+          return executeCanvasTool(name, args);
+        },
+      });
+      window.addEventListener("pagehide", stop, { once: true });
+      if (import.meta.hot) import.meta.hot.dispose(stop);
+    });
+  }
+}

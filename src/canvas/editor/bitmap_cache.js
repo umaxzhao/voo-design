@@ -16,6 +16,8 @@ import {
   registerUnavailableCache,
 } from "./asset_unavailable.js";
 
+import { assertImageDimensions, checkImageDimensions } from "../../shared/image_size_guard.js";
+
 export { isAssetFailed, retryAssetLoad } from "./asset_unavailable.js";
 
 export const BITMAP_CACHE_MAX = 128;
@@ -142,7 +144,7 @@ export function createBitmapCache({
         markAssetFailed(key, node);
         return;
       }
-      const image = downscaleForDisplay(await decode(url));
+      const image = downscaleForDisplay(guardDecodedImage(await decode(url)));
       if (disposed) {
         revokeKeyUrl(key);
         return;
@@ -330,17 +332,45 @@ export function downscaleForDisplay(image, maxSide = DISPLAY_MAX_SIDE) {
   return canvas;
 }
 
+
+function guardDecodedImage(image) {
+  const width = image?.naturalWidth ?? image?.width ?? 0;
+  const height = image?.naturalHeight ?? image?.height ?? 0;
+  const check = checkImageDimensions(width, height);
+  if (!check.ok) {
+    try {
+      if (typeof image.close === "function") image.close();
+    } catch {
+      /* ImageBitmap.close is best-effort */
+    }
+    assertImageDimensions(width, height);
+  }
+  return image;
+}
+
 /** Decodes a File/Blob into a bitmap plus the object URL that has to be revoked. */
 export async function decodeBlob(blob) {
   const url = URL.createObjectURL(blob);
   try {
     return await new Promise((resolve, reject) => {
       const image = new Image();
-      image.onload = () => resolve(image);
+      image.onload = () => {
+        try {
+          resolve(guardDecodedImage(image));
+        } catch (err) {
+          reject(err);
+        }
+      };
       image.onerror = (e) =>
         reject(new Error("Blob decode failed: " + e.message));
       image.src = url;
-      if (image.complete && image.naturalWidth > 0) resolve(image);
+      if (image.complete && image.naturalWidth > 0) {
+        try {
+          resolve(guardDecodedImage(image));
+        } catch (err) {
+          reject(err);
+        }
+      }
     });
   } finally {
     URL.revokeObjectURL(url);
@@ -355,8 +385,11 @@ export async function decodeBlob(blob) {
 export async function decodeBlobToBitmap(blob) {
   if (typeof createImageBitmap !== "function") return decodeBlob(blob);
   try {
-    return await createImageBitmap(blob);
-  } catch {
+    return guardDecodedImage(await createImageBitmap(blob));
+  } catch (err) {
+    if (err?.code === "image-too-large" || err?.code === "image-invalid-size") {
+      throw err;
+    }
     return decodeBlob(blob);
   }
 }
@@ -373,11 +406,23 @@ export async function decodeImageSource(source) {
       if (!source.startsWith("data:") && !source.startsWith("blob:")) {
         img.crossOrigin = "anonymous";
       }
-      img.onload = () => resolve(img);
+      img.onload = () => {
+        try {
+          resolve(guardDecodedImage(img));
+        } catch (err) {
+          reject(err);
+        }
+      };
       img.onerror = (e) =>
         reject(new Error("Source decode failed: " + e.message));
       img.src = source;
-      if (img.complete && img.naturalWidth > 0) resolve(img);
+      if (img.complete && img.naturalWidth > 0) {
+        try {
+          resolve(guardDecodedImage(img));
+        } catch (err) {
+          reject(err);
+        }
+      }
     });
   }
   throw new Error("Invalid image source type");

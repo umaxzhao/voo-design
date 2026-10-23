@@ -1,3 +1,4 @@
+import VariantsSection from "./editor_properties/variants_section.jsx";
 import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
 import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
@@ -26,6 +27,7 @@ const BUTTON_CLASS =
  */
 export default function EditorCanvasInstanceProperties({
   node,
+  engine,
   sourceDoc,
   onPatch,
   onPreview,
@@ -122,6 +124,7 @@ export default function EditorCanvasInstanceProperties({
           </button>
         ) : null}
       </InspectorGroup>
+      <VariantsSection engine={engine} node={node} sourceDoc={sourceDoc} />
       <InspectorGroup title={t("editor.three.transform")}>
         <VectorRow
           testId="editor-instance-position"

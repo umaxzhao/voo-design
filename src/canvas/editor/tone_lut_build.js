@@ -290,6 +290,8 @@ function buildToneLutUncached(adjustments) {
 
   // True when any cpu-only adjustment is active — the GL pipeline bails out
   // on this so the CPU path handles the whole frame.
+  // highPass / clarity / motionBlur have GL twins in gl_spatial.js — they no
+  // longer force the CPU path. Live filters and pixel ops still do.
   const cpuOnly =
     noiseVal > 0 ||
     cloudsVal > 0 ||
@@ -299,9 +301,6 @@ function buildToneLutUncached(adjustments) {
     halftoneVal > 0 ||
     sepiaVal > 0 ||
     embossVal > 0 ||
-    highPassVal > 0 ||
-    clarityVal !== 0 ||
-    motionBlurVal > 0 ||
     colorBalanceActive ||
     bwActive ||
     photoFilterActive ||
