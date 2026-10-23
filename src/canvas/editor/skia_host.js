@@ -54,6 +54,11 @@ export async function createSkiaHost(canvas) {
   let lastPixelWidth = 0;
   let lastPixelHeight = 0;
 
+  let resourceRevision = 0;
+  let lastScene = null;
+  let latestFrame = null;
+  let disposed = false;
+
   return {
     backend,
     instance,
@@ -136,15 +141,30 @@ export async function createSkiaHost(canvas) {
           visibleRect,
         }),
       };
+      const resourcesChanged = !lastScene || lastScene.revision !== revision ||
+        lastScene.docs.length !== docs.length ||
+        docs.some((doc, index) => doc !== lastScene.docs[index]);
+      lastScene = { revision, docs: [...docs] };
+      latestFrame = { snapshot, viewport: skiaViewport };
       instance.updateResources(snapshot);
-      // Pictures decode off-thread; drawing before they land paints holes.
-      // The wait is bounded so one unreachable picture cannot stall the frame.
-      await instance.waitForResources(snapshot, RESOURCE_TIMEOUT_MS);
+      // Present the camera immediately with resources already available. Never
+      // hold a zoom frame behind image/font decoding while chrome moves on.
       instance.render(snapshot, skiaViewport);
+      // Resource completion may repaint, but must use the newest camera. Camera
+      // frames neither wait for decoding nor register another completion draw.
+      if (resourcesChanged) {
+        const currentResources = ++resourceRevision;
+        await instance.waitForResources(snapshot, RESOURCE_TIMEOUT_MS);
+        if (!disposed && currentResources === resourceRevision) {
+          instance.render(latestFrame.snapshot, latestFrame.viewport);
+        }
+      }
       return snapshot;
     },
 
     dispose() {
+      disposed = true;
+      ++resourceRevision;
       instance.dispose();
     },
   };
