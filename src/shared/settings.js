@@ -15,6 +15,7 @@
  */
 
 const STORAGE_KEYS = [
+  "agent.mcpServers",
   "ciw.currentWorkflowId",
   "ciw.locale",
   "ciw.selectorOverrides",

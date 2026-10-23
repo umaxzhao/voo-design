@@ -1,3 +1,5 @@
+import { customModelGroups, resolveAgentProvider } from "../agent/agent_provider.js";
+import { externalMcpTools } from "../agent/external_mcp_tools.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { ArrowUp, Check, ChevronDown, History, PanelLeft, Plus, X } from "lucide-react";
@@ -70,6 +72,10 @@ export function getModelDisplayLabel(modelId) {
         return `${group.name} · ${m.label.replace(/^Claude\s+|Gemini\s+/, "")}`;
       }
     }
+  }
+  for (const group of customModelGroups()) {
+    const model = group.models.find(model => model.id === modelId);
+    if (model) return `${group.name} · ${model.label}`;
   }
   const parts = String(modelId).split(":");
   if (parts.length >= 2) {
@@ -249,19 +255,16 @@ export default function CanvasAgentPanel({ onClose }) {
           : text;
 
         const model = selectedModel || getSetting(AGENT_SETTING.MODEL);
+        const provider = await resolveAgentProvider(model);
+        const external = await externalMcpTools();
         const reply = await runAgentTurn({
-          streamStep: isCliAgentModel(model) ? streamCliStep : streamChatTurn,
-          config: {
-            apiKey: getSetting(AGENT_SETTING.API_KEY),
-            baseUrl: getSetting(AGENT_SETTING.BASE_URL),
-            model,
-          },
+          ...provider,
           maxSteps: Number(getSetting(AGENT_SETTING.MAX_STEPS)) || AGENT_DEFAULTS.maxSteps,
           styleNote: getSetting(AGENT_SETTING.STYLE_NOTE) ?? AGENT_DEFAULTS.styleNote,
           history: historyRef.current,
           userText: promptWithContext,
-          tools: CANVAS_TOOL_SCHEMAS,
-          executeTool: executeCanvasTool,
+          tools: [...CANVAS_TOOL_SCHEMAS, ...external.tools],
+          executeTool: (name, args) => name.startsWith("mcp__") ? external.execute(name, args) : executeCanvasTool(name, args),
           onText: setStreamingText,
           onToolEvent: updateToolItem,
         });
@@ -404,7 +407,9 @@ export default function CanvasAgentPanel({ onClose }) {
               <X size={12} />
             </button>
           </div>
-          {CLI_MODEL_GROUPS.map((group) => (
+          <div className="px-2 text-[11px] text-neutral-400">{t("agent.providers.hint")}</div>
+          {customModelGroups().length === 0 && <p className="px-2 text-[11px] text-neutral-500">{t("agent.providers.customHint")}</p>}
+          {[...CLI_MODEL_GROUPS, ...customModelGroups()].map((group) => (
             <div key={group.cliId} className="flex flex-col gap-0.5">
               <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-mono uppercase tracking-wider text-neutral-400">
                 {group.name}

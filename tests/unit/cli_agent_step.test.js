@@ -24,14 +24,14 @@ describe("streamCliStep", () => {
     delete globalThis.window;
   });
 
-  it("returns tool receipts to the same native session across model steps", async () => {
+  it.each(["codex:gpt-6-astra", "claude:sonnet"])("returns tool receipts to the same native session across model steps: %s", async (model) => {
     const advance = vi.fn()
       .mockResolvedValueOnce({ ok: true, sessionId: "native-session", done: false, text: "Working.",
         toolCalls: [{ id: "tool-1", function: { name: "create_frame", arguments: "{}" } }] })
       .mockResolvedValueOnce({ ok: true, sessionId: "native-session", done: true, text: "Working.Done." });
     setBridge({ advance, cancel: vi.fn() });
     const signal = new AbortController().signal;
-    const options = { config: { model: "codex:gpt-6-astra" }, tools: [], signal };
+    const options = { config: { model }, tools: [], signal };
     await streamCliStep({ ...options, messages: [{ role: "user", content: "make a frame" }] });
     const messages = [{ role: "tool", tool_call_id: "tool-1", content: '{"ok":true}' }];
     const result = await streamCliStep({ ...options, messages });

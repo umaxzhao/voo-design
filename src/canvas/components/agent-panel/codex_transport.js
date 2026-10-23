@@ -1,3 +1,5 @@
+import { getSetting } from "../../../shared/settings.js";
+import { MCP_SERVERS_KEY } from "../../../shared/agent_mcp_servers.js";
 import { CLI_TRANSPORT } from "../../../shared/cli-agents.js";
 import { NATIVE_AGENT_CLI_IDS } from "../../../shared/cli_bridge_protocol.js";
 import { cliTransport, ensureLocalCliBridge } from "./local_cli_bridge.js";
@@ -96,6 +98,7 @@ export async function* streamCodexCompletion({
       ...(reasoningEffort != null ? { reasoningEffort } : {}),
       messages,
       tools,
+      mcpServers: getSetting(MCP_SERVERS_KEY) ?? [],
     });
     void pending.then(
       (result) => push({ result }),

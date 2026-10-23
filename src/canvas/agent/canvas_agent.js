@@ -21,7 +21,7 @@ export const SYSTEM_PROMPT =
   "list_styles and list_variables before creating new ones.\n" +
   "2. Structure: create_frame for containers (optionally with horizontal/vertical auto layout, gap, " +
   "padding); create_shape for rect/ellipse/text; create_path for vector art (SVG d); place_image for " +
-  "raster at exact geometry; generate_image or generate_image_web to make imagery.\n" +
+  "raster at exact geometry when provided by the user.\n" +
   "3. Arrange: align_layers and distribute_layers instead of hand-computing coordinates; " +
   "mutate_auto_layout for frames; mutate_layer_layout/style/text or batch_mutate_layers for edits; " +
   "group_layers/ungroup_layers, reorder_layer, rename_layer (name every layer meaningfully).\n" +
@@ -34,7 +34,11 @@ export const SYSTEM_PROMPT =
   "rasterizes layers to base64 PNG for verification or handoff.\n" +
   "6. Verify: After multi-step edits check inspect_layer_tree or capture_canvas (PNG returned to you). " +
   "If a step went wrong, use undo (and redo) rather than piling on fixes.\n" +
-  "Keep replies short.";
+  "Design quality: plan first. Prefer auto layout frames for composed layouts. Use spacing scale " +
+  "4/8/12/16/24/32/48/64; establish typography hierarchy (display, heading, body, caption), " +
+  "consistent radius and clear contrast. Create color tokens/variables before use and bind them. " +
+  "After multi-step writes, require capture_canvas, review alignment, clipping and hierarchy, then fix and capture again. " +
+  "On tool failure inspect the error, correct arguments and retry once; report unresolved failures. Keep replies short.";
 
 const READ_ONLY_TOOLS = new Set([
   "describe_selection",
@@ -114,6 +118,11 @@ export async function runAgentTurn({
   const editor = activeEditor();
   const before = documentFingerprint(editor);
   let mutated = false;
+  let writesSinceCapture = 0;
+  let verificationNudged = false;
+  let retryNudged = false;
+  let failurePending = false;
+  const canCapture = tools.some(tool => tool.function?.name === "capture_canvas");
 
   const runSteps = async () => {
     for (let step = 0; step < maxSteps; step += 1) {
@@ -127,7 +136,19 @@ export async function runAgentTurn({
         signal: turnSignal,
         onText,
       });
-      if (toolCalls.length === 0) return text;
+      if (toolCalls.length === 0) {
+        if (failurePending && !retryNudged) {
+          retryNudged = true;
+          messages.push({ role: "assistant", content: text || null }, { role: "user", content: "A tool failed. Inspect its error and retry once with corrected arguments, or explain why it cannot be completed." });
+          continue;
+        }
+        if (canCapture && writesSinceCapture >= 2 && !verificationNudged) {
+          verificationNudged = true;
+          messages.push({ role: "assistant", content: text || null }, { role: "user", content: "Before finishing, call capture_canvas to verify the multi-step design edits. Review the image and fix visible problems." });
+          continue;
+        }
+        return text;
+      }
 
       messages.push({
         role: "assistant",
@@ -152,6 +173,10 @@ export async function runAgentTurn({
         onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "in_progress" });
         try {
           const result = await executeTool(call.name, args);
+          if (result?.isError || result?.error) throw new Error(JSON.stringify(result));
+          failurePending = false;
+          if (call.name === "capture_canvas") writesSinceCapture = 0;
+          else if (!READ_ONLY_TOOLS.has(call.name)) { writesSinceCapture += 1; verificationNudged = false; }
           const { dataUrl, ...rest } = result && typeof result === "object" ? result : {};
           const hasImage = typeof dataUrl === "string" && dataUrl.startsWith("data:image");
           const content = JSON.stringify(hasImage ? { ...rest, imageAttached: true } : result);
@@ -167,6 +192,7 @@ export async function runAgentTurn({
           }
           onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "completed", result });
         } catch (error) {
+          failurePending = true;
           const code = error?.code ?? error?.message ?? "toolFailed";
           messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: code }) });
           onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "failed", error: code });
