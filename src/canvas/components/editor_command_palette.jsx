@@ -59,10 +59,9 @@ export default function EditorCommandPalette({
   const [activeIndex, setActiveIndex] = useState(0);
   const [recentIds, setRecentIds] = useState(readRecent);
 
-  const index = useMemo(
-    () => buildCommandIndex({ t, actions }),
-    [t, actions],
-  );
+  // t has a stable identity; dictionary loading and locale changes still
+  // notify useI18n. Rebuild these small rows on render to refresh their labels.
+  const index = buildCommandIndex({ t, actions });
   const filtered = useMemo(() => filterCommands(index, query), [index, query]);
   const recentCommands = useMemo(
     () => resolveRecent(index, recentIds),
@@ -73,6 +72,13 @@ export default function EditorCommandPalette({
     query.trim().length === 0 && recentCommands.length > 0;
 
   const sections = useMemo(() => {
+    if (query.trim()) {
+      return [{
+        id: "results",
+        title: labelOr(t, "commandPalette.sections.results", "Results"),
+        commands: filtered,
+      }];
+    }
     const commands = filtered.filter((command) => command.kind === "command");
     const actionRows = filtered.filter((command) => command.kind === "action");
     const result = [];
@@ -98,7 +104,7 @@ export default function EditorCommandPalette({
       });
     }
     return result;
-  }, [filtered, recentCommands, showRecent, t]);
+  }, [filtered, query, recentCommands, showRecent, t]);
 
   const flat = useMemo(
     () => sections.flatMap((section) => section.commands),

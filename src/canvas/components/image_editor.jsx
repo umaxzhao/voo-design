@@ -1,3 +1,5 @@
+import { buildExtendedPaletteActions } from "../commands/palette_actions.js";
+import { setLocale } from "../../shared/i18n.js";
 import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
 import {
   consumeImagePublication,
@@ -2360,6 +2362,14 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     [stageCentre, setEditorCamera, focusedId, layoutById],
   );
 
+  const toggleGrid = useCallback(() => {
+    const next = engine?.getGrid?.() ? null : { enabled: true, size: 32 };
+    if (multi) {
+      for (const entry of enginesRef.current.values()) entry.engine?.setGrid?.(next);
+    } else engine?.setGrid?.(next);
+    bump();
+  }, [engine, multi]);
+
   /**
    * Non-command-table actions the palette exposes: view toggles, zoom, panel
    * openers. Handlers are closures over the live editor state, so a palette row
@@ -2367,6 +2377,15 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
    */
   const paletteActions = useMemo(
     () => [
+      ...buildExtendedPaletteActions({
+        engine,
+        onTool: runTool,
+        onCreateComponent: handleCreateComponent,
+        onToggleGrid: toggleGrid,
+        onOpenAgent: () =>
+          window.dispatchEvent(new CustomEvent("voo:open-agent-panel")),
+        setLocale,
+      }),
       {
         id: "undo",
         labelKey: "editor.undo",
@@ -2467,6 +2486,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       },
     ],
     [
+      runTool,
+      handleCreateComponent,
+      toggleGrid,
       presentationHistory,
       multi,
       zoomSharedStep,
@@ -4922,17 +4944,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               }
               onFit={multi ? fitAll : () => engine?.zoomToFit()}
               grid={grid}
-              onToggleGrid={() => {
-                const next = grid ? null : { enabled: true, size: 32 };
-                if (multi) {
-                  for (const entry of enginesRef.current.values()) {
-                    entry.engine?.setGrid?.(next);
-                  }
-                } else {
-                  engine?.setGrid?.(next);
-                }
-                bump();
-              }}
+              onToggleGrid={toggleGrid}
               snapping={snappingEnabled}
               onToggleSnapping={toggleSnapping}
             >
@@ -5135,6 +5147,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               canCreateComponent ? handleCreateComponent : null
             }
             onDetachInstance={handleDetachInstance}
+            onOpenShortcuts={() => setShortcutsOpen(true)}
             onImportMedia={() => mediaInputRef.current?.click()}
           />
         ) : null}
