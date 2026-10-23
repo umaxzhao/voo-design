@@ -1,4 +1,10 @@
 export default {
+  "editor.variants.title": "变体",
+  "editor.variants.variant": "变体",
+  "editor.variants.set": "变体集",
+  "editor.variants.add": "添加变体",
+  "editor.variants.change": "切换变体",
+  "editor.variants.default": "默认",
   "editor.canvasType.label": "画布类型",
   "editor.canvasType.design": "设计",
   "editor.canvasType.motion": "动效",

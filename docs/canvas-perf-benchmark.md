@@ -23,7 +23,7 @@
 
 ## Browser FPS
 
-`tests/e2e/canvas_fps.e2e.mjs` (`npm run test:e2e:fps`) drives the real editor in headless Chromium: it adds ~2,000 rects, pans/zooms for ~2 seconds, samples `requestAnimationFrame` deltas and writes `docs/canvas-fps-results.json`. It is instrumentation, not a gate — low FPS only prints a warning. Install Playwright once with `npm i -D playwright && npx playwright install chromium`; without a running dev server it starts Vite briefly, and without Playwright/Chromium it prints SKIP.
+`npm run test:e2e:fps` measures the real Vite app through `?voo-test=1` in headless Playwright Chromium. See “Real browser FPS (Playwright Chromium)” below for measured results and limitations. Generated browser JSON remains local and gitignored.
 
 ## BEFORE / AFTER
 
@@ -94,3 +94,46 @@
 - Missing phase measurements are shown as `_pending_`; cases are matched by ID.
 - Batch update speedups by case: 1,000 mixed nodes: 29.34×; 5,000 mixed nodes: 43.90×; 20,000 mixed nodes: 43.50×; 500 images + 4500 rects (5000 nodes): 46.27×.
 - Culled node counts per shift (average): 1,000 mixed nodes: 565.8; 5,000 mixed nodes: 602.3; 20,000 mixed nodes: 609.0; 500 images + 4500 rects (5000 nodes): 601.6.
+
+## Real browser FPS (Playwright Chromium)
+
+Measured on 2026-10-23 with Playwright Chromium 156.0.8078.4, Linux/x64, Node v20.19.2, a 1440×1000 viewport and device scale 1. This box has **no GPU**: Chromium runs headless with software rendering / SwiftShader (`--use-angle=swiftshader --enable-unsafe-swiftshader`). Treat these numbers as a lower bound for this environment, not a prediction of desktop GPU performance. The app's default Canvas2D renderer is measured; enabling SwiftShader also allows WebGL/CanvasKit initialization, but this benchmark does not switch the app to its experimental Skia renderer.
+
+The harness starts Vite from this worktree on port 5197, opens `?voo-test=1`, replaces the document with exactly 1,000 / 5,000 / 20,000 solid rectangles on a 24px grid, sizes the page to contain them, and fits the whole page. Consequently nearly all nodes are visible; this is not a culling-only benchmark. Each independent scenario resets to fit, settles for one second, then measures at least two seconds from the first animation callback:
+
+- Pan: sinusoidal camera translation through the live engine.
+- Zoom: continuous zoom around a screen point through `zoomAt`.
+- Drag: sinusoidal movement of one rectangle through `updateNodes(..., { commit: false, preview: true })`, the operation used by the real pointer drag dispatcher. This measures document preview/render work, excluding pointer hit testing, snapping and pointer-up history commits.
+
+FPS is animation callback cadence during real app rendering, not a count of GPU-presented frames. p95 is the 95th percentile of frame intervals. Large stalls can extend samples beyond two seconds. These are single runs on a shared CPU box; low frame counts, scheduler contention, headless raster/compositor costs and Vite development overhead make the results noisy. Both comparison runs use the same harness and a server from this worktree; CPU profiling is disabled for the table.
+
+| Nodes | Scenario | Before FPS | After FPS | Before p95 (ms) | After p95 (ms) |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 1,000 | pan | 32.95 | 30.90 | 50.10 | 183.30 |
+| 1,000 | zoom | 1.69 | 8.76 | 2316.60 | 333.40 |
+| 1,000 | drag | 1.30 | 8.64 | 1783.20 | 366.70 |
+| 5,000 | pan | 2.46 | 6.67 | 1083.30 | 500.00 |
+| 5,000 | zoom | 2.22 | 5.64 | 1416.60 | 600.00 |
+| 5,000 | drag | 2.21 | 4.43 | 1450.00 | 800.00 |
+| 20,000 | pan | 0.94 | 1.79 | 1233.20 | 2050.00 |
+| 20,000 | zoom | 0.97 | 1.70 | 1983.40 | 1266.60 |
+| 20,000 | drag | 0.93 | 2.19 | 1816.60 | 1433.30 |
+
+Before captured at 2026-10-23T06:58:06.395Z; after at 2026-10-23T07:04:50.785Z.
+
+The optimization uses one Canvas2D save/restore scope for an all-plain-rectangle document, preserves individual fill calls and paint order (including translucent overlaps), and caches eligibility by immutable node/list identity. It avoids per-node effect dispatch, corner-radius processing, closures and render-state allocations. Visibility, hidden-node and layer-pass filters still apply; transforms, rounded corners, strokes, gradients, masks, groups, effects, noise and mixed documents retain the general renderer. Layer-cache rendering and non-indexed viewport culling also retain their existing paths.
+
+An exploratory Chrome CPU profile identified repeated native `save`/`restore` and per-node paint setup as major active costs. A follow-up profile exercises the new `drawPlainRects` path; remaining prominent work includes `fillRect`, editor layer UI updates, document comparisons and garbage collection, with substantial browser idle/wait time. This is a targeted reduction in CPU render overhead, not a solution to all the headless stalls. Many scenarios remain below 30 FPS, and an individual regression is retained in the table rather than hidden.
+
+Reproduce with:
+
+```sh
+npm install
+npx playwright install --with-deps chromium
+npm run test:e2e:fps
+VOO_FPS_NODES=20000 VOO_FPS_MS=5000 VOO_FPS_PROFILE=/tmp/canvas.cpuprofile npm run test:e2e:fps
+```
+
+Open the optional `.cpuprofile` in Chrome DevTools Performance. `VOO_URL` can target an explicitly chosen running Vite server with `?voo-test=1`; without it the harness starts its own server and fails if the port is occupied. Missing browser prerequisites and page errors fail the run; low FPS is reported without making a performance gate. The latest raw run is kept in gitignored `docs/canvas-fps-results.json`, removed from the Git index.
+
+Validation: `VOO_LINK_PORT=29871 npm test` passed **1,972 tests**, with **5 skipped** (1,977 total), across **163 test files**. The private port avoids another process occupying the default extension bridge port 17632; no bridge implementation was changed. The 22 rectangle renderer tests cover state restoration, opacity, overlap order, visibility/filtering, immutable edits and complex-document fallback. `npm run build` passed.

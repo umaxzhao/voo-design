@@ -481,12 +481,15 @@ export function createEditor({
       ctrl.nodesController.updateNodes([{ id, ...patch }], options),
     getNode: (id) => getDoc()?.nodes?.find((n) => n.id === id) ?? null,
     getDoc: () => getDoc(),
+    // Selection state lives in the nodes controller; the selection controller
+    // only owns pixel selections, so it must not shadow these readers.
     getSelectedIds: () =>
+      ctrl.nodesController.getSelectedIds?.() ??
       ctrl.selectionController.getSelectedIds?.() ??
-      (ctrl.selectionController.getSelectedId?.()
-        ? [ctrl.selectionController.getSelectedId()]
-        : []),
-    getSelectedId: () => ctrl.selectionController.getSelectedId?.(),
+      [],
+    getSelectedId: () =>
+      ctrl.nodesController.getSelectedId?.() ??
+      ctrl.selectionController.getSelectedId?.(),
     commitEditorDocument: (options) =>
       ctrl.documentController.commitEditorDocument?.(options),
     zoomToFit: () => viewportTools.zoomToFit?.(),
