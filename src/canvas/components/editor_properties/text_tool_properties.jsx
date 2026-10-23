@@ -5,8 +5,9 @@
 
 import PropTypes from "prop-types";
 import { useI18n } from "../../use_i18n.js";
-import { StaticSection } from "./property_section.jsx";
-import ScrubField from "../scrub_field.jsx";
+import { StaticSection, sectionRowClass } from "./property_section.jsx";
+import ToolSliderField from "./tool_slider_field.jsx";
+import FlatSelect from "../flat_select.jsx";
 import { CustomFontPicker } from "../font_picker.jsx";
 import {
   IconAlignCenter,
@@ -22,6 +23,10 @@ import {
 } from "../../editor/scene_model_core.js";
 
 const QUICK_FONT_SIZES = [12, 14, 16, 20, 24, 32, 48, 64];
+
+function fontWeightLabelKey(weight) {
+  return `editor.props.weight.${weight === 400 ? "normal" : weight}`;
+}
 
 export default function TextToolProperties({
   fontFamily = DEFAULT_FONT_FAMILY,
@@ -44,12 +49,11 @@ export default function TextToolProperties({
   const { t } = useI18n();
 
   return (
-    <StaticSection title={t("editor.props.textStyle") || "文字排版"}>
-      <div className="flex flex-col gap-2">
-        {/* 1. Font Family Picker */}
+    <StaticSection title={t("editor.props.textStyle")}>
+      <div className="flex flex-col gap-2.5">
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-mono text-neutral-400">
-            {t("editor.props.fontFamily") || "字体"}
+          <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-400">
+            {t("editor.props.fontFamily")}
           </span>
           <CustomFontPicker
             value={fontFamily}
@@ -57,165 +61,156 @@ export default function TextToolProperties({
           />
         </div>
 
-        {/* 2. Font Weight & Quick Align */}
+        <div className="flex h-7 min-w-0 items-center gap-2">
+          <span className="w-[64px] shrink-0 truncate text-[10px] font-mono uppercase tracking-wide text-neutral-500">
+            {t("editor.props.fontWeight")}
+          </span>
+          <FlatSelect
+            value={String(fontWeight)}
+            onChange={(value) => onFontWeight?.(Number(value))}
+            label={t("editor.props.fontWeight")}
+            options={TEXT_FONT_WEIGHTS.map((weight) => ({
+              value: String(weight),
+              label: t(fontWeightLabelKey(weight)),
+            }))}
+            className="min-w-0 flex-1"
+            triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2.5 !text-[10px] !font-mono !tabular-nums !text-neutral-100 hover:!bg-neutral-800/80"
+            widthClass="w-44"
+          />
+        </div>
+
+        <div className="flex h-7 min-w-0 items-center gap-2">
+          <span className="w-[64px] shrink-0 truncate text-[10px] font-mono uppercase tracking-wide text-neutral-500">
+            {t("editor.props.alignment")}
+          </span>
+          <div className="flex min-w-0 flex-1 items-center gap-1">
+            {[
+              {
+                id: "left",
+                icon: <IconAlignLeft size={13} />,
+                label: t("editor.props.align.left"),
+              },
+              {
+                id: "center",
+                icon: <IconAlignCenter size={13} />,
+                label: t("editor.props.align.center"),
+              },
+              {
+                id: "right",
+                icon: <IconAlignRight size={13} />,
+                label: t("editor.props.align.right"),
+              },
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onAlign?.(item.id)}
+                aria-pressed={align === item.id}
+                title={item.label}
+                aria-label={item.label}
+                className={`${sectionRowClass} flex-1 justify-center ${
+                  align === item.id
+                    ? "text-white ring-1 ring-white/25"
+                    : "text-neutral-400"
+                }`}
+              >
+                {item.icon}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <ToolSliderField
+          label={t("editor.props.fontSize")}
+          icon={<span className="text-[11px] leading-none">T</span>}
+          min={6}
+          max={288}
+          step={1}
+          value={Math.round(fontSize)}
+          onValueChange={(val) => onFontSize?.(val)}
+          suffix="px"
+          ariaLabel={t("editor.props.fontSize")}
+          scrubHint={t("editor.props.dragToAdjust")}
+        />
+
         <div className="grid grid-cols-2 gap-1.5">
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-mono text-neutral-400">
-              {t("editor.props.fontWeight") || "字重"}
-            </span>
-            <select
-              value={fontWeight}
-              onChange={(e) => onFontWeight?.(Number(e.target.value))}
-              aria-label={t("editor.props.fontWeight") || "字重"}
-              className="h-7 w-full rounded-lg bg-neutral-900 border border-white/10 px-2 text-[11px] font-mono text-neutral-200 focus:outline-none focus:ring-1 focus:ring-[#a7ffd4]"
-            >
-              {TEXT_FONT_WEIGHTS.map((weight) => (
-                <option key={weight} value={weight}>
-                  {weight === 300
-                    ? "Light"
-                    : weight === 400
-                      ? "Regular"
-                      : weight === 500
-                        ? "Medium"
-                        : weight === 600
-                          ? "SemiBold"
-                          : weight === 700
-                            ? "Bold"
-                            : weight === 800
-                              ? "ExtraBold"
-                              : weight === 900
-                                ? "Black"
-                                : weight}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-mono text-neutral-400">
-              {t("editor.props.alignment") || "对齐"}
-            </span>
-            <div className="flex items-center gap-1 rounded-lg bg-neutral-900 border border-white/10 p-0.5 h-7">
-              {[
-                { id: "left", icon: <IconAlignLeft size={13} />, label: "左对齐" },
-                { id: "center", icon: <IconAlignCenter size={13} />, label: "居中" },
-                { id: "right", icon: <IconAlignRight size={13} />, label: "右对齐" },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onAlign?.(item.id)}
-                  aria-pressed={align === item.id}
-                  title={item.label}
-                  className={`flex flex-1 items-center justify-center rounded-md h-full transition-colors ${
-                    align === item.id
-                      ? "bg-white/20 text-white font-medium"
-                      : "text-neutral-400 hover:text-white"
-                  }`}
-                >
-                  {item.icon}
-                </button>
-              ))}
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => onItalic?.(!italic)}
+            aria-pressed={italic}
+            title={t("editor.props.italic")}
+            aria-label={t("editor.props.italic")}
+            className={`${sectionRowClass} justify-center ${
+              italic
+                ? "text-[#a7ffd4] ring-1 ring-[#a7ffd4]/40"
+                : "text-neutral-400"
+            }`}
+          >
+            <IconItalic size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onUnderline?.(!underline)}
+            aria-pressed={underline}
+            title={t("editor.props.underline")}
+            aria-label={t("editor.props.underline")}
+            className={`${sectionRowClass} justify-center ${
+              underline
+                ? "text-[#a7ffd4] ring-1 ring-[#a7ffd4]/40"
+                : "text-neutral-400"
+            }`}
+          >
+            <IconUnderline size={13} />
+          </button>
         </div>
 
-        {/* 3. Font Size & Quick Size Pills */}
-        <div className="flex flex-col gap-1.5 pt-0.5">
-          <div className="grid grid-cols-2 gap-1.5">
-            <ScrubField
-              prefix="T"
-              suffix="px"
-              min={6}
-              max={288}
-              step={1}
-              value={Math.round(fontSize)}
-              onValueChange={(val) => onFontSize?.(val)}
-              ariaLabel={t("editor.props.fontSize") || "字号"}
-              scrubHint={t("editor.props.dragToAdjust")}
-              showRange
-            />
-            {/* Italic & Underline Toggles */}
-            <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+          <span className="mr-0.5 shrink-0 text-[9px] font-mono uppercase text-neutral-500">
+            {t("editor.props.size")}
+          </span>
+          {QUICK_FONT_SIZES.map((size) => {
+            const isActive = Math.round(fontSize) === size;
+            return (
               <button
+                key={size}
                 type="button"
-                onClick={() => onItalic?.(!italic)}
-                aria-pressed={italic}
-                title="斜体 (Italic)"
-                className={`flex h-7 flex-1 items-center justify-center rounded-lg border transition-colors ${
-                  italic
-                    ? "bg-[#a7ffd4]/15 border-[#a7ffd4]/40 text-[#a7ffd4]"
-                    : "bg-neutral-900 border-white/10 text-neutral-400 hover:text-white"
+                onClick={() => onFontSize?.(size)}
+                className={`flex h-5 min-w-[24px] items-center justify-center rounded-md px-1.5 text-[10px] font-mono transition-all ${
+                  isActive
+                    ? "bg-[#a7ffd4] font-semibold text-black shadow-pop"
+                    : "bg-white/[0.06] text-neutral-400 hover:bg-white/[0.12] hover:text-neutral-200"
                 }`}
               >
-                <IconItalic size={13} />
+                {size}
               </button>
-              <button
-                type="button"
-                onClick={() => onUnderline?.(!underline)}
-                aria-pressed={underline}
-                title="下划线 (Underline)"
-                className={`flex h-7 flex-1 items-center justify-center rounded-lg border transition-colors ${
-                  underline
-                    ? "bg-[#a7ffd4]/15 border-[#a7ffd4]/40 text-[#a7ffd4]"
-                    : "bg-neutral-900 border-white/10 text-neutral-400 hover:text-white"
-                }`}
-              >
-                <IconUnderline size={13} />
-              </button>
-            </div>
-          </div>
-
-          {/* Quick Font Size Pills */}
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-            <span className="text-[9px] font-mono text-neutral-500 uppercase shrink-0 mr-0.5">
-              Size
-            </span>
-            {QUICK_FONT_SIZES.map((sz) => {
-              const isActive = Math.round(fontSize) === sz;
-              return (
-                <button
-                  key={sz}
-                  type="button"
-                  onClick={() => onFontSize?.(sz)}
-                  className={`h-5 min-w-[24px] px-1.5 flex items-center justify-center rounded-md text-[10px] font-mono transition-all ${
-                    isActive
-                      ? "bg-[#a7ffd4] text-black font-semibold shadow-pop"
-                      : "bg-white/[0.06] text-neutral-400 hover:bg-white/[0.12] hover:text-neutral-200"
-                  }`}
-                >
-                  {sz}
-                </button>
-              );
-            })}
-          </div>
+            );
+          })}
         </div>
 
-        {/* 4. Line Height & Letter Spacing */}
-        <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-          <ScrubField
-            prefix="↕"
-            suffix="%"
-            min={50}
-            max={300}
-            step={5}
-            value={Math.round(lineHeight * 100)}
-            onValueChange={(val) => onLineHeight?.(val / 100)}
-            ariaLabel={t("editor.props.lineHeight") || "行高"}
-            scrubHint={t("editor.props.dragToAdjust")}
-          />
-          <ScrubField
-            prefix="↔"
-            suffix="%"
-            min={-20}
-            max={100}
-            step={1}
-            value={Math.round(letterSpacing * 100)}
-            onValueChange={(val) => onLetterSpacing?.(val / 100)}
-            ariaLabel={t("editor.props.letterSpacing") || "字距"}
-            scrubHint={t("editor.props.dragToAdjust")}
-          />
-        </div>
+        <ToolSliderField
+          label={t("editor.props.lineHeight")}
+          icon={<span className="text-[11px] leading-none">↕</span>}
+          min={50}
+          max={300}
+          step={5}
+          value={Math.round(lineHeight * 100)}
+          onValueChange={(val) => onLineHeight?.(val / 100)}
+          suffix="%"
+          ariaLabel={t("editor.props.lineHeight")}
+          scrubHint={t("editor.props.dragToAdjust")}
+        />
+        <ToolSliderField
+          label={t("editor.props.letterSpacing")}
+          icon={<span className="text-[11px] leading-none">↔</span>}
+          min={-20}
+          max={100}
+          step={1}
+          value={Math.round(letterSpacing * 100)}
+          onValueChange={(val) => onLetterSpacing?.(val / 100)}
+          suffix="%"
+          ariaLabel={t("editor.props.letterSpacing")}
+          scrubHint={t("editor.props.dragToAdjust")}
+        />
       </div>
     </StaticSection>
   );

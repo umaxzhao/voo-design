@@ -1,3 +1,4 @@
+import { dirtyRectsToDevice, shouldUseDirtyRect } from "./dirty_rect.js";
 // Top-level stage paint loop coordinating page background, nodes, and chrome passes.
 
 import {
@@ -117,6 +118,9 @@ export function draw(
     cullOffscreen = false,
     // Stage-only too: exports must paint every node exactly, never a blit.
     layerCache = null,
+    dirtyRects = null,
+    stageWidth = null,
+    stageHeight = null,
   },
 ) {
   // The camera metadata rides even when no GL renderer was found: the CPU
@@ -131,7 +135,17 @@ export function draw(
   const page = effectivePage(doc);
   ctx.save();
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+  const width = stageWidth ?? canvas.width / dpr;
+  const height = stageHeight ?? canvas.height / dpr;
+  const dirty = dirtyRectsToDevice(dirtyRects, viewport, dpr, width, height);
+  if (dirtyRects && shouldUseDirtyRect(dirty, width, height, dpr)) {
+    ctx.beginPath();
+    ctx.rect(dirty.x / dpr, dirty.y / dpr, dirty.width / dpr, dirty.height / dpr);
+    ctx.clip();
+    ctx.clearRect(dirty.x / dpr, dirty.y / dpr, dirty.width / dpr, dirty.height / dpr);
+  } else {
+    ctx.clearRect(0, 0, width, height);
+  }
 
   // The page and everything on it, clipped to the document bounds.
   ctx.save();

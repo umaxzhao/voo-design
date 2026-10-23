@@ -4,8 +4,8 @@ import PropTypes from "prop-types";
 import { useState } from "react";
 import { cropModeFields } from "../../editor/crop_panel_fields.js";
 import { useI18n } from "../../use_i18n.js";
-import { StaticSection } from "./property_section.jsx";
-import ScrubField from "../scrub_field.jsx";
+import { StaticSection, sectionRowClass } from "./property_section.jsx";
+import ToolSliderField from "./tool_slider_field.jsx";
 
 export default function CropProperties({
   cropRatio = null,
@@ -33,11 +33,15 @@ export default function CropProperties({
   const showCropHeight = cropFields.includes("height");
   const activeCropRatio = cropMode === "ratio" && cropRatio > 0 ? cropRatio : 0;
 
+  const toggleClass = (active) =>
+    `${sectionRowClass} justify-center px-1 text-[10px] ${
+      active ? "text-white ring-1 ring-white/25" : "text-neutral-400"
+    }`;
+
   return (
     <StaticSection title={t("editor.crop")}>
-      {/* Mode toggle: Free / Fixed Ratio / Fixed Size */}
       <div
-        className="grid grid-cols-3 gap-1.5"
+        className="grid grid-cols-3 gap-1"
         role="radiogroup"
         aria-label={t("editor.cropMode")}
       >
@@ -52,49 +56,36 @@ export default function CropProperties({
             role="radio"
             aria-checked={cropMode === value}
             onClick={() => onCropMode?.(value)}
-            className={`rounded-xl py-1.5 text-[11px] font-mono transition-all ${
-              cropMode === value
-                ? "bg-white text-black font-semibold"
-                : "bg-[#222222] text-neutral-400 hover:bg-[#2a2a2a] hover:text-neutral-200"
-            }`}
+            className={toggleClass(cropMode === value)}
           >
             {label}
           </button>
         ))}
       </div>
 
-      {!imageCropMode && <>
-      {/* Smart framing: solves the frame for the chosen ratio from the page's
-          own content instead of centring it. Needs a ratio to solve for, so it
-          stays disabled in Free mode and says why. Called without an optional
-          chain on purpose: the handler is wired by the editor that supplies
-          these props, and a missing one must throw on click rather than turn
-          the button into a silent no-op. */}
-      <button
-        type="button"
-        data-testid="crop-smart"
-        disabled={!activeCropRatio}
-        onClick={() => onAutoCrop()}
-        title={
-          activeCropRatio
-            ? t("editor.crop.smartHint")
-            : t("editor.crop.smartNeedsRatio")
-        }
-        className={`mt-1.5 w-full rounded-xl py-1.5 text-[11px] font-mono transition-all disabled:opacity-40 ${
-          activeCropRatio
-            ? "bg-[#222222] text-neutral-300 hover:bg-[#2a2a2a] hover:text-white"
-            : "bg-[#222222] text-neutral-500"
-        }`}
-      >
-        {t("editor.crop.smart")}
-      </button>
-      </>}
+      {!imageCropMode && (
+        <button
+          type="button"
+          data-testid="crop-smart"
+          disabled={!activeCropRatio}
+          onClick={() => onAutoCrop()}
+          title={
+            activeCropRatio
+              ? t("editor.crop.smartHint")
+              : t("editor.crop.smartNeedsRatio")
+          }
+          className={`${sectionRowClass} justify-center text-[10px] disabled:opacity-40 ${
+            activeCropRatio ? "text-neutral-200" : "text-neutral-500"
+          }`}
+        >
+          {t("editor.crop.smart")}
+        </button>
+      )}
 
-      {/* Fixed Ratio — aspect presets + a custom numeric ratio */}
       {showCropRatio && (
-        <div className="mt-2 space-y-1.5">
+        <div className="space-y-1.5">
           <div
-            className="grid grid-cols-4 gap-1.5"
+            className="grid grid-cols-4 gap-1"
             role="radiogroup"
             aria-label={t("editor.crop.ratioPreset")}
           >
@@ -114,83 +105,90 @@ export default function CropProperties({
                 role="radio"
                 aria-checked={activeCropRatio === ratio}
                 onClick={() => onCropRatio?.(ratio)}
-                className={`rounded-lg py-1.5 text-[11px] font-mono transition-all ${
-                  activeCropRatio === ratio
-                    ? "bg-white text-black font-semibold"
-                    : "bg-[#222222] text-neutral-400 hover:bg-[#2a2a2a] hover:text-neutral-200"
-                }`}
+                className={toggleClass(activeCropRatio === ratio)}
               >
                 {label}
               </button>
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-1.5">
-            <ScrubField
-              prefix="R"
-              value={cropRatio || 1}
-              min={0.1}
-              max={100}
-              step={0.01}
-              onValueChange={(value) => onCropRatio?.(value)}
-              ariaLabel={t("editor.crop.ratioCustom")}
-            />
-          </div>
+          <ToolSliderField
+            label={t("editor.crop.ratioCustom")}
+            min={0.1}
+            max={100}
+            step={0.01}
+            value={cropRatio || 1}
+            onValueChange={(value) => onCropRatio?.(value)}
+            ariaLabel={t("editor.crop.ratioCustom")}
+            scrubHint={t("editor.props.dragToAdjust")}
+          />
         </div>
       )}
 
-      {/* Fixed Size — W/H numeric entry */}
       {(showCropWidth || showCropHeight) && (
-        <div className="mt-2 grid grid-cols-2 gap-1.5">
-          <ScrubField
-            prefix="W"
-            value={cropWidth}
-            min={1}
-            onValueChange={(value) => onCropSize?.(value, cropHeight)}
-            ariaLabel={t("editor.crop.width")}
-          />
-          <ScrubField
-            prefix="H"
-            value={cropHeight}
-            min={1}
-            onValueChange={(value) => onCropSize?.(cropWidth, value)}
-            ariaLabel={t("editor.crop.height")}
-          />
+        <div className="flex flex-col gap-1.5">
+          {showCropWidth ? (
+            <ToolSliderField
+              label={t("editor.crop.width")}
+              min={1}
+              max={8192}
+              value={cropWidth}
+              onValueChange={(value) => onCropSize?.(value, cropHeight)}
+              suffix="px"
+              ariaLabel={t("editor.crop.width")}
+              scrubHint={t("editor.props.dragToAdjust")}
+            />
+          ) : null}
+          {showCropHeight ? (
+            <ToolSliderField
+              label={t("editor.crop.height")}
+              min={1}
+              max={8192}
+              value={cropHeight}
+              onValueChange={(value) => onCropSize?.(cropWidth, value)}
+              suffix="px"
+              ariaLabel={t("editor.crop.height")}
+              scrubHint={t("editor.props.dragToAdjust")}
+            />
+          ) : null}
         </div>
       )}
 
-      {!imageCropMode && <>
-      {/* Straighten — angle slider */}
-      <div className="mt-2">
-        <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wide text-neutral-400">
-          <span>{t("editor.crop.straighten")}</span>
-          <span>{Math.round(cropAngle)}°</span>
-        </div>
-        <input
-          type="range"
-          min={-45}
-          max={45}
-          step={0.5}
-          value={cropAngle}
-          onChange={(event) => onCropAngle?.(Number(event.target.value))}
-          className="flat-range w-full"
-          aria-label={t("editor.crop.straighten")}
-        />
-      </div>
+      {!imageCropMode && (
+        <>
+          <ToolSliderField
+            label={t("editor.crop.straighten")}
+            min={-45}
+            max={45}
+            step={0.5}
+            value={cropAngle}
+            onValueChange={(value) => onCropAngle?.(value)}
+            suffix="°"
+            ariaLabel={t("editor.crop.straighten")}
+            scrubHint={t("editor.props.dragToAdjust")}
+          />
 
-      {/* Delete Cropped Pixels — checked routes Apply down the destructive path */}
-      <label className="mt-2 flex items-center gap-2 text-[11px] text-neutral-300">
-        <input
-          type="checkbox"
-          checked={deleteCroppedPixels}
-          onChange={(event) => setDeleteCroppedPixels(event.target.checked)}
-          className="flat-check"
-        />
-        <span>{t("editor.crop.deletePixels")}</span>
-      </label>
-      </>}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={deleteCroppedPixels}
+            onClick={() => setDeleteCroppedPixels((v) => !v)}
+            className={`${sectionRowClass} justify-between text-[10px] ${
+              deleteCroppedPixels
+                ? "text-white ring-1 ring-white/25"
+                : "text-neutral-400"
+            }`}
+          >
+            <span className="truncate">{t("editor.crop.deletePixels")}</span>
+            <span
+              className={`h-2 w-2 shrink-0 rounded-full ${
+                deleteCroppedPixels ? "bg-[#a7ffd4]" : "bg-neutral-600"
+              }`}
+            />
+          </button>
+        </>
+      )}
 
-      {/* Apply / Cancel — always visible while the crop tool is active */}
-      <div className="mt-2 grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
         <button
           type="button"
           onClick={() =>
@@ -198,14 +196,14 @@ export default function CropProperties({
               ? onApplyDestructiveCrop?.()
               : onApplyCrop?.()
           }
-          className="rounded-xl bg-white py-1.5 text-[11px] font-semibold text-black hover:bg-neutral-200 transition-colors"
+          className="flex h-7 w-full items-center justify-center rounded-xl bg-white text-[11px] font-semibold text-black transition-colors hover:bg-neutral-200"
         >
           {t("editor.crop.apply")}
         </button>
         <button
           type="button"
           onClick={() => onCancelCrop?.()}
-          className="rounded-xl bg-[#222222] py-1.5 text-[11px] font-mono text-neutral-300 hover:bg-[#2a2a2a] hover:text-white transition-colors"
+          className={`${sectionRowClass} justify-center text-[10px] text-neutral-300`}
         >
           {t("editor.crop.cancel")}
         </button>
@@ -215,7 +213,7 @@ export default function CropProperties({
         <button
           type="button"
           onClick={() => onResetCrop()}
-          className="mt-2 w-full rounded-xl bg-[#222222] py-1.5 text-[10px] font-mono uppercase tracking-wider text-neutral-300 hover:bg-[#2a2a2a] hover:text-white transition-colors"
+          className={`${sectionRowClass} justify-center text-[10px] uppercase tracking-wider text-neutral-300`}
         >
           {t("editor.crop.reset")}
         </button>

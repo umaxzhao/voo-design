@@ -6,8 +6,15 @@ import ScrubValueInput from "./scrub_value_input.jsx";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
 import { NODE_KIND } from "../../editor/scene_model.js";
 import { useI18n } from "../../use_i18n.js";
-import { IconMinus } from "../../icons.jsx";
+import { IconMinus, IconOpacity } from "../../icons.jsx";
+import { PaintBucket } from "lucide-react";
 import { Swatch, HexField, HEX_COLOUR } from "./colour_swatch.jsx";
+import {
+  SectionAddButton,
+  StaticSection,
+  sectionActionClass,
+  sectionRowClass,
+} from "./property_section.jsx";
 
 /** imageId → preview URL, so the fill picker never re-encodes per render. */
 const fillPreviewCache = new Map();
@@ -139,36 +146,27 @@ export function FillSection({
     commonValue(selectedNodes, "fillOpacity") === MIXED;
 
   return (
-    <div className="flex flex-col gap-1.5 pt-2 pb-1 border-t border-white/10 mt-2.5">
-      {/* Header */}
-      <div className="flex items-center justify-between px-0.5 select-none">
-        <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-400 font-medium">
-          {t("editor.props.fillLabel")}
-        </span>
-        {!isImageNode && none ? (
-          <button
-            type="button"
-            onClick={() => editAndCommit({ fill: "#D9D9D9" })}
-            title={t("editor.props.fill")}
-            className="flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white text-xs font-mono outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
-          >
-            ＋
-          </button>
-        ) : null}
-      </div>
-
+    <StaticSection
+      title={t("editor.props.fillLabel")}
+      extra={
+        <SectionAddButton
+          label={t("editor.props.addFill")}
+          onClick={() => editAndCommit({ fill: "#D9D9D9" })}
+        />
+      }
+    >
       {none ? (
         <button
           type="button"
           onClick={() => editAndCommit({ fill: "#D9D9D9" })}
-          className="flex h-7 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/10 text-[11px] font-mono text-neutral-400 hover:border-white/20 hover:text-white transition-colors cursor-pointer"
+          className="flex h-7 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/10 text-[11px] font-mono text-neutral-400 hover:border-white/20 hover:text-white transition-colors cursor-pointer"
         >
-          <span>＋</span>
-          <span>{t("editor.props.fill")}</span>
+          <span>+</span>
+          <span className="uppercase">{t("editor.props.fill")}</span>
         </button>
       ) : (
         /* Row 1: Unified Pill (Swatch + Label/Hex + Opacity + Minus) */
-        <div className="flex h-7 items-center rounded-lg bg-neutral-800 px-2 gap-2 hover:bg-neutral-800/80 transition-colors">
+        <div className={sectionRowClass}>
           <Swatch
             value={none ? null : fill}
             onPick={(colour) => editAndCommit({ fill: colour })}
@@ -176,12 +174,15 @@ export function FillSection({
             previewImage={imageUrl}
             isImage={isImageNode}
           />
+          <span className="shrink-0 text-neutral-500" aria-hidden="true">
+            <PaintBucket size={11} />
+          </span>
           {isImageNode ? (
-            <span className="min-w-0 flex-1 text-[11px] font-mono text-neutral-200 truncate">
+            <span className="min-w-0 flex-1 truncate text-[11px] font-mono text-neutral-200">
               {object.name || t("editor.props.imageLabel")}
             </span>
           ) : isGradient ? (
-            <span className="min-w-0 flex-1 text-[11px] font-mono text-neutral-300 truncate">
+            <span className="min-w-0 flex-1 truncate text-[11px] font-mono text-neutral-300">
               {t("editor.props.gradientLabel")}
             </span>
           ) : (
@@ -191,7 +192,7 @@ export function FillSection({
               ariaLabel={t("editor.props.customColour")}
             />
           )}
-          <div className="flex items-center gap-0.5 border-l border-white/10 pl-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-0.5 border-l border-white/10 pl-2">
             {fillOpacityMixed ? (
               <span
                 className="text-[11px] font-mono text-neutral-500"
@@ -201,6 +202,9 @@ export function FillSection({
               </span>
             ) : (
               <>
+                <span className="text-neutral-500" aria-hidden="true">
+                  <IconOpacity size={11} />
+                </span>
                 <ScrubValueInput
                   min={0}
                   max={100}
@@ -220,20 +224,19 @@ export function FillSection({
                 </span>
               </>
             )}
-            {!isImageNode ? (
-              <button
-                type="button"
-                onClick={() => editAndCommit({ fill: "transparent" })}
-                title={t("node.delete")}
-                className="ml-1 flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.08] hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
-              >
-                <IconMinus size={12} />
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={() => editAndCommit({ fill: "transparent" })}
+              title={t("editor.props.removeFill")}
+              aria-label={t("editor.props.removeFill")}
+              className={`${sectionActionClass} ml-1`}
+            >
+              <IconMinus size={12} />
+            </button>
           </div>
         </div>
       )}
-    </div>
+    </StaticSection>
   );
 }
 

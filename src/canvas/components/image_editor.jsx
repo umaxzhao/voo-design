@@ -46,8 +46,8 @@ import { layoutPresentationPages } from "../presentation/presentation-document.j
 import { usePresentationHistory } from "./presentation/use_presentation_history.js";
 import { usePresentationEditor } from "./presentation/use_presentation_editor.js";
 import PresentationPageMenu from "./presentation/presentation_page_menu.jsx";
-import PresentationViewer from "./presentation/presentation_viewer.jsx";
-import PresentationExportDialog from "./presentation/presentation_export_dialog.jsx";
+const PresentationViewer = lazy(() => import("./presentation/presentation_viewer.jsx"));
+const PresentationExportDialog = lazy(() => import("./presentation/presentation_export_dialog.jsx"));
 import PresentationSlide from "./presentation/presentation_slide.jsx";
 import {
   editorMediaFileKind,
@@ -60,10 +60,10 @@ import EditorToolSubbar from "./editor_tool_subbar.jsx";
 import EditorPieMenu from "./editor_pie_menu.jsx";
 import EditorPenSubbar from "./editor_pen_subbar.jsx";
 import EditorContextMenu from "./editor_context_menu.jsx";
-import EditorCommandPalette from "./editor_command_palette.jsx";
-import EditorFindReplace from "./editor_find_replace.jsx";
-import ShortcutReferenceModal from "./shortcut_reference_modal.jsx";
-import SvgEditModal from "./SvgEditModal.jsx";
+const EditorCommandPalette = lazy(() => import("./editor_command_palette.jsx"));
+const EditorFindReplace = lazy(() => import("./editor_find_replace.jsx"));
+const ShortcutReferenceModal = lazy(() => import("./shortcut_reference_modal.jsx"));
+const SvgEditModal = lazy(() => import("./SvgEditModal.jsx"));
 import { DESIGN_SHORTCUT_GROUPS } from "../../shared/editor-shortcut-catalog.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import {
@@ -267,7 +267,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const materializeEditorGeneratedOutput = useDesignStore(
     (state) => state.materializeEditorGeneratedOutput,
   );
-  const cameraZoom = useDesignStore((state) => state.editorCamera?.zoom ?? 1);
+  const cameraZoom = useDesignStore((state) => state.editorCamera?.zoom ?? 1, (a, b) => a === b);
   const editorArtboardLayouts = useDesignStore(
     (state) => state.editorArtboardLayouts,
   );
@@ -329,11 +329,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const freeStageRef = useRef(null);
   const workspaceCanvasRef = useRef(null);
   const artboardLayerRef = useRef(null);
+  const freeGridRef = useRef(null);
   const panGestureRef = useRef(null);
-  const pointerPanRafRef = useRef(null);
-  const pendingPointerPanRef = useRef({ dx: 0, dy: 0 });
-  const wheelRafRef = useRef(null);
-  const pendingWheelPanRef = useRef({ dx: 0, dy: 0 });
   const artboardDragRef = useRef(null);
   const spaceRef = useRef(false);
   const [busy, setBusy] = useState(false);
@@ -1269,9 +1266,13 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
 
   const propertyObject =
     selectedGroup ?? selected ?? (isFrameSelected ? frameObject : null);
-  const parentLayout = propertyObject?.parentId
-    ? layers.find((node) => node.id === propertyObject.parentId)?.autoLayout
+  const parentNode = propertyObject?.parentId
+    ? layers.find((node) => node.id === propertyObject.parentId) ?? null
     : null;
+  const parentLayout = parentNode?.autoLayout ?? null;
+  const parentIsFrame = Boolean(
+    parentNode?.isFrame || parentNode?.kind === "frame",
+  );
   const colorVariableActions = propertyObject
     ? {
         documentId: doc?.canvasId,
@@ -1773,14 +1774,13 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     return index;
   }, [workspaceDocs, layoutById]);
 
-  const editorCamera = useDesignStore((state) => state.editorCamera);
   useWorkspaceSkia({
     enabled: multi,
     canvasRef: workspaceCanvasRef,
     stageRef: freeStageRef,
     docs: workspaceDocs,
     layouts: layoutById,
-    camera: editorCamera,
+    subscribeCamera: true,
     revision: `${positionSignature}|${engineVersion}`,
     spatialIndex: workspaceSpatialIndex,
     resolveImageUrl: useCallback((node) => {
@@ -1821,7 +1821,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     if (!multi) return undefined;
     const syncTransform = (cam) => {
       const el = artboardLayerRef.current;
-      if (!el || !cam) return;
+      if (!cam) return;
+      if (freeGridRef.current) freeGridRef.current.style.backgroundPosition = `${cam.panX || 0}px ${cam.panY || 0}px`;
+      if (!el) return;
       el.style.transform = `translate3d(${cam.panX || 0}px, ${cam.panY || 0}px, 0)`;
     };
     syncTransform(useDesignStore.getState().editorCamera);
@@ -2579,16 +2581,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     const onWheel = (event) => {
       event.preventDefault();
       if (event.ctrlKey || event.metaKey) {
-        if (wheelRafRef.current) {
-          cancelAnimationFrame(wheelRafRef.current);
-          wheelRafRef.current = null;
-        }
-        const { dx: pdx, dy: pdy } = pendingWheelPanRef.current;
-        pendingWheelPanRef.current = { dx: 0, dy: 0 };
-        if (pdx !== 0 || pdy !== 0) {
-          panEditorCamera(pdx, pdy);
-        }
-
         const bounds = stage.getBoundingClientRect();
         setEditorCamera((prev) =>
           zoomCameraAt(prev, wheelZoomFactor(event.deltaY), {
@@ -2599,33 +2591,12 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         return;
       }
       const { dx, dy } = wheelPanDelta(event);
-      pendingWheelPanRef.current.dx += dx;
-      pendingWheelPanRef.current.dy += dy;
-
-      const el = artboardLayerRef.current;
-      if (el) {
-        const cur = useDesignStore.getState().editorCamera;
-        el.style.transform = `translate3d(${(cur?.panX || 0) + pendingWheelPanRef.current.dx}px, ${(cur?.panY || 0) + pendingWheelPanRef.current.dy}px, 0)`;
-      }
-
-      if (!wheelRafRef.current) {
-        wheelRafRef.current = requestAnimationFrame(() => {
-          wheelRafRef.current = null;
-          const { dx: pdx, dy: pdy } = pendingWheelPanRef.current;
-          pendingWheelPanRef.current = { dx: 0, dy: 0 };
-          if (pdx !== 0 || pdy !== 0) {
-            panEditorCamera(pdx, pdy);
-          }
-        });
-      }
+      panEditorCamera(dx, dy);
     };
     stage.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       stage.removeEventListener("wheel", onWheel);
-      if (wheelRafRef.current) {
-        cancelAnimationFrame(wheelRafRef.current);
-        wheelRafRef.current = null;
-      }
+
     };
   }, [multi, visible, panEditorCamera, setEditorCamera]);
 
@@ -2740,6 +2711,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   // next open restores it. A hand multi-select (no group) is never written.
   const cameraRef = useRef(useDesignStore.getState().editorCamera);
   cameraRef.current = useDesignStore.getState().editorCamera;
+  useEffect(() => useDesignStore.subscribe((state) => {
+    cameraRef.current = state.editorCamera;
+  }), []);
   const rememberedRef = useRef({ groupId: null, active: false });
   useEffect(() => {
     if (multi && editorRememberCamera && editingGroupId) {
@@ -2858,25 +2832,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         gesture.moved = true;
       }
 
-      pendingPointerPanRef.current.dx += dx;
-      pendingPointerPanRef.current.dy += dy;
-
-      const el = artboardLayerRef.current;
-      if (el) {
-        const cur = useDesignStore.getState().editorCamera;
-        el.style.transform = `translate3d(${(cur?.panX || 0) + pendingPointerPanRef.current.dx}px, ${(cur?.panY || 0) + pendingPointerPanRef.current.dy}px, 0)`;
-      }
-
-      if (!pointerPanRafRef.current) {
-        pointerPanRafRef.current = requestAnimationFrame(() => {
-          pointerPanRafRef.current = null;
-          const { dx: pdx, dy: pdy } = pendingPointerPanRef.current;
-          pendingPointerPanRef.current = { dx: 0, dy: 0 };
-          if (pdx !== 0 || pdy !== 0) {
-            panEditorCamera(pdx, pdy);
-          }
-        });
-      }
+      panEditorCamera(dx, dy);
     },
     [panEditorCamera],
   );
@@ -2885,16 +2841,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       const gesture = panGestureRef.current;
       if (gesture?.pointerId !== event.pointerId) return;
       panGestureRef.current = null;
-
-      if (pointerPanRafRef.current) {
-        cancelAnimationFrame(pointerPanRafRef.current);
-        pointerPanRafRef.current = null;
-      }
-      const { dx: pdx, dy: pdy } = pendingPointerPanRef.current;
-      pendingPointerPanRef.current = { dx: 0, dy: 0 };
-      if (pdx !== 0 || pdy !== 0) {
-        panEditorCamera(pdx, pdy);
-      }
 
       try {
         freeStageRef.current?.releasePointerCapture?.(event.pointerId);
@@ -2912,7 +2858,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         focusEditorPage(null);
       }
     },
-    [focusedId, focusEditorPage, panEditorCamera],
+    [focusedId, focusEditorPage],
   );
 
   // Ref populated by ToolPropertiesSection so the X shortcut can swap colours.
@@ -3345,10 +3291,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   // places that page at `layout * zoom + camera.pan` inside the stage, so that
   // offset is the page origin on screen. No second camera is introduced.
   const focusedLayout = layoutById.get(focusedId) ?? null;
-  const rulerOffsetX =
-    (focusedLayout?.x ?? 0) * cameraZoom + (editorCamera?.panX ?? 0);
-  const rulerOffsetY =
-    (focusedLayout?.y ?? 0) * cameraZoom + (editorCamera?.panY ?? 0);
   const documentGuides = doc ? readDocumentGuides(doc) : [];
   const documentComments = doc ? normalizeComments(doc.comments) : [];
   // Presentation playback and 3D canvases have no 2D document space to measure.
@@ -3414,6 +3356,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             />
             <div
               aria-hidden
+              ref={freeGridRef}
               data-testid="editor-free-grid"
               className="pointer-events-none absolute inset-0 transition-opacity duration-200"
               style={{
@@ -3812,14 +3755,14 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             toasts (z-20); only its 20px strips and guide hit bands take pointer
             events, so drawing/selecting on the canvas is unchanged. */}
         {rulersVisible ? (
-          <EditorRulers
+          <CameraPositionedOverlay
+            component={EditorRulers}
+            layout={focusedLayout}
             showRulers={showRulers}
             showGuides={showGuides}
             guides={documentGuides}
             selectedGuideId={selectedGuideId}
             zoom={cameraZoom}
-            offsetX={rulerOffsetX}
-            offsetY={rulerOffsetY}
             onSelectGuide={setSelectedGuideId}
             onCreateGuide={handleCreateGuide}
             onMoveGuide={handleMoveGuide}
@@ -3832,13 +3775,13 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             page's document space. The root is pointer-events-none; only pins,
             popovers, the panel and the placement layer take the pointer. */}
         {commentsVisible ? (
-          <EditorComments
+          <CameraPositionedOverlay
+            component={EditorComments}
+            layout={focusedLayout}
             open={commentsOpen}
             addMode={commentMode}
             comments={documentComments}
             zoom={cameraZoom}
-            offsetX={rulerOffsetX}
-            offsetY={rulerOffsetY}
             onOpen={() => setCommentsOpen(true)}
             onClose={closeComments}
             onToggleAddMode={toggleCommentMode}
@@ -3969,7 +3912,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         ) : null}
 
         {exportOpen && presentationId ? (
-          <PresentationExportDialog
+          <Suspense fallback={null}>
+            <PresentationExportDialog
             busy={presentation.busy}
             warnings={presentation.warnings}
             error={presentation.error}
@@ -3979,6 +3923,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               cancelExport();
             }}
           />
+          </Suspense>
         ) : exportOpen ? (
           <Suspense fallback={null}>
             <EditorExportDialog
@@ -4007,7 +3952,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         ) : null}
 
         {presentation.preview ? (
-          <PresentationViewer
+          <Suspense fallback={null}>
+            <PresentationViewer
             pages={presentation.preview.pages}
             title={presentation.preview.title}
             initialPageId={presentation.preview.initialPageId}
@@ -4016,6 +3962,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               <PresentationSlide key={page.id} page={page} index={index} />
             )}
           />
+          </Suspense>
         ) : null}
         {presentation.error && !exportOpen ? (
           <p
@@ -4148,6 +4095,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             engine={engine}
             object={propertyObject}
             parentLayout={parentLayout}
+            parentIsFrame={parentIsFrame}
+            parentNode={parentNode}
             colorVariableActions={colorVariableActions}
             styleActions={styleActions}
             index={activeIndex}
@@ -5170,7 +5119,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           />
         ) : null}
 
-        <ShortcutReferenceModal
+        <Suspense fallback={null}>
+          <ShortcutReferenceModal
           isOpen={shortcutsOpen}
           onClose={() => setShortcutsOpen(false)}
           titleKey="editor.shortcuts.title"
@@ -5200,6 +5150,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           onFocusMatch={focusFindMatch}
           onApplyDoc={applyFindReplaceDoc}
         />
+        </Suspense>
       </div>
     </div>
   );
@@ -5290,3 +5241,11 @@ AiRepairDownloadDialog.propTypes = {
   onDownload: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
 };
+
+// Keep pan subscriptions local to overlays that need screen-space coordinates.
+function CameraPositionedOverlay({ component: Component, layout, ...props }) {
+  const camera = useDesignStore((state) => state.editorCamera);
+  return <Component {...props} zoom={camera?.zoom ?? 1}
+    offsetX={(layout?.x ?? 0) * (camera?.zoom ?? 1) + (camera?.panX ?? 0)}
+    offsetY={(layout?.y ?? 0) * (camera?.zoom ?? 1) + (camera?.panY ?? 0)} />;
+}

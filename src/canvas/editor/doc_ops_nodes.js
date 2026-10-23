@@ -1,3 +1,4 @@
+import { hitTestMetadata, orderedCandidates } from "./hit_test_candidates.js";
 import {
   createImageNode,
   isGroupNode,
@@ -238,31 +239,9 @@ export function nodeAtPoint(
           maxY: point.y + querySlop,
         });
 
-    const hasFillInstance = doc.nodes.some(
-      (n) => n.kind === NODE_KIND.CANVAS_INSTANCE && n.instance?.layoutMode === "fill",
-    );
-
-    if (candidates.length === 0 && !hasFillInstance) {
-      return null;
-    }
-
-    const candidateIdSet = new Set(candidates.map((c) => c.id));
-    candidateNodes = [];
-    for (let i = doc.nodes.length - 1; i >= 0; i -= 1) {
-      const node = doc.nodes[i];
-      if (
-        candidateIdSet.has(node.id) ||
-        (node.kind === NODE_KIND.CANVAS_INSTANCE && node.instance?.layoutMode === "fill")
-      ) {
-        candidateNodes.push(node);
-        if (
-          candidateNodes.length ===
-          candidateIdSet.size + (hasFillInstance ? 1 : 0)
-        ) {
-          break;
-        }
-      }
-    }
+    const metadata = hitTestMetadata(doc.nodes);
+    if (candidates.length === 0 && !metadata.hasFillInstance) return null;
+    candidateNodes = orderedCandidates(doc.nodes, candidates, metadata.fills);
   }
 
   const nodesToTest = candidateNodes ?? doc.nodes;
@@ -278,7 +257,7 @@ export function nodeAtPoint(
     // which hold the actual vector outlines.
     if (
       node.kind === NODE_KIND.BOOLEAN &&
-      doc.nodes.some((n) => n.parentId === node.id)
+      hitTestMetadata(doc.nodes).parents.has(node.id)
     ) {
       continue;
     }

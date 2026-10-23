@@ -9,8 +9,8 @@ import {
 } from "../../editor/editor_constants.js";
 import { MARQUEE_MODE_IDS } from "../../editor/tool_families.js";
 import { useI18n } from "../../use_i18n.js";
-import { StaticSection } from "./property_section.jsx";
-import ScrubField from "../scrub_field.jsx";
+import { StaticSection, sectionRowClass } from "./property_section.jsx";
+import ToolSliderField from "./tool_slider_field.jsx";
 import MagneticLassoFields from "./magnetic_lasso_fields.jsx";
 import SelectionModeButtons from "./selection_mode_buttons.jsx";
 import SelectionWandControls from "./selection_wand_controls.jsx";
@@ -73,14 +73,9 @@ export default function SelectionProperties({
 
         {/* Feathering */}
         {onFeatherSelection ? (
-          <div className="flex flex-col gap-1.5 pt-0.5">
-            <ScrubField
-              prefix={
-                <span className="text-[10px] font-mono text-neutral-400">
-                  {t("editor.selection.feather")}
-                </span>
-              }
-              suffix="px"
+          <div className="flex flex-col gap-1.5">
+            <ToolSliderField
+              label={t("editor.selection.feather")}
               min={0}
               max={250}
               value={selectionFeather}
@@ -88,9 +83,9 @@ export default function SelectionProperties({
                 setSelectionFeather(val);
                 onFeatherSelection(val);
               }}
+              suffix="px"
               ariaLabel={t("editor.selection.feather")}
               scrubHint={t("editor.props.dragToAdjust")}
-              showRange
             />
             {/* Quick Feather Pills (Affinity style) */}
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
@@ -104,9 +99,9 @@ export default function SelectionProperties({
                       setSelectionFeather(fVal);
                       onFeatherSelection(fVal);
                     }}
-                    className={`h-5 min-w-[24px] px-1.5 flex items-center justify-center rounded-md text-[10px] font-mono transition-all ${
+                    className={`flex h-5 min-w-[24px] items-center justify-center rounded-md px-1.5 text-[10px] font-mono transition-all ${
                       isActive
-                        ? "bg-[#a7ffd4] text-black font-semibold shadow-pop"
+                        ? "bg-[#a7ffd4] font-semibold text-black shadow-pop"
                         : "bg-white/[0.06] text-neutral-400 hover:bg-white/[0.12] hover:text-neutral-200"
                     }`}
                   >
@@ -143,10 +138,10 @@ export default function SelectionProperties({
                     type="button"
                     onClick={() => onMarqueeRatio(value)}
                     aria-pressed={active}
-                    className={`rounded-xl py-1.5 text-[10px] font-mono transition-all ${
+                    className={`${sectionRowClass} justify-center text-[10px] ${
                       active
-                        ? "bg-white text-black font-semibold"
-                        : "bg-[#222222] text-neutral-400 hover:bg-[#282828] hover:text-white"
+                        ? "text-white ring-1 ring-white/25"
+                        : "text-neutral-400"
                     }`}
                   >
                     {label}
@@ -198,10 +193,10 @@ export default function SelectionProperties({
                   type="button"
                   onClick={() => onRegionTarget(value)}
                   aria-pressed={regionTarget === value}
-                  className={`rounded-xl py-1.5 text-[10px] font-mono transition-all ${
+                  className={`${sectionRowClass} justify-center text-[10px] ${
                     regionTarget === value
-                      ? "bg-white text-black font-semibold"
-                      : "bg-[#222222] text-neutral-400 hover:bg-[#282828] hover:text-white"
+                      ? "text-white ring-1 ring-white/25"
+                      : "text-neutral-400"
                   }`}
                 >
                   {t(labelKey)}
@@ -215,26 +210,16 @@ export default function SelectionProperties({
         {tool === TOOL.REGION &&
         regionMode === "remove" &&
         onBrushWidth ? (
-          <div className="space-y-1.5 pt-1">
-            <ScrubField
-              prefix={
-                <svg
-                  className="w-3.5 h-3.5 text-neutral-400"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <polygon points="3,19 21,19 21,5" />
-                </svg>
-              }
-              min={REMOVE_BRUSH_MIN}
-              max={REMOVE_BRUSH_MAX}
-              value={brushWidth}
-              onValueChange={(val) => onBrushWidth(val)}
-              ariaLabel={t("editor.brushWidth")}
-              scrubHint={t("editor.props.dragToAdjust")}
-              showRange
-            />
-          </div>
+          <ToolSliderField
+            label={t("editor.brushWidth")}
+            min={REMOVE_BRUSH_MIN}
+            max={REMOVE_BRUSH_MAX}
+            value={Math.round(brushWidth)}
+            onValueChange={(val) => onBrushWidth(val)}
+            suffix="px"
+            ariaLabel={t("editor.brushWidth")}
+            scrubHint={t("editor.props.dragToAdjust")}
+          />
         ) : null}
 
         {/* Lasso cutout / keep / erase workflow & Select Subject */}

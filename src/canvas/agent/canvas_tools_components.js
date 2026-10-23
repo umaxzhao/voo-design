@@ -42,7 +42,9 @@ const INSTANCE_RECORD_FIELDS = Object.freeze([
 const BINDING_KEYS = Object.values(VARIABLE_BINDINGS).map((entry) => entry.key);
 
 function invalidArgs(message) {
-  throw Object.assign(new Error(message || TOOL_ERROR.INVALID_ARGS), {
+  const base = message || TOOL_ERROR.INVALID_ARGS;
+  const full = base === TOOL_ERROR.INVALID_ARGS ? base : `${TOOL_ERROR.INVALID_ARGS}: ${base}`;
+  throw Object.assign(new Error(full), {
     code: TOOL_ERROR.INVALID_ARGS,
   });
 }
@@ -59,8 +61,12 @@ function apiMissing(message) {
   });
 }
 
-function mapEngineError(error) {
-  throw Object.assign(new Error(error?.message || TOOL_ERROR.INVALID_ARGS), {
+function mapEngineError(error, context = "") {
+  const detail = error?.message || "invalid value";
+  const message = context
+    ? `${TOOL_ERROR.INVALID_ARGS}: Invalid argument ${context}: ${detail}`
+    : `${TOOL_ERROR.INVALID_ARGS}: ${detail}`;
+  throw Object.assign(new Error(message), {
     code: TOOL_ERROR.INVALID_ARGS,
   });
 }
@@ -71,14 +77,18 @@ function requireEditor() {
   return editor;
 }
 
-function requireId(value) {
-  if (typeof value !== "string" || value.trim() === "") invalidArgs();
+function requireId(value, name = "id") {
+  if (typeof value !== "string" || value.trim() === "") {
+    invalidArgs(`Invalid argument "${name}": expected a non-empty string, got ${JSON.stringify(value)}`);
+  }
   return value;
 }
 
 function getDocument(editor) {
   const doc = editor.getDocument?.() ?? editor.getDoc?.() ?? null;
-  if (!doc || !Array.isArray(doc.nodes)) invalidArgs();
+  if (!doc || !Array.isArray(doc.nodes)) {
+    invalidArgs("The editor does not expose a document with a nodes array");
+  }
   return doc;
 }
 
@@ -117,7 +127,7 @@ function commitDocument(editor, next, message) {
     editor.requestRender?.();
     return true;
   }
-  invalidArgs();
+  invalidArgs("The editor cannot commit document changes");
 }
 
 /** Resolves a main component's document through the editor or the host doc. */
@@ -153,7 +163,7 @@ function getDocumentSafe(editor) {
 function requireInstance(editor, instanceId) {
   const node = requireNode(editor, instanceId);
   if (node.kind !== INSTANCE_NODE_KIND) {
-    invalidArgs(`${instanceId} is not a component instance`);
+    invalidArgs(`Invalid argument "instanceId": ${JSON.stringify(instanceId)} is not a component instance (expected kind canvasInstance)`);
   }
   return node;
 }
@@ -179,11 +189,11 @@ function normalizeInstanceResult(result, instanceId) {
 
 function setInstanceOverride(args = {}) {
   const editor = requireEditor();
-  const instanceId = requireId(args.instanceId);
+  const instanceId = requireId(args.instanceId, "instanceId");
   const patch = args.patch;
-  if (!patch || typeof patch !== "object" || Array.isArray(patch)) invalidArgs();
+  if (!patch || typeof patch !== "object" || Array.isArray(patch)) invalidArgs(`Invalid argument "patch": expected a plain object, got ${JSON.stringify(patch)}`);
   const keys = Object.keys(patch);
-  if (keys.length === 0) invalidArgs();
+  if (keys.length === 0) invalidArgs(`Invalid argument "patch": expected a non-empty object`);
   const instance = requireInstance(editor, instanceId);
 
   if (typeof editor.setInstanceOverride === "function") {
@@ -196,13 +206,13 @@ function setInstanceOverride(args = {}) {
       const normalized = normalizeInstanceResult(result, instanceId);
       if (normalized) return normalized;
     } catch (error) {
-      mapEngineError(error);
+      mapEngineError(error, '"instanceId"/"childId"/"patch"');
     }
   }
 
   const childId = args.childId === undefined || args.childId === null
     ? null
-    : requireId(args.childId);
+    : requireId(args.childId, "childId");
   const doc = getDocument(editor);
   let targetChildId = childId;
   let next;
@@ -214,7 +224,7 @@ function setInstanceOverride(args = {}) {
       const master = resolveComponentDocument(editor, instance.sourceCanvasId);
       const target = master ? overridableNodes(master) : [];
       if (target.length !== 1) {
-        invalidArgs("childId is required to override a component layer");
+        invalidArgs(`Invalid argument "childId": required to override a component layer`);
       }
       targetChildId = target[0].node.id;
     } else {
@@ -227,24 +237,24 @@ function setInstanceOverride(args = {}) {
     try {
       overrides = setNodeOverride(instance.instance ?? {}, targetChildId, patch);
     } catch (error) {
-      mapEngineError(error);
+      mapEngineError(error, '"childId"/"patch"');
     }
     next = replaceInstanceNode(doc, instanceId, { instance: overrides });
   } else {
     if (!keys.every((key) => INSTANCE_RECORD_FIELDS.includes(key))) {
-      invalidArgs(`Override fields must be within ${OVERRIDE_FIELDS.join(", ")}`);
+      invalidArgs(`Invalid argument "patch": expected keys within ${INSTANCE_RECORD_FIELDS.join(", ")}, got ${keys.join(", ")}`);
     }
     for (const key of keys) {
       const value = patch[key];
       if (key === "layoutMode" && !INSTANCE_LAYOUT_MODES.includes(value)) {
-        invalidArgs();
+        invalidArgs(`Invalid argument "patch.layoutMode": expected one of ${INSTANCE_LAYOUT_MODES.join(", ")}, got ${JSON.stringify(value)}`);
       }
       if (key === "playbackMode" && !INSTANCE_PLAYBACK_MODES.includes(value)) {
-        invalidArgs();
+        invalidArgs(`Invalid argument "patch.playbackMode": expected one of ${INSTANCE_PLAYBACK_MODES.join(", ")}, got ${JSON.stringify(value)}`);
       }
-      if (key === "playbackStart" && !Number.isFinite(value)) invalidArgs();
+      if (key === "playbackStart" && !Number.isFinite(value)) invalidArgs(`Invalid argument "patch.playbackStart": expected a finite number, got ${JSON.stringify(value)}`);
       if (key !== "playbackStart" && typeof value !== "string" && value !== null) {
-        invalidArgs();
+        invalidArgs(`Invalid argument "patch.${key}": expected a string or null, got ${JSON.stringify(value)}`);
       }
     }
     const record = { ...(instance.instance ?? {}), ...patch };
@@ -262,7 +272,7 @@ function setInstanceOverride(args = {}) {
 
 function resetInstanceOverrides(args = {}) {
   const editor = requireEditor();
-  const instanceId = requireId(args.instanceId);
+  const instanceId = requireId(args.instanceId, "instanceId");
   const instance = requireInstance(editor, instanceId);
 
   if (typeof editor.resetInstanceOverrides === "function") {
@@ -271,7 +281,7 @@ function resetInstanceOverrides(args = {}) {
       const normalized = normalizeInstanceResult(result, instanceId);
       if (normalized) return normalized;
     } catch (error) {
-      mapEngineError(error);
+      mapEngineError(error, '"instanceId"');
     }
   }
 
@@ -290,8 +300,8 @@ function resetInstanceOverrides(args = {}) {
 
 function swapInstance(args = {}) {
   const editor = requireEditor();
-  const instanceId = requireId(args.instanceId);
-  const componentId = requireId(args.componentId);
+  const instanceId = requireId(args.instanceId, "instanceId");
+  const componentId = requireId(args.componentId, "componentId");
   const instance = requireInstance(editor, instanceId);
 
   if (typeof editor.swapInstance === "function") {
@@ -300,13 +310,13 @@ function swapInstance(args = {}) {
       const normalized = normalizeInstanceResult(result, instanceId);
       if (normalized) return { ...normalized, componentId };
     } catch (error) {
-      mapEngineError(error);
+      mapEngineError(error, '"instanceId"/"componentId"');
     }
   }
 
   const doc = getDocument(editor);
   if (instance.sourceCanvasId === componentId) {
-    invalidArgs("The instance already uses this component");
+    invalidArgs(`Invalid argument "componentId": the instance already uses ${JSON.stringify(componentId)}`);
   }
   const resolveCanvas = (id) => resolveComponentDocument(editor, id);
   if (wouldCreateCanvasCycle(doc.canvasId, componentId, resolveCanvas)) {
@@ -344,15 +354,15 @@ function variableDoc(editor) {
 
 function normalizeModeSpecs(modes) {
   if (modes === undefined || modes === null) return [];
-  if (!Array.isArray(modes)) invalidArgs();
+  if (!Array.isArray(modes)) invalidArgs(`Invalid argument "modes": expected an array, got ${JSON.stringify(modes)}`);
   return modes.map((mode) => {
     if (typeof mode === "string") return { name: mode };
     if (mode && typeof mode === "object" && !Array.isArray(mode)) {
-      if (mode.id !== undefined && typeof mode.id !== "string") invalidArgs();
-      if (mode.name !== undefined && typeof mode.name !== "string") invalidArgs();
+      if (mode.id !== undefined && typeof mode.id !== "string") invalidArgs(`Invalid argument "modes[].id": expected a string, got ${JSON.stringify(mode.id)}`);
+      if (mode.name !== undefined && typeof mode.name !== "string") invalidArgs(`Invalid argument "modes[].name": expected a string, got ${JSON.stringify(mode.name)}`);
       return mode;
     }
-    invalidArgs();
+    invalidArgs(`Invalid argument "modes[]": expected a mode name string or an object with id/name, got ${JSON.stringify(mode)}`);
   });
 }
 
@@ -360,13 +370,15 @@ function requireVariableCollection(model, collectionId) {
   const collection = model.collections.find(
     (candidate) => candidate.id === collectionId,
   );
-  if (!collection) invalidArgs(`No variable collection ${collectionId}`);
+  if (!collection) {
+    invalidArgs(`Invalid argument "collectionId": no variable collection ${JSON.stringify(collectionId)}`);
+  }
   return collection;
 }
 
 function createVariableCollection(args = {}) {
   const editor = requireEditor();
-  if (typeof args.name !== "string" || args.name.trim() === "") invalidArgs();
+  if (typeof args.name !== "string" || args.name.trim() === "") invalidArgs(`Invalid argument "name": expected a non-empty string, got ${JSON.stringify(args.name)}`);
   const modeSpecs = normalizeModeSpecs(args.modes);
 
   const doc = variableDoc(editor);
@@ -396,16 +408,18 @@ function createVariableCollection(args = {}) {
 
 function addVariableMode(args = {}) {
   const editor = requireEditor();
-  const collectionId = requireId(args.collectionId);
+  const collectionId = requireId(args.collectionId, "collectionId");
   const name = args.name;
-  if (name !== undefined && typeof name !== "string") invalidArgs();
+  if (name !== undefined && typeof name !== "string") {
+    invalidArgs(`Invalid argument "name": expected a string, got ${JSON.stringify(name)}`);
+  }
 
   const doc = variableDoc(editor);
   let next;
   try {
     next = addMode(doc, collectionId, typeof name === "string" ? { name } : {});
   } catch (error) {
-    mapEngineError(error);
+    mapEngineError(error, '"collectionId"/"name"');
   }
   const collection = requireVariableCollection(
     getVariablesModel(next),
@@ -418,13 +432,15 @@ function addVariableMode(args = {}) {
 
 function createVariable(args = {}) {
   const editor = requireEditor();
-  const collectionId = requireId(args.collectionId);
-  if (!VARIABLE_TYPES.includes(args.type)) invalidArgs();
-  if (typeof args.name !== "string" || args.name.trim() === "") invalidArgs();
+  const collectionId = requireId(args.collectionId, "collectionId");
+  if (!VARIABLE_TYPES.includes(args.type)) {
+    invalidArgs(`Invalid argument "type": expected one of ${VARIABLE_TYPES.join(", ")}, got ${JSON.stringify(args.type)}`);
+  }
+  if (typeof args.name !== "string" || args.name.trim() === "") invalidArgs(`Invalid argument "name": expected a non-empty string, got ${JSON.stringify(args.name)}`);
   if (args.valuesByMode !== undefined) {
     if (!args.valuesByMode || typeof args.valuesByMode !== "object" ||
         Array.isArray(args.valuesByMode)) {
-      invalidArgs();
+      invalidArgs(`Invalid argument "valuesByMode": expected a plain object, got ${JSON.stringify(args.valuesByMode)}`);
     }
   }
 
@@ -443,7 +459,7 @@ function createVariable(args = {}) {
       valuesByMode: args.valuesByMode,
     });
   } catch (error) {
-    mapEngineError(error);
+    mapEngineError(error, '"collectionId"/"type"/"name"/"valuesByMode"/"value"');
   }
   const variable = getVariablesModel(next)
     .collections.flatMap((collection) => collection.variables)
@@ -462,16 +478,16 @@ function createVariable(args = {}) {
 
 function setVariableValueTool(args = {}) {
   const editor = requireEditor();
-  const variableId = requireId(args.variableId);
-  if (args.modeId !== undefined && typeof args.modeId !== "string") invalidArgs();
-  if (args.value === undefined || args.value === null) invalidArgs();
+  const variableId = requireId(args.variableId, "variableId");
+  if (args.modeId !== undefined && typeof args.modeId !== "string") invalidArgs(`Invalid argument "modeId": expected a string, got ${JSON.stringify(args.modeId)}`);
+  if (args.value === undefined || args.value === null) invalidArgs(`Invalid argument "value": expected a non-null value`);
 
   const doc = variableDoc(editor);
   let next;
   try {
     next = setVariableValue(doc, variableId, args.modeId, args.value);
   } catch (error) {
-    mapEngineError(error);
+    mapEngineError(error, '"variableId"/"modeId"/"value"');
   }
   commitDocument(editor, next, "AI: Set variable value");
   return { ok: true, variableId, modeId: args.modeId ?? null, value: args.value };
@@ -479,29 +495,33 @@ function setVariableValueTool(args = {}) {
 
 function setActiveMode(args = {}) {
   const editor = requireEditor();
-  const modeId = requireId(args.modeId);
+  const modeId = requireId(args.modeId, "modeId");
   const doc = variableDoc(editor);
   let collectionId = null;
   let layerId = null;
 
   if (args.layerId === undefined && args.collectionId === undefined) {
-    invalidArgs("layerId or collectionId is required");
+    invalidArgs(`Invalid arguments: "layerId" or "collectionId" is required`);
   }
   if (args.collectionId !== undefined) {
-    if (args.layerId !== undefined) invalidArgs();
-    collectionId = requireId(args.collectionId);
+    if (args.layerId !== undefined) {
+      invalidArgs('Invalid arguments: give either "collectionId" or "layerId", not both');
+    }
+    collectionId = requireId(args.collectionId, "collectionId");
     requireVariableCollection(getVariablesModel(doc), collectionId);
   } else {
     // No collection given: switch the mode of the collection that this
     // layer's bound variable lives in (fill/stroke/opacity/... binding).
-    layerId = requireId(args.layerId);
+    layerId = requireId(args.layerId, "layerId");
     const node = requireNode(editor, layerId);
     const boundId = BINDING_KEYS.map((key) => node[key]).find(Boolean);
     if (!boundId) {
-      invalidArgs(`${layerId} is not bound to a variable`);
+      invalidArgs(`Invalid argument "layerId": layer ${JSON.stringify(layerId)} is not bound to a variable`);
     }
     const found = findVariable(doc, boundId);
-    if (!found) invalidArgs();
+    if (!found) {
+      invalidArgs(`Invalid argument "layerId": layer ${JSON.stringify(layerId)} is bound to unknown variable ${JSON.stringify(boundId)}`);
+    }
     collectionId = found.collection.id;
   }
 
@@ -509,7 +529,7 @@ function setActiveMode(args = {}) {
   try {
     next = setActiveCollectionMode(doc, collectionId, modeId);
   } catch (error) {
-    mapEngineError(error);
+    mapEngineError(error, '"collectionId"/"layerId"/"modeId"');
   }
   commitDocument(editor, next, "AI: Set active variable mode");
   return {
@@ -527,8 +547,9 @@ export const COMPONENT_TOOL_SCHEMAS = Object.freeze([
       name: "set_instance_override",
       description:
         "Override part of a component instance. With childId, patch overrides a component layer " +
-        "(text, fill, visible). Without childId, patch adjusts the instance's own record " +
-        "(layoutMode, playbackMode, playbackStart, cameraId, poster).",
+        "(text: string, fill: hex colour, visible: boolean); a null value removes that override. " +
+        "Without childId, patch adjusts the instance's own record (layoutMode, playbackMode, " +
+        "playbackStart, cameraId, poster); null clears cameraId/poster.",
       parameters: {
         type: "object",
         properties: {
@@ -537,7 +558,22 @@ export const COMPONENT_TOOL_SCHEMAS = Object.freeze([
             type: "string",
             description: "Optional layer id inside the component.",
           },
-          patch: { type: "object" },
+          patch: {
+            type: "object",
+            description:
+              "With childId: { text?, fill?, visible? }. Without childId: { layoutMode?, " +
+              "playbackMode?, playbackStart?, cameraId?, poster? }.",
+            properties: {
+              text: { type: "string", description: "Text override; null removes it." },
+              fill: { type: "string", description: "Hex colour override; null removes it." },
+              visible: { type: "boolean", description: "Visibility override; null removes it." },
+              layoutMode: { type: "string" },
+              playbackMode: { type: "string" },
+              playbackStart: { type: "number" },
+              cameraId: { type: "string", description: "Camera id; null clears it." },
+              poster: { type: "string", description: "Poster URL; null clears it." },
+            },
+          },
         },
         required: ["instanceId", "patch"],
       },
@@ -576,15 +612,28 @@ export const COMPONENT_TOOL_SCHEMAS = Object.freeze([
     type: "function",
     function: {
       name: "create_variable_collection",
-      description: "Create a variable collection with an optional list of extra modes.",
+      description:
+        "Create a variable collection with an optional list of extra modes. A Default mode is " +
+        "always created first.",
       parameters: {
         type: "object",
         properties: {
-          name: { type: "string" },
+          name: { type: "string", description: "Collection name." },
           modes: {
             type: "array",
-            items: { type: "string" },
-            description: "Optional additional mode names.",
+            description: "Optional additional modes: mode name strings or { id?, name? } objects.",
+            items: {
+              anyOf: [
+                { type: "string" },
+                {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    name: { type: "string" },
+                  },
+                },
+              ],
+            },
           },
         },
         required: ["name"],
@@ -595,12 +644,14 @@ export const COMPONENT_TOOL_SCHEMAS = Object.freeze([
     type: "function",
     function: {
       name: "add_variable_mode",
-      description: "Add a mode to a variable collection; values are copied from the default mode.",
+      description:
+        "Add a mode to a variable collection; every variable's value is copied from the default " +
+        "mode. Returns modeId and modeName.",
       parameters: {
         type: "object",
         properties: {
-          collectionId: { type: "string" },
-          name: { type: "string" },
+          collectionId: { type: "string", description: "Target collection id." },
+          name: { type: "string", description: "New mode name." },
         },
         required: ["collectionId", "name"],
       },
@@ -617,9 +668,17 @@ export const COMPONENT_TOOL_SCHEMAS = Object.freeze([
         type: "object",
         properties: {
           collectionId: { type: "string" },
-          type: { type: "string", enum: [...VARIABLE_TYPES] },
+          type: { type: "string", enum: [...VARIABLE_TYPES], description: "Variable type: one of color, number, string, boolean (VARIABLE_TYPES)." },
           name: { type: "string" },
-          valuesByMode: { type: "object" },
+          value: {
+            description:
+              "Optional initial value for every mode; valuesByMode overrides individual modes.",
+          },
+          valuesByMode: {
+            type: "object",
+            description:
+              "Optional { [modeId]: value } map. Missing modes inherit the default mode's value.",
+          },
         },
         required: ["collectionId", "type", "name"],
       },
@@ -646,14 +705,15 @@ export const COMPONENT_TOOL_SCHEMAS = Object.freeze([
     function: {
       name: "set_active_mode",
       description:
-        "Switch a collection's active mode and re-resolve bound properties. " +
-        "Give collectionId, or layerId to switch the collection the layer's bound variable belongs to.",
+        "Switch a collection's active mode and re-resolve bound properties. Give exactly one of " +
+        "collectionId or layerId (layerId switches the collection its bound variable belongs to). " +
+        "modeId must be one of that collection's modes.",
       parameters: {
         type: "object",
         properties: {
-          layerId: { type: "string" },
-          collectionId: { type: "string" },
-          modeId: { type: "string" },
+          layerId: { type: "string", description: "Layer bound to a variable in the target collection." },
+          collectionId: { type: "string", description: "Target collection id." },
+          modeId: { type: "string", description: "Mode to activate." },
         },
         required: ["modeId"],
       },

@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense, lazy } from "react";
 import ImageEditor from "./canvas/components/image_editor.jsx";
 import AppTitleBar, { VooBrandLogo } from "./app_title_bar.jsx";
-import WelcomeDashboard from "./canvas/components/welcome_dashboard.jsx";
+const WelcomeDashboard = lazy(() => import("./canvas/components/welcome_dashboard.jsx"));
 import PageSwitcher from "./canvas/components/page_switcher.jsx";
 import LoadingModal from "./canvas/components/loading_modal.jsx";
-import CanvasAgentPanel from "./canvas/components/canvas_agent_panel.jsx";
+const CanvasAgentPanel = lazy(() => import("./canvas/components/canvas_agent_panel.jsx"));
 import OnboardingGuide from "./canvas/components/onboarding/OnboardingGuide.jsx";
 import { shouldShowOnboarding } from "./canvas/components/onboarding/onboarding_state.js";
 import { useI18n } from "./canvas/use_i18n.js";
@@ -92,7 +92,9 @@ export default function App() {
               <ImageEditor visible={true} agentVisible={false} />
               {welcomeOpen && (
                 <div className="absolute inset-0 z-50 overflow-hidden rounded-3xl bg-[#0c0c0c]">
-                  <WelcomeDashboard />
+                  <Suspense fallback={null}>
+                    <WelcomeDashboard />
+                  </Suspense>
                 </div>
               )}
             </div>
@@ -102,7 +104,9 @@ export default function App() {
             editor only: the workbench (welcome) page does not show it. */}
         {agentOpen && !welcomeOpen && (
           <aside className="flex w-[376px] shrink-0 flex-col py-3 pr-3">
-            <CanvasAgentPanel onClose={() => setAgentOpen(false)} />
+            <Suspense fallback={null}>
+              <CanvasAgentPanel onClose={() => setAgentOpen(false)} />
+            </Suspense>
           </aside>
         )}
         {!welcomeOpen && <PageSwitcher />}

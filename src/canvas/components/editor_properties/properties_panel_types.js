@@ -5,6 +5,8 @@ import PropTypes from "prop-types";
 export const editorPropertiesPropTypes = {
   object: PropTypes.object,
   parentLayout: PropTypes.object,
+  parentIsFrame: PropTypes.bool,
+  parentNode: PropTypes.object,
   colorVariableActions: PropTypes.object,
   index: PropTypes.number,
   isBackground: PropTypes.bool,
