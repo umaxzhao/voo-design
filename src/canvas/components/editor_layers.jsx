@@ -1024,6 +1024,7 @@ export default function EditorLayers({
                         <>
                           {rows.map(
                             ({ node: object, index, depth, position }) => {
+                              const rowSelected = rowSelectedOf(object);
                               const isBoolean = isBooleanNode(object);
                               const grouped = isGroupNode(object) || isBoolean;
                               const instanceSourceDoc =
@@ -1054,7 +1055,7 @@ export default function EditorLayers({
                                   <div
                                     role="option"
                                     id={`layer-row-${object.id}`}
-                                    aria-selected={rowSelectedOf(object)}
+                                    aria-selected={rowSelected}
                                     {...(draggable
                                       ? {
                                           "data-layer-row": true,
@@ -1170,15 +1171,19 @@ export default function EditorLayers({
                                           : ""
                                       }${
                                         overId === object.id
-                                          ? "bg-[#a7ffd4]/15 ring-1 ring-inset ring-[#a7ffd4]/70"
+                                          ? "bg-neutral-800 ring-1 ring-inset ring-[#a7ffd4]/70"
                                           : isGroupNode(object) &&
-                                              rowSelectedOf(object)
-                                            ? "bg-[#E5B2FF]/10 text-[#eed0ff]"
-                                            : rowSelectedOf(object)
-                                              ? "bg-[#a7ffd4]/10 text-[#a7ffd4] font-medium"
+                                              rowSelected
+                                            ? "bg-neutral-800 text-[#eed0ff]"
+                                            : rowSelected
+                                              ? "bg-neutral-800 text-[#a7ffd4] font-medium"
                                               : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"
                                       } ${draggable ? "touch-none cursor-default" : ""}`}
                                       style={{
+                                        boxShadow:
+                                          rowSelected && overId !== object.id
+                                            ? "inset 0 0 0 1px #a7ffd4"
+                                            : undefined,
                                         paddingLeft:
                                           8 +
                                           depth * 14 +
@@ -1604,9 +1609,14 @@ export default function EditorLayers({
             tabIndex={-1}
             className={`group/layer flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all cursor-pointer ${
               isBackgroundSelected
-                ? "bg-[#a7ffd4]/10 text-[#a7ffd4] font-medium"
+                ? "bg-neutral-800 text-[#a7ffd4] font-medium"
                 : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"
             }`}
+            style={{
+              boxShadow: isBackgroundSelected
+                ? "inset 0 0 0 1px #a7ffd4"
+                : undefined,
+            }}
             onClick={onSelectBackground}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
