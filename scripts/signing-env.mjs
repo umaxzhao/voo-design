@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
+import { prepareAppImageCompression, shouldOptimizeAppImage } from './appimage-compression.mjs';
 
 export function prepareSigningEnv(env = process.env, warn = console.warn) {
   const prepared = { ...env };
@@ -14,9 +15,20 @@ export function prepareSigningEnv(env = process.env, warn = console.warn) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const require = createRequire(import.meta.url);
-  const result = spawnSync(process.execPath, [require.resolve('electron-builder/cli.js'), ...process.argv.slice(2)], {
-    env: prepareSigningEnv(), stdio: 'inherit',
-  });
-  if (result.error) console.error('[voo-design] Unable to start electron-builder:', result.error.message);
-  process.exitCode = result.status ?? 1;
+  const args = process.argv.slice(2);
+  const config = require('../package.json').build;
+  const signingEnv = prepareSigningEnv();
+  const optimize = shouldOptimizeAppImage(args, config);
+  const tools = optimize
+    ? await prepareAppImageCompression({ env: signingEnv })
+    : { env: signingEnv, cleanup: async () => {} };
+  try {
+    const result = spawnSync(process.execPath, [require.resolve('electron-builder/cli.js'), ...args], {
+      env: tools.env, stdio: 'inherit',
+    });
+    if (result.error) console.error('[voo-design] Unable to start electron-builder:', result.error.message);
+    process.exitCode = result.status ?? 1;
+  } finally {
+    await tools.cleanup();
+  }
 }

@@ -17,13 +17,18 @@ export function verifyPackage(appDir) {
   for (const file of required) {
     if (!files.has(file)) throw new Error(`Missing runtime asset: ${file}`);
   }
+  const wasm = [...files].filter(file => file.endsWith('.wasm'));
+  const engineWasm = wasm.filter(file => /^dist\/assets\/voo_engine_bg-[\w-]+\.wasm$/.test(file));
+  if (engineWasm.length !== 1) throw new Error('Expected exactly one native canvas engine WASM');
+  const unexpectedWasm = wasm.filter(file => !required.includes(file) && !engineWasm.includes(file));
+  if (unexpectedWasm.length) throw new Error(`Unexpected WASM payload: ${unexpectedWasm.join(', ')}`);
   const manifest = JSON.parse(extractFile(archive, 'package.json').toString());
   for (const name of Object.keys(manifest.dependencies || {})) {
     if (!files.has(`node_modules/${name}/package.json`)) throw new Error(`Missing runtime dependency: ${name}`);
   }
   const forbidden = [...files].filter(file =>
     /\.(?:map|ts|tsx)$/.test(file) ||
-    /(?:^|\/)(?:tests?|__tests__|docs|examples?|benchmarks?|coverage|\.cache|\.nyc_output)(?:\/|$)/.test(file) ||
+    /(?:^|\/)(?:tests?|__tests__|docs|examples?|benchmarks?|coverage|\.cache|\.v8-cache|\.nyc_output)(?:\/|$)/.test(file) ||
     /^dist\/fonts\/.*\.ttf$/.test(file) ||
     /^node_modules\/(?:electron|electron-builder|vite|vitest|react|onnxruntime-web)(?:\/|$)/.test(file) ||
     /^node_modules\/(?:js-yaml|semver)\/bin(?:\/|$)/.test(file) ||
