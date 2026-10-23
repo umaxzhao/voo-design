@@ -2,8 +2,7 @@
 
 import { readNodeTransform } from "./scene_state_contract.js";
 import {
-  layoutTextLines,
-  measureLineWidth,
+  getTextLayout,
   textFont,
   textLineHeight,
 } from "./text_metrics.js";
@@ -22,21 +21,6 @@ import {
   warpOutputScale,
 } from "./render_warp_geometry.js";
 
-/**
- * Distance from the top of a line box to the baseline.
- *
- * Derived from the font's own metrics the same way CSS does it — half the
- * leading, then the ascent — so canvas text lands exactly where the textarea
- * overlay puts it and entering or leaving a text edit never makes it jump.
- */
-function baselineOffset(ctx, node) {
-  const metrics = ctx.measureText("M");
-  const ascent = metrics.fontBoundingBoxAscent ?? node.fontSize * 0.8;
-  const descent = metrics.fontBoundingBoxDescent ?? node.fontSize * 0.2;
-  const lineHeight = textLineHeight(node);
-  return (lineHeight - (ascent + descent)) / 2 + ascent;
-}
-
 export function paintTextBody(ctx, node) {
   if (node.textPath && (node.textPath.points?.length || node.textPath.anchors?.length)) {
     paintTextOnPath(ctx, node);
@@ -48,7 +32,7 @@ export function paintTextBody(ctx, node) {
   const letterSpacing = node.letterSpacing ?? 0;
   if ("letterSpacing" in ctx) ctx.letterSpacing = `${letterSpacing}px`;
   const lineHeight = textLineHeight(node);
-  const baseline = baselineOffset(ctx, node);
+  const { lines, widths, baseline } = getTextLayout(ctx, node);
   // Photoshop's Baseline Shift: the glyphs rise/fall inside the line box
   // while the box itself (hit-testing, resize) stays put.
   const shift = node.baselineShift ?? 0;
@@ -58,7 +42,6 @@ export function paintTextBody(ctx, node) {
   // same wrapped lines the measurer produces — a fixed box wraps here too,
   // or the painted columns and the hit-test box describe different text.
   if (node.direction === "vertical") {
-    const lines = layoutTextLines(ctx, node);
     const charAdvance = node.fontSize + letterSpacing;
     const columnPitch = lineHeight;
     const columns = lines.map((line) => [...line]);
@@ -108,10 +91,6 @@ export function paintTextBody(ctx, node) {
   }
 
   // Paint the same wrapped lines that measureText uses for hit tests and layout.
-  const lines = layoutTextLines(ctx, node);
-  const widths = lines.map((line) =>
-    measureLineWidth(ctx, line, letterSpacing),
-  );
   // Alignment shifts each line inside the node box; left is the historical x.
   const align = node.align ?? "left";
   const lineX = widths.map((width) => {

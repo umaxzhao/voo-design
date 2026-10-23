@@ -13,7 +13,8 @@
 // Import the constant from its owner so deferred generation cannot create a
 // cross-chunk re-export cycle through the full scene-model facade.
 import { LINE_HEIGHT_RATIO } from "./scene_model_core.js";
-import { textLines } from "./scene_model.js";
+import { textLines } from "./scene_model_groups.js";
+import { TextLayoutCache } from "./text_layout_cache.js";
 
 /** The canvas font string for a text node: style and weight precede size. */
 export function textFont(node) {
@@ -113,7 +114,7 @@ export function breakUnits(text) {
  * prefix — a CJK paragraph hard-broke character by character otherwise, one
  * Canvas2D measure per glyph while the user types.
  */
-export function layoutTextLines(ctx, node) {
+function wrapTextLines(ctx, node) {
   const boxWidth = node.boxWidth ?? 0;
   if (!(boxWidth > 0)) return textLines(node);
   const letterSpacing = node.letterSpacing ?? 0;
@@ -190,6 +191,60 @@ export function layoutTextLines(ctx, node) {
   return wrapped;
 }
 
+// Context identity isolates different metric providers (including export canvases).
+// One shared budget bounds all contexts; weak IDs do not retain canvas objects.
+const layouts = new TextLayoutCache();
+const contextIds = new WeakMap();
+let nextContextId = 0;
+const observedFonts = new WeakSet();
+
+export function clearTextLayoutCache() {
+  layouts.clear();
+}
+
+export function getTextLayout(ctx, node) {
+  const fonts = globalThis.document?.fonts;
+  if (fonts?.addEventListener && !observedFonts.has(fonts)) {
+    observedFonts.add(fonts);
+    fonts.addEventListener("loadingdone", clearTextLayoutCache);
+    fonts.addEventListener("loadingerror", clearTextLayoutCache);
+  }
+  if (!contextIds.has(ctx)) contextIds.set(ctx, ++nextContextId);
+  const font = textFont(node);
+  const spacing = node.letterSpacing ?? 0;
+  const key = JSON.stringify([
+    contextIds.get(ctx), String(node.text ?? ""), font,
+    textLineHeight(node), spacing, node.boxWidth ?? 0,
+    // These Canvas2D properties can also affect shaping.
+    ctx.direction, ctx.fontKerning, ctx.fontStretch, ctx.fontVariantCaps,
+    ctx.textRendering, ctx.lang,
+  ]);
+  const cached = layouts.get(key);
+  if (cached) return cached;
+  ctx.save();
+  try {
+    ctx.font = font;
+    if ("letterSpacing" in ctx) ctx.letterSpacing = `${spacing}px`;
+    const lines = Object.freeze(wrapTextLines(ctx, node));
+    const widths = Object.freeze(lines.map((line) => measureLineWidth(ctx, line, spacing)));
+    const metrics = ctx.measureText("M");
+    const ascent = metrics.fontBoundingBoxAscent ?? node.fontSize * 0.8;
+    const descent = metrics.fontBoundingBoxDescent ?? node.fontSize * 0.2;
+    const value = Object.freeze({
+      lines, widths,
+      baseline: (textLineHeight(node) - ascent - descent) / 2 + ascent,
+    });
+    layouts.set(key, value);
+    return value;
+  } finally {
+    ctx.restore();
+  }
+}
+
+export function layoutTextLines(ctx, node) {
+  return getTextLayout(ctx, node).lines;
+}
+
 /**
  * Tokens a paragraph wraps between. Spaced scripts split on whitespace as
  * ever; a CJK run breaks between every character (kinsoku decides closed
@@ -215,7 +270,7 @@ export function measureText(ctx, node) {
   ctx.font = textFont(node);
   const letterSpacing = node.letterSpacing ?? 0;
   if ("letterSpacing" in ctx) ctx.letterSpacing = `${letterSpacing}px`;
-  const lines = layoutTextLines(ctx, node);
+  const { lines, widths } = getTextLayout(ctx, node);
   const strokeWidth = node.stroke ? (node.strokeWidth ?? 0) : 0;
 
   // 直排: each line is a column of stacked characters; columns advance right
@@ -234,8 +289,8 @@ export function measureText(ctx, node) {
   }
 
   let width = 0;
-  for (const line of lines) {
-    width = Math.max(width, measureLineWidth(ctx, line, letterSpacing));
+  for (const lineWidth of widths) {
+    width = Math.max(width, lineWidth);
   }
   ctx.restore();
   const boxWidth = node.boxWidth ?? 0;
