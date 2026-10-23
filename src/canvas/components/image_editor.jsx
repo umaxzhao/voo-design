@@ -4940,7 +4940,11 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               }}
               onToggleGrid={() => {
                 if (grid?.size) lastGridSizeRef.current = grid.size;
-                const next = grid ? null : { enabled: true, size: lastGridSizeRef.current };
+                const next = {
+                  ...grid,
+                  enabled: !grid || grid.enabled === false,
+                  size: grid?.size ?? lastGridSizeRef.current,
+                };
                 if (multi) {
                   for (const entry of enginesRef.current.values()) {
                     entry.engine?.setGrid?.(next);

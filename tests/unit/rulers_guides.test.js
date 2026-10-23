@@ -1,3 +1,4 @@
+import { createEngineDocumentController } from "../../src/canvas/editor/editor_engine_document.js";
 import { describe, it, expect, afterEach } from "vitest";
 import {
   RULER_SIZE,
@@ -345,6 +346,33 @@ describe("snapping option plumbing", () => {
     await setSetting(SNAP_SETTING_KEYS.showGuides, true);
     expect(editorSnapOptions({ grid: { enabled: true, size: 64 } }).snapToGrid).toBe(false);
     expect(editorSnapOptions().snapToGuides).toBe(true);
+  });
+
+  it("snaps to the custom grid size after hiding the overlay", async () => {
+    const doc = createDocument(1000, 800);
+    const controller = createEngineDocumentController({
+      getDoc: () => doc,
+      crop: {},
+      requestRender: () => {},
+      notify: () => {},
+    });
+    await setSetting(SNAP_SETTING_KEYS.snapToGrid, true);
+    for (const hide of [{ enabled: false }, { visible: false }, null]) {
+      controller.setGrid({ enabled: true, size: 20 });
+      controller.setGrid(hide);
+      expect(controller.getGrid()).toMatchObject({ enabled: false, size: 20 });
+      const options = editorSnapOptions({ grid: controller.getGrid() });
+      expect(options.grid.size).toBe(20);
+      const snapped = snapNodeBounds({
+        doc,
+        rect: { x: 23, y: 23, width: 40, height: 40 },
+        zoom: 1,
+        options,
+      });
+      expect(snapped.x).toBe(20);
+      expect(snapped.y).toBe(20);
+    }
+    await setSetting(SNAP_SETTING_KEYS.snapToGrid, false);
   });
 
   it("grid snapping produces a snapped rect once the option is passed", () => {

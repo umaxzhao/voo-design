@@ -140,7 +140,7 @@ export function createEngineDocumentController({
     getGrid: () => grid,
     setGrid: (patch) => {
       if (!patch || patch.enabled === false || patch.visible === false) {
-        grid = null;
+        grid = { size: 32, ...(grid ?? {}), ...patch, enabled: false };
       } else {
         grid = { enabled: true, size: 32, ...(grid ?? {}), ...patch };
       }

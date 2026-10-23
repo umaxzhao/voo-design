@@ -95,6 +95,10 @@ describe("single bottom toolbar", () => {
       expect(find("editor-grid-menu")).toBeUndefined();
       nodes().find((node) => node.props?.["aria-label"] === "editor.view.grid").props.onClick();
       expect(toggleGrid).toHaveBeenCalledOnce();
+      props.grid = { enabled: false, size: 16 };
+      expect(nodes().find((node) => node.props?.["aria-label"] === "editor.view.grid").props["aria-pressed"]).toBe(false);
+      props.grid = { enabled: true, size: 16 };
+      expect(nodes().find((node) => node.props?.["aria-label"] === "editor.view.grid").props["aria-pressed"]).toBe(true);
       find("editor-grid-menu-trigger").props.onClick();
       expect(find("editor-grid-menu")).toBeDefined();
       expect(find("editor-grid-menu-snap").props["aria-checked"]).toBe(true);
@@ -175,7 +179,7 @@ describe("single bottom toolbar", () => {
       expect(grid.size).toBe(64);
       for (let i = 0; i < 2; i++) {
         callback("onToggleGrid", context())();
-        expect(grid).toBeNull();
+        expect(grid).toEqual({ enabled: false, size: 64 });
         expect(lastGridSizeRef.current).toBe(64);
         callback("onToggleGrid", context())();
         expect(grid).toEqual({ enabled: true, size: 64 });
@@ -204,7 +208,7 @@ describe("single bottom toolbar", () => {
     const zh = (await import("../../src/shared/i18n/ux-zh.js")).default;
     const gridEn = (await import("../../src/shared/i18n/rulers-en.js")).default;
     const gridZh = (await import("../../src/shared/i18n/rulers-zh.js")).default;
-    for (const key of ["editor.grid.options", "editor.grid.size", "editor.snapping.toGrid"]) {
+    for (const key of ["editor.grid.options", "editor.grid.size", "editor.grid.sizeLabel", "editor.snapping.toGrid"]) {
       expect(gridEn[key]).toBeTruthy();
       expect(gridZh[key]).toBeTruthy();
     }

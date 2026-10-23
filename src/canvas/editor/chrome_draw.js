@@ -289,7 +289,7 @@ export function draw(
   // View-only grid overlay (never exported): hairline columns and rows in
   // document space, drawn over nodes so it serves as an active alignment aid.
   const isGridEnabled = Boolean(
-    grid && (grid.enabled || grid.visible) && grid.size > 0,
+    grid && grid.enabled !== false && (grid.enabled || grid.visible) && grid.size > 0,
   );
   if (isGridEnabled) {
     const gridSize = grid.size || 32;

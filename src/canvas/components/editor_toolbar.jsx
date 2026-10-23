@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Magnet } from "lucide-react";
 import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
 import PropTypes from "prop-types";
 import {
@@ -15,6 +14,7 @@ import {
   IconGrid3x3,
   IconHistory,
   IconMinus,
+  IconMagnet,
   IconPerspective,
   IconPointer,
   IconCone,
@@ -203,7 +203,7 @@ export default function EditorToolbar({
         <div
           data-family-id="select"
           onMouseEnter={() => onHoverFamily?.("select")}
-          className="relative flex items-center rounded-lg border border-black/10"
+          className="relative flex items-center rounded-lg border border-white/10"
         >
           <EditorTooltip
             title={t("editor.tool.select")}
@@ -699,9 +699,9 @@ export function EditorZoom({
           onClick={onToggleGrid}
           title={t("editor.view.grid")}
           aria-label={t("editor.view.grid")}
-          aria-pressed={Boolean(grid)}
+          aria-pressed={Boolean(grid && grid.enabled !== false)}
           className={`flex h-7 w-7 items-center justify-center rounded-l-lg outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
-            grid ? "text-black" : "text-black/40"
+            grid && grid.enabled !== false ? "text-black" : "text-black/40"
           }`}
         >
           <IconGrid3x3 size={13} />
@@ -749,7 +749,7 @@ export function EditorZoom({
               onClick={onToggleSnapToGrid}
               className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-white focus-visible:bg-white outline-none"
             >
-              <Magnet size={13} />
+              <IconMagnet size={13} />
               {t("editor.snapping.toGrid")}
               <span aria-hidden="true" className="ml-auto">{snapToGrid ? "✓" : ""}</span>
             </button>
@@ -768,7 +768,7 @@ export function EditorZoom({
                 }}
                 className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 hover:bg-white focus-visible:bg-white outline-none"
               >
-                {size} px
+                {t("editor.grid.sizeLabel", { size })}
                 <span aria-hidden="true">{gridSize === size ? "✓" : ""}</span>
               </button>
             ))}
