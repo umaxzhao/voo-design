@@ -235,6 +235,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
 
   const nodeIds = useDesignStore((state) => state.editingNodeIds);
   const focusedId = useDesignStore((state) => state.editingNodeId);
+  const pendingArtboardFitId = useDesignStore((state) => state.pendingArtboardFitId);
   const nodes = useDesignStore((state) => state.nodes);
   const presentationId = useDesignStore(
     (state) => state.editingPresentationId,
@@ -305,8 +306,18 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
 
   /** nodeId -> live engine, and nodeId -> what an evicted page left behind. */
   const enginesRef = useRef(new Map());
-  const pendingCanvasSelectionRef = useRef(new PendingCanvasSelectionManager());
   const snapshotsRef = useRef(new Map());
+  useEffect(() => {
+    const reader = (id) => {
+      const live = enginesRef.current.get(id);
+      return live?.ready ? live.engine.serialise() : snapshotsRef.current.get(id)?.doc;
+    };
+    useDesignStore.setState({ editorPageDocumentReader: reader });
+    return () => {
+      if (useDesignStore.getState().editorPageDocumentReader === reader) useDesignStore.setState({ editorPageDocumentReader: null });
+    };
+  }, []);
+  const pendingCanvasSelectionRef = useRef(new PendingCanvasSelectionManager());
   const presentation = usePresentationEditor({
     ownerId: presentationId,
     focusedId,
@@ -483,7 +494,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
    */
   const handleBeforeDispose = useCallback(async (nodeId, engine, ready) => {
     if (!ready) return;
-
 
     const writeSnapshot = (png) => {
       const dirty = engine.isDirty();
@@ -2085,7 +2095,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       if (nodeIds.length === 1 && refId && engineState?.ready) {
         void handleBeforeDispose(refId, engineState.engine, true);
       }
-      return addEditorPage(refId, customSize);
+      return addEditorPage({ ...customSize });
     },
     [focusedId, nodeIds, addEditorPage, handleBeforeDispose],
   );
@@ -2658,6 +2668,28 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     presentationId,
     focusedId,
   ]);
+
+  // Focus an unseen artboard after the initial row fit, using its world position.
+  useEffect(() => {
+    if (!pendingArtboardFitId || pendingArtboardFitId !== focusedId) return;
+    if (multi) {
+      const stage = freeStageRef.current;
+      const layout = layoutById.get(focusedId);
+      const allReady = presentationId
+        ? enginesRef.current.get(focusedId)?.ready
+        : nodeIds.every((id) => enginesRef.current.get(id)?.ready);
+      if (!stage || !layout || !allReady) return;
+      const camera = fitEditorPageCamera({
+        stageWidth: stage.clientWidth,
+        stageHeight: stage.clientHeight,
+        layout,
+        insets: editorPanelLayout({ stageWidth: stage.clientWidth, swapped: swapPanels, reserveBothPanels: true }).insets,
+      });
+      if (!camera) return;
+      setEditorCamera(camera);
+    }
+    useDesignStore.setState({ pendingArtboardFitId: null });
+  }, [pendingArtboardFitId, focusedId, multi, nodeIds, presentationId, layoutById, readySignature, swapPanels, setEditorCamera]);
 
   // A component jump is complete when its live page and visible stage are
   // ready. The normal multi-page fit runs first; this then focuses the target.
