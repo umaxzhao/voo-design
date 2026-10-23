@@ -142,3 +142,28 @@ export async function hasNewerCrashDraft(documentId, baselineMs = 0) {
   if (!draft?.document) return false;
   return Number(draft.savedAt || 0) > Number(baselineMs || 0);
 }
+
+/** Find the most recent recoverable draft, including dynamically generated page IDs. */
+export async function loadLatestCrashDraft() {
+  const entries = [...memoryDrafts.values()];
+  try {
+    const db = await openDb();
+    if (db) {
+      const rows = await new Promise((resolve) => {
+        const req = db.transaction(STORE, "readonly").objectStore(STORE).getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve([]);
+      });
+      entries.push(...rows);
+    }
+    if (typeof localStorage !== "undefined") {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key?.startsWith(LS_PREFIX)) continue;
+        try { entries.push(JSON.parse(localStorage.getItem(key))); } catch { /* skip corrupt drafts */ }
+      }
+    }
+  } catch { /* memory fallback */ }
+  return entries.filter((entry) => entry?.id && entry?.document)
+    .sort((a, b) => Number(b.savedAt || 0) - Number(a.savedAt || 0))[0] || null;
+}

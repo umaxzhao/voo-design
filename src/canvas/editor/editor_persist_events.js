@@ -13,7 +13,7 @@
  * @module editor/editor_persist_events
  */
 
-/** @typedef {{ type: "persist-quota" | "persist-failed" | "asset-unavailable" | "asset-restored", source?: string, nodeId?: string, assetKey?: string }} PersistAlert */
+/** @typedef {{ type: "persist-quota" | "persist-failed" | "asset-unavailable" | "asset-restored" | "image-too-large", source?: string, nodeId?: string, assetKey?: string }} PersistAlert */
 
 /** @type {Set<(alert: PersistAlert) => void>} */
 const listeners = new Set();

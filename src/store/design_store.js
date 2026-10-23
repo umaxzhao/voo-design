@@ -238,6 +238,12 @@ export const useDesignStore = create((set, get) => {
   setWelcomeOpen: (welcomeOpen) => set({ welcomeOpen }),
   setDocumentLoading: (documentLoading) => set({ documentLoading }),
 
+  restoreCrashDraft: (draft) => {
+    if (!draft?.document) return;
+    get().loadVooProject({ vooData: { document: draft.document, kind: draft.document.canvasType }, fileName: draft.label || "Untitled.voo" });
+    set({ isDirty: true, editingGroupId: null, images: {}, streamingPreview: null, streamingPreviewNodeId: null });
+  },
+
   // Structure-only crash draft (no image bytes) for unexpected-exit recovery.
   saveEditorDrafts: async () => {
     const state = get();

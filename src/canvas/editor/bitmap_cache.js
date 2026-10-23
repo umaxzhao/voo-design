@@ -16,7 +16,7 @@ import {
   registerUnavailableCache,
 } from "./asset_unavailable.js";
 
-import { checkImageDimensions } from "../../shared/image_size_guard.js";
+import { assertImageDimensions, checkImageDimensions } from "../../shared/image_size_guard.js";
 
 export { isAssetFailed, retryAssetLoad } from "./asset_unavailable.js";
 
@@ -144,7 +144,7 @@ export function createBitmapCache({
         markAssetFailed(key, node);
         return;
       }
-      const image = downscaleForDisplay(await decode(url));
+      const image = downscaleForDisplay(guardDecodedImage(await decode(url)));
       if (disposed) {
         revokeKeyUrl(key);
         return;
@@ -343,9 +343,7 @@ function guardDecodedImage(image) {
     } catch {
       /* ImageBitmap.close is best-effort */
     }
-    const error = new Error(check.message);
-    error.code = check.code;
-    throw error;
+    assertImageDimensions(width, height);
   }
   return image;
 }

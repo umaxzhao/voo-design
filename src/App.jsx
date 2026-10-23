@@ -3,6 +3,8 @@ import ImageEditor from "./canvas/components/image_editor.jsx";
 import AppTitleBar, { VooBrandLogo } from "./app_title_bar.jsx";
 const WelcomeDashboard = lazy(() => import("./canvas/components/welcome_dashboard.jsx"));
 import PageSwitcher from "./canvas/components/page_switcher.jsx";
+import ImageSizeNotice from "./canvas/components/image_size_notice.jsx";
+import CrashRecoveryPrompt from "./canvas/components/crash_recovery_prompt.jsx";
 import LoadingModal from "./canvas/components/loading_modal.jsx";
 const CanvasAgentPanel = lazy(() => import("./canvas/components/canvas_agent_panel.jsx"));
 import OnboardingGuide from "./canvas/components/onboarding/OnboardingGuide.jsx";
@@ -83,6 +85,8 @@ export default function App() {
         background: "linear-gradient(-90deg, rgb(0, 0, 0) 70.123%, rgb(178, 255, 214) 89.855%)",
       }}
     >
+      <CrashRecoveryPrompt />
+      <ImageSizeNotice />
       <AppTitleBar />
       <div className="relative flex min-h-0 flex-1">
         {/* The rounded green frame wraps the workspace below the title bar. */}
