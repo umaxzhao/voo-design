@@ -5,6 +5,7 @@ import { Search, X } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
 import {
   MAX_RECENT_COMMANDS,
+  COMMAND_LABEL_KEYS,
   buildCommandIndex,
   filterCommands,
   moveSelection,
@@ -14,6 +15,7 @@ import {
 } from "../commands/command_registry.js";
 
 const RECENT_STORAGE_KEY = "voo.commandPalette.recent";
+const EMPTY_ACTIONS = [];
 
 function labelOr(t, key, fallback) {
   const value = t(key);
@@ -48,20 +50,26 @@ function writeRecent(list) {
  */
 export default function EditorCommandPalette({
   open = false,
-  actions = [],
+  actions = EMPTY_ACTIONS,
   onRun,
   onClose,
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [recentIds, setRecentIds] = useState(readRecent);
 
+  // t is stable even when dictionaries finish loading. Track the labels as
+  // well as locale so those updates refresh the index without rebuilding on hover.
+  const labels = JSON.stringify([
+    ...Object.values(COMMAND_LABEL_KEYS),
+    ...actions.map((action) => action?.labelKey).filter(Boolean),
+  ].map((key) => t(key)));
   const index = useMemo(
     () => buildCommandIndex({ t, actions }),
-    [t, actions],
+    [t, locale, labels, actions],
   );
   const filtered = useMemo(() => filterCommands(index, query), [index, query]);
   const recentCommands = useMemo(
@@ -73,6 +81,13 @@ export default function EditorCommandPalette({
     query.trim().length === 0 && recentCommands.length > 0;
 
   const sections = useMemo(() => {
+    if (query.trim()) {
+      return [{
+        id: "results",
+        title: labelOr(t, "commandPalette.sections.results", "Results"),
+        commands: filtered,
+      }];
+    }
     const commands = filtered.filter((command) => command.kind === "command");
     const actionRows = filtered.filter((command) => command.kind === "action");
     const result = [];
@@ -98,7 +113,7 @@ export default function EditorCommandPalette({
       });
     }
     return result;
-  }, [filtered, recentCommands, showRecent, t]);
+  }, [filtered, query, recentCommands, showRecent, t]);
 
   const flat = useMemo(
     () => sections.flatMap((section) => section.commands),

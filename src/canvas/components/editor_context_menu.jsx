@@ -45,6 +45,7 @@ export default function EditorContextMenu({
   onCreateComponent = null,
   onDetachInstance = null,
   onImportMedia = null,
+  onOpenShortcuts = null,
 }) {
   const { t } = useI18n();
   const isMac = isMacPlatform();
@@ -649,6 +650,14 @@ export default function EditorContextMenu({
         </span>
       </button>
 
+      {onOpenShortcuts ? (
+        <button type="button" role="menuitem" className={itemClass}
+          onClick={() => run(onOpenShortcuts)}>
+          <span>{t("editor.shortcuts.title")}</span>
+          <span className="text-[9px] text-neutral-500">{formatShortcut("⌘/", isMac)}</span>
+        </button>
+      ) : null}
+
       {codeDialogOpen ? (
         <Suspense fallback={null}>
           <EditorCodeExportDialog
@@ -673,6 +682,7 @@ EditorContextMenu.propTypes = {
   targetNodeId: PropTypes.string,
   selectedCount: PropTypes.number.isRequired,
   onClose: PropTypes.func.isRequired,
+  onOpenShortcuts: PropTypes.func,
   onDuplicateCanvas: PropTypes.func,
   onDeleteCanvas: PropTypes.func,
   onEditSvg: PropTypes.func,

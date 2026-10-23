@@ -3,6 +3,11 @@
  * command-palette-en.js; the Lead wires this slice into zh.js.
  */
 export default {
+  "commandPalette.sections.results": "搜索结果",
+  "commandPalette.toggleGrid": "显示/隐藏网格",
+  "commandPalette.languageEnglish": "切换语言为英语",
+  "commandPalette.languageChinese": "切换语言为中文",
+
   "commandPalette.title": "命令面板",
   "commandPalette.placeholder": "搜索命令与操作",
   "commandPalette.sections.recent": "最近使用",
