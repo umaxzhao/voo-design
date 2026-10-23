@@ -421,7 +421,7 @@ export function renderMarkdownDocument(result) {
     "- Memory proxy: `process.memoryUsage().heapUsed` delta between the document build and the end of the warmup + cull pass (after index construction). Forced GC is used when Node exposes it; otherwise this is a noisy proxy, not peak heap.",
   );
   lines.push(
-    "- Soft gates: index build < 500 ms, cull < 50 ms/cull, hit-test < 25,000 µs/query, camera 1,500 cycles < 500 ms for every case.",
+    "- Soft gates: index build < 500 ms, cull < 50 ms/cull, hit-test < 25,000 µs/query for BEFORE or < 1,000 µs/query for AFTER, camera 1,500 cycles < 500 ms for every case.",
   );
   lines.push(
     "- Browser FPS is not measured: Playwright/Puppeteer are not installed in this repository. A system Chrome binary exists, but the benchmark intentionally stays on pure engine modules so CI does not need a browser. This remains a documented gap for paint/FPS work.",
@@ -434,26 +434,37 @@ export function renderMarkdownDocument(result) {
   lines.push("");
   lines.push("| Case | Metric | BEFORE | AFTER |");
   lines.push("| --- | --- | ---: | ---: |");
-  for (const entry of result.cases) {
+  const before = result.before;
+  const after = result.after;
+  const beforeCases = new Map((before?.cases ?? []).map((entry) => [entry.id, entry]));
+  const afterCases = new Map((after?.cases ?? []).map((entry) => [entry.id, entry]));
+  const cases = new Map([...beforeCases, ...afterCases]);
+  for (const [id, entry] of cases) {
     for (const row of METRIC_ROWS) {
-      const value = entry.metrics[row.key];
+      const beforeEntry = beforeCases.get(id);
+      const afterEntry = afterCases.get(id);
+      const beforeValue = beforeEntry ? format(beforeEntry.metrics[row.key], row.digits) : "_pending_";
+      const afterValue = afterEntry ? format(afterEntry.metrics[row.key], row.digits) : "_pending_";
       lines.push(
-        `| ${entry.label} | ${row.label} (${row.unit}) | ${format(value, row.digits)} | _pending_ |`,
+        `| ${entry.label} | ${row.label} (${row.unit}) | ${beforeValue} | ${afterValue} |`,
       );
     }
   }
   lines.push("");
-  lines.push("## Raw BEFORE Metrics");
-  lines.push("");
-  lines.push(renderConsoleSummary(result));
-  lines.push("");
+  for (const [phase, snapshot] of [["BEFORE", before], ["AFTER", after]]) {
+    if (!snapshot) continue;
+    lines.push(`## Raw ${phase} Metrics`);
+    lines.push("");
+    lines.push(renderConsoleSummary(snapshot));
+    lines.push("");
+  }
   lines.push("## Notes");
   lines.push("");
   lines.push(
     "- JSON source of truth: `docs/canvas-perf-results.json`.",
   );
   lines.push(
-    "- The AFTER column is intentionally left as `_pending_` for a later performance commit to fill in.",
+    "- Missing phase measurements are shown as `_pending_`; cases are matched by ID.",
   );
   lines.push(
     "- Batch update speedups by case: " +
@@ -477,17 +488,48 @@ export function renderMarkdownDocument(result) {
   return lines.join("\n");
 }
 
-export function writeBenchmarkArtifacts(result) {
+function readBenchmarkArtifacts() {
+  const jsonPath = path.join(REPO_ROOT, "docs", "canvas-perf-results.json");
+  return fs.existsSync(jsonPath)
+    ? JSON.parse(fs.readFileSync(jsonPath, "utf8"))
+    : null;
+}
+
+export function resolveBenchmarkPhase(phase, existing = readBenchmarkArtifacts()) {
+  const selected = phase ?? process.env.CANVAS_PERF_PHASE ??
+    (existing?.phase === "before" || existing?.before ? "after" : "before");
+  if (selected !== "before" && selected !== "after") {
+    throw new Error(`Invalid canvas benchmark phase: ${selected}`);
+  }
+  return selected;
+}
+
+export function writeBenchmarkArtifacts(result, { phase } = {}) {
+  const existing = readBenchmarkArtifacts();
+  phase = resolveBenchmarkPhase(phase, existing);
+  const snapshot = { generatedAt: result.generatedAt, cases: result.cases };
+  const artifact = {
+    schemaVersion: 1,
+    generatedAt: result.generatedAt,
+    environment: result.environment,
+    settings: result.settings,
+    before: phase === "before" ? snapshot : existing?.before ??
+      (existing?.cases ? { generatedAt: existing.generatedAt, cases: existing.cases } : null),
+    after: phase === "after" ? snapshot : existing?.after ?? null,
+    cases: result.cases,
+  };
   const docsDir = path.join(REPO_ROOT, "docs");
   fs.mkdirSync(docsDir, { recursive: true });
   const jsonPath = path.join(docsDir, "canvas-perf-results.json");
   const markdownPath = path.join(docsDir, "canvas-perf-benchmark.md");
-  fs.writeFileSync(jsonPath, `${JSON.stringify(result, null, 2)}\n`, "utf8");
-  fs.writeFileSync(markdownPath, renderMarkdownDocument(result), "utf8");
+  fs.writeFileSync(jsonPath, `${JSON.stringify(artifact, null, 2)}\n`, "utf8");
+  fs.writeFileSync(markdownPath, renderMarkdownDocument(artifact), "utf8");
+  result.phase = phase;
   return { jsonPath, markdownPath };
 }
 
-export function softGateFailures(result) {
+export function softGateFailures(result, phase = result.phase ?? resolveBenchmarkPhase()) {
+  const hitTestLimitUs = phase === "after" ? 1000 : 25000;
   const failures = [];
   for (const entry of result.cases) {
     const m = entry.metrics;
@@ -504,11 +546,9 @@ export function softGateFailures(result) {
         `${entry.label}: cull ${format(m.cullAvgMs, 3)}ms >= 50ms`,
       );
     }
-    // Soft CI gate: before spatial resolve fixes, 20k docs can be multi-ms/query.
-    // Trend is tracked in docs/canvas-perf-*; tighten after the hit-test path lands.
-    if (!(m.hitTestAvgUs < 25000)) {
+    if (!(m.hitTestAvgUs < hitTestLimitUs)) {
       failures.push(
-        `${entry.label}: hit-test ${format(m.hitTestAvgUs, 2)}µs >= 25000µs`,
+        `${entry.label}: hit-test ${format(m.hitTestAvgUs, 2)}µs >= ${hitTestLimitUs}µs`,
       );
     }
     if (!(m.cameraCyclesTotalMs < 500)) {
