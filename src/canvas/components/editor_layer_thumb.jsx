@@ -371,7 +371,7 @@ export default function EditorLayerThumb({ object, getBitmap = null }) {
       return (
         <div
           className={`${tile} rounded-md`}
-          style={{ backgroundColor: color ?? "#262626" }}
+          style={{ backgroundColor: color ?? "#262626", boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 25%)" }}
         />
       );
     }
@@ -384,7 +384,7 @@ export default function EditorLayerThumb({ object, getBitmap = null }) {
         <div className={`${tile} bg-neutral-800`}>
           <div
             className="h-3.5 w-3.5 rounded-full"
-            style={{ backgroundColor: color ?? "transparent" }}
+            style={{ backgroundColor: color ?? "transparent", boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 25%)" }}
           />
         </div>
       );

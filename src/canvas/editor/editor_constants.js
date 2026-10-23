@@ -181,7 +181,7 @@ export const MARK_COLORS = [
 ];
 
 /** The tool-options bar starts on black (Photoshop default: black foreground, white background); the picker takes it from there. */
-export const DEFAULT_MARK_COLOR = "#000000";
+export const DEFAULT_MARK_COLOR = "#D4D4D4";
 
 export const DEFAULT_BRUSH_WIDTH = 12;
 

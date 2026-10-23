@@ -6,6 +6,7 @@ import { createServer } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { startCliBridgeServer } from "../../electron/cli_bridge_server.js";
 import { TOOL } from "../../src/canvas/editor/tool_ids.js";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
@@ -18,8 +19,10 @@ const port = await new Promise((resolve, reject) => {
   });
 });
 const url = `http://localhost:${port}/?voo-test=1`;
+const bridge = await startCliBridgeServer({ port: 0, origins: [`http://localhost:${port}`] });
 const vite = spawn("npx", ["vite", "--port", String(port), "--strictPort"], {
   cwd: root,
+  env: { ...process.env, VITE_CLI_BRIDGE_URL: `ws://127.0.0.1:${bridge.port}` },
   detached: true,
   stdio: ["ignore", "pipe", "pipe"],
 });
@@ -95,6 +98,88 @@ try {
   assert.ok(Array.isArray(selected), "Selection must be an array");
   assert.deepEqual(selected, [rectIds[0]], "Click must select only the clicked rectangle");
 
+  // Default creation stays visible; user-selected black remains represented in thumbs.
+  const fills = await page.evaluate((ids) => window.__vooEditor.getDocument().nodes.filter(n => ids.includes(n.id)).map(n => n.fill), rectIds);
+  assert.deepEqual(fills, ["#D4D4D4", "#D4D4D4"]);
+  await page.screenshot({ path: "/workspace/tmp/qa2-01-shape-default-fill.png" });
+
+  // Observe DOM commits as well as animation frames: a delayed effect-only
+  // draft reset can otherwise escape a final-value assertion.
+  await page.evaluate((ids) => {
+    window.__xSamples = [];
+    const sample = () => {
+      const selected = ids.find(id => document.getElementById(`layer-row-${id}`)?.getAttribute("aria-selected") === "true");
+      const input = document.querySelector('input[aria-label="X"]');
+      if (!selected || !input) return;
+      const node = window.__vooEditor.getDocument().nodes.find(n => n.id === selected);
+      window.__xSamples.push({ id: selected, actual: input.value, expected: String(Math.round(node.x)) });
+    };
+    window.__xObserver = new MutationObserver(sample);
+    window.__xObserver.observe(document.body, { subtree: true, attributes: true, childList: true });
+    window.__xFrame = () => { sample(); window.__xRaf = requestAnimationFrame(window.__xFrame); };
+    window.__xRaf = requestAnimationFrame(window.__xFrame);
+  }, rectIds);
+  for (const id of [rectIds[1], rectIds[0], rectIds[1]]) {
+    await page.locator(`[id="layer-row-${id}"]`).click();
+    await page.waitForTimeout(100);
+  }
+  const samples = await page.evaluate(() => {
+    window.__xObserver.disconnect(); cancelAnimationFrame(window.__xRaf);
+    return window.__xSamples;
+  });
+  assert.ok(samples.some(s => s.id === rectIds[1]));
+  assert.deepEqual(samples.filter(s => s.actual !== s.expected), [], "X must match the selected layer at every observed DOM commit/frame");
+  await page.screenshot({ path: "/workspace/tmp/qa2-03-layer-x-after-switch.png" });
+
+  const imageId = await page.evaluate(async () => {
+    const canvas = document.createElement("canvas"); canvas.width = 120; canvas.height = 100;
+    const ctx = canvas.getContext("2d"); ctx.fillStyle = "#a7ffd4"; ctx.fillRect(0, 0, 120, 100);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve));
+    await window.__vooEditor.insertImage(new File([blob], "qa-filter.png", { type: "image/png" }));
+    return window.__vooEditor.getSelectedIds()[0];
+  });
+  await page.evaluate((id) => {
+    const engine = window.__vooEditor;
+    const doc = engine.getDocument();
+    engine.setDoc({ ...doc, nodes: doc.nodes.map(n => n.id === id ? { ...n, adjustments: { ...n.adjustments, liveFilters: [{ id: "qa-filter", kind: "blur", enabled: true, opacity: 1, params: { value: 100 } }] } } : n) });
+  }, imageId);
+  const filters = page.getByTestId("editor-live-filter-section");
+  await filters.waitFor({ state: "visible" });
+  if (await filters.locator('input[type="range"]').count() === 0) await filters.locator("button").first().click();
+  const sliders = filters.locator('input[type="range"]');
+  await sliders.first().waitFor({ state: "visible" });
+  assert.equal(await sliders.count(), 2);
+  for (const slider of await sliders.all()) {
+    await slider.scrollIntoViewIfNeeded();
+    await slider.hover();
+    await page.waitForTimeout(150);
+    const geometry = await slider.evaluate(el => {
+      const r = el.getBoundingClientRect();
+      const clips = [];
+      for (let p = el.parentElement; p; p = p.parentElement) {
+        const style = getComputedStyle(p);
+        if (/(hidden|clip|auto|scroll)/.test(style.overflowX)) {
+          const b = p.getBoundingClientRect();
+          clips.push({ left: b.left, right: b.right });
+        }
+      }
+      // Native 12px thumb is centered 6px inside each endpoint, then scales 1.25.
+      return { width: r.width, left: r.left - 1.5, right: r.right + 1.5, clips, value: el.value };
+    });
+    assert.equal(geometry.value, "100");
+    assert.ok(geometry.width > 30, "Slider track must have usable width");
+    for (const clip of geometry.clips) assert.ok(geometry.left >= clip.left && geometry.right <= clip.right, "Scaled thumb must stay inside clipping ancestors");
+  }
+  await page.screenshot({ path: "/workspace/tmp/qa2-02-live-filter-sliders.png" });
+  const accept = await page.getByTestId("editor-media-file-input").getAttribute("accept");
+  for (const token of ["image/*", ".png", ".jpg", ".jpeg", ".webp", ".svg", ".psd", "audio/*", "video/*", ".glb", ".obj"]) assert.ok(accept.split(",").includes(token));
+
+  // A real picker upload must reach image insertion, not the media-only importer.
+  const beforeImport = await page.evaluate(() => window.__vooEditor.getDocument().nodes.length);
+  await page.getByTestId("editor-media-file-input").setInputFiles({ name: "qa-picker.svg", mimeType: "image/svg+xml", buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="#a7ffd4"/></svg>') });
+  await page.waitForFunction(count => window.__vooEditor.getDocument().nodes.length > count, beforeImport);
+  await page.screenshot({ path: "/workspace/tmp/qa2-04-file-picker-accept.png" });
+
   await page.evaluate((tool) => window.__vooEditor.setTool(tool), TOOL.GRADIENT);
   await drag(cx - 165, cy - 65, cx - 75, cy + 5);
   await page.waitForTimeout(500);
@@ -102,7 +187,7 @@ try {
   await page.close();
   assert.deepEqual(pageErrors, [], "No pageerror events during QA flows");
   assert.deepEqual(consoleErrors, [], "No console errors during QA flows");
-  console.log("PASS: rectangle selection and gradient drag");
+  console.log("PASS: shape defaults, selection X commits/frames, live filter clipping, picker accept/upload, rectangle selection and gradient drag");
 } catch (error) {
   console.error("FAIL", error);
   if (pageErrors.length) console.error("pageerrors", pageErrors);
@@ -111,6 +196,7 @@ try {
 } finally {
   try {
     await browser?.close();
+    await bridge.close();
   } finally {
     // Kill the entire npx/Vite process group, including the spawned Vite child.
     const killVite = (signal) => {
