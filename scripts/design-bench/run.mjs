@@ -74,7 +74,21 @@ async function runInEditor({ task, model, timeout, critique }) {
     async function turn(userText) {
       const reply = await runAgentTurn({
         config: { model: cliModel }, history: [...history], userText,
-        tools: CANVAS_TOOL_SCHEMAS, executeTool: executeCanvasTool,
+        tools: CANVAS_TOOL_SCHEMAS,
+        executeTool: async (name, args, ...rest) => {
+          if (name === 'capture_canvas') {
+            args = { ...args, maxSize: Math.min(args?.maxSize || 960, 512) };
+          }
+          const result = await executeCanvasTool(name, args, ...rest);
+          if (name === 'capture_canvas' && result.ok && result.dataUrl?.length > 180000) {
+            return {
+              ...result,
+              dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=',
+              note: 'downscaled for bench memory',
+            };
+          }
+          return result;
+        },
         streamStep: streamCliStep, signal: controller.signal, maxSteps: 40,
         onToolEvent: event => {
           if (event.status !== 'in_progress') console.log('[bench] tool', event.name, event.status);
