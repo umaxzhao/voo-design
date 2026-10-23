@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { getCanvasTypeIcon } from "../../src/canvas/components/editor_canvas_tree_row.jsx";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import EditorCanvasTreeRow, { getCanvasTypeIcon } from "../../src/canvas/components/editor_canvas_tree_row.jsx";
 import {
   IconFrame,
   IconComponent,
@@ -26,5 +28,18 @@ describe("EditorCanvasTreeRow (Frame vs Component Icon & Tone)", () => {
   it("uses IconFilm for motion frames", () => {
     const icon = getCanvasTypeIcon("motion", false);
     expect(icon).toBe(IconFilm);
+  });
+});
+
+
+describe("canvas row highlight", () => {
+  it.each([false, true])("uses the same gray for active frames (component=%s)", (isComponent) => {
+    const html = renderToStaticMarkup(createElement(EditorCanvasTreeRow, {
+      page: { id: "frame", title: "Frame", isComponent },
+      isActive: true,
+      t: (key) => key,
+    }));
+    expect(html).toContain("bg-neutral-800");
+    expect(html).not.toMatch(/bg-\[#(?:a7ffd4|E5B2FF)\]/);
   });
 });

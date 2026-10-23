@@ -48,8 +48,8 @@ export default function EditorCanvasTreeRow({
       className={`group/canvas flex min-h-7 items-center gap-1 rounded-lg px-1.5 transition-colors cursor-pointer ${
         isActive
           ? isComponent
-            ? "bg-[#E5B2FF]/10 text-[#eed0ff]"
-            : "bg-[#a7ffd4]/10 text-[#a7ffd4]"
+            ? "bg-neutral-800 text-[#eed0ff]"
+            : "bg-neutral-800 text-[#a7ffd4]"
           : isComponent
             ? "text-neutral-400 hover:bg-white/[0.06] hover:text-[#eed0ff]"
             : "text-neutral-400 hover:bg-white/[0.06] hover:text-neutral-200"
