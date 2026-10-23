@@ -2842,4 +2842,17 @@ export default {
   "settings.cloudModels.scheduleInfoTitle": "Time-based Pricing",
   "settings.cloudModels.originalTimezone": "Original tz {tz}",
   "settings.cloudModels.localTimezone": "Local {tz}",
+
+  "app.error.title": "Something went wrong",
+  "app.error.body": "The editor hit an unexpected error. Your last autosave draft may still be recoverable after reload.",
+  "app.error.reload": "Reload app",
+  "app.error.details": "Show details",
+  "app.error.copyDiagnostics": "Copy diagnostics",
+  "app.error.copied": "Copied",
+  "app.error.unknown": "Unknown error",
+  "app.crashRecovery.title": "Recover unsaved draft?",
+  "app.crashRecovery.body": "A newer local draft was found after an unexpected exit.",
+  "app.crashRecovery.restore": "Restore draft",
+  "app.crashRecovery.discard": "Discard",
+  "app.imageTooLarge": "Image is too large to open safely",
 };

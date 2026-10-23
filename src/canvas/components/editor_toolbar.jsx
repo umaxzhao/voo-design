@@ -615,11 +615,17 @@ export function EditorZoom({
   grid,
   onToggleGrid,
   onAddCanvas = null,
+  children = null,
 }) {
   const { t } = useI18n();
 
   return (
-    <div className="viewport-tools absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-0.5 rounded-xl px-1 py-0.5 shadow-pop">
+    <div
+      data-testid="editor-bottom-toolbar"
+      role="toolbar"
+      aria-label={t("editor.bottomBar.label")}
+      className="viewport-tools absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-0.5 rounded-xl px-1 py-0.5 shadow-pop"
+    >
       {onAddCanvas ? (
         <button
           type="button"
@@ -668,6 +674,14 @@ export function EditorZoom({
         <IconGrid3x3 size={13} />
       </button>
 
+      {/* Rulers / guides / snap-to-grid live inside this one bar. */}
+      {children ? (
+        <>
+          <div className="h-3.5 w-[1px] bg-black/15 mx-0.5" />
+          {children}
+        </>
+      ) : null}
+
       <div className="h-3.5 w-[1px] bg-black/15 mx-0.5" />
 
       <button
@@ -713,4 +727,5 @@ EditorZoom.propTypes = {
   onFit: PropTypes.func.isRequired,
   grid: PropTypes.object,
   onToggleGrid: PropTypes.func,
+  children: PropTypes.node,
 };

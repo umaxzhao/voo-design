@@ -4926,22 +4926,21 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               }}
               snapping={snappingEnabled}
               onToggleSnapping={toggleSnapping}
-            />
-            {/* Rulers / guides / snap-to-grid sit beside the zoom cluster, a
-                short reach from the existing grid-overlay toggle. */}
-            {rulersVisible ? (
-              <EditorCanvasAids
-                showRulers={showRulers}
-                showGuides={showGuides}
-                snapToGrid={snapToGrid}
-                canClearGuides={documentGuides.length > 0}
-                onToggleRulers={toggleRulers}
-                onToggleGuides={toggleGuides}
-                onToggleSnapToGrid={toggleSnapToGrid}
-                onClearGuides={handleClearGuides}
-                t={t}
-              />
-            ) : null}
+            >
+              {rulersVisible ? (
+                <EditorCanvasAids
+                  showRulers={showRulers}
+                  showGuides={showGuides}
+                  snapToGrid={snapToGrid}
+                  canClearGuides={documentGuides.length > 0}
+                  onToggleRulers={toggleRulers}
+                  onToggleGuides={toggleGuides}
+                  onToggleSnapToGrid={toggleSnapToGrid}
+                  onClearGuides={handleClearGuides}
+                  t={t}
+                />
+              ) : null}
+            </EditorZoom>
           </div>
         </div>
 

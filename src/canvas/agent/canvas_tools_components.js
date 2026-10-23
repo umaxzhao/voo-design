@@ -32,6 +32,23 @@ const TOOL_ERROR = Object.freeze({
 });
 
 const INSTANCE_NODE_KIND = "canvasInstance";
+
+/** Variant metadata written by the tools, per live editor. */
+const variantDocuments = new WeakMap();
+
+function variantRegistry(editor) {
+  let documents = variantDocuments.get(editor);
+  if (!documents) {
+    documents = new Map();
+    variantDocuments.set(editor, documents);
+  }
+  return documents;
+}
+
+function storeVariantDocument(editor, componentId, document) {
+  if (!componentId || !document) return;
+  variantRegistry(editor).set(componentId, document);
+}
 const INSTANCE_RECORD_FIELDS = Object.freeze([
   "layoutMode",
   "playbackMode",
@@ -132,6 +149,8 @@ function commitDocument(editor, next, message) {
 
 /** Resolves a main component's document through the editor or the host doc. */
 function resolveComponentDocument(editor, componentId) {
+  const local = variantRegistry(editor).get(componentId);
+  if (local?.nodes) return local;
   for (const name of [
     "getComponentDoc",
     "resolveComponent",
@@ -158,6 +177,233 @@ function getDocumentSafe(editor) {
   } catch {
     return null;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Component variants                                                  */
+/* ------------------------------------------------------------------ */
+
+function newComponentId() {
+  const source = globalThis.crypto;
+  if (source?.randomUUID) return source.randomUUID();
+  return `component_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function variantNameOf(document) {
+  return typeof document?.variantName === "string" && document.variantName.trim()
+    ? document.variantName
+    : null;
+}
+
+function variantGroupOf(document) {
+  return typeof document?.variantGroupId === "string" && document.variantGroupId.trim()
+    ? document.variantGroupId
+    : null;
+}
+
+/**
+ * Duplicate a main component document as a sibling variant. Node ids are kept
+ * so overrides and layer lookups stay meaningful across variants.
+ */
+export function duplicateComponentMaster(source, {
+  componentId,
+  variantGroupId,
+  variantName,
+  name,
+} = {}) {
+  if (!source || !Array.isArray(source.nodes)) {
+    throw new TypeError("A component document with nodes is required");
+  }
+  const canvasId = componentId ?? newComponentId();
+  return {
+    ...source,
+    canvasId,
+    variantGroupId,
+    variantName,
+    ...(name ? { name } : {}),
+  };
+}
+
+function componentEntries(editor, extra = null) {
+  const entries = new Map();
+  const add = (key, document, fallbackName = null) => {
+    if (!document || !Array.isArray(document.nodes)) return;
+    const componentId = document.canvasId || key;
+    if (!componentId) return;
+    const existing = entries.get(componentId);
+    if (existing && variantGroupOf(existing.document) && !variantGroupOf(document)) return;
+    entries.set(componentId, {
+      componentId,
+      document,
+      name: document.name ?? fallbackName ?? componentId,
+    });
+  };
+
+  for (const [key, document] of variantRegistry(editor)) add(key, document);
+  const host = getDocumentSafe(editor);
+  for (const [key, document] of Object.entries(host?.components ?? {})) {
+    add(key, document);
+  }
+  for (const resolver of ["listComponents", "getComponents"]) {
+    if (typeof editor[resolver] !== "function") continue;
+    try {
+      const result = editor[resolver]();
+      const list = Array.isArray(result) ? result : Object.values(result ?? {});
+      for (const item of list) add(item?.canvasId ?? item?.id, item?.document ?? item);
+    } catch {
+      // An engine that cannot enumerate components still resolves by id.
+    }
+  }
+  if (extra?.componentId) add(extra.componentId, extra.document, extra.name);
+  return [...entries.values()];
+}
+
+function requireComponent(editor, componentId) {
+  const document = resolveComponentDocument(editor, componentId);
+  if (!document) apiMissing(`The main component ${componentId} is not available`);
+  return document;
+}
+
+function createComponentVariant(args = {}) {
+  const editor = requireEditor();
+  const sourceComponentId = requireId(args.sourceComponentId, "sourceComponentId");
+  const variantName = requireId(args.variantName, "variantName");
+  if (args.name !== undefined && (typeof args.name !== "string" || args.name.trim() === "")) {
+    invalidArgs(`Invalid argument "name": expected a non-empty string, got ${JSON.stringify(args.name)}`);
+  }
+
+  const source = requireComponent(editor, sourceComponentId);
+  const variantGroupId = variantGroupOf(source) ?? `variant-group:${newComponentId()}`;
+  const sourceVariantName = variantNameOf(source) ?? "Default";
+  const entries = componentEntries(editor, {
+    componentId: source.canvasId ?? sourceComponentId,
+    document: { ...source, variantGroupId, variantName: sourceVariantName },
+  });
+  if (
+    entries.some(
+      (entry) =>
+        variantGroupOf(entry.document) === variantGroupId &&
+        variantNameOf(entry.document) === variantName,
+    )
+  ) {
+    invalidArgs(`Invalid argument "variantName": ${JSON.stringify(variantName)} already exists in the group`);
+  }
+
+  const variant = duplicateComponentMaster(source, {
+    variantGroupId,
+    variantName,
+    ...(args.name ? { name: args.name } : {}),
+  });
+  const updatedSource = {
+    ...source,
+    variantGroupId,
+    variantName: sourceVariantName,
+  };
+  const host = getDocument(editor);
+  const components = { ...(host.components ?? {}) };
+  const sourceKey = source.canvasId ?? sourceComponentId;
+  components[sourceKey] = updatedSource;
+  components[variant.canvasId] = variant;
+  storeVariantDocument(editor, sourceKey, updatedSource);
+  storeVariantDocument(editor, sourceComponentId, updatedSource);
+  storeVariantDocument(editor, variant.canvasId, variant);
+  commitDocument(editor, { ...host, components }, "AI: Create component variant");
+  return {
+    ok: true,
+    componentId: variant.canvasId,
+    sourceComponentId,
+    variantGroupId,
+    variantName,
+    name: variant.name ?? variantName,
+  };
+}
+
+function listComponentVariants(args = {}) {
+  const editor = requireEditor();
+  if (args.componentId === undefined && args.variantGroupId === undefined) {
+    invalidArgs('Invalid arguments: "componentId" or "variantGroupId" is required');
+  }
+  const componentId = args.componentId === undefined
+    ? null
+    : requireId(args.componentId, "componentId");
+  const requestedGroupId = args.variantGroupId === undefined
+    ? null
+    : requireId(args.variantGroupId, "variantGroupId");
+
+  let source = null;
+  if (componentId) source = requireComponent(editor, componentId);
+  const variantGroupId = requestedGroupId ?? variantGroupOf(source);
+  const entries = componentEntries(editor, source ? {
+    componentId: source.canvasId ?? componentId,
+    document: source,
+  } : null);
+  const variants = entries
+    .filter((entry) =>
+      variantGroupId
+        ? variantGroupOf(entry.document) === variantGroupId
+        : entry.componentId === componentId,
+    )
+    .map((entry) => ({
+      componentId: entry.componentId,
+      variantName: variantNameOf(entry.document),
+      name: entry.name,
+      variantGroupId: variantGroupOf(entry.document),
+    }))
+    .sort((a, b) => String(a.variantName ?? "").localeCompare(String(b.variantName ?? "")));
+
+  return { ok: true, variantGroupId: variantGroupId ?? null, variants };
+}
+
+function setInstanceVariant(args = {}) {
+  const editor = requireEditor();
+  const instanceId = requireId(args.instanceId, "instanceId");
+  const variantName = requireId(args.variantName, "variantName");
+  const instance = requireInstance(editor, instanceId);
+  const source = requireComponent(editor, instance.sourceCanvasId);
+  const variantGroupId = variantGroupOf(source);
+  if (!variantGroupId) {
+    invalidArgs(`Invalid argument "instanceId": the instance's component has no variants`);
+  }
+
+  if (typeof editor.setInstanceVariant === "function") {
+    try {
+      const result = editor.setInstanceVariant({ instanceId, variantName });
+      const normalized = normalizeInstanceResult(result, instanceId);
+      if (normalized) return { ...normalized, variantName, variantGroupId };
+    } catch (error) {
+      mapEngineError(error, '"instanceId"/"variantName"');
+    }
+  }
+
+  const entries = componentEntries(editor, {
+    componentId: source.canvasId ?? instance.sourceCanvasId,
+    document: source,
+  });
+  const match = entries.find(
+    (entry) =>
+      variantGroupOf(entry.document) === variantGroupId &&
+      variantNameOf(entry.document) === variantName,
+  );
+  if (!match) {
+    invalidArgs(`Invalid argument "variantName": no variant ${JSON.stringify(variantName)} in group ${JSON.stringify(variantGroupId)}`);
+  }
+  if (match.componentId === instance.sourceCanvasId) {
+    return {
+      ok: true,
+      instanceId,
+      layerId: instanceId,
+      componentId: match.componentId,
+      previousComponentId: match.componentId,
+      variantName,
+      variantGroupId,
+      unchanged: true,
+    };
+  }
+  return {
+    ...swapInstance({ instanceId, componentId: match.componentId }),
+    variantName,
+    variantGroupId,
+  };
 }
 
 function requireInstance(editor, instanceId) {
@@ -611,6 +857,57 @@ export const COMPONENT_TOOL_SCHEMAS = Object.freeze([
   {
     type: "function",
     function: {
+      name: "create_component_variant",
+      description:
+        "Duplicate a main component as another variant in the same variant group. The first " +
+        "variant is named Default when the source has no variant name yet.",
+      parameters: {
+        type: "object",
+        properties: {
+          sourceComponentId: { type: "string", description: "Main component to duplicate." },
+          variantName: { type: "string", description: "Name of the new variant, for example Dark." },
+          name: { type: "string", description: "Optional display name for the new component." },
+        },
+        required: ["sourceComponentId", "variantName"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_component_variants",
+      description:
+        "List the variants that share a component's variant group. Give componentId or " +
+        "variantGroupId.",
+      parameters: {
+        type: "object",
+        properties: {
+          componentId: { type: "string", description: "Any component in the group." },
+          variantGroupId: { type: "string", description: "Variant group id." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "set_instance_variant",
+      description:
+        "Swap a component instance to a named variant from the same group. Keeps the " +
+        "instance's box and resets layer overrides (same behaviour as swap_instance).",
+      parameters: {
+        type: "object",
+        properties: {
+          instanceId: { type: "string" },
+          variantName: { type: "string" },
+        },
+        required: ["instanceId", "variantName"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "create_variable_collection",
       description:
         "Create a variable collection with an optional list of extra modes. A Default mode is " +
@@ -725,6 +1022,9 @@ export const COMPONENT_TOOL_EXECUTORS = Object.freeze({
   set_instance_override: setInstanceOverride,
   reset_instance_overrides: resetInstanceOverrides,
   swap_instance: swapInstance,
+  create_component_variant: createComponentVariant,
+  list_component_variants: listComponentVariants,
+  set_instance_variant: setInstanceVariant,
   create_variable_collection: createVariableCollection,
   add_variable_mode: addVariableMode,
   create_variable: createVariable,

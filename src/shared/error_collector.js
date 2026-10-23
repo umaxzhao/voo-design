@@ -256,3 +256,67 @@ export const ERROR_COLLECTOR_LIMITS = Object.freeze({
   MAX_ERRORS,
   MAX_BREADCRUMBS,
 });
+
+let globalHandlersInstalled = false;
+
+/**
+ * Install once-per-page window error + unhandledrejection listeners that
+ * feed the local collector. Never rethrows; never installs twice.
+ *
+ * @param {Window | undefined} [target]
+ * @returns {() => void} disposer
+ */
+export function installGlobalErrorHandlers(target) {
+  const root =
+    target ??
+    (typeof window !== "undefined" ? window : undefined);
+  if (!root || typeof root.addEventListener !== "function") {
+    return () => {};
+  }
+  const isWindowRoot =
+    typeof window !== "undefined" && root === window;
+  if (globalHandlersInstalled && isWindowRoot) {
+    return () => {};
+  }
+
+  const onError = (event) => {
+    try {
+      captureError({
+        error: event?.error ?? null,
+        message: event?.message || String(event?.error ?? "window.error"),
+        source: "window.error",
+      });
+    } catch {
+      /* never throw from a global handler */
+    }
+  };
+
+  const onRejection = (event) => {
+    try {
+      const reason = event?.reason;
+      captureError({
+        error: reason instanceof Error ? reason : null,
+        message:
+          reason instanceof Error
+            ? reason.message
+            : safeString(reason) || "unhandledrejection",
+        source: "unhandledrejection",
+      });
+    } catch {
+      /* never throw from a global handler */
+    }
+  };
+
+  root.addEventListener("error", onError);
+  root.addEventListener("unhandledrejection", onRejection);
+  if (isWindowRoot) globalHandlersInstalled = true;
+
+  return () => {
+    root.removeEventListener("error", onError);
+    root.removeEventListener("unhandledrejection", onRejection);
+    if (typeof window !== "undefined" && root === window) {
+      globalHandlersInstalled = false;
+    }
+  };
+}
+
