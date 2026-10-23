@@ -6,6 +6,7 @@ import { findPersonaById, formatPersonaPrompt } from "../../src/shared/agent_per
 
 const ALL_TOOL_NAMES = [
   "create_shape",
+  "lint_design",
   "delete_layers",
   "duplicate_layer",
   "select_layers",

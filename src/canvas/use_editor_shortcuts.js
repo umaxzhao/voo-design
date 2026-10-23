@@ -366,6 +366,12 @@ export function useEditorShortcuts({
           onToggleCommandPalette();
           return;
         }
+        if (event.code === "Slash" && onToggleShortcuts) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          onToggleShortcuts();
+          return;
+        }
         if (event.code === "KeyF" && onOpenFindReplace) {
           event.preventDefault();
           event.stopImmediatePropagation();

@@ -5,6 +5,9 @@
  * rulers-en.js for the key contract.
  */
 export default {
+  "settings.canvas.title": "画布",
+  "settings.canvas.showRulers": "显示标尺",
+  "settings.canvas.rulersHint": "默认隐藏。也可按 Shift+R（⇧R）切换标尺。",
   "editor.rulers.toggle": "显示/隐藏标尺",
   "editor.rulers.show": "显示标尺",
   "editor.rulers.hide": "隐藏标尺",

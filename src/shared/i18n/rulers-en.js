@@ -7,6 +7,9 @@
  * `editor.snapping.*`.
  */
 export default {
+  "settings.canvas.title": "Canvas",
+  "settings.canvas.showRulers": "Show rulers",
+  "settings.canvas.rulersHint": "Hidden by default. You can also toggle rulers with Shift+R (⇧R).",
   "editor.rulers.toggle": "Show/hide rulers",
   "editor.rulers.show": "Show rulers",
   "editor.rulers.hide": "Hide rulers",

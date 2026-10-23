@@ -1,3 +1,6 @@
+import { exportFilename, exportTargetName } from "../../editor/export_filename.js";
+import { selectedExportNodes } from "../../editor/editor_export_selection.js";
+import { exportBackdropDocument } from "../../editor/editor_export_bounds.js";
 import { documentToSvg, nodesToSvg } from "../../editor/editor_svg.js";
 import { saveMediaExport } from "../../media_export.js";
 import { effectivePage } from "../../editor/scene_model_geometry.js";
@@ -95,6 +98,7 @@ export async function exportEditorImage({
   title,
   signal,
   range = "frame",
+  transparent,
   selectedIds = [],
   resolveCanvas = null,
 }) {
@@ -117,6 +121,8 @@ export async function exportEditorImage({
   const canCaptureScenePage =
     (mime.startsWith("image/") && format !== "psd") || format === "pdf";
   if (range === "slices") {
+    if (!["png", "jpeg", "jpg", "webp"].includes(format))
+      throw new Error("EXPORT_FORMAT_UNSUPPORTED");
     const regions = (editorDocument.nodes ?? []).filter(
       (node) => node.kind === "region" && node.visible !== false,
     );
@@ -127,6 +133,7 @@ export async function exportEditorImage({
       type: "image/png",
       scale,
       resolveCanvas,
+      transparent,
     });
     if (!fullPagePng) throw new Error("EXPORT_TOO_LARGE");
 
@@ -155,6 +162,10 @@ export async function exportEditorImage({
         sliceCanvas.width = rw;
         sliceCanvas.height = rh;
         const sctx = sliceCanvas.getContext("2d");
+        if (sctx && mime === "image/jpeg") {
+          sctx.fillStyle = editorDocument.backgroundColor && editorDocument.backgroundColor !== "transparent" ? editorDocument.backgroundColor : "#ffffff";
+          sctx.fillRect(0, 0, rw, rh);
+        }
         if (sctx && fullImg) {
           sctx.drawImage(fullImg, rx, ry, rw, rh, 0, 0, rw, rh);
         }
@@ -176,7 +187,7 @@ export async function exportEditorImage({
     for (const slice of slices) {
       await saveMediaExport({
         dataUrl: slice.dataUrl,
-        name: slice.name,
+        name: exportFilename(slice.name, format, scale),
         format,
         title,
         signal,
@@ -193,24 +204,7 @@ export async function exportEditorImage({
     selectedIds.length > 0
   ) {
     if (format === "svg") {
-      const wanted = new Set(selectedIds);
-      let changed = true;
-      while (changed) {
-        changed = false;
-        for (const node of editorDocument.nodes ?? []) {
-          if (
-            node.parentId &&
-            wanted.has(node.parentId) &&
-            !wanted.has(node.id)
-          ) {
-            wanted.add(node.id);
-            changed = true;
-          }
-        }
-      }
-      const selectedNodes = (editorDocument.nodes ?? []).filter((node) =>
-        wanted.has(node.id),
-      );
+      const selectedNodes = selectedExportNodes(editorDocument, selectedIds);
       const { bitmapOf, bitmapSizeOf, maskOf } = createSvgAssetResolvers(
         editorDocument,
         engine,
@@ -220,9 +214,11 @@ export async function exportEditorImage({
         resolveCanvas,
       );
       const svg = nodesToSvg(expanded.nodes, {
+        backgroundColor: exportBackdropDocument(editorDocument, transparent !== false).backgroundColor,
         bitmapOf,
         bitmapSizeOf,
         maskOf,
+        measureCtx: document.createElement("canvas").getContext("2d"),
         resolveCanvas,
       });
       if (!svg) {
@@ -235,6 +231,7 @@ export async function exportEditorImage({
       )?.(selectedIds, {
         type: "image/png",
         scale,
+        transparent,
         resolveCanvas,
       });
       if (!exported?.dataUrl) {
@@ -253,6 +250,7 @@ export async function exportEditorImage({
         type: mime,
         quality: mime === "image/png" ? undefined : quality,
         scale,
+        transparent,
         resolveCanvas,
       });
       if (!exported?.dataUrl) {
@@ -266,6 +264,7 @@ export async function exportEditorImage({
       type: "image/png",
       scale,
       resolveCanvas,
+      transparent,
     });
     signal?.throwIfAborted();
     dataUrl = await jpegPageToPdf({
@@ -283,10 +282,12 @@ export async function exportEditorImage({
       engine,
     );
     const expanded = expandInstancesForRaster(editorDocument, resolveCanvas);
-    const svg = documentToSvg(expanded, {
+    const svg = documentToSvg(exportBackdropDocument(expanded, transparent), {
       bitmapOf,
       bitmapSizeOf,
       maskOf,
+      transparent,
+      measureCtx: document.createElement("canvas").getContext("2d"),
     });
     dataUrl = bytesToDataUrl(new TextEncoder().encode(svg), "image/svg+xml");
   } else {
@@ -295,12 +296,17 @@ export async function exportEditorImage({
       quality: mime === "image/png" ? undefined : quality,
       scale,
       resolveCanvas,
+      transparent,
     });
   }
   if (!dataUrl || dataUrl.length <= "data:,".length)
     throw new Error("EXPORT_TOO_LARGE");
   signal?.throwIfAborted();
-  return saveMediaExport({ dataUrl, name, format, title, signal });
+  return saveMediaExport({
+    dataUrl,
+    name: exportFilename(exportTargetName(name, range, editorDocument.nodes, selectedIds), format, scale),
+    format, title, signal,
+  });
 }
 
 async function encodeScenePreview({

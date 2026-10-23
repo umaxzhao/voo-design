@@ -133,7 +133,7 @@ export function generateRulerTicks({
 }
 
 /** True when a dragged guide should be removed: dropped back on a ruler. */
-export function isOverRulerStrip(point, { showRulers = true, size = RULER_SIZE } = {}) {
+export function isOverRulerStrip(point, { showRulers = false, size = RULER_SIZE } = {}) {
   if (!showRulers) return false;
   const x = finiteOr(point?.x, Infinity);
   const y = finiteOr(point?.y, Infinity);

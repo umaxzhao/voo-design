@@ -44,7 +44,7 @@ function clampSize(value) {
 }
 
 export default function EditorRulers({
-  showRulers = true,
+  showRulers = false,
   showGuides = true,
   guides = [],
   selectedGuideId = null,
@@ -502,7 +502,7 @@ EditorRulers.propTypes = {
  * tri-state readouts of the same values the pointer handlers read.
  */
 export function EditorCanvasAids({
-  showRulers = true,
+  showRulers = false,
   showGuides = true,
   canClearGuides = false,
   onToggleRulers = null,

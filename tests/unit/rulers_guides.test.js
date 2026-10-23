@@ -292,9 +292,10 @@ describe("document guide persistence shape", () => {
 
 describe("ruler drag helpers", () => {
   it("removes a guide dropped back on a ruler strip", () => {
-    expect(isOverRulerStrip({ x: 4, y: 200 })).toBe(true);
-    expect(isOverRulerStrip({ x: 200, y: RULER_SIZE })).toBe(true);
+    expect(isOverRulerStrip({ x: 4, y: 200 }, { showRulers: true })).toBe(true);
+    expect(isOverRulerStrip({ x: 200, y: RULER_SIZE }, { showRulers: true })).toBe(true);
     expect(isOverRulerStrip({ x: 200, y: 400 })).toBe(false);
+    expect(isOverRulerStrip({ x: 4, y: 4 })).toBe(false);
     expect(isOverRulerStrip({ x: 4, y: 4 }, { showRulers: false })).toBe(false);
   });
 
