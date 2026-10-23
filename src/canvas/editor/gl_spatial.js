@@ -8,32 +8,24 @@
  * gl_adjustments.js:
  *
  *   tone pass -> FBO A -> gaussian H (A→B) -> gaussian V (B→A or screen)
- *             -> sharpen (A→screen)
+ *             -> sharpen / highPass / clarity / motionBlur
  *
- * The passes that actually run depend on the active adjustments; with neither
- * blur nor sharpen the stage is never touched and the renderer stays a single
- * draw to the default framebuffer.
- *
- * This module also owns the two pieces of shader machinery both renderers
- * share — the full-screen-triangle vertex shader and program building — so the
- * GLSL entry points cannot drift apart.
- *
- * Same best-effort contract as gl_adjustments.js: any failure (program build,
- * incomplete framebuffer, lost context) makes the stage report itself
- * unusable and the caller falls back to the CPU path. A broken stage never
- * poisons the main tone pipeline.
+ * Same best-effort contract as gl_adjustments.js: any failure makes the stage
+ * report itself unusable and the caller falls back to the CPU path.
  */
 
 import {
   BLUR_FRAGMENT_SHADER,
   buildProgram,
+  CLARITY_FRAGMENT_SHADER,
   FULLSCREEN_VERTEX_SHADER,
   FULLSCREEN_VERTEX_SHADER_FBO,
+  HIGH_PASS_FRAGMENT_SHADER,
+  MOTION_BLUR_FRAGMENT_SHADER,
   SHARPEN_FRAGMENT_SHADER,
 } from "./gl_spatial_shaders.js";
 
 export { buildProgram, FULLSCREEN_VERTEX_SHADER, FULLSCREEN_VERTEX_SHADER_FBO };
-
 
 /**
  * Creates the spatial stage bound to one WebGL2 context.
@@ -45,8 +37,14 @@ export { buildProgram, FULLSCREEN_VERTEX_SHADER, FULLSCREEN_VERTEX_SHADER_FBO };
 export function createSpatialStage(gl, accounting) {
   let blurProgram = null;
   let sharpenProgram = null;
+  let highPassProgram = null;
+  let clarityProgram = null;
+  let motionBlurProgram = null;
   let blurUniforms = null;
   let sharpenUniforms = null;
+  let highPassUniforms = null;
+  let clarityUniforms = null;
+  let motionBlurUniforms = null;
 
   /** Ping-pong targets: { a, b, width, height } with { fbo, texture } entries. */
   let targets = null;
@@ -138,6 +136,46 @@ export function createSpatialStage(gl, accounting) {
           amount: gl.getUniformLocation(sharpenProgram, "u_amount"),
         };
       }
+      if (!highPassProgram) {
+        highPassProgram = buildProgram(
+          gl,
+          HIGH_PASS_FRAGMENT_SHADER,
+          FULLSCREEN_VERTEX_SHADER_FBO,
+        );
+        highPassUniforms = {
+          image: gl.getUniformLocation(highPassProgram, "u_image"),
+          texel: gl.getUniformLocation(highPassProgram, "u_texel"),
+          radius: gl.getUniformLocation(highPassProgram, "u_radius"),
+          sigma: gl.getUniformLocation(highPassProgram, "u_sigma"),
+        };
+      }
+      if (!clarityProgram) {
+        clarityProgram = buildProgram(
+          gl,
+          CLARITY_FRAGMENT_SHADER,
+          FULLSCREEN_VERTEX_SHADER_FBO,
+        );
+        clarityUniforms = {
+          image: gl.getUniformLocation(clarityProgram, "u_image"),
+          texel: gl.getUniformLocation(clarityProgram, "u_texel"),
+          radius: gl.getUniformLocation(clarityProgram, "u_radius"),
+          sigma: gl.getUniformLocation(clarityProgram, "u_sigma"),
+          strength: gl.getUniformLocation(clarityProgram, "u_strength"),
+        };
+      }
+      if (!motionBlurProgram) {
+        motionBlurProgram = buildProgram(
+          gl,
+          MOTION_BLUR_FRAGMENT_SHADER,
+          FULLSCREEN_VERTEX_SHADER_FBO,
+        );
+        motionBlurUniforms = {
+          image: gl.getUniformLocation(motionBlurProgram, "u_image"),
+          texel: gl.getUniformLocation(motionBlurProgram, "u_texel"),
+          direction: gl.getUniformLocation(motionBlurProgram, "u_direction"),
+          radius: gl.getUniformLocation(motionBlurProgram, "u_radius"),
+        };
+      }
       if (targets && (targets.width !== width || targets.height !== height)) {
         disposeTargets();
       }
@@ -156,8 +194,6 @@ export function createSpatialStage(gl, accounting) {
       }
       return true;
     } catch (error) {
-      // A driver that cannot build these programs must degrade to the CPU
-      // path, not crash the editor or take the tone pipeline down with it.
       console.error("WebGL spatial stage unavailable", error);
       broken = true;
       return false;
@@ -199,6 +235,50 @@ export function createSpatialStage(gl, accounting) {
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
+  function drawDetailPass(
+    program,
+    uniforms,
+    sourceTexture,
+    targetFbo,
+    width,
+    height,
+    radius,
+    extra,
+  ) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, targetFbo);
+    gl.viewport(0, 0, width, height);
+    gl.useProgram(program);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
+    gl.uniform1i(uniforms.image, 0);
+    gl.uniform2f(uniforms.texel, 1 / width, 1 / height);
+    gl.uniform1f(uniforms.radius, radius);
+    gl.uniform1f(uniforms.sigma, Math.max(radius * 0.5, 1e-3));
+    if (extra) extra(uniforms);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  function drawMotionBlurPass(
+    sourceTexture,
+    targetFbo,
+    width,
+    height,
+    radius,
+    dirX,
+    dirY,
+  ) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, targetFbo);
+    gl.viewport(0, 0, width, height);
+    gl.useProgram(motionBlurProgram);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
+    gl.uniform1i(motionBlurUniforms.image, 0);
+    gl.uniform2f(motionBlurUniforms.texel, 1 / width, 1 / height);
+    gl.uniform2f(motionBlurUniforms.direction, dirX, dirY);
+    gl.uniform1f(motionBlurUniforms.radius, radius);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
   return {
     /**
      * Prepares the stage and binds FBO A as the render target for the tone
@@ -215,22 +295,53 @@ export function createSpatialStage(gl, accounting) {
     /**
      * Runs the convolution passes after the tone pass, ending with a draw to
      * the default framebuffer (the shared canvas).
-     *
-     * `blurRadius` is the effective pixel radius from scaledRadius(); pass
-     * sigma tracks it at half its value, so the slider's gaussian keeps its
-     * shape at any preview scale. `sharpenAmount` is the slider value / 100.
      */
-    finish({ width, height, blurRadius, sharpenAmount }) {
+    finish({
+      width,
+      height,
+      blurRadius = 0,
+      sharpenAmount = 0,
+      highPassRadius = 0,
+      clarityRadius = 0,
+      clarityStrength = 0,
+      motionBlurRadius = 0,
+      motionBlurAngle = 0,
+    }) {
       const blurActive = blurRadius > 0;
       const sharpenActive = sharpenAmount > 0;
+      const highPassActive = highPassRadius > 0;
+      const clarityActive = clarityRadius > 0 && clarityStrength !== 0;
+      const motionActive = motionBlurRadius > 0;
+
+      let readTexture = targets.a.texture;
+      let writeFbo = targets.b.fbo;
+      let writeTexture = targets.b.texture;
+
+      const swap = () => {
+        readTexture = writeTexture;
+        if (writeTexture === targets.b.texture) {
+          writeFbo = targets.a.fbo;
+          writeTexture = targets.a.texture;
+        } else {
+          writeFbo = targets.b.fbo;
+          writeTexture = targets.b.texture;
+        }
+      };
+
+      const remainingAfter = (flags) => flags.some(Boolean);
 
       if (blurActive) {
         const sigma = Math.max(blurRadius * 0.5, 1e-3);
-        // H: A -> B, then V: B -> A (when sharpen still needs a sampleable
-        // input) or straight to the screen.
+        const last =
+          !remainingAfter([
+            sharpenActive,
+            highPassActive,
+            clarityActive,
+            motionActive,
+          ]);
         drawBlurPass(
-          targets.a.texture,
-          targets.b.fbo,
+          readTexture,
+          writeFbo,
           width,
           height,
           blurRadius,
@@ -238,9 +349,10 @@ export function createSpatialStage(gl, accounting) {
           1,
           0,
         );
+        swap();
         drawBlurPass(
-          targets.b.texture,
-          sharpenActive ? targets.a.fbo : null,
+          readTexture,
+          last ? null : writeFbo,
           width,
           height,
           blurRadius,
@@ -248,20 +360,76 @@ export function createSpatialStage(gl, accounting) {
           0,
           1,
         );
+        if (last) return;
+        swap();
       }
+
+      if (motionActive) {
+        const angle = ((Number(motionBlurAngle) || 0) * Math.PI) / 180;
+        const last = !remainingAfter([
+          sharpenActive,
+          highPassActive,
+          clarityActive,
+        ]);
+        drawMotionBlurPass(
+          readTexture,
+          last ? null : writeFbo,
+          width,
+          height,
+          motionBlurRadius,
+          Math.cos(angle),
+          Math.sin(angle),
+        );
+        if (last) return;
+        swap();
+      }
+
+      if (highPassActive) {
+        const last = !remainingAfter([sharpenActive, clarityActive]);
+        drawDetailPass(
+          highPassProgram,
+          highPassUniforms,
+          readTexture,
+          last ? null : writeFbo,
+          width,
+          height,
+          highPassRadius,
+        );
+        if (last) return;
+        swap();
+      }
+
+      if (clarityActive) {
+        const last = !sharpenActive;
+        drawDetailPass(
+          clarityProgram,
+          clarityUniforms,
+          readTexture,
+          last ? null : writeFbo,
+          width,
+          height,
+          clarityRadius,
+          (u) => gl.uniform1f(u.strength, clarityStrength),
+        );
+        if (last) return;
+        swap();
+      }
+
       if (sharpenActive) {
-        drawSharpenPass(targets.a.texture, width, height, sharpenAmount);
+        drawSharpenPass(readTexture, width, height, sharpenAmount);
       }
     },
 
     /**
      * Context lost: the GPU objects are gone already, so this only drops the
-     * bookkeeping. Everything rebuilds lazily on the next begin() after the
-     * context is restored — including a fresh attempt for a `broken` stage.
+     * bookkeeping. Everything rebuilds lazily on the next begin().
      */
     invalidate() {
       blurProgram = null;
       sharpenProgram = null;
+      highPassProgram = null;
+      clarityProgram = null;
+      motionBlurProgram = null;
       targets = null;
       if (targetBytes) {
         accounting.remove(targetBytes);
@@ -272,10 +440,20 @@ export function createSpatialStage(gl, accounting) {
 
     dispose() {
       disposeTargets();
-      if (blurProgram) gl.deleteProgram(blurProgram);
-      if (sharpenProgram) gl.deleteProgram(sharpenProgram);
+      for (const program of [
+        blurProgram,
+        sharpenProgram,
+        highPassProgram,
+        clarityProgram,
+        motionBlurProgram,
+      ]) {
+        if (program) gl.deleteProgram(program);
+      }
       blurProgram = null;
       sharpenProgram = null;
+      highPassProgram = null;
+      clarityProgram = null;
+      motionBlurProgram = null;
       broken = true;
     },
   };
