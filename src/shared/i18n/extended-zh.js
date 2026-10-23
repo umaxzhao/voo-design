@@ -1,5 +1,10 @@
 /** Extended deferred Chinese dictionary. */
 export default {
+  "editor.props.modifiers": "修改器",
+  "editor.modifiers.add": "添加修改器",
+  "editor.modifiers.empty": "暂无修改器",
+  "editor.modifiers.remove": "移除修改器",
+
   "editor.taskbar.askAgent": "询问 VOO 智能助手",
   "editor.taskbar.askPlaceholder": "让 VOO 修改当前选中内容…",
   "editor.taskbar.fontFamily": "字体",

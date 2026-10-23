@@ -60,6 +60,9 @@ export const CIRCULAR_ANIMATABLE_PROPERTIES = Object.freeze([
  * @returns {true}
  */
 export function validateCircularArrayModifier(modifier, targetNode = null) {
+  if (modifier?.enabled !== undefined && typeof modifier.enabled !== "boolean") {
+    throw new TypeError("Modifier enabled must be a boolean");
+  }
   if (!modifier || typeof modifier !== "object" || Array.isArray(modifier)) {
     throw new TypeError("Modifier configuration must be an object");
   }
@@ -260,6 +263,7 @@ export function normalizeCircularArrayModifier(modifier, targetNode = null) {
     id: modifier.id.trim(),
     type: CIRCULAR_MODIFIER_TYPE,
     targetId: modifier.targetId.trim(),
+    ...(modifier.enabled !== undefined ? { enabled: modifier.enabled } : {}),
     count: modifier.count,
     radius: modifier.radius,
     startAngle: modifier.startAngle,
