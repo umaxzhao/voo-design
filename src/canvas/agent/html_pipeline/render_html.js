@@ -1,6 +1,14 @@
+import tailwindLite from './tailwind_lite.css?raw';
+import { expandLucideIcons } from './lucide.js';
 export class HtmlRenderer {
   constructor({ document: host = globalThis.document } = {}) { this.host = host; }
   async render(html, frame, signal) {
+    html = expandLucideIcons(html);
+    // Put utilities before authored styles so custom variables and overrides win.
+    const utilities = `<style data-voo-tailwind-lite>${tailwindLite}</style>`;
+    html = /<head\b[^>]*>/i.test(html)
+      ? html.replace(/<head\b[^>]*>/i, head => head + utilities)
+      : utilities + html;
     signal?.throwIfAborted();
     if (!this.iframe) {
       this.iframe = this.host.createElement('iframe');

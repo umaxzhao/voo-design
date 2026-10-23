@@ -1,3 +1,5 @@
+import { runAntiAiChecks } from './anti_ai_checks.js';
+import { UI_RULES } from './rules.js';
 import { callJson } from './json_call.js';
 export function validateCritique(value) {
   const ok = Number.isInteger(value?.score) && value.score >= 1 && value.score <= 5 && Array.isArray(value.issues) && value.issues.every(i => ['id', 'problem', 'fix'].every(k => typeof i?.[k] === 'string' && i[k].trim()));
@@ -34,11 +36,12 @@ export async function exportFramePng(editor, frameId) {
   if (!canvas?.toDataURL) throw new Error('Canvas PNG export unavailable');
   return canvas.toDataURL('image/png');
 }
-export async function critiqueHtml({ editor, frameId, brief, html, streamStep, config, signal }) {
+export async function critiqueHtml({ editor, frameId, brief, html, frame, streamStep, config, signal }) {
+  const checks = runAntiAiChecks({ html, frame });
   const image = await exportFramePng(editor, frameId);
-  const review = await callJson({ streamStep, config, signal, system: 'Critique this finished canvas design for hierarchy, legibility, clipping, brief coverage and visual polish. Return {score:1..5,issues:[{id: data-voo-id,problem,fix}]}. Only actionable issues; 4 means ready.', user: [{ type: 'text', text: `Brief: ${brief}\nHTML: ${html}` }, { type: 'image_url', image_url: { url: image } }], validate: validateCritique });
-  if (review.value.score >= 4) return { html, trace: review.trace, repaired: false };
-  const repair = await callJson({ streamStep, config, signal, system: 'Return {patches:[{id,html}]} for ONE targeted repair. Each html is a single full replacement element preserving its data-voo-id. No overlapping targets. Retain all other content and styling.', user: JSON.stringify({ brief, html, issues: review.value.issues }), validate: value => {
+  const review = await callJson({ streamStep, config, signal, system: UI_RULES + ' Critique this finished canvas design for hierarchy, legibility, clipping, brief coverage and visual polish. Return {score:1..5,issues:[{id: data-voo-id,problem,fix}]}. Only actionable issues; 4 means ready.', user: [{ type: 'text', text: `Brief: ${brief}\nHTML: ${html}\nDeterministic checks: ${JSON.stringify(checks)}` }, { type: 'image_url', image_url: { url: image } }], validate: validateCritique });
+  if (!checks.hardFail && review.value.score - checks.verbosityPenalty >= 4) return { html, trace: review.trace, repaired: false };
+  const repair = await callJson({ streamStep, config, signal, system: UI_RULES + ' Return {patches:[{id,html}]} for ONE targeted repair. Each html is a single full replacement element preserving its data-voo-id. No overlapping targets. Retain all other content and styling.', user: JSON.stringify({ brief, html, issues: [...review.value.issues, ...checks.issues] }), validate: value => {
     const result = validatePatches(value);
     if (!result.ok) return result;
     try { splicePatches(html, value.patches); return result; }

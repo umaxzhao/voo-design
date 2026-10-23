@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 import { ready, browserOptions } from './runtime.mjs';
 import { DESIGN_BENCH_TASKS } from './tasks.mjs';
+import { runAntiAiChecks } from '../../src/canvas/agent/html_pipeline/anti_ai_checks.js';
 import { loadLinter, scoreDocument } from './score.mjs';
 
 const cwd = fileURLToPath(new URL('../../', import.meta.url));
@@ -235,6 +236,8 @@ export async function main(args = process.argv.slice(2)) {
           await page.exposeFunction('__vooBenchSourceHtml', async html => {
             await writeFile(`${output}/${id}.html`, html);
             record.sourceHtml = `${output}/${id}.html`;
+            record.antiAi = runAntiAiChecks({ html, frame: task.frame });
+            record.failed = record.antiAi.hardFail;
           });
           await page.exposeFunction('__vooBenchCheckpoint', payload => {
             if (payload?.nodes?.length) lastCheckpoint = payload;
@@ -260,7 +263,7 @@ export async function main(args = process.argv.slice(2)) {
             record.screenshot = `${output}/${id}.png`;
             await writeFile(record.screenshot, Buffer.from(png.split(',')[1], 'base64'));
           } else record.error ||= `Screenshot unavailable: ${result.captureError}`;
-          Object.assign(record, await scoreDocument(doc, { lint, screenshot: record.screenshot, judge: options.judge && !!png }));
+          Object.assign(record, await scoreDocument(doc, { lint, antiAi: record.antiAi, screenshot: record.screenshot, judge: options.judge && !!png }));
         } catch (error) {
           record.error = error.stack || String(error);
           try {
@@ -296,7 +299,7 @@ export async function main(args = process.argv.slice(2)) {
                 record.screenshot = `${output}/${id}.png`;
                 await writeFile(record.screenshot, Buffer.from(salvage.png.split(',')[1], 'base64'));
               }
-              Object.assign(record, await scoreDocument(salvage.doc, { lint, screenshot: record.screenshot, judge: options.judge && !!record.screenshot }));
+              Object.assign(record, await scoreDocument(salvage.doc, { lint, antiAi: record.antiAi, screenshot: record.screenshot, judge: options.judge && !!record.screenshot }));
             }
           } catch (salvageError) { record.salvageError = salvageError.message; }
         }
@@ -306,7 +309,7 @@ export async function main(args = process.argv.slice(2)) {
         results.tasks = results.tasks.filter(item => item.id !== id);
         results.tasks.push(record);
         await save();
-        console.error(`${id}: ${record.error && !record.partial ? 'FAILED' : `lint ${record.lint?.score ?? 'unavailable'}`}`);
+        console.error(`${id}: ${record.failed || record.error && !record.partial ? 'FAILED' : `lint ${record.lint?.score ?? 'unavailable'}`}`);
       } finally { await browser.close(); }
     };
     for (const id of options.selectedTasks) await runOne(id);
@@ -325,7 +328,7 @@ export async function main(args = process.argv.slice(2)) {
     await save();
   }
   console.log(`${output}/scores.json`);
-  if (results.tasks.some(task => task.error || task.judgeError)) process.exitCode = 1;
+  if (results.tasks.some(task => task.error || task.judgeError || task.failed)) process.exitCode = 1;
   return results;
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

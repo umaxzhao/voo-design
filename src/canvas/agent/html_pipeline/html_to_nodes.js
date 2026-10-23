@@ -83,11 +83,16 @@ export function elementKey(el) {
 }
 export function htmlToNodes(doc, frame = {}) {
   const nodes = [], view = doc.defaultView, parseColor = colorParser(doc);
-  function walk(el, inheritedOpacity = 1) {
+  function walk(el, inheritedOpacity = 1, parentKey) {
     if (['SCRIPT', 'STYLE', 'META', 'LINK', 'HEAD'].includes(el.tagName)) return;
     const css = view.getComputedStyle(el), r = el.getBoundingClientRect();
     if (css.display === 'none' || css.visibility === 'hidden' || Number.parseFloat(css.opacity) === 0) return;
     const key = elementKey(el), base = { htmlSource: { id: el.dataset?.vooSrc || key, selector: `[data-voo-src=${JSON.stringify(el.dataset?.vooSrc || key)}]` }, name: el.getAttribute('aria-label') || el.dataset?.vooId || el.tagName.toLowerCase(), x: Math.round(r.x + (frame.x || 0)), y: Math.round(r.y + (frame.y || 0)), width: Math.ceil(r.width), height: Math.ceil(r.height), opacity: inheritedOpacity * ( css.opacity === '' ? 1 : Math.max(0, Math.min(1, Number(css.opacity || 1)))) };
+    const layout = /^(inline-)?(flex|grid)$/.test(css.display);
+    const overlay = ['absolute', 'fixed'].includes(css.position);
+    Object.assign(base, { parentKey, layoutPosition: overlay ? 'absolute' : 'auto',
+      layoutWidth: number(css.flexGrow) > 0 || css.alignSelf === 'stretch' || css.width === '100%' ? 'fill' : 'hug',
+      layoutHeight: css.height === '100%' ? 'fill' : 'hug' });
     el.setAttribute?.('data-voo-src', key);
     const gradient = gradientPaint(css.backgroundImage, parseColor);
     const textClip = (css.backgroundClip || css.webkitBackgroundClip) === 'text';
@@ -104,9 +109,19 @@ export function htmlToNodes(doc, frame = {}) {
       return { width: style === 'none' || style === 'hidden' ? 0 : width, paint: parseColor(css[`border${side}Color`] || css.borderColor) };
     });
     const uniform = sides.every(s => s.width === sides[0].width && s.paint?.color === sides[0].paint?.color && s.paint?.alpha === sides[0].paint?.alpha);
-    if (r.width > 0 && r.height > 0 && (background || sides.some(s => s.width && s.paint) || imagePrompt)) {
+    if (r.width > 0 && r.height > 0 && (layout || background || sides.some(s => s.width && s.paint) || imagePrompt)) {
       const border = uniform ? sides[0] : { width: 0 };
-      const node = { ...base, key, htmlKey: key, type: css.borderRadius === '50%' ? 'ellipse' : 'rect', fill: background || (imagePrompt ? '#E5E7EB' : 'transparent'), fillOpacity: gradient ? 1 : bg?.alpha ?? 1, stroke: border.paint?.color || 'transparent', strokeOpacity: border.paint?.alpha ?? 1, strokeWidth: border.width, cornerRadius: number(css.borderRadius), shadow: { enabled: false } };
+      const node = { ...base, key, htmlKey: key, type: layout ? 'frame' : css.borderRadius === '50%' ? 'ellipse' : 'rect', fill: background || (imagePrompt ? '#E5E7EB' : 'transparent'), fillOpacity: gradient ? 1 : bg?.alpha ?? 1, stroke: border.paint?.color || 'transparent', strokeOpacity: border.paint?.alpha ?? 1, strokeWidth: border.width, cornerRadius: number(css.borderRadius), shadow: { enabled: false } };
+      if (layout) {
+        const vertical = css.flexDirection?.startsWith('column') || css.display.includes('grid') && css.gridAutoFlow?.startsWith('column');
+        const align = value => ({ 'flex-start': 'start', 'flex-end': 'end', normal: 'start' }[value] || value || 'start');
+        node.autoLayout = { direction: vertical ? 'vertical' : 'horizontal',
+          gap: number(vertical ? css.rowGap : css.columnGap, number(css.gap)),
+          crossGap: number(vertical ? css.columnGap : css.rowGap, number(css.gap)),
+          padding: Object.fromEntries(['Top', 'Right', 'Bottom', 'Left'].map(side => [side.toLowerCase(), number(css[`padding${side}`])])),
+          alignItems: align(css.alignItems), justifyContent: align(css.justifyContent),
+          wrap: css.display.includes('grid') || css.flexWrap === 'wrap' || css.flexWrap === 'wrap-reverse' };
+      }
       if (imagePrompt) node.imagePrompt = imagePrompt;
       if (css.boxShadow && css.boxShadow !== 'none') {
         const color = css.boxShadow.match(/rgba?\([^)]*\)|#[\da-f]+/i)?.[0] || '#000000';
@@ -114,7 +129,7 @@ export function htmlToNodes(doc, frame = {}) {
         const paint = parseColor(color);
         node.shadow = { enabled: !!paint, color: paint?.color, offsetX: lengths[0] || 0, offsetY: lengths[1] || 0, blur: lengths[2] || 0, opacity: paint?.alpha ?? 0 };
       }
-      if (background || imagePrompt || border.width) nodes.push(node);
+      if (layout || background || imagePrompt || border.width) nodes.push(node);
       if (!uniform) sides.forEach((side, i) => {
         if (!side.width || !side.paint) return;
         const horizontal = i % 2 === 0;
@@ -145,7 +160,7 @@ export function htmlToNodes(doc, frame = {}) {
       // half the leading also preserves the browser's button/flex alignment.
       const top = first.y - (lineHeight - first.height) / 2;
       const height = (lines || Math.max(1, Math.round(rect.height / lineHeight))) * lineHeight;
-      nodes.push({ ...base, key: `${key}/text:${index}`, htmlKey: `${key}/text:${index}`, type: 'text',
+      nodes.push({ ...base, key: `${key}/text:${index}`, htmlKey: `${key}/text:${index}`, type: 'text', parentKey: layout ? key : parentKey, layoutPosition: layout ? 'auto' : base.layoutPosition,
         x: (multiline ? blockRect.x + number(blockCss.borderLeftWidth) + number(blockCss.paddingLeft) : rect.x) + (frame.x || 0),
         y: top + (frame.y || 0),
         width: multiline ? boxWidth : rect.width, height, boxWidth,
@@ -154,7 +169,7 @@ export function htmlToNodes(doc, frame = {}) {
         letterSpacing: number(css.letterSpacing), lineHeight: lineHeight / fontSize,
         align: ['center', 'right'].includes(css.textAlign) ? css.textAlign : 'left' });
     }
-    for (const child of children) if (child.nodeType === 1) walk(child, base.opacity);
+    for (const child of children) if (child.nodeType === 1) walk(child, base.opacity, layout ? key : parentKey);
   }
   walk(doc.body);
   return nodes;

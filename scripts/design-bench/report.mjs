@@ -20,7 +20,7 @@ export function formatReport(before, after, labelA = before?.label || 'before', 
     const left = a.get(id), right = b.get(id);
     const gain = delta(judgeMean(left), judgeMean(right));
     if (gain !== null) changes.push({ id, gain });
-    const status = [left?.error && `${labelA} failed`, right?.error && `${labelB} failed`, left?.judgeError && `${labelA} judge failed`, right?.judgeError && `${labelB} judge failed`].filter(Boolean).join('; ') || (!left || !right ? 'missing run' : 'ok');
+    const status = [left?.antiAi?.hardFail && `${labelA} anti-AI failed`, right?.antiAi?.hardFail && `${labelB} anti-AI failed`,left?.error && `${labelA} failed`, right?.error && `${labelB} failed`, left?.judgeError && `${labelA} judge failed`, right?.judgeError && `${labelB} judge failed`].filter(Boolean).join('; ') || (!left || !right ? 'missing run' : 'ok');
     lines.push(`| ${id.replace(/\|/g, '\\|')} | ${show(left?.lint?.score)} | ${show(right?.lint?.score)} | ${signed(delta(left?.lint?.score, right?.lint?.score))} | ${show(judgeMean(left))} | ${show(judgeMean(right))} | ${signed(gain)} | ${status} |`);
   }
   const average = (map, get) => mean([...map.values()].map(get).filter(Number.isFinite));

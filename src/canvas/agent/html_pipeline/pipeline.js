@@ -1,3 +1,4 @@
+import { runAntiAiChecks } from './anti_ai_checks.js';
 import { configuredImageGenerator } from './images.js';
 import { createDirections, pickDirection } from './directions.js';
 import { generateHtml } from './generate_html.js';
@@ -24,7 +25,11 @@ export async function runHtmlPipeline({ brief, frame, editor, streamStep, config
     trace.push(...generated.trace);
     await streamer.flush(); progress(stage, 'completed');
     stage = 'critique'; progress(stage, 'in_progress');
-    const reviewed = await critiqueHtml({ editor, frameId: streamer.frameId, brief, html: generated.html, streamStep, config, signal });
+    const reviewed = await critiqueHtml({ editor, frameId: streamer.frameId, frame, brief, html: generated.html, streamStep, config, signal });
+    const checks = runAntiAiChecks({ html: reviewed.html, frame });
+    trace.push({ stage: 'anti_ai_checks', ...checks });
+    await globalThis.__vooBenchSourceHtml?.(reviewed.html);
+    if (checks.hardFail) throw new Error('Design contains decorative icons: ' + checks.issues.filter(i => i.hard).map(i => i.problem).join('; '));
     trace.push(...reviewed.trace); progress(stage, 'completed');
     if (reviewed.repaired) { stage = 'repair'; progress(stage, 'in_progress'); await streamer.snapshot(reviewed.html); await streamer.flush(); progress(stage, 'completed'); }
     // Optional injected image provider must honor AbortSignal and return native
@@ -44,8 +49,7 @@ export async function runHtmlPipeline({ brief, frame, editor, streamStep, config
       } finally { clearTimeout(timeout); controller.abort(); signal?.removeEventListener('abort', abort); }
       signal?.throwIfAborted(); progress(stage, 'completed');
     }
-    await globalThis.__vooBenchSourceHtml?.(reviewed.html);
-    return { html: reviewed.html, directionId: direction.id, nodeCount: streamer.previous.size, trace };
+    return { html: reviewed.html, directionId: direction.id, nodeCount: streamer.previous.size, verbosityPenalty: checks.verbosityPenalty, trace };
   } catch (error) { progress(stage, signal?.aborted ? 'cancelled' : 'failed'); throw error; }
   finally { if (streamer) { try { await streamer.flush(); } finally { streamer.finish(); } } }
 }

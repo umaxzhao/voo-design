@@ -1,3 +1,4 @@
+import { UI_RULES } from './rules.js';
 import { designSystemToCssVars } from '../design_system/apply.js';
 import { stripFences } from './json_call.js';
 const voids = new Set('area base br col embed hr img input link meta param source track wbr'.split(' '));
@@ -28,7 +29,7 @@ export function createSnapshotEmitter(onSnapshot, now = Date.now) {
 }
 export async function generateHtml({ brief, frame, direction, streamStep, config, signal, onSnapshot }) {
   const vars = designSystemToCssVars(direction.designSystem);
-  const system = `Write ONE complete self-contained HTML document, no fences or explanations. Exact viewport ${frame.width}x${frame.height}px. Plain CSS in a style block, no JavaScript, network, CDN, imports, external fonts or images. Use local fallback fonts. CSS variables: ${JSON.stringify(vars)}. Define these on :root and use them. Body margin:0, fixed page dimensions. Real polished copy, every brief section in top-down order. Give EVERY element a unique stable data-voo-id. Use CSS shapes, gradients and inline SVG. Image slots must be divs with data-image-prompt, styled as attractive placeholders. Direction: ${JSON.stringify(direction)}.`;
+  const system = `Write ONE complete self-contained HTML document, no fences or explanations. Exact viewport ${frame.width}x${frame.height}px. Use Tailwind utility classes for layout, spacing, colors and typography. The offline utility stylesheet is provided by the renderer. Reserve style blocks for :root CSS variables and rare custom styles unsupported by utilities. No JavaScript, network, CDN, imports, external fonts or images. Use local fallback fonts. CSS variables: ${JSON.stringify(vars)}. Define these on :root and use them. Body margin:0, fixed page dimensions. Real polished copy, every brief section in top-down order. Give EVERY element a unique stable data-voo-id. Nest flex/grid containers to produce editable auto-layout frames. Use absolute positioning only for overlays. ${UI_RULES} Image slots must be divs with data-image-prompt, styled as attractive placeholders. Direction: ${JSON.stringify(direction)}.`;
   const emitter = createSnapshotEmitter(onSnapshot);
   let buffer = '';
   const result = await streamStep({ config, messages: [{ role: 'system', content: system }, { role: 'user', content: brief }], tools: [], signal, onText: text => {

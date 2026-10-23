@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { runAntiAiChecks } from '../../src/canvas/agent/html_pipeline/anti_ai_checks.js';
 import { spawn } from 'node:child_process';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -61,9 +62,11 @@ If you cannot read the image, fail explicitly; do not invent scores.`;
   }
 }
 
-export async function scoreDocument(doc, { screenshot, judge = false, rootId, kit, lint } = {}) {
+export async function scoreDocument(doc, { screenshot, judge = false, rootId, kit, lint, html, antiAi } = {}) {
   const lintFn = lint === undefined ? await loadLinter() : lint;
   const result = { lint: lintFn ? lintFn(doc, { rootId, kit }) : null };
+  result.antiAi = html !== undefined ? runAntiAiChecks({ html }) : antiAi ?? null;
+  result.failed = !!result.antiAi?.hardFail;
   if (judge) {
     try {
       result.judge = await judgeScreenshot(screenshot);
@@ -88,11 +91,12 @@ async function main() {
     if (args.includes('--judge')) { delete result.judge; delete result.judgeMean; delete result.judgeError; }
     Object.assign(result, await scoreDocument(JSON.parse(await readFile(result.document, 'utf8')), {
       screenshot: result.screenshot, judge: args.includes('--judge'), lint,
+      html: result.sourceHtml ? await readFile(result.sourceHtml, 'utf8') : undefined, antiAi: result.antiAi,
     }));
   }
   await writeFile(path, `${JSON.stringify(results, null, 2)}\n`);
   console.log(path);
-  if (results.tasks.some(task => task.judgeError)) process.exitCode = 1;
+  if (results.tasks.some(task => task.judgeError || task.failed)) process.exitCode = 1;
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch(error => { console.error(error); process.exitCode = 1; });

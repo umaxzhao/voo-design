@@ -101,9 +101,18 @@ it('preserves flex-centered single-line text using its Range rather than the con
     textRect: { x: 60, y: 41.5, width: 80, height: 17 },
   });
   doc.body.tagName = 'DIV';
-  expect(htmlToNodes(doc)[0]).toMatchObject({ x: 60, y: 38, height: 24, boxWidth: 0 });
+  const nodes = htmlToNodes(doc);
+  expect(nodes[0]).toMatchObject({ type: 'frame', x: 0, y: 0, height: 100 });
+  expect(nodes.find(n => n.type === 'text')).toMatchObject({ parentKey: 'button', x: 60, y: 38, height: 24, boxWidth: 0 });
   // Asymmetric button padding can put the label off the border-box center.
   doc.body.tagName = 'BUTTON';
   doc.body.css.paddingTop = '20px';
-  expect(htmlToNodes(doc)[0]).toMatchObject({ y: 38, height: 24 });
+  expect(htmlToNodes(doc).find(n => n.type === 'text')).toMatchObject({ y: 38, height: 24 });
+});
+
+it('keeps absolute text geometry and positioning inside a flex frame', () => {
+  const { doc, element } = fixture({ css: { display: 'flex' } });
+  const label = element('SPAN', 'overlay', { position: 'absolute', lineHeight: '24px', color: 'white' }, [{ nodeType: 3, textContent: 'Overlay' }]);
+  doc.body.childNodes = [label]; doc.body.children = [label]; label.parentElement = doc.body;
+  expect(htmlToNodes(doc).find(n => n.type === 'text')).toMatchObject({ parentKey: 'button', layoutPosition: 'absolute', x: 14.2, y: 22.4, height: 24, boxWidth: 0 });
 });

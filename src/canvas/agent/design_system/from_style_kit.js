@@ -1,3 +1,4 @@
+import { UI_RULES } from '../html_pipeline/rules.js';
 import { STYLE_KITS } from '../design_quality/style_kits.js';
 import { DESIGN_TOKENS, contrastRatio } from '../design_quality/tokens.js';
 import { FONT_ROLES, validateDesignSystem } from './schema.js';
@@ -21,7 +22,7 @@ export function fromStyleKit(kit) {
     typography:{fontHeadline:kit.fonts.display,fontBody:kit.fonts.body,fontLabel:kit.fonts.body,scale:Object.fromEntries(FONT_ROLES.map((role,i)=>[role,{fontSize:roleSizes[i],lineHeight:Math.ceil(roleSizes[i]*(i<3?1.2:1.5)),fontWeight:i<4?600:i<6?400:500,letterSpacing:0}]))},
     spacing:{unit:4,scale:[...DESIGN_TOKENS.spacing]},roundness:{none:0,...kit.radius},elevation:{sm:kit.shadow.sm.css,md:kit.shadow.md.css},
     components:{button:{radius:kit.radius.md,paddingX:16,paddingY:8,fontRole:'labelLg'},card:{radius:kit.radius.lg,padding:kit.spacingDensity==='dense'?12:24,elevation:'sm'},input:{radius:kit.radius.md,height:40,border:1},chip:{radius:kit.radius.full}},
-    designMd:[kit.mood,`Layout: ${kit.layoutPatterns.join('; ')}`,`Do: ${kit.dos.join('; ')}`,`Avoid: ${kit.donts.join('; ')}`].join('\n').slice(0,4000)};
+    designMd:[UI_RULES,kit.mood,`Layout: ${kit.layoutPatterns.join('; ')}`,`Do: ${kit.dos.join('; ')}`,`Avoid: ${kit.donts.join('; ')}`].join('\n').slice(0,4000)};
   const result = validateDesignSystem(ds);
   if (!result.ok) throw new Error(result.errors.join('\n'));
   return result.value;
