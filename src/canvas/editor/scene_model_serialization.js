@@ -1,3 +1,4 @@
+import { designSystemFields } from "./design_tokens.js";
 // Seam: Document serialization, deserialization, and display helpers.
 /* eslint-disable no-unused-vars */
 import {
@@ -156,6 +157,7 @@ export function serialiseDocument(doc) {
   return {
     version: DOC_VERSION,
     ...canvasComposition.serializeCanvasFields(doc),
+    ...designSystemFields(doc),
     width: doc.width,
     height: doc.height,
     backgroundColor: doc.backgroundColor ?? "transparent",
@@ -384,6 +386,7 @@ export function deserialiseDocument(value) {
   const nextDocument = {
     version: DOC_VERSION,
     ...canvasComposition.deserializeCanvasFields(value),
+    ...designSystemFields(value),
     width: value.width,
     height: value.height,
     backgroundColor: value.backgroundColor ?? "transparent",
