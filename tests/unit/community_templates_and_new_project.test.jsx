@@ -84,27 +84,29 @@ describe("Community Templates and New Project Workbench Experience", () => {
     }
   });
 
-  it("renders Figma Community style templates view with cards, authors, stats, and search", () => {
-    const html = renderToStaticMarkup(
-      React.createElement(CommunityTemplatesView, { onUseTemplate: () => {} })
-    );
-
-    // Verify community template titles appear
-    expect(html).toContain("SaaS Analytics &amp; Cloud Metric Dashboard");
-    expect(html).toContain("iOS 18 Mobile Banking &amp; Digital Wallet");
-    expect(html).toContain("Bento Grid AI Product Landing Page");
-    expect(html).toContain("Universal Design System &amp; UI Kit");
-
-    // Verify authors and stats appear
-    expect(html).toContain("Alex Rivera");
-    expect(html).toContain("Elena Rostova");
-    expect(html).toContain("Design Tokens WG");
-
-    // Verify action buttons appear
-    expect(html).toContain("使用模板");
-    expect(html).toContain("预览详情");
+  it("renders compact templates with localized titles, dimensions, and persistent actions", () => {
+    const html = renderToStaticMarkup(<CommunityTemplatesView onUseTemplate={() => {}} />);
+    expect(html).toContain('data-testid="community-templates"');
+    expect(html).toContain("数据看板");
+    expect(html).toContain("移动钱包");
+    expect(html).toContain("1440 × 900 px");
+    expect(html.match(/data-testid="use-template"/g)).toHaveLength(6);
+    expect(html).toContain("预览: 数据看板");
+    expect(html).not.toContain("Alex Rivera");
+    expect(html).not.toContain("lucide-heart");
+    expect(html).not.toContain("<select");
     expect(html).not.toContain("lucide-sparkles");
     expect(html).not.toMatch(/\p{Extended_Pictographic}/u);
+  });
+
+  it("renders English template controls and titles", async () => {
+    await loadLocale("en");
+    const html = renderToStaticMarkup(<CommunityTemplatesView />);
+    expect(html).toContain("Search templates");
+    expect(html).toContain("Analytics dashboard");
+    expect(html).toContain("Preview: Mobile wallet");
+    expect(html).not.toContain("使用");
+    expect(html).not.toContain("社区");
   });
 
   it("instantiating a community template produces a valid .voo file and registers in workspace", async () => {
