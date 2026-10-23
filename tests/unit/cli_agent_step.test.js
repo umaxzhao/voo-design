@@ -24,6 +24,26 @@ describe("streamCliStep", () => {
     delete globalThis.window;
   });
 
+  it("returns tool receipts to the same native session across model steps", async () => {
+    const advance = vi.fn()
+      .mockResolvedValueOnce({ ok: true, sessionId: "native-session", done: false, text: "Working.",
+        toolCalls: [{ id: "tool-1", function: { name: "create_frame", arguments: "{}" } }] })
+      .mockResolvedValueOnce({ ok: true, sessionId: "native-session", done: true, text: "Working.Done." });
+    setBridge({ advance, cancel: vi.fn() });
+    const signal = new AbortController().signal;
+    const options = { config: { model: "codex:gpt-6-astra" }, tools: [], signal };
+    await streamCliStep({ ...options, messages: [{ role: "user", content: "make a frame" }] });
+    const messages = [{ role: "tool", tool_call_id: "tool-1", content: '{"ok":true}' }];
+    const result = await streamCliStep({ ...options, messages });
+    expect(advance.mock.calls[1][0].sessionId).toBe("native-session");
+    expect(advance.mock.calls[1][0].messages).toEqual(messages);
+    expect(result.text).toBe("Done.");
+    // A completed turn must not leak its native session into another turn.
+    advance.mockResolvedValueOnce({ ok: true, done: true, text: "Fresh." });
+    await streamCliStep({ ...options, messages: [] });
+    expect(advance.mock.calls[2][0].sessionId).toBeUndefined();
+  });
+
   it("returns streamed text and the tool intents the CLI reported", async () => {
     setBridge({
       advance: async (opts) => ({
