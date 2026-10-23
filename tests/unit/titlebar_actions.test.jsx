@@ -1,0 +1,61 @@
+import React from "react";
+import { describe, it, expect, vi } from "vitest";
+import fs from "node:fs";
+
+const state = vi.hoisted(() => ({ welcomeOpen: false, setWelcomeOpen: vi.fn() }));
+vi.mock("react", async (original) => ({
+  ...await original(),
+  useState: (initial) => [initial, vi.fn()],
+  useEffect: () => {},
+}));
+vi.mock("../../src/store/design_store.js", () => ({ useDesignStore: (selector) => selector(state) }));
+vi.mock("../../src/canvas/use_i18n.js", () => ({ useI18n: () => ({ t: (key) => key }) }));
+vi.mock("../../src/canvas/components/canvas_tab_bar.jsx", () => ({ default: () => null }));
+vi.mock("../../src/canvas/components/settings_drawer.jsx", () => ({ default: () => null }));
+import AppTitleBar from "../../src/app_title_bar.jsx";
+
+function buttons(node) {
+  if (!React.isValidElement(node)) return [];
+  if (node.type === "button") return [node];
+  return React.Children.toArray(node.props.children).flatMap(buttons);
+}
+const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
+
+describe("title bar actions", () => {
+  it.each([true, false])("offers only open/save/settings on the right (welcome=%s)", (welcomeOpen) => {
+    state.welcomeOpen = welcomeOpen;
+    const dispatchEvent = vi.fn();
+    vi.stubGlobal("window", { dispatchEvent });
+    vi.stubGlobal("CustomEvent", class { constructor(type) { this.type = type; } });
+    try {
+      const tree = AppTitleBar();
+      const header = React.Children.toArray(tree.props.children)[0];
+      const right = React.Children.toArray(header.props.children)[1];
+      const actions = buttons(right);
+      expect(actions).toHaveLength(3);
+      expect(actions.map((button) => button.props.title)).toEqual([
+        "titlebar.openTitle", "titlebar.saveTitle",
+        welcomeOpen ? "titlebar.settingsTitle" : "titlebar.prefsTitle",
+      ]);
+      actions[0].props.onClick();
+      actions[1].props.onClick();
+      expect(dispatchEvent.mock.calls.map(([event]) => event.type)).toEqual(["voo:file-open", "voo:file-save"]);
+      expect(actions[2].props.onClick.toString()).toContain("setSettingsOpen(true)");
+      for (const event of ["voo:open-about", "voo:open-onboarding", "voo:editor-export", "voo:open-first-run"]) {
+        expect(source("../../src/app_title_bar.jsx")).not.toContain(event);
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("keeps wizard entry points in Settings and the native Help menu", () => {
+    const settings = source("../../src/canvas/components/settings_drawer.jsx");
+    expect(settings).toContain('t("titlebar.cliWizard")');
+    expect(settings).toContain('new CustomEvent("voo:open-onboarding")');
+    const main = source("../../electron/main.cjs");
+    expect(main).toContain('dispatchMenuAction("help:onboarding")');
+    expect(main).toContain('dispatchMenuAction("help:about")');
+    expect(source("../../src/App.jsx")).toMatch(/case "help:onboarding":\s*window.dispatchEvent\(new CustomEvent\("voo:open-onboarding"\)\)/);
+  });
+});
