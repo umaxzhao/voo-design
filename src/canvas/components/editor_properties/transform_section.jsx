@@ -5,7 +5,7 @@
 
 import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
-import { Contrast } from "lucide-react";
+import { Blend, Contrast } from "lucide-react";
 import ScrubField from "../scrub_field.jsx";
 import MixedField from "./mixed_field.jsx";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
@@ -264,11 +264,14 @@ export default function TransformSection({
             value={object.blendMode ?? DEFAULT_BLEND_MODE}
             onChange={(value) => editAndCommit({ blendMode: value })}
             label={t("editor.props.blendMode")}
+            placeholderIcon={
+              <Blend size={11} className="text-neutral-500" />
+            }
             options={BLEND_MODES.map((mode) => ({
               value: mode,
               label: t(blendModeLabelKey(mode)),
             }))}
-            triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2.5 !text-[10px] !font-mono !tabular-nums !text-neutral-100 hover:!bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+            triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2.5 !text-[10px] !font-mono !tabular-nums !uppercase !text-neutral-100 hover:!bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
             widthClass="w-full"
           />
         </div>

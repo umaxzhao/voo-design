@@ -8,10 +8,10 @@ import {
 import { CollapsibleSection } from "./property_section.jsx";
 
 const FIELD_CLASS =
-  "h-7 w-full min-w-0 flex-1 cursor-pointer appearance-none rounded-lg bg-[#222222] pl-2 pr-6 text-[11px] font-mono tabular-nums text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#E5B2FF]/40";
+  "h-7 w-full min-w-0 flex-1 cursor-pointer appearance-none rounded-xl bg-neutral-800 pl-2.5 pr-6 text-[11px] font-mono tabular-nums text-neutral-100 uppercase outline-none transition-colors hover:bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
 
 const ROW_CLASS =
-  "flex items-center gap-2 text-[10px] text-neutral-400";
+  "flex min-w-0 items-center gap-2 text-[10px] text-neutral-400";
 
 export default function ConstraintsSection({ object, editAndCommit }) {
   const { t } = useI18n();
@@ -28,7 +28,7 @@ export default function ConstraintsSection({ object, editAndCommit }) {
 
   const selectRow = (key, label, value, options, onChange) => (
     <label key={key} className={ROW_CLASS}>
-      <span className="w-[62px] shrink-0 whitespace-nowrap">{label}</span>
+      <span className="w-[62px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap uppercase">{label}</span>
       <span className="relative flex min-w-0 flex-1">
       <select
         data-testid={`editor-constraints-${key}`}
