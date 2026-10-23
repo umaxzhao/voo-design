@@ -248,8 +248,31 @@ export function createAdjustmentRenderer() {
         const naturalWidth = source.naturalWidth ?? source.width;
         const blurRadius = scaledRadius(tone.blur, targetWidth, naturalWidth);
         const sharpenAmount = tone.sharpen / 100;
+        const highPassRadius = scaledRadius(
+          tone.highPass,
+          targetWidth,
+          naturalWidth,
+        );
+        const clarityRadius = scaledRadius(
+          Math.abs(tone.clarity),
+          targetWidth,
+          naturalWidth,
+        );
+        const clarityStrength = (tone.clarity / 100) * 2;
+        const motionBlurRadius = scaledRadius(
+          tone.motionBlur,
+          targetWidth,
+          naturalWidth,
+        );
+        const motionBlurAngle = tone.motionBlurAngle ?? 0;
         let spatial = null;
-        if (blurRadius > 0 || sharpenAmount > 0) {
+        if (
+          blurRadius > 0 ||
+          sharpenAmount > 0 ||
+          highPassRadius > 0 ||
+          (clarityRadius > 0 && clarityStrength !== 0) ||
+          motionBlurRadius > 0
+        ) {
           spatialStage ??= createSpatialStage(gl, spatialAccounting);
           if (!spatialStage.begin(targetWidth, targetHeight)) return null;
           spatial = spatialStage;
@@ -295,6 +318,11 @@ export function createAdjustmentRenderer() {
           height: targetHeight,
           blurRadius,
           sharpenAmount,
+          highPassRadius,
+          clarityRadius,
+          clarityStrength,
+          motionBlurRadius,
+          motionBlurAngle,
         });
 
         // Stable request seen twice: worth keeping.

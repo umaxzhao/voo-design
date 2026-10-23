@@ -1,3 +1,5 @@
+import { withExternalMcp } from "./external_mcp_client.js";
+import { validateMcpServers } from "../src/shared/agent_mcp_servers.js";
 import { randomBytes } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -201,6 +203,22 @@ export function registerCodexAgentIpc({
   ipcMain.handle(
     "voo:codex-advance",
     protect(async (event, options) => {
+      if (options.externalMcp) {
+        const servers = validateMcpServers(options.servers);
+        if (options.externalMcp === "list") {
+          const tools = [];
+          for (const server of servers) {
+            const listed = await withExternalMcp(server, client => client.listTools());
+            tools.push(...listed.map(tool => ({ type: "function", function: { name: `mcp__${server.id}__${tool.name}`, description: tool.description ?? "", parameters: tool.inputSchema } })));
+          }
+          return { ok: true, tools };
+        }
+        const server = servers.find(server => options.name?.startsWith(`mcp__${server.id}__`));
+        if (!server || options.externalMcp !== "call") throw new Error("cli.invalidRequest");
+        const result = await withExternalMcp(server, client => client.callTool(options.name.slice(`mcp__${server.id}__`.length), options.arguments ?? {}));
+        return { ok: true, result };
+      }
+      validateMcpServers(options.mcpServers ?? []);
       if (
         !Array.isArray(options.messages) ||
         !Array.isArray(options.tools) ||
@@ -290,6 +308,7 @@ export function registerCodexAgentIpc({
             cwd: initialized.cwd,
             token: initialized.token,
             reasoningEffort: options.reasoningEffort,
+            mcpServers: options.mcpServers ?? [],
           });
         } catch (error) {
           session.close();

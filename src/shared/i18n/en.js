@@ -29,6 +29,23 @@ import commandPaletteEn from "./command-palette-en.js";
 import findReplaceEn from "./find-replace-en.js";
 
 export default {
+  "agent.providers.hint": "Codex CLI · Claude Code CLI · Custom models",
+  "agent.providers.customHint": "Add an OpenAI-compatible provider and text models in AI Providers.",
+  "agent.mcp.title": "External MCP servers",
+  "agent.mcp.hint": "Connect local tools (stdio) or remote tools (HTTP). Commands run locally; credentials are saved in settings.",
+  "agent.mcp.type": "Transport",
+  "agent.mcp.stdio": "Local process (stdio)",
+  "agent.mcp.http": "Streamable HTTP",
+  "agent.mcp.id": "Server ID",
+  "agent.mcp.command": "Command",
+  "agent.mcp.url": "URL",
+  "agent.mcp.args": "Arguments (JSON array)",
+  "agent.mcp.env": "Environment (JSON object)",
+  "agent.mcp.headers": "Headers (JSON object)",
+  "agent.mcp.add": "Add server",
+  "agent.mcp.remove": "Remove",
+  "agent.mcp.invalid": "Check the unique server ID, transport fields, and JSON values.",
+
   "canvas.start.loading": "Loading template…",
   "editor.wf.conn.templateLoad":
     "Could not load template. Refresh and try again.",

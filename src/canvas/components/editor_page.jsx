@@ -963,6 +963,7 @@ export default function EditorPage({
           {doc && focused ? (
             <EditorContextualTaskBar
               engine={engine}
+              selectedIds={selectedIds}
               tool={tool}
               selected={selected}
               hasSelection={Boolean(
@@ -1177,6 +1178,7 @@ export default function EditorPage({
             {focused ? (
               <EditorContextualTaskBar
                 engine={engine}
+                selectedIds={selectedIds}
                 tool={tool}
                 selected={selected}
                 hasSelection={Boolean(

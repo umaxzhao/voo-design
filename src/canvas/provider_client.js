@@ -1,3 +1,11 @@
+import { getStoredCustomProviders } from "../shared/custom_providers.js";
+import { createGenericProvider } from "../shared/providers/provider_generic_factory.js";
+
+function customProvider(payload) {
+  const provider = getStoredCustomProviders().find(provider => provider.id === payload?.providerId);
+  return provider ? createGenericProvider({ providerId: provider.id, defaultBaseUrl: provider.defaultBaseUrl }) : null;
+}
+
 /**
  * Standalone decoupled provider client stub.
  * Cloud AI generation runtimes are removed from the standalone editor.
@@ -32,15 +40,15 @@ export async function testProvider(payload) {
 }
 
 export async function getProviderConfig(payload) {
-  return null;
+  return customProvider(payload)?.getProviderConfig() ?? null;
 }
 
 export async function saveProviderConfig(payload) {
-  return true;
+  return customProvider(payload)?.saveProviderConfig(payload) ?? true;
 }
 
 export async function clearProviderConfig(payload) {
-  return true;
+  return customProvider(payload)?.clearProviderConfig() ?? true;
 }
 
 export async function listProviderModels(payload) {

@@ -1,0 +1,50 @@
+import { describe, expect, it } from "vitest";
+import { buildToneLut } from "../../src/canvas/editor/tone_lut_build.js";
+import {
+  CLARITY_FRAGMENT_SHADER,
+  HIGH_PASS_FRAGMENT_SHADER,
+  MOTION_BLUR_FRAGMENT_SHADER,
+} from "../../src/canvas/editor/gl_spatial_shaders.js";
+
+describe("GL spatial filter twins", () => {
+  it("exposes highPass / clarity / motionBlur fragment shaders", () => {
+    expect(HIGH_PASS_FRAGMENT_SHADER).toMatch(/u_radius/);
+    expect(HIGH_PASS_FRAGMENT_SHADER).toMatch(/0\.5/);
+    expect(CLARITY_FRAGMENT_SHADER).toMatch(/u_strength/);
+    expect(CLARITY_FRAGMENT_SHADER).toMatch(/0\.299/);
+    expect(MOTION_BLUR_FRAGMENT_SHADER).toMatch(/u_direction/);
+  });
+
+  it("does not force cpuOnly for highPass / clarity / motionBlur alone", () => {
+    expect(buildToneLut({ highPass: { enabled: true, value: 40 } }).cpuOnly).toBe(
+      false,
+    );
+    expect(buildToneLut({ clarity: { enabled: true, value: 30 } }).cpuOnly).toBe(
+      false,
+    );
+    expect(
+      buildToneLut({
+        motionBlur: { enabled: true, value: 25, angle: 45 },
+      }).cpuOnly,
+    ).toBe(false);
+  });
+
+  it("still forces cpuOnly for live filters and pixel ops", () => {
+    expect(
+      buildToneLut({
+        liveFilters: [{ kind: "highPass", enabled: true, params: { value: 10 } }],
+      }).cpuOnly,
+    ).toBe(true);
+    expect(buildToneLut({ noise: { enabled: true, value: 10 } }).cpuOnly).toBe(
+      true,
+    );
+  });
+
+  it("keeps highPass values in the tone signature", () => {
+    const a = buildToneLut({ highPass: { enabled: true, value: 10 } });
+    const b = buildToneLut({ highPass: { enabled: true, value: 40 } });
+    expect(a.highPass).toBe(10);
+    expect(b.highPass).toBe(40);
+    expect(a.signature).not.toBe(b.signature);
+  });
+});

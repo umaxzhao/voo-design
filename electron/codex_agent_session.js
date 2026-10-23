@@ -1,3 +1,4 @@
+import { nativeMcpServers } from "../src/shared/agent_mcp_servers.js";
 import { randomUUID } from "node:crypto";
 import { createToolTurn } from "./agent_tool_turn.js";
 const OUTPUT_METHODS = new Set([
@@ -89,7 +90,7 @@ export function createCodexAgentSession({
   const session = {
     id,
     tools,
-    async start({ model, messages, mcpUrl, cwd, reasoningEffort }) {
+    async start({ model, messages, mcpUrl, cwd, reasoningEffort, mcpServers = [] }) {
       const canvasAgent = tools.length > 0;
       const instructions = messages
         .filter((message) => message.role === "system")
@@ -108,6 +109,7 @@ export function createCodexAgentSession({
         config: {
           ...(canvasAgent && {
             mcp_servers: {
+              ...nativeMcpServers(mcpServers, true),
               voo: {
                 url: `${mcpUrl}/${id}`,
                 bearer_token_env_var: "VOO_AGENT_MCP_TOKEN",
