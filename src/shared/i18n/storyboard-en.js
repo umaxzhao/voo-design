@@ -26,7 +26,7 @@ export default {
   "node.storyboard.seconds": "{seconds}s",
   "node.storyboard.secondsUnit": "s",
   "node.storyboard.shotCount": "Shots",
-  "node.storyboard.totalDuration": "Total length",
+  "node.storyboard.totalDuration": "Duration",
   "node.storyboard.aspectRatio": "Aspect ratio",
   "node.storyboard.style": "Style",
   "node.storyboard.stylePlaceholder": "Visual style for every shot",
@@ -41,7 +41,7 @@ export default {
   "node.storyboard.sheetMissing": "Run to create the sheet",
   "node.storyboard.sheetPrompt": "Sheet direction",
   "node.storyboard.sheetPromptPlaceholder":
-    "Optional visual direction for the full sheet",
+    "Visual direction (optional)",
   "node.storyboard.duration": "Duration",
   "node.storyboard.action": "Action",
   "node.storyboard.actionPlaceholder": "What happens in this shot",
@@ -53,20 +53,20 @@ export default {
   "node.storyboard.cameraMove": "Camera move",
   "node.storyboard.moveSpeed": "Speed",
   "node.storyboard.hint":
-    "Connect a story Prompt, then split it into shots. Choose shot by shot or render one numbered storyboard sheet first. In sheet mode, each keyframe expands its matching panel and removes motion arrows. Connect Shots to Gen Video for one clip per shot.",
+    "Connect a story Prompt, then split shots. Render individual shots or a numbered sheet. Sheet keyframes expand panels without motion arrows. Connect Shots to Gen Video for a clip per shot.",
   "node.storyboard.error.noStory":
-    "No story. Connect a prompt node with the story text.",
+    "Connect a prompt with story text.",
   "node.storyboard.error.parse":
-    "The reply had no usable shot list. Try splitting again.",
+    "No usable shots. Split again.",
   "node.storyboard.error.splitModelMissing":
     "Choose a text model for splitting shots.",
-  "node.storyboard.error.empty": "The storyboard has no shots.",
+  "node.storyboard.error.empty": "No shots.",
   "node.storyboard.error.keyframeStale":
-    "A keyframe no longer matches its shot. Run the Storyboard node first.",
+    "Keyframe outdated. Run Storyboard again.",
   "node.storyboard.error.sheetIncomplete":
-    "The sheet or a shot image is missing. Run the Storyboard node first.",
+    "Sheet or shot image missing. Run Storyboard again.",
   "node.storyboard.error.sheetStale":
-    "The storyboard changed while its sheet was rendering. Run it again.",
+    "Storyboard changed during rendering. Run again.",
   "agent.skill.storyboardSheet": "Storyboard sheet to film",
   "agent.skill.storyboardSheetDesc":
     "Draw all shots and motion paths on one sheet before expanding frames and video.",

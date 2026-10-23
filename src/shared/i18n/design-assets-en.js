@@ -1,16 +1,16 @@
 export default {
   "designAssets.defaultLayerName": "Generated image",
   "designAssets.mountCall": "Place image in Design",
-  "designAssets.mountResult": "Image placed as an editable layer",
-  "designAssets.error.invalidNodes": "Select an image node and a Design node.",
+  "designAssets.mountResult": "Placed as an editable layer",
+  "designAssets.error.invalidNodes": "Select image and Design nodes.",
   "designAssets.error.invalidSource": "This node cannot output an image.",
-  "designAssets.error.noImage": "Generate or select an image result first.",
+  "designAssets.error.noImage": "Generate or select an image first.",
   "designAssets.error.invalidPlacement":
-    "Image placement must fit inside the Design document.",
+    "Place the image inside the Design document.",
   "designAssets.error.alreadyConnected":
-    "This image is already connected. Edit its existing layer or remove the connection before placing it again.",
+    "Image already connected. Edit its layer or disconnect to place again.",
   "designAssets.error.connectionRefused":
-    "The image could not connect to this Design node.",
+    "Could not connect image to Design.",
   "designAssets.error.mountIncomplete":
-    "The connection was added, but the image layer could not be confirmed.",
+    "Connected, but image placement is unconfirmed.",
 };
