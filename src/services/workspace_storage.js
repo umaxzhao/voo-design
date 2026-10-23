@@ -21,6 +21,28 @@ export function guessCategory(fileName = "") {
   return "web";
 }
 
+/**
+ * Splits a relative workspace id (`Campaign/Hero.voo` or `Hero.voo`) into
+ * its project folder and file name. Absolute Electron paths are left alone
+ * (folder null, name = basename) — those drivers resolve by full path.
+ */
+export function parseWorkspaceRelativeId(fileId) {
+  const raw = String(fileId || "");
+  if (!raw) return { folder: null, name: "" };
+  if (raw.includes("\\") || /^[A-Za-z]:\//.test(raw) || raw.startsWith("/")) {
+    const slash = Math.max(raw.lastIndexOf("/"), raw.lastIndexOf("\\"));
+    return { folder: null, name: slash >= 0 ? raw.slice(slash + 1) : raw };
+  }
+  const slash = raw.indexOf("/");
+  if (slash <= 0) return { folder: null, name: raw };
+  return { folder: raw.slice(0, slash), name: raw.slice(slash + 1) };
+}
+
+/** Relative id for a file living in an optional project folder. */
+export function workspaceRelativeId(name, folder = null) {
+  return folder ? `${folder}/${name}` : name;
+}
+
 export class WorkspaceStorageEngine {
   constructor(forcedDriverType = null) {
     this.driver = this.resolveDriver(forcedDriverType);
@@ -101,6 +123,18 @@ export class WorkspaceStorageEngine {
 
   async createFolder(name) {
     return this.driver.createFolder(name);
+  }
+
+  /**
+   * Moves a file into a project folder, or back to the workspace root when
+   * `folderName` is null. Membership is the physical subdirectory (or the
+   * sandbox `folder` field on the IndexedDB driver).
+   */
+  async moveToFolder(fileIdOrPath, folderName) {
+    if (typeof this.driver.moveToFolder !== "function") {
+      return { ok: false, error: "unsupported" };
+    }
+    return this.driver.moveToFolder(fileIdOrPath, folderName);
   }
 
   async readFileBytes(fileIdOrPath) {

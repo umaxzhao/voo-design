@@ -147,6 +147,19 @@ export class ElectronWorkspaceDriver {
     return res?.ok ? { ok: true, folder: res.folder } : { ok: false, error: res?.error || "failed" };
   }
 
+  /** Moves a file into a project folder, or back to the root when folderName is null. */
+  async moveToFolder(fileIdOrPath, folderName) {
+    if (!this.bridge?.moveToFolder) return { ok: false, error: "unsupported" };
+    const res = await this.bridge.moveToFolder(fileIdOrPath, folderName);
+    if (res?.ok && res.file?.id && res.previousPath) {
+      this._migrateMeta(res.previousPath, res.file.id);
+      this._migrateMeta(fileIdOrPath, res.file.id);
+    }
+    return res?.ok
+      ? { ok: true, file: res.file }
+      : { ok: false, error: res?.error || "failed" };
+  }
+
   async scanFiles(options = {}) {
     if (!this.bridge) return [];
     const res = await this.bridge.scanFiles();
@@ -159,6 +172,7 @@ export class ElectronWorkspaceDriver {
         id: f.id,
         name: f.name,
         path: f.path,
+        folder: f.folder ?? null,
         extension: f.extension,
         size: f.size || 0,
         updatedAt: f.updatedAt || Date.now(),

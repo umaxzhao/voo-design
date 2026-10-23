@@ -3,11 +3,14 @@
  *
  * Extracted from editor_engine.js to isolate contour snapshot deduplication,
  * history tool label mappings, and bitmap pin refreshes.
+ *
+ * In-memory snapshots store the live immutable document reference (structural
+ * sharing across undo entries). String snapshots remain supported for legacy
+ * tests and any external callers that still push JSON.
  */
 
 import {
   NODE_KIND,
-  serialiseDocument,
   deserialiseDocument,
   findNode,
   isGroupNode,
@@ -41,6 +44,24 @@ export const HISTORY_TOOL_NAMES = {
   [TOOL.ERASER]: "editor.history.entry.eraser",
   [TOOL.GRADIENT]: "editor.history.entry.gradient",
 };
+
+function collectAssetIds(candidate, ids) {
+  for (const node of candidate?.nodes ?? []) {
+    if (node.imageId) ids.add(node.imageId);
+    if (node.maskId) ids.add(node.maskId);
+  }
+}
+
+function parseSnapshot(snapshot) {
+  if (!snapshot) return null;
+  if (typeof snapshot === "object") return snapshot;
+  if (typeof snapshot !== "string") return null;
+  try {
+    return JSON.parse(snapshot);
+  } catch {
+    return null;
+  }
+}
 
 export function createEngineHistoryState({
   getDoc,
@@ -79,36 +100,26 @@ export function createEngineHistoryState({
       }
       savedSelection = { ...pixelSelection, contours: undefined, contoursRef };
     }
+    // Live document reference: edits replace `doc` immutably, so prior history
+    // entries keep sharing unchanged node objects without JSON cloning.
     const state = {
-      doc: serialiseDocument(getDoc()),
+      doc: getDoc(),
       pixelSelection: savedSelection,
-      selectedIds: selection?.getIds?.() ?? [],
+      selectedIds: [...(selection?.getIds?.() ?? [])],
     };
     validateEditorDocumentSnapshot("design", state);
-    return JSON.stringify(state);
+    return state;
   }
 
   function refreshBitmapCachePins() {
     const ids = new Set();
-    const collect = (candidate) => {
-      for (const node of candidate?.nodes ?? []) {
-        if (node.imageId) ids.add(node.imageId);
-        if (node.maskId) ids.add(node.maskId);
-      }
-    };
-    collect(getDoc());
-    // Only parse and pin recent history snapshots (up to 10 steps) to avoid parsing 50 snapshots
-    // on every edit and to allow LRU eviction of images deleted long ago. Older snapshots restore
-    // on-demand via cache.preload(nodes).
-    const snapshots = history.getSnapshots();
-    const recentSnapshots = snapshots.slice(-10);
-    for (const snapshot of recentSnapshots) {
-      try {
-        const raw = JSON.parse(snapshot);
-        collect(raw?.doc ?? raw);
-      } catch {
-        // A corrupt history snapshot is ignored by restore too.
-      }
+    collectAssetIds(getDoc(), ids);
+    // Object snapshots are cheap to walk; pin every history-referenced asset so
+    // undo/redo never races LRU eviction. Dropped entries fall out of the union.
+    for (const snapshot of history.getSnapshots()) {
+      const raw = parseSnapshot(snapshot);
+      if (!raw) continue;
+      collectAssetIds(raw?.doc ?? raw, ids);
     }
     cache.setPinnedKeys(ids);
   }
@@ -119,25 +130,44 @@ export function createEngineHistoryState({
     let parsedDoc = null;
     let parsedSelection = null;
     let parsedSelectedIds = null;
-    try {
-      const raw = JSON.parse(snapshot);
-      if (raw && typeof raw === "object" && raw.doc) {
-        parsedDoc = deserialiseDocument(raw.doc);
-        parsedSelection = raw.pixelSelection ?? null;
+
+    if (typeof snapshot === "object") {
+      const raw = snapshot;
+      if (raw.doc && typeof raw.doc === "object") {
+        // Already a live (or previously restored) document — keep the reference.
+        parsedDoc = raw.doc;
+        parsedSelection = raw.pixelSelection
+          ? { ...raw.pixelSelection }
+          : null;
         if (Array.isArray(raw.selectedIds)) {
           parsedSelectedIds = raw.selectedIds;
         }
-        if (parsedSelection?.contoursRef) {
-          parsedSelection.contours =
-            contourSnapshots.get(parsedSelection.contoursRef) ?? [];
-          delete parsedSelection.contoursRef;
-        }
-      } else {
-        parsedDoc = deserialiseDocument(raw);
       }
-    } catch {
-      return;
+    } else {
+      try {
+        const raw = JSON.parse(snapshot);
+        if (raw && typeof raw === "object" && raw.doc) {
+          parsedDoc = deserialiseDocument(raw.doc);
+          parsedSelection = raw.pixelSelection
+            ? { ...raw.pixelSelection }
+            : null;
+          if (Array.isArray(raw.selectedIds)) {
+            parsedSelectedIds = raw.selectedIds;
+          }
+        } else {
+          parsedDoc = deserialiseDocument(raw);
+        }
+      } catch {
+        return;
+      }
     }
+
+    if (parsedSelection?.contoursRef) {
+      parsedSelection.contours =
+        contourSnapshots.get(parsedSelection.contoursRef) ?? [];
+      delete parsedSelection.contoursRef;
+    }
+
     if (!parsedDoc) return;
     getTextTools?.()?.api?.endTextEdit?.(undefined);
     getMaskTools?.()?.onDocRestored?.();

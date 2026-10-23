@@ -1,0 +1,46 @@
+{
+ "evidence_id": "ev_cba470e08e63316e260901be9879f05afda6dbe1b6f40e5e013e9791a7db9664",
+ "subject": {
+  "name": "figma",
+  "digest": {
+   "sha256": "7ec69a50a895e3da6f1d02042eaa7b57c4050562da910131724caca829ff4958"
+  },
+  "local_path": "/private/tmp/apps/figma",
+  "format": "directory",
+  "architecture": null
+ },
+ "statistics": {
+  "relevant_files": 74,
+  "nested_asar_containers": 0,
+  "text_bytes_read": 8549278,
+  "invalid_utf8_files": 0,
+  "parsed_javascript_files": 45,
+  "visited_ast_nodes": 1801663,
+  "findings": 1546,
+  "modules": 14,
+  "parse_failures": 0
+ },
+ "summary": {
+  "browser_windows": 4,
+  "explicit_web_preferences": 10,
+  "preload_entrypoints": 2,
+  "context_bridge_apis": 8,
+  "exposed_api_members": 75,
+  "ipc": {
+   "operations": 57,
+   "literal_channels": 14,
+   "dynamic_channel_operations": 39,
+   "renderer_transmissions": 30,
+   "renderer_listeners": 6,
+   "main_handlers": 21,
+   "paired_renderer_transmissions": 3,
+   "ambiguous_renderer_transmissions": 0,
+   "unpaired_literal_renderer_transmissions": 4
+  },
+  "sender_validation_observations": 1,
+  "utility_processes": 1,
+  "resolved_utility_entrypoints": 1,
+  "native_addon_bindings": 1,
+  "resolved_native_addon_bindings": 0
+ }
+}

@@ -4,7 +4,11 @@
  * in IndexedDB, manages .trash/ subfolder emulation, and monitors file iteration.
  */
 
-import { guessCategory } from "../workspace_storage.js";
+import {
+  guessCategory,
+  parseWorkspaceRelativeId,
+  workspaceRelativeId,
+} from "../workspace_storage.js";
 
 const FSA_DB_NAME = "voo_fsa_workspace";
 const FSA_STORE_HANDLES = "handles";
@@ -93,6 +97,15 @@ export class WebFsaWorkspaceDriver {
   _deleteMeta(name) {
     const meta = this._loadMetadata();
     delete meta[name];
+    this._saveMetadata(meta);
+  }
+
+  _migrateMeta(oldId, newId) {
+    if (!oldId || !newId || oldId === newId) return;
+    const meta = this._loadMetadata();
+    if (!meta[oldId]) return;
+    meta[newId] = meta[oldId];
+    delete meta[oldId];
     this._saveMetadata(meta);
   }
 
@@ -232,6 +245,94 @@ export class WebFsaWorkspaceDriver {
     }
   }
 
+  async _getProjectDir(folderName, create = false) {
+    if (!this.dirHandle) return null;
+    if (!folderName) return this.dirHandle;
+    try {
+      return await this.dirHandle.getDirectoryHandle(folderName, { create });
+    } catch {
+      return null;
+    }
+  }
+
+  async _resolveFileHandle(fileId) {
+    const { folder, name } = parseWorkspaceRelativeId(fileId);
+    const dir = await this._getProjectDir(folder, false);
+    if (!dir || !name) return null;
+    try {
+      return { dir, name, folder, handle: await dir.getFileHandle(name) };
+    } catch {
+      return null;
+    }
+  }
+
+  async _moveHandle(fileHandle, sourceDir, destDir, targetName) {
+    if (typeof fileHandle.move === "function") {
+      try {
+        await fileHandle.move(destDir, targetName);
+        return;
+      } catch {
+        // Fall through to copy + delete when the destination form is unsupported.
+      }
+    }
+    const file = await fileHandle.getFile();
+    const bytes = await file.arrayBuffer();
+    const next = await destDir.getFileHandle(targetName, { create: true });
+    const writable = await next.createWritable();
+    await writable.write(bytes);
+    await writable.close();
+    await sourceDir.removeEntry(fileHandle.name);
+  }
+
+  async _uniqueName(dir, baseName) {
+    try {
+      await dir.getFileHandle(baseName);
+    } catch {
+      return baseName;
+    }
+    const match = baseName.match(/^(.*)\.([a-zA-Z0-9]+)$/);
+    const stem = match ? match[1] : baseName;
+    const ext = match ? match[2] : "voo";
+    let n = 2;
+    while (true) {
+      const candidate = `${stem}-${n}.${ext}`;
+      try {
+        await dir.getFileHandle(candidate);
+        n += 1;
+      } catch {
+        return candidate;
+      }
+    }
+  }
+
+  async _scanDirFiles(dirHandle, folder, meta, files) {
+    for await (const [name, entry] of dirHandle.entries()) {
+      if (entry.kind !== "file") continue;
+      const match = name.toLowerCase().match(/\.(voo|fig|psd|svg)$/);
+      if (!match) continue;
+      try {
+        const f = await entry.getFile();
+        const id = workspaceRelativeId(name, folder);
+        const m = meta[id] || meta[name] || {};
+        files.push({
+          id,
+          name,
+          path: null,
+          folder,
+          extension: match[1],
+          size: f.size,
+          updatedAt: f.lastModified,
+          createdAt: f.lastModified,
+          starred: Boolean(m.starred),
+          trashed: false,
+          trashedAt: null,
+          category: m.category || guessCategory(name),
+          preview: m.preview || null,
+        });
+      } catch {}
+    }
+  }
+
   async scanFiles(options = {}) {
     if (!this.dirHandle) return [];
     const hasPerm = await this._verifyPermission(this.dirHandle, false);
@@ -240,35 +341,15 @@ export class WebFsaWorkspaceDriver {
     const meta = this._loadMetadata();
     const files = [];
 
-    // 1. Scan active root files
+    // 1. Root files, then one level of project folders.
     try {
+      await this._scanDirFiles(this.dirHandle, null, meta, files);
       for await (const [name, entry] of this.dirHandle.entries()) {
-        if (entry.kind === "file") {
-          const match = name.toLowerCase().match(/\.(voo|fig|psd|svg)$/);
-          if (match) {
-            try {
-              const f = await entry.getFile();
-              const m = meta[name] || {};
-              files.push({
-                id: name,
-                name,
-                path: null,
-                extension: match[1],
-                size: f.size,
-                updatedAt: f.lastModified,
-                createdAt: f.lastModified,
-                starred: Boolean(m.starred),
-                trashed: false,
-                trashedAt: null,
-                category: m.category || guessCategory(name),
-                preview: m.preview || null,
-              });
-            } catch {}
-          }
-        }
+        if (entry.kind !== "directory" || name.startsWith(".") || name.startsWith("__voo_")) continue;
+        await this._scanDirFiles(entry, name, meta, files);
       }
     } catch (err) {
-      console.warn("[WebFsaDriver] Failed to iterate root folder:", err);
+      console.warn("[WebFsaDriver] Failed to iterate workspace folder:", err);
     }
 
     // 2. Scan virtual .trash/ directory
@@ -347,19 +428,69 @@ export class WebFsaWorkspaceDriver {
     if (!this.dirHandle) throw new Error("No workspace directory chosen");
     await this._verifyPermission(this.dirHandle, false);
 
-    let fileEntry = null;
-    try {
-      fileEntry = await this.dirHandle.getFileHandle(fileIdOrName);
-    } catch {
+    const resolved = await this._resolveFileHandle(fileIdOrName);
+    let fileEntry = resolved?.handle || null;
+    if (!fileEntry) {
+      const { name } = parseWorkspaceRelativeId(fileIdOrName);
       const trashDir = await this._getTrashDir(false);
-      if (trashDir) {
-        fileEntry = await trashDir.getFileHandle(fileIdOrName);
+      if (trashDir && name) {
+        try {
+          fileEntry = await trashDir.getFileHandle(name);
+        } catch {}
       }
     }
     if (!fileEntry) throw new Error(`File ${fileIdOrName} not found`);
     const file = await fileEntry.getFile();
     const buf = await file.arrayBuffer();
     return new Uint8Array(buf);
+  }
+
+  async moveToFolder(fileIdOrName, folderName) {
+    if (!this.dirHandle) return { ok: false, error: "No workspace chosen" };
+    const hasPerm = await this._verifyPermission(this.dirHandle, true);
+    if (!hasPerm) return { ok: false, error: "permission_denied" };
+
+    const safeFolder =
+      folderName == null || folderName === ""
+        ? null
+        : String(folderName).trim();
+    if (
+      folderName &&
+      (!safeFolder || safeFolder.startsWith(".") || /[/\\:*?"<>|]/.test(safeFolder))
+    ) {
+      return { ok: false, error: "invalid_name" };
+    }
+
+    const resolved = await this._resolveFileHandle(fileIdOrName);
+    if (!resolved) return { ok: false, error: "file_not_found" };
+    if ((resolved.folder || null) === safeFolder) {
+      return {
+        ok: true,
+        file: {
+          id: workspaceRelativeId(resolved.name, safeFolder),
+          name: resolved.name,
+          folder: safeFolder,
+        },
+      };
+    }
+
+    const destDir = await this._getProjectDir(safeFolder, Boolean(safeFolder));
+    if (!destDir) return { ok: false, error: "folder_not_found" };
+
+    try {
+      const targetName = await this._uniqueName(destDir, resolved.name);
+      await this._moveHandle(resolved.handle, resolved.dir, destDir, targetName);
+      const nextId = workspaceRelativeId(targetName, safeFolder);
+      this._migrateMeta(fileIdOrName, nextId);
+      this._migrateMeta(resolved.name, nextId);
+      this._emitChange("change", nextId);
+      return {
+        ok: true,
+        file: { id: nextId, name: targetName, folder: safeFolder },
+      };
+    } catch (err) {
+      return { ok: false, error: err.message || "move_failed" };
+    }
   }
 
   async writeFileBytes(name, bytes, options = {}) {
@@ -400,67 +531,51 @@ export class WebFsaWorkspaceDriver {
     return fileInfo;
   }
 
-  async renameFile(oldName, newName) {
+  async renameFile(fileId, newName) {
     if (!this.dirHandle) return { ok: false, error: "No workspace chosen" };
     const hasPerm = await this._verifyPermission(this.dirHandle, true);
     if (!hasPerm) return { ok: false, error: "Permission denied" };
 
+    const resolved = await this._resolveFileHandle(fileId);
+    if (!resolved) return { ok: false, error: "File not found" };
     const targetName = newName.includes(".") ? newName : `${newName}.voo`;
     try {
-      if (targetName !== oldName) {
+      if (targetName !== resolved.name) {
         try {
-          await this.dirHandle.getFileHandle(targetName);
+          await resolved.dir.getFileHandle(targetName);
           return { ok: false, error: "A file with this name already exists" };
         } catch {
-          // File does not exist yet, proceed
+          // Free name.
         }
       }
-
-      const oldHandle = await this.dirHandle.getFileHandle(oldName);
-      if (typeof oldHandle.move === "function") {
-        await oldHandle.move(targetName);
-      } else {
-        const file = await oldHandle.getFile();
-        const bytes = await file.arrayBuffer();
-        const newHandle = await this.dirHandle.getFileHandle(targetName, { create: true });
-        const writable = await newHandle.createWritable();
-        await writable.write(bytes);
-        await writable.close();
-        await this.dirHandle.removeEntry(oldName);
-      }
-
-      const meta = this._loadMetadata();
-      if (meta[oldName]) {
-        meta[targetName] = meta[oldName];
-        delete meta[oldName];
-        this._saveMetadata(meta);
-      }
-      this._emitChange("change", targetName);
-      return { ok: true, newName: targetName, file: { id: targetName, name: targetName } };
+      await this._moveHandle(resolved.handle, resolved.dir, resolved.dir, targetName);
+      const nextId = workspaceRelativeId(targetName, resolved.folder);
+      this._migrateMeta(fileId, nextId);
+      this._emitChange("change", nextId);
+      return {
+        ok: true,
+        newName: targetName,
+        file: { id: nextId, name: targetName, folder: resolved.folder },
+      };
     } catch (err) {
       return { ok: false, error: err.message };
     }
   }
 
-  async moveToTrash(name) {
+  async moveToTrash(fileId) {
     if (!this.dirHandle) return { ok: false, error: "No workspace chosen" };
     const hasPerm = await this._verifyPermission(this.dirHandle, true);
     if (!hasPerm) return { ok: false, error: "Permission denied" };
 
     try {
+      const resolved = await this._resolveFileHandle(fileId);
+      if (!resolved) return { ok: false, error: "File not found" };
       const trashDir = await this._getTrashDir(true);
-      const fileHandle = await this.dirHandle.getFileHandle(name);
-      const file = await fileHandle.getFile();
-      const bytes = await file.arrayBuffer();
-
-      const trashFileHandle = await trashDir.getFileHandle(name, { create: true });
-      const writable = await trashFileHandle.createWritable();
-      await writable.write(bytes);
-      await writable.close();
-
-      await this.dirHandle.removeEntry(name);
-      this._setMeta(name, { trashed: true, trashedAt: Date.now() });
-      this._emitChange("change", name);
+      const trashName = await this._uniqueName(trashDir, resolved.name);
+      await this._moveHandle(resolved.handle, resolved.dir, trashDir, trashName);
+      this._setMeta(trashName, { trashed: true, trashedAt: Date.now() });
+      this._deleteMeta(fileId);
+      this._emitChange("change", trashName);
       return { ok: true };
     } catch (err) {
       return { ok: false, error: err.message };

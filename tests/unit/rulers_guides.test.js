@@ -311,6 +311,7 @@ describe("snapping option plumbing", () => {
       snapToObjects: true,
       snapToGuides: true,
       snapToGrid: false,
+      activeSnap: false,
       grid: { type: "rectangular", size: 32 },
     });
     expect(
@@ -318,12 +319,14 @@ describe("snapping option plumbing", () => {
         grid: { type: "isometric", size: 24 },
         snapToGrid: true,
         showGuides: false,
+        activeSnap: true,
       }),
     ).toEqual({
       enabled: true,
       snapToObjects: true,
       snapToGuides: false,
       snapToGrid: true,
+      activeSnap: true,
       grid: { type: "isometric", size: 24 },
     });
     // A garbage grid size falls back instead of producing NaN snapping.

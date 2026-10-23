@@ -1,0 +1,38 @@
+--- electron/preload.cjs
++++ electron/preload.cjs
+@@ -6,6 +6,21 @@
+   return () => ipcRenderer.removeListener(channel, listener);
+ }
+ 
++const workspaceApi = {
++  getConfig: () => ipcRenderer.invoke("workspace:getConfig"),
++  chooseDirectory: () => ipcRenderer.invoke("workspace:chooseDir"),
++  setDirectory: (targetPath) => ipcRenderer.invoke("workspace:setDir", targetPath),
++  getDefaultDirectory: () => ipcRenderer.invoke("workspace:getDefaultDirectory"),
++  scanFiles: () => ipcRenderer.invoke("workspace:scanFiles"),
++  readFileBytes: (filePath) => ipcRenderer.invoke("workspace:readFileBytes", filePath),
++  writeFileBytes: (name, bytes, options) => ipcRenderer.invoke("workspace:writeFileBytes", { name, bytes, ...options }),
++  renameFile: (filePath, newName) => ipcRenderer.invoke("workspace:renameFile", { filePath, newName }),
++  moveToTrash: (filePath) => ipcRenderer.invoke("workspace:moveToTrash", filePath),
++  deletePermanently: (filePath) => ipcRenderer.invoke("workspace:deletePermanently", filePath),
++  revealInFinder: (filePath) => ipcRenderer.invoke("workspace:revealInFinder", filePath),
++  onChanged: (handler) => subscribe("workspace:changed", handler),
++};
++
+ contextBridge.exposeInMainWorld("vooDesktop", {
+   platform: process.platform,
+   localCli: {
+@@ -16,6 +31,7 @@
+     checkStatus: (cliId, options) => ipcRenderer.invoke("voo:cli-status", cliId, options),
+     onText: (handler) => subscribe("voo:codex-text", handler),
+   },
++  workspace: workspaceApi,
+ });
+ 
+ contextBridge.exposeInMainWorld("electronAPI", {
+@@ -32,6 +48,7 @@
+     ipcRenderer.on("menu:action", handler);
+     return () => ipcRenderer.removeListener("menu:action", handler);
+   },
++  workspace: workspaceApi,
+ });

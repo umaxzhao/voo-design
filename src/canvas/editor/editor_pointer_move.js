@@ -365,10 +365,13 @@ export function createPointerMoveDispatcher({
                 zoom,
                 // Grid snapping is unreachable without this: the flag lives in
                 // settings and the grid overlay supplies type/size.
-                options: editorSnapOptions({
-                  grid: api.getGrid?.() ?? null,
-                  activeSnap: Boolean(gesture.activeSnap),
-                }),
+                options: {
+                  ...editorSnapOptions({
+                    grid: api.getGrid?.() ?? null,
+                    activeSnap: Boolean(gesture.activeSnap),
+                  }),
+                  spatialIndex: api.getSpatialIndex?.() ?? visibleDoc.spatialIndex,
+                },
               });
           gesture.activeSnap = Boolean(snap.guides && snap.guides.length > 0);
           const correctionX = snap.x - bounds.x;

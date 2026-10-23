@@ -1,0 +1,948 @@
+{
+ "ipc-channel": [
+  {
+   "kind": "ipc-channel",
+   "label": "\"web:\"+c",
+   "source": "web_app_binding_renderer.js",
+   "start_line": 23,
+   "properties": {
+    "side": "renderer",
+    "operation": "send-sync",
+    "mode": "send",
+    "channel": null,
+    "channel_expression": "\"web:\"+c",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "Xb(\"online\")",
+   "source": "main.js",
+   "start_line": 139,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "Xb(\"online\")",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "\"web:\"+r",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "\"web:\"+r",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "c",
+   "source": "web_app_binding_renderer.js",
+   "start_line": 23,
+   "properties": {
+    "side": "renderer",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "c",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "`ipc:${a}:${p}`",
+   "source": "detached_window_binding_renderer.js",
+   "start_line": 1,
+   "properties": {
+    "side": "renderer",
+    "operation": "invoke",
+    "mode": "invoke",
+    "channel": null,
+    "channel_expression": "`ipc:${a}:${p}`",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "i(o)",
+   "source": "loading_screen/loading_screen_binding_renderer.js",
+   "start_line": 1,
+   "properties": {
+    "side": "renderer",
+    "operation": "send",
+    "mode": "send",
+    "channel": null,
+    "channel_expression": "i(o)",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "o",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "handle",
+    "mode": "handle",
+    "channel": null,
+    "channel_expression": "o",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "web-promise-response:handlePromiseReject",
+   "source": "main.js",
+   "start_line": 374,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": "web-promise-response:handlePromiseReject",
+    "channel_expression": null,
+    "resolution": "literal"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "r",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "r",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "shell:getAgentStatus",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "handle",
+    "mode": "handle",
+    "channel": "shell:getAgentStatus",
+    "channel_expression": null,
+    "resolution": "literal"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "shell:restartAgent",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "handle",
+    "mode": "handle",
+    "channel": "shell:restartAgent",
+    "channel_expression": null,
+    "resolution": "literal"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "web-promise-response:handlePromiseResolve",
+   "source": "main.js",
+   "start_line": 374,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": "web-promise-response:handlePromiseResolve",
+    "channel_expression": null,
+    "resolution": "literal"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "\"web:\"+a",
+   "source": "main.js",
+   "start_line": 374,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "\"web:\"+a",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "\"shell:\"+e",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "\"shell:\"+e",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "c",
+   "source": "web_app_binding_renderer.js",
+   "start_line": 23,
+   "properties": {
+    "side": "renderer",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "c",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "n(\"loadComponentDescriptor\")",
+   "source": "make_local/make_local_browser_preview_preload.js",
+   "start_line": 97,
+   "properties": {
+    "side": "renderer",
+    "operation": "invoke",
+    "mode": "invoke",
+    "channel": null,
+    "channel_expression": "n(\"loadComponentDescriptor\")",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "n(\"invoke\")",
+   "source": "make_local/make_local_browser_preview_preload.js",
+   "start_line": 97,
+   "properties": {
+    "side": "renderer",
+    "operation": "invoke",
+    "mode": "invoke",
+    "channel": null,
+    "channel_expression": "n(\"invoke\")",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "Xb(\"loading-animation-ended\")",
+   "source": "main.js",
+   "start_line": 139,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "Xb(\"loading-animation-ended\")",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "makeLocalBrowserPreview:invoke",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "handle",
+    "mode": "handle",
+    "channel": "makeLocalBrowserPreview:invoke",
+    "channel_expression": null,
+    "resolution": "literal"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "\"web:\"+c",
+   "source": "web_app_binding_renderer.js",
+   "start_line": 23,
+   "properties": {
+    "side": "renderer",
+    "operation": "invoke",
+    "mode": "invoke",
+    "channel": null,
+    "channel_expression": "\"web:\"+c",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "`ipc:${a}:getInitData`",
+   "source": "detached_window_binding_renderer.js",
+   "start_line": 1,
+   "properties": {
+    "side": "renderer",
+    "operation": "send-sync",
+    "mode": "send",
+    "channel": null,
+    "channel_expression": "`ipc:${a}:getInitData`",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "notificationReceived",
+   "source": "main.js",
+   "start_line": 374,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": "notificationReceived",
+    "channel_expression": null,
+    "resolution": "literal"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "\"web-promise-response:\"+b",
+   "source": "web_app_binding_renderer.js",
+   "start_line": 23,
+   "properties": {
+    "side": "renderer",
+    "operation": "send",
+    "mode": "send",
+    "channel": null,
+    "channel_expression": "\"web-promise-response:\"+b",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "\"web:\"+c",
+   "source": "web_app_binding_renderer.js",
+   "start_line": 23,
+   "properties": {
+    "side": "renderer",
+    "operation": "send",
+    "mode": "send",
+    "channel": null,
+    "channel_expression": "\"web:\"+c",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "i",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "i",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "Xb(\"retry-button-pressed\")",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "Xb(\"retry-button-pressed\")",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "makeLocalBrowserPreview:loadComponentDescriptor",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "handle",
+    "mode": "handle",
+    "channel": "makeLocalBrowserPreview:loadComponentDescriptor",
+    "channel_expression": null,
+    "resolution": "literal"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "_O(sG)",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "_O(sG)",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "\"web-callback:\"+a",
+   "source": "main.js",
+   "start_line": 374,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "\"web-callback:\"+a",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "web-cancel-callback",
+   "source": "web_app_binding_renderer.js",
+   "start_line": 23,
+   "properties": {
+    "side": "renderer",
+    "operation": "send",
+    "mode": "send",
+    "channel": "web-cancel-callback",
+    "channel_expression": null,
+    "resolution": "literal"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "\"web-callback:\"+v",
+   "source": "web_app_binding_renderer.js",
+   "start_line": 23,
+   "properties": {
+    "side": "renderer",
+    "operation": "send",
+    "mode": "send",
+    "channel": null,
+    "channel_expression": "\"web-callback:\"+v",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "\"web:\"+a",
+   "source": "main.js",
+   "start_line": 374,
+   "properties": {
+    "side": "main",
+    "operation": "handle",
+    "mode": "handle",
+    "channel": null,
+    "channel_expression": "\"web:\"+a",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "n(\"message\")",
+   "source": "make_local/make_local_browser_preview_preload.js",
+   "start_line": 97,
+   "properties": {
+    "side": "renderer",
+    "operation": "send",
+    "mode": "send",
+    "channel": null,
+    "channel_expression": "n(\"message\")",
+    "resolution": "dynamic"
+   }
+  },
+  {
+   "kind": "ipc-channel",
+   "label": "Xb(\"offline\")",
+   "source": "main.js",
+   "start_line": 139,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "Xb(\"offline\")",
+    "resolution": "dynamic"
+   }
+  }
+ ],
+ "ipc-handler": [
+  {
+   "kind": "ipc-handler",
+   "label": null,
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "r"
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": null,
+   "source": "main.js",
+   "start_line": 374,
+   "properties": {
+    "side": "main",
+    "operation": "handle",
+    "mode": "handle",
+    "channel": null,
+    "channel_expression": "\"web:\"+a"
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": null,
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "\"web:\"+r"
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": "makeLocalBrowserPreview:loadComponentDescriptor",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "handle",
+    "mode": "handle",
+    "channel": "makeLocalBrowserPreview:loadComponentDescriptor",
+    "channel_expression": null
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": null,
+   "source": "main.js",
+   "start_line": 139,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "Xb(\"loading-animation-ended\")"
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": null,
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "_O(sG)"
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": null,
+   "source": "main.js",
+   "start_line": 139,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "Xb(\"online\")"
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": null,
+   "source": "web_app_binding_renderer.js",
+   "start_line": 23,
+   "properties": {
+    "side": "renderer",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "c"
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": "web-promise-response:handlePromiseReject",
+   "source": "main.js",
+   "start_line": 374,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": "web-promise-response:handlePromiseReject",
+    "channel_expression": null
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": null,
+   "source": "main.js",
+   "start_line": 374,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "\"web:\"+a"
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": "notificationReceived",
+   "source": "main.js",
+   "start_line": 374,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": "notificationReceived",
+    "channel_expression": null
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": "sender-id validation candidate",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {}
+  },
+  {
+   "kind": "ipc-handler",
+   "label": "web-promise-response:handlePromiseResolve",
+   "source": "main.js",
+   "start_line": 374,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": "web-promise-response:handlePromiseResolve",
+    "channel_expression": null
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": "web-cancel-callback",
+   "source": "main.js",
+   "start_line": 374,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": "web-cancel-callback",
+    "channel_expression": null
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": null,
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "i"
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": null,
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "handle",
+    "mode": "handle",
+    "channel": null,
+    "channel_expression": "o"
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": "makeLocalBrowserPreview:invoke",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "handle",
+    "mode": "handle",
+    "channel": "makeLocalBrowserPreview:invoke",
+    "channel_expression": null
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": null,
+   "source": "main.js",
+   "start_line": 139,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "Xb(\"offline\")"
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": "shell:getAgentStatus",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "handle",
+    "mode": "handle",
+    "channel": "shell:getAgentStatus",
+    "channel_expression": null
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": null,
+   "source": "web_app_binding_renderer.js",
+   "start_line": 23,
+   "properties": {
+    "side": "renderer",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "c"
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": null,
+   "source": "main.js",
+   "start_line": 374,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "\"web-callback:\"+a"
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": null,
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "on",
+    "mode": "listen",
+    "channel": null,
+    "channel_expression": "Xb(\"retry-button-pressed\")"
+   }
+  },
+  {
+   "kind": "ipc-handler",
+   "label": "shell:restartAgent",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "side": "main",
+    "operation": "handle",
+    "mode": "handle",
+    "channel": "shell:restartAgent",
+    "channel_expression": null
+   }
+  }
+ ],
+ "context-bridge-api": [
+  {
+   "kind": "context-bridge-api",
+   "label": "__figmaCodeConnect",
+   "source": "make_local/make_local_browser_preview_preload.js",
+   "start_line": 97,
+   "properties": {}
+  },
+  {
+   "kind": "context-bridge-api",
+   "label": null,
+   "source": "detached_window_binding_renderer.js",
+   "start_line": 1,
+   "properties": {}
+  },
+  {
+   "kind": "context-bridge-api",
+   "label": "__figmaPreviewIpc",
+   "source": "make_local/make_local_browser_preview_preload.js",
+   "start_line": 97,
+   "properties": {}
+  },
+  {
+   "kind": "context-bridge-api",
+   "label": "loadingScreenAPI",
+   "source": "loading_screen/loading_screen_binding_renderer.js",
+   "start_line": 1,
+   "properties": {}
+  }
+ ],
+ "browser-window": [
+  {
+   "kind": "browser-window",
+   "label": "BrowserWindow@383:21525-383:21942",
+   "source": "main.js",
+   "start_line": 383,
+   "properties": {}
+  },
+  {
+   "kind": "browser-window",
+   "label": "BrowserWindow@133:68634-133:68953",
+   "source": "main.js",
+   "start_line": 133,
+   "properties": {}
+  },
+  {
+   "kind": "browser-window",
+   "label": "BrowserWindow@383:8160-383:8180",
+   "source": "main.js",
+   "start_line": 383,
+   "properties": {}
+  },
+  {
+   "kind": "browser-window",
+   "label": "BrowserWindow@139:6666-139:6694",
+   "source": "main.js",
+   "start_line": 139,
+   "properties": {}
+  }
+ ],
+ "electron-preload": [
+  {
+   "kind": "electron-preload",
+   "label": "detached_window_binding_renderer.js",
+   "source": "main.js",
+   "start_line": 415,
+   "properties": {
+    "declared_path": "detached_window_binding_renderer.js",
+    "resolved_path": "detached_window_binding_renderer.js"
+   }
+  },
+  {
+   "kind": "electron-preload",
+   "label": "tray/tray_binding_renderer.js",
+   "source": "main.js",
+   "start_line": 383,
+   "properties": {
+    "declared_path": "tray/tray_binding_renderer.js",
+    "resolved_path": "tray/tray_binding_renderer.js"
+   }
+  },
+  {
+   "kind": "electron-preload",
+   "label": "shell_app_binding_renderer.js",
+   "source": "main.js",
+   "start_line": 133,
+   "properties": {
+    "declared_path": "shell_app_binding_renderer.js",
+    "resolved_path": "shell_app_binding_renderer.js"
+   }
+  },
+  {
+   "kind": "electron-preload",
+   "label": "overlay_window_binding_renderer.js",
+   "source": "main.js",
+   "start_line": 415,
+   "properties": {
+    "declared_path": "overlay_window_binding_renderer.js",
+    "resolved_path": "overlay_window_binding_renderer.js"
+   }
+  },
+  {
+   "kind": "electron-preload",
+   "label": "make_local/make_local_browser_preview_preload.js",
+   "source": "main.js",
+   "start_line": 388,
+   "properties": {
+    "declared_path": "make_local/make_local_browser_preview_preload.js",
+    "resolved_path": "make_local/make_local_browser_preview_preload.js"
+   }
+  },
+  {
+   "kind": "electron-preload",
+   "label": "loading_screen/loading_screen_binding_renderer.js",
+   "source": "main.js",
+   "start_line": 133,
+   "properties": {
+    "declared_path": "loading_screen/loading_screen_binding_renderer.js",
+    "resolved_path": "loading_screen/loading_screen_binding_renderer.js"
+   }
+  },
+  {
+   "kind": "electron-preload",
+   "label": "web_app_binding_renderer.js",
+   "source": "main.js",
+   "start_line": 415,
+   "properties": {
+    "declared_path": "web_app_binding_renderer.js",
+    "resolved_path": "web_app_binding_renderer.js"
+   }
+  },
+  {
+   "kind": "electron-preload",
+   "label": "popout_binding_renderer.js",
+   "source": "main.js",
+   "start_line": 415,
+   "properties": {
+    "declared_path": "popout_binding_renderer.js",
+    "resolved_path": "popout_binding_renderer.js"
+   }
+  }
+ ],
+ "worker": [
+  {
+   "kind": "worker",
+   "label": null,
+   "source": "main.js",
+   "start_line": 57,
+   "properties": {
+    "resolved_path": null
+   }
+  },
+  {
+   "kind": "worker",
+   "label": null,
+   "source": "main.js",
+   "start_line": 47,
+   "properties": {
+    "resolved_path": null
+   }
+  }
+ ],
+ "electron-utility": [
+  {
+   "kind": "electron-utility",
+   "label": "bindings_worker.js",
+   "source": "main.js",
+   "start_line": 441,
+   "properties": {
+    "service_name": null
+   }
+  }
+ ]
+}

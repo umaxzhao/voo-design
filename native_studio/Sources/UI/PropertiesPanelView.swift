@@ -1,0 +1,3228 @@
+//
+//  PropertiesPanelView.swift
+//  native_studio
+//
+//  Web-parity "PROPERTIES" inspector card content.
+//  Matches VOO Design's live web editor right-hand inspector:
+//    PROPERTIES header + icon buttons
+//    COLOR     — HSV hue wheel / SV triangle + fill swatch + hex pill + eyedropper
+//    SHAPE     — corner radius scrub field (shape-like nodes only)
+//    TRANSFORM — X/Y/W/H + R/CR compact pills (native functionality retained)
+//    APPEARANCE— fill/stroke hex pills, stroke width, opacity, blend mode
+//
+//  The floating card chrome itself is drawn by FloatingPropertiesCardView.
+//  Copyright © 2026 VOO Design. All rights reserved.
+//
+
+import AppKit
+import CoreGraphics
+import Foundation
+
+// MARK: - Card Geometry Metrics (256 × 520 scrollable content box)
+
+public struct PropertiesPanelMetrics {
+    /// Scroll-document width (the floating web card itself is 256pt wide, p12).
+    public static let width: CGFloat = 256
+    public static let contentInset: CGFloat = 12
+    public static let contentWidth: CGFloat = 232
+    public static let dividerInset: CGFloat = 12
+    public static let headerDividerY: CGFloat = 46
+    public static let headerTitleTop: CGFloat = 16
+    public static let headerTitleHeight: CGFloat = 20
+    public static let headerIconSize: CGFloat = 21
+    public static let wheelDiameter: CGFloat = 140
+    public static let sectionLabelHeight: CGFloat = 12
+    public static let rowHeight: CGFloat = 24
+}
+
+// MARK: - HSV / Hex Color Math
+
+public enum PropertiesColorMath {
+    /// Standard HSV → RGB (0…1 components). Hue is in degrees 0…<360.
+    public static func rgb(hue: CGFloat, saturation: CGFloat, value: CGFloat) -> (r: CGFloat, g: CGFloat, b: CGFloat) {
+        let h = ((hue.truncatingRemainder(dividingBy: 360)) + 360).truncatingRemainder(dividingBy: 360)
+        let s = min(max(saturation, 0), 1)
+        let v = min(max(value, 0), 1)
+        let c = v * s
+        let x = c * (1 - abs((h / 60).truncatingRemainder(dividingBy: 2) - 1))
+        let m = v - c
+        var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0
+        switch Int(h / 60) % 6 {
+        case 0: r1 = c; g1 = x
+        case 1: r1 = x; g1 = c
+        case 2: g1 = c; b1 = x
+        case 3: g1 = x; b1 = c
+        case 4: r1 = x; b1 = c
+        case 5: r1 = c; b1 = x
+        default: break
+        }
+        return (r1 + m, g1 + m, b1 + m)
+    }
+
+    public static func color(hue: CGFloat, saturation: CGFloat, value: CGFloat) -> NSColor {
+        let rgb = rgb(hue: hue, saturation: saturation, value: value)
+        return NSColor(srgbRed: rgb.r, green: rgb.g, blue: rgb.b, alpha: 1.0)
+    }
+
+    public static func hex(hue: CGFloat, saturation: CGFloat, value: CGFloat) -> String {
+        let rgb = rgb(hue: hue, saturation: saturation, value: value)
+        let r = Int(round(min(max(rgb.r, 0), 1) * 255))
+        let g = Int(round(min(max(rgb.g, 0), 1) * 255))
+        let b = Int(round(min(max(rgb.b, 0), 1) * 255))
+        return String(format: "#%02X%02X%02X", r, g, b)
+    }
+
+    /// Parses #RGB / #RRGGBB strings into normalised HSB. Returns (0, 0, 0) for black / invalid.
+    public static func hsb(fromHex raw: String) -> (hue: CGFloat, saturation: CGFloat, value: CGFloat) {
+        guard let normalized = normalizeHex(raw),
+              let color = NSColor(hexString: normalized) else {
+            return (0, 0, 0)
+        }
+        var hue: CGFloat = 0, saturation: CGFloat = 0, brightness: CGFloat = 0, alpha: CGFloat = 0
+        color.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+        return (hue * 360, saturation, brightness)
+    }
+
+    /// Returns an uppercase "#RRGGBB" string, or nil when the input is not a 3/6 digit hex color.
+    public static func normalizeHex(_ raw: String) -> String? {
+        var clean = raw.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if clean.hasPrefix("#") { clean.removeFirst() }
+        if clean.count == 3 {
+            clean = clean.map { "\($0)\($0)" }.joined()
+        }
+        guard clean.count == 6, clean.allSatisfy({ $0.isHexDigit }) else { return nil }
+        return "#" + clean
+    }
+
+    public static func hexString(from color: NSColor) -> String {
+        let hex = color.hexString
+        return String(hex.prefix(7))
+    }
+
+    /// Compact numeric formatting used by all pill fields ("12", "1.5", "-40").
+    public static func formatNumber(_ value: CGFloat, integer: Bool = true) -> String {
+        if integer || abs(value - round(value)) < 0.05 {
+            return String(Int(round(value)))
+        }
+        return String(format: "%.1f", value)
+    }
+
+    public static func englishBlendModeName(_ raw: String) -> String {
+        if raw == "source-over" { return "Normal" }
+        return raw
+            .split(separator: "-")
+            .map { part -> String in
+                guard let first = part.first else { return "" }
+                return String(first).uppercased() + part.dropFirst()
+            }
+            .joined(separator: " ")
+    }
+}
+
+// MARK: - Vector Glyph Factory (self-contained, no Icons.swift edits)
+
+public enum PropertiesGlyphFactory {
+    public enum Kind {
+        case settings
+        case transfer
+        case eyedropper
+        case cornerRadius
+        case chevronDown
+        case link
+        case unlink
+        case italic
+        case underline
+        case alignLeft
+        case alignCenter
+        case alignRight
+        case alignJustify
+    }
+
+    public static func draw(kind: Kind, in rect: CGRect, color: NSColor, strokeWidth: CGFloat = 1.5) {
+        switch kind {
+        case .settings:
+            VooIconFactory.drawSettings(in: rect, color: color, strokeWidth: strokeWidth)
+        case .transfer:
+            VooIconFactory.drawSwap(in: rect, color: color, strokeWidth: strokeWidth)
+        case .eyedropper:
+            VooIconFactory.drawPipette(in: rect, color: color, strokeWidth: strokeWidth)
+        case .cornerRadius:
+            VooIconFactory.drawCornerRadius(in: rect, color: color, strokeWidth: strokeWidth)
+        case .chevronDown:
+            VooIconFactory.drawChevronDown(in: rect, color: color, strokeWidth: strokeWidth)
+        case .link:
+            VooIconFactory.drawLink(in: rect, color: color, strokeWidth: strokeWidth)
+        case .unlink:
+            VooIconFactory.drawUnlink(in: rect, color: color, strokeWidth: strokeWidth)
+        case .italic:
+            VooIconFactory.drawItalic(in: rect, color: color, strokeWidth: strokeWidth)
+        case .underline:
+            VooIconFactory.drawUnderline(in: rect, color: color, strokeWidth: strokeWidth)
+        case .alignLeft:
+            VooIconFactory.drawAlignTextLeft(in: rect, color: color, strokeWidth: strokeWidth)
+        case .alignCenter:
+            VooIconFactory.drawAlignTextCenter(in: rect, color: color, strokeWidth: strokeWidth)
+        case .alignRight:
+            VooIconFactory.drawAlignTextRight(in: rect, color: color, strokeWidth: strokeWidth)
+        case .alignJustify:
+            VooIconFactory.drawAlignJustify(in: rect, color: color, strokeWidth: strokeWidth)
+        }
+    }
+}
+
+// MARK: - HSV Color Wheel + SV Triangle (Web Parity)
+
+public final class PropertiesColorWheelView: NSView {
+    /// Hue in degrees 0…<360. 0° (red) sits at the 3 o'clock position, hue increases clockwise.
+    public var hue: CGFloat = 0
+    public var saturation: CGFloat = 0
+    public var value: CGFloat = 0
+
+    /// Fires with an uppercase "#RRGGBB" string whenever the user drags a knob.
+    public var onColorChanged: ((String) -> Void)?
+
+    private enum DragMode { case none, hue, sv }
+    private var dragMode: DragMode = .none
+
+    private let ringThickness: CGFloat = 14
+    private var isEditingHexDriven = false
+
+    public override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+
+    private func setup() {
+        setAccessibilityIdentifier("Inspector.Properties.ColorWheel")
+        setAccessibilityElement(true)
+        setAccessibilityRole(.slider)
+        setAccessibilityLabel("Color wheel")
+        setAccessibilityValue(hex)
+    }
+
+    public var hex: String {
+        PropertiesColorMath.hex(hue: hue, saturation: saturation, value: value)
+    }
+
+    /// Applies a hex color to the wheel state. Hue / saturation are preserved for
+    /// achromatic inputs (black / grey) so the hue marker does not jump to red.
+    public func setHex(_ raw: String) {
+        let normalized = PropertiesColorMath.normalizeHex(raw) ?? "#000000"
+        let hsb = PropertiesColorMath.hsb(fromHex: normalized)
+        if hsb.value > 0.0005 && hsb.saturation > 0.0005 {
+            hue = hsb.hue
+        }
+        saturation = hsb.saturation
+        value = hsb.value
+        setAccessibilityValue(hex)
+        needsDisplay = true
+    }
+
+    // MARK: Geometry
+
+    private var center: CGPoint { CGPoint(x: bounds.midX, y: bounds.midY) }
+    private var outerRadius: CGFloat { max(min(bounds.width, bounds.height) / 2, 8) }
+    private var ringRadius: CGFloat { max(outerRadius - ringThickness / 2, 6) }
+    private var innerRadius: CGFloat { max(outerRadius - ringThickness, 4) }
+    private var triangleRadius: CGFloat { max(innerRadius - 3, 3) }
+
+    private var huePoint: CGPoint {
+        CGPoint(x: center.x + triangleRadius, y: center.y)
+    }
+    private var blackPoint: CGPoint {
+        CGPoint(x: center.x + triangleRadius * cos(120 * .pi / 180),
+                y: center.y + triangleRadius * sin(120 * .pi / 180))
+    }
+    private var whitePoint: CGPoint {
+        CGPoint(x: center.x + triangleRadius * cos(240 * .pi / 180),
+                y: center.y + triangleRadius * sin(240 * .pi / 180))
+    }
+
+    private var hueKnobPoint: CGPoint {
+        let theta = -hue * .pi / 180
+        return CGPoint(x: center.x + ringRadius * cos(theta), y: center.y + ringRadius * sin(theta))
+    }
+
+    private var svKnobPoint: CGPoint {
+        let hueWeight = saturation * value
+        let whiteWeight = value * (1 - saturation)
+        let blackWeight = 1 - value
+        return CGPoint(
+            x: huePoint.x * hueWeight + whitePoint.x * whiteWeight + blackPoint.x * blackWeight,
+            y: huePoint.y * hueWeight + whitePoint.y * whiteWeight + blackPoint.y * blackWeight
+        )
+    }
+
+    // MARK: Drawing
+
+    public override func draw(_ dirtyRect: NSRect) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        let segs = 180
+        let radius = ringRadius
+        ctx.saveGState()
+        ctx.setLineCap(.butt)
+        for i in 0..<segs {
+            let a0 = CGFloat(i) * 2 * .pi / CGFloat(segs)
+            let a1 = CGFloat(i + 1) * 2 * .pi / CGFloat(segs)
+            let midDeg = ((a0 + a1) / 2) * 180 / .pi
+            var h = (360 - midDeg).truncatingRemainder(dividingBy: 360)
+            if h < 0 { h += 360 }
+            ctx.setStrokeColor(PropertiesColorMath.color(hue: h, saturation: 1, value: 1).cgColor)
+            ctx.setLineWidth(ringThickness)
+            ctx.beginPath()
+            ctx.addArc(center: center, radius: radius, startAngle: a0 - 0.004, endAngle: a1 + 0.004, clockwise: false)
+            ctx.strokePath()
+        }
+        ctx.restoreGState()
+
+        drawTriangle(in: ctx)
+        drawKnobs(in: ctx)
+    }
+
+    private func drawTriangle(in ctx: CGContext) {
+        let hueColor = PropertiesColorMath.color(hue: hue, saturation: 1, value: 1)
+        let hueVertex = huePoint
+        let whiteVertex = whitePoint
+        let blackVertex = blackPoint
+
+        let triangle = CGMutablePath()
+        triangle.move(to: hueVertex)
+        triangle.addLine(to: blackVertex)
+        triangle.addLine(to: whiteVertex)
+        triangle.closeSubpath()
+
+        ctx.saveGState()
+        ctx.addPath(triangle)
+        ctx.clip()
+
+        // Base black plane.
+        ctx.setFillColor(NSColor.black.cgColor)
+        ctx.fill(bounds)
+
+        // Additive hue component (weight = barycentric hue weight).
+        ctx.setBlendMode(.plusLighter)
+        let footHue = CGPoint(x: (blackVertex.x + whiteVertex.x) / 2, y: (blackVertex.y + whiteVertex.y) / 2)
+        drawAlphaGradient(ctx: ctx, from: hueVertex, to: footHue, color: hueColor)
+
+        // Additive white component (weight = barycentric white weight).
+        let footWhite = CGPoint(x: (hueVertex.x + blackVertex.x) / 2, y: (hueVertex.y + blackVertex.y) / 2)
+        drawAlphaGradient(ctx: ctx, from: whiteVertex, to: footWhite, color: .white)
+
+        ctx.restoreGState()
+    }
+
+    private func drawAlphaGradient(ctx: CGContext, from start: CGPoint, to end: CGPoint, color: NSColor) {
+        let colors = [color.withAlphaComponent(1.0).cgColor, color.withAlphaComponent(0.0).cgColor] as CFArray
+        guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 1]) else { return }
+        ctx.drawLinearGradient(gradient, start: start, end: end,
+                               options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+    }
+
+    private func drawKnobs(in ctx: CGContext) {
+        // Hue knob — hollow white ring filled with the pure hue color.
+        let hueColor = PropertiesColorMath.color(hue: hue, saturation: 1, value: 1)
+        drawKnob(in: ctx, at: hueKnobPoint, diameter: 15, fill: hueColor, ringWidth: 1.8)
+
+        // Saturation / value knob — white ring filled with the current color.
+        let current = PropertiesColorMath.color(hue: hue, saturation: saturation, value: value)
+        drawKnob(in: ctx, at: svKnobPoint, diameter: 11, fill: current, ringWidth: 1.6)
+    }
+
+    private func drawKnob(in ctx: CGContext, at point: CGPoint, diameter: CGFloat, fill: NSColor, ringWidth: CGFloat) {
+        let rect = CGRect(x: point.x - diameter / 2, y: point.y - diameter / 2, width: diameter, height: diameter)
+        ctx.setFillColor(fill.cgColor)
+        ctx.fillEllipse(in: rect)
+        ctx.setStrokeColor(NSColor.white.cgColor)
+        ctx.setLineWidth(ringWidth)
+        ctx.strokeEllipse(in: rect.insetBy(dx: ringWidth / 2, dy: ringWidth / 2))
+        // Thin dark outer hairline keeps the marker legible on bright hues.
+        ctx.setStrokeColor(NSColor(white: 0, alpha: 0.35).cgColor)
+        ctx.setLineWidth(0.75)
+        ctx.strokeEllipse(in: rect.insetBy(dx: -0.4, dy: -0.4))
+    }
+
+    // MARK: Interaction
+
+    public override func resetCursorRects() {
+        addCursorRect(bounds, cursor: .crosshair)
+    }
+
+    public override func mouseDown(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        let distance = hypot(point.x - center.x, point.y - center.y)
+        if abs(distance - ringRadius) <= ringThickness / 2 + 5 {
+            dragMode = .hue
+        } else if distance <= innerRadius {
+            dragMode = .sv
+        } else {
+            dragMode = .none
+            return
+        }
+        applyDrag(at: point)
+    }
+
+    public override func mouseDragged(with event: NSEvent) {
+        guard dragMode != .none else { return }
+        applyDrag(at: convert(event.locationInWindow, from: nil))
+    }
+
+    public override func mouseUp(with event: NSEvent) {
+        dragMode = .none
+    }
+
+    private func applyDrag(at point: CGPoint) {
+        switch dragMode {
+        case .hue:
+            var degrees = atan2(point.y - center.y, point.x - center.x) * 180 / .pi
+            degrees = (360 - degrees).truncatingRemainder(dividingBy: 360)
+            if degrees < 0 { degrees += 360 }
+            hue = degrees
+        case .sv:
+            let weights = barycentric(point)
+            var blackWeight = min(max(weights.black, 0), 1)
+            var whiteWeight = min(max(weights.white, 0), 1)
+            if blackWeight + whiteWeight > 1 {
+                let overflow = blackWeight + whiteWeight - 1
+                if whiteWeight >= blackWeight {
+                    whiteWeight -= overflow
+                } else {
+                    blackWeight -= overflow
+                }
+            }
+            let v = 1 - blackWeight
+            let s = v > 0.0005 ? max(min(whiteWeight / v, 1), 0) : 0
+            value = min(max(v, 0), 1)
+            saturation = min(max(s, 0), 1)
+        case .none:
+            return
+        }
+        setAccessibilityValue(hex)
+        needsDisplay = true
+        onColorChanged?(hex)
+    }
+
+    private func barycentric(_ point: CGPoint) -> (hue: CGFloat, white: CGFloat, black: CGFloat) {
+        let v0x = whitePoint.x - huePoint.x, v0y = whitePoint.y - huePoint.y
+        let v1x = blackPoint.x - huePoint.x, v1y = blackPoint.y - huePoint.y
+        let v2x = point.x - huePoint.x, v2y = point.y - huePoint.y
+        let d00 = v0x * v0x + v0y * v0y
+        let d01 = v0x * v1x + v0y * v1y
+        let d11 = v1x * v1x + v1y * v1y
+        let d20 = v2x * v0x + v2y * v0y
+        let d21 = v2x * v1x + v2y * v1y
+        let denominator = d00 * d11 - d01 * d01
+        guard abs(denominator) > 0.000001 else { return (1, 0, 0) }
+        let white = (d11 * d20 - d01 * d21) / denominator
+        let black = (d00 * d21 - d01 * d20) / denominator
+        return (1 - white - black, white, black)
+    }
+}
+
+// MARK: - Compact Capsule Numeric Field (click to type / drag to scrub)
+
+public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
+    public var labelText: String = "" {
+        didSet { labelField.stringValue = labelText; needsLayout = true }
+    }
+    public var suffix: String = "" {
+        didSet { updateDisplay() }
+    }
+    public var roundsToInteger: Bool = true
+    public var minimumValue: CGFloat = -100_000
+    public var maximumValue: CGFloat = 100_000
+    public var scrubUnitsPerPoint: CGFloat = 1.0
+    public var valueAlignment: NSTextAlignment = .left {
+        didSet { valueField.alignment = valueAlignment }
+    }
+    public var leadingGlyph: PropertiesGlyphFactory.Kind? {
+        didSet { needsDisplay = true; needsLayout = true }
+    }
+    public var onValueChanged: ((CGFloat) -> Void)?
+
+    public private(set) var value: CGFloat = 0
+
+    private let labelField = NSTextField(labelWithString: "")
+    private let valueField = NSTextField()
+    private var isEditing = false
+    private var isHovered = false
+    private var dragStartPoint = NSPoint.zero
+    private var dragStartValue: CGFloat = 0
+    private var didDrag = false
+
+    public init(label: String, suffix: String = "") {
+        super.init(frame: .zero)
+        labelText = label
+        self.suffix = suffix
+        setupUI()
+    }
+
+    public required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupUI()
+    }
+
+    private func setupUI() {
+        setAccessibilityElement(true)
+        setAccessibilityRole(.textField)
+        setAccessibilityLabel(labelText.isEmpty ? "Value" : labelText)
+
+        labelField.stringValue = labelText
+        labelField.font = NSFont.systemFont(ofSize: 9, weight: .semibold)
+        labelField.textColor = NSColor(hex: "8a8a8a")
+        labelField.isBordered = false
+        labelField.drawsBackground = false
+        labelField.isEditable = false
+        labelField.isSelectable = false
+        labelField.isHidden = labelText.isEmpty
+        addSubview(labelField)
+
+        valueField.font = ThemeFonts.mono(size: 10, weight: .regular)
+        valueField.textColor = NSColor(hex: "e5e5e5")
+        valueField.isBordered = false
+        valueField.drawsBackground = false
+        valueField.focusRingType = .none
+        valueField.alignment = valueAlignment
+        valueField.isEditable = false
+        valueField.isSelectable = false
+        valueField.delegate = self
+        valueField.target = self
+        valueField.action = #selector(commitEditing)
+        addSubview(valueField)
+
+        updateDisplay()
+    }
+
+    // MARK: Value
+
+    public func setValue(_ newValue: CGFloat) {
+        value = clamped(newValue)
+        updateDisplay()
+    }
+
+    private func clamped(_ raw: CGFloat) -> CGFloat {
+        min(max(raw, minimumValue), maximumValue)
+    }
+
+    private func formatted(_ raw: CGFloat) -> String {
+        PropertiesColorMath.formatNumber(raw, integer: roundsToInteger) + suffix
+    }
+
+    private func updateDisplay() {
+        guard !isEditing else { return }
+        valueField.stringValue = formatted(value)
+        setAccessibilityValue(valueField.stringValue)
+        invalidateIntrinsicContentSize()
+    }
+
+    private func parse(_ raw: String) -> CGFloat? {
+        var clean = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !suffix.isEmpty, clean.hasSuffix(suffix) {
+            clean = String(clean.dropLast(suffix.count))
+        }
+        clean = clean.replacingOccurrences(of: ",", with: ".")
+        clean = clean.replacingOccurrences(of: "°", with: "")
+        clean = clean.replacingOccurrences(of: "%", with: "")
+        return Double(clean).map { CGFloat($0) }
+    }
+
+    // MARK: Layout
+
+    public override func layout() {
+        super.layout()
+        let glyphSpace: CGFloat = leadingGlyph == nil ? 0 : 20
+        let labelSpace: CGFloat
+        if labelText.isEmpty || leadingGlyph != nil {
+            labelSpace = 0
+        } else {
+            labelSpace = labelText.count >= 2 ? 17 : 9
+        }
+        labelField.frame = CGRect(x: 7 + glyphSpace, y: round((bounds.height - 11) / 2),
+                                  width: max(labelSpace, 1), height: 11)
+        labelField.isHidden = labelText.isEmpty || leadingGlyph != nil
+        let textX = 7 + glyphSpace + labelSpace + 2
+        valueField.frame = CGRect(x: textX, y: round((bounds.height - 15) / 2),
+                                  width: max(bounds.width - textX - 4, 8), height: 15)
+    }
+
+    // MARK: Drawing
+
+    public override func draw(_ dirtyRect: NSRect) {
+        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
+                                xRadius: 8, yRadius: 8)
+        (isHovered || isEditing ? NSColor(hex: "2d2d2d") : NSColor(hex: "262626")).setFill()
+        path.fill()
+        NSColor(white: 1.0, alpha: 0.05).setStroke()
+        path.lineWidth = 1
+        path.stroke()
+
+        if let glyph = leadingGlyph {
+            PropertiesGlyphFactory.draw(kind: glyph,
+                                        in: CGRect(x: 8, y: (bounds.height - 12) / 2, width: 12, height: 12),
+                                        color: NSColor(hex: "c9c9c9"), strokeWidth: 1.4)
+        }
+    }
+
+    // MARK: Hover
+
+    public override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas where area.owner === self && area.userInfo == nil {
+            removeTrackingArea(area)
+        }
+        let area = NSTrackingArea(rect: .zero,
+                                  options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+                                  owner: self, userInfo: nil)
+        addTrackingArea(area)
+    }
+
+    public override func mouseEntered(with event: NSEvent) {
+        isHovered = true
+        needsDisplay = true
+    }
+
+    public override func mouseExited(with event: NSEvent) {
+        isHovered = false
+        needsDisplay = true
+    }
+
+    // MARK: Mouse (click = edit, drag = scrub)
+
+    public override func hitTest(_ point: NSPoint) -> NSView? {
+        if isEditing { return super.hitTest(point) }
+        let local = convert(point, from: superview)
+        return bounds.contains(local) ? self : nil
+    }
+
+    public override func mouseDown(with event: NSEvent) {
+        dragStartPoint = event.locationInWindow
+        dragStartValue = value
+        didDrag = false
+    }
+
+    public override func mouseDragged(with event: NSEvent) {
+        let dx = event.locationInWindow.x - dragStartPoint.x
+        if abs(dx) > 1.5 { didDrag = true }
+        guard didDrag else { return }
+        let multiplier: CGFloat = event.modifierFlags.contains(.shift) ? 0.1 : 1.0
+        let raw = dragStartValue + dx * scrubUnitsPerPoint * multiplier
+        value = clamped(roundsToInteger ? round(raw) : raw)
+        updateDisplay()
+        onValueChanged?(value)
+    }
+
+    public override func mouseUp(with event: NSEvent) {
+        if !didDrag && !isEditing {
+            beginEditing()
+        }
+    }
+
+    private func beginEditing() {
+        isEditing = true
+        valueField.isEditable = true
+        valueField.isSelectable = true
+        valueField.stringValue = PropertiesColorMath.formatNumber(value, integer: roundsToInteger)
+        if let window = window {
+            window.makeFirstResponder(valueField)
+            valueField.currentEditor()?.selectAll(nil)
+        }
+        needsDisplay = true
+    }
+
+    @objc private func commitEditing() {
+        window?.makeFirstResponder(nil)
+    }
+
+    public func controlTextDidEndEditing(_ obj: Notification) {
+        isEditing = false
+        if let parsed = parse(valueField.stringValue) {
+            value = clamped(parsed)
+            onValueChanged?(value)
+        }
+        updateDisplay()
+        valueField.isEditable = false
+        valueField.isSelectable = false
+        needsDisplay = true
+    }
+}
+
+// MARK: - Compact Capsule Hex Field (click to edit)
+
+public final class PropertiesHexPill: NSView, NSTextFieldDelegate {
+    public var showsColorDot: Bool = false {
+        didSet { needsLayout = true; needsDisplay = true }
+    }
+    public private(set) var hex: String = "#000000"
+    public var onHexChange: ((String) -> Void)?
+
+    private let textField = NSTextField()
+    private var isEditing = false
+    private var isHovered = false
+
+    public init(hex: String = "#000000", showsColorDot: Bool = false) {
+        super.init(frame: .zero)
+        self.hex = PropertiesColorMath.normalizeHex(hex) ?? "#000000"
+        self.showsColorDot = showsColorDot
+        setupUI()
+    }
+
+    public required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupUI()
+    }
+
+    private func setupUI() {
+        setAccessibilityElement(true)
+        setAccessibilityRole(.textField)
+        setAccessibilityLabel("Hex color")
+
+        textField.font = ThemeFonts.mono(size: 10, weight: .regular)
+        textField.textColor = NSColor(hex: "d6d6d6")
+        textField.isBordered = false
+        textField.drawsBackground = false
+        textField.focusRingType = .none
+        textField.alignment = showsColorDot ? .left : .center
+        textField.isEditable = false
+        textField.isSelectable = false
+        textField.delegate = self
+        textField.target = self
+        textField.action = #selector(commitEditing)
+        textField.stringValue = hex
+        addSubview(textField)
+        setAccessibilityValue(hex)
+    }
+
+    public func setHex(_ raw: String) {
+        let normalized = PropertiesColorMath.normalizeHex(raw) ?? "#000000"
+        hex = normalized
+        if !isEditing { textField.stringValue = normalized }
+        setAccessibilityValue(normalized)
+        needsDisplay = true
+    }
+
+    public override func layout() {
+        super.layout()
+        let left: CGFloat = showsColorDot ? 24 : 8
+        textField.alignment = showsColorDot ? .left : .center
+        textField.frame = CGRect(x: left, y: round((bounds.height - 15) / 2),
+                                 width: max(bounds.width - left - 7, 8), height: 15)
+    }
+
+    public override func draw(_ dirtyRect: NSRect) {
+        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
+                                xRadius: 8, yRadius: 8)
+        (isHovered || isEditing ? NSColor(hex: "292929") : NSColor(hex: "222222")).setFill()
+        path.fill()
+        NSColor(white: 1.0, alpha: 0.05).setStroke()
+        path.lineWidth = 1
+        path.stroke()
+
+        if showsColorDot {
+            let dotRect = CGRect(x: 8, y: (bounds.height - 11) / 2, width: 11, height: 11)
+            let dot = NSBezierPath(roundedRect: dotRect, xRadius: 3, yRadius: 3)
+            NSColor(hex: hex).setFill()
+            dot.fill()
+            NSColor(white: 1.0, alpha: 0.28).setStroke()
+            dot.lineWidth = 1
+            dot.stroke()
+        }
+    }
+
+    public override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas where area.owner === self && area.userInfo == nil {
+            removeTrackingArea(area)
+        }
+        addTrackingArea(NSTrackingArea(rect: .zero,
+                                       options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+                                       owner: self, userInfo: nil))
+    }
+
+    public override func mouseEntered(with event: NSEvent) {
+        isHovered = true
+        needsDisplay = true
+    }
+
+    public override func mouseExited(with event: NSEvent) {
+        isHovered = false
+        needsDisplay = true
+    }
+
+    public override func hitTest(_ point: NSPoint) -> NSView? {
+        if isEditing { return super.hitTest(point) }
+        let local = convert(point, from: superview)
+        return bounds.contains(local) ? self : nil
+    }
+
+    public override func mouseDown(with event: NSEvent) {
+        beginEditing()
+    }
+
+    private func beginEditing() {
+        guard !isEditing else { return }
+        isEditing = true
+        textField.isEditable = true
+        textField.isSelectable = true
+        textField.stringValue = hex
+        if let window = window {
+            window.makeFirstResponder(textField)
+            textField.currentEditor()?.selectAll(nil)
+        }
+        needsDisplay = true
+    }
+
+    @objc private func commitEditing() {
+        window?.makeFirstResponder(nil)
+    }
+
+    public func controlTextDidEndEditing(_ obj: Notification) {
+        isEditing = false
+        if let normalized = PropertiesColorMath.normalizeHex(textField.stringValue) {
+            let changed = normalized != hex
+            hex = normalized
+            setAccessibilityValue(normalized)
+            textField.stringValue = normalized
+            if changed { onHexChange?(normalized) }
+        } else {
+            textField.stringValue = hex
+        }
+        textField.isEditable = false
+        textField.isSelectable = false
+        needsDisplay = true
+    }
+}
+
+// MARK: - Fill / Stroke Double Swatch (Web Parity)
+
+public final class PropertiesFillSwatchView: NSView {
+    public var fillHex: String = "#000000" { didSet { needsDisplay = true } }
+    public var strokeHex: String = "#b2ffd6" { didSet { needsDisplay = true } }
+    public var onClick: (() -> Void)?
+
+    public override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setAccessibilityElement(true)
+        setAccessibilityRole(.button)
+        setAccessibilityLabel("Fill and stroke swatch")
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+    }
+
+    public override func draw(_ dirtyRect: NSRect) {
+        // Rear stroke swatch (offset bottom-right), then front fill swatch.
+        let backRect = CGRect(x: 9, y: 1, width: 19, height: 19)
+        let back = NSBezierPath(roundedRect: backRect, xRadius: 8, yRadius: 8)
+        NSColor(white: 1.0, alpha: 0.16).setStroke()
+        back.lineWidth = 1.2
+        back.stroke()
+
+        let frontRect = CGRect(x: 0, y: 9, width: 21, height: 21)
+        let front = NSBezierPath(roundedRect: frontRect, xRadius: 8, yRadius: 8)
+        NSColor(hex: fillHex).setFill()
+        front.fill()
+        NSColor(white: 1.0, alpha: 0.85).setStroke()
+        front.lineWidth = 1.6
+        front.stroke()
+    }
+
+    public override func mouseDown(with event: NSEvent) {
+        onClick?()
+    }
+}
+
+// MARK: - Icon Button (header + eyedropper + swap)
+
+public final class PropertiesIconButton: NSButton {
+    public enum ButtonStyle {
+        case plain
+        case circular
+    }
+
+    public var iconKind: PropertiesGlyphFactory.Kind = .settings { didSet { needsDisplay = true } }
+    public var buttonStyle: ButtonStyle = .plain { didSet { needsDisplay = true } }
+    public var iconColor: NSColor = NSColor(hex: "737373") { didSet { needsDisplay = true } }
+    /// Explicit glyph padding; -1 keeps the style default (circular 8, plain 0.5).
+    public var iconPadding: CGFloat = -1 { didSet { needsDisplay = true } }
+    /// Draws a round white/8 hover wash (header icon buttons per UI spec p4 radius-full).
+    public var showsHoverBackground: Bool = false
+
+    private var isHovered = false
+
+    public init(kind: PropertiesGlyphFactory.Kind, style: ButtonStyle = .plain) {
+        super.init(frame: .zero)
+        iconKind = kind
+        buttonStyle = style
+        isBordered = false
+        focusRingType = .none
+        title = ""
+        setAccessibilityElement(true)
+        setAccessibilityRole(.button)
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        isBordered = false
+        focusRingType = .none
+        title = ""
+    }
+
+    public override func draw(_ dirtyRect: NSRect) {
+        if showsHoverBackground && isHovered {
+            let wash = NSBezierPath(ovalIn: bounds.insetBy(dx: 0.5, dy: 0.5))
+            NSColor(white: 1.0, alpha: 0.08).setFill()
+            wash.fill()
+        }
+        if buttonStyle == .circular {
+            let bg = NSBezierPath(ovalIn: bounds.insetBy(dx: 0.5, dy: 0.5))
+            (isHovered ? NSColor(hex: "333333") : NSColor(hex: "262626")).setFill()
+            bg.fill()
+        }
+        let inset: CGFloat = iconPadding >= 0 ? iconPadding : (buttonStyle == .circular ? 8 : 0.5)
+        let iconRect = bounds.insetBy(dx: inset, dy: inset)
+        let color = isHovered ? NSColor(hex: "e5e5e5") : iconColor
+        PropertiesGlyphFactory.draw(kind: iconKind, in: iconRect, color: color, strokeWidth: 1.5)
+    }
+
+    public override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas where area.owner === self && area.userInfo == nil {
+            removeTrackingArea(area)
+        }
+        addTrackingArea(NSTrackingArea(rect: .zero,
+                                       options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+                                       owner: self, userInfo: nil))
+    }
+
+    public override func mouseEntered(with event: NSEvent) {
+        isHovered = true
+        needsDisplay = true
+    }
+
+    public override func mouseExited(with event: NSEvent) {
+        isHovered = false
+        needsDisplay = true
+    }
+}
+
+// MARK: - Blend Mode Capsule Menu Button
+
+public final class PropertiesBlendModeButton: NSButton {
+    public var onValueChange: ((String) -> Void)?
+    /// Title shown when `selectedValue` is not one of the menu items.
+    public var placeholderTitle: String = "Normal" {
+        didSet { needsDisplay = true; setAccessibilityValue(displayTitle) }
+    }
+
+    private var items: [(title: String, value: String)] = []
+    private var isHovered = false
+
+    public private(set) var selectedValue: String = "source-over" {
+        didSet { needsDisplay = true; setAccessibilityValue(displayTitle) }
+    }
+
+    private var displayTitle: String {
+        items.first(where: { $0.value == selectedValue })?.title ?? placeholderTitle
+    }
+
+    public init() {
+        super.init(frame: .zero)
+        isBordered = false
+        focusRingType = .none
+        title = ""
+        setAccessibilityElement(true)
+        setAccessibilityRole(.popUpButton)
+        setAccessibilityLabel("Blend mode")
+        setAccessibilityValue(displayTitle)
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        isBordered = false
+        focusRingType = .none
+        title = ""
+    }
+
+    public func setItems(_ newItems: [(title: String, value: String)]) {
+        items = newItems
+        if items.contains(where: { $0.value == selectedValue }) == false {
+            selectedValue = items.first?.value ?? "source-over"
+        }
+        needsDisplay = true
+    }
+
+    public func select(value: String) {
+        selectedValue = value
+    }
+
+    public override func draw(_ dirtyRect: NSRect) {
+        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
+                                xRadius: 8, yRadius: 8)
+        (isHovered ? NSColor(hex: "2d2d2d") : NSColor(hex: "262626")).setFill()
+        path.fill()
+        NSColor(white: 1.0, alpha: 0.05).setStroke()
+        path.lineWidth = 1
+        path.stroke()
+
+        let textRect = CGRect(x: 10, y: round((bounds.height - 14) / 2), width: max(bounds.width - 34, 10), height: 14)
+        (displayTitle as NSString).draw(in: textRect, withAttributes: [
+            .font: NSFont.systemFont(ofSize: 10, weight: .medium),
+            .foregroundColor: NSColor(hex: "d6d6d6")
+        ])
+        PropertiesGlyphFactory.draw(kind: .chevronDown,
+                                    in: CGRect(x: bounds.width - 22, y: (bounds.height - 10) / 2, width: 10, height: 10),
+                                    color: NSColor(hex: "8a8a8a"), strokeWidth: 1.3)
+    }
+
+    public override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas where area.owner === self && area.userInfo == nil {
+            removeTrackingArea(area)
+        }
+        addTrackingArea(NSTrackingArea(rect: .zero,
+                                       options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+                                       owner: self, userInfo: nil))
+    }
+
+    public override func mouseEntered(with event: NSEvent) {
+        isHovered = true
+        needsDisplay = true
+    }
+
+    public override func mouseExited(with event: NSEvent) {
+        isHovered = false
+        needsDisplay = true
+    }
+
+    public override func mouseDown(with event: NSEvent) {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        for item in items {
+            let menuItem = NSMenuItem(title: item.title, action: #selector(selectMenuItem(_:)), keyEquivalent: "")
+            menuItem.target = self
+            menuItem.representedObject = item.value
+            menuItem.state = item.value == selectedValue ? .on : .off
+            menu.addItem(menuItem)
+        }
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: -4), in: self)
+    }
+
+    @objc private func selectMenuItem(_ sender: NSMenuItem) {
+        guard let value = sender.representedObject as? String else { return }
+        selectedValue = value
+        onValueChange?(value)
+    }
+}
+
+// MARK: - Compact "Aa" Typography Menu Button
+
+public final class PropertiesTypographyMenuButton: NSButton {
+    public var currentWeight: String = "regular"
+    public var currentTextAlign: String = "left"
+    public var currentLineHeight: CGFloat = 1.2
+    public var currentLetterSpacing: CGFloat = 0
+
+    public var onWeightChange: ((String) -> Void)?
+    public var onTextAlignChange: ((String) -> Void)?
+    public var onLineHeightChange: ((CGFloat) -> Void)?
+    public var onLetterSpacingChange: ((CGFloat) -> Void)?
+
+    private var isHovered = false
+
+    public init() {
+        super.init(frame: .zero)
+        isBordered = false
+        focusRingType = .none
+        title = ""
+        setAccessibilityElement(true)
+        setAccessibilityRole(.popUpButton)
+        setAccessibilityLabel("Typography")
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        isBordered = false
+        focusRingType = .none
+        title = ""
+    }
+
+    public override func draw(_ dirtyRect: NSRect) {
+        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
+                                xRadius: 8, yRadius: 8)
+        (isHovered ? NSColor(hex: "2d2d2d") : NSColor(hex: "262626")).setFill()
+        path.fill()
+        NSColor(white: 1.0, alpha: 0.05).setStroke()
+        path.lineWidth = 1
+        path.stroke()
+
+        let attributed = NSAttributedString(string: "Aa", attributes: [
+            .font: NSFont.systemFont(ofSize: 10.5, weight: .medium),
+            .foregroundColor: NSColor(hex: "d6d6d6")
+        ])
+        let textSize = attributed.size()
+        let textRect = CGRect(x: round((bounds.width - textSize.width) / 2),
+                              y: round((bounds.height - textSize.height) / 2),
+                              width: textSize.width, height: textSize.height)
+        attributed.draw(in: textRect)
+    }
+
+    public override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas where area.owner === self && area.userInfo == nil {
+            removeTrackingArea(area)
+        }
+        addTrackingArea(NSTrackingArea(rect: .zero,
+                                       options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+                                       owner: self, userInfo: nil))
+    }
+
+    public override func mouseEntered(with event: NSEvent) {
+        isHovered = true
+        needsDisplay = true
+    }
+
+    public override func mouseExited(with event: NSEvent) {
+        isHovered = false
+        needsDisplay = true
+    }
+
+    public override func mouseDown(with event: NSEvent) {
+        let root = NSMenu()
+        root.autoenablesItems = false
+        root.addItem(makeSubmenu(title: "字重", category: "weight",
+                                 accessibilityIdentifier: "Inspector.Properties.Weight",
+                                 options: [("Regular", "regular"), ("Medium", "medium"),
+                                           ("Semibold", "semibold"), ("Bold", "bold")]))
+        root.addItem(makeSubmenu(title: "对齐", category: "align",
+                                 accessibilityIdentifier: "Inspector.Properties.Align",
+                                 options: [("Left", "left"), ("Center", "center"),
+                                           ("Right", "right"), ("Justify", "justify")]))
+        root.addItem(makeSubmenu(title: "行高", category: "lineHeight",
+                                 accessibilityIdentifier: "Inspector.Properties.LineHeight",
+                                 options: [("Auto (1.2)", "1.2"), ("1.0", "1.0"),
+                                           ("1.5", "1.5"), ("2.0", "2.0")]))
+        root.addItem(makeSubmenu(title: "字距", category: "spacing",
+                                 accessibilityIdentifier: "Inspector.Properties.LetterSpacing",
+                                 options: [("0", "0"), ("-1", "-1"), ("0.5", "0.5"),
+                                           ("1", "1"), ("2", "2")]))
+        root.popUp(positioning: nil, at: NSPoint(x: 0, y: -4), in: self)
+    }
+
+    private func makeSubmenu(title: String, category: String,
+                             accessibilityIdentifier: String,
+                             options: [(title: String, tag: String)]) -> NSMenuItem {
+        let submenu = NSMenu()
+        submenu.autoenablesItems = false
+        let parent = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        parent.setAccessibilityIdentifier(accessibilityIdentifier)
+        for option in options {
+            let item = NSMenuItem(title: option.title,
+                                  action: #selector(selectFormatItem(_:)),
+                                  keyEquivalent: "")
+            item.target = self
+            item.representedObject = "\(category)|\(option.tag)"
+            item.state = isChecked(category: category, tag: option.tag) ? .on : .off
+            submenu.addItem(item)
+        }
+        parent.submenu = submenu
+        return parent
+    }
+
+    private func isChecked(category: String, tag: String) -> Bool {
+        switch category {
+        case "weight": return currentWeight == tag
+        case "align": return currentTextAlign == tag
+        case "lineHeight": return abs(currentLineHeight - CGFloat(Double(tag) ?? 0)) < 0.0001
+        case "spacing": return abs(currentLetterSpacing - CGFloat(Double(tag) ?? 0)) < 0.0001
+        default: return false
+        }
+    }
+
+    @objc private func selectFormatItem(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String,
+              let separator = raw.firstIndex(of: "|") else { return }
+        let category = String(raw[..<separator])
+        let tag = String(raw[raw.index(after: separator)...])
+        switch category {
+        case "weight":
+            currentWeight = tag
+            onWeightChange?(tag)
+        case "align":
+            currentTextAlign = tag
+            onTextAlignChange?(tag)
+        case "lineHeight":
+            let value = min(max(CGFloat(Double(tag) ?? 1.2), 0.5), 4.0)
+            currentLineHeight = value
+            onLineHeightChange?(value)
+        case "spacing":
+            let value = min(max(CGFloat(Double(tag) ?? 0), -20), 50)
+            currentLetterSpacing = value
+            onLetterSpacingChange?(value)
+        default:
+            break
+        }
+        needsDisplay = true
+    }
+}
+
+// MARK: - Properties Segmented Control
+
+public final class PropertiesSegmentedControl: NSView {
+    public struct Segment {
+        public var title: String
+        public var icon: PropertiesGlyphFactory.Kind?
+        public var value: String
+        public init(title: String, icon: PropertiesGlyphFactory.Kind? = nil, value: String) {
+            self.title = title
+            self.icon = icon
+            self.value = value
+        }
+    }
+
+    public var onSelectionChanged: ((Int, String) -> Void)?
+    public private(set) var selectedIndex: Int = 0
+    public var segments: [Segment] = [] {
+        didSet {
+            if selectedIndex >= segments.count { selectedIndex = max(0, segments.count - 1) }
+            needsDisplay = true
+        }
+    }
+
+    public init(segments: [Segment] = []) {
+        self.segments = segments
+        super.init(frame: .zero)
+        wantsLayer = true
+        layer?.cornerRadius = 6
+        layer?.masksToBounds = true
+        setAccessibilityElement(true)
+        setAccessibilityRole(.radioGroup)
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        wantsLayer = true
+        layer?.cornerRadius = 6
+        layer?.masksToBounds = true
+    }
+
+    public func select(index: Int, notify: Bool = false) {
+        guard index >= 0, index < segments.count else { return }
+        selectedIndex = index
+        setAccessibilityValue(segments[index].value)
+        needsDisplay = true
+        if notify {
+            onSelectionChanged?(index, segments[index].value)
+        }
+    }
+
+    public func select(value: String, notify: Bool = false) {
+        if let idx = segments.firstIndex(where: { $0.value == value }) {
+            select(index: idx, notify: notify)
+        }
+    }
+
+    public override func mouseDown(with event: NSEvent) {
+        let location = convert(event.locationInWindow, from: nil)
+        guard bounds.width > 0, !segments.isEmpty else { return }
+        let segmentWidth = bounds.width / CGFloat(segments.count)
+        let clickedIndex = min(max(Int(location.x / segmentWidth), 0), segments.count - 1)
+        select(index: clickedIndex, notify: true)
+    }
+
+    public override func draw(_ dirtyRect: NSRect) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        ctx.setFillColor(NSColor(hex: "1a1a1a").cgColor)
+        ctx.fill(bounds)
+
+        guard !segments.isEmpty else { return }
+        let segmentWidth = bounds.width / CGFloat(segments.count)
+
+        let selectedRect = CGRect(x: CGFloat(selectedIndex) * segmentWidth + 1,
+                                  y: 1,
+                                  width: segmentWidth - 2,
+                                  height: bounds.height - 2)
+        let selectedPath = CGPath(roundedRect: selectedRect, cornerWidth: 5, cornerHeight: 5, transform: nil)
+        ctx.setFillColor(NSColor(hex: "333333").cgColor)
+        ctx.addPath(selectedPath)
+        ctx.fillPath()
+
+        ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.1).cgColor)
+        ctx.setLineWidth(1)
+        ctx.stroke(bounds.insetBy(dx: 0.5, dy: 0.5))
+
+        for (i, seg) in segments.enumerated() {
+            let segRect = CGRect(x: CGFloat(i) * segmentWidth, y: 0, width: segmentWidth, height: bounds.height)
+            let isSelected = (i == selectedIndex)
+            let textColor = isSelected ? NSColor.white : NSColor(hex: "888888")
+
+            if let iconKind = seg.icon {
+                let iconSize: CGFloat = min(segRect.height - 8, 14)
+                let iconRect = CGRect(x: segRect.midX - iconSize / 2,
+                                      y: segRect.midY - iconSize / 2,
+                                      width: iconSize,
+                                      height: iconSize)
+                PropertiesGlyphFactory.draw(kind: iconKind, in: iconRect, color: textColor, strokeWidth: 1.5)
+            } else {
+                let paragraphStyle = NSMutableParagraphStyle()
+                paragraphStyle.alignment = .center
+                let attrs: [NSAttributedString.Key: Any] = [
+                    .font: NSFont.systemFont(ofSize: 10, weight: isSelected ? .medium : .regular),
+                    .foregroundColor: textColor,
+                    .paragraphStyle: paragraphStyle
+                ]
+                let str = NSAttributedString(string: seg.title, attributes: attrs)
+                let strSize = str.size()
+                let strRect = CGRect(x: segRect.minX,
+                                     y: segRect.midY - strSize.height / 2,
+                                     width: segRect.width,
+                                     height: strSize.height)
+                str.draw(in: strRect)
+            }
+        }
+    }
+}
+
+// MARK: - Gradient Stops Bar View
+
+public final class GradientStopsBarView: NSView {
+    public struct Stop {
+        public var color: NSColor
+        public var location: CGFloat // 0.0 ... 1.0
+        public init(color: NSColor, location: CGFloat) {
+            self.color = color
+            self.location = min(max(location, 0), 1)
+        }
+    }
+
+    public var stops: [Stop] = [
+        Stop(color: .white, location: 0.0),
+        Stop(color: .black, location: 1.0)
+    ] {
+        didSet {
+            if selectedIndex >= stops.count { selectedIndex = max(0, stops.count - 1) }
+            needsDisplay = true
+        }
+    }
+
+    public private(set) var selectedIndex: Int = 0
+    public var onStopsChange: (([Stop]) -> Void)?
+    public var onSelectionChange: ((Int, Stop) -> Void)?
+
+    private var isDragging = false
+
+    public override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.cornerRadius = 6
+        layer?.masksToBounds = false
+        setAccessibilityElement(true)
+        setAccessibilityRole(.slider)
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        wantsLayer = true
+        layer?.cornerRadius = 6
+        layer?.masksToBounds = false
+    }
+
+    public var selectedStop: Stop? {
+        guard selectedIndex >= 0, selectedIndex < stops.count else { return nil }
+        return stops[selectedIndex]
+    }
+
+    public func updateSelectedColor(_ color: NSColor) {
+        guard selectedIndex >= 0, selectedIndex < stops.count else { return }
+        stops[selectedIndex].color = color
+        needsDisplay = true
+        onStopsChange?(stops)
+    }
+
+    public func selectStop(at index: Int) {
+        guard index >= 0, index < stops.count else { return }
+        selectedIndex = index
+        needsDisplay = true
+        onSelectionChange?(selectedIndex, stops[selectedIndex])
+    }
+
+    public override func draw(_ dirtyRect: NSRect) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        let trackHeight: CGFloat = 14
+        let trackY = (bounds.height - trackHeight) / 2
+        let trackRect = CGRect(x: 8, y: trackY, width: max(bounds.width - 16, 10), height: trackHeight)
+
+        ctx.saveGState()
+        let trackPath = CGPath(roundedRect: trackRect, cornerWidth: 4, cornerHeight: 4, transform: nil)
+        ctx.addPath(trackPath)
+        ctx.clip()
+
+        let sortedStops = stops.sorted { $0.location < $1.location }
+        var cgColors: [CGColor] = []
+        var locations: [CGFloat] = []
+        for stop in sortedStops {
+            cgColors.append(stop.color.cgColor)
+            locations.append(stop.location)
+        }
+        if !cgColors.isEmpty, let grad = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                                    colors: cgColors as CFArray,
+                                                    locations: locations) {
+            ctx.drawLinearGradient(grad,
+                                   start: CGPoint(x: trackRect.minX, y: trackRect.midY),
+                                   end: CGPoint(x: trackRect.maxX, y: trackRect.midY),
+                                   options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+        }
+        ctx.restoreGState()
+
+        ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.15).cgColor)
+        ctx.setLineWidth(1)
+        ctx.addPath(trackPath)
+        ctx.strokePath()
+
+        for (i, stop) in stops.enumerated() {
+            let knobX = trackRect.minX + stop.location * trackRect.width
+            let knobY = trackRect.midY
+            let knobRect = CGRect(x: knobX - 6, y: knobY - 6, width: 12, height: 12)
+            let isSelected = (i == selectedIndex)
+
+            ctx.saveGState()
+            if isSelected {
+                ctx.setShadow(offset: .zero, blur: 4, color: NSColor(hex: "a7ffd4").cgColor)
+            }
+            ctx.setFillColor(stop.color.cgColor)
+            ctx.fillEllipse(in: knobRect)
+
+            ctx.setStrokeColor(isSelected ? NSColor.white.cgColor : NSColor(white: 0.8, alpha: 0.8).cgColor)
+            ctx.setLineWidth(isSelected ? 2.0 : 1.5)
+            ctx.strokeEllipse(in: knobRect)
+            ctx.restoreGState()
+        }
+    }
+
+    public override func mouseDown(with event: NSEvent) {
+        let loc = convert(event.locationInWindow, from: nil)
+        let trackRect = CGRect(x: 8, y: (bounds.height - 14) / 2, width: max(bounds.width - 16, 10), height: 14)
+
+        for (i, stop) in stops.enumerated() {
+            let knobX = trackRect.minX + stop.location * trackRect.width
+            let knobRect = CGRect(x: knobX - 8, y: trackRect.midY - 8, width: 16, height: 16)
+            if knobRect.contains(loc) {
+                selectedIndex = i
+                isDragging = true
+                needsDisplay = true
+                onSelectionChange?(selectedIndex, stops[selectedIndex])
+                return
+            }
+        }
+
+        if trackRect.insetBy(dx: -4, dy: -4).contains(loc) {
+            let frac = min(max((loc.x - trackRect.minX) / trackRect.width, 0), 1)
+            let interpolatedColor = interpolateColor(at: frac)
+            let newStop = Stop(color: interpolatedColor, location: frac)
+            stops.append(newStop)
+            selectedIndex = stops.count - 1
+            isDragging = true
+            needsDisplay = true
+            onSelectionChange?(selectedIndex, newStop)
+            onStopsChange?(stops)
+        }
+    }
+
+    public override func mouseDragged(with event: NSEvent) {
+        guard isDragging, selectedIndex >= 0, selectedIndex < stops.count else { return }
+        let loc = convert(event.locationInWindow, from: nil)
+        let trackRect = CGRect(x: 8, y: (bounds.height - 14) / 2, width: max(bounds.width - 16, 10), height: 14)
+        let frac = min(max((loc.x - trackRect.minX) / trackRect.width, 0), 1)
+        stops[selectedIndex].location = frac
+        needsDisplay = true
+        onStopsChange?(stops)
+    }
+
+    public override func mouseUp(with event: NSEvent) {
+        isDragging = false
+    }
+
+    private func interpolateColor(at frac: CGFloat) -> NSColor {
+        let sorted = stops.sorted { $0.location < $1.location }
+        guard !sorted.isEmpty else { return .white }
+        if frac <= sorted.first!.location { return sorted.first!.color }
+        if frac >= sorted.last!.location { return sorted.last!.color }
+        for i in 0..<(sorted.count - 1) {
+            let s1 = sorted[i]
+            let s2 = sorted[i + 1]
+            if frac >= s1.location && frac <= s2.location {
+                let range = s2.location - s1.location
+                let t = range > 0 ? (frac - s1.location) / range : 0
+                return blend(c1: s1.color, c2: s2.color, t: t)
+            }
+        }
+        return sorted.first!.color
+    }
+
+    private func blend(c1: NSColor, c2: NSColor, t: CGFloat) -> NSColor {
+        let rgb1 = c1.usingColorSpace(.sRGB) ?? c1
+        let rgb2 = c2.usingColorSpace(.sRGB) ?? c2
+        let r = rgb1.redComponent + (rgb2.redComponent - rgb1.redComponent) * t
+        let g = rgb1.greenComponent + (rgb2.greenComponent - rgb1.greenComponent) * t
+        let b = rgb1.blueComponent + (rgb2.blueComponent - rgb1.blueComponent) * t
+        let a = rgb1.alphaComponent + (rgb2.alphaComponent - rgb1.alphaComponent) * t
+        return NSColor(srgbRed: r, green: g, blue: b, alpha: a)
+    }
+}
+
+// MARK: - Flipped Container (top-down subview layout)
+
+public final class PropertiesFlippedContainerView: NSView {
+    public override var isFlipped: Bool { true }
+}
+
+// MARK: - Properties Panel View (The Web-Parity Card Content)
+
+public final class PropertiesPanelView: NSView {
+    /// Full scrollable document height. The visible web card is only 368pt tall
+    /// (header + COLOR + SHAPE); TRANSFORM / APPEARANCE live below the fold.
+    public static let preferredContentHeight: CGFloat = 520
+
+    // Public API -------------------------------------------------------------
+    public var onFillChange: ((String) -> Void)?
+    public var onStrokeChange: ((String) -> Void)?
+    public var onStrokeWidthChange: ((CGFloat) -> Void)?
+    public var onOpacityChange: ((CGFloat) -> Void)?
+    public var onBlendModeChange: ((String) -> Void)?
+    public var onCornerRadiusChange: ((CGFloat) -> Void)?
+    public var onGeometryChange: ((_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ r: CGFloat, _ cr: CGFloat?) -> Void)?
+    /// Text-layer typography (only surfaced for `NodeKind.text` selections).
+    public var onFontFamilyChange: ((String) -> Void)?
+    public var onFontSizeChange: ((CGFloat) -> Void)?
+    public var onFontWeightChange: ((String) -> Void)?
+    public var onTextAlignChange: ((String) -> Void)?
+    public var onLineHeightChange: ((CGFloat) -> Void)?
+    public var onLetterSpacingChange: ((CGFloat) -> Void)?
+
+    // M2 Callbacks -----------------------------------------------------------
+    public var onCornerRadiiChange: ((CornerRadii) -> Void)?
+    public var onLockRatioChange: ((Bool) -> Void)?
+    public var onStrokeCapChange: ((String) -> Void)?
+    public var onStrokeJoinChange: ((String) -> Void)?
+    public var onStrokeMiterLimitChange: ((CGFloat) -> Void)?
+    public var onStrokeDashChange: (([CGFloat]?) -> Void)?
+    public var onStrokeAlignChange: ((String) -> Void)?
+    public var onItalicChange: ((Bool) -> Void)?
+    public var onUnderlineChange: ((Bool) -> Void)?
+    public var onEffectsChange: ((LayerEffects) -> Void)?
+    public var onAnchorChanged: ((TransformAnchor3x3) -> Void)?
+
+    public private(set) var node: VOONode?
+
+    public override var isFlipped: Bool { true }
+
+    // Header -----------------------------------------------------------------
+    private let headerLabel = NSTextField(labelWithString: "")
+    private let settingsButton = PropertiesIconButton(kind: .settings, style: .plain)
+    private let transferButton = PropertiesIconButton(kind: .transfer, style: .plain)
+
+    // COLOR & Fill Modes -----------------------------------------------------
+    private let colorLabel = NSTextField(labelWithString: "")
+    public let fillModeControl = PropertiesSegmentedControl(segments: [
+        .init(title: "Solid", value: "solid"),
+        .init(title: "Linear", value: "linear"),
+        .init(title: "Radial", value: "radial")
+    ])
+    private let wheel = PropertiesColorWheelView()
+    private let fillSwatch = PropertiesFillSwatchView()
+    private let swapButton = PropertiesIconButton(kind: .transfer, style: .plain)
+    private let hexPill = PropertiesHexPill(hex: "#000000", showsColorDot: false)
+    private let eyedropperButton = PropertiesIconButton(kind: .eyedropper, style: .circular)
+
+    // Gradient Fill Controls
+    public let gradientStopsBar = GradientStopsBarView()
+    public let gradientAnglePill = PropertiesNumberPill(label: "∠")
+    public let gradientStopHexPill = PropertiesHexPill(hex: "#FFFFFF", showsColorDot: true)
+    public let gradientStopOpacityPill = PropertiesNumberPill(label: "Op")
+
+    // SHAPE ------------------------------------------------------------------
+    private let shapeLabel = NSTextField(labelWithString: "")
+    private let radiusPill = PropertiesNumberPill(label: "")
+
+    // TEXT (text layers only — occupies the SHAPE slot) -----------------------
+    private let textContainer = PropertiesFlippedContainerView()
+    private let textLabel = NSTextField(labelWithString: "")
+    private let fontFamilyPill = PropertiesBlendModeButton()
+    private let fontSizePill = PropertiesNumberPill(label: "")
+    private let typographyButton = PropertiesTypographyMenuButton()
+    // Accessibility markers describing the current submenu values.
+    private let weightMarker = NSView()
+    private let alignMarker = NSView()
+    private let lineHeightMarker = NSView()
+    private let letterSpacingMarker = NSView()
+
+    // Visible Typography Controls (M2)
+    public let fontWeightDropdown = PropertiesBlendModeButton()
+    public let alignSegmentedControl = PropertiesSegmentedControl(segments: [
+        .init(title: "", icon: .alignLeft, value: "left"),
+        .init(title: "", icon: .alignCenter, value: "center"),
+        .init(title: "", icon: .alignRight, value: "right"),
+        .init(title: "", icon: .alignJustify, value: "justify")
+    ])
+    public let lineHeightPill = PropertiesNumberPill(label: "LH")
+    public let letterSpacingPill = PropertiesNumberPill(label: "LS")
+    public let italicButton = PropertiesIconButton(kind: .italic, style: .plain)
+    public let underlineButton = PropertiesIconButton(kind: .underline, style: .plain)
+
+    // TRANSFORM --------------------------------------------------------------
+    private let transformLabel = NSTextField(labelWithString: "")
+    public let anchorGrid = AnchorGridView()
+    private let transformContainer = PropertiesFlippedContainerView()
+    public let xPill = PropertiesNumberPill(label: "X")
+    public let yPill = PropertiesNumberPill(label: "Y")
+    public let wPill = PropertiesNumberPill(label: "W")
+    public let lockRatioButton = PropertiesIconButton(kind: .unlink, style: .plain)
+    public let hPill = PropertiesNumberPill(label: "H")
+    public let rPill = PropertiesNumberPill(label: "R")
+    public let crLinkButton = PropertiesIconButton(kind: .link, style: .plain)
+    public let crPill = PropertiesNumberPill(label: "CR")
+    public let tlPill = PropertiesNumberPill(label: "TL")
+    public let trPill = PropertiesNumberPill(label: "TR")
+    public let brPill = PropertiesNumberPill(label: "BR")
+    public let blPill = PropertiesNumberPill(label: "BL")
+
+    // APPEARANCE -------------------------------------------------------------
+    private let appearanceLabel = NSTextField(labelWithString: "")
+    public let fillHexPill = PropertiesHexPill(hex: "#000000", showsColorDot: true)
+    public let strokeHexPill = PropertiesHexPill(hex: "#b2ffd6", showsColorDot: true)
+    public let strokeWidthPill = PropertiesNumberPill(label: "W")
+    public let strokeCapControl = PropertiesSegmentedControl(segments: [
+        .init(title: "Butt", value: "butt"),
+        .init(title: "Round", value: "round"),
+        .init(title: "Square", value: "square")
+    ])
+    public let strokeJoinControl = PropertiesSegmentedControl(segments: [
+        .init(title: "Miter", value: "miter"),
+        .init(title: "Round", value: "round"),
+        .init(title: "Bevel", value: "bevel")
+    ])
+    public let strokeMiterLimitPill = PropertiesNumberPill(label: "ML")
+    public let strokeDashControl = PropertiesSegmentedControl(segments: [
+        .init(title: "Solid", value: "solid"),
+        .init(title: "Dash", value: "dashed"),
+        .init(title: "Dot", value: "dotted"),
+        .init(title: "Custom", value: "custom")
+    ])
+    public let dashLengthPill = PropertiesNumberPill(label: "DL")
+    public let dashGapPill = PropertiesNumberPill(label: "DG")
+    public let strokeAlignControl = PropertiesSegmentedControl(segments: [
+        .init(title: "Center", value: "center"),
+        .init(title: "Inside", value: "inside"),
+        .init(title: "Outside", value: "outside")
+    ])
+    public let opacityPill = PropertiesNumberPill(label: "")
+    public let blendButton = PropertiesBlendModeButton()
+
+    // EFFECTS ----------------------------------------------------------------
+    public let effectsContainer = PropertiesFlippedContainerView()
+    private let effectsLabel = NSTextField(labelWithString: "")
+    public let blurCheckbox = NSButton(checkboxWithTitle: "Gaussian Blur", target: nil, action: nil)
+    public let blurPill = PropertiesNumberPill(label: "R")
+
+    public let dropShadowCheckbox = NSButton(checkboxWithTitle: "Drop Shadow", target: nil, action: nil)
+    public let dropShadowHexPill = PropertiesHexPill(hex: "#000000", showsColorDot: true)
+    public let dropShadowOpacityPill = PropertiesNumberPill(label: "Op")
+    public let dropShadowBlurPill = PropertiesNumberPill(label: "Bl")
+    public let dropShadowXPill = PropertiesNumberPill(label: "X")
+    public let dropShadowYPill = PropertiesNumberPill(label: "Y")
+
+    public let innerShadowCheckbox = NSButton(checkboxWithTitle: "Inner Shadow", target: nil, action: nil)
+    public let innerShadowHexPill = PropertiesHexPill(hex: "#000000", showsColorDot: true)
+    public let innerShadowOpacityPill = PropertiesNumberPill(label: "Op")
+    public let innerShadowBlurPill = PropertiesNumberPill(label: "Bl")
+    public let innerShadowXPill = PropertiesNumberPill(label: "X")
+    public let innerShadowYPill = PropertiesNumberPill(label: "Y")
+
+    // State ------------------------------------------------------------------
+    private var dividerYs: [CGFloat] = [PropertiesPanelMetrics.headerDividerY]
+    private var showsShape = true
+    private var showsText = false
+    private var currentX: CGFloat = 0
+    private var currentY: CGFloat = 0
+    private var currentW: CGFloat = 0
+    private var currentH: CGFloat = 0
+    private var currentR: CGFloat = 0
+    private var currentCornerRadius: CGFloat = 0
+    public private(set) var isAspectLocked: Bool = false
+    public private(set) var isCornerRadiiLinked: Bool = true
+    public private(set) var currentCornerRadii: CornerRadii = CornerRadii(uniform: 0)
+
+    private var currentFillHex: String = "#000000"
+    private var currentSolidHex: String = "#000000"
+    public private(set) var currentFillMode: String = "solid"
+    public private(set) var currentGradientAngle: CGFloat = 180
+
+    private var currentStrokeHex: String = "#b2ffd6"
+    private var currentStrokeWidth: CGFloat = 1
+    public private(set) var currentStrokeCap: String = "butt"
+    public private(set) var currentStrokeJoin: String = "miter"
+    public private(set) var currentStrokeMiterLimit: CGFloat = 4.0
+    public private(set) var currentStrokeDash: [CGFloat]? = nil
+    public private(set) var currentStrokeAlign: String = "center"
+
+    private var currentOpacity: CGFloat = 1
+    private var currentBlendMode: String = "source-over"
+    private var currentFontFamily: String = "Inter"
+    private var currentFontSize: CGFloat = 16
+    private var currentFontWeight: String = "regular"
+    private var currentTextAlign: String = "left"
+    private var currentLineHeight: CGFloat = 1.2
+    private var currentLetterSpacing: CGFloat = 0
+    public private(set) var isItalic: Bool = false
+    public private(set) var isUnderline: Bool = false
+    public private(set) var currentEffects: LayerEffects = LayerEffects()
+    private var colorSampler: NSColorSampler?
+
+    public private(set) var contentHeight: CGFloat = PropertiesPanelView.preferredContentHeight
+
+    // MARK: Init
+
+    public override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setupUI()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupUI()
+    }
+
+    // MARK: Setup
+
+    private func setupUI() {
+        setAccessibilityIdentifier("Inspector.Properties")
+        setAccessibilityElement(true)
+        setAccessibilityRole(.group)
+        setAccessibilityLabel("Properties inspector")
+
+        // Header
+        applyAttributedLabel(headerLabel, text: "PROPERTIES", size: 11, weight: .semibold,
+                             color: NSColor(hex: "a3a3a3"), kern: 1.0)
+        addSubview(headerLabel)
+
+        settingsButton.iconPadding = 4
+        settingsButton.showsHoverBackground = true
+        settingsButton.setAccessibilityIdentifier("Inspector.Properties.Settings")
+        settingsButton.setAccessibilityLabel("Properties settings")
+        settingsButton.target = self
+        settingsButton.action = #selector(didClickSettings)
+        addSubview(settingsButton)
+
+        transferButton.iconPadding = 4
+        transferButton.showsHoverBackground = true
+        transferButton.setAccessibilityIdentifier("Inspector.Properties.Swap")
+        transferButton.setAccessibilityLabel("Swap fill and stroke")
+        transferButton.target = self
+        transferButton.action = #selector(didClickSwap)
+        addSubview(transferButton)
+
+        // COLOR
+        applyAttributedLabel(colorLabel, text: "COLOR", size: 10, weight: .semibold,
+                             color: NSColor(hex: "8f8f8f"), kern: 1.2)
+        addSubview(colorLabel)
+
+        fillModeControl.setAccessibilityIdentifier("Inspector.Properties.FillMode")
+        fillModeControl.setAccessibilityLabel("Fill mode")
+        fillModeControl.onSelectionChanged = { [weak self] _, mode in
+            self?.applyFillMode(mode)
+        }
+        addSubview(fillModeControl)
+
+        wheel.onColorChanged = { [weak self] hex in
+            self?.currentSolidHex = hex
+            self?.applyFill(hex: hex, notify: true)
+        }
+        addSubview(wheel)
+
+        fillSwatch.onClick = { [weak self] in self?.presentColorPanel() }
+        addSubview(fillSwatch)
+
+        swapButton.iconColor = NSColor(hex: "737373")
+        swapButton.setAccessibilityIdentifier("Inspector.Properties.SwapInline")
+        swapButton.setAccessibilityLabel("Swap fill and stroke")
+        swapButton.target = self
+        swapButton.action = #selector(didClickSwap)
+        addSubview(swapButton)
+
+        hexPill.setAccessibilityIdentifier("Inspector.Properties.Hex")
+        hexPill.setAccessibilityLabel("Fill hex color")
+        hexPill.onHexChange = { [weak self] hex in
+            self?.currentSolidHex = hex
+            self?.applyFill(hex: hex, notify: true)
+        }
+        addSubview(hexPill)
+
+        eyedropperButton.setAccessibilityIdentifier("Inspector.Properties.Eyedropper")
+        eyedropperButton.setAccessibilityLabel("Eyedropper")
+        eyedropperButton.target = self
+        eyedropperButton.action = #selector(didClickEyedropper)
+        addSubview(eyedropperButton)
+
+        gradientStopsBar.setAccessibilityIdentifier("Inspector.Properties.GradientStops")
+        gradientStopsBar.onStopsChange = { [weak self] _ in
+            self?.rebuildGradientFill(notify: true)
+        }
+        gradientStopsBar.onSelectionChange = { [weak self] _, stop in
+            self?.didSelectGradientStop(stop)
+        }
+        addSubview(gradientStopsBar)
+
+        gradientAnglePill.minimumValue = 0
+        gradientAnglePill.maximumValue = 360
+        gradientAnglePill.suffix = "°"
+        gradientAnglePill.setAccessibilityIdentifier("Inspector.Properties.GradientAngle")
+        gradientAnglePill.onValueChanged = { [weak self] angle in
+            self?.applyGradientAngle(angle)
+        }
+        addSubview(gradientAnglePill)
+
+        gradientStopHexPill.setAccessibilityIdentifier("Inspector.Properties.GradientStopHex")
+        gradientStopHexPill.onHexChange = { [weak self] hex in
+            self?.applyGradientStopHex(hex)
+        }
+        addSubview(gradientStopHexPill)
+
+        gradientStopOpacityPill.minimumValue = 0
+        gradientStopOpacityPill.maximumValue = 100
+        gradientStopOpacityPill.suffix = "%"
+        gradientStopOpacityPill.setAccessibilityIdentifier("Inspector.Properties.GradientStopOpacity")
+        gradientStopOpacityPill.onValueChanged = { [weak self] op in
+            self?.applyGradientStopOpacity(op)
+        }
+        addSubview(gradientStopOpacityPill)
+
+        // SHAPE
+        applyAttributedLabel(shapeLabel, text: "SHAPE", size: 10, weight: .semibold,
+                             color: NSColor(hex: "8f8f8f"), kern: 1.2)
+        addSubview(shapeLabel)
+
+        radiusPill.leadingGlyph = .cornerRadius
+        radiusPill.minimumValue = 0
+        radiusPill.maximumValue = 1_000
+        radiusPill.scrubUnitsPerPoint = 0.5
+        radiusPill.setAccessibilityIdentifier("Inspector.Properties.Radius")
+        radiusPill.setAccessibilityLabel("Corner radius")
+        radiusPill.onValueChanged = { [weak self] value in
+            self?.applyCornerRadius(value)
+        }
+        addSubview(radiusPill)
+
+        // TEXT (text layers only)
+        textContainer.setAccessibilityIdentifier("Inspector.Properties.Text")
+        textContainer.setAccessibilityElement(true)
+        textContainer.setAccessibilityRole(.group)
+        textContainer.setAccessibilityLabel("Text typography")
+        addSubview(textContainer)
+
+        applyAttributedLabel(textLabel, text: "TEXT", size: 10, weight: .semibold,
+                             color: NSColor(hex: "8f8f8f"), kern: 1.2)
+        textContainer.addSubview(textLabel)
+
+        fontFamilyPill.placeholderTitle = "Inter"
+        fontFamilyPill.setItems(PropertiesPanelView.fontFamilyItems)
+        fontFamilyPill.setAccessibilityIdentifier("Inspector.Properties.FontFamily")
+        fontFamilyPill.setAccessibilityLabel("Font family")
+        fontFamilyPill.onValueChange = { [weak self] family in
+            self?.applyFontFamily(family)
+        }
+        textContainer.addSubview(fontFamilyPill)
+
+        fontSizePill.minimumValue = 8
+        fontSizePill.maximumValue = 200
+        fontSizePill.scrubUnitsPerPoint = 1.0
+        fontSizePill.valueAlignment = .center
+        fontSizePill.setAccessibilityIdentifier("Inspector.Properties.FontSize")
+        fontSizePill.setAccessibilityLabel("Font size")
+        fontSizePill.onValueChanged = { [weak self] size in
+            self?.applyFontSize(size)
+        }
+        textContainer.addSubview(fontSizePill)
+
+        // Accessibility markers for typography submenus
+        configureFormatMarker(weightMarker, identifier: "Inspector.Properties.Weight", label: "Font weight")
+        configureFormatMarker(alignMarker, identifier: "Inspector.Properties.Align", label: "Text alignment")
+        configureFormatMarker(lineHeightMarker, identifier: "Inspector.Properties.LineHeight", label: "Line height")
+        configureFormatMarker(letterSpacingMarker, identifier: "Inspector.Properties.LetterSpacing", label: "Letter spacing")
+        for marker in [weightMarker, alignMarker, lineHeightMarker, letterSpacingMarker] {
+            textContainer.addSubview(marker)
+        }
+
+        typographyButton.setAccessibilityIdentifier("Inspector.Properties.Typography")
+        typographyButton.setAccessibilityLabel("Typography")
+        typographyButton.onWeightChange = { [weak self] weight in self?.applyFontWeight(weight) }
+        typographyButton.onTextAlignChange = { [weak self] align in self?.applyTextAlign(align) }
+        typographyButton.onLineHeightChange = { [weak self] lh in self?.applyLineHeight(lh) }
+        typographyButton.onLetterSpacingChange = { [weak self] sp in self?.applyLetterSpacing(sp) }
+        textContainer.addSubview(typographyButton)
+
+        // Visible Typography Controls (M2)
+        fontWeightDropdown.placeholderTitle = "Regular"
+        fontWeightDropdown.setItems([
+            ("Regular", "regular"),
+            ("Medium", "medium"),
+            ("Semibold", "semibold"),
+            ("Bold", "bold"),
+            ("Black", "black"),
+            ("Light", "light"),
+            ("Thin", "thin")
+        ])
+        fontWeightDropdown.setAccessibilityIdentifier("Inspector.Properties.VisibleWeight")
+        fontWeightDropdown.setAccessibilityLabel("Font weight")
+        fontWeightDropdown.onValueChange = { [weak self] weight in self?.applyFontWeight(weight) }
+        textContainer.addSubview(fontWeightDropdown)
+
+        alignSegmentedControl.setAccessibilityIdentifier("Inspector.Properties.VisibleAlign")
+        alignSegmentedControl.setAccessibilityLabel("Text alignment")
+        alignSegmentedControl.onSelectionChanged = { [weak self] _, align in self?.applyTextAlign(align) }
+        textContainer.addSubview(alignSegmentedControl)
+
+        lineHeightPill.minimumValue = 0.5
+        lineHeightPill.maximumValue = 4.0
+        lineHeightPill.roundsToInteger = false
+        lineHeightPill.scrubUnitsPerPoint = 0.05
+        lineHeightPill.setAccessibilityIdentifier("Inspector.Properties.VisibleLineHeight")
+        lineHeightPill.setAccessibilityLabel("Line height")
+        lineHeightPill.onValueChanged = { [weak self] lh in self?.applyLineHeight(lh) }
+        textContainer.addSubview(lineHeightPill)
+
+        letterSpacingPill.minimumValue = -20
+        letterSpacingPill.maximumValue = 50
+        letterSpacingPill.roundsToInteger = false
+        letterSpacingPill.scrubUnitsPerPoint = 0.5
+        letterSpacingPill.setAccessibilityIdentifier("Inspector.Properties.VisibleLetterSpacing")
+        letterSpacingPill.setAccessibilityLabel("Letter spacing")
+        letterSpacingPill.onValueChanged = { [weak self] ls in self?.applyLetterSpacing(ls) }
+        textContainer.addSubview(letterSpacingPill)
+
+        italicButton.setAccessibilityIdentifier("Inspector.Properties.Italic")
+        italicButton.setAccessibilityLabel("Italic")
+        italicButton.target = self
+        italicButton.action = #selector(didClickItalic)
+        textContainer.addSubview(italicButton)
+
+        underlineButton.setAccessibilityIdentifier("Inspector.Properties.Underline")
+        underlineButton.setAccessibilityLabel("Underline")
+        underlineButton.target = self
+        underlineButton.action = #selector(didClickUnderline)
+        textContainer.addSubview(underlineButton)
+
+        // TRANSFORM
+        applyAttributedLabel(transformLabel, text: "TRANSFORM", size: 10, weight: .semibold,
+                             color: NSColor(hex: "8f8f8f"), kern: 1.2)
+        addSubview(transformLabel)
+
+        anchorGrid.setAccessibilityIdentifier("Inspector.Properties.AnchorGrid")
+        anchorGrid.setAccessibilityLabel("Transform 3x3 Anchor Grid")
+        anchorGrid.onAnchorChanged = { [weak self] a in self?.onAnchorChanged?(a) }
+        addSubview(anchorGrid)
+
+        transformContainer.setAccessibilityIdentifier("Inspector.Properties.Transform")
+        transformContainer.setAccessibilityElement(true)
+        transformContainer.setAccessibilityRole(.group)
+        transformContainer.setAccessibilityLabel("Transform")
+        addSubview(transformContainer)
+
+        configureTransformPill(xPill, label: "X", units: 1.0)
+        configureTransformPill(yPill, label: "Y", units: 1.0)
+        configureTransformPill(wPill, label: "W", units: 1.0)
+        configureTransformPill(hPill, label: "H", units: 1.0)
+        configureTransformPill(rPill, label: "R", units: 1.0)
+        configureTransformPill(crPill, label: "CR", units: 0.5)
+
+        configureTransformPill(tlPill, label: "TL", units: 0.5)
+        configureTransformPill(trPill, label: "TR", units: 0.5)
+        configureTransformPill(brPill, label: "BR", units: 0.5)
+        configureTransformPill(blPill, label: "BL", units: 0.5)
+
+        tlPill.setAccessibilityIdentifier("Inspector.Properties.TL")
+        trPill.setAccessibilityIdentifier("Inspector.Properties.TR")
+        brPill.setAccessibilityIdentifier("Inspector.Properties.BR")
+        blPill.setAccessibilityIdentifier("Inspector.Properties.BL")
+
+        lockRatioButton.setAccessibilityIdentifier("Inspector.Properties.LockRatio")
+        lockRatioButton.setAccessibilityLabel("Lock aspect ratio")
+        lockRatioButton.target = self
+        lockRatioButton.action = #selector(didClickLockRatio)
+        transformContainer.addSubview(lockRatioButton)
+
+        crLinkButton.setAccessibilityIdentifier("Inspector.Properties.CornerRadiiLink")
+        crLinkButton.setAccessibilityLabel("Link corner radii")
+        crLinkButton.target = self
+        crLinkButton.action = #selector(didClickCornerRadiiLink)
+        transformContainer.addSubview(crLinkButton)
+
+        xPill.onValueChanged = { [weak self] value in self?.applyGeometry(x: value) }
+        yPill.onValueChanged = { [weak self] value in self?.applyGeometry(y: value) }
+
+        wPill.onValueChanged = { [weak self] value in
+            guard let self = self else { return }
+            if self.isAspectLocked && self.currentW > 0 && self.currentH > 0 {
+                let ratio = self.currentW / self.currentH
+                let newH = max(1, round(value / ratio))
+                self.hPill.setValue(newH)
+                self.applyGeometry(width: value, height: newH)
+            } else {
+                self.applyGeometry(width: value)
+            }
+        }
+
+        hPill.onValueChanged = { [weak self] value in
+            guard let self = self else { return }
+            if self.isAspectLocked && self.currentW > 0 && self.currentH > 0 {
+                let ratio = self.currentW / self.currentH
+                let newW = max(1, round(value * ratio))
+                self.wPill.setValue(newW)
+                self.applyGeometry(width: newW, height: value)
+            } else {
+                self.applyGeometry(height: value)
+            }
+        }
+
+        rPill.onValueChanged = { [weak self] value in self?.applyGeometry(rotation: value) }
+        crPill.onValueChanged = { [weak self] value in self?.applyCornerRadius(value) }
+
+        tlPill.onValueChanged = { [weak self] v in self?.applyCornerRadius(tl: v) }
+        trPill.onValueChanged = { [weak self] v in self?.applyCornerRadius(tr: v) }
+        brPill.onValueChanged = { [weak self] v in self?.applyCornerRadius(br: v) }
+        blPill.onValueChanged = { [weak self] v in self?.applyCornerRadius(bl: v) }
+
+        for pill in [xPill, yPill, wPill, hPill, rPill, crPill, tlPill, trPill, brPill, blPill] {
+            transformContainer.addSubview(pill)
+        }
+
+        // APPEARANCE
+        applyAttributedLabel(appearanceLabel, text: "APPEARANCE", size: 10, weight: .semibold,
+                             color: NSColor(hex: "8f8f8f"), kern: 1.2)
+        addSubview(appearanceLabel)
+
+        fillHexPill.setAccessibilityIdentifier("Inspector.Properties.FillHex")
+        fillHexPill.setAccessibilityLabel("Fill color")
+        fillHexPill.onHexChange = { [weak self] hex in
+            self?.currentSolidHex = hex
+            self?.applyFill(hex: hex, notify: true)
+        }
+        addSubview(fillHexPill)
+
+        strokeHexPill.setAccessibilityIdentifier("Inspector.Properties.StrokeHex")
+        strokeHexPill.setAccessibilityLabel("Stroke color")
+        strokeHexPill.onHexChange = { [weak self] hex in self?.applyStroke(hex: hex, notify: true) }
+        addSubview(strokeHexPill)
+
+        strokeWidthPill.minimumValue = 0
+        strokeWidthPill.maximumValue = 500
+        strokeWidthPill.scrubUnitsPerPoint = 0.2
+        strokeWidthPill.roundsToInteger = false
+        strokeWidthPill.setAccessibilityIdentifier("Inspector.Properties.StrokeWidth")
+        strokeWidthPill.setAccessibilityLabel("Stroke width")
+        strokeWidthPill.onValueChanged = { [weak self] value in
+            guard let self = self else { return }
+            self.currentStrokeWidth = max(value, 0)
+            if var node = self.node {
+                node.style.strokeWidth = self.currentStrokeWidth
+                self.node = node
+            }
+            self.onStrokeWidthChange?(self.currentStrokeWidth)
+        }
+        addSubview(strokeWidthPill)
+
+        strokeCapControl.setAccessibilityIdentifier("Inspector.Properties.StrokeCap")
+        strokeCapControl.setAccessibilityLabel("Stroke cap")
+        strokeCapControl.onSelectionChanged = { [weak self] _, cap in self?.applyStrokeCap(cap) }
+        addSubview(strokeCapControl)
+
+        strokeJoinControl.setAccessibilityIdentifier("Inspector.Properties.StrokeJoin")
+        strokeJoinControl.setAccessibilityLabel("Stroke join")
+        strokeJoinControl.onSelectionChanged = { [weak self] _, join in self?.applyStrokeJoin(join) }
+        addSubview(strokeJoinControl)
+
+        strokeMiterLimitPill.minimumValue = 1
+        strokeMiterLimitPill.maximumValue = 50
+        strokeMiterLimitPill.setValue(4)
+        strokeMiterLimitPill.setAccessibilityIdentifier("Inspector.Properties.StrokeMiterLimit")
+        strokeMiterLimitPill.setAccessibilityLabel("Stroke miter limit")
+        strokeMiterLimitPill.onValueChanged = { [weak self] ml in self?.applyStrokeMiterLimit(ml) }
+        addSubview(strokeMiterLimitPill)
+
+        strokeDashControl.setAccessibilityIdentifier("Inspector.Properties.StrokeDash")
+        strokeDashControl.setAccessibilityLabel("Stroke dash")
+        strokeDashControl.onSelectionChanged = { [weak self] _, dash in self?.applyStrokeDashMode(dash) }
+        addSubview(strokeDashControl)
+
+        dashLengthPill.minimumValue = 0
+        dashLengthPill.maximumValue = 500
+        dashLengthPill.setValue(4)
+        dashLengthPill.setAccessibilityIdentifier("Inspector.Properties.DashLength")
+        dashLengthPill.onValueChanged = { [weak self] _ in self?.applyCustomDash() }
+        addSubview(dashLengthPill)
+
+        dashGapPill.minimumValue = 0
+        dashGapPill.maximumValue = 500
+        dashGapPill.setValue(2)
+        dashGapPill.setAccessibilityIdentifier("Inspector.Properties.DashGap")
+        dashGapPill.onValueChanged = { [weak self] _ in self?.applyCustomDash() }
+        addSubview(dashGapPill)
+
+        strokeAlignControl.setAccessibilityIdentifier("Inspector.Properties.StrokeAlign")
+        strokeAlignControl.setAccessibilityLabel("Stroke align")
+        strokeAlignControl.onSelectionChanged = { [weak self] _, align in self?.applyStrokeAlign(align) }
+        addSubview(strokeAlignControl)
+
+        opacityPill.minimumValue = 0
+        opacityPill.maximumValue = 100
+        opacityPill.scrubUnitsPerPoint = 0.5
+        opacityPill.valueAlignment = .center
+        opacityPill.suffix = "%"
+        opacityPill.setAccessibilityIdentifier("Inspector.Properties.Opacity")
+        opacityPill.setAccessibilityLabel("Opacity")
+        opacityPill.onValueChanged = { [weak self] value in
+            guard let self = self else { return }
+            self.currentOpacity = min(max(value / 100.0, 0), 1)
+            if var node = self.node {
+                node.style.opacity = self.currentOpacity
+                self.node = node
+            }
+            self.onOpacityChange?(self.currentOpacity)
+        }
+        addSubview(opacityPill)
+
+        blendButton.setAccessibilityIdentifier("Inspector.Properties.BlendMode")
+        blendButton.setItems(PropertiesPanelView.blendModeItems)
+        blendButton.onValueChange = { [weak self] raw in
+            guard let self = self else { return }
+            self.currentBlendMode = raw
+            if var node = self.node {
+                node.style.blendMode = raw
+                self.node = node
+            }
+            self.onBlendModeChange?(raw)
+        }
+        addSubview(blendButton)
+
+        // EFFECTS (M2)
+        effectsContainer.setAccessibilityIdentifier("Inspector.Properties.Effects")
+        effectsContainer.setAccessibilityElement(true)
+        effectsContainer.setAccessibilityRole(.group)
+        effectsContainer.setAccessibilityLabel("Effects")
+        addSubview(effectsContainer)
+
+        applyAttributedLabel(effectsLabel, text: "EFFECTS", size: 10, weight: .semibold,
+                             color: NSColor(hex: "8f8f8f"), kern: 1.2)
+        effectsContainer.addSubview(effectsLabel)
+
+        blurCheckbox.setAccessibilityIdentifier("Inspector.Properties.BlurCheckbox")
+        blurCheckbox.target = self
+        blurCheckbox.action = #selector(didToggleBlur)
+        effectsContainer.addSubview(blurCheckbox)
+
+        blurPill.minimumValue = 0
+        blurPill.maximumValue = 100
+        blurPill.setAccessibilityIdentifier("Inspector.Properties.BlurRadius")
+        blurPill.onValueChanged = { [weak self] r in self?.applyBlurRadius(r) }
+        effectsContainer.addSubview(blurPill)
+
+        dropShadowCheckbox.setAccessibilityIdentifier("Inspector.Properties.DropShadowCheckbox")
+        dropShadowCheckbox.target = self
+        dropShadowCheckbox.action = #selector(didToggleDropShadow)
+        effectsContainer.addSubview(dropShadowCheckbox)
+
+        dropShadowHexPill.setAccessibilityIdentifier("Inspector.Properties.DropShadowHex")
+        dropShadowHexPill.onHexChange = { [weak self] hex in self?.applyDropShadow(hex: hex) }
+        effectsContainer.addSubview(dropShadowHexPill)
+
+        dropShadowOpacityPill.minimumValue = 0
+        dropShadowOpacityPill.maximumValue = 100
+        dropShadowOpacityPill.suffix = "%"
+        dropShadowOpacityPill.onValueChanged = { [weak self] op in self?.applyDropShadow(opacity: op / 100.0) }
+        effectsContainer.addSubview(dropShadowOpacityPill)
+
+        dropShadowBlurPill.minimumValue = 0
+        dropShadowBlurPill.maximumValue = 100
+        dropShadowBlurPill.onValueChanged = { [weak self] bl in self?.applyDropShadow(blur: bl) }
+        effectsContainer.addSubview(dropShadowBlurPill)
+
+        dropShadowXPill.minimumValue = -100
+        dropShadowXPill.maximumValue = 100
+        dropShadowXPill.onValueChanged = { [weak self] x in self?.applyDropShadow(x: x) }
+        effectsContainer.addSubview(dropShadowXPill)
+
+        dropShadowYPill.minimumValue = -100
+        dropShadowYPill.maximumValue = 100
+        dropShadowYPill.onValueChanged = { [weak self] y in self?.applyDropShadow(y: y) }
+        effectsContainer.addSubview(dropShadowYPill)
+
+        innerShadowCheckbox.setAccessibilityIdentifier("Inspector.Properties.InnerShadowCheckbox")
+        innerShadowCheckbox.target = self
+        innerShadowCheckbox.action = #selector(didToggleInnerShadow)
+        effectsContainer.addSubview(innerShadowCheckbox)
+
+        innerShadowHexPill.setAccessibilityIdentifier("Inspector.Properties.InnerShadowHex")
+        innerShadowHexPill.onHexChange = { [weak self] hex in self?.applyInnerShadow(hex: hex) }
+        effectsContainer.addSubview(innerShadowHexPill)
+
+        innerShadowOpacityPill.minimumValue = 0
+        innerShadowOpacityPill.maximumValue = 100
+        innerShadowOpacityPill.suffix = "%"
+        innerShadowOpacityPill.onValueChanged = { [weak self] op in self?.applyInnerShadow(opacity: op / 100.0) }
+        effectsContainer.addSubview(innerShadowOpacityPill)
+
+        innerShadowBlurPill.minimumValue = 0
+        innerShadowBlurPill.maximumValue = 100
+        innerShadowBlurPill.onValueChanged = { [weak self] bl in self?.applyInnerShadow(blur: bl) }
+        effectsContainer.addSubview(innerShadowBlurPill)
+
+        innerShadowXPill.minimumValue = -100
+        innerShadowXPill.maximumValue = 100
+        innerShadowXPill.onValueChanged = { [weak self] x in self?.applyInnerShadow(x: x) }
+        effectsContainer.addSubview(innerShadowXPill)
+
+        innerShadowYPill.minimumValue = -100
+        innerShadowYPill.maximumValue = 100
+        innerShadowYPill.onValueChanged = { [weak self] y in self?.applyInnerShadow(y: y) }
+        effectsContainer.addSubview(innerShadowYPill)
+
+        applyEmptyState()
+    }
+
+    private func configureTransformPill(_ pill: PropertiesNumberPill, label: String, units: CGFloat) {
+        pill.labelText = label
+        pill.minimumValue = -100_000
+        pill.maximumValue = 100_000
+        pill.scrubUnitsPerPoint = units
+        pill.setAccessibilityLabel("Transform \(label)")
+    }
+
+    private func configureFormatMarker(_ view: NSView, identifier: String, label: String) {
+        view.setAccessibilityIdentifier(identifier)
+        view.setAccessibilityElement(true)
+        view.setAccessibilityRole(.group)
+        view.setAccessibilityLabel(label)
+    }
+
+    private func updateFormatMarkers() {
+        weightMarker.setAccessibilityValue(currentFontWeight)
+        alignMarker.setAccessibilityValue(currentTextAlign)
+        lineHeightMarker.setAccessibilityValue(PropertiesColorMath.formatNumber(currentLineHeight, integer: false))
+        letterSpacingMarker.setAccessibilityValue(PropertiesColorMath.formatNumber(currentLetterSpacing, integer: false))
+        typographyButton.setAccessibilityValue("\(currentFontWeight), \(currentTextAlign), \(currentLineHeight), \(currentLetterSpacing)")
+    }
+
+    private func applyAttributedLabel(_ label: NSTextField, text: String, size: CGFloat,
+                                      weight: NSFont.Weight, color: NSColor, kern: CGFloat) {
+        label.attributedStringValue = NSAttributedString(string: text, attributes: [
+            .font: NSFont.systemFont(ofSize: size, weight: weight),
+            .foregroundColor: color,
+            .kern: kern
+        ])
+        label.isBordered = false
+        label.drawsBackground = false
+        label.isEditable = false
+        label.isSelectable = false
+        label.lineBreakMode = .byClipping
+        label.cell?.usesSingleLineMode = true
+    }
+
+    private static let blendModeItems: [(title: String, value: String)] = BlendMode.allCases.map {
+        (PropertiesColorMath.englishBlendModeName($0.rawValue), $0.rawValue)
+    }
+
+    private static let fontFamilies = ["Inter", "Helvetica Neue", "SF Pro Text", "Arial", "Georgia", "Menlo"]
+    private static let fontFamilyItems: [(title: String, value: String)] = fontFamilies.map { ($0, $0) }
+
+    // MARK: Configure
+
+    public func configure(with node: VOONode?) {
+        self.node = node
+        guard let node = node else {
+            applyEmptyState()
+            return
+        }
+
+        alphaValue = 1.0
+
+        currentX = node.x
+        currentY = node.y
+        currentW = node.width
+        currentH = node.height
+        currentR = node.rotation
+
+        isAspectLocked = node.lockRatio ?? false
+        lockRatioButton.iconKind = isAspectLocked ? .link : .unlink
+
+        currentCornerRadii = node.cornerRadii ?? CornerRadii(uniform: 0)
+        isCornerRadiiLinked = currentCornerRadii.isUniform
+        currentCornerRadius = currentCornerRadii.uniformRadius
+        crLinkButton.iconKind = isCornerRadiiLinked ? .link : .unlink
+
+        xPill.setValue(currentX)
+        yPill.setValue(currentY)
+        wPill.setValue(currentW)
+        hPill.setValue(currentH)
+        rPill.setValue(currentR)
+        crPill.setValue(currentCornerRadius)
+        tlPill.setValue(currentCornerRadii.tl)
+        trPill.setValue(currentCornerRadii.tr)
+        brPill.setValue(currentCornerRadii.br)
+        blPill.setValue(currentCornerRadii.bl)
+
+        radiusPill.maximumValue = max(0, min(node.width, node.height) / 2)
+        radiusPill.setValue(min(currentCornerRadius, radiusPill.maximumValue))
+
+        // Fill / Gradient
+        currentFillHex = node.fill
+        if node.fill.hasPrefix("linear-gradient") {
+            currentFillMode = "linear"
+            fillModeControl.select(value: "linear")
+            if let parsed = CanvasStageView.parseGradient(from: node.fill) {
+                if case .linear(let angle) = parsed.type {
+                    currentGradientAngle = angle
+                    gradientAnglePill.setValue(angle)
+                }
+                gradientStopsBar.stops = parsed.stops.map { GradientStopsBarView.Stop(color: $0.color, location: $0.location) }
+            }
+        } else if node.fill.hasPrefix("radial-gradient") {
+            currentFillMode = "radial"
+            fillModeControl.select(value: "radial")
+            if let parsed = CanvasStageView.parseGradient(from: node.fill) {
+                gradientStopsBar.stops = parsed.stops.map { GradientStopsBarView.Stop(color: $0.color, location: $0.location) }
+            }
+        } else {
+            currentFillMode = "solid"
+            fillModeControl.select(value: "solid")
+            currentSolidHex = PropertiesColorMath.normalizeHex(node.fill) ?? "#000000"
+            wheel.setHex(currentSolidHex)
+            fillSwatch.fillHex = currentSolidHex
+            hexPill.setHex(currentSolidHex)
+            fillHexPill.setHex(currentSolidHex)
+        }
+
+        let isGradient = (currentFillMode != "solid")
+        wheel.isHidden = isGradient
+        fillSwatch.isHidden = isGradient
+        swapButton.isHidden = isGradient
+        hexPill.isHidden = isGradient
+        eyedropperButton.isHidden = isGradient
+        gradientStopsBar.isHidden = !isGradient
+        gradientStopHexPill.isHidden = !isGradient
+        gradientStopOpacityPill.isHidden = !isGradient
+        gradientAnglePill.isHidden = (currentFillMode != "linear")
+
+        currentStrokeHex = PropertiesColorMath.normalizeHex(node.stroke) ?? "#b2ffd6"
+        currentStrokeWidth = max(node.strokeWidth, 0)
+        strokeHexPill.setHex(currentStrokeHex)
+        strokeWidthPill.setValue(currentStrokeWidth)
+        fillSwatch.strokeHex = currentStrokeHex
+
+        currentStrokeCap = node.style.strokeCap ?? "butt"
+        strokeCapControl.select(value: currentStrokeCap)
+        currentStrokeJoin = node.style.strokeJoin ?? "miter"
+        strokeJoinControl.select(value: currentStrokeJoin)
+        currentStrokeMiterLimit = node.style.strokeMiterLimit ?? 4.0
+        strokeMiterLimitPill.setValue(currentStrokeMiterLimit)
+        currentStrokeAlign = node.style.strokeAlign ?? "center"
+        strokeAlignControl.select(value: currentStrokeAlign)
+        currentStrokeDash = node.style.strokeDash
+        if let dash = currentStrokeDash, !dash.isEmpty {
+            if dash.count >= 2 && dash[0] == 0 {
+                strokeDashControl.select(value: "dotted")
+            } else if dash.count >= 2 && dash[0] == 4 * currentStrokeWidth {
+                strokeDashControl.select(value: "dashed")
+            } else {
+                strokeDashControl.select(value: "custom")
+                dashLengthPill.setValue(dash[0])
+                dashGapPill.setValue(dash.count > 1 ? dash[1] : dash[0])
+            }
+        } else {
+            strokeDashControl.select(value: "solid")
+        }
+
+        currentOpacity = min(max(node.opacity, 0), 1)
+        opacityPill.setValue(round(currentOpacity * 100))
+
+        currentBlendMode = node.blendMode
+        blendButton.select(value: currentBlendMode)
+
+        // Typography
+        currentFontFamily = node.fontFamily ?? "Inter"
+        currentFontSize = min(max(node.fontSize ?? 16, 8), 200)
+        currentFontWeight = node.fontWeight ?? "regular"
+        currentTextAlign = node.textAlign ?? "left"
+        currentLineHeight = node.lineHeight ?? 1.2
+        currentLetterSpacing = node.letterSpacing ?? 0
+        isItalic = node.italic ?? false
+        isUnderline = node.underline ?? false
+
+        fontFamilyPill.select(value: currentFontFamily)
+        fontSizePill.setValue(currentFontSize)
+        typographyButton.currentWeight = currentFontWeight
+        typographyButton.currentTextAlign = currentTextAlign
+        typographyButton.currentLineHeight = currentLineHeight
+        typographyButton.currentLetterSpacing = currentLetterSpacing
+
+        fontWeightDropdown.select(value: currentFontWeight)
+        alignSegmentedControl.select(value: currentTextAlign)
+        lineHeightPill.setValue(currentLineHeight)
+        letterSpacingPill.setValue(currentLetterSpacing)
+        italicButton.iconColor = isItalic ? NSColor(hex: "a7ffd4") : NSColor(hex: "737373")
+        underlineButton.iconColor = isUnderline ? NSColor(hex: "a7ffd4") : NSColor(hex: "737373")
+        updateFormatMarkers()
+
+        // Effects
+        currentEffects = node.effects ?? LayerEffects()
+        let blur = currentEffects.gaussianBlur
+        blurCheckbox.state = (blur?.enabled == true) ? .on : .off
+        blurPill.setValue(CGFloat(blur?.radius ?? 0))
+
+        let shadow = currentEffects.shadow
+        dropShadowCheckbox.state = (shadow?.enabled == true) ? .on : .off
+        dropShadowHexPill.setHex(PropertiesColorMath.normalizeHex(shadow?.color ?? "#000000") ?? "#000000")
+        dropShadowOpacityPill.setValue(round(CGFloat(shadow?.opacity ?? 1.0) * 100))
+        dropShadowBlurPill.setValue(CGFloat(shadow?.blur ?? 0))
+        dropShadowXPill.setValue(CGFloat(shadow?.offsetX ?? 0))
+        dropShadowYPill.setValue(CGFloat(shadow?.offsetY ?? 0))
+
+        let innerShadow = currentEffects.innerShadow
+        innerShadowCheckbox.state = (innerShadow?.enabled == true) ? .on : .off
+        innerShadowHexPill.setHex(PropertiesColorMath.normalizeHex(innerShadow?.color ?? "#000000") ?? "#000000")
+        innerShadowOpacityPill.setValue(round(CGFloat(innerShadow?.opacity ?? 1.0) * 100))
+        innerShadowBlurPill.setValue(CGFloat(innerShadow?.blur ?? 0))
+        innerShadowXPill.setValue(CGFloat(innerShadow?.offsetX ?? 0))
+        innerShadowYPill.setValue(CGFloat(innerShadow?.offsetY ?? 0))
+
+        showsShape = isShapeLike(node.kind)
+        showsText = node.kind == .text
+        applySectionVisibility()
+        needsLayout = true
+        layoutSubtreeIfNeeded()
+        needsDisplay = true
+    }
+
+    private func applyEmptyState() {
+        alphaValue = 0.5
+        showsShape = false
+        showsText = false
+        currentX = 0; currentY = 0; currentW = 0; currentH = 0; currentR = 0; currentCornerRadius = 0
+        currentCornerRadii = CornerRadii(uniform: 0)
+        isAspectLocked = false
+        isCornerRadiiLinked = true
+        lockRatioButton.iconKind = .unlink
+        crLinkButton.iconKind = .link
+        xPill.setValue(0); yPill.setValue(0); wPill.setValue(0); hPill.setValue(0)
+        rPill.setValue(0); crPill.setValue(0); radiusPill.setValue(0)
+        tlPill.setValue(0); trPill.setValue(0); brPill.setValue(0); blPill.setValue(0)
+
+        currentFillHex = "#000000"
+        currentSolidHex = "#000000"
+        currentFillMode = "solid"
+        fillModeControl.select(value: "solid")
+        wheel.setHex(currentFillHex)
+        fillSwatch.fillHex = currentFillHex
+        fillSwatch.strokeHex = "#b2ffd6"
+        hexPill.setHex(currentFillHex)
+        fillHexPill.setHex(currentFillHex)
+
+        currentStrokeHex = "#b2ffd6"
+        currentStrokeWidth = 1
+        currentStrokeCap = "butt"
+        currentStrokeJoin = "miter"
+        currentStrokeMiterLimit = 4.0
+        currentStrokeDash = nil
+        currentStrokeAlign = "center"
+        strokeCapControl.select(value: "butt")
+        strokeJoinControl.select(value: "miter")
+        strokeMiterLimitPill.setValue(4.0)
+        strokeDashControl.select(value: "solid")
+        strokeAlignControl.select(value: "center")
+        strokeHexPill.setHex(currentStrokeHex)
+        strokeWidthPill.setValue(currentStrokeWidth)
+
+        currentOpacity = 1
+        opacityPill.setValue(100)
+
+        currentBlendMode = "source-over"
+        blendButton.select(value: currentBlendMode)
+
+        currentFontFamily = "Inter"
+        currentFontSize = 16
+        currentFontWeight = "regular"
+        currentTextAlign = "left"
+        currentLineHeight = 1.2
+        currentLetterSpacing = 0
+        isItalic = false
+        isUnderline = false
+        fontFamilyPill.select(value: currentFontFamily)
+        fontSizePill.setValue(currentFontSize)
+        typographyButton.currentWeight = currentFontWeight
+        typographyButton.currentTextAlign = currentTextAlign
+        typographyButton.currentLineHeight = currentLineHeight
+        typographyButton.currentLetterSpacing = currentLetterSpacing
+        fontWeightDropdown.select(value: currentFontWeight)
+        alignSegmentedControl.select(value: currentTextAlign)
+        lineHeightPill.setValue(currentLineHeight)
+        letterSpacingPill.setValue(currentLetterSpacing)
+        italicButton.iconColor = NSColor(hex: "737373")
+        underlineButton.iconColor = NSColor(hex: "737373")
+        updateFormatMarkers()
+
+        currentEffects = LayerEffects()
+        blurCheckbox.state = .off
+        blurPill.setValue(0)
+        dropShadowCheckbox.state = .off
+        dropShadowHexPill.setHex("#000000")
+        dropShadowOpacityPill.setValue(100)
+        dropShadowBlurPill.setValue(0)
+        dropShadowXPill.setValue(0)
+        dropShadowYPill.setValue(0)
+        innerShadowCheckbox.state = .off
+        innerShadowHexPill.setHex("#000000")
+        innerShadowOpacityPill.setValue(100)
+        innerShadowBlurPill.setValue(0)
+        innerShadowXPill.setValue(0)
+        innerShadowYPill.setValue(0)
+
+        contentHeight = PropertiesPanelView.preferredContentHeight
+        applySectionVisibility()
+        needsLayout = true
+        layoutSubtreeIfNeeded()
+        needsDisplay = true
+    }
+
+    private func isShapeLike(_ kind: NodeKind) -> Bool {
+        switch kind {
+        case .rect, .ellipse, .frame, .boolean, .path:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func applySectionVisibility() {
+        shapeLabel.isHidden = !showsShape
+        radiusPill.isHidden = !showsShape
+        textContainer.isHidden = !showsText
+    }
+
+    // MARK: Edits (internal state + node mirror + callbacks)
+
+    private func applyFill(hex: String, notify: Bool) {
+        let normalized = PropertiesColorMath.normalizeHex(hex) ?? currentFillHex
+        currentFillHex = normalized
+        currentSolidHex = normalized
+        fillSwatch.fillHex = normalized
+        hexPill.setHex(normalized)
+        fillHexPill.setHex(normalized)
+        if wheel.hex != normalized {
+            wheel.setHex(normalized)
+        }
+        if var node = node {
+            node.style.fill = normalized
+            self.node = node
+        }
+        if notify {
+            onFillChange?(normalized)
+        }
+    }
+
+    private func applyFillMode(_ mode: String) {
+        currentFillMode = mode
+        let isGradient = (mode != "solid")
+        wheel.isHidden = isGradient
+        fillSwatch.isHidden = isGradient
+        swapButton.isHidden = isGradient
+        hexPill.isHidden = isGradient
+        eyedropperButton.isHidden = isGradient
+        gradientStopsBar.isHidden = !isGradient
+        gradientStopHexPill.isHidden = !isGradient
+        gradientStopOpacityPill.isHidden = !isGradient
+        gradientAnglePill.isHidden = (mode != "linear")
+
+        if mode == "solid" {
+            let hex = PropertiesColorMath.normalizeHex(currentSolidHex) ?? "#000000"
+            applyFill(hex: hex, notify: true)
+        } else {
+            rebuildGradientFill(notify: true)
+        }
+        needsLayout = true
+        needsDisplay = true
+    }
+
+    private func didSelectGradientStop(_ stop: GradientStopsBarView.Stop) {
+        gradientStopHexPill.setHex(PropertiesColorMath.hexString(from: stop.color))
+        let alpha = stop.color.alphaComponent
+        gradientStopOpacityPill.setValue(round(alpha * 100))
+    }
+
+    private func applyGradientStopHex(_ hex: String) {
+        guard let normalized = PropertiesColorMath.normalizeHex(hex),
+              let baseColor = NSColor(hexString: normalized) else { return }
+        let currentAlpha = gradientStopsBar.selectedStop?.color.alphaComponent ?? 1.0
+        let newColor = baseColor.withAlphaComponent(currentAlpha)
+        gradientStopsBar.updateSelectedColor(newColor)
+        rebuildGradientFill(notify: true)
+    }
+
+    private func applyGradientStopOpacity(_ op: CGFloat) {
+        guard let stop = gradientStopsBar.selectedStop else { return }
+        let alpha = min(max(op / 100.0, 0), 1)
+        let newColor = stop.color.withAlphaComponent(alpha)
+        gradientStopsBar.updateSelectedColor(newColor)
+        rebuildGradientFill(notify: true)
+    }
+
+    private func applyGradientAngle(_ angle: CGFloat) {
+        currentGradientAngle = angle.truncatingRemainder(dividingBy: 360)
+        if currentGradientAngle < 0 { currentGradientAngle += 360 }
+        rebuildGradientFill(notify: true)
+    }
+
+    private func rebuildGradientFill(notify: Bool = true) {
+        let sorted = gradientStopsBar.stops.sorted { $0.location < $1.location }
+        let stopStrings = sorted.map { stop -> String in
+            let hex = PropertiesColorMath.hexString(from: stop.color)
+            let pct = Int(round(stop.location * 100))
+            return "\(hex) \(pct)%"
+        }.joined(separator: ", ")
+
+        let cssString: String
+        if currentFillMode == "radial" {
+            cssString = "radial-gradient(circle at 50% 50%, \(stopStrings))"
+        } else {
+            cssString = "linear-gradient(\(Int(round(currentGradientAngle)))deg, \(stopStrings))"
+        }
+
+        currentFillHex = cssString
+        if var node = node {
+            node.style.fill = cssString
+            self.node = node
+        }
+        if notify {
+            onFillChange?(cssString)
+        }
+    }
+
+    private func applyStroke(hex: String, notify: Bool) {
+        let normalized = PropertiesColorMath.normalizeHex(hex) ?? currentStrokeHex
+        currentStrokeHex = normalized
+        strokeHexPill.setHex(normalized)
+        fillSwatch.strokeHex = normalized
+        if var node = node {
+            node.style.stroke = normalized
+            self.node = node
+        }
+        if notify {
+            onStrokeChange?(normalized)
+        }
+    }
+
+    private func applyStrokeCap(_ cap: String) {
+        currentStrokeCap = cap
+        if var node = node {
+            node.style.strokeCap = cap
+            self.node = node
+        }
+        onStrokeCapChange?(cap)
+    }
+
+    private func applyStrokeJoin(_ join: String) {
+        currentStrokeJoin = join
+        if var node = node {
+            node.style.strokeJoin = join
+            self.node = node
+        }
+        onStrokeJoinChange?(join)
+    }
+
+    private func applyStrokeMiterLimit(_ ml: CGFloat) {
+        currentStrokeMiterLimit = max(1, ml)
+        if var node = node {
+            node.style.strokeMiterLimit = currentStrokeMiterLimit
+            self.node = node
+        }
+        onStrokeMiterLimitChange?(currentStrokeMiterLimit)
+    }
+
+    private func applyStrokeDashMode(_ mode: String) {
+        switch mode {
+        case "solid":
+            currentStrokeDash = nil
+        case "dashed":
+            let w = max(currentStrokeWidth, 1)
+            currentStrokeDash = [4 * w, 2 * w]
+        case "dotted":
+            let w = max(currentStrokeWidth, 1)
+            currentStrokeDash = [0, 2 * w]
+            currentStrokeCap = "round"
+            strokeCapControl.select(value: "round")
+            applyStrokeCap("round")
+        case "custom":
+            currentStrokeDash = [dashLengthPill.value, dashGapPill.value]
+        default:
+            currentStrokeDash = nil
+        }
+        if var node = node {
+            node.style.strokeDash = currentStrokeDash
+            self.node = node
+        }
+        onStrokeDashChange?(currentStrokeDash)
+        needsLayout = true
+    }
+
+    private func applyCustomDash() {
+        let dl = max(0, dashLengthPill.value)
+        let dg = max(0, dashGapPill.value)
+        currentStrokeDash = [dl, dg]
+        if var node = node {
+            node.style.strokeDash = currentStrokeDash
+            self.node = node
+        }
+        onStrokeDashChange?(currentStrokeDash)
+    }
+
+    private func applyStrokeAlign(_ align: String) {
+        currentStrokeAlign = align
+        if var node = node {
+            node.style.strokeAlign = align
+            self.node = node
+        }
+        onStrokeAlignChange?(align)
+    }
+
+    @objc private func didClickLockRatio() {
+        isAspectLocked.toggle()
+        lockRatioButton.iconKind = isAspectLocked ? .link : .unlink
+        if var node = node {
+            node.lockRatio = isAspectLocked
+            self.node = node
+        }
+        onLockRatioChange?(isAspectLocked)
+    }
+
+    @objc private func didClickCornerRadiiLink() {
+        isCornerRadiiLinked.toggle()
+        crLinkButton.iconKind = isCornerRadiiLinked ? .link : .unlink
+        crPill.isHidden = !isCornerRadiiLinked
+        tlPill.isHidden = isCornerRadiiLinked
+        trPill.isHidden = isCornerRadiiLinked
+        brPill.isHidden = isCornerRadiiLinked
+        blPill.isHidden = isCornerRadiiLinked
+        if isCornerRadiiLinked {
+            let u = currentCornerRadii.tl
+            currentCornerRadii = CornerRadii(uniform: u)
+            crPill.setValue(u)
+            applyCornerRadii(currentCornerRadii)
+        }
+        needsLayout = true
+    }
+
+    private func applyCornerRadius(_ radius: CGFloat) {
+        currentCornerRadius = max(radius, 0)
+        currentCornerRadii = CornerRadii(uniform: currentCornerRadius)
+        crPill.setValue(currentCornerRadius)
+        tlPill.setValue(currentCornerRadius)
+        trPill.setValue(currentCornerRadius)
+        brPill.setValue(currentCornerRadius)
+        blPill.setValue(currentCornerRadius)
+        if var node = node {
+            node.cornerRadii = currentCornerRadii
+            self.node = node
+        }
+        onCornerRadiusChange?(currentCornerRadius)
+        onCornerRadiiChange?(currentCornerRadii)
+    }
+
+    private func applyCornerRadius(tl: CGFloat? = nil, tr: CGFloat? = nil, br: CGFloat? = nil, bl: CGFloat? = nil) {
+        if let tl = tl { currentCornerRadii.tl = max(0, tl) }
+        if let tr = tr { currentCornerRadii.tr = max(0, tr) }
+        if let br = br { currentCornerRadii.br = max(0, br) }
+        if let bl = bl { currentCornerRadii.bl = max(0, bl) }
+        applyCornerRadii(currentCornerRadii)
+    }
+
+    private func applyCornerRadii(_ radii: CornerRadii) {
+        currentCornerRadii = radii
+        currentCornerRadius = radii.tl
+        if var node = node {
+            node.cornerRadii = radii
+            self.node = node
+        }
+        onCornerRadiiChange?(radii)
+        onCornerRadiusChange?(radii.tl)
+    }
+
+    private func applyFontFamily(_ family: String) {
+        currentFontFamily = family
+        if var node = node {
+            node.fontFamily = family
+            self.node = node
+        }
+        onFontFamilyChange?(family)
+    }
+
+    private func applyFontSize(_ size: CGFloat) {
+        currentFontSize = min(max(size, 8), 200)
+        if var node = node {
+            node.fontSize = currentFontSize
+            self.node = node
+        }
+        onFontSizeChange?(currentFontSize)
+    }
+
+    private func applyFontWeight(_ weight: String) {
+        currentFontWeight = weight
+        typographyButton.currentWeight = weight
+        fontWeightDropdown.select(value: weight)
+        if var node = node {
+            node.fontWeight = weight
+            self.node = node
+        }
+        updateFormatMarkers()
+        onFontWeightChange?(weight)
+    }
+
+    private func applyTextAlign(_ align: String) {
+        currentTextAlign = align
+        typographyButton.currentTextAlign = align
+        alignSegmentedControl.select(value: align)
+        if var node = node {
+            node.textAlign = align
+            self.node = node
+        }
+        updateFormatMarkers()
+        onTextAlignChange?(align)
+    }
+
+    private func applyLineHeight(_ lineHeight: CGFloat) {
+        currentLineHeight = min(max(lineHeight, 0.5), 4.0)
+        typographyButton.currentLineHeight = currentLineHeight
+        lineHeightPill.setValue(currentLineHeight)
+        if var node = node {
+            node.lineHeight = currentLineHeight
+            self.node = node
+        }
+        updateFormatMarkers()
+        onLineHeightChange?(currentLineHeight)
+    }
+
+    private func applyLetterSpacing(_ spacing: CGFloat) {
+        currentLetterSpacing = min(max(spacing, -20), 50)
+        typographyButton.currentLetterSpacing = currentLetterSpacing
+        letterSpacingPill.setValue(currentLetterSpacing)
+        if var node = node {
+            node.letterSpacing = currentLetterSpacing
+            self.node = node
+        }
+        updateFormatMarkers()
+        onLetterSpacingChange?(currentLetterSpacing)
+    }
+
+    @objc private func didClickItalic() {
+        isItalic.toggle()
+        italicButton.iconColor = isItalic ? NSColor(hex: "a7ffd4") : NSColor(hex: "737373")
+        if var node = node {
+            node.italic = isItalic
+            self.node = node
+        }
+        onItalicChange?(isItalic)
+    }
+
+    @objc private func didClickUnderline() {
+        isUnderline.toggle()
+        underlineButton.iconColor = isUnderline ? NSColor(hex: "a7ffd4") : NSColor(hex: "737373")
+        if var node = node {
+            node.underline = isUnderline
+            self.node = node
+        }
+        onUnderlineChange?(isUnderline)
+    }
+
+    @objc private func didToggleBlur() {
+        let enabled = blurCheckbox.state == .on
+        let radius = Double(blurPill.value)
+        currentEffects.gaussianBlur = BlurEffect(enabled: enabled, radius: radius)
+        applyEffects()
+    }
+
+    private func applyBlurRadius(_ radius: CGFloat) {
+        let enabled = blurCheckbox.state == .on
+        currentEffects.gaussianBlur = BlurEffect(enabled: enabled, radius: Double(radius))
+        applyEffects()
+    }
+
+    @objc private func didToggleDropShadow() {
+        let enabled = dropShadowCheckbox.state == .on
+        var shadow = currentEffects.shadow ?? DropShadowEffect(enabled: enabled, color: dropShadowHexPill.hex, blur: Double(dropShadowBlurPill.value), offsetX: Double(dropShadowXPill.value), offsetY: Double(dropShadowYPill.value), spread: 0, opacity: Double(dropShadowOpacityPill.value / 100.0))
+        shadow.enabled = enabled
+        currentEffects.shadow = shadow
+        applyEffects()
+    }
+
+    private func applyDropShadow(hex: String? = nil, opacity: Double? = nil, blur: Double? = nil, x: Double? = nil, y: Double? = nil) {
+        var shadow = currentEffects.shadow ?? DropShadowEffect(enabled: dropShadowCheckbox.state == .on, color: dropShadowHexPill.hex, blur: 8, offsetX: 0, offsetY: 4, spread: 0, opacity: 1.0)
+        if let hex = hex { shadow.color = hex }
+        if let opacity = opacity { shadow.opacity = opacity }
+        if let blur = blur { shadow.blur = blur }
+        if let x = x { shadow.offsetX = x }
+        if let y = y { shadow.offsetY = y }
+        currentEffects.shadow = shadow
+        applyEffects()
+    }
+
+    @objc private func didToggleInnerShadow() {
+        let enabled = innerShadowCheckbox.state == .on
+        var innerShadow = currentEffects.innerShadow ?? InnerShadowEffect(enabled: enabled, color: innerShadowHexPill.hex, blur: Double(innerShadowBlurPill.value), offsetX: Double(innerShadowXPill.value), offsetY: Double(innerShadowYPill.value), spread: 0, opacity: Double(innerShadowOpacityPill.value / 100.0))
+        innerShadow.enabled = enabled
+        currentEffects.innerShadow = innerShadow
+        applyEffects()
+    }
+
+    private func applyInnerShadow(hex: String? = nil, opacity: Double? = nil, blur: Double? = nil, x: Double? = nil, y: Double? = nil) {
+        var innerShadow = currentEffects.innerShadow ?? InnerShadowEffect(enabled: innerShadowCheckbox.state == .on, color: innerShadowHexPill.hex, blur: 4, offsetX: 0, offsetY: 2, spread: 0, opacity: 1.0)
+        if let hex = hex { innerShadow.color = hex }
+        if let opacity = opacity { innerShadow.opacity = opacity }
+        if let blur = blur { innerShadow.blur = blur }
+        if let x = x { innerShadow.offsetX = x }
+        if let y = y { innerShadow.offsetY = y }
+        currentEffects.innerShadow = innerShadow
+        applyEffects()
+    }
+
+    private func applyEffects() {
+        if var node = node {
+            node.effects = currentEffects
+            self.node = node
+        }
+        onEffectsChange?(currentEffects)
+    }
+
+    private func applyGeometry(x: CGFloat? = nil, y: CGFloat? = nil, width: CGFloat? = nil,
+                               height: CGFloat? = nil, rotation: CGFloat? = nil,
+                               cornerRadius: CGFloat? = nil) {
+        if let x = x { currentX = x }
+        if let y = y { currentY = y }
+        if let width = width { currentW = width }
+        if let height = height { currentH = height }
+        if let rotation = rotation { currentR = rotation }
+        if let cornerRadius = cornerRadius {
+            currentCornerRadius = max(cornerRadius, 0)
+            if isCornerRadiiLinked {
+                currentCornerRadii = CornerRadii(uniform: currentCornerRadius)
+                tlPill.setValue(currentCornerRadius)
+                trPill.setValue(currentCornerRadius)
+                brPill.setValue(currentCornerRadius)
+                blPill.setValue(currentCornerRadius)
+            }
+        }
+
+        if var node = node {
+            node.x = currentX
+            node.y = currentY
+            node.width = max(currentW, 0.001)
+            node.height = max(currentH, 0.001)
+            node.rotation = currentR
+            if isShapeLike(node.kind) {
+                node.cornerRadii = currentCornerRadii
+            }
+            self.node = node
+            radiusPill.maximumValue = max(0, min(node.width, node.height) / 2)
+        }
+
+        onGeometryChange?(currentX, currentY, currentW, currentH, currentR, currentCornerRadius)
+    }
+
+    private func presentColorPanel() {
+        let panel = NSColorPanel.shared
+        panel.setTarget(self)
+        panel.setAction(#selector(colorPanelDidChange(_:)))
+        panel.color = NSColor(hex: currentSolidHex)
+        panel.orderFront(nil)
+    }
+
+    @objc private func colorPanelDidChange(_ sender: NSColorPanel) {
+        let hex = PropertiesColorMath.hexString(from: sender.color)
+        applyFill(hex: hex, notify: true)
+    }
+
+    @objc private func didClickSwap() {
+        let fill = currentSolidHex
+        let stroke = currentStrokeHex
+        applyStroke(hex: fill, notify: true)
+        applyFill(hex: stroke, notify: true)
+    }
+
+    @objc private func didClickSettings() {
+        presentColorPanel()
+    }
+
+    @objc private func didClickEyedropper() {
+        let sampler = NSColorSampler()
+        colorSampler = sampler
+        sampler.show { [weak self] color in
+            guard let self = self else { return }
+            self.colorSampler = nil
+            guard let color = color else { return }
+            let hex = PropertiesColorMath.hexString(from: color)
+            self.applyFill(hex: hex, notify: true)
+        }
+    }
+
+    // MARK: Layout
+
+    public override func layout() {
+        super.layout()
+        let width = bounds.width > 0 ? bounds.width : PropertiesPanelMetrics.width
+        let contentRight = width - PropertiesPanelMetrics.contentInset
+        let contentWidth = max(contentRight - PropertiesPanelMetrics.contentInset, 0)
+        let inset = PropertiesPanelMetrics.contentInset
+        dividerYs = [PropertiesPanelMetrics.headerDividerY]
+
+        // Header
+        headerLabel.frame = CGRect(x: inset + 8,
+                                   y: PropertiesPanelMetrics.headerTitleTop,
+                                   width: 190,
+                                   height: PropertiesPanelMetrics.headerTitleHeight)
+        let headerIcon = PropertiesPanelMetrics.headerIconSize
+        let headerIconY = PropertiesPanelMetrics.headerTitleTop
+            + (PropertiesPanelMetrics.headerTitleHeight - headerIcon) / 2
+        transferButton.frame = CGRect(x: contentRight - 8 - headerIcon, y: headerIconY,
+                                      width: headerIcon, height: headerIcon)
+        settingsButton.frame = CGRect(x: contentRight - 8 - headerIcon - 4 - headerIcon,
+                                      y: headerIconY, width: headerIcon, height: headerIcon)
+
+        // COLOR section
+        colorLabel.frame = CGRect(x: inset, y: 56,
+                                  width: 100, height: PropertiesPanelMetrics.sectionLabelHeight)
+        fillModeControl.frame = CGRect(x: inset, y: 72, width: contentWidth, height: 22)
+
+        var cursorY: CGFloat = 100
+
+        if currentFillMode == "solid" {
+            wheel.isHidden = false
+            fillSwatch.isHidden = false
+            swapButton.isHidden = false
+            hexPill.isHidden = false
+            eyedropperButton.isHidden = false
+
+            gradientStopsBar.isHidden = true
+            gradientAnglePill.isHidden = true
+            gradientStopHexPill.isHidden = true
+            gradientStopOpacityPill.isHidden = true
+
+            let wheelSide = PropertiesPanelMetrics.wheelDiameter
+            wheel.frame = CGRect(x: round((width - wheelSide) / 2), y: cursorY, width: wheelSide, height: wheelSide)
+            cursorY += wheelSide + 10
+
+            fillSwatch.frame = CGRect(x: inset, y: cursorY, width: 30, height: 30)
+            swapButton.frame = CGRect(x: inset + 36, y: cursorY + 7, width: 16, height: 16)
+            hexPill.frame = CGRect(x: contentRight - 30 - 6 - 70, y: cursorY + 3, width: 70, height: 24)
+            eyedropperButton.frame = CGRect(x: contentRight - 30, y: cursorY, width: 30, height: 30)
+            cursorY += 38
+        } else {
+            wheel.isHidden = true
+            fillSwatch.isHidden = true
+            swapButton.isHidden = true
+            hexPill.isHidden = true
+            eyedropperButton.isHidden = true
+
+            gradientStopsBar.isHidden = false
+            gradientStopHexPill.isHidden = false
+            gradientStopOpacityPill.isHidden = false
+
+            gradientStopsBar.frame = CGRect(x: inset, y: cursorY, width: contentWidth, height: 24)
+            cursorY += 28
+
+            let stopRowY = cursorY
+            gradientStopHexPill.frame = CGRect(x: inset, y: stopRowY, width: 100, height: 24)
+            gradientStopOpacityPill.frame = CGRect(x: inset + 106, y: stopRowY, width: 56, height: 24)
+
+            if currentFillMode == "linear" {
+                gradientAnglePill.isHidden = false
+                gradientAnglePill.frame = CGRect(x: contentRight - 56, y: stopRowY, width: 56, height: 24)
+            } else {
+                gradientAnglePill.isHidden = true
+                gradientAnglePill.frame = .zero
+            }
+            cursorY += 32
+        }
+
+        dividerYs.append(cursorY)
+        cursorY += 8
+
+        // SHAPE / TEXT section
+        if showsShape {
+            shapeLabel.isHidden = false
+            radiusPill.isHidden = false
+            textContainer.isHidden = true
+
+            shapeLabel.frame = CGRect(x: inset, y: cursorY,
+                                      width: 100, height: PropertiesPanelMetrics.sectionLabelHeight)
+            cursorY += 16
+            radiusPill.frame = CGRect(x: inset, y: cursorY, width: 108, height: 26)
+            cursorY += 32
+            dividerYs.append(cursorY)
+            cursorY += 8
+        } else if showsText {
+            shapeLabel.isHidden = true
+            radiusPill.isHidden = true
+            textContainer.isHidden = false
+
+            let textContainerH: CGFloat = 110
+            textContainer.frame = CGRect(x: inset, y: cursorY, width: contentWidth, height: textContainerH)
+            textLabel.frame = CGRect(x: 0, y: 0, width: 100, height: PropertiesPanelMetrics.sectionLabelHeight)
+
+            fontFamilyPill.frame = CGRect(x: 0, y: 16, width: 130, height: 26)
+            fontSizePill.frame = CGRect(x: 136, y: 16, width: 50, height: 26)
+            typographyButton.frame = CGRect(x: contentWidth - 24, y: 16, width: 24, height: 26)
+
+            weightMarker.frame = CGRect(x: contentWidth - 24, y: 16, width: 1, height: 1)
+            alignMarker.frame = CGRect(x: contentWidth - 24, y: 16, width: 1, height: 1)
+            lineHeightMarker.frame = CGRect(x: contentWidth - 24, y: 16, width: 1, height: 1)
+            letterSpacingMarker.frame = CGRect(x: contentWidth - 24, y: 16, width: 1, height: 1)
+
+            fontWeightDropdown.frame = CGRect(x: 0, y: 48, width: 110, height: 24)
+            alignSegmentedControl.frame = CGRect(x: 116, y: 48, width: contentWidth - 116, height: 24)
+
+            lineHeightPill.frame = CGRect(x: 0, y: 78, width: 50, height: 24)
+            letterSpacingPill.frame = CGRect(x: 56, y: 78, width: 50, height: 24)
+            italicButton.frame = CGRect(x: contentWidth - 54, y: 78, width: 24, height: 24)
+            underlineButton.frame = CGRect(x: contentWidth - 26, y: 78, width: 24, height: 24)
+
+            cursorY += textContainerH + 12
+            dividerYs.append(cursorY)
+            cursorY += 8
+        } else {
+            shapeLabel.isHidden = true
+            radiusPill.isHidden = true
+            textContainer.isHidden = true
+        }
+
+        // TRANSFORM section
+        transformLabel.frame = CGRect(x: inset, y: cursorY,
+                                      width: 120, height: PropertiesPanelMetrics.sectionLabelHeight)
+        anchorGrid.frame = CGRect(x: contentRight - 26, y: cursorY - 3, width: 26, height: 20)
+        cursorY += 16
+
+        let transformH: CGFloat = isCornerRadiiLinked ? 60 : 92
+        transformContainer.frame = CGRect(x: inset, y: cursorY, width: contentWidth, height: transformH)
+
+        let col = (contentWidth - 28) / 4
+        xPill.frame = CGRect(x: 0, y: 0, width: col, height: 26)
+        yPill.frame = CGRect(x: col + 4, y: 0, width: col, height: 26)
+        wPill.frame = CGRect(x: (col + 4) * 2, y: 0, width: col - 8, height: 26)
+        lockRatioButton.frame = CGRect(x: (col + 4) * 2 + col - 6, y: 3, width: 16, height: 20)
+        hPill.frame = CGRect(x: (col + 4) * 3, y: 0, width: col, height: 26)
+
+        rPill.frame = CGRect(x: 0, y: 30, width: 100, height: 26)
+        crLinkButton.frame = CGRect(x: 106, y: 33, width: 16, height: 20)
+
+        if isCornerRadiiLinked {
+            crPill.isHidden = false
+            tlPill.isHidden = true; trPill.isHidden = true; brPill.isHidden = true; blPill.isHidden = true
+            crPill.frame = CGRect(x: 128, y: 30, width: contentWidth - 128, height: 26)
+        } else {
+            crPill.isHidden = true
+            tlPill.isHidden = false; trPill.isHidden = false; brPill.isHidden = false; blPill.isHidden = false
+            let half = (contentWidth - 128 - 4) / 2
+            tlPill.frame = CGRect(x: 128, y: 30, width: half, height: 26)
+            trPill.frame = CGRect(x: 128 + half + 4, y: 30, width: half, height: 26)
+
+            blPill.frame = CGRect(x: 128, y: 60, width: half, height: 26)
+            brPill.frame = CGRect(x: 128 + half + 4, y: 60, width: half, height: 26)
+        }
+
+        cursorY += transformH + 8
+        dividerYs.append(cursorY)
+        cursorY += 8
+
+        // APPEARANCE section
+        appearanceLabel.frame = CGRect(x: inset, y: cursorY,
+                                       width: 140, height: PropertiesPanelMetrics.sectionLabelHeight)
+        cursorY += 16
+
+        fillHexPill.frame = CGRect(x: inset, y: cursorY, width: 110, height: 24)
+        strokeHexPill.frame = CGRect(x: contentRight - 110, y: cursorY, width: 110, height: 24)
+        cursorY += 28
+
+        strokeWidthPill.frame = CGRect(x: inset, y: cursorY, width: 50, height: 24)
+        strokeCapControl.frame = CGRect(x: inset + 56, y: cursorY + 1, width: 84, height: 22)
+        strokeJoinControl.frame = CGRect(x: contentRight - 84, y: cursorY + 1, width: 84, height: 22)
+        cursorY += 28
+
+        strokeDashControl.frame = CGRect(x: inset, y: cursorY, width: 110, height: 22)
+        strokeAlignControl.frame = CGRect(x: contentRight - 110, y: cursorY, width: 110, height: 22)
+        cursorY += 26
+
+        let isDashedOrCustom = (currentStrokeDash != nil && !currentStrokeDash!.isEmpty)
+        dashLengthPill.isHidden = !isDashedOrCustom
+        dashGapPill.isHidden = !isDashedOrCustom
+        strokeMiterLimitPill.isHidden = !isDashedOrCustom
+        if isDashedOrCustom {
+            dashLengthPill.frame = CGRect(x: inset, y: cursorY, width: 60, height: 24)
+            dashGapPill.frame = CGRect(x: inset + 66, y: cursorY, width: 60, height: 24)
+            strokeMiterLimitPill.frame = CGRect(x: contentRight - 60, y: cursorY, width: 60, height: 24)
+            cursorY += 28
+        }
+
+        opacityPill.frame = CGRect(x: inset, y: cursorY, width: 54, height: 24)
+        blendButton.frame = CGRect(x: inset + 60, y: cursorY, width: contentWidth - 60, height: 24)
+        cursorY += 32
+
+        dividerYs.append(cursorY)
+        cursorY += 8
+
+        // EFFECTS section
+        effectsContainer.frame = CGRect(x: inset, y: cursorY, width: contentWidth, height: 160)
+        effectsLabel.frame = CGRect(x: 0, y: 0, width: 100, height: PropertiesPanelMetrics.sectionLabelHeight)
+
+        blurCheckbox.frame = CGRect(x: 0, y: 16, width: 120, height: 20)
+        blurPill.frame = CGRect(x: contentWidth - 60, y: 14, width: 60, height: 24)
+
+        dropShadowCheckbox.frame = CGRect(x: 0, y: 46, width: 110, height: 20)
+        dropShadowHexPill.frame = CGRect(x: 116, y: 44, width: 64, height: 22)
+        dropShadowOpacityPill.frame = CGRect(x: contentWidth - 48, y: 44, width: 48, height: 22)
+
+        dropShadowBlurPill.frame = CGRect(x: 0, y: 72, width: 50, height: 22)
+        dropShadowXPill.frame = CGRect(x: 56, y: 72, width: 50, height: 22)
+        dropShadowYPill.frame = CGRect(x: 112, y: 72, width: 50, height: 22)
+
+        innerShadowCheckbox.frame = CGRect(x: 0, y: 102, width: 110, height: 20)
+        innerShadowHexPill.frame = CGRect(x: 116, y: 100, width: 64, height: 22)
+        innerShadowOpacityPill.frame = CGRect(x: contentWidth - 48, y: 100, width: 48, height: 22)
+
+        innerShadowBlurPill.frame = CGRect(x: 0, y: 128, width: 50, height: 22)
+        innerShadowXPill.frame = CGRect(x: 56, y: 128, width: 50, height: 22)
+        innerShadowYPill.frame = CGRect(x: 112, y: 128, width: 50, height: 22)
+
+        cursorY += 164
+        contentHeight = node == nil ? PropertiesPanelView.preferredContentHeight : max(PropertiesPanelView.preferredContentHeight, cursorY)
+
+        needsDisplay = true
+    }
+
+    public func calculateContentHeight() -> CGFloat {
+        return contentHeight
+    }
+
+    // MARK: Drawing (section dividers)
+
+    public override func draw(_ dirtyRect: NSRect) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        ctx.setLineWidth(1)
+        let inset = PropertiesPanelMetrics.dividerInset
+        for y in dividerYs {
+            let alpha: CGFloat = abs(y - PropertiesPanelMetrics.headerDividerY) < 0.5 ? 0.10 : 0.08
+            ctx.setStrokeColor(NSColor(white: 1.0, alpha: alpha).cgColor)
+            let lineY = round(y) + 0.5
+            ctx.strokeLineSegments(between: [CGPoint(x: inset, y: lineY),
+                                             CGPoint(x: bounds.width - inset, y: lineY)])
+        }
+    }
+}
+

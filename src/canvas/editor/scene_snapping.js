@@ -7,7 +7,12 @@
 import { nodeAABB } from "./scene_geometry.js";
 import { getSetting } from "../../shared/settings.js";
 
-const SNAP_THRESHOLD_PX = 6;
+/** Screen-space distance to acquire a snap (Figma/Affinity tactile feel). */
+export const SNAP_ACQUIRE_PX = 5;
+/** Screen-space distance to keep a snap once acquired (hysteresis). */
+export const SNAP_RELEASE_PX = 9;
+/** @deprecated Prefer SNAP_ACQUIRE_PX; kept for callers that override tolerance. */
+const SNAP_THRESHOLD_PX = SNAP_ACQUIRE_PX;
 const SQRT3_OVER_2 = Math.sqrt(3) / 2;
 
 /** Persisted settings keys that drive the snapping options below. */
@@ -31,6 +36,7 @@ export function buildSnapOptions({
   grid = null,
   snapToGrid = false,
   showGuides = true,
+  activeSnap = false,
 } = {}) {
   const size = Number(grid?.size);
   return {
@@ -38,6 +44,7 @@ export function buildSnapOptions({
     snapToObjects: true,
     snapToGuides: showGuides !== false,
     snapToGrid: snapToGrid === true,
+    activeSnap: activeSnap === true,
     grid: {
       type: grid?.type === "isometric" ? "isometric" : "rectangular",
       size: Number.isFinite(size) && size > 0 ? size : DEFAULT_GRID_SNAP_SIZE,
@@ -53,11 +60,12 @@ export function buildSnapOptions({
  * on the very next gesture without restarting the engine; the grid overlay
  * only supplies the grid type/size.
  */
-export function editorSnapOptions({ grid = null } = {}) {
+export function editorSnapOptions({ grid = null, activeSnap = false } = {}) {
   return buildSnapOptions({
     grid,
     snapToGrid: getSetting(SNAP_SETTING_KEYS.snapToGrid) === true,
     showGuides: getSetting(SNAP_SETTING_KEYS.showGuides) !== false,
+    activeSnap,
   });
 }
 
@@ -139,8 +147,13 @@ export function snapNodeBounds({
   const gridType = options.grid?.type || "rectangular";
   const gridSize = Math.max(1, options.grid?.size || 10);
 
-  const baseThreshold = options.tolerance ?? SNAP_THRESHOLD_PX;
-  const threshold = Math.max(3, baseThreshold / zoom);
+  // Hysteresis: easier to stay snapped than to acquire, preventing flutter at
+  // the threshold boundary while dragging along an alignment.
+  const acquirePx = options.tolerance ?? SNAP_ACQUIRE_PX;
+  const releasePx = options.releaseTolerance ?? SNAP_RELEASE_PX;
+  const acquireThreshold = Math.max(3, acquirePx / zoom);
+  const releaseThreshold = Math.max(acquireThreshold + 1, releasePx / zoom);
+  const threshold = options.activeSnap ? releaseThreshold : acquireThreshold;
 
   const targetsX = [];
   const targetsY = [];
@@ -155,39 +168,58 @@ export function snapNodeBounds({
   const moving = new Set(activeIds ?? (activeId ? [activeId] : []));
   const siblingBoxes = [];
 
-  // Sibling nodes
+  // Sibling nodes — only a local neighborhood. Full-document scans made every
+  // drag frame O(N) for alignment and O(N²) for gaps on 1000+ node pages.
   if (snapToObjects) {
     const totalNodes = doc.nodes?.length ?? 0;
-    // Local neighborhood radius for equidistant spacing candidates (prevents quadratic explosion on 1000+ nodes)
-    const neighborRadius = Math.max(rect.width * 3, rect.height * 3, 1200 / (zoom || 1));
-    const neighborMinX = rect.x - neighborRadius;
-    const neighborMaxX = rect.x + rect.width + neighborRadius;
-    const neighborMinY = rect.y - neighborRadius;
-    const neighborMaxY = rect.y + rect.height + neighborRadius;
+    const neighborMargin = Math.max(
+      0,
+      Number(options.neighborhoodMargin) ||
+        Math.max(rect.width * 3, rect.height * 3, 1000 / Math.max(zoom || 1, 1e-6)),
+    );
+    const neighborBox = {
+      minX: rect.x - neighborMargin,
+      minY: rect.y - neighborMargin,
+      maxX: rect.x + rect.width + neighborMargin,
+      maxY: rect.y + rect.height + neighborMargin,
+    };
 
-    for (const node of doc.nodes ?? []) {
+    const index = options.spatialIndex ?? doc.spatialIndex ?? doc._spatialIndex;
+    let candidates = null;
+    if (index && typeof index.search === "function" && totalNodes > 32) {
+      const hits = index.search(neighborBox);
+      candidates = [];
+      for (let i = 0; i < hits.length; i += 1) {
+        const node = hits[i].node ?? hits[i];
+        if (!node?.id || moving.has(node.id) || node.visible === false) continue;
+        candidates.push(node);
+      }
+    }
+
+    const nodes = candidates ?? doc.nodes ?? [];
+    for (const node of nodes) {
       if (moving.has(node.id) || node.visible === false) continue;
       const box = nodeAABB(node);
-
       if (
-        totalNodes <= 32 ||
-        (box.x + box.width >= neighborMinX &&
-          box.x <= neighborMaxX &&
-          box.y + box.height >= neighborMinY &&
-          box.y <= neighborMaxY)
+        candidates == null &&
+        totalNodes > 32 &&
+        (box.x + box.width < neighborBox.minX ||
+          box.x > neighborBox.maxX ||
+          box.y + box.height < neighborBox.minY ||
+          box.y > neighborBox.maxY)
       ) {
-        siblingBoxes.push(box);
+        continue;
       }
-
+      siblingBoxes.push(box);
       targetsX.push(
-        { pos: box.x },
-        { pos: box.x + box.width / 2 },
-        { pos: box.x + box.width },
+        { pos: box.x, box },
+        { pos: box.x + box.width / 2, box },
+        { pos: box.x + box.width, box },
       );
       targetsY.push(
-        { pos: box.y },
-        { pos: box.y + box.height / 2 },
-        { pos: box.y + box.height },
+        { pos: box.y, box },
+        { pos: box.y + box.height / 2, box },
+        { pos: box.y + box.height, box },
       );
     }
   }
@@ -211,6 +243,8 @@ export function snapNodeBounds({
   let bestDistY = Infinity;
   let activeGuideX = null;
   let activeGuideY = null;
+  let activeTargetBoxX = null;
+  let activeTargetBoxY = null;
   let gapGuidesX = null;
   let gapGuidesY = null;
 
@@ -361,6 +395,7 @@ export function snapNodeBounds({
         if (dist <= threshold && dist < bestDistX) {
           bestDistX = dist;
           activeGuideX = target.pos;
+          activeTargetBoxX = target.box ?? null;
           const dX = target.pos - edge;
           snappedX = target.pos;
           snappedWidth = rect.width - dX;
@@ -373,6 +408,7 @@ export function snapNodeBounds({
         if (dist <= threshold && dist < bestDistX) {
           bestDistX = dist;
           activeGuideX = target.pos;
+          activeTargetBoxX = target.box ?? null;
           const dX = target.pos - edge;
           snappedWidth = rect.width + dX;
         }
@@ -386,6 +422,7 @@ export function snapNodeBounds({
         if (dist <= threshold && dist < bestDistY) {
           bestDistY = dist;
           activeGuideY = target.pos;
+          activeTargetBoxY = target.box ?? null;
           const dY = target.pos - edge;
           snappedY = target.pos;
           snappedHeight = rect.height - dY;
@@ -398,6 +435,7 @@ export function snapNodeBounds({
         if (dist <= threshold && dist < bestDistY) {
           bestDistY = dist;
           activeGuideY = target.pos;
+          activeTargetBoxY = target.box ?? null;
           const dY = target.pos - edge;
           snappedHeight = rect.height + dY;
         }
@@ -423,6 +461,7 @@ export function snapNodeBounds({
           bestDistX = dist;
           snappedX = target.pos - offset;
           activeGuideX = target.pos;
+          activeTargetBoxX = target.box ?? null;
         }
       }
     }
@@ -434,6 +473,7 @@ export function snapNodeBounds({
           bestDistY = dist;
           snappedY = target.pos - offset;
           activeGuideY = target.pos;
+          activeTargetBoxY = target.box ?? null;
         }
       }
     }
@@ -469,6 +509,7 @@ export function snapNodeBounds({
             bestDistX = distRight;
             snappedX = targetRight;
             activeGuideX = targetRight;
+            activeTargetBoxX = null;
 
             const allMinY = Math.max(b1.y, b2.y, rect.y);
             const allMaxY = Math.min(
@@ -540,6 +581,7 @@ export function snapNodeBounds({
             bestDistX = distLeft;
             snappedX = targetLeft;
             activeGuideX = targetLeft;
+            activeTargetBoxX = null;
 
             const allMinY = Math.max(b1.y, b2.y, rect.y);
             const allMaxY = Math.min(
@@ -614,6 +656,7 @@ export function snapNodeBounds({
             bestDistX = distMid;
             snappedX = targetMid;
             activeGuideX = targetMid;
+            activeTargetBoxX = null;
 
             const allMinY = Math.max(b1.y, b2.y, rect.y);
             const allMaxY = Math.min(
@@ -681,6 +724,7 @@ export function snapNodeBounds({
             bestDistY = distBelow;
             snappedY = targetBelow;
             activeGuideY = targetBelow;
+            activeTargetBoxY = null;
 
             const allMinX = Math.max(b1.x, b2.x, rect.x);
             const allMaxX = Math.min(
@@ -752,6 +796,7 @@ export function snapNodeBounds({
             bestDistY = distAbove;
             snappedY = targetAbove;
             activeGuideY = targetAbove;
+            activeTargetBoxY = null;
 
             const allMinX = Math.max(b1.x, b2.x, rect.x);
             const allMaxX = Math.min(
@@ -826,6 +871,7 @@ export function snapNodeBounds({
             bestDistY = distMid;
             snappedY = targetMid;
             activeGuideY = targetMid;
+            activeTargetBoxY = null;
 
             const allMinX = Math.max(b1.x, b2.x, rect.x);
             const allMaxX = Math.min(
@@ -875,7 +921,15 @@ export function snapNodeBounds({
   }
 
   if (activeGuideX !== null) {
-    guides.push({ type: "v", pos: activeGuideX });
+    const guide = { type: "v", pos: activeGuideX };
+    // Object-to-object segments (Figma/Affinity); canvas/grid snaps keep full span.
+    if (activeTargetBoxX) {
+      const peer = activeTargetBoxX;
+      guide.startY = Math.min(rect.y, peer.y) - 8;
+      guide.endY =
+        Math.max(rect.y + rect.height, peer.y + peer.height) + 8;
+    }
+    guides.push(guide);
   }
   if (gapGuidesX && gapGuidesX.length > 0) {
     guides.push(...gapGuidesX);
@@ -897,7 +951,14 @@ export function snapNodeBounds({
   }
 
   if (activeGuideY !== null) {
-    guides.push({ type: "h", pos: activeGuideY });
+    const guide = { type: "h", pos: activeGuideY };
+    if (activeTargetBoxY) {
+      const peer = activeTargetBoxY;
+      guide.startX = Math.min(rect.x, peer.x) - 8;
+      guide.endX =
+        Math.max(rect.x + rect.width, peer.x + peer.width) + 8;
+    }
+    guides.push(guide);
   }
   if (gapGuidesY && gapGuidesY.length > 0) {
     guides.push(...gapGuidesY);

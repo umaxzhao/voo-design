@@ -1,0 +1,1112 @@
+# Recovered Figma editor command table (fullscreen_actions i18n namespace)
+# source: /tmp/figma_web/figma_app-61e97149e8b9c012.min.en.json.br
+# extraction: json keys fullscreen_actions.<action-id> -> English label
+abandon_and_reattach_multiplayer	Abandon and reattach multiplayer
+adapt_content_for_screenreaders	Adapt content for screen readers
+add-default-cell-styles-to-tables	Add default cell styles to tables
+add-platform-shape-definition	Add Platform Shape Definition
+add-prototype-starting-point	Add starting point
+add-slide-object-animation	Animate…
+add-table-column-after	Add column to the right
+add-table-column-before	Add column to the left
+add-table-row-above	Add row above
+add-table-row-below	Add row below
+add-title	Add title
+add-transform-modifier-to-selection	Add transforms
+add-transform-modifiers-to-selection	Add radial repeat to selection
+add-variant	Add variant
+add_transform-modifier-linear	Linear repeat
+add_transform-modifier-radial	Radial repeat
+add_transform-modifier-skew	Skew
+adjust-ruler-guides	Adjust ruler guides...
+adjust_font_size	Adjust font size
+adjust_font_weight	Adjust font weight
+adjust_letter_spacing	Adjust letter spacing
+adjust_line_height	Adjust line height
+adjust_ruler_guides	Adjust ruler guides
+after_selecting_points	After selecting points…
+ai-balance	AI balance
+ai_content_fill.couldnt_count	Couldn't replace {failed} / {total}
+ai_content_fill.generic_error	Couldn’t regenerate text content. Please try again.
+ai_content_fill.magic_handle_hover_tooltip	Duplicate, with new content
+ai_content_fill.magic_handle_hover_tooltip_all_dupes	Duplicate
+ai_content_fill.missing_font	Missing fonts
+ai_content_fill.missing_font_visual_bell	Some text failed to update due to missing fonts
+ai_content_fill.no_duplicates_to_replace_error	No duplicate nodes found—couldn’t replace
+ai_content_fill.placeholder_fill_realistic_content	Fill in realistic content
+ai_content_fill.private_beta.share_feedback	Share feedback
+ai_content_fill.prompt_suggestion	Describe your changes
+ai_content_fill.replace_content	Replace content
+ai_content_fill.rewrite_duplicates	Rewrite duplicates
+ai_content_fill.select_a_stack_of_repeating_frames	Select a few repeating items
+ai_content_fill.select_items_in_one_breakpoint	Select items in the same breakpoint
+ai_content_fill.select_items_in_same_tlf	Select items in the same frame
+ai_content_fill.select_items_with_text	Select items with text
+ai_content_fill.update_content	Update content
+ai_content_fill.visual_bell_suggestion	Suggestion
+align-bottom	Align bottom
+align-bottom-to-frame	Align bottom to frame
+align-center	Align center
+align-horizontal-center	Align horizontal centers
+align-horizontal-center-to-frame	Align horizontally to frame
+align-left	Align left
+align-left-to-frame	Align left to frame
+align-right	Align right
+align-right-to-frame	Align right to frame
+align-top	Align top
+align-top-to-frame	Align top to frame
+align-vertical-center	Align vertical centers
+align-vertical-center-to-frame	Align vertically to frame
+align_centers	Align centers
+align_left_right	Align left/right
+align_top_bottom	Align top/bottom
+always_show_tabs_when_presenting	Always show tabs when presenting
+annotations-menu	Annotations
+apply-transform-modifiers	Apply transforms to selection
+arrange-menu	Arrange
+arrow_tool	Arrow tool
+aspect-ratio-lock	Lock aspect ratio
+aspect-ratio-unlock	Unlock aspect ratio
+back-to-files	Back to files
+backup-all-overrides	Back up all overrides in document to clipboard
+bend-tool-tooltip	Bend
+bend_tool	Bend tool
+bold_and_italic	Bold/Italic
+boolean-menu	Boolean groups
+break-vector-network-into-paths	Break branching vector network into paths
+bring-forward	Bring forward
+bring-to-front	Bring to front
+browse-all-resources-dlt	Widgets, stickers, templates and more
+browse-all-resources-dlt-description	Widgets, stickers, and more.
+browse-all-resources-dlt-overflow	Much, much more
+browse-all-resources-dlt-overflow-description	Widgets, stickers, and more.
+browse-all-resources-modal	Browse all resources
+brush_tool	Brush tool
+bulleted_and_numbered_list	Turn into a list
+calculate-deleted-components-published-version	Compute publish statuses of soft deleted components
+cancel-last-animation	Test cancel last Typescript animation
+canvas-search-replace	Find and replace…
+canvas_node_picker.add_input	Add reference
+canvas_node_picker.add_input_error	Failed to add reference
+change_status	Change status
+change_variant	Change variant
+choose_instance	Choose instance
+clear-component-props-data-for-selection	Clear all component props data from selection
+clear-make-edits-debug-data	Clear make edits debug data
+clear-slot	Clear slot
+clear_empty_prototype_interactions	Clear empty prototype interactions
+clear_favicon	Clear favicon
+click_or_drag_to_place	Click or drag to place
+collaborate	Collaborate
+collapse-figjam-left-panel	Collapse panel
+collapse-layers	Collapse layers
+color-profile-assign-legacy	Assign file color profile to LEGACY
+color-profile-assign-legacy.quick_action	[INTERNAL DEBUG ONLY]: Assign file color profile to LEGACY.
+color-profile-set-display-p3	Change file color profile to Display P3
+color-profile-set-display-p3.quick-action	Change file color profile to Display P3…
+color-profile-set-srgb	Change file color profile to sRGB
+color-profile-set-srgb.quick_action	Change file color profile to sRGB…
+combine-text-path-layers	Convert to text on path
+comment	Comment
+comment-unread	Comment ({count} unread)
+comments-disabled	Comments disabled
+commit-staged-changes	Commit staged changes
+component-insert	Insert component
+convert-rich-link-to-text	Convert {format} to text
+convert-slot-to-frame	Convert slot to frame
+convert-to-raster	Rasterize selection
+convert-to-slot	Convert to slot
+convert_to_stickies	Convert to stickies
+copied_to_clipboard	Copied to clipboard
+copy	Copy
+copy-as-android	Android
+copy-as-animated-svg	Copy as animated SVG
+copy-as-code	Copy as code
+copy-as-css	CSS
+copy-as-css-recursive	CSS (all layers)
+copy-as-ios	iOS
+copy-as-menu	Copy as
+copy-as-png	Copy as PNG
+copy-as-svg	Copy as SVG
+copy-email	Copy email {email}
+copy-hyperlink	Copy link to {hyperlink}
+copy-link-to-connector	Copy link to connector
+copy-link-to-instance	Copy link to sticker
+copy-link-to-rich-link	Copy link to {format}
+copy-link-to-section	Copy link to section
+copy-link-to-shape	Copy link to shape
+copy-link-to-stamp	Copy link to stamp
+copy-link-to-sticky	Copy link to sticky
+copy-link-to-table	Copy link to table
+copy-link-to-text	Copy link to text
+copy-link-to-this	Copy link to this
+copy-link-to-washi-tape	Copy link to washi tape
+copy-link-to-widget	Copy link to widget
+copy-original-link	Copy original link
+copy-out-design-from-code	Copy out original design
+copy-paste-menu	Copy/Paste as
+copy-phone	Copy phone {number}
+copy-presentation-link	Copy presentation link
+copy-presentation-link-success	Presentation link copied to clipboard
+copy-properties	Copy properties
+copy-text	Copy as text
+copy-unlinked-code-layers	Copy unlinked layers
+copy_layer_name	Copy layer name
+copy_link_to_selection	Copy link to selection
+copy_link_to_slide	Copy link to slide
+copy_roundtrip_diff	Copy roundtrip diff to clipboard
+copy_roundtrip_diff_copy_failed	Copy to clipboard failed
+copy_roundtrip_diff_failed	Couldn’t generate roundtrip diff
+create-arc	Create arc
+create-branch	Create branch…
+create-brush-menu	Create brush
+create-code-layer-from-design	Make code from design
+create-comment	Create new comment
+create-cooper-module	Create brand template
+create-diamond	Create new diamond
+create-ellipse	Create new ellipse
+create-make-from-design	Build this with code
+create-make-prototype	Build this with code
+create-multiple-symbols	Create multiple components
+create-multiple-symbols-and-state-group	Create component set
+create-native-code-layer	Create a new native code layer
+create-rounded-rectangle	Create new rounded rectangle
+create-row-from-asset	Create section from asset
+create-row-from-assets	Create section from assets
+create-row-from-slide	Create section from slide
+create-row-from-slides	Create section from slides
+create-savepoint	Save to version history…
+create-scatter-brush	Scatter brush
+create-scatter-brush-qc	Create scatter brush
+create-section	Create new section
+create-section-from-selection	Wrap in new section
+create-slide	Create new slide
+create-slides-outline-from-figjam	Create Figma Slides outline
+create-sticky	Create new sticky note
+create-stretch-brush	Stretch brush
+create-stretch-brush-qc	Create stretch brush
+create-symbol	Create component
+create-text-node	Create new text
+create-triangle	Create new triangle
+create-webpage	Create webpage
+create_variant	Create variant
+creation_submenu.new-buzz	Buzz
+creation_submenu.new-design	Design
+creation_submenu.new-rev	Make
+creation_submenu.new-site	Site
+creation_submenu.new-slides	Slides
+creation_submenu.new-weave	Weave
+creation_submenu.new-whiteboard	FigJam
+creation_submenu.spec-file-type-name	Spec
+crop-image	Crop image
+crop-media	Crop media
+cut	Cut
+cut_tool	Cut tool
+dashed_stroke_variable_width_disabled	Can''t use variable width on dashed strokes
+debug-incremental-loading-all-pages	Incremental loading: Load all pages
+debug-incremental-loading-current-only	Incremental loading: Reset to current page only
+debug-inspect-layer-figma-scope	Inspect in FigmaScope
+debug-print-as-test-code	Print as generated test code
+debug-print-vector-network-as-test-code	Print vector networks as generated test code
+debug-selection	Debug log selection
+debug-toggle-dont-merge-stroke-outlines	Don't merge stroke outlines
+debug-toggle-figma-scope	Show FigmaScope
+debug-toggle-recolor-debug-action	Enable Recolor debug action
+debug-toggle-show-all-snap-target-candidates	Show all snap target candidates
+debug-toggle-show-canvas-axis	Show canvas x and y axis
+debug-toggle-show-mouse-position	Show mouse position
+debug-toggle-show-text-on-path-debug-outlines	Show text on path debug outlines
+debug-toggle-show-vector-network-labels	Show vector network labels
+debug-toggle-whiteboard-pdf-import-node-replacement	PDF Import: Enable node replacement
+deep_select	Deep select
+deep_select_within_rectangle	Deep select within rectangle
+delete-and-heal-selection	Delete and heal selection
+delete-contents	Delete contents
+delete-current-table-column	Delete column
+delete-current-table-row	Delete row
+delete-prototype-starting-point	Remove starting point
+delete-selection	Delete
+delete-table-contents	Delete content
+deselect-all	Select none
+destroy-all-auto-layout	Remove all auto layout
+destroy-all-auto-layout-result-visual-bell-toast	{numAutoLayoutsRemoved, plural, one {Removed from 1 frame} other {Removed from {numAutoLayoutsRemoved} frames}}
+destroy-all-auto-layout-result-visual-bell-toast-zero	No auto layout found
+detach-all-instances	Detach all nested instances
+detach-code-layer	Detach code layer
+detach-deleted-styles	Detach deleted styles
+detach-deleted-variables	Detach deleted variables
+detach-instance	Detach instance
+detach-locked-template	Unlock for more flexibility
+detach-tool	Detach tool
+detach-tools	Detach tools
+dev-handoff-focus-next	Focus next dev handoff node
+dev-handoff-focus-previous	Focus previous dev handoff node
+dev-mode-mcp-server-settings	Desktop MCP server settings
+development	Development
+disable-all-unframed-masks	Disable all unframed masks
+disable-cursor-chat	Cursor chat has been disabled by your organization
+disable-image-color-management	Disable image color management
+disable-pinch-zoom-fix	Use alternate zoom handling
+discard_all_images	Discard all
+distribute-bottom	Distribute bottom
+distribute-horizontal-center	Distribute horizontal centers
+distribute-horizontal-spacing	Distribute horizontal spacing
+distribute-left	Distribute left
+distribute-right	Distribute right
+distribute-top	Distribute top
+distribute-vertical-center	Distribute vertical centers
+distribute-vertical-spacing	Distribute vertical spacing
+distribute_spacing	Distribute spacing
+divider-delete	Delete divider
+divider-duplicate	Duplicate divider
+divider-rename	Rename divider
+download-memory-profile	Download memory profile
+download-webgl-trace	Download WebGL trace
+duplicate-branch-as-new-file	Duplicate branch as a new file
+duplicate-file	Duplicate file
+duplicate-file-to-your-drafts	Duplicate file to your drafts
+duplicate-in-place	Duplicate
+duplicate_selection	Duplicate selection
+dynamic_stroke_variable_width_disabled	Can''t use variable width on dynamic strokes
+edit	Edit
+edit-code	Edit code
+edit-main-component	Edit main component
+edit-shape-or-image	Edit shape or image
+edit-text	Edit text
+edit_gradient_paint	Edit gradient paint
+edit_image	Edit image
+edit_image.placeholder	Describe your changes…
+edit_image.with_prompt	Edit with prompt
+edit_image_crop	Edit image crop
+edit_image_with_prompt	Edit image with prompt
+edit_object	Edit object
+edit_object_plural	{numSelected, plural, one {Edit object} other {Edit objects}}
+edit_path	Edit path
+ellipse_tool	Ellipse tool
+end-magic-link	End Magic Link edit mode
+enter-design-mode	Switch to Design
+enter-draw-mode	Switch to Draw
+enter-inspect-mode	Switch to Dev Mode
+enter-staging-mode	Enter staging mode
+exit_vector_edit_mode_esc	Exit vector edit mode (Esc)
+expand-figjam-left-panel	Expand panel
+expand-figjam-left-panel-with-filename	Expand panel for file named {fileName}
+expand-ui	Expand UI
+expand-ui-with-filename	Expand UI for file named {fileName}
+expand_image	Expand image
+expand_image.loading	Expanding…
+expand_image.shortened	Expand
+export	Export
+export-all-cooper-templates-to-pdf	Export all Cooper templates to PDF…
+export-all-frames-to-pdf	Export frames to PDF…
+export-all-slides-to-pdf	Export all slides to PDF…
+export-buzz-assets	Export
+export-selected-exportables	Export…
+export-selection-or-current-page	Export as…
+export-slides-to	Export slides to…
+export-slides-to-pdf	Export slides to PDF…
+export_selection_or_current_page_desc	Export
+figma-account-menu	Help and account
+file-menu	File
+file-new-menu	New
+find	Find
+find-inspiration-compact	Find similar designs
+find-next	Find next
+find-prev	Find previous
+find-shared-instances-need-relinking	Identify shared instances that should point to local component
+find-symbol	Go to main component
+flatten-selection	Flatten selection
+flatten-selection-short	Flatten
+flip-horizontal	Flip horizontal
+flip-vertical	Flip vertical
+focus-mode	Multi edit
+focus-mode-component-set-toggle	Toggle multi edit
+focus-mode-exit	Unfocus frames
+focus-mode-responsive-set	Select matching layers automatically
+focus-mode-responsive-set-disable	Stop selecting matching layers
+focus-mode-responsive-set-enable	Always select matching layers
+focus_next_area	Focus the next area
+focus_previous_area	Focus the previous area
+follow_presenter	Follow presenter
+force-publish-state-group	Republish selected component
+force_merge_branch	Force merge branch
+force_update_from_main	Force update from main
+frame-selection	Frame selection
+frame_tool	Frame tool
+group-selection	Group selection
+group-selection-into-slot	Wrap in new slot
+hide-section	{numSections, plural, one {Hide section} other {Hide sections}}
+hide-sibling-layers	Hide other layers
+hide-sidebar	Hide left sidebar
+hide_help_ui	Hide help UI
+hide_selection	Hide selection
+hot_reload_plugin	Hot reload plugin
+ignore_constraints	Ignore constraints
+ignore_constraints_frames_only	Crop (images)/Ignore constraints (frames)
+import	Import…
+import-from-csv	Import from CSV…
+insert-component-right-text	from {name}
+insert-slide-numbers-all-slides	Add numbers to all slides
+inspect-fragment	Inspect fragment
+interaction_test_recorder_web_jest_fullscreen_tip	Tip: before recording, consider using a Web Jest Fullscreen test to exercise web + Fullscreen behavior. See web/js/test/README.md.
+interaction_test_recorder_web_jest_fullscreen_tip_documentation	Notion documentation
+join-selection	Join selection
+keyboard_shortcuts_panel.component-search	Component search
+keyboard_shortcuts_panel.insert	Insert
+leave_edit_mode	Done
+left_sidebar_label	Left sidebar
+line_tool	Line tool
+link_copied	Link copied
+live-boolean-intersect	Intersect selection
+live-boolean-intersect-short	Intersect
+live-boolean-subtract	Subtract selection
+live-boolean-subtract-short	Subtract
+live-boolean-union	Union selection
+live-boolean-union-short	Union
+live-boolean-xor	Exclude selection
+live-boolean-xor-short	Exclude
+main-component	Main component
+main_menu	Main menu
+make-edits-debug	Make Edits Debug
+make_edits_debug_review	Make Edits Debug Review
+manage-plugins	Manage plugins…
+manage-widgets	Manage widgets…
+manage_plugins_in_development	Manage plugins in development
+manage_widgets_in_development	Manage widgets in development
+mask-selection	Use as mask
+mcp-allow-overwriting-files	Allow overwriting files on disk
+mcp-enable-code-connect	Enable Code Connect
+mcp-get-test-cases-snapshot	Get test cases snapshot
+mcp-jsx-code	JSX
+mcp-react-tailwind-code	React and Tailwind CSS
+mcp-use-tailwind	Use Tailwind CSS
+measure_to_selection	Measure to selection
+mermaid-to-diagram	Convert Mermaid code to diagram
+mind-map-generate-ideas	Make new mind map ideas
+minimize-left-navigation-bar	Minimize left navigation bar
+minimize-ui	Minimize UI
+missing-plugin	{pluginCommand} (Please run: {pluginName})
+mode-quick-toggle-next	Switch to next mode (quick toggle)
+mode-quick-toggle-previous	Switch to previous mode (quick toggle)
+more-transform-modifier-options	Additional transform modifiers
+move-table-column-left	Move column left
+move-table-column-right	Move column right
+move-table-row-down	Move row down
+move-table-row-up	Move row up
+move_down	Move down
+move_left	Move left
+move_right	Move right
+move_to_bottom	Move to bottom
+move_to_left_edge	Move to left edge
+move_to_right_edge	Move to right edge
+move_to_top	Move to top
+move_up	Move up
+move_while_resizing	Move while resizing
+multi-edit-text	Multi-edit text
+multi-stack-selection-submenu	More layout options
+new	New
+new-buzz	New Buzz file
+new-design	New Design
+new-from-sketch	Import from Sketch
+new-from-templates	Templates
+new-from-templates-description	Ready-to-use boards
+new-rev	New Make
+new-site	New Site
+new-slides	New Slides
+new-spec-file	New Spec
+new-weave	New Weave
+new-whiteboard	New FigJam
+new_notification_received	New notification received
+new_page	New page
+next-artboard	Zoom to next frame
+next-artboard-same-zoom	Find next frame
+no_actions_available	No actions available
+no_matches	No matches
+notifications	Notifications
+notifications_new_notification_received	Notifications, new notification received
+object-menu	Object
+open-account-settings	Account settings
+open-font-settings	Open font settings
+open-help	Help page
+open-in-desktop-app	Open in desktop app
+open-in-focus	Open in focus view
+open-legal-summary	Legal summary
+open-link	Open
+open-links-in-desktop-app	Open links in desktop app
+open-preferences-modal	Libraries
+open-release-notes	Release notes
+open-shortcuts	Keyboard shortcuts
+open-support-forum	Support forum
+open-timer	Open timer
+open-tutorials	Video tutorials
+open_console	Open console
+outline-mode-hidden-layers	Include hidden layers
+outline-mode-hidden-layers-qc	Include hidden layers when viewing outlines
+outline-mode-object-bounds	Include object bounds
+outline-mode-object-bounds-qc	Include object bounds when viewing outlines
+outline-stroke	Outline stroke
+outlined-vws-for-offset-visual-bell	Variable width stroke outlined for offset
+outlines-enabled	Enabled
+outlines-menu	Outlines
+pack-horizontal	Pack horizontal
+pack-vertical	Pack vertical
+page-convert-to-figjam	Convert page to FigJam page
+page-convert-to-figma	Convert page to Figma page
+page-copy-link	Copy link to page
+page-delete	Delete page
+page-divider-add-title	Add a title
+page-divider-add-title-placeholder	[Title]
+page-duplicate	Duplicate page
+page-move-to	{name}
+page-move-to-menu	Move to page
+page-move-to-new-file	Move to new file…
+page-navigate-fail	We were unable to load that page. Please try again.
+page-next	Next page
+page-previous	Previous page
+page-rename	Rename page
+page_status.archived	Archived
+page_status.complete	Complete
+page_status.in_progress	In progress
+page_status.manage_statuses	Manage statuses
+page_status.needs_review	Needs review
+page_status.none	None
+pages-delete	{pageCount, plural, one {Delete page} other {Delete {pageCount} pages}}
+pages-rename	{pageCount, plural, one {Rename page} other {Rename {pageCount} pages}}
+pan	Pan
+panels-menu	Panels
+paste	Paste
+paste-and-match-style	Paste and match style
+paste-animation	Paste animation
+paste-here	Paste here
+paste-over-selection	Paste over selection
+paste-properties	Paste properties
+paste-to-replace	Paste to replace
+pen_tool	Pen tool
+pencil_tool	Pencil tool
+place	Place image/video…
+place_all_images	Place all
+place_image	Place image…
+place_image_or_video	Image/video…
+plugin_parameters.enter	Enter
+plugin_parameters.optional_optional_names	optional: {optionalNames}
+plugin_parameters.tab	Tab
+plugin_parameters.to_enter_optional_parameters	to enter optional parameters
+plugin_parameters.to_run_plugin	to run plugin
+plugins-from-org	Plugins from {orgName}
+plugins-menu	Plugins
+plugins-menu-browse	Browse plugins in Community
+plugins-menu-internal-dev-modal	Internal dev…
+plugins-menu-manage	Manage plugins…
+plugins-menu-saved-plugins	Saved plugins
+plugins-run-last	Run last plugin
+preferences-menu	Preferences
+present-as-prototype	Present
+present-sites-full-preview	Full preview
+present-slides-audience-view	Presentation
+present-slides-description	Just one view—no presented notes.
+present-slides-flyout-icon-alt	Thumbnail of current slide
+present-slides-presenter-view	Presentation with notes
+present-slides-presenter-view-description	One view for sharing, another for your notes.
+previous-artboard	Zoom to previous frame
+previous-artboard-same-zoom	Find previous frame
+print-image-diagnostics	Print image diagnostics
+print-render-tree	Print render tree
+prototype	Prototype
+prototype-with-figma-make	Prototype with Figma Make
+prune_invalid_component_prop_refs	Prune invalid component prop refs for selection
+publish-changes-to-library	Publish changes to library
+publish-selection	Publish selected components
+publish-template	Publish template
+publish_library_for_ai	Publish library for AI
+purge-all-memory	Purge all non-essential memory
+push-changes-to-main	Push changes to main component
+quick_actions.add-interactions-v2	Add interactions
+quick_actions.auto-rename-layers	Rename layers
+quick_actions.check-for-print	Check for print
+quick_actions.create-a-prototype-with-figma-make	Create a prototype with Figma Make
+quick_actions.detect-violations	Check designs
+quick_actions.find-assets-matching	Search assets for {searchQuery}
+quick_actions.find-at-plan-file	{searchQuery} at {planFileName}
+quick_actions.find-at-plan-file-and-community	{searchQuery} in {planFileName} / Community
+quick_actions.find-community-matching	Search community for {searchQuery}
+quick_actions.find-components	{searchQuery} components
+quick_actions.find-components-matching	Search components for {searchQuery}
+quick_actions.find-extensions-matching	Search plugins & widgets for {searchQuery}
+quick_actions.find-files-matching	Search files for "{searchQuery}"
+quick_actions.find-in-community	{searchQuery} in Community
+quick_actions.find-inspiration-verbose	Search with image or selection
+quick_actions.find-inspiration-with-selection	Find more like {frameName}
+quick_actions.find-inspiration-with-selection-vague	Find more like this
+quick_actions.find-plugins-widgets	{searchQuery} in plugins & widgets
+quick_actions.first-draft	First Draft
+quick_actions.first-draft-linting	Lint first draft kit
+quick_actions.first-draft-make-changes	Make changes
+quick_actions.first-draft-relaunch	First Draft
+quick_actions.go-to-page	Go to {pageName}
+quick_actions.make-edits	Prompt to Edit
+quick_actions.name-all-layers	Rename layers
+quick_actions.quoted-query	"{searchQuery}"
+quick_actions.rewrite-this	Rewrite this...
+quick_actions.search-at-plan-file-and-community	Search {searchQuery} in {planFileName} / Community
+quick_actions.search-plugins-widgets	Search {searchQuery} in plugins & widgets
+quick_actions.selection	Send selection to Figma Make
+quick_actions.send-frame-to-figma-make	Send {frameName} to Figma Make
+quick_actions.shorten-text	Shorten
+quick_actions.translate-text	Translate to...
+quick_create_immutable_frame	New shape or sticky
+ready-status-add	Mark as ready for dev
+ready-status-remove	Remove ready status
+recents	Recents
+rectangle_tool	Rectangle tool
+redo	Redo
+redo-spell-checking	Redo spell checking
+reflow-immutable-frames	Reflow immutable frames
+regenerate-all-instances	Regenerate all instances (slow)
+regenerate-component-props	Regenerate component props for selection
+regenerate-file-geometry	Regenerate file geometry (slow)
+regenerate-missing-thumbnails	Regenerate missing thumbnails (slow)
+regenerate-selected-instances	Regenerate instances in selection
+relink-instances-to-local-component	Relink instances to local component
+remove-annotations	Remove annotations
+remove-fill	Remove fill
+remove-guide	Remove guide
+remove-horizontal-guides	Remove all horizontal guides
+remove-interactions-on-page	Remove all interactions
+remove-interactions-on-selection	Remove interactions
+remove-orphaned-variables	Remove orphaned variables
+remove-platform-shape-definition	Remove Platform Shape Definition
+remove-responsive-text-style-variants	Remove extra responsive text style variants
+remove-status-in-focus-view	Remove status
+remove-stroke	Remove stroke
+remove-vertical-guides	Remove all vertical guides
+remove_background	Remove background
+remove_object	Erase object in image
+remove_object.loading	Erasing…
+remove_object.shortened	Erase
+rename-section	Rename section
+rename-selection	Rename selection
+reorder-backward	Move backwards
+reorder-forward	Move forward
+repair-backing-component-set	Repair backing component set
+repair-breakpoint-multiedit	Reconnect matching layers
+repair-duplicate-subscribed-assets	Repair duplicate subscribed assets
+repair-keyless-state-groups	Repair keyless component states
+repair-missing-override-keys	Fix instance overrides
+repair-motion-in-file	Repair motion in file
+repair-selected-instances	Repair component connections
+repair-state-group-versions	Repair component set versions
+repair-variable-connections	Repair variable connections
+repair-variable-mode-values	Repair variable mode values
+replace-selected-frame-with-section	Convert to section
+replace-selected-section-with-frame	Convert to frame
+republish-auto-layout-components	Republish Auto layout components
+republish-selected-components	Update and publish selected component
+reresolve-variable-references	Re-resolve variable references
+reset-changes	Reset all changes
+reset-instance	Reset instance
+reset-slot-assignment	Reset slot
+reset-transform	Fix broken transform
+reset-variable-modes	Reset variable modes in selection
+resize-to-fit	Resize to fit
+resize_from_center	Resize from center
+resize_proportionally	Resize proportionally
+resources	Resources
+restart-desktop-app-color-space-managed	Restart desktop app in 'Managed' color space
+restart-desktop-app-color-space-unmanaged	Restart desktop app in 'Unmanaged' color space
+restore-autolayout-position	Restore auto layout position
+restore-design-in-place-from-code	Restore original design
+restore-soft-deleted-selection	Restore soft-deleted selection
+restore-soft-deleted-variable-sets	Restore soft-deleted variable sets
+restore-symbol-or-state-group	Restore main component
+restore_default_file_thumbnail	Restore default file thumbnail
+restore_default_page_thumbnail	Restore default page thumbnail
+restore_default_thumbnail	Restore default thumbnail
+retina_mode	Retina mode
+return-to-instance	Return to instance
+review_and_merge_changes	Review and merge changes…
+review_changes	Review changes…
+right_sidebar_label	Right sidebar
+rollback-staged-changes	Rollback staged changes
+rotate-180	Rotate 180˚
+rotate-90-clockwise	Rotate 90˚ right
+rotate-90-counterclockwise	Rotate 90˚ left
+round-to-pixels	Round to pixel
+ruler-unit-centimeters	Centimeters
+ruler-unit-inches	Inches
+ruler-unit-menu	Ruler units
+ruler-unit-pixels	Pixels
+run-multi-stack-auto-layout	Suggest auto layout
+run-prompts-in-parallel	Run prompts in parallel
+save-as	Save local copy…
+search	Search
+search_menus_commands_and_plugins	Search menus, commands, and plugins
+search_or_ask_for_anything	Search or ask for anything…
+see-all-branches	See all branches
+see-all-plugins	See all plugins
+see-recents-and-saved-plugins	See saved plugins
+select-all	Select all
+select-all-hidden-layers-within-selection	Select all hidden layers within selection
+select-all-slides	Select all slides
+select-all-text	Select all text layers
+select-all-widgets	Select all widgets
+select-all-with-menu-options	Select all with
+select-broken-fixed-scrolling-nodes	Debug broken fixed-scrolling layers
+select-child	Select children
+select-inverse	Select inverse
+select-matching	Select matching layers
+select-next-sibling	Select next sibling
+select-node	{name}
+select-node-menu	Select layer
+select-parent	Select parent
+select-previous-sibling	Select previous sibling
+select-same-effect	Select all with same effect
+select-same-fill	Select all with same fill
+select-same-font	Select all with same font
+select-same-instance	Select all with same instance
+select-same-stroke	Select all with same stroke
+select-same-style	Select all with same properties
+select-same-text	Select all with same text properties
+select-same-variant	Select all with same variant
+send-backward	Send backward
+send-to	Send to
+send-to-back	Send to back
+send-to-make-from-design	Send to Figma Make
+send-to-make-from-figjam	Send to Figma Make
+separate-text-path-layers	Create separate layers
+separate_object	Isolate object in image
+separate_object.loading	Isolating…
+separate_object.shortened	Isolate
+set-as-primary-breakpoint	Set as primary breakpoint
+set-constraints-automatically	Set constraints automatically
+set-constraints-automatically-toggle	Set constraints automatically
+set-constraints-manually	Set constraints manually
+set-default-style	Set default properties
+set-fill-height	Set height to fill container
+set-fill-width	Set width to fill container
+set-hug-height	Set height to hug contents
+set-hug-width	Set width to hug contents
+set-missing-font-on-text	Set missing font on text…
+set-opacity-0	Set opacity to 100%
+set-opacity-00	Set opacity to 0%
+set-opacity-1	Set opacity to 10%
+set-opacity-2	Set opacity to 20%
+set-opacity-3	Set opacity to 30%
+set-opacity-4	Set opacity to 40%
+set-opacity-5	Set opacity to 50%
+set-opacity-6	Set opacity to 60%
+set-opacity-7	Set opacity to 70%
+set-opacity-8	Set opacity to 80%
+set-opacity-9	Set opacity to 90%
+set-tool-annotate	Annotation
+set-tool-annotate-desc	Annotation tool
+set-tool-arrow	Arrow
+set-tool-bar-chart	Bar chart
+set-tool-bend	Bend tool
+set-tool-brush	Brush
+set-tool-code-block	Code block
+set-tool-code-block-description	Create snippets with syntax highlighting.
+set-tool-code-component	Code
+set-tool-code-component-toolbelt-entry	Code
+set-tool-comments	View comments
+set-tool-connector-arrow	Arrow
+set-tool-connector-elbowed	Connector
+set-tool-connector-elbowed-description	Smart lines for diagramming.
+set-tool-connector-straight	Line
+set-tool-cut	Cut
+set-tool-default	Move
+set-tool-default-desc-figjam	Select tool
+set-tool-default-desc-figma	Move tool
+set-tool-default-dev-handoff	Inspect
+set-tool-default-figjam	Select
+set-tool-ellipse	Ellipse
+set-tool-eraser	Eraser
+set-tool-frame	Frame
+set-tool-hand	Hand tool
+set-tool-highlighter	Highlighter
+set-tool-line	Line
+set-tool-marker	Marker
+set-tool-measure	Measurement
+set-tool-media	Media
+set-tool-media-description	From your device
+set-tool-offset-path	Offset vector
+set-tool-paint-bucket	Paint
+set-tool-pen	Pen
+set-tool-pencil	Pencil
+set-tool-recolor	Recolor
+set-tool-recolor-debug	Recolor (debug)
+set-tool-rectangle	Rectangle
+set-tool-regular-polygon	Polygon
+set-tool-scale	Scale
+set-tool-section	Section
+set-tool-section-description	Organize your board.
+set-tool-shape-slides-blurb	Blurb
+set-tool-shape-slides-triangle-down	Triangle (Down)
+set-tool-shape-slides-triangle-up	Triangle (Up)
+set-tool-shape-whiteboard-arrow-left	Left arrow
+set-tool-shape-whiteboard-arrow-right	Right arrow
+set-tool-shape-whiteboard-chevron	Chevron
+set-tool-shape-whiteboard-diamond	Diamond
+set-tool-shape-whiteboard-document-multiple	Multiple documents
+set-tool-shape-whiteboard-document-single	Document
+set-tool-shape-whiteboard-ellipse	Ellipse
+set-tool-shape-whiteboard-eng-database	Cylinder
+set-tool-shape-whiteboard-eng-file	File
+set-tool-shape-whiteboard-eng-folder	Folder
+set-tool-shape-whiteboard-eng-queue	Horizontal cylinder
+set-tool-shape-whiteboard-hexagon	Hexagon
+set-tool-shape-whiteboard-internal-storage	Internal storage
+set-tool-shape-whiteboard-manual-input	Manual input
+set-tool-shape-whiteboard-octagon	Octagon
+set-tool-shape-whiteboard-or	Or
+set-tool-shape-whiteboard-parallelogram-left	Left-leaning parallelogram
+set-tool-shape-whiteboard-parallelogram-right	Right-leaning parallelogram
+set-tool-shape-whiteboard-pentagon	Pentagon
+set-tool-shape-whiteboard-plus	Plus
+set-tool-shape-whiteboard-predefined-process	Predefined process
+set-tool-shape-whiteboard-rounded-rectangle	Rounded rectangle
+set-tool-shape-whiteboard-shield	Shield
+set-tool-shape-whiteboard-speech-bubble	Speech bubble
+set-tool-shape-whiteboard-square	Square
+set-tool-shape-whiteboard-star	Star
+set-tool-shape-whiteboard-summing-junction	Summing junction
+set-tool-shape-whiteboard-trapezoid	Trapezoid
+set-tool-shape-whiteboard-triangle-down	Downward-pointing triangle
+set-tool-shape-whiteboard-triangle-up	Triangle
+set-tool-simplify-vector	Simplify vector
+set-tool-sites-embed	Embed
+set-tool-sites-link	Link
+set-tool-sites-responsive-set	Webpage
+set-tool-sites-webpage	Webpage
+set-tool-slice	Slice
+set-tool-slide-number	Slide number
+set-tool-stamp	Stamp
+set-tool-stamp-description	Quick voting and reactions.
+set-tool-star	Star
+set-tool-sticky	Sticky note
+set-tool-sticky-description	Scribble, stick, repeat.
+set-tool-table	Table
+set-tool-table-description	Structure your content.
+set-tool-text-path	Text on path
+set-tool-type	Text
+set-tool-type-description	Jot ideas and add headings.
+set-tool-var-width-point	Variable width
+set-tool-vector-eraser	Erase
+set-tool-vector-lasso	Lasso
+set-tool-washi-tape	Washi tape
+set-widget-thumbnail	Set as widget thumbnail
+set_as_favicon	Set as favicon
+set_as_file_thumbnail	Set as file thumbnail
+set_as_page_thumbnail	Set as page thumbnail
+set_as_thumbnail	Set as thumbnail
+set_image_as_profile_picture	Set image as profile picture
+set_tool_mindmap_tree_nucleus	Mind map
+set_tool_type_desc	Text tool
+shape_builder_tool	Shape builder
+show-all-annotation-categories	All categories
+show-browser-permissions-modal	Permissions and helpers…
+show-design-panel	Open design panel
+show-inspect-panel	Open inspect panel
+show-nudge-amount-picker	Nudge amount…
+show-properties-panel	Open properties panel
+show-prototype-panel	Open prototype panel
+show-rotation-origin	Show rotation origin for layer
+show-section	{numSections, plural, one {Show section} other {Show sections}}
+show-sidebar	Show left sidebar
+show-suggested-ai-actions	Show tool suggestions
+show-templates-for-new-figjam-files	Show templates for new files
+show-text-suggestions	Show text suggestions
+show-toggle-prototyping-mode-button	Show toggle prototyping mode button
+show_annotations	Show annotations
+show_assets	Show assets
+show_comments	Show comments
+show_frame_outlines	Show frame outlines
+show_layers	Show layers
+show_layout_grids	Show layout grids
+show_layout_guides	Show layout guides
+show_mask_outlines	Show mask outlines
+show_outlines	Show outlines
+show_pixel_grid	Show pixel grid
+show_pixel_preview	Show pixel preview
+show_print_marks	Show print marks
+show_rulers	Show rulers
+show_slices	Show slices
+show_ui_hints_in_toolbar	Show UI hints in toolbar
+show_variable_width_disabled_dynamic_stroke	Variable width is not available on dynamic strokes
+show_vector_networks_variable_width_disabled	To use variable width, break branching vector in action menu
+sign-out	Log out
+similar-includes-matching	Similar includes matching
+simplify-selected-instance-panels	Simplify instances for selected components
+simulate-back-to-files	Simulate 'Back to files'
+single-properties-panel	Single properties panel
+sites_change_semantic_tag	HTML tag
+skip-slide	Skip slide
+skip-slides	Skip slides
+slice_tool	Slice tool
+slides-draft-speaker-notes	Draft presenter notes
+slides-rewrite-text	Adjust tone
+slots-menu	Slots
+smooth-join-selection	Smooth join selection
+sort-stickies-by-author	Sort stickies by author
+sort-stickies-by-color	Sort stickies by color
+sort-stickies-by-stamp-count	Sort stickies by stamp count
+sort-stickies-by-stamp-type	Sort stickies by stamp type
+sort-stickies-by-topic	Sort stickies by topic
+speaker_notes_overlay.aria_label	Speaker notes
+spell-check-enable-language	Enable {language} spell check
+spell-check-menu	Spell check
+split_vector	Split vector
+split_vector_variable_width_disabled	Split vector to use variable width stroke
+spotlight_me	Spotlight me
+stack-selection	Add auto layout
+stamp_on_node	Stamp on selection
+stamp_or_reaction_wheel	Emote/Stamp wheel
+start-chat	Cursor chat
+start-magic-link	Start Magic Link edit mode
+stop-all-playing-code-layers	Stop all playing code layers
+straight-line	Straight line
+straight_connector	Straight connector or line
+stretch_top_and_bottom	Stretch top and bottom
+suggested-actions	Suggestions
+summarize-stickies	Summarize stickies
+swap-fill-and-stroke	Swap fill and stroke
+swap-nodes	Swap layers
+swap_component_instance	Swap component instance
+swap_instance	Swap instance
+tab	Tab
+team_library	Team library
+test-action	Test action
+test-independent-layer-animation	Test independent layer animation
+test-independent-layer-animation-eased	Test eased independent layer animation
+test-independent-layer-animation-opacity	Test opacity independent layer animation
+test-multiplayer-reject-invalid-permissions	Test multiplayer 'Invalid permissions'
+test-multiplayer-reject-not-logged-in	Test multiplayer 'Not logged in'
+test-multiplayer-reject-too-many-connections	Test multiplayer 'Too many connections'
+test-multiplayer-reject-too-old	Test multiplayer 'Client too old'
+test-multiplayer-upgrade	Test multiplayer upgrade protocol
+test-non-independent-layer-animation	Test non-independent layer animation
+text-adjust-menu	Adjust
+text-align-bottom	Text align bottom
+text-align-center	Text align center
+text-align-justified	Text align justified
+text-align-left	Text align left
+text-align-menu	Alignment
+text-align-middle	Text align middle
+text-align-right	Text align right
+text-align-top	Text align top
+text-bold-decrease	Decrease font weight
+text-bold-increase	Increase font weight
+text-case-menu	Case
+text-dedent-list	Decrease indentation
+text-directionality-menu	Text direction
+text-edit-hyperlink	Create link
+text-font-size-decrease	Decrease font size
+text-font-size-increase	Increase font size
+text-forced-small-caps	Forced small caps
+text-indent-list	Increase indentation
+text-letter-spacing-decrease	Decrease letter spacing
+text-letter-spacing-increase	Increase letter spacing
+text-line-height-decrease	Decrease line height
+text-line-height-increase	Increase line height
+text-lower-case	Lowercase
+text-menu	Text
+text-original-case	Original case
+text-relayout	Recompute text layout in selection
+text-set-directionality-ltr	Left to right
+text-set-directionality-ltr-qa	Left to right text direction
+text-set-directionality-rtl	Right to left
+text-set-directionality-rtl-qa	Right to left text direction
+text-small-caps	Small caps
+text-title-case	Title case
+text-toggle-italic	Italic
+text-toggle-ordered-list	Numbered list
+text-toggle-strikethrough	Strikethrough
+text-toggle-underline	Underline
+text-toggle-unordered-list	Bulleted list
+text-upgrade-explicit-layout-version	Update to support latest text layout
+text-upgrade-to-bidi	Update to support bidirectional text (RTL)
+text-upper-case	Uppercase
+text_indent_and_dedent_list	Increase and decrease indentation
+text_style_h1	Extra large
+text_style_h2	Large
+text_style_h3	Medium
+text_style_normal	Small
+text_style_title	Huge
+theme-menu-option	Theme
+theme-wildcard	Wildcard (Default)
+theme-wildcard-quick-command	Use wildcard (default) mode
+theme.dark	Dark
+theme.debug	Debug
+theme.enhanced_contrast	Enhanced contrast mode
+theme.light	Light
+theme.light_legacy	Light (Legacy)
+theme.system_theme	System theme
+theme.use_dark_mode	Use dark mode
+theme.use_debug_mode	Use debug mode
+theme.use_light_legacy_mode	Use light (legacy) mode
+theme.use_light_mode	Use light mode
+theme.use_system_theme	Use system theme
+tidy-up	Tidy up
+to_edit	to edit
+toggle-actions-menu	Actions…
+toggle-ai-sound-notification	Play audio notifications in AI chat
+toggle-allow-time-sliced-edit-rendering-optimization	Toggle allow time-sliced edit rendering
+toggle-animate-info	Toggle animate panel
+toggle-annotations	Show dimensions on objects
+toggle-auto-fill-full-width-children	Toggle auto-fill full-width children
+toggle-auto-use-default-make-kits	Apply default Make kits
+toggle-automatic-variable-matching	Enable automatic variable matching
+toggle-bold	Bold
+toggle-collaborative-text-debug	Toggle collaborative text debug logs
+toggle-copy-renaming	Rename duplicated layers
+toggle-ctrl-click-context-menu	Ctrl+click opens right click menus
+toggle-cursor-high-five-wiggle	Shake cursor for high five
+toggle-debug-doc-sync-logs	Toggle multiplayer doc logs
+toggle-debug-feature-flag-bisector	Toggle feature flag bisector
+toggle-debug-layout-logs	Toggle logging text and IF layouts
+toggle-debug-materializer-logs	Toggle materializer debugging logs
+toggle-debug-page-sync-logs	Toggle multiplayer query logs
+toggle-debug-user-sync-logs	Toggle multiplayer user logs
+toggle-disable-jit-dst	Disable keyframes in smart animations
+toggle-display-cpu-timer-tree	Display real-time CPU timer trees
+toggle-display-dirty-rects	Display dirty rectangles
+toggle-display-dirty-tiles	Display dirty tiles
+toggle-display-expensive-tiles	Display expensive tiles
+toggle-display-gpu-metrics	Display GPU metrics
+toggle-display-metronome-texture-cache	Display metronome texture cache
+toggle-display-node-occluders	Display node occluders
+toggle-display-pixel-heat-map	Display pixel heat map
+toggle-dropper	Pick color
+toggle-dynamic-insertion-points	Show dynamic stack insertion points when dragging into auto layout frame
+toggle-enable-codegen-mcp-server	Enable desktop MCP server
+toggle-fake-mp-activity	Show fake multiplayer activity tools
+toggle-figment-debugger	Toggle Figment Debugger
+toggle-flip-during-resize	Flip objects while resizing
+toggle-frame-clipping	Toggle clip content
+toggle-google-fonts	Show Google Fonts
+toggle-grid	Pixel grid
+toggle-include-everything-in-tab-order	Include everything on canvas in the focus order
+toggle-inline-html-preview	Inline preview
+toggle-inline-preview	Preview
+toggle-invert-zoom	Invert zoom direction
+toggle-keyboard-zoom-to-selection	Keyboard zooms into selection
+toggle-layer-hover	Highlight layers on hover
+toggle-layers	Open layers panel
+toggle-layers-dom-order	Show layers in DOM order
+toggle-locked-for-selected-nodes	Lock/Unlock selection
+toggle-memory-usage-indicator	Memory usage
+toggle-menu	Quick actions…
+toggle-multiplayer-cursors	Multiplayer cursors
+toggle-outlines	Show outlines
+toggle-overlay-ui-rendering	Toggle overlay UI rendering
+toggle-pen-tool-avoid-single-handles	Avoid single handles with pen tool
+toggle-perf-hud	Show performance HUD
+toggle-perf-mode-medium	Force perf mode to medium
+toggle-pixel-preview	Pixel preview
+toggle-pressure-sensitivity	Enable stroke pressure
+toggle-print-marks	Print marks
+toggle-prototyping-info	Toggle prototype panel
+toggle-prototyping-information	Prototyping
+toggle-publish	Libraries
+toggle-ready-for-dev-status	Toggle ready for dev status
+toggle-recording-interactions	Toggle interaction recorder
+toggle-resource-use	Resource use
+toggle-responsive-container-multiedit	Toggle multi-edit mode
+toggle-responsive-container-multiedit-disable	Disable multi-edit mode
+toggle-responsive-container-multiedit-enable	Enable multi-edit mode
+toggle-right-click-pan	Right-click and drag to pan
+toggle-rulers	Rulers
+toggle-show-all-layers	Show all layers
+toggle-show-annotations	Annotations
+toggle-show-annotations-v2	Show annotations
+toggle-show-artboard-outlines	Frame outlines
+toggle-show-chat-on-canvas	Show Agents on canvas
+toggle-show-comments	Comments
+toggle-show-dot-grid	Show dot grid
+toggle-show-figjam-halloween-features	Show FigJam halloween features
+toggle-show-figjam-halloween-features-off	Back to normal
+toggle-show-figjam-halloween-features-on	Trick or treat!
+toggle-show-floating-layers	Show/hide floating layers
+toggle-show-guids	Show GUIDs
+toggle-show-html-tags-on-layer-rows	Show HTML tags on layers
+toggle-show-immutable-frame-sublayers	Show immutable frame sublayers
+toggle-show-labels	Additional labels
+toggle-show-masks	Mask outlines
+toggle-show-property-labels	Property labels
+toggle-show-quick-command-rank-debug	Show quick actions search rankings
+toggle-show-slices	Show slices
+toggle-shown-for-selected-nodes	Show/Hide selection
+toggle-shown-layout-grids	Layout grids
+toggle-shown-layout-guides	Layout guides
+toggle-sidebar	Show left sidebar
+toggle-similar-highlights	Toggle highlights of similar objects
+toggle-slide-view	Switch views
+toggle-smart-quotes	Substitute smart quotes
+toggle-smart-text-substitution	Use smart quotes/symbols
+toggle-snapping-to-dots	Snap to dot grid
+toggle-snapping-to-geometry	Snap to geometry
+toggle-snapping-to-objects	Snap to objects
+toggle-snapping-to-pixels	Snap to pixel grid
+toggle-spell-check	Check spelling
+toggle-stack-shadows	Show shadows when dragging into auto layout
+toggle-sticky-tools	Keep tool selected after use
+toggle-sync-cursor-rendering	Toggle sync TSMER cursor rendering
+toggle-tsmer-config	Show TSMER config
+toggle-ui	Show/Hide UI
+toggle-use-numbers-for-opacity	Use number keys for opacity
+toggle-use-old-outline-shortcuts	Use old shortcuts for outlines
+toggle-use-scroll-wheel-zoom	Use scroll wheel zoom
+toggle-variables	Toggle variables
+toggle-version-history	Show version history
+toggle-view-short-description	Focus <-> Grid view
+toggle-viewport-overlay-hiding	Hide canvas UI during changes
+toggle_console	Show/Hide console
+toggle_dark_theme	Toggle dark theme
+toggle_full_screen	Toggle full screen
+toolbar_label	Application toolbar
+troubleshooting	Troubleshooting
+undo	Undo
+ungroup-selection	Ungroup selection
+unhide-all	Unhide all objects
+unlock-all	Unlock all objects
+unskip-slide	Unskip slide
+unskip-slides	Unskip slides
+unstack-selection	Remove auto layout
+update-via-instance-swap	Update instances in selection preserving overrides
+update_from_main	Update from main…
+upgrade-stack-layout-version.page	Update page to latest layout
+upgrade-stack-layout-version.selection	Update selection to latest layout
+upscale_image	Boost resolution
+use_developer_vm	Use developer VM
+use_local_related_link_plugin	Use local plugin with dev resources
+vector-menu	Vector
+vector_eraser_onboarding.description	Use the Eraser tool to remove the parts you don’t need.
+vector_eraser_onboarding.title	New: Erase paths and shapes
+vectorize	Vectorize
+vectorize-image	Vectorize
+vectorize-image.cancel	Cancel
+vectorize-image.loading	Vectorizing...
+view-menu	View
+view-widget-details	View widget details
+view_api_documentation	View API documentation
+view_main_file	View main file
+vws-removed-for-offset-visual-bell	Variable width stroke removed for offset
+wheel-react	Emote
+wheel-stamp	Stamp
+while_clicking	While clicking…
+while_dragging_to_select	While dragging to select…
+while_editing_a_shape	While editing a shape…
+while_editing_shape_or_sticky	While editing shape or sticky…
+while_inserting_a_component	While inserting a component…
+while_moving	While moving…
+while_pointing	While pointing…
+while_resizing	While resizing…
+while_stamping	While stamping…
+while_text_shape_or_sticky_selected	While text, shape, or sticky is selected…
+whiteboard-generate-content	Make templates and diagrams…
+widgets-menu	Widgets
+widgets-menu-saved-widgets	Saved widgets
+zoom-in	Zoom in
+zoom-out	Zoom out
+zoom-reset	Zoom to 100%
+zoom-to-fit	Zoom to fit
+zoom-to-selection	Zoom to selection

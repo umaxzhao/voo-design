@@ -320,8 +320,16 @@ export function attachPointerHandlers({
       return;
     }
 
-    // Heavy geometric & snapping gestures coalesce with rAF to sustain rock-solid 60/120FPS
-    if (gesture.kind === "move" || gesture.kind === "transform" || gesture.kind === "pan") {
+    // Heavy geometric & snapping gestures coalesce with rAF to sustain 60/120FPS.
+    // Kind names match transform/crop gesture creators (not a generic "transform").
+    if (
+      gesture.kind === "move" ||
+      gesture.kind === "pan" ||
+      gesture.kind === "resize" ||
+      gesture.kind === "rotate" ||
+      gesture.kind === "cropMove" ||
+      gesture.kind === "cropResize"
+    ) {
       pendingMoveEvent = event;
       pendingGesture = gesture;
       if (!moveRafId) {

@@ -1,0 +1,88 @@
+{"rea_progress":{"phase":"analyze_javascript_application","completed":0,"total":1,"message":"Inventorying and parsing application artifacts","sequence":1}}
+{"rea_progress":{"phase":"read_javascript_artifacts","completed":0,"total":1,"message":"Reading inventoried JavaScript application sources","sequence":2}}
+{"rea_progress":{"phase":"parse_javascript_sources","completed":0,"total":1,"message":"Parsing and projecting 74 selected application source files","sequence":3}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting bindings_worker.js (1/74)","sequence":4}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting build.json (2/74)","sequence":5}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting desktop_shell.js (3/74)","sequence":6}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting detached_window_binding_renderer.js (4/74)","sequence":7}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting element_resolver_bundle.js (5/74)","sequence":8}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting i18n/de.json (6/74)","sequence":9}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting i18n/es-es.json (7/74)","sequence":10}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting i18n/es-la.json (8/74)","sequence":11}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting i18n/fr.json (9/74)","sequence":12}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting i18n/ja.json (10/74)","sequence":13}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting i18n/ko-kr.json (11/74)","sequence":14}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting i18n/pt-br.json (12/74)","sequence":15}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting lazy/external/codegen_mcp_server.js (13/74)","sequence":16}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting lazy/external/fcm_manager.js (14/74)","sequence":17}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting lazy/external/mcp_client_manager.js (15/74)","sequence":18}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting lazy/external/proxy_agent.js (16/74)","sequence":19}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting loading_screen.html (17/74)","sequence":20}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting loading_screen/loading_screen_binding_renderer.js (18/74)","sequence":21}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting main.js (19/74)","sequence":22}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting make_local/make_local_browser_preview_preload.js (20/74)","sequence":23}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/.package-lock.json (21/74)","sequence":24}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/anymatch/index.js (22/74)","sequence":25}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/anymatch/package.json (23/74)","sequence":26}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/binary-extensions/binary-extensions.json (24/74)","sequence":27}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/binary-extensions/index.js (25/74)","sequence":28}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/binary-extensions/package.json (26/74)","sequence":29}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/braces/index.js (27/74)","sequence":30}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/braces/lib/compile.js (28/74)","sequence":31}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/braces/lib/constants.js (29/74)","sequence":32}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/braces/lib/expand.js (30/74)","sequence":33}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/braces/lib/parse.js (31/74)","sequence":34}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/braces/lib/stringify.js (32/74)","sequence":35}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/braces/lib/utils.js (33/74)","sequence":36}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/braces/package.json (34/74)","sequence":37}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/chokidar/index.js (35/74)","sequence":38}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/chokidar/lib/constants.js (36/74)","sequence":39}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/chokidar/lib/fsevents-handler.js (37/74)","sequence":40}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/chokidar/lib/nodefs-handler.js (38/74)","sequence":41}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/chokidar/package.json (39/74)","sequence":42}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/fill-range/index.js (40/74)","sequence":43}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/fill-range/package.json (41/74)","sequence":44}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/fsevents/fsevents.js (42/74)","sequence":45}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/fsevents/package.json (43/74)","sequence":46}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/glob-parent/index.js (44/74)","sequence":47}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/glob-parent/package.json (45/74)","sequence":48}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/is-binary-path/index.js (46/74)","sequence":49}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/is-binary-path/package.json (47/74)","sequence":50}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/is-extglob/index.js (48/74)","sequence":51}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/is-extglob/package.json (49/74)","sequence":52}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/is-glob/index.js (50/74)","sequence":53}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/is-glob/package.json (51/74)","sequence":54}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/is-number/index.js (52/74)","sequence":55}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/is-number/package.json (53/74)","sequence":56}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/normalize-path/index.js (54/74)","sequence":57}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/normalize-path/package.json (55/74)","sequence":58}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/picomatch/index.js (56/74)","sequence":59}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/picomatch/lib/constants.js (57/74)","sequence":60}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/picomatch/lib/parse.js (58/74)","sequence":61}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/picomatch/lib/picomatch.js (59/74)","sequence":62}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/picomatch/lib/scan.js (60/74)","sequence":63}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/picomatch/lib/utils.js (61/74)","sequence":64}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/picomatch/package.json (62/74)","sequence":65}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/readdirp/index.js (63/74)","sequence":66}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/readdirp/package.json (64/74)","sequence":67}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/to-regex-range/index.js (65/74)","sequence":68}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting node_modules/to-regex-range/package.json (66/74)","sequence":69}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting overlay_window_binding_renderer.js (67/74)","sequence":70}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting package-lock.json (68/74)","sequence":71}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting package.json (69/74)","sequence":72}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting popout_binding_renderer.js (70/74)","sequence":73}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting shell.html (71/74)","sequence":74}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting shell_app_binding_renderer.js (72/74)","sequence":75}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting tray/tray_binding_renderer.js (73/74)","sequence":76}}
+{"rea_progress":{"phase":"parse_javascript_source","completed":0,"total":1,"message":"Parsing and projecting web_app_binding_renderer.js (74/74)","sequence":77}}
+{"rea_progress":{"phase":"build_javascript_application_graph","completed":0,"total":1,"message":"Constructing application and Electron boundary relationships","sequence":78}}
+{"rea_progress":{"phase":"seal_javascript_application_graph","completed":0,"total":1,"message":"Sealing the validated application graph","sequence":79}}
+{"rea_progress":{"phase":"build_javascript_semantic_graph","completed":0,"total":1,"message":"Binding and validating static semantic relationships","sequence":80}}
+{"rea_progress":{"phase":"seal_javascript_semantic_graph","completed":0,"total":1,"message":"Validating and sealing the semantic graph","sequence":81}}
+{"rea_progress":{"phase":"validate_javascript_application_result","completed":0,"total":1,"message":"Validating result metadata and cross-graph bindings","sequence":82}}
+{"rea_progress":{"phase":"create_javascript_application_evidence","completed":0,"total":1,"message":"Creating and hashing application analysis Evidence","sequence":83}}
+{"rea_progress":{"phase":"seal_javascript_application_result","completed":0,"total":1,"message":"Sealing the complete application analysis result","sequence":84}}
+{"rea_progress":{"phase":"validate_javascript_application_evidence","completed":0,"total":1,"message":"Validating the immutable application Evidence JSON","sequence":85}}
+{"rea_progress":{"phase":"hash_javascript_application_evidence","completed":0,"total":1,"message":"Hashing the complete application analysis Evidence","sequence":86}}
+{"rea_progress":{"phase":"analyze_javascript_application","completed":1,"total":1,"message":"Application graph and Electron boundaries reconstructed","terminal":true,"sequence":87}}
+EXIT:0

@@ -5,7 +5,8 @@
  * 1. Persists user workspace configuration in `projects_config.json` under `app.getPath("userData")`.
  * 2. Provides default fallback to `~/Documents/VOO/Projects`.
  * 3. Validates folder existence and write permissions (`isValidProjectsRootDir`).
- * 4. Shallow scans workspace directory for design files (.voo, .fig, .psd, .svg).
+ * 4. Scans the workspace root and one level of project folders for design files
+ *    (.voo, .fig, .psd, .svg); folder membership is the physical subdirectory.
  * 5. Handles atomic writes, path traversal prevention, case-only renames (APFS / NTFS), and collision checks.
  * 6. Executes safe deletions (shell.trashItem -> .trash/ folder -> safe unlink).
  * 7. Debounced (300ms) file watcher broadcasting `workspace:changed` to the renderer.
@@ -183,6 +184,61 @@ const setWorkspaceRoot = setWorkspaceRootDir;
 /**
  * Shallow scan of the workspace root for .voo, .fig, .psd, .svg files.
  */
+/** True for a visible project folder under the workspace root. */
+function isProjectFolderName(name) {
+  return Boolean(name) && !name.startsWith(".") && !name.startsWith("__voo_");
+}
+
+/**
+ * Collects design files from one directory. `folder` is the project folder
+ * name when scanning inside one, or null for the workspace root.
+ */
+function collectDesignFiles(dir, folder, files) {
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    if (files.length >= MAX_SCAN_ENTRIES) return;
+    if (!entry.isFile()) continue;
+    const name = entry.name;
+    if (
+      name.startsWith(".") ||
+      name.startsWith("__voo_") ||
+      name.includes(".tmp_") ||
+      name.includes(".bak_")
+    ) {
+      continue;
+    }
+    const match = name.match(/\.([a-zA-Z0-9]+)$/);
+    if (!match) continue;
+    const ext = match[1].toLowerCase();
+    if (!ALLOWED_EXTENSIONS.has(ext)) continue;
+
+    const fullPath = path.join(dir, name);
+    try {
+      const stat = fs.statSync(fullPath);
+      files.push({
+        id: fullPath,
+        name,
+        path: fullPath,
+        folder,
+        extension: ext,
+        size: stat.size,
+        updatedAt: Math.round(stat.mtimeMs),
+        createdAt: Math.round(stat.birthtimeMs || stat.ctimeMs || stat.mtimeMs),
+        starred: false,
+        trashed: false,
+        trashedAt: null,
+      });
+    } catch {
+      // Skip entry if stat fails (e.g. file deleted concurrently)
+    }
+  }
+}
+
 function scanWorkspaceFiles(rootDir) {
   const dir = rootDir || getWorkspaceConfig().path;
   if (!dir || !fs.existsSync(dir)) {
@@ -190,53 +246,106 @@ function scanWorkspaceFiles(rootDir) {
   }
 
   try {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
     const files = [];
+    collectDesignFiles(dir, null, files);
 
-    for (const entry of entries) {
-      if (!entry.isFile()) continue;
-      const name = entry.name;
-      // Skip hidden, temporary, or staging files
-      if (
-        name.startsWith(".") ||
-        name.startsWith("__voo_") ||
-        name.includes(".tmp_") ||
-        name.includes(".bak_")
-      ) {
-        continue;
-      }
-
-      const match = name.match(/\.([a-zA-Z0-9]+)$/);
-      if (!match) continue;
-      const ext = match[1].toLowerCase();
-      if (!ALLOWED_EXTENSIONS.has(ext)) continue;
-
-      const fullPath = path.join(dir, name);
-      try {
-        const stat = fs.statSync(fullPath);
-        files.push({
-          id: fullPath,
-          name,
-          path: fullPath,
-          extension: ext,
-          size: stat.size,
-          updatedAt: Math.round(stat.mtimeMs),
-          createdAt: Math.round(stat.birthtimeMs || stat.ctimeMs || stat.mtimeMs),
-          starred: false,
-          trashed: false,
-          trashedAt: null,
-        });
-      } catch {
-        // Skip entry if stat fails (e.g. file deleted concurrently)
-      }
-
+    // One level of project folders: membership is the physical subdirectory.
+    let children;
+    try {
+      children = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      children = [];
+    }
+    for (const entry of children) {
       if (files.length >= MAX_SCAN_ENTRIES) break;
+      if (!entry.isDirectory() || !isProjectFolderName(entry.name)) continue;
+      collectDesignFiles(path.join(dir, entry.name), entry.name, files);
     }
 
     files.sort((a, b) => b.updatedAt - a.updatedAt);
     return { ok: true, files };
   } catch (err) {
     return { ok: false, error: err.message, files: [] };
+  }
+}
+
+/**
+ * Moves a design file into a project folder, or back to the workspace root
+ * when `folderName` is null/empty. Collision names get a `-2` suffix.
+ */
+function moveWorkspaceFileToFolder(filePath, folderName, rootDir) {
+  if (!filePath || typeof filePath !== "string" || !fs.existsSync(filePath)) {
+    return { ok: false, error: "file_not_found" };
+  }
+  const root = rootDir || getWorkspaceConfig().path;
+  if (!root || !fs.existsSync(root)) {
+    return { ok: false, error: "directory_not_found" };
+  }
+
+  const resolvedFile = path.resolve(filePath);
+  const resolvedRoot = path.resolve(root);
+  if (
+    resolvedFile !== resolvedRoot &&
+    !resolvedFile.startsWith(resolvedRoot + path.sep)
+  ) {
+    return { ok: false, error: "outside_workspace" };
+  }
+
+  const baseName = path.basename(resolvedFile);
+  const safeFolder =
+    folderName == null || folderName === ""
+      ? null
+      : sanitizeFileName(String(folderName));
+  if (folderName && (!safeFolder || !isProjectFolderName(safeFolder))) {
+    return { ok: false, error: "invalid_name" };
+  }
+
+  const destDir = safeFolder ? path.join(resolvedRoot, safeFolder) : resolvedRoot;
+  if (safeFolder && !fs.existsSync(destDir)) {
+    try {
+      fs.mkdirSync(destDir, { recursive: true });
+    } catch (err) {
+      return { ok: false, error: err.message || "mkdir_failed" };
+    }
+  }
+
+  // Already in the right place.
+  if (path.dirname(resolvedFile) === destDir) {
+    return {
+      ok: true,
+      file: {
+        id: resolvedFile,
+        name: baseName,
+        path: resolvedFile,
+        folder: safeFolder,
+      },
+    };
+  }
+
+  let targetName = baseName;
+  let targetPath = path.join(destDir, targetName);
+  if (fs.existsSync(targetPath)) {
+    const extMatch = baseName.match(/\.([a-zA-Z0-9]+)$/);
+    const ext = extMatch ? extMatch[1] : "";
+    const stem = ext ? baseName.slice(0, -(ext.length + 1)) : baseName;
+    targetName = resolveCollisionName(destDir, stem, ext || "voo");
+    targetPath = path.join(destDir, targetName);
+  }
+
+  try {
+    fs.renameSync(resolvedFile, targetPath);
+    return {
+      ok: true,
+      file: {
+        id: targetPath,
+        name: targetName,
+        path: targetPath,
+        folder: safeFolder,
+      },
+      previousPath: resolvedFile,
+    };
+  } catch (err) {
+    return { ok: false, error: err.message || "move_failed" };
   }
 }
 
@@ -573,15 +682,18 @@ function startWorkspaceWatcher(dirPath, onChange) {
 
   currentWatchedDir = dirPath;
   try {
-    activeWatcher = fs.watch(dirPath, { persistent: false }, (eventType, filename) => {
+    // Recursive so edits inside project folders refresh the welcome list.
+    // Linux may ignore the flag; root events still fire there.
+    activeWatcher = fs.watch(dirPath, { persistent: false, recursive: true }, (eventType, filename) => {
       if (!filename) return;
+      const base = path.basename(filename);
       // Filter out internal hidden and temporary files
       if (
-        filename.startsWith(".") ||
-        filename.startsWith("__voo_") ||
+        base.startsWith(".") ||
+        base.startsWith("__voo_") ||
         filename.includes(".tmp_") ||
         filename.includes(".bak_") ||
-        filename === CONFIG_FILE
+        base === CONFIG_FILE
       ) {
         return;
       }
@@ -730,6 +842,13 @@ function registerWorkspaceIpc(ipcMain, getMainWindow) {
     return createWorkspaceFolder(getWorkspaceConfig().path, name);
   });
 
+  ipcMain.handle("workspace:moveToFolder", (_event, payload) => {
+    const filePath = typeof payload === "string" ? payload : payload?.filePath;
+    const folderName =
+      typeof payload === "object" && payload ? payload.folderName ?? payload.folder ?? null : null;
+    return moveWorkspaceFileToFolder(filePath, folderName, getWorkspaceConfig().path);
+  });
+
   ipcMain.handle("workspace:readFileBytes", async (_event, payload) => {
     const filePath = typeof payload === "string" ? payload : payload?.filePath;
     if (!filePath || !fs.existsSync(filePath)) {
@@ -804,6 +923,7 @@ module.exports = {
   scanWorkspaceFiles,
   listWorkspaceFolders,
   createWorkspaceFolder,
+  moveWorkspaceFileToFolder,
   renameWorkspaceFile,
   moveWorkspaceFileToTrash,
   moveFileToTrash,

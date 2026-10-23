@@ -1,0 +1,719 @@
+ (looks like multiple versions of prosemirror-model were loaded)
+ prompt
+ startup, MCP is automatically setup to selected CLI tools.
+ via MCP externally
+$feature_enrollment/
+$feature_enrollment_update
+&&a.forEachToken((m,g,v)=>{if(m===Vh){const x=a.getLocation(g,v),k=OR(e,v-2,v,
+&&a.forEachToken((x,k,C)=>{if(x===dd){const A=a.getLocation(k,C),E=PR(e,C-2,C,
+&&a.forEachToken(g.bind(l())),typeof m==
+&&d<e.length?o.getLocation(d):this.eof?o.getLocation(hAt(e,e.length-1)):o.getLocation(this.tokenStart);throw new n1e(u||
+&&f.jsx(YQn,{chatManager:u}),t===
+&&n.authorToken.length>=16)return{displayName:typeof n.displayName==
+&&navigator.userAgent.includes(
+&&navigator?.userAgent?.includes(
+&&this.token(Kf,
+&&this.token(Qd,
+&&this.tokens.pop(),this.tokens[0]==
+&&u<e.length?o.getLocation(u):this.eof?o.getLocation(i7t(e,e.length-1)):o.getLocation(this.tokenStart);throw new cwe(c||
+&&v.claude.apiKeyStored,signInLabel:
+&&v.codex.apiKeyStored,signInLabel:
+'.' <ident-token>
+':' <ident-token>|':' <function-token> <any-value> ')'
+'[' <wq-name> ']'|'[' <wq-name> <attr-matcher> [<string-token>|<ident-token>] <attr-modifier>? ']'
+'progid:' [<ident-token> '.']* [<ident-token>|<function-token> <any-value>? )]
+(-token
+)),t.limit&&(this.token(Rn,
+))return document.modelContext??navigator.modelContext}const l9n=[
+))return this.advanceBy(4),this.makeToken(9,
+))return this.advanceBy(5),this.makeToken(10,
+))},[v.codex.apiKeyStored]),S.useEffect(()=>{v.gemini.apiKeyStored&&(Y(!1),te(
+))},[v.cursor]);const Te=async hn=>{const hr=hn;D(hr),y$(
+))},[v.gemini.apiKeyStored]),S.useEffect(()=>{v.cursor?.apiKeyStored&&(re(!1),pe(
+),Bt()}finally{se(!1)}},me=async()=>{if(J.trim()){Y(!0);try{await l({agentType:
+),Bt()}finally{se(!1)}}},we=async()=>{se(!0);try{await l({agentType:
+),Q(!1)},[pr,Gr,lt,vn,$e,e,cn,Bt]);pn.current=ba;const Ki=e.getActiveModelIdWithFallback()??
+),Ve()}finally{q(!1)}},Pe=async()=>{if(G.trim()){se(!0);try{await l({agentType:
+),Ve()}finally{q(!1)}}},Le=async()=>{q(!0);try{await l({agentType:
+),[$h.node(0,t.state.doc.content.size,e)]}function Q5e(t){if(t.markCursor){let e=document.createElement(
+),[h,p]=S.useState(()=>s?.models.map(Qee)??[Qee()]),[m,g]=S.useState(
+),await l({agentType:
+),document.body.style.cursor=
+),fn()}finally{re(!1)}},Re=async hn=>{if(K.trim()){Ne(!0);try{await l({agentType:
+),kn()}finally{Y(!1)}},Ue=async()=>{if(ce.trim()){re(!0);try{await l({agentType:
+),kn()}finally{Y(!1)}}},ke=async()=>{Y(!0);try{await l({agentType:
+),l.tokens[0].text=l.tokens[0].text.replace(this.rules.other.listReplaceTask,
+),l.tokens[0]?.type===
+),p)},z=()=>{const U=m.current;U&&(p.end(),i?.(!1)),m.current=!1,document.body.style.cursor=
+),r.model!==void 0&&Ey(r.model,e,n+
+),t){var n=this.pos-1;this.invalidStringToken(n,
+),t.children===null?this.token(Rn,t.name):(this.token(Fi,t.name+
+),t.children===null?this.token(ir,t.name):(this.token(Rs,t.name+
+),this._emitEOFToken();break}default:this._err(Ut.invalidFirstCharacterOfTagName),this._emitChars(
+),this.children(t),this.token(Hs,
+),this.children(t),this.token(Mo,
+),this.children(t),this.token(Ss,
+),this.children(t),this.token(li,
+),this.node(e),this.token(li,
+),this.node(t.declaration),this.token(li,
+),this.node(t.limit),this.token(li,
+),this.node(t.root),this.token(li,
+),this.node(t.value)),this.token(Mo,
+),this.node(t.value)),this.token(li,
+),this.node(t.value),t.important&&(this.token(Hs,
+),this.node(t.value),t.important&&(this.token(Ss,
+),this.node(t.value),this.token(li,
+),this.token(Jd,
+),this.token(Qs,
+),this.token(Rn,t.important===!0?
+),this.token(Rn,t.name),t.value!==null&&(this.token(Jd,
+),this.token(eh,
+),this.token(ir,t.important===!0?
+),this.token(ir,t.name),t.value!==null&&(this.token(eh,
+)-token
+): a different token (`
+):navigator.userAgent}function gbt(){if(!GA)return
+):this.token(Qs,
+);Object.assign(a,p?xAt:wAt),Array.isArray(g)?a.forEachToken((x,k,C)=>{g.push({type:x,start:k,end:C})}):typeof g==
+);break;case dl:this.tokenType===yi&&(h=this.tokenEnd,d=
+);break;case ul:this.tokenType===bi&&(p=this.tokenEnd,h=
+);const o=await s.json();this.setState({session:{token:n,user:{id:o.userId,email:e,realName:o.realName??
+);return{agentType:
+)return this.advance(),this.makeToken(4,
+)return this.advance(),this.makeToken(5,
+)return this.advance(),this.makeToken(6,
+)return this.advance(),this.makeToken(7,
+)return this.advance(),this.makeToken(8,
+){Qx(r,s,{agentError:n.content.message});const l=r.modelID??this.defaultModel;if(l){const c=Vm(l).agentType,u=c===
+){const e=this.tokenStart;this.skipSC(),this.eat(Qs);const n=oZ.call(this),r=V1e.call(this,n.type===
+){l.tokens[0].raw=l.tokens[0].raw.replace(this.rules.other.listReplaceTask,
+)}),this.token(em,
+)}),this.token(xg,
+)}];for(const g of m)u.push(new Ur({x:g.x,y:g.y,width:g.width,height:g.height,backgroundColor:void 0,cursor:()=>jp(
+)}finally{Ne(!1)}},tt=v.claude.loginType===
+)}finally{Ne(!1)}}},Je=async hn=>{Ne(!0);try{await l({agentType:
+)}function FPn(){try{const e=localStorage.getItem(sJe);if(e){const n=JSON.parse(e);if(typeof n.authorToken==
+* Toggling reloads the editor with the "webmcp" URL parameter.
+* Your browser doesn't expose the Web Model Context API, so WebMCP can't be enabled here.
++JSON.stringify(r.fileToken)}),r.fonts!==void 0)if(!Array.isArray(r.fonts))e.errors.push({path:n+
++l.type)},tokenBefore:rDe,token(l,c,u){s=this.tokenBefore(s,l,c),!u&&s&1&&this.emit(
++t.name),t.prelude!==null&&this.node(t.prelude),t.block?this.node(t.block):this.token(Kf,
++t.name),t.prelude!==null&&this.node(t.prelude),t.block?this.node(t.block):this.token(Qd,
+, got '+JSON.stringify(r.version)}),r.fileToken!==void 0&&typeof r.fileToken!=
+,!0,!0,function(t){return t.tryReadTemplateToken()}),f_stat:new m0(
+,Rqe={claude:
+,Xhe(this.options.HTMLAttributes,t),0]},parseMarkdown:(t,e)=>{const n=t.tokens||[];if(n.length===1&&n[0].type===
+,_wt=YRe()?.hostVersion,Swt=`${VRe}`,Cwt=bwt.getParser(window.navigator.userAgent),xp=Cwt.getOS(),Ewt=typeof window<
+,`URL must look like ${r}/s/<token>`);const o=s[1];if(!o)throw new vc(
+,agentType:
+,authorToken:n.authorToken}}}catch{}const t={displayName:
+,autoStart:c.autoStartOAuth})})]}),v.codex.loginType&&B!==
+,canSendToExternalIDEChat:!!window.vscodeapi&&(vR===
+,children:c.name}),f.jsx(lae,{models:tat(c.models)})]})]}),f.jsx(DA,{connected:!0,connectedLabel:l.apiKeyStored?
+,children:d.prompt}),d.options&&d.options.length>0&&f.jsxs(
+,children:e.prompt})]})]})})}function Sq(t){const e=t.type===
+,children:en.oauthInstruction}),Dt=f.jsx(Jee,{provider:hn,agentType:
+,children:f.jsx(lae,{models:s.models,modelsLink:s.modelsLink})})]}),f.jsx(
+,claudeDesktop:
+,codex:
+,codexCLI:
+,cursor:
+,cursorCLI:
+,d=r?.authToken??
+,darkmagenta:
+,gemini:
+,geminiCLI:
+,height:0}),n.length>0?new Ur({layout:bn.Horizontal,alignItems:Kn.Center,childSpacing:4,padding:[4,0,4,0],cursor:
+,loginType:hr})},ae=async()=>{if(z.trim()){q(!0);try{await l({agentType:
+,magenta:
+,maxTokens:t?.maxTokens!==void 0?String(t.maxTokens):
+,mobile:!0,model:
+,mobile:!1,model:
+,n.agentPresence);if(d.error)return{success:!1,error:d.error};const h=i.pageState();return{success:!0,error:
+,onClick:()=>{const o=dr(aA[n.length%aA.length]);t.setAgentProfileTemplates([...n,{name:
+,onSetupEvent:n,connected:v.claude.loginType===
+,onSetupEvent:n,connected:v.codex.loginType===
+,openai_gpt_image_2:
+,openai_gpt_image_flare:
+,openai_gpt_image_sunburst:
+,raw:e[0],text:n,href:r,tokens:[{type:
+,read_skill:
+,stored:v.claude.apiKeyStored,keyHint:v.claude.apiKeyHint,saving:F,value:z,onChange:U,onSave:ae,onClear:Le})}),I===
+,stored:v.codex.apiKeyStored,keyHint:v.codex.apiKeyHint,saving:Q,value:G,onChange:V,onSave:Pe,onClear:we})}),B===
+,style:{backgroundColor:Ls([...c,1])}}),f.jsx(f$,{name:a,modelDisplayName:l,className:
+,t),...r})}const Dq={claudeCodeCLI:
+,t[t.modelName=58]=
+,this.pos)-this.pos),++this.pos,e>1114111&&this.invalidStringToken(n,
+,v.claude.loginType,v.claude.apiKeyStored,n),{result:yt,checkedAt:_t,refresh:Bt,isProbeBacked:yn}=Lz(
+,v.codex.loginType,v.codex.apiKeyStored,n),{result:cn,checkedAt:Nn,refresh:kn,isProbeBacked:pn}=Lz(
+,v.gemini.loginType,v.gemini.apiKeyStored,n),{result:mn,checkedAt:$n,refresh:fn,isProbeBacked:on}=Lz(
+,ya=Vm(Ki).agentType,ou=(ya===
+,{agentType:
+,{token:b,whitespace:M})},h2=function(b,M){return Mr(
+,{token:b,whitespace:M})},m3=function(b,M){return Mr(
+,{token:b,whitespace:M})},mi=function(b,M){return Mr(
+,{token:b,whitespace:M})},vD=function(b,M){return Mr(
+,{token:b,whitespace:M})},wD=function(b,M){return Mr(
+,{token:b,whitespace:M})},xD=function(b,M){return Mr(
+,{token:e,whitespace:t})},Bg=function(e,t){return Y(
+,{token:e,whitespace:t})},Gg=function(e,t){return Y(
+,{token:e,whitespace:t})},J=function(e,t){return Y(
+,{token:e,whitespace:t})},Lg=function(e,t){return Y(
+,{token:e,whitespace:t})},Ng=function(e,t){return Y(
+,{token:e,whitespace:t})},Ug=function(e,t){return Y(
+,{token:ie,wsEnd:fe})},xr=function(ie,fe){return Is(
+,{token:u,wsEnd:p})},te=function(u,p){return ie(
+--agent-messages-bottom
+.concat(b.specifier.token).concat(zo(k));return[O,E,
+.concat(r.specifier.token).concat(_Se(i));return[o,s,
+/api/early_access_features/?token=
+/api/surveys/?token=
+/api/web_experiments/?token=
+/s/:token/comments
+/s/:token/comments/:threadId
+/s/:token/comments/:threadId/target
+/s/:token/references
+/s/:token/references/:referenceId
+/s/:token/references/:referenceId/complete
+/usr/local/bin/claude
+:`Model ${U+1} context window`,value:z.contextWindow,onChange:F=>I(z.key,
+:`Model ${U+1} max tokens`,value:z.maxTokens,onChange:F=>I(z.key,
+:return this.finishToken(De.invalidTemplate,this.input.slice(this.start,this.pos));case
+:return`the skill ${JSON.stringify(t.name)}`;case
+:x!==null&&x.type===av?Owe(A.token)?e=To:(l(),e=Dwe(x)?To:oo):e=Owe(A.token)||Dwe(x)?oo:To;break;case
+:x!==null&&x.type===ep?R1e(A.token)?e=Ao:(l(),e=O1e(x)?Ao:so):e=R1e(A.token)||O1e(x)?so:Ao;break;case
+:{n+=this.renderer.text(s);break}default:{let o='Token with 
+:{r+=n.text(o);break}default:{let a='Token with 
+;break}case Xe.EOF:{this._err(Ut.eofInComment),this.emitCurrentComment(n),this._emitEOFToken();break}default:n.data+=
+;case 56:case 57:if(this.strict&&this.invalidStringToken(this.pos-1,
+;const t=navigator.userAgentData;return t?.platform?t.platform:navigator.platform??
+;return g?p.createNode(e,m,[p.createTextNode(g)]):p.createNode(e,m,[])},markdownTokenizer:{name:e,level:
+;return r.token&&(i=r.token.replace(/\+/g,
+<dimension-token>
+<ident-token>
+<ident-token> : <declaration-value>? ['!' important]?
+<ident-token>|<function-token> <any-value>? )
+<ident>|<function-token> <any-value> )
+<ns-prefix>? <ident-token>
+<number-token>
+?document:null,I_=tv&&tv.userAgent||
+?this.agentConfig.claude.loginType:c===
+Add SKILL.md file…
+Agent
+Agent (Default)
+Agent + Model
+Agent Names
+Agent Settings
+Agent chat text size
+Agent cursor label
+Agent cursor size
+Agent panel controls
+Agent sessions
+Agent setup
+Agent stopped by user.
+Agents
+Anthropic
+Anthropic Claude Code
+Anthropic Messages
+Browse for the claude executable
+CDC-token
+CDO-token
+Called contentMatchAt on a node with invalid content
+Cannot close document, a token (`
+Chat
+Chat template
+ChatGPT
+Chathura
+Choose a folder where agent can generate code
+Claude
+Claude Code
+Close MCP configuration
+Codex
+Connect another MCP client
+Connect any OpenAI or Anthropic compatible API
+Connect via MCP
+Connect your agents and discover your canvas. You can close setup and resume next time.
+Copied MCP config to clipboard
+Copy MCP config
+Copy to Agent
+Could not update the MCP integration.
+Cursor
+Cursor Agent
+Cursor settings...
+Custom MCP Server Configuration
+Delete queued prompt
+Design Agent
+Dismiss Sample Prompts
+Dismiss example prompts
+EOF-token
+Edit queued prompt
+Exactly one of shareId or fileToken is required
+Failed to copy prompt to clipboard
+Failed to copy prompt to clipboard:
+Failed to execute spawn-agents!
+Failed to load dashboard agent configuration
+Failed to open MCP settings
+Failed to read the initial dashboard prompt
+Failed to send feedback to the agent
+Failed to update skills
+GPT 5.3 Codex Spark
+Gemini
+Gemini 3.5
+Gemini 3.6
+Gemini 3.6 Flash
+Gemini 3.7
+Gemini 3.7 Flash · Gemini 3.6 Flash · Gemini 3.1 Pro
+Gemini 3.7 Flash · Gemini 3.6 Flash · Gemini 3.5 Flash
+Gemini 3.8
+Gemini 3.8 Flash · Grok 4.6 · Composer 2.5 and other models
+Gemini API service issue
+Google Gemini
+Gradient Prompt Stack
+Hide agent input?
+Input tokens
+Invalid input for GapCursor.fromJSON
+Loading agent conversations…
+Loading agents…
+MCP
+MCP configuration
+MCP configuration copied to clipboard.
+MCP connections
+Minimize chat
+Missing share token in URL
+Model
+Model ID
+Model providers
+Model requests
+Model turns
+Models/Provider info
+Multiple models*, e.g. Claude Opus 5
+Multiple models*, e.g. Claude Opus 5 · Claude Haiku 4.5 · GPT-5.5
+Multiple models*, e.g. Claude Opus 5.5 · Claude Sonnet 5.5 · Claude Haiku 4.5
+Multiple models*, e.g. DeepSeek V4 Pro · Kimi K2.7 Code
+Multiple models, e.g. Opus 4.8 · GPT-5.5 · DeepSeek V4 Pro · GLM 5.2 · GLM 5.1
+New Agent
+New agent
+No models found
+No session token available
+Oops, something went wrong with Claude Code!
+Oops, something went wrong with Codex!
+Oops, something went wrong with your coding agent!
+Open agent tab
+OpenAI
+OpenAI (reasoning_effort)
+OpenAI ChatGPT
+OpenAI Completions
+OpenAI Responses
+Output token parameter
+Output tokens
+Parallel agents
+Paste this into your tool’s MCP server settings to connect it to pen.dev.
+Pencil MCP disconnected
+Pick a skill
+Pick names for your design agents
+Prompt
+Prompt copied to clipboard
+Prompt copied. Paste it in the agent input.
+ProseMirror-gapcursor
+Queued prompts
+Qwen (chat_template_kwargs)
+Read skill
+Reading skill
+Reasoning effort
+Relative path of a file referenced from SKILL.md. Omit to read SKILL.md itself.
+Remove Agent History
+SKILL.md
+Search models…
+Select Model
+Send message to agent
+Send reasoning_effort
+Send to the running agent now
+Set parallel agents
+Set up Claude Code
+Set up your on-canvas agent harness
+Show Agent History
+Show agent input on dashboard
+Sign in to the Anthropic Console and create a key under Settings → API Keys.
+Sign in to the OpenAI platform and create a key on the API Keys page.
+Sign in with ChatGPT
+Silent migration error, falling back to old token
+Silent migration failed, falling back to old token
+Skill docs
+Started agents
+Starting agents
+Stop agents
+Style guide copied to clipboard. Paste it into the agent chat.
+Subagent Task
+System prompt & tools
+The agent will apply this feedback to the design
+The required config for the extra agents that will be spawned and executed in parallel alongside the current agent.
+This removes the create prompt from the dashboard. You can turn it back on later in Settings → General.
+This will permanently delete all agent chat history and cannot be undone.
+Tip: You can ask agent to generate a script for you based on your description or find more scripts in Goodies...
+Tip: You can ask agent to generate a shader for you based on your description or find more shaders in Goodies...
+Token
+Tool call cancelled
+Unexpected token
+Unknown Model
+Use Pencil mcp tools.
+Use pen.dev from your favorite coding tools. Choose where to enable MCP for your design-to-code workflow.
+User prompts
+User-Agent
+UserAgent should be a string
+Vertex Gemini API
+WeChat
+WebMCP tools
+[-token
+[<function-token> <any-value> )]|( <ident> <any-value> )
+[<function-token> <any-value>? )]|[( <any-value>? )]
+[<ident-token>|'*']? '|'
+[ChatManager] Failed to load conversations from disk:
+[ChatManager] Failed to steer:
+[LiveShareSync] Missing fileToken; skipping publish
+[connected-agents] names
+[data-pencil-allow-chat-clipboard]
+[webmcp] tool call
+[webmcp] tools registered
+]-token
+]}));else if(c.agent===
+]})]}),e.prompt&&f.jsxs(f.Fragment,{children:[f.jsxs(
+`:d} is expected`,p=this.tokenStart;switch(u){case Rn:this.tokenType===Fi||this.tokenType===zd?(p=this.tokenEnd-1,h=
+`:u} is expected`,h=this.tokenStart;switch(c){case ir:this.tokenType===Rs||this.tokenType===Zu?(h=this.tokenEnd-1,d=
+`prompt` property is required for Generate operation!
+absolute bottom-2 right-0 w-2 translate-x-full cursor-ew-resize pointer-events-auto
+absolute inset-0 cursor-default rounded-lg outline-none
+absolute inset-0 h-full w-full cursor-default bg-gradient-to-b from-transparent via-black/50 to-black/90 duration-300
+absolute left-0 top-0 bottom-0 z-10 w-1.5 -translate-x-1/2 cursor-ew-resize
+absolute z-40 pointer-events-auto [&_button]:cursor-pointer
+add-skill
+add-to-chat
+addToChat
+agent-and-model
+agent-browse-executable-path
+agent-config-changed
+agent-dialog-opened
+agent-names
+agent-oauth-login
+agent-oauth-login-update
+agent-oauth-logout
+agent-probe
+agent-session-event
+agent-set-api-key
+agent-steer
+agent-stop
+agent-text-size-changed
+agentCursorLabel
+agentCursorSize
+agentTextSize
+allowGapCursor
+anthropic-messages
+at-keyword-token
+bad-string-token
+bad-url-token
+bg-zinc-200/50 dark:bg-zinc-700/50 text-foreground/40 cursor-not-allowed
+block max-h-[400px] overflow-y-auto cursor-text bg-transparent text-foreground pl-0.5 pr-0.5
+blots/cursor
+border border-dashed border-input bg-muted/40 text-foreground/30 cursor-not-allowed
+chat-active-conversation-changed
+chat-bold
+chat-centered
+chat-centered-bold
+chat-centered-dots
+chat-centered-dots-bold
+chat-centered-dots-fill
+chat-centered-dots-light
+chat-centered-dots-thin
+chat-centered-fill
+chat-centered-light
+chat-centered-text
+chat-centered-text-bold
+chat-centered-text-fill
+chat-centered-text-light
+chat-centered-text-thin
+chat-centered-thin
+chat-circle
+chat-circle-bold
+chat-circle-dots
+chat-circle-dots-bold
+chat-circle-dots-fill
+chat-circle-dots-light
+chat-circle-dots-thin
+chat-circle-fill
+chat-circle-light
+chat-circle-text
+chat-circle-text-bold
+chat-circle-text-fill
+chat-circle-text-light
+chat-circle-text-thin
+chat-circle-thin
+chat-dots
+chat-dots-bold
+chat-dots-fill
+chat-dots-light
+chat-dots-thin
+chat-fill
+chat-light
+chat-session-delete
+chat-session-save
+chat-sessions-load
+chat-tab-title block min-w-0 max-w-full overflow-hidden whitespace-nowrap
+chat-teardrop
+chat-teardrop-bold
+chat-teardrop-dots
+chat-teardrop-dots-bold
+chat-teardrop-dots-fill
+chat-teardrop-dots-light
+chat-teardrop-dots-thin
+chat-teardrop-fill
+chat-teardrop-light
+chat-teardrop-text
+chat-teardrop-text-bold
+chat-teardrop-text-fill
+chat-teardrop-text-light
+chat-teardrop-text-thin
+chat-teardrop-thin
+chat-template
+chat-text
+chat-text-bold
+chat-text-fill
+chat-text-light
+chat-text-thin
+chat-thin
+chat_add_on
+chat_apps_script
+chat_bubble
+chat_bubble_off
+chat_dashed
+chat_error
+chat_info
+chat_paste_go
+chat_paste_go_2
+chatgpt-user
+chats-bold
+chats-circle
+chats-circle-bold
+chats-circle-fill
+chats-circle-light
+chats-circle-thin
+chats-fill
+chats-light
+chats-teardrop
+chats-teardrop-bold
+chats-teardrop-fill
+chats-teardrop-light
+chats-teardrop-thin
+chats-thin
+check-agent-status
+childTokens
+claude-
+claude-4.5-haiku
+claude-4.6-opus
+claude-4.6-sonnet
+claude-4.7-opus
+claude-4.8-opus
+claude-5-fable
+claude-5-opus
+claude-5-sonnet
+claude-5.5-opus
+claude-5.5-sonnet
+claude-connect
+claude-disconnect
+claude-fable-5-1
+claude-opus-5-5
+claudeAutoPermissionMode
+code-token
+colon-token
+comma-token
+comment-token
+connected-agents-changed
+contextual_token
+contextual_token_add
+crisp-chat-integration
+cursor-bold
+cursor-composer
+cursor-default underline decoration-foreground/40 decoration-dotted decoration-[1px] underline-offset-4
+cursor-fill
+cursor-grab active:cursor-grabbing
+cursor-grabbing [&_*]:cursor-grabbing
+cursor-light
+cursor-pointer gap-2 text-xs
+cursor-pointer hover:bg-zinc-300/60 dark:hover:bg-zinc-600/60
+cursor-predefined
+cursor-text
+cursor-text-bold
+cursor-text-light
+cursor-text-thin
+cursor-thin
+cursorIDE
+custom-model
+dashboard:agent-config
+data-agent-input-notch
+data-agent-notch-header
+data-agent-notch-scroll
+data-agent-spotlight
+data-pencil-allow-chat-clipboard
+data-queued-prompt
+delim-token
+desktop:take-initial-prompt
+did-change-cursor
+didChangeCursor
+dimension-token
+dropCursor
+examplePromptsDismissed
+expired_token
+failed to remove skill
+failed to update skills
+fileToken is required when creating a new share link
+flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer
+flex items-center justify-between cursor-pointer
+flex items-center justify-center cursor-pointer hover:bg-accent w-5 h-full transition-opacity no-drag
+flex items-center space-x-1 cursor-pointer
+flex items-center space-x-2 cursor-pointer
+function-token
+gap-2 rounded-md text-xs cursor-pointer
+gapCursor
+gemini-
+gemini-3.6-flash
+get-mcp-config
+gfmFootnoteCallMarker
+gpt-5.3-codex-spark
+group no-drag grid place-items-center h-8 p-1 cursor-pointer rounded
+group/example-prompts relative -m-2 rounded-xl p-1 transition-colors hover:bg-zinc-200/70 dark:hover:bg-zinc-800/80
+group/row flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xxs outline-none
+handle flex flex-row pl-2 pb-2 pr-1 mt-2 border-b cursor-grab active:cursor-grabbing
+handlePromptSubmit
+hash-token
+highlight_mouse_cursor
+highlight_text_cursor
+https://console.anthropic.com/settings/keys
+https://docs.github.com/en/copilot/reference/ai-models/supported-models
+https://fireworks.ai/models
+https://fonts.gstatic.com/s/chathura/v22/_gP71R7-rzUuVjim418goUC5S-Zy.ttf
+https://fonts.gstatic.com/s/chathura/v22/_gP81R7-rzUuVjim42eAjWSxYPp7oSNy.ttf
+https://fonts.gstatic.com/s/chathura/v22/_gP81R7-rzUuVjim42eMiWSxYPp7oSNy.ttf
+https://fonts.gstatic.com/s/chathura/v22/_gP81R7-rzUuVjim42ecjmSxYPp7oSNy.ttf
+https://fonts.gstatic.com/s/chathura/v22/_gP91R7-rzUuVjim42dEq0SbTvZyuDo.ttf
+https://fonts.gstatic.com/s/edutasbeginner/v5/ZXu9e04WubHfGVY-1TcNg7AFUmshmcPqoeRWfbs.ttf
+https://fonts.gstatic.com/s/jacquesfrancois/v26/ZXu9e04ZvKeOOHIe1TMahbcIU2cgmcPqoeRWfbs.ttf
+https://fonts.gstatic.com/s/kalam/v18/YA9Qr0Wd4kDdMtD6GgLLmCUItqGt.ttf
+https://fonts.gstatic.com/s/kalam/v18/YA9Qr0Wd4kDdMtDqHQLLmCUItqGt.ttf
+https://openrouter.ai/models
+https://platform.openai.com/api-keys
+https://status.claude.com
+https://status.claude.com/api/v2/incidents/unresolved.json
+https://status.claude.com/api/v2/status.json
+https://status.claude.com/api/v2/summary.json
+https://status.cursor.com
+https://status.openai.com
+https://status.openai.com/api/v2/incidents.json
+https://status.openai.com/api/v2/status.json
+https://status.openai.com/api/v2/summary.json
+https://www.together.ai/models
+ident-token
+images/onboarding/chatgpt.png
+images/onboarding/claude.png
+images/onboarding/cursor.png
+images/onboarding/gemini.png
+in e&&e.tokens?this.parser.parseInline(e.tokens):
+mark_chat_read
+mark_chat_unread
+mark_unread_chat_alt
+max_completion_tokens
+max_output_tokens
+max_tokens
+meta-externalagent
+mobile_chat
+modelId
+modelName
+model_training
+my-model-id
+number-token
+onboarding-agent-probe-finished
+onboarding-agent-setup-finished
+onboarding-agent-setup-started
+onboarding-mcp-configuration-finished
+onboarding-mcp-configuration-started
+opacity-0 group-hover/model:opacity-100 data-[state=open]:opacity-100 hover:bg-zinc-200/60 dark:hover:bg-zinc-700/50
+open-mcp-settings
+openai-codex
+openai-completions
+openai-responses
+openai_gpt_image_2
+openai_gpt_image_flare
+openai_gpt_image_sunburst
+p-0.5 cursor-pointer
+pencil-agent-multimodel-models
+pencil-agent-parallel-mode
+pencil-agent-settings-opened
+pencil-chat-notifications
+pencil-cursor-mcp-not-connected
+pencil-last-agent-probe
+pencil-mcp-settings-failed-open
+pencil.providerStatus.claude.v2
+pencil.providerStatus.codex.v2
+pencil.providerStatus.gemini.v1
+percentage-token
+pointer-events-none absolute inset-0 z-[5] cursor-auto overflow-clip antialiased
+processAllTokens
+prompt-agent
+promptAgent
+prompt_suggestion
+prosemirror-dropcursor-block
+prosemirror-dropcursor-inline
+ql-cursor
+ql-token
+qwen-chat-template
+read-skill-file
+read_skill
+real_estate_agent
+registers its design tools with the browser so those agents can call them directly.
+relative inline-flex h-4 w-8 shrink-0 cursor-default rounded-full border-2 border-transparent transition-colors bg-input
+relative inline-flex h-4 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors bg-input
+relative w-full h-full border border-input rounded bg-background hover:bg-muted transition-colors cursor-pointer
+scrollMargin
+semicolon-token
+send-prompt
+set-agent-text-size
+skillet_cooktop
+skills-list
+skills-remove
+snapchat-logo
+snapchat-logo-bold
+snapchat-logo-fill
+snapchat-logo-light
+snapchat-logo-thin
+spawn-agents
+spawn-agents-failed
+spawn-agents-streaming
+spawn_agents
+string-token
+submit-prompt
+support_agent
+supportsReasoningEffort
+text-cursor
+text-cursor-input
+toggle-mcp-integration
+trackCursorAxis
+tracking-cursor
+url( <string> <url-modifier>* )|<url-token>
+url-token
+video_chat
+voice_chat
+voice_chat_off
+w-6 aspect-square rounded border border-input outline-none cursor-pointer hover:border-foreground
+whitespace-token
+{-token
+||e===56||e===57)&&(this.strict||t)&&this.invalidStringToken(this.pos-1-r.length,t?
+||l.tokens[0]?.type===
+||v.claude.loginType===
+})]}),e.agentError?f.jsx(
+})]}),f.jsx(VQn,{chatManager:u,hideHeader:P})]}),u&&t===
+})]})}function ilr({premiumImageModelsEnabled:t=!0,onUpgrade:e}){const[n,r]=oa(
+})})]}),v.claude.loginType&&I!==
+})})]}),wt.isBrowser&&t.shareToken&&C&&wr&&f.jsx(War,{shareToken:t.shareToken}),Fa.size>0&&f.jsx(
+},P=I=>{if(I.preventDefault(),I.detail>1){k.current=null,m(null),document.body.style.cursor=
+},[Ki,vo,Ws,Sl,Fa,rl]),Cl=S.useCallback(kt=>{e.setModelIdForConversation(r,kt)},[e,r]),Oc=x===
+},prompt:{description:
+}-token
+};l.checked=u.checked,i.loose?l.tokens[0]&&[
+}`,{headers:Ot});if(Cn.ok){const In=await Cn.json();return In.token?{token:In.token}:{error:
