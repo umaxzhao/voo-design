@@ -41,7 +41,7 @@ try {
     }
   }
   await input.fill("blnun");
-  await rows.filter({ hasText: "Union" }).waitFor();
+  await rows.filter({ hasText: "Unite" }).waitFor();
   await screenshot("palette-filter");
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Escape");
@@ -70,7 +70,7 @@ try {
 
   await page.keyboard.press("Control+k");
   await palette.waitFor();
-  assert.ok((await palette.innerText()).includes("Recent"));
+  await palette.getByText("Recent", { exact: true }).waitFor();
   await input.fill("Switch language to Chinese");
   await page.waitForFunction(() => document.querySelector("#command-palette-option-0")?.textContent.includes("Switch language to Chinese"));
   await page.keyboard.press("Enter");
