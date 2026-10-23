@@ -27,6 +27,14 @@ export function createHistoryApi({
   const currentDocSnapshot = () =>
     snapshotDoc ? snapshotDoc() : snapshotState();
   return {
+    captureDocumentSession: () => ({
+      current: snapshotState(), history: history.captureSession(), applied: getAppliedSnapshot(),
+    }),
+    restoreDocumentSession(session) {
+      history.restoreSession(session.history);
+      restore(session.current, { fromHistory: true });
+      setAppliedSnapshot(session.applied);
+    },
     canUndo: () =>
       history.canUndo() ||
       maskTools.hasDirtyMasks() ||
