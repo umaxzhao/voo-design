@@ -495,7 +495,8 @@ EditorRulers.propTypes = {
 };
 
 /**
- * Compact cluster of canvas view-aid toggles, mounted beside the zoom bar.
+ * Canvas view-aid toggles. Rendered as a group INSIDE the single bottom
+ * toolbar (EditorZoom) — never as a second floating bar.
  *
  * Rulers/guides/snap-to-grid are all persisted settings, so the buttons are
  * tri-state readouts of the same values the pointer handlers read.
@@ -518,10 +519,9 @@ export function EditorCanvasAids({
   return (
     <div
       data-testid="editor-canvas-aids"
-      role="toolbar"
+      role="group"
       aria-label={label(t, "editor.guides.show", "Canvas aids")}
-      className="viewport-tools absolute bottom-3 z-30 flex items-center gap-0.5 rounded-xl px-1 py-0.5 shadow-pop"
-      style={{ left: "calc(50% + 132px)" }}
+      className="flex items-center gap-0.5"
     >
       <button
         type="button"

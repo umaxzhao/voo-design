@@ -92,4 +92,5 @@ export default {
   "settings.shortcuts.panKeys": "H / 空格 + 拖动",
   "settings.shortcuts.multiSelectKeys": "⌘/Ctrl + 单击",
   "editor.toolbar.label": "编辑器工具栏",
+  "editor.bottomBar.label": "画布视图控制",
 };
