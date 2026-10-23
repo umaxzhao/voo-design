@@ -48,6 +48,7 @@ const COORD_LIMIT = 99999;
  */
 export default function TransformSection({
   object,
+  showRadius = true,
   docSize: _docSize = null,
   isRegion = false,
   edit,
@@ -278,7 +279,7 @@ export default function TransformSection({
           />
         </div>
 
-        {object.kind === "rect" || object.kind === "image" || object.isFrame || object.kind === "frame" ? (
+        {showRadius && (object.kind === "rect" || object.isFrame || object.kind === "frame") ? (
           <TransformRadiusControls
             object={object}
             commonCornerRadius={commonCornerRadius}
@@ -309,6 +310,7 @@ export default function TransformSection({
 
 TransformSection.propTypes = {
   object: PropTypes.object.isRequired,
+  showRadius: PropTypes.bool,
   docSize: PropTypes.shape({ width: PropTypes.number, height: PropTypes.number }),
   isRegion: PropTypes.bool,
   tool: PropTypes.string,

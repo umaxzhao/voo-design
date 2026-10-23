@@ -1,3 +1,4 @@
+import { ellipseArcPath, hasEllipseArc } from "./ellipse_arc.js";
 // Paint style resolution (solid/gradient/image) and basic shape (rect, ellipse) rendering.
 
 import { isCssGradient, parseGradient } from "../color_picker/gradient_fill.js";
@@ -228,6 +229,23 @@ export function fillRoundRect(ctx, x, y, w, h, r) {
  * Exported for the renderer unit tests; drawNode is the real caller.
  */
 export function drawEllipseNode(ctx, node) {
+  if (hasEllipseArc(node)) {
+    const path = new Path2D(ellipseArcPath(node));
+    ctx.save();
+    ctx.translate(node.x, node.y);
+    if (node.fill && node.fill !== "transparent") {
+      ctx.fillStyle = resolvePaintStyle(ctx, node.fill, 0, 0, node.width, node.height, node.fillOpacity ?? 1);
+      ctx.fill(path, "evenodd");
+    }
+    if (node.stroke && node.strokeWidth) {
+      ctx.strokeStyle = resolvePaintStyle(ctx, node.stroke, 0, 0, node.width, node.height, node.strokeOpacity ?? 1);
+      ctx.lineWidth = node.strokeWidth;
+      ctx.setLineDash(dashPatternFor(normalizeStrokeProps(node).dash, node.strokeWidth));
+      ctx.stroke(path);
+    }
+    ctx.restore();
+    return;
+  }
   const centreX = node.x + node.width / 2;
   const centreY = node.y + node.height / 2;
   const fillAlpha = node.fillOpacity ?? 1;

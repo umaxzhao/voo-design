@@ -56,7 +56,7 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     );
 
     // Header badge
-    expect(html).toContain("editor-properties-panel");
+    expect(html).toContain("image-context-toolbar");
     expect(html).toContain("editor.tool.brush");
 
     // Quick size pills
