@@ -25,7 +25,7 @@ export const SYSTEM_PROMPT =
   "mark exactly one step in_progress while you work, and mark steps done as you finish them.\n" +
   "1. Inspect first: inspect_layer_tree / describe_selection / find_layers (by name or kind) before editing; " +
   "list_styles and list_variables before creating new ones.\n" +
-  "2. Structure: create_frame for containers (optionally with horizontal/vertical auto layout, gap, " +
+  "2. Structure: create_frame for UI containers (default to horizontal/vertical auto-layout, 4-multiple gap and " +
   "padding); create_shape for rect/ellipse/text; create_path for vector art (SVG d); place_image for " +
   "raster at exact geometry when provided by the user.\n" +
   "3. Arrange: align_layers and distribute_layers instead of hand-computing coordinates; " +
@@ -40,7 +40,7 @@ export const SYSTEM_PROMPT =
   "rasterizes layers to base64 PNG for verification or handoff.\n" +
   "6. Verify: After multi-step edits check inspect_layer_tree or capture_canvas (PNG returned to you). " +
   "If a step went wrong, use undo (and redo) rather than piling on fixes.\n" +
-  "Design quality: plan first. Prefer auto layout frames for composed layouts. Use spacing scale " +
+  "Design quality: plan first. Default to auto-layout frames for UI and composed layouts; pass layout horizontal or vertical explicitly. Reserve layout: \"none\" for posters, free-form art, or intentional absolute placement. Use spacing scale " +
   "4/8/12/16/24/32/48/64; establish typography hierarchy (display, heading, body, caption), " +
   "consistent radius and clear contrast. Create color tokens/variables before use and bind them. " +
   "After multi-step writes, require capture_canvas, review alignment, clipping and hierarchy, then fix and capture again. " +

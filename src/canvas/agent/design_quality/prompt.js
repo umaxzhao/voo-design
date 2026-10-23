@@ -28,7 +28,7 @@ export function buildDesignQualityPrompt({ userText, kit } = {}) {
     "",
     "[Workflow — tokens first]",
     "1. Choose the kit above and apply its tokens (background, surfaces, hairline borders, text colors, accent) as variables/styles before drawing.",
-    "2. Structure first: layout skeleton as auto-layout frames (horizontal/vertical, 4-multiple gap and padding), not hand-placed boxes.",
+    "2. Structure first: default to auto-layout frames for UI generation (horizontal/vertical, 4-multiple gap and padding), not hand-placed boxes. Reserve layout: \"none\" for posters, free-form art, or intentional absolute placement.",
     "3. Build components/rows once and repeat with real content; wire fills to tokens.",
     "4. Content last, but never lorem: real names, prices, dates, counts, avatar initials, status pills.",
     "5. Verify: capture_canvas, then fix overlap/overflow/alignment/type/contrast mistakes before replying.",
