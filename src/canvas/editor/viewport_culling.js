@@ -334,7 +334,7 @@ export function nonCullableNodeIds(doc) {
  * @param {SpatialIndex} [spatialIndex]
  * @returns {Set<string>}
  */
-export function visibleNodeIds(doc, visibleRect, spatialIndex = null) {
+export function visibleNodeIds(doc, visibleRect, spatialIndex = null, allCullable = false) {
   if (!doc?.nodes) return new Set();
   const nodes = doc.nodes;
   if (!visibleRect) {
@@ -349,8 +349,8 @@ export function visibleNodeIds(doc, visibleRect, spatialIndex = null) {
     for (let i = 0; i < hits.length; i += 1) {
       visibleIds.add(hits[i].id);
     }
-    const nonCullable = nonCullableNodeIds(doc);
-    if (nonCullable.size > 0) {
+    const nonCullable = allCullable ? null : nonCullableNodeIds(doc);
+    if (nonCullable?.size > 0) {
       for (const id of nonCullable) {
         visibleIds.add(id);
       }

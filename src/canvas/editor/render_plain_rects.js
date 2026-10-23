@@ -18,19 +18,27 @@ export function isPlainRect(node) {
   return eligible;
 }
 
-export function drawPlainRects(ctx, nodes, { visibleSet, hiddenNodeId, paintNodeIds } = {}) {
+export function isPlainRectList(nodes) {
   let eligible = eligibleLists.get(nodes);
   if (eligible === undefined) {
     eligible = nodes.every(isPlainRect);
     eligibleLists.set(nodes, eligible);
   }
-  if (!eligible) return false;
+  return eligible;
+}
+
+export function drawPlainRects(ctx, nodes, { visibleSet, hiddenNodeId, paintNodeIds, paintBounds } = {}) {
+  if (!isPlainRectList(nodes)) return false;
   ctx.save();
   ctx.globalCompositeOperation = "source-over";
   for (const node of nodes) {
     if (!node.visible || node.id === hiddenNodeId ||
         (visibleSet && !visibleSet.has(node.id)) ||
         (paintNodeIds && !paintNodeIds.has(node.id))) continue;
+    if (paintBounds && (node.x + node.width < paintBounds.x ||
+        node.y + node.height < paintBounds.y ||
+        node.x > paintBounds.x + paintBounds.width ||
+        node.y > paintBounds.y + paintBounds.height)) continue;
     ctx.globalAlpha = node.opacity ?? 1;
     ctx.fillStyle = node.fill;
     ctx.fillRect(node.x, node.y, node.width, node.height);

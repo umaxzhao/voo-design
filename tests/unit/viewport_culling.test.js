@@ -1,3 +1,4 @@
+import { createRectNode } from "../../src/canvas/editor/scene_model.js";
 import { describe, it, expect } from "vitest";
 import {
   CULL_MARGIN_WORLD_PX,
@@ -389,4 +390,12 @@ describe("attachSpatialIndex", () => {
     attachSpatialIndex(doc, null);
     expect(doc.spatialIndex).toBeNull();
   });
+});
+
+it("queries local damage without a non-cullable scan for verified plain documents", () => {
+  const nodes = [createRectNode({ x: 0, y: 0, width: 10, height: 10 }),
+    createRectNode({ x: 100, y: 100, width: 10, height: 10 })];
+  const box = { minX: -1, minY: -1, maxX: 20, maxY: 20 };
+  const index = buildSpatialIndex(nodes);
+  expect(visibleNodeIds({ nodes }, box, index, true)).toEqual(new Set([nodes[0].id]));
 });

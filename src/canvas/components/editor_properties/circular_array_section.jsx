@@ -71,6 +71,7 @@ export default function CircularArraySection({
       return undefined;
     const unsubscribe = engine.subscribeRender(() =>
       setRenderTicket((n) => n + 1),
+      { documentOnly: true },
     );
     return unsubscribe;
   }, [engine]);

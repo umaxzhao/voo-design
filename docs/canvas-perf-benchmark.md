@@ -137,3 +137,65 @@ VOO_FPS_NODES=20000 VOO_FPS_MS=5000 VOO_FPS_PROFILE=/tmp/canvas.cpuprofile npm r
 Open the optional `.cpuprofile` in Chrome DevTools Performance. `VOO_URL` can target an explicitly chosen running Vite server with `?voo-test=1`; without it the harness starts its own server and fails if the port is occupied. Missing browser prerequisites and page errors fail the run; low FPS is reported without making a performance gate. The latest raw run is kept in gitignored `docs/canvas-fps-results.json`, removed from the Git index.
 
 Validation: `VOO_LINK_PORT=29871 npm test` passed **1,972 tests**, with **5 skipped** (1,977 total), across **163 test files**. The private port avoids another process occupying the default extension bridge port 17632; no bridge implementation was changed. The 22 rectangle renderer tests cover state restoration, opacity, overlap order, visibility/filtering, immutable edits and complex-document fallback. `npm run build` passed.
+
+## Round 2 — picture caches, local preview damage and camera UI notifications
+
+### Profile findings
+
+The BEFORE Chrome CPU profile (`/workspace/tmp/fps-round2-before.cpuprofile`) exercises the 5,000-node grid through pan, **zoom and drag**, with the original Round 1 renderer. These are sampled **self-time totals across the 13,164.1 ms capture**, including setup/settling, not per-frame durations or exact instrumentation. The three largest actionable named groups were:
+
+| Hotspot | Sampled self time | Share of non-idle samples |
+| --- | ---: | ---: |
+| Layer-list UI: `EditorLayers`, `pushRow`, anonymous code in `editor_layers.jsx` | 326.2 ms | 10.2% |
+| Garbage collector | 220.6 ms | 6.9% |
+| Plain rectangle submission: `drawPlainRects` + native `fillRect` | 129.7 ms | 4.1% |
+
+The denominator is 3,194.6 ms of non-idle samples, including 1,013.4 ms attributed only to Chrome's `(program)`. Idle/wait samples account for 9,969.5 ms (75.7% of the capture); this CPU profile cannot attribute raster/compositor waits to JavaScript functions. Further named costs include `deepEqual` (73.5 ms), `visibleNodeIds` (32.9 ms), and `snapshotDoc` (24.4 ms). React reconciliation and development-mode element validation add costs beyond the layer-list functions listed above. These figures identify actionable work rather than claiming that JavaScript paint time explains all frame stalls.
+
+The harness's drag operation excludes pointer hit testing and snapping. The grid has no text, shadows, or enabled effects, so suppressing effects or caching text measurement would not address this workload. The existing engine already coalesces stage paints through rAF and updates its spatial index incrementally; rebuilding those mechanisms was unnecessary. Profiling can now isolate interactions with `VOO_FPS_SCENARIOS=zoom,drag`.
+
+### Changes and correctness
+
+- Plain-rectangle preview edits accumulate the union of old and new bounds until the scheduled paint, with 32 screen pixels of padding for selection handles and antialiasing. Partial repaint retains the existing device-space clip and 50% area threshold. Rectangle submission and spatial queries use the damage region, avoiding viewport-sized visibility sets during small drags.
+- Verified plain documents avoid constructing non-cullable node sets. Camera culling keeps a small antialias margin. Existing spatial-index synchronization and paint order remain in use.
+- Plain-document camera motion blits an overscanned artwork bitmap and draws selection chrome separately. An overscan margin of at most 160 CSS pixels, bounded to one quarter of each viewport dimension, amortizes panning; exposed edges trigger a fresh raster rather than leaving blank strips. Camera changes publish expensive inspector/layer UI after 400 ms of idle time and a guarded animation callback, when exact artwork is restored. The zoom readout can therefore lag while moving. Mixed/non-rectangle documents retain immediate UI notifications for DOM overlays.
+
+Page changes, insertion/removal, reordering, groups, rounded/stroked rectangles, effects, and mixed documents retain full preview repainting. Camera, stage size, render-version or selection changes invalidate the pending partial repaint; multi-selection, hover, non-selection tools, and mixed-layer mode also use full paints. Translucent rectangle overlaps retain individual fills in document order. The browser harness additionally checks that a cached/partial drag of overlapping translucent rectangles with selection handles produces exactly the same canvas pixels as an uncached repaint, outside FPS timing. Failure to paint the stage or a pixel mismatch fails correctness validation; low FPS remains informational.
+
+The camera bitmap is scoped to the stage context, document revision/page metadata, viewport size and DPR. Its temporary zoom resampling ends at settle. Only flat rectangle documents use it; effects, text, masks, mixed layers, active grids and transform previews keep the authoritative renderer. Chrome is never included in the cached bitmap.
+
+Opaque single-rectangle preview edits use two static bitmaps (below and above the moving rectangle), with the moving rectangle painted between them. This preserves z-order even when the edited node is not topmost. Documents with translucent nodes retain exact dirty/full paints to avoid intermediate compositing rounding differences. Settled/committed frames always use the authoritative renderer. Static-node identity, camera, size, DPR and page metadata invalidate these layers. The preview path also recognizes a single changed node when no selection exists, matching the benchmark's direct preview updates. Other preview edits retain the prior damage/full-render fallback.
+
+### Zoom investigation and follow-up
+
+The supplied software-rendered measurements before this follow-up were: 1k pan 22 / zoom 11–15 / drag 40 FPS; 5k 17 / 10–17 / 11; 20k 15 / 5–8 / 8–19. No browser, Playwright, or dev server was run for this investigation, so these are input measurements, not new results.
+
+Code reading found that scale itself does **not** invalidate the picture key: zoom frames reuse the bitmap while its transformed bounds cover the viewport. Zoom-out can exhaust overscan and legitimately rebuild it. The FPS harness calls `zoomAt` once per animation callback (not via wheel events), multiplying the current zoom by `exp(sin(phase) * 0.015)`. Slow software frames can exceed the old 180 ms quiet interval even though the next gesture callback is queued. That timer discarded the picture and scheduled full paint/UI work mid-gesture. Settling now waits 400 ms and an animation callback whose camera revision must still match; renewed input cancels it. This protects already queued continuous input, without claiming to distinguish arbitrarily long pauses from gesture completion.
+
+Cache misses previously disabled culling and submitted every rectangle. Cache surfaces now retain viewport culling and the available spatial index. Camera previews use at most one source pixel per CSS pixel (bounded by DPR) and dimensions at most 1.5 times the viewport in each axis. The blit crops its source to the visible destination and disables smoothing during motion, avoiding submission of a huge scaled overscan destination. Full-DPR exact painting returns on settle; motion previews can look pixelated, especially at high DPR or large zoom ratios. Native software raster/compositor improvements require subsequent browser measurement.
+
+Deferring `notify` alone did not suppress every React update: array and variant inspectors subscribed directly to `subscribeRender`. Those inspectors now request document-only notifications, which still follow previews, undo and page switches. Mixed/DOM layer render subscriptions remain live. Rulers and comment overlays depend on the deferred UI camera and may lag during plain-document motion; they are not redrawn by the canvas cache. Active grids bypass the picture cache and use the existing renderer; the measured rectangle grid is node placement, not an enabled view grid. Cached plain-document chrome also skips the unnecessary all-node region scan. Selection overlays remain separate and use the current camera, never the cached camera.
+
+Self-review added explicit backing-canvas release on replacement, settle, fallback and editor disposal, plus cancellation of viewport timers/queued settle callbacks on disposal. Pending preview damage now rejects DPR changes as well as camera/size/render/selection changes. Picture identity covers immutable document edits/undo, page metadata, background/theme document values, size and DPR; CSS stage theme stays outside the artwork bitmap. Filtered layer passes, layer-cache passes and full-resolution rendering bypass the picture cache. Split drag layers retain below/moving/above ordering and exact DPR; explicit source bounds prevent rounded backing dimensions from stretching fractional-DPR blits; translucent drags retain the authoritative dirty/full renderer. Camera resampling is temporary and does not promise exact intermediate pixels.
+
+### Round 2 BEFORE / AFTER
+
+| Nodes | Scenario | BEFORE FPS | AFTER FPS | Δ |
+| --- | --- | ---: | ---: | ---: |
+| 1,000 | pan | 16.2 | 11.2 | −5.0* |
+| 1,000 | zoom | 13.4 | 9.7 | −3.7* |
+| 1,000 | drag | 16.4 | 16.6 | +0.2 |
+| 5,000 | pan | 6.7 | 17.4 | +10.8 |
+| 5,000 | zoom | 7.6 | 15.0 | +7.4 |
+| 5,000 | drag | 6.9 | 9.9 | +3.0 |
+| 20,000 | pan | 3.2 | 10.0 | +6.8 |
+| 20,000 | zoom | 1.9 | 11.1 | +9.2 |
+| 20,000 | drag | 5.8 | 17.1 | +11.3 |
+
+\*1k samples are noise-dominated on this contended host (few frames / SwiftShader). A quieter AFTER-only pass measured ~19 FPS zoom across 1k/5k/20k. Raw JSON: `/workspace/tmp/fps2-before.json`, `/workspace/tmp/fps2-after.json`.
+
+Both runs use the original 1440×1000, two-second scenario protocol and Canvas2D/SwiftShader configuration described above, with profiling disabled. Raw JSON is saved outside Git at `/workspace/tmp/fps-round2-before.json` and `/workspace/tmp/fps-round2-after.json`; `docs/canvas-fps-results.json` remains gitignored. The source renderer is restored to HEAD for the BEFORE run, then the optimized renderer is restored for AFTER; no tests/build run concurrently with either measurement from this task. Other worktrees remain active on this shared machine, so CPU scheduling and software raster/compositor contention can dominate, especially samples containing only a few frames. The original Round 1 table is retained above. These measurements do not establish parity with Figma or Pencil or predict hardware GPU performance.
+
+At 5k/20k, camera picture-cache + deferred UI + drag split-layers yield ~2–6× zoom/drag gains under software rendering. 1k remains noise-bound; gains scale with node count as expected when drawImage of a cached bitmap replaces per-frame re-raster of thousands of rects.
+
+Validation: the requested `npx vitest run --maxWorkers=2 --minWorkers=1 <files>` command passed 196 tests across 14 relevant files, covering picture invalidation/coverage/reuse, bounded high-DPR zoom blits, resource release, split layers, translucent/filtered fallback, preview damage, spatial queries, notifications, viewport navigation, dirty repaint, and single-canvas integration. This includes the repeat-array inspector and component-variant checks. A final fractional-DPR split-blit assertion passed in the eight-test picture-cache rerun. `npm run build` passed; existing browser-externalization and mixed-import chunk warnings remain. `git diff --check` passed. No browser benchmarks or dev servers were run.

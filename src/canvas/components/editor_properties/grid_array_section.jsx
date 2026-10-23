@@ -134,7 +134,7 @@ export default function GridArraySection({
     if (!engine || typeof engine.subscribeRender !== "function") return;
     const unsubscribe = engine.subscribeRender(() => {
       setRenderTicket((prev) => prev + 1);
-    });
+    }, { documentOnly: true });
     return unsubscribe;
   }, [engine]);
 
