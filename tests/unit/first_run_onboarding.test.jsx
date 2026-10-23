@@ -18,6 +18,14 @@ vi.mock("react", async (importOriginal) => {
     useSyncExternalStore: (...args) => hooks.active ? args[1]() : actual.useSyncExternalStore(...args),
   };
 });
+vi.mock("../../src/store/design_store.js", async importOriginal => {
+  const actual = await importOriginal();
+  return { ...actual, useDesignStore: Object.assign(
+    selector => hooks.active ? selector(actual.useDesignStore.getState()) : actual.useDesignStore(selector),
+    actual.useDesignStore,
+  ) };
+});
+import { useDesignStore } from "../../src/store/design_store.js";
 import { AGENT_SETTING } from "../../src/canvas/agent/canvas_tools.js";
 import { AGENT_DEFAULT_MODELS } from "../../src/canvas/components/onboarding/onboarding_agent_model.js";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -58,7 +66,8 @@ describe("commercial first run", () => {
     expect(app).toContain('addEventListener("voo:open-first-run", handleOpenFirstRun)');
     expect(app).toContain('removeEventListener("voo:open-first-run", handleOpenFirstRun)');
     expect(app).toContain('case "help:onboarding":');
-    expect(app).toContain('const handleOpenFirstRun = () => setFirstRunOpen(true)');
+    expect(app).toContain('setFirstRunReopened(true); setFirstRunOpen(true)');
+    expect(app).toContain('reopened={firstRunReopened}');
   });
   it("bypasses browser automation", () => {
     vi.stubGlobal("navigator", { webdriver: true });
@@ -89,14 +98,16 @@ function elements(node) {
   return [node, ...React.Children.toArray(node.props?.children).flatMap(elements)];
 }
 describe("first-run interactions", () => {
-  let onStart, onClose, tree;
-  const draw = () => { hooks.index = 0; hooks.refIndex = 0; tree = FirstRunOnboarding({ open: true, onStart, onClose }); return tree; };
+  let onStart, onClose, tree, reopened;
+  const draw = () => { hooks.index = 0; hooks.refIndex = 0; tree = FirstRunOnboarding({ open: true, reopened, onStart, onClose }); return tree; };
   const click = (predicate) => { const el = elements(tree).find(predicate); expect(el).toBeTruthy(); el.props.onClick(); draw(); };
   const next = () => click(el => el.props?.["data-testid"] === "first-run-next");
   const step = () => elements(tree).find(el => el.props?.["data-step"])?.props["data-step"];
   beforeEach(async () => {
     await loadLocale("en");
     hooks.active = true; hooks.values = []; hooks.refs = [];
+    reopened = false;
+    useDesignStore.setState({ isDirty: false, nodes: [] });
     onStart = vi.fn(); onClose = vi.fn(); draw();
   });
   afterEach(() => { hooks.active = false; vi.unstubAllGlobals(); });
@@ -132,9 +143,39 @@ describe("first-run interactions", () => {
     click(el => el.type === "button" && el.props.children === "Skip for now");
     expect(getSetting(FIRST_RUN_KEY)).toBe("dismissed"); expect(onClose).toHaveBeenCalled();
   });
-  it("Escape dismisses the dialog", () => {
+  it("Escape closes for now and marks dismissed on first run", () => {
     tree.props.onCancel({ preventDefault: vi.fn() });
     expect(getSetting(FIRST_RUN_KEY)).toBe("dismissed"); expect(onClose).toHaveBeenCalled();
+  });
+  it("keeps the current document by default when reopened", () => {
+    reopened = true; hooks.values = []; draw();
+    next();
+    expect(elements(tree).find(el => el.props?.children === "Keep current document").props["aria-pressed"]).toBe(true);
+    next(); expect(step()).toBe("tour"); expect(onStart).not.toHaveBeenCalled();
+  });
+  it.each([{ isDirty: true, nodes: [] }, { isDirty: false, nodes: [{ id: "existing" }] }])("requires confirmation before replacing %j", current => {
+    useDesignStore.setState(current);
+    reopened = true; hooks.values = []; draw(); next();
+    click(el => el.type === "button" && elements(el).some(child => child.props?.children === "Blank"));
+    next(); expect(step()).toBe("start"); expect(onStart).not.toHaveBeenCalled();
+    expect(elements(tree).find(el => el.props?.["data-testid"] === "first-run-next").props.disabled).toBe(true);
+    elements(tree).find(el => el.type === "input").props.onChange({ target: { checked: true } }); draw();
+    next(); expect(onStart).toHaveBeenCalledWith(null); expect(step()).toBe("tour");
+  });
+  it.each([null, "completed", "dismissed"])("reopened Escape preserves persisted status %s", status => {
+    setSetting(FIRST_RUN_KEY, status);
+    reopened = true; hooks.values = []; draw();
+    tree.props.onCancel({ preventDefault: vi.fn() });
+    expect(getSetting(FIRST_RUN_KEY)).toBe(status); expect(onClose).toHaveBeenCalled();
+  });
+  it("opens the full Agent setup guide for CLI detection", () => {
+    vi.stubGlobal("window", new EventTarget());
+    vi.stubGlobal("CustomEvent", class extends Event {});
+    const listener = vi.fn(); window.addEventListener("voo:open-onboarding", listener);
+    next(); next(); next();
+    click(el => el.type === "button" && el.props.children === "Codex");
+    click(el => el.type === "button" && el.props.children === "Open Agent setup guide (CLI detection and connection test)");
+    expect(listener).toHaveBeenCalledOnce(); expect(onClose).toHaveBeenCalled();
   });
   it("persists an existing custom model through the Agent model setting", () => {
     vi.stubGlobal("localStorage", { getItem: key => key === "voo.custom_providers" ? JSON.stringify([{ id: "custom:studio", name: "Studio", models: [{ id: "model-a", label: "Model A" }] }]) : null });

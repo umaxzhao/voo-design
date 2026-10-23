@@ -1,5 +1,9 @@
 /** Critical initial-paint English dictionary. */
 export default {
+  "firstRun.keep": "Keep current document",
+  "firstRun.replaceConfirm": "This replaces your current canvas",
+  "firstRun.start.reopenedDescription": "Keep your current document, or explicitly choose a new starting point.",
+  "firstRun.provider.guide": "Open Agent setup guide (CLI detection and connection test)",
   "firstRun.provider.configure": "Add a new provider in settings",
   "firstRun.progress": "Getting started",
   "firstRun.welcome.label": "Welcome",
@@ -39,8 +43,6 @@ export default {
   "firstRun.title": "Welcome to VOO Design",
   "firstRun.description": "A canvas for your ideas, with AI by your side. Start with a blank document and make something yours.",
   "firstRun.palette": "Find tools and actions with Cmd/Ctrl+K, your command palette.",
-  "firstRun.agent": "Need a hand? Open the Agent panel using the sparkle button at the bottom right of the editor.",
-  "firstRun.start": "Start a blank document",
   "firstRun.skip": "Skip for now",
 
   "release.about": "About VOO Design",

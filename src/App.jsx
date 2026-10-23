@@ -22,13 +22,14 @@ export default function App() {
   const setAgentOpen = useDesignStore((s) => s.setAgentPanelOpen);
   // Workspace/agent configuration remains available through voo:open-onboarding.
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [firstRunReopened, setFirstRunReopened] = useState(false);
   const [firstRunOpen, setFirstRunOpen] = useState(shouldShowFirstRun);
   const { t } = useI18n();
 
   // Listen for Electron native menu actions and Agent panel trigger events
   useEffect(() => {
     const handleOpenAgent = () => setAgentOpen(true);
-    const handleOpenFirstRun = () => setFirstRunOpen(true);
+    const handleOpenFirstRun = () => { setFirstRunReopened(true); setFirstRunOpen(true); };
     window.addEventListener("voo:open-first-run", handleOpenFirstRun);
     const handleOpenOnboarding = () => setOnboardingOpen(true);
     window.addEventListener("voo:open-agent-panel", handleOpenAgent);
@@ -145,6 +146,7 @@ export default function App() {
       ) : null}
       <FirstRunOnboarding
         open={firstRunOpen}
+        reopened={firstRunReopened}
         onClose={() => setFirstRunOpen(false)}
         onStart={(template) => {
           const store = useDesignStore.getState();

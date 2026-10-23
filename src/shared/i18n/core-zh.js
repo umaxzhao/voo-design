@@ -1,5 +1,9 @@
 /** Critical initial-paint Chinese dictionary. */
 export default {
+  "firstRun.keep": "保留当前文档",
+  "firstRun.replaceConfirm": "这将替换当前画布",
+  "firstRun.start.reopenedDescription": "保留当前文档，或选择新的起点。",
+  "firstRun.provider.guide": "打开 Agent 设置指南（CLI 检测和连接测试）",
   "firstRun.provider.configure": "在设置中添加供应商",
   "firstRun.progress": "入门进度",
   "firstRun.welcome.label": "欢迎",
@@ -39,8 +43,6 @@ export default {
   "firstRun.title": "欢迎使用 VOO Design",
   "firstRun.description": "让灵感在画布上自由生长，让 AI 助你一臂之力。从空白文档开始，创造属于你的设计。",
   "firstRun.palette": "按 Cmd/Ctrl+K 打开命令面板，快速查找工具和操作。",
-  "firstRun.agent": "需要帮忙？点击编辑器右下角的星光按钮，打开 Agent 面板。",
-  "firstRun.start": "新建空白文档",
   "firstRun.skip": "暂时跳过",
 
   "release.about": "关于 VOO Design",

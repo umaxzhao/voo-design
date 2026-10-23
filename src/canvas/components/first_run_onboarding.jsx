@@ -4,7 +4,9 @@ import { Command, Layout, MousePointer2, Sparkles } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
 import { setLocale } from "../../shared/i18n.js";
 import { setSetting } from "../../shared/settings.js";
+import { getProviderStatusInfo } from "./provider_status_helpers.js";
 import { finishFirstRun } from "./first_run_state.js";
+import { useDesignStore } from "../../store/design_store.js";
 import { COMMUNITY_TEMPLATES } from "./community_templates_data.js";
 import { customModelGroups } from "../agent/agent_provider.js";
 import { AGENT_SETTING } from "../agent/canvas_tools.js";
@@ -15,37 +17,58 @@ const steps = ["welcome", "start", "tour", "provider"];
 export const FIRST_RUN_TEMPLATES = COMMUNITY_TEMPLATES.filter(({ category }) => ["dashboard", "mobile", "slides"].includes(category));
 const focusClass = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E5B2FF]";
 
-export default function FirstRunOnboarding({ open, onClose, onStart }) {
+export default function FirstRunOnboarding({ open, reopened = false, onClose, onStart }) {
   const dialog = useRef(null);
   const title = useRef(null);
   const createdStarter = useRef(null);
   const [step, setStep] = useState(0);
-  const [starter, setStarter] = useState("blank");
+  const [starter, setStarter] = useState(reopened ? "keep" : "blank");
+  const [confirmed, setConfirmed] = useState(false);
+  const hasCurrentContent = useDesignStore(s => s.isDirty || s.nodes?.length > 0);
+  const replacesCurrent = reopened && starter !== "keep" && hasCurrentContent;
   const [provider, setProvider] = useState("");
   const [customModel, setCustomModel] = useState("");
   const customGroups = customModelGroups();
+  const [cliStatus, setCliStatus] = useState(null);
   const [error, setError] = useState(false);
   const { t, locale } = useI18n();
   useEffect(() => {
     if (open) {
       createdStarter.current = null;
       setStep(0);
-      setStarter("blank");
+      setStarter(reopened ? "keep" : "blank");
+      setConfirmed(false);
       setProvider("");
       setCustomModel("");
       setError(false);
       dialog.current?.showModal();
     } else dialog.current?.close();
-  }, [open]);
+  }, [open, reopened]);
   useEffect(() => { if (open) title.current?.focus(); }, [step, open]);
-  const dismiss = () => { finishFirstRun("dismissed"); onClose(); };
+  useEffect(() => {
+    setCliStatus(null);
+    if (!open || step !== 3 || !["codex", "claude"].includes(provider)) return;
+    const cli = globalThis.window?.vooDesktop?.localCli;
+    if (!cli?.checkStatus) return;
+    let active = true;
+    Promise.resolve().then(() => cli.checkStatus(provider)).then(result => {
+      if (active) setCliStatus(getProviderStatusInfo(t, {
+        configured: Boolean(result.installed || result.ready || result.ok),
+        verification: { status: result.ready || result.ok ? "verified" : "untested" },
+      }));
+    }).catch(() => { /* The full guide offers detection and connection diagnostics. */ });
+    return () => { active = false; };
+  }, [open, step, provider, t]);
+  const dismiss = () => { if (!reopened) finishFirstRun("dismissed"); onClose(); };
   const complete = (settings = false) => {
-    finishFirstRun();
+    if (!reopened) finishFirstRun();
     onClose();
     if (settings) window.dispatchEvent(new CustomEvent("voo:open-settings", { detail: { tab: "providers" } }));
   };
   const next = () => {
-    if (step === 1 && createdStarter.current !== starter) {
+    if (step === 1 && starter !== "keep" && createdStarter.current !== starter) {
+      const current = useDesignStore.getState();
+      if (reopened && (current.isDirty || current.nodes?.length > 0) && !confirmed) return;
       try {
         onStart(FIRST_RUN_TEMPLATES.find(({ id }) => id === starter) ?? null);
         createdStarter.current = starter;
@@ -79,18 +102,20 @@ export default function FirstRunOnboarding({ open, onClose, onStart }) {
           </li>)}
         </ol>
         <h1 ref={title} tabIndex={-1} id="first-run-title" className="text-[15px] font-semibold tracking-tight outline-none">{t(step === 0 ? "firstRun.title" : `firstRun.${name}.title`)}</h1>
-        <p id="first-run-description" className="mt-3 text-[12px] leading-relaxed text-neutral-400">{t(step === 0 ? "firstRun.description" : `firstRun.${name}.description`)}</p>
+        <p id="first-run-description" className="mt-3 text-[12px] leading-relaxed text-neutral-400">{t(step === 0 ? "firstRun.description" : (step === 1 && reopened ? "firstRun.start.reopenedDescription" : `firstRun.${name}.description`))}</p>
         <div className="my-7">
           {step === 0 && <div className="flex items-center gap-5 rounded-2xl border border-white/10 bg-black/20 p-6"><Sparkles size={44} className="shrink-0 text-[#E5B2FF]" aria-hidden="true" /><p className="text-[15px] text-[#B2FFD6]">{t("firstRun.eyebrow")}</p></div>}
           {step === 1 && <div role="group" aria-label={t("firstRun.start.label")} className="grid grid-cols-2 gap-3">
+            {reopened && <button type="button" aria-pressed={starter === "keep"} onClick={() => { setStarter("keep"); setConfirmed(false); }} className={`rounded-2xl border p-4 text-left ${focusClass} ${starter === "keep" ? "border-[#E5B2FF] bg-[#E5B2FF]/10" : "border-white/10"}`}>{t("firstRun.keep")}</button>}
             {[null, ...FIRST_RUN_TEMPLATES].map((template) => {
               const id = template?.id ?? "blank";
-              return <button type="button" key={id} aria-pressed={starter === id} onClick={() => setStarter(id)} className={`rounded-2xl border p-4 text-left ${focusClass} ${starter === id ? "border-[#E5B2FF] bg-[#E5B2FF]/10" : "border-white/10 hover:bg-white/5"}`}>
+              return <button type="button" key={id} aria-pressed={starter === id} onClick={() => { setStarter(id); setConfirmed(false); }} className={`rounded-2xl border p-4 text-left ${focusClass} ${starter === id ? "border-[#E5B2FF] bg-[#E5B2FF]/10" : "border-white/10 hover:bg-white/5"}`}>
                 <Layout aria-hidden="true" size={28} className="mb-4 text-[#B2FFD6]" /><span className="block text-[12px] font-medium">{t(`firstRun.template.${template?.category ?? "blank"}`)}</span>
                 <span className="mt-1 block text-xs text-neutral-400">{template ? `${template.width} × ${template.height}` : t("firstRun.blankHint")}</span>
               </button>;
             })}
           </div>}
+          {step === 1 && replacesCurrent && <label className="mt-4 flex items-center gap-3 text-[12px] text-amber-200"><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} />{t("firstRun.replaceConfirm")}</label>}
           {step === 2 && <div className="space-y-3">
             {[["canvas", Layout], ["tools", MousePointer2], ["agent", Sparkles]].map(([id, Icon]) => <div key={id} className="flex gap-4 rounded-2xl border border-white/10 bg-black/20 p-4"><Icon size={30} className="shrink-0 text-[#B2FFD6]" aria-hidden="true" /><div><h2 className="text-[12px] font-semibold">{t(`firstRun.tour.${id}`)}</h2><p className="mt-1 text-[12px] text-neutral-400">{t(`firstRun.tour.${id}Hint`)}</p></div></div>)}
             {hasCommandPalette && <p className="flex gap-2 text-xs text-neutral-400"><Command size={16} aria-hidden="true" />{t("firstRun.palette")}</p>}
@@ -103,7 +128,9 @@ export default function FirstRunOnboarding({ open, onClose, onStart }) {
                 {customGroups.map(group => <optgroup key={group.cliId} label={group.name}>{group.models.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}</optgroup>)}
               </select>
             </label>}
+            {cliStatus && <p role="status" className={`text-xs ${cliStatus.statusClass}`}>{cliStatus.statusText}</p>}
             <p className="text-xs leading-relaxed text-neutral-400">{t("firstRun.provider.hint")}</p>
+            {(provider === "codex" || provider === "claude") && <button type="button" onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("voo:open-onboarding")); }} className={`rounded-lg py-2 text-[12px] text-[#B2FFD6] ${focusClass}`}>{t("firstRun.provider.guide")}</button>}
             <button type="button" onClick={() => complete(true)} className={`rounded-lg py-2 text-[12px] text-[#B2FFD6] ${focusClass}`}>{t("firstRun.provider.settings")}</button>
           </div>}
         </div>
@@ -111,10 +138,10 @@ export default function FirstRunOnboarding({ open, onClose, onStart }) {
         <div className="flex items-center gap-3">
           <button type="button" onClick={dismiss} className={`mr-auto rounded-xl py-3 text-[12px] text-neutral-400 hover:text-white ${focusClass}`}>{t("firstRun.skip")}</button>
           {step > 0 && <button type="button" onClick={() => setStep(step - 1)} className={`rounded-xl border border-white/10 px-4 py-3 text-[12px] ${focusClass}`}>{t("firstRun.back")}</button>}
-          <button type="button" data-testid="first-run-next" onClick={next} className={`rounded-xl bg-[#E5B2FF] px-5 py-3 text-[12px] font-semibold text-black hover:brightness-110 ${focusClass}`}>{t(step === 3 ? (provider ? "firstRun.finish" : "firstRun.later") : "firstRun.next")}</button>
+          <button type="button" data-testid="first-run-next" disabled={step === 1 && replacesCurrent && !confirmed && createdStarter.current !== starter} onClick={next} className={`rounded-xl bg-[#E5B2FF] px-5 py-3 text-[12px] font-semibold text-black hover:brightness-110 ${focusClass}`}>{t(step === 3 ? (provider ? "firstRun.finish" : "firstRun.later") : "firstRun.next")}</button>
         </div>
       </div>
     </dialog>
   );
 }
-FirstRunOnboarding.propTypes = { open: PropTypes.bool.isRequired, onClose: PropTypes.func.isRequired, onStart: PropTypes.func.isRequired };
+FirstRunOnboarding.propTypes = { open: PropTypes.bool.isRequired, reopened: PropTypes.bool, onClose: PropTypes.func.isRequired, onStart: PropTypes.func.isRequired };
