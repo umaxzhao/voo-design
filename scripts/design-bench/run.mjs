@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
-import { copyFile, mkdir, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 import { ready, browserOptions } from './runtime.mjs';
@@ -12,7 +12,7 @@ export function parseOptions(args) {
   const options = { label: 'after', critique: false, judge: false };
   for (let i = 0; i < args.length; i++) {
     const [flag, ...rest] = args[i].split('=');
-    if (['--critique', '--judge', '--help', '--baseline'].includes(flag)) {
+    if (['--critique', '--judge', '--help', '--baseline', '--skip-existing'].includes(flag)) {
       if (rest.length) throw new Error(`${flag} takes no value`);
       options[flag.slice(2)] = true;
     } else if (['--model', '--tasks', '--label', '--out'].includes(flag)) {
@@ -21,7 +21,7 @@ export function parseOptions(args) {
       options[flag.slice(2)] = value;
     } else throw new Error(`Unknown option: ${flag}`);
   }
-  if (!['before', 'after'].includes(options.label)) throw new Error('--label must be before or after');
+  if (!/^[a-z0-9-]+$/.test(options.label)) throw new Error('--label must match [a-z0-9-]+');
   options.selectedTasks = options.tasks ? options.tasks.split(',') : DESIGN_BENCH_TASKS.map(task => task.id);
   if (new Set(options.selectedTasks).size !== options.selectedTasks.length) throw new Error('Duplicate task IDs');
   for (const id of options.selectedTasks) {
@@ -133,18 +133,18 @@ async function runInEditor({ task, model, timeout, critique }) {
 export async function main(args = process.argv.slice(2)) {
   const options = parseOptions(args);
   if (options.help) {
-    console.log('npm run bench:design -- [--model MODEL] [--tasks=id1,id2] [--critique] [--baseline] [--label=before|after] [--judge] [--out=DIR]\nPorts: VOO_DESIGN_BENCH_BRIDGE_PORT (4290), VOO_DESIGN_BENCH_VITE_PORT (5199).\nOutputs: /workspace/tmp/design-bench/<label>/{<id>.png,<id>.json,scores.json}\nRescore: node scripts/design-bench/score.mjs --label=after [--judge]\nCompare: node scripts/design-bench/report.mjs');
+    console.log('npm run bench:design -- [--model MODEL] [--tasks=id1,id2] [--critique] [--baseline] [--label=LABEL] [--judge] [--skip-existing] [--out=DIR]\nPorts: VOO_DESIGN_BENCH_BRIDGE_PORT (4290), VOO_DESIGN_BENCH_VITE_PORT (5199).\nOutputs: /workspace/tmp/design-bench/<label>/{<id>.png,<id>.json,scores.json}\nRescore: node scripts/design-bench/score.mjs --label=after [--judge]\nCompare: node scripts/design-bench/report.mjs --a=before --b=after');
     return;
   }
   const { chromium } = await import('playwright');
   const lint = await loadLinter();
   if (options.critique && !lint) console.warn('Warning: critique skipped because the linter is missing.');
-  const timeout = Number(process.env.VOO_DESIGN_BENCH_TIMEOUT_MS || 900000);
+  const timeout = Number(process.env.VOO_DESIGN_BENCH_TIMEOUT_MS || 480000);
   if (!Number.isFinite(timeout) || timeout <= 0) throw new Error('Invalid VOO_DESIGN_BENCH_TIMEOUT_MS');
   const bridgePort = process.env.VOO_DESIGN_BENCH_BRIDGE_PORT || process.env.VOO_CODEX_BRIDGE_PORT || '4290';
   const vitePort = process.env.VOO_DESIGN_BENCH_VITE_PORT || process.env.VOO_CODEX_VITE_PORT || '5199';
   const env = {
-    ...process.env, HTTPS_PROXY: 'http://127.0.0.1:7890', HTTP_PROXY: 'http://127.0.0.1:7890',
+    ...process.env,
     NO_PROXY: [...new Set(`${process.env.NO_PROXY || ''},127.0.0.1,localhost`.split(','))].join(','),
     VOO_CLI_BRIDGE_PORT: bridgePort, VITE_CLI_BRIDGE_URL: `ws://127.0.0.1:${bridgePort}`,
   };
@@ -153,6 +153,10 @@ export async function main(args = process.argv.slice(2)) {
   await mkdir(output, { recursive: true });
   if (options.out) await mkdir(options.out, { recursive: true });
   const results = { label: options.label, model: options.model || process.env.VOO_CODEX_MODEL || null, critique: options.critique, startedAt: new Date().toISOString(), tasks: [] };
+  if (options['skip-existing']) {
+    try { results.tasks = JSON.parse(await readFile(`${output}/scores.json`, 'utf8')).tasks; }
+    catch (error) { if (error.code !== 'ENOENT') throw error; }
+  }
   const save = () => writeFile(`${output}/scores.json`, `${JSON.stringify(results, null, 2)}\n`);
   function start(args) {
     const child = spawn('npm', args, { cwd, env, detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -168,6 +172,21 @@ export async function main(args = process.argv.slice(2)) {
     await Promise.all(['/', '/src/canvas/agent/canvas_tools.js'].map(path => fetch(`http://127.0.0.1:${vitePort}${path}`).catch(() => {})));
     const runOne = async id => {
       const task = DESIGN_BENCH_TASKS.find(item => item.id === id);
+      if (options['skip-existing']) {
+        let exists = false;
+        try { await Promise.all(['json', 'png'].map(ext => access(`${output}/${id}.${ext}`))); exists = true; }
+        catch (error) { if (error.code !== 'ENOENT') throw error; }
+        if (exists) {
+          console.error(`Design benchmark: ${id} (skipped)`);
+          if (!results.tasks.some(item => item.id === id)) {
+            const doc = JSON.parse(await readFile(`${output}/${id}.json`, 'utf8'));
+            results.tasks.push({ id, kind: task.kind, frame: task.frame, document: `${output}/${id}.json`, screenshot: `${output}/${id}.png`, ...await scoreDocument(doc, { lint }) });
+          }
+          if (options.out) await copyFile(`${output}/${id}.png`, resolve(options.out, `${id}.png`));
+          await save();
+          return;
+        }
+      }
       console.error(`Design benchmark: ${id}`);
       const browser = await chromium.launch(browserOptions);
       try {
@@ -203,6 +222,9 @@ export async function main(args = process.argv.slice(2)) {
           ]);
           const { doc, png, ...details } = result;
           Object.assign(record, details);
+          if (doc?.nodes?.length) lastCheckpoint = doc;
+          if (!png) throw new Error(`Screenshot unavailable: ${result.captureError}`);
+          if (record.error) record.partial = true;
           record.document = `${output}/${id}.json`;
           await writeFile(record.document, `${JSON.stringify(doc, null, 2)}\n`);
           if (png) {
@@ -213,16 +235,30 @@ export async function main(args = process.argv.slice(2)) {
         } catch (error) {
           record.error = error.stack || String(error);
           try {
-            let salvage;
-            try { salvage = await page.evaluate(async size => {
+            // Stop the timed-out agent before restoring its latest checkpoint in a fresh page.
+            let doc = lastCheckpoint;
+            if (!doc) {
+              try { doc = await page.evaluate(() => JSON.parse(JSON.stringify(window.__vooEditor.getDocument()))); }
+              catch {}
+            }
+            if (!doc?.nodes?.length) throw new Error('No checkpoint document to salvage');
+            record.partial = true;
+            record.document = `${output}/${id}.json`;
+            await writeFile(record.document, `${JSON.stringify(doc, null, 2)}\n`);
+            await page.close();
+            const recovery = await context.newPage();
+            await recovery.goto(`http://127.0.0.1:${vitePort}/?voo-test=1`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+            await recovery.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
+            if (!doc?.nodes?.length) throw new Error('No checkpoint document to salvage');
+            await recovery.evaluate(doc => window.__vooEditor.updateDocument(doc), doc);
+            await recovery.waitForTimeout(1500);
+            const png = await recovery.evaluate(async size => {
               const { executeCanvasTool } = await import('/src/canvas/agent/canvas_tools.js');
               const captured = await executeCanvasTool('capture_canvas', { maxSize: size });
-              return { doc: JSON.parse(JSON.stringify(window.__vooEditor.getDocument())), png: captured?.dataUrl };
-            }, Math.min(960, Math.max(task.frame.w, task.frame.h))); }
-            catch (salvageError) {
-              record.salvageError = salvageError.message;
-              salvage = { doc: lastCheckpoint };
-            }
+              if (!captured.ok || !captured.dataUrl?.startsWith('data:image/png;base64,')) throw new Error('Canvas capture returned no PNG');
+              return captured.dataUrl;
+            }, Math.min(960, Math.max(task.frame.w, task.frame.h)));
+            const salvage = { doc, png };
             if (salvage.doc?.nodes?.length) {
               record.partial = true;
               record.document = `${output}/${id}.json`;
@@ -238,6 +274,7 @@ export async function main(args = process.argv.slice(2)) {
         finally { clearTimeout(watchdog); clearInterval(heapInterval); await context.close(); }
         if (options.out && record.screenshot) await copyFile(record.screenshot, resolve(options.out, `${id}.png`));
         record.durationMs = Date.now() - started;
+        results.tasks = results.tasks.filter(item => item.id !== id);
         results.tasks.push(record);
         await save();
         console.error(`${id}: ${record.error && !record.partial ? 'FAILED' : `lint ${record.lint?.score ?? 'unavailable'}`}`);

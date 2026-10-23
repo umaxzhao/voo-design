@@ -8,7 +8,7 @@ import { ready, browserOptions } from './runtime.mjs';
 const cwd = fileURLToPath(new URL('../../', import.meta.url));
 
 export async function recapture({ label, tasks, scoreOnly = false, repaint = false, out } = {}) {
-  if (!['before', 'after'].includes(label)) throw new Error('--label must be before or after');
+  if (!/^[a-z0-9-]+$/.test(label || '')) throw new Error('--label must match [a-z0-9-]+');
   const directory = `/workspace/tmp/design-bench/${label}`;
   const manifest = `${directory}/scores.json`;
   const scores = JSON.parse(await readFile(manifest, 'utf8'));
