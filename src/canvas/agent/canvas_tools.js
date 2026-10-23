@@ -54,7 +54,8 @@ export const AGENT_DEFAULTS = Object.freeze({
   confirmBeforeImage: true,
   useSelectionByDefault: true,
   defaultImageSize: "1024x1024",
-  maxSteps: 8,
+  // Native CLI tools yield one model step per MCP call (including token setup).
+  maxSteps: 64,
   styleNote: "",
 });
 

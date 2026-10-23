@@ -4,6 +4,7 @@ import { buildDocumentDesignContext } from "../editor/design_tokens.js";
  * results until it stops asking for tools. Nothing here builds a workflow.
  */
 
+import { closeCodexSession } from "../components/agent-panel/codex_transport.js";
 import { abortable } from "./abortable.js";
 
 import { streamChatTurn } from "./chat_stream.js";
@@ -13,6 +14,7 @@ import { AGENT_DEFAULTS } from "./canvas_tools.js";
 
 export const AGENT_ERROR = Object.freeze({
   STEP_LIMIT: "agentStepLimit",
+  NO_CANVAS_CONTENT: "agentNoCanvasContent",
 });
 
 export const SYSTEM_PROMPT =
@@ -45,6 +47,9 @@ export const SYSTEM_PROMPT =
   "On tool failure inspect the error, correct arguments and retry once; report unresolved failures.\n" +
   "7. Design quality: honor the Design quality block below — one style kit, tokens first, " +
   "clear hierarchy, no AI-template smells.\n" +
+  "For a poster/layout brief, create visible canvas layers in this turn; plans and variables alone do not complete it. " +
+  "Keep initial token setup small, then build the layout before expanding the palette. " +
+  "For UI generation use Lucide icons, never emoji as icons. For HTML generation use Tailwind utility classes for layout and styling.\n" +
   "Keep replies short.";
 
 const READ_ONLY_TOOLS = new Set([
@@ -134,6 +139,11 @@ export async function runAgentTurn({
   let verificationNudged = false;
   let retryNudged = false;
   let failurePending = false;
+  let canvasCreated = false;
+  let creationNudged = false;
+  // Only creation briefs require new content; inspection and token-only tasks remain valid.
+  const needsCanvasContent = /(?:create|draft|design|build|make).{0,60}(?:poster|layout|screen|landing page|dashboard)|(?:草拟|设计|生成|绘制|制作).{0,30}(?:海报|版式|页面|界面)/i.test(userText);
+  const creationTools = new Set(["create_frame", "create_shape", "create_path", "place_image", "generate_image", "generate_image_web", "create_instance", "create_nodes", "edit_html"]);
   const canCapture = tools.some(tool => tool.function?.name === "capture_canvas");
 
   const runSteps = async () => {
@@ -150,6 +160,12 @@ export async function runAgentTurn({
       }), turnSignal);
       turnSignal.throwIfAborted();
       if (toolCalls.length === 0) {
+        if (needsCanvasContent && !canvasCreated) {
+          if (creationNudged) throw Object.assign(new Error(AGENT_ERROR.NO_CANVAS_CONTENT), { code: AGENT_ERROR.NO_CANVAS_CONTENT });
+          creationNudged = true;
+          messages.push({ role: "assistant", content: text || null }, { role: "user", content: "The brief requires visible canvas content. Only setup has been completed. Now create the poster/layout using create_frame and create_shape (or other available canvas creation tools), then capture_canvas to verify. Do not stop at plans or variables." });
+          continue;
+        }
         if (failurePending && !retryNudged) {
           retryNudged = true;
           messages.push({ role: "assistant", content: text || null }, { role: "user", content: "A tool failed. Inspect its error and retry once with corrected arguments, or explain why it cannot be completed." });
@@ -189,6 +205,7 @@ export async function runAgentTurn({
           turnSignal.throwIfAborted();
           if (result?.isError || result?.error) throw new Error(JSON.stringify(result));
           failurePending = false;
+          if (creationTools.has(call.name)) canvasCreated = true;
           if (call.name === "capture_canvas") writesSinceCapture = 0;
           else if (!READ_ONLY_TOOLS.has(call.name)) { writesSinceCapture += 1; verificationNudged = false; }
           const { dataUrl, ...rest } = result && typeof result === "object" ? result : {};
@@ -242,6 +259,9 @@ export async function runAgentTurn({
     wasCancelled = e instanceof DOMException && e.name === "AbortError" || (turnSignal?.aborted === true);
     throw e;
   } finally {
+    // A step limit happens outside the transport; release a native CLI still
+    // parked awaiting the final tool receipt. Cleanup must preserve the cause.
+    try { await closeCodexSession(turnSignal); } catch (cleanupError) { console.warn("[agent] Session cleanup failed", cleanupError); }
     restoreCommits?.();
     endBatch?.();
     const after = documentFingerprint(editor);

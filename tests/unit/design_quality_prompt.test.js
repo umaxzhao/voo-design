@@ -229,7 +229,7 @@ describe("canvas agent design quality hook", () => {
     await runAgentTurn({
       config: {},
       history: [],
-      userText: "Build an admin dashboard with KPI cards",
+      userText: "Inspect an admin dashboard with KPI cards",
       tools: [],
       executeTool: async () => ({}),
       streamStep,
