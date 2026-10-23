@@ -74,6 +74,7 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "src/shared/**/*",
       "package.json"
     ],
     "asar": true,

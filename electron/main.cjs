@@ -355,7 +355,58 @@ try {
   console.warn("[electron] Could not register workspace IPC:", err);
 }
 
+// Reuse the external MCP/CLI bridge; the renderer registers its canvas there.
+let cliBridge = null;
+let cliBridgeStartup = Promise.resolve();
+let cliBridgeShutdown = null;
+let cliBridgeQuitComplete = false;
+
+async function startDesktopCliBridge() {
+  try {
+    const { startCliBridgeServer, DEFAULT_CLI_BRIDGE_ORIGINS } = await import("./cli_bridge_server.js");
+    const { CLI_BRIDGE_DEFAULT_PORT } = await import("../src/shared/cli_bridge_protocol.js");
+    const rawPort = process.env.VOO_CLI_BRIDGE_PORT;
+    const port = rawPort ? Number(rawPort) : CLI_BRIDGE_DEFAULT_PORT;
+    if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+      throw new Error(`Invalid VOO_CLI_BRIDGE_PORT: ${rawPort}`);
+    }
+    const extraOrigins = (process.env.VOO_CLI_BRIDGE_ORIGINS ?? "")
+      .split(",").map((origin) => origin.trim()).filter(Boolean);
+    try {
+      cliBridge = await startCliBridgeServer({
+        host: "127.0.0.1", port,
+        origins: [...DEFAULT_CLI_BRIDGE_ORIGINS, ...extraOrigins],
+      });
+      console.info(`[electron] CLI bridge listening on ws://127.0.0.1:${cliBridge.port}`);
+    } catch (err) {
+      if (err.code !== "EADDRINUSE") throw err;
+      console.info(`[electron] Reusing existing CLI bridge on ws://127.0.0.1:${port}`);
+    }
+  } catch (err) {
+    console.warn("[electron] Could not start CLI bridge:", err);
+  }
+}
+
+app.on("before-quit", (event) => {
+  if (cliBridgeQuitComplete) return;
+  event.preventDefault();
+  // Wait for in-flight startup too, so quitting during listen cannot leak a server.
+  if (!cliBridgeShutdown) {
+    cliBridgeShutdown = cliBridgeStartup.then(async () => {
+      if (cliBridge) await cliBridge.close();
+    }).catch((err) => {
+      console.warn("[electron] Could not close CLI bridge:", err);
+    }).finally(() => {
+      cliBridge = null;
+      cliBridgeQuitComplete = true;
+      app.quit();
+    });
+  }
+  return cliBridgeShutdown;
+});
+
 app.whenReady().then(() => {
+  cliBridgeStartup = startDesktopCliBridge();
   createMainWindow();
 
   app.on("activate", () => {

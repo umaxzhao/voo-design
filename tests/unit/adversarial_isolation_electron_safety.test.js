@@ -130,6 +130,7 @@ describe("Adversarial Challenger: Electron Headless Boot & IPC Contracts", () =>
     let appReadyCb = null;
     let menuTemplate = null;
 
+    const appEvents = new Map();
     const mockApp = {
       name: "VOO Design",
       whenReady: () => ({
@@ -138,7 +139,7 @@ describe("Adversarial Challenger: Electron Headless Boot & IPC Contracts", () =>
           return Promise.resolve();
         },
       }),
-      on: () => {},
+      on: (event, cb) => appEvents.set(event, cb),
       quit: () => {},
     };
 
@@ -299,6 +300,7 @@ describe("Adversarial Challenger: Electron Headless Boot & IPC Contracts", () =>
       expect(actionReceived).toBe("file:save");
       unsub();
     } finally {
+      await appEvents.get("before-quit")?.({ preventDefault() {} });
       Module.prototype.require = originalReq;
     }
   });

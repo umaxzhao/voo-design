@@ -14,6 +14,8 @@ import { createWsIpcAdapter } from "./ws_ipc_adapter.js";
 import { registerLocalCliIpc } from "./local_backend_bridge.js";
 
 export const DEFAULT_CLI_BRIDGE_ORIGINS = Object.freeze([
+  "null", // Opaque origin sent by file:// Electron pages
+  "file://",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   "http://localhost:4173",
@@ -28,10 +30,12 @@ export const DEFAULT_CLI_BRIDGE_ORIGINS = Object.freeze([
 
 export function isAllowedOrigin(origin, allowedSet) {
   if (!origin) return true; // Local non-browser client
+  if (origin === "null") return true; // Electron loadFile / browser file origin
   try {
-    const { origin: normalized } = new URL(origin);
-    if (allowedSet.has(normalized)) return true;
     const url = new URL(origin);
+    if (url.protocol === "file:") return true;
+    // Other opaque schemes also normalize to "null"; never allow them via that entry.
+    if (url.origin !== "null" && allowedSet.has(url.origin)) return true;
     if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return true;
   } catch {
     return false;

@@ -6,7 +6,7 @@ the most recently connected editor page. It requires no MCP SDK or new dependenc
 
 ## Run
 
-Start the editor with `npm run dev` (or desktop with `npm run electron:dev`).
+Start the web editor with `npm run dev`.
 Run `npm run bridge` for a persistent bridge, then launch the MCP server with
 `npm run mcp`. Alternatively, `npm run mcp` starts its own bridge if none is
 reachable, so no separate bridge command is required. The editor must remain open.
@@ -17,6 +17,22 @@ server and `VITE_CLI_BRIDGE_URL` for the editor when using a different port.
 Set `localStorage.setItem("voo.mcpLink", "off")` and reload to disable the page
 link; remove that key and reload to enable it again. Calls time out after 60 seconds
 in the relay and fail if the selected canvas disconnects or is replaced.
+
+## Electron desktop
+
+Open the desktop app with `npm run electron:dev` or launch the packaged app.
+Electron starts the same CLI bridge on `127.0.0.1:4179`, or reuses the bridge
+already listening there. It closes only its own bridge when quitting. Keep the
+app and document open, then configure Claude Code or Codex with
+`node /ABS/PATH/voo-design/scripts/mcp-server.mjs` as shown below; the Node entry
+and its dependencies must be available separately from the packaged app.
+No separate `npm run bridge` is needed.
+
+The bridge accepts Electron's `null` / `file://` origins and localhost development
+origins. `VOO_CLI_BRIDGE_ORIGINS` adds comma-separated allowed origins.
+`VOO_CLI_BRIDGE_PORT` changes the desktop bridge port; set it for the MCP client
+too, and set `VITE_CLI_BRIDGE_URL` for the renderer (at build time for packaged
+apps) to the matching WebSocket URL. The default needs no configuration.
 
 ## Client configuration
 
