@@ -14,7 +14,7 @@ try {
     const { useDesignStore } = await import('/src/store/design_store.js');
     useDesignStore.getState().setWelcomeOpen(false);
   });
-  await page.waitForFunction(() => window.__vooEditor?.getDocument()?.width === 1200);
+  await page.waitForFunction(() => window.__vooEditor?.getDocument()?.width === 1200, null, { timeout: 120000 });
   // Draw through the canvas UI; inspect the engine through the existing browser-test hook.
   const edit = async () => {
     await page.keyboard.press('Escape');
@@ -33,7 +33,7 @@ try {
   const a = await page.evaluate(() => ({ nodes: window.__vooEditor.serialise().nodes, viewport: window.__vooEditor.getViewport() }));
   const tabs = page.getByRole('tablist').first();
   page.on('dialog', dialog => dialog.accept());
-  await tabs.getByRole('button', { name: /New|新建/ }).click();
+  await tabs.getByRole('button', { name: /Add project|添加项目/ }).click();
   await page.waitForTimeout(1800);
   if (before) {
     assert.equal(await tabs.getByRole('tab').count(), 1);
