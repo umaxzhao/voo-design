@@ -106,10 +106,13 @@ describe("Adversarial Challenger: Runtime Isolation & Artifact Leaks", () => {
   });
 
   it("ONNX Runtime WASM exists and is non-empty", () => {
-    // The Draco decoder went with the 3D editor; only the ONNX runtime ships now.
-    const onnxWasm = path.join(assetsDir, "ort-wasm-simd-threaded.jsep-MDYUKy93.wasm");
+    // The external ONNX export loads the public copy through wasmPaths.
+    const onnxWasm = path.join(distDir, "ort/ort-wasm-simd-threaded.jsep.wasm");
     expect(fs.existsSync(onnxWasm)).toBe(true);
     expect(fs.statSync(onnxWasm).size).toBeGreaterThan(20000000);
+    const header = fs.readFileSync(onnxWasm).subarray(0, 4);
+    expect([...header]).toEqual([0, 97, 115, 109]);
+    expect(fs.readdirSync(assetsDir).filter((name) => name.endsWith(".wasm"))).toEqual([]);
   });
 });
 
