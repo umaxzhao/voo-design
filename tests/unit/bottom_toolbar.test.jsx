@@ -181,7 +181,12 @@ describe("single bottom toolbar", () => {
         callback("onToggleGrid", context())();
         expect(grid).toEqual({ enabled: false, size: 64 });
         expect(lastGridSizeRef.current).toBe(64);
+        callback("onSetGridSize", context())(128);
+        expect(grid).toEqual({ enabled: false, size: 128 });
+        expect(lastGridSizeRef.current).toBe(128);
         callback("onToggleGrid", context())();
+        expect(grid).toEqual({ enabled: true, size: 128 });
+        callback("onSetGridSize", context())(64);
         expect(grid).toEqual({ enabled: true, size: 64 });
       }
       expect(snapToGrid).toBe(true);

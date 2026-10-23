@@ -4928,7 +4928,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               onToggleSnapToGrid={toggleSnapToGrid}
               onSetGridSize={(size) => {
                 lastGridSizeRef.current = size;
-                const next = { enabled: true, size };
+                const next = { enabled: grid ? grid.enabled !== false : true, size };
                 if (multi) {
                   for (const entry of enginesRef.current.values()) {
                     entry.engine?.setGrid?.(next);
