@@ -30,7 +30,7 @@ export function parseOptions(args) {
 }
 
 async function ready(url, child) {
-  const deadline = Date.now() + 60000;
+  const deadline = Date.now() + Number(process.env.VOO_DESIGN_BENCH_READY_MS || 240000);
   while (Date.now() < deadline) {
     if (child.exitCode !== null || child.startError) throw child.startError || new Error(`Server exited: ${child.exitCode}`);
     try { if ((await fetch(url, { signal: AbortSignal.timeout(2000) })).ok) return; } catch {}
@@ -56,7 +56,9 @@ async function runInEditor({ task, model, timeout, critique }) {
     const { CANVAS_TOOL_SCHEMAS, executeCanvasTool, AGENT_SETTING } = await import('/src/canvas/agent/canvas_tools.js');
     const { setSetting } = await import('/src/shared/settings.js');
     ({ closeCodexSession: closeSession } = await import('/src/canvas/components/agent-panel/codex_transport.js'));
+    console.log('[bench] ensure bridge');
     const bridge = await ensureLocalCliBridge();
+    console.log('[bench] connect');
     if (!bridge) throw new Error('Local CLI bridge unavailable');
     const connected = await bridge.connect();
     const status = connected.value ?? connected;
@@ -74,12 +76,14 @@ async function runInEditor({ task, model, timeout, critique }) {
         tools: CANVAS_TOOL_SCHEMAS, executeTool: executeCanvasTool,
         streamStep: streamCliStep, signal: controller.signal, maxSteps: 64,
         onToolEvent: event => {
+          if (event.status !== 'in_progress') console.log('[bench] tool', event.name, event.status);
           if (event.status !== 'in_progress') out.toolCalls.push({ name: event.name, status: event.status, error: event.error });
         },
       });
       history.push({ role: 'user', content: userText }, { role: 'assistant', content: reply || '' });
       return reply;
     }
+    console.log('[bench] turn start');
     out.finalReply = await turn(prompt);
     if (controller.signal.aborted) throw new Error('Task timed out');
     if (critique) {
@@ -119,15 +123,15 @@ async function runInEditor({ task, model, timeout, critique }) {
 export async function main(args = process.argv.slice(2)) {
   const options = parseOptions(args);
   if (options.help) {
-    console.log('npm run bench:design -- [--model MODEL] [--tasks=id1,id2] [--critique] [--baseline] [--label=before|after] [--judge]\nPorts: VOO_DESIGN_BENCH_BRIDGE_PORT (4190), VOO_DESIGN_BENCH_VITE_PORT (5199).\nOutputs: /workspace/tmp/design-bench/<label>/{<id>.png,<id>.json,scores.json}\nRescore: node scripts/design-bench/score.mjs --label=after [--judge]\nCompare: node scripts/design-bench/report.mjs');
+    console.log('npm run bench:design -- [--model MODEL] [--tasks=id1,id2] [--critique] [--baseline] [--label=before|after] [--judge]\nPorts: VOO_DESIGN_BENCH_BRIDGE_PORT (4290), VOO_DESIGN_BENCH_VITE_PORT (5199).\nOutputs: /workspace/tmp/design-bench/<label>/{<id>.png,<id>.json,scores.json}\nRescore: node scripts/design-bench/score.mjs --label=after [--judge]\nCompare: node scripts/design-bench/report.mjs');
     return;
   }
   const { chromium } = await import('playwright');
   const lint = await loadLinter();
   if (options.critique && !lint) console.warn('Warning: critique skipped because the linter is missing.');
-  const timeout = Number(process.env.VOO_DESIGN_BENCH_TIMEOUT_MS || 360000);
+  const timeout = Number(process.env.VOO_DESIGN_BENCH_TIMEOUT_MS || 900000);
   if (!Number.isFinite(timeout) || timeout <= 0) throw new Error('Invalid VOO_DESIGN_BENCH_TIMEOUT_MS');
-  const bridgePort = process.env.VOO_DESIGN_BENCH_BRIDGE_PORT || process.env.VOO_CODEX_BRIDGE_PORT || '4190';
+  const bridgePort = process.env.VOO_DESIGN_BENCH_BRIDGE_PORT || process.env.VOO_CODEX_BRIDGE_PORT || '4290';
   const vitePort = process.env.VOO_DESIGN_BENCH_VITE_PORT || process.env.VOO_CODEX_VITE_PORT || '5199';
   const env = {
     ...process.env, HTTPS_PROXY: 'http://127.0.0.1:7890', HTTP_PROXY: 'http://127.0.0.1:7890',
@@ -152,12 +156,13 @@ export async function main(args = process.argv.slice(2)) {
     const vite = start(['run', 'dev', '--', '--host', '127.0.0.1', '--port', vitePort, '--strictPort']);
     await Promise.all([ready(`http://127.0.0.1:${bridgePort}/health`, bridge), ready(`http://127.0.0.1:${vitePort}`, vite)]);
     browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
-    for (const id of options.selectedTasks) {
+    const runOne = async id => {
       const task = DESIGN_BENCH_TASKS.find(item => item.id === id);
       console.error(`Design benchmark: ${id}`);
       const context = await browser.newContext({ viewport: { width: 1600, height: 1100 } });
       await context.addInitScript(baseline => { globalThis.__VOO_DESIGN_QUALITY_OFF__ = baseline; }, !!options.baseline);
       const page = await context.newPage();
+      if (process.env.VOO_DESIGN_BENCH_DEBUG) page.on('console', m => console.error(`[page] ${m.text().slice(0, 300)}`));
       const started = Date.now();
       let watchdog;
       let record = { id, kind: task.kind, frame: task.frame };
@@ -177,13 +182,35 @@ export async function main(args = process.argv.slice(2)) {
           await writeFile(record.screenshot, Buffer.from(png.split(',')[1], 'base64'));
         } else record.error ||= `Screenshot unavailable: ${result.captureError}`;
         Object.assign(record, await scoreDocument(doc, { lint, screenshot: record.screenshot, judge: options.judge && !!png }));
-      } catch (error) { record.error = error.stack || String(error); }
+      } catch (error) {
+        record.error = error.stack || String(error);
+        try {
+          const salvage = await page.evaluate(async size => {
+            const { executeCanvasTool } = await import('/src/canvas/agent/canvas_tools.js');
+            const captured = await executeCanvasTool('capture_canvas', { maxSize: size });
+            return { doc: JSON.parse(JSON.stringify(window.__vooEditor.getDocument())), png: captured?.dataUrl };
+          }, Math.max(task.frame.w, task.frame.h));
+          if (salvage.doc?.nodes?.length) {
+            record.partial = true;
+            record.document = `${output}/${id}.json`;
+            await writeFile(record.document, `${JSON.stringify(salvage.doc, null, 2)}\n`);
+            if (salvage.png?.startsWith('data:image/png;base64,')) {
+              record.screenshot = `${output}/${id}.png`;
+              await writeFile(record.screenshot, Buffer.from(salvage.png.split(',')[1], 'base64'));
+            }
+            Object.assign(record, await scoreDocument(salvage.doc, { lint, screenshot: record.screenshot, judge: options.judge && !!record.screenshot }));
+          }
+        } catch (salvageError) { record.salvageError = salvageError.message; }
+      }
       finally { clearTimeout(watchdog); await context.close(); }
       record.durationMs = Date.now() - started;
       results.tasks.push(record);
       await save();
-      console.error(`${id}: ${record.error ? 'FAILED' : `lint ${record.lint?.score ?? 'unavailable'}`}`);
-    }
+      console.error(`${id}: ${record.error && !record.partial ? 'FAILED' : `lint ${record.lint?.score ?? 'unavailable'}`}`);
+    };
+    const queue = [...options.selectedTasks];
+    const concurrency = Math.max(1, Number(process.env.VOO_DESIGN_BENCH_CONCURRENCY || 1));
+    await Promise.all(Array.from({ length: Math.min(concurrency, queue.length) }, async () => { while (queue.length) await runOne(queue.shift()); }));
   } finally {
     await browser?.close();
     for (const child of children.reverse()) {
