@@ -1269,9 +1269,13 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
 
   const propertyObject =
     selectedGroup ?? selected ?? (isFrameSelected ? frameObject : null);
-  const parentLayout = propertyObject?.parentId
-    ? layers.find((node) => node.id === propertyObject.parentId)?.autoLayout
+  const parentNode = propertyObject?.parentId
+    ? layers.find((node) => node.id === propertyObject.parentId) ?? null
     : null;
+  const parentLayout = parentNode?.autoLayout ?? null;
+  const parentIsFrame = Boolean(
+    parentNode?.isFrame || parentNode?.kind === "frame",
+  );
   const colorVariableActions = propertyObject
     ? {
         documentId: doc?.canvasId,
@@ -4152,6 +4156,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             engine={engine}
             object={propertyObject}
             parentLayout={parentLayout}
+            parentIsFrame={parentIsFrame}
+            parentNode={parentNode}
             colorVariableActions={colorVariableActions}
             styleActions={styleActions}
             index={activeIndex}
