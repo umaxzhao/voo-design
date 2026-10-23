@@ -143,6 +143,8 @@ export function createDefaultAdjustments() {
         { x: 1, y: 1 },
       ],
     },
+    // Non-destructive live filter stack (Affinity Live Filters); empty = none.
+    liveFilters: [],
   };
 }
 

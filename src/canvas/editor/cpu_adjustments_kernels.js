@@ -32,6 +32,7 @@ import {
   cpuBlurRadius,
   scaledRadius,
 } from "./spatial_filter.js";
+import { applyLiveFilterStack } from "./live_filter_stack.js";
 
 export function rgbToHsl(r, g, b) {
   r /= 255;
@@ -237,5 +238,13 @@ export function applyAdjustmentKernels(data, width, height, naturalWidth, tone) 
       tone.motionBlurAngle ?? 0,
       naturalWidth ?? width,
     );
+  }
+
+  // The non-destructive Live Filter stack (node.adjustments.liveFilters) runs
+  // dead last, in stack order with per-entry opacity blending, so it composes
+  // over the adjusted pixels exactly like Affinity's Live Filters over an
+  // adjustment chain.
+  if (tone.liveFilters?.length) {
+    applyLiveFilterStack(data, width, height, tone.liveFilters);
   }
 }

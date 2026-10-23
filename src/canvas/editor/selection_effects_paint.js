@@ -12,6 +12,120 @@ import { penContourRing } from "./editor_pen.js";
 import { contourBounds } from "./mask_contour.js";
 import * as ops from "./doc_ops.js";
 import { BAKED_BITMAP_DEFORMATION_PATCH } from "./editor_deformation_patch.js";
+import {
+  isPristineGradientStops,
+} from "./gradient_tool_state.js";
+
+/** Hex + 0-100 opacity → the CSS colour CanvasGradient.addColorStop wants. */
+function stopCssColor(stop) {
+  const hex = /^#[0-9a-fA-F]{6}/.test(stop?.color ?? "") ? stop.color : "#ffffff";
+  const opacity = Math.max(0, Math.min(100, Number(stop?.opacity ?? 100))) / 100;
+  if (opacity >= 1) return hex;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
+/**
+ * The type-specific gradient anchors shared by the drag path (tool press →
+ * release, doc-space) and the panel path (whole layer box, pixel space).
+ * Doc points are mapped into pixel space here, so both paths emit one shape:
+ * `{ p0, p1, center, radius }` per gradient type.
+ */
+export function gradientGeometry(
+  type,
+  startDocPt,
+  endDocPt,
+  box,
+  node,
+  scaleX,
+  scaleY,
+) {
+  const toPixel = (point) => ({
+    x: (point?.x - node.x) * scaleX,
+    y: (point?.y - node.y) * scaleY,
+  });
+  const p0 = toPixel(startDocPt);
+  const p1 = endDocPt ? toPixel(endDocPt) : p0;
+  if (type === "radial") {
+    const center = p0;
+    const radius = Math.max(1, Math.hypot(p1.x - center.x, p1.y - center.y));
+    return { p0, p1, center, radius };
+  }
+  if (type === "angular") {
+    return {
+      p0,
+      p1,
+      center: { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 },
+      radius: Math.max(1, Math.hypot(p1.x - p0.x, p1.y - p0.y)),
+    };
+  }
+  return { p0, p1, center: p0, radius: Math.max(1, Math.hypot(p1.x - p0.x, p1.y - p0.y)) };
+}
+
+/**
+ * The panel path: a gradient line across the layer's pixel-space box from the
+ * tool angle (CSS semantics — 0deg points up, 90deg points right) and, for
+ * radial/angular, the box centre.
+ */
+export function angleGeometry(type, angle, box) {
+  const center = { x: box.width / 2, y: box.height / 2 };
+  if (type === "radial") {
+    return {
+      center,
+      radius: Math.max(1, Math.hypot(center.x, center.y)),
+    };
+  }
+  if (type === "angular") {
+    return { center };
+  }
+  const radians = (Math.max(0, Math.min(359, Number(angle) || 0)) * Math.PI) / 180;
+  const dx = Math.sin(radians);
+  const dy = -Math.cos(radians);
+  const scale = Math.hypot(center.x, center.y) + 1;
+  return {
+    p0: { x: center.x - dx * scale, y: center.y - dy * scale },
+    p1: { x: center.x + dx * scale, y: center.y + dy * scale },
+  };
+}
+
+/** Builds the CanvasGradient for the tool's type/stops; null when unsupported. */
+export function buildCanvasGradient(ctx, type, angle, geometry, stops) {
+  let grad = null;
+  try {
+    if (type === "radial" && geometry.center && geometry.radius) {
+      grad = ctx.createRadialGradient(
+        geometry.center.x,
+        geometry.center.y,
+        0,
+        geometry.center.x,
+        geometry.center.y,
+        geometry.radius,
+      );
+    } else if (type === "angular" && ctx.createConicGradient) {
+      const radians =
+        ((Number.isFinite(Number(angle)) ? Number(angle) : 0) * Math.PI) / 180;
+      grad = ctx.createConicGradient(
+        radians,
+        geometry.center?.x ?? 0,
+        geometry.center?.y ?? 0,
+      );
+    }
+    if (!grad) {
+      const p0 = geometry.p0 ?? { x: 0, y: 0 };
+      const p1 = geometry.p1 ?? { x: 0, y: 0 };
+      if (p0.x === p1.x && p0.y === p1.y) return null;
+      grad = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y);
+    }
+  } catch {
+    return null;
+  }
+  for (const stop of stops ?? []) {
+    grad.addColorStop(Math.max(0, Math.min(1, (stop.position ?? 0) / 100)), stopCssColor(stop));
+  }
+  return grad;
+}
 
 export function createSelectionPaintEffects({
   getDoc,
@@ -28,6 +142,7 @@ export function createSelectionPaintEffects({
   notify,
   commitPaintBucket,
   commitSelectionEffect,
+  getGradientToolState = null,
 }) {
   /**
    * Strokes the selection's outline onto the layer with the current colour
@@ -227,14 +342,65 @@ export function createSelectionPaintEffects({
   }
 
   /**
-   * Applies a linear gradient between two points to the active selection or image layer.
+   * Applies a gradient to the active selection or image layer. Pass a drag
+   * vector (tool press → release) or omit it to paint the Gradient tool's
+   * panel state over the layer's bounds; either way the stops/type/angle come
+   * from the gradient tool state, with an untouched default stop list seeded
+   * from the drag's foreground/background colours.
    */
   async function applyGradientSelection(
     startDocPt,
     endDocPt,
     startColor = getColor(),
     endColor = getBackgroundColor(),
+    {
+      toolType = null,
+      toolAngle = null,
+      toolStops = null,
+    } = {},
   ) {
+    const state =
+      typeof getGradientToolState === "function" ? getGradientToolState() : null;
+    const type = toolType ?? state?.type ?? "linear";
+    const angle = toolAngle ?? state?.angle ?? 135;
+    let stops = toolStops ?? state?.stops ?? null;
+    if (!stops?.length || isPristineGradientStops(stops)) {
+      stops = [
+        { color: startColor, opacity: 100, position: 0 },
+        { color: endColor ?? "#ffffff", opacity: 100, position: 100 },
+      ];
+    }
+    return paintNodeGradient({
+      type,
+      angle,
+      stops,
+      buildGeometry: ({ box }) => gradientGeometry(type, startDocPt, endDocPt, box),
+    });
+  }
+
+  /**
+   * The Gradient tool panel's "apply": paints the current stop list over the
+   * selected layer (or the whole layer when there is no pixel selection),
+   * using angle/type instead of a drag vector.
+   */
+  async function applyGradientTool() {
+    const state =
+      typeof getGradientToolState === "function" ? getGradientToolState() : null;
+    if (!state?.stops?.length) return false;
+    return paintNodeGradient({
+      type: state.type,
+      angle: state.angle,
+      stops: state.stops,
+      buildGeometry: ({ box }) => angleGeometry(state.type, state.angle, box),
+    });
+  }
+
+  /**
+   * Paints one gradient onto the resolved image layer's pixels and commits the
+   * bitmap swap. `buildGeometry({ box })` returns the type-specific anchor
+   * points in pixel space (see gradientGeometry/angleGeometry).
+   */
+  async function paintNodeGradient({ type, angle, stops, buildGeometry }) {
     const doc = getDoc();
     const current = getPixelSelection();
     const selectedId = selection.getId();
@@ -268,14 +434,14 @@ export function createSelectionPaintEffects({
 
     ctx.drawImage(bitmap, 0, 0);
 
-    const p0x = (startDocPt.x - node.x) * scaleX;
-    const p0y = (startDocPt.y - node.y) * scaleY;
-    const p1x = (endDocPt.x - node.x) * scaleX;
-    const p1y = (endDocPt.y - node.y) * scaleY;
-
-    const grad = ctx.createLinearGradient(p0x, p0y, p1x, p1y);
-    grad.addColorStop(0, startColor);
-    grad.addColorStop(1, endColor);
+    const geometry = buildGeometry({
+      box: { x: 0, y: 0, width: bWidth, height: bHeight },
+      node,
+      scaleX,
+      scaleY,
+    });
+    const grad = buildCanvasGradient(ctx, type, angle, geometry, stops);
+    if (!grad) return false;
 
     if (current?.contours?.length) {
       ctx.save();

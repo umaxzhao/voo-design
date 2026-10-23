@@ -51,6 +51,9 @@ const ALL_TOOL_NAMES = [
   "redo",
   "update_plan",
   "get_plan",
+  "boolean_combine",
+  "set_constraints",
+  "export_layers",
 ];
 
 describe("CANVAS_TOOL_SCHEMAS completeness", () => {

@@ -22,6 +22,9 @@ kept in sync with undo/redo:
 | `mutate_layer_text` | Updates typography and text content on a text layer. |
 | `mutate_auto_layout` | Configures or updates Auto-Layout on a frame or group (direction, gap, padding, wrap, alignment). |
 | `batch_mutate_layers` | Executes multiple layer mutations in a single atomic undoable transaction. |
+| `boolean_combine` | Combines layers into a boolean group (`union`, `subtract`, `intersect`, `exclude`) and selects the result. Without `layerIds`, the current selection is used. |
+| `set_constraints` | Sets or clears layout constraints on layers (how they follow their parent frame on resize). Without `layerIds`, the current selection is used. |
+| `export_layers` | Rasterizes layers to a base64 PNG data URL: one layer alone, or several composited and cropped to their union bounds. Returns a short preview unless `includeDataUrl` is set. |
 
 Mutations flash a visual focus overlay on the canvas
 (`src/canvas/editor/chrome_stage_overlays.js`) so you can see what the agent

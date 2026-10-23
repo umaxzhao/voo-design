@@ -11,6 +11,11 @@ import {
 } from "./editor_constants.js";
 import { createDrawingApi } from "./editor_drawing_api.js";
 import { DEFAULT_SOFT_BRUSH_HARDNESS } from "./scene_model_node_builders.js";
+import {
+  createDefaultGradientToolState,
+  normalizeGradientToolState,
+  rotateGradientStops,
+} from "./gradient_tool_state.js";
 
 export function createEngineBrushController({
   getDoc,
@@ -43,6 +48,14 @@ export function createEngineBrushController({
   let penStrokeWidth = DEFAULT_PEN_STROKE_WIDTH;
   let arrowSize = 24;
   let arrowStart = false;
+  // The Gradient tool's multi-stop state (type/angle/stops): the panel is the
+  // writer, the drag-and the panel's Apply both paint from it.
+  let gradientTool = createDefaultGradientToolState();
+  const setGradientToolState = (patch = {}) => {
+    gradientTool = normalizeGradientToolState({ ...gradientTool, ...patch });
+    notify();
+    return gradientTool;
+  };
 
   const drawingApi = createDrawingApi({
     getDoc,
@@ -155,6 +168,42 @@ export function createEngineBrushController({
 
   return {
     getColor: () => color,
+    getGradientToolState: () => gradientTool,
+    setGradientToolState,
+    setGradientToolType(type) {
+      return setGradientToolState({ type });
+    },
+    setGradientToolAngle(angle) {
+      return setGradientToolState({ angle });
+    },
+    setGradientToolStops(stops, activeStopIndex = null) {
+      if (stops != null) setGradientToolState({ stops });
+      if (activeStopIndex != null) setGradientToolState({ activeStopIndex });
+      return gradientTool;
+    },
+    setGradientToolActiveStop(index) {
+      return setGradientToolState({ activeStopIndex: index });
+    },
+    /** Paints the picked colour into the active stop (the wheel is the editor). */
+    setGradientToolStopColor(color) {
+      const index = Math.max(0, Math.min(gradientTool.stops.length - 1, gradientTool.activeStopIndex));
+      if (!(typeof color === "string" && /^#[0-9a-fA-F]{6}$/.test(color))) return gradientTool;
+      const stops = gradientTool.stops.map((stop, i) =>
+        i === index ? { ...stop, color: color.toUpperCase() } : stop,
+      );
+      gradientTool = { ...gradientTool, stops };
+      notify();
+      return gradientTool;
+    },
+    /** Reverses the gradient stops (was wired in the panel before the engine method existed). */
+    reverseGradient() {
+      gradientTool = {
+        ...gradientTool,
+        stops: rotateGradientStops(gradientTool.stops),
+      };
+      notify();
+      return gradientTool;
+    },
     getBrushMode: () => brushMode,
     setBrushMode(mode) {
       const allowed = [
