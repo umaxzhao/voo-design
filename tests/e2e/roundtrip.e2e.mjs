@@ -19,6 +19,7 @@ try {
   page = await browser.newPage({viewport:{width:1280,height:900},acceptDownloads:true});
   page.setDefaultTimeout(90000);
   page.on('pageerror',error=>console.error('PAGE ERROR',error.message));
+  page.on('console',message=>{if(message.text().startsWith('ROUNDTRIP WORKER')) console.log(message.text());});
   if (phase === 'before') {
    for (const source of ['src/canvas/store/project_io.js','src/canvas/editor/editor_svg_import.js']) {
     const original=execFileSync('git',['show',`${process.env.ROUNDTRIP_BASELINE_REF || 'origin/main'}:${source}`],{encoding:'utf8'});
@@ -26,6 +27,17 @@ try {
    }
   }
   page.on('dialog',d=>d.accept());
+  await page.addInitScript(()=>{
+   const NativeWorker = window.Worker;
+   window.Worker = class extends NativeWorker {
+    constructor(...args) {
+     super(...args);
+     this.addEventListener('message',({data})=>{
+      if (data?.type) console.log('ROUNDTRIP WORKER', data.type, data.stage || '', data.percent ?? '');
+     });
+    }
+   };
+  });
   await page.addInitScript(()=>{localStorage.setItem('ciw.locale',JSON.stringify('en'));window.showSaveFilePicker=undefined;window.showOpenFilePicker=undefined;});
  };
  const start = async () => {await page.goto(process.env.VOO_URL || 'http://127.0.0.1:5253/?voo-test=1',{waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'New',exact:true}).waitFor();};
