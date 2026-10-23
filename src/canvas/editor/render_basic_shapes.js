@@ -79,21 +79,18 @@ function buildCanvasGradient(ctx, parsed, x, y, width, height) {
   } else {
     // Radial, and diamond — which Canvas2D has no shader for, so it takes the
     // radial ramp rather than painting nothing.
-    const radius = Math.max(
-      1,
-      Math.max(
-        ((geometry?.width ?? 100) / 100) * width,
-        ((geometry?.height ?? 100) / 100) * height,
-      ) / 2,
-    );
-    gradient = ctx.createRadialGradient(
-      centreX,
-      centreY,
-      0,
-      centreX,
-      centreY,
-      radius,
-    );
+    const radiusX = Math.max(1, ((geometry?.width ?? 100) / 200) * width);
+    const radiusY = Math.max(1, ((geometry?.height ?? 100) / 200) * height);
+    // Canvas gradients capture the current transform when created. Stretch a
+    // unit circle so elliptical fills retain both radii during raster export.
+    ctx.save();
+    try {
+      ctx.translate(centreX, centreY);
+      ctx.scale(radiusX, radiusY);
+      gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    } finally {
+      ctx.restore();
+    }
   }
 
   for (const stop of parsed.stops ?? []) {
