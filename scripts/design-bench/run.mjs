@@ -156,14 +156,22 @@ export async function main(args = process.argv.slice(2)) {
     const vite = start(['run', 'dev', '--', '--host', '127.0.0.1', '--port', vitePort, '--strictPort']);
     await Promise.all([ready(`http://127.0.0.1:${bridgePort}/health`, bridge), ready(`http://127.0.0.1:${vitePort}`, vite)]);
     await Promise.all(['/', '/src/canvas/agent/canvas_tools.js'].map(path => fetch(`http://127.0.0.1:${vitePort}${path}`).catch(() => {})));
-    browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+    browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--js-flags=--max-old-space-size=3072', '--disable-dev-shm-usage'] });
     const runOne = async id => {
       const task = DESIGN_BENCH_TASKS.find(item => item.id === id);
       console.error(`Design benchmark: ${id}`);
       const context = await browser.newContext({ viewport: { width: 1600, height: 1100 } });
       await context.addInitScript(baseline => { globalThis.__VOO_DESIGN_QUALITY_OFF__ = baseline; }, !!options.baseline);
       const page = await context.newPage();
+      page.on('crash', () => console.error(`[crash] ${id}`));
+      let heapInterval;
       if (process.env.VOO_DESIGN_BENCH_DEBUG) page.on('console', m => console.error(`[page] ${m.text().slice(0, 300)}`));
+      if (process.env.VOO_DESIGN_BENCH_DEBUG) heapInterval = setInterval(async () => {
+        try {
+          const heap = await page.evaluate(() => performance.memory?.usedJSHeapSize);
+          if (heap !== undefined) console.error(`[heap] ${id} ${(heap / 1024 / 1024).toFixed(1)}`);
+        } catch {}
+      }, 30000);
       const started = Date.now();
       let watchdog;
       let record = { id, kind: task.kind, frame: task.frame };
@@ -207,7 +215,7 @@ export async function main(args = process.argv.slice(2)) {
           }
         } catch (salvageError) { record.salvageError = salvageError.message; }
       }
-      finally { clearTimeout(watchdog); await context.close(); }
+      finally { clearTimeout(watchdog); clearInterval(heapInterval); await context.close(); }
       record.durationMs = Date.now() - started;
       results.tasks.push(record);
       await save();
