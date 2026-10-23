@@ -197,8 +197,13 @@ const layouts = new TextLayoutCache();
 const contextIds = new WeakMap();
 let nextContextId = 0;
 const observedFonts = new WeakSet();
+let fontEpoch = 0;
+
+/** Revision used by tile caches to invalidate text after font changes. */
+export const textMetricsRevision = () => fontEpoch;
 
 export function clearTextLayoutCache() {
+  fontEpoch += 1;
   layouts.clear();
 }
 

@@ -1,4 +1,4 @@
-import { isPlainRectList } from "./render_plain_rects.js";
+import { isTileDocument } from "./raster_tiles.js";
 /**
  * The editor viewport: zoom and pan over the document.
  *
@@ -37,6 +37,7 @@ export function createViewport({
   notify,
   requestRender,
   getFitInsets = null,
+  hasDomOverlay = () => false,
 }) {
   let viewport = { zoom: 1, panX: 0, panY: 0 };
   let settleTimer = 0;
@@ -70,7 +71,7 @@ export function createViewport({
     // Plain 2D artwork and selection chrome follow the camera on canvas.
     // Publish inspector/layer UI when motion settles; DOM/mixed documents
     // retain live notifications so their overlays track every camera change.
-    if (!getDoc().nodes || !isPlainRectList(getDoc().nodes)) notify();
+    if (hasDomOverlay() || !getDoc().nodes || !isTileDocument(getDoc().nodes)) notify();
   }
 
   /** One axis of the fit area: the stage span less both insets. */

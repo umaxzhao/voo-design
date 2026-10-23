@@ -1,3 +1,4 @@
+import { syncTileLayerCanvas } from './stage_tile_layer.js';
 /**
  * Canvas pixel sampling and eyedropper color readback.
  *
@@ -20,6 +21,8 @@ export function createEngineSampler({
   DROPPER_SAMPLE_RADII,
 }) {
   function compositedPixelAt(docPoint, radius, size) {
+    syncTileLayerCanvas(ctx, () => ({ doc: getDoc(), viewport: viewportTools.getViewport(),
+      cullOffscreen: false, spatialIndex: null }));
     const pixel = canvasPixelAt(
       docPoint,
       viewportTools.getViewport(),

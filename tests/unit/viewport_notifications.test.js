@@ -51,3 +51,33 @@ it("does not settle between slow gesture frames and cancels pending work on disp
     expect(requestRender).toHaveBeenCalledTimes(2);
   } finally { vi.useRealTimers(); }
 });
+it("defers text-document inspectors during camera gestures too", () => {
+  vi.useFakeTimers();
+  try {
+    const notify = vi.fn();
+    const viewport = createViewport({ stage: {}, getDoc: () => ({ nodes: [{ kind: "text", text: "hello" }] }), notify, requestRender: () => {} });
+    viewport.zoomAt(1.05, { x: 100, y: 100 });
+    expect(notify).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(416);
+    expect(notify).toHaveBeenCalledTimes(1);
+    viewport.dispose();
+  } finally { vi.useRealTimers(); }
+});
+
+it("keeps an active DOM text editor positioned during camera changes", () => {
+  vi.useFakeTimers();
+  try {
+    const notify = vi.fn();
+    let editing = true;
+    const viewport = createViewport({ stage: {}, getDoc: () => ({ nodes: [{ kind: "text", text: "hello" }] }),
+      notify, requestRender: () => {}, hasDomOverlay: () => editing });
+    viewport.panBy(10, 20);
+    expect(notify).toHaveBeenCalledTimes(1);
+    editing = false;
+    viewport.panBy(10, 20);
+    expect(notify).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(416);
+    expect(notify).toHaveBeenCalledTimes(2);
+    viewport.dispose();
+  } finally { vi.useRealTimers(); }
+});

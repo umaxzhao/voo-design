@@ -1,8 +1,13 @@
+import { interactionBackdrop } from './interaction_backdrop.js';
+import { releaseTileLayer } from './stage_tile_layer.js';
+import { textMetricsRevision } from './text_metrics.js';
+import { RasterTiles, changedRectBounds, drawTiles, scheduleTileRefinement, cancelTileRefinement, isTileDocument } from './raster_tiles.js';
 import { effectivePage } from './scene_model.js';
 import { drawPlainRects, isPlainRectList } from './render_plain_rects.js';
 import { dirtyRectsToDevice, shouldUseDirtyRect } from './dirty_rect.js';
 
 const caches = new WeakMap();
+const tileCaches = new WeakMap();
 const MARGIN = 160;
 
 // Identity includes all page metadata, not just nodes: page/crop/background edits
@@ -37,7 +42,20 @@ function storeCache(ctx, next) {
   else caches.delete(ctx);
 }
 
-export function releaseStagePictureCache(ctx) { storeCache(ctx, null); }
+export function cancelStagePictureRefinement(ctx) {
+  cancelTileRefinement(tileCaches.get(ctx));
+}
+
+export function releaseStagePictureCache(ctx) {
+  interactionBackdrop.release(ctx);
+  releaseTileLayer(ctx);
+  storeCache(ctx, null);
+  const tiles = tileCaches.get(ctx);
+  cancelTileRefinement(tiles);
+  tiles?.tiles.clear();
+  if (tiles?.exact) tiles.exact.canvas.width = tiles.exact.canvas.height = 0;
+  tileCaches.delete(ctx);
+}
 
 function surface(ctx, options, paint, nodes = options.doc.nodes, background = true, margin = MARGIN, dpr = options.dpr) {
   const width = options.stageWidth ?? ctx.canvas.width / options.dpr;
@@ -45,7 +63,9 @@ function surface(ctx, options, paint, nodes = options.doc.nodes, background = tr
   const canvas = document.createElement('canvas');
   canvas.width = Math.ceil((width + margin * 2) * dpr);
   canvas.height = Math.ceil((height + margin * 2) * dpr);
-  const target = canvas.getContext('2d');
+  // Match the destination raster backend: CPU and GPU antialiasing can
+  // differ at fractional coordinates, even for solid rectangles.
+  const target = canvas.getContext('2d', ctx.getContextAttributes?.());
   const viewport = { ...options.viewport, panX: options.viewport.panX + margin,
     panY: options.viewport.panY + margin };
   paint(target, { ...options, dpr, doc: { ...options.doc, nodes,
@@ -57,13 +77,16 @@ function surface(ctx, options, paint, nodes = options.doc.nodes, background = tr
 }
 
 export function drawCachedStage(ctx, options, paint) {
+  if (!options.cameraMoving) releaseTileLayer(ctx);
+  if (options.previewMotion) cancelStagePictureRefinement(ctx);
   // Exports, mixed layers and paint tools keep the authoritative renderer.
   const eligible = options.cullOffscreen && options.pageBackground !== false &&
-    isPlainRectList(options.doc.nodes) && !options.hiddenNodeId &&
+    isTileDocument(options.doc.nodes) && !options.hiddenNodeId &&
     !options.paintNodeIds && !options.layerCache && !options.fullResolution &&
     !options.penDraft && !options.penEdit &&
     !(options.grid && (options.grid.enabled || options.grid.visible)) && !options.selectionTransformBox;
   if (!eligible) { releaseStagePictureCache(ctx); return paint(ctx, options); }
+  interactionBackdrop.update(ctx, options.cameraMoving || options.previewMotion);
   const width = options.stageWidth ?? ctx.canvas.width / options.dpr;
   const height = options.stageHeight ?? ctx.canvas.height / options.dpr;
   // The engine supplies damage only when camera, selection, DPR and render
@@ -73,7 +96,7 @@ export function drawCachedStage(ctx, options, paint) {
   if (!options.cameraMoving && options.previewMotion && options.dirtyRects &&
       shouldUseDirtyRect(dirtyRectsToDevice(options.dirtyRects, options.viewport,
         options.dpr, width, height), width, height, options.dpr)) {
-    releaseStagePictureCache(ctx);
+    storeCache(ctx, null);
     return paint(ctx, options);
   }
   const key = pictureKey({ ...options, stageWidth: width, stageHeight: height });
@@ -96,7 +119,7 @@ export function drawCachedStage(ctx, options, paint) {
   const previous = caches.get(ctx)?.split;
   const index = selected ? options.doc.nodes.findIndex(n => n.id === selected) : -1;
   if (!options.cameraMoving && options.previewMotion && index >= 0 && !options.selectionSet &&
-      options.doc.nodes.every(n => (n.opacity ?? 1) === 1)) {
+      isPlainRectList(options.doc.nodes) && options.doc.nodes.every(n => (n.opacity ?? 1) === 1)) {
     const nodes = options.doc.nodes;
     const reusable = previous && previous.selected === selected &&
       previous.viewport === options.viewport && samePictureKey(previous.key, splitKey) &&
@@ -124,35 +147,57 @@ export function drawCachedStage(ctx, options, paint) {
     storeCache(ctx, cache);
     return;
   }
-  // Settled frames always use the authoritative renderer, including selections.
-  if (!options.cameraMoving) {
-    paint(ctx, options);
-    cache.picture = null;
-    cache.split = null;
-    cache.viewport = options.viewport;
-    storeCache(ctx, cache);
-    return;
+  if (!options.cameraMoving && options.previewMotion) {
+    storeCache(ctx, null);
+    return paint(ctx, options);
   }
+  // Tile identity deliberately excludes renderVersion: selection/hover and
+  // inspector notifications change chrome, not immutable rectangle content.
+  const tileKey = pictureKey({ ...options, docVersion: textMetricsRevision(), stageWidth: width, stageHeight: height });
+  let tiles = tileCaches.get(ctx);
+  if (!tiles || !samePictureKey(tiles.key, tileKey)) {
+    if (tiles) { cancelTileRefinement(tiles); tiles.tiles.clear(); if (tiles.exact) tiles.exact.canvas.width = tiles.exact.canvas.height = 0; }
+    tiles = { key: tileKey, nodes: options.doc.nodes, tiles: new RasterTiles() };
+    tileCaches.set(ctx, tiles);
+  }
+  if (tiles.nodes !== options.doc.nodes) {
+    cancelTileRefinement(tiles);
+    const bounds = changedRectBounds(tiles.nodes, options.doc.nodes);
+    if (bounds) tiles.tiles.invalidate(bounds); else tiles.tiles.clear();
+    tiles.nodes = options.doc.nodes;
+    if (tiles.exact) tiles.exact.canvas.width = tiles.exact.canvas.height = 0;
+    tiles.exact = null;
+  }
+  const tileOptions = { ...options, stageWidth: width, stageHeight: height };
+  if (!options.cameraMoving && width * height * options.dpr ** 2 * 4 > 48 * 1024 * 1024) {
+    if (tiles.exact) tiles.exact.canvas.width = tiles.exact.canvas.height = 0;
+    tiles.exact = null;
+    tiles.moving = false;
+    return paint(ctx, options);
+  }
+  if (options.cameraMoving) {
+    cancelTileRefinement(tiles);
+    drawTiles(ctx, tileOptions, paint, tiles);
+  } else {
+    const v = tiles.exact?.viewport;
+    if (!v || v.zoom !== options.viewport.zoom || v.panX !== options.viewport.panX || v.panY !== options.viewport.panY) {
+      if (tiles.exact) tiles.exact.canvas.width = tiles.exact.canvas.height = 0;
+      tiles.exact = surface(ctx, options, paint, options.doc.nodes, true, 0);
+    }
+    ctx.save();
+    // Copy physical pixels 1:1. Rounding a CSS size times fractional DPR can
+    // leave a partial last pixel; rescaling the snapshot would blur all edges.
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.drawImage(tiles.exact.canvas, 0, 0);
+    ctx.restore();
+    paint(ctx, { ...options, overlaysOnly: true, dirtyRects: null });
+    // The viewport's quiet timer triggers this branch. Never synchronously
+    // rebuild all tiles after a zoom; warm one per animation frame without repainting the stage.
+    if (options.requestRender) scheduleTileRefinement(tileOptions, paint, tiles);
+    else tiles.moving = false;
+  }
+  cache.picture = null;
   cache.split = null;
-  // At most 1.5x the viewport in either dimension; camera previews need no
-  // more than one source pixel per CSS pixel. Settled output uses full DPR.
-  const margin = Math.min(MARGIN, width / 4, height / 4);
-  let transform = cache.picture && pictureTransform(cache.picture.viewport, options.viewport, cache.picture.margin);
-  if (!transform || !pictureCovers(transform, width, height, margin)) {
-    cache.picture = surface(ctx, options, paint, options.doc.nodes, true, margin, Math.min(options.dpr, 1));
-    transform = pictureTransform(cache.picture.viewport, options.viewport, margin);
-  }
-  ctx.save();
-  ctx.setTransform(options.dpr, 0, 0, options.dpr, 0, 0);
-  ctx.clearRect(0, 0, width, height);
-  // Crop the source to the visible destination: zooming in must not submit
-  // a huge scaled overscan surface to the software rasterizer.
-  ctx.imageSmoothingEnabled = false;
-  const sourceScale = cache.picture.dpr / transform.scale;
-  ctx.drawImage(cache.picture.canvas,
-    -transform.x * sourceScale, -transform.y * sourceScale,
-    width * sourceScale, height * sourceScale, 0, 0, width, height);
-  ctx.restore();
-  paint(ctx, { ...options, overlaysOnly: true, dirtyRects: null });
   storeCache(ctx, cache);
 }

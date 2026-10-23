@@ -326,8 +326,9 @@ export function createPenDraft({
    */
   function insertionPreview() {
     const edit = getEdit?.();
-    const node = findNode(getDoc(), edit?.nodeId);
-    if (!node || !edit?.hover || edit.dragging) return null;
+    if (!edit?.hover || edit.dragging) return null;
+    const node = findNode(getDoc(), edit.nodeId);
+    if (!node) return null;
     const scaleX = node.baseWidth ? node.width / node.baseWidth : 1;
     const scaleY = node.baseHeight ? node.height / node.baseHeight : 1;
     const local = {
