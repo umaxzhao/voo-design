@@ -656,7 +656,7 @@ export default function EditorComments({
                   aria-label={label(t, "editor.comments.delete", "Delete comment")}
                   className="flex items-center gap-1 rounded-lg px-1.5 py-1 text-[10px] leading-none text-rose-400 outline-none hover:bg-rose-500/10 hover:text-rose-300 focus-visible:ring-1 focus-visible:ring-rose-500/40"
                 >
-                  <Trash2 size={11} />
+                  <Trash2 className="text-neutral-400" size={11} />
                 </button>
               </div>
               <PostButton
@@ -695,7 +695,6 @@ export default function EditorComments({
         >
           <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-3">
             <div className="flex min-w-0 items-center gap-2">
-              <MessageSquare size={13} className="shrink-0 text-[#a7ffd4]" />
               <h2 className="truncate text-[11px] font-medium leading-none text-neutral-200">
                 {label(t, "editor.comments.title", "Comments")}
               </h2>

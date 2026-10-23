@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { RotateCcw } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
 import { useDesignStore } from "../../store/design_store.js";
 import { clearCrashDraft, loadLatestCrashDraft } from "../../shared/crash_recovery.js";
@@ -34,7 +33,6 @@ export function CrashRecoveryDialog({ draft, onRestore, onDiscard, busy = false 
           }
         }}
         className="w-full max-w-md rounded-3xl border border-white/10 bg-neutral-900/95 p-7 text-neutral-200 shadow-panel backdrop-blur-md">
-        <div className="mb-5 flex size-11 items-center justify-center rounded-2xl bg-[#E5B2FF]/10 text-[#E5B2FF]"><RotateCcw size={22} aria-hidden="true" /></div>
         <h2 id="crash-recovery-title" className="text-lg font-semibold text-white">{t("app.crashRecovery.title")}</h2>
         <p id="crash-recovery-body" className="mt-2 text-sm leading-relaxed text-neutral-400">{t("app.crashRecovery.body")}</p>
         {draft.label && <p className="mt-4 truncate rounded-xl bg-white/5 px-3 py-2 text-sm">{draft.label}</p>}

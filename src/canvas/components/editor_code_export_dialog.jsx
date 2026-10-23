@@ -177,7 +177,7 @@ function WarningRail({ warnings, t }) {
                 size={10}
                 strokeWidth={1.5}
                 aria-hidden="true"
-                className="mt-0.5 flex-none"
+                className="mt-0.5 flex-none text-neutral-400"
               />
               <span className="min-w-0">
                 {message}

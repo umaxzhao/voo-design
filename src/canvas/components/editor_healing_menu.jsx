@@ -59,11 +59,9 @@ export default function EditorHealingMenu({
           aria-pressed={isActive}
           className={`relative rounded-full p-2.5 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
             isActive
-              ? isAiTool
-                ? "bg-[#E5B2FF] text-black font-medium"
-                : "bg-white text-black font-medium"
+              ? "bg-white text-black font-medium"
               : isAiTool
-                ? "text-[#E5B2FF] hover:bg-[#E5B2FF]/15 hover:text-[#E5B2FF]"
+                ? "text-neutral-300 hover:bg-white/15 hover:text-neutral-300"
                 : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
           }`}
         >
@@ -74,7 +72,7 @@ export default function EditorHealingMenu({
               isActive
                 ? "text-black/70"
                 : isAiTool
-                  ? "text-[#E5B2FF]/70"
+                  ? "text-neutral-300/70"
                   : "text-neutral-400"
             }`}
           />

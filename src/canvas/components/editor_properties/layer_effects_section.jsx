@@ -185,8 +185,7 @@ export default function LayerEffectsSection({
                   className="flex items-center gap-2 min-w-0 flex-1 text-left rounded-lg focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
                 >
                   <span
-                    className="shrink-0"
-                    style={{ color: isEnabled ? accent : "#525252" }}
+                    className={`shrink-0 ${isEnabled ? "text-neutral-300" : "text-neutral-500"}`}
                   >
                     <KindIcon kind={kind} />
                   </span>
@@ -251,8 +250,7 @@ export default function LayerEffectsSection({
                   className="flex items-center gap-2 min-w-0 flex-1 text-left rounded-lg focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
                 >
                   <span
-                    className="shrink-0"
-                    style={{ color: isEnabled ? "#E5B2FF" : "#525252" }}
+                    className={`shrink-0 ${isEnabled ? "text-neutral-300" : "text-neutral-500"}`}
                   >
                     <KindIcon kind={kind} />
                   </span>

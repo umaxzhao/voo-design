@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { Command, Layout, MousePointer2, Sparkles } from "lucide-react";
+import { Command } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
 import { setLocale } from "../../shared/i18n.js";
 import { setSetting } from "../../shared/settings.js";
@@ -111,20 +111,20 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
         <h1 ref={title} tabIndex={-1} id="first-run-title" className="text-[15px] font-semibold tracking-tight outline-none">{t(step === 0 ? "firstRun.title" : `firstRun.${name}.title`)}</h1>
         <p id="first-run-description" className="mt-3 text-[12px] leading-relaxed text-neutral-400">{t(step === 0 ? "firstRun.description" : (step === 1 && reopened ? "firstRun.start.reopenedDescription" : `firstRun.${name}.description`))}</p>
         <div className="my-7">
-          {step === 0 && <div className="flex items-center gap-5 rounded-2xl border border-white/10 bg-black/20 p-6"><Sparkles size={44} className="shrink-0 text-[#E5B2FF]" aria-hidden="true" /><p className="text-[15px] text-[#B2FFD6]">{t("firstRun.eyebrow")}</p></div>}
+          {step === 0 && <div className="flex items-center gap-5 rounded-2xl border border-white/10 bg-black/20 p-6"><p className="text-[15px] text-[#B2FFD6]">{t("firstRun.eyebrow")}</p></div>}
           {step === 1 && <div role="group" aria-label={t("firstRun.start.label")} className="grid grid-cols-2 gap-3">
             {reopened && <button type="button" aria-pressed={starter === "keep"} onClick={() => { setStarter("keep"); setConfirmed(false); }} className={`rounded-2xl border p-4 text-left ${focusClass} ${starter === "keep" ? "border-[#E5B2FF] bg-[#E5B2FF]/10" : "border-white/10"}`}>{t("firstRun.keep")}</button>}
             {[null, ...FIRST_RUN_TEMPLATES].map((template) => {
               const id = template?.id ?? "blank";
               return <button type="button" key={id} aria-pressed={starter === id} onClick={() => { setStarter(id); setConfirmed(false); }} className={`rounded-2xl border p-4 text-left ${focusClass} ${starter === id ? "border-[#E5B2FF] bg-[#E5B2FF]/10" : "border-white/10 hover:bg-white/5"}`}>
-                <Layout aria-hidden="true" size={28} className="mb-4 text-[#B2FFD6]" /><span className="block text-[12px] font-medium">{t(`firstRun.template.${template?.category ?? "blank"}`)}</span>
+                <span className="block text-[12px] font-medium">{t(`firstRun.template.${template?.category ?? "blank"}`)}</span>
                 <span className="mt-1 block text-xs text-neutral-400">{template ? `${template.width} × ${template.height}` : t("firstRun.blankHint")}</span>
               </button>;
             })}
           </div>}
           {step === 1 && replacesCurrent && <label className="mt-4 flex items-center gap-3 text-[12px] text-amber-200"><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} />{t("firstRun.replaceConfirm")}</label>}
           {step === 2 && <div className="space-y-3">
-            {[["canvas", Layout], ["tools", MousePointer2], ["agent", Sparkles]].map(([id, Icon]) => <div key={id} className="flex gap-4 rounded-2xl border border-white/10 bg-black/20 p-4"><Icon size={30} className="shrink-0 text-[#B2FFD6]" aria-hidden="true" /><div><h2 className="text-[12px] font-semibold">{t(`firstRun.tour.${id}`)}</h2><p className="mt-1 text-[12px] text-neutral-400">{t(`firstRun.tour.${id}Hint`)}</p></div></div>)}
+            {["canvas", "tools", "agent"].map((id) => <div key={id} className="flex gap-4 rounded-2xl border border-white/10 bg-black/20 p-4"><div><h2 className="text-[12px] font-semibold">{t(`firstRun.tour.${id}`)}</h2><p className="mt-1 text-[12px] text-neutral-400">{t(`firstRun.tour.${id}Hint`)}</p></div></div>)}
             {hasCommandPalette && <p className="flex gap-2 text-xs text-neutral-400"><Command size={16} aria-hidden="true" />{t("firstRun.palette")}</p>}
           </div>}
           {step === 3 && <div className="space-y-3">

@@ -41,11 +41,11 @@ function createSaasDashboardDoc() {
 
     // Nav items
     createRectNode({ x: 16, y: 88, width: 208, height: 36, fill: "#1E222D", stroke: "transparent", strokeWidth: 0 }),
-    createTextNode({ x: 36, y: 98, text: "📊  Overview", fill: "#818CF8", fontSize: 13 }),
-    createTextNode({ x: 36, y: 140, text: "⚡  Real-time Metrics", fill: "#8F96A3", fontSize: 13 }),
-    createTextNode({ x: 36, y: 180, text: "👥  Customers", fill: "#8F96A3", fontSize: 13 }),
-    createTextNode({ x: 36, y: 220, text: "💳  Billing & Plans", fill: "#8F96A3", fontSize: 13 }),
-    createTextNode({ x: 36, y: 260, text: "⚙️  Project Settings", fill: "#8F96A3", fontSize: 13 }),
+    createTextNode({ x: 36, y: 98, text: "Overview", fill: "#818CF8", fontSize: 13 }),
+    createTextNode({ x: 36, y: 140, text: "Real-time Metrics", fill: "#8F96A3", fontSize: 13 }),
+    createTextNode({ x: 36, y: 180, text: "Customers", fill: "#8F96A3", fontSize: 13 }),
+    createTextNode({ x: 36, y: 220, text: "Billing & Plans", fill: "#8F96A3", fontSize: 13 }),
+    createTextNode({ x: 36, y: 260, text: "Project Settings", fill: "#8F96A3", fontSize: 13 }),
 
     // User Avatar in sidebar footer
     createEllipseNode({ x: 24, y: 836, width: 36, height: 36, fill: "#374151", stroke: "#4B5563", strokeWidth: 1 }),
@@ -157,9 +157,9 @@ function createIosBankingDoc() {
     // Greeting Header
     createEllipseNode({ x: 24, y: 64, width: 44, height: 44, fill: "#312E81", stroke: "#6366F1", strokeWidth: 2 }),
     createTextNode({ x: 80, y: 68, text: "Welcome back,", fill: "#9CA3AF", fontSize: 12 }),
-    createTextNode({ x: 80, y: 86, text: "Alex Rivera 👋", fill: "#FFFFFF", fontSize: 16 }),
+    createTextNode({ x: 80, y: 86, text: "Alex Rivera", fill: "#FFFFFF", fontSize: 16 }),
     createRectNode({ x: 333, y: 68, width: 36, height: 36, fill: "#181A22", stroke: "#262936", strokeWidth: 1 }),
-    createTextNode({ x: 343, y: 76, text: "🔔", fill: "#FFFFFF", fontSize: 14 }),
+    createTextNode({ x: 343, y: 76, text: "◉", fill: "#D4D4D4", fontSize: 14 }),
 
     // Platinum Bank Card
     createRectNode({ x: 24, y: 130, width: 345, height: 200, fill: "#4F46E5", stroke: "#818CF8", strokeWidth: 1 }),
@@ -171,19 +171,19 @@ function createIosBankingDoc() {
 
     // Quick Action 4 Buttons
     createEllipseNode({ x: 36, y: 360, width: 56, height: 56, fill: "#1E222D", stroke: "#2E3444", strokeWidth: 1 }),
-    createTextNode({ x: 50, y: 376, text: "↗", fill: "#818CF8", fontSize: 20 }),
+    createTextNode({ x: 50, y: 376, text: "↗", fill: "#D4D4D4", fontSize: 20 }),
     createTextNode({ x: 44, y: 426, text: "Send", fill: "#9CA3AF", fontSize: 12 }),
 
     createEllipseNode({ x: 126, y: 360, width: 56, height: 56, fill: "#1E222D", stroke: "#2E3444", strokeWidth: 1 }),
-    createTextNode({ x: 140, y: 376, text: "↙", fill: "#10B981", fontSize: 20 }),
+    createTextNode({ x: 140, y: 376, text: "↙", fill: "#D4D4D4", fontSize: 20 }),
     createTextNode({ x: 130, y: 426, text: "Receive", fill: "#9CA3AF", fontSize: 12 }),
 
     createEllipseNode({ x: 216, y: 360, width: 56, height: 56, fill: "#1E222D", stroke: "#2E3444", strokeWidth: 1 }),
-    createTextNode({ x: 232, y: 376, text: "⚡", fill: "#F59E0B", fontSize: 18 }),
+    createTextNode({ x: 230, y: 376, text: "⇄", fill: "#D4D4D4", fontSize: 20 }),
     createTextNode({ x: 226, y: 426, text: "Swap", fill: "#9CA3AF", fontSize: 12 }),
 
     createEllipseNode({ x: 306, y: 360, width: 56, height: 56, fill: "#1E222D", stroke: "#2E3444", strokeWidth: 1 }),
-    createTextNode({ x: 322, y: 376, text: "⚙", fill: "#A78BFA", fontSize: 18 }),
+    createTextNode({ x: 320, y: 376, text: "⋯", fill: "#D4D4D4", fontSize: 20 }),
     createTextNode({ x: 320, y: 426, text: "More", fill: "#9CA3AF", fontSize: 12 }),
 
     // Recent Transactions List
@@ -192,29 +192,21 @@ function createIosBankingDoc() {
     createTextNode({ x: 290, y: 496, text: "See all", fill: "#6366F1", fontSize: 12 }),
 
     // Item 1
-    createEllipseNode({ x: 44, y: 530, width: 40, height: 40, fill: "#1E222E", stroke: "transparent", strokeWidth: 0 }),
-    createTextNode({ x: 56, y: 540, text: "🍎", fill: "#FFFFFF", fontSize: 16 }),
     createTextNode({ x: 96, y: 534, text: "Apple Store", fill: "#FFFFFF", fontSize: 14 }),
     createTextNode({ x: 96, y: 554, text: "Electronics • 2h ago", fill: "#6B7280", fontSize: 11 }),
     createTextNode({ x: 270, y: 542, text: "-$1,299.00", fill: "#FFFFFF", fontSize: 14 }),
 
     // Item 2
-    createEllipseNode({ x: 44, y: 590, width: 40, height: 40, fill: "#1E222E", stroke: "transparent", strokeWidth: 0 }),
-    createTextNode({ x: 56, y: 600, text: "💼", fill: "#FFFFFF", fontSize: 16 }),
     createTextNode({ x: 96, y: 594, text: "Salary Payment", fill: "#FFFFFF", fontSize: 14 }),
     createTextNode({ x: 96, y: 614, text: "VOO Labs Inc • Yesterday", fill: "#6B7280", fontSize: 11 }),
     createTextNode({ x: 270, y: 602, text: "+$8,400.00", fill: "#10B981", fontSize: 14 }),
 
     // Item 3
-    createEllipseNode({ x: 44, y: 650, width: 40, height: 40, fill: "#1E222E", stroke: "transparent", strokeWidth: 0 }),
-    createTextNode({ x: 56, y: 660, text: "☕", fill: "#FFFFFF", fontSize: 16 }),
     createTextNode({ x: 96, y: 654, text: "Blue Bottle Coffee", fill: "#FFFFFF", fontSize: 14 }),
     createTextNode({ x: 96, y: 674, text: "Food & Drinks • Oct 20", fill: "#6B7280", fontSize: 11 }),
     createTextNode({ x: 295, y: 662, text: "-$6.50", fill: "#FFFFFF", fontSize: 14 }),
 
     // Item 4
-    createEllipseNode({ x: 44, y: 710, width: 40, height: 40, fill: "#1E222E", stroke: "transparent", strokeWidth: 0 }),
-    createTextNode({ x: 56, y: 720, text: "🎵", fill: "#FFFFFF", fontSize: 16 }),
     createTextNode({ x: 96, y: 714, text: "Spotify Premium", fill: "#FFFFFF", fontSize: 14 }),
     createTextNode({ x: 96, y: 734, text: "Subscription • Oct 18", fill: "#6B7280", fontSize: 11 }),
     createTextNode({ x: 290, y: 722, text: "-$14.99", fill: "#FFFFFF", fontSize: 14 }),
@@ -246,7 +238,7 @@ function createBentoLandingDoc() {
 
     // Hero Badge & Headings
     createRectNode({ x: 540, y: 130, width: 360, height: 32, fill: "#1F1D36", stroke: "#6D28D9", strokeWidth: 1 }),
-    createTextNode({ x: 560, y: 137, text: "✨  Next-Gen Creative Canvas 2.0 is Live", fill: "#C4B5FD", fontSize: 13 }),
+    createTextNode({ x: 560, y: 137, text: "Next-Gen Creative Canvas 2.0 is Live", fill: "#C4B5FD", fontSize: 13 }),
 
     createTextNode({ x: 260, y: 190, text: "Design without boundaries.", fill: "#FFFFFF", fontSize: 56 }),
     createTextNode({ x: 380, y: 260, text: "Powered by Skia & WebAssembly.", fill: "#A78BFA", fontSize: 56 }),
@@ -490,7 +482,6 @@ export const COMMUNITY_TEMPLATES = [
     author: {
       name: "VOO Core Studio",
       handle: "@voocore",
-      avatar: "⚡",
       verified: true,
     },
     stats: {
@@ -514,7 +505,6 @@ export const COMMUNITY_TEMPLATES = [
     author: {
       name: "Alex Rivera",
       handle: "@rivera_ux",
-      avatar: "💳",
       verified: true,
     },
     stats: {
@@ -538,7 +528,6 @@ export const COMMUNITY_TEMPLATES = [
     author: {
       name: "Studio Hyperion",
       handle: "@hyperion",
-      avatar: "✨",
       verified: true,
     },
     stats: {
@@ -562,7 +551,6 @@ export const COMMUNITY_TEMPLATES = [
     author: {
       name: "Design Tokens WG",
       handle: "@design_systems",
-      avatar: "🎨",
       verified: true,
     },
     stats: {
@@ -586,7 +574,6 @@ export const COMMUNITY_TEMPLATES = [
     author: {
       name: "Elena Rostova",
       handle: "@elena_deck",
-      avatar: "📊",
       verified: true,
     },
     stats: {
@@ -610,7 +597,6 @@ export const COMMUNITY_TEMPLATES = [
     author: {
       name: "Atelier Studio",
       handle: "@atelier_nordic",
-      avatar: "🛍️",
       verified: true,
     },
     stats: {

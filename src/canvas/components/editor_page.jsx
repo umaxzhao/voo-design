@@ -929,7 +929,7 @@ export default function EditorPage({
             data-testid="editor-frame-header-icon"
             aria-label={t(iconTone.label)}
             className={`flex shrink-0 items-center transition-colors ${
-              focused ? "text-[#a7ffd4]" : iconTone.text
+              focused ? "text-neutral-200" : iconTone.text
             }`}
           >
             <IconFrame size={12} strokeWidth={1.5} />
@@ -1141,7 +1141,7 @@ export default function EditorPage({
                 data-testid="editor-frame-header-icon"
                 aria-label={t(iconTone.label)}
                 className={`flex shrink-0 items-center transition-colors ${
-                  focused ? "text-[#a7ffd4]" : iconTone.text
+                  focused ? "text-neutral-200" : iconTone.text
                 }`}
               >
                 <IconFrame size={12} strokeWidth={1.5} />

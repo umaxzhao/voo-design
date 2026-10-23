@@ -195,8 +195,8 @@ export default function StreamingLayoutPreview({
         aria-hidden="true"
         className="pointer-events-none absolute z-10 opacity-0 transition-[left,top,opacity] duration-300 ease-out motion-reduce:transition-none"
       >
-        <IconCursor size={18} strokeWidth={1.5} className="text-[#E5B2FF]" />
-        <span className="ml-4 mt-1 block w-max rounded-lg bg-neutral-900 px-2 py-1 text-[10px] text-[#eed0ff]">
+        <IconCursor size={18} strokeWidth={1.5} className="text-neutral-300" />
+        <span className="ml-4 mt-1 block w-max rounded-lg bg-neutral-900 px-2 py-1 text-[10px] text-neutral-300">
           {t("agent.title")}
         </span>
       </div>

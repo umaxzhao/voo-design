@@ -121,7 +121,7 @@ export default function EditorToolSubbar({
                           ? "text-black"
                           : "text-black"
                         : isAi
-                          ? "text-[#E5B2FF]"
+                          ? "text-neutral-300"
                           : "text-neutral-400 group-hover:text-white"
                     }`}
                   >

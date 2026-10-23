@@ -461,7 +461,7 @@ export default function CanvasAgentPanel({ onClose }) {
                     }`}
                   >
                     <span className="truncate">{m.label}</span>
-                    {isSelected && <Check size={13} className="text-[#E5B2FF] shrink-0 ml-2" />}
+                    {isSelected && <Check size={13} className="text-neutral-300 shrink-0 ml-2" />}
                   </button>
                 );
               })}

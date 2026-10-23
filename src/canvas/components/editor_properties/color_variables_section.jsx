@@ -210,7 +210,7 @@ export default function ColorVariablesSection({
                 aria-label={t("editor.variables.delete")}
                 className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
               >
-                <IconTrash size={12} strokeWidth={1.5} />
+                <IconTrash className="text-neutral-400" size={12} strokeWidth={1.5} />
               </button>
             ) : null}
           </div>

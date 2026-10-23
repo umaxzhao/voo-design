@@ -32,7 +32,7 @@ import {
 export const ICON_BTN =
   "flex h-6 w-6 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20";
 export const ICON_BTN_DEFAULT = `${ICON_BTN} text-neutral-400 hover:bg-white/10 hover:text-neutral-200`;
-export const ICON_BTN_AI = `${ICON_BTN} bg-[#E5B2FF]/10 text-[#E5B2FF] hover:bg-[#E5B2FF]/20 hover:text-[#eed0ff]`;
+export const ICON_BTN_AI = `${ICON_BTN} bg-white/10 text-neutral-300 hover:bg-white/20 hover:text-white`;
 
 /** One retouch slider row: name, current percent, and the range input. */
 function RetouchSlider({ slider, value, disabled, onChange, t }) {
@@ -119,7 +119,7 @@ PortraitRetouchPanel.propTypes = {
 const MENU_ITEM =
   "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-neutral-200 transition-colors hover:bg-white/[0.08] hover:text-white disabled:opacity-40 disabled:hover:bg-transparent";
 
-/** One AI row of the More menu: a purple icon and a label. */
+/** One AI row of the More menu: a monochrome icon and a label. */
 function AiMenuItem({ icon: Icon, label, testId, disabled, onClick, title }) {
   return (
     <button
@@ -130,7 +130,7 @@ function AiMenuItem({ icon: Icon, label, testId, disabled, onClick, title }) {
       onClick={onClick}
       className={MENU_ITEM}
     >
-      <Icon size={13} className="shrink-0 text-[#E5B2FF]" />
+      <Icon size={13} className="shrink-0 text-neutral-300" />
       <span className="min-w-0 truncate">{label}</span>
     </button>
   );

@@ -200,7 +200,6 @@ export default function EditorPieMenu({
             hoveredIndex < 0 && lastHoveredIndexRef.current === idx;
           const isHighlighted = isHovered || isLastHovered;
           const isActive = activeIndex === idx;
-          const isAi = Boolean(item.isAi);
           const Icon = toolFamilyIcon(item.icon);
 
           // Determine label placement relative to the icon based on angle:
@@ -249,16 +248,10 @@ export default function EditorPieMenu({
               <div
                 className={`flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-md transition-all ${
                   isHighlighted
-                    ? isAi
-                      ? "bg-[#E5B2FF] text-black font-medium"
-                      : "bg-white text-black font-medium"
+                    ? "bg-white text-black font-medium"
                     : isActive
-                      ? isAi
-                        ? "bg-[#E5B2FF]/40 text-[#eed0ff]"
-                        : "bg-white/30 text-white"
-                      : isAi
-                        ? "bg-black/60 text-[#E5B2FF] hover:bg-[#E5B2FF]/20"
-                        : "bg-black/60 text-neutral-300 hover:bg-white/20 hover:text-white"
+                      ? "bg-white/30 text-white"
+                      : "bg-black/60 text-neutral-300 hover:bg-white/20 hover:text-white"
                 }`}
               >
                 <Icon size={16} />
@@ -268,9 +261,7 @@ export default function EditorPieMenu({
               <div
                 className={`absolute ${labelPosClass} whitespace-nowrap rounded-md px-1.5 py-0.5 font-mono text-[9px] tracking-tight backdrop-blur-md transition-all pointer-events-none ${
                   isHighlighted
-                    ? isAi
-                      ? "bg-[#E5B2FF] text-black font-medium opacity-100"
-                      : "bg-white text-black font-medium opacity-100"
+                    ? "bg-white text-black font-medium opacity-100"
                     : "bg-black/60 text-neutral-200 opacity-90"
                 }`}
               >

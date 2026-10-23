@@ -103,6 +103,8 @@ describe("Community Templates and New Project Workbench Experience", () => {
     // Verify action buttons appear
     expect(html).toContain("使用模板");
     expect(html).toContain("预览详情");
+    expect(html).not.toContain("lucide-sparkles");
+    expect(html).not.toMatch(/\p{Extended_Pictographic}/u);
   });
 
   it("instantiating a community template produces a valid .voo file and registers in workspace", async () => {
@@ -177,20 +179,47 @@ describe("Community Templates and New Project Workbench Experience", () => {
   it("welcome dashboard renders AI generation types row without 'All' filter pill", () => {
     const html = renderToStaticMarkup(React.createElement(WelcomeDashboard));
 
-    // Verify AI generation header label
-    expect(html).toContain("AI 生成类型");
+    // Keep the accessible group name while removing the visible heading.
+    expect(html).not.toContain("AI 生成类型");
+    expect(html).toContain('aria-label="生成类型"');
+    expect(html).toMatch(/class="flex justify-center"><div class="[^"]*justify-center" role="radiogroup"/);
+    const group = /<div\b[^>]*\brole="radiogroup"[^>]*>/.exec(html);
+    if (!group) throw new Error("AI generation radiogroup is missing");
+    const contentStart = group.index + group[0].length;
+    const divTags = /<\/?div\b[^>]*>/g;
+    divTags.lastIndex = contentStart;
+    let depth = 1;
+    let contentEnd;
+    // Balance nested divs so extraction includes every pill and stops at the group boundary.
+    for (const tag of html.matchAll(divTags)) {
+      depth += tag[0].startsWith("</") ? -1 : 1;
+      if (depth === 0) {
+        contentEnd = tag.index;
+        break;
+      }
+    }
+    if (contentEnd === undefined) {
+      throw new Error("AI generation radiogroup has no closing tag");
+    }
+    const pillsMarkup = html.slice(contentStart, contentEnd);
+    const pills = {
+      text: pillsMarkup.replace(/<[^>]*>/g, ""),
+      count: [...pillsMarkup.matchAll(/\brole="radio"/g)].length,
+    };
+    expect(pills.count).toBe(AI_GEN_TYPES.length);
+    expect(pillsMarkup).not.toContain("text-mint");
+    expect(pillsMarkup).not.toContain("text-amber");
 
     // Verify generation types are present
-    expect(html).toContain("落地页");
-    expect(html).toContain("移动应用");
-    expect(html).toContain("Web 应用");
-    expect(html).toContain("幻灯片");
-    expect(html).toContain("数据看板");
-    expect(html).toContain("其他创意…");
+    expect(pills.text).toContain("落地页");
+    expect(pills.text).toContain("移动应用");
+    expect(pills.text).toContain("Web 应用");
+    expect(pills.text).toContain("幻灯片");
+    expect(pills.text).toContain("数据看板");
+    expect(pills.text).toContain("其他创意…");
 
     // Verify '全部' is NOT in the AI generation radiogroup
-    // (radiogroup has role="radiogroup" aria-label="AI 生成类型")
-    expect(html).not.toMatch(/role="radiogroup"[^>]*>[\s\S]*<span>全部<\/span>/);
+    expect(pills.text).not.toContain("全部");
   });
 
   it("AI_GEN_TYPES defines tailored dimensions, categories, and placeholders for AI generation", () => {

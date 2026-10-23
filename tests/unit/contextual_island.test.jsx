@@ -201,7 +201,7 @@ describe("Contextual Island & Agent Dispatch (Pen App Style)", () => {
   });
 
   describe("Tier 3: EditorContextualAiInput Component", () => {
-    it("renders sparkles icon and contextual placeholder for image", () => {
+    it("renders contextual placeholder without a decorative sparkles icon", () => {
       const node = { id: "1", kind: "image", name: "Cover" };
       const html = renderToStaticMarkup(
         <EditorContextualAiInput selectedNode={node} />
@@ -209,7 +209,7 @@ describe("Contextual Island & Agent Dispatch (Pen App Style)", () => {
 
       expect(html).toContain('data-testid="editor-contextual-ai-form"');
       expect(html).toContain('placeholder="Ask AI to edit @Cover..."');
-      expect(html).toContain("text-[#E5B2FF]");
+      expect(html).not.toContain("lucide-sparkles");
     });
 
     it("renders contextual placeholder for text and frame nodes", () => {

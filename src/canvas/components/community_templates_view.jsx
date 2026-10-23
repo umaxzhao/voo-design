@@ -4,7 +4,6 @@ import {
   Heart,
   Download,
   Eye,
-  Sparkles,
   CheckCircle2,
   Layers,
   X,
@@ -314,7 +313,6 @@ export default function CommunityTemplatesView({ onUseTemplate }) {
       <div className="relative overflow-hidden rounded-2xl bg-neutral-900 border border-white/10 p-6 md:p-8">
         <div className="relative z-10 max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-[#a7ffd4] text-xs font-medium">
-            <Sparkles size={13} />
             <span>{t("welcome.community.title")}</span>
           </div>
 
@@ -479,12 +477,11 @@ export default function CommunityTemplatesView({ onUseTemplate }) {
 
                 <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs text-neutral-400">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs">{template.author?.avatar}</span>
                     <span className="text-xs font-medium text-neutral-300 truncate max-w-[100px]">
                       {template.author?.name}
                     </span>
                     {template.author?.verified && (
-                      <CheckCircle2 size={12} className="text-[#a7ffd4] shrink-0" />
+                      <CheckCircle2 size={12} className="text-neutral-400 shrink-0" />
                     )}
                   </div>
 

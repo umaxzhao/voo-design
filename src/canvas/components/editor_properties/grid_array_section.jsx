@@ -286,7 +286,7 @@ export default function GridArraySection({
         onClick={handleRemove}
         className="mt-1 flex h-7 w-full items-center justify-center gap-1.5 rounded-lg bg-rose-500/10 px-2 text-[11px] font-medium text-rose-400 transition-colors hover:bg-rose-500/20 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-400"
       >
-        <IconTrash size={12} strokeWidth={1.5} />
+        <IconTrash className="text-neutral-400" size={12} strokeWidth={1.5} />
         <span>{t("editor.gridArray.remove")}</span>
       </button>
     </div>

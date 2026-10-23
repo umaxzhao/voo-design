@@ -185,7 +185,7 @@ export default function EditorExportDialog({
               >
                 <span>{t(label)}</span>
                 {format === id && (
-                  <span aria-hidden="true" className="text-[#a7ffd4]">
+                  <span aria-hidden="true" className="text-neutral-200">
                     ✓
                   </span>
                 )}

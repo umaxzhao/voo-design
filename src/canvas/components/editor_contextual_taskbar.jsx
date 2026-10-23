@@ -25,7 +25,7 @@ function Action({
   active,
   ...props
 }) {
-  return <EditorTooltip title={label} shortcut={shortcut}><button type="button" aria-label={label} data-testid={`editor-taskbar-${id}`} aria-pressed={active} className={`${BUTTON} ${active ? "bg-white/15 text-[#a7ffd4]" : ""}`} {...props}>{icon}</button></EditorTooltip>;
+  return <EditorTooltip title={label} shortcut={shortcut}><button type="button" aria-label={label} data-testid={`editor-taskbar-${id}`} aria-pressed={active} className={`${BUTTON} ${active ? "bg-white/15 text-neutral-200" : ""}`} {...props}>{icon}</button></EditorTooltip>;
 }
 
 // Coordinates are in the editor overlay's viewport coordinate system.
@@ -151,7 +151,7 @@ function EditorContextualTaskBar({
     onDispatch?.(payload);
     setAiInputOpen(false);
   };
-  const ai = <>{action("ai-sparkle", <IconSparkles size={14} className="text-[#E5B2FF]" />, () => setAiInputOpen(open => !open), {
+  const ai = <>{action("ai-sparkle", <IconSparkles size={14} className="text-neutral-300" />, () => setAiInputOpen(open => !open), {
       label: label("askAgent"),
       active: aiInputOpen,
       "aria-expanded": aiInputOpen

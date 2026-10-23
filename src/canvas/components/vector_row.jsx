@@ -172,7 +172,7 @@ export default function VectorRow({
             aria-pressed={lock.locked}
             onClick={lock.onToggle}
             className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
-              lock.locked ? "text-[#eed0ff]" : "text-neutral-500"
+              lock.locked ? "text-neutral-200" : "text-neutral-500"
             }`}
           >
             {lock.locked ? (

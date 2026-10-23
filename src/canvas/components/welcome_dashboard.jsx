@@ -1065,16 +1065,11 @@ export default function WelcomeDashboard() {
         {activeTab === "recents" && (
           <div className="flex-1 p-8 max-w-6xl w-full mx-auto space-y-8">
             {/* AI Generation Preset Types Row */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-medium">
-                <Sparkles size={14} className="text-amber-400" />
-                <span>{t("welcome.prompt.aiGenTypes")}</span>
-              </div>
-
+            <div className="flex justify-center">
               <div
                 className="flex items-center gap-1.5 flex-wrap justify-center"
                 role="radiogroup"
-                aria-label={t("welcome.prompt.aiGenTypes")}
+                aria-label={t("welcome.prompt.generationTypeLabel")}
               >
                 {AI_GEN_TYPES.map((typeItem) => {
                   const Icon = typeItem.icon;
@@ -1097,7 +1092,7 @@ export default function WelcomeDashboard() {
                           size={13}
                           className={`transition-colors ${
                             isSelected
-                              ? "text-mint"
+                              ? "text-neutral-200"
                               : "text-neutral-500 group-hover:text-neutral-300"
                           }`}
                         />
@@ -1147,10 +1142,7 @@ export default function WelcomeDashboard() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5 text-xs text-amber-400/90 font-mono">
-                    <svg className="size-3.5" viewBox="0 0 24 24" fill="currentColor">
-                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                    </svg>
+                  <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-mono">
                     <span>1x</span>
                   </div>
 

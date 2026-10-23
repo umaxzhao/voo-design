@@ -118,7 +118,7 @@ export default function EditorHistoryPanel({
                   </div>
 
                   {isActive ? (
-                    <span className="shrink-0 text-[#b2ffd6] ml-2">
+                    <span className="shrink-0 text-neutral-200 ml-2">
                       <IconCheck size={12} />
                     </span>
                   ) : null}

@@ -55,7 +55,7 @@ export default function TransformDimensionBar({
           aria-label={t("editor.props.lockRatio")}
           className={`flex h-7 w-6 shrink-0 items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 rounded-md ${
             lockRatio
-              ? "text-[#a7ffd4] hover:text-white"
+              ? "text-neutral-200 hover:text-white"
               : "text-neutral-500 hover:text-neutral-300"
           }`}
         >

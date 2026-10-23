@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import { memo, useCallback, useMemo, useState } from "react";
-import { IconSparkles, IconArrowUp, IconClose } from "../icons.jsx";
+import { IconArrowUp, IconClose } from "../icons.jsx";
 import { useDesignStore } from "../../store/design_store.js";
 
 /**
@@ -165,9 +165,6 @@ function EditorContextualAiInput({
       className={`flex items-center gap-1.5 ${className}`}
     >
       <div className="relative flex items-center" data-testid="editor-contextual-ai-wrapper">
-        <span className="pointer-events-none absolute left-2 text-[#E5B2FF]">
-          <IconSparkles size={13} strokeWidth={1.5} />
-        </span>
         <input
           type="text"
           autoFocus={autoFocus}
@@ -176,7 +173,7 @@ function EditorContextualAiInput({
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="h-6 w-36 sm:w-48 focus:w-56 rounded-full bg-white/[0.06] hover:bg-white/[0.08] focus:bg-white/[0.1] pl-7 pr-2.5 text-[10px] text-neutral-100 placeholder-neutral-400 border border-white/10 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-[#E5B2FF]/40 transition-all font-sans"
+          className="h-6 w-36 sm:w-48 focus:w-56 rounded-full bg-white/[0.06] hover:bg-white/[0.08] focus:bg-white/[0.1] px-2.5 text-[10px] text-neutral-100 placeholder-neutral-400 border border-white/10 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-[#E5B2FF]/40 transition-all font-sans"
         />
       </div>
 
