@@ -374,7 +374,8 @@ export function createSelectionPaintEffects({
       type,
       angle,
       stops,
-      buildGeometry: ({ box }) => gradientGeometry(type, startDocPt, endDocPt, box),
+      buildGeometry: ({ box, node, scaleX, scaleY }) =>
+        gradientGeometry(type, startDocPt, endDocPt, box, node, scaleX, scaleY),
     });
   }
 

@@ -25,6 +25,7 @@
     "bridge": "node scripts/cli-bridge.mjs",
     "mcp": "node scripts/mcp-server.mjs",
     "test:e2e": "node tests/e2e/agent_tools.e2e.mjs",
+    "test:e2e:qa": "node tests/e2e/qa_flows.e2e.mjs",
     "bench:agent": "node scripts/agent-bench/run.mjs --dry-run",
     "test:e2e:codex": "node tests/e2e/codex_agent.e2e.mjs",
     "test:e2e:claude": "node tests/e2e/claude_agent.e2e.mjs",

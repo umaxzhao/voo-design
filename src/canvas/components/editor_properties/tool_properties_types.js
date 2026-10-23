@@ -128,7 +128,7 @@ export const toolPropertiesPropTypes = {
   swapColorsRef: PropTypes.shape({ current: PropTypes.func }),
   fontFamily: PropTypes.string,
   onFontFamily: PropTypes.func,
-  fontWeight: PropTypes.number,
+  fontWeight: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   onFontWeight: PropTypes.func,
   fontSize: PropTypes.number,
   onFontSize: PropTypes.func,
