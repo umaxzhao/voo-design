@@ -88,6 +88,7 @@ export default function AppTitleBar() {
 
         {welcomeOpen ? (
           <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" }}>
+            <button type="button" className="px-2 text-xs text-white/70" onClick={() => window.dispatchEvent(new CustomEvent("voo:open-about"))}>{t("release.about")}</button>
             <button
               type="button"
               data-testid="titlebar-open-onboarding-btn"
@@ -129,6 +130,7 @@ export default function AppTitleBar() {
             >
               {t("titlebar.open")}
             </button>
+            <button type="button" className="px-2 text-xs text-white/70" onClick={() => window.dispatchEvent(new CustomEvent("voo:open-about"))}>{t("release.about")}</button>
             <button
               type="button"
               data-testid="titlebar-open-onboarding-btn"

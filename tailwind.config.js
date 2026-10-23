@@ -2,7 +2,8 @@ import tokens from "./design/tokens.cjs";
 
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./index.html", "./src/**/*.{js,jsx,html}"],
+  // Code generators contain template strings, not runtime UI class names.
+  content: ["./index.html", "./src/**/*.{js,jsx,html}", "!./src/canvas/codegen/**"],
   theme: {
     extend: {
       fontFamily: {

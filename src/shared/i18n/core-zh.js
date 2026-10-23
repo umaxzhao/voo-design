@@ -1,5 +1,16 @@
 /** Critical initial-paint Chinese dictionary. */
 export default {
+  "release.about": "关于 VOO Design",
+  "release.downloading": "有可用更新，正在下载…",
+  "release.restartReady": "重启以更新",
+  "release.restart": "重启",
+  "release.dismiss": "忽略",
+  "release.close": "关闭",
+  "release.eula": "最终用户许可协议",
+  "release.notices": "第三方许可声明",
+  "release.loading": "正在加载…",
+  "release.loadFailed": "无法加载许可文档。",
+
   "node.rendererLoadFailed": "节点加载失败",
   "node.rendererReload": "刷新页面",
   "node.rendererSaveFailed": "无法保存更改，已停止刷新",

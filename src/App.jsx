@@ -1,4 +1,5 @@
 import React, { useEffect, useState, Suspense, lazy } from "react";
+import ReleaseUI from "./release_ui.jsx";
 import ImageEditor from "./canvas/components/image_editor.jsx";
 import AppTitleBar, { VooBrandLogo } from "./app_title_bar.jsx";
 const WelcomeDashboard = lazy(() => import("./canvas/components/welcome_dashboard.jsx"));
@@ -88,6 +89,7 @@ export default function App() {
       <CrashRecoveryPrompt />
       <ImageSizeNotice />
       <AppTitleBar />
+      <ReleaseUI />
       <div className="relative flex min-h-0 flex-1">
         {/* The rounded green frame wraps the workspace below the title bar. */}
         <div className="editor-shell relative min-h-0 min-w-0 flex-1">
