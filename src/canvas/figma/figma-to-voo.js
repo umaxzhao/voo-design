@@ -27,14 +27,11 @@ import { createTextNode } from "../editor/scene_model_text_effects.js";
 import { imageBytesToDataUrl, parseFigFile } from "./fig-file.js";
 import { isFigContainer, parseFigContainer } from "./fig-kiwi.js";
 import { extractFigZip } from "./fig-zip-reader.js";
-import { penNodeFromPathText, vectorToPenNode } from "./figma-path-nodes.js";
-import { textOutlinePath } from "./figma-glyph-outline.js";
-import { textStyleOf } from "./figma-text.js";
+import { vectorToPenNode } from "./figma-path-nodes.js";
+import { isFigmaFontAvailable, textStyleOf } from "./figma-text.js";
 import { formatGradient } from "../color_picker/gradient_fill.js";
 import { blendModeOf, effectsOf, paintBlendOf } from "./figma-effects.js";
 import { expandInstances } from "./figma-instances.js";
-import { BUNDLED_FONTS } from "../editor/font_loader.js";
-import { isGoogleFamily } from "../editor/google_fonts_index.js";
 
 /** Figma node types that act as containers with their own children. */
 const CONTAINER_TYPES = new Set([
@@ -281,15 +278,8 @@ function buildLeaf(node, box, ctx) {
     const fontSize = asNumber(node.raw.fontSize, 0) > 0 ? asNumber(node.raw.fontSize) : undefined;
     const style = textStyleOf(node.raw, fontSize);
     noteFont(ctx, style.figmaFont);
-    // Glyph outlines carry Figma's own layout, so the text looks as designed
-    // whether or not its font is installed here.
-    const outline = penNodeFromPathText(
-      textOutlinePath(node.raw, ctx.blobs),
-      box,
-      { fill: solidPaintHex(fills) ?? "#000000", stroke: "transparent", strokeWidth: 0 },
-      { filled: true, fillRule: "nonzero" },
-    );
-    if (outline) return applyCommon(node, ctx, { ...outline, name: node.name, figmaText: text });
+    // Preserve editable text and its original face; unavailable fonts render
+    // with the stack fallback rather than becoming irreversible glyph paths.
     const { figmaFont, ...fields } = style;
     return applyCommon(node, ctx, {
       ...createTextNode({
@@ -301,6 +291,7 @@ function buildLeaf(node, box, ctx) {
       }),
       ...fields,
       figmaFont,
+      fontMissing: !isFigmaFontAvailable(figmaFont.family),
       name: node.name,
     });
   }
@@ -556,7 +547,7 @@ function fontSummary(fonts) {
       family: entry.family,
       styles: [...entry.styles],
       count: entry.count,
-      available: BUNDLED_FONTS.some((font) => font.family === entry.family) || isGoogleFamily(entry.family),
+      available: isFigmaFontAvailable(entry.family),
     }))
     .sort((a, b) => b.count - a.count);
 }
