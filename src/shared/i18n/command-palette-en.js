@@ -6,6 +6,11 @@
  * dictionary. Keys are flat app keys under `commandPalette.*`.
  */
 export default {
+  "commandPalette.sections.results": "Results",
+  "commandPalette.toggleGrid": "Show/hide grid",
+  "commandPalette.languageEnglish": "Switch language to English",
+  "commandPalette.languageChinese": "Switch language to Chinese",
+
   "commandPalette.title": "Command palette",
   "commandPalette.placeholder": "Search commands and actions",
   "commandPalette.sections.recent": "Recent",

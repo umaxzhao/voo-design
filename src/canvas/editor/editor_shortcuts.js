@@ -20,7 +20,7 @@ export const TOOL_SHORTCUTS = {
   [TOOL.ARROW]: "⇧L",
   [TOOL.PEN]: "P",
   [TOOL.FREE_PEN]: "⇧P",
-  [TOOL.REGION]: "M",
+  [TOOL.REGION]: "Z",
   [TOOL.TEXT]: "T",
   [TOOL.CROP]: "C",
   [TOOL.DROPPER]: "I",

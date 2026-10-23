@@ -1,3 +1,8 @@
+import {
+  pageCameraCache,
+  rememberPageCamera,
+  restorePageCamera,
+} from "./page_camera.js";
 import { useEffect, useReducer, useRef, useState } from "react";
 import { createEditor } from "./editor/editor_engine.js";
 import { createEditorCommandBridge } from "./editor/editor_command_bridge.js";
@@ -133,7 +138,11 @@ export function useEditorEngine({
         .getState()
         .registerEditorBridge?.(sourceWorkflowNodeId, commandBridge);
 
+    const pageCameras = pageCameraCache(
+      useDesignStore.getState().editorPageSession,
+    );
     let cancelled = false;
+    let opened = false;
     void created
       .open(source)
       .then(() => {
@@ -142,6 +151,7 @@ export function useEditorEngine({
           setError({ code: "decodeFailed" });
           return;
         }
+        opened = true;
         setReady(true);
         if (commandBridge) {
           commandBridge.ready = true;
@@ -152,7 +162,8 @@ export function useEditorEngine({
           );
         }
         if (cameraMode !== "shared") {
-          created.zoomToFit();
+          if (!restorePageCamera(pageCameras, sourceWorkflowNodeId, created))
+            created.zoomToFit();
         }
       })
       .catch((err) => {
@@ -163,8 +174,10 @@ export function useEditorEngine({
 
     const resizeObserver = new ResizeObserver(() => {
       if (
+        opened &&
         created &&
         cameraMode !== "shared" &&
+        !pageCameras.has(sourceWorkflowNodeId) &&
         stageRef.current?.clientWidth &&
         stageRef.current?.clientHeight
       ) {
@@ -177,6 +190,12 @@ export function useEditorEngine({
 
     return () => {
       cancelled = true;
+      if (opened && cameraMode !== "shared")
+        rememberPageCamera(
+          pageCameras,
+          sourceWorkflowNodeId,
+          created.getViewport?.(),
+        );
       resizeObserver.disconnect();
       if (window.__vooEditors?.[sourceWorkflowNodeId] === created) {
         delete window.__vooEditors[sourceWorkflowNodeId];
