@@ -519,11 +519,13 @@ export function writeBenchmarkArtifacts(result, { phase } = {}) {
     cases: result.cases,
   };
   const docsDir = path.join(REPO_ROOT, "docs");
-  fs.mkdirSync(docsDir, { recursive: true });
   const jsonPath = path.join(docsDir, "canvas-perf-results.json");
   const markdownPath = path.join(docsDir, "canvas-perf-benchmark.md");
-  fs.writeFileSync(jsonPath, `${JSON.stringify(artifact, null, 2)}\n`, "utf8");
-  fs.writeFileSync(markdownPath, renderMarkdownDocument(artifact), "utf8");
+  if (process.env.CANVAS_PERF_WRITE === "1") {
+    fs.mkdirSync(docsDir, { recursive: true });
+    fs.writeFileSync(jsonPath, `${JSON.stringify(artifact, null, 2)}\n`, "utf8");
+    fs.writeFileSync(markdownPath, renderMarkdownDocument(artifact), "utf8");
+  }
   result.phase = phase;
   return { jsonPath, markdownPath };
 }

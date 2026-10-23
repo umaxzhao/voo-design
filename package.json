@@ -18,7 +18,7 @@
     "electron:build": "npm run copy:ort && npm run copy:canvaskit && vite build && electron-builder --dir",
     "pretest": "npm run copy:canvaskit && node scripts/ensure-dist.mjs",
     "test": "vitest run",
-    "bench:canvas": "vitest run tests/unit/canvas_perf_benchmark.test.js",
+    "bench:canvas": "CANVAS_PERF_WRITE=1 vitest run tests/unit/canvas_perf_benchmark.test.js",
     "build:extension": "node scripts/build-extension.mjs",
     "test:watch": "vitest",
     "lint:design": "node scripts/check-design.mjs",

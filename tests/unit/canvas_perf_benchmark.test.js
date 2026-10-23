@@ -19,8 +19,10 @@ describe("canvas performance benchmark", () => {
 
       console.log(`\n${renderConsoleSummary(result)}\n`);
 
-      expect(fs.existsSync(files.jsonPath)).toBe(true);
-      expect(fs.existsSync(files.markdownPath)).toBe(true);
+      if (process.env.CANVAS_PERF_WRITE === "1") {
+        expect(fs.existsSync(files.jsonPath)).toBe(true);
+        expect(fs.existsSync(files.markdownPath)).toBe(true);
+      }
       expect(softGateFailures(result)).toEqual([]);
     },
     180000,
