@@ -244,13 +244,43 @@ function buildTopLevel(message) {
   return { roots: roots.sort(byPosition), canvases };
 }
 
+/** Keep paints on their owning node, in Figma's bottom-to-top order. */
+function fillPaintsOf(raw, ctx) {
+  return asArray(raw.fillPaints).map((paint) => {
+    if (!asObject(paint)) return null;
+    let fill = solidPaintHex([{ ...paint, visible: true, opacity: 1 }])
+      ?? gradientPaintFill([{ ...paint, visible: true }]);
+    let imageId;
+    if (paint.type === "IMAGE") {
+      const hash = hashHex(asObject(paint.image)?.hash);
+      const bytes = hash && ctx.images.get(hash);
+      if (!bytes) return null;
+      imageId = `img-${hash}`;
+      ctx.assets[imageId] = imageBytesToDataUrl(bytes);
+      fill = ctx.assets[imageId];
+    }
+    if (!fill) return null;
+    return { fill, ...(imageId ? { imageId } : {}), opacity: asNumber(paint.opacity, 1),
+      visible: paint.visible !== false, blendMode: blendModeOf(paint) };
+  }).filter(Boolean);
+}
+
 function applyCommon(node, ctx, layer) {
   const opacity = asNumber(node.raw.opacity, 1);
   if (opacity < 1) layer.opacity = Math.max(0, opacity);
   if (node.raw.visible === false) layer.visible = false;
   layer.blendMode = blendModeOf(node.raw);
-  if (layer.blendMode === "source-over") {
-    layer.blendMode = paintBlendOf(node.raw) ?? "source-over";
+  if (layer.kind !== NODE_KIND.GROUP && !(VECTOR_TYPES.has(node.type) && asArray(node.raw.strokeGeometry).length > 0 && asArray(node.raw.fillGeometry).length === 0)) {
+    const paints = fillPaintsOf(node.raw, ctx);
+    if (paints.length) {
+      const first = paints.find((paint) => paint.visible) ?? paints[0];
+      layer.fill = first.fill;
+      layer.fillOpacity = first.opacity;
+      layer.fillHidden = !first.visible;
+      if (first.imageId) layer.imageId = first.imageId;
+      if (paints.length > 1) layer.fills = paints;
+      else layer.fillBlendMode = first.blendMode;
+    }
   }
   const { effects, layerBlur, backgroundBlur, noise } = effectsOf(node.raw);
   if (effects) layer.effects = effects;
@@ -306,13 +336,13 @@ function buildLeaf(node, box, ctx) {
   }
 
   const image = imagePaint(fills);
-  if (image) {
-    const imageId = hashHex(asObject(image.image)?.hash);
-    const bytes = imageId ? ctx.images.get(imageId) : undefined;
+  if (image && !VECTOR_TYPES.has(node.type) && node.type !== "ELLIPSE") {
+    const hash = hashHex(asObject(image.image)?.hash);
+    const bytes = hash && ctx.images.get(hash);
     if (bytes) {
-      const assetId = `img-${imageId}`;
-      ctx.assets[assetId] = imageBytesToDataUrl(bytes);
-      return applyCommon(node, ctx, { ...createImageNode({ ...box, imageId: assetId, name: node.name }) });
+      const imageId = `img-${hash}`;
+      ctx.assets[imageId] = imageBytesToDataUrl(bytes);
+      return applyCommon(node, ctx, createImageNode({ ...box, imageId, name: node.name }));
     }
     note(ctx, "image-fill-missing");
   }
@@ -347,7 +377,7 @@ function buildLeaf(node, box, ctx) {
  * a filled shape keeps its fill colour.
  */
 function vectorColors(raw) {
-  const fillColor = solidPaintHex(raw.fillPaints);
+  const fillColor = solidPaintHex(raw.fillPaints) ?? gradientPaintFill(raw.fillPaints);
   const strokeColor = solidPaintHex(raw.strokePaints);
   const hasFill = asArray(raw.fillGeometry).length > 0;
   const hasOutline = hasFill || asArray(raw.strokeGeometry).length > 0;
@@ -363,7 +393,7 @@ function vectorColors(raw) {
 }
 
 function hasOwnPaint(node) {
-  return solidPaintHex(node.raw.fillPaints) !== null || solidPaintHex(node.raw.strokePaints) !== null || imagePaint(node.raw.fillPaints) !== null;
+  return gradientPaintFill(node.raw.fillPaints) !== null || solidPaintHex(node.raw.fillPaints) !== null || solidPaintHex(node.raw.strokePaints) !== null || imagePaint(node.raw.fillPaints) !== null;
 }
 
 function isFrameContainer(type) {
@@ -397,12 +427,12 @@ function isMaskLeaf(node) {
  * clip base below the layers it clips, which is the order Figma already gives.
  * Each covered sibling therefore points `clipTo` at the mask.
  */
-function emitChildren(children, originX, originY, parentId, out, ctx) {
+function emitChildren(children, originX, originY, parentId, out, ctx, emit = emitNode) {
   let activeMask = null;
   for (const child of children) {
     if (isMaskLeaf(child)) {
       const before = out.length;
-      emitNode(child, originX, originY, parentId, out, ctx);
+      emit(child, originX, originY, parentId, out, ctx);
       activeMask = out[before] ?? null;
       if (activeMask) {
         activeMask.maskBase = true;
@@ -413,7 +443,7 @@ function emitChildren(children, originX, originY, parentId, out, ctx) {
       continue;
     }
     const before = out.length;
-    emitNode(child, originX, originY, parentId, out, ctx);
+    emit(child, originX, originY, parentId, out, ctx);
     if (!activeMask) continue;
     for (const emitted of out.slice(before)) {
       if (emitted.kind !== NODE_KIND.GROUP) emitted.clipTo = activeMask.id;
@@ -485,36 +515,6 @@ function emitNode(node, originX, originY, parentId, out, ctx) {
   if (!leaf) return;
   leaf.parentId = parentId ?? null;
   out.push(leaf);
-  for (const extra of extraPaintLayers(node, box, leaf.kind)) {
-    extra.parentId = parentId ?? null;
-    out.push(extra);
-  }
-}
-
-/**
- * Figma stacks several fill paints on one layer, each with its own blend mode and
- * opacity; the editor has one fill per node. The first paint is the node itself,
- * and every further visible solid paint becomes its own node stacked above it.
- * Only rectangles and ellipses are split: a vector path already draws all paints.
- */
-function extraPaintLayers(node, box, kind) {
-  if (kind !== "rect" && kind !== "ellipse") return [];
-  const solids = asArray(node.raw.fillPaints).filter(
-    (paint) => asObject(paint) && paint.visible !== false && paint.type === "SOLID",
-  );
-  return solids.slice(1).map((paint) => {
-    // The paint's opacity goes on the layer below, so the colour is read alone.
-    const fill = solidPaintHex([{ ...paint, opacity: 1 }]) ?? "transparent";
-    const layer =
-      kind === "ellipse"
-        ? createEllipseNode({ ...box, fill, stroke: "transparent", strokeWidth: 0 })
-        : createRectNode({ ...box, fill, stroke: "transparent", strokeWidth: 0 });
-    const opacity = asNumber(paint.opacity, 1);
-    if (opacity < 1) layer.opacity = Math.max(0, opacity);
-    layer.blendMode = blendModeOf(paint);
-    layer.name = node.name;
-    return layer;
-  });
 }
 
 /**
@@ -541,7 +541,7 @@ function canvasPage(roots, label, ctx, background = "transparent") {
   const maxX = roots.length > 0 ? Math.max(...roots.map((node) => node.x + node.w)) : 0;
   const maxY = roots.length > 0 ? Math.max(...roots.map((node) => node.y + node.h)) : 0;
   const nodes = [];
-  for (const root of roots) emitPageRoot(root, -minX, -minY, nodes, ctx);
+  emitChildren(roots, -minX, -minY, null, nodes, ctx, (root, x, y, _parent, out, context) => emitPageRoot(root, x, y, out, context));
   return { label, width: maxX - minX, height: maxY - minY, nodes, left: minX, top: minY, background };
 }
 
@@ -765,9 +765,8 @@ export async function figBytesToVooFileStreaming(bytes, options = {}) {
   for (let pIdx = 0; pIdx < pagesMeta.length; pIdx++) {
     const meta = pagesMeta[pIdx];
     const pageNodes = [];
-    for (const root of meta.roots) {
-      emitPageRoot(root, -meta.minX, -meta.minY, pageNodes, ctx);
-    }
+    emitChildren(meta.roots, -meta.minX, -meta.minY, null, pageNodes, ctx,
+      (root, x, y, _parent, out, context) => emitPageRoot(root, x, y, out, context));
     totalLayerCount += pageNodes.length;
 
     if (pageNodes.length === 0) {

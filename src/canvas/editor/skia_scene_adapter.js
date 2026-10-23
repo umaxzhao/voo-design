@@ -39,6 +39,13 @@ export function requiresCanvas2dMediaFallback(doc) {
     doc?.timeline ||
     doc?.nodes?.some(
       (node) =>
+        // The scene adapter cannot express painted alpha/luminance mask chains
+        // or per-paint blends. Use the compositor that preserves their pixels.
+        node.maskBase || node.clipTo || Array.isArray(node.fills) ||
+        node.fillHidden ||
+        (node.kind === "image" && (node.fillOpacity ?? 1) !== 1) ||
+        /^(?:blob:|data:image\/|https?:|file:)/i.test(node.fill ?? "") ||
+        node.fillBlendMode && node.fillBlendMode !== "source-over" ||
         node.kind === "video" ||
         node.kind === "model3d" ||
         node.kind === "adjustment" ||
