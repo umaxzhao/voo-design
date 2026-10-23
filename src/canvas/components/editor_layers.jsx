@@ -1024,6 +1024,7 @@ export default function EditorLayers({
                         <>
                           {rows.map(
                             ({ node: object, index, depth, position }) => {
+                              const rowSelected = rowSelectedOf(object);
                               const isBoolean = isBooleanNode(object);
                               const grouped = isGroupNode(object) || isBoolean;
                               const instanceSourceDoc =
@@ -1054,7 +1055,7 @@ export default function EditorLayers({
                                   <div
                                     role="option"
                                     id={`layer-row-${object.id}`}
-                                    aria-selected={rowSelectedOf(object)}
+                                    aria-selected={rowSelected}
                                     {...(draggable
                                       ? {
                                           "data-layer-row": true,
@@ -1172,21 +1173,17 @@ export default function EditorLayers({
                                         overId === object.id
                                           ? "bg-neutral-800 ring-1 ring-inset ring-[#a7ffd4]/70"
                                           : isGroupNode(object) &&
-                                              rowSelectedOf(object)
+                                              rowSelected
                                             ? "bg-neutral-800 text-[#eed0ff]"
-                                            : rowSelectedOf(object)
+                                            : rowSelected
                                               ? "bg-neutral-800 text-[#a7ffd4] font-medium"
                                               : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"
                                       } ${draggable ? "touch-none cursor-default" : ""}`}
                                       style={{
-                                        // Isolation highlights the hierarchy without selecting the group.
-                                        boxShadow: isRowSelected(objects, object, {
-                                          selectedIds,
-                                          activeIndex,
-                                          isBackgroundSelected,
-                                        })
-                                          ? "inset 0 0 0 1px #a7ffd4"
-                                          : undefined,
+                                        boxShadow:
+                                          rowSelected && overId !== object.id
+                                            ? "inset 0 0 0 1px #a7ffd4"
+                                            : undefined,
                                         paddingLeft:
                                           8 +
                                           depth * 14 +
