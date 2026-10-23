@@ -4126,7 +4126,12 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             }
             toolProps={{
               color,
-              onColor: (next) => engine?.setColor(next),
+              onColor: (next) => {
+                if (tool === TOOL.GRADIENT && engine?.getGradientToolState?.()) {
+                  engine.setGradientToolStopColor(next);
+                }
+                engine?.setColor(next);
+              },
               onPickColor: () => engine?.setTool(TOOL.DROPPER),
               swapColorsRef,
               brushWidth:
@@ -4405,8 +4410,15 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { letterSpacing: val });
               },
               // Gradient & Fill properties (Affinity Style)
-              gradientType: engine?.getGradientType?.() ?? "linear",
-              onGradientType: (type) => engine?.setGradientType?.(type),
+              gradientType: engine?.getGradientToolState?.()?.type ?? "linear",
+              onGradientType: (type) => engine?.setGradientToolType?.(type),
+              gradientStops: engine?.getGradientToolState?.()?.stops ?? null,
+              onGradientStops: (stops) => engine?.setGradientToolStops?.(stops),
+              gradientAngle: engine?.getGradientToolState?.()?.angle ?? 135,
+              onGradientAngle: (angle) => engine?.setGradientToolAngle?.(angle),
+              gradientActiveStop: engine?.getGradientToolState?.()?.activeStopIndex ?? 0,
+              onGradientActiveStop: (index) => engine?.setGradientToolActiveStop?.(index),
+              onApplyGradientTool: () => engine?.applyGradientTool?.(),
               fillTolerance: engine?.getFillTolerance?.() ?? 32,
               onFillTolerance: (val) => engine?.setFillTolerance?.(val),
               fillContiguous: engine?.getFillContiguous?.() ?? true,

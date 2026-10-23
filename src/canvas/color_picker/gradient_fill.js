@@ -9,7 +9,7 @@ const LINEAR_CENTER_METADATA =
 const LINEAR_ENDPOINT_METADATA =
   /\/\*\s*voo-gradient-line:\s*(-?\d+(?:\.\d+)?)%?\s+(-?\d+(?:\.\d+)?)%?\s+(-?\d+(?:\.\d+)?)%?\s+(-?\d+(?:\.\d+)?)%?\s*\*\//i;
 
-const DEFAULT_STOPS = [
+export const DEFAULT_STOPS = [
   { color: "#FFFFFF", opacity: 100, position: 0 },
   { color: "#A651FF", opacity: 100, position: 100 },
 ];
