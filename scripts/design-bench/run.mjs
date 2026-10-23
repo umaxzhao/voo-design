@@ -65,7 +65,7 @@ async function runInEditor({ task, model, timeout, critique, images }) {
     out.model = cliModel;
     setSetting(AGENT_SETTING.MODEL, cliModel);
     unsubscribe = bridge.onText(event => { if (event.text) out.reply += event.text; });
-    const prompt = `${task.prompt}\nCreate the complete design within a ${task.frame.w}×${task.frame.h}px canvas, with an outer frame named "${task.id}" at (0, 0). Use editable canvas elements and realistic finished content. Do not rely on external images or assets.`;
+    const prompt = `${task.prompt}\nCreate the complete design within a ${task.frame.w}×${task.frame.h}px canvas, with an outer frame named "${task.id}" at (0, 0). Use editable canvas elements and realistic finished content. Do not rely on external images or assets. Create a complete UI page/screen.`;
     const history = [];
     async function turn(userText) {
       const reply = await runAgentTurn({

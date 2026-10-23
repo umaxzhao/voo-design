@@ -41,11 +41,15 @@ export async function critiqueHtml({ editor, frameId, brief, html, frame, stream
   const image = await exportFramePng(editor, frameId);
   const review = await callJson({ streamStep, config, signal, system: UI_RULES + ' Critique this finished canvas design for hierarchy, legibility, clipping, brief coverage and visual polish. Return {score:1..5,issues:[{id: data-voo-id,problem,fix}]}. Only actionable issues; 4 means ready.', user: [{ type: 'text', text: `Brief: ${brief}\nHTML: ${html}\nDeterministic checks: ${JSON.stringify(checks)}` }, { type: 'image_url', image_url: { url: image } }], validate: validateCritique });
   if (!checks.hardFail && review.value.score - checks.verbosityPenalty >= 4) return { html, trace: review.trace, repaired: false };
-  const repair = await callJson({ streamStep, config, signal, system: UI_RULES + ' Return {patches:[{id,html}]} for ONE targeted repair. Each html is a single full replacement element preserving its data-voo-id. No overlapping targets. Retain all other content and styling.', user: JSON.stringify({ brief, html, issues: [...review.value.issues, ...checks.issues] }), validate: value => {
+  const repair = await repairHtml({ brief, html, issues: [...review.value.issues, ...checks.issues], streamStep, config, signal });
+  return { html: repair.html, trace: [...review.trace, ...repair.trace], repaired: true };
+}
+export async function repairHtml({ brief, html, issues, streamStep, config, signal }) {
+  const repair = await callJson({ streamStep, config, signal, system: UI_RULES + ' Return {patches:[{id,html}]} for ONE targeted repair. Strip decorative emoji, stars and icons flagged by the deterministic checks; retain functional monochrome icons only. Each html is a single full replacement element preserving its data-voo-id. No overlapping targets. Retain all other content and styling.', user: JSON.stringify({ brief, html, issues }), validate: value => {
     const result = validatePatches(value);
     if (!result.ok) return result;
     try { splicePatches(html, value.patches); return result; }
     catch (error) { return { ok: false, errors: [error.message] }; }
   } });
-  return { html: splicePatches(html, repair.value.patches), trace: [...review.trace, ...repair.trace], repaired: true };
+  return { html: splicePatches(html, repair.value.patches), trace: repair.trace, repaired: true };
 }

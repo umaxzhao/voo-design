@@ -3,7 +3,7 @@ import { configuredImageGenerator } from './images.js';
 import { createDirections, pickDirection } from './directions.js';
 import { generateHtml } from './generate_html.js';
 import { CanvasStreamer } from './incremental.js';
-import { critiqueHtml } from './critique.js';
+import { critiqueHtml, repairHtml } from './critique.js';
 import { setActiveDesignSystem } from '../design_system/store.js';
 export async function runHtmlPipeline({ brief, frame, editor, streamStep, config, signal = new AbortController().signal, onProgress, chooseDirection }) {
   const progress = (stage, status) => onProgress?.({ stage, status });
@@ -25,13 +25,26 @@ export async function runHtmlPipeline({ brief, frame, editor, streamStep, config
     trace.push(...generated.trace);
     await streamer.flush(); progress(stage, 'completed');
     stage = 'critique'; progress(stage, 'in_progress');
-    const reviewed = await critiqueHtml({ editor, frameId: streamer.frameId, frame, brief, html: generated.html, streamStep, config, signal });
-    const checks = runAntiAiChecks({ html: reviewed.html, frame });
+    let reviewed = await critiqueHtml({ editor, frameId: streamer.frameId, frame, brief, html: generated.html, streamStep, config, signal });
+    let checks = runAntiAiChecks({ html: reviewed.html, frame });
+    trace.push(...reviewed.trace);
+    if (checks.hardFail) {
+      trace.push({ stage: 'anti_ai_checks', ...checks });
+      progress(stage, 'completed');
+      stage = 'repair'; progress(stage, 'in_progress');
+      const repaired = await repairHtml({ brief, html: reviewed.html, issues: checks.issues, streamStep, config, signal });
+      reviewed = { ...repaired, repaired: true };
+      trace.push(...repaired.trace);
+      checks = runAntiAiChecks({ html: reviewed.html, frame });
+    }
     trace.push({ stage: 'anti_ai_checks', ...checks });
     await globalThis.__vooBenchSourceHtml?.(reviewed.html);
     if (checks.hardFail) throw new Error('Design contains decorative icons: ' + checks.issues.filter(i => i.hard).map(i => i.problem).join('; '));
-    trace.push(...reviewed.trace); progress(stage, 'completed');
-    if (reviewed.repaired) { stage = 'repair'; progress(stage, 'in_progress'); await streamer.snapshot(reviewed.html); await streamer.flush(); progress(stage, 'completed'); }
+    if (stage === 'critique') progress(stage, 'completed');
+    if (reviewed.repaired) {
+      if (stage !== 'repair') { stage = 'repair'; progress(stage, 'in_progress'); }
+      await streamer.snapshot(reviewed.html); await streamer.flush(); progress(stage, 'completed');
+    }
     // Optional injected image provider must honor AbortSignal and return native
     // image fill properties. The normal offline and benchmark path skips it.
     const imageGenerator = (!globalThis.__VOO_DESIGN_BENCH__ || globalThis.__VOO_DESIGN_BENCH_IMAGES__) && (config?.htmlImageGenerator ?? configuredImageGenerator());
@@ -57,5 +70,5 @@ export function shouldUseHtmlPipeline({ editor, userText, enabled = true }) {
   if (!enabled || !editor || typeof globalThis.document?.createElement !== 'function') return false;
   const doc = editor.getDocument?.() ?? editor.getDoc?.();
   if (!doc || !Array.isArray(doc.nodes) || doc.nodes.length !== 0) return false;
-  return /\b(create|build|design|generate|make)\b/i.test(userText) && /\b(screen|page|website|dashboard|landing|app|interface)\b/i.test(userText) && !/\b(edit|refine|fix|update|existing)\b/i.test(userText);
+  return /\b(create|build|design|generate|make)\b/i.test(userText) && /\b(canvas|ui|layout|form|card|screen|page|website|dashboard|landing|app|interface|poster|modal|home|hero)\b/i.test(userText) && !/\b(edit|refine|fix|update|existing)\b/i.test(userText);
 }

@@ -1,9 +1,9 @@
 import { beforeEach, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ render: vi.fn(), convert: vi.fn(), create: vi.fn(), critique: vi.fn(), imageGenerator: vi.fn() }));
+const mocks = vi.hoisted(() => ({ render: vi.fn(), convert: vi.fn(), create: vi.fn(), critique: vi.fn(), repair: vi.fn(), imageGenerator: vi.fn() }));
 vi.mock('../../../src/canvas/agent/html_pipeline/render_html.js', () => ({ HtmlRenderer: class { render(...args) { return mocks.render(...args); } dispose() {} } }));
 vi.mock('../../../src/canvas/agent/html_pipeline/html_to_nodes.js', () => ({ htmlToNodes: (...args) => mocks.convert(...args) }));
 vi.mock('../../../src/canvas/agent/canvas_tools_build_layout.js', () => ({ createLayoutNode: (...args) => mocks.create(...args) }));
-vi.mock('../../../src/canvas/agent/html_pipeline/critique.js', () => ({ critiqueHtml: (...args) => mocks.critique(...args) }));
+vi.mock('../../../src/canvas/agent/html_pipeline/critique.js', () => ({ critiqueHtml: (...args) => mocks.critique(...args), repairHtml: (...args) => mocks.repair(...args) }));
 vi.mock('../../../src/canvas/agent/html_pipeline/images.js', () => ({ configuredImageGenerator: () => null }));
 import { runHtmlPipeline, shouldUseHtmlPipeline } from '../../../src/canvas/agent/html_pipeline/pipeline.js';
 import { DESIGN_SYSTEM_PRESETS } from '../../../src/canvas/agent/design_system/from_style_kit.js';
@@ -41,4 +41,34 @@ it('requires a browser, explicit generation intent and empty document', () => {
   expect(shouldUseHtmlPipeline({ editor, userText: 'Move and rename' })).toBe(false);
   expect(shouldUseHtmlPipeline({ editor, userText: 'Inspect the page' })).toBe(false);
   if (previous === undefined) delete globalThis.document; else globalThis.document = previous;
+});
+
+it.each(['canvas', 'ui', 'layout', 'form', 'card', 'screen', 'page', 'website', 'dashboard', 'landing', 'app', 'interface', 'poster', 'modal', 'home', 'hero'])('routes empty-document %s creation to HTML', noun => {
+  vi.stubGlobal('document', { createElement() {} });
+  try {
+    const editor = { getDocument: () => ({ nodes: [] }) };
+    for (const verb of ['create', 'build', 'design', 'generate', 'make']) {
+      expect(shouldUseHtmlPipeline({ editor, userText: `${verb} a ${noun}` })).toBe(true);
+      for (const edit of ['edit', 'refine', 'fix', 'update', 'existing']) {
+        expect(shouldUseHtmlPipeline({ editor, userText: `${verb} a ${noun} ${edit}` })).toBe(false);
+      }
+    }
+  } finally { vi.unstubAllGlobals(); }
+});
+it.each([false, true])('repairs decorative hard failures once, persistent failure: %s', async persistent => {
+  const dirty = '<html><body><h1 data-voo-id="headline">Hi ★</h1></body></html>';
+  const clean = dirty.replace(' ★', '');
+  const editor = { getDocument: () => ({ nodes: [] }), setDoc: vi.fn(), beginBatch: vi.fn(), endBatch: vi.fn(), commit: vi.fn(), updateNode: vi.fn(), removeNode: vi.fn() };
+  const streamStep = vi.fn().mockResolvedValueOnce({ text: JSON.stringify(directions) }).mockResolvedValueOnce({ text: dirty });
+  mocks.critique.mockResolvedValue({ html: dirty, repaired: true, trace: [] });
+  mocks.repair.mockResolvedValue({ html: persistent ? dirty : clean, trace: [] });
+  const run = runHtmlPipeline({ brief: 'Create a canvas', frame: { width: 800, height: 600 }, editor, streamStep });
+  if (persistent) await expect(run).rejects.toThrow('Design contains decorative icons');
+  else {
+    await expect(run).resolves.toMatchObject({ html: clean });
+    expect(mocks.render.mock.calls.at(-1)[0]).toBe(clean);
+  }
+  expect(mocks.repair).toHaveBeenCalledOnce();
+  expect(mocks.repair.mock.calls[0][0].issues).toEqual(expect.arrayContaining([expect.objectContaining({ hard: true })]));
+  expect(editor.endBatch).toHaveBeenCalledOnce();
 });

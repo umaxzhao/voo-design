@@ -126,6 +126,8 @@ export async function runAgentTurn({
   const editor = activeEditor();
   if (!qualityOff && shouldUseHtmlPipeline({ editor, userText, enabled: htmlPipeline })) {
     const doc = editor.getDocument?.() ?? editor.getDoc?.();
+    // Pipeline owns bounded critique/repair. Propagate failures to the caller;
+    // retrying through the tool loop can leave an incomplete or blank design.
     const result = await runHtmlPipeline({ brief: styleNote ? `${userText}\nStyle notes: ${styleNote}` : userText,
       frame: frame ?? { width: doc.width || 1440, height: doc.height || 1000, x: 0, y: 0 },
       editor, streamStep, config, signal, onProgress, chooseDirection });
