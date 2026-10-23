@@ -81,16 +81,24 @@ function buildCanvasGradient(ctx, parsed, x, y, width, height) {
     // radial ramp rather than painting nothing.
     const radiusX = Math.max(1, ((geometry?.width ?? 100) / 200) * width);
     const radiusY = Math.max(1, ((geometry?.height ?? 100) / 200) * height);
-    // Canvas gradients capture the current transform when created. Stretch a
-    // unit circle so elliptical fills retain both radii during raster export.
-    ctx.save();
-    try {
-      ctx.translate(centreX, centreY);
-      ctx.scale(radiusX, radiusY);
-      gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
-    } finally {
-      ctx.restore();
+    // Rasterize the elliptical ramp in local coordinates. CanvasGradient has
+    // no transform of its own; restoring the creation context loses the ellipse.
+    const tile = document.createElement("canvas");
+    tile.width = Math.max(1, Math.ceil(width));
+    tile.height = Math.max(1, Math.ceil(height));
+    const paint = tile.getContext("2d");
+    paint.scale(tile.width / width, tile.height / height);
+    paint.translate(centreX - x, centreY - y);
+    paint.scale(radiusX, radiusY);
+    const ramp = paint.createRadialGradient(0, 0, 0, 0, 0, 1);
+    for (const stop of parsed.stops ?? []) {
+      ramp.addColorStop(Math.max(0, Math.min(1, (stop.position ?? 0) / 100)), gradientStopColour(stop));
     }
+    paint.fillStyle = ramp;
+    paint.fillRect(-(centreX - x) / radiusX, -(centreY - y) / radiusY, width / radiusX, height / radiusY);
+    const pattern = ctx.createPattern(tile, "no-repeat");
+    pattern.setTransform(new DOMMatrix().translate(x, y).scale(width / tile.width, height / tile.height));
+    return pattern;
   }
 
   for (const stop of parsed.stops ?? []) {
