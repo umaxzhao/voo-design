@@ -1,20 +1,22 @@
+import { fromStyleKit } from '../design_system/from_style_kit.js';
+import { designSystemPromptBlock } from '../design_system/apply.js';
 /**
  * Builds the appended "Design quality" block for the agent system prompt:
  * tokens-first workflow, hierarchy rules, anti-AI-smell rules, Dribbble-human
  * principles, the chosen kit block, and 3-4 text exemplars.
  */
-import { pickStyleKit } from "./style_kits.js";
+import { STYLE_KITS, pickStyleKit } from "./style_kits.js";
 import { pickExemplars } from "./exemplars.js";
 import { DESIGN_TOKENS } from "./tokens.js";
 
-export function buildDesignQualityPrompt({ userText, kit } = {}) {
-  const activeKit = kit && STYLE_KIT_SHAPE_OK(kit) ? kit : pickStyleKit(userText);
-  const exemplars = pickExemplars(activeKit?.id, 4);
+export function buildDesignQualityPrompt({ userText, kit, designSystem } = {}) {
+  const activeKit = STYLE_KITS[designSystem?.id] ?? (kit && STYLE_KIT_SHAPE_OK(kit) ? kit : pickStyleKit(userText));
+  const exemplars = pickExemplars(userText, 4, activeKit?.id);
   const palette = activeKit?.palette ?? DESIGN_TOKENS.palettes.light;
   const scale = (activeKit?.typeScale ?? DESIGN_TOKENS.typeScale).join(" ");
   const radius = activeKit?.radius ?? DESIGN_TOKENS.radii;
 
-  return [
+  const kitInstructions = [
     "=== Design quality (follow strictly) ===",
     `Style kit: ${activeKit.name} — ${activeKit.mood} Use this ONE kit for the ENTIRE design; never mix kits or inject other palettes.`,
     "",
@@ -27,11 +29,11 @@ export function buildDesignQualityPrompt({ userText, kit } = {}) {
     `Don't: ${activeKit.donts.join("; ")}.`,
     "",
     "[Workflow — tokens first]",
-    "1. Choose the kit above and apply its tokens (background, surfaces, hairline borders, text colors, accent) as variables/styles before drawing.",
-    "2. Structure first: layout skeleton as auto-layout frames (horizontal/vertical, 4-multiple gap and padding), not hand-placed boxes.",
-    "3. Build components/rows once and repeat with real content; wire fills to tokens.",
-    "4. Content last, but never lorem: real names, prices, dates, counts, avatar initials, status pills.",
-    "5. Verify: capture_canvas, then fix overlap/overflow/alignment/type/contrast mistakes before replying.",
+    "1. Build the complete screen with build_layout in 1-3 calls: include every section, real copy, and all text. You may batch multiple tool calls in one step.",
+    "2. Set colours and fonts directly from the style kit tokens on each node; do not spend calls on separate bind_variable operations or token creation.",
+    "3. Structure with auto-layout frames (horizontal/vertical, 4-multiple gap and padding); repeat components/rows with real names, prices, dates, counts, initials and status pills.",
+    "4. Avoid hand-drawn path illustrations; use simple shapes or image placeholders.",
+    "5. After the complete screen is built, capture_canvas once, review it, then fix overlap/overflow/alignment/type/contrast mistakes before replying.",
     "",
     "[Visual hierarchy]",
     "One focal element at >=2x the area of its peers; supporting elements stay small.",
@@ -53,9 +55,19 @@ export function buildDesignQualityPrompt({ userText, kit } = {}) {
     "Polish: 1px hairlines instead of heavy borders, soft layered shadows on the 1-2 elevated modules only, consistent icon style, deliberate asymmetry.",
     "",
     exemplars.length
-      ? "[Exemplar recipes — follow the nearest one]\n" + exemplars.map((e, i) => `${i + 1}. (${e.kit}) ${e.description}`).join("\n")
+      ? "[Exemplar recipes — follow the nearest one]\n" + exemplars.map((e, i) => (e.structureOnly || designSystem)
+        ? `${i + 1}. (${e.kit}; structure only, restyle with the active kit) ${e.structure}`
+        : `${i + 1}. (${e.kit}) ${e.description}`).join("\n")
       : "",
-  ]
+  ];
+  if (designSystem) {
+    kitInstructions.splice(1, 10, designSystemPromptBlock(designSystem));
+    const instruction = kitInstructions.findIndex(s => s.startsWith("2. Set colours"));
+    kitInstructions[instruction] = "2. Set colours and fonts directly from the active design system contract on each node.";
+  } else {
+    kitInstructions.splice(1, 0, designSystemPromptBlock(fromStyleKit(activeKit)));
+  }
+  return kitInstructions
     .filter((s) => s.length > 0)
     .join("\n");
 }

@@ -1,4 +1,4 @@
-import { designSystemFields } from "./design_tokens.js";
+import { getActiveDesignSystem } from '../agent/design_system/store.js';
 // Seam: Document serialization, deserialization, and display helpers.
 /* eslint-disable no-unused-vars */
 import {
@@ -156,12 +156,11 @@ export function serialiseDocument(doc) {
   const comments = serializeComments(doc);
   return {
     version: DOC_VERSION,
+    ...(getActiveDesignSystem(doc) ? { designSystem: getActiveDesignSystem(doc) } : {}),
     ...canvasComposition.serializeCanvasFields(doc),
-    ...designSystemFields(doc),
     width: doc.width,
     height: doc.height,
     backgroundColor: doc.backgroundColor ?? "transparent",
-    ...(doc.isCanvasRoot === true ? { isCanvasRoot: true } : {}),
     ...(colorVariables.length > 0 ? { colorVariables } : {}),
     // A non-destructive crop travels with the document; without it the full
     // canvas is shown.
@@ -387,11 +386,10 @@ export function deserialiseDocument(value) {
   const nextDocument = {
     version: DOC_VERSION,
     ...canvasComposition.deserializeCanvasFields(value),
-    ...designSystemFields(value),
+    ...(getActiveDesignSystem(value) ? { designSystem: getActiveDesignSystem(value) } : {}),
     width: value.width,
     height: value.height,
     backgroundColor: value.backgroundColor ?? "transparent",
-    ...(value.isCanvasRoot === true ? { isCanvasRoot: true } : {}),
     ...(colorVariables.length > 0 ? { colorVariables } : {}),
     // A non-destructive crop comes back only when it is a sane, in-bounds
     // rect; anything else is dropped so the full canvas shows instead.

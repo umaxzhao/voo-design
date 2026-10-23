@@ -31,6 +31,8 @@ import { CANVAS_TOOL_LAYOUT_SCHEMAS, LAYOUT_TOOL_EXECUTORS } from "./canvas_tool
 import { CANVAS_TOOL_PLAN_SCHEMAS, PLAN_TOOL_EXECUTORS } from "./canvas_tools_plan.js";
 import { SCENE_OPS_TOOL_SCHEMAS, SCENE_OPS_TOOL_EXECUTORS } from "./canvas_tools_scene_ops.js";
 
+import { BUILD_LAYOUT_SCHEMA, buildLayout } from "./canvas_tools_build_layout.js";
+
 import { LINT_TOOL_SCHEMA, lintDesignTool } from "./design_quality/lint_tool.js";
 
 export const AGENT_SETTING = Object.freeze({
@@ -70,6 +72,7 @@ export const TOOL_ERROR = Object.freeze({
 });
 
 export const CANVAS_TOOL_SCHEMAS = Object.freeze([
+  BUILD_LAYOUT_SCHEMA,
   {
     type: "function",
     function: {
@@ -738,8 +741,8 @@ function isGroupNode(node) {
   return node?.kind === "group" || node?.type === "group";
 }
 
-function createShape(args = {}) {
-  const editor = requireEditor();
+export function createShape(args = {}, hostEditor) {
+  const editor = hostEditor ?? requireEditor();
   const { kind, x, y, width, height, text, fill, name } = args;
   if (!["rect", "ellipse", "text"].includes(kind)) {
     invalidArgs(`Invalid argument "kind": expected one of rect, ellipse, text, got ${JSON.stringify(kind)}`);
@@ -901,6 +904,7 @@ const EXECUTORS = Object.freeze({
   mutate_auto_layout: mutateAutoLayout,
   batch_mutate_layers: batchMutateLayers,
   create_shape: createShape,
+  build_layout: buildLayout,
   delete_layers: deleteLayers,
   duplicate_layer: duplicateLayer,
   select_layers: selectLayers,

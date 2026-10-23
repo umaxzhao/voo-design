@@ -9,29 +9,32 @@ describe('design benchmark controls', () => {
       model: 'gpt-6-astra', selectedTasks: ['login-form', 'mobile-home'], label: 'before', critique: true,
     });
     expect(parseOptions(['--model=codex:example']).model).toBe('codex:example');
-    expect(parseOptions([]).selectedTasks).toHaveLength(20);
+    expect(parseOptions(['--label=html-v2', '--skip-existing', '--out=/tmp/design'])).toMatchObject({ label: 'html-v2', 'skip-existing': true, out: '/tmp/design' });
+    expect(parseOptions([]).selectedTasks).toHaveLength(30);
   });
   it('rejects bad selection before launching processes or writing artifacts', () => {
-    for (const args of [['--tasks=missing'], ['--tasks=signup,signup'], ['--model'], ['--label=elsewhere'], ['--unknown'], ['--judge=false']]) {
+    for (const args of [['--tasks=missing'], ['--tasks=signup,signup'], ['--model'], ['--label=../elsewhere'], ['--unknown'], ['--judge=false']]) {
       expect(() => parseOptions(args)).toThrow();
     }
   });
   it('requires every judge dimension to be an integer on the rubric scale', () => {
     const scores = Object.fromEntries(JUDGE_DIMENSIONS.map(key => [key, 4]));
     expect(parseJudgeOutput(`\`\`\`json\n${JSON.stringify(scores)}\n\`\`\``)).toEqual(scores);
-    expect(() => parseJudgeOutput(JSON.stringify({ ...scores, aiSmell: 0 }))).toThrow();
+    for (const aiSmell of [0, 6, 3.5, '4', null]) {
+      expect(() => parseJudgeOutput(JSON.stringify({ ...scores, aiSmell }))).toThrow();
+    }
     expect(() => parseJudgeOutput(JSON.stringify({ hierarchy: 5 }))).toThrow();
     expect(() => parseJudgeOutput('Image unavailable')).toThrow();
   });
   it('supports scoring a persisted document without the optional linter', async () => {
-    expect(await scoreDocument({ nodes: [] }, { lint: null })).toEqual({ lint: null });
+    expect(await scoreDocument({ nodes: [] }, { lint: null })).toMatchObject({ lint: null, failed: false, antiAi: { hardFail: false, skipped: true, issues: [], verbosityPenalty: 0 } });
     const lint = (doc, options) => ({ score: doc.nodes.length, rootId: options.rootId });
-    expect(await scoreDocument({ nodes: [{ id: 'a' }] }, { lint, rootId: 'a' })).toEqual({ lint: { score: 1, rootId: 'a' } });
+    expect(await scoreDocument({ nodes: [{ id: 'a' }] }, { lint, rootId: 'a' })).toMatchObject({ lint: { score: 1, rootId: 'a' }, failed: false, antiAi: { skipped: true } });
   });
   it('shows comparable scores, deltas and missing/failed runs', () => {
     const before = { tasks: [{ id: 'signup', lint: { score: 60 } }, { id: 'login-form', error: 'timeout' }] };
     const after = { tasks: [{ id: 'signup', lint: { score: 85 } }] };
-    expect(formatReport(before, after)).toContain('| signup | 60 | 85 | +25 |');
+    expect(formatReport(before, after)).toContain('| signup | 60.00 | 85.00 | +25.00 |');
     expect(formatReport(before, after)).toContain('before failed');
     expect(formatReport(null, after)).toContain('missing run');
   });
