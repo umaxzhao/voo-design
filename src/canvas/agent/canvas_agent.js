@@ -4,6 +4,7 @@
  */
 
 import { streamChatTurn } from "./chat_stream.js";
+import { buildDesignQualityPrompt, pickStyleKit } from "./design_quality/index.js";
 
 import { AGENT_DEFAULTS } from "./canvas_tools.js";
 
@@ -34,6 +35,8 @@ export const SYSTEM_PROMPT =
   "rasterizes layers to base64 PNG for verification or handoff.\n" +
   "6. Verify: After multi-step edits check inspect_layer_tree or capture_canvas (PNG returned to you). " +
   "If a step went wrong, use undo (and redo) rather than piling on fixes.\n" +
+  "7. Design quality: honor the Design quality block below — one style kit, tokens first, " +
+  "clear hierarchy, no AI-template smells.\n" +
   "Keep replies short.";
 
 const READ_ONLY_TOOLS = new Set([
@@ -102,7 +105,8 @@ export async function runAgentTurn({
   styleNote = "",
   streamStep = streamChatTurn,
 }) {
-  const system = styleNote.trim() ? `${SYSTEM_PROMPT}\n\nStyle notes from the user: ${styleNote.trim()}` : SYSTEM_PROMPT;
+  const base = styleNote.trim() ? `${SYSTEM_PROMPT}\n\nStyle notes from the user: ${styleNote.trim()}` : SYSTEM_PROMPT;
+  const system = `${base}\n\n${buildDesignQualityPrompt({ userText, kit: pickStyleKit(userText) })}`;
   const messages = [
     { role: "system", content: system },
     ...history,
