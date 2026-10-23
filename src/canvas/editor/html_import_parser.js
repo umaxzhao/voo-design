@@ -257,22 +257,30 @@ function domElementToTree(element, measurements = null) {
   const attrs = {};
   for (const attr of element.attributes ?? []) attrs[attr.name] = attr.value;
   const measured = measurements?.get(element);
-  const directText = [...element.childNodes]
+  let directText = [...element.childNodes]
     .map((node) => {
       if (node.nodeType === 3) return node.textContent;
       if (node.nodeType === 1 && node.tagName?.toLowerCase() === "br")
-        return "\n";
+        return "\u0000";
       return "";
     })
-    .join("")
-    .replace(/[ \t]*\n[ \t]*/g, "\n")
-    .trim();
+    .join("");
+  const whiteSpace = measured?.style.whiteSpace ?? "normal";
+  if (["normal", "nowrap"].includes(whiteSpace)) {
+    directText = directText.replace(/[ \t\r\n\f]+/g, " ").trim();
+  } else if (whiteSpace === "pre-line") {
+    directText = directText.replace(/[ \t]+/g, " ").trim();
+  }
+  directText = directText.replaceAll("\u0000", "\n");
   return {
     tag,
     style: measured
       ? {
-          ...measured.style,
           ...parseInlineStyle(element.getAttribute("style")),
+          ...measured.style,
+          // Computed paints have resolved variables and stylesheet precedence.
+          background: undefined,
+          backgroundColor: measured.style.backgroundColor ?? "transparent",
         }
       : (element.getAttribute("style") ?? ""),
     attrs,

@@ -514,8 +514,10 @@ export function parseSvgStringToNodes(svgString) {
     }
   }
 
+  const rootPaint = parsePaintProps(svgAttrs);
+  const rootMatrix = resolveTransformMatrix(parseTransform(svgAttrs.transform));
   for (const child of svgTree.children) {
-    walk(child);
+    walk(child, rootPaint, rootMatrix);
   }
 
   // Calculate overall bounding box of generated nodes
