@@ -23,6 +23,8 @@ function createMainWindow() {
     },
   });
 
+  require("./packaged_smoke.cjs")(app, mainWindow);
+
   const showWindow = () => {
     if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
       mainWindow.show();
@@ -90,7 +92,7 @@ function setupMenu() {
           {
             label: app.name,
             submenu: [
-              { role: "about" },
+              { label: "About VOO Design", click: () => dispatchMenuAction("help:about") },
               { type: "separator" },
               { role: "services" },
               { type: "separator" },
@@ -231,9 +233,12 @@ function setupMenu() {
     },
   ];
 
+  template.push({ label: app.getLocale?.().startsWith("zh") ? "帮助" : "Help", submenu: [{ label: app.getLocale?.().startsWith("zh") ? "关于 VOO Design" : "About VOO Design", click: () => dispatchMenuAction("help:about") }] });
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 }
+
+ipcMain.handle("app:version", () => app.getVersion());
 
 // IPC Handlers
 ipcMain.handle("dialog:openFile", async (_, options = {}) => {
@@ -357,6 +362,7 @@ try {
 
 app.whenReady().then(() => {
   createMainWindow();
+  require("./updater.cjs").setupUpdater({ app, ipcMain, getWindow: () => mainWindow });
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

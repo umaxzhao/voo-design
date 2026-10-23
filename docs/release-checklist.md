@@ -15,7 +15,7 @@
 - [ ] Update app icon files: `build/icon.ico`, `build/icon.png`, `build/icon.icns`
 
 ### Build & Testing
-- [ ] Run `npm test` — all suites pass (target: 154 test files, 1905+ tests)
+- [ ] Run `npm test` — all suites pass (verified: 164 test files, 1954 passed, 5 skipped)
   - Verify no flaky test failures (race conditions fixed in M4)
   - Verify agent tools e2e passes: `npm run test:e2e`
 - [ ] Run `npm run build` — production vite bundle succeeds
@@ -221,3 +221,24 @@ For detailed feature inventory, see:
 - `docs/editor-ui-gaps.md` — UI control audit findings
 - `docs/code-signing.md` — macOS & Windows certificate setup (to be added)
 - `README.md` — User-facing feature overview
+
+## Updates, licenses, and packaged verification
+
+- [ ] Use Node 22.12+ for the current Electron/build tooling, then `npm ci` (npm network uses the configured HTTPS_PROXY/HTTP_PROXY).
+- [ ] Keep source under `LICENSE` (MIT); review `EULA.md` for binary distribution. About is available in the title bar and native Help menu (app menu on macOS), with English/Chinese labels.
+- [ ] `npm run notices` walks installed production dependencies recursively and produces `public/THIRD_PARTY_NOTICES.json`, `public/LICENSE`, and `public/EULA.md`. These are generated assets, bundled into `dist/`, and accessible in About. Review missing/undeclared licenses and upstream license supplements in `scripts/license-texts/` on dependency upgrades.
+- [ ] Run `npm test`, `npm run build`, and `npm run dist`. Read the complete builder log; missing production modules are release blockers. Keep `release/` uncommitted.
+- [ ] Run `npm run smoke:packaged` on Linux with `xvfb-run` installed. It launches the actual AppImage with an isolated temporary profile, disables updates, asserts a nonzero canvas, rejects renderer console errors, captures `docs/screenshots/packaged-smoke.png`, and exits. Inspect the screenshot as well.
+- [ ] Packaged builds check GitHub Releases (`umaxzhao/voo-design`) once at launch, download automatically, and install on quit or explicit Restart. Offline failures are logged silently. `VOO_DISABLE_UPDATES=1` disables checks; development/browser builds do not check. Dismiss hides the current notification only.
+- [ ] Publish from trusted CI only: set `GH_TOKEN` as a masked CI environment secret with release-write permission. Never put it in source, build config, renderer, or artifacts. Build the versioned tag with `electron-builder --publish always` on each target platform after its normal build/notices steps. Local `npm run dist` uses `--publish never`.
+- [ ] Publish installers AND generated update metadata (`latest.yml`, `latest-linux.yml`, `latest-mac.yml` as applicable) and blockmaps to the same GitHub Release. Verify signatures/checksums, then publish the release rather than leaving it draft.
+- [ ] Verify an older installed version detects the published update and successfully restarts into it; test an offline launch separately. Linux auto-update requires running the AppImage as an AppImage. Cross-platform updater/signing checks remain required on macOS/Windows hosts.
+
+### Verification record — 2026-10-23
+
+- `npm test -- --testTimeout=20000 --maxWorkers=2 --minWorkers=1`: 164 files passed; 1954 tests passed, 5 skipped. An initial unrestricted run timed out importing the editor under concurrent CPU load; the controlled run passed.
+- `npm run build`: passed. `npm run dist`: passed, with GitHub update metadata generated and publishing disabled.
+- Fixed unsupported `linux.desktopName` placement, enabled Linux desktop-name synchronization, included `src/shared` and `src/content` runtime imports missing from the packaged Electron bridges, and supplied the local canvas package's MIT metadata/license.
+- Reinstalled/resolved production dependencies with the lockfile; no missing-module/dependency-location warnings remain. Builder's duplicate dependency references are informational and deduplicated in the package. Existing Vite `node:zlib` browser externalization is in the presentation PDF fallback; it remains a build warning. Tailwind no longer scans code-generator template literals, eliminating invalid generated CSS warnings.
+- `npm audit --omit=dev`: zero reported vulnerabilities. The host uses Node 20 and emits engine warnings for Electron tooling; use Node 22.12+ in release CI. Full development-tool audit still requires maintenance separately.
+- `npm run smoke:packaged`: passed on the final AppImage; exposed editor canvas verified by hit testing, About loaded MIT/EULA/third-party documents, zero renderer console errors, no missing main-process imports. Screenshot inspected at `docs/screenshots/packaged-smoke.png`. Headless Chromium's system D-Bus diagnostics are expected in this container and are separate from renderer console errors.
