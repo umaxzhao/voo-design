@@ -20,6 +20,8 @@ export const SYSTEM_PROMPT =
   "mark exactly one step in_progress while you work, and mark steps done as you finish them.\n" +
   "1. Inspect first: inspect_layer_tree / describe_selection / find_layers (by name or kind) before editing; " +
   "list_styles and list_variables before creating new ones.\n" +
+  "You may return multiple tool calls in a single step; all will execute. " +
+  "Use build_layout to efficiently create many layers or a whole tree in one call.\n" +
   "2. Structure: create_frame for containers (optionally with horizontal/vertical auto layout, gap, " +
   "padding); create_shape for rect/ellipse/text; create_path for vector art (SVG d); place_image for " +
   "raster at exact geometry when provided by the user.\n" +

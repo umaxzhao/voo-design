@@ -144,6 +144,15 @@ describe("critique loop stub contract", () => {
 });
 
 describe("buildDesignQualityPrompt", () => {
+  it("instructs complete bulk creation with direct kit styling", () => {
+    const prompt = buildDesignQualityPrompt({ userText: "dashboard" });
+    expect(prompt).toContain("complete screen with build_layout in 1-3 calls");
+    expect(prompt).toContain("every section, real copy, and all text");
+    expect(prompt).toContain("colours and fonts directly from the style kit tokens");
+    expect(prompt).toContain("Avoid hand-drawn path illustrations");
+    expect(prompt).toContain("capture_canvas once");
+  });
+
   it("picks the dashboard recipe from the request within the active kit", () => {
     const prompt = buildDesignQualityPrompt({ userText: "Build a dashboard", kit: STYLE_KITS["dribbble-saas"] });
     expect(prompt).toContain(EXEMPLARS.find((e) => e.id === "analytics-dark-shot").description);
@@ -239,6 +248,41 @@ describe("canvas agent design quality hook", () => {
     expect(system).toContain("=== Design quality (follow strictly) ===");
     expect(system).toContain("Enterprise Admin");
     expect(system).toContain("Design quality: honor the Design quality block");
+  });
+
+  it("executes multiple calls within one model step", async () => {
+    const executed = [];
+    let steps = 0;
+    await runAgentTurn({ config: {}, history: [], userText: "Build a screen", tools: [], maxSteps: 2,
+      executeTool: async (name, args) => { executed.push({ name, args }); return {}; },
+      streamStep: async () => ++steps === 1
+        ? { text: "", toolCalls: [1, 2, 3].map(i => ({ id: `c${i}`, name: "build_layout", arguments: JSON.stringify({ nodes: [], section: i }) })) }
+        : { text: "done", toolCalls: [] },
+    });
+    expect(steps).toBe(2);
+    expect(executed.map(call => call.args.section)).toEqual([1, 2, 3]);
+  });
+
+  it("keeps bulk creation and multiple tool calls available in the baseline", async () => {
+    const original = globalThis.__VOO_DESIGN_QUALITY_OFF__;
+    globalThis.__VOO_DESIGN_QUALITY_OFF__ = true;
+    let system;
+    try {
+      await runAgentTurn({ config: {}, history: [], userText: "dashboard", tools: [],
+        executeTool: async () => ({}),
+        streamStep: async ({ messages }) => {
+          system = messages[0].content;
+          return { text: "done", toolCalls: [] };
+        },
+      });
+      expect(system).toContain("Use build_layout to efficiently create many layers");
+      expect(system).toContain("multiple tool calls in a single step");
+      expect(system).not.toContain("complete screen with build_layout in 1-3 calls");
+      expect(system).not.toContain("=== Design quality (follow strictly) ===");
+    } finally {
+      if (original === undefined) delete globalThis.__VOO_DESIGN_QUALITY_OFF__;
+      else globalThis.__VOO_DESIGN_QUALITY_OFF__ = original;
+    }
   });
 
   it("keeps style notes and blends both prompts", async () => {
