@@ -62,7 +62,7 @@ export default function PageSwitcher() {
           {nodes.length === 0 && (
             <p
               data-testid="pages-empty"
-              className="px-3 py-4 text-xs text-neutral-400"
+              className="px-3 py-4 text-sm text-neutral-400"
             >
               {t("pageSwitcher.empty")}
             </p>
@@ -83,7 +83,7 @@ export default function PageSwitcher() {
                       defaultValue={label}
                       maxLength={80}
                       onFocus={(e) => e.target.select()}
-                      className="min-w-0 flex-1 rounded-lg bg-white/10 px-2 py-2 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
+                      className="min-w-0 flex-1 rounded bg-white/10 px-2 py-2 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
                       onKeyDown={(e) => {
                         if (e.key === "Escape") {
                           e.stopPropagation();

@@ -12,13 +12,6 @@ import { useI18n } from "../../use_i18n.js";
 import { usePresetThumbs, useActivePresetKey } from "./use_preset_thumbs.js";
 import KindIcon from "./kind_icons.jsx";
 
-/** Category heading accents; functional glyphs use neutral tones. */
-const ACCENT = {
-  adjustment: "#7fd4a8",
-  filter: "#38bdf8",
-  effect: "#b3a0ff",
-};
-
 /**
  * One tappable kind in the left column. The glyph carries what the kind does
  * and the group heading identifies the category.
@@ -45,12 +38,11 @@ KindButton.propTypes = {
 };
 
 /** A titled group of kinds in the left column. */
-function KindGroup({ title, accent, kinds, labelOf, onPick }) {
+function KindGroup({ title, kinds, labelOf, onPick }) {
   return (
     <div>
       <div
-        className="mb-1.5 px-0.5 text-[10px] font-mono uppercase tracking-wider font-semibold"
-        style={{ color: accent }}
+        className="mb-1.5 px-0.5 text-[10px] font-mono uppercase tracking-wider font-semibold text-neutral-300"
       >
         <span>{title}</span>
       </div>
@@ -70,7 +62,6 @@ function KindGroup({ title, accent, kinds, labelOf, onPick }) {
 
 KindGroup.propTypes = {
   title: PropTypes.string.isRequired,
-  accent: PropTypes.string.isRequired,
   kinds: PropTypes.arrayOf(PropTypes.string).isRequired,
   labelOf: PropTypes.func.isRequired,
   onPick: PropTypes.func.isRequired,
@@ -80,8 +71,8 @@ KindGroup.propTypes = {
  * The "add" popover for a layer's effect stack.
  *
  * Left column: every kind that can be added, grouped as tone adjustments,
- * pixel filters, and layer-style effects — the dot colours match the rows they
- * become. Right column: one-click presets, each a bundle of adjustments
+ * pixel filters, and layer-style effects. Right column: one-click presets, each
+ * a bundle of adjustments
  * rendered on the layer's own bitmap, because a look is judged on the picture
  * rather than a stock tile. Everything either column adds lands in the same
  * stack, which is why they share one entry point.
@@ -130,14 +121,12 @@ export default function AddKindPicker({
         <div className="ui-scroll min-h-0 flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col gap-3">
           <KindGroup
             title={t("editor.layers.adjustments")}
-            accent={ACCENT.adjustment}
             kinds={TONE_ADJUSTMENT_KINDS}
             labelOf={(kind) => t(adjustmentLabelKey(kind))}
             onPick={(kind) => onPick(kind, false)}
           />
           <KindGroup
             title={t("editor.layers.filters")}
-            accent={ACCENT.filter}
             kinds={FILTER_KINDS}
             labelOf={(kind) => t(adjustmentLabelKey(kind))}
             onPick={(kind) => onPick(kind, false)}
@@ -145,7 +134,6 @@ export default function AddKindPicker({
           {showEffects ? (
             <KindGroup
               title={t("editor.layers.effects")}
-              accent={ACCENT.effect}
               kinds={EFFECT_KINDS}
               labelOf={(kind) => t(effectLabelKey(kind))}
               onPick={(kind) => onPick(kind, true)}

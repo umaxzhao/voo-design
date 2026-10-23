@@ -209,26 +209,26 @@ function buildEditorSource(nodeId, snapshot) {
  *    job). Only the focused artboard shows handles and text overlays.
  */
 /**
- * Frame headers retain canvas-type accents while their functional glyphs stay neutral.
+ * Frame headers use neutral tones for decorative surfaces and functional glyphs.
  */
 export const CANVAS_TYPE_TONES = Object.freeze({
   [CANVAS_TYPE.DESIGN]: {
-    wash: "bg-[#a7ffd4]/10",
-    bar: "bg-[#a7ffd4]/50",
+    wash: "bg-neutral-300/10",
+    bar: "bg-neutral-300/50",
     text: "text-neutral-300",
     solid: "bg-[#a7ffd4] text-black",
     label: "editor.canvasType.design",
   },
   [CANVAS_TYPE.MOTION]: {
-    wash: "bg-[#E5B2FF]/10",
-    bar: "bg-[#E5B2FF]/50",
+    wash: "bg-neutral-300/10",
+    bar: "bg-neutral-300/50",
     text: "text-neutral-300",
     solid: "bg-[#E5B2FF] text-black",
     label: "editor.canvasType.motion",
   },
   [CANVAS_TYPE.THREE_D]: {
-    wash: "bg-[#b2ccff]/10",
-    bar: "bg-[#b2ccff]/50",
+    wash: "bg-neutral-300/10",
+    bar: "bg-neutral-300/50",
     text: "text-neutral-300",
     solid: "bg-[#b2ccff] text-black",
     label: "editor.canvasType.threeD",
@@ -1227,7 +1227,7 @@ export default function EditorPage({
           </>
         ) : null}
 
-
+        
         {overlays}
       </div>
     </section>

@@ -176,11 +176,11 @@ export default function StreamingLayoutPreview({
     >
       {!ready && <div data-testid="streaming-layout-skeleton" role="status" aria-label={t("agent.panel.busy")}
         className="absolute inset-0 space-y-6 p-[8%] motion-safe:animate-pulse">
-        <div className="h-3 w-1/4 rounded-lg bg-neutral-200" />
-        <div className="h-8 w-3/4 rounded-lg bg-neutral-200" />
-        <div className="h-3 w-1/2 rounded-lg bg-neutral-200" />
+        <div className="h-3 w-1/4 rounded bg-neutral-200" />
+        <div className="h-8 w-3/4 rounded bg-neutral-200" />
+        <div className="h-3 w-1/2 rounded bg-neutral-200" />
         <div className="h-48 rounded-xl bg-neutral-200/70" />
-        <div className="h-3 w-2/3 rounded-lg bg-neutral-200" />
+        <div className="h-3 w-2/3 rounded bg-neutral-200" />
       </div>}
       <canvas
         ref={canvasRef}
@@ -196,7 +196,7 @@ export default function StreamingLayoutPreview({
         className="pointer-events-none absolute z-10 opacity-0 transition-[left,top,opacity] duration-300 ease-out motion-reduce:transition-none"
       >
         <IconCursor size={18} strokeWidth={1.5} className="text-neutral-300" />
-        <span className="ml-4 mt-1 block w-max rounded-lg bg-neutral-900 px-2 py-1 text-[10px] text-[#eed0ff]">
+        <span className="ml-4 mt-1 block w-max rounded-lg bg-neutral-900 px-2 py-1 text-[10px] text-neutral-300">
           {t("agent.title")}
         </span>
       </div>
