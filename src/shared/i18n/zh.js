@@ -29,6 +29,23 @@ import commandPaletteZh from "./command-palette-zh.js";
 import findReplaceZh from "./find-replace-zh.js";
 
 export default {
+  "agent.providers.hint": "Codex CLI · Claude Code CLI · 自定义模型",
+  "agent.providers.customHint": "在 AI 服务商中添加兼容 OpenAI 的服务商和文本模型。",
+  "agent.mcp.title": "外部 MCP 服务器",
+  "agent.mcp.hint": "连接本地工具（stdio）或远程工具（HTTP）。命令在本机运行，凭据保存在设置中。",
+  "agent.mcp.type": "传输方式",
+  "agent.mcp.stdio": "本地进程（stdio）",
+  "agent.mcp.http": "流式 HTTP",
+  "agent.mcp.id": "服务器 ID",
+  "agent.mcp.command": "命令",
+  "agent.mcp.url": "地址",
+  "agent.mcp.args": "参数（JSON 数组）",
+  "agent.mcp.env": "环境变量（JSON 对象）",
+  "agent.mcp.headers": "请求头（JSON 对象）",
+  "agent.mcp.add": "添加服务器",
+  "agent.mcp.remove": "移除",
+  "agent.mcp.invalid": "请检查唯一的服务器 ID、传输字段和 JSON 值。",
+
   "canvas.start.loading": "正在加载模板…",
   "editor.wf.conn.templateLoad": "模板加载失败，请刷新后重试。",
   "error.chatgptWorkMode":

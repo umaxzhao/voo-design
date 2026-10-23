@@ -24,5 +24,13 @@ export function setCredentialAreaFactory(next) {
 
 /** The named credential area, or null when this context has none. */
 export function credentialArea(name) {
-  return areaFactory(name) ?? null;
+  const area = areaFactory(name);
+  if (area) return area;
+  const storage = name === "session" ? globalThis.sessionStorage : globalThis.localStorage;
+  if (!storage) return null;
+  return {
+    async get(key) { const raw = storage.getItem(key); return { [key]: raw ? JSON.parse(raw) : undefined }; },
+    async set(values) { for (const [key, value] of Object.entries(values)) storage.setItem(key, JSON.stringify(value)); },
+    async remove(key) { storage.removeItem(key); },
+  };
 }

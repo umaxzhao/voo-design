@@ -1,3 +1,4 @@
+import { nativeMcpServers } from "../src/shared/agent_mcp_servers.js";
 /**
  * A VOO agent turn run by the Claude Code CLI.
  *
@@ -10,9 +11,9 @@
  * flags below are the line between "operate the canvas" and "run code on this
  * machine":
  *
- *   --restricted --tools ""   no Bash, file, web or other built-in tool; user,
- *                             project and local settings (hooks included) are
- *                             not loaded
+ *   --setting-sources "" --tools ""  no Bash, file, web or other built-in
+ *                             tool; user, project and local settings (hooks
+ *                             included) are not loaded
  *   --strict-mcp-config       no MCP server except VOO's
  *   --permission-mode dontAsk + --allowedTools (the two voo tools)
  *                             those run; anything else is refused outright
@@ -88,7 +89,7 @@ export function claudeInput(messages) {
 }
 
 /** The `claude` argv for one headless, canvas-only agent turn. */
-export function claudeArgs({ model, mcpConfigPath, systemPrompt, effort }) {
+export function claudeArgs({ model, mcpConfigPath, systemPrompt, effort, mcpServers = [] }) {
   const cliModel = resolveClaudeCliModel(model);
   return [
     "-p",
@@ -98,7 +99,8 @@ export function claudeArgs({ model, mcpConfigPath, systemPrompt, effort }) {
     "stream-json",
     "--verbose",
     "--include-partial-messages",
-    "--restricted",
+    "--setting-sources",
+    "",
     "--tools",
     "",
     "--strict-mcp-config",
@@ -106,10 +108,8 @@ export function claudeArgs({ model, mcpConfigPath, systemPrompt, effort }) {
     mcpConfigPath,
     "--permission-mode",
     "dontAsk",
-    "--permission-prompts",
-    "none",
     "--allowedTools",
-    VOO_MCP_TOOLS.join(","),
+    [...VOO_MCP_TOOLS, ...mcpServers.map(server => `mcp__${server.id}__*`)].join(","),
     "--no-session-persistence",
     "--model",
     cliModel,
@@ -225,7 +225,7 @@ export function createClaudeAgentSession({
   const session = {
     id,
     tools,
-    async start({ model, messages, mcpUrl, cwd, token, reasoningEffort }) {
+    async start({ model, messages, mcpUrl, cwd, token, reasoningEffort, mcpServers = [] }) {
       if (
         reasoningEffort !== undefined &&
         !CLAUDE_EFFORTS.includes(reasoningEffort)
@@ -240,6 +240,7 @@ export function createClaudeAgentSession({
         mcpConfigPath,
         JSON.stringify({
           mcpServers: {
+            ...nativeMcpServers(mcpServers),
             voo: {
               type: "http",
               url: `${mcpUrl}/${id}`,
@@ -261,6 +262,7 @@ export function createClaudeAgentSession({
           mcpConfigPath,
           systemPrompt: `${instructions}\n${AGENT_INSTRUCTIONS}`,
           effort: reasoningEffort,
+          mcpServers,
         }),
         { cwd, stdio: ["pipe", "pipe", "pipe"] },
       );
