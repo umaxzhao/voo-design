@@ -2708,4 +2708,17 @@ export default {
   "settings.cloudModels.scheduleInfoTitle": "分时计价规则",
   "settings.cloudModels.originalTimezone": "原时区{tz}",
   "settings.cloudModels.localTimezone": "本地{tz}",
+
+  "app.error.title": "应用程序遇到意外错误",
+  "app.error.body": "编辑器出现了未预期的错误。重新加载后可能仍可恢复最近的本地草稿。",
+  "app.error.reload": "重新加载应用",
+  "app.error.details": "显示详情",
+  "app.error.copyDiagnostics": "复制诊断信息",
+  "app.error.copied": "已复制",
+  "app.error.unknown": "未知错误",
+  "app.crashRecovery.title": "恢复未保存的草稿？",
+  "app.crashRecovery.body": "检测到异常退出后留下的更新本地草稿。",
+  "app.crashRecovery.restore": "恢复草稿",
+  "app.crashRecovery.discard": "丢弃",
+  "app.imageTooLarge": "图片过大，无法安全打开",
 };
