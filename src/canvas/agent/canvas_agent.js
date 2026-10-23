@@ -4,6 +4,8 @@ import { buildDocumentDesignContext } from "../editor/design_tokens.js";
  * results until it stops asking for tools. Nothing here builds a workflow.
  */
 
+import { abortable } from "./abortable.js";
+
 import { streamChatTurn } from "./chat_stream.js";
 import { buildDesignQualityPrompt, pickStyleKit } from "./design_quality/index.js";
 
@@ -139,13 +141,14 @@ export async function runAgentTurn({
       if (turnSignal.aborted) {
         throw new DOMException("Aborted", "AbortError");
       }
-      const { text, toolCalls } = await streamStep({
+      const { text, toolCalls } = await abortable(() => streamStep({
         config,
         messages,
         tools,
         signal: turnSignal,
-        onText,
-      });
+        onText: (text) => { if (!turnSignal.aborted) onText?.(text); },
+      }), turnSignal);
+      turnSignal.throwIfAborted();
       if (toolCalls.length === 0) {
         if (failurePending && !retryNudged) {
           retryNudged = true;
@@ -182,7 +185,8 @@ export async function runAgentTurn({
         }
         onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "in_progress" });
         try {
-          const result = await executeTool(call.name, args);
+          const result = await abortable(() => executeTool(call.name, args, { signal: turnSignal }), turnSignal);
+          turnSignal.throwIfAborted();
           if (result?.isError || result?.error) throw new Error(JSON.stringify(result));
           failurePending = false;
           if (call.name === "capture_canvas") writesSinceCapture = 0;
@@ -202,6 +206,7 @@ export async function runAgentTurn({
           }
           onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "completed", result });
         } catch (error) {
+          if (turnSignal.aborted) throw error;
           failurePending = true;
           const code = error?.code ?? error?.message ?? "toolFailed";
           messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: code }) });

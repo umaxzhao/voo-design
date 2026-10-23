@@ -389,7 +389,7 @@ function selectedReference(editor) {
   return editor.exportNodePng?.(selectedId) ?? null;
 }
 
-async function generateImage(args) {
+async function generateImage(args, { signal } = {}) {
   const editor = requireEditor();
   const providerId = getSetting(AGENT_SETTING.IMAGE_PROVIDER_ID);
   const modelId = getSetting(AGENT_SETTING.IMAGE_MODEL_ID);
@@ -403,6 +403,7 @@ async function generateImage(args) {
     throw Object.assign(new Error(TOOL_ERROR.CANCELLED), { code: TOOL_ERROR.CANCELLED });
   }
   const { taskId, urls } = await runImageJob({
+    signal,
     providerId,
     request: {
       model: modelId,
@@ -412,6 +413,7 @@ async function generateImage(args) {
       n: 1,
     },
   });
+  signal?.throwIfAborted();
   await placeImageInEditor(editor, urls[0], null);
   return { taskId, placed: true };
 }
@@ -426,7 +428,7 @@ function placementPoint(args, index, span) {
   };
 }
 
-async function generateImageWebTool(args) {
+async function generateImageWebTool(args, { signal } = {}) {
   requireEditor();
   if (args.provider !== "chatgpt" && args.provider !== "gemini") {
     throw Object.assign(new Error("invalidProvider"), { code: "invalidProvider" });
@@ -435,7 +437,9 @@ async function generateImageWebTool(args) {
   const result = await generateImageWeb(
     { provider: args.provider, prompt: args.prompt, count },
     {
+      signal,
       onProgress: (event) => {
+        if (signal?.aborted) return;
         const statusLine = webImageStatusLine(args.provider, event.stage);
         globalThis.window?.dispatchEvent?.(
           new CustomEvent("voo:web-image-progress", {
@@ -445,6 +449,7 @@ async function generateImageWebTool(args) {
       },
     },
   );
+  signal?.throwIfAborted();
   if (result?.ok === false) {
     throw Object.assign(new Error(result.error || result.code || "needsDesktopApp"), {
       code: result.code || "needsDesktopApp",
@@ -454,6 +459,7 @@ async function generateImageWebTool(args) {
   const span = Number.isFinite(args.width) ? args.width : images[0]?.width || 512;
   const layerIds = [];
   for (let index = 0; index < images.length; index += 1) {
+    signal?.throwIfAborted();
     const image = images[index];
     const point = placementPoint(args, index, span);
     const sourceWidth = image.width || (Number.isFinite(args.width) ? args.width : 512);
@@ -912,8 +918,9 @@ const EXECUTORS = Object.freeze({
 });
 
 /** Runs a canvas tool by name; an unknown name is an error, not a silent no-op. */
-export async function executeCanvasTool(name, args) {
+export async function executeCanvasTool(name, args, context = {}) {
+  context.signal?.throwIfAborted();
   const executor = EXECUTORS[name];
   if (!executor) throw new Error(`unknown tool: ${name}`);
-  return executor(args);
+  return executor(args, context);
 }

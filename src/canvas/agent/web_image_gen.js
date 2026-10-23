@@ -5,6 +5,8 @@
  * that plainly instead of pretending a provider call failed.
  */
 
+import { abortable } from "./abortable.js";
+
 export const DESKTOP_REQUIRED_MESSAGE =
   "Web image generation needs the VOO Design desktop app (Electron); it is not available in the browser build.";
 
@@ -37,7 +39,7 @@ export function webImageStatusLine(provider, stage) {
 
 export async function generateImageWeb(
   { provider, prompt, count },
-  { bridge = globalThis.window?.vooDesktop, onProgress, jobId } = {},
+  { bridge = globalThis.window?.vooDesktop, onProgress, jobId, signal } = {},
 ) {
   if (!bridge?.webImageGenerate) {
     return { ok: false, code: "needsDesktopApp", error: DESKTOP_REQUIRED_MESSAGE };
@@ -50,7 +52,7 @@ export async function generateImageWeb(
     }) ?? (() => {});
   }
   try {
-    const result = await bridge.webImageGenerate({ provider, prompt, count, jobId: id });
+    const result = await abortable(() => bridge.webImageGenerate({ provider, prompt, count, jobId: id }), signal);
     if (result?.ok === false) {
       return {
         ok: false,
