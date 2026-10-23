@@ -1,3 +1,5 @@
+import { dispatchToAgent } from "./dispatch_to_agent.js";
+import { HTML_IMPORT_ACCEPT, SCREENSHOT_ACCEPT, importWelcomeHtml, recreateWelcomeScreenshot } from "./welcome_home_actions.js";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   File,
@@ -173,6 +175,8 @@ export default function WelcomeDashboard() {
   const [confirmEmptyTrashOpen, setConfirmEmptyTrashOpen] = useState(false);
 
   const fileInputRef = useRef(null);
+  const htmlInputRef = useRef(null);
+  const screenshotInputRef = useRef(null);
   const menuRef = useRef(null);
   const setWelcomeOpen = useDesignStore((state) => state.setWelcomeOpen);
 
@@ -536,22 +540,7 @@ export default function WelcomeDashboard() {
         fromWelcomeDashboard: true,
       };
 
-      setTimeout(() => {
-        window.dispatchEvent(
-          new CustomEvent("voo:open-agent-panel", { detail: { context } })
-        );
-        window.dispatchEvent(
-          new CustomEvent("voo:agent-prompt", {
-            detail: {
-              prompt: promptToDispatch,
-              intent: "generate",
-              tool: "canvas_generate",
-              context,
-              autoSend: true,
-            },
-          })
-        );
-      }, 100);
+      dispatchToAgent({ prompt: promptToDispatch, intent: "generate", tool: "canvas_generate", context, autoSend: true });
     }
   };
 
@@ -796,6 +785,25 @@ export default function WelcomeDashboard() {
           }
         }}
       />
+
+      <input ref={htmlInputRef} type="file" accept={HTML_IMPORT_ACCEPT} className="hidden"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (!file) return;
+          try { await importWelcomeHtml(file, useDesignStore.getState()); }
+          catch (error) { console.error("[VOO] HTML import failed:", error); }
+        }} />
+      <input ref={screenshotInputRef} type="file" accept={SCREENSHOT_ACCEPT} className="hidden"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (!file) return;
+          try {
+            setPromptText("");
+            await recreateWelcomeScreenshot(file, { createDesign: handleCreateNew, getStore: useDesignStore.getState });
+          } catch (error) { console.error("[VOO] Screenshot import failed:", error); }
+        }} />
 
       {/* Drag & drop overlay */}
       {isDragOver && (
@@ -1183,7 +1191,7 @@ export default function WelcomeDashboard() {
 
               <button
                 type="button"
-                onClick={() => handleCreateNew(AI_GEN_TYPES[0])}
+                onClick={() => htmlInputRef.current?.click()}
                 className="flex items-center justify-center gap-2.5 rounded-2xl bg-neutral-800/70 hover:bg-neutral-700/70 p-4 text-xs font-medium text-neutral-300 hover:text-white transition-all cursor-pointer group"
               >
                 <svg className="size-4 text-neutral-400 group-hover:text-neutral-200 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -1196,7 +1204,7 @@ export default function WelcomeDashboard() {
 
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => screenshotInputRef.current?.click()}
                 className="flex items-center justify-center gap-2.5 rounded-2xl bg-neutral-800/70 hover:bg-neutral-700/70 p-4 text-xs font-medium text-neutral-300 hover:text-white transition-all cursor-pointer group"
               >
                 <svg className="size-4 text-neutral-400 group-hover:text-neutral-200 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>

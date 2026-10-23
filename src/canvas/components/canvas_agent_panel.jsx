@@ -1,3 +1,5 @@
+import { useDesignStore } from "../../store/design_store.js";
+import { consumePendingAgentIntent } from "./pending_agent_intent.js";
 import { customModelGroups, resolveAgentProvider } from "../agent/agent_provider.js";
 import { externalMcpTools } from "../agent/external_mcp_tools.js";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -291,6 +293,18 @@ export default function CanvasAgentPanel({ onClose }) {
     },
     [busy, input, activeId, activeContext, selectedModel],
   );
+
+  useEffect(() => {
+    const consume = () => {
+      if (!busy) consumePendingAgentIntent(useDesignStore, (prompt, context) => {
+        if (context) setActiveContext(context);
+        send(prompt, context);
+      });
+    };
+    const unsubscribe = useDesignStore.subscribe(consume);
+    consume();
+    return unsubscribe;
+  }, [busy, send]);
 
   // Listen for Pen-style contextual island prompts and panel open events
   useEffect(() => {

@@ -249,7 +249,11 @@ export function createShapesPointerGestures({
     api.setTextDraftRect?.(null);
     api.select(finished.id);
     api.setTool(TOOL.SELECT);
-    api.beginTextEdit(finished.id);
+    // Defer the placement snapshot until content exists, so undo never
+    // resurrects an empty box between placing and typing.
+    api.beginTextEdit(finished.id, {
+      commitPlacement: () => commitEditorAction("editor.pointer.draw", () => api.commit()),
+    });
   }
 
   return {

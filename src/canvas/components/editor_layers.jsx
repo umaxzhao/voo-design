@@ -891,8 +891,8 @@ export default function EditorLayers({
                 return next;
               });
             }}
-            aria-label={t("editor.layers.search")}
-            title={t("editor.layers.search")}
+            aria-label={t("editor.layers.searchToggle")}
+            title={t("editor.layers.searchToggle")}
             className={`rounded-lg p-1 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
               showSearch || search
                 ? "bg-neutral-800 text-white"
