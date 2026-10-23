@@ -57,7 +57,7 @@ const POLL_MS = 200;
 const thumbCache = new Map();
 
 /** The node's bitmap cropped and fitted inside the tile without losing its edges. */
-function renderImageThumb(bitmap, node) {
+export function renderImageThumb(bitmap, node) {
   const sourceWidth = bitmap.videoWidth || bitmap.naturalWidth || bitmap.width;
   const sourceHeight =
     bitmap.videoHeight || bitmap.naturalHeight || bitmap.height;

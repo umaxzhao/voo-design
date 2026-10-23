@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 vi.mock('../../src/canvas/editor/scene_renderer.js', () => ({draw: vi.fn(), resizeCanvas: vi.fn()}));
 import { draw } from '../../src/canvas/editor/scene_renderer.js';
 import { renderEngineStage } from '../../src/canvas/editor/editor_engine_render.js';
+import { drawSelection } from '../../src/canvas/editor/chrome_selection.js';
 
 function render(selectedContainer = null) {
   globalThis.window = { devicePixelRatio: 1 };
@@ -33,5 +34,34 @@ describe('container selection chrome',()=>{
  });
  it('keeps ordinary multi-selection outlines',()=>{
   expect(render().selectionSet.map(n=>n.id)).toEqual(['child']);
+ });
+});
+
+describe('one CSS pixel selection frame', () => {
+ it.each([1, 2])('preserves the inset and 8 × 8 handles at %ix DPR', (dpr) => {
+  // The renderer scales the backing context by DPR; chrome uses CSS coordinates.
+  const strokes = [];
+  const fills = [];
+  const ctx = {
+   save: vi.fn(), restore: vi.fn(),
+   strokeRect(...rect) { strokes.push({ rect, width: this.lineWidth }); },
+   fillRect(...rect) { fills.push(rect); },
+  };
+  drawSelection(ctx, { x: 10, y: 20, width: 100, height: 60 },
+   { zoom: 1, panX: 0, panY: 0 }, true);
+  expect(strokes[0]).toEqual({ rect: [10.5, 20.5, 98.5, 58.5], width: 1 });
+  // The left/top stroke starts exactly on the integer CSS boundary.
+  expect((strokes[0].rect[0] - strokes[0].width / 2) * dpr).toBe(10 * dpr);
+  expect(strokes[0].width * dpr).toBe(dpr);
+  expect(fills).toHaveLength(8);
+  for (const [index, rect] of fills.entries()) {
+   expect(rect.slice(2)).toEqual([8, 8]);
+   expect(strokes[index + 1]).toEqual({ rect, width: 1 });
+   expect(rect.slice(2).map(size => size * dpr)).toEqual([8 * dpr, 8 * dpr]);
+  }
+  // Existing paintHandle rounding adds 1 CSS px after frameCentre's 0.5 px
+  // inset. Handles still cover the frame corners; preserve that placement.
+  expect(fills[0]).toEqual([7.5, 17.5, 8, 8]);
+  expect(fills[0][0] + 4 - strokes[0].rect[0]).toBe(1);
  });
 });
