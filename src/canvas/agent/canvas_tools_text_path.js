@@ -6,8 +6,9 @@ const TOOL_ERROR = Object.freeze({
   INVALID_ARGS: "agentInvalidArgs",
 });
 
-function invalidArgs() {
-  throw Object.assign(new Error(TOOL_ERROR.INVALID_ARGS), {
+function invalidArgs(message = TOOL_ERROR.INVALID_ARGS) {
+  const full = message === TOOL_ERROR.INVALID_ARGS ? message : `${TOOL_ERROR.INVALID_ARGS}: ${message}`;
+  throw Object.assign(new Error(full), {
     code: TOOL_ERROR.INVALID_ARGS,
   });
 }
@@ -29,7 +30,7 @@ function requireEditor() {
 }
 
 function requireId(value) {
-  if (typeof value !== "string" || value.trim() === "") invalidArgs();
+  if (typeof value !== "string" || value.trim() === "") invalidArgs(`Invalid argument "layerId": expected a non-empty string, got ${JSON.stringify(value)}`);
   return value;
 }
 
@@ -117,9 +118,9 @@ function getNodeText(node) {
 function applyTextRangeStyleToNode(node, start, end, style) {
   const text = getNodeText(node);
   const length = text.length;
-  if (!Number.isFinite(start) || !Number.isFinite(end)) invalidArgs();
-  if (!Number.isInteger(start) || !Number.isInteger(end)) invalidArgs();
-  if (start < 0 || end > length || start >= end) invalidArgs();
+  if (!Number.isFinite(start) || !Number.isFinite(end)) invalidArgs(`Invalid argument "start"/"end": expected finite numbers`);
+  if (!Number.isInteger(start) || !Number.isInteger(end)) invalidArgs(`Invalid argument "start"/"end": expected integers`);
+  if (start < 0 || end > length || start >= end) invalidArgs(`Invalid argument "start"/"end": expected 0 <= start < end <= ${length}`);
   const nextStyle = cloneStyle(style);
 
   const existing = Array.isArray(node.textRuns) ? node.textRuns : [];
@@ -211,11 +212,11 @@ function setTextRangeStyle(args = {}) {
   const node = requireNode(editor, layerId);
   const style = args.style;
   if (style === null || typeof style !== "object" || Array.isArray(style)) {
-    invalidArgs();
+    invalidArgs(`Invalid argument "style": expected a plain object, got ${JSON.stringify(style)}`);
   }
   const start = Number(args.start);
   const end = Number(args.end);
-  if (!Number.isFinite(start) || !Number.isFinite(end)) invalidArgs();
+  if (!Number.isFinite(start) || !Number.isFinite(end)) invalidArgs(`Invalid argument "start"/"end": expected finite numbers, got start=${JSON.stringify(args.start)}, end=${JSON.stringify(args.end)}`);
 
   const doc = getDocument(editor);
   const textRuns = applyTextRangeStyleToNode(node, start, end, style);
@@ -244,7 +245,7 @@ function editPathNodes(args = {}) {
   const editor = requireEditor();
   const layerId = requireId(args.layerId);
   const ops = args.ops;
-  if (!Array.isArray(ops)) invalidArgs();
+  if (!Array.isArray(ops)) invalidArgs(`Invalid argument "ops": expected an array, got ${JSON.stringify(ops)}`);
   const doc = getDocument(editor);
   const node = requireNode(editor, layerId);
   const points = Array.isArray(node.points)
@@ -252,13 +253,13 @@ function editPathNodes(args = {}) {
     : [];
 
   for (const op of ops) {
-    if (!op || typeof op !== "object") invalidArgs();
+    if (!op || typeof op !== "object") invalidArgs(`Invalid argument "ops[]": expected an object, got ${JSON.stringify(op)}`);
     const kind = op.op;
     switch (kind) {
       case "move": {
         const index = Number(op.index);
         if (!Number.isInteger(index) || index < 0 || index >= points.length) {
-          invalidArgs();
+          invalidArgs(`Invalid argument "index": expected integer in [0, ${points.length}), got ${JSON.stringify(op.index)}`);
         }
         const point = points[index];
         if (op.point && typeof op.point === "object") {
@@ -279,7 +280,7 @@ function editPathNodes(args = {}) {
         if (index === undefined) index = points.length;
         index = Number(index);
         if (!Number.isInteger(index) || index < 0 || index > points.length) {
-          invalidArgs();
+          invalidArgs(`Invalid argument "index": expected integer in [0, ${points.length}], got ${JSON.stringify(op.index)}`);
         }
         const anchor = normalizeAnchorFromOp(op);
         points.splice(index, 0, anchor);
@@ -293,14 +294,14 @@ function editPathNodes(args = {}) {
             .sort((a, b) => b - a);
           for (const index of indices) {
             if (!Number.isInteger(index) || index < 0 || index >= points.length) {
-              invalidArgs();
+              invalidArgs(`Invalid argument "indices": expected integers in [0, ${points.length}), got ${JSON.stringify(index)}`);
             }
             points.splice(index, 1);
           }
         } else {
           const index = Number(op.index);
           if (!Number.isInteger(index) || index < 0 || index >= points.length) {
-            invalidArgs();
+            invalidArgs(`Invalid argument "index": expected integer in [0, ${points.length}), got ${JSON.stringify(op.index)}`);
           }
           points.splice(index, 1);
         }
@@ -309,7 +310,7 @@ function editPathNodes(args = {}) {
       case "setHandles": {
         const index = Number(op.index);
         if (!Number.isInteger(index) || index < 0 || index >= points.length) {
-          invalidArgs();
+          invalidArgs(`Invalid argument "index": expected integer in [0, ${points.length}), got ${JSON.stringify(op.index)}`);
         }
         const point = points[index];
         if (op.handles && typeof op.handles === "object") {
@@ -335,7 +336,7 @@ function editPathNodes(args = {}) {
       case "setType": {
         const index = Number(op.index);
         if (!Number.isInteger(index) || index < 0 || index >= points.length) {
-          invalidArgs();
+          invalidArgs(`Invalid argument "index": expected integer in [0, ${points.length}), got ${JSON.stringify(op.index)}`);
         }
         const point = points[index];
         if (op.type !== undefined) point.type = op.type;
@@ -344,7 +345,7 @@ function editPathNodes(args = {}) {
         break;
       }
       default:
-        invalidArgs();
+        invalidArgs(`Invalid argument "op": expected one of move, insert, add, delete, remove, setHandles, setType, got ${JSON.stringify(op.op)}`);
     }
   }
 

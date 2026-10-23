@@ -31,8 +31,9 @@ const BINDING_TARGETS = Object.freeze(["fill", "stroke"]);
 /** Master documents created through the fallback path, per live editor. */
 const componentDocs = new WeakMap();
 
-function invalidArgs() {
-  throw Object.assign(new Error(TOOL_ERROR.INVALID_ARGS), {
+function invalidArgs(message = TOOL_ERROR.INVALID_ARGS) {
+  const full = message === TOOL_ERROR.INVALID_ARGS ? message : `${TOOL_ERROR.INVALID_ARGS}: ${message}`;
+  throw Object.assign(new Error(full), {
     code: TOOL_ERROR.INVALID_ARGS,
   });
 }
@@ -279,7 +280,7 @@ function createInstance(args = {}) {
 function listStyles(args = {}) {
   const editor = requireEditor();
   if (args.type !== undefined && !STYLE_TYPES.includes(args.type)) {
-    invalidArgs();
+    invalidArgs(`Invalid argument "type": expected one of ${STYLE_TYPES.join(", ")}, got ${JSON.stringify(args.type)}`);
   }
   const library = getStyles(getDocument(editor));
   if (args.type) {
@@ -290,8 +291,8 @@ function listStyles(args = {}) {
 
 function createStyle(args = {}) {
   const editor = requireEditor();
-  if (!STYLE_TYPES.includes(args.type)) invalidArgs();
-  if (typeof args.name !== "string" || args.name.trim() === "") invalidArgs();
+  if (!STYLE_TYPES.includes(args.type)) invalidArgs(`Invalid argument "type": expected one of ${STYLE_TYPES.join(", ")}, got ${JSON.stringify(args.type)}`);
+  if (typeof args.name !== "string" || args.name.trim() === "") invalidArgs(`Invalid argument "name": expected a non-empty string, got ${JSON.stringify(args.name)}`);
   let fromLayerId = args.fromLayerId ?? args.fromNodeId ?? null;
   if (fromLayerId === null) fromLayerId = editor.getSelectedId?.() ?? null;
   if (fromLayerId !== null) requireNode(editor, requireId(fromLayerId));
@@ -327,7 +328,7 @@ function createStyle(args = {}) {
 function applyStyle(args = {}) {
   const editor = requireEditor();
   const layerId = requireId(args.layerId);
-  if (!STYLE_TYPES.includes(args.type)) invalidArgs();
+  if (!STYLE_TYPES.includes(args.type)) invalidArgs(`Invalid argument "type": expected one of ${STYLE_TYPES.join(", ")}, got ${JSON.stringify(args.type)}`);
   const styleId = requireId(args.styleId);
   requireNode(editor, layerId);
 
@@ -374,7 +375,7 @@ function bindVariable(args = {}) {
   const layerId = requireId(args.layerId);
   const variableId = requireId(args.variableId);
   const target = args.target ?? "fill";
-  if (!BINDING_TARGETS.includes(target)) invalidArgs();
+  if (!BINDING_TARGETS.includes(target)) invalidArgs(`Invalid argument "target": expected one of ${BINDING_TARGETS.join(", ")}, got ${JSON.stringify(target)}`);
   requireNode(editor, layerId);
 
   const doc = migrateColorVariablesV1(getDocument(editor));
@@ -448,13 +449,13 @@ export const DESIGN_TOOL_SCHEMAS = Object.freeze([
     function: {
       name: "create_style",
       description:
-        "Create a named style. Capture the value from fromLayerId when supplied.",
+        "Create a named style of type paint/text/effect. Capture the value from fromLayerId when supplied.",
       parameters: {
         type: "object",
         properties: {
-          type: { type: "string", enum: [...STYLE_TYPES] },
-          name: { type: "string" },
-          fromLayerId: { type: "string" },
+          type: { type: "string", enum: [...STYLE_TYPES], description: "Style type: one of paint, text, effect." },
+          name: { type: "string", description: "Style name." },
+          fromLayerId: { type: "string", description: "Optional layer id to capture the style value from." },
         },
         required: ["type", "name"],
       },
@@ -469,8 +470,8 @@ export const DESIGN_TOOL_SCHEMAS = Object.freeze([
         type: "object",
         properties: {
           layerId: { type: "string" },
-          type: { type: "string", enum: [...STYLE_TYPES] },
-          styleId: { type: "string" },
+          type: { type: "string", enum: [...STYLE_TYPES], description: "Style type: one of paint, text, effect." },
+          styleId: { type: "string", description: "Id of the style to apply." },
         },
         required: ["layerId", "type", "styleId"],
       },
@@ -499,7 +500,7 @@ export const DESIGN_TOOL_SCHEMAS = Object.freeze([
         properties: {
           layerId: { type: "string" },
           variableId: { type: "string" },
-          target: { type: "string", enum: [...BINDING_TARGETS] },
+          target: { type: "string", enum: [...BINDING_TARGETS], description: "Binding target: one of fill, stroke." },
         },
         required: ["layerId", "variableId", "target"],
       },

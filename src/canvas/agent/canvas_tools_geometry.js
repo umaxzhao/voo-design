@@ -14,8 +14,9 @@ function requireEditor() {
   return editor;
 }
 
-function invalidArgs() {
-  throw Object.assign(new Error(TOOL_ERROR.INVALID_ARGS), { code: TOOL_ERROR.INVALID_ARGS });
+function invalidArgs(message = TOOL_ERROR.INVALID_ARGS) {
+  const full = message === TOOL_ERROR.INVALID_ARGS ? message : `${TOOL_ERROR.INVALID_ARGS}: ${message}`;
+  throw Object.assign(new Error(full), { code: TOOL_ERROR.INVALID_ARGS });
 }
 
 function nodeNotFound() {
@@ -96,12 +97,12 @@ export function createPath(args = {}) {
   const { d, fill, stroke, strokeWidth, name } = args;
   const x = finiteOrNull(args.x);
   const y = finiteOrNull(args.y);
-  if (typeof d !== "string" || d.trim() === "") invalidArgs();
-  if ((x === null && args.x !== undefined) || (y === null && args.y !== undefined)) invalidArgs();
-  if (fill !== undefined && typeof fill !== "string") invalidArgs();
-  if (stroke !== undefined && typeof stroke !== "string") invalidArgs();
-  if (strokeWidth !== undefined && !Number.isFinite(Number(strokeWidth))) invalidArgs();
-  if (name !== undefined && typeof name !== "string") invalidArgs();
+  if (typeof d !== "string" || d.trim() === "") invalidArgs(`Invalid argument "d": expected a non-empty SVG path string, got ${JSON.stringify(d)}`);
+  if ((x === null && args.x !== undefined) || (y === null && args.y !== undefined)) invalidArgs(`Invalid argument "x"/"y": expected finite numbers, got x=${JSON.stringify(args.x)}, y=${JSON.stringify(args.y)}`);
+  if (fill !== undefined && typeof fill !== "string") invalidArgs(`Invalid argument "fill": expected a string, got ${JSON.stringify(fill)}`);
+  if (stroke !== undefined && typeof stroke !== "string") invalidArgs(`Invalid argument "stroke": expected a string, got ${JSON.stringify(stroke)}`);
+  if (strokeWidth !== undefined && !Number.isFinite(Number(strokeWidth))) invalidArgs(`Invalid argument "strokeWidth": expected a finite number, got ${JSON.stringify(strokeWidth)}`);
+  if (name !== undefined && typeof name !== "string") invalidArgs(`Invalid argument "name": expected a string, got ${JSON.stringify(name)}`);
 
   const result = editor.addPenNode?.({
     svgD: d,
@@ -127,18 +128,18 @@ export async function placeImage(args = {}) {
   const y = finiteOrNull(args.y);
   const width = finiteOrNull(args.width);
   const height = finiteOrNull(args.height);
-  if (typeof url !== "string" || url.trim() === "") invalidArgs();
+  if (typeof url !== "string" || url.trim() === "") invalidArgs(`Invalid argument "url": expected a non-empty string, got ${JSON.stringify(url)}`);
   if (
     (x === null && args.x !== undefined) ||
     (y === null && args.y !== undefined) ||
     (width === null && args.width !== undefined) ||
     (height === null && args.height !== undefined)
   ) {
-    invalidArgs();
+    invalidArgs(`Invalid argument "x"/"y"/"width"/"height": expected finite numbers`);
   }
-  if (name !== undefined && typeof name !== "string") invalidArgs();
-  if (width !== null && width < 0) invalidArgs();
-  if (height !== null && height < 0) invalidArgs();
+  if (name !== undefined && typeof name !== "string") invalidArgs(`Invalid argument "name": expected a string, got ${JSON.stringify(name)}`);
+  if (width !== null && width < 0) invalidArgs(`Invalid argument "width": expected >= 0, got ${JSON.stringify(width)}`);
+  if (height !== null && height < 0) invalidArgs(`Invalid argument "height": expected >= 0, got ${JSON.stringify(height)}`);
 
   const node = await editor.insertImage?.(url);
   if (!node?.id) nodeNotFound();

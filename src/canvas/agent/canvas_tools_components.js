@@ -42,7 +42,9 @@ const INSTANCE_RECORD_FIELDS = Object.freeze([
 const BINDING_KEYS = Object.values(VARIABLE_BINDINGS).map((entry) => entry.key);
 
 function invalidArgs(message) {
-  throw Object.assign(new Error(message || TOOL_ERROR.INVALID_ARGS), {
+  const base = message || TOOL_ERROR.INVALID_ARGS;
+  const full = base === TOOL_ERROR.INVALID_ARGS ? base : `${TOOL_ERROR.INVALID_ARGS}: ${base}`;
+  throw Object.assign(new Error(full), {
     code: TOOL_ERROR.INVALID_ARGS,
   });
 }
@@ -181,9 +183,9 @@ function setInstanceOverride(args = {}) {
   const editor = requireEditor();
   const instanceId = requireId(args.instanceId);
   const patch = args.patch;
-  if (!patch || typeof patch !== "object" || Array.isArray(patch)) invalidArgs();
+  if (!patch || typeof patch !== "object" || Array.isArray(patch)) invalidArgs(`Invalid argument "patch": expected a plain object, got ${JSON.stringify(patch)}`);
   const keys = Object.keys(patch);
-  if (keys.length === 0) invalidArgs();
+  if (keys.length === 0) invalidArgs(`Invalid argument "patch": expected a non-empty object`);
   const instance = requireInstance(editor, instanceId);
 
   if (typeof editor.setInstanceOverride === "function") {
@@ -214,7 +216,7 @@ function setInstanceOverride(args = {}) {
       const master = resolveComponentDocument(editor, instance.sourceCanvasId);
       const target = master ? overridableNodes(master) : [];
       if (target.length !== 1) {
-        invalidArgs("childId is required to override a component layer");
+        invalidArgs(`Invalid argument "childId": required to override a component layer`);
       }
       targetChildId = target[0].node.id;
     } else {
@@ -232,17 +234,17 @@ function setInstanceOverride(args = {}) {
     next = replaceInstanceNode(doc, instanceId, { instance: overrides });
   } else {
     if (!keys.every((key) => INSTANCE_RECORD_FIELDS.includes(key))) {
-      invalidArgs(`Override fields must be within ${OVERRIDE_FIELDS.join(", ")}`);
+      invalidArgs(`Invalid argument "patch": expected keys within ${INSTANCE_RECORD_FIELDS.join(", ")}, got ${keys.join(", ")}`);
     }
     for (const key of keys) {
       const value = patch[key];
       if (key === "layoutMode" && !INSTANCE_LAYOUT_MODES.includes(value)) {
-        invalidArgs();
+        invalidArgs(`Invalid argument "patch.layoutMode": expected one of ${INSTANCE_LAYOUT_MODES.join(", ")}, got ${JSON.stringify(value)}`);
       }
       if (key === "playbackMode" && !INSTANCE_PLAYBACK_MODES.includes(value)) {
-        invalidArgs();
+        invalidArgs(`Invalid argument "patch.playbackMode": expected one of ${INSTANCE_PLAYBACK_MODES.join(", ")}, got ${JSON.stringify(value)}`);
       }
-      if (key === "playbackStart" && !Number.isFinite(value)) invalidArgs();
+      if (key === "playbackStart" && !Number.isFinite(value)) invalidArgs(`Invalid argument "patch.playbackStart": expected a finite number, got ${JSON.stringify(value)}`);
       if (key !== "playbackStart" && typeof value !== "string" && value !== null) {
         invalidArgs();
       }
@@ -344,12 +346,12 @@ function variableDoc(editor) {
 
 function normalizeModeSpecs(modes) {
   if (modes === undefined || modes === null) return [];
-  if (!Array.isArray(modes)) invalidArgs();
+  if (!Array.isArray(modes)) invalidArgs(`Invalid argument "modes": expected an array, got ${JSON.stringify(modes)}`);
   return modes.map((mode) => {
     if (typeof mode === "string") return { name: mode };
     if (mode && typeof mode === "object" && !Array.isArray(mode)) {
-      if (mode.id !== undefined && typeof mode.id !== "string") invalidArgs();
-      if (mode.name !== undefined && typeof mode.name !== "string") invalidArgs();
+      if (mode.id !== undefined && typeof mode.id !== "string") invalidArgs(`Invalid argument "modes[].id": expected a string, got ${JSON.stringify(mode.id)}`);
+      if (mode.name !== undefined && typeof mode.name !== "string") invalidArgs(`Invalid argument "modes[].name": expected a string, got ${JSON.stringify(mode.name)}`);
       return mode;
     }
     invalidArgs();
@@ -366,7 +368,7 @@ function requireVariableCollection(model, collectionId) {
 
 function createVariableCollection(args = {}) {
   const editor = requireEditor();
-  if (typeof args.name !== "string" || args.name.trim() === "") invalidArgs();
+  if (typeof args.name !== "string" || args.name.trim() === "") invalidArgs(`Invalid argument "name": expected a non-empty string, got ${JSON.stringify(args.name)}`);
   const modeSpecs = normalizeModeSpecs(args.modes);
 
   const doc = variableDoc(editor);
@@ -398,7 +400,7 @@ function addVariableMode(args = {}) {
   const editor = requireEditor();
   const collectionId = requireId(args.collectionId);
   const name = args.name;
-  if (name !== undefined && typeof name !== "string") invalidArgs();
+  if (name !== undefined && typeof name !== "string") invalidArgs(`Invalid argument "name": expected a string, got ${JSON.stringify(name)}`);
 
   const doc = variableDoc(editor);
   let next;
@@ -420,11 +422,11 @@ function createVariable(args = {}) {
   const editor = requireEditor();
   const collectionId = requireId(args.collectionId);
   if (!VARIABLE_TYPES.includes(args.type)) invalidArgs();
-  if (typeof args.name !== "string" || args.name.trim() === "") invalidArgs();
+  if (typeof args.name !== "string" || args.name.trim() === "") invalidArgs(`Invalid argument "name": expected a non-empty string, got ${JSON.stringify(args.name)}`);
   if (args.valuesByMode !== undefined) {
     if (!args.valuesByMode || typeof args.valuesByMode !== "object" ||
         Array.isArray(args.valuesByMode)) {
-      invalidArgs();
+      invalidArgs(`Invalid argument "valuesByMode": expected a plain object, got ${JSON.stringify(args.valuesByMode)}`);
     }
   }
 
@@ -463,8 +465,8 @@ function createVariable(args = {}) {
 function setVariableValueTool(args = {}) {
   const editor = requireEditor();
   const variableId = requireId(args.variableId);
-  if (args.modeId !== undefined && typeof args.modeId !== "string") invalidArgs();
-  if (args.value === undefined || args.value === null) invalidArgs();
+  if (args.modeId !== undefined && typeof args.modeId !== "string") invalidArgs(`Invalid argument "modeId": expected a string, got ${JSON.stringify(args.modeId)}`);
+  if (args.value === undefined || args.value === null) invalidArgs(`Invalid argument "value": expected a non-null value`);
 
   const doc = variableDoc(editor);
   let next;
@@ -485,7 +487,7 @@ function setActiveMode(args = {}) {
   let layerId = null;
 
   if (args.layerId === undefined && args.collectionId === undefined) {
-    invalidArgs("layerId or collectionId is required");
+    invalidArgs(`Invalid arguments: "layerId" or "collectionId" is required`);
   }
   if (args.collectionId !== undefined) {
     if (args.layerId !== undefined) invalidArgs();
@@ -617,7 +619,7 @@ export const COMPONENT_TOOL_SCHEMAS = Object.freeze([
         type: "object",
         properties: {
           collectionId: { type: "string" },
-          type: { type: "string", enum: [...VARIABLE_TYPES] },
+          type: { type: "string", enum: [...VARIABLE_TYPES], description: "Variable type: one of color, number, string, boolean (VARIABLE_TYPES)." },
           name: { type: "string" },
           valuesByMode: { type: "object" },
         },
