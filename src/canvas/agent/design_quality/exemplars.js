@@ -201,14 +201,13 @@ export const EXEMPLARS = [
 
 /**
  * Chooses up to `n` exemplars given either an exemplar kind id or free-form
- * user text. With an active kit, backfill within that kit and allow at most
- * one foreign recipe for structure only. Deterministic, without mutation.
+ * user text. Deterministic: stable ordering, no mutation.
  */
-export function pickExemplars(kindOrUserText, n = 3, activeKitId) {
+export function pickExemplars(kindOrUserText, n = 3) {
   const count = Math.max(0, Math.floor(Number(n) || 0));
   if (count === 0 || !EXEMPLARS.length) return [];
   const text = String(kindOrUserText ?? "").toLowerCase().replace(/[\n\r]+/g, " ");
-  if (!text.trim() && !activeKitId) return defaultSpread(count);
+  if (!text.trim()) return defaultSpread(count);
 
   const scored = EXEMPLARS.map((exemplar, index) => {
     let score = 0;
@@ -222,22 +221,8 @@ export function pickExemplars(kindOrUserText, n = 3, activeKitId) {
     for (const token of contentTokens(exemplar)) {
       if (new RegExp(`\\b${token}\\b`).test(text)) score += 1;
     }
-    const kindMatch = text === exemplar.kind || new RegExp(`\\b${exemplar.kind}\\b`).test(text);
-    return { exemplar, score, kindMatch, index };
+    return { exemplar, score, index };
   });
-
-  if (activeKitId) {
-    const ranked = [...scored].sort(
-      (a, b) => Number(b.kindMatch) - Number(a.kindMatch) || b.score - a.score || a.index - b.index,
-    );
-    const sameKit = ranked.filter((s) => s.exemplar.kit === activeKitId);
-    const selected = sameKit.slice(0, count).map((s) => s.exemplar);
-    if (selected.length < count) {
-      const crossKit = ranked.find((s) => s.exemplar.kit !== activeKitId);
-      if (crossKit) selected.push({ ...crossKit.exemplar, structureOnly: true });
-    }
-    return selected;
-  }
 
   const matched = scored
     .filter((s) => s.score > 0)

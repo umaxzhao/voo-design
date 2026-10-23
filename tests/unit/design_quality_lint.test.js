@@ -114,30 +114,3 @@ describe('baseline kill switch', () => {
   });
   it('parses baseline flag', () => { expect(parseOptions(['--baseline']).baseline).toBe(true); });
 });
-
-describe('auto-layout evaluation', () => {
-  const composition = patch => [rect('p', { kind: 'frame', width: 400, height: 200, children: ['a', { id: 'b' }], ...patch }), rect('a'), rect('b', { x: 120 })];
-  it.each([{ kind: 'frame' }, { kind: 'group' }, { kind: 'rect', isFrame: true }])('warns on unmanaged composed containers %j with a modest penalty', patch => {
-    const result = lintDesign({ nodes: composition(patch) });
-    expect(result.issues).toEqual([expect.objectContaining({ rule: 'missingAutoLayout', severity: 'warn', nodeIds: ['p'], fix: expect.stringContaining('4-multiple gap') })]);
-    expect(result.score).toBe(93);
-  });
-  it.each([{ autoLayout: { direction: 'vertical' } }, { autoLayout: { direction: 'horizontal' } }, { layout: 'horizontal' }])('accepts managed composition %j', patch => {
-    expect(rules(composition(patch))).not.toContain('missingAutoLayout');
-  });
-  it('ignores single-child, leaf, hidden content and hidden branches', () => {
-    const nodes = composition({ layout: 'none' });
-    nodes[2].visible = false;
-    expect(rules(nodes)).not.toContain('missingAutoLayout');
-    expect(rules([rect('leaf', { kind: 'frame', layout: 'none' })])).not.toContain('missingAutoLayout');
-    nodes[0].visible = false;
-    nodes[2].visible = true;
-    expect(rules(nodes)).not.toContain('missingAutoLayout');
-  });
-  it('uses parentId relationships and scopes evaluation to the requested root', () => {
-    const nodes = composition({ children: undefined });
-    nodes[1].parentId = nodes[2].parentId = 'p';
-    expect(rules(nodes)).toContain('missingAutoLayout');
-    expect(lintDesign({ nodes }, { rootId: 'a' }).issues.map(i => i.rule)).not.toContain('missingAutoLayout');
-  });
-});

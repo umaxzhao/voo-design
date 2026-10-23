@@ -9,7 +9,7 @@ import { DESIGN_TOKENS } from "./tokens.js";
 
 export function buildDesignQualityPrompt({ userText, kit } = {}) {
   const activeKit = kit && STYLE_KIT_SHAPE_OK(kit) ? kit : pickStyleKit(userText);
-  const exemplars = pickExemplars(userText, 4, activeKit?.id);
+  const exemplars = pickExemplars(activeKit?.id, 4);
   const palette = activeKit?.palette ?? DESIGN_TOKENS.palettes.light;
   const scale = (activeKit?.typeScale ?? DESIGN_TOKENS.typeScale).join(" ");
   const radius = activeKit?.radius ?? DESIGN_TOKENS.radii;
@@ -28,7 +28,7 @@ export function buildDesignQualityPrompt({ userText, kit } = {}) {
     "",
     "[Workflow — tokens first]",
     "1. Choose the kit above and apply its tokens (background, surfaces, hairline borders, text colors, accent) as variables/styles before drawing.",
-    "2. Structure first: default to auto-layout frames for UI generation (horizontal/vertical, 4-multiple gap and padding), not hand-placed boxes. Reserve layout: \"none\" for posters, free-form art, or intentional absolute placement.",
+    "2. Structure first: layout skeleton as auto-layout frames (horizontal/vertical, 4-multiple gap and padding), not hand-placed boxes.",
     "3. Build components/rows once and repeat with real content; wire fills to tokens.",
     "4. Content last, but never lorem: real names, prices, dates, counts, avatar initials, status pills.",
     "5. Verify: capture_canvas, then fix overlap/overflow/alignment/type/contrast mistakes before replying.",
@@ -53,9 +53,7 @@ export function buildDesignQualityPrompt({ userText, kit } = {}) {
     "Polish: 1px hairlines instead of heavy borders, soft layered shadows on the 1-2 elevated modules only, consistent icon style, deliberate asymmetry.",
     "",
     exemplars.length
-      ? "[Exemplar recipes — follow the nearest one]\n" + exemplars.map((e, i) => e.structureOnly
-        ? `${i + 1}. (${e.kit}; structure only, restyle with the active kit) ${e.structure}`
-        : `${i + 1}. (${e.kit}) ${e.description}`).join("\n")
+      ? "[Exemplar recipes — follow the nearest one]\n" + exemplars.map((e, i) => `${i + 1}. (${e.kit}) ${e.description}`).join("\n")
       : "",
   ]
     .filter((s) => s.length > 0)

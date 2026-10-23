@@ -6,7 +6,7 @@ const contains = (a, b) => b.x >= a.x && b.y >= a.y && b.x + b.width <= a.x + a.
 const intersects = (a, b) => Math.min(a.x + a.width, b.x + b.width) > Math.max(a.x, b.x) && Math.min(a.y + a.height, b.y + b.height) > Math.max(a.y, b.y);
 const fill = n => { const f = n.fills?.find(f => f.visible !== false) ?? n.fill; return typeof f === 'string' ? f : f?.color; };
 const values = v => typeof v === 'number' ? [v] : v && typeof v === 'object' ? Object.values(v).flatMap(values) : [];
-const weights = { missingAutoLayout: 7, overlap: 10, overflow: 10, misalignment: 4, offGrid: 4, typeScale: 7, contrast: 12, radii: 5, purpleGradient: 12, identicalCards: 10, centerStackedHero: 10, decorativeLines: 7, evenTemplateSpacing: 6, flatHierarchy: 10, noFocal: 8 };
+const weights = { overlap: 10, overflow: 10, misalignment: 4, offGrid: 4, typeScale: 7, contrast: 12, radii: 5, purpleGradient: 12, identicalCards: 10, centerStackedHero: 10, decorativeLines: 7, evenTemplateSpacing: 6, flatHierarchy: 10, noFocal: 8 };
 
 /** Axis-aligned heuristics on editor world coordinates. Intentional overlaps and
  * decorative motifs are warnings to review, not a claim about visual intent. */
@@ -27,13 +27,6 @@ export function lintDesign(doc, { rootId, kit } = {}) {
   const add = (rule, ns, message, fix, severity = 'warn') => issues.push({ rule, severity, nodeIds: ns.map(n => n.id).filter(id => id != null), message, fix });
   const gaps = [];
   for (const n of nodes) {
-    // Reuse visible, scoped direct children; decoration alone is not composed UI.
-    const frame = ['frame', 'group'].includes(kind(n)) || n.isFrame === true || n.frame === true || n.containerType === 'frame';
-    const contentChildren = (children.get(n.id) ?? []).filter(c => !['line', 'path'].includes(kind(c)) && c.structural !== true);
-    const direction = n.autoLayout?.direction ?? n.layout;
-    if (frame && contentChildren.length >= 2 && !['horizontal', 'vertical'].includes(direction)) {
-      add('missingAutoLayout', [n], 'Composed frame lacks auto-layout; review intentional absolute compositions.', 'Enable horizontal/vertical auto-layout with a 4-multiple gap and padding unless absolute placement is intentional.');
-    }
     const p = byId.get(parents.get(n.id));
     if (p && container(p) && !contains(p, n)) add('overflow', [n, p], 'Child extends outside its parent bounds.', 'Resize or reposition the child inside the frame.', 'error');
     const spacing = ['gap', 'crossGap', 'padding', 'spacing'].flatMap(key => values(n.autoLayout?.[key] ?? n[key]));

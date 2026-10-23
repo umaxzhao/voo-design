@@ -144,41 +144,6 @@ describe("critique loop stub contract", () => {
 });
 
 describe("buildDesignQualityPrompt", () => {
-  it("picks the dashboard recipe from the request within the active kit", () => {
-    const prompt = buildDesignQualityPrompt({ userText: "Build a dashboard", kit: STYLE_KITS["dribbble-saas"] });
-    expect(prompt).toContain(EXEMPLARS.find((e) => e.id === "analytics-dark-shot").description);
-    expect(pickExemplars("Build a dashboard", 4, "dribbble-saas")[0].id).toBe("analytics-dark-shot");
-  });
-
-  it("picks the pricing recipe from the request", () => {
-    const prompt = buildDesignQualityPrompt({ userText: "Build a pricing page", kit: STYLE_KITS["dribbble-saas"] });
-    expect(prompt).toContain(EXEMPLARS.find((e) => e.id === "pricing-tiers").description);
-    expect(pickExemplars("Build a pricing page", 4, "dribbble-saas")[0].id).toBe("pricing-tiers");
-  });
-
-  it("labels at most one cross-kit recipe and includes only its structure", () => {
-    for (const kit of Object.values(STYLE_KITS)) {
-      for (const userText of ["dashboard", "pricing", "", "unmatched request"]) {
-        const selected = pickExemplars(userText, 4, kit.id);
-        const foreign = selected.filter((e) => e.kit !== kit.id);
-        expect(foreign.length).toBeLessThanOrEqual(1);
-        expect(selected.filter((e) => e.kit === kit.id)).toHaveLength(
-          Math.min(4, EXEMPLARS.filter((e) => e.kit === kit.id).length),
-        );
-        const prompt = buildDesignQualityPrompt({ userText, kit });
-        for (const e of foreign) {
-          expect(e.structureOnly).toBe(true);
-          expect(prompt).toContain(`(${e.kit}; structure only, restyle with the active kit) ${e.structure}`);
-          expect(prompt).not.toContain(e.description);
-        }
-        const recipes = prompt.split("[Exemplar recipes — follow the nearest one]\n")[1].split("\n");
-        for (const recipe of recipes) {
-          expect(recipe.includes(`(${kit.id})`) || recipe.includes("structure only, restyle with the active kit")).toBe(true);
-        }
-      }
-    }
-  });
-
   it("embeds the kit block, rules and exemplars", () => {
     const promptText = buildDesignQualityPrompt({
       userText: "analytics dashboard with KPI cards",
@@ -229,7 +194,7 @@ describe("canvas agent design quality hook", () => {
     await runAgentTurn({
       config: {},
       history: [],
-      userText: "Inspect an admin dashboard with KPI cards",
+      userText: "Build an admin dashboard with KPI cards",
       tools: [],
       executeTool: async () => ({}),
       streamStep,
@@ -262,13 +227,3 @@ describe("canvas agent design quality hook", () => {
     expect(system).toContain("=== Design quality (follow strictly) ===");
   });
 });
-
- it("makes auto-layout the UI default while preserving generation guidance", () => {
-   expect(SYSTEM_PROMPT).toContain("Default to auto-layout frames for UI and composed layouts");
-   expect(SYSTEM_PROMPT).toContain('layout: "none"');
-   for (const text of ["Lucide icons, never emoji", "Tailwind utility classes", "short copy for on-canvas UI text"]) expect(SYSTEM_PROMPT).toContain(text);
-   const prompt = buildDesignQualityPrompt({ userText: "dashboard" });
-   expect(prompt).toContain("default to auto-layout frames for UI generation");
-   expect(prompt).toContain("4-multiple gap and padding");
-   expect(prompt).toContain("intentional absolute placement");
- });

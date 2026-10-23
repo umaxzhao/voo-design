@@ -46,7 +46,6 @@ async function runInEditor({ task, model, timeout, critique }) {
   const timer = setTimeout(() => controller.abort(), timeout);
   let unsubscribe;
   let closeSession;
-  let completedTools = 0;
   try {
     const { createDocument } = await import('/src/canvas/editor/scene_model.js');
     const editor = window.__vooEditor;
@@ -74,28 +73,11 @@ async function runInEditor({ task, model, timeout, critique }) {
     async function turn(userText) {
       const reply = await runAgentTurn({
         config: { model: cliModel }, history: [...history], userText,
-        tools: CANVAS_TOOL_SCHEMAS,
-        executeTool: async (name, args, ...rest) => {
-          if (name === 'capture_canvas') {
-            args = { ...args, maxSize: Math.min(args?.maxSize || 960, 512) };
-          }
-          const result = await executeCanvasTool(name, args, ...rest);
-          if (name === 'capture_canvas' && result.ok && result.dataUrl?.length > 180000) {
-            return {
-              ...result,
-              dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=',
-              note: 'downscaled for bench memory',
-            };
-          }
-          return result;
-        },
-        streamStep: streamCliStep, signal: controller.signal, maxSteps: 40,
+        tools: CANVAS_TOOL_SCHEMAS, executeTool: executeCanvasTool,
+        streamStep: streamCliStep, signal: controller.signal, maxSteps: 64,
         onToolEvent: event => {
           if (event.status !== 'in_progress') console.log('[bench] tool', event.name, event.status);
           if (event.status !== 'in_progress') out.toolCalls.push({ name: event.name, status: event.status, error: event.error });
-          if ((event.status === 'completed' || event.status === 'error') && ++completedTools % 4 === 0 && window.__vooEditor) {
-            window.__vooBenchCheckpoint?.(JSON.parse(JSON.stringify(window.__vooEditor.getDocument())));
-          }
         },
       });
       history.push({ role: 'user', content: userText }, { role: 'assistant', content: reply || '' });
@@ -128,10 +110,9 @@ async function runInEditor({ task, model, timeout, critique }) {
     try { await closeSession?.(AbortSignal.timeout(10000)); }
     catch (error) { out.sessionCloseError = error.message; }
     out.doc = JSON.parse(JSON.stringify(window.__vooEditor.getDocument()));
-    await window.__vooBenchCheckpoint?.(out.doc);
     try {
       const { executeCanvasTool } = await import('/src/canvas/agent/canvas_tools.js');
-      const captured = await executeCanvasTool('capture_canvas', { maxSize: Math.min(960, Math.max(task.frame.w, task.frame.h)) });
+      const captured = await executeCanvasTool('capture_canvas', { maxSize: Math.max(task.frame.w, task.frame.h) });
       if (!captured.ok || !captured.dataUrl?.startsWith('data:image/png;base64,')) throw new Error('Canvas capture returned no PNG');
       out.png = captured.dataUrl;
     } catch (error) { out.captureError = error.message; }
@@ -174,36 +155,19 @@ export async function main(args = process.argv.slice(2)) {
     const bridge = start(['run', 'bridge']);
     const vite = start(['run', 'dev', '--', '--host', '127.0.0.1', '--port', vitePort, '--strictPort']);
     await Promise.all([ready(`http://127.0.0.1:${bridgePort}/health`, bridge), ready(`http://127.0.0.1:${vitePort}`, vite)]);
-    await Promise.all(['/', '/src/canvas/agent/canvas_tools.js'].map(path => fetch(`http://127.0.0.1:${vitePort}${path}`).catch(() => {})));
-    browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--js-flags=--max-old-space-size=3072', '--disable-dev-shm-usage'] });
+    browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
     const runOne = async id => {
       const task = DESIGN_BENCH_TASKS.find(item => item.id === id);
       console.error(`Design benchmark: ${id}`);
       const context = await browser.newContext({ viewport: { width: 1600, height: 1100 } });
       await context.addInitScript(baseline => { globalThis.__VOO_DESIGN_QUALITY_OFF__ = baseline; }, !!options.baseline);
       const page = await context.newPage();
-      page.on('crash', () => console.error(`[crash] ${id}`));
-      let heapInterval;
       if (process.env.VOO_DESIGN_BENCH_DEBUG) page.on('console', m => console.error(`[page] ${m.text().slice(0, 300)}`));
-      if (process.env.VOO_DESIGN_BENCH_DEBUG) heapInterval = setInterval(async () => {
-        try {
-          const heap = await page.evaluate(() => performance.memory?.usedJSHeapSize);
-          if (heap !== undefined) console.error(`[heap] ${id} ${(heap / 1024 / 1024).toFixed(1)}`);
-        } catch {}
-      }, 30000);
       const started = Date.now();
       let watchdog;
       let record = { id, kind: task.kind, frame: task.frame };
-      let lastCheckpoint = null;
       try {
-        await page.exposeFunction('__vooBenchCheckpoint', payload => {
-          if (payload?.nodes?.length) lastCheckpoint = payload;
-        });
-        try {
-          await page.goto(`http://127.0.0.1:${vitePort}/?voo-test=1`, { waitUntil: 'domcontentloaded', timeout: 180000 });
-        } catch {
-          await page.goto(`http://127.0.0.1:${vitePort}/?voo-test=1`, { waitUntil: 'domcontentloaded', timeout: 180000 });
-        }
+        await page.goto(`http://127.0.0.1:${vitePort}/?voo-test=1`);
         await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
         const result = await Promise.race([
           page.evaluate(runInEditor, { task, model: options.model || process.env.VOO_CODEX_MODEL, timeout, critique: options.critique && !!lint }),
@@ -221,16 +185,11 @@ export async function main(args = process.argv.slice(2)) {
       } catch (error) {
         record.error = error.stack || String(error);
         try {
-          let salvage;
-          try { salvage = await page.evaluate(async size => {
+          const salvage = await page.evaluate(async size => {
             const { executeCanvasTool } = await import('/src/canvas/agent/canvas_tools.js');
             const captured = await executeCanvasTool('capture_canvas', { maxSize: size });
             return { doc: JSON.parse(JSON.stringify(window.__vooEditor.getDocument())), png: captured?.dataUrl };
-          }, Math.min(960, Math.max(task.frame.w, task.frame.h))); }
-          catch (salvageError) {
-            record.salvageError = salvageError.message;
-            salvage = { doc: lastCheckpoint };
-          }
+          }, Math.max(task.frame.w, task.frame.h));
           if (salvage.doc?.nodes?.length) {
             record.partial = true;
             record.document = `${output}/${id}.json`;
@@ -243,7 +202,7 @@ export async function main(args = process.argv.slice(2)) {
           }
         } catch (salvageError) { record.salvageError = salvageError.message; }
       }
-      finally { clearTimeout(watchdog); clearInterval(heapInterval); await context.close(); }
+      finally { clearTimeout(watchdog); await context.close(); }
       record.durationMs = Date.now() - started;
       results.tasks.push(record);
       await save();

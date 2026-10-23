@@ -1,11 +1,7 @@
-import { buildDocumentDesignContext } from "../editor/design_tokens.js";
 /**
  * Minimal agent loop: the model talks, calls canvas tools, and sees their
  * results until it stops asking for tools. Nothing here builds a workflow.
  */
-
-import { closeCodexSession } from "../components/agent-panel/codex_transport.js";
-import { abortable } from "./abortable.js";
 
 import { streamChatTurn } from "./chat_stream.js";
 import { buildDesignQualityPrompt, pickStyleKit } from "./design_quality/index.js";
@@ -14,7 +10,6 @@ import { AGENT_DEFAULTS } from "./canvas_tools.js";
 
 export const AGENT_ERROR = Object.freeze({
   STEP_LIMIT: "agentStepLimit",
-  NO_CANVAS_CONTENT: "agentNoCanvasContent",
 });
 
 export const SYSTEM_PROMPT =
@@ -25,9 +20,9 @@ export const SYSTEM_PROMPT =
   "mark exactly one step in_progress while you work, and mark steps done as you finish them.\n" +
   "1. Inspect first: inspect_layer_tree / describe_selection / find_layers (by name or kind) before editing; " +
   "list_styles and list_variables before creating new ones.\n" +
-  "2. Structure: create_frame for UI containers (default to horizontal/vertical auto-layout, 4-multiple gap and " +
+  "2. Structure: create_frame for containers (optionally with horizontal/vertical auto layout, gap, " +
   "padding); create_shape for rect/ellipse/text; create_path for vector art (SVG d); place_image for " +
-  "raster at exact geometry when provided by the user.\n" +
+  "raster at exact geometry; generate_image or generate_image_web to make imagery.\n" +
   "3. Arrange: align_layers and distribute_layers instead of hand-computing coordinates; " +
   "mutate_auto_layout for frames; mutate_layer_layout/style/text or batch_mutate_layers for edits; " +
   "group_layers/ungroup_layers, reorder_layer, rename_layer (name every layer meaningfully).\n" +
@@ -40,17 +35,8 @@ export const SYSTEM_PROMPT =
   "rasterizes layers to base64 PNG for verification or handoff.\n" +
   "6. Verify: After multi-step edits check inspect_layer_tree or capture_canvas (PNG returned to you). " +
   "If a step went wrong, use undo (and redo) rather than piling on fixes.\n" +
-  "Design quality: plan first. Default to auto-layout frames for UI and composed layouts; pass layout horizontal or vertical explicitly. Reserve layout: \"none\" for posters, free-form art, or intentional absolute placement. Use spacing scale " +
-  "4/8/12/16/24/32/48/64; establish typography hierarchy (display, heading, body, caption), " +
-  "consistent radius and clear contrast. Create color tokens/variables before use and bind them. " +
-  "After multi-step writes, require capture_canvas, review alignment, clipping and hierarchy, then fix and capture again. " +
-  "On tool failure inspect the error, correct arguments and retry once; report unresolved failures.\n" +
   "7. Design quality: honor the Design quality block below — one style kit, tokens first, " +
   "clear hierarchy, no AI-template smells.\n" +
-  "For a poster/layout brief, create visible canvas layers in this turn; plans and variables alone do not complete it. " +
-  "Keep initial token setup small, then build the layout before expanding the palette. " +
-  "For UI generation use Lucide icons, never emoji as icons. For HTML generation use Tailwind utility classes for layout and styling.\n" +
-  "Use short copy for on-canvas UI text: prefer concise labels, headlines and body text; avoid chatty paragraphs. " +
   "Keep replies short.";
 
 const READ_ONLY_TOOLS = new Set([
@@ -123,8 +109,7 @@ export async function runAgentTurn({
   const base = styleNote.trim() ? `${SYSTEM_PROMPT}\n\nStyle notes from the user: ${styleNote.trim()}` : SYSTEM_PROMPT;
   let qualityOff = globalThis.__VOO_DESIGN_QUALITY_OFF__ === true;
   try { qualityOff ||= globalThis.localStorage?.getItem("voo.designQuality") === "off"; } catch {}
-  const documentContext = buildDocumentDesignContext(activeEditor()?.getDocument?.());
-  const system = (qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit: pickStyleKit(userText) })}`) + documentContext;
+  const system = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit: pickStyleKit(userText) })}`;
   const messages = [
     { role: "system", content: system },
     ...history,
@@ -136,49 +121,20 @@ export async function runAgentTurn({
   const editor = activeEditor();
   const before = documentFingerprint(editor);
   let mutated = false;
-  let writesSinceCapture = 0;
-  let verificationNudged = false;
-  let retryNudged = false;
-  let failurePending = false;
-  let canvasCreated = false;
-  let creationNudged = false;
-  // Only creation briefs require new content; inspection and token-only tasks remain valid.
-  const needsCanvasContent = /(?:create|draft|design|build|make).{0,60}(?:poster|layout|screen|landing page|dashboard)|(?:草拟|设计|生成|绘制|制作).{0,30}(?:海报|版式|页面|界面)/i.test(userText);
-  const creationTools = new Set(["create_frame", "create_shape", "create_path", "place_image", "generate_image", "generate_image_web", "create_instance", "create_nodes", "edit_html"]);
-  const canCapture = tools.some(tool => tool.function?.name === "capture_canvas");
 
   const runSteps = async () => {
     for (let step = 0; step < maxSteps; step += 1) {
       if (turnSignal.aborted) {
         throw new DOMException("Aborted", "AbortError");
       }
-      const { text, toolCalls } = await abortable(() => streamStep({
+      const { text, toolCalls } = await streamStep({
         config,
         messages,
         tools,
         signal: turnSignal,
-        onText: (text) => { if (!turnSignal.aborted) onText?.(text); },
-      }), turnSignal);
-      turnSignal.throwIfAborted();
-      if (toolCalls.length === 0) {
-        if (needsCanvasContent && !canvasCreated) {
-          if (creationNudged) throw Object.assign(new Error(AGENT_ERROR.NO_CANVAS_CONTENT), { code: AGENT_ERROR.NO_CANVAS_CONTENT });
-          creationNudged = true;
-          messages.push({ role: "assistant", content: text || null }, { role: "user", content: "The brief requires visible canvas content. Only setup has been completed. Now create the poster/layout using create_frame and create_shape (or other available canvas creation tools), then capture_canvas to verify. Do not stop at plans or variables." });
-          continue;
-        }
-        if (failurePending && !retryNudged) {
-          retryNudged = true;
-          messages.push({ role: "assistant", content: text || null }, { role: "user", content: "A tool failed. Inspect its error and retry once with corrected arguments, or explain why it cannot be completed." });
-          continue;
-        }
-        if (canCapture && writesSinceCapture >= 2 && !verificationNudged) {
-          verificationNudged = true;
-          messages.push({ role: "assistant", content: text || null }, { role: "user", content: "Before finishing, call capture_canvas to verify the multi-step design edits. Review the image and fix visible problems." });
-          continue;
-        }
-        return text;
-      }
+        onText,
+      });
+      if (toolCalls.length === 0) return text;
 
       messages.push({
         role: "assistant",
@@ -202,13 +158,7 @@ export async function runAgentTurn({
         }
         onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "in_progress" });
         try {
-          const result = await abortable(() => executeTool(call.name, args, { signal: turnSignal }), turnSignal);
-          turnSignal.throwIfAborted();
-          if (result?.isError || result?.error) throw new Error(JSON.stringify(result));
-          failurePending = false;
-          if (creationTools.has(call.name)) canvasCreated = true;
-          if (call.name === "capture_canvas") writesSinceCapture = 0;
-          else if (!READ_ONLY_TOOLS.has(call.name)) { writesSinceCapture += 1; verificationNudged = false; }
+          const result = await executeTool(call.name, args);
           const { dataUrl, ...rest } = result && typeof result === "object" ? result : {};
           const hasImage = typeof dataUrl === "string" && dataUrl.startsWith("data:image");
           const content = JSON.stringify(hasImage ? { ...rest, imageAttached: true } : result);
@@ -224,11 +174,6 @@ export async function runAgentTurn({
           }
           onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "completed", result });
         } catch (error) {
-          if (turnSignal.aborted) {
-            onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "cancelled" });
-            throw error;
-          }
-          failurePending = true;
           const code = error?.code ?? error?.message ?? "toolFailed";
           messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: code }) });
           onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "failed", error: code });
@@ -263,9 +208,6 @@ export async function runAgentTurn({
     wasCancelled = e instanceof DOMException && e.name === "AbortError" || (turnSignal?.aborted === true);
     throw e;
   } finally {
-    // A step limit happens outside the transport; release a native CLI still
-    // parked awaiting the final tool receipt. Cleanup must preserve the cause.
-    try { await closeCodexSession(turnSignal); } catch (cleanupError) { console.warn("[agent] Session cleanup failed", cleanupError); }
     restoreCommits?.();
     endBatch?.();
     const after = documentFingerprint(editor);
