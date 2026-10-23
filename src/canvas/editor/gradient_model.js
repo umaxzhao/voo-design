@@ -232,8 +232,8 @@ export function normalizeGradient(input) {
     if (first.includes("circle") || first.includes("at ") || first.includes("ellipse")) {
       const atMatch = /at\s+([\d.]+%?)\s+([\d.]+%?)/i.exec(first);
       if (atMatch) {
-        geometry.centerX = Number.parseFloat(atMatch[1]);
-        geometry.centerY = Number.parseFloat(atMatch[2]);
+        geometry.centerX = Number.parseFloat(atMatch[1]) || 50;
+        geometry.centerY = Number.parseFloat(atMatch[2]) || 50;
       }
       stopArgs = args.slice(1);
     }
@@ -244,8 +244,8 @@ export function normalizeGradient(input) {
       if (fromMatch) angle = parseAngleDegrees(fromMatch[1]);
       const atMatch = /at\s+([\d.]+%?)\s+([\d.]+%?)/i.exec(first);
       if (atMatch) {
-        geometry.centerX = Number.parseFloat(atMatch[1]);
-        geometry.centerY = Number.parseFloat(atMatch[2]);
+        geometry.centerX = Number.parseFloat(atMatch[1]) || 50;
+        geometry.centerY = Number.parseFloat(atMatch[2]) || 50;
       }
       stopArgs = args.slice(1);
     }
