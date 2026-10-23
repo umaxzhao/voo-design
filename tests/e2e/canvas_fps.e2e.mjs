@@ -135,10 +135,17 @@ try {
   }
 
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  await page.addInitScript(enabled => {
+    if (enabled) localStorage.setItem('voo.wasm-engine', '1');
+    else localStorage.removeItem('voo.wasm-engine');
+  }, process.env.VOO_WASM_ENGINE === '1');
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(String(error)));
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
+  if (process.env.VOO_WASM_ENGINE === '1') {
+    await page.waitForFunction(() => window.__vooEditor?.getWasmEngineStatus?.() === 'ready', null, { timeout: 30000 });
+  }
   await page.waitForTimeout(1000);
 
   const profiler = process.env.VOO_FPS_PROFILE ? await page.context().newCDPSession(page) : null;

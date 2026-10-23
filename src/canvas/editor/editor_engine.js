@@ -1,3 +1,4 @@
+import { wasmEngineEnabled, loadEditorWasmIndex } from '../../engine-wasm/editor-index.js';
 import { validateDesignTokens } from "./design_tokens.js";
 import { documentRenderListener } from "./render_notifications.js";
 import { releaseStagePictureCache } from "./stage_picture_cache.js";
@@ -325,6 +326,15 @@ export function createEditor({
   maskSourceAccessor = ctrl.maskTools.maskSourceOf;
 
   const layerCache = createLayerCache();
+  let wasmIndex = null;
+  if (wasmEngineEnabled()) {
+    loadEditorWasmIndex().then(index => {
+      if (disposed) { index.free(); return; }
+      wasmIndex = index;
+      cachedSpatialIndexDoc = null;
+      requestRender();
+    }).catch(error => console.warn('WASM engine unavailable; using JS spatial index', error));
+  }
   let cachedSpatialIndex = null;
   let cachedSpatialIndexDoc = null;
   function getSpatialIndex(currentDoc) {
@@ -336,7 +346,7 @@ export function createEditor({
     if (cachedSpatialIndexDoc && cachedSpatialIndexDoc.spatialIndex === cachedSpatialIndex) {
       attachSpatialIndex(cachedSpatialIndexDoc, null);
     }
-    cachedSpatialIndex = syncSpatialIndex(cachedSpatialIndex, currentDoc.nodes);
+    cachedSpatialIndex = wasmIndex ? wasmIndex.sync(currentDoc.nodes) : syncSpatialIndex(cachedSpatialIndex, currentDoc.nodes);
     cachedSpatialIndexDoc = currentDoc;
     attachSpatialIndex(currentDoc, cachedSpatialIndex);
     return cachedSpatialIndex;
@@ -433,6 +443,7 @@ export function createEditor({
   }
 
   const api = {
+    getWasmEngineStatus: () => wasmIndex ? "ready" : "inactive",
     get sourceWorkflowNodeId() {
       return sourceWorkflowNodeId;
     },
@@ -824,6 +835,7 @@ export function createEditor({
   requestRender();
 
   api.dispose = () => {
+    wasmIndex?.free();
     disposed = true;
     viewportTools.dispose();
     releaseStagePictureCache(ctx);

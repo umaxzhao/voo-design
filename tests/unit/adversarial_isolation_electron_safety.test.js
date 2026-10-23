@@ -112,7 +112,13 @@ describe("Adversarial Challenger: Runtime Isolation & Artifact Leaks", () => {
     expect(fs.statSync(onnxWasm).size).toBeGreaterThan(20000000);
     const header = fs.readFileSync(onnxWasm).subarray(0, 4);
     expect([...header]).toEqual([0, 97, 115, 109]);
-    expect(fs.readdirSync(assetsDir).filter((name) => name.endsWith(".wasm"))).toEqual([]);
+    const bundledWasm = fs.readdirSync(assetsDir).filter((name) => name.endsWith(".wasm"));
+    // ONNX stays external; the opt-in native scene core is a separate small asset.
+    expect(bundledWasm.filter(name => !/^voo_engine_bg-[\w-]+\.wasm$/.test(name))).toEqual([]);
+    expect(bundledWasm).toHaveLength(1);
+    const engine = fs.readFileSync(path.join(assetsDir, bundledWasm[0]));
+    expect(WebAssembly.validate(engine)).toBe(true);
+    expect(engine.length).toBeLessThan(100 * 1024);
   });
 });
 
