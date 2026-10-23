@@ -33,6 +33,8 @@ export default function PropertiesPanelSections({
   object,
   engine,
   parentLayout,
+  parentIsFrame = false,
+  parentNode = null,
   colorVariableActions,
   styleActions,
   docSize,
@@ -151,13 +153,30 @@ export default function PropertiesPanelSections({
       {/* Resize constraints: how this node follows its parent's resize. Frames
           (the page itself) and adjustments/regions/audio have no parent box;
           an auto-layout flow child is positioned by reflowAutoLayout instead. */}
-      {!isWarpTool &&
+       {!isWarpTool &&
       !object.isFrame &&
       object.kind !== "adjustment" &&
       object.kind !== "audio" &&
       !isRegionNode(object) &&
       !(parentLayout && object.layoutPosition !== "absolute") &&
-      (selectionCount ?? 1) <= 1 ? (
+      (selectionCount ?? 1) <= 1 &&
+      (object?.parentId == null ||
+        Boolean(parentLayout) ||
+        Boolean(parentIsFrame) ||
+        Boolean(parentNode?.isFrame) ||
+        parentNode?.kind === "frame" ||
+        Boolean(parentNode?.autoLayout) ||
+        (() => {
+          const engineParent =
+            engine?.getDocument?.()?.nodes?.find?.(
+              (node) => node.id === object.parentId,
+            ) ?? null;
+          return Boolean(
+            engineParent?.isFrame ||
+              engineParent?.kind === "frame" ||
+              engineParent?.autoLayout,
+          );
+        })()) ? (
         <ConstraintsSection object={object} editAndCommit={editAndCommit} />
       ) : null}
 
@@ -278,6 +297,8 @@ PropertiesPanelSections.propTypes = {
   object: PropTypes.object.isRequired,
   engine: PropTypes.object,
   parentLayout: PropTypes.object,
+  parentIsFrame: PropTypes.bool,
+  parentNode: PropTypes.object,
   colorVariableActions: PropTypes.object,
   styleActions: PropTypes.object,
   docSize: PropTypes.object,

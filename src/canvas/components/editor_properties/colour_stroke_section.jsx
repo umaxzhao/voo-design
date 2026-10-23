@@ -7,11 +7,23 @@ import { commonValue, MIXED } from "../../editor/selection_values.js";
 import { NODE_KIND } from "../../editor/scene_model.js";
 import { STROKE_ALIGN } from "../../editor/stroke_style.js";
 import { useI18n } from "../../use_i18n.js";
-import { IconSliders, IconChevronDown, IconMinus } from "../../icons.jsx";
+import {
+  IconSliders,
+  IconChevronDown,
+  IconMinus,
+  IconOpacity,
+} from "../../icons.jsx";
+import { Paintbrush, AlignCenterHorizontal } from "lucide-react";
 import StrokeStyleSection from "./stroke_style_section.jsx";
 import EditorTooltip from "../editor_tooltip.jsx";
 import ScrubField from "../scrub_field.jsx";
 import { Swatch, HexField, HEX_COLOUR } from "./colour_swatch.jsx";
+import {
+  SectionAddButton,
+  StaticSection,
+  sectionActionClass,
+  sectionRowClass,
+} from "./property_section.jsx";
 
 export function StrokeSection({
   object,
@@ -45,29 +57,20 @@ export function StrokeSection({
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
-    <div className="flex flex-col gap-1.5 pt-2 pb-1 border-t border-white/10 mt-2.5">
-      {/* Header */}
-      <div className="flex items-center justify-between px-0.5 select-none">
-        <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-400 font-medium">
-          {t("editor.props.strokeLabel")}
-        </span>
-        {none ? (
-          <button
-            type="button"
-            onClick={() =>
-              editAndCommit({
-                stroke: "#FFFFFF",
-                strokeWidth: Math.max(1, strokeWidth || 1),
-              })
-            }
-            title={t("editor.props.stroke")}
-            className="flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white text-xs font-mono outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
-          >
-            ＋
-          </button>
-        ) : null}
-      </div>
-
+    <StaticSection
+      title={t("editor.props.strokeLabel")}
+      extra={
+        <SectionAddButton
+          label={t("editor.props.addStroke")}
+          onClick={() =>
+            editAndCommit({
+              stroke: "#FFFFFF",
+              strokeWidth: Math.max(1, strokeWidth || 1),
+            })
+          }
+        />
+      }
+    >
       {none ? (
         <button
           type="button"
@@ -77,22 +80,25 @@ export function StrokeSection({
               strokeWidth: Math.max(1, strokeWidth || 1),
             })
           }
-          className="flex h-7 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/10 text-[11px] font-mono text-neutral-400 hover:border-white/20 hover:text-white transition-colors cursor-pointer"
+          className="flex h-7 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/10 text-[11px] font-mono text-neutral-400 hover:border-white/20 hover:text-white transition-colors cursor-pointer"
         >
-          <span>＋</span>
-          <span>{t("editor.props.stroke")}</span>
+          <span>+</span>
+          <span className="uppercase">{t("editor.props.stroke")}</span>
         </button>
       ) : (
         <>
           {/* Row 1: Unified Pill (Swatch + Label/Hex + Opacity + Minus) */}
-          <div className="flex h-7 items-center rounded-lg bg-neutral-800 px-2 gap-2 hover:bg-neutral-800/80 transition-colors">
+          <div className={sectionRowClass}>
             <Swatch
               value={none ? null : stroke}
               onPick={(colour) => editAndCommit({ stroke: colour })}
               ariaLabel={t("editor.props.stroke")}
             />
+            <span className="shrink-0 text-neutral-500" aria-hidden="true">
+              <Paintbrush size={11} />
+            </span>
             {isGradient ? (
-              <span className="min-w-0 flex-1 text-[11px] font-mono text-neutral-300 truncate">
+              <span className="min-w-0 flex-1 truncate text-[11px] font-mono text-neutral-300">
                 {t("editor.props.gradientLabel")}
               </span>
             ) : (
@@ -102,7 +108,7 @@ export function StrokeSection({
                 ariaLabel={t("editor.props.customColour")}
               />
             )}
-            <div className="flex items-center gap-0.5 border-l border-white/10 pl-2 shrink-0">
+            <div className="flex shrink-0 items-center gap-0.5 border-l border-white/10 pl-2">
               {strokeOpacityMixed ? (
                 <span
                   className="text-[11px] font-mono text-neutral-500"
@@ -112,6 +118,9 @@ export function StrokeSection({
                 </span>
               ) : (
                 <>
+                  <span className="text-neutral-500" aria-hidden="true">
+                    <IconOpacity size={11} />
+                  </span>
                   <ScrubValueInput
                     min={0}
                     max={100}
@@ -136,8 +145,9 @@ export function StrokeSection({
               <button
                 type="button"
                 onClick={() => editAndCommit({ stroke: "transparent" })}
-                title={t("node.delete")}
-                className="ml-1 flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.08] hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+                title={t("editor.props.removeStroke")}
+                aria-label={t("editor.props.removeStroke")}
+                className={`${sectionActionClass} ml-1`}
               >
                 <IconMinus size={12} />
               </button>
@@ -147,12 +157,18 @@ export function StrokeSection({
           {/* Row 2: Figma-style Stroke Position dropdown + Width input + More Settings toggle */}
           <div className="flex items-center gap-1.5 pt-0.5">
             {/* Stroke Position (Inside / Center / Outside) */}
-            <div className="relative flex-[1.2] min-w-0">
+            <div className="relative flex h-7 flex-[1.2] min-w-0 items-center rounded-xl bg-neutral-800 transition-colors hover:bg-neutral-800/80 focus-within:bg-neutral-800 focus-within:ring-1 focus-within:ring-[#a7ffd4]/40">
+              <span
+                className="pointer-events-none flex shrink-0 items-center pl-2.5 text-neutral-500"
+                aria-hidden="true"
+              >
+                <AlignCenterHorizontal size={11} />
+              </span>
               <select
                 value={strokeAlign}
                 disabled={!closed}
                 onChange={(e) => editAndCommit({ strokeAlign: e.target.value })}
-                className="h-7 w-full appearance-none rounded-xl bg-neutral-800 px-2.5 pr-6 text-[11px] font-mono text-neutral-200 outline-none hover:bg-neutral-800/80 focus:ring-1 focus:ring-[#a7ffd4]/40 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="h-full w-full min-w-0 appearance-none rounded-xl bg-transparent py-0 pl-1.5 pr-6 text-[11px] font-mono uppercase text-neutral-200 outline-none transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 aria-label={t("editor.strokeStyle.align")}
               >
                 <option
@@ -182,8 +198,8 @@ export function StrokeSection({
             {/* Stroke Width ScrubField */}
             <div className="flex-1 min-w-0">
               {strokeWidthMixed ? (
-                <div className="flex items-center rounded-lg bg-neutral-800 px-2 py-1 gap-1">
-                  <span className="text-[11px] font-mono text-neutral-500 pl-1">
+                <div className="flex h-7 items-center gap-1 rounded-xl bg-neutral-800 px-2.5">
+                  <span className="pl-1 text-[11px] font-mono text-neutral-500">
                     —
                   </span>
                 </div>
@@ -214,7 +230,6 @@ export function StrokeSection({
                   onCommit={commitNow}
                   ariaLabel={t("editor.props.strokeWidth")}
                   scrubHint={t("editor.props.dragToAdjust")}
-                  className="!rounded-lg"
                 />
               )}
             </div>
@@ -245,7 +260,7 @@ export function StrokeSection({
           ) : null}
         </>
       )}
-    </div>
+    </StaticSection>
   );
 }
 

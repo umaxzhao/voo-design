@@ -2,8 +2,9 @@
 
 import PropTypes from "prop-types";
 import { useI18n } from "../../use_i18n.js";
-import ScrubField from "../scrub_field.jsx";
+import ToolSliderField from "./tool_slider_field.jsx";
 import FlatSelect from "../flat_select.jsx";
+import { sectionRowClass } from "./property_section.jsx";
 
 export default function SelectionWandControls({
   isWand = false,
@@ -24,31 +25,20 @@ export default function SelectionWandControls({
 
   return (
     <div className="space-y-1.5 pt-1">
-      <div className="grid grid-cols-2 gap-1.5">
-        <ScrubField
-          prefix={
-            <svg
-              className="w-3.5 h-3.5 text-neutral-400"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="22" y1="12" x2="18" y2="12" />
-              <line x1="6" y1="12" x2="2" y2="12" />
-              <line x1="12" y1="6" x2="12" y2="2" />
-              <line x1="12" y1="22" x2="12" y2="18" />
-            </svg>
-          }
-          min={0}
-          max={255}
-          value={wandTolerance}
-          onValueChange={(val) => onWandTolerance?.(val)}
-          ariaLabel={t("editor.wand.tolerance")}
-          scrubHint={t("editor.props.dragToAdjust")}
-        />
-        {onWandSampleSize ? (
+      <ToolSliderField
+        label={t("editor.wand.tolerance")}
+        min={0}
+        max={255}
+        value={Math.round(wandTolerance)}
+        onValueChange={(val) => onWandTolerance?.(val)}
+        ariaLabel={t("editor.wand.tolerance")}
+        scrubHint={t("editor.props.dragToAdjust")}
+      />
+      {onWandSampleSize ? (
+        <div className="flex h-7 min-w-0 items-center gap-2">
+          <span className="w-[64px] shrink-0 truncate text-[10px] font-mono uppercase tracking-wide text-neutral-500">
+            {t("editor.wand.sampleSize")}
+          </span>
           <FlatSelect
             value={String(wandSampleSize ?? 0)}
             onChange={(value) => onWandSampleSize(Number(value))}
@@ -58,21 +48,22 @@ export default function SelectionWandControls({
               { value: "1", label: t("editor.wand.sample3x3") },
               { value: "2", label: t("editor.wand.sample5x5") },
             ]}
-            triggerClassName="!h-8 !w-full !rounded-xl !bg-[#222222] !pl-3 !pr-7 !py-1.5 !text-[11px] !font-mono !tabular-nums !text-neutral-100 hover:!bg-[#282828]"
+            className="min-w-0 flex-1"
+            triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2.5 !text-[10px] !font-mono !tabular-nums !text-neutral-100 hover:!bg-neutral-800/80"
             widthClass="w-40"
           />
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-3 gap-1">
         <button
           type="button"
           onClick={() => onWandContiguous?.(!wandContiguous)}
           aria-pressed={wandContiguous}
-          className={`rounded-xl py-1.5 text-[10px] font-mono transition-all ${
+          className={`${sectionRowClass} justify-center px-1 text-[10px] ${
             wandContiguous
-              ? "bg-white text-black font-semibold"
-              : "bg-[#222222] text-neutral-400 hover:bg-[#282828] hover:text-white"
+              ? "text-white ring-1 ring-white/25"
+              : "text-neutral-400"
           }`}
         >
           {t("editor.wand.contiguous")}
@@ -81,10 +72,10 @@ export default function SelectionWandControls({
           type="button"
           onClick={() => onWandAntiAlias?.(!wandAntiAlias)}
           aria-pressed={wandAntiAlias}
-          className={`rounded-xl py-1.5 text-[10px] font-mono transition-all ${
+          className={`${sectionRowClass} justify-center px-1 text-[10px] ${
             wandAntiAlias
-              ? "bg-white text-black font-semibold"
-              : "bg-[#222222] text-neutral-400 hover:bg-[#282828] hover:text-white"
+              ? "text-white ring-1 ring-white/25"
+              : "text-neutral-400"
           }`}
         >
           {t("editor.wand.antiAlias")}
@@ -93,10 +84,10 @@ export default function SelectionWandControls({
           type="button"
           onClick={() => onWandSampleAll?.(!wandSampleAll)}
           aria-pressed={wandSampleAll}
-          className={`rounded-xl py-1.5 text-[10px] font-mono transition-all ${
+          className={`${sectionRowClass} justify-center px-1 text-[10px] ${
             wandSampleAll
-              ? "bg-white text-black font-semibold"
-              : "bg-[#222222] text-neutral-400 hover:bg-[#282828] hover:text-white"
+              ? "text-white ring-1 ring-white/25"
+              : "text-neutral-400"
           }`}
         >
           {t("editor.wand.sampleAll")}

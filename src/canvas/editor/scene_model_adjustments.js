@@ -201,7 +201,10 @@ export function normalizeAdjustments(adj) {
     },
     colorBalance: {
       enabled: Boolean(adj.colorBalance?.enabled ?? defaults.colorBalance.enabled),
-      preserveLuminosity: adj.colorBalance?.preserveLuminosity ?? defaults.colorBalance.preserveLuminosity,
+      preserveLuminosity:
+        adj.colorBalance?.preserveLuminosity === undefined
+          ? defaults.colorBalance.preserveLuminosity
+          : adj.colorBalance?.preserveLuminosity,
       shadows: normalizeColorBalanceZone(adj.colorBalance?.shadows, defaults.colorBalance.shadows),
       midtones: normalizeColorBalanceZone(adj.colorBalance?.midtones, defaults.colorBalance.midtones),
       highlights: normalizeColorBalanceZone(adj.colorBalance?.highlights, defaults.colorBalance.highlights),
@@ -221,7 +224,10 @@ export function normalizeAdjustments(adj) {
       enabled: Boolean(adj.photoFilter?.enabled ?? defaults.photoFilter.enabled),
       color: normalizeHexColor(adj.photoFilter?.color, defaults.photoFilter.color),
       density: parseAdjustmentValue(adj.photoFilter?.density, 0, 100, defaults.photoFilter.density),
-      preserveLuminosity: adj.photoFilter?.preserveLuminosity ?? defaults.photoFilter.preserveLuminosity,
+      preserveLuminosity:
+        adj.photoFilter?.preserveLuminosity === undefined
+          ? defaults.photoFilter.preserveLuminosity
+          : adj.photoFilter?.preserveLuminosity,
     },
     vibrance: {
       enabled: Boolean(adj.vibrance?.enabled ?? defaults.vibrance.enabled),

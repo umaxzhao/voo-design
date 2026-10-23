@@ -132,8 +132,8 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     expect(html).toContain("editor.shape.rect");
     expect(html).toContain("editor.strokeStyle.weight");
     expect(html).toContain("editor.props.cornerRadius");
-    expect(html).toContain("圆角");
-    expect(html).toContain("切角");
+    expect(html).toContain("editor.shape.cornerRound");
+    expect(html).toContain("editor.shape.cornerStraight");
     expect(html).toContain("2px");
     expect(html).toContain("4px");
   });
@@ -156,8 +156,8 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     );
 
     expect(html).toContain("editor.shape.star");
-    expect(html).toContain("角数 (Points)");
-    expect(html).toContain("内径比例 (Inner Radius)");
+    expect(html).toContain("editor.shape.points");
+    expect(html).toContain("editor.shape.innerRadius");
   });
 
   it("renders Arrow tool properties (Arrowhead start, end, size) when Arrow tool is active", () => {
@@ -180,8 +180,8 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     );
 
     expect(html).toContain("editor.tool.arrow");
-    expect(html).toContain("起点箭头");
-    expect(html).toContain("终点箭头");
+    expect(html).toContain("editor.shape.arrowStart");
+    expect(html).toContain("editor.shape.arrowEnd");
   });
 
   it("renders Gradient properties (Linear, Radial, Angular, Reverse) when Gradient tool is active", () => {
@@ -199,10 +199,10 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     );
 
     expect(html).toContain("editor.tool.gradient");
-    expect(html).toContain("线性 Linear");
-    expect(html).toContain("径向 Radial");
-    expect(html).toContain("角度 Angular");
-    expect(html).toContain("反转渐变色标");
+    expect(html).toContain("editor.props.gradient.linear");
+    expect(html).toContain("editor.props.gradient.radial");
+    expect(html).toContain("editor.props.gradient.angular");
+    expect(html).toContain("editor.gradient.reverse");
   });
 
   it("renders Selection tools (Marquee/Lasso/Wand) with modes and action shortcuts", () => {

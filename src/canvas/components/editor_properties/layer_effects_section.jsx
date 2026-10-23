@@ -1,7 +1,11 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { CollapsibleSection } from "./property_section.jsx";
+import {
+  CollapsibleSection,
+  SectionAddButton,
+  sectionActionClass,
+} from "./property_section.jsx";
 import { useI18n } from "../../use_i18n.js";
 import {
   listConfiguredAdjustments,
@@ -12,7 +16,7 @@ import {
   effectLabelKey,
   FILTER_KINDS,
 } from "../../editor/adjustment_catalog.js";
-import { IconEye, IconEyeOff, IconTrash } from "../../icons.jsx";
+import { IconEye, IconEyeOff, IconMinus } from "../../icons.jsx";
 import AddKindPicker from "./add_kind_picker.jsx";
 import AdjustmentPopover from "./adjustment_popover.jsx";
 import KindIcon from "./kind_icons.jsx";
@@ -136,17 +140,13 @@ export default function LayerEffectsSection({
       <CollapsibleSection
         title={t("editor.props.effects")}
         extra={
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
+          <SectionAddButton
+            label={t("editor.props.addEffect")}
+            onClick={(event) => {
+              event.stopPropagation();
               setShowAddPicker(true);
             }}
-            title={t("editor.layers.addAdjustment")}
-            className="flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white text-[12px] font-mono focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
-          >
-            ＋
-          </button>
+          />
         }
         defaultOpen={defaultOpen}
         storageKey={`effects.${object.kind}`}
@@ -172,7 +172,7 @@ export default function LayerEffectsSection({
               <div
                 key={`adj-${kind}`}
                 style={isEditing ? { ringColor: `${accent}80` } : undefined}
-                className={`flex items-center justify-between rounded-xl px-2.5 py-1.5 transition-all ${
+                className={`flex h-7 items-center justify-between rounded-xl px-2.5 transition-all ${
                   isEditing
                     ? "bg-neutral-800 ring-1 ring-white/20"
                     : "bg-neutral-900/80 hover:bg-neutral-800/80"
@@ -191,7 +191,7 @@ export default function LayerEffectsSection({
                     <KindIcon kind={kind} />
                   </span>
                   <span
-                    className={`truncate text-[11px] font-mono ${
+                    className={`truncate text-[11px] font-mono uppercase ${
                       isEnabled ? "text-neutral-200" : "text-neutral-500"
                     }`}
                   >
@@ -218,10 +218,11 @@ export default function LayerEffectsSection({
                   <button
                     type="button"
                     onClick={() => removeKind(kind, false)}
-                    title={t("node.delete")}
-                    className="p-1 text-neutral-500 hover:text-rose-400 transition-colors"
+                    title={t("editor.props.removeAdjustment")}
+                    aria-label={t("editor.props.removeAdjustment")}
+                    className={sectionActionClass}
                   >
-                    <IconTrash size={12} />
+                    <IconMinus size={12} />
                   </button>
                 </div>
               </div>
@@ -237,7 +238,7 @@ export default function LayerEffectsSection({
             return (
               <div
                 key={`eff-${kind}`}
-                className={`flex items-center justify-between rounded-xl px-2.5 py-1.5 transition-all ${
+                className={`flex h-7 items-center justify-between rounded-xl px-2.5 transition-all ${
                   isEditing
                     ? "bg-neutral-800 ring-1 ring-[#E5B2FF]/40"
                     : "bg-neutral-900/80 hover:bg-neutral-800/80"
@@ -256,7 +257,7 @@ export default function LayerEffectsSection({
                     <KindIcon kind={kind} />
                   </span>
                   <span
-                    className={`truncate text-[11px] font-mono ${
+                    className={`truncate text-[11px] font-mono uppercase ${
                       isEnabled ? "text-neutral-200" : "text-neutral-500"
                     }`}
                   >
@@ -283,10 +284,11 @@ export default function LayerEffectsSection({
                   <button
                     type="button"
                     onClick={() => removeKind(kind, true)}
-                    title={t("node.delete")}
-                    className="p-1 text-neutral-500 hover:text-rose-400 transition-colors"
+                    title={t("editor.props.removeEffect")}
+                    aria-label={t("editor.props.removeEffect")}
+                    className={sectionActionClass}
                   >
-                    <IconTrash size={12} />
+                    <IconMinus size={12} />
                   </button>
                 </div>
               </div>

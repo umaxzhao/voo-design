@@ -15,7 +15,6 @@ import { getImageDataUrl, putImage } from "./db.js";
 import { dataUrlToBlob } from "../../shared/db_wire.js";
 import { useDesignStore } from "../../store/design_store.js";
 import { addRecentFile } from "./recent_files.js";
-import { psdBytesToVooFile } from "./psd_to_voo.js";
 import { isSvgFileName, svgBytesToVooFile } from "./svg_document_io.js";
 import { buildFigContainer } from "../figma/voo-to-fig.js";
 import { serializeFigArchive } from "../figma/fig-file.js";
@@ -459,6 +458,7 @@ async function binaryDesignToVooFile(bytes, sourceName, callbacks = {}) {
     const { vooFile, fonts, figSource } = await importFigFile(bytes, callbacks);
     return { vooFile, fonts, figSource };
   }
+  const { psdBytesToVooFile } = await import("./psd_to_voo.js");
   return { vooFile: psdBytesToVooFile(bytes), fonts: [], figSource: null };
 }
 
