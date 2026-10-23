@@ -2,8 +2,8 @@
 
 import PropTypes from "prop-types";
 import { useI18n } from "../../use_i18n.js";
-import { StaticSection } from "./property_section.jsx";
-import ScrubField from "../scrub_field.jsx";
+import { StaticSection, sectionRowClass } from "./property_section.jsx";
+import ToolSliderField from "./tool_slider_field.jsx";
 
 export default function PenProperties({
   penMode = "shape",
@@ -26,10 +26,10 @@ export default function PenProperties({
                 type="button"
                 onClick={() => onPenMode(mode)}
                 aria-pressed={penMode === mode}
-                className={`rounded-xl py-1.5 text-[11px] font-mono transition-all ${
+                className={`${sectionRowClass} justify-center text-[10px] ${
                   penMode === mode
-                    ? "bg-white text-black font-medium"
-                    : "bg-[#222222] text-neutral-400 hover:bg-[#2a2a2a] hover:text-neutral-200"
+                    ? "text-white ring-1 ring-white/25"
+                    : "text-neutral-400"
                 }`}
               >
                 {mode === "shape"
@@ -44,10 +44,11 @@ export default function PenProperties({
       {onPenStrokeWidth && (
         <StaticSection title={t("editor.strokeStyle.weight")}>
           <div className="flex flex-col gap-1.5">
-            <ScrubField
-              prefix={
+            <ToolSliderField
+              label={t("editor.strokeStyle.weight")}
+              icon={
                 <svg
-                  className="w-3.5 h-3.5 text-neutral-400"
+                  className="h-3 w-3"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -81,9 +82,9 @@ export default function PenProperties({
                     key={sz}
                     type="button"
                     onClick={() => onPenStrokeWidth(sz)}
-                    className={`h-5 min-w-[24px] px-1.5 flex items-center justify-center rounded-md text-[10px] font-mono transition-all ${
+                    className={`flex h-5 min-w-[24px] items-center justify-center rounded-md px-1.5 text-[10px] font-mono transition-all ${
                       isActive
-                        ? "bg-[#a7ffd4] text-black font-semibold shadow-pop"
+                        ? "bg-[#a7ffd4] font-semibold text-black shadow-pop"
                         : "bg-white/[0.06] text-neutral-400 hover:bg-white/[0.12] hover:text-neutral-200"
                     }`}
                   >
@@ -104,10 +105,10 @@ export default function PenProperties({
                 key={type}
                 type="button"
                 onClick={() => onPenAnchorType(type)}
-                className={`rounded-xl py-1.5 text-[11px] font-mono transition-all ${
+                className={`${sectionRowClass} justify-center text-[10px] ${
                   penAnchorType === type
-                    ? "bg-white text-black font-medium"
-                    : "bg-[#222222] text-neutral-400 hover:bg-[#2a2a2a] hover:text-neutral-200"
+                    ? "text-white ring-1 ring-white/25"
+                    : "text-neutral-400"
                 }`}
               >
                 {type === "corner"

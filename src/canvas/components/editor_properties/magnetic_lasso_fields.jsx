@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 
 import { MAGNETIC_LASSO_SETTINGS } from "../../editor/magnetic_lasso.js";
-import ScrubField from "../scrub_field.jsx";
+import ToolSliderField from "./tool_slider_field.jsx";
 
 const FIELDS = Object.freeze([
   ["width", "editor.magneticLasso.width"],
@@ -15,9 +15,9 @@ export default function MagneticLassoFields({ t, values, onChange }) {
       {FIELDS.map(([name, labelKey]) => {
         const definition = MAGNETIC_LASSO_SETTINGS[name];
         return (
-          <ScrubField
+          <ToolSliderField
             key={name}
-            prefix={t(labelKey)}
+            label={t(labelKey)}
             min={definition.min}
             max={definition.max}
             step={definition.step}
