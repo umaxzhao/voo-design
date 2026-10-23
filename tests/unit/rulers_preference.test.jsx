@@ -16,7 +16,7 @@ describe("rulers product defaults", () => {
     await setSetting("voo.editor.showRulers", value);
     const html = renderToStaticMarkup(<CanvasSettingsSection />);
     expect(html).toContain('data-testid="settings-show-rulers"');
-    expect(html.includes('checked=""')).toBe(value === true);
+    expect(html).toContain(`aria-checked="${value === true}"`);
     expect(getSetting("voo.editor.showRulers")).toBe(value ?? null);
   });
 

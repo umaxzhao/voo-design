@@ -22,6 +22,7 @@ import {
 import InfoHint from "./info_hint.jsx";
 import { useShowRulers } from "../use_show_rulers.js";
 import SettingsSection from "./settings_section.jsx";
+import { Switch } from "./ui/switch.jsx";
 
 export function WorkspaceSettingsSection() {
   const { t } = useI18n();
@@ -228,18 +229,18 @@ export function WorkspaceSettingsSection() {
 export function CanvasSettingsSection() {
   const { t } = useI18n();
   const { showRulers, setShowRulers } = useShowRulers();
+  const label = t("settings.canvas.showRulers");
   return (
     <SettingsSection title={t("settings.canvas.title")} hint={t("settings.canvas.rulersHint")}>
-      <label className="flex items-center justify-between gap-3 text-xs text-neutral-200">
-        <span>{t("settings.canvas.showRulers")}</span>
-        <input
-          type="checkbox"
-          data-testid="settings-show-rulers"
+      <div className="flex items-center justify-between gap-3 text-xs text-neutral-200">
+        <span>{label}</span>
+        <Switch
+          testId="settings-show-rulers"
           checked={showRulers}
-          onChange={(event) => setShowRulers(event.target.checked)}
-          className="h-4 w-4 accent-[#a7ffd4]"
+          onChange={setShowRulers}
+          label={label}
         />
-      </label>
+      </div>
     </SettingsSection>
   );
 }

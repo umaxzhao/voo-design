@@ -27,9 +27,11 @@ describe("shared ruler preference", () => {
     const editorSetter = harness.setters[0];
     const section = CanvasSettingsSection();
     const settingsSetter = harness.setters[1];
-    const input = section.props.children.props.children[1];
-    expect(input.props.checked).toBe(false);
-    input.props.onChange({ target: { checked: true } });
+    // SettingsSection > div > [span, Switch]
+    const switchEl = section.props.children.props.children[1];
+    expect(switchEl.props.checked).toBe(false);
+    expect(switchEl.props["data-testid"] || switchEl.props.testId).toBeTruthy();
+    switchEl.props.onChange(true);
     expect(getSetting(SHOW_RULERS_SETTING)).toBe(true);
     expect(editorSetter).toHaveBeenLastCalledWith(true);
     editor.toggleRulers();
