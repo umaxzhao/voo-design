@@ -11,7 +11,7 @@ node scripts/design-bench/score.mjs --label=after --judge
 node scripts/design-bench/report.mjs
 ```
 
-Omit `--tasks` for all 20 tasks. `--model` accepts a bare model ID or `codex:<id>` and defaults to `VOO_CODEX_MODEL` or the bridge's default model. `--judge` also works on the runner; it invokes the locally installed `claude -p --model haiku` CLI to inspect each screenshot. Judge errors are recorded and cause a nonzero exit rather than fabricated scores.
+Omit `--tasks` for all 20 tasks. `--model` accepts a bare model ID or `codex:<id>` and defaults to `VOO_CODEX_MODEL` or the bridge's default model. `--judge` also works on the runner; it invokes the local Codex CLI (`codex exec -i <png>`, proxy vars set automatically; override model with `VOO_DESIGN_JUDGE_MODEL`) to inspect each screenshot. Judge errors are recorded and cause a nonzero exit rather than fabricated scores.
 
 Outputs live in `/workspace/tmp/design-bench/<before|after>/`: `<id>.png` is a canvas-only capture at the requested frame resolution, `<id>.json` is the final editor document, and `scores.json` contains lint results, critique rounds, model, timing, tool receipts and any errors. Results are checkpointed after each task. Re-running a label replaces its score manifest and selected task artifacts. Use the same task selection and model in both runs for a useful comparison.
 
