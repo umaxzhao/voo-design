@@ -499,8 +499,9 @@ export function parseSvgStringToNodes(svgString) {
       if (!content.trim()) return;
       const x = parseNum(attrs.x, 0);
       const y = parseNum(attrs.y, 0);
-      const pt = applyTransformToPoint(x, y, matrix);
       const fontSize = parseNum(attrs["font-size"] || attrs.fontSize, 16);
+      // SVG y is a baseline; editor text positions are the top of the box.
+      const pt = applyTransformToPoint(x, y - fontSize, matrix);
       const textNode = createTextNode({
         x: pt.x,
         y: pt.y,
