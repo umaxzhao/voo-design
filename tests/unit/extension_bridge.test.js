@@ -36,7 +36,7 @@ describe("extension bridge", () => {
   });
 
   it("rejects origins that are not this extension", async () => {
-    const bridge = new ExtensionBridge();
+    const bridge = new ExtensionBridge({ port: 0 });
     bridges.push(bridge);
     const port = await listen(bridge);
     await expect(connect(port, "https://evil.example")).rejects.toThrow();
@@ -44,7 +44,7 @@ describe("extension bridge", () => {
   });
 
   it("accepts the extension origin and resolves an acknowledged job", async () => {
-    const bridge = new ExtensionBridge();
+    const bridge = new ExtensionBridge({ port: 0 });
     bridges.push(bridge);
     const port = await listen(bridge);
     const socket = await connect(port, EXTENSION_ORIGIN);
@@ -69,7 +69,7 @@ describe("extension bridge", () => {
   });
 
   it("rejects a job that is not acknowledged in time", async () => {
-    const bridge = new ExtensionBridge({ ackTimeoutMs: 40 });
+    const bridge = new ExtensionBridge({ port: 0, ackTimeoutMs: 40 });
     bridges.push(bridge);
     const port = await listen(bridge);
     const socket = await connect(port, EXTENSION_ORIGIN);

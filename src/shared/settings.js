@@ -15,6 +15,22 @@
  */
 
 const STORAGE_KEYS = [
+  // Canvas agent settings are read synchronously when the panel mounts.
+  // Keep these in sync with AGENT_SETTING without importing the canvas engine.
+  "agent.apiKey",
+  "agent.baseUrl",
+  "agent.model",
+  "agent.imageProviderId",
+  "agent.imageModelId",
+  "agent.text.providerId",
+  "agent.text.modelId",
+  "agent.llm.providerId",
+  "agent.llm.modelId",
+  "agent.confirmBeforeImage",
+  "agent.useSelectionByDefault",
+  "agent.defaultImageSize",
+  "agent.maxSteps",
+  "agent.styleNote",
   "agent.mcpServers",
   "ciw.currentWorkflowId",
   "ciw.locale",

@@ -1061,6 +1061,8 @@ export default {
   "editor.strokeStyle.profileTaperBoth": "两端渐细",
   "editor.shape.title": "形状",
   "editor.shape.type": "类型",
+  "editor.shape.rect": "矩形",
+  "editor.shape.ellipse": "椭圆",
   "editor.shape.polygon": "多边形",
   "editor.shape.star": "星形",
   "editor.shape.sides": "边数",
