@@ -28,47 +28,68 @@ export async function recapture({ label, tasks, scoreOnly = false } = {}) {
   try {
     for (const id of ids) {
       const screenshot = `${directory}/${id}.png`;
-      let exists = false;
-      try { await access(screenshot); exists = true; }
-      catch (error) { if (error.code !== 'ENOENT') throw error; }
-      if (!scoreOnly || !exists) {
-        const doc = JSON.parse(await readFile(`${directory}/${id}.json`, 'utf8'));
-        if (!browser) {
-          vite = spawn('npm', ['run', 'dev', '--', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
-            cwd: fileURLToPath(new URL('../../', import.meta.url)), detached: true, stdio: ['ignore', 'inherit', 'inherit'],
-          });
-          vite.on('error', error => { startError = error; });
-          const deadline = Date.now() + 240000;
-          while (true) {
-            if (startError) throw startError;
-            if (vite.exitCode !== null || vite.signalCode) throw new Error('Vite exited before capture');
-            try { if ((await fetch(url, { signal: AbortSignal.timeout(2000) })).ok) break; } catch {}
-            if (Date.now() >= deadline) throw new Error('Vite readiness timed out');
-            await new Promise(done => setTimeout(done, 250));
+      try {
+        let exists = false;
+        try { await access(screenshot); exists = true; }
+        catch (error) { if (error.code !== 'ENOENT') throw error; }
+        if (!scoreOnly || !exists) {
+          const doc = JSON.parse(await readFile(`${directory}/${id}.json`, 'utf8'));
+          if (!browser) {
+            vite = spawn('npm', ['run', 'dev', '--', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
+              cwd: fileURLToPath(new URL('../../', import.meta.url)), detached: true, stdio: ['ignore', 'inherit', 'inherit'],
+            });
+            vite.on('error', error => { startError = error; });
+            const deadline = Date.now() + 240000;
+            while (true) {
+              if (startError) throw startError;
+              if (vite.exitCode !== null || vite.signalCode) throw new Error('Vite exited before capture');
+              try { if ((await fetch(url, { signal: AbortSignal.timeout(2000) })).ok) break; } catch {}
+              if (Date.now() >= deadline) throw new Error('Vite readiness timed out');
+              await new Promise(done => setTimeout(done, 250));
+            }
+            const { chromium } = await import('playwright');
+            browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--js-flags=--max-old-space-size=3072', '--disable-dev-shm-usage'] });
           }
-          const { chromium } = await import('playwright');
-          browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--js-flags=--max-old-space-size=3072', '--disable-dev-shm-usage'] });
+          const context = await browser.newContext({ viewport: { width: 1600, height: 1100 } });
+          try {
+            const page = await context.newPage();
+            await page.goto(`${url}/?voo-test=1`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+            await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
+            const frame = await page.evaluate(doc => {
+              const editor = window.__vooEditor;
+              editor.updateDocument(doc);
+              editor.requestRender?.();
+              return { w: doc.width || doc.w, h: doc.height || doc.h };
+            }, doc);
+            await page.waitForTimeout(800);
+            try {
+              await page.locator('[data-testid="workspace-skia-canvas"], [data-testid="skia-canvas"], canvas').first()
+                .screenshot({ path: screenshot, type: 'png' });
+            } catch {
+              const viewport = page.viewportSize();
+              const dimension = (value, maximum) => Number.isFinite(Number(value)) && Number(value) > 0
+                ? Math.min(Number(value), maximum) : maximum;
+              await page.screenshot({
+                path: screenshot, type: 'png',
+                clip: { x: 0, y: 0, width: dimension(frame.w, viewport.width), height: dimension(frame.h, viewport.height) },
+              });
+            }
+          } finally { await context.close(); }
         }
-        const context = await browser.newContext({ viewport: { width: 1600, height: 1100 } });
-        try {
-          const page = await context.newPage();
-          await page.goto(`${url}/?voo-test=1`, { waitUntil: 'domcontentloaded', timeout: 180000 });
-          await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
-          const png = await page.evaluate(async document => {
-            window.__vooEditor.updateDocument(document);
-            const { executeCanvasTool } = await import('/src/canvas/agent/canvas_tools.js');
-            const capture = await executeCanvasTool('capture_canvas', { maxSize: 960 });
-            if (!capture.ok || !capture.dataUrl?.startsWith('data:image/png;base64,')) throw new Error('Canvas capture returned no PNG');
-            return capture.dataUrl.split(',')[1];
-          }, doc);
-          await writeFile(screenshot, Buffer.from(png, 'base64'));
-        } finally { await context.close(); }
+      } catch (error) {
+        console.error(`Failed to recapture ${id}:`, error);
+      }
+      try { await access(screenshot); }
+      catch (error) {
+        if (error.code !== 'ENOENT') console.error(`Failed to access screenshot for ${id}:`, error);
+        continue;
       }
       const record = scores.tasks.find(task => task.id === id);
       if (record) record.screenshot = screenshot;
       else scores.tasks.push({ id, document: `${directory}/${id}.json`, screenshot });
       await writeFile(manifest, `${JSON.stringify(scores, null, 2)}\n`);
     }
+    await writeFile(manifest, `${JSON.stringify(scores, null, 2)}\n`);
     return scores;
   } finally {
     kill();
