@@ -1,3 +1,4 @@
+import { exportFilename, exportTargetName } from "../../editor/export_filename.js";
 import { selectedExportNodes } from "../../editor/editor_export_selection.js";
 import { exportBackdropDocument } from "../../editor/editor_export_bounds.js";
 import { documentToSvg, nodesToSvg } from "../../editor/editor_svg.js";
@@ -186,7 +187,7 @@ export async function exportEditorImage({
     for (const slice of slices) {
       await saveMediaExport({
         dataUrl: slice.dataUrl,
-        name: slice.name,
+        name: exportFilename(slice.name, format, scale),
         format,
         title,
         signal,
@@ -301,7 +302,11 @@ export async function exportEditorImage({
   if (!dataUrl || dataUrl.length <= "data:,".length)
     throw new Error("EXPORT_TOO_LARGE");
   signal?.throwIfAborted();
-  return saveMediaExport({ dataUrl, name, format, title, signal });
+  return saveMediaExport({
+    dataUrl,
+    name: exportFilename(exportTargetName(name, range, editorDocument.nodes, selectedIds), format, scale),
+    format, title, signal,
+  });
 }
 
 async function encodeScenePreview({

@@ -1,3 +1,4 @@
+import { exportTargetName } from "../editor/export_filename.js";
 import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
 import {
   consumeImagePublication,
@@ -3933,6 +3934,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         ) : exportOpen ? (
           <Suspense fallback={null}>
             <EditorExportDialog
+              exportName={exportTargetName(pageTitle(), exportRange, exportDocument?.nodes, selectedIds)}
               format={exportFormat}
               quality={exportQuality}
               scale={exportScale}

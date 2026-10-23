@@ -1,3 +1,4 @@
+import { exportFilename } from "../editor/export_filename.js";
 import PropTypes from "prop-types";
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -28,8 +29,8 @@ export function designExportDimensions({ width, height, format, scale }) {
     : scale;
   if (!Number.isFinite(factor) || factor <= 0) return null;
   return {
-    width: Math.round(width * factor),
-    height: Math.round(height * factor),
+    width: Math.max(1, Math.round(width * factor)),
+    height: Math.max(1, Math.round(height * factor)),
   };
 }
 
@@ -72,6 +73,7 @@ export default function EditorExportDialog({
   format,
   quality,
   scale,
+  exportName,
   documentWidth,
   documentHeight,
   selectedCount = 0,
@@ -126,7 +128,7 @@ export default function EditorExportDialog({
         <h2 id="design-export-title" className="text-xs text-neutral-200">
           {t("editor.exportTitle")}
         </h2>
-        {(selectedCount > 0 || slicesCount > 0) && onExportRange ? (
+        {onExportRange ? (
           <div
             className="flex gap-1 rounded-xl bg-white/[0.04] p-0.5 text-[11px]"
             role="radiogroup"
@@ -136,27 +138,28 @@ export default function EditorExportDialog({
               type="button"
               role="radio"
               aria-checked={exportRange === "frame"}
+              disabled={busy}
               onClick={() => onExportRange("frame")}
               className={`flex-1 rounded-lg py-1.5 text-center transition-colors ${exportRange === "frame" ? "bg-white/[0.12] text-white" : "text-neutral-400 hover:text-white"}`}
             >
-              {t("editor.exportRange.frame")}
+              Page / {t("editor.exportRange.frame")}
             </button>
-            {selectedCount > 0 && (
-              <button
+            <button
                 type="button"
                 role="radio"
                 aria-checked={exportRange === "selection"}
+                disabled={busy || selectedCount === 0}
                 onClick={() => onExportRange("selection")}
                 className={`flex-1 rounded-lg py-1.5 text-center transition-colors ${exportRange === "selection" ? "bg-white/[0.12] text-white" : "text-neutral-400 hover:text-white"}`}
               >
                 {t("editor.exportRange.selection")}
-              </button>
-            )}
+            </button>
             {slicesCount > 0 && (
               <button
                 type="button"
                 role="radio"
                 aria-checked={exportRange === "slices"}
+                disabled={busy}
                 onClick={() => onExportRange("slices")}
                 className={`flex-1 rounded-lg py-1.5 text-center transition-colors ${exportRange === "slices" ? "bg-white/[0.12] text-white" : "text-neutral-400 hover:text-white"}`}
               >
@@ -205,7 +208,7 @@ export default function EditorExportDialog({
             </label>
           )}
           {!["svg", "psd"].includes(format) && (
-            <div className="flex gap-2">
+            <div className="flex gap-2" role="group" aria-label="Export scale">
               {[1, 2, 3].map((value) => (
                 <button
                   key={value}
@@ -220,15 +223,29 @@ export default function EditorExportDialog({
             </div>
           )}
         </fieldset>
+        {exportRange !== "slices" && (
+          <p className="break-all text-[11px] text-neutral-300" aria-live="polite" data-testid="design-export-filename">
+            {exportFilename(exportName, format, scale)}
+          </p>
+        )}
         <EditorExportSummary
           dimensions={dimensions}
           canChooseSaveLocation={canChooseSaveLocation}
         />
-        {["png", "webp", "svg", "pdf"].includes(format) && (
+        {["png", "jpeg", "webp", "svg", "pdf"].includes(format) && (
           <label className="flex items-center gap-2 text-[11px] text-neutral-300">
-            <input type="checkbox" checked={transparent} onChange={(event) => setTransparent(event.target.checked)} />
+            <input
+              type="checkbox"
+              disabled={busy || format === "jpeg"}
+              aria-describedby={format === "jpeg" ? "export-jpeg-background" : undefined}
+              checked={format !== "jpeg" && transparent}
+              onChange={(event) => setTransparent(event.target.checked)}
+            />
             Transparent background
           </label>
+        )}
+        {format === "jpeg" && (
+          <p id="export-jpeg-background" className="text-[11px] text-neutral-400">JPEG requires an opaque background.</p>
         )}
         <div className="flex gap-2">
           <button
@@ -241,7 +258,7 @@ export default function EditorExportDialog({
           <button
             type="button"
             disabled={busy || (!dimensions && exportRange !== "slices")}
-            onClick={() => onExport({ transparent })}
+            onClick={() => onExport({ transparent: format !== "jpeg" && transparent })}
             className="min-h-8 flex-1 rounded-lg bg-white px-3 text-[11px] font-semibold text-black hover:bg-neutral-200 transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
           >
             {exportRange === "slices"
@@ -256,6 +273,7 @@ export default function EditorExportDialog({
 }
 
 EditorExportDialog.propTypes = {
+  exportName: PropTypes.string,
   format: PropTypes.string.isRequired,
   quality: PropTypes.number.isRequired,
   scale: PropTypes.number.isRequired,

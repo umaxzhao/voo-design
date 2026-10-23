@@ -28,3 +28,20 @@ then run `node tests/fixtures/export-quality.mjs` with Playwright installed.
 Playwright module. The fixture checks actual PNG alpha and crop/selection sizes,
 and writes `/workspace/tmp/export-png.png`, `export-jpeg.jpeg`,
 `export-selection.png`, `export-svg.svg`, and `export-pdf.pdf`.
+
+## Export dialog polish
+
+The focused page/frame scope and selection scope remain visible; selection is
+unavailable when nothing is selected. Raster sampling offers 1x/2x/3x. PNG,
+JPEG, SVG and PDF remain available alongside WebP and PSD. JPEG shows a disabled
+transparency control and explains its opaque background requirement.
+
+The filename preview and saved output share `export_filename.js`: document or
+single selected node names (otherwise Selection), scale suffixes, portable
+character/device-name sanitization, Unicode preservation, an Untitled fallback,
+and a 120-byte UTF-8 cap including extension. Slices use the same sanitizer.
+
+Run `npx vitest run --maxWorkers=2 --minWorkers=1 tests/unit/export*` for filename
+edge cases, page/selection PNG canvas dimensions at each scale, and SVG gradient,
+alpha-mask and editable-text structure. Canvas dimensions are checked with a
+mock encoder; actual PNG byte/alpha checks remain in the browser fixture above.

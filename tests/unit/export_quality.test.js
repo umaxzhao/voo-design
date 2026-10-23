@@ -7,17 +7,45 @@ import { draw } from "../../src/canvas/editor/scene_renderer.js";
 vi.mock("../../src/canvas/editor/scene_renderer.js", () => ({ draw: vi.fn() }));
 const rect = (id, extra = {}) => ({ id, kind: "rect", x: 20.25, y: 30.5, width: 100, height: 40, fill: "#ff0000", ...extra });
 const doc = { width: 500, height: 400, backgroundColor: "#123456", crop: { x: 10.5, y: 20.25, width: 200, height: 100 }, nodes: [rect("r")] };
-function canvasDom() {
+function canvasDom(canvases = []) {
   const contexts = [];
   vi.stubGlobal("document", { createElement: () => {
     const ctx = { fillRect: vi.fn(), drawImage: vi.fn() };
     contexts.push(ctx);
-    return { width: 0, height: 0, getContext: () => ctx, toDataURL: (type) => `data:${type};base64,sample` };
+    const canvas = { width: 0, height: 0, getContext: () => ctx, toDataURL: (type) => `data:${type};base64,sample` };
+    canvases.push(canvas);
+    return canvas;
   } });
   return contexts;
 }
 afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); });
 describe("export quality", () => {
+  it.each([1, 2, 3])("sizes page and selection PNG canvases at %sx", (scale) => {
+    const canvases = [];
+    canvasDom(canvases);
+    const api = createExport({ getDoc: () => doc, cache: { get: () => null } });
+    expect(api.exportImage({ type: "image/png", scale })).toMatch(/^data:image\/png;/);
+    expect(canvases.at(-1)).toMatchObject({ width: 200 * scale, height: 100 * scale });
+    const bounds = { x: 20.25, y: 30.5, width: 100, height: 40 };
+    const result = renderSelectionPng(doc, doc.nodes, bounds, { scale }, {});
+    expect(result.dataUrl).toMatch(/^data:image\/png;/);
+    expect(canvases.at(-1)).toMatchObject({ width: 100 * scale, height: 40 * scale });
+  });
+  it("preserves linked gradient, alpha mask and editable text SVG elements", () => {
+    const svg = documentToSvg({ ...doc, nodes: [
+      rect("mask", { maskBase: true, opacity: 0.5 }),
+      rect("art", { clipTo: "mask", fill: "linear-gradient(90deg, #ff0000 0%, #0000ff 100%)" }),
+      { ...rect("text"), kind: "text", text: "Editable", fontSize: 16, fontFamily: "Arial" },
+    ] });
+    expect(svg).toContain("<linearGradient ");
+    expect(svg).toContain("<stop ");
+    expect(svg).toContain('fill="url(#');
+    expect(svg).toContain('<mask id="clip-mask"');
+    expect(svg).toContain('mask="url(#clip-mask)"');
+    expect(svg).toContain("<text ");
+    expect(svg).toContain("Editable");
+    expect(svg).not.toContain("<image");
+  });
   it("uses transformed bounds and ignores malformed rectangles", () => {
     const bounds = selectionBounds([rect("r", { rotation: 90 }), rect("bad", { width: NaN })]);
     expect(bounds.y).toBeCloseTo(0.5);
