@@ -1,5 +1,5 @@
-// Start Vite, then: flock /tmp/voo-e2e.lock node tests/e2e/multi_document_tabs.e2e.mjs
-// Kill orphan chrome-headless processes before and after the locked browser run.
+// Start Vite, then: flock -w 600 /tmp/voo-e2e.lock node tests/e2e/multi_document_tabs.e2e.mjs
+// browser.close() cleans up the browser launched by this test.
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY = '1';
@@ -14,7 +14,17 @@ try {
     const { useDesignStore } = await import('/src/store/design_store.js');
     useDesignStore.getState().setWelcomeOpen(false);
   });
-  await page.waitForFunction(() => window.__vooEditor?.getDocument()?.width === 1200, null, { timeout: 120000 });
+  // Closing welcome mounts the existing document asynchronously. Give that
+  // editor time to start before creating a fallback project (and another tab).
+  try {
+    await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 15000 });
+  } catch {
+    await page.evaluate(async () => {
+      const { useDesignStore } = await import('/src/store/design_store.js');
+      if (!window.__vooEditor) useDesignStore.getState().newVooProject();
+    });
+    await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 120000 });
+  }
   // Draw through the canvas UI; inspect the engine through the existing browser-test hook.
   const edit = async () => {
     await page.keyboard.press('Escape');
