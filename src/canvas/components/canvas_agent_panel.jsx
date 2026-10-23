@@ -132,6 +132,8 @@ export default function CanvasAgentPanel({ onClose }) {
   const [streamingText, setStreamingText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [cancelled, setCancelled] = useState(false);
+  const [lastRequest, setLastRequest] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState(
     () => getSetting(AGENT_SETTING.MODEL) || DEFAULT_AGENT_MODEL,
@@ -166,6 +168,9 @@ export default function CanvasAgentPanel({ onClose }) {
   };
 
   const openSession = (session) => {
+    if (turnRef.current) return;
+    setCancelled(false);
+    setLastRequest(null);
     setActiveId(session.id);
     setTranscript(session.messages ?? []);
     historyRef.current = session.history ?? [];
@@ -175,7 +180,10 @@ export default function CanvasAgentPanel({ onClose }) {
   };
 
   const startNewSession = () => {
+    if (turnRef.current) return;
     const session = createEmptySession();
+    setCancelled(false);
+    setLastRequest(null);
     setActiveId(session.id);
     setTranscript([]);
     historyRef.current = [];
@@ -191,6 +199,7 @@ export default function CanvasAgentPanel({ onClose }) {
   };
 
   const removeSession = (sessionId) => {
+    if (turnRef.current) return;
     const next = deleteSessionFromList(sessionsRef.current, sessionId);
     sessionsRef.current = next;
     setSessions(next);
@@ -238,7 +247,7 @@ export default function CanvasAgentPanel({ onClose }) {
   };
 
   const send = useCallback(
-    async (overrideText, contextAttachment) => {
+    async (overrideText, contextAttachment, recoveryRequest) => {
       const targetContext = contextAttachment !== undefined ? contextAttachment : activeContext;
       const text = (overrideText ?? input).trim();
       if (!text || busy || turnRef.current) return;
@@ -247,6 +256,8 @@ export default function CanvasAgentPanel({ onClose }) {
       useDesignStore.setState({ agentGenerating: true });
       setInput("");
       setError(null);
+      setCancelled(false);
+      setLastRequest(recoveryRequest ?? { text, context: targetContext });
       setBusy(true);
       setStreamingText("");
       const sessionId = activeId ?? createSessionId();
@@ -278,7 +289,7 @@ export default function CanvasAgentPanel({ onClose }) {
           userText: promptWithContext,
           tools: [...CANVAS_TOOL_SCHEMAS, ...external.tools],
           executeTool: (name, args, context) => name.startsWith("mcp__") ? external.execute(name, args, context) : executeCanvasTool(name, args, context),
-          onText: setStreamingText,
+          onText: (text) => { if (!controller.signal.aborted) setStreamingText(text); },
           onToolEvent: updateToolItem,
         });
         controller.signal.throwIfAborted();
@@ -302,6 +313,7 @@ export default function CanvasAgentPanel({ onClose }) {
         turnRef.current = null;
         useDesignStore.setState({ agentGenerating: false });
         if (controller.signal.aborted) {
+          setCancelled(true);
           setTranscript((items) => items.map((item) => item.call?.status === "in_progress"
             ? { ...item, call: { ...item.call, status: "cancelled", statusLine: t("node.generate.cancelled") } }
             : item));
@@ -595,6 +607,17 @@ export default function CanvasAgentPanel({ onClose }) {
         </div>
       )}
 
+      {!busy && cancelled && (
+        <p role="status" className="mx-4 mb-2 text-[12px] text-neutral-400">{t("agent.panel.cancelled")}</p>
+      )}
+      {!busy && lastRequest && (
+        <div className="mx-4 mb-2 flex gap-2 text-[12px]">
+          <button type="button" className="rounded-lg px-3 py-2 text-neutral-300 hover:bg-white/10"
+            onClick={() => send(lastRequest.text, lastRequest.context)}>{t("agent.panel.retry")}</button>
+          {cancelled && <button type="button" className="rounded-lg px-3 py-2 text-[#eed0ff] hover:bg-white/10"
+            onClick={() => send(`${lastRequest.text}\n\n${t("agent.panel.resumePrompt")}`, lastRequest.context, lastRequest)}>{t("agent.panel.resume")}</button>}
+        </div>
+      )}
       {error && (
         <p role="alert" className="mx-4 mb-2 rounded-xl bg-[#E5B2FF]/10 px-3 py-2 text-[12px] text-[#eed0ff]">
           {t(`agent.panel.${error}`)}
