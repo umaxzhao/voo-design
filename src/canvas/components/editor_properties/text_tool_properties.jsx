@@ -142,7 +142,7 @@ export default function TextToolProperties({
             aria-label={t("editor.props.italic")}
             className={`${sectionRowClass} justify-center ${
               italic
-                ? "text-neutral-200 ring-1 ring-[#a7ffd4]/40"
+                ? "text-neutral-200 ring-1 ring-white/30"
                 : "text-neutral-400"
             }`}
           >
@@ -156,7 +156,7 @@ export default function TextToolProperties({
             aria-label={t("editor.props.underline")}
             className={`${sectionRowClass} justify-center ${
               underline
-                ? "text-neutral-200 ring-1 ring-[#a7ffd4]/40"
+                ? "text-neutral-200 ring-1 ring-white/30"
                 : "text-neutral-400"
             }`}
           >

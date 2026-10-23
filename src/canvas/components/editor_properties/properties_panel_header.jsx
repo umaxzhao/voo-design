@@ -138,7 +138,7 @@ export default function PropertiesPanelHeader({
               data-testid="editor-motion-trigger"
               className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a7ffd4] ${
                 motionOpen
-                  ? "bg-[#E5B2FF]/10 text-neutral-200 hover:bg-[#E5B2FF]/20"
+                  ? "bg-white/10 text-neutral-200 hover:bg-white/20"
                   : "text-neutral-400 hover:bg-white/10 hover:text-white"
               }`}
             >

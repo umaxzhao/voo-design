@@ -75,7 +75,7 @@ export default function EditorUpscaleButton({
           aria-expanded={open}
           aria-label={t("editor.upscale.button") || "HD Upscale"}
           className={`${ICON_BTN_AI} disabled:opacity-40 ${
-            open ? "bg-[#E5B2FF]/25 text-neutral-300 ring-1 ring-[#E5B2FF]" : ""
+            open ? "bg-white/10 text-neutral-300 ring-1 ring-white/30" : ""
           }`}
         >
           <IconHd size={12} className={`text-neutral-300 ${busy ? "animate-pulse" : ""}`} />
