@@ -98,20 +98,26 @@ export function createPath(args = {}) {
   const x = finiteOrNull(args.x);
   const y = finiteOrNull(args.y);
   if (typeof d !== "string" || d.trim() === "") invalidArgs(`Invalid argument "d": expected a non-empty SVG path string, got ${JSON.stringify(d)}`);
-  if ((x === null && args.x !== undefined) || (y === null && args.y !== undefined)) invalidArgs(`Invalid argument "x"/"y": expected finite numbers, got x=${JSON.stringify(args.x)}, y=${JSON.stringify(args.y)}`);
+  if (x === null && args.x !== undefined) invalidArgs(`Invalid argument "x": expected a finite number, got ${JSON.stringify(args.x)}`);
+  if (y === null && args.y !== undefined) invalidArgs(`Invalid argument "y": expected a finite number, got ${JSON.stringify(args.y)}`);
   if (fill !== undefined && typeof fill !== "string") invalidArgs(`Invalid argument "fill": expected a string, got ${JSON.stringify(fill)}`);
   if (stroke !== undefined && typeof stroke !== "string") invalidArgs(`Invalid argument "stroke": expected a string, got ${JSON.stringify(stroke)}`);
   if (strokeWidth !== undefined && !Number.isFinite(Number(strokeWidth))) invalidArgs(`Invalid argument "strokeWidth": expected a finite number, got ${JSON.stringify(strokeWidth)}`);
   if (name !== undefined && typeof name !== "string") invalidArgs(`Invalid argument "name": expected a string, got ${JSON.stringify(name)}`);
 
-  const result = editor.addPenNode?.({
-    svgD: d,
-    ...(x !== null ? { x } : {}),
-    ...(y !== null ? { y } : {}),
-    ...(stroke !== undefined ? { stroke } : {}),
-    ...(strokeWidth !== undefined ? { strokeWidth: Number(strokeWidth) } : {}),
-    ...(fill !== undefined ? { fill } : {}),
-  });
+  let result;
+  try {
+    result = editor.addPenNode?.({
+      svgD: d,
+      ...(x !== null ? { x } : {}),
+      ...(y !== null ? { y } : {}),
+      ...(stroke !== undefined ? { stroke } : {}),
+      ...(strokeWidth !== undefined ? { strokeWidth: Number(strokeWidth) } : {}),
+      ...(fill !== undefined ? { fill } : {}),
+    });
+  } catch (error) {
+    invalidArgs(`Invalid argument "d": expected valid SVG path data, got ${JSON.stringify(d)} (${error?.message || "parse failed"})`);
+  }
   if (!result?.nodeId) nodeNotFound();
 
   if (name !== undefined) editor.updateNode?.(result.nodeId, { name });
@@ -129,14 +135,10 @@ export async function placeImage(args = {}) {
   const width = finiteOrNull(args.width);
   const height = finiteOrNull(args.height);
   if (typeof url !== "string" || url.trim() === "") invalidArgs(`Invalid argument "url": expected a non-empty string, got ${JSON.stringify(url)}`);
-  if (
-    (x === null && args.x !== undefined) ||
-    (y === null && args.y !== undefined) ||
-    (width === null && args.width !== undefined) ||
-    (height === null && args.height !== undefined)
-  ) {
-    invalidArgs(`Invalid argument "x"/"y"/"width"/"height": expected finite numbers`);
-  }
+  if (x === null && args.x !== undefined) invalidArgs(`Invalid argument "x": expected a finite number, got ${JSON.stringify(args.x)}`);
+  if (y === null && args.y !== undefined) invalidArgs(`Invalid argument "y": expected a finite number, got ${JSON.stringify(args.y)}`);
+  if (width === null && args.width !== undefined) invalidArgs(`Invalid argument "width": expected a finite number, got ${JSON.stringify(args.width)}`);
+  if (height === null && args.height !== undefined) invalidArgs(`Invalid argument "height": expected a finite number, got ${JSON.stringify(args.height)}`);
   if (name !== undefined && typeof name !== "string") invalidArgs(`Invalid argument "name": expected a string, got ${JSON.stringify(name)}`);
   if (width !== null && width < 0) invalidArgs(`Invalid argument "width": expected >= 0, got ${JSON.stringify(width)}`);
   if (height !== null && height < 0) invalidArgs(`Invalid argument "height": expected >= 0, got ${JSON.stringify(height)}`);

@@ -44,6 +44,13 @@ function nodeNotFound() {
   });
 }
 
+function mapEngineError(error, context) {
+  const detail = error?.message || "invalid value";
+  throw Object.assign(new Error(`${TOOL_ERROR.INVALID_ARGS}: Invalid argument ${context}: ${detail}`), {
+    code: TOOL_ERROR.INVALID_ARGS,
+  });
+}
+
 function requireEditor() {
   const editor = typeof window !== "undefined" ? window.__vooEditor : null;
   if (!editor) {
@@ -54,14 +61,18 @@ function requireEditor() {
   return editor;
 }
 
-function requireId(value) {
-  if (typeof value !== "string" || value.trim() === "") invalidArgs();
+function requireId(value, name = "id") {
+  if (typeof value !== "string" || value.trim() === "") {
+    invalidArgs(`Invalid argument "${name}": expected a non-empty string, got ${JSON.stringify(value)}`);
+  }
   return value;
 }
 
 function getDocument(editor) {
   const doc = editor.getDocument?.() ?? editor.getDoc?.() ?? null;
-  if (!doc || !Array.isArray(doc.nodes)) invalidArgs();
+  if (!doc || !Array.isArray(doc.nodes)) {
+    invalidArgs("The editor does not expose a document with a nodes array");
+  }
   return doc;
 }
 
@@ -107,7 +118,7 @@ function commitDocument(editor, next, message) {
     editor.requestRender?.();
     return true;
   }
-  invalidArgs();
+  invalidArgs("The editor cannot commit document changes");
 }
 
 function storeComponent(editor, master) {
@@ -189,7 +200,7 @@ function normalizeComponentResult(result, fallbackLayerId = null) {
 
 function createComponent(args = {}) {
   const editor = requireEditor();
-  const layerId = requireId(args.layerId);
+  const layerId = requireId(args.layerId, "layerId");
   const node = requireNode(editor, layerId);
   const name =
     typeof args.name === "string" && args.name.trim()
@@ -223,10 +234,12 @@ function createComponent(args = {}) {
 
 function createInstance(args = {}) {
   const editor = requireEditor();
-  const componentId = requireId(args.componentId);
+  const componentId = requireId(args.componentId, "componentId");
   const x = args.x;
   const y = args.y;
-  if (!Number.isFinite(x) || !Number.isFinite(y)) invalidArgs();
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    invalidArgs(`Invalid argument "x"/"y": expected finite numbers, got x=${JSON.stringify(x)}, y=${JSON.stringify(y)}`);
+  }
 
   if (typeof editor.createInstance === "function") {
     const result = editor.createInstance({
@@ -295,7 +308,9 @@ function createStyle(args = {}) {
   if (typeof args.name !== "string" || args.name.trim() === "") invalidArgs(`Invalid argument "name": expected a non-empty string, got ${JSON.stringify(args.name)}`);
   let fromLayerId = args.fromLayerId ?? args.fromNodeId ?? null;
   if (fromLayerId === null) fromLayerId = editor.getSelectedId?.() ?? null;
-  if (fromLayerId !== null) requireNode(editor, requireId(fromLayerId));
+  if (fromLayerId !== null) {
+    requireNode(editor, requireId(fromLayerId, args.fromNodeId !== undefined ? "fromNodeId" : "fromLayerId"));
+  }
 
   const doc = getDocument(editor);
   const before = new Set(getStyles(doc)[args.type].map((style) => style.id));
@@ -308,9 +323,7 @@ function createStyle(args = {}) {
       ...(args.value !== undefined ? { value: args.value } : {}),
     });
   } catch (error) {
-    throw Object.assign(new Error(error?.message || TOOL_ERROR.INVALID_ARGS), {
-      code: TOOL_ERROR.INVALID_ARGS,
-    });
+    mapEngineError(error, '"type"/"fromLayerId"/"fromNodeId"/"value"');
   }
   const created = getStyles(next)[args.type].find(
     (style) => !before.has(style.id),
@@ -327,9 +340,9 @@ function createStyle(args = {}) {
 
 function applyStyle(args = {}) {
   const editor = requireEditor();
-  const layerId = requireId(args.layerId);
+  const layerId = requireId(args.layerId, "layerId");
   if (!STYLE_TYPES.includes(args.type)) invalidArgs(`Invalid argument "type": expected one of ${STYLE_TYPES.join(", ")}, got ${JSON.stringify(args.type)}`);
-  const styleId = requireId(args.styleId);
+  const styleId = requireId(args.styleId, "styleId");
   requireNode(editor, layerId);
 
   const doc = getDocument(editor);
@@ -337,9 +350,7 @@ function applyStyle(args = {}) {
   try {
     next = applyStyleInDocument(doc, layerId, args.type, styleId);
   } catch (error) {
-    throw Object.assign(new Error(error?.message || TOOL_ERROR.INVALID_ARGS), {
-      code: TOOL_ERROR.INVALID_ARGS,
-    });
+    mapEngineError(error, '"layerId"/"type"/"styleId"');
   }
   commitDocument(editor, next, "AI: Apply style");
   return { ok: true, layerId, type: args.type, styleId };
@@ -372,8 +383,8 @@ function listVariables(args = {}) {
 
 function bindVariable(args = {}) {
   const editor = requireEditor();
-  const layerId = requireId(args.layerId);
-  const variableId = requireId(args.variableId);
+  const layerId = requireId(args.layerId, "layerId");
+  const variableId = requireId(args.variableId, "variableId");
   const target = args.target ?? "fill";
   if (!BINDING_TARGETS.includes(target)) invalidArgs(`Invalid argument "target": expected one of ${BINDING_TARGETS.join(", ")}, got ${JSON.stringify(target)}`);
   requireNode(editor, layerId);
@@ -383,9 +394,7 @@ function bindVariable(args = {}) {
   try {
     next = bindVariableInDocument(doc, layerId, variableId, target);
   } catch (error) {
-    throw Object.assign(new Error(error?.message || TOOL_ERROR.INVALID_ARGS), {
-      code: TOOL_ERROR.INVALID_ARGS,
-    });
+    mapEngineError(error, '"layerId"/"variableId"/"target"');
   }
   commitDocument(editor, next, "AI: Bind variable");
   return { ok: true, layerId, variableId, target };
@@ -449,13 +458,28 @@ export const DESIGN_TOOL_SCHEMAS = Object.freeze([
     function: {
       name: "create_style",
       description:
-        "Create a named style of type paint/text/effect. Capture the value from fromLayerId when supplied.",
+        "Create a named style of type paint/text/effect. Provide value explicitly, or fromLayerId " +
+        "(alias fromNodeId) to capture the value from an existing layer. Paint values use " +
+        "{ fill?, stroke?, strokeWidth?, fillOpacity?, strokeOpacity? }; text values use " +
+        "{ fontFamily?, fontSize?, fontWeight?, italic?, underline?, align?, letterSpacing?, lineHeight? }; " +
+        "effect values use { effects }.",
       parameters: {
         type: "object",
         properties: {
           type: { type: "string", enum: [...STYLE_TYPES], description: "Style type: one of paint, text, effect." },
           name: { type: "string", description: "Style name." },
-          fromLayerId: { type: "string", description: "Optional layer id to capture the style value from." },
+          fromLayerId: {
+            type: "string",
+            description: "Optional layer id to capture the style value from (alias: fromNodeId).",
+          },
+          fromNodeId: {
+            type: "string",
+            description: "Alias of fromLayerId.",
+          },
+          value: {
+            type: "object",
+            description: "Optional explicit style value; wins over fromLayerId. Shape depends on type (see tool description).",
+          },
         },
         required: ["type", "name"],
       },
@@ -465,7 +489,9 @@ export const DESIGN_TOOL_SCHEMAS = Object.freeze([
     type: "function",
     function: {
       name: "apply_style",
-      description: "Apply a named style to a layer.",
+      description:
+        "Apply a named style to a layer, writing the style's values onto the layer and recording " +
+        "the style id. type must match the style's type (paint, text, effect).",
       parameters: {
         type: "object",
         properties: {
@@ -494,13 +520,19 @@ export const DESIGN_TOOL_SCHEMAS = Object.freeze([
     type: "function",
     function: {
       name: "bind_variable",
-      description: "Bind a layer's fill or stroke to a color variable.",
+      description:
+        "Bind a layer's fill or stroke to a color variable. The value is materialised from the " +
+        "variable's active mode; target is fill or stroke.",
       parameters: {
         type: "object",
         properties: {
           layerId: { type: "string" },
           variableId: { type: "string" },
-          target: { type: "string", enum: [...BINDING_TARGETS], description: "Binding target: one of fill, stroke." },
+          target: {
+            type: "string",
+            enum: [...BINDING_TARGETS],
+            description: "Binding target: one of fill, stroke (defaults to fill when omitted).",
+          },
         },
         required: ["layerId", "variableId", "target"],
       },
