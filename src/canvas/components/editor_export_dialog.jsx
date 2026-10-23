@@ -1,3 +1,4 @@
+import { hasBlendModes } from "../editor/scene_model_core.js";
 import { exportFilename } from "../editor/export_filename.js";
 import PropTypes from "prop-types";
 import { useRef, useState } from "react";
@@ -74,6 +75,7 @@ export default function EditorExportDialog({
   quality,
   scale,
   exportName,
+  doc,
   documentWidth,
   documentHeight,
   selectedCount = 0,
@@ -91,7 +93,7 @@ export default function EditorExportDialog({
 }) {
   const { t } = useI18n();
   const dialogRef = useRef(null);
-  const [transparent, setTransparent] = useState(true);
+  const [transparent, setTransparent] = useState(() => !hasBlendModes(doc));
   const targetWidth =
     exportRange === "selection" && selectionBounds?.width
       ? selectionBounds.width
@@ -142,7 +144,7 @@ export default function EditorExportDialog({
               onClick={() => onExportRange("frame")}
               className={`flex-1 rounded-lg py-1.5 text-center transition-colors ${exportRange === "frame" ? "bg-white/[0.12] text-white" : "text-neutral-400 hover:text-white"}`}
             >
-              Page / {t("editor.exportRange.frame")}
+              {t("editor.exportRange.pageFrame")}
             </button>
             <button
                 type="button"
@@ -208,7 +210,7 @@ export default function EditorExportDialog({
             </label>
           )}
           {!["svg", "psd"].includes(format) && (
-            <div className="flex gap-2" role="group" aria-label="Export scale">
+            <div className="flex gap-2" role="group" aria-label={t("editor.exportScale")}>
               {[1, 2, 3].map((value) => (
                 <button
                   key={value}
@@ -241,11 +243,11 @@ export default function EditorExportDialog({
               checked={format !== "jpeg" && transparent}
               onChange={(event) => setTransparent(event.target.checked)}
             />
-            Transparent background
+            {t("editor.exportTransparentBackground")}
           </label>
         )}
         {format === "jpeg" && (
-          <p id="export-jpeg-background" className="text-[11px] text-neutral-400">JPEG requires an opaque background.</p>
+          <p id="export-jpeg-background" className="text-[11px] text-neutral-400">{t("editor.exportJpegOpaqueBackground")}</p>
         )}
         <div className="flex gap-2">
           <button
@@ -277,6 +279,7 @@ EditorExportDialog.propTypes = {
   format: PropTypes.string.isRequired,
   quality: PropTypes.number.isRequired,
   scale: PropTypes.number.isRequired,
+  doc: PropTypes.object,
   documentWidth: PropTypes.number,
   documentHeight: PropTypes.number,
   selectedCount: PropTypes.number,

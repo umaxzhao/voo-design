@@ -3934,6 +3934,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         ) : exportOpen ? (
           <Suspense fallback={null}>
             <EditorExportDialog
+              doc={exportDocument}
               exportName={exportTargetName(pageTitle(), exportRange, exportDocument?.nodes, selectedIds)}
               format={exportFormat}
               quality={exportQuality}
