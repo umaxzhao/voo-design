@@ -142,6 +142,18 @@ export default function SettingsDrawer({
           >
             <div className="flex flex-col gap-5">
               <h2 className="text-xs text-neutral-200">{activeLabel}</h2>
+              {(activeTab === "assistant" || activeTab === "providers") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose?.();
+                    window.dispatchEvent(new CustomEvent("voo:open-onboarding"));
+                  }}
+                  className="self-start rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-neutral-200 hover:bg-white/[0.08] focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+                >
+                  {t("titlebar.cliWizard")}
+                </button>
+              )}
               {activeTab === "providers" && <ProviderSettings />}
               {activeTab === "assistant" && <AgentSettings />}
               {activeTab === "general" && <SettingsGeneral />}
