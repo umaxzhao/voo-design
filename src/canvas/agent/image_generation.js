@@ -72,6 +72,6 @@ export async function placeImageInEditor(editor, url, point = null) {
   if (!editor || typeof editor.insertImage !== "function") {
     throw generationError(IMAGE_GENERATION_ERROR.NO_EDITOR);
   }
-  await editor.insertImage(url, point);
-  return { placed: true, url };
+  const node = await editor.insertImage(url, point);
+  return { placed: true, url, layerId: node?.id ?? null };
 }

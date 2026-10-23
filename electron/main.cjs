@@ -338,6 +338,15 @@ import("./local_backend_bridge.js").then(({ registerLocalCliIpc }) => {
   console.warn("[electron] Could not register local CLI IPC:", err);
 });
 
+// Web image generation: the user's signed-in Chrome, via the extension bridge.
+import("./web_image_ipc.js").then(({ registerWebImageIpc }) => {
+  registerWebImageIpc(ipcMain, {
+    getWindow: () => (mainWindow && !mainWindow.isDestroyed() ? mainWindow : null),
+  });
+}).catch((err) => {
+  console.warn("[electron] Could not register web image IPC:", err);
+});
+
 // Register Workspace Manager IPC Handlers
 try {
   const { registerWorkspaceIpc } = require("./workspace_manager.cjs");

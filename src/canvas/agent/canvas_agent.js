@@ -15,6 +15,7 @@ const SYSTEM_PROMPT =
   "You are a design assistant inside a free-form design canvas. " +
   "Create and edit content by calling tools. Generate images with generate_image; " +
   "when the user has selected a layer, pass useSelection so it is used as the reference. " +
+  "To generate images in the user's signed-in Chrome (ChatGPT or Gemini), call generate_image_web. " +
   "Keep replies short.";
 
 /**

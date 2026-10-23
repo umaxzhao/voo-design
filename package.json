@@ -17,6 +17,7 @@
     "electron:dev": "npm run copy:ort && npm run copy:canvaskit && concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
     "electron:build": "npm run copy:ort && npm run copy:canvaskit && vite build && electron-builder --dir",
     "test": "vitest run",
+    "build:extension": "node scripts/build-extension.mjs",
     "test:watch": "vitest",
     "lint:design": "node scripts/check-design.mjs",
     "bridge": "node scripts/cli-bridge.mjs"

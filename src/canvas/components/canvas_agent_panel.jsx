@@ -187,6 +187,33 @@ export default function CanvasAgentPanel({ onClose }) {
     }
   };
 
+  useEffect(() => {
+    const onProgress = (event) => {
+      const statusLine = event.detail?.statusLine;
+      if (!statusLine) return;
+      setTranscript((prev) => {
+        let target = -1;
+        for (let index = prev.length - 1; index >= 0; index -= 1) {
+          const item = prev[index];
+          if (
+            item.kind === "tool" &&
+            item.call?.name === "generate_image_web" &&
+            item.call.status === "in_progress"
+          ) {
+            target = index;
+            break;
+          }
+        }
+        if (target === -1) return prev;
+        return prev.map((item, index) =>
+          index === target ? { ...item, call: { ...item.call, statusLine } } : item,
+        );
+      });
+    };
+    window.addEventListener("voo:web-image-progress", onProgress);
+    return () => window.removeEventListener("voo:web-image-progress", onProgress);
+  }, []);
+
   const updateToolItem = (event) => {
     setTranscript((prev) => {
       const index = prev.findIndex((item) => item.kind === "tool" && item.call.id === event.id);
