@@ -130,6 +130,13 @@ export default function AppTitleBar() {
             >
               {t("titlebar.open")}
             </button>
+            <button type="button" data-testid="titlebar-export-btn"
+              aria-label={t("editor.export")}
+              title={`${t("editor.export")} (${isMac ? "⇧⌘E" : "Ctrl+Shift+E"})`}
+              onClick={() => window.dispatchEvent(new CustomEvent("voo:editor-export"))}
+              className="cursor-pointer rounded-lg px-2.5 py-1 font-medium text-neutral-300 hover:bg-white/10">
+              {t("editor.export")}
+            </button>
             <button type="button" className="px-2 text-xs text-white/70" onClick={() => window.dispatchEvent(new CustomEvent("voo:open-about"))}>{t("release.about")}</button>
             <button
               type="button"

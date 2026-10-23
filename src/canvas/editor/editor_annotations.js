@@ -62,6 +62,7 @@ export function createAnnotations({
   };
 
   let editingTextId = null;
+  let commitTextPlacement = null;
   let editingRegionId = null;
 
   /**
@@ -168,7 +169,8 @@ export function createAnnotations({
     );
   }
 
-  function beginTextEdit(id) {
+  function beginTextEdit(id, { commitPlacement = null } = {}) {
+    commitTextPlacement = commitPlacement;
     editingTextId = id;
     requestRender();
     notify();
@@ -184,6 +186,8 @@ export function createAnnotations({
 
   function endTextEdit(text) {
     const id = editingTextId;
+    const commitPlacement = commitTextPlacement;
+    commitTextPlacement = null;
     editingTextId = null;
     if (!id) return;
     const node = findNode(getDoc(), id);
@@ -196,6 +200,13 @@ export function createAnnotations({
         ops.removeNode(getDoc(), id),
       );
       select(null);
+      return;
+    }
+    if (commitPlacement && String(text ?? node.text ?? "").trim()) {
+      if (text !== undefined) {
+        setDoc(ops.updateNode(getDoc(), id, { text }), { commit: false });
+      }
+      commitPlacement();
       return;
     }
     if (text !== undefined) {

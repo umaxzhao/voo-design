@@ -1,3 +1,4 @@
+import { handleExportShortcut } from "./editor/export_shortcut.js";
 import { useEffect, useRef } from "react";
 import {
   isTextEditingTarget,
@@ -444,6 +445,8 @@ export function useEditorShortcuts({
       // Non-text controls (range/number/checkbox) never accept text: plain
       // keys stay muted, but ⌘/Ctrl combos pass — undo right after a slider.
       if (shortcutBlockedByTarget(event.target, event)) return;
+
+      if (handleExportShortcut(event)) return;
 
       const magneticAction = magneticLassoShortcutAction(event, {
         active: Boolean(engine.getMagneticLassoDraft?.()),
