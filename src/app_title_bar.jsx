@@ -88,6 +88,7 @@ export default function AppTitleBar() {
 
         {welcomeOpen ? (
           <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" }}>
+            <button type="button" aria-label={t("firstRun.help")} title={t("firstRun.help")} className="rounded-lg px-2 py-1 text-xs text-white/70 hover:text-[#B2FFD6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E5B2FF]" onClick={() => window.dispatchEvent(new CustomEvent("voo:open-first-run"))}>?</button>
             <button type="button" className="px-2 text-xs text-white/70" onClick={() => window.dispatchEvent(new CustomEvent("voo:open-about"))}>{t("release.about")}</button>
             <button
               type="button"
@@ -130,6 +131,7 @@ export default function AppTitleBar() {
             >
               {t("titlebar.open")}
             </button>
+            <button type="button" aria-label={t("firstRun.help")} title={t("firstRun.help")} className="rounded-lg px-2 py-1 text-xs text-white/70 hover:text-[#B2FFD6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E5B2FF]" onClick={() => window.dispatchEvent(new CustomEvent("voo:open-first-run"))}>?</button>
             <button type="button" className="px-2 text-xs text-white/70" onClick={() => window.dispatchEvent(new CustomEvent("voo:open-about"))}>{t("release.about")}</button>
             <button
               type="button"

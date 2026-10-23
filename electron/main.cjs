@@ -233,7 +233,7 @@ function setupMenu() {
     },
   ];
 
-  template.push({ label: app.getLocale?.().startsWith("zh") ? "帮助" : "Help", submenu: [{ label: app.getLocale?.().startsWith("zh") ? "关于 VOO Design" : "About VOO Design", click: () => dispatchMenuAction("help:about") }] });
+  template.push({ label: app.getLocale?.().startsWith("zh") ? "帮助" : "Help", submenu: [{ label: app.getLocale?.().startsWith("zh") ? "新手引导" : "Welcome tour", click: () => dispatchMenuAction("help:onboarding") }, { label: app.getLocale?.().startsWith("zh") ? "关于 VOO Design" : "About VOO Design", click: () => dispatchMenuAction("help:about") }] });
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 }

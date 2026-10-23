@@ -28,6 +28,8 @@ export default function App() {
   // Listen for Electron native menu actions and Agent panel trigger events
   useEffect(() => {
     const handleOpenAgent = () => setAgentOpen(true);
+    const handleOpenFirstRun = () => setFirstRunOpen(true);
+    window.addEventListener("voo:open-first-run", handleOpenFirstRun);
     const handleOpenOnboarding = () => setOnboardingOpen(true);
     window.addEventListener("voo:open-agent-panel", handleOpenAgent);
     window.addEventListener("voo:agent-prompt", handleOpenAgent);
@@ -38,6 +40,9 @@ export default function App() {
       unsubscribeMenu = window.electronAPI.onMenuAction((action) => {
         const store = useDesignStore.getState();
         switch (action) {
+          case "help:onboarding":
+            handleOpenFirstRun();
+            break;
           case "file:new":
             window.dispatchEvent(new CustomEvent("voo:file-new"));
             break;
@@ -69,6 +74,7 @@ export default function App() {
     }
 
     return () => {
+      window.removeEventListener("voo:open-first-run", handleOpenFirstRun);
       window.removeEventListener("voo:open-agent-panel", handleOpenAgent);
       window.removeEventListener("voo:agent-prompt", handleOpenAgent);
       window.removeEventListener("voo:open-onboarding", handleOpenOnboarding);
@@ -140,7 +146,14 @@ export default function App() {
       <FirstRunOnboarding
         open={firstRunOpen}
         onClose={() => setFirstRunOpen(false)}
-        onStart={() => useDesignStore.getState().newVooProject()}
+        onStart={(template) => {
+          const store = useDesignStore.getState();
+          if (!template) store.newVooProject();
+          else store.loadVooProject({
+            vooData: { format: "voo", version: 2, kind: "design", document: template.createDoc(), assets: {} },
+            fileName: `${template.title}.voo`,
+          });
+        }}
       />
       {/* Workspace configuration is opened explicitly from settings/events. */}
       <OnboardingGuide
