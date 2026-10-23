@@ -59,3 +59,23 @@ describe('save registry fallbacks', () => {
     expect(pendingSerialise).not.toHaveBeenCalled();
   });
 });
+
+describe('browser File import entry point', () => {
+  for (const name of fixtures.filter(name => /\.(fig|psd)$/.test(name))) it(name, async () => {
+    vi.stubGlobal('window', {});
+    vi.stubGlobal('Worker', undefined);
+    vi.stubGlobal('ImageData', class { constructor(data,width,height) {Object.assign(this,{data,width,height});} });
+    vi.stubGlobal('document', { createElement: () => ({getContext:()=>({putImageData(){}}),toDataURL:()=> 'data:image/png;base64,AAAA'}) });
+    const file = new File([readFileSync(new URL(name, root))], name);
+    const loadVooProject = vi.fn();
+    const setDocumentLoading = vi.fn();
+    const result = await openVooProject({fileOrPath:file,store:{loadVooProject,setDocumentLoading}});
+    expect(result.success).toBe(true);
+    expect(loadVooProject).toHaveBeenCalledOnce();
+    const {vooData,fileName} = loadVooProject.mock.calls[0][0];
+    const pages = vooData.document.pages || [{sceneDoc:vooData.document}];
+    expect(pages.some(page => page.sceneDoc.nodes.length > 0)).toBe(true);
+    expect(fileName).toMatch(name.endsWith('.psd') ? /\.psd$/ : /\.fig$/);
+    expect(setDocumentLoading).toHaveBeenLastCalledWith(null);
+  });
+});
