@@ -76,11 +76,9 @@ export default function EditorCanvasInactiveLayers({
           ? selectedGroupId === node.id
           : selectedIds.includes(node.id);
         const selectedGroup = isGroup && selected;
-        const rowColor = selectedGroup
-          ? "bg-[#E5B2FF]/10 text-[#eed0ff]"
-          : selected
-            ? "bg-neutral-800 text-white"
-            : "text-neutral-400 hover:bg-white/[0.06] hover:text-neutral-200";
+        const rowColor = selected
+          ? "bg-neutral-800 text-neutral-100 shadow-[inset_0_0_0_1px_#a7ffd4]"
+          : "text-neutral-400 hover:bg-white/[0.06] hover:text-neutral-200";
 
         return (
           <div
@@ -89,8 +87,8 @@ export default function EditorCanvasInactiveLayers({
             data-canvas-id={canvasId}
             data-layer-id={node.id}
             data-inactive-layer="true"
-            style={{ paddingLeft: `${8 + depth * 14}px` }}
-            className={`group/layer flex min-h-6 w-full items-center justify-between rounded-lg pr-2 text-left text-[10px] transition-colors ${rowColor}`}
+            style={{ paddingLeft: `${8 + depth * 16}px` }}
+            className={`group/layer flex min-h-6 w-full items-center justify-between rounded pr-2 text-left text-[10px] transition-colors ${rowColor}`}
           >
             <div className="flex min-w-0 flex-1 items-center gap-1">
               {canExpand ? (

@@ -20,18 +20,8 @@ import {
   drawPuppetWarpChrome,
 } from "./chrome_warp.js";
 
-/**
- * Figma's selection chrome, measured in screen pixels: a 2px frame, four 8×8
- * corner handles in a 1px ring, and a W × H chip below the box. Nothing casts a
- * shadow — the frame already separates the node from the artwork, and a drop
- * shadow under every handle reads as four smudges along the corners rather than
- * four grab targets.
- *
- * The frame is drawn at twice the handle's ring weight on purpose: the ring has
- * to stay legible at 8px, and the heavier frame is what makes the selection
- * read at a glance on a busy canvas without the handles having to grow.
- */
-const FRAME_WIDTH = 2;
+/** Selection chrome stays one CSS pixel wide at every canvas zoom. */
+const FRAME_WIDTH = 1;
 const HANDLE_RING_WIDTH = 1;
 const CHROME_FONT_FAMILY = "system-ui, -apple-system, 'Segoe UI', sans-serif";
 const SIZE_LABEL_FONT_SIZE = 11;
@@ -41,14 +31,7 @@ const SIZE_LABEL_GAP = 6;
 const SIZE_LABEL_RADIUS = 2;
 const SIZE_LABEL_TEXT = "#111111";
 
-/**
- * A crisp frame of `FRAME_WIDTH`.
- *
- * A stroke straddles the path it is given, so the path sits half a width inside
- * the box and the rect loses a full width. Offsetting by 0.5 would smear a 2px
- * stroke across three pixel rows; insetting by a whole pixel keeps both edges on
- * a pixel boundary at any zoom.
- */
+/** Inset half a pixel so a one-pixel stroke lands on device pixel edges. */
 function strokeCrispRect(ctx, x, y, width, height) {
   const left = Math.round(x) + FRAME_WIDTH / 2;
   const top = Math.round(y) + FRAME_WIDTH / 2;
@@ -62,15 +45,7 @@ function strokeCrispRect(ctx, x, y, width, height) {
   );
 }
 
-/**
- * A box corner moved onto the frame's centreline.
- *
- * `strokeCrispRect` insets the stroke path by half the frame width so the
- * 2px frame's outer edge lands exactly on the box, which puts its centreline
- * a pixel inside the corner. A handle centred on the raw corner would hang a
- * pixel outboard of the frame it belongs to, and every corner reads visibly
- * off-centre. Rounding before the inset keeps the handle on a pixel boundary.
- */
+/** Align handle centres with the inset outline. */
 function frameCentre(point) {
   return {
     x: Math.round(point.x) + FRAME_WIDTH / 2,
@@ -143,7 +118,7 @@ function sizeLabelText(node, rect) {
 /**
  * Draws the selection outline and resize handles for an object or a region.
  *
- * Screen space, not document space: the frame must stay 2px and the handles
+ * Screen space, not document space: the frame must stay 1px and the handles
  * 8x8 at any zoom, exactly like Figma and Photoshop. The transform is
  * carried in the viewport argument instead of ctx.setTransform so handles do
  * not blur or scale up.

@@ -56,14 +56,14 @@ const POLL_MS = 200;
 /** `imageId` → data URL. Module-level, like the filter preset swatches. */
 const thumbCache = new Map();
 
-/** The node's bitmap cropped/fitted to fill the tile cleanly. */
-function renderImageThumb(bitmap, node) {
+/** The node's bitmap cropped and fitted inside the tile without losing its edges. */
+export function renderImageThumb(bitmap, node) {
   const sourceWidth = bitmap.videoWidth || bitmap.naturalWidth || bitmap.width;
   const sourceHeight =
     bitmap.videoHeight || bitmap.naturalHeight || bitmap.height;
   if (!sourceWidth || !sourceHeight) return null;
   const crop = normalizeImageCrop(node, sourceWidth, sourceHeight);
-  const scale = Math.max(
+  const scale = Math.min(
     (THUMB_WIDTH * RENDER_SCALE) / crop.width,
     (THUMB_HEIGHT * RENDER_SCALE) / crop.height,
   );
@@ -348,7 +348,7 @@ PenThumb.propTypes = {
  */
 export default function EditorLayerThumb({ object, getBitmap = null }) {
   const tile =
-    "flex h-5 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md";
+    "flex h-5 w-7 shrink-0 items-center justify-center overflow-hidden rounded-sm";
 
   switch (object.kind) {
     case NODE_KIND.IMAGE:
@@ -371,7 +371,7 @@ export default function EditorLayerThumb({ object, getBitmap = null }) {
       return (
         <div
           className={`${tile} rounded-md`}
-          style={{ backgroundColor: color ?? "#262626", boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 25%)" }}
+          style={{ background: color ?? "#262626", opacity: object.opacity ?? 1, boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 25%)" }}
         />
       );
     }
@@ -384,7 +384,7 @@ export default function EditorLayerThumb({ object, getBitmap = null }) {
         <div className={`${tile} bg-neutral-800`}>
           <div
             className="h-3.5 w-3.5 rounded-full"
-            style={{ backgroundColor: color ?? "transparent", boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 25%)" }}
+            style={{ background: color ?? "transparent", opacity: object.opacity ?? 1, boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 25%)" }}
           />
         </div>
       );
