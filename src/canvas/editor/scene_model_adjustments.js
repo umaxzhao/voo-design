@@ -145,6 +145,19 @@ export function normalizeAdjustments(adj) {
       enabled: Boolean(adj.sharpen?.enabled ?? defaults.sharpen.enabled),
       value: parseAdjustmentValue(adj.sharpen?.value, 0, 100, defaults.sharpen.value),
     },
+    clarity: {
+      enabled: Boolean(adj.clarity?.enabled ?? defaults.clarity.enabled),
+      value: parseAdjustmentValue(adj.clarity?.value, -100, 100, defaults.clarity.value),
+    },
+    highPass: {
+      enabled: Boolean(adj.highPass?.enabled ?? defaults.highPass.enabled),
+      value: parseAdjustmentValue(adj.highPass?.value, 0, 100, defaults.highPass.value),
+    },
+    motionBlur: {
+      enabled: Boolean(adj.motionBlur?.enabled ?? defaults.motionBlur.enabled),
+      value: parseAdjustmentValue(adj.motionBlur?.value, 0, 100, defaults.motionBlur.value),
+      angle: parseAdjustmentValue(adj.motionBlur?.angle, -180, 180, defaults.motionBlur.angle),
+    },
     noise: {
       enabled: Boolean(adj.noise?.enabled ?? defaults.noise.enabled),
       value: parseAdjustmentValue(adj.noise?.value, 0, 100, defaults.noise.value),

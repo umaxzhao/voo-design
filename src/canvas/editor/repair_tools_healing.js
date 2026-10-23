@@ -116,6 +116,7 @@ export function createRepairHealingTools({
     diameter = 24,
     hardness = 0.5,
     opacity = 1,
+    flow = 1,
     { persist = true } = {},
   ) {
     const doc = getDoc();
@@ -172,6 +173,7 @@ export function createRepairHealingTools({
       diameter * scaleX,
       hardness,
       opacity,
+      flow,
       coverage,
     );
     if (!stampedDataUrl) return false;

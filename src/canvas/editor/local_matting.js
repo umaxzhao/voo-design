@@ -275,13 +275,13 @@ function rasteriseOriginal(bitmap, width, height) {
  * Refining against the full-size colours is what puts the edge back where the
  * picture's colours say it is.
  *
- * There is no colour-decontamination stage here, and there is nowhere else for
- * one to go: a matte's RGB is white by construction (`maskToRgba`), so this
- * image does not carry the old background's colour to unmix, and the only
- * stage that holds the picture's RGBA beside a matte — `applyMatte`'s
- * render-time composite — is the editor's hottest per-frame path, where a
- * float-plane unmix of every pixel would be a freeze. A cutout edge therefore
- * keeps whatever fringe the model's own resolution left on it.
+ * There is no colour-decontamination stage here: a matte's RGB is white by
+ * construction (`maskToRgba`), so this image does not carry the old
+ * background's colour to unmix. That work belongs to `defringeRgba` in
+ * `matte_defringe.js`, which `applyMatte` runs on the composited RGBA after
+ * `destination-in` and before caching the result. The cache is what makes the
+ * pass affordable: it runs when the bitmap or matte changes, not on every pan
+ * and zoom.
  *
  * @param {object|false} settings refinement options, or false to skip.
  * @returns {{mask: Float32Array, refinement: {ran: boolean, reason: string|null}}}
