@@ -1904,6 +1904,15 @@ export default {
   "agent.error.generateImageNoResult": "The image provider finished without an image.",
   "agent.error.providerNotConfigured": "This provider is not configured yet.",
   "agent.error.toolFailed": "The tool failed.",
+  "agent.error.needsDesktopApp":
+    "Web image generation needs the VOO Design desktop app (Electron); it is not available in the browser build.",
+  "agent.error.extensionNotLinked":
+    "The VOO Chrome extension is not connected. Load it in Chrome and keep Chrome open.",
+  "agent.error.loginRequired": "Sign in to ChatGPT or Gemini in the Chrome window, then try again.",
+  "agent.error.composerMissing": "The chat composer was not on the page. Refresh the ChatGPT or Gemini tab.",
+  "agent.error.chromeLaunchFailed": "Google Chrome could not be opened. Confirm Chrome is installed.",
+  "agent.error.timeout": "Timed out waiting for the web image.",
+  "agent.error.noImages": "The page finished without a new image.",
   "agent.history.title": "Conversations",
   "agent.history.new": "New conversation",
   "agent.history.empty": "No saved conversations yet.",

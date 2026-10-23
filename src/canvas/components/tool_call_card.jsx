@@ -16,6 +16,13 @@ const KNOWN_ERRORS = new Set([
   "generateImageNoResult",
   "providerNotConfigured",
   "toolFailed",
+  "needsDesktopApp",
+  "extensionNotLinked",
+  "loginRequired",
+  "composerMissing",
+  "chromeLaunchFailed",
+  "timeout",
+  "noImages",
 ]);
 
 /** Readable text for a known error code; anything else is shown as it came. */
@@ -46,6 +53,9 @@ export default function ToolCallCard({ call }) {
         <span className="flex-1 truncate">{call.name}</span>
         <span aria-hidden="true">{expanded ? "▾" : "▸"}</span>
       </button>
+      {call.statusLine && (
+        <p className="mt-1 pl-5 text-[11px] text-neutral-400">{call.statusLine}</p>
+      )}
       {expanded && (
         <div className="mt-2 flex flex-col gap-2">
           <Section label={t("agent.system.arguments")} value={call.arguments} />
@@ -77,6 +87,7 @@ ToolCallCard.propTypes = {
     name: PropTypes.string.isRequired,
     status: PropTypes.string.isRequired,
     arguments: PropTypes.any,
+    statusLine: PropTypes.string,
     result: PropTypes.any,
     error: PropTypes.any,
   }).isRequired,

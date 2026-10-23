@@ -31,6 +31,9 @@ const workspaceApi = {
 
 contextBridge.exposeInMainWorld("vooDesktop", {
   platform: process.platform,
+  webImageGenerate: (args) => ipcRenderer.invoke("webImage:generate", args),
+  webImageCancel: (jobId) => ipcRenderer.invoke("webImage:cancel", jobId),
+  onWebImageProgress: (handler) => subscribe("webImage:progress", handler),
   localCli: {
     connect: () => ipcRenderer.invoke("voo:codex-connect"),
     advance: (options) => ipcRenderer.invoke("voo:codex-advance", options),

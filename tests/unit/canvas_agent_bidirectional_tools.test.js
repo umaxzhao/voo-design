@@ -116,6 +116,19 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
     expect(names).toContain("batch_mutate_layers");
   });
 
+  it("publishes a complete generate_image_web schema", () => {
+    const schema = CANVAS_TOOL_SCHEMAS.find((entry) => entry.function.name === "generate_image_web");
+    expect(schema).toBeTruthy();
+    const params = schema.function.parameters;
+    expect(params.required).toEqual(["provider", "prompt"]);
+    expect(params.properties.provider.enum).toEqual(["chatgpt", "gemini"]);
+    expect(params.properties.prompt.type).toBe("string");
+    expect(params.properties.count).toMatchObject({ type: "integer", minimum: 1, maximum: 4 });
+    expect(params.properties.x.type).toBe("number");
+    expect(params.properties.y.type).toBe("number");
+    expect(params.properties.width.type).toBe("number");
+  });
+
   it("inspects layer tree of a specific node and returns hierarchy", async () => {
     const result = await executeCanvasTool("inspect_layer_tree", {
       layerId: "frame_hero",

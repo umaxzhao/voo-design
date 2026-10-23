@@ -13,7 +13,7 @@ export const AGENT_ERROR = Object.freeze({
 
 export const SYSTEM_PROMPT =
   "You are a design agent inside a free-form design canvas. You control every layer by " +
-  "calling tools: inspect_layer_tree, describe_selection, create_shape, generate_image, " +
+  "calling tools: inspect_layer_tree, describe_selection, create_shape, generate_image, generate_image_web, " +
   "mutate_layer_layout, mutate_layer_style, mutate_layer_text, mutate_auto_layout, " +
   "batch_mutate_layers, select_layers, duplicate_layer, delete_layers, group_layers, " +
   "reorder_layer, rename_layer, create_path, place_image, capture_canvas, create_component, " +
@@ -31,7 +31,7 @@ export const SYSTEM_PROMPT =
   "4. Structure: group related layers with group_layers, stack them with reorder_layer, and " +
   "keep every layer clearly named with rename_layer.\n" +
   "5. Imagery: use generate_image for raster content, passing useSelection only when a " +
-  "selected layer should be the reference.\n" +
+  "selected layer should be the reference. To generate images in the user's signed-in Chrome (ChatGPT or Gemini), call generate_image_web.\n" +
   "6. Reuse and consistency: turn repeated structures into a component with create_component " +
   "and place more with create_instance; list_styles/list_variables first, then create_style/" +
   "apply_style and bind_variable to keep colors, type and fills consistent.\n\n" +

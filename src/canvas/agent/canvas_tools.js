@@ -10,6 +10,7 @@ import {
   placeImageInEditor,
   runImageJob,
 } from "./image_generation.js";
+import { generateImageWeb, webImageStatusLine } from "./web_image_gen.js";
 import {
   CANVAS_TOOL_GEOMETRY_SCHEMAS,
   captureCanvas,
@@ -231,6 +232,26 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
   {
     type: "function",
     function: {
+      name: "generate_image_web",
+      description:
+        "Generate images in the user's signed-in Chrome via ChatGPT or Gemini and place them on the canvas. Requires the VOO Design desktop app and the VOO Chrome extension.",
+      parameters: {
+        type: "object",
+        properties: {
+          provider: { type: "string", enum: ["chatgpt", "gemini"] },
+          prompt: { type: "string" },
+          count: { type: "integer", minimum: 1, maximum: 4 },
+          x: { type: "number" },
+          y: { type: "number" },
+          width: { type: "number" },
+        },
+        required: ["provider", "prompt"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "create_shape",
       description: "Create a new rectangle, ellipse, or text layer on the canvas.",
       parameters: {
@@ -385,6 +406,63 @@ async function generateImage(args) {
   });
   await placeImageInEditor(editor, urls[0], null);
   return { taskId, placed: true };
+}
+
+function placementPoint(args, index, span) {
+  const hasX = Number.isFinite(args.x);
+  const hasY = Number.isFinite(args.y);
+  if (!hasX && !hasY && index === 0) return null;
+  return {
+    x: (hasX ? args.x : 0) + index * (span + 24),
+    y: hasY ? args.y : 0,
+  };
+}
+
+async function generateImageWebTool(args) {
+  requireEditor();
+  if (args.provider !== "chatgpt" && args.provider !== "gemini") {
+    throw Object.assign(new Error("invalidProvider"), { code: "invalidProvider" });
+  }
+  const count = Math.min(4, Math.max(1, Math.round(Number(args.count) || 1)));
+  const result = await generateImageWeb(
+    { provider: args.provider, prompt: args.prompt, count },
+    {
+      onProgress: (event) => {
+        const statusLine = webImageStatusLine(args.provider, event.stage);
+        globalThis.window?.dispatchEvent?.(
+          new CustomEvent("voo:web-image-progress", {
+            detail: { ...event, provider: args.provider, statusLine },
+          }),
+        );
+      },
+    },
+  );
+  if (result?.ok === false) {
+    throw Object.assign(new Error(result.error || result.code || "needsDesktopApp"), {
+      code: result.code || "needsDesktopApp",
+    });
+  }
+  const images = Array.isArray(result?.images) ? result.images : [];
+  const span = Number.isFinite(args.width) ? args.width : images[0]?.width || 512;
+  const layerIds = [];
+  for (let index = 0; index < images.length; index += 1) {
+    const image = images[index];
+    const point = placementPoint(args, index, span);
+    const sourceWidth = image.width || (Number.isFinite(args.width) ? args.width : 512);
+    const sourceHeight = image.height || sourceWidth;
+    const width = Number.isFinite(args.width) ? args.width : undefined;
+    const height =
+      width !== undefined
+        ? Math.max(1, Math.round(width * (sourceHeight / sourceWidth)))
+        : undefined;
+    const placed = await placeImage({
+      url: image.dataUrl,
+      ...(point ? { x: point.x, y: point.y } : {}),
+      ...(width !== undefined ? { width, height } : {}),
+    });
+    if (placed.layerId) layerIds.push(placed.layerId);
+  }
+  return { ok: true, provider: args.provider, layerIds };
 }
 
 function describeSelection() {
@@ -798,6 +876,7 @@ function renameLayer(args = {}) {
 
 const EXECUTORS = Object.freeze({
   generate_image: generateImage,
+  generate_image_web: generateImageWebTool,
   describe_selection: describeSelection,
   inspect_layer_tree: inspectLayerTree,
   mutate_layer_layout: mutateLayerLayout,

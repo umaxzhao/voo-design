@@ -20,6 +20,7 @@ const ALL_TOOL_NAMES = [
   "inspect_layer_tree",
   "describe_selection",
   "generate_image",
+  "generate_image_web",
   "create_component",
   "create_instance",
   "list_styles",

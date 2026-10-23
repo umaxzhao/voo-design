@@ -18,6 +18,7 @@
     "electron:build": "npm run copy:ort && npm run copy:canvaskit && vite build && electron-builder --dir",
     "pretest": "npm run copy:canvaskit && node scripts/ensure-dist.mjs",
     "test": "vitest run",
+    "build:extension": "node scripts/build-extension.mjs",
     "test:watch": "vitest",
     "lint:design": "node scripts/check-design.mjs",
     "bridge": "node scripts/cli-bridge.mjs"
