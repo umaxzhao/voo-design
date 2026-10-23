@@ -153,6 +153,7 @@ export function cloneStampImage(
   diameter,
   hardness = 0.5,
   opacity = 1,
+  flow = 1,
   coverage = null,
 ) {
   const width = sourceCanvas.width;
@@ -184,14 +185,16 @@ export function cloneStampImage(
             const dist = Math.sqrt(dist2);
             alpha = 1 - (dist - innerRadius) / (radius - innerRadius);
           }
-          alpha *= opacity;
+          alpha *= opacity * flow;
           if (coverage) {
             alpha *= coverage[y * width + x] / 255;
             if (alpha <= 0) continue;
           }
 
-          const sx = Math.min(width - 1, Math.max(0, Math.round(x + dx)));
-          const sy = Math.min(height - 1, Math.max(0, Math.round(y + dy)));
+          const sx = Math.round(x + dx);
+          const sy = Math.round(y + dy);
+          // Skip out-of-bounds source samples — never wrap (Affinity/PS stamp).
+          if (sx < 0 || sy < 0 || sx >= width || sy >= height) continue;
           const sIdx = (sy * width + sx) * 4;
           const dIdx = (y * width + x) * 4;
 
