@@ -65,6 +65,7 @@ const EditorFindReplace = lazy(() => import("./editor_find_replace.jsx"));
 const ShortcutReferenceModal = lazy(() => import("./shortcut_reference_modal.jsx"));
 const SvgEditModal = lazy(() => import("./SvgEditModal.jsx"));
 import { DESIGN_SHORTCUT_GROUPS } from "../../shared/editor-shortcut-catalog.js";
+import { useShowRulers } from "../use_show_rulers.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import {
   addGuide,
@@ -170,7 +171,6 @@ const FREE_COLUMNS = 3;
  * Persisted view-aid keys. The pointer/snapping modules read the same keys
  * synchronously, so a toggle here changes the very next drag.
  */
-const SHOW_RULERS_SETTING = "voo.editor.showRulers";
 const SHOW_GUIDES_SETTING = "voo.editor.showGuides";
 const SNAP_TO_GRID_SETTING = "voo.editor.snapToGrid";
 /** History label for every guide edit (one entry per completed gesture). */
@@ -349,9 +349,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const [selectedInstanceChild, setSelectedInstanceChild] = useState(null);
   // Rulers/guides/snap-to-grid view aids. Persisted, not document state: they
   // describe how the user looks at a canvas, not what the canvas contains.
-  const [showRulers, setShowRulers] = useState(
-    () => getSetting(SHOW_RULERS_SETTING) !== false,
-  );
+  const { showRulers, toggleRulers } = useShowRulers();
   const [showGuides, setShowGuides] = useState(
     () => getSetting(SHOW_GUIDES_SETTING) !== false,
   );
@@ -761,14 +759,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   useEffect(() => {
     if (!commentsOpen) setCommentMode(false);
   }, [commentsOpen]);
-
-  const toggleRulers = useCallback(() => {
-    setShowRulers((previous) => {
-      const next = !previous;
-      void setSetting(SHOW_RULERS_SETTING, next);
-      return next;
-    });
-  }, []);
 
   const toggleGuides = useCallback(() => {
     setShowGuides((previous) => {
