@@ -155,6 +155,7 @@ export async function main(args = process.argv.slice(2)) {
     const bridge = start(['run', 'bridge']);
     const vite = start(['run', 'dev', '--', '--host', '127.0.0.1', '--port', vitePort, '--strictPort']);
     await Promise.all([ready(`http://127.0.0.1:${bridgePort}/health`, bridge), ready(`http://127.0.0.1:${vitePort}`, vite)]);
+    await Promise.all(['/', '/src/canvas/agent/canvas_tools.js'].map(path => fetch(`http://127.0.0.1:${vitePort}${path}`).catch(() => {})));
     browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
     const runOne = async id => {
       const task = DESIGN_BENCH_TASKS.find(item => item.id === id);
@@ -167,7 +168,11 @@ export async function main(args = process.argv.slice(2)) {
       let watchdog;
       let record = { id, kind: task.kind, frame: task.frame };
       try {
-        await page.goto(`http://127.0.0.1:${vitePort}/?voo-test=1`);
+        try {
+          await page.goto(`http://127.0.0.1:${vitePort}/?voo-test=1`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+        } catch {
+          await page.goto(`http://127.0.0.1:${vitePort}/?voo-test=1`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+        }
         await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
         const result = await Promise.race([
           page.evaluate(runInEditor, { task, model: options.model || process.env.VOO_CODEX_MODEL, timeout, critique: options.critique && !!lint }),
