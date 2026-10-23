@@ -1,3 +1,4 @@
+import { createCameraRafBatcher } from "../canvas/camera_raf.js";
 import { create } from "zustand";
 import { createDocument, CANVAS_TYPE } from "../canvas/editor/scene_doc_factory.js";
 import { addRecentFile } from "../canvas/store/recent_files.js";
@@ -25,7 +26,13 @@ function createDefaultPage(id = DEFAULT_PAGE_ID, label = "Design 1", canvasType 
 
 let pageCounter = 0;
 
-export const useDesignStore = create((set, get) => ({
+export const useDesignStore = create((set, get) => {
+  const cameraBatcher = createCameraRafBatcher({
+    getCamera: () => get().editorCamera,
+    setCamera: (editorCamera) => set({ editorCamera }),
+    requestAnimationFrame: (callback) => typeof globalThis.requestAnimationFrame === 'function' ? globalThis.requestAnimationFrame(callback) : callback(),
+  });
+  return {
   // Core state
   editingNodeId: DEFAULT_PAGE_ID,
   editingNodeIds: [DEFAULT_PAGE_ID],
@@ -144,6 +151,7 @@ export const useDesignStore = create((set, get) => ({
 
   // Viewport / Camera actions
   setEditorCamera: (camera) => {
+    cameraBatcher.flush();
     set((state) => ({
       editorCamera: {
         ...state.editorCamera,
@@ -157,13 +165,7 @@ export const useDesignStore = create((set, get) => ({
       typeof arg1 === "object" && arg1 !== null
         ? { dx: Number(arg1.dx) || 0, dy: Number(arg2?.dy ?? arg1.dy) || 0 }
         : { dx: Number(arg1) || 0, dy: Number(arg2) || 0 };
-    set((state) => ({
-      editorCamera: {
-        ...state.editorCamera,
-        panX: (state.editorCamera?.panX || 0) + dx,
-        panY: (state.editorCamera?.panY || 0) + dy,
-      },
-    }));
+    cameraBatcher.pan(dx, dy);
   },
 
   setEditorViewport: ({ panX, panY, zoom }) => {
@@ -397,6 +399,7 @@ export const useDesignStore = create((set, get) => ({
     });
   },
   clearPendingAgentIntent: () => set({ pendingAgentIntent: null }),
-}));
+  };
+});
 
 export default useDesignStore;
