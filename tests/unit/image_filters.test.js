@@ -11,6 +11,9 @@ import {
 } from "../../src/canvas/editor/pixel_filter.js";
 import {
   applyBoxBlur,
+  applyClarity,
+  applyHighPass,
+  applyMotionBlur,
   applySharpen,
   scaledRadius,
   cpuBlurRadius,
@@ -259,5 +262,88 @@ describe("cpuBlurRadius", () => {
     expect(cpuBlurRadius(50)).toBe(CPU_BLUR_RADIUS_CAP);
     expect(cpuBlurRadius(10)).toBe(10);
     expect(cpuBlurRadius(-5)).toBe(0);
+  });
+});
+
+describe("applyHighPass", () => {
+  it("rewrites opaque pixels (128 + residual) on a step edge", () => {
+    const data = new Uint8ClampedArray(16 * 4);
+    for (let i = 0; i < 16; i += 1) {
+      const v = i % 4 < 2 ? 0 : 255;
+      data[i * 4] = v;
+      data[i * 4 + 1] = v;
+      data[i * 4 + 2] = v;
+      data[i * 4 + 3] = 255;
+    }
+    const before = Array.from(data);
+    applyHighPass(data, 4, 4, 80);
+    const changed = data.some((v, i) => i % 4 !== 3 && v !== before[i]);
+    expect(changed).toBe(true);
+    // Alpha untouched
+    for (let i = 3; i < data.length; i += 4) expect(data[i]).toBe(255);
+  });
+
+  it("is identity at amount 0", () => {
+    const data = rgba(10, 20, 30, 255);
+    const before = Array.from(data);
+    applyHighPass(data, 1, 1, 0);
+    expect(Array.from(data)).toEqual(before);
+  });
+
+  it("skips transparent pixels", () => {
+    const data = rgba(200, 100, 50, 0);
+    applyHighPass(data, 1, 1, 80);
+    expect(data[0]).toBe(200);
+    expect(data[3]).toBe(0);
+  });
+});
+
+describe("applyClarity", () => {
+  it("boosts midtone local contrast with positive amount", () => {
+    const data = new Uint8ClampedArray(16 * 4);
+    for (let i = 0; i < 16; i += 1) {
+      const v = i % 4 < 2 ? 80 : 180;
+      data[i * 4] = v;
+      data[i * 4 + 1] = v;
+      data[i * 4 + 2] = v;
+      data[i * 4 + 3] = 255;
+    }
+    const before = Array.from(data);
+    applyClarity(data, 4, 4, 60);
+    const changed = data.some((v, i) => i % 4 !== 3 && v !== before[i]);
+    expect(changed).toBe(true);
+  });
+
+  it("is identity at amount 0", () => {
+    const data = rgba(120, 120, 120, 255);
+    const before = Array.from(data);
+    applyClarity(data, 1, 1, 0);
+    expect(Array.from(data)).toEqual(before);
+  });
+});
+
+describe("applyMotionBlur", () => {
+  it("smears a bright pixel along the angle", () => {
+    const data = new Uint8ClampedArray(25 * 4);
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = 0;
+      data[i + 1] = 0;
+      data[i + 2] = 0;
+      data[i + 3] = 255;
+    }
+    // Centre bright
+    data[12 * 4] = 255;
+    data[12 * 4 + 1] = 255;
+    data[12 * 4 + 2] = 255;
+    applyMotionBlur(data, 5, 5, 80, 0);
+    // Horizontal neighbour of centre should pick up some brightness
+    expect(data[13 * 4]).toBeGreaterThan(0);
+  });
+
+  it("is identity at amount 0", () => {
+    const data = rgba(10, 20, 30, 255);
+    const before = Array.from(data);
+    applyMotionBlur(data, 1, 1, 0, 45);
+    expect(Array.from(data)).toEqual(before);
   });
 });

@@ -164,3 +164,125 @@ export function applyBoxBlur(data, width, height, radius) {
   }
   return data;
 }
+
+/** A blurred snapshot of `data` at the given radius, for residual maths. */
+function blurredCopy(data, width, height, radius) {
+  const copy = Uint8ClampedArray.from(data);
+  applyBoxBlur(copy, width, height, radius);
+  return copy;
+}
+
+/** The slider amount as a clamped number; non-finite input means "do nothing". */
+function clampedAmount(amount, min, max) {
+  if (!Number.isFinite(amount)) return 0;
+  return Math.min(max, Math.max(min, amount));
+}
+
+/**
+ * High Pass (Photoshop / Affinity style), in place: subtract a blurred copy
+ * of each RGB channel from the original and re-centre the residual on mid
+ * grey, so flat areas become 128 grey and only edges/details survive. The
+ * slider (0-100) scales the blur radius through the shared scaledRadius /
+ * cpuBlurRadius helpers, so a small amount keeps fine detail and a large one
+ * keeps broader structure. Transparent pixels are skipped.
+ */
+export function applyHighPass(data, width, height, amount, naturalWidth = width) {
+  const amountC = clampedAmount(amount, 0, 100);
+  if (!(amountC > 0)) return data;
+  const radius = Math.max(
+    1,
+    Math.round(cpuBlurRadius(scaledRadius(amountC, width, naturalWidth))),
+  );
+  const blurred = blurredCopy(data, width, height, radius);
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] === 0) continue;
+    for (let c = 0; c < 3; c++) {
+      data[i + c] = 128 + (data[i + c] - blurred[i + c]);
+    }
+  }
+  return data;
+}
+
+/**
+ * Clarity, in place: midtone local contrast. The high-pass residual is added
+ * back scaled by the amount (-100..100) and a smooth midtone weight derived
+ * from the pixel's luma — 0 at black/white, 1 at mid grey — so deep shadows
+ * and bright highlights are protected while midtone edges gain (positive
+ * amount) or lose (negative amount) contrast. The radius scales with
+ * |amount| through scaledRadius / cpuBlurRadius. Transparent pixels skipped.
+ */
+export function applyClarity(data, width, height, amount, naturalWidth = width) {
+  const amountC = clampedAmount(amount, -100, 100);
+  if (amountC === 0) return data;
+  const radius = Math.max(
+    1,
+    Math.round(
+      cpuBlurRadius(scaledRadius(Math.abs(amountC), width, naturalWidth)),
+    ),
+  );
+  const blurred = blurredCopy(data, width, height, radius);
+  // Twice the slider ratio: clarity reads as "local contrast", which needs
+  // more gain than the raw high-pass residual to feel like Photoshop's.
+  const strength = (amountC / 100) * 2;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] === 0) continue;
+    const luma =
+      (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]) / 255;
+    const mid = 2 * luma - 1;
+    const weight = 1 - mid * mid;
+    for (let c = 0; c < 3; c++) {
+      data[i + c] =
+        data[i + c] + (data[i + c] - blurred[i + c]) * strength * weight;
+    }
+  }
+  return data;
+}
+
+/**
+ * Motion Blur, in place: a directional line (box) blur along `angleDeg`
+ * (0° smears horizontally toward +x, positive angles rotate clockwise
+ * toward +y). The slider (0-100) scales the smear length through
+ * scaledRadius / cpuBlurRadius, the same cap as the isotropic blur. Alpha is
+ * preserved; transparent pixels are skipped.
+ */
+export function applyMotionBlur(
+  data,
+  width,
+  height,
+  amount,
+  angleDeg = 0,
+  naturalWidth = width,
+) {
+  const amountC = clampedAmount(amount, 0, 100);
+  if (!(amountC > 0)) return data;
+  const radius = Math.round(
+    cpuBlurRadius(scaledRadius(amountC, width, naturalWidth)),
+  );
+  if (radius < 1) return data;
+  const angle = ((Number.isFinite(angleDeg) ? angleDeg : 0) * Math.PI) / 180;
+  const dirX = Math.cos(angle);
+  const dirY = Math.sin(angle);
+  const src = Uint8ClampedArray.from(data);
+  const samples = 2 * radius + 1;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const o = (y * width + x) * 4;
+      if (src[o + 3] === 0) continue;
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      for (let t = -radius; t <= radius; t++) {
+        const sx = Math.min(width - 1, Math.max(0, Math.round(x + dirX * t)));
+        const sy = Math.min(height - 1, Math.max(0, Math.round(y + dirY * t)));
+        const so = (sy * width + sx) * 4;
+        r += src[so];
+        g += src[so + 1];
+        b += src[so + 2];
+      }
+      data[o] = r / samples;
+      data[o + 1] = g / samples;
+      data[o + 2] = b / samples;
+    }
+  }
+  return data;
+}
