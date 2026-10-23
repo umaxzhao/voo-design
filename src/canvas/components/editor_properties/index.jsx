@@ -1,3 +1,4 @@
+import VariantsSection from "./variants_section.jsx";
 /**
  * Editor properties panel: root component docked on canvas side showing
  * background, tool properties, mask editing, pen editing, or node properties.
@@ -26,6 +27,7 @@ export {
 
 export default function EditorProperties({
    object = null,
+   isMainComponent = false,
    parentLayout = null,
    parentIsFrame = false,
    parentNode = null,
@@ -225,6 +227,7 @@ export default function EditorProperties({
       >
         {header}
         <div className={backgroundContentClass}>
+          <VariantsSection engine={engine} isMainComponent={isMainComponent} />
           {docSize && onSetDocumentSize && framePosition && onSetFramePosition && (
             <InspectorGroup title={t("editor.frame.transform")}>
               <FrameSizeSection
@@ -308,6 +311,7 @@ export default function EditorProperties({
       {header}
       <div className={contentClass}>
         {maskToolbar}
+        {object?.isFrame && <VariantsSection engine={engine} isMainComponent={isMainComponent} />}
           <PropertiesPanelSections
             object={object}
             engine={engine}

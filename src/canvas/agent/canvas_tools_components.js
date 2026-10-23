@@ -1,3 +1,5 @@
+import { newComponentId, variantNameOf, variantGroupOf, duplicateComponentMaster, createVariantDocument, switchVariantDocument } from "../editor/component_variants.js";
+export { duplicateComponentMaster } from "../editor/component_variants.js";
 /** Agent tools: component instances (overrides, swap) and document variables. */
 
 import {
@@ -183,47 +185,6 @@ function getDocumentSafe(editor) {
 /* Component variants                                                  */
 /* ------------------------------------------------------------------ */
 
-function newComponentId() {
-  const source = globalThis.crypto;
-  if (source?.randomUUID) return source.randomUUID();
-  return `component_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function variantNameOf(document) {
-  return typeof document?.variantName === "string" && document.variantName.trim()
-    ? document.variantName
-    : null;
-}
-
-function variantGroupOf(document) {
-  return typeof document?.variantGroupId === "string" && document.variantGroupId.trim()
-    ? document.variantGroupId
-    : null;
-}
-
-/**
- * Duplicate a main component document as a sibling variant. Node ids are kept
- * so overrides and layer lookups stay meaningful across variants.
- */
-export function duplicateComponentMaster(source, {
-  componentId,
-  variantGroupId,
-  variantName,
-  name,
-} = {}) {
-  if (!source || !Array.isArray(source.nodes)) {
-    throw new TypeError("A component document with nodes is required");
-  }
-  const canvasId = componentId ?? newComponentId();
-  return {
-    ...source,
-    canvasId,
-    variantGroupId,
-    variantName,
-    ...(name ? { name } : {}),
-  };
-}
-
 function componentEntries(editor, extra = null) {
   const entries = new Map();
   const add = (key, document, fallbackName = null) => {
@@ -273,7 +234,7 @@ function createComponentVariant(args = {}) {
   }
 
   const source = requireComponent(editor, sourceComponentId);
-  const variantGroupId = variantGroupOf(source) ?? `variant-group:${newComponentId()}`;
+  let variantGroupId = variantGroupOf(source) ?? `variant-group:${newComponentId()}`;
   const sourceVariantName = variantNameOf(source) ?? "Default";
   const entries = componentEntries(editor, {
     componentId: source.canvasId ?? sourceComponentId,
@@ -289,25 +250,18 @@ function createComponentVariant(args = {}) {
     invalidArgs(`Invalid argument "variantName": ${JSON.stringify(variantName)} already exists in the group`);
   }
 
-  const variant = duplicateComponentMaster(source, {
-    variantGroupId,
-    variantName,
-    ...(args.name ? { name: args.name } : {}),
-  });
-  const updatedSource = {
-    ...source,
-    variantGroupId,
-    variantName: sourceVariantName,
-  };
   const host = getDocument(editor);
-  const components = { ...(host.components ?? {}) };
+  const componentId = newComponentId();
+  const next = createVariantDocument(host, source, variantName, componentId);
   const sourceKey = source.canvasId ?? sourceComponentId;
-  components[sourceKey] = updatedSource;
-  components[variant.canvasId] = variant;
+  const updatedSource = next.components[sourceKey];
+  const variant = next.components[componentId];
+  variantGroupId = variant.variantGroupId;
+  if (args.name) variant.name = args.name;
   storeVariantDocument(editor, sourceKey, updatedSource);
   storeVariantDocument(editor, sourceComponentId, updatedSource);
   storeVariantDocument(editor, variant.canvasId, variant);
-  commitDocument(editor, { ...host, components }, "AI: Create component variant");
+  commitDocument(editor, next, "AI: Create component variant");
   return {
     ok: true,
     componentId: variant.canvasId,
@@ -575,11 +529,7 @@ function swapInstance(args = {}) {
 
   // Overrides pointed at the old master's layer ids, so they start over;
   // the instance's view/camera fields are kept.
-  const record = clearAllOverrides(instance.instance ?? {});
-  const next = replaceInstanceNode(doc, instanceId, {
-    sourceCanvasId: componentId,
-    instance: record,
-  });
+  const next = switchVariantDocument(doc, instanceId, { canvasId: componentId });
   commitDocument(editor, next, "AI: Swap instance");
   return {
     ok: true,

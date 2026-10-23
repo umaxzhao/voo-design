@@ -1,4 +1,10 @@
 export default {
+  "editor.variants.title": "Variants",
+  "editor.variants.variant": "Variant",
+  "editor.variants.set": "Variant set",
+  "editor.variants.add": "Add variant",
+  "editor.variants.change": "Change variant",
+  "editor.variants.default": "Default",
   "editor.canvasType.label": "Canvas type",
   "editor.canvasType.design": "Design",
   "editor.canvasType.motion": "Motion",
