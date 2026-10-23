@@ -2,10 +2,12 @@
  * Non-destructive live filter stack (Affinity Live Filters–style).
  *
  * Ordered, toggleable, opacity-blendable filter entries applied as pure
- * buffer ops. Render integration is optional: callers that already hold an
- * RGBA buffer (export, bake, tests) can run `applyLiveFilterStack` after the
- * tone adjustment path. Hot scene render does not call this yet — wire it
- * through `tone.liveFilters` only once a node field is persisted.
+ * buffer ops. The stack persists on the node's `adjustments.liveFilters`
+ * field (normalized/serialized by the scene model); render integration:
+ * buildToneLut passes enabled entries on `tone.liveFilters`, forcing the CPU
+ * path, and applyAdjustmentKernels runs applyLiveFilterStack dead last on the
+ * RGBA buffer. Callers outside render (export, bake, tests) can also run
+ * `applyLiveFilterStack` directly.
  */
 import {
   applyBoxBlur,

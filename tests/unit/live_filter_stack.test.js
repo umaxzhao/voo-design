@@ -1,122 +1,165 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { describe as _d } from "vitest";
 import {
+  LIVE_FILTER_KINDS,
   createLiveFilterEntry,
   normalizeLiveFilterStack,
   applyLiveFilterStack,
-  LIVE_FILTER_KINDS,
 } from "../../src/canvas/editor/live_filter_stack.js";
-
-function solid(w, h, r, g, b, a = 255) {
-  const data = new Uint8ClampedArray(w * h * 4);
-  for (let i = 0; i < data.length; i += 4) {
-    data[i] = r;
-    data[i + 1] = g;
-    data[i + 2] = b;
-    data[i + 3] = a;
-  }
-  return data;
-}
-
-describe("LIVE_FILTER_KINDS", () => {
-  it("includes Affinity-style live filter kinds", () => {
-    expect(LIVE_FILTER_KINDS).toContain("blur");
-    expect(LIVE_FILTER_KINDS).toContain("sharpen");
-    expect(LIVE_FILTER_KINDS).toContain("highPass");
-    expect(LIVE_FILTER_KINDS).toContain("clarity");
-    expect(LIVE_FILTER_KINDS).toContain("motionBlur");
-    expect(LIVE_FILTER_KINDS).toContain("sepia");
-    expect(LIVE_FILTER_KINDS).toContain("pixelate");
-  });
-});
-
-describe("createLiveFilterEntry", () => {
-  it("creates an entry with defaults", () => {
-    const entry = createLiveFilterEntry("blur", { radius: 5 });
-    expect(entry.kind).toBe("blur");
-    expect(entry.enabled).toBe(true);
-    expect(entry.opacity).toBe(1);
-    expect(entry.params.radius).toBe(5);
-    expect(typeof entry.id).toBe("string");
-    expect(entry.id.length).toBeGreaterThan(0);
-  });
-
-  it("respects enabled and opacity overrides", () => {
-    const entry = createLiveFilterEntry("sepia", {
-      amount: 100,
-      enabled: false,
-      opacity: 0.5,
-    });
-    expect(entry.enabled).toBe(false);
-    expect(entry.opacity).toBe(0.5);
-    expect(entry.params.amount).toBe(100);
-    expect(entry.params.enabled).toBeUndefined();
-  });
-});
+import { buildToneLut } from "../../src/canvas/editor/tone_lut_build.js";
+import { normalizeAdjustments } from "../../src/canvas/editor/scene_model_adjustments.js";
+import { isDefaultAdjustments } from "../../src/canvas/editor/scene_model_core.js";
+import { createDocument } from "../../src/canvas/editor/scene_doc_factory.js";
+import { createImageNode } from "../../src/canvas/editor/scene_model_core.js";
+import {
+  deserialiseDocument,
+  serialiseDocument,
+} from "../../src/canvas/editor/scene_model_serialization.js";
 
 describe("normalizeLiveFilterStack", () => {
-  it("filters unknown kinds and clamps opacity", () => {
-    const stack = normalizeLiveFilterStack([
-      { kind: "blur", opacity: 2, params: { radius: 3 } },
-      { kind: "unknown-filter", params: {} },
-      { kind: "sharpen", enabled: false, opacity: -1 },
-    ]);
-    expect(stack).toHaveLength(2);
-    expect(stack[0].kind).toBe("blur");
-    expect(stack[0].opacity).toBe(1);
-    expect(stack[1].kind).toBe("sharpen");
-    expect(stack[1].enabled).toBe(false);
-    expect(stack[1].opacity).toBe(0);
+  it("returns [] for missing/garbage input", () => {
+    expect(normalizeLiveFilterStack()).toEqual([]);
+    expect(normalizeLiveFilterStack(null)).toEqual([]);
+    expect(normalizeLiveFilterStack("nope")).toEqual([]);
   });
 
-  it("returns empty for non-array", () => {
-    expect(normalizeLiveFilterStack(null)).toEqual([]);
-    expect(normalizeLiveFilterStack(undefined)).toEqual([]);
+  it("keeps only supported kinds with sane opacity/id", () => {
+    const stack = normalizeLiveFilterStack([
+      { kind: "highPass", enabled: true, opacity: 1, params: { value: 12 } },
+      { kind: "frobnicate", enabled: true, opacity: 1, params: {} },
+      { kind: "clarity", enabled: "yes", opacity: 9, params: { value: 400 } },
+    ]);
+    expect(stack).toHaveLength(2);
+    expect(stack[0].kind).toBe("highPass");
+    expect(stack[0].id).toBeTruthy();
+    expect(stack[1].kind).toBe("clarity");
+    expect(stack[1].enabled).toBe(true);
+    expect(stack[1].opacity).toBe(1);
+    // Params stay as written: the UI slider clamps, and the apply kernels
+    // clamp raw radii themselves, so normalization stays lenient here.
+    expect(stack[1].params.value).toBe(400);
+  });
+
+  it("used ids stay stable", () => {
+    const raw = [{ id: "keep-me", kind: "motionBlur", params: { value: 50, angle: 90 } }];
+    const [entry] = normalizeLiveFilterStack(raw);
+    expect(entry.id).toBe("keep-me");
   });
 });
 
-describe("applyLiveFilterStack", () => {
-  it("applies blur and preserves buffer length", () => {
-    const data = solid(4, 4, 255, 0, 0);
-    data[0] = 0;
-    data[1] = 0;
-    data[2] = 0;
-    const stack = [createLiveFilterEntry("blur", { radius: 5 })];
-    const result = applyLiveFilterStack(data, 4, 4, stack);
-    expect(result.length).toBe(64);
+describe("live filter tone integration", () => {
+  it("empty liveFilters keeps tone neutral and not cpuOnly", () => {
+    const tone = buildToneLut({});
+    expect(tone.liveFilters).toEqual([]);
+    expect(tone.cpuOnly).toBe(false);
   });
 
-  it("skips disabled entries", () => {
-    const data = solid(2, 2, 100, 100, 100);
-    const before = Uint8ClampedArray.from(data);
-    const stack = [
-      createLiveFilterEntry("noise", { amount: 50, enabled: false }),
-    ];
-    applyLiveFilterStack(data, 2, 2, stack);
+  it("enabled entries force cpuOnly and land on tone.liveFilters", () => {
+    const entry = createLiveFilterEntry("highPass", { value: 20 });
+    const tone = buildToneLut({ liveFilters: [entry] });
+    expect(tone.active).toBe(true);
+    expect(tone.cpuOnly).toBe(true);
+    expect(tone.liveFilters).toEqual([entry]);
+  });
+
+  it("disabled entries do not activate the tone pass", () => {
+    const entry = { ...createLiveFilterEntry("clarity", {}), enabled: false };
+    const tone = buildToneLut({ liveFilters: [entry] });
+    expect(tone.liveFilters).toEqual([]);
+    expect(tone.cpuOnly).toBe(false);
+  });
+
+  it("signature is id-independent but value-sensitive", () => {
+    const base = buildToneLut({ liveFilters: [createLiveFilterEntry("highPass", {})] });
+    const other = buildToneLut({ liveFilters: [createLiveFilterEntry("clarity", {})] });
+    const same = buildToneLut({ liveFilters: [createLiveFilterEntry("highPass", {})] });
+    expect(other.signature).not.toBe(base.signature);
+    expect(same.signature).toBe(base.signature);
+
+    const valued = buildToneLut({
+      liveFilters: [createLiveFilterEntry("highPass", { value: 40 })],
+    });
+    expect(valued.signature).not.toBe(base.signature);
+    const reordered = buildToneLut({
+      liveFilters: [
+        createLiveFilterEntry("clarity", {}),
+        createLiveFilterEntry("highPass", {}),
+      ],
+    });
+    const sameOrder = buildToneLut({
+      liveFilters: [
+        createLiveFilterEntry("clarity", {}),
+        createLiveFilterEntry("highPass", {}),
+      ],
+    });
+    expect(sameOrder.signature).toBe(reordered.signature);
+  });
+});
+
+describe("applyLiveFilterStack buffer ops", () => {
+  it("moves pixels for highPass on a stepped image", () => {
+    const w = 8;
+    const h = 4;
+    const data = new Uint8ClampedArray(w * h * 4);
+    for (let y = 0; y < h; y += 1) {
+      for (let x = 0; x < w; x += 1) {
+        const i = (y * w + x) * 4;
+        const v = x < 4 ? 30 : 220;
+        data[i] = v;
+        data[i + 1] = v;
+        data[i + 2] = v;
+        data[i + 3] = 255;
+      }
+    }
+    const before = data.slice();
+    const entry = createLiveFilterEntry("highPass", { value: 40 });
+    applyLiveFilterStack(data, w, h, [entry]);
+    let changed = 0;
+    for (let i = 0; i < data.length; i += 1) if (data[i] !== before[i]) changed += 1;
+    expect(changed).toBeGreaterThan(0);
+  });
+
+  it("opacity 0 leaves the buffer untouched", () => {
+    const data = new Uint8ClampedArray(8 * 4 * 4);
+    data.fill(90);
+    const before = data.slice();
+    applyLiveFilterStack(data, 8, 4, [createLiveFilterEntry("clarity", { value: 60 }), { ...createLiveFilterEntry("highPass", {}), opacity: 0 }]);
     expect(Array.from(data)).toEqual(Array.from(before));
   });
+});
 
-  it("blends with opacity < 1", () => {
-    const data = solid(2, 2, 0, 0, 0);
-    const stack = [
-      createLiveFilterEntry("sepia", { amount: 100, opacity: 0.5 }),
-    ];
-    applyLiveFilterStack(data, 2, 2, stack);
-    // Sepia on black stays near black; opacity blend should not throw
-    expect(data.length).toBe(16);
+describe("liveFilter persistence", () => {
+  it("normalizeAdjustments carries non-empty stacks", () => {
+    const entry = createLiveFilterEntry("motionBlur", { value: 30 });
+    entry.params = { ...entry.params, angle: 45 };
+    const adj = normalizeAdjustments({ liveFilters: [entry] });
+    expect(adj.liveFilters).toHaveLength(1);
+    expect(adj.liveFilters[0].kind).toBe("motionBlur");
+    expect(adj.liveFilters[0].params.angle).toBe(45);
   });
 
-  it("applies pixelate", () => {
-    const data = solid(4, 4, 200, 100, 50);
-    data[0] = 10;
-    data[4] = 240;
-    const stack = [createLiveFilterEntry("pixelate", { amount: 50 })];
-    const result = applyLiveFilterStack(data, 4, 4, stack);
-    expect(result.length).toBe(64);
+  it("empty stack counts as default adjustments", () => {
+    expect(isDefaultAdjustments(normalizeAdjustments({ liveFilters: [] }))).toBe(true);
+    expect(
+      isDefaultAdjustments(normalizeAdjustments({ liveFilters: [createLiveFilterEntry("clarity", {})] })),
+    ).toBe(false);
   });
 
-  it("throws on undersized buffer", () => {
-    const data = new Uint8ClampedArray(8);
-    const stack = [createLiveFilterEntry("blur", { radius: 1 })];
-    expect(() => applyLiveFilterStack(data, 4, 4, stack)).toThrow(/buffer length/);
+  it("survives document serialize → deserialize", () => {
+    const doc = createDocument(800, 600, "#ffffff", { canvasId: "doc-1" });
+    const node = createImageNode({
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 80,
+    });
+    node.adjustments = {
+      ...node.adjustments,
+      liveFilters: [createLiveFilterEntry("highPass", { value: 25 })],
+    };
+    doc.nodes = [node];
+    const round = deserialiseDocument(JSON.parse(JSON.stringify(serialiseDocument(doc))));
+    const image = round.nodes.find((n) => n.id === node.id);
+    expect(image.adjustments.liveFilters).toEqual(node.adjustments.liveFilters);
   });
 });

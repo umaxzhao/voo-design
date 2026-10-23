@@ -10,6 +10,7 @@ import ShapeSection from "./shape_section.jsx";
 import TextSection from "./text_section.jsx";
 import TransformSection from "./transform_section.jsx";
 import LayerEffectsSection from "./layer_effects_section.jsx";
+import LiveFilterSection from "./live_filter_section.jsx";
 import PuppetPinSection from "./puppet_pin_section.jsx";
 import WarpSection from "./warp_section.jsx";
 import AutoLayoutSection from "./auto_layout_section.jsx";
@@ -287,6 +288,15 @@ export default function PropertiesPanelSections({
           swapSide={swapSide}
           panelRef={panelRef}
           getBitmap={getBitmap}
+        />
+      ) : null}
+
+      {!isWarpTool && object.kind === "image" ? (
+        <LiveFilterSection
+          object={object}
+          liveFilters={normalizeAdjustments(object.adjustments).liveFilters}
+          edit={edit}
+          editAndCommit={editAndCommit}
         />
       ) : null}
     </>
