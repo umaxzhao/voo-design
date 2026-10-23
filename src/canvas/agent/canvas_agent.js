@@ -1,3 +1,7 @@
+// canvas_tools.js must evaluate before the HTML pipeline: it imports
+// canvas_tools_build_layout.js and reads BUILD_LAYOUT_SCHEMA at load time, which is
+// undefined if the import cycle starts from build_layout instead.
+import { AGENT_DEFAULTS } from "./canvas_tools.js";
 import { runHtmlPipeline, shouldUseHtmlPipeline } from './html_pipeline/pipeline.js';
 import { getActiveDesignSystem, setActiveDesignSystem } from './design_system/store.js';
 import { fromStyleKit } from './design_system/from_style_kit.js';
@@ -8,11 +12,13 @@ import { fromStyleKit } from './design_system/from_style_kit.js';
 
 import { streamChatTurn } from "./chat_stream.js";
 import { buildDesignQualityPrompt, pickStyleKit } from "./design_quality/index.js";
-
-import { AGENT_DEFAULTS } from "./canvas_tools.js";
+import { buildDocumentDesignContext } from "../editor/design_tokens.js";
+import { closeCodexSession } from "../components/agent-panel/codex_transport.js";
+import { abortable } from "./abortable.js";
 
 export const AGENT_ERROR = Object.freeze({
   STEP_LIMIT: "agentStepLimit",
+  NO_CANVAS_CONTENT: "agentNoCanvasContent",
 });
 
 export const SYSTEM_PROMPT =
@@ -40,13 +46,19 @@ export const SYSTEM_PROMPT =
   "rasterizes layers to base64 PNG for verification or handoff.\n" +
   "6. Verify: After multi-step edits check inspect_layer_tree or capture_canvas (PNG returned to you). " +
   "If a step went wrong, use undo (and redo) rather than piling on fixes.\n" +
-  "Design quality: plan first. Prefer auto layout frames for composed layouts. Use spacing scale " +
-  "4/8/12/16/24/32/48/64; establish typography hierarchy (display, heading, body, caption), " +
-  "consistent radius and clear contrast. Create color tokens/variables before use and bind them. " +
-  "After multi-step writes, require capture_canvas, review alignment, clipping and hierarchy, then fix and capture again. " +
-  "On tool failure inspect the error, correct arguments and retry once; report unresolved failures.\n" +
+  "Design quality: plan first. Default to auto-layout frames for UI and composed layouts; pass layout " +
+  "horizontal or vertical explicitly. Reserve layout: \"none\" for posters, free-form art, or intentional " +
+  "absolute placement. Use spacing scale 4/8/12/16/24/32/48/64; establish typography hierarchy (display, " +
+  "heading, body, caption), consistent radius and clear contrast. Create color tokens/variables before use " +
+  "and bind them. Keep initial token setup small, then build the layout before expanding the palette. " +
+  "For a poster/layout brief, create visible canvas layers in this turn; plans and variables alone do not " +
+  "complete it. After multi-step writes, require capture_canvas, review alignment, clipping and hierarchy, " +
+  "then fix and capture again. On tool failure inspect the error, correct arguments and retry once; report " +
+  "unresolved failures.\n" +
   "7. Design quality: honor the Design quality block below — one style kit, tokens first, " +
-  "clear hierarchy, no AI-template smells.\n" +
+  "clear hierarchy, no AI-template smells. For UI generation use Lucide icons, never emoji as icons. " +
+  "For HTML generation use Tailwind utility classes for layout and styling. Use short copy for on-canvas " +
+  "UI text: prefer concise labels, headlines and body text; avoid chatty paragraphs.\n" +
   "Keep replies short.";
 
 const READ_ONLY_TOOLS = new Set([
@@ -141,7 +153,9 @@ export async function runAgentTurn({
     designSystem = getActiveDesignSystem(doc) ?? fromStyleKit(kit);
     // A prompt fallback must not mutate the document or create an undo entry.
   }
-  const system = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit, designSystem })}`;
+  const documentContext = buildDocumentDesignContext(editor?.getDocument?.());
+  const designPrompt = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit, designSystem })}`;
+  const system = designPrompt + documentContext;
   const messages = [
     { role: "system", content: system },
     ...history,
@@ -155,6 +169,13 @@ export async function runAgentTurn({
   let verificationNudged = false;
   let retryNudged = false;
   let failurePending = false;
+  let canvasCreated = false;
+  let creationNudged = false;
+  const creationTools = new Set(["create_frame", "create_shape", "create_path", "place_image", "generate_image", "generate_image_web", "create_instance", "create_nodes", "edit_html"]);
+  // Only creation briefs require new content; inspection and token-only tasks remain valid.
+  // Without a creation tool in the toolset the requirement cannot be met, so do not enforce it.
+  const needsCanvasContent = tools.some(tool => creationTools.has(tool?.function?.name))
+    && /(?:create|draft|design|build|make).{0,60}(?:poster|layout|screen|landing page|dashboard)|(?:草拟|设计|生成|绘制|制作).{0,30}(?:海报|版式|页面|界面)/i.test(userText);
   const canCapture = tools.some(tool => tool.function?.name === "capture_canvas");
 
   const runSteps = async () => {
@@ -162,14 +183,21 @@ export async function runAgentTurn({
       if (turnSignal.aborted) {
         throw new DOMException("Aborted", "AbortError");
       }
-      const { text, toolCalls } = await streamStep({
+      const { text, toolCalls } = await abortable(() => streamStep({
         config,
         messages,
         tools,
         signal: turnSignal,
-        onText,
-      });
+        onText: (text) => { if (!turnSignal.aborted) onText?.(text); },
+      }), turnSignal);
+      turnSignal.throwIfAborted();
       if (toolCalls.length === 0) {
+        if (needsCanvasContent && !canvasCreated) {
+          if (creationNudged) throw Object.assign(new Error(AGENT_ERROR.NO_CANVAS_CONTENT), { code: AGENT_ERROR.NO_CANVAS_CONTENT });
+          creationNudged = true;
+          messages.push({ role: "assistant", content: text || null }, { role: "user", content: "The brief requires visible canvas content. Only setup has been completed. Now create the poster/layout using create_frame and create_shape (or other available canvas creation tools), then capture_canvas to verify. Do not stop at plans or variables." });
+          continue;
+        }
         if (failurePending && !retryNudged) {
           retryNudged = true;
           messages.push({ role: "assistant", content: text || null }, { role: "user", content: "A tool failed. Inspect its error and retry once with corrected arguments, or explain why it cannot be completed." });
@@ -205,13 +233,15 @@ export async function runAgentTurn({
         }
         onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "in_progress" });
         try {
-          const result = await executeTool(call.name, args);
+          const result = await abortable(() => executeTool(call.name, args, { signal: turnSignal }), turnSignal);
+          turnSignal.throwIfAborted();
           if (result?.isError || result?.error) throw new Error(JSON.stringify(result));
           if (!READ_ONLY_TOOLS.has(call.name) && designSystem && editor) {
             const doc = editor.getDocument?.() ?? editor.getDoc?.();
             if (doc && !getActiveDesignSystem(doc)) setActiveDesignSystem(editor, designSystem);
           }
           failurePending = false;
+          if (creationTools.has(call.name)) canvasCreated = true;
           if (call.name === "capture_canvas") writesSinceCapture = 0;
           else if (!READ_ONLY_TOOLS.has(call.name)) { writesSinceCapture += 1; verificationNudged = false; }
           const { dataUrl, ...rest } = result && typeof result === "object" ? result : {};
@@ -229,6 +259,10 @@ export async function runAgentTurn({
           }
           onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "completed", result });
         } catch (error) {
+          if (turnSignal.aborted) {
+            onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "cancelled" });
+            throw error;
+          }
           failurePending = true;
           const code = error?.code ?? error?.message ?? "toolFailed";
           messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: code }) });
@@ -264,6 +298,9 @@ export async function runAgentTurn({
     wasCancelled = e instanceof DOMException && e.name === "AbortError" || (turnSignal?.aborted === true);
     throw e;
   } finally {
+    // A step limit happens outside the transport; release a native CLI still
+    // parked awaiting the final tool receipt. Cleanup must preserve the cause.
+    try { await closeCodexSession(turnSignal); } catch (cleanupError) { console.warn("[agent] Session cleanup failed", cleanupError); }
     restoreCommits?.();
     endBatch?.();
     const after = documentFingerprint(editor);

@@ -893,6 +893,9 @@ function renameLayer(args = {}) {
   return { ok: true, layerId, name: args.name };
 }
 
+// executeCanvasTool passes (args, context). The hostEditor parameter of the
+// create_* builders is only for build_layout, so tool executors must not forward
+// the context object into it: a non-empty context would replace the active editor.
 const EXECUTORS = Object.freeze({
   generate_image: generateImage,
   generate_image_web: generateImageWebTool,
@@ -903,7 +906,7 @@ const EXECUTORS = Object.freeze({
   mutate_layer_text: mutateLayerText,
   mutate_auto_layout: mutateAutoLayout,
   batch_mutate_layers: batchMutateLayers,
-  create_shape: createShape,
+  create_shape: (args) => createShape(args),
   build_layout: buildLayout,
   delete_layers: deleteLayers,
   duplicate_layer: duplicateLayer,
@@ -917,7 +920,8 @@ const EXECUTORS = Object.freeze({
   ...LAYOUT_TOOL_EXECUTORS,
   ...PLAN_TOOL_EXECUTORS,
   ...SCENE_OPS_TOOL_EXECUTORS, lint_design: lintDesignTool,
-  create_path: createPath,
+  create_path: (args) => createPath(args),
+  create_frame: (args) => LAYOUT_TOOL_EXECUTORS.create_frame(args),
   place_image: placeImage,
   capture_canvas: captureCanvas,
 });

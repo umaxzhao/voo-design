@@ -47,7 +47,7 @@ describe("build_layout", () => {
     expect(result.count).toBe(5);
     expect(result.created.map(n => n.type)).toEqual(["frame", "frame", "text", "ellipse", "line"]);
     const [outer, inner, text, ellipse, line] = doc.nodes;
-    expect(outer).toMatchObject({ isFrame: true, autoLayout: { direction: "vertical", gap: 12, padding: 16 } });
+    expect(outer).toMatchObject({ isFrame: true, autoLayout: { direction: "vertical", gap: 12, padding: { top: 16, right: 16, bottom: 16, left: 16 } } });
     expect(inner).toMatchObject({ parentId: outer.id, x: 100, y: 200 });
     expect(text).toMatchObject({ parentId: inner.id, text: "Hello", fill: "#123456", fontSize: 24 });
     expect(ellipse).toMatchObject({ parentId: outer.id, kind: "ellipse", opacity: 0.5 });

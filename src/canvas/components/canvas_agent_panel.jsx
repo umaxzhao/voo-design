@@ -1,3 +1,5 @@
+import { useDesignStore } from "../../store/design_store.js";
+import { consumePendingAgentIntent } from "./pending_agent_intent.js";
 import { customModelGroups, resolveAgentProvider } from "../agent/agent_provider.js";
 import { externalMcpTools } from "../agent/external_mcp_tools.js";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -7,6 +9,8 @@ import { useI18n } from "../use_i18n.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import { DEFAULT_AGENT_MODEL } from "../../shared/agent-defaults.js";
 import { runAgentTurn } from "../agent/canvas_agent.js";
+import { errorText } from "../error_text.js";
+import { abortable } from "../agent/abortable.js";
 import {
   AGENT_DEFAULTS,
   AGENT_SETTING,
@@ -133,12 +137,19 @@ export default function CanvasAgentPanel({ onClose }) {
   useEffect(() => () => directionChoice.current?.('auto'), []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [cancelled, setCancelled] = useState(false);
+  const [lastRequest, setLastRequest] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState(
     () => getSetting(AGENT_SETTING.MODEL) || DEFAULT_AGENT_MODEL,
   );
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [activeContext, setActiveContext] = useState(null);
+  const turnRef = useRef(null);
+  useEffect(() => () => {
+    turnRef.current?.abort();
+    useDesignStore.setState({ agentGenerating: false });
+  }, []);
   const historyRef = useRef([]);
   const sessionsRef = useRef(sessions);
   sessionsRef.current = sessions;
@@ -162,6 +173,9 @@ export default function CanvasAgentPanel({ onClose }) {
   };
 
   const openSession = (session) => {
+    if (turnRef.current) return;
+    setCancelled(false);
+    setLastRequest(null);
     setActiveId(session.id);
     setTranscript(session.messages ?? []);
     historyRef.current = session.history ?? [];
@@ -171,7 +185,10 @@ export default function CanvasAgentPanel({ onClose }) {
   };
 
   const startNewSession = () => {
+    if (turnRef.current) return;
     const session = createEmptySession();
+    setCancelled(false);
+    setLastRequest(null);
     setActiveId(session.id);
     setTranscript([]);
     historyRef.current = [];
@@ -187,6 +204,7 @@ export default function CanvasAgentPanel({ onClose }) {
   };
 
   const removeSession = (sessionId) => {
+    if (turnRef.current) return;
     const next = deleteSessionFromList(sessionsRef.current, sessionId);
     sessionsRef.current = next;
     setSessions(next);
@@ -234,12 +252,17 @@ export default function CanvasAgentPanel({ onClose }) {
   };
 
   const send = useCallback(
-    async (overrideText, contextAttachment) => {
+    async (overrideText, contextAttachment, recoveryRequest) => {
       const targetContext = contextAttachment !== undefined ? contextAttachment : activeContext;
       const text = (overrideText ?? input).trim();
-      if (!text || busy) return;
+      if (!text || busy || turnRef.current) return;
+      const controller = new AbortController();
+      turnRef.current = controller;
+      useDesignStore.setState({ agentGenerating: true });
       setInput("");
       setError(null);
+      setCancelled(false);
+      setLastRequest(recoveryRequest ?? { text, context: targetContext });
       setBusy(true);
       setStreamingText("");
       const sessionId = activeId ?? createSessionId();
@@ -259,17 +282,19 @@ export default function CanvasAgentPanel({ onClose }) {
           : text;
 
         const model = selectedModel || getSetting(AGENT_SETTING.MODEL);
-        const provider = await resolveAgentProvider(model);
-        const external = await externalMcpTools();
+        const provider = await abortable(() => resolveAgentProvider(model), controller.signal);
+        const external = await abortable(() => externalMcpTools(), controller.signal);
+        controller.signal.throwIfAborted();
         const reply = await runAgentTurn({
+          signal: controller.signal,
           ...provider,
           maxSteps: Number(getSetting(AGENT_SETTING.MAX_STEPS)) || AGENT_DEFAULTS.maxSteps,
           styleNote: getSetting(AGENT_SETTING.STYLE_NOTE) ?? AGENT_DEFAULTS.styleNote,
           history: historyRef.current,
           userText: promptWithContext,
           tools: [...CANVAS_TOOL_SCHEMAS, ...external.tools],
-          executeTool: (name, args) => name.startsWith("mcp__") ? external.execute(name, args) : executeCanvasTool(name, args),
-          onText: setStreamingText,
+          executeTool: (name, args, context) => name.startsWith("mcp__") ? external.execute(name, args, context) : executeCanvasTool(name, args, context),
+          onText: (text) => { if (!controller.signal.aborted) setStreamingText(text); },
           onProgress: setPipelineProgress,
           chooseDirection: (choices, { signal } = {}) => new Promise((resolve, reject) => {
             setDirections(choices);
@@ -282,6 +307,7 @@ export default function CanvasAgentPanel({ onClose }) {
           }),
           onToolEvent: updateToolItem,
         });
+        controller.signal.throwIfAborted();
         const replyItem = { kind: "text", role: "assistant", content: reply };
         historyRef.current = [
           ...historyRef.current,
@@ -297,16 +323,36 @@ export default function CanvasAgentPanel({ onClose }) {
           createdAt: Date.now(),
         });
       } catch (caught) {
-        setError(caught?.code === CHAT_ERROR.NOT_CONFIGURED ? "notConfigured" : "failed");
+        if (!controller.signal.aborted) setError(caught?.code === CHAT_ERROR.NOT_CONFIGURED ? t("agent.panel.notConfigured") : errorText({ code: caught?.code ?? caught?.message, message: caught?.message }));
       } finally {
+        turnRef.current = null;
+        useDesignStore.setState({ agentGenerating: false });
+        if (controller.signal.aborted) {
+          setCancelled(true);
+          setTranscript((items) => items.map((item) => item.call?.status === "in_progress"
+            ? { ...item, call: { ...item.call, status: "cancelled", statusLine: t("node.generate.cancelled") } }
+            : item));
+        }
         setStreamingText("");
         setBusy(false);
         setPipelineProgress(null);
         setDirections([]);
       }
     },
-    [busy, input, activeId, activeContext, selectedModel],
+    [busy, input, activeId, activeContext, selectedModel, t],
   );
+
+  useEffect(() => {
+    const consume = () => {
+      if (!busy) consumePendingAgentIntent(useDesignStore, (prompt, context) => {
+        if (context) setActiveContext(context);
+        send(prompt, context);
+      });
+    };
+    const unsubscribe = useDesignStore.subscribe(consume);
+    consume();
+    return unsubscribe;
+  }, [busy, send]);
 
   // Listen for Pen-style contextual island prompts and panel open events
   useEffect(() => {
@@ -378,7 +424,7 @@ export default function CanvasAgentPanel({ onClose }) {
           className="flex items-center gap-1.5 rounded-full bg-white/[0.06] px-2.5 py-1 text-[10px] text-neutral-300 transition-colors hover:bg-white/[0.12] focus:outline-none"
         >
           <span className="size-1.5 rounded-full bg-[#a7ffd4] animate-pulse" aria-hidden="true" />
-          <span className="font-mono text-[9px] text-neutral-200 max-w-[100px] truncate font-medium">
+          <span className="font-mono text-[9px] text-neutral-200 max-w-[160px] truncate font-medium">
             {getModelDisplayLabel(currentModel)}
           </span>
           <ChevronDown
@@ -444,7 +490,7 @@ export default function CanvasAgentPanel({ onClose }) {
                     }`}
                   >
                     <span className="truncate">{m.label}</span>
-                    {isSelected && <Check size={13} className="text-[#E5B2FF] shrink-0 ml-2" />}
+                    {isSelected && <Check size={13} className="text-neutral-300 shrink-0 ml-2" />}
                   </button>
                 );
               })}
@@ -587,9 +633,20 @@ export default function CanvasAgentPanel({ onClose }) {
         </div>
       )}
 
+      {!busy && cancelled && (
+        <p role="status" className="mx-4 mb-2 text-[12px] text-neutral-400">{t("agent.panel.cancelled")}</p>
+      )}
+      {!busy && lastRequest && (
+        <div className="mx-4 mb-2 flex gap-2 text-[12px]">
+          <button type="button" className="rounded-lg px-3 py-2 text-neutral-300 hover:bg-white/10"
+            onClick={() => send(lastRequest.text, lastRequest.context)}>{t("agent.panel.retry")}</button>
+          {cancelled && <button type="button" className="rounded-lg px-3 py-2 text-[#eed0ff] hover:bg-white/10"
+            onClick={() => send(`${lastRequest.text}\n\n${t("agent.panel.resumePrompt")}`, lastRequest.context, lastRequest)}>{t("agent.panel.resume")}</button>}
+        </div>
+      )}
       {error && (
         <p role="alert" className="mx-4 mb-2 rounded-xl bg-[#E5B2FF]/10 px-3 py-2 text-[12px] text-[#eed0ff]">
-          {t(`agent.panel.${error}`)}
+          {error}
         </p>
       )}
       <form onSubmit={onSubmit} className="prompt-composer agent-composer relative mx-3 mb-3 rounded-2xl p-3">
@@ -613,9 +670,19 @@ export default function CanvasAgentPanel({ onClose }) {
               }}
               title={currentModel}
               data-testid="agent-composer-model-pill"
-              className="max-w-[150px] truncate rounded-lg bg-white/[0.05] px-2 py-1 text-[11px] text-neutral-400 hover:bg-white/[0.1] hover:text-neutral-200 transition-colors"
+              className="max-w-[220px] truncate rounded-lg bg-white/[0.05] px-2 py-1 text-[11px] text-neutral-400 hover:bg-white/[0.1] hover:text-neutral-200 transition-colors"
             >
               {getModelDisplayLabel(currentModel)}
+            </button>
+          )}
+          {busy && (
+            <button
+              type="button"
+              onClick={() => turnRef.current?.abort()}
+              data-testid="agent-cancel"
+              className="rounded-lg px-3 py-1.5 text-xs text-neutral-300 hover:bg-white/10"
+            >
+              {t("agent.plan.review.cancel")}
             </button>
           )}
           <button

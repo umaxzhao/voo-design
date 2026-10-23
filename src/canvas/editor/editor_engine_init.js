@@ -94,19 +94,18 @@ export function createEngineInitController({
     return current;
   }
 
-  const fontLoadWaits = new Set();
-  const fontLoadsSettled = new Set();
+  // ensureFontLoaded caches settled promises too. Keep completed requests here:
+  // the font callback calls setDoc(), which queues fonts again synchronously.
+  const fontLoadRequests = new Set();
 
   function queueFontLoads(next) {
     for (const node of next.nodes) {
       if (node.kind !== NODE_KIND.TEXT || !node.fontFamily) continue;
-      if (fontLoadWaits.has(node.fontFamily) || fontLoadsSettled.has(node.fontFamily)) continue;
+      if (fontLoadRequests.has(node.fontFamily)) continue;
       const wait = ensureFontLoaded(node.fontFamily);
       if (!wait) continue;
-      fontLoadWaits.add(node.fontFamily);
+      fontLoadRequests.add(node.fontFamily);
       void wait.then((loaded) => {
-        fontLoadWaits.delete(node.fontFamily);
-        fontLoadsSettled.add(node.fontFamily);
         if (!loaded || isDisposed()) return;
         const wasClean = getAppliedSnapshot() === snapshotDoc();
         const measured = measureTextNodes(getDoc(), { force: true });
