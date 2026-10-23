@@ -2,6 +2,7 @@
 import { createShape, TOOL_ERROR } from "./canvas_tools.js";
 import { createFrame } from "./canvas_tools_layout.js";
 import { createPath } from "./canvas_tools_geometry.js";
+import { normalizeAutoLayout } from "../editor/scene_auto_layout.js";
 
 const strings = ["name", "fill", "stroke", "text", "fontFamily", "color"];
 const numbers = ["x", "y", "width", "height", "strokeWidth", "cornerRadius", "opacity", "fontSize", "lineHeight", "letterSpacing"];
@@ -85,12 +86,35 @@ function validate(args) {
 
 /** Shared native creation path for bulk layout and HTML streaming. */
 export function createLayoutNode(editor, node, parentId) {
-  const { type, children, autoLayout, color, ...style } = node;
-  const result = type === "frame" ? createFrame({ ...style, ...autoLayout }, editor)
+  const {
+    type, children, autoLayout, color,
+    key, htmlKey, htmlSource, parentKey, imagePrompt,
+    layoutPosition, layoutWidth, layoutHeight, fillOpacity, strokeOpacity,
+    ...style
+  } = node;
+  // HTML uses the scene's direction/per-side padding, while create_frame's
+  // public arguments use layout/scalar padding. Preserve the full scene config
+  // in the post-creation patch without passing objects to numeric arguments.
+  const direction = autoLayout?.direction ?? autoLayout?.layout;
+  const layout = ["horizontal", "vertical"].includes(direction) ? direction : "none";
+  const frameLayout = {
+    layout,
+    ...(autoLayout?.gap !== undefined ? { gap: Number(autoLayout.gap) } : {}),
+    ...(autoLayout?.padding !== undefined ? {
+      padding: Number(typeof autoLayout.padding === "object" ? autoLayout.padding?.top ?? 0 : autoLayout.padding),
+    } : {}),
+  };
+  const result = type === "frame" ? createFrame({ ...style, ...frameLayout }, editor)
     : type === "path" ? createPath(style, editor)
     : type === "line" ? createPath({ ...style, fill: "none", d: `M 0 0 L ${node.width} ${node.height}` }, editor)
     : createShape({ ...style, kind: type }, editor);
   const patch = { ...style, ...(parentId ? { parentId } : {}) };
+  for (const [field, value] of Object.entries({ layoutPosition, layoutWidth, layoutHeight, fillOpacity, strokeOpacity })) {
+    if (value !== undefined) patch[field] = value;
+  }
+  if (type === "frame" && layout !== "none") {
+    patch.autoLayout = normalizeAutoLayout({ ...autoLayout, direction: layout });
+  }
   if (type === "text") { patch.boxWidth = node.width; if (color !== undefined) patch.fill = color; }
   editor.updateNode(result.layerId, patch);
   return result.layerId;
