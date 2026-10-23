@@ -158,6 +158,8 @@ function createIosBankingDoc() {
     createEllipseNode({ x: 24, y: 64, width: 44, height: 44, fill: "#312E81", stroke: "#6366F1", strokeWidth: 2 }),
     createTextNode({ x: 80, y: 68, text: "Welcome back,", fill: "#9CA3AF", fontSize: 12 }),
     createTextNode({ x: 80, y: 86, text: "Alex Rivera", fill: "#FFFFFF", fontSize: 16 }),
+    createRectNode({ x: 333, y: 68, width: 36, height: 36, fill: "#181A22", stroke: "#262936", strokeWidth: 1 }),
+    createTextNode({ x: 343, y: 76, text: "◉", fill: "#D4D4D4", fontSize: 14 }),
 
     // Platinum Bank Card
     createRectNode({ x: 24, y: 130, width: 345, height: 200, fill: "#4F46E5", stroke: "#818CF8", strokeWidth: 1 }),

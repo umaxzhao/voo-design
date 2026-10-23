@@ -209,27 +209,28 @@ function buildEditorSource(nodeId, snapshot) {
  *    job). Only the focused artboard shows handles and text overlays.
  */
 /**
- * Frame headers use neutral tones for decorative surfaces and functional glyphs.
+ * Colours for the frame header icon circle matching the frame's canvas type.
+ * Unifies with CANVAS_TYPE_TONES in editor_canvas_type_select.jsx.
  */
 export const CANVAS_TYPE_TONES = Object.freeze({
   [CANVAS_TYPE.DESIGN]: {
-    wash: "bg-neutral-300/10",
-    bar: "bg-neutral-300/50",
-    text: "text-neutral-300",
+    wash: "bg-[#a7ffd4]/10",
+    bar: "bg-[#a7ffd4]/50",
+    text: "text-[#a7ffd4]",
     solid: "bg-[#a7ffd4] text-black",
     label: "editor.canvasType.design",
   },
   [CANVAS_TYPE.MOTION]: {
-    wash: "bg-neutral-300/10",
-    bar: "bg-neutral-300/50",
-    text: "text-neutral-300",
+    wash: "bg-[#E5B2FF]/10",
+    bar: "bg-[#E5B2FF]/50",
+    text: "text-[#eed0ff]",
     solid: "bg-[#E5B2FF] text-black",
     label: "editor.canvasType.motion",
   },
   [CANVAS_TYPE.THREE_D]: {
-    wash: "bg-neutral-300/10",
-    bar: "bg-neutral-300/50",
-    text: "text-neutral-300",
+    wash: "bg-[#b2ccff]/10",
+    bar: "bg-[#b2ccff]/50",
+    text: "text-[#b2ccff]",
     solid: "bg-[#b2ccff] text-black",
     label: "editor.canvasType.threeD",
   },
@@ -919,7 +920,7 @@ export default function EditorPage({
           // switch at the right. The focused frame's bar is tinted with its
           // type colour; the others show just the name.
           className={`absolute left-0 ${pageTitleActions ? "z-40" : ""} flex max-w-full items-center gap-1.5 text-[11px] font-mono leading-none transition-colors ${
-            focused ? "text-neutral-200" : "text-neutral-400 hover:text-neutral-200"
+            focused ? "text-[#a7ffd4]" : "text-neutral-400 hover:text-neutral-200"
           } ${titlePanHandlers ? "cursor-grab touch-none" : "cursor-pointer"}`}
           {...titlePanHandlers}
           onDoubleClick={startRename}
@@ -944,7 +945,7 @@ export default function EditorPage({
           {componentUses > 0 ? (
             <span
               data-testid="editor-component-uses"
-              className={`shrink-0 ${focused ? "text-neutral-300" : "text-neutral-500"}`}
+              className={`shrink-0 ${focused ? "text-[#a7ffd4]/70" : "text-neutral-500"}`}
             >
               {t("editor.component.uses", { count: componentUses })}
             </span>
@@ -1128,7 +1129,7 @@ export default function EditorPage({
               data-editor-artboard-title
               // Same full-width bar as a frame on the free canvas.
               className={`absolute z-20 flex max-w-[70%] items-center gap-1.5 text-[11px] font-mono leading-none transition-colors ${
-                focused ? "text-neutral-200" : "text-neutral-400 hover:text-neutral-200"
+                focused ? "text-[#a7ffd4]" : "text-neutral-400 hover:text-neutral-200"
               }`}
               onDoubleClick={startRename}
               style={{
@@ -1156,7 +1157,7 @@ export default function EditorPage({
               {componentUses > 0 ? (
                 <span
                   data-testid="editor-component-uses"
-                  className={`shrink-0 ${focused ? "text-neutral-300" : "text-neutral-500"}`}
+                  className={`shrink-0 ${focused ? "text-[#a7ffd4]/70" : "text-neutral-500"}`}
                 >
                   {t("editor.component.uses", { count: componentUses })}
                 </span>

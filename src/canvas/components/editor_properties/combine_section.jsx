@@ -124,7 +124,7 @@ export default function CombineSection({ onCombine, currentOperation = null }) {
                 aria-pressed={isActive}
                 className={`flex w-full items-center justify-center rounded-lg py-1.5 transition-colors ${
                   isActive
-                    ? "bg-[#b2ffd6]/20 text-neutral-200 ring-1 ring-[#b2ffd6]/50"
+                    ? "bg-[#b2ffd6]/20 text-[#b2ffd6] ring-1 ring-[#b2ffd6]/50"
                     : "bg-white/[0.06] text-neutral-300 hover:bg-white/[0.12] hover:text-neutral-100"
                 }`}
               >

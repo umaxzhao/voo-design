@@ -14,7 +14,7 @@ import KindIcon from "./kind_icons.jsx";
 
 /**
  * One tappable kind in the left column. The glyph carries what the kind does
- * and the group heading identifies the category.
+ * and the accent carries which group it belongs to, so the row needs no dot.
  */
 function KindButton({ kind, label, onClick }) {
   return (
@@ -71,8 +71,8 @@ KindGroup.propTypes = {
  * The "add" popover for a layer's effect stack.
  *
  * Left column: every kind that can be added, grouped as tone adjustments,
- * pixel filters, and layer-style effects. Right column: one-click presets, each
- * a bundle of adjustments
+ * pixel filters, and layer-style effects — the dot colours match the rows they
+ * become. Right column: one-click presets, each a bundle of adjustments
  * rendered on the layer's own bitmap, because a look is judged on the picture
  * rather than a stock tile. Everything either column adds lands in the same
  * stack, which is why they share one entry point.

@@ -540,7 +540,7 @@ export default function VariablesPanel({
                         addType || supportedTypes[0] || "color",
                       )
                     }
-                    className="flex items-center gap-1 rounded-lg bg-white/10 px-2.5 py-1 text-[10px] text-neutral-300 transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="flex items-center gap-1 rounded-lg bg-[#a7ffd4]/15 px-2.5 py-1 text-[10px] text-[#a7ffd4] transition-colors hover:bg-[#a7ffd4]/25 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <IconAdd className="text-neutral-300" size={11} strokeWidth={1.5} />
                     <span>{tv("editor.variables.panel.addVariable")}</span>

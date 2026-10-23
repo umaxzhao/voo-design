@@ -172,7 +172,7 @@ export default function StreamingLayoutPreview({
     <div
       ref={canvasWrapRef}
       data-testid="streaming-layout-frame-preview"
-      className="relative h-full w-full overflow-hidden bg-neutral-100"
+      className="relative h-full w-full overflow-hidden bg-[#f7f7f9]"
     >
       {!ready && <div data-testid="streaming-layout-skeleton" role="status" aria-label={t("agent.panel.busy")}
         className="absolute inset-0 space-y-6 p-[8%] motion-safe:animate-pulse">
