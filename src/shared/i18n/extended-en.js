@@ -463,7 +463,6 @@ export default {
   "editor.exportTransparentBackground": "Transparent background",
   "editor.exportJpegOpaqueBackground": "JPEG requires an opaque background.",
   "editor.exportRange": "Export range",
-  "editor.exportRange.frame": "Entire frame",
   "editor.exportRange.selection": "Selected layers",
   "editor.exportRange.slices": "All slices",
   "editor.exportSlicesAction": "Export {count} slices",

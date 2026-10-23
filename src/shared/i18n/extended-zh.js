@@ -449,7 +449,6 @@ export default {
   "editor.exportTransparentBackground": "透明背景",
   "editor.exportJpegOpaqueBackground": "JPEG 需要不透明背景。",
   "editor.exportRange": "导出范围",
-  "editor.exportRange.frame": "整个画框",
   "editor.exportRange.selection": "所选图层",
   "editor.exportRange.slices": "全部切片",
   "editor.exportSlicesAction": "导出全部切片 ({count})",

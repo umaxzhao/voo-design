@@ -21,7 +21,8 @@ export function exportFilename(name, format, scale = 1) {
   // Windows reserves device names even when followed by another extension.
   if (/^(?:con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(stem))
     stem = `_${stem}`;
-  const suffix = `${Number.isFinite(scale) && scale > 1 ? `@${scale}x` : ""}.${extension}`;
+  const usesScale = format !== "svg" && format !== "psd";
+  const suffix = `${usesScale && Number.isFinite(scale) && scale > 1 ? `@${scale}x` : ""}.${extension}`;
   const budget = 120 - new TextEncoder().encode(suffix).length;
   let truncated = "";
   let bytes = 0;

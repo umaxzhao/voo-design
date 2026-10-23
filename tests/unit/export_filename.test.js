@@ -4,6 +4,10 @@ import { exportFilename, exportTargetName } from "../../src/canvas/editor/export
 describe("export filenames", () => {
   it.each([
     ["Design", "png", 1, "Design.png"],
+    ["Design", "svg", 2, "Design.svg"],
+    ["Design", "psd", 2, "Design.psd"],
+    ["Design", "png", 2, "Design@2x.png"],
+    ["Design", "pdf", 2, "Design@2x.pdf"],
     ["Frame", "jpeg", 2, "Frame@2x.jpg"],
     ["Selection.svg", "pdf", 3, "Selection@3x.pdf"],
     ["你好 🎨", "svg", 1, "你好 🎨.svg"],
