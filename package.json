@@ -23,6 +23,7 @@
     "test:watch": "vitest",
     "lint:design": "node scripts/check-design.mjs",
     "bridge": "node scripts/cli-bridge.mjs",
+    "mcp": "node scripts/mcp-server.mjs",
     "test:e2e": "node tests/e2e/agent_tools.e2e.mjs"
   },
   "dependencies": {

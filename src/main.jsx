@@ -105,3 +105,21 @@ async function bootstrap() {
 }
 
 bootstrap();
+
+// Keep the MCP link outside the agent UI and load the tool executor on demand.
+if (typeof window !== "undefined" && typeof WebSocket !== "undefined" && !import.meta.env?.VITEST) {
+  let enabled = true;
+  try { enabled = localStorage.getItem("voo.mcpLink") !== "off"; } catch {}
+  if (enabled) {
+    void import("./canvas/mcp/canvas_mcp_link.js").then(({ startCanvasMcpLink }) => {
+      const stop = startCanvasMcpLink({
+        executeTool: async (name, args) => {
+          const { executeCanvasTool } = await import("./canvas/agent/canvas_tools.js");
+          return executeCanvasTool(name, args);
+        },
+      });
+      window.addEventListener("pagehide", stop, { once: true });
+      if (import.meta.hot) import.meta.hot.dispose(stop);
+    });
+  }
+}

@@ -32,11 +32,16 @@ export const CLI_BRIDGE_CHANNEL = Object.freeze({
   CANCEL: "voo:codex-cancel",
   CHECK_ALL: "voo:cli-check-all",
   RUN_TEXT: "voo:cli-run-text",
+  MCP_REGISTER_CANVAS: "voo:mcp-register-canvas",
+  MCP_TOOL_RESULT: "voo:mcp-tool-result",
+  MCP_CALL: "voo:mcp-call",
+  MCP_STATUS: "voo:mcp-status",
 });
 
 /** Events the bridge pushes without being asked. */
 export const CLI_BRIDGE_EVENT = Object.freeze({
   TEXT: "voo:codex-text",
+  MCP_TOOL_CALL: "voo:mcp-tool-call",
 });
 
 /** Frame `type` values. */

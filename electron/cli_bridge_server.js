@@ -6,6 +6,7 @@
  * Provides a /health endpoint and WS wire protocol adapter.
  */
 
+import { registerMcpRelayChannels } from "./mcp_server/canvas_relay.js";
 import http from "node:http";
 import { WebSocketServer } from "ws";
 import { CLI_BRIDGE_DEFAULT_PORT } from "../src/shared/cli_bridge_protocol.js";
@@ -43,6 +44,7 @@ export function isAllowedOrigin(origin, allowedSet) {
  */
 export function registerCliBridgeChannels({ ipcMain }) {
   registerLocalCliIpc(ipcMain, { isAuthorized: () => true });
+  registerMcpRelayChannels(ipcMain);
 }
 
 /**
