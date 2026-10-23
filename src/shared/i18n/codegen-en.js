@@ -7,8 +7,6 @@
  */
 export default {
   "editor.codegen.title": "Export code",
-  "editor.codegen.subtitle":
-    "Code from selected layers",
   "editor.codegen.close": "Close",
   "editor.codegen.format": "Format",
   "editor.codegen.format.tailwind": "HTML + Tailwind",

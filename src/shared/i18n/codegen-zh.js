@@ -4,7 +4,6 @@
  */
 export default {
   "editor.codegen.title": "导出代码",
-  "editor.codegen.subtitle": "所选图层的代码",
   "editor.codegen.close": "关闭",
   "editor.codegen.format": "格式",
   "editor.codegen.format.tailwind": "HTML + Tailwind",
