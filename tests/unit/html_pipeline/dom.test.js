@@ -24,7 +24,7 @@ it('converts box styles, text geometry and stable IDs to native node specs', () 
     createRange: () => ({ selectNodeContents() {}, getClientRects: () => [], getBoundingClientRect: () => textRect }),
   };
   const nodes = htmlToNodes(doc, { x: 5, y: 7 });
-  expect(nodes.find(n => n.key === 'card')).toMatchObject({ type: 'ellipse', x: 15, y: 27, fill: 'rgb(255, 0, 0)', strokeWidth: 2 });
+  expect(nodes.find(n => n.key === 'card')).toMatchObject({ type: 'ellipse', x: 15, y: 27, fill: '#ff0000', strokeWidth: 2 });
   expect(nodes.find(n => n.type === 'text')).toMatchObject({ text: 'Hello world', x: 19, y: 31, width: 80, fontFamily: 'Arial', fontSize: 20, fontWeight: '700', lineHeight: 1.5, letterSpacing: 2, align: 'center' });
   expect(nodes.some(n => n.text === 'Hidden')).toBe(false);
   expect(nodes.find(n => n.key === 'card').shadow).toMatchObject({ enabled: true, offsetX: 1, offsetY: 2, blur: 3 });
