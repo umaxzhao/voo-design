@@ -116,3 +116,63 @@ Build and measure on macOS/Windows release hosts before promising download sizes
   conditions outside test mode resolved it.
 - Existing Vite `node:zlib` browser-externalization warning in the PDF fallback remains.
   Cross-platform packaging/signing and optional AI inference remain platform QA tasks.
+
+## Incremental follow-up — `codex/installer-size`
+
+Rebuilt the latest branch before changing packaging, rather than using the historical
+101.45 MiB artifact above. Linux x64 and Electron 43.8.0 remain unchanged. Unpacked
+sizes below sum file bytes across the entire `release/linux-unpacked` directory;
+the ASAR row is a subset of that directory.
+
+| Artifact | Baseline bytes | Final bytes | Baseline MiB | Final MiB | Reduction |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| AppImage | 106,431,827 | 104,516,963 | 101.50 | 99.68 | 1.80% |
+| Entire unpacked app | 347,774,791 | 343,678,018 | 331.66 | 327.76 | 1.18% |
+| app.asar | 63,026,150 | 58,929,377 | 60.11 | 56.20 | 6.50% |
+
+The incremental savings are **1,914,864 compressed bytes** and **4,096,773 unpacked
+bytes**. The installer is now below 100 MiB.
+
+- Excluded the nine redundant `dist/fonts/*.ttf` source copies. The UI references
+  WOFF2 files; source TTFs remain in the repository. WOFF2 fonts and OFL notices ship.
+- Excluded js-yaml's unused browser JavaScript builds and the js-yaml/semver CLI
+  entry points. Kept js-yaml's CommonJS implementation and its exported ESM build.
+  Excluded benchmark, coverage, and cache directories alongside existing exclusions
+  for source maps, typings, tests, examples, and docs.
+- Rechecked production imports: both remaining direct dependencies,
+  `electron-updater` and `ws`, are runtime requirements. No further direct dependency
+  can move to devDependencies. The new archive inspection tool, `@electron/asar`, is
+  explicitly a devDependency and does not ship.
+- Retained ASAR with no unpacked payload, maximum compression, and the existing
+  `en-US`/`zh-CN` locale allowlist. Explicitly selected AppImage XZ compression,
+  matching maximum compression's existing behavior. Retained all three WASM binaries
+  and both ONNX loaders for CPU/WebGPU support.
+- Added `npm run verify:package`, run automatically after the Linux `dist` build.
+  It inspects the actual ASAR for required runtime/legal assets and production
+  dependencies, rejects unnecessary development files, and checks the locale files.
+- Strengthened packaged smoke checks to load both runtime dependencies even with
+  update checks disabled. Fixed fresh-profile smoke navigation to dismiss the native
+  first-run dialog and handle English/Chinese welcome buttons. Failure screenshots
+  are saved too; the runner accepts `VOO_SMOKE_SCREENSHOT` for external output paths.
+
+Validation:
+
+- Baseline: `flock /tmp/voo-e2e.lock npm run dist`.
+- Optimized full build: `flock /tmp/voo-e2e.lock npm run dist`; after the smoke-only
+  fixes, repackaged the same renderer with `node scripts/signing-env.mjs --linux
+  AppImage --publish never` under the same lock, then ran `npm run verify:package`
+  and `npm run smoke:packaged` while still holding it.
+- Final package inspection: 618 archive entries, exactly `en-US.pak` and `zh-CN.pak`.
+- Final AppImage smoke: `PACKAGED_SMOKE_OK`, exposed canvas rendered, updater and
+  WebSocket imports loaded, About legal documents loaded, zero renderer console errors.
+  The baseline smoke initially exposed the pre-existing first-run/welcome navigation
+  assumptions; the final smoke and regression tests cover the corrected path.
+- Six focused Vitest files: **27 tests passed**, with `--maxWorkers=2 --minWorkers=1`.
+  Coverage includes real ASAR fixtures, missing runtime assets, leaked development
+  files, missing/excess locales, fresh-profile navigation in both languages, failure
+  screenshots, updater behavior, signing configuration, and third-party notices.
+- Screenshot visually inspected: `/tmp/shots-installer-size/optimized.png`.
+  The requested `/workspace/tmp/shots-installer-size/` destination is read-only in
+  this session's sandbox, so the screenshot uses the writable `/tmp` fallback.
+- UI and workspace/file-management implementation remain unchanged. Optional AI
+  inference and other platform installers were not exercised by this Linux startup test.
