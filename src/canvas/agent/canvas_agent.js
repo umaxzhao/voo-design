@@ -40,6 +40,7 @@ export const SYSTEM_PROMPT =
   "Keep replies short.";
 
 const READ_ONLY_TOOLS = new Set([
+  "lint_design",
   "describe_selection",
   "inspect_layer_tree",
   "select_layers",
@@ -106,7 +107,9 @@ export async function runAgentTurn({
   streamStep = streamChatTurn,
 }) {
   const base = styleNote.trim() ? `${SYSTEM_PROMPT}\n\nStyle notes from the user: ${styleNote.trim()}` : SYSTEM_PROMPT;
-  const system = `${base}\n\n${buildDesignQualityPrompt({ userText, kit: pickStyleKit(userText) })}`;
+  let qualityOff = globalThis.__VOO_DESIGN_QUALITY_OFF__ === true;
+  try { qualityOff ||= globalThis.localStorage?.getItem("voo.designQuality") === "off"; } catch {}
+  const system = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit: pickStyleKit(userText) })}`;
   const messages = [
     { role: "system", content: system },
     ...history,

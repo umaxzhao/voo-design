@@ -11,7 +11,7 @@ export function parseOptions(args) {
   const options = { label: 'after', critique: false, judge: false };
   for (let i = 0; i < args.length; i++) {
     const [flag, ...rest] = args[i].split('=');
-    if (['--critique', '--judge', '--help'].includes(flag)) {
+    if (['--critique', '--judge', '--help', '--baseline'].includes(flag)) {
       if (rest.length) throw new Error(`${flag} takes no value`);
       options[flag.slice(2)] = true;
     } else if (['--model', '--tasks', '--label'].includes(flag)) {
@@ -119,7 +119,7 @@ async function runInEditor({ task, model, timeout, critique }) {
 export async function main(args = process.argv.slice(2)) {
   const options = parseOptions(args);
   if (options.help) {
-    console.log('npm run bench:design -- [--model MODEL] [--tasks=id1,id2] [--critique] [--label=before|after] [--judge]\nPorts: VOO_DESIGN_BENCH_BRIDGE_PORT (4190), VOO_DESIGN_BENCH_VITE_PORT (5199).\nOutputs: /workspace/tmp/design-bench/<label>/{<id>.png,<id>.json,scores.json}\nRescore: node scripts/design-bench/score.mjs --label=after [--judge]\nCompare: node scripts/design-bench/report.mjs');
+    console.log('npm run bench:design -- [--model MODEL] [--tasks=id1,id2] [--critique] [--baseline] [--label=before|after] [--judge]\nPorts: VOO_DESIGN_BENCH_BRIDGE_PORT (4190), VOO_DESIGN_BENCH_VITE_PORT (5199).\nOutputs: /workspace/tmp/design-bench/<label>/{<id>.png,<id>.json,scores.json}\nRescore: node scripts/design-bench/score.mjs --label=after [--judge]\nCompare: node scripts/design-bench/report.mjs');
     return;
   }
   const { chromium } = await import('playwright');
@@ -130,7 +130,7 @@ export async function main(args = process.argv.slice(2)) {
   const bridgePort = process.env.VOO_DESIGN_BENCH_BRIDGE_PORT || process.env.VOO_CODEX_BRIDGE_PORT || '4190';
   const vitePort = process.env.VOO_DESIGN_BENCH_VITE_PORT || process.env.VOO_CODEX_VITE_PORT || '5199';
   const env = {
-    ...process.env, HTTPS_PROXY: 'http://127.0.0.1:7890',
+    ...process.env, HTTPS_PROXY: 'http://127.0.0.1:7890', HTTP_PROXY: 'http://127.0.0.1:7890',
     NO_PROXY: [...new Set(`${process.env.NO_PROXY || ''},127.0.0.1,localhost`.split(','))].join(','),
     VOO_CLI_BRIDGE_PORT: bridgePort, VITE_CLI_BRIDGE_URL: `ws://127.0.0.1:${bridgePort}`,
   };
@@ -156,6 +156,7 @@ export async function main(args = process.argv.slice(2)) {
       const task = DESIGN_BENCH_TASKS.find(item => item.id === id);
       console.error(`Design benchmark: ${id}`);
       const context = await browser.newContext({ viewport: { width: 1600, height: 1100 } });
+      await context.addInitScript(baseline => { globalThis.__VOO_DESIGN_QUALITY_OFF__ = baseline; }, !!options.baseline);
       const page = await context.newPage();
       const started = Date.now();
       let watchdog;
