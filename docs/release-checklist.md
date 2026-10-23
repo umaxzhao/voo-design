@@ -20,7 +20,7 @@
   - Verify agent tools e2e passes: `npm run test:e2e`
 - [ ] Run `npm run build` — production vite bundle succeeds
 - [ ] Run `npm run dist` — AppImage generation succeeds
-  - Verify artifact size reasonable (~150–200 MB range)
+  - Compare artifact size against `docs/installer-size.md` (Linux baseline after hardening: ~101 MiB)
   - Verify dist output in `release/` directory
 - [ ] Code signing (see `docs/code-signing.md` for setup)
   - [ ] **macOS**: Sign DMG with Apple Developer certificate
@@ -242,3 +242,11 @@ For detailed feature inventory, see:
 - Reinstalled/resolved production dependencies with the lockfile; no missing-module/dependency-location warnings remain. Builder's duplicate dependency references are informational and deduplicated in the package. Existing Vite `node:zlib` browser externalization is in the presentation PDF fallback; it remains a build warning. Tailwind no longer scans code-generator template literals, eliminating invalid generated CSS warnings.
 - `npm audit --omit=dev`: zero reported vulnerabilities. The host uses Node 20 and emits engine warnings for Electron tooling; use Node 22.12+ in release CI. Full development-tool audit still requires maintenance separately.
 - `npm run smoke:packaged`: passed on the final AppImage; exposed editor canvas verified by hit testing, About loaded MIT/EULA/third-party documents, zero renderer console errors, no missing main-process imports. Screenshot inspected at `docs/screenshots/packaged-smoke.png`. Headless Chromium's system D-Bus diagnostics are expected in this container and are separate from renderer console errors.
+
+## Installer size gate
+
+- [ ] Compare release artifact and extracted `app.asar`, `app.asar.unpacked`, WASM, maps and locales with [installer-size.md](installer-size.md); investigate regressions from the 106,382,855-byte Linux x64 AppImage.
+- [ ] Keep only Electron runtime imports in production dependencies; maintain `rendererDependencies` for bundled-library notices when moving packages to devDependencies.
+- [ ] Run `ANALYZE=1 npm run build` and inspect the local `analysis/bundle.html` report. Ship no report, maps, duplicate WASM, tests or build caches; keep EULA/third-party notices intact.
+- [ ] Verify `zh-CN`/`en-US` locales, production sourcemaps disabled, maximum compression, and on-demand model caching/offline failure behavior. Smoke-test the rebuilt AppImage and refresh `docs/screenshots/packaged-smoke.png`.
+- [ ] Measure DMG/NSIS on their native release hosts; the report's macOS/Windows sizes are estimates.

@@ -43,7 +43,7 @@ export async function generateNotices(root = process.cwd()) {
       try { await visit(dep, location); } catch (error) { if (!error.message.startsWith('Missing production dependency:')) throw error; }
     }
   }
-  for (const name of Object.keys(manifest.dependencies || {}).sort()) await visit(name, root);
+  for (const name of [...new Set([...Object.keys(manifest.dependencies || {}), ...(manifest.rendererDependencies || [])])].sort()) await visit(name, root);
   return notices.sort((a, b) => `${a.name}@${a.version}`.localeCompare(`${b.name}@${b.version}`));
 }
 export async function writeNotices(root = process.cwd()) {
