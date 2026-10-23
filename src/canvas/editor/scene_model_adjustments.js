@@ -36,6 +36,7 @@ import {
   createDocument,
   createImageNode,
 } from "./scene_model_core.js";
+import { normalizeLiveFilterStack } from "./live_filter_stack.js";
 
 /** Sorts and clamps a gradient stop list; falls back on a broken list. */
 /* eslint-enable no-unused-vars */
@@ -272,5 +273,8 @@ export function normalizeAdjustments(adj) {
       reverse: Boolean(adj.gradientMap?.reverse ?? defaults.gradientMap.reverse),
       stops: normalizeGradientStops(adj.gradientMap?.stops, defaults.gradientMap.stops),
     },
+    // Non-destructive Live Filter stack rides with the adjustments object so
+    // every tone consumer (GL fallback gate, CPU kernels, export) sees it.
+    liveFilters: normalizeLiveFilterStack(adj.liveFilters),
   };
 }

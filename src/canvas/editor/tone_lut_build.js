@@ -8,6 +8,9 @@
 
 import { normalizeAdjustments } from "./scene_model.js";
 import {
+  normalizeLiveFilterStack,
+} from "./live_filter_stack.js";
+import {
   hasCustomCurve,
   curveSignature,
 } from "./tone_lut_curves.js";
@@ -235,6 +238,14 @@ function buildToneLutUncached(adjustments) {
   const gradientMap = normalized.gradientMap;
   const gradientMapActive = Boolean(gradientMap?.enabled);
 
+  // The live filter stack rides the adjustments object (see
+  // normalizeAdjustments); enabled entries are pure CPU buffer ops, so they
+  // join the signature (as the spatial cache key) and force cpuOnly — the GL
+  // pipeline cannot run them, the CPU kernels apply them after adjustments.
+  const liveFilters = normalizeLiveFilterStack(normalized.liveFilters);
+  const liveFiltersStack = liveFilters.filter((entry) => entry.enabled);
+  const liveFiltersActive = liveFiltersStack.length > 0;
+
   const lutIdentity =
     bVal === 0 &&
     cVal === 0 &&
@@ -274,7 +285,8 @@ function buildToneLutUncached(adjustments) {
     solarizeVal > 0 ||
     halftoneVal > 0 ||
     sepiaVal > 0 ||
-    embossVal > 0;
+    embossVal > 0 ||
+    liveFiltersActive;
 
   // True when any cpu-only adjustment is active — the GL pipeline bails out
   // on this so the CPU path handles the whole frame.
@@ -296,7 +308,8 @@ function buildToneLutUncached(adjustments) {
     vibranceActive ||
     channelMixerActive ||
     selectiveColorActive ||
-    gradientMapActive;
+    gradientMapActive ||
+    liveFiltersActive;
 
   const signature = `${bVal}|${cVal}|${hVal}|${sVal}|${lVal}|${colorizeActive ? 1 : 0}|${hueSatBandsSignature(hueSatBands)}|${
     curvesActive
@@ -305,7 +318,7 @@ function buildToneLutUncached(adjustments) {
         curveSignature(curvesObj?.g) +
         curveSignature(curvesObj?.b)
       : "0"
-  }|${eVal}|${tVal}|${tiVal}|${hiVal}|${shVal}|${vVal}|${blurVal}|${sharpenVal}|${highPassVal}|${clarityVal}|${motionBlurVal}|${motionBlurAngle}|${noiseVal}|${cloudsVal}|${pixelateVal}|${posterizeVal}|${solarizeVal}|${halftoneVal}|${sepiaVal}|${embossVal}|${levelsActive ? `${blackVal}|${whiteVal}|${gammaVal}|${outBlackVal}|${outWhiteVal}` : "0"}|${invertVal ? "1" : "0"}|${thresholdVal === null ? "0" : thresholdVal}|${colorBalanceActive ? colorBalanceSignature(colorBalance) : "0"}|${bwActive ? `${blackAndWhite.reds}|${blackAndWhite.yellows}|${blackAndWhite.greens}|${blackAndWhite.cyans}|${blackAndWhite.blues}|${blackAndWhite.magentas}|${blackAndWhite.useTint ? blackAndWhite.tintColor : "0"}` : "0"}|${photoFilterActive ? `${photoFilter.density}|${photoFilter.color}|${photoFilter.preserveLuminosity !== false ? 1 : 0}` : "0"}|${vibranceActive ? vibrance.value : "0"}|${channelMixerActive ? channelMixerSignature(channelMixer) : "0"}|${selectiveColorActive ? selectiveColorSignature(selectiveColor) : "0"}|${gradientMapActive ? gradientMapSignature(gradientMap) : "0"}`;
+  }|${eVal}|${tVal}|${tiVal}|${hiVal}|${shVal}|${vVal}|${blurVal}|${sharpenVal}|${highPassVal}|${clarityVal}|${motionBlurVal}|${motionBlurAngle}|${noiseVal}|${cloudsVal}|${pixelateVal}|${posterizeVal}|${solarizeVal}|${halftoneVal}|${sepiaVal}|${embossVal}|${levelsActive ? `${blackVal}|${whiteVal}|${gammaVal}|${outBlackVal}|${outWhiteVal}` : "0"}|${invertVal ? "1" : "0"}|${thresholdVal === null ? "0" : thresholdVal}|${colorBalanceActive ? colorBalanceSignature(colorBalance) : "0"}|${bwActive ? `${blackAndWhite.reds}|${blackAndWhite.yellows}|${blackAndWhite.greens}|${blackAndWhite.cyans}|${blackAndWhite.blues}|${blackAndWhite.magentas}|${blackAndWhite.useTint ? blackAndWhite.tintColor : "0"}` : "0"}|${photoFilterActive ? `${photoFilter.density}|${photoFilter.color}|${photoFilter.preserveLuminosity !== false ? 1 : 0}` : "0"}|${vibranceActive ? vibrance.value : "0"}|${channelMixerActive ? channelMixerSignature(channelMixer) : "0"}|${selectiveColorActive ? selectiveColorSignature(selectiveColor) : "0"}|${gradientMapActive ? gradientMapSignature(gradientMap) : "0"}${liveFiltersActive ? `|${liveFiltersStack.map((entry) => `${entry.kind}@${entry.params?.value ?? 0}@${entry.params?.angle ?? 0}@${entry.opacity}`).join(";")}` : "|0"}`;
 
   const { lutR, lutG, lutB } = computeChannelLuts({
     bVal,
@@ -366,6 +379,7 @@ function buildToneLutUncached(adjustments) {
     channelMixer,
     selectiveColor,
     gradientMap,
+    liveFilters: liveFiltersStack,
     signature,
   };
 }

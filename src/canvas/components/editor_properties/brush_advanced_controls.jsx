@@ -54,7 +54,10 @@ export default function BrushAdvancedControls({
   onCloneAligned,
 }) {
   const { t } = useI18n();
-  const [advancedBrushOpen, setAdvancedBrushOpen] = useState(false);
+  // Roundness/angle/blend are primary brush knobs (the engine already models
+  // them on every stamp), so Advanced starts open — discoverability beat tidy
+  // folding for the one section that holds real controls.
+  const [advancedBrushOpen, setAdvancedBrushOpen] = useState(true);
 
   return (
     <>

@@ -43,6 +43,7 @@ export function createSelectionEffects(context) {
     strokeSelection: paintEffects.strokeSelection,
     fillSelection: paintEffects.fillSelection,
     applyGradientSelection: paintEffects.applyGradientSelection,
+    applyGradientTool: paintEffects.applyGradientTool,
     pathToSelection: paintEffects.pathToSelection,
   };
 }

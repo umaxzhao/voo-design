@@ -287,6 +287,7 @@ export function assembleEngineControllers({
     selectionController,
     getColor: brushController.getColor,
     getBackgroundColor: documentController.getBackgroundColor,
+    getGradientToolState: brushController.getGradientToolState,
     sourceWorkflowNodeId,
     onGeneratedOutput,
     isDisposed,

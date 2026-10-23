@@ -29,7 +29,10 @@ export const SYSTEM_PROMPT =
   "swap_instance for variants. Design tokens: create_variable_collection, add_variable_mode, " +
   "create_variable, set_variable_value, set_active_mode, bind_variable; styles via create_style/apply_style; " +
   "set_text_range_style for rich text; get_path_nodes/edit_path_nodes for vector edits.\n" +
-  "5. Verify: After multi-step edits check inspect_layer_tree or capture_canvas (PNG returned to you). " +
+  "5. Scene ops: boolean_combine merges shapes (union/subtract/intersect/exclude); set_constraints " +
+  "(left/right/center/scale, top/bottom/center/scale) so children follow frame resizes; export_layers " +
+  "rasterizes layers to base64 PNG for verification or handoff.\n" +
+  "6. Verify: After multi-step edits check inspect_layer_tree or capture_canvas (PNG returned to you). " +
   "If a step went wrong, use undo (and redo) rather than piling on fixes.\n" +
   "Keep replies short.";
 

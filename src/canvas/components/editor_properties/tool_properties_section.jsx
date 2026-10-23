@@ -185,6 +185,13 @@ export default function ToolPropertiesSection({
   // Fill & Gradient props (Affinity Style)
   gradientType,
   onGradientType,
+  gradientStops,
+  onGradientStops,
+  gradientAngle,
+  onGradientAngle,
+  gradientActiveStop,
+  onGradientActiveStop,
+  onApplyGradientTool,
   fillTolerance,
   onFillTolerance,
   fillContiguous,
@@ -456,6 +463,13 @@ export default function ToolPropertiesSection({
           tool={tool}
           gradientType={gradientType}
           onGradientType={onGradientType}
+          gradientStops={gradientStops}
+          onGradientStops={onGradientStops}
+          gradientAngle={gradientAngle}
+          onGradientAngle={onGradientAngle}
+          gradientActiveStop={gradientActiveStop}
+          onGradientActiveStop={onGradientActiveStop}
+          onApplyGradientTool={onApplyGradientTool}
           fillTolerance={fillTolerance}
           onFillTolerance={onFillTolerance}
           fillContiguous={fillContiguous}
