@@ -357,15 +357,15 @@ describe.skipIf(!hasM3GridSupport)("Scene Snapping - Tier 1: 2D Rectangular Grid
     expect(res.x + res.width / 2).toBe(50);
   });
 
-  it("supports custom grid pitch sizes (e.g. 16px grid)", () => {
+  it.each([8, 16, 32, 64])("supports the grid menu pitch %ipx", (size) => {
     const res = snapNodeBounds({
       doc,
-      rect: { x: 34, y: 62, width: 40, height: 40 }, // near 32, 64
+      rect: { x: size * 2 + 1, y: size * 4 - 1, width: size, height: size },
       zoom: 1,
-      options: { enabled: true, snapToGrid: true, grid: { type: "rectangular", size: 16 } },
+      options: { enabled: true, snapToGrid: true, grid: { type: "rectangular", size } },
     });
-    expect(res.x).toBe(32);
-    expect(res.y).toBe(64);
+    expect(res.x).toBe(size * 2);
+    expect(res.y).toBe(size * 4);
   });
 });
 

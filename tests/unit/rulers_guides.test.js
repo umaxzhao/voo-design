@@ -336,14 +336,14 @@ describe("snapping option plumbing", () => {
   it("editorSnapOptions reads the persisted toggles synchronously", async () => {
     await setSetting(SNAP_SETTING_KEYS.snapToGrid, true);
     await setSetting(SNAP_SETTING_KEYS.showGuides, false);
-    const options = editorSnapOptions({ grid: { size: 20 } });
+    const options = editorSnapOptions({ grid: { enabled: true, size: 64 } });
     expect(options.snapToGrid).toBe(true);
     expect(options.snapToGuides).toBe(false);
-    expect(options.grid).toEqual({ type: "rectangular", size: 20 });
+    expect(options.grid).toEqual({ type: "rectangular", size: 64 });
 
     await setSetting(SNAP_SETTING_KEYS.snapToGrid, false);
     await setSetting(SNAP_SETTING_KEYS.showGuides, true);
-    expect(editorSnapOptions().snapToGrid).toBe(false);
+    expect(editorSnapOptions({ grid: { enabled: true, size: 64 } }).snapToGrid).toBe(false);
     expect(editorSnapOptions().snapToGuides).toBe(true);
   });
 

@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { Eye, EyeOff, Grid3x3, Ruler, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Ruler, Trash2 } from "lucide-react";
 import {
   GUIDE_HIT_SLOP,
   GUIDE_TYPES,
@@ -498,17 +498,15 @@ EditorRulers.propTypes = {
  * Canvas view-aid toggles. Rendered as a group INSIDE the single bottom
  * toolbar (EditorZoom) — never as a second floating bar.
  *
- * Rulers/guides/snap-to-grid are all persisted settings, so the buttons are
+ * Rulers/guides are persisted settings, so the buttons are
  * tri-state readouts of the same values the pointer handlers read.
  */
 export function EditorCanvasAids({
   showRulers = true,
   showGuides = true,
-  snapToGrid = false,
   canClearGuides = false,
   onToggleRulers = null,
   onToggleGuides = null,
-  onToggleSnapToGrid = null,
   onClearGuides = null,
   t = null,
 }) {
@@ -553,22 +551,6 @@ export function EditorCanvasAids({
       >
         {showGuides ? <Eye size={13} /> : <EyeOff size={13} />}
       </button>
-      <div aria-hidden className="mx-0.5 h-3.5 w-px bg-black/15" />
-      <button
-        type="button"
-        data-testid="editor-toggle-snap-to-grid"
-        onClick={onToggleSnapToGrid}
-        title={label(
-          t,
-          snapToGrid ? "editor.snapping.toGridOn" : "editor.snapping.toGridOff",
-          snapToGrid ? "Snap to grid (on)" : "Snap to grid (off)",
-        )}
-        aria-label={label(t, "editor.snapping.toGrid", "Snap to grid")}
-        aria-pressed={Boolean(snapToGrid)}
-        className={buttonClass(snapToGrid)}
-      >
-        <Grid3x3 size={13} />
-      </button>
       <button
         type="button"
         data-testid="editor-clear-guides"
@@ -587,11 +569,9 @@ export function EditorCanvasAids({
 EditorCanvasAids.propTypes = {
   showRulers: PropTypes.bool,
   showGuides: PropTypes.bool,
-  snapToGrid: PropTypes.bool,
   canClearGuides: PropTypes.bool,
   onToggleRulers: PropTypes.func,
   onToggleGuides: PropTypes.func,
-  onToggleSnapToGrid: PropTypes.func,
   onClearGuides: PropTypes.func,
   t: PropTypes.func,
 };

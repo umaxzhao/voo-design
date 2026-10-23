@@ -22,6 +22,8 @@ export default {
   "editor.guides.clear": "Clear guides",
   "editor.guides.clearAll": "Clear all guides",
 
+  "editor.grid.options": "Grid options",
+  "editor.grid.size": "Grid size",
   "editor.snapping.toGrid": "Snap to grid",
   "editor.snapping.toGridOn": "Snap to grid (on)",
   "editor.snapping.toGridOff": "Snap to grid (off)",

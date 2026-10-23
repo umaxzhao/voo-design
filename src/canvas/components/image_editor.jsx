@@ -4922,6 +4922,20 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               }
               onFit={multi ? fitAll : () => engine?.zoomToFit()}
               grid={grid}
+              gridSize={grid?.size ?? 32}
+              snapToGrid={snapToGrid}
+              onToggleSnapToGrid={toggleSnapToGrid}
+              onSetGridSize={(size) => {
+                const next = { enabled: true, size };
+                if (multi) {
+                  for (const entry of enginesRef.current.values()) {
+                    entry.engine?.setGrid?.(next);
+                  }
+                } else {
+                  engine?.setGrid?.(next);
+                }
+                bump();
+              }}
               onToggleGrid={() => {
                 const next = grid ? null : { enabled: true, size: 32 };
                 if (multi) {
@@ -4940,11 +4954,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 <EditorCanvasAids
                   showRulers={showRulers}
                   showGuides={showGuides}
-                  snapToGrid={snapToGrid}
                   canClearGuides={documentGuides.length > 0}
                   onToggleRulers={toggleRulers}
                   onToggleGuides={toggleGuides}
-                  onToggleSnapToGrid={toggleSnapToGrid}
                   onClearGuides={handleClearGuides}
                   t={t}
                 />
