@@ -1,6 +1,5 @@
 import { useI18n } from "../use_i18n.js";
 import { isFigmaFontAvailable } from "../figma/figma-text.js";
-import { bundledFamilyOf } from "../editor/font_loader.js";
 import PropTypes from "prop-types";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { LINE_HEIGHT_RATIO } from "../editor/scene_model_core.js";
@@ -21,8 +20,10 @@ export default function EditorTextOverlay({
   onUpdate,
 }) {
   const { t } = useI18n();
-  const family = bundledFamilyOf(node.fontFamily) ?? node.figmaFont?.family;
-  const missingFont = family && !isFigmaFontAvailable(family);
+  // Match the actual first face exactly: "Interstate" must not match "Inter".
+  const family = node.fontFamily?.split(",")[0].trim().replace(/^['"]|['"]$/g, "") || node.figmaFont?.family;
+  const genericFamily = /^(sans-serif|serif|monospace|cursive|fantasy|system-ui|ui-sans-serif|ui-serif|ui-monospace)$/i.test(family ?? "");
+  const missingFont = family && !genericFamily && !isFigmaFontAvailable(family);
   const ref = useRef(null);
   const [value, setValue] = useState(node.text ?? "");
   /** The live value, so the blur handler cannot commit a stale one. */
