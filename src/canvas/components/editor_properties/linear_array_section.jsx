@@ -128,6 +128,7 @@ export default function LinearArraySection({
   engine = null,
   doc = null,
   is3d = false,
+  embedded = false,
   t,
 }) {
   const targetId = object?.id;
@@ -262,7 +263,7 @@ export default function LinearArraySection({
           </div>
         </div>
       ) : null}
-      <button
+      {!embedded ? <button
         type="button"
         data-testid="editor-linear-array-remove"
         onClick={handleRemove}
@@ -270,9 +271,11 @@ export default function LinearArraySection({
       >
         <IconTrash className="text-neutral-400" size={12} strokeWidth={1.5} />
         <span>{t("editor.linearArray.remove")}</span>
-      </button>
+      </button> : null}
     </div>
   );
+
+  if (embedded) return activeModifier ? content : null;
 
   if (is3d) {
     return (
@@ -303,5 +306,6 @@ LinearArraySection.propTypes = {
   engine: PropTypes.object,
   doc: PropTypes.object,
   is3d: PropTypes.bool,
+  embedded: PropTypes.bool,
   t: PropTypes.func.isRequired,
 };

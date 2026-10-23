@@ -36,6 +36,9 @@ export const MODIFIER_TYPE = Object.freeze({
  * Throws TypeError if invalid.
  */
 export function validateLinearArrayModifier(modifier, targetNode = null) {
+  if (modifier?.enabled !== undefined && typeof modifier.enabled !== "boolean") {
+    throw new TypeError("Modifier enabled must be a boolean");
+  }
   if (!modifier || typeof modifier !== "object" || Array.isArray(modifier)) {
     throw new TypeError("Modifier configuration must be an object");
   }
@@ -156,6 +159,7 @@ export function normalizeLinearArrayModifier(modifier, targetNode = null) {
     id: modifier.id.trim(),
     type: MODIFIER_TYPE.LINEAR_ARRAY,
     targetId: modifier.targetId.trim(),
+    ...(modifier.enabled !== undefined ? { enabled: modifier.enabled } : {}),
     count: modifier.count,
     step: {
       x: modifier.step.x,
@@ -317,8 +321,8 @@ export function validateModifierPatch(current, patch, targetNode) {
   // its own kind actually has, so this stays a whitelist rather than a permissive pass-through.
   const isCircularPatch = current?.type === MODIFIER_TYPE.CIRCULAR_ARRAY;
   const allowedKeys = isCircularPatch
-    ? new Set(["count", "radius", "startAngle", "arcSpan"])
-    : new Set(["count", "step", "animations"]);
+    ? new Set(["enabled", "count", "radius", "startAngle", "arcSpan"])
+    : new Set(["enabled", "count", "step", "animations"]);
   for (const key of Object.keys(patch)) {
     if (!allowedKeys.has(key)) {
       throw new TypeError(`Cannot patch unsupported property: "${key}"`);
@@ -343,6 +347,7 @@ export function validateModifierPatch(current, patch, targetNode) {
 
   const merged = {
     ...current,
+    ...(patch.enabled !== undefined ? { enabled: patch.enabled } : {}),
     count: patch.count !== undefined ? patch.count : current.count,
     step: {
       ...current.step,

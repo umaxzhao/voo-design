@@ -174,7 +174,7 @@ export function evaluateLinearArrayModifiers(nodes, modifiers = []) {
 
   for (const node of nodes) {
     const mod = targetModifiers.get(node.id);
-    if (!mod) {
+    if (!mod || mod.enabled === false) {
       result.push(node);
       continue;
     }

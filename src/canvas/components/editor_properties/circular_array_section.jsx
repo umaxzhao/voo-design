@@ -61,6 +61,7 @@ export default function CircularArraySection({
   engine = null,
   doc = null,
   is3d = false,
+  embedded = false,
   t,
 }) {
   const targetId = object?.id;
@@ -198,7 +199,7 @@ export default function CircularArraySection({
             step={1}
             onChange={(arcSpan) => handleUpdate({ arcSpan })}
           />
-          <button
+          {!embedded ? <button
             type="button"
             data-testid="editor-circular-array-remove"
             className="mt-1 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-left text-[11px] text-neutral-400 hover:bg-white/[0.08]"
@@ -206,7 +207,7 @@ export default function CircularArraySection({
           >
             <IconTrash size={14} strokeWidth={1.5} />
             {t("editor.circularArray.remove")}
-          </button>
+          </button> : null}
         </div>
       )}
     </div>
@@ -215,6 +216,8 @@ export default function CircularArraySection({
   // The 3D properties panel is a different entry point from the 2D one: it renders an InspectorGroup whose
   // testid the native browser fixture keys on. Without this split the section simply is not reachable from
   // the 3D panel, which is why a model3d node in a 2D document could never be genuine native 3D.
+  if (embedded) return activeModifier ? content : null;
+
   if (is3d) {
     return (
       <InspectorGroup
@@ -241,6 +244,7 @@ export default function CircularArraySection({
 CircularArraySection.propTypes = {
   object: PropTypes.shape({ id: PropTypes.string }),
   is3d: PropTypes.bool,
+  embedded: PropTypes.bool,
   engine: PropTypes.object,
   doc: PropTypes.object,
   t: PropTypes.func.isRequired,

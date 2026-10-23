@@ -78,6 +78,7 @@ export function circularLocalToEditor(local, node) {
  * @returns {Array<object>}
  */
 export function evaluateCircularArrayForNode(node, mod, assignedInstanceIds) {
+  if (mod.enabled === false) return [node];
   // Slot 0 is the source itself: same id, same coordinates, still editable and unmoved.
   const instances = [node];
   if (mod.count <= 1) {
@@ -158,7 +159,7 @@ export function evaluateCircularArrayModifiers(nodes, modifiers = []) {
 
   for (const node of nodes) {
     const mod = byTarget.get(node.id);
-    if (!mod) {
+    if (!mod || mod.enabled === false) {
       result.push(node);
       continue;
     }

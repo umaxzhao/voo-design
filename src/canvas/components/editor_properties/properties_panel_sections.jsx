@@ -19,10 +19,7 @@ import ConstraintsSection from "./constraints_section.jsx";
 import ColorVariablesSection from "./color_variables_section.jsx";
 import StyleSection from "./style_section.jsx";
 import MediaSection from "./media_section.jsx";
-import LinearArraySection from "./linear_array_section.jsx";
-import GridArraySection from "./grid_array_section.jsx";
-import CircularArraySection from "./circular_array_section.jsx";
-import { CollapsibleSection } from "./property_section.jsx";
+import ModifiersSection from "./modifiers_section.jsx";
 import {
   isRegionNode,
   supportsColour,
@@ -139,21 +136,6 @@ export default function PropertiesPanelSections({
           selectedNodes={selectedNodes}
           transformActions={transformActions}
         />
-      ) : null}
-
-      {/* TODO(modifiers-pr): move Repeat/Array under Modifiers */}
-      {/* Repeat / Array: the three array modifiers, one group right under
-          Transform so "copy this layer N times" sits where its geometry is. */}
-      {showRepeatArray ? (
-        <CollapsibleSection
-          title={t("editor.props.repeatArray")}
-          storageKey="repeatArray.section"
-          testId="editor-repeat-array-section"
-        >
-          <LinearArraySection object={object} engine={engine} t={t} />
-          <GridArraySection object={object} engine={engine} t={t} />
-          <CircularArraySection object={object} engine={engine} t={t} />
-        </CollapsibleSection>
       ) : null}
 
       {/* Resize constraints: how this node follows its parent's resize. Frames
@@ -300,6 +282,7 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
+      {showRepeatArray ? <ModifiersSection object={object} engine={engine} t={t} /> : null}
 
     </>
   );

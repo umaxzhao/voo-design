@@ -51,6 +51,9 @@ export function getGridArrayCellId(sourceId, modifierId, row, col, layer = 0) {
  * Throws TypeError if invalid.
  */
 export function validateGridArrayModifier(modifier, targetNode = null) {
+  if (modifier?.enabled !== undefined && typeof modifier.enabled !== "boolean") {
+    throw new TypeError("Modifier enabled must be a boolean");
+  }
   if (!modifier || typeof modifier !== "object" || Array.isArray(modifier)) {
     throw new TypeError("Modifier configuration must be an object");
   }
@@ -176,6 +179,7 @@ export function normalizeGridArrayModifier(modifier, targetNode = null) {
     id: modifier.id.trim(),
     type: GRID_MODIFIER_TYPE,
     targetId: modifier.targetId.trim(),
+    ...(modifier.enabled !== undefined ? { enabled: modifier.enabled } : {}),
     rows: modifier.rows,
     cols: modifier.cols,
     layers,
@@ -209,7 +213,7 @@ export function validateGridModifierPatch(current, patch, targetNode) {
     throw new TypeError("Modifier patch must be an object");
   }
 
-  const allowedKeys = new Set(["rows", "cols", "layers", "step", "animations"]);
+  const allowedKeys = new Set(["enabled", "rows", "cols", "layers", "step", "animations"]);
   for (const key of Object.keys(patch)) {
     if (!allowedKeys.has(key)) {
       throw new TypeError(`Cannot patch unsupported property: "${key}"`);
@@ -228,6 +232,7 @@ export function validateGridModifierPatch(current, patch, targetNode) {
 
   const merged = {
     ...current,
+    ...(patch.enabled !== undefined ? { enabled: patch.enabled } : {}),
     rows: patch.rows !== undefined ? patch.rows : current.rows,
     cols: patch.cols !== undefined ? patch.cols : current.cols,
     layers: patch.layers !== undefined ? patch.layers : (current.layers ?? 1),
@@ -324,6 +329,7 @@ function computeGridCellOffset3D(step, col, row, layer, node) {
  * Pure evaluation: evaluates grid array modifier on a single node and returns all cell instances.
  */
 export function evaluateGridArrayForNode(node, mod, assignedInstanceIds) {
+  if (mod.enabled === false) return [node];
   const { rows, cols, layers = 1, step, id: modifierId } = mod;
   if (rows <= 1 && cols <= 1 && layers <= 1) {
     return [node];

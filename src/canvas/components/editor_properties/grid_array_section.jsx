@@ -125,6 +125,7 @@ export default function GridArraySection({
   engine = null,
   doc = null,
   is3d = false,
+  embedded = false,
   t,
 }) {
   const targetId = object?.id;
@@ -280,7 +281,7 @@ export default function GridArraySection({
           </div>
         </>
       ) : null}
-      <button
+      {!embedded ? <button
         type="button"
         data-testid="editor-grid-array-remove"
         onClick={handleRemove}
@@ -288,9 +289,11 @@ export default function GridArraySection({
       >
         <IconTrash className="text-neutral-400" size={12} strokeWidth={1.5} />
         <span>{t("editor.gridArray.remove")}</span>
-      </button>
+      </button> : null}
     </div>
   );
+
+  if (embedded) return activeModifier ? content : null;
 
   if (is3d) {
     return (
@@ -321,5 +324,6 @@ GridArraySection.propTypes = {
   engine: PropTypes.object,
   doc: PropTypes.object,
   is3d: PropTypes.bool,
+  embedded: PropTypes.bool,
   t: PropTypes.func.isRequired,
 };

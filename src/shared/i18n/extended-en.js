@@ -1,5 +1,10 @@
 /** Extended deferred English dictionary. */
 export default {
+  "editor.props.modifiers": "Modifiers",
+  "editor.modifiers.add": "Add modifier",
+  "editor.modifiers.empty": "No modifiers",
+  "editor.modifiers.remove": "Remove modifier",
+
   "editor.taskbar.askAgent": "Ask VOO agent",
   "editor.taskbar.askPlaceholder": "Ask VOO to edit this selection…",
   "editor.taskbar.fontFamily": "Font family",

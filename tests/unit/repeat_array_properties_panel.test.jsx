@@ -1,8 +1,4 @@
-/**
- * Repeat / Array wiring: the three array-modifier sections (linear, grid,
- * circular) render as one collapsible group under Transform for a single
- * non-background layer or group selection — and nowhere else.
- */
+/** Modifiers follow Effects in the selection-driven inspector. */
 
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
@@ -41,32 +37,29 @@ function renderSections(props) {
   );
 }
 
-describe("Repeat / Array group", () => {
-  it("renders the group with all three array sections for a single group", () => {
+describe("Modifiers group", () => {
+  it("renders the group with an empty stack for a single group", () => {
     const html = renderSections();
-    expect(html).toContain('data-testid="editor-repeat-array-section"');
-    expect(html).toContain("editor.props.repeatArray");
-    expect(html).toContain('data-testid="editor-linear-array-enable"');
-    expect(html).toContain('data-testid="editor-grid-array-enable"');
-    expect(html).toContain('data-testid="editor-circular-array-enable"');
+    expect(html).toContain('data-testid="editor-modifiers-section"');
+    expect(html).toContain("editor.props.modifiers");
+    expect(html).toContain('data-testid="editor-modifiers-empty"');
+    expect(html).not.toContain('editor-repeat-array-section');
+    expect(html).not.toContain('editor.props.repeatArray');
+    expect(html).not.toContain('editor-linear-array-enable');
   });
 
   it("renders the group for a single non-background layer (rect)", () => {
     const html = renderSections({
       object: { id: "n2", kind: "rect", x: 0, y: 0, width: 4, height: 4 },
     });
-    expect(html).toContain('data-testid="editor-repeat-array-section"');
+    expect(html).toContain('data-testid="editor-modifiers-section"');
   });
 
-  it("places the group right after the transform section", () => {
+  it("places Modifiers directly after Effects", () => {
     const html = renderSections();
-    const transformAt = html.indexOf("editor.props.transform");
-    const repeatAt = html.indexOf("editor.props.repeatArray");
-    expect(transformAt).toBeGreaterThan(-1);
-    expect(repeatAt).toBeGreaterThan(transformAt);
-    // And before the sections that follow it (constraints).
-    const constraintsAt = html.indexOf("editor-constraints-left");
-    if (constraintsAt > -1) expect(repeatAt).toBeLessThan(constraintsAt);
+    const effectsAt = html.indexOf("editor.props.effects");
+    expect(effectsAt).toBeGreaterThan(-1);
+    expect(html.indexOf("editor.props.modifiers")).toBeGreaterThan(effectsAt);
   });
 
   it("shows the active controls when an array modifier already exists", () => {
@@ -89,13 +82,13 @@ describe("Repeat / Array group", () => {
 
   it("hides the group on a multi-selection", () => {
     const html = renderSections({ selectionCount: 2 });
-    expect(html).not.toContain("editor.props.repeatArray");
+    expect(html).not.toContain("editor.props.modifiers");
     expect(html).not.toContain("editor-linear-array-enable");
   });
 
   it("hides the group for the canvas background", () => {
     const html = renderSections({ isBackground: true });
-    expect(html).not.toContain("editor.props.repeatArray");
+    expect(html).not.toContain("editor.props.modifiers");
   });
 
   it("hides the group for the frame (page) node", () => {
@@ -110,18 +103,18 @@ describe("Repeat / Array group", () => {
         height: 100,
       },
     });
-    expect(html).not.toContain("editor.props.repeatArray");
+    expect(html).not.toContain("editor.props.modifiers");
   });
 
   it("hides the group while the warp tool owns the selection", () => {
     const html = renderSections({ isWarpTool: true, tool: "distort" });
-    expect(html).not.toContain("editor.props.repeatArray");
+    expect(html).not.toContain("editor.props.modifiers");
   });
 
   it("hides the group for an adjustment layer", () => {
     const html = renderSections({
       object: { id: "adj1", kind: "adjustment", adjustments: [] },
     });
-    expect(html).not.toContain("editor.props.repeatArray");
+    expect(html).not.toContain("editor.props.modifiers");
   });
 });
