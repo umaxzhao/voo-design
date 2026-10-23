@@ -2,6 +2,8 @@
  * Matte compositing and caching for the CPU adjustment path.
  */
 
+import { defringeRgba } from "./matte_defringe.js";
+
 const compositeCache = new WeakMap();
 const bitmapVersions = new WeakMap();
 
@@ -29,8 +31,20 @@ export function invalidateBitmapComposite(bitmap) {
  * when the node is drawn scaled. The composite is cached: panning and zooming
  * redraw every frame, and recompositing a full-resolution pair each time is
  * the hottest cost in the editor.
+ *
+ * Defringing runs here because this is the first point that holds both the
+ * picture's colours and the matte: `destination-in` leaves the old
+ * background's colour mixed into the semi-transparent edge, and `defringeRgba`
+ * unmixes it before the result is cached. Pass `{ defringe: false }` to keep
+ * the edge exactly as the matte composited it.
+ *
+ * @param {CanvasImageSource} bitmap
+ * @param {CanvasImageSource} matte
+ * @param {object} [options]
+ * @param {boolean} [options.defringe] default true.
  */
-export function applyMatte(bitmap, matte) {
+export function applyMatte(bitmap, matte, options = {}) {
+  const { defringe = true } = options;
   const cached = compositeCache.get(matte);
   const version = bitmapVersion(bitmap);
   if (cached?.bitmap === bitmap && cached.bitmapVersion === version)
@@ -45,6 +59,11 @@ export function applyMatte(bitmap, matte) {
   matteCtx.drawImage(bitmap, 0, 0);
   matteCtx.globalCompositeOperation = "destination-in";
   matteCtx.drawImage(matte, 0, 0, width, height);
+  if (defringe) {
+    const pixels = matteCtx.getImageData(0, 0, width, height);
+    defringeRgba(pixels.data, width, height);
+    matteCtx.putImageData(pixels, 0, 0);
+  }
   compositeCache.set(matte, { bitmap, bitmapVersion: version, canvas });
   return canvas;
 }
