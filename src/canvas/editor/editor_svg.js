@@ -8,6 +8,7 @@
  * drive it without a DOM.
  */
 
+import { selectionBounds } from "./editor_export_bounds.js";
 import { resolveCornerRadii } from "./scene_model_core.js";
 import { NODE_KIND, effectivePage } from "./scene_model.js";
 import { escapeXml, number, svgNodeTransform } from "./editor_svg_xml.js";
@@ -124,6 +125,7 @@ export function documentToSvg(
     bitmapSizeOf = null,
     maskOf = null,
     measureCtx = null,
+    transparent = false,
     resolveCanvas = null,
   } = {},
 ) {
@@ -133,7 +135,7 @@ export function documentToSvg(
   const { defs, idOf } = gradientDefs(doc.nodes ?? []);
   const body = [];
 
-  if (doc.backgroundColor && doc.backgroundColor !== "transparent") {
+  if (!transparent && doc.backgroundColor && doc.backgroundColor !== "transparent") {
     body.push(
       `<rect x="${number(page.x)}" y="${number(page.y)}" width="${number(page.width)}" height="${number(page.height)}" fill="${escapeXml(
         doc.backgroundColor,
@@ -424,6 +426,8 @@ export function nodesToSvg(
     bitmapSizeOf = null,
     maskOf = null,
     resolveCanvas = null,
+    measureCtx = null,
+    backgroundColor = "transparent",
   } = {},
 ) {
   const list = Array.isArray(nodes) ? nodes : [nodes].filter(Boolean);
@@ -431,48 +435,18 @@ export function nodesToSvg(
   // paints nothing, so it neither sizes the export nor exports on its own.
   if (!list.some((node) => !node.maskBase)) return "";
 
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-
-  for (const node of list) {
-    if (node.kind === NODE_KIND.GROUP || node.maskBase) continue;
-    const nx = Number(node.x || 0);
-    const ny = Number(node.y || 0);
-    const nw = Number(node.width || 0);
-    const nh = Number(node.height || 0);
-    minX = Math.min(minX, nx);
-    minY = Math.min(minY, ny);
-    maxX = Math.max(maxX, nx + nw);
-    maxY = Math.max(maxY, ny + nh);
-  }
-
-  const originX = Number.isFinite(minX) ? minX : 0;
-  const originY = Number.isFinite(minY) ? minY : 0;
-  const w =
-    width ??
-    (Number.isFinite(maxX) && Number.isFinite(minX)
-      ? Math.max(1, maxX - minX)
-      : 100);
-  const h =
-    height ??
-    (Number.isFinite(maxY) && Number.isFinite(minY)
-      ? Math.max(1, maxY - minY)
-      : 100);
-
+  const bounds = selectionBounds(list.filter((node) => node.kind !== NODE_KIND.GROUP && !node.maskBase && node.visible !== false));
+  if (!bounds) return "";
   const virtualDoc = {
-    width: w,
-    height: h,
-    backgroundColor: "transparent",
-    nodes: list.map((n) => ({
-      ...n,
-      x: (n.x || 0) - originX,
-      y: (n.y || 0) - originY,
-    })),
+    width: width ?? bounds.width,
+    height: height ?? bounds.height,
+    crop: { ...bounds, width: width ?? bounds.width, height: height ?? bounds.height },
+    backgroundColor,
+    nodes: list,
   };
 
   return documentToSvg(virtualDoc, {
+    measureCtx,
     bitmapOf,
     bitmapSizeOf,
     maskOf,

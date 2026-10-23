@@ -45,7 +45,7 @@ export function useEditorExport({
     [],
   );
 
-  const exportImage = useCallback(() => {
+  const exportImage = useCallback((options = {}) => {
     if (!engine?.exportImage) return Promise.resolve(null);
     if (attemptRef.current) return attemptRef.current.promise;
     const attempt = {
@@ -63,6 +63,7 @@ export function useEditorExport({
       try {
         const receipt = await exportEditorImage({
           engine,
+          transparent: options.transparent,
           format: exportFormat,
           quality: exportQuality,
           scale: exportScale,

@@ -1,4 +1,5 @@
 import { buildExtendedPaletteActions } from "../commands/palette_actions.js";
+import { exportTargetName } from "../editor/export_filename.js";
 import { setLocale } from "../../shared/i18n.js";
 import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
 import {
@@ -3977,6 +3978,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         ) : exportOpen ? (
           <Suspense fallback={null}>
             <EditorExportDialog
+              doc={exportDocument}
+              exportName={exportTargetName(pageTitle(), exportRange, exportDocument?.nodes, selectedIds)}
               format={exportFormat}
               quality={exportQuality}
               scale={exportScale}
@@ -3995,7 +3998,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               onFormat={setExportFormat}
               onQuality={setExportQuality}
               onScale={setExportScale}
-              onExport={() => void exportImage()}
+              onExport={(options) => void exportImage(options)}
               onClose={cancelExport}
             />
           </Suspense>
