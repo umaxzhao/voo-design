@@ -23,7 +23,11 @@
     "test:watch": "vitest",
     "lint:design": "node scripts/check-design.mjs",
     "bridge": "node scripts/cli-bridge.mjs",
-    "test:e2e": "node tests/e2e/agent_tools.e2e.mjs"
+    "test:e2e": "node tests/e2e/agent_tools.e2e.mjs",
+    "dist": "npm run copy:ort && npm run copy:canvaskit && vite build && electron-builder --linux AppImage",
+    "dist:dir": "npm run copy:ort && npm run copy:canvaskit && vite build && electron-builder --dir",
+    "dist:all": "npm run copy:ort && npm run copy:canvaskit && vite build && electron-builder -mwl",
+    "test:e2e:fps": "node tests/e2e/canvas_fps.e2e.mjs"
   },
   "dependencies": {
     "@voo/canvas-core": "file:vendor/voo-canvas-core",
@@ -56,31 +60,81 @@
   "build": {
     "appId": "run.voo.design",
     "productName": "VOO Design",
+    "copyright": "Copyright \u00a9 VOO Design contributors",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
       "electron/**/*",
       "package.json"
     ],
-    "extraResources": [
-      {
-        "from": "../voo-design-models",
-        "to": "models",
-        "filter": [
-          "lama_512_fp16.onnx",
-          "lama_512_int8.onnx",
-          "rmbg-1.4-fp16.onnx"
-        ]
-      }
-    ],
+    "asar": true,
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "mac": {
       "category": "public.app-category.graphics-design",
       "icon": "build/icon.icns",
       "target": [
-        "dir"
+        "dmg",
+        "zip"
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "category": "Graphics",
+      "synopsis": "Professional vector, motion & design editor",
+      "description": "VOO Design \u2014 local Figma-class UI editor with Affinity-style image tools and a Pencil-class design agent.",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "desktop": {
+        "Name": "VOO Design",
+        "Comment": "Professional Vector, Motion & 3D Design Editor",
+        "Categories": "Graphics;2DGraphics;RasterGraphics;VectorGraphics;"
+      }
     }
   },
   "allowScripts": {
