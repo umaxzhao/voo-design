@@ -89,7 +89,7 @@ describe("export and layer search accessibility", () => {
     expect(titlebar).not.toContain('data-testid="titlebar-export-btn"');
     expect(titlebar).not.toContain('voo:editor-export');
     expect(read("canvas/components/editor_hooks/use_editor_apply.js")).toContain('window.addEventListener("voo:editor-export", onTriggerExport)');
-    expect(read("canvas/editor/export_shortcut.js")).toContain("Shift");
+    expect(read("canvas/editor/export_shortcut.js")).toContain("shiftKey");
   });
   it("gives search toggle and input distinct labels in both languages", () => {
     const source = read("canvas/components/editor_layers.jsx");
