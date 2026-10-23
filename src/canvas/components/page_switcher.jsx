@@ -5,6 +5,7 @@ import { useDesignStore } from "../../store/design_store.js";
 
 export default function PageSwitcher() {
   const { t } = useI18n();
+  const [size, setSize] = useState("default");
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(null);
   const root = useRef(null);
@@ -34,6 +35,7 @@ export default function PageSwitcher() {
     );
     actions.addEditorPage({
       label: `${t("pageSwitcher.page")} ${highest + 1}`,
+      ...({ phone: { width: 393, height: 852 }, desktop: { width: 1440, height: 900 }, social: { width: 1080, height: 1080 } }[size] ?? {}),
     });
   };
   return (
@@ -147,6 +149,17 @@ export default function PageSwitcher() {
               );
             })}
           </ul>
+          <select
+            aria-label={t("editor.canvas.size")}
+            value={size}
+            onChange={(event) => setSize(event.target.value)}
+            className="mx-2 mt-2 rounded-lg border border-white/10 bg-neutral-800 px-2 py-1.5 text-xs text-neutral-300"
+          >
+            <option value="default">{t("editor.canvas.group.default")} · 1200 × 800</option>
+            <option value="phone">{t("editor.canvas.group.phone")} · 393 × 852</option>
+            <option value="desktop">{t("editor.canvas.group.desktop")} · 1440 × 900</option>
+            <option value="social">{t("editor.canvas.group.social")} · 1080 × 1080</option>
+          </select>
           <button
             type="button"
             onClick={add}
@@ -169,7 +182,7 @@ export default function PageSwitcher() {
         <span className="text-neutral-400">
           {current ? nodes.indexOf(current) + 1 : 0}/{nodes.length}
         </span>
-        <ChevronUp size={12} />
+        {open || nodes.length === 0 ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
       </button>
     </div>
   );

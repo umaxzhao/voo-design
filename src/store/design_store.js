@@ -1,3 +1,4 @@
+import { forgetPageCamera, pageCameraCache } from "../canvas/page_camera.js";
 import { createCameraRafBatcher } from "../canvas/camera_raf.js";
 import { create } from "zustand";
 import { createDocument, CANVAS_TYPE } from "../canvas/editor/scene_doc_factory.js";
@@ -65,6 +66,7 @@ export const useDesignStore = create((set, get) => {
   pendingAgentIntent: null,
 
   editorPageCameras: {},
+  pendingArtboardFitId: null,
   editorPageSession: 0,
 
   // Page / Artboard actions
@@ -73,7 +75,8 @@ export const useDesignStore = create((set, get) => {
     cameraBatcher.flush();
     set((state) => ({
       editorPageCameras: { ...state.editorPageCameras, ...(state.editingNodeId ? { [state.editingNodeId]: { ...state.editorCamera } } : {}) },
-      editorCamera: state.editorPageCameras[id] || { panX: 0, panY: 0, zoom: 1 },
+      editorCamera: state.editorPageCameras[id] || state.editorCamera,
+      pendingArtboardFitId: state.editorPageCameras[id] ? null : id,
       editingNodeId: id,
       // A page the canvas does not show yet replaces what is on it, so the switcher brings it in.
       editingNodeIds: state.editingNodeIds.includes(id) ? state.editingNodeIds : [id],
@@ -104,6 +107,7 @@ export const useDesignStore = create((set, get) => {
   deleteEditorPage: (id) => {
     if (!get().nodes.some((node) => node.id === id)) return;
     cameraBatcher.flush();
+    forgetPageCamera(pageCameraCache(get().editorPageSession), id);
     set((state) => {
       const nextIds = state.editingNodeIds.filter((pId) => pId !== id);
       const nextNodes = state.nodes.filter((n) => n.id !== id);
@@ -114,7 +118,8 @@ export const useDesignStore = create((set, get) => {
         editingNodeIds: nextIds.length ? nextIds : (nextFocused ? [nextFocused] : []),
         editorPageCameras,
         editorArtboardLayouts,
-        editorCamera: state.editingNodeId === id ? (editorPageCameras[nextFocused] || { panX: 0, panY: 0, zoom: 1 }) : state.editorCamera,
+        editorCamera: state.editingNodeId === id ? (editorPageCameras[nextFocused] || state.editorCamera) : state.editorCamera,
+        pendingArtboardFitId: state.editingNodeId === id ? (editorPageCameras[nextFocused] ? null : nextFocused) : state.pendingArtboardFitId,
         nodes: nextNodes,
         editingNodeId: nextFocused,
         isDirty: true,
@@ -289,7 +294,7 @@ export const useDesignStore = create((set, get) => {
     const doc = vooData?.document;
     if (!doc) return;
     cameraBatcher.flush();
-    set({ figSource, editorPageCameras: {}, editorPageSession: get().editorPageSession + 1 });
+    set({ figSource, editorPageCameras: {}, pendingArtboardFitId: null, editorPageSession: get().editorPageSession + 1 });
 
     if (Array.isArray(doc.pages) && doc.pages.length > 0) {
       const nextNodes = doc.pages.map((page, idx) => ({
@@ -337,7 +342,7 @@ export const useDesignStore = create((set, get) => {
           [pageId]: { x: 0, y: 0, width: doc.width || DEFAULT_WIDTH, height: doc.height || DEFAULT_HEIGHT },
         },
         editorCamera: { panX: 0, panY: 0, zoom: 1 },
-        editorPageCameras: {},
+        editorPageCameras: {}, pendingArtboardFitId: null,
         filePath,
         fileName,
         fileHandle,
@@ -376,7 +381,7 @@ export const useDesignStore = create((set, get) => {
       editingGroupId: null,
       nodes: [page],
       editorCamera: { panX: 0, panY: 0, zoom: 1 },
-      editorPageCameras: {},
+      editorPageCameras: {}, pendingArtboardFitId: null,
       editorPageSession: get().editorPageSession + 1,
       editorArtboardLayouts: {
         [pageId]: { x: 0, y: 0, width, height },

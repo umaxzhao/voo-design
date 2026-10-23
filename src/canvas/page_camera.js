@@ -26,3 +26,7 @@ export function pageCameraCache(session) {
   }
   return sessionCameras;
 }
+
+export function forgetPageCamera(cameras, id) {
+  cameras.delete(id);
+}

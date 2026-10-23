@@ -1,9 +1,11 @@
+import { PRESET_GROUPS, MIN_CANVAS_SIZE, MAX_CANVAS_SIZE } from "../../src/canvas/editor/canvas_presets.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import PageSwitcher from "../../src/canvas/components/page_switcher.jsx";
 import { useDesignStore as store } from "../../src/store/design_store.js";
 import {
+  forgetPageCamera,
   rememberPageCamera,
   restorePageCamera,
   pageCameraCache,
@@ -28,10 +30,41 @@ describe("page list polish", () => {
       editingNodeId: null,
       editingNodeIds: [],
       editorPageCameras: {},
+      pendingArtboardFitId: null,
       editorCamera: { panX: 0, panY: 0, zoom: 1 },
       isDirty: false,
     }),
   );
+  it("preserves the shared camera and requests a fit for unseen pages", () => {
+    const a = store.getState().addEditorPage();
+    const camera = { panX: -1400, panY: 80, zoom: 0.7 };
+    store.getState().setEditorCamera(camera);
+    const b = store.getState().addEditorPage({ width: 393, height: 852 });
+    expect(store.getState().editorCamera).toEqual(camera);
+    expect(store.getState().pendingArtboardFitId).toBe(b);
+    expect(store.getState().nodes[1].data.editorDoc).toMatchObject({ width: 393, height: 852 });
+    store.getState().focusEditorPage(a);
+    expect(store.getState().pendingArtboardFitId).toBeNull();
+  });
+  it("provides bounded phone and desktop presets", () => {
+    for (const group of ["phone", "desktop"]) {
+      expect(PRESET_GROUPS.find((g) => g.titleKey.endsWith(`.${group}`)).items.length).toBeGreaterThanOrEqual(3);
+    }
+    for (const { items } of PRESET_GROUPS) for (const { w, h } of items) {
+      expect(Math.min(w, h)).toBeGreaterThanOrEqual(MIN_CANVAS_SIZE);
+      expect(Math.max(w, h)).toBeLessThanOrEqual(MAX_CANVAS_SIZE);
+    }
+  });
+  it("forgets deleted page cameras in the session cache", () => {
+    const id = store.getState().addEditorPage();
+    const cameras = pageCameraCache(store.getState().editorPageSession);
+    rememberPageCamera(cameras, id, { panX: 1, panY: 2, zoom: 1 });
+    store.getState().deleteEditorPage(id);
+    expect(cameras.has(id)).toBe(false);
+    cameras.set("other", {});
+    forgetPageCamera(cameras, "other");
+    expect(cameras.size).toBe(0);
+  });
   it("adds, renames, duplicates without ID collisions, reorders and deletes", () => {
     const id = store.getState().addEditorPage({ label: "Page 1" });
     store.getState().renameEditorPage(id, "  Hero  ");

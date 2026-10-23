@@ -13,6 +13,22 @@ export const MAX_CANVAS_SIZE = 8192;
 
 export const PRESET_GROUPS = [
   {
+    titleKey: "editor.canvas.group.phone",
+    items: [
+      { w: 393, h: 852, labelKey: "editor.canvas.preset.iphone16Pro" },
+      { w: 375, h: 667, labelKey: "editor.canvas.preset.iphoneSE" },
+      { w: 360, h: 800, labelKey: "editor.canvas.preset.android" },
+    ],
+  },
+  {
+    titleKey: "editor.canvas.group.desktop",
+    items: [
+      { w: 1440, h: 900, labelKey: "editor.canvas.preset.desktopHD" },
+      { w: 1280, h: 832, labelKey: "editor.canvas.preset.macbookAir" },
+      { w: 1920, h: 1080, labelKey: "editor.canvas.preset.desktopFullHD" },
+    ],
+  },
+  {
     titleKey: "editor.canvas.group.square",
     items: [
       { w: 1024, h: 1024 },

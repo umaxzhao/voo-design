@@ -12,6 +12,9 @@ Before this change the bottom-left list exposed add, focus and delete, despite e
 - Rename trims whitespace and rejects blank/no-op changes. Duplicate IDs use a monotonic suffix; duplication reads the current live engine or evicted snapshot when available. Reordering changes document node order without moving artboard coordinates.
 - Legacy documents remain a single editor node holding the original document object; neither missing nor empty `pages` arrays rewrite the payload on load. Existing nonempty `doc.pages` loading remains intact and preserves order/focus.
 
+- Presets include phone and desktop devices alongside social formats, with English and Chinese labels. The page list offers compact default, phone, desktop and social size choices; add-canvas inherits its reference canvas size.
+- Focusing a page restores its saved shared view. An unseen page keeps the current shared camera until its positioned artboard is ready to zoom-to-fit, including presentation navigation. Local single-page viewports retain their existing restore/fit behavior.
+
 ## Deferred
 
 Drag reordering, cross-page layer moves, hierarchical sections and separate page-versus-artboard document models remain out of scope. Camera persistence across app restarts and changes to the save envelope are deferred. Existing project serialization writes node order into `document.pages`; this change does not modify file-management or save code. Reordering the list intentionally leaves free-canvas artboard geometry unchanged.
