@@ -1,3 +1,4 @@
+import { getActiveDesignSystem } from '../agent/design_system/store.js';
 // Seam: Document serialization, deserialization, and display helpers.
 /* eslint-disable no-unused-vars */
 import {
@@ -155,6 +156,7 @@ export function serialiseDocument(doc) {
   const comments = serializeComments(doc);
   return {
     version: DOC_VERSION,
+    ...(getActiveDesignSystem(doc) ? { designSystem: getActiveDesignSystem(doc) } : {}),
     ...canvasComposition.serializeCanvasFields(doc),
     width: doc.width,
     height: doc.height,
@@ -384,6 +386,7 @@ export function deserialiseDocument(value) {
   const nextDocument = {
     version: DOC_VERSION,
     ...canvasComposition.deserializeCanvasFields(value),
+    ...(getActiveDesignSystem(value) ? { designSystem: getActiveDesignSystem(value) } : {}),
     width: value.width,
     height: value.height,
     backgroundColor: value.backgroundColor ?? "transparent",

@@ -1,20 +1,22 @@
+import { fromStyleKit } from '../design_system/from_style_kit.js';
+import { designSystemPromptBlock } from '../design_system/apply.js';
 /**
  * Builds the appended "Design quality" block for the agent system prompt:
  * tokens-first workflow, hierarchy rules, anti-AI-smell rules, Dribbble-human
  * principles, the chosen kit block, and 3-4 text exemplars.
  */
-import { pickStyleKit } from "./style_kits.js";
+import { STYLE_KITS, pickStyleKit } from "./style_kits.js";
 import { pickExemplars } from "./exemplars.js";
 import { DESIGN_TOKENS } from "./tokens.js";
 
-export function buildDesignQualityPrompt({ userText, kit } = {}) {
-  const activeKit = kit && STYLE_KIT_SHAPE_OK(kit) ? kit : pickStyleKit(userText);
+export function buildDesignQualityPrompt({ userText, kit, designSystem } = {}) {
+  const activeKit = STYLE_KITS[designSystem?.id] ?? (kit && STYLE_KIT_SHAPE_OK(kit) ? kit : pickStyleKit(userText));
   const exemplars = pickExemplars(userText, 4, activeKit?.id);
   const palette = activeKit?.palette ?? DESIGN_TOKENS.palettes.light;
   const scale = (activeKit?.typeScale ?? DESIGN_TOKENS.typeScale).join(" ");
   const radius = activeKit?.radius ?? DESIGN_TOKENS.radii;
 
-  return [
+  const kitInstructions = [
     "=== Design quality (follow strictly) ===",
     `Style kit: ${activeKit.name} — ${activeKit.mood} Use this ONE kit for the ENTIRE design; never mix kits or inject other palettes.`,
     "",
@@ -53,11 +55,19 @@ export function buildDesignQualityPrompt({ userText, kit } = {}) {
     "Polish: 1px hairlines instead of heavy borders, soft layered shadows on the 1-2 elevated modules only, consistent icon style, deliberate asymmetry.",
     "",
     exemplars.length
-      ? "[Exemplar recipes — follow the nearest one]\n" + exemplars.map((e, i) => e.structureOnly
+      ? "[Exemplar recipes — follow the nearest one]\n" + exemplars.map((e, i) => (e.structureOnly || designSystem)
         ? `${i + 1}. (${e.kit}; structure only, restyle with the active kit) ${e.structure}`
         : `${i + 1}. (${e.kit}) ${e.description}`).join("\n")
       : "",
-  ]
+  ];
+  if (designSystem) {
+    kitInstructions.splice(1, 10, designSystemPromptBlock(designSystem));
+    const instruction = kitInstructions.findIndex(s => s.startsWith("2. Set colours"));
+    kitInstructions[instruction] = "2. Set colours and fonts directly from the active design system contract on each node.";
+  } else {
+    kitInstructions.splice(1, 0, designSystemPromptBlock(fromStyleKit(activeKit)));
+  }
+  return kitInstructions
     .filter((s) => s.length > 0)
     .join("\n");
 }

@@ -1,3 +1,5 @@
+import { getActiveDesignSystem, setActiveDesignSystem } from './design_system/store.js';
+import { fromStyleKit } from './design_system/from_style_kit.js';
 /**
  * Minimal agent loop: the model talks, calls canvas tools, and sees their
  * results until it stops asking for tools. Nothing here builds a workflow.
@@ -116,7 +118,16 @@ export async function runAgentTurn({
   const base = styleNote.trim() ? `${SYSTEM_PROMPT}\n\nStyle notes from the user: ${styleNote.trim()}` : SYSTEM_PROMPT;
   let qualityOff = globalThis.__VOO_DESIGN_QUALITY_OFF__ === true;
   try { qualityOff ||= globalThis.localStorage?.getItem("voo.designQuality") === "off"; } catch {}
-  const system = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit: pickStyleKit(userText) })}`;
+  const editor = activeEditor();
+  const before = documentFingerprint(editor);
+  const kit = pickStyleKit(userText);
+  let designSystem;
+  if (!qualityOff) {
+    const doc = editor?.getDocument?.() ?? editor?.getDoc?.();
+    designSystem = getActiveDesignSystem(doc) ?? fromStyleKit(kit);
+    if (doc && !getActiveDesignSystem(doc)) setActiveDesignSystem(editor, designSystem);
+  }
+  const system = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit, designSystem })}`;
   const messages = [
     { role: "system", content: system },
     ...history,
@@ -125,8 +136,6 @@ export async function runAgentTurn({
   // A CLI agent keeps its native session across tool steps, keyed by the signal,
   // so every step of one turn shares a single signal.
   const turnSignal = signal ?? new AbortController().signal;
-  const editor = activeEditor();
-  const before = documentFingerprint(editor);
   let mutated = false;
   let writesSinceCapture = 0;
   let verificationNudged = false;
