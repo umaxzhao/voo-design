@@ -9,7 +9,7 @@ const build = pkg.build;
 
 describe("electron-builder commercial packaging config", () => {
   it("defines dist script that builds a Linux AppImage", () => {
-    expect(pkg.scripts.dist).toMatch(/electron-builder/);
+    expect(pkg.scripts.dist).toMatch(/scripts\/signing-env\.mjs/);
     expect(pkg.scripts.dist).toMatch(/AppImage/);
   });
 
