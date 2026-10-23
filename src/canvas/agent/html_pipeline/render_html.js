@@ -21,7 +21,7 @@ export class HtmlRenderer {
     await new Promise((resolve, reject) => {
       const finish = error => { clearTimeout(timer); iframe.onload = null; signal?.removeEventListener('abort', abort); error ? reject(error) : resolve(); };
       const abort = () => finish(new DOMException('Aborted', 'AbortError'));
-      const timer = setTimeout(() => finish(new Error('HTML layout timed out')), 2000);
+      const timer = setTimeout(() => finish(new Error('HTML layout timed out')), 8000);
       iframe.onload = () => finish(); signal?.addEventListener('abort', abort, { once: true });
       // CSP enforces offline rendering even if the model ignores its prompt.
       iframe.srcdoc = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src 'none'">${html}`;

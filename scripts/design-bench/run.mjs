@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import { access, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
-import { ready, browserOptions } from './runtime.mjs';
+import { ready, browserOptions, awaitKill } from './runtime.mjs';
 import { DESIGN_BENCH_TASKS } from './tasks.mjs';
 import { runAntiAiChecks } from '../../src/canvas/agent/html_pipeline/anti_ai_checks.js';
 import { loadLinter, scoreDocument } from './score.mjs';
@@ -155,8 +155,9 @@ export async function main(args = process.argv.slice(2)) {
   const { chromium } = await import('playwright');
   const lint = await loadLinter();
   if (options.critique && !lint) console.warn('Warning: critique skipped because the linter is missing.');
-  const timeout = Number(process.env.VOO_DESIGN_BENCH_TIMEOUT_MS || 480000);
+  const timeout = Number(process.env.VOO_DESIGN_BENCH_TIMEOUT_MS || 900000);
   if (!Number.isFinite(timeout) || timeout <= 0) throw new Error('Invalid VOO_DESIGN_BENCH_TIMEOUT_MS');
+  console.error(`Design benchmark timeout: ${timeout}ms per task (including critique)`);
   const bridgePort = process.env.VOO_DESIGN_BENCH_BRIDGE_PORT || process.env.VOO_CODEX_BRIDGE_PORT || '4290';
   const vitePort = process.env.VOO_DESIGN_BENCH_VITE_PORT || process.env.VOO_CODEX_VITE_PORT || '5199';
   const env = {
@@ -172,6 +173,12 @@ export async function main(args = process.argv.slice(2)) {
   if (options['skip-existing']) {
     try { results.tasks = JSON.parse(await readFile(`${output}/scores.json`, 'utf8')).tasks; }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
+  }
+  async function ensureAntiAi(record) {
+    if (!record.antiAi && record.sourceHtml) {
+      record.antiAi = runAntiAiChecks({ html: await readFile(record.sourceHtml, 'utf8') });
+    }
+    record.antiAi ??= { hardFail: false, skipped: true, issues: [], verbosityPenalty: 0 };
   }
   const save = () => writeFile(`${output}/scores.json`, `${JSON.stringify(results, null, 2)}\n`);
   function start(args) {
@@ -197,6 +204,11 @@ export async function main(args = process.argv.slice(2)) {
           if (!results.tasks.some(item => item.id === id)) {
             const doc = JSON.parse(await readFile(`${output}/${id}.json`, 'utf8'));
             results.tasks.push({ id, kind: task.kind, frame: task.frame, document: `${output}/${id}.json`, screenshot: `${output}/${id}.png`, ...await scoreDocument(doc, { lint }) });
+          }
+          const record = results.tasks.find(item => item.id === id);
+          if (!record.antiAi) {
+            await ensureAntiAi(record);
+            Object.assign(record, await scoreDocument(JSON.parse(await readFile(record.document || `${output}/${id}.json`, 'utf8')), { lint, antiAi: record.antiAi }));
           }
           if (options.out) await copyFile(`${output}/${id}.png`, resolve(options.out, `${id}.png`));
           await save();
@@ -263,6 +275,7 @@ export async function main(args = process.argv.slice(2)) {
             record.screenshot = `${output}/${id}.png`;
             await writeFile(record.screenshot, Buffer.from(png.split(',')[1], 'base64'));
           } else record.error ||= `Screenshot unavailable: ${result.captureError}`;
+          await ensureAntiAi(record);
           Object.assign(record, await scoreDocument(doc, { lint, antiAi: record.antiAi, screenshot: record.screenshot, judge: options.judge && !!png }));
         } catch (error) {
           record.error = error.stack || String(error);
@@ -299,11 +312,13 @@ export async function main(args = process.argv.slice(2)) {
                 record.screenshot = `${output}/${id}.png`;
                 await writeFile(record.screenshot, Buffer.from(salvage.png.split(',')[1], 'base64'));
               }
+              await ensureAntiAi(record);
               Object.assign(record, await scoreDocument(salvage.doc, { lint, antiAi: record.antiAi, screenshot: record.screenshot, judge: options.judge && !!record.screenshot }));
             }
           } catch (salvageError) { record.salvageError = salvageError.message; }
         }
         finally { clearTimeout(watchdog); clearInterval(heapInterval); await context.close(); }
+        await ensureAntiAi(record);
         if (options.out && record.screenshot) await copyFile(record.screenshot, resolve(options.out, `${id}.png`));
         record.durationMs = Date.now() - started;
         results.tasks = results.tasks.filter(item => item.id !== id);
@@ -314,16 +329,7 @@ export async function main(args = process.argv.slice(2)) {
     };
     for (const id of options.selectedTasks) await runOne(id);
   } finally {
-    for (const child of children.reverse()) {
-      try { process.kill(-child.pid, 'SIGTERM'); } catch {}
-    }
-    for (const child of children) {
-      if (child.exitCode === null) await Promise.race([
-        new Promise(resolveExit => child.once('exit', resolveExit)),
-        new Promise(resolveWait => setTimeout(resolveWait, 1500)),
-      ]);
-      try { process.kill(-child.pid, 'SIGKILL'); } catch {}
-    }
+    for (const child of children.reverse()) await awaitKill(child);
     results.finishedAt = new Date().toISOString();
     await save();
   }

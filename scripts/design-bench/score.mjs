@@ -58,14 +58,17 @@ If you cannot read the image, fail explicitly; do not invent scores.`;
   for (let attempt = 0; attempt < 2; attempt++) {
     const output = await run();
     try { return parseJudgeOutput(output); }
-    catch (error) { if (attempt === 1) throw error; }
+    catch (error) {
+      if (attempt === 1) throw error;
+      console.warn(`Judge output invalid; retrying: ${error.message} (${output.length} characters)`);
+    }
   }
 }
 
 export async function scoreDocument(doc, { screenshot, judge = false, rootId, kit, lint, html, antiAi } = {}) {
   const lintFn = lint === undefined ? await loadLinter() : lint;
   const result = { lint: lintFn ? lintFn(doc, { rootId, kit }) : null };
-  result.antiAi = html !== undefined ? runAntiAiChecks({ html }) : antiAi ?? null;
+  result.antiAi = html !== undefined ? runAntiAiChecks({ html }) : antiAi ?? { hardFail: false, skipped: true, issues: [], verbosityPenalty: 0 };
   result.failed = !!result.antiAi?.hardFail;
   if (judge) {
     try {

@@ -27,9 +27,9 @@ describe('design benchmark controls', () => {
     expect(() => parseJudgeOutput('Image unavailable')).toThrow();
   });
   it('supports scoring a persisted document without the optional linter', async () => {
-    expect(await scoreDocument({ nodes: [] }, { lint: null })).toEqual({ lint: null });
+    expect(await scoreDocument({ nodes: [] }, { lint: null })).toMatchObject({ lint: null, failed: false, antiAi: { hardFail: false, skipped: true, issues: [], verbosityPenalty: 0 } });
     const lint = (doc, options) => ({ score: doc.nodes.length, rootId: options.rootId });
-    expect(await scoreDocument({ nodes: [{ id: 'a' }] }, { lint, rootId: 'a' })).toEqual({ lint: { score: 1, rootId: 'a' } });
+    expect(await scoreDocument({ nodes: [{ id: 'a' }] }, { lint, rootId: 'a' })).toMatchObject({ lint: { score: 1, rootId: 'a' }, failed: false, antiAi: { skipped: true } });
   });
   it('shows comparable scores, deltas and missing/failed runs', () => {
     const before = { tasks: [{ id: 'signup', lint: { score: 60 } }, { id: 'login-form', error: 'timeout' }] };

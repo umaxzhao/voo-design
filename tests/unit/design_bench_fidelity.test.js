@@ -1,5 +1,5 @@
-import { expect, it } from 'vitest';
-import { compare } from '../../scripts/design-bench/fidelity.mjs';
+import { expect, it, vi } from 'vitest';
+import { compare, fidelity } from '../../scripts/design-bench/fidelity.mjs';
 const rect = { x: 20, y: 30, width: 80, height: 40 };
 function sample({ converted = rect, loaded = rect, autoLayout } = {}) {
   return { dom: [{ key: 'card', rect, styles: {}, texts: [] }], converted: [{ htmlKey: 'card', ...converted }],
@@ -32,4 +32,11 @@ it('compares text conversion against CSS line boxes while retaining glyph baseli
   data.converted.push({ htmlKey: 'text', ...lineBox }); data.loaded.nodes.push({ htmlKey: 'text', ...lineBox });
   data.textMetrics.push({ key: 'text', baseline: 46, lines: ['one', 'two'], lineHeight: 30 });
   expect(compare(data)).toEqual([]);
+});
+
+it('explains how to fix a missing flock before creating worker artifacts', async () => {
+  vi.stubEnv('PATH', '/nonexistent-flock-path');
+  try {
+    await expect(fidelity({ out: '/unused-fidelity-output' })).rejects.toThrow('flock is required for fidelity (util-linux). Install it or run without the lock wrapper.');
+  } finally { vi.unstubAllEnvs(); }
 });

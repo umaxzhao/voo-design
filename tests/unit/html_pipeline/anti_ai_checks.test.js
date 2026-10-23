@@ -20,3 +20,12 @@ it('carries decorative failures through scoring and reporting', async () => {
   expect(score.failed).toBe(true);
   expect(formatReport({ tasks: [] }, { tasks: [{ id: 'test', ...score }] })).toContain('anti-AI failed');
 });
+
+it('preserves supplied checks but gives HTML precedence and normalizes missing checks', async () => {
+  const antiAi = { hardFail: true, issues: ['decoration'], verbosityPenalty: 0 };
+  expect((await scoreDocument({}, { lint: null, antiAi })).antiAi).toBe(antiAi);
+  expect(await scoreDocument({}, { lint: null, antiAi, html: '<button>Create</button>' })).toMatchObject({ failed: false, antiAi: { hardFail: false } });
+  for (const value of [undefined, null]) {
+    expect(await scoreDocument({}, { lint: null, antiAi: value })).toMatchObject({ failed: false, antiAi: { hardFail: false, skipped: true, issues: [], verbosityPenalty: 0 } });
+  }
+});

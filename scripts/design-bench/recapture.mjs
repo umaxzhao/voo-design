@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import { access, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { ready, browserOptions } from './runtime.mjs';
+import { ready, browserOptions, awaitKill } from './runtime.mjs';
 
 const cwd = fileURLToPath(new URL('../../', import.meta.url));
 
@@ -34,7 +34,12 @@ export async function recapture({ label, tasks, scoreOnly = false, repaint = fal
       const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });
       await page.goto(`${url}/?voo-test=1`, { waitUntil: 'domcontentloaded', timeout: 180000 });
       await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
-      await page.evaluate(doc => window.__vooEditor.updateDocument(doc), doc);
+      await page.evaluate(async doc => {
+        const { createDocument } = await import('/src/canvas/editor/scene_model.js');
+        window.__vooEditor.updateDocument(createDocument());
+        window.__vooEditor.updateDocument(doc);
+        await document.fonts.ready;
+      }, doc);
       await page.waitForTimeout(1500);
       return await page.evaluate(async maxSize => {
         const { executeCanvasTool } = await import('/src/canvas/agent/canvas_tools.js');
@@ -70,14 +75,7 @@ export async function recapture({ label, tasks, scoreOnly = false, repaint = fal
       }
     }
   } finally {
-    if (vite) {
-      try { process.kill(-vite.pid, 'SIGTERM'); } catch {}
-      if (vite.exitCode === null) await Promise.race([
-        new Promise(resolveExit => vite.once('exit', resolveExit)),
-        new Promise(resolveWait => setTimeout(resolveWait, 1500)),
-      ]);
-      try { process.kill(-vite.pid, 'SIGKILL'); } catch {}
-    }
+    if (vite) await awaitKill(vite);
   }
   return scores;
 }

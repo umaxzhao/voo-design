@@ -1,20 +1,26 @@
 #!/usr/bin/env node
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
 import { resolve, basename } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { ready, browserOptions } from './runtime.mjs';
+import { ready, browserOptions, awaitKill } from './runtime.mjs';
 import { DESIGN_BENCH_TASKS } from './tasks.mjs';
+
+const flockRequired = () => new Error('flock is required for fidelity (util-linux). Install it or run without the lock wrapper.');
 
 // Keep the lock in a parent process, including when called as a library.
 export async function fidelity(options) {
+  const check = spawnSync('flock', ['--version']);
+  if (check.error?.code === 'ENOENT') throw flockRequired();
+  if (check.error) throw check.error;
+  if (check.status !== 0) throw flockRequired();
   await mkdir(options.out, { recursive: true });
   const config = resolve(options.out, `.fidelity-${process.pid}.json`);
   await writeFile(config, JSON.stringify(options));
   try {
     await new Promise((done, reject) => {
       const child = spawn('flock', ['-w', process.env.VOO_FIDELITY_LOCK_TIMEOUT || '240', '/tmp/voo-e2e.lock', process.execPath, fileURLToPath(import.meta.url), '--worker', config], { stdio: 'inherit' });
-      child.on('error', reject); child.on('exit', code => code === 0 ? done() : reject(new Error(code === 1 ? 'Fidelity failed (browser lock timeout or worker failure; see stderr)' : `Fidelity exited ${code}`)));
+      child.on('error', error => reject(error.code === 'ENOENT' ? flockRequired() : error)); child.on('exit', code => code === 0 ? done() : reject(new Error(code === 1 ? 'Fidelity failed (browser lock timeout or worker failure; see stderr)' : `Fidelity exited ${code}`)));
     });
   } finally { const { unlink } = await import('node:fs/promises'); await unlink(config); }
 }
@@ -31,9 +37,10 @@ async function worker({ out, inputs, frame }) {
     await ready(url, vite);
     const { chromium } = await import('playwright'); browser = await chromium.launch(browserOptions);
     const page = await browser.newPage({ viewport: { width: 1600, height: 1100 }, deviceScaleFactor: 1 });
-    await page.goto(`${url}/?voo-test=1`, { waitUntil: 'domcontentloaded', timeout: 180000 });
-    await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
     for (const input of inputs) {
+      await page.goto(`${url}/?voo-test=1`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+      await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
+
       const id = input.id; if (!/^[\w-]+$/.test(id)) throw new Error('Invalid id');
       const html = input.html ?? await readFile(input.file, 'utf8');
       const task = DESIGN_BENCH_TASKS.find(t => t.id === id);
@@ -118,9 +125,7 @@ async function worker({ out, inputs, frame }) {
       console.log(`${id}: ${mismatches.length} mismatches; ${pixels.changed}/${pixels.total} pixels`);
     }
   } finally {
-    await browser?.close();
-    try { process.kill(-vite.pid,'SIGTERM'); } catch {}
-    await new Promise(r=>setTimeout(r,500));try { process.kill(-vite.pid,'SIGKILL'); } catch {}
+    try { await browser?.close(); } finally { await awaitKill(vite); }
   }
 }
 
