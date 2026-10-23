@@ -1,3 +1,5 @@
+import { emitPersistenceAlert } from "../canvas/editor/editor_persist_events.js";
+
 /**
  * Soft limits for decode/upload so a single huge bitmap cannot OOM the
  * renderer. Kept separate from the GL texture budget so CPU decode paths can
@@ -60,6 +62,7 @@ export function checkImageDimensions(
 export function assertImageDimensions(width, height, limits) {
   const result = checkImageDimensions(width, height, limits);
   if (!result.ok) {
+    if (result.code === "image-too-large") emitPersistenceAlert({ type: "image-too-large" });
     const error = new Error(result.message);
     error.code = result.code;
     error.width = result.width;
