@@ -18,8 +18,12 @@
 6. Camera: 1500 `createCameraMatrixTransformer` screen→world→frame→world→screen cycles.
 - Memory proxy: `process.memoryUsage().heapUsed` delta between the document build and the end of the warmup + cull pass (after index construction). Forced GC is used when Node exposes it; otherwise this is a noisy proxy, not peak heap.
 - Soft gates: index build < 500 ms, cull < 50 ms/cull, hit-test < 25,000 µs/query for BEFORE or < 1,000 µs/query for AFTER, camera 1,500 cycles < 500 ms for every case.
-- Browser FPS is not measured: Playwright/Puppeteer are not installed in this repository. A system Chrome binary exists, but the benchmark intentionally stays on pure engine modules so CI does not need a browser. This remains a documented gap for paint/FPS work.
+- Browser FPS is measured separately by the Playwright harness below; these Node numbers stay browser-free so CI does not need a display.
 - These are single-run wall-clock numbers; treat them as before/after trend indicators, not precise microbenchmarks.
+
+## Browser FPS
+
+`tests/e2e/canvas_fps.e2e.mjs` (`npm run test:e2e:fps`) drives the real editor in headless Chromium: it adds ~2,000 rects, pans/zooms for ~2 seconds, samples `requestAnimationFrame` deltas and writes `docs/canvas-fps-results.json`. It is instrumentation, not a gate — low FPS only prints a warning. Install Playwright once with `npm i -D playwright && npx playwright install chromium`; without a running dev server it starts Vite briefly, and without Playwright/Chromium it prints SKIP.
 
 ## BEFORE / AFTER
 

@@ -8,3 +8,5 @@ coverage
 public/canvaskit.js
 public/canvaskit.wasm
 public/ort/
+release/
+docs/canvas-fps-results.json

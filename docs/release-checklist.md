@@ -56,14 +56,26 @@ These were audit items marked for post-release:
 
 | Deferral | Reason |
 |:---------|:-------|
-| **GL highPass shader twins** | CPU path already covers radius cap on GPU nodes via `cpuOnly` gate; GPU twin is perf optimization, not feature |
-| **Browser FPS e2e (per-1000-frame averaging)** | Needs render-region instrumentation; outside first-pass gap closure |
+| **GL highPass / clarity / motionBlur twins** | ✅ SHIPPED in commercial-readiness — single-pass GLSL in `gl_spatial.js`; no longer force `cpuOnly` |
+| **Browser FPS e2e** | ✅ SHIPPED — `npm run test:e2e:fps` (`tests/e2e/canvas_fps.e2e.mjs`) writes `docs/canvas-fps-results.json` |
 | **Workspace Cursor line** | Cursor is schema/file diff; UI gaps fixed were product-impact, not network schema |
 | **Agent session persistence** | Follows shipped JSONL session layer; quality follow-up post-release |
-| **Live filter variants (extra blur sets)** | User-facing stack already matches Affinity non-destructive promise; variant picker is UI polish |
+| **Component variants (basic)** | ✅ Basic agent tools (`create_component_variant` / list) shipped; full UI variant picker still polish |
 | **Non-destructive masks / blend ranges / frequency separation / Liquify / Camera RAW** | Each is product-sized project; live filter platform already seamed for composition |
 
 ---
+
+
+## Robustness & Packaging (commercial-readiness)
+
+- [x] Electron packaging: `npm run dist` → AppImage; `dist:all` for mac/win/linux
+- [x] Code-signing hooks documented in `docs/code-signing.md` (no secrets in repo)
+- [x] Global `AppErrorBoundary` (zh/en) + `installGlobalErrorHandlers`
+- [x] Crash-recovery drafts: `src/shared/crash_recovery.js`
+- [x] Large-image / OOM guard: `src/shared/image_size_guard.js` wired into decode
+- [x] GL spatial twins: highPass / clarity / motionBlur
+- [x] Playwright FPS instrumentation: `npm run test:e2e:fps`
+- [x] Basic component variants (agent tools)
 
 ## QA Checklist
 
