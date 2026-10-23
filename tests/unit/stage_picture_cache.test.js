@@ -41,7 +41,7 @@ it('reuses camera pixels, rerenders exposed areas, and returns to exact paint on
     expect(paint).toHaveBeenLastCalledWith(ctx, settled);
   } finally { vi.unstubAllGlobals(); }
 });
-it('keeps static split layers through a drag and invalidates changes above the selection', () => {
+it('keeps split layers for large drag damage and invalidates changes above the selection', () => {
   const context = () => ({ canvas: { width: 800, height: 600 }, save() {}, restore() {}, setTransform() {}, clearRect() {},
     translate() {}, scale() {}, beginPath() {}, rect() {}, clip() {}, fillRect() {}, drawImage() {} });
   const ctx = context();
@@ -51,7 +51,8 @@ it('keeps static split layers through a drag and invalidates changes above the s
     const paint = vi.fn();
     const options = { doc: { width: 800, height: 600, nodes }, selectionNode: nodes[1],
       viewport: { zoom: 1, panX: 0, panY: 0 }, dpr: 1, stageWidth: 800, stageHeight: 600,
-      cullOffscreen: true, previewMotion: true, docVersion: '1:1' };
+      cullOffscreen: true, previewMotion: true, docVersion: '1:1',
+      dirtyRects: { x: 0, y: 0, width: 800, height: 600 } };
     drawCachedStage(ctx, options, paint);
     expect(paint.mock.calls.filter(c => c[1].artworkOnly).map(c => c[1].doc.nodes)).toEqual([[nodes[0]], [nodes[2]]]);
     const moved = { ...nodes[1], x: 90 };
@@ -157,4 +158,46 @@ it('composites drag layers below, moving rectangle, above, then live overlays', 
     expect(events).toEqual(['below', 'moving', 'above', 'overlays']);
     releaseStagePictureCache(ctx);
   } finally { vi.unstubAllGlobals(); }
+});
+
+it('repaints small preview damage directly instead of allocating full-stage layers', () => {
+  const ctx = {};
+  const paint = vi.fn();
+  const createElement = vi.fn();
+  vi.stubGlobal('document', { createElement });
+  try {
+    const nodes = [createRectNode({ x: 50, y: 50 })];
+    const options = { doc: { nodes }, selectionNode: nodes[0],
+      viewport: { zoom: 1, panX: 0, panY: 0 }, dpr: 1,
+      stageWidth: 800, stageHeight: 600, cullOffscreen: true,
+      previewMotion: true, dirtyRects: { x: 10, y: 10, width: 100, height: 100 } };
+    drawCachedStage(ctx, options, paint);
+    expect(paint).toHaveBeenCalledTimes(1);
+    expect(paint).toHaveBeenCalledWith(ctx, options);
+    expect(createElement).not.toHaveBeenCalled();
+  } finally { vi.unstubAllGlobals(); }
+});
+
+it('releases camera surfaces when switching to a local drag repaint', () => {
+  const context = () => ({ canvas: { width: 800, height: 600 }, save() {}, restore() {},
+    setTransform() {}, clearRect() {}, drawImage() {} });
+  const ctx = context();
+  const surfaces = [];
+  vi.stubGlobal('document', { createElement: () => {
+    const canvas = { getContext: context }; surfaces.push(canvas); return canvas;
+  } });
+  try {
+    const paint = vi.fn();
+    const options = { doc: { nodes: [createRectNode({})] },
+      viewport: { zoom: 1, panX: 0, panY: 0 }, dpr: 1,
+      stageWidth: 800, stageHeight: 600, cullOffscreen: true, cameraMoving: true };
+    drawCachedStage(ctx, options, paint);
+    expect(surfaces).toHaveLength(1);
+    const preview = { ...options, cameraMoving: false, previewMotion: true,
+      dirtyRects: { x: 10, y: 10, width: 100, height: 100 } };
+    drawCachedStage(ctx, preview, paint);
+    expect(surfaces).toHaveLength(1);
+    expect(surfaces[0]).toMatchObject({ width: 0, height: 0 });
+    expect(paint).toHaveBeenLastCalledWith(ctx, preview);
+  } finally { releaseStagePictureCache(ctx); vi.unstubAllGlobals(); }
 });

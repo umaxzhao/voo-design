@@ -13,6 +13,7 @@
 // This is instrumentation, not a gate: a low FPS is reported and the process
 // still exits 0. The latest numbers are written to docs/canvas-fps-results.json.
 import fs from "node:fs/promises";
+import { summarizeCpuProfile } from "./cpu_profile_summary.mjs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -141,7 +142,8 @@ try {
   await page.waitForTimeout(1000);
 
   const profiler = process.env.VOO_FPS_PROFILE ? await page.context().newCDPSession(page) : null;
-  if (profiler) { await profiler.send("Profiler.enable"); await profiler.send("Profiler.start"); }
+  if (profiler) await profiler.send("Profiler.enable");
+  let cpuProfile = null;
   const results = [];
   for (const nodeCount of NODE_COUNTS) {
     await page.evaluate(async (nodeCount) => {
@@ -163,6 +165,8 @@ try {
     for (const scenario of SCENARIOS) {
       await page.evaluate(() => window.__vooEditor.zoomToFit());
       await page.waitForTimeout(1000);
+      const profileSample = profiler && scenario === "drag" && nodeCount === Math.max(...NODE_COUNTS);
+      if (profileSample) await profiler.send("Profiler.start");
       const result = await page.evaluate(async ({ scenario, sampleMs }) => {
         const editor = window.__vooEditor;
         const base = { ...editor.getViewport() };
@@ -199,6 +203,11 @@ try {
           updateMs: +(timings.reduce((a,b) => a+b, 0) / timings.length).toFixed(2),
           frames: frames.length, durationMs: Math.round(total), nodeCount: editor.getDocument().nodes.length };
       }, { scenario, sampleMs: SAMPLE_MS });
+      if (profileSample) {
+        cpuProfile = (await profiler.send("Profiler.stop")).profile;
+        // Retain the diagnostic even if a later pixel check or sample fails.
+        await fs.writeFile(process.env.VOO_FPS_PROFILE, JSON.stringify(cpuProfile));
+      }
       if (result.nodeCount !== nodeCount || !Number.isFinite(result.avgFps)) {
         throw new Error(`Invalid ${nodeCount}-node ${scenario} measurement`);
       }
@@ -211,47 +220,50 @@ try {
     }
   }
   // Outside timed samples: partial paint must equal a subsequent full paint,
-  // including overlapping translucent rectangles and the selection handles.
+  // including opaque/translucent overlaps and the selection handles.
   const previewPixelsMatch = await page.evaluate(async () => {
     const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
     const editor = window.__vooEditor;
-    const nodes = [
-      createRectNode({ x: 50, y: 50, width: 100, height: 100, fill: "#3366ff", opacity: .5 }),
-      createRectNode({ x: 100, y: 90, width: 100, height: 100, fill: "#ff6633", opacity: .6 }),
-    ];
-    editor.setDoc({ ...editor.getDocument(), width: 500, height: 500, nodes }, { commit: false });
-    editor.zoomToFit();
-    editor.selectExactly([nodes[0].id]);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const paint = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    // Free-mode pages own an offscreen canvas, so intercept the actual engine
-    // clear rather than assuming a per-artboard canvas exists in the DOM.
-    const proto = CanvasRenderingContext2D.prototype, clear = proto.clearRect;
-    let canvas = null;
-    proto.clearRect = function(x, y, width, height) {
-      if (width > 0 && height > 0 && width <= this.canvas.width && height <= this.canvas.height) canvas = this.canvas;
-      return clear.call(this, x, y, width, height);
-    };
-    try {
-      editor.updateNodes([{ id: nodes[0].id, x: 80, y: 70 }], { commit: false, preview: true });
-      await paint();
-    } finally { proto.clearRect = clear; }
-    if (!canvas) throw new Error("Preview did not repaint the stage");
-    const partial = canvas.toDataURL();
-    const { draw } = await import("/src/canvas/editor/scene_renderer.js");
-    const doc = editor.getDocument();
-    const selected = doc.nodes[0];
-    // No cullOffscreen flag: force the authoritative renderer, bypassing caches.
-    draw(canvas.getContext("2d"), { doc, viewport: editor.getViewport(),
-      dpr: window.devicePixelRatio || 1, selectionNode: selected,
-      selectionRect: { x: selected.x, y: selected.y, width: selected.width, height: selected.height },
-      bitmapOf: () => null, maskOf: () => null });
-    return partial === canvas.toDataURL();
+    for (const opacity of [1, .5]) {
+      const nodes = [
+        createRectNode({ x: 50, y: 50, width: 100, height: 100, fill: "#3366ff", opacity }),
+        createRectNode({ x: 100, y: 90, width: 100, height: 100, fill: "#ff6633", opacity }),
+      ];
+      editor.setDoc({ ...editor.getDocument(), width: 500, height: 500, nodes }, { commit: false });
+      editor.zoomToFit();
+      editor.selectExactly([nodes[0].id]);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const paint = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      // Free-mode pages own an offscreen canvas, so intercept the actual engine
+      // clear rather than assuming a per-artboard canvas exists in the DOM.
+      const proto = CanvasRenderingContext2D.prototype, clear = proto.clearRect;
+      let canvas = null;
+      proto.clearRect = function(x, y, width, height) {
+        if (width > 0 && height > 0 && width <= this.canvas.width && height <= this.canvas.height) canvas = this.canvas;
+        return clear.call(this, x, y, width, height);
+      };
+      try {
+        editor.updateNodes([{ id: nodes[0].id, x: 80, y: 70 }], { commit: false, preview: true });
+        await paint();
+      } finally { proto.clearRect = clear; }
+      if (!canvas) throw new Error("Preview did not repaint the stage");
+      const partial = canvas.toDataURL();
+      const { draw } = await import("/src/canvas/editor/scene_renderer.js");
+      const doc = editor.getDocument();
+      const selected = doc.nodes[0];
+      // No cullOffscreen flag: force the authoritative renderer, bypassing caches.
+      draw(canvas.getContext("2d"), { doc, viewport: editor.getViewport(),
+        dpr: window.devicePixelRatio || 1, selectionNode: selected,
+        selectionRect: { x: selected.x, y: selected.y, width: selected.width, height: selected.height },
+        bitmapOf: () => null, maskOf: () => null });
+      if (partial !== canvas.toDataURL()) return false;
+    }
+    return true;
   });
   if (!previewPixelsMatch) throw new Error("Cached/partial preview pixels differ from full repaint");
   if (profiler) {
-    const { profile } = await profiler.send("Profiler.stop");
-    await fs.writeFile(process.env.VOO_FPS_PROFILE, JSON.stringify(profile));
+    if (!cpuProfile) throw new Error("CPU profiling requires the drag scenario");
+    log({ cpuProfile: summarizeCpuProfile(cpuProfile) });
   }
   if (pageErrors.length) throw new Error(`Browser errors: ${pageErrors.join("; ")}`);
   const summary = {

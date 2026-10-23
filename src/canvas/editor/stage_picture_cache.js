@@ -1,5 +1,6 @@
 import { effectivePage } from './scene_model.js';
 import { drawPlainRects, isPlainRectList } from './render_plain_rects.js';
+import { dirtyRectsToDevice, shouldUseDirtyRect } from './dirty_rect.js';
 
 const caches = new WeakMap();
 const MARGIN = 160;
@@ -65,6 +66,16 @@ export function drawCachedStage(ctx, options, paint) {
   if (!eligible) { releaseStagePictureCache(ctx); return paint(ctx, options); }
   const width = options.stageWidth ?? ctx.canvas.width / options.dpr;
   const height = options.stageHeight ?? ctx.canvas.height / options.dpr;
+  // The engine supplies damage only when camera, selection, DPR and render
+  // state still match the last frame. Restore that region in painter order
+  // through the spatial index rather than clearing and blitting two complete
+  // stage surfaces for a small moving selection (especially costly in software).
+  if (!options.cameraMoving && options.previewMotion && options.dirtyRects &&
+      shouldUseDirtyRect(dirtyRectsToDevice(options.dirtyRects, options.viewport,
+        options.dpr, width, height), width, height, options.dpr)) {
+    releaseStagePictureCache(ctx);
+    return paint(ctx, options);
+  }
   const key = pictureKey({ ...options, stageWidth: width, stageHeight: height });
   let cache = caches.get(ctx);
   const valid = cache && samePictureKey(cache.key, key) && cache.nodes === options.doc.nodes;
