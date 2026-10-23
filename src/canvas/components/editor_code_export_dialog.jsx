@@ -337,15 +337,8 @@ export default function EditorCodeExportDialog({
               id="code-export-title"
               className="text-[12px] text-neutral-100"
             >
-              {tOr(t, "editor.codegen.title", "Export design to code")}
+              {tOr(t, "editor.codegen.title", "Export code")}
             </h2>
-            <p className="mt-1 text-[10px] text-neutral-500">
-              {tOr(
-                t,
-                "editor.codegen.subtitle",
-                "Tailwind, React or plain CSS from the selected layers.",
-              )}
-            </p>
           </div>
           <button
             type="button"

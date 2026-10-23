@@ -39,7 +39,7 @@ export default {
   "node.storyboard.sheetOutdated": "整页分镜图 · 待更新",
   "node.storyboard.sheetMissing": "运行后生成整页图",
   "node.storyboard.sheetPrompt": "整页图要求",
-  "node.storyboard.sheetPromptPlaceholder": "可补充整页图的视觉要求",
+  "node.storyboard.sheetPromptPlaceholder": "视觉方向（选填）",
   "node.storyboard.duration": "时长",
   "node.storyboard.action": "画面内容",
   "node.storyboard.actionPlaceholder": "这个镜头里发生了什么",
@@ -51,17 +51,17 @@ export default {
   "node.storyboard.cameraMove": "运镜",
   "node.storyboard.moveSpeed": "速度",
   "node.storyboard.hint":
-    "连接故事Prompt后拆分镜，可选择逐镜头生成，或先画带编号与运镜路径的整页分镜图。整页模式会从对应画格扩展出干净的单镜头图。再连接视频节点逐段生成。",
-  "node.storyboard.error.noStory": "没有故事内容，请连接写有故事的提示词节点。",
-  "node.storyboard.error.parse": "回复里没有可用的分镜列表，请重新拆分。",
+    "连接故事提示词后拆分镜头。可逐镜头生成，或先生成带编号的整页分镜图。关键帧会展开对应画格并移除运镜箭头。连接视频生成节点，每个镜头生成一个片段。",
+  "node.storyboard.error.noStory": "请连接包含故事的提示词节点。",
+  "node.storyboard.error.parse": "无可用镜头，请重新拆分。",
   "node.storyboard.error.splitModelMissing": "请选择拆分镜头的文本模型。",
-  "node.storyboard.error.empty": "故事板里没有镜头。",
+  "node.storyboard.error.empty": "暂无镜头。",
   "node.storyboard.error.keyframeStale":
-    "有关键帧已与当前分镜不符，请先运行故事板节点。",
+    "关键帧已过期，请重新运行故事板。",
   "node.storyboard.error.sheetIncomplete":
-    "整页分镜图或镜头图尚未完成，请先运行故事板节点。",
+    "缺少整页分镜图或镜头图片，请重新运行故事板。",
   "node.storyboard.error.sheetStale":
-    "生成整页图期间分镜发生变化，请重新运行故事板节点。",
+    "渲染时分镜已更改，请重新运行。",
   "agent.skill.storyboardSheet": "整页分镜成片",
   "agent.skill.storyboardSheetDesc":
     "先将全部镜头与运镜路径画在一张图上，再扩展镜头图和视频。",

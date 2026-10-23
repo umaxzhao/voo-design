@@ -6,9 +6,9 @@
  * `editor.codegen.*` namespace.
  */
 export default {
-  "editor.codegen.title": "Export design to code",
+  "editor.codegen.title": "Export code",
   "editor.codegen.subtitle":
-    "Tailwind, React or plain CSS from the selected layers.",
+    "Code from selected layers",
   "editor.codegen.close": "Close",
   "editor.codegen.format": "Format",
   "editor.codegen.format.tailwind": "HTML + Tailwind",
@@ -26,42 +26,42 @@ export default {
   "editor.codegen.copyFailed": "Copy failed",
   "editor.codegen.download": "Download",
   "editor.codegen.preview": "Code preview",
-  "editor.codegen.resolving": "Resolving image assets...",
-  "editor.codegen.error": "This document could not be exported.",
+  "editor.codegen.resolving": "Loading images…",
+  "editor.codegen.error": "Could not export document.",
   "editor.codegen.copyAction": "Copy code",
-  "editor.codegen.exportAction": "Export design to code...",
+  "editor.codegen.exportAction": "Export code…",
   "editor.codegen.warn.emptySelection":
-    "Nothing is selected; exported the whole page instead.",
+    "No selection; exported the whole page.",
   "editor.codegen.warn.emptyPage":
-    "The page has no visible layers; exported an empty frame.",
+    "No visible layers; exported an empty frame.",
   "editor.codegen.warn.imageMissing":
-    "Image layer has no resolvable bytes; exported a neutral placeholder.",
+    "Image unavailable; exported a placeholder.",
   "editor.codegen.warn.imageCropApproximated":
-    "Image crop is approximated because the source pixel size is unknown.",
+    "Unknown image size; crop approximated.",
   "editor.codegen.warn.imageEffectsSkipped":
-    "Image adjustments could not be baked into code; exported the raw pixels.",
+    "Image adjustments skipped; exported original pixels.",
   "editor.codegen.warn.videoMissing":
-    "Video layer has no safe source; exported a placeholder.",
+    "Video source unavailable; exported a placeholder.",
   "editor.codegen.warn.videoBestEffort":
-    "Video is exported muted, looping and autoplaying; playback controls are not reproduced.",
+    "Video autoplays muted on loop, without controls.",
   "editor.codegen.warn.adjustmentSkipped":
-    "Adjustment layer skipped; adjustment layers have no CSS equivalent.",
+    "Adjustment layer skipped: no CSS equivalent.",
   "editor.codegen.warn.regionSkipped":
-    "Region layer skipped; regions are AI editing guides, not artwork.",
+    "Region skipped: editing guide only.",
   "editor.codegen.warn.canvasInstancePlaceholder":
-    "Canvas instance flattened to a placeholder; nested canvases are not inlined.",
+    "Nested canvas exported as a placeholder.",
   "editor.codegen.warn.unsupportedNode":
-    "Unsupported layer kind exported as a placeholder.",
+    "Unsupported layer exported as a placeholder.",
   "editor.codegen.warn.effectsSkipped":
     "Some layer effects (inner shadow, bevel, satin, overlay) have no CSS equivalent and were skipped.",
   "editor.codegen.warn.textEffectsSkipped":
     "Some text effects (highlight, baseline shift) have no CSS equivalent and were skipped.",
   "editor.codegen.warn.maskSkipped":
-    "Layer mask skipped; the exported layer is unmasked.",
+    "Mask skipped; layer exported unmasked.",
   "editor.codegen.warn.clipSkipped":
-    "Layer clip was skipped; clipping paths are not reproduced.",
+    "Clipping path skipped.",
   "editor.codegen.warn.blendModeUnsupported":
-    "Layer blend mode has no Tailwind equivalent; exported with normal blending.",
+    "Blend mode unsupported in Tailwind; using Normal.",
   "editor.codegen.warn.vectorMissing":
-    "Vector layer produced no drawable geometry; exported a placeholder.",
+    "No vector geometry; exported a placeholder.",
 };
