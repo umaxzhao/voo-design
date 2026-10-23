@@ -1,5 +1,14 @@
 /** Critical initial-paint English dictionary. */
 export default {
+  "firstRun.language": "Language",
+  "firstRun.eyebrow": "A little idea. Endless possibilities.",
+  "firstRun.title": "Welcome to VOO Design",
+  "firstRun.description": "A canvas for your ideas, with AI by your side. Start with a blank document and make something yours.",
+  "firstRun.palette": "Find tools and actions with Cmd/Ctrl+K, your command palette.",
+  "firstRun.agent": "Need a hand? Open the Agent panel using the sparkle button at the bottom right of the editor.",
+  "firstRun.start": "Start a blank document",
+  "firstRun.skip": "Skip for now",
+
   "release.about": "About VOO Design",
   "release.downloading": "Update available, downloading…",
   "release.restartReady": "Restart to update",

@@ -9,7 +9,8 @@ import CrashRecoveryPrompt from "./canvas/components/crash_recovery_prompt.jsx";
 import LoadingModal from "./canvas/components/loading_modal.jsx";
 const CanvasAgentPanel = lazy(() => import("./canvas/components/canvas_agent_panel.jsx"));
 import OnboardingGuide from "./canvas/components/onboarding/OnboardingGuide.jsx";
-import { shouldShowOnboarding } from "./canvas/components/onboarding/onboarding_state.js";
+import FirstRunOnboarding from "./canvas/components/first_run_onboarding.jsx";
+import { shouldShowFirstRun } from "./canvas/components/first_run_state.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import { useDesignStore } from "./store/design_store.js";
 
@@ -19,13 +20,9 @@ export default function App() {
   // The AI panel state is managed in design_store for hybrid agent coordination
   const agentOpen = useDesignStore((s) => s.agentPanelOpen);
   const setAgentOpen = useDesignStore((s) => s.setAgentPanelOpen);
-  const [onboardingOpen, setOnboardingOpen] = useState(() => {
-    try {
-      return shouldShowOnboarding();
-    } catch {
-      return false;
-    }
-  });
+  // Workspace/agent configuration remains available through voo:open-onboarding.
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [firstRunOpen, setFirstRunOpen] = useState(shouldShowFirstRun);
   const { t } = useI18n();
 
   // Listen for Electron native menu actions and Agent panel trigger events
@@ -140,7 +137,12 @@ export default function App() {
           <LoadingModal label={documentLoading} />
         </div>
       ) : null}
-      {/* First-launch Onboarding Configuration Guide Modal */}
+      <FirstRunOnboarding
+        open={firstRunOpen}
+        onClose={() => setFirstRunOpen(false)}
+        onStart={() => useDesignStore.getState().newVooProject()}
+      />
+      {/* Workspace configuration is opened explicitly from settings/events. */}
       <OnboardingGuide
         open={onboardingOpen}
         onClose={() => setOnboardingOpen(false)}

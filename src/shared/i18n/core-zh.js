@@ -1,5 +1,14 @@
 /** Critical initial-paint Chinese dictionary. */
 export default {
+  "firstRun.language": "语言",
+  "firstRun.eyebrow": "从一个灵感，到无限可能",
+  "firstRun.title": "欢迎使用 VOO Design",
+  "firstRun.description": "让灵感在画布上自由生长，让 AI 助你一臂之力。从空白文档开始，创造属于你的设计。",
+  "firstRun.palette": "按 Cmd/Ctrl+K 打开命令面板，快速查找工具和操作。",
+  "firstRun.agent": "需要帮忙？点击编辑器右下角的星光按钮，打开 Agent 面板。",
+  "firstRun.start": "新建空白文档",
+  "firstRun.skip": "暂时跳过",
+
   "release.about": "关于 VOO Design",
   "release.downloading": "有可用更新，正在下载…",
   "release.restartReady": "重启以更新",
