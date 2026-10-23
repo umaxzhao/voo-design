@@ -64,7 +64,7 @@ export function textElement(node, measureCtx) {
       node.fontFamily ?? "sans-serif",
     )}" font-size="${number(node.fontSize)}" font-weight="${node.fontWeight ?? "normal"}" fill="${escapeXml(
       node.fill ?? "#000000",
-    )}" text-anchor="${anchor}"${styleParts}${textTransform}>`;
+    )}"${node.opacity != null && node.opacity < 1 ? ` opacity="${number(node.opacity)}"` : ""} text-anchor="${anchor}"${styleParts}${textTransform}>`;
   const lines = svgTextLines(node, measureCtx);
   const textBody =
     lines.length === 1

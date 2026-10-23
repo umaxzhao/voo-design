@@ -40,8 +40,15 @@ export function gradientDefs(nodes) {
         )
         .join("\n");
       if (parsed.type === "radial") {
+        // The editor stores ellipse diameters as percentages of the node bounds.
+        // Transform a unit circle to preserve both edited radii and the centre.
+        const geometry = parsed.geometry ?? {};
+        const cx = (geometry.centerX ?? 50) / 100;
+        const cy = (geometry.centerY ?? 50) / 100;
+        const rx = (geometry.width ?? 100) / 200;
+        const ry = (geometry.height ?? 100) / 200;
         defs.push(
-          `<radialGradient id="${id}" cx="50%" cy="50%" r="50%">\n${stops}\n  </radialGradient>`,
+          `<radialGradient id="${id}" cx="0" cy="0" r="1" gradientTransform="translate(${number(cx)} ${number(cy)}) scale(${number(rx)} ${number(ry)})">\n${stops}\n  </radialGradient>`,
         );
       } else {
         let angle = 180;
