@@ -55,41 +55,34 @@ export function useSkiaPage({
   useEffect(() => {
     const host = hostRef.current;
     if (!host || status !== "ready" || !engine || !doc) return;
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const width = stage.clientWidth;
-    const height = stage.clientHeight;
-
-    // Only resize when physical pixel dimensions change; never recreate surface during pan/zoom
-    const last = lastDimensionsRef.current;
-    if (last.width !== width || last.height !== height || last.dpr !== dpr) {
-      lastDimensionsRef.current = { width, height, dpr };
-      host.resize(width, height, dpr);
-    }
-
-    const camera = engine.getViewport();
-    void host
-      .draw({
-        docs: [doc],
+    const paint = () => {
+      const stage = stageRef.current;
+      if (!stage) return;
+      const dpr = window.devicePixelRatio || 1;
+      const width = stage.clientWidth;
+      const height = stage.clientHeight;
+      const last = lastDimensionsRef.current;
+      if (last.width !== width || last.height !== height || last.dpr !== dpr) {
+        lastDimensionsRef.current = { width, height, dpr };
+        host.resize(width, height, dpr);
+      }
+      const camera = engine.getViewport();
+      void host.draw({
+        docs: [engine.getDocument()],
         axis: "horizontal",
         revision,
         viewport: {
-          x: camera.panX,
-          y: camera.panY,
-          zoom: camera.zoom,
-          panX: camera.panX,
-          panY: camera.panY,
-          width,
-          height,
-          devicePixelRatio: dpr,
+          x: camera.panX, y: camera.panY, ...camera,
+          width, height, devicePixelRatio: dpr,
         },
         resolveImageUrl: (node) => engine.getNodeBitmap(node)?.src ?? null,
-      })
-      .catch((error) => {
-        console.warn("Skia frame failed", error);
-      });
+      }).catch(error => console.warn("Skia frame failed", error));
+    };
+    // The engine calls listeners after painting chrome, inside the same rAF.
+    // Camera-only frames deliberately do not notify React while moving.
+    const unsubscribe = engine.subscribeRender(paint);
+    paint();
+    return unsubscribe;
   }, [status, engine, doc, stageRef, revision]);
 
   return { status, host: hostRef.current };
