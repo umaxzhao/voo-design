@@ -64,10 +64,16 @@ export const useDesignStore = create((set, get) => {
   agentPanelOpen: false,
   pendingAgentIntent: null,
 
+  editorPageCameras: {},
+  editorPageSession: 0,
+
   // Page / Artboard actions
   focusEditorPage: (id) => {
-    if (!id) return;
+    if (!id || !get().nodes.some((node) => node.id === id) || id === get().editingNodeId) return;
+    cameraBatcher.flush();
     set((state) => ({
+      editorPageCameras: { ...state.editorPageCameras, ...(state.editingNodeId ? { [state.editingNodeId]: { ...state.editorCamera } } : {}) },
+      editorCamera: state.editorPageCameras[id] || { panX: 0, panY: 0, zoom: 1 },
       editingNodeId: id,
       // A page the canvas does not show yet replaces what is on it, so the switcher brings it in.
       editingNodeIds: state.editingNodeIds.includes(id) ? state.editingNodeIds : [id],
@@ -89,19 +95,26 @@ export const useDesignStore = create((set, get) => {
     set((state) => ({
       nodes: [...state.nodes, newPage],
       editingNodeIds: [...state.editingNodeIds, id],
-      editingNodeId: id,
       isDirty: true,
     }));
+    get().focusEditorPage(id);
     return id;
   },
 
   deleteEditorPage: (id) => {
+    if (!get().nodes.some((node) => node.id === id)) return;
+    cameraBatcher.flush();
     set((state) => {
       const nextIds = state.editingNodeIds.filter((pId) => pId !== id);
       const nextNodes = state.nodes.filter((n) => n.id !== id);
-      const nextFocused = state.editingNodeId === id ? (nextIds[0] || null) : state.editingNodeId;
+      const nextFocused = state.editingNodeId === id ? (nextIds[0] || nextNodes[0]?.id || null) : state.editingNodeId;
+      const { [id]: removedCamera, ...editorPageCameras } = state.editorPageCameras;
+      const { [id]: removedLayout, ...editorArtboardLayouts } = state.editorArtboardLayouts;
       return {
-        editingNodeIds: nextIds,
+        editingNodeIds: nextIds.length ? nextIds : (nextFocused ? [nextFocused] : []),
+        editorPageCameras,
+        editorArtboardLayouts,
+        editorCamera: state.editingNodeId === id ? (editorPageCameras[nextFocused] || { panX: 0, panY: 0, zoom: 1 }) : state.editorCamera,
         nodes: nextNodes,
         editingNodeId: nextFocused,
         isDirty: true,
@@ -109,36 +122,51 @@ export const useDesignStore = create((set, get) => {
     });
   },
 
-  duplicateEditorPage: (sourceId) => {
+  editorPageDocumentReader: null,
+
+  duplicateEditorPage: (sourceId, { copySuffix = "Copy", defaultLabel = "Page" } = {}) => {
     const state = get();
     const sourceNode = state.nodes.find((n) => n.id === sourceId);
     if (!sourceNode) return null;
-    const newId = `page-${Date.now().toString(36)}`;
+    const newId = `page-${Date.now().toString(36)}-${(++pageCounter).toString(36)}`;
     const duplicatedNode = {
       ...sourceNode,
       id: newId,
       data: {
         ...sourceNode.data,
-        label: `${sourceNode.data?.label || "Page"} Copy`,
-        editorDoc: JSON.parse(JSON.stringify(sourceNode.data?.editorDoc ?? sourceNode.data?.sceneDoc ?? {})),
+        label: `${sourceNode.data?.label || defaultLabel} ${copySuffix}`,
+        editorDoc: JSON.parse(JSON.stringify(state.editorPageDocumentReader?.(sourceId) ?? sourceNode.data?.editorDoc ?? sourceNode.data?.sceneDoc ?? {})),
       },
     };
     set((s) => ({
       nodes: [...s.nodes, duplicatedNode],
       editingNodeIds: [...s.editingNodeIds, newId],
-      editingNodeId: newId,
       isDirty: true,
     }));
+    get().focusEditorPage(newId);
     return newId;
   },
 
   renameEditorPage: (id, name) => {
+    name = String(name ?? "").trim();
+    if (!name || !get().nodes.some((node) => node.id === id && node.data?.label !== name)) return;
     set((state) => ({
       nodes: state.nodes.map((n) =>
         n.id === id ? { ...n, data: { ...n.data, label: name } } : n
       ),
       isDirty: true,
     }));
+  },
+
+  reorderEditorPage: (id, direction) => {
+    set((state) => {
+      const index = state.nodes.findIndex((node) => node.id === id);
+      const target = index + direction;
+      if (index < 0 || ![-1, 1].includes(direction) || target < 0 || target >= state.nodes.length) return state;
+      const nodes = [...state.nodes];
+      [nodes[index], nodes[target]] = [nodes[target], nodes[index]];
+      return { nodes, isDirty: true };
+    });
   },
 
   updateNodeData: (id, partialData) => {
@@ -260,7 +288,8 @@ export const useDesignStore = create((set, get) => {
   loadVooProject: ({ vooData, filePath = null, fileName = "Untitled.voo", fileHandle = null, figSource = null }) => {
     const doc = vooData?.document;
     if (!doc) return;
-    set({ figSource });
+    cameraBatcher.flush();
+    set({ figSource, editorPageCameras: {}, editorPageSession: get().editorPageSession + 1 });
 
     if (Array.isArray(doc.pages) && doc.pages.length > 0) {
       const nextNodes = doc.pages.map((page, idx) => ({
@@ -308,6 +337,7 @@ export const useDesignStore = create((set, get) => {
           [pageId]: { x: 0, y: 0, width: doc.width || DEFAULT_WIDTH, height: doc.height || DEFAULT_HEIGHT },
         },
         editorCamera: { panX: 0, panY: 0, zoom: 1 },
+        editorPageCameras: {},
         filePath,
         fileName,
         fileHandle,
@@ -346,6 +376,8 @@ export const useDesignStore = create((set, get) => {
       editingGroupId: null,
       nodes: [page],
       editorCamera: { panX: 0, panY: 0, zoom: 1 },
+      editorPageCameras: {},
+      editorPageSession: get().editorPageSession + 1,
       editorArtboardLayouts: {
         [pageId]: { x: 0, y: 0, width, height },
       },

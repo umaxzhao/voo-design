@@ -1,98 +1,175 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronUp, ChevronDown, Copy, Pencil, Trash2 } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
 import { useDesignStore } from "../../store/design_store.js";
 
-const PAGE_NAME = /^Page (\d+)$/;
-
-/** Next free "Page N" name, after the highest one already in the file. */
-function nextPageName(nodes) {
-  const highest = nodes.reduce((max, node) => {
-    const match = PAGE_NAME.exec(node.data?.label ?? "");
-    return match ? Math.max(max, Number(match[1])) : max;
-  }, 0);
-  return `Page ${highest + 1}`;
-}
-
-/**
- * Page switcher for the open file, bottom-left. Collapsed it shows the current
- * page; expanded, the page list opens upward above it.
- */
 export default function PageSwitcher() {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const nodes = useDesignStore((state) => state.nodes);
-  const focusedId = useDesignStore((state) => state.editingNodeId);
-  const focusEditorPage = useDesignStore((state) => state.focusEditorPage);
-  const addEditorPage = useDesignStore((state) => state.addEditorPage);
-  const deleteEditorPage = useDesignStore((state) => state.deleteEditorPage);
-
+  const [renaming, setRenaming] = useState(null);
+  const root = useRef(null);
+  const nodes = useDesignStore((s) => s.nodes);
+  const focusedId = useDesignStore((s) => s.editingNodeId);
   const current = nodes.find((node) => node.id === focusedId) ?? nodes[0];
-  const index = Math.max(0, nodes.findIndex((node) => node.id === current?.id));
-  const canDelete = nodes.length > 1;
-
+  const actions = useDesignStore.getState();
+  useEffect(() => {
+    if (!open) return;
+    const dismiss = (event) => {
+      if (!root.current?.contains(event.target)) {
+        setOpen(false);
+        setRenaming(null);
+      }
+    };
+    document.addEventListener("pointerdown", dismiss);
+    return () => document.removeEventListener("pointerdown", dismiss);
+  }, [open]);
+  const add = () => {
+    const highest = nodes.reduce(
+      (max, node) =>
+        Math.max(
+          max,
+          Number(/(?:Page|页面) (\d+)$/.exec(node.data?.label ?? "")?.[1] || 0),
+        ),
+      0,
+    );
+    actions.addEditorPage({
+      label: `${t("pageSwitcher.page")} ${highest + 1}`,
+    });
+  };
   return (
-    <div className="absolute bottom-4 left-4 z-[60] flex flex-col items-start gap-2">
-      {open && (
-        <div
-          role="listbox"
+    <div
+      ref={root}
+      data-testid="page-switcher"
+      className="absolute bottom-4 left-4 z-[60] flex flex-col items-start gap-2"
+      onKeyDown={(event) => {
+        event.stopPropagation();
+        if (event.key === "Escape") {
+          setOpen(false);
+          setRenaming(null);
+        }
+      }}
+    >
+      {(open || nodes.length === 0) && (
+        <section
           aria-label={t("pageSwitcher.label")}
-          className="flex max-h-[50vh] w-56 flex-col gap-1 overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900/95 p-1.5 shadow-menu backdrop-blur-2xl"
+          className="flex max-h-[50vh] w-80 flex-col gap-1 overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900/95 p-2 shadow-menu backdrop-blur-2xl"
         >
-          {nodes.map((node) => {
-            const active = node.id === focusedId;
-            return (
-              <div
-                key={node.id}
-                className={`group flex items-center gap-1 rounded-xl pr-1 text-[12px] ${
-                  active ? "bg-white/10 text-white" : "text-neutral-300 hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={active}
-                  onClick={() => {
-                    focusEditorPage(node.id);
-                    setOpen(false);
-                  }}
-                  className="min-w-0 flex-1 truncate px-3 py-2 text-left outline-none"
+          <h2 className="px-3 py-2 text-xs font-medium text-neutral-400">
+            {t("pageSwitcher.label")}
+          </h2>
+          {nodes.length === 0 && (
+            <p
+              data-testid="pages-empty"
+              className="px-3 py-4 text-sm text-neutral-400"
+            >
+              {t("pageSwitcher.empty")}
+            </p>
+          )}
+          <ul className="flex flex-col gap-1">
+            {nodes.map((node, index) => {
+              const active = node.id === current?.id;
+              const label = node.data?.label ?? t("pageSwitcher.untitled");
+              return (
+                <li
+                  key={node.id}
+                  className={`group flex items-center gap-1 rounded-xl px-1 text-xs ${active ? "bg-white/10 text-white" : "text-neutral-300 hover:bg-white/5"}`}
                 >
-                  {node.data?.label ?? t("pageSwitcher.untitled")}
-                </button>
-                {canDelete && (
-                  <button
-                    type="button"
-                    onClick={() => deleteEditorPage(node.id)}
-                    aria-label={t("pageSwitcher.close")}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-neutral-400 hover:bg-white/20 hover:text-white"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-            );
-          })}
+                  {renaming === node.id ? (
+                    <input
+                      autoFocus
+                      aria-label={t("pageSwitcher.rename")}
+                      defaultValue={label}
+                      maxLength={80}
+                      onFocus={(e) => e.target.select()}
+                      className="min-w-0 flex-1 rounded bg-white/10 px-2 py-2 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") {
+                          e.stopPropagation();
+                          setRenaming(null);
+                        }
+                        if (e.key === "Enter") e.currentTarget.blur();
+                      }}
+                      onBlur={(e) => {
+                        actions.renameEditorPage(node.id, e.target.value);
+                        setRenaming(null);
+                      }}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      aria-current={active ? "page" : undefined}
+                      onDoubleClick={() => setRenaming(node.id)}
+                      onClick={() => actions.focusEditorPage(node.id)}
+                      className="min-w-0 flex-1 truncate px-2 py-2.5 text-left focus-visible:outline focus-visible:outline-[#a7ffd4]"
+                      title={label}
+                    >
+                      {label}
+                    </button>
+                  )}
+                  {[
+                    [Pencil, "rename", () => setRenaming(node.id)],
+                    [
+                      Copy,
+                      "duplicate",
+                      () =>
+                        actions.duplicateEditorPage(node.id, {
+                          copySuffix: t("pageSwitcher.copySuffix"),
+                          defaultLabel: t("pageSwitcher.page"),
+                        }),
+                    ],
+                    [
+                      ChevronUp,
+                      "moveUp",
+                      () => actions.reorderEditorPage(node.id, -1),
+                      index === 0,
+                    ],
+                    [
+                      ChevronDown,
+                      "moveDown",
+                      () => actions.reorderEditorPage(node.id, 1),
+                      index === nodes.length - 1,
+                    ],
+                    [Trash2, "close", () => actions.deleteEditorPage(node.id)],
+                  ].map(([Icon, key, onClick, disabled]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      aria-label={`${t(`pageSwitcher.${key}`)}: ${label}`}
+                      title={t(`pageSwitcher.${key}`)}
+                      disabled={disabled}
+                      onClick={onClick}
+                      className="flex h-7 w-6 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-[#a7ffd4] disabled:opacity-25"
+                    >
+                      <Icon size={13} />
+                    </button>
+                  ))}
+                </li>
+              );
+            })}
+          </ul>
           <button
             type="button"
-            onClick={() => {
-              addEditorPage({ label: nextPageName(nodes) });
-            }}
-            className="rounded-xl px-3 py-2 text-left text-[12px] text-neutral-300 hover:bg-white/5 hover:text-white"
+            onClick={add}
+            className="mt-1 rounded-xl px-3 py-2 text-left text-xs text-[#a7ffd4] hover:bg-white/5"
           >
             + {t("pageSwitcher.add")}
           </button>
-        </div>
+        </section>
       )}
       <button
         type="button"
-        aria-expanded={open}
+        aria-label={t("pageSwitcher.label")}
+        aria-expanded={open || nodes.length === 0}
         onClick={() => setOpen((value) => !value)}
-        className="flex h-9 items-center gap-2 rounded-full border border-white/10 bg-neutral-900/95 px-3.5 text-[12px] text-neutral-100 shadow-menu backdrop-blur-2xl hover:text-white"
+        className="flex h-9 items-center gap-2 rounded-full border border-white/10 bg-neutral-900/95 px-3.5 text-xs text-neutral-100 shadow-menu backdrop-blur-2xl"
       >
-        <span className="max-w-[160px] truncate">{current?.data?.label ?? t("pageSwitcher.untitled")}</span>
-        <span className="text-neutral-400">
-          {index + 1}/{nodes.length}
+        <span className="max-w-[160px] truncate">
+          {current?.data?.label ?? t("pageSwitcher.untitled")}
         </span>
+        <span className="text-neutral-400">
+          {current ? nodes.indexOf(current) + 1 : 0}/{nodes.length}
+        </span>
+        <ChevronUp size={12} />
       </button>
     </div>
   );

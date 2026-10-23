@@ -303,8 +303,18 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
 
   /** nodeId -> live engine, and nodeId -> what an evicted page left behind. */
   const enginesRef = useRef(new Map());
-  const pendingCanvasSelectionRef = useRef(new PendingCanvasSelectionManager());
   const snapshotsRef = useRef(new Map());
+  useEffect(() => {
+    const reader = (id) => {
+      const live = enginesRef.current.get(id);
+      return live?.ready ? live.engine.serialise() : snapshotsRef.current.get(id)?.doc;
+    };
+    useDesignStore.setState({ editorPageDocumentReader: reader });
+    return () => {
+      if (useDesignStore.getState().editorPageDocumentReader === reader) useDesignStore.setState({ editorPageDocumentReader: null });
+    };
+  }, []);
+  const pendingCanvasSelectionRef = useRef(new PendingCanvasSelectionManager());
   const presentation = usePresentationEditor({
     ownerId: presentationId,
     focusedId,
@@ -483,7 +493,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
    */
   const handleBeforeDispose = useCallback(async (nodeId, engine, ready) => {
     if (!ready) return;
-
 
     const writeSnapshot = (png) => {
       const dirty = engine.isDirty();
