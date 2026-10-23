@@ -66,6 +66,9 @@ export function useSkiaPage({
         lastDimensionsRef.current = { width, height, dpr };
         host.resize(width, height, dpr);
       }
+      // doc/revision trigger React resubscription, but may lag engine edits.
+      // Read document and camera together from the live engine in this rAF so
+      // artwork stays in sync with chrome, even before React receives the update.
       const camera = engine.getViewport();
       void host.draw({
         docs: [engine.getDocument()],
