@@ -1,79 +1,94 @@
 # Image processing audit: adjustments, filters, masks, brush/eraser, repair/inpaint, background removal
 
-Audit of the Affinity-style image processing features under `src/canvas/editor/`:
+Audit of the Affinity-style image processing features under `src/canvas/editor/`.
 
-- Adjustment layers: `adjustment_catalog.js`, `adjustment_kinds.js`, `adjustment_queries.js`, `adjustment_starters.js`, `cpu_adjustments.js`, `cpu_adjustments_kernels.js`, `cpu_adjustments_matte.js`, `cpu_adjustments_runner.js`, `gl_adjustments.js`, `gl_adjustments_pipeline.js`, `gl_adjustments_shaders.js`, `skia_adjustment_support.js`, `tone_lut*`, `color_adjust*`, `scene_model_adjustments.js`, `filter_presets.js`
-- Filters: `pixel_filter.js`, `spatial_filter.js`
-- Masks: `editor_mask.js`, `editor_mask_brush.js`, `editor_mask_lifecycle.js`, `editor_mask_ops.js`, `matte_refine.js`, `mask_contour.js`
-- Brush/eraser: `editor_paint.js`, `editor_paint_stroke.js`, `editor_paint_target.js`, `editor_paint_stamps.js`, `editor_paint_layer.js`, `editor_paint_persist.js`, `editor_paint_retouch.js`, `soft_brush.js`, `brush_properties.js`, `brush_pressure.js`, `editor_engine_brush.js`
-- Repair/inpaint: `editor_repair_tools.js`, `local_inpaint.js`, `local_inpaint_patch.js`, `local_ai_repair.js`, `repair_tools_healing.js`
-- Background removal: `local_matting.js`, `matting_transform.js`, `matte_refine.js`, `matting_models.js`
+Legend for **Fixed?**: `yes` = patched; `partial` = API/CPU only; `no` = documented only.
 
-Legend for **Fixed?**: `yes` = patched in this change; `no` = documented only.
-
-## Fixes
+## Fixes (this branch + prior audit)
 
 | File | Problem | Fix | Fixed? |
 | --- | --- | --- | --- |
-| `src/canvas/editor/scene_model_adjustments.js` (lines 204, 224) | `normalizeAdjustments` used `??` on `preserveLuminosity` for `colorBalance` and `photoFilter`. `false ?? default` yields `default`, so an explicit user choice of `preserveLuminosity: false` was silently overwritten with `true`. Downstream code (`color_adjust_balance.js`, `tone_lut_build.js`, `psd_export.js`) already reads `!== false`, so only normalization was wrong. | Fall back to the default only when the field is `=== undefined`; otherwise preserve the user's boolean. | yes |
-| `src/canvas/editor/pixel_filter.js` (`applyEmboss`) | `applyEmboss` was the only pixel filter missing the `if (data[i + 3] === 0) continue;` guard. Fully transparent texels were processed and rewritten to 128 mid-grey instead of being left untouched. | Added the same transparent-pixel skip every other pixel filter (`applyNoise`, `applyPixelate`, `applyPosterize`, `applySepia`, `applyClouds`, `applySolarize`, `applyHalftone`) already has. | yes |
+| `scene_model_adjustments.js` | `preserveLuminosity: false` overwritten by `??` | Fall back only when `=== undefined` | yes |
+| `pixel_filter.js` (`applyEmboss`) | Transparent pixels rewritten to mid-grey | Skip `a===0` like other filters | yes |
+| `matte_defringe.js` + `cpu_adjustments_matte.js` | Cutout fringe on new backgrounds | Affinity-style colour defringe on cache miss | yes |
+| `spatial_filter.js` + tone/CPU path | Missing Affinity high-pass / clarity / motion blur | `applyHighPass` / `applyClarity` / `applyMotionBlur` wired through `tone_lut_build` + `cpu_adjustments_kernels` | yes (CPU) |
+| `live_filter_stack.js` | No non-destructive live filter stack | Ordered, toggleable, opacity-blendable stack API (`applyLiveFilterStack`) | partial (not in hot render / props UI) |
+| `local_inpaint.js` / `repair_tools_healing.js` | Clone stamp missing flow; OOB wrap risk | `flow` param; skip OOB source samples (no wrap) | yes |
+| `blend_math.js` | Custom modes untested | Unit coverage for linear-burn/dodge, pin-light, hard-mix, subtract, divide, dissolve | yes (tests) |
 
 ## What works
 
 **Adjustment layers / tone pipeline**
-- `buildToneLut` normalises the full adjustment vocabulary and produces a consistent `signature` used by both the CPU and GL render paths; CPU and GL agree on colour within float/integer rounding.
-- Scalar adjustments (brightness, contrast, hue, saturation, lightness, exposure, temperature, tint, highlights, shadows, vignette, blur, sharpen) and the one-click pixel filters (noise, clouds, pixelate, posterize, solarize, halftone, sepia, emboss) all fold into the tone LUT or the per-pixel CPU pass correctly.
-- Curve/levels/invert/threshold/vibrance/colorBalance/blackAndWhite/photoFilter/channelMixer/selectiveColor/gradientMap all normalise and render through `cpu_adjustments_kernels.js` (CPU) or `gl_adjustments_pipeline.js` (GL, with CPU fallback for `cpuOnly` categories).
-- `cpuOnly` flag correctly forces the CPU path for noise/clouds/pixelate/posterize/solarize/halftone/sepia/emboss and for colorBalance/blackAndWhite/photoFilter/vibrance/channelMixer/selectiveColor/gradientMap, which have no GLSL kernel.
-- Adjustment cache (`cpu_adjustments_runner.js`) keeps up to 4 resolutions per tone signature; cache is invalidated on signature change.
-- `applyMatte` (`cpu_adjustments_matte.js`) composites bitmap + alpha matte with `destination-in` at natural resolution, cached per (bitmap, version).
-- Filter presets (`filter_presets.js`) produce complete adjustment objects through the same commit path as sliders.
+- Full vocabulary through `buildToneLut` (CPU + GL colour path); `cpuOnly` for spatial/pixel/colour ops without GLSL.
+- Curves, levels, HSL scalars, selective color, channel mixer, color balance, B&W, photo filter, vibrance, gradient map, invert, threshold.
+- **New on this branch (CPU):** high pass, clarity (−100..100), motion blur (+ angle).
 
-**Masks**
-- Mask brush (`editor_mask_brush.js`) paints into per-node matte canvases with `destination-out` (erase) / `source-over` (restore), transforms doc points through the node's local frame, supports implicit eraser sessions, stroke replay for collaboration, and `[ ]` size shortcuts.
-- Mask ops (`editor_mask_ops.js`): lasso apply (keepInside/eraseInside), feather, invert, refine (smooth/expand/contract), quick mask from selection — all persist through the same queue path as brush strokes (one history entry per edit).
-- Mask lifecycle (`editor_mask_lifecycle.js`): per-node matte canvases keyed by `maskId`, serialised persist queue that survives undo/redo mid-await, `maskSourceOf` identity check prevents stale composites after undo/redo and background-removal matte swaps.
+**Live filters**
+- Pure stack: blur, sharpen, noise, highPass, clarity, motionBlur, sepia, pixelate — normalize / create / apply with per-entry opacity.
+- Not yet persisted on nodes or drawn in the properties panel (intentionally avoided; PR #4 owns that UI).
 
-**Brush / eraser / retouch**
-- `editor_paint.js` + `editor_paint_stroke.js`: continuous stroke with quadratic interpolation, stamp spacing, pressure size/opacity, paint-layer materialisation/growth, erase trims paint layers, draft mode at dpr 1 during drag.
-- `soft_brush.js`: `softBrushAlpha(t, hardness)` and gradient stops are pure, testable math.
-- Retouch dabs (`editor_paint_retouch.js`): blur/sharpen/smudge/dodge/burn/sponge; smudge captures a stroke snapshot so dragging doesn't collapse into blur.
-- Brush controller (`editor_engine_brush.js`) exposes width/hardness/opacity/flow/strength/exposure/roundness/angle/blend-mode/pressure toggles.
+**Masks / brush / repair / matting**
+- Mask brush, feather, invert, refine, selection coverage; paint/eraser with pressure; spot heal, LaMa AI repair, patch blend, clone stamp (hardness/opacity/flow/coverage).
+- BiRefNet/RMBG matting + refine/feather + **defringe** on composite.
 
-**Repair / inpaint**
-- `inpaintLocalStroke` (Spot Healing / Telea): rasterises a stroke mask, clips to the active pixel selection, runs `inpaintLocalImage` (boundary-weighted diffusion) and writes back via `replaceNodeBitmap`.
-- `inpaintAiRepairStroke` (LaMa): bounded crop + mask, model download gating, separate run-failed vs download-failed recovery paths, does not silently fall back to Spot.
-- Patch and clone stamp (`repair_tools_healing.js`, `local_inpaint.js`): Poisson-style patch blend and coverage-gated clone stamp.
-- `cloneStampImage`/`patchBlendImage` are pure pixel-buffer functions.
+## Affinity Photo essentials matrix
 
-**Background removal**
-- `local_matting.js`: BiRefNet/RMBG via onnxruntime-web (WebGPU first, WASM fallback), one-time model download cached in Cache Storage, provider refusal tracking, letterbox + resample + refine + feather pipeline.
-- `matting_transform.js`: `fitToModelInput`, `toNormalisedTensor`, `sigmoid`, `looksLikeProbabilities`, `normaliseMask`, `hardenMask`, `cropMask`, `resampleMask`, `padRegion`, `placeRegionMask`, `polygonBounds`, `pointInPolygon`, `clipMaskToPolygon`, `maskToRgba` — all pure, testable arithmetic.
-- `matte_refine.js`: guided-filter edge refinement (`refineMatte`) and edge-only feathering (`featherMatte`), band-limited to the matte's transition to avoid halo; `MATTE_REFINE_MAX_PIXELS` cap skips refinement on 32MP+ images.
-- Region matting (`runRegionMatting`): model runs on a padded crop; lasso clips the placed mask via even-odd point-in-polygon.
+| Affinity feature | Status | Notes |
+| --- | --- | --- |
+| Curves | done | Monotone cubic LUT; CPU+GL |
+| Levels | done | Black/white/gamma/output |
+| HSL / HSL shift | done | Global + per-band |
+| Selective color | done | CMYK ink zones; CPU |
+| Channel mixer | done | CPU |
+| Color balance | done | Shadows/midtones/highlights |
+| Black & white | done | Band mix + tint |
+| Photo filter | done | Density + preserve luminosity |
+| Vibrance | done | CPU |
+| Brightness/contrast/exposure | done | Tone LUT |
+| Temperature / tint | done | Tone LUT |
+| Highlights / shadows | done | Tone LUT |
+| Invert / threshold | done | |
+| Gradient map | done | CPU |
+| Blur (live/gaussian-ish) | done | Box×3 ≈ gaussian; CPU+GL |
+| Sharpen (unsharp) | done | CPU+GL |
+| Noise / pixelate / posterize / sepia / emboss / clouds / solarize / halftone | done | CPU (`cpuOnly`) |
+| High pass | done (CPU) | No GL shader yet |
+| Clarity | done (CPU) | Midtone-weighted local contrast |
+| Motion blur | done (CPU) | Angle param; no GL yet |
+| Live filter stack (non-destructive) | partial | API + tests; not hot-rendered / no props UI |
+| Layer blend modes (Affinity set) | mostly | Custom: linear-burn/dodge, vivid/linear/pin-light, hard-mix, subtract, divide, dissolve |
+| Masks (paint / refine / feather) | done | |
+| Mask refinement (decontaminate) | done | Defringe on matte composite |
+| Brush / eraser | done | Softness, pressure, flow |
+| Clone stamp | done | Hardness, opacity, flow, coverage; OOB skip |
+| Healing / inpaint | done | Spot (Telea-like) + LaMa AI |
+| Patch tool | done | Poisson-style blend |
+| Background removal | done | ONNX BiRefNet/RMBG + refine/feather/defringe |
+| Frequency separation | missing | |
+| Liquify | missing | |
+| Perspective / mesh warp | missing / partial | Outside this PR’s scope |
+| RAW develop persona | missing | |
+| GL parity for new spatial filters | missing | highPass/clarity/motionBlur CPU-only |
 
 ## Remaining gaps
 
 | Area | Gap | Notes |
 | --- | --- | --- |
-| CPU/GL parity | No unit test exercises the GL shader path (`gl_adjustments_pipeline.js` / `gl_adjustments_shaders.js`) — it requires a WebGL2 context and cannot run under vitest's node environment. | Visual parity is documented in comments but not machine-verified. |
-| Background removal on large images | Refinement is skipped above `MATTE_REFINE_MAX_PIXELS` (16 MP); the cutout keeps the model's raw edge. | Documented degradation, not a bug. |
-| Defringe | Colour decontamination (unmixing old-background fringe from semi-transparent edge pixels) was deliberately removed (`matte_refine.js` notes it has no caller). Cutout edges can carry a fringe on new backgrounds. | Product decision; no stage in `src/` calls a defringe. |
-| PSD import of adjustments | `psd_to_voo.js` notes adjustment layers, masks, and text editability are "Not rebuilt yet". | Out of scope for this audit. |
-| `canvas_tools.js` | Excluded from this audit per task constraints. | Not reviewed. |
+| GL shaders | highPass / clarity / motionBlur have no GLSL twin | Falls back to CPU when those are active (`cpuOnly`-style via signature) |
+| Live filters UI / persist | Stack not stored on nodes; properties panel untouched | Follow-up once PR #4 settles |
+| Frequency separation / Liquify | Not implemented | High effort; Affinity Photo persona features |
+| PSD adjustment import | Still “not rebuilt” in `psd_to_voo.js` | Out of scope |
+| GL unit tests | Need WebGL2; not runnable under vitest node | Visual parity only |
 
-## Tests
+## Tests (this branch)
 
-New test files (6, 119 tests, all passing):
-
-- `tests/unit/adjustment_normalization.test.js` — `normalizeAdjustments`: defaults, `preserveLuminosity=false` preservation (regression for the fix above), value clamping, mixer/ink/zone/bands/levels normalization.
-- `tests/unit/color_adjustments.test.js` — `applyColorBalance`, `applyBlackAndWhite`, `applyPhotoFilter`, `applyVibrance`, `applyChannelMixer`, `applySelectiveColor`, `sampleGradient`, `applyGradientMap`.
-- `tests/unit/image_filters.test.js` — `applyNoise`, `applyPixelate`, `applyPosterize`, `applySepia`, `applyEmboss`, `applyClouds`, `applySolarize`, `applyHalftone`, `applyBoxBlur`, `applySharpen`, `scaledRadius`, `cpuBlurRadius`.
-- `tests/unit/matting_transforms.test.js` — `fitToModelInput`, `toNormalisedTensor`, `sigmoid`, `looksLikeProbabilities`, `normaliseMask`, `hardenMask`, `cropMask`, `resampleMask`, `padRegion`, `placeRegionMask`, `polygonBounds`, `pointInPolygon`, `clipMaskToPolygon`, `maskToRgba`, `softBrushAlpha`.
-- `tests/unit/matte_refine.test.js` — `refineMatte`, `featherMatte`, `MATTE_REFINE_DEFAULTS`, `MATTE_FEATHER_DEFAULTS`.
-- `tests/unit/tone_lut.test.js` — `evaluateMonotoneCubicSpline`, `buildCurveLUT`, `hasCustomCurve`, `buildToneLut` (active/cpuOnly flags), `hueBandIndex`.
+- `tests/unit/image_filters.test.js` — +highPass / clarity / motionBlur
+- `tests/unit/live_filter_stack.test.js` — create / normalize / apply / opacity / undersize guard
+- `tests/unit/clone_stamp.test.js` — flow, OOB skip, pixel copy
+- `tests/unit/blend_math.test.js` — custom blend modes
+- `tests/unit/matte_defringe.test.js` — (prior commit on branch)
 
 ## Verification
 
-- `npx vitest run`: 127 files, 1699 tests pass (1580 pre-existing + 119 new).
-- `npx vite build`: green.
+- `npm test`: 145 files, 1813 passed | 5 skipped
+- `npm run build`: green
