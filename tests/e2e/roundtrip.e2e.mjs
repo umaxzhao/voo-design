@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY = '1';
 const phase = process.env.ROUNDTRIP_PHASE || 'after';
-const shots = '/workspace/tmp/shots-roundtrip';
+const shots = process.env.ROUNDTRIP_SHOTS_DIR || '/workspace/tmp/shots-roundtrip';
 const root = new URL('../fixtures/roundtrip/', import.meta.url);
 await mkdir(shots,{recursive:true});
 const browser = await chromium.launch({args:['--no-sandbox']});
@@ -18,6 +18,8 @@ try {
   if (page) await page.context().close();
   page = await browser.newPage({viewport:{width:1280,height:900},acceptDownloads:true});
   page.setDefaultTimeout(90000);
+  page.on('worker', worker=>console.log('ROUNDTRIP WORKER module',worker.url()));
+  page.on('requestfailed', request=>console.log('ROUNDTRIP WORKER requestfailed',request.url(),request.failure()?.errorText));
   page.on('pageerror',error=>console.error('PAGE ERROR',error.message));
   page.on('console',message=>{if(message.text().startsWith('ROUNDTRIP WORKER')) console.log(message.text());});
   if (phase === 'before') {
@@ -32,6 +34,9 @@ try {
    window.Worker = class extends NativeWorker {
     constructor(...args) {
      super(...args);
+     console.log('ROUNDTRIP WORKER constructed',String(args[0]));
+     this.addEventListener('error', event=>console.log('ROUNDTRIP WORKER error',event.message));
+     this.addEventListener('messageerror', ()=>console.log('ROUNDTRIP WORKER messageerror'));
      this.addEventListener('message',({data})=>{
       if (data?.type) console.log('ROUNDTRIP WORKER', data.type, data.stage || '', data.percent ?? '');
      });
@@ -106,5 +111,5 @@ try {
 } finally {await browser.close();}
 await writeFile(`${shots}/${phase}-report.json`,JSON.stringify(rows,null,2));
 const table=['| Fixture | Nodes | Native tree | Native pixel Δ % | Original tree | Original pixel Δ % | Error |','|---|---:|---|---:|---|---:|---|',...rows.map(r=>`| ${r.fixture} | ${r.nodes??'-'} → ${r.reopenedNodes??'-'} | ${r.native?.tree??'-'} | ${r.native?.pixel??'-'} | ${r.original?.tree??'-'} | ${r.original?.pixel??'-'} | ${(r.error||'').replaceAll('\n',' ').replaceAll('|','/')} |`)];
-await writeFile(`/workspace/tmp/roundtrip-${phase}.md`,table.join('\n')+'\n');
+await writeFile(`${process.env.ROUNDTRIP_REPORT_DIR || "/workspace/tmp"}/roundtrip-${phase}.md`,table.join('\n')+'\n');
 if(phase==='after')assert.ok(rows.length > 0 && rows.every(r=>!r.error&&r.native?.tree&&r.native.pixel===0),'All native round trips must preserve nodes and pixels; see report');
