@@ -71,7 +71,7 @@ describe("agent tool invalid-argument messages name the argument", () => {
   });
 
   it("validates variable mode name and mode selector", async () => {
-    const name = await messageFor("add_variable_mode", { collectionId: "collection:theme" });
+    const name = await messageFor("add_variable_mode", { collectionId: "collection:theme", name: 42 });
     expect(name).toContain('Invalid argument "name"');
     const both = await messageFor("set_active_mode", {
       collectionId: "collection:theme",

@@ -126,7 +126,7 @@ const out = await page.evaluate(async (PNG) => {
   };
   invalid.styleType = await captureError("create_style", { type: "spacing", name: "Space" });
   invalid.move = await captureError("edit_path_nodes", { layerId: pathId, ops: [{ op: "move", index: 0 }] });
-  invalid.modeName = await captureError("add_variable_mode", { collectionId: collId });
+  invalid.modeName = await captureError("add_variable_mode", { collectionId: collId, name: 42 });
   checks.invalidArgs = invalid.styleType.includes('Invalid argument "type"')
     && invalid.styleType.includes("paint")
     && invalid.move.includes("Invalid argument")

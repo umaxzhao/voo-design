@@ -410,8 +410,8 @@ function addVariableMode(args = {}) {
   const editor = requireEditor();
   const collectionId = requireId(args.collectionId, "collectionId");
   const name = args.name;
-  if (typeof name !== "string" || name.trim() === "") {
-    invalidArgs(`Invalid argument "name": expected a non-empty string, got ${JSON.stringify(name)}`);
+  if (name !== undefined && typeof name !== "string") {
+    invalidArgs(`Invalid argument "name": expected a string, got ${JSON.stringify(name)}`);
   }
 
   const doc = variableDoc(editor);
