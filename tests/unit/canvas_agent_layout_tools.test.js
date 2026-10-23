@@ -3,6 +3,7 @@ if (typeof globalThis.window === "undefined") {
 }
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import "../../src/canvas/agent/canvas_tools.js";
 import {
   CANVAS_TOOL_LAYOUT_SCHEMAS,
   LAYOUT_TOOL_EXECUTORS,

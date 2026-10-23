@@ -27,6 +27,8 @@ import {
 
 import { COMPONENT_TOOL_SCHEMAS, COMPONENT_TOOL_EXECUTORS } from "./canvas_tools_components.js";
 import { TEXT_PATH_TOOL_SCHEMAS, TEXT_PATH_TOOL_EXECUTORS } from "./canvas_tools_text_path.js";
+import { CANVAS_TOOL_LAYOUT_SCHEMAS, LAYOUT_TOOL_EXECUTORS } from "./canvas_tools_layout.js";
+import { CANVAS_TOOL_PLAN_SCHEMAS, PLAN_TOOL_EXECUTORS } from "./canvas_tools_plan.js";
 
 export const AGENT_SETTING = Object.freeze({
   API_KEY: "agent.apiKey",
@@ -366,6 +368,8 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
   ...CANVAS_TOOL_GEOMETRY_SCHEMAS,
   ...COMPONENT_TOOL_SCHEMAS,
   ...TEXT_PATH_TOOL_SCHEMAS,
+  ...CANVAS_TOOL_LAYOUT_SCHEMAS,
+  ...CANVAS_TOOL_PLAN_SCHEMAS,
 ]);
 
 function requireEditor() {
@@ -894,6 +898,8 @@ const EXECUTORS = Object.freeze({
   ...DESIGN_TOOL_EXECUTORS,
   ...COMPONENT_TOOL_EXECUTORS,
   ...TEXT_PATH_TOOL_EXECUTORS,
+  ...LAYOUT_TOOL_EXECUTORS,
+  ...PLAN_TOOL_EXECUTORS,
   create_path: createPath,
   place_image: placeImage,
   capture_canvas: captureCanvas,

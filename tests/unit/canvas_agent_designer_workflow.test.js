@@ -42,6 +42,15 @@ const ALL_TOOL_NAMES = [
   "set_text_range_style",
   "get_path_nodes",
   "edit_path_nodes",
+  "align_layers",
+  "distribute_layers",
+  "create_frame",
+  "ungroup_layers",
+  "find_layers",
+  "undo",
+  "redo",
+  "update_plan",
+  "get_plan",
 ];
 
 describe("CANVAS_TOOL_SCHEMAS completeness", () => {

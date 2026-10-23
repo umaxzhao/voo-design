@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import "../../src/canvas/agent/canvas_tools.js";
 import { CANVAS_TOOL_PLAN_SCHEMAS, PLAN_TOOL_EXECUTORS, getAgentPlan, resetAgentPlan } from "../../src/canvas/agent/canvas_tools_plan.js";
 
 describe("Canvas Agent Plan Tools", () => {
