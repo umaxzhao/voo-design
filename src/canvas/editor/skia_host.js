@@ -1,3 +1,5 @@
+import { wasmEngineEnabled } from '../../engine-wasm/editor-index.js';
+import { createWasmSkiaFrames } from '../../engine-wasm/skia-frame.js';
 /**
  * The Skia renderer, wired to this application.
  *
@@ -51,6 +53,7 @@ export async function createSkiaHost(canvas) {
   const instance = new core.SkiaRenderer();
   const backend = await instance.initialize(canvas);
 
+  const wasmFrames = createWasmSkiaFrames();
   let lastPixelWidth = 0;
   let lastPixelHeight = 0;
 
@@ -58,6 +61,13 @@ export async function createSkiaHost(canvas) {
   let lastScene = null;
   let latestFrame = null;
   let disposed = false;
+
+  function present(frame) {
+    if (!wasmFrames.draw(instance, frame.docs, frame.nativeIndex, frame.viewport,
+        frame.visibleRect, frame.snapshot.backgroundColor, frame.layouts)) {
+      instance.render(frame.snapshot, frame.viewport);
+    }
+  }
 
   return {
     backend,
@@ -129,6 +139,11 @@ export async function createSkiaHost(canvas) {
         );
       }
 
+      const suppliedIndex = spatialIndex ??
+        (docs.length === 1 ? docs[0]?.spatialIndex : null);
+      // Keep the default-off camera path synchronous.
+      const nativeIndex = wasmEngineEnabled() || suppliedIndex?.drawList
+        ? await wasmFrames.prepare(docs, suppliedIndex) : suppliedIndex;
       const snapshot = {
         revision,
         backgroundColor: backgroundColor ?? "#1c1c1c",
@@ -137,7 +152,7 @@ export async function createSkiaHost(canvas) {
           axis,
           resolveImageUrl,
           layouts,
-          spatialIndex,
+          spatialIndex: nativeIndex,
           visibleRect,
         }),
       };
@@ -145,18 +160,18 @@ export async function createSkiaHost(canvas) {
         lastScene.docs.length !== docs.length ||
         docs.some((doc, index) => doc !== lastScene.docs[index]);
       lastScene = { revision, docs: [...docs] };
-      latestFrame = { snapshot, viewport: skiaViewport };
+      latestFrame = { snapshot, viewport: skiaViewport, docs, nativeIndex, visibleRect, layouts };
       instance.updateResources(snapshot);
       // Present the camera immediately with resources already available. Never
       // hold a zoom frame behind image/font decoding while chrome moves on.
-      instance.render(snapshot, skiaViewport);
+      present(latestFrame);
       // Resource completion may repaint, but must use the newest camera. Camera
       // frames neither wait for decoding nor register another completion draw.
       if (resourcesChanged) {
         const currentResources = ++resourceRevision;
         await instance.waitForResources(snapshot, RESOURCE_TIMEOUT_MS);
         if (!disposed && currentResources === resourceRevision) {
-          instance.render(latestFrame.snapshot, latestFrame.viewport);
+          present(latestFrame);
         }
       }
       return snapshot;
@@ -165,6 +180,7 @@ export async function createSkiaHost(canvas) {
     dispose() {
       disposed = true;
       ++resourceRevision;
+      wasmFrames.clear();
       instance.dispose();
     },
   };

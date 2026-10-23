@@ -1,3 +1,4 @@
+import { journalNodes, nodesTracked } from "../../engine-wasm/journal.js";
 import { hitTestMetadata, orderedCandidates } from "./hit_test_candidates.js";
 import {
   createImageNode,
@@ -12,7 +13,7 @@ import { toNodeLocal } from "./scene_geometry.js";
 import { regionLocalPoint } from "./doc_ops_regions.js";
 import { projectOntoPath } from "./editor_pen_math.js";
 
-export function withNodes(doc, rawNodes) {
+export function withNodes(doc, rawNodes, changes = null) {
   let nodes = rawNodes;
   const booleanContainers = rawNodes?.filter(
     (n) => n.kind === NODE_KIND.BOOLEAN,
@@ -35,6 +36,7 @@ export function withNodes(doc, rawNodes) {
       return node;
     });
   }
+  journalNodes(doc.nodes, nodes, nodes === rawNodes ? changes : null);
   return { ...doc, nodes };
 }
 
@@ -87,9 +89,10 @@ export function addNode(doc, node) {
 }
 
 export function updateNode(doc, id, patch) {
+  const changes = nodesTracked(doc.nodes) ? [] : null;
   return withNodes(
     doc,
-    doc.nodes.map((node) => {
+    doc.nodes.map((node, z) => {
       if (node.id !== id) return node;
       const updated = {
         ...node,
@@ -117,8 +120,10 @@ export function updateNode(doc, id, patch) {
           delete updated[key];
         }
       }
+      changes?.push({ node: updated, z });
       return updated;
     }),
+    changes,
   );
 }
 
@@ -145,9 +150,10 @@ export function updateNodes(doc, updates) {
 
   if (patchMap.size === 0) return doc;
 
+  const changes = nodesTracked(doc.nodes) ? [] : null;
   return withNodes(
     doc,
-    doc.nodes.map((node) => {
+    doc.nodes.map((node, z) => {
       const patch = patchMap.get(node.id);
       if (!patch) return node;
       const updated = {
@@ -176,8 +182,10 @@ export function updateNodes(doc, updates) {
           delete updated[key];
         }
       }
+      changes?.push({ node: updated, z });
       return updated;
     }),
+    changes,
   );
 }
 

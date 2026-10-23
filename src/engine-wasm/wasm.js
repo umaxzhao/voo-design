@@ -21,6 +21,17 @@ export async function createWasmScene(bytes) {
     },
     /** @param {number} x @param {number} y */
     hitTest: (x, y) => scene.hit_test(x, y),
+    /** @param {number} x @param {number} y @param {number} r @param {number} b */
+    drawList(x, y, r, b) {
+      const count = scene.draw_list(x, y, r, b);
+      return {
+        ids: new Uint32Array(memory.memory.buffer, scene.output_ptr(), count).slice(),
+        transforms: new Float32Array(memory.memory.buffer, scene.transforms_ptr(), count * 6).slice(),
+      };
+    },
+    /** @param {number} bucket */
+    setTileBucket: bucket => scene.tile_bucket(bucket),
+    takeTiles: () => scene.take_tiles(),
     takeDirty: () => scene.take_dirty(),
     free: () => scene.free(),
   };

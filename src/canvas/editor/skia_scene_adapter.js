@@ -1,3 +1,4 @@
+import { isPlainRectList } from './render_plain_rects.js';
 /**
  * Our editor document, expressed as the scene the Skia renderer draws.
  *
@@ -150,6 +151,14 @@ export function documentsToScene(
   docs,
   { axis = "horizontal", resolveImageUrl, layouts, spatialIndex, visibleRect } = {},
 ) {
+  // Native paint-order array avoids a full document filter on camera frames.
+  const only = docs.length === 1 ? docs[0] : null;
+  if (only && !layouts && !only.layout && !only.bounds && spatialIndex?.drawList && visibleRect &&
+      isPlainRectList(only.nodes)) {
+    const { ids } = spatialIndex.drawList(visibleRect);
+    const nodes = Array.from(ids, slot => spatialIndex.items[slot]?.node).filter(Boolean);
+    return documentToScene({ ...only, nodes }, { resolveImageUrl, visibleRect });
+  }
   const elements = [];
   let offsetX = 0;
   let offsetY = 0;

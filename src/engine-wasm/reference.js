@@ -10,7 +10,13 @@ export class ReferenceScene {
       const [op, id, ...row] = Array.from(ops.slice(p, p + 7), Math.fround);
       const old = this.rows.get(id);
       if (old) this.mark(old);
-      if (op) { this.rows.set(id, row); this.mark(row); }
+      if (op === 2) {
+        if (!old) continue;
+        const moved = [Math.fround(old[0] + row[0]), Math.fround(old[1] + row[1]),
+          Math.fround(old[2] + row[0]), Math.fround(old[3] + row[1]), old[4]];
+        this.rows.set(id, moved); this.mark(moved);
+      }
+      else if (op) { this.rows.set(id, row); this.mark(row); }
       else this.rows.delete(id);
     }
   }

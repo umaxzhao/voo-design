@@ -41,6 +41,20 @@ function getArrayF32FromWasm0(ptr, len) {
     return getFloat32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
 }
 
+let cachedInt32ArrayMemory0 = null;
+
+function getInt32ArrayMemory0() {
+    if (cachedInt32ArrayMemory0 === null || cachedInt32ArrayMemory0.byteLength === 0) {
+        cachedInt32ArrayMemory0 = new Int32Array(wasm.memory.buffer);
+    }
+    return cachedInt32ArrayMemory0;
+}
+
+function getArrayI32FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getInt32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
+}
+
 const SceneFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_scene_free(ptr >>> 0, 1));
@@ -82,11 +96,40 @@ export class Scene {
         }
     }
     /**
+     * @returns {Int32Array}
+     */
+    take_tiles() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.scene_take_tiles(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayI32FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export_0(r0, r1 * 4, 4);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
      * @param {number} count
      * @returns {number}
      */
     reserve_ops(count) {
         const ret = wasm.scene_reserve_ops(this.__wbg_ptr, count);
+        return ret >>> 0;
+    }
+    /**
+     * @param {number} bucket
+     */
+    tile_bucket(bucket) {
+        wasm.scene_tile_bucket(this.__wbg_ptr, bucket);
+    }
+    /**
+     * @returns {number}
+     */
+    transforms_ptr() {
+        const ret = wasm.scene_transforms_ptr(this.__wbg_ptr);
         return ret >>> 0;
     }
     constructor() {
@@ -120,6 +163,17 @@ export class Scene {
     hit_test(x, y) {
         const ret = wasm.scene_hit_test(this.__wbg_ptr, x, y);
         return ret;
+    }
+    /**
+     * @param {number} x
+     * @param {number} y
+     * @param {number} r
+     * @param {number} b
+     * @returns {number}
+     */
+    draw_list(x, y, r, b) {
+        const ret = wasm.scene_draw_list(this.__wbg_ptr, x, y, r, b);
+        return ret >>> 0;
     }
 }
 
@@ -173,6 +227,7 @@ function __wbg_finalize_init(instance, module) {
     __wbg_init.__wbindgen_wasm_module = module;
     cachedDataViewMemory0 = null;
     cachedFloat32ArrayMemory0 = null;
+    cachedInt32ArrayMemory0 = null;
     cachedUint8ArrayMemory0 = null;
 
 
