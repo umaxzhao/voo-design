@@ -1,4 +1,5 @@
-import { drawPlainRects } from "./render_plain_rects.js";
+import { drawCachedStage } from "./stage_picture_cache.js";
+import { drawPlainRects, isPlainRectList } from "./render_plain_rects.js";
 import { dirtyRectsToDevice, shouldUseDirtyRect } from "./dirty_rect.js";
 // Top-level stage paint loop coordinating page background, nodes, and chrome passes.
 
@@ -66,7 +67,7 @@ import { drawCloneAnchor, drawClonePreview } from "./chrome_clone.js";
  * `bypassAdjustments` is the hold-to-compare preview: image nodes draw with
  * identity adjustments. Preview-only — the export pass never sets it.
  */
-export function draw(
+function drawUncached(
   ctx,
   {
     doc,
@@ -120,6 +121,8 @@ export function draw(
     // Stage-only too: exports must paint every node exactly, never a blit.
     layerCache = null,
     dirtyRects = null,
+    artworkOnly = false,
+    overlaysOnly = false,
     stageWidth = null,
     stageHeight = null,
   },
@@ -139,185 +142,203 @@ export function draw(
   const width = stageWidth ?? canvas.width / dpr;
   const height = stageHeight ?? canvas.height / dpr;
   const dirty = dirtyRectsToDevice(dirtyRects, viewport, dpr, width, height);
-  if (dirtyRects && shouldUseDirtyRect(dirty, width, height, dpr)) {
-    ctx.beginPath();
-    ctx.rect(dirty.x / dpr, dirty.y / dpr, dirty.width / dpr, dirty.height / dpr);
-    ctx.clip();
-    ctx.clearRect(dirty.x / dpr, dirty.y / dpr, dirty.width / dpr, dirty.height / dpr);
-  } else {
-    ctx.clearRect(0, 0, width, height);
-  }
-
-  // The page and everything on it, clipped to the document bounds.
-  ctx.save();
-  ctx.translate(viewport.panX, viewport.panY);
-  ctx.scale(viewport.zoom, viewport.zoom);
-  ctx.beginPath();
-  ctx.rect(page.x, page.y, page.width, page.height);
-  ctx.clip();
-
-  if (pageBackground) {
-    if (doc.backgroundColor && doc.backgroundColor !== "transparent") {
-      ctx.fillStyle = doc.backgroundColor;
-      ctx.fillRect(page.x, page.y, page.width, page.height);
+  const partial = dirtyRects && shouldUseDirtyRect(dirty, width, height, dpr);
+  if (!overlaysOnly) {
+    if (partial) {
+      ctx.beginPath();
+      ctx.rect(dirty.x / dpr, dirty.y / dpr, dirty.width / dpr, dirty.height / dpr);
+      ctx.clip();
+      ctx.clearRect(dirty.x / dpr, dirty.y / dpr, dirty.width / dpr, dirty.height / dpr);
     } else {
-      // A transparent backdrop reads as a checkerboard on screen. Exports only
-      // set pageBackground for blend-mode documents, so this pattern never
-      // leaks into a PNG — eraser/cutout pixels stay transparent there.
-      const source = getCheckerboardSource();
-      if (source) {
-        ctx.fillStyle = ctx.createPattern(source, "repeat");
+      ctx.clearRect(0, 0, width, height);
+    }
+
+    // The page and everything on it, clipped to the document bounds.
+    ctx.save();
+    ctx.translate(viewport.panX, viewport.panY);
+    ctx.scale(viewport.zoom, viewport.zoom);
+    ctx.beginPath();
+    ctx.rect(page.x, page.y, page.width, page.height);
+    ctx.clip();
+
+    if (pageBackground) {
+      if (doc.backgroundColor && doc.backgroundColor !== "transparent") {
+        ctx.fillStyle = doc.backgroundColor;
         ctx.fillRect(page.x, page.y, page.width, page.height);
       } else {
-        ctx.fillStyle = PAGE_BACKGROUND;
-        ctx.fillRect(page.x, page.y, page.width, page.height);
+        // A transparent backdrop reads as a checkerboard on screen. Exports only
+        // set pageBackground for blend-mode documents, so this pattern never
+        // leaks into a PNG — eraser/cutout pixels stay transparent there.
+        const source = getCheckerboardSource();
+        if (source) {
+          ctx.fillStyle = ctx.createPattern(source, "repeat");
+          ctx.fillRect(page.x, page.y, page.width, page.height);
+        } else {
+          ctx.fillStyle = PAGE_BACKGROUND;
+          ctx.fillRect(page.x, page.y, page.width, page.height);
+        }
       }
+    } else if (doc.backgroundColor && doc.backgroundColor !== "transparent") {
+      ctx.fillStyle = doc.backgroundColor;
+      ctx.fillRect(page.x, page.y, page.width, page.height);
     }
-  } else if (doc.backgroundColor && doc.backgroundColor !== "transparent") {
-    ctx.fillStyle = doc.backgroundColor;
-    ctx.fillRect(page.x, page.y, page.width, page.height);
-  }
 
-  const culledIds = cullOffscreen ? cullableNodeIds(doc) : null;
-  const visibleRect = culledIds
-    ? visibleWorldRect(
-        viewport,
-        canvas.width / dpr,
-        canvas.height / dpr,
-        cullMarginWorld(doc, viewport.zoom, dpr),
-      )
-    : null;
-  const activeSpatialIndex =
-    cullOffscreen ? (spatialIndex ?? doc.spatialIndex ?? doc._spatialIndex ?? null) : null;
-  const visibleSet =
-    activeSpatialIndex && visibleRect
-      ? visibleNodeIds(doc, visibleRect, activeSpatialIndex)
+    const activeSpatialIndex =
+      cullOffscreen ? (spatialIndex ?? doc.spatialIndex ?? doc._spatialIndex ?? null) : null;
+    const plainDocument = isPlainRectList(doc.nodes);
+    const culledIds = cullOffscreen && (!plainDocument || !activeSpatialIndex) ? cullableNodeIds(doc) : null;
+    const damageWorld = partial && plainDocument ? {
+      minX: (dirty.x / dpr - viewport.panX - 1) / viewport.zoom,
+      minY: (dirty.y / dpr - viewport.panY - 1) / viewport.zoom,
+      maxX: ((dirty.x + dirty.width) / dpr - viewport.panX + 1) / viewport.zoom,
+      maxY: ((dirty.y + dirty.height) / dpr - viewport.panY + 1) / viewport.zoom,
+    } : null;
+    const visibleRect = cullOffscreen
+      ? (damageWorld ?? visibleWorldRect(
+          viewport,
+          canvas.width / dpr,
+          canvas.height / dpr,
+          plainDocument ? 2 / viewport.zoom : cullMarginWorld(doc, viewport.zoom, dpr),
+        ))
       : null;
-  const stageCache = cullOffscreen ? layerCache : null;
-  stageCache?.beginFrame(ctx);
+    const visibleSet =
+      activeSpatialIndex && visibleRect
+        ? visibleNodeIds(doc, visibleRect, activeSpatialIndex, plainDocument)
+        : null;
+    const stageCache = cullOffscreen ? layerCache : null;
+    stageCache?.beginFrame(ctx);
 
-  const plainRectsPainted = !stageCache && (!visibleRect || visibleSet) &&
-    drawPlainRects(ctx, doc.nodes, { visibleSet, hiddenNodeId, paintNodeIds });
-  for (let i = 0; !plainRectsPainted && i < doc.nodes.length; i += 1) {
-    const node = doc.nodes[i];
-    if (paintNodeIds && !paintNodeIds.has(node.id)) continue;
-    if (node.id === hiddenNodeId) continue;
-    if (visibleSet && !visibleSet.has(node.id)) continue;
-    if (
-      !visibleSet &&
-      culledIds?.has(node.id) &&
-      isBoxOffscreen(nodeVisualAABB(node), visibleRect)
-    )
-      continue;
-    // A hidden folder hides everything inside it, and the folder row itself
-    // is chrome — it never paints.
-    // A child inside a boolean group is painted composited by the boolean group itself.
-    if (
-      isGroupNode(node) ||
-      isHiddenByGroup(doc, node) ||
-      isInsideBooleanGroup(doc, node)
-    )
-      continue;
-    // A mask base only clips the layers above it (Figma masks): it paints nothing
-    // itself, and its shape becomes the alpha of its clipping chain below.
-    if (node.maskBase) continue;
-    // A clipped layer is painted as part of its clipping chain: the chain is
-    // collected below and drawn in one pass, so the loop skips every member.
-    if (node.clipTo) {
-      drawClippingChain(ctx, doc, i, node.clipTo, {
-        hiddenNodeId,
-        docVersion,
-        canvasWidth: canvas.width,
-        canvasHeight: canvas.height,
-        fullResolution,
-        bitmapOf,
-        maskOf,
-        gpu,
-        bypassAdjustments,
-      });
-      // Advance past every layer in the chain.
-      while (
-        i + 1 < doc.nodes.length &&
-        doc.nodes[i + 1].clipTo === node.clipTo
-      ) {
-        i += 1;
-      }
-      continue;
-    }
-    if (node.kind === NODE_KIND.ADJUSTMENT) {
-      if (bypassAdjustments || !node.adjustments || node.visible === false)
+    const plainRectsPainted = !stageCache && (!visibleRect || visibleSet) &&
+      drawPlainRects(ctx, doc.nodes, { visibleSet, hiddenNodeId, paintNodeIds,
+        paintBounds: partial ? {
+          x: (dirty.x / dpr - viewport.panX - 1) / viewport.zoom,
+          y: (dirty.y / dpr - viewport.panY - 1) / viewport.zoom,
+          width: (dirty.width / dpr + 2) / viewport.zoom,
+          height: (dirty.height / dpr + 2) / viewport.zoom,
+        } : null });
+    for (let i = 0; !plainRectsPainted && i < doc.nodes.length; i += 1) {
+      const node = doc.nodes[i];
+      if (paintNodeIds && !paintNodeIds.has(node.id)) continue;
+      if (node.id === hiddenNodeId) continue;
+      if (visibleSet && !visibleSet.has(node.id)) continue;
+      if (
+        !visibleSet &&
+        culledIds?.has(node.id) &&
+        isBoxOffscreen(nodeVisualAABB(node), visibleRect)
+      )
         continue;
-      drawAdjustmentLayer(ctx, doc, node, i, {
-        hiddenNodeId,
+      // A hidden folder hides everything inside it, and the folder row itself
+      // is chrome — it never paints.
+      // A child inside a boolean group is painted composited by the boolean group itself.
+      if (
+        isGroupNode(node) ||
+        isHiddenByGroup(doc, node) ||
+        isInsideBooleanGroup(doc, node)
+      )
+        continue;
+      // A mask base only clips the layers above it (Figma masks): it paints nothing
+      // itself, and its shape becomes the alpha of its clipping chain below.
+      if (node.maskBase) continue;
+      // A clipped layer is painted as part of its clipping chain: the chain is
+      // collected below and drawn in one pass, so the loop skips every member.
+      if (node.clipTo) {
+        drawClippingChain(ctx, doc, i, node.clipTo, {
+          hiddenNodeId,
+          docVersion,
+          canvasWidth: canvas.width,
+          canvasHeight: canvas.height,
+          fullResolution,
+          bitmapOf,
+          maskOf,
+          gpu,
+          bypassAdjustments,
+        });
+        // Advance past every layer in the chain.
+        while (
+          i + 1 < doc.nodes.length &&
+          doc.nodes[i + 1].clipTo === node.clipTo
+        ) {
+          i += 1;
+        }
+        continue;
+      }
+      if (node.kind === NODE_KIND.ADJUSTMENT) {
+        if (bypassAdjustments || !node.adjustments || node.visible === false)
+          continue;
+        drawAdjustmentLayer(ctx, doc, node, i, {
+          hiddenNodeId,
+          docVersion,
+          canvasWidth: canvas.width,
+          canvasHeight: canvas.height,
+          fullResolution,
+          bitmapOf,
+          maskOf,
+          bypassAdjustments,
+        });
+        continue;
+      }
+      const renderState = {
         docVersion,
-        canvasWidth: canvas.width,
-        canvasHeight: canvas.height,
-        fullResolution,
-        bitmapOf,
-        maskOf,
-        bypassAdjustments,
-      });
-      continue;
+        // Nodes are painted bottom-up. The revision plus their position makes a
+        // custom blend tile depend on exactly the backdrop generation beneath it.
+        backdropGeneration: `${docVersion}:${i}`,
+        outputKey: `${canvas.width}x${canvas.height}|${fullResolution ? 1 : 0}`,
+        selectionTransform: selectionTransformBox,
+        videoFrameOf,
+      };
+      const paintNode = (target) =>
+        drawNode(target, node, bitmapOf, maskOf, gpu, bypassAdjustments, renderState);
+      if (!stageCache?.paint(ctx, node, paintNode)) paintNode(ctx);
     }
-    const renderState = {
-      docVersion,
-      // Nodes are painted bottom-up. The revision plus their position makes a
-      // custom blend tile depend on exactly the backdrop generation beneath it.
-      backdropGeneration: `${docVersion}:${i}`,
-      outputKey: `${canvas.width}x${canvas.height}|${fullResolution ? 1 : 0}`,
-      selectionTransform: selectionTransformBox,
-      videoFrameOf,
-    };
-    const paintNode = (target) =>
-      drawNode(target, node, bitmapOf, maskOf, gpu, bypassAdjustments, renderState);
-    if (!stageCache?.paint(ctx, node, paintNode)) paintNode(ctx);
-  }
 
-  if (penDraft || penEdit) {
-    drawPenOverlay(ctx, penDraft, penEdit, penEditNode, penInsertPreview);
-  }
-  // A selected pen path re-strokes its own outline in green, so the user can
-  // tell the line itself is selected — not just its bounding box. The node
-  // being anchor-edited is already painted that green by the overlay.
-  if (selectionSet) {
-    for (const selectedNode of selectionSet) {
-      if (penEditNode && selectedNode.id === penEditNode.id) continue;
-      drawPenSelectionTint(ctx, selectedNode);
+    if (penDraft || penEdit) {
+      drawPenOverlay(ctx, penDraft, penEdit, penEditNode, penInsertPreview);
     }
-  }
+    // A selected pen path re-strokes its own outline in green, so the user can
+    // tell the line itself is selected — not just its bounding box. The node
+    // being anchor-edited is already painted that green by the overlay.
+    if (selectionSet) {
+      for (const selectedNode of selectionSet) {
+        if (penEditNode && selectedNode.id === penEditNode.id) continue;
+        drawPenSelectionTint(ctx, selectedNode);
+      }
+    }
 
-  // View-only grid overlay (never exported): hairline columns and rows in
-  // document space, drawn over nodes so it serves as an active alignment aid.
-  const isGridEnabled = Boolean(
-    grid && grid.enabled !== false && (grid.enabled || grid.visible) && grid.size > 0,
-  );
-  if (isGridEnabled) {
-    const gridSize = grid.size || 32;
-    ctx.save();
-    ctx.lineWidth = 1 / viewport.zoom;
-    ctx.beginPath();
-    const startX = page.x - (page.x % gridSize);
-    for (let x = startX; x <= page.x + page.width; x += gridSize) {
-      ctx.moveTo(x, page.y);
-      ctx.lineTo(x, page.y + page.height);
+    // View-only grid overlay (never exported): hairline columns and rows in
+    // document space, drawn over nodes so it serves as an active alignment aid.
+    const isGridEnabled = Boolean(
+      grid && grid.enabled !== false && (grid.enabled || grid.visible) && grid.size > 0,
+    );
+    if (isGridEnabled) {
+      const gridSize = grid.size || 32;
+      ctx.save();
+      ctx.lineWidth = 1 / viewport.zoom;
+      ctx.beginPath();
+      const startX = page.x - (page.x % gridSize);
+      for (let x = startX; x <= page.x + page.width; x += gridSize) {
+        ctx.moveTo(x, page.y);
+        ctx.lineTo(x, page.y + page.height);
+      }
+      const startY = page.y - (page.y % gridSize);
+      for (let y = startY; y <= page.y + page.height; y += gridSize) {
+        ctx.moveTo(page.x, y);
+        ctx.lineTo(page.x + page.width, y);
+      }
+      // Dual stroke: subtle dark hairline for bright/white backgrounds,
+      // plus mint hairline for dark backgrounds, visible at all contrasts.
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.18)";
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(178, 255, 214, 0.32)";
+      ctx.stroke();
+      ctx.restore();
     }
-    const startY = page.y - (page.y % gridSize);
-    for (let y = startY; y <= page.y + page.height; y += gridSize) {
-      ctx.moveTo(page.x, y);
-      ctx.lineTo(page.x + page.width, y);
-    }
-    // Dual stroke: subtle dark hairline for bright/white backgrounds,
-    // plus mint hairline for dark backgrounds, visible at all contrasts.
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.18)";
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(178, 255, 214, 0.32)";
-    ctx.stroke();
+
     ctx.restore();
+
   }
+  if (artworkOnly) { ctx.restore(); return; }
 
-  ctx.restore();
-
-  if (includeRegions) drawRegions(ctx, doc, viewport, hiddenLabelId);
+  if (includeRegions && !isPlainRectList(doc.nodes)) drawRegions(ctx, doc, viewport, hiddenLabelId);
 
   if (cropRect) drawCrop(ctx, cropRect, doc, viewport);
   else if (selectionSet) drawSelectionSet(ctx, selectionSet, viewport);
@@ -380,4 +401,8 @@ export function draw(
   if (guides && guides.length > 0) drawGuides(ctx, guides, viewport, dpr);
 
   ctx.restore();
+}
+
+export function draw(ctx, options) {
+  return drawCachedStage(ctx, options, drawUncached);
 }

@@ -62,6 +62,7 @@ export function renderEngineStage({
   spatialIndex = null,
   layerCache = null,
   dirtyRects = null,
+  previewMotion = false,
 }) {
   const dpr = draftRender ? 1 : window.devicePixelRatio || 1;
   const width = stageWidth || stage.clientWidth;
@@ -139,6 +140,8 @@ export function renderEngineStage({
     stageWidth: width,
     stageHeight: height,
     dirtyRects,
+    previewMotion,
+    cameraMoving: viewportTools.isMoving?.() ?? false,
     pageBackground: !mixedLayerMode,
     paintNodeIds: mixedLayerMode ? new Set() : null,
     selectionRect: selRect,

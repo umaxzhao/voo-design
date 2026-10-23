@@ -9,7 +9,7 @@ const BUTTON_CLASS = "flex h-8 w-full items-center rounded-xl bg-[#222222] px-3 
 export default function VariantsSection({ engine, node = null, sourceDoc = null, isMainComponent = false }) {
   const { t } = useI18n();
   const [, refresh] = useReducer(value => value + 1, 0);
-  useEffect(() => engine?.subscribeRender?.(refresh), [engine]);
+  useEffect(() => engine?.subscribeRender?.(refresh, { documentOnly: true }), [engine]);
   const host = engine?.getDocument?.();
   if (!host) return null;
   const source = node ? host.components?.[node.sourceCanvasId] ?? sourceDoc : host;

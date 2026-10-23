@@ -138,7 +138,7 @@ export default function LinearArraySection({
     if (!engine || typeof engine.subscribeRender !== "function") return;
     const unsubscribe = engine.subscribeRender(() => {
       setRenderTicket((t) => t + 1);
-    });
+    }, { documentOnly: true });
     return unsubscribe;
   }, [engine]);
 

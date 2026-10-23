@@ -1,3 +1,4 @@
+import { isPlainRectList } from "./render_plain_rects.js";
 /**
  * The editor viewport: zoom and pan over the document.
  *
@@ -21,7 +22,7 @@ import {
 const MIN_FIT_SPAN = 160;
 
 /** Quiet time after the last view change before exact blend tiles return. */
-const VIEW_SETTLE_MS = 250;
+const VIEW_SETTLE_MS = 400;
 
 /**
  * @param {object} options
@@ -39,19 +40,37 @@ export function createViewport({
 }) {
   let viewport = { zoom: 1, panX: 0, panY: 0 };
   let settleTimer = 0;
+  let moving = false;
+  let settleFrame = 0;
+  let revision = 0;
 
   function setViewport(next) {
     viewport = next;
+    const currentRevision = ++revision;
+    if (settleFrame) cancelAnimationFrame(settleFrame);
+    settleFrame = 0;
+    moving = true;
     beginCustomBlendInteraction();
     beginLayerCacheInteraction();
     clearTimeout(settleTimer);
     settleTimer = setTimeout(() => {
-      endCustomBlendInteraction();
-      endLayerCacheInteraction();
-      requestRender();
+      // A slow raster can exceed the quiet interval while the next camera
+      // callback is already queued. Let that callback cancel settling first.
+      settleFrame = requestAnimationFrame(() => {
+        settleFrame = 0;
+        if (currentRevision !== revision) return;
+        moving = false;
+        endCustomBlendInteraction();
+        endLayerCacheInteraction();
+        requestRender();
+        notify();
+      });
     }, VIEW_SETTLE_MS);
     requestRender();
-    notify();
+    // Plain 2D artwork and selection chrome follow the camera on canvas.
+    // Publish inspector/layer UI when motion settles; DOM/mixed documents
+    // retain live notifications so their overlays track every camera change.
+    if (!getDoc().nodes || !isPlainRectList(getDoc().nodes)) notify();
   }
 
   /** One axis of the fit area: the stage span less both insets. */
@@ -143,6 +162,15 @@ export function createViewport({
   }
 
   return {
+    dispose() {
+      ++revision;
+      clearTimeout(settleTimer);
+      if (settleFrame) cancelAnimationFrame(settleFrame);
+      moving = false;
+      endCustomBlendInteraction();
+      endLayerCacheInteraction();
+    },
+    isMoving: () => moving,
     getViewport: () => viewport,
     getZoom: () => viewport.zoom,
     setViewport,

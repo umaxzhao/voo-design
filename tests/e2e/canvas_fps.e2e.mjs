@@ -2,7 +2,9 @@
 //
 // Usage: `node tests/e2e/canvas_fps.e2e.mjs` (or `npm run test:e2e:fps`).
 // VOO_FPS_NODES=1000,5000,20000 selects sizes; VOO_FPS_MS=2000 sets each sample.
+// VOO_FPS_SCENARIOS=zoom,drag isolates interactions for profiling.
 // VOO_FPS_PROFILE=/tmp/canvas.cpuprofile captures a Chrome CPU profile.
+// VOO_FPS_SCREENSHOT_DIR=/tmp/canvas-fps saves settled full-page PNGs.
 // Uses Playwright chromium and the `?voo-test=1` engine hook. If no dev server
 // is reachable it starts Vite briefly; if Playwright/Chromium is unavailable it
 // fails with installation instructions. Install once with:
@@ -19,8 +21,11 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const RESULTS_PATH = path.join(ROOT, "docs", "canvas-fps-results.json");
 const NODE_COUNTS = (process.env.VOO_FPS_NODES || "1000,5000,20000").split(",").map(Number);
 if (NODE_COUNTS.some(n => !Number.isInteger(n) || n < 1)) throw new Error("Invalid VOO_FPS_NODES");
+const SCENARIOS = (process.env.VOO_FPS_SCENARIOS || "pan,zoom,drag").split(",");
+if (SCENARIOS.some(s => !["pan", "zoom", "drag"].includes(s))) throw new Error("Invalid VOO_FPS_SCENARIOS");
 const SAMPLE_MS = Number(process.env.VOO_FPS_MS || 2000);
 if (!Number.isFinite(SAMPLE_MS) || SAMPLE_MS <= 0) throw new Error("Invalid VOO_FPS_MS");
+const SCREENSHOT_DIR = process.env.VOO_FPS_SCREENSHOT_DIR;
 const EXPLICIT_URL = process.env.VOO_URL || null;
 const CANDIDATES = EXPLICIT_URL
   ? [EXPLICIT_URL]
@@ -90,6 +95,7 @@ async function loadChromium() {
 let child = null;
 let browser = null;
 try {
+  if (SCREENSHOT_DIR) await fs.mkdir(SCREENSHOT_DIR, { recursive: true });
   const playwright = await loadChromium();
   if (!playwright) {
     log("Cannot measure canvas FPS: playwright is not installed. Run `npm i -D playwright && npx playwright install chromium`.");
@@ -150,7 +156,11 @@ try {
         height: Math.ceil(nodeCount / columns) * 24, nodes }, { commit: false });
       editor.zoomToFit();
     }, nodeCount);
-    for (const scenario of ["pan", "zoom", "drag"]) {
+    if (SCREENSHOT_DIR) {
+      await page.waitForTimeout(1000);
+      await page.screenshot({ path: path.join(SCREENSHOT_DIR, `fps-${nodeCount}-settled.png`), fullPage: true });
+    }
+    for (const scenario of SCENARIOS) {
       await page.evaluate(() => window.__vooEditor.zoomToFit());
       await page.waitForTimeout(1000);
       const result = await page.evaluate(async ({ scenario, sampleMs }) => {
@@ -194,8 +204,51 @@ try {
       }
       results.push({ scenario, ...result });
       log(results.at(-1));
+      if (SCREENSHOT_DIR && (scenario === "zoom" || scenario === "drag")) {
+        await page.waitForTimeout(400);
+        await page.screenshot({ path: path.join(SCREENSHOT_DIR, `fps-${nodeCount}-after-${scenario}.png`), fullPage: true });
+      }
     }
   }
+  // Outside timed samples: partial paint must equal a subsequent full paint,
+  // including overlapping translucent rectangles and the selection handles.
+  const previewPixelsMatch = await page.evaluate(async () => {
+    const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
+    const editor = window.__vooEditor;
+    const nodes = [
+      createRectNode({ x: 50, y: 50, width: 100, height: 100, fill: "#3366ff", opacity: .5 }),
+      createRectNode({ x: 100, y: 90, width: 100, height: 100, fill: "#ff6633", opacity: .6 }),
+    ];
+    editor.setDoc({ ...editor.getDocument(), width: 500, height: 500, nodes }, { commit: false });
+    editor.zoomToFit();
+    editor.selectExactly([nodes[0].id]);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const paint = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    // Free-mode pages own an offscreen canvas, so intercept the actual engine
+    // clear rather than assuming a per-artboard canvas exists in the DOM.
+    const proto = CanvasRenderingContext2D.prototype, clear = proto.clearRect;
+    let canvas = null;
+    proto.clearRect = function(x, y, width, height) {
+      if (width > 0 && height > 0 && width <= this.canvas.width && height <= this.canvas.height) canvas = this.canvas;
+      return clear.call(this, x, y, width, height);
+    };
+    try {
+      editor.updateNodes([{ id: nodes[0].id, x: 80, y: 70 }], { commit: false, preview: true });
+      await paint();
+    } finally { proto.clearRect = clear; }
+    if (!canvas) throw new Error("Preview did not repaint the stage");
+    const partial = canvas.toDataURL();
+    const { draw } = await import("/src/canvas/editor/scene_renderer.js");
+    const doc = editor.getDocument();
+    const selected = doc.nodes[0];
+    // No cullOffscreen flag: force the authoritative renderer, bypassing caches.
+    draw(canvas.getContext("2d"), { doc, viewport: editor.getViewport(),
+      dpr: window.devicePixelRatio || 1, selectionNode: selected,
+      selectionRect: { x: selected.x, y: selected.y, width: selected.width, height: selected.height },
+      bitmapOf: () => null, maskOf: () => null });
+    return partial === canvas.toDataURL();
+  });
+  if (!previewPixelsMatch) throw new Error("Cached/partial preview pixels differ from full repaint");
   if (profiler) {
     const { profile } = await profiler.send("Profiler.stop");
     await fs.writeFile(process.env.VOO_FPS_PROFILE, JSON.stringify(profile));
@@ -209,6 +262,8 @@ try {
     url,
     viewport: "1440x1000",
     requestedNodes: NODE_COUNTS,
+    scenarios: SCENARIOS,
+    previewPixelsMatch,
     sampleMs: SAMPLE_MS,
     results,
   };

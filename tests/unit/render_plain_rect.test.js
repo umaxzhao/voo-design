@@ -56,3 +56,13 @@ describe("plain rectangle rendering", () => {
     expect(ctx.fillRect).not.toHaveBeenCalled();
   });
 });
+
+it("submits only damage intersections while retaining their paint order", () => {
+  const ctx = context();
+  const a = { ...rect(), x: 100 }, b = rect(), c = { ...rect(), opacity: .5 };
+  const colors = [];
+  ctx.fillRect.mockImplementation(() => colors.push(ctx.globalAlpha));
+  drawPlainRects(ctx, [a, b, c], { paintBounds: { x: 0, y: 0, width: 30, height: 30 } });
+  expect(ctx.fillRect).toHaveBeenCalledTimes(2);
+  expect(colors).toEqual([1, .5]);
+});

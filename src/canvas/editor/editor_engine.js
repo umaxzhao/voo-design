@@ -1,3 +1,8 @@
+import { documentRenderListener } from "./render_notifications.js";
+import { releaseStagePictureCache } from "./stage_picture_cache.js";
+import { TOOL } from "./editor_constants.js";
+import { previewDirtyRect } from "./preview_dirty_rect.js";
+import { unionRect } from "./dirty_rect.js";
 /**
  * The image editor engine facade.
  * Coordinates subsystems, renders frames, and exposes the public editor API.
@@ -213,13 +218,32 @@ export function createEditor({
       ctrl?.selectionController?.setSelectionTransform?.(null),
   });
 
+  let previewDirty = null;
+  let previewViewport = null;
+  let previewRenderVersion = -1;
+  let previewSelection = null;
+  let previewCanRepaint = true;
+  let previewStageSize = null;
+  let previewDpr = null;
   function setDoc(next, { commit = true, name = null, preview = false } = {}) {
     if (preview) {
+      const region = previewDirtyRect(doc, next, viewportTools.getZoom());
+      if (!previewDirty) {
+        previewViewport = viewportTools.getViewport();
+        previewRenderVersion = renderVersion;
+        previewSelection = selection.getIds().join("\0");
+        previewDpr = draftRender ? 1 : window.devicePixelRatio || 1;
+        previewStageSize = `${cachedStageWidth}:${cachedStageHeight}`;
+      }
+      if (!region) previewCanRepaint = false;
+      previewDirty = unionRect(previewDirty, region);
       doc = next;
       docVersion += 1;
       requestRender();
       return;
     }
+    previewDirty = null;
+    previewCanRepaint = false;
     doc = ctrl.initController.measureTextNodes(next);
     docVersion += 1;
     ctrl.initController.queueFontLoads(doc);
@@ -369,15 +393,29 @@ export function createEditor({
       getEffectiveNode,
       mixedLayerMode,
       spatialIndex: getSpatialIndex(evaluatedDoc),
+      previewMotion: !!previewDirty,
+      dirtyRects: previewCanRepaint &&
+        previewDpr === (draftRender ? 1 : window.devicePixelRatio || 1) &&
+        previewStageSize === `${cachedStageWidth}:${cachedStageHeight}` &&
+        previewViewport === viewportTools.getViewport() &&
+        previewRenderVersion === renderVersion &&
+        previewSelection === selection.getIds().join("\0") &&
+        selection.getIds().length <= 1 && !mixedLayerMode &&
+        !marqueeRect && !textDraftRect && !hoveredNodeId &&
+        ctrl.toolsController.getTool() === TOOL.SELECT
+        ? previewDirty : null,
       // Off until it measures faster: in Chrome, blitting 400 cached shadow
       // surfaces during a pan was slower than painting the shadows directly.
       layerCache: null,
     });
+    previewDirty = null;
+    previewViewport = null;
+    previewCanRepaint = true;
     for (const listener of renderListeners) listener();
   }
 
   function requestRender() {
-    if (frame) return;
+    if (disposed || frame) return;
     frame = requestAnimationFrame(() => {
       frame = 0;
       render();
@@ -385,7 +423,7 @@ export function createEditor({
   }
 
   function notify() {
-    if (notifyFrame) return;
+    if (disposed || notifyFrame) return;
     notifyFrame = requestAnimationFrame(() => {
       notifyFrame = 0;
       renderVersion += 1;
@@ -683,9 +721,10 @@ export function createEditor({
         renderVersion,
       });
     },
-    subscribeRender(listener) {
-      renderListeners.add(listener);
-      return () => renderListeners.delete(listener);
+    subscribeRender(listener, { documentOnly = false } = {}) {
+      const callback = documentOnly ? documentRenderListener(getDoc, listener) : listener;
+      renderListeners.add(callback);
+      return () => renderListeners.delete(callback);
     },
     setBypassAdjustments(next) {
       const value = Boolean(next);
@@ -781,6 +820,8 @@ export function createEditor({
 
   api.dispose = () => {
     disposed = true;
+    viewportTools.dispose();
+    releaseStagePictureCache(ctx);
     renderListeners.clear();
     
     if (frame) cancelAnimationFrame(frame);
