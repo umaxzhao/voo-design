@@ -161,6 +161,7 @@ export function serialiseDocument(doc) {
     width: doc.width,
     height: doc.height,
     backgroundColor: doc.backgroundColor ?? "transparent",
+    ...(doc.isCanvasRoot === true ? { isCanvasRoot: true } : {}),
     ...(colorVariables.length > 0 ? { colorVariables } : {}),
     // A non-destructive crop travels with the document; without it the full
     // canvas is shown.
@@ -390,6 +391,7 @@ export function deserialiseDocument(value) {
     width: value.width,
     height: value.height,
     backgroundColor: value.backgroundColor ?? "transparent",
+    ...(value.isCanvasRoot === true ? { isCanvasRoot: true } : {}),
     ...(colorVariables.length > 0 ? { colorVariables } : {}),
     // A non-destructive crop comes back only when it is a sane, in-bounds
     // rect; anything else is dropped so the full canvas shows instead.

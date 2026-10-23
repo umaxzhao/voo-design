@@ -30,10 +30,10 @@ export function buildVisibleTreeItems({
 
   for (const page of pages) {
     const isActive = page.id === activeCanvasId || page.isFallback;
-    const isCollapsed = collapsedCanvasIds.has(page.id);
+    const isCollapsed = !page.isCanvasRoot && collapsedCanvasIds.has(page.id);
     const isExpanded = !isCollapsed;
 
-    if (!page.isFallback) {
+    if (!page.isFallback && !page.isCanvasRoot) {
       items.push({
         key: `canvas-${page.id}`,
         domId: `canvas-row-${page.id}`,
@@ -61,7 +61,7 @@ export function buildVisibleTreeItems({
             layerId: row.node.id,
             node: row.node,
             index: row.index,
-            depth: (row.depth ?? 0) + (page.isFallback ? 0 : 1),
+            depth: (row.depth ?? 0) + (page.isFallback || page.isCanvasRoot ? 0 : 1),
             isActiveCanvas: true,
             isGroup,
             hasChildren: hasVisibleChildren,
@@ -87,7 +87,7 @@ export function buildVisibleTreeItems({
             layerId: row.node.id,
             node: row.node,
             index: row.index,
-            depth: (row.depth ?? 0) + 1,
+            depth: (row.depth ?? 0) + (page.isCanvasRoot ? 0 : 1),
             isActiveCanvas: false,
             isGroup: row.isGroup,
             hasChildren: row.hasChildren,

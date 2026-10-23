@@ -1058,7 +1058,12 @@ describe("E2E Acceptance Criteria & 4-Tier Verification Suite", () => {
       // 3. Convert page into Skia unified scene elements
       const pageDoc = vooFile.document.pages[0].sceneDoc;
       const scene = documentToScene(pageDoc, { offsetX: 0, offsetY: 0 });
-      expect(scene.length).toBeGreaterThanOrEqual(2);
+      expect(pageDoc.isCanvasRoot).toBe(true);
+      const header = pageDoc.nodes.find((node) => node.name === "Header");
+      const logo = pageDoc.nodes.find((node) => node.name === "Logo");
+      expect(header).toMatchObject({ frame: true, parentId: null });
+      expect(logo.parentId).toBe(header.id);
+      expect(scene.map((element) => element.id)).toEqual([logo.id]);
 
       // 4. Index scene elements into R-Tree
       const rtree = new SpatialIndex();
@@ -1080,9 +1085,8 @@ describe("E2E Acceptance Criteria & 4-Tier Verification Suite", () => {
       const viewRect = visibleWorldRect(camera, 1440, 900, 0);
       const visible = rtree.search(viewRect);
 
-      expect(visible.map((v) => v.id)).toContain("frame-page");
-      const logoHit = visible.find((v) => v.id.includes("Logo") || v.id.length > 0);
-      expect(logoHit).toBeDefined();
+      expect(visible.map((v) => v.id)).not.toContain("frame-page");
+      expect(visible.map((v) => v.id)).toContain(logo.id);
     });
   });
 });

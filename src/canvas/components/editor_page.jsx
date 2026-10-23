@@ -888,7 +888,7 @@ export default function EditorPage({
           onKeyDownCapture={handleAdjustmentKey}
           onDoubleClickCapture={openInstanceAtPoint}
           className={`absolute inset-0 touch-none overflow-hidden transition-colors ${
-            focused ? "ring-1 ring-[#b2ffd6]/60" : "ring-1 ring-white/10"
+            doc?.isCanvasRoot ? "" : focused ? "ring-1 ring-[#b2ffd6]/60" : "ring-1 ring-white/10"
           }`}
           style={{
             borderRadius: doc?.cornerRadius ? `${doc.cornerRadius}px` : undefined,
@@ -915,7 +915,8 @@ export default function EditorPage({
           ref={titleRef}
           data-testid="editor-page-title"
           data-editor-artboard-title
-          style={{ top: -EDITOR_PAGE_HEADER_INSET }}
+          hidden={doc?.isCanvasRoot}
+          style={{ top: -EDITOR_PAGE_HEADER_INSET, display: doc?.isCanvasRoot ? "none" : undefined }}
           // A full-width bar over the frame: name at the left, the canvas-type
           // switch at the right. The focused frame's bar is tinted with its
           // type colour; the others show just the name.
@@ -958,7 +959,7 @@ export default function EditorPage({
         <div
           data-testid="editor-page-toolbar"
           className="absolute left-1/2 z-40 flex -translate-x-1/2 items-center gap-1"
-          style={{ top: "calc(100% + 8px)" }}
+          style={{ top: "calc(100% + 8px)", display: doc?.isCanvasRoot ? "none" : undefined }}
         >
           {doc && focused ? (
             <EditorContextualTaskBar
@@ -1026,7 +1027,7 @@ export default function EditorPage({
         </div>
 
         {/* Add Canvas Button in Free Mode - only on the right of the last canvas */}
-        {onAddCanvas && isLast ? (
+        {onAddCanvas && isLast && !doc?.isCanvasRoot ? (
           <button
             type="button"
             data-testid="editor-add-canvas-btn"

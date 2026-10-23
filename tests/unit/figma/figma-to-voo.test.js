@@ -1,9 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   figmaMessageToPages,
   figmaMessageToVooFile,
 } from "../../../src/canvas/figma/figma-to-voo.js";
 import { imageIdsOfDocument, isValidVooFile } from "../../../electron/voo_format.js";
+
+import { serialiseDocument, deserialiseDocument } from "../../../src/canvas/editor/scene_model_serialization.js";
+import { documentToScene } from "../../../src/canvas/editor/skia_scene_adapter.js";
+import { buildVisibleTreeItems } from "../../../src/canvas/components/editor_canvas_tree_items.js";
+
+import { draw } from "../../../src/canvas/editor/chrome_draw.js";
 
 const guid = (localID) => ({ sessionID: 0, localID });
 
@@ -74,7 +80,7 @@ function sampleMessage() {
 }
 
 describe("figmaMessageToPages", () => {
-  it("turns each top-level frame into a page and keeps loose shapes on their own page", () => {
+  it("keeps top-level frames and loose shapes on the same Figma page", () => {
     const { pages } = figmaMessageToPages(sampleMessage());
 
     // One editor page per Figma page: the frame and the loose shape share one canvas.
@@ -181,6 +187,41 @@ describe("figmaMessageToPages", () => {
 });
 
 describe("figmaMessageToVooFile", () => {
+  it("persists canvas-root content without adding a synthetic page frame", () => {
+    const { vooFile } = figmaMessageToVooFile(sampleMessage(), new Map());
+    const page = vooFile.document.pages[0];
+    const doc = deserialiseDocument(page.sceneDoc);
+    expect(doc.isCanvasRoot).toBe(true);
+    expect(serialiseDocument(doc).isCanvasRoot).toBe(true);
+    const roots = doc.nodes.filter((node) => !node.parentId);
+    expect(roots.map((node) => node.name)).toEqual(["Home", "Path"]);
+    expect(roots[0]).toMatchObject({ frame: true, isFrame: true });
+    expect(doc.nodes.some((node) => node.name === "Page 1")).toBe(false);
+
+    const scene = documentToScene(doc, {});
+    expect(scene.some((node) => node.id === `frame-${doc.id ?? "page"}`)).toBe(false);
+    expect(scene.find((node) => node.id === roots[1].id).parentId ?? null).toBeNull();
+    const loose = { ...roots[1], x: doc.width + 100, y: 0 };
+    const outside = documentToScene({ ...doc, nodes: [loose] }, {
+      visibleRect: { x: loose.x, y: loose.y, width: loose.width, height: loose.height },
+    });
+    expect(outside.map((node) => node.id)).toEqual([loose.id]);
+    // Regular editor documents still have their artboard frame.
+    expect(documentToScene({ ...doc, isCanvasRoot: false }, {})[0].kind).toBe("frame");
+
+    for (const activeCanvasId of [page.id, "another-page"]) {
+      const items = buildVisibleTreeItems({
+        canvasPages: [{ id: page.id, isCanvasRoot: true, nodes: doc.nodes }],
+        activeCanvasId,
+        collapsedCanvasIds: new Set([page.id]),
+        activeRows: roots.map((node, index) => ({ node, index, depth: 0 })),
+      });
+      expect(items.some((item) => item.type === "canvas")).toBe(false);
+      expect(items.find((item) => item.node.name === "Home").depth).toBe(0);
+      expect(items.find((item) => item.node.name === "Path").depth).toBe(0);
+    }
+  });
+
   it("builds a valid v2 .voo envelope that the existing open path can load", () => {
     const { vooFile, layerCount } = figmaMessageToVooFile(sampleMessage(), new Map());
 
@@ -212,5 +253,19 @@ describe("figmaMessageToVooFile", () => {
 
     expect(ids).toContain("img-ab01");
     expect(vooFile.assets["img-ab01"]).toMatch(/^data:image\/png;base64,/);
+  });
+});
+
+
+describe("canvas-root Canvas2D fallback", () => {
+  it.each([true, false])("only clips and paints an outer artboard for ordinary documents (root=%s)", (isCanvasRoot) => {
+    const ctx = { canvas: { width: 800, height: 600 } };
+    for (const name of ["save", "restore", "setTransform", "clearRect", "translate", "scale", "beginPath", "rect", "clip", "fillRect"]) ctx[name] = vi.fn();
+    draw(ctx, {
+      doc: { width: 100, height: 100, nodes: [], backgroundColor: "#ffffff", isCanvasRoot },
+      viewport: { panX: 0, panY: 0, zoom: 1 }, dpr: 1, artworkOnly: true,
+    });
+    expect(ctx.clip).toHaveBeenCalledTimes(isCanvasRoot ? 0 : 1);
+    expect(ctx.fillRect).toHaveBeenCalledTimes(isCanvasRoot ? 0 : 1);
   });
 });

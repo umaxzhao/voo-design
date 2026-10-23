@@ -98,7 +98,7 @@ export function documentToScene(
   };
 
   // Frustum culling: if frame is entirely offscreen, omit its children
-  if (visibleRect) {
+  if (visibleRect && !doc.isCanvasRoot) {
     const frameBox = { x: offsetX, y: offsetY, width: doc.width, height: doc.height };
     if (isBoxOffscreen(frameBox, visibleRect)) {
       return [frame];
@@ -131,13 +131,13 @@ export function documentToScene(
     // arrowheads — where every other node is a single element.
     .flat()
     .map((el) => {
-      if (!el.parentId) {
+      if (!el.parentId && !doc.isCanvasRoot) {
         return { ...el, parentId: frame.id };
       }
       return el;
     });
 
-  return [frame, ...nodes];
+  return doc.isCanvasRoot ? nodes : [frame, ...nodes];
 }
 
 /**

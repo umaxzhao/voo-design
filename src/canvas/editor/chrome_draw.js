@@ -153,15 +153,17 @@ function drawUncached(
       ctx.clearRect(0, 0, width, height);
     }
 
-    // The page and everything on it, clipped to the document bounds.
+    // Ordinary artboards clip to their bounds; imported canvas roots are unbounded.
     ctx.save();
     ctx.translate(viewport.panX, viewport.panY);
     ctx.scale(viewport.zoom, viewport.zoom);
-    ctx.beginPath();
-    ctx.rect(page.x, page.y, page.width, page.height);
-    ctx.clip();
+    if (!doc.isCanvasRoot) {
+      ctx.beginPath();
+      ctx.rect(page.x, page.y, page.width, page.height);
+      ctx.clip();
+    }
 
-    if (pageBackground) {
+    if (!doc.isCanvasRoot && pageBackground) {
       if (doc.backgroundColor && doc.backgroundColor !== "transparent") {
         ctx.fillStyle = doc.backgroundColor;
         ctx.fillRect(page.x, page.y, page.width, page.height);
@@ -178,7 +180,7 @@ function drawUncached(
           ctx.fillRect(page.x, page.y, page.width, page.height);
         }
       }
-    } else if (doc.backgroundColor && doc.backgroundColor !== "transparent") {
+    } else if (!doc.isCanvasRoot && doc.backgroundColor && doc.backgroundColor !== "transparent") {
       ctx.fillStyle = doc.backgroundColor;
       ctx.fillRect(page.x, page.y, page.width, page.height);
     }
