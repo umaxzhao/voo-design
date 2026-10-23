@@ -19,4 +19,4 @@ Each task gets a fresh browser context and a fresh document. `--critique` uses t
 
 Dedicated server defaults are bridge port 4290 and Vite port 5199. Override with `VOO_DESIGN_BENCH_BRIDGE_PORT` / `VOO_DESIGN_BENCH_VITE_PORT` (or the E2E's `VOO_CODEX_BRIDGE_PORT` / `VOO_CODEX_VITE_PORT`). `VOO_DESIGN_BENCH_TIMEOUT_MS` defaults to 900000 per task, including critique turns. The runner starts its own servers with strict ports and shuts down their process groups when finished.
 
-Recapture saved documents with `node scripts/design-bench/recapture.mjs --label=after [--tasks=id1,id2]` (port `VOO_DESIGN_BENCH_RECAPTURE_PORT`, default 5299); `--score-only` or the exported `scoreOnly(options)` preserves existing PNGs.
+Recapture saved documents with `node scripts/design-bench/recapture.mjs --label=after [--tasks=id1,id2]` using pure Node schematic PNG previews (maximum side 960px, no browser or Vite); `--score-only` or the exported `scoreOnly(options)` preserves existing PNGs.
