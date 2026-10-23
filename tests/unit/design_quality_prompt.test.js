@@ -144,6 +144,41 @@ describe("critique loop stub contract", () => {
 });
 
 describe("buildDesignQualityPrompt", () => {
+  it("picks the dashboard recipe from the request within the active kit", () => {
+    const prompt = buildDesignQualityPrompt({ userText: "Build a dashboard", kit: STYLE_KITS["dribbble-saas"] });
+    expect(prompt).toContain(EXEMPLARS.find((e) => e.id === "analytics-dark-shot").description);
+    expect(pickExemplars("Build a dashboard", 4, "dribbble-saas")[0].id).toBe("analytics-dark-shot");
+  });
+
+  it("picks the pricing recipe from the request", () => {
+    const prompt = buildDesignQualityPrompt({ userText: "Build a pricing page", kit: STYLE_KITS["dribbble-saas"] });
+    expect(prompt).toContain(EXEMPLARS.find((e) => e.id === "pricing-tiers").description);
+    expect(pickExemplars("Build a pricing page", 4, "dribbble-saas")[0].id).toBe("pricing-tiers");
+  });
+
+  it("labels at most one cross-kit recipe and includes only its structure", () => {
+    for (const kit of Object.values(STYLE_KITS)) {
+      for (const userText of ["dashboard", "pricing", "", "unmatched request"]) {
+        const selected = pickExemplars(userText, 4, kit.id);
+        const foreign = selected.filter((e) => e.kit !== kit.id);
+        expect(foreign.length).toBeLessThanOrEqual(1);
+        expect(selected.filter((e) => e.kit === kit.id)).toHaveLength(
+          Math.min(4, EXEMPLARS.filter((e) => e.kit === kit.id).length),
+        );
+        const prompt = buildDesignQualityPrompt({ userText, kit });
+        for (const e of foreign) {
+          expect(e.structureOnly).toBe(true);
+          expect(prompt).toContain(`(${e.kit}; structure only, restyle with the active kit) ${e.structure}`);
+          expect(prompt).not.toContain(e.description);
+        }
+        const recipes = prompt.split("[Exemplar recipes — follow the nearest one]\n")[1].split("\n");
+        for (const recipe of recipes) {
+          expect(recipe.includes(`(${kit.id})`) || recipe.includes("structure only, restyle with the active kit")).toBe(true);
+        }
+      }
+    }
+  });
+
   it("embeds the kit block, rules and exemplars", () => {
     const promptText = buildDesignQualityPrompt({
       userText: "analytics dashboard with KPI cards",

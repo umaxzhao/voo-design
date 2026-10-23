@@ -9,7 +9,7 @@ import { DESIGN_TOKENS } from "./tokens.js";
 
 export function buildDesignQualityPrompt({ userText, kit } = {}) {
   const activeKit = kit && STYLE_KIT_SHAPE_OK(kit) ? kit : pickStyleKit(userText);
-  const exemplars = pickExemplars(activeKit?.id, 4);
+  const exemplars = pickExemplars(userText, 4, activeKit?.id);
   const palette = activeKit?.palette ?? DESIGN_TOKENS.palettes.light;
   const scale = (activeKit?.typeScale ?? DESIGN_TOKENS.typeScale).join(" ");
   const radius = activeKit?.radius ?? DESIGN_TOKENS.radii;
@@ -53,7 +53,9 @@ export function buildDesignQualityPrompt({ userText, kit } = {}) {
     "Polish: 1px hairlines instead of heavy borders, soft layered shadows on the 1-2 elevated modules only, consistent icon style, deliberate asymmetry.",
     "",
     exemplars.length
-      ? "[Exemplar recipes — follow the nearest one]\n" + exemplars.map((e, i) => `${i + 1}. (${e.kit}) ${e.description}`).join("\n")
+      ? "[Exemplar recipes — follow the nearest one]\n" + exemplars.map((e, i) => e.structureOnly
+        ? `${i + 1}. (${e.kit}; structure only, restyle with the active kit) ${e.structure}`
+        : `${i + 1}. (${e.kit}) ${e.description}`).join("\n")
       : "",
   ]
     .filter((s) => s.length > 0)

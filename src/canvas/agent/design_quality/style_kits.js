@@ -301,7 +301,6 @@ const INLINE_HINT = {
     ["chat", 2],
     ["player", 2],
     ["music", 1],
-    ["terminal", 2],
     ["ide", 2],
     ["linear", 4],
   ],
