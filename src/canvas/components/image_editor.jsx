@@ -263,6 +263,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const getGroupCamera = useDesignStore((state) => state.getGroupCamera);
   const saveGroupCamera = useDesignStore((state) => state.saveGroupCamera);
   /** Accumulated HTML of a streaming layout generation, shown live. */
+  const agentGenerating = useDesignStore((state) => state.agentGenerating);
   const streamingPreview = useDesignStore((state) => state.streamingPreview);
   const streamingPreviewNodeId = useDesignStore(
     (state) => state.streamingPreviewNodeId,
@@ -3308,10 +3309,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       : layoutCanvasSize(
           nodes.find((candidate) => candidate.id === streamingPageId)?.data,
         );
-  const streamingLayout = streamingPreview
+  const streamingLayout = (streamingPreview !== null || (agentGenerating && !streamingPageDoc?.nodes?.length))
     ? {
         nodeId: streamingPageId,
-        html: streamingPreview,
+        html: streamingPreview ?? "",
         ...streamingPageSize,
       }
     : null;

@@ -3,6 +3,8 @@
  * as an image layer in the open design editor. No graph node is involved.
  */
 
+import { abortable } from "./abortable.js";
+
 import {
   fetchRegisteredProviderJob,
   submitRegisteredProviderJob,
@@ -39,11 +41,13 @@ export async function runImageJob({
   maxPolls = DEFAULT_MAX_POLLS,
   intervalMs = DEFAULT_POLL_INTERVAL_MS,
   sleep = wait,
+  signal,
 }) {
-  const submitted = await submit({ mediaType: "image", providerId, request });
+  const submitted = await abortable(() => submit({ mediaType: "image", providerId, request, ...(signal ? { signal } : {}) }), signal);
   const taskId = submitted?.taskId ?? null;
   let state = submitted;
   for (let attempt = 0; attempt < maxPolls; attempt += 1) {
+    signal?.throwIfAborted();
     if (state?.status === REMOTE_JOB_STATUS.FAILED) {
       throw generationError(IMAGE_GENERATION_ERROR.FAILED, state.error ?? "");
     }
@@ -57,8 +61,8 @@ export async function runImageJob({
     if (!taskId) {
       throw generationError(IMAGE_GENERATION_ERROR.NO_RESULT);
     }
-    await sleep(intervalMs);
-    state = await fetch({ mediaType: "image", providerId, taskId });
+    await abortable(() => sleep(intervalMs), signal);
+    state = await abortable(() => fetch({ mediaType: "image", providerId, taskId, ...(signal ? { signal } : {}) }), signal);
   }
   throw generationError(IMAGE_GENERATION_ERROR.TIMEOUT, taskId);
 }

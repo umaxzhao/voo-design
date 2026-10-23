@@ -57,3 +57,33 @@ describe("placeImageInEditor", () => {
     });
   });
 });
+
+
+describe("image generation cancellation", () => {
+  it("stops polling immediately when cancelled during the wait", async () => {
+    const controller = new AbortController();
+    const fetch = vi.fn();
+    let waiting;
+    const asleep = new Promise((resolve) => { waiting = resolve; });
+    const job = runImageJob({ providerId: "p", request: {}, signal: controller.signal,
+      submit: async () => ({ taskId: "pending", status: "processing" }), fetch,
+      sleep: () => { waiting(); return new Promise(() => {}); },
+    });
+    await asleep;
+    controller.abort();
+    await expect(job).rejects.toMatchObject({ name: "AbortError" });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("ignores a provider result delivered after cancellation", async () => {
+    const controller = new AbortController();
+    let finish;
+    const job = runImageJob({ providerId: "p", request: {}, signal: controller.signal,
+      submit: () => new Promise((resolve) => { finish = resolve; }),
+    });
+    await Promise.resolve();
+    controller.abort();
+    await expect(job).rejects.toMatchObject({ name: "AbortError" });
+    finish({ status: "completed", urls: ["late.png"] });
+  });
+});

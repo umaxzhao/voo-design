@@ -53,3 +53,21 @@ describe("generateImageWeb", () => {
     );
   });
 });
+
+
+it("unsubscribes progress immediately when a web image job is cancelled", async () => {
+  const controller = new AbortController();
+  const unsubscribe = vi.fn();
+  let finish;
+  const result = generateImageWeb({ provider: "chatgpt", prompt: "test", count: 1 }, {
+    signal: controller.signal, onProgress: vi.fn(),
+    bridge: { onWebImageProgress: () => unsubscribe,
+      webImageGenerate: () => new Promise((resolve) => { finish = resolve; }),
+    },
+  });
+  await Promise.resolve();
+  controller.abort();
+  await expect(result).rejects.toMatchObject({ name: "AbortError" });
+  expect(unsubscribe).toHaveBeenCalledOnce();
+  finish({ ok: true, images: [] });
+});

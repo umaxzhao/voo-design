@@ -9,6 +9,7 @@ import { useI18n } from "../use_i18n.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import { DEFAULT_AGENT_MODEL } from "../../shared/agent-defaults.js";
 import { runAgentTurn } from "../agent/canvas_agent.js";
+import { abortable } from "../agent/abortable.js";
 import {
   AGENT_DEFAULTS,
   AGENT_SETTING,
@@ -137,6 +138,11 @@ export default function CanvasAgentPanel({ onClose }) {
   );
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [activeContext, setActiveContext] = useState(null);
+  const turnRef = useRef(null);
+  useEffect(() => () => {
+    turnRef.current?.abort();
+    useDesignStore.setState({ agentGenerating: false });
+  }, []);
   const historyRef = useRef([]);
   const sessionsRef = useRef(sessions);
   sessionsRef.current = sessions;
@@ -235,7 +241,10 @@ export default function CanvasAgentPanel({ onClose }) {
     async (overrideText, contextAttachment) => {
       const targetContext = contextAttachment !== undefined ? contextAttachment : activeContext;
       const text = (overrideText ?? input).trim();
-      if (!text || busy) return;
+      if (!text || busy || turnRef.current) return;
+      const controller = new AbortController();
+      turnRef.current = controller;
+      useDesignStore.setState({ agentGenerating: true });
       setInput("");
       setError(null);
       setBusy(true);
@@ -257,19 +266,22 @@ export default function CanvasAgentPanel({ onClose }) {
           : text;
 
         const model = selectedModel || getSetting(AGENT_SETTING.MODEL);
-        const provider = await resolveAgentProvider(model);
-        const external = await externalMcpTools();
+        const provider = await abortable(() => resolveAgentProvider(model), controller.signal);
+        const external = await abortable(() => externalMcpTools(), controller.signal);
+        controller.signal.throwIfAborted();
         const reply = await runAgentTurn({
+          signal: controller.signal,
           ...provider,
           maxSteps: Number(getSetting(AGENT_SETTING.MAX_STEPS)) || AGENT_DEFAULTS.maxSteps,
           styleNote: getSetting(AGENT_SETTING.STYLE_NOTE) ?? AGENT_DEFAULTS.styleNote,
           history: historyRef.current,
           userText: promptWithContext,
           tools: [...CANVAS_TOOL_SCHEMAS, ...external.tools],
-          executeTool: (name, args) => name.startsWith("mcp__") ? external.execute(name, args) : executeCanvasTool(name, args),
+          executeTool: (name, args, context) => name.startsWith("mcp__") ? external.execute(name, args, context) : executeCanvasTool(name, args, context),
           onText: setStreamingText,
           onToolEvent: updateToolItem,
         });
+        controller.signal.throwIfAborted();
         const replyItem = { kind: "text", role: "assistant", content: reply };
         historyRef.current = [
           ...historyRef.current,
@@ -285,13 +297,20 @@ export default function CanvasAgentPanel({ onClose }) {
           createdAt: Date.now(),
         });
       } catch (caught) {
-        setError(caught?.code === CHAT_ERROR.NOT_CONFIGURED ? "notConfigured" : "failed");
+        if (!controller.signal.aborted) setError(caught?.code === CHAT_ERROR.NOT_CONFIGURED ? "notConfigured" : "failed");
       } finally {
+        turnRef.current = null;
+        useDesignStore.setState({ agentGenerating: false });
+        if (controller.signal.aborted) {
+          setTranscript((items) => items.map((item) => item.call?.status === "in_progress"
+            ? { ...item, call: { ...item.call, status: "cancelled", statusLine: t("node.generate.cancelled") } }
+            : item));
+        }
         setStreamingText("");
         setBusy(false);
       }
     },
-    [busy, input, activeId, activeContext, selectedModel],
+    [busy, input, activeId, activeContext, selectedModel, t],
   );
 
   useEffect(() => {
@@ -605,6 +624,16 @@ export default function CanvasAgentPanel({ onClose }) {
               className="max-w-[220px] truncate rounded-lg bg-white/[0.05] px-2 py-1 text-[11px] text-neutral-400 hover:bg-white/[0.1] hover:text-neutral-200 transition-colors"
             >
               {getModelDisplayLabel(currentModel)}
+            </button>
+          )}
+          {busy && (
+            <button
+              type="button"
+              onClick={() => turnRef.current?.abort()}
+              data-testid="agent-cancel"
+              className="rounded-lg px-3 py-1.5 text-xs text-neutral-300 hover:bg-white/10"
+            >
+              {t("agent.plan.review.cancel")}
             </button>
           )}
           <button

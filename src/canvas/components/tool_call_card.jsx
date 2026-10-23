@@ -2,7 +2,7 @@ import { useState } from "react";
 import PropTypes from "prop-types";
 import { useI18n } from "../use_i18n.js";
 
-const STATUS_MARK = { in_progress: "…", completed: "✓", failed: "✗" };
+const STATUS_MARK = { in_progress: "…", completed: "✓", failed: "✗", cancelled: "■" };
 
 /** Error codes the assistant and its tools raise, mapped to message keys. */
 const KNOWN_ERRORS = new Set([
