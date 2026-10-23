@@ -1,3 +1,4 @@
+import { drawPlainRects } from "./render_plain_rects.js";
 import { dirtyRectsToDevice, shouldUseDirtyRect } from "./dirty_rect.js";
 // Top-level stage paint loop coordinating page background, nodes, and chrome passes.
 
@@ -195,7 +196,9 @@ export function draw(
   const stageCache = cullOffscreen ? layerCache : null;
   stageCache?.beginFrame(ctx);
 
-  for (let i = 0; i < doc.nodes.length; i += 1) {
+  const plainRectsPainted = !stageCache && (!visibleRect || visibleSet) &&
+    drawPlainRects(ctx, doc.nodes, { visibleSet, hiddenNodeId, paintNodeIds });
+  for (let i = 0; !plainRectsPainted && i < doc.nodes.length; i += 1) {
     const node = doc.nodes[i];
     if (paintNodeIds && !paintNodeIds.has(node.id)) continue;
     if (node.id === hiddenNodeId) continue;
