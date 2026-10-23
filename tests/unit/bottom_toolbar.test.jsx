@@ -118,8 +118,28 @@ describe("single bottom toolbar", () => {
         addEventListener: (type, handler) => { listeners[type] = handler; },
         removeEventListener: vi.fn(),
       });
-      nodes();
+      const menu = find("editor-grid-menu");
+      const items = Array.from({ length: 5 }, () => ({ focus: vi.fn() }));
+      menu.ref.current = { querySelector: () => items[0] };
       const cleanup = hooks.effects.at(-1)();
+      expect(items[0].focus).toHaveBeenCalledOnce();
+      const navigate = (key, index, expected) => {
+        const preventDefault = vi.fn();
+        menu.props.onKeyDown({
+          key, target: items[index], preventDefault,
+          currentTarget: { querySelectorAll: () => items },
+        });
+        expect(preventDefault).toHaveBeenCalledOnce();
+        expect(items[expected].focus).toHaveBeenCalled();
+        items.forEach((item) => item.focus.mockClear());
+      };
+      navigate("ArrowDown", 0, 1);
+      navigate("ArrowUp", 1, 0);
+      navigate("ArrowUp", 0, 4);
+      navigate("ArrowDown", 4, 0);
+      navigate("End", 0, 4);
+      navigate("Home", 4, 0);
+      expect(find("editor-grid-menu-trigger").props.className).toContain("h-7 w-5");
       listeners.keydown({ key: "Escape" });
       expect(hooks.open).toBe(false);
       hooks.open = true;
@@ -130,6 +150,38 @@ describe("single bottom toolbar", () => {
       hooks.active = false;
       hooks.effects = [];
       vi.unstubAllGlobals();
+    }
+  });
+
+  it("preserves the last grid size and snap setting through visibility toggles", () => {
+    const src = fs.readFileSync(
+      path.resolve(__dirname, "../../src/canvas/components/image_editor.jsx"), "utf8",
+    );
+    // Exercise the actual editor callbacks without mounting its canvas engines.
+    const callback = (name, context) => {
+      const body = src.split(`${name}={`)[1].split("\n              }}")[0];
+      return new Function(...Object.keys(context), `return (${body}});`)(...Object.values(context));
+    };
+    for (const multi of [false, true]) {
+      const lastGridSizeRef = { current: 32 };
+      let grid = null;
+      const engine = { setGrid: vi.fn((next) => { grid = next; }) };
+      let snapToGrid = true;
+      const context = () => ({ lastGridSizeRef, grid, multi, engine,
+        enginesRef: { current: new Map([["canvas", { engine }]]) }, bump: noop,
+        setSnapToGrid: (next) => { snapToGrid = next; } });
+      const select = callback("onSetGridSize", context());
+      select(64);
+      expect(grid.size).toBe(64);
+      for (let i = 0; i < 2; i++) {
+        callback("onToggleGrid", context())();
+        expect(grid).toBeNull();
+        expect(lastGridSizeRef.current).toBe(64);
+        callback("onToggleGrid", context())();
+        expect(grid).toEqual({ enabled: true, size: 64 });
+      }
+      expect(snapToGrid).toBe(true);
+      expect(src).toContain("gridSize={grid?.size ?? lastGridSizeRef.current}");
     }
   });
 

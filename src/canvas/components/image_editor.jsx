@@ -358,6 +358,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const [snapToGrid, setSnapToGrid] = useState(
     () => getSetting(SNAP_TO_GRID_SETTING) === true,
   );
+  const lastGridSizeRef = useRef(32);
   const [selectedGuideId, setSelectedGuideId] = useState(null);
   /** Document snapshot taken when a guide drag begins; the whole drag is one undo. */
   const guideDragOriginRef = useRef(null);
@@ -4922,10 +4923,11 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               }
               onFit={multi ? fitAll : () => engine?.zoomToFit()}
               grid={grid}
-              gridSize={grid?.size ?? 32}
+              gridSize={grid?.size ?? lastGridSizeRef.current}
               snapToGrid={snapToGrid}
               onToggleSnapToGrid={toggleSnapToGrid}
               onSetGridSize={(size) => {
+                lastGridSizeRef.current = size;
                 const next = { enabled: true, size };
                 if (multi) {
                   for (const entry of enginesRef.current.values()) {
@@ -4937,7 +4939,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 bump();
               }}
               onToggleGrid={() => {
-                const next = grid ? null : { enabled: true, size: 32 };
+                if (grid?.size) lastGridSizeRef.current = grid.size;
+                const next = grid ? null : { enabled: true, size: lastGridSizeRef.current };
                 if (multi) {
                   for (const entry of enginesRef.current.values()) {
                     entry.engine?.setGrid?.(next);

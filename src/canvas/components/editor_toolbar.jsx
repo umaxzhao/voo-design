@@ -203,7 +203,7 @@ export default function EditorToolbar({
         <div
           data-family-id="select"
           onMouseEnter={() => onHoverFamily?.("select")}
-          className="relative flex items-center"
+          className="relative flex items-center rounded-lg border border-black/10"
         >
           <EditorTooltip
             title={t("editor.tool.select")}
@@ -626,8 +626,10 @@ export function EditorZoom({
   const [gridMenuOpen, setGridMenuOpen] = useState(false);
   const gridControlRef = useRef(null);
   const gridMenuTriggerRef = useRef(null);
+  const gridMenuRef = useRef(null);
   useEffect(() => {
     if (!gridMenuOpen) return;
+    gridMenuRef.current?.querySelector('[role^="menuitem"]')?.focus();
     const onOutside = (event) => {
       if (!gridControlRef.current?.contains(event.target)) setGridMenuOpen(false);
     };
@@ -698,7 +700,7 @@ export function EditorZoom({
           title={t("editor.view.grid")}
           aria-label={t("editor.view.grid")}
           aria-pressed={Boolean(grid)}
-          className={`flex h-7 w-7 items-center justify-center rounded-lg outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
+          className={`flex h-7 w-7 items-center justify-center rounded-l-lg outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
             grid ? "text-black" : "text-black/40"
           }`}
         >
@@ -715,12 +717,24 @@ export function EditorZoom({
           aria-label={t("editor.grid.options")}
           title={t("editor.grid.options")}
           onClick={() => setGridMenuOpen((open) => !open)}
-          className="flex h-7 w-4 items-center justify-center rounded-lg text-black hover:bg-black/10 focus-visible:ring-1 focus-visible:ring-black/30 outline-none"
+          className="flex h-7 w-5 items-center justify-center rounded-r-lg border-l border-black/10 text-black hover:bg-black/10 focus-visible:ring-1 focus-visible:ring-black/30 outline-none"
         >
           <IconChevronDown size={13} />
         </button>
         {gridMenuOpen ? (
           <div
+            ref={gridMenuRef}
+            onKeyDown={(event) => {
+              if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+              const items = Array.from(event.currentTarget.querySelectorAll('[role^="menuitem"]'));
+              if (!items.length) return;
+              event.preventDefault();
+              const index = items.indexOf(event.target);
+              const next = event.key === "Home" ? 0
+                : event.key === "End" ? items.length - 1
+                : (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+              items[next].focus();
+            }}
             id="editor-grid-menu"
             data-testid="editor-grid-menu"
             role="menu"
