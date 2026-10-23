@@ -1,3 +1,4 @@
+import { createMipCache, getMip } from "./image_mipmaps.js";
 /**
  * Decoded bitmaps for the editor's image nodes.
  *
@@ -40,6 +41,7 @@ export function createBitmapCache({
 } = {}) {
   /** id or src → HTMLImageElement, once decoded. */
   const bitmaps = new Map();
+  const mipCache = createMipCache();
   /** Keys currently being decoded, so a redraw does not queue a second load. */
   const pending = new Set();
   /** Failed asset key -> node: the placeholder stands in until a reload. */
@@ -68,6 +70,7 @@ export function createBitmapCache({
   function touch(key, image) {
     const prev = bitmaps.get(key);
     if (prev) {
+      if (prev !== image) mipCache.invalidate(prev);
       totalBytes -= estimateImageBytes(prev);
     }
     bitmaps.delete(key);
@@ -87,6 +90,7 @@ export function createBitmapCache({
         totalBytes = Math.max(0, totalBytes - estimateImageBytes(image));
       }
       revokeKeyUrl(key);
+      mipCache.invalidate(image);
       onEvict?.(image);
     }
   }
@@ -186,6 +190,8 @@ export function createBitmapCache({
     const current = bitmaps.get(key);
     if (current) {
       bitmaps.delete(key);
+      mipCache.invalidate(current);
+      totalBytes = Math.max(0, totalBytes - estimateImageBytes(current));
       // Only a real bitmap owns a GPU texture; the placeholder does not.
       if (!isAssetPlaceholder(current)) onEvict?.(current);
     }
@@ -195,6 +201,10 @@ export function createBitmapCache({
 
   return {
     /** The bitmap for a node, kicking off a load the first time it is asked for. */
+    getDisplayBitmap(image, scale) {
+      return getMip(mipCache, image, scale) ?? image;
+    },
+
     get(node) {
       const key = keyOf(node);
       if (!key) return undefined;
@@ -240,6 +250,7 @@ export function createBitmapCache({
       revokeKeyUrl(key);
       if (image) {
         totalBytes = Math.max(0, totalBytes - estimateImageBytes(image));
+        mipCache.invalidate(image);
         onEvict?.(image);
       }
     },
@@ -279,6 +290,7 @@ export function createBitmapCache({
 
     dispose() {
       disposed = true;
+      mipCache.clear();
       failed.clear();
       unregisterUnavailable();
       for (const url of urlByKey.values()) {
