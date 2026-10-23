@@ -990,7 +990,7 @@ export default function EditorLayers({
           <>
             {pagesToRender.map((page) => {
               const isActive = page.id === activeCanvasId || page.isFallback;
-              const isCollapsed = collapsedCanvasIds.has(page.id);
+              const isCollapsed = !page.isCanvasRoot && collapsedCanvasIds.has(page.id);
               const isExpanded = !isCollapsed;
 
               if (query && !page.isFallback) {
@@ -1006,7 +1006,7 @@ export default function EditorLayers({
 
               return (
                 <div key={page.id} className="flex flex-col gap-0.5">
-                  {!page.isFallback ? (
+                  {!page.isFallback && !page.isCanvasRoot ? (
                     <EditorCanvasTreeRow
                       page={page}
                       isActive={isActive}
@@ -1018,7 +1018,7 @@ export default function EditorLayers({
                   ) : null}
                   {isExpanded || page.isFallback ? (
                     <div
-                      className={`flex flex-col gap-0.5 ${page.isFallback ? "" : "pl-2"}`}
+                      className={`flex flex-col gap-0.5 ${page.isFallback || page.isCanvasRoot ? "" : "pl-2"}`}
                     >
                       {isActive ? (
                         <>

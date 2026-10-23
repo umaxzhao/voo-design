@@ -1020,6 +1020,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   }, [selected, selectedIds.length, selectedGroup]);
 
   const isFrameSelected = Boolean(
+    !doc?.isCanvasRoot &&
     focusedId &&
     !selected &&
     !selectedGroup &&
@@ -1453,6 +1454,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     return {
       id,
       title: pageTitle(id, index),
+      isCanvasRoot: pageDoc?.isCanvasRoot === true,
       type: pageDoc ? getCanvasType(pageDoc) : "design",
       nodes: pageDoc?.nodes ?? [],
       selectedIds: pageEngine?.getSelectedIds?.() ?? [],
@@ -1762,7 +1764,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       };
       const offsetX = layout.x ?? 0;
       const offsetY = layout.y ?? 0;
-      index.insert({
+      if (!doc.isCanvasRoot) index.insert({
         id: `frame-${docId}`,
         minX: offsetX,
         minY: offsetY,

@@ -798,6 +798,8 @@ export async function figBytesToVooFileStreaming(bytes, options = {}) {
     }
 
     const sceneDoc = createDocument(meta.width, meta.height, meta.background);
+    // Figma CANVAS is an unbounded root, not an artboard frame.
+    sceneDoc.isCanvasRoot = true;
     sceneDoc.nodes = pageNodes;
     pages.push({
       id: meta.id,
@@ -883,6 +885,8 @@ export function figmaMessageToVooFile(message, images) {
 
   const pages = mapped.pages.map((page) => {
     const sceneDoc = createDocument(page.width, page.height, page.background ?? "transparent");
+    // Figma CANVAS is an unbounded root, not an artboard frame.
+    sceneDoc.isCanvasRoot = true;
     sceneDoc.nodes = page.nodes;
     return { id: crypto.randomUUID(), label: page.label, canvasType: "design", sceneDoc, layout: null, left: page.left, top: page.top };
   });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { serializeFigFile } from "../../../src/canvas/figma/fig-file.js";
 import { loadFigmaSchema } from "../../../src/canvas/figma/figma-schema.js";
-import { figBytesToVooFile } from "../../../src/canvas/figma/figma-to-voo.js";
+import { figBytesToVooFile, figBytesToVooFileStreaming } from "../../../src/canvas/figma/figma-to-voo.js";
 
 const guid = (localID) => ({ sessionID: 0, localID });
 
@@ -50,6 +50,12 @@ describe(".fig round trip into voo_design", () => {
 
     const { vooFile, layerCount, warnings } = await figBytesToVooFile(bytes);
     const home = vooFile.document.pages[0];
+    expect(home.sceneDoc.isCanvasRoot).toBe(true);
+    const streamed = await figBytesToVooFileStreaming(bytes);
+    const streamedDoc = streamed.vooFile.document.pages[0].sceneDoc;
+    expect(streamedDoc.isCanvasRoot).toBe(true);
+    expect(streamedDoc.nodes.filter((node) => !node.parentId).map((node) => node.name)).toEqual(["Home"]);
+    expect(streamedDoc.nodes.find((node) => node.name === "Home").frame).toBe(true);
     const box = home.sceneDoc.nodes.find((node) => node.name === "Box");
 
     expect(vooFile.document.pages.map((page) => page.label)).toEqual(["Page 1"]);
