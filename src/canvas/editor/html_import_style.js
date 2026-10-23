@@ -1,5 +1,7 @@
 // HTML import style parsing and paint resolution seam.
 
+import { formatGradient } from "../color_picker/gradient_fill.js";
+
 import {
   normalizeGradient,
   formatGradientString,
@@ -127,7 +129,7 @@ function extractGradient(value) {
 }
 
 /** Resolves an element's background to a fill paint (color or gradient). */
-export function resolveFill(style, ctx) {
+export function resolveFill(style, ctx, box = null) {
   const candidates = [
     style.background,
     style.backgroundImage,
@@ -142,7 +144,7 @@ export function resolveFill(style, ctx) {
       const gradient = extractGradient(value);
       if (gradient) {
         const normalized = normalizeGradient(gradient);
-        if (normalized) return formatGradientString(normalized);
+        if (normalized) return resolveGradientGeometry(normalized, gradient, box, ctx);
         return gradient;
       }
       continue;
@@ -152,6 +154,58 @@ export function resolveFill(style, ctx) {
     return value;
   }
   return null;
+}
+
+/** Encode CSS geometry in the native gradient format shared by both renderers. */
+function resolveGradientGeometry(gradient, raw, box, ctx) {
+  if (!box?.width || !box?.height) return formatGradientString(gradient);
+  const { width, height } = box;
+  const geometry = { ...gradient.geometry };
+  if (gradient.type === "linear") {
+    const radians = (gradient.angle - 90) * Math.PI / 180;
+    const dx = Math.cos(radians), dy = Math.sin(radians);
+    const reach = (Math.abs(width * dx) + Math.abs(height * dy)) / 2;
+    Object.assign(geometry, {
+      startX: 50 - dx * reach / width * 100,
+      startY: 50 - dy * reach / height * 100,
+      endX: 50 + dx * reach / width * 100,
+      endY: 50 + dy * reach / height * 100,
+    });
+    return formatGradient("linear", gradient.angle, gradient.stops, geometry);
+  }
+  if (gradient.type === "radial") {
+    const header = raw.slice(raw.indexOf("(") + 1).split(",")[0];
+    if (!/\bcircle\b/i.test(header)) {
+      const warning = "unsupported-gradient:elliptical-radial";
+      if (ctx?.warnings && !ctx.warnings.includes(warning)) ctx.warnings.push(warning);
+      return formatGradientString(gradient);
+    }
+    const at = /\bat\s+(.+)$/i.exec(header)?.[1].trim().split(/\s+/);
+    if (at?.length && at.length <= 2) {
+      let [horizontal, vertical = "center"] = at;
+      if (["top", "bottom"].includes(horizontal)) [horizontal, vertical] = [vertical, horizontal];
+      const coordinate = (value, dimension) => {
+        const keyword = { left: 0, top: 0, center: 50, right: 100, bottom: 100 }[value];
+        if (keyword != null) return keyword;
+        const numeric = Number.parseFloat(value);
+        return Number.isFinite(numeric) ? (value.endsWith("px") ? numeric / dimension * 100 : numeric) : 50;
+      };
+      geometry.centerX = coordinate(horizontal, width);
+      geometry.centerY = coordinate(vertical, height);
+    }
+    const cx = geometry.centerX / 100 * width, cy = geometry.centerY / 100 * height;
+    const sides = [Math.abs(cx), Math.abs(width - cx), Math.abs(cy), Math.abs(height - cy)];
+    const corners = [Math.hypot(cx, cy), Math.hypot(width - cx, cy), Math.hypot(cx, height - cy), Math.hypot(width - cx, height - cy)];
+    const explicit = /circle\s+([\d.]+)px/i.exec(header);
+    const radius = explicit ? Number(explicit[1])
+      : /closest-side/i.test(header) ? Math.min(...sides)
+      : /farthest-side/i.test(header) ? Math.max(...sides)
+      : /closest-corner/i.test(header) ? Math.min(...corners) : Math.max(...corners);
+    geometry.width = radius * 2 / width * 100;
+    geometry.height = radius * 2 / height * 100;
+    return formatGradient("radial", 0, gradient.stops, geometry);
+  }
+  return formatGradientString(gradient);
 }
 
 /** The 16 CSS basic colour keywords (the contract's colour vocabulary). */

@@ -34,7 +34,15 @@ const COMPUTED_KEYS = [
   "textAlign",
   "textDecoration",
   "textTransform",
+  "whiteSpace",
   "visibility",
+  "fill", "stroke", "strokeWidth", "strokeLinecap", "strokeLinejoin", "fillRule", "fillOpacity", "strokeOpacity",
+  "backgroundImage", "opacity", "borderRadius",
+  "borderTopLeftRadius", "borderTopRightRadius", "borderBottomRightRadius", "borderBottomLeftRadius",
+  "borderTop", "borderRight", "borderBottom", "borderLeft",
+  "flexDirection", "flexWrap", "justifyContent", "alignItems", "alignContent",
+  "rowGap", "columnGap", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+  "gridTemplateColumns", "gridTemplateRows", "objectFit",
 ];
 
 function safeClone(source, documentRef, pairs) {
@@ -88,7 +96,7 @@ function safeClone(source, documentRef, pairs) {
   return clone;
 }
 
-function directTextBox(element, origin) {
+function directTextBox(element, origin, lineHeight) {
   const textNodes = [...element.childNodes].filter(
     (child) => child.nodeType === 3 && child.textContent?.trim(),
   );
@@ -105,11 +113,12 @@ function directTextBox(element, origin) {
   const top = Math.min(...rects.map((rect) => rect.top));
   const right = Math.max(...rects.map((rect) => rect.right));
   const bottom = Math.max(...rects.map((rect) => rect.bottom));
+  const leading = Number.isFinite(lineHeight) ? lineHeight - rects[0].height : 0;
   return {
     x: left - origin.left,
-    y: top - origin.top,
+    y: top - origin.top - leading / 2,
     width: right - left,
-    height: bottom - top,
+    height: bottom - top + leading,
   };
 }
 
@@ -158,6 +167,14 @@ export function measureHtmlRoots(
       ) {
         style.backgroundColor = background;
       }
+      const sides = ["borderTop", "borderRight", "borderBottom", "borderLeft"];
+      if (sides.every((key) => style[key] === style.borderTop)) {
+        style.border = style.borderTop;
+        for (const key of sides) style[key] = "none";
+      } else {
+        // A shorthand would paint a second stroke beneath the individual sides.
+        style.border = "none";
+      }
       measured.set(source, {
         box: {
           x: rect.left - origin.left,
@@ -167,7 +184,7 @@ export function measureHtmlRoots(
           absolute:
             computed.position === "absolute" || computed.position === "fixed",
         },
-        textBox: directTextBox(clone, origin),
+        textBox: directTextBox(clone, origin, Number.parseFloat(computed.lineHeight)),
         style,
       });
     }

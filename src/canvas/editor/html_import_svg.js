@@ -1,5 +1,6 @@
 // Converts inline HTML SVG into editable scene shapes at its CSS box.
 
+import { parseInlineStyle } from "./html_import_style.js";
 import { NODE_KIND } from "./scene_model.js";
 import { parseSvgStringToNodes } from "./editor_svg_import.js";
 
@@ -26,17 +27,35 @@ function escapeAttribute(value) {
     .replaceAll("<", "&lt;");
 }
 
-function serializeSvgTree(element) {
+function serializeSvgTree(element, inheritedOpacity = 1, inheritedColor = "#000000") {
   const tag = String(element.tag ?? "").toLowerCase();
   if (!SVG_TAGS.has(tag)) return "";
-  const attributes = Object.entries(element.attrs ?? {})
+  const attrs = { ...element.attrs };
+  const style = parseInlineStyle(element.style);
+  const color = style.color ?? attrs.color ?? inheritedColor;
+  for (const key of ["fill", "stroke"]) {
+    if (attrs[key] === "currentColor") attrs[key] = color;
+  }
+  // CSS classes and currentColor are resolved by the browser measurement pass.
+  const paint = {};
+  for (const key of ["fill", "stroke", "strokeWidth", "strokeLinecap", "strokeLinejoin", "fillRule", "fillOpacity", "strokeOpacity", "opacity", "color"]) {
+    if (style[key] != null) {
+      const name = key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+      const value = style[key];
+      paint[name] = value === "currentColor" ? color : value;
+    }
+  }
+  const opacity = inheritedOpacity * Math.max(0, Math.min(1, Number(style.opacity ?? attrs.opacity ?? 1)));
+  paint.opacity = opacity;
+  if (Object.keys(paint).length) attrs.style = `${attrs.style ?? ""};${Object.entries(paint).map(([key, value]) => `${key}:${value}`).join(";")}`;
+  const attributes = Object.entries(attrs)
     .filter(([name]) => /^[a-zA-Z][a-zA-Z0-9:_-]*$/.test(name))
     .map(([name, value]) => ` ${name}="${escapeAttribute(value)}"`)
     .join("");
   const text = String(element.text ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;");
-  const children = (element.children ?? []).map(serializeSvgTree).join("");
+  const children = (element.children ?? []).map(child => serializeSvgTree(child, opacity, color)).join("");
   return `<${tag}${attributes}>${text}${children}</${tag}>`;
 }
 

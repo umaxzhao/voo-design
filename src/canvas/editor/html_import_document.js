@@ -6,6 +6,7 @@ import {
   createImageNode,
   createRectNode,
 } from "./scene_model.js";
+import { cssAutoLayout } from "./html_import_autolayout.js";
 import { computeContainerLayout } from "./html_layout.js";
 import { importInlineSvg } from "./html_import_svg.js";
 import { inheritInlineTextStyle } from "./text_fidelity.js";
@@ -43,7 +44,8 @@ const SEMANTIC_CONTAINERS = new Set([
 ]);
 
 function shouldPreserveContainer(el, tag, style, fill, isRoot, enabled) {
-  if (!enabled || isRoot || !el.children?.length) return false;
+  if (!enabled || !el.children?.length) return false;
+  if (cssAutoLayout(style)) return true;
   if (SEMANTIC_CONTAINERS.has(tag)) return true;
   if (el.attrs?.["data-layer-name"] || el.attrs?.["aria-label"] || el.attrs?.id)
     return true;
@@ -70,11 +72,21 @@ export function walkElement(
     precomputedBox = null,
     inheritedStyle = null,
     parentId = null,
+    inheritedOpacity = 1,
+    layoutItem = false,
   } = {},
 ) {
   const { warnings } = ctx;
   const tag = String(el.tag ?? "div").toLowerCase();
-  const style = inheritedStyle ?? parseInlineStyle(el.style);
+  const style = { ...(inheritedStyle ?? parseInlineStyle(el.style)) };
+  const ownOpacity = Math.max(0, Math.min(1, px(style.opacity, 1)));
+  const opacity = inheritedOpacity * ownOpacity;
+  style.opacity = opacity;
+  if (ownOpacity < 1 && el.children?.length && !warnings.includes("html-opacity-flattened")) {
+    // Folder groups do not composite to an offscreen surface. Preserve child
+    // alpha, and report the overlap limitation rather than silently losing it.
+    warnings.push("html-opacity-flattened");
+  }
   const layers = [];
 
   if (SKIP_TAGS.has(tag)) {
@@ -121,7 +133,10 @@ export function walkElement(
   }
 
   if (tag === "svg") {
-    layers.push(...importInlineSvg(el, resolved, parentId));
+    const slot = ctx.preserveHierarchy && layoutItem
+      ? createGroupNode({ ...resolved, parentId }) : null;
+    if (slot) { slot.name = "svg"; layers.push(slot); }
+    layers.push(...importInlineSvg({ ...el, style }, resolved, slot?.id ?? parentId));
     return {
       layers,
       bottom: resolved.y + resolved.height,
@@ -130,11 +145,11 @@ export function walkElement(
     };
   }
 
-  const fill = resolveFill(style, ctx);
+  const fill = resolveFill(style, ctx, resolved);
   const radius = resolveRadius(style, resolved);
   const ownText = textOf(el);
 
-  const groupThis = shouldPreserveContainer(
+  const groupThis = (ctx.preserveHierarchy && layoutItem && tag !== "img") || shouldPreserveContainer(
     el,
     tag,
     style,
@@ -149,6 +164,7 @@ export function walkElement(
         width: resolved.width,
         height: resolved.height,
         parentId,
+        autoLayout: cssAutoLayout(style),
       })
     : null;
   if (group) {
@@ -180,8 +196,10 @@ export function walkElement(
         imageId: null,
         src,
       });
-      if (radius === "ellipse")
-        node.cornerRadius = Math.min(resolved.width, resolved.height) / 2;
+      node.cornerRadius = radius === "ellipse"
+        ? Math.min(resolved.width, resolved.height) / 2 : radius;
+      const opacity = px(style.opacity);
+      if (opacity != null) node.opacity = Math.max(0, Math.min(1, opacity));
       applyDropShadow(node, style);
       appendLayer(layers, node, layerParentId);
       pendingImages.push({ nodeId: node.id, src });
@@ -225,10 +243,11 @@ export function walkElement(
       makeShapeLayer(resolved, fill, radius, style),
       layerParentId,
     );
+    if (group?.autoLayout) layers.at(-1).layoutPosition = "absolute";
   }
   if (!isRoot)
     makeSideBorderLayers(resolved, style).forEach((node) =>
-      appendLayer(layers, node, layerParentId),
+      appendLayer(layers, Object.assign(node, { layoutPosition: "absolute", opacity }), layerParentId),
     );
 
   if (ownText) {
@@ -257,7 +276,7 @@ export function walkElement(
         : resolved);
     appendLayer(
       layers,
-      makeTextLayer(ownText, textBox, textStyle, ctx),
+      makeTextLayer(ownText, textBox, textStyle, { ...ctx, measuredText: !!el.measuredTextBox }),
       layerParentId,
     );
   }
@@ -298,8 +317,15 @@ export function walkElement(
           precomputedBox: childPrecomputed,
           inheritedStyle: childStyle,
           parentId: layerParentId,
+          inheritedOpacity: opacity,
+          layoutItem: !!cssAutoLayout(style) && !isAbs,
         },
       );
+      if (isAbs) {
+        for (const node of out.layers) {
+          if (node.parentId === layerParentId) node.layoutPosition = "absolute";
+        }
+      }
       layers.push(...out.layers);
       if (out.absolute) continue;
       if (layout) {
@@ -330,7 +356,7 @@ export function walkElement(
  */
 export function htmlTreeToDocument(
   elements,
-  { width, height, background, metricsAdapter, preserveHierarchy = false } = {},
+  { width, height, background, metricsAdapter, preserveHierarchy = true } = {},
 ) {
   const roots = Array.isArray(elements) ? elements : [elements];
   const W = width ?? 1080;
@@ -340,7 +366,7 @@ export function htmlTreeToDocument(
   const pendingImages = [];
 
   const rootStyle = parseInlineStyle(roots[0]?.style ?? {});
-  const rootFill = background ?? resolveFill(rootStyle, ctx);
+  const rootFill = background ?? resolveFill(rootStyle, ctx, { width: W, height: H });
   const rootGradient = rootFill && GRADIENT_RE.test(rootFill) ? rootFill : null;
   const doc = createDocument(
     W,

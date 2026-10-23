@@ -17,16 +17,17 @@ import {
 import { INLINE_TAGS, px, resolveShadow } from "./html_import_style.js";
 
 export function resolveRadius(style, box) {
-  const raw = style.borderRadius;
-  if (raw == null || raw === "" || raw === "0") return 0;
-  const token = String(raw).trim().split(/\s+/)[0];
-  if (token.endsWith("%")) {
-    if (box.width === box.height && Number.parseFloat(token) === 50) {
-      return "ellipse";
-    }
-    return Math.min(box.width, box.height) / 2;
-  }
-  return px(token, 0);
+  const tokens = String(style.borderRadius ?? "0").trim().split(/\s+/);
+  const [tl, tr = tl, br = tl, bl = tr] = tokens;
+  const values = [tl, tr, br, bl].map((value, index) => {
+    const key = ["TopLeft", "TopRight", "BottomRight", "BottomLeft"][index];
+    const raw = String(style[`border${key}Radius`] ?? value);
+    return raw.endsWith("%")
+      ? Math.min(box.width, box.height) * px(raw, 0) / 100
+      : px(raw, 0);
+  });
+  if (values.every((value) => value === values[0])) return values[0];
+  return Object.fromEntries(["tl", "tr", "br", "bl"].map((key, i) => [key, values[i]]));
 }
 
 /** rotate(Ndeg) → degrees, or null. */
@@ -162,7 +163,7 @@ export function makeShapeLayer(box, fill, radius, style) {
     stroke: border?.color ?? "transparent",
     strokeWidth: border?.width ?? 0,
   });
-  if (typeof radius === "number" && radius > 0) node.cornerRadius = radius;
+  if (radius) node.cornerRadius = radius;
   const rotation = resolveRotation(style);
   if (rotation != null) node.rotation = rotation;
   const opacity = px(style.opacity);
@@ -227,7 +228,9 @@ export function makeTextLayer(text, box, style, ctx) {
     fill: style.color ?? "#000000",
     fontSize,
   });
-  node.fontWeight = isBold(style) ? "bold" : "normal";
+  const weight = String(style.fontWeight ?? "normal");
+  node.fontWeight = /^(100|200|300|500|600|700|800|900|bold)$/.test(weight)
+    ? weight : "normal";
   if (style.fontStyle === "italic" || style.fontStyle === "oblique") {
     node.italic = true;
   }
@@ -281,6 +284,16 @@ export function makeTextLayer(text, box, style, ctx) {
         node.x = Math.round(box.x + box.width - textWidth);
       }
     }
+  }
+
+  if (ctx?.measuredText) {
+    node.x = box.x;
+    node.y = box.y;
+    node.width = box.width;
+    node.height = box.height;
+    node.boxWidth = box.width;
+    node.estimatedMetrics = false;
+    node.metricsSource = "browser-layout";
   }
 
   const rotation = resolveRotation(style);
