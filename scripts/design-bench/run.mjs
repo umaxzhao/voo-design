@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
+import { ready, browserOptions } from './runtime.mjs';
 import { DESIGN_BENCH_TASKS } from './tasks.mjs';
 import { loadLinter, scoreDocument } from './score.mjs';
 
@@ -14,7 +15,7 @@ export function parseOptions(args) {
     if (['--critique', '--judge', '--help', '--baseline'].includes(flag)) {
       if (rest.length) throw new Error(`${flag} takes no value`);
       options[flag.slice(2)] = true;
-    } else if (['--model', '--tasks', '--label'].includes(flag)) {
+    } else if (['--model', '--tasks', '--label', '--out'].includes(flag)) {
       const value = rest.length ? rest.join('=') : args[++i];
       if (!value || value.startsWith('--')) throw new Error(`Missing value for ${flag}`);
       options[flag.slice(2)] = value;
@@ -27,16 +28,6 @@ export function parseOptions(args) {
     if (!DESIGN_BENCH_TASKS.some(task => task.id === id)) throw new Error(`Unknown task: ${id}`);
   }
   return options;
-}
-
-async function ready(url, child) {
-  const deadline = Date.now() + Number(process.env.VOO_DESIGN_BENCH_READY_MS || 240000);
-  while (Date.now() < deadline) {
-    if (child.exitCode !== null || child.startError) throw child.startError || new Error(`Server exited: ${child.exitCode}`);
-    try { if ((await fetch(url, { signal: AbortSignal.timeout(2000) })).ok) return; } catch {}
-    await new Promise(resolveWait => setTimeout(resolveWait, 250));
-  }
-  throw new Error(`Server did not become ready: ${url}`);
 }
 
 // Runs inside the editor page; imports match the live Codex E2E harness.
@@ -142,7 +133,7 @@ async function runInEditor({ task, model, timeout, critique }) {
 export async function main(args = process.argv.slice(2)) {
   const options = parseOptions(args);
   if (options.help) {
-    console.log('npm run bench:design -- [--model MODEL] [--tasks=id1,id2] [--critique] [--baseline] [--label=before|after] [--judge]\nPorts: VOO_DESIGN_BENCH_BRIDGE_PORT (4290), VOO_DESIGN_BENCH_VITE_PORT (5199).\nOutputs: /workspace/tmp/design-bench/<label>/{<id>.png,<id>.json,scores.json}\nRescore: node scripts/design-bench/score.mjs --label=after [--judge]\nCompare: node scripts/design-bench/report.mjs');
+    console.log('npm run bench:design -- [--model MODEL] [--tasks=id1,id2] [--critique] [--baseline] [--label=before|after] [--judge] [--out=DIR]\nPorts: VOO_DESIGN_BENCH_BRIDGE_PORT (4290), VOO_DESIGN_BENCH_VITE_PORT (5199).\nOutputs: /workspace/tmp/design-bench/<label>/{<id>.png,<id>.json,scores.json}\nRescore: node scripts/design-bench/score.mjs --label=after [--judge]\nCompare: node scripts/design-bench/report.mjs');
     return;
   }
   const { chromium } = await import('playwright');
@@ -158,9 +149,9 @@ export async function main(args = process.argv.slice(2)) {
     VOO_CLI_BRIDGE_PORT: bridgePort, VITE_CLI_BRIDGE_URL: `ws://127.0.0.1:${bridgePort}`,
   };
   const children = [];
-  let browser;
   const output = `/workspace/tmp/design-bench/${options.label}`;
   await mkdir(output, { recursive: true });
+  if (options.out) await mkdir(options.out, { recursive: true });
   const results = { label: options.label, model: options.model || process.env.VOO_CODEX_MODEL || null, critique: options.critique, startedAt: new Date().toISOString(), tasks: [] };
   const save = () => writeFile(`${output}/scores.json`, `${JSON.stringify(results, null, 2)}\n`);
   function start(args) {
@@ -175,85 +166,85 @@ export async function main(args = process.argv.slice(2)) {
     const vite = start(['run', 'dev', '--', '--host', '127.0.0.1', '--port', vitePort, '--strictPort']);
     await Promise.all([ready(`http://127.0.0.1:${bridgePort}/health`, bridge), ready(`http://127.0.0.1:${vitePort}`, vite)]);
     await Promise.all(['/', '/src/canvas/agent/canvas_tools.js'].map(path => fetch(`http://127.0.0.1:${vitePort}${path}`).catch(() => {})));
-    browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--js-flags=--max-old-space-size=3072', '--disable-dev-shm-usage'] });
     const runOne = async id => {
       const task = DESIGN_BENCH_TASKS.find(item => item.id === id);
       console.error(`Design benchmark: ${id}`);
-      const context = await browser.newContext({ viewport: { width: 1600, height: 1100 } });
-      await context.addInitScript(baseline => { globalThis.__VOO_DESIGN_QUALITY_OFF__ = baseline; }, !!options.baseline);
-      const page = await context.newPage();
-      page.on('crash', () => console.error(`[crash] ${id}`));
-      let heapInterval;
-      if (process.env.VOO_DESIGN_BENCH_DEBUG) page.on('console', m => console.error(`[page] ${m.text().slice(0, 300)}`));
-      if (process.env.VOO_DESIGN_BENCH_DEBUG) heapInterval = setInterval(async () => {
-        try {
-          const heap = await page.evaluate(() => performance.memory?.usedJSHeapSize);
-          if (heap !== undefined) console.error(`[heap] ${id} ${(heap / 1024 / 1024).toFixed(1)}`);
-        } catch {}
-      }, 30000);
-      const started = Date.now();
-      let watchdog;
-      let record = { id, kind: task.kind, frame: task.frame };
-      let lastCheckpoint = null;
+      const browser = await chromium.launch(browserOptions);
       try {
-        await page.exposeFunction('__vooBenchCheckpoint', payload => {
-          if (payload?.nodes?.length) lastCheckpoint = payload;
-        });
+        const context = await browser.newContext({ viewport: { width: 1600, height: 1100 } });
+        await context.addInitScript(baseline => { globalThis.__VOO_DESIGN_QUALITY_OFF__ = baseline; }, !!options.baseline);
+        const page = await context.newPage();
+        page.on('crash', () => console.error(`[crash] ${id}`));
+        let heapInterval;
+        if (process.env.VOO_DESIGN_BENCH_DEBUG) page.on('console', m => console.error(`[page] ${m.text().slice(0, 300)}`));
+        if (process.env.VOO_DESIGN_BENCH_DEBUG) heapInterval = setInterval(async () => {
+          try {
+            const heap = await page.evaluate(() => performance.memory?.usedJSHeapSize);
+            if (heap !== undefined) console.error(`[heap] ${id} ${(heap / 1024 / 1024).toFixed(1)}`);
+          } catch {}
+        }, 30000);
+        const started = Date.now();
+        let watchdog;
+        let record = { id, kind: task.kind, frame: task.frame };
+        let lastCheckpoint = null;
         try {
-          await page.goto(`http://127.0.0.1:${vitePort}/?voo-test=1`, { waitUntil: 'domcontentloaded', timeout: 180000 });
-        } catch {
-          await page.goto(`http://127.0.0.1:${vitePort}/?voo-test=1`, { waitUntil: 'domcontentloaded', timeout: 180000 });
-        }
-        await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
-        const result = await Promise.race([
-          page.evaluate(runInEditor, { task, model: options.model || process.env.VOO_CODEX_MODEL, timeout, critique: options.critique && !!lint }),
-          new Promise((_, reject) => { watchdog = setTimeout(() => reject(new Error('Task exceeded hard deadline')), timeout + 30000); }),
-        ]);
-        const { doc, png, ...details } = result;
-        Object.assign(record, details);
-        record.document = `${output}/${id}.json`;
-        await writeFile(record.document, `${JSON.stringify(doc, null, 2)}\n`);
-        if (png) {
-          record.screenshot = `${output}/${id}.png`;
-          await writeFile(record.screenshot, Buffer.from(png.split(',')[1], 'base64'));
-        } else record.error ||= `Screenshot unavailable: ${result.captureError}`;
-        Object.assign(record, await scoreDocument(doc, { lint, screenshot: record.screenshot, judge: options.judge && !!png }));
-      } catch (error) {
-        record.error = error.stack || String(error);
-        try {
-          let salvage;
-          try { salvage = await page.evaluate(async size => {
-            const { executeCanvasTool } = await import('/src/canvas/agent/canvas_tools.js');
-            const captured = await executeCanvasTool('capture_canvas', { maxSize: size });
-            return { doc: JSON.parse(JSON.stringify(window.__vooEditor.getDocument())), png: captured?.dataUrl };
-          }, Math.min(960, Math.max(task.frame.w, task.frame.h))); }
-          catch (salvageError) {
-            record.salvageError = salvageError.message;
-            salvage = { doc: lastCheckpoint };
+          await page.exposeFunction('__vooBenchCheckpoint', payload => {
+            if (payload?.nodes?.length) lastCheckpoint = payload;
+          });
+          try {
+            await page.goto(`http://127.0.0.1:${vitePort}/?voo-test=1`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+          } catch {
+            await page.goto(`http://127.0.0.1:${vitePort}/?voo-test=1`, { waitUntil: 'domcontentloaded', timeout: 180000 });
           }
-          if (salvage.doc?.nodes?.length) {
-            record.partial = true;
-            record.document = `${output}/${id}.json`;
-            await writeFile(record.document, `${JSON.stringify(salvage.doc, null, 2)}\n`);
-            if (salvage.png?.startsWith('data:image/png;base64,')) {
-              record.screenshot = `${output}/${id}.png`;
-              await writeFile(record.screenshot, Buffer.from(salvage.png.split(',')[1], 'base64'));
+          await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
+          const result = await Promise.race([
+            page.evaluate(runInEditor, { task, model: options.model || process.env.VOO_CODEX_MODEL, timeout, critique: options.critique && !!lint }),
+            new Promise((_, reject) => { watchdog = setTimeout(() => reject(new Error('Task exceeded hard deadline')), timeout + 30000); }),
+          ]);
+          const { doc, png, ...details } = result;
+          Object.assign(record, details);
+          record.document = `${output}/${id}.json`;
+          await writeFile(record.document, `${JSON.stringify(doc, null, 2)}\n`);
+          if (png) {
+            record.screenshot = `${output}/${id}.png`;
+            await writeFile(record.screenshot, Buffer.from(png.split(',')[1], 'base64'));
+          } else record.error ||= `Screenshot unavailable: ${result.captureError}`;
+          Object.assign(record, await scoreDocument(doc, { lint, screenshot: record.screenshot, judge: options.judge && !!png }));
+        } catch (error) {
+          record.error = error.stack || String(error);
+          try {
+            let salvage;
+            try { salvage = await page.evaluate(async size => {
+              const { executeCanvasTool } = await import('/src/canvas/agent/canvas_tools.js');
+              const captured = await executeCanvasTool('capture_canvas', { maxSize: size });
+              return { doc: JSON.parse(JSON.stringify(window.__vooEditor.getDocument())), png: captured?.dataUrl };
+            }, Math.min(960, Math.max(task.frame.w, task.frame.h))); }
+            catch (salvageError) {
+              record.salvageError = salvageError.message;
+              salvage = { doc: lastCheckpoint };
             }
-            Object.assign(record, await scoreDocument(salvage.doc, { lint, screenshot: record.screenshot, judge: options.judge && !!record.screenshot }));
-          }
-        } catch (salvageError) { record.salvageError = salvageError.message; }
-      }
-      finally { clearTimeout(watchdog); clearInterval(heapInterval); await context.close(); }
-      record.durationMs = Date.now() - started;
-      results.tasks.push(record);
-      await save();
-      console.error(`${id}: ${record.error && !record.partial ? 'FAILED' : `lint ${record.lint?.score ?? 'unavailable'}`}`);
+            if (salvage.doc?.nodes?.length) {
+              record.partial = true;
+              record.document = `${output}/${id}.json`;
+              await writeFile(record.document, `${JSON.stringify(salvage.doc, null, 2)}\n`);
+              if (salvage.png?.startsWith('data:image/png;base64,')) {
+                record.screenshot = `${output}/${id}.png`;
+                await writeFile(record.screenshot, Buffer.from(salvage.png.split(',')[1], 'base64'));
+              }
+              Object.assign(record, await scoreDocument(salvage.doc, { lint, screenshot: record.screenshot, judge: options.judge && !!record.screenshot }));
+            }
+          } catch (salvageError) { record.salvageError = salvageError.message; }
+        }
+        finally { clearTimeout(watchdog); clearInterval(heapInterval); await context.close(); }
+        if (options.out && record.screenshot) await copyFile(record.screenshot, resolve(options.out, `${id}.png`));
+        record.durationMs = Date.now() - started;
+        results.tasks.push(record);
+        await save();
+        console.error(`${id}: ${record.error && !record.partial ? 'FAILED' : `lint ${record.lint?.score ?? 'unavailable'}`}`);
+      } finally { await browser.close(); }
     };
-    const queue = [...options.selectedTasks];
-    const concurrency = Math.max(1, Number(process.env.VOO_DESIGN_BENCH_CONCURRENCY || 1));
-    await Promise.all(Array.from({ length: Math.min(concurrency, queue.length) }, async () => { while (queue.length) await runOne(queue.shift()); }));
+    for (const id of options.selectedTasks) await runOne(id);
   } finally {
-    await browser?.close();
     for (const child of children.reverse()) {
       try { process.kill(-child.pid, 'SIGTERM'); } catch {}
     }
