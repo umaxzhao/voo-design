@@ -26,6 +26,23 @@ function createDefaultPage(id = DEFAULT_PAGE_ID, label = "Design 1", canvasType 
   };
 }
 
+// Session snapshots are intentionally separate from on-disk project serialization.
+const DOCUMENT_FIELDS = [
+  "nodes", "edges", "images", "editingNodeId", "editingNodeIds", "editingGroupId",
+  "editorCamera", "editorArtboardLayouts", "editorPageCameras", "editorPageSession",
+  "pendingArtboardFitId", "filePath", "fileHandle", "fileName", "figSource",
+  "isDirty", "canvasBackgroundColor", "editingPresentationId",
+];
+let documentCounter = 0;
+function documentSnapshot(state) {
+  const snapshot = Object.fromEntries(DOCUMENT_FIELDS.map(key => [key, state[key]]));
+  snapshot.nodes = state.nodes.map(node => {
+    const doc = state.editorPageDocumentReader?.(node.id);
+    return doc ? { ...node, data: { ...node.data, editorDoc: doc } } : node;
+  });
+  return snapshot;
+}
+
 let pageCounter = 0;
 
 export const useDesignStore = create((set, get) => {
@@ -35,6 +52,42 @@ export const useDesignStore = create((set, get) => {
     requestAnimationFrame: (callback) => typeof globalThis.requestAnimationFrame === 'function' ? globalThis.requestAnimationFrame(callback) : callback(),
   });
   return {
+  activeDocumentId: "document-0",
+  openDocuments: [{ id: "document-0", fileName: "Untitled.voo", isDirty: false }],
+  suspendDocument: () => {
+    cameraBatcher.flush();
+    const state = get();
+    if (!state.activeDocumentId) return;
+    const snapshot = documentSnapshot(state);
+    set({ openDocuments: state.openDocuments.map(doc => doc.id === state.activeDocumentId ? { id: doc.id, ...snapshot } : doc) });
+  },
+  beginDocument: () => {
+    get().suspendDocument();
+    const id = `document-${++documentCounter}`;
+    set(state => ({ activeDocumentId: id, openDocuments: [...state.openDocuments, { id }],
+      edges: [], images: {}, figSource: null, canvasBackgroundColor: "#1e1e1e",
+      streamingPreview: null, streamingPreviewNodeId: null }));
+  },
+  switchDocument: (id) => {
+    if (id === get().activeDocumentId) { set({ welcomeOpen: false }); return; }
+    if (!get().openDocuments.some(doc => doc.id === id)) return;
+    get().suspendDocument();
+    const doc = get().openDocuments.find(doc => doc.id === id);
+    set({ ...Object.fromEntries(DOCUMENT_FIELDS.map(key => [key, doc[key]])), activeDocumentId: id, welcomeOpen: false,
+      streamingPreview: null, streamingPreviewNodeId: null });
+  },
+  closeDocument: (id, confirmClose = () => true) => {
+    const state = get();
+    const doc = id === state.activeDocumentId ? state : state.openDocuments.find(doc => doc.id === id);
+    if (!doc || (doc.isDirty && !confirmClose())) return false;
+    if (id === state.activeDocumentId) {
+      const next = state.openDocuments.filter(doc => doc.id !== id);
+      if (next.length) get().switchDocument(next[next.length - 1].id);
+      else set({ activeDocumentId: null, welcomeOpen: true, nodes: [], editingNodeId: null, editingNodeIds: [], fileName: null, filePath: null, fileHandle: null, isDirty: false });
+    }
+    set(state => ({ openDocuments: state.openDocuments.filter(doc => doc.id !== id) }));
+    return true;
+  },
   // Core state
   editingNodeId: DEFAULT_PAGE_ID,
   editingNodeIds: [DEFAULT_PAGE_ID],
@@ -297,6 +350,7 @@ export const useDesignStore = create((set, get) => {
   loadVooProject: ({ vooData, filePath = null, fileName = "Untitled.voo", fileHandle = null, figSource = null }) => {
     const doc = vooData?.document;
     if (!doc) return;
+    get().beginDocument();
     cameraBatcher.flush();
     set({ figSource, editorPageCameras: {}, pendingArtboardFitId: null, editorPageSession: get().editorPageSession + 1 });
 
@@ -357,7 +411,8 @@ export const useDesignStore = create((set, get) => {
   },
 
   newVooProject: ({ label = "Design 1", width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT, canvasType = CANVAS_TYPE.DESIGN } = {}) => {
-    const pageId = `page-${Date.now().toString(36)}`;
+    get().beginDocument();
+    const pageId = `page-${Date.now().toString(36)}-${++pageCounter}`;
     const page = {
       id: pageId,
       type: "imageEditor",
@@ -398,19 +453,7 @@ export const useDesignStore = create((set, get) => {
     });
   },
 
-  closeProject: () => {
-    set({
-      welcomeOpen: true,
-      fileName: null,
-      filePath: null,
-      fileHandle: null,
-      isDirty: false,
-      nodes: [],
-      editingNodeId: null,
-      editingNodeIds: [],
-      editingGroupId: null,
-    });
-  },
+  closeProject: () => get().closeDocument(get().activeDocumentId),
 
   closeImageEditor: () => {
     set({ welcomeOpen: true });

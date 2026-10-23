@@ -15,6 +15,7 @@ import { useI18n } from "./canvas/use_i18n.js";
 import { useDesignStore } from "./store/design_store.js";
 
 export default function App() {
+  const activeDocumentId = useDesignStore(s => s.activeDocumentId);
   const welcomeOpen = useDesignStore((s) => s.welcomeOpen);
   const documentLoading = useDesignStore((s) => s.documentLoading);
   // The AI panel state is managed in design_store for hybrid agent coordination
@@ -104,7 +105,7 @@ export default function App() {
         <div className="editor-shell relative min-h-0 min-w-0 flex-1">
           <div className="editor-shell-inner flex flex-col">
             <div className="relative min-h-0 flex-1 overflow-hidden">
-              <ImageEditor visible={true} agentVisible={false} />
+              <ImageEditor key={activeDocumentId} visible={true} agentVisible={false} />
               {welcomeOpen && (
                 <div className="absolute inset-0 z-50 overflow-hidden rounded-3xl bg-[#0c0c0c]">
                   <Suspense fallback={null}>

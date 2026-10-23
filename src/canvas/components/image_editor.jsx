@@ -472,6 +472,11 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const handleEngine = useCallback((nodeId, state) => {
     if (state.engine) {
       enginesRef.current.set(nodeId, state);
+      const store = useDesignStore.getState();
+      if (store.nodes.some(node => node.id === nodeId) && state.ready) {
+        const dirty = store.nodes.some(node => enginesRef.current.get(node.id)?.dirty || snapshotsRef.current.get(node.id)?.dirty);
+        if (dirty) store.setIsDirty(true);
+      }
       // Its work is live again; the snapshot it was rebuilt from is spent.
       if (state.ready) {
         snapshotsRef.current.delete(nodeId);

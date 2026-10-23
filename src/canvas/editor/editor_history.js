@@ -238,6 +238,13 @@ export function createHistory({
       }
     },
 
+    captureSession() {
+      return { entries: entries.slice(), currentIndex };
+    },
+    restoreSession(session) {
+      entries = session.entries.slice();
+      currentIndex = session.currentIndex;
+    },
     getEntries() {
       return entries.map((entry, idx) => ({
         id: entry.id,

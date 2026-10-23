@@ -10,6 +10,12 @@ import { openDecodeFailed } from "./editor_open_state.js";
 import { useDesignStore } from "../store/design_store.js";
 import { createWorkflowStoreEditorHost } from "../shared/editor-host-contract.js";
 import { ensureModule, moduleState } from "./module_loader.js";
+// Runtime-only sessions retain undo and selection when a document tab unmounts.
+const documentSessions = new Map();
+useDesignStore.subscribe(state => {
+  const ids = new Set(state.openDocuments.map(doc => doc.id));
+  for (const [key, entry] of documentSessions) if (!ids.has(entry.documentId)) documentSessions.delete(key);
+});
 /** Window event fired when the editor engine is (re)created or replaced. */
 export const EDITOR_ENGINE_CHANGE_EVENT = "voo:editor-engine-change";
 
@@ -138,6 +144,9 @@ export function useEditorEngine({
         .getState()
         .registerEditorBridge?.(sourceWorkflowNodeId, commandBridge);
 
+    const documentId = useDesignStore.getState().activeDocumentId;
+    const sessionKey = `${documentId}:${sourceWorkflowNodeId}`;
+    const previousSession = documentSessions.get(sessionKey)?.snapshot;
     const pageCameras = pageCameraCache(
       useDesignStore.getState().editorPageSession,
     );
@@ -145,8 +154,14 @@ export function useEditorEngine({
     let opened = false;
     void created
       .open(source)
-      .then(() => {
+      .then(async () => {
         if (cancelled) return;
+        if (previousSession) {
+          const snapshot = await previousSession;
+          if (cancelled) return;
+          created.restoreDocumentSession(snapshot.state);
+          created.setViewport(snapshot.viewport);
+        }
         if (openDecodeFailed(source, created.getDocument())) {
           setError({ code: "decodeFailed" });
           return;
@@ -162,7 +177,7 @@ export function useEditorEngine({
           );
         }
         if (cameraMode !== "shared") {
-          if (!restorePageCamera(pageCameras, sourceWorkflowNodeId, created))
+          if (!previousSession && !restorePageCamera(pageCameras, sourceWorkflowNodeId, created))
             created.zoomToFit();
         }
       })
@@ -175,6 +190,7 @@ export function useEditorEngine({
     const resizeObserver = new ResizeObserver(() => {
       if (
         opened &&
+        !previousSession &&
         created &&
         cameraMode !== "shared" &&
         !pageCameras.has(sourceWorkflowNodeId) &&
@@ -212,6 +228,11 @@ export function useEditorEngine({
         snapshotWork = onBeforeDisposeRef.current?.(created) ?? null;
       } catch (err) {
         console.error("Failed to snapshot editor before dispose", err);
+      }
+      if (opened && useDesignStore.getState().openDocuments.some(doc => doc.id === documentId)) {
+        const capture = () => ({ state: created.captureDocumentSession(), viewport: created.getViewport() });
+        documentSessions.set(sessionKey, { documentId, snapshot: snapshotWork && typeof snapshotWork.then === "function"
+          ? Promise.resolve(snapshotWork).then(capture) : Promise.resolve(capture()) });
       }
       setEngine(null);
       setReady(false);
