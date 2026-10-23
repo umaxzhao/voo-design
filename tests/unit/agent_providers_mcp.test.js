@@ -40,10 +40,11 @@ it('nudges capture after multiple writes, and reviews the capture before complet
     .mockResolvedValueOnce({ text: '', toolCalls: [{ id: 'c', name: 'capture_canvas', arguments: '{}' }] })
     .mockResolvedValueOnce({ text: 'Verified', toolCalls: [] });
   const executeTool = vi.fn().mockResolvedValue({ ok: true });
-  const result = await runAgentTurn({ config: {}, history: [], userText: 'design', tools: [{ function: { name: 'capture_canvas' } }], executeTool, streamStep });
+  const controller = new AbortController();
+  const result = await runAgentTurn({ config: {}, history: [], userText: 'design', tools: [{ function: { name: 'capture_canvas' } }], executeTool, streamStep, signal: controller.signal });
   expect(result).toBe('Verified');
   expect(streamStep.mock.calls[2][0].messages.some(m => m.content?.includes?.('Before finishing'))).toBe(true);
-  expect(executeTool).toHaveBeenCalledWith('capture_canvas', {});
+  expect(executeTool).toHaveBeenCalledWith('capture_canvas', {}, { signal: controller.signal });
 });
 
 it('allows one explicit recovery message after tool failure', async () => {

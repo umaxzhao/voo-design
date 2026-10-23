@@ -277,7 +277,7 @@ export default function CanvasAgentPanel({ onClose }) {
           history: historyRef.current,
           userText: promptWithContext,
           tools: [...CANVAS_TOOL_SCHEMAS, ...external.tools],
-          executeTool: (name, args, context) => name.startsWith("mcp__") ? external.execute(name, args) : executeCanvasTool(name, args, context),
+          executeTool: (name, args, context) => name.startsWith("mcp__") ? external.execute(name, args, context) : executeCanvasTool(name, args, context),
           onText: setStreamingText,
           onToolEvent: updateToolItem,
         });
