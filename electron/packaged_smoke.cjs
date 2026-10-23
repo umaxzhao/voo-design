@@ -16,6 +16,10 @@ module.exports = function attachSmoke(app, win) {
   const timeout = setTimeout(() => { console.error('PACKAGED_SMOKE_TIMEOUT'); app.exit(1); }, 60000);
   wc.once('did-finish-load', async () => {
     try {
+      // Updates are disabled during smoke runs; still resolve both production
+      // dependencies so packaging exclusions cannot silently break them.
+      if (typeof require('electron-updater').autoUpdater.checkForUpdates !== 'function') throw new Error('Updater unavailable');
+      if (typeof require('ws').WebSocketServer !== 'function') throw new Error('WebSocket server unavailable');
       // Exercise the editor view through its existing UI (no project file operations).
       await wc.executeJavaScript(`document.querySelector('[data-testid="onboarding-close-btn"]')?.click();`);
       let rendered = false;
@@ -26,7 +30,7 @@ module.exports = function attachSmoke(app, win) {
       }
       if (!rendered) throw new Error('No rendered canvas');
       await new Promise(resolve => setTimeout(resolve, 3000));
-      await wc.executeJavaScript(`document.querySelector('[data-testid="onboarding-close-btn"]')?.click(); document.querySelector('.app-title-bar button[title="返回画布"]')?.click();`);
+      await wc.executeJavaScript(`document.querySelector('[data-testid="first-run-onboarding"]')?.closest('dialog')?.dispatchEvent(new Event('cancel', { bubbles: true, cancelable: true })); document.querySelector('[data-testid="onboarding-close-btn"]')?.click(); document.querySelector('.app-title-bar button[title="返回画布"], .app-title-bar button[title="Back to canvas"]')?.click();`);
       await new Promise(resolve => setTimeout(resolve, 1500));
       const visible = await wc.executeJavaScript(`Boolean([...document.querySelectorAll('canvas')].some(c => { const r = c.getBoundingClientRect(); return r.width > 0 && r.height > 0 && document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === c; }))`);
       if (!visible) throw new Error('Editor canvas is covered or invisible');
@@ -48,6 +52,16 @@ module.exports = function attachSmoke(app, win) {
       console.log('PACKAGED_SMOKE_OK canvas rendered; console errors: 0');
       clearTimeout(timeout);
       app.exit(0);
-    } catch (error) { console.error('PACKAGED_SMOKE_FAILED', error); clearTimeout(timeout); app.exit(1); }
+    } catch (error) {
+      // Preserve diagnostics even when an unexpected dialog covers the editor.
+      try {
+        const screenshot = process.env.VOO_SMOKE_SCREENSHOT;
+        if (screenshot && path.isAbsolute(screenshot)) {
+          fs.mkdirSync(path.dirname(screenshot), { recursive: true });
+          fs.writeFileSync(screenshot, (await wc.capturePage()).toPNG());
+        }
+      } catch {}
+      console.error('PACKAGED_SMOKE_FAILED', error); clearTimeout(timeout); app.exit(1);
+    }
   });
 };

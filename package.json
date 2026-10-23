@@ -15,7 +15,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "electron:dev": "npm run copy:ort && npm run copy:canvaskit && concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
-"electron:build": "npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build && node scripts/signing-env.mjs --dir",
+    "electron:build": "npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build && node scripts/signing-env.mjs --dir",
     "pretest": "npm run copy:canvaskit && node scripts/ensure-dist.mjs",
     "test": "vitest run",
     "bench:design": "node scripts/design-bench/run.mjs",
@@ -30,19 +30,21 @@
     "bench:agent": "node scripts/agent-bench/run.mjs --dry-run",
     "test:e2e:codex": "node tests/e2e/codex_agent.e2e.mjs",
     "test:e2e:claude": "node tests/e2e/claude_agent.e2e.mjs",
-"dist": "npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build && node scripts/signing-env.mjs --linux AppImage --publish never",
+    "dist": "npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build && node scripts/signing-env.mjs --linux AppImage --publish never && npm run verify:package",
     "dist:dir": "npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build && node scripts/signing-env.mjs --dir",
     "dist:all": "npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build && node scripts/signing-env.mjs -mwl --publish never",
     "test:e2e:fps": "node tests/e2e/canvas_fps.e2e.mjs",
     "notices": "node scripts/generate-third-party-notices.mjs",
     "smoke:packaged": "node scripts/smoke-packaged.mjs",
-    "bench:wasm-engine": "node scripts/bench-wasm-engine.mjs"
+    "bench:wasm-engine": "node scripts/bench-wasm-engine.mjs",
+    "verify:package": "node scripts/verify-package.mjs"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
     "ws": "^8.22.0"
   },
   "devDependencies": {
+    "@electron/asar": "^3.4.1",
     "@vitejs/plugin-react": "^4.3.3",
     "@voo/canvas-core": "file:vendor/voo-canvas-core",
     "ag-psd": "^31.0.2",
@@ -72,7 +74,7 @@
   "build": {
     "appId": "run.voo.design",
     "productName": "VOO Design",
-    "copyright": "Copyright \u00a9 VOO Design contributors",
+    "copyright": "Copyright © VOO Design contributors",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -80,7 +82,7 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-"package.json",
+      "package.json",
       "LICENSE",
       "EULA.md",
       "src/shared/**/*.js",
@@ -89,7 +91,12 @@
       "!**/{test,tests,__tests__,docs,example,examples,.v8-cache}/**/*",
       "!**/*.md",
       "EULA.md",
-      "dist/EULA.md"
+      "dist/EULA.md",
+      "!dist/fonts/*.ttf",
+      "!**/{benchmark,benchmarks,coverage,.nyc_output,.cache}/**/*",
+      "!**/node_modules/js-yaml/dist/*.{js,map}",
+      "!**/node_modules/js-yaml/bin/**/*",
+      "!**/node_modules/semver/bin/**/*"
     ],
     "asar": true,
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
@@ -147,12 +154,12 @@
       "icon": "build/icon.png",
       "category": "Graphics",
       "synopsis": "Professional vector, motion & design editor",
-      "description": "VOO Design \u2014 local Figma-class UI editor with Affinity-style image tools and a Pencil-class design agent.",
+      "description": "VOO Design — local Figma-class UI editor with Affinity-style image tools and a Pencil-class design agent.",
       "target": [
         "AppImage",
         "deb"
       ],
-"executableName": "voo-design",
+      "executableName": "voo-design",
       "syncDesktopName": true
     },
     "afterSign": "scripts/notarize.cjs",
@@ -167,7 +174,10 @@
       "zh-CN",
       "en-US"
     ],
-    "compression": "maximum"
+    "compression": "maximum",
+    "appImage": {
+      "compression": "xz"
+    }
   },
   "allowScripts": {
     "esbuild@0.21.5": true

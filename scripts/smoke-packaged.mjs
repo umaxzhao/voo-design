@@ -8,7 +8,7 @@ const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'voo-packaged-smoke-'));
 try {
   const code = await new Promise((resolve, reject) => {
     const child = spawn('xvfb-run', ['-a', path.resolve('release', artifacts[0]), '--appimage-extract-and-run', '--no-sandbox', '--disable-gpu', `--user-data-dir=${profile}`], {
-      env: { ...process.env, VOO_PACKAGED_SMOKE: '1', VOO_DISABLE_UPDATES: '1', VOO_SMOKE_SCREENSHOT: path.resolve('docs/screenshots/packaged-smoke.png') },
+      env: { ...process.env, VOO_PACKAGED_SMOKE: '1', VOO_DISABLE_UPDATES: '1', VOO_SMOKE_SCREENSHOT: path.resolve(process.env.VOO_SMOKE_SCREENSHOT || 'docs/screenshots/packaged-smoke.png') },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let passed = false;
