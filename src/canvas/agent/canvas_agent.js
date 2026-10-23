@@ -50,6 +50,7 @@ export const SYSTEM_PROMPT =
   "For a poster/layout brief, create visible canvas layers in this turn; plans and variables alone do not complete it. " +
   "Keep initial token setup small, then build the layout before expanding the palette. " +
   "For UI generation use Lucide icons, never emoji as icons. For HTML generation use Tailwind utility classes for layout and styling.\n" +
+  "Use short copy for on-canvas UI text: prefer concise labels, headlines and body text; avoid chatty paragraphs. " +
   "Keep replies short.";
 
 const READ_ONLY_TOOLS = new Set([

@@ -108,9 +108,14 @@ describe("poster content recovery", () => {
     expect(streamStep).toHaveBeenCalledOnce();
   });
 
-  it("keeps Lucide and Tailwind in generation guidance", () => {
+  it("keeps icons, HTML styling, composed layouts and short copy explicit in generation guidance", () => {
     expect(SYSTEM_PROMPT).toContain("Lucide");
     expect(SYSTEM_PROMPT).toContain("Tailwind utility classes");
     expect(SYSTEM_PROMPT).toContain("never emoji as icons");
+    expect(SYSTEM_PROMPT).toContain("Prefer auto layout frames for composed layouts");
+    expect(SYSTEM_PROMPT).toContain("short copy for on-canvas UI text");
+    expect(SYSTEM_PROMPT).toContain("concise labels, headlines and body text");
+    expect(SYSTEM_PROMPT).toContain("avoid chatty paragraphs");
+    expect(SYSTEM_PROMPT).toContain("Keep replies short");
   });
 });
