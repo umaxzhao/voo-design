@@ -1,11 +1,14 @@
 import { defineConfig } from "vite";
+import { visualizer } from "rollup-plugin-visualizer";
 import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
 
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), ...(process.env.ANALYZE === "1" ? [visualizer({ filename: "analysis/bundle.html", gzipSize: true, brotliSize: true, open: false })] : [])],
   base: "./",
   resolve: {
+    // ONNX loads the single public/ort copy through env.wasm.wasmPaths.
+    ...(mode !== "test" ? { conditions: ["onnxruntime-web-use-extern-wasm", "module", "browser", "development|production"] } : {}),
     alias: {
       "@": resolve(__dirname, "./src"),
     },
@@ -16,6 +19,7 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
+    sourcemap: false,
     target: "esnext",
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
@@ -43,4 +47,4 @@ export default defineConfig({
     environment: "node",
     include: ["tests/unit/**/*.test.{js,jsx}"],
   },
-});
+}));

@@ -30,6 +30,12 @@ const workspaceApi = {
 };
 
 contextBridge.exposeInMainWorld("vooDesktop", {
+  version: () => ipcRenderer.invoke("app:version"),
+  updates: {
+    status: () => ipcRenderer.invoke("updates:status"),
+    onStatus: (handler) => subscribe("updates:status", handler),
+    quitAndInstall: () => ipcRenderer.invoke("updates:install"),
+  },
   platform: process.platform,
   webImageGenerate: (args) => ipcRenderer.invoke("webImage:generate", args),
   webImageCancel: (jobId) => ipcRenderer.invoke("webImage:cancel", jobId),

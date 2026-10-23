@@ -1,5 +1,16 @@
 /** Critical initial-paint English dictionary. */
 export default {
+  "release.about": "About VOO Design",
+  "release.downloading": "Update available, downloading…",
+  "release.restartReady": "Restart to update",
+  "release.restart": "Restart",
+  "release.dismiss": "Dismiss",
+  "release.close": "Close",
+  "release.eula": "End User License Agreement",
+  "release.notices": "Third Party Notices",
+  "release.loading": "Loading…",
+  "release.loadFailed": "Unable to load license documents.",
+
   "node.rendererLoadFailed": "Could not load this node.",
   "node.rendererReload": "Reload page",
   "node.rendererSaveFailed": "Could not save changes. Reload stopped.",

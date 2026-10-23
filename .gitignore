@@ -10,3 +10,8 @@ public/canvaskit.wasm
 public/ort/
 release/
 docs/canvas-fps-results.json
+public/THIRD_PARTY_NOTICES.json
+public/LICENSE
+public/EULA.md
+
+analysis/
