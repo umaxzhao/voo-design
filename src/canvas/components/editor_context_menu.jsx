@@ -4,10 +4,12 @@ import { useI18n } from "../use_i18n.js";
 import { executeEditorCommand } from "../editor/command_table.js";
 import { generateCode } from "../codegen/index.js";
 import { copyEditorHtml } from "../editor/editor_html_clipboard.js";
-import EditorCodeExportDialog, {
-  resolveCodegenAssets,
-  tOr,
-} from "./editor_code_export_dialog.jsx";
+import { lazy, Suspense } from "react";
+const EditorCodeExportDialog = lazy(() => import("./editor_code_export_dialog.jsx"));
+function tOr(t, key, fallback, params = null) {
+  const value = t(key, params ?? undefined);
+  return value === key ? fallback : value;
+}
 import { canConvertToPath } from "../editor/scene_model.js";
 import EditorPathMenuItems from "./editor_path_menu_items.jsx";
 import { isMacPlatform } from "../use_window_controls.js";
@@ -121,6 +123,7 @@ export default function EditorContextMenu({
       const doc = engine.getDocument?.() ?? null;
       const selectedIds = engine.getSelectedIds?.() ?? [];
       const scope = selectedIds.length > 0 ? "selection" : "page";
+      const { resolveCodegenAssets } = await import("./editor_code_export_dialog.jsx");
       const { imageSources, imageSizes } = await resolveCodegenAssets(doc, {
         selectedIds,
         scope,
@@ -647,7 +650,8 @@ export default function EditorContextMenu({
       </button>
 
       {codeDialogOpen ? (
-        <EditorCodeExportDialog
+        <Suspense fallback={null}>
+          <EditorCodeExportDialog
           doc={engine.getDocument?.() ?? null}
           selectedIds={engine.getSelectedIds?.() ?? []}
           selectedCount={selectedCount}
@@ -656,6 +660,7 @@ export default function EditorContextMenu({
             onClose();
           }}
         />
+        </Suspense>
       ) : null}
     </div>
   );

@@ -46,8 +46,8 @@ import { layoutPresentationPages } from "../presentation/presentation-document.j
 import { usePresentationHistory } from "./presentation/use_presentation_history.js";
 import { usePresentationEditor } from "./presentation/use_presentation_editor.js";
 import PresentationPageMenu from "./presentation/presentation_page_menu.jsx";
-import PresentationViewer from "./presentation/presentation_viewer.jsx";
-import PresentationExportDialog from "./presentation/presentation_export_dialog.jsx";
+const PresentationViewer = lazy(() => import("./presentation/presentation_viewer.jsx"));
+const PresentationExportDialog = lazy(() => import("./presentation/presentation_export_dialog.jsx"));
 import PresentationSlide from "./presentation/presentation_slide.jsx";
 import {
   editorMediaFileKind,
@@ -60,10 +60,10 @@ import EditorToolSubbar from "./editor_tool_subbar.jsx";
 import EditorPieMenu from "./editor_pie_menu.jsx";
 import EditorPenSubbar from "./editor_pen_subbar.jsx";
 import EditorContextMenu from "./editor_context_menu.jsx";
-import EditorCommandPalette from "./editor_command_palette.jsx";
-import EditorFindReplace from "./editor_find_replace.jsx";
-import ShortcutReferenceModal from "./shortcut_reference_modal.jsx";
-import SvgEditModal from "./SvgEditModal.jsx";
+const EditorCommandPalette = lazy(() => import("./editor_command_palette.jsx"));
+const EditorFindReplace = lazy(() => import("./editor_find_replace.jsx"));
+const ShortcutReferenceModal = lazy(() => import("./shortcut_reference_modal.jsx"));
+const SvgEditModal = lazy(() => import("./SvgEditModal.jsx"));
 import { DESIGN_SHORTCUT_GROUPS } from "../../shared/editor-shortcut-catalog.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import {
@@ -1269,9 +1269,13 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
 
   const propertyObject =
     selectedGroup ?? selected ?? (isFrameSelected ? frameObject : null);
-  const parentLayout = propertyObject?.parentId
-    ? layers.find((node) => node.id === propertyObject.parentId)?.autoLayout
+  const parentNode = propertyObject?.parentId
+    ? layers.find((node) => node.id === propertyObject.parentId) ?? null
     : null;
+  const parentLayout = parentNode?.autoLayout ?? null;
+  const parentIsFrame = Boolean(
+    parentNode?.isFrame || parentNode?.kind === "frame",
+  );
   const colorVariableActions = propertyObject
     ? {
         documentId: doc?.canvasId,
@@ -3969,7 +3973,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         ) : null}
 
         {exportOpen && presentationId ? (
-          <PresentationExportDialog
+          <Suspense fallback={null}>
+            <PresentationExportDialog
             busy={presentation.busy}
             warnings={presentation.warnings}
             error={presentation.error}
@@ -3979,6 +3984,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               cancelExport();
             }}
           />
+          </Suspense>
         ) : exportOpen ? (
           <Suspense fallback={null}>
             <EditorExportDialog
@@ -4007,7 +4013,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         ) : null}
 
         {presentation.preview ? (
-          <PresentationViewer
+          <Suspense fallback={null}>
+            <PresentationViewer
             pages={presentation.preview.pages}
             title={presentation.preview.title}
             initialPageId={presentation.preview.initialPageId}
@@ -4016,6 +4023,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               <PresentationSlide key={page.id} page={page} index={index} />
             )}
           />
+          </Suspense>
         ) : null}
         {presentation.error && !exportOpen ? (
           <p
@@ -4148,6 +4156,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             engine={engine}
             object={propertyObject}
             parentLayout={parentLayout}
+            parentIsFrame={parentIsFrame}
+            parentNode={parentNode}
             colorVariableActions={colorVariableActions}
             styleActions={styleActions}
             index={activeIndex}
@@ -5170,7 +5180,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           />
         ) : null}
 
-        <ShortcutReferenceModal
+        <Suspense fallback={null}>
+          <ShortcutReferenceModal
           isOpen={shortcutsOpen}
           onClose={() => setShortcutsOpen(false)}
           titleKey="editor.shortcuts.title"
@@ -5200,6 +5211,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           onFocusMatch={focusFindMatch}
           onApplyDoc={applyFindReplaceDoc}
         />
+        </Suspense>
       </div>
     </div>
   );

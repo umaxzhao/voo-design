@@ -6,8 +6,10 @@ import { useI18n } from "../../use_i18n.js";
 import {
   StaticSection,
   CollapsibleSection,
+  sectionRowClass,
+  fieldClass,
 } from "./property_section.jsx";
-import ScrubField from "../scrub_field.jsx";
+import ToolSliderField from "./tool_slider_field.jsx";
 import { IconSparkle } from "../../icons.jsx";
 
 export default function SelectionActions({
@@ -40,7 +42,7 @@ export default function SelectionActions({
               <button
                 type="button"
                 onClick={() => onInvertSelection()}
-                className="rounded-xl bg-[#222222] py-1.5 text-[10px] font-mono text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors"
+                className={`${sectionRowClass} justify-center text-[10px] text-neutral-300`}
               >
                 {t("editor.selection.invert")}
               </button>
@@ -49,7 +51,7 @@ export default function SelectionActions({
               <button
                 type="button"
                 onClick={() => onClearSelection()}
-                className="rounded-xl bg-rose-500/15 py-1.5 text-[10px] font-mono text-rose-300 hover:bg-rose-500/25 transition-colors"
+                className={`${sectionRowClass} justify-center text-[10px] text-rose-300 ring-1 ring-rose-400/20`}
               >
                 {t("editor.selection.deselect")}
               </button>
@@ -58,7 +60,7 @@ export default function SelectionActions({
               <button
                 type="button"
                 onClick={() => onTransformSelection()}
-                className="rounded-xl bg-[#222222] py-1.5 text-[10px] font-mono text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors"
+                className={`${sectionRowClass} justify-center text-[10px] text-neutral-300`}
               >
                 {t("editor.selection.transform")}
               </button>
@@ -67,7 +69,7 @@ export default function SelectionActions({
               <button
                 type="button"
                 onClick={() => onFillSelection()}
-                className="rounded-xl bg-[#222222] py-1.5 text-[10px] font-mono text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors"
+                className={`${sectionRowClass} justify-center text-[10px] text-neutral-300`}
               >
                 {t("editor.selection.fill")}
               </button>
@@ -78,7 +80,7 @@ export default function SelectionActions({
             <button
               type="button"
               onClick={() => onRefineEdge()}
-              className="w-full rounded-xl bg-[#222222] py-1.5 text-[10px] font-mono uppercase tracking-wider text-neutral-200 hover:bg-[#282828] hover:text-white transition-colors"
+              className={`${sectionRowClass} justify-center text-[10px] uppercase tracking-wider text-neutral-200`}
             >
               {t("editor.selection.refineEdge")}
             </button>
@@ -89,14 +91,14 @@ export default function SelectionActions({
               <button
                 type="button"
                 onClick={() => onApplyTransformSelection?.()}
-                className="rounded-xl bg-emerald-500/15 py-1.5 text-[10px] font-mono text-emerald-300 hover:bg-emerald-500/25 transition-colors"
+                className={`${sectionRowClass} justify-center text-[10px] text-emerald-300 ring-1 ring-emerald-400/20`}
               >
                 {t("editor.selection.applyTransform")}
               </button>
               <button
                 type="button"
                 onClick={() => onCancelTransformSelection?.()}
-                className="rounded-xl bg-rose-500/15 py-1.5 text-[10px] font-mono text-rose-300 hover:bg-rose-500/25 transition-colors"
+                className={`${sectionRowClass} justify-center text-[10px] text-rose-300 ring-1 ring-rose-400/20`}
               >
                 {t("editor.selection.cancelTransform")}
               </button>
@@ -128,7 +130,7 @@ export default function SelectionActions({
               placeholder={t("editor.selection.aiRepaintPlaceholder")}
               disabled={aiRepainting}
               aria-label={t("editor.selection.aiRepaintPlaceholder")}
-              className="w-full rounded-xl bg-[#222222] px-3 py-1.5 text-[11px] font-mono text-neutral-100 outline-none transition-all placeholder:text-neutral-400 focus:bg-[#2a2a2a] focus:ring-1 focus:ring-white/20 disabled:opacity-50"
+              className={`${fieldClass} placeholder:text-neutral-500 disabled:opacity-50`}
             />
             <button
               type="button"
@@ -158,10 +160,11 @@ export default function SelectionActions({
           defaultOpen={false}
         >
           <div className="space-y-1.5">
-            <ScrubField
-              prefix={
+            <ToolSliderField
+              label={t("editor.selection.modify.amount")}
+              icon={
                 <svg
-                  className="w-3.5 h-3.5 text-neutral-400"
+                  className="h-3 w-3"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -171,11 +174,11 @@ export default function SelectionActions({
                   <circle cx="12" cy="12" r="7" />
                 </svg>
               }
-              suffix="px"
               min={1}
               max={100}
               value={modifyAmount}
               onValueChange={setModifyAmount}
+              suffix="px"
               ariaLabel={t("editor.selection.modify.amount")}
               scrubHint={t("editor.props.dragToAdjust")}
             />
@@ -184,7 +187,7 @@ export default function SelectionActions({
                 type="button"
                 onClick={() => onModifySelection(modifyAmount, "expand")}
                 disabled={modifyAmount <= 0}
-                className="rounded-xl bg-[#222222] py-1.5 text-[10px] font-mono text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors disabled:opacity-40"
+                className={`${sectionRowClass} justify-center px-1 text-[10px] text-neutral-300 disabled:opacity-40`}
               >
                 {t("editor.selection.modify.expand")}
               </button>
@@ -192,7 +195,7 @@ export default function SelectionActions({
                 type="button"
                 onClick={() => onModifySelection(modifyAmount, "contract")}
                 disabled={modifyAmount <= 0}
-                className="rounded-xl bg-[#222222] py-1.5 text-[10px] font-mono text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors disabled:opacity-40"
+                className={`${sectionRowClass} justify-center px-1 text-[10px] text-neutral-300 disabled:opacity-40`}
               >
                 {t("editor.selection.modify.contract")}
               </button>
@@ -200,7 +203,7 @@ export default function SelectionActions({
                 type="button"
                 onClick={() => onModifySelection(modifyAmount, "border")}
                 disabled={modifyAmount <= 0}
-                className="rounded-xl bg-[#222222] py-1.5 text-[10px] font-mono text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors disabled:opacity-40"
+                className={`${sectionRowClass} justify-center px-1 text-[10px] text-neutral-300 disabled:opacity-40`}
               >
                 {t("editor.selection.modify.border")}
               </button>
@@ -208,7 +211,7 @@ export default function SelectionActions({
                 type="button"
                 onClick={() => onModifySelection(modifyAmount, "smooth")}
                 disabled={modifyAmount <= 0}
-                className="rounded-xl bg-[#222222] py-1.5 text-[10px] font-mono text-neutral-300 hover:bg-[#282828] hover:text-white transition-colors disabled:opacity-40"
+                className={`${sectionRowClass} justify-center px-1 text-[10px] text-neutral-300 disabled:opacity-40`}
               >
                 {t("editor.selection.modify.smooth")}
               </button>

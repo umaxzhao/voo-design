@@ -25,8 +25,11 @@ export {
 };
 
 export default function EditorProperties({
-  object = null,
-  parentLayout = null,
+   object = null,
+   parentLayout = null,
+   parentIsFrame = false,
+   parentNode = null,
+
   colorVariableActions = null,
   styleActions = null,
   index: _index = -1,
@@ -309,6 +312,8 @@ export default function EditorProperties({
             object={object}
             engine={engine}
             parentLayout={parentLayout}
+            parentIsFrame={parentIsFrame}
+            parentNode={parentNode}
             colorVariableActions={colorVariableActions}
             styleActions={styleActions}
             docSize={docSize}

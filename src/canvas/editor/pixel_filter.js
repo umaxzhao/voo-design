@@ -145,6 +145,7 @@ export function applyEmboss(data, width, height, amount) {
     for (let x = 0; x < width; x += 1) {
       const xNext = Math.min(width - 1, x + 1);
       const o = (y * width + x) * 4;
+      if (src[o + 3] === 0) continue;
       const diag = (yNext * width + xNext) * 4;
       for (let c = 0; c < 3; c += 1) {
         const lum = 0.299 * src[o] + 0.587 * src[o + 1] + 0.114 * src[o + 2];
