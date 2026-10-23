@@ -51,6 +51,66 @@ function expandInstances(doc, resolveCanvas, sourcePath = new Set()) {
   return { ...doc, nodes };
 }
 
+const CLIP_SHAPE_KINDS = new Set([NODE_KIND.RECT, NODE_KIND.ELLIPSE, NODE_KIND.PATH]);
+const SINGLE_SHAPE_ELEMENT = /^<(rect|ellipse|path)\s[^<]*\/>$/;
+
+function isOpaqueSolid(fill) {
+  if (typeof fill !== "string") return false;
+  const value = fill.trim().toLowerCase();
+  if (value === "none" || value === "transparent") return false;
+  if (value.startsWith("#")) {
+    if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(value)) return true;
+    return /^#[0-9a-f]{3}f$|^#[0-9a-f]{6}ff$/.test(value);
+  }
+  return /^rgb\(/.test(value) || /^[a-z]+$/.test(value);
+}
+
+function paintsBeyondFill(node) {
+  if (node.strokeWidth > 0 && node.stroke && node.stroke !== "transparent") return true;
+  if (node.layerBlur > 0 || node.noise?.opacity > 0 || node.shadow?.enabled) return true;
+  const effects = node.effects;
+  if (Array.isArray(effects)) return effects.some((effect) => effect && effect.enabled !== false);
+  return Boolean(effects && Object.values(effects).some((effect) => effect?.enabled));
+}
+
+/**
+ * A `<clipPath>` keeps only geometry, so it reproduces the stage's alpha clip
+ * exactly only for an opaque, solid-filled, unstroked vector base.
+ */
+function clipsAsGeometry(base, markup) {
+  return (
+    base.maskType !== "luminance" &&
+    CLIP_SHAPE_KINDS.has(base.kind) &&
+    (base.opacity ?? 1) >= 1 &&
+    isOpaqueSolid(base.fill) &&
+    !paintsBeyondFill(base) &&
+    markup.length === 1 &&
+    SINGLE_SHAPE_ELEMENT.test(markup[0])
+  );
+}
+
+/**
+ * Defines the clip for layers clipped to `base` and returns the attribute
+ * that applies it, or null when the base renders nothing to clip with.
+ * Any other base becomes a `<mask>` holding its painted markup: alpha for a
+ * clipping mask (opacity, gradients and strokes all count, as on the stage),
+ * luminance for a Figma luminance mask.
+ */
+function clipReference(base, markup, defs) {
+  if (markup.length === 0) return null;
+  const id = `clip-${String(base.id).replace(/[^A-Za-z0-9_-]/g, "_")}`;
+  if (clipsAsGeometry(base, markup)) {
+    const shape = markup[0].replace(/fill-rule="([^"]+)"/, 'fill-rule="$1" clip-rule="$1"');
+    defs.push(`<clipPath id="${id}" clipPathUnits="userSpaceOnUse">${shape}</clipPath>`);
+    return `clip-path="url(#${id})"`;
+  }
+  const type = base.maskType === "luminance" ? "luminance" : "alpha";
+  defs.push(
+    `<mask id="${id}" maskUnits="userSpaceOnUse" x="-50000" y="-50000" width="100000" height="100000" mask-type="${type}" style="mask-type:${type}">${markup.join("")}</mask>`,
+  );
+  return `mask="url(#${id})"`;
+}
+
 /**
  * Renders a document as an SVG string. Image nodes embed `bitmapOf(id)` when
  * provided (a data URL) and are skipped otherwise. `measureCtx` — a 2D
@@ -81,9 +141,10 @@ export function documentToSvg(
     );
   }
 
-  (doc.nodes ?? []).forEach((node) => {
+  const nodeMarkup = (node) => {
+    const out = [];
     // Locking prevents edits; visible locked artwork still belongs in exports.
-    if (node.visible === false) return;
+    if (node.visible === false) return out;
     switch (node.kind) {
       case NODE_KIND.RECT: {
         const radii = resolveCornerRadii(
@@ -114,11 +175,11 @@ export function documentToSvg(
                 radii.uniformRadius > 0
                   ? ` rx="${number(radii.uniformRadius)}"`
                   : "";
-              body.push(
+              out.push(
                 `<rect x="${number(node.x)}" y="${number(node.y)}" width="${number(node.width)}" height="${number(node.height)}"${r} fill="${idOf(node.fill) ?? escapeXml(node.fill)}"${node.opacity != null && node.opacity < 1 ? ` opacity="${number(node.opacity)}"` : ""}/>`,
               );
             } else {
-              body.push(
+              out.push(
                 `<path d="${roundedRectPathData(node.x, node.y, node.width, node.height, radii)}" fill="${idOf(node.fill) ?? escapeXml(node.fill)}"${node.opacity != null && node.opacity < 1 ? ` opacity="${number(node.opacity)}"` : ""}/>`,
               );
             }
@@ -137,11 +198,11 @@ export function documentToSvg(
               insetRadii.uniformRadius > 0
                 ? ` rx="${number(insetRadii.uniformRadius)}"`
                 : "";
-            body.push(
+            out.push(
               `<rect x="${number(node.x + inset)}" y="${number(node.y + inset)}" width="${number(iw)}" height="${number(ih)}"${ir} ${shapeAttributes(strokeOnlyNode, idOf)}/>`,
             );
           } else {
-            body.push(
+            out.push(
               `<path d="${roundedRectPathData(node.x + inset, node.y + inset, iw, ih, insetRadii)}" ${shapeAttributes(strokeOnlyNode, idOf)}/>`,
             );
           }
@@ -152,20 +213,20 @@ export function documentToSvg(
             radii.uniformRadius > 0
               ? ` rx="${number(radii.uniformRadius)}"`
               : "";
-          body.push(
+          out.push(
             `<rect x="${number(node.x)}" y="${number(node.y)}" width="${number(node.width)}" height="${number(
               node.height,
             )}"${radius} ${shapeAttributes(node, idOf)}/>`,
           );
         } else {
-          body.push(
+          out.push(
             `<path d="${roundedRectPathData(node.x, node.y, node.width, node.height, radii)}" ${shapeAttributes(node, idOf)}/>`,
           );
         }
         break;
       }
       case NODE_KIND.ELLIPSE:
-        body.push(
+        out.push(
           `<ellipse cx="${number(node.x + node.width / 2)}" cy="${number(node.y + node.height / 2)}" rx="${number(
             node.width / 2,
           )}" ry="${number(node.height / 2)}" ${shapeAttributes(node, idOf)}/>`,
@@ -175,7 +236,7 @@ export function documentToSvg(
         // A polygon/star exports as its true closed outline with its fill —
         // shapeAttributes emits the fill and (only when stroked) the stroke.
         if (node.poly === true || node.polygon === true || node.star === true) {
-          body.push(
+          out.push(
             `<path d="${polyPathData(node)}" ${shapeAttributes(node, idOf)}/>`,
           );
           break;
@@ -196,18 +257,18 @@ export function documentToSvg(
             ? `<path d="${ribbonPathData(ribbon)}" ${ribbonAttributes(node)}/>`
             : `<path d="${pathData(node)}" ${shapeAttributes({ ...node, rotation: 0, flipH: false, flipV: false }, idOf)}/>`;
           if (transformAttr) {
-            body.push(`<g ${transformAttr}>${shaft}${arrowHeads.join("")}</g>`);
+            out.push(`<g ${transformAttr}>${shaft}${arrowHeads.join("")}</g>`);
           } else {
-            body.push(shaft, ...arrowHeads);
+            out.push(shaft, ...arrowHeads);
           }
           break;
         }
         if (ribbon) {
-          body.push(
+          out.push(
             `<path d="${ribbonPathData(ribbon)}" ${ribbonAttributes(node)}/>`,
           );
         } else {
-          body.push(
+          out.push(
             `<path d="${pathData(node)}" ${shapeAttributes(node, idOf)}/>`,
           );
         }
@@ -229,7 +290,7 @@ export function documentToSvg(
           const combinedD = sources
             .map((s) => booleanSourceToPathData(node, s))
             .join(" ");
-          body.push(
+          out.push(
             `<path fill-rule="evenodd" d="${combinedD}" ${fillAttr} ${groupTransform}/>`,
           );
         } else if (op === "subtract" && sources.length > 1) {
@@ -250,7 +311,7 @@ export function documentToSvg(
               `    <g fill="black">${cutoutSources}</g>\n` +
               `  </mask>`,
           );
-          body.push(
+          out.push(
             `<g mask="url(#${maskId})" ${groupTransform}>${renderBooleanSource(node, sources[0], fillAttr)}</g>`,
           );
         } else if (op === "intersect" && sources.length > 1) {
@@ -265,12 +326,12 @@ export function documentToSvg(
               `    <g fill="white">${clipSources}</g>\n` +
               `  </mask>`,
           );
-          body.push(
+          out.push(
             `<g mask="url(#${maskId})" ${groupTransform}>${renderBooleanSource(node, sources[0], fillAttr)}</g>`,
           );
         } else {
           // union (and single-source fallback):
-          body.push(
+          out.push(
             `<g ${groupTransform}>` +
               sources
                 .map((source) => renderBooleanSource(node, source, fillAttr))
@@ -281,7 +342,7 @@ export function documentToSvg(
         break;
       }
       case NODE_KIND.TEXT: {
-        body.push(textElement(node, measureCtx));
+        out.push(textElement(node, measureCtx));
         break;
       }
       case NODE_KIND.IMAGE: {
@@ -292,7 +353,7 @@ export function documentToSvg(
           defs,
         });
         if (imageSvg) {
-          body.push(imageSvg);
+          out.push(imageSvg);
         }
         break;
       }
@@ -300,14 +361,50 @@ export function documentToSvg(
       default:
         break;
     }
-  });
+    return out;
+  };
+
+  const nodes = doc.nodes ?? [];
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const clipRefs = new Map();
+  const clipRefOf = (base) => {
+    if (!clipRefs.has(base.id)) {
+      clipRefs.set(base.id, clipReference(base, nodeMarkup(base), defs));
+    }
+    return clipRefs.get(base.id);
+  };
+
+  for (let i = 0; i < nodes.length; i += 1) {
+    const node = nodes[i];
+    if (node.clipTo) {
+      // Like the stage, consecutive layers clipped to one base composite as
+      // one group, and the group is clipped once by the base.
+      const baseId = node.clipTo;
+      const members = [];
+      while (i < nodes.length && nodes[i].clipTo === baseId) {
+        members.push(...nodeMarkup(nodes[i]));
+        i += 1;
+      }
+      i -= 1;
+      const base = byId.get(baseId);
+      if (!base || base.visible === false || members.length === 0) continue;
+      const ref = clipRefOf(base);
+      body.push(ref ? `<g ${ref}>${members.join("")}</g>` : members.join(""));
+      continue;
+    }
+    // A Figma mask base paints nothing itself; it only clips its chain.
+    if (node.maskBase) continue;
+    body.push(...nodeMarkup(node));
+  }
 
   return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
     `<svg xmlns="http://www.w3.org/2000/svg" width="${number(page.width)}" height="${number(page.height)}" viewBox="${number(page.x)} ${number(page.y)} ${number(
       page.width,
     )} ${number(page.height)}">`,
-    defs.length ? `<defs>\n${defs.join("\n")}\n</defs>` : "",
+    // A painted image base also renders its markup for the clip, which
+    // repeats the image's own corner-clip def.
+    defs.length ? `<defs>\n${[...new Set(defs)].join("\n")}\n</defs>` : "",
     ...body,
     `</svg>`,
   ]
@@ -329,10 +426,10 @@ export function nodesToSvg(
     resolveCanvas = null,
   } = {},
 ) {
-  // A Figma mask base only clips layers on the canvas; SVG has no clip chain here,
-  // so the base is left out rather than painted as a visible shape.
-  const list = (Array.isArray(nodes) ? nodes : [nodes].filter(Boolean)).filter((node) => !node.maskBase);
-  if (list.length === 0) return "";
+  const list = Array.isArray(nodes) ? nodes : [nodes].filter(Boolean);
+  // A Figma mask base stays in the list so its chain can clip to it, but it
+  // paints nothing, so it neither sizes the export nor exports on its own.
+  if (!list.some((node) => !node.maskBase)) return "";
 
   let minX = Infinity;
   let minY = Infinity;
@@ -340,7 +437,7 @@ export function nodesToSvg(
   let maxY = -Infinity;
 
   for (const node of list) {
-    if (node.kind === NODE_KIND.GROUP) continue;
+    if (node.kind === NODE_KIND.GROUP || node.maskBase) continue;
     const nx = Number(node.x || 0);
     const ny = Number(node.y || 0);
     const nw = Number(node.width || 0);

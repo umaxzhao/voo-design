@@ -111,7 +111,7 @@ export function createEditor({
   let mixedLayerMode = false;
   const renderListeners = new Set();
 
-  const history = createHistory(100);
+  const history = createHistory();
   const selection = createSelection({
     onChange: (ids) => {
       history.updateCurrentSelection(ids);
@@ -120,6 +120,7 @@ export function createEditor({
   const glAdjustments = acquireAdjustmentRenderer();
   const cache = createBitmapCache({
     onEvict: (image) => {
+      releaseImagePyramid(image, glAdjustments);
       glAdjustments?.release?.(image);
     },
   });
@@ -368,7 +369,9 @@ export function createEditor({
       getEffectiveNode,
       mixedLayerMode,
       spatialIndex: getSpatialIndex(evaluatedDoc),
-      layerCache,
+      // Off until it measures faster: in Chrome, blitting 400 cached shadow
+      // surfaces during a pan was slower than painting the shadows directly.
+      layerCache: null,
     });
     for (const listener of renderListeners) listener();
   }
@@ -490,6 +493,7 @@ export function createEditor({
     zoomToHundred: () => viewportTools.zoomToHundred?.(),
     zoomIn: () => viewportTools.zoomIn?.(),
     zoomOut: () => viewportTools.zoomOut?.(),
+    getSpatialIndex: () => getSpatialIndex(getDoc()),
     nodeAtPoint: (point, options = {}) =>
       ctrl.nodesController.nodeAtPoint(point, {
         zoom: viewportTools.getZoom(),

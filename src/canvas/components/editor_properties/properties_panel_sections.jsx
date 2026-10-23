@@ -18,6 +18,10 @@ import ConstraintsSection from "./constraints_section.jsx";
 import ColorVariablesSection from "./color_variables_section.jsx";
 import StyleSection from "./style_section.jsx";
 import MediaSection from "./media_section.jsx";
+import LinearArraySection from "./linear_array_section.jsx";
+import GridArraySection from "./grid_array_section.jsx";
+import CircularArraySection from "./circular_array_section.jsx";
+import { CollapsibleSection } from "./property_section.jsx";
 import {
   isRegionNode,
   supportsColour,
@@ -40,6 +44,7 @@ export default function PropertiesPanelSections({
   onRotatePuppetPin,
   onMovePuppetPinDepth,
   onTogglePuppetPinFixed,
+  isBackground = false,
   selectionCount,
   selectedNodes,
   onLayout,
@@ -60,6 +65,18 @@ export default function PropertiesPanelSections({
     object.kind === "video" ||
     object.kind === "model3d" ||
     object.kind === "audio";
+  // Array modifiers (linear, grid, circular) target one node at a time, so
+  // the group is a single-selection affordance for a layer or group. The
+  // canvas background never reaches the sections (the panel renders the
+  // background panel instead), and frames/adjustments have no array target.
+  const showRepeatArray =
+    !isWarpTool &&
+    !isBackground &&
+    (selectionCount ?? 1) === 1 &&
+    Boolean(object?.id) &&
+    !object.isFrame &&
+    object.kind !== "frame" &&
+    object.kind !== "adjustment";
   return (
     <>
       {isWarpTool && tool === TOOL.PUPPET_WARP ? (
@@ -115,6 +132,20 @@ export default function PropertiesPanelSections({
           selectedNodes={selectedNodes}
           transformActions={transformActions}
         />
+      ) : null}
+
+      {/* Repeat / Array: the three array modifiers, one group right under
+          Transform so "copy this layer N times" sits where its geometry is. */}
+      {showRepeatArray ? (
+        <CollapsibleSection
+          title={t("editor.props.repeatArray")}
+          storageKey="repeatArray.section"
+          testId="editor-repeat-array-section"
+        >
+          <LinearArraySection object={object} engine={engine} t={t} />
+          <GridArraySection object={object} engine={engine} t={t} />
+          <CircularArraySection object={object} engine={engine} t={t} />
+        </CollapsibleSection>
       ) : null}
 
       {/* Resize constraints: how this node follows its parent's resize. Frames
@@ -258,6 +289,8 @@ PropertiesPanelSections.propTypes = {
   onRotatePuppetPin: PropTypes.func,
   onMovePuppetPinDepth: PropTypes.func,
   onTogglePuppetPinFixed: PropTypes.func,
+  /** True when the selection is the canvas background (no array target). */
+  isBackground: PropTypes.bool,
   selectionCount: PropTypes.number,
   selectedNodes: PropTypes.array,
   onLayout: PropTypes.func,

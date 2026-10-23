@@ -373,13 +373,30 @@ export function drawGuides(ctx, guides, viewport, dpr = 1) {
       if (guide.type === "v") {
         const screenX =
           Math.round(guide.pos * viewport.zoom + viewport.panX) + 0.5;
-        ctx.moveTo(screenX, 0);
-        ctx.lineTo(screenX, height);
+        // Segment-bounded guides between aligned objects; full height otherwise.
+        const top =
+          guide.startY !== undefined
+            ? Math.round(guide.startY * viewport.zoom + viewport.panY)
+            : 0;
+        const bottom =
+          guide.endY !== undefined
+            ? Math.round(guide.endY * viewport.zoom + viewport.panY)
+            : height;
+        ctx.moveTo(screenX, Math.max(0, top));
+        ctx.lineTo(screenX, Math.min(height, bottom));
       } else if (guide.type === "h") {
         const screenY =
           Math.round(guide.pos * viewport.zoom + viewport.panY) + 0.5;
-        ctx.moveTo(0, screenY);
-        ctx.lineTo(width, screenY);
+        const left =
+          guide.startX !== undefined
+            ? Math.round(guide.startX * viewport.zoom + viewport.panX)
+            : 0;
+        const right =
+          guide.endX !== undefined
+            ? Math.round(guide.endX * viewport.zoom + viewport.panX)
+            : width;
+        ctx.moveTo(Math.max(0, left), screenY);
+        ctx.lineTo(Math.min(width, right), screenY);
       }
       ctx.stroke();
     }

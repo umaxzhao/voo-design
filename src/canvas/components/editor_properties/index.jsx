@@ -320,6 +320,7 @@ export default function EditorProperties({
             onRotatePuppetPin={onRotatePuppetPin}
             onMovePuppetPinDepth={onMovePuppetPinDepth}
             onTogglePuppetPinFixed={onTogglePuppetPinFixed}
+            isBackground={isBackground}
             selectionCount={selectionCount}
             selectedNodes={selectedNodes}
             onLayout={onLayout}

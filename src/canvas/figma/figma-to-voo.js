@@ -406,6 +406,8 @@ function emitChildren(children, originX, originY, parentId, out, ctx) {
       activeMask = out[before] ?? null;
       if (activeMask) {
         activeMask.maskBase = true;
+        // NodeChange.maskType is the MaskType enum: ALPHA, OUTLINE, LUMINANCE.
+        if (child.raw.maskType === "LUMINANCE") activeMask.maskType = "luminance";
         note(ctx, "mask-applied");
       }
       continue;

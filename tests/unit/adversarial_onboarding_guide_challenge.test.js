@@ -13,6 +13,9 @@ if (typeof globalThis.CustomEvent === "undefined") {
     }
   };
 }
+if (typeof globalThis.navigator === "undefined") {
+  globalThis.navigator = {};
+}
 
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";

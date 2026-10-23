@@ -4846,8 +4846,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               engine?.convertSelectedToPath?.();
               bump();
             }}
-            onRemoveBackground={removeBackground}
-            onSelectSubject={() => selectSubject(engine?.getSelected())}
             regionMode={engine?.getRegionMode() ?? "object"}
             onRegionMode={(mode) => engine?.setRegionMode(mode)}
             healingMode={engine?.getHealingMode() ?? "aiRepair"}

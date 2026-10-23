@@ -64,6 +64,17 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
           cornerRadius: 8,
           fills: [{ type: "solid", color: "#a7ffd4" }],
         },
+        {
+          id: "btn_label",
+          name: "CTA Label",
+          type: "text",
+          parentId: "btn_cta",
+          x: 144,
+          y: 316,
+          width: 116,
+          height: 20,
+          text: "Get started",
+        },
       ],
     };
 
@@ -129,6 +140,52 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
     expect(result.root.autoLayout.enabled).toBe(true);
     expect(result.children.length).toBe(2);
     expect(result.children[0].id).toBe("text_title");
+  });
+
+  it("returns kind and parentId with recursive nesting up to the default depth", async () => {
+    const result = await executeCanvasTool("inspect_layer_tree", {
+      layerId: "frame_hero",
+    });
+
+    expect(result.root.kind).toBe("frame");
+    expect(result.root.parentId).toBe(null);
+
+    const cta = result.children.find((child) => child.id === "btn_cta");
+    expect(cta.kind).toBe("frame");
+    expect(cta.parentId).toBe("frame_hero");
+
+    const label = cta.children.find((child) => child.id === "btn_label");
+    expect(label.kind).toBe("text");
+    expect(label.parentId).toBe("btn_cta");
+    expect(label.children).toEqual([]);
+  });
+
+  it("honors a small depth so huge trees stay compact", async () => {
+    const directOnly = await executeCanvasTool("inspect_layer_tree", {
+      layerId: "frame_hero",
+      depth: 1,
+    });
+    const cta = directOnly.children.find((child) => child.id === "btn_cta");
+    expect(cta.children).toBeUndefined();
+
+    const rootNodeOnly = await executeCanvasTool("inspect_layer_tree", {
+      layerId: "frame_hero",
+      depth: 0,
+    });
+    expect(rootNodeOnly.root.children).toBeUndefined();
+  });
+
+  it("inspects the whole document as nested top-level layers", async () => {
+    mockEditor.getSelectedId = vi.fn(() => null);
+    const result = await executeCanvasTool("inspect_layer_tree", {});
+
+    expect(result.totalCount).toBe(mockDoc.nodes.length);
+    const root = result.layers.find((layer) => layer.id === "frame_hero");
+    expect(root.parentId).toBe(null);
+    expect(root.children.map((child) => child.id)).toEqual([
+      "text_title",
+      "btn_cta",
+    ]);
   });
 
   it("mutates layer layout and triggers visual focus feedback", async () => {

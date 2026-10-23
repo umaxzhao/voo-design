@@ -96,4 +96,105 @@ describe("electron/workspace_manager folder helpers", () => {
     expect(workspaceManager.createWorkspaceFolder(root, ".secret").error).toBe("invalid_name");
     expect(workspaceManager.createWorkspaceFolder(root, "  ").error).toBe("invalid_name");
   });
+
+  it("scans design files inside project folders with a folder field", () => {
+    workspaceManager.createWorkspaceFolder(root, "Campaign");
+    fs.writeFileSync(path.join(root, "Root.voo"), "");
+    fs.writeFileSync(path.join(root, "Campaign", "Hero.voo"), "");
+    fs.writeFileSync(path.join(root, "Campaign", "notes.txt"), "skip");
+
+    const scan = workspaceManager.scanWorkspaceFiles(root);
+    expect(scan.ok).toBe(true);
+    const byName = Object.fromEntries(scan.files.map((file) => [file.name, file]));
+    expect(byName["Root.voo"].folder).toBeNull();
+    expect(byName["Hero.voo"].folder).toBe("Campaign");
+    expect(byName["Hero.voo"].path).toBe(path.join(root, "Campaign", "Hero.voo"));
+    expect(scan.files.some((file) => file.name === "notes.txt")).toBe(false);
+  });
+
+  it("moves a file into a project folder and back to the root", () => {
+    workspaceManager.createWorkspaceFolder(root, "Campaign");
+    const source = path.join(root, "Hero.voo");
+    fs.writeFileSync(source, "design");
+
+    const into = workspaceManager.moveWorkspaceFileToFolder(source, "Campaign", root);
+    expect(into.ok).toBe(true);
+    expect(into.file.folder).toBe("Campaign");
+    expect(fs.existsSync(source)).toBe(false);
+    expect(fs.existsSync(into.file.path)).toBe(true);
+
+    const back = workspaceManager.moveWorkspaceFileToFolder(into.file.path, null, root);
+    expect(back.ok).toBe(true);
+    expect(back.file.folder).toBeNull();
+    expect(fs.existsSync(path.join(root, "Hero.voo"))).toBe(true);
+  });
+
+  it("renames on collision when the destination already has that file", () => {
+    workspaceManager.createWorkspaceFolder(root, "Campaign");
+    fs.writeFileSync(path.join(root, "Campaign", "Hero.voo"), "kept");
+    const source = path.join(root, "Hero.voo");
+    fs.writeFileSync(source, "moved");
+
+    const into = workspaceManager.moveWorkspaceFileToFolder(source, "Campaign", root);
+    expect(into.ok).toBe(true);
+    expect(into.file.name).toBe("Hero-2.voo");
+    expect(fs.readFileSync(path.join(root, "Campaign", "Hero.voo"), "utf8")).toBe("kept");
+  });
+});
+
+describe("sandbox moveToFolder (IndexedDB driver without a database)", () => {
+  it("stores membership on the file record and changes its id", async () => {
+    const driver = new WebIdbWorkspaceDriver();
+    driver._openDatabase = async () => null;
+    await driver.createFolder("Campaign");
+    await driver.writeFileBytes("Hero.voo", new Uint8Array([1, 2, 3]));
+
+    const moved = await driver.moveToFolder("Hero.voo", "Campaign");
+    expect(moved.ok).toBe(true);
+    expect(moved.file).toMatchObject({ id: "Campaign/Hero.voo", name: "Hero.voo", folder: "Campaign" });
+
+    const listed = await driver.scanFiles();
+    expect(listed).toHaveLength(1);
+    expect(listed[0].folder).toBe("Campaign");
+    expect(listed[0].id).toBe("Campaign/Hero.voo");
+
+    const back = await driver.moveToFolder("Campaign/Hero.voo", null);
+    expect(back.file.folder).toBeNull();
+    expect(back.file.id).toBe("Hero.voo");
+  });
+});
+
+describe("Electron driver moveToFolder over the IPC bridge", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("forwards the move and migrates starred metadata onto the new path", async () => {
+    const bridge = {
+      moveToFolder: vi.fn(async () => ({
+        ok: true,
+        previousPath: "/r/Hero.voo",
+        file: { id: "/r/Campaign/Hero.voo", name: "Hero.voo", path: "/r/Campaign/Hero.voo", folder: "Campaign" },
+      })),
+    };
+    vi.stubGlobal("window", {
+      electronAPI: { workspace: bridge },
+      localStorage: {
+        store: { voo_workspace_meta_electron: JSON.stringify({ "/r/Hero.voo": { starred: true } }) },
+        getItem(key) {
+          return this.store[key] ?? null;
+        },
+        setItem(key, value) {
+          this.store[key] = String(value);
+        },
+      },
+    });
+    const driver = new ElectronWorkspaceDriver();
+    const res = await driver.moveToFolder("/r/Hero.voo", "Campaign");
+    expect(res.ok).toBe(true);
+    expect(bridge.moveToFolder).toHaveBeenCalledWith("/r/Hero.voo", "Campaign");
+    expect(JSON.parse(window.localStorage.getItem("voo_workspace_meta_electron"))).toEqual({
+      "/r/Campaign/Hero.voo": { starred: true },
+    });
+  });
 });

@@ -27,10 +27,12 @@ import { commitEditorAction } from "../undo-action-contracts.js";
  * vertical-only drag leaves point text untouched (auto width, the press point
  * as origin), matching the pre-box era and Figma's click behaviour.
  */
-export function textBoxDrag(start, point) {
+export function textBoxDrag(start, point, { zoom = 1 } = {}) {
   const width = point.x - start.x;
   const height = point.y - start.y;
-  if (Math.abs(width) < 4) return null;
+  // Screen-constant ~4px click threshold (matches move DRAG_SLOP_PX).
+  const clickThreshold = 4 / Math.max(Number(zoom) || 1, 1e-6);
+  if (Math.abs(width) < clickThreshold) return null;
   const boxWidth = Math.round(Math.abs(width));
   return {
     patch: {
@@ -235,7 +237,9 @@ export function createShapesPointerGestures({
   function dragText(event) {
     const gesture = getGesture();
     const point = api.toDocPoint(event.clientX, event.clientY);
-    const step = textBoxDrag(gesture.start, point);
+    const step = textBoxDrag(gesture.start, point, {
+      zoom: api.getViewport?.()?.zoom ?? 1,
+    });
     if (!step) return;
     api.updateNode(gesture.id, step.patch, { commit: false });
     api.setTextDraftRect?.(step.draftRect);

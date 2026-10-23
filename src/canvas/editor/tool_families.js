@@ -159,7 +159,7 @@ export const TOOL_FAMILIES = {
     key: "L",
     codes: ["KeyL"],
     code: "KeyL",
-    matchTool: (tool) =>
+    matchTool: (tool, marqueeMode = null) =>
       tool === TOOL.LASSO ||
       (tool === TOOL.MARQUEE &&
         (marqueeMode === "poly" || marqueeMode === "magnetic")),

@@ -8,6 +8,7 @@
 
 import { parseCliModelId } from "../../shared/providers/provider_cli.js";
 import { streamCodexCompletion } from "../components/agent-panel/codex_transport.js";
+import { CANVAS_TOOL_SCHEMAS } from "./canvas_tools.js";
 
 /** The CLI agents that can run a native VOO turn. */
 const CLI_AGENT_IDS = Object.freeze(["claude", "codex", "antigravity"]);
@@ -28,7 +29,7 @@ export async function streamCliStep({ config, messages, tools, signal, onText })
   for await (const chunk of streamCodexCompletion({
     model: config.model,
     messages,
-    tools,
+    tools: tools ?? CANVAS_TOOL_SCHEMAS,
     signal,
   })) {
     const delta = chunk.choices?.[0]?.delta ?? {};

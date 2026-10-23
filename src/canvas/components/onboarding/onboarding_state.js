@@ -50,7 +50,7 @@ export function openOnboardingGuide() {
  * true if onboarding was never completed OR if no valid non-empty workspace directory has been configured.
  */
 export function shouldShowOnboarding() {
-  if (typeof navigator !== "undefined" && navigator.webdriver) return false;
+  if (globalThis.navigator?.webdriver) return false;
   const p = getSetting(ONBOARDING_WORKSPACE_PATH_KEY);
   return !isOnboardingCompleted() || !p || typeof p !== "string" || !p.trim();
 }

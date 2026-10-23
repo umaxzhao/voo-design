@@ -27,6 +27,9 @@ export function estimateImageBytes(image) {
   return w * h * 4;
 }
 
+/** Contract alias used by PROJECT.md / performance tests. */
+export const calculateBitmapBytes = estimateImageBytes;
+
 export function createBitmapCache({
   onLoad,
   onEvict,
@@ -245,6 +248,17 @@ export function createBitmapCache({
     setPinnedKeys(keys) {
       pinnedKeys = new Set(keys);
       evict();
+    },
+
+    /** Diagnostics for tests and memory tooling. */
+    stats() {
+      return {
+        size: bitmaps.size,
+        totalBytes,
+        maxEntries,
+        maxBytes,
+        pinnedCount: pinnedKeys.size,
+      };
     },
 
     /** Resolves once every image node in the document has been tried. */

@@ -25,12 +25,13 @@ describe("generate_image_web tool", () => {
     });
     const inserted = [];
     const editor = {
-      insertImage: vi.fn(async (url, point) => {
+      insertImage: vi.fn(async (url) => {
         const id = `layer-${inserted.length + 1}`;
-        inserted.push({ id, url, point });
+        inserted.push({ id, url });
         return { id };
       }),
       updateNode: vi.fn(),
+      commitEditorDocument: vi.fn(),
     };
     globalThis.window.__vooEditor = editor;
 
@@ -44,10 +45,20 @@ describe("generate_image_web tool", () => {
     });
 
     expect(result.layerIds).toEqual(["layer-1", "layer-2"]);
-    expect(editor.insertImage).toHaveBeenNthCalledWith(1, "data:image/png;base64,aaa", { x: 10, y: 20 });
-    expect(editor.insertImage).toHaveBeenNthCalledWith(2, "data:image/png;base64,bbb", { x: 134, y: 20 });
-    expect(editor.updateNode).toHaveBeenCalledWith("layer-1", { width: 100, height: 50 });
-    expect(editor.updateNode).toHaveBeenCalledWith("layer-2", { width: 100, height: 40 });
+    expect(editor.insertImage).toHaveBeenNthCalledWith(1, "data:image/png;base64,aaa");
+    expect(editor.insertImage).toHaveBeenNthCalledWith(2, "data:image/png;base64,bbb");
+    expect(editor.updateNode).toHaveBeenCalledWith("layer-1", {
+      x: 10,
+      y: 20,
+      width: 100,
+      height: 50,
+    });
+    expect(editor.updateNode).toHaveBeenCalledWith("layer-2", {
+      x: 134,
+      y: 20,
+      width: 100,
+      height: 40,
+    });
   });
 
   it("surfaces the desktop-app error when the bridge is missing", async () => {

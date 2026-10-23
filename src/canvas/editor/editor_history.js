@@ -30,12 +30,44 @@ export function createHistory({
    */
   let entries = [];
   let currentIndex = -1;
-  let muted = false;
+  let muteDepth = 0;
+  let batchDepth = 0;
   let gestureTransaction = null;
 
+  function isMuted() {
+    return muteDepth > 0 || batchDepth > 0;
+  }
+
+  function snapshotsMatch(a, b) {
+    if (a === b) return true;
+    if (!a || !b || typeof a !== "object" || typeof b !== "object") {
+      return false;
+    }
+    if (a.doc !== b.doc) return false;
+    const aIds = a.selectedIds;
+    const bIds = b.selectedIds;
+    if (aIds !== bIds) {
+      if (!Array.isArray(aIds) || !Array.isArray(bIds) || aIds.length !== bIds.length) {
+        return false;
+      }
+      for (let i = 0; i < aIds.length; i += 1) {
+        if (aIds[i] !== bIds[i]) return false;
+      }
+    }
+    const aSel = a.pixelSelection;
+    const bSel = b.pixelSelection;
+    if (aSel === bSel) return true;
+    if (!aSel || !bSel) return aSel === bSel;
+    return (
+      aSel.contoursRef === bSel.contoursRef &&
+      aSel.mode === bSel.mode &&
+      aSel.inverted === bSel.inverted
+    );
+  }
+
   function pushEntry(snapshot, name = null) {
-    if (muted) return;
-    if (currentIndex >= 0 && entries[currentIndex]?.snapshot === snapshot)
+    if (isMuted()) return;
+    if (currentIndex >= 0 && snapshotsMatch(entries[currentIndex]?.snapshot, snapshot))
       return;
 
     if (validateSnapshot) {
@@ -98,18 +130,35 @@ export function createHistory({
     },
 
     mute(run) {
-      const previous = muted;
-      muted = true;
+      muteDepth += 1;
+      let result;
       try {
-        return run();
-      } finally {
-        muted = previous;
+        result = run();
+      } catch (error) {
+        muteDepth -= 1;
+        throw error;
       }
+      if (result && typeof result.then === "function") {
+        return Promise.resolve(result).finally(() => {
+          muteDepth = Math.max(0, muteDepth - 1);
+        });
+      }
+      muteDepth = Math.max(0, muteDepth - 1);
+      return result;
     },
 
-    isMuted() {
-      return muted;
+    /** Starts suppressing history pushes until the matching endBatch(). */
+    beginBatch() {
+      batchDepth += 1;
+      return batchDepth;
     },
+
+    endBatch() {
+      batchDepth = Math.max(0, batchDepth - 1);
+      return batchDepth;
+    },
+
+    isMuted,
 
     push(snapshot, name = null) {
       pushEntry(snapshot, name);
@@ -169,13 +218,19 @@ export function createHistory({
     },
 
     updateCurrentSelection(selectedIds) {
-      if (muted) return;
+      if (isMuted()) return;
       const entry = entries[currentIndex];
-      if (!entry || typeof entry.snapshot !== "string") return;
+      if (!entry) return;
+      const nextIds = Array.isArray(selectedIds) ? [...selectedIds] : [];
+      if (entry.snapshot && typeof entry.snapshot === "object") {
+        entry.snapshot.selectedIds = nextIds;
+        return;
+      }
+      if (typeof entry.snapshot !== "string") return;
       try {
         const raw = JSON.parse(entry.snapshot);
         if (raw && typeof raw === "object") {
-          raw.selectedIds = Array.isArray(selectedIds) ? [...selectedIds] : [];
+          raw.selectedIds = nextIds;
           entry.snapshot = JSON.stringify(raw);
         }
       } catch {

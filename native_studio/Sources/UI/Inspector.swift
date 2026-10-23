@@ -1,0 +1,504 @@
+//
+//  Inspector.swift
+//  native_studio
+//
+//  Floating studio overlay container matching VOO Design 1:1.
+//  Hosts the floating left layers card and floating right properties card.
+//  Copyright © 2026 VOO Design. All rights reserved.
+//
+
+import AppKit
+import CoreGraphics
+import Foundation
+
+// MARK: - Inspector Delegate Protocol
+
+public protocol InspectorDelegate: AnyObject {
+    func inspectorDidSelectNode(id: String)
+    func inspectorDidChangeNodeGeometry(id: String, x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat, rotation: CGFloat, cornerRadius: CGFloat?)
+    func inspectorDidChangeNodeGeometryWithRadii(id: String, x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat, rotation: CGFloat, cornerRadii: CornerRadii?, lockRatio: Bool?)
+    func inspectorDidChangeNodeCornerRadii(id: String, cornerRadii: CornerRadii)
+    func inspectorDidChangeNodeLockRatio(id: String, lockRatio: Bool)
+    func inspectorDidChangeNodeStyle(id: String, fill: String, stroke: String, strokeWidth: CGFloat, opacity: CGFloat, blendMode: String)
+    func inspectorDidChangeNodeStrokeStyle(id: String, strokeCap: String?, strokeJoin: String?, strokeMiterLimit: CGFloat?, strokeDash: [CGFloat]?, strokeAlign: String?)
+    func inspectorDidChangeTextTypography(id: String, fontFamily: String, fontSize: CGFloat)
+    func inspectorDidChangeTextFormatting(id: String, fontWeight: String, textAlign: String, lineHeight: CGFloat, letterSpacing: CGFloat)
+    func inspectorDidChangeTextDecoration(id: String, italic: Bool?, underline: Bool?, boxWidth: CGFloat?)
+    func inspectorDidChangeEffects(id: String, effects: LayerEffects)
+    func inspectorDidToggleVisibility(id: String, visible: Bool)
+    func inspectorDidToggleLock(id: String, locked: Bool)
+}
+
+public extension InspectorDelegate {
+    func inspectorDidSelectNode(id: String) {}
+    func inspectorDidChangeNodeGeometry(id: String, x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat, rotation: CGFloat, cornerRadius: CGFloat?) {}
+    func inspectorDidChangeNodeGeometryWithRadii(id: String, x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat, rotation: CGFloat, cornerRadii: CornerRadii?, lockRatio: Bool?) {}
+    func inspectorDidChangeNodeCornerRadii(id: String, cornerRadii: CornerRadii) {}
+    func inspectorDidChangeNodeLockRatio(id: String, lockRatio: Bool) {}
+    func inspectorDidChangeNodeStyle(id: String, fill: String, stroke: String, strokeWidth: CGFloat, opacity: CGFloat, blendMode: String) {}
+    func inspectorDidChangeNodeStrokeStyle(id: String, strokeCap: String?, strokeJoin: String?, strokeMiterLimit: CGFloat?, strokeDash: [CGFloat]?, strokeAlign: String?) {}
+    func inspectorDidChangeTextTypography(id: String, fontFamily: String, fontSize: CGFloat) {}
+    func inspectorDidChangeTextFormatting(id: String, fontWeight: String, textAlign: String, lineHeight: CGFloat, letterSpacing: CGFloat) {}
+    func inspectorDidChangeTextDecoration(id: String, italic: Bool?, underline: Bool?, boxWidth: CGFloat?) {}
+    func inspectorDidChangeEffects(id: String, effects: LayerEffects) {}
+    func inspectorDidToggleVisibility(id: String, visible: Bool) {}
+    func inspectorDidToggleLock(id: String, locked: Bool) {}
+}
+
+// MARK: - Right Floating Properties Card Shell
+
+public class FloatingPropertiesCardView: NSView {
+    public override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.masksToBounds = false
+        layer?.shadowColor = NSColor.black.cgColor
+        layer?.shadowOpacity = 0.45
+        layer?.shadowRadius = 18.0
+        layer?.shadowOffset = CGSize(width: 0, height: -6)
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        wantsLayer = true
+        layer?.masksToBounds = false
+        layer?.shadowColor = NSColor.black.cgColor
+        layer?.shadowOpacity = 0.45
+        layer?.shadowRadius = 18.0
+        layer?.shadowOffset = CGSize(width: 0, height: -6)
+    }
+
+    public override func draw(_ dirtyRect: NSRect) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+
+        // Floating Card Shell: cornerRadius 24, near-black rgba(0, 0, 0, 0.95)
+        // matching the web editor's PROPERTIES card over the canvas stage.
+        let path = CGPath(roundedRect: bounds, cornerWidth: 24, cornerHeight: 24, transform: nil)
+        ctx.setFillColor(NSColor(white: 0.0, alpha: 0.95).cgColor)
+        ctx.addPath(path)
+        ctx.fillPath()
+
+        // Border: 1px solid rgba(255, 255, 255, 0.08)
+        ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.08).cgColor)
+        ctx.setLineWidth(1.0)
+        ctx.addPath(path)
+        ctx.strokePath()
+    }
+}
+
+// MARK: - Inspector Studio Container View (Transparent Floating Overlay)
+
+public class InspectorView: NSView {
+    public weak var delegate: InspectorDelegate?
+
+    public let layersPanel = LayersPanelView()
+    public let propertiesCard = FloatingPropertiesCardView()
+    public private(set) var arePropertiesVisible: Bool = true
+    /// Web-parity PROPERTIES card content (visible, functional inspector).
+    public let propertiesPanel = PropertiesPanelView()
+    /// Scroll container that keeps the native-only TRANSFORM / APPEARANCE sections
+    /// reachable below the 368pt-tall web-sized card fold.
+    public let propertiesScrollView = NSScrollView()
+    /// Legacy Affinity-style panels kept as hidden subviews for backward compatibility
+    /// (`WindowController` and the accessibility test-suite still reference them).
+    public let transformPanel = TransformPanelView()
+    public let appearancePanel = AppearancePanelView()
+
+    // Latest web-parity property values (mirrors of the card state) used to compose
+    // complete geometry / style payloads for `InspectorDelegate`.
+    private var propertiesFill = "#262626"
+    private var propertiesStroke = "#b2ffd6"
+    private var propertiesStrokeWidth: CGFloat = 1.0
+    private var propertiesOpacity: CGFloat = 1.0
+    private var propertiesBlendMode = "source-over"
+    private var propertiesX: CGFloat = 0
+    private var propertiesY: CGFloat = 0
+    private var propertiesWidth: CGFloat = 0
+    private var propertiesHeight: CGFloat = 0
+    private var propertiesRotation: CGFloat = 0
+    private var propertiesCornerRadius: CGFloat = 0
+    private var propertiesFontFamily: String = "Inter"
+    private var propertiesFontSize: CGFloat = 16
+    private var propertiesFontWeight: String = "regular"
+    private var propertiesTextAlign: String = "left"
+    private var propertiesLineHeight: CGFloat = 1.2
+    private var propertiesLetterSpacing: CGFloat = 0
+    private var panelHeightConstraint: NSLayoutConstraint?
+
+    public override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setupUI()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupUI()
+    }
+
+    private func setupUI() {
+        setAccessibilityIdentifier(AccessibilityCatalog.inspectorStudio)
+        setAccessibilityRole(.group)
+
+        // 1. Left Floating Card: Layers Panel
+        layersPanel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(layersPanel)
+
+        // 2. Right Floating Card: Properties Card (web-parity PROPERTIES content)
+        propertiesCard.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(propertiesCard)
+
+        // Scrollable content: the card is web-sized (252×368) so TRANSFORM and
+        // APPEARANCE live below the fold and remain reachable by scrolling.
+        propertiesScrollView.translatesAutoresizingMaskIntoConstraints = false
+        propertiesScrollView.drawsBackground = false
+        propertiesScrollView.backgroundColor = .clear
+        propertiesScrollView.contentView.drawsBackground = false
+        propertiesScrollView.borderType = .noBorder
+        propertiesScrollView.hasVerticalScroller = true
+        propertiesScrollView.hasHorizontalScroller = false
+        propertiesScrollView.autohidesScrollers = true
+        propertiesScrollView.scrollerStyle = .overlay
+        propertiesScrollView.verticalScrollElasticity = .automatic
+        propertiesScrollView.horizontalScrollElasticity = .none
+        // Clip the scrolling document to the card's 20pt rounded corners.
+        propertiesScrollView.wantsLayer = true
+        propertiesScrollView.layer?.cornerRadius = 24
+        propertiesScrollView.layer?.masksToBounds = true
+        propertiesCard.addSubview(propertiesScrollView)
+
+        propertiesScrollView.documentView = propertiesPanel
+
+        // The panel is the scroll document: fixed 252pt width, 520pt scrollable
+        // height. Auto Layout (rather than autoresizing) keeps the width locked
+        // to the clip view at 252 irrespective of when the card is first laid out.
+        propertiesPanel.translatesAutoresizingMaskIntoConstraints = false
+        let heightConstraint = propertiesPanel.heightAnchor.constraint(equalToConstant: PropertiesPanelView.preferredContentHeight)
+        self.panelHeightConstraint = heightConstraint
+        NSLayoutConstraint.activate([
+            propertiesPanel.leadingAnchor.constraint(equalTo: propertiesScrollView.contentView.leadingAnchor),
+            propertiesPanel.topAnchor.constraint(equalTo: propertiesScrollView.contentView.topAnchor),
+            propertiesPanel.widthAnchor.constraint(equalTo: propertiesScrollView.widthAnchor),
+            heightConstraint
+        ])
+
+        // Legacy Affinity panels are retained (and configured) but never shown.
+        transformPanel.translatesAutoresizingMaskIntoConstraints = false
+        appearancePanel.translatesAutoresizingMaskIntoConstraints = false
+        transformPanel.isHidden = true
+        appearancePanel.isHidden = true
+        propertiesCard.addSubview(transformPanel)
+        propertiesCard.addSubview(appearancePanel)
+
+        // Layout Constraints:
+        // Layers Panel: Floating on the left
+        // Properties Card: Floating on the right
+        NSLayoutConstraint.activate([
+            // Left Floating Card
+            layersPanel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            layersPanel.centerYAnchor.constraint(equalTo: centerYAnchor),
+            layersPanel.widthAnchor.constraint(equalToConstant: 256),
+            layersPanel.heightAnchor.constraint(equalToConstant: 238),
+
+            // Right Floating Card (matched to the live web inspector: 252×368,
+            // vertically centred in the editor shell).
+            propertiesCard.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            propertiesCard.centerYAnchor.constraint(equalTo: centerYAnchor),
+            propertiesCard.widthAnchor.constraint(equalToConstant: 256),
+            propertiesCard.heightAnchor.constraint(equalToConstant: 368),
+
+            // Scroll view fills the card with zero insets.
+            propertiesScrollView.topAnchor.constraint(equalTo: propertiesCard.topAnchor),
+            propertiesScrollView.leadingAnchor.constraint(equalTo: propertiesCard.leadingAnchor),
+            propertiesScrollView.trailingAnchor.constraint(equalTo: propertiesCard.trailingAnchor),
+            propertiesScrollView.bottomAnchor.constraint(equalTo: propertiesCard.bottomAnchor),
+
+            // Hidden legacy panels keep their original layout (offscreen, non-interactive).
+            transformPanel.topAnchor.constraint(equalTo: propertiesCard.topAnchor, constant: 8),
+            transformPanel.leadingAnchor.constraint(equalTo: propertiesCard.leadingAnchor, constant: 8),
+            transformPanel.trailingAnchor.constraint(equalTo: propertiesCard.trailingAnchor, constant: -8),
+            transformPanel.heightAnchor.constraint(equalToConstant: 165),
+
+            appearancePanel.topAnchor.constraint(equalTo: transformPanel.bottomAnchor, constant: 6),
+            appearancePanel.leadingAnchor.constraint(equalTo: propertiesCard.leadingAnchor, constant: 8),
+            appearancePanel.trailingAnchor.constraint(equalTo: propertiesCard.trailingAnchor, constant: -8),
+            appearancePanel.bottomAnchor.constraint(equalTo: propertiesCard.bottomAnchor, constant: -8)
+        ])
+
+        wireDelegates()
+    }
+
+    private func wireDelegates() {
+        layersPanel.onSelectNode = { [weak self] id in
+            self?.delegate?.inspectorDidSelectNode(id: id)
+        }
+        layersPanel.onToggleVisibility = { [weak self] id, vis in
+            self?.delegate?.inspectorDidToggleVisibility(id: id, visible: vis)
+        }
+        layersPanel.onToggleLock = { [weak self] id, lck in
+            self?.delegate?.inspectorDidToggleLock(id: id, locked: lck)
+        }
+
+        transformPanel.onGeometryChange = { [weak self] x, y, w, h, r, cr in
+            guard let self = self, let id = self.layersPanel.selectedNodeId else { return }
+            self.delegate?.inspectorDidChangeNodeGeometry(id: id, x: x, y: y, width: w, height: h, rotation: r, cornerRadius: cr)
+        }
+
+        appearancePanel.onStyleChange = { [weak self] fill, stroke, width, opacity, blend in
+            guard let self = self, let id = self.layersPanel.selectedNodeId else { return }
+            self.delegate?.inspectorDidChangeNodeStyle(id: id, fill: fill, stroke: stroke, strokeWidth: width, opacity: opacity, blendMode: blend)
+        }
+
+        // Web-parity PROPERTIES card → InspectorDelegate forwarding.
+        propertiesPanel.onGeometryChange = { [weak self] x, y, w, h, r, cr in
+            guard let self = self else { return }
+            self.propertiesX = x
+            self.propertiesY = y
+            self.propertiesWidth = w
+            self.propertiesHeight = h
+            self.propertiesRotation = r
+            if let cr = cr { self.propertiesCornerRadius = cr }
+            guard let id = self.layersPanel.selectedNodeId else { return }
+            self.delegate?.inspectorDidChangeNodeGeometry(id: id, x: x, y: y, width: w, height: h, rotation: r, cornerRadius: cr)
+        }
+
+        propertiesPanel.onCornerRadiusChange = { [weak self] radius in
+            guard let self = self else { return }
+            self.propertiesCornerRadius = radius
+            guard let id = self.layersPanel.selectedNodeId else { return }
+            self.delegate?.inspectorDidChangeNodeGeometry(id: id,
+                                                         x: self.propertiesX,
+                                                         y: self.propertiesY,
+                                                         width: self.propertiesWidth,
+                                                         height: self.propertiesHeight,
+                                                         rotation: self.propertiesRotation,
+                                                         cornerRadius: radius)
+        }
+
+        propertiesPanel.onFillChange = { [weak self] fill in
+            guard let self = self else { return }
+            self.propertiesFill = fill
+            self.forwardPropertiesStyle(fill: fill)
+        }
+        propertiesPanel.onStrokeChange = { [weak self] stroke in
+            guard let self = self else { return }
+            self.propertiesStroke = stroke
+            self.forwardPropertiesStyle(stroke: stroke)
+        }
+        propertiesPanel.onStrokeWidthChange = { [weak self] width in
+            guard let self = self else { return }
+            self.propertiesStrokeWidth = width
+            self.forwardPropertiesStyle(strokeWidth: width)
+        }
+        propertiesPanel.onOpacityChange = { [weak self] opacity in
+            guard let self = self else { return }
+            self.propertiesOpacity = opacity
+            self.forwardPropertiesStyle(opacity: opacity)
+        }
+        propertiesPanel.onBlendModeChange = { [weak self] blend in
+            guard let self = self else { return }
+            self.propertiesBlendMode = blend
+            self.forwardPropertiesStyle(blendMode: blend)
+        }
+
+        // Text-layer typography → InspectorDelegate (both values sent together).
+        propertiesPanel.onFontFamilyChange = { [weak self] family in
+            guard let self = self else { return }
+            self.propertiesFontFamily = family
+            self.forwardPropertiesTypography()
+        }
+        propertiesPanel.onFontSizeChange = { [weak self] size in
+            guard let self = self else { return }
+            self.propertiesFontSize = size
+            self.forwardPropertiesTypography()
+        }
+
+        // Text-layer formatting (weight / align / line height / letter spacing)
+        // → InspectorDelegate, always sending all current values together.
+        propertiesPanel.onFontWeightChange = { [weak self] weight in
+            guard let self = self else { return }
+            self.propertiesFontWeight = weight
+            self.forwardPropertiesFormatting()
+        }
+        propertiesPanel.onTextAlignChange = { [weak self] align in
+            guard let self = self else { return }
+            self.propertiesTextAlign = align
+            self.forwardPropertiesFormatting()
+        }
+        propertiesPanel.onLineHeightChange = { [weak self] lineHeight in
+            guard let self = self else { return }
+            self.propertiesLineHeight = lineHeight
+            self.forwardPropertiesFormatting()
+        }
+        propertiesPanel.onLetterSpacingChange = { [weak self] spacing in
+            guard let self = self else { return }
+            self.propertiesLetterSpacing = spacing
+            self.forwardPropertiesFormatting()
+        }
+
+        propertiesPanel.onLockRatioChange = { [weak self] locked in
+            guard let self = self, let id = self.layersPanel.selectedNodeId else { return }
+            self.delegate?.inspectorDidChangeNodeLockRatio(id: id, lockRatio: locked)
+        }
+
+        propertiesPanel.onCornerRadiiChange = { [weak self] radii in
+            guard let self = self else { return }
+            self.propertiesCornerRadius = radii.uniformRadius
+            guard let id = self.layersPanel.selectedNodeId else { return }
+            self.delegate?.inspectorDidChangeNodeCornerRadii(id: id, cornerRadii: radii)
+            self.delegate?.inspectorDidChangeNodeGeometryWithRadii(
+                id: id,
+                x: self.propertiesX,
+                y: self.propertiesY,
+                width: self.propertiesWidth,
+                height: self.propertiesHeight,
+                rotation: self.propertiesRotation,
+                cornerRadii: radii,
+                lockRatio: self.propertiesPanel.isAspectLocked
+            )
+        }
+
+        propertiesPanel.onStrokeCapChange = { [weak self] cap in self?.forwardPropertiesStrokeStyle(strokeCap: cap) }
+        propertiesPanel.onStrokeJoinChange = { [weak self] join in self?.forwardPropertiesStrokeStyle(strokeJoin: join) }
+        propertiesPanel.onStrokeMiterLimitChange = { [weak self] miter in self?.forwardPropertiesStrokeStyle(strokeMiterLimit: miter) }
+        propertiesPanel.onStrokeDashChange = { [weak self] dash in self?.forwardPropertiesStrokeStyle(strokeDash: dash) }
+        propertiesPanel.onStrokeAlignChange = { [weak self] align in self?.forwardPropertiesStrokeStyle(strokeAlign: align) }
+
+        propertiesPanel.onItalicChange = { [weak self] it in self?.forwardPropertiesTextDecoration(italic: it) }
+        propertiesPanel.onUnderlineChange = { [weak self] un in self?.forwardPropertiesTextDecoration(underline: un) }
+
+        propertiesPanel.onEffectsChange = { [weak self] effects in
+            guard let self = self, let id = self.layersPanel.selectedNodeId else { return }
+            self.delegate?.inspectorDidChangeEffects(id: id, effects: effects)
+        }
+    }
+
+    /// Forwards the current text typography for the selected node.
+    private func forwardPropertiesTypography() {
+        guard let id = layersPanel.selectedNodeId else { return }
+        delegate?.inspectorDidChangeTextTypography(id: id,
+                                                  fontFamily: propertiesFontFamily,
+                                                  fontSize: propertiesFontSize)
+    }
+
+    /// Forwards the current text formatting for the selected node.
+    private func forwardPropertiesFormatting() {
+        guard let id = layersPanel.selectedNodeId else { return }
+        delegate?.inspectorDidChangeTextFormatting(id: id,
+                                                  fontWeight: propertiesFontWeight,
+                                                  textAlign: propertiesTextAlign,
+                                                  lineHeight: propertiesLineHeight,
+                                                  letterSpacing: propertiesLetterSpacing)
+    }
+
+    /// Composes a full style payload from the latest PROPERTIES card values and
+    /// forwards it through `InspectorDelegate`.
+    private func forwardPropertiesStyle(fill: String? = nil,
+                                       stroke: String? = nil,
+                                       strokeWidth: CGFloat? = nil,
+                                       opacity: CGFloat? = nil,
+                                       blendMode: String? = nil) {
+        guard let id = layersPanel.selectedNodeId else { return }
+        delegate?.inspectorDidChangeNodeStyle(
+            id: id,
+            fill: fill ?? propertiesFill,
+            stroke: stroke ?? propertiesStroke,
+            strokeWidth: strokeWidth ?? propertiesStrokeWidth,
+            opacity: opacity ?? propertiesOpacity,
+            blendMode: blendMode ?? propertiesBlendMode
+        )
+    }
+
+    private func forwardPropertiesStrokeStyle(strokeCap: String? = nil,
+                                               strokeJoin: String? = nil,
+                                               strokeMiterLimit: CGFloat? = nil,
+                                               strokeDash: [CGFloat]? = nil,
+                                               strokeAlign: String? = nil) {
+        guard let id = layersPanel.selectedNodeId else { return }
+        delegate?.inspectorDidChangeNodeStrokeStyle(
+            id: id,
+            strokeCap: strokeCap ?? propertiesPanel.currentStrokeCap,
+            strokeJoin: strokeJoin ?? propertiesPanel.currentStrokeJoin,
+            strokeMiterLimit: strokeMiterLimit ?? propertiesPanel.currentStrokeMiterLimit,
+            strokeDash: strokeDash ?? propertiesPanel.currentStrokeDash,
+            strokeAlign: strokeAlign ?? propertiesPanel.currentStrokeAlign
+        )
+    }
+
+    private func forwardPropertiesTextDecoration(italic: Bool? = nil, underline: Bool? = nil) {
+        guard let id = layersPanel.selectedNodeId else { return }
+        delegate?.inspectorDidChangeTextDecoration(
+            id: id,
+            italic: italic ?? propertiesPanel.isItalic,
+            underline: underline ?? propertiesPanel.isUnderline,
+            boxWidth: propertiesPanel.node?.boxWidth
+        )
+    }
+
+    /// Configures the visible web-parity PROPERTIES card (and keeps the hidden
+    /// legacy panels in sync for backward compatibility / test coverage).
+    public func configureProperties(with node: VOONode?) {
+        propertiesPanel.configure(with: node)
+        transformPanel.configure(with: node)
+        appearancePanel.configure(with: node)
+        panelHeightConstraint?.constant = propertiesPanel.contentHeight
+
+        if let node = node {
+            propertiesFill = node.fill
+            propertiesStroke = node.stroke
+            propertiesStrokeWidth = node.strokeWidth
+            propertiesOpacity = node.opacity
+            propertiesBlendMode = node.blendMode
+            propertiesX = node.x
+            propertiesY = node.y
+            propertiesWidth = node.width
+            propertiesHeight = node.height
+            propertiesRotation = node.rotation
+            propertiesCornerRadius = node.cornerRadii?.tl ?? 0
+            propertiesFontFamily = node.fontFamily ?? "Inter"
+            propertiesFontSize = min(max(node.fontSize ?? 16, 8), 200)
+            propertiesFontWeight = node.fontWeight ?? "regular"
+            propertiesTextAlign = node.textAlign ?? "left"
+            propertiesLineHeight = node.lineHeight ?? 1.2
+            propertiesLetterSpacing = node.letterSpacing ?? 0
+        } else {
+            propertiesFill = "#262626"
+            propertiesStroke = "#b2ffd6"
+            propertiesStrokeWidth = 1.0
+            propertiesOpacity = 1.0
+            propertiesBlendMode = "source-over"
+            propertiesX = 0
+            propertiesY = 0
+            propertiesWidth = 0
+            propertiesHeight = 0
+            propertiesRotation = 0
+            propertiesCornerRadius = 0
+            propertiesFontFamily = "Inter"
+            propertiesFontSize = 16
+            propertiesFontWeight = "regular"
+            propertiesTextAlign = "left"
+            propertiesLineHeight = 1.2
+            propertiesLetterSpacing = 0
+        }
+    }
+
+    /// The web inspector only floats the right properties card while something is
+    /// selected; the layers card stays visible at all times.
+    public func setPropertiesVisible(_ visible: Bool) {
+        guard arePropertiesVisible != visible else { return }
+        arePropertiesVisible = visible
+        propertiesCard.isHidden = !visible
+    }
+
+    public override func hitTest(_ point: NSPoint) -> NSView? {
+        // Transparent passthrough for canvas stage interactions
+        let res = super.hitTest(point)
+        if res === self {
+            return nil
+        }
+        return res
+    }
+
+    public override func draw(_ dirtyRect: NSRect) {
+        // Transparent overlay container
+    }
+}

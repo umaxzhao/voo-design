@@ -5,3 +5,6 @@ extension/dist
 .DS_Store
 *.log
 coverage
+public/canvaskit.js
+public/canvaskit.wasm
+public/ort/

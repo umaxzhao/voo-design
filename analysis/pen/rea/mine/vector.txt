@@ -1,0 +1,469 @@
+ stroke-linecap=
+ stroke-linejoin=
+ stroke-width=
+ stroke=
+!boolean-group
+$ZodBoolean
+$ZodDiscriminatedUnion
+$ZodIntersection
+$ZodUnion
+${`M${O.map(([q,G])=>`${Xt(q)} ${Xt(G)}`).join(
+&&(a.attributes.stroke=
+&&(l.args[1]+=g[1]),l.coords=u.coords,h[d]=l,!1;if(e.curveSmoothShorthands&&l.command){if(m===
+&&n.push(i)}),n.length>1?n.join(
+&&r.indexOf(e)===n).join(
+'})).join(
+( [<mf-plain>|<mf-boolean>|<mf-range>] )
+(fill|stroke)
+)&&(e=r,r=i,i=e),n[0]=_Te[r]||r,n[1]=_Te[i]||i,n.join(
+)))){t.input.lastIOSEnter=0;return}if(t.state.selection.anchor>m.start&&zwn(u,m.start,m.endA,g,v)&&t.someProp(
+)))})]},`${r.keys.flat().join(
+)),s.length&&(t.backdropFilter=s.join(
+)),x.join(
+)).join(
+));return e.join(
+));return[i(o,e),new Array(n+l+2).join(
+));return[o(u,e),new Array(n+h+2).join(
+))}}return e.join(
+),K.startTagPosition+1<K.position){var Ne=K.position-K.startTagPosition;xe=new Array(Ne).join(
+),filledPaths:[],strokedPath:{pathData:this.properties.resolved.pathData??
+),h=>new Array(20-h.length).join(
+),i&&(n+=i,i=0)}return e.join(
+),l}var z1=t=>t.join(
+),n=e.slice(1).map(r=>r[0].toUpperCase()+r.slice(1)).join(
+),o+=1);for(let a of n)s[o]=a.map(r).join(
+),s=r.stops.map(nJt).join(
+),t.tabIndex=0,t.style.outline=
+),this.path=ty.join(e||
+),this.path=ty.join(this.dirname||
+).concat($.join(
+).concat(E.join(
+).concat(e.join(
+).concat(s.join(
+).filter(Boolean):[],i=n.class?n.class.split(
+).filter(e=>e.length>0).join(
+).filter(r=>r.length>0).join(
+).join(
+).map(encodeURIComponent).join(
+).map(h=>h.charAt(0).toUpperCase()+h.slice(1)).join(
+).map(h=>h.value).join(
+).map(i=>If(i,e?.document)).join(
+).map(i=>If(i,n?.document)).join(
+).map(i=>`00${parseInt(i,10).toString(16)}`.slice(-2)).join(
+).map(m=>Ip(m,s)).join(
+).map(n=>n+n).join(
+).map(n=>n.raw);return e.length>0?e.join(
+).map(o=>If(o,e?.document)).join(
+).map(r=>encodeURIComponent(r)).join(
+).map(r=>r.insert).join(
+).map(s=>{const o=parseInt(s);return`${Math.round(o*.9)}px`}).join(
+).map(v=>Ip(v,s)).join(
+).map(x=>x.text).join(
+).reverse().join(
+).slice(-2).join(
+).slice(0,-1).join(
+).slice(0,3).join(
+).slice(k.length).join(
+).trim().split(/\s+/).filter(Boolean);e[0]===
+).trim();return e?e.split(/[ \t\n\r\f]+/g):[]}function XKe(t){return t.join(
+):[],c=a.filter(u=>!l.includes(u));r[i]=[...l,...c].join(
+):c&&l.push(c)}return l.join(
+):c.push(u);return c.join(
+):n.push(r);return n.join(
+):t.join(
+):x.join(
+);const n=[];for(let r=0;r<t.length;r+=32768)n.push(String.fromCharCode(...t.subarray(r,r+32768)));return btoa(n.join(
+);const r=`${e}(?:${n.join(
+);for(;s<n.length;)i.push(n[s]),s++;let o=i.join(
+);if(O<0||(I=I.slice(0,O),I.match(/^([^\/]+:\/)?\/*$/)))return D;++B}return Array(B+1).join(
+);if(u.length>1&&(l=u.slice(0,-1).join(
+);mUt(U),U=gUt(U,A,{isSafeToUseZ:z,maybeHasStrokeAndLinecap:O,hasMarkerMid:I}),g&&(U=bUt(U,A)),(N.attributes[
+);return`${e.workspaceId}:${e.workspaceName}:{${n}}`}).join(
+);return`${o8(c,p)}.${m}`}return h});l.attributes[u]=d.join(
+)===r.join(
+)?AR.join(i,t.slice(1)):this.isAbsolute(t)?t:this.join(r,t)},normalize(t){if(i0(t),t.length===0)return
+)].filter(Boolean).join(
+)return;const Te=new IntersectionObserver(Ye=>{for(const ae of Ye)O(ae.isIntersecting)},{rootMargin:
+){const a=new Map([...o3e(r[i]),...o3e(s)]);r[i]=Array.from(a.entries()).map(([l,c])=>`${l}: ${c}`).join(
+){if(t.number&&n&&!Number.isNaN(Number(n)))return Number(n);if((t.boolean||t.overloadedBoolean)&&(n===
+)} |`,i+=1}else{let l=a.map(c=>Lee(c));r[i]=`| ${l.join(
+)}'`:e).join(
+)}));return n.join(
+)}).join(
+)},i=e.length>0?n.length+1:n.length,s=new Array(i),o=0;e.length>0&&(s[o]=e.map(r).join(
+)},join(...t){if(t.length===0)return
+)}: ${B.message}`).join(
+)}: ${N.message}`).join(
+)}: ${O.message}`).join(
+)}<${l}`:`${a}>${i.join(
+)}function toe(t){return dw(t)?t.join(
+)}i&&(u==null||a.attributes.stroke===
+)}i[s]=o.join(
+)}m.push(n.delimiterEnd===!1?x.join(
+)}return n.join(
+)}this.path=ty.join(this.dirname,this.stem+(e||
++D);return O?(O.path=z,s(O)):z}t.join=c,t.isAbsolute=function(I){return I.charAt(0)===
++JSON.stringify(t)}):r.anchor!==void 0&&bWt(r.anchor,e,n+
++JSON.stringify(t)});else{const r=t;if(r.stroke!==void 0){const i={errors:[],partial:e.partial};if(D6(r.stroke,i,n+
++h[3]:h.join(
++i)}),t.pseudoSignature=n.size>0?[...n].sort().join(
++lk();!zM&&a--;){var c=o.slice(a).join(
++n)})),i.join(e)},I$=function(t,e){for(var n,r=((t.split(
++o)).join(
++s,message:'expected one of: string, number, boolean, 
++u.join(
+,E.smooth,u);continue}else if(g===
+,Yye=4e3,_5t=356,S5t=14,C5t=45,E5t=200;function Gb(...t){return t.filter(Boolean).join(
+,bounds:Dn.MakeXYWH(0,0,16,16),outlineWidth:1},instance:{path:
+,bounds:Dn.MakeXYWH(0,0,24,24),outlineWidth:2},browser:{path:
+,bounds:Dn.MakeXYWH(0,0,24,24),outlineWidth:2},component:{path:
+,bounds:Dn.MakeXYWH(0,0,24,24),outlineWidth:2}},gen=
+,c=s.attributes.stroke||
+,children:f.jsx($nt,{join:t})})}function rBn({value:t}){return t==null||t===
+,children:s,iconNode:o,...a},l)=>{const{size:c=24,strokeWidth:u=2,absoluteStrokeWidth:d=!1,color:h=
+,copy:i.map(s=>s.copy).join(
+,copy:n.map(r=>r.copy).join(
+,d=this.svgStrokeOutlinePath(Yre(n,$ke(this.id),c));u8(e,this,{style:r,viewBox:l.join(
+,dir:x.dir,...k,...g,ref:I,style:{outline:
+,e].filter(Boolean).join(
+,height:16,strokeLinejoin:
+,joinExtensions:[
+,layoutShift:!d&&typeof IntersectionObserver<
+,lde(a.lineJoin));break}case
+,message:'expected either boolean or 
+,message:'expected one of: boolean, 
+,outline:
+,p.name,!0))&&d.delete(p.name);d.size===0?delete u.attributes.class:u.attributes.class=Array.from(d).join(
+,pathBounds:Dn.MakeXYWH(0,0,24,24),outlineColor:r,outlineWidth:1.5}),new ao(e,{width:240,fontSize:12,fontFamily:
+,r.stroke);s!==void 0&&(r.stroke=s),D6(r.stroke,e,n+
+,s=t.terms.map(o=>gU(o,e,n,r)).join(i);return t.explicit||n?(r||s[0]===
+,s=t.terms.map(o=>lue(o,e,n,r)).join(i);return t.explicit||n?(r||s[0]===
+,stroke:
+,stroke:n.strokedPath.stroke,
+,strokeDasharray:`${Math.max(.6,o*C3e)} ${C3e}`,className:Fe(o>.95?
+,strokeLinecap:
+,strokeLinejoin:
+,strokeWidth:
+,strokeWidth:1.5}),f.jsx(
+,strokeWidth:1.5}):f.jsx(_R,{className:
+,t[t.NumpadSubtract=109]=
+,t[t.layoutIncludeStroke=49]=
+,t[t.lineJoin=17]=
+,t[t.strokeAlignment=16]=
+,t[t.strokeFills=14]=
+,t[t.strokeWidth=15]=
+,t_(a.strokeFills,r,!1));break}case
+,v$e(a.strokeWidth,r));break}case
+,w$e(a.strokeAlignment));break}case
+,{attributes:{d:n.strokedPath.pathData,fill:
+,{d:n,stroke:
+,{ref:l,...aK,width:e??c??aK.width,height:e??c??aK.height,stroke:t??h,strokeWidth:m,className:S7e(
+,{text:ie.join(
+,{text:u.join(
+,{textNode:o}=this,a=o.data.split(A0.CONTENTS).join(
+--anchor-height
+--anchor-width
+--radix-popper-anchor-height
+--radix-popper-anchor-width
+-moz-osx-font-smoothing
+-moz-outline-radius
+-moz-outline-radius-bottomleft
+-moz-outline-radius-bottomright
+-moz-outline-radius-topleft
+-moz-outline-radius-topright
+-webkit-font-smoothing
+-webkit-text-stroke
+-webkit-text-stroke-color
+-webkit-text-stroke-width
+/layoutIncludeStroke
+/strokeAlignment
+/strokeLinecap
+/strokeLinejoin
+/strokeWidth
+/strokeWidth/
+/strokeWidth/bottom
+/strokeWidth/left
+/strokeWidth/right
+/strokeWidth/top
+:Array.isArray(n)?n.map(e).join(
+:Array.isArray(r)?r.map($).join(
+:Yr(n.strokedPath.strokeWidth),
+:[Q.transformOrigin?.x,Q.transformOrigin?.y].join(
+:[{outline:J()}],shadow:[{shadow:[
+:i.fillRule,mask:i.mask?`url(#${i.mask.id})`:void 0}});n.strokedPath&&r.element(
+:n.strokedPath.lineCap,
+:n.strokedPath.lineJoin,
+:n.strokedPath.stroke?
+:null].filter(Boolean).join(
+:p.length===1?p[0]:s(p).join(
+:return t.nodes.map(e=>e.label?`${e.path} (${JSON.stringify(e.label)})`:e.path).join(
+:void 0}})}})}function u8(t,e,n){const r=FJt(t,e,n),i=r?[]:jJt(n),s=typeof n.strokedPath==
+:{(p??={}).layoutIncludeStroke=g;break}case
+:{(p??={}).lineJoin=DUe(g);break}case
+:{(p??={}).strokeAlignment=OUe(g);break}case
+:{(p??={}).strokeFills=s6(r,i,g);break}case
+:{(p??={}).strokeWidth=RUe(r,g);break}case
+;)h.shift(),d-=1;i.pathname=h.join(
+;break}default:o=String.fromCharCode(s)}i=s===-2,r.push(o)}return r.join(
+;if(i.image?.hash){const u=Array.from(i.image.hash).map(m8).join(
+;if(r===!0||r===!1||r instanceof Boolean)return
+;let r=new Array(n.length+2),i=0,s=e.map(a=>Lee(a));r[i]=`| ${s.join(
+;let u=py(i,o?.attributes??{});return u=py(u,a.outline.attributes),wS(a.data,r,u,s,c)?.node??null}case
+;r[i]=`| ${l.join(
+;r[i]=`| ${o.join(
+;this.joinExtensions.includes(this.extname(i).toLowerCase())?e+=`/../${r}`:e+=`/${r}`}}return e===void 0?
+;u8(e,this,{style:s,viewBox:l.join(
+<'align-self'>|anchor-center
+<'justify-self'>|anchor-center
+<'outline-width'>||<'outline-style'>||<'outline-color'>
+<length-percentage>|auto|<anchor-size()>
+<linear-easing-function>|<cubic-bezier-easing-function>|<step-easing-function>
+<mf-plain>|<mf-boolean>|<mf-range>
+<outline-radius>
+<outline-radius>{1,4} [/ <outline-radius>{1,4}]?
+<shape-box>|fill-box|stroke-box|view-box
+<visual-box>|fill-box|stroke-box
+>${i.join(
+?(U.splice(q+1,V),V=0):(U.splice(q,2),V--));return B=U.join(
+?YE(r):r?YE(r.toString()):String(r)).join(
+?a:a(i,n);o.add(l)}i.attributes.class=Array.from(o).join(
+?mA(r):r?mA(r.toString()):String(r)).join(
+?n({editor:e,node:s,pos:i,hasAnchor:a}):n})}function MXe(t,e){return typeof t==
+?r.style.stroke=i:r.style.fill=i)}}class glt extends TY{constructor(e,n){super(e),this.container.classList.add(
+?s:[s,l].join(
+?t:wt.isMac?t.join(
+?x.pop():x.push(C))}return x.join(
+A dimensional ribbon creates motion around firmly anchored typography
+A substantial technical sans and mono annotation layer make an outlined drafting sheet operational.
+Add stroke
+Anchor
+Anchored Ribbon Grid
+BOOLEAN_OPERATION
+Boolean
+Broad heavy geometric type sits in unequal calm tiles joined by a narrow continuous grout.
+Bungee Outline
+Cannot join 
+Cannot vectorize images on multiple layers at once.
+CutAnchor
+EXT_disjoint_timer_query
+EXT_disjoint_timer_query_webgl2
+Failed to vectorize image
+JoinContour
+Kumar One Outline
+Material Symbols Outlined
+MenuAnchor
+Outline
+PopoverAnchor
+PopperAnchor
+STROKE_WEIGHT
+Second argument of SetVariables operation must be a boolean if provided!
+Stroke
+ToggleSmooth
+VECTOR
+Vector
+Vectorize image
+ZodBoolean
+ZodDiscriminatedUnion
+ZodIntersection
+ZodUnion
+[<'offset-position'>? [<'offset-path'> [<'offset-distance'>||<'offset-rotate'>]?]?]! [/ <'offset-anchor'>]?
+[<'outline-color'>||<'outline-style'>||<'outline-width'>]
+[object Boolean]
+].join(
+]:[s];let o=R8e(r.join(
+]:t).join((n.padRight?
+];e[1]=n.join(
+];return[O$,e.join(
+];return[wy,e.join(
+]`).join(
+`).join(
+`:a},i=e.length>0?n.length+1:n.length,s=new Array(i),o=0;e.length>0&&(s[o]=e.map(r).join(
+`].join(
+`}).join(
+absolute inset-0 cursor-default rounded-lg outline-none
+add|subtract|intersect|exclude
+always|[anchors-valid||anchors-visible||no-overflow]
+anchor( <anchor-name>?&&<anchor-side> , <length-percentage>? )
+anchor()
+anchor-bold
+anchor-light
+anchor-name
+anchor-scope
+anchor-side
+anchor-simple
+anchor-simple-bold
+anchor-simple-light
+anchor-simple-thin
+anchor-size
+anchor-size( [<anchor-name>||<anchor-size>]? , <length-percentage>? )
+anchor-size()
+anchor-thin
+auto|<length-percentage>|<anchor()>|<anchor-size()>
+auto|<outline-line-style>
+auto|crisp-edges|pixelated|smooth|optimizeSpeed|optimizeQuality|<-non-standard-image-rendering>
+auto|none|<anchor-name>
+auto|none|visiblePainted|visibleFill|visibleStroke|visible|painted|fill|stroke|all|inherit
+auto|normal|stretch|<baseline-position>|<overflow-position>? <self-position>|anchor-center
+auto|normal|stretch|<baseline-position>|<overflow-position>? [<self-position>|left|right]|anchor-center
+auto|smooth
+bezier-curve
+bezier-curve-bold
+bezier-curve-fill
+bezier-curve-light
+bezier-curve-thin
+bg-background outline-none rounded border text-xs border-blue-500 px-1 h-full leading-[var(--layer-row-height)]
+boolean-expr
+bungee outline
+check_box_outline_blank
+content-box|border-box|fill-box|stroke-box|view-box
+content-box|padding-box|border-box|fill-box|stroke-box|view-box
+cubic-bezier( [<number [0,1]> , <number>]#{2} )
+cubic-bezier()
+cubic-bezier-easing-function
+cubic-bezier-timing-function
+data-anchor-hidden
+disjoinRuleset
+done_outline
+dots-three-outline
+dots-three-outline-bold
+dots-three-outline-fill
+dots-three-outline-light
+dots-three-outline-thin
+dots-three-outline-vertical
+dots-three-outline-vertical-bold
+dots-three-outline-vertical-fill
+dots-three-outline-vertical-light
+dots-three-outline-vertical-thin
+ease|ease-in|ease-out|ease-in-out|cubic-bezier( <number [0,1]> , <number> , <number [0,1]> , <number> )
+expected boolean, got 
+expected either boolean or "$variable", got 
+flex flex-col gap-2 flex-shrink-0 text-left group focus:outline-none
+flex flex-col min-w-0 outline-none
+flex flex-col outline-none
+flex items-center justify-center px-1.5 py-1 outline-none transition-opacity rounded-sm
+focus:outline-none
+focus:outline-none focus:ring-0
+font-sans h-6 focus:outline-none focus-visible:ring-0
+font-sans h-6 text-xxs focus:outline-none focus-visible:ring-0
+font-smooth
+font-smoothing
+group/row flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xxs outline-none
+http://taptrix.com/vectorillustrator/svg_extensions
+http://www.vector.evaxdesign.sk
+https://fonts.gstatic.com/s/bungeeoutline/v24/_6_mEDvmVP24UvU2MyiGDslL3Qg3YhJqPXxo.ttf
+https://fonts.gstatic.com/s/kumaroneoutline/v20/Noao6VH62pyLP0fsrZ-v18wlUEcX9zDwRQu8EGKF.ttf
+in n&&(n.library=n.iconFontFamily,delete n.iconFontFamily),typeof n.stroke==
+intersect-bold
+intersect-fill
+intersect-light
+intersect-thin
+invalid_union
+join_inner
+join_left
+join_right
+kumar one outline
+lineJoin
+linear|<cubic-bezier-timing-function>|<step-timing-function>
+londrina outline
+mars-stroke
+material icons outlined
+material symbols outlined
+max-w-lg gap-3 p-4 outline-none !slide-in-from-top-0 !slide-in-from-left-0 !slide-out-to-top-0 !slide-out-to-left-0
+mf-boolean
+mx-auto h-10 w-10 text-red-500 mb-3 stroke-[1.5]
+no-drag group border-b border-border px-3 py-2.5 text-left text-[13px] outline-none
+no-drag group flex w-full flex-col overflow-hidden rounded-xl border bg-background text-left outline-none
+non-scaling-stroke
+none|<color>|<url> [none|<color>]?|context-fill|context-stroke
+none|[fill|fill-opacity|stroke|stroke-opacity]#
+none|non-scaling-stroke|non-scaling-size|non-rotation|fixed-position
+normal|[fill||stroke||markers]
+normal|stretch|<baseline-position>|[<overflow-position>? <self-position>]|anchor-center
+noto sans adlam unjoined
+noto sans nko unjoined
+offset-anchor
+outline-color
+outline-line-style
+outline-none
+outline-offset
+outline-radius
+outline-style
+outline-w
+outline-width
+overflow-anchor
+popover-anchor
+position-anchor
+px-3 py-2 text-sm border-b border-zinc-200 dark:border-zinc-700 bg-transparent focus:outline-none
+ql-stroke
+removeUselessStrokeAndFill
+removes useless stroke and fill attributes
+size-3.5 text-background stroke-[1.5]
+smoothScrollTargetReached
+squares-exclude
+squares-intersect
+squares-subtract
+stroke-alignment
+stroke-amber-500
+stroke-color
+stroke-dasharray
+stroke-dashoffset
+stroke-dashoffset 200ms ease-out
+stroke-emerald-500
+stroke-foreground/60
+stroke-linecap
+stroke-linejoin
+stroke-miterlimit
+stroke-muted-foreground/30
+stroke-opacity
+stroke-red-500
+stroke-w
+stroke-width
+strokeAlignment
+strokeColor
+strokeDasharray
+strokeDashoffset
+strokeFills
+strokeLinecap
+strokeLinejoin
+strokeMiterlimit
+strokeOpacity
+strokeWidth
+strokeWidthBottom
+strokeWidthLeft
+strokeWidthRight
+strokeWidthTop
+strokeWidths
+stroke_full
+stroke_partial
+text-[clamp(28px,3vw,40px)] font-medium tracking-[-0.04em] leading-[1.2] outline-none
+text-anchor
+textAnchor
+transform,transformOrigin,svgOrigin,force3D,smoothOrigin,transformPerspective
+type-outline
+var(--radix-popper-anchor-height)
+var(--radix-popper-anchor-width)
+vector-effect
+vector-square
+vectorEffect
+vectorize-image
+w-3.5 h-3.5 text-background stroke-[1.5]
+w-6 aspect-square rounded border border-input outline-none cursor-pointer hover:border-foreground
+w-full bg-transparent py-2 text-xxs text-foreground placeholder:text-foreground/40 outline-none
+w-full focus:outline-none
+webkitFontSmoothing
+z-50 outline-none
+||!s.inlineContent?[]:null}for(let i in this.marks){let s=this.marks[i],o=s.spec.excludes;s.excluded=o==null?[s]:o==
+||E7(n)===E7(e)))return!0}return n}function v$n(t){const e=[];for(const[n,r]of Object.entries(t))e.push([n,r].join(
+} return ${I}.eval(p);`).join(`\n`)}\n  }\n}\n`)),fe){for(let I of re)oe.set(I,j(
+} return ${oe.get(I)};`).join(`\n`)}\n  }\n}\n`)}let z=0;for(let I=0;I<E.program.length;I++){let L=E.program[I];L.type===
+}),r&&(u=eot(e),l=r.c,l.join(i)!==u.c.join(i)))for(c=e.replace(Bk,
+},n1t={[$le.anchorHidden]:
+},stroke:{inherits:!0,initial:
+}`).join(
+}`})})]})})}const ber=ffe.join(
+}function Lne(t){return Array.isArray(t)?t.map(Lne).join(
+}function NCe(t,e,n){const r=[];let i=-1;for(;++i<t.length;)r[i]=rZe(t[i],e,n);return r.join(
+}function hB(t){return Array.isArray(t)?t.map(hB).join(
+}function uU(t){return Array.isArray(t)?t.map(uU).join(
+}return Xae(e)}function DPe(t){return Xa(t)?null:Zq(t).split(/(\s+)/).filter((e=>lR(e))).join(
+}toStringInner(){return this.content.join(

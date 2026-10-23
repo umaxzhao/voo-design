@@ -160,7 +160,7 @@ export default function MediaSection({
   const model = object.model ?? {};
   const currentMediaObject = () => {
     const current = engine
-      ? engine.getDocument().nodes.find((node) => node.id === object.id)
+      ? engine.getDocument()?.nodes?.find((node) => node.id === object.id)
       : object;
     if (!current) throw new Error("Selected video clip is unavailable");
     return current;
