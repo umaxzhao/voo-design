@@ -96,4 +96,5 @@ export default {
   "settings.shortcuts.panKeys": "H / Space + drag",
   "settings.shortcuts.multiSelectKeys": "⌘/Ctrl + click",
   "editor.toolbar.label": "Editor tools",
+  "editor.bottomBar.label": "Canvas view controls",
 };
