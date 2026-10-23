@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronUp, ChevronDown, Copy, Pencil, Trash2 } from "lucide-react";
+import { ChevronUp, ChevronDown, Copy, Trash2 } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
+import { finishPageRename, movePageToEdge } from "./page_switcher_interactions.js";
 import { useDesignStore } from "../../store/design_store.js";
 
 export default function PageSwitcher() {
@@ -9,6 +10,22 @@ export default function PageSwitcher() {
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(null);
   const root = useRef(null);
+  const edit = useRef(null);
+  const drag = useRef(null);
+  const suppressClick = useRef(false);
+  const [drop, setDrop] = useState(null);
+  const startRename = (id) => {
+    edit.current = id;
+    setRenaming(id);
+  };
+  const finishRename = (value, cancel = false) => {
+    finishPageRename(edit, useDesignStore.getState(), value, cancel);
+    setRenaming(null);
+  };
+  const clearDrag = () => {
+    drag.current = null;
+    setDrop(null);
+  };
   const nodes = useDesignStore((s) => s.nodes);
   const focusedId = useDesignStore((s) => s.editingNodeId);
   const current = nodes.find((node) => node.id === focusedId) ?? nodes[0];
@@ -17,8 +34,9 @@ export default function PageSwitcher() {
     if (!open) return;
     const dismiss = (event) => {
       if (!root.current?.contains(event.target)) {
-        setOpen(false);
+        finishPageRename(edit, useDesignStore.getState(), root.current?.querySelector("input")?.value);
         setRenaming(null);
+        setOpen(false);
       }
     };
     document.addEventListener("pointerdown", dismiss);
@@ -47,7 +65,7 @@ export default function PageSwitcher() {
         event.stopPropagation();
         if (event.key === "Escape") {
           setOpen(false);
-          setRenaming(null);
+          finishRename("", true);
         }
       }}
     >
@@ -62,20 +80,58 @@ export default function PageSwitcher() {
           {nodes.length === 0 && (
             <p
               data-testid="pages-empty"
-              className="px-3 py-4 text-sm text-neutral-400"
+              className="px-3 py-4 text-xs text-neutral-400"
             >
               {t("pageSwitcher.empty")}
             </p>
           )}
           <ul className="flex flex-col gap-1">
-            {nodes.map((node, index) => {
+            {nodes.map((node) => {
               const active = node.id === current?.id;
               const label = node.data?.label ?? t("pageSwitcher.untitled");
               return (
                 <li
                   key={node.id}
-                  className={`group flex items-center gap-1 rounded-xl px-1 text-xs ${active ? "bg-white/10 text-white" : "text-neutral-300 hover:bg-white/5"}`}
+                  data-page-id={node.id}
+                  draggable={renaming === null}
+                  onDragStart={(event) => {
+                    if (renaming !== null || event.target.closest("input, [data-page-action]")) {
+                      event.preventDefault();
+                      return;
+                    }
+                    drag.current = node.id;
+                    suppressClick.current = true;
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData("text/plain", node.id);
+                  }}
+                  onDragOver={(event) => {
+                    if (!drag.current) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                    const bounds = event.currentTarget.getBoundingClientRect();
+                    setDrop({ id: node.id, edge: event.clientY < bounds.y + bounds.height / 2 ? "before" : "after" });
+                  }}
+                  onDragLeave={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget)) setDrop(null);
+                  }}
+                  onDrop={(event) => {
+                    if (!drag.current) return;
+                    event.preventDefault();
+                    const bounds = event.currentTarget.getBoundingClientRect();
+                    movePageToEdge(useDesignStore.getState(), useDesignStore.getState().nodes,
+                      drag.current, node.id, event.clientY < bounds.y + bounds.height / 2 ? "before" : "after");
+                    clearDrag();
+                  }}
+                  onDragEnd={clearDrag}
+                  className={`relative group flex items-center gap-1 rounded-xl px-1 text-xs ${active ? "bg-white/10 text-white" : "text-neutral-300 hover:bg-white/5"}`}
                 >
+                  {drop?.id === node.id && drag.current !== node.id && (
+                    <span
+                      data-testid="page-drop-indicator"
+                      aria-hidden="true"
+                      className={`pointer-events-none absolute inset-x-1 z-10 h-px bg-neutral-300 ${drop.edge === "before" ? "-top-0.5" : "-bottom-0.5"}`}
+                    />
+                  )}
                   {renaming === node.id ? (
                     <input
                       autoFocus
@@ -83,25 +139,30 @@ export default function PageSwitcher() {
                       defaultValue={label}
                       maxLength={80}
                       onFocus={(e) => e.target.select()}
-                      className="min-w-0 flex-1 rounded bg-white/10 px-2 py-2 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
+                      className="min-w-0 flex-1 rounded-lg bg-white/10 px-2 py-2 outline-none focus-visible:ring-1 focus-visible:ring-neutral-400"
                       onKeyDown={(e) => {
                         if (e.key === "Escape") {
                           e.stopPropagation();
-                          setRenaming(null);
+                          finishRename(e.currentTarget.value, true);
                         }
-                        if (e.key === "Enter") e.currentTarget.blur();
+                        if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                          e.preventDefault();
+                          finishRename(e.currentTarget.value);
+                        }
                       }}
                       onBlur={(e) => {
-                        actions.renameEditorPage(node.id, e.target.value);
-                        setRenaming(null);
+                        finishRename(e.currentTarget.value);
                       }}
                     />
                   ) : (
                     <button
                       type="button"
                       aria-current={active ? "page" : undefined}
-                      onDoubleClick={() => setRenaming(node.id)}
-                      onClick={() => actions.focusEditorPage(node.id)}
+                      onDoubleClick={() => startRename(node.id)}
+                      onPointerDown={() => { suppressClick.current = false; }}
+                      onClick={(event) => {
+                        if (!suppressClick.current || event.detail === 0) actions.focusEditorPage(node.id);
+                      }}
                       className="min-w-0 flex-1 truncate px-2 py-2.5 text-left focus-visible:outline focus-visible:outline-[#a7ffd4]"
                       title={label}
                     >
@@ -109,7 +170,6 @@ export default function PageSwitcher() {
                     </button>
                   )}
                   {[
-                    [Pencil, "rename", () => setRenaming(node.id)],
                     [
                       Copy,
                       "duplicate",
@@ -119,28 +179,18 @@ export default function PageSwitcher() {
                           defaultLabel: t("pageSwitcher.page"),
                         }),
                     ],
-                    [
-                      ChevronUp,
-                      "moveUp",
-                      () => actions.reorderEditorPage(node.id, -1),
-                      index === 0,
-                    ],
-                    [
-                      ChevronDown,
-                      "moveDown",
-                      () => actions.reorderEditorPage(node.id, 1),
-                      index === nodes.length - 1,
-                    ],
                     [Trash2, "close", () => actions.deleteEditorPage(node.id)],
-                  ].map(([Icon, key, onClick, disabled]) => (
+                  ].map(([Icon, key, onClick]) => (
                     <button
                       key={key}
                       type="button"
                       aria-label={`${t(`pageSwitcher.${key}`)}: ${label}`}
                       title={t(`pageSwitcher.${key}`)}
-                      disabled={disabled}
+                      data-page-action="true"
+                      draggable={false}
+                      onDragStart={(event) => event.preventDefault()}
                       onClick={onClick}
-                      className="flex h-7 w-6 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-[#a7ffd4] disabled:opacity-25"
+                      className="flex h-7 w-6 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-[#a7ffd4]"
                     >
                       <Icon size={13} />
                     </button>
