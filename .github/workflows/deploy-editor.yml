@@ -1,0 +1,80 @@
+name: Deploy editor to la
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Required secret: LA_SSH_KEY (deployment private key).
+# Optional secrets: LA_SSH_HOST (default 103.114.160.86, behind alias la),
+# LA_SSH_USER (default root; set to the user used by your local Host la config).
+concurrency:
+  group: deploy-editor-la
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_enabled: ${{ steps.secrets.outputs.enabled }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: editor-dist
+          path: dist/
+          if-no-files-found: error
+      # Secrets cannot be referenced directly in a job-level if expression.
+      - name: Check deployment configuration
+        id: secrets
+        env:
+          LA_SSH_KEY: ${{ secrets.LA_SSH_KEY }}
+        run: |
+          if [ -n "$LA_SSH_KEY" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    needs: build
+    if: needs.build.outputs.deploy_enabled == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: editor-dist
+          path: dist/
+      - name: Configure SSH
+        env:
+          LA_SSH_KEY: ${{ secrets.LA_SSH_KEY }}
+          LA_SSH_HOST: ${{ secrets.LA_SSH_HOST || '103.114.160.86' }}
+          LA_SSH_USER: ${{ secrets.LA_SSH_USER || 'root' }}
+        run: |
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s\n' "$LA_SSH_KEY" > ~/.ssh/la_deploy_key
+          ssh-keyscan -H "$LA_SSH_HOST" > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host la
+            HostName $LA_SSH_HOST
+            User $LA_SSH_USER
+            IdentityFile ~/.ssh/la_deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            StrictHostKeyChecking yes
+          EOF
+      - name: Deploy editor artifact
+        env:
+          VOO_DEPLOY_SKIP_BUILD: '1'
+        run: bash scripts/deploy-editor.sh
+      - name: Remove deployment key
+        if: always()
+        run: rm -f ~/.ssh/la_deploy_key
