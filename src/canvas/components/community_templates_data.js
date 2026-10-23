@@ -168,16 +168,20 @@ function createIosBankingDoc() {
     createTextNode({ x: 280, y: 154, text: "VISA", fill: "#FFFFFF", fontSize: 18 }),
 
     // Quick Action 4 Buttons
-    createEllipseNode({ x: 36, y: 360, width: 56, height: 56, fill: "#1E222D", stroke: "#2E3444", strokeWidth: 1 }),
+    createEllipseNode({ x: 36, y: 360, width: 56, height: 56, fill: "#262626", stroke: "#404040", strokeWidth: 1 }),
     createTextNode({ x: 50, y: 376, text: "↗", fill: "#D4D4D4", fontSize: 20 }),
     createTextNode({ x: 44, y: 426, text: "Send", fill: "#9CA3AF", fontSize: 12 }),
 
-    createEllipseNode({ x: 126, y: 360, width: 56, height: 56, fill: "#1E222D", stroke: "#2E3444", strokeWidth: 1 }),
+    createEllipseNode({ x: 126, y: 360, width: 56, height: 56, fill: "#262626", stroke: "#404040", strokeWidth: 1 }),
     createTextNode({ x: 140, y: 376, text: "↙", fill: "#D4D4D4", fontSize: 20 }),
     createTextNode({ x: 130, y: 426, text: "Receive", fill: "#9CA3AF", fontSize: 12 }),
 
+    createEllipseNode({ x: 216, y: 360, width: 56, height: 56, fill: "#262626", stroke: "#404040", strokeWidth: 1 }),
+    createTextNode({ x: 230, y: 376, text: "⇄", fill: "#D4D4D4", fontSize: 20 }),
     createTextNode({ x: 226, y: 426, text: "Swap", fill: "#9CA3AF", fontSize: 12 }),
 
+    createEllipseNode({ x: 306, y: 360, width: 56, height: 56, fill: "#262626", stroke: "#404040", strokeWidth: 1 }),
+    createTextNode({ x: 320, y: 376, text: "⋯", fill: "#D4D4D4", fontSize: 20 }),
     createTextNode({ x: 320, y: 426, text: "More", fill: "#9CA3AF", fontSize: 12 }),
 
     // Recent Transactions List

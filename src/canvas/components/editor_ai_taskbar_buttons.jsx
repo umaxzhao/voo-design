@@ -32,7 +32,7 @@ import {
 export const ICON_BTN =
   "flex h-6 w-6 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20";
 export const ICON_BTN_DEFAULT = `${ICON_BTN} text-neutral-400 hover:bg-white/10 hover:text-neutral-200`;
-export const ICON_BTN_AI = `${ICON_BTN} bg-[#E5B2FF]/10 text-neutral-300 hover:bg-[#E5B2FF]/20 hover:text-white`;
+export const ICON_BTN_AI = `${ICON_BTN} bg-white/10 text-neutral-300 hover:bg-white/20 hover:text-white`;
 
 /** One retouch slider row: name, current percent, and the range input. */
 function RetouchSlider({ slider, value, disabled, onChange, t }) {
