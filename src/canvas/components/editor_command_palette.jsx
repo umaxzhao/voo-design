@@ -5,6 +5,7 @@ import { Search, X } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
 import {
   MAX_RECENT_COMMANDS,
+  COMMAND_LABEL_KEYS,
   buildCommandIndex,
   filterCommands,
   moveSelection,
@@ -14,6 +15,7 @@ import {
 } from "../commands/command_registry.js";
 
 const RECENT_STORAGE_KEY = "voo.commandPalette.recent";
+const EMPTY_ACTIONS = [];
 
 function labelOr(t, key, fallback) {
   const value = t(key);
@@ -48,20 +50,27 @@ function writeRecent(list) {
  */
 export default function EditorCommandPalette({
   open = false,
-  actions = [],
+  actions = EMPTY_ACTIONS,
   onRun,
   onClose,
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [recentIds, setRecentIds] = useState(readRecent);
 
-  // t has a stable identity; dictionary loading and locale changes still
-  // notify useI18n. Rebuild these small rows on render to refresh their labels.
-  const index = buildCommandIndex({ t, actions });
+  // t is stable even when dictionaries finish loading. Track the labels as
+  // well as locale so those updates refresh the index without rebuilding on hover.
+  const labels = JSON.stringify([
+    ...Object.values(COMMAND_LABEL_KEYS),
+    ...actions.map((action) => action?.labelKey).filter(Boolean),
+  ].map((key) => t(key)));
+  const index = useMemo(
+    () => buildCommandIndex({ t, actions }),
+    [t, locale, labels, actions],
+  );
   const filtered = useMemo(() => filterCommands(index, query), [index, query]);
   const recentCommands = useMemo(
     () => resolveRecent(index, recentIds),

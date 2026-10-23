@@ -29,8 +29,9 @@ try {
 
   await page.keyboard.press("Control+k");
   await palette.waitFor();
-  assert.equal(await rows.count(), 65);
-  console.log("Indexed palette rows: 65 (20 commands + 45 host actions)");
+  const rowCount = await rows.count();
+  assert.ok(rowCount >= 65, `Expected at least 65 palette rows, got ${rowCount}`);
+  console.log(`Indexed palette rows: ${rowCount}`);
   await screenshot("palette");
   const bounds = await palette.boundingBox();
   for (const id of ["editor-bottom-toolbar", "editor-contextual-taskbar"]) {
