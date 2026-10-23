@@ -1,3 +1,4 @@
+import SettingsDesignSystem from "./settings_design_system.jsx";
 import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -10,6 +11,7 @@ import SettingsGeneral from "./settings_general.jsx";
 import SettingsShortcuts from "./settings_shortcuts.jsx";
 
 const TABS = [
+  { id: "design-system", labelZh: "设计系统", labelEn: "Design System", icon: IconSliders },
   {
     id: "general",
     labelZh: "常规偏好",
@@ -157,6 +159,7 @@ export default function SettingsDrawer({
               {activeTab === "providers" && <ProviderSettings />}
               {activeTab === "assistant" && <AgentSettings />}
               {activeTab === "general" && <SettingsGeneral />}
+              {activeTab === "design-system" && <SettingsDesignSystem />}
               {activeTab === "shortcuts" && <SettingsShortcuts asSection={false} />}
             </div>
           </main>

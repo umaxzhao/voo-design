@@ -1,4 +1,5 @@
 import { wasmEngineEnabled, loadEditorWasmIndex } from '../../engine-wasm/editor-index.js';
+import { validateDesignTokens } from "./design_tokens.js";
 import { documentRenderListener } from "./render_notifications.js";
 import { releaseStagePictureCache } from "./stage_picture_cache.js";
 import { TOOL } from "./editor_constants.js";
@@ -447,6 +448,10 @@ export function createEditor({
       return sourceWorkflowNodeId;
     },
     getDocument: getDoc,
+    setDesignSystem({ designTokens, designMd }) {
+      validateDesignTokens(designTokens);
+      setDoc({ ...getDoc(), designTokens: JSON.parse(JSON.stringify(designTokens)), designMd: String(designMd ?? '') }, { name: 'Update design system' });
+    },
     getZoom: viewportTools.getZoom,
     getViewport: viewportTools.getViewport,
     getCropRect: ctrl.crop.getCropRect,

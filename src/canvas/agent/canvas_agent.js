@@ -1,3 +1,4 @@
+import { buildDocumentDesignContext } from "../editor/design_tokens.js";
 /**
  * Minimal agent loop: the model talks, calls canvas tools, and sees their
  * results until it stops asking for tools. Nothing here builds a workflow.
@@ -114,7 +115,8 @@ export async function runAgentTurn({
   const base = styleNote.trim() ? `${SYSTEM_PROMPT}\n\nStyle notes from the user: ${styleNote.trim()}` : SYSTEM_PROMPT;
   let qualityOff = globalThis.__VOO_DESIGN_QUALITY_OFF__ === true;
   try { qualityOff ||= globalThis.localStorage?.getItem("voo.designQuality") === "off"; } catch {}
-  const system = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit: pickStyleKit(userText) })}`;
+  const documentContext = buildDocumentDesignContext(activeEditor()?.getDocument?.());
+  const system = (qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit: pickStyleKit(userText) })}`) + documentContext;
   const messages = [
     { role: "system", content: system },
     ...history,
