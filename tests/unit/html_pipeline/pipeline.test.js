@@ -1,0 +1,44 @@
+import { beforeEach, expect, it, vi } from 'vitest';
+const mocks = vi.hoisted(() => ({ render: vi.fn(), convert: vi.fn(), create: vi.fn(), critique: vi.fn(), imageGenerator: vi.fn() }));
+vi.mock('../../../src/canvas/agent/html_pipeline/render_html.js', () => ({ HtmlRenderer: class { render(...args) { return mocks.render(...args); } dispose() {} } }));
+vi.mock('../../../src/canvas/agent/html_pipeline/html_to_nodes.js', () => ({ htmlToNodes: (...args) => mocks.convert(...args) }));
+vi.mock('../../../src/canvas/agent/canvas_tools_build_layout.js', () => ({ createLayoutNode: (...args) => mocks.create(...args) }));
+vi.mock('../../../src/canvas/agent/html_pipeline/critique.js', () => ({ critiqueHtml: (...args) => mocks.critique(...args) }));
+vi.mock('../../../src/canvas/agent/html_pipeline/images.js', () => ({ configuredImageGenerator: () => null }));
+import { runHtmlPipeline, shouldUseHtmlPipeline } from '../../../src/canvas/agent/html_pipeline/pipeline.js';
+import { DESIGN_SYSTEM_PRESETS } from '../../../src/canvas/agent/design_system/from_style_kit.js';
+const directions = Object.values(DESIGN_SYSTEM_PRESETS).slice(0, 2).map((designSystem, i) => ({ id: String(i), name: designSystem.name, mood: 'calm', layoutIdea: 'grid', designSystem }));
+beforeEach(() => { vi.clearAllMocks(); mocks.render.mockImplementation(async html => html); mocks.convert.mockReturnValue([{ key: 'headline', type: 'text', text: 'Hi' }]); let id = 0; mocks.create.mockImplementation(() => String(++id)); });
+it('orchestrates selection, live snapshots, saved tokens and a single repair', async () => {
+  let doc = { nodes: [], width: 800, height: 600 };
+  const editor = { getDocument: () => doc, setDoc: vi.fn(next => { doc = next; }), beginBatch: vi.fn(), endBatch: vi.fn(), commit: vi.fn(), updateNode: vi.fn(), removeNode: vi.fn() };
+  const html = '<html><body><h1 data-voo-id="headline">Hi</h1></body></html>';
+  const streamStep = vi.fn().mockResolvedValueOnce({ text: JSON.stringify(directions) }).mockImplementationOnce(async ({ onText }) => { onText('<html><body><h1>Hi'); return { text: html }; });
+  mocks.critique.mockResolvedValue({ html: html.replace('Hi', 'Repaired'), repaired: true, trace: [{ raw: 'review' }] });
+  const chooseDirection = vi.fn(() => '1'), onProgress = vi.fn();
+  const result = await runHtmlPipeline({ brief: 'Create a page', frame: { width: 800, height: 600 }, editor, streamStep, config: {}, onProgress, chooseDirection });
+  expect(result.directionId).toBe('1'); expect(result.nodeCount).toBe(1); expect(result.html).toContain('Repaired');
+  expect(doc.designSystem.id).toBe(directions[1].designSystem.id);
+  expect(mocks.render.mock.calls.at(-1)[0]).toContain('Repaired');
+  expect(editor.commit).toHaveBeenCalledOnce(); expect(editor.endBatch).toHaveBeenCalledOnce();
+  expect(onProgress).toHaveBeenCalledWith({ stage: 'repair', status: 'completed' });
+});
+it('restores history entry points after aborted generation', async () => {
+  const controller = new AbortController(); const commit = vi.fn();
+  const editor = { getDocument: () => ({ nodes: [] }), setDoc: vi.fn(), beginBatch: vi.fn(), endBatch: vi.fn(), commit };
+  const streamStep = vi.fn().mockResolvedValueOnce({ text: JSON.stringify(directions) }).mockImplementationOnce(() => { controller.abort(); throw new DOMException('Aborted', 'AbortError'); });
+  await expect(runHtmlPipeline({ brief: 'page', frame: { width: 800, height: 600 }, editor, streamStep, signal: controller.signal })).rejects.toThrow('Aborted');
+  expect(editor.commit).toBe(commit); expect(editor.endBatch).toHaveBeenCalledOnce();
+});
+it('requires a browser, explicit generation intent and empty document', () => {
+  const previous = globalThis.document; globalThis.document = { createElement() {} };
+  const editor = { getDocument: () => ({ nodes: [] }) };
+  expect(shouldUseHtmlPipeline({ editor, userText: 'Create a landing page' })).toBe(true);
+  expect(shouldUseHtmlPipeline({ editor, userText: 'Fix the existing page' })).toBe(false);
+  expect(shouldUseHtmlPipeline({ editor, userText: 'Create a page', enabled: false })).toBe(false);
+  expect(shouldUseHtmlPipeline({ editor: { getDocument: () => ({ nodes: [{ kind: 'text' }] }) }, userText: 'Create a page' })).toBe(false);
+  expect(shouldUseHtmlPipeline({ editor: { getDocument: () => ({ nodes: [{ kind: 'rect' }] }) }, userText: 'Create a page' })).toBe(false);
+  expect(shouldUseHtmlPipeline({ editor, userText: 'Move and rename' })).toBe(false);
+  expect(shouldUseHtmlPipeline({ editor, userText: 'Inspect the page' })).toBe(false);
+  if (previous === undefined) delete globalThis.document; else globalThis.document = previous;
+});

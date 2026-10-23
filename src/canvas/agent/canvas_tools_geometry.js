@@ -92,8 +92,8 @@ export const CANVAS_TOOL_GEOMETRY_SCHEMAS = Object.freeze([
 ]);
 
 /** Creates a pen (bezier) node from an SVG path string via the drawing API. */
-export function createPath(args = {}) {
-  const editor = requireEditor();
+export function createPath(args = {}, hostEditor) {
+  const editor = hostEditor ?? requireEditor();
   const { d, fill, stroke, strokeWidth, name } = args;
   const x = finiteOrNull(args.x);
   const y = finiteOrNull(args.y);

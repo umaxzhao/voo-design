@@ -48,12 +48,21 @@ describe('versioned design system', () => {
     expect(getActiveDesignSystem(deserialiseDocument(serialiseDocument({...doc,designSystem:undefined})))).toBe(null);
     expect(doc.colorVariables).toHaveLength(1);
   });
-  it('persists the auto selection and reuses the contract on subsequent edits', async () => {
+  it('persists the auto selection after an edit and reuses the contract on subsequent turns', async () => {
     const original=globalThis.window; let doc={nodes:[]}; let system;
     globalThis.window={__vooEditor:{getDoc:()=>doc,setDoc:next=>{doc=next;}}};
-    const run= userText=>runAgentTurn({config:{},history:[],userText,tools:[],executeTool:async()=>({}),streamStep:async({messages})=>{system=messages[0].content;return {text:'done',toolCalls:[]};}});
+    const run = (userText, edit = false) => {
+      let first = true;
+      return runAgentTurn({ config: {}, history: [], userText, tools: [], executeTool: async () => ({}), streamStep: async ({ messages }) => {
+        system = messages[0].content;
+        const toolCalls = edit && first ? [{ id: 'rename', name: 'rename_layer', arguments: '{}' }] : [];
+        first = false;
+        return { text: 'done', toolCalls };
+      } });
+    };
     try {
-      await run('editorial magazine'); expect(doc.designSystem.id).toBe('editorial');
+      await run('editorial magazine'); expect(doc.designSystem).toBeUndefined();
+      await run('editorial magazine', true); expect(doc.designSystem.id).toBe('editorial');
       doc.designSystem.colors.primary='#123456'; await run('edit the dark developer dashboard');
       expect(system).toContain('#123456'); expect(system).toContain('Editorial Print'); expect(system).not.toContain('Palette: bg');
     } finally { if(original===undefined) delete globalThis.window; else globalThis.window=original; }

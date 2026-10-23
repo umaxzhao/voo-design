@@ -83,6 +83,19 @@ function validate(args) {
   visit(args.nodes, "nodes");
 }
 
+/** Shared native creation path for bulk layout and HTML streaming. */
+export function createLayoutNode(editor, node, parentId) {
+  const { type, children, autoLayout, color, ...style } = node;
+  const result = type === "frame" ? createFrame({ ...style, ...autoLayout }, editor)
+    : type === "path" ? createPath(style, editor)
+    : type === "line" ? createPath({ ...style, fill: "none", d: `M 0 0 L ${node.width} ${node.height}` }, editor)
+    : createShape({ ...style, kind: type }, editor);
+  const patch = { ...style, ...(parentId ? { parentId } : {}) };
+  if (type === "text") { patch.boxWidth = node.width; if (color !== undefined) patch.fill = color; }
+  editor.updateNode(result.layerId, patch);
+  return result.layerId;
+}
+
 export function buildLayout(args = {}) {
   validate(args);
   const editor = typeof window !== "undefined" ? window.__vooEditor : null;
@@ -106,17 +119,10 @@ export function buildLayout(args = {}) {
     }
     function create(nodes, parentId) {
       for (const node of nodes) {
-        const { type, children, autoLayout, color, ...style } = node;
-        const result = type === "frame" ? createFrame({ ...style, ...autoLayout })
-          : type === "line" ? createPath({ ...style, fill: "none", d: `M 0 0 L ${node.width} ${node.height}` })
-            : createShape({ ...style, kind: type });
-        const patch = { ...style, ...(parentId ? { parentId } : {}) };
-        // updateNode routes through setDoc -> measureTextNodes, just like create_shape.
-        // Set boxWidth and all typography together so the final measured geometry is current.
-        if (type === "text") { patch.boxWidth = node.width; if (color !== undefined) patch.fill = color; }
-        editor.updateNode(result.layerId, patch);
-        created.push({ id: result.layerId, name: node.name, type });
-        if (children?.length) create(children, result.layerId);
+        const { type, children } = node;
+        const id = createLayoutNode(editor, node, parentId);
+        created.push({ id, name: node.name, type });
+        if (children?.length) create(children, id);
       }
     }
     if (!batched && typeof editor.mute === "function") editor.mute(() => create(args.nodes, args.parentId));

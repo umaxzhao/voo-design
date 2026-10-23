@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { DESIGN_BENCH_TASKS } from '../../scripts/design-bench/tasks.mjs';
 
 describe('design benchmark task contract', () => {
-  it('covers all twenty requested design scenarios with unique portable IDs', () => {
+  it('covers the original twenty scenarios and ten new scenarios with unique portable IDs', () => {
     const ids = DESIGN_BENCH_TASKS.map(task => task.id);
-    expect(ids).toHaveLength(20);
-    expect(new Set(ids).size).toBe(20);
-    expect(ids).toEqual(['product-card', 'login-form', 'signup', 'landing-hero', 'saas-dashboard', 'analytics-dashboard', 'settings-page', 'pricing-table', 'mobile-home', 'mobile-onboarding', 'mobile-profile', 'checkout-form', 'email-newsletter', 'blog-article', 'empty-state', 'notification-panel', 'file-upload-modal', 'kanban-board', 'chat-app-screen', 'music-player']);
+    expect(ids).toHaveLength(30);
+    expect(new Set(ids).size).toBe(30);
+    expect(ids.slice(0, 20)).toEqual(['product-card', 'login-form', 'signup', 'landing-hero', 'saas-dashboard', 'analytics-dashboard', 'settings-page', 'pricing-table', 'mobile-home', 'mobile-onboarding', 'mobile-profile', 'checkout-form', 'email-newsletter', 'blog-article', 'empty-state', 'notification-panel', 'file-upload-modal', 'kanban-board', 'chat-app-screen', 'music-player']);
+    expect(ids.slice(20)).toEqual(['saas-landing', 'hospitality-landing', 'meditation-home', 'food-menu', 'travel-results', 'crypto-portfolio', 'people-directory', 'portfolio-home', 'conference-page', 'form-wizard']);
     for (const task of DESIGN_BENCH_TASKS) {
       expect(task.id).toMatch(/^[a-z]+(?:-[a-z]+)*$/);
       expect(task.kind.length).toBeGreaterThan(3);

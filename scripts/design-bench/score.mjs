@@ -18,11 +18,14 @@ export async function loadLinter() {
 }
 
 export function parseJudgeOutput(output) {
-  const result = JSON.parse(output.trim());
+  const start = output.indexOf('{');
+  const end = output.lastIndexOf('}');
+  if (start < 0 || end < start) throw new Error('Judge did not return a JSON object');
+  const result = JSON.parse(output.slice(start, end + 1));
   if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('Judge must return a JSON object');
   for (const key of JUDGE_DIMENSIONS) {
-    if (!Number.isFinite(result[key]) || result[key] < 1 || result[key] > 5) {
-      throw new Error(`Invalid judge score for ${key}: expected number 1–5`);
+    if (!Number.isInteger(result[key]) || result[key] < 1 || result[key] > 5) {
+      throw new Error(`Invalid judge score for ${key}: expected integer 1–5`);
     }
   }
   return result;

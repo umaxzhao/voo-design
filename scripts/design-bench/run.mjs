@@ -31,13 +31,17 @@ export function parseOptions(args) {
 }
 
 // Runs inside the editor page; imports match the live Codex E2E harness.
-async function runInEditor({ task, model, timeout, critique }) {
+async function runInEditor({ task, model, timeout, critique, images }) {
   const out = { toolCalls: [], rounds: [], reply: '' };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
   let unsubscribe;
   let closeSession;
   let completedTools = 0;
+  let frameTimer;
+  let frameBusy = false;
+  globalThis.__VOO_DESIGN_BENCH__ = true;
+  globalThis.__VOO_DESIGN_BENCH_IMAGES__ = images;
   try {
     const { createDocument } = await import('/src/canvas/editor/scene_model.js');
     const editor = window.__vooEditor;
@@ -80,6 +84,7 @@ async function runInEditor({ task, model, timeout, critique }) {
           }
           return result;
         },
+        chooseDirection: () => 'auto', frame: { width: task.frame.w, height: task.frame.h },
         streamStep: streamCliStep, signal: controller.signal, maxSteps: 40,
         onToolEvent: event => {
           if (event.status !== 'in_progress') console.log('[bench] tool', event.name, event.status);
@@ -92,6 +97,15 @@ async function runInEditor({ task, model, timeout, critique }) {
       history.push({ role: 'user', content: userText }, { role: 'assistant', content: reply || '' });
       return reply;
     }
+    if (window.__vooBenchFrame) frameTimer = setInterval(async () => {
+      if (frameBusy || controller.signal.aborted) return;
+      frameBusy = true;
+      try {
+        const canvas = await (editor.exportPngCanvas?.() ?? editor.renderComposite?.());
+        if (canvas) await window.__vooBenchFrame(canvas.toDataURL('image/png'));
+      } catch (error) { console.warn('[bench] frame capture', error.message); }
+      finally { frameBusy = false; }
+    }, 2000);
     console.log('[bench] turn start');
     out.finalReply = await turn(prompt);
     if (controller.signal.aborted) throw new Error('Task timed out');
@@ -115,6 +129,7 @@ async function runInEditor({ task, model, timeout, critique }) {
   } catch (error) { out.error = error.stack || String(error); }
   finally {
     clearTimeout(timer);
+    clearInterval(frameTimer);
     unsubscribe?.();
     try { await closeSession?.(AbortSignal.timeout(10000)); }
     catch (error) { out.sessionCloseError = error.message; }
@@ -207,6 +222,16 @@ export async function main(args = process.argv.slice(2)) {
         let record = { id, kind: task.kind, frame: task.frame };
         let lastCheckpoint = null;
         try {
+          const framesDir = process.env.VOO_DESIGN_BENCH_FRAMES_DIR;
+          if (framesDir) {
+            await mkdir(framesDir, { recursive: true });
+            let frameIndex = 0;
+            await page.exposeFunction('__vooBenchFrame', async png => {
+              if (!png?.startsWith('data:image/png;base64,')) return;
+              const filename = `${id}-${String(frameIndex++).padStart(3, '0')}.png`;
+              await writeFile(resolve(framesDir, filename), Buffer.from(png.split(',')[1], 'base64'));
+            });
+          }
           await page.exposeFunction('__vooBenchCheckpoint', payload => {
             if (payload?.nodes?.length) lastCheckpoint = payload;
           });
@@ -217,7 +242,7 @@ export async function main(args = process.argv.slice(2)) {
           }
           await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
           const result = await Promise.race([
-            page.evaluate(runInEditor, { task, model: options.model || process.env.VOO_CODEX_MODEL, timeout, critique: options.critique && !!lint }),
+            page.evaluate(runInEditor, { task, model: options.model || process.env.VOO_CODEX_MODEL, timeout, images: process.env.VOO_DESIGN_BENCH_IMAGES === '1', critique: options.critique && !!lint }),
             new Promise((_, reject) => { watchdog = setTimeout(() => reject(new Error('Task exceeded hard deadline')), timeout + 30000); }),
           ]);
           const { doc, png, ...details } = result;

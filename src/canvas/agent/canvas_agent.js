@@ -1,3 +1,4 @@
+import { runHtmlPipeline, shouldUseHtmlPipeline } from './html_pipeline/pipeline.js';
 import { getActiveDesignSystem, setActiveDesignSystem } from './design_system/store.js';
 import { fromStyleKit } from './design_system/from_style_kit.js';
 /**
@@ -114,18 +115,29 @@ export async function runAgentTurn({
   maxSteps = AGENT_DEFAULTS.maxSteps,
   styleNote = "",
   streamStep = streamChatTurn,
+  htmlPipeline = true,
+  onProgress,
+  chooseDirection,
+  frame,
 }) {
   const base = styleNote.trim() ? `${SYSTEM_PROMPT}\n\nStyle notes from the user: ${styleNote.trim()}` : SYSTEM_PROMPT;
   let qualityOff = globalThis.__VOO_DESIGN_QUALITY_OFF__ === true;
   try { qualityOff ||= globalThis.localStorage?.getItem("voo.designQuality") === "off"; } catch {}
   const editor = activeEditor();
+  if (!qualityOff && shouldUseHtmlPipeline({ editor, userText, enabled: htmlPipeline })) {
+    const doc = editor.getDocument?.() ?? editor.getDoc?.();
+    const result = await runHtmlPipeline({ brief: styleNote ? `${userText}\nStyle notes: ${styleNote}` : userText,
+      frame: frame ?? { width: doc.width || 1440, height: doc.height || 1000, x: 0, y: 0 },
+      editor, streamStep, config, signal, onProgress, chooseDirection });
+    return `Created page with ${result.nodeCount} editable layers (${result.directionId}).`;
+  }
   const before = documentFingerprint(editor);
   const kit = pickStyleKit(userText);
   let designSystem;
   if (!qualityOff) {
     const doc = editor?.getDocument?.() ?? editor?.getDoc?.();
     designSystem = getActiveDesignSystem(doc) ?? fromStyleKit(kit);
-    if (doc && !getActiveDesignSystem(doc)) setActiveDesignSystem(editor, designSystem);
+    // A prompt fallback must not mutate the document or create an undo entry.
   }
   const system = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit, designSystem })}`;
   const messages = [
@@ -193,6 +205,10 @@ export async function runAgentTurn({
         try {
           const result = await executeTool(call.name, args);
           if (result?.isError || result?.error) throw new Error(JSON.stringify(result));
+          if (!READ_ONLY_TOOLS.has(call.name) && designSystem && editor) {
+            const doc = editor.getDocument?.() ?? editor.getDoc?.();
+            if (doc && !getActiveDesignSystem(doc)) setActiveDesignSystem(editor, designSystem);
+          }
           failurePending = false;
           if (call.name === "capture_canvas") writesSinceCapture = 0;
           else if (!READ_ONLY_TOOLS.has(call.name)) { writesSinceCapture += 1; verificationNudged = false; }

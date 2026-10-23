@@ -127,6 +127,10 @@ export default function CanvasAgentPanel({ onClose }) {
   const [transcript, setTranscript] = useState([]);
   const [input, setInput] = useState("");
   const [streamingText, setStreamingText] = useState("");
+  const [pipelineProgress, setPipelineProgress] = useState(null);
+  const [directions, setDirections] = useState([]);
+  const directionChoice = useRef(null);
+  useEffect(() => () => directionChoice.current?.('auto'), []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -266,6 +270,16 @@ export default function CanvasAgentPanel({ onClose }) {
           tools: [...CANVAS_TOOL_SCHEMAS, ...external.tools],
           executeTool: (name, args) => name.startsWith("mcp__") ? external.execute(name, args) : executeCanvasTool(name, args),
           onText: setStreamingText,
+          onProgress: setPipelineProgress,
+          chooseDirection: (choices, { signal } = {}) => new Promise((resolve, reject) => {
+            setDirections(choices);
+            const finish = choice => { clearTimeout(timer); signal?.removeEventListener('abort', abort); directionChoice.current = null; setDirections([]); resolve(choice); };
+            const abort = () => { clearTimeout(timer); directionChoice.current = null; setDirections([]); reject(new DOMException('Aborted', 'AbortError')); };
+            const timer = setTimeout(() => finish('auto'), 15000);
+            directionChoice.current = finish;
+            signal?.addEventListener('abort', abort, { once: true });
+            if (signal?.aborted) abort();
+          }),
           onToolEvent: updateToolItem,
         });
         const replyItem = { kind: "text", role: "assistant", content: reply };
@@ -287,6 +301,8 @@ export default function CanvasAgentPanel({ onClose }) {
       } finally {
         setStreamingText("");
         setBusy(false);
+        setPipelineProgress(null);
+        setDirections([]);
       }
     },
     [busy, input, activeId, activeContext, selectedModel],
@@ -526,10 +542,19 @@ export default function CanvasAgentPanel({ onClose }) {
                 </li>
               ),
             )}
+            {directions.length > 0 && (
+              <li className="flex flex-wrap gap-1.5" aria-label="Visual directions">
+                {directions.map(direction => (
+                  <button key={direction.id} type="button" title={`${direction.mood} — ${direction.layoutIdea}`} onClick={() => directionChoice.current?.(direction.id)} className="rounded-full border border-neutral-700 px-2.5 py-1 text-[11px] text-neutral-200 hover:border-purple-300">
+                    {direction.name}
+                  </button>
+                ))}
+              </li>
+            )}
             {busy && (
               <li className="flex items-center gap-2 text-[12px] text-neutral-400">
                 <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-[#E5B2FF]" aria-hidden="true" />
-                {streamingText || t("agent.panel.busy")}
+                {pipelineProgress ? `${pipelineProgress.stage} · ${pipelineProgress.status}` : streamingText || t("agent.panel.busy")}
               </li>
             )}
           </ol>

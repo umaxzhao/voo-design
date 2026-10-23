@@ -734,8 +734,8 @@ function isGroupNode(node) {
   return node?.kind === "group" || node?.type === "group";
 }
 
-export function createShape(args = {}) {
-  const editor = requireEditor();
+export function createShape(args = {}, hostEditor) {
+  const editor = hostEditor ?? requireEditor();
   const { kind, x, y, width, height, text, fill, name } = args;
   if (!["rect", "ellipse", "text"].includes(kind)) {
     invalidArgs(`Invalid argument "kind": expected one of rect, ellipse, text, got ${JSON.stringify(kind)}`);

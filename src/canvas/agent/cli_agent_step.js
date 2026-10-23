@@ -47,3 +47,6 @@ export async function streamCliStep({ config, messages, tools, signal, onText })
   }
   return { text, toolCalls };
 }
+
+// HTML generation consumes this transport alongside cumulative API streams.
+streamCliStep.textMode = "delta";

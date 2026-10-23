@@ -5,6 +5,7 @@ import { isCliAgentModel, streamCliStep } from "../../src/canvas/agent/cli_agent
 import { findPersonaById, formatPersonaPrompt } from "../../src/shared/agent_persona.js";
 
 const ALL_TOOL_NAMES = [
+  "build_layout",
   "create_shape",
   "lint_design",
   "delete_layers",
@@ -66,7 +67,8 @@ describe("CANVAS_TOOL_SCHEMAS completeness", () => {
     for (const name of ALL_TOOL_NAMES) {
       expect(names).toContain(name);
     }
-    expect(new Set(names).size).toBe(ALL_TOOL_NAMES.length);
+    expect(new Set(names).size).toBe(names.length);
+    expect([...names].sort()).toEqual([...ALL_TOOL_NAMES].sort());
   });
 });
 

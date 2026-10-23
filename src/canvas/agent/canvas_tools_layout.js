@@ -235,8 +235,8 @@ function applyAutoLayout(editor, layerId, config) {
   return config;
 }
 
-export function createFrame(args = {}) {
-  const editor = requireEditor();
+export function createFrame(args = {}, hostEditor) {
+  const editor = hostEditor ?? requireEditor();
   const { x, y, width, height, name, fill } = args;
   if (![x, y, width, height].every((value) => Number.isFinite(value))) invalidArgs();
   if (name !== undefined && typeof name !== "string") invalidArgs();
