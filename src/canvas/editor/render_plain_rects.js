@@ -6,7 +6,7 @@ const eligibleLists = new WeakMap();
 
 export function isPlainRect(node) {
   if (eligibleNodes.has(node)) return eligibleNodes.get(node);
-  let eligible = node.kind === "rect" && !node.parentId && !node.maskBase && !node.clipTo &&
+  let eligible = node.kind === "rect" && !node.parentId && !node.fills && !node.fillHidden && !node.fillBlendMode && !node.maskBase && !node.clipTo &&
     !node.rotation && !node.shear && !node.flipH && !node.flipV &&
     !node.cornerRadius && !node.strokeWidth && !node.layerBlur && !node.backgroundBlur && !node.noise &&
     (!node.blendMode || node.blendMode === "source-over") &&

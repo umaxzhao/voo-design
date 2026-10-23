@@ -149,7 +149,8 @@ export function drawImageNode(
     return;
   }
 
-  if (!bitmap) return;
+  if (!bitmap || node.fillHidden === true || fillAlpha <= 0) return;
+  ctx.globalAlpha *= fillAlpha;
 
   const fullResolution = Boolean(gpu?.fullResolution);
   const rasterLevel = resolveRasterLevelFromPyramid({

@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import FigmaColorPicker from "../../color_picker/FigmaColorPicker.jsx";
 
 /** `<input type="color">` only accepts full 6-digit hex, not names or rgba(). */
-export const HEX_COLOUR = /^#[0-9a-f]{6}$/i;
+export const HEX_COLOUR = /^#(?:[0-9a-f]{6}|[0-9a-f]{8})$/i;
 
 /** The hatched "no paint" swatch face, the same idea as Figma's None. */
 export const NONE_PATTERN =

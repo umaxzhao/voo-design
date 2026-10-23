@@ -17,7 +17,7 @@ import {
 } from "./node_effects.js";
 import { drawImageNode } from "./render_image_node.js";
 import { drawVideoNode } from "./render_video_node.js";
-import { drawRectNode, drawEllipseNode } from "./render_basic_shapes.js";
+import { isImagePaint, drawRectNode, drawEllipseNode } from "./render_basic_shapes.js";
 import { drawPathNode } from "./render_path_node.js";
 import { drawPenNode } from "./render_pen_node.js";
 import { drawBooleanNode } from "./render_boolean_node.js";
@@ -53,14 +53,29 @@ export function drawNode(
   const hasFill = Boolean(effects?.fill?.enabled);
   const hasStroke = Boolean(effects?.stroke?.enabled);
 
-  const paintBody = (targetCtx = ctx) => {
+  const paintOne = (targetCtx, node) => {
+    if (node.fillHidden) node = { ...node, fillOpacity: 0 };
+    const imageFill = isImagePaint(node.fill);
+    if (imageFill || (node.imageId && node.kind !== NODE_KIND.IMAGE && node.fill === "transparent")) {
+      const bitmap = bitmapOf(imageFill ? { ...node, imageId: undefined, src: node.fill } : node);
+      if (!bitmap) return;
+      if (node.kind === NODE_KIND.IMAGE) {
+        node = { ...node, src: imageFill ? node.fill : node.src };
+      } else {
+        const pattern = targetCtx.createPattern(bitmap, "no-repeat");
+        if (!pattern) return;
+        const scale = Math.max(node.width / (bitmap.naturalWidth ?? bitmap.width), node.height / (bitmap.naturalHeight ?? bitmap.height));
+        pattern.setTransform(new DOMMatrix().translate(node.x, node.y).scale(scale));
+        node = { ...node, fill: pattern, opacity: (node.opacity ?? 1) * (node.fillOpacity ?? 1), fillOpacity: 1 };
+      }
+    }
     targetCtx.globalAlpha = node.opacity ?? 1;
     switch (node.kind) {
       case NODE_KIND.IMAGE:
         drawImageNode(
           targetCtx,
           node,
-          bitmapOf(node),
+          bitmapOf(imageFill ? { ...node, imageId: undefined, src: node.fill } : node),
           maskOf?.(node),
           gpu,
           bypassAdjustments,
@@ -89,6 +104,29 @@ export function drawNode(
       default:
         break;
     }
+  };
+
+  const paintBody = (targetCtx = ctx) => {
+    const paints = Array.isArray(node.fills) ? node.fills : null;
+    if (!paints) {
+      targetCtx.save();
+      targetCtx.globalCompositeOperation = node.fillBlendMode && node.fillBlendMode !== "source-over"
+        ? node.fillBlendMode : targetCtx.globalCompositeOperation;
+      paintOne(targetCtx, node);
+      targetCtx.restore();
+      return;
+    }
+    for (const paint of paints) {
+      if (paint.visible === false) continue;
+      targetCtx.save();
+      targetCtx.globalCompositeOperation = paint.blendMode ?? "source-over";
+      const painted = { ...node, fill: paint.fill, fillOpacity: paint.opacity ?? 1,
+        fillHidden: false, strokeHidden: true, imageId: paint.imageId ?? node.imageId };
+
+      paintOne(targetCtx, painted);
+      targetCtx.restore();
+    }
+    if (node.strokeWidth > 0) paintOne(targetCtx, { ...node, fillHidden: true, fillOpacity: 0 });
   };
 
   ctx.save();

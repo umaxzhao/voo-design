@@ -6,6 +6,7 @@
  * Figma text needs glyph outlines this editor does not produce. Everything
  * else is reported by `figSaveLosses` before the file is written.
  */
+import { parseGradient, isCssGradient } from "../color_picker/gradient_fill.js";
 import { NODE_KIND } from "../editor/scene_doc_factory.js";
 
 /** Layers written here live in their own session; the file's DOCUMENT and CANVAS use session 0. */
@@ -41,9 +42,47 @@ function solidPaints(value) {
   return [{ type: "SOLID", color: { r: color.r, g: color.g, b: color.b, a: 1 }, opacity: color.a, visible: true, blendMode: "NORMAL" }];
 }
 
+function paintOf(fill, opacity = 1, visible = true, blendMode = "source-over") {
+  const blend = blendMode === "source-over" ? "NORMAL" : blendMode.replaceAll("-", "_").toUpperCase();
+  if (!isCssGradient(fill)) return solidPaints(fill).map((paint) => ({
+    ...paint, opacity: paint.opacity * opacity, visible, blendMode: blend,
+  }));
+  const gradient = parseGradient(fill);
+  const kinds = { linear: "GRADIENT_LINEAR", radial: "GRADIENT_RADIAL", angular: "GRADIENT_ANGULAR", diamond: "GRADIENT_DIAMOND" };
+  const stops = gradient.stops.map((stop) => ({
+    position: stop.position / 100,
+    color: { ...parseHexColor(stop.color), a: (stop.opacity ?? 100) / 100 },
+  }));
+  const g = gradient.geometry ?? gradient;
+  if (gradient.type !== "linear") {
+    const width = (g.width ?? 100) / 100, height = (g.height ?? 100) / 100;
+    return [{ type: kinds[gradient.type], stops, opacity, visible, blendMode: blend,
+      transform: { m00: width, m10: 0, m01: 0, m11: height,
+        m02: (g.centerX ?? 50) / 100 - width / 2, m12: (g.centerY ?? 50) / 100 - height / 2 } }];
+  }
+  if (g.startX === undefined) {
+    const radians = parseFloat(gradient.angle) * Math.PI / 180;
+    const dx = Math.sin(radians), dy = -Math.cos(radians);
+    g.startX = 50 - dx * 50; g.endX = 50 + dx * 50;
+    g.startY = 50 - dy * 50; g.endY = 50 + dy * 50;
+  }
+  const sx = (g.startX ?? 0) / 100, sy = (g.startY ?? 50) / 100;
+  const ex = (g.endX ?? 100) / 100, ey = (g.endY ?? 50) / 100;
+  const dx = ex - sx, dy = ey - sy;
+  return [{ type: kinds[gradient.type] ?? kinds[gradient.kind] ?? "GRADIENT_LINEAR",
+    stops, opacity, visible, blendMode: blend,
+    transform: { m00: dx, m10: dy, m01: -dy, m11: dx, m02: sx + dy / 2, m12: sy - dx / 2 } }];
+}
+
+function fillsOf(node) {
+  if (Array.isArray(node.fills)) return node.fills.flatMap((paint) =>
+    paintOf(paint.fill, paint.opacity, paint.visible, paint.blendMode));
+  return paintOf(node.fill, node.fillOpacity ?? 1, node.fillHidden !== true, node.fillBlendMode);
+}
+
 /** Whether a fill can be written: absent, transparent, or a plain hex colour. */
 function hasSupportedFill(node) {
-  return node.fill === undefined || node.fill === null || node.fill === "transparent" || parseHexColor(node.fill) !== null;
+  return node.fill === undefined || node.fill === null || node.fill === "transparent" || parseHexColor(node.fill) !== null || isCssGradient(node.fill);
 }
 
 function isWritable(node) {
@@ -99,7 +138,8 @@ function layerRecord({ guid, parentGuid, position, node, origin }) {
     transform: { ...IDENTITY, m02: node.x - origin.x, m12: node.y - origin.y },
     strokeAlign: "INSIDE",
     strokeWeight: node.strokeWidth > 0 ? node.strokeWidth : 0,
-    fillPaints: hasSupportedFill(node) ? solidPaints(node.fill) : [],
+    fillPaints: fillsOf(node),
+    ...(node.maskBase ? { mask: true, maskType: node.maskType === "luminance" ? "LUMINANCE" : "ALPHA" } : {}),
     strokePaints: node.strokeWidth > 0 ? solidPaints(node.stroke) : [],
   };
   if (node.kind === NODE_KIND.GROUP) {

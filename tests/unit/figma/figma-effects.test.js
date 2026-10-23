@@ -106,7 +106,7 @@ describe("spread, multitone grain and paint blend", () => {
     expect(paintBlendOf({ fillPaints: [{ type: "SOLID", blendMode: "NORMAL", visible: true }] })).toBeNull();
   });
 
-  it("stacks each extra solid paint as its own layer with its blend mode", () => {
+  it("keeps each solid paint on its owner with its blend mode", () => {
     const message = rectMessage({
       fillPaints: [
         { type: "SOLID", color: { r: 1, g: 0, b: 0, a: 1 }, visible: true, blendMode: "NORMAL", opacity: 1 },
@@ -115,11 +115,9 @@ describe("spread, multitone grain and paint blend", () => {
     });
     const nodes = figmaMessageToPages(message).pages[0].nodes;
 
-    expect(nodes).toHaveLength(2);
+    expect(nodes).toHaveLength(1);
     expect(nodes[0].fill).toBe("#ff0000");
-    expect(nodes[1].fill).toBe("#0000ff");
-    expect(nodes[1].blendMode).toBe("multiply");
-    expect(nodes[1].opacity).toBe(0.5);
+    expect(nodes[0].fills[1]).toMatchObject({ fill: "#0000ff", blendMode: "multiply", opacity: 0.5 });
   });
 });
 

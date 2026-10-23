@@ -89,6 +89,6 @@ describe("VOO to Figma writer", () => {
     const gradient = figSaveLosses({
       nodes: [{ id: "x", kind: NODE_KIND.RECT, fill: "linear-gradient(red, blue)", visible: true }],
     });
-    expect(gradient).toEqual([{ key: "fig.save.lossFills", params: { count: 1 } }]);
+    expect(gradient).toEqual([]);
   });
 });

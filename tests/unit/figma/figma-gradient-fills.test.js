@@ -85,13 +85,15 @@ describe("Figma gradient paints", () => {
     expect(fill).toBeNull();
   });
 
-  it("skips hidden gradient paints", () => {
+  it("preserves hidden gradient paints without displaying them", () => {
     const fill = rectFill({
       type: "GRADIENT_LINEAR",
       visible: false,
       gradientStops: stops,
       transform: { m00: 1, m11: 1 },
     });
-    expect(fill).toBeNull();
+    expect(fill).toContain("gradient");
+    const nodes = figmaMessageToPages(gradientRect({ type: "GRADIENT_LINEAR", visible: false, gradientStops: stops })).pages[0].nodes;
+    expect(nodes.find((node) => node.name === "Hero").fillHidden).toBe(true);
   });
 });
