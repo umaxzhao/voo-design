@@ -1082,6 +1082,8 @@ export default {
   "editor.strokeStyle.profileTaperBoth": "Taper both ends",
   "editor.shape.title": "Shape",
   "editor.shape.type": "Type",
+  "editor.shape.rect": "Rectangle",
+  "editor.shape.ellipse": "Ellipse",
   "editor.shape.polygon": "Polygon",
   "editor.shape.star": "Star",
   "editor.shape.sides": "Sides",

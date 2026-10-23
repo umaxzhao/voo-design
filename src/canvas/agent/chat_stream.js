@@ -35,20 +35,27 @@ async function* readSseJson(body) {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    let index = buffer.indexOf("\n");
-    while (index !== -1) {
-      const line = buffer.slice(0, index).trim();
-      buffer = buffer.slice(index + 1);
-      if (line.startsWith(DATA_PREFIX)) {
-        const payload = line.slice(DATA_PREFIX.length).trim();
-        if (payload && payload !== "[DONE]") yield JSON.parse(payload);
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      buffer += done ? decoder.decode() : decoder.decode(value, { stream: true });
+      // Some compatible endpoints close immediately after their last JSON event.
+      // Treat EOF as a line boundary so its text/tool call is not silently lost.
+      if (done && buffer && !buffer.endsWith("\n")) buffer += "\n";
+      let index = buffer.indexOf("\n");
+      while (index !== -1) {
+        const line = buffer.slice(0, index).trim();
+        buffer = buffer.slice(index + 1);
+        if (line.startsWith(DATA_PREFIX)) {
+          const payload = line.slice(DATA_PREFIX.length).trim();
+          if (payload && payload !== "[DONE]") yield JSON.parse(payload);
+        }
+        index = buffer.indexOf("\n");
       }
-      index = buffer.indexOf("\n");
+      if (done) break;
     }
+  } finally {
+    reader.releaseLock();
   }
 }
 
