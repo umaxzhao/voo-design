@@ -16,6 +16,8 @@ export { Swatch, HexField, FillSection, StrokeSection, HEX_COLOUR, parseHex };
  */
 export default function ColourSection({
   object,
+  showFill = true,
+  showStroke = true,
   edit,
   editAndCommit,
   commitNow = undefined,
@@ -24,27 +26,29 @@ export default function ColourSection({
 }) {
   return (
     <>
-      <FillSection
+      {showFill && <FillSection
         object={object}
         edit={edit}
         editAndCommit={editAndCommit}
         commitNow={commitNow}
         selectedNodes={selectedNodes}
         getBitmap={getBitmap}
-      />
-      <StrokeSection
+      />}
+      {showStroke && <StrokeSection
         object={object}
         edit={edit}
         editAndCommit={editAndCommit}
         commitNow={commitNow}
         selectedNodes={selectedNodes}
-      />
+      />}
     </>
   );
 }
 
 ColourSection.propTypes = {
   object: PropTypes.object.isRequired,
+  showFill: PropTypes.bool,
+  showStroke: PropTypes.bool,
   edit: PropTypes.func.isRequired,
   editAndCommit: PropTypes.func.isRequired,
   commitNow: PropTypes.func,

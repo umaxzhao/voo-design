@@ -1137,6 +1137,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       cornerRadii: doc.cornerRadii ?? null,
       effects: doc.effects ?? [],
       clipContent: doc.clipContent ?? true,
+      autoLayout: doc.autoLayout ?? null,
+      layoutGrid: doc.layoutGrid ?? null,
       visible: true,
       locked: false,
     };

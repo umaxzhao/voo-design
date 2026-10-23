@@ -1,3 +1,5 @@
+import { resolvePanelForContext } from "./resolve_panel_context.js";
+import RasterContextToolbar from "./raster_context_toolbar.jsx";
 import VariantsSection from "./variants_section.jsx";
 /**
  * Editor properties panel: root component docked on canvas side showing
@@ -139,37 +141,11 @@ export default function EditorProperties({
     control.title = control.getAttribute("aria-label");
   };
 
-  // Dedicated Tool Properties apply to raster brush / selection / crop / wand
-  // / region tools, shapes, and to the pen family.
-  const isDedicatedToolActive =
-    !penEditing &&
-    (tool === TOOL.MARQUEE ||
-      tool === TOOL.LASSO ||
-      tool === TOOL.WAND ||
-      tool === TOOL.REGION ||
-      tool === TOOL.BRUSH ||
-      tool === TOOL.ERASER ||
-      tool === TOOL.HEALING ||
-      tool === TOOL.BLUR ||
-      tool === TOOL.SHARPEN ||
-      tool === TOOL.SMUDGE ||
-      tool === TOOL.DODGE ||
-      tool === TOOL.BURN ||
-      tool === TOOL.SPONGE ||
-      tool === TOOL.DROPPER ||
-      tool === TOOL.CROP ||
-      tool === TOOL.PEN ||
-      tool === TOOL.CURVATURE_PEN ||
-      tool === TOOL.FREE_PEN ||
-      tool === TOOL.RECT ||
-      tool === TOOL.ELLIPSE ||
-      tool === TOOL.POLYGON ||
-      tool === TOOL.STAR ||
-      tool === TOOL.LINE ||
-      tool === TOOL.ARROW ||
-      tool === TOOL.FILL ||
-      tool === TOOL.GRADIENT ||
-      tool === TOOL.TEXT);
+  const context = resolvePanelForContext({
+    tool,
+    selection: !isBackground && object ? (selectedNodes.length ? selectedNodes : [object]) : [],
+  });
+  const isDedicatedToolActive = !penEditing && context.panel === "tool";
 
   const header = (
     <PropertiesPanelHeader
@@ -201,7 +177,10 @@ export default function EditorProperties({
   );
 
   if (isDedicatedToolActive && toolProps) {
+    if (context.topBar) return <RasterContextToolbar context={context} toolProps={toolProps} object={object} engine={engine} editAndCommit={editAndCommit} />;
     return (
+      <>
+      <RasterContextToolbar context={context} toolProps={toolProps} object={object} engine={engine} editAndCommit={editAndCommit} />
       <aside
         data-testid="editor-properties-panel"
         className={dynamicPanelClass}
@@ -214,6 +193,7 @@ export default function EditorProperties({
           <ToolPropertiesSection tool={tool} {...toolProps} />
         </div>
       </aside>
+      </>
     );
   }
 
@@ -301,6 +281,8 @@ export default function EditorProperties({
   }
 
   return (
+    <>
+    <RasterContextToolbar context={context} toolProps={toolProps} object={object} engine={engine} editAndCommit={editAndCommit} />
     <aside
       data-testid="editor-properties-panel"
       className={dynamicPanelClass}
@@ -313,6 +295,7 @@ export default function EditorProperties({
         {maskToolbar}
         {object?.isFrame && <VariantsSection engine={engine} isMainComponent={isMainComponent} />}
           <PropertiesPanelSections
+            sections={context.sections}
             object={object}
             engine={engine}
             parentLayout={parentLayout}
@@ -348,6 +331,7 @@ export default function EditorProperties({
           />
       </div>
     </aside>
+    </>
   );
 }
 

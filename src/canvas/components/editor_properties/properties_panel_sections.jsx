@@ -1,7 +1,8 @@
 /** Section list rendering for node properties: transform, warp, text, shape, colour, and effects. */
 
+import { resolvePanelForContext } from "./resolve_panel_context.js";
 import PropTypes from "prop-types";
-import AdjustmentControls from "./adjustment_controls.jsx";
+import TypeSpecificSections from "./type_specific_sections.jsx";
 import AffinityAdjustmentSection from "./affinity_adjustment_section.jsx";
 import AlignSection from "./align_section.jsx";
 import ColourSection from "./colour_section.jsx";
@@ -10,7 +11,6 @@ import ShapeSection from "./shape_section.jsx";
 import TextSection from "./text_section.jsx";
 import TransformSection from "./transform_section.jsx";
 import LayerEffectsSection from "./layer_effects_section.jsx";
-import LiveFilterSection from "./live_filter_section.jsx";
 import PuppetPinSection from "./puppet_pin_section.jsx";
 import WarpSection from "./warp_section.jsx";
 import AutoLayoutSection from "./auto_layout_section.jsx";
@@ -32,6 +32,7 @@ import { TOOL } from "../../editor/editor_constants.js";
 
 export default function PropertiesPanelSections({
   object,
+  sections = null,
   engine,
   parentLayout,
   parentIsFrame = false,
@@ -64,6 +65,8 @@ export default function PropertiesPanelSections({
   mediaError,
   t,
 }) {
+  const allowed = sections ?? resolvePanelForContext({ selection: [object] }).sections;
+  const has = (section) => allowed.includes(section);
   const isMedia =
     object.kind === "video" ||
     object.kind === "model3d" ||
@@ -93,7 +96,7 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {!isWarpTool && onLayout && object.kind !== "adjustment" ? (
+      {!isWarpTool && has("alignment") && onLayout && object.kind !== "adjustment" ? (
         <AlignSection
           count={selectionCount}
           onLayout={onLayout}
@@ -124,9 +127,10 @@ export default function PropertiesPanelSections({
             })
           }
         />
-      ) : object.kind !== "adjustment" && object.kind !== "audio" ? (
+      ) : has("transform") && object.kind !== "adjustment" && object.kind !== "audio" ? (
         <TransformSection
           object={object}
+          showRadius={has("radius")}
           docSize={docSize}
           isRegion={isRegionNode(object)}
           edit={edit}
@@ -137,6 +141,7 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
+      {/* TODO(modifiers-pr): move Repeat/Array under Modifiers */}
       {/* Repeat / Array: the three array modifiers, one group right under
           Transform so "copy this layer N times" sits where its geometry is. */}
       {showRepeatArray ? (
@@ -154,7 +159,7 @@ export default function PropertiesPanelSections({
       {/* Resize constraints: how this node follows its parent's resize. Frames
           (the page itself) and adjustments/regions/audio have no parent box;
           an auto-layout flow child is positioned by reflowAutoLayout instead. */}
-       {!isWarpTool &&
+       {!isWarpTool && has("constraints") &&
       !object.isFrame &&
       object.kind !== "adjustment" &&
       object.kind !== "audio" &&
@@ -182,6 +187,8 @@ export default function PropertiesPanelSections({
       ) : null}
 
 
+      {!isWarpTool && <TypeSpecificSections object={object} sections={allowed} engine={engine} editAndCommit={editAndCommit} />}
+
       {!isWarpTool && isMedia ? (
         <MediaSection
           object={object}
@@ -194,11 +201,11 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {!isWarpTool && object.kind === "group" ? (
+      {!isWarpTool && has("autoLayout") ? (
         <AutoLayoutSection object={object} editAndCommit={editAndCommit} />
       ) : null}
 
-      {!isWarpTool && parentLayout ? (
+      {!isWarpTool && has("layoutChild") && parentLayout ? (
         <AutoLayoutChildSection object={object} editAndCommit={editAndCommit} />
       ) : null}
 
@@ -238,9 +245,11 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {!isWarpTool && supportsColour(object) ? (
+      {!isWarpTool && (has("fill") || has("stroke")) && supportsColour(object) ? (
         <ColourSection
           object={object}
+          showFill={has("fill")}
+          showStroke={has("stroke")}
           edit={edit}
           editAndCommit={editAndCommit}
           commitNow={commitNow}
@@ -248,7 +257,7 @@ export default function PropertiesPanelSections({
           getBitmap={getBitmap}
         />
       ) : null}
-      {!isWarpTool &&
+      {!isWarpTool && has("fill") &&
       colorVariableActions &&
       supportsColour(object) &&
       object.kind !== "image" &&
@@ -265,7 +274,7 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {!isWarpTool &&
+      {!isWarpTool && (has("fill") || has("stroke")) &&
       styleActions &&
       object.kind !== "adjustment" &&
       !isMedia &&
@@ -277,7 +286,7 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {!isWarpTool && object.kind !== "adjustment" && !isMedia ? (
+      {!isWarpTool && has("effects") && object.kind !== "adjustment" && !isMedia ? (
         <LayerEffectsSection
           object={object}
           edit={edit}
@@ -291,20 +300,14 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {!isWarpTool && object.kind === "image" ? (
-        <LiveFilterSection
-          object={object}
-          liveFilters={normalizeAdjustments(object.adjustments).liveFilters}
-          edit={edit}
-          editAndCommit={editAndCommit}
-        />
-      ) : null}
+
     </>
   );
 }
 
 PropertiesPanelSections.propTypes = {
   object: PropTypes.object.isRequired,
+  sections: PropTypes.arrayOf(PropTypes.string),
   engine: PropTypes.object,
   parentLayout: PropTypes.object,
   parentIsFrame: PropTypes.bool,

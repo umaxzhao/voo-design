@@ -1,3 +1,4 @@
+import { ellipseArcPath, hasEllipseArc } from "./ellipse_arc.js";
 /**
  * Node to Skia scene element mapping.
  */
@@ -95,8 +96,9 @@ export function elementFor(node, index, offsetX, offsetY, resolveImageUrl, doc) 
     return {
       ...base,
       kind: "node",
-      nodeType: "ellipse",
-      shape: "ellipse",
+      nodeType: hasEllipseArc(node) ? "path" : "ellipse",
+      shape: hasEllipseArc(node) ? "path" : "ellipse",
+      ...(hasEllipseArc(node) ? { pathData: ellipseArcPath(node), fillRule: "evenodd" } : {}),
       title: node.name ?? "Ellipse",
       fills: fillsOf(node),
       stroke: strokeOf(node),
