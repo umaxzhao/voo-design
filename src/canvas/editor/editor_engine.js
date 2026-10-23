@@ -1,7 +1,7 @@
 import { wasmEngineEnabled, loadEditorWasmIndex } from '../../engine-wasm/editor-index.js';
 import { validateDesignTokens } from "./design_tokens.js";
 import { documentRenderListener } from "./render_notifications.js";
-import { releaseStagePictureCache } from "./stage_picture_cache.js";
+import { releaseStagePictureCache, cancelStagePictureRefinement } from "./stage_picture_cache.js";
 import { TOOL } from "./editor_constants.js";
 import { previewDirtyRect } from "./preview_dirty_rect.js";
 import { unionRect } from "./dirty_rect.js";
@@ -156,6 +156,8 @@ export function createEditor({
     notify: () => notify(),
     requestRender: () => requestRender(),
     getFitInsets,
+    hasDomOverlay: () => Boolean(ctrl?.annotations?.getEditingTextId?.() ||
+      ctrl?.annotations?.getEditingRegionId?.()),
   });
 
   let cachedStageWidth = stage?.clientWidth ?? 0;
@@ -369,6 +371,7 @@ export function createEditor({
       stageHeight: cachedStageHeight || stage.clientHeight,
       doc: evaluatedDoc,
       viewportTools,
+      requestRender,
       selection,
       selectedContainer: ctrl.nodesController?.getSelectedGroup?.() ?? null,
       tool: ctrl.toolsController.getTool(),
@@ -427,6 +430,7 @@ export function createEditor({
   }
 
   function requestRender() {
+    cancelStagePictureRefinement(ctx);
     if (disposed || frame) return;
     frame = requestAnimationFrame(() => {
       frame = 0;
