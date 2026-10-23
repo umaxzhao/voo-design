@@ -4,6 +4,7 @@
  */
 
 import { streamChatTurn } from "./chat_stream.js";
+import { buildDesignQualityPrompt, pickStyleKit } from "./design_quality/index.js";
 
 import { AGENT_DEFAULTS } from "./canvas_tools.js";
 
@@ -38,9 +39,13 @@ export const SYSTEM_PROMPT =
   "4/8/12/16/24/32/48/64; establish typography hierarchy (display, heading, body, caption), " +
   "consistent radius and clear contrast. Create color tokens/variables before use and bind them. " +
   "After multi-step writes, require capture_canvas, review alignment, clipping and hierarchy, then fix and capture again. " +
-  "On tool failure inspect the error, correct arguments and retry once; report unresolved failures. Keep replies short.";
+  "On tool failure inspect the error, correct arguments and retry once; report unresolved failures.\n" +
+  "7. Design quality: honor the Design quality block below — one style kit, tokens first, " +
+  "clear hierarchy, no AI-template smells.\n" +
+  "Keep replies short.";
 
 const READ_ONLY_TOOLS = new Set([
+  "lint_design",
   "describe_selection",
   "inspect_layer_tree",
   "select_layers",
@@ -106,7 +111,10 @@ export async function runAgentTurn({
   styleNote = "",
   streamStep = streamChatTurn,
 }) {
-  const system = styleNote.trim() ? `${SYSTEM_PROMPT}\n\nStyle notes from the user: ${styleNote.trim()}` : SYSTEM_PROMPT;
+  const base = styleNote.trim() ? `${SYSTEM_PROMPT}\n\nStyle notes from the user: ${styleNote.trim()}` : SYSTEM_PROMPT;
+  let qualityOff = globalThis.__VOO_DESIGN_QUALITY_OFF__ === true;
+  try { qualityOff ||= globalThis.localStorage?.getItem("voo.designQuality") === "off"; } catch {}
+  const system = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit: pickStyleKit(userText) })}`;
   const messages = [
     { role: "system", content: system },
     ...history,
