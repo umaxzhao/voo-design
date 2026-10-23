@@ -17,6 +17,7 @@ async function fixture({ omit, extra, locales = ['en-US', 'zh-CN'] } = {}) {
     'dist/LICENSE', 'dist/THIRD_PARTY_NOTICES.json',
     'dist/ort/ort-wasm-simd-threaded.wasm', 'dist/ort/ort-wasm-simd-threaded.mjs',
     'dist/ort/ort-wasm-simd-threaded.jsep.wasm', 'dist/ort/ort-wasm-simd-threaded.jsep.mjs',
+    'dist/assets/voo_engine_bg-fixture.wasm',
     'dist/fonts/inter.woff2', 'dist/fonts/zcool-kuaile.woff2',
     'dist/fonts/intel-one-mono-regular.woff2', 'dist/fonts/inter.OFL.txt',
     'node_modules/ws/package.json', 'node_modules/ws/index.js',
@@ -44,9 +45,23 @@ describe('shipped package inspection', () => {
     'dist/fonts/inter.ttf', 'dist/assets/editor.js.map', 'electron/tests/debug.js',
     'node_modules/vite/package.json', 'node_modules/js-yaml/dist/js-yaml.min.js',
     'node_modules/js-yaml/bin/js-yaml.js',
+    'node_modules/ag-psd/.v8-cache/compiled.bin',
   ])('rejects unnecessary file %s in a real ASAR', async extra => {
     const app = await fixture({ extra });
     expect(() => verifyPackage(app)).toThrow('Development files in package');
+  });
+  it.each(['dist/assets/ort-duplicate.wasm', 'dist/ort/ort-wasm-simd-threaded.asyncify.wasm'])(
+    'rejects extra WASM payload %s', async extra => {
+      const app = await fixture({ extra });
+      expect(() => verifyPackage(app)).toThrow('Unexpected WASM payload');
+    },
+  );
+  it.each([
+    { omit: 'dist/assets/voo_engine_bg-fixture.wasm' },
+    { extra: 'dist/assets/voo_engine_bg-second.wasm' },
+  ])('requires exactly one canvas engine WASM: %j', async options => {
+    const app = await fixture(options);
+    expect(() => verifyPackage(app)).toThrow('Expected exactly one native canvas engine WASM');
   });
   it.each(['dist/ort/ort-wasm-simd-threaded.jsep.wasm', 'dist/fonts/inter.woff2', 'dist/EULA.md'])(
     'rejects removal of required asset %s', async omit => {

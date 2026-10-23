@@ -176,3 +176,91 @@ Validation:
   this session's sandbox, so the screenshot uses the writable `/tmp` fallback.
 - UI and workspace/file-management implementation remain unchanged. Optional AI
   inference and other platform installers were not exercised by this Linux startup test.
+
+## Second incremental follow-up — `codex/installer-size2`
+
+Measured the current main-derived tree again on Linux x64 with Electron 43.8.0.
+The historical 101.45 MiB release is not this round's baseline; the previous
+incremental work is already present. Sizes use MiB, not decimal MB.
+
+| Artifact | Before bytes | After bytes | Before MiB | After MiB | Reduction |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| AppImage | 104,524,972 | 103,008,832 | 99.68 | 98.24 | 1.45% |
+| Entire unpacked app | 343,733,227 | 343,733,227 | 327.81 | 327.81 | 0.00% |
+| app.asar | 58,984,586 | 58,984,586 | 56.25 | 56.25 | 0.00% |
+
+The AppImage saves **1,516,140 bytes (1.45 MiB, 1.45%)**.
+SHA-256 hashes of the executable, ASAR and both locales match the baseline;
+the unpacked byte totals are unchanged.
+
+The safe remaining change is XZ's **x86 BCJ filter**. SquashFS tries branch-address
+normalization and unfiltered compression per block, then retains the smaller
+result. This is lossless container compression; it does not strip or rewrite the
+shipped executable. Keep ASAR, maximum compression, XZ's existing 1 MiB block and
+100% dictionary, and the `en-US` / `zh-CN` locale allowlist.
+
+The signing/build wrapper creates a private temporary view of electron-builder's
+checksum-verified legacy AppImage toolset and wraps only `mksquashfs`, adding
+`-Xbcj x86 -processors 2 -mem 512M`. It removes that view after the builder exits;
+the shared tool cache is never modified. Apply this only to Linux x64 XZ builds;
+directory builds, explicit alternate architectures, static-runtime toolsets,
+other compressors/platforms and explicit `APPIMAGE_TOOLS_PATH` overrides retain
+their existing behavior. The internal toolset resolver is supplied by the locked
+electron-builder dependency, so revalidate this integration on builder upgrades.
+
+Rechecked the remaining payload:
+
+- Both direct production dependencies (`ws`, `electron-updater`) are runtime
+  imports; renderer/build dependencies already live in devDependencies.
+- Maps, typings, tests, docs, source TTF copies and build-only dependencies are
+  already excluded. Package inspection now also rejects V8 cache directories.
+- Retained both ONNX WASM variants and their loaders for the current module
+  contract and CPU/WebGPU support. Neither ONNX binary has a custom/debug section
+  to strip. Retained CanvasKit and the native canvas engine. Package inspection
+  now permits exactly those four WASM binaries, including exactly one hashed
+  canvas engine binary, and rejects extra/duplicate WASM payloads.
+- Kept Chromium GPU/SwiftShader/Vulkan resources for runtime compatibility.
+  UI and workspace/file-management implementation are unchanged.
+
+### Why 80 MB is not feasible with this Electron payload
+
+Measured the 225,451,256-byte (215.01 MiB) Electron executable alone using the same
+SquashFS XZ settings: **73,404,416 bytes (70.00 MiB)** without BCJ and
+**72,355,840 bytes (69.00 MiB)** with BCJ. More decisively, compressed the entire
+`release/linux-unpacked` platform payload while excluding its whole `resources`
+directory (including VOO's ASAR), with BCJ, XZ, 1 MiB blocks, 100% dictionary and
+no fragments/xattrs: **89,878,528 bytes (85.71 MiB)**. That platform-only SquashFS
+already exceeds both 80 decimal MB and 80 MiB, before VOO's renderer, fonts,
+WASM or AppImage launcher/additional libraries. This is a measured floor for the
+retained platform files under these settings, not a universal compression limit.
+A larger cut requires changing the Electron distribution or runtime feature
+coverage, rather than removing more unused app files.
+
+### Validation for this round
+
+- Installed dependencies with `npm ci --prefer-offline`; explicitly ran Electron's
+  install script because its binary was initially absent after dependency install.
+- Baseline: `flock /tmp/voo-e2e.lock npm run dist` produced the measured artifact.
+  The new WASM inspection initially rejected the existing native engine; after
+  correcting the allowlist, `node scripts/verify-package.mjs` passed on that same
+  artifact. Baseline packaged smoke passed with zero renderer console errors.
+- Optimized: `flock /tmp/voo-e2e.lock npm run dist` passed, including package
+  inspection: 620 ASAR entries, exactly `en-US.pak` and `zh-CN.pak`, exactly four
+  expected WASM binaries. Temporary compression tools were removed after the build.
+- Six focused Vitest files passed **32 tests** with
+  `--testTimeout=60000 --maxWorkers=2 --minWorkers=1`. After adding the native
+  engine cases, the package suite passed **17 tests**, for **34 distinct tests**
+  across the final six files. Shared-host scheduling stalls caused preliminary
+  fixture timeouts; the package rerun used `--testTimeout=300000
+  --hookTimeout=300000 --maxWorkers=2 --minWorkers=1` and passed in 1.33 seconds.
+- Final `flock /tmp/voo-e2e.lock env
+  VOO_SMOKE_SCREENSHOT=/workspace/tmp/shots-installer-size2/after.png npm run
+  smoke:packaged` passed: `PACKAGED_SMOKE_OK`, exposed canvas rendered, runtime
+  updater/WebSocket imports loaded, About legal documents loaded, zero renderer
+  console errors. The first final-artifact attempt hit the outer runner's 90-second
+  timeout under heavy host load; the same artifact passed on retry with unchanged
+  smoke timeouts and assertions. Both screenshots were visually inspected.
+- Screenshots: `/workspace/tmp/shots-installer-size2/before.png` and
+  `/workspace/tmp/shots-installer-size2/after.png`.
+- Optional model inference, GPU execution and non-Linux installers were not tested.
+  The existing Vite `node:zlib` browser-externalization warning remains.
