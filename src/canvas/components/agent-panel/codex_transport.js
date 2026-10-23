@@ -165,8 +165,6 @@ export async function* streamCodexCompletion({
     if (!finished) {
       if (signal) sessions.delete(signal);
       await cancelNativeRequest(entry, failed);
-    } else if (signal) {
-      sessions.delete(signal);
     }
   }
 }
