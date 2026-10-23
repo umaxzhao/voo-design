@@ -78,7 +78,7 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "package.json",
+"package.json",
       "LICENSE",
       "EULA.md",
       "src/shared/**/*.js",

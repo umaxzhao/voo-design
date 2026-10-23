@@ -506,14 +506,36 @@ describe("Empirical Challenger: Wire Protocol & WebSocket Loopback Stress Testin
       expect(isAllowedOrigin("http://localhost:3000", allowedOrigins)).toBe(true); // localhost any port
       expect(isAllowedOrigin("http://127.0.0.1:8080", allowedOrigins)).toBe(true); // loopback any port
 
+      expect(isAllowedOrigin("null", allowedOrigins)).toBe(true);
+      expect(isAllowedOrigin("file://", allowedOrigins)).toBe(true);
+      expect(isAllowedOrigin("file:///Applications/VOO/dist/index.html", allowedOrigins)).toBe(true);
+
       // Rejected
       expect(isAllowedOrigin("https://evil-hacker.com", allowedOrigins)).toBe(false);
       expect(isAllowedOrigin("http://localhost.evil.com", allowedOrigins)).toBe(false);
       expect(isAllowedOrigin("http://127.0.0.1.attacker.io", allowedOrigins)).toBe(false);
       expect(isAllowedOrigin("https://not-voo.run", allowedOrigins)).toBe(false);
-      expect(isAllowedOrigin("javascript:void(0)", allowedOrigins)).toBe(false);
+      expect(isAllowedOrigin("javascript:void(0)", new Set(["null", "file://"]))).toBe(false);
+      expect(isAllowedOrigin("data:text/html,hello", new Set(["null"]))).toBe(false);
       expect(isAllowedOrigin("malformed-origin-string", allowedOrigins)).toBe(false);
     });
+
+    it.each(["null", "file://", "file:///Applications/VOO/dist/index.html"])(
+      "accepts Electron origin %s during a live WebSocket handshake", async (origin) => {
+        const server = await startCliBridgeServer({ port: 0 });
+        runningServers.push(server);
+        const client = new WebSocket(`ws://127.0.0.1:${server.port}`, { origin });
+        try {
+          await new Promise((resolve, reject) => {
+            client.once("open", resolve);
+            client.once("error", reject);
+          });
+          expect(client.readyState).toBe(WebSocket.OPEN);
+        } finally {
+          client.terminate();
+        }
+      },
+    );
 
     it("rejects untrusted origin during live WebSocket handshake", async () => {
       const server = await startCliBridgeServer({ port: 0 });
