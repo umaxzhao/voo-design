@@ -8,8 +8,15 @@ if [ "$TARGET" != "la" ]; then
   exit 1
 fi
 
-echo "Building editor bundle for production..."
-npm run build
+if [ "${VOO_DEPLOY_SKIP_BUILD:-0}" != "1" ]; then
+  echo "Building editor bundle for production..."
+  npm run build
+fi
+
+if [ ! -f dist/index.html ]; then
+  echo "Error: dist/index.html is missing; build the editor before deploying." >&2
+  exit 1
+fi
 
 REMOTE_HOST="la"
 REMOTE_PATH="/var/www/voo.run/editor/"
