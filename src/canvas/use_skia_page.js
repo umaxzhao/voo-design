@@ -1,3 +1,4 @@
+import { useDesignStore } from "../store/design_store.js";
 import { useEffect, useRef, useState } from "react";
 import { createSkiaHost } from "./editor/skia_host.js";
 
@@ -108,6 +109,7 @@ export function useWorkspaceSkia({
   docs = [],
   layouts = null,
   camera = null,
+  subscribeCamera = false,
   revision = 0,
   spatialIndex = null,
   resolveImageUrl = null,
@@ -147,84 +149,53 @@ export function useWorkspaceSkia({
     };
   }, [enabled, canvasRef]);
 
-  // Handle stage container resize strictly when container dimensions change
+  const latestRef = useRef(null);
+  latestRef.current = { docs, layouts, camera, revision, spatialIndex, resolveImageUrl, backgroundColor };
+  const scheduleRef = useRef(null);
+
   useEffect(() => {
     const host = hostRef.current;
-    if (!host || status !== "ready") return;
     const stage = stageRef.current;
-    if (!stage) return;
-
-    const syncSize = () => {
+    if (!host || status !== "ready" || !stage) return;
+    let frame = null;
+    const paint = () => {
+      frame = null;
+      const latest = latestRef.current;
       const dpr = window.devicePixelRatio || 1;
-      const width = stage.clientWidth;
-      const height = stage.clientHeight;
+      const width = stage.clientWidth || 1024;
+      const height = stage.clientHeight || 768;
       const last = lastDimensionsRef.current;
       if (last.width !== width || last.height !== height || last.dpr !== dpr) {
         lastDimensionsRef.current = { width, height, dpr };
         host.resize(width, height, dpr);
       }
+      const cam = (subscribeCamera ? useDesignStore.getState().editorCamera : latest.camera) ?? {};
+      const { panX = 0, panY = 0, zoom = 1 } = cam;
+      void host.draw({ ...latest, viewport: {
+        x: panX, y: panY, panX, panY, zoom, width, height, devicePixelRatio: dpr,
+      } }).catch(error => console.warn("Workspace Skia draw failed", error));
     };
+    const schedule = () => {
+      if (frame === null) frame = requestAnimationFrame(paint);
+    };
+    scheduleRef.current = schedule;
+    const unsubscribe = subscribeCamera ? useDesignStore.subscribe((state, previous) => {
+      if (state.editorCamera !== previous.editorCamera) schedule();
+    }) : null;
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(schedule) : null;
+    observer?.observe(stage);
+    schedule();
+    return () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      scheduleRef.current = null;
+      unsubscribe?.();
+      observer?.disconnect();
+    };
+  }, [status, stageRef, subscribeCamera]);
 
-    syncSize();
-
-    if (typeof ResizeObserver !== "undefined") {
-      const observer = new ResizeObserver(() => syncSize());
-      observer.observe(stage);
-      return () => observer.disconnect();
-    }
-    return undefined;
-  }, [status, stageRef]);
-
-  // Repaint on camera transform, document changes, or spatial updates
   useEffect(() => {
-    const host = hostRef.current;
-    if (!host || status !== "ready" || !docs || docs.length === 0) return;
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const width = stage.clientWidth || 1024;
-    const height = stage.clientHeight || 768;
-
-    const panX = camera?.panX || 0;
-    const panY = camera?.panY || 0;
-    const zoom = camera?.zoom || 1;
-
-    void host
-      .draw({
-        docs,
-        layouts,
-        viewport: {
-          x: panX,
-          y: panY,
-          zoom,
-          panX,
-          panY,
-          width,
-          height,
-          devicePixelRatio: dpr,
-        },
-        revision,
-        spatialIndex,
-        resolveImageUrl,
-        backgroundColor,
-      })
-      .catch((error) => {
-        console.warn("Workspace Skia draw failed", error);
-      });
-  }, [
-    status,
-    docs,
-    layouts,
-    camera?.panX,
-    camera?.panY,
-    camera?.zoom,
-    revision,
-    spatialIndex,
-    resolveImageUrl,
-    backgroundColor,
-    stageRef,
-  ]);
+    scheduleRef.current?.();
+  }, [docs, layouts, camera, revision, spatialIndex, resolveImageUrl, backgroundColor]);
 
   return { status, host: hostRef.current };
 }

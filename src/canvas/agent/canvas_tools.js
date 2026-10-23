@@ -690,8 +690,9 @@ function batchMutateLayers(args) {
   return { ok: true, count: updates.length };
 }
 
-function invalidArgs() {
-  throw Object.assign(new Error(TOOL_ERROR.INVALID_ARGS), { code: TOOL_ERROR.INVALID_ARGS });
+function invalidArgs(message = TOOL_ERROR.INVALID_ARGS) {
+  const full = message === TOOL_ERROR.INVALID_ARGS ? message : `${TOOL_ERROR.INVALID_ARGS}: ${message}`;
+  throw Object.assign(new Error(full), { code: TOOL_ERROR.INVALID_ARGS });
 }
 
 function nodeNotFound() {
@@ -700,18 +701,18 @@ function nodeNotFound() {
 
 function requireLayerId(value) {
   if (typeof value !== "string" || value.trim() === "") {
-    invalidArgs();
+    invalidArgs(`Invalid argument "layerId": expected a non-empty string, got ${JSON.stringify(value)}`);
   }
   return value;
 }
 
 function requireLayerIds(value, { min = 1 } = {}) {
   if (!Array.isArray(value) || value.length < min) {
-    invalidArgs();
+    invalidArgs(`Invalid argument "layerIds": expected an array of at least ${min} id(s), got ${JSON.stringify(value)}`);
   }
   const ids = [...new Set(value)];
   if (ids.some((id) => typeof id !== "string" || id.trim() === "")) {
-    invalidArgs();
+    invalidArgs(`Invalid argument "layerIds": expected non-empty string ids, got ${JSON.stringify(value)}`);
   }
   return ids;
 }
@@ -730,19 +731,19 @@ function createShape(args = {}) {
   const editor = requireEditor();
   const { kind, x, y, width, height, text, fill, name } = args;
   if (!["rect", "ellipse", "text"].includes(kind)) {
-    invalidArgs();
+    invalidArgs(`Invalid argument "kind": expected one of rect, ellipse, text, got ${JSON.stringify(kind)}`);
   }
   if (![x, y, width, height].every((value) => Number.isFinite(value))) {
-    invalidArgs();
+    invalidArgs(`Invalid argument "x"/"y"/"width"/"height": expected finite numbers, got ${JSON.stringify({ x, y, width, height })}`);
   }
   if (text !== undefined && typeof text !== "string") {
-    invalidArgs();
+    invalidArgs(`Invalid argument "text": expected a string, got ${JSON.stringify(text)}`);
   }
   if (fill !== undefined && typeof fill !== "string") {
-    invalidArgs();
+    invalidArgs(`Invalid argument "fill": expected a string, got ${JSON.stringify(fill)}`);
   }
   if (name !== undefined && typeof name !== "string") {
-    invalidArgs();
+    invalidArgs(`Invalid argument "name": expected a string, got ${JSON.stringify(name)}`);
   }
 
   let node;
@@ -753,7 +754,7 @@ function createShape(args = {}) {
   } else {
     node = editor.addTextAt?.({ x, y }, text ?? "");
   }
-  if (!node?.id) invalidArgs();
+  if (!node?.id) invalidArgs(`Invalid argument: failed to create shape node`);
 
   const patch = { width, height };
   if (name !== undefined) patch.name = name;
@@ -805,7 +806,7 @@ function groupLayers(args = {}) {
   const layerIds = requireLayerIds(args.layerIds, { min: 2 });
   layerIds.forEach((layerId) => requireNode(editor, layerId));
   if (args.name !== undefined && typeof args.name !== "string") {
-    invalidArgs();
+    invalidArgs(`Invalid argument "name": expected a string, got ${JSON.stringify(args.name)}`);
   }
 
   const docBefore = editor.getDoc?.();
@@ -845,12 +846,12 @@ function reorderLayer(args = {}) {
   if (typeof position === "string") {
     position = position.toLowerCase();
     if (position !== "front" && position !== "back") {
-      invalidArgs();
+      invalidArgs(`Invalid argument "position": expected "front", "back", or a number, got ${JSON.stringify(args.position)}`);
     }
   } else if (typeof position === "number" && Number.isFinite(position)) {
     position = Math.round(position);
   } else {
-    invalidArgs();
+    invalidArgs(`Invalid argument "position": expected "front", "back", or a finite number, got ${JSON.stringify(args.position)}`);
   }
 
   if (position === "front") {
@@ -869,7 +870,7 @@ function renameLayer(args = {}) {
   const layerId = requireLayerId(args.layerId);
   requireNode(editor, layerId);
   if (typeof args.name !== "string" || args.name.trim() === "") {
-    invalidArgs();
+    invalidArgs(`Invalid argument "name": expected a non-empty string, got ${JSON.stringify(args.name)}`);
   }
 
   editor.updateNode?.(layerId, { name: args.name });

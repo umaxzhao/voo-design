@@ -18,10 +18,12 @@
     "electron:build": "npm run copy:ort && npm run copy:canvaskit && vite build && electron-builder --dir",
     "pretest": "npm run copy:canvaskit && node scripts/ensure-dist.mjs",
     "test": "vitest run",
+    "bench:canvas": "CANVAS_PERF_WRITE=1 vitest run tests/unit/canvas_perf_benchmark.test.js",
     "build:extension": "node scripts/build-extension.mjs",
     "test:watch": "vitest",
     "lint:design": "node scripts/check-design.mjs",
-    "bridge": "node scripts/cli-bridge.mjs"
+    "bridge": "node scripts/cli-bridge.mjs",
+    "test:e2e": "node tests/e2e/agent_tools.e2e.mjs"
   },
   "dependencies": {
     "@voo/canvas-core": "file:vendor/voo-canvas-core",
@@ -80,5 +82,8 @@
         "dir"
       ]
     }
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true
   }
 }

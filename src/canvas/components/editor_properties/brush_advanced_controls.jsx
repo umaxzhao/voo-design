@@ -4,7 +4,7 @@ import PropTypes from "prop-types";
 import { useState } from "react";
 import { TOOL } from "../../editor/editor_constants.js";
 import { useI18n } from "../../use_i18n.js";
-import ScrubField from "../scrub_field.jsx";
+import ToolSliderField from "./tool_slider_field.jsx";
 import FlatSelect from "../flat_select.jsx";
 
 export const BRUSH_BLEND_OPTIONS = [
@@ -69,10 +69,10 @@ export default function BrushAdvancedControls({
               role="switch"
               aria-checked={pressureSize}
               onClick={() => onPressureSize?.(!pressureSize)}
-              className={`flex w-full items-center justify-between rounded-xl px-3 py-2 transition-all ${
+              className={`flex h-7 w-full items-center justify-between rounded-xl px-2.5 transition-all ${
                 pressureSize
-                  ? "bg-[#2a2a2a] text-white ring-1 ring-white/20"
-                  : "bg-[#222222] text-neutral-400 hover:bg-[#282828] hover:text-neutral-200"
+                  ? "bg-neutral-800 text-white ring-1 ring-[#a7ffd4]/40"
+                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-800/80 hover:text-neutral-200"
               }`}
             >
               <div className="flex items-center gap-2">
@@ -112,10 +112,10 @@ export default function BrushAdvancedControls({
               role="switch"
               aria-checked={pressureOpacity}
               onClick={() => onPressureOpacity?.(!pressureOpacity)}
-              className={`flex w-full items-center justify-between rounded-xl px-3 py-2 transition-all ${
+              className={`flex h-7 w-full items-center justify-between rounded-xl px-2.5 transition-all ${
                 pressureOpacity
-                  ? "bg-[#2a2a2a] text-white ring-1 ring-white/20"
-                  : "bg-[#222222] text-neutral-400 hover:bg-[#282828] hover:text-neutral-200"
+                  ? "bg-neutral-800 text-white ring-1 ring-[#a7ffd4]/40"
+                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-800/80 hover:text-neutral-200"
               }`}
             >
               <div className="flex items-center gap-2">
@@ -169,12 +169,13 @@ export default function BrushAdvancedControls({
       ) : null}
 
       {isNormalBrush && advancedBrushOpen ? (
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="space-y-2.5">
           {isNormalBrush && onBrushRoundness ? (
-            <ScrubField
-              prefix={
+            <ToolSliderField
+              label={t("editor.brushRoundness")}
+              icon={
                 <svg
-                  className="w-3.5 h-3.5 text-neutral-400"
+                  className="h-3 w-3"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -190,14 +191,14 @@ export default function BrushAdvancedControls({
               onValueChange={(val) => onBrushRoundness(val / 100)}
               ariaLabel={t("editor.brushRoundness")}
               scrubHint={t("editor.props.dragToAdjust")}
-              showRange
             />
           ) : null}
           {isNormalBrush && onBrushAngle ? (
-            <ScrubField
-              prefix={
+            <ToolSliderField
+              label={t("editor.brushAngle")}
+              icon={
                 <svg
-                  className="w-3.5 h-3.5 text-neutral-400"
+                  className="h-3 w-3"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -214,7 +215,6 @@ export default function BrushAdvancedControls({
               onValueChange={(val) => onBrushAngle(val % 360)}
               ariaLabel={t("editor.brushAngle")}
               scrubHint={t("editor.props.dragToAdjust")}
-              showRange
             />
           ) : null}
           {isNormalBrush && onBrushBlendMode ? (
@@ -228,7 +228,7 @@ export default function BrushAdvancedControls({
                   label: t(labelKey),
                 }),
               )}
-              triggerClassName="!h-8 !w-full !rounded-xl !bg-[#222222] !pl-3 !pr-7 !py-1.5 !text-[11px] !font-mono !tabular-nums !text-neutral-100 hover:!bg-[#2a2a2a] capitalize"
+              triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !pl-2.5 !pr-7 !text-[10px] !font-mono !tabular-nums !text-neutral-100 hover:!bg-neutral-800/80 capitalize"
               widthClass="w-44"
             />
           ) : null}
@@ -238,7 +238,7 @@ export default function BrushAdvancedControls({
       {tool === TOOL.HEALING &&
       healingMode === "clone" &&
       onCloneAligned ? (
-        <label className="mt-1.5 flex items-center gap-2 rounded-xl bg-[#222222] px-3 py-1.5 cursor-pointer hover:bg-[#2a2a2a] transition-colors">
+        <label className="mt-1.5 flex h-7 cursor-pointer items-center gap-2 rounded-xl bg-neutral-800 px-2.5 transition-colors hover:bg-neutral-800/80">
           <input
             type="checkbox"
             checked={cloneAligned}

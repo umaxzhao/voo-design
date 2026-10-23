@@ -25,6 +25,9 @@ import {
 } from "./pixel_filter.js";
 import {
   applyBoxBlur,
+  applyClarity,
+  applyHighPass,
+  applyMotionBlur,
   applySharpen,
   cpuBlurRadius,
   scaledRadius,
@@ -214,5 +217,25 @@ export function applyAdjustmentKernels(data, width, height, naturalWidth, tone) 
   }
   if (tone.sharpen > 0) {
     applySharpen(data, width, height, tone.sharpen / 100);
+  }
+  // High Pass, Clarity, and Motion Blur are spatial residuals / directional
+  // blurs with no GPU twin (like the pixel filters above), so they run last
+  // on the CPU path. Each takes the natural width so its radius scales the
+  // same way the isotropic blur's does.
+  if (tone.highPass > 0) {
+    applyHighPass(data, width, height, tone.highPass, naturalWidth ?? width);
+  }
+  if (tone.clarity) {
+    applyClarity(data, width, height, tone.clarity, naturalWidth ?? width);
+  }
+  if (tone.motionBlur > 0) {
+    applyMotionBlur(
+      data,
+      width,
+      height,
+      tone.motionBlur,
+      tone.motionBlurAngle ?? 0,
+      naturalWidth ?? width,
+    );
   }
 }

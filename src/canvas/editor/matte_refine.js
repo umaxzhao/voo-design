@@ -15,24 +15,25 @@
  * So the refinement here is range-aware rather than shape-aware: alpha is
  * moved only where the picture's own colours say an edge is.
  *
- * **Colour unmixing is deliberately absent.** A pixel the model called "half
- * subject" still carries the colour it had in the original picture, and on a
- * new background that half reads as a fringe of the old one — but reversing
- * that needs the picture's RGBA beside the matte, and what this module is
- * handed is a matte whose RGB is white by construction (`maskToRgba` in
- * `matting_transform.js`): the old background's colour is not in the buffer to
- * solve for. The one stage that does hold both is `applyMatte`'s render-time
- * composite (`cpu_adjustments_matte.js`), which redraws on every pan and zoom
- * and cannot pay for a float-plane pass over every pixel. A `defringe()`
- * written for that job had no caller anywhere in `src/`, so it was removed
- * rather than left as tested-but-unreachable debt; a cutout edge therefore
- * keeps whatever fringe the model left on it. Do not re-add one without
- * naming the stage that will call it.
+ * **Colour unmixing happens after the matte, not here.** A pixel the model
+ * called "half subject" still carries the colour it had in the original
+ * picture, and on a new background that half reads as a fringe of the old one
+ * — but reversing that needs the picture's RGBA beside the matte, and what
+ * this module is handed is a matte whose RGB is white by construction
+ * (`maskToRgba` in `matting_transform.js`): the old background's colour is not
+ * in the buffer to solve for. `defringeRgba` (`matte_defringe.js`) does that
+ * work where both are available: in `applyMatte`'s render-time composite
+ * (`cpu_adjustments_matte.js`), after `destination-in` and before the result
+ * is cached. Because that composite is cached until the bitmap or matte
+ * changes, the unmix is paid on cache misses rather than on every pan and
+ * zoom.
  *
  * All of it is arithmetic over typed arrays — no DOM, no canvas, no ONNX. A
  * refiner that could only be judged through a rendered image is a refiner
  * whose bugs are invisible; these functions run under `node --test`.
  */
+
+export { defringeRgba, MATTE_DEFRINGE_DEFAULTS } from "./matte_defringe.js";
 
 /**
  * Defaults, tuned for hair and fur rather than for hard-edged objects.
@@ -336,11 +337,9 @@ export function featherMatte(alpha, width, height, options = {}) {
 
 /*
  * There is no combined "refine then feather" entry point either, and its
- * absence is deliberate. `refineMatteResult` used to be one — refining,
- * feathering and defringing a picture in a single call — but its only caller
- * was the defringe it no longer has, and `local_matting.js` cannot use a
- * combined call anyway: it has to be able to skip the refinement on a picture
- * too large for it while still feathering. Both passes are exported and the
- * one production caller sequences them, so a wrapper here would be an export
- * nothing calls.
+ * absence is deliberate. `local_matting.js` cannot use one: it has to be able
+ * to skip the refinement on a picture too large for it while still feathering.
+ * Both passes are exported and that caller sequences them, and defringing is
+ * not part of this sequence at all — it belongs after compositing, in
+ * `applyMatte` — so a wrapper here would be an export nothing calls.
  */

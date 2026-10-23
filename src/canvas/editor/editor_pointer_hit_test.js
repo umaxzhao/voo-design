@@ -1,3 +1,4 @@
+import { orderedCandidates } from "./hit_test_candidates.js";
 /**
  * Hit testing helpers for pointer gestures on the canvas editor stage.
  */
@@ -188,8 +189,47 @@ export function createPointerHitTester({ api, stage: _stage, screenPoint }) {
 
   /**
    * The topmost image node under a document-space point.
+   *
+   * Uses the document's R-tree spatial index when one is available, so a
+   * 10k-node page costs a point query plus the few overlapping images instead
+   * of a scan of every node. Candidates are still tested topmost-first, and
+   * each one is confirmed with the exact local-space bounds test the linear
+   * scan used, so results are identical with and without the index.
    */
   const imageAt = (doc, point) => {
+    const index =
+      (typeof api.getSpatialIndex === "function" && api.getSpatialIndex()) ||
+      doc.spatialIndex ||
+      doc._spatialIndex;
+
+    if (index?.pointQuery) {
+      const zoom = api.getViewport?.()?.zoom ?? 1;
+      const slop = Math.max(1, 24 / Math.max(0.1, zoom));
+      const candidates = index.pointQuery(point, slop);
+      if (candidates.length === 0) return null;
+      for (const node of orderedCandidates(doc.nodes, candidates)) {
+        if (
+          node.visible === false ||
+          node.locked ||
+          node.lockImagePixels ||
+          node.kind !== NODE_KIND.IMAGE
+        ) {
+          continue;
+        }
+        const local = toNodeLocal(node, point);
+        if (
+          local.x >= 0 &&
+          local.x <= node.width &&
+          local.y >= 0 &&
+          local.y <= node.height
+        ) {
+          if (node.paint === true && !api.isPaintOpaqueAt(node, point)) continue;
+          return node;
+        }
+      }
+      return null;
+    }
+
     for (let index = doc.nodes.length - 1; index >= 0; index -= 1) {
       const node = doc.nodes[index];
       if (

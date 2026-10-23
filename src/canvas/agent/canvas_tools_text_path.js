@@ -6,8 +6,9 @@ const TOOL_ERROR = Object.freeze({
   INVALID_ARGS: "agentInvalidArgs",
 });
 
-function invalidArgs() {
-  throw Object.assign(new Error(TOOL_ERROR.INVALID_ARGS), {
+function invalidArgs(message = TOOL_ERROR.INVALID_ARGS) {
+  const full = message === TOOL_ERROR.INVALID_ARGS ? message : `${TOOL_ERROR.INVALID_ARGS}: ${message}`;
+  throw Object.assign(new Error(full), {
     code: TOOL_ERROR.INVALID_ARGS,
   });
 }
@@ -28,14 +29,18 @@ function requireEditor() {
   return editor;
 }
 
-function requireId(value) {
-  if (typeof value !== "string" || value.trim() === "") invalidArgs();
+function requireId(value, name = "layerId") {
+  if (typeof value !== "string" || value.trim() === "") {
+    invalidArgs(`Invalid argument "${name}": expected a non-empty string, got ${JSON.stringify(value)}`);
+  }
   return value;
 }
 
 function getDocument(editor) {
   const doc = editor.getDocument?.() ?? editor.getDoc?.() ?? null;
-  if (!doc || !Array.isArray(doc.nodes)) invalidArgs();
+  if (!doc || !Array.isArray(doc.nodes)) {
+    invalidArgs("The editor does not expose a document with a nodes array");
+  }
   return doc;
 }
 
@@ -79,7 +84,7 @@ function commitDocument(editor, next, message) {
     editor.requestRender?.();
     return true;
   }
-  invalidArgs();
+  invalidArgs("The editor cannot commit document changes");
 }
 
 function cloneAnchor(anchor) {
@@ -117,9 +122,9 @@ function getNodeText(node) {
 function applyTextRangeStyleToNode(node, start, end, style) {
   const text = getNodeText(node);
   const length = text.length;
-  if (!Number.isFinite(start) || !Number.isFinite(end)) invalidArgs();
-  if (!Number.isInteger(start) || !Number.isInteger(end)) invalidArgs();
-  if (start < 0 || end > length || start >= end) invalidArgs();
+  if (!Number.isFinite(start) || !Number.isFinite(end)) invalidArgs(`Invalid argument "start"/"end": expected finite numbers`);
+  if (!Number.isInteger(start) || !Number.isInteger(end)) invalidArgs(`Invalid argument "start"/"end": expected integers`);
+  if (start < 0 || end > length || start >= end) invalidArgs(`Invalid argument "start"/"end": expected 0 <= start < end <= ${length}`);
   const nextStyle = cloneStyle(style);
 
   const existing = Array.isArray(node.textRuns) ? node.textRuns : [];
@@ -211,11 +216,12 @@ function setTextRangeStyle(args = {}) {
   const node = requireNode(editor, layerId);
   const style = args.style;
   if (style === null || typeof style !== "object" || Array.isArray(style)) {
-    invalidArgs();
+    invalidArgs(`Invalid argument "style": expected a plain object, got ${JSON.stringify(style)}`);
   }
   const start = Number(args.start);
   const end = Number(args.end);
-  if (!Number.isFinite(start) || !Number.isFinite(end)) invalidArgs();
+  if (!Number.isFinite(start) || !Number.isFinite(end)) invalidArgs(`Invalid argument "start"/"end": expected finite numbers, got start=${JSON.stringify(args.start)}, end=${JSON.stringify(args.end)}`);
+  if (!Number.isInteger(start) || !Number.isInteger(end)) invalidArgs(`Invalid argument "start"/"end": expected integers, got start=${JSON.stringify(args.start)}, end=${JSON.stringify(args.end)}`);
 
   const doc = getDocument(editor);
   const textRuns = applyTextRangeStyleToNode(node, start, end, style);
@@ -244,7 +250,7 @@ function editPathNodes(args = {}) {
   const editor = requireEditor();
   const layerId = requireId(args.layerId);
   const ops = args.ops;
-  if (!Array.isArray(ops)) invalidArgs();
+  if (!Array.isArray(ops)) invalidArgs(`Invalid argument "ops": expected an array, got ${JSON.stringify(ops)}`);
   const doc = getDocument(editor);
   const node = requireNode(editor, layerId);
   const points = Array.isArray(node.points)
@@ -252,13 +258,13 @@ function editPathNodes(args = {}) {
     : [];
 
   for (const op of ops) {
-    if (!op || typeof op !== "object") invalidArgs();
+    if (!op || typeof op !== "object") invalidArgs(`Invalid argument "ops[]": expected an object, got ${JSON.stringify(op)}`);
     const kind = op.op;
     switch (kind) {
       case "move": {
         const index = Number(op.index);
         if (!Number.isInteger(index) || index < 0 || index >= points.length) {
-          invalidArgs();
+          invalidArgs(`Invalid argument "index": expected integer in [0, ${points.length}), got ${JSON.stringify(op.index)}`);
         }
         const point = points[index];
         if (op.point && typeof op.point === "object") {
@@ -266,10 +272,17 @@ function editPathNodes(args = {}) {
           if (Number.isFinite(next.x)) point.x = next.x;
           if (Number.isFinite(next.y)) point.y = next.y;
         } else {
-          if (Number.isFinite(Number(op.x))) point.x = Number(op.x);
-          if (Number.isFinite(Number(op.y))) point.y = Number(op.y);
-          if (Number.isFinite(Number(op.dx))) point.x += Number(op.dx);
-          if (Number.isFinite(Number(op.dy))) point.y += Number(op.dy);
+          const hasX = Number.isFinite(Number(op.x));
+          const hasY = Number.isFinite(Number(op.y));
+          const hasDx = Number.isFinite(Number(op.dx));
+          const hasDy = Number.isFinite(Number(op.dy));
+          if (!hasX && !hasY && !hasDx && !hasDy) {
+            invalidArgs(`Invalid argument "ops[].x"/"ops[].y"/"ops[].dx"/"ops[].dy": move needs at least one finite coordinate or delta, got ${JSON.stringify(op)}`);
+          }
+          if (hasX) point.x = Number(op.x);
+          if (hasY) point.y = Number(op.y);
+          if (hasDx) point.x += Number(op.dx);
+          if (hasDy) point.y += Number(op.dy);
         }
         break;
       }
@@ -279,9 +292,12 @@ function editPathNodes(args = {}) {
         if (index === undefined) index = points.length;
         index = Number(index);
         if (!Number.isInteger(index) || index < 0 || index > points.length) {
-          invalidArgs();
+          invalidArgs(`Invalid argument "index": expected integer in [0, ${points.length}], got ${JSON.stringify(op.index)}`);
         }
         const anchor = normalizeAnchorFromOp(op);
+        if (!op.point && (!Number.isFinite(Number(op.x)) || !Number.isFinite(Number(op.y)))) {
+          invalidArgs(`Invalid argument "ops[].x"/"ops[].y": insert needs finite coordinates or a point object, got ${JSON.stringify(op)}`);
+        }
         points.splice(index, 0, anchor);
         break;
       }
@@ -293,14 +309,14 @@ function editPathNodes(args = {}) {
             .sort((a, b) => b - a);
           for (const index of indices) {
             if (!Number.isInteger(index) || index < 0 || index >= points.length) {
-              invalidArgs();
+              invalidArgs(`Invalid argument "indices": expected integers in [0, ${points.length}), got ${JSON.stringify(index)}`);
             }
             points.splice(index, 1);
           }
         } else {
           const index = Number(op.index);
           if (!Number.isInteger(index) || index < 0 || index >= points.length) {
-            invalidArgs();
+            invalidArgs(`Invalid argument "index": expected integer in [0, ${points.length}), got ${JSON.stringify(op.index)}`);
           }
           points.splice(index, 1);
         }
@@ -309,9 +325,15 @@ function editPathNodes(args = {}) {
       case "setHandles": {
         const index = Number(op.index);
         if (!Number.isInteger(index) || index < 0 || index >= points.length) {
-          invalidArgs();
+          invalidArgs(`Invalid argument "index": expected integer in [0, ${points.length}), got ${JSON.stringify(op.index)}`);
         }
         const point = points[index];
+        if (op.handles === undefined && op.in === undefined && op.out === undefined) {
+          invalidArgs(`Invalid argument "ops[].handles": setHandles needs a handles object or in/out values, got ${JSON.stringify(op)}`);
+        }
+        if (op.handles && typeof op.handles !== "object") {
+          invalidArgs(`Invalid argument "ops[].handles": expected a plain object, got ${JSON.stringify(op.handles)}`);
+        }
         if (op.handles && typeof op.handles === "object") {
           if (op.handles.in !== undefined) {
             point.in = Array.isArray(op.handles.in)
@@ -335,16 +357,19 @@ function editPathNodes(args = {}) {
       case "setType": {
         const index = Number(op.index);
         if (!Number.isInteger(index) || index < 0 || index >= points.length) {
-          invalidArgs();
+          invalidArgs(`Invalid argument "index": expected integer in [0, ${points.length}), got ${JSON.stringify(op.index)}`);
         }
         const point = points[index];
+        if (op.type === undefined && op.close === undefined && op.value === undefined) {
+          invalidArgs(`Invalid argument "ops[].type"/"ops[].close"/"ops[].value": setType needs one of them, got ${JSON.stringify(op)}`);
+        }
         if (op.type !== undefined) point.type = op.type;
         if (op.close !== undefined) point.close = Boolean(op.close);
         if (op.value !== undefined) point.value = op.value;
         break;
       }
       default:
-        invalidArgs();
+        invalidArgs(`Invalid argument "op": expected one of move, insert, add, delete, remove, setHandles, setType, got ${JSON.stringify(op.op)}`);
     }
   }
 
@@ -365,14 +390,19 @@ export const TEXT_PATH_TOOL_SCHEMAS = Object.freeze([
     function: {
       name: "set_text_range_style",
       description:
-        "Apply a style to a character range of a text layer, splitting and merging text runs.",
+        "Apply a style to a character range [start, end) of a text layer, splitting and merging " +
+        "text runs. start/end are integer character offsets with 0 <= start < end <= text length. " +
+        "style is a partial typography object, e.g. { fontWeight: 'bold', color: '#ff0000' }.",
       parameters: {
         type: "object",
         properties: {
-          layerId: { type: "string" },
-          start: { type: "number" },
-          end: { type: "number" },
-          style: { type: "object" },
+          layerId: { type: "string", description: "Text layer id." },
+          start: { type: "number", description: "First character offset (inclusive)." },
+          end: { type: "number", description: "End character offset (exclusive)." },
+          style: {
+            type: "object",
+            description: "Partial text style applied to the range, e.g. { fontWeight, fontSize, color }.",
+          },
         },
         required: ["layerId", "start", "end", "style"],
       },
@@ -382,11 +412,13 @@ export const TEXT_PATH_TOOL_SCHEMAS = Object.freeze([
     type: "function",
     function: {
       name: "get_path_nodes",
-      description: "Read a path layer's anchors and handles.",
+      description:
+        "Read a path layer's anchors and handles. Each point has x, y plus optional in/out " +
+        "handle arrays ([dx, dy]) and close/type flags.",
       parameters: {
         type: "object",
         properties: {
-          layerId: { type: "string" },
+          layerId: { type: "string", description: "Path layer id." },
         },
         required: ["layerId"],
       },
@@ -396,32 +428,54 @@ export const TEXT_PATH_TOOL_SCHEMAS = Object.freeze([
     type: "function",
     function: {
       name: "edit_path_nodes",
-      description: "Edit a path layer's anchors and handles with a list of operations.",
+      description:
+        "Edit a path layer's anchors and handles with a list of operations applied in order. " +
+        "move uses index plus x/y (absolute) or dx/dy (delta); insert/add takes index and x/y " +
+        "or point; delete/remove takes index or indices; setHandles takes index and handles " +
+        "{ in?, out? } or top-level in/out; setType takes index and type/close/value.",
       parameters: {
         type: "object",
         properties: {
-          layerId: { type: "string" },
+          layerId: { type: "string", description: "Path layer id." },
           ops: {
             type: "array",
+            description: "Operations applied in order.",
             items: {
               type: "object",
               properties: {
                 op: {
                   type: "string",
-                  enum: ["move", "insert", "delete", "setHandles", "setType"],
+                  enum: ["move", "insert", "add", "delete", "remove", "setHandles", "setType"],
+                  description: "Operation kind.",
                 },
-                index: { type: "number" },
-                indices: { type: "array", items: { type: "number" } },
-                x: { type: "number" },
-                y: { type: "number" },
-                dx: { type: "number" },
-                dy: { type: "number" },
-                point: { type: "object" },
-                in: {},
-                out: {},
-                handles: { type: "object" },
-                type: {},
-                close: { type: "boolean" },
+                index: { type: "number", description: "Zero-based anchor index." },
+                indices: {
+                  type: "array",
+                  items: { type: "number" },
+                  description: "Anchor indices for delete/remove.",
+                },
+                x: { type: "number", description: "Absolute x or new anchor x." },
+                y: { type: "number", description: "Absolute y or new anchor y." },
+                dx: { type: "number", description: "Relative x delta for move." },
+                dy: { type: "number", description: "Relative y delta for move." },
+                point: {
+                  type: "object",
+                  description: "Full anchor object for move/insert, e.g. { x, y, in?, out?, close? }.",
+                },
+                in: {
+                  description: "Incoming bezier handle as [dx, dy] (or null).",
+                  anyOf: [{ type: "array", items: { type: "number" } }, { type: "null" }],
+                },
+                out: {
+                  description: "Outgoing bezier handle as [dx, dy] (or null).",
+                  anyOf: [{ type: "array", items: { type: "number" } }, { type: "null" }],
+                },
+                handles: {
+                  type: "object",
+                  description: "Handle patch for setHandles: { in?, out? }.",
+                },
+                type: { description: "Anchor type for setType." },
+                close: { type: "boolean", description: "Close/open flag for setType." },
               },
               required: ["op"],
             },
