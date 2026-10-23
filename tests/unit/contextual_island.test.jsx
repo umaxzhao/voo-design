@@ -264,7 +264,7 @@ describe("Contextual Island & Agent Dispatch (Pen App Style)", () => {
       expect(html).toContain("bg-neutral-900/95");
       expect(html).toContain("border-white/10");
       expect(html).toContain("shadow-pop");
-      expect(html).toContain('data-testid="editor-taskbar-ai-repaint"');
+      expect(html).toContain('data-testid="editor-taskbar-ai-sparkle"');
       expect(html).toContain('data-testid="editor-taskbar-ai-input"');
     });
 
@@ -275,17 +275,17 @@ describe("Contextual Island & Agent Dispatch (Pen App Style)", () => {
       expect(html).toBe("");
     });
 
-    it("renders contextual image action buttons: Remove BG, Inpaint, Repaint, Upscale", () => {
+    it("renders compact image editing actions and collapsed agent", () => {
       const node = { id: "img-1", kind: "image", name: "Photo" };
       const html = renderToStaticMarkup(
         <EditorContextualTaskBar selected={node} />
       );
 
-      expect(html).toContain('data-testid="editor-taskbar-ai-image-actions"');
+      expect(html).toContain('data-testid="editor-taskbar-image-actions"');
       expect(html).toContain('data-testid="editor-taskbar-ai-remove-bg"');
-      expect(html).toContain('data-testid="editor-taskbar-ai-inpaint"');
-      expect(html).toContain('data-testid="editor-taskbar-ai-repaint"');
-      expect(html).toContain('data-testid="editor-taskbar-ai-upscale"');
+      expect(html).toContain('data-testid="editor-taskbar-crop"');
+      expect(html).toContain('data-testid="editor-taskbar-ai-sparkle"');
+      expect(html).toContain('data-testid="editor-taskbar-replace"');
     });
 
     it("renders contextual frame action buttons and AI sparkle", () => {

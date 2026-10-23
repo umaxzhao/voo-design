@@ -61,8 +61,8 @@ describe("HD Upscale Models & Taskbar Integration", () => {
     });
   });
 
-  describe("Tier 3: Contextual TaskBar Integration next to Matting", () => {
-    it("renders HD upscale button right beside remove background button for single image", () => {
+  describe("Tier 3: Contextual TaskBar Integration (compact face + More)", () => {
+    it("keeps remove-bg on the face and parks HD upscale under More for single image", () => {
       const dummyEngine = {
         getSelected: () => ({ id: "img-1", kind: "image" }),
         getDocument: () => ({
@@ -80,16 +80,16 @@ describe("HD Upscale Models & Taskbar Integration", () => {
         />
       );
 
-      // Verify both matting (remove background) and upscale buttons are present
+      // Compact face: matting + more (upscale lives inside the More AI menu)
       expect(html).toContain("editor.taskbar.matting");
-      expect(html).toContain("editor.upscale.button");
+      expect(html).toContain('data-testid="editor-taskbar-more"');
+      expect(html).toContain('data-testid="editor-taskbar-ai-remove-bg"');
+      expect(html).not.toContain("editor.upscale.button");
 
-      // Verify upscale appears closely following matting
-      const mattingIdx = html.indexOf("editor.taskbar.matting");
-      const upscaleIdx = html.indexOf("editor.upscale.button");
-      expect(mattingIdx).toBeGreaterThan(-1);
-      expect(upscaleIdx).toBeGreaterThan(-1);
-      expect(upscaleIdx).toBeGreaterThan(mattingIdx);
+      const menu = renderToStaticMarkup(
+        <EditorUpscaleButton onUpscale={vi.fn()} busy={false} />
+      );
+      expect(menu).toContain("editor.upscale.button");
     });
   });
 });
