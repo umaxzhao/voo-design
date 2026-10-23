@@ -1,3 +1,6 @@
+import { buildExtendedPaletteActions } from "../commands/palette_actions.js";
+import { exportTargetName } from "../editor/export_filename.js";
+import { setLocale } from "../../shared/i18n.js";
 import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
 import {
   consumeImagePublication,
@@ -65,6 +68,7 @@ const EditorFindReplace = lazy(() => import("./editor_find_replace.jsx"));
 const ShortcutReferenceModal = lazy(() => import("./shortcut_reference_modal.jsx"));
 const SvgEditModal = lazy(() => import("./SvgEditModal.jsx"));
 import { DESIGN_SHORTCUT_GROUPS } from "../../shared/editor-shortcut-catalog.js";
+import { useShowRulers } from "../use_show_rulers.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import {
   addGuide,
@@ -170,7 +174,6 @@ const FREE_COLUMNS = 3;
  * Persisted view-aid keys. The pointer/snapping modules read the same keys
  * synchronously, so a toggle here changes the very next drag.
  */
-const SHOW_RULERS_SETTING = "voo.editor.showRulers";
 const SHOW_GUIDES_SETTING = "voo.editor.showGuides";
 const SNAP_TO_GRID_SETTING = "voo.editor.snapToGrid";
 /** History label for every guide edit (one entry per completed gesture). */
@@ -233,6 +236,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
 
   const nodeIds = useDesignStore((state) => state.editingNodeIds);
   const focusedId = useDesignStore((state) => state.editingNodeId);
+  const pendingArtboardFitId = useDesignStore((state) => state.pendingArtboardFitId);
   const nodes = useDesignStore((state) => state.nodes);
   const presentationId = useDesignStore(
     (state) => state.editingPresentationId,
@@ -303,8 +307,18 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
 
   /** nodeId -> live engine, and nodeId -> what an evicted page left behind. */
   const enginesRef = useRef(new Map());
-  const pendingCanvasSelectionRef = useRef(new PendingCanvasSelectionManager());
   const snapshotsRef = useRef(new Map());
+  useEffect(() => {
+    const reader = (id) => {
+      const live = enginesRef.current.get(id);
+      return live?.ready ? live.engine.serialise() : snapshotsRef.current.get(id)?.doc;
+    };
+    useDesignStore.setState({ editorPageDocumentReader: reader });
+    return () => {
+      if (useDesignStore.getState().editorPageDocumentReader === reader) useDesignStore.setState({ editorPageDocumentReader: null });
+    };
+  }, []);
+  const pendingCanvasSelectionRef = useRef(new PendingCanvasSelectionManager());
   const presentation = usePresentationEditor({
     ownerId: presentationId,
     focusedId,
@@ -349,15 +363,14 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const [selectedInstanceChild, setSelectedInstanceChild] = useState(null);
   // Rulers/guides/snap-to-grid view aids. Persisted, not document state: they
   // describe how the user looks at a canvas, not what the canvas contains.
-  const [showRulers, setShowRulers] = useState(
-    () => getSetting(SHOW_RULERS_SETTING) !== false,
-  );
+  const { showRulers, toggleRulers } = useShowRulers();
   const [showGuides, setShowGuides] = useState(
     () => getSetting(SHOW_GUIDES_SETTING) !== false,
   );
   const [snapToGrid, setSnapToGrid] = useState(
     () => getSetting(SNAP_TO_GRID_SETTING) === true,
   );
+  const lastGridSizeRef = useRef(32);
   const [selectedGuideId, setSelectedGuideId] = useState(null);
   /** Document snapshot taken when a guide drag begins; the whole drag is one undo. */
   const guideDragOriginRef = useRef(null);
@@ -483,7 +496,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
    */
   const handleBeforeDispose = useCallback(async (nodeId, engine, ready) => {
     if (!ready) return;
-
 
     const writeSnapshot = (png) => {
       const dirty = engine.isDirty();
@@ -761,14 +773,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   useEffect(() => {
     if (!commentsOpen) setCommentMode(false);
   }, [commentsOpen]);
-
-  const toggleRulers = useCallback(() => {
-    setShowRulers((previous) => {
-      const next = !previous;
-      void setSetting(SHOW_RULERS_SETTING, next);
-      return next;
-    });
-  }, []);
 
   const toggleGuides = useCallback(() => {
     setShowGuides((previous) => {
@@ -2093,7 +2097,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       if (nodeIds.length === 1 && refId && engineState?.ready) {
         void handleBeforeDispose(refId, engineState.engine, true);
       }
-      return addEditorPage(refId, customSize);
+      return addEditorPage({ ...customSize });
     },
     [focusedId, nodeIds, addEditorPage, handleBeforeDispose],
   );
@@ -2360,6 +2364,14 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     [stageCentre, setEditorCamera, focusedId, layoutById],
   );
 
+  const toggleGrid = useCallback(() => {
+    const next = engine?.getGrid?.() ? null : { enabled: true, size: 32 };
+    if (multi) {
+      for (const entry of enginesRef.current.values()) entry.engine?.setGrid?.(next);
+    } else engine?.setGrid?.(next);
+    bump();
+  }, [engine, multi]);
+
   /**
    * Non-command-table actions the palette exposes: view toggles, zoom, panel
    * openers. Handlers are closures over the live editor state, so a palette row
@@ -2367,6 +2379,15 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
    */
   const paletteActions = useMemo(
     () => [
+      ...buildExtendedPaletteActions({
+        engine,
+        onTool: runTool,
+        onCreateComponent: handleCreateComponent,
+        onToggleGrid: toggleGrid,
+        onOpenAgent: () =>
+          window.dispatchEvent(new CustomEvent("voo:open-agent-panel")),
+        setLocale,
+      }),
       {
         id: "undo",
         labelKey: "editor.undo",
@@ -2467,6 +2488,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       },
     ],
     [
+      runTool,
+      handleCreateComponent,
+      toggleGrid,
       presentationHistory,
       multi,
       zoomSharedStep,
@@ -2646,6 +2670,28 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     presentationId,
     focusedId,
   ]);
+
+  // Focus an unseen artboard after the initial row fit, using its world position.
+  useEffect(() => {
+    if (!pendingArtboardFitId || pendingArtboardFitId !== focusedId) return;
+    if (multi) {
+      const stage = freeStageRef.current;
+      const layout = layoutById.get(focusedId);
+      const allReady = presentationId
+        ? enginesRef.current.get(focusedId)?.ready
+        : nodeIds.every((id) => enginesRef.current.get(id)?.ready);
+      if (!stage || !layout || !allReady) return;
+      const camera = fitEditorPageCamera({
+        stageWidth: stage.clientWidth,
+        stageHeight: stage.clientHeight,
+        layout,
+        insets: editorPanelLayout({ stageWidth: stage.clientWidth, swapped: swapPanels, reserveBothPanels: true }).insets,
+      });
+      if (!camera) return;
+      setEditorCamera(camera);
+    }
+    useDesignStore.setState({ pendingArtboardFitId: null });
+  }, [pendingArtboardFitId, focusedId, multi, nodeIds, presentationId, layoutById, readySignature, swapPanels, setEditorCamera]);
 
   // A component jump is complete when its live page and visible stage are
   // ready. The normal multi-page fit runs first; this then focuses the target.
@@ -3933,6 +3979,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         ) : exportOpen ? (
           <Suspense fallback={null}>
             <EditorExportDialog
+              doc={exportDocument}
+              exportName={exportTargetName(pageTitle(), exportRange, exportDocument?.nodes, selectedIds)}
               format={exportFormat}
               quality={exportQuality}
               scale={exportScale}
@@ -3951,7 +3999,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               onFormat={setExportFormat}
               onQuality={setExportQuality}
               onScale={setExportScale}
-              onExport={() => void exportImage()}
+              onExport={(options) => void exportImage(options)}
               onClose={cancelExport}
             />
           </Suspense>
@@ -4922,8 +4970,28 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               }
               onFit={multi ? fitAll : () => engine?.zoomToFit()}
               grid={grid}
+              gridSize={grid?.size ?? lastGridSizeRef.current}
+              snapToGrid={snapToGrid}
+              onToggleSnapToGrid={toggleSnapToGrid}
+              onSetGridSize={(size) => {
+                lastGridSizeRef.current = size;
+                const next = { enabled: grid ? grid.enabled !== false : true, size };
+                if (multi) {
+                  for (const entry of enginesRef.current.values()) {
+                    entry.engine?.setGrid?.(next);
+                  }
+                } else {
+                  engine?.setGrid?.(next);
+                }
+                bump();
+              }}
               onToggleGrid={() => {
-                const next = grid ? null : { enabled: true, size: 32 };
+                if (grid?.size) lastGridSizeRef.current = grid.size;
+                const next = {
+                  ...grid,
+                  enabled: !grid || grid.enabled === false,
+                  size: grid?.size ?? lastGridSizeRef.current,
+                };
                 if (multi) {
                   for (const entry of enginesRef.current.values()) {
                     entry.engine?.setGrid?.(next);
@@ -4940,11 +5008,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 <EditorCanvasAids
                   showRulers={showRulers}
                   showGuides={showGuides}
-                  snapToGrid={snapToGrid}
                   canClearGuides={documentGuides.length > 0}
                   onToggleRulers={toggleRulers}
                   onToggleGuides={toggleGuides}
-                  onToggleSnapToGrid={toggleSnapToGrid}
                   onClearGuides={handleClearGuides}
                   t={t}
                 />
@@ -5135,6 +5201,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               canCreateComponent ? handleCreateComponent : null
             }
             onDetachInstance={handleDetachInstance}
+            onOpenShortcuts={() => setShortcutsOpen(true)}
             onImportMedia={() => mediaInputRef.current?.click()}
           />
         ) : null}

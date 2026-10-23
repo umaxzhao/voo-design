@@ -1,7 +1,9 @@
-import { drawNode } from "./render_nodes.js";
-import { NODE_KIND } from "./scene_model.js";
+import { draw } from "./scene_renderer.js";
+import { NODE_KIND, isHiddenByGroup } from "./scene_model.js";
 import {
   RENDERABLE_KINDS,
+  exportPixelSize,
+  exportBackdropDocument,
   encodeCanvas,
   selectionBounds,
 } from "./editor_export_bounds.js";
@@ -22,6 +24,7 @@ export function selectedExportNodes(doc, ids) {
     (node) =>
       wanted.has(node.id) &&
       node.visible !== false &&
+      !isHiddenByGroup(doc, node) &&
       (RENDERABLE_KINDS.has(node.kind) ||
         node.kind === NODE_KIND.CANVAS_INSTANCE) &&
       selectionBounds([node]),
@@ -36,31 +39,24 @@ export function renderSelectionPng(
   { bitmapSourceOf, cache, maskSourceOf, glRenderer },
 ) {
   if (!bounds) return null;
-  const originX = Math.floor(bounds.x);
-  const originY = Math.floor(bounds.y);
-  const scale =
-    Number.isFinite(options.scale) && options.scale > 0 ? options.scale : 1;
-  const width = Math.max(1, Math.ceil(bounds.x + bounds.width) - originX);
-  const height = Math.max(1, Math.ceil(bounds.y + bounds.height) - originY);
+  const { x: originX, y: originY, width, height } = bounds;
+  const size = exportPixelSize(bounds, options.scale);
   const output = document.createElement("canvas");
-  output.width = Math.round(width * scale);
-  output.height = Math.round(height * scale);
+  output.width = size.width;
+  output.height = size.height;
   const ctx = output.getContext("2d");
   if (!ctx) return null;
-  if (scale !== 1) ctx.scale(scale, scale);
-  ctx.translate(-originX, -originY);
-  for (const node of nodes) {
-    const bitmap = bitmapSourceOf ? bitmapSourceOf(node) : cache.get(node);
-    if (node.kind === NODE_KIND.IMAGE && !bitmap) continue;
-    drawNode(
-      ctx,
-      node,
-      () => bitmap ?? null,
-      maskSourceOf,
-      glRenderer ? { renderer: glRenderer } : null,
-      false,
-    );
-  }
+  draw(ctx, {
+    doc: { ...exportBackdropDocument(doc, options.transparent !== false), nodes, crop: bounds },
+    viewport: { zoom: size.scale, panX: -originX * size.scale, panY: -originY * size.scale },
+    dpr: 1,
+    includeRegions: false,
+    pageBackground: options.transparent === false,
+    bitmapOf: (node) => bitmapSourceOf ? bitmapSourceOf(node) : cache?.get(node),
+    maskOf: maskSourceOf,
+    glRenderer,
+    fullResolution: true,
+  });
   let finalCanvas = output;
   if (options.type === "image/jpeg") {
     const flattened = document.createElement("canvas");

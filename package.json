@@ -18,6 +18,7 @@
 "electron:build": "npm run copy:ort && npm run copy:canvaskit && npm run notices && vite build && node scripts/signing-env.mjs --dir",
     "pretest": "npm run copy:canvaskit && node scripts/ensure-dist.mjs",
     "test": "vitest run",
+    "bench:design": "node scripts/design-bench/run.mjs",
     "bench:canvas": "CANVAS_PERF_WRITE=1 vitest run tests/unit/canvas_perf_benchmark.test.js",
     "build:extension": "node scripts/build-extension.mjs",
     "test:watch": "vitest",

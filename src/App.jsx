@@ -9,7 +9,8 @@ import CrashRecoveryPrompt from "./canvas/components/crash_recovery_prompt.jsx";
 import LoadingModal from "./canvas/components/loading_modal.jsx";
 const CanvasAgentPanel = lazy(() => import("./canvas/components/canvas_agent_panel.jsx"));
 import OnboardingGuide from "./canvas/components/onboarding/OnboardingGuide.jsx";
-import { shouldShowOnboarding } from "./canvas/components/onboarding/onboarding_state.js";
+import FirstRunOnboarding from "./canvas/components/first_run_onboarding.jsx";
+import { shouldShowFirstRun } from "./canvas/components/first_run_state.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import { useDesignStore } from "./store/design_store.js";
 
@@ -19,18 +20,20 @@ export default function App() {
   // The AI panel state is managed in design_store for hybrid agent coordination
   const agentOpen = useDesignStore((s) => s.agentPanelOpen);
   const setAgentOpen = useDesignStore((s) => s.setAgentPanelOpen);
-  const [onboardingOpen, setOnboardingOpen] = useState(() => {
-    try {
-      return shouldShowOnboarding();
-    } catch {
-      return false;
-    }
-  });
+  // Workspace/agent configuration remains available through voo:open-onboarding.
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [firstRunReopened, setFirstRunReopened] = useState(false);
+  const [firstRunOpen, setFirstRunOpen] = useState(shouldShowFirstRun);
   const { t } = useI18n();
 
   // Listen for Electron native menu actions and Agent panel trigger events
   useEffect(() => {
     const handleOpenAgent = () => setAgentOpen(true);
+    const handleOpenFirstRun = () => {
+      if (firstRunOpen) return;
+      setFirstRunReopened(true); setFirstRunOpen(true);
+    };
+    window.addEventListener("voo:open-first-run", handleOpenFirstRun);
     const handleOpenOnboarding = () => setOnboardingOpen(true);
     window.addEventListener("voo:open-agent-panel", handleOpenAgent);
     window.addEventListener("voo:agent-prompt", handleOpenAgent);
@@ -39,8 +42,13 @@ export default function App() {
     let unsubscribeMenu = null;
     if (window.electronAPI?.onMenuAction) {
       unsubscribeMenu = window.electronAPI.onMenuAction((action) => {
-        const store = useDesignStore.getState();
         switch (action) {
+          case "help:first-run":
+            handleOpenFirstRun();
+            break;
+          case "help:onboarding":
+            window.dispatchEvent(new CustomEvent("voo:open-onboarding"));
+            break;
           case "file:new":
             window.dispatchEvent(new CustomEvent("voo:file-new"));
             break;
@@ -72,12 +80,13 @@ export default function App() {
     }
 
     return () => {
+      window.removeEventListener("voo:open-first-run", handleOpenFirstRun);
       window.removeEventListener("voo:open-agent-panel", handleOpenAgent);
       window.removeEventListener("voo:agent-prompt", handleOpenAgent);
       window.removeEventListener("voo:open-onboarding", handleOpenOnboarding);
       if (unsubscribeMenu) unsubscribeMenu();
     };
-  }, []);
+  }, [firstRunOpen]);
 
   return (
     <main
@@ -140,7 +149,20 @@ export default function App() {
           <LoadingModal label={documentLoading} />
         </div>
       ) : null}
-      {/* First-launch Onboarding Configuration Guide Modal */}
+      <FirstRunOnboarding
+        open={firstRunOpen}
+        reopened={firstRunReopened}
+        onClose={() => setFirstRunOpen(false)}
+        onStart={(template) => {
+          const store = useDesignStore.getState();
+          if (!template) store.newVooProject();
+          else store.loadVooProject({
+            vooData: { format: "voo", version: 2, kind: "design", document: template.createDoc(), assets: {} },
+            fileName: `${template.title}.voo`,
+          });
+        }}
+      />
+      {/* Workspace configuration is opened explicitly from settings/events. */}
       <OnboardingGuide
         open={onboardingOpen}
         onClose={() => setOnboardingOpen(false)}

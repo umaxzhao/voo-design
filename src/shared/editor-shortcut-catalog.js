@@ -30,7 +30,7 @@ export const DESIGN_SHORTCUT_GROUPS = Object.freeze([
     shortcuts: Object.freeze([
       Object.freeze({ key: "V / A", labelKey: "editor.tool.select" }),
       Object.freeze({ key: "⌘T / Q", labelKey: "editor.tool.transform" }),
-      Object.freeze({ key: "M", labelKey: "editor.tool.region" }),
+      Object.freeze({ key: "Z", labelKey: "editor.tool.region" }),
       Object.freeze({ key: "M", labelKey: "editor.tool.marquee" }),
       Object.freeze({ key: "W", labelKey: "editor.tool.wand" }),
       Object.freeze({ key: "L", labelKey: "editor.tool.lasso" }),
@@ -107,7 +107,7 @@ export const DESIGN_SHORTCUT_GROUPS = Object.freeze([
       Object.freeze({ key: "⌥⌘⇧M", labelKey: "editor.comments.toggleAddMode" }),
       Object.freeze({ key: "\\", labelKey: "editor.compareOriginal" }),
       Object.freeze({ key: "Space + Drag", labelKey: "editor.panCanvas" }),
-      Object.freeze({ key: "?", labelKey: "editor.shortcuts.title" }),
+      Object.freeze({ key: "⌘/ / ?", labelKey: "editor.shortcuts.title" }),
       Object.freeze({ key: "Esc", labelKey: "editor.cancel" }),
     ]),
   }),

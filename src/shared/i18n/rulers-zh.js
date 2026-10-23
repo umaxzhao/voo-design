@@ -5,6 +5,9 @@
  * rulers-en.js for the key contract.
  */
 export default {
+  "settings.canvas.title": "画布",
+  "settings.canvas.showRulers": "显示标尺",
+  "settings.canvas.rulersHint": "默认隐藏。也可按 Shift+R（⇧R）切换标尺。",
   "editor.rulers.toggle": "显示/隐藏标尺",
   "editor.rulers.show": "显示标尺",
   "editor.rulers.hide": "隐藏标尺",
@@ -20,6 +23,9 @@ export default {
   "editor.guides.clear": "清除参考线",
   "editor.guides.clearAll": "清除全部参考线",
 
+  "editor.grid.sizeLabel": "{size} 像素",
+  "editor.grid.options": "网格选项",
+  "editor.grid.size": "网格大小",
   "editor.snapping.toGrid": "对齐网格",
   "editor.snapping.toGridOn": "对齐网格（开）",
   "editor.snapping.toGridOff": "对齐网格（关）",

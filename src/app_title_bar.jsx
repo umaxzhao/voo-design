@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import CanvasTabBar from "./canvas/components/canvas_tab_bar.jsx";
-import { Bolt, Sparkles } from "lucide-react";
+import { Bolt } from "lucide-react";
 import { useDesignStore } from "./store/design_store.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import SettingsDrawer from "./canvas/components/settings_drawer.jsx";
@@ -86,79 +86,36 @@ export default function AppTitleBar() {
           )}
         </div>
 
-        {welcomeOpen ? (
-          <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" }}>
-            <button type="button" className="px-2 text-xs text-white/70" onClick={() => window.dispatchEvent(new CustomEvent("voo:open-about"))}>{t("release.about")}</button>
-            <button
-              type="button"
-              data-testid="titlebar-open-onboarding-btn"
-              aria-label={t("titlebar.cliWizard")}
-              title={`${t("titlebar.cliWizard")} (Claude / Codex / Antigravity)`}
-              onClick={() => window.dispatchEvent(new CustomEvent("voo:open-onboarding"))}
-              className="flex size-5 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-[#a7ffd4]"
-            >
-              <Sparkles size={14} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              aria-label={t("welcome.settings.open")}
-              title={t("titlebar.settingsTitle")}
-              onClick={() => setSettingsOpen(true)}
-              className="flex size-5 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-white"
-            >
-              <Bolt size={14} aria-hidden="true" />
-            </button>
-          </div>
-        ) : (
-          <div
-            className="flex items-center gap-2 text-neutral-300 text-[11px]"
-            style={{ WebkitAppRegion: "no-drag" }}
+        <div
+          className="flex items-center gap-2 text-neutral-300 text-[11px]"
+          style={{ WebkitAppRegion: "no-drag" }}
+        >
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("voo:file-open"))}
+            className="cursor-pointer rounded-lg px-2.5 py-1 text-neutral-400 transition-colors hover:bg-white/10 hover:text-neutral-200 font-medium"
+            title={t("titlebar.openTitle")}
           >
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent("voo:file-save"))}
-              className="cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
-              title={t("titlebar.saveTitle")}
-            >
-              {t("titlebar.save")}
-            </button>
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent("voo:file-open"))}
-              className="cursor-pointer rounded-lg px-2.5 py-1 text-neutral-400 transition-colors hover:bg-white/10 hover:text-neutral-200 font-medium"
-              title={t("titlebar.openTitle")}
-            >
-              {t("titlebar.open")}
-            </button>
-            <button type="button" data-testid="titlebar-export-btn"
-              aria-label={t("editor.export")}
-              title={`${t("editor.export")} (${isMac ? "⇧⌘E" : "Ctrl+Shift+E"})`}
-              onClick={() => window.dispatchEvent(new CustomEvent("voo:editor-export"))}
-              className="cursor-pointer rounded-lg px-2.5 py-1 font-medium text-neutral-300 hover:bg-white/10">
-              {t("editor.export")}
-            </button>
-            <button type="button" className="px-2 text-xs text-white/70" onClick={() => window.dispatchEvent(new CustomEvent("voo:open-about"))}>{t("release.about")}</button>
-            <button
-              type="button"
-              data-testid="titlebar-open-onboarding-btn"
-              aria-label={t("titlebar.cliWizard")}
-              title={`${t("titlebar.cliWizard")} (Claude / Codex / Antigravity)`}
-              onClick={() => window.dispatchEvent(new CustomEvent("voo:open-onboarding"))}
-              className="flex size-5 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-[#a7ffd4]"
-            >
-              <Sparkles size={14} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              aria-label={t("welcome.settings.open")}
-              title={t("titlebar.prefsTitle")}
-              onClick={() => setSettingsOpen(true)}
-              className="flex size-5 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-white"
-            >
-              <Bolt size={14} aria-hidden="true" />
-            </button>
-          </div>
-        )}
+            {t("titlebar.open")}
+          </button>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("voo:file-save"))}
+            className="cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
+            title={t("titlebar.saveTitle")}
+          >
+            {t("titlebar.save")}
+          </button>
+          <button
+            type="button"
+            aria-label={t("welcome.settings.open")}
+            title={t(welcomeOpen ? "titlebar.settingsTitle" : "titlebar.prefsTitle")}
+            onClick={() => setSettingsOpen(true)}
+            className="flex size-5 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-white"
+          >
+            <Bolt size={14} aria-hidden="true" />
+          </button>
+        </div>
       </header>
 
       {/* Settings Modal Drawer */}

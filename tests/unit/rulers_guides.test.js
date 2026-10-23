@@ -1,3 +1,4 @@
+import { createEngineDocumentController } from "../../src/canvas/editor/editor_engine_document.js";
 import { describe, it, expect, afterEach } from "vitest";
 import {
   RULER_SIZE,
@@ -291,9 +292,10 @@ describe("document guide persistence shape", () => {
 
 describe("ruler drag helpers", () => {
   it("removes a guide dropped back on a ruler strip", () => {
-    expect(isOverRulerStrip({ x: 4, y: 200 })).toBe(true);
-    expect(isOverRulerStrip({ x: 200, y: RULER_SIZE })).toBe(true);
+    expect(isOverRulerStrip({ x: 4, y: 200 }, { showRulers: true })).toBe(true);
+    expect(isOverRulerStrip({ x: 200, y: RULER_SIZE }, { showRulers: true })).toBe(true);
     expect(isOverRulerStrip({ x: 200, y: 400 })).toBe(false);
+    expect(isOverRulerStrip({ x: 4, y: 4 })).toBe(false);
     expect(isOverRulerStrip({ x: 4, y: 4 }, { showRulers: false })).toBe(false);
   });
 
@@ -336,15 +338,42 @@ describe("snapping option plumbing", () => {
   it("editorSnapOptions reads the persisted toggles synchronously", async () => {
     await setSetting(SNAP_SETTING_KEYS.snapToGrid, true);
     await setSetting(SNAP_SETTING_KEYS.showGuides, false);
-    const options = editorSnapOptions({ grid: { size: 20 } });
+    const options = editorSnapOptions({ grid: { enabled: true, size: 64 } });
     expect(options.snapToGrid).toBe(true);
     expect(options.snapToGuides).toBe(false);
-    expect(options.grid).toEqual({ type: "rectangular", size: 20 });
+    expect(options.grid).toEqual({ type: "rectangular", size: 64 });
 
     await setSetting(SNAP_SETTING_KEYS.snapToGrid, false);
     await setSetting(SNAP_SETTING_KEYS.showGuides, true);
-    expect(editorSnapOptions().snapToGrid).toBe(false);
+    expect(editorSnapOptions({ grid: { enabled: true, size: 64 } }).snapToGrid).toBe(false);
     expect(editorSnapOptions().snapToGuides).toBe(true);
+  });
+
+  it("snaps to the custom grid size after hiding the overlay", async () => {
+    const doc = createDocument(1000, 800);
+    const controller = createEngineDocumentController({
+      getDoc: () => doc,
+      crop: {},
+      requestRender: () => {},
+      notify: () => {},
+    });
+    await setSetting(SNAP_SETTING_KEYS.snapToGrid, true);
+    for (const hide of [{ enabled: false }, { visible: false }, null]) {
+      controller.setGrid({ enabled: true, size: 20 });
+      controller.setGrid(hide);
+      expect(controller.getGrid()).toMatchObject({ enabled: false, size: 20 });
+      const options = editorSnapOptions({ grid: controller.getGrid() });
+      expect(options.grid.size).toBe(20);
+      const snapped = snapNodeBounds({
+        doc,
+        rect: { x: 23, y: 23, width: 40, height: 40 },
+        zoom: 1,
+        options,
+      });
+      expect(snapped.x).toBe(20);
+      expect(snapped.y).toBe(20);
+    }
+    await setSetting(SNAP_SETTING_KEYS.snapToGrid, false);
   });
 
   it("grid snapping produces a snapped rect once the option is passed", () => {

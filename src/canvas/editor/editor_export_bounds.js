@@ -59,3 +59,25 @@ export function encodeCanvas(canvas, { type = "image/png", quality } = {}) {
   if (type === "image/png") return canvas.toDataURL("image/png");
   return canvas.toDataURL(type, quality);
 }
+
+/** Shared pixel sizing: preserve fractional origins and never allocate zero pixels. */
+export function exportPixelSize(bounds, scale = 1) {
+  const factor = Number.isFinite(scale) && scale > 0 ? scale : 1;
+  return {
+    scale: factor,
+    width: Math.max(1, Math.round(bounds.width * factor)),
+    height: Math.max(1, Math.round(bounds.height * factor)),
+  };
+}
+
+/** Undefined retains legacy automatic backdrop behavior for internal callers. */
+export function exportPageBackground(transparent, hasBlends = false) {
+  return transparent === undefined ? hasBlends : !transparent;
+}
+
+/** Override the sheet color without changing artwork or drawing a checkerboard. */
+export function exportBackdropDocument(doc, transparent) {
+  if (transparent === undefined) return doc;
+  return { ...doc, backgroundColor: transparent ? "transparent" :
+    (doc.backgroundColor && doc.backgroundColor !== "transparent" ? doc.backgroundColor : "#ffffff") };
+}

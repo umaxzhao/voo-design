@@ -84,13 +84,12 @@ describe("export and layer search accessibility", () => {
     expect(handleExportShortcut({ ...event, ctrlKey: false, metaKey: false })).toBe(false);
     vi.unstubAllGlobals();
   });
-  it("connects the visible title bar export button to the existing editor listener", () => {
-    const source = read("app_title_bar.jsx");
-    expect(source).toContain('data-testid="titlebar-export-btn"');
-    const button = source.split('data-testid="titlebar-export-btn"')[1].split("</button>")[0];
-    expect(button).toContain('aria-label={t("editor.export")}');
-    expect(button).toContain('new CustomEvent("voo:editor-export")');
+  it("keeps title bar minimal (no Export) while export stays reachable via shortcut listener", () => {
+    const titlebar = read("app_title_bar.jsx");
+    expect(titlebar).not.toContain('data-testid="titlebar-export-btn"');
+    expect(titlebar).not.toContain('voo:editor-export');
     expect(read("canvas/components/editor_hooks/use_editor_apply.js")).toContain('window.addEventListener("voo:editor-export", onTriggerExport)');
+    expect(read("canvas/editor/export_shortcut.js")).toContain("Shift");
   });
   it("gives search toggle and input distinct labels in both languages", () => {
     const source = read("canvas/components/editor_layers.jsx");

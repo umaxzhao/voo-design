@@ -376,7 +376,7 @@ export default function CanvasAgentPanel({ onClose }) {
           className="flex items-center gap-1.5 rounded-full bg-white/[0.06] px-2.5 py-1 text-[10px] text-neutral-300 transition-colors hover:bg-white/[0.12] focus:outline-none"
         >
           <span className="size-1.5 rounded-full bg-[#a7ffd4] animate-pulse" aria-hidden="true" />
-          <span className="font-mono text-[9px] text-neutral-200 max-w-[100px] truncate font-medium">
+          <span className="font-mono text-[9px] text-neutral-200 max-w-[160px] truncate font-medium">
             {getModelDisplayLabel(currentModel)}
           </span>
           <ChevronDown
@@ -602,7 +602,7 @@ export default function CanvasAgentPanel({ onClose }) {
               }}
               title={currentModel}
               data-testid="agent-composer-model-pill"
-              className="max-w-[150px] truncate rounded-lg bg-white/[0.05] px-2 py-1 text-[11px] text-neutral-400 hover:bg-white/[0.1] hover:text-neutral-200 transition-colors"
+              className="max-w-[220px] truncate rounded-lg bg-white/[0.05] px-2 py-1 text-[11px] text-neutral-400 hover:bg-white/[0.1] hover:text-neutral-200 transition-colors"
             >
               {getModelDisplayLabel(currentModel)}
             </button>

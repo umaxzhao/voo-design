@@ -7,6 +7,9 @@
  * `editor.snapping.*`.
  */
 export default {
+  "settings.canvas.title": "Canvas",
+  "settings.canvas.showRulers": "Show rulers",
+  "settings.canvas.rulersHint": "Hidden by default. You can also toggle rulers with Shift+R (⇧R).",
   "editor.rulers.toggle": "Show/hide rulers",
   "editor.rulers.show": "Show rulers",
   "editor.rulers.hide": "Hide rulers",
@@ -22,6 +25,9 @@ export default {
   "editor.guides.clear": "Clear guides",
   "editor.guides.clearAll": "Clear all guides",
 
+  "editor.grid.sizeLabel": "{size} px",
+  "editor.grid.options": "Grid options",
+  "editor.grid.size": "Grid size",
   "editor.snapping.toGrid": "Snap to grid",
   "editor.snapping.toGridOn": "Snap to grid (on)",
   "editor.snapping.toGridOff": "Snap to grid (off)",

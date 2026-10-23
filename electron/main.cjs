@@ -233,7 +233,14 @@ function setupMenu() {
     },
   ];
 
-  template.push({ label: app.getLocale?.().startsWith("zh") ? "帮助" : "Help", submenu: [{ label: app.getLocale?.().startsWith("zh") ? "关于 VOO Design" : "About VOO Design", click: () => dispatchMenuAction("help:about") }] });
+  template.push({
+    label: app.getLocale?.().startsWith("zh") ? "帮助" : "Help",
+    submenu: [
+      { label: app.getLocale?.().startsWith("zh") ? "关于 VOO Design" : "About VOO Design", click: () => dispatchMenuAction("help:about") },
+      { label: app.getLocale?.().startsWith("zh") ? "新手引导" : "Welcome tour", click: () => dispatchMenuAction("help:first-run") },
+      { label: app.getLocale?.().startsWith("zh") ? "Agent / CLI 设置向导" : "Agent / CLI Setup Wizard", click: () => dispatchMenuAction("help:onboarding") },
+    ],
+  });
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 }

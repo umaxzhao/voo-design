@@ -20,7 +20,9 @@ import {
   ElectronWorkspaceDriver,
 } from "../../services/workspace_storage.js";
 import InfoHint from "./info_hint.jsx";
+import { useShowRulers } from "../use_show_rulers.js";
 import SettingsSection from "./settings_section.jsx";
+import { Switch } from "./ui/switch.jsx";
 
 export function WorkspaceSettingsSection() {
   const { t } = useI18n();
@@ -224,6 +226,25 @@ export function WorkspaceSettingsSection() {
   );
 }
 
+export function CanvasSettingsSection() {
+  const { t } = useI18n();
+  const { showRulers, setShowRulers } = useShowRulers();
+  const label = t("settings.canvas.showRulers");
+  return (
+    <SettingsSection title={t("settings.canvas.title")} hint={t("settings.canvas.rulersHint")}>
+      <div className="flex items-center justify-between gap-3 text-xs text-neutral-200">
+        <span>{label}</span>
+        <Switch
+          testId="settings-show-rulers"
+          checked={showRulers}
+          onChange={setShowRulers}
+          label={label}
+        />
+      </div>
+    </SettingsSection>
+  );
+}
+
 export default function SettingsGeneral() {
   const { t, locale } = useI18n();
   const user = useUserStore((s) => s.user);
@@ -302,6 +323,8 @@ export default function SettingsGeneral() {
           </label>
         )}
       </div>
+
+      <CanvasSettingsSection />
 
       {/* Workspace Directory Section */}
       <WorkspaceSettingsSection />

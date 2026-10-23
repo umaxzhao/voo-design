@@ -39,6 +39,7 @@ const STORAGE_KEYS = [
   "voo.globalMemory.brands",
   "voo.globalMemory.preferences",
   "voo.onboarding.completedVersion",
+  "voo.firstRun.status",
   "voo.agent.experimental.antigravity",
   "voo.workspace.path",
   "voo.workspace.type",
