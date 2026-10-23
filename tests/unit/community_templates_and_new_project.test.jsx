@@ -36,7 +36,6 @@ globalThis.localStorage = mockStorage;
 import React from "react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { chromium } from "playwright";
 import WelcomeDashboard, {
   AI_GEN_TYPES,
 } from "../../src/canvas/components/welcome_dashboard.jsx";
@@ -177,34 +176,36 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(html).toContain("社区模板");
   });
 
-  it("welcome dashboard renders AI generation types row without 'All' filter pill", async () => {
+  it("welcome dashboard renders AI generation types row without 'All' filter pill", () => {
     const html = renderToStaticMarkup(React.createElement(WelcomeDashboard));
 
     // Keep the accessible group name while removing the visible heading.
     expect(html).not.toContain("AI 生成类型");
     expect(html).toContain('aria-label="生成类型"');
     expect(html).toMatch(/class="flex justify-center"><div class="[^"]*justify-center" role="radiogroup"/);
-    const browser = await chromium.launch({
-      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
-    });
-    let pills;
-    try {
-      const page = await browser.newPage();
-      await page.setContent(html);
-      // Query the complete DOM group so nested divs cannot truncate the pills.
-      pills = await page.evaluate(() => {
-        const group = document.querySelector('[role="radiogroup"]');
-        if (!group) throw new Error("AI generation radiogroup is missing");
-        return {
-          markup: group.innerHTML,
-          text: group.textContent,
-          count: group.querySelectorAll('[role="radio"]').length,
-        };
-      });
-    } finally {
-      await browser.close();
+    const group = /<div\b[^>]*\brole="radiogroup"[^>]*>/.exec(html);
+    if (!group) throw new Error("AI generation radiogroup is missing");
+    const contentStart = group.index + group[0].length;
+    const divTags = /<\/?div\b[^>]*>/g;
+    divTags.lastIndex = contentStart;
+    let depth = 1;
+    let contentEnd;
+    // Balance nested divs so extraction includes every pill and stops at the group boundary.
+    for (const tag of html.matchAll(divTags)) {
+      depth += tag[0].startsWith("</") ? -1 : 1;
+      if (depth === 0) {
+        contentEnd = tag.index;
+        break;
+      }
     }
-    const pillsMarkup = pills.markup;
+    if (contentEnd === undefined) {
+      throw new Error("AI generation radiogroup has no closing tag");
+    }
+    const pillsMarkup = html.slice(contentStart, contentEnd);
+    const pills = {
+      text: pillsMarkup.replace(/<[^>]*>/g, ""),
+      count: [...pillsMarkup.matchAll(/\brole="radio"/g)].length,
+    };
     expect(pills.count).toBe(AI_GEN_TYPES.length);
     expect(pillsMarkup).not.toContain("text-mint");
     expect(pillsMarkup).not.toContain("text-amber");
