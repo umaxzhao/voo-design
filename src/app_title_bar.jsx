@@ -73,7 +73,7 @@ export default function AppTitleBar() {
             type="button"
             onClick={() => setWelcomeOpen(!welcomeOpen)}
             className="flex h-7 items-center gap-1.5 font-medium text-black tracking-normal hover:opacity-80 transition-opacity cursor-pointer rounded-lg px-1.5"
-            title={welcomeOpen ? "返回画布" : "主页 / 欢迎界面"}
+            title={welcomeOpen ? t("titlebar.backToCanvas") : t("titlebar.home")}
           >
             <VooBrandLogo className="size-5 text-black" />
             <span className="text-[12px] font-medium text-black tracking-tight">{APP_DISPLAY_NAME}</span>
@@ -91,8 +91,8 @@ export default function AppTitleBar() {
             <button
               type="button"
               data-testid="titlebar-open-onboarding-btn"
-              aria-label="本地 CLI 配置向导"
-              title="本地 CLI 配置向导 (Claude / Codex / Antigravity)"
+              aria-label={t("titlebar.cliWizard")}
+              title={`${t("titlebar.cliWizard")} (Claude / Codex / Antigravity)`}
               onClick={() => window.dispatchEvent(new CustomEvent("voo:open-onboarding"))}
               className="flex size-5 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-[#a7ffd4]"
             >
@@ -100,8 +100,8 @@ export default function AppTitleBar() {
             </button>
             <button
               type="button"
-              aria-label={t("welcome.settings.open") || "设置"}
-              title="设置 (⌘,)"
+              aria-label={t("welcome.settings.open")}
+              title={t("titlebar.settingsTitle")}
               onClick={() => setSettingsOpen(true)}
               className="flex size-5 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-white"
             >
@@ -117,23 +117,23 @@ export default function AppTitleBar() {
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent("voo:file-save"))}
               className="cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
-              title="保存 (⌘S / Ctrl+S)"
+              title={t("titlebar.saveTitle")}
             >
-              保存
+              {t("titlebar.save")}
             </button>
             <button
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent("voo:file-open"))}
               className="cursor-pointer rounded-lg px-2.5 py-1 text-neutral-400 transition-colors hover:bg-white/10 hover:text-neutral-200 font-medium"
-              title="打开工程文件 (⌘O / Ctrl+O)"
+              title={t("titlebar.openTitle")}
             >
-              打开
+              {t("titlebar.open")}
             </button>
             <button
               type="button"
               data-testid="titlebar-open-onboarding-btn"
-              aria-label="本地 CLI 配置向导"
-              title="本地 CLI 配置向导 (Claude / Codex / Antigravity)"
+              aria-label={t("titlebar.cliWizard")}
+              title={`${t("titlebar.cliWizard")} (Claude / Codex / Antigravity)`}
               onClick={() => window.dispatchEvent(new CustomEvent("voo:open-onboarding"))}
               className="flex size-5 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-[#a7ffd4]"
             >
@@ -141,8 +141,8 @@ export default function AppTitleBar() {
             </button>
             <button
               type="button"
-              aria-label="设置"
-              title="偏好设置与 AI 供应商 (⌘,)"
+              aria-label={t("welcome.settings.open")}
+              title={t("titlebar.prefsTitle")}
               onClick={() => setSettingsOpen(true)}
               className="flex size-5 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-white"
             >
