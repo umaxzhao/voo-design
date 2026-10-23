@@ -38,8 +38,12 @@ export class CanvasStreamer {
       if (previous && (previous.node.type !== node.type || (node.type === 'path' && previous.node.d !== node.d))) {
         this.editor.removeNode(id); id = null;
       }
-      if (!id) id = this.create(this.editor, node, this.frameId);
-      else if (JSON.stringify(previous.node) !== JSON.stringify(node)) this.editor.updateNode(id, { ...node, boxWidth: node.type === 'text' ? node.width : undefined, parentId: this.frameId });
+      if (!id) {
+        id = this.create(this.editor, node, this.frameId);
+        // The shared layout creator defaults text wrapping to width.
+        if (node.type === 'text' && node.boxWidth !== undefined) this.editor.updateNode(id, { boxWidth: node.boxWidth });
+      }
+      else if (JSON.stringify(previous.node) !== JSON.stringify(node)) this.editor.updateNode(id, { ...node, boxWidth: node.type === 'text' ? node.boxWidth ?? node.width : undefined, parentId: this.frameId });
       next.set(node.key, { id, node });
     }
     for (const [key, value] of this.previous) if (!next.has(key)) this.editor.removeNode(value.id);

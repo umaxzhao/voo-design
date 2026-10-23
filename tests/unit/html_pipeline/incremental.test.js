@@ -28,3 +28,14 @@ it('recreates changed native kinds and vector geometry while retaining stable HT
   expect(create).toHaveBeenCalledTimes(3); expect(editor.removeNode).toHaveBeenCalledTimes(2);
   expect(streamer.previous.get('logo').id).toBe('3');
 });
+it('preserves explicit auto-width and multiline wrapping on creation and updates', () => {
+  const editor = { updateNode: vi.fn() };
+  const streamer = new CanvasStreamer({ editor, frame: {}, create: () => 'text', renderer: {} });
+  const node = { key: 'label', type: 'text', text: 'Product', width: 54, boxWidth: 0 };
+  streamer.apply([node]);
+  expect(editor.updateNode).toHaveBeenLastCalledWith('text', { boxWidth: 0 });
+  streamer.apply([{ ...node, text: 'Log in' }]);
+  expect(editor.updateNode).toHaveBeenLastCalledWith('text', expect.objectContaining({ boxWidth: 0 }));
+  streamer.apply([{ ...node, boxWidth: 124, width: 124 }]);
+  expect(editor.updateNode).toHaveBeenLastCalledWith('text', expect.objectContaining({ boxWidth: 124 }));
+});

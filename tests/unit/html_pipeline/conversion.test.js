@@ -15,3 +15,46 @@ it('converts measured DOM geometry with native line height, gradients and hidden
   expect(nodes[1]).toMatchObject({ key: 'headline/text:0', type: 'text', fontSize: 20, lineHeight: 1.5, text: 'Hello world', letterSpacing: 2, align: 'center' });
   expect(nodes).toHaveLength(2);
 });
+
+function fixture({ css = {}, children, rect = { x: 10.4, y: 20.6, width: 120.3, height: 40 }, textRect = { x: 14.2, y: 24.4, width: 80.2, height: 20 }, rects } = {}) {
+  const element = (tagName, id, overrides = {}, childNodes = []) => ({
+    nodeType: 1, tagName, dataset: { vooId: id },
+    css: { opacity: '1', backgroundColor: 'transparent', fontSize: '16px', lineHeight: '24px', color: 'white', ...overrides },
+    childNodes, children: childNodes.filter(c => c.nodeType === 1),
+    getAttribute: () => null, getBoundingClientRect: () => rect,
+  });
+  const body = element('BUTTON', 'button', css, children || [{ nodeType: 3, textContent: 'Get started' }]);
+  const doc = { body, defaultView: { getComputedStyle: el => el.css }, createRange: () => ({ selectNodeContents() {}, getBoundingClientRect: () => textRect, getClientRects: () => rects || [textRect] }) };
+  return { doc, element };
+}
+it('keeps single-line labels unwrapped and centers button text with whole-pixel geometry', () => {
+  const { doc } = fixture();
+  expect(htmlToNodes(doc)[0]).toMatchObject({ text: 'Get started', boxWidth: 0, width: 81, height: 24, x: 14, y: 29 });
+});
+it('emits a multiline inline subtree once with content-width slack and DOM line height', () => {
+  const { doc, element } = fixture({ css: { paddingLeft: '4px', paddingRight: '4px' }, textRect: { x: 14, y: 24, width: 100.7, height: 48 }, rects: [{ x: 14, y: 24, width: 100, height: 20 }, { x: 14, y: 48, width: 80, height: 20 }] });
+  const span = element('SPAN', 'inline', {}, [{ nodeType: 3, textContent: 'shared orbit' }]);
+  doc.body.childNodes = [{ nodeType: 3, textContent: 'One ' }, span]; doc.body.children = [span];
+  const nodes = htmlToNodes(doc);
+  expect(nodes).toHaveLength(1);
+  expect(nodes[0]).toMatchObject({ text: 'One shared orbit', boxWidth: 117, width: 117, lineHeight: 1.5 });
+});
+it('preserves translucent radial and linear fills and skips invisible or unsupported decorations', () => {
+  for (const backgroundImage of ['radial-gradient(rgba(255,255,255,0.1), transparent)', 'linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0))']) {
+    const { doc } = fixture({ css: { backgroundImage } });
+    expect(htmlToNodes(doc)[0].fill).toBe(backgroundImage);
+    for (const css of [{ opacity: '0.0' }, { visibility: 'hidden' }]) {
+      Object.assign(doc.body.css, css); expect(htmlToNodes(doc)).toEqual([]);
+      Object.assign(doc.body.css, { opacity: '1', visibility: 'visible' });
+    }
+    doc.body.css.filter = 'blur(30px)';
+    expect(htmlToNodes(doc).every(n => n.type === 'text')).toBe(true);
+  }
+  const { doc } = fixture({ css: { backgroundColor: 'rgba(255, 255, 255, 0.0)' } });
+  expect(htmlToNodes(doc)).toHaveLength(1);
+});
+it('applies background-clip text gradients without emitting a covering rectangle', () => {
+  const gradient = 'linear-gradient(white, rgba(255,255,255,0.5))';
+  const { doc } = fixture({ css: { backgroundImage: gradient, backgroundClip: 'text', color: 'transparent', backgroundColor: 'white' } });
+  expect(htmlToNodes(doc)).toEqual([expect.objectContaining({ type: 'text', fill: gradient })]);
+});
