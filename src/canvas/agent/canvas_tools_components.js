@@ -1,4 +1,4 @@
-import { newComponentId, variantNameOf, variantGroupOf, duplicateComponentMaster, createVariantDocument, switchVariantDocument } from "../editor/component_variants.js";
+import { newComponentId, variantNameOf, variantGroupOf, createVariantDocument, createVariantMatrix, matchVariantProperties, parseVariantName, variantProperties, switchVariantDocument } from "../editor/component_variants.js";
 export { duplicateComponentMaster } from "../editor/component_variants.js";
 /** Agent tools: component instances (overrides, swap) and document variables. */
 
@@ -35,22 +35,6 @@ const TOOL_ERROR = Object.freeze({
 
 const INSTANCE_NODE_KIND = "canvasInstance";
 
-/** Variant metadata written by the tools, per live editor. */
-const variantDocuments = new WeakMap();
-
-function variantRegistry(editor) {
-  let documents = variantDocuments.get(editor);
-  if (!documents) {
-    documents = new Map();
-    variantDocuments.set(editor, documents);
-  }
-  return documents;
-}
-
-function storeVariantDocument(editor, componentId, document) {
-  if (!componentId || !document) return;
-  variantRegistry(editor).set(componentId, document);
-}
 const INSTANCE_RECORD_FIELDS = Object.freeze([
   "layoutMode",
   "playbackMode",
@@ -151,8 +135,6 @@ function commitDocument(editor, next, message) {
 
 /** Resolves a main component's document through the editor or the host doc. */
 function resolveComponentDocument(editor, componentId) {
-  const local = variantRegistry(editor).get(componentId);
-  if (local?.nodes) return local;
   for (const name of [
     "getComponentDoc",
     "resolveComponent",
@@ -200,7 +182,6 @@ function componentEntries(editor, extra = null) {
     });
   };
 
-  for (const [key, document] of variantRegistry(editor)) add(key, document);
   const host = getDocumentSafe(editor);
   for (const [key, document] of Object.entries(host?.components ?? {})) {
     add(key, document);
@@ -253,14 +234,9 @@ function createComponentVariant(args = {}) {
   const host = getDocument(editor);
   const componentId = newComponentId();
   const next = createVariantDocument(host, source, variantName, componentId);
-  const sourceKey = source.canvasId ?? sourceComponentId;
-  const updatedSource = next.components[sourceKey];
   const variant = next.components[componentId];
   variantGroupId = variant.variantGroupId;
   if (args.name) variant.name = args.name;
-  storeVariantDocument(editor, sourceKey, updatedSource);
-  storeVariantDocument(editor, sourceComponentId, updatedSource);
-  storeVariantDocument(editor, variant.canvasId, variant);
   commitDocument(editor, next, "AI: Create component variant");
   return {
     ok: true,
@@ -269,6 +245,40 @@ function createComponentVariant(args = {}) {
     variantGroupId,
     variantName,
     name: variant.name ?? variantName,
+  };
+}
+
+function createComponentVariantMatrix(args = {}) {
+  const editor = requireEditor();
+  const sourceComponentId = requireId(args.sourceComponentId, "sourceComponentId");
+  const source = requireComponent(editor, sourceComponentId);
+  let result;
+  try {
+    result = createVariantMatrix(getDocument(editor), source, args.axes);
+  } catch (error) {
+    invalidArgs(error.message);
+  }
+  commitDocument(editor, result.document, "AI: Create component variant matrix");
+  return { ok: true, sourceComponentId, variantGroupId: result.groupId, variants: [
+    { componentId: source.canvasId, variantName: result.variantNames[0] },
+    ...result.created,
+  ] };
+}
+
+function listInstanceVariantProperties(args = {}) {
+  const editor = requireEditor();
+  const instanceId = requireId(args.instanceId, "instanceId");
+  const instance = requireInstance(editor, instanceId);
+  const source = requireComponent(editor, instance.sourceCanvasId);
+  const variants = componentEntries(editor, { componentId: source.canvasId, document: source })
+    .filter(entry => variantGroupOf(entry.document) === variantGroupOf(source))
+    .map(entry => entry.document);
+  return {
+    ok: true,
+    instanceId,
+    componentId: source.canvasId,
+    properties: parseVariantName(source.variantName) ?? {},
+    axes: variantProperties(variants) ?? [],
   };
 }
 
@@ -311,7 +321,10 @@ function listComponentVariants(args = {}) {
 function setInstanceVariant(args = {}) {
   const editor = requireEditor();
   const instanceId = requireId(args.instanceId, "instanceId");
-  const variantName = requireId(args.variantName, "variantName");
+  const hasName = typeof args.variantName === "string" && args.variantName.trim() !== "";
+  const hasProperties = args.properties && typeof args.properties === "object" && !Array.isArray(args.properties);
+  if (hasName === Boolean(hasProperties)) invalidArgs('Invalid arguments: give exactly one of "variantName" or "properties"');
+  const variantName = hasName ? args.variantName : null;
   const instance = requireInstance(editor, instanceId);
   const source = requireComponent(editor, instance.sourceCanvasId);
   const variantGroupId = variantGroupOf(source);
@@ -319,7 +332,7 @@ function setInstanceVariant(args = {}) {
     invalidArgs(`Invalid argument "instanceId": the instance's component has no variants`);
   }
 
-  if (typeof editor.setInstanceVariant === "function") {
+  if (hasName && typeof editor.setInstanceVariant === "function") {
     try {
       const result = editor.setInstanceVariant({ instanceId, variantName });
       const normalized = normalizeInstanceResult(result, instanceId);
@@ -333,13 +346,14 @@ function setInstanceVariant(args = {}) {
     componentId: source.canvasId ?? instance.sourceCanvasId,
     document: source,
   });
-  const match = entries.find(
+  const groupVariants = entries.filter(entry => variantGroupOf(entry.document) === variantGroupId);
+  const match = hasName ? groupVariants.find(
     (entry) =>
       variantGroupOf(entry.document) === variantGroupId &&
       variantNameOf(entry.document) === variantName,
-  );
+  ) : groupVariants.find(entry => matchVariantProperties([entry.document], args.properties));
   if (!match) {
-    invalidArgs(`Invalid argument "variantName": no variant ${JSON.stringify(variantName)} in group ${JSON.stringify(variantGroupId)}`);
+    invalidArgs(`Invalid variant selection in group ${JSON.stringify(variantGroupId)}`);
   }
   if (match.componentId === instance.sourceCanvasId) {
     return {
@@ -348,14 +362,14 @@ function setInstanceVariant(args = {}) {
       layerId: instanceId,
       componentId: match.componentId,
       previousComponentId: match.componentId,
-      variantName,
+      variantName: variantNameOf(match.document),
       variantGroupId,
       unchanged: true,
     };
   }
   return {
     ...swapInstance({ instanceId, componentId: match.componentId }),
-    variantName,
+    variantName: variantNameOf(match.document),
     variantGroupId,
   };
 }
@@ -841,17 +855,41 @@ export const COMPONENT_TOOL_SCHEMAS = Object.freeze([
   {
     type: "function",
     function: {
+      name: "create_component_variant_matrix",
+      description: "Create the Cartesian product of variant axes on a component master, persisting all documents in the active canvas document.",
+      parameters: {
+        type: "object",
+        properties: {
+          sourceComponentId: { type: "string" },
+          axes: { type: "object", description: "Axis names mapped to arrays of values, for example { State: [Default, Hover], Size: [M, L] }.", additionalProperties: { type: "array", items: { type: "string" } } },
+        },
+        required: ["sourceComponentId", "axes"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_instance_variant_properties",
+      description: "List the current property values and available axis values for a component instance.",
+      parameters: { type: "object", properties: { instanceId: { type: "string" } }, required: ["instanceId"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "set_instance_variant",
       description:
-        "Swap a component instance to a named variant from the same group. Keeps the " +
+        "Swap a component instance to a named variant or property map from the same group. Keeps the " +
         "instance's box and resets layer overrides (same behaviour as swap_instance).",
       parameters: {
         type: "object",
         properties: {
           instanceId: { type: "string" },
           variantName: { type: "string" },
+          properties: { type: "object", description: "Variant property map, for example { State: Hover }.", additionalProperties: { type: "string" } },
         },
-        required: ["instanceId", "variantName"],
+        required: ["instanceId"],
       },
     },
   },
@@ -974,6 +1012,8 @@ export const COMPONENT_TOOL_EXECUTORS = Object.freeze({
   swap_instance: swapInstance,
   create_component_variant: createComponentVariant,
   list_component_variants: listComponentVariants,
+  create_component_variant_matrix: createComponentVariantMatrix,
+  list_instance_variant_properties: listInstanceVariantProperties,
   set_instance_variant: setInstanceVariant,
   create_variable_collection: createVariableCollection,
   add_variable_mode: addVariableMode,

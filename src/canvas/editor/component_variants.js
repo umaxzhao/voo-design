@@ -80,6 +80,50 @@ export function matchVariantProperty(variants, current, key, value) {
   });
 }
 
+export function matchVariantProperties(variants, properties) {
+  if (!properties || typeof properties !== "object" || Array.isArray(properties)) return null;
+  return variants.find(document => {
+    const candidate = parseVariantName(document.variantName);
+    return candidate && Object.entries(properties).every(([key, value]) => candidate[key] === value);
+  }) ?? null;
+}
+
+export function createVariantMatrix(host, source, axes) {
+  const entries = Object.entries(axes ?? {});
+  if (!entries.length || entries.some(([, values]) => !Array.isArray(values) || !values.length || values.some(value => typeof value !== "string" || !value.trim()))) {
+    throw new TypeError("Variant axes must contain non-empty arrays of strings");
+  }
+  const seenKeys = new Set();
+  const names = entries.map(([rawKey, values]) => {
+    const key = rawKey.trim();
+    if (!key.trim()) throw new TypeError("Variant axis names must not be empty");
+    if (seenKeys.has(key)) throw new TypeError(`Duplicate variant axis ${key}`);
+    seenKeys.add(key);
+    return [key, [...new Set(values.map(value => value.trim()))]];
+  });
+  let combinations = [{}];
+  for (const [key, values] of names) {
+    combinations = combinations.flatMap(combination => values.map(value => ({ ...combination, [key]: value })));
+  }
+  const variantNames = combinations.map(combination => Object.entries(combination).map(([key, value]) => `${key}=${value}`).join(", "));
+  const existing = componentVariants(host, source);
+  const groupId = variantGroupOf(source) ?? `variant-group:${newComponentId()}`;
+  if (existing.some(document => variantGroupOf(document) === groupId && variantNames.includes(variantNameOf(document)))) {
+    throw new Error("Variant matrix contains an existing variant");
+  }
+  const sourceId = source.canvasId;
+  const canonicalSource = { ...source, variantGroupId: groupId, variantName: variantNames[0] };
+  const components = { ...(host.components ?? {}), [sourceId]: canonicalSource };
+  const created = [];
+  for (const variantName of variantNames.slice(1)) {
+    const componentId = newComponentId();
+    const document = duplicateComponentMaster(source, { componentId, variantGroupId: groupId, variantName });
+    components[componentId] = document;
+    created.push({ componentId, variantName });
+  }
+  return { document: { ...host, ...(host.canvasId === sourceId ? canonicalSource : {}), components }, groupId, created, variantNames };
+}
+
 export function createVariantDocument(host, source, variantName, componentId = newComponentId()) {
   const variants = componentVariants(host, source);
   source = variants.find(doc => doc.canvasId === source.canvasId) ?? source;

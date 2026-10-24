@@ -12,19 +12,91 @@ Defined in `src/canvas/agent/canvas_tools.js`
 (`CANVAS_TOOL_SCHEMAS`); execution is transactional, mutation-focused, and
 kept in sync with undo/redo:
 
+### Layout & Generation
+
 | Tool | Effect |
 | :--- | :--- |
-| `generate_image` | Generates an image and places it as a new image layer. If a layer is selected and `useSelection` is not false, the selection is the reference image. |
-| `describe_selection` | Reports which layer is currently selected. |
-| `inspect_layer_tree` | Reads the layer tree. |
-| `mutate_layer_layout` | Updates a layer's position, size or rotation. |
-| `mutate_layer_style` | Updates visual style attributes: fills, strokes, strokeWidth, cornerRadius, opacity. |
-| `mutate_layer_text` | Updates typography and text content on a text layer. |
-| `mutate_auto_layout` | Configures or updates Auto-Layout on a frame or group (direction, gap, padding, wrap, alignment). |
-| `batch_mutate_layers` | Executes multiple layer mutations in a single atomic undoable transaction. |
-| `boolean_combine` | Combines layers into a boolean group (`union`, `subtract`, `intersect`, `exclude`) and selects the result. Without `layerIds`, the current selection is used. |
-| `set_constraints` | Sets or clears layout constraints on layers (how they follow their parent frame on resize). Without `layerIds`, the current selection is used. |
-| `export_layers` | Rasterizes layers to a base64 PNG data URL: one layer alone, or several composited and cropped to their union bounds. Returns a short preview unless `includeDataUrl` is set. |
+| `build_layout` | Builds a structured layout from a description. |
+| `generate_image` | Generates and places an image layer. |
+| `generate_image_web` | Finds and places a web image. |
+| `create_shape` | Creates a shape layer. |
+| `create_frame` | Creates a frame. |
+| `place_image` | Places an image on the canvas. |
+| `capture_canvas` | Captures the current canvas. |
+
+### Layer Inspection & Mutation
+
+| Tool | Effect |
+| :--- | :--- |
+| `describe_selection` | Reports the selected layer. |
+| `inspect_layer_tree` | Reads the layer hierarchy and metadata. |
+| `mutate_layer_layout` | Updates layer position, size or rotation. |
+| `mutate_layer_style` | Updates fills, strokes, corners or opacity. |
+| `mutate_layer_text` | Updates text and typography. |
+| `mutate_auto_layout` | Configures Auto-Layout. |
+| `batch_mutate_layers` | Runs multiple layer mutations atomically. |
+| `delete_layers` | Deletes layers. |
+| `duplicate_layer` | Duplicates a layer. |
+| `select_layers` | Selects layers. |
+| `group_layers` | Groups layers. |
+| `reorder_layer` | Changes layer order. |
+| `rename_layer` | Renames a layer. |
+| `set_constraints` | Sets layout constraints. |
+| `align_layers` | Aligns layers. |
+| `distribute_layers` | Distributes layers evenly. |
+| `find_layers` | Finds layers by properties. |
+| `undo` | Undoes the last document action. |
+| `redo` | Redoes the last undone action. |
+| `set_text_range_style` | Styles a text range. |
+| `update_plan` | Updates the agent plan. |
+| `get_plan` | Reads the agent plan. |
+| `export_layers` | Exports selected layers as PNG data. |
+
+### Components & Variants
+
+| Tool | Effect |
+| :--- | :--- |
+| `create_component` | Creates a reusable component. |
+| `create_instance` | Creates a component instance. |
+| `set_instance_override` | Overrides instance layer or record properties. |
+| `reset_instance_overrides` | Clears instance overrides. |
+| `swap_instance` | Changes an instance source component. |
+| `create_component_variant` | Creates a sibling component variant. |
+| `create_component_variant_matrix` | Creates and persists a Cartesian variant matrix from axes. |
+| `list_component_variants` | Lists variants in a component group. |
+| `list_instance_variant_properties` | Lists current and available variant properties for an instance. |
+| `set_instance_variant` | Switches by variant name or property map in one document transaction. |
+
+### Design System & Variables
+
+| Tool | Effect |
+| :--- | :--- |
+| `list_styles` | Lists saved styles. |
+| `create_style` | Creates a saved style. |
+| `apply_style` | Applies a saved style. |
+| `list_variables` | Lists design variables. |
+| `bind_variable` | Binds a variable to a layer property. |
+| `create_variable_collection` | Creates a variable collection. |
+| `add_variable_mode` | Adds a collection mode. |
+| `create_variable` | Creates a typed variable. |
+| `set_variable_value` | Sets a variable value. |
+| `set_active_mode` | Changes an active variable mode. |
+
+### Path & Boolean Ops
+
+| Tool | Effect |
+| :--- | :--- |
+| `create_path` | Creates a vector path. |
+| `get_path_nodes` | Reads path nodes. |
+| `edit_path_nodes` | Edits path nodes. |
+| `boolean_combine` | Combines layers with a boolean operation. |
+| `ungroup_layers` | Ungroups a layer group. |
+
+### Quality & Lint
+
+| Tool | Effect |
+| :--- | :--- |
+| `lint_design` | Checks the design for quality issues. |
 
 Mutations flash a visual focus overlay on the canvas
 (`src/canvas/editor/chrome_stage_overlays.js`) so you can see what the agent
