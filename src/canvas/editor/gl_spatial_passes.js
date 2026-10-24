@@ -92,6 +92,7 @@ export function drawDetailPass(
   height,
   radius,
   extra,
+  blurredTexture,
 ) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, targetFbo);
   gl.viewport(0, 0, width, height);
@@ -99,11 +100,33 @@ export function drawDetailPass(
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
   gl.uniform1i(uniforms.image, 0);
-  gl.uniform2f(uniforms.texel, 1 / width, 1 / height);
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, blurredTexture);
+  gl.uniform1i(uniforms.blurred, 1);
   gl.uniform1f(uniforms.radius, radius);
-  gl.uniform1f(uniforms.sigma, Math.max(radius * 0.5, 1e-3));
   if (extra) extra(uniforms);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+/** Run three horizontal/vertical box pairs into RGBA8 intermediate targets. */
+export function drawBoxBlur(gl, program, uniforms, sourceTexture, firstTarget, secondTarget, width, height, radius) {
+  let source = sourceTexture;
+  for (let pass = 0; pass < 6; pass++) {
+    const horizontal = pass % 2 === 0;
+    const target = pass % 2 === 0 ? firstTarget : secondTarget;
+    const targetFbo = target.fbo;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, targetFbo);
+    gl.viewport(0, 0, width, height);
+    gl.useProgram(program);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, source);
+    gl.uniform1i(uniforms.image, 0);
+    gl.uniform2i(uniforms.axis, horizontal ? 1 : 0, horizontal ? 0 : 1);
+    gl.uniform1i(uniforms.radius, radius);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    source = target.texture;
+  }
+  return source;
 }
 
 export function drawMotionBlurPass(

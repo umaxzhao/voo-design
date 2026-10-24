@@ -88,7 +88,7 @@ uniform float u_sigma;
 void main() {
   vec4 sum = texture(u_image, v_uv);
   float weightSum = 1.0;
-  int radius = int(floor(u_radius));
+  int radius = int(floor(u_radius + 0.5));
   for (int i = 1; i <= 32; i++) {
     if (i > radius) break;
     float w = exp(-0.5 * float(i * i) / (u_sigma * u_sigma));
@@ -98,6 +98,27 @@ void main() {
     weightSum += 2.0 * w;
   }
   outColor = sum / weightSum;
+}`;
+
+/** One integer-coordinate box-blur axis pass; the RGBA8 target quantises every pass. */
+export const BOX_BLUR_FRAGMENT_SHADER = `#version 300 es
+precision highp float;
+precision highp int;
+in vec2 v_uv;
+out vec4 outColor;
+uniform sampler2D u_image;
+uniform ivec2 u_axis;
+uniform int u_radius;
+void main() {
+  ivec2 size = textureSize(u_image, 0);
+  ivec2 p = ivec2(gl_FragCoord.xy);
+  vec4 sum = vec4(0.0);
+  for (int i = -32; i <= 32; i++) {
+    if (abs(i) > u_radius) continue;
+    ivec2 q = clamp(p + u_axis * i, ivec2(0), size - 1);
+    sum += texelFetch(u_image, q, 0);
+  }
+  outColor = sum / float(2 * u_radius + 1);
 }`;
 
 /**
@@ -147,9 +168,8 @@ in vec2 v_uv;
 out vec4 outColor;
 
 uniform sampler2D u_image;
-uniform vec2 u_texel;
 uniform float u_radius;
-uniform float u_sigma;
+uniform sampler2D u_blurred;
 
 void main() {
   vec4 center = texture(u_image, v_uv);
@@ -157,25 +177,12 @@ void main() {
     outColor = center;
     return;
   }
-  int radius = int(floor(u_radius));
+  int radius = int(floor(u_radius + 0.5));
   if (radius < 1) {
     outColor = vec4(vec3(0.5), center.a);
     return;
   }
-  vec4 sum = center;
-  float weightSum = 1.0;
-  for (int i = 1; i <= 32; i++) {
-    if (i > radius) break;
-    float w = exp(-0.5 * float(i * i) / (u_sigma * u_sigma));
-    vec2 ox = vec2(u_texel.x * float(i), 0.0);
-    vec2 oy = vec2(0.0, u_texel.y * float(i));
-    sum += texture(u_image, v_uv + ox) * w;
-    sum += texture(u_image, v_uv - ox) * w;
-    sum += texture(u_image, v_uv + oy) * w;
-    sum += texture(u_image, v_uv - oy) * w;
-    weightSum += 4.0 * w;
-  }
-  vec3 blur = (sum / weightSum).rgb;
+  vec3 blur = texelFetch(u_blurred, ivec2(gl_FragCoord.xy), 0).rgb;
   outColor = vec4(clamp(vec3(0.5) + (center.rgb - blur), 0.0, 1.0), center.a);
 }`;
 
@@ -190,9 +197,8 @@ in vec2 v_uv;
 out vec4 outColor;
 
 uniform sampler2D u_image;
-uniform vec2 u_texel;
 uniform float u_radius;
-uniform float u_sigma;
+uniform sampler2D u_blurred;
 uniform float u_strength;
 
 void main() {
@@ -201,24 +207,7 @@ void main() {
     outColor = center;
     return;
   }
-  int radius = int(floor(u_radius));
-  vec3 blur = center.rgb;
-  if (radius >= 1) {
-    vec4 sum = center;
-    float weightSum = 1.0;
-    for (int i = 1; i <= 32; i++) {
-      if (i > radius) break;
-      float w = exp(-0.5 * float(i * i) / (u_sigma * u_sigma));
-      vec2 ox = vec2(u_texel.x * float(i), 0.0);
-      vec2 oy = vec2(0.0, u_texel.y * float(i));
-      sum += texture(u_image, v_uv + ox) * w;
-      sum += texture(u_image, v_uv - ox) * w;
-      sum += texture(u_image, v_uv + oy) * w;
-      sum += texture(u_image, v_uv - oy) * w;
-      weightSum += 4.0 * w;
-    }
-    blur = (sum / weightSum).rgb;
-  }
+  vec3 blur = texelFetch(u_blurred, ivec2(gl_FragCoord.xy), 0).rgb;
   float luma = dot(center.rgb, vec3(0.299, 0.587, 0.114));
   float mid = 2.0 * luma - 1.0;
   float weight = 1.0 - mid * mid;
@@ -246,7 +235,7 @@ void main() {
     outColor = center;
     return;
   }
-  int radius = int(floor(u_radius));
+  int radius = int(floor(u_radius + 0.5));
   if (radius < 1) {
     outColor = center;
     return;
@@ -255,9 +244,11 @@ void main() {
   float count = 1.0;
   for (int i = 1; i <= 32; i++) {
     if (i > radius) break;
-    vec2 offset = u_direction * u_texel * float(i);
-    sum += texture(u_image, clamp(v_uv + offset, vec2(0.0), vec2(1.0))).rgb;
-    sum += texture(u_image, clamp(v_uv - offset, vec2(0.0), vec2(1.0))).rgb;
+    ivec2 size = textureSize(u_image, 0);
+    ivec2 p = ivec2(gl_FragCoord.xy);
+    ivec2 delta = ivec2(floor(u_direction * float(i) + 0.5));
+    sum += texelFetch(u_image, clamp(p + delta, ivec2(0), size - 1), 0).rgb;
+    sum += texelFetch(u_image, clamp(p - delta, ivec2(0), size - 1), 0).rgb;
     count += 2.0;
   }
   outColor = vec4(sum / count, center.a);
