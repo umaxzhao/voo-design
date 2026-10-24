@@ -5,6 +5,8 @@ import {
   accessFromLocation,
   parseRoomId,
   roomIdFromLocation,
+  roomSecretFromLink,
+  roomSecretFromLocation,
 } from "./room.js";
 import { loadIdentity, saveIdentity } from "./identity.js";
 import { MSG } from "./protocol.js";
@@ -163,7 +165,7 @@ export async function joinCollabByLink(text) {
   const live = getCollabSession();
   const access = accessFromLink(text);
   if (access) live.setAccess(access);
-  live.start(roomId);
+  live.start(roomId, { secret: roomSecretFromLink(text) });
   reportIfBroken(attachBridge(isCurrent));
   return roomId;
 }
@@ -177,7 +179,7 @@ export async function autoJoinFromLocation() {
   const live = getCollabSession();
   const access = accessFromLocation();
   if (access) live.setAccess(access);
-  live.start(roomId);
+  live.start(roomId, { secret: roomSecretFromLocation() });
   reportIfBroken(attachBridge(isCurrent));
   return roomId;
 }
