@@ -1,4 +1,5 @@
 import { newComponentId, variantNameOf, variantGroupOf, createVariantDocument, createVariantMatrix, matchVariantProperties, parseVariantName, variantProperties, switchVariantDocument } from "../editor/component_variants.js";
+import { createComponentVariantBatch as buildComponentVariantBatch } from "../editor/component_variant_batch.js";
 export { duplicateComponentMaster } from "../editor/component_variants.js";
 /** Agent tools: component instances (overrides, swap) and document variables. */
 
@@ -263,6 +264,23 @@ function createComponentVariantMatrix(args = {}) {
     { componentId: source.canvasId, variantName: result.variantNames[0] },
     ...result.created,
   ] };
+}
+
+function createComponentVariantsBatch(args = {}) {
+  const editor = requireEditor();
+  const sourceComponentId = requireId(args.sourceComponentId, "sourceComponentId");
+  const source = requireComponent(editor, sourceComponentId);
+  const host = getDocument(editor);
+  let result;
+  try {
+    result = buildComponentVariantBatch(host, source, args.variants);
+  } catch (error) {
+    invalidArgs(error.message);
+  }
+  if (result.results.some(entry => entry.status === "created")) {
+    commitDocument(editor, result.document, "AI: Create component variants batch");
+  }
+  return { ok: true, sourceComponentId, variantGroupId: result.groupId, results: result.results };
 }
 
 function listInstanceVariantProperties(args = {}) {
@@ -839,6 +857,25 @@ export const COMPONENT_TOOL_SCHEMAS = Object.freeze([
   {
     type: "function",
     function: {
+      name: "create_component_variants_batch",
+      description: "Create multiple sibling component variants from property sets in one document transaction. Each result reports created or error.",
+      parameters: {
+        type: "object",
+        properties: {
+          sourceComponentId: { type: "string", description: "Main component to duplicate." },
+          variants: {
+            type: "array",
+            description: "Variant property maps, for example [{ State: 'Default' }, { State: 'Hover' }].",
+            items: { type: "object", additionalProperties: { type: "string" } },
+          },
+        },
+        required: ["sourceComponentId", "variants"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "list_component_variants",
       description:
         "List the variants that share a component's variant group. Give componentId or " +
@@ -1011,6 +1048,7 @@ export const COMPONENT_TOOL_EXECUTORS = Object.freeze({
   reset_instance_overrides: resetInstanceOverrides,
   swap_instance: swapInstance,
   create_component_variant: createComponentVariant,
+  create_component_variants_batch: createComponentVariantsBatch,
   list_component_variants: listComponentVariants,
   create_component_variant_matrix: createComponentVariantMatrix,
   list_instance_variant_properties: listInstanceVariantProperties,
