@@ -7,14 +7,35 @@ import { normalizeAdjustments } from '../../editor/scene_model.js';
 /** Affinity-style canvas context bar; deliberately outside the floating panel. */
 export default function RasterContextToolbar({ context, object, engine, editAndCommit, toolProps }) {
   const input = useRef(null);
+  const frequencyRadius = useRef(null);
+  const frequencyStatus = useRef(null);
   const { t } = useI18n();
   if (!context.topBar) return null;
+  const applyFrequencySeparation = async () => {
+    try {
+      await engine?.frequencySeparateSelected?.(object.id, Number(frequencyRadius.current?.value));
+      if (frequencyStatus.current) frequencyStatus.current.textContent = "";
+    } catch (error) {
+      const key = typeof error?.message === "string" && error.message.startsWith("editor.frequencySeparation.error.")
+        ? error.message
+        : "editor.frequencySeparation.error.generic";
+      if (frequencyStatus.current) frequencyStatus.current.textContent = t(key);
+    }
+  };
   return <div role="toolbar" aria-label="Image context" data-testid="image-context-toolbar" className="absolute inset-x-20 top-16 z-30 flex flex-wrap items-center gap-3 rounded-lg bg-neutral-950 px-3 py-2 text-xs text-neutral-200">
     {toolProps && <details><summary>工具设置</summary><div className="absolute top-full max-h-[60vh] w-80 overflow-auto rounded-lg bg-neutral-950 p-3"><ToolPropertiesSection tool={context.topBar} {...toolProps} /></div></details>}
     <span>{context.topBar === 'image' ? '图像' : t(['marquee', 'lasso', 'wand', 'region', 'select_region', 'ai_select'].includes(context.topBar) ? 'editor.tool.selection' : `editor.tool.${context.topBar}`)}</span>
     <button type="button" onClick={() => engine?.setTool?.('crop')}>裁切</button>
     {object?.kind === 'image' && <>
       <button type="button" onClick={() => input.current?.click()}>替换图像</button>
+      <label className="flex items-center gap-1" htmlFor="frequency-separation-radius">
+        {t("editor.frequencySeparation.radius")}
+        <input ref={frequencyRadius} id="frequency-separation-radius" type="number" min="1" max="100" defaultValue="10" className="w-14 rounded-lg bg-neutral-900 px-1 py-0.5" />
+      </label>
+      <button type="button" onClick={applyFrequencySeparation}>
+        {t("editor.frequencySeparation.action")}
+      </button>
+      <span ref={frequencyStatus} role="status" aria-live="polite" />
       <input ref={input} hidden type="file" accept="image/*" onChange={async event => {
         const file = event.target.files?.[0];
         if (!file) return;

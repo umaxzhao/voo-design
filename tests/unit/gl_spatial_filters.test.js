@@ -7,6 +7,16 @@ import {
 } from "../../src/canvas/editor/gl_spatial_shaders.js";
 
 describe("GL spatial filter twins", () => {
+  describe("GPU and CPU pixel consistency", () => {
+    const skipReason = "no GL context in Node/jsdom";
+
+    it.skip(`highPass maximum per-channel difference <= 3 (${skipReason})`);
+
+    it.skip(`clarity maximum per-channel difference <= 3 (${skipReason})`);
+
+    it.skip(`motionBlur maximum per-channel difference <= 3 (${skipReason})`);
+  });
+
   it("exposes highPass / clarity / motionBlur fragment shaders", () => {
     expect(HIGH_PASS_FRAGMENT_SHADER).toMatch(/u_radius/);
     expect(HIGH_PASS_FRAGMENT_SHADER).toMatch(/0\.5/);
@@ -29,12 +39,17 @@ describe("GL spatial filter twins", () => {
     ).toBe(false);
   });
 
-  it("still forces cpuOnly for live filters and pixel ops", () => {
-    expect(
-      buildToneLut({
-        liveFilters: [{ kind: "highPass", enabled: true, params: { value: 10 } }],
-      }).cpuOnly,
-    ).toBe(true);
+  it("allows fully opaque spatial live filter stacks on the GPU", () => {
+    expect(buildToneLut({ liveFilters: [
+      { kind: "blur", enabled: true, opacity: 1, params: { value: 20 } },
+      { kind: "motionBlur", enabled: true, opacity: 1, params: { value: 10, angle: 45 } },
+    ] }).cpuOnly).toBe(false);
+    expect(buildToneLut({ liveFilters: [
+      { kind: "highPass", enabled: true, opacity: 0.5, params: { value: 10 } },
+    ] }).cpuOnly).toBe(true);
+    expect(buildToneLut({ liveFilters: [
+      { kind: "sepia", enabled: true, opacity: 1, params: { value: 10 } },
+    ] }).cpuOnly).toBe(true);
     expect(buildToneLut({ noise: { enabled: true, value: 10 } }).cpuOnly).toBe(
       true,
     );
