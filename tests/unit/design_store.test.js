@@ -132,6 +132,11 @@ describe("useDesignStore Standalone Decoupled Store", () => {
 
     store.closeProject();
     state = useDesignStore.getState();
+    expect(state.welcomeOpen).toBe(false);
+    expect(state.fileName).toBe("Untitled.voo");
+
+    store.closeProject();
+    state = useDesignStore.getState();
     expect(state.welcomeOpen).toBe(true);
     expect(state.fileName).toBeNull();
     expect(state.nodes).toHaveLength(0);
