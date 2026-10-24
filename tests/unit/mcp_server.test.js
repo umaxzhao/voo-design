@@ -25,8 +25,10 @@ function stdio(callTool) {
     throw new Error("Missing stdio reply");
   } };
 }
-async function client(port) {
-  const ws = new WebSocket(`ws://127.0.0.1:${port}`);
+async function client(port, token) {
+  const ws = new WebSocket(`ws://127.0.0.1:${port}`, {
+    headers: { "x-voo-cli-bridge-token": token },
+  });
   await once(ws, "open");
   let id = 0;
   return { ws, invoke(channel, args = []) {
@@ -93,7 +95,11 @@ describe("MCP stdio", () => {
 describe("MCP relay", () => {
   it("registers the page link and serializes executor results and errors", async () => {
     const bridge = await startCliBridgeServer({ port: 0 });
-    vi.stubGlobal("WebSocket", WebSocket);
+    function BrowserOriginWebSocket(url) {
+      return new WebSocket(url, { origin: "http://localhost:5173" });
+    }
+    BrowserOriginWebSocket.OPEN = WebSocket.OPEN;
+    vi.stubGlobal("WebSocket", BrowserOriginWebSocket);
     const executeTool = vi.fn(async (name, args) => {
       if (name === "fail") throw new Error("page failure");
       if (name === "empty") return undefined;
@@ -101,7 +107,7 @@ describe("MCP relay", () => {
     });
     const stop = startCanvasMcpLink({ url: `ws://127.0.0.1:${bridge.port}`, executeTool });
     try {
-      const caller = await client(bridge.port);
+      const caller = await client(bridge.port, process.env.VOO_CLI_BRIDGE_TOKEN);
       for (let n = 0; n < 100; n++) {
         if ((await caller.invoke(C.MCP_STATUS)).value.canvasConnected) break;
         await new Promise((resolve) => setTimeout(resolve, 5));
@@ -130,7 +136,7 @@ describe("MCP relay", () => {
     try {
       expect((await s.request("tools/call", { name: "voo_status" })).result.content[0].text).toBe('{"canvasConnected":false}');
       expect((await s.request("tools/call", { name: "create_frame" })).result).toMatchObject({ isError: true });
-      const page = await client(bridge.port);
+      const page = await client(bridge.port, process.env.VOO_CLI_BRIDGE_TOKEN);
       await page.invoke(C.MCP_REGISTER_CANVAS);
       page.ws.on("message", (data) => {
         const frame = JSON.parse(data);
@@ -148,8 +154,8 @@ describe("MCP relay", () => {
   it("round-trips tools, authenticates results, handles replacement and disconnect", async () => {
     const bridge = await startCliBridgeServer({ port: 0 });
     try {
-      const page = await client(bridge.port);
-      const caller = await client(bridge.port);
+      const page = await client(bridge.port, process.env.VOO_CLI_BRIDGE_TOKEN);
+      const caller = await client(bridge.port, process.env.VOO_CLI_BRIDGE_TOKEN);
       expect(await caller.invoke(C.MCP_CALL, ["create_shape", {}])).toMatchObject({ ok: false, error: "mcp.noCanvas" });
       await page.invoke(C.MCP_REGISTER_CANVAS);
       expect((await caller.invoke(C.MCP_STATUS)).value.canvasConnected).toBe(true);
@@ -166,7 +172,7 @@ describe("MCP relay", () => {
       const event = once(page.ws, "message");
       const pending = caller.invoke(C.MCP_CALL, ["hold", {}]);
       await event;
-      const replacement = await client(bridge.port);
+      const replacement = await client(bridge.port, process.env.VOO_CLI_BRIDGE_TOKEN);
       await replacement.invoke(C.MCP_REGISTER_CANVAS);
       expect(await pending).toMatchObject({ ok: false, error: "Canvas disconnected" });
       page.ws.close();
