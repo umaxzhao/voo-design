@@ -18,12 +18,14 @@ import { useI18n } from "../../use_i18n.js";
 import PropertiesPanelHeader from "./properties_panel_header.jsx";
 import PropertiesPanelMaskToolbar from "./properties_panel_mask_toolbar.jsx";
 import PropertiesPanelSections from "./properties_panel_sections.jsx";
+import LiveFilterSection from "./live_filter_section.jsx";
 import { editorPropertiesPropTypes } from "./properties_panel_types.js";
 
 export {
   PropertiesPanelHeader,
   PropertiesPanelMaskToolbar,
   PropertiesPanelSections,
+  LiveFilterSection,
   editorPropertiesPropTypes,
 };
 
