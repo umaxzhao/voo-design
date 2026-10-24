@@ -70,6 +70,7 @@ const SvgEditModal = lazy(() => import("./SvgEditModal.jsx"));
 import { DESIGN_SHORTCUT_GROUPS } from "../../shared/editor-shortcut-catalog.js";
 import { useShowRulers } from "../use_show_rulers.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
+import { loadEditorPanelLayout, saveEditorPanelLayout } from "./editor_panel_preferences.js";
 import {
   addGuide,
   createGuide,
@@ -391,7 +392,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const [mediaImportBusy, setMediaImportBusy] = useState(false);
   const [mediaImportError, setMediaImportError] = useState(null);
   const mediaInputRef = useRef(null);
-  const [swapPanels, setSwapPanels] = useState(false);
+  const [swapPanels, setSwapPanels] = useState(
+    () => loadEditorPanelLayout().swapped,
+  );
   // The panels' layout follows the editor's width (see editor_panel_layout).
   // A callback ref: the editor renders nothing until a node is open, so a
   // mount-time effect would find no element to measure.
@@ -3352,7 +3355,11 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     workbench.wideLayersRail && layersPanelShown ? swapPanels : sidePanelSwap;
   // Swapping sides moves the clear band the fit uses; refit into it.
   const toggleSwapPanels = () => {
-    setSwapPanels((swapped) => !swapped);
+    setSwapPanels((swapped) => {
+      const next = !swapped;
+      void saveEditorPanelLayout({ swapped: next });
+      return next;
+    });
     requestAnimationFrame(() => engine?.zoomToFit?.());
   };
 
