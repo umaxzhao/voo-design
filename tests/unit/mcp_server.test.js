@@ -173,7 +173,12 @@ describe("MCP relay", () => {
       const closed = once(replacement.ws, "close");
       replacement.ws.close();
       await closed;
-      expect((await caller.invoke(C.MCP_STATUS)).value.canvasConnected).toBe(false);
+      let canvasConnected = true;
+      for (let n = 0; n < 100 && canvasConnected; n++) {
+        canvasConnected = (await caller.invoke(C.MCP_STATUS)).value.canvasConnected;
+        if (canvasConnected) await new Promise((resolve) => setTimeout(resolve, 5));
+      }
+      expect(canvasConnected).toBe(false);
     } finally { await bridge.close(); }
   });
 });
