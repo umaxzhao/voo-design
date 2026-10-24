@@ -63,7 +63,7 @@ export default function ConstraintsSection({ object, editAndCommit }) {
           data-testid="editor-constraints-diagram"
           className="relative h-16 w-16 shrink-0 rounded-lg border border-white/10 bg-[#1a1a1a]"
         >          <div className="absolute inset-2 rounded-lg border border-white/20" />
-          <div className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-[#a7ffd4]/60 bg-[#a7ffd4]/10" />
+          <div className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-white/30 bg-white/[0.06]" />
           <button
             type="button"
             data-testid="editor-constraints-left"

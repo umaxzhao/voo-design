@@ -42,18 +42,17 @@ describe("commercial first run", () => {
     setSetting("voo.onboarding.completedVersion", null);
   });
   afterEach(() => vi.unstubAllGlobals());
-  it("defaults to showing for a new user", () => expect(shouldShowFirstRun()).toBe(true));
-  it.each(["completed", "dismissed"])("persists %s and never shows again", (status) => {
-    finishFirstRun(status);
-    expect(getSetting(FIRST_RUN_KEY)).toBe(status);
-    expect(shouldShowFirstRun()).toBe(false);
-    // Workspace setup remaining incomplete must not bring the introduction back.
-    setSetting("voo.workspace.path", "");
-    expect(shouldShowFirstRun()).toBe(false);
+  it("shows on every launch, including after completion or dismissal", () => {
+    expect(shouldShowFirstRun()).toBe(true);
+    finishFirstRun("completed");
+    expect(getSetting(FIRST_RUN_KEY)).toBe("completed");
+    expect(shouldShowFirstRun()).toBe(true);
+    finishFirstRun("dismissed");
+    expect(shouldShowFirstRun()).toBe(true);
   });
-  it("does not interrupt existing workspace-guide users", () => {
+  it("still shows for existing workspace-guide users", () => {
     setSetting("voo.onboarding.completedVersion", "2.2.0");
-    expect(shouldShowFirstRun()).toBe(false);
+    expect(shouldShowFirstRun()).toBe(true);
   });
   it("URL forcing overrides automation and completed flags", () => {
     finishFirstRun();
@@ -78,8 +77,8 @@ describe("commercial first run", () => {
     await loadLocale(locale);
     const html = renderToStaticMarkup(<FirstRunOnboarding open onClose={() => {}} onStart={() => {}} />);
     expect(html).toContain("first-run-title");
-    expect(html).toContain(locale === "en" ? "Welcome to VOO Design" : "欢迎使用 VOO Design");
-    expect(html).toContain(locale === "en" ? "Next" : "下一步");
+    expect(html).toContain(locale === "en" ? "Choose your Agent (optional)" : "选择智能体（可选）");
+    expect(html).toContain(locale === "en" ? "Set up later" : "稍后设置");
     expect(html).not.toContain("firstRun.");
   });
   it("renders nothing when closed", () => {
@@ -136,56 +135,27 @@ describe("first-run interactions", () => {
     onStart = vi.fn(); onClose = vi.fn(); draw();
   });
   afterEach(() => { hooks.active = false; vi.unstubAllGlobals(); });
-  it("navigates every step, creates the chosen template and persists the provider", () => {
-    expect(step()).toBe("welcome"); next(); expect(step()).toBe("start");
-    click(el => el.type === "button" && elements(el).some(child => child.props?.children === "Mobile wallet"));
-    next(); expect(step()).toBe("tour");
-    expect(onStart.mock.calls[0][0].category).toBe("mobile");
-    next(); expect(step()).toBe("provider");
+  it("renders the provider step and persists the chosen provider", () => {
+    expect(step()).toBe("provider");
     click(el => el.type === "button" && el.props.children === "Codex");
     expect(getSetting(AGENT_SETTING.MODEL)).toBe(AGENT_DEFAULT_MODELS.codex);
     click(el => el.type === "button" && el.props.children === "Claude Code");
     expect(getSetting(AGENT_SETTING.MODEL)).toBe(AGENT_DEFAULT_MODELS.claude);
-    click(el => el.type === "button" && el.props.children === "Back"); expect(step()).toBe("tour");
-    next(); next(); expect(getSetting(FIRST_RUN_KEY)).toBe("completed"); expect(onClose).toHaveBeenCalled();
-  });
-  it("does not recreate the document when returning through Start", () => {
-    next(); next();
-    click(el => el.type === "button" && el.props.children === "Back");
-    next(); expect(onStart).toHaveBeenCalledTimes(1);
+    next(); expect(getSetting(FIRST_RUN_KEY)).toBe("completed"); expect(onClose).toHaveBeenCalled();
+    expect(onStart).not.toHaveBeenCalled();
   });
   it.each(["en", "zh"])("translates every step in %s", async locale => {
     await loadLocale(locale);
-    for (let index = 0; index < 4; index++) {
-      draw();
-      expect(renderToStaticMarkup(tree)).not.toContain("firstRun.");
-      if (index < 3) next();
-    }
+    draw();
+    expect(renderToStaticMarkup(tree)).not.toContain("firstRun.");
   });
-  it("creates blank through the start callback", () => { next(); next(); expect(onStart).toHaveBeenCalledWith(null); });
-  it.each([0, 1, 2, 3])("skip persists from step %s", index => {
-    for (let i = 0; i < index; i++) next();
+  it("skip persists from the provider step", () => {
     click(el => el.type === "button" && el.props.children === "Skip for now");
     expect(getSetting(FIRST_RUN_KEY)).toBe("dismissed"); expect(onClose).toHaveBeenCalled();
   });
   it("Escape closes for now and marks dismissed on first run", () => {
     tree.props.onCancel({ preventDefault: vi.fn() });
     expect(getSetting(FIRST_RUN_KEY)).toBe("dismissed"); expect(onClose).toHaveBeenCalled();
-  });
-  it("keeps the current document by default when reopened", () => {
-    reopened = true; hooks.values = []; draw();
-    next();
-    expect(elements(tree).find(el => el.props?.children === "Keep current document").props["aria-pressed"]).toBe(true);
-    next(); expect(step()).toBe("tour"); expect(onStart).not.toHaveBeenCalled();
-  });
-  it.each([{ isDirty: true, nodes: [] }, { isDirty: false, nodes: [{ id: "existing" }] }])("requires confirmation before replacing %j", current => {
-    useDesignStore.setState(current);
-    reopened = true; hooks.values = []; draw(); next();
-    click(el => el.type === "button" && elements(el).some(child => child.props?.children === "Blank"));
-    next(); expect(step()).toBe("start"); expect(onStart).not.toHaveBeenCalled();
-    expect(elements(tree).find(el => el.props?.["data-testid"] === "first-run-next").props.disabled).toBe(true);
-    elements(tree).find(el => el.type === "input").props.onChange({ target: { checked: true } }); draw();
-    next(); expect(onStart).toHaveBeenCalledWith(null); expect(step()).toBe("tour");
   });
   it.each([null, "completed", "dismissed"])("reopened Escape preserves persisted status %s", status => {
     setSetting(FIRST_RUN_KEY, status);
@@ -197,32 +167,23 @@ describe("first-run interactions", () => {
     vi.stubGlobal("window", new EventTarget());
     vi.stubGlobal("CustomEvent", class extends Event {});
     const listener = vi.fn(); window.addEventListener("voo:open-onboarding", listener);
-    next(); next(); next();
     click(el => el.type === "button" && el.props.children === "Codex");
     click(el => el.type === "button" && el.props.children === "Open Agent setup guide (CLI detection and connection test)");
     expect(listener).toHaveBeenCalledOnce(); expect(onClose).toHaveBeenCalled();
   });
   it("persists an existing custom model through the Agent model setting", () => {
     vi.stubGlobal("localStorage", { getItem: key => key === "voo.custom_providers" ? JSON.stringify([{ id: "custom:studio", name: "Studio", models: [{ id: "model-a", label: "Model A" }] }]) : null });
-    next(); next(); next();
     click(el => el.type === "button" && el.props.children === "Custom model");
     const select = elements(tree).find(el => el.type === "select");
     select.props.onChange({ target: { value: "api:custom%3Astudio:model-a" } });
     expect(getSetting(AGENT_SETTING.MODEL)).toBe("api:custom%3Astudio:model-a");
   });
-  it("keeps Start open when document creation fails", () => {
-    next(); onStart.mockImplementationOnce(() => { throw new Error("failed"); }); next();
-    expect(step()).toBe("start");
-    expect(elements(tree).some(el => el.props?.role === "alert")).toBe(true);
-    next(); expect(step()).toBe("tour");
-  });
   it("custom setup opens the existing provider settings", () => {
     vi.stubGlobal("window", new EventTarget());
     vi.stubGlobal("CustomEvent", class extends Event { constructor(type, options) { super(type); this.detail = options.detail; } });
     const listener = vi.fn(); window.addEventListener("voo:open-settings", listener);
-    next(); next(); next();
     click(el => el.type === "button" && el.props.children === "Custom model"); next();
     expect(listener.mock.calls[0][0].detail.tab).toBe("providers");
   });
-  it("can finish without choosing an Agent", () => { next(); next(); next(); next(); expect(onClose).toHaveBeenCalled(); });
+  it("can finish without choosing an Agent", () => { next(); expect(onClose).toHaveBeenCalled(); });
 });

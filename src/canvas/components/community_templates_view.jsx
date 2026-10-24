@@ -17,7 +17,7 @@ function TemplateMiniPreview({ templateId }) {
         <div className="w-full h-full bg-neutral-950 p-3 flex flex-col justify-between text-[9px] select-none pointer-events-none">
           <div className="flex items-center justify-between border-b border-white/10 pb-2">
             <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-md bg-[#a7ffd4]" />
+              <div className="w-2.5 h-2.5 rounded-md bg-white/40" />
               <span className="font-medium text-white">VOO Cloud</span>
             </div>
             <div className="flex gap-1.5">
@@ -27,7 +27,7 @@ function TemplateMiniPreview({ templateId }) {
           </div>
           <div className="flex-1 flex gap-2 pt-2">
             <div className="w-12 border-r border-white/10 flex flex-col gap-1 pr-1">
-              <div className="h-2.5 rounded-lg bg-white/10 text-[#a7ffd4] px-1 flex items-center">Overview</div>
+              <div className="h-2.5 rounded-lg bg-white/10 text-white px-1 flex items-center">Overview</div>
               <div className="h-2 rounded-lg bg-neutral-800" />
               <div className="h-2 rounded-lg bg-neutral-800" />
               <div className="h-2 rounded-lg bg-neutral-800" />
@@ -44,7 +44,7 @@ function TemplateMiniPreview({ templateId }) {
                 </div>
                 <div className="bg-neutral-900 border border-white/10 rounded-lg p-1.5">
                   <div className="text-[9px] text-neutral-400">Uptime</div>
-                  <div className="text-[10px] font-medium text-[#a7ffd4] mt-0.5">99.98%</div>
+                  <div className="text-[10px] font-medium text-white mt-0.5">99.98%</div>
                 </div>
               </div>
               <div className="flex-1 bg-neutral-900 border border-white/10 rounded-lg p-2 flex items-end justify-between gap-1">
@@ -52,7 +52,7 @@ function TemplateMiniPreview({ templateId }) {
                   <div key={i} className="flex-1 bg-neutral-800 rounded-lg flex flex-col justify-end overflow-hidden h-full">
                     <div
                       style={{ height: `${h}%` }}
-                      className={`w-full rounded-lg ${i === 5 ? "bg-[#a7ffd4]" : "bg-neutral-700"}`}
+                      className={`w-full rounded-lg ${i === 5 ? "bg-white" : "bg-neutral-700"}`}
                     />
                   </div>
                 ))}
@@ -109,7 +109,7 @@ function TemplateMiniPreview({ templateId }) {
             <div className="flex gap-2 text-neutral-400 text-[9px]">
               <span>Features</span>
               <span>Models</span>
-              <span className="text-[#a7ffd4] font-medium">Get Started</span>
+              <span className="text-white font-medium">Get Started</span>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-1.5 flex-1 pt-2">
@@ -124,7 +124,7 @@ function TemplateMiniPreview({ templateId }) {
             </div>
             <div className="col-span-1 rounded-lg bg-neutral-900 border border-white/10 p-1.5 flex flex-col justify-between">
               <span className="text-[9px] text-neutral-400">Latency</span>
-              <span className="text-[12px] font-mono font-medium text-[#a7ffd4]">12ms</span>
+              <span className="text-[12px] font-mono font-medium text-white">12ms</span>
               <span className="text-[9px] text-neutral-400">Realtime sync</span>
             </div>
             <div className="col-span-1 rounded-lg bg-neutral-900 border border-white/10 p-1.5 flex flex-col justify-between">
@@ -133,7 +133,7 @@ function TemplateMiniPreview({ templateId }) {
             </div>
             <div className="col-span-2 rounded-lg bg-neutral-900 border border-white/10 p-1.5 flex items-center justify-between">
               <span className="text-[9px] text-neutral-300">Built for your team</span>
-              <span className="text-[9px] text-[#a7ffd4] font-medium">Explore</span>
+              <span className="text-[9px] text-white font-medium">Explore</span>
             </div>
           </div>
         </div>
@@ -150,7 +150,7 @@ function TemplateMiniPreview({ templateId }) {
             <span className="text-[9px] text-neutral-400 uppercase tracking-wider font-medium">Color Semantics</span>
             <div className="flex gap-1.5">
               {[
-                { label: "Accent", color: "bg-[#a7ffd4]" },
+                { label: "Accent", color: "bg-white" },
                 { label: "Emerald", color: "bg-neutral-600" },
                 { label: "Amber", color: "bg-neutral-500" },
                 { label: "Rose", color: "bg-neutral-400" },
@@ -201,7 +201,7 @@ function TemplateMiniPreview({ templateId }) {
             <div className="flex flex-col gap-1 w-24">
               <div className="rounded-lg bg-neutral-900 border border-white/10 p-1 flex justify-between items-center">
                 <span className="text-[9px] text-neutral-400">Net Retention</span>
-                <span className="text-[9px] font-medium text-[#a7ffd4] font-mono">148%</span>
+                <span className="text-[9px] font-medium text-white font-mono">148%</span>
               </div>
               <div className="rounded-lg bg-neutral-900 border border-white/10 p-1 flex justify-between items-center">
                 <span className="text-[9px] text-neutral-400">Gross Margin</span>
@@ -272,7 +272,7 @@ function TemplateDialog({ template, title, t, onClose, onUse }) {
       onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
       className="m-auto w-[calc(100%-2rem)] max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl border border-white/10 bg-neutral-900 p-0 text-white backdrop:bg-black/70">
       <div className="flex items-center justify-between px-5 py-4">
-        <h2 id="template-dialog-title" className="text-sm font-medium">{title}</h2>
+        <h2 id="template-dialog-title" className="text-xs font-medium">{title}</h2>
         <button type="button" autoFocus onClick={onClose} aria-label={t("welcome.community.close")}
           className="rounded-md p-1 text-neutral-400 hover:bg-white/10 hover:text-white"><X size={16} /></button>
       </div>
@@ -282,7 +282,7 @@ function TemplateDialog({ template, title, t, onClose, onUse }) {
       <div className="flex items-center justify-between p-5">
         <span className="text-xs tabular-nums text-neutral-400">{template.width} × {template.height} px</span>
         <button type="button" data-testid="use-template" onClick={() => onUse(template)}
-          className="rounded-lg bg-[#a7ffd4] px-4 py-2 text-xs font-medium text-black hover:bg-[#c4ffe3]">{t("welcome.community.useTemplate")}</button>
+          className="rounded-lg bg-white px-4 py-2 text-xs font-medium text-black hover:bg-neutral-200">{t("welcome.community.useTemplate")}</button>
       </div>
     </dialog>
   );
@@ -308,12 +308,12 @@ export default function CommunityTemplatesView({ onUseTemplate }) {
   return (
     <section data-testid="community-templates" className="w-full space-y-5" aria-labelledby="templates-title">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 id="templates-title" className="text-base font-medium text-white">{t("welcome.community.title")}</h1>
+        <h1 id="templates-title" className="text-[15px] font-medium text-white">{t("welcome.community.title")}</h1>
         <div className="relative w-full sm:w-64">
           <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
           <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)}
             aria-label={t("welcome.community.searchPlaceholder")} placeholder={t("welcome.community.searchPlaceholder")}
-            className="w-full rounded-lg border border-white/10 bg-neutral-900 py-2 pl-9 pr-3 text-xs text-white placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-white/30" />
+            className="w-full rounded-lg border border-white/10 bg-neutral-900 py-2 pl-9 pr-3 text-xs text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/30" />
         </div>
       </div>
       <div className="flex flex-wrap gap-1" role="group" aria-label={t("welcome.community.categories")}>
@@ -347,9 +347,9 @@ export default function CommunityTemplatesView({ onUseTemplate }) {
         </div>
       ) : (
         <div className="py-20 text-center">
-          <p role="status" className="text-sm text-neutral-400">{t("welcome.community.empty")}</p>
+          <p role="status" className="text-xs text-neutral-400">{t("welcome.community.empty")}</p>
           <button type="button" onClick={() => { setSearchQuery(""); setSelectedCategory("all"); }}
-            className="mt-3 text-xs text-[#a7ffd4] hover:underline">{t("welcome.community.reset")}</button>
+            className="mt-3 text-xs text-neutral-300 hover:text-white hover:underline">{t("welcome.community.reset")}</button>
         </div>
       )}
       {activeModalTemplate && <TemplateDialog template={activeModalTemplate} title={title(activeModalTemplate)} t={t}

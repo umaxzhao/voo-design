@@ -45,7 +45,7 @@ export default function EditorCanvasTreeRow({
       data-testid="editor-canvas-row"
       data-canvas-id={page.id}
       onClick={() => onFocusCanvas?.(page.id)}
-      className={`group/canvas flex min-h-8 items-center gap-1 rounded px-1.5 transition-colors cursor-pointer text-neutral-200 ${
+      className={`group/canvas flex min-h-8 items-center gap-1 rounded-lg px-1.5 transition-colors cursor-pointer text-neutral-200 ${
         isActive ? "bg-neutral-800" : "hover:bg-white/[0.06]"
       }`}
     >

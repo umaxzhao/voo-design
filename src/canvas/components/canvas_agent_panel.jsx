@@ -580,7 +580,7 @@ export default function CanvasAgentPanel({ onClose }) {
                   }
                 >
                   {item.contextBadge && (
-                    <div className="mb-1.5 inline-flex items-center gap-1 rounded-md bg-[#a7ffd4]/15 px-1.5 py-0.5 text-[10px] font-mono text-[#a7ffd4]">
+                    <div className="mb-1.5 inline-flex items-center gap-1 rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-mono text-neutral-300">
                       {item.contextBadge}
                     </div>
                   )}
@@ -591,7 +591,7 @@ export default function CanvasAgentPanel({ onClose }) {
             {directions.length > 0 && (
               <li className="flex flex-wrap gap-1.5" aria-label="Visual directions">
                 {directions.map(direction => (
-                  <button key={direction.id} type="button" title={`${direction.mood} — ${direction.layoutIdea}`} onClick={() => directionChoice.current?.(direction.id)} className="rounded-full border border-neutral-700 px-2.5 py-1 text-[11px] text-neutral-200 hover:border-purple-300">
+                  <button key={direction.id} type="button" title={`${direction.mood} — ${direction.layoutIdea}`} onClick={() => directionChoice.current?.(direction.id)} className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-neutral-200 hover:bg-white/10">
                     {direction.name}
                   </button>
                 ))}
@@ -612,7 +612,7 @@ export default function CanvasAgentPanel({ onClose }) {
         <div className="flex items-center gap-1.5 px-4 pt-1 pb-1">
           <span
             data-testid="agent-context-badge"
-            className="flex items-center gap-1 rounded-md bg-[#a7ffd4]/15 px-2 py-0.5 text-[10px] font-mono text-[#a7ffd4]"
+            className="flex items-center gap-1 rounded-md bg-white/[0.06] px-2 py-0.5 text-[10px] font-mono text-neutral-300"
           >
             <span>@{activeContext.name || activeContext.kind}</span>
             <button
@@ -640,12 +640,12 @@ export default function CanvasAgentPanel({ onClose }) {
         <div className="mx-4 mb-2 flex gap-2 text-[12px]">
           <button type="button" className="rounded-lg px-3 py-2 text-neutral-300 hover:bg-white/10"
             onClick={() => send(lastRequest.text, lastRequest.context)}>{t("agent.panel.retry")}</button>
-          {cancelled && <button type="button" className="rounded-lg px-3 py-2 text-[#eed0ff] hover:bg-white/10"
+          {cancelled && <button type="button" className="rounded-lg px-3 py-2 text-neutral-300 hover:bg-white/10"
             onClick={() => send(`${lastRequest.text}\n\n${t("agent.panel.resumePrompt")}`, lastRequest.context, lastRequest)}>{t("agent.panel.resume")}</button>}
         </div>
       )}
       {error && (
-        <p role="alert" className="mx-4 mb-2 rounded-xl bg-[#E5B2FF]/10 px-3 py-2 text-[12px] text-[#eed0ff]">
+        <p role="alert" className="mx-4 mb-2 rounded-xl bg-rose-500/10 px-3 py-2 text-[12px] text-rose-400">
           {error}
         </p>
       )}

@@ -965,7 +965,7 @@ export default function EditorLayers({
             value: mode,
             label: t(blendModeLabelKey(mode)),
           }))}
-          triggerClassName="!h-7 !w-full !rounded !bg-transparent !px-2.5 !text-[10px] !font-mono !tabular-nums !text-neutral-100 hover:!bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+          triggerClassName="!h-7 !w-full !bg-transparent !px-2.5 !text-[10px] !font-mono !tabular-nums !text-neutral-100 hover:!bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
           widthClass="w-44"
         />
       </div>
@@ -1165,7 +1165,7 @@ export default function EditorLayers({
                                               })
                                           : undefined
                                       }
-                                      className={`group/layer relative flex min-h-8 select-none items-center gap-1.5 rounded py-1 transition-colors ${
+                                      className={`group/layer relative flex min-h-8 select-none items-center gap-1.5 rounded-lg py-1 transition-colors ${
                                         dragId === object.id
                                           ? "opacity-40 "
                                           : ""

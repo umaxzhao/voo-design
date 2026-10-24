@@ -63,17 +63,16 @@ describe("single bottom toolbar", () => {
       expect(html.split(needle).length - 1, needle).toBe(1);
     once('aria-label="editor.undo"');
     once('aria-label="editor.redo"');
-    once('aria-label="editor.view.grid"');
+    once('aria-label="editor.zoomOut"');
+    once('aria-label="editor.zoomIn"');
+    once('aria-label="editor.taskbar.more"');
+    once('data-testid="editor-more-menu-trigger"');
     once('data-testid="editor-toggle-rulers"');
     once('data-testid="editor-toggle-guides"');
-    once('data-testid="editor-grid-menu-trigger"');
-    once('lucide-grid-3x3');
     expect(html).not.toContain('data-testid="editor-toggle-snap-to-grid"');
     once('data-testid="editor-clear-guides"');
-    once('aria-label="editor.zoomIn"');
-    once('aria-label="editor.zoomFit"');
-    once('aria-label="editor.zoomOut"');
-    expect(html).toContain("58%");
+    expect(html).not.toContain('aria-label="editor.view.grid"');
+    expect(html).not.toContain('aria-label="editor.zoomFit"');
   });
 
   it("opens grid options, toggles snap with Magnet, and selects grid sizes", () => {
@@ -93,13 +92,14 @@ describe("single bottom toolbar", () => {
     const find = (id) => nodes().find((node) => node.props?.["data-testid"] === id);
     try {
       expect(find("editor-grid-menu")).toBeUndefined();
+      find("editor-more-menu-trigger").props.onClick();
+      expect(hooks.open).toBe(true);
       nodes().find((node) => node.props?.["aria-label"] === "editor.view.grid").props.onClick();
       expect(toggleGrid).toHaveBeenCalledOnce();
       props.grid = { enabled: false, size: 16 };
       expect(nodes().find((node) => node.props?.["aria-label"] === "editor.view.grid").props["aria-pressed"]).toBe(false);
       props.grid = { enabled: true, size: 16 };
       expect(nodes().find((node) => node.props?.["aria-label"] === "editor.view.grid").props["aria-pressed"]).toBe(true);
-      find("editor-grid-menu-trigger").props.onClick();
       expect(find("editor-grid-menu")).toBeDefined();
       expect(find("editor-grid-menu-snap").props["aria-checked"]).toBe(true);
       expect(renderToStaticMarkup(find("editor-grid-menu-snap"))).toContain("lucide-magnet");
@@ -143,7 +143,6 @@ describe("single bottom toolbar", () => {
       navigate("ArrowDown", 4, 0);
       navigate("End", 0, 4);
       navigate("Home", 4, 0);
-      expect(find("editor-grid-menu-trigger").props.className).toContain("h-7 w-5");
       listeners.keydown({ key: "Escape" });
       expect(hooks.open).toBe(false);
       hooks.open = true;

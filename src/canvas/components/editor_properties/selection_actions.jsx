@@ -130,7 +130,7 @@ export default function SelectionActions({
               placeholder={t("editor.selection.aiRepaintPlaceholder")}
               disabled={aiRepainting}
               aria-label={t("editor.selection.aiRepaintPlaceholder")}
-              className={`${fieldClass} placeholder:text-neutral-500 disabled:opacity-50`}
+              className={`${fieldClass} placeholder:text-neutral-400 disabled:opacity-50`}
             />
             <button
               type="button"

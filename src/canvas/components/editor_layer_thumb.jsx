@@ -348,7 +348,7 @@ PenThumb.propTypes = {
  */
 export default function EditorLayerThumb({ object, getBitmap = null }) {
   const tile =
-    "flex h-5 w-7 shrink-0 items-center justify-center overflow-hidden rounded-sm";
+    "flex h-5 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md";
 
   switch (object.kind) {
     case NODE_KIND.IMAGE:

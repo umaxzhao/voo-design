@@ -153,18 +153,22 @@
    * `scroll-margin` keeps the browser from scrolling a newly focused control
    * flush against the viewport edge.
    */
+  /*
+   * Keyboard focus rings are disabled app-wide. !important also overrides the Tailwind
+   * focus-visible:* utilities: outlines directly, and rings through their shadow variables
+   * (only the ring variables are cleared, so an element's own box-shadow is untouched).
+   */
   :focus-visible {
-    /* Utilities such as outline-none must not hide the focused control. */
-    outline: 2px solid var(--focus-ring, #a7ffd4) !important;
-    outline-offset: 1px;
+    outline: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
     scroll-margin: 8px;
   }
 
   input:focus-visible,
   textarea:focus-visible,
   select:focus-visible {
-    outline: 2px solid var(--focus-ring, #a7ffd4);
-    outline-offset: 0;
+    outline: none;
   }
 
   /*

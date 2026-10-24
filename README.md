@@ -5,8 +5,8 @@
 <h1 align="center">VOO Design</h1>
 
 <p align="center">
-  <strong>A local desktop design editor</strong><br />
-  <sub>UI-design workflows in the spirit of Figma, pixel-retouching workflows in the spirit of Affinity — and an agent that can drive the canvas. Runs on the desktop (Electron) and in the browser.</sub>
+  <strong>An agent-driven design editor for the future</strong><br />
+  <sub>Design with an AI agent that works directly on the canvas. Vector, pixel and layout editing in one document. Runs on the desktop (Electron) and in the browser.</sub>
 </p>
 
 <p align="center">
@@ -18,7 +18,7 @@
 
 ![VOO Design dashboard](docs/screenshots/dashboard.jpg)
 
-**VOO Design** is a design editor for vector shapes, pixel layers, text, masks and filters, all in one document. Local AI tools (background removal, upscaling, inpainting) run on your machine, and local CLI coding agents (Claude Code, Codex, OpenCode, Antigravity) can operate the canvas through a sandboxed tool interface.
+**VOO Design** is a design editor built around an AI agent. The agent works directly on the document: it reads the layer tree, applies transactional edits, and places generated images on the canvas, while you keep direct control of vector shapes, pixel layers, text, masks and filters in the same file. Local AI tools (background removal, upscaling, inpainting) run on your machine, and local CLI coding agents (Claude Code, Codex, OpenCode, Antigravity) can operate the canvas through a sandboxed tool interface.
 
 ![VOO Design editor](docs/screenshots/editor.jpg)
 
@@ -42,8 +42,8 @@
 
 ### File formats
 - **`.voo`** is the native project format: it holds the document and its image data, and nothing is lost on save.
-- **Round-trip saves** to SVG, `.fig` (Figma) and PSD, with the per-format losses shown before saving.
-- **Imports**: `.fig` files (decoded in a streaming worker with progress), PSD, SVG, Pen documents and `.abr` brush stamps.
+- **Round-trip saves** to SVG, `.fig` and PSD, with the per-format losses shown before saving.
+- **Imports**: `.fig` files (decoded in a streaming worker with progress), PSD, SVG and `.abr` brush stamps.
 
 ### Local AI (on-device)
 - **Background removal** with an on-device matting model (RMBG-1.4 or a smaller fallback you can pick in settings).

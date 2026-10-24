@@ -214,24 +214,24 @@ function buildEditorSource(nodeId, snapshot) {
  */
 export const CANVAS_TYPE_TONES = Object.freeze({
   [CANVAS_TYPE.DESIGN]: {
-    wash: "bg-[#a7ffd4]/10",
-    bar: "bg-[#a7ffd4]/50",
-    text: "text-[#a7ffd4]",
-    solid: "bg-[#a7ffd4] text-black",
+    wash: "bg-white/[0.08]",
+    bar: "bg-white/40",
+    text: "text-neutral-400",
+    solid: "bg-white text-black",
     label: "editor.canvasType.design",
   },
   [CANVAS_TYPE.MOTION]: {
-    wash: "bg-[#E5B2FF]/10",
-    bar: "bg-[#E5B2FF]/50",
-    text: "text-[#eed0ff]",
-    solid: "bg-[#E5B2FF] text-black",
+    wash: "bg-white/[0.08]",
+    bar: "bg-white/40",
+    text: "text-neutral-400",
+    solid: "bg-white text-black",
     label: "editor.canvasType.motion",
   },
   [CANVAS_TYPE.THREE_D]: {
-    wash: "bg-[#b2ccff]/10",
-    bar: "bg-[#b2ccff]/50",
-    text: "text-[#b2ccff]",
-    solid: "bg-[#b2ccff] text-black",
+    wash: "bg-white/[0.08]",
+    bar: "bg-white/40",
+    text: "text-neutral-400",
+    solid: "bg-white text-black",
     label: "editor.canvasType.threeD",
   },
 });
@@ -946,7 +946,7 @@ export default function EditorPage({
           {componentUses > 0 ? (
             <span
               data-testid="editor-component-uses"
-              className={`shrink-0 ${focused ? "text-[#a7ffd4]/70" : "text-neutral-500"}`}
+              className={`shrink-0 ${focused ? "text-neutral-400" : "text-neutral-500"}`}
             >
               {t("editor.component.uses", { count: componentUses })}
             </span>
@@ -1158,7 +1158,7 @@ export default function EditorPage({
               {componentUses > 0 ? (
                 <span
                   data-testid="editor-component-uses"
-                  className={`shrink-0 ${focused ? "text-[#a7ffd4]/70" : "text-neutral-500"}`}
+                  className={`shrink-0 ${focused ? "text-neutral-400" : "text-neutral-500"}`}
                 >
                   {t("editor.component.uses", { count: componentUses })}
                 </span>

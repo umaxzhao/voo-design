@@ -124,7 +124,7 @@ export default function AutoLayoutSection({ object, editAndCommit }) {
                 onClick={() => change({ direction })}
                 className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-[11px] ${
                   layout.direction === direction
-                    ? "bg-[#E5B2FF]/20 text-[#eed0ff]"
+                    ? "bg-white/[0.12] text-white"
                     : "bg-white/[0.06] text-neutral-400"
                 }`}
               >
@@ -142,7 +142,7 @@ export default function AutoLayoutSection({ object, editAndCommit }) {
               onClick={() => change({ wrap: !layout.wrap })}
               className={`rounded-lg px-3 py-1 text-[10px] ${
                 layout.wrap
-                  ? "bg-[#E5B2FF]/20 text-[#eed0ff]"
+                  ? "bg-white/[0.12] text-white"
                   : "bg-white/[0.06] text-neutral-400"
               }`}
             >

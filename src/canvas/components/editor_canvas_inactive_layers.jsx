@@ -88,7 +88,7 @@ export default function EditorCanvasInactiveLayers({
             data-layer-id={node.id}
             data-inactive-layer="true"
             style={{ paddingLeft: `${8 + depth * 16}px` }}
-            className={`group/layer flex min-h-6 w-full items-center justify-between rounded pr-2 text-left text-[10px] transition-colors ${rowColor}`}
+            className={`group/layer flex min-h-6 w-full items-center justify-between rounded-lg pr-2 text-left text-[10px] transition-colors ${rowColor}`}
           >
             <div className="flex min-w-0 flex-1 items-center gap-1">
               {canExpand ? (
