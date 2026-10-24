@@ -37,6 +37,18 @@ export function clampQuickbar(docRect, width, height, viewportWidth, viewportHei
     top: Math.max(8, Math.min(docRect.y + docRect.height + EDITOR_PAGE_TOOLBAR_GAP, ceiling))
   };
 }
+
+export function reorderSelection(engine, ids, direction) {
+  if (!engine?.reorderNode || !Array.isArray(ids) || ids.length === 0) return;
+  const nodes = engine.getDoc?.()?.nodes ?? [];
+  const indexes = new Map(nodes.map((entry, index) => [entry.id, index]));
+  const orderedIds = [...ids].sort((first, second) => {
+    const firstIndex = indexes.get(first) ?? -1;
+    const secondIndex = indexes.get(second) ?? -1;
+    return direction > 0 ? secondIndex - firstIndex : firstIndex - secondIndex;
+  });
+  orderedIds.forEach((id) => engine.reorderNode(id, direction));
+}
 function EditorContextualTaskBar({
   engine,
   tool = null,
@@ -265,8 +277,8 @@ function EditorContextualTaskBar({
         {action("group", <IconFolder size={14} />, () => engine?.groupSelection?.())}{booleanActions}
       </>}
       <Divider />
-      {action("bringForward", <IconArrowUp size={14} />, () => ids.forEach((id) => engine?.reorderNode?.(id, 1)))}
-      {action("sendBackward", <IconArrowUp size={14} className="rotate-180" />, () => ids.forEach((id) => engine?.reorderNode?.(id, -1)))}
+      {action("bringForward", <IconArrowUp size={14} />, () => reorderSelection(engine, ids, 1))}
+      {action("sendBackward", <IconArrowUp size={14} className="rotate-180" />, () => reorderSelection(engine, ids, -1))}
       <Divider />
       {action("duplicate", <IconCopy size={14} />, () => engine?.duplicateSelected?.(), {
             shortcut: typeof navigator !== "undefined" && /Mac/.test(navigator.platform) ? "⌘D" : "Ctrl+D"
