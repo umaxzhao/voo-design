@@ -23,7 +23,7 @@ import {
 } from "./protocol.js";
 import { decodeBinaryFrame } from "./chunking.js";
 import { createPresence, colourFor } from "./presence.js";
-import { createRoomId, roomUrl } from "./room.js";
+import { createRoomId, createRoomSecret, roomUrl } from "./room.js";
 
 export const STATUS = {
   OFF: "off",
@@ -63,6 +63,7 @@ export function createCollabSession({
   connectTimeoutMs = 15000,
 }) {
   let currentConnectionId = connectionId;
+  let roomSecret = null;
   const presence = createPresence(userId, now);
   /**
    * connectionId -> userId.
@@ -79,6 +80,8 @@ export function createCollabSession({
    * nothing gets the format the first build spoke.
    */
   const peerCaps = new Map();
+  const verifiedPeers = new Set();
+  const requestedDocs = new Set();
   /**
    * connectionId -> transport kind, once the data channel has opened.
    * "direct" (host/server-reflexive) or "relay" (through the TURN server).
@@ -102,12 +105,76 @@ export function createCollabSession({
 
   /** One place every outbound message goes, queued or live. */
   function dispatch(peerId, wire) {
+    if (roomSecret && isProtectedWire(wire)) {
+      if (peerId) {
+        if (!verifiedPeers.has(peerId)) return;
+      } else {
+        const trusted = [...verifiedPeers];
+        trusted.forEach((trustedPeer) => transport?.send(trustedPeer, wire));
+        return;
+      }
+    }
     if (!transport) {
       outbox.push({ peerId, wire });
       return;
     }
     if (peerId) transport.send(peerId, wire);
     else transport.broadcast(wire);
+  }
+
+  function isProtectedWire(wire) {
+    try {
+      const type = typeof wire === "string" ? JSON.parse(wire).t : null;
+      return [MSG.DOC, MSG.DOC_REQUEST, MSG.BLOB_HAVE, MSG.BLOB_WANT,
+        MSG.BLOB_WANT_ORIGINAL, MSG.BLOB_DATA, MSG.STROKE].includes(type);
+    } catch {
+      return false;
+    }
+  }
+
+  async function proofFor(peerId) {
+    if (!roomSecret) return undefined;
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw", new TextEncoder().encode(roomSecret), "HKDF", false, ["deriveKey"],
+    );
+    const key = await crypto.subtle.deriveKey(
+      { name: "HKDF", hash: "SHA-256", salt: new Uint8Array(), info: new TextEncoder().encode("voo-room-proof-v1") },
+      keyMaterial, { name: "HMAC", hash: "SHA-256", length: 256 }, false, ["sign"],
+    );
+    const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(peerId));
+    return [...new Uint8Array(signature)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function helloWire({ reply = true } = {}) {
+    return encode(MSG.HELLO, {
+      peerId: userId, name: displayName, colour: colourFor(userId), avatarSeed,
+      workflowId, caps: [CAP_BINARY_BLOBS], access, reply,
+      ...(roomSecret ? { proof: await proofFor(userId) } : {}),
+    });
+  }
+
+  async function sendHello(peerId, options) {
+    if (!roomSecret) {
+      dispatch(peerId, encode(MSG.HELLO, {
+        peerId: userId, name: displayName, colour: colourFor(userId), avatarSeed,
+        workflowId, caps: [CAP_BINARY_BLOBS], access,
+        reply: options?.reply ?? true,
+      }));
+      return;
+    }
+    dispatch(peerId, await helloWire(options));
+  }
+
+  async function verifyHello(message) {
+    if (!roomSecret) return true;
+    if (typeof message.proof !== "string") return false;
+    const expected = await proofFor(message.peerId);
+    if (message.proof.length !== expected.length) return false;
+    let difference = 0;
+    for (let index = 0; index < expected.length; index++) {
+      difference |= expected.charCodeAt(index) ^ message.proof.charCodeAt(index);
+    }
+    return difference === 0;
   }
   let heartbeat = 0;
   let displayName = name;
@@ -162,7 +229,7 @@ export function createCollabSession({
     status,
     roomId,
     workflowId,
-    link: roomId ? roomUrl(roomId) : null,
+    link: roomId ? roomUrl(roomId, undefined, access, roomSecret ?? undefined) : null,
     selfId: userId,
     peers: presence.list(),
     joinedAt,
@@ -196,22 +263,7 @@ export function createCollabSession({
     announce();
   }
 
-  function helloWire({ reply = true } = {}) {
-    return encode(MSG.HELLO, {
-      peerId: userId,
-      name: displayName,
-      colour: colourFor(userId),
-      avatarSeed,
-      // The document this room is about. Peers use it to recognise the room's
-      // document when it arrives, so a guest can adopt the host's workflow.
-      workflowId,
-      caps: [CAP_BINARY_BLOBS],
-      access,
-      reply,
-    });
-  }
-
-  function handleMessage(fromPeerId, raw) {
+  async function handleMessage(fromPeerId, raw) {
     // Bulk image bytes arrive as binary frames rather than JSON; everything
     // else — and everything from older builds — is a JSON string.
     if (typeof raw !== "string") {
@@ -225,8 +277,10 @@ export function createCollabSession({
         }
         throw error;
       }
+      if (roomSecret && !verifiedPeers.has(fromPeerId)) return;
       if (!whoIs.has(fromPeerId)) {
-        dispatch(fromPeerId, helloWire({ reply: true }));
+        if (roomSecret) await sendHello(fromPeerId, { reply: true });
+        else void sendHello(fromPeerId, { reply: true });
       }
       presence.touch(whoIs.get(fromPeerId));
       if (frame.meta.t === MSG.BLOB_DATA) {
@@ -249,16 +303,19 @@ export function createCollabSession({
     // If a non-greeting message arrives from an unknown connection, prompt them
     // with our HELLO so they can greet us back and complete presence.
     if (!whoIs.has(fromPeerId) && message.type !== MSG.HELLO) {
-      dispatch(fromPeerId, helloWire({ reply: true }));
+      void sendHello(fromPeerId, { reply: true });
     }
     // Attribute the connection to a person the first time it says who it is.
     if (message.type === MSG.HELLO) {
+      if (roomSecret && !(await verifyHello(message))) return;
+      verifiedPeers.add(fromPeerId);
       whoIs.set(fromPeerId, message.peerId);
       peerCaps.set(
         fromPeerId,
         new Set(Array.isArray(message.caps) ? message.caps : []),
       );
     }
+    if (roomSecret && !verifiedPeers.has(fromPeerId)) return;
     presence.touch(whoIs.get(fromPeerId));
 
     switch (message.type) {
@@ -271,7 +328,7 @@ export function createCollabSession({
           const next = message.access === "view" ? "view" : "edit";
           if (access !== next) {
             access = next;
-            dispatch(null, helloWire());
+            void sendHello(null);
           }
         }
         presence.upsert(message.peerId, {
@@ -286,7 +343,11 @@ export function createCollabSession({
         // Two-way handshake guarantee: answer back so the sender has us in
         // their roster even if our initial onPeer hello was lost or raced.
         if (message.reply !== false) {
-          dispatch(fromPeerId, helloWire({ reply: false }));
+          void sendHello(fromPeerId, { reply: false });
+        }
+        if (roomSecret && !requestedDocs.has(fromPeerId)) {
+          requestedDocs.add(fromPeerId);
+          dispatch(fromPeerId, encode(MSG.DOC_REQUEST, {}));
         }
         announce();
         break;
@@ -330,7 +391,7 @@ export function createCollabSession({
     if (dropped.length) announce();
     // A HELLO doubles as the keep-alive: it is small, idempotent, and it also
     // repairs a roster that missed the first one during connection setup.
-    dispatch(null, helloWire());
+    void sendHello(null);
   }
 
   return {
@@ -361,7 +422,7 @@ export function createCollabSession({
       if (nextName !== undefined) displayName = nextName ?? "";
       if (nextSeed !== undefined) avatarSeed = nextSeed ?? null;
       presence.upsert(userId, { name: displayName, avatarSeed });
-      dispatch(null, helloWire());
+      void sendHello(null);
       announce();
     },
 
@@ -381,7 +442,7 @@ export function createCollabSession({
     setAccess(next) {
       if (access === next) return;
       access = next === "view" ? "view" : "edit";
-      dispatch(null, helloWire());
+      void sendHello(null);
       announce();
     },
 
@@ -396,7 +457,7 @@ export function createCollabSession({
      */
     start(
       existingRoomId,
-      { viaLink = Boolean(existingRoomId), timeoutMs = connectTimeoutMs } = {},
+      { viaLink = Boolean(existingRoomId), timeoutMs = connectTimeoutMs, secret } = {},
     ) {
       const joinRoom = existingRoomId ?? createRoomId();
       if (transport) {
@@ -408,6 +469,7 @@ export function createCollabSession({
         this.stop();
       }
       roomId = joinRoom;
+      roomSecret = secret ?? (existingRoomId ? null : createRoomSecret());
       joinedAt = Date.now();
       joinedViaLink = Boolean(existingRoomId && viaLink);
       receivedDocument = false;
@@ -428,15 +490,17 @@ export function createCollabSession({
         onPeer: (peerId) => {
           // Nothing goes in the roster yet: a connection is not a person until
           // its HELLO says whose it is. Greeting it is what asks.
-          dispatch(peerId, helloWire());
+          void sendHello(peerId);
           // A peer that has just arrived has nothing; ask for the document
           // rather than waiting for the next edit to bring it.
-          dispatch(peerId, encode(MSG.DOC_REQUEST, {}));
+          if (!roomSecret) dispatch(peerId, encode(MSG.DOC_REQUEST, {}));
           announce();
         },
         onPeerGone: (peerId) => {
           const gone = whoIs.get(peerId);
           whoIs.delete(peerId);
+          verifiedPeers.delete(peerId);
+          requestedDocs.delete(peerId);
           peerCaps.delete(peerId);
           transportTypes.delete(peerId);
           // Someone with a second window open is still here; only the last of
@@ -489,10 +553,13 @@ export function createCollabSession({
       outbox.length = 0;
       presence.clear();
       peerCaps.clear();
+      verifiedPeers.clear();
+      requestedDocs.clear();
       whoIs.clear();
       roomId = null;
       joinedAt = null;
       joinedViaLink = false;
+      roomSecret = null;
       receivedDocument = false;
       setStatus(STATUS.OFF);
       announce();
@@ -537,7 +604,7 @@ export function createCollabSession({
      * and validated.
      */
     sendRaw(peerId, frame) {
-      if (!transport) return false;
+      if (!transport || (roomSecret && !verifiedPeers.has(peerId))) return false;
       transport.send(peerId, frame);
       return true;
     },

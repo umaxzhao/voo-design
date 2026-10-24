@@ -18,6 +18,9 @@ const ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
 // 31-symbol alphabet ≈ 99 bits — safe against guessing, short enough to share.
 const ID_LENGTH = 20;
 const ROOM_PATH = "/r/";
+const ROOM_SECRET_BYTES = 16;
+const ROOM_SECRET_PATTERN = /^[A-Za-z0-9_-]{22}$/;
+const BASE64URL_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 /** Anything that is our id shape (8 to 20 chars), anchored so a URL never matches. */
 const ID_PATTERN = new RegExp(`^[${ALPHABET}]{8,20}$`);
@@ -49,6 +52,25 @@ export function createRoomId() {
   return randomId(ID_LENGTH);
 }
 
+/** A 128-bit room secret encoded without padding for use in a URL fragment. */
+export function createRoomSecret() {
+  const bytes = new Uint8Array(ROOM_SECRET_BYTES);
+  globalThis.crypto.getRandomValues(bytes);
+  let encoded = "";
+  for (let index = 0; index < bytes.length; index += 3) {
+    const first = bytes[index];
+    const second = bytes[index + 1] ?? 0;
+    const third = bytes[index + 2] ?? 0;
+    encoded += BASE64URL_ALPHABET[first >> 2];
+    encoded += BASE64URL_ALPHABET[((first & 3) << 4) | (second >> 4)];
+    if (index + 1 < bytes.length) {
+      encoded += BASE64URL_ALPHABET[((second & 15) << 2) | (third >> 6)];
+    }
+    if (index + 2 < bytes.length) encoded += BASE64URL_ALPHABET[third & 63];
+  }
+  return encoded;
+}
+
 export function isValidRoomId(value) {
   return typeof value === "string" && ID_PATTERN.test(value);
 }
@@ -75,14 +97,38 @@ export const CANONICAL_ORIGIN = "https://voo.run";
  * @param {string} roomId
  * @param {string} [origin] overrides the detected one, for tests.
  * @param {string} [access] "view" appends the read-only marker; "edit"/undefined leave it off.
+ * @param {string} [secret] A URL-fragment room secret, never sent in HTTP requests.
  */
-export function roomUrl(roomId, origin, access) {
+export function roomUrl(roomId, origin, access, secret) {
   const detected = origin ?? globalThis.location?.origin ?? "";
   const shareable = /^https?:\/\//i.test(detected)
     ? detected
     : CANONICAL_ORIGIN;
   const base = `${shareable.replace(/\/+$/, "")}${ROOM_PATH}${roomId}`;
-  return access === "view" ? `${base}?access=view` : base;
+  const withAccess = access === "view" ? `${base}?access=view` : base;
+  return secret && ROOM_SECRET_PATTERN.test(secret)
+    ? `${withAccess}#k=${secret}`
+    : withAccess;
+}
+
+/** The 128-bit secret in a room link fragment, or null if absent or invalid. */
+export function roomSecretFromLink(input) {
+  if (typeof input !== "string") return null;
+  try {
+    const secret = new URL(input, CANONICAL_ORIGIN).hash
+      .slice(1)
+      .split("&")
+      .map((part) => part.split("=", 2))
+      .find(([key]) => key === "k")?.[1];
+    return secret && ROOM_SECRET_PATTERN.test(secret) ? secret : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The room secret from the current page URL fragment, if present. */
+export function roomSecretFromLocation(location = globalThis.location) {
+  return location ? roomSecretFromLink(location.href ?? location.hash ?? "") : null;
 }
 
 /** The permission read from the current link, or null when none is marked. */

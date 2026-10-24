@@ -6,9 +6,11 @@ globalThis.crypto ??= webcrypto;
 
 import {
   createRoomId,
+  createRoomSecret,
   isValidRoomId,
   parseRoomId,
   roomIdFromLocation,
+  roomSecretFromLink,
   roomUrl,
 } from "../../src/canvas/collab/room.js";
 import {
@@ -57,6 +59,22 @@ test("the id alphabet is used evenly rather than favouring its start", () => {
 test("a room link round-trips", () => {
   const id = createRoomId();
   assert.equal(parseRoomId(roomUrl(id, "https://voo.run")), id);
+});
+
+test("room secrets are 128-bit base64url values and round-trip in the fragment", () => {
+  const id = createRoomId();
+  const secret = createRoomSecret();
+  const link = roomUrl(id, "https://voo.run", "view", secret);
+  assert.match(secret, /^[A-Za-z0-9_-]{22}$/);
+  assert.match(link, /\?access=view#k=[A-Za-z0-9_-]{22}$/);
+  assert.equal(roomSecretFromLink(link), secret);
+});
+
+test("a room link without a secret has no join secret", () => {
+  const id = createRoomId();
+  const link = roomUrl(id, "https://voo.run");
+  assert.equal(roomSecretFromLink(link), null);
+  assert.equal(roomSecretFromLink(`${link}#k=short`), null);
 });
 
 test("a pasted link survives the mess chat apps add", () => {
