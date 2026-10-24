@@ -176,6 +176,19 @@ export function renameRecentFile(idOrPath, newName) {
   return updatedItem;
 }
 
+/** Updates the cached workspace summary after its backing driver confirms a mutation. */
+export function syncRecentFile(idOrPath, patch) {
+  const current = readRawList();
+  let updatedItem = null;
+  const updated = current.map((item) => {
+    if (item.id !== idOrPath && item.path !== idOrPath && item.name !== idOrPath) return item;
+    updatedItem = { ...item, ...patch, updatedAt: Date.now() };
+    return updatedItem;
+  });
+  writeRawList(updated);
+  return updatedItem;
+}
+
 export function duplicateRecentFile(idOrPath) {
   const current = readRawList();
   const source = current.find((item) => item.id === idOrPath || item.path === idOrPath || item.name === idOrPath);
