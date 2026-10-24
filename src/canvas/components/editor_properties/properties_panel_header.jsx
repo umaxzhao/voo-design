@@ -18,6 +18,14 @@ import {
 import { TOOL } from "../../editor/editor_constants.js";
 import EditorTooltip from "../editor_tooltip.jsx";
 
+export function activateMaskAction(hasMask, maskActions) {
+  if (hasMask) {
+    maskActions?.onEditToggle?.();
+  } else {
+    maskActions?.onAddMask?.();
+  }
+}
+
 function getToolHeaderInfo(tool, t) {
   if (!tool || tool === TOOL.SELECT) return null;
 
@@ -103,13 +111,7 @@ export default function PropertiesPanelHeader({
           >
             <button
               type="button"
-              onClick={() => {
-                if (maskActions?.onAddMask) {
-                  maskActions.onAddMask();
-                } else {
-                  maskActions?.onEditToggle?.();
-                }
-              }}
+              onClick={() => activateMaskAction(hasMask, maskActions)}
               disabled={maskBusy}
               aria-label={
                 hasMask ? t("editor.mask.edit") : t("editor.mask.create")
