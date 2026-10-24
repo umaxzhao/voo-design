@@ -66,6 +66,7 @@ const STORAGE_KEYS = [
   "voo.editor.showRulers",
   "voo.editor.showGuides",
   "voo.editor.snapToGrid",
+  "voo.editor.panelLayout",
 ];
 
 const cache = new Map();
