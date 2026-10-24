@@ -85,7 +85,7 @@ const REQUIRED = {
   [MSG.HELLO]: { peerId: "string", name: "string", colour: "string" },
   // `avatar` is optional: a peer on an older build simply shows initials.
   [MSG.CURSOR]: { peerId: "string" },
-  [MSG.DOC]: { workflowId: "string", document: "object" },
+  [MSG.DOC]: { document: "object" },
   [MSG.DOC_REQUEST]: {},
   [MSG.BLOB_HAVE]: { ids: "object" },
   [MSG.BLOB_WANT]: { ids: "object" },
