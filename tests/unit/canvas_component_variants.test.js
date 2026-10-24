@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   CANVAS_TOOL_SCHEMAS,
   executeCanvasTool,
@@ -78,6 +80,13 @@ describe("component variant schemas", () => {
       ]),
     );
   });
+
+  it("documents every registered canvas tool", () => {
+    const catalog = readFileSync(resolve(process.cwd(), "docs/agents.md"), "utf8");
+    for (const name of CANVAS_TOOL_SCHEMAS.map((schema) => schema.function.name)) {
+      expect(catalog, `Missing ${name} from docs/agents.md`).toContain(`\`${name}\``);
+    }
+  });
 });
 
 describe("component variant tools", () => {
@@ -121,6 +130,34 @@ describe("component variant tools", () => {
     expect(byGroup.variants.map((variant) => variant.componentId)).toEqual(
       expect.arrayContaining(["master_button", created.componentId]),
     );
+  });
+
+  it("creates a persisted multi-axis matrix and switches an instance by properties in one commit", async () => {
+    let commits = 0;
+    const originalSetDoc = editor.setDoc;
+    editor.setDoc = (next) => { commits += 1; originalSetDoc(next); };
+    const created = await executeCanvasTool("create_component_variant_matrix", {
+      sourceComponentId: "master_button",
+      axes: { State: ["Default", "Hover"], Size: ["M", "L"] },
+    });
+    expect(created.variants).toHaveLength(4);
+    expect(Object.keys(doc().components)).toHaveLength(4);
+    expect(doc().components.master_button.variantName).toBe("State=Default, Size=M");
+
+    const beforeSwitch = commits;
+    const properties = await executeCanvasTool("list_instance_variant_properties", { instanceId: "inst_1" });
+    expect(properties.axes).toEqual([
+      { key: "State", values: ["Default", "Hover"] },
+      { key: "Size", values: ["M", "L"] },
+    ]);
+    const switched = await executeCanvasTool("set_instance_variant", {
+      instanceId: "inst_1",
+      properties: { State: "Hover", Size: "L" },
+    });
+    expect(switched.variantName).toBe("State=Hover, Size=L");
+    expect(commits).toBe(beforeSwitch + 1);
+    expect(doc().nodes[0].sourceCanvasId).toBe(switched.componentId);
+    expect(doc().components[switched.componentId].variantName).toBe("State=Hover, Size=L");
   });
 
   it("swaps an instance to a named sibling variant", async () => {
