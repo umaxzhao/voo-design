@@ -29,6 +29,7 @@ import {
   ICON_STROKE_WIDTH,
 } from "../icons.jsx";
 import ShapeToolsMenu from "./editor_shape_menu.jsx";
+import CollabAvatars from "./collab_avatars.jsx";
 import EditorMarqueeMenu from "./editor_marquee_menu.jsx";
 import EditorLassoMenu from "./editor_lasso_menu.jsx";
 import EditorHealingMenu from "./editor_healing_menu.jsx";
@@ -339,6 +340,8 @@ export default function EditorToolbar({
         {EDITOR_BETA_ENABLED && onAddObject3d ? (
           <EditorObject3dMenu onAdd={onAddObject3d} />
         ) : null}
+        <div className="mx-0.5 h-4 w-px bg-white/10 shrink-0" />
+        <CollabAvatars />
       </div>
     </div>
   );

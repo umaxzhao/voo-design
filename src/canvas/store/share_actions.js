@@ -1,30 +1,69 @@
 import { createRoomId, roomUrl } from "../collab/room.js";
-import { scheduleSave } from "./persistence.js";
-import { isWorkflowReadOnly } from "./workflow_readonly.js";
+
 
 /**
- * Share-by-link (P2P only — design-p2-share-clone §3, without the snapshot
- * bucket).
+ * Share-by-link (P2P only) for the free-canvas editor document.
  *
  * Sharing starts a live collaboration room on this page and hands back its
- * `/r/<id>` link. The voo-collab signalling server only introduces peers:
- * the document, the images and the strokes all travel directly between them,
- * so sharing costs the server a few kilobytes of handshake and nothing after
- * that. No snapshot is written anywhere — a link works exactly while the
- * author is in the room, and visitors to an empty room are told it is offline
- * (OfflineSessionNotice) rather than served a stored copy.
- *
- * The room id is bound to the workflow, not to this page: it lives on the
- * workflow document and is reused on every re-share, so the link never drifts
- * while the workflow is current. A binding older than ROOM_TTL_MS is re-minted
- * on the next share — the old link goes stale after a week instead of pointing
- * at a room nobody ever starts again.
+ * `/r/<id>` link. The signaling server only introduces peers: the document,
+ * the images and the strokes all travel directly between them.
  */
 
-/** How long a workflow-bound share link stays valid before it is re-minted. */
+/** How long a document-bound share link stays valid before it is re-minted. */
 export const ROOM_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** Share store actions, spread into the workflow store. */
+/** Starts a P2P room for the free-canvas editor and returns its link. */
+export async function shareWorkflow(access = "edit") {
+  const { useDesignStore } = await import("../../store/design_store.js");
+  const store = useDesignStore.getState();
+  if (typeof store.shareWorkflow === "function") {
+    return store.shareWorkflow(access);
+  }
+
+  const { getCollabSession, startCollab } = await import(
+    "../collab/use_collab.js"
+  );
+  const session = getCollabSession();
+  const joined = session?.getSnapshot?.();
+  if (joined?.joinedViaLink && joined.roomId) {
+    return roomUrl(joined.roomId, undefined, joined.access);
+  }
+
+  const roomId = createRoomId();
+  const joinedRoomId = await startCollab(roomId, access);
+  if (!joinedRoomId) return null;
+  return roomUrl(joinedRoomId, undefined, access);
+}
+
+/** Exports the current room state as a self-contained JSON snapshot. */
+export async function exportRoomSnapshot() {
+  const { useDesignStore } = await import("../../store/design_store.js");
+  const { downloadJson } = await import("../download.js");
+  const state = useDesignStore.getState();
+  const name = state.fileName?.replace(/\.[^/.]+$/, "") || "design";
+  const engine = globalThis.window?.__vooEditor;
+  const doc = engine?.getDocument?.() ?? {};
+  const snapshot = {
+    version: 2,
+    name,
+    nodes: state.nodes ?? [],
+    edges: state.edges ?? [],
+    images: state.images ?? {},
+    document: doc,
+  };
+  downloadJson(snapshot, `room-${name}`);
+  return snapshot;
+}
+
+/** Saves the open room session to local disk/project file. */
+export async function saveRoomSessionToProjectFolder() {
+  if (typeof globalThis.window?.dispatchEvent === "function") {
+    globalThis.window.dispatchEvent(new CustomEvent("voo:file-save-as"));
+  }
+  return true;
+}
+
+/** Share store actions, spread into the design store. */
 export function createShareActions(set, get) {
   let operationRevision = 0;
   return {
@@ -32,52 +71,46 @@ export function createShareActions(set, get) {
     shareError: null,
     lastShareUrl: null,
 
-    /** Starts a P2P room for the current workflow and returns its link. */
-    async shareWorkflow(access) {
+    /** Starts a P2P room for the current editor document and returns its link. */
+    async shareWorkflow(access = "edit") {
       const initial = get();
-      const joined = initial.collabSession?.getSnapshot?.();
-      // Guests copy the host's link and permission without restarting as hosts.
+      const { getCollabSession, startCollab } = await import(
+        "../collab/use_collab.js"
+      );
+      const session = getCollabSession();
+      const joined = session?.getSnapshot?.();
+
       if (joined?.joinedViaLink && joined.roomId) {
         const url = roomUrl(joined.roomId, undefined, joined.access);
         set({ shareLoading: false, shareError: null, lastShareUrl: url });
         return url;
       }
-      if (!initial.workflowId || isWorkflowReadOnly(initial)) return null;
-      const { workflowId, workflowHistories } = initial;
+
+      const activeDocumentId = initial.activeDocumentId;
+      if (!activeDocumentId) return null;
+
       const revision = ++operationRevision;
-      // History ownership also distinguishes A -> B -> A from the old A session.
       const ownsDocument = () => {
         const current = get();
         return (
           revision === operationRevision &&
-          current.workflowId === workflowId &&
-          current.workflowHistories === workflowHistories
+          current.activeDocumentId === activeDocumentId
         );
       };
-      const isCurrent = () => ownsDocument() && !isWorkflowReadOnly(get());
+      const isCurrent = () => ownsDocument();
+
       set({ shareLoading: true, shareError: null });
       try {
-        // Resolve the workflow's bound room id. Reuse it while it is younger
-        // than the TTL; a stale binding is dropped so the next id is fresh.
         const state = get();
         let roomId = state.roomId;
         const createdAt = state.roomCreatedAt ?? 0;
         if (!roomId || !createdAt || Date.now() - createdAt > ROOM_TTL_MS) {
           roomId = createRoomId();
           set({ roomId, roomCreatedAt: Date.now() });
-          // Persist the binding so the same workflow re-shares the same link.
-          scheduleSave(get);
         }
-        // Lazy: the collab session and its WebRTC transport only come into
-        // existence when someone actually shares.
-        const { startCollab } = await import("../collab/use_collab.js");
+
         if (!isCurrent()) return null;
-        const joinedRoomId = await startCollab(
-          roomId,
-          state.workflowId,
-          access,
-          { isCurrent },
-        );
+        const joinedRoomId = await startCollab(roomId, access, { isCurrent });
         if (!isCurrent()) return null;
         if (!joinedRoomId) throw new Error("roomStartFailed");
         const url = roomUrl(joinedRoomId, undefined, access);
@@ -95,5 +128,8 @@ export function createShareActions(set, get) {
     clearShareError() {
       set({ shareError: null });
     },
+
+    exportRoomSnapshot,
+    saveRoomSessionToProjectFolder,
   };
 }

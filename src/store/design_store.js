@@ -5,6 +5,7 @@ import { createDocument, CANVAS_TYPE } from "../canvas/editor/scene_doc_factory.
 import { addRecentFile } from "../canvas/store/recent_files.js";
 import { guessCategory } from "../services/workspace_storage.js";
 import { saveCrashDraft } from "../shared/crash_recovery.js";
+import { createShareActions } from "../canvas/store/share_actions.js";
 
 const DEFAULT_PAGE_ID = "page-1";
 const DEFAULT_WIDTH = 1200;
@@ -52,6 +53,7 @@ export const useDesignStore = create((set, get) => {
     requestAnimationFrame: (callback) => typeof globalThis.requestAnimationFrame === 'function' ? globalThis.requestAnimationFrame(callback) : callback(),
   });
   return {
+  ...createShareActions(set, get),
   activeDocumentId: "document-0",
   openDocuments: [{ id: "document-0", fileName: "Untitled.voo", isDirty: false }],
   suspendDocument: () => {
