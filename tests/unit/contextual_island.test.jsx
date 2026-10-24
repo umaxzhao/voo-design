@@ -177,7 +177,7 @@ describe("Contextual Island & Agent Dispatch (Pen App Style)", () => {
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy.mock.calls[0][0].detail).toEqual(payload);
 
-      expect(promptSpy).toHaveBeenCalledTimes(1);
+      expect(promptSpy).not.toHaveBeenCalled();
       expect(openSpy).toHaveBeenCalledTimes(1);
 
       expect(storeDispatch).toHaveBeenCalledWith(payload);

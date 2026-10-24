@@ -28,7 +28,8 @@ function boot(startCliBridgeServer, env = {}) {
       };
       if (id === "node:path") return path;
       if (id === "node:fs") return fs;
-      return { registerWorkspaceIpc() {} };
+      if (id === "./packaged_smoke.cjs") return () => {};
+      return { registerWorkspaceIpc() {}, setupUpdater() {} };
     },
     __dirname: path.resolve("electron"),
     process: { env, platform: "linux" },
