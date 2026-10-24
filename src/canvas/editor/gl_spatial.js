@@ -7,8 +7,7 @@
  * which is what this module adds on top of the single-draw pipeline in
  * gl_adjustments.js:
  *
- *   tone pass -> FBO A -> gaussian H (A→B) -> gaussian V (B→A or screen)
- *             -> sharpen / highPass / clarity / motionBlur
+ *   tone pass -> FBO A -> spatial passes -> screen
  *
  * Same best-effort contract as gl_adjustments.js: any failure makes the stage
  * report itself unusable and the caller falls back to the CPU path.
@@ -24,9 +23,16 @@ import {
   MOTION_BLUR_FRAGMENT_SHADER,
   SHARPEN_FRAGMENT_SHADER,
 } from "./gl_spatial_shaders.js";
+import {
+  createSpatialTarget,
+  deleteSpatialTarget,
+  drawBlurPass as runBlurPass,
+  drawDetailPass as runDetailPass,
+  drawMotionBlurPass as runMotionBlurPass,
+  drawSharpenPass as runSharpenPass,
+} from "./gl_spatial_passes.js";
 
 export { buildProgram, FULLSCREEN_VERTEX_SHADER, FULLSCREEN_VERTEX_SHADER_FBO };
-
 /**
  * Creates the spatial stage bound to one WebGL2 context.
  *
@@ -53,58 +59,13 @@ export function createSpatialStage(gl, accounting) {
   /** Set by any failure; begin() keeps declining until invalidate() resets. */
   let broken = false;
 
-  function deleteTarget(target) {
-    if (!target) return;
-    gl.deleteFramebuffer(target.fbo);
-    gl.deleteTexture(target.texture);
-  }
-
   function disposeTargets() {
     if (!targets) return;
-    deleteTarget(targets.a);
-    deleteTarget(targets.b);
+    deleteSpatialTarget(gl, targets.a);
+    deleteSpatialTarget(gl, targets.b);
     targets = null;
     accounting.remove(targetBytes);
     targetBytes = 0;
-  }
-
-  /** One RGBA/UNSIGNED_BYTE texture the tone pass can render into. */
-  function makeTarget(width, height) {
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl.RGBA,
-      width,
-      height,
-      0,
-      gl.RGBA,
-      gl.UNSIGNED_BYTE,
-      null,
-    );
-    const fbo = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      texture,
-      0,
-    );
-    const complete =
-      gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    if (!complete) {
-      gl.deleteFramebuffer(fbo);
-      gl.deleteTexture(texture);
-      return null;
-    }
-    return { fbo, texture };
   }
 
   function ensure(width, height) {
@@ -180,11 +141,11 @@ export function createSpatialStage(gl, accounting) {
         disposeTargets();
       }
       if (!targets) {
-        const a = makeTarget(width, height);
-        const b = a ? makeTarget(width, height) : null;
+        const a = createSpatialTarget(gl, width, height);
+        const b = a ? createSpatialTarget(gl, width, height) : null;
         if (!a || !b) {
-          deleteTarget(a);
-          deleteTarget(b);
+          deleteSpatialTarget(gl, a);
+          deleteSpatialTarget(gl, b);
           broken = true;
           return false;
         }
@@ -200,84 +161,13 @@ export function createSpatialStage(gl, accounting) {
     }
   }
 
-  function drawBlurPass(
-    sourceTexture,
-    targetFbo,
-    width,
-    height,
-    radius,
-    sigma,
-    dirX,
-    dirY,
-  ) {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, targetFbo);
-    gl.viewport(0, 0, width, height);
-    gl.useProgram(blurProgram);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
-    gl.uniform1i(blurUniforms.image, 0);
-    gl.uniform2f(blurUniforms.texel, 1 / width, 1 / height);
-    gl.uniform2f(blurUniforms.direction, dirX, dirY);
-    gl.uniform1f(blurUniforms.radius, radius);
-    gl.uniform1f(blurUniforms.sigma, sigma);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-  }
-
-  function drawSharpenPass(sourceTexture, width, height, amount) {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, width, height);
-    gl.useProgram(sharpenProgram);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
-    gl.uniform1i(sharpenUniforms.image, 0);
-    gl.uniform2f(sharpenUniforms.texel, 1 / width, 1 / height);
-    gl.uniform1f(sharpenUniforms.amount, amount);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-  }
-
-  function drawDetailPass(
-    program,
-    uniforms,
-    sourceTexture,
-    targetFbo,
-    width,
-    height,
-    radius,
-    extra,
-  ) {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, targetFbo);
-    gl.viewport(0, 0, width, height);
-    gl.useProgram(program);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
-    gl.uniform1i(uniforms.image, 0);
-    gl.uniform2f(uniforms.texel, 1 / width, 1 / height);
-    gl.uniform1f(uniforms.radius, radius);
-    gl.uniform1f(uniforms.sigma, Math.max(radius * 0.5, 1e-3));
-    if (extra) extra(uniforms);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-  }
-
-  function drawMotionBlurPass(
-    sourceTexture,
-    targetFbo,
-    width,
-    height,
-    radius,
-    dirX,
-    dirY,
-  ) {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, targetFbo);
-    gl.viewport(0, 0, width, height);
-    gl.useProgram(motionBlurProgram);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
-    gl.uniform1i(motionBlurUniforms.image, 0);
-    gl.uniform2f(motionBlurUniforms.texel, 1 / width, 1 / height);
-    gl.uniform2f(motionBlurUniforms.direction, dirX, dirY);
-    gl.uniform1f(motionBlurUniforms.radius, radius);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-  }
+  const drawBlurPass = (...args) =>
+    runBlurPass(gl, blurProgram, blurUniforms, ...args);
+  const drawSharpenPass = (...args) =>
+    runSharpenPass(gl, sharpenProgram, sharpenUniforms, ...args);
+  const drawDetailPass = (...args) => runDetailPass(gl, ...args);
+  const drawMotionBlurPass = (...args) =>
+    runMotionBlurPass(gl, motionBlurProgram, motionBlurUniforms, ...args);
 
   return {
     /**
@@ -306,6 +196,7 @@ export function createSpatialStage(gl, accounting) {
       clarityStrength = 0,
       motionBlurRadius = 0,
       motionBlurAngle = 0,
+      liveFilters = [],
     }) {
       const blurActive = blurRadius > 0;
       const sharpenActive = sharpenAmount > 0;
@@ -332,13 +223,13 @@ export function createSpatialStage(gl, accounting) {
 
       if (blurActive) {
         const sigma = Math.max(blurRadius * 0.5, 1e-3);
-        const last =
-          !remainingAfter([
-            sharpenActive,
-            highPassActive,
-            clarityActive,
-            motionActive,
-          ]);
+        const last = !remainingAfter([
+          sharpenActive,
+          highPassActive,
+          clarityActive,
+          motionActive,
+          liveFilters.length > 0,
+        ]);
         drawBlurPass(
           readTexture,
           writeFbo,
@@ -370,6 +261,7 @@ export function createSpatialStage(gl, accounting) {
           sharpenActive,
           highPassActive,
           clarityActive,
+          liveFilters.length > 0,
         ]);
         drawMotionBlurPass(
           readTexture,
@@ -385,7 +277,7 @@ export function createSpatialStage(gl, accounting) {
       }
 
       if (highPassActive) {
-        const last = !remainingAfter([sharpenActive, clarityActive]);
+        const last = !remainingAfter([sharpenActive, clarityActive, liveFilters.length > 0]);
         drawDetailPass(
           highPassProgram,
           highPassUniforms,
@@ -400,7 +292,7 @@ export function createSpatialStage(gl, accounting) {
       }
 
       if (clarityActive) {
-        const last = !sharpenActive;
+        const last = !sharpenActive && liveFilters.length === 0;
         drawDetailPass(
           clarityProgram,
           clarityUniforms,
@@ -416,8 +308,55 @@ export function createSpatialStage(gl, accounting) {
       }
 
       if (sharpenActive) {
-        drawSharpenPass(readTexture, width, height, sharpenAmount);
+        const last = liveFilters.length === 0;
+        if (last) drawSharpenPass(readTexture, width, height, sharpenAmount);
+        else {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, writeFbo);
+          gl.viewport(0, 0, width, height);
+          gl.useProgram(sharpenProgram);
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, readTexture);
+          gl.uniform1i(sharpenUniforms.image, 0);
+          gl.uniform2f(sharpenUniforms.texel, 1 / width, 1 / height);
+          gl.uniform1f(sharpenUniforms.amount, sharpenAmount);
+          gl.drawArrays(gl.TRIANGLES, 0, 3);
+          swap();
+        }
       }
+
+      liveFilters.forEach((filter, index) => {
+        const last = index === liveFilters.length - 1;
+        if (filter.kind === "blur") {
+          const sigma = Math.max(filter.radius * 0.5, 1e-3);
+          drawBlurPass(readTexture, writeFbo, width, height, filter.radius, sigma, 1, 0);
+          swap();
+          drawBlurPass(readTexture, last ? null : writeFbo, width, height, filter.radius, sigma, 0, 1);
+        } else if (filter.kind === "motionBlur") {
+          const target = last ? null : writeFbo;
+          const angle = (filter.angle * Math.PI) / 180;
+          drawMotionBlurPass(readTexture, target, width, height, filter.radius, Math.cos(angle), Math.sin(angle));
+        } else if (filter.kind === "highPass" || filter.kind === "clarity") {
+          const target = last ? null : writeFbo;
+          const program = filter.kind === "highPass" ? highPassProgram : clarityProgram;
+          const uniforms = filter.kind === "highPass" ? highPassUniforms : clarityUniforms;
+          drawDetailPass(program, uniforms, readTexture, target, width, height, filter.radius, filter.kind === "clarity" ? (u) => gl.uniform1f(u.strength, filter.strength) : null);
+        } else if (filter.kind === "sharpen") {
+          if (last) drawSharpenPass(readTexture, width, height, filter.amount);
+          else {
+            const target = writeFbo;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, target);
+            gl.viewport(0, 0, width, height);
+            gl.useProgram(sharpenProgram);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, readTexture);
+            gl.uniform1i(sharpenUniforms.image, 0);
+            gl.uniform2f(sharpenUniforms.texel, 1 / width, 1 / height);
+            gl.uniform1f(sharpenUniforms.amount, filter.amount);
+            gl.drawArrays(gl.TRIANGLES, 0, 3);
+          }
+        }
+        if (!last) swap();
+      });
     },
 
     /**

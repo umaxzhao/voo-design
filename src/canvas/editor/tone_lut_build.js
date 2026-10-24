@@ -239,12 +239,16 @@ function buildToneLutUncached(adjustments) {
   const gradientMapActive = Boolean(gradientMap?.enabled);
 
   // The live filter stack rides the adjustments object (see
-  // normalizeAdjustments); enabled entries are pure CPU buffer ops, so they
-  // join the signature (as the spatial cache key) and force cpuOnly — the GL
-  // pipeline cannot run them, the CPU kernels apply them after adjustments.
+  // normalizeAdjustments); supported spatial entries can run in the existing
+  // GPU spatial stage, after the scalar adjustment pass.
   const liveFilters = normalizeLiveFilterStack(normalized.liveFilters);
   const liveFiltersStack = liveFilters.filter((entry) => entry.enabled);
   const liveFiltersActive = liveFiltersStack.length > 0;
+  const liveFiltersGpuSupported = liveFiltersStack.every(
+    (entry) =>
+      ["blur", "sharpen", "highPass", "clarity", "motionBlur"].includes(entry.kind) &&
+      entry.opacity === 1,
+  );
 
   const lutIdentity =
     bVal === 0 &&
@@ -291,7 +295,7 @@ function buildToneLutUncached(adjustments) {
   // True when any cpu-only adjustment is active — the GL pipeline bails out
   // on this so the CPU path handles the whole frame.
   // highPass / clarity / motionBlur have GL twins in gl_spatial.js — they no
-  // longer force the CPU path. Live filters and pixel ops still do.
+    // longer force the CPU path. Unsupported live filters and pixel ops do.
   const cpuOnly =
     noiseVal > 0 ||
     cloudsVal > 0 ||
@@ -308,7 +312,7 @@ function buildToneLutUncached(adjustments) {
     channelMixerActive ||
     selectiveColorActive ||
     gradientMapActive ||
-    liveFiltersActive;
+    liveFiltersActive && !liveFiltersGpuSupported;
 
   const signature = `${bVal}|${cVal}|${hVal}|${sVal}|${lVal}|${colorizeActive ? 1 : 0}|${hueSatBandsSignature(hueSatBands)}|${
     curvesActive
@@ -317,7 +321,7 @@ function buildToneLutUncached(adjustments) {
         curveSignature(curvesObj?.g) +
         curveSignature(curvesObj?.b)
       : "0"
-  }|${eVal}|${tVal}|${tiVal}|${hiVal}|${shVal}|${vVal}|${blurVal}|${sharpenVal}|${highPassVal}|${clarityVal}|${motionBlurVal}|${motionBlurAngle}|${noiseVal}|${cloudsVal}|${pixelateVal}|${posterizeVal}|${solarizeVal}|${halftoneVal}|${sepiaVal}|${embossVal}|${levelsActive ? `${blackVal}|${whiteVal}|${gammaVal}|${outBlackVal}|${outWhiteVal}` : "0"}|${invertVal ? "1" : "0"}|${thresholdVal === null ? "0" : thresholdVal}|${colorBalanceActive ? colorBalanceSignature(colorBalance) : "0"}|${bwActive ? `${blackAndWhite.reds}|${blackAndWhite.yellows}|${blackAndWhite.greens}|${blackAndWhite.cyans}|${blackAndWhite.blues}|${blackAndWhite.magentas}|${blackAndWhite.useTint ? blackAndWhite.tintColor : "0"}` : "0"}|${photoFilterActive ? `${photoFilter.density}|${photoFilter.color}|${photoFilter.preserveLuminosity !== false ? 1 : 0}` : "0"}|${vibranceActive ? vibrance.value : "0"}|${channelMixerActive ? channelMixerSignature(channelMixer) : "0"}|${selectiveColorActive ? selectiveColorSignature(selectiveColor) : "0"}|${gradientMapActive ? gradientMapSignature(gradientMap) : "0"}${liveFiltersActive ? `|${liveFiltersStack.map((entry) => `${entry.kind}@${entry.params?.value ?? 0}@${entry.params?.angle ?? 0}@${entry.opacity}`).join(";")}` : "|0"}`;
+  }|${eVal}|${tVal}|${tiVal}|${hiVal}|${shVal}|${vVal}|${blurVal}|${sharpenVal}|${highPassVal}|${clarityVal}|${motionBlurVal}|${motionBlurAngle}|${noiseVal}|${cloudsVal}|${pixelateVal}|${posterizeVal}|${solarizeVal}|${halftoneVal}|${sepiaVal}|${embossVal}|${levelsActive ? `${blackVal}|${whiteVal}|${gammaVal}|${outBlackVal}|${outWhiteVal}` : "0"}|${invertVal ? "1" : "0"}|${thresholdVal === null ? "0" : thresholdVal}|${colorBalanceActive ? colorBalanceSignature(colorBalance) : "0"}|${bwActive ? `${blackAndWhite.reds}|${blackAndWhite.yellows}|${blackAndWhite.greens}|${blackAndWhite.cyans}|${blackAndWhite.blues}|${blackAndWhite.magentas}|${blackAndWhite.useTint ? blackAndWhite.tintColor : "0"}` : "0"}|${photoFilterActive ? `${photoFilter.density}|${photoFilter.color}|${photoFilter.preserveLuminosity !== false ? 1 : 0}` : "0"}|${vibranceActive ? vibrance.value : "0"}|${channelMixerActive ? channelMixerSignature(channelMixer) : "0"}|${selectiveColorActive ? selectiveColorSignature(selectiveColor) : "0"}|${gradientMapActive ? gradientMapSignature(gradientMap) : "0"}${liveFiltersActive ? `|${liveFiltersStack.map((entry) => `${entry.kind}@${entry.params?.value ?? entry.params?.amount ?? entry.params?.radius ?? 0}@${entry.params?.angle ?? 0}@${entry.opacity}`).join(";")}` : "|0"}`;
 
   const { lutR, lutG, lutB } = computeChannelLuts({
     bVal,

@@ -63,6 +63,13 @@ const MANUAL_ACTIONS = Object.freeze([
     "editor.history.entry.addLayer",
   ],
   [
+    "editor.frequencySeparation",
+    "Create frequency-separated image layers",
+    "ATOMIC",
+    "src/canvas/editor/editor_engine_layers.js",
+    "editor.history.entry.frequencySeparation",
+  ],
+  [
     "editor.mask.attach",
     "Attach a mask to one Design Editor layer",
     "ATOMIC",

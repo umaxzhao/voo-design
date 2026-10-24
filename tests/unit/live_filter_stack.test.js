@@ -54,12 +54,17 @@ describe("live filter tone integration", () => {
     expect(tone.cpuOnly).toBe(false);
   });
 
-  it("enabled entries force cpuOnly and land on tone.liveFilters", () => {
+  it("enabled spatial entries can use the GPU and land on tone.liveFilters", () => {
     const entry = createLiveFilterEntry("highPass", { value: 20 });
     const tone = buildToneLut({ liveFilters: [entry] });
     expect(tone.active).toBe(true);
-    expect(tone.cpuOnly).toBe(true);
+    expect(tone.cpuOnly).toBe(false);
     expect(tone.liveFilters).toEqual([entry]);
+  });
+
+  it("keeps unsupported or translucent entries on the CPU", () => {
+    expect(buildToneLut({ liveFilters: [createLiveFilterEntry("sepia", {})] }).cpuOnly).toBe(true);
+    expect(buildToneLut({ liveFilters: [{ ...createLiveFilterEntry("blur", {}), opacity: 0.5 }] }).cpuOnly).toBe(true);
   });
 
   it("disabled entries do not activate the tone pass", () => {
@@ -93,6 +98,9 @@ describe("live filter tone integration", () => {
       ],
     });
     expect(sameOrder.signature).toBe(reordered.signature);
+    const radiusA = buildToneLut({ liveFilters: [{ kind: "highPass", enabled: true, params: { radius: 12 } }] });
+    const radiusB = buildToneLut({ liveFilters: [{ kind: "highPass", enabled: true, params: { radius: 45 } }] });
+    expect(radiusA.signature).not.toBe(radiusB.signature);
   });
 });
 

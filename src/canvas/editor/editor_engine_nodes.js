@@ -13,6 +13,7 @@ import {
   topLevelGroupOf,
 } from "./scene_model.js";
 import { createEngineLayersController } from "./editor_engine_layers.js";
+import { createFrequencySeparationController } from "./editor_frequency_separation.js";
 import { createEngineNodeOps } from "./editor_engine_node_ops.js";
 import { createEngineGroups } from "./editor_engine_groups.js";
 import * as ops from "./doc_ops.js";
@@ -191,6 +192,12 @@ export function createEngineNodesController({
     clearPixelSelection,
     setTool,
   });
+  const frequencySeparationController = createFrequencySeparationController({
+    getDoc,
+    setDoc,
+    cache,
+    selectExactly,
+  });
 
   return {
     select,
@@ -250,5 +257,6 @@ export function createEngineNodesController({
     ...groups,
     ...nodeOps,
     ...layersController,
+    ...frequencySeparationController,
   };
 }

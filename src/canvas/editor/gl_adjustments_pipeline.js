@@ -265,13 +265,25 @@ export function createAdjustmentRenderer() {
           naturalWidth,
         );
         const motionBlurAngle = tone.motionBlurAngle ?? 0;
+        const liveFilters = tone.liveFilters.map((entry) => {
+          const params = entry.params ?? {};
+          const value = Number(params.value ?? params.amount ?? params.radius ?? 0);
+          return {
+            kind: entry.kind,
+            radius: scaledRadius(value, targetWidth, naturalWidth),
+            amount: Math.max(0, value) / 100,
+            strength: (value / 100) * 2,
+            angle: Number(params.angle ?? 0),
+          };
+        });
         let spatial = null;
         if (
           blurRadius > 0 ||
           sharpenAmount > 0 ||
           highPassRadius > 0 ||
           (clarityRadius > 0 && clarityStrength !== 0) ||
-          motionBlurRadius > 0
+          motionBlurRadius > 0 ||
+          liveFilters.length > 0
         ) {
           spatialStage ??= createSpatialStage(gl, spatialAccounting);
           if (!spatialStage.begin(targetWidth, targetHeight)) return null;
@@ -323,6 +335,7 @@ export function createAdjustmentRenderer() {
           clarityStrength,
           motionBlurRadius,
           motionBlurAngle,
+          liveFilters,
         });
 
         // Stable request seen twice: worth keeping.
