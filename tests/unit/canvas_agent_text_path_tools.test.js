@@ -176,4 +176,13 @@ describe("path nodes tool", () => {
       }),
     ).rejects.toMatchObject({ code: "agentInvalidArgs" });
   });
+
+  it("rejects handles containing non-numeric entries without committing", async () => {
+    await expect(executeCanvasTool("edit_path_nodes", {
+      layerId: "path",
+      ops: [{ op: "setHandles", index: 0, handles: { in: [1, "bad"] } }],
+    })).rejects.toMatchObject({ code: "agentInvalidArgs" });
+    expect(commits).toHaveLength(0);
+    expect(doc.nodes[0].points[0].in).toBeNull();
+  });
 });

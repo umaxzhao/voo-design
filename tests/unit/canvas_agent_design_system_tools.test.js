@@ -27,6 +27,57 @@ describe("design-system tool schemas", () => {
   });
 });
 
+describe("validated canvas mutations", () => {
+  let doc;
+  let editor;
+  beforeEach(() => {
+    doc = makeDoc([
+      { id: "a", kind: "rect", x: 0, y: 0, width: 20, height: 10 },
+      { id: "b", kind: "rect", x: 2, y: 3, width: 30, height: 12 },
+    ]);
+    editor = {
+      getDoc: () => doc,
+      getNode: (id) => doc.nodes.find((node) => node.id === id) ?? null,
+      updateNodes: vi.fn((updates) => {
+        for (const update of updates) {
+          const { id, ...patch } = update;
+          Object.assign(doc.nodes.find((node) => node.id === id), patch);
+        }
+      }),
+      updateNode: vi.fn((id, patch) => Object.assign(doc.nodes.find((node) => node.id === id), patch)),
+      commitEditorDocument: vi.fn(),
+    };
+    globalThis.window = { __vooEditor: editor };
+  });
+
+  it("applies a valid batch without changing its input patches", async () => {
+    const patch = { x: 40 };
+    const result = await executeCanvasTool("batch_mutate_layers", {
+      mutations: [{ type: "layout", layerId: "a", patch }, { type: "style", layerId: "b", patch: { opacity: 0.5 } }],
+    });
+    expect(result).toMatchObject({ ok: true, count: 2 });
+    expect(doc.nodes[0].x).toBe(40);
+    expect(doc.nodes[1].opacity).toBe(0.5);
+    expect(patch).toEqual({ x: 40 });
+  });
+
+  it("rejects the entire batch before applying any entry", async () => {
+    await expect(executeCanvasTool("batch_mutate_layers", {
+      mutations: [{ type: "layout", layerId: "a", patch: { x: 40 } }, { type: "layout", layerId: "b", patch: { width: NaN } }],
+    })).rejects.toMatchObject({ code: "agentInvalidArgs" });
+    expect(editor.updateNodes).not.toHaveBeenCalled();
+    expect(doc.nodes[0].x).toBe(0);
+  });
+
+  it("rejects non-finite and wrong-type values with field errors", async () => {
+    await expect(executeCanvasTool("mutate_layer_layout", { layerId: "a", patch: { x: NaN } }))
+      .rejects.toThrow('patch.x');
+    await expect(executeCanvasTool("mutate_layer_style", { layerId: "a", patch: { opacity: "0.5" } }))
+      .rejects.toThrow('patch.opacity');
+    expect(editor.updateNode).not.toHaveBeenCalled();
+  });
+});
+
 describe("component tools", () => {
   let doc;
   let editor;

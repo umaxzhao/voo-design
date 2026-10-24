@@ -193,8 +193,10 @@ function applyTextRangeStyleToNode(node, start, end, style) {
 
 function normalizeAnchorFromOp(op) {
   if (op?.point && typeof op.point === "object") {
-    return cloneAnchor(op.point);
+    return validateAnchor(op.point, "ops[].point");
   }
+  if (op?.x !== undefined) requireFinitePathNumber(op.x, "ops[].x");
+  if (op?.y !== undefined) requireFinitePathNumber(op.y, "ops[].y");
   const anchor = {
     x: Number.isFinite(Number(op?.x)) ? Number(op.x) : 0,
     y: Number.isFinite(Number(op?.y)) ? Number(op.y) : 0,
@@ -207,6 +209,38 @@ function normalizeAnchorFromOp(op) {
   }
   if (op?.close !== undefined) anchor.close = Boolean(op.close);
   if (op?.type !== undefined) anchor.type = op.type;
+  return validateAnchor(anchor, "ops[]");
+}
+
+function validateHandle(value, field) {
+  if (value === null) return null;
+  if (!Array.isArray(value) || value.length !== 2 || value.some((entry) => typeof entry !== "number" || !Number.isFinite(entry) || Math.abs(entry) > 100000)) {
+    invalidArgs(`Invalid field "${field}": expected null or [finite dx, finite dy] within +/-100000, got ${JSON.stringify(value)}`);
+  }
+  return value.slice();
+}
+
+function requireFinitePathNumber(value, field) {
+  if (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > 100000) {
+    invalidArgs(`Invalid field "${field}": expected a finite number within +/-100000, got ${JSON.stringify(value)}`);
+  }
+  return value;
+}
+
+function validateAnchor(anchor, field) {
+  if (!anchor || typeof anchor !== "object" || Array.isArray(anchor)) invalidArgs(`Invalid field "${field}": expected an anchor object`);
+  anchor = { ...anchor };
+  const allowed = ["x", "y", "in", "out", "close", "type", "value"];
+  for (const key of Object.keys(anchor)) if (!allowed.includes(key)) invalidArgs(`Invalid field "${field}.${key}": unsupported anchor field`);
+  for (const key of ["x", "y"]) {
+    if (typeof anchor[key] !== "number" || !Number.isFinite(anchor[key]) || Math.abs(anchor[key]) > 100000) {
+      invalidArgs(`Invalid field "${field}.${key}": expected a finite coordinate within +/-100000, got ${JSON.stringify(anchor[key])}`);
+    }
+  }
+  if (anchor.in !== undefined) anchor.in = validateHandle(anchor.in, `${field}.in`);
+  if (anchor.out !== undefined) anchor.out = validateHandle(anchor.out, `${field}.out`);
+  if (anchor.close !== undefined && typeof anchor.close !== "boolean") invalidArgs(`Invalid field "${field}.close": expected a boolean`);
+  if (anchor.type !== undefined && !["corner", "smooth", "symmetric", "auto"].includes(anchor.type)) invalidArgs(`Invalid field "${field}.type": expected corner, smooth, symmetric, or auto`);
   return cloneAnchor(anchor);
 }
 
@@ -331,26 +365,23 @@ function editPathNodes(args = {}) {
         if (op.handles === undefined && op.in === undefined && op.out === undefined) {
           invalidArgs(`Invalid argument "ops[].handles": setHandles needs a handles object or in/out values, got ${JSON.stringify(op)}`);
         }
-        if (op.handles && typeof op.handles !== "object") {
+        if (op.handles !== undefined && (!op.handles || typeof op.handles !== "object" || Array.isArray(op.handles))) {
           invalidArgs(`Invalid argument "ops[].handles": expected a plain object, got ${JSON.stringify(op.handles)}`);
         }
+        if (op.handles && Object.keys(op.handles).some((key) => !["in", "out"].includes(key))) invalidArgs(`Invalid field "ops[].handles": only in and out are supported`);
         if (op.handles && typeof op.handles === "object") {
           if (op.handles.in !== undefined) {
-            point.in = Array.isArray(op.handles.in)
-              ? op.handles.in.slice()
-              : op.handles.in;
+            point.in = validateHandle(op.handles.in, "ops[].handles.in");
           }
           if (op.handles.out !== undefined) {
-            point.out = Array.isArray(op.handles.out)
-              ? op.handles.out.slice()
-              : op.handles.out;
+            point.out = validateHandle(op.handles.out, "ops[].handles.out");
           }
         }
         if (op.in !== undefined) {
-          point.in = Array.isArray(op.in) ? op.in.slice() : op.in;
+          point.in = validateHandle(op.in, "ops[].in");
         }
         if (op.out !== undefined) {
-          point.out = Array.isArray(op.out) ? op.out.slice() : op.out;
+          point.out = validateHandle(op.out, "ops[].out");
         }
         break;
       }
@@ -363,9 +394,19 @@ function editPathNodes(args = {}) {
         if (op.type === undefined && op.close === undefined && op.value === undefined) {
           invalidArgs(`Invalid argument "ops[].type"/"ops[].close"/"ops[].value": setType needs one of them, got ${JSON.stringify(op)}`);
         }
-        if (op.type !== undefined) point.type = op.type;
-        if (op.close !== undefined) point.close = Boolean(op.close);
-        if (op.value !== undefined) point.value = op.value;
+        if (op.type !== undefined) {
+          if (!["corner", "smooth", "symmetric", "auto"].includes(op.type)) invalidArgs(`Invalid field "ops[].type": expected corner, smooth, symmetric, or auto`);
+          point.type = op.type;
+        }
+        if (op.close !== undefined) {
+          if (typeof op.close !== "boolean") invalidArgs(`Invalid field "ops[].close": expected a boolean`);
+          point.close = op.close;
+        }
+        if (op.value !== undefined) {
+          if (typeof op.value !== "string" && typeof op.value !== "number") invalidArgs(`Invalid field "ops[].value": expected a string or finite number`);
+          if (typeof op.value === "number" && !Number.isFinite(op.value)) invalidArgs(`Invalid field "ops[].value": expected a finite number`);
+          point.value = op.value;
+        }
         break;
       }
       default:

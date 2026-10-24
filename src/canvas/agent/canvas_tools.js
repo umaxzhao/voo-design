@@ -34,6 +34,7 @@ import { SCENE_OPS_TOOL_SCHEMAS, SCENE_OPS_TOOL_EXECUTORS } from "./canvas_tools
 import { BUILD_LAYOUT_SCHEMA, buildLayout } from "./canvas_tools_build_layout.js";
 
 import { LINT_TOOL_SCHEMA, lintDesignTool } from "./design_quality/lint_tool.js";
+import { validateLayerId, validateLayerPatch, validateAutoLayout } from "./canvas_mutation_validation.js";
 
 export const AGENT_SETTING = Object.freeze({
   API_KEY: "agent.apiKey",
@@ -577,7 +578,8 @@ function inspectLayerTree(args = {}) {
 
 function mutateLayerLayout(args) {
   const editor = requireEditor();
-  const { layerId, patch } = args;
+  const layerId = validateLayerId(args?.layerId);
+  const patch = validateLayerPatch("layout", args?.patch);
   const node = editor.getNode?.(layerId);
   if (!node) {
     throw Object.assign(new Error(TOOL_ERROR.NODE_NOT_FOUND), { code: TOOL_ERROR.NODE_NOT_FOUND });
@@ -601,7 +603,8 @@ function mutateLayerLayout(args) {
 
 function mutateLayerStyle(args) {
   const editor = requireEditor();
-  const { layerId, patch } = args;
+  const layerId = validateLayerId(args?.layerId);
+  const patch = validateLayerPatch("style", args?.patch);
   const node = editor.getNode?.(layerId);
   if (!node) {
     throw Object.assign(new Error(TOOL_ERROR.NODE_NOT_FOUND), { code: TOOL_ERROR.NODE_NOT_FOUND });
@@ -654,7 +657,8 @@ function mutateLayerText(args) {
 
 function mutateAutoLayout(args) {
   const editor = requireEditor();
-  const { layerId, config } = args;
+  const layerId = validateLayerId(args?.layerId);
+  const config = validateAutoLayout(args?.config);
   const node = editor.getNode?.(layerId);
   if (!node) {
     throw Object.assign(new Error(TOOL_ERROR.NODE_NOT_FOUND), { code: TOOL_ERROR.NODE_NOT_FOUND });
@@ -680,22 +684,25 @@ function mutateAutoLayout(args) {
 function batchMutateLayers(args) {
   const editor = requireEditor();
   const { mutations = [] } = args;
+  if (!Array.isArray(mutations)) invalidArgs('Invalid field "mutations": expected an array');
   if (!Array.isArray(mutations) || mutations.length === 0) {
     return { ok: true, count: 0 };
   }
-
-  const updates = mutations.map((m) => {
-    const node = editor.getNode?.(m.layerId);
-    if (node) {
-      setAgentFocusNode(node, `AI: Batch ${m.type}`);
-    }
-    const patch = m.patch || {};
-    if (m.type === "text" && patch.textContent) {
-      patch.text = patch.textContent;
-    } else if (m.type === "autoLayout") {
-      return { id: m.layerId, autoLayout: patch };
-    }
-    return { id: m.layerId, ...patch };
+  const validated = mutations.map((mutation, index) => {
+    if (!mutation || typeof mutation !== "object" || Array.isArray(mutation)) invalidArgs(`Invalid field "mutations[${index}]": expected an object`);
+    const layerId = validateLayerId(mutation.layerId);
+    const type = mutation.type;
+    const patch = validateLayerPatch(type, mutation.patch);
+    const node = editor.getNode?.(layerId);
+    if (!node) nodeNotFound();
+    return { layerId, type, patch, node };
+  });
+  const updates = validated.map(({ layerId, type, patch, node }) => {
+    setAgentFocusNode(node, `AI: Batch ${type}`);
+    if (type === "text" && patch.textContent !== undefined) patch.text = patch.textContent;
+    return type === "autoLayout"
+      ? { id: layerId, autoLayout: patch.autoLayout }
+      : { id: layerId, ...patch };
   });
 
   editor.updateNodes?.(updates);
