@@ -43,7 +43,9 @@ export function createHistory({
     if (!a || !b || typeof a !== "object" || typeof b !== "object") {
       return false;
     }
-    if (a.doc !== b.doc) return false;
+    const aDoc = a.doc !== undefined ? a.doc : a;
+    const bDoc = b.doc !== undefined ? b.doc : b;
+    if (aDoc !== bDoc) return false;
     const aIds = a.selectedIds;
     const bIds = b.selectedIds;
     if (aIds !== bIds) {
