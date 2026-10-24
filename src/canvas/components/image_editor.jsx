@@ -103,7 +103,11 @@ import { useI18n } from "../use_i18n.js";
 import { useDesignStore } from "../../store/design_store.js";
 import { useWorkspaceSkia } from "../use_skia_page.js";
 import { SpatialIndex } from "../editor/spatial_index.js";
-import { requestCollabOriginal } from "../collab/use_collab.js";
+import { requestCollabOriginal, sendCollabCursor } from "../collab/use_collab.js";
+import RemoteCursors from "./remote_cursors.jsx";
+import OfflineSessionNotice from "./offline_session_notice.jsx";
+import RoomProjectNotice from "./room_project_notice.jsx";
+import SharedDocumentLoading from "./shared_document_loading.jsx";
 import { regionHost } from "../editor/doc_ops.js";
 import {
   getCanvasType,
@@ -2874,8 +2878,23 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       button: event.button,
     };
   }, []);
+  const lastCollabCursorSentRef = useRef(0);
+  const handleCollabCursorMove = useCallback((event) => {
+    const now = performance.now();
+    if (now - lastCollabCursorSentRef.current < 50) return;
+    lastCollabCursorSentRef.current = now;
+    const stage = freeStageRef.current;
+    if (!stage) return;
+    const rect = stage.getBoundingClientRect();
+    const cam = useDesignStore.getState().editorCamera || { panX: 0, panY: 0, zoom: 1 };
+    const z = cam.zoom || 1;
+    const x = (event.clientX - rect.left - (cam.panX || 0)) / z;
+    const y = (event.clientY - rect.top - (cam.panY || 0)) / z;
+    sendCollabCursor({ x, y });
+  }, []);
   const onFreePointerMove = useCallback(
     (event) => {
+      handleCollabCursorMove(event);
       const gesture = panGestureRef.current;
       if (!gesture || gesture.pointerId !== event.pointerId) return;
       const dx = event.clientX - gesture.lastX;
@@ -3407,6 +3426,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             onPointerMove={onFreePointerMove}
             onPointerUp={onFreePointerUp}
             onPointerCancel={onFreePointerUp}
+            onPointerLeave={() => sendCollabCursor(null)}
             onAuxClick={(event) => {
               if (event.button === 1) event.preventDefault();
             }}
@@ -3416,6 +3436,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               data-testid="workspace-skia-canvas"
               className="pointer-events-none absolute inset-0 h-full w-full"
             />
+            <RemoteCursors />
             <div
               aria-hidden
               ref={freeGridRef}
@@ -3653,8 +3674,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         ) : (
           <div
             data-testid="editor-pages"
-            className="h-full w-full overflow-hidden"
+            className="relative h-full w-full overflow-hidden"
+            onPointerLeave={() => sendCollabCursor(null)}
           >
+            <RemoteCursors />
             {nodeIds.map((nodeId, index) => (
               <EditorPage
                 key={nodeId}
@@ -5177,6 +5200,16 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             </div>
           )
         ) : null}
+
+        <SharedDocumentLoading />
+
+        <div
+          data-testid="canvas-notice-column"
+          className="pointer-events-none absolute bottom-4 left-4 z-40 flex flex-col gap-2 max-w-[min(360px,calc(100%-32px))]"
+        >
+          <OfflineSessionNotice />
+          <RoomProjectNotice />
+        </div>
 
         <input
           ref={mediaInputRef}
