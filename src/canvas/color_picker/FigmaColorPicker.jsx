@@ -3,12 +3,14 @@ import { useEffect, useState } from "react";
 import { ColorSliderSurfaces } from "./ColorSliderSurfaces.jsx";
 import { ColorChannelInputs } from "./ColorChannelInputs.jsx";
 import { GradientStopsBar } from "./GradientStopsBar.jsx";
+import { GradientAngleControl } from "./GradientAngleControl.jsx";
 import { SwatchGrid } from "./SwatchGrid.jsx";
 import { hexToHsv } from "./color_math.js";
 import {
   formatGradient,
   isCssGradient,
   parseGradient,
+  normalizeGradientAngle,
 } from "./gradient_fill.js";
 import { useI18n } from "../use_i18n.js";
 
@@ -146,13 +148,29 @@ export default function FigmaColorPicker({
     onChange(formatGradient(nextGradType, angle, gradientStops, geometry));
   };
 
-  const handleAngleChange = (rawVal) => {
-    const num = parseInt(rawVal, 10);
-    if (!Number.isFinite(num)) return;
-    const clamped = ((num % 360) + 360) % 360;
-    const nextAngle = `${clamped}deg`;
+  const handleAngleChange = (rawVal, rotate = false) => {
+    const normalized = normalizeGradientAngle(rawVal);
+    if (!normalized) return;
+    const numericValue = Number.parseFloat(rawVal);
+    const nextValue = rotate
+      ? ((numericValue % 360) + 360) % 360
+      : Math.max(0, Math.min(360, numericValue));
+    const nextAngle = `${nextValue}deg`;
     setAngle(nextAngle);
-    onChange(formatGradient(gradientType, nextAngle, gradientStops, geometry));
+    // An explicit angle edit invalidates custom endpoints; retain center and size.
+    const nextGeometry = geometry
+      ? {
+          ...geometry,
+          startX: undefined,
+          startY: undefined,
+          endX: undefined,
+          endY: undefined,
+        }
+      : geometry;
+    setGeometry(nextGeometry);
+    onChange(
+      formatGradient(gradientType, nextAngle, gradientStops, nextGeometry),
+    );
   };
 
   const handleEyeDropper = async () => {
@@ -301,22 +319,7 @@ export default function FigmaColorPicker({
       {/* Gradient angle field — only relevant for linear & angular (conic) */}
       {primaryType === "gradient" &&
       (gradientType === "linear" || gradientType === "angular") ? (
-        <div className="flex items-center gap-2 rounded-lg bg-neutral-800 px-2 py-1">
-          <span className="text-[10px] font-mono text-neutral-400 shrink-0">
-            ∠
-          </span>
-          <input
-            type="number"
-            min={0}
-            max={359}
-            step={1}
-            value={parseInt(angle, 10) || 0}
-            onChange={(e) => handleAngleChange(e.target.value)}
-            aria-label={t("editor.props.gradientAngle")}
-            className="min-w-0 flex-1 bg-transparent text-[11px] font-mono tabular-nums text-neutral-100 outline-none"
-          />
-          <span className="text-[10px] font-mono text-neutral-500">°</span>
-        </div>
+        <GradientAngleControl angle={angle} onChange={handleAngleChange} />
       ) : null}
 
       {/* Gradient Stops Bar */}

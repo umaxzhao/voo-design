@@ -370,3 +370,10 @@ export function getGradientInsertionPosition(stops) {
   }
   return Math.round(midpoint * 100) / 100;
 }
+
+/** Normalize a degree value while allowing 360° to remain a visible endpoint. */
+export function normalizeGradientAngle(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return null;
+  return `${Math.max(0, Math.min(360, numericValue))}deg`;
+}
