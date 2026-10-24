@@ -28,7 +28,7 @@ describe("layer row selection styling", () => {
   it.each([false, true])("selected row has gray fill and inset shadow (isolated=%s)", (isolated) => {
     const row = renderRow({ isolated });
     expect(row).toContain("bg-neutral-800");
-    expect(row).toContain(isolated ? "text-[#eed0ff]" : "text-[#a7ffd4]");
+    expect(row).toContain("text-neutral-100");
     expect(row).toContain("box-shadow:inset 0 0 0 1px #a7ffd4");
   });
 

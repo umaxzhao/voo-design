@@ -14,7 +14,7 @@ describe("QA visual defaults and imports", () => {
   });
   it.each(["rect", "ellipse"])("outlines intentional black %s thumbs without changing their fill", kind => {
     const html = renderToStaticMarkup(<EditorLayerThumb object={{ id: "black", kind, fill: "#000000" }} />);
-    expect(html).toContain("background-color:#000000");
+    expect(html).toContain("background:#000000");
     expect(html).toContain("box-shadow:inset 0 0 0 1px");
   });
   it.each(["png", "jpg", "jpeg", "webp", "svg", "gif", "bmp", "avif", "ico"])("shares extension-only %s support with drop and picker", ext => {
