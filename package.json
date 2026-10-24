@@ -24,6 +24,7 @@
     "test:watch": "vitest",
     "lint:design": "node scripts/check-design.mjs",
     "bridge": "node scripts/cli-bridge.mjs",
+    "signal": "node scripts/signaling-server.mjs",
     "mcp": "node scripts/mcp-server.mjs",
     "test:e2e": "node tests/e2e/agent_tools.e2e.mjs",
     "test:e2e:qa": "node tests/e2e/qa_flows.e2e.mjs",
