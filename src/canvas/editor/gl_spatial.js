@@ -1,20 +1,6 @@
-/**
- * The multi-pass spatial stage for the GPU adjustment path.
- *
- * Blur and sharpen are convolutions: they read neighbouring pixels, so they
- * cannot fold into the tone LUT the way brightness or curves do. They need the
- * tone pass to land somewhere sampleable first — an offscreen framebuffer —
- * which is what this module adds on top of the single-draw pipeline in
- * gl_adjustments.js:
- *
- *   tone pass -> FBO A -> spatial passes -> screen
- *
- * Same best-effort contract as gl_adjustments.js: any failure makes the stage
- * report itself unusable and the caller falls back to the CPU path.
- */
-
 import {
   BLUR_FRAGMENT_SHADER,
+  BOX_BLUR_FRAGMENT_SHADER,
   buildProgram,
   CLARITY_FRAGMENT_SHADER,
   FULLSCREEN_VERTEX_SHADER,
@@ -27,42 +13,40 @@ import {
   createSpatialTarget,
   deleteSpatialTarget,
   drawBlurPass as runBlurPass,
+  drawBoxBlur as runBoxBlur,
   drawDetailPass as runDetailPass,
   drawMotionBlurPass as runMotionBlurPass,
   drawSharpenPass as runSharpenPass,
 } from "./gl_spatial_passes.js";
 
 export { buildProgram, FULLSCREEN_VERTEX_SHADER, FULLSCREEN_VERTEX_SHADER_FBO };
-/**
- * Creates the spatial stage bound to one WebGL2 context.
- *
- * `accounting` is `{ add(bytes), remove(bytes) }` into the renderer's texture
- * budget, so the two FBO textures count against the same 512MB LRU pool as
- * source uploads.
- */
+/** Creates the spatial stage bound to one WebGL2 context. */
 export function createSpatialStage(gl, accounting) {
   let blurProgram = null;
+  let boxBlurProgram = null;
   let sharpenProgram = null;
   let highPassProgram = null;
   let clarityProgram = null;
   let motionBlurProgram = null;
   let blurUniforms = null;
+  let boxBlurUniforms = null;
   let sharpenUniforms = null;
   let highPassUniforms = null;
   let clarityUniforms = null;
   let motionBlurUniforms = null;
 
-  /** Ping-pong targets: { a, b, width, height } with { fbo, texture } entries. */
+  /** RGBA8 targets: source, blur ping-pong, and output. */
   let targets = null;
   let targetBytes = 0;
 
-  /** Set by any failure; begin() keeps declining until invalidate() resets. */
   let broken = false;
 
   function disposeTargets() {
     if (!targets) return;
     deleteSpatialTarget(gl, targets.a);
     deleteSpatialTarget(gl, targets.b);
+    deleteSpatialTarget(gl, targets.c);
+    deleteSpatialTarget(gl, targets.d);
     targets = null;
     accounting.remove(targetBytes);
     targetBytes = 0;
@@ -83,6 +67,14 @@ export function createSpatialStage(gl, accounting) {
           direction: gl.getUniformLocation(blurProgram, "u_direction"),
           radius: gl.getUniformLocation(blurProgram, "u_radius"),
           sigma: gl.getUniformLocation(blurProgram, "u_sigma"),
+        };
+      }
+      if (!boxBlurProgram) {
+        boxBlurProgram = buildProgram(gl, BOX_BLUR_FRAGMENT_SHADER, FULLSCREEN_VERTEX_SHADER_FBO);
+        boxBlurUniforms = {
+          image: gl.getUniformLocation(boxBlurProgram, "u_image"),
+          axis: gl.getUniformLocation(boxBlurProgram, "u_axis"),
+          radius: gl.getUniformLocation(boxBlurProgram, "u_radius"),
         };
       }
       if (!sharpenProgram) {
@@ -107,7 +99,7 @@ export function createSpatialStage(gl, accounting) {
           image: gl.getUniformLocation(highPassProgram, "u_image"),
           texel: gl.getUniformLocation(highPassProgram, "u_texel"),
           radius: gl.getUniformLocation(highPassProgram, "u_radius"),
-          sigma: gl.getUniformLocation(highPassProgram, "u_sigma"),
+          blurred: gl.getUniformLocation(highPassProgram, "u_blurred"),
         };
       }
       if (!clarityProgram) {
@@ -118,9 +110,8 @@ export function createSpatialStage(gl, accounting) {
         );
         clarityUniforms = {
           image: gl.getUniformLocation(clarityProgram, "u_image"),
-          texel: gl.getUniformLocation(clarityProgram, "u_texel"),
           radius: gl.getUniformLocation(clarityProgram, "u_radius"),
-          sigma: gl.getUniformLocation(clarityProgram, "u_sigma"),
+          blurred: gl.getUniformLocation(clarityProgram, "u_blurred"),
           strength: gl.getUniformLocation(clarityProgram, "u_strength"),
         };
       }
@@ -143,14 +134,18 @@ export function createSpatialStage(gl, accounting) {
       if (!targets) {
         const a = createSpatialTarget(gl, width, height);
         const b = a ? createSpatialTarget(gl, width, height) : null;
-        if (!a || !b) {
+        const c = b ? createSpatialTarget(gl, width, height) : null;
+        const d = c ? createSpatialTarget(gl, width, height) : null;
+        if (!a || !b || !c || !d) {
           deleteSpatialTarget(gl, a);
           deleteSpatialTarget(gl, b);
+          deleteSpatialTarget(gl, c);
+          deleteSpatialTarget(gl, d);
           broken = true;
           return false;
         }
-        targets = { a, b, width, height };
-        targetBytes = width * height * 4 * 2;
+        targets = { a, b, c, d, width, height };
+        targetBytes = width * height * 4 * 4;
         accounting.add(targetBytes);
       }
       return true;
@@ -169,12 +164,16 @@ export function createSpatialStage(gl, accounting) {
   const drawMotionBlurPass = (...args) =>
     runMotionBlurPass(gl, motionBlurProgram, motionBlurUniforms, ...args);
 
+  function drawAccurateDetail(program, uniforms, source, targetFbo, width, height, radius, extra) {
+    const scratch = [targets.a, targets.b, targets.c, targets.d].filter(
+      (target) => target.texture !== source && target.fbo !== targetFbo,
+    );
+    const blurred = runBoxBlur(gl, boxBlurProgram, boxBlurUniforms, source, scratch[0], scratch[1], width, height, Math.floor(radius + 0.5));
+    drawDetailPass(program, uniforms, source, targetFbo, width, height, radius, extra, blurred);
+  }
+
   return {
-    /**
-     * Prepares the stage and binds FBO A as the render target for the tone
-     * pass. Returns false — leaving the default framebuffer untouched — when
-     * the stage cannot run, so the caller can hand the frame to the CPU path.
-     */
+    /** Prepare the stage and bind a source target for the tone pass. */
     begin(width, height) {
       if (!ensure(width, height)) return false;
       gl.bindFramebuffer(gl.FRAMEBUFFER, targets.a.fbo);
@@ -182,10 +181,7 @@ export function createSpatialStage(gl, accounting) {
       return true;
     },
 
-    /**
-     * Runs the convolution passes after the tone pass, ending with a draw to
-     * the default framebuffer (the shared canvas).
-     */
+    /** Run spatial passes after the tone pass. */
     finish({
       width,
       height,
@@ -278,7 +274,7 @@ export function createSpatialStage(gl, accounting) {
 
       if (highPassActive) {
         const last = !remainingAfter([sharpenActive, clarityActive, liveFilters.length > 0]);
-        drawDetailPass(
+        drawAccurateDetail(
           highPassProgram,
           highPassUniforms,
           readTexture,
@@ -293,7 +289,7 @@ export function createSpatialStage(gl, accounting) {
 
       if (clarityActive) {
         const last = !sharpenActive && liveFilters.length === 0;
-        drawDetailPass(
+        drawAccurateDetail(
           clarityProgram,
           clarityUniforms,
           readTexture,
@@ -339,7 +335,7 @@ export function createSpatialStage(gl, accounting) {
           const target = last ? null : writeFbo;
           const program = filter.kind === "highPass" ? highPassProgram : clarityProgram;
           const uniforms = filter.kind === "highPass" ? highPassUniforms : clarityUniforms;
-          drawDetailPass(program, uniforms, readTexture, target, width, height, filter.radius, filter.kind === "clarity" ? (u) => gl.uniform1f(u.strength, filter.strength) : null);
+          drawAccurateDetail(program, uniforms, readTexture, target, width, height, filter.radius, filter.kind === "clarity" ? (u) => gl.uniform1f(u.strength, filter.strength) : null);
         } else if (filter.kind === "sharpen") {
           if (last) drawSharpenPass(readTexture, width, height, filter.amount);
           else {
@@ -359,12 +355,9 @@ export function createSpatialStage(gl, accounting) {
       });
     },
 
-    /**
-     * Context lost: the GPU objects are gone already, so this only drops the
-     * bookkeeping. Everything rebuilds lazily on the next begin().
-     */
     invalidate() {
       blurProgram = null;
+      boxBlurProgram = null;
       sharpenProgram = null;
       highPassProgram = null;
       clarityProgram = null;
@@ -381,6 +374,7 @@ export function createSpatialStage(gl, accounting) {
       disposeTargets();
       for (const program of [
         blurProgram,
+        boxBlurProgram,
         sharpenProgram,
         highPassProgram,
         clarityProgram,
@@ -389,6 +383,7 @@ export function createSpatialStage(gl, accounting) {
         if (program) gl.deleteProgram(program);
       }
       blurProgram = null;
+      boxBlurProgram = null;
       sharpenProgram = null;
       highPassProgram = null;
       clarityProgram = null;
