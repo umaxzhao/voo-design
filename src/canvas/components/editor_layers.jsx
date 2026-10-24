@@ -1170,10 +1170,11 @@ export default function EditorLayers({
                                           ? "opacity-40 "
                                           : ""
                                       }${
-                                        rowSelectedOf(object)
-                                          ? `bg-neutral-800 text-neutral-100 ${isRowSelected(objects, object, { selectedIds, activeIndex, isBackgroundSelected }) ? "shadow-[inset_0_0_0_1px_#a7ffd4]" : ""}`
-                                          : overId === object.id
-                                            ? "bg-neutral-800 ring-1 ring-inset ring-[#a7ffd4]"
+                                        // The drag-over ring wins over the selection shadow, matching the inline boxShadow below.
+                                        overId === object.id
+                                          ? `bg-neutral-800 ${rowSelectedOf(object) ? "text-neutral-100 " : ""}ring-1 ring-inset ring-[#a7ffd4]`
+                                          : rowSelectedOf(object)
+                                            ? `bg-neutral-800 text-neutral-100 ${isRowSelected(objects, object, { selectedIds, activeIndex, isBackgroundSelected }) ? "shadow-[inset_0_0_0_1px_#a7ffd4]" : ""}`
                                             : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"
                                       } ${draggable ? "touch-none cursor-default" : ""}`}
                                       style={{
