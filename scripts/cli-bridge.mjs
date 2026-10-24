@@ -6,6 +6,9 @@
  *   VOO_CLI_BRIDGE_ORIGINS  extra allowed page origins, comma-separated
  */
 
+import os from "node:os";
+import path from "node:path";
+import { mkdir, writeFile, chmod } from "node:fs/promises";
 import {
   DEFAULT_CLI_BRIDGE_ORIGINS,
   startCliBridgeServer,
@@ -26,8 +29,19 @@ const bridge = await startCliBridgeServer({
   port,
   origins: [...DEFAULT_CLI_BRIDGE_ORIGINS, ...extraOrigins],
 });
+const token = process.env.VOO_CLI_BRIDGE_TOKEN;
+if (!token) throw new Error("CLI bridge token was not initialized");
+const configDir = process.env.XDG_CONFIG_HOME
+  ? path.join(process.env.XDG_CONFIG_HOME, "voo-design")
+  : path.join(os.homedir(), ".config", "voo-design");
+await mkdir(configDir, { recursive: true, mode: 0o700 });
+const tokenPath = path.join(configDir, "cli-bridge-token");
+await writeFile(tokenPath, `${token}\n`, { mode: 0o600 });
+await chmod(tokenPath, 0o600);
 process.stdout.write(
-  `VOO CLI bridge listening on ws://127.0.0.1:${bridge.port}\n`,
+  `VOO CLI bridge listening on ws://127.0.0.1:${bridge.port}\n` +
+  `CLI bridge token: ${token}\n` +
+  `CLI bridge token file: ${tokenPath}\n`,
 );
 
 const shutdown = () => void bridge.close();

@@ -8,14 +8,14 @@
 
 import { registerMcpRelayChannels } from "./mcp_server/canvas_relay.js";
 import http from "node:http";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { CLI_BRIDGE_DEFAULT_PORT } from "../src/shared/cli_bridge_protocol.js";
 import { createWsIpcAdapter } from "./ws_ipc_adapter.js";
 import { registerLocalCliIpc } from "./local_backend_bridge.js";
 
 export const DEFAULT_CLI_BRIDGE_ORIGINS = Object.freeze([
-  "null", // Opaque origin sent by file:// Electron pages
-  "file://",
+  "null", // Opaque Origin sent by packaged Electron pages loaded with file://.
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   "http://localhost:4173",
@@ -28,19 +28,18 @@ export const DEFAULT_CLI_BRIDGE_ORIGINS = Object.freeze([
   "https://la.voo.run",
 ]);
 
+const SESSION_BRIDGE_TOKEN = process.env.VOO_CLI_BRIDGE_TOKEN || randomBytes(32).toString("hex");
+process.env.VOO_CLI_BRIDGE_TOKEN = SESSION_BRIDGE_TOKEN;
+
 export function isAllowedOrigin(origin, allowedSet) {
-  if (!origin) return true; // Local non-browser client
-  if (origin === "null") return true; // Electron loadFile / browser file origin
-  try {
-    const url = new URL(origin);
-    if (url.protocol === "file:") return true;
-    // Other opaque schemes also normalize to "null"; never allow them via that entry.
-    if (url.origin !== "null" && allowedSet.has(url.origin)) return true;
-    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return true;
-  } catch {
-    return false;
-  }
-  return false;
+  return typeof origin === "string" && allowedSet.has(origin);
+}
+
+function hasValidBridgeToken(candidate, expected) {
+  if (typeof candidate !== "string" || typeof expected !== "string") return false;
+  const candidateBytes = Buffer.from(candidate);
+  const expectedBytes = Buffer.from(expected);
+  return candidateBytes.length === expectedBytes.length && timingSafeEqual(candidateBytes, expectedBytes);
 }
 
 /**
@@ -58,6 +57,7 @@ export async function startCliBridgeServer({
   port = CLI_BRIDGE_DEFAULT_PORT,
   host = "127.0.0.1",
   origins = DEFAULT_CLI_BRIDGE_ORIGINS,
+  token = SESSION_BRIDGE_TOKEN,
   register = registerCliBridgeChannels,
 } = {}) {
   const adapter = createWsIpcAdapter();
@@ -81,7 +81,10 @@ export async function startCliBridgeServer({
 
   const wss = new WebSocketServer({
     server,
-    verifyClient: ({ origin }) => isAllowedOrigin(origin, allowed),
+    verifyClient: ({ origin, req }) => {
+      if (origin !== undefined) return isAllowedOrigin(origin, allowed);
+      return hasValidBridgeToken(req.headers["x-voo-cli-bridge-token"], token);
+    },
   });
 
   // Attach error handler to prevent unhandled EventEmitter crashes when server errors occur

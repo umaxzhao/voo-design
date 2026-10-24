@@ -474,7 +474,9 @@ describe("Empirical Challenger: Wire Protocol & WebSocket Loopback Stress Testin
       runningServers.push(server);
       const port = server.port;
 
-      const client = new WebSocket(`ws://127.0.0.1:${port}`);
+      const client = new WebSocket(`ws://127.0.0.1:${port}`, {
+        headers: { "x-voo-cli-bridge-token": process.env.VOO_CLI_BRIDGE_TOKEN },
+      });
       await new Promise((resolve) => client.on("open", resolve));
       expect(client.readyState).toBe(WebSocket.OPEN);
 
@@ -490,6 +492,7 @@ describe("Empirical Challenger: Wire Protocol & WebSocket Loopback Stress Testin
 
     it("strictly enforces origin security policy via isAllowedOrigin", () => {
       const allowedOrigins = new Set([
+        "null",
         "http://localhost:5173",
         "http://127.0.0.1:4179",
         "https://voo.run",
@@ -497,18 +500,17 @@ describe("Empirical Challenger: Wire Protocol & WebSocket Loopback Stress Testin
       ]);
 
       // Permitted
-      expect(isAllowedOrigin(null, allowedOrigins)).toBe(true); // CLI / local script
-      expect(isAllowedOrigin("", allowedOrigins)).toBe(true);
+      expect(isAllowedOrigin(null, allowedOrigins)).toBe(false);
+      expect(isAllowedOrigin("", allowedOrigins)).toBe(false);
       expect(isAllowedOrigin("http://localhost:5173", allowedOrigins)).toBe(true);
       expect(isAllowedOrigin("http://127.0.0.1:4179", allowedOrigins)).toBe(true);
       expect(isAllowedOrigin("https://voo.run", allowedOrigins)).toBe(true);
       expect(isAllowedOrigin("https://la.voo.run", allowedOrigins)).toBe(true);
-      expect(isAllowedOrigin("http://localhost:3000", allowedOrigins)).toBe(true); // localhost any port
-      expect(isAllowedOrigin("http://127.0.0.1:8080", allowedOrigins)).toBe(true); // loopback any port
-
+      expect(isAllowedOrigin("http://localhost:3000", allowedOrigins)).toBe(false);
+      expect(isAllowedOrigin("http://127.0.0.1:8080", allowedOrigins)).toBe(false);
       expect(isAllowedOrigin("null", allowedOrigins)).toBe(true);
-      expect(isAllowedOrigin("file://", allowedOrigins)).toBe(true);
-      expect(isAllowedOrigin("file:///Applications/VOO/dist/index.html", allowedOrigins)).toBe(true);
+      expect(isAllowedOrigin("file://", allowedOrigins)).toBe(false);
+      expect(isAllowedOrigin("file:///Applications/VOO/dist/index.html", allowedOrigins)).toBe(false);
 
       // Rejected
       expect(isAllowedOrigin("https://evil-hacker.com", allowedOrigins)).toBe(false);
@@ -520,22 +522,20 @@ describe("Empirical Challenger: Wire Protocol & WebSocket Loopback Stress Testin
       expect(isAllowedOrigin("malformed-origin-string", allowedOrigins)).toBe(false);
     });
 
-    it.each(["null", "file://", "file:///Applications/VOO/dist/index.html"])(
-      "accepts Electron origin %s during a live WebSocket handshake", async (origin) => {
-        const server = await startCliBridgeServer({ port: 0 });
-        runningServers.push(server);
-        const client = new WebSocket(`ws://127.0.0.1:${server.port}`, { origin });
-        try {
-          await new Promise((resolve, reject) => {
-            client.once("open", resolve);
-            client.once("error", reject);
-          });
-          expect(client.readyState).toBe(WebSocket.OPEN);
-        } finally {
-          client.terminate();
-        }
-      },
-    );
+    it.each(["null"])("accepts Electron origin %s during a live WebSocket handshake", async (origin) => {
+      const server = await startCliBridgeServer({ port: 0 });
+      runningServers.push(server);
+      const client = new WebSocket(`ws://127.0.0.1:${server.port}`, { origin });
+      try {
+        await new Promise((resolve, reject) => {
+          client.once("open", resolve);
+          client.once("error", reject);
+        });
+        expect(client.readyState).toBe(WebSocket.OPEN);
+      } finally {
+        client.terminate();
+      }
+    });
 
     it("rejects untrusted origin during live WebSocket handshake", async () => {
       const server = await startCliBridgeServer({ port: 0 });
@@ -580,7 +580,11 @@ describe("Empirical Challenger: Wire Protocol & WebSocket Loopback Stress Testin
     it("processes 50 concurrent requests cleanly without frame crosstalk", async () => {
       const bridge = createWebCliBridge({
         url: `ws://127.0.0.1:${server.port}`,
-        WebSocketImpl: WebSocket,
+        WebSocketImpl: function TokenAuthorizedWebSocket(url) {
+          return new WebSocket(url, {
+            headers: { "x-voo-cli-bridge-token": process.env.VOO_CLI_BRIDGE_TOKEN },
+          });
+        },
       });
 
       await bridge.connect();

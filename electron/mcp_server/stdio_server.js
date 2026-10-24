@@ -6,7 +6,10 @@ import { buildMcpTools } from "./tool_catalog.js";
 
 function connect(port) {
   return new Promise((resolve, reject) => {
-    const socket = new WebSocket(`ws://127.0.0.1:${port}`, { handshakeTimeout: 2000 });
+    const socket = new WebSocket(`ws://127.0.0.1:${port}`, {
+      handshakeTimeout: 2000,
+      headers: { "x-voo-cli-bridge-token": process.env.VOO_CLI_BRIDGE_TOKEN || "" },
+    });
     socket.on("error", () => {});
     socket.once("error", reject);
     socket.once("open", () => resolve(socket));

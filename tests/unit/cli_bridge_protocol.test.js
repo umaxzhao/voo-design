@@ -292,9 +292,14 @@ describe("CLI Bridge Protocol & Dual-Channel Transport", () => {
       expect(health).toEqual({ ok: true, version: "1.0.0" });
 
       // 2. Connect client web bridge
+      const TokenAuthorizedWebSocket = function (url) {
+        return new WebSocket(url, {
+          headers: { "x-voo-cli-bridge-token": process.env.VOO_CLI_BRIDGE_TOKEN },
+        });
+      };
       const bridge = createWebCliBridge({
         url: `ws://127.0.0.1:${port}`,
-        WebSocketImpl: WebSocket,
+        WebSocketImpl: TokenAuthorizedWebSocket,
       });
 
       const connectRes = await bridge.connect();
