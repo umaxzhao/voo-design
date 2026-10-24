@@ -48,13 +48,16 @@ function makeEditor() {
     ],
     components: { master_button: MASTER },
   };
+  const undoStack = [];
   const editor = {
     getDoc: () => doc,
     getDocument: () => doc,
     getNode: (id) => doc.nodes.find((node) => node.id === id) ?? null,
     setDoc: (next) => {
+      undoStack.push(doc);
       doc = next;
     },
+    undo: () => { doc = undoStack.pop(); return doc; },
   };
   return { editor, doc: () => doc };
 }
@@ -75,6 +78,7 @@ describe("component variant schemas", () => {
     expect(names).toEqual(
       expect.arrayContaining([
         "create_component_variant",
+        "create_component_variants_batch",
         "list_component_variants",
         "set_instance_variant",
       ]),
@@ -107,6 +111,31 @@ describe("component variant tools", () => {
     expect(variant.variantGroupId).toBe(result.variantGroupId);
     expect(variant.variantName).toBe("Dark");
     expect(variant.nodes.map((node) => node.id)).toEqual(["label"]);
+  });
+
+  it("creates a batch of variants in one undoable document update", async () => {
+    let commits = 0;
+    const originalSetDoc = editor.setDoc;
+    editor.setDoc = (next, options) => { commits += 1; originalSetDoc(next, options); };
+    const result = await executeCanvasTool("create_component_variants_batch", {
+      sourceComponentId: "master_button",
+      variants: [{ State: "Default" }, { State: "Hover" }, { State: "Disabled" }],
+    });
+    expect(result.results).toHaveLength(3);
+    expect(result.results.every(entry => entry.status === "created")).toBe(true);
+    expect(commits).toBe(1);
+    expect(Object.keys(doc().components)).toHaveLength(4);
+    editor.undo();
+    expect(Object.keys(doc().components)).toEqual(["master_button"]);
+  });
+
+  it("reports invalid property sets while creating valid batch entries", async () => {
+    const result = await executeCanvasTool("create_component_variants_batch", {
+      sourceComponentId: "master_button",
+      variants: [{ State: "Hover" }, { State: " " }, { State: "Disabled" }],
+    });
+    expect(result.results.map(entry => entry.status)).toEqual(["created", "error", "created"]);
+    expect(Object.keys(doc().components)).toHaveLength(3);
   });
 
   it("lists variants by component id or by group id", async () => {

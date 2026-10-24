@@ -62,6 +62,7 @@ kept in sync with undo/redo:
 | `reset_instance_overrides` | Clears instance overrides. |
 | `swap_instance` | Changes an instance source component. |
 | `create_component_variant` | Creates a sibling component variant. |
+| `create_component_variants_batch` | Creates sibling variants from property sets in one undoable transaction. |
 | `create_component_variant_matrix` | Creates and persists a Cartesian variant matrix from axes. |
 | `list_component_variants` | Lists variants in a component group. |
 | `list_instance_variant_properties` | Lists current and available variant properties for an instance. |
