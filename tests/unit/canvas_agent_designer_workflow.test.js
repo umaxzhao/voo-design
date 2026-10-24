@@ -25,6 +25,7 @@ const ALL_TOOL_NAMES = [
   "generate_image_web",
   "create_component",
   "create_component_variant",
+  "create_component_variants_batch",
   "create_component_variant_matrix",
   "list_component_variants",
   "list_instance_variant_properties",
