@@ -266,7 +266,7 @@ export function createSpatialStage(gl, accounting) {
           height,
           motionBlurRadius,
           Math.cos(angle),
-          Math.sin(angle),
+          -Math.sin(angle),
         );
         if (last) return;
         swap();
