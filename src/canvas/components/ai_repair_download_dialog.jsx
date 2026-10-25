@@ -81,3 +81,5 @@ AiRepairDownloadDialog.propTypes = {
   onDownload: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
 };
+
+export default AiRepairDownloadDialog;
