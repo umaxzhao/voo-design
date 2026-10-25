@@ -11,6 +11,10 @@ export default function SelectedNodeActions({
   const { t } = useI18n();
   if (!object?.id || !engine) return null;
   const nodes = selectedNodes.length ? selectedNodes : [object];
+  const canCombine = nodes.length > 1 && Boolean(engine.canCombineSelection?.());
+  // Group / Ungroup / boolean rows are the only content; with none of them the
+  // section would be a bare heading, so it renders nothing.
+  if (nodes.length <= 1 && object.kind !== "group") return null;
   return (
     <StaticSection title={t("editor.layer.title")}>
       <div className="grid grid-cols-2 gap-1.5">
@@ -33,7 +37,7 @@ export default function SelectedNodeActions({
             {t("editor.taskbar.ungroup")}
           </button>
         ) : null}
-        {nodes.length > 1 && engine.canCombineSelection?.()
+        {canCombine
           ? BOOLEAN_OPERATIONS.map((operation) => (
               <button
                 key={operation}

@@ -23,7 +23,7 @@ import { CANVAS_TYPE } from "../editor/scene_doc_factory.js";
 export const WORKBENCHES = Object.freeze({
   [CANVAS_TYPE.DESIGN]: Object.freeze({
     timelineOpen: false,
-    inspectorAlwaysOpen: false,
+    inspectorAlwaysOpen: true,
     toolbar: "design",
     pieMenu: true,
     sceneInspector: false,

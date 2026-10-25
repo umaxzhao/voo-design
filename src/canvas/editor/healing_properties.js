@@ -11,7 +11,7 @@
 /** Which properties a healing mode shows, in panel order. */
 export const HEALING_MODE_PROPERTIES = {
   spot: ["size", "hardness", "source", "contentAware"],
-  aiRepair: ["size"],
+  aiRepair: ["size", "hardness", "opacity"],
   patch: ["source", "destination", "diffusion", "transparent"],
   clone: ["size", "hardness", "opacity", "flow", "aligned", "source", "preset"],
 };
