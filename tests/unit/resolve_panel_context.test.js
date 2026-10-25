@@ -21,13 +21,18 @@ describe('dynamic properties context', () => {
     expect(resolve('group').sections).not.toContain('fill');
     expect(resolve('group').sections).not.toContain('stroke');
     expect(resolve('line').sections).not.toContain('fill');
-    expect(resolve('image').sections).toEqual(['transform', 'layer', 'effects', 'export']);
-    expect(resolve('image').topBar).toBe('image');
+    // The image section replaces the former top context bar (crop / replace / fit).
+    expect(resolve('image').sections).toEqual(['transform', 'image', 'layer', 'effects', 'export']);
+    expect(resolve('image').toolOptions).toBeNull();
     expect(resolve('ellipse').sections).toContain('arc');
   });
-  it.each(['brush', 'crop', 'lasso', 'marquee', 'wand', 'eraser'])('puts %s in a top context bar', tool => {
-    expect(resolvePanelForContext({ tool }).topBar).toBe(tool);
-    expect(resolve('image', tool).panel).toBe('properties');
+  it.each(['brush', 'crop', 'lasso', 'marquee', 'wand', 'eraser'])('puts %s options in the right panel', tool => {
+    expect(resolvePanelForContext({ tool })).toMatchObject({ panel: 'tool', toolOptions: tool });
+    expect(resolve('image', tool)).toMatchObject({ panel: 'properties', toolOptions: tool });
+    expect(resolvePanelForContext({ tool })).not.toHaveProperty('topBar');
+  });
+  it.each(['retouch', 'select_region', 'ai_select', 'rect', 'text', 'pen', 'dropper'])('keeps the selection panel when %s is armed', tool => {
+    expect(resolve('image', tool).toolOptions).toBeNull();
   });
   it('normalizes real scene encodings', () => {
     expect(propertyType({ kind: 'path', line: true })).toBe('line');
@@ -51,8 +56,8 @@ describe('complete selection and tool precedence matrix', () => {
       expect(resolve(kind, tool)).toMatchObject({ panel: 'properties', sections: PROPERTY_SECTIONS[kind] });
     }
   });
-  it.each(['brush', 'eraser', 'healing', 'retouch', 'blur', 'sharpen', 'smudge', 'dodge', 'burn', 'sponge', 'crop', 'marquee', 'lasso', 'wand', 'region', 'select_region', 'ai_select'])('%s has a raster toolbar without selection', tool => {
-    expect(resolvePanelForContext({ tool, selection: [] })).toEqual({ panel: 'tool', sections: [], topBar: tool });
+  it.each(['brush', 'eraser', 'healing', 'retouch', 'blur', 'sharpen', 'smudge', 'dodge', 'burn', 'sponge', 'crop', 'marquee', 'lasso', 'wand', 'region', 'select_region', 'ai_select'])('%s has panel tool options without selection', tool => {
+    expect(resolvePanelForContext({ tool, selection: [] })).toEqual({ panel: 'tool', sections: [], toolOptions: tool });
   });
   it.each([
     [{ kind: 'path', poly: true, star: true }, 'star'],

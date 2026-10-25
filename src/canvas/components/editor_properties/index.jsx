@@ -1,5 +1,4 @@
 import { resolvePanelForContext } from "./resolve_panel_context.js";
-import RasterContextToolbar from "./raster_context_toolbar.jsx";
 import VariantsSection from "./variants_section.jsx";
 /**
  * Editor properties panel: root component docked on canvas side showing
@@ -20,8 +19,6 @@ import PropertiesPanelMaskToolbar from "./properties_panel_mask_toolbar.jsx";
 import PropertiesPanelSections from "./properties_panel_sections.jsx";
 import LiveFilterSection from "./live_filter_section.jsx";
 import { editorPropertiesPropTypes } from "./properties_panel_types.js";
-import PropertiesExportAction from "./properties_export_action.jsx";
-import { downloadSelectionPng } from "./type_specific_sections.jsx";
 import { PROPERTIES_PANEL_MAX_HEIGHT_CLASS } from "../editor_panel_clearance.js";
 
 export const PROPERTIES_PANEL_CONTENT_CLASS = "flex-1 min-h-0 overflow-x-hidden overflow-y-auto";
@@ -152,7 +149,10 @@ export default function EditorProperties({
     tool,
     selection: !isBackground && object ? (selectedNodes.length ? selectedNodes : [object]) : [],
   });
-  const isDedicatedToolActive = !penEditing && context.panel === "tool";
+  // The active tool's options own the panel: always with nothing selected, and
+  // over a selection for the raster tools (brush, eraser, crop, selection...).
+  const isDedicatedToolActive =
+    !penEditing && !maskEditing && (context.panel === "tool" || Boolean(context.toolOptions));
 
   const header = (
     <PropertiesPanelHeader
@@ -184,10 +184,7 @@ export default function EditorProperties({
   );
 
   if (isDedicatedToolActive && toolProps) {
-    if (context.topBar) return <RasterContextToolbar context={context} toolProps={toolProps} object={object} engine={engine} editAndCommit={editAndCommit} />;
     return (
-      <>
-      <RasterContextToolbar context={context} toolProps={toolProps} object={object} engine={engine} editAndCommit={editAndCommit} />
       <aside
         data-testid="editor-properties-panel"
         className={dynamicPanelClass}
@@ -200,7 +197,6 @@ export default function EditorProperties({
           <ToolPropertiesSection tool={tool} {...toolProps} />
         </div>
       </aside>
-      </>
     );
   }
 
@@ -288,8 +284,6 @@ export default function EditorProperties({
   }
 
   return (
-    <>
-    <RasterContextToolbar context={context} toolProps={toolProps} object={object} engine={engine} editAndCommit={editAndCommit} />
     <aside
       data-testid="editor-properties-panel"
       className={dynamicPanelClass}
@@ -298,10 +292,8 @@ export default function EditorProperties({
       onMouseOver={promoteTitleOnHover}
     >
       {header}
-      {context.sections?.includes("export") && <PropertiesExportAction title={t("editor.export")} label={t("editor.props.exportPng")} onExport={() => downloadSelectionPng(engine, object)} />}
       <div className={contentClass}>
         {maskToolbar}
-        {object?.isFrame && <VariantsSection engine={engine} isMainComponent={isMainComponent} />}
           <PropertiesPanelSections
             sections={context.sections}
             object={object}
@@ -309,6 +301,7 @@ export default function EditorProperties({
             parentLayout={parentLayout}
             parentIsFrame={parentIsFrame}
             parentNode={parentNode}
+            isMainComponent={isMainComponent}
             colorVariableActions={colorVariableActions}
             styleActions={styleActions}
             docSize={docSize}
@@ -339,7 +332,6 @@ export default function EditorProperties({
           />
       </div>
     </aside>
-    </>
   );
 }
 

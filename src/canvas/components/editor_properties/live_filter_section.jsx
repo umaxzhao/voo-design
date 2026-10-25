@@ -1,258 +1,95 @@
-/** Live Filter stack section: add / toggle / edit / reorder non-destructive filters. */
+/**
+ * Live Filter section: hidden until the layer has a filter (or the add menu
+ * reveals it). One "+" opens a compact picker for every filter kind and for
+ * frequency separation, instead of a row of stacked add buttons.
+ */
 
 import PropTypes from "prop-types";
+import { useState } from "react";
 import { useI18n } from "../../use_i18n.js";
-import { CollapsibleSection } from "./property_section.jsx";
-import ToolSliderField from "./tool_slider_field.jsx";
+import { CollapsibleSection, SectionAddButton } from "./property_section.jsx";
+import LiveFilterStack, { DEFAULT_VALUE } from "./live_filter_stack.jsx";
+import FrequencySeparationRow from "./frequency_separation_row.jsx";
 import { LIVE_FILTER_KINDS, createLiveFilterEntry } from "../../editor/live_filter_stack.js";
 
-const DEFAULT_VALUE = 50;
-const PARAM_VALUE_LABELS = {
-  motionBlur: "editor.liveFilters.value",
+const PICKER_ITEM_CLASS =
+  "block w-full rounded-lg px-2 py-1.5 text-left text-[11px] text-neutral-200 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
+
+/** Append a new filter of `kind` to the stack and commit it as one history entry. */
+export function addLiveFilter({ object, liveFilters, kind, editAndCommit }) {
+  const params = kind === "motionBlur" ? { value: DEFAULT_VALUE, angle: 0 } : { value: DEFAULT_VALUE };
+  editAndCommit({
+    adjustments: {
+      ...(object.adjustments ?? {}),
+      liveFilters: [...liveFilters, createLiveFilterEntry(kind, params)],
+    },
+  });
+}
+
+/** The one add picker: every filter kind, plus frequency separation for images. */
+export function LiveFilterPicker({ onPick, onFrequency = null }) {
+  const { t } = useI18n();
+  return (
+    <div data-testid="editor-live-filter-picker" className="rounded-xl border border-white/10 bg-neutral-900 p-1">
+      {LIVE_FILTER_KINDS.map((kind) => (
+        <button key={kind} type="button" data-testid={`live-filter-add-${kind}`} className={PICKER_ITEM_CLASS} onClick={() => onPick(kind)}>
+          {t(`editor.liveFilter.kind.${kind}`)}
+        </button>
+      ))}
+      {onFrequency ? (
+        <button type="button" data-testid="live-filter-add-frequency" className={`${PICKER_ITEM_CLASS} border-t border-white/10`} onClick={onFrequency}>
+          {t("editor.frequencySeparation.action")}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+LiveFilterPicker.propTypes = {
+  onPick: PropTypes.func.isRequired,
+  onFrequency: PropTypes.func,
 };
 
 export default function LiveFilterSection({
   object,
   liveFilters = object?.adjustments?.liveFilters ?? [],
+  engine = null,
+  /** Show the section even with an empty stack (set by the panel's add menu). */
+  revealed = false,
+  defaultPickerOpen = revealed,
+  defaultFrequencyOpen = false,
   edit,
   editAndCommit,
   commitNow = null,
 }) {
   const { t } = useI18n();
+  const [pickerOpen, setPickerOpen] = useState(defaultPickerOpen);
+  const [frequencyOpen, setFrequencyOpen] = useState(defaultFrequencyOpen);
+  const canSeparate = object.kind === "image" && Boolean(engine);
 
-  const setStack = (stack) => {
-    editAndCommit({
-      adjustments: {
-        ...(object.adjustments ?? {}),
-        liveFilters: stack,
-      },
-    });
-  };
-
-  const liveAddStack = (kind) => {
-    const initialParams =
-      kind === "motionBlur"
-        ? { value: DEFAULT_VALUE, angle: 0 }
-        : { value: DEFAULT_VALUE };
-    setStack([
-      ...liveFilters,
-      createLiveFilterEntry(kind, initialParams),
-    ]);
-  };
-
-  const patchEntry = (entryId, patch) => {
-    edit({
-      adjustments: {
-        ...(object.adjustments ?? {}),
-        liveFilters: liveFilters.map((entry) =>
-          entry.id === entryId ? { ...entry, ...patch } : entry,
-        ),
-      },
-    });
-  };
-
-  const handleCommit = () => {
-    if (typeof commitNow === "function") {
-      commitNow();
-    } else {
-      editAndCommit({
-        adjustments: {
-          ...(object.adjustments ?? {}),
-          liveFilters,
-        },
-      });
-    }
-  };
-
-  const toggleEntry = (entryId) => {
-    setStack(
-      liveFilters.map((entry) =>
-        entry.id === entryId ? { ...entry, enabled: !entry.enabled } : entry,
-      ),
-    );
-  };
-
-  const moveEntry = (index, delta) => {
-    const target = index + delta;
-    if (target < 0 || target >= liveFilters.length) return;
-    const next = [...liveFilters];
-    const [removed] = next.splice(index, 1);
-    next.splice(target, 0, removed);
-    setStack(next);
-  };
-
-  const removeEntry = (entryId) => {
-    setStack(liveFilters.filter((entry) => entry.id !== entryId));
-  };
+  // An unused, unrevealed section does not exist in the panel at all.
+  if (liveFilters.length === 0 && !revealed && !pickerOpen && !frequencyOpen) return null;
 
   return (
     <CollapsibleSection
       title={t("editor.liveFilters.title")}
       storageKey="liveFilters"
       testId="editor-live-filter-section"
+      extra={<SectionAddButton label={t("editor.liveFilters.add")} onClick={() => setPickerOpen((open) => !open)} />}
     >
-      {liveFilters.length === 0 ? (
-        <p className="px-1 text-[9px] font-mono text-neutral-500">
-          {t("editor.liveFilters.empty")}
-        </p>
+      {pickerOpen ? (
+        <LiveFilterPicker
+          onPick={(kind) => {
+            addLiveFilter({ object, liveFilters, kind, editAndCommit });
+            setPickerOpen(false);
+          }}
+          onFrequency={canSeparate ? () => { setFrequencyOpen(true); setPickerOpen(false); } : null}
+        />
       ) : null}
-
-      <div className="flex flex-col gap-2">
-        {liveFilters.map((entry, index) => {
-          const hasRadius = entry.params?.radius !== undefined;
-          const mainParamKey = hasRadius ? "radius" : "value";
-          const mainParamLabel = hasRadius
-            ? "editor.liveFilters.radius"
-            : (PARAM_VALUE_LABELS[entry.kind] ?? "editor.liveFilters.value");
-          const mainParamValue = Math.round(
-            Number(entry.params?.[mainParamKey] ?? entry.params?.value ?? entry.params?.radius ?? DEFAULT_VALUE),
-          );
-
-          return (
-            <div
-              key={entry.id}
-              className="flex flex-col gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] p-2"
-              data-testid={`live-filter-entry-${entry.kind}`}
-            >
-              <div className="flex min-w-0 items-center gap-1.5">
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={entry.enabled}
-                  onClick={() => toggleEntry(entry.id)}
-                  className={`h-4 w-2 rounded-full transition-colors ${
-                    entry.enabled ? "bg-[#a7ffd4]" : "bg-neutral-600"
-                  }`}
-                  aria-label={`${entry.kind}: ${entry.enabled ? t("editor.liveFilters.enabled") : t("editor.liveFilters.disabled")}`}
-                  data-testid={`live-filter-toggle-${entry.kind}`}
-                />
-                <span className="min-w-0 flex-1 truncate text-[10px] font-mono uppercase tracking-wide text-neutral-200">
-                  {t(`editor.liveFilter.kind.${entry.kind}`)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => moveEntry(index, -1)}
-                  aria-label={t("editor.liveFilters.moveUp")}
-                  data-testid={`live-filter-move-up-${entry.kind}`}
-                  className="px-1 text-[10px] text-neutral-400 hover:text-white"
-                >
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  onClick={() => moveEntry(index, 1)}
-                  aria-label={t("editor.liveFilters.moveDown")}
-                  data-testid={`live-filter-move-down-${entry.kind}`}
-                  className="px-1 text-[10px] text-neutral-400 hover:text-white"
-                >
-                  ↓
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeEntry(entry.id)}
-                  aria-label={t("editor.liveFilters.remove")}
-                  data-testid={`live-filter-remove-${entry.kind}`}
-                  className="px-1 text-[11px] text-neutral-400 hover:text-white"
-                >
-                  ×
-                </button>
-              </div>
-
-              {entry.params?.radius !== undefined && entry.params?.value !== undefined ? (
-                <>
-                  <ToolSliderField
-                    label={t("editor.liveFilters.value")}
-                    labelClassName="w-[48px]"
-                    fieldClassName="w-[72px]"
-                    min={0}
-                    max={100}
-                    value={Math.round(Number(entry.params.value))}
-                    onValueChange={(val) =>
-                      patchEntry(entry.id, { params: { ...(entry.params ?? {}), value: val } })
-                    }
-                    onCommit={handleCommit}
-                    ariaLabel={t("editor.liveFilters.value")}
-                    scrubHint={t("editor.props.dragToAdjust")}
-                  />
-                  <ToolSliderField
-                    label={t("editor.liveFilters.radius")}
-                    labelClassName="w-[48px]"
-                    fieldClassName="w-[72px]"
-                    min={0}
-                    max={100}
-                    value={Math.round(Number(entry.params.radius))}
-                    onValueChange={(val) =>
-                      patchEntry(entry.id, { params: { ...(entry.params ?? {}), radius: val } })
-                    }
-                    onCommit={handleCommit}
-                    ariaLabel={t("editor.liveFilters.radius")}
-                    scrubHint={t("editor.props.dragToAdjust")}
-                  />
-                </>
-              ) : (
-                <ToolSliderField
-                  label={t(mainParamLabel)}
-                  labelClassName="w-[48px]"
-                  fieldClassName="w-[72px]"
-                  min={0}
-                  max={100}
-                  value={mainParamValue}
-                  onValueChange={(val) =>
-                    patchEntry(entry.id, { params: { ...(entry.params ?? {}), [mainParamKey]: val } })
-                  }
-                  onCommit={handleCommit}
-                  ariaLabel={t(mainParamLabel)}
-                  scrubHint={t("editor.props.dragToAdjust")}
-                />
-              )}
-
-              {entry.kind === "motionBlur" ? (
-                <ToolSliderField
-                  label={t("editor.liveFilters.angle")}
-                  labelClassName="w-[48px]"
-                  fieldClassName="w-[72px]"
-                  min={0}
-                  max={359}
-                  value={Math.round(Number(entry.params?.angle ?? 0))}
-                  onValueChange={(val) =>
-                    patchEntry(entry.id, { params: { ...(entry.params ?? {}), angle: val } })
-                  }
-                  onCommit={handleCommit}
-                  ariaLabel={t("editor.liveFilters.angle")}
-                  scrubHint={t("editor.props.dragToAdjust")}
-                />
-              ) : null}
-              <ToolSliderField
-                label={t("editor.liveFilters.opacity")}
-                labelClassName="w-[48px]"
-                fieldClassName="w-[72px]"
-                suffix="%"
-                min={0}
-                max={100}
-                value={Math.round((Number(entry.opacity ?? 1)) * 100)}
-                onValueChange={(val) => patchEntry(entry.id, { opacity: val / 100 })}
-                onCommit={handleCommit}
-                ariaLabel={t("editor.liveFilters.opacity")}
-                scrubHint={t("editor.props.dragToAdjust")}
-              />
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="flex flex-wrap gap-1 border-t border-white/[0.06] pt-2">
-        {LIVE_FILTER_KINDS.map((kind) => (
-          <button
-            key={kind}
-            type="button"
-            onClick={() => liveAddStack(kind)}
-            data-testid={`live-filter-add-${kind}`}
-            className="rounded-lg bg-white/[0.06] px-2 py-0.5 text-[9px] font-mono uppercase text-neutral-300 transition-colors hover:bg-white/[0.12] hover:text-white"
-          >
-            + {t(`editor.liveFilter.kind.${kind}`)}
-          </button>
-        ))}
-      </div>
+      {frequencyOpen && canSeparate ? <FrequencySeparationRow object={object} engine={engine} /> : null}
+      {liveFilters.length > 0 ? (
+        <LiveFilterStack object={object} liveFilters={liveFilters} edit={edit} editAndCommit={editAndCommit} commitNow={commitNow} />
+      ) : null}
     </CollapsibleSection>
   );
 }
@@ -260,6 +97,10 @@ export default function LiveFilterSection({
 LiveFilterSection.propTypes = {
   object: PropTypes.object.isRequired,
   liveFilters: PropTypes.arrayOf(PropTypes.object),
+  engine: PropTypes.object,
+  revealed: PropTypes.bool,
+  defaultPickerOpen: PropTypes.bool,
+  defaultFrequencyOpen: PropTypes.bool,
   edit: PropTypes.func.isRequired,
   editAndCommit: PropTypes.func.isRequired,
   commitNow: PropTypes.func,

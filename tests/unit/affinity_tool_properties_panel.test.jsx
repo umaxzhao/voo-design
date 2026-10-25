@@ -56,7 +56,9 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     );
 
     // Header badge
-    expect(html).toContain("image-context-toolbar");
+    // Options live in the right panel; no top option bar is rendered any more.
+    expect(html).toContain("editor-properties-panel");
+    expect(html).not.toContain("image-context-toolbar");
     expect(html).toContain("editor.tool.brush");
 
     // Quick size pills
