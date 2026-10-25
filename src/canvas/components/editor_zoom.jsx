@@ -159,6 +159,7 @@ export function EditorZoom({
             aria-label={t("editor.taskbar.more")}
             className="absolute bottom-full right-0 mb-2 min-w-44 rounded-xl border border-white/10 bg-neutral-900 p-1.5 text-[11px] text-white shadow-pop"
           >
+            <div className="px-2 py-1 text-neutral-400">{t("editor.menu.groupZoom")}</div>
             <button
               type="button"
               role="menuitem"
@@ -171,10 +172,14 @@ export function EditorZoom({
               aria-label={t("editor.zoomFit")}
               className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-neutral-200 hover:bg-neutral-800 hover:text-white focus-visible:bg-neutral-800 outline-none"
             >
-              <span>{t("editor.zoomFit")}</span>
-              <span className="tabular-nums text-neutral-400">{Math.round(zoom * 100)}%</span>
+              <span className="whitespace-nowrap">{t("editor.zoomFit.label")}</span>
+              <span className="ml-4 flex items-center gap-2 whitespace-nowrap text-neutral-400">
+                <span className="tabular-nums">{Math.round(zoom * 100)}%</span>
+                <span data-testid="editor-fit-shortcut">{t("editor.zoomFit.shortcut")}</span>
+              </span>
             </button>
 
+            <div className="mt-1 border-t border-white/10 px-2 pb-1 pt-2 text-neutral-400">{t("editor.menu.groupGrid")}</div>
             <button
               type="button"
               role="menuitemcheckbox"

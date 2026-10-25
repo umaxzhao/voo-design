@@ -87,7 +87,7 @@ export default function EditorCanvasTreeRow({
           event.stopPropagation();
           onFocusCanvas?.(page.id);
         }}
-        className={`flex min-w-0 flex-1 items-center justify-between gap-1.5 text-left outline-none focus-visible:ring-1 ${
+        className={`flex min-w-0 flex-1 items-center justify-between gap-1.5 self-stretch text-left outline-none focus-visible:ring-1 ${
           isComponent ? "focus-visible:ring-[#E5B2FF]" : "focus-visible:ring-[#a7ffd4]"
         }`}
       >
