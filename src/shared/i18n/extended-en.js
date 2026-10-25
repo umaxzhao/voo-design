@@ -783,6 +783,8 @@ export default {
   "editor.props.adjustments": "Visual Adjustments",
   "editor.props.brightness": "Brightness",
   "editor.props.contrast": "Contrast",
+  "editor.adjust.brightness": "Brightness",
+  "editor.adjust.contrast": "Contrast",
   "editor.props.hue": "Hue Shift",
   "editor.props.saturation": "Saturation",
   "editor.props.lightness": "Lightness",
@@ -1209,6 +1211,7 @@ export default {
   "editor.layer.transparent": "Transparent",
   "editor.layer.new": "New layer",
   "editor.layer.rename": "Rename layer",
+  "editor.layer.title": "Layer",
   "editor.layer.clipped":
     "Clipping mask: this layer's pixels are clipped into the layer below (Alt+⌘G to create, ⇧Alt+⌘G to release)",
   "editor.layers.adjustments": "Adjustments",
