@@ -154,7 +154,10 @@ export function useWorkspaceSkia({
     const stage = stageRef.current;
     if (!host || status !== "ready" || !stage) return;
     let frame = null;
-    const paint = () => {
+    // `cameraOverride` is the exact camera the store just published, so the
+    // canvas and the DOM overlay (synced from the same store event) share it.
+    const paint = (cameraOverride) => {
+      if (frame !== null) cancelAnimationFrame(frame);
       frame = null;
       const latest = latestRef.current;
       const dpr = window.devicePixelRatio || 1;
@@ -165,18 +168,23 @@ export function useWorkspaceSkia({
         lastDimensionsRef.current = { width, height, dpr };
         host.resize(width, height, dpr);
       }
-      const cam = (subscribeCamera ? useDesignStore.getState().editorCamera : latest.camera) ?? {};
+      const live = cameraOverride?.zoom !== undefined ? cameraOverride : null;
+      const cam = (live ?? (subscribeCamera ? useDesignStore.getState().editorCamera : latest.camera)) ?? {};
       const { panX = 0, panY = 0, zoom = 1 } = cam;
       void host.draw({ ...latest, viewport: {
         x: panX, y: panY, panX, panY, zoom, width, height, devicePixelRatio: dpr,
       } }).catch(error => console.warn("Workspace Skia draw failed", error));
     };
     const schedule = () => {
-      if (frame === null) frame = requestAnimationFrame(paint);
+      if (frame === null) frame = requestAnimationFrame(() => paint());
     };
     scheduleRef.current = schedule;
+    // Camera changes already arrive coalesced to one per frame (camera_raf.js),
+    // and the DOM overlay transform is applied in its own store subscriber in
+    // the same tick. Paint synchronously here: deferring to another rAF would
+    // show the artboard one frame behind the frame outline, labels and handles.
     const unsubscribe = subscribeCamera ? useDesignStore.subscribe((state, previous) => {
-      if (state.editorCamera !== previous.editorCamera) schedule();
+      if (state.editorCamera !== previous.editorCamera) paint(state.editorCamera);
     }) : null;
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(schedule) : null;
     observer?.observe(stage);
