@@ -32,6 +32,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import FirstRunOnboarding, { syncFirstRunDialog } from "../../src/canvas/components/first_run_onboarding.jsx";
 import AgentCardGrid from "../../src/canvas/components/onboarding/agent_card_grid.jsx";
+import CustomProviderInline from "../../src/canvas/components/onboarding/custom_provider_inline.jsx";
 import { FIRST_RUN_KEY, finishFirstRun, shouldShowFirstRun } from "../../src/canvas/components/first_run_state.js";
 import { getSetting, setSetting } from "../../src/shared/settings.js";
 import { loadLocale } from "../../src/shared/i18n.js";
@@ -81,6 +82,15 @@ describe("commercial first run", () => {
     expect(html).toContain(locale === "en" ? "Choose your Agent (optional)" : "选择智能体（可选）");
     expect(html).toContain(locale === "en" ? "Set up later" : "稍后设置");
     expect(html).not.toContain("firstRun.");
+  });
+  it.each(["en", "zh"])("renders the inline custom config with translated text in %s", async (locale) => {
+    await loadLocale(locale);
+    const { t } = await import("../../src/shared/i18n.js");
+    const groups = [{ cliId: "custom:a", name: "host", models: [{ id: "api:a:m", label: "m" }] }];
+    const html = renderToStaticMarkup(<CustomProviderInline t={t} groups={groups} selectedModel="api:a:m" onSelectModel={() => {}} onConfigured={() => {}} />);
+    expect(html).toContain(locale === "en" ? "Fetch models" : "拉取模型");
+    expect(html).toContain('type="password"');
+    expect(html).not.toMatch(/firstRun\.|settings\.customProvider\.|provider\.(apiKey|replaceKey)/);
   });
   it("renders nothing when closed", () => {
     expect(renderToStaticMarkup(<FirstRunOnboarding open={false} onClose={() => {}} onStart={() => {}} />)).toBe("");
@@ -174,19 +184,49 @@ describe("first-run interactions", () => {
     click(el => el.type === "button" && el.props.children === "Open Agent setup guide (CLI detection and connection test)");
     expect(listener).toHaveBeenCalledOnce(); expect(onClose).toHaveBeenCalled();
   });
+  const inline = () => elements(tree).find(el => el.type === CustomProviderInline);
   it("persists an existing custom model through the Agent model setting", () => {
     vi.stubGlobal("localStorage", { getItem: key => key === "voo.custom_providers" ? JSON.stringify([{ id: "custom:studio", name: "Studio", models: [{ id: "model-a", label: "Model A" }] }]) : null });
     pick("custom");
-    const select = elements(tree).find(el => el.type === "select");
-    select.props.onChange({ target: { value: "api:custom%3Astudio:model-a" } });
+    expect(inline().props.groups[0].models.map(model => model.id)).toEqual(["api:custom%3Astudio:model-a"]);
+    inline().props.onSelectModel("api:custom%3Astudio:model-a");
     expect(getSetting(AGENT_SETTING.MODEL)).toBe("api:custom%3Astudio:model-a");
+    draw();
+    expect(inline().props.selectedModel).toBe("api:custom%3Astudio:model-a");
   });
-  it("custom setup opens the existing provider settings", () => {
+  it("no longer offers an Open provider settings button", () => {
     vi.stubGlobal("window", new EventTarget());
-    vi.stubGlobal("CustomEvent", class extends Event { constructor(type, options) { super(type); this.detail = options.detail; } });
+    vi.stubGlobal("CustomEvent", class extends Event { constructor(type, options) { super(type); this.detail = options?.detail; } });
     const listener = vi.fn(); window.addEventListener("voo:open-settings", listener);
-    pick("custom"); next();
-    expect(listener.mock.calls[0][0].detail.tab).toBe("providers");
+    const buttons = () => elements(tree).filter(el => el.type === "button").map(el => el.props.children);
+    for (const id of [undefined, "codex", "custom"]) {
+      if (id) pick(id);
+      expect(buttons()).not.toContain("Open provider settings");
+      expect(JSON.stringify(buttons())).not.toContain("provider settings");
+    }
+    next();
+    expect(listener).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+  it("shows the inline custom config only while Custom model is selected", () => {
+    expect(inline()).toBeUndefined();
+    pick("custom");
+    expect(inline()).toBeTruthy();
+    pick("codex");
+    expect(inline()).toBeUndefined();
+    pick("custom");
+    expect(inline()).toBeTruthy();
+    pick("claude");
+    expect(inline()).toBeUndefined();
+  });
+  it("re-reads the custom providers when the inline setup reports a stored provider", () => {
+    const store = {};
+    vi.stubGlobal("localStorage", { getItem: key => store[key] ?? null });
+    pick("custom");
+    expect(elements(tree).find(el => el.type === AgentCardGrid).props.customConfigured).toBe(false);
+    store["voo.custom_providers"] = JSON.stringify([{ id: "custom:studio", name: "Studio", models: [{ id: "model-a", label: "Model A" }] }]);
+    inline().props.onConfigured(); draw();
+    expect(elements(tree).find(el => el.type === AgentCardGrid).props.customConfigured).toBe(true);
   });
   it("can finish without choosing an Agent", () => { next(); expect(onClose).toHaveBeenCalled(); });
 });

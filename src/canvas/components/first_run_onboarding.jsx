@@ -9,6 +9,7 @@ import { AGENT_SETTING } from "../agent/canvas_tools.js";
 import { applyAgentModel } from "./onboarding/onboarding_agent_model.js";
 import OnboardingArt from "./onboarding/onboarding_art.jsx";
 import AgentCardGrid from "./onboarding/agent_card_grid.jsx";
+import CustomProviderInline from "./onboarding/custom_provider_inline.jsx";
 import { useAgentDetection } from "./onboarding/use_agent_detection.js";
 
 const steps = ["provider"];
@@ -27,6 +28,9 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
   const contentRef = useRef(null);
   const [provider, setProvider] = useState("");
   const [customModel, setCustomModel] = useState("");
+  // Bumped after the inline setup stores a provider so the groups below are read again.
+  const [, setCustomVersion] = useState(0);
+  const refreshCustom = () => setCustomVersion(version => version + 1);
   const customGroups = customModelGroups();
   const detection = useAgentDetection(open);
   const { t, locale } = useI18n();
@@ -44,11 +48,8 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
     }
   }, [open]);
   const dismiss = () => { if (!reopened) finishFirstRun("dismissed"); onClose(); };
-  const complete = (settings = false) => {
-    if (!reopened) finishFirstRun();
-    onClose();
-    if (settings) window.dispatchEvent(new CustomEvent("voo:open-settings", { detail: { tab: "providers" } }));
-  };
+  const complete = () => { if (!reopened) finishFirstRun(); onClose(); };
+  const selectCustomModel = (id) => { setCustomModel(id); setSetting(AGENT_SETTING.MODEL, id); };
   if (!open) return null;
   const [name] = steps;
   return (
@@ -79,22 +80,14 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
               <AgentCardGrid t={t} label={t("firstRun.provider.label")} selected={provider} detection={detection}
                 customConfigured={customGroups.some(group => group.models.length > 0)}
                 onSelect={(id) => { setProvider(id); if (id !== "custom") applyAgentModel(id); else if (customModel) setSetting(AGENT_SETTING.MODEL, customModel); }} />
-              {provider === "custom" && customGroups.some(group => group.models.length > 0) && (
-                <label className="flex flex-col gap-1.5 rounded-2xl bg-white/[0.04] p-4 text-xs font-semibold text-neutral-100">
-                  {t("firstRun.provider.custom")}
-                  <select value={customModel} onChange={(event) => { setCustomModel(event.target.value); if (event.target.value) setSetting(AGENT_SETTING.MODEL, event.target.value); }}
-                    className={`rounded-xl border border-white/10 bg-[#161616] px-3 py-2 text-xs font-normal text-neutral-100 ${focusClass}`}>
-                    <option value="">{t("firstRun.provider.configure")}</option>
-                    {customGroups.map(group => <optgroup key={group.cliId} label={group.name}>{group.models.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}</optgroup>)}
-                  </select>
-                </label>
+              {provider === "custom" && (
+                <CustomProviderInline t={t} groups={customGroups} selectedModel={customModel}
+                  onSelectModel={selectCustomModel} onConfigured={refreshCustom} />
               )}
               {provider !== "" && provider !== "custom" && (
                 <button type="button" onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("voo:open-onboarding")); }}
                   className={`w-fit rounded-lg bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-neutral-100 hover:bg-white/[0.14] transition-colors ${focusClass}`}>{t("firstRun.provider.guide")}</button>
               )}
-              <button type="button" onClick={() => complete(true)}
-                className={`w-fit rounded-lg bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-neutral-100 hover:bg-white/[0.14] transition-colors ${focusClass}`}>{t("firstRun.provider.settings")}</button>
             </div>
           </div>
 
@@ -102,7 +95,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
             <button type="button" onClick={dismiss}
               className={`rounded-lg px-3 py-2 text-xs text-neutral-400 hover:text-neutral-200 transition-colors disabled:opacity-40 ${focusClass}`}>{t("firstRun.skip")}</button>
             <div className="flex items-center gap-2">
-              <button type="button" data-testid="first-run-next" onClick={() => complete(provider === "custom" && !customModel)}
+              <button type="button" data-testid="first-run-next" onClick={complete}
                 className={`rounded-lg bg-white px-5 py-2 text-xs font-medium text-black hover:bg-neutral-200 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none ${focusClass}`}>
                 {t(provider ? "firstRun.finish" : "firstRun.later")}
               </button>
