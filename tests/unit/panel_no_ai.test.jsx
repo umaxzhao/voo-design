@@ -87,7 +87,7 @@ describe("right properties panel carries no AI entries", () => {
     // Positive control: the panel itself and its non-AI image actions are rendered.
     expect(html).toContain('data-testid="image-context-actions"');
     expect(html).toContain('data-testid="editor-taskbar-crop"');
-    expect(html).toContain('data-testid="editor-taskbar-layer-actions"');
+    expect(html).not.toContain('data-testid="editor-taskbar-layer-actions"');
     for (const id of REMOVED_TEST_IDS) {
       expect(html, `test id ${id}`).not.toContain(`"${id}"`);
     }
@@ -98,7 +98,7 @@ describe("right properties panel carries no AI entries", () => {
 
   it("renders no AI test ids or labels for a plain layer", () => {
     const html = renderPanel(layer);
-    expect(html).toContain('data-testid="editor-taskbar-layer-actions"');
+    expect(html).not.toContain('data-testid="editor-taskbar-layer-actions"');
     expect(html).not.toContain('data-testid="image-context-actions"');
     for (const id of REMOVED_TEST_IDS) {
       expect(html, `test id ${id}`).not.toContain(`"${id}"`);

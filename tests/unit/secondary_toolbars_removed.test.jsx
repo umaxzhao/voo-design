@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import SelectedNodeActions from "../../src/canvas/components/editor_properties/selected_node_actions.jsx";
 import ImageContextActions from "../../src/canvas/components/editor_properties/image_context_actions.jsx";
 import EditorProperties from "../../src/canvas/components/editor_properties/index.jsx";
+import Quickbar from "../../src/canvas/components/editor_contextual_taskbar.jsx";
 
 vi.mock("../../src/canvas/use_i18n.js", () => ({
   useI18n: () => ({ t: (key) => key }),
@@ -20,45 +20,19 @@ describe("secondary editor bars", () => {
     expect(page).not.toContain("editor-contextual-taskbar");
   });
 
-  it("keeps layer actions inside the collapsed disclosure and has no agent button", () => {
+  it("removes layer actions from the properties component", () => {
     const markup = renderToStaticMarkup(
-      <SelectedNodeActions
-        object={{ id: "image-1", kind: "image" }}
-        engine={{}}
-      />,
+      <EditorProperties tool="select" object={{ id: "image-1", kind: "image" }} engine={{}} />,
     );
-    const layerActions = markup.match(
-      /<details[^>]*data-testid="editor-taskbar-layer-actions"[^>]*>[\s\S]*?<\/details>/,
-    )?.[0];
-    expect(layerActions).toBeDefined();
-    expect(layerActions).toContain("editor.layer.actions");
-    for (const id of [
-      "duplicate",
-      "lock",
-      "hide",
-      "bringForward",
-      "sendBackward",
-      "delete",
-    ]) {
-      expect(layerActions).toContain(`data-testid="editor-taskbar-${id}"`);
-    }
-    // The agent entry lives on the bottom quick-tools bar only, never in the panel.
+    expect(markup).not.toContain('data-testid="editor-taskbar-layer-actions"');
     expect(markup).not.toContain('data-testid="editor-taskbar-ai-sparkle"');
     expect(markup).not.toContain("editor.taskbar.askAgent");
-  });
-
-  it("keeps the layer actions disclosure collapsed by default", () => {
-    const markup = renderToStaticMarkup(
-      <SelectedNodeActions
-        object={{ id: "image-1", kind: "image" }}
-        engine={{}}
-      />,
+    const bottomBar = renderToStaticMarkup(
+      <Quickbar selected={{ id: "image-1", kind: "image" }} engine={{}} />,
     );
-    const openTag = markup.match(
-      /<details[^>]*data-testid="editor-taskbar-layer-actions"[^>]*>/,
-    )?.[0];
-    expect(openTag).toBeDefined();
-    expect(openTag).not.toMatch(/\sopen(\s|>|=)/);
+    for (const id of ["duplicate", "lock", "hide", "bringForward", "sendBackward", "delete"]) {
+      expect(bottomBar).toContain(`data-testid="editor-taskbar-${id}"`);
+    }
   });
 
   it("keeps image crop and replace in image properties, without AI entries", () => {
