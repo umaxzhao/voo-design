@@ -43,7 +43,7 @@ function findByTestId(node, testId) {
 }
 
 describe("DesignSystemCards", () => {
-  it("renders only the first 4 cards by default", () => {
+  it("renders only the first COLLAPSED_COUNT cards by default", () => {
     const systems = manySystems();
     expect(systems.length).toBeGreaterThan(COLLAPSED_COUNT);
     const html = render(props(systems));
@@ -51,7 +51,7 @@ describe("DesignSystemCards", () => {
     expect(html).toContain('data-testid="design-system-list"');
   });
 
-  it("shows a more control only when there are more than 4 systems", () => {
+  it("shows a more control only when there are more than COLLAPSED_COUNT systems", () => {
     const systems = manySystems();
     expect(render(props(systems))).toContain("designSystems.showMore");
     expect(render(props(systems.slice(0, COLLAPSED_COUNT)))).not.toContain('data-testid="design-system-more"');
@@ -74,7 +74,7 @@ describe("DesignSystemCards", () => {
     }
   });
 
-  it("starts expanded when the selected system is beyond the first 4", () => {
+  it("starts expanded when the selected system is beyond the collapsed range", () => {
     const systems = manySystems();
     const html = render(props(systems, systems.at(-1).id));
     expect(itemIds(html)).toHaveLength(systems.length);

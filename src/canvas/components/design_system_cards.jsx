@@ -3,8 +3,8 @@ import PropTypes from "prop-types";
 import { useI18n } from "../use_i18n.js";
 import { designSystemName } from "../editor/design_system_registry.js";
 
-/** Cards visible before "Show more". */
-export const COLLAPSED_COUNT = 4;
+/** Cards visible before "Show more": two full rows at lg (3 columns) and two rows below lg (2 columns). */
+export const COLLAPSED_COUNT = 6;
 const MAX_COVER_COLORS = 6;
 
 const CARD_BASE =

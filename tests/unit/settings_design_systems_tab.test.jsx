@@ -27,12 +27,11 @@ describe("Design systems settings tab", () => {
 
     it("lists the presets and exposes only Duplicate and Use for a built-in system", () => {
       const html = renderToStaticMarkup(<SettingsDesignSystems />);
-      // Cards show the first 4 by default; the rest sit behind "Show more".
-      for (const id of ["studio", "wellness", "commerce", "editorial"]) {
+      // Cards show the first COLLAPSED_COUNT (6) by default; the five built-in presets all fit, so no "Show more".
+      for (const id of ["studio", "wellness", "commerce", "editorial", "analytics"]) {
         expect(html).toContain(`data-testid="design-system-item-${id}"`);
       }
-      expect(html).not.toContain('data-testid="design-system-item-analytics"');
-      expect(html).toContain("Show more");
+      expect(html).not.toContain('data-testid="design-system-more"');
       expect(html).toContain("Studio");
       expect(html).toContain("Built-in");
       expect(html).toContain("Use for this document");
