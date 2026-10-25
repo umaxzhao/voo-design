@@ -17,8 +17,8 @@ export default function ToolSliderField({
   ariaLabel,
   scrubHint,
   disabled = false,
-  labelClassName = "w-[76px]",
-  fieldClassName = "w-[68px]",
+  labelClassName = "w-[84px]",
+  fieldClassName = "w-[66px]",
 }) {
   const id = useId();
 
@@ -27,7 +27,7 @@ export default function ToolSliderField({
       <label
         htmlFor={id}
         title={label}
-        className={`flex shrink-0 items-center gap-1 text-[10px] font-mono uppercase tracking-wide leading-[10px] text-neutral-500 ${labelClassName}`}
+        className={`flex shrink-0 items-center gap-1 text-[9px] font-mono uppercase tracking-tight leading-[10px] text-neutral-500 ${labelClassName}`}
       >
         {icon ? <span className="shrink-0">{icon}</span> : null}
         <span className="min-w-0 whitespace-normal">{label}</span>
