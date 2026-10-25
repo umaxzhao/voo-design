@@ -43,3 +43,23 @@ describe("canvas row highlight", () => {
     expect(html).not.toMatch(/bg-\[#(?:a7ffd4|E5B2FF)\]/);
   });
 });
+
+describe("canvas row component accent", () => {
+  it("tints the component icon and label purple when not active", () => {
+    const html = renderToStaticMarkup(createElement(EditorCanvasTreeRow, {
+      page: { id: "comp", title: "Button", isComponent: true },
+      t: (key) => key,
+    }));
+    expect(html).toMatch(/lucide-component shrink-0 text-\[#E5B2FF\]"/);
+    expect(html).toMatch(/class="ml-2 shrink-0 text-\[10px\] text-\[#E5B2FF\] font-mono"/);
+  });
+
+  it("keeps ordinary frames neutral", () => {
+    const html = renderToStaticMarkup(createElement(EditorCanvasTreeRow, {
+      page: { id: "frame", title: "Frame" },
+      t: (key) => key,
+    }));
+    expect(html).not.toContain("E5B2FF");
+    expect(html).toMatch(/lucide-frame shrink-0 text-neutral-400 group-hover\/canvas:text-neutral-200"/);
+  });
+});

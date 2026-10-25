@@ -36,6 +36,10 @@ export default function EditorCanvasTreeRow({
   );
   const typeKey = page.type === "3d" ? "threeD" : page.type || "design";
   const TypeIcon = getCanvasTypeIcon(page.type, isComponent);
+  // Components carry the purple accent in every state; ordinary frames keep the neutral tones.
+  let iconTone = "text-neutral-400 group-hover/canvas:text-neutral-200";
+  if (isActive) iconTone = "text-neutral-200";
+  if (isComponent) iconTone = "text-[#E5B2FF]";
 
   return (
     <div
@@ -95,7 +99,7 @@ export default function EditorCanvasTreeRow({
           <TypeIcon
             size={13}
             strokeWidth={ICON_STROKE_WIDTH}
-            className={`shrink-0 ${isActive ? "text-neutral-200" : "text-neutral-400 group-hover/canvas:text-neutral-200"}`}
+            className={`shrink-0 ${iconTone}`}
           />
           <span className="truncate text-[11px] font-medium leading-none">
             {page.title}
@@ -103,7 +107,7 @@ export default function EditorCanvasTreeRow({
         </div>
 
         {isComponent ? (
-          <span className="ml-2 shrink-0 text-[10px] text-neutral-400 font-mono">
+          <span className="ml-2 shrink-0 text-[10px] text-[#E5B2FF] font-mono">
             {t("editor.component.label")}
           </span>
         ) : page.type === "3d" || page.type === "motion" ? (
