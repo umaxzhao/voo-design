@@ -69,6 +69,8 @@ const ShortcutReferenceModal = lazy(() => import("./shortcut_reference_modal.jsx
 const SvgEditModal = lazy(() => import("./SvgEditModal.jsx"));
 import { DESIGN_SHORTCUT_GROUPS } from "../../shared/editor-shortcut-catalog.js";
 import { useShowRulers } from "../use_show_rulers.js";
+import useIsNarrow from "../use_is_narrow.js";
+import "./editor_mobile_layout.css";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import { loadEditorPanelLayout, saveEditorPanelLayout } from "./editor_panel_preferences.js";
 import {
@@ -201,6 +203,7 @@ const FIND_REPLACE_HISTORY_NAME = "editor.history.entry.replaceText";
 
 export default function ImageEditor({ agentVisible = false, visible = true }) {
   const { t } = useI18n();
+  const isNarrow = useIsNarrow();
 
   const nodeIds = useDesignStore((state) => state.editingNodeIds);
   const focusedId = useDesignStore((state) => state.editingNodeId);
@@ -3362,7 +3365,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       ref={editorRootRef}
       data-testid="design-editor"
       aria-hidden={!visible}
-      className={`absolute bottom-0 left-0 top-0 z-50 flex flex-col overflow-hidden rounded-b-2xl bg-surface-canvas ${
+      className={`absolute bottom-0 left-0 top-0 z-50 flex flex-col overflow-hidden rounded-b-2xl bg-surface-canvas ${isNarrow ? "editor-narrow" : ""} ${
         dockAgent ? "right-[376px]" : "right-0"
       } ${visible ? "" : "invisible pointer-events-none"}`}
       {...dropHandlers}
@@ -4033,6 +4036,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         {propertiesOpen && nestedNode && nestedEngine ? (
           nestedNode.kind === "canvasInstance" ? (
             <PropertiesPanelShell
+              testId="editor-properties-panel"
               swapSide={inspectorSwap}
               onToggleSide={toggleSwapPanels}
             >
@@ -4093,6 +4097,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           )
         ) : propertiesOpen && propertyObject?.kind === "canvasInstance" ? (
           <PropertiesPanelShell
+            testId="editor-properties-panel"
             swapSide={inspectorSwap}
             onToggleSide={toggleSwapPanels}
           >
