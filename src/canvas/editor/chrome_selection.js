@@ -133,6 +133,7 @@ export function drawSelection(
   warpTool = null,
   gradientAdjusting = false,
   selectedPuppetPin = null,
+  paintOutline = false,
 ) {
   // A boxless layer (audio) has nothing to outline and no handles to grab.
   const isRegion = node?.kind === NODE_KIND.REGION;
@@ -178,6 +179,8 @@ export function drawSelection(
   }
 
   ctx.save();
+  // Paint tools keep only a faint outline of the image (no handles).
+  if (paintOutline) ctx.globalAlpha = 0.2;
   ctx.strokeStyle = strokeColor;
   ctx.lineWidth = FRAME_WIDTH;
 
