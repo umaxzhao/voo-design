@@ -20,7 +20,7 @@ describe("secondary editor bars", () => {
     expect(page).not.toContain("editor-contextual-taskbar");
   });
 
-  it("keeps layer actions inside the collapsed disclosure and Ask VOO agent visible", () => {
+  it("keeps layer actions inside the collapsed disclosure and has no agent button", () => {
     const markup = renderToStaticMarkup(
       <SelectedNodeActions
         object={{ id: "image-1", kind: "image" }}
@@ -42,9 +42,9 @@ describe("secondary editor bars", () => {
     ]) {
       expect(layerActions).toContain(`data-testid="editor-taskbar-${id}"`);
     }
-    // Ask VOO agent stays outside the disclosure, always visible.
-    expect(layerActions).not.toContain("editor-taskbar-ai-sparkle");
-    expect(markup).toContain('data-testid="editor-taskbar-ai-sparkle"');
+    // The agent entry lives on the bottom quick-tools bar only, never in the panel.
+    expect(markup).not.toContain('data-testid="editor-taskbar-ai-sparkle"');
+    expect(markup).not.toContain("editor.taskbar.askAgent");
   });
 
   it("keeps the layer actions disclosure collapsed by default", () => {
@@ -61,47 +61,23 @@ describe("secondary editor bars", () => {
     expect(openTag).not.toMatch(/\sopen(\s|>|=)/);
   });
 
-  it("keeps image crop, replace, and background removal in image properties", () => {
+  it("keeps image crop and replace in image properties, without AI entries", () => {
     const markup = renderToStaticMarkup(
       <ImageContextActions
         object={{ id: "image-1", kind: "image" }}
         engine={{}}
         editAndCommit={vi.fn()}
-        onRemoveBackground={vi.fn()}
-        aiActions={{ onOutpaint: vi.fn(), onUpscale: vi.fn() }}
       />,
     );
     expect(markup).toContain("editor.taskbar.crop");
     expect(markup).toContain("editor.taskbar.replace");
-    expect(markup).toContain("editor.taskbar.matting");
     expect(markup).toContain('data-testid="editor-taskbar-crop"');
     expect(markup).toContain('data-testid="editor-taskbar-replace"');
-    expect(markup).toContain('data-testid="editor-taskbar-ai-remove-bg"');
-    // AI actions live inside the collapsed "AI tools" disclosure.
-    const aiTools = markup.match(
-      /<details[^>]*data-testid="editor-taskbar-ai-tools"[^>]*>[\s\S]*?<\/details>/,
-    )?.[0];
-    expect(aiTools).toBeDefined();
-    expect(aiTools).toContain("editor.taskbar.aiTools");
-    expect(aiTools).toContain('data-testid="editor-taskbar-more"');
-    expect(aiTools).toContain("editor.upscale.2x");
-    expect(aiTools).toContain("editor.taskbar.outpaint");
-  });
-
-  it("keeps AI tools collapsed by default for an image", () => {
-    const markup = renderToStaticMarkup(
-      <ImageContextActions
-        object={{ id: "image-1", kind: "image" }}
-        engine={{}}
-        editAndCommit={vi.fn()}
-        aiActions={{ onOutpaint: vi.fn(), onUpscale: vi.fn() }}
-      />,
-    );
-    const openTag = markup.match(
-      /<details[^>]*data-testid="editor-taskbar-ai-tools"[^>]*>/,
-    )?.[0];
-    expect(openTag).toBeDefined();
-    expect(openTag).not.toMatch(/\sopen(\s|>|=)/);
+    // Remove BG and the AI tools menu are on the bottom quick-tools bar only.
+    expect(markup).not.toContain('data-testid="editor-taskbar-ai-remove-bg"');
+    expect(markup).not.toContain("editor.taskbar.matting");
+    expect(markup).not.toContain('data-testid="editor-taskbar-ai-tools"');
+    expect(markup).not.toContain("editor.taskbar.aiTools");
   });
 
   it("places the page delete action in the background properties panel", () => {
