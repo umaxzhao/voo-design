@@ -31,6 +31,7 @@ import { AGENT_DEFAULT_MODELS } from "../../src/canvas/components/onboarding/onb
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import FirstRunOnboarding, { syncFirstRunDialog } from "../../src/canvas/components/first_run_onboarding.jsx";
+import AgentCardGrid from "../../src/canvas/components/onboarding/agent_card_grid.jsx";
 import { FIRST_RUN_KEY, finishFirstRun, shouldShowFirstRun } from "../../src/canvas/components/first_run_state.js";
 import { getSetting, setSetting } from "../../src/shared/settings.js";
 import { loadLocale } from "../../src/shared/i18n.js";
@@ -125,6 +126,8 @@ describe("first-run interactions", () => {
   let onStart, onClose, tree, reopened;
   const draw = () => { hooks.index = 0; hooks.refIndex = 0; tree = FirstRunOnboarding({ open: true, reopened, onStart, onClose }); return tree; };
   const click = (predicate) => { const el = elements(tree).find(predicate); expect(el).toBeTruthy(); el.props.onClick(); draw(); };
+  // The cards live inside AgentCardGrid, which this shallow tree does not expand: pick through its onSelect.
+  const pick = (id) => { elements(tree).find(el => el.type === AgentCardGrid).props.onSelect(id); draw(); };
   const next = () => click(el => el.props?.["data-testid"] === "first-run-next");
   const step = () => elements(tree).find(el => el.props?.["data-step"])?.props["data-step"];
   beforeEach(async () => {
@@ -137,9 +140,9 @@ describe("first-run interactions", () => {
   afterEach(() => { hooks.active = false; vi.unstubAllGlobals(); });
   it("renders the provider step and persists the chosen provider", () => {
     expect(step()).toBe("provider");
-    click(el => el.type === "button" && el.props.children === "Codex");
+    pick("codex");
     expect(getSetting(AGENT_SETTING.MODEL)).toBe(AGENT_DEFAULT_MODELS.codex);
-    click(el => el.type === "button" && el.props.children === "Claude Code");
+    pick("claude");
     expect(getSetting(AGENT_SETTING.MODEL)).toBe(AGENT_DEFAULT_MODELS.claude);
     next(); expect(getSetting(FIRST_RUN_KEY)).toBe("completed"); expect(onClose).toHaveBeenCalled();
     expect(onStart).not.toHaveBeenCalled();
@@ -167,13 +170,13 @@ describe("first-run interactions", () => {
     vi.stubGlobal("window", new EventTarget());
     vi.stubGlobal("CustomEvent", class extends Event {});
     const listener = vi.fn(); window.addEventListener("voo:open-onboarding", listener);
-    click(el => el.type === "button" && el.props.children === "Codex");
+    pick("codex");
     click(el => el.type === "button" && el.props.children === "Open Agent setup guide (CLI detection and connection test)");
     expect(listener).toHaveBeenCalledOnce(); expect(onClose).toHaveBeenCalled();
   });
   it("persists an existing custom model through the Agent model setting", () => {
     vi.stubGlobal("localStorage", { getItem: key => key === "voo.custom_providers" ? JSON.stringify([{ id: "custom:studio", name: "Studio", models: [{ id: "model-a", label: "Model A" }] }]) : null });
-    click(el => el.type === "button" && el.props.children === "Custom model");
+    pick("custom");
     const select = elements(tree).find(el => el.type === "select");
     select.props.onChange({ target: { value: "api:custom%3Astudio:model-a" } });
     expect(getSetting(AGENT_SETTING.MODEL)).toBe("api:custom%3Astudio:model-a");
@@ -182,7 +185,7 @@ describe("first-run interactions", () => {
     vi.stubGlobal("window", new EventTarget());
     vi.stubGlobal("CustomEvent", class extends Event { constructor(type, options) { super(type); this.detail = options.detail; } });
     const listener = vi.fn(); window.addEventListener("voo:open-settings", listener);
-    click(el => el.type === "button" && el.props.children === "Custom model"); next();
+    pick("custom"); next();
     expect(listener.mock.calls[0][0].detail.tab).toBe("providers");
   });
   it("can finish without choosing an Agent", () => { next(); expect(onClose).toHaveBeenCalled(); });
