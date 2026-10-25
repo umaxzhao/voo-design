@@ -20,6 +20,21 @@ import { visibleWorldRect } from "./viewport_culling.js";
 /** How long a frame waits on pictures before painting without them. */
 const RESOURCE_TIMEOUT_MS = 3000;
 
+/**
+ * Keep the canvas element's CSS box in sync with the stage.
+ *
+ * A stale CSS size (the backing store can be unchanged while the stage grows)
+ * leaves the painted canvas smaller than the workspace — the reported
+ * "canvas offset". Exported for the regression test.
+ */
+export function syncCanvasCssSize(canvas, width, height) {
+  if (!canvas?.style) return;
+  const cssWidth = `${Math.max(1, Math.round(width))}px`;
+  const cssHeight = `${Math.max(1, Math.round(height))}px`;
+  if (canvas.style.width !== cssWidth) canvas.style.width = cssWidth;
+  if (canvas.style.height !== cssHeight) canvas.style.height = cssHeight;
+}
+
 let modulePromise = null;
 
 /**
@@ -90,6 +105,9 @@ export async function createSkiaHost(canvas) {
       const dpr = devicePixelRatio || 1;
       const pw = Math.max(1, Math.round(width * dpr));
       const ph = Math.max(1, Math.round(height * dpr));
+      // CSS size must always track the stage, even when the backing store is
+      // unchanged (see syncCanvasCssSize).
+      syncCanvasCssSize(canvas, width, height);
       if (pw === lastPixelWidth && ph === lastPixelHeight) return;
       lastPixelWidth = pw;
       lastPixelHeight = ph;

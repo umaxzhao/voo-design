@@ -87,7 +87,7 @@ export function CollapsibleSection({
           type="button"
           onClick={toggle}
           aria-expanded={open}
-          className={`flex min-w-0 items-center gap-1.5 ${sectionTitleClass} hover:text-neutral-200 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 rounded-md`}
+          className={`relative flex min-w-0 items-center gap-1.5 ${sectionTitleClass} before:absolute before:-inset-x-2 before:-inset-y-1.5 before:content-[''] hover:text-neutral-200 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 rounded-md`}
         >
           <IconChevronDown
             size={12}

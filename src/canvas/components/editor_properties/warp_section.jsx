@@ -36,6 +36,10 @@ export default function WarpSection({
   editAndCommit = null,
   commitNow = null,
   onReset,
+  puppetPins = [],
+  puppetPinId = null,
+  onSelectPuppetPin = null,
+  onDeletePuppetPin = null,
 }) {
   const { t } = useI18n();
   const detail = WARP_DETAILS[tool];
@@ -311,6 +315,43 @@ export default function WarpSection({
         </div>
       )}
 
+      {tool === TOOL.PUPPET_WARP && puppetPins.length ? (
+        <div className="space-y-1">
+          <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-400">
+            {t("editor.puppet.pins", { count: puppetPins.length })}
+          </span>
+          {puppetPins.map((pin, index) => (
+            <div
+              key={pin.id}
+              className={`flex h-7 items-center gap-1.5 rounded-xl px-2.5 ${
+                puppetPinId === pin.id ? "bg-neutral-800" : "bg-neutral-900/70"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => onSelectPuppetPin?.(pin.id)}
+                className="min-w-0 flex-1 truncate text-left text-[10px] font-mono uppercase tracking-wide text-neutral-300 transition-colors hover:text-white"
+              >
+                {t("editor.puppet.pinLabel", { index: index + 1 })}
+                {pin.fixed ? ` · ${t("editor.puppet.fixed")}` : ""}
+              </button>
+              <button
+                type="button"
+                aria-label={t("editor.puppet.deletePin")}
+                title={t("editor.puppet.deletePin")}
+                onClick={() => {
+                  onSelectPuppetPin?.(pin.id);
+                  onDeletePuppetPin?.(pin.id);
+                }}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-white/[0.08] hover:text-white"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       <p className="text-[10px] leading-4 text-neutral-400">
         {t(detail.hintKey)}
       </p>
@@ -332,4 +373,8 @@ WarpSection.propTypes = {
   editAndCommit: PropTypes.func,
   commitNow: PropTypes.func,
   onReset: PropTypes.func.isRequired,
+  puppetPins: PropTypes.array,
+  puppetPinId: PropTypes.string,
+  onSelectPuppetPin: PropTypes.func,
+  onDeletePuppetPin: PropTypes.func,
 };

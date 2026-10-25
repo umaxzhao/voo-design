@@ -28,7 +28,7 @@ export function createPointerDownDispatcher({
       const fillCol = event.altKey
         ? api.getBackgroundColor?.() || "#ffffff"
         : api.getColor();
-      void api.fillSelection?.(fillCol);
+      void api.fillSelection?.(fillCol, { opacity: api.getFillOpacity?.() ?? 1 });
     } else if (api.getTool() === TOOL.GRADIENT) {
       setGesture({
         kind: "gradient",

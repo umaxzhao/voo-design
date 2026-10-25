@@ -19,6 +19,7 @@ export const BRUSH_MODE_PROPERTIES = {
   dodge: [
     "size",
     "exposure",
+    "flow",
     "smoothness",
     "shadows",
     "midtones",
@@ -28,13 +29,14 @@ export const BRUSH_MODE_PROPERTIES = {
   burn: [
     "size",
     "exposure",
+    "flow",
     "smoothness",
     "shadows",
     "midtones",
     "highlights",
     "protectLuminosity",
   ],
-  sponge: ["size", "flow", "smoothness", "saturating"],
+  sponge: ["size", "flow", "opacity", "smoothness", "saturating"],
   eraser: ["size", "hardness", "opacity", "flow", "smoothness", "preset"],
 };
 

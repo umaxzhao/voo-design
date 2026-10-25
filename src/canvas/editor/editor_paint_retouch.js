@@ -3,6 +3,24 @@
 import { softBrushAlpha } from "./scene_renderer.js";
 import { brushModeDrawField } from "./brush_pressure.js";
 
+/**
+ * The per-dab effect force for a retouch mode.
+ *
+ * Dodge/Burn scale their exposure by Flow; Sponge scales its saturating force
+ * by Opacity. Both scale factors are independent fields, so changing Flow
+ * never changes Exposure.
+ */
+export function retouchModeAmount(paintEdit) {
+  let amount =
+    paintEdit[brushModeDrawField(paintEdit.mode)] ?? paintEdit.strength;
+  if (paintEdit.mode === "dodge" || paintEdit.mode === "burn") {
+    amount *= paintEdit.flow ?? 1;
+  } else if (paintEdit.mode === "sponge") {
+    amount *= paintEdit.opacity ?? 1;
+  }
+  return amount;
+}
+
 /** Applies one soft local retouch dab without creating a second raster path. */
 export function stampRetouch(canvas, x, y, diameter, coverage, paintEdit) {
   const ctx = canvas.getContext("2d");
@@ -83,8 +101,7 @@ export function stampRetouch(canvas, x, y, diameter, coverage, paintEdit) {
   // Each mode draws its effect force from its own independent field — never
   // a shared opacity/flow alias — so changing Smudge strength can never
   // retouch Opacity, and so on.
-  const modeAmount =
-    paintEdit[brushModeDrawField(paintEdit.mode)] ?? paintEdit.strength;
+  const modeAmount = retouchModeAmount(paintEdit);
   const amount = Math.min(1, Math.max(0, modeAmount * coverage));
   const indexAt = (px, py) => ((py - top) * width + (px - left)) * 4;
   const { protectLuminosity, tonalRange } = paintEdit;

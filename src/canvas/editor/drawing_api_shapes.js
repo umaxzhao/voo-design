@@ -37,15 +37,20 @@ export function createDrawingShapesApi({
   /** Creates a zero-size rect at `point`; the drag shapes it. Fill-only by convention. */
   function addRectAt(point, options = {}) {
     const node = insideFrame(
-      createRectNode({
-        x: point.x,
-        y: point.y,
-        width: 0,
-        height: 0,
-        fill: getColor?.() ?? "#999999",
-        stroke: "#ffffff",
-        strokeWidth: 0,
-      }),
+      {
+        ...createRectNode({
+          x: point.x,
+          y: point.y,
+          width: 0,
+          height: 0,
+          fill: options.fill ?? getColor?.() ?? "#999999",
+          stroke: options.stroke ?? "#ffffff",
+          strokeWidth: 0,
+        }),
+        ...(options.stroke ? { stroke: options.stroke } : {}),
+        strokeWidth: Number(options.strokeWidth) || 0,
+        ...(options.opacity != null ? { opacity: options.opacity } : {}),
+      },
       point,
       options.intoFrame,
     );
@@ -72,15 +77,20 @@ export function createDrawingShapesApi({
   /** Creates a zero-size ellipse at `point`; the drag shapes it. Fill-only by convention. */
   function addEllipseAt(point, options = {}) {
     const node = insideFrame(
-      createEllipseNode({
-        x: point.x,
-        y: point.y,
-        width: 0,
-        height: 0,
-        fill: getColor?.() ?? "#999999",
-        stroke: "#ffffff",
-        strokeWidth: 0,
-      }),
+      {
+        ...createEllipseNode({
+          x: point.x,
+          y: point.y,
+          width: 0,
+          height: 0,
+          fill: options.fill ?? getColor?.() ?? "#999999",
+          stroke: options.stroke ?? "#ffffff",
+          strokeWidth: 0,
+        }),
+        ...(options.stroke ? { stroke: options.stroke } : {}),
+        strokeWidth: Number(options.strokeWidth) || 0,
+        ...(options.opacity != null ? { opacity: options.opacity } : {}),
+      },
       point,
       options.intoFrame,
     );
@@ -91,12 +101,15 @@ export function createDrawingShapesApi({
   /** Creates an empty text node at `point`; the drag (optionally) boxes it. */
   function addTextAt(point, text, options = {}) {
     const node = insideFrame(
-      createTextNode({
-        x: point.x,
-        y: point.y,
-        text,
-        fill: "#ffffff",
-      }),
+      {
+        ...createTextNode({
+          x: point.x,
+          y: point.y,
+          text,
+          fill: options.fill ?? "#ffffff",
+        }),
+        ...(options.opacity != null ? { opacity: options.opacity } : {}),
+      },
       point,
       options.intoFrame,
     );

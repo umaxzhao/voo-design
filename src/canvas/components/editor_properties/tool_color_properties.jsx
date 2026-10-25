@@ -74,7 +74,7 @@ export default function ToolColorProperties({
                   onColor?.(bgColor);
                 }}
                 title={t("editor.toolOptions.backgroundColor")}
-                className={`absolute bottom-0 right-0 h-4.5 w-4.5 rounded-md transition-transform hover:scale-105 ${
+                className={`absolute bottom-0 right-0 h-4.5 w-4.5 rounded-md before:absolute before:-inset-1 before:content-[''] transition-transform hover:scale-105 ${
                   activeSlot === "bg"
                     ? "ring-2 ring-white ring-offset-1 ring-offset-[#141414] z-10 scale-105"
                     : "ring-1 ring-white/30 z-0"
@@ -93,7 +93,7 @@ export default function ToolColorProperties({
                   onColor?.(fgColor);
                 }}
                 title={t("editor.toolOptions.foregroundColor")}
-                className={`absolute top-0 left-0 h-4.5 w-4.5 rounded-md transition-transform hover:scale-105 ${
+                className={`absolute top-0 left-0 h-4.5 w-4.5 rounded-md before:absolute before:-inset-1 before:content-[''] transition-transform hover:scale-105 ${
                   activeSlot === "fg"
                     ? "ring-2 ring-white ring-offset-1 ring-offset-[#141414] z-10 scale-105"
                     : "ring-1 ring-white/30 z-0"
@@ -112,7 +112,7 @@ export default function ToolColorProperties({
               onClick={handleSwapColors}
               title={t("editor.toolOptions.switchColors")}
               aria-label={t("editor.toolOptions.switchColors")}
-              className="rounded-full p-1 text-neutral-400 hover:bg-[#262626] hover:text-white transition-colors"
+              className="rounded-full p-1.5 text-neutral-400 hover:bg-[#262626] hover:text-white transition-colors"
             >
               <IconSwap size={12} />
             </button>

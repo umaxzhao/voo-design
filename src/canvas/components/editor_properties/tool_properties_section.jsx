@@ -169,6 +169,10 @@ export default function ToolPropertiesSection({
   // Shape tool props (Affinity Style)
   strokeWidth,
   onStrokeWidth,
+  shapeStrokeColor = "#FFFFFF",
+  onShapeStrokeColor,
+  shapeOpacity = 1,
+  onShapeOpacity,
   strokeStyle,
   onStrokeStyle,
   cornerRadius,
@@ -195,6 +199,10 @@ export default function ToolPropertiesSection({
   gradientActiveStop,
   onGradientActiveStop,
   onApplyGradientTool,
+  fillOpacity = 1,
+  onFillOpacity,
+  gradientOpacity = 1,
+  onGradientOpacity,
   fillTolerance,
   onFillTolerance,
   fillContiguous,
@@ -242,9 +250,10 @@ export default function ToolPropertiesSection({
     tool === TOOL.TEXT ||
     tool === TOOL.FILL ||
     tool === TOOL.GRADIENT;
+  // Every brush mode shares the tip presets: retouch modes use width/hardness
+  // from a preset just like the normal brush.
   const showBrushPresets =
-    (tool === TOOL.BRUSH && brushModeHasPresets(brushMode)) ||
-    (tool === TOOL.ERASER && brushModeHasPresets("eraser"));
+    tool === TOOL.BRUSH || (tool === TOOL.ERASER && brushModeHasPresets("eraser"));
 
   return (
     <div className="flex flex-col font-mono text-neutral-200">
@@ -266,6 +275,10 @@ export default function ToolPropertiesSection({
           onBrushWidth={onBrushWidth}
           strokeWidth={strokeWidth}
           onStrokeWidth={onStrokeWidth}
+          strokeColor={shapeStrokeColor}
+          onStrokeColor={onShapeStrokeColor}
+          opacity={shapeOpacity}
+          onOpacity={onShapeOpacity}
           strokeStyle={strokeStyle}
           onStrokeStyle={onStrokeStyle}
           cornerRadius={cornerRadius}
@@ -477,6 +490,10 @@ export default function ToolPropertiesSection({
           gradientActiveStop={gradientActiveStop}
           onGradientActiveStop={onGradientActiveStop}
           onApplyGradientTool={onApplyGradientTool}
+          fillOpacity={fillOpacity}
+          onFillOpacity={onFillOpacity}
+          gradientOpacity={gradientOpacity}
+          onGradientOpacity={onGradientOpacity}
           fillTolerance={fillTolerance}
           onFillTolerance={onFillTolerance}
           fillContiguous={fillContiguous}

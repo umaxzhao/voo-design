@@ -12,6 +12,7 @@ import {
   sectionTitleClass,
 } from "./property_section.jsx";
 import ToolSliderField from "./tool_slider_field.jsx";
+import { Swatch, HexField } from "./colour_swatch.jsx";
 
 const StrokeWidthIcon = () => (
   <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
@@ -23,6 +24,10 @@ export default function ShapeProperties({
   tool,
   strokeWidth = 1,
   onStrokeWidth,
+  strokeColor = "#FFFFFF",
+  onStrokeColor,
+  opacity = 1,
+  onOpacity,
   brushWidth,
   onBrushWidth,
   strokeStyle = "solid",
@@ -80,6 +85,37 @@ export default function ShapeProperties({
             onValueChange={(val) => setWidth(val)}
             suffix="px"
             ariaLabel={t("editor.strokeStyle.weight")}
+            scrubHint={t("editor.props.dragToAdjust")}
+          />
+        ) : null}
+
+        {onStrokeColor ? (
+          <div className={sectionRowClass}>
+            <span className="shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-400">
+              {t("editor.props.stroke")}
+            </span>
+            <Swatch
+              value={strokeColor}
+              onPick={(colour) => onStrokeColor(colour)}
+              ariaLabel={t("editor.props.stroke")}
+            />
+            <HexField
+              value={strokeColor}
+              onCommit={(colour) => onStrokeColor(colour)}
+              ariaLabel={t("editor.props.stroke")}
+            />
+          </div>
+        ) : null}
+
+        {onOpacity ? (
+          <ToolSliderField
+            label={t("editor.props.opacity")}
+            min={0}
+            max={100}
+            value={Math.round(opacity * 100)}
+            onValueChange={(value) => onOpacity(value / 100)}
+            suffix="%"
+            ariaLabel={t("editor.props.opacity")}
             scrubHint={t("editor.props.dragToAdjust")}
           />
         ) : null}
@@ -267,6 +303,10 @@ ShapeProperties.propTypes = {
   tool: PropTypes.string,
   strokeWidth: PropTypes.number,
   onStrokeWidth: PropTypes.func,
+  strokeColor: PropTypes.string,
+  onStrokeColor: PropTypes.func,
+  opacity: PropTypes.number,
+  onOpacity: PropTypes.func,
   brushWidth: PropTypes.number,
   onBrushWidth: PropTypes.func,
   strokeStyle: PropTypes.string,

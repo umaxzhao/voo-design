@@ -84,8 +84,29 @@ export function useSkiaPage({
     // The engine calls listeners after painting chrome, inside the same rAF.
     // Camera-only frames deliberately do not notify React while moving.
     const unsubscribe = engine.subscribeRender(paint);
+    const onWindowResize = () => paint();
+    // jsdom-style harnesses expose a partial window; the listeners are opt-in.
+    window.addEventListener?.("resize", onWindowResize);
+    let dprQuery = null;
+    const watchDpr = () => {
+      if (typeof window.matchMedia !== "function") return;
+      dprQuery?.removeEventListener?.("change", onDprChange);
+      dprQuery = window.matchMedia(
+        `(resolution: ${window.devicePixelRatio || 1}dppx)`,
+      );
+      dprQuery?.addEventListener?.("change", onDprChange);
+    };
+    const onDprChange = () => {
+      watchDpr();
+      paint();
+    };
+    watchDpr();
     paint();
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      window.removeEventListener?.("resize", onWindowResize);
+      dprQuery?.removeEventListener?.("change", onDprChange);
+    };
   }, [status, engine, doc, stageRef, revision]);
 
   return { status, host: hostRef.current };
@@ -159,10 +180,12 @@ export function useWorkspaceSkia({
     const paint = (cameraOverride) => {
       if (frame !== null) cancelAnimationFrame(frame);
       frame = null;
+      const liveStage = stageRef.current;
+      if (!liveStage) return;
       const latest = latestRef.current;
       const dpr = window.devicePixelRatio || 1;
-      const width = stage.clientWidth || 1024;
-      const height = stage.clientHeight || 768;
+      const width = liveStage.clientWidth || 1024;
+      const height = liveStage.clientHeight || 768;
       const last = lastDimensionsRef.current;
       if (last.width !== width || last.height !== height || last.dpr !== dpr) {
         lastDimensionsRef.current = { width, height, dpr };
@@ -188,12 +211,33 @@ export function useWorkspaceSkia({
     }) : null;
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(schedule) : null;
     observer?.observe(stage);
+    // A DPR change (moving the window between displays) and a plain window
+    // resize must resize the surface even when neither the document nor the
+    // camera changed.
+    const onWindowResize = () => schedule();
+    window.addEventListener?.("resize", onWindowResize);
+    let dprQuery = null;
+    const onDprChange = () => {
+      watchDpr();
+      schedule();
+    };
+    const watchDpr = () => {
+      if (typeof window.matchMedia !== "function") return;
+      dprQuery?.removeEventListener?.("change", onDprChange);
+      dprQuery = window.matchMedia(
+        `(resolution: ${window.devicePixelRatio || 1}dppx)`,
+      );
+      dprQuery?.addEventListener?.("change", onDprChange);
+    };
+    watchDpr();
     schedule();
     return () => {
       if (frame !== null) cancelAnimationFrame(frame);
       scheduleRef.current = null;
       unsubscribe?.();
       observer?.disconnect();
+      window.removeEventListener?.("resize", onWindowResize);
+      dprQuery?.removeEventListener?.("change", onDprChange);
     };
   }, [status, stageRef, subscribeCamera]);
 

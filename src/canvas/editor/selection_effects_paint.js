@@ -127,6 +127,29 @@ export function buildCanvasGradient(ctx, type, angle, geometry, stops) {
   return grad;
 }
 
+/** HEX → rgba() so a canvas fill honours the tool opacity (other strings pass through). */
+export function colourWithOpacity(colour, opacity) {
+  const alpha = Math.max(0, Math.min(1, Number(opacity)));
+  if (alpha >= 1) return colour;
+  const match = /^#([0-9a-f]{6})$/i.exec(String(colour ?? ""));
+  if (!match) return colour;
+  const value = match[1];
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/** Scale a gradient stop list by the tool opacity (0..1). */
+export function scaleGradientStops(stops, opacity) {
+  const factor = Math.max(0, Math.min(1, Number(opacity)));
+  if (!Array.isArray(stops)) return stops;
+  return stops.map((stop) => ({
+    ...stop,
+    opacity: Math.round((stop.opacity ?? 100) * factor),
+  }));
+}
+
 export function createSelectionPaintEffects({
   getDoc,
   cache,
@@ -143,6 +166,8 @@ export function createSelectionPaintEffects({
   commitPaintBucket,
   commitSelectionEffect,
   getGradientToolState = null,
+  getFillOpacity = null,
+  getGradientOpacity = null,
 }) {
   /**
    * Strokes the selection's outline onto the layer with the current colour
@@ -193,7 +218,11 @@ export function createSelectionPaintEffects({
   /**
    * Fills the active selection (or layer) with the specified colour (Photoshop's Edit → Fill).
    */
-  async function fillSelection(fillColor = getColor()) {
+  async function fillSelection(fillColor = getColor(), options = {}) {
+    const opacity = Math.max(
+      0,
+      Math.min(1, Number(options.opacity ?? getFillOpacity?.() ?? 1)),
+    );
     const doc = getDoc();
     const current = getPixelSelection();
     const selectedId = selection.getId();
@@ -215,7 +244,9 @@ export function createSelectionPaintEffects({
     // If it's a vector / shape node: fill its vector color
     if (node.kind !== NODE_KIND.IMAGE) {
       if ("fill" in node) {
-        commitSelectionEffect(ops.updateNode(doc, node.id, { fill: fillColor }));
+        commitSelectionEffect(
+          ops.updateNode(doc, node.id, { fill: fillColor, fillOpacity: opacity }),
+        );
         requestRender();
         notify();
         return true;
@@ -283,7 +314,7 @@ export function createSelectionPaintEffects({
         tempCanvas.width = 1;
         tempCanvas.height = 1;
         const tCtx = tempCanvas.getContext("2d");
-        tCtx.fillStyle = fillColor;
+        tCtx.fillStyle = colourWithOpacity(fillColor, opacity);
         tCtx.fillRect(0, 0, 1, 1);
         const [fr, fg, fb, fa] = tCtx.getImageData(0, 0, 1, 1).data;
 
@@ -309,7 +340,7 @@ export function createSelectionPaintEffects({
         }
         ctx.putImageData(image, 0, 0);
       } else {
-        ctx.fillStyle = fillColor;
+        ctx.fillStyle = colourWithOpacity(fillColor, opacity);
         ctx.beginPath();
         for (const ring of current.contours) {
           ring.forEach(([x, y], index) => {
@@ -323,7 +354,7 @@ export function createSelectionPaintEffects({
         ctx.fill();
       }
     } else {
-      ctx.fillStyle = fillColor;
+      ctx.fillStyle = colourWithOpacity(fillColor, opacity);
       ctx.fillRect(0, 0, bWidth, bHeight);
     }
 
@@ -370,10 +401,11 @@ export function createSelectionPaintEffects({
         { color: endColor ?? "#ffffff", opacity: 100, position: 100 },
       ];
     }
+    const gradientOpacity = getGradientOpacity?.() ?? 1;
     return paintNodeGradient({
       type,
       angle,
-      stops,
+      stops: scaleGradientStops(stops, gradientOpacity),
       buildGeometry: ({ box, node, scaleX, scaleY }) =>
         gradientGeometry(type, startDocPt, endDocPt, box, node, scaleX, scaleY),
     });
@@ -391,7 +423,7 @@ export function createSelectionPaintEffects({
     return paintNodeGradient({
       type: state.type,
       angle: state.angle,
-      stops: state.stops,
+      stops: scaleGradientStops(state.stops, getGradientOpacity?.() ?? 1),
       buildGeometry: ({ box }) => angleGeometry(state.type, state.angle, box),
     });
   }

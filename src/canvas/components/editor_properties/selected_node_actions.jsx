@@ -12,9 +12,16 @@ export default function SelectedNodeActions({
   if (!object?.id || !engine) return null;
   const nodes = selectedNodes.length ? selectedNodes : [object];
   const canCombine = nodes.length > 1 && Boolean(engine.canCombineSelection?.());
+  // A frame is a group that keeps its own identity: Figma/Pen do not offer
+  // "ungroup" for it, so the layer row only belongs to plain groups.
+  const isFrame =
+    object.isFrame === true ||
+    object.frame === true ||
+    object.kind === "frame" ||
+    object.containerType === "frame";
   // Group / Ungroup / boolean rows are the only content; with none of them the
   // section would be a bare heading, so it renders nothing.
-  if (nodes.length <= 1 && object.kind !== "group") return null;
+  if (nodes.length <= 1 && (object.kind !== "group" || isFrame)) return null;
   return (
     <StaticSection title={t("editor.layer.title")}>
       <div className="grid grid-cols-2 gap-1.5">
@@ -27,7 +34,7 @@ export default function SelectedNodeActions({
           >
             {t("editor.taskbar.group")}
           </button>
-        ) : object.kind === "group" ? (
+        ) : object.kind === "group" && !isFrame ? (
           <button
             type="button"
             data-testid="editor-taskbar-ungroup"

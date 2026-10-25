@@ -146,12 +146,21 @@ export function createShapesPointerGestures({
 
   function startShape(event) {
     const point = api.toDocPoint(event.clientX, event.clientY);
+    // The colour wheel is the fill; stroke colour/weight and opacity are the
+    // shape tool's other paint axes (Pen-style).
+    const style = {
+      intoFrame: true,
+      fill: api.getColor?.() ?? "#999999",
+      stroke: api.getShapeStrokeColor?.() ?? "#ffffff",
+      strokeWidth: api.getStrokeWidth?.() ?? 0,
+      opacity: api.getShapeOpacity?.() ?? 1,
+    };
     const node =
       api.getTool() === TOOL.FRAME
         ? api.addFrameAt(point, { intoFrame: true })
         : api.getTool() === TOOL.ELLIPSE
-          ? api.addEllipseAt(point, { intoFrame: true })
-          : api.addRectAt(point, { intoFrame: true });
+          ? api.addEllipseAt(point, style)
+          : api.addRectAt(point, style);
     api.select(node.id);
     setGesture({ kind: "shape", id: node.id, start: point });
   }
@@ -188,14 +197,15 @@ export function createShapesPointerGestures({
         box,
         {
           fill: gesture.fill,
-          stroke: gesture.fill,
-          strokeWidth: 0,
+          stroke: gesture.stroke ?? gesture.fill,
+          strokeWidth: gesture.strokeWidth ?? 0,
         },
       );
       api.setDoc(
         ops.updateNode(api.getDocument(), gesture.id, {
           ...next,
           id: gesture.id,
+          ...(gesture.opacity != null ? { opacity: gesture.opacity } : {}),
         }),
         { commit: false },
       );
@@ -222,17 +232,31 @@ export function createShapesPointerGestures({
   function startPolyShape(event) {
     const point = api.toDocPoint(event.clientX, event.clientY);
     const fill = api.getColor();
+    const stroke = api.getShapeStrokeColor?.() ?? fill;
+    const strokeWidth = api.getStrokeWidth?.() ?? 0;
+    const opacity = api.getShapeOpacity?.() ?? 1;
     const star = api.getTool() === TOOL.STAR;
-    const node = (star ? starNodeFromBox : polygonNodeFromBox)(
-      { x: point.x, y: point.y, width: 1, height: 1 },
-      { fill, stroke: fill, strokeWidth: 0 },
-    );
+    const node = {
+      ...(star ? starNodeFromBox : polygonNodeFromBox)(
+        { x: point.x, y: point.y, width: 1, height: 1 },
+        { fill, stroke, strokeWidth },
+      ),
+      ...(opacity !== 1 ? { opacity } : {}),
+    };
     api.setDoc(
       ops.addNode(api.getDocument(), insideFrame(api.getDocument(), node, point)),
       { commit: false },
     );
     api.select(node.id);
-    setGesture({ kind: "shape", id: node.id, start: point, fill });
+    setGesture({
+      kind: "shape",
+      id: node.id,
+      start: point,
+      fill,
+      stroke,
+      strokeWidth,
+      opacity,
+    });
   }
 
   function startText(event) {

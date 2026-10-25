@@ -51,6 +51,14 @@ export function createEngineBrushController({
   // The Gradient tool's multi-stop state (type/angle/stops): the panel is the
   // writer, the drag-and the panel's Apply both paint from it.
   let gradientTool = createDefaultGradientToolState();
+  // Tool-level paint opacity (Fill / Gradient panels). Values are 0..1 and are
+  // applied at paint time; they are not layer opacity.
+  let fillOpacity = 1;
+  let gradientOpacity = 1;
+  // Shape-tool paint: the colour wheel is the fill, these are the other axes.
+  let shapeStrokeColor = "#FFFFFF";
+  let shapeStrokeWidth = 1;
+  let shapeOpacity = 1;
   const setGradientToolState = (patch = {}) => {
     gradientTool = normalizeGradientToolState({ ...gradientTool, ...patch });
     notify();
@@ -169,6 +177,43 @@ export function createEngineBrushController({
   return {
     getColor: () => color,
     getGradientToolState: () => gradientTool,
+    getShapeStrokeColor: () => shapeStrokeColor,
+    setShapeStrokeColor(next) {
+      if (typeof next === "string" && /^#[0-9a-fA-F]{6}$/.test(next)) {
+        shapeStrokeColor = next.toUpperCase();
+        notify?.();
+      }
+    },
+    getStrokeWidth: () => shapeStrokeWidth,
+    setStrokeWidth(next) {
+      const value = Number(next);
+      shapeStrokeWidth = Number.isFinite(value)
+        ? Math.max(0, Math.min(100, value))
+        : 1;
+      notify?.();
+    },
+    getShapeOpacity: () => shapeOpacity,
+    setShapeOpacity(next) {
+      const value = Number(next);
+      shapeOpacity = Number.isFinite(value)
+        ? Math.max(0, Math.min(1, value))
+        : 1;
+      notify?.();
+    },
+    getFillOpacity: () => fillOpacity,
+    setFillOpacity(next) {
+      const value = Number(next);
+      fillOpacity = Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 1;
+      notify?.();
+    },
+    getGradientOpacity: () => gradientOpacity,
+    setGradientOpacity(next) {
+      const value = Number(next);
+      gradientOpacity = Number.isFinite(value)
+        ? Math.max(0, Math.min(1, value))
+        : 1;
+      notify?.();
+    },
     setGradientToolState,
     setGradientToolType(type) {
       return setGradientToolState({ type });

@@ -23,6 +23,7 @@ export default function ColourSection({
   commitNow = undefined,
   selectedNodes = [],
   getBitmap = null,
+  bindings = null,
 }) {
   return (
     <>
@@ -33,6 +34,7 @@ export default function ColourSection({
         commitNow={commitNow}
         selectedNodes={selectedNodes}
         getBitmap={getBitmap}
+        bindings={bindings}
       />}
       {showStroke && <StrokeSection
         object={object}
@@ -40,6 +42,7 @@ export default function ColourSection({
         editAndCommit={editAndCommit}
         commitNow={commitNow}
         selectedNodes={selectedNodes}
+        bindings={bindings}
       />}
     </>
   );
@@ -55,4 +58,5 @@ ColourSection.propTypes = {
   /** Selected node objects when several are picked (plan 1.9). */
   selectedNodes: PropTypes.array,
   getBitmap: PropTypes.func,
+  bindings: PropTypes.object,
 };

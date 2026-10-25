@@ -109,6 +109,27 @@ describe("phase-1 panel order", () => {
     expect(colours).toBeLessThan(html.indexOf("editor.props.fillLabel"));
   });
 
+  it("shows inline binding chips for a bound variable and paint style", () => {
+    const boundEngine = {
+      ...engine,
+      getDocument: () => ({
+        nodes: [],
+        variablesV2: {
+          collections: [
+            { id: "c1", variables: [{ id: "v1", name: "Brand/Red" }] },
+          ],
+        },
+        styles: {
+          paint: [{ id: "s1", name: "Card paint", value: { fill: "#ff0000" } }],
+        },
+      }),
+    };
+    const node = base({ fillVariableId: "v1", styleIds: { paintId: "s1" } });
+    const html = render(node, { sections: ["fill", "stroke"], engine: boundEngine });
+    expect(html).toContain("Brand/Red");
+    expect(html).toContain("Card paint");
+  });
+
   it("renders export presets with format, scale and suffix", () => {
     const html = render(base(), { sections: ["export"] });
     expect(html).toContain("editor.props.exportFormat");

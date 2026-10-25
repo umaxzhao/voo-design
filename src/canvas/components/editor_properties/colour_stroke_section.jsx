@@ -31,6 +31,7 @@ export function StrokeSection({
   editAndCommit,
   commitNow = undefined,
   selectedNodes = [],
+  bindings = null,
 }) {
   const { t } = useI18n();
   const stroke =
@@ -72,6 +73,15 @@ export function StrokeSection({
         />
       }
     >
+      {bindings?.styleName ? (
+        <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
+          <button type="button" onClick={bindings.onDetachStyle} className="flex max-w-full items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] font-mono uppercase tracking-wide text-neutral-300 hover:bg-white/[0.12]" title={bindings.styleName}>
+            <span className="truncate">{bindings.styleName}</span>
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+      ) : null}
+
       {none ? null : (
         <>
           {/* Row 1: Unified Pill (Swatch + Label/Hex + Opacity + Minus) */}

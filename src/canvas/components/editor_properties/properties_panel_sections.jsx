@@ -29,6 +29,7 @@ import PanelAddMenu from "./panel_add_menu.jsx";
 import AppearanceSection from "./appearance_section.jsx";
 import ExportSection from "./export_section.jsx";
 import SelectionColorsSection from "./selection_colors_section.jsx";
+import { normalizeStyles } from "../../editor/scene_styles.js";
 import { resolveExtras } from "./panel_extras.js";
 import {
   isRegionNode,
@@ -97,6 +98,26 @@ export default function PropertiesPanelSections({
   // affordance; frames and adjustments have no array target.
   const showRepeatArray = !isBackground && eligible.modifiers;
   const show = (key) => eligible[key] && (hasContent[key] || revealed(key));
+  // Inline binding chips (Pen-style): resolve the bound variable/style names
+  // once for the Fill/Stroke rows.
+  const bindingDoc = engine?.getDocument?.();
+  const boundVariable = object.fillVariableId
+    ? (bindingDoc?.variablesV2?.collections ?? [])
+        .flatMap((collection) => collection.variables ?? [])
+        .find((variable) => variable.id === object.fillVariableId)
+    : null;
+  const boundPaintStyle = object.styleIds?.paintId
+    ? normalizeStyles(bindingDoc?.styles).paint.find(
+        (style) => style.id === object.styleIds.paintId,
+      )
+    : null;
+  const bindings = {
+    variableName: boundVariable?.name ?? null,
+    styleName: boundPaintStyle?.name ?? null,
+    onDetachVariable: () => colorVariableActions?.variableActions?.bind?.(null),
+    onDetachStyle: () => styleActions?.detach?.("paint"),
+  };
+
   const addItems = [
     eligible.liveFilters && !show("liveFilters") && { key: "liveFilters", label: t("editor.liveFilters.title"), onSelect: () => reveal("liveFilters") },
     eligible.variables && !show("variables") && { key: "variables", label: t("editor.variables.title"), onSelect: () => reveal("variables") },
@@ -146,6 +167,13 @@ export default function PropertiesPanelSections({
               puppetPins: null,
             })
           }
+          puppetPins={puppetPins}
+          puppetPinId={puppetPinId}
+          onSelectPuppetPin={(id) => engine?.setSelectedPuppetPin?.(id)}
+          onDeletePuppetPin={(id) => {
+            engine?.setSelectedPuppetPin?.(id);
+            engine?.deletePuppetPin?.();
+          }}
         />
       ) : has("transform") && object.kind !== "adjustment" && object.kind !== "audio" ? (
         <TransformSection
@@ -245,6 +273,7 @@ export default function PropertiesPanelSections({
             commitNow={commitNow}
             selectedNodes={selectedNodes}
             getBitmap={getBitmap}
+            bindings={bindings}
           />
         </DocumentColoursContext.Provider>
       ) : null}

@@ -79,7 +79,7 @@ export default function GradientProperties({
       }
     >
       <div className="flex flex-col gap-2.5">
-        {(isGradient || isFill) && onFillOpacity && (
+        {(isGradient ? Boolean(onGradientOpacity) : Boolean(onFillOpacity)) && (
           <ToolSliderField label={t("editor.props.opacity")} min={0} max={100} value={Math.round((isGradient ? gradientOpacity : fillOpacity) * 100)} onValueChange={(value) => (isGradient ? onGradientOpacity : onFillOpacity)?.(value / 100)} ariaLabel={t("editor.props.opacity")} scrubHint={t("editor.props.dragToAdjust")} />
         )}
         {isGradient && (

@@ -154,7 +154,7 @@ export default function BrushProperties({
   const showHardness =
     isNormalBrush || isEraser || isRetouchActive || healingFields.includes("hardness");
   const showOpacity =
-    isNormalBrush || isEraser || healingFields.includes("opacity");
+    isNormalBrush || isEraser || isSponge || healingFields.includes("opacity");
   const showSmoothing = isNormalBrush || isEraser || isRetouchActive;
   const showStrength = isBlurOrSharpen || isSmudge;
   const showExposure = isDodgeBurn;
@@ -227,6 +227,20 @@ export default function BrushProperties({
             onValueChange={(val) => onBrushExposure(val / 100)}
             suffix="%"
             ariaLabel={t("editor.brushMode.exposure")}
+            scrubHint={t("editor.props.dragToAdjust")}
+          />
+        ) : null}
+
+        {isDodgeBurn && onBrushFlow ? (
+          <ToolSliderField
+            label={t("editor.brushFlow")}
+            icon={<FlowIcon />}
+            min={0}
+            max={100}
+            value={Math.round(brushFlow * 100)}
+            onValueChange={(val) => onBrushFlow(val / 100)}
+            suffix="%"
+            ariaLabel={t("editor.brushFlow")}
             scrubHint={t("editor.props.dragToAdjust")}
           />
         ) : null}

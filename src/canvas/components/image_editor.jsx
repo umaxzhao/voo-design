@@ -4447,6 +4447,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 if (selected?.id) engine?.updateNode(selected.id, { strokeWidth: val });
                 else engine?.setStrokeWidth?.(val);
               },
+              shapeStrokeColor: engine?.getShapeStrokeColor?.() ?? "#FFFFFF",
+              onShapeStrokeColor: (val) => engine?.setShapeStrokeColor?.(val),
+              shapeOpacity: engine?.getShapeOpacity?.() ?? 1,
+              onShapeOpacity: (val) => engine?.setShapeOpacity?.(val),
               strokeStyle: selected?.strokeStyle || (selected?.strokeDashed ? "dashed" : "solid"),
               onStrokeStyle: (style) => {
                 if (selected?.id) engine?.updateNode(selected.id, { strokeStyle: style, strokeDashed: style === "dashed" });
@@ -4513,6 +4517,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               gradientActiveStop: engine?.getGradientToolState?.()?.activeStopIndex ?? 0,
               onGradientActiveStop: (index) => engine?.setGradientToolActiveStop?.(index),
               onApplyGradientTool: () => engine?.applyGradientTool?.(),
+              fillOpacity: engine?.getFillOpacity?.() ?? 1,
+              onFillOpacity: (value) => engine?.setFillOpacity?.(value),
+              gradientOpacity: engine?.getGradientOpacity?.() ?? 1,
+              onGradientOpacity: (value) => engine?.setGradientOpacity?.(value),
               fillTolerance: engine?.getFillTolerance?.() ?? 32,
               onFillTolerance: (val) => engine?.setFillTolerance?.(val),
               fillContiguous: engine?.getFillContiguous?.() ?? true,

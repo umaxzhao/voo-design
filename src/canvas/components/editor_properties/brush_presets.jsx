@@ -48,7 +48,7 @@ export default function BrushPresets({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="rounded-lg bg-[#222222] px-2 py-0.5 text-[10px] font-mono text-neutral-400 hover:bg-[#2a2a2a] hover:text-white transition-colors"
+          className="flex min-h-6 items-center rounded-lg bg-[#222222] px-2 py-1 text-[10px] font-mono text-neutral-400 hover:bg-[#2a2a2a] hover:text-white transition-colors"
           title={t("editor.toolOptions.importABR")}
         >
           + .ABR

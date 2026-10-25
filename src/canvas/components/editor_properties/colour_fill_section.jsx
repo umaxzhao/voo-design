@@ -77,6 +77,7 @@ export function FillSection({
   getBitmap = null,
   paintRow = false,
   onRemove = null,
+  bindings = null,
 }) {
   const { t } = useI18n();
   const isImageNode = isImageUrlFill(object.fill) || (object.kind === NODE_KIND.IMAGE && (!object.fill || object.fill === "transparent"));
@@ -173,7 +174,8 @@ export function FillSection({
         }}
         edit={(patch) => updatePaint(index, paintPatch(patch), false)}
         editAndCommit={(patch) => updatePaint(index, paintPatch(patch), true)}
-        commitNow={commitNow} getBitmap={getBitmap} selectedNodes={selectedNodes} />)}
+        commitNow={commitNow} getBitmap={getBitmap} selectedNodes={selectedNodes}
+        bindings={bindings} />)}
       {object.maskBase && <span className="text-[11px] text-neutral-400">Mask · {object.maskType ?? "alpha"}</span>}
     </StaticSection>
   );
@@ -181,6 +183,23 @@ export function FillSection({
   return (
     <div
     >
+      {bindings?.variableName || bindings?.styleName ? (
+        <div className="mb-1.5 flex flex-wrap items-center gap-1.5 px-0.5">
+          {bindings.variableName ? (
+            <button type="button" onClick={bindings.onDetachVariable} className="flex max-w-full items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] font-mono uppercase tracking-wide text-neutral-300 hover:bg-white/[0.12]" title={bindings.variableName}>
+              <span className="truncate">{bindings.variableName}</span>
+              <span aria-hidden="true">×</span>
+            </button>
+          ) : null}
+          {bindings.styleName ? (
+            <button type="button" onClick={bindings.onDetachStyle} className="flex max-w-full items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] font-mono uppercase tracking-wide text-neutral-300 hover:bg-white/[0.12]" title={bindings.styleName}>
+              <span className="truncate">{bindings.styleName}</span>
+              <span aria-hidden="true">×</span>
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
       {none ? null : (
         /* Row 1: Unified Pill (Swatch + Label/Hex + Opacity + Minus) */
         <div className={sectionRowClass}>
