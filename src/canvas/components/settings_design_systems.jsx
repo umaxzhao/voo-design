@@ -12,7 +12,7 @@ import {
 } from "../editor/design_system_registry.js";
 import { updateTokenPath } from "./design_token_controls.js";
 import DesignSystemActions, { ACTION_CLASS } from "./design_system_actions.jsx";
-import DesignSystemList from "./design_system_list.jsx";
+import DesignSystemCards from "./design_system_cards.jsx";
 import DesignTokenFields from "./design_token_fields.jsx";
 import { editorReducer, initialEditorState } from "./design_system_editor_state.js";
 import SettingsSection from "./settings_section.jsx";
@@ -116,7 +116,7 @@ export default function SettingsDesignSystems() {
       <SettingsSection title={t("designSystems.listTitle")} hint={t("designSystems.listHint")}>
         {!available && <p className="text-xs text-neutral-400">{t("designSystems.noDocument")}</p>}
         {missingApplied && <p className="text-xs text-neutral-400">{t("designSystems.appliedMissing")}</p>}
-        <DesignSystemList systems={systems} selectedId={selected.id} appliedId={appliedId} onSelect={select} />
+        <DesignSystemCards systems={systems} selectedId={selected.id} appliedId={appliedId} onSelect={select} />
         <DesignSystemActions
           system={selected}
           name={selectedName}

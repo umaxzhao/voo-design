@@ -12,6 +12,8 @@ export default {
   "designSystems.builtIn": "内置",
   "designSystems.custom": "自定义",
   "designSystems.inUse": "使用中",
+  "designSystems.showMore": "更多",
+  "designSystems.showLess": "收起",
   "designSystems.use": "用于当前文档",
   "designSystems.duplicate": "复制",
   "designSystems.rename": "重命名",
