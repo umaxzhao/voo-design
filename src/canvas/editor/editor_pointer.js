@@ -395,6 +395,9 @@ export function attachPointerHandlers({
         gesture,
       );
     }
+    if (event.key === "Alt" && !gesture && lastPointerEvent) {
+      hover.updateHoverCursor({ ...lastPointerEvent, altKey: true });
+    }
     if (event.code === "AltLeft" || event.code === "AltRight") {
       return;
     }
@@ -436,6 +439,9 @@ export function attachPointerHandlers({
         },
         gesture,
       );
+    }
+    if (event.key === "Alt" && !gesture && lastPointerEvent) {
+      hover.updateHoverCursor({ ...lastPointerEvent, altKey: false });
     }
     if (event.code === "AltLeft" || event.code === "AltRight") {
       return;

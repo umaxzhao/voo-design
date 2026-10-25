@@ -312,8 +312,10 @@ export function createHoverCursorController({
           opacity: api.getBrushOpacity?.() ?? 1,
           nodeId: target.id,
           sourcePoint: effectiveSourcePt,
+          showSourceCircle: Boolean(event.altKey && source?.point),
         });
-        stage.style.cursor = "none";
+        const zoom = api.getViewport()?.zoom ?? 1;
+        stage.style.cursor = brushCircleCursor(api.getBrushWidth?.() ?? 24, zoom);
         return;
       }
     }
