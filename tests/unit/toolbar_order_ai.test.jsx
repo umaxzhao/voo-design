@@ -30,10 +30,12 @@ const DESIGN_TOOL_ORDER = [
   "editor.tool.marquee",
   "editor.tool.brush",
   "editor.tool.eraser",
+  "editor.tool.dropper",
   "editor.tool.text",
   "editor.tool.pen",
   "editor.tool.fill",
   "editor.tool.aiRepair",
+  "editor.tool.hand",
 ];
 
 function renderToolbar(props = {}) {
@@ -64,17 +66,18 @@ function buttonMarkup(html, label) {
 }
 
 describe("top toolbar tool order", () => {
-  it("renders select, crop, marquee, brush, eraser, text, pen, fill, then AI repair", () => {
+  it("renders select, crop, marquee, brush, eraser, eyedropper, text, pen, fill, AI repair, then hand", () => {
     const html = renderToolbar();
     expect(toolLabelsInOrder(html, DESIGN_TOOL_ORDER)).toEqual(DESIGN_TOOL_ORDER);
   });
 
-  it("keeps Text and Pen right after Eraser in the motion variant", () => {
+  it("keeps Text and Pen right after Select in the motion variant", () => {
     const html = renderToolbar({ variant: "motion" });
     expect(toolLabelsInOrder(html, DESIGN_TOOL_ORDER)).toEqual([
       "editor.tool.select",
       "editor.tool.text",
       "editor.tool.pen",
+      "editor.tool.hand",
     ]);
   });
 });

@@ -391,6 +391,26 @@ export const TOOL_FAMILIES = {
 };
 
 /**
+ * The member a family key pre-selects when the radial opens and the pointer
+ * never leaves the dead zone. Without it, the first item in the family wins
+ * (so a lone W press would arm Rectangle rather than the Wand it names).
+ */
+export const PIE_DEFAULT_ITEM_BY_CODE = Object.freeze({
+  KeyA: TOOL.SELECT,
+  KeyQ: TOOL.PERSPECTIVE,
+  KeyW: "wand",
+  KeyZ: "region",
+  KeyM: "rect",
+  KeyL: "lasso",
+  KeyB: "normal",
+  KeyJ: "aiRepair",
+  KeyP: TOOL.PEN,
+  KeyR: TOOL.RECT,
+  KeyO: TOOL.ELLIPSE,
+  KeyG: TOOL.FILL,
+});
+
+/**
  * Find the tool family associated with a keyboard event code.
  */
 export function getFamilyByCode(code) {

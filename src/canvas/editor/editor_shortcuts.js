@@ -8,6 +8,7 @@ export const TOOL_SHORTCUTS = {
   [TOOL.SELECT]: "V",
   [TOOL.FRAME]: "F",
   [TOOL.SELECT_REGION]: "⌘T",
+  [TOOL.HAND]: "H",
   [TOOL.PERSPECTIVE]: "Q",
   [TOOL.MARQUEE]: "M",
   [TOOL.WAND]: "W",

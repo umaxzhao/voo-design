@@ -120,6 +120,12 @@ export function createHoverCursorController({
       }
     }
     const tool = api.getTool();
+    if (tool === TOOL.HAND) {
+      // The hand tool always reads as a grab handle; startPan switches to
+      // "grabbing" while the drag is in flight.
+      stage.style.cursor = "grab";
+      return;
+    }
     if (
       tool === TOOL.BRUSH ||
       tool === TOOL.ERASER ||

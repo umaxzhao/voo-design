@@ -7,6 +7,7 @@ export const TOOL = Object.freeze({
   DISTORT: "distort",
   PUPPET_WARP: "puppet_warp",
   SELECT_REGION: "select_region",
+  HAND: "hand",
   MARQUEE: "marquee",
   WAND: "wand",
   BRUSH: "brush",

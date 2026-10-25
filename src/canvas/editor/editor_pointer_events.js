@@ -18,7 +18,7 @@ export function createPointerDownDispatcher({
   setGesture,
 }) {
   function dispatchDown(event, spaceDown) {
-    if (spaceDown || event.button === 1) {
+    if (spaceDown || event.button === 1 || api.getTool() === TOOL.HAND) {
       if (!shared) pan.startPan(event);
     } else if (event.altKey && toolUsesColor(api.getTool())) {
       drawing.pickColor(event);

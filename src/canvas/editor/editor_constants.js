@@ -37,6 +37,8 @@ export const TOOL_KEYS = {
   KeyG: TOOL.FILL,
   KeyC: TOOL.CROP,
   KeyI: TOOL.DROPPER,
+  // Hold Space still pans from any tool; H makes the hand tool persistent.
+  KeyH: TOOL.HAND,
 };
 
 /**

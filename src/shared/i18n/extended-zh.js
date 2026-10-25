@@ -1011,6 +1011,7 @@ export default {
   "editor.saveFailed": "保存失败",
   "editor.tool.select": "选择",
   "editor.tool.frame": "画框",
+  "editor.tool.hand": "抓手",
   "editor.tool.transform": "变换",
   "editor.warp.perspectiveHint": "拖拽角点",
   "editor.warp.distortHint": "拖拽点或手柄",

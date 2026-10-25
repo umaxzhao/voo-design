@@ -1032,6 +1032,7 @@ export default {
   "editor.saveFailed": "Save failed",
   "editor.tool.select": "Select",
   "editor.tool.frame": "Frame",
+  "editor.tool.hand": "Hand",
   "editor.tool.transform": "Transform",
   "editor.warp.perspectiveHint": "Drag a corner",
   "editor.warp.distortHint": "Drag a point or handle",

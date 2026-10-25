@@ -45,6 +45,7 @@ export const DESIGN_SHORTCUT_GROUPS = Object.freeze([
       Object.freeze({ key: "T", labelKey: "editor.tool.text" }),
       Object.freeze({ key: "C", labelKey: "editor.tool.crop" }),
       Object.freeze({ key: "I", labelKey: "editor.tool.dropper" }),
+      Object.freeze({ key: "H", labelKey: "editor.tool.hand" }),
       Object.freeze({ key: "G", labelKey: "editor.tool.fill" }),
       Object.freeze({ key: "G", labelKey: "editor.tool.gradient" }),
     ]),

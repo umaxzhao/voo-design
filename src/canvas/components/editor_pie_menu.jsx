@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useI18n } from "../use_i18n.js";
+import { PIE_DEFAULT_ITEM_BY_CODE } from "../editor/tool_families.js";
 import { toolFamilyIcon } from "./tool_family_icons.jsx";
 
 /**
@@ -32,13 +33,10 @@ export default function EditorPieMenu({
   const anchorPositionRef = useRef(position);
   const menuPos = anchorPositionRef.current;
 
-  const items = useMemo(
-    () =>
-      family.id === "marquee"
-        ? family.items.filter((item) => item.id !== "region")
-        : family.items,
-    [family],
-  );
+  // Every family member takes a slice of the radial, including Object select
+  // (region): it is the tool the marquee chevron and the Z key name, so hiding
+  // it here left the pie unable to reach it.
+  const items = family.items;
   const count = items.length;
   const radius = 72; // Distance from center to icon center
   const innerRadius = 8; // Responsive dead zone radius around cursor (reduced from 14 for instant flick detection)
@@ -51,8 +49,21 @@ export default function EditorPieMenu({
     );
   }, [items, family, tool, marqueeMode, brushMode, healingMode]);
 
+  // Releasing the key without moving the pointer picks the member the pressed
+  // key names (W → Wand, Z → Object select), not simply the first sector.
+  const defaultIndex = useMemo(() => {
+    const preferredId = triggerCode
+      ? PIE_DEFAULT_ITEM_BY_CODE[triggerCode]
+      : null;
+    if (!preferredId) return 0;
+    const index = items.findIndex(
+      (item) => item.id === preferredId || item.toolId === preferredId,
+    );
+    return index >= 0 ? index : 0;
+  }, [items, triggerCode]);
+
   // Track the last hovered valid item index
-  const lastHoveredIndexRef = useRef(activeIndex >= 0 ? activeIndex : 0);
+  const lastHoveredIndexRef = useRef(activeIndex >= 0 ? activeIndex : defaultIndex);
 
   // Handle pointer tracking to find which radial sector is hovered
   const handlePointerMove = useCallback(
@@ -141,7 +152,7 @@ export default function EditorPieMenu({
               ? lastHoveredIndexRef.current
               : activeIndex >= 0
                 ? activeIndex
-                : 0;
+                : defaultIndex;
         selectItemRef.current(targetIdx);
       }
     };
@@ -158,7 +169,14 @@ export default function EditorPieMenu({
       window.removeEventListener("keyup", handleKeyUp, { capture: true });
       window.removeEventListener("keydown", handleKeyDown, { capture: true });
     };
-  }, [family.code, family.codes, triggerCode, hoveredIndex, activeIndex]);
+  }, [
+    family.code,
+    family.codes,
+    triggerCode,
+    hoveredIndex,
+    activeIndex,
+    defaultIndex,
+  ]);
 
   return (
     <div

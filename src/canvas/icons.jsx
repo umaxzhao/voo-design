@@ -12,6 +12,7 @@ export const ICON_STROKE_WIDTH = 1.5;
  * `size`/`strokeWidth` props callers already pass through.
  */
 export { Pin as IconPin } from "lucide-react";
+export { Hand as IconHand } from "lucide-react";
 export { Spline as IconBend } from "lucide-react";
 export { Scissors as IconCut } from "lucide-react";
 export { PanelLeft as IconPanelLeft } from "lucide-react";
