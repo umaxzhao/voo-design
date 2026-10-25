@@ -14,8 +14,8 @@ import {
 import { useI18n } from "../use_i18n.js";
 
 /**
- * The floating bottom-center zoom cluster: zoom in, current zoom (click to
- * fit the page), zoom out. Matches the outer canvas viewport-tools design.
+ * The floating bottom-center zoom cluster: zoom out, live zoom percentage
+ * (click to reset to 100%), zoom in. Matches the outer canvas viewport-tools design.
  */
 export function EditorZoom({
   zoom,
@@ -25,6 +25,7 @@ export function EditorZoom({
   onRedo,
   onZoomIn,
   onZoomOut,
+  onZoomReset = null,
   onFit,
   grid,
   onToggleGrid,
@@ -41,6 +42,7 @@ export function EditorZoom({
   children = null,
 }) {
   const { t } = useI18n();
+  const zoomPercent = Math.round(zoom * 100);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreControlRef = useRef(null);
   const moreTriggerRef = useRef(null);
@@ -117,6 +119,17 @@ export function EditorZoom({
         className="flex h-7 w-7 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
       >
         <IconMinus size={13} strokeWidth={ICON_STROKE_WIDTH} />
+      </button>
+      {/* Live zoom ratio; clicking it resets the view to 100%. min-w keeps the bar from shifting as digits change. */}
+      <button
+        type="button"
+        data-testid="editor-zoom-percent"
+        onClick={() => onZoomReset?.()}
+        title={t("editor.shortcut.zoom100")}
+        aria-live="polite"
+        className="flex h-7 min-w-[2.75rem] items-center justify-center rounded-lg px-1 text-center text-[10px] tabular-nums text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
+      >
+        {`${zoomPercent}%`}
       </button>
       <button
         type="button"
@@ -313,6 +326,7 @@ EditorZoom.propTypes = {
   onRedo: PropTypes.func,
   onZoomIn: PropTypes.func.isRequired,
   onZoomOut: PropTypes.func.isRequired,
+  onZoomReset: PropTypes.func,
   onFit: PropTypes.func.isRequired,
   grid: PropTypes.object,
   onToggleGrid: PropTypes.func,
