@@ -768,6 +768,8 @@ export default {
   "editor.props.adjustments": "视觉调整",
   "editor.props.brightness": "亮度",
   "editor.props.contrast": "对比度",
+  "editor.adjust.brightness": "亮度",
+  "editor.adjust.contrast": "对比度",
   "editor.props.hue": "色相偏移",
   "editor.props.saturation": "饱和度",
   "editor.props.lightness": "明度",
@@ -1187,6 +1189,7 @@ export default {
   "editor.layer.transparent": "透明",
   "editor.layer.new": "新建图层",
   "editor.layer.rename": "重命名图层",
+  "editor.layer.title": "图层",
   "editor.layer.clipped":
     "剪贴蒙版：此图层内容仅在下方图层范围内显示（Alt+⌘G创建，⇧Alt+⌘G释放）",
   "editor.layers.adjustments": "调整",
