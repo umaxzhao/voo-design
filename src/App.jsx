@@ -13,6 +13,10 @@ import FirstRunOnboarding from "./canvas/components/first_run_onboarding.jsx";
 import { shouldShowFirstRun } from "./canvas/components/first_run_state.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import { useDesignStore } from "./store/design_store.js";
+import {
+  VOO_FILE_FORMAT,
+  VOO_FILE_VERSION,
+} from "../electron/voo_format.js";
 
 export default function App() {
   const activeDocumentId = useDesignStore(s => s.activeDocumentId);
@@ -158,7 +162,7 @@ export default function App() {
           const store = useDesignStore.getState();
           if (!template) store.newVooProject();
           else store.loadVooProject({
-            vooData: { format: "voo", version: 2, kind: "design", document: template.createDoc(), assets: {} },
+            vooData: { format: VOO_FILE_FORMAT, version: VOO_FILE_VERSION, kind: "design", document: template.createDoc(), assets: {} },
             fileName: `${template.title}.voo`,
           });
         }}

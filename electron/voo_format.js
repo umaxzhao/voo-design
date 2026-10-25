@@ -10,6 +10,12 @@
 
 export const VOO_FILE_FORMAT = "voo-editor";
 export const VOO_FILE_VERSION = 2;
+/**
+ * Early 1.0 builds tagged the envelope `"voo"`. Files written by those builds
+ * are otherwise identical, so they stay readable rather than erroring with
+ * "Invalid .voo file format".
+ */
+export const LEGACY_VOO_FILE_FORMAT = "voo";
 export const VOO_SUPPORTED_VERSIONS = Object.freeze([1, 2]);
 export const VOO_KINDS = Object.freeze(["design", "clip", "model3d"]);
 
@@ -53,8 +59,18 @@ export function emptyVooFile(document = null, kind = "design") {
   };
 }
 
+/** Rewrites a legacy 1.0 envelope onto the current format tag. */
+export function normalizeVooFile(value) {
+  if (!value || typeof value !== "object") return value;
+  if (value.format === LEGACY_VOO_FILE_FORMAT) {
+    return { ...value, format: VOO_FILE_FORMAT };
+  }
+  return value;
+}
+
 /**
- * Accepts a value as a valid `.voo` file (supports both v1 and v2 envelopes).
+ * Accepts a value as a valid `.voo` file (supports both v1 and v2 envelopes,
+ * and the legacy `"voo"` format tag written by early 1.0 builds).
  *
  * The document is trusted wholesale once it is shaped right — the editor's
  * own deserialiser normalises the node list — so this checks the envelope:
@@ -66,7 +82,8 @@ export function emptyVooFile(document = null, kind = "design") {
  */
 export function isValidVooFile(value) {
   if (!value || typeof value !== "object") return false;
-  if (value.format !== VOO_FILE_FORMAT) return false;
+  const format = normalizeVooFile(value).format;
+  if (format !== VOO_FILE_FORMAT) return false;
   if (
     typeof value.version !== "number" ||
     !VOO_SUPPORTED_VERSIONS.includes(value.version)

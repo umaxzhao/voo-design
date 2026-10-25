@@ -7,6 +7,10 @@ import { createDocument, CANVAS_TYPE } from "../../editor/scene_doc_factory.js";
 import { encodeVooBinary } from "../../store/voo_binary.js";
 import { workspaceStorage, guessCategory } from "../../../services/workspace_storage.js";
 import { WELCOME_NEW_EVENT } from "./welcome_events.js";
+import {
+  VOO_FILE_FORMAT,
+  VOO_FILE_VERSION,
+} from "../../../../electron/voo_format.js";
 
 /** Handlers that create a new design file: blank/preset or community template. */
 export function useWelcomeCreate({
@@ -42,8 +46,8 @@ export function useWelcomeCreate({
     const pageId = `page-${Date.now().toString(36)}`;
     const doc = createDocument(width, height, "#171717", { canvasType, canvasId: pageId });
     const vooFile = {
-      format: "voo",
-      version: 2,
+      format: VOO_FILE_FORMAT,
+      version: VOO_FILE_VERSION,
       kind: "design",
       document: doc,
       assets: {},
@@ -97,8 +101,8 @@ export function useWelcomeCreate({
       doc.id = pageId;
 
       const vooFile = {
-        format: "voo",
-        version: 2,
+        format: VOO_FILE_FORMAT,
+        version: VOO_FILE_VERSION,
         kind: "design",
         document: doc,
         assets: {},

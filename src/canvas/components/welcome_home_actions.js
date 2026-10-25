@@ -1,6 +1,10 @@
 import { dispatchToAgent } from "./dispatch_to_agent.js";
 import { resolveLayoutImages } from "../store/layout_action_helpers.js";
 import { htmlToDocument } from "../editor/html_import.js";
+import {
+  VOO_FILE_FORMAT,
+  VOO_FILE_VERSION,
+} from "../../../electron/voo_format.js";
 
 export const HTML_IMPORT_ACCEPT = ".html,.htm,text/html";
 export const SCREENSHOT_ACCEPT = "image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif";
@@ -9,7 +13,7 @@ export async function importWelcomeHtml(file, store) {
   const { doc: document, pendingImages } = htmlToDocument(await file.text(), { width: 1440, height: 900 });
   await resolveLayoutImages(document, pendingImages);
   store.loadVooProject({
-    vooData: { format: "voo", version: 2, kind: "design", document, assets: {} },
+    vooData: { format: VOO_FILE_FORMAT, version: VOO_FILE_VERSION, kind: "design", document, assets: {} },
     fileName: file.name.replace(/\.html?$/i, ".voo"),
   });
   store.setWelcomeOpen(false);

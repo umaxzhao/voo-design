@@ -38,6 +38,7 @@ import {
   VOO_FILE_VERSION,
   imageIdsOfDocument,
   isValidVooFile,
+  normalizeVooFile,
 } from "../../../electron/voo_format.js";
 import { flushEditorPendingWrites } from "../components/editor_hooks/editor-autosave.js";
 
@@ -710,9 +711,12 @@ async function openVooSource({ store, bytes, name, path, handle }) {
     return openBinaryDesignSource({ store, bytes, sourceName: name, sourcePath: path, handle });
   }
 
-  const parsed = isVooBinary(bytes)
+  const raw = isVooBinary(bytes)
     ? decodeVooBinary(bytes)
     : JSON.parse(new TextDecoder().decode(bytes));
+  // Early 1.0 builds wrote the envelope tag as "voo"; upgrade it in memory so
+  // those files open (and the next save writes the current tag).
+  const parsed = normalizeVooFile(raw);
   if (!isValidVooFile(parsed)) {
     throw new Error("Invalid .voo file format");
   }
