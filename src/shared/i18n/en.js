@@ -27,6 +27,7 @@ import stylesEn from "./styles-en.js";
 import constraintsEn from "./constraints-en.js";
 import commandPaletteEn from "./command-palette-en.js";
 import findReplaceEn from "./find-replace-en.js";
+import designSystemsEn from "./design-systems-en.js";
 
 export default {
   "agent.providers.hint": "Codex CLI · Claude Code CLI · Custom models",
@@ -75,6 +76,7 @@ export default {
   ...constraintsEn,
   ...commandPaletteEn,
   ...findReplaceEn,
+  ...designSystemsEn,
   ...adminEn,
   ...accountAvatarEn,
   ...hunyuan3dEn,

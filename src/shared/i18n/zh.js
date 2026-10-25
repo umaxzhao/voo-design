@@ -27,6 +27,7 @@ import stylesZh from "./styles-zh.js";
 import constraintsZh from "./constraints-zh.js";
 import commandPaletteZh from "./command-palette-zh.js";
 import findReplaceZh from "./find-replace-zh.js";
+import designSystemsZh from "./design-systems-zh.js";
 
 export default {
   "agent.providers.hint": "Codex CLI · Claude Code CLI · 自定义模型",
@@ -71,6 +72,7 @@ export default {
   ...constraintsZh,
   ...commandPaletteZh,
   ...findReplaceZh,
+  ...designSystemsZh,
   ...adminZh,
   ...accountAvatarZh,
   ...hunyuan3dZh,
