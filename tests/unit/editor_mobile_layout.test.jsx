@@ -21,14 +21,43 @@ describe("mobile editor layout", () => {
     expect(listeners.size).toBe(0);
   });
 
-  it("docks both panels in equal bottom halves and reserves the upper 55% for canvas", async () => {
+  it("uses the desktop visibility signal to expand layers when properties are absent", async () => {
     const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
     expect(css).toContain("max-width: 768px");
     expect(css).toContain("height: 55%");
     expect(css).toContain("height: 81.818%");
+    expect(css).toContain('data-properties-open="true"');
+    expect(css).toContain("width: 100%");
     expect(css).toContain("width: 50%");
+    expect(css).toContain("transition: width 180ms ease, left 180ms ease");
     expect(css).toContain('data-testid="editor-layers-panel"');
     expect(css).toContain('data-testid="editor-properties-panel"');
+    const editor = await import("../../src/canvas/components/image_editor.jsx?raw");
+    expect(editor.default).toContain("data-properties-open={propertiesOpen ? \"true\" : \"false\"}");
+    expect(editor.default).toContain("backgroundSelected");
+  });
+
+  it("keeps title actions outside the horizontally scrollable tab strip on narrow screens", async () => {
+    const titleBar = await import("../../src/app_title_bar.jsx?raw");
+    const css = readFileSync("src/index.css", "utf8");
+    expect(titleBar.default).toContain('data-testid="editor-top-bar-actions"');
+    expect(titleBar.default).toContain('data-testid="editor-top-bar"');
+    expect(css).toContain(".app-title-tabs {");
+    expect(css).toContain("overflow-x: auto");
+    expect(css).toContain(".app-title-actions {");
+    expect(css).toContain(".app-title-brand-row {");
+  });
+
+  it("docks the bottom toolbar above the bottom panels only on narrow screens", () => {
+    const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
+    expect(css).toContain("bottom: calc(45% + 0.5rem)");
+    expect(css).toContain('[data-testid="design-editor"].editor-narrow .viewport-tools');
+  });
+
+  it("keeps the desktop panel rules outside narrow media styling", () => {
+    const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
+    expect(css.trimStart().startsWith("@media (max-width: 768px)")).toBe(true);
+    expect(css).not.toContain("@media (min-width");
   });
 
   it("keeps desktop panels floating and places the narrow agent button above them", async () => {

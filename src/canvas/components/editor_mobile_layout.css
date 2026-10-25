@@ -18,17 +18,23 @@
     bottom: auto;
     left: 0;
     right: auto;
-    width: 50%;
+    width: 100%;
     height: 81.818%;
     max-height: none;
     min-width: 0;
     transform: none;
     overflow: auto;
+    transition: width 180ms ease, left 180ms ease;
     border-radius: 0;
     padding: 0.5rem;
   }
 
-  [data-testid="design-editor"].editor-narrow [data-testid="editor-properties-panel"] {
+  [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-layers-panel"],
+  [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-properties-panel"] {
+    width: 50%;
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-properties-panel"] {
     left: 50%;
   }
 
@@ -37,6 +43,10 @@
     left: 0.5rem;
     max-width: calc(100% - 1rem);
     transform: none;
+  }
+
+  [data-testid="design-editor"].editor-narrow .viewport-tools {
+    bottom: calc(45% + 0.5rem);
   }
 
   [data-testid="design-editor"].editor-narrow [data-testid="editor-toolbar"] > div {
