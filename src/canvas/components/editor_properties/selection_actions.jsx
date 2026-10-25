@@ -1,4 +1,4 @@
-/** Quick selection actions, AI repaint, and advanced selection modifications. */
+/** Quick selection actions and advanced selection modifications. */
 
 import PropTypes from "prop-types";
 import { useState } from "react";
@@ -7,10 +7,8 @@ import {
   StaticSection,
   CollapsibleSection,
   sectionRowClass,
-  fieldClass,
 } from "./property_section.jsx";
 import ToolSliderField from "./tool_slider_field.jsx";
-import { IconSparkle } from "../../icons.jsx";
 
 export default function SelectionActions({
   hasSelection = false,
@@ -22,13 +20,10 @@ export default function SelectionActions({
   selectionTransforming = false,
   onApplyTransformSelection,
   onCancelTransformSelection,
-  onAiRepaintSelection,
-  aiRepainting = false,
   onModifySelection,
 }) {
   const { t } = useI18n();
   const [modifyAmount, setModifyAmount] = useState(4);
-  const [aiRepaintPrompt, setAiRepaintPrompt] = useState("");
 
   if (!hasSelection) return null;
 
@@ -106,52 +101,6 @@ export default function SelectionActions({
           )}
         </div>
       </StaticSection>
-
-      {/* AI Repaint (if active selection) */}
-      {onAiRepaintSelection && (
-        <CollapsibleSection
-          title={t("editor.selection.aiRepaint")}
-          defaultOpen={false}
-        >
-          <div className="flex flex-col gap-1.5">
-            <input
-              type="text"
-              value={aiRepaintPrompt}
-              onChange={(e) => setAiRepaintPrompt(e.target.value)}
-              onKeyDown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  aiRepaintPrompt.trim() &&
-                  !aiRepainting
-                ) {
-                  onAiRepaintSelection(aiRepaintPrompt.trim());
-                }
-              }}
-              placeholder={t("editor.selection.aiRepaintPlaceholder")}
-              disabled={aiRepainting}
-              aria-label={t("editor.selection.aiRepaintPlaceholder")}
-              className={`${fieldClass} placeholder:text-neutral-400 disabled:opacity-50`}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                if (aiRepaintPrompt.trim() && !aiRepainting) {
-                  onAiRepaintSelection(aiRepaintPrompt.trim());
-                }
-              }}
-              disabled={aiRepainting || !aiRepaintPrompt.trim()}
-              className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#E5B2FF] py-1.5 text-[10px] font-mono font-medium text-black hover:bg-[#eed0ff] transition-all disabled:opacity-50"
-            >
-              <IconSparkle size={13} className="text-black shrink-0" />
-              <span>
-                {aiRepainting
-                  ? t("editor.selection.aiRepaintRunning")
-                  : t("editor.selection.aiRepaint")}
-              </span>
-            </button>
-          </div>
-        </CollapsibleSection>
-      )}
 
       {/* Advanced Selection Modify (Expand, Contract, Border, Smooth) */}
       {onModifySelection && (
@@ -233,7 +182,5 @@ SelectionActions.propTypes = {
   selectionTransforming: PropTypes.bool,
   onApplyTransformSelection: PropTypes.func,
   onCancelTransformSelection: PropTypes.func,
-  onAiRepaintSelection: PropTypes.func,
-  aiRepainting: PropTypes.bool,
   onModifySelection: PropTypes.func,
 };

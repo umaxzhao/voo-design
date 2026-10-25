@@ -1,9 +1,7 @@
 import PropTypes from "prop-types";
-import { useState } from "react";
 import { useI18n } from "../../use_i18n.js";
 import { BOOLEAN_OPERATIONS } from "../../editor/scene_model.js";
 import { StaticSection, sectionRowClass } from "./property_section.jsx";
-import EditorContextualAiInput from "../editor_contextual_ai_input.jsx";
 
 const ACTIONS = [
   ["duplicate", "duplicateSelected"],
@@ -22,7 +20,6 @@ export default function SelectedNodeActions({
   onDetachInstance,
 }) {
   const { t } = useI18n();
-  const [aiOpen, setAiOpen] = useState(false);
   if (!object?.id || !engine) return null;
   const nodes = selectedNodes.length ? selectedNodes : [object];
   const ids = nodes.map((node) => node.id).filter(Boolean);
@@ -134,24 +131,6 @@ export default function SelectedNodeActions({
             ))
           : null}
       </div>
-      <button
-        type="button"
-        data-testid="editor-taskbar-ai-sparkle"
-        aria-expanded={aiOpen}
-        onClick={() => setAiOpen((open) => !open)}
-        className={`${sectionRowClass} mt-1.5 w-full justify-center text-[10px] text-neutral-300`}
-      >
-        {t("editor.taskbar.askAgent")}
-      </button>
-      {aiOpen ? (
-        <EditorContextualAiInput
-          selectedNode={object}
-          placeholder={t("editor.taskbar.askPlaceholder")}
-          inputTestId="editor-properties-ai-input"
-          submitTestId="editor-properties-ai-submit"
-          onClose={() => setAiOpen(false)}
-        />
-      ) : null}
     </StaticSection>
   );
 }

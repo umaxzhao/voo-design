@@ -3,7 +3,6 @@ import { useRef, useState } from "react";
 import { TOOL } from "../../editor/editor_constants.js";
 import { normalizeAdjustments } from "../../editor/scene_model.js";
 import { useI18n } from "../../use_i18n.js";
-import { EditorAiMenuSection } from "../editor_ai_taskbar_buttons.jsx";
 
 const ACTION_BUTTON_CLASS =
   "min-h-8 rounded-lg border border-white/10 bg-white/[0.04] px-2 text-left text-[11px] text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]";
@@ -12,9 +11,6 @@ export default function ImageContextActions({
   object,
   engine,
   editAndCommit,
-  aiActions = null,
-  onRemoveBackground = null,
-  removeBackgroundBusy = false,
 }) {
   const { t } = useI18n();
   const fileInputRef = useRef(null);
@@ -137,34 +133,6 @@ export default function ImageContextActions({
           {t("editor.frequencySeparation.action")}
         </button>
       </div>
-      {onRemoveBackground ? (
-        <button
-          type="button"
-          data-testid="editor-taskbar-ai-remove-bg"
-          className={`${ACTION_BUTTON_CLASS} mt-1.5 w-full`}
-          disabled={removeBackgroundBusy}
-          onClick={onRemoveBackground}
-        >
-          {t("editor.taskbar.matting")}
-        </button>
-      ) : null}
-      {aiActions ? (
-        // AI actions stay collapsed until asked, keeping the panel short.
-        <details
-          data-testid="editor-taskbar-ai-tools"
-          className="mt-2 rounded-lg border border-white/10 bg-white/[0.025] px-2"
-        >
-          <summary className="cursor-pointer rounded-md py-2 text-[10px] text-neutral-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]">
-            {t("editor.taskbar.aiTools")}
-          </summary>
-          <div
-            data-testid="editor-taskbar-more"
-            className="border-t border-white/10 pb-2 pt-2"
-          >
-            <EditorAiMenuSection {...aiActions} onDone={() => {}} />
-          </div>
-        </details>
-      ) : null}
       {frequencyError ? (
         <p
           role="status"
@@ -220,7 +188,4 @@ ImageContextActions.propTypes = {
   object: PropTypes.object.isRequired,
   engine: PropTypes.object,
   editAndCommit: PropTypes.func.isRequired,
-  aiActions: PropTypes.object,
-  onRemoveBackground: PropTypes.func,
-  removeBackgroundBusy: PropTypes.bool,
 };
