@@ -20,7 +20,8 @@ export const PROPERTY_SECTIONS = Object.freeze({
   group: [...base, 'autoLayout', 'effects', 'export'],
   component: [...base, 'component', 'radius', 'autoLayout', ...paint],
   instance: [...base, 'component', ...paint],
-  image: ['transform', 'layer', 'effects', 'export'],
+  // An image is a rectangle with an image fill, so it gets the rectangle panel.
+  image: [...base, 'radius', ...paint],
   adjustment: ['adjustments', 'layer', 'export'],
   brush: ['transform', 'layer', 'effects', 'export'],
   media: ['transform', 'layer', 'media', 'export'],

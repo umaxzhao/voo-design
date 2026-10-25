@@ -13,6 +13,7 @@ export default {
   "editor.props.component": "Component",
   "editor.props.mainComponent": "Main component",
   "editor.props.exportPng": "Export PNG",
+  "editor.image.tools": "Image tools",
   "editor.context.image": "Image",
   "editor.image.fitFill": "Fit / Fill",
   "editor.image.fit": "Fit",

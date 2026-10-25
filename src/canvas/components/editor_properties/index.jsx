@@ -1,5 +1,4 @@
 import { resolvePanelForContext } from "./resolve_panel_context.js";
-import ImageContextActions from "./image_context_actions.jsx";
 import VariantsSection from "./variants_section.jsx";
 import SelectedNodeActions from "./selected_node_actions.jsx";
 /**
@@ -160,11 +159,6 @@ export default function EditorProperties({
   });
   const isDedicatedToolActive =
     !penEditing && !maskEditing && context.panel === "tool";
-  const showImageActions =
-    !isDedicatedToolActive &&
-    !isWarpTool &&
-    (tool ?? TOOL.SELECT) === TOOL.SELECT &&
-    object?.kind === "image";
 
   const header = (
     <PropertiesPanelHeader
@@ -320,16 +314,6 @@ export default function EditorProperties({
     >
       {header}
       <div className={contentClass}>
-        {showImageActions ? (
-          <ImageContextActions
-            object={object}
-            engine={engine}
-            editAndCommit={editAndCommit}
-            aiActions={imageAiActions}
-            onRemoveBackground={onRemoveBackground}
-            removeBackgroundBusy={removeBackgroundBusy}
-          />
-        ) : null}
         <SelectedNodeActions
           object={object}
           selectedNodes={selectedNodes}

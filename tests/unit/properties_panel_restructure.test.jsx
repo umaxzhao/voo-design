@@ -65,6 +65,13 @@ describe("image controls live in the panel", () => {
     expect(html).toContain('type="file"');
   });
 
+  it("keeps the image tools in one disclosure that is closed by default", () => {
+    const html = renderToStaticMarkup(<EditorProperties tool={TOOL.SELECT} object={image} engine={engine} />);
+    const tag = html.match(/<details[^>]*data-testid="image-context-actions"[^>]*>/)?.[0];
+    expect(tag).toBeDefined();
+    expect(tag).not.toMatch(/\sopen(\s|>|=)/);
+  });
+
   it("does not show the image actions for non-image layers", () => {
     expect(renderSections(rect, { sections: ["transform", "fill", "effects"] })).not.toContain("image-context-actions");
     expect(renderToStaticMarkup(<EditorProperties tool={TOOL.SELECT} object={rect} engine={engine} />)).not.toContain("image-context-actions");

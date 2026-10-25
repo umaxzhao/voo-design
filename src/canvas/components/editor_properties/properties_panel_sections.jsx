@@ -5,6 +5,7 @@ import { resolvePanelForContext } from "./resolve_panel_context.js";
 import PropTypes from "prop-types";
 import TypeSpecificSections from "./type_specific_sections.jsx";
 import AffinityAdjustmentSection from "./affinity_adjustment_section.jsx";
+import ImageContextActions from "./image_context_actions.jsx";
 import AlignSection from "./align_section.jsx";
 import ColourSection from "./colour_section.jsx";
 import CombineSection from "./combine_section.jsx";
@@ -243,6 +244,14 @@ export default function PropertiesPanelSections({
             getBitmap={getBitmap}
           />
         </DocumentColoursContext.Provider>
+      ) : null}
+      {/* Image-only tools: one collapsed disclosure right after fill / stroke. */}
+      {!isWarpTool && object.kind === "image" && (tool ?? TOOL.SELECT) === TOOL.SELECT ? (
+        <ImageContextActions
+          object={object}
+          engine={engine}
+          editAndCommit={editAndCommit}
+        />
       ) : null}
       {show("variables") ? (
         <ColorVariablesSection
