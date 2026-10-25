@@ -41,9 +41,7 @@ const render = () =>
       onToggleSnapToGrid={noop}
     >
       <EditorCanvasAids
-        onToggleRulers={noop}
         onToggleGuides={noop}
-        onClearGuides={noop}
         t={(k) => k}
       />
     </EditorZoom>,
@@ -67,10 +65,11 @@ describe("single bottom toolbar", () => {
     once('aria-label="editor.zoomIn"');
     once('aria-label="editor.taskbar.more"');
     once('data-testid="editor-more-menu-trigger"');
-    once('data-testid="editor-toggle-rulers"');
     once('data-testid="editor-toggle-guides"');
     expect(html).not.toContain('data-testid="editor-toggle-snap-to-grid"');
-    once('data-testid="editor-clear-guides"');
+    // Ruler and clear-guides both live in the closed More menu, not in the bar.
+    expect(html).not.toContain('data-testid="editor-toggle-rulers"');
+    expect(html).not.toContain('data-testid="editor-clear-guides"');
     expect(html).not.toContain('aria-label="editor.view.grid"');
     expect(html).not.toContain('aria-label="editor.zoomFit"');
   });

@@ -20,9 +20,11 @@ describe("rulers product defaults", () => {
     expect(getSetting("voo.editor.showRulers")).toBe(value ?? null);
   });
 
-  it("canvas aids are off and ruler strips absent without props", () => {
+  it("canvas aids hold only the guide toggle and ruler strips are absent without props", () => {
     const html = renderToStaticMarkup(<EditorCanvasAids t={(key) => key} />);
-    expect(html).toMatch(/data-testid="editor-toggle-rulers"[^>]*aria-pressed="false"/);
+    expect(html).toContain('data-testid="editor-toggle-guides"');
+    expect(html).not.toContain('data-testid="editor-toggle-rulers"');
+    expect(html).not.toContain('data-testid="editor-clear-guides"');
     const rulers = renderToStaticMarkup(<EditorRulers t={(key) => key} />);
     expect(rulers).not.toContain('data-testid="editor-ruler-top"');
     expect(rulers).not.toContain('data-testid="editor-ruler-left"');
