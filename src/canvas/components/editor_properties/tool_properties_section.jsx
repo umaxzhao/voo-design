@@ -432,7 +432,7 @@ export default function ToolPropertiesSection({
           penStrokeWidth={penStrokeWidth}
           onPenStrokeWidth={onPenStrokeWidth}
           penAnchorType={penAnchorType}
-          onPenAnchorType={onPenAnchorType}
+          onPenAnchorType={tool === TOOL.FREE_PEN ? null : onPenAnchorType}
         />
       )}
 

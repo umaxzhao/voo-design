@@ -42,59 +42,35 @@ export default function PenProperties({
       )}
 
       {onPenStrokeWidth && (
-        <StaticSection title={t("editor.strokeStyle.weight")}>
-          <div className="flex flex-col gap-1.5">
-            <ToolSliderField
-              label={t("editor.strokeStyle.weight")}
-              icon={
-                <svg
-                  className="h-3 w-3"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <line
-                    x1="3"
-                    y1="12"
-                    x2="21"
-                    y2="12"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              }
-              suffix="px"
-              min={1}
-              max={256}
-              step={1}
-              value={Math.round(penStrokeWidth)}
-              onValueChange={(val) => onPenStrokeWidth(val)}
-              ariaLabel={t("editor.strokeStyle.weight")}
-              scrubHint={t("editor.props.dragToAdjust")}
-            />
-            {/* Quick stroke width pills (Affinity style) */}
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-              {[1, 2, 4, 8, 16].map((sz) => {
-                const isActive = Math.round(penStrokeWidth) === sz;
-                return (
-                  <button
-                    key={sz}
-                    type="button"
-                    onClick={() => onPenStrokeWidth(sz)}
-                    className={`flex h-5 min-w-[24px] items-center justify-center rounded-md px-1.5 text-[10px] font-mono transition-all ${
-                      isActive
-                        ? "bg-[#a7ffd4] font-semibold text-black shadow-pop"
-                        : "bg-white/[0.06] text-neutral-400 hover:bg-white/[0.12] hover:text-neutral-200"
-                    }`}
-                  >
-                    {sz}px
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </StaticSection>
+        <ToolSliderField
+          label={t("editor.strokeStyle.weight")}
+          icon={
+            <svg
+              className="h-3 w-3"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <line
+                x1="3"
+                y1="12"
+                x2="21"
+                y2="12"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            </svg>
+          }
+          suffix="px"
+          min={1}
+          max={256}
+          step={1}
+          value={Math.round(penStrokeWidth)}
+          onValueChange={(val) => onPenStrokeWidth(val)}
+          ariaLabel={t("editor.strokeStyle.weight")}
+          scrubHint={t("editor.props.dragToAdjust")}
+        />
       )}
 
       {onPenAnchorType && (

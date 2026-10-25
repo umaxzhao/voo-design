@@ -13,8 +13,6 @@ import {
 } from "./property_section.jsx";
 import ToolSliderField from "./tool_slider_field.jsx";
 
-const QUICK_STROKE_SIZES = [0, 1, 2, 4, 8, 16, 24];
-
 const StrokeWidthIcon = () => (
   <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
     <polygon points="3,19 21,19 21,5" />
@@ -140,31 +138,6 @@ export default function ShapeProperties({
           </div>
         ) : null}
 
-        {setWidth ? (
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-            <span className="mr-0.5 shrink-0 text-[9px] font-mono uppercase text-neutral-500">
-              {t("editor.props.stroke")}
-            </span>
-            {QUICK_STROKE_SIZES.map((size) => {
-              const isActive = width === size;
-              return (
-                <button
-                  key={size}
-                  type="button"
-                  onClick={() => setWidth(size)}
-                  className={`flex h-5 min-w-[24px] items-center justify-center rounded-md px-1.5 text-[10px] font-mono transition-all ${
-                    isActive
-                      ? "bg-[#a7ffd4] font-semibold text-black shadow-pop"
-                      : "bg-white/[0.06] text-neutral-400 hover:bg-white/[0.12] hover:text-neutral-200"
-                  }`}
-                >
-                  {size}px
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
-
         {isRect && onCornerRadius ? (
           <div className="flex flex-col gap-1.5">
             <ToolSliderField
@@ -227,13 +200,13 @@ export default function ShapeProperties({
             ) : null}
             {isStar && onStarRatio ? (
               <ToolSliderField
-                label={t("editor.shape.innerRadius")}
+                label={t("editor.shape.ratio")}
                 min={10}
                 max={90}
                 value={Math.round(starRatio * 100)}
                 onValueChange={(val) => onStarRatio(val / 100)}
                 suffix="%"
-                ariaLabel={t("editor.shape.innerRadius")}
+                ariaLabel={t("editor.shape.ratio")}
                 scrubHint={t("editor.props.dragToAdjust")}
               />
             ) : null}

@@ -66,8 +66,8 @@ export default function TextToolProperties({
             {t("editor.props.fontWeight")}
           </span>
           <FlatSelect
-            value={String(fontWeight)}
-            onChange={(value) => onFontWeight?.(Number(value))}
+            value={String(fontWeight) === "400" ? "normal" : String(fontWeight)}
+            onChange={(value) => onFontWeight?.(value === "normal" ? 400 : Number(value))}
             label={t("editor.props.fontWeight")}
             options={TEXT_FONT_WEIGHTS.map((weight) => ({
               value: String(weight),
@@ -164,7 +164,7 @@ export default function TextToolProperties({
           </button>
         </div>
 
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex flex-wrap items-center gap-1 py-0.5">
           <span className="mr-0.5 shrink-0 text-[9px] font-mono uppercase text-neutral-500">
             {t("editor.props.size")}
           </span>
