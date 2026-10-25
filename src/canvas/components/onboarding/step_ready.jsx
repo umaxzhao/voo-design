@@ -1,16 +1,13 @@
 import PropTypes from "prop-types";
 import { getSetting } from "../../../shared/settings.js";
+import { useI18n } from "../../use_i18n.js";
+import { AGENT_NAME_KEYS } from "./onboarding_state.js";
 
-const AGENT_NAMES = {
-  claude: "Claude Code",
-  codex: "OpenAI Codex",
-  antigravity: "Google Antigravity",
-};
-
-const WORKSPACE_NAMES = {
-  electron: "本地磁盘",
-  "web-fsa": "本地文件夹",
-  "web-idb": "沙盒工作区",
+/** i18n key of each workspace type's display name. */
+const WORKSPACE_NAME_KEYS = {
+  electron: "onboardingGuide.workspace.native",
+  "web-fsa": "onboardingGuide.workspace.fsa",
+  "web-idb": "onboardingGuide.workspace.virtual",
 };
 
 function SummaryRow({ testId, label, value, detail }) {
@@ -31,6 +28,7 @@ SummaryRow.propTypes = {
 };
 
 export default function StepReady({ selectedAgent, workspaceConfig }) {
+  const { t } = useI18n();
   const activePath =
     workspaceConfig?.path || getSetting("voo.workspace.path") || "~/Documents/VOO/Projects";
   const activeType =
@@ -40,14 +38,14 @@ export default function StepReady({ selectedAgent, workspaceConfig }) {
     <div className="flex flex-col gap-3">
       <SummaryRow
         testId="onboarding-ready-workspace-summary"
-        label="工作区"
-        value={WORKSPACE_NAMES[activeType] || WORKSPACE_NAMES.electron}
+        label={t("onboardingGuide.ready.workspace")}
+        value={t(WORKSPACE_NAME_KEYS[activeType] || WORKSPACE_NAME_KEYS.electron)}
         detail={activePath}
       />
       <SummaryRow
         testId="onboarding-ready-agent-summary"
-        label="智能体"
-        value={AGENT_NAMES[selectedAgent] || AGENT_NAMES.claude}
+        label={t("firstRun.provider.label")}
+        value={t(AGENT_NAME_KEYS[selectedAgent] || AGENT_NAME_KEYS.claude)}
       />
     </div>
   );

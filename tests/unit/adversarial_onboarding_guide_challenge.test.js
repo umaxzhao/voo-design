@@ -18,7 +18,7 @@ if (typeof globalThis.navigator === "undefined") {
 }
 
 import React from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import OnboardingGuide, {
   applyDefaultWorkspaceOnboarding,
@@ -33,8 +33,14 @@ import {
   shouldShowOnboarding,
 } from "../../src/canvas/components/onboarding/onboarding_state.js";
 import { getSetting, setSetting } from "../../src/shared/settings.js";
+import { loadLocale } from "../../src/shared/i18n.js";
 
 describe("Adversarial Challenge: Onboarding Workspace Guide Flow", () => {
+  // These assertions match the Chinese copy.
+  beforeAll(async () => {
+    await loadLocale("zh");
+  });
+
   beforeEach(() => {
     resetOnboarding();
     setSetting("voo.workspace.path", null);

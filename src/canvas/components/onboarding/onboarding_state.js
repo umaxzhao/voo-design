@@ -23,6 +23,13 @@ export const ONBOARDING_STEPS = Object.freeze([
   GUIDE_STEP.READY,
 ]);
 
+/** i18n key of each agent's display name (shared with the first-run agent cards). */
+export const AGENT_NAME_KEYS = Object.freeze({
+  claude: "firstRun.provider.claude",
+  codex: "firstRun.provider.codex",
+  antigravity: "firstRun.provider.antigravity",
+});
+
 export const WORKSPACE_GUIDE_STEPS = ONBOARDING_STEPS;
 
 // Legacy 3-step constant retained for backwards compatibility with existing test suites
