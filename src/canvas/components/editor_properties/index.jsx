@@ -219,6 +219,18 @@ export default function EditorProperties({
             onSetBackgroundColor={onSetBackgroundColor}
             docSize={docSize}
           />
+          {onDeleteCanvas ? (
+            <div className="px-1 pb-1">
+              <button
+                type="button"
+                data-testid="editor-delete-canvas-btn"
+                onClick={onDeleteCanvas}
+                className="min-h-8 rounded-lg border border-white/10 bg-white/[0.04] px-2 text-left text-[11px] text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
+              >
+                {t("editor.pages.deleteCanvas")}
+              </button>
+            </div>
+          ) : null}
         </div>
       </aside>
     );

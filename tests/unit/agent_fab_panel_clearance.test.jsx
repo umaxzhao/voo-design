@@ -85,8 +85,12 @@ describe("agent button clearance for the side panels", () => {
     expect(html).toContain("min-h-0");
   });
 
-  it("renders no panel without a selection, so the button has nothing to cover", () => {
-    expect(renderToStaticMarkup(<EditorProperties />)).toBe("");
+  it("renders the page panel without a selection, under the same clearance cap", () => {
+    // The page (background) panel is shown with nothing selected, so it must
+    // keep the shared cap that leaves room for the agent button.
+    const html = renderToStaticMarkup(<EditorProperties />);
+    expect(html).toContain('data-testid="editor-properties-panel"');
+    expect(html).toContain(PROPERTIES_PANEL_MAX_HEIGHT_CLASS);
   });
 
   it("keeps the layers panel on the shared cap", () => {
