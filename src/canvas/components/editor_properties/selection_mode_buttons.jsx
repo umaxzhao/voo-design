@@ -12,7 +12,7 @@ export default function SelectionModeButtons({
   const modes = [
     {
       mode: "replace",
-      title: `${t("editor.selection.modeNew")} (Replace)`,
+      title: t("editor.selection.modeNew"),
       icon: (
         <svg
           className="w-3.5 h-3.5"
@@ -34,7 +34,7 @@ export default function SelectionModeButtons({
     },
     {
       mode: "union",
-      title: `${t("editor.selection.modeAdd")} (⇧ Shift)`,
+      title: t("editor.selection.modeAdd"),
       icon: (
         <svg
           className="w-3.5 h-3.5"
@@ -66,7 +66,7 @@ export default function SelectionModeButtons({
     },
     {
       mode: "subtract",
-      title: `${t("editor.selection.modeSubtract")} (⌥ Option)`,
+      title: t("editor.selection.modeSubtract"),
       icon: (
         <svg
           className="w-3.5 h-3.5"
@@ -99,7 +99,7 @@ export default function SelectionModeButtons({
     },
     {
       mode: "intersect",
-      title: `${t("editor.selection.modeIntersect")} (⇧⌥ Shift+Option)`,
+      title: t("editor.selection.modeIntersect"),
       icon: (
         <svg
           className="w-3.5 h-3.5"
@@ -154,6 +154,7 @@ export default function SelectionModeButtons({
             role="radio"
             aria-checked={active}
             title={title}
+            aria-label={title}
             onClick={() => onSelectionMode?.(mode)}
             className={`flex h-7 items-center justify-center rounded-lg transition-all ${
               active

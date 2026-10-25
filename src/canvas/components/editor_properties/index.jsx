@@ -160,6 +160,7 @@ export default function EditorProperties({
   const header = (
     <PropertiesPanelHeader
       tool={tool}
+      marqueeMode={toolProps?.marqueeMode}
       isToolActive={isDedicatedToolActive}
       showMaskBtn={!isDedicatedToolActive && showMaskBtn}
       hasMask={hasMask}

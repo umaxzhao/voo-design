@@ -87,34 +87,11 @@ export default function SelectionProperties({
               ariaLabel={t("editor.selection.feather")}
               scrubHint={t("editor.props.dragToAdjust")}
             />
-            {/* Quick Feather Pills (Affinity style) */}
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-              {[0, 2, 5, 10, 20].map((fVal) => {
-                const isActive = selectionFeather === fVal;
-                return (
-                  <button
-                    key={fVal}
-                    type="button"
-                    onClick={() => {
-                      setSelectionFeather(fVal);
-                      onFeatherSelection(fVal);
-                    }}
-                    className={`flex h-5 min-w-[24px] items-center justify-center rounded-md px-1.5 text-[10px] font-mono transition-all ${
-                      isActive
-                        ? "bg-[#a7ffd4] font-semibold text-black shadow-pop"
-                        : "bg-white/[0.06] text-neutral-400 hover:bg-white/[0.12] hover:text-neutral-200"
-                    }`}
-                  >
-                    {fVal}px
-                  </button>
-                );
-              })}
-            </div>
           </div>
         ) : null}
 
         {/* Marquee aspect ratio presets */}
-        {tool === TOOL.MARQUEE && onMarqueeRatio && (
+        {tool === TOOL.MARQUEE && !["poly", "magnetic"].includes(marqueeMode) && onMarqueeRatio && (
           <div className="space-y-1.5 pt-1">
             <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
               {t("editor.selection.ratio")}
