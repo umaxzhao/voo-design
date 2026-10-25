@@ -80,6 +80,7 @@ function drawUncached(
     textDraftRect = null,
     gradientAdjusting = false,
     selectionHandles = true,
+    selectionPaintOutline = false,
     showCornerRadius = false,
     warpTool = null,
     selectedPuppetPin = null,
@@ -355,6 +356,7 @@ function drawUncached(
       warpTool,
       gradientAdjusting,
       selectedPuppetPin,
+      selectionPaintOutline,
     );
 
   if (marqueeRect) drawMarquee(ctx, marqueeRect, viewport);

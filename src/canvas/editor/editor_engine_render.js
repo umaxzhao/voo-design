@@ -15,6 +15,7 @@ import {
 import { nodeAABB } from "./scene_geometry.js";
 import { draw, resizeCanvas } from "./scene_renderer.js";
 import { TOOL } from "./editor_constants.js";
+import { isPaintTool } from "./paint_tool_ids.js";
 import * as ops from "./doc_ops.js";
 
 export function renderEngineStage({
@@ -72,9 +73,15 @@ export function renderEngineStage({
   resizeCanvas(canvas, width, height, dpr);
   const selectedId = selection.getId();
   const selectedNode = selectedContainer ?? (selectedId ? findNode(doc, selectedId) : null);
+  // A paint tool on one image layer keeps only the faint outline (no handles)
+  // so the user still sees the range of the image being painted.
+  const paintOutline =
+    isPaintTool(tool) &&
+    selectedNode?.kind === NODE_KIND.IMAGE &&
+    !selectedContainer &&
+    selection.getIds().length <= 1;
   const hideSelection =
-    tool === TOOL.BRUSH ||
-    tool === TOOL.ERASER ||
+    ((tool === TOOL.BRUSH || tool === TOOL.ERASER) && !paintOutline) ||
     tool === TOOL.REGION ||
     tool === TOOL.LASSO;
   const selectedIds = selection.getIds();
@@ -167,6 +174,7 @@ export function renderEngineStage({
       !isAdjustmentNode &&
       !multiple &&
       !selectedNode?.locked &&
+      !paintOutline &&
       !annotations.getEditingTextId() &&
       tool !== TOOL.RECT &&
       tool !== TOOL.ELLIPSE &&
@@ -174,6 +182,7 @@ export function renderEngineStage({
       tool !== TOOL.PERSPECTIVE &&
       tool !== TOOL.DISTORT &&
       tool !== TOOL.PUPPET_WARP,
+    selectionPaintOutline: paintOutline,
     showCornerRadius: selectedNode?.id === hoveredNodeId,
     cropRect: crop.getCropRect(),
     hiddenNodeId: annotations.getEditingTextId(),
