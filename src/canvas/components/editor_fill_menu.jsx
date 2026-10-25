@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { IconBucket, IconGradient, IconChevronDown } from "../icons.jsx";
+import { IconBucket, IconGradient } from "../icons.jsx";
 import { TOOL } from "../editor/editor_constants.js";
 import { TOOL_SHORTCUTS } from "../editor/editor_shortcuts.js";
 import { useI18n } from "../use_i18n.js";
@@ -30,18 +30,12 @@ export default function EditorFillMenu({ tool, onTool }) {
     >
       <button
         type="button"
-        onClick={() => onTool(isActive ? tool : TOOL.FILL)}
+        onClick={() => onTool(TOOL.FILL)}
         aria-label={currentLabel}
         aria-pressed={isActive}
         className={toolButtonClass(isActive)}
       >
         <ActiveIcon size={16} />
-        <IconChevronDown
-          size={7}
-          className={`absolute bottom-1 right-1 pointer-events-none ${
-            isActive ? "text-black/70" : "text-neutral-400"
-          }`}
-        />
       </button>
     </EditorTooltip>
   );

@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { IconPen, IconSparkle, IconEdit, IconChevronDown } from "../icons.jsx";
+import { IconPen, IconSparkle, IconEdit } from "../icons.jsx";
 import { TOOL } from "../editor/editor_constants.js";
 import { useI18n } from "../use_i18n.js";
 import EditorTooltip from "./editor_tooltip.jsx";
@@ -36,18 +36,12 @@ export default function EditorPenMenu({ tool, onTool }) {
     <EditorTooltip title={currentLabel} shortcut="P" side="top">
       <button
         type="button"
-        onClick={() => onTool(isActive ? tool : TOOL.PEN)}
+        onClick={() => onTool(TOOL.PEN)}
         aria-label={currentLabel}
         aria-pressed={isActive}
         className={toolButtonClass(isActive)}
       >
         <ActiveIcon size={16} />
-        <IconChevronDown
-          size={7}
-          className={`absolute bottom-1 right-1 pointer-events-none ${
-            isActive ? "text-black/70" : "text-neutral-400"
-          }`}
-        />
       </button>
     </EditorTooltip>
   );

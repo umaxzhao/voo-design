@@ -60,7 +60,6 @@ import {
 import EditorToolbar, { EditorZoom } from "./editor_toolbar.jsx";
 import EditorRulers, { EditorCanvasAids } from "./editor_rulers.jsx";
 import EditorComments from "./editor_comments.jsx";
-import EditorToolSubbar from "./editor_tool_subbar.jsx";
 import EditorPieMenu from "./editor_pie_menu.jsx";
 import EditorContextMenu from "./editor_context_menu.jsx";
 const EditorCommandPalette = lazy(() => import("./editor_command_palette.jsx"));
@@ -410,9 +409,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     node: null,
     svgString: "",
   });
-  /** Secondary tool subbar hover state: active family ID when mouse hovers top toolbar */
-  const [hoveredFamily, setHoveredFamily] = useState(null);
-  const hoverLeaveTimerRef = useRef(null);
   /** Pie Menu state: active family and screen coordinates { family, position: { x, y } } */
   const [pieMenu, setPieMenu] = useState(null);
   /** ⌘K palette / ⌘F find bar: editor overlays, not document state. */
@@ -1652,11 +1648,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       focusEditorPage,
     ],
   );
-  useEffect(() => {
-    if (!hasDoc) return;
-    // A family the new mode's toolbar does not carry must not keep its subbar.
-    setHoveredFamily(null);
-  }, [focusedId, workbench, hasDoc]);
   useEffect(() => {
     // A pie opened in Design must not survive into the 3D surface, where its
     // overlay is not mounted to catch the keyup that would close it.
@@ -3562,11 +3553,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                     onOutpaintSubmit={(node, grownRect) => {
                       if (node) void runOutpaint(node, grownRect);
                     }}
-                    onEditSvg={handleOpenSvgEdit}
-                    onCreateComponent={
-                      canCreateComponent ? handleCreateComponent : null
-                    }
-                    onDetachInstance={handleDetachInstance}
                     onAddCanvas={handleAddCanvas}
                     onDeleteCanvas={handleDeleteCanvas}
                     onDuplicateCanvas={handleDuplicateCanvas}
@@ -3728,11 +3714,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 onOutpaintSubmit={(node, grownRect) => {
                   if (node) void runOutpaint(node, grownRect);
                 }}
-                onEditSvg={handleOpenSvgEdit}
-                onCreateComponent={
-                  canCreateComponent ? handleCreateComponent : null
-                }
-                onDetachInstance={handleDetachInstance}
                 onAddCanvas={handleAddCanvas}
                 onDeleteCanvas={handleDeleteCanvas}
                 onDuplicateCanvas={handleDuplicateCanvas}
@@ -4160,6 +4141,44 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             isMainComponent={(instanceCounts.get(doc?.canvasId) ?? 0) > 0}
             engine={engine}
             object={propertyObject}
+            onDeleteCanvas={
+              nodeIds.length > 1 && !doc?.isCanvasRoot
+                ? () => {
+                    if (typeof window !== "undefined") {
+                      window.dispatchEvent(
+                        new CustomEvent("editor:request-delete-canvas", {
+                          detail: { nodeId: focusedId },
+                        }),
+                      );
+                    }
+                  }
+                : null
+            }
+            onCreateComponent={
+              canCreateComponent ? handleCreateComponent : null
+            }
+            onDetachInstance={handleDetachInstance}
+            onRemoveBackground={() => void removeBackground()}
+            removeBackgroundBusy={maskBusy}
+            imageAiActions={{
+              onOutpaint: () => {
+                if (typeof window !== "undefined" && propertyObject?.id) {
+                  window.dispatchEvent(
+                    new CustomEvent("editor:request-outpaint", {
+                      detail: { nodeId: propertyObject.id },
+                    }),
+                  );
+                }
+              },
+              onUpscale: (scale) => void upscaleImage(scale),
+              upscaleBusy,
+              onAutoEnhance: () => runAutoEnhance(focusedId),
+              onPortraitRetouch: (strengths) =>
+                runPortraitRetouch(focusedId, strengths),
+              portraitRetouchBusy: retouchBusy,
+              onSplitLayers: splitLayers,
+              splitLayersBusy,
+            }}
             parentLayout={parentLayout}
             parentIsFrame={parentIsFrame}
             parentNode={parentNode}
@@ -4221,6 +4240,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               brushOpacity: engine?.getBrushOpacity?.() ?? 1,
               onBrushOpacity: (next) => engine?.setBrushOpacity?.(next),
               brushMode: engine?.getBrushMode?.() ?? "normal",
+              onTool: runTool,
               onBrushMode: (next) => engine?.setBrushMode?.(next),
               brushFlow: engine?.getBrushFlow?.() ?? 1,
               onBrushFlow: (next) => engine?.setBrushFlow?.(next),
@@ -4348,6 +4368,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               marqueeRatio: engine?.getMarqueeRatio?.() ?? null,
               onMarqueeRatio: (ratio) => engine?.setMarqueeRatio?.(ratio),
               marqueeMode: engine?.getMarqueeMode?.() ?? "rect",
+              onMarqueeMode: (mode) => engine?.setMarqueeMode?.(mode),
               magneticLassoSettings: engine?.getMagneticLassoSettings?.() ?? {
                 width: 64,
                 contrast: 50,
@@ -4880,56 +4901,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             marqueeMode={engine?.getMarqueeMode() ?? "rect"}
             onMarqueeMode={(mode) => engine?.setMarqueeMode(mode)}
             brushMode={engine?.getBrushMode?.() ?? "normal"}
-            onHoverFamily={(fam) => {
-              if (hoverLeaveTimerRef.current) {
-                clearTimeout(hoverLeaveTimerRef.current);
-                hoverLeaveTimerRef.current = null;
-              }
-              setHoveredFamily(fam);
-            }}
-            onLeaveFamily={() => {
-              if (hoverLeaveTimerRef.current)
-                clearTimeout(hoverLeaveTimerRef.current);
-              hoverLeaveTimerRef.current = setTimeout(() => {
-                setHoveredFamily(null);
-              }, 180);
-            }}
+            onBrushMode={(mode) => engine?.setBrushMode?.(mode)}
           />
         )}
-
-        {workbench.subbar ? (
-          <EditorToolSubbar
-            activeFamilyId={hoveredFamily}
-            tool={tool}
-            onTool={runTool}
-            marqueeMode={engine?.getMarqueeMode() ?? "rect"}
-            onMarqueeMode={(mode) => engine?.setMarqueeMode(mode)}
-            brushMode={engine?.getBrushMode() ?? "normal"}
-            onBrushMode={(mode) => engine?.setBrushMode(mode)}
-            healingMode={engine?.getHealingMode() ?? "aiRepair"}
-            onHealingMode={(mode) => engine?.setHealingMode(mode)}
-            onSelect={() => {
-              if (hoverLeaveTimerRef.current) {
-                clearTimeout(hoverLeaveTimerRef.current);
-                hoverLeaveTimerRef.current = null;
-              }
-              setHoveredFamily(null);
-            }}
-            onMouseEnter={() => {
-              if (hoverLeaveTimerRef.current) {
-                clearTimeout(hoverLeaveTimerRef.current);
-                hoverLeaveTimerRef.current = null;
-              }
-            }}
-            onMouseLeave={() => {
-              if (hoverLeaveTimerRef.current)
-                clearTimeout(hoverLeaveTimerRef.current);
-              hoverLeaveTimerRef.current = setTimeout(() => {
-                setHoveredFamily(null);
-              }, 180);
-            }}
-          />
-        ) : null}
 
         {workbench.pieMenu && pieMenu ? (
           <EditorPieMenu

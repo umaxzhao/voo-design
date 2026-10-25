@@ -6,7 +6,6 @@ import {
   IconTriangle,
   IconStar,
   IconArrowUpRight,
-  IconChevronDown,
 } from "../icons.jsx";
 import { TOOL } from "../editor/editor_constants.js";
 import { useI18n } from "../use_i18n.js";
@@ -65,18 +64,12 @@ export default function ShapeToolsMenu({ tool, onTool }) {
     <EditorTooltip title={currentLabel} shortcut="R" side="top">
       <button
         type="button"
-        onClick={() => onTool(isActive ? tool : TOOL.RECT)}
+        onClick={() => onTool(TOOL.RECT)}
         aria-label={currentLabel}
         aria-pressed={isActive}
         className={toolButtonClass(isActive)}
       >
         <ActiveIcon size={16} />
-        <IconChevronDown
-          size={7}
-          className={`absolute bottom-1 right-1 pointer-events-none ${
-            isActive ? "text-black/70" : "text-neutral-400"
-          }`}
-        />
       </button>
     </EditorTooltip>
   );

@@ -3,7 +3,7 @@
  *
  * The family definitions live in `src/canvas/editor/`, which must stay
  * React-free, so they can only name an icon — never hold the component. Every
- * surface that renders a family's items (hover subbar, keyboard pie menu) has
+ * surface that renders a family's items (properties panel, keyboard pie menu) has
  * to resolve the name through this one table.
  *
  * It exists because the pie menu did `const Icon = item.icon` and rendered the

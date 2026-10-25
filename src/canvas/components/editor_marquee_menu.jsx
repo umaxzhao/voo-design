@@ -1,5 +1,4 @@
 import PropTypes from "prop-types";
-import { IconChevronDown } from "../icons.jsx";
 import { TOOL } from "../editor/editor_constants.js";
 import {
   marqueeItemForMode,
@@ -30,7 +29,7 @@ export default function EditorMarqueeMenu({
     marqueeMode !== "poly" &&
     marqueeMode !== "magnetic";
 
-  const currentMode = marqueeMode === "ellipse" ? "ellipse" : "rect";
+  const currentMode = "rect";
   const currentItem = marqueeItemForMode(currentMode);
   const ActiveIcon = toolFamilyIcon(currentItem?.icon || "selectionRect");
 
@@ -53,12 +52,6 @@ export default function EditorMarqueeMenu({
           className={toolButtonClass(isMarqueeActive)}
         >
           <ActiveIcon size={16} />
-          <IconChevronDown
-            size={7}
-            className={`absolute bottom-1 right-1 pointer-events-none ${
-              isMarqueeActive ? "text-black/70" : "text-neutral-400"
-            }`}
-          />
         </button>
       </EditorTooltip>
     </div>

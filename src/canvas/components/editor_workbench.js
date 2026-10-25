@@ -13,7 +13,6 @@ import { CANVAS_TYPE } from "../editor/scene_doc_factory.js";
  * @property {boolean} timelineOpen  Motion timeline opens when the mode is entered.
  * @property {boolean} inspectorAlwaysOpen  Properties panel stays open without a selection.
  * @property {"design"|"motion"|"three"} toolbar  Which tool bar the mode carries.
- * @property {boolean} subbar  Tool family sub-bar (brush, shape, ...) is available.
  * @property {boolean} pieMenu  Radial tool menu is available.
  * @property {boolean} sceneInspector  Scene-level 3D inspector replaces the 2D one.
  * @property {boolean} timelineInspector  Timeline settings panel replaces the 2D one.
@@ -26,7 +25,6 @@ export const WORKBENCHES = Object.freeze({
     timelineOpen: false,
     inspectorAlwaysOpen: false,
     toolbar: "design",
-    subbar: true,
     pieMenu: true,
     sceneInspector: false,
     timelineInspector: false,

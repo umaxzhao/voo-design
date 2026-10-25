@@ -1,6 +1,8 @@
 import { resolvePanelForContext } from "./resolve_panel_context.js";
 import ImageContextActions from "./image_context_actions.jsx";
 import VariantsSection from "./variants_section.jsx";
+import SelectedNodeActions from "./selected_node_actions.jsx";
+import ToolFamilyModes from "./tool_family_modes.jsx";
 /**
  * Editor properties panel: root component docked on canvas side showing
  * background, tool properties, mask editing, pen editing, or node properties.
@@ -87,6 +89,12 @@ export default function EditorProperties({
   /** Pen-edit anchor actions, forwarded from the engine. */
   onConvertAnchor = null,
   onDeleteAnchor = null,
+  imageAiActions = null,
+  onRemoveBackground = null,
+  removeBackgroundBusy = false,
+  onCreateComponent = null,
+  onDetachInstance = null,
+  onDeleteCanvas = null,
 }) {
   const { t } = useI18n();
   const sideClass = swapSide ? "left-4" : "right-4";
@@ -199,6 +207,18 @@ export default function EditorProperties({
       >
         {header}
         <div className={contentClass}>
+          {toolProps ? (
+            <ToolFamilyModes
+              tool={tool}
+              marqueeMode={toolProps.marqueeMode}
+              brushMode={toolProps.brushMode}
+              healingMode={toolProps.healingMode}
+              onTool={toolProps.onTool}
+              onMarqueeMode={toolProps.onMarqueeMode}
+              onBrushMode={toolProps.onBrushMode}
+              onHealingMode={toolProps.onHealingMode}
+            />
+          ) : null}
           {toolProps ? <ToolPropertiesSection tool={tool} {...toolProps} /> : null}
         </div>
       </aside>
@@ -238,6 +258,16 @@ export default function EditorProperties({
               />
             </div>
           </InspectorGroup>
+          {onDeleteCanvas ? (
+            <button
+              type="button"
+              data-testid="editor-delete-canvas-btn"
+              onClick={onDeleteCanvas}
+              className="min-h-8 rounded-lg border border-white/10 bg-white/[0.04] px-2 text-left text-[11px] text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
+            >
+              {t("editor.pages.deleteCanvas")}
+            </button>
+          ) : null}
         </div>
       </aside>
     );
@@ -303,13 +333,35 @@ export default function EditorProperties({
     >
       {header}
       <div className={contentClass}>
+        {toolProps ? (
+          <ToolFamilyModes
+            tool={tool}
+            marqueeMode={toolProps.marqueeMode}
+            brushMode={toolProps.brushMode}
+            healingMode={toolProps.healingMode}
+            onTool={toolProps.onTool}
+            onMarqueeMode={toolProps.onMarqueeMode}
+            onBrushMode={toolProps.onBrushMode}
+            onHealingMode={toolProps.onHealingMode}
+          />
+        ) : null}
         {showImageActions ? (
           <ImageContextActions
             object={object}
             engine={engine}
             editAndCommit={editAndCommit}
+            aiActions={imageAiActions}
+            onRemoveBackground={onRemoveBackground}
+            removeBackgroundBusy={removeBackgroundBusy}
           />
         ) : null}
+        <SelectedNodeActions
+          object={object}
+          selectedNodes={selectedNodes}
+          engine={engine}
+          onCreateComponent={onCreateComponent}
+          onDetachInstance={onDetachInstance}
+        />
         {maskToolbar}
           <PropertiesPanelSections
             sections={context.sections}
