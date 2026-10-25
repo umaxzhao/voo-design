@@ -13,6 +13,7 @@ export function ColorSliderSurfaces({
   onApplyColor,
   onApplyOpacity,
   onAddRecentColor,
+  onOpacityEnd,
   onEyeDropper,
   eyeDropperTitle,
 }) {
@@ -26,12 +27,13 @@ export function ColorSliderSurfaces({
     hsvRef.current = hsv;
   }, [hsv]);
 
-  const startDrag = (update, e, recordRecent) => {
+  const startDrag = (update, e, recordRecent, onEnd) => {
     update(e.clientX, e.clientY);
     const handleMouseMove = (ev) => update(ev.clientX, ev.clientY);
     const handleMouseUp = () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
+      onEnd?.();
       if (recordRecent && onAddRecentColor) {
         const cur = hsvRef.current;
         onAddRecentColor(hsvToHex(cur.h, cur.s, cur.v));
@@ -99,6 +101,7 @@ export function ColorSliderSurfaces({
       },
       e,
       false,
+      onOpacityEnd,
     );
   };
 
@@ -141,27 +144,30 @@ export function ColorSliderSurfaces({
 
       {/* Sliders row */}
       <div className="flex items-center gap-2">
-        {onEyeDropper ? (
-          <button
-            type="button"
-            onClick={onEyeDropper}
-            title={eyeDropperTitle || "Pick color from screen"}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10 hover:text-white"
+        {/* Always shown; disabled with an explanatory title where the
+            browser has no EyeDropper API (rather than vanishing silently). */}
+        <button
+          type="button"
+          onClick={onEyeDropper ?? undefined}
+          disabled={!onEyeDropper}
+          title={eyeDropperTitle || "Pick color from screen"}
+          aria-label={eyeDropperTitle || "Pick color from screen"}
+          data-testid="picker-eyedropper"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/5 disabled:hover:text-neutral-300"
+        >
+          <svg
+            className="h-3.5 w-3.5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
           >
-            <svg
-              className="h-3.5 w-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="m2 22 1-1h3l9-9" />
-              <path d="M3 21v-3l9-9" />
-              <path d="m15 6 3 3" />
-              <path d="m18 3 3 3-2.5 2.5-3-3L18 3z" />
-            </svg>
-          </button>
-        ) : null}
+            <path d="m2 22 1-1h3l9-9" />
+            <path d="M3 21v-3l9-9" />
+            <path d="m15 6 3 3" />
+            <path d="m18 3 3 3-2.5 2.5-3-3L18 3z" />
+          </svg>
+        </button>
 
         <div className="flex flex-1 flex-col gap-2">
           {/* Hue slider */}
@@ -224,6 +230,7 @@ ColorSliderSurfaces.propTypes = {
   onApplyColor: PropTypes.func.isRequired,
   onApplyOpacity: PropTypes.func.isRequired,
   onAddRecentColor: PropTypes.func,
+  onOpacityEnd: PropTypes.func,
   onEyeDropper: PropTypes.func,
   eyeDropperTitle: PropTypes.string,
 };

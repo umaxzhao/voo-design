@@ -36,6 +36,11 @@ export function Swatch({
   ariaLabel,
   previewImage = null,
   isImage = false,
+  opacity = null,
+  onOpacityChange = null,
+  onOpacityCommit = undefined,
+  blendMode = null,
+  onBlendModeChange = null,
 }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState(null);
@@ -133,6 +138,11 @@ export function Swatch({
                 initialType={isImage ? "image" : undefined}
                 onChange={(nextColor) => onPick(nextColor)}
                 onClose={() => setOpen(false)}
+                opacity={opacity}
+                onOpacityChange={onOpacityChange}
+                onOpacityCommit={onOpacityCommit}
+                blendMode={blendMode}
+                onBlendModeChange={onBlendModeChange}
               />
             </div>,
             document.body,
@@ -148,6 +158,13 @@ Swatch.propTypes = {
   ariaLabel: PropTypes.string.isRequired,
   previewImage: PropTypes.string,
   isImage: PropTypes.bool,
+  /** Opacity in percent, bound to the row that owns this swatch. */
+  opacity: PropTypes.number,
+  onOpacityChange: PropTypes.func,
+  onOpacityCommit: PropTypes.func,
+  /** Blend mode shown inside the picker ("source-over" is Normal). */
+  blendMode: PropTypes.string,
+  onBlendModeChange: PropTypes.func,
 };
 
 /**

@@ -19,6 +19,7 @@ import AutoLayoutSection from "./auto_layout_section.jsx";
 import AutoLayoutChildSection from "./auto_layout_child_section.jsx";
 import ConstraintsSection from "./constraints_section.jsx";
 import ColorVariablesSection from "./color_variables_section.jsx";
+import { DocumentColoursContext } from "../../color_picker/document_colours_context.js";
 import StyleSection from "./style_section.jsx";
 import MediaSection from "./media_section.jsx";
 import ModifiersSection from "./modifiers_section.jsx";
@@ -32,6 +33,9 @@ import {
   normalizeAdjustments,
 } from "../../editor/scene_model.js";
 import { TOOL } from "../../editor/editor_constants.js";
+
+/** Stable empty list so the context value does not change identity per render. */
+const NO_DOCUMENT_COLOURS = [];
 
 export default function PropertiesPanelSections({
   object,
@@ -226,16 +230,19 @@ export default function PropertiesPanelSections({
       ) : null}
 
       {!isWarpTool && (has("fill") || has("stroke")) && supportsColour(object) ? (
-        <ColourSection
-          object={object}
-          showFill={has("fill")}
-          showStroke={has("stroke")}
-          edit={edit}
-          editAndCommit={editAndCommit}
-          commitNow={commitNow}
-          selectedNodes={selectedNodes}
-          getBitmap={getBitmap}
-        />
+        // The picker's "Document colours" row reads the document's colour variables.
+        <DocumentColoursContext.Provider value={colorVariableActions?.variables ?? NO_DOCUMENT_COLOURS}>
+          <ColourSection
+            object={object}
+            showFill={has("fill")}
+            showStroke={has("stroke")}
+            edit={edit}
+            editAndCommit={editAndCommit}
+            commitNow={commitNow}
+            selectedNodes={selectedNodes}
+            getBitmap={getBitmap}
+          />
+        </DocumentColoursContext.Provider>
       ) : null}
       {show("variables") ? (
         <ColorVariablesSection

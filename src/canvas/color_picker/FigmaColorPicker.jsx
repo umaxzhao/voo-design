@@ -1,11 +1,15 @@
 import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
 import { ColorSliderSurfaces } from "./ColorSliderSurfaces.jsx";
-import { ColorChannelInputs } from "./ColorChannelInputs.jsx";
+import { ColorModelInputs } from "./ColorModelInputs.jsx";
+import { PickerOpacityField } from "./PickerOpacityField.jsx";
+import { BlendModeSelect } from "./BlendModeSelect.jsx";
+import { DocumentColourRow } from "./DocumentColourRow.jsx";
+import { PickerHeader } from "./PickerHeader.jsx";
 import { GradientStopsBar } from "./GradientStopsBar.jsx";
 import { GradientAngleControl } from "./GradientAngleControl.jsx";
 import { SwatchGrid } from "./SwatchGrid.jsx";
-import { hexToHsv } from "./color_math.js";
+import { hexToHsv, hsvToHex } from "./color_math.js";
 import {
   formatGradient,
   isCssGradient,
@@ -13,21 +17,6 @@ import {
   normalizeGradientAngle,
 } from "./gradient_fill.js";
 import { useI18n } from "../use_i18n.js";
-
-import { IconImage } from "../icons.jsx";
-
-// Texture and video tabs are not yet supported by the renderer:
-// - "texture" writes repeating-*-gradient() CSS that isCssGradient() won't
-//   match, so the fill is silently dropped.
-// - "video" writes a blob: URL that the canvas treats as a transparent image.
-// Both tabs are hidden until the renderer adds support. "image" routes through
-// blob: URLs the same way, so it too is hidden for now.
-// Only "solid" and "gradient" are connected to working renderer paths.
-const PRIMARY_FILL_TYPES = [
-  { id: "solid", labelKey: "editor.colorPicker.solid", icon: "solid" },
-  { id: "gradient", labelKey: "editor.colorPicker.gradient", icon: "gradient" },
-  // image / texture / video deliberately omitted until renderer support lands.
-];
 
 const GRADIENT_SUB_TYPES = [
   {
@@ -66,6 +55,13 @@ export default function FigmaColorPicker({
   imageUrl: _imageUrl = null,
   initialType = null,
   grayscaleOnly = false,
+  // Optional bindings to the row that opened the picker. When absent the
+  // matching control is not shown (e.g. effect colours have no blend mode).
+  opacity = null,
+  onOpacityChange = null,
+  onOpacityCommit = undefined,
+  blendMode = null,
+  onBlendModeChange = null,
 }) {
   const { t } = useI18n();
   const isGradient = isCssGradient(color);
@@ -124,8 +120,14 @@ export default function FigmaColorPicker({
     }
   };
 
+  // Solid: the opacity is the fill/stroke opacity shared with the row field.
+  // Gradient: the opacity belongs to the active stop (existing behaviour).
+  const hasOpacity = primaryType === "gradient" || onOpacityChange !== null;
+  const shownOpacity = primaryType === "gradient" ? currentSolidOpacity : (opacity ?? 100);
   const handleApplyOpacity = (op) => {
-    if (primaryType === "gradient") {
+    if (primaryType !== "gradient") {
+      onOpacityChange?.(op);
+    } else {
       const nextStops = gradientStops.map((stop, idx) =>
         idx === activeStopIndex ? { ...stop, opacity: op } : stop,
       );
@@ -173,8 +175,15 @@ export default function FigmaColorPicker({
     );
   };
 
+  const handleHsvChange = (next) => {
+    setHsv(next);
+    handleApplySolidColor(hsvToHex(next.h, next.s, next.v));
+  };
+
+  const eyeDropperAvailable =
+    typeof window !== "undefined" && Boolean(window.EyeDropper);
   const handleEyeDropper = async () => {
-    if (!window.EyeDropper) return;
+    if (!eyeDropperAvailable) return;
     try {
       const eyeDropper = new window.EyeDropper();
       const result = await eyeDropper.open();
@@ -187,110 +196,13 @@ export default function FigmaColorPicker({
   };
 
   return (
-    <div className="flex w-72 flex-col gap-3 rounded-2xl bg-neutral-900 p-3.5 text-white shadow-menu backdrop-blur-xl font-mono box-border select-none">
-      {/* Header & Primary Tabs */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-        {showTypeTabs ? (
-          <div className="flex items-center gap-1">
-            {PRIMARY_FILL_TYPES.map((fillType) => (
-              <button
-                key={fillType.id}
-                type="button"
-                onClick={() => handleSelectPrimaryType(fillType.id)}
-                title={t(fillType.labelKey)}
-                aria-label={t(fillType.labelKey)}
-                className={`flex h-7 w-7 items-center justify-center rounded-lg text-[11px] font-mono transition-all ${
-                  primaryType === fillType.id
-                    ? "bg-white/20 text-white font-medium"
-                    : "text-neutral-400 hover:text-neutral-100 hover:bg-white/10"
-                }`}
-              >
-                {fillType.icon === "solid" ? (
-                  <svg
-                    width={14}
-                    height={14}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect
-                      x="3"
-                      y="3"
-                      width="18"
-                      height="18"
-                      rx="3"
-                      fill="currentColor"
-                      fillOpacity={0.9}
-                    />
-                  </svg>
-                ) : fillType.icon === "gradient" ? (
-                  <svg
-                    width={14}
-                    height={14}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <defs>
-                      <linearGradient
-                        id="popover_grad_icon"
-                        x1="0"
-                        y1="0"
-                        x2="1"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="currentColor"
-                          stopOpacity="0.2"
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor="currentColor"
-                          stopOpacity="1"
-                        />
-                      </linearGradient>
-                    </defs>
-                    <rect
-                      x="3"
-                      y="3"
-                      width="18"
-                      height="18"
-                      rx="3"
-                      fill="url(#popover_grad_icon)"
-                      stroke="currentColor"
-                    />
-                  </svg>
-                ) : fillType.icon === "image" ? (
-                  <IconImage size={14} />
-                ) : (
-                  <span>{fillType.icon}</span>
-                )}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <span className="text-[12px] font-mono font-medium">
-            {t("editor.colorPicker.title")}
-          </span>
-        )}
-
-        {onClose ? (
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-5 w-5 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white"
-          >
-            ✕
-          </button>
-        ) : null}
-      </div>
+    <div className="flex max-h-[calc(100vh-1rem)] w-72 flex-col gap-3 overflow-y-auto rounded-2xl bg-neutral-900 p-3.5 text-white shadow-menu backdrop-blur-xl font-mono box-border select-none">
+      <PickerHeader
+        showTypeTabs={showTypeTabs}
+        activeType={primaryType}
+        onSelectType={handleSelectPrimaryType}
+        onClose={onClose}
+      />
 
       {/* Gradient Sub-Types Toolbar */}
       {primaryType === "gradient" ? (
@@ -343,20 +255,41 @@ export default function FigmaColorPicker({
             hsv={hsv}
             setHsv={setHsv}
             activeColorHex={currentSolidHex}
-            activeOpacity={currentSolidOpacity}
-            showOpacity={primaryType === "gradient"}
+            activeOpacity={shownOpacity}
+            showOpacity={hasOpacity}
             onApplyColor={handleApplySolidColor}
             onApplyOpacity={handleApplyOpacity}
-            onEyeDropper={window.EyeDropper ? handleEyeDropper : null}
-            eyeDropperTitle={t("editor.colorPicker.eyedropper")}
+            onOpacityEnd={primaryType === "gradient" ? undefined : onOpacityCommit}
+            onEyeDropper={eyeDropperAvailable ? handleEyeDropper : null}
+            eyeDropperTitle={
+              eyeDropperAvailable
+                ? t("editor.colorPicker.eyedropper")
+                : t("editor.colorPicker.eyedropperUnavailable")
+            }
           />
 
-          <ColorChannelInputs
-            hex={currentSolidHex}
-            opacity={currentSolidOpacity}
-            onChangeHex={handleApplySolidColor}
-            onChangeOpacity={handleApplyOpacity}
-          />
+          <div className="flex items-center gap-1.5">
+            <ColorModelInputs
+              hex={currentSolidHex}
+              hsv={hsv}
+              onChangeHex={handleApplySolidColor}
+              onChangeHsv={handleHsvChange}
+            />
+            {hasOpacity ? (
+              <PickerOpacityField
+                value={shownOpacity}
+                onChange={handleApplyOpacity}
+                onCommit={primaryType === "gradient" ? undefined : onOpacityCommit}
+              />
+            ) : null}
+          </div>
+
+          {onBlendModeChange ? (
+            <BlendModeSelect
+              value={blendMode ?? "source-over"}
+              onChange={onBlendModeChange}
+            />
+          ) : null}
 
           <SwatchGrid
             onSelectColor={handleApplySolidColor}
@@ -379,6 +312,8 @@ export default function FigmaColorPicker({
                 : undefined
             }
           />
+
+          <DocumentColourRow onSelectColor={handleApplySolidColor} />
         </>
       ) : null}
     </div>
@@ -395,4 +330,12 @@ FigmaColorPicker.propTypes = {
   /** Opens straight on this fill type instead of inferring it from `color`. */
   initialType: PropTypes.string,
   grayscaleOnly: PropTypes.bool,
+  /** Fill/stroke opacity in percent (0-100), shared with the row field. */
+  opacity: PropTypes.number,
+  onOpacityChange: PropTypes.func,
+  /** Interaction-end commit for opacity edits (same as the row field's). */
+  onOpacityCommit: PropTypes.func,
+  /** Layer blend mode ("source-over" is Normal). */
+  blendMode: PropTypes.string,
+  onBlendModeChange: PropTypes.func,
 };

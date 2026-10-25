@@ -4,9 +4,10 @@ import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
 import ScrubValueInput from "./scrub_value_input.jsx";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
-import { BLEND_MODES, NODE_KIND } from "../../editor/scene_model.js";
+import { NODE_KIND } from "../../editor/scene_model.js";
+import { opacityPatch } from "../../color_picker/opacity_patch.js";
 import { useI18n } from "../../use_i18n.js";
-import { IconEye, IconEyeOff, IconMinus, IconOpacity } from "../../icons.jsx";
+import { IconEye, IconEyeOff, IconMinus } from "../../icons.jsx";
 import { Swatch, HexField, HEX_COLOUR } from "./colour_swatch.jsx";
 import {
   SectionAddButton,
@@ -66,34 +67,6 @@ function isImageUrlFill(fill) {
       fill.startsWith("http"))
   );
 }
-
-/**
- * Blend mode inside the fill row. Normal shows as a quiet icon-sized hit area
- * (the native menu opens on click); any other mode shows its name.
- */
-function BlendModeControl({ value, title, onChange }) {
-  const normal = value === "source-over";
-  return (
-    <span className={`relative flex h-6 shrink-0 items-center justify-center rounded-lg text-[10px] font-mono text-neutral-300 focus-within:ring-1 focus-within:ring-[#a7ffd4]/40 ${normal ? "w-6 hover:bg-white/[0.08]" : "max-w-[4.5rem] bg-white/[0.06] px-1.5"}`}>
-      <span aria-hidden="true" className="pointer-events-none truncate">{normal ? "◐" : value}</span>
-      <select
-        aria-label="Fill blend mode"
-        title={title}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0 focus-visible:outline-none"
-      >
-        {BLEND_MODES.map((mode) => <option key={mode} value={mode}>{mode === "source-over" ? "Normal" : mode}</option>)}
-      </select>
-    </span>
-  );
-}
-
-BlendModeControl.propTypes = {
-  value: PropTypes.string.isRequired,
-  title: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
-};
 
 export function FillSection({
   object,
@@ -226,6 +199,11 @@ export function FillSection({
             ariaLabel={t("editor.props.fill")}
             previewImage={imageUrl}
             isImage={isImageNode}
+            opacity={fillOpacityMixed ? null : fillOpacity}
+            onOpacityChange={fillOpacityMixed ? null : (val) => edit(opacityPatch("fillOpacity", val))}
+            onOpacityCommit={commitNow}
+            blendMode={object.fillBlendMode ?? "source-over"}
+            onBlendModeChange={(mode) => editAndCommit({ fillBlendMode: mode })}
           />
           {isImageNode ? (
             <span className="min-w-0 flex-1 truncate text-[11px] font-mono text-neutral-200">
@@ -252,18 +230,13 @@ export function FillSection({
               </span>
             ) : (
               <>
-                <span className="text-neutral-500" aria-hidden="true">
-                  <IconOpacity size={11} />
-                </span>
                 <ScrubValueInput
                   min={0}
                   max={100}
                   step={1}
                   value={fillOpacity}
                   format={(val) => `${val}`}
-                  onChange={(val) =>
-                    edit({ fillOpacity: Math.max(0, Math.min(1, val / 100)) })
-                  }
+                  onChange={(val) => edit(opacityPatch("fillOpacity", val))}
                   onCommit={commitNow}
                   ariaLabel={t("editor.props.opacity")}
                   scrubHint={t("editor.props.dragToAdjust")}
@@ -284,11 +257,6 @@ export function FillSection({
             >
               {object.fillHidden === true ? <IconEyeOff size={12} /> : <IconEye size={12} />}
             </button>
-            <BlendModeControl
-              value={object.fillBlendMode ?? "source-over"}
-              title={t("editor.panel.fillBlend")}
-              onChange={(mode) => editAndCommit({ fillBlendMode: mode })}
-            />
             <button
               type="button"
               onClick={() => onRemove?.()}
