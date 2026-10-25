@@ -159,7 +159,7 @@ export default function WelcomeDashboard() {
 
   return (
     <div
-      className="welcome-dashboard relative flex h-full w-full select-none bg-black text-neutral-100 overflow-hidden rounded-3xl"
+      className="welcome-dashboard relative flex flex-col lg:flex-row h-full w-full select-none bg-black text-neutral-100 overflow-hidden rounded-3xl"
       onDragOver={(e) => {
         e.preventDefault();
         setIsDragOver(true);
@@ -226,7 +226,7 @@ export default function WelcomeDashboard() {
       />
 
       {/* Main Workspace */}
-      <main className="flex-1 flex flex-col min-w-0 bg-neutral-950 overflow-y-auto">
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 bg-neutral-950 overflow-y-auto">
         {/* Top Header Strip with Search, View Mode, Sort and Actions */}
         <header className="flex h-14 shrink-0 items-center justify-between px-8 bg-neutral-950/60 backdrop-blur-md sticky top-0 z-20 gap-4">
           {/* Right: Controls & Actions */}
