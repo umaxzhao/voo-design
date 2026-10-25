@@ -3,7 +3,6 @@ import { useEffect, useRef } from "react";
 import {
   isTextEditingTarget,
   isNonTextControlTarget,
-  isNativeTabTarget,
   shortcutBlockedByTarget,
 } from "../shared/dom_targets.js";
 import {
@@ -250,11 +249,9 @@ export function useEditorShortcuts({
   /** Track currently pressed family key to show/hide Pie Menu */
   const pressedFamilyCodeRef = useRef(null);
 
-  /**
-   * Tab saves every page and leaves.
-   */
+  /** Keep canvas focus after pointer editing without affecting Tab traversal. */
   useEffect(() => {
-    if (!enabled || !onSaveAndExit) return undefined;
+    if (!enabled) return undefined;
     const onSurfacePointerDown = (event) => {
       if (
         modalOpen ||
@@ -270,49 +267,11 @@ export function useEditorShortcuts({
       if (!surface.hasAttribute("tabindex")) surface.tabIndex = -1;
       surface.focus({ preventScroll: true });
     };
-    const onTabKey = (event) => {
-      if (
-        modalOpen ||
-        event.target.closest?.(
-          "[data-presentation-overlay], [data-modal-overlay], [data-floating-surface], [role='dialog'], [role='menu'], [data-settings-drawer]",
-        )
-      )
-        return;
-      // Ctrl/Alt/Meta are browser and system shortcuts and are never touched by this handler.
-      if (event.ctrlKey || event.altKey || event.metaKey) return;
-      if (event.key !== "Tab" || event.isComposing) return;
-      // The workspace switch belongs to the canvas. Buttons, side panels and
-      // the timeline keep native keyboard navigation, including Shift+Tab.
-      if (
-        isTextEditingTarget(event.target) ||
-        isNonTextControlTarget(event.target) ||
-        isNativeTabTarget(event.target) ||
-        isNativeTabTarget(document.activeElement)
-      )
-        return;
-      // Shift+Tab MUST consume only (never save/exit/enter).
-      if (event.shiftKey) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        return;
-      }
-      // Held Tab: prevent the scroll/cycle but do not re-trigger save.
-      if (event.repeat) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        return;
-      }
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      onSaveAndExit();
-    };
-    window.addEventListener("keydown", onTabKey, true);
     window.addEventListener("pointerdown", onSurfacePointerDown, true);
     return () => {
-      window.removeEventListener("keydown", onTabKey, true);
       window.removeEventListener("pointerdown", onSurfacePointerDown, true);
     };
-  }, [enabled, onSaveAndExit, modalOpen]);
+  }, [enabled]);
 
   useEffect(() => {
     if (!enabled || !engine) return undefined;
@@ -348,6 +307,21 @@ export function useEditorShortcuts({
     };
 
     const onKeyDown = (event) => {
+      // Require three modifiers so saving and exiting cannot happen by accident.
+      if (
+        event.code === "KeyE" &&
+        event.ctrlKey &&
+        event.altKey &&
+        event.shiftKey &&
+        !event.metaKey &&
+        !event.isComposing &&
+        onSaveAndExit
+      ) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        onSaveAndExit();
+        return;
+      }
       // Editor-owned overlays are handled before the modal guard: ⌘K/⌘F must
       // never reach the browser's own find dialog while the user is typing in
       // the find bar, and ⌘K has to toggle the palette even though the palette

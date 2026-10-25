@@ -2598,7 +2598,7 @@ export default {
   "editor.warp.skewY": "斜切Y",
   "editor.shortcut.nudge": "微移（Shift = ×10）",
   "editor.shortcut.brushHardness": "笔刷硬度（Shift + [ / ]）",
-  "editor.shortcut.saveAndExit": "保存并退出编辑器",
+  "editor.shortcut.saveAndExit": "保存并退出编辑器（Ctrl+Alt+Shift+E）",
   "editor.shortcut.toolMode": "切换工具子模式（Cmd+1–7）",
   "editor.shortcut.swapColors": "切换前景色/背景色",
   "editor.upscale.button": "高清放大",
