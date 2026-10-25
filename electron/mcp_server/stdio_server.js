@@ -1,14 +1,22 @@
 import { WebSocket } from "ws";
 import { createInterface } from "node:readline";
 import { CLI_BRIDGE_CHANNEL as C, CLI_BRIDGE_DEFAULT_PORT } from "../../src/shared/cli_bridge_protocol.js";
-import { startCliBridgeServer } from "../cli_bridge_server.js";
+import { readBridgeToken } from "../../src/shared/cli_bridge_token.js";
 import { buildMcpTools } from "./tool_catalog.js";
 
-function connect(port) {
+export function resolveBridgeToken() {
+  const token = process.env.VOO_CLI_BRIDGE_TOKEN || readBridgeToken();
+  if (!token) {
+    throw new Error("VOO bridge token not found. Start the VOO desktop app or npm run bridge.");
+  }
+  return token;
+}
+
+function connect(port, token = resolveBridgeToken()) {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(`ws://127.0.0.1:${port}`, {
       handshakeTimeout: 2000,
-      headers: { "x-voo-cli-bridge-token": process.env.VOO_CLI_BRIDGE_TOKEN || "" },
+      headers: { "x-voo-cli-bridge-token": token },
     });
     socket.on("error", () => {});
     socket.once("error", reject);
@@ -27,12 +35,16 @@ function createBridgeClient() {
     if (closed) throw new Error("MCP server closed");
     if (connection) return connection;
     connection = (async () => {
+      const token = resolveBridgeToken();
       const port = Number(process.env.VOO_CLI_BRIDGE_PORT || CLI_BRIDGE_DEFAULT_PORT);
-      try { socket = await connect(port); }
+      try { socket = await connect(port, token); }
       catch {
-        try { ownedBridge = await startCliBridgeServer({ port }); }
+        try {
+          const { startCliBridgeServer } = await import("../cli_bridge_server.js");
+          ownedBridge = await startCliBridgeServer({ port, token });
+        }
         catch (error) { if (error.code !== "EADDRINUSE") throw error; }
-        socket = await connect(ownedBridge?.port ?? port);
+        socket = await connect(ownedBridge?.port ?? port, token);
       }
       socket.on("message", (data) => {
         let frame;

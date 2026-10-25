@@ -11,6 +11,7 @@ import http from "node:http";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { CLI_BRIDGE_DEFAULT_PORT } from "../src/shared/cli_bridge_protocol.js";
+import { writeBridgeToken } from "../src/shared/cli_bridge_token.js";
 import { createWsIpcAdapter } from "./ws_ipc_adapter.js";
 import { registerLocalCliIpc } from "./local_backend_bridge.js";
 
@@ -30,6 +31,7 @@ export const DEFAULT_CLI_BRIDGE_ORIGINS = Object.freeze([
 
 const SESSION_BRIDGE_TOKEN = process.env.VOO_CLI_BRIDGE_TOKEN || randomBytes(32).toString("hex");
 process.env.VOO_CLI_BRIDGE_TOKEN = SESSION_BRIDGE_TOKEN;
+writeBridgeToken(SESSION_BRIDGE_TOKEN);
 
 export function isAllowedOrigin(origin, allowedSet) {
   return typeof origin === "string" && allowedSet.has(origin);
