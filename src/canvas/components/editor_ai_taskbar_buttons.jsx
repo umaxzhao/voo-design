@@ -8,6 +8,8 @@ import {
   IconWand,
 } from "../icons.jsx";
 import InfoHint from "./info_hint.jsx";
+import ScrubField from "./scrub_field.jsx";
+import { useScrubDrag } from "./use_scrub_drag.js";
 import { useI18n } from "../use_i18n.js";
 import { CAPABILITY, isCapabilitySupported } from "../platform_capabilities.js";
 import {
@@ -34,25 +36,40 @@ export const ICON_BTN =
 export const ICON_BTN_DEFAULT = `${ICON_BTN} text-neutral-400 hover:bg-white/10 hover:text-neutral-200`;
 export const ICON_BTN_AI = `${ICON_BTN} bg-white/10 text-neutral-300 hover:bg-white/20 hover:text-white`;
 
-/** One retouch slider row: name, current percent, and the range input. */
+/** One retouch row: a caption and one combined scrubbable percent field. */
 function RetouchSlider({ slider, value, disabled, onChange, t }) {
   const label = t(slider.labelKey);
+  const scrub = useScrubDrag({
+    value,
+    step: slider.step,
+    min: slider.min,
+    max: slider.max,
+    onScrub: onChange,
+  });
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-baseline justify-between gap-2 text-[10px] font-mono uppercase tracking-wide text-neutral-400">
-        <span>{label}</span>
-        <span className="tabular-nums text-neutral-300">{value}%</span>
-      </div>
-      <input
-        type="range"
+    <div className="flex min-h-7 items-center gap-2">
+      <span
+        title={label}
+        aria-hidden="true"
+        {...(disabled ? {} : scrub)}
+        className={`w-[84px] shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-400 ${
+          disabled ? "opacity-40" : "cursor-ew-resize touch-none select-none"
+        }`}
+      >
+        {label}
+      </span>
+      <ScrubField
+        value={value}
         min={slider.min}
         max={slider.max}
         step={slider.step}
-        value={value}
+        suffix="%"
+        onValueChange={onChange}
+        ariaLabel={label}
+        scrubHint={t("editor.props.dragToAdjust")}
         disabled={disabled}
-        onChange={(event) => onChange(Number(event.target.value))}
-        aria-label={label}
-        className="flat-range w-full cursor-pointer"
+        showRange
+        className="min-w-0 flex-1"
       />
     </div>
   );

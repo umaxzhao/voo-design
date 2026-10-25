@@ -17,7 +17,7 @@ import EditorProperties from "../../src/canvas/components/editor_properties/inde
 import { TOOL } from "../../src/canvas/editor/editor_constants.js";
 
 describe("brush size controls", () => {
-  it("omits quick size buttons while keeping the width slider and numeric field", () => {
+  it("omits quick size buttons and keeps one combined width field", () => {
     const html = renderToStaticMarkup(
       <EditorProperties
         tool={TOOL.BRUSH}
@@ -27,7 +27,8 @@ describe("brush size controls", () => {
 
     expect(html).not.toMatch(/<button[^>]*>\s*(?:4|8|16|24|48|96|160)\s*<\/button>/);
     expect(html).not.toContain("editor.props.size");
-    expect(html).toContain('type="range"');
+    // One combined scrubbable field: no separate range bar beside a number box.
+    expect(html).not.toContain('type="range"');
     expect(html).toContain('type="number"');
     expect(html).toContain("editor.brushWidth");
   });

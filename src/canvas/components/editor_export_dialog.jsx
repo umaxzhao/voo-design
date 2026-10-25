@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { useI18n } from "../use_i18n.js";
 import { CAPABILITY, isCapabilitySupported } from "../platform_capabilities.js";
 import { useExportDialogKeyboard } from "./editor_hooks/use_export_dialog_keyboard.js";
+import ScrubField from "./scrub_field.jsx";
 
 const FORMATS = [
   ["png", "editor.exportPng"],
@@ -193,21 +194,23 @@ export default function EditorExportDialog({
             ))}
           </div>
           {(format === "jpeg" || format === "webp") && (
-            <label className="flex items-center gap-2 text-[11px] text-neutral-400">
-              <span>{t("editor.exportQuality")}</span>
-              <input
-                type="range"
-                min={0.5}
-                max={1}
-                step={0.02}
-                value={quality}
-                onChange={(event) => onQuality(Number(event.target.value))}
-                className="flat-range min-w-0 flex-1"
-              />
-              <span className="w-8 text-right tabular-nums">
-                {Math.round(quality * 100)}%
+            <div className="flex items-center gap-2 text-[11px] text-neutral-400">
+              <span aria-hidden="true" className="shrink-0">
+                {t("editor.exportQuality")}
               </span>
-            </label>
+              <ScrubField
+                value={Math.round(quality * 100)}
+                min={50}
+                max={100}
+                step={2}
+                suffix="%"
+                onValueChange={(next) => onQuality(next / 100)}
+                ariaLabel={t("editor.exportQuality")}
+                scrubHint={t("editor.props.dragToAdjust")}
+                showRange
+                className="min-w-0 flex-1"
+              />
+            </div>
           )}
           {!["svg", "psd"].includes(format) && (
             <div className="flex gap-2" role="group" aria-label={t("editor.exportScale")}>

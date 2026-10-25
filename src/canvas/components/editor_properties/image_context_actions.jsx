@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { TOOL } from "../../editor/editor_constants.js";
 import { normalizeAdjustments } from "../../editor/scene_model.js";
 import { useI18n } from "../../use_i18n.js";
+import ScrubField from "../scrub_field.jsx";
 
 const ACTION_BUTTON_CLASS =
   "min-h-8 rounded-lg border border-white/10 bg-white/[0.04] px-2 text-left text-[11px] text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]";
@@ -154,23 +155,24 @@ export default function ImageContextActions({
         </summary>
         <div className="space-y-2 border-t border-white/10 pb-2 pt-2">
           {["brightness", "contrast"].map((kind) => (
-            <label
+            <div
               key={kind}
-              className="flex items-center gap-2 text-[10px] text-neutral-400"
+              className="flex min-h-7 items-center gap-2 text-[10px] text-neutral-400"
             >
-              <span className="w-16 shrink-0">{t(`editor.adjust.${kind}`)}</span>
-              <input
-                type="range"
-                min="-100"
-                max="100"
+              <span aria-hidden="true" className="w-[84px] shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-500">
+                {t(`editor.adjust.${kind}`)}
+              </span>
+              <ScrubField
                 value={adjustments[kind].value}
-                aria-label={t(`editor.adjust.${kind}`)}
-                onChange={(event) =>
-                  updateAdjustment(kind, Number(event.target.value))
-                }
-                className="min-w-0 flex-1 accent-[#a7ffd4]"
+                min={-100}
+                max={100}
+                onValueChange={(next) => updateAdjustment(kind, next)}
+                ariaLabel={t(`editor.adjust.${kind}`)}
+                scrubHint={t("editor.props.dragToAdjust")}
+                showRange
+                className="min-w-0 flex-1"
               />
-            </label>
+            </div>
           ))}
         </div>
       </details>

@@ -6,6 +6,7 @@ import {
   MASK_BRUSH_MIN,
 } from "../../editor/editor_constants.js";
 import { maskErrorCopy } from "../../error_text.js";
+import ScrubField from "../scrub_field.jsx";
 
 export default function PropertiesPanelMaskToolbar({
   maskEditing,
@@ -37,29 +38,34 @@ export default function PropertiesPanelMaskToolbar({
           </button>
         ))}
       </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="range"
+      <div className="flex min-h-7 items-center gap-2">
+        <span aria-hidden="true" className="w-[84px] shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-500">
+          {t("editor.mask.brushSize")}
+        </span>
+        <ScrubField
+          value={maskEditing.size}
           min={MASK_BRUSH_MIN}
           max={MASK_BRUSH_MAX}
-          value={maskEditing.size}
-          aria-label={t("editor.mask.brushSize")}
-          onChange={(e) => maskActions.onSize?.(Number(e.target.value))}
-          className="flat-range min-w-0 flex-1"
+          onValueChange={(next) => maskActions.onSize?.(next)}
+          ariaLabel={t("editor.mask.brushSize")}
+          scrubHint={t("editor.props.dragToAdjust")}
+          showRange
+          className="min-w-0 flex-1"
         />
-        <span className="w-6 shrink-0 text-right text-[10px] font-mono tabular-nums text-neutral-400">
-          {maskEditing.size}
-        </span>
       </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="range"
+      <div className="flex min-h-7 items-center gap-2">
+        <span aria-hidden="true" className="w-[84px] shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-500">
+          {t("editor.mask.feather")}
+        </span>
+        <ScrubField
+          value={feather}
           min={0}
           max={40}
-          value={feather}
-          aria-label={t("editor.mask.feather")}
-          onChange={(e) => setFeather(Number(e.target.value))}
-          className="flat-range min-w-0 flex-1"
+          onValueChange={(next) => setFeather(next)}
+          ariaLabel={t("editor.mask.feather")}
+          scrubHint={t("editor.props.dragToAdjust")}
+          showRange
+          className="min-w-0 flex-1"
         />
         <button
           type="button"

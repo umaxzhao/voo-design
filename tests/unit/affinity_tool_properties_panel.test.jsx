@@ -61,7 +61,9 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     expect(html).toContain("editor.tool.brush");
 
     expect(html).toContain("editor.brushWidth");
-    expect(html).toContain('type="range"');
+    // The width control is one combined field, not a range bar + number box.
+    expect(html).not.toContain('type="range"');
+    expect(html).toContain('type="number"');
     expect(html).not.toContain("editor.props.size");
     expect(html).not.toMatch(/<button[^>]*>\s*(?:4|8|16|24|48|96|160)\s*<\/button>/);
 
