@@ -11,13 +11,13 @@ import {
   IconSliders,
   IconChevronDown,
   IconMinus,
-  IconOpacity,
 } from "../../icons.jsx";
 import { Paintbrush, AlignCenterHorizontal } from "lucide-react";
 import StrokeStyleSection from "./stroke_style_section.jsx";
 import EditorTooltip from "../editor_tooltip.jsx";
 import ScrubField from "../scrub_field.jsx";
 import { Swatch, HexField, HEX_COLOUR } from "./colour_swatch.jsx";
+import { opacityPatch } from "../../color_picker/opacity_patch.js";
 import {
   SectionAddButton,
   StaticSection,
@@ -94,6 +94,13 @@ export function StrokeSection({
               value={none ? null : stroke}
               onPick={(colour) => editAndCommit({ stroke: colour })}
               ariaLabel={t("editor.props.stroke")}
+              opacity={strokeOpacityMixed ? null : strokeOpacity}
+              onOpacityChange={
+                strokeOpacityMixed
+                  ? null
+                  : (val) => edit(opacityPatch("strokeOpacity", val))
+              }
+              onOpacityCommit={commitNow}
             />
             <span className="shrink-0 text-neutral-500" aria-hidden="true">
               <Paintbrush size={11} />
@@ -119,20 +126,13 @@ export function StrokeSection({
                 </span>
               ) : (
                 <>
-                  <span className="text-neutral-500" aria-hidden="true">
-                    <IconOpacity size={11} />
-                  </span>
                   <ScrubValueInput
                     min={0}
                     max={100}
                     step={1}
                     value={strokeOpacity}
                     format={(val) => `${val}`}
-                    onChange={(val) =>
-                      edit({
-                        strokeOpacity: Math.max(0, Math.min(1, val / 100)),
-                      })
-                    }
+                    onChange={(val) => edit(opacityPatch("strokeOpacity", val))}
                     onCommit={commitNow}
                     ariaLabel={t("editor.props.opacity")}
                     scrubHint={t("editor.props.dragToAdjust")}

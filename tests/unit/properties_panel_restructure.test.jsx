@@ -134,18 +134,17 @@ describe("empty sections do not render; extras hide behind one add menu", () => 
 });
 
 describe("fill row", () => {
-  it("keeps visibility and blend mode inside the fill row, not as a second full-width bar", () => {
+  it("keeps visibility inside the fill row; the blend mode lives in the colour picker", () => {
     const html = renderToStaticMarkup(
       <FillSection object={{ kind: "rect", fill: "#ff0000" }} edit={noop} editAndCommit={noop} />,
     );
-    expect(html.match(/aria-label="Fill blend mode"/g)).toHaveLength(1);
+    expect(html).not.toContain('aria-label="Fill blend mode"');
     expect(html.match(/aria-label="Fill visible"/g)).toHaveLength(1);
     expect(html).not.toContain('type="checkbox"');
-    // Normal blend shows no mode name; a non-normal mode names itself.
-    expect(html).not.toContain(">source-over<");
+    // Even a non-normal mode no longer names itself in the row.
     const dodge = renderToStaticMarkup(
       <FillSection object={{ kind: "rect", fill: "#ff0000", fillBlendMode: "color-dodge" }} edit={noop} editAndCommit={noop} />,
     );
-    expect(dodge).toContain(">color-dodge<");
+    expect(dodge).not.toContain(">color-dodge<");
   });
 });
