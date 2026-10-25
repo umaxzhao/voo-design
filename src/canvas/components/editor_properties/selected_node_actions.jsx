@@ -41,55 +41,66 @@ export default function SelectedNodeActions({
   return (
     <StaticSection title={t("editor.layer.title")}>
       <div className="grid grid-cols-2 gap-1.5">
-        {object.kind === "canvasInstance" && onDetachInstance ? (
-          <button
-            type="button"
-            data-testid="editor-taskbar-detach-instance"
-            onClick={() => onDetachInstance(object.id)}
-            className={`${sectionRowClass} justify-center text-[10px] text-neutral-300`}
-          >
-            {t("editor.component.detach")}
-          </button>
-        ) : onCreateComponent ? (
-          <button
-            type="button"
-            data-testid="editor-taskbar-create-component"
-            onClick={onCreateComponent}
-            className={`${sectionRowClass} justify-center text-[10px] text-neutral-300`}
-          >
-            {t("editor.component.create")}
-          </button>
-        ) : null}
-        {ACTIONS.map(([id, action]) => {
-          const labelKey =
-            id === "lock"
-              ? `editor.taskbar.${object.locked ? "unlock" : "lock"}`
-              : id === "visibility"
-                ? `editor.taskbar.${object.visible === false ? "show" : "hide"}`
-                : `editor.taskbar.${id}`;
-          const testId =
-            id === "lock"
-              ? object.locked
-                ? "unlock"
-                : "lock"
-              : id === "visibility"
-                ? object.visible === false
-                  ? "show"
-                  : "hide"
-                : id;
-          return (
-            <button
-              key={id}
-              type="button"
-              data-testid={`editor-taskbar-${testId}`}
-              aria-label={t(labelKey)}
-              onClick={() => run(action)}
-              className={`${sectionRowClass} justify-center text-[10px] text-neutral-300`}
-            >
-              {t(labelKey)}
-            </button>
-          );
-        })}
+        {/* Layer actions stay collapsed until asked, keeping the panel short. */}
+        <details
+          data-testid="editor-taskbar-layer-actions"
+          className="col-span-2 rounded-lg border border-white/10 bg-white/[0.025] px-2"
+        >
+          <summary className="cursor-pointer rounded-md py-2 text-[10px] text-neutral-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]">
+            {t("editor.layer.actions")}
+          </summary>
+          <div className="grid grid-cols-2 gap-1.5 border-t border-white/10 pb-2 pt-2">
+            {object.kind === "canvasInstance" && onDetachInstance ? (
+              <button
+                type="button"
+                data-testid="editor-taskbar-detach-instance"
+                onClick={() => onDetachInstance(object.id)}
+                className={`${sectionRowClass} justify-center text-[10px] text-neutral-300`}
+              >
+                {t("editor.component.detach")}
+              </button>
+            ) : onCreateComponent ? (
+              <button
+                type="button"
+                data-testid="editor-taskbar-create-component"
+                onClick={onCreateComponent}
+                className={`${sectionRowClass} justify-center text-[10px] text-neutral-300`}
+              >
+                {t("editor.component.create")}
+              </button>
+            ) : null}
+            {ACTIONS.map(([id, action]) => {
+              const labelKey =
+                id === "lock"
+                  ? `editor.taskbar.${object.locked ? "unlock" : "lock"}`
+                  : id === "visibility"
+                    ? `editor.taskbar.${object.visible === false ? "show" : "hide"}`
+                    : `editor.taskbar.${id}`;
+              const testId =
+                id === "lock"
+                  ? object.locked
+                    ? "unlock"
+                    : "lock"
+                  : id === "visibility"
+                    ? object.visible === false
+                      ? "show"
+                      : "hide"
+                    : id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  data-testid={`editor-taskbar-${testId}`}
+                  aria-label={t(labelKey)}
+                  onClick={() => run(action)}
+                  className={`${sectionRowClass} justify-center text-[10px] text-neutral-300`}
+                >
+                  {t(labelKey)}
+                </button>
+              );
+            })}
+          </div>
+        </details>
         {nodes.length > 1 ? (
           <button
             type="button"
