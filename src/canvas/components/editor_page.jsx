@@ -18,7 +18,7 @@ import {
 } from "./editor_panel_layout.js";
 import EditorRegionLabel from "./editor_region_label.jsx";
 import { instanceSnapshotUrl } from "../editor/instance-snapshot.js";
-import EditorPageTitle from "./editor_page_title.jsx";
+import EditorPageTitle, { FRAME_TITLE_HIT_AREA } from "./editor_page_title.jsx";
 import EditorResizeHandles from "./editor_resize_handles.jsx";
 import EditorTextOverlay from "./editor_text_overlay.jsx";
 import EditorOutpaintOverlay from "./editor_outpaint_overlay.jsx";
@@ -920,7 +920,7 @@ export default function EditorPage({
           // A full-width bar over the frame: name at the left, the canvas-type
           // switch at the right. The focused frame's bar is tinted with its
           // type colour; the others show just the name.
-          className={`absolute left-0 ${pageTitleActions ? "z-40" : ""} flex max-w-full items-center gap-1.5 text-[11px] font-mono leading-none transition-colors ${
+          className={`absolute left-0 ${FRAME_TITLE_HIT_AREA} ${pageTitleActions ? "z-40" : ""} flex max-w-full items-center gap-1.5 text-[11px] font-mono leading-none transition-colors ${
             focused ? "text-[#a7ffd4]" : "text-neutral-400 hover:text-neutral-200"
           } ${titlePanHandlers ? "cursor-grab touch-none" : "cursor-pointer"}`}
           {...titlePanHandlers}
@@ -1129,7 +1129,7 @@ export default function EditorPage({
               data-testid="editor-page-title"
               data-editor-artboard-title
               // Same full-width bar as a frame on the free canvas.
-              className={`absolute z-20 flex max-w-[70%] items-center gap-1.5 text-[11px] font-mono leading-none transition-colors ${
+              className={`absolute z-20 ${FRAME_TITLE_HIT_AREA} flex max-w-[70%] items-center gap-1.5 text-[11px] font-mono leading-none transition-colors ${
                 focused ? "text-[#a7ffd4]" : "text-neutral-400 hover:text-neutral-200"
               }`}
               onDoubleClick={startRename}

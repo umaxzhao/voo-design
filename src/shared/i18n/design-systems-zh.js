@@ -1,6 +1,10 @@
-/** 设置 > 设计系统 文案。键：`settings.tabDesignSystems`、`designSystems.*`。 */
+/** 设置 > 设计系统 文案。键：`settings.tab*`（设置抽屉标签）、`designSystems.*`。 */
 export default {
   "settings.tabDesignSystems": "设计系统",
+  "settings.tabPreferences": "常规偏好",
+  "settings.tabAssistant": "AI 助手",
+  "settings.tabProviders": "AI 供应商",
+  "settings.tabShortcuts": "快捷键速查",
   "designSystems.listTitle": "设计系统",
   "designSystems.listHint":
     "选择一个设计系统用于当前页面或进行编辑。内置系统为只读，可复制后自定义。",

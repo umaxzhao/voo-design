@@ -2,6 +2,13 @@ import PropTypes from "prop-types";
 import { useI18n } from "../use_i18n.js";
 
 /**
+ * Hit-area padding for the frame header bar: the 13px text row grows to 25px
+ * (>= 24px target) while the negative margin cancels the offset, so the
+ * visible text does not move.
+ */
+export const FRAME_TITLE_HIT_AREA = "-my-1.5 py-1.5";
+
+/**
  * A frame's name in its header. Double-click the header (handled by the page, since a drag capture retargets it) to rename it in place: Enter or
  * leaving the field keeps the name, Escape cancels, and an empty name goes
  * back to the default one.
