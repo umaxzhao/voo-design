@@ -140,39 +140,36 @@
   }
 
   /*
-   * Keyboard focus has to be visible on every control (Design.md §11, WCAG
-   * 2.4.7). 191 elements carry their own `focus-visible:ring`, but the ones
-   * that did not were left with `outline: none` above and nothing to replace
-   * it — so tabbing through the app moved a focus ring nobody could see.
-   *
-   * Mint is the focus colour by design contract (§2: system and flow), which
-   * is why the per-component rings use `#a7ffd4` too. The outline is drawn
-   * with `outline` rather than a ring so it follows border-radius and costs
-   * no layout.
-   *
-   * `scroll-margin` keeps the browser from scrolling a newly focused control
-   * flush against the viewport edge.
-   */
-  /*
-   * Keyboard focus rings are disabled app-wide. !important also overrides the Tailwind
-   * focus-visible:* utilities: outlines directly, and rings through their shadow variables
-   * (only the ring variables are cleared, so an element's own box-shadow is untouched).
+   * Keyboard focus ring, neutral-300 (#d4d4d4) so it reads on every panel
+   * surface without adding an accent colour. Only `:focus-visible` matches, so
+   * a mouse click or a programmatic focus after one never paints it. The
+   * Tailwind ring variables are cleared (!important) so a control's own
+   * `focus-visible:ring-*` does not stack a second frame on top of this one.
    */
   :focus-visible {
-    outline: none !important;
+    outline: 2px solid #d4d4d4 !important;
+    outline-offset: 2px;
     --tw-ring-shadow: 0 0 #0000 !important;
     --tw-ring-offset-shadow: 0 0 #0000 !important;
     scroll-margin: 8px;
   }
 
+  /*
+   * Text-entry surfaces match `:focus-visible` even for a click, so they keep
+   * the frameless look (they show focus through their own fill/caret).
+   * `tabindex="-1"` targets (dialog shells, headings focused by script) are
+   * outside the Tab order, so a frame around the whole container is noise.
+   */
   input:focus-visible,
   textarea:focus-visible,
-  select:focus-visible {
-    outline: none;
+  select:focus-visible,
+  [contenteditable]:focus-visible,
+  [tabindex="-1"]:focus-visible {
+    outline: none !important;
   }
 
   /*
-   * POINTER MODALITY. A pointer click into a text prompt must not paint the forced mint ring: the
+   * POINTER MODALITY. A pointer click into a text prompt must not paint the forced focus ring: the
    * browser's `:focus-visible` heuristic matches text-entry surfaces even for a click, which is the
    * artefact the user reported. The ring above is untouched for keyboard navigation (Design.md §11,
    * WCAG 2.4.7) and this is NOT a global `outline: none` — it applies only while `useInputModality`

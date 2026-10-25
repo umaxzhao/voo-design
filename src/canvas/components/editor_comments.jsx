@@ -125,7 +125,7 @@ function CommentAvatar({ author, size = 20, t = null }) {
   return (
     <span
       aria-hidden="true"
-      className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-800 text-[9px] leading-none text-neutral-300"
+      className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-800 text-[11px] leading-none text-neutral-300"
       style={{ width: size, height: size }}
     >
       {initialOf(author, t)}
@@ -505,7 +505,7 @@ export default function EditorComments({
               type="button"
               onClick={() => setDraft(null)}
               aria-label={label(t, "editor.comments.cancel", "Cancel")}
-              className="flex size-6 items-center justify-center rounded-lg text-neutral-400 outline-none hover:bg-neutral-800 hover:text-neutral-200 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+              className="flex size-7 items-center justify-center rounded-lg text-neutral-400 outline-none hover:bg-neutral-800 hover:text-neutral-200 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
             >
               <X size={12} />
             </button>
@@ -582,7 +582,7 @@ export default function EditorComments({
               type="button"
               onClick={closeThread}
               aria-label={label(t, "editor.comments.close", "Close comments")}
-              className="flex size-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 outline-none hover:bg-neutral-800 hover:text-neutral-200 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+              className="flex size-7 shrink-0 items-center justify-center rounded-lg text-neutral-400 outline-none hover:bg-neutral-800 hover:text-neutral-200 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
             >
               <X size={12} />
             </button>

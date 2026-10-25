@@ -64,7 +64,7 @@ export default function EditorCanvasTreeRow({
           event.stopPropagation();
           onToggleCollapse?.(page.id);
         }}
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.08] hover:text-neutral-200 focus-visible:outline-none focus-visible:ring-1 ${
+        className={`-mx-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.08] hover:text-neutral-200 focus-visible:outline-none focus-visible:ring-1 ${
           isComponent ? "focus-visible:ring-[#E5B2FF]" : "focus-visible:ring-[#a7ffd4]"
         }`}
       >

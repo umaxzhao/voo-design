@@ -190,7 +190,7 @@ export default function PageSwitcher() {
                       draggable={false}
                       onDragStart={(event) => event.preventDefault()}
                       onClick={onClick}
-                      className="flex h-7 w-6 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-[#a7ffd4]"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-[#a7ffd4]"
                     >
                       <Icon size={13} />
                     </button>

@@ -34,7 +34,7 @@ function Avatar({ peer, index, size = 22 }) {
         height: size,
         marginLeft: index === 0 ? 0 : -6,
         zIndex: MAX_FACES - index,
-        fontSize: Math.round(size * 0.4),
+        fontSize: Math.max(11, Math.round(size * 0.4)),
       }}
       className="relative flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full font-medium text-black"
     >
@@ -168,7 +168,7 @@ export default function CollabAvatars({
         {overflow > 0 ? (
           <span
             style={{ marginLeft: -6 }}
-            className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-neutral-800 px-1 text-[9px] font-medium text-neutral-200"
+            className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-neutral-800 px-1 text-[11px] font-medium text-neutral-200"
           >
             +{overflow}
           </span>

@@ -49,7 +49,7 @@ export function EditorActions({
             disabled={!canUndo}
             onClick={onUndo}
             aria-label={t("editor.undo")}
-            className="rounded-full p-2 text-neutral-400 transition-all hover:bg-neutral-800 hover:text-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-neutral-400"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-neutral-800 hover:text-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-neutral-400"
           >
             <IconUndo size={15} />
           </button>
@@ -60,7 +60,7 @@ export function EditorActions({
             disabled={!canRedo}
             onClick={onRedo}
             aria-label={t("editor.redo")}
-            className="rounded-full p-2 text-neutral-400 transition-all hover:bg-neutral-800 hover:text-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-neutral-400"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-neutral-800 hover:text-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-neutral-400"
           >
             <IconRedo size={15} />
           </button>
@@ -80,7 +80,7 @@ export function EditorActions({
               onClick={onToggleGrid}
               aria-label={t("editor.view.grid")}
               aria-pressed={showGrid}
-              className={`rounded-full p-2 transition-all ${
+              className={`flex h-8 w-8 items-center justify-center rounded-full transition-all ${
                 showGrid
                   ? "bg-white text-black font-medium"
                   : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
@@ -105,7 +105,7 @@ export function EditorActions({
               onClick={onToggleHistory}
               aria-label={t("editor.history")}
               aria-pressed={historyOpen}
-              className={`rounded-full p-2 transition-all ${
+              className={`flex h-8 w-8 items-center justify-center rounded-full transition-all ${
                 historyOpen
                   ? "bg-white text-black font-medium"
                   : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
@@ -125,7 +125,7 @@ export function EditorActions({
               type="button"
               onClick={onToggleAxis}
               aria-label={t("editor.pages.toggleAxis")}
-              className="rounded-full p-2 text-neutral-400 transition-all hover:bg-neutral-800 hover:text-neutral-100"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-neutral-800 hover:text-neutral-100"
             >
               <IconSwap
                 size={15}
@@ -144,7 +144,7 @@ export function EditorActions({
               type="button"
               onClick={onAddPage}
               aria-label={t("editor.pages.add")}
-              className="rounded-full p-2 text-neutral-400 transition-all hover:bg-neutral-800 hover:text-neutral-100"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-neutral-800 hover:text-neutral-100"
             >
               <IconAdd size={15} />
             </button>
@@ -203,7 +203,7 @@ export function EditorActions({
             type="button"
             onClick={onClose}
             aria-label={t("editor.exit.discard")}
-            className="rounded-full p-2 text-neutral-400 transition-all hover:bg-neutral-800 hover:text-neutral-100"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-neutral-800 hover:text-neutral-100"
           >
             <IconClose size={15} />
           </button>

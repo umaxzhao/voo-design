@@ -94,7 +94,7 @@ export default function EditorCanvasPresets({
         aria-label={t("editor.canvas.size")}
         aria-expanded={open}
         title={t("editor.canvas.size")}
-        className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-mono tabular-nums transition-all ${
+        className={`flex items-center gap-1.5 rounded-full min-h-7 px-2.5 py-0.5 text-[11px] font-mono tabular-nums transition-all ${
           open
             ? "bg-[#282828] text-white"
             : "bg-[#181818]/90 text-neutral-400 hover:text-white hover:bg-[#262626]"
