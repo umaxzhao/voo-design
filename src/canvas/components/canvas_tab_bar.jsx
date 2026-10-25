@@ -37,7 +37,7 @@ export default function CanvasTabBar() {
         return (
         <div
           key={document.id}
-          className={`group flex h-7 max-w-[240px] shrink-0 items-center gap-1.5 rounded-full pl-3 pr-1.5 text-[12px] transition-colors ${
+          className={`group flex h-7 max-w-[240px] shrink-0 items-center gap-1.5 rounded-full pr-1.5 text-[12px] transition-colors ${
             active && !welcomeOpen
               ? "bg-neutral-800/75 text-white"
               : "bg-neutral-800/50 text-white/85 hover:bg-neutral-800/75 hover:text-white"
@@ -48,13 +48,15 @@ export default function CanvasTabBar() {
             role="tab"
             aria-selected={active && !welcomeOpen}
             onClick={() => switchDocument(document.id)}
-            className="min-w-0 flex-1 truncate text-left outline-none cursor-pointer font-medium"
+            className="h-full min-w-0 flex-1 truncate pl-3 text-left outline-none cursor-pointer font-medium"
             title={label || FALLBACK_NAME}
           >
             {label || FALLBACK_NAME}
           </button>
           {dirty && (
             <span
+              role="img"
+              aria-label={t("canvasTabs.unsaved")}
               className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400"
               title={t("canvasTabs.unsaved")}
             />
@@ -62,11 +64,15 @@ export default function CanvasTabBar() {
           <button
             type="button"
             onClick={() => closeDocument(document.id, () => window.confirm(t("editor.exit.confirmBody")))}
-            className="flex size-4 shrink-0 items-center justify-center rounded-full text-white/50 hover:bg-white/20 hover:text-white transition-colors cursor-pointer"
+            // 28px hit area; -m-1.5 keeps the layout footprint at the 16px circle.
+            className="group/close -m-1.5 flex size-7 shrink-0 items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer"
+            style={{ WebkitAppRegion: "no-drag" }}
             title={t("canvasTabs.close")}
             aria-label={t("canvasTabs.close")}
           >
-            <X size={12} strokeWidth={2.2} />
+            <span className="flex size-4 items-center justify-center rounded-full transition-colors group-hover/close:bg-white/20">
+              <X size={12} strokeWidth={2.2} />
+            </span>
           </button>
         </div>
       ); })}
