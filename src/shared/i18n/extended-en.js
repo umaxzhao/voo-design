@@ -1212,6 +1212,7 @@ export default {
   "editor.layer.new": "New layer",
   "editor.layer.rename": "Rename layer",
   "editor.layer.title": "Layer",
+  "editor.layer.actions": "Layer actions",
   "editor.layer.clipped":
     "Clipping mask: this layer's pixels are clipped into the layer below (Alt+⌘G to create, ⇧Alt+⌘G to release)",
   "editor.layers.adjustments": "Adjustments",

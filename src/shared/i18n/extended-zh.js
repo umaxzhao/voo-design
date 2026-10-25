@@ -1190,6 +1190,7 @@ export default {
   "editor.layer.new": "新建图层",
   "editor.layer.rename": "重命名图层",
   "editor.layer.title": "图层",
+  "editor.layer.actions": "图层操作",
   "editor.layer.clipped":
     "剪贴蒙版：此图层内容仅在下方图层范围内显示（Alt+⌘G创建，⇧Alt+⌘G释放）",
   "editor.layers.adjustments": "调整",

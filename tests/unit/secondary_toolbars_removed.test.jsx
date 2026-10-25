@@ -20,13 +20,18 @@ describe("secondary editor bars", () => {
     expect(page).not.toContain("editor-page-toolbar");
   });
 
-  it("shows common selected-layer actions in the right-panel section", () => {
+  it("keeps layer actions inside the collapsed disclosure and Ask VOO agent visible", () => {
     const markup = renderToStaticMarkup(
       <SelectedNodeActions
         object={{ id: "image-1", kind: "image" }}
         engine={{}}
       />,
     );
+    const layerActions = markup.match(
+      /<details[^>]*data-testid="editor-taskbar-layer-actions"[^>]*>[\s\S]*?<\/details>/,
+    )?.[0];
+    expect(layerActions).toBeDefined();
+    expect(layerActions).toContain("editor.layer.actions");
     for (const id of [
       "duplicate",
       "lock",
@@ -34,10 +39,26 @@ describe("secondary editor bars", () => {
       "bringForward",
       "sendBackward",
       "delete",
-      "ai-sparkle",
     ]) {
-      expect(markup).toContain(`data-testid="editor-taskbar-${id}"`);
+      expect(layerActions).toContain(`data-testid="editor-taskbar-${id}"`);
     }
+    // Ask VOO agent stays outside the disclosure, always visible.
+    expect(layerActions).not.toContain("editor-taskbar-ai-sparkle");
+    expect(markup).toContain('data-testid="editor-taskbar-ai-sparkle"');
+  });
+
+  it("keeps the layer actions disclosure collapsed by default", () => {
+    const markup = renderToStaticMarkup(
+      <SelectedNodeActions
+        object={{ id: "image-1", kind: "image" }}
+        engine={{}}
+      />,
+    );
+    const openTag = markup.match(
+      /<details[^>]*data-testid="editor-taskbar-layer-actions"[^>]*>/,
+    )?.[0];
+    expect(openTag).toBeDefined();
+    expect(openTag).not.toMatch(/\sopen(\s|>|=)/);
   });
 
   it("keeps image crop, replace, and background removal in image properties", () => {
