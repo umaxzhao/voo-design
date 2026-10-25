@@ -32,7 +32,7 @@ export function WelcomePromptComposer({
                 role="radio"
                 aria-checked={isSelected}
                 onClick={() => setActivePill(typeItem.id)}
-                className={`group flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+                className={`group flex min-w-[5rem] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
                   isSelected
                     ? "bg-neutral-800 text-white shadow-pop ring-1 ring-white/10"
                     : "bg-neutral-900/70 text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200"
@@ -48,7 +48,7 @@ export function WelcomePromptComposer({
                     }`}
                   />
                 )}
-                <span>{t(typeItem.label)}</span>
+                <span className="whitespace-nowrap">{t(typeItem.label)}</span>
               </button>
             );
           })}
@@ -56,7 +56,7 @@ export function WelcomePromptComposer({
       </div>
 
       {/* Central Prompt Box */}
-      <form onSubmit={handlePromptSubmit} className="prompt-composer relative rounded-3xl p-4 transition-all">
+      <form onSubmit={handlePromptSubmit} className="prompt-composer relative min-w-0 rounded-3xl p-4 transition-all">
         <div className="absolute -top-px left-1/4 right-1/4 h-px bg-white/10 pointer-events-none" />
 
         <textarea
@@ -80,7 +80,7 @@ export function WelcomePromptComposer({
           className="w-full resize-none bg-transparent text-xs text-neutral-100 placeholder-neutral-400 focus:outline-none"
         />
 
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -92,12 +92,12 @@ export function WelcomePromptComposer({
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-mono">
               <span>1x</span>
             </div>
 
-            <div className="flex items-center gap-1 text-xs text-neutral-400 bg-neutral-800/70 px-2.5 py-1 rounded-lg">
+            <div className="flex min-w-0 items-center gap-1 text-xs text-neutral-400 bg-neutral-800/70 px-2.5 py-1 rounded-lg">
               <span>{selectedModel}</span>
             </div>
 

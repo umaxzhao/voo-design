@@ -45,7 +45,7 @@ function AgentCard({ id, icon, name, status, statusText, selected, onSelect, tes
         </span>
       )}
       <span aria-hidden="true" className="flex size-7 items-center justify-center text-neutral-100">{icon}</span>
-      <span className="max-w-full break-words text-xs font-semibold text-neutral-100">{name}</span>
+      <span className="max-w-full break-normal text-xs font-semibold text-neutral-100">{name}</span>
       <span
         data-testid={`${testIds.status}-${id}`}
         data-status={status}
