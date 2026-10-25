@@ -113,3 +113,23 @@ describe("agent card grid", () => {
     expect(onSelect.mock.calls).toEqual([["codex"], ["custom"]]);
   });
 });
+
+describe("agent grid host adaptation", () => {
+  it("lets a host pick and order platforms, drop the custom card and rename test ids", () => {
+    const html = render({ phase: DETECTION_PHASE.CHECKING }, {
+      agentIds: ["claude", "codex"],
+      showCustom: false,
+      testIds: { grid: "host-grid", card: "host-card", status: "host-status" },
+    });
+    expect(html).toContain('data-testid="host-grid"');
+    expect(html.indexOf("host-card-claude")).toBeLessThan(html.indexOf("host-card-codex"));
+    expect(html).not.toContain("host-card-antigravity");
+    expect(html).not.toContain("host-card-custom");
+    expect(html).toContain("grid-cols-3");
+  });
+  it("keeps the first-run defaults when no host props are given", () => {
+    const html = render({ phase: DETECTION_PHASE.CHECKING });
+    expect(html).toContain('data-testid="first-run-agent-card-custom"');
+    expect(html).toContain('data-testid="first-run-agent-grid"');
+  });
+});
