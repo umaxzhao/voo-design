@@ -173,8 +173,11 @@ export function drawClonePreview(
   ctx.stroke();
 
   // 3. If source anchor exists, draw reference source crosshair anchor marker on the image
-  if (cloneSource?.point) {
-    drawCloneAnchor(ctx, cloneSource, viewport);
+  const anchorMarker = sourceAnchor
+    ? { ...cloneSource, point: sourceAnchor }
+    : cloneSource;
+  if (anchorMarker?.point) {
+    drawCloneAnchor(ctx, anchorMarker, viewport);
   }
 
   ctx.restore();

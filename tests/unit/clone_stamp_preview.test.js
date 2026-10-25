@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { drawClonePreview } from "../../src/canvas/editor/chrome_clone.js";
 
 function makeContext() {
-  const calls = { arcs: [], images: 0, clips: 0, imageArgs: null };
+  const calls = {
+    arcs: [],
+    images: 0,
+    clips: 0,
+    imageArgs: null,
+    lines: [],
+  };
   return {
     calls,
     canvas: { width: 500, height: 500 },
@@ -11,8 +17,8 @@ function makeContext() {
     beginPath() {},
     arc(...args) { calls.arcs.push(args); },
     clip() { calls.clips += 1; },
-    moveTo() {},
-    lineTo() {},
+    moveTo(x, y) { calls.lines.push(["move", x, y]); },
+    lineTo(x, y) { calls.lines.push(["line", x, y]); },
     stroke() {},
     setLineDash() {},
     drawImage(...args) {
@@ -76,6 +82,30 @@ describe("clone stamp live preview", () => {
     );
 
     expect(ctx.calls.arcs).toContainEqual([30, 40, 10, 0, Math.PI * 2]);
+  });
+
+  it("moves the target cross with the pointer and keeps the source cross anchored", () => {
+    const ctx = makeContext();
+    const sourceAnchor = { x: 30, y: 40 };
+    drawClonePreview(
+      ctx,
+      {
+        cursor: { x: 80, y: 100 },
+        sourceAnchor,
+        targetAnchor: { x: 70, y: 90 },
+        sourcePoint: { x: 40, y: 50 },
+        size: 20,
+      },
+      { ...source, point: { x: 40, y: 50 } },
+      bitmapOf,
+      doc,
+      viewport,
+    );
+
+    expect(ctx.calls.lines).toContainEqual(["move", 75, 100]);
+    expect(ctx.calls.lines).toContainEqual(["move", 80, 95]);
+    expect(ctx.calls.lines).toContainEqual(["move", 21, 40]);
+    expect(ctx.calls.lines).toContainEqual(["move", 30, 31]);
   });
 
   it("draws no source circle or preview content without a source", () => {
