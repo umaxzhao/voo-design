@@ -17,21 +17,21 @@ codegen、ruler guides、`.pen` import、Find/⌘K、constraints 已落地。本
 | 8 | **文本大小写** | Original/Upper/Lower/Title，参与绘制与排版测量，存储内容不变（面板新增 Text case） | `a4a50d5` |
 | 9 | **矢量蒙版（等价能力）** | 剪贴蒙版（⌥⌘G / ⇧⌥⌘G）已存在但只能靠快捷键/⌘K：补到右键菜单 Create/Release clipping mask；路径基座即矢量蒙版 | 本次 |
 | 10 | **便携快照 .zip** | `snapshot_io.js`：document.voo + manifest + preview 打包；标题栏快照按钮导出；Open 自动识别 `.zip` 并解包（含畸形 zip 防护）；`buildProjectVooFile` 从保存路径抽出共用 | `9a12ff7` |
-| 11 | **清理** | 引擎参数重复键去重；原型 runner 移出 presentation 懒加载 chunk（修复循环初始化崩溃） | `c6e0625` / `aaf8bfd` |
+| 11 | **轻色界面主题** | `voo.editor.theme` 启动前应用 `html[data-theme]`；设置 → 外观开关；`theme-light.css` 重映射中性色阶/描边/surface token/共享面板；开关、画布 ground、accent 文本单独处理；44 状态浅色巡检 0 error/裁剪/漏翻/无名称 | `977a5ae` |
+| 12 | **清理** | 引擎参数重复键去重；原型 runner 移出 presentation 懒加载 chunk（修复循环初始化崩溃） | `c6e0625` / `aaf8bfd` |
 
 ## 2. 验证
 
-- `npx vitest run`：**3303 passed / 12 skipped / 0 failed**
-- `npm run lint:design`：clean（1087 files）
+- `npx vitest run`：**3307 passed / 12 skipped / 0 failed**
+- `npm run lint:design`：clean（1090 files）
 - `npm run build`：通过（`dist` 已重建）
-- 44 状态巡检：**0 error / 0 裁剪 / 0 漏翻 / 0 无名称**
+- 44 状态巡检（深色 + `VOO_AUDIT_THEME=light`）：**0 error / 0 裁剪 / 0 漏翻 / 0 无名称**
 - 运行时验证：布局网格可见（网格/列）、Inspect 面板、原型 Red→Blue 跳转、Export 下载、header 重命名、canvas/stage 尺寸一致
 
 ## 3. 仍未做（明确遗留，非本轮缺陷）
 
 | 项 | 原因 / 需要什么 |
 |---|---|
-| **轻色主题** | 当前 chrome 全部是硬编码 Tailwind 灰阶（`bg-[#0a0a0a]`/`bg-[#222]`/`text-neutral-*`），无 CSS 变量层。做真主题需要先做 token 化（design-system pass），属独立工程，不宜混在功能批次里 |
 | **段落间距 / 富文本 / RTL** | 文本排版是行数组模型（无段落索引），段落间距需要 layout API 改造；RTL/富文本更大 |
 | **评论通知 / @mention / 实时** | 评论模型/面板已完整，缺通知中心与 collab 广播；实时依赖协作层端到端验证 |
 | **桌面端自动保存** | `use_editor_autosave` 是刻意关闭（Photoshop 手动保存），草稿崩溃恢复已有 `useDraftAutosave`；要做成用户选项是产品决策 |
@@ -41,9 +41,9 @@ codegen、ruler guides、`.pen` import、Find/⌘K、constraints 已落地。本
 
 ## 4. 建议下一批
 
-1. 设计 token 化 → 轻色主题（最大剩余项）
-2. 文本排版 API 加段落索引 → 段落间距/大小写组合
-3. 协作层两窗冒烟 → 评论通知/@mention + 实时
+1. 评论通知 / @mention / 实时（依赖协作层两窗冒烟）
+2. 文本排版 API 加段落索引 → 段落间距（Text case 已完成）
+3. 协作层两窗冒烟（需要后端 WebSocket）
 4. `.voo` 快照导出（若确实需要跨工具分发再评估）
 
 ## 5. 复现
