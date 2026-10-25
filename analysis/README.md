@@ -12,8 +12,9 @@ analysis/
   FEATURE_MATRIX.md    # synthesized by Lead: canonical feature matrix + gap verdicts
   FEATURE_MATRIX.json  # synthesized by Lead: machine-readable matrix
   GAP_REPORT.md        # synthesized by Lead: prioritized gap report / backlog
-  pen/                 # pen-analyst output (evidence + features.jsonl + FEATURES.md)
-  figma/               # figma-analyst output
+  RIGHT_PANEL_ALIGNMENT.md # right-hand properties panel: Figma/Pen functional layout → VOO target spec
+  pen/                 # pen-analyst output (evidence + features.jsonl + FEATURES.md; RIGHT_PANEL.md = panel anatomy)
+  figma/               # figma-analyst output (same; RIGHT_PANEL.md = panel anatomy)
   voo/                 # voo-inventory output
 ```
 
