@@ -4,6 +4,9 @@ const base = ['alignment', 'transform', 'constraints', 'layoutChild', 'layer'];
 const paint = ['fill', 'stroke', 'effects', 'export'];
 /** Product contract: tool properties and object properties share one dynamic inspector.
  * Active tools own the panel until the user returns to an object selection mode.
+ * Sections listed here are the minimal default set for a type; extras (live
+ * filters, modifiers, variables, styles, constraints, export) are reached
+ * through the panel's single add menu, not listed here.
  */
 export const PROPERTY_SECTIONS = Object.freeze({
   rectangle: [...base, 'radius', ...paint],

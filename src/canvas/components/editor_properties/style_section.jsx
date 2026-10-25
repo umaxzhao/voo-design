@@ -248,7 +248,7 @@ StyleTypeRow.propTypes = {
  *   create(type, name?), apply(type, styleId), detach(type),
  *   update(type, styleId), rename(type, styleId, name), delete(type, styleId).
  */
-export default function StyleSection({ object, styles = null, styleActions = null }) {
+export default function StyleSection({ object, styles = null, styleActions = null, revealed = false }) {
   const tv = usePanelText();
   const [creating, setCreating] = useState(null);
   const library = normalizeStyles(styles);
@@ -263,6 +263,12 @@ export default function StyleSection({ object, styles = null, styleActions = nul
     return true;
   });
 
+  // Only types with an applied style show by default; the add menu reveals the
+  // rest (so a layer with no styles has no Styles section at all).
+  const appliedTypes = types.filter((type) => object?.styleIds?.[STYLE_TYPE_KEYS[type]]);
+  if (appliedTypes.length === 0 && !revealed) return null;
+  const shownTypes = revealed ? types : appliedTypes;
+
   return (
     <CollapsibleSection
       title={tv("styles.title")}
@@ -270,7 +276,7 @@ export default function StyleSection({ object, styles = null, styleActions = nul
       testId="editor-style-section"
     >
       <div className="flex flex-col gap-2">
-        {types.map((type) => {
+        {shownTypes.map((type) => {
           const list = library[type];
           const activeId = styleIds[STYLE_TYPE_KEYS[type]];
           const activeStyle = activeId
@@ -294,9 +300,11 @@ export default function StyleSection({ object, styles = null, styleActions = nul
             />
           );
         })}
-        <p className="px-0.5 text-[9px] leading-relaxed text-neutral-500">
-          {tv("styles.hint")}
-        </p>
+        {revealed ? (
+          <p className="px-0.5 text-[9px] leading-relaxed text-neutral-500">
+            {tv("styles.hint")}
+          </p>
+        ) : null}
       </div>
     </CollapsibleSection>
   );
@@ -306,4 +314,5 @@ StyleSection.propTypes = {
   object: PropTypes.object.isRequired,
   styles: PropTypes.object,
   styleActions: PropTypes.object,
+  revealed: PropTypes.bool,
 };

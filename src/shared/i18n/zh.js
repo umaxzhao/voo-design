@@ -26,6 +26,7 @@ import variablesZh from "./variables-zh.js";
 import commentsZh from "./comments-zh.js";
 import stylesZh from "./styles-zh.js";
 import constraintsZh from "./constraints-zh.js";
+import panelZh from "./panel-zh.js";
 import commandPaletteZh from "./command-palette-zh.js";
 import findReplaceZh from "./find-replace-zh.js";
 import designSystemsZh from "./design-systems-zh.js";
@@ -71,6 +72,7 @@ export default {
   ...commentsZh,
   ...stylesZh,
   ...constraintsZh,
+  ...panelZh,
   ...commandPaletteZh,
   ...findReplaceZh,
   ...designSystemsZh,

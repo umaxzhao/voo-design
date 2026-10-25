@@ -13,6 +13,7 @@ vi.mock("../../src/canvas/use_i18n.js", () => ({
 }));
 
 import PropertiesPanelSections from "../../src/canvas/components/editor_properties/properties_panel_sections.jsx";
+import ModifiersSection from "../../src/canvas/components/editor_properties/modifiers_section.jsx";
 
 const t = (key) => key;
 const noop = () => {};
@@ -38,25 +39,46 @@ function renderSections(props) {
 }
 
 describe("Modifiers group", () => {
-  it("renders the group with an empty stack for a single group", () => {
+  it("renders no Modifiers section for an empty stack; the add menu offers it", () => {
     const html = renderSections();
-    expect(html).toContain('data-testid="editor-modifiers-section"');
-    expect(html).toContain("editor.props.modifiers");
-    expect(html).toContain('data-testid="editor-modifiers-empty"');
+    expect(html).not.toContain('data-testid="editor-modifiers-section"');
+    expect(html).not.toContain('data-testid="editor-modifiers-empty"');
+    expect(html).toContain('data-testid="properties-add-menu"');
     expect(html).not.toContain('editor-repeat-array-section');
     expect(html).not.toContain('editor.props.repeatArray');
     expect(html).not.toContain('editor-linear-array-enable');
   });
 
-  it("renders the group for a single non-background layer (rect)", () => {
-    const html = renderSections({
-      object: { id: "n2", kind: "rect", x: 0, y: 0, width: 4, height: 4 },
-    });
-    expect(html).toContain('data-testid="editor-modifiers-section"');
+  it("reveals a header-only Modifiers section with the kind picker from the add menu", () => {
+    for (const object of [
+      { id: "n1", kind: "group", x: 0, y: 0, width: 10, height: 10 },
+      { id: "n2", kind: "rect", x: 0, y: 0, width: 4, height: 4 },
+    ]) {
+      const html = renderToStaticMarkup(
+        <ModifiersSection object={object} engine={makeEngine()} t={t} revealed />,
+      );
+      expect(html).toContain('data-testid="editor-modifiers-section"');
+      expect(html).toContain('data-testid="editor-modifiers-picker"');
+      expect(html).toContain('data-testid="editor-modifiers-add"');
+      expect(html).not.toContain('editor-modifiers-empty');
+    }
+    const hidden = renderToStaticMarkup(
+      <ModifiersSection object={{ id: "n3", kind: "rect" }} engine={makeEngine()} t={t} />,
+    );
+    expect(hidden).toBe("");
   });
 
   it("places Modifiers directly after Effects", () => {
-    const html = renderSections();
+    const html = renderSections({
+      object: {
+        id: "n1", kind: "group", x: 0, y: 0, width: 10, height: 10,
+        adjustments: { brightness: { enabled: true, value: 10 } },
+      },
+      engine: makeEngine(
+        [{ id: "n1", kind: "group" }],
+        [{ id: "m1", type: "linearArray", targetId: "n1", count: 3, step: { x: 20, y: 0, z: 0 } }],
+      ),
+    });
     const effectsAt = html.indexOf("editor.props.effects");
     expect(effectsAt).toBeGreaterThan(-1);
     expect(html.indexOf("editor.props.modifiers")).toBeGreaterThan(effectsAt);

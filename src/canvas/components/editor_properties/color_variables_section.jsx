@@ -35,6 +35,8 @@ export default function ColorVariablesSection({
    */
   variablesV2 = null,
   variableActions = null,
+  /** Show the section while the layer is unbound (set by the panel's add menu). */
+  revealed = false,
 }) {
   const { t } = useI18n();
   const [managerOpen, setManagerOpen] = useState(false);
@@ -100,6 +102,9 @@ export default function ColorVariablesSection({
   useLayoutEffect(() => {
     if (nameInputRef.current) nameInputRef.current.value = activeName;
   }, [documentId, activeId, activeName]);
+
+  // An unbound layer has no variables section until the add menu reveals it.
+  if (!active && !revealed) return null;
 
   return (
     <>
@@ -255,4 +260,5 @@ ColorVariablesSection.propTypes = {
     activeModeByCollection: PropTypes.object,
   }),
   variableActions: PropTypes.object,
+  revealed: PropTypes.bool,
 };

@@ -21,8 +21,6 @@ import PropertiesPanelMaskToolbar from "./properties_panel_mask_toolbar.jsx";
 import PropertiesPanelSections from "./properties_panel_sections.jsx";
 import LiveFilterSection from "./live_filter_section.jsx";
 import { editorPropertiesPropTypes } from "./properties_panel_types.js";
-import PropertiesExportAction from "./properties_export_action.jsx";
-import { downloadSelectionPng } from "./type_specific_sections.jsx";
 import { PROPERTIES_PANEL_MAX_HEIGHT_CLASS } from "../editor_panel_clearance.js";
 
 export const PROPERTIES_PANEL_CONTENT_CLASS = "flex-1 min-h-0 overflow-x-hidden overflow-y-auto";
@@ -296,7 +294,6 @@ export default function EditorProperties({
   }
 
   return (
-    <>
     <aside
       data-testid="editor-properties-panel"
       className={dynamicPanelClass}
@@ -305,7 +302,6 @@ export default function EditorProperties({
       onMouseOver={promoteTitleOnHover}
     >
       {header}
-      {context.sections?.includes("export") && <PropertiesExportAction title={t("editor.export")} label={t("editor.props.exportPng")} onExport={() => downloadSelectionPng(engine, object)} />}
       <div className={contentClass}>
         {showImageActions ? (
           <ImageContextActions
@@ -315,7 +311,6 @@ export default function EditorProperties({
           />
         ) : null}
         {maskToolbar}
-        {object?.isFrame && <VariantsSection engine={engine} isMainComponent={isMainComponent} />}
           <PropertiesPanelSections
             sections={context.sections}
             object={object}
@@ -323,6 +318,7 @@ export default function EditorProperties({
             parentLayout={parentLayout}
             parentIsFrame={parentIsFrame}
             parentNode={parentNode}
+            isMainComponent={isMainComponent}
             colorVariableActions={colorVariableActions}
             styleActions={styleActions}
             docSize={docSize}
@@ -353,7 +349,6 @@ export default function EditorProperties({
           />
       </div>
     </aside>
-    </>
   );
 }
 

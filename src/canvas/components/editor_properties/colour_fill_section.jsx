@@ -6,8 +6,7 @@ import ScrubValueInput from "./scrub_value_input.jsx";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
 import { BLEND_MODES, NODE_KIND } from "../../editor/scene_model.js";
 import { useI18n } from "../../use_i18n.js";
-import { IconMinus, IconOpacity } from "../../icons.jsx";
-import { PaintBucket } from "lucide-react";
+import { IconEye, IconEyeOff, IconMinus, IconOpacity } from "../../icons.jsx";
 import { Swatch, HexField, HEX_COLOUR } from "./colour_swatch.jsx";
 import {
   SectionAddButton,
@@ -67,6 +66,34 @@ function isImageUrlFill(fill) {
       fill.startsWith("http"))
   );
 }
+
+/**
+ * Blend mode inside the fill row. Normal shows as a quiet icon-sized hit area
+ * (the native menu opens on click); any other mode shows its name.
+ */
+function BlendModeControl({ value, title, onChange }) {
+  const normal = value === "source-over";
+  return (
+    <span className={`relative flex h-6 shrink-0 items-center justify-center rounded-lg text-[10px] font-mono text-neutral-300 focus-within:ring-1 focus-within:ring-[#a7ffd4]/40 ${normal ? "w-6 hover:bg-white/[0.08]" : "max-w-[4.5rem] bg-white/[0.06] px-1.5"}`}>
+      <span aria-hidden="true" className="pointer-events-none truncate">{normal ? "◐" : value}</span>
+      <select
+        aria-label="Fill blend mode"
+        title={title}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0 focus-visible:outline-none"
+      >
+        {BLEND_MODES.map((mode) => <option key={mode} value={mode}>{mode === "source-over" ? "Normal" : mode}</option>)}
+      </select>
+    </span>
+  );
+}
+
+BlendModeControl.propTypes = {
+  value: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
 
 export function FillSection({
   object,
@@ -200,9 +227,6 @@ export function FillSection({
             previewImage={imageUrl}
             isImage={isImageNode}
           />
-          <span className="shrink-0 text-neutral-500" aria-hidden="true">
-            <PaintBucket size={11} />
-          </span>
           {isImageNode ? (
             <span className="min-w-0 flex-1 truncate text-[11px] font-mono text-neutral-200">
               {object.name || t("editor.props.imageLabel")}
@@ -252,25 +276,31 @@ export function FillSection({
             )}
             <button
               type="button"
+              aria-label="Fill visible"
+              aria-pressed={object.fillHidden !== true}
+              title={t("editor.panel.fillVisible")}
+              onClick={() => editAndCommit({ fillHidden: object.fillHidden !== true })}
+              className={sectionActionClass}
+            >
+              {object.fillHidden === true ? <IconEyeOff size={12} /> : <IconEye size={12} />}
+            </button>
+            <BlendModeControl
+              value={object.fillBlendMode ?? "source-over"}
+              title={t("editor.panel.fillBlend")}
+              onChange={(mode) => editAndCommit({ fillBlendMode: mode })}
+            />
+            <button
+              type="button"
               onClick={() => onRemove?.()}
               title={t("editor.props.removeFill")}
               aria-label={t("editor.props.removeFill")}
-              className={`${sectionActionClass} ml-1`}
+              className={sectionActionClass}
             >
               <IconMinus size={12} />
             </button>
           </div>
         </div>
       )}
-    <div className="flex items-center gap-2 py-1">
-        <input type="checkbox" aria-label="Fill visible" checked={object.fillHidden !== true}
-          onChange={(event) => editAndCommit({ fillHidden: !event.target.checked })} />
-        <select aria-label="Fill blend mode" value={object.fillBlendMode ?? "source-over"}
-          onChange={(event) => editAndCommit({ fillBlendMode: event.target.value })}
-          className="min-w-0 flex-1 bg-neutral-900 text-[11px] text-neutral-300">
-          {BLEND_MODES.map((mode) => <option key={mode} value={mode}>{mode === "source-over" ? "Normal" : mode}</option>)}
-        </select>
-      </div>
     </div>
   );
 }

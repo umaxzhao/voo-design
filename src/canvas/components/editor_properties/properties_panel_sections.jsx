@@ -1,5 +1,6 @@
 /** Section list rendering for node properties: transform, warp, text, shape, colour, and effects. */
 
+import { useState } from "react";
 import { resolvePanelForContext } from "./resolve_panel_context.js";
 import PropTypes from "prop-types";
 import TypeSpecificSections from "./type_specific_sections.jsx";
@@ -21,6 +22,10 @@ import ColorVariablesSection from "./color_variables_section.jsx";
 import StyleSection from "./style_section.jsx";
 import MediaSection from "./media_section.jsx";
 import ModifiersSection from "./modifiers_section.jsx";
+import VariantsSection from "./variants_section.jsx";
+import PanelAddMenu from "./panel_add_menu.jsx";
+import { resolveExtras } from "./panel_extras.js";
+import { downloadSelectionPng } from "./type_specific_sections.jsx";
 import {
   isRegionNode,
   supportsColour,
@@ -35,6 +40,7 @@ export default function PropertiesPanelSections({
   parentLayout,
   parentIsFrame = false,
   parentNode = null,
+  isMainComponent = false,
   colorVariableActions,
   styleActions,
   docSize,
@@ -69,18 +75,30 @@ export default function PropertiesPanelSections({
     object.kind === "video" ||
     object.kind === "model3d" ||
     object.kind === "audio";
-  // Array modifiers (linear, grid, circular) target one node at a time, so
-  // the group is a single-selection affordance for a layer or group. The
-  // canvas background never reaches the sections (the panel renders the
-  // background panel instead), and frames/adjustments have no array target.
-  const showRepeatArray =
-    !isWarpTool &&
-    !isBackground &&
-    (selectionCount ?? 1) === 1 &&
-    Boolean(object?.id) &&
-    !object.isFrame &&
-    object.kind !== "frame" &&
-    object.kind !== "adjustment";
+  // Optional capabilities stay hidden until the add menu reveals them; the
+  // reveal belongs to one selection and resets when another node is picked.
+  const [revealState, setRevealState] = useState({ id: object?.id, keys: [], effectsPicker: false });
+  const current = revealState.id === object?.id ? revealState : { id: object?.id, keys: [], effectsPicker: false };
+  const revealed = (key) => current.keys.includes(key);
+  const reveal = (key) => setRevealState({ ...current, keys: [...current.keys, key] });
+  const setEffectsPicker = (open) => setRevealState({ ...current, effectsPicker: open });
+  const { eligible, hasContent } = resolveExtras({
+    object, allowed, isWarpTool, isMedia, selectionCount: selectionCount ?? 1,
+    parentLayout, parentIsFrame, parentNode, colorVariableActions, styleActions, engine,
+  });
+  // Array modifiers target one node at a time, so they are a single-selection
+  // affordance; frames and adjustments have no array target.
+  const showRepeatArray = !isBackground && eligible.modifiers;
+  const show = (key) => eligible[key] && (hasContent[key] || revealed(key));
+  const addItems = [
+    eligible.effects && !hasContent.effects && { key: "effects", label: t("editor.panel.effects"), onSelect: () => setEffectsPicker(true) },
+    eligible.liveFilters && !show("liveFilters") && { key: "liveFilters", label: t("editor.liveFilters.title"), onSelect: () => reveal("liveFilters") },
+    eligible.variables && !show("variables") && { key: "variables", label: t("editor.variables.title"), onSelect: () => reveal("variables") },
+    eligible.styles && !show("styles") && { key: "styles", label: t("styles.title"), onSelect: () => reveal("styles") },
+    eligible.constraints && !show("constraints") && { key: "constraints", label: t("editor.constraints.title"), onSelect: () => reveal("constraints") },
+    showRepeatArray && !show("modifiers") && { key: "modifiers", label: t("editor.props.modifiers"), onSelect: () => reveal("modifiers") },
+    eligible.export && { key: "export", label: t("editor.props.exportPng"), onSelect: () => downloadSelectionPng(engine, object) },
+  ].filter(Boolean);
   return (
     <>
       {isWarpTool && tool === TOOL.PUPPET_WARP ? (
@@ -139,36 +157,15 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {/* Resize constraints: how this node follows its parent's resize. Frames
-          (the page itself) and adjustments/regions/audio have no parent box;
-          an auto-layout flow child is positioned by reflowAutoLayout instead. */}
-       {!isWarpTool && has("constraints") &&
-      !object.isFrame &&
-      object.kind !== "adjustment" &&
-      object.kind !== "audio" &&
-      !isRegionNode(object) &&
-      !(parentLayout && object.layoutPosition !== "absolute") &&
-      (selectionCount ?? 1) <= 1 &&
-      (object?.parentId == null ||
-        Boolean(parentLayout) ||
-        Boolean(parentIsFrame) ||
-        Boolean(parentNode?.isFrame) ||
-        parentNode?.kind === "frame" ||
-        Boolean(parentNode?.autoLayout) ||
-        (() => {
-          const engineParent =
-            engine?.getDocument?.()?.nodes?.find?.(
-              (node) => node.id === object.parentId,
-            ) ?? null;
-          return Boolean(
-            engineParent?.isFrame ||
-              engineParent?.kind === "frame" ||
-              engineParent?.autoLayout,
-          );
-        })()) ? (
+      {/* The constraints row appears once set or when the add menu reveals it.
+          Image actions (crop / replace / fit) live in ImageContextActions. */}
+      {show("constraints") ? (
         <ConstraintsSection object={object} editAndCommit={editAndCommit} />
       ) : null}
 
+      {!isWarpTool && object.isFrame ? (
+        <VariantsSection engine={engine} isMainComponent={isMainComponent} />
+      ) : null}
 
       {!isWarpTool && <TypeSpecificSections object={object} sections={allowed} engine={engine} editAndCommit={editAndCommit} />}
 
@@ -240,11 +237,7 @@ export default function PropertiesPanelSections({
           getBitmap={getBitmap}
         />
       ) : null}
-      {!isWarpTool && has("fill") &&
-      colorVariableActions &&
-      supportsColour(object) &&
-      object.kind !== "image" &&
-      selectionCount === 1 ? (
+      {show("variables") ? (
         <ColorVariablesSection
           object={object}
           documentId={colorVariableActions.documentId}
@@ -254,23 +247,23 @@ export default function PropertiesPanelSections({
           onUpdate={colorVariableActions.update}
           variablesV2={colorVariableActions.variablesV2 ?? null}
           variableActions={colorVariableActions.variableActions ?? null}
+          revealed={revealed("variables")}
         />
       ) : null}
 
-      {!isWarpTool && (has("fill") || has("stroke")) &&
-      styleActions &&
-      object.kind !== "adjustment" &&
-      !isMedia &&
-      (selectionCount ?? 1) === 1 ? (
+      {show("styles") ? (
         <StyleSection
           object={object}
           styles={styleActions.styles ?? null}
           styleActions={styleActions.actions ?? null}
+          revealed={revealed("styles")}
         />
       ) : null}
 
-      {!isWarpTool && has("effects") && object.kind !== "adjustment" && !isMedia ? (
+      {eligible.effects ? (
         <LayerEffectsSection
+          addPickerOpen={current.effectsPicker}
+          onAddPickerChange={setEffectsPicker}
           object={object}
           edit={edit}
           editAndCommit={editAndCommit}
@@ -283,12 +276,10 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {!isWarpTool &&
-      has("effects") &&
-      !object.isFrame &&
-      (object.kind === "image" || object.kind === "raster") ? (
+      {eligible.liveFilters ? (
         <LiveFilterSection
           object={object}
+          revealed={revealed("liveFilters")}
           liveFilters={normalizeAdjustments(object.adjustments).liveFilters}
           edit={edit}
           editAndCommit={editAndCommit}
@@ -296,7 +287,9 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {showRepeatArray ? <ModifiersSection object={object} engine={engine} t={t} /> : null}
+      {showRepeatArray ? <ModifiersSection object={object} engine={engine} t={t} revealed={revealed("modifiers")} /> : null}
+
+      <PanelAddMenu items={addItems} />
 
     </>
   );
@@ -309,6 +302,7 @@ PropertiesPanelSections.propTypes = {
   parentLayout: PropTypes.object,
   parentIsFrame: PropTypes.bool,
   parentNode: PropTypes.object,
+  isMainComponent: PropTypes.bool,
   colorVariableActions: PropTypes.object,
   styleActions: PropTypes.object,
   docSize: PropTypes.object,

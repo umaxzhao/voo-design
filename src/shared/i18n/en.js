@@ -26,6 +26,7 @@ import variablesEn from "./variables-en.js";
 import commentsEn from "./comments-en.js";
 import stylesEn from "./styles-en.js";
 import constraintsEn from "./constraints-en.js";
+import panelEn from "./panel-en.js";
 import commandPaletteEn from "./command-palette-en.js";
 import findReplaceEn from "./find-replace-en.js";
 import designSystemsEn from "./design-systems-en.js";
@@ -75,6 +76,7 @@ export default {
   ...commentsEn,
   ...stylesEn,
   ...constraintsEn,
+  ...panelEn,
   ...commandPaletteEn,
   ...findReplaceEn,
   ...designSystemsEn,

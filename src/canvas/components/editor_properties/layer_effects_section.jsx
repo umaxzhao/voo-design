@@ -40,11 +40,17 @@ export default function LayerEffectsSection({
   swapSide = false,
   panelRef = null,
   getBitmap = null,
+  /** Controlled picker state: the panel's add menu opens the picker for an empty stack. */
+  addPickerOpen = undefined,
+  onAddPickerChange = undefined,
 }) {
   const { t } = useI18n();
   // Popover state for editing an existing or newly added item
   const [popover, setPopover] = useState(null); // { kind, isEffect }
-  const [showAddPicker, setShowAddPicker] = useState(false);
+  const [localPickerOpen, setLocalPickerOpen] = useState(false);
+  const controlled = typeof onAddPickerChange === "function";
+  const showAddPicker = controlled ? Boolean(addPickerOpen) : localPickerOpen;
+  const setShowAddPicker = controlled ? onAddPickerChange : setLocalPickerOpen;
 
   if (!object || object.kind === "region") return null;
 
@@ -137,6 +143,8 @@ export default function LayerEffectsSection({
 
   return (
     <>
+      {/* An empty stack renders no section; the panel's add menu is the entry point. */}
+      {hasAny ? (
       <CollapsibleSection
         title={t("editor.props.effects")}
         extra={
@@ -152,14 +160,6 @@ export default function LayerEffectsSection({
         storageKey={`effects.${object.kind}`}
       >
         <div className="flex flex-col gap-1.5 pt-1">
-          {!hasAny ? (
-            <div className="rounded-xl border border-dashed border-white/[0.08] p-3 text-center">
-              <p className="text-[11px] text-neutral-500">
-                {t("editor.layers.noEffects")}
-              </p>
-            </div>
-          ) : null}
-
           {/* Tone adjustments (green) and pixel filters (blue) both live in
               `adjustments`; the dot keeps them apart the way the picker does. */}
           {configuredAdjustments.map((kind) => {
@@ -294,6 +294,7 @@ export default function LayerEffectsSection({
           })}
         </div>
       </CollapsibleSection>
+      ) : null}
 
       {/* Both cards mount on the panel element itself, clear of its scrolling
           body -- `overflow-y: auto` there computes overflow-x to auto as well,
@@ -346,4 +347,6 @@ LayerEffectsSection.propTypes = {
   panelRef: PropTypes.object,
   /** Decoded bitmap lookup, for rendering preset swatches. */
   getBitmap: PropTypes.func,
+  addPickerOpen: PropTypes.bool,
+  onAddPickerChange: PropTypes.func,
 };
