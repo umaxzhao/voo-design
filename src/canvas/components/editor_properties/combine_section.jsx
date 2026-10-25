@@ -106,7 +106,7 @@ export default function CombineSection({ onCombine, currentOperation = null }) {
   const { t } = useI18n();
 
   return (
-    <StaticSection title={t("editor.props.combine")}>
+    <StaticSection title={t("editor.props.combine")} storageKey="combine">
       <div className="flex gap-1">
         {BOOLEAN_OPERATIONS.map((operation) => {
           const isActive = currentOperation === operation;
