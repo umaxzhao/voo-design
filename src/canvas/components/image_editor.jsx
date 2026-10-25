@@ -3364,6 +3364,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     <div
       ref={editorRootRef}
       data-testid="design-editor"
+      data-properties-open={propertiesOpen ? "true" : "false"}
       aria-hidden={!visible}
       className={`absolute bottom-0 left-0 top-0 z-50 flex flex-col overflow-hidden rounded-b-2xl bg-surface-canvas ${isNarrow ? "editor-narrow" : ""} ${
         dockAgent ? "right-[376px]" : "right-0"

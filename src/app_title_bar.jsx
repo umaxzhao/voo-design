@@ -63,6 +63,7 @@ export default function AppTitleBar() {
   return (
     <>
       <header
+        data-testid="editor-top-bar"
         className="app-title-bar flex h-[40px] shrink-0 items-center justify-between px-4 text-xs font-medium tracking-wide select-none border-b border-white/10"
         style={{
           ...(isMac ? { paddingLeft: MAC_TRAFFIC_LIGHT_INSET_PX } : {}),
@@ -70,7 +71,7 @@ export default function AppTitleBar() {
           background: "linear-gradient(-90deg, rgb(0, 0, 0) 70.123%, rgb(178, 255, 214) 89.855%)",
         }}
       >
-        <div className="flex h-full items-center gap-2 leading-none" style={{ WebkitAppRegion: "no-drag" }}>
+        <div className="app-title-brand-row flex h-full min-w-0 items-center gap-2 leading-none" style={{ WebkitAppRegion: "no-drag" }}>
           <button
             type="button"
             onClick={() => setWelcomeOpen(!welcomeOpen)}
@@ -82,14 +83,15 @@ export default function AppTitleBar() {
           </button>
 
           {(
-            <div className="flex min-w-0 flex-1 items-center pl-3">
+            <div className="app-title-tabs flex min-w-0 flex-1 items-center pl-3">
               <CanvasTabBar />
             </div>
           )}
         </div>
 
         <div
-          className="flex items-center gap-2 text-neutral-300 text-[11px]"
+          data-testid="editor-top-bar-actions"
+          className="app-title-actions flex items-center gap-2 text-neutral-300 text-[11px]"
           style={{ WebkitAppRegion: "no-drag" }}
         >
           {/* Presence and share live beside the file actions, only while a document is open. */}
