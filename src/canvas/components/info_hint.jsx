@@ -89,7 +89,7 @@ export function useHint(text) {
           id={id}
           role="tooltip"
           style={{ ...position, width: WIDTH }}
-          className="pointer-events-none fixed z-[120] rounded-lg border border-white/10 bg-neutral-900/98 px-3 py-2 text-[11px] font-normal leading-relaxed text-neutral-300 shadow-pop backdrop-blur-xl whitespace-pre-line"
+          className="pointer-events-none fixed z-[120] rounded-lg bg-neutral-900 px-3 py-2 text-[11px] font-normal leading-relaxed text-neutral-300 shadow-pop backdrop-blur-xl whitespace-pre-line"
         >
           {text}
         </span>,

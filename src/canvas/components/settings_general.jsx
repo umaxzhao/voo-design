@@ -173,7 +173,7 @@ export function WorkspaceSettingsSection() {
         </div>
 
         {errorMsg && (
-          <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-400">
+          <div className="rounded-xl bg-rose-500/10 px-3 py-2 text-xs text-rose-400">
             {errorMsg}
           </div>
         )}

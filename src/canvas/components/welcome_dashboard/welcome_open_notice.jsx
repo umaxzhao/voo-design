@@ -4,7 +4,7 @@ export function WelcomeOpenNotice({ t, notice }) {
   return (
     <p
       role="alert"
-      className="mx-4 lg:mx-8 mt-3 rounded-xl border border-rose-400/40 bg-neutral-900 px-4 py-2.5 text-xs text-rose-400"
+      className="mx-4 lg:mx-8 mt-3 rounded-xl bg-rose-400/10 px-4 py-2.5 text-xs text-rose-400"
     >
       {t(notice.key, { reason: notice.reason })}
     </p>

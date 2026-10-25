@@ -40,7 +40,7 @@ export default function ToolCallCard({ call }) {
   return (
     <div
       className={`rounded-xl border px-3 py-2 text-[12px] ${
-        failed ? "border-rose-500/30 text-rose-400" : "border-white/[0.06] text-neutral-300"
+        failed ? "border-transparent bg-rose-500/10 text-rose-400" : "border-white/[0.06] text-neutral-300"
       }`}
     >
       <button

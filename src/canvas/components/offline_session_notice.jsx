@@ -54,7 +54,7 @@ export default function OfflineSessionNotice({
     <div
       role="status"
       data-testid="offline-session-notice"
-      className="pointer-events-auto flex items-center gap-2 rounded-lg border border-white/10 bg-neutral-900 px-3.5 py-2 text-[12px] text-neutral-300"
+      className="pointer-events-auto flex items-center gap-2 rounded-lg bg-neutral-900 px-3.5 py-2 text-[12px] text-neutral-300"
     >
       <span
         className="h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-500"

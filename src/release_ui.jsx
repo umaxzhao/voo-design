@@ -39,7 +39,7 @@ export default function ReleaseUI() {
     return () => window.removeEventListener('keydown', close);
   }, [open]);
   return <>
-    {['available', 'downloaded'].includes(status) && dismissed !== status && <div role="status" className="fixed bottom-5 left-5 z-[110] flex items-center gap-4 rounded-xl border border-white/20 bg-neutral-900 p-4 text-xs text-white shadow-pop">
+    {['available', 'downloaded'].includes(status) && dismissed !== status && <div role="status" className="fixed bottom-5 left-5 z-[110] flex items-center gap-4 rounded-xl bg-neutral-900 p-4 text-xs text-white shadow-pop">
       <span>{t(status === 'downloaded' ? 'release.restartReady' : 'release.downloading')}</span>
       {status === 'downloaded' && <button onClick={() => window.vooDesktop?.updates?.quitAndInstall().catch(() => {})}>{t('release.restart')}</button>}
       <button onClick={() => setDismissed(status)}>{t('release.dismiss')}</button>
