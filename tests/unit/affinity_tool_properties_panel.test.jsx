@@ -27,7 +27,7 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders dedicated brush properties (Size, Presets, Pressure dynamics) when Brush tool is active", () => {
+  it("renders brush width and pressure dynamics without quick size presets", () => {
     const html = renderToStaticMarkup(
       <EditorProperties
         tool={TOOL.BRUSH}
@@ -60,11 +60,10 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     expect(html).not.toContain("image-context-toolbar");
     expect(html).toContain("editor.tool.brush");
 
-    // Quick size pills
-    expect(html).toContain("16");
-    expect(html).toContain("24");
-    expect(html).toContain("48");
-    expect(html).toContain("96");
+    expect(html).toContain("editor.brushWidth");
+    expect(html).toContain('type="range"');
+    expect(html).not.toContain("editor.props.size");
+    expect(html).not.toMatch(/<button[^>]*>\s*(?:4|8|16|24|48|96|160)\s*<\/button>/);
 
     // Pressure dynamics switches
     expect(html).toContain("editor.pressureSize");

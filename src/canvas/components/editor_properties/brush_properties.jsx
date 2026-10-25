@@ -17,8 +17,6 @@ import BrushAdvancedControls, {
 
 export { BRUSH_BLEND_OPTIONS };
 
-const QUICK_BRUSH_SIZES = [4, 8, 16, 24, 48, 96, 160];
-
 const SizeIcon = () => (
   <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
     <polygon points="3,19 21,19 21,5" />
@@ -284,31 +282,6 @@ export default function BrushProperties({
             ariaLabel={t("editor.brushSmoothing")}
             scrubHint={t("editor.props.dragToAdjust")}
           />
-        ) : null}
-
-        {showSize ? (
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-            <span className="mr-0.5 shrink-0 text-[9px] font-mono uppercase text-neutral-500">
-              {t("editor.props.size")}
-            </span>
-            {QUICK_BRUSH_SIZES.map((size) => {
-              const isActive = Math.round(brushWidth) === size;
-              return (
-                <button
-                  key={size}
-                  type="button"
-                  onClick={() => onBrushWidth(size)}
-                  className={`flex h-5 min-w-[24px] items-center justify-center rounded-md px-1.5 text-[10px] font-mono transition-all ${
-                    isActive
-                      ? "bg-[#a7ffd4] font-semibold text-black shadow-pop"
-                      : "bg-white/[0.06] text-neutral-400 hover:bg-white/[0.12] hover:text-neutral-200"
-                  }`}
-                >
-                  {size}
-                </button>
-              );
-            })}
-          </div>
         ) : null}
 
         <BrushRetouchControls
