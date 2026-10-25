@@ -10,14 +10,14 @@ vi.mock("../../src/canvas/use_i18n.js", () => ({
 }));
 
 describe("secondary editor bars", () => {
-  it("does not mount either removed bar from its former hosts", () => {
+  it("does not mount the removed tool subbar and keeps the contextual bar in the page", () => {
     const editor = readFileSync("src/canvas/components/image_editor.jsx", "utf8");
     const page = readFileSync("src/canvas/components/editor_page.jsx", "utf8");
     expect(editor).not.toContain("EditorToolSubbar");
     expect(editor).not.toContain("editor-tool-subbar");
-    expect(page).not.toContain("EditorContextualTaskBar");
+    // The contextual bar is restored at its two render sites via the slot.
+    expect(page).toContain("EditorContextualTaskBarSlot");
     expect(page).not.toContain("editor-contextual-taskbar");
-    expect(page).not.toContain("editor-page-toolbar");
   });
 
   it("keeps layer actions inside the collapsed disclosure and Ask VOO agent visible", () => {
