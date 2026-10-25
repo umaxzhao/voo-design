@@ -156,7 +156,7 @@ export default function TransformSection({
 
   return (
     <>
-      <StaticSection title={t("editor.props.transform")}>
+      <StaticSection title={t("editor.props.transform")} storageKey="transform">
         <div className="flex items-start gap-2">
           {isRegion ? null : (
             <AnchorPointGrid
@@ -165,7 +165,7 @@ export default function TransformSection({
               label={t("editor.props.anchorPoint")}
             />
           )}
-          <div className="min-w-0 flex-1 space-y-2">
+          <div className="min-w-0 flex-1 space-y-2.5">
             <div className="grid grid-cols-2 gap-2">
               {commonX.mixed ? <MixedField label="X" /> : (
                 <ScrubField
@@ -291,7 +291,7 @@ export default function TransformSection({
         ) : null}
 
         {(object.warpMesh || object.perspectiveCorners) && (
-          <div className="pt-1">
+          <div>
             <button
               type="button"
               onClick={() => {

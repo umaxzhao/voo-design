@@ -59,6 +59,7 @@ export function StrokeSection({
   return (
     <StaticSection
       title={t("editor.props.strokeLabel")}
+      storageKey="stroke"
       extra={
         <SectionAddButton
           label={t("editor.props.addStroke")}
@@ -155,7 +156,7 @@ export function StrokeSection({
           </div>
 
           {/* Row 2: Figma-style Stroke Position dropdown + Width input + More Settings toggle */}
-          <div className="flex items-center gap-1.5 pt-0.5">
+          <div className="flex items-center gap-1.5">
             {/* Stroke Position (Inside / Center / Outside) */}
             <div className="relative flex h-7 flex-[1.2] min-w-0 items-center rounded-xl bg-neutral-800 transition-colors hover:bg-neutral-800/80 focus-within:bg-neutral-800 focus-within:ring-1 focus-within:ring-[#a7ffd4]/40">
               <span

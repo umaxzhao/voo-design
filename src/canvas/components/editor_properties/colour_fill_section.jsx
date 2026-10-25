@@ -159,7 +159,7 @@ export function FillSection({
       fillOpacity: first?.opacity ?? 1, fillHidden: first?.visible === false });
   };
   if (!paintRow) return (
-    <StaticSection title={t("editor.props.fillLabel")} extra={
+    <StaticSection title={t("editor.props.fillLabel")} storageKey="fill" extra={
       <SectionAddButton label={t("editor.props.addFill")}
         onClick={() => editAndCommit({ fills: [...paints, { fill: "#D9D9D9", opacity: 1, visible: true, blendMode: "source-over" }] })} />
     }>

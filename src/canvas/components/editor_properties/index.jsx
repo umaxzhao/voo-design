@@ -20,6 +20,10 @@ import PropertiesPanelMaskToolbar from "./properties_panel_mask_toolbar.jsx";
 import PropertiesPanelSections from "./properties_panel_sections.jsx";
 import LiveFilterSection from "./live_filter_section.jsx";
 import { editorPropertiesPropTypes } from "./properties_panel_types.js";
+import PropertiesExportAction from "./properties_export_action.jsx";
+import { downloadSelectionPng } from "./type_specific_sections.jsx";
+
+export const PROPERTIES_PANEL_CONTENT_CLASS = "flex-1 min-h-0 overflow-x-hidden overflow-y-auto";
 
 export {
   PropertiesPanelHeader,
@@ -87,7 +91,7 @@ export default function EditorProperties({
   const { t } = useI18n();
   const sideClass = swapSide ? "left-4" : "right-4";
   const panelRef = useRef(null);
-  const dynamicPanelClass = `${bottomInset > 0 ? "flex flex-col [&>div:first-child]:shrink-0" : "block"} absolute ${sideClass} top-1/2 z-30 max-md:inset-x-3 max-md:w-auto md:w-64 -translate-y-1/2 rounded-3xl bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200`;
+  const dynamicPanelClass = `flex flex-col [&>div:first-child]:shrink-0 absolute ${sideClass} top-1/2 z-30 max-h-[85vh] max-md:inset-x-3 max-md:w-auto md:w-64 -translate-y-1/2 rounded-3xl bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200`;
   // The canvas-local timeline owns the reserved bottom area. Keep the
   // original horizontal placement and center within the remaining height.
   const panelStyle =
@@ -97,7 +101,7 @@ export default function EditorProperties({
           maxHeight: `calc(100% - ${bottomInset + 80}px)`,
         }
       : undefined;
-  const contentClass = `overflow-x-hidden overflow-y-auto ${bottomInset > 0 ? "ui-scroll min-h-0" : "no-scrollbar max-h-[75vh]"}`;
+  const contentClass = `${PROPERTIES_PANEL_CONTENT_CLASS} ${bottomInset > 0 ? "ui-scroll" : "no-scrollbar"}`;
   const backgroundContentClass =
     bottomInset > 0
       ? contentClass
@@ -293,6 +297,7 @@ export default function EditorProperties({
       onMouseOver={promoteTitleOnHover}
     >
       {header}
+      {context.sections?.includes("export") && <PropertiesExportAction title={t("editor.export")} label={t("editor.props.exportPng")} onExport={() => downloadSelectionPng(engine, object)} />}
       <div className={contentClass}>
         {maskToolbar}
         {object?.isFrame && <VariantsSection engine={engine} isMainComponent={isMainComponent} />}

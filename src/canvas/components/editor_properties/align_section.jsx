@@ -315,7 +315,7 @@ function GapControlRow({ selectedNodes = [], onLayout }) {
     "Vertical gap";
 
   return (
-    <div className="flex h-7 min-w-0 items-center gap-1.5 pt-0.5">
+    <div className="flex h-7 min-w-0 items-center gap-1.5">
       <div className="flex h-7 shrink-0 items-center rounded-lg bg-white/[0.06] p-0.5">
         <EditorTooltip title={hLabel} side="top">
           <button
@@ -383,7 +383,7 @@ export default function AlignSection({ count, onLayout, selectedNodes = [] }) {
   const canSpread = count >= 3;
 
   return (
-    <StaticSection title={t("editor.props.align")}>
+    <StaticSection title={t("editor.props.align")} storageKey="align">
       <Row>
         {ALIGN_TYPES.map((type) => (
           <EditorTooltip

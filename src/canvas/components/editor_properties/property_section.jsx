@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
 import { IconChevronDown } from "../../icons.jsx";
-import { readCollapseState, writeCollapseState } from "./collapse_state.js";
+import { loadEditorPanelSectionState, toggleEditorPanelSectionState } from "../editor_panel_preferences.js";
 
 /** Shared input skin for every field in the panel. */
 export const fieldClass =
@@ -59,10 +59,9 @@ SectionAddButton.propTypes = {
 /**
  * One collapsible group in the property panel.
  *
- * The panel is meant to fit without scrolling, so grouping and folding is how
- * it stays inside the stage height rather than growing a scrollbar. A
- * `storageKey` opts the section into remembering its fold across sessions
- * (plan 1.11); callers key it per object kind, e.g. `textStyle.<kind>`.
+ * Folding keeps the panel short; the body also scrolls inside its container.
+ * The fold is remembered across sessions through editor_panel_preferences;
+ * callers key it per object kind where needed, e.g. `textStyle.<kind>`.
  */
 export function CollapsibleSection({
   title,
@@ -72,15 +71,14 @@ export function CollapsibleSection({
   storageKey = null,
   testId = undefined,
 }) {
+  // Callers should pass a stable `storageKey`; the title fallback is
+  // locale-dependent, so a language switch would reset that section's fold.
+  const sectionStorageKey = storageKey ?? `panel.${title.trim().toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ".")}`;
   const [open, setOpen] = useState(
-    storageKey ? readCollapseState(storageKey, defaultOpen) : defaultOpen,
+    loadEditorPanelSectionState()[sectionStorageKey] ?? defaultOpen,
   );
   const toggle = () => {
-    setOpen((current) => {
-      const next = !current;
-      if (storageKey) writeCollapseState(storageKey, next);
-      return next;
-    });
+    setOpen(toggleEditorPanelSectionState(sectionStorageKey, open));
   };
   return (
     <div className={sectionRhythmClass} data-testid={testId}>
@@ -109,30 +107,23 @@ CollapsibleSection.propTypes = {
   defaultOpen: PropTypes.bool,
   children: PropTypes.node,
   extra: PropTypes.node,
-  /** When set, the fold state persists under `voo.props.<storageKey>`. */
+  /** Key of this section's fold state in the `voo.editor.panelSections` setting. */
   storageKey: PropTypes.string,
   testId: PropTypes.string,
 };
 
 /**
- * A group that is always open — the transform box, the align row. Identical
- * title size, separator and spacing to CollapsibleSection; the only
- * difference is there is no chevron and nothing folds away.
+ * A panel group that shares CollapsibleSection's header, spacing and fold
+ * persistence (it is expanded by default). Kept as a separate name so call
+ * sites read as "fixed group" versus "opt-in fold".
  */
-export function StaticSection({ title, children = null, extra = null }) {
-  return (
-    <div className={sectionRhythmClass}>
-      <div className={sectionHeaderClass}>
-        <span className={`min-w-0 ${sectionTitleClass}`}>{title}</span>
-        {extra ? <div className="flex shrink-0 items-center gap-2">{extra}</div> : null}
-      </div>
-      <div className={sectionBodyClass}>{children}</div>
-    </div>
-  );
+export function StaticSection({ title, children = null, extra = null, storageKey = null }) {
+  return <CollapsibleSection title={title} extra={extra} storageKey={storageKey}>{children}</CollapsibleSection>;
 }
 
 StaticSection.propTypes = {
   title: PropTypes.string.isRequired,
   children: PropTypes.node,
   extra: PropTypes.node,
+  storageKey: PropTypes.string,
 };
