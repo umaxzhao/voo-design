@@ -6,6 +6,7 @@
 import PropTypes from "prop-types";
 import { useI18n } from "../../use_i18n.js";
 import PropertiesPanelHeader from "./properties_panel_header.jsx";
+import { DOCKED_PANEL_MAX_HEIGHT_CLASS } from "../editor_panel_clearance.js";
 
 export default function PropertiesPanelShell({
   swapSide = false,
@@ -21,7 +22,7 @@ export default function PropertiesPanelShell({
   const sideClass = swapSide ? "left-4" : "right-4";
   // The canvas-local timeline owns the reserved bottom area: keep the
   // horizontal placement and centre within the height that is left.
-  const panelClass = `${bottomInset > 0 ? "flex flex-col [&>div:first-child]:shrink-0" : ""} absolute ${sideClass} top-1/2 z-30 w-64 -translate-y-1/2 rounded-3xl bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200 transition-[top,max-height,transform] duration-200 ease-out`;
+  const panelClass = `flex flex-col [&>div:first-child]:shrink-0 ${DOCKED_PANEL_MAX_HEIGHT_CLASS} absolute ${sideClass} top-1/2 z-30 w-64 -translate-y-1/2 rounded-3xl bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200 transition-[top,max-height,transform] duration-200 ease-out`;
   const panelStyle =
     bottomInset > 0
       ? {
@@ -32,7 +33,7 @@ export default function PropertiesPanelShell({
   // The scrollbar stays hidden in both states so opening the timeline never
   // changes the panel's inner width.
   const contentClass = `no-scrollbar overflow-x-hidden overflow-y-auto ${
-    bottomInset > 0 ? "min-h-0" : "max-h-[75vh]"
+    bottomInset > 0 ? "min-h-0" : "min-h-0 max-h-[75vh]"
   }`;
   return (
     <aside
