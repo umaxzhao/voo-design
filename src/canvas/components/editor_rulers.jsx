@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { Eye, EyeOff, Ruler, Trash2 } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import {
   GUIDE_HIT_SLOP,
   GUIDE_TYPES,
@@ -496,18 +496,15 @@ EditorRulers.propTypes = {
 
 /**
  * Canvas view-aid toggles. Rendered as a group INSIDE the single bottom
- * toolbar (EditorZoom) — never as a second floating bar.
+ * toolbar (EditorZoom) — never as a second floating bar. The ruler toggle
+ * lives in EditorZoom's More menu, not here.
  *
- * Rulers/guides are persisted settings, so the buttons are
- * tri-state readouts of the same values the pointer handlers read.
+ * Guides are a persisted setting, so the eye button is a tri-state readout of
+ * the same value the pointer handlers read.
  */
 export function EditorCanvasAids({
-  showRulers = false,
   showGuides = true,
-  canClearGuides = false,
-  onToggleRulers = null,
   onToggleGuides = null,
-  onClearGuides = null,
   t = null,
 }) {
   const buttonClass = (active) =>
@@ -523,21 +520,6 @@ export function EditorCanvasAids({
     >
       <button
         type="button"
-        data-testid="editor-toggle-rulers"
-        onClick={onToggleRulers}
-        title={label(
-          t,
-          showRulers ? "editor.rulers.hide" : "editor.rulers.show",
-          showRulers ? "Hide rulers" : "Show rulers",
-        )}
-        aria-label={label(t, "editor.rulers.toggle", "Show/hide rulers")}
-        aria-pressed={Boolean(showRulers)}
-        className={buttonClass(showRulers)}
-      >
-        <Ruler size={13} />
-      </button>
-      <button
-        type="button"
         data-testid="editor-toggle-guides"
         onClick={onToggleGuides}
         title={label(
@@ -551,27 +533,12 @@ export function EditorCanvasAids({
       >
         {showGuides ? <Eye size={13} /> : <EyeOff size={13} />}
       </button>
-      <button
-        type="button"
-        data-testid="editor-clear-guides"
-        onClick={onClearGuides}
-        disabled={!canClearGuides}
-        title={label(t, "editor.guides.clearAll", "Clear all guides")}
-        aria-label={label(t, "editor.guides.clearAll", "Clear all guides")}
-        className={`${buttonClass(false)} disabled:opacity-25 disabled:hover:opacity-25`}
-      >
-        <Trash2 size={13} />
-      </button>
     </div>
   );
 }
 
 EditorCanvasAids.propTypes = {
-  showRulers: PropTypes.bool,
   showGuides: PropTypes.bool,
-  canClearGuides: PropTypes.bool,
-  onToggleRulers: PropTypes.func,
   onToggleGuides: PropTypes.func,
-  onClearGuides: PropTypes.func,
   t: PropTypes.func,
 };

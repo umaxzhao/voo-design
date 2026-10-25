@@ -4980,16 +4980,17 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 bump();
               }}
               snapping={snappingEnabled}
+              showRulers={showRulers}
+              rulersAvailable={rulersVisible}
+              onToggleRulers={toggleRulers}
+              canClearGuides={documentGuides.length > 0}
+              onClearGuides={handleClearGuides}
               onToggleSnapping={toggleSnapping}
             >
               {rulersVisible ? (
                 <EditorCanvasAids
-                  showRulers={showRulers}
                   showGuides={showGuides}
-                  canClearGuides={documentGuides.length > 0}
-                  onToggleRulers={toggleRulers}
                   onToggleGuides={toggleGuides}
-                  onClearGuides={handleClearGuides}
                   t={t}
                 />
               ) : null}

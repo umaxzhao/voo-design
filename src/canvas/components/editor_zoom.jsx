@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
+import { Ruler, Trash2 } from "lucide-react";
 import {
   IconAdd,
   IconGrid3x3,
@@ -31,6 +32,11 @@ export function EditorZoom({
   onToggleSnapToGrid,
   gridSize = 32,
   onSetGridSize,
+  showRulers = false,
+  rulersAvailable = false,
+  onToggleRulers = null,
+  canClearGuides = false,
+  onClearGuides = null,
   onAddCanvas = null,
   children = null,
 }) {
@@ -178,6 +184,44 @@ export function EditorZoom({
                 <span data-testid="editor-fit-shortcut">{t("editor.zoomFit.shortcut")}</span>
               </span>
             </button>
+            {rulersAvailable ? (
+              <button
+                type="button"
+                role="menuitemcheckbox"
+                data-testid="editor-toggle-rulers"
+                onClick={onToggleRulers}
+                title={t("editor.rulers.toggle")}
+                aria-label={t("editor.rulers.toggle")}
+                aria-checked={Boolean(showRulers)}
+                className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-neutral-200 hover:bg-neutral-800 hover:text-white focus-visible:bg-neutral-800 outline-none"
+              >
+                <span className="flex items-center gap-2">
+                  <Ruler size={13} className={showRulers ? "text-white" : "text-neutral-500"} />
+                  {t("editor.rulers.toggle")}
+                </span>
+                <span aria-hidden="true" className="text-neutral-400">{showRulers ? "✓" : ""}</span>
+              </button>
+            ) : null}
+            {rulersAvailable ? (
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="editor-clear-guides"
+                onClick={() => {
+                  onClearGuides?.();
+                  setMoreOpen(false);
+                }}
+                disabled={!canClearGuides}
+                title={t("editor.guides.clearAll")}
+                aria-label={t("editor.guides.clearAll")}
+                className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-neutral-200 hover:bg-neutral-800 hover:text-white focus-visible:bg-neutral-800 outline-none disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-neutral-200"
+              >
+                <span className="flex items-center gap-2">
+                  <Trash2 size={13} className="text-neutral-500" />
+                  {t("editor.guides.clearAll")}
+                </span>
+              </button>
+            ) : null}
 
             <div className="mt-1 border-t border-white/10 px-2 pb-1 pt-2 text-neutral-400">{t("editor.menu.groupGrid")}</div>
             <button
@@ -276,5 +320,10 @@ EditorZoom.propTypes = {
   onToggleSnapToGrid: PropTypes.func,
   gridSize: PropTypes.number,
   onSetGridSize: PropTypes.func,
+  showRulers: PropTypes.bool,
+  rulersAvailable: PropTypes.bool,
+  onToggleRulers: PropTypes.func,
+  canClearGuides: PropTypes.bool,
+  onClearGuides: PropTypes.func,
   children: PropTypes.node,
 };
