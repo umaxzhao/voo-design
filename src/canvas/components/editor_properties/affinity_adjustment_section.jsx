@@ -4,53 +4,52 @@ import AdjustmentControls from "./adjustment_controls.jsx";
 import AdjustmentSlider from "./adjustment_slider.jsx";
 import { createDefaultAdjustments } from "../../editor/scene_model.js";
 import { adjustmentLabelKey } from "../../editor/adjustment_catalog.js";
-import { useI18n } from "../../use_i18n.js";
 
 const ADJUSTMENT_PRESETS = {
   contrast: [
-    { labelZh: "默认", labelEn: "Default", patch: { contrast: { enabled: true, value: 0 }, brightness: { enabled: true, value: 0 } } },
-    { labelZh: "轻微 +15%", labelEn: "Light +15%", patch: { contrast: { enabled: true, value: 15 } } },
-    { labelZh: "适度 +30%", labelEn: "Medium +30%", patch: { contrast: { enabled: true, value: 30 } } },
-    { labelZh: "高反差 +50%", labelEn: "High +50%", patch: { contrast: { enabled: true, value: 50 } } },
-    { labelZh: "柔和 -20%", labelEn: "Muted -20%", patch: { contrast: { enabled: true, value: -20 } } },
+    { labelKey: "editor.adjustmentPreset.contrast.0", patch: { contrast: { enabled: true, value: 0 }, brightness: { enabled: true, value: 0 } } },
+    { labelKey: "editor.adjustmentPreset.contrast.1", patch: { contrast: { enabled: true, value: 15 } } },
+    { labelKey: "editor.adjustmentPreset.contrast.2", patch: { contrast: { enabled: true, value: 30 } } },
+    { labelKey: "editor.adjustmentPreset.contrast.3", patch: { contrast: { enabled: true, value: 50 } } },
+    { labelKey: "editor.adjustmentPreset.contrast.4", patch: { contrast: { enabled: true, value: -20 } } },
   ],
   brightness: [
-    { labelZh: "默认", labelEn: "Default", patch: { brightness: { enabled: true, value: 0 }, contrast: { enabled: true, value: 0 } } },
-    { labelZh: "提亮 +15%", labelEn: "Bright +15%", patch: { brightness: { enabled: true, value: 15 } } },
-    { labelZh: "高调 +30%", labelEn: "High +30%", patch: { brightness: { enabled: true, value: 30 } } },
-    { labelZh: "微暗 -15%", labelEn: "Darken -15%", patch: { brightness: { enabled: true, value: -15 } } },
-    { labelZh: "低调 -30%", labelEn: "Muted -30%", patch: { brightness: { enabled: true, value: -30 } } },
+    { labelKey: "editor.adjustmentPreset.brightness.0", patch: { brightness: { enabled: true, value: 0 }, contrast: { enabled: true, value: 0 } } },
+    { labelKey: "editor.adjustmentPreset.brightness.1", patch: { brightness: { enabled: true, value: 15 } } },
+    { labelKey: "editor.adjustmentPreset.brightness.2", patch: { brightness: { enabled: true, value: 30 } } },
+    { labelKey: "editor.adjustmentPreset.brightness.3", patch: { brightness: { enabled: true, value: -15 } } },
+    { labelKey: "editor.adjustmentPreset.brightness.4", patch: { brightness: { enabled: true, value: -30 } } },
   ],
   exposure: [
-    { labelZh: "默认 0", labelEn: "Default 0", patch: { exposure: { enabled: true, value: 0 } } },
-    { labelZh: "+0.5 EV", labelEn: "+0.5 EV", patch: { exposure: { enabled: true, value: 0.5 } } },
-    { labelZh: "+1.0 EV", labelEn: "+1.0 EV", patch: { exposure: { enabled: true, value: 1.0 } } },
-    { labelZh: "-0.5 EV", labelEn: "-0.5 EV", patch: { exposure: { enabled: true, value: -0.5 } } },
-    { labelZh: "-1.0 EV", labelEn: "-1.0 EV", patch: { exposure: { enabled: true, value: -1.0 } } },
+    { labelKey: "editor.adjustmentPreset.exposure.0", patch: { exposure: { enabled: true, value: 0 } } },
+    { labelKey: "editor.adjustmentPreset.exposure.1", patch: { exposure: { enabled: true, value: 0.5 } } },
+    { labelKey: "editor.adjustmentPreset.exposure.2", patch: { exposure: { enabled: true, value: 1.0 } } },
+    { labelKey: "editor.adjustmentPreset.exposure.3", patch: { exposure: { enabled: true, value: -0.5 } } },
+    { labelKey: "editor.adjustmentPreset.exposure.4", patch: { exposure: { enabled: true, value: -1.0 } } },
   ],
   temperature: [
-    { labelZh: "中性 0%", labelEn: "Neutral 0%", patch: { temperature: { enabled: true, value: 0 }, tint: { enabled: true, value: 0 } } },
-    { labelZh: "微暖 +15%", labelEn: "Warm +15%", patch: { temperature: { enabled: true, value: 15 } } },
-    { labelZh: "金秋 +35%", labelEn: "Golden +35%", patch: { temperature: { enabled: true, value: 35 } } },
-    { labelZh: "微冷 -15%", labelEn: "Cool -15%", patch: { temperature: { enabled: true, value: -15 } } },
-    { labelZh: "冰蓝 -35%", labelEn: "Ice -35%", patch: { temperature: { enabled: true, value: -35 } } },
+    { labelKey: "editor.adjustmentPreset.temperature.0", patch: { temperature: { enabled: true, value: 0 }, tint: { enabled: true, value: 0 } } },
+    { labelKey: "editor.adjustmentPreset.temperature.1", patch: { temperature: { enabled: true, value: 15 } } },
+    { labelKey: "editor.adjustmentPreset.temperature.2", patch: { temperature: { enabled: true, value: 35 } } },
+    { labelKey: "editor.adjustmentPreset.temperature.3", patch: { temperature: { enabled: true, value: -15 } } },
+    { labelKey: "editor.adjustmentPreset.temperature.4", patch: { temperature: { enabled: true, value: -35 } } },
   ],
   highlights: [
-    { labelZh: "默认 0%", labelEn: "Default 0%", patch: { highlights: { enabled: true, value: 0 }, shadows: { enabled: true, value: 0 } } },
-    { labelZh: "压制 -30%", labelEn: "Compress -30%", patch: { highlights: { enabled: true, value: -30 } } },
-    { labelZh: "提亮 +30%", labelEn: "Boost +30%", patch: { highlights: { enabled: true, value: 30 } } },
+    { labelKey: "editor.adjustmentPreset.highlights.0", patch: { highlights: { enabled: true, value: 0 }, shadows: { enabled: true, value: 0 } } },
+    { labelKey: "editor.adjustmentPreset.highlights.1", patch: { highlights: { enabled: true, value: -30 } } },
+    { labelKey: "editor.adjustmentPreset.highlights.2", patch: { highlights: { enabled: true, value: 30 } } },
   ],
   vibrance: [
-    { labelZh: "默认", labelEn: "Default", patch: { vibrance: { enabled: true, value: 0 }, saturation: { enabled: true, value: 0 } } },
-    { labelZh: "生动 +20%", labelEn: "Vivid +20%", patch: { vibrance: { enabled: true, value: 20 } } },
-    { labelZh: "浓郁 +40%", labelEn: "Rich +40%", patch: { vibrance: { enabled: true, value: 40 } } },
-    { labelZh: "淡雅 -20%", labelEn: "Muted -20%", patch: { vibrance: { enabled: true, value: -20 } } },
-    { labelZh: "黑白 -100%", labelEn: "B&W -100%", patch: { saturation: { enabled: true, value: -100 } } },
+    { labelKey: "editor.adjustmentPreset.vibrance.0", patch: { vibrance: { enabled: true, value: 0 }, saturation: { enabled: true, value: 0 } } },
+    { labelKey: "editor.adjustmentPreset.vibrance.1", patch: { vibrance: { enabled: true, value: 20 } } },
+    { labelKey: "editor.adjustmentPreset.vibrance.2", patch: { vibrance: { enabled: true, value: 40 } } },
+    { labelKey: "editor.adjustmentPreset.vibrance.3", patch: { vibrance: { enabled: true, value: -20 } } },
+    { labelKey: "editor.adjustmentPreset.vibrance.4", patch: { saturation: { enabled: true, value: -100 } } },
   ],
   threshold: [
-    { labelZh: "标准 128", labelEn: "Mid 128", patch: { threshold: { enabled: true, value: 128 } } },
-    { labelZh: "暗部 64", labelEn: "Dark 64", patch: { threshold: { enabled: true, value: 64 } } },
-    { labelZh: "亮部 192", labelEn: "Bright 192", patch: { threshold: { enabled: true, value: 192 } } },
+    { labelKey: "editor.adjustmentPreset.threshold.0", patch: { threshold: { enabled: true, value: 128 } } },
+    { labelKey: "editor.adjustmentPreset.threshold.1", patch: { threshold: { enabled: true, value: 64 } } },
+    { labelKey: "editor.adjustmentPreset.threshold.2", patch: { threshold: { enabled: true, value: 192 } } },
   ],
 };
 
@@ -63,8 +62,6 @@ export default function AffinityAdjustmentSection({
   bitmap = null,
   t,
 }) {
-  const { locale } = useI18n();
-  const isZh = locale === "zh";
   const kind = object.adjustmentKind || "contrast";
 
   const Slider = useMemo(
@@ -179,7 +176,7 @@ export default function AffinityAdjustmentSection({
               {localizedTitle}
             </span>
             <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-wider">
-              {isZh ? "调整图层 · 滤镜" : "Adjustment Layer"}
+              {t("editor.adjustment.layer")}
             </span>
           </div>
         </div>
@@ -192,15 +189,15 @@ export default function AffinityAdjustmentSection({
               onChange={(e) => toggleEnabled(e.target.checked)}
               className="flat-check"
             />
-            <span>{isEnabled ? (isZh ? "启用" : "Active") : (isZh ? "旁路" : "Bypass")}</span>
+            <span>{isEnabled ? t("editor.adjustment.active") : t("editor.adjustment.bypass")}</span>
           </label>
           <button
             type="button"
             onClick={resetAll}
             className="text-[10px] font-mono text-neutral-400 hover:text-white transition-colors cursor-pointer px-1.5 py-0.5 rounded-md hover:bg-white/10"
-            title={isZh ? "重置该调整项为默认值" : "Reset adjustment to default"}
+            title={t("editor.adjustment.reset")}
           >
-            {t("editor.props.reset") || (isZh ? "重置" : "Reset")}
+            {t("editor.props.reset")}
           </button>
         </div>
       </div>
@@ -209,7 +206,7 @@ export default function AffinityAdjustmentSection({
       {presets && (
         <div className="flex flex-col gap-1">
           <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-wider">
-            {isZh ? "快捷预设档位" : "Quick Presets"}
+            {t("editor.adjustment.quickPresets")}
           </span>
           <div className="flex flex-wrap gap-1">
             {presets.map((preset, idx) => (
@@ -219,7 +216,7 @@ export default function AffinityAdjustmentSection({
                 onClick={() => applyPreset(preset.patch)}
                 className="rounded-lg bg-white/[0.04] px-2 py-0.5 text-[10px] font-mono text-neutral-300 hover:bg-white/[0.12] hover:text-white transition-colors border border-white/[0.06] cursor-pointer"
               >
-                {isZh ? preset.labelZh : preset.labelEn}
+                {t(preset.labelKey)}
               </button>
             ))}
           </div>
@@ -232,7 +229,7 @@ export default function AffinityAdjustmentSection({
           <>
             {/* Contrast Slider */}
             <Slider
-              label={t("editor.props.contrast") || (isZh ? "对比度" : "Contrast")}
+              label={t("editor.props.contrast")}
               unit="%"
               min={-100}
               max={100}
@@ -245,7 +242,7 @@ export default function AffinityAdjustmentSection({
             />
             {/* Brightness Slider (Paired like in Affinity Photo) */}
             <Slider
-              label={t("editor.props.brightness") || (isZh ? "亮度" : "Brightness")}
+              label={t("editor.props.brightness")}
               unit="%"
               min={-100}
               max={100}
@@ -260,7 +257,7 @@ export default function AffinityAdjustmentSection({
         ) : isTemperatureOrTint ? (
           <>
             <Slider
-              label={t("editor.props.temperature") || (isZh ? "色温 (暖/冷)" : "Temperature")}
+              label={t("editor.props.temperature")}
               unit="%"
               min={-100}
               max={100}
@@ -272,7 +269,7 @@ export default function AffinityAdjustmentSection({
               onReset={() => resetCategory("temperature")}
             />
             <Slider
-              label={t("editor.props.tint") || (isZh ? "色调 (品红/绿)" : "Tint")}
+              label={t("editor.props.tint")}
               unit="%"
               min={-100}
               max={100}
@@ -287,7 +284,7 @@ export default function AffinityAdjustmentSection({
         ) : isHighlightsOrShadows ? (
           <>
             <Slider
-              label={t("editor.props.highlights") || (isZh ? "高光" : "Highlights")}
+              label={t("editor.props.highlights")}
               unit="%"
               min={-100}
               max={100}
@@ -299,7 +296,7 @@ export default function AffinityAdjustmentSection({
               onReset={() => resetCategory("highlights")}
             />
             <Slider
-              label={t("editor.props.shadows") || (isZh ? "阴影" : "Shadows")}
+              label={t("editor.props.shadows")}
               unit="%"
               min={-100}
               max={100}
@@ -314,7 +311,7 @@ export default function AffinityAdjustmentSection({
         ) : isVibranceOrSaturation ? (
           <>
             <Slider
-              label={t("editor.props.vibrance") || (isZh ? "自然饱和度" : "Vibrance")}
+              label={t("editor.props.vibrance")}
               unit="%"
               min={-100}
               max={100}
@@ -326,7 +323,7 @@ export default function AffinityAdjustmentSection({
               onReset={() => resetCategory("vibrance")}
             />
             <Slider
-              label={t("editor.props.saturation") || (isZh ? "饱和度" : "Saturation")}
+              label={t("editor.props.saturation")}
               unit="%"
               min={-100}
               max={100}

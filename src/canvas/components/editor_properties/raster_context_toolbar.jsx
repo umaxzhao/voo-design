@@ -23,11 +23,11 @@ export default function RasterContextToolbar({ context, object, engine, editAndC
     }
   };
   return <div role="toolbar" aria-label="Image context" data-testid="image-context-toolbar" className="absolute inset-x-20 top-16 z-30 flex flex-wrap items-center gap-3 rounded-lg bg-neutral-950 px-3 py-2 text-xs text-neutral-200">
-    {toolProps && <details><summary>工具设置</summary><div className="absolute top-full max-h-[60vh] w-80 overflow-auto rounded-lg bg-neutral-950 p-3"><ToolPropertiesSection tool={context.topBar} {...toolProps} /></div></details>}
-    <span>{context.topBar === 'image' ? '图像' : t(['marquee', 'lasso', 'wand', 'region', 'select_region', 'ai_select'].includes(context.topBar) ? 'editor.tool.selection' : `editor.tool.${context.topBar}`)}</span>
-    <button type="button" onClick={() => engine?.setTool?.('crop')}>裁切</button>
+    {toolProps && <details><summary>{t('editor.toolOptions')}</summary><div className="absolute top-full max-h-[60vh] w-80 overflow-auto rounded-lg bg-neutral-950 p-3"><ToolPropertiesSection tool={context.topBar} {...toolProps} /></div></details>}
+    <span>{context.topBar === 'image' ? t('editor.context.image') : t(['marquee', 'lasso', 'wand', 'region', 'select_region', 'ai_select'].includes(context.topBar) ? 'editor.tool.selection' : `editor.tool.${context.topBar}`)}</span>
+    <button type="button" onClick={() => engine?.setTool?.('crop')}>{t('editor.taskbar.crop')}</button>
     {object?.kind === 'image' && <>
-      <button type="button" onClick={() => input.current?.click()}>替换图像</button>
+      <button type="button" onClick={() => input.current?.click()}>{t('editor.taskbar.replace')}</button>
       <label className="flex items-center gap-1" htmlFor="frequency-separation-radius">
         {t("editor.frequencySeparation.radius")}
         <input ref={frequencyRadius} id="frequency-separation-radius" type="number" min="1" max="100" defaultValue="10" className="w-14 rounded-lg bg-neutral-900 px-1 py-0.5" />
@@ -44,7 +44,7 @@ export default function RasterContextToolbar({ context, object, engine, editAndC
         reader.readAsDataURL(file);
         event.target.value = '';
       }} />
-      <details><summary>调整</summary><div className="absolute top-full rounded-lg bg-neutral-950 p-3">{['brightness', 'contrast'].map(kind => <label key={kind} className="block">{t(`editor.adjust.${kind}`)}<input aria-label={kind} type="range" min="-100" max="100" value={normalizeAdjustments(object.adjustments)[kind].value} onChange={event => editAndCommit({ adjustments: { ...normalizeAdjustments(object.adjustments), [kind]: { enabled: true, value: Number(event.target.value) } } })} /></label>)}</div></details>
+      <details><summary>{t('editor.taskbar.adjust')}</summary><div className="absolute top-full rounded-lg bg-neutral-950 p-3">{['brightness', 'contrast'].map(kind => <label key={kind} className="block">{t(`editor.adjust.${kind}`)}<input aria-label={kind} type="range" min="-100" max="100" value={normalizeAdjustments(object.adjustments)[kind].value} onChange={event => editAndCommit({ adjustments: { ...normalizeAdjustments(object.adjustments), [kind]: { enabled: true, value: Number(event.target.value) } } })} /></label>)}</div></details>
       <select aria-label="Fit / Fill" defaultValue="" onChange={event => {
         const doc = engine?.getDocument?.();
         const parent = doc?.nodes?.find(node => node.id === object.parentId) ?? doc;
@@ -53,7 +53,7 @@ export default function RasterContextToolbar({ context, object, engine, editAndC
         const width = object.width * scale, height = object.height * scale;
         editAndCommit({ width, height, x: (parent.x ?? 0) + (parent.width - width) / 2, y: (parent.y ?? 0) + (parent.height - height) / 2 });
         event.target.value = '';
-      }} className="bg-neutral-900"><option value="" disabled>适合 / 填满</option><option value="fit">适合 Fit</option><option value="fill">填满 Fill</option></select>
+      }} className="bg-neutral-900"><option value="" disabled>{t('editor.image.fitFill')}</option><option value="fit">{t('editor.image.fit')}</option><option value="fill">{t('editor.image.fill')}</option></select>
     </>}
   </div>;
 }

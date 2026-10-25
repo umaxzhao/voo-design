@@ -7,15 +7,6 @@ import { StaticSection } from "./property_section.jsx";
 import { parseABR } from "../../editor/abr_parser.js";
 import { DEFAULT_BRUSH_PRESETS } from "../../editor/brush_presets.js";
 
-const PRESET_NAMES = {
-  soft_round: "软边圆笔",
-  medium_round: "中硬圆笔",
-  hard_round: "硬边圆笔",
-  flat_pen: "平头笔刷",
-  airbrush: "柔和喷枪",
-  pencil: "精细铅笔",
-};
-
 export default function BrushPresets({
   brushPreset = "medium_round",
   onBrushPreset,
@@ -75,7 +66,7 @@ export default function BrushPresets({
       <div className="grid grid-cols-3 gap-1.5">
         {DEFAULT_BRUSH_PRESETS.map((preset) => {
           const isActive = effectiveActive === preset.id;
-          const displayName = (preset.labelKey ? t(preset.labelKey) : null) || PRESET_NAMES[preset.id] || preset.name;
+          const displayName = (preset.labelKey ? t(preset.labelKey) : null);
           return (
             <button
               key={preset.id}

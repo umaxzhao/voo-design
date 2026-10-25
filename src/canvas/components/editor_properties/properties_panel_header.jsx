@@ -31,43 +31,43 @@ function getToolHeaderInfo(tool, t) {
 
   switch (tool) {
     case TOOL.BRUSH:
-      return { label: t("editor.tool.brush") || "画笔工具", icon: <IconBrush size={12} className="text-neutral-300" /> };
+      return { label: t("editor.tool.brush"), icon: <IconBrush size={12} className="text-neutral-300" /> };
     case TOOL.ERASER:
-      return { label: t("editor.tool.eraser") || "橡皮擦工具", icon: <IconEraser size={12} className="text-neutral-300" /> };
+      return { label: t("editor.tool.eraser"), icon: <IconEraser size={12} className="text-neutral-300" /> };
     case TOOL.HEALING:
-      return { label: t("editor.tool.healing") || "修复工具", icon: <IconBrush size={12} className="text-neutral-300" /> };
+      return { label: t("editor.tool.healing"), icon: <IconBrush size={12} className="text-neutral-300" /> };
     case TOOL.BLUR:
     case TOOL.SHARPEN:
     case TOOL.SMUDGE:
     case TOOL.DODGE:
     case TOOL.BURN:
     case TOOL.SPONGE:
-      return { label: t(`editor.tool.${tool}`) || "修饰工具", icon: <IconBrush size={12} className="text-neutral-300" /> };
+      return { label: t(`editor.tool.${tool}`), icon: <IconBrush size={12} className="text-neutral-300" /> };
     case TOOL.PEN:
     case TOOL.CURVATURE_PEN:
     case TOOL.FREE_PEN:
-      return { label: t("editor.tool.pen") || "钢笔工具", icon: <IconVectorSquare size={12} className="text-neutral-300" /> };
+      return { label: t("editor.tool.pen"), icon: <IconVectorSquare size={12} className="text-neutral-300" /> };
     case TOOL.TEXT:
-      return { label: t("editor.tool.text") || "文字工具", icon: <IconText size={12} className="text-neutral-300" /> };
+      return { label: t("editor.tool.text"), icon: <IconText size={12} className="text-neutral-300" /> };
     case TOOL.CROP:
-      return { label: t("editor.tool.crop") || "裁切工具", icon: <IconCrop size={12} className="text-neutral-300" /> };
+      return { label: t("editor.tool.crop"), icon: <IconCrop size={12} className="text-neutral-300" /> };
     case TOOL.DROPPER:
-      return { label: t("editor.tool.dropper") || "吸管工具", icon: <IconPipette size={12} className="text-neutral-300" /> };
+      return { label: t("editor.tool.dropper"), icon: <IconPipette size={12} className="text-neutral-300" /> };
     case TOOL.FILL:
     case TOOL.GRADIENT:
-      return { label: t(`editor.tool.${tool}`) || "填充渐变", icon: <IconBucket size={12} className="text-neutral-300" /> };
+      return { label: t(`editor.tool.${tool}`), icon: <IconBucket size={12} className="text-neutral-300" /> };
     case TOOL.MARQUEE:
     case TOOL.LASSO:
     case TOOL.WAND:
     case TOOL.REGION:
-      return { label: t("editor.tool.selection") || "选区工具", icon: <IconSelectionRect size={12} className="text-neutral-300" /> };
+      return { label: t("editor.tool.selection"), icon: <IconSelectionRect size={12} className="text-neutral-300" /> };
     case TOOL.RECT:
     case TOOL.ELLIPSE:
     case TOOL.POLYGON:
     case TOOL.STAR:
     case TOOL.LINE:
     case TOOL.ARROW:
-      return { label: t("editor.shape.title") || "形状工具", icon: <IconVectorSquare size={12} className="text-neutral-300" /> };
+      return { label: t("editor.shape.title"), icon: <IconVectorSquare size={12} className="text-neutral-300" /> };
     default:
       return null;
   }

@@ -146,7 +146,7 @@ export default function WarpSection({
               showRange
             />
           </div>
-          {/* Row 2: Horizontal & Vertical Skew (斜切) */}
+          {/* Row 2: Horizontal & Vertical Skew */}
           <div className="grid grid-cols-2 gap-1.5">
             <ScrubField
               prefix="SX"
