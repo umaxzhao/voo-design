@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useDesignStore } from "../../../store/design_store.js";
-import { addRecentFile } from "../../store/recent_files.js";
+import { addRecentFile, removeRecentFile } from "../../store/recent_files.js";
+import { saveDraftBytes } from "../../store/draft_store.js";
+import { findDraftEntry } from "../../store/draft_autosave.js";
 import { createDocument, CANVAS_TYPE } from "../../editor/scene_doc_factory.js";
 import { encodeVooBinary } from "../../store/voo_binary.js";
 import { workspaceStorage, guessCategory } from "../../../services/workspace_storage.js";
@@ -66,13 +68,23 @@ export function useWelcomeCreate({
       setWelcomeOpen(false);
     } catch (err) {
       console.warn("[VOO] workspaceStorage.writeFileBytes failed, fallback to memory project:", err);
-      useDesignStore.getState().newVooProject({ label: baseLabel, width, height, canvasType });
-      addRecentFile({
+      const store = useDesignStore.getState();
+      store.newVooProject({ label: baseLabel, width, height, canvasType });
+      // newVooProject records the draft under the bare label; keep one entry under the unique name.
+      const bareName = useDesignStore.getState().fileName;
+      if (bareName !== uniqueName) {
+        const stray = findDraftEntry(bareName);
+        if (stray) removeRecentFile(stray.id);
+        useDesignStore.getState().setFileName(uniqueName);
+      }
+      const entry = addRecentFile({
         name: uniqueName,
         path: null,
         isDraft: true,
         category,
       });
+      // The draft id is the recent entry id; the copy lets Recents reopen it later.
+      if (entry) await saveDraftBytes(entry.id, bytes, entry.name);
       await reloadFiles();
       setWelcomeOpen(false);
     }
@@ -111,12 +123,14 @@ export function useWelcomeCreate({
         console.warn("[VOO] workspaceStorage.writeFileBytes error, continuing in-memory:", err);
       }
 
-      addRecentFile({
+      // A failed workspace write leaves an in-memory draft; keep a copy so Recents can reopen it.
+      const recent = addRecentFile({
         name: saved?.name || uniqueName,
         path: saved?.path || null,
         category: template.category || "web",
-        isDraft: false,
+        isDraft: saved === null,
       });
+      if (saved === null && recent) await saveDraftBytes(recent.id, bytes, recent.name);
 
       useDesignStore.getState().loadVooProject({
         vooData: vooFile,

@@ -102,6 +102,8 @@ export default {
   "welcome.dialog.confirm": "确认",
   "welcome.dialog.cancel": "取消",
   "welcome.dialog.emptyTrashConfirm": "确定清空废纸篓吗？所有删除的文件将被永久移除。",
+  "welcome.recent.openFailed": "无法打开此文档。{reason}",
+  "welcome.recent.draftMissing": "此未保存草稿已不可用。",
   "welcome.recents.remove": "从最近列表移除",
   "welcome.edited": "编辑于 ",
   "welcome.prompt.generationTypeLabel": "生成类型",

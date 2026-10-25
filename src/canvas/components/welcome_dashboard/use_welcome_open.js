@@ -1,9 +1,13 @@
+import { useState } from "react";
 import { useDesignStore } from "../../../store/design_store.js";
 import { openVooProject } from "../../store/project_io.js";
-import { workspaceStorage } from "../../../services/workspace_storage.js";
+import { openRecentItem } from "./open_recent.js";
 
 /** Handlers that open an existing project: file picker, recent item, or dropped file. */
 export function useWelcomeOpen({ setWelcomeOpen, setIsDragOver }) {
+  // { key, reason } of the last failed open from Recents, or null.
+  const [openNotice, setOpenNotice] = useState(null);
+
   const handleOpenLocal = async () => {
     try {
       const res = await openVooProject({ store: useDesignStore.getState() });
@@ -15,39 +19,14 @@ export function useWelcomeOpen({ setWelcomeOpen, setIsDragOver }) {
     }
   };
 
+  // Opens a recent item; a failure is shown to the user and never opens the file picker.
   const handleOpenRecent = async (item) => {
-    try {
-      if (item.path) {
-        const res = await openVooProject({
-          store: useDesignStore.getState(),
-          fileOrPath: item.path,
-        });
-        if (res?.success) {
-          setWelcomeOpen(false);
-        }
-      } else if (item.id) {
-        // Read file bytes from workspaceStorage (for Web FSA or Virtual IndexedDB)
-        try {
-          const bytes = await workspaceStorage.readFileBytes(item.id);
-          const file = new File([bytes], item.name, {
-            type: "application/octet-stream",
-          });
-          const res = await openVooProject({
-            store: useDesignStore.getState(),
-            fileOrPath: file,
-          });
-          if (res?.success) {
-            useDesignStore.getState().setFileName?.(item.name);
-            setWelcomeOpen(false);
-          }
-        } catch {
-          handleOpenLocal();
-        }
-      } else {
-        handleOpenLocal();
-      }
-    } catch (err) {
-      console.error("[VOO] Failed to open project:", err);
+    const result = await openRecentItem(item);
+    if (result.ok) {
+      setOpenNotice(null);
+      setWelcomeOpen(false);
+    } else {
+      setOpenNotice({ key: result.key, reason: result.reason });
     }
   };
 
@@ -71,5 +50,5 @@ export function useWelcomeOpen({ setWelcomeOpen, setIsDragOver }) {
     }
   };
 
-  return { handleOpenLocal, handleOpenRecent, handleDrop };
+  return { handleOpenLocal, handleOpenRecent, handleDrop, openNotice, dismissOpenNotice: () => setOpenNotice(null) };
 }

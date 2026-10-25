@@ -102,6 +102,8 @@ export default {
   "welcome.dialog.confirm": "Confirm",
   "welcome.dialog.cancel": "Cancel",
   "welcome.dialog.emptyTrashConfirm": "Are you sure you want to empty trash? All items will be permanently removed.",
+  "welcome.recent.openFailed": "Could not open this document. {reason}",
+  "welcome.recent.draftMissing": "This unsaved draft is no longer available.",
   "welcome.recents.remove": "Remove from recents",
   "welcome.edited": "Edited ",
   "welcome.prompt.generationTypeLabel": "Generation type",

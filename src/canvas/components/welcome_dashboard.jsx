@@ -13,6 +13,7 @@ import { useWelcomeFolders } from "./welcome_dashboard/use_welcome_folders.js";
 import { useWelcomeCreate } from "./welcome_dashboard/use_welcome_create.js";
 import { useWelcomeOpen } from "./welcome_dashboard/use_welcome_open.js";
 import { useWelcomeFileActions } from "./welcome_dashboard/use_welcome_file_actions.js";
+import { WelcomeOpenNotice } from "./welcome_dashboard/welcome_open_notice.jsx";
 import { WelcomeSidebar } from "./welcome_dashboard/welcome_sidebar.jsx";
 import { WelcomePromptComposer } from "./welcome_dashboard/welcome_prompt_composer.jsx";
 import { WelcomeFileCollection } from "./welcome_dashboard/welcome_file_collection.jsx";
@@ -105,7 +106,7 @@ export default function WelcomeDashboard() {
     }
   };
 
-  const { handleOpenLocal: openLocalProject, handleOpenRecent, handleDrop } = useWelcomeOpen({
+  const { handleOpenLocal: openLocalProject, handleOpenRecent, handleDrop, openNotice } = useWelcomeOpen({
     setWelcomeOpen,
     setIsDragOver,
   });
@@ -244,6 +245,8 @@ export default function WelcomeDashboard() {
             )}
           </div>
         </header>
+
+        <WelcomeOpenNotice t={t} notice={openNotice} />
 
         {/* =================== TAB 1: RECENTS =================== */}
         {activeTab === "recents" && (
