@@ -190,9 +190,18 @@ export function createPaintStroke({
     // current layer, whatever that is). The one exception is materialising a
     // brand-new paint layer, which selects itself on creation.
     // A brush dab that reaches past the layer's box grows the layer to fit.
-    if (paintEdit.mode === "paint" && node.paint === true) {
-      node = expandPaintLayer(layerContext, node, dabRect(point, diameterDoc));
+    if ((paintEdit.mode === "paint" || paintEdit.mode === "smudge") && node.paint === true) {
+      const oldNode = node;
+      const oldSnapshot = paintEdit.retouchSnapshot;
+      node = expandPaintLayer(layerContext, node, dabRect(point, diameterDoc), paintEdit.mode === "smudge");
       if (!node) return;
+      if (oldSnapshot && node !== oldNode) {
+        const rebased = document.createElement("canvas");
+        rebased.width = node.width;
+        rebased.height = node.height;
+        rebased.getContext("2d").putImageData(oldSnapshot, oldNode.x - node.x, oldNode.y - node.y);
+        paintEdit.retouchSnapshot = rebased.getContext("2d").getImageData(0, 0, rebased.width, rebased.height);
+      }
     }
     const canvas = paintCanvasOf(node);
     if (!canvas) return;

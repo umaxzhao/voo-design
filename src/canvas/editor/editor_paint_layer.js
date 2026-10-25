@@ -127,9 +127,12 @@ export function expandPaintLayer(
   { getDoc, setDoc, paintCanvases, releaseBitmap, markPaintDirty },
   node,
   rect,
+  allowOutsideDoc = false,
 ) {
   const doc = getDoc();
-  const box = clampRectToDoc(rect, doc);
+  const box = allowOutsideDoc
+    ? { x: Math.floor(rect.x), y: Math.floor(rect.y), width: Math.ceil(rect.x + rect.width) - Math.floor(rect.x), height: Math.ceil(rect.y + rect.height) - Math.floor(rect.y) }
+    : clampRectToDoc(rect, doc);
   if (!box) return null;
   const left = Math.min(node.x, box.x);
   const top = Math.min(node.y, box.y);
