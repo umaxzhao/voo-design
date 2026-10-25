@@ -572,6 +572,7 @@ export function createEditor({
     ...ctrl.historyApi,
     ...ctrl.transformApi,
     ...ctrl.repairController,
+    ...ctrl.styleController,
     ...ctrl.bitmapWriter,
     ...ctrl.exporter,
     ...ctrl.exportApi,

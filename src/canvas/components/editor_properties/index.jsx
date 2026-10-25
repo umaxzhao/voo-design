@@ -1,5 +1,6 @@
 import { resolvePanelForContext } from "./resolve_panel_context.js";
 import SelectedNodeActions from "./selected_node_actions.jsx";
+import InspectPanel from "./inspect_panel.jsx";
 /**
  * Editor properties panel: root component docked on canvas side showing
  * background, tool properties, mask editing, pen editing, or node properties.
@@ -59,9 +60,6 @@ export default function EditorProperties({
   onLayout = null,
   swapSide = false,
   onToggleSide = null,
-  onToggleMotion = null,
-  motionTriggerRef = null,
-  motionOpen = false,
   bottomInset = 0,
   engine = null,
   mediaError = null,
@@ -115,6 +113,7 @@ export default function EditorProperties({
   });
 
   const [feather, setFeather] = useState(8);
+  const [inspectOpen, setInspectOpen] = useState(false);
 
   // A warp tool owns the selection: while it is armed AND the selected object
   // actually carries warp data, the panel shows only what that tool adjusts.
@@ -156,6 +155,9 @@ export default function EditorProperties({
   });
   const isDedicatedToolActive =
     !penEditing && !maskEditing && context.panel === "tool";
+  // Inspect is a read-only Dev Mode-style view for one selected layer.
+  const canInspect =
+    Boolean(object?.id) && selectionCount === 1 && !isDedicatedToolActive;
 
   const header = (
     <PropertiesPanelHeader
@@ -174,10 +176,10 @@ export default function EditorProperties({
       maskActions={maskActions}
       maskBusy={maskBusy}
       maskEditing={maskEditing}
-      onToggleMotion={isDedicatedToolActive ? null : onToggleMotion}
-      motionTriggerRef={motionTriggerRef}
-      motionOpen={motionOpen}
       onToggleSide={isDedicatedToolActive ? null : onToggleSide}
+      showInspect={canInspect}
+      inspectOpen={inspectOpen}
+      onToggleInspect={() => setInspectOpen((open) => !open)}
       t={t}
     />
   );
@@ -303,6 +305,15 @@ export default function EditorProperties({
     >
       {header}
       <div className={contentClass}>
+        {canInspect && inspectOpen ? (
+          <InspectPanel
+            object={object}
+            parentNode={parentNode}
+            engine={engine}
+            onClose={() => setInspectOpen(false)}
+          />
+        ) : (
+          <>
         <SelectedNodeActions
           object={object}
           selectedNodes={selectedNodes}
@@ -347,6 +358,8 @@ export default function EditorProperties({
             mediaError={mediaError}
             t={t}
           />
+          </>
+        )}
       </div>
     </aside>
   );

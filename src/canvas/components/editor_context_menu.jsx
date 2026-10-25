@@ -384,6 +384,28 @@ export default function EditorContextMenu({
           <div className="mx-1 my-0.5 h-px bg-white/10" />
         </>
       )}
+      {selectedCount === 1 ? (
+        <>
+          {[
+            ["fill", "editor.menu.selectSame.fill"],
+            ["stroke", "editor.menu.selectSame.stroke"],
+            ["font", "editor.menu.selectSame.font"],
+            ["kind", "editor.menu.selectSame.kind"],
+          ].map(([criteria, label]) => (
+            <button
+              key={criteria}
+              type="button"
+              role="menuitem"
+              data-testid={`editor-menu-select-same-${criteria}`}
+              className={itemClass}
+              onClick={() => run(() => engine.selectSame?.(criteria))}
+            >
+              <span>{t(label)}</span>
+            </button>
+          ))}
+          <div className="mx-1 my-0.5 h-px bg-white/10" />
+        </>
+      ) : null}
       {selectedCount >= 1 ? (
         <>
           <button
@@ -404,6 +426,28 @@ export default function EditorContextMenu({
             <span>{t("editor.menu.duplicate")}</span>
             <span className="text-[9px] text-neutral-500">{formatShortcut("⌘D", isMac)}</span>
           </button>
+          <button
+            type="button"
+            role="menuitem"
+            data-testid="editor-menu-copy-properties"
+            className={itemClass}
+            onClick={() => run(() => engine.copyStyle?.())}
+          >
+            <span>{t("editor.menu.copyProperties")}</span>
+            <span className="text-[9px] text-neutral-500">{formatShortcut("⌥⌘C", isMac)}</span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            data-testid="editor-menu-paste-properties"
+            className={itemClass}
+            disabled={!engine.hasStyleClipboard?.()}
+            onClick={() => run(() => engine.pasteStyle?.())}
+          >
+            <span>{t("editor.menu.pasteProperties")}</span>
+            <span className="text-[9px] text-neutral-500">{formatShortcut("⌥⌘V", isMac)}</span>
+          </button>
+          <div className="mx-1 my-0.5 h-px bg-white/10" />
           {onCreateComponent && !is3D ? (
             <button
               type="button"

@@ -709,6 +709,11 @@ export function useEditorShortcuts({
             engine.selectAll();
             return;
           case "KeyC": {
+            if (event.altKey) {
+              event.preventDefault();
+              engine.copyStyle?.();
+              return;
+            }
             const hasTextSelection =
               (window.getSelection()?.toString().length ?? 0) > 0;
             if (hasTextSelection) return;
@@ -737,6 +742,11 @@ export function useEditorShortcuts({
             }
             return;
           case "KeyV": {
+            if (event.altKey) {
+              event.preventDefault();
+              engine.pasteStyle?.();
+              return;
+            }
             // The paste event carries the current system clipboard data.
             // Its handler decides whether it matches internal copied layers.
             return;

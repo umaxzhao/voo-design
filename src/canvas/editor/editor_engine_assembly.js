@@ -22,6 +22,7 @@ import { createEngineNodesController } from "./editor_engine_nodes.js";
 import { createEngineBrushController } from "./editor_engine_brush.js";
 import { createEngineToolsController } from "./editor_engine_tools.js";
 import { createEngineRepairController } from "./editor_engine_repair_state.js";
+import { createEngineStyleController } from "./editor_engine_styles.js";
 import { emitLocalStroke } from "../collab/stroke_bus.js";
 
 export function assembleEngineControllers({
@@ -245,6 +246,15 @@ export function assembleEngineControllers({
     notify,
   });
 
+  const styleController = createEngineStyleController({
+    getDoc,
+    setDoc,
+    selection,
+    selectMany: nodesController.selectMany,
+    notify,
+    requestRender,
+  });
+
   const brushController = createEngineBrushController({
     getDoc,
     setDoc,
@@ -296,15 +306,7 @@ export function assembleEngineControllers({
     setShapeOpacity: brushController.setShapeOpacity,
     getFillOpacity: brushController.getFillOpacity,
     getGradientOpacity: brushController.getGradientOpacity,
-    getShapeStrokeColor: brushController.getShapeStrokeColor,
-    setShapeStrokeColor: brushController.setShapeStrokeColor,
-    getStrokeWidth: brushController.getStrokeWidth,
-    setStrokeWidth: brushController.setStrokeWidth,
-    getShapeOpacity: brushController.getShapeOpacity,
-    setShapeOpacity: brushController.setShapeOpacity,
-    getFillOpacity: brushController.getFillOpacity,
     setFillOpacity: brushController.setFillOpacity,
-    getGradientOpacity: brushController.getGradientOpacity,
     setGradientOpacity: brushController.setGradientOpacity,
     sourceWorkflowNodeId,
     onGeneratedOutput,
@@ -362,6 +364,7 @@ export function assembleEngineControllers({
     brushController,
     toolsController,
     repairController,
+    styleController,
     transformApi,
   };
 }

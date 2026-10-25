@@ -11,9 +11,6 @@ import { DOCKED_PANEL_MAX_HEIGHT_CLASS } from "../editor_panel_clearance.js";
 export default function PropertiesPanelShell({
   swapSide = false,
   bottomInset = 0,
-  onToggleMotion = null,
-  motionTriggerRef = null,
-  motionOpen = false,
   onToggleSide = null,
   testId = undefined,
   children = null,
@@ -43,9 +40,6 @@ export default function PropertiesPanelShell({
       style={panelStyle}
     >
       <PropertiesPanelHeader
-        onToggleMotion={onToggleMotion}
-        motionTriggerRef={motionTriggerRef}
-        motionOpen={motionOpen}
         onToggleSide={onToggleSide}
         t={t}
       />
@@ -57,9 +51,6 @@ export default function PropertiesPanelShell({
 PropertiesPanelShell.propTypes = {
   swapSide: PropTypes.bool,
   bottomInset: PropTypes.number,
-  onToggleMotion: PropTypes.func,
-  motionTriggerRef: PropTypes.object,
-  motionOpen: PropTypes.bool,
   onToggleSide: PropTypes.func,
   testId: PropTypes.string,
   children: PropTypes.node,

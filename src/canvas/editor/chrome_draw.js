@@ -27,6 +27,7 @@ import {
   getCheckerboardSource,
 } from "./render_nodes.js";
 import { drawAdjustmentLayer, drawClippingChain } from "./chrome_layers.js";
+import { drawLayoutGrids } from "./chrome_layout_grid.js";
 import { drawRegions } from "./chrome_regions.js";
 import { drawSelection, drawSelectionSet } from "./chrome_selection.js";
 import {
@@ -306,6 +307,10 @@ function drawUncached(
         drawPenSelectionTint(ctx, selectedNode);
       }
     }
+
+    // Per-frame layout grids first (below the global pixel grid): they are
+    // view-only chrome and clipped to the frame that owns them.
+    drawLayoutGrids(ctx, doc, viewport, { hiddenNodeId });
 
     // View-only grid overlay (never exported): hairline columns and rows in
     // document space, drawn over nodes so it serves as an active alignment aid.

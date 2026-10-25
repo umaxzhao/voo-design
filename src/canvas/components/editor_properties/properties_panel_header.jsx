@@ -1,12 +1,11 @@
-/** Header bar for EditorProperties panel: title, tool identity, mask, motion, and side-dock controls. */
+/** Header bar for EditorProperties panel: title, tool identity, mask, inspect and side-dock controls. */
 
-import { EDITOR_BETA_ENABLED } from "../../editor-beta-features.js";
 import PropTypes from "prop-types";
 import { useState } from "react";
 import {
+  IconCode,
   IconSwap,
   IconMask,
-  IconMotion,
   IconBrush,
   IconEraser,
   IconText,
@@ -116,10 +115,10 @@ export default function PropertiesPanelHeader({
   maskActions,
   maskBusy,
   maskEditing,
-  onToggleMotion,
-  motionTriggerRef,
-  motionOpen,
   onToggleSide,
+  inspectOpen = false,
+  showInspect = false,
+  onToggleInspect = null,
   object = null,
   selectionCount = 1,
   onRename = null,
@@ -228,25 +227,22 @@ export default function PropertiesPanelHeader({
             </button>
           </EditorTooltip>
         ) : null}
-        {EDITOR_BETA_ENABLED && onToggleMotion ? (
-          <EditorTooltip title={t("editor.motion.title")} side="bottom">
+        {showInspect ? (
+          <EditorTooltip title={t("editor.inspect.title")} side="bottom">
             <button
-              ref={motionTriggerRef}
               type="button"
-              onClick={onToggleMotion}
-              title={t("editor.motion.title")}
-              aria-label={t("editor.motion.title")}
-              aria-controls="editor-motion-timeline"
-              aria-expanded={motionOpen}
-              aria-pressed={motionOpen}
-              data-testid="editor-motion-trigger"
-              className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a7ffd4] ${
-                motionOpen
-                  ? "bg-white/10 text-neutral-200 hover:bg-white/20"
-                  : "text-neutral-400 hover:bg-white/10 hover:text-white"
+              onClick={onToggleInspect}
+              title={t("editor.inspect.title")}
+              aria-label={t("editor.inspect.title")}
+              aria-pressed={inspectOpen}
+              data-testid="editor-inspect-trigger"
+              className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
+                inspectOpen
+                  ? "bg-white/10 text-neutral-100 hover:bg-white/20"
+                  : "text-neutral-400 hover:bg-white/[0.08] hover:text-white"
               }`}
             >
-              <IconMotion size={13} />
+              <IconCode size={13} />
             </button>
           </EditorTooltip>
         ) : null}
@@ -276,9 +272,9 @@ PropertiesPanelHeader.propTypes = {
   maskActions: PropTypes.object,
   maskBusy: PropTypes.bool,
   maskEditing: PropTypes.object,
-  onToggleMotion: PropTypes.func,
-  motionTriggerRef: PropTypes.object,
-  motionOpen: PropTypes.bool,
   onToggleSide: PropTypes.func,
+  inspectOpen: PropTypes.bool,
+  showInspect: PropTypes.bool,
+  onToggleInspect: PropTypes.func,
   t: PropTypes.func.isRequired,
 };
