@@ -75,7 +75,11 @@ export function createPointerDownDispatcher({
       shapes.startArrow(event);
     } else if (api.getTool() === TOOL.LINE) {
       shapes.startArrow(event, { line: true });
-    } else if (api.getTool() === TOOL.RECT || api.getTool() === TOOL.ELLIPSE) {
+    } else if (
+      api.getTool() === TOOL.FRAME ||
+      api.getTool() === TOOL.RECT ||
+      api.getTool() === TOOL.ELLIPSE
+    ) {
       shapes.startShape(event);
     } else if (api.getTool() === TOOL.POLYGON || api.getTool() === TOOL.STAR) {
       shapes.startPolyShape(event);

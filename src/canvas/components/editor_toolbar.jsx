@@ -1,6 +1,6 @@
 import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
 import PropTypes from "prop-types";
-import { IconCrop, IconEraser, IconText } from "../icons.jsx";
+import { IconCrop, IconEraser, IconFrame, IconText } from "../icons.jsx";
 import EditorBrushMenu from "./editor_brush_menu.jsx";
 import EditorSelectMenu from "./editor_select_menu.jsx";
 import ShapeToolsMenu from "./editor_shape_menu.jsx";
@@ -90,6 +90,12 @@ export default function EditorToolbar({
 
         {!motionVariant ? (
           <>
+            {renderTool({
+              id: TOOL.FRAME,
+              icon: <IconFrame size={16} />,
+              label: t("editor.tool.frame"),
+            })}
+
             {/* 2. 裁切工具 (Crop) */}
             {renderTool({
               id: TOOL.CROP,

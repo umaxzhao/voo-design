@@ -18,6 +18,7 @@ export { TOOL };
  */
 export const TOOL_KEYS = {
   KeyV: TOOL.SELECT,
+  KeyF: TOOL.FRAME,
   KeyA: TOOL.SELECT,
   KeyQ: TOOL.PERSPECTIVE,
   KeyM: TOOL.MARQUEE,
@@ -67,6 +68,7 @@ export const TOOL_KEY_FAMILIES = {
   },
   KeyJ: { type: "healing", items: ["aiRepair", "spot", "patch", "clone"] },
   KeyP: { type: "tool", items: [TOOL.PEN, TOOL.CURVATURE_PEN, TOOL.FREE_PEN] },
+  KeyF: { type: "tool", items: [TOOL.FRAME] },
   KeyR: {
     type: "tool",
     items: [
@@ -211,6 +213,7 @@ export function toolUsesColor(tool) {
   return (
     tool === TOOL.BRUSH ||
     tool === TOOL.RECT ||
+    tool === TOOL.FRAME ||
     tool === TOOL.ELLIPSE ||
     tool === TOOL.LINE ||
     tool === TOOL.POLYGON ||

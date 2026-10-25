@@ -7,6 +7,7 @@
  */
 import {
   createEllipseNode,
+  createGroupNode,
   createPenNode,
   createRectNode,
   createTextNode,
@@ -33,6 +34,18 @@ export function createDrawingShapesApi({
       stroke: "#ffffff",
       strokeWidth: 0,
     });
+    setDoc(ops.addNode(getDoc(), node), { commit: false });
+    return node;
+  }
+
+  /** Creates a zero-size frame at `point`; the frame tool drag shapes it. */
+  function addFrameAt(point) {
+    const node = {
+      ...createGroupNode({ x: point.x, y: point.y, width: 0, height: 0 }),
+      frame: true,
+      isFrame: true,
+      name: "Frame",
+    };
     setDoc(ops.addNode(getDoc(), node), { commit: false });
     return node;
   }
@@ -203,6 +216,7 @@ export function createDrawingShapesApi({
 
   return {
     addRectAt,
+    addFrameAt,
     addEllipseAt,
     addTextAt,
     addPenNode,

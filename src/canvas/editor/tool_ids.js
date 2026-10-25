@@ -2,6 +2,7 @@
 
 export const TOOL = Object.freeze({
   SELECT: "select",
+  FRAME: "frame",
   PERSPECTIVE: "perspective",
   DISTORT: "distort",
   PUPPET_WARP: "puppet_warp",

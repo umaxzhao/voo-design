@@ -240,6 +240,7 @@ export function createDrawingApi({
       notify();
     },
     addRectAt: shapes.addRectAt,
+    addFrameAt: shapes.addFrameAt,
     addEllipseAt: shapes.addEllipseAt,
     addTextAt: shapes.addTextAt,
     addPenNode: shapes.addPenNode,

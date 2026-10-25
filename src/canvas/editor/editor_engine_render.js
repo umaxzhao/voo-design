@@ -177,6 +177,7 @@ export function renderEngineStage({
       !paintOutline &&
       !annotations.getEditingTextId() &&
       tool !== TOOL.RECT &&
+      tool !== TOOL.FRAME &&
       tool !== TOOL.ELLIPSE &&
       tool !== TOOL.ARROW &&
       tool !== TOOL.PERSPECTIVE &&

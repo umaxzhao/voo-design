@@ -138,9 +138,11 @@ export function createShapesPointerGestures({
   function startShape(event) {
     const point = api.toDocPoint(event.clientX, event.clientY);
     const node =
-      api.getTool() === TOOL.ELLIPSE
-        ? api.addEllipseAt(point)
-        : api.addRectAt(point);
+      api.getTool() === TOOL.FRAME
+        ? api.addFrameAt(point)
+        : api.getTool() === TOOL.ELLIPSE
+          ? api.addEllipseAt(point)
+          : api.addRectAt(point);
     api.select(node.id);
     setGesture({ kind: "shape", id: node.id, start: point });
   }
