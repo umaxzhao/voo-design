@@ -136,5 +136,6 @@ export function normalizeStrokeOptions(options) {
     saturating: Boolean(options.saturating),
     pressureSize: Boolean(options.pressureSize),
     pressureOpacity: Boolean(options.pressureOpacity),
+    penStroke: options.penStroke === true,
   };
 }

@@ -62,9 +62,14 @@ export function createDrawingPointerGestures(ctx) {
       ? event.pressure
       : 0.5;
 
-  /** The brush settings, captured for one stroke. */
-  const strokeOptions = (mode) => ({
+  /**
+   * The brush settings, captured for one stroke. `event` is the pointerdown
+   * that starts it: a pen stroke applies pressure on its own, while mouse and
+   * touch leave pressure to the panel toggles.
+   */
+  const strokeOptions = (mode, event = null) => ({
     mode,
+    penStroke: event?.pointerType === "pen",
     size: api.getBrushWidth(),
     hardness: api.getBrushHardness(),
     color: api.getColor(),
@@ -112,7 +117,7 @@ export function createDrawingPointerGestures(ctx) {
       setLastBrushPoint(point);
       return;
     }
-    api.beginPaintStroke(null, strokeOptions("paint"));
+    api.beginPaintStroke(null, strokeOptions("paint", event));
     api.paintStrokeTo(point, pressureOf(event));
     setGesture({ kind: "paint", tool: TOOL.BRUSH, lastPoint: point });
   }
@@ -128,7 +133,7 @@ export function createDrawingPointerGestures(ctx) {
         : imageAt(api.getDocument(), point);
     if (!target) return;
     const mode = requestedMode || api.getTool();
-    api.beginPaintStroke(target.id, strokeOptions(mode));
+    api.beginPaintStroke(target.id, strokeOptions(mode, event));
     api.paintStrokeTo(point, pressureOf(event));
     setGesture({ kind: "paint", tool: mode, lastPoint: point });
   }
@@ -148,7 +153,7 @@ export function createDrawingPointerGestures(ctx) {
       target = imageAt(api.getDocument(), point);
     }
     if (!target) return;
-    if (!api.beginPaintStroke(target.id, strokeOptions("erase"))) return;
+    if (!api.beginPaintStroke(target.id, strokeOptions("erase", event))) return;
     api.paintStrokeTo(point, pressureOf(event));
     setGesture({ kind: "paint", tool: TOOL.ERASER, lastPoint: point });
   }

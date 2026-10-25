@@ -130,6 +130,7 @@ export function createPaintStroke({
       saturating: normalized.saturating,
       pressureSize: normalized.pressureSize,
       pressureOpacity: normalized.pressureOpacity,
+      penStroke: normalized.penStroke,
       last: null,
       pending: null,
       pendingDiameter: 0,
@@ -164,19 +165,17 @@ export function createPaintStroke({
    */
   function paintStrokeTo(point, pressure = 0.5) {
     if (!paintEdit) return;
-    // Pen pressure, when the toggle is on, modulates the dab size; a mouse
-    // (pressure 0) and a toggled-off tablet both read as the full brush size.
+    // A pen always carries pressure; mouse and touch only when the panel
+    // toggle asks for it (a mouse reads a flat 0.5 while pressed).
     const diameterDoc = resolvePressureSize(
       paintEdit.size,
       pressure,
-      paintEdit.pressureSize,
+      paintEdit.pressureSize || paintEdit.penStroke,
     );
-    // Pressure-driven opacity: only when the toggle is on. A mouse keeps the
-    // stable brush opacity.
     paintEdit.stampOpacity = resolvePressureOpacity(
       paintEdit.opacity,
       pressure,
-      paintEdit.pressureOpacity,
+      paintEdit.pressureOpacity || paintEdit.penStroke,
     );
     let node = paintEdit.nodeId ? findNode(getDoc(), paintEdit.nodeId) : null;
     if (!node && paintEdit.mode === "paint") {
