@@ -131,6 +131,44 @@ export function clearAllOverrides(instance) {
   return withNodes(instance, {});
 }
 
+/** Every field currently overridden somewhere on the instance. */
+export function overriddenFields(instance) {
+  const fields = new Set();
+  for (const entry of Object.values(nodeMap(instance))) {
+    for (const field of Object.keys(entry ?? {})) fields.add(field);
+  }
+  return fields;
+}
+
+/** Removes only the named fields from every node override (empty nodes drop). */
+export function clearOverrideFields(instance, fields = []) {
+  const remove = new Set(fields);
+  if (remove.size === 0) return instance;
+  const next = {};
+  let changed = false;
+  for (const [nodeId, entry] of Object.entries(nodeMap(instance))) {
+    const kept = {};
+    for (const [field, value] of Object.entries(entry ?? {})) {
+      if (remove.has(field)) changed = true;
+      else kept[field] = value;
+    }
+    if (Object.keys(kept).length > 0) next[nodeId] = kept;
+  }
+  return changed ? withNodes(instance, next) : instance;
+}
+
+/** Replaces an instance's source component and clears its overrides. */
+export function swapInstanceSource(node, sourceCanvasId) {
+  if (!node || node.kind !== "canvasInstance") return node;
+  if (typeof sourceCanvasId !== "string" || !sourceCanvasId) return node;
+  if (node.sourceCanvasId === sourceCanvasId) return node;
+  return {
+    ...node,
+    sourceCanvasId,
+    instance: clearAllOverrides(node.instance ?? {}),
+  };
+}
+
 function withNodes(instance, nodes) {
   const overrides = { ...instance?.overrides };
   if (Object.keys(nodes).length > 0) overrides.nodes = nodes;

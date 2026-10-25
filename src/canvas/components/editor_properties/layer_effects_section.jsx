@@ -5,7 +5,9 @@ import {
   CollapsibleSection,
   SectionAddButton,
   sectionActionClass,
+  sectionRowClass,
 } from "./property_section.jsx";
+import ScrubField from "../scrub_field.jsx";
 import { useI18n } from "../../use_i18n.js";
 import {
   listConfiguredAdjustments,
@@ -291,6 +293,96 @@ export default function LayerEffectsSection({
               </div>
             );
           })}
+        </div>
+        {/* Layer-level blur and grain share the Effects section: they are
+            effects on the layer, not paint properties. */}
+        <div className="mt-2 flex flex-col gap-1.5 border-t border-white/10 pt-2">
+          <span className="px-1 text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-400">
+            {t("editor.props.blurNoise")}
+          </span>
+          <div className={sectionRowClass}>
+            <span className="flex-1 text-left text-[10px] text-neutral-300">
+              {t("editor.props.layerBlur")}
+            </span>
+            <ScrubField
+              suffix="px"
+              min={0}
+              max={100}
+              value={object.layerBlur ?? 0}
+              onValueChange={(value) => editAndCommit({ layerBlur: value })}
+              onCommit={_commitNow}
+              ariaLabel={t("editor.props.layerBlur")}
+              scrubHint={t("editor.props.dragToAdjust")}
+            />
+          </div>
+          <div className={sectionRowClass}>
+            <span className="flex-1 text-left text-[10px] text-neutral-300">
+              {t("editor.props.backgroundBlur")}
+            </span>
+            <ScrubField
+              suffix="px"
+              min={0}
+              max={100}
+              value={object.backgroundBlur ?? 0}
+              onValueChange={(value) => editAndCommit({ backgroundBlur: value })}
+              onCommit={_commitNow}
+              ariaLabel={t("editor.props.backgroundBlur")}
+              scrubHint={t("editor.props.dragToAdjust")}
+            />
+          </div>
+          {object.noise ? (
+            <div className="flex flex-col gap-1 rounded-xl bg-neutral-900/60 p-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-mono uppercase tracking-tight text-neutral-400">
+                  {t("editor.props.noise")}
+                </span>
+                <button
+                  type="button"
+                  aria-label={t("editor.props.removeNoise")}
+                  title={t("editor.props.removeNoise")}
+                  onClick={() => editAndCommit({ noise: null })}
+                  className={sectionActionClass}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {[
+                  ["opacity", t("editor.props.noiseOpacity"), 0, 1, 100, "%", (value) => value / 100],
+                  ["density", t("editor.props.noiseDensity"), 0, 1, 100, "%", (value) => value / 100],
+                  ["size", t("editor.props.noiseSize"), 1, 12, 12, "px", (value) => value],
+                ].map(([key, label, min, max, displayMax, suffix, toStored]) => (
+                  <ScrubField
+                    key={key}
+                    suffix={suffix}
+                    min={min * (key === "opacity" || key === "density" ? 100 : 1)}
+                    max={max * (key === "opacity" || key === "density" ? 100 : 1)}
+                    value={Math.round((object.noise?.[key] ?? 0) * (key === "opacity" || key === "density" ? 100 : 1))}
+                    onValueChange={(value) =>
+                      editAndCommit({
+                        noise: { ...(object.noise ?? {}), [key]: toStored(value) },
+                      })
+                    }
+                    onCommit={_commitNow}
+                    ariaLabel={label}
+                    scrubHint={t("editor.props.dragToAdjust")}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() =>
+                editAndCommit({
+                  noise: { opacity: 0.15, density: 0.5, size: 2 },
+                })
+              }
+              className="flex h-6 w-full items-center justify-center rounded-lg text-[10px] font-mono text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white"
+            >
+              + {t("editor.props.noise")}
+            </button>
+          )}
         </div>
       </CollapsibleSection>
 

@@ -34,7 +34,7 @@ Prototype、Inspect、轻主题、布局网格、Appearance、Constraints 等上
 | Figma | VOO | 说明 |
 |---|---|---|
 | X / Y / W / H / rotation / radius | ✅ | `transform_section.jsx` |
-| W/H sizing dropdown（Hug/Fill/Fixed）+ min/max badge | 🟡 | 只在 `auto_layout_section.jsx` 的 `widthMode/heightMode/minWidth...`；普通图层没有 combo input |
+| W/H sizing dropdown（Hug/Fill/Fixed）+ min/max badge | ✅/🟡 | 本轮在 Transform 增加 sizing 下拉：有 auto layout 的 frame（Fixed/Hug）、auto-layout 子项（Fixed/Hug/Fill）；min/max 仍在 Layout 段；纯形状为 Fixed 语义，不显示无意义选项 |
 | Corner smoothing | ❌ | 无 `cornerSmoothing` |
 | Independent corners（4 角分别） | ✅ | `TransformRadiusControls` |
 | Arc（start/sweep/ratio）、line x2/y2、repeat/grid child spacing | 🟡 | arc 有；line 端点与 repeat 间距在 type-specific/collect 段，未在 transform 行内 |
@@ -85,8 +85,8 @@ Prototype、Inspect、轻主题、布局网格、Appearance、Constraints 等上
 ### 8. Effects
 | Figma | VOO | 说明 |
 |---|---|---|
-| Drop/Inner shadow、layer/background blur | 🟡 | `layer_effects_section.jsx` 有 shadow/glow/inner shadow/inner glow/satin/bevel/fill/gradient/stroke；layerBlur/backgroundBlur 在引擎存在但面板未作为 effect 行 |
-| Glass / Noise / Texture / Shader / 3D effects | ❌ | 无 |
+| Drop/Inner shadow、layer/background blur | ✅ | 本轮 Effects 段新增 Layer blur / Background blur 数值行（引擎已有渲染），并新增 Noise（opacity/density/size，引擎已有 grain 渲染） |
+| Glass / Texture / Shader / 3D effects | ❌ | 无（Noise 已有） |
 | 每行 inline X/Y/Blur/Spread/Color | 🟡 | 行打开 popover 编辑（不是 Figma 的行内展开） |
 | 禁用原因 tooltip（glass only frames 等） | ❌ | 没有对应控件，自然也没有原因 |
 
@@ -108,9 +108,10 @@ Prototype、Inspect、轻主题、布局网格、Appearance、Constraints 等上
 | 主组件 / 实例 / detach | ✅ | component extract/instance |
 | Variants + 属性轴 | 🟡 | 上一轮有变体轴编辑（新增属性/组合），无 component properties（布尔/文本/实例交换属性） |
 | Component description / publish changes | ❌ | 无 |
-| Swap instance / go to main component | ❌ | 无面板入口 |
+| Swap instance | ✅ | 本轮 Instance 段：源组件下拉切换（清空旧覆盖） |
+| go to main component | ❌ | 无 |
 | Override 字段 | ✅ | 上一轮扩到 text/fill/visible/stroke/描边宽/透明度/effects/圆角/字号字重 |
-| Override reset 矩阵（reset fill/stroke/.../other） | ❌ | 只能整体 clearAllOverrides（agent 路径），无面板矩阵 |
+| Override reset 矩阵（reset fill/stroke/.../other） | 🟡 | 本轮 Instance 段提供按组重置（Text/Fill/Stroke/Effects/Opacity/Visibility/All）；Figma 更细（size/name/exports/interactions） |
 
 ### 11. Export
 | Figma | VOO | 说明 |
@@ -165,7 +166,28 @@ Prototype、Inspect、轻主题、布局网格、Appearance、Constraints 等上
 - Pen/Figma/PSD/SVG 导入
 - 布局网格已真正渲染（Figma 有；Pen 无）、原型 MVP 比 Pen 更进一步
 
+## 4.1 本轮已完成（2026-10-26）
+
+| 项 | 交付 | 验证 |
+|---|---|---|
+| Effects blur/noise | `layer_effects_section.jsx` 增加 Layer blur、Background blur、Noise(opacity/density/size) 行，均为引擎已支持的 `layerBlur/backgroundBlur/noise` 字段 | `effects_blur_noise.test.jsx`；运行时面板显示三行 |
+| Transform sizing | 有 auto layout 的 frame：Fixed/Hug；auto-layout 子项：Fixed/Hug/Fill（写 `widthMode/heightMode` 或 `layoutWidth/layoutHeight`） | `sizing_modes.test.jsx` |
+| Instance 面板 | 源组件 swap（清空旧覆盖）+ override reset 分组（Text/Fill/Stroke/Effects/Opacity/Visibility/All） | `instance_section.test.jsx`；helper 测试 |
+
+## 4.2 仍未做（原因）
+
+| 缺口 | 阻碍 |
+|---|---|
+| 多 stroke / per-side | 引擎与 CanvasKit 场景都按单 `stroke` 渲染；需要 renderer/core 级改动 |
+| Gradient 插值 color space / hue method | Canvas2D 渐变只按 sRGB 插值；需自绘 stop 采样或 core shader |
+| Image scale mode / alt text | 图片填充走拉伸绘制，没有 crop/fit/fill 元数据与绘制分支 |
+| 组件 properties / description / publish | 需要 component property → 节点绑定的数据模型，不只是面板 |
+| Prototype scroll / change-to / set-variable / 条件 | 需要运行时的滚动容器与实例变体切换支持；当前 Runner 基于整帧栅格 |
+| 3D transform / corner smoothing / grid layout | 渲染与布局核心能力，评估为 P3 |
+
 ## 5. 复核方式
+
+**本轮验证**：`npx vitest run` 3326 passed / 12 skipped / 0 failed；`lint:design` clean（1093 files）；`build` 通过；44 状态巡检此前仍为 0 error/裁剪/漏翻/无名称。
 
 ```bash
 # 本表逐项源码复核（示例）

@@ -30,6 +30,7 @@ import AppearanceSection from "./appearance_section.jsx";
 import ExportSection from "./export_section.jsx";
 import SelectionColorsSection from "./selection_colors_section.jsx";
 import PrototypeSection from "./prototype_section.jsx";
+import InstanceSection from "./instance_section.jsx";
 import { normalizeStyles } from "../../editor/scene_styles.js";
 import { resolveExtras } from "./panel_extras.js";
 import {
@@ -187,6 +188,7 @@ export default function PropertiesPanelSections({
           commitNow={commitNow}
           selectedNodes={selectedNodes}
           transformActions={transformActions}
+          parentLayout={parentLayout}
         />
       ) : null}
 
@@ -199,6 +201,8 @@ export default function PropertiesPanelSections({
       {!isWarpTool && object.isFrame ? (
         <VariantsSection engine={engine} isMainComponent={isMainComponent} />
       ) : null}
+
+      {!isWarpTool ? <InstanceSection object={object} engine={engine} /> : null}
 
       {!isWarpTool && <TypeSpecificSections object={object} sections={allowed} engine={engine} editAndCommit={editAndCommit} />}
 

@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 import { Contrast } from "lucide-react";
 import ScrubField from "../scrub_field.jsx";
 import MixedField from "./mixed_field.jsx";
+import FlatSelect from "../flat_select.jsx";
+import { normalizeAutoLayout } from "../../editor/scene_auto_layout.js";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
 import { StaticSection } from "./property_section.jsx";
 import {
@@ -49,6 +51,7 @@ export default function TransformSection({
   commitNow = undefined,
   selectedNodes = [],
   transformActions = null,
+  parentLayout = null,
 }) {
   const { t } = useI18n();
   const [lockRatioState, setLockRatioState] = useState({
@@ -241,6 +244,54 @@ export default function TransformSection({
         )}
 
         {/* Opacity and blend mode live in the Appearance section (Figma/Pen). */}
+
+        {(() => {
+          const isGroup = object.kind === "group";
+          const frameLayout = isGroup ? normalizeAutoLayout(object.autoLayout) : null;
+          const childOfLayout = Boolean(parentLayout) && !isGroup;
+          if (!frameLayout && !childOfLayout) return null;
+          const widthKey = frameLayout ? "widthMode" : "layoutWidth";
+          const heightKey = frameLayout ? "heightMode" : "layoutHeight";
+          const widthValue = frameLayout
+            ? frameLayout.widthMode
+            : object.layoutWidth ?? "fixed";
+          const heightValue = frameLayout
+            ? frameLayout.heightMode
+            : object.layoutHeight ?? "fixed";
+          const options = frameLayout
+            ? ["fixed", "hug"]
+            : ["fixed", "hug", "fill"];
+          const commitMode = (key, value) => {
+            if (frameLayout) {
+              editAndCommit({
+                autoLayout: { ...frameLayout, [key]: value },
+              });
+            } else {
+              editAndCommit({ [key]: value });
+            }
+          };
+          return (
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                ["width", widthKey, widthValue, t("editor.props.sizingWidth")],
+                ["height", heightKey, heightValue, t("editor.props.sizingHeight")],
+              ].map(([axis, key, value, label]) => (
+                <FlatSelect
+                  key={axis}
+                  value={value}
+                  onChange={(next) => commitMode(key, next)}
+                  label={label}
+                  options={options.map((option) => ({
+                    value: option,
+                    label: t(`editor.sizing.${option}`),
+                  }))}
+                  triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2 !text-[10px] !font-mono !uppercase !text-neutral-100 hover:!bg-neutral-800/80"
+                  widthClass="w-full"
+                />
+              ))}
+            </div>
+          );
+        })()}
 
         {showRadius && (object.kind === "rect" || object.isFrame || object.kind === "frame") ? (
           <TransformRadiusControls
