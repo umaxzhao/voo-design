@@ -10,7 +10,6 @@ import { healingModeFields } from "../../editor/healing_properties.js";
 import { useI18n } from "../../use_i18n.js";
 import { StaticSection } from "./property_section.jsx";
 import ToolSliderField from "./tool_slider_field.jsx";
-import { IconOpacity } from "../../icons.jsx";
 import BrushRetouchControls from "./brush_retouch_controls.jsx";
 import BrushAdvancedControls, {
   BRUSH_BLEND_OPTIONS,
@@ -249,7 +248,6 @@ export default function BrushProperties({
         {showOpacity && onBrushOpacity ? (
           <ToolSliderField
             label={t("editor.brushOpacity")}
-            icon={<IconOpacity size={12} />}
             min={0}
             max={100}
             value={Math.round(brushOpacity * 100)}

@@ -22,7 +22,6 @@ import {
 import {
   IconFlipH,
   IconFlipV,
-  IconOpacity,
 } from "../../icons.jsx";
 import { useI18n } from "../../use_i18n.js";
 import EditorTooltip from "../editor_tooltip.jsx";
@@ -249,10 +248,9 @@ export default function TransformSection({
 
         <div className="grid grid-cols-2 gap-2 items-center">
           {commonOpacity.mixed ? (
-            <MixedField label={<IconOpacity size={12} />} suffix="%" />
+            <MixedField label="" suffix="%" />
           ) : (
             <ScrubField
-              prefix={<IconOpacity size={12} />}
               suffix="%"
               min={0}
               max={100}
