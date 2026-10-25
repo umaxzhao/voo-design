@@ -49,6 +49,12 @@ export function textBoxDrag(start, point, { zoom = 1 } = {}) {
   };
 }
 
+/** A node drawn from `point` joins the frame the drag starts inside. */
+function insideFrame(doc, node, point) {
+  const frame = ops.frameAtPoint(doc, point);
+  return frame ? { ...node, parentId: frame.id } : node;
+}
+
 export function createShapesPointerGestures({
   api,
   getGesture,
@@ -71,7 +77,10 @@ export function createShapesPointerGestures({
             arrowStart: api.getArrowStart?.() ?? false,
           }),
     });
-    api.setDoc(ops.addNode(api.getDocument(), node), { commit: false });
+    api.setDoc(
+      ops.addNode(api.getDocument(), insideFrame(api.getDocument(), node, point)),
+      { commit: false },
+    );
     api.select(node.id);
     setGesture({ kind: "arrow", id: node.id, start: point, node, line });
   }
@@ -139,10 +148,10 @@ export function createShapesPointerGestures({
     const point = api.toDocPoint(event.clientX, event.clientY);
     const node =
       api.getTool() === TOOL.FRAME
-        ? api.addFrameAt(point)
+        ? api.addFrameAt(point, { intoFrame: true })
         : api.getTool() === TOOL.ELLIPSE
-          ? api.addEllipseAt(point)
-          : api.addRectAt(point);
+          ? api.addEllipseAt(point, { intoFrame: true })
+          : api.addRectAt(point, { intoFrame: true });
     api.select(node.id);
     setGesture({ kind: "shape", id: node.id, start: point });
   }
@@ -218,7 +227,10 @@ export function createShapesPointerGestures({
       { x: point.x, y: point.y, width: 1, height: 1 },
       { fill, stroke: fill, strokeWidth: 0 },
     );
-    api.setDoc(ops.addNode(api.getDocument(), node), { commit: false });
+    api.setDoc(
+      ops.addNode(api.getDocument(), insideFrame(api.getDocument(), node, point)),
+      { commit: false },
+    );
     api.select(node.id);
     setGesture({ kind: "shape", id: node.id, start: point, fill });
   }
@@ -232,7 +244,7 @@ export function createShapesPointerGestures({
       api.beginTextEdit(hit.id);
       return;
     }
-    const node = api.addTextAt(point, "");
+    const node = api.addTextAt(point, "", { intoFrame: true });
     setGesture({ kind: "text", id: node.id, start: point });
   }
 

@@ -258,6 +258,9 @@ export function createPenDraft({
     }
     void usable;
     const node = createPenNode(anchors, color, strokeWidth);
+    // A path drawn from inside a frame joins that frame (Figma/Pen behaviour).
+    const hostFrame = ops.frameAtPoint(getDoc(), anchors[0]);
+    if (hostFrame) node.parentId = hostFrame.id;
     // A freehand doodle is a stroke, not a shape: filling its implicit
     // closure turns every open squiggle into a blob.
     if (getPenMode() === "shape" && toolKind !== "free_pen") {

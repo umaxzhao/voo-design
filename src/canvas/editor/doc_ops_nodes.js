@@ -350,6 +350,42 @@ export function nodeAtPoint(
 }
 
 /**
+ * The deepest visible, unlocked frame whose box contains the document-space
+ * point, or null.
+ *
+ * Drawing tools use it to land a new child inside the frame the drag starts
+ * in (Figma/Pen behaviour) instead of always appending to the document root.
+ * Nested frames resolve to the innermost one, so a frame drawn inside a frame
+ * becomes its child rather than its sibling.
+ */
+export function frameAtPoint(doc, point) {
+  if (!doc?.nodes?.length) return null;
+  let best = null;
+  let bestArea = Infinity;
+  for (const node of doc.nodes) {
+    if (!(node.isFrame || node.kind === "frame")) continue;
+    if (!node.visible || isHiddenByGroup(doc, node)) continue;
+    if (node.locked || isLockedByGroup(doc, node)) continue;
+    if (!(node.width > 0) || !(node.height > 0)) continue;
+    const local = toNodeLocal(node, point);
+    if (
+      local.x < 0 ||
+      local.y < 0 ||
+      local.x > node.width ||
+      local.y > node.height
+    ) {
+      continue;
+    }
+    const area = node.width * node.height;
+    if (area < bestArea) {
+      best = node;
+      bestArea = area;
+    }
+  }
+  return best;
+}
+
+/**
  * The topmost visible image node whose box contains the document-space
  * point, or null. The pixel tools all anchor on an image this way, so a
  * selection made from a path lands on the layer the path is drawn over.

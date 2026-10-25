@@ -7,6 +7,7 @@
 export {
   addNode,
   duplicateNode,
+  frameAtPoint,
   imageNodeUnder,
   makeCentredImageNode,
   nodeAtPoint,

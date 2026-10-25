@@ -23,56 +23,83 @@ export function createDrawingShapesApi({
   selectMany,
   getColor,
 }) {
+  /**
+   * A new node drawn from `point` joins the frame the drag starts inside.
+   * Figma/Pen behaviour: drawing within a frame adds a child; drawing outside
+   * stays at the document root. The frame itself is excluded so a new frame
+   * never parents to the frame being replaced.
+   */
+  function insideFrame(node, point, enabled) {
+    if (!enabled) return node;
+    const frame = ops.frameAtPoint(getDoc(), point);
+    return frame ? { ...node, parentId: frame.id } : node;
+  }
   /** Creates a zero-size rect at `point`; the drag shapes it. Fill-only by convention. */
-  function addRectAt(point) {
-    const node = createRectNode({
-      x: point.x,
-      y: point.y,
-      width: 0,
-      height: 0,
-      fill: getColor?.() ?? "#999999",
-      stroke: "#ffffff",
-      strokeWidth: 0,
-    });
+  function addRectAt(point, options = {}) {
+    const node = insideFrame(
+      createRectNode({
+        x: point.x,
+        y: point.y,
+        width: 0,
+        height: 0,
+        fill: getColor?.() ?? "#999999",
+        stroke: "#ffffff",
+        strokeWidth: 0,
+      }),
+      point,
+      options.intoFrame,
+    );
     setDoc(ops.addNode(getDoc(), node), { commit: false });
     return node;
   }
 
   /** Creates a zero-size frame at `point`; the frame tool drag shapes it. */
-  function addFrameAt(point) {
-    const node = {
-      ...createGroupNode({ x: point.x, y: point.y, width: 0, height: 0 }),
-      frame: true,
-      isFrame: true,
-      name: "Frame",
-    };
+  function addFrameAt(point, options = {}) {
+    const node = insideFrame(
+      {
+        ...createGroupNode({ x: point.x, y: point.y, width: 0, height: 0 }),
+        frame: true,
+        isFrame: true,
+        name: "Frame",
+      },
+      point,
+      options.intoFrame,
+    );
     setDoc(ops.addNode(getDoc(), node), { commit: false });
     return node;
   }
 
   /** Creates a zero-size ellipse at `point`; the drag shapes it. Fill-only by convention. */
-  function addEllipseAt(point) {
-    const node = createEllipseNode({
-      x: point.x,
-      y: point.y,
-      width: 0,
-      height: 0,
-      fill: getColor?.() ?? "#999999",
-      stroke: "#ffffff",
-      strokeWidth: 0,
-    });
+  function addEllipseAt(point, options = {}) {
+    const node = insideFrame(
+      createEllipseNode({
+        x: point.x,
+        y: point.y,
+        width: 0,
+        height: 0,
+        fill: getColor?.() ?? "#999999",
+        stroke: "#ffffff",
+        strokeWidth: 0,
+      }),
+      point,
+      options.intoFrame,
+    );
     setDoc(ops.addNode(getDoc(), node), { commit: false });
     return node;
   }
 
   /** Creates an empty text node at `point`; the drag (optionally) boxes it. */
-  function addTextAt(point, text) {
-    const node = createTextNode({
-      x: point.x,
-      y: point.y,
-      text,
-      fill: "#ffffff",
-    });
+  function addTextAt(point, text, options = {}) {
+    const node = insideFrame(
+      createTextNode({
+        x: point.x,
+        y: point.y,
+        text,
+        fill: "#ffffff",
+      }),
+      point,
+      options.intoFrame,
+    );
     setDoc(ops.addNode(getDoc(), node), { commit: false });
     return node;
   }
