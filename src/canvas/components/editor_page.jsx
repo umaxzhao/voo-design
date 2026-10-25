@@ -1066,9 +1066,12 @@ export default function EditorPage({
                 </span>
               ) : null}
                                         </div>
-            {/* Canvas size presets sit above the artboard. */}
+            {/* Canvas size presets sit above the artboard. The bottom padding
+                is the only space under the pill inside this box: pb-px (1px,
+                was pb-2 = 8px) halves the visible gap to the page header from
+                14px to 7px (1px padding + 6px header hit-area padding). */}
             <div
-              className="absolute z-20 flex -translate-x-1/2 -translate-y-full items-center gap-1 text-[10px] font-mono pb-2"
+              className="absolute z-20 flex -translate-x-1/2 -translate-y-full items-center gap-1 text-[10px] font-mono pb-px"
               style={{
                 left: docRect.x + docRect.width / 2,
                 top: docRect.y - EDITOR_PAGE_HEADER_INSET - EDITOR_PAGE_TOOLBAR_GAP,
