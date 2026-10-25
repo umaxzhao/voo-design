@@ -24,7 +24,7 @@ function errorText(error, t) {
 }
 
 export default function SettingsDesignSystems() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const pageId = useDesignStore((s) => s.editingNodeId);
   const [custom, commit] = useCustomDesignSystems();
   const systems = listDesignSystems(custom);
@@ -53,6 +53,13 @@ export default function SettingsDesignSystems() {
   useEffect(() => {
     if (selected.id !== state.selectedId) dispatch({ type: "select", system: selected });
   }, [selected, state.selectedId]);
+
+  // A pristine built-in draft carries a locale-specific brief: refresh it on locale change.
+  useEffect(() => {
+    if (selected.builtIn && !state.dirty) dispatch({ type: "select", system: selected });
+    // Only the locale change re-reads the preset; edits must not be overwritten.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale]);
 
   async function run(action) {
     try {

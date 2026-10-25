@@ -1,3 +1,4 @@
+import { getLocale } from "../../shared/i18n.js";
 import {
   DESIGN_SYSTEMS,
   buildDesignSystemBrief,
@@ -50,7 +51,11 @@ export function presetToDocumentSystem(system) {
     nameKey: system.labelKey,
     descriptionKey: system.descriptionKey,
     designTokens,
-    designMd: buildDesignSystemBrief(system),
+    // A getter, not a snapshot: the brief follows the UI locale at the moment
+    // it is shown in the editor or applied to a document.
+    get designMd() {
+      return buildDesignSystemBrief(system, { locale: getLocale() });
+    },
   });
 }
 

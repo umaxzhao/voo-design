@@ -239,8 +239,45 @@ export function designSystemColorViolation(html, system) {
   return null;
 }
 
-/** The renderer requires literal values, so resolve aliases before prompting. */
-export function buildDesignSystemBrief(system, { media = "web" } = {}) {
+/** Brief wording per locale. `zh` is the original text and the default. */
+const BRIEF_COPY = {
+  zh: {
+    title: (id) => `【Design System: ${id}】所有页面使用同一套 token。`,
+    colors: (palette) => `语义颜色（只使用这些精确色值）：${palette}。`,
+    type: (p, t) =>
+      `字体：标题 ${p.fonts.heading}，正文 ${p.fonts.body}。字号：展示 ${t.display}px，页面标题 ${t.title}px，正文 ${t.body}px，辅助 ${t.caption}px。`,
+    spacing: (spaces, r) =>
+      `间距基于 4px：${spaces}px；圆角：控件 ${r.control}px，卡片 ${r.card}px，面板 ${r.panel}px。`,
+    components: (v) =>
+      `主按钮：${v.buttonHeight}px 高，背景 ${v.buttonBg}，文字 ${v.buttonText}。需要卡片时：背景 ${v.cardBg}，内边距 ${v.cardPadding}px；主视觉区不是卡片，可用深色 text=${v.text} 或 action=${v.action} 做完整明暗分区。底部或顶部导航：${v.navHeight}px 高，选中项 ${v.navActive}。`,
+    states:
+      "组件的默认、按下、不可用状态保持同一字号、间距和圆角；不可用状态降低对比度，不引入新颜色。HTML 内仍写最终色值，不写 CSS 变量。",
+  },
+  en: {
+    title: (id) => `[Design System: ${id}] Every page uses the same token set.`,
+    colors: (palette) =>
+      `Semantic colors (use only these exact values): ${palette}.`,
+    type: (p, t) =>
+      `Fonts: headings ${p.fonts.heading}, body ${p.fonts.body}. Type sizes: display ${t.display}px, page title ${t.title}px, body ${t.body}px, caption ${t.caption}px.`,
+    spacing: (spaces, r) =>
+      `Spacing on a 4px base: ${spaces}px; radii: control ${r.control}px, card ${r.card}px, panel ${r.panel}px.`,
+    components: (v) =>
+      `Primary button: ${v.buttonHeight}px tall, background ${v.buttonBg}, text ${v.buttonText}. When a card is needed: background ${v.cardBg}, padding ${v.cardPadding}px; the hero area is not a card and may use dark text=${v.text} or action=${v.action} for a full light/dark band. Bottom or top navigation: ${v.navHeight}px tall, active item ${v.navActive}.`,
+    states:
+      "Default, pressed and disabled states of a component keep the same type size, spacing and radius; disabled states lower the contrast without introducing new colors. Write final color values in the HTML, never CSS variables.",
+  },
+};
+
+/**
+ * The renderer requires literal values, so resolve aliases before prompting.
+ * `locale` picks the brief's language ("zh" by default, so existing callers
+ * keep their output); unknown locales fall back to English.
+ */
+export function buildDesignSystemBrief(
+  system,
+  { media = "web", locale = "zh" } = {},
+) {
+  const copy = BRIEF_COPY[locale] ?? BRIEF_COPY.en;
   const { primitive, component } = system.tokens;
   const colors = designSystemColors(system);
   const type =
@@ -250,11 +287,21 @@ export function buildDesignSystemBrief(system, { media = "web" } = {}) {
     .join(", ");
   const spaces = Object.values(primitive.spacing).join(" / ");
   return [
-    `【Design System: ${system.id}】所有页面使用同一套 token。`,
-    `语义颜色（只使用这些精确色值）：${palette}。`,
-    `字体：标题 ${primitive.fonts.heading}，正文 ${primitive.fonts.body}。字号：展示 ${type.display}px，页面标题 ${type.title}px，正文 ${type.body}px，辅助 ${type.caption}px。`,
-    `间距基于 4px：${spaces}px；圆角：控件 ${primitive.radius.control}px，卡片 ${primitive.radius.card}px，面板 ${primitive.radius.panel}px。`,
-    `主按钮：${component.button.height}px 高，背景 ${colors[component.button.background]}，文字 ${colors[component.button.text]}。需要卡片时：背景 ${colors[component.card.background]}，内边距 ${primitive.spacing[component.card.padding]}px；主视觉区不是卡片，可用深色 text=${colors.text} 或 action=${colors.action} 做完整明暗分区。底部或顶部导航：${component.navigation.height}px 高，选中项 ${colors[component.navigation.active]}。`,
-    "组件的默认、按下、不可用状态保持同一字号、间距和圆角；不可用状态降低对比度，不引入新颜色。HTML 内仍写最终色值，不写 CSS 变量。",
+    copy.title(system.id),
+    copy.colors(palette),
+    copy.type(primitive, type),
+    copy.spacing(spaces, primitive.radius),
+    copy.components({
+      buttonHeight: component.button.height,
+      buttonBg: colors[component.button.background],
+      buttonText: colors[component.button.text],
+      cardBg: colors[component.card.background],
+      cardPadding: primitive.spacing[component.card.padding],
+      text: colors.text,
+      action: colors.action,
+      navHeight: component.navigation.height,
+      navActive: colors[component.navigation.active],
+    }),
+    copy.states,
   ].join("\n");
 }
