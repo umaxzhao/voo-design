@@ -3,6 +3,8 @@
  * Aligned with Figma file workspace architecture (Recents, Drafts, Starred, Trash, Duplication, Renaming).
  */
 
+import { deleteDraft } from "./draft_store.js";
+
 const RECENT_FILES_KEY = "voo_design_recent_files";
 const MAX_RECENT_FILES = 50;
 
@@ -34,6 +36,13 @@ function writeRawList(list) {
     storage.setItem(RECENT_FILES_KEY, JSON.stringify(list.slice(0, MAX_RECENT_FILES)));
   } catch (err) {
     console.warn("[VOO] Failed to write recent files to storage:", err);
+  }
+}
+
+/** Removes the local draft copy of every pathless entry that leaves the list for good. */
+function dropDraftCopies(removed) {
+  for (const item of removed) {
+    if (!item.path && item.id) void deleteDraft(item.id);
   }
 }
 
@@ -243,6 +252,7 @@ export function restoreFromTrash(idOrPath) {
 export function deletePermanently(idOrPath) {
   const current = readRawList();
   const updated = current.filter((item) => item.id !== idOrPath && item.path !== idOrPath && item.name !== idOrPath);
+  dropDraftCopies(current.filter((item) => !updated.includes(item)));
   writeRawList(updated);
   return getRecentFiles();
 }
@@ -250,6 +260,7 @@ export function deletePermanently(idOrPath) {
 export function emptyTrash() {
   const current = readRawList();
   const updated = current.filter((item) => !item.trashed);
+  dropDraftCopies(current.filter((item) => item.trashed));
   writeRawList(updated);
   return [];
 }

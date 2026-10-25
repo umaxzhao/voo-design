@@ -133,6 +133,7 @@ import {
 import { createVariablesPanelActions } from "../editor/scene_variables.js";
 import { createStylePanelActions } from "../editor/scene_styles.js";
 import { useEditorApply } from "./editor_hooks/use_editor_apply.js";
+import { useDraftAutosave } from "./editor_hooks/use_draft_autosave.js";
 import { readImageRgba } from "./bitmap_pixels.js";
 import {
   ENHANCE_SAMPLE_EDGE,
@@ -1963,6 +1964,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       resolveCanvas,
       onExportWarnings: (warnings) => setExportNotice(warnings || true),
     });
+
+  // Unsaved documents keep a local draft copy so Recents can reopen them.
+  useDraftAutosave({ enginesRef, snapshotsRef, revision: engineVersion });
 
   /**
    * Tool selection. Shape tools stay armed across draws — a row of
