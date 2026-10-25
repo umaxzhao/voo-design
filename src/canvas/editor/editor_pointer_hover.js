@@ -55,8 +55,10 @@ export function createHoverCursorController({
     imageAt,
     pointInContours,
   } = hitTest;
+  let lastPointerEvent = null;
 
   function updateHoverCursor(event) {
+    lastPointerEvent = event;
     if (isSpaceDown()) {
       stage.style.cursor = "grab";
       return;
@@ -320,8 +322,18 @@ export function createHoverCursorController({
     stage.style.cursor = "default";
   }
 
+  function refreshBrushCursor() {
+    if (lastPointerEvent) updateHoverCursor(lastPointerEvent);
+  }
+
+  function clearLastPointerEvent() {
+    lastPointerEvent = null;
+  }
+
   return {
     brushCircleCursor,
     updateHoverCursor,
+    refreshBrushCursor,
+    clearLastPointerEvent,
   };
 }

@@ -208,6 +208,7 @@ export function attachPointerHandlers({
     hitTest,
     isSpaceDown: () => spaceDown,
   });
+  api.refreshBrushCursor = hover.refreshBrushCursor;
 
   // ---------------------------------------------------------- dispatchers
   const { dispatchDown } = createPointerDownDispatcher({
@@ -446,6 +447,7 @@ export function attachPointerHandlers({
   };
 
   const onPointerLeave = () => {
+    hover.clearLastPointerEvent?.();
     api.setClonePreview?.(null);
   };
 
@@ -469,6 +471,9 @@ export function attachPointerHandlers({
   window.addEventListener("keyup", onKeyUp);
 
   return () => {
+    if (api.refreshBrushCursor === hover.refreshBrushCursor) {
+      delete api.refreshBrushCursor;
+    }
     if (!shared) {
       stage.removeEventListener("wheel", pan.onWheel);
     }
