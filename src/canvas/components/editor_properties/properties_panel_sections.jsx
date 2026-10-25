@@ -29,6 +29,7 @@ import PanelAddMenu from "./panel_add_menu.jsx";
 import AppearanceSection from "./appearance_section.jsx";
 import ExportSection from "./export_section.jsx";
 import SelectionColorsSection from "./selection_colors_section.jsx";
+import PrototypeSection from "./prototype_section.jsx";
 import { normalizeStyles } from "../../editor/scene_styles.js";
 import { resolveExtras } from "./panel_extras.js";
 import {
@@ -336,6 +337,10 @@ export default function PropertiesPanelSections({
 
       {eligible.export ? (
         <ExportSection object={object} selectedNodes={selectedNodes} engine={engine} />
+      ) : null}
+
+      {!isWarpTool && object.kind !== "adjustment" && object.kind !== "region" && object.kind !== "audio" ? (
+        <PrototypeSection object={object} engine={engine} />
       ) : null}
 
       {eligible.liveFilters ? (

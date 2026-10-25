@@ -49,6 +49,7 @@ import {
   deserializeComments,
   serializeComments,
 } from "../comments/comment_model.js";
+import { deserializePrototype, serializePrototype } from "./prototype_model.js";
 import {
   deserializeStyles,
   resolveStyleBindings,
@@ -155,6 +156,7 @@ export function serialiseDocument(doc) {
   assertNotEvaluatedFrame(doc);
   const colorVariables = normalizeColorVariables(doc.colorVariables);
   const comments = serializeComments(doc);
+  const prototype = serializePrototype(doc);
   return {
     version: DOC_VERSION,
     ...(getActiveDesignSystem(doc) ? { designSystem: getActiveDesignSystem(doc) } : {}),
@@ -177,6 +179,8 @@ export function serialiseDocument(doc) {
     ...serializeStyles(doc),
     // Canvas comment threads belong to the page, like guides do.
     ...(comments.length > 0 ? { comments } : {}),
+    // Prototype flows (hotspots + start frame) are page-level like comments.
+    ...prototype,
     ...(doc.modifiers !== undefined
       ? (() => {
           const valid = validateAndNormalizeModifierCollection(
@@ -412,6 +416,8 @@ export function deserialiseDocument(value) {
           return valid.length > 0 ? { modifiers: valid } : {};
         })()
       : {}),
+    // Prototype flows travel with the page.
+    ...deserializePrototype(value),
     // Array order is paint order, and regions are the plane above the artwork.
     // Sorting on the way in means nothing downstream has to re-check that.
     nodes: [
