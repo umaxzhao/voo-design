@@ -4,13 +4,13 @@
    "panel": {
     "box": [
      1134,
-     149,
+     114,
      288,
-     643
+     712
     ],
-    "text": "PROPERTIES | TRANSFORM | X | Y | W | H | R | ° | S | ° | % | px | FRAME | Clip content | LAYOUT GRID | + | AUTO LAYOUT | + | FILL | + | STROKE | + | + | ADD",
-    "scrollH": 643,
-    "clientH": 643
+    "text": "Frame | FRAME | TRANSFORM | X | Y | W | H | R | ° | S | ° | px | FRAME | Clip content | LAYOUT GRID | + | AUTO LAYOUT | + | FILL | + | STROKE | + | EFFECTS | + | APPEARANCE | % | EXPORT | + | PNG | 1x | × | Export | + | ADD",
+    "scrollH": 712,
+    "clientH": 712
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -40,6 +40,21 @@
     {
      "tag": "button",
      "role": null,
+     "label": "Double-click to rename",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1172,
+      136,
+      34,
+      17
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
      "label": "Switch between rows and columns",
      "pressed": null,
      "checked": null,
@@ -47,7 +62,7 @@
      "disabled": false,
      "box": [
       1374,
-      165,
+      130,
       28,
       28
      ]
@@ -62,7 +77,7 @@
      "disabled": false,
      "box": [
       1150,
-      212,
+      177,
       79,
       14
      ]
@@ -77,7 +92,7 @@
      "disabled": false,
      "box": [
       1153,
-      236,
+      202,
       10,
       10
      ]
@@ -92,7 +107,7 @@
      "disabled": false,
      "box": [
       1161,
-      236,
+      202,
       10,
       10
      ]
@@ -107,7 +122,7 @@
      "disabled": false,
      "box": [
       1169,
-      236,
+      202,
       10,
       10
      ]
@@ -122,7 +137,7 @@
      "disabled": false,
      "box": [
       1153,
-      246,
+      212,
       10,
       10
      ]
@@ -137,7 +152,7 @@
      "disabled": false,
      "box": [
       1161,
-      246,
+      212,
       10,
       10
      ]
@@ -152,7 +167,7 @@
      "disabled": false,
      "box": [
       1169,
-      246,
+      212,
       10,
       10
      ]
@@ -167,7 +182,7 @@
      "disabled": false,
      "box": [
       1153,
-      256,
+      222,
       10,
       10
      ]
@@ -182,7 +197,7 @@
      "disabled": false,
      "box": [
       1161,
-      256,
+      222,
       10,
       10
      ]
@@ -197,7 +212,7 @@
      "disabled": false,
      "box": [
       1169,
-      256,
+      222,
       10,
       10
      ]
@@ -212,7 +227,7 @@
      "disabled": false,
      "box": [
       1213,
-      233,
+      199,
       83,
       28
      ]
@@ -227,7 +242,7 @@
      "disabled": false,
      "box": [
       1325,
-      233,
+      199,
       83,
       28
      ]
@@ -242,7 +257,7 @@
      "disabled": false,
      "box": [
       1213,
-      278,
+      243,
       75,
       15
      ]
@@ -257,7 +272,7 @@
      "disabled": false,
      "box": [
       1288,
-      271,
+      237,
       24,
       28
      ]
@@ -272,7 +287,7 @@
      "disabled": false,
      "box": [
       1333,
-      278,
+      243,
       75,
       15
      ]
@@ -287,7 +302,7 @@
      "disabled": false,
      "box": [
       1169,
-      309,
+      275,
       54,
       28
      ]
@@ -302,7 +317,7 @@
      "disabled": false,
      "box": [
       1269,
-      309,
+      275,
       54,
       28
      ]
@@ -317,7 +332,7 @@
      "disabled": false,
      "box": [
       1348,
-      309,
+      275,
       28,
       28
      ]
@@ -332,38 +347,8 @@
      "disabled": false,
      "box": [
       1380,
-      309,
+      275,
       28,
-      28
-     ]
-    },
-    {
-     "tag": "input",
-     "role": null,
-     "label": "Opacity",
-     "pressed": null,
-     "checked": null,
-     "value": "100",
-     "disabled": false,
-     "box": [
-      1148,
-      358,
-      109,
-      28
-     ]
-    },
-    {
-     "tag": "button",
-     "role": null,
-     "label": "Blend mode",
-     "pressed": null,
-     "checked": null,
-     "value": null,
-     "disabled": false,
-     "box": [
-      1282,
-      358,
-      126,
       28
      ]
     },
@@ -377,7 +362,7 @@
      "disabled": false,
      "box": [
       1174,
-      396,
+      313,
       178,
       28
      ]
@@ -392,7 +377,7 @@
      "disabled": false,
      "box": [
       1380,
-      396,
+      313,
       28,
       28
      ]
@@ -407,7 +392,7 @@
      "disabled": false,
      "box": [
       1150,
-      449,
+      366,
       52,
       14
      ]
@@ -422,7 +407,7 @@
      "disabled": false,
      "box": [
       1148,
-      471,
+      387,
       260,
       28
      ]
@@ -437,7 +422,7 @@
      "disabled": false,
      "box": [
       1150,
-      529,
+      445,
       93,
       14
      ]
@@ -452,7 +437,7 @@
      "disabled": false,
      "box": [
       1382,
-      524,
+      440,
       24,
       24
      ]
@@ -467,7 +452,7 @@
      "disabled": false,
      "box": [
       1150,
-      586,
+      502,
       93,
       14
      ]
@@ -482,7 +467,7 @@
      "disabled": false,
      "box": [
       1382,
-      581,
+      497,
       24,
       24
      ]
@@ -497,7 +482,7 @@
      "disabled": false,
      "box": [
       1150,
-      643,
+      559,
       45,
       14
      ]
@@ -512,7 +497,7 @@
      "disabled": false,
      "box": [
       1382,
-      638,
+      554,
       24,
       24
      ]
@@ -527,7 +512,7 @@
      "disabled": false,
      "box": [
       1150,
-      700,
+      616,
       59,
       14
      ]
@@ -542,9 +527,189 @@
      "disabled": false,
      "box": [
       1382,
-      695,
+      611,
       24,
       24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      673,
+      66,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add effect",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      668,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      729,
+      86,
+      14
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Opacity",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1148,
+      751,
+      109,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Blend mode",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1282,
+      751,
+      126,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      809,
+      59,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add export settings",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      804,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Format",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      836,
+      96,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Export scale",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1250,
+      836,
+      58,
+      28
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Suffix",
+     "pressed": null,
+     "checked": null,
+     "value": "",
+     "disabled": false,
+     "box": [
+      1314,
+      836,
+      64,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Remove export settings",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": true,
+     "box": [
+      1384,
+      838,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      870,
+      260,
+      28
      ]
     },
     {
@@ -557,7 +722,7 @@
      "disabled": false,
      "box": [
       1146,
-      752,
+      923,
       264,
       28
      ]
@@ -567,8 +732,17 @@
    "small": [
     {
      "box": [
+      1172,
+      136,
+      34,
+      17
+     ],
+     "label": "Frame"
+    },
+    {
+     "box": [
       1150,
-      212,
+      177,
       79,
       14
      ],
@@ -577,7 +751,7 @@
     {
      "box": [
       1153,
-      236,
+      202,
       10,
       10
      ],
@@ -586,7 +760,7 @@
     {
      "box": [
       1161,
-      236,
+      202,
       10,
       10
      ],
@@ -595,7 +769,7 @@
     {
      "box": [
       1169,
-      236,
+      202,
       10,
       10
      ],
@@ -604,7 +778,7 @@
     {
      "box": [
       1153,
-      246,
+      212,
       10,
       10
      ],
@@ -613,7 +787,7 @@
     {
      "box": [
       1161,
-      246,
+      212,
       10,
       10
      ],
@@ -622,7 +796,7 @@
     {
      "box": [
       1169,
-      246,
+      212,
       10,
       10
      ],
@@ -631,7 +805,7 @@
     {
      "box": [
       1153,
-      256,
+      222,
       10,
       10
      ],
@@ -640,7 +814,7 @@
     {
      "box": [
       1161,
-      256,
+      222,
       10,
       10
      ],
@@ -649,7 +823,7 @@
     {
      "box": [
       1169,
-      256,
+      222,
       10,
       10
      ],
@@ -658,7 +832,7 @@
     {
      "box": [
       1150,
-      449,
+      366,
       52,
       14
      ],
@@ -667,7 +841,7 @@
     {
      "box": [
       1150,
-      529,
+      445,
       93,
       14
      ],
@@ -676,7 +850,7 @@
     {
      "box": [
       1150,
-      586,
+      502,
       93,
       14
      ],
@@ -685,7 +859,7 @@
     {
      "box": [
       1150,
-      643,
+      559,
       45,
       14
      ],
@@ -694,39 +868,76 @@
     {
      "box": [
       1150,
-      700,
+      616,
       59,
       14
      ],
      "label": "STROKE"
+    },
+    {
+     "box": [
+      1150,
+      673,
+      66,
+      14
+     ],
+     "label": "EFFECTS"
+    },
+    {
+     "box": [
+      1150,
+      729,
+      86,
+      14
+     ],
+     "label": "APPEARANCE"
+    },
+    {
+     "box": [
+      1150,
+      809,
+      59,
+      14
+     ],
+     "label": "EXPORT"
     }
    ],
    "rawKeys": [],
-   "lowContrast": [],
+   "lowContrast": [
+    {
+     "text": "Frame",
+     "ratio": 4.43,
+     "size": 9
+    }
+   ],
    "sectionTitles": [
+    "FRAME",
     "TRANSFORM",
     "FRAME",
     "LAYOUT GRID",
     "AUTO LAYOUT",
     "FILL",
-    "STROKE"
+    "STROKE",
+    "EFFECTS",
+    "APPEARANCE",
+    "EXPORT"
    ],
    "doc": {
-    "scrollH": 568,
-    "clientH": 568
+    "scrollH": 774,
+    "clientH": 637
    }
   },
   "02-select-rect": {
    "panel": {
     "box": [
      1134,
-     159,
+     114,
      288,
-     623
+     712
     ],
-    "text": "PROPERTIES | ALIGN | TRANSFORM | X | Y | W | H | R | ° | S | ° | % | NORMAL | px | FILL | + | 100 | % | STROKE | + | 100 | % | Inside | Center | Outside | + | ADD",
-    "scrollH": 623,
-    "clientH": 623
+    "text": "rect | RECTANGLE | ALIGN | TRANSFORM | X | Y | W | H | R | ° | S | ° | px | CONSTRAINTS | HORIZONTAL | Left | Right | Left & right | Center | Scale | VERTICAL | Top | Bottom | Top & bottom | Center | Scale | FILL | + | 100 | % | STROKE | + | 100 | % | Inside | Center | Outside | EFFECTS | + | APPEARANCE | % | NORMAL | EXPORT | + | PNG | 1x | × | Export | + | ADD",
+    "scrollH": 712,
+    "clientH": 712
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -756,6 +967,21 @@
     {
      "tag": "button",
      "role": null,
+     "label": "Double-click to rename",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1172,
+      136,
+      27,
+      17
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
      "label": "New Mask",
      "pressed": null,
      "checked": null,
@@ -763,7 +989,7 @@
      "disabled": false,
      "box": [
       1342,
-      175,
+      130,
       28,
       28
      ]
@@ -778,7 +1004,7 @@
      "disabled": false,
      "box": [
       1374,
-      175,
+      130,
       28,
       28
      ]
@@ -793,7 +1019,7 @@
      "disabled": false,
      "box": [
       1150,
-      222,
+      177,
       52,
       14
      ]
@@ -808,7 +1034,7 @@
      "disabled": false,
      "box": [
       1148,
-      243,
+      199,
       40,
       28
      ]
@@ -823,7 +1049,7 @@
      "disabled": false,
      "box": [
       1192,
-      243,
+      199,
       40,
       28
      ]
@@ -838,7 +1064,7 @@
      "disabled": false,
      "box": [
       1236,
-      243,
+      199,
       40,
       28
      ]
@@ -853,7 +1079,7 @@
      "disabled": false,
      "box": [
       1280,
-      243,
+      199,
       40,
       28
      ]
@@ -868,7 +1094,7 @@
      "disabled": false,
      "box": [
       1324,
-      243,
+      199,
       40,
       28
      ]
@@ -883,7 +1109,7 @@
      "disabled": false,
      "box": [
       1368,
-      243,
+      199,
       40,
       28
      ]
@@ -898,7 +1124,7 @@
      "disabled": false,
      "box": [
       1150,
-      296,
+      252,
       79,
       14
      ]
@@ -913,7 +1139,7 @@
      "disabled": false,
      "box": [
       1153,
-      321,
+      276,
       10,
       10
      ]
@@ -928,7 +1154,7 @@
      "disabled": false,
      "box": [
       1161,
-      321,
+      276,
       10,
       10
      ]
@@ -943,7 +1169,7 @@
      "disabled": false,
      "box": [
       1169,
-      321,
+      276,
       10,
       10
      ]
@@ -958,7 +1184,7 @@
      "disabled": false,
      "box": [
       1153,
-      331,
+      286,
       10,
       10
      ]
@@ -973,7 +1199,7 @@
      "disabled": false,
      "box": [
       1161,
-      331,
+      286,
       10,
       10
      ]
@@ -988,7 +1214,7 @@
      "disabled": false,
      "box": [
       1169,
-      331,
+      286,
       10,
       10
      ]
@@ -1003,7 +1229,7 @@
      "disabled": false,
      "box": [
       1153,
-      341,
+      296,
       10,
       10
      ]
@@ -1018,7 +1244,7 @@
      "disabled": false,
      "box": [
       1161,
-      341,
+      296,
       10,
       10
      ]
@@ -1033,7 +1259,7 @@
      "disabled": false,
      "box": [
       1169,
-      341,
+      296,
       10,
       10
      ]
@@ -1048,7 +1274,7 @@
      "disabled": false,
      "box": [
       1213,
-      318,
+      273,
       83,
       28
      ]
@@ -1063,7 +1289,7 @@
      "disabled": false,
      "box": [
       1325,
-      318,
+      273,
       83,
       28
      ]
@@ -1078,7 +1304,7 @@
      "disabled": false,
      "box": [
       1213,
-      362,
+      318,
       75,
       15
      ]
@@ -1093,7 +1319,7 @@
      "disabled": false,
      "box": [
       1288,
-      356,
+      311,
       24,
       28
      ]
@@ -1108,7 +1334,7 @@
      "disabled": false,
      "box": [
       1333,
-      362,
+      318,
       75,
       15
      ]
@@ -1123,7 +1349,7 @@
      "disabled": false,
      "box": [
       1169,
-      394,
+      349,
       54,
       28
      ]
@@ -1138,7 +1364,7 @@
      "disabled": false,
      "box": [
       1269,
-      394,
+      349,
       54,
       28
      ]
@@ -1153,7 +1379,7 @@
      "disabled": false,
      "box": [
       1348,
-      394,
+      349,
       28,
       28
      ]
@@ -1168,38 +1394,8 @@
      "disabled": false,
      "box": [
       1380,
-      394,
+      349,
       28,
-      28
-     ]
-    },
-    {
-     "tag": "input",
-     "role": null,
-     "label": "Opacity",
-     "pressed": null,
-     "checked": null,
-     "value": "100",
-     "disabled": false,
-     "box": [
-      1148,
-      443,
-      109,
-      28
-     ]
-    },
-    {
-     "tag": "button",
-     "role": null,
-     "label": "Blend mode",
-     "pressed": null,
-     "checked": null,
-     "value": null,
-     "disabled": false,
-     "box": [
-      1282,
-      443,
-      126,
       28
      ]
     },
@@ -1213,7 +1409,7 @@
      "disabled": false,
      "box": [
       1174,
-      481,
+      387,
       178,
       28
      ]
@@ -1228,7 +1424,7 @@
      "disabled": false,
      "box": [
       1380,
-      481,
+      387,
       28,
       28
      ]
@@ -1243,7 +1439,142 @@
      "disabled": false,
      "box": [
       1150,
-      539,
+      440,
+      93,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Left",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1153,
+      484,
+      4,
+      20
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Right",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1203,
+      484,
+      4,
+      20
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Top",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1170,
+      467,
+      20,
+      4
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Bottom",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1170,
+      517,
+      20,
+      4
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Center",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1170,
+      492,
+      20,
+      4
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Center",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1178,
+      484,
+      4,
+      20
+     ]
+    },
+    {
+     "tag": "select",
+     "role": null,
+     "label": "Horizontal",
+     "pressed": null,
+     "checked": null,
+     "value": "left",
+     "disabled": false,
+     "box": [
+      1294,
+      462,
+      114,
+      28
+     ]
+    },
+    {
+     "tag": "select",
+     "role": null,
+     "label": "Vertical",
+     "pressed": null,
+     "checked": null,
+     "value": "top",
+     "disabled": false,
+     "box": [
+      1294,
+      498,
+      114,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      556,
       45,
       14
      ]
@@ -1258,7 +1589,7 @@
      "disabled": false,
      "box": [
       1382,
-      534,
+      551,
       24,
       24
      ]
@@ -1273,7 +1604,7 @@
      "disabled": false,
      "box": [
       1158,
-      570,
+      587,
       20,
       20
      ]
@@ -1288,7 +1619,7 @@
      "disabled": false,
      "box": [
       1186,
-      569,
+      586,
       107,
       21
      ]
@@ -1303,7 +1634,7 @@
      "disabled": false,
      "box": [
       1310,
-      571,
+      588,
       28,
       17
      ]
@@ -1318,7 +1649,7 @@
      "disabled": false,
      "box": [
       1348,
-      568,
+      585,
       24,
       24
      ]
@@ -1333,7 +1664,7 @@
      "disabled": false,
      "box": [
       1374,
-      568,
+      585,
       24,
       24
      ]
@@ -1348,7 +1679,7 @@
      "disabled": false,
      "box": [
       1150,
-      624,
+      641,
       59,
       14
      ]
@@ -1363,7 +1694,7 @@
      "disabled": false,
      "box": [
       1382,
-      619,
+      636,
       24,
       24
      ]
@@ -1378,7 +1709,7 @@
      "disabled": false,
      "box": [
       1158,
-      655,
+      672,
       20,
       20
      ]
@@ -1389,11 +1720,11 @@
      "label": "Custom colour",
      "pressed": null,
      "checked": null,
-     "value": "#ffffff",
+     "value": "#FFFFFF",
      "disabled": false,
      "box": [
       1205,
-      654,
+      671,
       110,
       21
      ]
@@ -1408,7 +1739,7 @@
      "disabled": false,
      "box": [
       1332,
-      656,
+      673,
       28,
       17
      ]
@@ -1423,7 +1754,7 @@
      "disabled": false,
      "box": [
       1374,
-      653,
+      670,
       24,
       24
      ]
@@ -1438,7 +1769,7 @@
      "disabled": false,
      "box": [
       1169,
-      689,
+      706,
       99,
       28
      ]
@@ -1449,11 +1780,11 @@
      "label": "Outline width",
      "pressed": null,
      "checked": null,
-     "value": "0",
+     "value": "1",
      "disabled": false,
      "box": [
       1300,
-      689,
+      706,
       74,
       28
      ]
@@ -1468,8 +1799,188 @@
      "disabled": false,
      "box": [
       1380,
-      689,
+      706,
       28,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      764,
+      66,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add effect",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      759,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      820,
+      86,
+      14
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Opacity",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1148,
+      841,
+      109,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Blend mode",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1282,
+      841,
+      126,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      899,
+      59,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add export settings",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      894,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Format",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      926,
+      96,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Export scale",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1250,
+      926,
+      58,
+      28
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Suffix",
+     "pressed": null,
+     "checked": null,
+     "value": "",
+     "disabled": false,
+     "box": [
+      1314,
+      926,
+      64,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Remove export settings",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": true,
+     "box": [
+      1384,
+      928,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      960,
+      260,
       28
      ]
     },
@@ -1483,7 +1994,7 @@
      "disabled": false,
      "box": [
       1146,
-      742,
+      1013,
       264,
       28
      ]
@@ -1493,8 +2004,17 @@
    "small": [
     {
      "box": [
+      1172,
+      136,
+      27,
+      17
+     ],
+     "label": "rect"
+    },
+    {
+     "box": [
       1150,
-      222,
+      177,
       52,
       14
      ],
@@ -1503,7 +2023,7 @@
     {
      "box": [
       1150,
-      296,
+      252,
       79,
       14
      ],
@@ -1512,7 +2032,7 @@
     {
      "box": [
       1153,
-      321,
+      276,
       10,
       10
      ],
@@ -1521,7 +2041,7 @@
     {
      "box": [
       1161,
-      321,
+      276,
       10,
       10
      ],
@@ -1530,7 +2050,7 @@
     {
      "box": [
       1169,
-      321,
+      276,
       10,
       10
      ],
@@ -1539,7 +2059,7 @@
     {
      "box": [
       1153,
-      331,
+      286,
       10,
       10
      ],
@@ -1548,7 +2068,7 @@
     {
      "box": [
       1161,
-      331,
+      286,
       10,
       10
      ],
@@ -1557,7 +2077,7 @@
     {
      "box": [
       1169,
-      331,
+      286,
       10,
       10
      ],
@@ -1566,7 +2086,7 @@
     {
      "box": [
       1153,
-      341,
+      296,
       10,
       10
      ],
@@ -1575,7 +2095,7 @@
     {
      "box": [
       1161,
-      341,
+      296,
       10,
       10
      ],
@@ -1584,7 +2104,7 @@
     {
      "box": [
       1169,
-      341,
+      296,
       10,
       10
      ],
@@ -1593,7 +2113,70 @@
     {
      "box": [
       1150,
-      539,
+      440,
+      93,
+      14
+     ],
+     "label": "CONSTRAINTS"
+    },
+    {
+     "box": [
+      1153,
+      484,
+      4,
+      20
+     ],
+     "label": "Left"
+    },
+    {
+     "box": [
+      1203,
+      484,
+      4,
+      20
+     ],
+     "label": "Right"
+    },
+    {
+     "box": [
+      1170,
+      467,
+      20,
+      4
+     ],
+     "label": "Top"
+    },
+    {
+     "box": [
+      1170,
+      517,
+      20,
+      4
+     ],
+     "label": "Bottom"
+    },
+    {
+     "box": [
+      1170,
+      492,
+      20,
+      4
+     ],
+     "label": "Center"
+    },
+    {
+     "box": [
+      1178,
+      484,
+      4,
+      20
+     ],
+     "label": "Center"
+    },
+    {
+     "box": [
+      1150,
+      556,
       45,
       14
      ],
@@ -1602,7 +2185,7 @@
     {
      "box": [
       1158,
-      570,
+      587,
       20,
       20
      ],
@@ -1611,7 +2194,7 @@
     {
      "box": [
       1310,
-      571,
+      588,
       28,
       17
      ],
@@ -1620,7 +2203,7 @@
     {
      "box": [
       1150,
-      624,
+      641,
       59,
       14
      ],
@@ -1629,7 +2212,7 @@
     {
      "box": [
       1158,
-      655,
+      672,
       20,
       20
      ],
@@ -1638,35 +2221,62 @@
     {
      "box": [
       1332,
-      656,
+      673,
       28,
       17
      ],
      "label": "Opacity"
+    },
+    {
+     "box": [
+      1150,
+      764,
+      66,
+      14
+     ],
+     "label": "EFFECTS"
+    },
+    {
+     "box": [
+      1150,
+      820,
+      86,
+      14
+     ],
+     "label": "APPEARANCE"
+    },
+    {
+     "box": [
+      1150,
+      899,
+      59,
+      14
+     ],
+     "label": "EXPORT"
     }
    ],
    "rawKeys": [],
    "lowContrast": [
     {
-     "text": "%",
-     "ratio": 3.19,
-     "size": 10
-    },
-    {
-     "text": "%",
-     "ratio": 3.19,
-     "size": 10
+     "text": "Rectangle",
+     "ratio": 4.43,
+     "size": 9
     }
    ],
    "sectionTitles": [
+    "RECTANGLE",
     "ALIGN",
     "TRANSFORM",
+    "CONSTRAINTS",
     "FILL",
-    "STROKE"
+    "STROKE",
+    "EFFECTS",
+    "APPEARANCE",
+    "EXPORT"
    ],
    "doc": {
-    "scrollH": 548,
-    "clientH": 548
+    "scrollH": 864,
+    "clientH": 637
    }
   },
   "03-select-text": {
@@ -1677,7 +2287,7 @@
      288,
      712
     ],
-    "text": "PROPERTIES | ALIGN | TRANSFORM | X | Y | W | H | R | ° | S | ° | % | NORMAL | TEXT STYLE | FONT FAMILY | system-ui | Thin | Extra Light | Light | Regular | Medium | SemiBold | Bold | Extra Bold | Black | Bold | Auto width | Fixed width | H | V | px | px | FILL | + | 100 | % | STROKE | + | + | ADD",
+    "text": "text | TEXT | ALIGN | TRANSFORM | X | Y | W | H | R | ° | S | ° | CONSTRAINTS | HORIZONTAL | Left | Right | Left & right | Center | Scale | VERTICAL | Top | Bottom | Top & bottom | Center | Scale | TEXT STYLE | FONT FAMILY | system-ui | Thin | Extra Light | Light | Regular | Medium | SemiBold | Bold | Extra Bold | Black | Bold | Auto width | Fixed width | H | V | px | px | FILL | + | 100 | % | STROKE | + | EFFECTS | + | APPEARANCE | % | NORMAL | EXPORT | + | PNG | 1x | × | Export | + | ADD",
     "scrollH": 712,
     "clientH": 712
    },
@@ -1706,6 +2316,21 @@
    ],
    "clipped": [],
    "controls": [
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Double-click to rename",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1172,
+      136,
+      27,
+      17
+     ]
+    },
     {
      "tag": "button",
      "role": null,
@@ -2127,32 +2752,137 @@
      ]
     },
     {
-     "tag": "input",
-     "role": null,
-     "label": "Opacity",
-     "pressed": null,
-     "checked": null,
-     "value": "100",
-     "disabled": false,
-     "box": [
-      1148,
-      398,
-      109,
-      28
-     ]
-    },
-    {
      "tag": "button",
      "role": null,
-     "label": "Blend mode",
+     "label": null,
      "pressed": null,
      "checked": null,
      "value": null,
      "disabled": false,
      "box": [
-      1282,
-      398,
-      126,
+      1150,
+      402,
+      93,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Left",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1153,
+      446,
+      4,
+      20
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Right",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1203,
+      446,
+      4,
+      20
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Top",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1170,
+      429,
+      20,
+      4
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Bottom",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1170,
+      479,
+      20,
+      4
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Center",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1170,
+      454,
+      20,
+      4
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Center",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1178,
+      446,
+      4,
+      20
+     ]
+    },
+    {
+     "tag": "select",
+     "role": null,
+     "label": "Horizontal",
+     "pressed": null,
+     "checked": null,
+     "value": "left",
+     "disabled": false,
+     "box": [
+      1294,
+      424,
+      114,
+      28
+     ]
+    },
+    {
+     "tag": "select",
+     "role": null,
+     "label": "Vertical",
+     "pressed": null,
+     "checked": null,
+     "value": "top",
+     "disabled": false,
+     "box": [
+      1294,
+      460,
+      114,
       28
      ]
     },
@@ -2166,7 +2896,7 @@
      "disabled": false,
      "box": [
       1150,
-      451,
+      513,
       86,
       14
      ]
@@ -2181,7 +2911,7 @@
      "disabled": false,
      "box": [
       1148,
-      492,
+      554,
       260,
       29
      ]
@@ -2196,7 +2926,7 @@
      "disabled": false,
      "box": [
       1176,
-      529,
+      590,
       98,
       28
      ]
@@ -2211,7 +2941,7 @@
      "disabled": false,
      "box": [
       1282,
-      529,
+      590,
       45,
       28
      ]
@@ -2226,7 +2956,7 @@
      "disabled": false,
      "box": [
       1331,
-      529,
+      590,
       37,
       28
      ]
@@ -2241,7 +2971,7 @@
      "disabled": false,
      "box": [
       1371,
-      529,
+      590,
       37,
       28
      ]
@@ -2256,7 +2986,7 @@
      "disabled": false,
      "box": [
       1152,
-      569,
+      630,
       124,
       28
      ]
@@ -2271,7 +3001,7 @@
      "disabled": false,
      "box": [
       1280,
-      569,
+      630,
       124,
       28
      ]
@@ -2286,7 +3016,7 @@
      "disabled": false,
      "box": [
       1152,
-      613,
+      674,
       124,
       28
      ]
@@ -2301,7 +3031,7 @@
      "disabled": false,
      "box": [
       1280,
-      613,
+      674,
       124,
       28
      ]
@@ -2316,7 +3046,7 @@
      "disabled": false,
      "box": [
       1152,
-      657,
+      718,
       81,
       28
      ]
@@ -2331,7 +3061,7 @@
      "disabled": false,
      "box": [
       1237,
-      657,
+      718,
       81,
       28
      ]
@@ -2346,7 +3076,7 @@
      "disabled": false,
      "box": [
       1323,
-      657,
+      718,
       81,
       28
      ]
@@ -2361,7 +3091,7 @@
      "disabled": false,
      "box": [
       1176,
-      697,
+      758,
       98,
       28
      ]
@@ -2376,7 +3106,7 @@
      "disabled": false,
      "box": [
       1310,
-      697,
+      758,
       74,
       28
      ]
@@ -2391,7 +3121,7 @@
      "disabled": false,
      "box": [
       1176,
-      733,
+      794,
       74,
       28
      ]
@@ -2406,7 +3136,7 @@
      "disabled": false,
      "box": [
       1150,
-      791,
+      852,
       45,
       14
      ]
@@ -2421,7 +3151,7 @@
      "disabled": false,
      "box": [
       1382,
-      786,
+      847,
       24,
       24
      ]
@@ -2436,7 +3166,7 @@
      "disabled": false,
      "box": [
       1158,
-      822,
+      883,
       20,
       20
      ]
@@ -2451,7 +3181,7 @@
      "disabled": false,
      "box": [
       1186,
-      821,
+      883,
       107,
       21
      ]
@@ -2466,7 +3196,7 @@
      "disabled": false,
      "box": [
       1310,
-      823,
+      885,
       28,
       17
      ]
@@ -2481,7 +3211,7 @@
      "disabled": false,
      "box": [
       1348,
-      820,
+      881,
       24,
       24
      ]
@@ -2496,7 +3226,7 @@
      "disabled": false,
      "box": [
       1374,
-      820,
+      881,
       24,
       24
      ]
@@ -2511,7 +3241,7 @@
      "disabled": false,
      "box": [
       1150,
-      876,
+      937,
       59,
       14
      ]
@@ -2526,9 +3256,189 @@
      "disabled": false,
      "box": [
       1382,
-      871,
+      932,
       24,
       24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      994,
+      66,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add effect",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      989,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      1050,
+      86,
+      14
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Opacity",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1148,
+      1072,
+      109,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Blend mode",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1282,
+      1072,
+      126,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      1130,
+      59,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add export settings",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      1125,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Format",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      1157,
+      96,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Export scale",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1250,
+      1157,
+      58,
+      28
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Suffix",
+     "pressed": null,
+     "checked": null,
+     "value": "",
+     "disabled": false,
+     "box": [
+      1314,
+      1157,
+      64,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Remove export settings",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": true,
+     "box": [
+      1384,
+      1159,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      1191,
+      260,
+      28
      ]
     },
     {
@@ -2541,7 +3451,7 @@
      "disabled": false,
      "box": [
       1146,
-      928,
+      1244,
       264,
       28
      ]
@@ -2549,6 +3459,15 @@
    ],
    "unnamed": [],
    "small": [
+    {
+     "box": [
+      1172,
+      136,
+      27,
+      17
+     ],
+     "label": "text"
+    },
     {
      "box": [
       1150,
@@ -2651,7 +3570,70 @@
     {
      "box": [
       1150,
-      451,
+      402,
+      93,
+      14
+     ],
+     "label": "CONSTRAINTS"
+    },
+    {
+     "box": [
+      1153,
+      446,
+      4,
+      20
+     ],
+     "label": "Left"
+    },
+    {
+     "box": [
+      1203,
+      446,
+      4,
+      20
+     ],
+     "label": "Right"
+    },
+    {
+     "box": [
+      1170,
+      429,
+      20,
+      4
+     ],
+     "label": "Top"
+    },
+    {
+     "box": [
+      1170,
+      479,
+      20,
+      4
+     ],
+     "label": "Bottom"
+    },
+    {
+     "box": [
+      1170,
+      454,
+      20,
+      4
+     ],
+     "label": "Center"
+    },
+    {
+     "box": [
+      1178,
+      446,
+      4,
+      20
+     ],
+     "label": "Center"
+    },
+    {
+     "box": [
+      1150,
+      513,
       86,
       14
      ],
@@ -2660,7 +3642,7 @@
     {
      "box": [
       1150,
-      791,
+      852,
       45,
       14
      ],
@@ -2669,7 +3651,7 @@
     {
      "box": [
       1158,
-      822,
+      883,
       20,
       20
      ],
@@ -2678,7 +3660,7 @@
     {
      "box": [
       1310,
-      823,
+      885,
       28,
       17
      ],
@@ -2687,15 +3669,47 @@
     {
      "box": [
       1150,
-      876,
+      937,
       59,
       14
      ],
      "label": "STROKE"
+    },
+    {
+     "box": [
+      1150,
+      994,
+      66,
+      14
+     ],
+     "label": "EFFECTS"
+    },
+    {
+     "box": [
+      1150,
+      1050,
+      86,
+      14
+     ],
+     "label": "APPEARANCE"
+    },
+    {
+     "box": [
+      1150,
+      1130,
+      59,
+      14
+     ],
+     "label": "EXPORT"
     }
    ],
    "rawKeys": [],
    "lowContrast": [
+    {
+     "text": "Text",
+     "ratio": 4.43,
+     "size": 9
+    },
     {
      "text": "Font family",
      "ratio": 4.43,
@@ -2710,23 +3724,23 @@
      "text": "V",
      "ratio": 3.19,
      "size": 11
-    },
-    {
-     "text": "%",
-     "ratio": 3.19,
-     "size": 10
     }
    ],
    "sectionTitles": [
+    "TEXT",
     "ALIGN",
     "TRANSFORM",
+    "CONSTRAINTS",
     "TEXT STYLE",
     "FONT FAMILY",
     "FILL",
-    "STROKE"
+    "STROKE",
+    "EFFECTS",
+    "APPEARANCE",
+    "EXPORT"
    ],
    "doc": {
-    "scrollH": 779,
+    "scrollH": 1095,
     "clientH": 637
    }
   },
@@ -2734,13 +3748,13 @@
    "panel": {
     "box": [
      1134,
-     193,
+     114,
      288,
-     554
+     712
     ],
-    "text": "PROPERTIES | ALIGN | TRANSFORM | X | Y | W | H | R | ° | S | ° | % | NORMAL | FILL | + | Paint | 100 | % | STROKE | + | Image tools | + | ADD",
-    "scrollH": 554,
-    "clientH": 554
+    "text": "Paint | IMAGE | ALIGN | TRANSFORM | X | Y | W | H | R | ° | S | ° | CONSTRAINTS | HORIZONTAL | Left | Right | Left & right | Center | Scale | VERTICAL | Top | Bottom | Top & bottom | Center | Scale | FILL | + | Paint | 100 | % | STROKE | + | Image tools | EFFECTS | + | APPEARANCE | % | NORMAL | EXPORT | + | PNG | 1x | × | Export | + | ADD",
+    "scrollH": 712,
+    "clientH": 712
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -2770,6 +3784,21 @@
     {
      "tag": "button",
      "role": null,
+     "label": "Double-click to rename",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1172,
+      136,
+      34,
+      17
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
      "label": "New Mask",
      "pressed": null,
      "checked": null,
@@ -2777,7 +3806,7 @@
      "disabled": false,
      "box": [
       1342,
-      209,
+      130,
       28,
       28
      ]
@@ -2792,7 +3821,7 @@
      "disabled": false,
      "box": [
       1374,
-      209,
+      130,
       28,
       28
      ]
@@ -2807,7 +3836,7 @@
      "disabled": false,
      "box": [
       1150,
-      256,
+      177,
       52,
       14
      ]
@@ -2822,7 +3851,7 @@
      "disabled": false,
      "box": [
       1148,
-      278,
+      199,
       40,
       28
      ]
@@ -2837,7 +3866,7 @@
      "disabled": false,
      "box": [
       1192,
-      278,
+      199,
       40,
       28
      ]
@@ -2852,7 +3881,7 @@
      "disabled": false,
      "box": [
       1236,
-      278,
+      199,
       40,
       28
      ]
@@ -2867,7 +3896,7 @@
      "disabled": false,
      "box": [
       1280,
-      278,
+      199,
       40,
       28
      ]
@@ -2882,7 +3911,7 @@
      "disabled": false,
      "box": [
       1324,
-      278,
+      199,
       40,
       28
      ]
@@ -2897,7 +3926,7 @@
      "disabled": false,
      "box": [
       1368,
-      278,
+      199,
       40,
       28
      ]
@@ -2912,7 +3941,7 @@
      "disabled": false,
      "box": [
       1150,
-      331,
+      252,
       79,
       14
      ]
@@ -2927,7 +3956,7 @@
      "disabled": false,
      "box": [
       1153,
-      355,
+      276,
       10,
       10
      ]
@@ -2942,7 +3971,7 @@
      "disabled": false,
      "box": [
       1161,
-      355,
+      276,
       10,
       10
      ]
@@ -2957,7 +3986,7 @@
      "disabled": false,
      "box": [
       1169,
-      355,
+      276,
       10,
       10
      ]
@@ -2972,7 +4001,7 @@
      "disabled": false,
      "box": [
       1153,
-      365,
+      286,
       10,
       10
      ]
@@ -2987,7 +4016,7 @@
      "disabled": false,
      "box": [
       1161,
-      365,
+      286,
       10,
       10
      ]
@@ -3002,7 +4031,7 @@
      "disabled": false,
      "box": [
       1169,
-      365,
+      286,
       10,
       10
      ]
@@ -3017,7 +4046,7 @@
      "disabled": false,
      "box": [
       1153,
-      375,
+      296,
       10,
       10
      ]
@@ -3032,7 +4061,7 @@
      "disabled": false,
      "box": [
       1161,
-      375,
+      296,
       10,
       10
      ]
@@ -3047,7 +4076,7 @@
      "disabled": false,
      "box": [
       1169,
-      375,
+      296,
       10,
       10
      ]
@@ -3062,7 +4091,7 @@
      "disabled": false,
      "box": [
       1213,
-      352,
+      273,
       83,
       28
      ]
@@ -3077,7 +4106,7 @@
      "disabled": false,
      "box": [
       1325,
-      352,
+      273,
       83,
       28
      ]
@@ -3092,7 +4121,7 @@
      "disabled": false,
      "box": [
       1213,
-      397,
+      318,
       75,
       15
      ]
@@ -3107,7 +4136,7 @@
      "disabled": false,
      "box": [
       1288,
-      390,
+      311,
       24,
       28
      ]
@@ -3122,7 +4151,7 @@
      "disabled": false,
      "box": [
       1333,
-      397,
+      318,
       75,
       15
      ]
@@ -3137,7 +4166,7 @@
      "disabled": false,
      "box": [
       1169,
-      428,
+      349,
       54,
       28
      ]
@@ -3152,7 +4181,7 @@
      "disabled": false,
      "box": [
       1269,
-      428,
+      349,
       54,
       28
      ]
@@ -3167,7 +4196,7 @@
      "disabled": false,
      "box": [
       1348,
-      428,
+      349,
       28,
       28
      ]
@@ -3182,38 +4211,8 @@
      "disabled": false,
      "box": [
       1380,
-      428,
+      349,
       28,
-      28
-     ]
-    },
-    {
-     "tag": "input",
-     "role": null,
-     "label": "Opacity",
-     "pressed": null,
-     "checked": null,
-     "value": "100",
-     "disabled": false,
-     "box": [
-      1148,
-      477,
-      109,
-      28
-     ]
-    },
-    {
-     "tag": "button",
-     "role": null,
-     "label": "Blend mode",
-     "pressed": null,
-     "checked": null,
-     "value": null,
-     "disabled": false,
-     "box": [
-      1282,
-      477,
-      126,
       28
      ]
     },
@@ -3227,7 +4226,142 @@
      "disabled": false,
      "box": [
       1150,
-      535,
+      402,
+      93,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Left",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1153,
+      446,
+      4,
+      20
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Right",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1203,
+      446,
+      4,
+      20
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Top",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1170,
+      429,
+      20,
+      4
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Bottom",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1170,
+      479,
+      20,
+      4
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Center",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1170,
+      454,
+      20,
+      4
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Center",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1178,
+      446,
+      4,
+      20
+     ]
+    },
+    {
+     "tag": "select",
+     "role": null,
+     "label": "Horizontal",
+     "pressed": null,
+     "checked": null,
+     "value": "left",
+     "disabled": false,
+     "box": [
+      1294,
+      424,
+      114,
+      28
+     ]
+    },
+    {
+     "tag": "select",
+     "role": null,
+     "label": "Vertical",
+     "pressed": null,
+     "checked": null,
+     "value": "top",
+     "disabled": false,
+     "box": [
+      1294,
+      460,
+      114,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      518,
       45,
       14
      ]
@@ -3242,7 +4376,7 @@
      "disabled": false,
      "box": [
       1382,
-      530,
+      513,
       24,
       24
      ]
@@ -3257,7 +4391,7 @@
      "disabled": false,
      "box": [
       1158,
-      566,
+      549,
       20,
       20
      ]
@@ -3272,7 +4406,7 @@
      "disabled": false,
      "box": [
       1310,
-      568,
+      550,
       28,
       17
      ]
@@ -3287,7 +4421,7 @@
      "disabled": false,
      "box": [
       1348,
-      564,
+      547,
       24,
       24
      ]
@@ -3302,7 +4436,7 @@
      "disabled": false,
      "box": [
       1374,
-      564,
+      547,
       24,
       24
      ]
@@ -3317,7 +4451,7 @@
      "disabled": false,
      "box": [
       1150,
-      620,
+      603,
       59,
       14
      ]
@@ -3332,7 +4466,7 @@
      "disabled": false,
      "box": [
       1382,
-      615,
+      598,
       24,
       24
      ]
@@ -3347,7 +4481,7 @@
      "disabled": false,
      "box": [
       1155,
-      692,
+      675,
       120,
       32
      ]
@@ -3362,7 +4496,7 @@
      "disabled": false,
      "box": [
       1281,
-      692,
+      675,
       120,
       32
      ]
@@ -3392,7 +4526,7 @@
      "disabled": false,
      "box": [
       1337,
-      734,
+      717,
       56,
       24
      ]
@@ -3407,7 +4541,7 @@
      "disabled": false,
      "box": [
       1155,
-      768,
+      751,
       246,
       32
      ]
@@ -3422,7 +4556,7 @@
      "disabled": false,
      "box": [
       1256,
-      849,
+      832,
       136,
       28
      ]
@@ -3437,7 +4571,7 @@
      "disabled": false,
      "box": [
       1256,
-      885,
+      868,
       136,
       28
      ]
@@ -3452,9 +4586,189 @@
      "disabled": false,
      "box": [
       1155,
-      849,
+      832,
       246,
       32
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      695,
+      66,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add effect",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      690,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      751,
+      86,
+      14
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Opacity",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1148,
+      772,
+      109,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Blend mode",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1282,
+      772,
+      126,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      830,
+      59,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add export settings",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      825,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Format",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      857,
+      96,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Export scale",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1250,
+      857,
+      58,
+      28
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Suffix",
+     "pressed": null,
+     "checked": null,
+     "value": "",
+     "disabled": false,
+     "box": [
+      1314,
+      857,
+      64,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Remove export settings",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": true,
+     "box": [
+      1384,
+      859,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      891,
+      260,
+      28
      ]
     },
     {
@@ -3467,7 +4781,7 @@
      "disabled": false,
      "box": [
       1146,
-      707,
+      944,
       264,
       28
      ]
@@ -3477,8 +4791,17 @@
    "small": [
     {
      "box": [
+      1172,
+      136,
+      34,
+      17
+     ],
+     "label": "Paint"
+    },
+    {
+     "box": [
       1150,
-      256,
+      177,
       52,
       14
      ],
@@ -3487,7 +4810,7 @@
     {
      "box": [
       1150,
-      331,
+      252,
       79,
       14
      ],
@@ -3496,7 +4819,7 @@
     {
      "box": [
       1153,
-      355,
+      276,
       10,
       10
      ],
@@ -3505,7 +4828,7 @@
     {
      "box": [
       1161,
-      355,
+      276,
       10,
       10
      ],
@@ -3514,7 +4837,7 @@
     {
      "box": [
       1169,
-      355,
+      276,
       10,
       10
      ],
@@ -3523,7 +4846,7 @@
     {
      "box": [
       1153,
-      365,
+      286,
       10,
       10
      ],
@@ -3532,7 +4855,7 @@
     {
      "box": [
       1161,
-      365,
+      286,
       10,
       10
      ],
@@ -3541,7 +4864,7 @@
     {
      "box": [
       1169,
-      365,
+      286,
       10,
       10
      ],
@@ -3550,7 +4873,7 @@
     {
      "box": [
       1153,
-      375,
+      296,
       10,
       10
      ],
@@ -3559,7 +4882,7 @@
     {
      "box": [
       1161,
-      375,
+      296,
       10,
       10
      ],
@@ -3568,7 +4891,7 @@
     {
      "box": [
       1169,
-      375,
+      296,
       10,
       10
      ],
@@ -3577,7 +4900,70 @@
     {
      "box": [
       1150,
-      535,
+      402,
+      93,
+      14
+     ],
+     "label": "CONSTRAINTS"
+    },
+    {
+     "box": [
+      1153,
+      446,
+      4,
+      20
+     ],
+     "label": "Left"
+    },
+    {
+     "box": [
+      1203,
+      446,
+      4,
+      20
+     ],
+     "label": "Right"
+    },
+    {
+     "box": [
+      1170,
+      429,
+      20,
+      4
+     ],
+     "label": "Top"
+    },
+    {
+     "box": [
+      1170,
+      479,
+      20,
+      4
+     ],
+     "label": "Bottom"
+    },
+    {
+     "box": [
+      1170,
+      454,
+      20,
+      4
+     ],
+     "label": "Center"
+    },
+    {
+     "box": [
+      1178,
+      446,
+      4,
+      20
+     ],
+     "label": "Center"
+    },
+    {
+     "box": [
+      1150,
+      518,
       45,
       14
      ],
@@ -3586,7 +4972,7 @@
     {
      "box": [
       1158,
-      566,
+      549,
       20,
       20
      ],
@@ -3595,7 +4981,7 @@
     {
      "box": [
       1310,
-      568,
+      550,
       28,
       17
      ],
@@ -3604,19 +4990,46 @@
     {
      "box": [
       1150,
-      620,
+      603,
       59,
       14
      ],
      "label": "STROKE"
+    },
+    {
+     "box": [
+      1150,
+      695,
+      66,
+      14
+     ],
+     "label": "EFFECTS"
+    },
+    {
+     "box": [
+      1150,
+      751,
+      86,
+      14
+     ],
+     "label": "APPEARANCE"
+    },
+    {
+     "box": [
+      1150,
+      830,
+      59,
+      14
+     ],
+     "label": "EXPORT"
     }
    ],
    "rawKeys": [],
    "lowContrast": [
     {
-     "text": "%",
-     "ratio": 3.19,
-     "size": 10
+     "text": "Image",
+     "ratio": 4.43,
+     "size": 9
     },
     {
      "text": "Brightness",
@@ -3630,14 +5043,19 @@
     }
    ],
    "sectionTitles": [
+    "IMAGE",
     "ALIGN",
     "TRANSFORM",
+    "CONSTRAINTS",
     "FILL",
-    "STROKE"
+    "STROKE",
+    "EFFECTS",
+    "APPEARANCE",
+    "EXPORT"
    ],
    "doc": {
-    "scrollH": 479,
-    "clientH": 479
+    "scrollH": 795,
+    "clientH": 637
    }
   },
   "05-select-frame": {
@@ -3648,7 +5066,7 @@
      288,
      712
     ],
-    "text": "PROPERTIES | LAYER | Ungroup | TRANSFORM | X | Y | W | H | R | ° | S | ° | % | NORMAL | px | FRAME | Clip content | LAYOUT GRID | + | AUTO LAYOUT | + | FILL | + | STROKE | + | + | ADD",
+    "text": "Frame | FRAME | TRANSFORM | X | Y | W | H | R | ° | S | ° | px | FRAME | Clip content | LAYOUT GRID | + | AUTO LAYOUT | + | FILL | + | STROKE | + | EFFECTS | + | APPEARANCE | % | NORMAL | EXPORT | + | PNG | 1x | × | Export | + | ADD",
     "scrollH": 712,
     "clientH": 712
    },
@@ -3680,6 +5098,21 @@
     {
      "tag": "button",
      "role": null,
+     "label": "Double-click to rename",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1172,
+      136,
+      34,
+      17
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
      "label": "Switch between rows and columns",
      "pressed": null,
      "checked": null,
@@ -3703,36 +5136,6 @@
      "box": [
       1150,
       177,
-      52,
-      14
-     ]
-    },
-    {
-     "tag": "button",
-     "role": null,
-     "label": null,
-     "pressed": null,
-     "checked": null,
-     "value": null,
-     "disabled": false,
-     "box": [
-      1148,
-      199,
-      127,
-      28
-     ]
-    },
-    {
-     "tag": "button",
-     "role": null,
-     "label": null,
-     "pressed": null,
-     "checked": null,
-     "value": null,
-     "disabled": false,
-     "box": [
-      1150,
-      252,
       79,
       14
      ]
@@ -3747,7 +5150,7 @@
      "disabled": false,
      "box": [
       1153,
-      276,
+      202,
       10,
       10
      ]
@@ -3762,7 +5165,7 @@
      "disabled": false,
      "box": [
       1161,
-      276,
+      202,
       10,
       10
      ]
@@ -3777,7 +5180,7 @@
      "disabled": false,
      "box": [
       1169,
-      276,
+      202,
       10,
       10
      ]
@@ -3792,7 +5195,7 @@
      "disabled": false,
      "box": [
       1153,
-      286,
+      212,
       10,
       10
      ]
@@ -3807,7 +5210,7 @@
      "disabled": false,
      "box": [
       1161,
-      286,
+      212,
       10,
       10
      ]
@@ -3822,7 +5225,7 @@
      "disabled": false,
      "box": [
       1169,
-      286,
+      212,
       10,
       10
      ]
@@ -3837,7 +5240,7 @@
      "disabled": false,
      "box": [
       1153,
-      296,
+      222,
       10,
       10
      ]
@@ -3852,7 +5255,7 @@
      "disabled": false,
      "box": [
       1161,
-      296,
+      222,
       10,
       10
      ]
@@ -3867,7 +5270,7 @@
      "disabled": false,
      "box": [
       1169,
-      296,
+      222,
       10,
       10
      ]
@@ -3882,7 +5285,7 @@
      "disabled": false,
      "box": [
       1213,
-      273,
+      199,
       83,
       28
      ]
@@ -3897,7 +5300,7 @@
      "disabled": false,
      "box": [
       1325,
-      273,
+      199,
       83,
       28
      ]
@@ -3912,7 +5315,7 @@
      "disabled": false,
      "box": [
       1213,
-      318,
+      243,
       75,
       15
      ]
@@ -3927,7 +5330,7 @@
      "disabled": false,
      "box": [
       1288,
-      311,
+      237,
       24,
       28
      ]
@@ -3942,7 +5345,7 @@
      "disabled": false,
      "box": [
       1333,
-      318,
+      243,
       75,
       15
      ]
@@ -3957,7 +5360,7 @@
      "disabled": false,
      "box": [
       1169,
-      349,
+      275,
       54,
       28
      ]
@@ -3972,7 +5375,7 @@
      "disabled": false,
      "box": [
       1269,
-      349,
+      275,
       54,
       28
      ]
@@ -3987,7 +5390,7 @@
      "disabled": false,
      "box": [
       1348,
-      349,
+      275,
       28,
       28
      ]
@@ -4002,38 +5405,8 @@
      "disabled": false,
      "box": [
       1380,
-      349,
+      275,
       28,
-      28
-     ]
-    },
-    {
-     "tag": "input",
-     "role": null,
-     "label": "Opacity",
-     "pressed": null,
-     "checked": null,
-     "value": "100",
-     "disabled": false,
-     "box": [
-      1148,
-      398,
-      109,
-      28
-     ]
-    },
-    {
-     "tag": "button",
-     "role": null,
-     "label": "Blend mode",
-     "pressed": null,
-     "checked": null,
-     "value": null,
-     "disabled": false,
-     "box": [
-      1282,
-      398,
-      126,
       28
      ]
     },
@@ -4047,7 +5420,7 @@
      "disabled": false,
      "box": [
       1174,
-      436,
+      313,
       178,
       28
      ]
@@ -4062,7 +5435,7 @@
      "disabled": false,
      "box": [
       1380,
-      436,
+      313,
       28,
       28
      ]
@@ -4077,7 +5450,7 @@
      "disabled": false,
      "box": [
       1150,
-      489,
+      366,
       52,
       14
      ]
@@ -4092,7 +5465,7 @@
      "disabled": false,
      "box": [
       1148,
-      511,
+      387,
       260,
       28
      ]
@@ -4107,7 +5480,7 @@
      "disabled": false,
      "box": [
       1150,
-      569,
+      445,
       93,
       14
      ]
@@ -4122,7 +5495,7 @@
      "disabled": false,
      "box": [
       1382,
-      564,
+      440,
       24,
       24
      ]
@@ -4137,7 +5510,7 @@
      "disabled": false,
      "box": [
       1150,
-      626,
+      502,
       93,
       14
      ]
@@ -4152,7 +5525,7 @@
      "disabled": false,
      "box": [
       1382,
-      621,
+      497,
       24,
       24
      ]
@@ -4167,7 +5540,7 @@
      "disabled": false,
      "box": [
       1150,
-      683,
+      559,
       45,
       14
      ]
@@ -4182,7 +5555,7 @@
      "disabled": false,
      "box": [
       1382,
-      678,
+      554,
       24,
       24
      ]
@@ -4197,7 +5570,7 @@
      "disabled": false,
      "box": [
       1150,
-      740,
+      616,
       59,
       14
      ]
@@ -4212,9 +5585,189 @@
      "disabled": false,
      "box": [
       1382,
-      735,
+      611,
       24,
       24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      673,
+      66,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add effect",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      668,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      729,
+      86,
+      14
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Opacity",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1148,
+      751,
+      109,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Blend mode",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1282,
+      751,
+      126,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      809,
+      59,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add export settings",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      804,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Format",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      836,
+      96,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Export scale",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1250,
+      836,
+      58,
+      28
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Suffix",
+     "pressed": null,
+     "checked": null,
+     "value": "",
+     "disabled": false,
+     "box": [
+      1314,
+      836,
+      64,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Remove export settings",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": true,
+     "box": [
+      1384,
+      838,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      870,
+      260,
+      28
      ]
     },
     {
@@ -4227,7 +5780,7 @@
      "disabled": false,
      "box": [
       1146,
-      792,
+      923,
       264,
       28
      ]
@@ -4237,17 +5790,17 @@
    "small": [
     {
      "box": [
-      1150,
-      177,
-      52,
-      14
+      1172,
+      136,
+      34,
+      17
      ],
-     "label": "LAYER"
+     "label": "Frame"
     },
     {
      "box": [
       1150,
-      252,
+      177,
       79,
       14
      ],
@@ -4256,7 +5809,7 @@
     {
      "box": [
       1153,
-      276,
+      202,
       10,
       10
      ],
@@ -4265,7 +5818,7 @@
     {
      "box": [
       1161,
-      276,
+      202,
       10,
       10
      ],
@@ -4274,7 +5827,7 @@
     {
      "box": [
       1169,
-      276,
+      202,
       10,
       10
      ],
@@ -4283,7 +5836,7 @@
     {
      "box": [
       1153,
-      286,
+      212,
       10,
       10
      ],
@@ -4292,7 +5845,7 @@
     {
      "box": [
       1161,
-      286,
+      212,
       10,
       10
      ],
@@ -4301,7 +5854,7 @@
     {
      "box": [
       1169,
-      286,
+      212,
       10,
       10
      ],
@@ -4310,7 +5863,7 @@
     {
      "box": [
       1153,
-      296,
+      222,
       10,
       10
      ],
@@ -4319,7 +5872,7 @@
     {
      "box": [
       1161,
-      296,
+      222,
       10,
       10
      ],
@@ -4328,7 +5881,7 @@
     {
      "box": [
       1169,
-      296,
+      222,
       10,
       10
      ],
@@ -4337,7 +5890,7 @@
     {
      "box": [
       1150,
-      489,
+      366,
       52,
       14
      ],
@@ -4346,7 +5899,7 @@
     {
      "box": [
       1150,
-      569,
+      445,
       93,
       14
      ],
@@ -4355,7 +5908,7 @@
     {
      "box": [
       1150,
-      626,
+      502,
       93,
       14
      ],
@@ -4364,7 +5917,7 @@
     {
      "box": [
       1150,
-      683,
+      559,
       45,
       14
      ],
@@ -4373,26 +5926,62 @@
     {
      "box": [
       1150,
-      740,
+      616,
       59,
       14
      ],
      "label": "STROKE"
+    },
+    {
+     "box": [
+      1150,
+      673,
+      66,
+      14
+     ],
+     "label": "EFFECTS"
+    },
+    {
+     "box": [
+      1150,
+      729,
+      86,
+      14
+     ],
+     "label": "APPEARANCE"
+    },
+    {
+     "box": [
+      1150,
+      809,
+      59,
+      14
+     ],
+     "label": "EXPORT"
     }
    ],
    "rawKeys": [],
-   "lowContrast": [],
+   "lowContrast": [
+    {
+     "text": "Frame",
+     "ratio": 4.43,
+     "size": 9
+    }
+   ],
    "sectionTitles": [
-    "LAYER",
+    "FRAME",
     "TRANSFORM",
     "FRAME",
     "LAYOUT GRID",
     "AUTO LAYOUT",
     "FILL",
-    "STROKE"
+    "STROKE",
+    "EFFECTS",
+    "APPEARANCE",
+    "EXPORT"
    ],
    "doc": {
-    "scrollH": 643,
+    "scrollH": 774,
     "clientH": 637
    }
   },
@@ -4404,7 +5993,7 @@
      288,
      712
     ],
-    "text": "PROPERTIES | LAYER | Group | ALIGN | H | V | GAP | TRANSFORM | X | — | Y | — | W | — | H | — | R | ° | S | ° | % | NORMAL | TEXT STYLE | FONT FAMILY | system-ui | FONT SIZE | —px | Thin | Extra Light | Light | Regular | Medium | SemiBold | Bold | Extra Bold | Black | Bold | Auto width | Fixed width | H | V | LINE HEIGHT | — | LETTER SPACING | —px | BASELINE SHIFT | —px | FILL | + | 100 | % | STROKE | + | + | ADD",
+    "text": "2 selected | LAYER | Group | ALIGN | H | V | GAP | TRANSFORM | X | — | Y | — | W | — | H | — | R | ° | S | ° | TEXT STYLE | FONT FAMILY | system-ui | FONT SIZE | —px | Thin | Extra Light | Light | Regular | Medium | SemiBold | Bold | Extra Bold | Black | Bold | Auto width | Fixed width | H | V | LINE HEIGHT | — | LETTER SPACING | —px | BASELINE SHIFT | —px | SELECTION COLORS | #D4D4D4 | ×1 | #FFFFFF | ×2 | FILL | + | 100 | % | STROKE | + | EFFECTS | + | APPEARANCE | % | NORMAL | EXPORT | + | PNG | 1x | × | Export",
     "scrollH": 712,
     "clientH": 712
    },
@@ -4929,36 +6518,6 @@
      ]
     },
     {
-     "tag": "input",
-     "role": null,
-     "label": "Opacity",
-     "pressed": null,
-     "checked": null,
-     "value": "100",
-     "disabled": false,
-     "box": [
-      1148,
-      549,
-      109,
-      28
-     ]
-    },
-    {
-     "tag": "button",
-     "role": null,
-     "label": "Blend mode",
-     "pressed": null,
-     "checked": null,
-     "value": null,
-     "disabled": false,
-     "box": [
-      1282,
-      549,
-      126,
-      28
-     ]
-    },
-    {
      "tag": "button",
      "role": null,
      "label": null,
@@ -4968,7 +6527,7 @@
      "disabled": false,
      "box": [
       1150,
-      602,
+      553,
       86,
       14
      ]
@@ -4983,7 +6542,7 @@
      "disabled": false,
      "box": [
       1148,
-      643,
+      594,
       260,
       29
      ]
@@ -4998,7 +6557,7 @@
      "disabled": false,
      "box": [
       1282,
-      680,
+      631,
       45,
       28
      ]
@@ -5013,7 +6572,7 @@
      "disabled": false,
      "box": [
       1331,
-      680,
+      631,
       37,
       28
      ]
@@ -5028,7 +6587,7 @@
      "disabled": false,
      "box": [
       1371,
-      680,
+      631,
       37,
       28
      ]
@@ -5043,7 +6602,7 @@
      "disabled": false,
      "box": [
       1152,
-      720,
+      671,
       124,
       28
      ]
@@ -5058,7 +6617,7 @@
      "disabled": false,
      "box": [
       1280,
-      720,
+      671,
       124,
       28
      ]
@@ -5073,7 +6632,7 @@
      "disabled": false,
      "box": [
       1152,
-      764,
+      715,
       124,
       28
      ]
@@ -5088,7 +6647,7 @@
      "disabled": false,
      "box": [
       1280,
-      764,
+      715,
       124,
       28
      ]
@@ -5103,7 +6662,7 @@
      "disabled": false,
      "box": [
       1152,
-      808,
+      759,
       81,
       28
      ]
@@ -5118,7 +6677,7 @@
      "disabled": false,
      "box": [
       1237,
-      808,
+      759,
       81,
       28
      ]
@@ -5133,7 +6692,7 @@
      "disabled": false,
      "box": [
       1323,
-      808,
+      759,
       81,
       28
      ]
@@ -5148,7 +6707,52 @@
      "disabled": false,
      "box": [
       1150,
-      976,
+      922,
+      127,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Select the layers using this color",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      944,
+      260,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Select the layers using this color",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      978,
+      260,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      1036,
       45,
       14
      ]
@@ -5163,7 +6767,7 @@
      "disabled": false,
      "box": [
       1382,
-      971,
+      1031,
       24,
       24
      ]
@@ -5178,7 +6782,7 @@
      "disabled": false,
      "box": [
       1158,
-      1007,
+      1067,
       20,
       20
      ]
@@ -5193,7 +6797,7 @@
      "disabled": false,
      "box": [
       1186,
-      1007,
+      1066,
       107,
       21
      ]
@@ -5208,7 +6812,7 @@
      "disabled": false,
      "box": [
       1310,
-      1009,
+      1068,
       28,
       17
      ]
@@ -5223,7 +6827,7 @@
      "disabled": false,
      "box": [
       1348,
-      1005,
+      1065,
       24,
       24
      ]
@@ -5238,7 +6842,7 @@
      "disabled": false,
      "box": [
       1374,
-      1005,
+      1065,
       24,
       24
      ]
@@ -5253,7 +6857,7 @@
      "disabled": false,
      "box": [
       1150,
-      1061,
+      1121,
       59,
       14
      ]
@@ -5268,7 +6872,7 @@
      "disabled": false,
      "box": [
       1382,
-      1056,
+      1116,
       24,
       24
      ]
@@ -5276,15 +6880,180 @@
     {
      "tag": "button",
      "role": null,
-     "label": "Add to this layer",
+     "label": null,
      "pressed": null,
      "checked": null,
      "value": null,
      "disabled": false,
      "box": [
-      1146,
-      1113,
-      264,
+      1150,
+      1178,
+      66,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add effect",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      1173,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      1234,
+      86,
+      14
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Opacity",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1148,
+      1255,
+      109,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Blend mode",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1282,
+      1255,
+      126,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      1313,
+      59,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add export settings",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      1308,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Format",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      1340,
+      96,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Export scale",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1250,
+      1340,
+      58,
+      28
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Suffix",
+     "pressed": null,
+     "checked": null,
+     "value": "",
+     "disabled": false,
+     "box": [
+      1314,
+      1340,
+      64,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Remove export settings",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": true,
+     "box": [
+      1384,
+      1342,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      1374,
+      260,
       28
      ]
     }
@@ -5402,7 +7171,7 @@
     {
      "box": [
       1150,
-      602,
+      553,
       86,
       14
      ],
@@ -5411,7 +7180,16 @@
     {
      "box": [
       1150,
-      976,
+      922,
+      127,
+      14
+     ],
+     "label": "SELECTION COLORS"
+    },
+    {
+     "box": [
+      1150,
+      1036,
       45,
       14
      ],
@@ -5420,7 +7198,7 @@
     {
      "box": [
       1158,
-      1007,
+      1067,
       20,
       20
      ],
@@ -5429,7 +7207,7 @@
     {
      "box": [
       1310,
-      1009,
+      1068,
       28,
       17
      ],
@@ -5438,72 +7216,54 @@
     {
      "box": [
       1150,
-      1061,
+      1121,
       59,
       14
      ],
      "label": "STROKE"
+    },
+    {
+     "box": [
+      1150,
+      1178,
+      66,
+      14
+     ],
+     "label": "EFFECTS"
+    },
+    {
+     "box": [
+      1150,
+      1234,
+      86,
+      14
+     ],
+     "label": "APPEARANCE"
+    },
+    {
+     "box": [
+      1150,
+      1313,
+      59,
+      14
+     ],
+     "label": "EXPORT"
     }
    ],
    "rawKeys": [],
    "lowContrast": [
-    {
-     "text": "X",
-     "ratio": 3.36,
-     "size": 10
-    },
-    {
-     "text": "—",
-     "ratio": 3.36,
-     "size": 11
-    },
-    {
-     "text": "Y",
-     "ratio": 3.36,
-     "size": 10
-    },
-    {
-     "text": "—",
-     "ratio": 3.36,
-     "size": 11
-    },
-    {
-     "text": "W",
-     "ratio": 3.36,
-     "size": 10
-    },
-    {
-     "text": "—",
-     "ratio": 3.36,
-     "size": 11
-    },
-    {
-     "text": "H",
-     "ratio": 3.36,
-     "size": 10
-    },
-    {
-     "text": "—",
-     "ratio": 3.36,
-     "size": 11
-    },
     {
      "text": "Font family",
      "ratio": 4.43,
      "size": 9
     },
     {
-     "text": "Font size",
-     "ratio": 3.36,
-     "size": 10
-    },
-    {
-     "text": "—px",
-     "ratio": 3.36,
+     "text": "Fixed width",
+     "ratio": 3.19,
      "size": 11
     },
     {
-     "text": "Fixed width",
+     "text": "V",
      "ratio": 3.19,
      "size": 11
     }
@@ -5514,11 +7274,15 @@
     "TRANSFORM",
     "TEXT STYLE",
     "FONT FAMILY",
+    "SELECTION COLORS",
     "FILL",
-    "STROKE"
+    "STROKE",
+    "EFFECTS",
+    "APPEARANCE",
+    "EXPORT"
    ],
    "doc": {
-    "scrollH": 964,
+    "scrollH": 1229,
     "clientH": 637
    }
   },
@@ -5530,7 +7294,7 @@
      288,
      712
     ],
-    "text": "PROPERTIES | LAYER | Group | ALIGN | H | V | GAP | TRANSFORM | X | — | Y | — | W | — | H | — | R | ° | S | ° | % | NORMAL | TEXT STYLE | FONT FAMILY | system-ui | FONT SIZE | —px | Thin | Extra Light | Light | Regular | Medium | SemiBold | Bold | Extra Bold | Black | Bold | Auto width | Fixed width | H | V | LINE HEIGHT | — | LETTER SPACING | —px | BASELINE SHIFT | —px | FILL | + | 100 | % | STROKE | + | + | ADD",
+    "text": "2 selected | LAYER | Group | ALIGN | H | V | GAP | TRANSFORM | X | — | Y | — | W | — | H | — | R | ° | S | ° | TEXT STYLE | FONT FAMILY | system-ui | FONT SIZE | —px | Thin | Extra Light | Light | Regular | Medium | SemiBold | Bold | Extra Bold | Black | Bold | Auto width | Fixed width | H | V | LINE HEIGHT | — | LETTER SPACING | —px | BASELINE SHIFT | —px | SELECTION COLORS | #D4D4D4 | ×1 | #FFFFFF | ×2 | FILL | + | 100 | % | STROKE | + | EFFECTS | + | APPEARANCE | % | NORMAL | EXPORT | + | PNG | 1x | × | Export",
     "scrollH": 712,
     "clientH": 712
    },
@@ -6055,36 +7819,6 @@
      ]
     },
     {
-     "tag": "input",
-     "role": null,
-     "label": "Opacity",
-     "pressed": null,
-     "checked": null,
-     "value": "100",
-     "disabled": false,
-     "box": [
-      1148,
-      549,
-      109,
-      28
-     ]
-    },
-    {
-     "tag": "button",
-     "role": null,
-     "label": "Blend mode",
-     "pressed": null,
-     "checked": null,
-     "value": null,
-     "disabled": false,
-     "box": [
-      1282,
-      549,
-      126,
-      28
-     ]
-    },
-    {
      "tag": "button",
      "role": null,
      "label": null,
@@ -6094,7 +7828,7 @@
      "disabled": false,
      "box": [
       1150,
-      602,
+      553,
       86,
       14
      ]
@@ -6109,7 +7843,7 @@
      "disabled": false,
      "box": [
       1148,
-      643,
+      594,
       260,
       29
      ]
@@ -6124,7 +7858,7 @@
      "disabled": false,
      "box": [
       1282,
-      680,
+      631,
       45,
       28
      ]
@@ -6139,7 +7873,7 @@
      "disabled": false,
      "box": [
       1331,
-      680,
+      631,
       37,
       28
      ]
@@ -6154,7 +7888,7 @@
      "disabled": false,
      "box": [
       1371,
-      680,
+      631,
       37,
       28
      ]
@@ -6169,7 +7903,7 @@
      "disabled": false,
      "box": [
       1152,
-      720,
+      671,
       124,
       28
      ]
@@ -6184,7 +7918,7 @@
      "disabled": false,
      "box": [
       1280,
-      720,
+      671,
       124,
       28
      ]
@@ -6199,7 +7933,7 @@
      "disabled": false,
      "box": [
       1152,
-      764,
+      715,
       124,
       28
      ]
@@ -6214,7 +7948,7 @@
      "disabled": false,
      "box": [
       1280,
-      764,
+      715,
       124,
       28
      ]
@@ -6229,7 +7963,7 @@
      "disabled": false,
      "box": [
       1152,
-      808,
+      759,
       81,
       28
      ]
@@ -6244,7 +7978,7 @@
      "disabled": false,
      "box": [
       1237,
-      808,
+      759,
       81,
       28
      ]
@@ -6259,7 +7993,7 @@
      "disabled": false,
      "box": [
       1323,
-      808,
+      759,
       81,
       28
      ]
@@ -6274,7 +8008,52 @@
      "disabled": false,
      "box": [
       1150,
-      976,
+      922,
+      127,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Select the layers using this color",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      944,
+      260,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Select the layers using this color",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      978,
+      260,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      1036,
       45,
       14
      ]
@@ -6289,7 +8068,7 @@
      "disabled": false,
      "box": [
       1382,
-      971,
+      1031,
       24,
       24
      ]
@@ -6304,7 +8083,7 @@
      "disabled": false,
      "box": [
       1158,
-      1007,
+      1067,
       20,
       20
      ]
@@ -6319,7 +8098,7 @@
      "disabled": false,
      "box": [
       1186,
-      1007,
+      1066,
       107,
       21
      ]
@@ -6334,7 +8113,7 @@
      "disabled": false,
      "box": [
       1310,
-      1009,
+      1068,
       28,
       17
      ]
@@ -6349,7 +8128,7 @@
      "disabled": false,
      "box": [
       1348,
-      1005,
+      1065,
       24,
       24
      ]
@@ -6364,7 +8143,7 @@
      "disabled": false,
      "box": [
       1374,
-      1005,
+      1065,
       24,
       24
      ]
@@ -6379,7 +8158,7 @@
      "disabled": false,
      "box": [
       1150,
-      1061,
+      1121,
       59,
       14
      ]
@@ -6394,7 +8173,7 @@
      "disabled": false,
      "box": [
       1382,
-      1056,
+      1116,
       24,
       24
      ]
@@ -6402,15 +8181,180 @@
     {
      "tag": "button",
      "role": null,
-     "label": "Add to this layer",
+     "label": null,
      "pressed": null,
      "checked": null,
      "value": null,
      "disabled": false,
      "box": [
-      1146,
-      1113,
-      264,
+      1150,
+      1178,
+      66,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add effect",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      1173,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      1234,
+      86,
+      14
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Opacity",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1148,
+      1255,
+      109,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Blend mode",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1282,
+      1255,
+      126,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      1313,
+      59,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add export settings",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      1308,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Format",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      1340,
+      96,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Export scale",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1250,
+      1340,
+      58,
+      28
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Suffix",
+     "pressed": null,
+     "checked": null,
+     "value": "",
+     "disabled": false,
+     "box": [
+      1314,
+      1340,
+      64,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Remove export settings",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": true,
+     "box": [
+      1384,
+      1342,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      1374,
+      260,
       28
      ]
     }
@@ -6528,7 +8472,7 @@
     {
      "box": [
       1150,
-      602,
+      553,
       86,
       14
      ],
@@ -6537,7 +8481,16 @@
     {
      "box": [
       1150,
-      976,
+      922,
+      127,
+      14
+     ],
+     "label": "SELECTION COLORS"
+    },
+    {
+     "box": [
+      1150,
+      1036,
       45,
       14
      ],
@@ -6546,7 +8499,7 @@
     {
      "box": [
       1158,
-      1007,
+      1067,
       20,
       20
      ],
@@ -6555,7 +8508,7 @@
     {
      "box": [
       1310,
-      1009,
+      1068,
       28,
       17
      ],
@@ -6564,72 +8517,54 @@
     {
      "box": [
       1150,
-      1061,
+      1121,
       59,
       14
      ],
      "label": "STROKE"
+    },
+    {
+     "box": [
+      1150,
+      1178,
+      66,
+      14
+     ],
+     "label": "EFFECTS"
+    },
+    {
+     "box": [
+      1150,
+      1234,
+      86,
+      14
+     ],
+     "label": "APPEARANCE"
+    },
+    {
+     "box": [
+      1150,
+      1313,
+      59,
+      14
+     ],
+     "label": "EXPORT"
     }
    ],
    "rawKeys": [],
    "lowContrast": [
-    {
-     "text": "X",
-     "ratio": 3.36,
-     "size": 10
-    },
-    {
-     "text": "—",
-     "ratio": 3.36,
-     "size": 11
-    },
-    {
-     "text": "Y",
-     "ratio": 3.36,
-     "size": 10
-    },
-    {
-     "text": "—",
-     "ratio": 3.36,
-     "size": 11
-    },
-    {
-     "text": "W",
-     "ratio": 3.36,
-     "size": 10
-    },
-    {
-     "text": "—",
-     "ratio": 3.36,
-     "size": 11
-    },
-    {
-     "text": "H",
-     "ratio": 3.36,
-     "size": 10
-    },
-    {
-     "text": "—",
-     "ratio": 3.36,
-     "size": 11
-    },
     {
      "text": "Font family",
      "ratio": 4.43,
      "size": 9
     },
     {
-     "text": "Font size",
-     "ratio": 3.36,
-     "size": 10
-    },
-    {
-     "text": "—px",
-     "ratio": 3.36,
+     "text": "Fixed width",
+     "ratio": 3.19,
      "size": 11
     },
     {
-     "text": "Fixed width",
+     "text": "V",
      "ratio": 3.19,
      "size": 11
     }
@@ -6640,11 +8575,15 @@
     "TRANSFORM",
     "TEXT STYLE",
     "FONT FAMILY",
+    "SELECTION COLORS",
     "FILL",
-    "STROKE"
+    "STROKE",
+    "EFFECTS",
+    "APPEARANCE",
+    "EXPORT"
    ],
    "doc": {
-    "scrollH": 964,
+    "scrollH": 1229,
     "clientH": 637
    }
   },
@@ -6656,7 +8595,7 @@
      288,
      342
     ],
-    "text": "PROPERTIES | LAYER | Group | Warp Style | Custom | Drag a point or handle | Reset Warp",
+    "text": "2 selected | LAYER | Group | Warp Style | Custom | Drag a point or handle | Reset Warp",
     "scrollH": 342,
     "clientH": 342
    },
@@ -7048,13 +8987,13 @@
    "panel": {
     "box": [
      1134,
-     307,
+     299,
      288,
-     327
+     342
     ],
-    "text": "PROPERTIES | LAYER | Group | HORIZONTAL | ° | ↺ | VERTICAL | ° | ↺ | SKEW X | ° | ↺ | SKEW Y | ° | ↺ | Drag a corner | Reset Warp",
-    "scrollH": 327,
-    "clientH": 327
+    "text": "2 selected | LAYER | Group | Warp Style | Custom | Drag a point or handle | Reset Warp",
+    "scrollH": 342,
+    "clientH": 342
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Frame | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -7091,7 +9030,7 @@
      "disabled": false,
      "box": [
       1374,
-      323,
+      315,
       28,
       28
      ]
@@ -7106,7 +9045,7 @@
      "disabled": false,
      "box": [
       1150,
-      370,
+      362,
       52,
       14
      ]
@@ -7121,129 +9060,279 @@
      "disabled": false,
      "box": [
       1148,
-      391,
+      383,
       127,
       28
      ]
     },
     {
-     "tag": "input",
+     "tag": "button",
      "role": null,
-     "label": "Horizontal",
-     "pressed": null,
+     "label": "Custom",
+     "pressed": "true",
      "checked": null,
-     "value": "0",
+     "value": null,
      "disabled": false,
      "box": [
-      1230,
-      425,
-      123,
-      28
+      1150,
+      436,
+      39,
+      39
      ]
     },
     {
      "tag": "button",
      "role": null,
-     "label": "Horizontal — Reset",
-     "pressed": null,
+     "label": "Arc",
+     "pressed": "false",
      "checked": null,
      "value": null,
      "disabled": false,
      "box": [
-      1378,
-      425,
-      28,
-      28
-     ]
-    },
-    {
-     "tag": "input",
-     "role": null,
-     "label": "Vertical",
-     "pressed": null,
-     "checked": null,
-     "value": "0",
-     "disabled": false,
-     "box": [
-      1230,
-      459,
-      123,
-      28
+      1193,
+      436,
+      39,
+      39
      ]
     },
     {
      "tag": "button",
      "role": null,
-     "label": "Vertical — Reset",
-     "pressed": null,
+     "label": "Lower Arc",
+     "pressed": "false",
      "checked": null,
      "value": null,
      "disabled": false,
      "box": [
-      1378,
-      459,
-      28,
-      28
-     ]
-    },
-    {
-     "tag": "input",
-     "role": null,
-     "label": "Skew X",
-     "pressed": null,
-     "checked": null,
-     "value": "0",
-     "disabled": false,
-     "box": [
-      1230,
-      493,
-      123,
-      28
+      1237,
+      436,
+      39,
+      39
      ]
     },
     {
      "tag": "button",
      "role": null,
-     "label": "Skew X — Reset",
-     "pressed": null,
+     "label": "Upper Arc",
+     "pressed": "false",
      "checked": null,
      "value": null,
      "disabled": false,
      "box": [
-      1378,
-      493,
-      28,
-      28
-     ]
-    },
-    {
-     "tag": "input",
-     "role": null,
-     "label": "Skew Y",
-     "pressed": null,
-     "checked": null,
-     "value": "0",
-     "disabled": false,
-     "box": [
-      1230,
-      527,
-      123,
-      28
+      1280,
+      436,
+      39,
+      39
      ]
     },
     {
      "tag": "button",
      "role": null,
-     "label": "Skew Y — Reset",
-     "pressed": null,
+     "label": "Arch",
+     "pressed": "false",
      "checked": null,
      "value": null,
      "disabled": false,
      "box": [
-      1378,
-      527,
-      28,
-      28
+      1323,
+      436,
+      39,
+      39
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Bulge",
+     "pressed": "false",
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1367,
+      436,
+      39,
+      39
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Shell Lower",
+     "pressed": "false",
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      480,
+      39,
+      39
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Shell Upper",
+     "pressed": "false",
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1193,
+      480,
+      39,
+      39
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Flag",
+     "pressed": "false",
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1237,
+      480,
+      39,
+      39
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Wave",
+     "pressed": "false",
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1280,
+      480,
+      39,
+      39
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Fish",
+     "pressed": "false",
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1323,
+      480,
+      39,
+      39
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Rise",
+     "pressed": "false",
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1367,
+      480,
+      39,
+      39
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Fisheye",
+     "pressed": "false",
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      523,
+      39,
+      39
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Inflate",
+     "pressed": "false",
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1193,
+      523,
+      39,
+      39
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Squeeze",
+     "pressed": "false",
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1237,
+      523,
+      39,
+      39
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Twist",
+     "pressed": "false",
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1280,
+      523,
+      39,
+      39
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Fan",
+     "pressed": "false",
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1323,
+      523,
+      39,
+      39
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Trapezoid",
+     "pressed": "false",
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1367,
+      523,
+      39,
+      39
      ]
     },
     {
@@ -7256,7 +9345,7 @@
      "disabled": false,
      "box": [
       1150,
-      591,
+      599,
       256,
       29
      ]
@@ -7267,7 +9356,7 @@
     {
      "box": [
       1150,
-      370,
+      362,
       52,
       14
      ],
@@ -7277,32 +9366,17 @@
    "rawKeys": [],
    "lowContrast": [
     {
-     "text": "↺",
+     "text": "Custom",
      "ratio": 4.43,
-     "size": 11
-    },
-    {
-     "text": "↺",
-     "ratio": 4.43,
-     "size": 11
-    },
-    {
-     "text": "↺",
-     "ratio": 4.43,
-     "size": 11
-    },
-    {
-     "text": "↺",
-     "ratio": 4.43,
-     "size": 11
+     "size": 10
     }
    ],
    "sectionTitles": [
     "LAYER"
    ],
    "doc": {
-    "scrollH": 252,
-    "clientH": 252
+    "scrollH": 267,
+    "clientH": 267
    }
   },
   "tool-select-puppet": {
@@ -7313,7 +9387,7 @@
      288,
      187
     ],
-    "text": "PROPERTIES | LAYER | Group | Click to add a pin · Drag to move | Reset Warp",
+    "text": "2 selected | LAYER | Group | Click to add a pin · Drag to move | Reset Warp",
     "scrollH": 187,
     "clientH": 187
    },
@@ -8989,9 +11063,9 @@
      "disabled": false,
      "box": [
       1188,
-      369,
-      20,
-      20
+      367,
+      24,
+      24
      ]
     },
     {
@@ -9199,7 +11273,7 @@
      "disabled": false,
      "box": [
       1150,
-      870,
+      873,
       66,
       14
      ]
@@ -9216,7 +11290,7 @@
       1353,
       868,
       53,
-      19
+      24
      ]
     },
     {
@@ -9244,7 +11318,7 @@
      "disabled": false,
      "box": [
       1148,
-      905,
+      910,
       83,
       48
      ]
@@ -9259,7 +11333,7 @@
      "disabled": false,
      "box": [
       1237,
-      905,
+      910,
       83,
       48
      ]
@@ -9274,7 +11348,7 @@
      "disabled": false,
      "box": [
       1325,
-      905,
+      910,
       83,
       48
      ]
@@ -9289,7 +11363,7 @@
      "disabled": false,
      "box": [
       1148,
-      958,
+      963,
       83,
       54
      ]
@@ -9304,7 +11378,7 @@
      "disabled": false,
      "box": [
       1237,
-      958,
+      963,
       83,
       54
      ]
@@ -9319,7 +11393,7 @@
      "disabled": false,
      "box": [
       1325,
-      958,
+      963,
       83,
       54
      ]
@@ -9356,15 +11430,6 @@
     },
     {
      "box": [
-      1188,
-      369,
-      20,
-      20
-     ],
-     "label": "Switch colors (X)"
-    },
-    {
-     "box": [
       1150,
       418,
       52,
@@ -9384,29 +11449,15 @@
     {
      "box": [
       1150,
-      870,
+      873,
       66,
       14
      ],
      "label": "BRUSHES"
-    },
-    {
-     "box": [
-      1353,
-      868,
-      53,
-      19
-     ],
-     "label": "+ .ABR"
     }
    ],
    "rawKeys": [],
    "lowContrast": [
-    {
-     "text": "#",
-     "ratio": 3.36,
-     "size": 11
-    },
     {
      "text": "Advanced",
      "ratio": 4.43,
@@ -9431,7 +11482,7 @@
     "BRUSHES"
    ],
    "doc": {
-    "scrollH": 846,
+    "scrollH": 851,
     "clientH": 645
    }
   },
@@ -9439,13 +11490,13 @@
    "panel": {
     "box": [
      1134,
-     231,
+     229,
      288,
-     478
+     483
     ],
     "text": "Smudge | SMUDGE | BRUSH WIDTH | px | HARDNESS | % | STRENGTH | % | SMOOTHING | % | Pressure controls size | Pressure controls opacity | BRUSHES | + .ABR | Soft Round | Medium Round | Hard Round | Chisel / Pen | Airbrush | Pencil 1px",
-    "scrollH": 478,
-    "clientH": 478
+    "scrollH": 483,
+    "clientH": 483
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Frame | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -9482,7 +11533,7 @@
      "disabled": false,
      "box": [
       1150,
-      287,
+      284,
       59,
       14
      ]
@@ -9497,7 +11548,7 @@
      "disabled": false,
      "box": [
       1240,
-      308,
+      306,
       144,
       28
      ]
@@ -9512,7 +11563,7 @@
      "disabled": false,
      "box": [
       1240,
-      346,
+      344,
       151,
       28
      ]
@@ -9527,7 +11578,7 @@
      "disabled": false,
      "box": [
       1240,
-      384,
+      382,
       151,
       28
      ]
@@ -9542,7 +11593,7 @@
      "disabled": false,
      "box": [
       1240,
-      422,
+      420,
       151,
       28
      ]
@@ -9557,7 +11608,7 @@
      "disabled": false,
      "box": [
       1148,
-      462,
+      460,
       260,
       28
      ]
@@ -9572,7 +11623,7 @@
      "disabled": false,
      "box": [
       1148,
-      496,
+      494,
       260,
       28
      ]
@@ -9602,9 +11653,9 @@
      "disabled": false,
      "box": [
       1353,
-      549,
+      547,
       53,
-      19
+      24
      ]
     },
     {
@@ -9632,7 +11683,7 @@
      "disabled": false,
      "box": [
       1148,
-      586,
+      589,
       83,
       48
      ]
@@ -9647,7 +11698,7 @@
      "disabled": false,
      "box": [
       1237,
-      586,
+      589,
       83,
       48
      ]
@@ -9662,7 +11713,7 @@
      "disabled": false,
      "box": [
       1325,
-      586,
+      589,
       83,
       48
      ]
@@ -9677,7 +11728,7 @@
      "disabled": false,
      "box": [
       1148,
-      640,
+      642,
       83,
       54
      ]
@@ -9692,7 +11743,7 @@
      "disabled": false,
      "box": [
       1237,
-      640,
+      642,
       83,
       54
      ]
@@ -9707,7 +11758,7 @@
      "disabled": false,
      "box": [
       1325,
-      640,
+      642,
       83,
       54
      ]
@@ -9718,7 +11769,7 @@
     {
      "box": [
       1150,
-      287,
+      284,
       59,
       14
      ],
@@ -9732,15 +11783,6 @@
       14
      ],
      "label": "BRUSHES"
-    },
-    {
-     "box": [
-      1353,
-      549,
-      53,
-      19
-     ],
-     "label": "+ .ABR"
     }
    ],
    "rawKeys": [],
@@ -9754,21 +11796,21 @@
     "BRUSHES"
    ],
    "doc": {
-    "scrollH": 411,
-    "clientH": 411
+    "scrollH": 416,
+    "clientH": 416
    }
   },
   "tool-brush-blur": {
    "panel": {
     "box": [
      1134,
-     316,
+     229,
      288,
-     309
+     483
     ],
-    "text": "Blur | BLUR | BRUSH WIDTH | px | HARDNESS | % | STRENGTH | % | SMOOTHING | % | Pressure controls size | Pressure controls opacity",
-    "scrollH": 309,
-    "clientH": 309
+    "text": "Blur | BLUR | BRUSH WIDTH | px | HARDNESS | % | STRENGTH | % | SMOOTHING | % | Pressure controls size | Pressure controls opacity | BRUSHES | + .ABR | Soft Round | Medium Round | Hard Round | Chisel / Pen | Airbrush | Pencil 1px",
+    "scrollH": 483,
+    "clientH": 483
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Frame | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -9805,7 +11847,7 @@
      "disabled": false,
      "box": [
       1150,
-      371,
+      284,
       45,
       14
      ]
@@ -9820,7 +11862,7 @@
      "disabled": false,
      "box": [
       1240,
-      393,
+      306,
       144,
       28
      ]
@@ -9835,7 +11877,7 @@
      "disabled": false,
      "box": [
       1240,
-      431,
+      344,
       151,
       28
      ]
@@ -9850,7 +11892,7 @@
      "disabled": false,
      "box": [
       1240,
-      469,
+      382,
       151,
       28
      ]
@@ -9865,7 +11907,7 @@
      "disabled": false,
      "box": [
       1240,
-      507,
+      420,
       151,
       28
      ]
@@ -9880,7 +11922,7 @@
      "disabled": false,
      "box": [
       1148,
-      547,
+      460,
       260,
       28
      ]
@@ -9895,9 +11937,144 @@
      "disabled": false,
      "box": [
       1148,
-      581,
+      494,
       260,
       28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      552,
+      66,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Import .ABR brushes",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1353,
+      547,
+      53,
+      24
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": "",
+     "disabled": false,
+     "box": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      589,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1237,
+      589,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1325,
+      589,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      642,
+      83,
+      54
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1237,
+      642,
+      83,
+      54
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1325,
+      642,
+      83,
+      54
      ]
     }
    ],
@@ -9906,11 +12083,20 @@
     {
      "box": [
       1150,
-      371,
+      284,
       45,
       14
      ],
      "label": "BLUR"
+    },
+    {
+     "box": [
+      1150,
+      552,
+      66,
+      14
+     ],
+     "label": "BRUSHES"
     }
    ],
    "rawKeys": [],
@@ -9920,24 +12106,25 @@
     "BRUSH WIDTH",
     "HARDNESS",
     "STRENGTH",
-    "SMOOTHING"
+    "SMOOTHING",
+    "BRUSHES"
    ],
    "doc": {
-    "scrollH": 242,
-    "clientH": 242
+    "scrollH": 416,
+    "clientH": 416
    }
   },
   "tool-brush-sharpen": {
    "panel": {
     "box": [
      1134,
-     316,
+     229,
      288,
-     309
+     483
     ],
-    "text": "Sharpen | SHARPEN | BRUSH WIDTH | px | HARDNESS | % | STRENGTH | % | SMOOTHING | % | Pressure controls size | Pressure controls opacity",
-    "scrollH": 309,
-    "clientH": 309
+    "text": "Sharpen | SHARPEN | BRUSH WIDTH | px | HARDNESS | % | STRENGTH | % | SMOOTHING | % | Pressure controls size | Pressure controls opacity | BRUSHES | + .ABR | Soft Round | Medium Round | Hard Round | Chisel / Pen | Airbrush | Pencil 1px",
+    "scrollH": 483,
+    "clientH": 483
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Frame | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -9974,7 +12161,7 @@
      "disabled": false,
      "box": [
       1150,
-      371,
+      284,
       66,
       14
      ]
@@ -9989,7 +12176,7 @@
      "disabled": false,
      "box": [
       1240,
-      393,
+      306,
       144,
       28
      ]
@@ -10004,7 +12191,7 @@
      "disabled": false,
      "box": [
       1240,
-      431,
+      344,
       151,
       28
      ]
@@ -10019,7 +12206,7 @@
      "disabled": false,
      "box": [
       1240,
-      469,
+      382,
       151,
       28
      ]
@@ -10034,7 +12221,7 @@
      "disabled": false,
      "box": [
       1240,
-      507,
+      420,
       151,
       28
      ]
@@ -10049,7 +12236,7 @@
      "disabled": false,
      "box": [
       1148,
-      547,
+      460,
       260,
       28
      ]
@@ -10064,9 +12251,144 @@
      "disabled": false,
      "box": [
       1148,
-      581,
+      494,
       260,
       28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      552,
+      66,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Import .ABR brushes",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1353,
+      547,
+      53,
+      24
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": "",
+     "disabled": false,
+     "box": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      589,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1237,
+      589,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1325,
+      589,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      642,
+      83,
+      54
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1237,
+      642,
+      83,
+      54
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1325,
+      642,
+      83,
+      54
      ]
     }
    ],
@@ -10075,11 +12397,20 @@
     {
      "box": [
       1150,
-      371,
+      284,
       66,
       14
      ],
      "label": "SHARPEN"
+    },
+    {
+     "box": [
+      1150,
+      552,
+      66,
+      14
+     ],
+     "label": "BRUSHES"
     }
    ],
    "rawKeys": [],
@@ -10089,24 +12420,25 @@
     "BRUSH WIDTH",
     "HARDNESS",
     "STRENGTH",
-    "SMOOTHING"
+    "SMOOTHING",
+    "BRUSHES"
    ],
    "doc": {
-    "scrollH": 242,
-    "clientH": 242
+    "scrollH": 416,
+    "clientH": 416
    }
   },
   "tool-brush-dodge": {
    "panel": {
     "box": [
      1134,
-     278,
+     172,
      288,
-     385
+     597
     ],
-    "text": "Dodge | DODGE | BRUSH WIDTH | px | HARDNESS | % | EXPOSURE | % | SMOOTHING | % | Shadows | Midtones | Highlights | Protect luminosity | Pressure controls size | Pressure controls opacity",
-    "scrollH": 385,
-    "clientH": 385
+    "text": "Dodge | DODGE | BRUSH WIDTH | px | HARDNESS | % | EXPOSURE | % | FLOW | % | SMOOTHING | % | Shadows | Midtones | Highlights | Protect luminosity | Pressure controls size | Pressure controls opacity | BRUSHES | + .ABR | Soft Round | Medium Round | Hard Round | Chisel / Pen | Airbrush | Pencil 1px",
+    "scrollH": 597,
+    "clientH": 597
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Frame | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -10143,7 +12475,7 @@
      "disabled": false,
      "box": [
       1150,
-      333,
+      227,
       52,
       14
      ]
@@ -10158,7 +12490,7 @@
      "disabled": false,
      "box": [
       1240,
-      355,
+      249,
       144,
       28
      ]
@@ -10173,7 +12505,7 @@
      "disabled": false,
      "box": [
       1240,
-      393,
+      287,
       151,
       28
      ]
@@ -10188,7 +12520,22 @@
      "disabled": false,
      "box": [
       1240,
-      431,
+      325,
+      151,
+      28
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Flow",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1240,
+      363,
       151,
       28
      ]
@@ -10203,7 +12550,7 @@
      "disabled": false,
      "box": [
       1240,
-      469,
+      401,
       151,
       28
      ]
@@ -10218,7 +12565,7 @@
      "disabled": false,
      "box": [
       1148,
-      507,
+      439,
       84,
       28
      ]
@@ -10233,7 +12580,7 @@
      "disabled": false,
      "box": [
       1236,
-      507,
+      439,
       84,
       28
      ]
@@ -10248,7 +12595,7 @@
      "disabled": false,
      "box": [
       1324,
-      507,
+      439,
       84,
       28
      ]
@@ -10263,7 +12610,7 @@
      "disabled": false,
      "box": [
       1148,
-      545,
+      477,
       260,
       28
      ]
@@ -10278,7 +12625,7 @@
      "disabled": false,
      "box": [
       1148,
-      585,
+      517,
       260,
       28
      ]
@@ -10293,9 +12640,144 @@
      "disabled": false,
      "box": [
       1148,
-      619,
+      551,
       260,
       28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      609,
+      66,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Import .ABR brushes",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1353,
+      604,
+      53,
+      24
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": "",
+     "disabled": false,
+     "box": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      646,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1237,
+      646,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1325,
+      646,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      699,
+      83,
+      54
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1237,
+      699,
+      83,
+      54
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1325,
+      699,
+      83,
+      54
      ]
     }
    ],
@@ -10304,11 +12786,20 @@
     {
      "box": [
       1150,
-      333,
+      227,
       52,
       14
      ],
      "label": "DODGE"
+    },
+    {
+     "box": [
+      1150,
+      609,
+      66,
+      14
+     ],
+     "label": "BRUSHES"
     }
    ],
    "rawKeys": [],
@@ -10318,24 +12809,26 @@
     "BRUSH WIDTH",
     "HARDNESS",
     "EXPOSURE",
-    "SMOOTHING"
+    "FLOW",
+    "SMOOTHING",
+    "BRUSHES"
    ],
    "doc": {
-    "scrollH": 318,
-    "clientH": 318
+    "scrollH": 530,
+    "clientH": 530
    }
   },
   "tool-brush-burn": {
    "panel": {
     "box": [
      1134,
-     278,
+     172,
      288,
-     385
+     597
     ],
-    "text": "Burn | BURN | BRUSH WIDTH | px | HARDNESS | % | EXPOSURE | % | SMOOTHING | % | Shadows | Midtones | Highlights | Protect luminosity | Pressure controls size | Pressure controls opacity",
-    "scrollH": 385,
-    "clientH": 385
+    "text": "Burn | BURN | BRUSH WIDTH | px | HARDNESS | % | EXPOSURE | % | FLOW | % | SMOOTHING | % | Shadows | Midtones | Highlights | Protect luminosity | Pressure controls size | Pressure controls opacity | BRUSHES | + .ABR | Soft Round | Medium Round | Hard Round | Chisel / Pen | Airbrush | Pencil 1px",
+    "scrollH": 597,
+    "clientH": 597
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Frame | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -10372,7 +12865,7 @@
      "disabled": false,
      "box": [
       1150,
-      333,
+      227,
       45,
       14
      ]
@@ -10387,7 +12880,7 @@
      "disabled": false,
      "box": [
       1240,
-      355,
+      249,
       144,
       28
      ]
@@ -10402,7 +12895,7 @@
      "disabled": false,
      "box": [
       1240,
-      393,
+      287,
       151,
       28
      ]
@@ -10417,7 +12910,22 @@
      "disabled": false,
      "box": [
       1240,
-      431,
+      325,
+      151,
+      28
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Flow",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1240,
+      363,
       151,
       28
      ]
@@ -10432,7 +12940,7 @@
      "disabled": false,
      "box": [
       1240,
-      469,
+      401,
       151,
       28
      ]
@@ -10447,7 +12955,7 @@
      "disabled": false,
      "box": [
       1148,
-      507,
+      439,
       84,
       28
      ]
@@ -10462,7 +12970,7 @@
      "disabled": false,
      "box": [
       1236,
-      507,
+      439,
       84,
       28
      ]
@@ -10477,7 +12985,7 @@
      "disabled": false,
      "box": [
       1324,
-      507,
+      439,
       84,
       28
      ]
@@ -10492,7 +13000,7 @@
      "disabled": false,
      "box": [
       1148,
-      545,
+      477,
       260,
       28
      ]
@@ -10507,7 +13015,7 @@
      "disabled": false,
      "box": [
       1148,
-      585,
+      517,
       260,
       28
      ]
@@ -10522,9 +13030,144 @@
      "disabled": false,
      "box": [
       1148,
-      619,
+      551,
       260,
       28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      609,
+      66,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Import .ABR brushes",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1353,
+      604,
+      53,
+      24
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": "",
+     "disabled": false,
+     "box": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      646,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1237,
+      646,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1325,
+      646,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      699,
+      83,
+      54
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1237,
+      699,
+      83,
+      54
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1325,
+      699,
+      83,
+      54
      ]
     }
    ],
@@ -10533,11 +13176,20 @@
     {
      "box": [
       1150,
-      333,
+      227,
       45,
       14
      ],
      "label": "BURN"
+    },
+    {
+     "box": [
+      1150,
+      609,
+      66,
+      14
+     ],
+     "label": "BRUSHES"
     }
    ],
    "rawKeys": [],
@@ -10547,24 +13199,26 @@
     "BRUSH WIDTH",
     "HARDNESS",
     "EXPOSURE",
-    "SMOOTHING"
+    "FLOW",
+    "SMOOTHING",
+    "BRUSHES"
    ],
    "doc": {
-    "scrollH": 318,
-    "clientH": 318
+    "scrollH": 530,
+    "clientH": 530
    }
   },
   "tool-brush-sponge": {
    "panel": {
     "box": [
      1134,
-     297,
+     191,
      288,
-     347
+     559
     ],
-    "text": "Sponge | SPONGE | BRUSH WIDTH | px | HARDNESS | % | FLOW | % | SMOOTHING | % | Saturate | Desaturate | Pressure controls size | Pressure controls opacity",
-    "scrollH": 347,
-    "clientH": 347
+    "text": "Sponge | SPONGE | BRUSH WIDTH | px | HARDNESS | % | FLOW | % | OPACITY | % | SMOOTHING | % | Saturate | Desaturate | Pressure controls size | Pressure controls opacity | BRUSHES | + .ABR | Soft Round | Medium Round | Hard Round | Chisel / Pen | Airbrush | Pencil 1px",
+    "scrollH": 559,
+    "clientH": 559
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Frame | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -10601,7 +13255,7 @@
      "disabled": false,
      "box": [
       1150,
-      352,
+      246,
       59,
       14
      ]
@@ -10616,7 +13270,7 @@
      "disabled": false,
      "box": [
       1240,
-      374,
+      268,
       144,
       28
      ]
@@ -10631,7 +13285,7 @@
      "disabled": false,
      "box": [
       1240,
-      412,
+      306,
       151,
       28
      ]
@@ -10646,7 +13300,22 @@
      "disabled": false,
      "box": [
       1240,
-      450,
+      344,
+      151,
+      28
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Opacity",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1240,
+      382,
       151,
       28
      ]
@@ -10661,7 +13330,7 @@
      "disabled": false,
      "box": [
       1240,
-      488,
+      420,
       151,
       28
      ]
@@ -10676,7 +13345,7 @@
      "disabled": false,
      "box": [
       1148,
-      526,
+      458,
       128,
       28
      ]
@@ -10691,7 +13360,7 @@
      "disabled": false,
      "box": [
       1280,
-      526,
+      458,
       128,
       28
      ]
@@ -10706,7 +13375,7 @@
      "disabled": false,
      "box": [
       1148,
-      566,
+      498,
       260,
       28
      ]
@@ -10721,9 +13390,144 @@
      "disabled": false,
      "box": [
       1148,
-      600,
+      532,
       260,
       28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      590,
+      66,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Import .ABR brushes",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1353,
+      585,
+      53,
+      24
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": "",
+     "disabled": false,
+     "box": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      627,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1237,
+      627,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1325,
+      627,
+      83,
+      48
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1148,
+      680,
+      83,
+      54
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1237,
+      680,
+      83,
+      54
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1325,
+      680,
+      83,
+      54
      ]
     }
    ],
@@ -10732,11 +13536,20 @@
     {
      "box": [
       1150,
-      352,
+      246,
       59,
       14
      ],
      "label": "SPONGE"
+    },
+    {
+     "box": [
+      1150,
+      590,
+      66,
+      14
+     ],
+     "label": "BRUSHES"
     }
    ],
    "rawKeys": [],
@@ -10746,11 +13559,13 @@
     "BRUSH WIDTH",
     "HARDNESS",
     "FLOW",
-    "SMOOTHING"
+    "OPACITY",
+    "SMOOTHING",
+    "BRUSHES"
    ],
    "doc": {
-    "scrollH": 280,
-    "clientH": 280
+    "scrollH": 492,
+    "clientH": 492
    }
   },
   "tool-healing-aiRepair": {
@@ -11350,9 +14165,9 @@
      "disabled": false,
      "box": [
       1188,
-      489,
-      20,
-      20
+      487,
+      24,
+      24
      ]
     },
     {
@@ -11507,15 +14322,6 @@
     },
     {
      "box": [
-      1188,
-      489,
-      20,
-      20
-     ],
-     "label": "Switch colors (X)"
-    },
-    {
-     "box": [
       1150,
       538,
       45,
@@ -11534,13 +14340,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "#",
-     "ratio": 3.36,
-     "size": 11
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "COLOR",
     "MODE",
@@ -11644,9 +14444,9 @@
      "disabled": false,
      "box": [
       1188,
-      475,
-      20,
-      20
+      473,
+      24,
+      24
      ]
     },
     {
@@ -11816,15 +14616,6 @@
     },
     {
      "box": [
-      1188,
-      475,
-      20,
-      20
-     ],
-     "label": "Switch colors (X)"
-    },
-    {
-     "box": [
       1150,
       524,
       45,
@@ -11843,13 +14634,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "#",
-     "ratio": 3.36,
-     "size": 11
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "COLOR",
     "MODE",
@@ -11954,9 +14739,9 @@
      "disabled": false,
      "box": [
       1188,
-      512,
-      20,
-      20
+      510,
+      24,
+      24
      ]
     },
     {
@@ -12081,15 +14866,6 @@
     },
     {
      "box": [
-      1188,
-      512,
-      20,
-      20
-     ],
-     "label": "Switch colors (X)"
-    },
-    {
-     "box": [
       1150,
       561,
       45,
@@ -12099,13 +14875,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "#",
-     "ratio": 3.36,
-     "size": 11
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "COLOR",
     "MODE",
@@ -12121,13 +14891,13 @@
    "panel": {
     "box": [
      1134,
-     230,
+     192,
      288,
-     480
+     556
     ],
-    "text": "Rectangle | COLOR | # | D4D4D4 | RECTANGLE | WEIGHT | px | ⌒ | CORNER RADIUS | px | Round | Straight",
-    "scrollH": 480,
-    "clientH": 480
+    "text": "Rectangle | COLOR | # | D4D4D4 | RECTANGLE | WEIGHT | px | STROKE | OPACITY | % | ⌒ | CORNER RADIUS | px | Round | Straight",
+    "scrollH": 556,
+    "clientH": 556
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Frame | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -12164,7 +14934,7 @@
      "disabled": false,
      "box": [
       1150,
-      286,
+      248,
       52,
       14
      ]
@@ -12179,7 +14949,7 @@
      "disabled": false,
      "box": [
       1162,
-      491,
+      453,
       18,
       18
      ]
@@ -12194,7 +14964,7 @@
      "disabled": false,
      "box": [
       1152,
-      481,
+      443,
       19,
       19
      ]
@@ -12209,9 +14979,9 @@
      "disabled": false,
      "box": [
       1188,
-      485,
-      20,
-      20
+      445,
+      24,
+      24
      ]
     },
     {
@@ -12224,7 +14994,7 @@
      "disabled": false,
      "box": [
       1376,
-      481,
+      443,
       28,
       28
      ]
@@ -12239,7 +15009,7 @@
      "disabled": false,
      "box": [
       1150,
-      534,
+      496,
       79,
       14
      ]
@@ -12254,8 +15024,53 @@
      "disabled": false,
      "box": [
       1240,
-      556,
+      518,
       144,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Stroke",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1198,
+      560,
+      20,
+      20
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Stroke",
+     "pressed": null,
+     "checked": null,
+     "value": "#FFFFFF",
+     "disabled": false,
+     "box": [
+      1226,
+      560,
+      172,
+      21
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Opacity",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1240,
+      594,
+      151,
       28
      ]
     },
@@ -12269,7 +15084,7 @@
      "disabled": false,
      "box": [
       1148,
-      594,
+      632,
       127,
       28
      ]
@@ -12284,7 +15099,7 @@
      "disabled": false,
      "box": [
       1281,
-      594,
+      632,
       127,
       28
      ]
@@ -12299,7 +15114,7 @@
      "disabled": false,
      "box": [
       1240,
-      632,
+      670,
       144,
       28
      ]
@@ -12314,7 +15129,7 @@
      "disabled": false,
      "box": [
       1148,
-      666,
+      704,
       127,
       28
      ]
@@ -12329,7 +15144,7 @@
      "disabled": false,
      "box": [
       1281,
-      666,
+      704,
       127,
       28
      ]
@@ -12340,7 +15155,7 @@
     {
      "box": [
       1150,
-      286,
+      248,
       52,
       14
      ],
@@ -12349,7 +15164,7 @@
     {
      "box": [
       1162,
-      491,
+      453,
       18,
       18
      ],
@@ -12358,7 +15173,7 @@
     {
      "box": [
       1152,
-      481,
+      443,
       19,
       19
      ],
@@ -12366,53 +15181,49 @@
     },
     {
      "box": [
-      1188,
-      485,
-      20,
-      20
-     ],
-     "label": "Switch colors (X)"
-    },
-    {
-     "box": [
       1150,
-      534,
+      496,
       79,
       14
      ],
      "label": "RECTANGLE"
+    },
+    {
+     "box": [
+      1198,
+      560,
+      20,
+      20
+     ],
+     "label": "Stroke"
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "#",
-     "ratio": 3.36,
-     "size": 11
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "COLOR",
     "RECTANGLE",
     "WEIGHT",
+    "STROKE",
+    "OPACITY",
     "CORNER RADIUS"
    ],
    "doc": {
-    "scrollH": 412,
-    "clientH": 412
+    "scrollH": 488,
+    "clientH": 488
    }
   },
   "tool-shapes-ellipse": {
    "panel": {
     "box": [
      1134,
-     266,
+     228,
      288,
-     408
+     484
     ],
-    "text": "Ellipse | COLOR | # | D4D4D4 | ELLIPSE | WEIGHT | px",
-    "scrollH": 408,
-    "clientH": 408
+    "text": "Ellipse | COLOR | # | D4D4D4 | ELLIPSE | WEIGHT | px | STROKE | OPACITY | %",
+    "scrollH": 484,
+    "clientH": 484
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Frame | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -12449,7 +15260,7 @@
      "disabled": false,
      "box": [
       1150,
-      322,
+      284,
       52,
       14
      ]
@@ -12464,7 +15275,7 @@
      "disabled": false,
      "box": [
       1162,
-      527,
+      489,
       18,
       18
      ]
@@ -12479,7 +15290,7 @@
      "disabled": false,
      "box": [
       1152,
-      517,
+      479,
       19,
       19
      ]
@@ -12494,9 +15305,9 @@
      "disabled": false,
      "box": [
       1188,
-      521,
-      20,
-      20
+      481,
+      24,
+      24
      ]
     },
     {
@@ -12509,7 +15320,7 @@
      "disabled": false,
      "box": [
       1376,
-      517,
+      479,
       28,
       28
      ]
@@ -12524,7 +15335,7 @@
      "disabled": false,
      "box": [
       1150,
-      570,
+      532,
       66,
       14
      ]
@@ -12539,8 +15350,53 @@
      "disabled": false,
      "box": [
       1240,
-      592,
+      554,
       144,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Stroke",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1198,
+      596,
+      20,
+      20
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Stroke",
+     "pressed": null,
+     "checked": null,
+     "value": "#FFFFFF",
+     "disabled": false,
+     "box": [
+      1226,
+      596,
+      172,
+      21
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Opacity",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1240,
+      630,
+      151,
       28
      ]
     },
@@ -12554,7 +15410,7 @@
      "disabled": false,
      "box": [
       1148,
-      630,
+      668,
       127,
       28
      ]
@@ -12569,7 +15425,7 @@
      "disabled": false,
      "box": [
       1281,
-      630,
+      668,
       127,
       28
      ]
@@ -12580,7 +15436,7 @@
     {
      "box": [
       1150,
-      322,
+      284,
       52,
       14
      ],
@@ -12589,7 +15445,7 @@
     {
      "box": [
       1162,
-      527,
+      489,
       18,
       18
      ],
@@ -12598,7 +15454,7 @@
     {
      "box": [
       1152,
-      517,
+      479,
       19,
       19
      ],
@@ -12606,39 +15462,35 @@
     },
     {
      "box": [
-      1188,
-      521,
-      20,
-      20
-     ],
-     "label": "Switch colors (X)"
-    },
-    {
-     "box": [
       1150,
-      570,
+      532,
       66,
       14
      ],
      "label": "ELLIPSE"
+    },
+    {
+     "box": [
+      1198,
+      596,
+      20,
+      20
+     ],
+     "label": "Stroke"
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "#",
-     "ratio": 3.36,
-     "size": 11
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "COLOR",
     "ELLIPSE",
-    "WEIGHT"
+    "WEIGHT",
+    "STROKE",
+    "OPACITY"
    ],
    "doc": {
-    "scrollH": 340,
-    "clientH": 340
+    "scrollH": 416,
+    "clientH": 416
    }
   },
   "tool-shapes-line": {
@@ -12733,9 +15585,9 @@
      "disabled": false,
      "box": [
       1188,
-      521,
-      20,
-      20
+      519,
+      24,
+      24
      ]
     },
     {
@@ -12845,15 +15697,6 @@
     },
     {
      "box": [
-      1188,
-      521,
-      20,
-      20
-     ],
-     "label": "Switch colors (X)"
-    },
-    {
-     "box": [
       1150,
       570,
       45,
@@ -12863,13 +15706,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "#",
-     "ratio": 3.36,
-     "size": 11
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "COLOR",
     "LINE",
@@ -12884,13 +15721,13 @@
    "panel": {
     "box": [
      1134,
-     247,
+     209,
      288,
-     446
+     522
     ],
-    "text": "Polygon | COLOR | # | D4D4D4 | POLYGON | WEIGHT | px | ⬡ | SIDES",
-    "scrollH": 446,
-    "clientH": 446
+    "text": "Polygon | COLOR | # | D4D4D4 | POLYGON | WEIGHT | px | STROKE | OPACITY | % | ⬡ | SIDES",
+    "scrollH": 522,
+    "clientH": 522
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Frame | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -12927,7 +15764,7 @@
      "disabled": false,
      "box": [
       1150,
-      303,
+      265,
       52,
       14
      ]
@@ -12942,7 +15779,7 @@
      "disabled": false,
      "box": [
       1162,
-      508,
+      470,
       18,
       18
      ]
@@ -12957,7 +15794,7 @@
      "disabled": false,
      "box": [
       1152,
-      498,
+      460,
       19,
       19
      ]
@@ -12972,9 +15809,9 @@
      "disabled": false,
      "box": [
       1188,
-      502,
-      20,
-      20
+      462,
+      24,
+      24
      ]
     },
     {
@@ -12987,7 +15824,7 @@
      "disabled": false,
      "box": [
       1376,
-      498,
+      460,
       28,
       28
      ]
@@ -13002,7 +15839,7 @@
      "disabled": false,
      "box": [
       1150,
-      551,
+      513,
       66,
       14
      ]
@@ -13017,8 +15854,53 @@
      "disabled": false,
      "box": [
       1240,
-      573,
+      535,
       144,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Stroke",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1198,
+      577,
+      20,
+      20
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Stroke",
+     "pressed": null,
+     "checked": null,
+     "value": "#FFFFFF",
+     "disabled": false,
+     "box": [
+      1226,
+      577,
+      172,
+      21
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Opacity",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1240,
+      611,
+      151,
       28
      ]
     },
@@ -13032,7 +15914,7 @@
      "disabled": false,
      "box": [
       1148,
-      611,
+      649,
       127,
       28
      ]
@@ -13047,7 +15929,7 @@
      "disabled": false,
      "box": [
       1281,
-      611,
+      649,
       127,
       28
      ]
@@ -13062,7 +15944,7 @@
      "disabled": false,
      "box": [
       1240,
-      649,
+      687,
       168,
       28
      ]
@@ -13073,7 +15955,7 @@
     {
      "box": [
       1150,
-      303,
+      265,
       52,
       14
      ],
@@ -13082,7 +15964,7 @@
     {
      "box": [
       1162,
-      508,
+      470,
       18,
       18
      ],
@@ -13091,7 +15973,7 @@
     {
      "box": [
       1152,
-      498,
+      460,
       19,
       19
      ],
@@ -13099,53 +15981,49 @@
     },
     {
      "box": [
-      1188,
-      502,
-      20,
-      20
-     ],
-     "label": "Switch colors (X)"
-    },
-    {
-     "box": [
       1150,
-      551,
+      513,
       66,
       14
      ],
      "label": "POLYGON"
+    },
+    {
+     "box": [
+      1198,
+      577,
+      20,
+      20
+     ],
+     "label": "Stroke"
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "#",
-     "ratio": 3.36,
-     "size": 11
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "COLOR",
     "POLYGON",
     "WEIGHT",
+    "STROKE",
+    "OPACITY",
     "SIDES"
    ],
    "doc": {
-    "scrollH": 378,
-    "clientH": 378
+    "scrollH": 454,
+    "clientH": 454
    }
   },
   "tool-shapes-star": {
    "panel": {
     "box": [
      1134,
-     230,
+     192,
      288,
-     480
+     556
     ],
-    "text": "Star | COLOR | # | D4D4D4 | STAR | WEIGHT | px | ★ | POINTS | RATIO | %",
-    "scrollH": 480,
-    "clientH": 480
+    "text": "Star | COLOR | # | D4D4D4 | STAR | WEIGHT | px | STROKE | OPACITY | % | ★ | POINTS | RATIO | %",
+    "scrollH": 556,
+    "clientH": 556
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Frame | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -13182,7 +16060,7 @@
      "disabled": false,
      "box": [
       1150,
-      286,
+      248,
       52,
       14
      ]
@@ -13197,7 +16075,7 @@
      "disabled": false,
      "box": [
       1162,
-      491,
+      453,
       18,
       18
      ]
@@ -13212,7 +16090,7 @@
      "disabled": false,
      "box": [
       1152,
-      481,
+      443,
       19,
       19
      ]
@@ -13227,9 +16105,9 @@
      "disabled": false,
      "box": [
       1188,
-      485,
-      20,
-      20
+      445,
+      24,
+      24
      ]
     },
     {
@@ -13242,7 +16120,7 @@
      "disabled": false,
      "box": [
       1376,
-      481,
+      443,
       28,
       28
      ]
@@ -13257,7 +16135,7 @@
      "disabled": false,
      "box": [
       1150,
-      534,
+      496,
       45,
       14
      ]
@@ -13272,8 +16150,53 @@
      "disabled": false,
      "box": [
       1240,
-      556,
+      518,
       144,
+      28
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Stroke",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1198,
+      560,
+      20,
+      20
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Stroke",
+     "pressed": null,
+     "checked": null,
+     "value": "#FFFFFF",
+     "disabled": false,
+     "box": [
+      1226,
+      560,
+      172,
+      21
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Opacity",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1240,
+      594,
+      151,
       28
      ]
     },
@@ -13287,7 +16210,7 @@
      "disabled": false,
      "box": [
       1148,
-      594,
+      632,
       127,
       28
      ]
@@ -13302,7 +16225,7 @@
      "disabled": false,
      "box": [
       1281,
-      594,
+      632,
       127,
       28
      ]
@@ -13317,7 +16240,7 @@
      "disabled": false,
      "box": [
       1240,
-      632,
+      670,
       168,
       28
      ]
@@ -13332,7 +16255,7 @@
      "disabled": false,
      "box": [
       1240,
-      666,
+      704,
       151,
       28
      ]
@@ -13343,7 +16266,7 @@
     {
      "box": [
       1150,
-      286,
+      248,
       52,
       14
      ],
@@ -13352,7 +16275,7 @@
     {
      "box": [
       1162,
-      491,
+      453,
       18,
       18
      ],
@@ -13361,7 +16284,7 @@
     {
      "box": [
       1152,
-      481,
+      443,
       19,
       19
      ],
@@ -13369,41 +16292,37 @@
     },
     {
      "box": [
-      1188,
-      485,
-      20,
-      20
-     ],
-     "label": "Switch colors (X)"
-    },
-    {
-     "box": [
       1150,
-      534,
+      496,
       45,
       14
      ],
      "label": "STAR"
+    },
+    {
+     "box": [
+      1198,
+      560,
+      20,
+      20
+     ],
+     "label": "Stroke"
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "#",
-     "ratio": 3.36,
-     "size": 11
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "COLOR",
     "STAR",
     "WEIGHT",
+    "STROKE",
+    "OPACITY",
     "POINTS",
     "RATIO"
    ],
    "doc": {
-    "scrollH": 412,
-    "clientH": 412
+    "scrollH": 488,
+    "clientH": 488
    }
   },
   "tool-shapes-arrow": {
@@ -13498,9 +16417,9 @@
      "disabled": false,
      "box": [
       1188,
-      476,
-      20,
-      20
+      474,
+      24,
+      24
      ]
     },
     {
@@ -13655,15 +16574,6 @@
     },
     {
      "box": [
-      1188,
-      476,
-      20,
-      20
-     ],
-     "label": "Switch colors (X)"
-    },
-    {
-     "box": [
       1150,
       525,
       52,
@@ -13673,13 +16583,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "#",
-     "ratio": 3.36,
-     "size": 11
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "COLOR",
     "ARROW",
@@ -13696,13 +16600,13 @@
    "panel": {
     "box": [
      1134,
-     268,
+     249,
      288,
-     404
+     442
     ],
-    "text": "Fill | COLOR | # | D4D4D4 | FILL | TOLERANCE | Contiguous | Sample All Layers",
-    "scrollH": 404,
-    "clientH": 404
+    "text": "Fill | COLOR | # | D4D4D4 | FILL | OPACITY | TOLERANCE | Contiguous | Sample All Layers",
+    "scrollH": 442,
+    "clientH": 442
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Frame | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -13739,7 +16643,7 @@
      "disabled": false,
      "box": [
       1150,
-      324,
+      305,
       52,
       14
      ]
@@ -13754,7 +16658,7 @@
      "disabled": false,
      "box": [
       1162,
-      529,
+      510,
       18,
       18
      ]
@@ -13769,7 +16673,7 @@
      "disabled": false,
      "box": [
       1152,
-      519,
+      500,
       19,
       19
      ]
@@ -13784,9 +16688,9 @@
      "disabled": false,
      "box": [
       1188,
-      523,
-      20,
-      20
+      502,
+      24,
+      24
      ]
     },
     {
@@ -13799,7 +16703,7 @@
      "disabled": false,
      "box": [
       1376,
-      519,
+      500,
       28,
       28
      ]
@@ -13814,9 +16718,24 @@
      "disabled": false,
      "box": [
       1150,
-      572,
+      553,
       45,
       14
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Opacity",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1240,
+      575,
+      168,
+      28
      ]
     },
     {
@@ -13829,7 +16748,7 @@
      "disabled": false,
      "box": [
       1240,
-      594,
+      613,
       168,
       28
      ]
@@ -13844,7 +16763,7 @@
      "disabled": false,
      "box": [
       1148,
-      628,
+      647,
       127,
       28
      ]
@@ -13859,7 +16778,7 @@
      "disabled": false,
      "box": [
       1281,
-      628,
+      647,
       127,
       28
      ]
@@ -13870,7 +16789,7 @@
     {
      "box": [
       1150,
-      324,
+      305,
       52,
       14
      ],
@@ -13879,7 +16798,7 @@
     {
      "box": [
       1162,
-      529,
+      510,
       18,
       18
      ],
@@ -13888,7 +16807,7 @@
     {
      "box": [
       1152,
-      519,
+      500,
       19,
       19
      ],
@@ -13896,17 +16815,8 @@
     },
     {
      "box": [
-      1188,
-      523,
-      20,
-      20
-     ],
-     "label": "Switch colors (X)"
-    },
-    {
-     "box": [
       1150,
-      572,
+      553,
       45,
       14
      ],
@@ -13914,34 +16824,29 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "#",
-     "ratio": 3.36,
-     "size": 11
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "COLOR",
     "FILL",
+    "OPACITY",
     "TOLERANCE"
    ],
    "doc": {
-    "scrollH": 336,
-    "clientH": 336
+    "scrollH": 374,
+    "clientH": 374
    }
   },
   "tool-fill-gradient": {
    "panel": {
     "box": [
      1134,
-     160,
+     141,
      288,
-     620
+     658
     ],
-    "text": "Gradient | COLOR | # | D4D4D4 | GRADIENT | GRADIENT TYPE | Linear | Radial | Angular | GRADIENT STOPS | Stops (2) | + Add Stop | drag off to delete | Pick a colour with the wheel to edit the selected stop's colour; the drag on canvas paints these stops. | GRADIENT ANGLE | ⇄ | Reverse Gradient | Apply to Layer",
-    "scrollH": 620,
-    "clientH": 620
+    "text": "Gradient | COLOR | # | D4D4D4 | GRADIENT | OPACITY | GRADIENT TYPE | Linear | Radial | Angular | GRADIENT STOPS | Stops (2) | + Add Stop | drag off to delete | Pick a colour with the wheel to edit the selected stop's colour; the drag on canvas paints these stops. | GRADIENT ANGLE | ⇄ | Reverse Gradient | Apply to Layer",
+    "scrollH": 658,
+    "clientH": 658
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Frame | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -13978,7 +16883,7 @@
      "disabled": false,
      "box": [
       1150,
-      216,
+      197,
       52,
       14
      ]
@@ -13993,7 +16898,7 @@
      "disabled": false,
      "box": [
       1162,
-      421,
+      402,
       18,
       18
      ]
@@ -14008,7 +16913,7 @@
      "disabled": false,
      "box": [
       1152,
-      411,
+      392,
       19,
       19
      ]
@@ -14023,9 +16928,9 @@
      "disabled": false,
      "box": [
       1188,
-      415,
-      20,
-      20
+      394,
+      24,
+      24
      ]
     },
     {
@@ -14038,7 +16943,7 @@
      "disabled": false,
      "box": [
       1376,
-      411,
+      392,
       28,
       28
      ]
@@ -14053,9 +16958,24 @@
      "disabled": false,
      "box": [
       1150,
-      464,
+      445,
       72,
       14
+     ]
+    },
+    {
+     "tag": "input",
+     "role": null,
+     "label": "Opacity",
+     "pressed": null,
+     "checked": null,
+     "value": "100",
+     "disabled": false,
+     "box": [
+      1240,
+      467,
+      168,
+      28
      ]
     },
     {
@@ -14068,7 +16988,7 @@
      "disabled": false,
      "box": [
       1148,
-      505,
+      524,
       83,
       28
      ]
@@ -14083,7 +17003,7 @@
      "disabled": false,
      "box": [
       1237,
-      505,
+      524,
       83,
       28
      ]
@@ -14098,7 +17018,7 @@
      "disabled": false,
      "box": [
       1325,
-      505,
+      524,
       83,
       28
      ]
@@ -14113,7 +17033,7 @@
      "disabled": false,
      "box": [
       1347,
-      559,
+      578,
       61,
       15
      ]
@@ -14128,7 +17048,7 @@
      "disabled": false,
      "box": [
       1240,
-      668,
+      687,
       168,
       28
      ]
@@ -14143,7 +17063,7 @@
      "disabled": false,
      "box": [
       1148,
-      702,
+      721,
       260,
       28
      ]
@@ -14158,7 +17078,7 @@
      "disabled": false,
      "box": [
       1148,
-      736,
+      755,
       260,
       28
      ]
@@ -14169,7 +17089,7 @@
     {
      "box": [
       1150,
-      216,
+      197,
       52,
       14
      ],
@@ -14178,7 +17098,7 @@
     {
      "box": [
       1162,
-      421,
+      402,
       18,
       18
      ],
@@ -14187,7 +17107,7 @@
     {
      "box": [
       1152,
-      411,
+      392,
       19,
       19
      ],
@@ -14195,17 +17115,8 @@
     },
     {
      "box": [
-      1188,
-      415,
-      20,
-      20
-     ],
-     "label": "Switch colors (X)"
-    },
-    {
-     "box": [
       1150,
-      464,
+      445,
       72,
       14
      ],
@@ -14214,7 +17125,7 @@
     {
      "box": [
       1347,
-      559,
+      578,
       61,
       15
      ],
@@ -14223,11 +17134,6 @@
    ],
    "rawKeys": [],
    "lowContrast": [
-    {
-     "text": "#",
-     "ratio": 3.36,
-     "size": 11
-    },
     {
      "text": "drag off to delete",
      "ratio": 4.43,
@@ -14242,13 +17148,14 @@
    "sectionTitles": [
     "COLOR",
     "GRADIENT",
+    "OPACITY",
     "GRADIENT TYPE",
     "GRADIENT STOPS",
     "GRADIENT ANGLE"
    ],
    "doc": {
-    "scrollH": 552,
-    "clientH": 552
+    "scrollH": 590,
+    "clientH": 590
    }
   },
   "tool-crop": {
@@ -14560,9 +17467,9 @@
      "disabled": false,
      "box": [
       1188,
-      400,
-      20,
-      20
+      398,
+      24,
+      24
      ]
     },
     {
@@ -14897,15 +17804,6 @@
     },
     {
      "box": [
-      1188,
-      400,
-      20,
-      20
-     ],
-     "label": "Switch colors (X)"
-    },
-    {
-     "box": [
       1150,
       449,
       86,
@@ -14989,11 +17887,6 @@
    "rawKeys": [],
    "lowContrast": [
     {
-     "text": "#",
-     "ratio": 3.36,
-     "size": 11
-    },
-    {
      "text": "Font weight",
      "ratio": 4.43,
      "size": 10
@@ -15027,13 +17920,13 @@
    "panel": {
     "box": [
      1134,
-     212,
+     210,
      288,
-     516
+     521
     ],
     "text": "Eraser | ERASER | BRUSH WIDTH | px | HARDNESS | % | OPACITY | % | FLOW | % | SMOOTHING | % | Pressure controls size | Pressure controls opacity | BRUSHES | + .ABR | Soft Round | Medium Round | Hard Round | Chisel / Pen | Airbrush | Pencil 1px",
-    "scrollH": 516,
-    "clientH": 516
+    "scrollH": 521,
+    "clientH": 521
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Frame | Paint | T | Hello | Rectangle | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -15070,7 +17963,7 @@
      "disabled": false,
      "box": [
       1150,
-      268,
+      265,
       59,
       14
      ]
@@ -15085,7 +17978,7 @@
      "disabled": false,
      "box": [
       1240,
-      289,
+      287,
       144,
       28
      ]
@@ -15100,7 +17993,7 @@
      "disabled": false,
      "box": [
       1240,
-      327,
+      325,
       151,
       28
      ]
@@ -15115,7 +18008,7 @@
      "disabled": false,
      "box": [
       1240,
-      365,
+      363,
       151,
       28
      ]
@@ -15130,7 +18023,7 @@
      "disabled": false,
      "box": [
       1240,
-      403,
+      401,
       151,
       28
      ]
@@ -15145,7 +18038,7 @@
      "disabled": false,
      "box": [
       1240,
-      441,
+      439,
       151,
       28
      ]
@@ -15160,7 +18053,7 @@
      "disabled": false,
      "box": [
       1148,
-      481,
+      479,
       260,
       28
      ]
@@ -15175,7 +18068,7 @@
      "disabled": false,
      "box": [
       1148,
-      515,
+      513,
       260,
       28
      ]
@@ -15205,9 +18098,9 @@
      "disabled": false,
      "box": [
       1353,
-      568,
+      566,
       53,
-      19
+      24
      ]
     },
     {
@@ -15235,7 +18128,7 @@
      "disabled": false,
      "box": [
       1148,
-      605,
+      608,
       83,
       48
      ]
@@ -15250,7 +18143,7 @@
      "disabled": false,
      "box": [
       1237,
-      605,
+      608,
       83,
       48
      ]
@@ -15265,7 +18158,7 @@
      "disabled": false,
      "box": [
       1325,
-      605,
+      608,
       83,
       48
      ]
@@ -15280,7 +18173,7 @@
      "disabled": false,
      "box": [
       1148,
-      659,
+      661,
       83,
       54
      ]
@@ -15295,7 +18188,7 @@
      "disabled": false,
      "box": [
       1237,
-      659,
+      661,
       83,
       54
      ]
@@ -15310,7 +18203,7 @@
      "disabled": false,
      "box": [
       1325,
-      659,
+      661,
       83,
       54
      ]
@@ -15321,7 +18214,7 @@
     {
      "box": [
       1150,
-      268,
+      265,
       59,
       14
      ],
@@ -15335,15 +18228,6 @@
       14
      ],
      "label": "BRUSHES"
-    },
-    {
-     "box": [
-      1353,
-      568,
-      53,
-      19
-     ],
-     "label": "+ .ABR"
     }
    ],
    "rawKeys": [],
@@ -15358,8 +18242,8 @@
     "BRUSHES"
    ],
    "doc": {
-    "scrollH": 449,
-    "clientH": 449
+    "scrollH": 454,
+    "clientH": 454
    }
   },
   "tool-dropper": {
@@ -15466,7 +18350,7 @@
      288,
      64
     ],
-    "text": "PROPERTIES",
+    "text": "2 selected",
     "scrollH": 64,
     "clientH": 64
    },

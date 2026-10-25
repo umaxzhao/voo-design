@@ -57,6 +57,9 @@ export default function ShapeProperties({
   const isStar = tool === TOOL.STAR;
   const isLine = tool === TOOL.LINE;
   const isArrow = tool === TOOL.ARROW;
+  // Line and Arrow are stroke-only paths: hide the fill/stroke/opacity axes
+  // instead of offering controls the creation path would ignore.
+  const hasPaintAxes = isRect || isEllipse || isPolygon || isStar;
 
   const sectionTitle = isArrow
     ? t("editor.tool.arrow")
@@ -89,7 +92,7 @@ export default function ShapeProperties({
           />
         ) : null}
 
-        {onStrokeColor ? (
+        {hasPaintAxes && onStrokeColor ? (
           <div className={sectionRowClass}>
             <span className="shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-400">
               {t("editor.props.stroke")}
@@ -107,7 +110,7 @@ export default function ShapeProperties({
           </div>
         ) : null}
 
-        {onOpacity ? (
+        {hasPaintAxes && onOpacity ? (
           <ToolSliderField
             label={t("editor.props.opacity")}
             min={0}

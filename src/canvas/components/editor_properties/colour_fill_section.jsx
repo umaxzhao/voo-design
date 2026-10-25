@@ -252,7 +252,7 @@ export function FillSection({
                   scrubHint={t("editor.props.dragToAdjust")}
                   className="!w-7 !p-0 bg-transparent text-right text-[11px] font-mono text-neutral-300 outline-none"
                 />
-                <span className="text-[10px] font-mono text-neutral-500">
+                <span className="text-[10px] font-mono text-neutral-400">
                   %
                 </span>
               </>

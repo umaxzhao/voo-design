@@ -121,7 +121,7 @@ export default function ToolColorProperties({
           {/* Active Hex Code + Pipette */}
           <div className="flex items-center gap-1.5">
             <div className="flex items-center gap-1 rounded-xl bg-[#222222] px-2.5 py-1 text-[11px] font-mono tabular-nums text-neutral-200 uppercase">
-              <span className="text-neutral-500">#</span>
+              <span className="text-neutral-400">#</span>
               <span>{activeColor.replace("#", "")}</span>
             </div>
             {onPickColor && (

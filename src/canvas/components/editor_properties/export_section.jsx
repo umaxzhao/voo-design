@@ -8,9 +8,9 @@ import FlatSelect from "../flat_select.jsx";
 import { IconDownload } from "../../icons.jsx";
 
 const FORMATS = [
-  { value: "image/png", labelKey: "editor.exportPng", ext: "png" },
-  { value: "image/jpeg", labelKey: "editor.exportJpeg", ext: "jpg" },
-  { value: "image/webp", labelKey: "editor.exportWebp", ext: "webp" },
+  { value: "image/png", labelKey: "editor.exportFormatPng", ext: "png" },
+  { value: "image/jpeg", labelKey: "editor.exportFormatJpeg", ext: "jpg" },
+  { value: "image/webp", labelKey: "editor.exportFormatWebp", ext: "webp" },
 ];
 const SCALES = [1, 2, 3];
 const MAX_PRESETS = 4;

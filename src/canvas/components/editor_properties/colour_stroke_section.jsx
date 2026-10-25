@@ -115,7 +115,7 @@ export function StrokeSection({
             <div className="flex shrink-0 items-center gap-0.5 border-l border-white/10 pl-2">
               {strokeOpacityMixed ? (
                 <span
-                  className="text-[11px] font-mono text-neutral-500"
+                  className="text-[11px] font-mono text-neutral-400"
                   title={t("editor.props.mixedValues")}
                 >
                   —%
@@ -134,7 +134,7 @@ export function StrokeSection({
                     scrubHint={t("editor.props.dragToAdjust")}
                     className="!w-7 !p-0 bg-transparent text-right text-[11px] font-mono text-neutral-300 outline-none"
                   />
-                  <span className="text-[10px] font-mono text-neutral-500">
+                  <span className="text-[10px] font-mono text-neutral-400">
                     %
                   </span>
                 </>
@@ -196,7 +196,7 @@ export function StrokeSection({
             <div className="flex-1 min-w-0">
               {strokeWidthMixed ? (
                 <div className="flex h-7 items-center gap-1 rounded-xl bg-neutral-800 px-2.5">
-                  <span className="pl-1 text-[11px] font-mono text-neutral-500">
+                  <span className="pl-1 text-[11px] font-mono text-neutral-400">
                     —
                   </span>
                 </div>

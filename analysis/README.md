@@ -13,6 +13,7 @@ analysis/
   FEATURE_MATRIX.json  # synthesized by Lead: machine-readable matrix
   GAP_REPORT.md        # synthesized by Lead: prioritized gap report / backlog
   RIGHT_PANEL_ALIGNMENT.md # right-hand properties panel: Figma/Pen functional layout → VOO target spec
+  DESIGN_EXPERIENCE_AUDIT_2026-10-25.md # 44-state automated design/UX sweep vs Pen + audit-2026-10-25/ raw data
   pen/                 # pen-analyst output (evidence + features.jsonl + FEATURES.md; RIGHT_PANEL.md = panel anatomy)
   figma/               # figma-analyst output (same; RIGHT_PANEL.md = panel anatomy)
   voo/                 # voo-inventory output
