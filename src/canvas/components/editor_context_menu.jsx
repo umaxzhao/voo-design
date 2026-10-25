@@ -384,6 +384,31 @@ export default function EditorContextMenu({
           <div className="mx-1 my-0.5 h-px bg-white/10" />
         </>
       )}
+      {selectedCount >= 1 ? (
+        <>
+          <button
+            type="button"
+            role="menuitem"
+            data-testid="editor-menu-create-clip-mask"
+            className={itemClass}
+            onClick={() => run(() => engine.createClippingMask?.())}
+          >
+            <span>{t("editor.menu.createClipMask")}</span>
+            <span className="text-[9px] text-neutral-500">{formatShortcut("⌥⌘G", isMac)}</span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            data-testid="editor-menu-release-clip-mask"
+            className={itemClass}
+            onClick={() => run(() => engine.releaseClippingMask?.())}
+          >
+            <span>{t("editor.menu.releaseClipMask")}</span>
+            <span className="text-[9px] text-neutral-500">{formatShortcut("⇧⌥⌘G", isMac)}</span>
+          </button>
+          <div className="mx-1 my-0.5 h-px bg-white/10" />
+        </>
+      ) : null}
       {selectedCount === 1 ? (
         <>
           {[
