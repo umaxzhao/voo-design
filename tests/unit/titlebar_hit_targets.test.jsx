@@ -56,6 +56,30 @@ describe("title bar hit targets", () => {
     expect(tag).toContain("no-drag");
   });
 
+  it.each([[false, true], [true, false]])(
+    "shows the share trigger only in the editor (welcome=%s)", (welcomeOpen, shown) => {
+      state.welcomeOpen = welcomeOpen;
+      vi.stubGlobal("window", {});
+      let html;
+      try {
+        html = renderToStaticMarkup(<AppTitleBar />);
+      } finally {
+        state.welcomeOpen = false;
+        vi.unstubAllGlobals();
+      }
+      if (!shown) {
+        expect(html).not.toContain("collab.share");
+        return;
+      }
+      const tag = openingTag(html, 'aria-haspopup="dialog"');
+      expect(tag).toContain("h-7");
+      expect(tag).toContain("no-drag");
+      // The share trigger sits in the right group, before the Open action.
+      expect(html.indexOf("collab.share")).toBeGreaterThan(html.indexOf("canvasTabs"));
+      expect(html.indexOf("collab.share")).toBeLessThan(html.indexOf("titlebar.openTitle"));
+    },
+  );
+
   it("names the unsaved indicator only on dirty tabs", () => {
     const html = renderToStaticMarkup(<CanvasTabBar />);
     const tag = openingTag(html, 'aria-label="canvasTabs.unsaved"');

@@ -3,6 +3,7 @@ import CanvasTabBar from "./canvas/components/canvas_tab_bar.jsx";
 import { Bolt } from "lucide-react";
 import { useDesignStore } from "./store/design_store.js";
 import { useI18n } from "./canvas/use_i18n.js";
+import CollabAvatars from "./canvas/components/collab_avatars.jsx";
 import SettingsDrawer from "./canvas/components/settings_drawer.jsx";
 import { WELCOME_NEW_EVENT } from "./canvas/components/welcome_dashboard/welcome_events.js";
 
@@ -91,6 +92,13 @@ export default function AppTitleBar() {
           className="flex items-center gap-2 text-neutral-300 text-[11px]"
           style={{ WebkitAppRegion: "no-drag" }}
         >
+          {/* Presence and share live beside the file actions, only while a document is open. */}
+          {welcomeOpen ? null : (
+            <>
+              <CollabAvatars />
+              <div className="h-4 w-px shrink-0 bg-white/10" aria-hidden="true" />
+            </>
+          )}
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("voo:file-open"))}

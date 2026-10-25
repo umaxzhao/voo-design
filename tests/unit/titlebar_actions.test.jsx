@@ -13,6 +13,7 @@ vi.mock("../../src/canvas/use_i18n.js", () => ({ useI18n: () => ({ t: (key) => k
 vi.mock("../../src/canvas/components/canvas_tab_bar.jsx", () => ({ default: () => null }));
 vi.mock("../../src/canvas/components/settings_drawer.jsx", () => ({ default: () => null }));
 import AppTitleBar from "../../src/app_title_bar.jsx";
+import CollabAvatars from "../../src/canvas/components/collab_avatars.jsx";
 
 function buttons(node) {
   if (!React.isValidElement(node)) return [];
@@ -51,6 +52,32 @@ describe("title bar actions", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it.each([[false, true], [true, false]])(
+    "places CollabAvatars before Open in the editor only (welcome=%s)", (welcomeOpen, shown) => {
+      state.welcomeOpen = welcomeOpen;
+      vi.stubGlobal("window", {});
+      try {
+        const header = React.Children.toArray(AppTitleBar().props.children)[0];
+        const right = React.Children.toArray(header.props.children)[1];
+        const flat = (node) => React.Children.toArray(node?.props?.children).flatMap((c) => [c, ...flat(c)]);
+        const kids = flat(right);
+        const collabIndex = kids.findIndex((c) => c.type === CollabAvatars);
+        expect(collabIndex >= 0).toBe(shown);
+        if (shown) {
+          expect(collabIndex).toBeLessThan(kids.findIndex((c) => c.props?.title === "titlebar.openTitle"));
+        }
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+  );
+
+  it("keeps CollabAvatars out of the floating toolbar", () => {
+    const toolbar = source("../../src/canvas/components/editor_toolbar.jsx");
+    expect(toolbar).not.toContain("CollabAvatars");
+    expect(toolbar).not.toContain("collab_avatars");
   });
 
   it("keeps wizard entry points in Settings and the native Help menu", () => {
