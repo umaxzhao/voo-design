@@ -124,6 +124,71 @@ export function createVariantMatrix(host, source, axes) {
   return { document: { ...host, ...(host.canvasId === sourceId ? canonicalSource : {}), components }, groupId, created, variantNames };
 }
 
+
+/**
+ * Adds axes to an existing variant set without rebuilding it: every variant
+ * gets the new keys (first value), then the missing combinations are created.
+ * Existing variants keep their canvas ids, so instances stay intact.
+ */
+export function extendVariantProperties(host, source, axes) {
+  const entries = Object.entries(axes ?? {});
+  if (!entries.length || entries.some(([, values]) => !Array.isArray(values) || !values.length || values.some(value => typeof value !== "string" || !value.trim()))) {
+    throw new TypeError("Variant axes must contain non-empty arrays of strings");
+  }
+  const seenKeys = new Set();
+  const names = entries.map(([rawKey, values]) => {
+    const key = rawKey.trim();
+    if (!key) throw new TypeError("Variant axis names must not be empty");
+    if (seenKeys.has(key)) throw new TypeError(`Duplicate variant axis ${key}`);
+    seenKeys.add(key);
+    return [key, [...new Set(values.map(value => value.trim()))]];
+  });
+  let next = host;
+  let canonical = componentVariants(next, source).find(doc => doc.canvasId === source.canvasId) ?? source;
+  if (!variantGroupOf(canonical)) {
+    const groupId = `variant-group:${newComponentId()}`;
+    canonical = { ...canonical, variantGroupId: groupId };
+    if (next.canvasId === canonical.canvasId) next = { ...next, ...canonical };
+    else next = { ...next, components: { ...(next.components ?? {}), [canonical.canvasId]: canonical } };
+  }
+  if (!variantNameOf(canonical)) {
+    canonical = { ...canonical, variantName: names.map(([key, values]) => `${key}=${values[0]}`).join(", ") };
+    if (next.canvasId === canonical.canvasId) next = { ...next, ...canonical };
+    else next = { ...next, components: { ...(next.components ?? {}), [canonical.canvasId]: canonical } };
+  }
+  // Fill in the new keys on every existing variant so names stay rectangular.
+  const variants = componentVariants(next, canonical);
+  const renamed = {};
+  for (const variant of variants) {
+    const parsed = parseVariantName(variant.variantName) ?? {};
+    const filled = { ...parsed };
+    for (const [key, values] of names) if (!(key in filled)) filled[key] = values[0];
+    const name = Object.entries(filled).map(([key, value]) => `${key}=${value}`).join(", ");
+    if (name !== variant.variantName) renamed[variant.canvasId] = { ...variant, variantName: name };
+  }
+  if (Object.keys(renamed).length) {
+    const components = { ...(next.components ?? {}) };
+    for (const [id, doc] of Object.entries(renamed)) {
+      components[id] = doc;
+      if (next.canvasId === id) next = { ...next, ...doc };
+    }
+    next = { ...next, components };
+    canonical = componentVariants(next, { ...canonical, ...(renamed[canonical.canvasId] ?? {}) }).find(doc => doc.canvasId === canonical.canvasId) ?? canonical;
+  }
+  // Create the combinations that do not exist yet.
+  const combinations = names.reduce((list, [key, values]) => list.flatMap(combination => values.map(value => ({ ...combination, [key]: value }))), [{}]);
+  const namesOf = () => new Set(componentVariants(next, canonical).map(doc => variantNameOf(doc)));
+  const created = [];
+  for (const combination of combinations) {
+    const variantName = Object.entries(combination).map(([key, value]) => `${key}=${value}`).join(", ");
+    if (namesOf().has(variantName)) continue;
+    const componentId = newComponentId();
+    next = createVariantDocument(next, canonical, variantName, componentId);
+    created.push({ componentId, variantName });
+  }
+  return { document: next, created };
+}
+
 export function createVariantDocument(host, source, variantName, componentId = newComponentId()) {
   const variants = componentVariants(host, source);
   source = variants.find(doc => doc.canvasId === source.canvasId) ?? source;

@@ -3,7 +3,8 @@ import ScrubField from "../scrub_field.jsx";
 import MixedField from "./mixed_field.jsx";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
 import { EditorField } from "../editor_controls.jsx";
-import { CollapsibleSection } from "./property_section.jsx";
+import { CollapsibleSection, sectionRowClass } from "./property_section.jsx";
+import FlatSelect from "../flat_select.jsx";
 import {
   IconAlignCenter,
   IconAlignLeft,
@@ -311,6 +312,24 @@ export default function TextSection({
               scrubHint={t("editor.props.dragToAdjust")}
             />
           )}
+        </div>
+
+        <div className={sectionRowClass}>
+          <span className="flex-1 text-left text-[11px] text-neutral-300">
+            {t("editor.props.textCase")}
+          </span>
+          <FlatSelect
+            value={object.textCase ?? "original"}
+            onChange={(value) => editAndCommit({ textCase: value })}
+            label={t("editor.props.textCase")}
+            options={["original", "upper", "lower", "title"].map((value) => ({
+              value,
+              label: t(`editor.props.textCase.${value}`),
+            }))}
+            className="w-[104px] shrink-0"
+            triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2 !text-[10px] !font-mono !uppercase !text-neutral-100 hover:!bg-neutral-800/80"
+            widthClass="w-28"
+          />
         </div>
 
         {object.textPath && (

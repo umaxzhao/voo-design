@@ -433,6 +433,21 @@ export function imageUnderRect(doc, rect) {
   return null;
 }
 
+export const TEXT_CASES = Object.freeze(["original", "upper", "lower", "title"]);
+
+/** Figma-style text case applied for drawing/layout (the content stays as typed). */
+export function applyTextCase(text, textCase) {
+  const value = String(text ?? "");
+  if (textCase === "upper") return value.toUpperCase();
+  if (textCase === "lower") return value.toLowerCase();
+  if (textCase === "title") {
+    return value.replace(/\S+/g, (word) =>
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+    );
+  }
+  return value;
+}
+
 export function textLines(node) {
-  return String(node.text ?? "").split("\n");
+  return applyTextCase(node.text, node.textCase).split("\n");
 }

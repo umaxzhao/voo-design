@@ -218,7 +218,7 @@ export function getTextLayout(ctx, node) {
   const font = textFont(node);
   const spacing = node.letterSpacing ?? 0;
   const key = JSON.stringify([
-    contextIds.get(ctx), String(node.text ?? ""), font,
+    contextIds.get(ctx), String(node.text ?? ""), node.textCase ?? "original", font,
     textLineHeight(node), spacing, node.boxWidth ?? 0,
     // These Canvas2D properties can also affect shaping.
     ctx.direction, ctx.fontKerning, ctx.fontStretch, ctx.fontVariantCaps,

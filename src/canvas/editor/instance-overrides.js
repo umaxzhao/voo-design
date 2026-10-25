@@ -9,17 +9,50 @@
  */
 
 
-export const OVERRIDE_FIELDS = Object.freeze(["text", "fill", "visible"]);
+export const OVERRIDE_FIELDS = Object.freeze([
+  "text",
+  "fill",
+  "visible",
+  "stroke",
+  "strokeWidth",
+  "fillOpacity",
+  "strokeOpacity",
+  "opacity",
+  "effects",
+  "cornerRadius",
+  "fontSize",
+  "fontWeight",
+]);
 
 const FILL_KINDS = new Set(["rect", "ellipse", "path", "text", "boolean"]);
 const HEX_COLOR = /^#(?:[\da-f]{3}|[\da-f]{6}|[\da-f]{8})$/i;
 
 /** What can be overridden on a layer of this kind. */
+const NUMBER_FIELDS = {
+  strokeWidth: [0, 1000],
+  fillOpacity: [0, 1],
+  strokeOpacity: [0, 1],
+  opacity: [0, 1],
+  cornerRadius: [0, 10000],
+  fontSize: [1, 512],
+  fontWeight: [100, 900],
+};
+
 export function overrideSupport(node) {
+  const paints = FILL_KINDS.has(node.kind);
   return {
     text: node.kind === "text",
-    fill: FILL_KINDS.has(node.kind),
+    fill: paints,
     visible: true,
+    stroke: paints,
+    strokeWidth: paints,
+    fillOpacity: paints,
+    strokeOpacity: paints,
+    opacity: paints,
+    effects: paints,
+    cornerRadius: paints,
+    fontSize: node.kind === "text",
+    fontWeight: node.kind === "text",
   };
 }
 
@@ -29,8 +62,22 @@ function validate(field, value) {
     throw new TypeError("A text override must be a string");
   if (field === "fill" && !(typeof value === "string" && HEX_COLOR.test(value)))
     throw new TypeError("A fill override must be a hex colour");
+  if (
+    field === "stroke" &&
+    !(typeof value === "string" &&
+      (HEX_COLOR.test(value) || value === "transparent"))
+  )
+    throw new TypeError("A stroke override must be a hex colour or transparent");
   if (field === "visible" && typeof value !== "boolean")
     throw new TypeError("A visibility override must be true or false");
+  if (field === "effects" && !Array.isArray(value))
+    throw new TypeError("An effects override must be an array");
+  const range = NUMBER_FIELDS[field];
+  if (range) {
+    const number = Number(value);
+    if (!Number.isFinite(number) || number < range[0] || number > range[1])
+      throw new TypeError(`A ${field} override is out of range`);
+  }
 }
 
 function nodeMap(instance) {
@@ -101,6 +148,9 @@ export function applyInstanceOverrides(sourceDoc, instance) {
     if (!entry) return node;
     changed = true;
     const result = { ...node, ...entry };
+    if (Array.isArray(entry.effects)) {
+      result.effects = entry.effects.map((effect) => ({ ...effect }));
+    }
     return result;
   });
   return changed ? { ...sourceDoc, nodes } : sourceDoc;
@@ -111,5 +161,5 @@ export function overridableNodes(sourceDoc) {
   return (sourceDoc?.nodes ?? [])
     .filter((node) => node.kind !== "group")
     .map((node) => ({ node, support: overrideSupport(node) }))
-    .filter(({ support }) => support.text || support.fill || support.visible);
+    .filter(({ support }) => Object.values(support).some(Boolean));
 }
