@@ -2712,7 +2712,7 @@ export default {
   "editor.warp.skewY": "Skew Y",
   "editor.shortcut.nudge": "Nudge (Shift = ×10)",
   "editor.shortcut.brushHardness": "Brush hardness (Shift + [ / ])",
-  "editor.shortcut.saveAndExit": "Save and exit editor",
+  "editor.shortcut.saveAndExit": "Save and exit editor (Ctrl+Alt+Shift+E)",
   "editor.shortcut.toolMode": "Switch tool sub-mode (Cmd+1–7)",
   "editor.shortcut.swapColors": "Swap foreground / background colors",
   "editor.upscale.button": "HD Upscale",

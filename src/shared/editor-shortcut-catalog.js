@@ -76,7 +76,7 @@ export const DESIGN_SHORTCUT_GROUPS = Object.freeze([
       Object.freeze({ key: "Delete / ⌫", labelKey: "editor.menu.delete" }),
       Object.freeze({ key: "⌘/Ctrl+A", labelKey: "editor.menu.selectAll" }),
       Object.freeze({ key: "⌘S", labelKey: "editor.shortcut.apply" }),
-      Object.freeze({ key: "Tab", labelKey: "editor.shortcut.saveAndExit" }),
+      Object.freeze({ key: "⌃⌥⇧E", labelKey: "editor.shortcut.saveAndExit" }),
       Object.freeze({ key: "↑↓←→", labelKey: "editor.shortcut.nudge" }),
       Object.freeze({
         key: "1..9, 0",
