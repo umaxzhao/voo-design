@@ -21,12 +21,20 @@ const CHECKER_IMAGE =
 export default function BackgroundSection({
   backgroundColor = "#262626",
   onSetBackgroundColor = null,
+  docSize = null,
 }) {
   const { t } = useI18n();
   const currentBg = backgroundColor || "#262626";
 
   return (
-    <div className="px-1 py-1">
+    <div className="space-y-2 px-1 py-1">
+      {docSize && Number.isFinite(docSize.width) && Number.isFinite(docSize.height) ? (
+        <EditorField label={t("editor.frame.size")} compact>
+          <div className="flex h-7 items-center rounded-xl bg-neutral-800 px-2.5 text-[11px] font-mono tabular-nums text-neutral-200">
+            {Math.round(docSize.width)} × {Math.round(docSize.height)}
+          </div>
+        </EditorField>
+      ) : null}
       <EditorField label={t("editor.props.bgColor")} compact>
         <div className="flex flex-col gap-2.5">
           <div className="flex flex-wrap items-center gap-2">
@@ -84,4 +92,8 @@ export default function BackgroundSection({
 BackgroundSection.propTypes = {
   backgroundColor: PropTypes.string,
   onSetBackgroundColor: PropTypes.func,
+  docSize: PropTypes.shape({
+    width: PropTypes.number,
+    height: PropTypes.number,
+  }),
 };

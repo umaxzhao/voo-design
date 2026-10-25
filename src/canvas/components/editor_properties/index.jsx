@@ -1,5 +1,4 @@
 import { resolvePanelForContext } from "./resolve_panel_context.js";
-import VariantsSection from "./variants_section.jsx";
 import SelectedNodeActions from "./selected_node_actions.jsx";
 /**
  * Editor properties panel: root component docked on canvas side showing
@@ -8,8 +7,6 @@ import SelectedNodeActions from "./selected_node_actions.jsx";
 
 import { useState, useRef } from "react";
 import BackgroundSection from "./background_section.jsx";
-import FrameSizeSection from "./frame_size_section.jsx";
-import { ColorRow, InspectorGroup } from "../inspector_primitives.jsx";
 import PenEditSection from "./pen_edit_section.jsx";
 import EditorPenSubbar from "../editor_pen_subbar.jsx";
 import ToolPropertiesSection from "./tool_properties_section.jsx";
@@ -206,7 +203,7 @@ export default function EditorProperties({
     );
   }
 
-  if (isBackground) {
+  if (context.panel === "background") {
     return (
       <aside
         data-testid="editor-properties-panel"
@@ -216,39 +213,11 @@ export default function EditorProperties({
       >
         {header}
         <div className={backgroundContentClass}>
-          <VariantsSection engine={engine} isMainComponent={isMainComponent} />
-          {docSize && onSetDocumentSize && framePosition && onSetFramePosition && (
-            <InspectorGroup title={t("editor.frame.transform")}>
-              <FrameSizeSection
-                x={framePosition.x}
-                y={framePosition.y}
-                width={docSize.width}
-                height={docSize.height}
-                onSetPosition={onSetFramePosition}
-                onSetSize={onSetDocumentSize}
-              />
-            </InspectorGroup>
-          )}
-          <InspectorGroup title={t("editor.layer.canvasBackground") || t("editor.props.fill")}>
-            <div className="px-3 py-2">
-              <ColorRow
-                label={t("editor.layer.canvasBackground") || t("editor.props.fill")}
-                value={backgroundColor}
-                onChange={(next) => onSetBackgroundColor?.(next)}
-                onCommit={(next) => onSetBackgroundColor?.(next)}
-              />
-            </div>
-          </InspectorGroup>
-          {onDeleteCanvas ? (
-            <button
-              type="button"
-              data-testid="editor-delete-canvas-btn"
-              onClick={onDeleteCanvas}
-              className="min-h-8 rounded-lg border border-white/10 bg-white/[0.04] px-2 text-left text-[11px] text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
-            >
-              {t("editor.pages.deleteCanvas")}
-            </button>
-          ) : null}
+          <BackgroundSection
+            backgroundColor={backgroundColor}
+            onSetBackgroundColor={onSetBackgroundColor}
+            docSize={docSize}
+          />
         </div>
       </aside>
     );

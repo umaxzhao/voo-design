@@ -23,14 +23,14 @@ export default function ToolSliderField({
   const id = useId();
 
   return (
-    <div className="flex h-7 min-w-0 items-center gap-2">
+    <div className="flex min-h-7 min-w-0 items-center gap-2">
       <label
         htmlFor={id}
         title={label}
-        className={`flex shrink-0 items-center gap-1 overflow-hidden text-[10px] font-mono uppercase tracking-wide text-neutral-500 ${labelClassName}`}
+        className={`flex shrink-0 items-center gap-1 text-[10px] font-mono uppercase tracking-wide leading-[10px] text-neutral-500 ${labelClassName}`}
       >
         {icon ? <span className="shrink-0">{icon}</span> : null}
-        <span className="min-w-0 truncate">{label}</span>
+        <span className="min-w-0 whitespace-normal">{label}</span>
       </label>
       <input
         id={id}
