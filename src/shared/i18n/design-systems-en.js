@@ -1,6 +1,10 @@
-/** Settings > Design systems copy. Keys: `settings.tabDesignSystems`, `designSystems.*`. */
+/** Settings > Design systems copy. Keys: `settings.tab*` (drawer tab labels), `designSystems.*`. */
 export default {
   "settings.tabDesignSystems": "Design Systems",
+  "settings.tabPreferences": "General",
+  "settings.tabAssistant": "AI Assistant",
+  "settings.tabProviders": "AI Providers",
+  "settings.tabShortcuts": "Shortcuts",
   "designSystems.listTitle": "Design systems",
   "designSystems.listHint":
     "Choose a design system to apply to this page or edit. Built-in systems are read-only; duplicate one to make your own.",

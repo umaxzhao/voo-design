@@ -49,7 +49,7 @@ export default function SettingsDrawer({
   if (!open) return null;
 
   const activeTabDef = TABS.find((tab) => tab.id === activeTab);
-  const tabLabel = (tab) => (tab.labelKey ? t(tab.labelKey) : isZh ? tab.labelZh : tab.labelEn);
+  const tabLabel = (tab) => t(tab.labelKey);
   const activeLabel = tabLabel(activeTabDef);
   const title = isZh ? "设置与偏好" : "Settings & Preferences";
 
