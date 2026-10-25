@@ -83,6 +83,8 @@ export default function ToolPropertiesSection({
   onPenMode,
   penStrokeWidth = 1,
   onPenStrokeWidth,
+  penCurveTension = 1,
+  onPenCurveTension,
   wandTolerance = 32,
   onWandTolerance,
   wandContiguous = true,
@@ -429,12 +431,15 @@ export default function ToolPropertiesSection({
       {/* 6. Pen Options */}
       {isPen && (
         <PenProperties
+          tool={tool}
           penMode={penMode}
           onPenMode={onPenMode}
           penStrokeWidth={penStrokeWidth}
           onPenStrokeWidth={onPenStrokeWidth}
           penAnchorType={penAnchorType}
           onPenAnchorType={tool === TOOL.FREE_PEN ? null : onPenAnchorType}
+          penCurveTension={penCurveTension}
+          onPenCurveTension={onPenCurveTension}
         />
       )}
 

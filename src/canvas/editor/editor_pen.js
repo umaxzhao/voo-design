@@ -55,6 +55,11 @@ export function createPenTools({
   /** "shape" (creates a filled/stroked vector shape) | "path" (creates a path/selection path) */
   let penMode = "shape";
   /**
+   * Curvature / freehand handle tension: 1 is the classic Catmull-Rom third,
+   * lower values flatten the curve, higher values pull it tighter.
+   */
+  let penCurveTension = 1;
+  /**
    * The active vector-edit sub-tool: "move" (default), "lasso" (marquee
    * multi-select), "bend" (drag a segment into a curve), "cut" (split here).
    */
@@ -80,6 +85,7 @@ export function createPenTools({
     getAnchorType: () => anchorType,
     getPenMode: () => penMode,
     getEdit: edit.getRawEdit,
+    getPenCurveTension: () => penCurveTension,
   });
 
   const subtools = createPenSubtools({
@@ -146,6 +152,18 @@ export function createPenTools({
         anchorType = mode === "smooth" ? "smooth" : "corner";
       },
       getAnchorType: () => anchorType,
+      setPenCurveTension(tension) {
+        penCurveTension = Math.min(
+          3,
+          Math.max(0.2, Number(tension) || 1),
+        );
+        const active = draft.getDraft();
+        if (active) {
+          draft.recomputeCurvatureHandles(active.anchors);
+          requestRender();
+        }
+      },
+      getPenCurveTension: () => penCurveTension,
       setPenMode(mode) {
         penMode = mode === "path" ? "path" : "shape";
       },

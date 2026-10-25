@@ -1,19 +1,32 @@
 /** Pen tool properties: shape vs path mode, stroke weight, and corner vs smooth anchor style. */
 
 import PropTypes from "prop-types";
+import { TOOL } from "../../editor/editor_constants.js";
 import { useI18n } from "../../use_i18n.js";
 import { StaticSection, sectionRowClass } from "./property_section.jsx";
 import ToolSliderField from "./tool_slider_field.jsx";
 
 export default function PenProperties({
+  tool = TOOL.PEN,
   penMode = "shape",
   onPenMode,
   penStrokeWidth = 1,
   onPenStrokeWidth,
   penAnchorType = "corner",
   onPenAnchorType,
+  penCurveTension = 1,
+  onPenCurveTension,
 }) {
   const { t } = useI18n();
+  // Curvature pen and freehand pen derive their handles from the anchor
+  // positions, so their single meaningful tuning knob is the handle tension;
+  // the plain pen leaves handles to the user's drag and offers none.
+  const tensionLabelKey =
+    tool === TOOL.CURVATURE_PEN
+      ? "editor.pen.tension"
+      : tool === TOOL.FREE_PEN
+        ? "editor.pen.smoothing"
+        : null;
 
   return (
     <>
@@ -40,6 +53,20 @@ export default function PenProperties({
           </div>
         </StaticSection>
       )}
+
+      {tensionLabelKey && onPenCurveTension ? (
+        <ToolSliderField
+          label={t(tensionLabelKey)}
+          min={20}
+          max={300}
+          step={5}
+          value={Math.round(penCurveTension * 100)}
+          onValueChange={(val) => onPenCurveTension(val / 100)}
+          suffix="%"
+          ariaLabel={t(tensionLabelKey)}
+          scrubHint={t("editor.props.dragToAdjust")}
+        />
+      ) : null}
 
       {onPenStrokeWidth && (
         <ToolSliderField
@@ -100,6 +127,9 @@ export default function PenProperties({
 }
 
 PenProperties.propTypes = {
+  tool: PropTypes.string,
+  penCurveTension: PropTypes.number,
+  onPenCurveTension: PropTypes.func,
   penMode: PropTypes.oneOf(["shape", "path"]),
   onPenMode: PropTypes.func,
   penStrokeWidth: PropTypes.number,

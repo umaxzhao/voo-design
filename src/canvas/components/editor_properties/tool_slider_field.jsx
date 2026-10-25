@@ -17,7 +17,7 @@ export default function ToolSliderField({
   ariaLabel,
   scrubHint,
   disabled = false,
-  labelClassName = "w-[64px]",
+  labelClassName = "w-[76px]",
   fieldClassName = "w-[68px]",
 }) {
   const id = useId();

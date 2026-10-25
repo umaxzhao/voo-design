@@ -21,6 +21,8 @@ export function createPenDraft({
   getAnchorType,
   getPenMode,
   getEdit,
+  /** Multiplier on the derived curvature handles (1 = the classic divide-by-6). */
+  getPenCurveTension = null,
 }) {
   /** { anchors, activeIndex, down, dragging, current }. */
   let draft = null;
@@ -53,6 +55,10 @@ export function createPenDraft({
    */
   function recomputeCurvatureHandles(anchors) {
     if (!anchors || anchors.length < 2) return;
+    const tension = Math.min(
+      3,
+      Math.max(0.2, Number(getPenCurveTension?.() ?? 1) || 1),
+    );
     const n = anchors.length;
     for (let i = 0; i < n; i += 1) {
       if (anchors[i].isCorner) {
@@ -66,7 +72,7 @@ export function createPenDraft({
         anchors[i === n - 1 ? (anchors[n - 1].close ? 0 : n - 1) : i + 1];
       const dx = next.x - prev.x;
       const dy = next.y - prev.y;
-      const handleLen = Math.hypot(dx, dy) / 6;
+      const handleLen = (Math.hypot(dx, dy) / 6) * tension;
       const angle = Math.atan2(dy, dx);
       const hx = Math.cos(angle) * handleLen;
       const hy = Math.sin(angle) * handleLen;

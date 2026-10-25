@@ -20,7 +20,7 @@ export default function EyedropperProperties({
 
   const selectRow = (label, control) => (
     <div className="flex h-7 min-w-0 items-center gap-2">
-      <span className="w-[64px] shrink-0 truncate text-[10px] font-mono uppercase tracking-wide text-neutral-500">
+      <span className="w-[76px] shrink-0 truncate text-[10px] font-mono uppercase tracking-wide text-neutral-500">
         {label}
       </span>
       <div className="min-w-0 flex-1">{control}</div>

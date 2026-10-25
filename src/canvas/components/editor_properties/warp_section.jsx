@@ -117,62 +117,42 @@ export default function WarpSection({
       {/* 1. Perspective & Skew Controls */}
       {isPerspective && (
         <div className="space-y-1.5">
-          {/* Row 1: Horizontal & Vertical Perspective */}
-          <div className="grid grid-cols-2 gap-1.5">
-            <ScrubField
-              prefix="H"
-              suffix="°"
-              min={-100}
-              max={100}
-              value={horizontal}
-              onValueChange={(val) =>
-                handlePerspectiveChange("horizontal", val)
-              }
-              onCommit={() => commitNow?.()}
-              ariaLabel={t("editor.transform.warpDistortH")}
-              scrubHint={t("editor.props.dragToAdjust")}
-              showRange
-            />
-            <ScrubField
-              prefix="V"
-              suffix="°"
-              min={-100}
-              max={100}
-              value={vertical}
-              onValueChange={(val) => handlePerspectiveChange("vertical", val)}
-              onCommit={() => commitNow?.()}
-              ariaLabel={t("editor.transform.warpDistortV")}
-              scrubHint={t("editor.props.dragToAdjust")}
-              showRange
-            />
-          </div>
-          {/* Row 2: Horizontal & Vertical Skew */}
-          <div className="grid grid-cols-2 gap-1.5">
-            <ScrubField
-              prefix="SX"
-              suffix="°"
-              min={-100}
-              max={100}
-              value={skewX}
-              onValueChange={(val) => handlePerspectiveChange("skewX", val)}
-              onCommit={() => commitNow?.()}
-              ariaLabel={t("editor.warp.skewX")}
-              scrubHint={t("editor.props.dragToAdjust")}
-              showRange
-            />
-            <ScrubField
-              prefix="SY"
-              suffix="°"
-              min={-100}
-              max={100}
-              value={skewY}
-              onValueChange={(val) => handlePerspectiveChange("skewY", val)}
-              onCommit={() => commitNow?.()}
-              ariaLabel={t("editor.warp.skewY")}
-              scrubHint={t("editor.props.dragToAdjust")}
-              showRange
-            />
-          </div>
+          {[
+            ["horizontal", "editor.warp.axis.horizontal", horizontal],
+            ["vertical", "editor.warp.axis.vertical", vertical],
+            ["skewX", "editor.warp.skewX", skewX],
+            ["skewY", "editor.warp.skewY", skewY],
+          ].map(([key, labelKey, value]) => (
+            <div key={key} className="flex min-h-7 min-w-0 items-center gap-2">
+              <span className="w-[72px] shrink-0 text-[10px] font-mono uppercase tracking-wide text-neutral-400">
+                {t(labelKey)}
+              </span>
+              <ScrubField
+                suffix="°"
+                min={-100}
+                max={100}
+                value={value}
+                onValueChange={(val) => handlePerspectiveChange(key, val)}
+                onCommit={() => commitNow?.()}
+                ariaLabel={t(labelKey)}
+                scrubHint={t("editor.props.dragToAdjust")}
+                showRange
+                className="min-w-0 flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  handlePerspectiveChange(key, 0);
+                  commitNow?.();
+                }}
+                title={t("editor.warp.resetAxis")}
+                aria-label={`${t(labelKey)} — ${t("editor.warp.resetAxis")}`}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] text-neutral-500 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                ↺
+              </button>
+            </div>
+          ))}
         </div>
       )}
 

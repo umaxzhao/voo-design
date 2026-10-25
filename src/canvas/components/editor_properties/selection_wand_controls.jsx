@@ -36,7 +36,7 @@ export default function SelectionWandControls({
       />
       {onWandSampleSize ? (
         <div className="flex h-7 min-w-0 items-center gap-2">
-          <span className="w-[64px] shrink-0 truncate text-[10px] font-mono uppercase tracking-wide text-neutral-500">
+          <span className="w-[76px] shrink-0 truncate text-[10px] font-mono uppercase tracking-wide text-neutral-500">
             {t("editor.wand.sampleSize")}
           </span>
           <FlatSelect
@@ -60,7 +60,7 @@ export default function SelectionWandControls({
           type="button"
           onClick={() => onWandContiguous?.(!wandContiguous)}
           aria-pressed={wandContiguous}
-          className={`${sectionRowClass} justify-center px-1 text-[10px] ${
+          className={`${sectionRowClass} justify-center px-1 text-[10px] leading-tight ${
             wandContiguous
               ? "text-white ring-1 ring-white/25"
               : "text-neutral-400"
@@ -72,7 +72,7 @@ export default function SelectionWandControls({
           type="button"
           onClick={() => onWandAntiAlias?.(!wandAntiAlias)}
           aria-pressed={wandAntiAlias}
-          className={`${sectionRowClass} justify-center px-1 text-[10px] ${
+          className={`${sectionRowClass} justify-center px-1 text-[10px] leading-tight ${
             wandAntiAlias
               ? "text-white ring-1 ring-white/25"
               : "text-neutral-400"
@@ -84,7 +84,7 @@ export default function SelectionWandControls({
           type="button"
           onClick={() => onWandSampleAll?.(!wandSampleAll)}
           aria-pressed={wandSampleAll}
-          className={`${sectionRowClass} justify-center px-1 text-[10px] ${
+          className={`${sectionRowClass} justify-center px-1 text-[10px] leading-tight ${
             wandSampleAll
               ? "text-white ring-1 ring-white/25"
               : "text-neutral-400"

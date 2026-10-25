@@ -4288,6 +4288,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               onPenMode: (mode) => engine?.setPenMode?.(mode),
               penStrokeWidth: engine?.getPenStrokeWidth?.() ?? 1,
               onPenStrokeWidth: (next) => engine?.setPenStrokeWidth?.(next),
+              penCurveTension: engine?.getPenCurveTension?.() ?? 1,
+              onPenCurveTension: (next) => engine?.setPenCurveTension?.(next),
               wandTolerance: engine?.getWandTolerance?.() ?? 32,
               onWandTolerance: (next) => engine?.setWandTolerance?.(next),
               wandContiguous: engine?.getWandContiguous?.() ?? true,
