@@ -10,12 +10,15 @@ Start the web editor with `npm run dev`.
 Run `npm run bridge` for a persistent bridge, then launch the MCP server with
 `npm run mcp`. Alternatively, `npm run mcp` starts its own bridge if none is
 reachable, so no separate bridge command is required. The editor must remain open.
-The page retries every five seconds when the bridge is absent.
+In a plain browser the page links only after opt-in: run
+`localStorage.setItem("voo.mcpLink", "on")` and reload, select a local CLI agent,
+or open a flow that dials the bridge. It then retries quietly with backoff
+(5s, doubling to 60s) while the bridge is absent. The desktop app always links.
 
 The bridge defaults to `ws://127.0.0.1:4179`. Set `VOO_CLI_BRIDGE_PORT` for the
 server and `VITE_CLI_BRIDGE_URL` for the editor when using a different port.
 Set `localStorage.setItem("voo.mcpLink", "off")` and reload to disable the page
-link; remove that key and reload to enable it again. Calls time out after 60 seconds
+link; remove that key and reload to return to the defaults. Calls time out after 60 seconds
 in the relay and fail if the selected canvas disconnects or is replaced.
 
 ## Electron desktop

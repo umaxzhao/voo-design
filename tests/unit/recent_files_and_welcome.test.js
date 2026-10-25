@@ -193,6 +193,12 @@ describe("Recent Files Management & Welcome Dashboard State", () => {
     useDesignStore.setState({ welcomeOpen: true });
     expect(useDesignStore.getState().welcomeOpen).toBe(true);
 
+    // With no open document there is nothing to go back to: welcome stays.
+    useDesignStore.getState().setWelcomeOpen(false);
+    expect(useDesignStore.getState().welcomeOpen).toBe(true);
+
+    useDesignStore.getState().newVooProject({ label: "Existing" });
+    useDesignStore.getState().setWelcomeOpen(true);
     useDesignStore.getState().setWelcomeOpen(false);
     expect(useDesignStore.getState().welcomeOpen).toBe(false);
 
