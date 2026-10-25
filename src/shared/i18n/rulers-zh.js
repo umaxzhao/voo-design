@@ -5,6 +5,10 @@
  * rulers-en.js for the key contract.
  */
 export default {
+  "settings.appearance.title": "外观",
+  "settings.appearance.hint": "编辑器界面的外观。",
+  "settings.appearance.lightTheme": "浅色界面",
+  "settings.appearance.lightThemeHint": "将面板和界面切换为浅色；画布保持自身颜色。",
   "settings.canvas.title": "画布",
   "settings.canvas.showRulers": "显示标尺",
   "settings.canvas.rulersHint": "默认隐藏。也可按 Shift+R（⇧R）切换标尺。",

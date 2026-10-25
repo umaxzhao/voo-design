@@ -16,6 +16,7 @@ import SettingsRow from "./settings_row.jsx";
 import ProfileSection from "./settings_profile.jsx";
 import LanguageSection from "./settings_language.jsx";
 import { Switch } from "./ui/switch.jsx";
+import { useEditorTheme } from "../use_editor_theme.js";
 
 export function WorkspaceSettingsSection() {
   const { t } = useI18n();
@@ -236,10 +237,35 @@ export function CanvasSettingsSection() {
   );
 }
 
+export function AppearanceSettingsSection() {
+  const { t } = useI18n();
+  const { theme, setTheme } = useEditorTheme();
+  const label = t("settings.appearance.lightTheme");
+  return (
+    <SettingsSection
+      title={t("settings.appearance.title")}
+      hint={t("settings.appearance.hint")}
+    >
+      <SettingsRow
+        label={label}
+        hint={t("settings.appearance.lightThemeHint")}
+      >
+        <Switch
+          testId="settings-light-theme"
+          checked={theme === "light"}
+          onChange={(next) => setTheme(next ? "light" : "dark")}
+          label={label}
+        />
+      </SettingsRow>
+    </SettingsSection>
+  );
+}
+
 export default function SettingsGeneral() {
   return (
     <div className="flex flex-col gap-4">
       <ProfileSection />
+      <AppearanceSettingsSection />
       <CanvasSettingsSection />
       <WorkspaceSettingsSection />
       <LanguageSection />

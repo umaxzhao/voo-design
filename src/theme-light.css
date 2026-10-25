@@ -1,0 +1,239 @@
+/*
+ * Light chrome theme (beta).
+ *
+ * The editor was written against one dark neutral scale. Rather than rewrite
+ * every component, this sheet remaps the neutral surfaces, text and hairlines
+ * under `html[data-theme="light"]`; brand accents (mint, purple) stay, with a
+ * darker mint for text so it keeps contrast on light surfaces.
+ *
+ * It is deliberately scoped to the app chrome: the document canvas keeps its
+ * own background/checkerboard, which is what a design tool should show.
+ */
+
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+html[data-theme="light"] body {
+  background: #f5f5f5;
+  color: #171717;
+}
+
+/* App frame ----------------------------------------------------------------- */
+html[data-theme="light"] .editor-shell-inner {
+  background: #f5f5f5 !important;
+}
+
+html[data-theme="light"] .editor-shell {
+  border-color: #a7ffd4 !important;
+}
+
+html[data-theme="light"] .app-title-bar {
+  background: #fafafa !important;
+  border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+html[data-theme="light"] .app-title-brand-row,
+html[data-theme="light"] .app-title-bar .text-neutral-400,
+html[data-theme="light"] .app-title-bar .text-white {
+  color: #171717 !important;
+}
+
+html[data-theme="light"] .agent-composer {
+  background: #ffffff !important;
+}
+
+html[data-theme="light"] .prompt-composer {
+  background: #ffffff padding-box !important;
+  box-shadow: 0 0 18px rgb(15 122 79 / 0.12), 0 0 36px rgb(120 80 200 / 0.1) !important;
+}
+
+/* Neutral surfaces ---------------------------------------------------------- */
+html[data-theme="light"] [class*="bg-neutral-950"],
+html[data-theme="light"] [class*="bg-[#0a0a0a]"],
+html[data-theme="light"] [class*="bg-[#0c0c0c]"],
+html[data-theme="light"] [class*="bg-[#0f0f0f]"],
+html[data-theme="light"] [class*="bg-black"] {
+  background-color: #fafafa !important;
+}
+
+html[data-theme="light"] [class*="bg-neutral-900"],
+html[data-theme="light"] [class*="bg-[#121212]"],
+html[data-theme="light"] [class*="bg-[#141414]"],
+html[data-theme="light"] [class*="bg-[#151515]"],
+html[data-theme="light"] [class*="bg-[#181818]"],
+html[data-theme="light"] [class*="bg-[#191919]"],
+html[data-theme="light"] [class*="bg-[#1a1a1a]"],
+html[data-theme="light"] [class*="bg-[#1c1c1c]"],
+html[data-theme="light"] [class*="bg-[#1d1d1d]"],
+html[data-theme="light"] [class*="bg-[#1e1e1e]"],
+html[data-theme="light"] [class*="bg-[#202020]"] {
+  background-color: #f5f5f5 !important;
+}
+
+html[data-theme="light"] [class*="bg-neutral-800"],
+html[data-theme="light"] [class*="bg-[#222222]"],
+html[data-theme="light"] [class*="bg-[#242424]"],
+html[data-theme="light"] [class*="bg-[#262626]"],
+html[data-theme="light"] [class*="bg-[#282828]"],
+html[data-theme="light"] [class*="bg-[#2a2a2a]"],
+html[data-theme="light"] [class*="bg-[#333333]"] {
+  background-color: #e5e5e5 !important;
+}
+
+html[data-theme="light"] [class*="bg-neutral-700"] {
+  background-color: #e5e5e5 !important;
+}
+
+/* Translucent white overlays become faint black washes. */
+html[data-theme="light"] [class~="bg-white/5"],
+html[data-theme="light"] [class*="bg-white/[0.04]"],
+html[data-theme="light"] [class*="bg-white/[0.05]"],
+html[data-theme="light"] [class*="bg-white/[0.06]"],
+html[data-theme="light"] [class~="bg-white/10"],
+html[data-theme="light"] [class*="bg-white/[0.08]"] {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+html[data-theme="light"] [class*="bg-white/[0.12]"],
+html[data-theme="light"] [class*="bg-white/[0.14]"],
+html[data-theme="light"] [class~="bg-white/20"] {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* A solid white element is a primary action: keep it, but give it an edge. */
+html[data-theme="light"] [class~="bg-white"] {
+  outline: 1px solid rgba(0, 0, 0, 0.12);
+  outline-offset: -1px;
+}
+
+/* Text ---------------------------------------------------------------------- */
+html[data-theme="light"] [class~="text-white"],
+html[data-theme="light"] [class*="text-neutral-100"],
+html[data-theme="light"] [class*="text-neutral-200"] {
+  color: #171717 !important;
+}
+
+html[data-theme="light"] [class*="text-neutral-300"] {
+  color: #262626 !important;
+}
+
+html[data-theme="light"] [class*="text-neutral-400"] {
+  color: #525252 !important;
+}
+
+html[data-theme="light"] [class*="text-neutral-500"],
+html[data-theme="light"] [class*="text-neutral-600"] {
+  color: #737373 !important;
+}
+
+/* Brand mint is unreadable on white: darker green keeps the hue. */
+html[data-theme="light"] [class*="text-[#a7ffd4]"],
+html[data-theme="light"] [class*="text-[#b2ffd6]"] {
+  color: #a7ffd4 !important;
+}
+
+/* Hairlines, rings and dividers */
+html[data-theme="light"] [class*="border-white/"],
+html[data-theme="light"] [class*="divide-white/"] {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+html[data-theme="light"] [class*="border-neutral-"] {
+  border-color: rgba(0, 0, 0, 0.14) !important;
+}
+
+html[data-theme="light"] [class*="ring-white/"],
+html[data-theme="light"] [class*="ring-neutral-"] {
+  --tw-ring-color: rgba(0, 0, 0, 0.16) !important;
+}
+
+/* Shared surfaces: panels, menus, dialogs, drawers, toolbars */
+html[data-theme="light"] [data-testid="editor-properties-panel"],
+html[data-theme="light"] [data-testid="editor-layers-panel"],
+html[data-theme="light"] [data-testid="editor-toolbar"],
+html[data-theme="light"] [data-testid="editor-top-bar"],
+html[data-theme="light"] [role="dialog"],
+html[data-theme="light"] [role="menu"],
+html[data-theme="light"] [role="listbox"] {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  color: #171717 !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+html[data-theme="light"] [role="dialog"],
+html[data-theme="light"] [role="menu"] {
+  box-shadow: 0 18px 48px rgba(15, 15, 20, 0.18) !important;
+}
+
+html[data-theme="light"] input,
+html[data-theme="light"] textarea,
+html[data-theme="light"] select {
+  color-scheme: light;
+}
+
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder {
+  color: #a3a3a3 !important;
+}
+
+html[data-theme="light"] .shadow-panel,
+html[data-theme="light"] .shadow-pop {
+  box-shadow: 0 18px 40px rgba(15, 15, 20, 0.16) !important;
+}
+
+/* Scrollbars */
+html[data-theme="light"] .ui-scroll,
+html[data-theme="light"] .no-scrollbar {
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+/* The node canvas ground sits a step lighter than the panels. */
+html[data-theme="light"] .canvas-stage,
+html[data-theme="light"] .bg-surface-canvas {
+  background-color: #d4d4d4 !important;
+}
+
+html[data-theme="light"] .bg-surface-panel {
+  background-color: #fafafa !important;
+}
+
+html[data-theme="light"] .bg-surface-raised,
+html[data-theme="light"] .bg-surface-card {
+  background-color: #ececec !important;
+}
+
+html[data-theme="light"] .bg-surface-hover {
+  background-color: #e2e2e2 !important;
+}
+
+html[data-theme="light"] .border-line {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+html[data-theme="light"] .border-line-strong {
+  border-color: rgba(0, 0, 0, 0.18) !important;
+}
+
+html[data-theme="light"] .text-accent-mint {
+  color: #171717 !important;
+}
+
+/* Switches: the checked track is white in the dark theme; on light it needs
+   the inverse (dark track, white knob) to stay legible. */
+html[data-theme="light"] [role="switch"][aria-checked="true"] {
+  background-color: #171717 !important;
+}
+
+html[data-theme="light"] [role="switch"][aria-checked="false"] {
+  background-color: rgba(0, 0, 0, 0.18) !important;
+}
+
+html[data-theme="light"] [role="switch"] [class*="bg-neutral-900"] {
+  background-color: #ffffff !important;
+}
+
+/* The AI dock keeps its purple identity but needs a readable glyph. */
+html[data-theme="light"] .voo-ai-fab {
+  color: #171717 !important;
+}

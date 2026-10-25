@@ -68,6 +68,8 @@ const STORAGE_KEYS = [
   "voo.editor.snapToGrid",
   "voo.editor.panelLayout",
   "voo.editor.panelSections",
+  // Editor chrome theme (dark by default): read synchronously before first paint.
+  "voo.editor.theme",
   // User-created design systems; built-in presets are code, not settings.
   "voo.designSystems.custom",
 ];

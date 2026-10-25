@@ -7,6 +7,10 @@
  * `editor.snapping.*`.
  */
 export default {
+  "settings.appearance.title": "Appearance",
+  "settings.appearance.hint": "How the editor chrome looks.",
+  "settings.appearance.lightTheme": "Light interface",
+  "settings.appearance.lightThemeHint": "Switch the panels and chrome to a light theme. The canvas keeps its own colors.",
   "settings.canvas.title": "Canvas",
   "settings.canvas.showRulers": "Show rulers",
   "settings.canvas.rulersHint": "Hidden by default. You can also toggle rulers with Shift+R (⇧R).",

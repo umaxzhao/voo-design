@@ -2,6 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import "./index.css";
+import "./theme-light.css";
+import { applyEditorTheme, currentEditorTheme } from "./canvas/use_editor_theme.js";
 import {
   loadCriticalLocale,
   loadLocale,
@@ -19,6 +21,8 @@ function storedLocale() {
 }
 
 async function bootstrap() {
+  // Apply the stored chrome theme before the first paint (no light/dark flash).
+  applyEditorTheme(currentEditorTheme());
   installGlobalErrorHandlers();
 
   let locale = "en";

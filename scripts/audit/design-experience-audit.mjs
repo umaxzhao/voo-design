@@ -9,6 +9,11 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
 });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+if (process.env.VOO_AUDIT_THEME === "light") {
+  await page.addInitScript(() => {
+    localStorage.setItem("voo.editor.theme", JSON.stringify("light"));
+  });
+}
 const pageErrors = [];
 page.on("pageerror", (e) => pageErrors.push(e.message));
 page.on("console", (m) => {
