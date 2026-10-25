@@ -473,6 +473,7 @@ export default {
   "editor.taskbar.agent": "VOO Agent",
   "editor.taskbar.repaint": "Generative Fill",
   "editor.taskbar.aiSection": "AI",
+  "editor.taskbar.aiTools": "AI tools",
   "editor.ai.failed": "AI edit failed. Try again.",
   "editor.taskbar.outpaint": "Expand",
   "editor.taskbar.splitLayers": "Split Layers",

@@ -459,6 +459,7 @@ export default {
   "editor.taskbar.agent": "VOO Agent",
   "editor.taskbar.repaint": "AI重绘",
   "editor.taskbar.aiSection": "AI",
+  "editor.taskbar.aiTools": "AI 工具",
   "editor.ai.failed": "AI编辑失败，请重试",
   "editor.taskbar.outpaint": "扩图",
   "editor.taskbar.splitLayers": "拆分图层",

@@ -149,12 +149,21 @@ export default function ImageContextActions({
         </button>
       ) : null}
       {aiActions ? (
-        <div
-          data-testid="editor-taskbar-more"
-          className="mt-2 border-t border-white/10 pt-2"
+        // AI actions stay collapsed until asked, keeping the panel short.
+        <details
+          data-testid="editor-taskbar-ai-tools"
+          className="mt-2 rounded-lg border border-white/10 bg-white/[0.025] px-2"
         >
-          <EditorAiMenuSection {...aiActions} onDone={() => {}} />
-        </div>
+          <summary className="cursor-pointer rounded-md py-2 text-[10px] text-neutral-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]">
+            {t("editor.taskbar.aiTools")}
+          </summary>
+          <div
+            data-testid="editor-taskbar-more"
+            className="border-t border-white/10 pb-2 pt-2"
+          >
+            <EditorAiMenuSection {...aiActions} onDone={() => {}} />
+          </div>
+        </details>
       ) : null}
       {frequencyError ? (
         <p

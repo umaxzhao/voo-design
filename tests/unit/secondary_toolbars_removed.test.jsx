@@ -56,9 +56,31 @@ describe("secondary editor bars", () => {
     expect(markup).toContain('data-testid="editor-taskbar-crop"');
     expect(markup).toContain('data-testid="editor-taskbar-replace"');
     expect(markup).toContain('data-testid="editor-taskbar-ai-remove-bg"');
-    expect(markup).toContain('data-testid="editor-taskbar-more"');
-    expect(markup).toContain("editor.upscale.2x");
-    expect(markup).toContain("editor.taskbar.outpaint");
+    // AI actions live inside the collapsed "AI tools" disclosure.
+    const aiTools = markup.match(
+      /<details[^>]*data-testid="editor-taskbar-ai-tools"[^>]*>[\s\S]*?<\/details>/,
+    )?.[0];
+    expect(aiTools).toBeDefined();
+    expect(aiTools).toContain("editor.taskbar.aiTools");
+    expect(aiTools).toContain('data-testid="editor-taskbar-more"');
+    expect(aiTools).toContain("editor.upscale.2x");
+    expect(aiTools).toContain("editor.taskbar.outpaint");
+  });
+
+  it("keeps AI tools collapsed by default for an image", () => {
+    const markup = renderToStaticMarkup(
+      <ImageContextActions
+        object={{ id: "image-1", kind: "image" }}
+        engine={{}}
+        editAndCommit={vi.fn()}
+        aiActions={{ onOutpaint: vi.fn(), onUpscale: vi.fn() }}
+      />,
+    );
+    const openTag = markup.match(
+      /<details[^>]*data-testid="editor-taskbar-ai-tools"[^>]*>/,
+    )?.[0];
+    expect(openTag).toBeDefined();
+    expect(openTag).not.toMatch(/\sopen(\s|>|=)/);
   });
 
   it("places the page delete action in the background properties panel", () => {
