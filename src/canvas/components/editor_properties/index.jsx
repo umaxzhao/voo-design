@@ -1,5 +1,5 @@
 import { resolvePanelForContext } from "./resolve_panel_context.js";
-import RasterContextToolbar from "./raster_context_toolbar.jsx";
+import ImageContextActions from "./image_context_actions.jsx";
 import VariantsSection from "./variants_section.jsx";
 /**
  * Editor properties panel: root component docked on canvas side showing
@@ -11,6 +11,7 @@ import BackgroundSection from "./background_section.jsx";
 import FrameSizeSection from "./frame_size_section.jsx";
 import { ColorRow, InspectorGroup } from "../inspector_primitives.jsx";
 import PenEditSection from "./pen_edit_section.jsx";
+import EditorPenSubbar from "../editor_pen_subbar.jsx";
 import ToolPropertiesSection from "./tool_properties_section.jsx";
 import { usePropertyCommit } from "./use_property_commit.js";
 import { TOOL } from "../../editor/editor_constants.js";
@@ -152,21 +153,27 @@ export default function EditorProperties({
     tool,
     selection: !isBackground && object ? (selectedNodes.length ? selectedNodes : [object]) : [],
   });
-  const isDedicatedToolActive = !penEditing && context.panel === "tool";
+  const isDedicatedToolActive =
+    !penEditing && !maskEditing && context.panel === "tool";
+  const showImageActions =
+    !isDedicatedToolActive &&
+    !isWarpTool &&
+    (tool ?? TOOL.SELECT) === TOOL.SELECT &&
+    object?.kind === "image";
 
   const header = (
     <PropertiesPanelHeader
       tool={tool}
       isToolActive={isDedicatedToolActive}
-      showMaskBtn={showMaskBtn}
+      showMaskBtn={!isDedicatedToolActive && showMaskBtn}
       hasMask={hasMask}
       maskActions={maskActions}
       maskBusy={maskBusy}
       maskEditing={maskEditing}
-      onToggleMotion={onToggleMotion}
+      onToggleMotion={isDedicatedToolActive ? null : onToggleMotion}
       motionTriggerRef={motionTriggerRef}
       motionOpen={motionOpen}
-      onToggleSide={onToggleSide}
+      onToggleSide={isDedicatedToolActive ? null : onToggleSide}
       t={t}
     />
   );
@@ -183,11 +190,8 @@ export default function EditorProperties({
     />
   );
 
-  if (isDedicatedToolActive && toolProps) {
-    if (context.topBar) return <RasterContextToolbar context={context} toolProps={toolProps} object={object} engine={engine} editAndCommit={editAndCommit} />;
+  if (isDedicatedToolActive) {
     return (
-      <>
-      <RasterContextToolbar context={context} toolProps={toolProps} object={object} engine={engine} editAndCommit={editAndCommit} />
       <aside
         data-testid="editor-properties-panel"
         className={dynamicPanelClass}
@@ -197,10 +201,9 @@ export default function EditorProperties({
       >
         {header}
         <div className={contentClass}>
-          <ToolPropertiesSection tool={tool} {...toolProps} />
+          {toolProps ? <ToolPropertiesSection tool={tool} {...toolProps} /> : null}
         </div>
       </aside>
-      </>
     );
   }
 
@@ -272,6 +275,11 @@ export default function EditorProperties({
       >
         {header}
         <div className={contentClass}>
+          <EditorPenSubbar
+            subTool={engine?.getPenSubTool?.() ?? "move"}
+            onSubTool={(mode) => engine?.setPenSubTool?.(mode)}
+            onCloseEdit={() => engine?.endEdit?.()}
+          />
           <PenEditSection
             object={object}
             edit={edit}
@@ -289,7 +297,6 @@ export default function EditorProperties({
 
   return (
     <>
-    <RasterContextToolbar context={context} toolProps={toolProps} object={object} engine={engine} editAndCommit={editAndCommit} />
     <aside
       data-testid="editor-properties-panel"
       className={dynamicPanelClass}
@@ -300,6 +307,13 @@ export default function EditorProperties({
       {header}
       {context.sections?.includes("export") && <PropertiesExportAction title={t("editor.export")} label={t("editor.props.exportPng")} onExport={() => downloadSelectionPng(engine, object)} />}
       <div className={contentClass}>
+        {showImageActions ? (
+          <ImageContextActions
+            object={object}
+            engine={engine}
+            editAndCommit={editAndCommit}
+          />
+        ) : null}
         {maskToolbar}
         {object?.isFrame && <VariantsSection engine={engine} isMainComponent={isMainComponent} />}
           <PropertiesPanelSections

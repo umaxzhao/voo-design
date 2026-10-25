@@ -55,8 +55,9 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
       />
     );
 
-    // Header badge
-    expect(html).toContain("image-context-toolbar");
+    // Tool controls stay in the right inspector; the extra canvas toolbar is gone.
+    expect(html).toContain('data-testid="editor-properties-panel"');
+    expect(html).not.toContain("image-context-toolbar");
     expect(html).toContain("editor.tool.brush");
 
     // Quick size pills
@@ -75,6 +76,70 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     expect(html).toContain("editor.brushPreset.medium_round");
     expect(html).toContain("editor.brushPreset.hard_round");
     expect(html).toContain("+ .ABR");
+  });
+
+  it("keeps the brush inspector focused on brush controls while a layer is selected", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.BRUSH}
+        object={{ id: "layer-1", kind: "rect", x: 10, y: 20, width: 80, height: 40 }}
+        toolProps={{
+          brushWidth: 24,
+          onBrushWidth: () => {},
+          brushHardness: 0.5,
+          onBrushHardness: () => {},
+          brushOpacity: 1,
+          onBrushOpacity: () => {},
+        }}
+      />
+    );
+
+    expect(html).toContain("editor.tool.brush");
+    expect(html).toContain("editor.brushWidth");
+    expect(html).not.toContain("editor.props.transform");
+    expect(html).not.toContain('aria-label="X"');
+    expect(html).not.toContain('aria-label="Y"');
+  });
+
+  it("shows image actions inside the inspector while Select is active", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.SELECT}
+        object={{
+          id: "image-1",
+          kind: "image",
+          x: 10,
+          y: 20,
+          width: 80,
+          height: 40,
+          adjustments: {},
+        }}
+        engine={{}}
+      />
+    );
+
+    expect(html).toContain('data-testid="editor-properties-panel"');
+    expect(html).toContain('data-testid="image-context-actions"');
+    expect(html).not.toContain('data-testid="image-context-toolbar"');
+    expect(html).toContain("editor.props.transform");
+    expect(html).toContain("editor.props.anchorPoint");
+  });
+
+  it("keeps pen edit modes inside the properties panel instead of adding a top bar", () => {
+    const html = renderToStaticMarkup(
+      <EditorProperties
+        tool={TOOL.PEN}
+        object={{ id: "path-1", kind: "path", pen: true, x: 0, y: 0, width: 20, height: 20 }}
+        engine={{ getPenSubTool: () => "move", setPenSubTool: () => {}, endEdit: () => {} }}
+        penEditing
+        onConvertAnchor={() => {}}
+        onDeleteAnchor={() => {}}
+      />
+    );
+
+    expect(html).toContain('data-testid="editor-properties-panel"');
+    expect(html).toContain('data-testid="editor-pen-subbar"');
+    expect(html).not.toContain('role="toolbar"');
   });
 
   it("renders dedicated typography properties (Font, Weight, Size pills, Alignment) when Text tool is active", () => {
