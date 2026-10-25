@@ -84,72 +84,6 @@ function suggestOutpaintPlanForNode(engine, node) {
 }
 
 /**
- * Real-time HUD preview of brush size & hardness in the center of the canvas viewport
- * whenever the user adjusts the brush or eraser slider/scrub field.
- */
-function BrushPreviewOverlay({ engine, viewport }) {
-  const [visible, setVisible] = useState(false);
-  const hideTimerRef = useRef(null);
-  const brushWidth = engine?.getBrushWidth?.() ?? 24;
-  const brushHardness = engine?.getBrushHardness?.() ?? 0.5;
-  const prevRef = useRef({ width: brushWidth, hardness: brushHardness });
-
-  useEffect(() => {
-    if (
-      prevRef.current.width !== brushWidth ||
-      prevRef.current.hardness !== brushHardness
-    ) {
-      prevRef.current = { width: brushWidth, hardness: brushHardness };
-      setVisible(true);
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = setTimeout(() => {
-        setVisible(false);
-      }, 1200);
-    }
-  }, [brushWidth, brushHardness]);
-
-  useEffect(
-    () => () => {
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    },
-    [],
-  );
-
-  if (!visible) return null;
-
-  const zoom = viewport?.zoom ?? 1;
-  const screenDiameter = Math.max(4, Math.round(brushWidth * zoom));
-  const blurPx = Math.round((1 - brushHardness) * (screenDiameter / 4));
-
-  return (
-    <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
-      <div className="flex flex-col items-center gap-2">
-        <div
-          className="relative rounded-full border border-white/80 shadow-pop transition-all duration-75"
-          style={{
-            width: `${screenDiameter}px`,
-            height: `${screenDiameter}px`,
-          }}
-        >
-          <div
-            className="absolute inset-0 rounded-full bg-white/10"
-            style={{ filter: blurPx > 0 ? `blur(${blurPx}px)` : "none" }}
-          />
-        </div>
-        <div className="rounded-full bg-black/75 px-2.5 py-0.5 text-[10px] font-mono tabular-nums text-white shadow-pop backdrop-blur">
-          {brushWidth}px · {Math.round(brushHardness * 100)}%
-        </div>
-      </div>
-    </div>
-  );
-}
-
-BrushPreviewOverlay.propTypes = {
-  engine: PropTypes.object,
-  viewport: PropTypes.object,
-};
-
-/**
  * Builds what the engine opens for one node: its own picture as the base layer
  * plus anything wired into its IMAGE input.
  *
@@ -463,6 +397,12 @@ export default function EditorPage({
     cameraMode: free ? "shared" : "page",
     getFitInsets,
   });
+  const brushWidth = engine?.getBrushWidth?.() ?? 24;
+  useEffect(() => {
+    if (tool === TOOL.BRUSH || tool === TOOL.ERASER) {
+      engine?.refreshBrushCursor?.();
+    }
+  }, [engine, tool, brushWidth]);
   const handleResizeCommit = useCallback(() => {
     engine?.commit("editor.history.entry.resize");
     if (free && resizePositionRef.current) {
@@ -836,15 +776,6 @@ export default function EditorPage({
               setOutpaintPlan(null);
             }}
           />
-        ) : null}
-
-        {/* Brush / Eraser / Healing Size & Hardness HUD preview */}
-        {focused &&
-        ready &&
-        (tool === TOOL.BRUSH ||
-          tool === TOOL.ERASER ||
-          tool === TOOL.HEALING) ? (
-          <BrushPreviewOverlay engine={engine} viewport={viewport} />
         ) : null}
 
         {editingRegionNode ? (
