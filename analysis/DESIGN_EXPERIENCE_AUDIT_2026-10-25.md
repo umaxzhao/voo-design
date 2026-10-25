@@ -25,11 +25,20 @@
 | 缺失翻译 key 泄漏到 UI | **0** |
 | 文本被裁剪/截断 | **0** |
 | 页面 / console 错误 | **0** |
-| 无名称按钮 | 3（均在图片工具区，已修） |
+| 无名称按钮 | 修复前 3（图片工具区），**修复后复测 0** |
 | 点击目标 < 24×24 | 见 §4（取色器手柄、`+ .ABR`、部分 reset 图标、字号 chips） |
 | 低对比度文本 | 微标签 4.43:1（差 0.07 达标）、数值前缀 3.19:1（已调亮） |
 
 > 结论：这一轮之后，面板不再有“漏翻译/截断/报错”这类硬伤；剩下的主要是**结构对齐**与**控件深度**。
+
+修复后复测（同一脚本、44 状态）：
+
+| 项 | 修复前 | 修复后 |
+|---|---|---|
+| 无名称按钮 | 3 | **0** |
+| Frame 面板区块 | 无 FILL/STROKE | **LAYER · TRANSFORM · FRAME · LAYOUT GRID · AUTO LAYOUT · FILL · STROKE** |
+| 工具 header | “Brush/Healing/Pen/Shape” | **“Smudge / Clone / Curvature Pen / Star …”** |
+| 低对比项 | 微标签 4.43、前缀 3.19 | 工具标签 ≈6，ScrubField/混合值前缀 ≈4.9；剩余主要是**未选中/禁用态**文字（WCAG 对禁用态豁免） |
 
 ## 3. 本轮已修复（含验证）
 
@@ -38,7 +47,7 @@
 | 1 | 用画框工具新建的 frame 面板里**没有 FILL / STROKE**，无法给画框上色 | `supportsColour()` 把 `kind === group` 一律排除，而 frame 正是 group kind + `isFrame` | frame（`isFrame/frame/containerType=frame`）视为可着色，普通 group 仍不可 | `frame_panel_figma.test.jsx`；面板截图见附件 |
 | 2 | 工具面板 header 只显示家族名（Brush/Healing/Pen/Shape），子模式不明 | header 只按 tool 查表 | header 接收 `brushMode/healingMode`，并为 pen/shape 映射子模式名（Smudge、Clone、Curvature Pen、Star…） | `tool_panel_header_submode.test.jsx`；Smudge header 截图 |
 | 3 | 图片工具的 3 个按钮没有无障碍名称（巡检命中） | 按钮只有可见文本，缺显式 `aria-label`，部分状态下 `innerText` 为空 | 补 `aria-label`（Crop / Replace / Frequency Separation） | `out.json` → `04-select-paint` 无名称按钮数归零（下一轮巡检） |
-| 4 | 微标签与数值前缀对比度不足（4.43 / 3.19） | `text-neutral-500` 在 #0a0a0a / #262626 上 | 工具面板标签与 ScrubField 前后缀提升到 `text-neutral-400`（≈6:1 / ≈4.9:1） | 设计 lint clean；下一轮巡检复测 |
+| 4 | 微标签与数值前缀对比度不足（4.43 / 3.19） | `text-neutral-500` 在 #0a0a0a / #262626 上 | 工具面板标签、ScrubField 前后缀、混合值字段提升到 `text-neutral-400`（≈6:1 / ≈4.9:1） | 复测：剩余低对比仅未选中/禁用态 |
 
 ## 4. 未修问题（按优先级，对标 Pen / Figma）
 

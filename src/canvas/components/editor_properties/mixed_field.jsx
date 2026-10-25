@@ -10,12 +10,12 @@ export default function MixedField({ label, suffix = "", bare = false }) {
   const { t } = useI18n();
   return (
     <div
-      className={`flex min-w-0 items-center rounded-xl bg-[#222222] px-2 py-1.5 text-[11px] font-mono text-neutral-500 ${
+      className={`flex min-w-0 items-center rounded-xl bg-[#222222] px-2 py-1.5 text-[11px] font-mono text-neutral-400 ${
         bare ? "flex-1" : ""
       }`}
       title={t("editor.props.mixedValues")}
     >
-      <span className="inline-flex items-center shrink-0 pr-1 text-[10px] font-mono uppercase tracking-wide text-neutral-500">
+      <span className="inline-flex items-center shrink-0 pr-1 text-[10px] font-mono uppercase tracking-wide text-neutral-400">
         {label}
       </span>
       <span className="ml-auto">{suffix ? `—${suffix}` : "—"}</span>

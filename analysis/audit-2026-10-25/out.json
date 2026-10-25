@@ -702,38 +702,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "X",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "Y",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "W",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "H",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "R",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "S",
-     "ratio": 3.19,
-     "size": 11
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "TRANSFORM",
     "FRAME",
@@ -1678,36 +1647,6 @@
    ],
    "rawKeys": [],
    "lowContrast": [
-    {
-     "text": "X",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "Y",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "W",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "H",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "R",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "S",
-     "ratio": 3.19,
-     "size": 11
-    },
     {
      "text": "%",
      "ratio": 3.19,
@@ -2758,36 +2697,6 @@
    "rawKeys": [],
    "lowContrast": [
     {
-     "text": "X",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "Y",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "W",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "H",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "R",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "S",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
      "text": "Font family",
      "ratio": 4.43,
      "size": 9
@@ -3431,7 +3340,7 @@
     {
      "tag": "button",
      "role": null,
-     "label": null,
+     "label": "Crop",
      "pressed": null,
      "checked": null,
      "value": null,
@@ -3446,7 +3355,7 @@
     {
      "tag": "button",
      "role": null,
-     "label": null,
+     "label": "Replace image",
      "pressed": null,
      "checked": null,
      "value": null,
@@ -3491,7 +3400,7 @@
     {
      "tag": "button",
      "role": null,
-     "label": null,
+     "label": "Frequency Separation",
      "pressed": null,
      "checked": null,
      "value": null,
@@ -3564,35 +3473,7 @@
      ]
     }
    ],
-   "unnamed": [
-    {
-     "box": [
-      1155,
-      692,
-      120,
-      32
-     ],
-     "cls": "min-h-8 rounded-lg border border-white/10 bg-white/[0.04] px"
-    },
-    {
-     "box": [
-      1281,
-      692,
-      120,
-      32
-     ],
-     "cls": "min-h-8 rounded-lg border border-white/10 bg-white/[0.04] px"
-    },
-    {
-     "box": [
-      1155,
-      768,
-      246,
-      32
-     ],
-     "cls": "min-h-8 rounded-lg border border-white/10 bg-white/[0.04] px"
-    }
-   ],
+   "unnamed": [],
    "small": [
     {
      "box": [
@@ -3733,36 +3614,6 @@
    "rawKeys": [],
    "lowContrast": [
     {
-     "text": "X",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "Y",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "W",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "H",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "R",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "S",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
      "text": "%",
      "ratio": 3.19,
      "size": 10
@@ -3793,13 +3644,13 @@
    "panel": {
     "box": [
      1134,
-     168,
+     114,
      288,
-     604
+     712
     ],
-    "text": "PROPERTIES | LAYER | Ungroup | TRANSFORM | X | Y | W | H | R | ° | S | ° | % | NORMAL | px | FRAME | Clip content | LAYOUT GRID | + | AUTO LAYOUT | + | + | ADD",
-    "scrollH": 604,
-    "clientH": 604
+    "text": "PROPERTIES | LAYER | Ungroup | TRANSFORM | X | Y | W | H | R | ° | S | ° | % | NORMAL | px | FRAME | Clip content | LAYOUT GRID | + | AUTO LAYOUT | + | FILL | + | STROKE | + | + | ADD",
+    "scrollH": 712,
+    "clientH": 712
    },
    "layersText": "LAYERS | % | Normal | Design 1 | Canvas Background | #1E1E1E",
    "toolbarButtons": [
@@ -3836,7 +3687,7 @@
      "disabled": false,
      "box": [
       1374,
-      184,
+      130,
       28,
       28
      ]
@@ -3851,7 +3702,7 @@
      "disabled": false,
      "box": [
       1150,
-      231,
+      177,
       52,
       14
      ]
@@ -3866,7 +3717,7 @@
      "disabled": false,
      "box": [
       1148,
-      253,
+      199,
       127,
       28
      ]
@@ -3881,7 +3732,7 @@
      "disabled": false,
      "box": [
       1150,
-      306,
+      252,
       79,
       14
      ]
@@ -3896,7 +3747,7 @@
      "disabled": false,
      "box": [
       1153,
-      330,
+      276,
       10,
       10
      ]
@@ -3911,7 +3762,7 @@
      "disabled": false,
      "box": [
       1161,
-      330,
+      276,
       10,
       10
      ]
@@ -3926,7 +3777,7 @@
      "disabled": false,
      "box": [
       1169,
-      330,
+      276,
       10,
       10
      ]
@@ -3941,7 +3792,7 @@
      "disabled": false,
      "box": [
       1153,
-      340,
+      286,
       10,
       10
      ]
@@ -3956,7 +3807,7 @@
      "disabled": false,
      "box": [
       1161,
-      340,
+      286,
       10,
       10
      ]
@@ -3971,7 +3822,7 @@
      "disabled": false,
      "box": [
       1169,
-      340,
+      286,
       10,
       10
      ]
@@ -3986,7 +3837,7 @@
      "disabled": false,
      "box": [
       1153,
-      350,
+      296,
       10,
       10
      ]
@@ -4001,7 +3852,7 @@
      "disabled": false,
      "box": [
       1161,
-      350,
+      296,
       10,
       10
      ]
@@ -4016,7 +3867,7 @@
      "disabled": false,
      "box": [
       1169,
-      350,
+      296,
       10,
       10
      ]
@@ -4031,7 +3882,7 @@
      "disabled": false,
      "box": [
       1213,
-      327,
+      273,
       83,
       28
      ]
@@ -4046,7 +3897,7 @@
      "disabled": false,
      "box": [
       1325,
-      327,
+      273,
       83,
       28
      ]
@@ -4061,7 +3912,7 @@
      "disabled": false,
      "box": [
       1213,
-      372,
+      318,
       75,
       15
      ]
@@ -4076,7 +3927,7 @@
      "disabled": false,
      "box": [
       1288,
-      365,
+      311,
       24,
       28
      ]
@@ -4091,7 +3942,7 @@
      "disabled": false,
      "box": [
       1333,
-      372,
+      318,
       75,
       15
      ]
@@ -4106,7 +3957,7 @@
      "disabled": false,
      "box": [
       1169,
-      403,
+      349,
       54,
       28
      ]
@@ -4121,7 +3972,7 @@
      "disabled": false,
      "box": [
       1269,
-      403,
+      349,
       54,
       28
      ]
@@ -4136,7 +3987,7 @@
      "disabled": false,
      "box": [
       1348,
-      403,
+      349,
       28,
       28
      ]
@@ -4151,7 +4002,7 @@
      "disabled": false,
      "box": [
       1380,
-      403,
+      349,
       28,
       28
      ]
@@ -4166,7 +4017,7 @@
      "disabled": false,
      "box": [
       1148,
-      452,
+      398,
       109,
       28
      ]
@@ -4181,7 +4032,7 @@
      "disabled": false,
      "box": [
       1282,
-      452,
+      398,
       126,
       28
      ]
@@ -4196,7 +4047,7 @@
      "disabled": false,
      "box": [
       1174,
-      490,
+      436,
       178,
       28
      ]
@@ -4211,7 +4062,7 @@
      "disabled": false,
      "box": [
       1380,
-      490,
+      436,
       28,
       28
      ]
@@ -4226,7 +4077,7 @@
      "disabled": false,
      "box": [
       1150,
-      543,
+      489,
       52,
       14
      ]
@@ -4241,7 +4092,7 @@
      "disabled": false,
      "box": [
       1148,
-      565,
+      511,
       260,
       28
      ]
@@ -4256,7 +4107,7 @@
      "disabled": false,
      "box": [
       1150,
-      623,
+      569,
       93,
       14
      ]
@@ -4271,7 +4122,7 @@
      "disabled": false,
      "box": [
       1382,
-      618,
+      564,
       24,
       24
      ]
@@ -4286,7 +4137,7 @@
      "disabled": false,
      "box": [
       1150,
-      680,
+      626,
       93,
       14
      ]
@@ -4301,7 +4152,67 @@
      "disabled": false,
      "box": [
       1382,
-      675,
+      621,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      683,
+      45,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add fill",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      678,
+      24,
+      24
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": null,
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1150,
+      740,
+      59,
+      14
+     ]
+    },
+    {
+     "tag": "button",
+     "role": null,
+     "label": "Add stroke",
+     "pressed": null,
+     "checked": null,
+     "value": null,
+     "disabled": false,
+     "box": [
+      1382,
+      735,
       24,
       24
      ]
@@ -4316,7 +4227,7 @@
      "disabled": false,
      "box": [
       1146,
-      732,
+      792,
       264,
       28
      ]
@@ -4327,7 +4238,7 @@
     {
      "box": [
       1150,
-      231,
+      177,
       52,
       14
      ],
@@ -4336,7 +4247,7 @@
     {
      "box": [
       1150,
-      306,
+      252,
       79,
       14
      ],
@@ -4345,7 +4256,7 @@
     {
      "box": [
       1153,
-      330,
+      276,
       10,
       10
      ],
@@ -4354,7 +4265,7 @@
     {
      "box": [
       1161,
-      330,
+      276,
       10,
       10
      ],
@@ -4363,7 +4274,7 @@
     {
      "box": [
       1169,
-      330,
+      276,
       10,
       10
      ],
@@ -4372,7 +4283,7 @@
     {
      "box": [
       1153,
-      340,
+      286,
       10,
       10
      ],
@@ -4381,7 +4292,7 @@
     {
      "box": [
       1161,
-      340,
+      286,
       10,
       10
      ],
@@ -4390,7 +4301,7 @@
     {
      "box": [
       1169,
-      340,
+      286,
       10,
       10
      ],
@@ -4399,7 +4310,7 @@
     {
      "box": [
       1153,
-      350,
+      296,
       10,
       10
      ],
@@ -4408,7 +4319,7 @@
     {
      "box": [
       1161,
-      350,
+      296,
       10,
       10
      ],
@@ -4417,7 +4328,7 @@
     {
      "box": [
       1169,
-      350,
+      296,
       10,
       10
      ],
@@ -4426,7 +4337,7 @@
     {
      "box": [
       1150,
-      543,
+      489,
       52,
       14
      ],
@@ -4435,7 +4346,7 @@
     {
      "box": [
       1150,
-      623,
+      569,
       93,
       14
      ],
@@ -4444,56 +4355,45 @@
     {
      "box": [
       1150,
-      680,
+      626,
       93,
       14
      ],
      "label": "AUTO LAYOUT"
+    },
+    {
+     "box": [
+      1150,
+      683,
+      45,
+      14
+     ],
+     "label": "FILL"
+    },
+    {
+     "box": [
+      1150,
+      740,
+      59,
+      14
+     ],
+     "label": "STROKE"
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "X",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "Y",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "W",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "H",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "R",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "S",
-     "ratio": 3.19,
-     "size": 11
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "LAYER",
     "TRANSFORM",
     "FRAME",
     "LAYOUT GRID",
-    "AUTO LAYOUT"
+    "AUTO LAYOUT",
+    "FILL",
+    "STROKE"
    ],
    "doc": {
-    "scrollH": 529,
-    "clientH": 529
+    "scrollH": 643,
+    "clientH": 637
    }
   },
   "06-multi-select": {
@@ -5548,11 +5448,6 @@
    "rawKeys": [],
    "lowContrast": [
     {
-     "text": "Gap",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
      "text": "X",
      "ratio": 3.36,
      "size": 10
@@ -5593,19 +5488,24 @@
      "size": 11
     },
     {
-     "text": "R",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "S",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
      "text": "Font family",
      "ratio": 4.43,
      "size": 9
+    },
+    {
+     "text": "Font size",
+     "ratio": 3.36,
+     "size": 10
+    },
+    {
+     "text": "—px",
+     "ratio": 3.36,
+     "size": 11
+    },
+    {
+     "text": "Fixed width",
+     "ratio": 3.19,
+     "size": 11
     }
    ],
    "sectionTitles": [
@@ -6674,11 +6574,6 @@
    "rawKeys": [],
    "lowContrast": [
     {
-     "text": "Gap",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
      "text": "X",
      "ratio": 3.36,
      "size": 10
@@ -6719,19 +6614,24 @@
      "size": 11
     },
     {
-     "text": "R",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
-     "text": "S",
-     "ratio": 3.19,
-     "size": 11
-    },
-    {
      "text": "Font family",
      "ratio": 4.43,
      "size": 9
+    },
+    {
+     "text": "Font size",
+     "ratio": 3.36,
+     "size": 10
+    },
+    {
+     "text": "—px",
+     "ratio": 3.36,
+     "size": 11
+    },
+    {
+     "text": "Fixed width",
+     "ratio": 3.19,
+     "size": 11
     }
    ],
    "sectionTitles": [
@@ -7756,13 +7656,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Feather",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "TOOL OPTIONS",
     "FEATHER"
@@ -8003,13 +7897,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Feather",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "TOOL OPTIONS",
     "FEATHER"
@@ -8252,16 +8140,6 @@
    "rawKeys": [],
    "lowContrast": [
     {
-     "text": "Feather",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Tolerance",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
      "text": "Sample size",
      "ratio": 4.43,
      "size": 10
@@ -8463,13 +8341,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Feather",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "TOOL OPTIONS",
     "FEATHER"
@@ -8635,13 +8507,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Feather",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "TOOL OPTIONS",
     "FEATHER"
@@ -8807,13 +8673,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Feather",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "TOOL OPTIONS",
     "FEATHER"
@@ -9024,28 +8884,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Feather",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Width",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Contrast",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Frequency",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "TOOL OPTIONS",
     "FEATHER",
@@ -9569,31 +9408,6 @@
      "size": 11
     },
     {
-     "text": "Brush width",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Hardness",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Opacity",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Flow",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Smoothing",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
      "text": "Advanced",
      "ratio": 4.43,
      "size": 10
@@ -9602,16 +9416,6 @@
      "text": "⌃",
      "ratio": 4.43,
      "size": 10
-    },
-    {
-     "text": "Roundness",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Angle",
-     "ratio": 4.43,
-     "size": 9
     }
    ],
    "sectionTitles": [
@@ -9639,7 +9443,7 @@
      288,
      478
     ],
-    "text": "Brush | SMUDGE | BRUSH WIDTH | px | HARDNESS | % | STRENGTH | % | SMOOTHING | % | Pressure controls size | Pressure controls opacity | BRUSHES | + .ABR | Soft Round | Medium Round | Hard Round | Chisel / Pen | Airbrush | Pencil 1px",
+    "text": "Smudge | SMUDGE | BRUSH WIDTH | px | HARDNESS | % | STRENGTH | % | SMOOTHING | % | Pressure controls size | Pressure controls opacity | BRUSHES | + .ABR | Soft Round | Medium Round | Hard Round | Chisel / Pen | Airbrush | Pencil 1px",
     "scrollH": 478,
     "clientH": 478
    },
@@ -9940,28 +9744,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Brush width",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Hardness",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Strength",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Smoothing",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "SMUDGE",
     "BRUSH WIDTH",
@@ -9983,7 +9766,7 @@
      288,
      309
     ],
-    "text": "Brush | BLUR | BRUSH WIDTH | px | HARDNESS | % | STRENGTH | % | SMOOTHING | % | Pressure controls size | Pressure controls opacity",
+    "text": "Blur | BLUR | BRUSH WIDTH | px | HARDNESS | % | STRENGTH | % | SMOOTHING | % | Pressure controls size | Pressure controls opacity",
     "scrollH": 309,
     "clientH": 309
    },
@@ -10131,28 +9914,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Brush width",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Hardness",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Strength",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Smoothing",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "BLUR",
     "BRUSH WIDTH",
@@ -10173,7 +9935,7 @@
      288,
      309
     ],
-    "text": "Brush | SHARPEN | BRUSH WIDTH | px | HARDNESS | % | STRENGTH | % | SMOOTHING | % | Pressure controls size | Pressure controls opacity",
+    "text": "Sharpen | SHARPEN | BRUSH WIDTH | px | HARDNESS | % | STRENGTH | % | SMOOTHING | % | Pressure controls size | Pressure controls opacity",
     "scrollH": 309,
     "clientH": 309
    },
@@ -10321,28 +10083,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Brush width",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Hardness",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Strength",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Smoothing",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "SHARPEN",
     "BRUSH WIDTH",
@@ -10363,7 +10104,7 @@
      288,
      385
     ],
-    "text": "Brush | DODGE | BRUSH WIDTH | px | HARDNESS | % | EXPOSURE | % | SMOOTHING | % | Shadows | Midtones | Highlights | Protect luminosity | Pressure controls size | Pressure controls opacity",
+    "text": "Dodge | DODGE | BRUSH WIDTH | px | HARDNESS | % | EXPOSURE | % | SMOOTHING | % | Shadows | Midtones | Highlights | Protect luminosity | Pressure controls size | Pressure controls opacity",
     "scrollH": 385,
     "clientH": 385
    },
@@ -10571,28 +10312,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Brush width",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Hardness",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Exposure",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Smoothing",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "DODGE",
     "BRUSH WIDTH",
@@ -10613,7 +10333,7 @@
      288,
      385
     ],
-    "text": "Brush | BURN | BRUSH WIDTH | px | HARDNESS | % | EXPOSURE | % | SMOOTHING | % | Shadows | Midtones | Highlights | Protect luminosity | Pressure controls size | Pressure controls opacity",
+    "text": "Burn | BURN | BRUSH WIDTH | px | HARDNESS | % | EXPOSURE | % | SMOOTHING | % | Shadows | Midtones | Highlights | Protect luminosity | Pressure controls size | Pressure controls opacity",
     "scrollH": 385,
     "clientH": 385
    },
@@ -10821,28 +10541,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Brush width",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Hardness",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Exposure",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Smoothing",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "BURN",
     "BRUSH WIDTH",
@@ -10863,7 +10562,7 @@
      288,
      347
     ],
-    "text": "Brush | SPONGE | BRUSH WIDTH | px | HARDNESS | % | FLOW | % | SMOOTHING | % | Saturate | Desaturate | Pressure controls size | Pressure controls opacity",
+    "text": "Sponge | SPONGE | BRUSH WIDTH | px | HARDNESS | % | FLOW | % | SMOOTHING | % | Saturate | Desaturate | Pressure controls size | Pressure controls opacity",
     "scrollH": 347,
     "clientH": 347
    },
@@ -11041,28 +10740,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Brush width",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Hardness",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Flow",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Smoothing",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "SPONGE",
     "BRUSH WIDTH",
@@ -11083,7 +10761,7 @@
      288,
      197
     ],
-    "text": "Healing | HEALING | BRUSH WIDTH | px | HARDNESS | % | OPACITY | %",
+    "text": "AI Repair | HEALING | BRUSH WIDTH | px | HARDNESS | % | OPACITY | %",
     "scrollH": 197,
     "clientH": 197
    },
@@ -11186,23 +10864,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Brush width",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Hardness",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Opacity",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "HEALING",
     "BRUSH WIDTH",
@@ -11222,7 +10884,7 @@
      288,
      159
     ],
-    "text": "Healing | HEALING | BRUSH WIDTH | px | HARDNESS | %",
+    "text": "Spot | HEALING | BRUSH WIDTH | px | HARDNESS | %",
     "scrollH": 159,
     "clientH": 159
    },
@@ -11310,18 +10972,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Brush width",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Hardness",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "HEALING",
     "BRUSH WIDTH",
@@ -11340,7 +10991,7 @@
      288,
      163
     ],
-    "text": "Healing | HEALING | Source | Destination | DIFFUSION | %",
+    "text": "Patch | HEALING | Source | Destination | DIFFUSION | %",
     "scrollH": 163,
     "clientH": 163
    },
@@ -11443,13 +11094,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Diffusion",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "HEALING",
     "DIFFUSION"
@@ -11467,7 +11112,7 @@
      288,
      314
     ],
-    "text": "Healing | HEALING | BRUSH WIDTH | px | HARDNESS | % | OPACITY | % | FLOW | % | Aligned | Source not set",
+    "text": "Clone | HEALING | BRUSH WIDTH | px | HARDNESS | % | OPACITY | % | FLOW | % | Aligned | Source not set",
     "scrollH": 314,
     "clientH": 314
    },
@@ -11600,28 +11245,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Brush width",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Hardness",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Opacity",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Flow",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "HEALING",
     "BRUSH WIDTH",
@@ -11915,11 +11539,6 @@
      "text": "#",
      "ratio": 3.36,
      "size": 11
-    },
-    {
-     "text": "Weight",
-     "ratio": 4.43,
-     "size": 9
     }
    ],
    "sectionTitles": [
@@ -11941,7 +11560,7 @@
      288,
      500
     ],
-    "text": "Pen | COLOR | # | D4D4D4 | MODE | Shape | Path | CURVE TENSION | % | WEIGHT | px | ANCHOR STYLE | Corner | Smooth",
+    "text": "Curvature Pen | COLOR | # | D4D4D4 | MODE | Shape | Path | CURVE TENSION | % | WEIGHT | px | ANCHOR STYLE | Corner | Smooth",
     "scrollH": 500,
     "clientH": 500
    },
@@ -12229,16 +11848,6 @@
      "text": "#",
      "ratio": 3.36,
      "size": 11
-    },
-    {
-     "text": "Curve tension",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Weight",
-     "ratio": 4.43,
-     "size": 9
     }
    ],
    "sectionTitles": [
@@ -12261,7 +11870,7 @@
      288,
      426
     ],
-    "text": "Pen | COLOR | # | D4D4D4 | MODE | Shape | Path | SMOOTHING | % | WEIGHT | px",
+    "text": "Freeform Pen | COLOR | # | D4D4D4 | MODE | Shape | Path | SMOOTHING | % | WEIGHT | px",
     "scrollH": 426,
     "clientH": 426
    },
@@ -12495,16 +12104,6 @@
      "text": "#",
      "ratio": 3.36,
      "size": 11
-    },
-    {
-     "text": "Smoothing",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Weight",
-     "ratio": 4.43,
-     "size": 9
     }
    ],
    "sectionTitles": [
@@ -12526,7 +12125,7 @@
      288,
      480
     ],
-    "text": "Shape | COLOR | # | D4D4D4 | RECTANGLE | WEIGHT | px | ⌒ | CORNER RADIUS | px | Round | Straight",
+    "text": "Rectangle | COLOR | # | D4D4D4 | RECTANGLE | WEIGHT | px | ⌒ | CORNER RADIUS | px | Round | Straight",
     "scrollH": 480,
     "clientH": 480
    },
@@ -12790,21 +12389,6 @@
      "text": "#",
      "ratio": 3.36,
      "size": 11
-    },
-    {
-     "text": "Weight",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "⌒",
-     "ratio": 4.43,
-     "size": 11
-    },
-    {
-     "text": "Corner radius",
-     "ratio": 4.43,
-     "size": 9
     }
    ],
    "sectionTitles": [
@@ -12826,7 +12410,7 @@
      288,
      408
     ],
-    "text": "Shape | COLOR | # | D4D4D4 | ELLIPSE | WEIGHT | px",
+    "text": "Ellipse | COLOR | # | D4D4D4 | ELLIPSE | WEIGHT | px",
     "scrollH": 408,
     "clientH": 408
    },
@@ -13045,11 +12629,6 @@
      "text": "#",
      "ratio": 3.36,
      "size": 11
-    },
-    {
-     "text": "Weight",
-     "ratio": 4.43,
-     "size": 9
     }
    ],
    "sectionTitles": [
@@ -13070,7 +12649,7 @@
      288,
      408
     ],
-    "text": "Shape | COLOR | # | D4D4D4 | LINE | WEIGHT | px",
+    "text": "Line | COLOR | # | D4D4D4 | LINE | WEIGHT | px",
     "scrollH": 408,
     "clientH": 408
    },
@@ -13289,11 +12868,6 @@
      "text": "#",
      "ratio": 3.36,
      "size": 11
-    },
-    {
-     "text": "Weight",
-     "ratio": 4.43,
-     "size": 9
     }
    ],
    "sectionTitles": [
@@ -13314,7 +12888,7 @@
      288,
      446
     ],
-    "text": "Shape | COLOR | # | D4D4D4 | POLYGON | WEIGHT | px | ⬡ | SIDES",
+    "text": "Polygon | COLOR | # | D4D4D4 | POLYGON | WEIGHT | px | ⬡ | SIDES",
     "scrollH": 446,
     "clientH": 446
    },
@@ -13548,21 +13122,6 @@
      "text": "#",
      "ratio": 3.36,
      "size": 11
-    },
-    {
-     "text": "Weight",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "⬡",
-     "ratio": 4.43,
-     "size": 11
-    },
-    {
-     "text": "Sides",
-     "ratio": 4.43,
-     "size": 9
     }
    ],
    "sectionTitles": [
@@ -13584,7 +13143,7 @@
      288,
      480
     ],
-    "text": "Shape | COLOR | # | D4D4D4 | STAR | WEIGHT | px | ★ | POINTS | RATIO | %",
+    "text": "Star | COLOR | # | D4D4D4 | STAR | WEIGHT | px | ★ | POINTS | RATIO | %",
     "scrollH": 480,
     "clientH": 480
    },
@@ -13833,26 +13392,6 @@
      "text": "#",
      "ratio": 3.36,
      "size": 11
-    },
-    {
-     "text": "Weight",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "★",
-     "ratio": 4.43,
-     "size": 11
-    },
-    {
-     "text": "Points",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Ratio",
-     "ratio": 4.43,
-     "size": 9
     }
    ],
    "sectionTitles": [
@@ -13875,7 +13414,7 @@
      288,
      499
     ],
-    "text": "Shape | COLOR | # | D4D4D4 | ARROW | WEIGHT | px | ARROW ENDS | Start Arrow | End Arrow | ARROW SIZE | px",
+    "text": "Arrow | COLOR | # | D4D4D4 | ARROW | WEIGHT | px | ARROW ENDS | Start Arrow | End Arrow | ARROW SIZE | px",
     "scrollH": 499,
     "clientH": 499
    },
@@ -14139,16 +13678,6 @@
      "text": "#",
      "ratio": 3.36,
      "size": 11
-    },
-    {
-     "text": "Weight",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Arrow Size",
-     "ratio": 4.43,
-     "size": 9
     }
    ],
    "sectionTitles": [
@@ -14390,11 +13919,6 @@
      "text": "#",
      "ratio": 3.36,
      "size": 11
-    },
-    {
-     "text": "Tolerance",
-     "ratio": 4.43,
-     "size": 9
     }
    ],
    "sectionTitles": [
@@ -14713,11 +14237,6 @@
      "text": "Pick a colour with the wheel t",
      "ratio": 4.43,
      "size": 9
-    },
-    {
-     "text": "Gradient angle",
-     "ratio": 4.43,
-     "size": 9
     }
    ],
    "sectionTitles": [
@@ -14938,11 +14457,6 @@
      "text": "Smart",
      "ratio": 3.19,
      "size": 10
-    },
-    {
-     "text": "Straighten",
-     "ratio": 4.43,
-     "size": 9
     }
    ],
    "sectionTitles": [
@@ -15490,37 +15004,7 @@
      "size": 10
     },
     {
-     "text": "T",
-     "ratio": 4.43,
-     "size": 11
-    },
-    {
-     "text": "Font size",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
      "text": "Size",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "↕",
-     "ratio": 4.43,
-     "size": 11
-    },
-    {
-     "text": "Line height",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "↔",
-     "ratio": 4.43,
-     "size": 11
-    },
-    {
-     "text": "Letter spacing",
      "ratio": 4.43,
      "size": 9
     }
@@ -15863,33 +15347,7 @@
     }
    ],
    "rawKeys": [],
-   "lowContrast": [
-    {
-     "text": "Brush width",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Hardness",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Opacity",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Flow",
-     "ratio": 4.43,
-     "size": 9
-    },
-    {
-     "text": "Smoothing",
-     "ratio": 4.43,
-     "size": 9
-    }
-   ],
+   "lowContrast": [],
    "sectionTitles": [
     "ERASER",
     "BRUSH WIDTH",
