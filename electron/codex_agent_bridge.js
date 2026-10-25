@@ -45,6 +45,9 @@ function requireBinaryResolver(injected, cliId) {
  * Despite the historical name this channel serves every native agent CLI:
  * `advance` carries a `cliId` (default "codex"). Both CLIs share one MCP
  * server and work directory; only Codex needs its long-lived app-server.
+ *
+ * @returns {{ dispose: () => Promise<void> }} Releases every process, server and
+ *   temp directory this registration started.
  */
 export function registerCodexAgentIpc({
   ipcMain,
@@ -341,18 +344,61 @@ export function registerCodexAgentIpc({
       return { ok: true };
     }),
   );
+  let disposal = null;
+
+  /**
+   * Tears down everything this registration owns: native sessions, the Codex
+   * app-server child process, the MCP server and the scratch directory.
+   *
+   * Idempotent (every caller gets the same promise) and safe when nothing was
+   * ever started. Cleanup steps are independent, so one failure does not stop
+   * the others; failures are rethrown together once all have been attempted.
+   *
+   * @returns {Promise<void>}
+   */
+  function dispose() {
+    disposal ??= (async () => {
+      closing = true;
+      for (const entry of sessions.values()) entry.session.close();
+      sessions.clear();
+      // A runtime/host whose startup failed (or is still failing) already
+      // cleaned up after itself, so a startup rejection means "nothing to
+      // release". Only failures of the release steps below are reported.
+      const steps = [];
+      if (runtimePromise)
+        steps.push(
+          runtimePromise.then(
+            ({ connection }) => connection.close(),
+            () => {},
+          ),
+        );
+      if (hostPromise)
+        steps.push(
+          hostPromise.then(
+            async ({ mcp, cwd }) => {
+              try {
+                await mcp.close();
+              } finally {
+                await rm(cwd, { recursive: true, force: true });
+              }
+            },
+            () => {},
+          ),
+        );
+      const failures = (await Promise.allSettled(steps))
+        .filter((result) => result.status === "rejected")
+        .map((result) => result.reason);
+      if (failures.length) throw new AggregateError(failures, "cli.disposeFailed");
+    })();
+    return disposal;
+  }
+
+  // Electron quits through app events; the standalone bridge has no `app` and
+  // calls the returned dispose() from its own close() instead.
   app.once?.("before-quit", () => {
-    closing = true;
-    for (const entry of sessions.values()) entry.session.close();
-    if (runtimePromise)
-      void runtimePromise
-        .then(({ connection }) => connection.close())
-        .catch(() => {});
-    if (hostPromise)
-      void hostPromise
-        .then(({ mcp, cwd }) =>
-          mcp.close().then(() => rm(cwd, { recursive: true, force: true })),
-        )
-        .catch(() => {});
+    dispose().catch((error) => {
+      console.warn("[codex-agent-bridge] dispose failed:", error);
+    });
   });
+  return { dispose };
 }

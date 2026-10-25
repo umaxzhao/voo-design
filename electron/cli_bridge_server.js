@@ -44,10 +44,17 @@ function hasValidBridgeToken(candidate, expected) {
 
 /**
  * Registers CLI bridge channels on an ipcMain facade.
+ *
+ * There is no Electron `app` here, so nothing fires "before-quit": the caller
+ * must call the returned `dispose()` to release the Codex child process, MCP
+ * server and temp directory started by the connect handler.
+ *
+ * @returns {{ dispose: () => Promise<void> }}
  */
 export function registerCliBridgeChannels({ ipcMain }) {
-  registerLocalCliIpc(ipcMain, { isAuthorized: () => true });
+  const { dispose } = registerLocalCliIpc(ipcMain, { isAuthorized: () => true });
   registerMcpRelayChannels(ipcMain);
+  return { dispose };
 }
 
 /**
@@ -61,7 +68,8 @@ export async function startCliBridgeServer({
   register = registerCliBridgeChannels,
 } = {}) {
   const adapter = createWsIpcAdapter();
-  register({ ipcMain: adapter.ipcMain });
+  // `register` may be a custom registrar with nothing to dispose.
+  const registration = register({ ipcMain: adapter.ipcMain });
 
   const allowed = new Set(origins);
   const server = http.createServer((request, response) => {
@@ -128,8 +136,13 @@ export async function startCliBridgeServer({
           client.terminate();
         } catch {}
       }
-      await new Promise((resolve) => wss.close(resolve));
-      await new Promise((resolve) => server.close(resolve));
+      try {
+        await new Promise((resolve) => wss.close(resolve));
+        await new Promise((resolve) => server.close(resolve));
+      } finally {
+        // Always release agent resources, even if the sockets failed to close.
+        await registration?.dispose?.();
+      }
     },
   };
 }

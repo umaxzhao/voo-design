@@ -44,6 +44,15 @@ process.stdout.write(
   `CLI bridge token file: ${tokenPath}\n`,
 );
 
-const shutdown = () => void bridge.close();
+// close() also releases the Codex child process, MCP server and temp dir.
+const shutdown = () => {
+  bridge.close().then(
+    () => process.exit(0),
+    (error) => {
+      process.stderr.write(`CLI bridge shutdown failed: ${error?.message ?? error}\n`);
+      process.exit(1);
+    },
+  );
+};
 process.once("SIGINT", shutdown);
 process.once("SIGTERM", shutdown);

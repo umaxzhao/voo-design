@@ -508,6 +508,7 @@ export async function runCodexMcpSession(bin, { prompt, model, cwd }) {
  *
  * @param {object} ipcMain
  * @param {{ app?: object, isAuthorized?: (event: object) => boolean }} [options]
+ * @returns {{ dispose: () => Promise<void> }}
  */
 export function registerLocalCliIpc(ipcMain, { app = {}, isAuthorized = isAuthorizedSender } = {}) {
   ipcMain.handle(CLI_BRIDGE_CHANNEL.CHECK_ALL, async (_event, options) => {
@@ -555,7 +556,7 @@ export function registerLocalCliIpc(ipcMain, { app = {}, isAuthorized = isAuthor
     }
   });
 
-  registerCodexAgentIpc({
+  return registerCodexAgentIpc({
     ipcMain,
     app,
     findBinary: () => findCliBinary(["codex"]),
