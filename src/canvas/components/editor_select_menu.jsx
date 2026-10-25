@@ -1,0 +1,215 @@
+import PropTypes from "prop-types";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import {
+  IconChevronDown,
+  IconCursor,
+  IconDistort,
+  IconPerspective,
+  IconVectorSquare,
+} from "../icons.jsx";
+import { TOOL } from "../editor/editor_constants.js";
+import { TOOL_SHORTCUTS } from "../editor/editor_shortcuts.js";
+import { useI18n } from "../use_i18n.js";
+import EditorTooltip from "./editor_tooltip.jsx";
+
+const toolButtonClass = (active) =>
+  `rounded-full p-2.5 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
+    active
+      ? "bg-white text-black font-medium"
+      : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
+  }`;
+
+// Puppet / deform pin icon (repo-inline SVG so the toolbar does not pull
+// lucide-react into the entry chunk, keeping toolbar icons local and compact).
+export function PuppetIcon({ size = 16 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="12" x2="12" y1="17" y2="21" />
+      <path d="M5 9L9 5l17 17-4 4-10-10" />
+      <path d="M9 5l2-2a2 2 0 0 1 2.83 0L19 8a2 2 0 0 1 0 2.83l-2 2" />
+    </svg>
+  );
+}
+
+PuppetIcon.propTypes = {
+  size: PropTypes.number,
+};
+
+/**
+ * The select family in display order. The top toolbar's Select menu is the
+ * only place these choices are listed; the properties panel does not repeat
+ * them.
+ */
+export const SELECT_MENU_ITEMS = Object.freeze([
+  { key: "select", tool: TOOL.SELECT, labelKey: "editor.tool.select", Icon: IconCursor },
+  { key: "distort", tool: TOOL.DISTORT, labelKey: "editor.tool.distort", Icon: IconDistort },
+  { key: "perspective", tool: TOOL.PERSPECTIVE, labelKey: "editor.tool.perspective", Icon: IconPerspective },
+  { key: "puppet", tool: TOOL.PUPPET_WARP, labelKey: "editor.tool.puppetWarp", Icon: PuppetIcon },
+]);
+
+/**
+ * Top-toolbar Select entry. The main button keeps its behaviour (selects the
+ * Select tool) and shows the icon of the active select-family mode. A small
+ * chevron opens a dropdown that lists the four modes.
+ */
+export default function EditorSelectMenu({ tool, onTool }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  // Fixed-position coordinates of the dropdown, captured when it opens. The
+  // dropdown is portalled to <body> because the toolbar row clips overflow and
+  // its backdrop blur would otherwise trap a fixed child.
+  const [menuPos, setMenuPos] = useState(null);
+  const rootRef = useRef(null);
+  const menuRef = useRef(null);
+  const chevronRef = useRef(null);
+
+  const isSelectFamily =
+    tool === TOOL.SELECT ||
+    tool === TOOL.SELECT_REGION ||
+    tool === TOOL.PERSPECTIVE ||
+    tool === TOOL.DISTORT ||
+    tool === TOOL.PUPPET_WARP;
+  const ActiveIcon =
+    tool === TOOL.PERSPECTIVE
+      ? IconPerspective
+      : tool === TOOL.DISTORT
+        ? IconDistort
+        : tool === TOOL.PUPPET_WARP
+          ? PuppetIcon
+          : tool === TOOL.SELECT_REGION
+            ? IconVectorSquare
+            : IconCursor;
+
+  const selectLabel = t("editor.tool.select");
+  const menuLabel = t("editor.toolOptions");
+
+  const toggleMenu = () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    const rect = rootRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setMenuPos({ top: rect.bottom + 8, left: rect.left + rect.width / 2 });
+    setOpen(true);
+  };
+
+  const chooseItem = (item) => {
+    onTool(item.tool);
+    setOpen(false);
+  };
+
+  // While the menu is open, a pointer press outside both the trigger and the
+  // portalled list closes it, and Escape closes it and returns focus to the
+  // chevron.
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOutside = (event) => {
+      if (rootRef.current?.contains(event.target)) return;
+      if (menuRef.current?.contains(event.target)) return;
+      setOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      setOpen(false);
+      chevronRef.current?.focus();
+    };
+    document.addEventListener("pointerdown", closeOutside, true);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside, true);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  // Keyboard users opening the menu land on its first item.
+  useEffect(() => {
+    if (!open) return;
+    menuRef.current?.querySelector('[role="menuitem"]')?.focus();
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative flex items-center" data-testid="editor-select-menu">
+      <EditorTooltip
+        title={selectLabel}
+        shortcut={TOOL_SHORTCUTS[TOOL.SELECT] || ""}
+        side="top"
+      >
+        <button
+          type="button"
+          data-testid="editor-select-tool"
+          onClick={() => onTool(TOOL.SELECT)}
+          aria-label={selectLabel}
+          aria-pressed={isSelectFamily}
+          className={`relative ${toolButtonClass(isSelectFamily)}`}
+        >
+          <ActiveIcon size={16} />
+        </button>
+      </EditorTooltip>
+      <button
+        ref={chevronRef}
+        type="button"
+        data-testid="editor-select-menu-trigger"
+        aria-label={menuLabel}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={toggleMenu}
+        className="absolute bottom-0.5 right-0.5 rounded-full p-0.5 text-neutral-400 transition-colors hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900"
+      >
+        <IconChevronDown
+          size={8}
+          className={`pointer-events-none ${open ? "text-white" : ""}`}
+        />
+      </button>
+      {open && menuPos && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              ref={menuRef}
+              role="menu"
+              aria-label={menuLabel}
+              data-testid="editor-select-menu-list"
+              className="fixed z-[9999] flex min-w-[142px] -translate-x-1/2 flex-col gap-0.5 rounded-xl border border-white/10 bg-black/90 p-1 font-mono shadow-panel backdrop-blur-md"
+              style={{ top: `${menuPos.top}px`, left: `${menuPos.left}px` }}
+            >
+              {SELECT_MENU_ITEMS.map((item) => {
+                const { Icon } = item;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    role="menuitem"
+                    data-testid={`editor-select-menu-${item.key}`}
+                    onClick={() => chooseItem(item)}
+                    className="group flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] text-neutral-300 transition-all hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4]"
+                  >
+                    <Icon
+                      size={14}
+                      className="shrink-0 text-neutral-400 group-hover:text-white"
+                    />
+                    <span className="truncate leading-none">{t(item.labelKey)}</span>
+                  </button>
+                );
+              })}
+            </div>,
+            document.body,
+          )
+        : null}
+    </div>
+  );
+}
+
+EditorSelectMenu.propTypes = {
+  tool: PropTypes.string.isRequired,
+  onTool: PropTypes.func.isRequired,
+};
