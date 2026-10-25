@@ -21,6 +21,28 @@ import {
 /** Below this a side's insets are ignored: overlap, not a sliver fit. */
 const MIN_FIT_SPAN = 160;
 
+/**
+ * Frame scheduling for the settle callback. The viewport also runs headless
+ * (unit tests, export), where requestAnimationFrame is absent; fall back to a
+ * macrotask so a late settle never throws an uncaught ReferenceError. The
+ * scheduler is chosen per call because tests stub the globals mid-flight.
+ */
+function scheduleFrame(callback) {
+  if (typeof requestAnimationFrame === "function") {
+    return { raf: true, handle: requestAnimationFrame(callback) };
+  }
+  return { raf: false, handle: setTimeout(callback, 0) };
+}
+
+function cancelFrame(frame) {
+  if (!frame) return;
+  if (frame.raf && typeof cancelAnimationFrame === "function") {
+    cancelAnimationFrame(frame.handle);
+    return;
+  }
+  clearTimeout(frame.handle);
+}
+
 /** Quiet time after the last view change before exact blend tiles return. */
 const VIEW_SETTLE_MS = 400;
 
@@ -42,14 +64,14 @@ export function createViewport({
   let viewport = { zoom: 1, panX: 0, panY: 0 };
   let settleTimer = 0;
   let moving = false;
-  let settleFrame = 0;
+  let settleFrame = null;
   let revision = 0;
 
   function setViewport(next) {
     viewport = next;
     const currentRevision = ++revision;
-    if (settleFrame) cancelAnimationFrame(settleFrame);
-    settleFrame = 0;
+    if (settleFrame) cancelFrame(settleFrame);
+    settleFrame = null;
     moving = true;
     beginCustomBlendInteraction();
     beginLayerCacheInteraction();
@@ -57,8 +79,8 @@ export function createViewport({
     settleTimer = setTimeout(() => {
       // A slow raster can exceed the quiet interval while the next camera
       // callback is already queued. Let that callback cancel settling first.
-      settleFrame = requestAnimationFrame(() => {
-        settleFrame = 0;
+      settleFrame = scheduleFrame(() => {
+        settleFrame = null;
         if (currentRevision !== revision) return;
         moving = false;
         endCustomBlendInteraction();
@@ -166,7 +188,7 @@ export function createViewport({
     dispose() {
       ++revision;
       clearTimeout(settleTimer);
-      if (settleFrame) cancelAnimationFrame(settleFrame);
+      if (settleFrame) cancelFrame(settleFrame);
       moving = false;
       endCustomBlendInteraction();
       endLayerCacheInteraction();
