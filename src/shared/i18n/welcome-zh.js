@@ -7,6 +7,8 @@ export default {
   "titlebar.cliWizard": "本地 CLI 配置向导",
   "titlebar.save": "保存",
   "titlebar.saveTitle": "保存 (⌘S / Ctrl+S)",
+  "titlebar.snapshot": "导出快照",
+  "titlebar.snapshotTitle": "将项目导出为可分享的 .zip 快照",
   "titlebar.open": "打开",
   "titlebar.openTitle": "打开工程文件 (⌘O / Ctrl+O)",
   "titlebar.settingsTitle": "设置 (⌘,)",

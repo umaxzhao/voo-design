@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import CanvasTabBar from "./canvas/components/canvas_tab_bar.jsx";
-import { Bolt } from "lucide-react";
+import { Bolt, Archive } from "lucide-react";
 import { useDesignStore } from "./store/design_store.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import CollabAvatars from "./canvas/components/collab_avatars.jsx";
@@ -118,6 +118,18 @@ export default function AppTitleBar() {
           >
             {welcomeOpen ? t("welcome.header.new") : t("titlebar.save")}
           </button>
+          {welcomeOpen ? null : (
+            <button
+              type="button"
+              aria-label={t("titlebar.snapshot")}
+              title={t("titlebar.snapshotTitle")}
+              onClick={() => window.dispatchEvent(new CustomEvent("voo:file-export-snapshot"))}
+              className="-m-1 flex size-7 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-white"
+              style={{ WebkitAppRegion: "no-drag" }}
+            >
+              <Archive size={14} aria-hidden="true" />
+            </button>
+          )}
           <button
             type="button"
             aria-label={t("welcome.settings.open")}

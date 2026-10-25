@@ -7,6 +7,8 @@ export default {
   "titlebar.cliWizard": "Local CLI setup wizard",
   "titlebar.save": "Save",
   "titlebar.saveTitle": "Save (⌘S / Ctrl+S)",
+  "titlebar.snapshot": "Export snapshot",
+  "titlebar.snapshotTitle": "Export project as a portable .zip snapshot",
   "titlebar.open": "Open",
   "titlebar.openTitle": "Open project file (⌘O / Ctrl+O)",
   "titlebar.settingsTitle": "Settings (⌘,)",

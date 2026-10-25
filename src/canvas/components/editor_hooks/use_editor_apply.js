@@ -7,7 +7,7 @@
  */
 import { useCallback, useEffect, useRef } from "react";
 import { useDesignStore } from "../../../store/design_store.js";
-import { buildVooFile, saveVooProject, openVooProject } from "../../store/project_io.js";
+import { buildVooFile, exportSnapshotPackage, saveVooProject, openVooProject } from "../../store/project_io.js";
 import { useEditorExport } from "./use_editor_export.js";
 export { assertExportableDocument } from "./export_editor_image.js";
 import { isQuotaError } from "../../../shared/persistence_contract.js";
@@ -375,6 +375,13 @@ export function useEditorApply({
     const onTriggerNew = () => newVooDocument();
     const onTriggerHistory = () => setHistoryOpen((open) => !open);
     const onTriggerExport = () => setExportOpen(true);
+    const onTriggerSnapshot = () => {
+      void exportSnapshotPackage({
+        store: useDesignStore.getState(),
+        enginesRef,
+        snapshotsRef,
+      });
+    };
     const onTriggerClose = () => requestExit();
 
     window.addEventListener("voo:file-save", onTriggerSaveVoo);
@@ -384,6 +391,7 @@ export function useEditorApply({
     window.addEventListener("voo:editor-apply", onTriggerApply);
     window.addEventListener("voo:editor-toggle-history", onTriggerHistory);
     window.addEventListener("voo:editor-export", onTriggerExport);
+    window.addEventListener("voo:file-export-snapshot", onTriggerSnapshot);
     window.addEventListener("voo:editor-close", onTriggerClose);
     window.addEventListener("voo:editor-save-voo", onTriggerSaveVoo);
 
@@ -411,6 +419,7 @@ export function useEditorApply({
       window.removeEventListener("voo:editor-apply", onTriggerApply);
       window.removeEventListener("voo:editor-toggle-history", onTriggerHistory);
       window.removeEventListener("voo:editor-export", onTriggerExport);
+      window.removeEventListener("voo:file-export-snapshot", onTriggerSnapshot);
       window.removeEventListener("voo:editor-close", onTriggerClose);
       window.removeEventListener("voo:editor-save-voo", onTriggerSaveVoo);
       window.removeEventListener("beforeunload", onBeforeUnload);

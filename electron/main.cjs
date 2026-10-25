@@ -252,7 +252,7 @@ ipcMain.handle("dialog:openFile", async (_, options = {}) => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ["openFile"],
     filters: options.filters || [
-      { name: "VOO Design Document", extensions: ["voo", "json"] },
+      { name: "VOO Design Document / Snapshot", extensions: ["voo", "zip", "json"] },
       { name: "Image Files", extensions: ["png", "jpg", "jpeg", "webp", "svg", "psd"] },
       { name: "Figma Files", extensions: ["fig"] },
       { name: "All Files", extensions: ["*"] },
@@ -268,7 +268,7 @@ ipcMain.handle("dialog:saveFile", async (_, { content, defaultPath, filters } = 
   const result = await dialog.showSaveDialog(mainWindow, {
     defaultPath: defaultPath || "Untitled.voo",
     filters: filters || [
-      { name: "VOO Design Document", extensions: ["voo", "json"] },
+      { name: "VOO Design Document / Snapshot", extensions: ["voo", "zip", "json"] },
       { name: "All Files", extensions: ["*"] },
     ],
   });

@@ -24,9 +24,9 @@ const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8")
 
 describe("title bar actions", () => {
   it.each([
-    [true, ["titlebar.openTitle", "welcome.header.new", "titlebar.settingsTitle"], ["voo:file-open", "voo:welcome-new"]],
-    [false, ["titlebar.openTitle", "titlebar.saveTitle", "titlebar.prefsTitle"], ["voo:file-open", "voo:file-save"]],
-  ])("offers open plus new/save and settings on the right (welcome=%s)", (welcomeOpen, titles, events) => {
+    [true, 3, ["titlebar.openTitle", "welcome.header.new", "titlebar.settingsTitle"], ["voo:file-open", "voo:welcome-new"]],
+    [false, 4, ["titlebar.openTitle", "titlebar.saveTitle", "titlebar.snapshotTitle", "titlebar.prefsTitle"], ["voo:file-open", "voo:file-save"]],
+  ])("offers open plus new/save, snapshot and settings on the right (welcome=%s)", (welcomeOpen, count, titles, events) => {
     state.welcomeOpen = welcomeOpen;
     const dispatchEvent = vi.fn();
     vi.stubGlobal("window", { dispatchEvent });
@@ -36,7 +36,7 @@ describe("title bar actions", () => {
       const header = React.Children.toArray(tree.props.children)[0];
       const right = React.Children.toArray(header.props.children)[1];
       const actions = buttons(right);
-      expect(actions).toHaveLength(3);
+      expect(actions).toHaveLength(count);
       expect(actions.map((button) => button.props.title)).toEqual(titles);
       // The visible label follows the title: Open + New on welcome, Open + Save in the editor.
       expect(actions.slice(0, 2).map((button) => button.props.children)).toEqual([
@@ -45,7 +45,13 @@ describe("title bar actions", () => {
       actions[0].props.onClick();
       actions[1].props.onClick();
       expect(dispatchEvent.mock.calls.map(([event]) => event.type)).toEqual(events);
-      expect(actions[2].props.onClick.toString()).toContain("setSettingsOpen(true)");
+      if (count === 4) {
+        actions[2].props.onClick();
+        expect(dispatchEvent.mock.calls.map(([event]) => event.type)).toContain("voo:file-export-snapshot");
+        expect(actions[3].props.onClick.toString()).toContain("setSettingsOpen(true)");
+      } else {
+        expect(actions[2].props.onClick.toString()).toContain("setSettingsOpen(true)");
+      }
       for (const event of ["voo:open-about", "voo:open-onboarding", "voo:editor-export", "voo:open-first-run"]) {
         expect(source("../../src/app_title_bar.jsx")).not.toContain(event);
       }

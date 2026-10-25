@@ -32,6 +32,12 @@ import { documentToSvg } from "../editor/editor_svg.js";
 import { workspaceStorage } from "../../services/workspace_storage.js";
 import { t } from "../../shared/i18n.js";
 import { decodeVooBinary, encodeVooBinary, isVooBinary } from "./voo_binary.js";
+import {
+  buildSnapshotZip,
+  extractSnapshotZip,
+  isSnapshotZipName,
+  isZipBytes,
+} from "./snapshot_io.js";
 import { importFigFile } from "../figma/figma_import_client.js";
 import {
   VOO_FILE_FORMAT,
@@ -253,12 +259,14 @@ async function encodeForFormat(format, { vooFile, engine, sceneDoc, figSource, p
   return encodeVooBinary(vooFile);
 }
 
-export async function saveVooProject({
+/**
+ * Builds the v2 `.voo` envelope for the current project (all pages, preview)
+ * without saving it. Shared by Save and by the snapshot exporter.
+ */
+export async function buildProjectVooFile({
   store = useDesignStore.getState(),
   enginesRef = null,
   snapshotsRef = null,
-  saveAs = false,
-  pageTitle = null,
 } = {}) {
   const nodes = store.nodes || [];
   const focusedId = store.editingNodeId;
@@ -330,6 +338,69 @@ export async function saveVooProject({
     kind: "design",
     version: 2,
   });
+
+  return {
+    vooFile,
+    pages,
+    primaryDoc,
+    primaryPage,
+    focusedEngine,
+    primaryPreview,
+    compositeDocument,
+  };
+}
+
+/**
+ * Writes the current project as a portable snapshot `.zip` (document + manifest
+ * + preview). Electron uses the save dialog; the browser falls back to a
+ * download. Opening a snapshot works through the normal Open flow.
+ */
+export async function exportSnapshotPackage({
+  store = useDesignStore.getState(),
+  enginesRef = null,
+  snapshotsRef = null,
+} = {}) {
+  const { vooFile, primaryPreview } = await buildProjectVooFile({
+    store,
+    enginesRef,
+    snapshotsRef,
+  });
+  const name = String(store.fileName || "Untitled").replace(/\.voo$/i, "") || "Untitled";
+  const bytes = buildSnapshotZip({
+    vooFile,
+    name,
+    preview: primaryPreview,
+    appVersion: window.electronAPI?.appVersion ?? null,
+  });
+  const fileName = `${name}.zip`;
+  if (window.electronAPI?.saveFileDialog && window.electronAPI?.writeFileBytes) {
+    const targetPath = await window.electronAPI.saveFileDialog({
+      defaultPath: fileName,
+      filters: [{ name: "VOO Snapshot", extensions: ["zip"] }],
+    });
+    if (!targetPath) return { canceled: true };
+    await window.electronAPI.writeFileBytes(targetPath, bytes);
+    return { success: true, filePath: targetPath, fileName: targetPath.split(/[/\\]/).pop() };
+  }
+  const blob = new Blob([bytes], { type: "application/zip" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return { success: true, fileName };
+}
+
+export async function saveVooProject({
+  store = useDesignStore.getState(),
+  enginesRef = null,
+  snapshotsRef = null,
+  saveAs = false,
+  pageTitle = null,
+} = {}) {
+  const { vooFile, pages, primaryDoc, primaryPage, focusedEngine, primaryPreview } =
+    await buildProjectVooFile({ store, enginesRef, snapshotsRef });
 
   // The file name decides the format: a `.svg` or `.psd` document saves back as itself.
   const format = saveFormatOf(store.fileName);
@@ -508,7 +579,7 @@ function pickFileFromInput() {
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".voo,.json,.psd,.fig,.svg,.pen";
+    input.accept = ".voo,.zip,.json,.psd,.fig,.svg,.pen";
     input.onchange = (e) => resolve(e.target.files?.[0] ?? null);
     input.click();
   });
@@ -586,7 +657,7 @@ async function openVooProjectUnlocked({
       filters: [
         {
           name: "VOO Design Document / PSD / Figma / SVG / Pen",
-          extensions: ["voo", "json", "psd", "fig", "svg", "pen"],
+          extensions: ["voo", "zip", "json", "psd", "fig", "svg", "pen"],
         },
       ],
     });
@@ -709,6 +780,14 @@ async function openVooSource({ store, bytes, name, path, handle }) {
   }
   if (isBinaryDesignName(name)) {
     return openBinaryDesignSource({ store, bytes, sourceName: name, sourcePath: path, handle });
+  }
+  // Snapshot packages are a zip holding document.voo: unwrap before the
+  // regular envelope validation so Open accepts both formats.
+  if (isSnapshotZipName(name) || isZipBytes(bytes)) {
+    const snapshot = extractSnapshotZip(bytes);
+    if (!snapshot) throw new Error("Invalid snapshot package");
+    bytes = snapshot.vooBytes;
+    name = snapshot.name || String(name).replace(/\.zip$/i, ".voo");
   }
 
   const raw = isVooBinary(bytes)
