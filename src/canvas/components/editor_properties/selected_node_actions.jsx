@@ -3,101 +3,17 @@ import { useI18n } from "../../use_i18n.js";
 import { BOOLEAN_OPERATIONS } from "../../editor/scene_model.js";
 import { StaticSection, sectionRowClass } from "./property_section.jsx";
 
-const ACTIONS = [
-  ["duplicate", "duplicateSelected"],
-  ["lock", "toggleLockNode"],
-  ["visibility", "visibility"],
-  ["bringForward", "bringForward"],
-  ["sendBackward", "sendBackward"],
-  ["delete", "deleteSelected"],
-];
-
 export default function SelectedNodeActions({
   object,
   selectedNodes = [],
   engine,
-  onCreateComponent,
-  onDetachInstance,
 }) {
   const { t } = useI18n();
   if (!object?.id || !engine) return null;
   const nodes = selectedNodes.length ? selectedNodes : [object];
-  const ids = nodes.map((node) => node.id).filter(Boolean);
-  const run = (action) => {
-    if (action === "duplicateSelected") engine.duplicateSelected?.();
-    if (action === "toggleLockNode") ids.forEach((id) => engine.toggleLockNode?.(id));
-    if (action === "visibility") {
-      const visible = object.visible === false;
-      ids.forEach((id) => engine.updateNode?.(id, { visible }));
-    }
-    if (action === "deleteSelected") engine.deleteSelected?.();
-    if (action === "bringForward") ids.forEach((id) => engine.reorderNode?.(id, 1));
-    if (action === "sendBackward") ids.forEach((id) => engine.reorderNode?.(id, -1));
-  };
-
   return (
     <StaticSection title={t("editor.layer.title")}>
       <div className="grid grid-cols-2 gap-1.5">
-        {/* Layer actions stay collapsed until asked, keeping the panel short. */}
-        <details
-          data-testid="editor-taskbar-layer-actions"
-          className="col-span-2 rounded-lg border border-white/10 bg-white/[0.025] px-2"
-        >
-          <summary className="cursor-pointer rounded-md py-2 text-[10px] text-neutral-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]">
-            {t("editor.layer.actions")}
-          </summary>
-          <div className="grid grid-cols-2 gap-1.5 border-t border-white/10 pb-2 pt-2">
-            {object.kind === "canvasInstance" && onDetachInstance ? (
-              <button
-                type="button"
-                data-testid="editor-taskbar-detach-instance"
-                onClick={() => onDetachInstance(object.id)}
-                className={`${sectionRowClass} justify-center text-[10px] text-neutral-300`}
-              >
-                {t("editor.component.detach")}
-              </button>
-            ) : onCreateComponent ? (
-              <button
-                type="button"
-                data-testid="editor-taskbar-create-component"
-                onClick={onCreateComponent}
-                className={`${sectionRowClass} justify-center text-[10px] text-neutral-300`}
-              >
-                {t("editor.component.create")}
-              </button>
-            ) : null}
-            {ACTIONS.map(([id, action]) => {
-              const labelKey =
-                id === "lock"
-                  ? `editor.taskbar.${object.locked ? "unlock" : "lock"}`
-                  : id === "visibility"
-                    ? `editor.taskbar.${object.visible === false ? "show" : "hide"}`
-                    : `editor.taskbar.${id}`;
-              const testId =
-                id === "lock"
-                  ? object.locked
-                    ? "unlock"
-                    : "lock"
-                  : id === "visibility"
-                    ? object.visible === false
-                      ? "show"
-                      : "hide"
-                    : id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  data-testid={`editor-taskbar-${testId}`}
-                  aria-label={t(labelKey)}
-                  onClick={() => run(action)}
-                  className={`${sectionRowClass} justify-center text-[10px] text-neutral-300`}
-                >
-                  {t(labelKey)}
-                </button>
-              );
-            })}
-          </div>
-        </details>
         {nodes.length > 1 ? (
           <button
             type="button"
@@ -139,6 +55,4 @@ SelectedNodeActions.propTypes = {
   object: PropTypes.object,
   selectedNodes: PropTypes.arrayOf(PropTypes.object),
   engine: PropTypes.object,
-  onCreateComponent: PropTypes.func,
-  onDetachInstance: PropTypes.func,
 };
