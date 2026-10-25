@@ -6,6 +6,7 @@ import { TOOL } from "./editor_constants.js";
  */
 export const TOOL_SHORTCUTS = {
   [TOOL.SELECT]: "V",
+  [TOOL.FRAME]: "F",
   [TOOL.SELECT_REGION]: "⌘T",
   [TOOL.PERSPECTIVE]: "Q",
   [TOOL.MARQUEE]: "M",

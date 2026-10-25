@@ -25,6 +25,7 @@ const AI_PURPLE_CLASS = "text-[#E5B2FF]";
 /** i18n keys of the design-variant tool buttons, in their rendered order. */
 const DESIGN_TOOL_ORDER = [
   "editor.tool.select",
+  "editor.tool.frame",
   "editor.tool.crop",
   "editor.tool.marquee",
   "editor.tool.brush",

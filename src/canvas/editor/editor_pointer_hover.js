@@ -146,6 +146,7 @@ export function createHoverCursorController({
       tool === TOOL.MARQUEE ||
       tool === TOOL.DROPPER ||
       tool === TOOL.RECT ||
+      tool === TOOL.FRAME ||
       tool === TOOL.ELLIPSE ||
       tool === TOOL.ARROW ||
       tool === TOOL.TEXT
