@@ -74,6 +74,7 @@ export default function ToolPropertiesSection({
   healingMode = "aiRepair",
   cloneAligned = false,
   onCloneAligned,
+  cloneSource = null,
   brushBlendMode = "normal",
   onBrushBlendMode,
   penAnchorType = "corner",
@@ -341,6 +342,7 @@ export default function ToolPropertiesSection({
             healingMode={healingMode}
             cloneAligned={cloneAligned}
             onCloneAligned={onCloneAligned}
+            cloneSource={cloneSource}
             brushBlendMode={brushBlendMode}
             onBrushBlendMode={onBrushBlendMode}
           />

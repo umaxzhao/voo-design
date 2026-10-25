@@ -50,6 +50,7 @@ export const toolPropertiesPropTypes = {
   healingMode: PropTypes.oneOf(["spot", "aiRepair", "patch", "clone"]),
   cloneAligned: PropTypes.bool,
   onCloneAligned: PropTypes.func,
+  cloneSource: PropTypes.object,
   brushBlendMode: PropTypes.string,
   onBrushBlendMode: PropTypes.func,
   penAnchorType: PropTypes.string,

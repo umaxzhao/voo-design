@@ -14,6 +14,7 @@ import BrushRetouchControls from "./brush_retouch_controls.jsx";
 import BrushAdvancedControls, {
   BRUSH_BLEND_OPTIONS,
 } from "./brush_advanced_controls.jsx";
+import HealingModeControls from "./healing_mode_controls.jsx";
 
 export { BRUSH_BLEND_OPTIONS };
 
@@ -122,6 +123,7 @@ export default function BrushProperties({
   healingMode = "aiRepair",
   cloneAligned = false,
   onCloneAligned,
+  cloneSource = null,
   brushBlendMode = "normal",
   onBrushBlendMode,
 }) {
@@ -270,6 +272,20 @@ export default function BrushProperties({
           />
         ) : null}
 
+        {tool === TOOL.HEALING && healingMode === "clone" && onBrushFlow ? (
+          <ToolSliderField
+            label={t("editor.brushFlow")}
+            icon={<FlowIcon />}
+            min={0}
+            max={100}
+            value={Math.round(brushFlow * 100)}
+            onValueChange={(val) => onBrushFlow(val / 100)}
+            suffix="%"
+            ariaLabel={t("editor.brushFlow")}
+            scrubHint={t("editor.props.dragToAdjust")}
+          />
+        ) : null}
+
         {showSmoothing && onBrushSmoothing ? (
           <ToolSliderField
             label={t("editor.brushSmoothing")}
@@ -313,6 +329,9 @@ export default function BrushProperties({
           cloneAligned={cloneAligned}
           onCloneAligned={onCloneAligned}
         />
+        {tool === TOOL.HEALING ? (
+          <HealingModeControls healingMode={healingMode} cloneSource={cloneSource} />
+        ) : null}
       </div>
     </StaticSection>
   );
@@ -360,6 +379,7 @@ BrushProperties.propTypes = {
   healingMode: PropTypes.oneOf(["spot", "aiRepair", "patch", "clone"]),
   cloneAligned: PropTypes.bool,
   onCloneAligned: PropTypes.func,
+  cloneSource: PropTypes.object,
   brushBlendMode: PropTypes.string,
   onBrushBlendMode: PropTypes.func,
 };
