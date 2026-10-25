@@ -5,6 +5,7 @@
  * comments-en.js for the key contract.
  */
 export default {
+  "editor.comments.new": "新",
   "editor.comments.title": "评论",
   "editor.comments.toggle": "显示/隐藏评论",
   "editor.comments.toggleAddMode": "评论模式",

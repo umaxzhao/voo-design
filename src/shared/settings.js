@@ -70,6 +70,8 @@ const STORAGE_KEYS = [
   "voo.editor.panelSections",
   // Editor chrome theme (dark by default): read synchronously before first paint.
   "voo.editor.theme",
+  // Optional background draft saver for saved documents (crash recovery).
+  "voo.editor.autoSaveDrafts",
   // User-created design systems; built-in presets are code, not settings.
   "voo.designSystems.custom",
 ];

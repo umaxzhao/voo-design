@@ -32,7 +32,7 @@ export function paintTextBody(ctx, node) {
   const letterSpacing = node.letterSpacing ?? 0;
   if ("letterSpacing" in ctx) ctx.letterSpacing = `${letterSpacing}px`;
   const lineHeight = textLineHeight(node);
-  const { lines, widths, baseline } = getTextLayout(ctx, node);
+  const { lines, widths, baseline, lineOffsets } = getTextLayout(ctx, node);
   // Photoshop's Baseline Shift: the glyphs rise/fall inside the line box
   // while the box itself (hit-testing, resize) stays put.
   const shift = node.baselineShift ?? 0;
@@ -108,7 +108,7 @@ export function paintTextBody(ctx, node) {
     lines.forEach((line, index) => {
       ctx.fillRect(
         lineX[index],
-        node.y + index * lineHeight,
+        node.y + (lineOffsets?.[index] ?? index * lineHeight),
         widths[index],
         lineHeight,
       );
@@ -124,7 +124,8 @@ export function paintTextBody(ctx, node) {
   }
   const strokeWidth = node.stroke ? (node.strokeWidth ?? 0) : 0;
   lines.forEach((line, index) => {
-    const y = node.y + index * lineHeight + baseline + shift;
+    const y =
+      node.y + (lineOffsets?.[index] ?? index * lineHeight) + baseline + shift;
     if (strokeWidth > 0) {
       ctx.strokeStyle = resolvePaintStyle(
         ctx,

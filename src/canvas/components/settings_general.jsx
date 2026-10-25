@@ -17,6 +17,11 @@ import ProfileSection from "./settings_profile.jsx";
 import LanguageSection from "./settings_language.jsx";
 import { Switch } from "./ui/switch.jsx";
 import { useEditorTheme } from "../use_editor_theme.js";
+import {
+  EDITOR_AUTOSAVE_SETTING,
+  updateEditorSetting,
+  useEditorSetting,
+} from "../use_editor_setting.js";
 
 export function WorkspaceSettingsSection() {
   const { t } = useI18n();
@@ -257,7 +262,27 @@ export function AppearanceSettingsSection() {
           label={label}
         />
       </SettingsRow>
+      <AutoSaveRow />
     </SettingsSection>
+  );
+}
+
+function AutoSaveRow() {
+  const { t } = useI18n();
+  const enabled = useEditorSetting(EDITOR_AUTOSAVE_SETTING, false) === true;
+  const label = t("settings.appearance.autoSaveDrafts");
+  return (
+    <SettingsRow
+      label={label}
+      hint={t("settings.appearance.autoSaveDraftsHint")}
+    >
+      <Switch
+        testId="settings-auto-save-drafts"
+        checked={enabled}
+        onChange={(next) => updateEditorSetting(EDITOR_AUTOSAVE_SETTING, next)}
+        label={label}
+      />
+    </SettingsRow>
   );
 }
 

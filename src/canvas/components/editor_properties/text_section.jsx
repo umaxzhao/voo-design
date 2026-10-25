@@ -283,7 +283,23 @@ export default function TextSection({
               scrubHint={t("editor.props.dragToAdjust")}
             />
           )}
-          {mixedBaselineShift ? (
+          {object.paragraphSpacing ? (
+          <div className="grid grid-cols-2 gap-2">
+            <ScrubField
+              prefix={<span className="text-[10px] text-neutral-400">¶</span>}
+              suffix="px"
+              min={0}
+              max={200}
+              value={object.paragraphSpacing ?? 0}
+              onValueChange={(value) => edit({ paragraphSpacing: Math.round(value) })}
+              onCommit={commitNow}
+              ariaLabel={t("editor.props.paragraphSpacing")}
+              scrubHint={t("editor.props.dragToAdjust")}
+            />
+          </div>
+        ) : null}
+
+        {mixedBaselineShift ? (
             <MixedField label={t("editor.props.baselineShift")} suffix="px" />
           ) : (
             <ScrubField

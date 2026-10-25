@@ -13,6 +13,10 @@ export { assertExportableDocument } from "./export_editor_image.js";
 import { isQuotaError } from "../../../shared/persistence_contract.js";
 import { flushEditorPendingWrites } from "./editor-autosave.js";
 import { useEditorAutosave } from "./use_editor_autosave.js";
+import {
+  EDITOR_AUTOSAVE_SETTING,
+  useEditorSetting,
+} from "../../use_editor_setting.js";
 
 /** How long the save-and-exit path keeps retrying a refused (busy) apply. */
 export const MAX_SAVE_EXIT_RETRIES = 8;
@@ -83,12 +87,15 @@ export function useEditorApply({
   const saveExitTimer = useRef(null);
   const savingExit = useRef(false);
   const applying = useRef(false);
+  // Desktop keeps manual file saving, but users can opt into background draft
+  // copies for crash recovery (off by default).
+  const autoSaveDrafts = useEditorSetting(EDITOR_AUTOSAVE_SETTING, false) === true;
   const autosave = useEditorAutosave({
     enginesRef,
     snapshotsRef,
     nodeIds,
     setApplyError,
-    disabled: true,
+    disabled: !autoSaveDrafts,
   });
   const mounted = useRef(true);
   useEffect(() => {

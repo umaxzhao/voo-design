@@ -16,6 +16,12 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  readCommentSeenAt,
+  unreadCommentCount,
+  unreadCommentIds,
+  writeCommentSeenAt,
+} from "../comments/comment_notifications.js";
 import PropTypes from "prop-types";
 import {
   Check,
@@ -180,9 +186,28 @@ export default function EditorComments({
   const [filter, setFilter] = useState("open");
   const [draft, setDraft] = useState(null);
   const [replyBody, setReplyBody] = useState("");
+  // Local "new since last look" state: the document stores messages, the
+  // client stores when this device last opened the panel.
+  const [seenAt, setSeenAt] = useState(() => readCommentSeenAt());
 
   const list = useMemo(() => normalizeComments(comments), [comments]);
   const openCount = useMemo(() => countOpen(list), [list]);
+  const unreadIds = useMemo(
+    () => new Set(unreadCommentIds(list, seenAt)),
+    [list, seenAt],
+  );
+  const unreadCount = useMemo(
+    () => unreadCommentCount(list, seenAt),
+    [list, seenAt],
+  );
+
+  // Opening the panel (or receiving a thread while it is open) marks it seen.
+  useEffect(() => {
+    if (!open) return;
+    const now = Date.now();
+    writeCommentSeenAt(now);
+    setSeenAt(now);
+  }, [open, list]);
   const threads = useMemo(
     () => (filter === "open" ? listOpenComments(list) : sortedComments(list)),
     [filter, list],
@@ -484,6 +509,13 @@ export default function EditorComments({
             ) : (
               <span className="tabular-nums">{comment.messages.length}</span>
             )}
+            {unreadIds.has(comment.id) ? (
+              <span
+                aria-hidden="true"
+                data-testid="editor-comment-pin-new"
+                className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-[#E5B2FF] ring-1 ring-black/40"
+              />
+            ) : null}
           </button>
         );
       })}
@@ -679,7 +711,14 @@ export default function EditorComments({
           className="pointer-events-auto absolute bottom-3 left-3 z-30 flex h-7 items-center gap-1.5 rounded-lg bg-[#222222] px-2 text-[10px] leading-none text-neutral-300 shadow-pop outline-none transition-opacity hover:opacity-80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
         >
           <MessageSquare size={12} />
-          {openCount > 0 ? (
+          {unreadCount > 0 ? (
+            <span
+              data-testid="editor-comments-unread-count"
+              className="rounded-full bg-[#a7ffd4] px-1 text-[9px] leading-none tabular-nums text-black"
+            >
+              {unreadCount}
+            </span>
+          ) : openCount > 0 ? (
             <span className="tabular-nums text-[#a7ffd4]">{openCount}</span>
           ) : null}
         </button>
@@ -823,6 +862,11 @@ export default function EditorComments({
                             )}
                         </span>
                         <span className="mt-1 flex items-center gap-1.5 text-[9px] leading-none text-neutral-500">
+                          {unreadIds.has(comment.id) ? (
+                            <span className="rounded-full bg-[#a7ffd4] px-1 text-[9px] leading-none text-black">
+                              {label(t, "editor.comments.new", "New")}
+                            </span>
+                          ) : null}
                           {comment.resolved ? (
                             <span className="flex items-center gap-1">
                               <Check size={9} />

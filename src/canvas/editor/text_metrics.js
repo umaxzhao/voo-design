@@ -116,16 +116,25 @@ export function breakUnits(text) {
  */
 function wrapTextLines(ctx, node) {
   const boxWidth = node.boxWidth ?? 0;
-  if (!(boxWidth > 0)) return textLines(node);
+  const paragraphs = textLines(node);
+  const wrapped = [];
+  const paragraphIndexes = [];
+  const push = (line, paragraphIndex) => {
+    wrapped.push(line);
+    paragraphIndexes.push(paragraphIndex);
+  };
+  if (!(boxWidth > 0)) {
+    paragraphs.forEach((paragraph, paragraphIndex) => push(paragraph, paragraphIndex));
+    return { lines: wrapped, paragraphIndexes };
+  }
   const letterSpacing = node.letterSpacing ?? 0;
   if ("letterSpacing" in ctx) ctx.letterSpacing = `${letterSpacing}px`;
   const fit = (value) =>
     measureLineWidth(ctx, value, letterSpacing) <= boxWidth;
-  const wrapped = [];
-  for (const paragraph of textLines(node)) {
+  paragraphs.forEach((paragraph, paragraphIndex) => {
     if (paragraph === "") {
-      wrapped.push("");
-      continue;
+      push("", paragraphIndex);
+      return;
     }
     let line = "";
     for (const token of splitParagraph(paragraph, hasCjk(paragraph))) {
@@ -133,13 +142,13 @@ function wrapTextLines(ctx, node) {
       if (line && fit(`${line} ${token}`)) {
         line += ` ${token}`;
       } else if (fit(token)) {
-        if (line) wrapped.push(line);
+        if (line) push(line, paragraphIndex);
         line = token;
       } else {
         // The token is wider than the box on its own: hard-break it into the
         // widest chunks that fit.
         if (line) {
-          wrapped.push(line);
+          push(line, paragraphIndex);
           line = "";
         }
         const units = hasCjk(token) ? breakUnits(token) : [...token];
@@ -181,14 +190,14 @@ function wrapTextLines(ctx, node) {
           ) {
             best -= 1;
           }
-          wrapped.push(units.slice(index, index + best).join(""));
+          push(units.slice(index, index + best).join(""), paragraphIndex);
           index += best;
         }
       }
     }
-    if (line) wrapped.push(line);
-  }
-  return wrapped;
+    if (line) push(line, paragraphIndex);
+  });
+  return { lines: wrapped, paragraphIndexes };
 }
 
 // Context identity isolates different metric providers (including export canvases).
@@ -220,6 +229,7 @@ export function getTextLayout(ctx, node) {
   const key = JSON.stringify([
     contextIds.get(ctx), String(node.text ?? ""), node.textCase ?? "original", font,
     textLineHeight(node), spacing, node.boxWidth ?? 0,
+    node.paragraphSpacing ?? 0,
     // These Canvas2D properties can also affect shaping.
     ctx.direction, ctx.fontKerning, ctx.fontStretch, ctx.fontVariantCaps,
     ctx.textRendering, ctx.lang,
@@ -230,14 +240,28 @@ export function getTextLayout(ctx, node) {
   try {
     ctx.font = font;
     if ("letterSpacing" in ctx) ctx.letterSpacing = `${spacing}px`;
-    const lines = Object.freeze(wrapTextLines(ctx, node));
+    const { lines: wrappedLines, paragraphIndexes } = wrapTextLines(ctx, node);
+    const lines = Object.freeze(wrappedLines);
     const widths = Object.freeze(lines.map((line) => measureLineWidth(ctx, line, spacing)));
+    const lineHeightValue = textLineHeight(node);
+    const paragraphSpacing = Math.max(0, Number(node.paragraphSpacing) || 0);
+    const lineOffsets = [];
+    let offset = 0;
+    for (let index = 0; index < lines.length; index += 1) {
+      if (index > 0 && paragraphSpacing > 0 && paragraphIndexes[index] !== paragraphIndexes[index - 1]) {
+        offset += paragraphSpacing;
+      }
+      lineOffsets.push(offset);
+      offset += lineHeightValue;
+    }
     const metrics = ctx.measureText("M");
     const ascent = metrics.fontBoundingBoxAscent ?? node.fontSize * 0.8;
     const descent = metrics.fontBoundingBoxDescent ?? node.fontSize * 0.2;
     const value = Object.freeze({
-      lines, widths,
-      baseline: (textLineHeight(node) - ascent - descent) / 2 + ascent,
+      lines,
+      widths,
+      lineOffsets: Object.freeze(lineOffsets),
+      baseline: (lineHeightValue - ascent - descent) / 2 + ascent,
     });
     layouts.set(key, value);
     return value;
@@ -275,7 +299,7 @@ export function measureText(ctx, node) {
   ctx.font = textFont(node);
   const letterSpacing = node.letterSpacing ?? 0;
   if ("letterSpacing" in ctx) ctx.letterSpacing = `${letterSpacing}px`;
-  const { lines, widths } = getTextLayout(ctx, node);
+  const { lines, widths, lineOffsets } = getTextLayout(ctx, node);
   const strokeWidth = node.stroke ? (node.strokeWidth ?? 0) : 0;
 
   // 直排: each line is a column of stacked characters; columns advance right
@@ -303,6 +327,6 @@ export function measureText(ctx, node) {
   const measuredWidth = boxWidth > 0 ? Math.max(boxWidth, width) : width;
   return {
     width: Math.ceil(measuredWidth + strokeWidth),
-    height: Math.ceil(lines.length * textLineHeight(node)),
+    height: Math.ceil((lineOffsets.at(-1) ?? 0) + textLineHeight(node)),
   };
 }

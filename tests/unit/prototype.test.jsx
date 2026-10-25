@@ -53,6 +53,27 @@ describe("prototype model", () => {
     expect(removeInteraction(updated, interaction.id).prototype.interactions).toHaveLength(0);
   });
 
+  it("supports overlay and close-overlay actions", () => {
+    const overlay = addInteraction(doc(), {
+      sourceId: "btn",
+      action: "overlay",
+      targetId: "fb",
+    });
+    expect(overlay.prototype.interactions[0]).toMatchObject({
+      action: "overlay",
+      targetId: "fb",
+    });
+    const close = addInteraction(overlay, {
+      sourceId: "btn",
+      action: "closeOverlay",
+    });
+    expect(close.prototype.interactions).toHaveLength(2);
+    expect(close.prototype.interactions[1].action).toBe("closeOverlay");
+    expect(
+      addInteraction(doc(), { sourceId: "btn", action: "overlay" }),
+    ).toEqual(doc());
+  });
+
   it("rejects invalid targets and keeps start frames", () => {
     expect(
       addInteraction(doc(), { sourceId: "btn", action: "navigate", targetId: "nope" }),

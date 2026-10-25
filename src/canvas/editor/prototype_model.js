@@ -5,7 +5,7 @@
  */
 
 export const PROTOTYPE_TRIGGERS = Object.freeze(["click", "whilePress"]);
-export const PROTOTYPE_ACTIONS = Object.freeze(["navigate", "back"]);
+export const PROTOTYPE_ACTIONS = Object.freeze(["navigate", "back", "overlay", "closeOverlay"]);
 export const PROTOTYPE_TRANSITIONS = Object.freeze([
   "instant",
   "dissolve",
@@ -63,13 +63,15 @@ export function normalizeInteraction(raw, doc = null) {
   if (typeof raw.sourceId !== "string" || !raw.sourceId) return null;
   if (nodes && !nodes.has(raw.sourceId)) return null;
   const action = PROTOTYPE_ACTIONS.includes(raw.action) ? raw.action : "navigate";
+  // Navigate and overlay both need a target frame; back/closeOverlay do not.
+  const needsTarget = action === "navigate" || action === "overlay";
   const targetId =
-    action === "navigate" &&
+    needsTarget &&
     typeof raw.targetId === "string" &&
     (!nodes || nodes.has(raw.targetId))
       ? raw.targetId
       : null;
-  if (action === "navigate" && !targetId) return null;
+  if (needsTarget && !targetId) return null;
   const trigger = PROTOTYPE_TRIGGERS.includes(raw.trigger) ? raw.trigger : "click";
   const transition = PROTOTYPE_TRANSITIONS.includes(raw.transition)
     ? raw.transition

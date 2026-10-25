@@ -98,6 +98,8 @@ export const DEFAULT_TEXT_STYLE = {
   align: "left",
   letterSpacing: 0,
   lineHeight: LINE_HEIGHT_RATIO,
+  /** Extra gap after a hard paragraph break ("\n"). */
+  paragraphSpacing: 0,
   /** Vertical glyph offset in px (Photoshop's Baseline Shift); the line box itself does not move. */
   baselineShift: 0,
   stroke: null,

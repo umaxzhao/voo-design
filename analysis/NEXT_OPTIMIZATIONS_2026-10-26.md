@@ -18,14 +18,19 @@ codegen、ruler guides、`.pen` import、Find/⌘K、constraints 已落地。本
 | 9 | **矢量蒙版（等价能力）** | 剪贴蒙版（⌥⌘G / ⇧⌥⌘G）已存在但只能靠快捷键/⌘K：补到右键菜单 Create/Release clipping mask；路径基座即矢量蒙版 | 本次 |
 | 10 | **便携快照 .zip** | `snapshot_io.js`：document.voo + manifest + preview 打包；标题栏快照按钮导出；Open 自动识别 `.zip` 并解包（含畸形 zip 防护）；`buildProjectVooFile` 从保存路径抽出共用 | `9a12ff7` |
 | 11 | **轻色界面主题** | `voo.editor.theme` 启动前应用 `html[data-theme]`；设置 → 外观开关；`theme-light.css` 重映射中性色阶/描边/surface token/共享面板；开关、画布 ground、accent 文本单独处理；44 状态浅色巡检 0 error/裁剪/漏翻/无名称 | `977a5ae` |
-| 12 | **清理** | 引擎参数重复键去重；原型 runner 移出 presentation 懒加载 chunk（修复循环初始化崩溃） | `c6e0625` / `aaf8bfd` |
+| 12 | **评论通知（本地）** | `comment_notifications.js`：last-seen 时间戳、未读线程清理、@mention 收件箱；评论面板折叠按钮显示未读数，pin/列表显示 New 标记，打开面板即已读 | 本轮 |
+| 13 | **自动保存草稿开关** | `voo.editor.autoSaveDrafts`（默认关，保持手动保存）；设置 → 外观开关；打开后 `useEditorAutosave` 后台写本地草稿（崩溃恢复），不改变显式保存语义 | 本轮 |
+| 14 | **段落间距** | 文本排版增加段落索引与 `lineOffsets`，绘制/边界/测量一致；文本面板新增 Paragraph spacing | 本轮 |
+| 15 | **原型 overlay + 过渡播放** | 新增 open/closeOverlay 动作；Runner 叠加浮层（可点击关闭/可含热区）；navigate 播放 dissolve/move-* 过渡 | 本轮 |
+| 16 | **清理** | 引擎参数重复键去重；原型 runner 移出 presentation 懒加载 chunk（修复循环初始化崩溃） | `c6e0625` / `aaf8bfd` |
 
 ## 2. 验证
 
-- `npx vitest run`：**3307 passed / 12 skipped / 0 failed**
-- `npm run lint:design`：clean（1090 files）
+- `npx vitest run`：**3316 passed / 12 skipped / 0 failed**
+- `npm run lint:design`：clean（1092 files）
 - `npm run build`：通过（`dist` 已重建）
-- 44 状态巡检（深色 + `VOO_AUDIT_THEME=light`）：**0 error / 0 裁剪 / 0 漏翻 / 0 无名称**
+- 44 状态巡检（深色 + `VOO_AUDIT_THEME=light`）：均为 **0 error / 0 裁剪 / 0 漏翻 / 0 无名称**
+- 协作冒烟：`tests/unit/collab_two_devices.test.js`（双端 session 同步）通过；真实后端 WebSocket 未在本环境启动
 - 运行时验证：布局网格可见（网格/列）、Inspect 面板、原型 Red→Blue 跳转、Export 下载、header 重命名、canvas/stage 尺寸一致
 
 ## 3. 仍未做（明确遗留，非本轮缺陷）
@@ -33,18 +38,15 @@ codegen、ruler guides、`.pen` import、Find/⌘K、constraints 已落地。本
 | 项 | 原因 / 需要什么 |
 |---|---|
 | **段落间距 / 富文本 / RTL** | 文本排版是行数组模型（无段落索引），段落间距需要 layout API 改造；RTL/富文本更大 |
-| **评论通知 / @mention / 实时** | 评论模型/面板已完整，缺通知中心与 collab 广播；实时依赖协作层端到端验证 |
-| **桌面端自动保存** | `use_editor_autosave` 是刻意关闭（Photoshop 手动保存），草稿崩溃恢复已有 `useDraftAutosave`；要做成用户选项是产品决策 |
 | **Healing Spot 的 Source/Sample all layers** | 引擎没有对应采样参数，面板不应提供无效控件 |
 | **Free Transform 独立工具** | 与 Pen/Figma 一致：Select 手柄即变换；⌘T 是像素选区变换，不新增冗余入口 |
-| **协作冒烟** | 代码路径存在（session/cursor/share_actions），但两窗同步/分享链接未做端到端验证，未改动 |
 
 ## 4. 建议下一批
 
-1. 评论通知 / @mention / 实时（依赖协作层两窗冒烟）
-2. 文本排版 API 加段落索引 → 段落间距（Text case 已完成）
-3. 协作层两窗冒烟（需要后端 WebSocket）
-4. `.voo` 快照导出（若确实需要跨工具分发再评估）
+1. 真实协作后端的两窗/分享链接联调（本环境无 WebSocket 服务）
+2. Figma 右栏剩余缺口（见 `figma/RIGHT_PANEL_PARITY_2026-10-26.md`）：sizing combo、多 stroke、多 paint 高级项、Effects blur/noise、组件 properties/instance swap
+3. 富文本 / RTL 排版
+4. 快照/导出格式的更广互操作（Pen/Figma/PSD 已有导入）
 
 ## 5. 复现
 

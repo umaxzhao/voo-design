@@ -9,6 +9,8 @@
 export default {
   "settings.appearance.title": "Appearance",
   "settings.appearance.hint": "How the editor chrome looks.",
+  "settings.appearance.autoSaveDrafts": "Auto-save edit drafts",
+  "settings.appearance.autoSaveDraftsHint": "Keep a local draft copy of edits for crash recovery. Saving the file is still explicit.",
   "settings.appearance.lightTheme": "Light interface",
   "settings.appearance.lightThemeHint": "Switch the panels and chrome to a light theme. The canvas keeps its own colors.",
   "settings.canvas.title": "Canvas",

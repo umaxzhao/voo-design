@@ -34,6 +34,8 @@ const TRIGGER_LABEL = {
 const ACTION_LABEL = {
   navigate: "editor.prototype.action.navigate",
   back: "editor.prototype.action.back",
+  overlay: "editor.prototype.action.overlay",
+  closeOverlay: "editor.prototype.action.closeOverlay",
 };
 const TRANSITION_LABEL = {
   instant: "editor.prototype.transition.instant",
@@ -170,7 +172,7 @@ export default function PrototypeSection({ object, engine }) {
                     value={interaction.action}
                     onChange={(action) =>
                       patch(
-                        action === "back"
+                        action === "back" || action === "closeOverlay"
                           ? { action, targetId: undefined }
                           : { action },
                       )
@@ -194,7 +196,8 @@ export default function PrototypeSection({ object, engine }) {
                     ×
                   </button>
                 </div>
-                {interaction.action === "navigate" ? (
+                {interaction.action === "navigate" ||
+                interaction.action === "overlay" ? (
                   <FlatSelect
                     value={interaction.targetId ?? ""}
                     onChange={(targetId) => patch({ targetId })}
