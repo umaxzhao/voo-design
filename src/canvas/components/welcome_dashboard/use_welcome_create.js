@@ -1,8 +1,10 @@
+import { useEffect, useRef } from "react";
 import { useDesignStore } from "../../../store/design_store.js";
 import { addRecentFile } from "../../store/recent_files.js";
 import { createDocument, CANVAS_TYPE } from "../../editor/scene_doc_factory.js";
 import { encodeVooBinary } from "../../store/voo_binary.js";
 import { workspaceStorage, guessCategory } from "../../../services/workspace_storage.js";
+import { WELCOME_NEW_EVENT } from "./welcome_events.js";
 
 /** Handlers that create a new design file: blank/preset or community template. */
 export function useWelcomeCreate({
@@ -129,6 +131,16 @@ export function useWelcomeCreate({
       console.error("[VOO] Failed to instantiate community template:", err);
     }
   };
+
+  // The title bar "New" button triggers the same handler through a window event.
+  // A ref keeps the listener pointing at the latest closure (fresh fileList).
+  const createNewRef = useRef(handleCreateNew);
+  createNewRef.current = handleCreateNew;
+  useEffect(() => {
+    const onWelcomeNew = () => createNewRef.current();
+    window.addEventListener(WELCOME_NEW_EVENT, onWelcomeNew);
+    return () => window.removeEventListener(WELCOME_NEW_EVENT, onWelcomeNew);
+  }, []);
 
   return { handleCreateNew, handleUseTemplate };
 }

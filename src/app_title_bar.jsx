@@ -4,6 +4,7 @@ import { Bolt } from "lucide-react";
 import { useDesignStore } from "./store/design_store.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import SettingsDrawer from "./canvas/components/settings_drawer.jsx";
+import { WELCOME_NEW_EVENT } from "./canvas/components/welcome_dashboard/welcome_events.js";
 
 /** Brand name shown in the title bar. A product name, not translatable copy. */
 export const APP_DISPLAY_NAME = "VOO Design";
@@ -98,13 +99,14 @@ export default function AppTitleBar() {
           >
             {t("titlebar.open")}
           </button>
+          {/* No document to save on the welcome page: the primary action creates one instead. */}
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("voo:file-save"))}
+            onClick={() => window.dispatchEvent(new CustomEvent(welcomeOpen ? WELCOME_NEW_EVENT : "voo:file-save"))}
             className="cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
-            title={t("titlebar.saveTitle")}
+            title={welcomeOpen ? t("welcome.header.new") : t("titlebar.saveTitle")}
           >
-            {t("titlebar.save")}
+            {welcomeOpen ? t("welcome.header.new") : t("titlebar.save")}
           </button>
           <button
             type="button"
