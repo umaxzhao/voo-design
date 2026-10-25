@@ -145,6 +145,21 @@ function buildToneLutUncached(adjustments) {
   const twirlVal = normalized.twirl?.enabled
     ? (normalized.twirl.value ?? 0)
     : 0;
+  const denoiseVal = normalized.denoise?.enabled
+    ? (normalized.denoise.value ?? 0)
+    : 0;
+  const defringeVal = normalized.defringe?.enabled
+    ? (normalized.defringe.value ?? 0)
+    : 0;
+  const hazeRemovalVal = normalized.hazeRemoval?.enabled
+    ? (normalized.hazeRemoval.value ?? 0)
+    : 0;
+  const diffuseGlowVal = normalized.diffuseGlow?.enabled
+    ? (normalized.diffuseGlow.value ?? 0)
+    : 0;
+  const unsharpMaskVal = normalized.unsharpMask?.enabled
+    ? (normalized.unsharpMask.value ?? 0)
+    : 0;
 
   const curvesObj = normalized.curves;
   const curvesEnabled = curvesObj?.enabled ?? true;
@@ -307,6 +322,11 @@ function buildToneLutUncached(adjustments) {
     bloomVal > 0 ||
     zoomBlurVal > 0 ||
     twirlVal !== 0 ||
+    denoiseVal > 0 ||
+    defringeVal > 0 ||
+    hazeRemovalVal > 0 ||
+    diffuseGlowVal > 0 ||
+    unsharpMaskVal > 0 ||
     liveFiltersActive;
 
   // True when any cpu-only adjustment is active — the GL pipeline bails out
@@ -326,6 +346,11 @@ function buildToneLutUncached(adjustments) {
     bloomVal > 0 ||
     zoomBlurVal > 0 ||
     twirlVal !== 0 ||
+    denoiseVal > 0 ||
+    defringeVal > 0 ||
+    hazeRemovalVal > 0 ||
+    diffuseGlowVal > 0 ||
+    unsharpMaskVal > 0 ||
     colorBalanceActive ||
     bwActive ||
     photoFilterActive ||
@@ -342,7 +367,7 @@ function buildToneLutUncached(adjustments) {
         curveSignature(curvesObj?.g) +
         curveSignature(curvesObj?.b)
       : "0"
-  }|${eVal}|${tVal}|${tiVal}|${hiVal}|${shVal}|${vVal}|${blurVal}|${sharpenVal}|${highPassVal}|${clarityVal}|${motionBlurVal}|${motionBlurAngle}|${noiseVal}|${cloudsVal}|${pixelateVal}|${posterizeVal}|${solarizeVal}|${halftoneVal}|${sepiaVal}|${embossVal}|${medianVal}|${bloomVal}|${zoomBlurVal}|${twirlVal}|${levelsActive ? `${blackVal}|${whiteVal}|${gammaVal}|${outBlackVal}|${outWhiteVal}` : "0"}|${invertVal ? "1" : "0"}|${thresholdVal === null ? "0" : thresholdVal}|${colorBalanceActive ? colorBalanceSignature(colorBalance) : "0"}|${bwActive ? `${blackAndWhite.reds}|${blackAndWhite.yellows}|${blackAndWhite.greens}|${blackAndWhite.cyans}|${blackAndWhite.blues}|${blackAndWhite.magentas}|${blackAndWhite.useTint ? blackAndWhite.tintColor : "0"}` : "0"}|${photoFilterActive ? `${photoFilter.density}|${photoFilter.color}|${photoFilter.preserveLuminosity !== false ? 1 : 0}` : "0"}|${vibranceActive ? vibrance.value : "0"}|${channelMixerActive ? channelMixerSignature(channelMixer) : "0"}|${selectiveColorActive ? selectiveColorSignature(selectiveColor) : "0"}|${gradientMapActive ? gradientMapSignature(gradientMap) : "0"}${liveFiltersActive ? `|${liveFiltersStack.map((entry) => `${entry.kind}@${entry.params?.value ?? entry.params?.amount ?? entry.params?.radius ?? 0}@${entry.params?.angle ?? 0}@${entry.opacity}`).join(";")}` : "|0"}`;
+  }|${eVal}|${tVal}|${tiVal}|${hiVal}|${shVal}|${vVal}|${blurVal}|${sharpenVal}|${highPassVal}|${clarityVal}|${motionBlurVal}|${motionBlurAngle}|${noiseVal}|${cloudsVal}|${pixelateVal}|${posterizeVal}|${solarizeVal}|${halftoneVal}|${sepiaVal}|${embossVal}|${medianVal}|${bloomVal}|${zoomBlurVal}|${twirlVal}|${denoiseVal}|${defringeVal}|${hazeRemovalVal}|${diffuseGlowVal}|${unsharpMaskVal}|${levelsActive ? `${blackVal}|${whiteVal}|${gammaVal}|${outBlackVal}|${outWhiteVal}` : "0"}|${invertVal ? "1" : "0"}|${thresholdVal === null ? "0" : thresholdVal}|${colorBalanceActive ? colorBalanceSignature(colorBalance) : "0"}|${bwActive ? `${blackAndWhite.reds}|${blackAndWhite.yellows}|${blackAndWhite.greens}|${blackAndWhite.cyans}|${blackAndWhite.blues}|${blackAndWhite.magentas}|${blackAndWhite.useTint ? blackAndWhite.tintColor : "0"}` : "0"}|${photoFilterActive ? `${photoFilter.density}|${photoFilter.color}|${photoFilter.preserveLuminosity !== false ? 1 : 0}` : "0"}|${vibranceActive ? vibrance.value : "0"}|${channelMixerActive ? channelMixerSignature(channelMixer) : "0"}|${selectiveColorActive ? selectiveColorSignature(selectiveColor) : "0"}|${gradientMapActive ? gradientMapSignature(gradientMap) : "0"}${liveFiltersActive ? `|${liveFiltersStack.map((entry) => `${entry.kind}@${entry.params?.value ?? entry.params?.amount ?? entry.params?.radius ?? 0}@${entry.params?.angle ?? 0}@${entry.opacity}`).join(";")}` : "|0"}`;
 
   const { lutR, lutG, lutB } = computeChannelLuts({
     bVal,
@@ -400,6 +425,11 @@ function buildToneLutUncached(adjustments) {
     bloom: bloomVal,
     zoomBlur: zoomBlurVal,
     twirl: twirlVal,
+    denoise: denoiseVal,
+    defringe: defringeVal,
+    hazeRemoval: hazeRemovalVal,
+    diffuseGlow: diffuseGlowVal,
+    unsharpMask: unsharpMaskVal,
     colorBalance,
     blackAndWhite,
     photoFilter,

@@ -207,6 +207,26 @@ export function normalizeAdjustments(adj) {
       enabled: Boolean(adj.twirl?.enabled ?? defaults.twirl.enabled),
       value: parseAdjustmentValue(adj.twirl?.value, -100, 100, defaults.twirl.value),
     },
+    denoise: {
+      enabled: Boolean(adj.denoise?.enabled ?? defaults.denoise.enabled),
+      value: parseAdjustmentValue(adj.denoise?.value, 0, 100, defaults.denoise.value),
+    },
+    defringe: {
+      enabled: Boolean(adj.defringe?.enabled ?? defaults.defringe.enabled),
+      value: parseAdjustmentValue(adj.defringe?.value, 0, 100, defaults.defringe.value),
+    },
+    hazeRemoval: {
+      enabled: Boolean(adj.hazeRemoval?.enabled ?? defaults.hazeRemoval.enabled),
+      value: parseAdjustmentValue(adj.hazeRemoval?.value, 0, 100, defaults.hazeRemoval.value),
+    },
+    diffuseGlow: {
+      enabled: Boolean(adj.diffuseGlow?.enabled ?? defaults.diffuseGlow.enabled),
+      value: parseAdjustmentValue(adj.diffuseGlow?.value, 0, 100, defaults.diffuseGlow.value),
+    },
+    unsharpMask: {
+      enabled: Boolean(adj.unsharpMask?.enabled ?? defaults.unsharpMask.enabled),
+      value: parseAdjustmentValue(adj.unsharpMask?.value, 0, 100, defaults.unsharpMask.value),
+    },
     curves: {
       enabled: Boolean(adj.curves?.enabled ?? defaults.curves.enabled),
       luminance: normalizePoints(adj.curves?.luminance, defaults.curves.luminance),

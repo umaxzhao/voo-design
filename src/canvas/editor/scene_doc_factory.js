@@ -64,6 +64,11 @@ export function createDefaultAdjustments() {
     bloom: { enabled: true, value: 0 },
     zoomBlur: { enabled: true, value: 0 },
     twirl: { enabled: true, value: 0 },
+    denoise: { enabled: true, value: 0 },
+    defringe: { enabled: true, value: 0 },
+    hazeRemoval: { enabled: true, value: 0 },
+    diffuseGlow: { enabled: true, value: 0 },
+    unsharpMask: { enabled: true, value: 0 },
     levels: {
       enabled: true,
       black: 0,

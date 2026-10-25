@@ -187,3 +187,152 @@ export function applyTwirlFilter(data, width, height, amount) {
     }
   }
 }
+
+/** Edge-preserving smoothing — Affinity's Denoise / Bilateral approximation. */
+export function applyDenoiseFilter(data, width, height, amount) {
+  const strength = clamp((Number(amount) || 0) / 100, 0, 1);
+  if (!(strength > 0) || width < 2 || height < 2) return;
+  const radius = strength > 0.6 ? 2 : 1;
+  const sigmaSpace = radius + 0.5;
+  const sigmaColor = 6 + strength * 26;
+  const source = new Uint8ClampedArray(data);
+  const colorWeight = (delta) => Math.exp(-(delta * delta) / (2 * sigmaColor * sigmaColor));
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const index = (y * width + x) * 4;
+      const baseR = source[index];
+      const baseG = source[index + 1];
+      const baseB = source[index + 2];
+      let red = 0;
+      let green = 0;
+      let blue = 0;
+      let total = 0;
+      for (let oy = -radius; oy <= radius; oy += 1) {
+        const sy = clamp(y + oy, 0, height - 1);
+        for (let ox = -radius; ox <= radius; ox += 1) {
+          const sx = clamp(x + ox, 0, width - 1);
+          const sIndex = (sy * width + sx) * 4;
+          const sr = source[sIndex];
+          const sg = source[sIndex + 1];
+          const sb = source[sIndex + 2];
+          const spatial = Math.exp(-(ox * ox + oy * oy) / (2 * sigmaSpace * sigmaSpace));
+          const colour = colorWeight(Math.max(Math.abs(sr - baseR), Math.abs(sg - baseG), Math.abs(sb - baseB)));
+          const weight = spatial * colour;
+          red += sr * weight;
+          green += sg * weight;
+          blue += sb * weight;
+          total += weight;
+        }
+      }
+      if (total > 0) {
+        data[index] = red / total;
+        data[index + 1] = green / total;
+        data[index + 2] = blue / total;
+      }
+    }
+  }
+}
+
+/** Reduces purple/green fringes on high-contrast edges — Affinity's Defringe. */
+export function applyDefringeFilter(data, width, height, amount) {
+  const strength = clamp((Number(amount) || 0) / 100, 0, 1);
+  if (!(strength > 0) || width < 3 || height < 3) return;
+  const source = new Uint8ClampedArray(data);
+  for (let y = 1; y < height - 1; y += 1) {
+    for (let x = 1; x < width - 1; x += 1) {
+      const index = (y * width + x) * 4;
+      const red = source[index];
+      const green = source[index + 1];
+      const blue = source[index + 2];
+      // Edge magnitude from the luminance gradient: fringes live on edges.
+      const luminance = (px, py) => {
+        const i = (py * width + px) * 4;
+        return 0.299 * source[i] + 0.587 * source[i + 1] + 0.114 * source[i + 2];
+      };
+      const gradient =
+        Math.abs(luminance(x + 1, y) - luminance(x - 1, y)) +
+        Math.abs(luminance(x, y + 1) - luminance(x, y - 1));
+      if (gradient < 24) continue;
+      const purple = blue >= red && red > green + 8 && blue > green + 8;
+      const greenFringe = green > red + 8 && green > blue + 8;
+      if (!purple && !greenFringe) continue;
+      const mean = (red + green + blue) / 3;
+      const pull = strength * 0.85;
+      data[index] = red + (mean - red) * pull;
+      data[index + 1] = green + (mean - green) * pull;
+      data[index + 2] = blue + (mean - blue) * pull;
+    }
+  }
+}
+
+/** Dark-channel dehaze — Haze Removal, simplified for local pixels. */
+export function applyHazeRemovalFilter(data, width, height, amount) {
+  const strength = clamp((Number(amount) || 0) / 100, 0, 1);
+  if (!(strength > 0) || width < 3 || height < 3) return;
+  const source = new Uint8ClampedArray(data);
+  const dark = new Uint8ClampedArray(width * height);
+  let airlight = 0;
+  for (let y = 1; y < height - 1; y += 1) {
+    for (let x = 1; x < width - 1; x += 1) {
+      let minimum = 255;
+      for (let oy = -1; oy <= 1; oy += 1) {
+        for (let ox = -1; ox <= 1; ox += 1) {
+          const index = ((y + oy) * width + (x + ox)) * 4;
+          minimum = Math.min(minimum, source[index], source[index + 1], source[index + 2]);
+        }
+      }
+      dark[y * width + x] = minimum;
+      if (minimum > airlight) airlight = minimum;
+    }
+  }
+  const safeAirlight = Math.max(32, airlight);
+  const omega = 0.65 + strength * 0.3;
+  const minimumTransmission = 0.25;
+  for (let y = 1; y < height - 1; y += 1) {
+    for (let x = 1; x < width - 1; x += 1) {
+      const index = (y * width + x) * 4;
+      const transmission = Math.max(
+        minimumTransmission,
+        1 - omega * (dark[y * width + x] / safeAirlight),
+      );
+      for (let channel = 0; channel < 3; channel += 1) {
+        const value =
+          (source[index + channel] - safeAirlight) / transmission + safeAirlight;
+        data[index + channel] = source[index + channel] + (value - source[index + channel]) * strength;
+      }
+    }
+  }
+}
+
+/** Blurred copy screened back over the image — Affinity's Diffuse Glow. */
+export function applyDiffuseGlowFilter(data, width, height, amount, naturalWidth = width) {
+  const strength = clamp((Number(amount) || 0) / 100, 0, 1);
+  if (!(strength > 0) || width < 2 || height < 2) return;
+  const radius = clamp(Math.round((naturalWidth / 160) * (2 + strength * 4)), 1, 24);
+  const glow = new Uint8ClampedArray(data);
+  boxBlur(glow, width, height, radius);
+  const lift = 18 * strength;
+  for (let index = 0; index < data.length; index += 4) {
+    for (let channel = 0; channel < 3; channel += 1) {
+      const base = data[index + channel];
+      const blurred = Math.min(255, glow[index + channel] + lift);
+      data[index + channel] = 255 - ((255 - base) * (255 - blurred)) / 255;
+    }
+  }
+}
+
+/** Unsharp mask: original + amount × (original − blurred). */
+export function applyUnsharpMaskFilter(data, width, height, amount, naturalWidth = width) {
+  const strength = clamp((Number(amount) || 0) / 100, 0, 1);
+  if (!(strength > 0) || width < 2 || height < 2) return;
+  const radius = clamp(Math.round((naturalWidth / 800) * 2), 1, 4);
+  const blurred = new Uint8ClampedArray(data);
+  boxBlur(blurred, width, height, radius);
+  const factor = strength * 1.6;
+  for (let index = 0; index < data.length; index += 4) {
+    for (let channel = 0; channel < 3; channel += 1) {
+      const value = data[index + channel];
+      data[index + channel] = value + (value - blurred[index + channel]) * factor;
+    }
+  }
+}

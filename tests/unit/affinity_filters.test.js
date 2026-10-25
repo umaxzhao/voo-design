@@ -7,8 +7,13 @@ import {
 import { normalizeAdjustments } from "../../src/canvas/editor/scene_model_adjustments.js";
 import {
   applyBloomFilter,
+  applyDefringeFilter,
+  applyDenoiseFilter,
+  applyDiffuseGlowFilter,
+  applyHazeRemovalFilter,
   applyMedianFilter,
   applyTwirlFilter,
+  applyUnsharpMaskFilter,
   applyZoomBlurFilter,
 } from "../../src/canvas/editor/affinity_filters.js";
 
@@ -25,7 +30,17 @@ const buffer = (width = 8, height = 8, fill = 120) => {
 
 describe("affinity filter catalog", () => {
   it("registers the new filters with panel metadata", () => {
-    for (const kind of ["median", "bloom", "zoomBlur", "twirl"]) {
+    for (const kind of [
+      "median",
+      "bloom",
+      "zoomBlur",
+      "twirl",
+      "denoise",
+      "defringe",
+      "hazeRemoval",
+      "diffuseGlow",
+      "unsharpMask",
+    ]) {
       expect(FILTER_KINDS).toContain(kind);
       const meta = SIMPLE_ADJUSTMENTS.find((entry) => entry.kind === kind);
       expect(meta).toBeTruthy();
@@ -44,6 +59,18 @@ describe("affinity filter catalog", () => {
     expect(normalized.bloom).toEqual({ enabled: true, value: 60 });
     expect(normalized.zoomBlur).toEqual({ enabled: true, value: 30 });
     expect(normalized.twirl).toEqual({ enabled: true, value: -50 });
+    const extra = normalizeAdjustments({
+      denoise: { enabled: true, value: 35 },
+      defringe: { enabled: true, value: 20 },
+      hazeRemoval: { enabled: true, value: 45 },
+      diffuseGlow: { enabled: true, value: 55 },
+      unsharpMask: { enabled: true, value: 65 },
+    });
+    expect(extra.denoise.value).toBe(35);
+    expect(extra.defringe.value).toBe(20);
+    expect(extra.hazeRemoval.value).toBe(45);
+    expect(extra.diffuseGlow.value).toBe(55);
+    expect(extra.unsharpMask.value).toBe(65);
   });
 });
 
@@ -66,6 +93,36 @@ describe("affinity filter kernels", () => {
     applyZoomBlurFilter(data, 8, 8, 60);
     expect(data.length).toBe(8 * 8 * 4);
     expect(data[3]).toBe(255);
+  });
+
+  it("denoise keeps a flat image flat but smooths noise", () => {
+    const flat = buffer(8, 8, 100);
+    applyDenoiseFilter(flat, 8, 8, 50);
+    expect(flat[0]).toBe(100);
+    const noisy = buffer(8, 8, 100);
+    const center = (4 * 8 + 4) * 4;
+    noisy[center] = 0;
+    const before = noisy[center];
+    applyDenoiseFilter(noisy, 8, 8, 80);
+    expect(Math.abs(noisy[center] - before)).toBeGreaterThan(0);
+  });
+
+  it("haze removal and diffuse glow stay in range", () => {
+    const data = buffer(8, 8, 180);
+    applyHazeRemovalFilter(data, 8, 8, 50);
+    expect(data[0]).toBeGreaterThanOrEqual(0);
+    expect(data[0]).toBeLessThanOrEqual(255);
+    applyDiffuseGlowFilter(data, 8, 8, 50, 8);
+    expect(data[3]).toBe(255);
+  });
+
+  it("defringe and unsharp mask keep the buffer shape", () => {
+    const data = buffer(8, 8, 120);
+    data[0] = 255;
+    data[2] = 255;
+    applyDefringeFilter(data, 8, 8, 60);
+    applyUnsharpMaskFilter(data, 8, 8, 50, 8);
+    expect(data.length).toBe(8 * 8 * 4);
   });
 
   it("twirl is a no-op at zero and rotates at a non-zero value", () => {

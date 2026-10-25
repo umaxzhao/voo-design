@@ -30,9 +30,17 @@
 | **Affinity：Bloom** | 新增 `bloom`（亮部阈值 + 两级 box blur + screen 合成） | 同上 |
 | **Affinity：Zoom Blur** | 新增 `zoomBlur`（向中心径向采样） | 同上 |
 | **Affinity：Twirl** | 新增 `twirl`（按半径衰减旋转，负值反向） | 同上 |
+| **Affinity：Denoise** | 新增 `denoise`（空域+颜色双边近似，边缘保留平滑） | `affinity_filters.js` |
+| **Affinity：Defringe** | 新增 `defringe`（高对比边缘上的紫/绿色晕拉回中性） | 同上 |
+| **Affinity：Haze Removal** | 新增 `hazeRemoval`（暗通道 + 大气光估计的简化去雾） | 同上 |
+| **Affinity：Diffuse Glow** | 新增 `diffuseGlow`（模糊复制 + screen + 亮度提升） | 同上 |
+| **Affinity：Unsharp Mask** | 新增 `unsharpMask`（原图 + amount×(原图−模糊)） | 同上 |
 
 以上新滤镜都走现有“Effects 栈 / 通用标量滤镜面板”路径，自动出现在右侧面板的滤镜分组，
 无需新面板。
+
+验证：`npx vitest run` **3338 passed / 12 skipped / 0 failed**；`lint:design` clean（1095 files）；
+`build` 通过；44 状态巡检（深色/浅色）0 error / 裁剪 / 漏翻 / 无名称。
 
 ## 3. Affinity 过滤器对照（来自 REA action selector）
 
@@ -46,17 +54,20 @@
 | Zoom Blur | ✅ 本轮 |
 | Median Blur | ✅ 本轮 |
 | Maximum / Minimum Blur | ❌ |
-| Bilateral Blur / Denoise | 🟡 median 近似；无 bilateral |
+| Bilateral Blur | ❌（有 denoise 近似） |
+| **Denoise** | ✅ 本轮 |
 | Wavelet / FFT / ML Denoise | ❌ |
 | Bloom | ✅ 本轮 |
-| Diffuse / Diffuse Glow | ❌ |
+| Diffuse | ❌ |
+| **Diffuse Glow** | ✅ 本轮 |
 | Depth of Field / Field Blur / Lens Blur | ❌ |
-| Defringe | ❌ |
-| Denoise（显式） | 🟡 median 近似 |
+| **Defringe** | ✅ 本轮 |
+| Denoise（显式） | ✅ 本轮（bilateral 近似） |
 | Dust & Scratches | 🟡 median 近似 |
+| **Haze Removal** | ✅ 本轮 |
 | Clarity | ✅ |
 | High Pass | ✅ |
-| Unsharp Mask | 🟡 sharpen 近似 |
+| **Unsharp Mask** | ✅ 本轮 |
 | Multi-band Sharpen | ❌ |
 | Twirl | ✅ 本轮 |
 | Ripple | ❌ |
@@ -105,8 +116,8 @@
 
 ## 5. 建议下一批（按投入产出）
 
-1. **Denoise / Bilateral / Defringe**：补齐“修图前处理”三件套（P1，CPU kernel 可做）；
-2. **Haze Removal / Diffuse Glow / Depth of Field**：风光/人像常用（P1/P2）；
+1. **Bilateral / Wavelet/FFT/ML Denoise**：denoise 已有近似，但 Affinity 的专用降噪仍更强（P2）；
+2. **Depth of Field / Field Blur / Lens Blur**：风光/人像常用，需要距离场或焦点参数（P2）；
 3. **Mesh Warp / Liquify 笔刷**：Affinity 的差异化，但需要新的 warp 运行时（P2/L）；
 4. **LUT3D + Soft Proof/OCIO**：色彩管理链路，需文档/色彩空间模型（P2/L）；
 5. **Develop Persona / Tone Mapping / HDR/Focus/Panorama stacks**：独立产品面（P3）；

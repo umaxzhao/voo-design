@@ -232,6 +232,46 @@ export const SIMPLE_ADJUSTMENTS = [
     unit: "%",
     starter: 30,
   },
+  {
+    kind: "denoise",
+    labelKey: "editor.props.denoise",
+    min: 0,
+    max: 100,
+    unit: "%",
+    starter: 30,
+  },
+  {
+    kind: "defringe",
+    labelKey: "editor.props.defringe",
+    min: 0,
+    max: 100,
+    unit: "%",
+    starter: 40,
+  },
+  {
+    kind: "hazeRemoval",
+    labelKey: "editor.props.hazeRemoval",
+    min: 0,
+    max: 100,
+    unit: "%",
+    starter: 40,
+  },
+  {
+    kind: "diffuseGlow",
+    labelKey: "editor.props.diffuseGlow",
+    min: 0,
+    max: 100,
+    unit: "%",
+    starter: 40,
+  },
+  {
+    kind: "unsharpMask",
+    labelKey: "editor.props.unsharpMask",
+    min: 0,
+    max: 100,
+    unit: "%",
+    starter: 50,
+  },
 ];
 
 /**
@@ -280,6 +320,11 @@ export const FILTER_KINDS = [
   "bloom",
   "zoomBlur",
   "twirl",
+  "denoise",
+  "defringe",
+  "hazeRemoval",
+  "diffuseGlow",
+  "unsharpMask",
   "sepia",
   "vignette",
 ];

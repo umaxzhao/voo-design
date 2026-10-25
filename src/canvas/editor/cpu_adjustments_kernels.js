@@ -36,7 +36,12 @@ import { applyLiveFilterStack } from "./live_filter_stack.js";
 import {
   applyBloomFilter,
   applyMedianFilter,
+  applyDefringeFilter,
+  applyDenoiseFilter,
+  applyDiffuseGlowFilter,
+  applyHazeRemovalFilter,
   applyTwirlFilter,
+  applyUnsharpMaskFilter,
   applyZoomBlurFilter,
 } from "./affinity_filters.js";
 
@@ -215,6 +220,15 @@ export function applyAdjustmentKernels(data, width, height, naturalWidth, tone) 
   }
   if (tone.zoomBlur > 0) applyZoomBlurFilter(data, width, height, tone.zoomBlur);
   if (tone.twirl) applyTwirlFilter(data, width, height, tone.twirl);
+  if (tone.denoise > 0) applyDenoiseFilter(data, width, height, tone.denoise);
+  if (tone.defringe > 0) applyDefringeFilter(data, width, height, tone.defringe);
+  if (tone.hazeRemoval > 0) applyHazeRemovalFilter(data, width, height, tone.hazeRemoval);
+  if (tone.diffuseGlow > 0) {
+    applyDiffuseGlowFilter(data, width, height, tone.diffuseGlow, naturalWidth ?? width);
+  }
+  if (tone.unsharpMask > 0) {
+    applyUnsharpMaskFilter(data, width, height, tone.unsharpMask, naturalWidth ?? width);
+  }
 
   // Spatial convolutions come last, in the GPU pipeline's order (blur, then
   // sharpen). scaledRadius converts the slider radius from natural to working
