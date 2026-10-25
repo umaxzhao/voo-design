@@ -4,20 +4,16 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 // Return the key itself so assertions can match stable aria-label keys.
 vi.mock("../../src/canvas/use_i18n.js", () => ({
-  useI18n: () => ({
-    t: (key) => key,
-    locale: "en",
-    toggleLocale: () => {},
-  }),
+  useI18n: () => ({ t: (key) => key, locale: "en", toggleLocale: () => {} }),
 }));
 
 import TransformSection from "../../src/canvas/components/editor_properties/transform_section.jsx";
+import AppearanceSection from "../../src/canvas/components/editor_properties/appearance_section.jsx";
 
-const SEPARATOR = 'role="separator"';
-const ROTATION_LABEL = 'aria-label="editor.props.rotation"';
 const OPACITY_LABEL = 'aria-label="editor.props.opacity"';
+const BLEND_LABEL = 'aria-label="editor.props.blendMode"';
 
-function renderSection(overrides = {}) {
+function renderTransform(overrides = {}) {
   const object = {
     id: "rect-1",
     kind: "rect",
@@ -42,30 +38,46 @@ function renderSection(overrides = {}) {
   );
 }
 
-describe("TransformSection divider", () => {
-  it("renders exactly one separator between the rotation row and the opacity row", () => {
-    const html = renderSection();
-    const separatorCount = html.split(SEPARATOR).length - 1;
-    expect(separatorCount).toBe(1);
+const renderAppearance = (opacity = 1) => {
+  const object = { id: "rect-1", kind: "rect", opacity, blendMode: "normal" };
+  return renderToStaticMarkup(
+    <AppearanceSection
+      object={object}
+      selectedNodes={[object]}
+      edit={() => {}}
+      editAndCommit={() => {}}
+    />,
+  );
+};
 
-    const rotationAt = html.indexOf(ROTATION_LABEL);
-    const separatorAt = html.indexOf(SEPARATOR);
-    const opacityAt = html.indexOf(OPACITY_LABEL);
-    expect(rotationAt).toBeGreaterThan(-1);
-    expect(opacityAt).toBeGreaterThan(-1);
-    expect(rotationAt).toBeLessThan(separatorAt);
-    expect(separatorAt).toBeLessThan(opacityAt);
+describe("Transform and Appearance separation", () => {
+  it("keeps opacity and blend mode out of Transform", () => {
+    const html = renderTransform();
+    expect(html).not.toContain(OPACITY_LABEL);
+    expect(html).not.toContain(BLEND_LABEL);
+    expect(html).not.toContain('role="separator"');
   });
 
-  it("uses the panel section divider classes", () => {
-    const html = renderSection();
-    expect(html).toMatch(/<div role="separator" class="border-t border-white\/10"><\/div>/);
-  });
-
-  it("hides the divider for regions, where the rotation row is not rendered", () => {
-    const html = renderSection({ isRegion: true });
-    expect(html).not.toContain(SEPARATOR);
-    expect(html).not.toContain(ROTATION_LABEL);
+  it("renders opacity and blend mode in the Appearance section", () => {
+    const html = renderAppearance(0.5);
     expect(html).toContain(OPACITY_LABEL);
+    expect(html).toContain(BLEND_LABEL);
+    expect(html).toContain("editor.props.appearance");
+    expect(html).toContain('value="50"');
+  });
+
+  it("disables the opacity field for a mixed multi-selection", () => {
+    const a = { id: "a", kind: "rect", opacity: 0.25, blendMode: "normal" };
+    const b = { id: "b", kind: "rect", opacity: 0.75, blendMode: "normal" };
+    const html = renderToStaticMarkup(
+      <AppearanceSection
+        object={a}
+        selectedNodes={[a, b]}
+        edit={() => {}}
+        editAndCommit={() => {}}
+      />,
+    );
+    expect(html).toContain(OPACITY_LABEL);
+    expect(html).toContain("disabled");
   });
 });

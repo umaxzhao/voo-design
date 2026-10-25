@@ -5,15 +5,13 @@
 
 import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
-import { Blend, Contrast } from "lucide-react";
+import { Contrast } from "lucide-react";
 import ScrubField from "../scrub_field.jsx";
 import MixedField from "./mixed_field.jsx";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
 import { StaticSection } from "./property_section.jsx";
 import {
   MAX_SHEAR_DEG,
-  BLEND_MODES,
-  DEFAULT_BLEND_MODE,
 } from "../../editor/scene_model_core.js";
 import {
   anchorDocPoint,
@@ -28,12 +26,8 @@ import EditorTooltip from "../editor_tooltip.jsx";
 import AnchorPointGrid from "./transform_anchor_grid.jsx";
 import TransformDimensionBar from "./transform_dimension_bar.jsx";
 import TransformRadiusControls from "./transform_radius_controls.jsx";
-import FlatSelect from "../flat_select.jsx";
 
 export { AnchorPointGrid, TransformDimensionBar, TransformRadiusControls };
-
-const blendModeLabelKey = (mode) =>
-  `editor.blend.${mode.replace(/-([a-z])/g, (_, c) => c.toUpperCase())}`;
 
 /** Largest value the position/size fields accept — comfortably past any doc. */
 const COORD_LIMIT = 99999;
@@ -246,39 +240,7 @@ export default function TransformSection({
           </div>
         )}
 
-        {/* Same separator as the panel's section dividers; space-y-2.5 supplies the rhythm on both sides. */}
-        {isRegion ? null : <div role="separator" className="border-t border-white/10" />}
-
-        <div className="grid grid-cols-2 gap-2 items-center">
-          {commonOpacity.mixed ? (
-            <MixedField label="" suffix="%" />
-          ) : (
-            <ScrubField
-              suffix="%"
-              min={0}
-              max={100}
-              value={Math.round((commonOpacity.value ?? 1) * 100)}
-              onValueChange={(value) => edit({ opacity: value / 100 })}
-              onCommit={commitNow}
-              ariaLabel={t("editor.props.opacity")}
-              scrubHint={t("editor.props.dragToAdjust")}
-            />
-          )}
-          <FlatSelect
-            value={object.blendMode ?? DEFAULT_BLEND_MODE}
-            onChange={(value) => editAndCommit({ blendMode: value })}
-            label={t("editor.props.blendMode")}
-            placeholderIcon={
-              <Blend size={11} className="text-neutral-500" />
-            }
-            options={BLEND_MODES.map((mode) => ({
-              value: mode,
-              label: t(blendModeLabelKey(mode)),
-            }))}
-            triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2.5 !text-[10px] !font-mono !tabular-nums !uppercase !text-neutral-100 hover:!bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
-            widthClass="w-full"
-          />
-        </div>
+        {/* Opacity and blend mode live in the Appearance section (Figma/Pen). */}
 
         {showRadius && (object.kind === "rect" || object.isFrame || object.kind === "frame") ? (
           <TransformRadiusControls

@@ -163,6 +163,11 @@ export default function EditorProperties({
       marqueeMode={toolProps?.marqueeMode}
       brushMode={toolProps?.brushMode}
       healingMode={toolProps?.healingMode}
+      object={object}
+      selectionCount={selectionCount}
+      onRename={(name) => {
+        if (engine && object?.id) engine.updateNode?.(object.id, { name });
+      }}
       isToolActive={isDedicatedToolActive}
       showMaskBtn={!isDedicatedToolActive && showMaskBtn}
       hasMask={hasMask}

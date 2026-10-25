@@ -23,7 +23,7 @@ import { FillSection } from "../../src/canvas/components/editor_properties/colou
 import { TOOL } from "../../src/canvas/editor/editor_constants.js";
 
 const noop = () => {};
-const engine = { getDocument: () => ({ nodes: [], modifiers: [] }), subscribeRender: () => () => {}, setTool: noop };
+const engine = { getDocument: () => ({ nodes: [], modifiers: [] }), subscribeRender: () => () => {}, setTool: noop, exportSelectionPng: () => ({ dataUrl: "data:image/png;base64,AA" }) };
 const image = { id: "img", kind: "image", x: 0, y: 0, width: 100, height: 80, adjustments: {} };
 const rect = { id: "r1", kind: "rect", x: 0, y: 0, width: 40, height: 40, fill: "#ff0000" };
 
@@ -96,32 +96,39 @@ describe("brush options live in the right panel", () => {
   });
 });
 
-describe("empty sections do not render; extras hide behind one add menu", () => {
-  it("renders only the minimal default sections for a plain shape", () => {
+describe("core sections are always visible; advanced extras hide behind one add menu", () => {
+  it("renders paint, effects, constraints, appearance and export for a plain shape", () => {
     const html = renderSections(rect, { sections: ["alignment", "transform", "constraints", "layer", "fill", "stroke", "effects", "export"] });
+    for (const shown of [
+      "editor.constraints.title",
+      "editor.props.effects",
+      "editor.props.addEffect",
+      "editor.props.appearance",
+      "editor.props.exportTitle",
+    ]) {
+      expect(html, shown).toContain(shown);
+    }
     for (const hidden of [
       "editor-live-filter-section",
       "editor-modifiers-section",
       "editor-style-section",
       "editor.variables.title",
-      "editor.constraints.title",
-      "editor.props.effects",
       "editor.layers.noEffects",
     ]) {
-      expect(html).not.toContain(hidden);
+      expect(html, hidden).not.toContain(hidden);
     }
     expect(html.match(/data-testid="properties-add-menu"/g)).toHaveLength(1);
   });
 
-  it("renders the Effects section (header with add) only once the layer has an adjustment", () => {
-    const html = renderSections({ ...rect, adjustments: { brightness: { enabled: true, value: 10 } } }, { sections: ["effects"] });
+  it("keeps the Effects header even with an empty stack", () => {
+    const html = renderSections(rect, { sections: ["effects"] });
     expect(html).toContain("editor.props.effects");
     expect(html).toContain("editor.props.addEffect");
   });
 
-  it("shows constraints only once they are set on the layer", () => {
+  it("shows constraints whenever the selection supports them", () => {
     const sections = ["transform", "constraints", "layer"];
-    expect(renderSections(rect, { sections })).not.toContain("editor.constraints.title");
+    expect(renderSections(rect, { sections })).toContain("editor.constraints.title");
     expect(renderSections({ ...rect, constraints: { horizontal: "left", vertical: "top" } }, { sections })).toContain("editor.constraints.title");
   });
 

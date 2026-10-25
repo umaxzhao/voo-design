@@ -2,6 +2,7 @@
 
 import { EDITOR_BETA_ENABLED } from "../../editor-beta-features.js";
 import PropTypes from "prop-types";
+import { useState } from "react";
 import {
   IconSwap,
   IconMask,
@@ -14,6 +15,7 @@ import {
   IconPipette,
   IconBucket,
   IconSelectionRect,
+  IconFrame,
 } from "../../icons.jsx";
 import { TOOL } from "../../editor/editor_constants.js";
 import EditorTooltip from "../editor_tooltip.jsx";
@@ -118,11 +120,74 @@ export default function PropertiesPanelHeader({
   motionTriggerRef,
   motionOpen,
   onToggleSide,
+  object = null,
+  selectionCount = 1,
+  onRename = null,
   t,
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
   const toolInfo = isToolActive
     ? getToolHeaderInfo(tool, t, marqueeMode, brushMode, healingMode)
     : null;
+  const nodeHeader = !toolInfo && object ? objectHeader(object, selectionCount) : null;
+
+  function objectHeader(node, count) {
+    const kind = node.isFrame || node.kind === "frame" ? "frame" : node.kind;
+    const typeKey = `editor.nodeType.${kind}`;
+    const icon =
+      kind === "frame" ? <IconFrame size={12} className="text-neutral-300" /> :
+      kind === "text" ? <IconText size={12} className="text-neutral-300" /> :
+      kind === "group" ? <IconFrame size={12} className="text-neutral-300" /> :
+      kind === "image" ? <IconBrush size={12} className="text-neutral-300" /> :
+      <IconVectorSquare size={12} className="text-neutral-300" />;
+    const name = node.name || node.kind;
+    const commit = () => {
+      setEditing(false);
+      const next = draft.trim();
+      if (next && next !== name) onRename?.(next);
+    };
+    return (
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="shrink-0">{icon}</span>
+        {count > 1 ? (
+          <span className="truncate text-[11px] font-mono text-neutral-200">
+            {t("editor.props.multiSelected", { count })}
+          </span>
+        ) : editing ? (
+          <input
+            autoFocus
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onBlur={commit}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") commit();
+              if (event.key === "Escape") setEditing(false);
+            }}
+            aria-label={t("editor.props.layerName")}
+            className="min-w-0 flex-1 border-b border-white/20 bg-transparent text-[11px] font-mono text-neutral-100 outline-none"
+          />
+        ) : (
+          <button
+            type="button"
+            onDoubleClick={() => {
+              setDraft(name);
+              setEditing(true);
+            }}
+            title={t("editor.props.renameHint")}
+            className="min-w-0 truncate text-left text-[11px] font-mono text-neutral-200 transition-colors hover:text-white"
+          >
+            {name}
+          </button>
+        )}
+        {count > 1 ? null : (
+          <span className="shrink-0 text-[9px] font-mono uppercase tracking-wide text-neutral-500">
+            {t(typeKey) === typeKey ? kind : t(typeKey)}
+          </span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-between px-2 pb-2.5 pt-1 border-b border-white/10 mb-2 select-none">
@@ -132,6 +197,8 @@ export default function PropertiesPanelHeader({
             {toolInfo.icon}
             <span className="font-semibold text-white truncate">{toolInfo.label}</span>
           </div>
+        ) : nodeHeader ? (
+          nodeHeader
         ) : (
           <h2 className="text-[11px] font-mono tracking-wider text-neutral-400 font-medium uppercase truncate">
             {t("editor.properties")}

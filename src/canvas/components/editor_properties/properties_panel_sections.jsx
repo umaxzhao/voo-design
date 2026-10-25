@@ -26,8 +26,10 @@ import MediaSection from "./media_section.jsx";
 import ModifiersSection from "./modifiers_section.jsx";
 import VariantsSection from "./variants_section.jsx";
 import PanelAddMenu from "./panel_add_menu.jsx";
+import AppearanceSection from "./appearance_section.jsx";
+import ExportSection from "./export_section.jsx";
+import SelectionColorsSection from "./selection_colors_section.jsx";
 import { resolveExtras } from "./panel_extras.js";
-import { downloadSelectionPng } from "./type_specific_sections.jsx";
 import {
   isRegionNode,
   supportsColour,
@@ -96,13 +98,10 @@ export default function PropertiesPanelSections({
   const showRepeatArray = !isBackground && eligible.modifiers;
   const show = (key) => eligible[key] && (hasContent[key] || revealed(key));
   const addItems = [
-    eligible.effects && !hasContent.effects && { key: "effects", label: t("editor.panel.effects"), onSelect: () => setEffectsPicker(true) },
     eligible.liveFilters && !show("liveFilters") && { key: "liveFilters", label: t("editor.liveFilters.title"), onSelect: () => reveal("liveFilters") },
     eligible.variables && !show("variables") && { key: "variables", label: t("editor.variables.title"), onSelect: () => reveal("variables") },
     eligible.styles && !show("styles") && { key: "styles", label: t("styles.title"), onSelect: () => reveal("styles") },
-    eligible.constraints && !show("constraints") && { key: "constraints", label: t("editor.constraints.title"), onSelect: () => reveal("constraints") },
     showRepeatArray && !show("modifiers") && { key: "modifiers", label: t("editor.props.modifiers"), onSelect: () => reveal("modifiers") },
-    eligible.export && { key: "export", label: t("editor.props.exportPng"), onSelect: () => downloadSelectionPng(engine, object) },
   ].filter(Boolean);
   return (
     <>
@@ -164,7 +163,7 @@ export default function PropertiesPanelSections({
 
       {/* The constraints row appears once set or when the add menu reveals it.
           Image actions (crop / replace / fit) live in ImageContextActions. */}
-      {show("constraints") ? (
+      {!isWarpTool && eligible.constraints ? (
         <ConstraintsSection object={object} editAndCommit={editAndCommit} />
       ) : null}
 
@@ -194,16 +193,6 @@ export default function PropertiesPanelSections({
         <AutoLayoutChildSection object={object} editAndCommit={editAndCommit} />
       ) : null}
 
-      {!isWarpTool && object.kind === "text" ? (
-        <TextSection
-          object={object}
-          edit={edit}
-          editAndCommit={editAndCommit}
-          commitNow={commitNow}
-          selectedNodes={selectedNodes}
-        />
-      ) : null}
-
       {/* Polygon/star parameters and the line/arrow head menu. Single
           selection only: the patches carry absolute geometry. */}
       {!isWarpTool &&
@@ -228,6 +217,20 @@ export default function PropertiesPanelSections({
           bitmap={getBitmap?.(object) ?? null}
           t={t}
         />
+      ) : null}
+
+      {!isWarpTool && object.kind === "text" ? (
+        <TextSection
+          object={object}
+          edit={edit}
+          editAndCommit={editAndCommit}
+          commitNow={commitNow}
+          selectedNodes={selectedNodes}
+        />
+      ) : null}
+
+      {!isWarpTool ? (
+        <SelectionColorsSection selectedNodes={selectedNodes} engine={engine} />
       ) : null}
 
       {!isWarpTool && (has("fill") || has("stroke")) && supportsColour(object) ? (
@@ -290,6 +293,20 @@ export default function PropertiesPanelSections({
           panelRef={panelRef}
           getBitmap={getBitmap}
         />
+      ) : null}
+
+      {!isWarpTool && object.kind !== "adjustment" && object.kind !== "region" && object.kind !== "audio" ? (
+        <AppearanceSection
+          object={object}
+          selectedNodes={selectedNodes}
+          edit={edit}
+          editAndCommit={editAndCommit}
+          commitNow={commitNow}
+        />
+      ) : null}
+
+      {eligible.export ? (
+        <ExportSection object={object} selectedNodes={selectedNodes} engine={engine} />
       ) : null}
 
       {eligible.liveFilters ? (

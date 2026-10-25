@@ -143,8 +143,7 @@ export default function LayerEffectsSection({
 
   return (
     <>
-      {/* An empty stack renders no section; the panel's add menu is the entry point. */}
-      {hasAny ? (
+      {/* Always present (Figma/Pen): an empty stack is just the header + button. */}
       <CollapsibleSection
         title={t("editor.props.effects")}
         extra={
@@ -294,7 +293,6 @@ export default function LayerEffectsSection({
           })}
         </div>
       </CollapsibleSection>
-      ) : null}
 
       {/* Both cards mount on the panel element itself, clear of its scrolling
           body -- `overflow-y: auto` there computes overflow-x to auto as well,
