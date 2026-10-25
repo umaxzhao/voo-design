@@ -4276,6 +4276,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               onHealingMode: (mode) => engine?.setHealingMode?.(mode),
               cloneAligned: engine?.getCloneAligned?.() ?? false,
               onCloneAligned: (next) => engine?.setCloneAligned?.(next),
+              cloneSource: engine?.getCloneSource?.() ?? null,
               brushBlendMode: engine?.getBrushBlendMode?.() ?? "normal",
               onBrushBlendMode: (mode) => engine?.setBrushBlendMode?.(mode),
               penAnchorType: engine?.getPenAnchorType?.() ?? "corner",
