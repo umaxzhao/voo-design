@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
 import { useCallback, useEffect, useState } from "react";
+import { useI18n } from "../../use_i18n.js";
 import OnboardingFlatOption from "./onboarding_flat_option.jsx";
 import { workspaceStorage, ElectronWorkspaceDriver, WebFsaWorkspaceDriver } from "../../../services/workspace_storage.js";
 
@@ -7,6 +8,7 @@ const DEFAULT_DESKTOP_PATH = "~/Documents/VOO/Projects";
 const DEFAULT_VIRTUAL_PATH = "Virtual Workspace";
 
 export default function StepWorkspace({ workspaceConfig, onSelectConfig }) {
+  const { t } = useI18n();
   const isElectron = ElectronWorkspaceDriver.isAvailable();
   const hasFsa = WebFsaWorkspaceDriver.isAvailable();
   const [defaultDesktopPath, setDefaultDesktopPath] = useState(DEFAULT_DESKTOP_PATH);
@@ -49,11 +51,11 @@ export default function StepWorkspace({ workspaceConfig, onSelectConfig }) {
         setErrorMsg(res.error);
       }
     } catch (err) {
-      setErrorMsg(err.message || "Failed to select directory");
+      setErrorMsg(err.message || t("onboardingGuide.workspace.chooseFailed"));
     } finally {
       setLoading(false);
     }
-  }, [selectNative]);
+  }, [selectNative, t]);
 
   const handleSelectVirtual = useCallback(() => {
     setErrorMsg("");
@@ -68,7 +70,7 @@ export default function StepWorkspace({ workspaceConfig, onSelectConfig }) {
 
   const handleChooseWebFsa = useCallback(async () => {
     if (!hasFsa) {
-      setErrorMsg("当前浏览器不支持本地文件夹挂载，推荐使用沙盒工作区。");
+      setErrorMsg(t("onboardingGuide.workspace.fsaUnsupported"));
       handleSelectVirtual();
       return;
     }
@@ -88,11 +90,11 @@ export default function StepWorkspace({ workspaceConfig, onSelectConfig }) {
         setErrorMsg(res.error);
       }
     } catch (err) {
-      setErrorMsg(err.message || "File System Access API failed");
+      setErrorMsg(err.message || t("onboardingGuide.workspace.fsaFailed"));
     } finally {
       setLoading(false);
     }
-  }, [hasFsa, handleSelectVirtual, onSelectConfig]);
+  }, [hasFsa, handleSelectVirtual, onSelectConfig, t]);
 
   const isNativeSelected = activeType === "electron";
   const isFsaSelected = activeType === "web-fsa";
@@ -103,7 +105,7 @@ export default function StepWorkspace({ workspaceConfig, onSelectConfig }) {
       {isElectron ? (
         <OnboardingFlatOption
           testId="workspace-option-native"
-          title="本地磁盘"
+          title={t("onboardingGuide.workspace.native")}
           description={defaultDesktopPath}
           selected={isNativeSelected}
           onSelect={() => selectNative(defaultDesktopPath, true)}
@@ -118,14 +120,14 @@ export default function StepWorkspace({ workspaceConfig, onSelectConfig }) {
             }}
             className="mt-1 w-fit text-[11px] font-medium text-neutral-300 underline-offset-2 hover:text-white hover:underline disabled:opacity-40"
           >
-            {loading ? "选择中..." : "选择其他目录"}
+            {loading ? t("onboardingGuide.workspace.choosing") : t("onboardingGuide.workspace.nativeCustom")}
           </button>
         </OnboardingFlatOption>
       ) : (
         <OnboardingFlatOption
           testId="workspace-option-fsa"
-          title="本地文件夹"
-          description={hasFsa ? "授权后直接读写所选文件夹" : "当前浏览器不支持直接挂载"}
+          title={t("onboardingGuide.workspace.fsa")}
+          description={hasFsa ? t("onboardingGuide.workspace.fsaAvailable") : t("onboardingGuide.workspace.fsaUnavailable")}
           selected={isFsaSelected}
           onSelect={handleChooseWebFsa}
         >
@@ -140,7 +142,7 @@ export default function StepWorkspace({ workspaceConfig, onSelectConfig }) {
               }}
               className="mt-1 w-fit text-[11px] font-medium text-neutral-300 underline-offset-2 hover:text-white hover:underline disabled:opacity-40"
             >
-              {loading ? "选择中..." : "选择文件夹"}
+              {loading ? t("onboardingGuide.workspace.choosing") : t("onboardingGuide.workspace.fsaChoose")}
             </button>
           )}
         </OnboardingFlatOption>
@@ -148,8 +150,8 @@ export default function StepWorkspace({ workspaceConfig, onSelectConfig }) {
 
       <OnboardingFlatOption
         testId="workspace-option-virtual"
-        title="沙盒工作区"
-        description="保存在浏览器内，无需授权"
+        title={t("onboardingGuide.workspace.virtual")}
+        description={t("onboardingGuide.workspace.virtualDesc")}
         selected={isVirtualSelected}
         onSelect={handleSelectVirtual}
       />
@@ -159,7 +161,7 @@ export default function StepWorkspace({ workspaceConfig, onSelectConfig }) {
       )}
 
       <p className="px-1 text-[11px] text-neutral-400">
-        已选：
+        {t("onboardingGuide.workspace.selected")}
         <span data-testid="onboarding-selected-workspace-path" className="font-mono text-neutral-200">
           {activePath}
         </span>

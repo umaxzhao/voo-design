@@ -7,7 +7,7 @@ if (typeof globalThis.Element === "undefined") {
 }
 
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import OnboardingGuide from "../../src/canvas/components/onboarding/OnboardingGuide.jsx";
 import { OnboardingStepProgress } from "../../src/canvas/components/onboarding/onboarding_step_progress.jsx";
@@ -26,6 +26,11 @@ import { loadLocale } from "../../src/shared/i18n.js";
 describe("Onboarding Guide & Local CLI Setup", () => {
   beforeEach(() => {
     resetOnboarding();
+  });
+
+  // The guide renders through t(); keep every test on a known locale.
+  afterEach(async () => {
+    await loadLocale("en");
   });
 
   it("renders OnboardingStepProgress with progress bar and correct step count", () => {
@@ -75,7 +80,8 @@ describe("Onboarding Guide & Local CLI Setup", () => {
     expect(at("codex")).toBeLessThan(at("antigravity"));
   });
 
-  it("renders StepLocalDetect with transport details and test button", () => {
+  it("renders StepLocalDetect with transport details and test button", async () => {
+    await loadLocale("zh");
     const html = renderToStaticMarkup(
       <StepLocalDetect selectedAgent="claude" />
     );
@@ -85,7 +91,8 @@ describe("Onboarding Guide & Local CLI Setup", () => {
     expect(html).toContain("npm install -g @anthropic-ai/claude-code");
   });
 
-  it("renders StepReady with success badge and summary", () => {
+  it("renders StepReady with success badge and summary", async () => {
+    await loadLocale("zh");
     const html = renderToStaticMarkup(
       <StepReady selectedAgent="claude" />
     );
@@ -95,7 +102,8 @@ describe("Onboarding Guide & Local CLI Setup", () => {
     expect(html).toContain("本地磁盘");
   });
 
-  it("renders OnboardingGuide modal when open is true", () => {
+  it("renders OnboardingGuide modal when open is true", async () => {
+    await loadLocale("zh");
     const html = renderToStaticMarkup(
       <OnboardingGuide open={true} onClose={() => {}} />
     );

@@ -13,6 +13,7 @@ import accountAvatarZh from "./account-avatar-zh.js";
 import hunyuan3dZh from "./hunyuan3d-zh.js";
 import feedbackZh from "./feedback-zh.js";
 import welcomeZh from "./welcome-zh.js";
+import onboardingGuideZh from "./onboarding-guide-zh.js";
 
 import sceneEditorZh from "./scene-editor-zh.js";
 import presentationZh from "./presentation-zh.js";
@@ -463,6 +464,7 @@ export default {
   ...designAssetsZh,
   ...feedbackZh,
   ...welcomeZh,
+  ...onboardingGuideZh,
   "node.continueWithAgent": "Agent",
   "agent.continueFromStagePrompt": "从所选阶段继续生成：",
   "agent.connection.requiresDesktopApp": "需下载VOO桌面版使用",

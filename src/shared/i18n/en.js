@@ -13,6 +13,7 @@ import accountAvatarEn from "./account-avatar-en.js";
 import hunyuan3dEn from "./hunyuan3d-en.js";
 import feedbackEn from "./feedback-en.js";
 import welcomeEn from "./welcome-en.js";
+import onboardingGuideEn from "./onboarding-guide-en.js";
 
 import sceneEditorEn from "./scene-editor-en.js";
 import presentationEn from "./presentation-en.js";
@@ -501,6 +502,7 @@ export default {
   ...designAssetsEn,
   ...feedbackEn,
   ...welcomeEn,
+  ...onboardingGuideEn,
   "node.continueWithAgent": "Agent",
   "agent.continueFromStagePrompt": "Continue from the selected stage: ",
   "agent.connection.requiresDesktopApp": "Requires the VOO desktop app",

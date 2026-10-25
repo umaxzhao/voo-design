@@ -16,44 +16,15 @@ import {
 } from "./onboarding_state.js";
 
 import { applyAgentModel } from "./onboarding_agent_model.js";
+import { clearDraft, loadDraft, saveDraft } from "./onboarding_draft.js";
+import { useI18n } from "../../use_i18n.js";
 
-const DRAFT_STORAGE_KEY = "voo.onboarding.draft";
-
-function loadDraft() {
-  try {
-    if (typeof window === "undefined" || !window.sessionStorage) return null;
-    const raw = window.sessionStorage.getItem(DRAFT_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveDraft(draft) {
-  try {
-    if (typeof window !== "undefined" && window.sessionStorage) {
-      window.sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-    }
-  } catch {
-    // ignore
-  }
-}
-
-function clearDraft() {
-  try {
-    if (typeof window !== "undefined" && window.sessionStorage) {
-      window.sessionStorage.removeItem(DRAFT_STORAGE_KEY);
-    }
-  } catch {
-    // ignore
-  }
-}
-
-const STEP_TITLES = {
-  [GUIDE_STEP.WORKSPACE_SETUP]: "选择工作区",
-  [GUIDE_STEP.AGENT_SELECT]: "选择智能体",
-  [GUIDE_STEP.LOCAL_DETECT]: "检测 CLI",
-  [GUIDE_STEP.READY]: "准备就绪",
+/** i18n key of each step's title. */
+const STEP_TITLE_KEYS = {
+  [GUIDE_STEP.WORKSPACE_SETUP]: "onboardingGuide.step.workspace",
+  [GUIDE_STEP.AGENT_SELECT]: "onboardingGuide.step.agent",
+  [GUIDE_STEP.LOCAL_DETECT]: "onboardingGuide.step.detect",
+  [GUIDE_STEP.READY]: "onboardingGuide.step.ready",
 };
 
 /**
@@ -114,6 +85,7 @@ export function persistOnboardingConfig({ agent, workspaceConfig, isElectron = f
 }
 
 export default function OnboardingGuide({ open, onClose, steps = ONBOARDING_STEPS }) {
+  const { t } = useI18n();
   const isElectron = ElectronWorkspaceDriver.isAvailable();
   const [stepIndex, setStepIndex] = useState(() => {
     const draft = loadDraft();
@@ -307,7 +279,7 @@ export default function OnboardingGuide({ open, onClose, steps = ONBOARDING_STEP
             <OnboardingStepProgress
               stepIndex={stepIndex}
               steps={steps}
-              label={`步骤 ${stepIndex + 1} / ${steps.length}`}
+              label={t("onboarding.stepOf", { current: stepIndex + 1, total: steps.length })}
             />
             <span
               data-testid="onboarding-step-counter"
@@ -322,7 +294,7 @@ export default function OnboardingGuide({ open, onClose, steps = ONBOARDING_STEP
                 tabIndex={-1}
                 className="text-xs font-medium leading-relaxed text-neutral-100 outline-none"
               >
-                {STEP_TITLES[currentStep] || ""}
+                {STEP_TITLE_KEYS[currentStep] ? t(STEP_TITLE_KEYS[currentStep]) : ""}
               </h2>
             </div>
             <button
@@ -330,8 +302,8 @@ export default function OnboardingGuide({ open, onClose, steps = ONBOARDING_STEP
               data-testid="onboarding-close-btn"
               disabled={finishing}
               onClick={handleSkip}
-              title="关闭向导"
-              aria-label="关闭向导"
+              title={t("onboardingGuide.close")}
+              aria-label={t("onboardingGuide.close")}
               className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] text-neutral-400 hover:bg-white/[0.08] hover:text-neutral-200 transition-colors disabled:opacity-40"
             >
               <IconClose size={14} />
@@ -374,7 +346,7 @@ export default function OnboardingGuide({ open, onClose, steps = ONBOARDING_STEP
               onClick={handleSkip}
               className="rounded-lg px-3 py-2 text-xs text-neutral-400 hover:text-neutral-200 transition-colors disabled:opacity-40"
             >
-              稍后配置 (跳过)
+              {t("onboardingGuide.skip")}
             </button>
 
             <div className="flex items-center gap-2">
@@ -386,7 +358,7 @@ export default function OnboardingGuide({ open, onClose, steps = ONBOARDING_STEP
                   onClick={handlePrev}
                   className="rounded-lg bg-white/[0.06] px-4 py-2 text-xs font-medium text-neutral-200 hover:bg-white/[0.12] transition-colors disabled:opacity-40"
                 >
-                  上一步
+                  {t("onboarding.back")}
                 </button>
               )}
               <button
@@ -396,7 +368,7 @@ export default function OnboardingGuide({ open, onClose, steps = ONBOARDING_STEP
                 onClick={handleNext}
                 className="rounded-lg bg-[#a7ffd4] px-5 py-2 text-xs font-medium text-black hover:bg-[#a7ffd4]/90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none"
               >
-                {isLastStep ? "进入画布工作台" : "下一步"}
+                {isLastStep ? t("onboardingGuide.enterCanvas") : t("onboarding.next")}
               </button>
             </div>
           </div>
