@@ -22,11 +22,10 @@ import EditorPageTitle, { FRAME_TITLE_HIT_AREA } from "./editor_page_title.jsx";
 import EditorResizeHandles from "./editor_resize_handles.jsx";
 import EditorTextOverlay from "./editor_text_overlay.jsx";
 import EditorOutpaintOverlay from "./editor_outpaint_overlay.jsx";
-import EditorContextualTaskBar from "./editor_contextual_taskbar.jsx";
 import StreamingLayoutPreview from "./streaming_layout_preview.jsx";
 import LoadingModal from "./loading_modal.jsx";
 import { readImageRgba } from "./bitmap_pixels.js";
-import { IconAdd, IconExpand, IconFrame, IconTrash } from "../icons.jsx";
+import { IconAdd, IconExpand, IconFrame } from "../icons.jsx";
 import { TOOL } from "../editor/editor_constants.js";
 import { effectivePage } from "../editor/scene_model.js";
 import { CANVAS_TYPE } from "../editor/scene_doc_factory.js";
@@ -278,9 +277,6 @@ export default function EditorPage({
   onAddAdjustmentLayer = null,
   onApplyPreset = null,
   getBitmap = null,
-  onEditSvg = null,
-  onCreateComponent = null,
-  onDetachInstance = null,
   /** How many instances use this page as their main component. */
   componentUses = 0,
   /** (nodeId, name) => void: renames this frame; omit to make it fixed. */
@@ -307,7 +303,6 @@ export default function EditorPage({
   const rootRef = useRef(null);
   const stageRef = useRef(null);
   const canvasRef = useRef(null);
-  // The page header; the contextual taskbar keeps clear of it.
   const titleRef = useRef(null);
   // Skia paints onto its own canvas so the engine keeps the 2D one it
   // measures text against and sizes from the stage.
@@ -506,25 +501,22 @@ export default function EditorPage({
     skiaRendererEnabled() &&
     !requiresCanvas2dMediaFallback(doc);
 
-  // The image AI group of the taskbar's More menu. Expand opens the grow-frame
-  // overlay on the selected layer; the parent runs every model.
-  const aiMenuProps = {
-    onOutpaint:
-      onOutpaintSubmit && selected?.kind === "image"
-        ? () => {
-            const node = selected;
-            setOutpaintNode(node);
-            setOutpaintPlan(suggestOutpaintPlanForNode(engine, node));
-          }
-        : null,
-    onUpscale,
-    upscaleBusy,
-    onAutoEnhance,
-    onPortraitRetouch,
-    portraitRetouchBusy,
-    onSplitLayers,
-    splitLayersBusy,
-  };
+  useEffect(() => {
+    const handleOutpaintRequest = (event) => {
+      if (
+        selected?.kind !== "image" ||
+        event.detail?.nodeId !== selected.id ||
+        !onOutpaintSubmit
+      ) {
+        return;
+      }
+      setOutpaintNode(selected);
+      setOutpaintPlan(suggestOutpaintPlanForNode(engine, selected));
+    };
+    window.addEventListener("editor:request-outpaint", handleOutpaintRequest);
+    return () =>
+      window.removeEventListener("editor:request-outpaint", handleOutpaintRequest);
+  }, [engine, onOutpaintSubmit, selected]);
 
   // Asset ids handed to the engine but not yet in its document. Decoding is
   // async, so without this a second store tick would see the same layer still
@@ -585,6 +577,23 @@ export default function EditorPage({
   // snapshot to compare against, so it would call itself modified.
   readyRef.current = ready;
   const dirty = ready && (engine?.isDirty() ?? false);
+  useEffect(() => {
+    const handleDeleteRequest = (event) => {
+      if (event.detail?.nodeId !== nodeId || !onDeleteCanvas) return;
+      const canDelete = confirmCanvasDelete({
+        isDirty: dirty,
+        confirmFn:
+          typeof window !== "undefined" && typeof window.confirm === "function"
+            ? (message) => window.confirm(message)
+            : null,
+        message: t("editor.pages.confirmDeleteDirty"),
+      });
+      if (canDelete) onDeleteCanvas(nodeId);
+    };
+    window.addEventListener("editor:request-delete-canvas", handleDeleteRequest);
+    return () =>
+      window.removeEventListener("editor:request-delete-canvas", handleDeleteRequest);
+  }, [dirty, nodeId, onDeleteCanvas, t]);
 
   useEffect(() => {
     const page = doc ? effectivePage(doc) : null;
@@ -953,79 +962,6 @@ export default function EditorPage({
           ) : null}
                               {pageTitleActions}
         </div>
-        {/* Page tool row: the contextual task bar and the canvas delete sit
-            one row above the header, centred on the frame, so neither covers
-            the page itself. */}
-        <div
-          data-testid="editor-page-toolbar"
-          className="absolute left-1/2 z-40 flex -translate-x-1/2 items-center gap-1"
-          style={{ top: "calc(100% + 8px)", display: doc?.isCanvasRoot ? "none" : undefined }}
-        >
-          {doc && focused ? (
-            <EditorContextualTaskBar
-              engine={engine}
-              selectedIds={selectedIds}
-              tool={tool}
-              selected={selected}
-              hasSelection={Boolean(
-                engine?.getPixelSelection?.()?.contours?.length,
-              )}
-              removeBackground={onAutoMask}
-              maskBusy={autoMaskBusy}
-              onRepaint={
-                engine?.getPixelSelection?.()?.contours?.length
-                  ? onRepaintSelection
-                  : selected?.kind === "image"
-                    ? (prompt) => onRepaintNode?.(selected, prompt)
-                    : null
-              }
-              repaintBusy={repaintBusy}
-              {...aiMenuProps}
-              onAddAdjustmentLayer={onAddAdjustmentLayer}
-              onApplyPreset={onApplyPreset}
-              getBitmap={getBitmap}
-              doc={doc}
-              onEditSvg={onEditSvg}
-              onCreateComponent={onCreateComponent}
-              onDetachInstance={onDetachInstance}
-            />
-          ) : null}
-          {onDeleteCanvas && !selected ? (
-            <div
-              className={`flex items-center gap-0.5 rounded-lg bg-neutral-900/95 p-0.5 backdrop-blur-md transition-opacity ${
-                focused
-                  ? "opacity-100"
-                  : "pointer-events-none opacity-0 group-hover/artboard:pointer-events-auto group-hover/artboard:opacity-100"
-              }`}
-            >
-              <button
-                type="button"
-                data-testid="editor-delete-canvas-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  const canDelete = confirmCanvasDelete({
-                    isDirty: dirty,
-                    confirmFn:
-                      typeof window !== "undefined" &&
-                      typeof window.confirm === "function"
-                        ? (msg) => window.confirm(msg)
-                        : null,
-                    message: t("editor.pages.confirmDeleteDirty"),
-                  });
-                  if (!canDelete) return;
-                  onDeleteCanvas(nodeId);
-                }}
-                title={t("editor.pages.deleteCanvas")}
-                aria-label={t("editor.pages.deleteCanvas")}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-neutral-100"
-              >
-                <IconTrash size={14} strokeWidth={1.5} />
-              </button>
-            </div>
-          ) : null}
-        </div>
-
         {/* Add Canvas Button in Free Mode - only on the right of the last canvas */}
         {onAddCanvas && isLast && !doc?.isCanvasRoot ? (
           <button
@@ -1164,8 +1100,7 @@ export default function EditorPage({
                 </span>
               ) : null}
                                         </div>
-            {/* Canvas size presets sit above the artboard; the task bar takes the
-                space below it. */}
+            {/* Canvas size presets sit above the artboard. */}
             <div
               className="absolute z-20 flex -translate-x-1/2 -translate-y-full items-center gap-1 text-[10px] font-mono pb-2"
               style={{
@@ -1175,37 +1110,6 @@ export default function EditorPage({
             >
               <EditorCanvasPresets engine={engine} doc={doc} />
             </div>
-
-            {focused ? (
-              <EditorContextualTaskBar
-                engine={engine}
-                selectedIds={selectedIds}
-                tool={tool}
-                selected={selected}
-                hasSelection={Boolean(
-                  engine?.getPixelSelection?.()?.contours?.length,
-                )}
-                removeBackground={onAutoMask}
-                maskBusy={autoMaskBusy}
-                onRepaint={
-                  engine?.getPixelSelection?.()?.contours?.length
-                    ? onRepaintSelection
-                    : selected?.kind === "image"
-                      ? (prompt) => onRepaintNode?.(selected, prompt)
-                      : null
-                }
-                repaintBusy={repaintBusy}
-                {...aiMenuProps}
-                onAddAdjustmentLayer={onAddAdjustmentLayer}
-                onApplyPreset={onApplyPreset}
-                getBitmap={getBitmap}
-                doc={doc}
-                docRect={docRect}
-                onEditSvg={onEditSvg}
-                onCreateComponent={onCreateComponent}
-                onDetachInstance={onDetachInstance}
-              />
-            ) : null}
 
             {/* The single 3D frame adds canvases from the unobstructed zoom toolbar. */}
             {onAddCanvas && isLast && canvasType !== "3d" ? (
@@ -1284,9 +1188,6 @@ EditorPage.propTypes = {
   onAddAdjustmentLayer: PropTypes.func,
   onApplyPreset: PropTypes.func,
   getBitmap: PropTypes.func,
-  onEditSvg: PropTypes.func,
-  onCreateComponent: PropTypes.func,
-  onDetachInstance: PropTypes.func,
   componentUses: PropTypes.number,
   onRenamePage: PropTypes.func,
   /** Pointer handlers for the title label drag-to-pan handle, or null. */

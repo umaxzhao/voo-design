@@ -3,11 +3,19 @@ import { useRef, useState } from "react";
 import { TOOL } from "../../editor/editor_constants.js";
 import { normalizeAdjustments } from "../../editor/scene_model.js";
 import { useI18n } from "../../use_i18n.js";
+import { EditorAiMenuSection } from "../editor_ai_taskbar_buttons.jsx";
 
 const ACTION_BUTTON_CLASS =
   "min-h-8 rounded-lg border border-white/10 bg-white/[0.04] px-2 text-left text-[11px] text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]";
 
-export default function ImageContextActions({ object, engine, editAndCommit }) {
+export default function ImageContextActions({
+  object,
+  engine,
+  editAndCommit,
+  aiActions = null,
+  onRemoveBackground = null,
+  removeBackgroundBusy = false,
+}) {
   const { t } = useI18n();
   const fileInputRef = useRef(null);
   const frequencyRadiusRef = useRef(null);
@@ -88,6 +96,7 @@ export default function ImageContextActions({ object, engine, editAndCommit }) {
       <div className="grid grid-cols-2 gap-1.5">
         <button
           type="button"
+          data-testid="editor-taskbar-crop"
           className={ACTION_BUTTON_CLASS}
           onClick={() => engine?.setTool?.(TOOL.CROP)}
         >
@@ -95,6 +104,7 @@ export default function ImageContextActions({ object, engine, editAndCommit }) {
         </button>
         <button
           type="button"
+          data-testid="editor-taskbar-replace"
           className={ACTION_BUTTON_CLASS}
           onClick={() => fileInputRef.current?.click()}
         >
@@ -127,6 +137,25 @@ export default function ImageContextActions({ object, engine, editAndCommit }) {
           {t("editor.frequencySeparation.action")}
         </button>
       </div>
+      {onRemoveBackground ? (
+        <button
+          type="button"
+          data-testid="editor-taskbar-ai-remove-bg"
+          className={`${ACTION_BUTTON_CLASS} mt-1.5 w-full`}
+          disabled={removeBackgroundBusy}
+          onClick={onRemoveBackground}
+        >
+          {t("editor.taskbar.matting")}
+        </button>
+      ) : null}
+      {aiActions ? (
+        <div
+          data-testid="editor-taskbar-more"
+          className="mt-2 border-t border-white/10 pt-2"
+        >
+          <EditorAiMenuSection {...aiActions} onDone={() => {}} />
+        </div>
+      ) : null}
       {frequencyError ? (
         <p
           role="status"
@@ -182,4 +211,7 @@ ImageContextActions.propTypes = {
   object: PropTypes.object.isRequired,
   engine: PropTypes.object,
   editAndCommit: PropTypes.func.isRequired,
+  aiActions: PropTypes.object,
+  onRemoveBackground: PropTypes.func,
+  removeBackgroundBusy: PropTypes.bool,
 };

@@ -41,11 +41,10 @@ vi.mock("../../src/canvas/use_i18n.js", () => ({
   }),
 }));
 
-import EditorContextualTaskBar from "../../src/canvas/components/editor_contextual_taskbar.jsx";
 import EditorContextualAiInput, {
   extractNodeContext,
-  dispatchToAgent,
 } from "../../src/canvas/components/editor_contextual_ai_input.jsx";
+import { dispatchToAgent } from "../../src/canvas/components/dispatch_to_agent.js";
 import { useDesignStore } from "../../src/store/design_store.js";
 
 describe("Contextual Island & Agent Dispatch (Pen App Style)", () => {
@@ -249,78 +248,6 @@ describe("Contextual Island & Agent Dispatch (Pen App Style)", () => {
       expect(html).toContain('data-testid="editor-contextual-ai-submit"');
       expect(html).toContain("disabled");
       expect(html).toContain("bg-[#E5B2FF]");
-    });
-  });
-
-  describe("Tier 4: EditorContextualTaskBar Aesthetic & Contextual AI Badges", () => {
-    it("renders with rounded-full island styling, hairline border and shadow-pop", () => {
-      const node = { id: "img-1", kind: "image", name: "Photo" };
-      const html = renderToStaticMarkup(
-        <EditorContextualTaskBar selected={node} initialAiOpen={true} />
-      );
-
-      expect(html).toContain('data-testid="editor-contextual-taskbar"');
-      expect(html).toContain("rounded-full");
-      expect(html).toContain("bg-neutral-900/95");
-      expect(html).toContain("border-white/10");
-      expect(html).toContain("shadow-pop");
-      expect(html).toContain('data-testid="editor-taskbar-ai-sparkle"');
-      expect(html).toContain('data-testid="editor-taskbar-ai-input"');
-    });
-
-    it("returns null when there is no selection and no active tool", () => {
-      const html = renderToStaticMarkup(
-        <EditorContextualTaskBar selected={null} hasSelection={false} />
-      );
-      expect(html).toBe("");
-    });
-
-    it("renders compact image editing actions and collapsed agent", () => {
-      const node = { id: "img-1", kind: "image", name: "Photo" };
-      const html = renderToStaticMarkup(
-        <EditorContextualTaskBar selected={node} />
-      );
-
-      expect(html).toContain('data-testid="editor-taskbar-image-actions"');
-      expect(html).toContain('data-testid="editor-taskbar-ai-remove-bg"');
-      expect(html).toContain('data-testid="editor-taskbar-crop"');
-      expect(html).toContain('data-testid="editor-taskbar-ai-sparkle"');
-      expect(html).toContain('data-testid="editor-taskbar-replace"');
-    });
-
-    it("renders contextual frame action buttons and AI sparkle", () => {
-      const node = { id: "frame-1", isFrame: true, name: "Section" };
-      const html = renderToStaticMarkup(
-        <EditorContextualTaskBar selected={node} />
-      );
-
-      expect(html).toContain('data-testid="editor-taskbar-ai-sparkle"');
-      expect(html).toContain('aria-label="editor.taskbar.duplicate"');
-      expect(html).toContain('aria-label="editor.taskbar.delete"');
-    });
-
-    it("renders contextual text action buttons: Duplicate, Delete, AI Sparkle", () => {
-      const node = { id: "text-1", kind: "text", name: "Paragraph" };
-      const html = renderToStaticMarkup(
-        <EditorContextualTaskBar selected={node} />
-      );
-
-      expect(html).toContain('aria-label="editor.taskbar.duplicate"');
-      expect(html).toContain('aria-label="editor.taskbar.delete"');
-      expect(html).toContain('data-testid="editor-taskbar-ai-sparkle"');
-    });
-
-    it("renders contextual shape action buttons: Flip, Duplicate, Delete, AI Sparkle", () => {
-      const node = { id: "shape-1", kind: "path", name: "Polygon" };
-      const html = renderToStaticMarkup(
-        <EditorContextualTaskBar selected={node} />
-      );
-
-      expect(html).toContain('aria-label="editor.taskbar.flipH"');
-      expect(html).toContain('aria-label="editor.taskbar.flipV"');
-      expect(html).toContain('aria-label="editor.taskbar.duplicate"');
-      expect(html).toContain('aria-label="editor.taskbar.delete"');
-      expect(html).toContain('data-testid="editor-taskbar-ai-sparkle"');
     });
   });
 

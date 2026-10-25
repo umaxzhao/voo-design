@@ -53,4 +53,10 @@ export const editorPropertiesPropTypes = {
   onTogglePuppetPinFixed: PropTypes.func,
   onConvertAnchor: PropTypes.func,
   onDeleteAnchor: PropTypes.func,
+  imageAiActions: PropTypes.object,
+  onRemoveBackground: PropTypes.func,
+  removeBackgroundBusy: PropTypes.bool,
+  onCreateComponent: PropTypes.func,
+  onDetachInstance: PropTypes.func,
+  onDeleteCanvas: PropTypes.func,
 };

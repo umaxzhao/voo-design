@@ -15,7 +15,6 @@ import {
   resolveUpscaleModel,
 } from "../../src/canvas/editor/upscale_models.js";
 import EditorUpscaleButton from "../../src/canvas/components/editor_upscale_button.jsx";
-import EditorContextualTaskBar from "../../src/canvas/components/editor_contextual_taskbar.jsx";
 
 describe("HD Upscale Models & Taskbar Integration", () => {
   beforeEach(() => {
@@ -61,35 +60,4 @@ describe("HD Upscale Models & Taskbar Integration", () => {
     });
   });
 
-  describe("Tier 3: Contextual TaskBar Integration (compact face + More)", () => {
-    it("keeps remove-bg on the face and parks HD upscale under More for single image", () => {
-      const dummyEngine = {
-        getSelected: () => ({ id: "img-1", kind: "image" }),
-        getDocument: () => ({
-          nodes: [{ id: "img-1", kind: "image", width: 400, height: 300 }],
-        }),
-      };
-
-      const html = renderToStaticMarkup(
-        <EditorContextualTaskBar
-          engine={dummyEngine}
-          selected={{ id: "img-1", kind: "image" }}
-          hasSelection={false}
-          removeBackground={vi.fn()}
-          onUpscale={vi.fn()}
-        />
-      );
-
-      // Compact face: matting + more (upscale lives inside the More AI menu)
-      expect(html).toContain("editor.taskbar.matting");
-      expect(html).toContain('data-testid="editor-taskbar-more"');
-      expect(html).toContain('data-testid="editor-taskbar-ai-remove-bg"');
-      expect(html).not.toContain("editor.upscale.button");
-
-      const menu = renderToStaticMarkup(
-        <EditorUpscaleButton onUpscale={vi.fn()} busy={false} />
-      );
-      expect(menu).toContain("editor.upscale.button");
-    });
-  });
 });

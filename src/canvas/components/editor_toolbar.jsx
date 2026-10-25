@@ -2,7 +2,6 @@ import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
 import PropTypes from "prop-types";
 import {
   IconBrush,
-  IconChevronDown,
   IconCrop,
   IconCursor,
   IconDistort,
@@ -37,8 +36,7 @@ export const toolButtonClass = (active) =>
   }`;
 
 // Puppet / deform pin icon (repo-inline SVG so the toolbar does not pull
-// lucide-react into the entry chunk — keeps it symmetric with the subbar's
-// icon, which loads lucide in the lazy ImageEditor chunk).
+// lucide-react into the entry chunk, keeping toolbar icons local and compact.
 function PuppetIcon({ size = 16 }) {
   return (
     <svg
@@ -75,8 +73,7 @@ export default function EditorToolbar({
   marqueeMode,
   onMarqueeMode,
   brushMode = "normal",
-  onHoverFamily = null,
-  onLeaveFamily = null,
+  onBrushMode,
   /**
    * "design" is the full pixel + vector row. "motion" drops the destructive
    * pixel tools: a motion page still composes/animate layers, and painting or
@@ -92,7 +89,6 @@ export default function EditorToolbar({
 
   // The "Select" entry is the unified entry for the select family: the plain
   // cursor tool and the three transform tools (Perspective / Distort / Puppet).
-  // The entry shows the active member's icon; the tool subbar lists the modes.
   const isSelectFamily =
     tool === TOOL.SELECT ||
     tool === TOOL.SELECT_REGION ||
@@ -157,20 +153,8 @@ export default function EditorToolbar({
           aria-label={entry.label}
           aria-pressed={isActive}
           className={`relative ${toolButtonClass(isActive)}`}
-          onMouseEnter={() => {
-            if (entry.familyId) onHoverFamily?.(entry.familyId);
-            else onLeaveFamily?.();
-          }}
         >
           {entry.icon}
-          {(entry.id === TOOL.BRUSH || entry.chevron) && (
-            <IconChevronDown
-              size={7}
-              className={`absolute bottom-1 right-1 pointer-events-none ${
-                isActive ? "text-black/70" : "text-neutral-400"
-              }`}
-            />
-          )}
         </button>
       </EditorTooltip>
     );
@@ -183,13 +167,10 @@ export default function EditorToolbar({
       role="toolbar"
       aria-label={t("editor.toolbar.label")}
       className="absolute top-[14px] left-1/2 z-30 -translate-x-1/2 max-w-[calc(100vw-16px)]"
-      onMouseLeave={() => onLeaveFamily?.()}
     >
       <div className="flex items-center gap-1 rounded-full bg-black/90 p-1.5 shadow-pop backdrop-blur-md font-mono max-w-full overflow-x-auto no-scrollbar">
         {/* 1. 选择工具（select）：统一入口 —— 光标选择 + 透视 / 网格扭曲 / 操控变形 */}
         <div
-          data-family-id="select"
-          onMouseEnter={() => onHoverFamily?.("select")}
           className="relative flex items-center rounded-lg border border-white/10"
         >
           <EditorTooltip
@@ -205,12 +186,6 @@ export default function EditorToolbar({
               className={`relative ${toolButtonClass(isSelectFamily)}`}
             >
               <SelectFamilyIcon size={16} />
-              <IconChevronDown
-                size={7}
-                className={`absolute bottom-1 right-1 pointer-events-none ${
-                  isSelectFamily ? "text-black/70" : "text-neutral-400"
-                }`}
-              />
             </button>
           </EditorTooltip>
         </div>
@@ -226,8 +201,6 @@ export default function EditorToolbar({
 
             {/* 3. 选区工具组 (框选 / 椭圆 / 多边形 / 套索 / 魔棒 / 对象选择) */}
             <div
-              data-family-id="marquee"
-              onMouseEnter={() => onHoverFamily?.("marquee")}
               className="relative flex items-center"
             >
               <EditorMarqueeMenu
@@ -242,8 +215,6 @@ export default function EditorToolbar({
 
             {/* 4. 画笔工具 */}
             <div
-              data-family-id="brush"
-              onMouseEnter={() => onHoverFamily?.("brush")}
               className="relative flex items-center"
             >
               <EditorTooltip
@@ -253,18 +224,15 @@ export default function EditorToolbar({
               >
                 <button
                   type="button"
-                  onClick={() => onTool(TOOL.BRUSH)}
+                  onClick={() => {
+                    onBrushMode?.("normal");
+                    onTool(TOOL.BRUSH);
+                  }}
                   aria-label={brushLabel}
                   aria-pressed={isBrushActive}
                   className={`relative ${toolButtonClass(isBrushActive)}`}
                 >
                   <ActiveBrushIcon size={16} />
-                  <IconChevronDown
-                    size={7}
-                    className={`absolute bottom-1 right-1 pointer-events-none ${
-                      isBrushActive ? "text-black/70" : "text-neutral-400"
-                    }`}
-                  />
                 </button>
               </EditorTooltip>
             </div>
@@ -278,8 +246,6 @@ export default function EditorToolbar({
 
             {/* 6. 填充 & 渐变工具组 (Fill & Gradient) */}
             <div
-              data-family-id="fill"
-              onMouseEnter={() => onHoverFamily?.("fill")}
               className="relative flex items-center"
             >
               <EditorFillMenu tool={tool} onTool={onTool} />
@@ -287,15 +253,15 @@ export default function EditorToolbar({
 
             {/* 7. 经典修复工具组 (AI修补 / 污点修复 / 修补工具 / 仿制图章) */}
             <div
-              data-family-id="healing"
-              onMouseEnter={() => onHoverFamily?.("healing")}
               className="relative flex items-center"
             >
               <EditorHealingMenu
                 tool={tool}
-                onTool={onTool}
+                onTool={(nextTool) => {
+                  onHealingMode?.("aiRepair");
+                  onTool(nextTool);
+                }}
                 healingMode={healingMode}
-                onHealingMode={onHealingMode}
               />
             </div>
           </>
@@ -310,15 +276,11 @@ export default function EditorToolbar({
 
         {/* 8. 钢笔 & 形状工具组 */}
         <div
-          data-family-id="pen"
-          onMouseEnter={() => onHoverFamily?.("pen")}
           className="relative flex items-center"
         >
           <EditorPenMenu tool={tool} onTool={onTool} />
         </div>
         <div
-          data-family-id="shapes"
-          onMouseEnter={() => onHoverFamily?.("shapes")}
           className="relative flex items-center"
         >
           <ShapeToolsMenu tool={tool} onTool={onTool} />
@@ -341,8 +303,7 @@ EditorToolbar.propTypes = {
   marqueeMode: PropTypes.string,
   onMarqueeMode: PropTypes.func,
   brushMode: PropTypes.string,
-  onHoverFamily: PropTypes.func,
-  onLeaveFamily: PropTypes.func,
+  onBrushMode: PropTypes.func,
   variant: PropTypes.oneOf(["design", "motion"]),
   onAddObject3d: PropTypes.func,
 };

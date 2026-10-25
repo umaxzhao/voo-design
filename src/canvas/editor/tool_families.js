@@ -90,7 +90,7 @@ export function marqueeCycleIds(code) {
 
 /**
  * Metadata definition for each tool family.
- * Shared across hover subbar and keyboard pie menu.
+ * Shared across the properties panel and keyboard pie menu.
  */
 export const TOOL_FAMILIES = {
   select: {

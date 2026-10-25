@@ -1,6 +1,5 @@
 import PropTypes from "prop-types";
 import {
-  IconChevronDown,
   IconHealAi,
   IconHealClone,
   IconHealPatch,
@@ -66,16 +65,6 @@ export default function EditorHealingMenu({
           }`}
         >
           <ActiveIcon size={16} />
-          <IconChevronDown
-            size={7}
-            className={`absolute bottom-1 right-1 pointer-events-none ${
-              isActive
-                ? "text-black/70"
-                : isAiTool
-                  ? "text-neutral-300/70"
-                  : "text-neutral-400"
-            }`}
-          />
         </button>
       </EditorTooltip>
     </div>
