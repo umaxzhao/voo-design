@@ -66,3 +66,27 @@ describe("layer name button hit area", () => {
     expect(tag).toMatch(/class="[^"]*\bself-stretch\b/);
   });
 });
+
+// The AI button and agent avatars were a mint/purple palette cycle. They are now a solid purple fill.
+describe("AI floating button and agent avatars", () => {
+  it("drops the palette cycle and keeps only the icon spin", () => {
+    const css = read("src/index.css");
+    expect(css).not.toMatch(/voo-ai-fab-palette/);
+    expect(css).not.toMatch(/\.voo-ai-fab\s*\{[^}]*\banimation:/);
+    expect(css).toMatch(/\.voo-ai-fab-icon\s*\{[^}]*voo-ai-fab-spin/);
+  });
+
+  it("fills the App floating button and both agent avatars with purple, never mint", () => {
+    const app = read("src/App.jsx");
+    const fab = app.match(/className="voo-ai-fab(?: [^"]*)?"/)?.[0] ?? "";
+    expect(fab).toMatch(PURPLE);
+    expect(fab).not.toContain(MINT);
+
+    const avatars = read("src/canvas/components/canvas_agent_panel.jsx").match(/className="voo-ai-fab(?: [^"]*)?"/g) ?? [];
+    expect(avatars).toHaveLength(2);
+    for (const cls of avatars) {
+      expect(cls).toMatch(PURPLE);
+      expect(cls).not.toContain(MINT);
+    }
+  });
+});

@@ -402,7 +402,7 @@ export default function CanvasAgentPanel({ onClose }) {
     >
       <header className="flex h-12 items-center gap-2 px-4">
         {/* Same animated circular badge as the floating button in App.jsx. */}
-        <span className="voo-ai-fab flex size-7 shrink-0 items-center justify-center rounded-full">
+        <span className="voo-ai-fab flex size-7 shrink-0 items-center justify-center rounded-full bg-[#E5B2FF]">
           <span className="voo-ai-fab-icon flex items-center justify-center">
             <VooBrandLogo className="size-4 text-black" />
           </span>
@@ -541,7 +541,7 @@ export default function CanvasAgentPanel({ onClose }) {
           <div className="flex flex-1 flex-col justify-center gap-6">
             <div className="flex flex-col gap-4">
               {/* Large animated badge, the same mark as the floating button. */}
-              <span className="voo-ai-fab flex size-14 items-center justify-center rounded-full">
+              <span className="voo-ai-fab flex size-14 items-center justify-center rounded-full bg-[#E5B2FF]">
                 <span className="voo-ai-fab-icon flex items-center justify-center">
                   <VooBrandLogo className="size-7 text-black" />
                 </span>

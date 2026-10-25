@@ -132,7 +132,7 @@ export default function App() {
             onClick={() => setAgentOpen(true)}
             aria-label={t("agent.panel.open")}
             title={t("agent.panel.open")}
-            className="voo-ai-fab absolute bottom-4 right-4 z-[60] flex size-11 items-center justify-center rounded-full text-black shadow-panel"
+            className="voo-ai-fab absolute bottom-4 right-4 z-[60] flex size-11 items-center justify-center rounded-full bg-[#E5B2FF] text-black shadow-panel"
           >
             <span className="voo-ai-fab-icon flex items-center justify-center">
               <VooBrandLogo className="size-6 text-black" />

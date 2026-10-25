@@ -28,4 +28,15 @@ describe('variant inspector', () => {
   it('does not show controls on ordinary canvases', () => {
     expect(renderToStaticMarkup(<VariantsSection engine={{ getDocument: () => ({ canvasId: 'page', nodes: [] }) }} />)).toBe('');
   });
+  it('shows the selected variant values with the purple accent, mint only on focus', () => {
+    const html = renderToStaticMarkup(<VariantsSection engine={engine} node={{ id: 'instance', sourceCanvasId: 'main' }} />);
+    const selects = html.match(/<select[^>]*>/g) ?? [];
+    expect(selects).toHaveLength(2);
+    for (const tag of selects) {
+      expect(tag).toContain('bg-[#E5B2FF]/15');
+      expect(tag).toContain('text-[#eed0ff]');
+      expect(tag).toContain('focus-visible:ring-[#a7ffd4]');
+      expect(tag).not.toContain('bg-[#222222]');
+    }
+  });
 });

@@ -3,7 +3,8 @@ import { useI18n } from "../../use_i18n.js";
 import { InspectorGroup, InspectorRow } from "../inspector_primitives.jsx";
 import { componentVariants, variantProperties, parseVariantName, matchVariantProperty, createVariantDocument, switchVariantDocument } from "../../editor/component_variants.js";
 
-const FIELD_CLASS = "h-8 w-full min-w-0 rounded-xl bg-[#222222] px-2 text-[11px] text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]";
+// Selected variant values sit on a purple wash, as selected rows do in the agent panel.
+const FIELD_CLASS = "h-8 w-full min-w-0 rounded-xl bg-[#E5B2FF]/15 px-2 text-[11px] text-[#eed0ff] outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]";
 const BUTTON_CLASS = "flex h-8 w-full items-center rounded-xl bg-[#222222] px-3 text-left text-[11px] text-neutral-200 transition-colors hover:bg-white/[0.08] disabled:opacity-40";
 
 export default function VariantsSection({ engine, node = null, sourceDoc = null, isMainComponent = false }) {

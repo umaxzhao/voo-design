@@ -1274,28 +1274,10 @@ select {
 }
 
 /*
- * Floating AI button (bottom-right). Same rhythm as the VOOrun Chrome launcher:
- * the fill steps through solid colours with holds, and the VOO icon turns one
- * full revolution in the first quarter of its cycle, then rests.
+ * Floating AI button (bottom-right). The fill is a solid VOO purple (#E5B2FF,
+ * set on the element as bg-[#E5B2FF]) in every state; only the VOO icon moves:
+ * it turns one full revolution in the first quarter of its cycle, then rests.
  */
-@keyframes voo-ai-fab-palette {
-  0% {
-    background-color: #e5b2ff;
-  }
-  8.333%,
-  33.333% {
-    background-color: #e5b2ff;
-  }
-  41.666%,
-  66.666% {
-    background-color: #b2ffd6;
-  }
-  75%,
-  100% {
-    background-color: #e5b2ff;
-  }
-}
-
 @keyframes voo-ai-fab-spin {
   0% {
     transform: rotate(0deg);
@@ -1307,7 +1289,6 @@ select {
 }
 
 .voo-ai-fab {
-  animation: voo-ai-fab-palette 12s linear infinite;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -1321,7 +1302,6 @@ select {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .voo-ai-fab,
   .voo-ai-fab-icon {
     animation: none;
   }

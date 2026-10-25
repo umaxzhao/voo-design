@@ -414,7 +414,7 @@ export default function EditorLayerThumb({ object, getBitmap = null }) {
       return (
         <div
           data-media-placeholder
-          className={`${tile} bg-neutral-800 text-neutral-300`}
+          className={`${tile} bg-neutral-800 text-[#E5B2FF]`}
         >
           <IconComponent size={12} strokeWidth={1.5} />
         </div>
