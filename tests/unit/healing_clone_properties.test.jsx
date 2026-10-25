@@ -15,7 +15,7 @@ function renderHealing(healingMode, props = {}) {
 }
 
 describe("healing and clone properties", () => {
-  it("keeps AI repair to its supported width control", () => {
+  it("shows AI repair width, hardness and opacity only", () => {
     const html = renderHealing("aiRepair", {
       onBrushWidth: vi.fn(),
       onBrushHardness: vi.fn(),
@@ -24,8 +24,8 @@ describe("healing and clone properties", () => {
     });
 
     expect(html).toContain("editor.brushWidth");
-    expect(html).not.toContain("editor.brushHardness");
-    expect(html).not.toContain("editor.brushOpacity");
+    expect(html).toContain("editor.brushHardness");
+    expect(html).toContain("editor.brushOpacity");
     expect(html).not.toContain("editor.brushFlow");
   });
 
