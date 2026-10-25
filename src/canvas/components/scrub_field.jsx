@@ -84,7 +84,7 @@ export default function ScrubField({
           aria-hidden="true"
           title={ariaLabel || scrubHint}
           {...(disabled ? {} : scrub)}
-          className="shrink-0 cursor-ew-resize touch-none select-none pr-2.5 text-[11px] font-mono text-neutral-500 transition-colors hover:text-neutral-300"
+          className="shrink-0 cursor-ew-resize touch-none select-none pr-2.5 text-[11px] font-mono text-neutral-400 transition-colors hover:text-neutral-300"
         >
           {suffix}
         </span>
