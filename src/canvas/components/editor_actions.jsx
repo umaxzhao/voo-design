@@ -220,7 +220,7 @@ export function EditorActions({
 
       {/* 保存失败提示 */}
       {applyError ? (
-        <div className="pointer-events-none absolute right-0 top-full mt-2 flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-[11px] text-rose-400 shadow-pop backdrop-blur-md">
+        <div className="pointer-events-none absolute right-0 top-full mt-2 flex items-center gap-1.5 rounded-xl bg-rose-500/10 px-3 py-1.5 text-[11px] text-rose-400 shadow-pop backdrop-blur-md">
           <span>{t("editor.saveFailed")}</span>
         </div>
       ) : null}

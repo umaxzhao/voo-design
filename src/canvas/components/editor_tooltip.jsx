@@ -124,7 +124,7 @@ export default function EditorTooltip({
             <div
               id={tooltipId}
               role="tooltip"
-              className={`pointer-events-none fixed z-[9999] flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/10 bg-neutral-900/95 px-2.5 py-1 text-[11px] font-mono text-neutral-200 shadow-pop backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 ${transform}`}
+              className={`pointer-events-none fixed z-[9999] flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-neutral-900/95 px-2.5 py-1 text-[11px] font-mono text-neutral-200 shadow-pop backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 ${transform}`}
               style={{
                 top: `${pos.top}px`,
                 left: `${pos.left}px`,

@@ -64,7 +64,7 @@ export default function EditorTextOverlay({
       {missingFont ? (
         <div
           role="status"
-          className="absolute z-20 rounded-lg border border-white/10 bg-neutral-900 px-2 py-0.5 text-[11px] text-neutral-200 shadow-pop"
+          className="absolute z-20 rounded-lg bg-neutral-900 px-2 py-0.5 text-[11px] text-neutral-200 shadow-pop"
           style={{
             left: Math.max(0, node.x * viewport.zoom + viewport.panX),
             top: Math.max(0, node.y * viewport.zoom + viewport.panY - 32),

@@ -121,14 +121,14 @@ export default function StepLocalDetect({ selectedAgent }) {
             ) : status === "unauthenticated" ? (
               <span
                 data-testid="onboarding-detect-status"
-                className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-400"
+                className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400"
               >
                 {t("onboardingGuide.detect.unauthenticated")}
               </span>
             ) : status === "web_bridge_missing" ? (
               <span
                 data-testid="onboarding-detect-status"
-                className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-400"
+                className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400"
               >
                 {t("onboardingGuide.detect.bridgeMissing")}
               </span>
@@ -185,7 +185,7 @@ export default function StepLocalDetect({ selectedAgent }) {
       {status === "unauthenticated" && (
         <div
           data-testid="onboarding-unauth-guidance"
-          className="flex flex-col gap-2 rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4"
+          className="flex flex-col gap-2 rounded-2xl bg-amber-500/10 p-4"
         >
           <span className="text-[11px] font-medium text-amber-300">
             {t("onboardingGuide.detect.loginGuide")}

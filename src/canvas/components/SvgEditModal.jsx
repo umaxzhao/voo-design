@@ -133,7 +133,7 @@ function SvgEditModal({
 
         {/* Error message */}
         {error && (
-          <div className="mt-3 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-xs text-rose-400">
+          <div className="mt-3 rounded-lg bg-rose-500/10 px-3 py-1.5 text-xs text-rose-400">
             {error}
           </div>
         )}
