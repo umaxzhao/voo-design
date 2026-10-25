@@ -117,7 +117,7 @@ export function WelcomeSidebar({
         {/* Section: Project folders, created in the workspace (Figma-style sidebar) */}
         <div className="space-y-0.5">
           <div className="flex items-center justify-between pt-2 pb-1 pl-2.5 pr-1.5">
-            <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
               {t("welcome.folders.title")}
             </span>
             <button
@@ -151,7 +151,7 @@ export function WelcomeSidebar({
                 aria-label={t("welcome.folders.placeholder")}
                 className="w-full h-7 px-2 text-xs rounded-lg bg-neutral-900/80 text-neutral-200 placeholder-neutral-400 focus:outline-none focus:bg-neutral-800 transition-colors"
               />
-              {folderError && <p className="px-1 pt-1 text-[10px] text-rose-400">{folderError}</p>}
+              {folderError && <p className="px-1 pt-1 text-[11px] text-rose-400">{folderError}</p>}
             </form>
           )}
 
@@ -178,7 +178,7 @@ export function WelcomeSidebar({
 
         {/* Section: Templates & Systems */}
         <div className="space-y-0.5">
-          <div className="pt-2 pb-1 px-2.5 text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
+          <div className="pt-2 pb-1 px-2.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
             {t("welcome.nav.templates")}
           </div>
 

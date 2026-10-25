@@ -877,7 +877,7 @@ export default function EditorLayers({
         <h2 className="text-[11px] font-mono tracking-wider text-neutral-400 font-medium uppercase">
           {t("editor.layers")}
         </h2>
-        <div className="flex items-center gap-1">
+        <div className="-my-1 flex items-center gap-1">
           <button
             type="button"
             onClick={() => {
@@ -893,7 +893,7 @@ export default function EditorLayers({
             }}
             aria-label={t("editor.layers.searchToggle")}
             title={t("editor.layers.searchToggle")}
-            className={`rounded-lg p-1 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
+            className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
               showSearch || search
                 ? "bg-neutral-800 text-white"
                 : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
@@ -907,7 +907,7 @@ export default function EditorLayers({
               onClick={onToggleSide}
               aria-label={t("editor.pages.toggleAxis")}
               title={t("editor.pages.toggleAxis")}
-              className="rounded-lg p-1 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
             >
               <IconSwap size={13} />
             </button>
@@ -965,7 +965,7 @@ export default function EditorLayers({
             value: mode,
             label: t(blendModeLabelKey(mode)),
           }))}
-          triggerClassName="!h-7 !w-full !bg-transparent !px-2.5 !text-[10px] !font-mono !tabular-nums !text-neutral-100 hover:!bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+          triggerClassName="!h-7 !w-full !bg-transparent !px-2.5 !text-[11px] !font-mono !tabular-nums !text-neutral-100 hover:!bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
           widthClass="w-44"
         />
       </div>
@@ -1209,7 +1209,7 @@ export default function EditorLayers({
                                               : t("editor.layer.collapseGroup")
                                           }
                                           aria-expanded={!collapsed}
-                                          className="shrink-0 p-0.5 text-neutral-400 transition-colors hover:text-neutral-100"
+                                          className="-mx-1.5 -my-1 flex h-7 w-7 shrink-0 items-center justify-center text-neutral-400 transition-colors hover:text-neutral-100"
                                         >
                                           {collapsed ? (
                                             <IconChevronRight size={12} />
@@ -1232,7 +1232,7 @@ export default function EditorLayers({
                                             ? "editor.hide"
                                             : "editor.show",
                                         )}
-                                        className="shrink-0 p-0.5 text-neutral-400 transition-colors hover:text-neutral-100 disabled:cursor-default disabled:opacity-35"
+                                        className="-mx-1.5 -my-1 flex h-7 w-7 shrink-0 items-center justify-center text-neutral-400 transition-colors hover:text-neutral-100 disabled:cursor-default disabled:opacity-35"
                                       >
                                         {object.visible ? (
                                           <IconEye size={13} />
@@ -1518,7 +1518,7 @@ export default function EditorLayers({
                                               ? "editor.unlock"
                                               : "editor.lock",
                                           )}
-                                          className="shrink-0 p-0.5 text-neutral-400 hover:text-neutral-100"
+                                          className="-mx-1.5 -my-1 flex h-7 w-7 shrink-0 items-center justify-center text-neutral-400 hover:text-neutral-100"
                                         >
                                           {object.locked ||
                                           object.lockTransparency ||
@@ -1636,7 +1636,7 @@ export default function EditorLayers({
               {t("editor.layer.canvasBackground")}
             </span>
             <span
-              className={`text-[10px] font-mono text-neutral-400 ${backgroundTransparent ? "" : "uppercase"}`}
+              className={`text-[11px] font-mono text-neutral-400 ${backgroundTransparent ? "" : "uppercase"}`}
             >
               {displayBg}
             </span>
@@ -1645,7 +1645,7 @@ export default function EditorLayers({
       </div>
 
       {/* Dynamic bottom toolbar: Multiple layers selected -> Group + Merge + New Layer; Single layer/group -> Mask + Adjustment + New Layer */}
-      <div className="flex items-center justify-between border-t border-white/10 pt-2.5 mt-2 px-1">
+      <div className="flex items-center justify-between border-t border-white/10 pt-2 mt-2 px-1">
         <div className="flex items-center gap-1">
           {selectedIds.length > 1 ? (
             <>
@@ -1660,7 +1660,7 @@ export default function EditorLayers({
                   onClick={() => onGroupSelected?.()}
                   disabled={!canGroupSelected}
                   aria-label={t("editor.layers.groupSelected")}
-                  className="flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
                 >
                   <IconFolder size={13} />
                 </button>
@@ -1681,7 +1681,7 @@ export default function EditorLayers({
                   }}
                   disabled={!canCombineSelected}
                   aria-label={t("editor.layers.mergeSelected")}
-                  className="flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
                 >
                   <svg
                     width="13"
@@ -1706,7 +1706,7 @@ export default function EditorLayers({
                   onClick={() => onAddMask?.()}
                   disabled={!activeObject || Boolean(activeObject.locked)}
                   aria-label={t("editor.props.mask")}
-                  className="flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
                 >
                   <IconMask size={13} strokeWidth={ICON_STROKE_WIDTH} />
                 </button>
@@ -1721,7 +1721,7 @@ export default function EditorLayers({
                   type="button"
                   onClick={() => setNewAdjustmentPicker((open) => !open)}
                   aria-label={t("editor.layers.addAdjustment")}
-                  className="flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
                     <circle
@@ -1744,7 +1744,7 @@ export default function EditorLayers({
               type="button"
               onClick={() => onAddLayer?.()}
               aria-label={t("editor.layer.new")}
-              className="flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white"
             >
               <svg
                 width="13"
@@ -1798,7 +1798,7 @@ export default function EditorLayers({
             aria-label={
               maskEdit?.nodeId ? t("editor.mask.delete") : t("node.delete")
             }
-            className="flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-neutral-400"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-neutral-400"
           >
             <IconTrash size={13} />
           </button>

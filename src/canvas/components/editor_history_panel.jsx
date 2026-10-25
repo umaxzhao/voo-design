@@ -44,7 +44,7 @@ export default function EditorHistoryPanel({
             onClick={onToggleSide}
             aria-label={t("editor.pages.toggleAxis")}
             title={t("editor.pages.toggleAxis")}
-            className="rounded-full p-1 text-neutral-400 transition-colors hover:bg-[#262626] hover:text-white"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-[#262626] hover:text-white"
           >
             <IconSwap size={13} />
           </button>
