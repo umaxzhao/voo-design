@@ -22,7 +22,6 @@ import ColorVariablesSection from "./color_variables_section.jsx";
 import StyleSection from "./style_section.jsx";
 import MediaSection from "./media_section.jsx";
 import ModifiersSection from "./modifiers_section.jsx";
-import ImageSection from "./image_section.jsx";
 import VariantsSection from "./variants_section.jsx";
 import PanelAddMenu from "./panel_add_menu.jsx";
 import { resolveExtras } from "./panel_extras.js";
@@ -158,12 +157,8 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {/* Image actions (crop / replace / fit) belong to an image layer; the
-          constraints row appears once set or when the add menu reveals it. */}
-      {!isWarpTool && has("image") && object.kind === "image" ? (
-        <ImageSection object={object} engine={engine} editAndCommit={editAndCommit} />
-      ) : null}
-
+      {/* The constraints row appears once set or when the add menu reveals it.
+          Image actions (crop / replace / fit) live in ImageContextActions. */}
       {show("constraints") ? (
         <ConstraintsSection object={object} editAndCommit={editAndCommit} />
       ) : null}
@@ -284,7 +279,6 @@ export default function PropertiesPanelSections({
       {eligible.liveFilters ? (
         <LiveFilterSection
           object={object}
-          engine={engine}
           revealed={revealed("liveFilters")}
           liveFilters={normalizeAdjustments(object.adjustments).liveFilters}
           edit={edit}

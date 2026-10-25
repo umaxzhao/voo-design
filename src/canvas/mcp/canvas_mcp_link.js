@@ -1,16 +1,26 @@
 import { CLI_BRIDGE_CHANNEL as C, CLI_BRIDGE_EVENT as E } from "../../shared/cli_bridge_protocol.js";
 
-/** Connect the current page to the local tool relay; retry quietly every 5s. */
-export function startCanvasMcpLink({ url, executeTool }) {
+const RETRY_BASE_MS = 5000;
+const RETRY_MAX_MS = 60000;
+
+/**
+ * Connect the current page to the local tool relay. A missing bridge is an
+ * expected state, so retries are silent and back off from 5s to 60s; a
+ * successful connection resets the delay.
+ */
+export function startCanvasMcpLink({ url, executeTool, retryBaseMs = RETRY_BASE_MS, retryMaxMs = RETRY_MAX_MS }) {
   if (typeof WebSocket === "undefined") return () => {};
   const bridgeUrl = url || import.meta.env?.VITE_CLI_BRIDGE_URL || "ws://127.0.0.1:4179";
   let socket;
   let timer;
   let stopped = false;
   let nextId = 0;
+  let delay = retryBaseMs;
   function retry() {
     clearTimeout(timer);
-    if (!stopped) timer = setTimeout(connect, 5000);
+    if (stopped) return;
+    timer = setTimeout(connect, delay);
+    delay = Math.min(delay * 2, retryMaxMs);
   }
   function connect() {
     if (stopped) return;
@@ -22,7 +32,10 @@ export function startCanvasMcpLink({ url, executeTool }) {
         ws.send(JSON.stringify({ type: "invoke", id: `page_${++nextId}`, channel, args }));
       }
     };
-    ws.addEventListener("open", () => invoke(C.MCP_REGISTER_CANVAS, []));
+    ws.addEventListener("open", () => {
+      delay = retryBaseMs;
+      invoke(C.MCP_REGISTER_CANVAS, []);
+    });
     ws.addEventListener("message", async (event) => {
       let frame;
       try { frame = JSON.parse(event.data); } catch { return; }

@@ -62,7 +62,6 @@ import EditorRulers, { EditorCanvasAids } from "./editor_rulers.jsx";
 import EditorComments from "./editor_comments.jsx";
 import EditorToolSubbar from "./editor_tool_subbar.jsx";
 import EditorPieMenu from "./editor_pie_menu.jsx";
-import EditorPenSubbar from "./editor_pen_subbar.jsx";
 import EditorContextMenu from "./editor_context_menu.jsx";
 const EditorCommandPalette = lazy(() => import("./editor_command_palette.jsx"));
 const EditorFindReplace = lazy(() => import("./editor_find_replace.jsx"));
@@ -4940,15 +4939,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             onBrushMode={(mode) => engine?.setBrushMode(mode)}
             onHealingMode={(mode) => engine?.setHealingMode(mode)}
             onClose={() => setPieMenu(null)}
-          />
-        ) : null}
-
-        {/* Vector-edit sub-tools, only while a pen node is open for editing. */}
-        {engine?.penEdit ? (
-          <EditorPenSubbar
-            subTool={engine.getPenSubTool?.() ?? "move"}
-            onSubTool={(mode) => engine.setPenSubTool?.(mode)}
-            onCloseEdit={() => engine.endEdit?.()}
           />
         ) : null}
 

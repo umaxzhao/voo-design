@@ -54,8 +54,10 @@ export const useDesignStore = create((set, get) => {
   });
   return {
   ...createShareActions(set, get),
-  activeDocumentId: "document-0",
-  openDocuments: [{ id: "document-0", fileName: "Untitled.voo", isDirty: false }],
+  // No document is open at startup: the welcome page owns the screen and the
+  // first New/Open creates the first tab (same state as after closing the last tab).
+  activeDocumentId: null,
+  openDocuments: [],
   suspendDocument: () => {
     cameraBatcher.flush();
     const state = get();
@@ -327,7 +329,8 @@ export const useDesignStore = create((set, get) => {
   setFilePath: (filePath) => set({ filePath }),
   setFileHandle: (fileHandle) => set({ fileHandle }),
   setIsDirty: (isDirty) => set({ isDirty }),
-  setWelcomeOpen: (welcomeOpen) => set({ welcomeOpen }),
+  // With no open document there is no canvas to go back to, so the welcome page stays.
+  setWelcomeOpen: (welcomeOpen) => set(state => (!welcomeOpen && !state.activeDocumentId ? {} : { welcomeOpen })),
   setDocumentLoading: (documentLoading) => set({ documentLoading }),
 
   restoreCrashDraft: (draft) => {

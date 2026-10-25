@@ -24,6 +24,15 @@ describe("CollabAvatars component", () => {
     expect(html).not.toContain("+");
   });
 
+  it("keeps a 28px no-drag trigger so it works inside the title bar", () => {
+    const html = renderToStaticMarkup(
+      <CollabAvatars state={{ status: STATUS.OFF, roomId: null, peers: [] }} onStop={() => {}} onIdentity={() => {}} />,
+    );
+    const trigger = html.match(/<button[^>]*aria-haspopup="dialog"[^>]*>/)[0];
+    expect(trigger).toContain("h-7");
+    expect(trigger).toContain("-webkit-app-region:no-drag");
+  });
+
   it("renders with two peers in the roster", () => {
     const state = {
       status: STATUS.ACTIVE,

@@ -1,7 +1,7 @@
 /**
  * Live Filter section: hidden until the layer has a filter (or the add menu
- * reveals it). One "+" opens a compact picker for every filter kind and for
- * frequency separation, instead of a row of stacked add buttons.
+ * reveals it). One "+" opens a compact picker for every filter kind, instead
+ * of a row of stacked add buttons.
  */
 
 import PropTypes from "prop-types";
@@ -9,7 +9,6 @@ import { useState } from "react";
 import { useI18n } from "../../use_i18n.js";
 import { CollapsibleSection, SectionAddButton } from "./property_section.jsx";
 import LiveFilterStack, { DEFAULT_VALUE } from "./live_filter_stack.jsx";
-import FrequencySeparationRow from "./frequency_separation_row.jsx";
 import { LIVE_FILTER_KINDS, createLiveFilterEntry } from "../../editor/live_filter_stack.js";
 
 const PICKER_ITEM_CLASS =
@@ -26,8 +25,8 @@ export function addLiveFilter({ object, liveFilters, kind, editAndCommit }) {
   });
 }
 
-/** The one add picker: every filter kind, plus frequency separation for images. */
-export function LiveFilterPicker({ onPick, onFrequency = null }) {
+/** The one add picker: every filter kind. */
+export function LiveFilterPicker({ onPick }) {
   const { t } = useI18n();
   return (
     <div data-testid="editor-live-filter-picker" className="rounded-xl border border-white/10 bg-neutral-900 p-1">
@@ -36,39 +35,29 @@ export function LiveFilterPicker({ onPick, onFrequency = null }) {
           {t(`editor.liveFilter.kind.${kind}`)}
         </button>
       ))}
-      {onFrequency ? (
-        <button type="button" data-testid="live-filter-add-frequency" className={`${PICKER_ITEM_CLASS} border-t border-white/10`} onClick={onFrequency}>
-          {t("editor.frequencySeparation.action")}
-        </button>
-      ) : null}
     </div>
   );
 }
 
 LiveFilterPicker.propTypes = {
   onPick: PropTypes.func.isRequired,
-  onFrequency: PropTypes.func,
 };
 
 export default function LiveFilterSection({
   object,
   liveFilters = object?.adjustments?.liveFilters ?? [],
-  engine = null,
   /** Show the section even with an empty stack (set by the panel's add menu). */
   revealed = false,
   defaultPickerOpen = revealed,
-  defaultFrequencyOpen = false,
   edit,
   editAndCommit,
   commitNow = null,
 }) {
   const { t } = useI18n();
   const [pickerOpen, setPickerOpen] = useState(defaultPickerOpen);
-  const [frequencyOpen, setFrequencyOpen] = useState(defaultFrequencyOpen);
-  const canSeparate = object.kind === "image" && Boolean(engine);
 
   // An unused, unrevealed section does not exist in the panel at all.
-  if (liveFilters.length === 0 && !revealed && !pickerOpen && !frequencyOpen) return null;
+  if (liveFilters.length === 0 && !revealed && !pickerOpen) return null;
 
   return (
     <CollapsibleSection
@@ -83,10 +72,8 @@ export default function LiveFilterSection({
             addLiveFilter({ object, liveFilters, kind, editAndCommit });
             setPickerOpen(false);
           }}
-          onFrequency={canSeparate ? () => { setFrequencyOpen(true); setPickerOpen(false); } : null}
         />
       ) : null}
-      {frequencyOpen && canSeparate ? <FrequencySeparationRow object={object} engine={engine} /> : null}
       {liveFilters.length > 0 ? (
         <LiveFilterStack object={object} liveFilters={liveFilters} edit={edit} editAndCommit={editAndCommit} commitNow={commitNow} />
       ) : null}
@@ -97,10 +84,8 @@ export default function LiveFilterSection({
 LiveFilterSection.propTypes = {
   object: PropTypes.object.isRequired,
   liveFilters: PropTypes.arrayOf(PropTypes.object),
-  engine: PropTypes.object,
   revealed: PropTypes.bool,
   defaultPickerOpen: PropTypes.bool,
-  defaultFrequencyOpen: PropTypes.bool,
   edit: PropTypes.func.isRequired,
   editAndCommit: PropTypes.func.isRequired,
   commitNow: PropTypes.func,

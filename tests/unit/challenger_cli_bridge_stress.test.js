@@ -17,6 +17,10 @@ import {
   startCliBridgeServer,
   isAllowedOrigin,
 } from "../../electron/cli_bridge_server.js";
+import { registerBridgeChannelsWithoutCliSpawn } from "./helpers/cli_bridge_test_server.js";
+
+/** Real-socket tests share a generous ceiling; it is a safety margin, not the fix. */
+const REAL_SOCKET_TEST_TIMEOUT_MS = 20000;
 
 describe("Empirical Challenger: Wire Protocol & WebSocket Loopback Stress Testing", () => {
   beforeEach(() => {
@@ -567,7 +571,10 @@ describe("Empirical Challenger: Wire Protocol & WebSocket Loopback Stress Testin
     let server = null;
 
     beforeEach(async () => {
-      server = await startCliBridgeServer({ port: 0 });
+      server = await startCliBridgeServer({
+        port: 0,
+        register: registerBridgeChannelsWithoutCliSpawn,
+      });
     });
 
     afterEach(async () => {
@@ -587,7 +594,8 @@ describe("Empirical Challenger: Wire Protocol & WebSocket Loopback Stress Testin
         },
       });
 
-      await bridge.connect();
+      const connected = await bridge.connect();
+      expect(connected.ok).toBe(true);
 
       const CONCURRENCY = 50;
       const results = await Promise.all(
@@ -596,9 +604,11 @@ describe("Empirical Challenger: Wire Protocol & WebSocket Loopback Stress Testin
       expect(results).toHaveLength(CONCURRENCY);
       for (const result of results) {
         expect(result).toBeDefined();
+        expect(Object.keys(result)).toEqual(
+          expect.arrayContaining(["claude", "codex", "antigravity"]),
+        );
       }
       bridge.close();
-    });
-
+    }, REAL_SOCKET_TEST_TIMEOUT_MS);
   });
 });

@@ -63,7 +63,7 @@ describe("LiveFilterSection mounting in properties panel", () => {
     );
 
     // Image actions that used to sit in the top bar live in the panel.
-    expect(html).toContain('data-testid="editor-image-section"');
+    expect(html).toContain('data-testid="image-context-actions"');
     expect(html).not.toContain("image-context-toolbar");
     // Nothing is listed for an empty stack: no section, no stacked add buttons.
     expect(html).not.toContain('data-testid="editor-live-filter-section"');
@@ -88,7 +88,7 @@ describe("LiveFilterSection mounting in properties panel", () => {
     expect(html).not.toContain("editor.liveFilters.empty");
   });
 
-  it("offers every filter kind in one picker and frequency separation only for images with an engine", () => {
+  it("offers every filter kind in one picker", () => {
     const html = renderToStaticMarkup(
       <LiveFilterSection
         object={{ id: "img-p", kind: "image", adjustments: { liveFilters: [] } }}
@@ -103,32 +103,8 @@ describe("LiveFilterSection mounting in properties panel", () => {
       expect(html).toContain(`data-testid="live-filter-add-${kind}"`);
       expect(html).toContain(`editor.liveFilter.kind.${kind}`);
     }
-    expect(html).toContain('data-testid="live-filter-add-frequency"');
-
-    const rasterHtml = renderToStaticMarkup(
-      <LiveFilterSection
-        object={{ id: "r-p", kind: "raster", adjustments: { liveFilters: [] } }}
-        engine={{}}
-        revealed
-        edit={() => {}}
-        editAndCommit={() => {}}
-      />,
-    );
-    expect(rasterHtml).not.toContain("live-filter-add-frequency");
-  });
-
-  it("shows the frequency separation radius row once chosen from the picker", () => {
-    const html = renderToStaticMarkup(
-      <LiveFilterSection
-        object={{ id: "img-f", kind: "image", adjustments: { liveFilters: [] } }}
-        engine={{}}
-        defaultFrequencyOpen
-        edit={() => {}}
-        editAndCommit={() => {}}
-      />,
-    );
-    expect(html).toContain('data-testid="editor-frequency-separation"');
-    expect(html).toContain("editor.frequencySeparation.radius");
+    // Frequency separation belongs to the image actions, not the filter picker.
+    expect(html).not.toContain("live-filter-add-frequency");
   });
 
   it("shows the Live Filter section for an image node that already has a filter", () => {
@@ -236,7 +212,7 @@ describe("LiveFilterSection add, reorder, toggle, parameter edit and history", (
       const onPick = (picked) =>
         addLiveFilter({ object: baseImageNode, liveFilters: [], kind: picked, editAndCommit });
       const picker = LiveFilterPicker({ onPick });
-      const btn = picker.props.children[0].find((b) => b.key === kind);
+      const btn = picker.props.children.find((b) => b.key === kind);
       expect(btn).toBeTruthy();
       btn.props.onClick();
 

@@ -18,6 +18,13 @@ import {
 import { createWsIpcAdapter } from "../../electron/ws_ipc_adapter.js";
 import { startCliBridgeServer } from "../../electron/cli_bridge_server.js";
 import { streamCodexCompletion } from "../../src/canvas/components/agent-panel/codex_transport.js";
+import {
+  registerBridgeChannelsWithoutCliSpawn,
+  STUB_CONNECT_RESULT,
+} from "./helpers/cli_bridge_test_server.js";
+
+/** Real-socket tests share a generous ceiling; it is a safety margin, not the fix. */
+const REAL_SOCKET_TEST_TIMEOUT_MS = 20000;
 
 describe("CLI Bridge Protocol & Dual-Channel Transport", () => {
   beforeEach(() => {
@@ -278,6 +285,7 @@ describe("CLI Bridge Protocol & Dual-Channel Transport", () => {
       serverInstance = await startCliBridgeServer({
         port: 0,
         host: "127.0.0.1",
+        register: registerBridgeChannelsWithoutCliSpawn,
       });
       const port = serverInstance.port;
 
@@ -305,6 +313,7 @@ describe("CLI Bridge Protocol & Dual-Channel Transport", () => {
       const connectRes = await bridge.connect();
       expect(connectRes.ok).toBe(true);
       expect(connectRes.transport).toBe("web_loopback");
+      expect(connectRes.value).toEqual(STUB_CONNECT_RESULT);
 
       // 3. checkAll
       const checkRes = await bridge.checkAll();
@@ -318,7 +327,7 @@ describe("CLI Bridge Protocol & Dual-Channel Transport", () => {
       expect(cancelRes.ok).toBe(true);
 
       bridge.close();
-    });
+    }, REAL_SOCKET_TEST_TIMEOUT_MS);
   });
 
   describe("6. Codex Transport Stream Generator", () => {

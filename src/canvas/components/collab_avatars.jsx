@@ -160,7 +160,9 @@ export default function CollabAvatars({
         aria-expanded={open}
         aria-label={live ? t("collab.sharing") : t("collab.share")}
         title={live ? t("collab.sharing") : t("collab.share")}
-        className="group flex h-[27px] items-center rounded-xl px-1 transition-colors hover:bg-white/[0.06] focus-visible:outline-none"
+        // 28px hit area; the title bar is a drag region, so the button opts out.
+        style={{ WebkitAppRegion: "no-drag" }}
+        className="group flex h-7 items-center rounded-xl px-1 transition-colors hover:bg-white/[0.06] focus-visible:outline-none"
       >
         {faces.map((peer, index) => (
           <Avatar key={peer.peerId} peer={peer} index={index} />

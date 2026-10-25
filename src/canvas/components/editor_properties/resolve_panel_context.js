@@ -2,12 +2,11 @@ import { TOOL } from '../../editor/tool_ids.js';
 
 const base = ['alignment', 'transform', 'constraints', 'layoutChild', 'layer'];
 const paint = ['fill', 'stroke', 'effects', 'export'];
-/** Product contract: panels are dynamic, never a permanent tool column.
- * Selection wins over drawing defaults; a shape inspector is only for drawing
- * with nothing selected. Sections listed here are the minimal default set for
- * a type; extras (live filters, modifiers, variables, styles, constraints,
- * export) are reached through the panel's single add menu, not listed here.
- * Raster tools put their options in the right panel (no top option bar).
+/** Product contract: tool properties and object properties share one dynamic inspector.
+ * Active tools own the panel until the user returns to an object selection mode.
+ * Sections listed here are the minimal default set for a type; extras (live
+ * filters, modifiers, variables, styles, constraints, export) are reached
+ * through the panel's single add menu, not listed here.
  */
 export const PROPERTY_SECTIONS = Object.freeze({
   rectangle: [...base, 'radius', ...paint],
@@ -21,7 +20,7 @@ export const PROPERTY_SECTIONS = Object.freeze({
   group: [...base, 'autoLayout', 'effects', 'export'],
   component: [...base, 'component', 'radius', 'autoLayout', ...paint],
   instance: [...base, 'component', ...paint],
-  image: ['transform', 'image', 'layer', 'effects', 'export'],
+  image: ['transform', 'layer', 'effects', 'export'],
   adjustment: ['adjustments', 'layer', 'export'],
   brush: ['transform', 'layer', 'effects', 'export'],
   media: ['transform', 'layer', 'media', 'export'],
@@ -39,19 +38,34 @@ export function propertyType(node) {
   if (['video', 'audio', 'model3d'].includes(node.kind)) return 'media';
   return PROPERTY_SECTIONS[node.kind] ? node.kind : 'vector';
 }
-const rasterTools = new Set(['brush', 'eraser', 'healing', 'retouch', 'blur', 'sharpen', 'smudge', 'dodge', 'burn', 'sponge', 'crop', 'marquee', 'lasso', 'wand', 'region', 'select_region', 'ai_select']);
-/** Raster tools whose options own the whole panel, even over a selection (as in voo-run). */
-const toolOptionTools = new Set([...rasterTools].filter(tool => !['retouch', 'select_region', 'ai_select'].includes(tool)));
-const drawingTools = new Set(['rect', 'ellipse', 'polygon', 'star', 'line', 'arrow', 'pen', 'curvature_pen', 'free_pen', 'text', 'dropper', 'fill', 'gradient']);
+const objectSelectionTools = new Set([
+  TOOL.SELECT,
+  TOOL.SELECT_REGION,
+  TOOL.PERSPECTIVE,
+  TOOL.DISTORT,
+  TOOL.PUPPET_WARP,
+]);
+
 export function resolvePanelForContext({ tool = TOOL.SELECT, selection = [] } = {}) {
-  const nodes = Array.isArray(selection) ? selection.filter(Boolean) : selection ? [selection] : [];
+  const activeTool = tool ?? TOOL.SELECT;
+  const nodes = Array.isArray(selection)
+    ? selection.filter(Boolean)
+    : selection
+      ? [selection]
+      : [];
+
+  // The inspector follows the active tool until the user returns to an object
+  // selection mode. This keeps drawing controls stable even when a layer is
+  // selected, while Select exposes the selected node's transform and style.
+  if (!objectSelectionTools.has(activeTool)) return { panel: 'tool', sections: [] };
+
   if (nodes.length) {
     const type = propertyType(nodes[0]);
     // Intersection prevents irrelevant paint/radius controls in mixed selections.
-    const sections = PROPERTY_SECTIONS[type].filter(section => nodes.every(node => PROPERTY_SECTIONS[propertyType(node)].includes(section)));
-    return { panel: 'properties', sections, toolOptions: toolOptionTools.has(tool) ? tool : null };
+    const sections = PROPERTY_SECTIONS[type].filter((section) =>
+      nodes.every((node) => PROPERTY_SECTIONS[propertyType(node)].includes(section)),
+    );
+    return { panel: 'properties', sections };
   }
-  if (rasterTools.has(tool)) return { panel: 'tool', sections: [], toolOptions: tool };
-  if (drawingTools.has(tool)) return { panel: 'tool', sections: [], toolOptions: null };
-  return { panel: 'background', sections: [], toolOptions: null };
+  return { panel: 'background', sections: [] };
 }

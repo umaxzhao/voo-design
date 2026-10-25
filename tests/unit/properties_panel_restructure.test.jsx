@@ -19,7 +19,6 @@ vi.mock("../../src/canvas/use_i18n.js", () => ({
 import EditorProperties from "../../src/canvas/components/editor_properties/index.jsx";
 import PropertiesPanelSections from "../../src/canvas/components/editor_properties/properties_panel_sections.jsx";
 import PanelAddMenu from "../../src/canvas/components/editor_properties/panel_add_menu.jsx";
-import ImageSection, { fitImageToParent } from "../../src/canvas/components/editor_properties/image_section.jsx";
 import { FillSection } from "../../src/canvas/components/editor_properties/colour_fill_section.jsx";
 import { TOOL } from "../../src/canvas/editor/editor_constants.js";
 
@@ -57,28 +56,18 @@ describe("top tool-options bar is gone", () => {
 });
 
 describe("image controls live in the panel", () => {
-  it("shows crop, replace and fit / fill in the Image section of an image selection", () => {
+  it("shows crop, replace and fit / fill in the image actions of an image selection", () => {
     const html = renderToStaticMarkup(<EditorProperties tool={TOOL.SELECT} object={image} engine={engine} />);
-    expect(html).toContain('data-testid="editor-image-section"');
+    expect(html).toContain('data-testid="image-context-actions"');
     expect(html).toContain("editor.taskbar.crop");
     expect(html).toContain("editor.taskbar.replace");
     expect(html).toContain("editor.image.fitFill");
     expect(html).toContain('type="file"');
   });
 
-  it("does not show the Image section for non-image layers", () => {
-    expect(renderSections(rect, { sections: ["transform", "fill", "effects"] })).not.toContain("editor-image-section");
-  });
-
-  it("crop hands over to the crop tool and fit scales into the parent", () => {
-    const setTool = vi.fn();
-    const section = ImageSection({ object: image, engine: { setTool }, editAndCommit: noop });
-    const cropButton = section.props.children[0].props.children[0];
-    cropButton.props.onClick();
-    expect(setTool).toHaveBeenCalledWith("crop");
-    expect(fitImageToParent(image, { x: 0, y: 0, width: 200, height: 200 }, "fit")).toEqual({ width: 200, height: 160, x: 0, y: 20 });
-    expect(fitImageToParent(image, { x: 0, y: 0, width: 200, height: 200 }, "fill")).toEqual({ width: 250, height: 200, x: -25, y: 0 });
-    expect(fitImageToParent(image, { width: 0, height: 0 }, "fit")).toBeNull();
+  it("does not show the image actions for non-image layers", () => {
+    expect(renderSections(rect, { sections: ["transform", "fill", "effects"] })).not.toContain("image-context-actions");
+    expect(renderToStaticMarkup(<EditorProperties tool={TOOL.SELECT} object={rect} engine={engine} />)).not.toContain("image-context-actions");
   });
 });
 
@@ -95,7 +84,7 @@ describe("brush options live in the right panel", () => {
   it("keeps the brush options in the panel over a selected image, instead of the image sections", () => {
     const html = renderToStaticMarkup(<EditorProperties tool={TOOL.BRUSH} toolProps={toolProps} object={image} engine={engine} />);
     expect(html).toContain("editor.tool.brush");
-    expect(html).not.toContain("editor-image-section");
+    expect(html).not.toContain("image-context-actions");
     expect(html).not.toContain("image-context-toolbar");
   });
 });

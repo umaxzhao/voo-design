@@ -1,7 +1,6 @@
 /**
- * The vector-edit sub-tool bar: Move / Lasso / Paint / Bend / Cut, a More
- * dropdown and a Done button — modelled on Figma's secondary toolbelt and
- * shown only while a pen node is open for anchor editing.
+ * Vector-edit modes shown inside the dynamic properties panel while a pen
+ * node is open for anchor editing.
  *
  * Paint, Shape builder and Variable width are visible but disabled: the
  * planar-region fill and variable-width stroke engines they need do not
@@ -40,34 +39,37 @@ export default function EditorPenSubbar({
   const { t } = useI18n();
 
   return (
-    <div className="absolute top-[66px] left-1/2 z-30 -translate-x-1/2">
-      <div className="relative flex items-center gap-1 rounded-full bg-black/60 p-1 font-mono shadow-pop backdrop-blur-md">
-        {SUB_TOOLS.map(({ id, icon: Icon, labelKey }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => onSubTool(id)}
-            aria-label={t(labelKey)}
-            title={t(labelKey)}
-            aria-pressed={subTool === id}
-            className={subbarBtnClass(subTool === id)}
-          >
-            <Icon size={16} />
-          </button>
-        ))}
-
-        <div className="mx-0.5 h-4 w-px bg-white/10" />
-
+    <div
+      role="group"
+      aria-label={t("editor.tool.pen")}
+      data-testid="editor-pen-subbar"
+      className="mb-3 flex flex-wrap items-center gap-1 rounded-xl border border-white/10 bg-white/[0.025] p-1 font-mono"
+    >
+      {SUB_TOOLS.map(({ id, icon: Icon, labelKey }) => (
         <button
+          key={id}
           type="button"
-          onClick={() => onCloseEdit?.()}
-          aria-label={t("editor.pen.closeEdit")}
-          title={t("editor.pen.closeEdit")}
-          className="rounded-full p-2 text-neutral-400 transition-all hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900"
+          onClick={() => onSubTool(id)}
+          aria-label={t(labelKey)}
+          title={t(labelKey)}
+          aria-pressed={subTool === id}
+          className={subbarBtnClass(subTool === id)}
         >
-          <IconClose size={16} />
+          <Icon size={16} />
         </button>
-      </div>
+      ))}
+
+      <div className="mx-0.5 h-4 w-px bg-white/10" />
+
+      <button
+        type="button"
+        onClick={() => onCloseEdit?.()}
+        aria-label={t("editor.pen.closeEdit")}
+        title={t("editor.pen.closeEdit")}
+        className="rounded-full p-2 text-neutral-400 transition-all hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900"
+      >
+        <IconClose size={16} />
+      </button>
     </div>
   );
 }
