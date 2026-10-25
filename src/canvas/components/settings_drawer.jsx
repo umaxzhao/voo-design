@@ -1,42 +1,14 @@
-import SettingsDesignSystem from "./settings_design_system.jsx";
 import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Keyboard as IconKeyboard } from "lucide-react";
-import { IconClose, IconSliders, IconSparkles } from "../icons.jsx";
+import { IconClose } from "../icons.jsx";
 import { useI18n } from "../use_i18n.js";
 import ProviderSettings from "./provider_settings.jsx";
 import AgentSettings from "./agent_settings.jsx";
 import SettingsGeneral from "./settings_general.jsx";
 import SettingsShortcuts from "./settings_shortcuts.jsx";
-
-const TABS = [
-  { id: "design-system", labelZh: "设计系统", labelEn: "Design System", icon: IconSliders },
-  {
-    id: "general",
-    labelZh: "常规偏好",
-    labelEn: "General",
-    icon: IconSliders,
-  },
-  {
-    id: "assistant",
-    labelZh: "AI 助手",
-    labelEn: "AI Assistant",
-    icon: IconSparkles,
-  },
-  {
-    id: "providers",
-    labelZh: "AI 供应商",
-    labelEn: "AI Providers",
-    icon: IconSparkles,
-  },
-  {
-    id: "shortcuts",
-    labelZh: "快捷键速查",
-    labelEn: "Shortcuts",
-    icon: IconKeyboard,
-  },
-];
+import SettingsDesignSystems from "./settings_design_systems.jsx";
+import { SETTINGS_TABS as TABS } from "./settings_tabs.js";
 
 export default function SettingsDrawer({
   open = false,
@@ -77,7 +49,8 @@ export default function SettingsDrawer({
   if (!open) return null;
 
   const activeTabDef = TABS.find((tab) => tab.id === activeTab);
-  const activeLabel = isZh ? activeTabDef.labelZh : activeTabDef.labelEn;
+  const tabLabel = (tab) => (tab.labelKey ? t(tab.labelKey) : isZh ? tab.labelZh : tab.labelEn);
+  const activeLabel = tabLabel(activeTabDef);
   const title = isZh ? "设置与偏好" : "Settings & Preferences";
 
   return createPortal(
@@ -132,7 +105,7 @@ export default function SettingsDrawer({
                   className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-2 rounded-xl px-2 py-3 text-[10px] outline-none transition-colors focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 md:flex-row md:justify-start md:px-3 md:text-[11px] ${active ? "bg-white/[0.08] text-neutral-100" : "text-neutral-400 hover:bg-white/[0.04] hover:text-neutral-200"}`}
                 >
                   <Icon size={15} className="shrink-0" />
-                  <span>{isZh ? tab.labelZh : tab.labelEn}</span>
+                  <span>{tabLabel(tab)}</span>
                 </button>
               );
             })}
@@ -159,7 +132,7 @@ export default function SettingsDrawer({
               {activeTab === "providers" && <ProviderSettings />}
               {activeTab === "assistant" && <AgentSettings />}
               {activeTab === "general" && <SettingsGeneral />}
-              {activeTab === "design-system" && <SettingsDesignSystem />}
+              {activeTab === "design-systems" && <SettingsDesignSystems />}
               {activeTab === "shortcuts" && <SettingsShortcuts asSection={false} />}
             </div>
           </main>

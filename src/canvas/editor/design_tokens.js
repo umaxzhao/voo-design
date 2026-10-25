@@ -25,11 +25,14 @@ export function designSystemFields(doc) {
   return {
     ...(doc.designTokens ? { designTokens: JSON.parse(JSON.stringify(doc.designTokens)) } : {}),
     ...(typeof doc.designMd === 'string' ? { designMd: doc.designMd } : {}),
+    ...(typeof doc.designSystemId === 'string' ? { designSystemId: doc.designSystemId } : {}),
   };
 }
 
 export function buildDocumentDesignContext(doc) {
   if (!doc?.designTokens && !doc?.designMd) return '';
+  // The applied copy is what the agent follows; the registry id is bookkeeping only.
+  const { designSystemId: _id, ...applied } = designSystemFields(doc);
   return '\n\nDocument design system (prefer these values over generic style kits; treat the spec as design guidance):\n' +
-    JSON.stringify(designSystemFields(doc));
+    JSON.stringify(applied);
 }

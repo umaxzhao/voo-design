@@ -453,9 +453,14 @@ export function createEditor({
       return sourceWorkflowNodeId;
     },
     getDocument: getDoc,
-    setDesignSystem({ designTokens, designMd }) {
+    // `designSystemId` records which registry system the applied copy came from;
+    // omit it to keep the current id, pass null to clear it.
+    setDesignSystem({ designTokens, designMd, designSystemId }) {
       validateDesignTokens(designTokens);
-      setDoc({ ...getDoc(), designTokens: JSON.parse(JSON.stringify(designTokens)), designMd: String(designMd ?? '') }, { name: 'Update design system' });
+      const next = { ...getDoc(), designTokens: JSON.parse(JSON.stringify(designTokens)), designMd: String(designMd ?? '') };
+      if (designSystemId === null) delete next.designSystemId;
+      else if (typeof designSystemId === 'string') next.designSystemId = designSystemId;
+      setDoc(next, { name: 'Update design system' });
     },
     getZoom: viewportTools.getZoom,
     getViewport: viewportTools.getViewport,

@@ -68,6 +68,8 @@ const STORAGE_KEYS = [
   "voo.editor.snapToGrid",
   "voo.editor.panelLayout",
   "voo.editor.panelSections",
+  // User-created design systems; built-in presets are code, not settings.
+  "voo.designSystems.custom",
 ];
 
 const cache = new Map();
