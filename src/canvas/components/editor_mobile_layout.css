@@ -1,0 +1,55 @@
+@media (max-width: 768px) {
+  [data-testid="design-editor"].editor-narrow {
+    right: 0;
+  }
+
+  [data-testid="design-editor"].editor-narrow > [data-open-guard] {
+    position: relative;
+    height: 55%;
+    min-height: 0;
+    flex: 0 0 55%;
+    overflow: visible;
+  }
+
+  [data-testid="design-editor"].editor-narrow [data-testid="editor-layers-panel"],
+  [data-testid="design-editor"].editor-narrow [data-testid="editor-properties-panel"] {
+    position: absolute;
+    top: 100%;
+    bottom: auto;
+    left: 0;
+    right: auto;
+    width: 50%;
+    height: 81.818%;
+    max-height: none;
+    min-width: 0;
+    transform: none;
+    overflow: auto;
+    border-radius: 0;
+    padding: 0.5rem;
+  }
+
+  [data-testid="design-editor"].editor-narrow [data-testid="editor-properties-panel"] {
+    left: 50%;
+  }
+
+  [data-testid="design-editor"].editor-narrow [data-testid="editor-toolbar"] {
+    top: 0.5rem;
+    left: 0.5rem;
+    max-width: calc(100% - 1rem);
+    transform: none;
+  }
+
+  [data-testid="design-editor"].editor-narrow [data-testid="editor-toolbar"] > div {
+    flex-wrap: nowrap;
+    touch-action: pan-x;
+  }
+
+  [data-testid="design-editor"].editor-narrow [data-testid="editor-toolbar"] button {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  .voo-ai-fab {
+    bottom: calc(45% + 1rem);
+  }
+}
