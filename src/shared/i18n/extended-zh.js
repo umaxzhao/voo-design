@@ -13,6 +13,7 @@ export default {
   "editor.props.component": "组件",
   "editor.props.mainComponent": "主组件",
   "editor.props.exportPng": "导出 PNG",
+  "editor.image.tools": "图像工具",
   "editor.context.image": "图像",
   "editor.image.fitFill": "适合 / 填满",
   "editor.image.fit": "适合 Fit",

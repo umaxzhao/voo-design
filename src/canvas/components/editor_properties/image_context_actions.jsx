@@ -81,14 +81,20 @@ export default function ImageContextActions({
   };
 
   return (
-    <section
-      aria-label={t("editor.context.image")}
+    // Image-only tools sit in one disclosure, closed until asked; fill, stroke
+    // and effects live in the regular panel sections like any rectangle.
+    <details
       data-testid="image-context-actions"
-      className="mb-3 rounded-2xl border border-white/10 bg-white/[0.025] p-2.5"
+      className="mb-3 rounded-lg border border-white/10 bg-white/[0.025] px-2"
     >
-      <h3 className="mb-2 px-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-400">
-        {t("editor.context.image")}
-      </h3>
+      <summary className="cursor-pointer rounded-md py-2 text-[10px] text-neutral-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]">
+        {t("editor.image.tools")}
+      </summary>
+      <div
+        role="group"
+        aria-label={t("editor.context.image")}
+        className="border-t border-white/10 pb-2 pt-2"
+      >
       <div className="grid grid-cols-2 gap-1.5">
         <button
           type="button"
@@ -180,7 +186,8 @@ export default function ImageContextActions({
         <option value="fit">{t("editor.image.fit")}</option>
         <option value="fill">{t("editor.image.fill")}</option>
       </select>
-    </section>
+      </div>
+    </details>
   );
 }
 

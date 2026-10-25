@@ -44,15 +44,21 @@ describe('dynamic properties context', () => {
     });
   });
 
-  it.each(['line', 'group', 'image', 'vector', 'ellipse'])('%s never exposes rectangle radius', kind => {
+  it.each(['line', 'group', 'vector', 'ellipse'])('%s never exposes rectangle radius', kind => {
     expect(resolve(kind).sections).not.toContain('radius');
   });
 
-  it('restricts group, line and raster paint', () => {
+  it('gives an image the rectangle panel, with radius, fill, stroke, effects and alignment', () => {
+    for (const section of ['alignment', 'radius', 'fill', 'stroke', 'effects']) {
+      expect(resolve('image').sections).toContain(section);
+    }
+  });
+
+  it('restricts group and line paint', () => {
     expect(resolve('group').sections).not.toContain('fill');
     expect(resolve('group').sections).not.toContain('stroke');
     expect(resolve('line').sections).not.toContain('fill');
-    expect(resolve('image').sections).toEqual(['transform', 'layer', 'effects', 'export']);
+    expect(resolve('image').sections).toEqual(PROPERTY_SECTIONS.rectangle);
     expect(resolve('ellipse').sections).toContain('arc');
   });
 
