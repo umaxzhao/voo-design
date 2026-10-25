@@ -43,6 +43,8 @@ export function drawClonePreview(
     points,
     sourceAnchor,
     targetAnchor,
+    sourcePoint,
+    showSourceCircle = false,
   } = preview;
   const radius = (size / 2) * viewport.zoom;
   const cx = cursor.x * viewport.zoom + viewport.panX;
@@ -57,19 +59,15 @@ export function drawClonePreview(
 
   let offsetDocX = 0;
   let offsetDocY = 0;
-  if (sourceAnchor && targetAnchor) {
+  if (sourcePoint) {
+    offsetDocX = cursor.x - sourcePoint.x;
+    offsetDocY = cursor.y - sourcePoint.y;
+  } else if (sourceAnchor && targetAnchor) {
     offsetDocX = targetAnchor.x - sourceAnchor.x;
     offsetDocY = targetAnchor.y - sourceAnchor.y;
-  } else {
-    const srcAnchor = cloneSource?.point || {
-      x: cursor.x - 30,
-      y: cursor.y - 30,
-    };
-    offsetDocX = cursor.x - srcAnchor.x;
-    offsetDocY = cursor.y - srcAnchor.y;
   }
 
-  if (bitmap && sourceNode) {
+  if (bitmap && sourceNode && sourcePoint) {
     const nodeScreenX =
       (sourceNode.x + offsetDocX) * viewport.zoom + viewport.panX;
     const nodeScreenY =
@@ -179,6 +177,30 @@ export function drawClonePreview(
     drawCloneAnchor(ctx, cloneSource, viewport);
   }
 
+  ctx.restore();
+
+  if (showSourceCircle && cloneSource?.point) {
+    drawCloneSourceCircle(ctx, cloneSource.point, size, viewport);
+  }
+}
+
+export function drawCloneSourceCircle(ctx, point, size, viewport) {
+  if (!point) return;
+  const x = point.x * viewport.zoom + viewport.panX;
+  const y = point.y * viewport.zoom + viewport.panY;
+  const radius = (size / 2) * viewport.zoom;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.8)";
+  ctx.stroke();
   ctx.restore();
 }
 
