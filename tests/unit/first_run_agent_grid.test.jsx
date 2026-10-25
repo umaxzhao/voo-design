@@ -80,6 +80,8 @@ describe("agent card grid", () => {
     expect(html).toContain("Not installed");
     expect(html).toContain("Not signed in");
     expect(html).toContain("Configure");
+    expect(html).toContain("break-normal text-xs font-semibold");
+    expect(html).toContain("grid grid-cols-3 gap-2");
   });
   it("shows Checking… while pending and Not detected without a bridge", () => {
     expect(render({ phase: DETECTION_PHASE.CHECKING })).toContain("Checking…");

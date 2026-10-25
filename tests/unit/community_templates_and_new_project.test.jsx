@@ -178,6 +178,17 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(html).toContain("社区模板");
   });
 
+  it("keeps welcome dashboard content usable on phones while preserving desktop breakpoints", () => {
+    const html = renderToStaticMarkup(React.createElement(WelcomeDashboard));
+    expect(html).toContain("w-full shrink-0 flex-col");
+    expect(html).toContain("lg:w-60");
+    expect(html).toContain("p-4 lg:p-8");
+    expect(html).toContain("grid grid-cols-1 sm:grid-cols-3");
+    expect(html).toContain("whitespace-nowrap");
+    expect(html).toContain("min-w-[5rem]");
+    expect(html).toContain("prompt-composer relative min-w-0");
+  });
+
   it("welcome dashboard renders AI generation types row without 'All' filter pill", () => {
     const html = renderToStaticMarkup(React.createElement(WelcomeDashboard));
 

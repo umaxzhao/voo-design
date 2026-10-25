@@ -28,7 +28,7 @@ export function WelcomeSidebar({
   handleCreateFolder,
 }) {
   return (
-    <aside className="flex w-60 shrink-0 flex-col bg-black pt-3 pb-3 px-2 rounded-tl-3xl justify-between">
+    <aside className="flex w-full shrink-0 flex-col bg-black pt-3 pb-3 px-2 rounded-tl-3xl justify-between lg:w-60">
       <div className="space-y-4">
 
         {/* Search lives in the sidebar, top-left, not in each page header */}
