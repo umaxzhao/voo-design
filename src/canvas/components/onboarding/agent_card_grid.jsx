@@ -13,20 +13,27 @@ const CARD_ORDER = ["codex", "claude", "antigravity"];
  * The CLI platforms a first-run card can pick: visible in the catalog and
  * runnable as a native agent (they have a default model to apply on selection).
  */
-export function selectableCliAgents(agents = getVisibleCliAgents()) {
-  const rank = (id) => (CARD_ORDER.includes(id) ? CARD_ORDER.indexOf(id) : CARD_ORDER.length);
+export function selectableCliAgents(agents = getVisibleCliAgents(), order = CARD_ORDER) {
+  const rank = (id) => (order.includes(id) ? order.indexOf(id) : order.length);
   return agents
     .filter((agent) => Object.hasOwn(AGENT_DEFAULT_MODELS, agent.id))
     .sort((a, b) => rank(a.id) - rank(b.id));
 }
 
-function AgentCard({ id, icon, name, status, statusText, selected, onSelect }) {
+/** Test ids of the first-run dialog; other hosts pass their own via `testIds`. */
+const DEFAULT_TEST_IDS = Object.freeze({
+  grid: "first-run-agent-grid",
+  card: "first-run-agent-card",
+  status: "first-run-agent-status",
+});
+
+function AgentCard({ id, icon, name, status, statusText, selected, onSelect, testIds }) {
   const settled = status !== AGENT_STATUS.CHECKING;
   return (
     <button
       type="button"
       aria-pressed={selected}
-      data-testid={`first-run-agent-card-${id}`}
+      data-testid={`${testIds.card}-${id}`}
       onClick={onSelect}
       className={`relative flex min-h-[116px] min-w-0 flex-col items-center justify-center gap-2 rounded-2xl p-3 text-center transition-colors ${FOCUS_CLASS} ${
         selected ? "bg-white/[0.1]" : "bg-white/[0.04] hover:bg-white/[0.07]"
@@ -40,7 +47,7 @@ function AgentCard({ id, icon, name, status, statusText, selected, onSelect }) {
       <span aria-hidden="true" className="flex size-7 items-center justify-center text-neutral-100">{icon}</span>
       <span className="max-w-full break-words text-xs font-semibold text-neutral-100">{name}</span>
       <span
-        data-testid={`first-run-agent-status-${id}`}
+        data-testid={`${testIds.status}-${id}`}
         data-status={status}
         className={`max-w-full break-words text-[11px] ${status === AGENT_STATUS.CONNECTED ? "text-neutral-100" : "text-neutral-400"} ${settled ? "" : "animate-pulse"}`}
       >
@@ -58,14 +65,24 @@ AgentCard.propTypes = {
   statusText: PropTypes.string.isRequired,
   selected: PropTypes.bool.isRequired,
   onSelect: PropTypes.func.isRequired,
+  testIds: PropTypes.shape({ card: PropTypes.string.isRequired, status: PropTypes.string.isRequired }).isRequired,
 };
 
-/** Three cards per row: icon, platform name, connection status. */
-export default function AgentCardGrid({ t, label, selected, detection, customConfigured, onSelect }) {
+/**
+ * Three cards per row: icon, platform name, connection status.
+ *
+ * Hosts adapt it through props, not forks: `agentIds` picks and orders the CLI
+ * platforms, `showCustom` toggles the custom-model card, `testIds` renames hooks.
+ */
+export default function AgentCardGrid({
+  t, label, selected, detection, customConfigured = false, onSelect,
+  agentIds, showCustom = true, testIds = DEFAULT_TEST_IDS,
+}) {
   const customStatus = customAgentStatus(customConfigured);
+  const agents = selectableCliAgents(undefined, agentIds).filter((agent) => !agentIds || agentIds.includes(agent.id));
   return (
-    <div role="group" aria-label={label} data-testid="first-run-agent-grid" className="grid grid-cols-3 gap-2">
-      {selectableCliAgents().map((agent) => {
+    <div role="group" aria-label={label} data-testid={testIds.grid ?? DEFAULT_TEST_IDS.grid} className="grid grid-cols-3 gap-2">
+      {agents.map((agent) => {
         const status = cliAgentStatus(agent, detection);
         return (
           <AgentCard
@@ -77,10 +94,11 @@ export default function AgentCardGrid({ t, label, selected, detection, customCon
             statusText={t(AGENT_STATUS_KEY[status])}
             selected={selected === agent.id}
             onSelect={() => onSelect(agent.id)}
+            testIds={testIds}
           />
         );
       })}
-      <AgentCard
+      {showCustom && <AgentCard
         id="custom"
         icon={<IconApi size={26} strokeWidth={ICON_STROKE_WIDTH} />}
         name={t("firstRun.provider.custom")}
@@ -88,7 +106,8 @@ export default function AgentCardGrid({ t, label, selected, detection, customCon
         statusText={t(AGENT_STATUS_KEY[customStatus])}
         selected={selected === "custom"}
         onSelect={() => onSelect("custom")}
-      />
+        testIds={testIds}
+      />}
     </div>
   );
 }
@@ -98,6 +117,9 @@ AgentCardGrid.propTypes = {
   label: PropTypes.string.isRequired,
   selected: PropTypes.string.isRequired,
   detection: PropTypes.shape({ phase: PropTypes.string.isRequired }).isRequired,
-  customConfigured: PropTypes.bool.isRequired,
+  customConfigured: PropTypes.bool,
   onSelect: PropTypes.func.isRequired,
+  agentIds: PropTypes.arrayOf(PropTypes.string),
+  showCustom: PropTypes.bool,
+  testIds: PropTypes.shape({ grid: PropTypes.string, card: PropTypes.string.isRequired, status: PropTypes.string.isRequired }),
 };

@@ -21,6 +21,7 @@ import {
   resetOnboarding,
 } from "../../src/canvas/components/onboarding/onboarding_state.js";
 import { getSetting, setSetting } from "../../src/shared/settings.js";
+import { loadLocale } from "../../src/shared/i18n.js";
 
 describe("Onboarding Guide & Local CLI Setup", () => {
   beforeEach(() => {
@@ -37,16 +38,41 @@ describe("Onboarding Guide & Local CLI Setup", () => {
     expect(html).toContain('aria-valuenow="1"');
   });
 
-  it("renders StepAgentSelect with Claude Code as recommended default", () => {
+  it("renders StepAgentSelect as the shared 3-column card grid with Claude Code selected", async () => {
+    await loadLocale("en");
     const html = renderToStaticMarkup(
       <StepAgentSelect selectedAgent="claude" onSelectAgent={() => {}} />
     );
 
-    expect(html).toContain('data-testid="onboarding-agent-option-claude"');
-    expect(html).toContain('data-testid="onboarding-agent-option-codex"');
-    expect(html).toContain('data-testid="onboarding-agent-option-antigravity"');
+    expect(html).toContain('data-testid="onboarding-agent-grid"');
+    expect(html).toContain("grid-cols-3");
+    for (const id of ["claude", "codex", "antigravity"]) {
+      expect(html).toContain(`data-testid="onboarding-agent-option-${id}"`);
+      expect(html).toContain(`data-testid="onboarding-agent-status-${id}"`);
+    }
+    expect(html).not.toContain("onboarding-agent-option-custom");
     expect(html).toContain("Claude Code");
-    expect(html).toContain("默认推荐");
+    // Claude Code stays the default selection; the others are not pressed.
+    expect(html).toMatch(/aria-pressed="true"[^>]*data-testid="onboarding-agent-option-claude"/);
+    expect(html).toMatch(/aria-pressed="false"[^>]*data-testid="onboarding-agent-option-codex"/);
+    // Each card ends in its live connection status (detection is still pending on first paint).
+    expect(html).toMatch(/data-testid="onboarding-agent-status-claude" data-status="checking"/);
+    expect(html).toContain("Checking…");
+    expect(html).not.toContain("默认推荐");
+    // The same cards and status copy come out in Chinese.
+    await loadLocale("zh");
+    const zh = renderToStaticMarkup(<StepAgentSelect selectedAgent="claude" onSelectAgent={() => {}} />);
+    expect(zh).toContain("检测中…");
+    await loadLocale("en");
+  });
+
+  it("orders the guide cards Claude Code, Codex, Antigravity", () => {
+    const html = renderToStaticMarkup(
+      <StepAgentSelect selectedAgent="claude" onSelectAgent={() => {}} />
+    );
+    const at = (id) => html.indexOf(`onboarding-agent-option-${id}`);
+    expect(at("claude")).toBeLessThan(at("codex"));
+    expect(at("codex")).toBeLessThan(at("antigravity"));
   });
 
   it("renders StepLocalDetect with transport details and test button", () => {
