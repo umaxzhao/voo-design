@@ -183,8 +183,10 @@ describe("top toolbar menus list every family mode", () => {
   it("marquee lists the marquee shapes and the lasso family", () => {
     const element = EditorMarqueeMenu({ tool: TOOL.MARQUEE, onTool: noop });
     expect(openMenuItems(element).map(([id]) => id)).toEqual([
+      "editor-marquee-menu-region",
       "editor-marquee-menu-rect",
       "editor-marquee-menu-ellipse",
+      "editor-marquee-menu-wand",
       "editor-marquee-menu-lasso",
       "editor-marquee-menu-poly",
       "editor-marquee-menu-magnetic",

@@ -174,7 +174,7 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     expect(html).toContain("64");
   });
 
-  it("renders shape geometry properties (Corner radius, Stroke pills) when Rect tool is active", () => {
+  it("renders shape geometry properties (Corner radius, Weight slider) when Rect tool is active", () => {
     const html = renderToStaticMarkup(
       <EditorProperties
         tool={TOOL.RECT}
@@ -198,8 +198,6 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     expect(html).toContain("editor.props.cornerRadius");
     expect(html).toContain("editor.shape.cornerRound");
     expect(html).toContain("editor.shape.cornerStraight");
-    expect(html).toContain("2px");
-    expect(html).toContain("4px");
   });
 
   it("renders Star/Polygon geometry properties (Sides & Ratio) when Star tool is active", () => {
@@ -221,7 +219,8 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
 
     expect(html).toContain("editor.shape.star");
     expect(html).toContain("editor.shape.points");
-    expect(html).toContain("editor.shape.innerRadius");
+    // Star keeps its Ratio row (label renamed from innerRadius); polygon hides it.
+    expect(html).toContain("editor.shape.ratio");
   });
 
   it("renders Arrow tool properties (Arrowhead start, end, size) when Arrow tool is active", () => {
@@ -286,19 +285,17 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
       />
     );
 
-    expect(html).toContain("editor.tool.selection");
+    // The panel title names the active marquee sub-mode (default rect).
+    expect(html).toContain("editor.selection.rect");
     expect(html).toContain("editor.selection.modeNew");
     expect(html).toContain("editor.selection.invert");
     expect(html).toContain("editor.selection.deselect");
-    // Quick feather pills
-    expect(html).toContain("0px");
-    expect(html).toContain("2px");
-    expect(html).toContain("5px");
-    expect(html).toContain("10px");
-    expect(html).toContain("20px");
+    // Quick feather pills were removed on purpose; the Feather slider stays.
+    expect(html).toContain("editor.selection.feather");
+    expect(html).not.toContain("20px");
   });
 
-  it("renders dedicated pen properties with quick stroke width pills", () => {
+  it("renders dedicated pen properties with the Weight slider", () => {
     const html = renderToStaticMarkup(
       <EditorProperties
         tool={TOOL.PEN}
@@ -315,12 +312,9 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
 
     expect(html).toContain("editor.tool.pen");
     expect(html).toContain("editor.pen.mode");
+    // Quick stroke width pills were removed on purpose; the Weight slider stays.
     expect(html).toContain("editor.strokeStyle.weight");
-    expect(html).toContain("1px");
-    expect(html).toContain("2px");
-    expect(html).toContain("4px");
-    expect(html).toContain("8px");
-    expect(html).toContain("16px");
+    expect(html).not.toContain("16px");
   });
 
   it("prioritizes dedicated tool properties even when isBackground is true", () => {
