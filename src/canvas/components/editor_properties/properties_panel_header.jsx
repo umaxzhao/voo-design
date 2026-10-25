@@ -26,7 +26,7 @@ export function activateMaskAction(hasMask, maskActions) {
   }
 }
 
-function getToolHeaderInfo(tool, t) {
+function getToolHeaderInfo(tool, t, marqueeMode = "rect") {
   if (!tool || tool === TOOL.SELECT) return null;
 
   switch (tool) {
@@ -56,11 +56,16 @@ function getToolHeaderInfo(tool, t) {
     case TOOL.FILL:
     case TOOL.GRADIENT:
       return { label: t(`editor.tool.${tool}`), icon: <IconBucket size={12} className="text-neutral-300" /> };
-    case TOOL.MARQUEE:
-    case TOOL.LASSO:
-    case TOOL.WAND:
     case TOOL.REGION:
-      return { label: t("editor.tool.selection"), icon: <IconSelectionRect size={12} className="text-neutral-300" /> };
+      return { label: t("editor.tool.region"), icon: <IconSelectionRect size={12} className="text-neutral-300" /> };
+    case TOOL.WAND:
+      return { label: t("editor.selection.wand"), icon: <IconSelectionRect size={12} className="text-neutral-300" /> };
+    case TOOL.MARQUEE:
+    case TOOL.LASSO: {
+      const mode = tool === TOOL.LASSO ? "lasso" : marqueeMode;
+      const key = mode === "magnetic" ? "magneticLasso" : mode;
+      return { label: t(`editor.selection.${key}`), icon: <IconSelectionRect size={12} className="text-neutral-300" /> };
+    }
     case TOOL.RECT:
     case TOOL.ELLIPSE:
     case TOOL.POLYGON:
@@ -75,6 +80,7 @@ function getToolHeaderInfo(tool, t) {
 
 export default function PropertiesPanelHeader({
   tool = null,
+  marqueeMode = "rect",
   isToolActive = false,
   showMaskBtn,
   hasMask,
@@ -87,7 +93,7 @@ export default function PropertiesPanelHeader({
   onToggleSide,
   t,
 }) {
-  const toolInfo = isToolActive ? getToolHeaderInfo(tool, t) : null;
+  const toolInfo = isToolActive ? getToolHeaderInfo(tool, t, marqueeMode) : null;
 
   return (
     <div className="flex items-center justify-between px-2 pb-2.5 pt-1 border-b border-white/10 mb-2 select-none">
@@ -166,6 +172,9 @@ export default function PropertiesPanelHeader({
 }
 
 PropertiesPanelHeader.propTypes = {
+  tool: PropTypes.string,
+  marqueeMode: PropTypes.string,
+  isToolActive: PropTypes.bool,
   showMaskBtn: PropTypes.bool,
   hasMask: PropTypes.bool,
   maskActions: PropTypes.object,

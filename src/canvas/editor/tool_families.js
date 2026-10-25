@@ -65,7 +65,7 @@ export const MARQUEE_MODE_IDS = Object.freeze(
 );
 
 export const MARQUEE_FAMILY_ITEMS = Object.freeze(
-  MARQUEE_TOOL_ITEMS.filter((item) => item.id === "rect" || item.id === "ellipse"),
+  MARQUEE_TOOL_ITEMS.filter((item) => ["region", "wand", "rect", "ellipse"].includes(item.id)),
 );
 
 export const LASSO_FAMILY_ITEMS = Object.freeze(
@@ -144,11 +144,15 @@ export const TOOL_FAMILIES = {
     key: "M",
     codes: ["KeyM"],
     code: "KeyM",
-    matchTool: (tool) => tool === TOOL.MARQUEE,
+    matchTool: (tool) => [TOOL.MARQUEE, TOOL.REGION, TOOL.WAND].includes(tool),
     items: MARQUEE_FAMILY_ITEMS,
     isActiveItem: (item, { tool, marqueeMode }) =>
-      tool === TOOL.MARQUEE && marqueeMode === item.id,
+      item.toolId === tool && (item.toolId !== TOOL.MARQUEE || marqueeMode === item.id),
     applyItem: (item, { onTool, onMarqueeMode }) => {
+      if (item.toolId !== TOOL.MARQUEE) {
+        onTool(item.toolId);
+        return;
+      }
       onMarqueeMode?.(item.id);
       onTool(TOOL.MARQUEE);
     },

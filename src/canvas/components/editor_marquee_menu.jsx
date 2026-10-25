@@ -16,9 +16,7 @@ const toolButtonClass = (active) =>
 
 /**
  * Top-toolbar Marquee entry. The main button keeps selecting the rectangular
- * marquee; the chevron lists the whole selection family: Rectangle and Ellipse
- * (marquee) plus Lasso, Polygonal and Magnetic (lasso), so the properties panel
- * does not have to.
+ * marquee; the chevron lists the selection family and its related tools.
  */
 export default function EditorMarqueeMenu({
   tool,
