@@ -17,7 +17,6 @@ import {
   IconSearch,
   IconSwap,
   IconTransparency,
-  IconOpacity,
   IconTrash,
   IconUnlock,
   ICON_STROKE_WIDTH,
@@ -945,7 +944,6 @@ export default function EditorLayers({
 
       <div className="flex flex-row-reverse items-center gap-2 mb-2 border-b border-white/[0.08] pb-2 [&>*:first-child]:w-20 [&>*:last-child]:min-w-0 [&>*:last-child]:flex-1">
         <ScrubField
-          prefix={<IconOpacity size={12} />}
           suffix="%"
           min={0}
           max={100}
@@ -957,6 +955,7 @@ export default function EditorLayers({
           ariaLabel={t("editor.props.opacity")}
           scrubHint={t("editor.props.dragToAdjust")}
           disabled={!activeObject}
+          className="layers-opacity-control"
         />
         <FlatSelect
           value={activeObject?.blendMode ?? DEFAULT_BLEND_MODE}
@@ -967,7 +966,7 @@ export default function EditorLayers({
             value: mode,
             label: t(blendModeLabelKey(mode)),
           }))}
-          triggerClassName="!h-7 !w-full !bg-transparent !px-2.5 !text-[11px] !font-mono !tabular-nums !text-neutral-100 hover:!bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+          triggerClassName="!h-7 !w-full !rounded-xl !bg-white/[0.06] !px-2.5 !text-[11px] !font-mono !tabular-nums !text-neutral-100 hover:!bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
           widthClass="w-44"
         />
       </div>
