@@ -22,6 +22,7 @@ import LiveFilterSection from "./live_filter_section.jsx";
 import { editorPropertiesPropTypes } from "./properties_panel_types.js";
 import PropertiesExportAction from "./properties_export_action.jsx";
 import { downloadSelectionPng } from "./type_specific_sections.jsx";
+import { PROPERTIES_PANEL_MAX_HEIGHT_CLASS } from "../editor_panel_clearance.js";
 
 export const PROPERTIES_PANEL_CONTENT_CLASS = "flex-1 min-h-0 overflow-x-hidden overflow-y-auto";
 
@@ -91,7 +92,7 @@ export default function EditorProperties({
   const { t } = useI18n();
   const sideClass = swapSide ? "left-4" : "right-4";
   const panelRef = useRef(null);
-  const dynamicPanelClass = `flex flex-col [&>div:first-child]:shrink-0 absolute ${sideClass} top-1/2 z-30 max-h-[85vh] max-md:inset-x-3 max-md:w-auto md:w-64 -translate-y-1/2 rounded-3xl bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200`;
+  const dynamicPanelClass = `flex flex-col [&>div:first-child]:shrink-0 absolute ${sideClass} top-1/2 z-30 ${PROPERTIES_PANEL_MAX_HEIGHT_CLASS} max-md:inset-x-3 max-md:w-auto md:w-64 -translate-y-1/2 rounded-3xl bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200`;
   // The canvas-local timeline owns the reserved bottom area. Keep the
   // original horizontal placement and center within the remaining height.
   const panelStyle =
@@ -105,7 +106,7 @@ export default function EditorProperties({
   const backgroundContentClass =
     bottomInset > 0
       ? contentClass
-      : "no-scrollbar overflow-x-hidden max-h-[85vh] overflow-y-auto";
+      : `${PROPERTIES_PANEL_CONTENT_CLASS} no-scrollbar`;
   const { edit, editAndCommit, commitNow } = usePropertyCommit({
     onMutate,
     onCommit,
