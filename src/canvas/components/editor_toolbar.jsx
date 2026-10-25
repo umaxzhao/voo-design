@@ -1,17 +1,7 @@
 import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
 import PropTypes from "prop-types";
-import {
-  IconBrush,
-  IconCrop,
-  IconDroplet,
-  IconEraser,
-  IconPointer,
-  IconCone,
-  IconSun,
-  IconMoon,
-  IconPalette,
-  IconText,
-} from "../icons.jsx";
+import { IconCrop, IconEraser, IconText } from "../icons.jsx";
+import EditorBrushMenu from "./editor_brush_menu.jsx";
 import EditorSelectMenu from "./editor_select_menu.jsx";
 import ShapeToolsMenu from "./editor_shape_menu.jsx";
 import EditorMarqueeMenu from "./editor_marquee_menu.jsx";
@@ -58,37 +48,6 @@ export default function EditorToolbar({
 }) {
   const { t } = useI18n();
   const motionVariant = variant === "motion";
-
-  const isBrushActive = tool === TOOL.BRUSH;
-  const ActiveBrushIcon =
-    brushMode === "smudge"
-      ? IconPointer
-      : brushMode === "blur"
-        ? IconDroplet
-        : brushMode === "sharpen"
-          ? IconCone
-          : brushMode === "dodge"
-            ? IconSun
-            : brushMode === "burn"
-              ? IconMoon
-              : brushMode === "sponge"
-                ? IconPalette
-                : IconBrush;
-
-  const brushLabel =
-    brushMode === "smudge"
-      ? t("editor.brushMode.smudge")
-      : brushMode === "blur"
-        ? t("editor.brushMode.blur")
-        : brushMode === "sharpen"
-          ? t("editor.brushMode.sharpen")
-          : brushMode === "dodge"
-            ? t("editor.brushMode.dodge")
-            : brushMode === "burn"
-              ? t("editor.brushMode.burn")
-              : brushMode === "sponge"
-                ? t("editor.brushMode.sponge")
-                : t("editor.tool.brush");
 
   const renderTool = (entry) => {
     const isActive = tool === entry.id;
@@ -156,24 +115,12 @@ export default function EditorToolbar({
             <div
               className="relative flex items-center"
             >
-              <EditorTooltip
-                title={brushLabel}
-                shortcut={TOOL_SHORTCUTS[TOOL.BRUSH] || "B"}
-                side="top"
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    onBrushMode?.("normal");
-                    onTool(TOOL.BRUSH);
-                  }}
-                  aria-label={brushLabel}
-                  aria-pressed={isBrushActive}
-                  className={`relative ${toolButtonClass(isBrushActive)}`}
-                >
-                  <ActiveBrushIcon size={16} />
-                </button>
-              </EditorTooltip>
+              <EditorBrushMenu
+                tool={tool}
+                onTool={onTool}
+                brushMode={brushMode}
+                onBrushMode={onBrushMode}
+              />
             </div>
 
             {/* 5. 橡皮擦工具 */}
@@ -220,11 +167,9 @@ export default function EditorToolbar({
             >
               <EditorHealingMenu
                 tool={tool}
-                onTool={(nextTool) => {
-                  onHealingMode?.("aiRepair");
-                  onTool(nextTool);
-                }}
+                onTool={onTool}
                 healingMode={healingMode}
+                onHealingMode={onHealingMode}
               />
             </div>
           </>

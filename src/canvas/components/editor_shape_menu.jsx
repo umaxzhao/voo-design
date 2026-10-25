@@ -8,6 +8,8 @@ import {
   IconArrowUpRight,
 } from "../icons.jsx";
 import { TOOL } from "../editor/editor_constants.js";
+import { TOOL_FAMILIES } from "../editor/tool_families.js";
+import EditorFamilyMenu, { familyMenuItems } from "./editor_family_menu.jsx";
 import { useI18n } from "../use_i18n.js";
 
 import EditorTooltip from "./editor_tooltip.jsx";
@@ -60,18 +62,23 @@ export default function ShapeToolsMenu({ tool, onTool }) {
               ? t("editor.tool.arrow")
               : t("editor.tool.shapes");
 
+  // The chevron lists every shapes choice, so the properties panel does not have to.
+  const items = familyMenuItems(TOOL_FAMILIES.shapes, { tool, onTool });
+
   return (
-    <EditorTooltip title={currentLabel} shortcut="R" side="top">
-      <button
-        type="button"
-        onClick={() => onTool(TOOL.RECT)}
-        aria-label={currentLabel}
-        aria-pressed={isActive}
-        className={toolButtonClass(isActive)}
-      >
-        <ActiveIcon size={16} />
-      </button>
-    </EditorTooltip>
+    <EditorFamilyMenu menuId="shapes" items={items}>
+      <EditorTooltip title={currentLabel} shortcut="R" side="top">
+        <button
+          type="button"
+          onClick={() => onTool(TOOL.RECT)}
+          aria-label={currentLabel}
+          aria-pressed={isActive}
+          className={toolButtonClass(isActive)}
+        >
+          <ActiveIcon size={16} />
+        </button>
+      </EditorTooltip>
+    </EditorFamilyMenu>
   );
 }
 
