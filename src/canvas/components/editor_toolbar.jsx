@@ -183,14 +183,38 @@ export default function EditorToolbar({
               label: t("editor.tool.eraser"),
             })}
 
-            {/* 6. 填充 & 渐变工具组 (Fill & Gradient) */}
+          </>
+        ) : null}
+
+        {/* 6. 文字工具 */}
+        {renderTool({
+          id: TOOL.TEXT,
+          icon: <IconText size={16} />,
+          label: t("editor.tool.text"),
+        })}
+
+        {/* 7. 钢笔 & 形状工具组 (shown in every variant) */}
+        <div
+          className="relative flex items-center"
+        >
+          <EditorPenMenu tool={tool} onTool={onTool} />
+        </div>
+        <div
+          className="relative flex items-center"
+        >
+          <ShapeToolsMenu tool={tool} onTool={onTool} />
+        </div>
+
+        {!motionVariant ? (
+          <>
+            {/* 8. 填充 & 渐变工具组 (Fill & Gradient) */}
             <div
               className="relative flex items-center"
             >
               <EditorFillMenu tool={tool} onTool={onTool} />
             </div>
 
-            {/* 7. 经典修复工具组 (AI修补 / 污点修复 / 修补工具 / 仿制图章) */}
+            {/* 9. 经典修复工具组 (AI修补 / 污点修复 / 修补工具 / 仿制图章) */}
             <div
               className="relative flex items-center"
             >
@@ -205,25 +229,6 @@ export default function EditorToolbar({
             </div>
           </>
         ) : null}
-
-        {/* 7. 文字工具 */}
-        {renderTool({
-          id: TOOL.TEXT,
-          icon: <IconText size={16} />,
-          label: t("editor.tool.text"),
-        })}
-
-        {/* 8. 钢笔 & 形状工具组 */}
-        <div
-          className="relative flex items-center"
-        >
-          <EditorPenMenu tool={tool} onTool={onTool} />
-        </div>
-        <div
-          className="relative flex items-center"
-        >
-          <ShapeToolsMenu tool={tool} onTool={onTool} />
-        </div>
         {EDITOR_BETA_ENABLED && onAddObject3d ? (
           <EditorObject3dMenu onAdd={onAddObject3d} />
         ) : null}
