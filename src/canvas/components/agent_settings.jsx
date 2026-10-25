@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import AgentMcpSettings from "./agent_mcp_settings.jsx";
 import { useEffect, useState } from "react";
 import { useI18n } from "../use_i18n.js";
@@ -10,11 +11,13 @@ import {
   AGENT_SETTING,
   IMAGE_SIZE_PRESETS,
 } from "../agent/canvas_tools.js";
-import SettingsSection, { SETTINGS_INPUT_CLASS } from "./settings_section.jsx";
+import SettingsSection, { SETTINGS_INPUT_CLASS, SettingsField } from "./settings_section.jsx";
+import SettingsRow from "./settings_row.jsx";
+import { Switch } from "./ui/switch.jsx";
 import FlatSelect from "./flat_select.jsx";
 
 /** Trigger look of the settings fields, so dropdowns match the inputs beside them. */
-const SELECT_TRIGGER_CLASS = "!h-auto !min-h-12 !w-full !rounded-xl !bg-white/[0.06] !px-3 !py-2 !text-xs !text-neutral-200";
+const SELECT_TRIGGER_CLASS = "!h-auto !min-h-9 !w-full !rounded-xl !bg-white/[0.06] !px-3 !py-2 !text-xs !text-neutral-200";
 
 const MIN_STEPS = 4;
 const MAX_STEPS = 128;
@@ -49,10 +52,8 @@ function ModelPicker({ label, mediaType, providerKey, modelKey, configuredIds, c
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-[12px] text-neutral-300">{label}</span>
-      {hint && <span className="text-[11px] text-neutral-500">{hint}</span>}
-      <div className="grid grid-cols-2 gap-2">
+    <SettingsRow label={label} hint={hint}>
+      <div className="grid w-full grid-cols-2 gap-2 sm:w-[22rem]">
         <FlatSelect
           label={`${label} · ${t("settings.assistant.provider")}`}
           value={providerId}
@@ -79,12 +80,12 @@ function ModelPicker({ label, mediaType, providerKey, modelKey, configuredIds, c
           widthClass="w-full"
         />
       </div>
-    </div>
+    </SettingsRow>
   );
 }
 
 /** Agent behaviour. Provider keys live in AI Providers; models are chosen here from them. */
-export default function AgentSettings() {
+export default function AgentSettings({ onOpenProviders }) {
   const { t } = useI18n();
   const { configs } = useProviderConfigs();
   const configuredIds = Object.keys(configs).filter((id) => configs[id]);
@@ -128,7 +129,16 @@ export default function AgentSettings() {
       <AgentMcpSettings />
       <SettingsSection title={t("settings.assistant.modelsTitle")} hint={t("settings.assistant.modelsHint")}>
         {configuredIds.length === 0 && (
-          <p className="text-[12px] text-neutral-400">{t("settings.assistant.noProviders")}</p>
+          <div className="flex flex-wrap items-center gap-x-2 text-xs text-neutral-400">
+            <span>{t("settings.assistant.noProviders")}</span>
+            <button
+              type="button"
+              onClick={onOpenProviders}
+              className="rounded-md px-1 py-1 text-neutral-200 underline underline-offset-2 outline-none hover:text-white focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+            >
+              {t("settings.tabProviders")}
+            </button>
+          </div>
         )}
         <ModelPicker
           label={t("settings.assistant.imageModel")}
@@ -158,52 +168,43 @@ export default function AgentSettings() {
       </SettingsSection>
 
       <SettingsSection title={t("settings.assistant.title")} hint={t("settings.assistant.hint")}>
-        <label className="flex items-center justify-between gap-4">
-          <span className="text-[12px] text-neutral-300">{t("settings.assistant.confirmBeforeImage")}</span>
-          <input
-            type="checkbox"
+        <SettingsRow label={t("settings.assistant.confirmBeforeImage")}>
+          <Switch
+            label={t("settings.assistant.confirmBeforeImage")}
             checked={confirmBeforeImage}
-            onChange={(event) =>
-              toggle(AGENT_SETTING.CONFIRM_BEFORE_IMAGE, event.target.checked, setConfirmBeforeImage)
-            }
-            className="size-4 accent-[#a7ffd4]"
+            onChange={(next) => toggle(AGENT_SETTING.CONFIRM_BEFORE_IMAGE, next, setConfirmBeforeImage)}
           />
-        </label>
+        </SettingsRow>
 
-        <label className="flex items-center justify-between gap-4">
-          <span className="text-[12px] text-neutral-300">{t("settings.assistant.useSelection")}</span>
-          <input
-            type="checkbox"
+        <SettingsRow label={t("settings.assistant.useSelection")}>
+          <Switch
+            label={t("settings.assistant.useSelection")}
             checked={useSelection}
-            onChange={(event) =>
-              toggle(AGENT_SETTING.USE_SELECTION_BY_DEFAULT, event.target.checked, setUseSelection)
-            }
-            className="size-4 accent-[#a7ffd4]"
+            onChange={(next) => toggle(AGENT_SETTING.USE_SELECTION_BY_DEFAULT, next, setUseSelection)}
           />
-        </label>
+        </SettingsRow>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[12px] text-neutral-300">{t("settings.assistant.imageSize")}</span>
-          <FlatSelect
-            label={t("settings.assistant.imageSize")}
-            value={imageSize}
-            onChange={(next) => {
-              setImageSize(next);
-              save(AGENT_SETTING.DEFAULT_IMAGE_SIZE, next);
-            }}
-            options={IMAGE_SIZE_PRESETS.map((size) => ({ value: size, label: size }))}
-            className="w-full"
-            triggerClassName={SELECT_TRIGGER_CLASS}
-            widthClass="w-full"
-          />
-        </label>
+        <SettingsRow label={t("settings.assistant.imageSize")}>
+          <div className="w-40">
+            <FlatSelect
+              label={t("settings.assistant.imageSize")}
+              value={imageSize}
+              onChange={(next) => {
+                setImageSize(next);
+                save(AGENT_SETTING.DEFAULT_IMAGE_SIZE, next);
+              }}
+              options={IMAGE_SIZE_PRESETS.map((size) => ({ value: size, label: size }))}
+              className="w-full"
+              triggerClassName={SELECT_TRIGGER_CLASS}
+              widthClass="w-full"
+            />
+          </div>
+        </SettingsRow>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[12px] text-neutral-300">
-            {t("settings.assistant.maxSteps")} ({MIN_STEPS}–{MAX_STEPS})
-          </span>
+        <SettingsRow label={`${t("settings.assistant.maxSteps")} (${MIN_STEPS}–${MAX_STEPS})`}>
           <input
             type="number"
+            aria-label={t("settings.assistant.maxSteps")}
             min={MIN_STEPS}
             max={MAX_STEPS}
             value={maxSteps}
@@ -212,22 +213,26 @@ export default function AgentSettings() {
               setMaxSteps(next);
               save(AGENT_SETTING.MAX_STEPS, next);
             }}
-            className={SETTINGS_INPUT_CLASS}
+            className={`${SETTINGS_INPUT_CLASS} !w-24`}
           />
-        </label>
+        </SettingsRow>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[12px] text-neutral-300">{t("settings.assistant.styleNote")}</span>
+        <SettingsField label={t("settings.assistant.styleNote")}>
           <textarea
-            rows={3}
+            rows={2}
             value={styleNote}
             placeholder={t("settings.assistant.styleNotePlaceholder")}
             onChange={(event) => setStyleNote(event.target.value)}
             onBlur={() => save(AGENT_SETTING.STYLE_NOTE, styleNote.trim())}
             className={SETTINGS_INPUT_CLASS}
           />
-        </label>
+        </SettingsField>
       </SettingsSection>
     </>
   );
 }
+
+AgentSettings.propTypes = {
+  /** Switches the drawer to the AI Providers tab. */
+  onOpenProviders: PropTypes.func,
+};

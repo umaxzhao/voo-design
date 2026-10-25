@@ -46,6 +46,8 @@ export default {
   "agent.mcp.env": "环境变量（JSON 对象）",
   "agent.mcp.headers": "请求头（JSON 对象）",
   "agent.mcp.add": "添加服务器",
+  "agent.mcp.showForm": "添加服务器",
+  "agent.mcp.hideForm": "取消",
   "agent.mcp.remove": "移除",
   "agent.mcp.invalid": "请检查唯一的服务器 ID、传输字段和 JSON 值。",
 

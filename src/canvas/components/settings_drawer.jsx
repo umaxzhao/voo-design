@@ -89,7 +89,7 @@ export default function SettingsDrawer({
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           <nav
             aria-label={isZh ? "设置分类" : "Settings Categories"}
-            className="grid shrink-0 grid-cols-2 gap-1 p-3 md:flex md:w-52 md:flex-col md:gap-2 md:bg-neutral-900"
+            className="grid shrink-0 grid-cols-2 gap-1 p-2 md:flex md:w-52 md:flex-col md:bg-neutral-900"
           >
             {TABS.map((tab) => {
               const Icon = tab.icon;
@@ -102,7 +102,7 @@ export default function SettingsDrawer({
                   aria-current={active ? "page" : undefined}
                   aria-selected={active}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-2 rounded-xl px-2 py-3 text-[10px] outline-none transition-colors focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 md:flex-row md:justify-start md:px-3 md:text-[11px] ${active ? "bg-white/[0.08] text-neutral-100" : "text-neutral-400 hover:bg-white/[0.04] hover:text-neutral-200"}`}
+                  className={`flex h-10 min-w-0 items-center justify-start gap-2 rounded-lg px-3 text-xs outline-none transition-colors focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${active ? "bg-white/[0.08] text-neutral-100" : "text-neutral-400 hover:bg-white/[0.04] hover:text-neutral-200"}`}
                 >
                   <Icon size={15} className="shrink-0" />
                   <span>{tabLabel(tab)}</span>
@@ -113,10 +113,10 @@ export default function SettingsDrawer({
 
           <main
             key={activeTab}
-            className="ui-scroll min-h-0 min-w-0 flex-1 overflow-y-auto p-4 sm:p-6"
+            className="ui-scroll min-h-0 min-w-0 flex-1 overflow-y-auto p-4"
           >
-            <div className="flex flex-col gap-5">
-              <h2 className="text-xs text-neutral-200">{activeLabel}</h2>
+            <div className="flex flex-col gap-4">
+              <h2 className="text-xs font-medium text-neutral-200">{activeLabel}</h2>
               {(activeTab === "assistant" || activeTab === "providers") && (
                 <button
                   type="button"
@@ -130,7 +130,9 @@ export default function SettingsDrawer({
                 </button>
               )}
               {activeTab === "providers" && <ProviderSettings />}
-              {activeTab === "assistant" && <AgentSettings />}
+              {activeTab === "assistant" && (
+                <AgentSettings onOpenProviders={() => setActiveTab("providers")} />
+              )}
               {activeTab === "general" && <SettingsGeneral />}
               {activeTab === "design-systems" && <SettingsDesignSystems />}
               {activeTab === "shortcuts" && <SettingsShortcuts asSection={false} />}
