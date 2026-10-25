@@ -46,6 +46,8 @@ export default {
   "agent.mcp.env": "Environment (JSON object)",
   "agent.mcp.headers": "Headers (JSON object)",
   "agent.mcp.add": "Add server",
+  "agent.mcp.showForm": "Add server",
+  "agent.mcp.hideForm": "Cancel",
   "agent.mcp.remove": "Remove",
   "agent.mcp.invalid": "Check the unique server ID, transport fields, and JSON values.",
 

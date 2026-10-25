@@ -8,10 +8,10 @@ export const COLLAPSED_COUNT = 4;
 const MAX_COVER_COLORS = 6;
 
 const CARD_BASE =
-  "flex w-full min-w-0 flex-col gap-2 rounded-xl border bg-white/[0.04] p-2 text-left outline-none transition-colors hover:bg-white/[0.07] focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
-const BADGE_CLASS = "shrink-0 rounded-md bg-white/[0.06] px-2 py-1 text-[10px] text-neutral-400";
+  "flex w-full min-w-0 flex-col gap-1.5 rounded-xl border bg-white/[0.04] p-2 text-left outline-none transition-colors hover:bg-white/[0.07] focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
+const BADGE_CLASS = "shrink-0 rounded-md bg-white/[0.06] px-2 py-0.5 text-xs text-neutral-400";
 const MORE_CLASS =
-  "min-h-12 self-start rounded-lg bg-white/10 px-4 py-2 text-xs text-neutral-100 outline-none hover:bg-white/[0.14] focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
+  "min-h-9 self-start rounded-lg bg-white/10 px-4 py-1.5 text-xs text-neutral-100 outline-none hover:bg-white/[0.14] focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
 
 /** The system's own palette: first distinct colour tokens, in token order. */
 export function coverColors(system) {
@@ -24,7 +24,7 @@ export function coverColors(system) {
 function Cover({ system }) {
   const colors = coverColors(system);
   return (
-    <div aria-hidden="true" data-testid="design-system-cover" className="flex aspect-video w-full overflow-hidden rounded-lg bg-white/[0.08]">
+    <div aria-hidden="true" data-testid="design-system-cover" className="flex h-16 w-full overflow-hidden rounded-lg bg-white/[0.08]">
       {colors.map((color) => (
         <span key={color} data-testid="design-system-cover-swatch" className="h-full min-w-0 flex-1" style={{ backgroundColor: color }} />
       ))}
@@ -47,7 +47,7 @@ function DesignSystemCard({ system, active, applied, onSelect }) {
       >
         <Cover system={system} />
         <span className="min-w-0 truncate px-1 text-xs text-neutral-100">{designSystemName(system, t)}</span>
-        <span className="flex min-w-0 flex-wrap items-center gap-1 px-1 pb-1">
+        <span className="flex min-w-0 flex-wrap items-center gap-1 px-1">
           {applied && <span className={BADGE_CLASS}>{t("designSystems.inUse")}</span>}
           <span className={BADGE_CLASS}>{system.builtIn ? t("designSystems.builtIn") : t("designSystems.custom")}</span>
         </span>
@@ -77,7 +77,7 @@ export default function DesignSystemCards({ systems, selectedId, appliedId, onSe
   const visible = expanded ? systems : systems.slice(0, COLLAPSED_COUNT);
   return (
     <div className="flex flex-col gap-2">
-      <ul aria-label={t("designSystems.listLabel")} data-testid="design-system-list" className="grid grid-cols-2 gap-2">
+      <ul aria-label={t("designSystems.listLabel")} data-testid="design-system-list" className="grid grid-cols-2 gap-2 lg:grid-cols-3">
         {visible.map((system) => (
           <DesignSystemCard key={system.id} system={system} active={system.id === selectedId} applied={system.id === appliedId} onSelect={onSelect} />
         ))}

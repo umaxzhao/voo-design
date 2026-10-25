@@ -4,12 +4,15 @@ import { IconChevronDown } from "../icons.jsx";
 import InfoHint from "./info_hint.jsx";
 
 export const SETTINGS_INPUT_CLASS =
-  "min-h-12 w-full min-w-0 rounded-xl bg-white/[0.06] px-3 py-2 text-xs text-neutral-200 outline-none placeholder:text-neutral-400 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
+  "min-h-9 w-full min-w-0 rounded-xl bg-white/[0.06] px-3 py-2 text-xs text-neutral-200 outline-none placeholder:text-neutral-400 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
 
-export default function SettingsSection({ title, hint, children }) {
+/** Label style shared by every stacked (label above input) field. */
+export const SETTINGS_LABEL_CLASS = "flex min-w-0 flex-col gap-1.5 text-xs text-neutral-400";
+
+export default function SettingsSection({ title, hint, testId, children }) {
   return (
-    <section className="flex flex-col gap-4 rounded-2xl bg-neutral-950 p-4">
-      <div className="text-[9px] uppercase tracking-[0.14em] text-neutral-500 font-medium">
+    <section data-testid={testId} className="flex flex-col gap-2 rounded-xl bg-neutral-900 p-3">
+      <div className="text-xs font-medium text-neutral-400">
         <InfoHint label={title} text={hint} />
       </div>
       {children}
@@ -20,6 +23,7 @@ export default function SettingsSection({ title, hint, children }) {
 SettingsSection.propTypes = {
   title: PropTypes.string.isRequired,
   hint: PropTypes.string.isRequired,
+  testId: PropTypes.string,
   children: PropTypes.node.isRequired,
 };
 
@@ -46,14 +50,14 @@ export function SettingsDisclosure({
         onClick={() =>
           onToggle ? onToggle(!isExpanded) : setExpanded(!isExpanded)
         }
-        className={`flex min-h-12 w-full min-w-0 items-center justify-between gap-3 text-left text-[11px] text-neutral-300 outline-none transition-colors hover:bg-white/[0.03] focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
+        className={`flex min-h-9 w-full min-w-0 items-center justify-between gap-3 text-left text-xs text-neutral-300 outline-none transition-colors hover:bg-white/[0.03] focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
           flush ? "rounded-lg py-2" : "rounded-2xl p-4"
         }`}
       >
         <span className="shrink-0">{title}</span>
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2 text-right">
           {!isExpanded && summary && (
-            <span className="min-w-0 truncate text-[10px] text-neutral-400">
+            <span className="min-w-0 truncate text-xs text-neutral-400">
               {summary}
             </span>
           )}
@@ -88,7 +92,7 @@ SettingsDisclosure.propTypes = {
 
 export function SettingsField({ label, children }) {
   return (
-    <label className="flex min-w-0 flex-col gap-2 text-[11px] text-neutral-400">
+    <label className={SETTINGS_LABEL_CLASS}>
       <span>{label}</span>
       {children}
     </label>
