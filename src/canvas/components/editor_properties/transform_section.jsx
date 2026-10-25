@@ -246,6 +246,9 @@ export default function TransformSection({
           </div>
         )}
 
+        {/* Same separator as the panel's section dividers; space-y-2.5 supplies the rhythm on both sides. */}
+        {isRegion ? null : <div role="separator" className="border-t border-white/10" />}
+
         <div className="grid grid-cols-2 gap-2 items-center">
           {commonOpacity.mixed ? (
             <MixedField label="" suffix="%" />
