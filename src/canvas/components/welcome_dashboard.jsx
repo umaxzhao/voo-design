@@ -1,11 +1,7 @@
 import { dispatchToAgent } from "./dispatch_to_agent.js";
 import { HTML_IMPORT_ACCEPT, SCREENSHOT_ACCEPT, importWelcomeHtml, recreateWelcomeScreenshot } from "./welcome_home_actions.js";
 import React, { useState, useRef } from "react";
-import {
-  Trash2,
-  Plus,
-  FolderOpen,
-} from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useDesignStore } from "../../store/design_store.js";
 import { openVooProject } from "../store/project_io.js";
 import { useI18n } from "../use_i18n.js";
@@ -246,26 +242,6 @@ export default function WelcomeDashboard() {
                 <span>{t("welcome.actions.emptyTrash")}</span>
               </button>
             )}
-
-            {/* Open File */}
-            <button
-              type="button"
-              onClick={() => handleOpenLocal()}
-              className="flex items-center gap-1.5 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-200 transition-colors cursor-pointer"
-            >
-              <FolderOpen size={13} className="text-neutral-400" />
-              <span>{t("welcome.header.open")}</span>
-            </button>
-
-            {/* New Design File */}
-            <button
-              type="button"
-              onClick={() => handleCreateNew()}
-              className="flex items-center gap-1.5 rounded-xl bg-white hover:bg-neutral-100 text-black px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
-            >
-              <Plus size={14} className="text-black" />
-              <span>{t("welcome.header.new")}</span>
-            </button>
           </div>
         </header>
 

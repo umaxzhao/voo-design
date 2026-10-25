@@ -22,7 +22,10 @@ function buttons(node) {
 const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
 describe("title bar actions", () => {
-  it.each([true, false])("offers only open/save/settings on the right (welcome=%s)", (welcomeOpen) => {
+  it.each([
+    [true, ["titlebar.openTitle", "welcome.header.new", "titlebar.settingsTitle"], ["voo:file-open", "voo:welcome-new"]],
+    [false, ["titlebar.openTitle", "titlebar.saveTitle", "titlebar.prefsTitle"], ["voo:file-open", "voo:file-save"]],
+  ])("offers open plus new/save and settings on the right (welcome=%s)", (welcomeOpen, titles, events) => {
     state.welcomeOpen = welcomeOpen;
     const dispatchEvent = vi.fn();
     vi.stubGlobal("window", { dispatchEvent });
@@ -33,13 +36,14 @@ describe("title bar actions", () => {
       const right = React.Children.toArray(header.props.children)[1];
       const actions = buttons(right);
       expect(actions).toHaveLength(3);
-      expect(actions.map((button) => button.props.title)).toEqual([
-        "titlebar.openTitle", "titlebar.saveTitle",
-        welcomeOpen ? "titlebar.settingsTitle" : "titlebar.prefsTitle",
+      expect(actions.map((button) => button.props.title)).toEqual(titles);
+      // The visible label follows the title: Open + New on welcome, Open + Save in the editor.
+      expect(actions.slice(0, 2).map((button) => button.props.children)).toEqual([
+        "titlebar.open", welcomeOpen ? "welcome.header.new" : "titlebar.save",
       ]);
       actions[0].props.onClick();
       actions[1].props.onClick();
-      expect(dispatchEvent.mock.calls.map(([event]) => event.type)).toEqual(["voo:file-open", "voo:file-save"]);
+      expect(dispatchEvent.mock.calls.map(([event]) => event.type)).toEqual(events);
       expect(actions[2].props.onClick.toString()).toContain("setSettingsOpen(true)");
       for (const event of ["voo:open-about", "voo:open-onboarding", "voo:editor-export", "voo:open-first-run"]) {
         expect(source("../../src/app_title_bar.jsx")).not.toContain(event);
