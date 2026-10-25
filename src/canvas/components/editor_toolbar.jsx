@@ -3,19 +3,16 @@ import PropTypes from "prop-types";
 import {
   IconBrush,
   IconCrop,
-  IconCursor,
-  IconDistort,
   IconDroplet,
   IconEraser,
-  IconPerspective,
   IconPointer,
   IconCone,
   IconSun,
   IconMoon,
   IconPalette,
   IconText,
-  IconVectorSquare,
 } from "../icons.jsx";
+import EditorSelectMenu from "./editor_select_menu.jsx";
 import ShapeToolsMenu from "./editor_shape_menu.jsx";
 import EditorMarqueeMenu from "./editor_marquee_menu.jsx";
 import EditorHealingMenu from "./editor_healing_menu.jsx";
@@ -34,31 +31,6 @@ export const toolButtonClass = (active) =>
       ? "bg-white text-black font-medium"
       : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
   }`;
-
-// Puppet / deform pin icon (repo-inline SVG so the toolbar does not pull
-// lucide-react into the entry chunk, keeping toolbar icons local and compact.
-function PuppetIcon({ size = 16 }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="12" x2="12" y1="17" y2="21" />
-      <path d="M5 9L9 5l17 17-4 4-10-10" />
-      <path d="M9 5l2-2a2 2 0 0 1 2.83 0L19 8a2 2 0 0 1 0 2.83l-2 2" />
-    </svg>
-  );
-}
-
-PuppetIcon.propTypes = {
-  size: PropTypes.number,
-};
 
 /**
  * Floating toolbar at the top-centre of the editor stage.
@@ -86,25 +58,6 @@ export default function EditorToolbar({
 }) {
   const { t } = useI18n();
   const motionVariant = variant === "motion";
-
-  // The "Select" entry is the unified entry for the select family: the plain
-  // cursor tool and the three transform tools (Perspective / Distort / Puppet).
-  const isSelectFamily =
-    tool === TOOL.SELECT ||
-    tool === TOOL.SELECT_REGION ||
-    tool === TOOL.PERSPECTIVE ||
-    tool === TOOL.DISTORT ||
-    tool === TOOL.PUPPET_WARP;
-  const SelectFamilyIcon =
-    tool === TOOL.PERSPECTIVE
-      ? IconPerspective
-      : tool === TOOL.DISTORT
-        ? IconDistort
-        : tool === TOOL.PUPPET_WARP
-          ? PuppetIcon
-          : tool === TOOL.SELECT_REGION
-            ? IconVectorSquare
-            : IconCursor;
 
   const isBrushActive = tool === TOOL.BRUSH;
   const ActiveBrushIcon =
@@ -169,25 +122,11 @@ export default function EditorToolbar({
       className="absolute top-[14px] left-1/2 z-30 -translate-x-1/2 max-w-[calc(100vw-16px)]"
     >
       <div className="flex items-center gap-1 rounded-full bg-black/90 p-1.5 shadow-pop backdrop-blur-md font-mono max-w-full overflow-x-auto no-scrollbar">
-        {/* 1. 选择工具（select）：统一入口 —— 光标选择 + 透视 / 网格扭曲 / 操控变形 */}
+        {/* 1. 选择工具（select）：统一入口 —— 光标选择 + 透视 / 扭曲 / 操控变形（下拉菜单） */}
         <div
           className="relative flex items-center rounded-lg border border-white/10"
         >
-          <EditorTooltip
-            title={t("editor.tool.select")}
-            shortcut={TOOL_SHORTCUTS[TOOL.SELECT] || ""}
-            side="top"
-          >
-            <button
-              type="button"
-              onClick={() => onTool(TOOL.SELECT)}
-              aria-label={t("editor.tool.select")}
-              aria-pressed={isSelectFamily}
-              className={`relative ${toolButtonClass(isSelectFamily)}`}
-            >
-              <SelectFamilyIcon size={16} />
-            </button>
-          </EditorTooltip>
+          <EditorSelectMenu tool={tool} onTool={onTool} />
         </div>
 
         {!motionVariant ? (

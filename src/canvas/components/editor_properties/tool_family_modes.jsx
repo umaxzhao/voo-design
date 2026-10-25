@@ -15,6 +15,15 @@ const MODE_FAMILIES = [
   "fill",
 ];
 
+// The select family (Select / Distort / Perspective / Puppet) is chosen from
+// the top toolbar's Select menu, so the properties panel does not repeat it.
+const TOP_TOOLBAR_SELECT_TOOLS = [
+  TOOL.SELECT,
+  TOOL.DISTORT,
+  TOOL.PERSPECTIVE,
+  TOOL.PUPPET_WARP,
+];
+
 export default function ToolFamilyModes({
   tool,
   marqueeMode,
@@ -26,6 +35,7 @@ export default function ToolFamilyModes({
   onHealingMode,
 }) {
   const { t } = useI18n();
+  if (TOP_TOOLBAR_SELECT_TOOLS.includes(tool)) return null;
   const family = MODE_FAMILIES.map((id) => TOOL_FAMILIES[id]).find((item) =>
     item.matchTool(tool, marqueeMode),
   );
