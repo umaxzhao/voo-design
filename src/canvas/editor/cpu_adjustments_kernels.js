@@ -33,6 +33,12 @@ import {
   scaledRadius,
 } from "./spatial_filter.js";
 import { applyLiveFilterStack } from "./live_filter_stack.js";
+import {
+  applyBloomFilter,
+  applyMedianFilter,
+  applyTwirlFilter,
+  applyZoomBlurFilter,
+} from "./affinity_filters.js";
 
 export function rgbToHsl(r, g, b) {
   r /= 255;
@@ -202,6 +208,13 @@ export function applyAdjustmentKernels(data, width, height, naturalWidth, tone) 
   if (tone.halftone > 0) applyHalftone(data, width, height, tone.halftone);
   if (tone.sepia > 0) applySepia(data, width, height, tone.sepia);
   if (tone.emboss > 0) applyEmboss(data, width, height, tone.emboss);
+  // Affinity parity filters (CPU only, like the pixel filters above).
+  if (tone.median > 0) applyMedianFilter(data, width, height, tone.median);
+  if (tone.bloom > 0) {
+    applyBloomFilter(data, width, height, tone.bloom, naturalWidth ?? width);
+  }
+  if (tone.zoomBlur > 0) applyZoomBlurFilter(data, width, height, tone.zoomBlur);
+  if (tone.twirl) applyTwirlFilter(data, width, height, tone.twirl);
 
   // Spatial convolutions come last, in the GPU pipeline's order (blur, then
   // sharpen). scaledRadius converts the slider radius from natural to working

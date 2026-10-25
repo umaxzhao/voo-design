@@ -132,6 +132,19 @@ function buildToneLutUncached(adjustments) {
   const embossVal = normalized.emboss?.enabled
     ? (normalized.emboss.value ?? 0)
     : 0;
+  // Affinity-style filters: median (denoise), bloom, zoom blur and twirl.
+  const medianVal = normalized.median?.enabled
+    ? (normalized.median.value ?? 0)
+    : 0;
+  const bloomVal = normalized.bloom?.enabled
+    ? (normalized.bloom.value ?? 0)
+    : 0;
+  const zoomBlurVal = normalized.zoomBlur?.enabled
+    ? (normalized.zoomBlur.value ?? 0)
+    : 0;
+  const twirlVal = normalized.twirl?.enabled
+    ? (normalized.twirl.value ?? 0)
+    : 0;
 
   const curvesObj = normalized.curves;
   const curvesEnabled = curvesObj?.enabled ?? true;
@@ -290,6 +303,10 @@ function buildToneLutUncached(adjustments) {
     halftoneVal > 0 ||
     sepiaVal > 0 ||
     embossVal > 0 ||
+    medianVal > 0 ||
+    bloomVal > 0 ||
+    zoomBlurVal > 0 ||
+    twirlVal !== 0 ||
     liveFiltersActive;
 
   // True when any cpu-only adjustment is active — the GL pipeline bails out
@@ -305,6 +322,10 @@ function buildToneLutUncached(adjustments) {
     halftoneVal > 0 ||
     sepiaVal > 0 ||
     embossVal > 0 ||
+    medianVal > 0 ||
+    bloomVal > 0 ||
+    zoomBlurVal > 0 ||
+    twirlVal !== 0 ||
     colorBalanceActive ||
     bwActive ||
     photoFilterActive ||
@@ -321,7 +342,7 @@ function buildToneLutUncached(adjustments) {
         curveSignature(curvesObj?.g) +
         curveSignature(curvesObj?.b)
       : "0"
-  }|${eVal}|${tVal}|${tiVal}|${hiVal}|${shVal}|${vVal}|${blurVal}|${sharpenVal}|${highPassVal}|${clarityVal}|${motionBlurVal}|${motionBlurAngle}|${noiseVal}|${cloudsVal}|${pixelateVal}|${posterizeVal}|${solarizeVal}|${halftoneVal}|${sepiaVal}|${embossVal}|${levelsActive ? `${blackVal}|${whiteVal}|${gammaVal}|${outBlackVal}|${outWhiteVal}` : "0"}|${invertVal ? "1" : "0"}|${thresholdVal === null ? "0" : thresholdVal}|${colorBalanceActive ? colorBalanceSignature(colorBalance) : "0"}|${bwActive ? `${blackAndWhite.reds}|${blackAndWhite.yellows}|${blackAndWhite.greens}|${blackAndWhite.cyans}|${blackAndWhite.blues}|${blackAndWhite.magentas}|${blackAndWhite.useTint ? blackAndWhite.tintColor : "0"}` : "0"}|${photoFilterActive ? `${photoFilter.density}|${photoFilter.color}|${photoFilter.preserveLuminosity !== false ? 1 : 0}` : "0"}|${vibranceActive ? vibrance.value : "0"}|${channelMixerActive ? channelMixerSignature(channelMixer) : "0"}|${selectiveColorActive ? selectiveColorSignature(selectiveColor) : "0"}|${gradientMapActive ? gradientMapSignature(gradientMap) : "0"}${liveFiltersActive ? `|${liveFiltersStack.map((entry) => `${entry.kind}@${entry.params?.value ?? entry.params?.amount ?? entry.params?.radius ?? 0}@${entry.params?.angle ?? 0}@${entry.opacity}`).join(";")}` : "|0"}`;
+  }|${eVal}|${tVal}|${tiVal}|${hiVal}|${shVal}|${vVal}|${blurVal}|${sharpenVal}|${highPassVal}|${clarityVal}|${motionBlurVal}|${motionBlurAngle}|${noiseVal}|${cloudsVal}|${pixelateVal}|${posterizeVal}|${solarizeVal}|${halftoneVal}|${sepiaVal}|${embossVal}|${medianVal}|${bloomVal}|${zoomBlurVal}|${twirlVal}|${levelsActive ? `${blackVal}|${whiteVal}|${gammaVal}|${outBlackVal}|${outWhiteVal}` : "0"}|${invertVal ? "1" : "0"}|${thresholdVal === null ? "0" : thresholdVal}|${colorBalanceActive ? colorBalanceSignature(colorBalance) : "0"}|${bwActive ? `${blackAndWhite.reds}|${blackAndWhite.yellows}|${blackAndWhite.greens}|${blackAndWhite.cyans}|${blackAndWhite.blues}|${blackAndWhite.magentas}|${blackAndWhite.useTint ? blackAndWhite.tintColor : "0"}` : "0"}|${photoFilterActive ? `${photoFilter.density}|${photoFilter.color}|${photoFilter.preserveLuminosity !== false ? 1 : 0}` : "0"}|${vibranceActive ? vibrance.value : "0"}|${channelMixerActive ? channelMixerSignature(channelMixer) : "0"}|${selectiveColorActive ? selectiveColorSignature(selectiveColor) : "0"}|${gradientMapActive ? gradientMapSignature(gradientMap) : "0"}${liveFiltersActive ? `|${liveFiltersStack.map((entry) => `${entry.kind}@${entry.params?.value ?? entry.params?.amount ?? entry.params?.radius ?? 0}@${entry.params?.angle ?? 0}@${entry.opacity}`).join(";")}` : "|0"}`;
 
   const { lutR, lutG, lutB } = computeChannelLuts({
     bVal,
@@ -375,6 +396,10 @@ function buildToneLutUncached(adjustments) {
     halftone: halftoneVal,
     sepia: sepiaVal,
     emboss: embossVal,
+    median: medianVal,
+    bloom: bloomVal,
+    zoomBlur: zoomBlurVal,
+    twirl: twirlVal,
     colorBalance,
     blackAndWhite,
     photoFilter,

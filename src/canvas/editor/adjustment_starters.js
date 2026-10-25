@@ -135,6 +135,7 @@ export function starterEffect(kind) {
       opacity: 75,
     },
     bevel: { enabled: true, depth: 60, size: 8, angle: 135, softness: 30 },
+    glass: { enabled: true, blur: 24, tint: "#ffffff", opacity: 28, highlight: 45, angle: 135 },
     fill: { enabled: true, color: "#22c55e", opacity: 100 },
     gradientOverlay: {
       enabled: true,

@@ -60,6 +60,10 @@ export function createDefaultAdjustments() {
     halftone: { enabled: true, value: 0 },
     sepia: { enabled: true, value: 0 },
     emboss: { enabled: true, value: 0 },
+    median: { enabled: true, value: 0 },
+    bloom: { enabled: true, value: 0 },
+    zoomBlur: { enabled: true, value: 0 },
+    twirl: { enabled: true, value: 0 },
     levels: {
       enabled: true,
       black: 0,

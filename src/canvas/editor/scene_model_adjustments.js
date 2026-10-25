@@ -191,6 +191,22 @@ export function normalizeAdjustments(adj) {
       enabled: Boolean(adj.emboss?.enabled ?? defaults.emboss.enabled),
       value: parseAdjustmentValue(adj.emboss?.value, 0, 100, defaults.emboss.value),
     },
+    median: {
+      enabled: Boolean(adj.median?.enabled ?? defaults.median.enabled),
+      value: parseAdjustmentValue(adj.median?.value, 0, 100, defaults.median.value),
+    },
+    bloom: {
+      enabled: Boolean(adj.bloom?.enabled ?? defaults.bloom.enabled),
+      value: parseAdjustmentValue(adj.bloom?.value, 0, 100, defaults.bloom.value),
+    },
+    zoomBlur: {
+      enabled: Boolean(adj.zoomBlur?.enabled ?? defaults.zoomBlur.enabled),
+      value: parseAdjustmentValue(adj.zoomBlur?.value, 0, 100, defaults.zoomBlur.value),
+    },
+    twirl: {
+      enabled: Boolean(adj.twirl?.enabled ?? defaults.twirl.enabled),
+      value: parseAdjustmentValue(adj.twirl?.value, -100, 100, defaults.twirl.value),
+    },
     curves: {
       enabled: Boolean(adj.curves?.enabled ?? defaults.curves.enabled),
       luminance: normalizePoints(adj.curves?.luminance, defaults.curves.luminance),

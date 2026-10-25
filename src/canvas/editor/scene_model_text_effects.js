@@ -169,6 +169,22 @@ export function normalizeBevel(value) {
 }
 
 /**
+ * Figma-style glass: blur what is behind the layer, tint it and add a light
+ * edge. `{ enabled, blur, tint, opacity, highlight, angle }`, or null.
+ */
+export function normalizeGlass(value) {
+  if (!value || typeof value !== "object") return null;
+  return {
+    enabled: Boolean(value.enabled),
+    blur: parseAdjustmentValue(value.blur, 0, 100, 20),
+    tint: normalizeColourOrNull(value.tint) ?? "#ffffff",
+    opacity: parseAdjustmentValue(value.opacity, 0, 100, 25),
+    highlight: parseAdjustmentValue(value.highlight, 0, 100, 40),
+    angle: parseAdjustmentValue(value.angle, 0, 360, 135),
+  };
+}
+
+/**
  * A node's colour overlay (Photoshop's solid fill): `{ enabled, color,
  * opacity }`, or null. The color paints over the node's own pixels where
  * they have alpha — the body keeps its shape and is re-coloured.
@@ -280,10 +296,11 @@ export function normalizeEffects(value) {
   const innerGlow = normalizeInnerGlow(value.innerGlow);
   const satin = normalizeSatin(value.satin);
   const bevel = normalizeBevel(value.bevel);
+  const glass = normalizeGlass(value.glass);
   const fill = normalizeFill(value.fill);
   const gradientOverlay = normalizeGradientOverlay(value.gradientOverlay);
   const stroke = normalizeStroke(value.stroke);
-  if (!shadow && !glow && !innerShadow && !innerGlow && !satin && !bevel && !fill && !gradientOverlay && !stroke) return null;
+  if (!shadow && !glow && !innerShadow && !innerGlow && !satin && !bevel && !glass && !fill && !gradientOverlay && !stroke) return null;
   const effects = {};
   if (shadow) effects.shadow = shadow;
   if (glow) effects.glow = glow;
@@ -291,6 +308,7 @@ export function normalizeEffects(value) {
   if (innerGlow) effects.innerGlow = innerGlow;
   if (satin) effects.satin = satin;
   if (bevel) effects.bevel = bevel;
+  if (glass) effects.glass = glass;
   if (fill) effects.fill = fill;
   if (gradientOverlay) effects.gradientOverlay = gradientOverlay;
   if (stroke) effects.stroke = stroke;

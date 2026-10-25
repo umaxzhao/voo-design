@@ -30,6 +30,7 @@ import {
   deviceScaleOf,
   drawBackgroundBlur,
   drawNoiseOverlay,
+  drawGlassOverlay,
 } from "./render_figma_effects.js";
 
 export function drawNode(
@@ -145,7 +146,9 @@ export function drawNode(
 
   // Background blur reads what is already painted under the node, so it runs
   // before the node paints. Layer blur filters everything this node draws.
-  if (node.backgroundBlur > 0) drawBackgroundBlur(ctx, node, node.backgroundBlur);
+  const glassBlur = effects?.glass?.enabled ? effects.glass.blur ?? 0 : 0;
+  const backdropBlur = Math.max(node.backgroundBlur ?? 0, glassBlur);
+  if (backdropBlur > 0) drawBackgroundBlur(ctx, node, backdropBlur);
   if (node.layerBlur > 0) {
     ctx.filter = `blur(${node.layerBlur * deviceScaleOf(ctx)}px)`;
   }
@@ -196,6 +199,9 @@ export function drawNode(
   }
   if (hasSatin && effects.satin) {
     drawSatinOverlay(ctx, node, effects.satin, paintBody);
+  }
+  if (effects?.glass?.enabled) {
+    drawGlassOverlay(ctx, node, effects.glass);
   }
   if (hasGradientOverlay && effects.gradientOverlay) {
     drawGradientOverlayEffect(ctx, node, effects.gradientOverlay);

@@ -82,7 +82,7 @@ export function isLayerCacheable(node) {
   if (!node || !node.visible) return false;
   if (!CACHEABLE_KINDS.has(node.kind)) return false;
   if ((node.blendMode ?? "source-over") !== "source-over") return false;
-  if (node.backgroundBlur > 0 || node.clipTo || node.maskBase) return false;
+  if (node.backgroundBlur > 0 || node.effects?.glass?.enabled || node.clipTo || node.maskBase) return false;
   return hasExpensivePaint(node);
 }
 

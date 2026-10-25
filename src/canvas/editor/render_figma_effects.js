@@ -42,6 +42,72 @@ export function drawBackgroundBlur(ctx, node, radius) {
   ctx.restore();
 }
 
+/** The node's silhouette as a Path2D, for effects that tint only the layer. */
+export function nodeSilhouette(node) {
+  const path = new Path2D();
+  const radius = Math.max(0, Math.min(node.cornerRadius ?? 0, Math.min(node.width, node.height) / 2));
+  if (node.kind === "ellipse") {
+    path.ellipse(
+      node.x + node.width / 2,
+      node.y + node.height / 2,
+      Math.max(0, node.width / 2),
+      Math.max(0, node.height / 2),
+      0,
+      0,
+      Math.PI * 2,
+    );
+  } else if (radius > 0) {
+    path.roundRect(node.x, node.y, node.width, node.height, radius);
+  } else {
+    path.rect(node.x, node.y, node.width, node.height);
+  }
+  return path;
+}
+
+/**
+ * Glass: tint and light the layer's silhouette. The backdrop blur runs before
+ * the body; this overlay runs after it so the frosted tint reads on both
+ * transparent and filled layers. It is an approximation of Figma's glass
+ * (blur + tint + edge light), not a refraction simulation.
+ */
+export function drawGlassOverlay(ctx, node, glass) {
+  if (!glass?.enabled) return;
+  const path = nodeSilhouette(node);
+  const opacity = Math.max(0, Math.min(100, glass.opacity ?? 0)) / 100;
+  const highlight = Math.max(0, Math.min(100, glass.highlight ?? 0)) / 100;
+  const angle = ((glass.angle ?? 135) * Math.PI) / 180;
+  ctx.save();
+  ctx.clip(path);
+  if (opacity > 0) {
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = glass.tint ?? "#ffffff";
+    ctx.fillRect(node.x, node.y, node.width, node.height);
+  }
+  if (highlight > 0) {
+    // A directional sheen, then a hairline rim: enough to read as glass on
+    // both light and dark backdrops.
+    const dx = Math.cos(angle);
+    const dy = Math.sin(angle);
+    const gradient = ctx.createLinearGradient(
+      node.x + node.width / 2 - (dx * node.width) / 2,
+      node.y + node.height / 2 - (dy * node.height) / 2,
+      node.x + node.width / 2 + (dx * node.width) / 2,
+      node.y + node.height / 2 + (dy * node.height) / 2,
+    );
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${(highlight * 0.35).toFixed(3)})`);
+    gradient.addColorStop(0.45, "rgba(255, 255, 255, 0)");
+    gradient.addColorStop(1, `rgba(255, 255, 255, ${(highlight * 0.1).toFixed(3)})`);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = gradient;
+    ctx.fillRect(node.x, node.y, node.width, node.height);
+    ctx.globalAlpha = Math.min(1, highlight);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.lineWidth = 1 / (deviceScaleOf(ctx) || 1);
+    ctx.stroke(path);
+  }
+  ctx.restore();
+}
+
 /** Seeded speckle tile, built once per seed and reused as a repeating pattern. */
 function grainTile(seed, color, secondary = null) {
   const key = `${seed}|${color}|${secondary ?? ""}`;
