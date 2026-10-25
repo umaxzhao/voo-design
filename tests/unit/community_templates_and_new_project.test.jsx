@@ -189,6 +189,27 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(html).toContain("prompt-composer relative min-w-0");
   });
 
+  it("stacks welcome dashboard sidebar above main on phones and restores row layout on lg", () => {
+    const html = renderToStaticMarkup(React.createElement(WelcomeDashboard));
+
+    // Root: column on phones so the main column keeps height; row from lg up (desktop unchanged).
+    const root = /<div\b[^>]*\bclass="[^"]*\bwelcome-dashboard\b[^"]*"/.exec(html);
+    if (!root) throw new Error("welcome dashboard root is missing");
+    expect(root[0]).toContain("flex-col lg:flex-row");
+
+    // Sidebar: capped height on phones so main content stays visible; uncapped on lg.
+    const aside = /<aside\b[^>]*>/.exec(html);
+    if (!aside) throw new Error("welcome sidebar is missing");
+    expect(aside[0]).toContain("max-h-[34dvh]");
+    expect(aside[0]).toContain("lg:max-h-none");
+
+    // Main: may shrink in the column layout so its own overflow-y-auto scrolls.
+    const main = /<main\b[^>]*>/.exec(html);
+    if (!main) throw new Error("welcome main column is missing");
+    expect(main[0]).toContain("min-h-0");
+    expect(main[0]).toContain("overflow-y-auto");
+  });
+
   it("welcome dashboard renders AI generation types row without 'All' filter pill", () => {
     const html = renderToStaticMarkup(React.createElement(WelcomeDashboard));
 
