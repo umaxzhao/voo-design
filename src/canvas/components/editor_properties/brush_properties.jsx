@@ -150,7 +150,7 @@ export default function BrushProperties({
   const healingFields =
     tool === TOOL.HEALING ? healingModeFields(healingMode) : [];
   const showHardness =
-    isNormalBrush || isEraser || healingFields.includes("hardness");
+    isNormalBrush || isEraser || isRetouchActive || healingFields.includes("hardness");
   const showOpacity =
     isNormalBrush || isEraser || healingFields.includes("opacity");
   const showSmoothing = isNormalBrush || isEraser || isRetouchActive;

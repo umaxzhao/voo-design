@@ -34,10 +34,14 @@ export default function GradientProperties({
   onGradientActiveStop = null,
   onApplyGradientTool = null,
   onReverseGradient,
+  fillOpacity = 1,
+  onFillOpacity,
   fillTolerance = 32,
   onFillTolerance,
   fillContiguous = true,
   onFillContiguous,
+  gradientOpacity = 1,
+  onGradientOpacity,
   fillSampleAll = false,
   onFillSampleAll,
 }) {
@@ -75,6 +79,9 @@ export default function GradientProperties({
       }
     >
       <div className="flex flex-col gap-2.5">
+        {(isGradient || isFill) && onFillOpacity && (
+          <ToolSliderField label={t("editor.props.opacity")} min={0} max={100} value={Math.round((isGradient ? gradientOpacity : fillOpacity) * 100)} onValueChange={(value) => (isGradient ? onGradientOpacity : onFillOpacity)?.(value / 100)} ariaLabel={t("editor.props.opacity")} scrubHint={t("editor.props.dragToAdjust")} />
+        )}
         {isGradient && (
           <div className="flex flex-col gap-1.5">
             <span className={sectionTitleClass}>
@@ -239,6 +246,10 @@ GradientProperties.propTypes = {
   onReverseGradient: PropTypes.func,
   fillTolerance: PropTypes.number,
   onFillTolerance: PropTypes.func,
+  fillOpacity: PropTypes.number,
+  onFillOpacity: PropTypes.func,
+  gradientOpacity: PropTypes.number,
+  onGradientOpacity: PropTypes.func,
   fillContiguous: PropTypes.bool,
   onFillContiguous: PropTypes.func,
   fillSampleAll: PropTypes.bool,
