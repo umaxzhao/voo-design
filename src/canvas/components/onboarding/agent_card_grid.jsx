@@ -1,0 +1,103 @@
+import PropTypes from "prop-types";
+import { ProviderLogo } from "../provider_icons.jsx";
+import { IconApi, IconCheck, ICON_STROKE_WIDTH } from "../../icons.jsx";
+import { getVisibleCliAgents } from "../../../shared/cli-agents.js";
+import { AGENT_DEFAULT_MODELS } from "./onboarding_agent_model.js";
+import { AGENT_STATUS, AGENT_STATUS_KEY, cliAgentStatus, customAgentStatus } from "./agent_status_model.js";
+
+const FOCUS_CLASS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40";
+/** Cards keep the dialog's established order; platforms not listed follow the catalog. */
+const CARD_ORDER = ["codex", "claude", "antigravity"];
+
+/**
+ * The CLI platforms a first-run card can pick: visible in the catalog and
+ * runnable as a native agent (they have a default model to apply on selection).
+ */
+export function selectableCliAgents(agents = getVisibleCliAgents()) {
+  const rank = (id) => (CARD_ORDER.includes(id) ? CARD_ORDER.indexOf(id) : CARD_ORDER.length);
+  return agents
+    .filter((agent) => Object.hasOwn(AGENT_DEFAULT_MODELS, agent.id))
+    .sort((a, b) => rank(a.id) - rank(b.id));
+}
+
+function AgentCard({ id, icon, name, status, statusText, selected, onSelect }) {
+  const settled = status !== AGENT_STATUS.CHECKING;
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      data-testid={`first-run-agent-card-${id}`}
+      onClick={onSelect}
+      className={`relative flex min-h-[116px] min-w-0 flex-col items-center justify-center gap-2 rounded-2xl p-3 text-center transition-colors ${FOCUS_CLASS} ${
+        selected ? "bg-white/[0.1]" : "bg-white/[0.04] hover:bg-white/[0.07]"
+      }`}
+    >
+      {selected && (
+        <span aria-hidden="true" className="absolute right-2 top-2 flex size-4 items-center justify-center rounded-full bg-white text-black">
+          <IconCheck size={10} strokeWidth={3} />
+        </span>
+      )}
+      <span aria-hidden="true" className="flex size-7 items-center justify-center text-neutral-100">{icon}</span>
+      <span className="max-w-full break-words text-xs font-semibold text-neutral-100">{name}</span>
+      <span
+        data-testid={`first-run-agent-status-${id}`}
+        data-status={status}
+        className={`max-w-full break-words text-[11px] ${status === AGENT_STATUS.CONNECTED ? "text-neutral-100" : "text-neutral-400"} ${settled ? "" : "animate-pulse"}`}
+      >
+        {statusText}
+      </span>
+    </button>
+  );
+}
+
+AgentCard.propTypes = {
+  id: PropTypes.string.isRequired,
+  icon: PropTypes.node.isRequired,
+  name: PropTypes.string.isRequired,
+  status: PropTypes.string.isRequired,
+  statusText: PropTypes.string.isRequired,
+  selected: PropTypes.bool.isRequired,
+  onSelect: PropTypes.func.isRequired,
+};
+
+/** Three cards per row: icon, platform name, connection status. */
+export default function AgentCardGrid({ t, label, selected, detection, customConfigured, onSelect }) {
+  const customStatus = customAgentStatus(customConfigured);
+  return (
+    <div role="group" aria-label={label} data-testid="first-run-agent-grid" className="grid grid-cols-3 gap-2">
+      {selectableCliAgents().map((agent) => {
+        const status = cliAgentStatus(agent, detection);
+        return (
+          <AgentCard
+            key={agent.id}
+            id={agent.id}
+            icon={<ProviderLogo providerId={agent.providerId} size={28} />}
+            name={t(`firstRun.provider.${agent.id}`)}
+            status={status}
+            statusText={t(AGENT_STATUS_KEY[status])}
+            selected={selected === agent.id}
+            onSelect={() => onSelect(agent.id)}
+          />
+        );
+      })}
+      <AgentCard
+        id="custom"
+        icon={<IconApi size={26} strokeWidth={ICON_STROKE_WIDTH} />}
+        name={t("firstRun.provider.custom")}
+        status={customStatus}
+        statusText={t(AGENT_STATUS_KEY[customStatus])}
+        selected={selected === "custom"}
+        onSelect={() => onSelect("custom")}
+      />
+    </div>
+  );
+}
+
+AgentCardGrid.propTypes = {
+  t: PropTypes.func.isRequired,
+  label: PropTypes.string.isRequired,
+  selected: PropTypes.string.isRequired,
+  detection: PropTypes.shape({ phase: PropTypes.string.isRequired }).isRequired,
+  customConfigured: PropTypes.bool.isRequired,
+  onSelect: PropTypes.func.isRequired,
+};

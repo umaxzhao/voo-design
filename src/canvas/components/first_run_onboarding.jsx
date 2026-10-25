@@ -3,19 +3,16 @@ import PropTypes from "prop-types";
 import { useI18n } from "../use_i18n.js";
 import { setLocale } from "../../shared/i18n.js";
 import { setSetting } from "../../shared/settings.js";
-import { getProviderStatusInfo } from "./provider_status_helpers.js";
 import { finishFirstRun } from "./first_run_state.js";
 import { customModelGroups } from "../agent/agent_provider.js";
 import { AGENT_SETTING } from "../agent/canvas_tools.js";
 import { applyAgentModel } from "./onboarding/onboarding_agent_model.js";
 import OnboardingArt from "./onboarding/onboarding_art.jsx";
+import AgentCardGrid from "./onboarding/agent_card_grid.jsx";
+import { useAgentDetection } from "./onboarding/use_agent_detection.js";
 
 const steps = ["provider"];
 const focusClass = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40";
-const optionClass = (selected) =>
-  `flex cursor-pointer items-center justify-between gap-3 rounded-2xl p-4 text-left transition-colors ${focusClass} ${
-    selected ? "bg-white/[0.1]" : "bg-white/[0.04] hover:bg-white/[0.07]"
-  }`;
 
 export function syncFirstRunDialog(dialog, open) {
   if (!dialog) return;
@@ -31,7 +28,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
   const [provider, setProvider] = useState("");
   const [customModel, setCustomModel] = useState("");
   const customGroups = customModelGroups();
-  const [cliStatus, setCliStatus] = useState(null);
+  const detection = useAgentDetection(open);
   const { t, locale } = useI18n();
   useEffect(() => {
     if (open) {
@@ -46,20 +43,6 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
       if (contentRef.current) contentRef.current.scrollTop = 0;
     }
   }, [open]);
-  useEffect(() => {
-    setCliStatus(null);
-    if (!open || !["codex", "claude"].includes(provider)) return;
-    const cli = globalThis.window?.vooDesktop?.localCli;
-    if (!cli?.checkStatus) return;
-    let active = true;
-    Promise.resolve().then(() => cli.checkStatus(provider)).then(result => {
-      if (active) setCliStatus(getProviderStatusInfo(t, {
-        configured: Boolean(result.installed || result.ready),
-        verification: { status: result.ready ? "verified" : "untested" },
-      }));
-    }).catch(() => { /* The full guide offers detection and connection diagnostics. */ });
-    return () => { active = false; };
-  }, [open, provider, t]);
   const dismiss = () => { if (!reopened) finishFirstRun("dismissed"); onClose(); };
   const complete = (settings = false) => {
     if (!reopened) finishFirstRun();
@@ -93,13 +76,9 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
             className="ui-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden px-6 pb-6 pt-2">
             <p id="first-run-description" className="text-[11px] leading-relaxed text-neutral-400">{t(`firstRun.${name}.description`)}</p>
             <div className="flex flex-col gap-3">
-              <div role="group" aria-label={t("firstRun.provider.label")} className="flex flex-col gap-2">
-                {["codex", "claude", "custom"].map((id) => (
-                  <button type="button" key={id} aria-pressed={provider === id}
-                    onClick={() => { setProvider(id); if (id !== "custom") applyAgentModel(id); else if (customModel) setSetting(AGENT_SETTING.MODEL, customModel); }}
-                    className={`${optionClass(provider === id)} text-xs font-semibold text-neutral-100`}>{t(`firstRun.provider.${id}`)}</button>
-                ))}
-              </div>
+              <AgentCardGrid t={t} label={t("firstRun.provider.label")} selected={provider} detection={detection}
+                customConfigured={customGroups.some(group => group.models.length > 0)}
+                onSelect={(id) => { setProvider(id); if (id !== "custom") applyAgentModel(id); else if (customModel) setSetting(AGENT_SETTING.MODEL, customModel); }} />
               {provider === "custom" && customGroups.some(group => group.models.length > 0) && (
                 <label className="flex flex-col gap-1.5 rounded-2xl bg-white/[0.04] p-4 text-xs font-semibold text-neutral-100">
                   {t("firstRun.provider.custom")}
@@ -110,8 +89,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
                   </select>
                 </label>
               )}
-              {cliStatus && <p role="status" className={`px-1 text-xs ${cliStatus.statusClass}`}>{cliStatus.statusText}</p>}
-              {(provider === "codex" || provider === "claude") && (
+              {provider !== "" && provider !== "custom" && (
                 <button type="button" onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("voo:open-onboarding")); }}
                   className={`w-fit rounded-lg bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-neutral-100 hover:bg-white/[0.14] transition-colors ${focusClass}`}>{t("firstRun.provider.guide")}</button>
               )}
