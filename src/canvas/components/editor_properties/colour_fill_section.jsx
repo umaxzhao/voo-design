@@ -181,16 +181,7 @@ export function FillSection({
   return (
     <div
     >
-      {none ? (
-        <button
-          type="button"
-          onClick={() => editAndCommit({ fill: "#D9D9D9" })}
-          className="flex h-7 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/10 text-[11px] font-mono text-neutral-400 hover:border-white/20 hover:text-white transition-colors cursor-pointer"
-        >
-          <span>+</span>
-          <span className="uppercase">{t("editor.props.fill")}</span>
-        </button>
-      ) : (
+      {none ? null : (
         /* Row 1: Unified Pill (Swatch + Label/Hex + Opacity + Minus) */
         <div className={sectionRowClass}>
           <Swatch

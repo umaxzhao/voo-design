@@ -100,6 +100,7 @@ export default function ImageContextActions({
         <button
           type="button"
           data-testid="editor-taskbar-crop"
+          aria-label={t("editor.taskbar.crop")}
           className={ACTION_BUTTON_CLASS}
           onClick={() => engine?.setTool?.(TOOL.CROP)}
         >
@@ -108,6 +109,7 @@ export default function ImageContextActions({
         <button
           type="button"
           data-testid="editor-taskbar-replace"
+          aria-label={t("editor.taskbar.replace")}
           className={ACTION_BUTTON_CLASS}
           onClick={() => fileInputRef.current?.click()}
         >
@@ -134,6 +136,7 @@ export default function ImageContextActions({
         </label>
         <button
           type="button"
+          aria-label={t("editor.frequencySeparation.action")}
           className={`${ACTION_BUTTON_CLASS} col-span-2`}
           onClick={applyFrequencySeparation}
         >

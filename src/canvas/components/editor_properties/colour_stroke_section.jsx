@@ -72,21 +72,7 @@ export function StrokeSection({
         />
       }
     >
-      {none ? (
-        <button
-          type="button"
-          onClick={() =>
-            editAndCommit({
-              stroke: "#FFFFFF",
-              strokeWidth: Math.max(1, strokeWidth || 1),
-            })
-          }
-          className="flex h-7 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/10 text-[11px] font-mono text-neutral-400 hover:border-white/20 hover:text-white transition-colors cursor-pointer"
-        >
-          <span>+</span>
-          <span className="uppercase">{t("editor.props.stroke")}</span>
-        </button>
-      ) : (
+      {none ? null : (
         <>
           {/* Row 1: Unified Pill (Swatch + Label/Hex + Opacity + Minus) */}
           <div className={sectionRowClass}>

@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { useI18n } from "../../use_i18n.js";
 import { normalizeAutoLayout } from "../../editor/scene_auto_layout.js";
-import { CollapsibleSection } from "./property_section.jsx";
+import { CollapsibleSection, SectionAddButton } from "./property_section.jsx";
 
 const DEFAULT_LAYOUT = {
   direction: "vertical",
@@ -103,17 +103,16 @@ export default function AutoLayoutSection({ object, editAndCommit }) {
     <CollapsibleSection
       title={t("editor.autoLayout.title")}
       storageKey="autoLayout.group"
+      extra={
+        <span data-testid="editor-auto-layout-enable">
+          <SectionAddButton
+            label={t("editor.autoLayout.enable")}
+            onClick={() => editAndCommit({ autoLayout: DEFAULT_LAYOUT })}
+          />
+        </span>
+      }
     >
-      {!layout ? (
-        <button
-          type="button"
-          data-testid="editor-auto-layout-enable"
-          onClick={() => editAndCommit({ autoLayout: DEFAULT_LAYOUT })}
-          className="w-full rounded-lg bg-white/[0.06] px-2 py-1.5 text-[11px] text-neutral-200 hover:bg-white/[0.12]"
-        >
-          {t("editor.autoLayout.enable")}
-        </button>
-      ) : (
+      {!layout ? null : (
         <div className="flex flex-col gap-2">
           <div className="flex gap-1">
             {["vertical", "horizontal"].map((direction) => (

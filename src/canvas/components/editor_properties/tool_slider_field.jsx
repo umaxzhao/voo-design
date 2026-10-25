@@ -46,7 +46,7 @@ export default function ToolSliderField({
         title={label}
         aria-hidden="true"
         {...(disabled ? {} : scrub)}
-        className={`flex shrink-0 items-center gap-1 text-[9px] font-mono uppercase tracking-tight leading-[10px] text-neutral-500 ${
+        className={`flex shrink-0 items-center gap-1 text-[9px] font-mono uppercase tracking-tight leading-[10px] text-neutral-400 ${
           disabled ? "opacity-40" : "cursor-ew-resize touch-none select-none"
         } ${labelClassName}`}
       >

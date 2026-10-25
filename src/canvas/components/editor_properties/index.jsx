@@ -161,6 +161,8 @@ export default function EditorProperties({
     <PropertiesPanelHeader
       tool={tool}
       marqueeMode={toolProps?.marqueeMode}
+      brushMode={toolProps?.brushMode}
+      healingMode={toolProps?.healingMode}
       isToolActive={isDedicatedToolActive}
       showMaskBtn={!isDedicatedToolActive && showMaskBtn}
       hasMask={hasMask}

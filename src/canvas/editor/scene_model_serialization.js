@@ -520,9 +520,17 @@ export function colourKeyOf(node) {
 }
 
 export function supportsColour(node) {
+  // A frame is a group that paints: it keeps the fill/stroke sections a plain
+  // group does not have. Without this a frame created by the tool had no paint
+  // controls at all (its node carries no fill/stroke fields yet).
+  const isFrame =
+    node.isFrame === true ||
+    node.frame === true ||
+    node.kind === "frame" ||
+    node.containerType === "frame";
   return (
     node.kind !== NODE_KIND.REGION &&
-    node.kind !== NODE_KIND.GROUP &&
+    (node.kind !== NODE_KIND.GROUP || isFrame) &&
     node.kind !== NODE_KIND.ADJUSTMENT
   );
 }

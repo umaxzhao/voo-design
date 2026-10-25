@@ -61,7 +61,7 @@ export default function ScrubField({
             aria-hidden="true"
             tabIndex={-1}
             {...(disabled ? {} : scrub)}
-            className="inline-flex items-center shrink-0 cursor-ew-resize touch-none select-none pl-2.5 pr-1 text-[11px] font-mono uppercase tracking-wide text-neutral-500 transition-colors hover:text-neutral-300"
+            className="inline-flex items-center shrink-0 cursor-ew-resize touch-none select-none pl-2.5 pr-1 text-[11px] font-mono uppercase tracking-wide text-neutral-400 transition-colors hover:text-neutral-200"
           >
             {prefix}
           </span>
@@ -84,7 +84,7 @@ export default function ScrubField({
           aria-hidden="true"
           title={ariaLabel || scrubHint}
           {...(disabled ? {} : scrub)}
-          className="shrink-0 cursor-ew-resize touch-none select-none pr-2.5 text-[11px] font-mono text-neutral-400 transition-colors hover:text-neutral-300"
+          className="shrink-0 cursor-ew-resize touch-none select-none pr-2.5 text-[11px] font-mono text-neutral-400 transition-colors hover:text-neutral-200"
         >
           {suffix}
         </span>

@@ -26,16 +26,34 @@ export function activateMaskAction(hasMask, maskActions) {
   }
 }
 
-function getToolHeaderInfo(tool, t, marqueeMode = "rect") {
+function getToolHeaderInfo(tool, t, marqueeMode = "rect", brushMode = "normal", healingMode = "aiRepair") {
   if (!tool || tool === TOOL.SELECT) return null;
 
   switch (tool) {
     case TOOL.BRUSH:
-      return { label: t("editor.tool.brush"), icon: <IconBrush size={12} className="text-neutral-300" /> };
+      return {
+        label:
+          brushMode === "normal"
+            ? t("editor.tool.brush")
+            : t(`editor.brushMode.${brushMode}`),
+        icon: <IconBrush size={12} className="text-neutral-300" />,
+      };
     case TOOL.ERASER:
       return { label: t("editor.tool.eraser"), icon: <IconEraser size={12} className="text-neutral-300" /> };
-    case TOOL.HEALING:
-      return { label: t("editor.tool.healing"), icon: <IconBrush size={12} className="text-neutral-300" /> };
+    case TOOL.HEALING: {
+      const healingLabelKey =
+        healingMode === "spot"
+          ? "editor.tool.spotHealing"
+          : healingMode === "patch"
+            ? "editor.tool.patch"
+            : healingMode === "clone"
+              ? "editor.tool.clone"
+              : "editor.tool.aiRepair";
+      return {
+        label: t(healingLabelKey),
+        icon: <IconBrush size={12} className="text-neutral-300" />,
+      };
+    }
     case TOOL.BLUR:
     case TOOL.SHARPEN:
     case TOOL.SMUDGE:
@@ -44,9 +62,11 @@ function getToolHeaderInfo(tool, t, marqueeMode = "rect") {
     case TOOL.SPONGE:
       return { label: t(`editor.tool.${tool}`), icon: <IconBrush size={12} className="text-neutral-300" /> };
     case TOOL.PEN:
-    case TOOL.CURVATURE_PEN:
-    case TOOL.FREE_PEN:
       return { label: t("editor.tool.pen"), icon: <IconVectorSquare size={12} className="text-neutral-300" /> };
+    case TOOL.CURVATURE_PEN:
+      return { label: t("editor.tool.curvaturePen"), icon: <IconVectorSquare size={12} className="text-neutral-300" /> };
+    case TOOL.FREE_PEN:
+      return { label: t("editor.tool.freePen"), icon: <IconVectorSquare size={12} className="text-neutral-300" /> };
     case TOOL.TEXT:
       return { label: t("editor.tool.text"), icon: <IconText size={12} className="text-neutral-300" /> };
     case TOOL.CROP:
@@ -67,12 +87,17 @@ function getToolHeaderInfo(tool, t, marqueeMode = "rect") {
       return { label: t(`editor.selection.${key}`), icon: <IconSelectionRect size={12} className="text-neutral-300" /> };
     }
     case TOOL.RECT:
+      return { label: t("editor.tool.rect"), icon: <IconVectorSquare size={12} className="text-neutral-300" /> };
     case TOOL.ELLIPSE:
+      return { label: t("editor.tool.ellipse"), icon: <IconVectorSquare size={12} className="text-neutral-300" /> };
     case TOOL.POLYGON:
+      return { label: t("editor.tool.polygon"), icon: <IconVectorSquare size={12} className="text-neutral-300" /> };
     case TOOL.STAR:
+      return { label: t("editor.tool.star"), icon: <IconVectorSquare size={12} className="text-neutral-300" /> };
     case TOOL.LINE:
+      return { label: t("editor.tool.line"), icon: <IconVectorSquare size={12} className="text-neutral-300" /> };
     case TOOL.ARROW:
-      return { label: t("editor.shape.title"), icon: <IconVectorSquare size={12} className="text-neutral-300" /> };
+      return { label: t("editor.tool.arrow"), icon: <IconVectorSquare size={12} className="text-neutral-300" /> };
     default:
       return null;
   }
@@ -81,6 +106,8 @@ function getToolHeaderInfo(tool, t, marqueeMode = "rect") {
 export default function PropertiesPanelHeader({
   tool = null,
   marqueeMode = "rect",
+  brushMode = "normal",
+  healingMode = "aiRepair",
   isToolActive = false,
   showMaskBtn,
   hasMask,
@@ -93,7 +120,9 @@ export default function PropertiesPanelHeader({
   onToggleSide,
   t,
 }) {
-  const toolInfo = isToolActive ? getToolHeaderInfo(tool, t, marqueeMode) : null;
+  const toolInfo = isToolActive
+    ? getToolHeaderInfo(tool, t, marqueeMode, brushMode, healingMode)
+    : null;
 
   return (
     <div className="flex items-center justify-between px-2 pb-2.5 pt-1 border-b border-white/10 mb-2 select-none">
