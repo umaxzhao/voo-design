@@ -16,12 +16,13 @@ codegen、ruler guides、`.pen` import、Find/⌘K、constraints 已落地。本
 | 7 | **实例覆盖扩展** | 覆盖字段从 `text/fill/visible` 扩到 stroke、描边宽/透明度、填充透明度、图层透明度、effects、圆角、字号/字重；校验 + 应用时克隆 effects | `a4a50d5` |
 | 8 | **文本大小写** | Original/Upper/Lower/Title，参与绘制与排版测量，存储内容不变（面板新增 Text case） | `a4a50d5` |
 | 9 | **矢量蒙版（等价能力）** | 剪贴蒙版（⌥⌘G / ⇧⌥⌘G）已存在但只能靠快捷键/⌘K：补到右键菜单 Create/Release clipping mask；路径基座即矢量蒙版 | 本次 |
-| 10 | **清理** | 引擎参数重复键去重；原型 runner 移出 presentation 懒加载 chunk（修复循环初始化崩溃） | `c6e0625` / `aaf8bfd` |
+| 10 | **便携快照 .zip** | `snapshot_io.js`：document.voo + manifest + preview 打包；标题栏快照按钮导出；Open 自动识别 `.zip` 并解包（含畸形 zip 防护）；`buildProjectVooFile` 从保存路径抽出共用 | `9a12ff7` |
+| 11 | **清理** | 引擎参数重复键去重；原型 runner 移出 presentation 懒加载 chunk（修复循环初始化崩溃） | `c6e0625` / `aaf8bfd` |
 
 ## 2. 验证
 
-- `npx vitest run`：**3298 passed / 12 skipped / 0 failed**
-- `npm run lint:design`：clean（1086 files）
+- `npx vitest run`：**3303 passed / 12 skipped / 0 failed**
+- `npm run lint:design`：clean（1087 files）
 - `npm run build`：通过（`dist` 已重建）
 - 44 状态巡检：**0 error / 0 裁剪 / 0 漏翻 / 0 无名称**
 - 运行时验证：布局网格可见（网格/列）、Inspect 面板、原型 Red→Blue 跳转、Export 下载、header 重命名、canvas/stage 尺寸一致
@@ -33,7 +34,6 @@ codegen、ruler guides、`.pen` import、Find/⌘K、constraints 已落地。本
 | **轻色主题** | 当前 chrome 全部是硬编码 Tailwind 灰阶（`bg-[#0a0a0a]`/`bg-[#222]`/`text-neutral-*`），无 CSS 变量层。做真主题需要先做 token 化（design-system pass），属独立工程，不宜混在功能批次里 |
 | **段落间距 / 富文本 / RTL** | 文本排版是行数组模型（无段落索引），段落间距需要 layout API 改造；RTL/富文本更大 |
 | **评论通知 / @mention / 实时** | 评论模型/面板已完整，缺通知中心与 collab 广播；实时依赖协作层端到端验证 |
-| **快照 `.zip`** | VOO `.voo` 已经内嵌 assets（自包含），再包 zip 收益低，优先级下调 |
 | **桌面端自动保存** | `use_editor_autosave` 是刻意关闭（Photoshop 手动保存），草稿崩溃恢复已有 `useDraftAutosave`；要做成用户选项是产品决策 |
 | **Healing Spot 的 Source/Sample all layers** | 引擎没有对应采样参数，面板不应提供无效控件 |
 | **Free Transform 独立工具** | 与 Pen/Figma 一致：Select 手柄即变换；⌘T 是像素选区变换，不新增冗余入口 |
