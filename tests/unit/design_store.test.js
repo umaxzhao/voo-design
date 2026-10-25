@@ -130,13 +130,11 @@ describe("useDesignStore Standalone Decoupled Store", () => {
     expect(state.nodes).toHaveLength(1);
     expect(state.nodes[0].data.label).toBe("App Redesign");
 
+    // The only open project: closing it returns to the welcome page, not to a placeholder tab.
+    expect(state.openDocuments).toHaveLength(1);
     store.closeProject();
     state = useDesignStore.getState();
-    expect(state.welcomeOpen).toBe(false);
-    expect(state.fileName).toBe("Untitled.voo");
-
-    store.closeProject();
-    state = useDesignStore.getState();
+    expect(state.openDocuments).toHaveLength(0);
     expect(state.welcomeOpen).toBe(true);
     expect(state.fileName).toBeNull();
     expect(state.nodes).toHaveLength(0);

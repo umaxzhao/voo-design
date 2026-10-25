@@ -17,6 +17,7 @@ import {
 } from "../../../shared/cli_bridge_protocol.js";
 import { CLI_TRANSPORT } from "../../../shared/cli-agents.js";
 import { BG, EVENTS } from "../../../shared/messages.js";
+import { MCP_LINK_WANTED_EVENT } from "../../mcp/mcp_link_boot.js";
 
 /** A refused loopback port fails at once; this only bounds a hung dial. */
 const CONNECT_TIMEOUT_MS = 1500;
@@ -199,6 +200,9 @@ export async function ensureLocalCliBridge({
   if (typeof window === "undefined" || typeof WebSocketImpl !== "function") {
     return null;
   }
+  // Dialing means the user asked for a bridge-backed flow, so the canvas MCP
+  // link may now join it (it stays off in a plain browser until then).
+  window.dispatchEvent(new Event(MCP_LINK_WANTED_EVENT));
   webBridge ??= createWebCliBridge({ url, WebSocketImpl });
   return (await webBridge.open()) ? webBridge : null;
 }

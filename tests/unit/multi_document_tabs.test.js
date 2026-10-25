@@ -4,9 +4,32 @@ import { createHistory } from '../../src/canvas/editor/editor_history.js';
 const store = () => useDesignStore.getState();
 const initial = useDesignStore.getInitialState();
 beforeEach(() => useDesignStore.setState(initial, true));
+/** Opens the first document the way the welcome page does and returns its id. */
+function openFirstDocument(label = 'A') {
+  store().newVooProject({ label });
+  return store().activeDocumentId;
+}
 describe('document tabs', () => {
+  it('starts with no document tab and replaces nothing when New is clicked from welcome', () => {
+    expect(store().welcomeOpen).toBe(true);
+    expect(store().openDocuments).toEqual([]);
+    expect(store().activeDocumentId).toBeNull();
+    store().newVooProject();
+    expect(store().openDocuments).toHaveLength(1);
+    expect(store().openDocuments[0].id).toBe(store().activeDocumentId);
+    expect(store().fileName).toBe('Design 1.voo');
+    expect(store().welcomeOpen).toBe(false);
+  });
+  it('keeps the welcome page when asked to return to a canvas that does not exist', () => {
+    store().setWelcomeOpen(false);
+    expect(store().welcomeOpen).toBe(true);
+    openFirstDocument();
+    store().setWelcomeOpen(true);
+    store().setWelcomeOpen(false);
+    expect(store().welcomeOpen).toBe(false);
+  });
   it('keeps live content, file identity, dirty state and camera independently', () => {
-    const a = store().activeDocumentId;
+    const a = openFirstDocument();
     const doc = { ...store().nodes[0].data.editorDoc, label: 'edited A' };
     const camera = { panX: 45, panY: 22, zoom: 2 };
     const handle = {};
@@ -28,7 +51,7 @@ describe('document tabs', () => {
     expect(store().isDirty).toBe(true);
   });
   it('confirms dirty inactive and active tabs, selects a neighbor, and closes the last tab', () => {
-    const a = store().activeDocumentId;
+    const a = openFirstDocument();
     store().setIsDirty(true);
     store().newVooProject({ label: 'B' });
     const b = store().activeDocumentId;
@@ -46,12 +69,27 @@ describe('document tabs', () => {
     expect(store().openDocuments).toHaveLength(1);
   });
   it('opens an existing document alongside the previous document', () => {
-    const a = store().activeDocumentId;
+    const a = openFirstDocument('Previous');
     const doc = store().nodes[0].data.editorDoc;
     store().loadVooProject({ vooData: { document: doc }, fileName: 'Opened.voo' });
     expect(store().openDocuments).toHaveLength(2);
     store().switchDocument(a);
-    expect(store().fileName).toBe('Untitled.voo');
+    expect(store().fileName).toBe('Previous.voo');
+  });
+  it('opening an existing file from welcome leaves exactly one tab and no Untitled tab', () => {
+    const doc = store().nodes[0].data.editorDoc;
+    store().loadVooProject({ vooData: { document: doc }, fileName: 'Opened.voo' });
+    expect(store().openDocuments).toHaveLength(1);
+    expect(store().fileName).toBe('Opened.voo');
+    expect(store().welcomeOpen).toBe(false);
+    expect(store().openDocuments.some(item => item.fileName === 'Untitled.voo')).toBe(false);
+  });
+  it('restoring a crash draft from welcome opens one dirty tab', () => {
+    const doc = store().nodes[0].data.editorDoc;
+    store().restoreCrashDraft({ document: doc, label: 'Recovered.voo' });
+    expect(store().openDocuments).toHaveLength(1);
+    expect(store().fileName).toBe('Recovered.voo');
+    expect(store().isDirty).toBe(true);
   });
   it('retains undo entries and the redo branch across runtime session restoration', () => {
     const a = createHistory();
