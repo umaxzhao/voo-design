@@ -4946,6 +4946,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               onZoomOut={
                 multi ? () => zoomSharedStep(-1) : () => engine?.zoomStep(-1)
               }
+              onZoomReset={
+                multi ? zoomSharedHundred : () => engine?.zoomToHundred?.()
+              }
               onFit={multi ? fitAll : () => engine?.zoomToFit()}
               grid={grid}
               gridSize={grid?.size ?? lastGridSizeRef.current}
