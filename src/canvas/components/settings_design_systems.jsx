@@ -12,7 +12,8 @@ import {
 } from "../editor/design_system_registry.js";
 import { updateTokenPath } from "./design_token_controls.js";
 import DesignSystemActions, { ACTION_CLASS } from "./design_system_actions.jsx";
-import DesignSystemCards from "./design_system_cards.jsx";
+import DesignSystemCards, { DESIGN_SYSTEM_TAB_PREFIX } from "./design_system_cards.jsx";
+import { SettingsTabPanel } from "./settings_tab_strip.jsx";
 import DesignTokenFields from "./design_token_fields.jsx";
 import { editorReducer, initialEditorState } from "./design_system_editor_state.js";
 import SettingsSection from "./settings_section.jsx";
@@ -112,11 +113,12 @@ export default function SettingsDesignSystems() {
   const missingApplied = appliedId && !systems.some((system) => system.id === appliedId);
 
   return (
-    <div className="flex flex-col gap-5">
-      <SettingsSection title={t("designSystems.listTitle")} hint={t("designSystems.listHint")}>
-        {!available && <p className="text-xs text-neutral-400">{t("designSystems.noDocument")}</p>}
-        {missingApplied && <p className="text-xs text-neutral-400">{t("designSystems.appliedMissing")}</p>}
-        <DesignSystemCards systems={systems} selectedId={selected.id} appliedId={appliedId} onSelect={select} />
+    <div className="flex flex-col gap-3">
+      <DesignSystemCards systems={systems} selectedId={selected.id} appliedId={appliedId} onSelect={select} />
+      {!available && <p className="text-xs text-neutral-400">{t("designSystems.noDocument")}</p>}
+      {missingApplied && <p className="text-xs text-neutral-400">{t("designSystems.appliedMissing")}</p>}
+      {/* Only the selected system's content renders under the tab row. */}
+      <SettingsTabPanel idPrefix={DESIGN_SYSTEM_TAB_PREFIX} selectedId={selected.id} testId="design-system-panel">
         <DesignSystemActions
           system={selected}
           name={selectedName}
@@ -131,26 +133,26 @@ export default function SettingsDesignSystems() {
           onDelete={remove}
         />
         {state.dirty && <p className="text-xs text-neutral-500">{t("designSystems.saveFirst")}</p>}
-      </SettingsSection>
-      <SettingsSection title={`${t("designSystems.editorTitle")} · ${selectedName}`} hint={t("designSystems.editorHint")}>
-        {selected.builtIn && <p className="text-xs text-neutral-400">{t("designSystems.builtInNotice")}</p>}
-        <DesignTokenFields
-          tokens={state.tokens}
-          designMd={state.designMd}
-          onTokenChange={(path, value) => {
-            dispatch({ type: "tokens", tokens: updateTokenPath(state.tokens, path, value) });
-            setStatus(t("designSystems.unsaved"));
-          }}
-          onMarkdownChange={(designMd) => {
-            dispatch({ type: "markdown", designMd });
-            setStatus(t("designSystems.unsaved"));
-          }}
-        />
-        <button type="button" disabled={!state.dirty} onClick={save} className={ACTION_CLASS}>
-          {selected.builtIn ? t("designSystems.saveAsCopy") : t("designSystems.save")}
-        </button>
-        <p role="status" className="text-xs text-neutral-400">{status}</p>
-      </SettingsSection>
+        <SettingsSection title={`${t("designSystems.editorTitle")} · ${selectedName}`} hint={t("designSystems.editorHint")}>
+          {selected.builtIn && <p className="text-xs text-neutral-400">{t("designSystems.builtInNotice")}</p>}
+          <DesignTokenFields
+            tokens={state.tokens}
+            designMd={state.designMd}
+            onTokenChange={(path, value) => {
+              dispatch({ type: "tokens", tokens: updateTokenPath(state.tokens, path, value) });
+              setStatus(t("designSystems.unsaved"));
+            }}
+            onMarkdownChange={(designMd) => {
+              dispatch({ type: "markdown", designMd });
+              setStatus(t("designSystems.unsaved"));
+            }}
+          />
+          <button type="button" disabled={!state.dirty} onClick={save} className={ACTION_CLASS}>
+            {selected.builtIn ? t("designSystems.saveAsCopy") : t("designSystems.save")}
+          </button>
+          <p role="status" className="text-xs text-neutral-400">{status}</p>
+        </SettingsSection>
+      </SettingsTabPanel>
     </div>
   );
 }

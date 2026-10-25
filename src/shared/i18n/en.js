@@ -731,4 +731,8 @@ export default {
   "settings.workspace.badgeDesktop": "[macOS Native]",
   "settings.workspace.badgeFsa": "[Browser Mount]",
   "settings.workspace.badgeVirtual": "[Virtual Workspace]",
+  "settings.assistant.tabAssistant": "Assistant",
+  "settings.assistant.tabMcp": "MCP servers",
+  "settings.assistant.tabCli": "Local CLI",
+  "settings.assistant.cliHint": "Connect a local coding CLI to the canvas assistant with the guided setup.",
 };

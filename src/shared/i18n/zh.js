@@ -687,4 +687,8 @@ export default {
   "settings.workspace.badgeDesktop": "[macOS 原生]",
   "settings.workspace.badgeFsa": "[浏览器挂载]",
   "settings.workspace.badgeVirtual": "[虚拟工作区]",
+  "settings.assistant.tabAssistant": "助手",
+  "settings.assistant.tabMcp": "MCP 服务器",
+  "settings.assistant.tabCli": "本地 CLI",
+  "settings.assistant.cliHint": "通过向导把本地编程 CLI 接入画布助手。",
 };
