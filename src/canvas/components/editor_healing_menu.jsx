@@ -64,7 +64,10 @@ export default function EditorHealingMenu({
                 : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
           }`}
         >
-          <ActiveIcon size={16} />
+          <ActiveIcon
+            size={16}
+            className={isAiTool ? "text-[#E5B2FF]" : undefined}
+          />
         </button>
       </EditorTooltip>
     </div>
