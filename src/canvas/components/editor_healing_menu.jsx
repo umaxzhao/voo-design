@@ -6,7 +6,9 @@ import {
   IconHealSpot,
 } from "../icons.jsx";
 import { TOOL } from "../editor/editor_constants.js";
+import { TOOL_FAMILIES } from "../editor/tool_families.js";
 import { useI18n } from "../use_i18n.js";
+import EditorFamilyMenu, { familyMenuItems } from "./editor_family_menu.jsx";
 
 import EditorTooltip from "./editor_tooltip.jsx";
 
@@ -21,6 +23,7 @@ export default function EditorHealingMenu({
   tool,
   onTool,
   healingMode = "aiRepair",
+  onHealingMode,
 }) {
   const { t } = useI18n();
 
@@ -46,12 +49,21 @@ export default function EditorHealingMenu({
 
   const shortcut = healingMode === "clone" ? "S" : "J";
 
+  // The chevron lists AI Repair, Spot Healing, Patch and Clone Stamp.
+  const items = familyMenuItems(TOOL_FAMILIES.healing, {
+    tool,
+    onTool,
+    onHealingMode,
+    healingMode,
+  });
+
   return (
-    <div className="relative flex items-center">
+    <EditorFamilyMenu menuId="healing" items={items}>
       <EditorTooltip title={currentLabel} shortcut={shortcut} side="top">
         <button
           type="button"
           onClick={() => {
+            onHealingMode?.("aiRepair");
             onTool(TOOL.HEALING);
           }}
           aria-label={currentLabel}
@@ -70,7 +82,7 @@ export default function EditorHealingMenu({
           />
         </button>
       </EditorTooltip>
-    </div>
+    </EditorFamilyMenu>
   );
 }
 
@@ -78,4 +90,5 @@ EditorHealingMenu.propTypes = {
   tool: PropTypes.string.isRequired,
   onTool: PropTypes.func.isRequired,
   healingMode: PropTypes.oneOf(["spot", "aiRepair", "patch", "clone"]),
+  onHealingMode: PropTypes.func,
 };

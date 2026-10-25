@@ -3,7 +3,7 @@ import en from "../../src/shared/i18n/en.js";
 import zh from "../../src/shared/i18n/zh.js";
 
 // Keys referenced by t("...") literals in the editor properties panels
-// (selected_node_actions.jsx, tool_family_modes.jsx, image_context_actions.jsx),
+// (selected_node_actions.jsx, image_context_actions.jsx),
 // plus the dynamic adjust labels built from `editor.adjust.${kind}`.
 const PROPERTIES_PANEL_KEYS = [
   "editor.layer.title",

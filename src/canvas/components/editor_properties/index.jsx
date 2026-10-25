@@ -2,7 +2,6 @@ import { resolvePanelForContext } from "./resolve_panel_context.js";
 import ImageContextActions from "./image_context_actions.jsx";
 import VariantsSection from "./variants_section.jsx";
 import SelectedNodeActions from "./selected_node_actions.jsx";
-import ToolFamilyModes from "./tool_family_modes.jsx";
 /**
  * Editor properties panel: root component docked on canvas side showing
  * background, tool properties, mask editing, pen editing, or node properties.
@@ -207,18 +206,6 @@ export default function EditorProperties({
       >
         {header}
         <div className={contentClass}>
-          {toolProps ? (
-            <ToolFamilyModes
-              tool={tool}
-              marqueeMode={toolProps.marqueeMode}
-              brushMode={toolProps.brushMode}
-              healingMode={toolProps.healingMode}
-              onTool={toolProps.onTool}
-              onMarqueeMode={toolProps.onMarqueeMode}
-              onBrushMode={toolProps.onBrushMode}
-              onHealingMode={toolProps.onHealingMode}
-            />
-          ) : null}
           {toolProps ? <ToolPropertiesSection tool={tool} {...toolProps} /> : null}
         </div>
       </aside>
@@ -333,18 +320,6 @@ export default function EditorProperties({
     >
       {header}
       <div className={contentClass}>
-        {toolProps ? (
-          <ToolFamilyModes
-            tool={tool}
-            marqueeMode={toolProps.marqueeMode}
-            brushMode={toolProps.brushMode}
-            healingMode={toolProps.healingMode}
-            onTool={toolProps.onTool}
-            onMarqueeMode={toolProps.onMarqueeMode}
-            onBrushMode={toolProps.onBrushMode}
-            onHealingMode={toolProps.onHealingMode}
-          />
-        ) : null}
         {showImageActions ? (
           <ImageContextActions
             object={object}

@@ -1,5 +1,5 @@
 // The top toolbar's Select button opens a menu of the select family, and the
-// properties panel no longer repeats those choices.
+// properties panel no longer repeats those choices (or any tool family mode).
 if (typeof globalThis.window === "undefined") {
   globalThis.window = new EventTarget();
 }
@@ -236,11 +236,10 @@ describe("properties panel does not repeat the select family", () => {
     },
   );
 
-  it("still renders the tool options block for the brush family", () => {
+  it("renders no tool family mode buttons for the brush either", () => {
     const html = renderToStaticMarkup(
       <EditorProperties tool={TOOL.BRUSH} toolProps={toolProps} object={rect} engine={engine} />,
     );
-    expect(html).toContain("editor.toolOptions");
-    expect(html).toContain('data-testid="tool-family-mode-normal"');
+    expect(html).not.toContain("tool-family-mode-");
   });
 });
