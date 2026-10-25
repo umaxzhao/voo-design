@@ -95,11 +95,14 @@ describe("DesignSystemCards", () => {
     expect(onSelect).toHaveBeenCalledWith(systems[1].id);
   });
 
-  it("marks only the selected card as current", () => {
+  it("renders the cards as tabs in one tablist and marks only the selected one", () => {
     const systems = manySystems();
     const html = render(props(systems, systems[1].id));
-    expect(html.match(/aria-current="true"/g)).toHaveLength(1);
-    expect(html).toContain(`aria-current="true" data-testid="design-system-item-${systems[1].id}"`);
+    expect(html.match(/role="tablist"/g)).toHaveLength(1);
+    expect(html.match(/role="tab"/g)).toHaveLength(COLLAPSED_COUNT);
+    expect(html.match(/aria-selected="true"/g)).toHaveLength(1);
+    expect(html.match(/tabindex="0"/g)).toHaveLength(1);
+    expect(html).toMatch(new RegExp(`aria-selected="true"[^>]*data-testid="design-system-item-${systems[1].id}"`));
   });
 
   it("badges the applied system as in use and tells built-in from custom", () => {
@@ -120,7 +123,7 @@ describe("DesignSystemCards", () => {
     expect(colors.length).toBeGreaterThan(0);
     expect(colors.length).toBeLessThanOrEqual(6);
     expect(new Set(colors.map((c) => c.toLowerCase())).size).toBe(colors.length);
-    const firstCard = html.split("<li")[1];
+    const firstCard = html.split('role="tab"')[1];
     for (const color of colors) expect(firstCard).toContain(`background-color:${color}`);
     // Different systems must not share one fixed cover.
     expect(coverColors(systems[1])).not.toEqual(colors);

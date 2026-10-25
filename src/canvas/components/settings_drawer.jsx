@@ -51,6 +51,11 @@ export default function SettingsDrawer({
   const activeTabDef = TABS.find((tab) => tab.id === activeTab);
   const tabLabel = (tab) => t(tab.labelKey);
   const activeLabel = tabLabel(activeTabDef);
+  // The Local CLI wizard lives outside the drawer: close, then ask the app to open it.
+  const openWizard = () => {
+    onClose?.();
+    window.dispatchEvent(new CustomEvent("voo:open-onboarding"));
+  };
   const title = isZh ? "设置与偏好" : "Settings & Preferences";
 
   return createPortal(
@@ -117,13 +122,10 @@ export default function SettingsDrawer({
           >
             <div className="flex flex-col gap-4">
               <h2 className="text-xs font-medium text-neutral-200">{activeLabel}</h2>
-              {(activeTab === "assistant" || activeTab === "providers") && (
+              {activeTab === "providers" && (
                 <button
                   type="button"
-                  onClick={() => {
-                    onClose?.();
-                    window.dispatchEvent(new CustomEvent("voo:open-onboarding"));
-                  }}
+                  onClick={openWizard}
                   className="self-start rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-neutral-200 hover:bg-white/[0.08] focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
                 >
                   {t("titlebar.cliWizard")}
@@ -131,7 +133,10 @@ export default function SettingsDrawer({
               )}
               {activeTab === "providers" && <ProviderSettings />}
               {activeTab === "assistant" && (
-                <AgentSettings onOpenProviders={() => setActiveTab("providers")} />
+                <AgentSettings
+                  onOpenProviders={() => setActiveTab("providers")}
+                  onOpenWizard={openWizard}
+                />
               )}
               {activeTab === "general" && <SettingsGeneral />}
               {activeTab === "design-systems" && <SettingsDesignSystems />}
