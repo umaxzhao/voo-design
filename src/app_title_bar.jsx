@@ -113,7 +113,9 @@ export default function AppTitleBar() {
             aria-label={t("welcome.settings.open")}
             title={t(welcomeOpen ? "titlebar.settingsTitle" : "titlebar.prefsTitle")}
             onClick={() => setSettingsOpen(true)}
-            className="flex size-5 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-white"
+            // 28px hit area; -m-1 keeps the layout footprint at 20px.
+            className="-m-1 flex size-7 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-white"
+            style={{ WebkitAppRegion: "no-drag" }}
           >
             <Bolt size={14} aria-hidden="true" />
           </button>
