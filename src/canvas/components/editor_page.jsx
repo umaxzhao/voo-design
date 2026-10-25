@@ -22,6 +22,7 @@ import EditorPageTitle, { FRAME_TITLE_HIT_AREA } from "./editor_page_title.jsx";
 import EditorResizeHandles from "./editor_resize_handles.jsx";
 import EditorTextOverlay from "./editor_text_overlay.jsx";
 import EditorOutpaintOverlay from "./editor_outpaint_overlay.jsx";
+import EditorContextualTaskBarSlot from "./editor_contextual_taskbar_slot.jsx";
 import StreamingLayoutPreview from "./streaming_layout_preview.jsx";
 import LoadingModal from "./loading_modal.jsx";
 import { readImageRgba } from "./bitmap_pixels.js";
@@ -863,6 +864,31 @@ export default function EditorPage({
       </>
     ) : null;
 
+  // Selection and AI handlers for the contextual task bar, shared by its two
+  // mounts (free-mode page tool row and the bar under the selection).
+  const contextualTaskBarProps = {
+    engine,
+    selectedIds,
+    tool,
+    selected,
+    doc,
+    onRepaintNode,
+    onRepaintSelection,
+    onOutpaintSubmit,
+    onAutoMask,
+    autoMaskBusy,
+    onAddAdjustmentLayer,
+    onApplyPreset,
+    getBitmap,
+    onUpscale,
+    upscaleBusy,
+    onAutoEnhance,
+    onPortraitRetouch,
+    portraitRetouchBusy,
+    onSplitLayers,
+    splitLayersBusy,
+  };
+
   if (free) {
     // An artboard on the shared free canvas. The outer div carries the camera
     // transform and the (thin, focused-only) frame; the inner stage owns the
@@ -961,6 +987,15 @@ export default function EditorPage({
             </span>
           ) : null}
                               {pageTitleActions}
+        </div>
+        {/* Page tool row: the contextual task bar sits below the header, centred
+            on the frame, so it does not cover the page itself. */}
+        <div
+          data-testid="editor-page-toolbar"
+          className="absolute left-1/2 z-40 flex -translate-x-1/2 items-center gap-1"
+          style={{ top: "calc(100% + 8px)", display: doc?.isCanvasRoot ? "none" : undefined }}
+        >
+          <EditorContextualTaskBarSlot {...contextualTaskBarProps} focused={focused} />
         </div>
         {/* Add Canvas Button in Free Mode - only on the right of the last canvas */}
         {onAddCanvas && isLast && !doc?.isCanvasRoot ? (
@@ -1110,6 +1145,12 @@ export default function EditorPage({
             >
               <EditorCanvasPresets engine={engine} doc={doc} />
             </div>
+
+            <EditorContextualTaskBarSlot
+              {...contextualTaskBarProps}
+              focused={focused}
+              docRect={docRect}
+            />
 
             {/* The single 3D frame adds canvases from the unobstructed zoom toolbar. */}
             {onAddCanvas && isLast && canvasType !== "3d" ? (
