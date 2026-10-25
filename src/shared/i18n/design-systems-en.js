@@ -12,6 +12,8 @@ export default {
   "designSystems.builtIn": "Built-in",
   "designSystems.custom": "Custom",
   "designSystems.inUse": "In use",
+  "designSystems.showMore": "Show more",
+  "designSystems.showLess": "Show less",
   "designSystems.use": "Use for this document",
   "designSystems.duplicate": "Duplicate",
   "designSystems.rename": "Rename",
