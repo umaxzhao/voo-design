@@ -55,9 +55,9 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
   return (
     <dialog ref={dialog} aria-labelledby="first-run-title" aria-describedby="first-run-description"
       onCancel={(event) => { event.preventDefault(); dismiss(); }}
-      className="m-auto w-full max-w-xl border-0 bg-transparent p-0 text-neutral-100 backdrop:bg-black/70 lg:max-w-[960px]">
+      className="m-auto w-[calc(100%-2rem)] max-w-xl border-0 bg-transparent p-0 text-neutral-100 backdrop:bg-black/70 lg:w-full lg:max-w-[960px]">
       <div data-testid="first-run-onboarding" data-step={name}
-        className="relative flex h-[min(656px,90dvh)] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-[#161616] border border-white/10 shadow-panel lg:max-w-[960px] lg:flex-row">
+        className="relative flex h-auto max-h-[85dvh] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-[#161616] border border-white/10 shadow-panel lg:h-[min(656px,90dvh)] lg:max-w-[960px] lg:flex-row">
         <OnboardingArt name="onboarding/cover.webp" className="hidden shrink-0 lg:block lg:h-full lg:w-1/3" />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <div className="flex flex-wrap items-center gap-3 px-6 pt-5 pb-4">

@@ -83,6 +83,13 @@ describe("commercial first run", () => {
     expect(html).toContain(locale === "en" ? "Set up later" : "稍后设置");
     expect(html).not.toContain("firstRun.");
   });
+  it("keeps the first-run dialog inset and content-sized below large screens", () => {
+    const source = readFileSync(new URL("../../src/canvas/components/first_run_onboarding.jsx", import.meta.url), "utf8");
+    expect(source).toMatch(/w-\[calc\(100%-2rem\)\].*lg:w-full/);
+    expect(source).toMatch(/h-auto max-h-\[85dvh\].*lg:h-\[min\(656px,90dvh\)\]/);
+    expect(source).toContain("ui-scroll flex min-h-0 flex-1");
+    expect(source).toContain("overflow-y-auto");
+  });
   it.each(["en", "zh"])("renders the inline custom config with translated text in %s", async (locale) => {
     await loadLocale(locale);
     const { t } = await import("../../src/shared/i18n.js");
