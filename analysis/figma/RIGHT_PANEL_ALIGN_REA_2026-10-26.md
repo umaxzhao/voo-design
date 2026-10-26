@@ -155,7 +155,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 | Transition 播放（duration/easing/spring） | 🟡 模型/runner 有部分过渡；无 spring 参数 | P2 |
 | Flow starting points / device presets | 🟡 单 start frame；无设备预设 | P2 |
 | Export 格式/scale/suffix/remove | ✅ | — |
-| Export 高级项（质量/色彩配置/sampling/PDF/SVG outline/动画） | 🟡 本轮补 JPEG/WebP Quality；色彩配置/sampling/动画仍缺 | P2 |
+| Export 高级项（质量/色彩配置/sampling/PDF/SVG outline/动画） | 🟡 JPEG/WebP Quality + PNG/WebP Transparent 已补；色彩配置/sampling/动画仍缺 | P2 |
 | Inspect（Dev Mode） | 🟡 VOO 有 inspect 面板；无 Figma 的测量/组件/导出全量 | P2 |
 | Page background / On this page colors / presets | 🟡 Background 有；页面颜色/设备 presets 缺 | P2 |
 
@@ -214,6 +214,7 @@ VOO 侧：当前 `npm run build` 后用 Playwright 选中 Frame，截取
 - `3c2e946` Image alt text（Fill + HTML 导出）
 - `5711432` Rectangle/image per-side stroke borders（T/R/B/L）
 - Texture 效果（tint/opacity/density/size/seed + 面板控件）
+- Export PNG/WebP Transparent 背景开关
 - `6646faa` 笔刷标签裁切修复
 
 仍属引擎级、未在本批伪造的缺口：组件属性/publish、Prototype scroll/change-to/
