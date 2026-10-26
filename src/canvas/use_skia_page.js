@@ -130,7 +130,7 @@ export function useWorkspaceSkia({
   revision = 0,
   spatialIndex = null,
   resolveImageUrl = null,
-  backgroundColor = "#1c1c1c",
+  backgroundColor = "transparent",
 }) {
   const hostRef = useRef(null);
   const [status, setStatus] = useState("idle");

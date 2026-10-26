@@ -164,7 +164,8 @@ export async function createSkiaHost(canvas) {
         ? await wasmFrames.prepare(docs, suppliedIndex) : suppliedIndex;
       const snapshot = {
         revision,
-        backgroundColor: backgroundColor ?? "#1c1c1c",
+        // Let the editor's themed CSS ground show through every render mode.
+        backgroundColor: backgroundColor ?? "transparent",
         gridMode: "none",
         elements: documentsToScene(docs, {
           axis,
