@@ -119,7 +119,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 | Image scale mode（crop/fit/fill）/ alt text | ❌ | P2 |
 | Selection colors / page colors / show in exports | 🟡 Selection colors 有；页面颜色清单/导出开关缺 | P2 |
 | Stroke：weight/color/opacity/position | ✅ | — |
-| 多 stroke 列表 / per-side borders | 🟡 本轮已支持额外 stroke 列表与渲染；per-side borders 仍缺 | 余：per-side |
+| 多 stroke 列表 / per-side borders | 🟡 多 stroke 列表 + 渲染已落地；per-side borders 仍缺 | 余：per-side |
 | Join/cap/dash/miter/arrows | 🟡 仅 path 的高级 stroke 有；rect/ellipse/image 没有 | P1/P2 |
 | Advanced stroke flyout / width profile / path trim | 🟡 path 有部分；trim 缺 | P2 |
 
@@ -141,7 +141,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 | Text style chip 行内 | 🟡 独立 Styles 段 | P3 |
 | Component properties（boolean/text/instance swap） | ❌ 只有变体轴 | P1/P2 |
 | Component description / publish changes | ❌ | P2 |
-| Swap instance / go to main | 🟡 swap instance 有；go-to-main 缺 | P1 |
+| Swap instance / go to main | ✅ swap instance 有；本轮新增 Go to main component | 已对齐（组件属性仍缺） |
 | Override reset 矩阵（size/name/exports/interactions/other） | 🟡 当前按 Text/Fill/Stroke/Effects/Opacity/Visibility/All 分组 | P2 细化 |
 | Missing component / variant states | ❌ | P2 |
 
@@ -155,7 +155,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 | Transition 播放（duration/easing/spring） | 🟡 模型/runner 有部分过渡；无 spring 参数 | P2 |
 | Flow starting points / device presets | 🟡 单 start frame；无设备预设 | P2 |
 | Export 格式/scale/suffix/remove | ✅ | — |
-| Export 高级项（质量/色彩配置/sampling/PDF/SVG outline/动画） | ❌ | P2 |
+| Export 高级项（质量/色彩配置/sampling/PDF/SVG outline/动画） | 🟡 本轮补 JPEG/WebP Quality；色彩配置/sampling/动画仍缺 | P2 |
 | Inspect（Dev Mode） | 🟡 VOO 有 inspect 面板；无 Figma 的测量/组件/导出全量 | P2 |
 | Page background / On this page colors / presets | 🟡 Background 有；页面颜色/设备 presets 缺 | P2 |
 
@@ -210,6 +210,6 @@ VOO 侧：当前 `npm run build` 后用 Playwright 选中 Frame，截取
 - `d2d40f3` 页面 “On this page” 颜色 + Export 质量/默认 PNG 预设
 - `d2d40f3` 之后：多 stroke 列表（renderer + panel）；`6646faa` 笔刷标签裁切修复
 
-仍属引擎级、未在本批伪造的缺口：多 stroke/per-side、组件属性/publish/go-to-main、
+仍属引擎级、未在本批伪造的缺口：per-side borders、组件属性/publish、
 Prototype scroll/change-to/set-variable/conditional、Fill image scale/alt、
 Effects texture/shader、3D transform/corner smoothing、Export 色彩配置/sampling。
