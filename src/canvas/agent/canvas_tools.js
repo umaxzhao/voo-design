@@ -30,6 +30,7 @@ import { TEXT_PATH_TOOL_SCHEMAS, TEXT_PATH_TOOL_EXECUTORS } from "./canvas_tools
 import { CANVAS_TOOL_LAYOUT_SCHEMAS, LAYOUT_TOOL_EXECUTORS } from "./canvas_tools_layout.js";
 import { CANVAS_TOOL_PLAN_SCHEMAS, PLAN_TOOL_EXECUTORS } from "./canvas_tools_plan.js";
 import { SCENE_OPS_TOOL_SCHEMAS, SCENE_OPS_TOOL_EXECUTORS } from "./canvas_tools_scene_ops.js";
+import { DOCUMENT_TOOL_SCHEMAS, DOCUMENT_TOOL_EXECUTORS } from "./canvas_tools_document.js";
 
 import { BUILD_LAYOUT_SCHEMA, buildLayout } from "./canvas_tools_build_layout.js";
 
@@ -378,7 +379,9 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
   ...TEXT_PATH_TOOL_SCHEMAS,
   ...CANVAS_TOOL_LAYOUT_SCHEMAS,
   ...CANVAS_TOOL_PLAN_SCHEMAS,
-  ...SCENE_OPS_TOOL_SCHEMAS, LINT_TOOL_SCHEMA,
+  ...SCENE_OPS_TOOL_SCHEMAS,
+  ...DOCUMENT_TOOL_SCHEMAS,
+  LINT_TOOL_SCHEMA,
 ]);
 
 function requireEditor() {
@@ -903,7 +906,7 @@ function renameLayer(args = {}) {
 // executeCanvasTool passes (args, context). The hostEditor parameter of the
 // create_* builders is only for build_layout, so tool executors must not forward
 // the context object into it: a non-empty context would replace the active editor.
-const EXECUTORS = Object.freeze({
+export const EXECUTORS = Object.freeze({
   generate_image: generateImage,
   generate_image_web: generateImageWebTool,
   describe_selection: describeSelection,
@@ -926,7 +929,9 @@ const EXECUTORS = Object.freeze({
   ...TEXT_PATH_TOOL_EXECUTORS,
   ...LAYOUT_TOOL_EXECUTORS,
   ...PLAN_TOOL_EXECUTORS,
-  ...SCENE_OPS_TOOL_EXECUTORS, lint_design: lintDesignTool,
+  ...SCENE_OPS_TOOL_EXECUTORS,
+  ...DOCUMENT_TOOL_EXECUTORS,
+  lint_design: lintDesignTool,
   create_path: (args) => createPath(args),
   create_frame: (args) => LAYOUT_TOOL_EXECUTORS.create_frame(args),
   place_image: placeImage,
