@@ -25,7 +25,10 @@ documents.
   children keep absolute boxes and a `parentId`, in pre-order
   (`scene_doc_factory.js`). This shape makes import flattening (PSD, `.fig`,
   Pen), canvas mutation by agents and code export share one representation.
-- Node kinds: `image`, `rect`, `ellipse`, `path`, `text`, `region`.
+- Node kinds (`scene_doc_factory.js`): `image`, `rect`, `ellipse`, `path`,
+  `text`, `region`, `group`, `boolean`, `adjustment`, `video`, `canvasInstance`.
+  A nested frame is a `group` with `isFrame`; an artboard/page is a document,
+  not a separate `frame` node kind.
 - Auto layout is resolved into concrete boxes on import but keeps an
   `autoLayout` on frames that map cleanly, so it stays editable.
 - Geometry mutations go through **undo contracts**
@@ -94,6 +97,34 @@ Electron adds local-machine capabilities to the same web app
 Security posture: the renderer is sandboxed web code (`contextIsolation: true`,
 `nodeIntegration: false`); every host capability is a named IPC channel the
 preload exposes.
+
+## CLI and MCP connections
+
+External clients launch `scripts/mcp-server.mjs`, a stdio MCP server backed by
+`electron/mcp_server/stdio_server.js`. It discovers tool schemas from the same
+catalog used by the editor and forwards calls over an authenticated loopback
+WebSocket to the bridge. Electron owns that bridge; browser-only use starts a
+persistent `npm run bridge`. The stdio process does not spawn a replacement
+bridge, and tool discovery does not require a connected document.
+
+The page link (`src/canvas/mcp/canvas_mcp_link.js`) registers the active editor,
+executes `executeCanvasTool`, and returns results through the relay. Desktop
+links automatically unless disabled; a browser opts in through MCP settings or
+a selected local CLI agent. These calls use the live engine and the same
+mutation validation, history, rendering and persistence as UI actions. Bridge
+authentication stays in the user's private configuration; ephemeral tests do
+not replace the persistent token. Named IPC channels are defined in
+`src/shared/cli_bridge_protocol.js`.
+
+Managed CLI agent sessions also use `electron/agent_mcp_server.js`, a private
+MCP-over-HTTP server for the current turn. This is separate from the external
+stdio connector. `plugins/voo-design/` provides the portable Claude plugin and
+DeepSeek Harness overlay; `scripts/build-agent-plugin.mjs` builds a whitelist
+of runtime files and the existing WebSocket dependency. Harness is an external
+MCP client and owns its model/profile; VOO does not manage its conversation.
+See [agents.md](agents.md), [mcp-server.md](mcp-server.md) and the
+[connector guide](../plugins/voo-design/README.md) for setup and verification
+limits.
 
 ## Figma import and export
 

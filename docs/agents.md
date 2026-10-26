@@ -32,8 +32,8 @@ kept in sync with undo/redo:
 | `describe_selection` | Reports the selected layer. |
 | `inspect_layer_tree` | Reads the layer hierarchy and metadata. |
 | `mutate_layer_layout` | Updates layer position, size or rotation. |
-| `mutate_layer_style` | Updates fills, strokes, corners or opacity. |
-| `mutate_layer_text` | Updates text and typography. |
+| `mutate_layer_style` | Updates solid/structured-gradient paints, stroke details/dashes, opacity, blend mode, layer/background blur and layer effects. |
+| `mutate_layer_text` | Updates content, font family/size/weight, italic, underline, line-height multiplier, pixel letter spacing, alignment, color and text-box width. Style-only patches preserve content. |
 | `mutate_auto_layout` | Configures Auto-Layout. |
 | `batch_mutate_layers` | Runs multiple layer mutations atomically. |
 | `delete_layers` | Deletes layers. |
@@ -237,3 +237,24 @@ WebSocket-to-IPC adapter, `electron/ws_ipc_adapter.js`). It:
 - allows only a fixed origin list (localhost dev ports plus the hosted
   `voo.run` origins), extended with `VOO_CLI_BRIDGE_ORIGINS`;
 - is configurable via `VOO_CLI_BRIDGE_PORT`.
+
+### Style and typography patch units
+
+`mutate_layer_style.gradient` accepts `type` (`linear`, `radial`, `angular`,
+`diamond`), numeric degree `angle`, and at least two `{color, position, opacity}`
+stops. Stop colors are six-digit hex; position and stop opacity are 0–100.
+Optional geometry uses percentages; explicit line endpoints require all four
+of `startX/startY/endX/endY`. This is converted to the same fill string used by
+the panel. Do not supply competing `fill`/`fills` alongside `gradient`.
+
+Layer/fill/stroke opacity is 0–1. The `effects` object replaces the effect
+stack; null clears it. Shadow/glow and overlay opacity is 0–100; texture opacity
+is 0–1. Unsupported GPU effects use the existing Canvas2D compositor rather
+than silently disappearing. Stroke dash accepts a preset or a nonnegative
+numeric pattern.
+
+Text `lineHeight` is a multiplier (0.8–3); `letterSpacing` is in document pixels
+(-10–40). `textContent`, `textAlign` and `color` normalize to the document's
+`text`, `align` and `fill` fields. Single writes and `batch_mutate_layers` share
+validation; invalid batches reject before any mutation. Generated portable
+connectors snapshot tool schemas and must be rebuilt after schema changes.

@@ -160,9 +160,9 @@ These were audit items marked for post-release:
   - VOO Design Team
 
   **Downloads:**
-  - 🐧 [Linux AppImage](…) | SHA256: `…`
-  - 🍎 [macOS DMG](…) | SHA256: `…`
-  - 🪟 [Windows NSIS](…) | SHA256: `…`
+  - 🐧 Linux AppImage (link pending) | SHA256: `…`
+  - 🍎 macOS DMG (link pending) | SHA256: `…`
+  - 🪟 Windows NSIS (link pending) | SHA256: `…`
   ```
 - [ ] Attach binary artifacts to release
 - [ ] Publish release

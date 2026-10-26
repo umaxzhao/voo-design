@@ -16,12 +16,14 @@
 - [release-checklist.md](release-checklist.md), [code-signing.md](code-signing.md), [installer-size.md](installer-size.md), [deploy-la.md](deploy-la.md) (editor deploys to `la2`)
 
 ## Performance
+- [Evidence map](performance/README.md): distinguishes CPU, historical raster FPS, current GPU FPS and WASM results; no mixed-backend aggregate
 - [canvas-perf-benchmark.md](canvas-perf-benchmark.md) with raw data in `canvas-perf-results.json` (both are written by `tests/unit/canvas_perf_harness.js`, so they stay at this level)
 - [performance/](performance/): [local drag FPS](performance/canvas-fps-local-drag.md), [tile rendering](performance/canvas-fps-tiles.md), [WASM engine](performance/wasm-engine.md), [WASM bench](performance/wasm-engine-bench.md)
 
 ## Audits (point-in-time records; check the date and re-verify before relying on them)
 | Document | Topic | Status |
 | :--- | :--- | :--- |
+| [audits/agent-mutation-verification.md](audits/agent-mutation-verification.md) | Agent paint/text parity, UI tests, real MCP/pixel evidence and remaining limits | Current (2026-10-27) |
 | [audits/effect-audit-verification.md](audits/effect-audit-verification.md) | Resize constraints, Skia italics: fixes and e2e evidence | Current (2026-10-27) |
 | [audits/editor-completion-verification.md](audits/editor-completion-verification.md) | Editor completion checks | Recent |
 | [audits/image-processing-audit.md](audits/image-processing-audit.md) | Affinity vs VOO image processing | Recent |

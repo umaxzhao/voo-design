@@ -143,6 +143,18 @@ npx vitest run tests/unit/mcp_server.test.js
 npm run build
 ```
 
+## Client configuration names
+
+`voo-design` is the canonical name in these examples, not a required protocol
+identifier. An existing local registration called `voo` can use the same entry
+point without being renamed or duplicated. Use the name actually registered
+with your client when editing or removing its configuration.
+
+Style and text tools expose the same validated patches in the editor and MCP
+catalog. See [patch units and aliases](agents.md#style-and-typography-patch-units).
+Schema exposure and stored values do not certify final pixels for every effect;
+see the dated [audit index](README.md#audits-point-in-time-records-check-the-date-and-re-verify-before-relying-on-them).
+
 ## Portable connectors
 
 Run `node scripts/build-agent-plugin.mjs /absolute/new/plugin-folder` to build a
