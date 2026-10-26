@@ -1,4 +1,4 @@
-name: Deploy editor to la
+name: Deploy editor to la2
 on:
   push:
     branches: [main]
@@ -7,11 +7,11 @@ on:
 permissions:
   contents: read
 
-# Required secret: LA_SSH_KEY (deployment private key).
-# Optional secrets: LA_SSH_HOST (default 103.114.160.86, behind alias la),
-# LA_SSH_USER (default root; set to the user used by your local Host la config).
+# Required secret: LA2_SSH_KEY (deployment private key).
+# Required secret: LA2_SSH_HOST (la2 address).
+# Optional secret: LA2_SSH_USER (default root).
 concurrency:
-  group: deploy-editor-la
+  group: deploy-editor-la2
   cancel-in-progress: false
 
 jobs:
@@ -36,9 +36,10 @@ jobs:
       - name: Check deployment configuration
         id: secrets
         env:
-          LA_SSH_KEY: ${{ secrets.LA_SSH_KEY }}
+          LA2_SSH_KEY: ${{ secrets.LA2_SSH_KEY }}
+          LA2_SSH_HOST: ${{ secrets.LA2_SSH_HOST }}
         run: |
-          if [ -n "$LA_SSH_KEY" ]; then
+          if [ -n "$LA2_SSH_KEY" ] && [ -n "$LA2_SSH_HOST" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -54,19 +55,19 @@ jobs:
           path: dist/
       - name: Configure SSH
         env:
-          LA_SSH_KEY: ${{ secrets.LA_SSH_KEY }}
-          LA_SSH_HOST: ${{ secrets.LA_SSH_HOST || '103.114.160.86' }}
-          LA_SSH_USER: ${{ secrets.LA_SSH_USER || 'root' }}
+          LA2_SSH_KEY: ${{ secrets.LA2_SSH_KEY }}
+          LA2_SSH_HOST: ${{ secrets.LA2_SSH_HOST }}
+          LA2_SSH_USER: ${{ secrets.LA2_SSH_USER || 'root' }}
         run: |
           umask 077
           mkdir -p ~/.ssh
-          printf '%s\n' "$LA_SSH_KEY" > ~/.ssh/la_deploy_key
-          ssh-keyscan -H "$LA_SSH_HOST" > ~/.ssh/known_hosts
+          printf '%s\n' "$LA2_SSH_KEY" > ~/.ssh/la2_deploy_key
+          ssh-keyscan -H "$LA2_SSH_HOST" > ~/.ssh/known_hosts
           cat > ~/.ssh/config <<EOF
-          Host la
-            HostName $LA_SSH_HOST
-            User $LA_SSH_USER
-            IdentityFile ~/.ssh/la_deploy_key
+          Host la2
+            HostName $LA2_SSH_HOST
+            User $LA2_SSH_USER
+            IdentityFile ~/.ssh/la2_deploy_key
             IdentitiesOnly yes
             BatchMode yes
             StrictHostKeyChecking yes
@@ -77,4 +78,4 @@ jobs:
         run: bash scripts/deploy-editor.sh
       - name: Remove deployment key
         if: always()
-        run: rm -f ~/.ssh/la_deploy_key
+        run: rm -f ~/.ssh/la2_deploy_key
