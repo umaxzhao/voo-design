@@ -124,3 +124,10 @@
 - Effects still shows real rows once an adjustment, effect, blur or noise
   exists; the compact groups keep the panel from looking padded out.
 - Screenshot: `analysis/voo/assets/right-panel-compact-2026-10-26.png`.
+
+## Tighter spacing pass
+
+- Group shell is now `py-2` (8px above/below the divider) instead of 12px.
+- Header-to-body and row gaps are 8px; Effects/Prototype inner stacks use the
+  same 8px rhythm.
+- Screenshot: `analysis/voo/assets/right-panel-tighter-2026-10-26.png`.

@@ -178,7 +178,7 @@ export default function LayerEffectsSection({
       >
         {!hasAny && !hasBlurNoise ? null : (
           <>
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2">
           {/* Tone adjustments (green) and pixel filters (blue) both live in
               `adjustments`; the dot keeps them apart the way the picker does. */}
           {configuredAdjustments.map((kind) => {
@@ -312,7 +312,7 @@ export default function LayerEffectsSection({
             );
           })}
         </div>
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2">
           <div className={sectionRowClass}>
             <span className="flex-1 text-left text-[10px] text-neutral-300">
               {t("editor.props.layerBlur")}

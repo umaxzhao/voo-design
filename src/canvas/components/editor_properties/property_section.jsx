@@ -18,14 +18,14 @@ export const sectionTitleClass =
 // One vertical rhythm for every group: the divider sits centred between the
 // previous group's last row and the next group's header (12px on each side).
 const sectionRhythmClass =
-  "border-t border-white/10 pt-3 pb-3 first:border-t-0 first:pt-0";
+  "border-t border-white/10 py-2 first:border-t-0 first:pt-0";
 
 /** The header row shared by static and collapsible sections. */
 export const sectionHeaderClass =
-  "flex min-w-0 items-center justify-between gap-2 px-1 pb-2.5 select-none";
+  "flex min-w-0 items-center justify-between gap-2 px-1 pb-2 select-none";
 
 /** The child wrapper shared by every section, so all rows share one inset. */
-export const sectionBodyClass = "space-y-2.5 px-0.5";
+export const sectionBodyClass = "space-y-2 px-0.5";
 
 /**
  * A full-width input row: the same height and horizontal inset as the fields
