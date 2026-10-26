@@ -1,5 +1,6 @@
 import { drawCachedStage } from "./stage_picture_cache.js";
 import { drawPlainRects, isPlainRectList } from "./render_plain_rects.js";
+import { roundRectPath } from "./render_basic_shapes.js";
 import { dirtyRectsToDevice, shouldUseDirtyRect } from "./dirty_rect.js";
 // Top-level stage paint loop coordinating page background, nodes, and chrome passes.
 
@@ -159,16 +160,20 @@ function drawUncached(
     ctx.save();
     ctx.translate(viewport.panX, viewport.panY);
     ctx.scale(viewport.zoom, viewport.zoom);
+    // Artboards clip to their bounds; a frame's corner radius rounds both the
+    // clip and its page fill so the canvas artwork matches the DOM frame.
     if (!doc.isCanvasRoot) {
       ctx.beginPath();
-      ctx.rect(page.x, page.y, page.width, page.height);
+      roundRectPath(ctx, page.x, page.y, page.width, page.height, doc.cornerRadius ?? 0);
       ctx.clip();
     }
 
     if (!doc.isCanvasRoot && pageBackground) {
+      ctx.beginPath();
+      roundRectPath(ctx, page.x, page.y, page.width, page.height, doc.cornerRadius ?? 0);
       if (doc.backgroundColor && doc.backgroundColor !== "transparent") {
         ctx.fillStyle = doc.backgroundColor;
-        ctx.fillRect(page.x, page.y, page.width, page.height);
+        ctx.fill();
       } else {
         // A transparent backdrop reads as a checkerboard on screen. Exports only
         // set pageBackground for blend-mode documents, so this pattern never
@@ -176,10 +181,10 @@ function drawUncached(
         const source = getCheckerboardSource();
         if (source) {
           ctx.fillStyle = ctx.createPattern(source, "repeat");
-          ctx.fillRect(page.x, page.y, page.width, page.height);
+          ctx.fill();
         } else {
           ctx.fillStyle = PAGE_BACKGROUND;
-          ctx.fillRect(page.x, page.y, page.width, page.height);
+          ctx.fill();
         }
       }
     } else if (!doc.isCanvasRoot && doc.backgroundColor && doc.backgroundColor !== "transparent") {
