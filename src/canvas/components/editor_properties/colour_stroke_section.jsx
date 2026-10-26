@@ -20,7 +20,6 @@ import { Swatch, HexField, HEX_COLOUR } from "./colour_swatch.jsx";
 import { opacityPatch } from "../../color_picker/opacity_patch.js";
 import {
   SectionAddButton,
-  SectionEmptyRow,
   StaticSection,
   sectionActionClass,
   sectionRowClass,
@@ -80,15 +79,7 @@ export function StrokeSection({
         </div>
       ) : null}
 
-      {none ? (
-        <SectionEmptyRow
-          label={t("editor.props.emptyState")}
-          ariaLabel={t("editor.props.addStroke")}
-          variant="empty"
-          testId="editor-stroke-empty"
-          onClick={addStroke}
-        />
-      ) : (
+      {none ? null : (
         <>
           {/* Row 1: Unified Pill (Swatch + Label/Hex + Opacity + Minus) */}
           <div className={sectionRowClass}>

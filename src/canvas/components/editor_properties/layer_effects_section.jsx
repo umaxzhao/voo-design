@@ -20,7 +20,7 @@ import {
 import { IconEye, IconEyeOff, IconMinus } from "../../icons.jsx";
 import AddKindPicker from "./add_kind_picker.jsx";
 import AdjustmentPopover from "./adjustment_popover.jsx";
-import { SectionEmptyRow, StaticSection } from "./property_section.jsx";
+import { StaticSection } from "./property_section.jsx";
 import KindIcon from "./kind_icons.jsx";
 
 /**
@@ -176,25 +176,9 @@ export default function LayerEffectsSection({
           />
         }
       >
-        {!hasAny && !hasBlurNoise ? (
-          <SectionEmptyRow
-            label={t("editor.props.emptyState")}
-            ariaLabel={t("editor.props.addEffect")}
-            variant="empty"
-            testId="editor-effects-empty"
-            onClick={() => setShowAddPicker(true)}
-          />
-        ) : (
+        {!hasAny && !hasBlurNoise ? null : (
           <>
         <div className="flex flex-col gap-2.5">
-          {!hasAny ? (
-            <SectionEmptyRow
-              label={t("editor.props.addEffect")}
-              testId="editor-effects-empty"
-              showPlus={false}
-              onClick={() => setShowAddPicker(true)}
-            />
-          ) : null}
           {/* Tone adjustments (green) and pixel filters (blue) both live in
               `adjustments`; the dot keeps them apart the way the picker does. */}
           {configuredAdjustments.map((kind) => {

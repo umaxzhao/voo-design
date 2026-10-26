@@ -115,3 +115,12 @@
 - Frames in older documents that still have no paint show the same page backdrop
   as a read-only fallback row in Fill; editing that row writes an explicit fill.
 - Screenshot: `analysis/voo/assets/frame-default-fill-2026-10-26.png`.
+
+## 5th pass — empty rows removed
+
+- Fill / Stroke / Effects / Prototype no longer render an Empty or
+  Add-interaction placeholder row when unused. The group header and its "+"
+  remain; clicking "+" creates the paint/effect/picker as before.
+- Effects still shows real rows once an adjustment, effect, blur or noise
+  exists; the compact groups keep the panel from looking padded out.
+- Screenshot: `analysis/voo/assets/right-panel-compact-2026-10-26.png`.

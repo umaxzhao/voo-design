@@ -11,7 +11,6 @@ import { IconEye, IconEyeOff, IconMinus } from "../../icons.jsx";
 import { Swatch, HexField, HEX_COLOUR } from "./colour_swatch.jsx";
 import {
   SectionAddButton,
-  SectionEmptyRow,
   StaticSection,
   sectionActionClass,
   sectionRowClass,
@@ -179,15 +178,9 @@ export function FillSection({
     <StaticSection title={t("editor.props.fillLabel")} storageKey="fill" extra={
       <SectionAddButton label={t("editor.props.addFill")} onClick={addFill} />
     }>
-      {!paints.some((paint) => paint?.visible !== false && paint?.fill && paint.fill !== "transparent") ? (
-        <SectionEmptyRow
-          label={t("editor.props.emptyState")}
-          ariaLabel={t("editor.props.addFill")}
-          variant="empty"
-          testId="editor-fill-empty"
-          onClick={addFill}
-        />
-      ) : paints.map((paint, index) => <FillSection key={index}
+      {!paints.some((paint) => paint?.visible !== false && paint?.fill && paint.fill !== "transparent")
+        ? null
+        : paints.map((paint, index) => <FillSection key={index}
         object={{ ...object, fills: undefined, fill: paint.fill, fillOpacity: paint.opacity,
           fillHidden: paint.visible === false, fillBlendMode: paint.blendMode,
           imageId: paint.imageId ?? object.imageId }}

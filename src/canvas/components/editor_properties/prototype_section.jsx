@@ -8,7 +8,6 @@ import { useState } from "react";
 import { useI18n } from "../../use_i18n.js";
 import {
   SectionAddButton,
-  SectionEmptyRow,
   StaticSection,
   sectionRowClass,
 } from "./property_section.jsx";
@@ -222,14 +221,7 @@ export default function PrototypeSection({ object, engine }) {
               </div>
             );
           })
-        ) : (
-          <SectionEmptyRow
-            label={t("editor.prototype.addInteraction")}
-            testId="editor-prototype-empty"
-            showPlus={false}
-            onClick={add}
-          />
-        )}
+        ) : null}
       </div>
       {running ? (
         <PrototypeRunner
