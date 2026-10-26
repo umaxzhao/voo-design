@@ -60,26 +60,45 @@ SectionAddButton.propTypes = {
  * A full-width "nothing here yet" row: the empty state for a paint/effect
  * section, so the section shows a clear action instead of a bare header.
  */
-export function SectionEmptyRow({ label, onClick, icon = null, testId = undefined, showPlus = true }) {
+export function SectionEmptyRow({
+  label,
+  onClick,
+  icon = null,
+  testId = undefined,
+  showPlus = true,
+  variant = "action",
+  ariaLabel = null,
+}) {
+  const isPlaceholder = variant === "empty";
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={label}
+      aria-label={ariaLabel ?? label}
       data-testid={testId}
-      className={`${sectionRowClass} justify-start text-[11px] text-neutral-400 hover:text-neutral-200`}
+      className={
+        isPlaceholder
+          ? "flex h-7 w-full items-center justify-center rounded-xl bg-white/[0.02] text-[10px] font-mono tracking-wide text-neutral-500 transition-colors hover:bg-white/[0.05] hover:text-neutral-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+          : `${sectionRowClass} justify-start text-[11px] text-neutral-400 hover:text-neutral-200`
+      }
     >
-      {icon ? (
-        <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">
-          {icon}
-        </span>
+      {isPlaceholder ? (
+        <span className="truncate">{label}</span>
       ) : (
-        <span aria-hidden="true" className="h-4 w-4 shrink-0 rounded-md border border-white/25" />
+        <>
+          {icon ? (
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">
+              {icon}
+            </span>
+          ) : (
+            <span aria-hidden="true" className="h-4 w-4 shrink-0 rounded-md border border-white/25" />
+          )}
+          <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+          {showPlus ? (
+            <span aria-hidden="true" className="text-[12px] font-mono text-neutral-500">+</span>
+          ) : null}
+        </>
       )}
-      <span className="min-w-0 flex-1 truncate text-left">{label}</span>
-      {showPlus ? (
-        <span aria-hidden="true" className="text-[12px] font-mono text-neutral-500">+</span>
-      ) : null}
     </button>
   );
 }
@@ -91,6 +110,10 @@ SectionEmptyRow.propTypes = {
   testId: PropTypes.string,
   /** Hide the trailing "+" when the section header already exposes the add action. */
   showPlus: PropTypes.bool,
+  /** "empty" renders a centred, nearly transparent placeholder instead of an add row. */
+  variant: PropTypes.oneOf(["action", "empty"]),
+  /** Accessible action label when the visible text is just "Empty". */
+  ariaLabel: PropTypes.string,
 };
 
 /**

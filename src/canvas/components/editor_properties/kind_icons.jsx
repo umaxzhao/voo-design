@@ -88,6 +88,8 @@ const GLYPHS = {
   /* ---- Creative & pixel filters -------------------------------------- */
 
   blur: IconGlyphBlur,
+  layerBlur: IconGlyphBlur,
+  backgroundBlur: IconGlyphBlur,
   sharpen: IconGlyphSharpen,
   noise: IconGlyphNoise,
   clouds: IconGlyphClouds,

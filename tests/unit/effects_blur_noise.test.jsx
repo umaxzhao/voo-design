@@ -20,8 +20,15 @@ const render = (object) =>
   );
 
 describe("blur and noise", () => {
-  it("shows layer and background blur fields for a layer", () => {
+  it("shows a single empty state until a blur, noise or effect exists", () => {
     const html = render({ id: "r1", kind: "rect", layerBlur: 0, backgroundBlur: 0 });
+    expect(html).toContain("editor.props.emptyState");
+    expect(html).not.toContain("editor.props.layerBlur");
+    expect(html).not.toContain("editor.props.backgroundBlur");
+  });
+
+  it("shows layer and background blur fields once blur is in use", () => {
+    const html = render({ id: "r1", kind: "rect", layerBlur: 8, backgroundBlur: 0 });
     expect(html).toContain("editor.props.layerBlur");
     expect(html).toContain("editor.props.backgroundBlur");
     expect(html).toContain("editor.props.noise");

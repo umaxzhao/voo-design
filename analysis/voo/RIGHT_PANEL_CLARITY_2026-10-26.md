@@ -68,3 +68,16 @@
   Effects → Export → Prototype.
 - Prototype's no-interaction state is an "Add interaction" row (start-frame and
   run controls stay available for frames).
+
+## 3rd pass — paint/effect empty states read "Empty"
+
+- Fill and Stroke show a single centred `Empty` placeholder (2% white backdrop,
+  no swatch, no duplicate plus). Clicking it still adds the paint; the header
+  plus remains the explicit add action.
+- Effects shows one centred `Empty` placeholder when there is no adjustment,
+  effect, layer blur, background blur or noise. Blur/noise rows appear only
+  after one is added or a value exists.
+- The picker gained a Blur & noise group (Layer blur / Background blur /
+  Noise), so those node-level controls stay discoverable even though the
+  default Effects body is empty.
+- Screenshot: `analysis/voo/assets/right-panel-empty-effects-2026-10-26.png`.

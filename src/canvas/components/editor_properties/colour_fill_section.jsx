@@ -170,11 +170,11 @@ export function FillSection({
     }>
       {none && paints.length <= 1 ? (
         <SectionEmptyRow
-          label={t("editor.props.addFill")}
+          label={t("editor.props.emptyState")}
+          ariaLabel={t("editor.props.addFill")}
+          variant="empty"
           testId="editor-fill-empty"
-          showPlus={false}
           onClick={addFill}
-          icon={<span className="block h-4 w-4 rounded-md border border-white/25 bg-[#D9D9D9]" />}
         />
       ) : paints.map((paint, index) => <FillSection key={index}
         object={{ ...object, fills: undefined, fill: paint.fill, fillOpacity: paint.opacity,

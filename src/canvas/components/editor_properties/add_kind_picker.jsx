@@ -54,6 +54,9 @@ const ACCENT = {
   effect: "#b3a0ff",
 };
 
+/** Layer-level controls that are node fields rather than adjustment kinds. */
+export const LAYER_EFFECT_KINDS = ["layerBlur", "backgroundBlur", "noise"];
+
 /**
  * One tappable kind in the left column. The glyph carries what the kind does
  * and the accent carries which group it belongs to, so the row needs no dot.
@@ -131,6 +134,7 @@ export default function AddKindPicker({
   adjustments = null,
   showEffects = true,
   onPick,
+  onPickLayerEffect = null,
   onApplyPreset,
   onClose,
   side = "left",
@@ -193,6 +197,15 @@ export default function AddKindPicker({
               kinds={EFFECT_KINDS}
               labelOf={(kind) => t(effectLabelKey(kind))}
               onPick={(kind) => onPick(kind, true)}
+            />
+          ) : null}
+          {onPickLayerEffect ? (
+            <KindGroup
+              title={t("editor.props.blurNoise")}
+              accent={ACCENT.effect}
+              kinds={LAYER_EFFECT_KINDS}
+              labelOf={(kind) => t(`editor.props.${kind}`)}
+              onPick={onPickLayerEffect}
             />
           ) : null}
         </div>
@@ -263,6 +276,8 @@ AddKindPicker.propTypes = {
   /** Whether the effects group is shown in the kinds column. */
   showEffects: PropTypes.bool,
   onPick: PropTypes.func.isRequired,
+  /** Adds node-level blur/noise entries from the picker. */
+  onPickLayerEffect: PropTypes.func,
   /** Absent for layers that cannot take presets; hides the column. */
   onApplyPreset: PropTypes.func,
   onClose: PropTypes.func.isRequired,

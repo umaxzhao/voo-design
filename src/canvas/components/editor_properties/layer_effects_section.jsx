@@ -60,6 +60,10 @@ export default function LayerEffectsSection({
   const configuredEffects = listConfiguredEffects(object.effects);
   const hasAny =
     configuredAdjustments.length > 0 || configuredEffects.length > 0;
+  const hasBlurNoise =
+    (object.layerBlur ?? 0) > 0 ||
+    (object.backgroundBlur ?? 0) > 0 ||
+    Boolean(object.noise);
   // This panel docks opposite the layers panel: it sits at `right-4` by default
   // and moves to `left-4` when swapped. A popover must open into the canvas, so
   // the side is the mirror of the layers panel's -- getting this backwards puts
@@ -139,6 +143,20 @@ export default function LayerEffectsSection({
     });
   };
 
+  /** Adds a layer-level blur/grain entry from the picker's "Blur & noise". */
+  const addLayerEffect = (kind) => {
+    setShowAddPicker(false);
+    if (kind === "layerBlur") {
+      editAndCommit({ layerBlur: Math.max(8, object.layerBlur ?? 0) });
+    } else if (kind === "backgroundBlur") {
+      editAndCommit({ backgroundBlur: Math.max(12, object.backgroundBlur ?? 0) });
+    } else if (kind === "noise") {
+      editAndCommit({
+        noise: object.noise ?? { opacity: 0.18, density: 0.35, size: 2 },
+      });
+    }
+  };
+
   /** Renders a popover onto the panel element once React has attached it. */
   const floating = (node) =>
     node && panelRef?.current ? createPortal(node, panelRef.current) : null;
@@ -158,6 +176,16 @@ export default function LayerEffectsSection({
           />
         }
       >
+        {!hasAny && !hasBlurNoise ? (
+          <SectionEmptyRow
+            label={t("editor.props.emptyState")}
+            ariaLabel={t("editor.props.addEffect")}
+            variant="empty"
+            testId="editor-effects-empty"
+            onClick={() => setShowAddPicker(true)}
+          />
+        ) : (
+          <>
         <div className="flex flex-col gap-1.5 pt-1">
           {!hasAny ? (
             <SectionEmptyRow
@@ -385,6 +413,8 @@ export default function LayerEffectsSection({
             </button>
           )}
         </div>
+          </>
+        )}
       </StaticSection>
 
       {/* Both cards mount on the panel element itself, clear of its scrolling
@@ -399,6 +429,7 @@ export default function LayerEffectsSection({
             adjustments={object.adjustments ?? null}
             onPick={handleAdd}
             onApplyPreset={applyPreset}
+            onPickLayerEffect={addLayerEffect}
             onClose={() => setShowAddPicker(false)}
             side={popoverSide}
           />
