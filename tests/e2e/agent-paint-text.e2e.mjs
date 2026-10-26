@@ -1,0 +1,87 @@
+import assert from "node:assert/strict";
+import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+
+await withEditorBrowser(async ({ page, tool }) => {
+  const checks = [];
+  await page.evaluate(async () => {
+    const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
+    const editor = window.__vooEditor;
+    const rect = { ...createRectNode({ x: 100, y: 100, width: 100, height: 100, fill: "#ffffff" }), id: "paint" };
+    editor.setDoc({ ...editor.getDocument(), width: 600, height: 400, backgroundColor: "#ffffff", nodes: [rect] });
+    editor.zoomToFit();
+  });
+  const sample = (point) => page.evaluate(async (point) => {
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return window.__vooEditor.sampleColorAt(point);
+  }, point);
+  const patch = (value) => tool("mutate_layer_style", { layerId: "paint", patch: value });
+  await patch({ gradient: { type: "linear", angle: 90, stops: [{ color: "#ff0000", position: 0 }, { color: "#0000ff", position: 100 }] } });
+  const left = await sample({ x: 110, y: 150 });
+  const right = await sample({ x: 190, y: 150 });
+  assert.notEqual(left, right, "Gradient stops must change actual pixels, not just document data");
+  assert.ok(parseInt(left.slice(1, 3), 16) > parseInt(right.slice(1, 3), 16));
+  checks.push("MCP structured gradient changes actual left/right pixels");
+  await patch({ fill: "#ffffff", effects: { shadow: { enabled: true, color: "#000000", blur: 0, spread: 0, offsetX: 30, offsetY: 0, opacity: 100 } } });
+  assert.equal(await sample({ x: 220, y: 150 }), "#000000", "Shadow must appear outside the object");
+  await tool("undo");
+  assert.equal(await sample({ x: 220, y: 150 }), "#ffffff");
+  await tool("redo");
+  assert.equal(await sample({ x: 220, y: 150 }), "#000000");
+  checks.push("MCP shadow appears on canvas, one undo clears pixels, redo restores them");
+  await patch({ effects: null, fill: "#ff0000", layerBlur: 8 });
+  const soft = await sample({ x: 98, y: 150 });
+  assert.notEqual(soft, "#ffffff", "Blur must soften pixels beyond the original edge");
+  checks.push("MCP layer blur affects pixels outside geometry");
+  const immediate = await page.evaluate(() => {
+    const editor = window.__vooEditor;
+    editor.updateNode("paint", { layerBlur: 0, fill: "#123456" });
+    return editor.sampleColorAt({ x: 150, y: 150 });
+  });
+  assert.equal(immediate, "#123456", "Same-event readback must flush the pending paint");
+  checks.push("synchronous eyedropper readback sees the latest mutation");
+  await page.evaluate(async () => {
+    const { createTextNode } = await import("/src/canvas/editor/scene_model.js");
+    const editor = window.__vooEditor;
+    const text = { ...createTextNode({ x: 300, y: 100, text: "Keep this text", fontSize: 24, fill: "#000000" }), id: "type" };
+    editor.setDoc({ ...editor.getDocument(), nodes: [...editor.getDocument().nodes, text] });
+  });
+  await tool("mutate_layer_text", { layerId: "type", patch: { italic: true, underline: true, lineHeight: 1.5, letterSpacing: 2, textAlign: "center", color: "#123456" } });
+  const text = await page.evaluate(() => window.__vooEditor.getNode("type"));
+  assert.equal(text.text, "Keep this text");
+  assert.equal(text.italic, true);
+  assert.equal(text.underline, true);
+  assert.equal(text.align, "center");
+  assert.equal(text.fill, "#123456");
+  assert.equal(text.lineHeight, 1.5);
+  assert.equal(text.letterSpacing, 2);
+  checks.push("real MCP typography preserves content and normalizes rendered fields");
+  await page.evaluate(() => window.__vooEditor.setTool("brush"));
+  const panel = page.getByTestId("editor-properties-panel");
+  await panel.getByRole("button", { name: /Round Medium Brush/i }).click();
+  const detail = page.getByTestId("brush-detail-popover");
+  await detail.waitFor({ state: "visible" });
+  const pressure = detail.getByRole("switch", { name: /Pressure controls size/i });
+  const before = await page.evaluate(() => window.__vooEditor.getPressureSize());
+  await pressure.click();
+  assert.equal(await page.evaluate(() => window.__vooEditor.getPressureSize()), !before);
+  checks.push("brush preset opens detail popover and pressure toggle reaches engine");
+  await page.keyboard.press("Escape");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(400);
+  const layout = await page.evaluate(() => {
+    const root = document.querySelector('[data-testid="design-editor"]');
+    const layers = root.querySelector('[data-testid="editor-layers-panel"]');
+    const props = root.querySelector('[data-testid="editor-properties-panel"]');
+    const bounds = (node) => { const box = node.getBoundingClientRect(); return { left: box.left, right: box.right, top: box.top, bottom: box.bottom }; };
+    return { root: bounds(root), layers: bounds(layers), props: bounds(props), radius: parseFloat(getComputedStyle(props).borderRadius) };
+  });
+  assert.ok(layout.layers.left >= layout.root.left + 3);
+  assert.ok(layout.props.right <= layout.root.right - 3);
+  assert.ok(layout.layers.right + 3 <= layout.props.left);
+  assert.ok(layout.radius > 0);
+  await page.getByTestId("editor-top-bar-actions").getByRole("button", { name: "More actions", exact: true }).click();
+  await page.getByRole("menu").waitFor({ state: "visible" });
+  assert.ok(await page.getByRole("menuitem").count() >= 2);
+  checks.push("390px mobile panels have gutters and rounded corners; file actions open in More");
+  console.log(JSON.stringify({ passed: checks }, null, 2));
+}, { hasTouch: true });

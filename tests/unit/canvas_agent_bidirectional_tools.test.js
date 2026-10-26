@@ -43,6 +43,7 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
           id: "text_title",
           name: "Hero Title",
           type: "text",
+          kind: "text",
           parentId: "frame_hero",
           x: 132,
           y: 232,
@@ -68,6 +69,7 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
           id: "btn_label",
           name: "CTA Label",
           type: "text",
+          kind: "text",
           parentId: "btn_cta",
           x: 144,
           y: 316,
@@ -235,7 +237,6 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
     expect(result.ok).toBe(true);
     expect(mockEditor.updateNode).toHaveBeenCalledWith("text_title", {
       text: "The Next-Gen Canvas Studio",
-      textContent: "The Next-Gen Canvas Studio",
       fontSize: 44,
     });
     expect(committedActions).toContain("AI: Mutate Layer Text");

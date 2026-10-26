@@ -13,15 +13,21 @@ export async function verifySkiaTextEffects() {
     const runs = [];
     const fonts = host.instance.fonts;
     const create = fonts.createParagraph.bind(fonts);
-    fonts.createParagraph = (run, width) => { runs.push(run.italic); return create(run, width); };
+    fonts.createParagraph = (run, width) => { runs.push({ ...run }); return create(run, width); };
     const node = createTextNode({ x: 30, y: 30, text: "Italic effects", fontFamily: "Inter", fontSize: 48, fill: "#000000" });
     const options = { viewport: { width: 500, height: 180, zoom: 1, x: 0, y: 0 }, layouts: { text: { x: 0, y: 0 } } };
-    const draw = async (italic, revision) => {
-      await host.draw({ ...options, revision, docs: [{ id: "text", width: 500, height: 180, backgroundColor: "#ffffff", nodes: [{ ...node, italic }] }] });
+    const draw = async (italic, revision, patch = {}) => {
+      await host.draw({ ...options, revision, docs: [{ id: "text", width: 500, height: 180, backgroundColor: "#ffffff", nodes: [{ ...node, italic, ...patch }] }] });
       return canvas.toDataURL();
     };
     const normal = await draw(false, 1);
     const italic = await draw(true, 2);
-    return { normalRun: runs.includes(false), italicRun: runs.includes(true), pixelsDiffer: normal !== italic };
+    const underlined = await draw(false, 3, { underline: true });
+    await draw(false, 4, { lineHeight: 1.5, letterSpacing: 2 });
+    return {
+      normalRun: runs.some((run) => run.italic === false), italicRun: runs.some((run) => run.italic === true), pixelsDiffer: normal !== italic,
+      underlineRun: runs.some((run) => run.underline === true), underlinePixelsDiffer: normal !== underlined,
+      lineHeightPixels: runs.at(-1).lineHeight, letterSpacing: runs.at(-1).letterSpacing,
+    };
   } finally { host.dispose(); canvas.remove(); }
 }

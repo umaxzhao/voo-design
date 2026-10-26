@@ -763,9 +763,12 @@ export function createEditor({
       requestRender();
     },
     prepareCanvasReadback() {
-      if (stagePaintingEnabled) return;
+      // Sampling is synchronous: a queued repaint or a previously hidden stage
+      // must not return pixels from the document before the last mutation.
+      if (frame) { cancelAnimationFrame(frame); frame = 0; }
+      const wasPaintingEnabled = stagePaintingEnabled;
       stagePaintingEnabled = true;
-      try { render(); } finally { stagePaintingEnabled = false; }
+      try { render(); } finally { stagePaintingEnabled = wasPaintingEnabled; }
     },
     renderLayerPass(targetCanvas, nodeIds) {
       renderEngineLayerPass({

@@ -1,3 +1,6 @@
+import { STYLE_PATCH_PROPERTIES, TEXT_PATCH_PROPERTIES, validateMutationField } from "./canvas-mutation-schema.js";
+import { isCssGradient, parseGradient, formatGradient, DEFAULT_GRADIENT_GEOMETRY } from "../color_picker/gradient_fill.js";
+
 const MAX_LAYOUT_VALUE = 100000;
 const MAX_SIZE = 100000;
 const COLOR_PATTERN = /^(#[\da-f]{3,8}|transparent|rgba?\([^)]*\)|hsla?\([^)]*\))$/i;
@@ -27,16 +30,26 @@ function fields(patch, allowed, field) {
   return copy;
 }
 
+function validateColorOrGradient(value, field) {
+  if (typeof value !== "string") invalid(field, "an editor paint string", value);
+  if (COLOR_PATTERN.test(value)) return;
+  // The UI parser supplies fallback stops for malformed input. Agent writes
+  // must reject that input rather than silently painting the fallback.
+  const explicitColors = value.match(/#[\da-f]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)/gi) ?? [];
+  if (isCssGradient(value) && explicitColors.length >= 2 && parseGradient(value).stops.length >= 2) return;
+  invalid(field, "an editor color or gradient string", value);
+}
+
 function validatePaints(value, field) {
   if (!Array.isArray(value)) invalid(field, "an array of paint values", value);
   for (let index = 0; index < value.length; index += 1) {
     const paint = value[index];
     if (typeof paint === "string") {
-      if (!COLOR_PATTERN.test(paint)) invalid(`${field}[${index}]`, "an editor color string", paint);
+      validateColorOrGradient(paint, `${field}[${index}]`);
     } else if (paint && typeof paint === "object" && !Array.isArray(paint)) {
       const copy = { ...paint };
       for (const [key, item] of Object.entries(copy)) {
-        if (["color", "fill", "stroke"].includes(key) && typeof item === "string" && !COLOR_PATTERN.test(item)) invalid(`${field}[${index}].${key}`, "an editor color string", item);
+        if (["color", "fill", "stroke"].includes(key)) validateColorOrGradient(item, `${field}[${index}].${key}`);
         if (["opacity", "offset", "position"].includes(key)) finite(item, `${field}[${index}].${key}`, 0, 1);
       }
     } else invalid(`${field}[${index}]`, "a color string or paint object", paint);
@@ -44,28 +57,38 @@ function validatePaints(value, field) {
 }
 
 export function validateLayerPatch(type, value) {
-  const allowedByType = {
-    layout: ["x", "y", "width", "height", "rotation"],
-    style: ["fill", "stroke", "fills", "strokes", "strokeWidth", "cornerRadius", "opacity"],
-    text: ["textContent", "text", "fontSize", "fontFamily", "fontWeight", "textAlign", "color"],
-  };
   if (type === "autoLayout") return { autoLayout: validateAutoLayout(value) };
-  if (!allowedByType[type]) invalid("type", "layout, style, text, or autoLayout", type);
-  const patch = fields(value, allowedByType[type], "patch");
+  if (type === "layout") {
+    const patch = fields(value, ["x", "y", "width", "height", "rotation"], "patch");
+    for (const [key, item] of Object.entries(patch)) finite(item, `patch.${key}`, ["width", "height"].includes(key) ? 0 : -MAX_LAYOUT_VALUE, MAX_SIZE);
+    return patch;
+  }
+  const properties = type === "style" ? STYLE_PATCH_PROPERTIES : type === "text" ? TEXT_PATCH_PROPERTIES : null;
+  if (!properties) invalid("type", "layout, style, text, or autoLayout", type);
+  const patch = fields(value, Object.keys(properties), "patch");
   for (const [key, item] of Object.entries(patch)) {
-    if (type === "layout") {
-      finite(item, `patch.${key}`, key === "width" || key === "height" ? 0 : -MAX_LAYOUT_VALUE, key === "width" || key === "height" ? MAX_SIZE : MAX_LAYOUT_VALUE);
-    } else if (type === "style") {
-      if (["fills", "strokes"].includes(key)) validatePaints(item, `patch.${key}`);
-      else if (["fill", "stroke"].includes(key)) {
-        if (typeof item !== "string" || !COLOR_PATTERN.test(item)) invalid(`patch.${key}`, "an editor color string", item);
-      } else if (key === "opacity") finite(item, `patch.${key}`, 0, 1);
-      else finite(item, `patch.${key}`, 0, MAX_SIZE);
-    } else if (["textContent", "text", "fontFamily", "fontWeight", "textAlign"].includes(key)) {
-      if (typeof item !== "string") invalid(`patch.${key}`, "a string", item);
-      if (key === "textAlign" && !["left", "center", "right", "justify"].includes(item)) invalid(`patch.${key}`, "left, center, right, or justify", item);
-    } else if (key === "fontSize") finite(item, `patch.${key}`, 1, MAX_SIZE);
-    else if (key === "color" && (typeof item !== "string" || !COLOR_PATTERN.test(item))) invalid(`patch.${key}`, "an editor color string", item);
+    validateMutationField(item, properties[key], `patch.${key}`);
+    if (key === "fill") validateColorOrGradient(item, `patch.${key}`);
+    if (["fills", "strokes"].includes(key)) validatePaints(item, `patch.${key}`);
+  }
+  if (type === "text") {
+    // Only write content when supplied; style-only changes must not erase it.
+    for (const [alias, canonical] of [["textContent", "text"], ["textAlign", "align"], ["color", "fill"]]) {
+      if (Object.hasOwn(patch, alias)) {
+        if (Object.hasOwn(patch, canonical) && patch[canonical] !== patch[alias]) invalid(`patch.${alias}`, `the same value as ${canonical}`, patch[alias]);
+        patch[canonical] = patch[alias];
+        delete patch[alias];
+      }
+    }
+  }
+  if (patch.gradient) {
+    if (Object.hasOwn(patch, "fill") || Object.hasOwn(patch, "fills")) invalid("patch.gradient", "a gradient without a competing fill/fills", patch.gradient);
+    const { type: gradientType, angle = 135, stops, geometry = {} } = patch.gradient;
+    const endpointKeys = ["startX", "startY", "endX", "endY"];
+    const count = endpointKeys.filter((key) => Object.hasOwn(geometry, key)).length;
+    if (count !== 0 && count !== 4) invalid("patch.gradient.geometry", "all four gradient line endpoints", geometry);
+    patch.fill = formatGradient(gradientType, `${angle}deg`, stops.map((stop) => ({ opacity: 100, ...stop })), { ...DEFAULT_GRADIENT_GEOMETRY, ...geometry });
+    delete patch.gradient;
   }
   return patch;
 }

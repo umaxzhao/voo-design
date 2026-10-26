@@ -7,7 +7,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     const { verifySkiaTextEffects } = await import("/tests/e2e/skia-text-effects.mjs");
     return verifySkiaTextEffects();
   });
-  assert.deepEqual(textEffects, { normalRun: true, italicRun: true, pixelsDiffer: true });
+  assert.deepEqual(textEffects, { normalRun: true, italicRun: true, pixelsDiffer: true, underlineRun: true, underlinePixelsDiffer: true, lineHeightPixels: 72, letterSpacing: 2 });
   checks.push("actual GPU text italic input and pixel change");
   const seed = async () => {
     await page.evaluate(() => {

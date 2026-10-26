@@ -44,7 +44,12 @@ export function requiresCanvas2dMediaFallback(doc) {
         // The scene adapter cannot express painted alpha/luminance mask chains
         // or per-paint blends. Use the compositor that preserves their pixels.
         node.maskBase || node.clipTo || Array.isArray(node.fills) ||
-        node.fillHidden ||
+        node.fillHidden || node.strokeHidden ||
+        // Effects and rectangle dash styles have no adapter representation.
+        // Preserve their pixels with the existing authoritative compositor.
+        node.layerBlur > 0 || node.backgroundBlur > 0 || node.noise ||
+        node.effects && Object.values(node.effects).some((effect) => effect?.enabled) ||
+        node.strokeDash && node.strokeDash !== "solid" ||
         (node.kind === "image" && (node.fillOpacity ?? 1) !== 1) ||
         /^(?:blob:|data:image\/|https?:|file:)/i.test(node.fill ?? "") ||
         node.fillBlendMode && node.fillBlendMode !== "source-over" ||

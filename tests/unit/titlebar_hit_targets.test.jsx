@@ -84,6 +84,11 @@ describe("title bar hit targets", () => {
     const html = renderToStaticMarkup(<CanvasTabBar />);
     const tag = openingTag(html, 'aria-label="canvasTabs.unsaved"');
     expect(tag).toContain('role="img"');
-    expect(html.match(/canvasTabs\.unsaved/g)?.length).toBe(2); // aria-label + title, one dirty tab
+    const indicators = html.match(/<span[^>]*role="img"[^>]*aria-label="canvasTabs\.unsaved"[^>]*>/g) ?? [];
+    expect(indicators).toHaveLength(2); // One desktop indicator and one active mobile indicator.
+    state.isDirty = false;
+    try {
+      expect(renderToStaticMarkup(<CanvasTabBar />)).not.toContain('aria-label="canvasTabs.unsaved"');
+    } finally { state.isDirty = true; }
   });
 });

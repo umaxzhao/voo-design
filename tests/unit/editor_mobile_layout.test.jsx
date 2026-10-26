@@ -25,14 +25,19 @@ describe("mobile editor layout", () => {
     const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
     expect(css).toContain("max-width: 768px");
     expect(css).toContain("height: 55%");
-    expect(css).toContain("height: calc(81.818% - 2 * var(--editor-mobile-panel-gap))");
+    expect(css).toContain("height: calc(81.818% - var(--editor-mobile-panel-gap))");
     expect(css).toContain('data-properties-open="true"');
     expect(css).toContain("width: calc(100% - 2 * var(--editor-mobile-panel-gap))");
     expect(css).toContain("width: calc((100% - 3 * var(--editor-mobile-panel-gap)) / 2)");
     expect(css).toContain("left: calc(50% + var(--editor-mobile-panel-gap) / 2)");
-    expect(css).toContain("--editor-mobile-panel-gap: 0.75rem");
-    expect(css).toContain("border-radius: 1.5rem");
-    expect(css).toContain("transition: width 180ms ease, left 180ms ease");
+    expect(css).toContain("--editor-mobile-panel-gap: 0.375rem");
+    expect(css).toContain("border-radius: 1rem");
+    expect(css).toContain("transition: width 180ms ease, left 180ms ease, opacity 180ms ease");
+    // Each mobile panel can collapse to a 3.5rem header independently.
+    expect(css).toContain('[data-mobile-layers-expanded="false"] [data-testid="editor-layers-panel"]');
+    expect(css).toContain('[data-mobile-properties-expanded="false"] [data-testid="editor-properties-panel"]');
+    expect(css).toContain("height: 3.5rem");
+    expect(css).toContain(".editor-mobile-panel-expand");
     expect(css).toContain('data-testid="editor-layers-panel"');
     expect(css).toContain('data-testid="editor-properties-panel"');
     const editor = await import("../../src/canvas/components/image_editor.jsx?raw");
@@ -53,19 +58,21 @@ describe("mobile editor layout", () => {
 
   it("docks the bottom toolbar above the bottom panels only on narrow screens", () => {
     const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
-    expect(css).toContain("bottom: calc(45% + 0.5rem)");
+    expect(css).toContain("bottom: calc(45% + 3.25rem)");
     expect(css).toContain('[data-testid="design-editor"].editor-narrow .viewport-tools');
   });
 
   it("keeps the desktop panel rules outside narrow media styling", () => {
     const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
-    expect(css.trimStart().startsWith("@media (max-width: 768px)")).toBe(true);
+    const desktopRules = css.slice(0, css.indexOf("@media (max-width: 768px)"));
+    expect(desktopRules).not.toContain('[data-testid="editor-layers-panel"]');
+    expect(desktopRules).not.toContain('[data-testid="editor-properties-panel"]');
     expect(css).not.toContain("@media (min-width");
   });
 
   it("keeps desktop panels floating and places the narrow agent button above them", async () => {
     const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
-    expect(css).toContain("bottom: calc(45% + 1rem)");
+    expect(css).toMatch(/\.voo-ai-fab(?:\.absolute)?\s*\{[^}]*top: calc\(55% - 3rem\)/);
     const app = await import("../../src/App.jsx?raw");
     expect(app.default).toContain('className="voo-ai-fab absolute bottom-4 right-4');
     const properties = await import("../../src/canvas/components/editor_properties/index.jsx?raw");

@@ -37,6 +37,7 @@ import { ASSET_TOOL_SCHEMAS, ASSET_TOOL_EXECUTORS } from "./canvas_tools_assets.
 import { BUILD_LAYOUT_SCHEMA, buildLayout } from "./canvas_tools_build_layout.js";
 
 import { LINT_TOOL_SCHEMA, lintDesignTool } from "./design_quality/lint_tool.js";
+import { STYLE_PATCH_PROPERTIES, TEXT_PATCH_PROPERTIES } from "./canvas-mutation-schema.js";
 import { validateLayerId, validateLayerPatch, validateAutoLayout } from "./canvas_mutation_validation.js";
 
 export const AGENT_SETTING = Object.freeze({
@@ -147,20 +148,16 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
     type: "function",
     function: {
       name: "mutate_layer_style",
-      description: "Update visual style attributes (fills, strokes, strokeWidth, cornerRadius, opacity).",
+      description: "Update paints/gradient geometry, stroke details, opacity, blend mode, layer/background blur and the layer effect stack.",
       parameters: {
         type: "object",
         properties: {
           layerId: { type: "string" },
           patch: {
             type: "object",
-            properties: {
-              fills: { type: "array" },
-              strokes: { type: "array" },
-              strokeWidth: { type: "number" },
-              cornerRadius: { type: "number" },
-              opacity: { type: "number" },
-            },
+            properties: STYLE_PATCH_PROPERTIES,
+            additionalProperties: false,
+            minProperties: 1,
           },
         },
         required: ["layerId", "patch"],
@@ -178,13 +175,9 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
           layerId: { type: "string" },
           patch: {
             type: "object",
-            properties: {
-              textContent: { type: "string" },
-              fontSize: { type: "number" },
-              fontFamily: { type: "string" },
-              fontWeight: { type: "string" },
-              textAlign: { type: "string" },
-            },
+            properties: TEXT_PATCH_PROPERTIES,
+            additionalProperties: false,
+            minProperties: 1,
           },
         },
         required: ["layerId", "patch"],
@@ -635,7 +628,8 @@ function mutateLayerStyle(args) {
 
 function mutateLayerText(args) {
   const editor = requireEditor();
-  const { layerId, patch } = args;
+  const layerId = validateLayerId(args?.layerId);
+  const patch = validateLayerPatch("text", args?.patch);
   const node = editor.getNode?.(layerId);
   if (!node) {
     throw Object.assign(new Error(TOOL_ERROR.NODE_NOT_FOUND), { code: TOOL_ERROR.NODE_NOT_FOUND });
@@ -643,10 +637,8 @@ function mutateLayerText(args) {
 
   setAgentFocusNode(node, "AI: Updating text");
 
-  const normalizedPatch = {
-    ...patch,
-    text: patch.textContent ?? patch.text,
-  };
+  if (node.kind !== "text") invalidArgs('Invalid argument "layerId": expected a text layer');
+  const normalizedPatch = patch;
 
   editor.updateNode?.(layerId, normalizedPatch);
   editor.commitEditorDocument?.({ message: "AI: Mutate Layer Text" });
@@ -702,11 +694,11 @@ function batchMutateLayers(args) {
     const patch = validateLayerPatch(type, mutation.patch);
     const node = editor.getNode?.(layerId);
     if (!node) nodeNotFound();
+    if (type === "text" && node.kind !== "text") invalidArgs('Invalid argument "layerId": expected a text layer');
     return { layerId, type, patch, node };
   });
   const updates = validated.map(({ layerId, type, patch, node }) => {
     setAgentFocusNode(node, `AI: Batch ${type}`);
-    if (type === "text" && patch.textContent !== undefined) patch.text = patch.textContent;
     return type === "autoLayout"
       ? { id: layerId, autoLayout: patch.autoLayout }
       : { id: layerId, ...patch };

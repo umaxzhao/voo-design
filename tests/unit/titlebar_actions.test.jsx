@@ -7,6 +7,7 @@ vi.mock("react", async (original) => ({
   ...await original(),
   useState: (initial) => [initial, vi.fn()],
   useEffect: () => {},
+  useRef: (current) => ({ current }),
 }));
 vi.mock("../../src/store/design_store.js", () => ({ useDesignStore: (selector) => selector(state) }));
 vi.mock("../../src/canvas/use_i18n.js", () => ({ useI18n: () => ({ t: (key) => key }) }));
@@ -19,6 +20,11 @@ function buttons(node) {
   if (!React.isValidElement(node)) return [];
   if (node.type === "button") return [node];
   return React.Children.toArray(node.props.children).flatMap(buttons);
+}
+function visibleText(node) {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (!React.isValidElement(node) || node.props["aria-hidden"]) return "";
+  return React.Children.toArray(node.props.children).map(visibleText).join("");
 }
 const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
@@ -35,11 +41,17 @@ describe("title bar actions", () => {
       const tree = AppTitleBar();
       const header = React.Children.toArray(tree.props.children)[0];
       const right = React.Children.toArray(header.props.children)[1];
-      const actions = buttons(right);
+      const allActions = buttons(right);
+      const more = allActions.filter((button) => button.props.title === "titlebar.more");
+      // The compact overflow trigger is always present for narrow widths.
+      expect(more).toHaveLength(1);
+      expect(more[0].props["aria-haspopup"]).toBe("menu");
+      expect(more[0].props["aria-expanded"]).toBe(false);
+      const actions = allActions.filter((button) => button.props.title !== "titlebar.more");
       expect(actions).toHaveLength(count);
       expect(actions.map((button) => button.props.title)).toEqual(titles);
       // The visible label follows the title: Open + New on welcome, Open + Export in the editor.
-      expect(actions.slice(0, 2).map((button) => button.props.children)).toEqual([
+      expect(actions.slice(0, 2).map(visibleText)).toEqual([
         "titlebar.open", welcomeOpen ? "welcome.header.new" : "editor.export",
       ]);
       actions[0].props.onClick();

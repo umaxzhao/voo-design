@@ -8,7 +8,7 @@ import { connect } from "../../electron/mcp_server/stdio_server.js";
 import { CLI_BRIDGE_CHANNEL as C } from "../../src/shared/cli_bridge_protocol.js";
 
 /** Isolated real editor + private MCP relay; never changes the user's open document. */
-export async function withEditorBrowser(run) {
+export async function withEditorBrowser(run, pageOptions = {}) {
   const port = await new Promise((resolve, reject) => {
     const server = createServer();
     server.once("error", reject);
@@ -41,7 +41,7 @@ export async function withEditorBrowser(run) {
       await delay(200);
     }
     browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, ...pageOptions });
     await page.addInitScript(() => localStorage.setItem("voo.mcpLink", "on"));
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));

@@ -237,6 +237,7 @@ export function elementFor(node, index, offsetX, offsetY, resolveImageUrl, doc) 
       fontFamily: node.fontFamily,
       fontSize: node.fontSize,
       italic: Boolean(node.italic),
+      underline: Boolean(node.underline),
       // Our model stores CSS keywords or numeric weights; Skia wants the
       // numeric axis. Legacy documents carry "normal"/"bold".
       fontWeight:
@@ -245,7 +246,8 @@ export function elementFor(node, index, offsetX, offsetY, resolveImageUrl, doc) 
           : node.fontWeight === "normal"
             ? 400
             : Number(node.fontWeight) || 400,
-      lineHeight: node.lineHeight,
+      // The document stores a multiplier; CanvasKit expects document pixels.
+      lineHeight: (node.lineHeight ?? 1.2) * (node.fontSize ?? 32),
       letterSpacing: node.letterSpacing,
       // Point text hugs the glyphs, matching how the editor measures it; a
       // fixed text box (boxWidth > 0) lays out to its wrap column instead —

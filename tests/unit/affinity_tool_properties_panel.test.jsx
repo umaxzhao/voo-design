@@ -67,9 +67,10 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     expect(html).not.toContain("editor.props.size");
     expect(html).not.toMatch(/<button[^>]*>\s*(?:4|8|16|24|48|96|160)\s*<\/button>/);
 
-    // Pressure dynamics switches
-    expect(html).toContain("editor.pressureSize");
-    expect(html).toContain("editor.pressureOpacity");
+    // Dynamics live in the preset details popover; keep the resting inspector compact.
+    expect(html).not.toContain("editor.pressureSize");
+    expect(html).not.toContain("editor.pressureOpacity");
+    expect(html).toContain("editor.brushPreset.medium_round");
 
     // Brush presets
     expect(html).toContain("editor.brushes");
@@ -339,7 +340,8 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
 
     // Shows brush tool properties, not background inspector
     expect(html).toContain("editor.tool.brush");
-    expect(html).toContain("editor.pressureSize");
+    expect(html).toContain("editor.brushWidth");
+    expect(html).toContain("editor.brushPreset.medium_round");
     expect(html).not.toContain("editor.layer.canvasBackground");
   });
 });
