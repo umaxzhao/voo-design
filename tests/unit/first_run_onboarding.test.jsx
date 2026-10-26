@@ -83,7 +83,9 @@ describe("commercial first run", () => {
     expect(html).toContain(locale === "en" ? "Set up later" : "稍后设置");
     expect(html).toContain(locale === "en" ? "Project directory" : "项目目录");
     expect(html).toContain('data-testid="first-run-workspace-choose"');
-    expect(html).toContain('data-testid="first-run-workspace-browser"');
+    expect(html).not.toContain('data-testid="first-run-workspace-browser"');
+    expect(html).toContain("lucide-folder-open");
+    expect(html).toContain(locale === "en" ? "Browser storage" : "浏览器存储");
     expect(html).not.toContain("firstRun.");
   });
   it("keeps the first-run dialog inset and content-sized below large screens", () => {

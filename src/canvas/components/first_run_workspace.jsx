@@ -2,8 +2,8 @@ import { useEffect, useReducer } from "react";
 import { useI18n } from "../use_i18n.js";
 import { getSetting } from "../../shared/settings.js";
 import { workspaceStorage, ElectronWorkspaceDriver, WebFsaWorkspaceDriver } from "../../services/workspace_storage.js";
+import { IconFolderOpen } from "../icons.jsx";
 
-const BROWSER_WORKSPACE = "Virtual Workspace";
 const initialState = () => ({
   path: getSetting("voo.workspace.path") || "",
   type: workspaceStorage.getDriverType(),
@@ -11,7 +11,6 @@ const initialState = () => ({
   error: "",
 });
 const updateState = (state, patch) => ({ ...state, ...patch });
-const buttonClass = "min-h-12 rounded-lg bg-white/[0.06] px-3 py-2 text-[11px] text-neutral-200 transition-colors hover:bg-white/[0.12] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 disabled:opacity-40";
 
 /** Configure the same workspace used by project creation and file storage. */
 export default function FirstRunWorkspace() {
@@ -58,32 +57,25 @@ export default function FirstRunWorkspace() {
       <label htmlFor="first-run-workspace-path" className="text-xs font-medium text-neutral-200">
         {t("firstRun.workspace.label")}
       </label>
-      <input id="first-run-workspace-path" data-testid="first-run-workspace-path"
-        type="text" value={state.path} readOnly={!isDesktop} disabled={state.busy}
-        aria-describedby="first-run-workspace-description"
-        placeholder={t("firstRun.workspace.placeholder")}
-        onChange={event => update({ path: event.target.value, error: "" })}
-        className="min-h-12 w-full min-w-0 rounded-lg bg-white/[0.06] px-3 py-2 font-mono text-[11px] text-neutral-200 outline-none focus-visible:ring-1 focus-visible:ring-white/40" />
+      <div className="flex min-h-12 items-center rounded-lg bg-white/[0.06] focus-within:ring-1 focus-within:ring-white/40">
+        <input id="first-run-workspace-path" data-testid="first-run-workspace-path"
+          type="text" value={state.type === "web-idb" ? t("firstRun.workspace.browserDefault") : state.path}
+          readOnly={!isDesktop} disabled={state.busy}
+          aria-describedby="first-run-workspace-description"
+          placeholder={t("firstRun.workspace.placeholder")}
+          onChange={event => update({ path: event.target.value, error: "" })}
+          className="min-h-12 min-w-0 flex-1 bg-transparent px-3 py-2 font-mono text-[11px] text-neutral-200 outline-none" />
+        <button type="button" data-testid="first-run-workspace-choose"
+          aria-label={t("firstRun.workspace.choose")} title={t("firstRun.workspace.choose")}
+          disabled={state.busy || !canChooseDirectory}
+          onClick={() => void configure(() => workspaceStorage.chooseDirectory())}
+          className="flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 disabled:opacity-40">
+          <IconFolderOpen size={16} />
+        </button>
+      </div>
       <p id="first-run-workspace-description" className="text-[11px] leading-relaxed text-neutral-400">
         {t(isDesktop ? "firstRun.workspace.desktopHint" : "firstRun.workspace.browserHint")}
       </p>
-      <div className="flex flex-wrap gap-2">
-        <button type="button" data-testid="first-run-workspace-choose" disabled={state.busy || !canChooseDirectory}
-          onClick={() => void configure(() => workspaceStorage.chooseDirectory())} className={buttonClass}>
-          {t(state.busy ? "firstRun.workspace.working" : "firstRun.workspace.choose")}
-        </button>
-        {isDesktop ? (
-          <button type="submit" disabled={state.busy || !state.path.trim()} className={buttonClass}>
-            {t("firstRun.workspace.apply")}
-          </button>
-        ) : (
-          <button type="button" data-testid="first-run-workspace-browser" disabled={state.busy}
-            aria-pressed={state.type === "web-idb"}
-            onClick={() => void configure(() => workspaceStorage.setDirectory(BROWSER_WORKSPACE))} className={buttonClass}>
-            {t("firstRun.workspace.browser")}
-          </button>
-        )}
-      </div>
       {state.error && <p role="alert" className="text-[11px] text-rose-400">{state.error}</p>}
     </form>
   );
