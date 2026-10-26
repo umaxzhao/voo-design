@@ -308,6 +308,21 @@ export default function EditorProperties({
     );
   }
 
+  const topTabs = [
+    ...(canPrototype
+      ? [
+          { key: "design", label: t("editor.panel.design"), view: "properties" },
+          { key: "prototype", label: t("editor.props.prototype"), view: "prototype" },
+        ]
+      : canInspect
+        ? [{ key: "design", label: t("editor.panel.design"), view: "properties" }]
+        : []),
+    ...(canInspect
+      ? [{ key: "code", label: t("editor.inspect.code"), view: "code" }]
+      : []),
+  ];
+  const activeTopTab = Math.max(0, topTabs.findIndex((tab) => tab.view === panelView));
+
   return (
     <aside
       data-testid="editor-properties-panel"
@@ -321,49 +336,35 @@ export default function EditorProperties({
           role="tablist"
           aria-label={t("editor.props.panelTabs")}
           data-testid="editor-panel-tabs"
-          className="flex min-w-0 flex-1 items-stretch bg-white/[0.04]"
+          className="relative flex min-w-0 flex-1 items-center rounded-2xl bg-white/[0.04] p-1"
         >
-          {(canPrototype
-            ? [
-                ["design", t("editor.panel.design"), "properties"],
-                ["prototype", t("editor.props.prototype"), "prototype"],
-              ]
-            : canInspect
-              ? [["design", t("editor.panel.design"), "properties"]]
-              : []
-          ).map(([key, label, view]) => (
+          {topTabs.length ? (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute bottom-1 left-1 top-1 rounded-xl bg-white/[0.12] transition-transform duration-200 ease-out"
+              style={{
+                width: `calc((100% - 8px) / ${topTabs.length})`,
+                transform: `translateX(${activeTopTab * 100}%)`,
+              }}
+            />
+          ) : null}
+          {topTabs.map((tab) => (
             <button
-              key={key}
+              key={tab.key}
               type="button"
               role="tab"
-              aria-selected={panelView === view}
-              data-testid={`editor-panel-tab-${key}`}
-              onClick={() => setPanelView(view)}
-              className={`flex h-9 flex-1 items-center justify-center text-[10px] font-mono transition-colors first:rounded-l-2xl ${canInspect ? "" : "last:rounded-r-2xl"} ${
-                panelView === view
-                  ? "bg-white/[0.12] text-white"
+              aria-selected={panelView === tab.view}
+              data-testid={`editor-panel-tab-${tab.key}`}
+              onClick={() => setPanelView(tab.view)}
+              className={`relative z-10 flex h-8 flex-1 items-center justify-center rounded-xl text-[10px] font-mono transition-colors ${
+                panelView === tab.view
+                  ? "text-white"
                   : "text-neutral-400 hover:text-neutral-200"
               }`}
             >
-              {label}
+              {tab.label}
             </button>
           ))}
-          {canInspect ? (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={inspectOpen}
-              data-testid="editor-panel-tab-code"
-              onClick={() => setPanelView(inspectOpen ? "properties" : "code")}
-              className={`flex h-9 flex-1 items-center justify-center rounded-r-2xl text-[10px] font-mono transition-colors ${
-                inspectOpen
-                  ? "bg-white/[0.12] text-white"
-                  : "text-neutral-400 hover:text-neutral-200"
-              }`}
-            >
-              {t("editor.inspect.code")}
-            </button>
-          ) : null}
         </div>
         {onToggleSide ? (
           <button
@@ -371,7 +372,7 @@ export default function EditorProperties({
             onClick={onToggleSide}
             title={t("editor.pages.toggleAxis")}
             aria-label={t("editor.pages.toggleAxis")}
-            className="flex h-9 w-10 shrink-0 items-center justify-center border-l border-white/10 text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
+            className="flex w-10 shrink-0 items-center justify-center border-l border-white/10 text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
           >
             <IconSwap size={13} />
           </button>
