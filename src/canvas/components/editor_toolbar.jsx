@@ -89,11 +89,16 @@ export default function EditorToolbar({
     >
       <div className="flex items-center gap-1 rounded-full bg-black/90 p-1.5 shadow-pop backdrop-blur-md font-mono max-w-full overflow-x-auto no-scrollbar">
         {/* 1. 选择工具（select）：统一入口 —— 光标选择 + 透视 / 扭曲 / 操控变形（下拉菜单） */}
-        <div
-          className="relative flex items-center rounded-lg border border-white/10"
-        >
+        <div className="relative flex items-center">
           <EditorSelectMenu tool={tool} onTool={onTool} />
         </div>
+
+        {/* 2. 抓手工具（H）：拖动画布，快速平移视图 */}
+        {renderTool({
+          id: TOOL.HAND,
+          icon: <IconHand size={16} />,
+          label: t("editor.tool.hand"),
+        })}
 
         {!motionVariant ? (
           <>
@@ -194,13 +199,6 @@ export default function EditorToolbar({
             </div>
           </>
         ) : null}
-        {/* 10. 抓手工具（H）：拖动画布，快速平移视图 */}
-        {renderTool({
-          id: TOOL.HAND,
-          icon: <IconHand size={16} />,
-          label: t("editor.tool.hand"),
-        })}
-
         {EDITOR_BETA_ENABLED && onAddObject3d ? (
           <EditorObject3dMenu onAdd={onAddObject3d} />
         ) : null}

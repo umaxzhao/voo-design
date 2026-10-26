@@ -25,6 +25,7 @@ const AI_PURPLE_CLASS = "text-[#E5B2FF]";
 /** i18n keys of the design-variant tool buttons, in their rendered order. */
 const DESIGN_TOOL_ORDER = [
   "editor.tool.select",
+  "editor.tool.hand",
   "editor.tool.frame",
   "editor.tool.crop",
   "editor.tool.marquee",
@@ -35,7 +36,6 @@ const DESIGN_TOOL_ORDER = [
   "editor.tool.pen",
   "editor.tool.fill",
   "editor.tool.aiRepair",
-  "editor.tool.hand",
 ];
 
 function renderToolbar(props = {}) {
@@ -66,18 +66,22 @@ function buttonMarkup(html, label) {
 }
 
 describe("top toolbar tool order", () => {
-  it("renders select, crop, marquee, brush, eraser, eyedropper, text, pen, fill, AI repair, then hand", () => {
+  it("renders select, hand, frame, crop, marquee, brush, eraser, eyedropper, text, pen, fill, AI repair", () => {
     const html = renderToolbar();
     expect(toolLabelsInOrder(html, DESIGN_TOOL_ORDER)).toEqual(DESIGN_TOOL_ORDER);
+    // The select entry itself has no forced outline; active state is paint-only.
+    const selectStart = html.indexOf('aria-label="editor.tool.select"');
+    const wrapper = html.slice(Math.max(0, selectStart - 220), selectStart);
+    expect(wrapper).not.toContain("border-white/10");
   });
 
   it("keeps Text and Pen right after Select in the motion variant", () => {
     const html = renderToolbar({ variant: "motion" });
     expect(toolLabelsInOrder(html, DESIGN_TOOL_ORDER)).toEqual([
       "editor.tool.select",
+      "editor.tool.hand",
       "editor.tool.text",
       "editor.tool.pen",
-      "editor.tool.hand",
     ]);
   });
 });
