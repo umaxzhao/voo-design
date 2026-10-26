@@ -3,6 +3,7 @@
 import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
 import ScrubValueInput from "./scrub_value_input.jsx";
+import FlatSelect from "../flat_select.jsx";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
 import { NODE_KIND } from "../../editor/scene_model.js";
 import { opacityPatch } from "../../color_picker/opacity_patch.js";
@@ -186,7 +187,8 @@ export function FillSection({
         : paints.map((paint, index) => <FillSection key={index}
         object={{ ...object, fills: undefined, fill: paint.fill, fillOpacity: paint.opacity,
           fillHidden: paint.visible === false, fillBlendMode: paint.blendMode,
-          imageId: paint.imageId ?? object.imageId }}
+          imageId: paint.imageId ?? object.imageId,
+          imageScaleMode: paint.imageScaleMode ?? object.imageScaleMode }}
         paintRow onRemove={() => {
           const next = paints.filter((_, at) => at !== index);
           editAndCommit({ fills: next, fill: next[0]?.fill ?? "transparent", fillOpacity: next[0]?.opacity ?? 1 });
@@ -316,6 +318,26 @@ export function FillSection({
               <IconMinus size={12} />
             </button>
           </div>
+          {isImageNode || object.imageId ? (
+            <div className="flex min-h-7 items-center gap-2 pt-1">
+              <span className="shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-400">
+                {t("editor.props.imageScaleMode")}
+              </span>
+              <FlatSelect
+                value={object.imageScaleMode ?? "fill"}
+                onChange={(imageScaleMode) => editAndCommit({ imageScaleMode })}
+                label={t("editor.props.imageScaleMode")}
+                options={[
+                  ["fill", t("editor.props.imageScaleFill")],
+                  ["fit", t("editor.props.imageScaleFit")],
+                  ["tile", t("editor.props.imageScaleTile")],
+                ].map(([value, label]) => ({ value, label }))}
+                className="min-w-0 flex-1"
+                triggerClassName="!h-6 !w-full !rounded-lg !bg-neutral-800 !px-2 !text-[10px] !font-mono !text-neutral-100"
+                widthClass="w-full"
+              />
+            </div>
+          ) : null}
         </div>
       )}
     </div>
@@ -343,5 +365,6 @@ function paintPatch(patch) {
   if ("fillOpacity" in patch) result.opacity = patch.fillOpacity;
   if ("fillHidden" in patch) result.visible = !patch.fillHidden;
   if ("fillBlendMode" in patch) result.blendMode = patch.fillBlendMode;
+  if ("imageScaleMode" in patch) result.imageScaleMode = patch.imageScaleMode;
   return result;
 }

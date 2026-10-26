@@ -63,10 +63,25 @@ export function drawNode(
       if (node.kind === NODE_KIND.IMAGE) {
         node = { ...node, src: imageFill ? node.fill : node.src };
       } else {
-        const pattern = targetCtx.createPattern(bitmap, "no-repeat");
+        const mode = node.imageScaleMode ?? "fill";
+        const pattern = targetCtx.createPattern(
+          bitmap,
+          mode === "tile" ? "repeat" : "no-repeat",
+        );
         if (!pattern) return;
-        const scale = Math.max(node.width / (bitmap.naturalWidth ?? bitmap.width), node.height / (bitmap.naturalHeight ?? bitmap.height));
-        pattern.setTransform(new DOMMatrix().translate(node.x, node.y).scale(scale));
+        const bitmapWidth = bitmap.naturalWidth ?? bitmap.width;
+        const bitmapHeight = bitmap.naturalHeight ?? bitmap.height;
+        let scale = 1;
+        let offsetX = node.x;
+        let offsetY = node.y;
+        if (mode === "fit") {
+          scale = Math.min(node.width / bitmapWidth, node.height / bitmapHeight);
+          offsetX += (node.width - bitmapWidth * scale) / 2;
+          offsetY += (node.height - bitmapHeight * scale) / 2;
+        } else if (mode !== "tile") {
+          scale = Math.max(node.width / bitmapWidth, node.height / bitmapHeight);
+        }
+        pattern.setTransform(new DOMMatrix().translate(offsetX, offsetY).scale(scale));
         node = { ...node, fill: pattern, opacity: (node.opacity ?? 1) * (node.fillOpacity ?? 1), fillOpacity: 1 };
       }
     }
@@ -122,7 +137,8 @@ export function drawNode(
       targetCtx.save();
       targetCtx.globalCompositeOperation = paint.blendMode ?? "source-over";
       const painted = { ...node, fill: paint.fill, fillOpacity: paint.opacity ?? 1,
-        fillHidden: false, strokeHidden: true, imageId: paint.imageId ?? node.imageId };
+        fillHidden: false, strokeHidden: true, imageId: paint.imageId ?? node.imageId,
+        imageScaleMode: paint.imageScaleMode ?? node.imageScaleMode };
 
       paintOne(targetCtx, painted);
       targetCtx.restore();
