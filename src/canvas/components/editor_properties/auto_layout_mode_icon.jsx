@@ -16,7 +16,7 @@ const LAYOUT_GLYPHS = {
   },
 };
 
-export default function AutoLayoutModeIcon({ mode, size = 12 }) {
+export default function AutoLayoutModeIcon({ mode, size = 16 }) {
   const glyph = LAYOUT_GLYPHS[mode];
   return (
     <svg
