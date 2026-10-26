@@ -8,6 +8,8 @@ const PROVIDER_MARKS = Object.freeze({
   "claude-cli": "claude",
   cli: "openai",
   "antigravity-cli": "antigravity",
+  "deepseek-harness": "deepseek",
+  "deepseek-cli": "deepseek",
   [PROVIDER_ID.DASHSCOPE]: "alibabacloud",
   [PROVIDER_ID.ZHIPU]: "zhipu",
   [PROVIDER_ID.DEEPSEEK]: "deepseek",
