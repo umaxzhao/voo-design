@@ -70,6 +70,21 @@ export const CLI_AGENTS = [
     supported: true,
     experimental: false,
   },
+  {
+    id: "deepseek-harness",
+    providerId: "deepseek",
+    displayName: "DeepSeek Harness",
+    name: "DeepSeek Harness",
+    labelKey: "agent.connection.deepseekHarness",
+    defaultModel: "deepseek-v4-flash",
+    models: [],
+    // Detected by macOS app bundle; no standalone CLI binary is documented.
+    detectedBy: "app-bundle",
+    detectionType: "app-bundle",
+    appBundle: true,
+    installCmd: "",
+    supported: true,
+  },
 ];
 
 const discoveredCliModels = new Map();

@@ -19,6 +19,11 @@ describe("onboarding agent model", () => {
     expect(getSetting(AGENT_SETTING.MODEL)).toBe("antigravity:gemini-3.8-flash-high");
   });
 
+  it("selects the DeepSeek Harness model for deepseek-harness", () => {
+    applyAgentModel("deepseek-harness");
+    expect(getSetting(AGENT_SETTING.MODEL)).toBe("deepseek-harness:deepseek-v4-flash");
+  });
+
   it("falls back to Claude for an unknown agent id", () => {
     applyAgentModel("unknown");
     expect(getSetting(AGENT_SETTING.MODEL)).toBe(AGENT_DEFAULT_MODELS.claude);

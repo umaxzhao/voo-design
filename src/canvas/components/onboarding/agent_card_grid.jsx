@@ -7,7 +7,7 @@ import { AGENT_STATUS, AGENT_STATUS_KEY, cliAgentStatus, customAgentStatus } fro
 
 const FOCUS_CLASS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40";
 /** Cards keep the dialog's established order; platforms not listed follow the catalog. */
-const CARD_ORDER = ["codex", "claude", "antigravity"];
+const CARD_ORDER = ["codex", "claude", "antigravity", "deepseek-harness"];
 
 /**
  * The CLI platforms a first-run card can pick: visible in the catalog and
@@ -69,7 +69,7 @@ AgentCard.propTypes = {
 };
 
 /**
- * Three cards per row: icon, platform name, connection status.
+ * Two groups of cards: agents first (row 1), API providers second (row 2).
  *
  * Hosts adapt it through props, not forks: `agentIds` picks and orders the CLI
  * platforms, `showCustom` toggles the custom-model card, `testIds` renames hooks.
@@ -81,41 +81,63 @@ export default function AgentCardGrid({
 }) {
   const customStatus = customAgentStatus(customConfigured);
   const agents = selectableCliAgents(undefined, agentIds).filter((agent) => !agentIds || agentIds.includes(agent.id));
+  const hasApiProviders = cloudProviders.length > 0 || showCustom;
+  const apiLabel = t("firstRun.provider.apiLabel");
   return (
-    <div role="group" aria-label={label} data-testid={testIds.grid ?? DEFAULT_TEST_IDS.grid} className="grid grid-cols-3 gap-2">
-      {agents.map((agent) => {
-        const status = cliAgentStatus(agent, detection);
-        return (
-          <AgentCard
-            key={agent.id}
-            id={agent.id}
-            icon={<ProviderLogo providerId={agent.providerId} size={28} />}
-            name={t(`firstRun.provider.${agent.id}`)}
-            status={status}
-            statusText={t(AGENT_STATUS_KEY[status])}
-            selected={selected === agent.id}
-            onSelect={() => onSelect(agent.id)}
-            testIds={testIds}
-          />
-        );
-      })}
-      {cloudProviders.map((provider) => {
-        const status = customAgentStatus(provider.configured);
-        return <AgentCard key={provider.id} id={provider.id}
-          icon={<ProviderLogo providerId={provider.id} size={28} />}
-          name={t(provider.labelKey)} status={status} statusText={t(AGENT_STATUS_KEY[status])}
-          selected={selected === provider.id} onSelect={() => onSelect(provider.id)} testIds={testIds} />;
-      })}
-      {showCustom && <AgentCard
-        id="custom"
-        icon={<IconApi size={26} strokeWidth={ICON_STROKE_WIDTH} />}
-        name={t("firstRun.provider.custom")}
-        status={customStatus}
-        statusText={t(AGENT_STATUS_KEY[customStatus])}
-        selected={selected === "custom"}
-        onSelect={() => onSelect("custom")}
-        testIds={testIds}
-      />}
+    <div data-testid={testIds.grid ?? DEFAULT_TEST_IDS.grid} className="flex flex-col gap-3">
+      <div role="group" aria-label={label} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {agents.map((agent) => {
+          const status = cliAgentStatus(agent, detection);
+          return (
+            <AgentCard
+              key={agent.id}
+              id={agent.id}
+              icon={<ProviderLogo providerId={agent.providerId} size={28} />}
+              name={t(`firstRun.provider.${agent.id}`)}
+              status={status}
+              statusText={t(AGENT_STATUS_KEY[status])}
+              selected={selected === agent.id}
+              onSelect={() => onSelect(agent.id)}
+              testIds={testIds}
+            />
+          );
+        })}
+      </div>
+      {hasApiProviders && (
+        <div role="group" aria-label={apiLabel} className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-neutral-400">{apiLabel}</span>
+          <div className="grid grid-cols-3 gap-2">
+            {cloudProviders.map((provider) => {
+              const status = customAgentStatus(provider.configured);
+              return (
+                <AgentCard
+                  key={provider.id}
+                  id={provider.id}
+                  icon={<ProviderLogo providerId={provider.id} size={28} />}
+                  name={t(provider.labelKey)}
+                  status={status}
+                  statusText={t(AGENT_STATUS_KEY[status])}
+                  selected={selected === provider.id}
+                  onSelect={() => onSelect(provider.id)}
+                  testIds={testIds}
+                />
+              );
+            })}
+            {showCustom && (
+              <AgentCard
+                id="custom"
+                icon={<IconApi size={26} strokeWidth={ICON_STROKE_WIDTH} />}
+                name={t("firstRun.provider.custom")}
+                status={customStatus}
+                statusText={t(AGENT_STATUS_KEY[customStatus])}
+                selected={selected === "custom"}
+                onSelect={() => onSelect("custom")}
+                testIds={testIds}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

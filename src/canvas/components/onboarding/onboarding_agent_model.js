@@ -9,6 +9,7 @@ export const AGENT_DEFAULT_MODELS = Object.freeze({
   claude: "claude:claude-opus-5-5",
   codex: "codex:gpt-6-astra",
   antigravity: "antigravity:gemini-3.8-flash-high",
+  "deepseek-harness": "deepseek-harness:deepseek-v4-flash",
 });
 
 /** Writes the default model for the chosen agent into the agent settings. */

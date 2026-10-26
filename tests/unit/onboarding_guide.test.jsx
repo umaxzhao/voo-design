@@ -43,14 +43,15 @@ describe("Onboarding Guide & Local CLI Setup", () => {
     expect(html).toContain('aria-valuenow="1"');
   });
 
-  it("renders StepAgentSelect as the shared 3-column card grid with Claude Code selected", async () => {
+  it("renders StepAgentSelect as the shared card grid with Claude Code selected", async () => {
     await loadLocale("en");
     const html = renderToStaticMarkup(
       <StepAgentSelect selectedAgent="claude" onSelectAgent={() => {}} />
     );
 
     expect(html).toContain('data-testid="onboarding-agent-grid"');
-    expect(html).toContain("grid-cols-3");
+    expect(html).toContain("grid-cols-2");
+    expect(html).toContain("sm:grid-cols-4");
     for (const id of ["claude", "codex", "antigravity"]) {
       expect(html).toContain(`data-testid="onboarding-agent-option-${id}"`);
       expect(html).toContain(`data-testid="onboarding-agent-status-${id}"`);
