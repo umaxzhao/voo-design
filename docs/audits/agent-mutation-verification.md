@@ -29,6 +29,10 @@ The ten existing scenarios in `editor-effects.e2e.mjs` also pass. Its actual Can
 
 Full shared-workspace test run: **3674 passed, 12 skipped**, zero failed (426 passing files, 3 skipped). Production build, design lint, new/modified helper formatting and diff checks passed. A rebuilt portable connector includes the new catalog and passed `claude plugin validate`. The connector runtime/configuration review found no credential bundling; the documented external Harness model-execution limitation remains in place.
 
+## Clean committed release verification
+
+A separate `git archive` snapshot of commit `b985ebe`, with no working-tree source files, also passed the production build, **3660 tests with 12 skips** (423 passing files, 3 skipped), and both browser suites (7 new scenarios plus 10 existing scenarios). The larger 3674 count above includes additional tests in concurrent uncommitted work; the clean release count is the relevant publication gate.
+
 ## Documentation decisions
 
 [Architecture](../architecture.md) now documents all factory node kinds, nested frame representation, external stdio/loopback MCP, managed CLI-turn MCP and portable plugins. The `voo` vs `voo-design` client name is explicitly a registration alias, not a protocol mismatch. All 64 editor tools are covered in the agent tool table; MCP intentionally filters some in-app-only tools and adds `voo_status`.
@@ -38,3 +42,7 @@ Full shared-workspace test run: **3674 passed, 12 skipped**, zero failed (426 pa
 ## Explicit coverage boundary
 
 This follow-up does not certify the entire editor. Linear gradient, drop shadow, layer blur, typography routing/readback, pressure control and the tested responsive/menu flows have the evidence listed above. Stroke dash and the rest of the effect schema have validation/routing tests, not exhaustive final-pixel certification. Full Auto Layout combinations, masks, Live Filters/adjustments, Boolean, alignment/distribution, Warp/Pin/Variants/arrays, every drawing/retouch tool, export settings and all history labels still require their own real-canvas scenarios. Neither a successful tool call nor a stored property is proof that all of those features render correctly.
+
+## Publication
+
+The clean verified release `b985ebe` was deployed directly through SSH alias `la2` to https://voo.run/editor/. The previous release is retained at `/srv/voo-run/editor-backups/b985ebe-20261026T183946Z`. Uncommitted source files from concurrent tasks were excluded from the release.
