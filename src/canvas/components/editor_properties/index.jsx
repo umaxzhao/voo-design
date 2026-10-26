@@ -313,6 +313,35 @@ export default function EditorProperties({
     >
       {header}
       <div className={contentClass}>
+        {canPrototype && !inspectOpen ? (
+          <div
+            role="tablist"
+            aria-label={t("editor.props.panelTabs")}
+            data-testid="editor-panel-tabs"
+            className="mb-2 flex shrink-0 items-center gap-1 rounded-xl bg-white/[0.04] p-1"
+          >
+            {[
+              ["design", t("editor.panel.design"), "properties"],
+              ["prototype", t("editor.props.prototype"), "prototype"],
+            ].map(([key, label, view]) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={panelView === view}
+                data-testid={`editor-panel-tab-${key}`}
+                onClick={() => setPanelView(view)}
+                className={`flex h-6 flex-1 items-center justify-center rounded-lg text-[10px] font-mono transition-colors ${
+                  panelView === view
+                    ? "bg-white/[0.12] text-white"
+                    : "text-neutral-400 hover:text-neutral-200"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
         {canInspect && inspectOpen ? (
           <InspectPanel
             object={object}

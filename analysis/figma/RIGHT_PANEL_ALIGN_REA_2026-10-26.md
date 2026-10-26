@@ -27,7 +27,7 @@
     不是本轮伪造的 AX。
 - **VOO 当前面板证据**：
   `analysis/figma/assets/voo-right-panel-2026-10-26.png`
-  （当前 build，选中 Frame；sha256 `24013ea6…`）。
+  （当前 build，选中 Frame；sha256 `bf4ad628…`）。
 
 ## 2. Figma 126.9.16 面板实际结构（截图事实）
 
@@ -75,10 +75,10 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 
 | Figma | VOO | 结论 |
 |---|---|---|
-| Design / Prototype tabs | ❌ 无 tab；Prototype 是底部 section | P1：加双 tab，或至少把 Design/Prototype 分段放顶部 |
+| Design / Prototype tabs | ✅ 本轮新增顶部双 tab（Design/Prototype）；Prototype 视图保留 header 图标快捷入口 | 已对齐 |
 | 未用 Fill/Stroke/Effects 仅标题 + `+` | ✅ 本轮已改为标题 +（空状态行已隐藏） | 已对齐 |
 | 面板内 section 常开/折叠策略 | ✅ 核心 section 常开，无折叠箭头 | 已对齐 |
-| 选中单个 Frame 显示 alignment 行 | ❌ 当前 VOO 单 Frame 不显示 ALIGN（多选才出现） | P1：Frame 单选也要显示对齐行 |
+| 选中单个 Frame 显示 alignment 行 | ✅ 本轮修复；单对象对齐到父 Frame（无父级时到页面） | 已对齐 |
 
 ### 4.2 Position / Transform
 
@@ -86,7 +86,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 |---|---|---|
 | 6 align + distribute/tidy | 🟡 有全套操作，但单 Frame 不显示；图标已按新 20px 套件 | 补单 Frame 可见性 |
 | X/Y | ✅ | — |
-| W/H + sizing 下拉（Fixed/Hug/Fill） | 🟡 W/H 在 Transform；sizing 只在 auto-layout frame/子项出现 | P1：W/H 移到 Layout，普通 Frame 也显示 Fixed 语义 |
+| W/H + sizing 下拉（Fixed/Hug/Fill） | 🟡 W/H 本轮已移到 Layout；sizing 下拉仍只在 auto-layout 字段里 | 余：普通 Frame 的 Fixed 语义下拉 |
 | Rotation / Flip | ✅ | — |
 | Corner radius + independent corners | ✅ | — |
 | Corner smoothing | ❌ | P2/长尾 |
@@ -98,7 +98,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 | Figma | VOO | 结论 |
 |---|---|---|
 | 4 模式 strip（none/vertical/horizontal/grid） | ✅ 本轮已有 | 已对齐 |
-| W/H 在 Layout | 🟡 当前在 Transform | P1：迁移 |
+| W/H 在 Layout | ✅ 本轮已迁移；Transform 不再重复 | 已对齐 |
 | Clip content 复选框 | ✅ | 已对齐 |
 | Auto layout direction/wrap/gap/padding/align | ✅ | — |
 | Min/max 尺寸约束 | ✅ 面板有 Min W/Max W/Min H/Max H | 已对齐 |
@@ -159,7 +159,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 | Inspect（Dev Mode） | 🟡 VOO 有 inspect 面板；无 Figma 的测量/组件/导出全量 | P2 |
 | Page background / On this page colors / presets | 🟡 Background 有；页面颜色/设备 presets 缺 | P2 |
 
-## 5. 本轮已对齐（相对旧 parity 文档）
+## 5. 本轮已对齐（相对旧 parity 文档 / 新增修复）
 
 - Layout：Figma 式 4 模式 strip、Clip content 复选框、auto layout/grid 字段内嵌；
 - 面板骨架：未用 Fill/Stroke/Effects/Prototype 不再显示空状态行，只保留标题 +；
@@ -167,14 +167,15 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 - 对齐图标：换成新 20px 套件（bar + blocks / grid）；
 - Effects：layer blur、background blur、noise 入口；Glass 近似效果；
 - W/H 对部分场景加 sizing 下拉；独立圆角、anchor grid 放大；
-- Background/Frame 默认 Fill、导出 icon、协作提示位置等已修。
+- Background/Frame 默认 Fill、导出 icon、协作提示位置等已修；
+- **本轮新增修复**：Design/Prototype 双 tab；W/H 从 Transform 迁到 Layout 且不再重复；
+  单选 Frame 显示 ALIGN 并支持对齐到父 Frame/页面。
 
 ## 6. 优先级建议（给下一轮实现）
 
 | 优先级 | 缺口 | 动作 | 量 |
 |---|---|---|---|
-| P1 | Layout 的 W/H 与 sizing | 把 W/H 从 Transform 移到 Layout；普通 Frame 也显示 Fixed 下拉，auto layout 显示 Hug/Fill | S/M |
-| P1 | 单 Frame 的 alignment | 让 ALIGN 行在单选 Frame 也显示；补齐 distribute/tidy 的可用性状态 | S |
+| P1 | 普通 Frame 的 W/H sizing 下拉 | 已有 W/H 在 Layout；补 Fixed 下拉（auto layout 已有 Hug/Fill） | S |
 | P1 | 多 stroke / per-side | stroke 数组 + 每边 border；面板多行列表 | M |
 | P1 | Design/Prototype 双 tab | 顶部 tab 切换，Prototype 从底部 section 迁出 | M |
 | P2 | Component properties + go-to-main + granular reset | 组件作者面 | M/L |
