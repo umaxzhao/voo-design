@@ -36,4 +36,4 @@ The historical audit worktrees were inspected, without merging entire stale bran
 
 Still not certified by this follow-up: free transforms of nested frames/groups, all Auto Layout combinations, gradient/image fills, stroke variants, shadows/blur, masks, Live Filters/adjustments, Boolean, variables, alignment/distribution, Warp/Pin/Variants/arrays, all drawing/retouch tools, export settings and every history label. In particular, a stored style value is not proof of its final pixels. Those remain unverified rather than being labeled healthy.
 
-The local Vite preview reflects the changes. Online deployment remains externally blocked by the absent repository `LA_SSH_KEY` secret and closed SSH connection documented in `editor-completion-verification.md`.
+Deployment follow-up: the corrected production target is SSH alias `la2`, not `la`. Release `bb0899b`, which includes these repairs, was built from a clean committed snapshot and deployed directly to https://voo.run/editor/. See `deploy-la.md`; the previously reported CI-secret blocker does not prevent direct SSH deployment.

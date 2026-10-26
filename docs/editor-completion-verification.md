@@ -42,4 +42,4 @@ The portable connector is built from a whitelist, bundles its declared WebSocket
 
 Changes are committed in focused batches; concurrent text/agent UI edits in the shared working tree are left with their owners. The local development preview updates through Vite.
 
-The configured online deployment cannot complete: the GitHub repository has no `LA_SSH_KEY` secret, and a direct batch SSH check to the configured host was closed by the remote server. CI build success is not an online deployment. No credential was read, copied into artifacts or invented to bypass this blocker.
+Deployment follow-up: the earlier blocker applied to the obsolete `la` target. The user identified the production host as `la2`; release `bb0899b` was subsequently built from a clean committed snapshot and deployed directly over SSH to `/srv/voo-run/current/web/public/editor/`, served at https://voo.run/editor/. The previous release is retained under `/srv/voo-run/editor-backups/bb0899b-20261026T175148Z`. Local SSH deployment does not require GitHub Actions secrets. See `deploy-la.md` for the corrected procedure.
