@@ -24,6 +24,42 @@
     padding: 0 0.75rem;
   }
 
+  .relative.flex[data-agent-open="true"] {
+    --editor-mobile-panel-gap: 0.375rem;
+  }
+
+  .relative.flex[data-agent-open="true"] > aside {
+    position: absolute;
+    z-index: 70;
+    right: var(--editor-mobile-panel-gap);
+    bottom: 0;
+    left: var(--editor-mobile-panel-gap);
+    width: auto;
+    height: calc(45% - var(--editor-mobile-panel-gap));
+    min-height: 0;
+    padding: 0 0 env(safe-area-inset-bottom);
+  }
+
+  .relative.flex[data-agent-open="true"] > aside > section {
+    height: 100%;
+    min-height: 0;
+    border: 1px solid rgb(255 255 255 / 10%);
+    border-radius: 1rem 1rem 0 0;
+  }
+
+  .relative.flex[data-agent-open="true"] > [data-testid="page-switcher"],
+  .relative.flex[data-agent-open="true"] > .voo-ai-fab {
+    display: none;
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-agent-open="true"] [data-testid="editor-layers-panel"],
+  [data-testid="design-editor"].editor-narrow[data-agent-open="true"] [data-testid="editor-properties-panel"],
+  [data-testid="design-editor"].editor-narrow[data-agent-open="true"] [data-testid="editor-history-panel"],
+  [data-testid="design-editor"].editor-narrow[data-agent-open="true"] .editor-mobile-panel-toggle,
+  [data-testid="design-editor"].editor-narrow[data-agent-open="true"] .editor-mobile-panel-expand {
+    display: none;
+  }
+
   [data-testid="design-editor"].editor-narrow {
     --editor-mobile-panel-gap: 0.375rem;
     right: 0;

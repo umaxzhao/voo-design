@@ -3334,6 +3334,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     <div
       ref={editorRootRef}
       data-testid="design-editor"
+      data-agent-open={agentVisible ? "true" : "false"}
       data-properties-open={propertiesOpen ? "true" : "false"}
       data-mobile-layers-expanded={mobileLayersExpanded ? "true" : "false"}
       data-mobile-properties-expanded={mobilePropertiesExpanded ? "true" : "false"}

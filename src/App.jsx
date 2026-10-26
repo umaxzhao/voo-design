@@ -104,12 +104,19 @@ export default function App() {
       <ImageSizeNotice />
       <AppTitleBar />
       <ReleaseUI />
-      <div className="relative flex min-h-0 flex-1">
+      <div
+        className="relative flex min-h-0 flex-1"
+        data-agent-open={agentOpen && !welcomeOpen ? "true" : "false"}
+      >
         {/* The rounded green frame wraps the workspace below the title bar. */}
         <div className="editor-shell relative min-h-0 min-w-0 flex-1">
           <div className="editor-shell-inner flex flex-col">
             <div className="relative min-h-0 flex-1 overflow-hidden">
-              <ImageEditor key={activeDocumentId} visible={true} agentVisible={false} />
+              <ImageEditor
+                key={activeDocumentId}
+                visible={true}
+                agentVisible={agentOpen && !welcomeOpen}
+              />
               {welcomeOpen && (
                 <div className="absolute inset-0 z-50 overflow-hidden rounded-3xl bg-[#0c0c0c]">
                   <Suspense fallback={null}>
