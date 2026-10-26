@@ -5,7 +5,7 @@ import { useI18n } from "../../use_i18n.js";
 import { StaticSection } from "./property_section.jsx";
 import ScrubField from "../scrub_field.jsx";
 import FlatSelect from "../flat_select.jsx";
-import { BLEND_MODES, DEFAULT_BLEND_MODE } from "../../editor/scene_model.js";
+import { BLEND_MODES, DEFAULT_BLEND_MODE, normalizeBlendMode } from "../../editor/scene_model.js";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
 import { IconMix } from "../../icons.jsx";
 
@@ -26,6 +26,10 @@ export default function AppearanceSection({
       : (object.opacity ?? 1);
   const mixed = opacity === MIXED;
   const value = mixed ? 1 : Math.round((opacity ?? 1) * 100);
+  // Imported documents may carry `normal` (Figma's name) instead of
+  // `source-over`; normalise before matching the option list so the trigger
+  // never renders a blank label.
+  const blendMode = normalizeBlendMode(object.blendMode ?? DEFAULT_BLEND_MODE);
 
   return (
     <StaticSection title={t("editor.props.appearance")} storageKey="appearance">
@@ -42,7 +46,7 @@ export default function AppearanceSection({
           disabled={mixed}
         />
         <FlatSelect
-          value={object.blendMode ?? DEFAULT_BLEND_MODE}
+          value={blendMode}
           onChange={(next) => editAndCommit({ blendMode: next })}
           label={t("editor.props.blendMode")}
           placeholderIcon={<IconMix size={11} className="text-neutral-500" />}
