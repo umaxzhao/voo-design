@@ -77,17 +77,30 @@ describe("agent card grid", () => {
     expect(html).toContain("brand-icons/volcengine.svg");
   });
   it("lays cards out with icon, name and status in two groups", () => {
-    const html = render(done({ codex: ready, claude: { installed: false }, antigravity: { installed: true, authenticated: false } }));
-    expect(html).toContain("grid-cols-2 sm:grid-cols-4");
-    expect(html).toContain("grid-cols-3");
-    const cards = html.match(/data-testid="first-run-agent-card-[a-z0-9-]+"/g);
-    expect(cards).toEqual([
+    const html = render(
+      done({ codex: ready, claude: { installed: false }, antigravity: { installed: true, authenticated: false } }),
+      { cloudProviders: CLOUD_PROVIDER_PRESETS },
+    );
+    const parts = html.split('<div role="group" aria-label="');
+    expect(parts).toHaveLength(3);
+    const agentGroup = parts[1];
+    const apiGroup = parts[2];
+    expect(agentGroup).toContain("grid grid-cols-2 gap-2 sm:grid-cols-4");
+    const agentCards = agentGroup.match(/data-testid="first-run-agent-card-[a-z0-9-]+"/g);
+    expect(agentCards).toEqual([
       'data-testid="first-run-agent-card-codex"',
       'data-testid="first-run-agent-card-claude"',
       'data-testid="first-run-agent-card-antigravity"',
       'data-testid="first-run-agent-card-deepseek-harness"',
+    ]);
+    const apiCards = apiGroup.match(/data-testid="first-run-agent-card-[a-z0-9-]+"/g);
+    expect(apiCards).toEqual([
+      'data-testid="first-run-agent-card-dashscope"',
+      'data-testid="first-run-agent-card-volcengine"',
       'data-testid="first-run-agent-card-custom"',
     ]);
+    expect(apiGroup).toContain("Alibaba Cloud");
+    expect(apiGroup).toContain("Volcengine");
     for (const card of html.split("<button").slice(1)) {
       expect(card).toMatch(/<img [^>]*src="[^"]*brand-icons\/|<svg /);
       expect(card).toMatch(/text-xs font-semibold[^>]*>[^<]+</);
@@ -130,9 +143,11 @@ describe("agent card grid", () => {
     const grid = AgentCardGrid({ t, label: "Agent", selected: "", detection: { phase: DETECTION_PHASE.UNAVAILABLE },
       cloudProviders: CLOUD_PROVIDER_PRESETS, customConfigured: false, onSelect });
     const extractCards = (node) => {
-      if (!node || typeof node !== "object") return [];
+      if (!node) return [];
+      if (Array.isArray(node)) return node.flatMap(extractCards);
+      if (typeof node !== "object") return [];
       if (node.props?.id && node.props?.onSelect) return [node];
-      return [node.props?.children].flat().flatMap(extractCards);
+      return [node.props?.children].flat(Infinity).flatMap(extractCards);
     };
     const cards = extractCards(grid);
     for (const id of ["codex", "volcengine", "custom", "deepseek-harness"]) {
@@ -154,7 +169,7 @@ describe("agent grid host adaptation", () => {
     expect(html).not.toContain("host-card-antigravity");
     expect(html).not.toContain("host-card-deepseek-harness");
     expect(html).not.toContain("host-card-custom");
-    expect(html).toContain("grid-cols-2 sm:grid-cols-4");
+    expect(html).toContain('<div role="group" aria-label="Agent" class="grid grid-cols-2 gap-2 sm:grid-cols-4">');
   });
   it("keeps the first-run defaults when no host props are given", () => {
     const html = render({ phase: DETECTION_PHASE.CHECKING });
