@@ -95,12 +95,21 @@ export function useMobileCanvasGestures(onUndo, onPinch) {
       const points = [...gesture.points.values()];
       const center = centerBetween(points[0], points[1]);
       const distance = Math.max(1, distanceBetween(points[0], points[1]));
+      const deltaX = center.x - gesture.pinch.centerX;
+      const deltaY = center.y - gesture.pinch.centerY;
+      const distanceChange = distance - gesture.pinch.distance;
+      if (Math.hypot(deltaX, deltaY, distanceChange) < 2) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (gesture.candidate) gesture.candidate.valid = false;
       onPinchRef.current?.({
         factor: distance / gesture.pinch.distance,
         centerX: center.x,
         centerY: center.y,
-        deltaX: center.x - gesture.pinch.centerX,
-        deltaY: center.y - gesture.pinch.centerY,
+        deltaX,
+        deltaY,
       });
       gesture.pinch = {
         distance,
