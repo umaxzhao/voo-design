@@ -269,10 +269,6 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {!isWarpTool ? (
-        <SelectionColorsSection selectedNodes={selectedNodes} engine={engine} />
-      ) : null}
-
       {!isWarpTool && object.kind !== "adjustment" && object.kind !== "region" && object.kind !== "audio" ? (
         <AppearanceSection
           object={object}
@@ -345,6 +341,10 @@ export default function PropertiesPanelSections({
           panelRef={panelRef}
           getBitmap={getBitmap}
         />
+      ) : null}
+
+      {!isWarpTool ? (
+        <SelectionColorsSection selectedNodes={selectedNodes} engine={engine} />
       ) : null}
 
       {eligible.export ? (

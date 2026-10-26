@@ -97,7 +97,7 @@ describe("phase-1 panel order", () => {
     }
   });
 
-  it("shows the selection colours summary before Fill on a multi-selection", () => {
+  it("shows the selection colours summary after Fill/Effects on a multi-selection", () => {
     const a = base({ id: "a", fill: "#ff0000" });
     const b = base({ id: "b", fill: "#ff0000" });
     const c = base({ id: "c", fill: "#00ff00" });
@@ -110,7 +110,7 @@ describe("phase-1 panel order", () => {
     expect(colours).toBeGreaterThan(-1);
     expect(html).toContain("#FF0000");
     expect(html).toContain("#00FF00");
-    expect(colours).toBeLessThan(html.indexOf("editor.props.fillLabel"));
+    expect(colours).toBeGreaterThan(html.indexOf("editor.props.fillLabel"));
   });
 
   it("shows inline binding chips for a bound variable and paint style", () => {
