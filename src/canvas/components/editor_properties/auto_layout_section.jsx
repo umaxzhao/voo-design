@@ -25,7 +25,7 @@ const DISTRIBUTIONS = [
 const FIELD_CLASS =
   "w-full min-w-0 rounded-lg bg-neutral-800 px-2 py-1.5 text-[11px] tabular-nums text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
 
-export function AutoLayoutFields({ object, editAndCommit, hideDirection = false }) {
+export function AutoLayoutFields({ object, editAndCommit, hideDirection = false, hideSizing = false }) {
   const { t } = useI18n();
   const layout = normalizeAutoLayout(object.autoLayout);
   const change = (patch) =>
@@ -208,7 +208,7 @@ export function AutoLayoutFields({ object, editAndCommit, hideDirection = false 
               DISTRIBUTIONS,
               (alignContent) => change({ alignContent }),
             )}
-          {["widthMode", "heightMode"].map((key) =>
+          {hideSizing ? null : ["widthMode", "heightMode"].map((key) =>
             selectRow(
               key,
               t(`editor.autoLayout.${key}`),

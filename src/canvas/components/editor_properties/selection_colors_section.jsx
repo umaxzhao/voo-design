@@ -35,7 +35,7 @@ export function selectionColours(nodes = []) {
 export default function SelectionColorsSection({ selectedNodes = [], engine }) {
   const { t } = useI18n();
   const colours = selectionColours(selectedNodes);
-  if (selectedNodes.length <= 1 || colours.length === 0) return null;
+  if (colours.length === 0) return null;
 
   return (
     <StaticSection title={t("editor.props.selectionColors")} storageKey="selectionColours">

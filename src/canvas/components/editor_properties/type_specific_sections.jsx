@@ -104,6 +104,28 @@ export default function TypeSpecificSections({ object, sections, showDimensions 
             />
           </div> : null}
 
+          {layout ? (
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                ["widthMode", t('editor.autoLayout.widthMode')],
+                ["heightMode", t('editor.autoLayout.heightMode')],
+              ].map(([key, label]) => (
+                <FlatSelect
+                  key={key}
+                  value={layout[key]}
+                  onChange={(mode) => editAndCommit({ autoLayout: { ...layout, [key]: mode } })}
+                  label={label}
+                  options={["fixed", "hug"].map((mode) => ({
+                    value: mode,
+                    label: t(`editor.sizing.${mode}`),
+                  }))}
+                  triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2 !text-[10px] !font-mono !uppercase !text-neutral-100 hover:!bg-neutral-800/80"
+                  widthClass="w-full"
+                />
+              ))}
+            </div>
+          ) : null}
+
           {has('clip') ? (
             <label className="flex h-7 items-center gap-2 text-[11px] font-mono text-neutral-300">
               <input
@@ -118,7 +140,7 @@ export default function TypeSpecificSections({ object, sections, showDimensions 
           ) : null}
 
           {layoutMode === 'vertical' || layoutMode === 'horizontal' ? (
-            <AutoLayoutFields object={object} editAndCommit={editAndCommit} hideDirection />
+            <AutoLayoutFields object={object} editAndCommit={editAndCommit} hideDirection hideSizing />
           ) : null}
 
           {layoutMode === 'grid' ? (() => {
