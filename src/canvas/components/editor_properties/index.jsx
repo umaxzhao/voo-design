@@ -339,7 +339,7 @@ export default function EditorProperties({
               aria-selected={panelView === view}
               data-testid={`editor-panel-tab-${key}`}
               onClick={() => setPanelView(view)}
-              className={`flex h-9 flex-1 items-center justify-center text-[10px] font-mono transition-colors ${
+              className={`flex h-9 flex-1 items-center justify-center text-[10px] font-mono transition-colors first:rounded-l-2xl ${canInspect ? "" : "last:rounded-r-2xl"} ${
                 panelView === view
                   ? "bg-white/[0.12] text-white"
                   : "text-neutral-400 hover:text-neutral-200"
@@ -355,7 +355,7 @@ export default function EditorProperties({
               aria-selected={inspectOpen}
               data-testid="editor-panel-tab-code"
               onClick={() => setPanelView(inspectOpen ? "properties" : "code")}
-              className={`flex h-9 flex-1 items-center justify-center text-[10px] font-mono transition-colors ${
+              className={`flex h-9 flex-1 items-center justify-center rounded-r-2xl text-[10px] font-mono transition-colors ${
                 inspectOpen
                   ? "bg-white/[0.12] text-white"
                   : "text-neutral-400 hover:text-neutral-200"
