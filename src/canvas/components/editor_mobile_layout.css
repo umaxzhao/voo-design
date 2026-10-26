@@ -55,7 +55,6 @@
   [data-testid="design-editor"].editor-narrow[data-agent-open="true"] [data-testid="editor-layers-panel"],
   [data-testid="design-editor"].editor-narrow[data-agent-open="true"] [data-testid="editor-properties-panel"],
   [data-testid="design-editor"].editor-narrow[data-agent-open="true"] [data-testid="editor-history-panel"],
-  [data-testid="design-editor"].editor-narrow[data-agent-open="true"] .editor-mobile-panel-toggle,
   [data-testid="design-editor"].editor-narrow[data-agent-open="true"] .editor-mobile-panel-expand {
     display: none;
   }
@@ -190,24 +189,6 @@
 
   .app-title-tabs > .canvas-tab-bar-mobile {
     display: block;
-  }
-
-  [data-testid="design-editor"].editor-narrow .editor-mobile-panel-toggle {
-    position: absolute;
-    z-index: 50;
-    top: auto;
-    bottom: calc(3.5rem + 3.25rem);
-    left: 50%;
-    display: flex;
-    width: 2.75rem;
-    height: 2.75rem;
-    transform: translateX(-50%);
-  }
-
-  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"] .editor-mobile-panel-toggle,
-  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="true"] .editor-mobile-panel-toggle {
-    top: calc(55% - 3rem);
-    bottom: auto;
   }
 
   [data-testid="page-switcher"].absolute {

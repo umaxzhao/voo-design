@@ -11,7 +11,6 @@ import {
   settleImagePublication,
 } from "../store/image-publication.js";
 import PropTypes from "prop-types";
-import { ChevronDown, ChevronUp } from "lucide-react";
 import {
   lazy,
   Suspense,
@@ -967,8 +966,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const { canUndo, canRedo } = presentationHistory;
   const [mobileLayersExpanded, setMobileLayersExpanded] = useState(false);
   const [mobilePropertiesExpanded, setMobilePropertiesExpanded] = useState(false);
-  const mobilePanelsExpanded =
-    mobileLayersExpanded || mobilePropertiesExpanded;
   const applyMobilePinch = useCallback(
     ({ isStart, factor, centerX, centerY, deltaX, deltaY }) => {
       if (isStart) {
@@ -1004,6 +1001,67 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     presentationHistory.undo,
     applyMobilePinch,
   );
+  const mobilePanelDragRef = useRef(null);
+  const suppressPanelClickRef = useRef(false);
+  const onMobilePanelPointerDownCapture = useCallback(
+    (event) => {
+      if (!isNarrow || event.pointerType !== "touch") return;
+      const panel = event.target.closest?.(
+        '[data-testid="editor-layers-panel"], [data-testid="editor-properties-panel"]',
+      );
+      if (!panel) return;
+      const panelId = panel.getAttribute("data-testid");
+      const isExpanded =
+        panelId === "editor-layers-panel"
+          ? mobileLayersExpanded
+          : mobilePropertiesExpanded;
+      if (!isExpanded) return;
+      const bounds = panel.getBoundingClientRect();
+      if (event.clientY > bounds.top + 56) return;
+      mobilePanelDragRef.current = {
+        pointerId: event.pointerId,
+        startY: event.clientY,
+        panelId,
+        dragged: false,
+      };
+    },
+    [isNarrow, mobileLayersExpanded, mobilePropertiesExpanded],
+  );
+  const onMobilePanelPointerMoveCapture = useCallback((event) => {
+    const drag = mobilePanelDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const deltaY = event.clientY - drag.startY;
+    if (deltaY < -10) {
+      mobilePanelDragRef.current = null;
+      return;
+    }
+    if (deltaY < 10) return;
+    event.preventDefault();
+    event.stopPropagation();
+    drag.dragged = true;
+    if (deltaY < 28) return;
+    if (drag.panelId === "editor-layers-panel") {
+      setMobileLayersExpanded(false);
+    } else {
+      setMobilePropertiesExpanded(false);
+    }
+  }, []);
+  const onMobilePanelPointerUpCapture = useCallback((event) => {
+    const drag = mobilePanelDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    suppressPanelClickRef.current = drag.dragged;
+    mobilePanelDragRef.current = null;
+  }, []);
+  const onMobilePanelPointerCancelCapture = useCallback(() => {
+    mobilePanelDragRef.current = null;
+    suppressPanelClickRef.current = false;
+  }, []);
+  const onMobilePanelClickCapture = useCallback((event) => {
+    if (!suppressPanelClickRef.current) return;
+    suppressPanelClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
   /** The selected (blue) Puppet Warp pin, read straight from the engine. */
   const puppetPinId = engine?.getSelectedPuppetPin?.() ?? null;
   const puppetRotation = puppetPinId
@@ -3378,10 +3436,23 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         dockAgent ? "right-[376px]" : "right-0"
       } ${visible ? "" : "invisible pointer-events-none"}`}
       {...dropHandlers}
-      onPointerDownCapture={mobileCanvasGestures.onPointerDownCapture}
-      onPointerMoveCapture={mobileCanvasGestures.onPointerMoveCapture}
-      onPointerUpCapture={mobileCanvasGestures.onPointerUpCapture}
-      onPointerCancelCapture={mobileCanvasGestures.onPointerCancelCapture}
+      onPointerDownCapture={(event) => {
+        mobileCanvasGestures.onPointerDownCapture(event);
+        onMobilePanelPointerDownCapture(event);
+      }}
+      onPointerMoveCapture={(event) => {
+        mobileCanvasGestures.onPointerMoveCapture(event);
+        onMobilePanelPointerMoveCapture(event);
+      }}
+      onPointerUpCapture={(event) => {
+        mobileCanvasGestures.onPointerUpCapture(event);
+        onMobilePanelPointerUpCapture(event);
+      }}
+      onPointerCancelCapture={(event) => {
+        mobileCanvasGestures.onPointerCancelCapture(event);
+        onMobilePanelPointerCancelCapture(event);
+      }}
+      onClickCapture={onMobilePanelClickCapture}
       onDropCapture={handleMediaDrop}
       onContextMenu={(event) => {
         event.preventDefault();
@@ -3395,33 +3466,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         setContextMenu({ x: event.clientX, y: event.clientY });
       }}
     >
-      <button
-        type="button"
-        data-testid="editor-mobile-panels-toggle"
-        aria-expanded={mobilePanelsExpanded}
-        aria-label={t(
-          mobilePanelsExpanded
-            ? "editor.mobile.panels.collapse"
-            : "editor.mobile.panels.expand",
-        )}
-        title={t(
-          mobilePanelsExpanded
-            ? "editor.mobile.panels.collapse"
-            : "editor.mobile.panels.expand",
-        )}
-        onClick={() => {
-          const nextExpanded = !mobilePanelsExpanded;
-          setMobileLayersExpanded(nextExpanded);
-          setMobilePropertiesExpanded(nextExpanded);
-        }}
-        className="editor-mobile-panel-toggle hidden h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-neutral-900/95 text-neutral-200 shadow-menu"
-      >
-        {mobilePanelsExpanded ? (
-          <ChevronDown size={15} aria-hidden="true" />
-        ) : (
-          <ChevronUp size={15} aria-hidden="true" />
-        )}
-      </button>
       <button
         type="button"
         data-testid="editor-mobile-expand-layers"
