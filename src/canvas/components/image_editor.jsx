@@ -969,7 +969,41 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const [mobilePropertiesExpanded, setMobilePropertiesExpanded] = useState(false);
   const mobilePanelsExpanded =
     mobileLayersExpanded || mobilePropertiesExpanded;
-  const mobileCanvasGestures = useMobileCanvasGestures(presentationHistory.undo);
+  const applyMobilePinch = useCallback(
+    ({ isStart, factor, centerX, centerY, deltaX, deltaY }) => {
+      if (isStart) {
+        panGestureRef.current = null;
+        if (freeStageRef.current) {
+          freeStageRef.current.style.cursor = spaceRef.current ? "grab" : "default";
+        }
+        return;
+      }
+      const stage =
+        freeStageRef.current ??
+        editorRootRef.current?.querySelector('[data-testid="editor-pages"]');
+      if (!stage) return;
+      const bounds = stage.getBoundingClientRect();
+      const point = { x: centerX - bounds.left, y: centerY - bounds.top };
+      if (multi) {
+        setEditorCamera((previous) => {
+          const zoomed = zoomCameraAt(previous, factor, point);
+          return {
+            ...zoomed,
+            panX: zoomed.panX + deltaX,
+            panY: zoomed.panY + deltaY,
+          };
+        });
+        return;
+      }
+      engine?.zoomAt?.(factor, point);
+      engine?.panBy?.(deltaX, deltaY);
+    },
+    [engine, multi, setEditorCamera],
+  );
+  const mobileCanvasGestures = useMobileCanvasGestures(
+    presentationHistory.undo,
+    applyMobilePinch,
+  );
   /** The selected (blue) Puppet Warp pin, read straight from the engine. */
   const puppetPinId = engine?.getSelectedPuppetPin?.() ?? null;
   const puppetRotation = puppetPinId

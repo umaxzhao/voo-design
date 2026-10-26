@@ -65,6 +65,11 @@
     right: 0;
   }
 
+  [data-testid="design-editor"].editor-narrow [data-testid="editor-pages"] {
+    touch-action: none;
+    overscroll-behavior: contain;
+  }
+
   [data-testid="design-editor"].editor-narrow > [data-open-guard] {
     position: relative;
     height: 55%;
