@@ -119,7 +119,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 | Image scale mode（crop/fit/fill）/ alt text | ❌ | P2 |
 | Selection colors / page colors / show in exports | 🟡 Selection colors 有；页面颜色清单/导出开关缺 | P2 |
 | Stroke：weight/color/opacity/position | ✅ | — |
-| 多 stroke 列表 / per-side borders | ❌ 单 stroke | P1（高频） |
+| 多 stroke 列表 / per-side borders | 🟡 本轮已支持额外 stroke 列表与渲染；per-side borders 仍缺 | 余：per-side |
 | Join/cap/dash/miter/arrows | 🟡 仅 path 的高级 stroke 有；rect/ellipse/image 没有 | P1/P2 |
 | Advanced stroke flyout / width profile / path trim | 🟡 path 有部分；trim 缺 | P2 |
 
@@ -177,7 +177,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 
 | 优先级 | 缺口 | 动作 | 量 |
 |---|---|---|---|
-| P1 | 多 stroke 列表 + per-side borders | Figma 高频；VOO 仍是单 stroke（需要渲染模型扩展） | L |
+| P1 | per-side borders | 多 stroke 列表已落地；每边独立 border 仍需渲染模型 | M |
 | P2 | 普通 Frame 的 Fixed sizing 下拉 | 纯 Frame 无 auto layout 时补语义 | S |
 | P1 | 多 stroke / per-side | stroke 数组 + 每边 border；面板多行列表 | M |
 | P1 | Design/Prototype 双 tab | 顶部 tab 切换，Prototype 从底部 section 迁出 | M |
@@ -208,6 +208,7 @@ VOO 侧：当前 `npm run build` 后用 Playwright 选中 Frame，截取
 - `7ef2b00` Design / Prototype 双 tab
 - `9593cbe` Layout W/H 旁 Fixed/Hug sizing 下拉 + 单图层 Selection colors
 - `d2d40f3` 页面 “On this page” 颜色 + Export 质量/默认 PNG 预设
+- `d2d40f3` 之后：多 stroke 列表（renderer + panel）；`6646faa` 笔刷标签裁切修复
 
 仍属引擎级、未在本批伪造的缺口：多 stroke/per-side、组件属性/publish/go-to-main、
 Prototype scroll/change-to/set-variable/conditional、Fill image scale/alt、
