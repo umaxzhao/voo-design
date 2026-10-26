@@ -18,6 +18,13 @@ const BUTTON = "flex h-7 w-7 shrink-0 items-center justify-center rounded-full t
 function Divider() {
   return <span aria-hidden="true" className="mx-1 h-3.5 w-[1px] shrink-0 bg-white/15" />;
 }
+function QuickbarAiIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 48 48" fill="none" stroke="currentColor" className="text-accent-purple" aria-hidden="true">
+      <path d="M28.2308 19L24.5487 9.4267C24.22 8.572 23.0108 8.57201 22.682 9.4267L19 19L9.4267 22.682C8.572 23.0108 8.57201 24.22 9.4267 24.5487L19 28.2308L22.682 37.8041C23.0108 38.6588 24.22 38.6588 24.5487 37.8041L28.2308 28.2308L37.8041 24.5487C38.6588 24.22 38.6588 23.0108 37.8041 22.682L28.2308 19Z" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 function Action({
   label,
   id,
@@ -164,7 +171,7 @@ function EditorContextualTaskBar({
     onDispatch?.(payload);
     setAiInputOpen(false);
   };
-  const ai = <>{action("ai-sparkle", <IconSparkles size={14} className="text-neutral-300" />, () => setAiInputOpen(open => !open), {
+  const ai = <>{action("ai-sparkle", <QuickbarAiIcon />, () => setAiInputOpen(open => !open), {
       label: label("askAgent"),
       active: aiInputOpen,
       "aria-expanded": aiInputOpen
