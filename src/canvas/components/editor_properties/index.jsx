@@ -16,6 +16,7 @@ import ToolPropertiesSection from "./tool_properties_section.jsx";
 import { usePropertyCommit } from "./use_property_commit.js";
 import { TOOL } from "../../editor/editor_constants.js";
 import { useI18n } from "../../use_i18n.js";
+import { IconSwap } from "../../icons.jsx";
 import PropertiesPanelHeader from "./properties_panel_header.jsx";
 import PropertiesPanelMaskToolbar from "./properties_panel_mask_toolbar.jsx";
 import PropertiesPanelSections from "./properties_panel_sections.jsx";
@@ -189,6 +190,7 @@ export default function EditorProperties({
       showPrototype={Boolean(canPrototype)}
       prototypeOpen={prototypeOpen}
       onTogglePrototype={() => setPanelView(view => view === "prototype" ? "properties" : "prototype")}
+      tabsAtTop
       t={t}
     />
   );
@@ -314,37 +316,69 @@ export default function EditorProperties({
       ref={panelRef}
       onMouseOver={promoteTitleOnHover}
     >
+      <div className="flex shrink-0 items-center gap-1.5 px-2 pt-2 pb-2">
+        <div
+          role="tablist"
+          aria-label={t("editor.props.panelTabs")}
+          data-testid="editor-panel-tabs"
+          className="flex min-w-0 flex-1 items-center gap-1 rounded-xl bg-white/[0.04] p-1"
+        >
+          {(canPrototype
+            ? [
+                ["design", t("editor.panel.design"), "properties"],
+                ["prototype", t("editor.props.prototype"), "prototype"],
+              ]
+            : canInspect
+              ? [["design", t("editor.panel.design"), "properties"]]
+              : []
+          ).map(([key, label, view]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={panelView === view}
+              data-testid={`editor-panel-tab-${key}`}
+              onClick={() => setPanelView(view)}
+              className={`flex h-6 flex-1 items-center justify-center rounded-lg text-[10px] font-mono transition-colors ${
+                panelView === view
+                  ? "bg-white/[0.12] text-white"
+                  : "text-neutral-400 hover:text-neutral-200"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+          {canInspect ? (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={inspectOpen}
+              data-testid="editor-panel-tab-code"
+              onClick={() => setPanelView(inspectOpen ? "properties" : "code")}
+              className={`flex h-6 flex-1 items-center justify-center rounded-lg text-[10px] font-mono transition-colors ${
+                inspectOpen
+                  ? "bg-white/[0.12] text-white"
+                  : "text-neutral-400 hover:text-neutral-200"
+              }`}
+            >
+              {t("editor.inspect.code")}
+            </button>
+          ) : null}
+        </div>
+        {onToggleSide ? (
+          <button
+            type="button"
+            onClick={onToggleSide}
+            title={t("editor.pages.toggleAxis")}
+            aria-label={t("editor.pages.toggleAxis")}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <IconSwap size={13} />
+          </button>
+        ) : null}
+      </div>
       {header}
       <div className={contentClass}>
-        {canPrototype && !inspectOpen ? (
-          <div
-            role="tablist"
-            aria-label={t("editor.props.panelTabs")}
-            data-testid="editor-panel-tabs"
-            className="mb-2 flex shrink-0 items-center gap-1 rounded-xl bg-white/[0.04] p-1"
-          >
-            {[
-              ["design", t("editor.panel.design"), "properties"],
-              ["prototype", t("editor.props.prototype"), "prototype"],
-            ].map(([key, label, view]) => (
-              <button
-                key={key}
-                type="button"
-                role="tab"
-                aria-selected={panelView === view}
-                data-testid={`editor-panel-tab-${key}`}
-                onClick={() => setPanelView(view)}
-                className={`flex h-6 flex-1 items-center justify-center rounded-lg text-[10px] font-mono transition-colors ${
-                  panelView === view
-                    ? "bg-white/[0.12] text-white"
-                    : "text-neutral-400 hover:text-neutral-200"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        ) : null}
         {canInspect && inspectOpen ? (
           <InspectPanel
             object={object}

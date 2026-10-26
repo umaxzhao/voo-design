@@ -122,6 +122,9 @@ export default function PropertiesPanelHeader({
   showPrototype = false,
   prototypeOpen = false,
   onTogglePrototype = null,
+  /** When the Design/Prototype/Code tabs live above this header, their old
+   * icon toggles (and the side-swap control) are not repeated here. */
+  tabsAtTop = false,
   object = null,
   selectionCount = 1,
   onRename = null,
@@ -240,7 +243,7 @@ export default function PropertiesPanelHeader({
             </button>
           </EditorTooltip>
         ) : null}
-        {showPrototype ? (
+        {showPrototype && !tabsAtTop ? (
           <EditorTooltip title={t("editor.props.prototype")} side="bottom">
             <button type="button" data-testid="editor-prototype-trigger"
               aria-label={t("editor.props.prototype")} aria-pressed={prototypeOpen}
@@ -250,7 +253,7 @@ export default function PropertiesPanelHeader({
             </button>
           </EditorTooltip>
         ) : null}
-        {showInspect ? (
+        {showInspect && !tabsAtTop ? (
           <EditorTooltip title={t("editor.inspect.code")} side="bottom">
             <button
               type="button"
@@ -269,7 +272,7 @@ export default function PropertiesPanelHeader({
             </button>
           </EditorTooltip>
         ) : null}
-        {onToggleSide ? (
+        {onToggleSide && !tabsAtTop ? (
           <EditorTooltip title={t("editor.pages.toggleAxis")} side="bottom">
             <button
               type="button"
@@ -303,6 +306,7 @@ PropertiesPanelHeader.propTypes = {
   onToggleInspect: PropTypes.func,
   showPrototype: PropTypes.bool,
   prototypeOpen: PropTypes.bool,
+  tabsAtTop: PropTypes.bool,
   onTogglePrototype: PropTypes.func,
   t: PropTypes.func.isRequired,
 };
