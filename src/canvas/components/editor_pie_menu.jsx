@@ -207,10 +207,10 @@ export default function EditorPieMenu({
           aria-hidden="true"
           className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full backdrop-blur-md"
           style={{
-            width: (outerRadius + 16) * 2,
-            height: (outerRadius + 16) * 2,
+            width: (radius + 40) * 2,
+            height: (radius + 40) * 2,
             background:
-              "radial-gradient(circle, transparent 0 45%, rgba(0,0,0,0.62) 45% 93%, rgba(255,255,255,0.12) 93% 100%)",
+              "radial-gradient(circle, transparent 0 40%, rgba(0,0,0,0.66) 40% 92%, rgba(255,255,255,0.16) 92% 100%)",
           }}
         />
 
@@ -277,12 +277,10 @@ export default function EditorPieMenu({
             >
               {/* Icon Circle (Flat, zero border, zero shadow) */}
               <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-md transition-all ${
-                  isHighlighted
+                className={`flex h-10 w-10 items-center justify-center rounded-full transition-all ${
+                  isHighlighted || isActive
                     ? "bg-white text-black font-medium"
-                    : isActive
-                      ? "bg-white/30 text-white"
-                      : "bg-black/60 text-neutral-300 hover:bg-white/20 hover:text-white"
+                    : "text-neutral-300 hover:text-white"
                 }`}
               >
                 <Icon size={16} />
