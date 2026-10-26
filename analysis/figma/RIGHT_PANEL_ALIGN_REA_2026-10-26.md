@@ -128,7 +128,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 | Figma | VOO | 结论 |
 |---|---|---|
 | Drop/Inner shadow、layer/background blur | ✅ 已有（blur/noise 在 Effects 内） | 已对齐 |
-| Glass / Noise / Texture / Shader | 🟡 Glass 有近似实现；Noise 有；Texture/Shader 缺 | P2：Texture/Shader；Glass 参数深度不足 |
+| Glass / Noise / Texture / Shader | 🟡 Glass/Noise/Texture 有近似实现；Shader 缺 | P2：Shader；Glass 参数深度不足 |
 | 每行 inline 参数 vs popover | ✅ 本轮 layer effects 改为 inline 展开；adjustment/filter 仍用 popover | 已对齐（effects 范围） |
 | 禁用原因 tooltip（如 glass 仅 frame） | ❌ | P2 |
 
@@ -213,6 +213,7 @@ VOO 侧：当前 `npm run build` 后用 Playwright 选中 Frame，截取
 - `a7c4cb2` Prototype Open link 动作
 - `3c2e946` Image alt text（Fill + HTML 导出）
 - `5711432` Rectangle/image per-side stroke borders（T/R/B/L）
+- Texture 效果（tint/opacity/density/size/seed + 面板控件）
 - `6646faa` 笔刷标签裁切修复
 
 仍属引擎级、未在本批伪造的缺口：组件属性/publish、Prototype scroll/change-to/
