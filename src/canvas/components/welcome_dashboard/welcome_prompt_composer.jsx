@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronDown, Layers, Monitor, Palette, Plus, Sparkles, X } from "lucide-react";
+import { ChevronDown, Layers, Monitor, MoreHorizontal, Palette, Plus, Sparkles, X } from "lucide-react";
 import { AI_GEN_TYPES } from "./welcome_constants.js";
 import { DEFAULT_STYLE_ID } from "./generation_intent.js";
 
@@ -35,6 +35,7 @@ export function WelcomePromptComposer({
   onSubmit,
 }) {
   const [openMenu, setOpenMenu] = useState(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const rootRef = useRef(null);
   const activePreset = AI_GEN_TYPES.find((preset) => preset.id === activePill) ?? AI_GEN_TYPES[0];
   const activeStyle = styleOptions?.find((style) => style.id === styleId);
@@ -61,47 +62,48 @@ export function WelcomePromptComposer({
   const toggle = (menu) => setOpenMenu((current) => (current === menu ? null : menu));
 
   return (
-    <div ref={rootRef} className="relative">
+    <div
+      ref={rootRef}
+      data-mobile-options-open={advancedOpen ? "true" : "false"}
+      className="welcome-prompt-root relative"
+    >
       {/* Design type chips: they choose the scene guidance and the default frame. */}
-      <div className="flex justify-center">
-        <div
-          className="flex items-center gap-1.5 flex-wrap justify-center"
-          role="radiogroup"
-          aria-label={t("welcome.prompt.generationTypeLabel")}
-        >
-          {AI_GEN_TYPES.map((typeItem) => {
-            const Icon = typeItem.icon;
-            const isSelected = activePill === typeItem.id;
-            return (
-              <button
-                key={typeItem.id}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                onClick={() => onSelectPill?.(typeItem.id)}
-                className={`group flex min-w-[5rem] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
-                  isSelected
-                    ? "bg-neutral-800 text-white shadow-pop ring-1 ring-white/10"
-                    : "bg-neutral-900/70 text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200"
-                }`}
-              >
-                {Icon && (
-                  <Icon
-                    size={13}
-                    className={`transition-colors ${
-                      isSelected ? "text-neutral-200" : "text-neutral-500 group-hover:text-neutral-300"
-                    }`}
-                  />
-                )}
-                <span className="whitespace-nowrap">{t(typeItem.label)}</span>
-              </button>
-            );
-          })}
+      <div className="welcome-prompt-type-options">
+        <div className="flex justify-center">
+          <div
+            className="flex items-center gap-1.5 flex-wrap justify-center"
+            role="radiogroup"
+            aria-label={t("welcome.prompt.generationTypeLabel")}
+          >
+            {AI_GEN_TYPES.map((typeItem) => {
+              const Icon = typeItem.icon;
+              const isSelected = activePill === typeItem.id;
+              return (
+                <button
+                  key={typeItem.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={isSelected}
+                  onClick={() => onSelectPill?.(typeItem.id)}
+                  className={`group flex min-w-[5rem] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-neutral-800 text-white shadow-pop ring-1 ring-white/10"
+                      : "bg-neutral-900/70 text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200"
+                  }`}
+                >
+                  {Icon && (
+                    <Icon size={13} className={`transition-colors ${isSelected ? "text-neutral-200" : "text-neutral-500 group-hover:text-neutral-300"}`} />
+                  )}
+                  <span className="whitespace-nowrap">{t(typeItem.label)}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
+        <p className="mx-auto mt-2 max-w-3xl px-2 text-center text-[11px] leading-relaxed text-neutral-500">
+          {t(activePreset.guidance)}
+        </p>
       </div>
-      <p className="mx-auto mt-2 max-w-3xl px-2 text-center text-[11px] leading-relaxed text-neutral-500">
-        {t(activePreset.guidance)}
-      </p>
 
       {/* Central prompt box */}
       <form
@@ -151,7 +153,7 @@ export function WelcomePromptComposer({
           </ul>
         )}
 
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="welcome-prompt-controls-row mt-2 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -166,7 +168,7 @@ export function WelcomePromptComposer({
 
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
             {/* Style kit */}
-            <div className="relative">
+            <div className="welcome-prompt-option welcome-prompt-option-style relative">
               <button
                 type="button"
                 onClick={() => toggle("style")}
@@ -212,7 +214,7 @@ export function WelcomePromptComposer({
             </div>
 
             {/* Provider model */}
-            <div className="relative">
+            <div className="welcome-prompt-option welcome-prompt-option-model relative">
               <button
                 type="button"
                 onClick={() => toggle("model")}
@@ -277,7 +279,7 @@ export function WelcomePromptComposer({
             </div>
 
             {/* Variant count */}
-            <div className="relative">
+            <div className="welcome-prompt-option welcome-prompt-option-candidates relative">
               <button
                 type="button"
                 onClick={() => toggle("candidates")}
@@ -318,7 +320,7 @@ export function WelcomePromptComposer({
             </div>
 
             {/* Frame size */}
-            <div className="relative">
+            <div className="welcome-prompt-option welcome-prompt-option-size relative">
               <button
                 type="button"
                 onClick={() => toggle("size")}
@@ -362,6 +364,15 @@ export function WelcomePromptComposer({
               )}
             </div>
 
+            <button
+              type="button"
+              className="welcome-prompt-more hidden size-9 items-center justify-center rounded-full text-neutral-400 hover:bg-white/10 hover:text-white"
+              aria-label={t("welcome.actions.more")}
+              aria-expanded={advancedOpen}
+              onClick={() => setAdvancedOpen((open) => !open)}
+            >
+              <MoreHorizontal size={17} aria-hidden="true" />
+            </button>
             <button
               type="submit"
               disabled={submitting}

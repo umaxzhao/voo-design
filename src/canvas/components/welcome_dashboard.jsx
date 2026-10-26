@@ -1,6 +1,6 @@
 import { HTML_IMPORT_ACCEPT, SCREENSHOT_ACCEPT, importWelcomeHtml, recreateWelcomeScreenshot } from "./welcome_home_actions.js";
-import React, { useState, useRef } from "react";
-import { Trash2 } from "lucide-react";
+import React, { useEffect, useState, useRef } from "react";
+import { Search, Trash2, X } from "lucide-react";
 import { useDesignStore } from "../../store/design_store.js";
 import { openVooProject } from "../store/project_io.js";
 import { useI18n } from "../use_i18n.js";
@@ -38,6 +38,10 @@ import {
 
 export { AI_GEN_TYPES, CATEGORY_PILLS };
 import { prepareCommunityTemplate } from "./community-template-selection.js";
+import {
+  WELCOME_FOLDERS_EVENT,
+  WELCOME_MENU_ACTION_EVENT,
+} from "./welcome_dashboard/welcome_events.js";
 
 export default function WelcomeDashboard() {
   const { t, locale } = useI18n();
@@ -50,6 +54,7 @@ export default function WelcomeDashboard() {
   const [sortBy, setSortBy] = useState("updatedAt"); // "updatedAt" | "oldest" | "nameAsc" | "nameDesc"
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState("grid"); // "grid" | "list"
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const [promptText, setPromptText] = useState("");
   const [modelId, setModelId] = useState(() => getSetting(AGENT_SETTING.MODEL) || DEFAULT_AGENT_MODEL);
@@ -68,6 +73,7 @@ export default function WelcomeDashboard() {
   const screenshotInputRef = useRef(null);
   const attachmentInputRef = useRef(null);
   const menuRef = useRef(null);
+  const mobileSearchRef = useRef(null);
   const setWelcomeOpen = useDesignStore((state) => state.setWelcomeOpen);
 
   useWelcomeMenuDismiss({ menuRef, setActiveMenuId, setSortMenuOpen });
@@ -97,6 +103,45 @@ export default function WelcomeDashboard() {
     reloadFiles,
     setWelcomeOpen,
   });
+
+  useEffect(() => {
+    const handleMobileMenuAction = (event) => {
+      const { action, value } = event.detail ?? {};
+      if (action === "tab") {
+        setActiveTab(value);
+        setActiveFolder(null);
+        setMobileSearchOpen(false);
+      } else if (action === "folder") {
+        setActiveTab("recents");
+        setActiveFolder(value);
+        setMobileSearchOpen(false);
+      } else if (action === "search") {
+        setActiveTab("recents");
+        setActiveFolder(null);
+        setMobileSearchOpen(true);
+      } else if (action === "open-file" || action === "import-figma") {
+        fileInputRef.current?.click();
+      } else if (action === "import-browser") {
+        htmlInputRef.current?.click();
+      } else if (action === "recreate-screenshot") {
+        screenshotInputRef.current?.click();
+      } else if (action === "sort") {
+        setSortBy(value);
+      } else if (action === "view") {
+        setViewMode(value);
+      }
+    };
+    window.addEventListener(WELCOME_MENU_ACTION_EVENT, handleMobileMenuAction);
+    return () => window.removeEventListener(WELCOME_MENU_ACTION_EVENT, handleMobileMenuAction);
+  }, []);
+
+  useEffect(() => {
+    if (mobileSearchOpen) mobileSearchRef.current?.focus();
+  }, [mobileSearchOpen]);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(WELCOME_FOLDERS_EVENT, { detail: folders }));
+  }, [folders]);
 
   const handleSelectOnlineTemplate = async (template) => {
     const selection = prepareCommunityTemplate(template, locale);
@@ -240,6 +285,7 @@ export default function WelcomeDashboard() {
   return (
     <div
       data-active-tab={activeTab}
+      data-mobile-search-open={mobileSearchOpen ? "true" : "false"}
       className="welcome-dashboard relative flex flex-col lg:flex-row h-full w-full select-none bg-black text-neutral-100 overflow-hidden rounded-3xl"
       onDragOver={(e) => {
         e.preventDefault();
@@ -321,7 +367,7 @@ export default function WelcomeDashboard() {
       />
 
       {/* Main Workspace */}
-      <main className="flex-1 flex flex-col min-w-0 min-h-0 bg-neutral-950 overflow-y-auto">
+      <main className="welcome-main flex-1 flex flex-col min-w-0 min-h-0 bg-neutral-950 overflow-y-auto">
         {/* Top Header Strip with Search, View Mode, Sort and Actions */}
         <header className="flex h-14 shrink-0 items-center justify-between px-8 bg-neutral-950/60 backdrop-blur-md sticky top-0 z-20 gap-4">
           {/* Right: Controls & Actions */}
@@ -344,7 +390,7 @@ export default function WelcomeDashboard() {
 
         {/* =================== TAB 1: RECENTS =================== */}
         {activeTab === "recents" && (
-          <div className="flex-1 p-4 lg:p-8 max-w-6xl w-full mx-auto space-y-8">
+          <div className="welcome-home-content flex-1 p-4 lg:p-8 max-w-6xl w-full mx-auto space-y-8">
             <WelcomePromptComposer
               t={t}
               activePill={activePill}
@@ -390,7 +436,30 @@ export default function WelcomeDashboard() {
             )}
 
             {/* Quick Action Cards (Import Figma / Browser / Recreate) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {mobileSearchOpen && (
+              <div className="welcome-mobile-search relative">
+                <Search size={15} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+                <input
+                  ref={mobileSearchRef}
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder={t("welcome.search.placeholder")}
+                  aria-label={t("welcome.search.placeholder")}
+                  className="h-11 w-full rounded-xl border border-white/10 bg-neutral-900 pl-10 pr-11 text-xs text-neutral-100 placeholder:text-neutral-400 outline-none focus:border-white/20"
+                />
+                <button
+                  type="button"
+                  aria-label={t("welcome.dialog.cancel")}
+                  onClick={() => { setMobileSearchOpen(false); setSearchQuery(""); }}
+                  className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white"
+                >
+                  <X size={14} aria-hidden="true" />
+                </button>
+              </div>
+            )}
+
+            <div className="welcome-quick-imports grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -434,7 +503,7 @@ export default function WelcomeDashboard() {
             </div>
 
             {/* Recents Section Header & File List */}
-            <div className="space-y-4 pt-2">
+            <div className="welcome-home-projects space-y-4 pt-2">
               <WelcomeFileCollection {...sharedCollectionProps} tabType="recents" />
             </div>
           </div>

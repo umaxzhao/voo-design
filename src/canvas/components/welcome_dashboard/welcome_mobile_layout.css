@@ -204,4 +204,163 @@
   .welcome-dashboard:not([data-active-tab="trash"]) > main > header {
     display: none;
   }
+  /* Keep the mobile landing surface focused on the prompt and project list. */
+  .welcome-dashboard {
+    border-radius: 1.5rem;
+  }
+
+  .welcome-sidebar {
+    display: none;
+  }
+
+  .welcome-main {
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+
+  .welcome-dashboard > .welcome-main > header {
+    display: none;
+  }
+
+  .welcome-home-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    max-width: none;
+    padding: 0.875rem 0.75rem 1rem;
+  }
+
+  .welcome-home-content > * + * {
+    margin-top: 0;
+  }
+
+  .welcome-mobile-search {
+    position: relative;
+    flex: 0 0 auto;
+  }
+
+  .welcome-mobile-search input {
+    width: 100%;
+    min-height: 2.75rem;
+    border: 1px solid rgb(255 255 255 / 8%);
+    border-radius: 1rem;
+    background: rgb(255 255 255 / 5%);
+    padding: 0.625rem 2.5rem;
+    color: #f5f5f5;
+    font-size: 0.875rem;
+  }
+
+  .welcome-prompt-type-options {
+    display: none;
+  }
+
+  .welcome-prompt-root[data-mobile-options-open="true"] .welcome-prompt-type-options {
+    display: block;
+  }
+
+  .welcome-prompt-root .prompt-composer {
+    margin-top: 0;
+    padding: 0.875rem;
+    border: 1px solid rgb(255 255 255 / 11%);
+    border-radius: 1.25rem;
+    background: #111;
+    box-shadow: 0 10px 28px rgb(0 0 0 / 20%);
+  }
+
+  .welcome-prompt-root .prompt-composer textarea {
+    min-height: 4.5rem;
+    height: auto;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+
+  .welcome-prompt-controls-row {
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+  }
+
+  .welcome-prompt-controls-row > div:last-child {
+    min-width: 0;
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+  }
+
+  .welcome-prompt-option-design-system,
+  .welcome-prompt-option-style,
+  .welcome-prompt-option-candidates,
+  .welcome-prompt-option-size {
+    display: none;
+  }
+
+  .welcome-prompt-root[data-mobile-options-open="true"] .welcome-prompt-option-design-system,
+  .welcome-prompt-root[data-mobile-options-open="true"] .welcome-prompt-option-style,
+  .welcome-prompt-root[data-mobile-options-open="true"] .welcome-prompt-option-candidates,
+  .welcome-prompt-root[data-mobile-options-open="true"] .welcome-prompt-option-size {
+    display: block;
+  }
+
+  .welcome-prompt-option-model > button {
+    max-width: 8.5rem;
+    min-height: 2.25rem;
+    padding-inline: 0.5rem;
+  }
+
+  .welcome-prompt-more {
+    display: inline-flex;
+    flex: 0 0 auto;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+  }
+
+  .welcome-prompt-controls-row > div:last-child > button[type="submit"] {
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 auto;
+  }
+
+  .welcome-quick-imports {
+    display: none;
+  }
+
+  .welcome-home-projects {
+    width: 100%;
+    padding-top: 0;
+  }
+
+  .welcome-home-projects > * + * {
+    margin-top: 0.75rem;
+  }
+
+  .welcome-home-projects .grid.grid-cols-1 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.625rem;
+  }
+
+  .welcome-home-projects .grid.grid-cols-1 > .group {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid rgb(255 255 255 / 6%);
+    border-radius: 1rem;
+  }
+
+  .welcome-home-projects .grid.grid-cols-1 > .group > div:last-child {
+    padding: 0.625rem;
+  }
+
+  .welcome-home-projects .grid.grid-cols-1 > .group > div:last-child > div {
+    min-width: 0;
+  }
+
+  .welcome-mobile-project-menu {
+    max-height: min(74dvh, 34rem);
+    padding: 0.5rem;
+    border-radius: 1rem;
+    background: rgb(12 12 12 / 96%);
+    backdrop-filter: blur(20px);
+  }
+
+  .welcome-mobile-project-menu .welcome-mobile-menu-section button {
+    min-height: 2.75rem;
+    font-size: 0.8125rem;
+  }
 }

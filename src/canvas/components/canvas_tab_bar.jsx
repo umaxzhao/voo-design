@@ -1,7 +1,25 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronDown, Plus, X } from "lucide-react";
+import {
+  ChevronDown,
+  Clock3,
+  File,
+  FolderOpen,
+  Image,
+  Keyboard,
+  LayoutGrid,
+  List,
+  Plus,
+  Search,
+  Star,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useI18n } from "../use_i18n.js";
 import { useDesignStore } from "../../store/design_store.js";
+import {
+  WELCOME_FOLDERS_EVENT,
+  WELCOME_MENU_ACTION_EVENT,
+} from "./welcome_dashboard/welcome_events.js";
 
 /** File names stay as the user saved them, so they are shown as they are. */
 const FALLBACK_NAME = "Untitled";
@@ -23,6 +41,7 @@ export default function CanvasTabBar() {
   const closeDocument = useDesignStore((state) => state.closeDocument);
   const newVooProject = useDesignStore((state) => state.newVooProject);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [welcomeFolders, setWelcomeFolders] = useState([]);
   const mobileMenuRef = useRef(null);
   const activeDocument = documents.find(
     (document) => document.id === activeId,
@@ -30,6 +49,14 @@ export default function CanvasTabBar() {
   const activeLabel = activeDocument
     ? documentLabel(activeDocument, true, fileName)
     : t("canvasTabs.selectProject");
+  const dispatchWelcomeAction = (action, value = undefined) => {
+    window.dispatchEvent(
+      new CustomEvent(WELCOME_MENU_ACTION_EVENT, {
+        detail: { action, value },
+      }),
+    );
+    setMobileMenuOpen(false);
+  };
 
   useEffect(() => {
     if (!mobileMenuOpen) return undefined;
@@ -48,6 +75,12 @@ export default function CanvasTabBar() {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    const updateFolders = (event) => setWelcomeFolders(event.detail ?? []);
+    window.addEventListener(WELCOME_FOLDERS_EVENT, updateFolders);
+    return () => window.removeEventListener(WELCOME_FOLDERS_EVENT, updateFolders);
+  }, []);
 
   return (
     <>
@@ -155,8 +188,119 @@ export default function CanvasTabBar() {
           <div
             id="mobile-project-switcher-options"
             aria-label={t("canvasTabs.label")}
-            className="absolute left-0 top-full z-[90] mt-1.5 max-h-[min(60vh,24rem)] min-w-48 max-w-[min(20rem,calc(100vw-1rem))] overflow-y-auto rounded-xl border border-white/10 bg-neutral-950 p-1.5 text-[11px] shadow-menu"
+            className={
+              "absolute top-full z-[90] mt-1.5 max-h-[min(74dvh,34rem)] min-w-48 max-w-[min(22rem,calc(100vw-1rem))] overflow-y-auto rounded-xl border border-white/10 bg-neutral-950 p-1.5 text-[11px] shadow-menu " +
+              (welcomeOpen
+                ? "welcome-mobile-project-menu left-1/2 w-[min(22rem,calc(100vw-1rem))] -translate-x-1/2"
+                : "left-0")
+            }
           >
+            {welcomeOpen ? (
+              <>
+                <div className="welcome-mobile-menu-section flex flex-col gap-0.5">
+                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("search")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                    <Search size={14} aria-hidden="true" />
+                    <span>{t("welcome.search.placeholder")}</span>
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("tab", "recents")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                    <Clock3 size={14} aria-hidden="true" />
+                    <span>{t("welcome.nav.recents")}</span>
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("tab", "drafts")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                    <File size={14} aria-hidden="true" />
+                    <span>{t("welcome.nav.drafts")}</span>
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("tab", "starred")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                    <Star size={14} aria-hidden="true" />
+                    <span>{t("welcome.nav.starred")}</span>
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("tab", "trash")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                    <Trash2 size={14} aria-hidden="true" />
+                    <span>{t("welcome.nav.trash")}</span>
+                  </button>
+                  {welcomeFolders.map((folder) => (
+                    <button
+                      key={folder.name}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => dispatchWelcomeAction("folder", folder.name)}
+                      className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10"
+                    >
+                      <FolderOpen size={14} aria-hidden="true" />
+                      <span className="truncate">{folder.name}</span>
+                    </button>
+                  ))}
+                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("tab", "design-systems")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                    <LayoutGrid size={14} aria-hidden="true" />
+                    <span>{t("welcome.nav.designSystems")}</span>
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("tab", "shortcuts")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                    <Keyboard size={14} aria-hidden="true" />
+                    <span>{t("welcome.nav.shortcuts")}</span>
+                  </button>
+                </div>
+                <div className="my-1.5 border-t border-white/10" role="separator" />
+                <div className="welcome-mobile-menu-section flex flex-col gap-0.5">
+                  {[
+                    ["updatedAt", "welcome.sort.lastModified"],
+                    ["oldest", "welcome.sort.oldestModified"],
+                    ["nameAsc", "welcome.sort.nameAsc"],
+                    ["nameDesc", "welcome.sort.nameDesc"],
+                  ].map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => dispatchWelcomeAction("sort", value)}
+                      className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10"
+                    >
+                      <Clock3 size={14} aria-hidden="true" />
+                      <span>{t(label)}</span>
+                    </button>
+                  ))}
+                  <div className="flex gap-1 px-1 py-1">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => dispatchWelcomeAction("view", "grid")}
+                      className="flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg text-neutral-300 hover:bg-white/10"
+                    >
+                      <LayoutGrid size={14} aria-hidden="true" />
+                      <span>{t("welcome.view.grid")}</span>
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => dispatchWelcomeAction("view", "list")}
+                      className="flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg text-neutral-300 hover:bg-white/10"
+                    >
+                      <List size={14} aria-hidden="true" />
+                      <span>{t("welcome.view.list")}</span>
+                    </button>
+                  </div>
+                </div>
+                <div className="my-1.5 border-t border-white/10" role="separator" />
+                <div className="welcome-mobile-menu-section flex flex-col gap-0.5">
+                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("open-file")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                    <FolderOpen size={14} aria-hidden="true" />
+                    <span>{t("welcome.actions.openLocal")}</span>
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("import-figma")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                    <File size={14} aria-hidden="true" />
+                    <span>{t("welcome.actions.importFigma")}</span>
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("import-browser")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                    <FolderOpen size={14} aria-hidden="true" />
+                    <span>{t("welcome.actions.importBrowser")}</span>
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("recreate-screenshot")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                    <Image size={14} aria-hidden="true" />
+                    <span>{t("welcome.actions.recreateScreenshot")}</span>
+                  </button>
+                </div>
+                <div className="my-1.5 border-t border-white/10" role="separator" />
+              </>
+            ) : null}
             {documents.map((document) => {
               const active = document.id === activeId;
               const label = documentLabel(document, active, fileName);
