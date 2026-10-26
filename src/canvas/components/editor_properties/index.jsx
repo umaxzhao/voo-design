@@ -316,7 +316,7 @@ export default function EditorProperties({
       ref={panelRef}
       onMouseOver={promoteTitleOnHover}
     >
-      <div className="flex shrink-0 items-stretch border-b border-white/10">
+      <div className="flex shrink-0 items-stretch overflow-hidden rounded-2xl">
         <div
           role="tablist"
           aria-label={t("editor.props.panelTabs")}
