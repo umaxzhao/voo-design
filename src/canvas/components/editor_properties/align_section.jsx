@@ -29,121 +29,82 @@ const { default: ScrubField } = await import("../scrub_field.jsx");
  * the shapes end up.
  */
 /**
- * Precision Figma-style SVG icons for Alignment & Distribution.
+ * Alignment / distribution icons — the supplied 20×20 set: a rounded guide
+ * bar against two rounded blocks, with distribution using a guide on both
+ * sides. Kept as inline SVG so the control reads at a glance.
  */
+const ALIGN_ICON_SHAPES = {
+  left: (
+    <>
+      <rect x="2.5" y="2" width="1.5" height="16" rx="0.75" />
+      <rect x="6" y="4" width="11" height="5" rx="1.25" />
+      <rect x="6" y="11" width="7" height="5" rx="1.25" />
+    </>
+  ),
+  center: (
+    <>
+      <rect x="9.25" y="2" width="1.5" height="16" rx="0.75" />
+      <rect x="3.5" y="4" width="13" height="5" rx="1.25" />
+      <rect x="5.5" y="11" width="9" height="5" rx="1.25" />
+    </>
+  ),
+  right: (
+    <>
+      <rect x="16" y="2" width="1.5" height="16" rx="0.75" />
+      <rect x="3" y="4" width="11" height="5" rx="1.25" />
+      <rect x="7" y="11" width="7" height="5" rx="1.25" />
+    </>
+  ),
+  top: (
+    <>
+      <rect x="2" y="2.5" width="16" height="1.5" rx="0.75" />
+      <rect x="5" y="6" width="5" height="11" rx="1.25" />
+      <rect x="12" y="6" width="5" height="7" rx="1.25" />
+    </>
+  ),
+  middle: (
+    <>
+      <rect x="2" y="9.25" width="16" height="1.5" rx="0.75" />
+      <rect x="5" y="3.5" width="5" height="13" rx="1.25" />
+      <rect x="12" y="5.5" width="5" height="9" rx="1.25" />
+    </>
+  ),
+  bottom: (
+    <>
+      <rect x="2" y="16" width="16" height="1.5" rx="0.75" />
+      <rect x="5" y="3" width="5" height="11" rx="1.25" />
+      <rect x="12" y="7" width="5" height="7" rx="1.25" />
+    </>
+  ),
+};
+
 export function AlignIcon({ type }) {
-  switch (type) {
-    case "left":
-      return (
-        <svg
-          viewBox="0 0 16 16"
-          className="h-4 w-4"
-          aria-hidden="true"
-          fill="currentColor"
-        >
-          <rect x="2" y="2" width="1.5" height="12" rx="0.75" />
-          <rect x="5.5" y="4" width="8" height="3" rx="0.5" />
-          <rect x="5.5" y="9" width="5" height="3" rx="0.5" />
-        </svg>
-      );
-    case "center":
-      return (
-        <svg
-          viewBox="0 0 16 16"
-          className="h-4 w-4"
-          aria-hidden="true"
-          fill="currentColor"
-        >
-          <rect x="7.25" y="2" width="1.5" height="12" rx="0.75" />
-          <rect x="3" y="4" width="10" height="3" rx="0.5" />
-          <rect x="4.5" y="9" width="7" height="3" rx="0.5" />
-        </svg>
-      );
-    case "right":
-      return (
-        <svg
-          viewBox="0 0 16 16"
-          className="h-4 w-4"
-          aria-hidden="true"
-          fill="currentColor"
-        >
-          <rect x="12.5" y="2" width="1.5" height="12" rx="0.75" />
-          <rect x="2.5" y="4" width="8" height="3" rx="0.5" />
-          <rect x="5.5" y="9" width="5" height="3" rx="0.5" />
-        </svg>
-      );
-    case "top":
-      return (
-        <svg
-          viewBox="0 0 16 16"
-          className="h-4 w-4"
-          aria-hidden="true"
-          fill="currentColor"
-        >
-          <rect x="2" y="2" width="12" height="1.5" rx="0.75" />
-          <rect x="4" y="5.5" width="3" height="8" rx="0.5" />
-          <rect x="9" y="5.5" width="3" height="5" rx="0.5" />
-        </svg>
-      );
-    case "middle":
-      return (
-        <svg
-          viewBox="0 0 16 16"
-          className="h-4 w-4"
-          aria-hidden="true"
-          fill="currentColor"
-        >
-          <rect x="2" y="7.25" width="12" height="1.5" rx="0.75" />
-          <rect x="4" y="3" width="3" height="10" rx="0.5" />
-          <rect x="9" y="4.5" width="3" height="7" rx="0.5" />
-        </svg>
-      );
-    case "bottom":
-      return (
-        <svg
-          viewBox="0 0 16 16"
-          className="h-4 w-4"
-          aria-hidden="true"
-          fill="currentColor"
-        >
-          <rect x="2" y="12.5" width="12" height="1.5" rx="0.75" />
-          <rect x="4" y="2.5" width="3" height="8" rx="0.5" />
-          <rect x="9" y="5.5" width="3" height="5" rx="0.5" />
-        </svg>
-      );
-    default:
-      return null;
-  }
+  return (
+    <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true" fill="currentColor">
+      {ALIGN_ICON_SHAPES[type] ?? null}
+    </svg>
+  );
 }
 
 AlignIcon.propTypes = { type: PropTypes.string.isRequired };
 
 /** Figma-style Distribute Center SVG icons. */
 export function DistributeIcon({ axis }) {
-  if (axis === "horizontal") {
-    return (
-      <svg
-        viewBox="0 0 16 16"
-        className="h-4 w-4"
-        aria-hidden="true"
-        fill="currentColor"
-      >
-        <rect x="2" y="2" width="1.5" height="12" rx="0.75" opacity="0.6" />
-        <rect x="12.5" y="2" width="1.5" height="12" rx="0.75" opacity="0.6" />
-        <rect x="5.5" y="4" width="5" height="8" rx="0.5" />
-      </svg>
-    );
-  }
   return (
-    <svg
-      viewBox="0 0 16 16"
-      className="h-4 w-4"
-      aria-hidden="true"
-      fill="currentColor"
-    >
-      <rect x="2" y="2" width="12" height="1.5" rx="0.75" opacity="0.6" />
-      <rect x="2" y="12.5" width="12" height="1.5" rx="0.75" opacity="0.6" />
-      <rect x="4" y="5.5" width="8" height="5" rx="0.5" />
+    <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true" fill="currentColor">
+      {axis === "horizontal" ? (
+        <>
+          <rect x="2.5" y="2" width="1.5" height="16" rx="0.75" />
+          <rect x="16" y="2" width="1.5" height="16" rx="0.75" />
+          <rect x="6.5" y="5" width="7" height="10" rx="1.25" />
+        </>
+      ) : (
+        <>
+          <rect x="2" y="2.5" width="16" height="1.5" rx="0.75" />
+          <rect x="2" y="16" width="16" height="1.5" rx="0.75" />
+          <rect x="5" y="6.5" width="10" height="7" rx="1.25" />
+        </>
+      )}
     </svg>
   );
 }
@@ -151,31 +112,14 @@ export function DistributeIcon({ axis }) {
 DistributeIcon.propTypes = { axis: PropTypes.string.isRequired };
 
 /** Figma-style Tidy Up / Even Spacing SVG icons with inner gap lines. */
-export function TidyIcon({ axis }) {
-  if (axis === "horizontal") {
-    return (
-      <svg
-        viewBox="0 0 16 16"
-        className="h-4 w-4"
-        aria-hidden="true"
-        fill="currentColor"
-      >
-        <rect x="2" y="4" width="3" height="8" rx="0.5" />
-        <rect x="6.5" y="4" width="3" height="8" rx="0.5" />
-        <rect x="11" y="4" width="3" height="8" rx="0.5" />
-      </svg>
-    );
-  }
+export function TidyIcon({ axis: _axis }) {
   return (
-    <svg
-      viewBox="0 0 16 16"
-      className="h-4 w-4"
-      aria-hidden="true"
-      fill="currentColor"
-    >
-      <rect x="4" y="2" width="8" height="3" rx="0.5" />
-      <rect x="4" y="6.5" width="8" height="3" rx="0.5" />
-      <rect x="4" y="11" width="8" height="3" rx="0.5" />
+    <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true" fill="currentColor">
+      {[2, 8, 14].map((y) =>
+        [2, 8, 14].map((x) => (
+          <rect key={`${x}-${y}`} x={x} y={y} width="4" height="4" rx="1" />
+        )),
+      )}
     </svg>
   );
 }
