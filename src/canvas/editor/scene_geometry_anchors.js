@@ -4,6 +4,8 @@
 
 import { calculateRotationAngle } from "./box_transform_math.js";
 import {
+  DIAGONAL_NESW_CURSOR,
+  DIAGONAL_NWSE_CURSOR,
   HORIZONTAL_SCALE_CURSOR,
   VERTICAL_SCALE_CURSOR,
 } from "./cursor_assets.js";
@@ -172,9 +174,9 @@ const HANDLE_AXIS_DEG = {
 
 const AXIS_CURSORS = [
   HORIZONTAL_SCALE_CURSOR,
-  "nwse-resize",
+  DIAGONAL_NWSE_CURSOR,
   VERTICAL_SCALE_CURSOR,
-  "nesw-resize",
+  DIAGONAL_NESW_CURSOR,
 ];
 
 export function cursorForHandle(handle, rotation = 0) {

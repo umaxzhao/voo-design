@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { cursorForHandle } from "../../src/canvas/editor/scene_geometry_anchors.js";
 import { rotationCursorForAngle } from "../../src/canvas/editor/editor-cursors.js";
 import {
+  DIAGONAL_NESW_CURSOR,
+  DIAGONAL_NWSE_CURSOR,
   HORIZONTAL_SCALE_CURSOR,
   ROTATE_CURSOR,
   VERTICAL_SCALE_CURSOR,
@@ -13,6 +15,14 @@ describe("editor cursors", () => {
     expect(cursorForHandle("w", 0)).toBe(HORIZONTAL_SCALE_CURSOR);
     expect(cursorForHandle("n", 0)).toBe(VERTICAL_SCALE_CURSOR);
     expect(cursorForHandle("s", 0)).toBe(VERTICAL_SCALE_CURSOR);
+  });
+
+  it("uses the supplied diagonal cursors for corner handles", () => {
+    expect(cursorForHandle("nw", 0)).toBe(DIAGONAL_NWSE_CURSOR);
+    expect(cursorForHandle("se", 0)).toBe(DIAGONAL_NWSE_CURSOR);
+    expect(cursorForHandle("ne", 0)).toBe(DIAGONAL_NESW_CURSOR);
+    expect(cursorForHandle("sw", 0)).toBe(DIAGONAL_NESW_CURSOR);
+    expect(DIAGONAL_NESW_CURSOR).toContain("data:image/svg+xml");
   });
 
   it("uses the supplied rotate cursor for the rotation grip", () => {
