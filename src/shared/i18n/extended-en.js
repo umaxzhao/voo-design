@@ -1050,6 +1050,7 @@ export default {
   "editor.props.effects": "Effects",
   "editor.props.effectShadow": "Drop shadow",
   "editor.props.effectGlow": "Glow",
+  "editor.props.effectTexture": "Texture",
   "editor.props.effectGlass": "Glass",
   "editor.props.effectHighlight": "Highlight",
   "editor.props.effectBevel": "Bevel / emboss",

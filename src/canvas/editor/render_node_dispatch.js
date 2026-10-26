@@ -237,6 +237,12 @@ export function drawNode(
   if (hasBevel && effects.bevel) {
     drawBevelOverlay(ctx, node, effects.bevel);
   }
+  if (effects?.texture?.enabled) {
+    drawNoiseOverlay(ctx, node, {
+      ...effects.texture,
+      blendMode: effects.texture.blendMode ?? "overlay",
+    });
+  }
   if (node.noise?.opacity > 0) {
     drawNoiseOverlay(ctx, node, node.noise);
   }

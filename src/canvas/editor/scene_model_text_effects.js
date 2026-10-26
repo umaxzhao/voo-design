@@ -169,6 +169,24 @@ export function normalizeBevel(value) {
 }
 
 /**
+ * Figma-style Texture: a coloured two-tone grain overlay. It reuses the same
+ * seeded grain tile as Noise, but with a tint, density and scale of its own.
+ */
+export function normalizeTexture(value) {
+  if (!value || typeof value !== "object") return null;
+  return {
+    enabled: Boolean(value.enabled),
+    color: normalizeColourOrNull(value.color) ?? "#808080",
+    secondaryColor: normalizeColourOrNull(value.secondaryColor) ?? null,
+    opacity: parseAdjustmentValue(value.opacity, 0, 1, 0.18),
+    density: parseAdjustmentValue(value.density, 0, 1, 0.5),
+    size: parseAdjustmentValue(value.size, 1, 12, 2),
+    seed: Math.round(parseAdjustmentValue(value.seed, 0, 9999, 1)),
+    blendMode: typeof value.blendMode === "string" ? value.blendMode : "overlay",
+  };
+}
+
+/**
  * Figma-style glass: blur what is behind the layer, tint it and add a light
  * edge. `{ enabled, blur, tint, opacity, highlight, angle }`, or null.
  */
@@ -297,10 +315,11 @@ export function normalizeEffects(value) {
   const satin = normalizeSatin(value.satin);
   const bevel = normalizeBevel(value.bevel);
   const glass = normalizeGlass(value.glass);
+  const texture = normalizeTexture(value.texture);
   const fill = normalizeFill(value.fill);
   const gradientOverlay = normalizeGradientOverlay(value.gradientOverlay);
   const stroke = normalizeStroke(value.stroke);
-  if (!shadow && !glow && !innerShadow && !innerGlow && !satin && !bevel && !glass && !fill && !gradientOverlay && !stroke) return null;
+  if (!shadow && !glow && !innerShadow && !innerGlow && !satin && !bevel && !glass && !texture && !fill && !gradientOverlay && !stroke) return null;
   const effects = {};
   if (shadow) effects.shadow = shadow;
   if (glow) effects.glow = glow;
@@ -309,6 +328,7 @@ export function normalizeEffects(value) {
   if (satin) effects.satin = satin;
   if (bevel) effects.bevel = bevel;
   if (glass) effects.glass = glass;
+  if (texture) effects.texture = texture;
   if (fill) effects.fill = fill;
   if (gradientOverlay) effects.gradientOverlay = gradientOverlay;
   if (stroke) effects.stroke = stroke;

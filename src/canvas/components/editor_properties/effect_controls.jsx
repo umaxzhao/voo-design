@@ -12,6 +12,7 @@ import EffectShadowGlowControls from "./effect_shadow_glow_controls.jsx";
 import EffectBevelSatinControls from "./effect_bevel_satin_controls.jsx";
 import EffectGradientOverlayControls from "./effect_gradient_overlay_controls.jsx";
 import EffectGlassControls from "./effect_glass_controls.jsx";
+import EffectTextureControls from "./effect_texture_controls.jsx";
 
 export {
   ColourRow,
@@ -20,6 +21,7 @@ export {
   EffectBevelSatinControls,
   EffectGradientOverlayControls,
   EffectGlassControls,
+  EffectTextureControls,
 };
 
 /**
@@ -110,6 +112,18 @@ export default function EffectControls({
     case "glass":
       return (
         <EffectGlassControls
+          current={current}
+          title={title}
+          setEffect={setEffect}
+          setAndCommit={setAndCommit}
+          Field={Field}
+          t={t}
+        />
+      );
+
+    case "texture":
+      return (
+        <EffectTextureControls
           current={current}
           title={title}
           setEffect={setEffect}

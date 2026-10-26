@@ -1035,6 +1035,7 @@ export default {
   "editor.props.effects": "效果",
   "editor.props.effectShadow": "投影",
   "editor.props.effectGlow": "发光",
+  "editor.props.effectTexture": "纹理",
   "editor.props.effectGlass": "玻璃",
   "editor.props.effectHighlight": "高光",
   "editor.props.effectBevel": "斜面浮雕",
