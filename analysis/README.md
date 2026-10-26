@@ -15,6 +15,7 @@ analysis/
   RIGHT_PANEL_ALIGNMENT.md # right-hand properties panel: Figma/Pen functional layout → VOO target spec
   DESIGN_EXPERIENCE_AUDIT_2026-10-25.md # 44-state automated design/UX sweep vs Pen + audit-2026-10-25/ raw data
   figma/RIGHT_PANEL_PARITY_2026-10-26.md # Figma right panel vs VOO: item-by-item parity check + remaining gaps
+  figma/RIGHT_PANEL_ALIGN_REA_2026-10-26.md # REA re-check of Figma 126.9.16 right panel vs current VOO + priority gaps
   affinity/GAP_ANALYSIS_2026-10-26.md   # Affinity Photo image-edit gap analysis (REA menus/resources) + shipped filters
   voo/RIGHT_PANEL_CLARITY_2026-10-26.md # Right panel empty states / merged Frame & layout + pan-chrome sync
   voo/EFFECTS_PICKER_2026-10-26.md       # Effects picker accents + template column parity
