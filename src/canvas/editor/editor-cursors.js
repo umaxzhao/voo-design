@@ -7,7 +7,7 @@
  */
 
 import { rotationFromPointer } from "./scene_geometry.js";
-import { ROTATE_CURSOR } from "./cursor_assets.js";
+import { rotateCursorForAngle as rotateCursorAsset } from "./cursor_assets.js";
 
 export const ROTATION_CURSOR_ANGLE_STEP = 15;
 
@@ -57,8 +57,7 @@ export function snapRotationCursorAngle(angle) {
 export function rotationCursorForAngle(angle) {
   // One supplied rotate cursor covers every snapped angle; the hotspot is the
   // centre of its curved arrow.
-  snapRotationCursorAngle(angle);
-  return ROTATE_CURSOR;
+  return rotateCursorAsset(snapRotationCursorAngle(angle));
 }
 
 /** Aligns the double-arrow cursor tangentially around a transform centre. */

@@ -13,8 +13,23 @@ const horizontalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height
 
 const verticalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="75 9 18 22"><path d="M83.5025 10L83.495 10L76 17.4962L81 17.4975L81 22.5212L76 22.5212L83.5 29.9962L91 22.5212L85.975 22.5225L85.9725 19.9962L85.9725 17.4962L91 17.4975L83.5025 10ZM83.4975 11.7637L87.9825 16.2475L84.7487 16.2462L84.7487 23.7725L87.98 23.7725L83.4975 28.2287L79.0162 23.7737L82.2475 23.7725L82.2475 20.6212L82.2487 16.2475L79.0162 16.2462L83.4975 11.7637Z" fill="#fff"/><path d="M82.2487 20.6213L82.2487 23.7725L79.0162 23.7725L83.4987 28.2288L87.9799 23.7725L84.7237 23.7725L84.7237 16.2463L87.9824 16.2463L83.4987 11.7638L79.0162 16.2463L82.2499 16.2463L82.2487 20.6213Z" fill="#000"/></svg>`;
 
-const rotateSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="138 11 20 20"><mask id="m" maskUnits="userSpaceOnUse" x="137" y="9" width="23" height="23"><rect x="137" y="9" width="23" height="23" fill="#fff"/><path d="M152 29L148 25H150.5V22C150.5 20.067 148.933 18.5 147 18.5H144V21L140 17L144 13V15.5H147C150.59 15.5 153.5 18.4101 153.5 22V25H156L152 29Z"/></mask><path d="M152 29L148 25H150.5V22C150.5 20.067 148.933 18.5 147 18.5H144V21L140 17L144 13V15.5H147C150.59 15.5 153.5 18.4101 153.5 22V25H156L152 29Z" fill="#000"/><path d="M152 29L148 25H150.5V22C150.5 20.067 148.933 18.5 147 18.5H144V21L140 17L144 13V15.5H147C150.59 15.5 153.5 18.4101 153.5 22V25H156L152 29Z" stroke="#fff" stroke-width="3" mask="url(#m)"/></svg>`;
+const rotatePaths = `<path d="M152 29L148 25H150.5V22C150.5 20.067 148.933 18.5 147 18.5H144V21L140 17L144 13V15.5H147C150.59 15.5 153.5 18.4101 153.5 22V25H156L152 29Z" fill="#000"/><path d="M152 29L148 25H150.5V22C150.5 20.067 148.933 18.5 147 18.5H144V21L140 17L144 13V15.5H147C150.59 15.5 153.5 18.4101 153.5 22V25H156L152 29Z" stroke="#fff" stroke-width="3" mask="url(#rm)"/>`;
 
+const rotateSvgForAngle = (angle) => `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="138 11 20 20"><mask id="rm" maskUnits="userSpaceOnUse" x="137" y="9" width="23" height="23"><rect x="137" y="9" width="23" height="23" fill="#fff"/><path d="M152 29L148 25H150.5V22C150.5 20.067 148.933 18.5 147 18.5H144V21L140 17L144 13V15.5H147C150.59 15.5 153.5 18.4101 153.5 22V25H156L152 29Z"/></mask><g transform="rotate(${angle} 148 21)">${rotatePaths}</g></svg>`;
+
+const rotationCursorCache = new Map();
+
+/** Rotation cursor rotated to the snapped pointer angle. */
+export function rotateCursorForAngle(angle) {
+  const normalized = ((Math.round(angle / 15) * 15) % 360 + 360) % 360;
+  if (!rotationCursorCache.has(normalized)) {
+    rotationCursorCache.set(
+      normalized,
+      `${encodeSvg(rotateSvgForAngle(normalized))} 12 12, crosshair`,
+    );
+  }
+  return rotationCursorCache.get(normalized);
+}
 
 const diagonalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 40 40"><path d="M26.5715 12.9302L26.5662 12.9249L15.9658 12.9257L19.5004 16.4622L15.9481 20.0145L12.4126 16.4789L12.4303 27.0679L23.0192 27.0855L19.4651 23.5332L21.2497 21.7451L23.0174 19.9774L26.5715 23.5332V12.9302ZM25.3208 14.1738L25.3217 20.5156L23.036 18.2282L17.7141 23.55L19.999 25.8349L13.6783 25.8163L13.6597 19.4974L15.9455 21.7814L18.1737 19.5531L21.2673 16.4613L18.9825 14.1747L25.3208 14.1738Z" fill="#fff"/><path d="M18.1746 19.5539L15.9463 21.7822L13.6606 19.4965L13.6792 25.8171L19.999 25.8348L17.6964 23.5323L23.0183 18.2104L25.3226 20.5147L25.3217 14.1746L18.9825 14.1746L21.2691 16.4612L18.1746 19.5539Z" fill="#000"/></svg>`;
 
@@ -22,6 +37,6 @@ const diagonalSvgRotated = `<svg xmlns="http://www.w3.org/2000/svg" width="32" h
 
 export const HORIZONTAL_SCALE_CURSOR = `${encodeSvg(horizontalSvg)} 12 12, ew-resize`;
 export const VERTICAL_SCALE_CURSOR = `${encodeSvg(verticalSvg)} 12 12, ns-resize`;
-export const ROTATE_CURSOR = `${encodeSvg(rotateSvg)} 12 12, crosshair`;
+export const ROTATE_CURSOR = rotateCursorForAngle(0);
 export const DIAGONAL_NESW_CURSOR = `${encodeSvg(diagonalSvg)} 16 16, nesw-resize`;
 export const DIAGONAL_NWSE_CURSOR = `${encodeSvg(diagonalSvgRotated)} 16 16, nwse-resize`;
