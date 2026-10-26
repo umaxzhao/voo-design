@@ -438,6 +438,14 @@ export default function EditorPage({
   const mixedLayers = Boolean(doc) && canvasType !== "3d" && hasCanvasInstances;
 
   useEffect(() => {
+    if (!engine?.setStagePaintingEnabled) return undefined;
+    // Shared GPU artwork and workspace chrome already paint this frame.
+    // Keep a 2D stage for fallback/media and read pixels lazily for sampling.
+    engine.setStagePaintingEnabled(!free || !workspaceRendererReady || mixedLayers || requiresWorkspaceCanvas2d(doc));
+    return () => engine.setStagePaintingEnabled(true);
+  }, [engine, free, workspaceRendererReady, mixedLayers, doc]);
+
+  useEffect(() => {
     if (!engine) return undefined;
     engine.setMixedLayerMode(mixedLayers);
     return () => engine.setMixedLayerMode(false);

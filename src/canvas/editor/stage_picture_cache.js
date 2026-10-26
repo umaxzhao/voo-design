@@ -46,8 +46,8 @@ export function cancelStagePictureRefinement(ctx) {
   cancelTileRefinement(tileCaches.get(ctx));
 }
 
-export function releaseStagePictureCache(ctx) {
-  interactionBackdrop.release(ctx);
+export function releaseStagePictureCache(ctx, { preserveInteraction = false } = {}) {
+  if (!preserveInteraction) interactionBackdrop.release(ctx);
   releaseTileLayer(ctx);
   storeCache(ctx, null);
   const tiles = tileCaches.get(ctx);
@@ -77,6 +77,9 @@ function surface(ctx, options, paint, nodes = options.doc.nodes, background = tr
 }
 
 export function drawCachedStage(ctx, options, paint) {
+  // UI compositing cost exists for every document, including mixed media that
+  // cannot use tiles. Dropping its cache must not cancel the gesture tier.
+  interactionBackdrop.update(ctx, options.cameraMoving || options.previewMotion);
   if (!options.cameraMoving) releaseTileLayer(ctx);
   if (options.previewMotion) cancelStagePictureRefinement(ctx);
   // Exports, mixed layers and paint tools keep the authoritative renderer.
@@ -85,8 +88,7 @@ export function drawCachedStage(ctx, options, paint) {
     !options.paintNodeIds && !options.layerCache && !options.fullResolution &&
     !options.penDraft && !options.penEdit &&
     !(options.grid && (options.grid.enabled || options.grid.visible)) && !options.selectionTransformBox;
-  if (!eligible) { releaseStagePictureCache(ctx); return paint(ctx, options); }
-  interactionBackdrop.update(ctx, options.cameraMoving || options.previewMotion);
+  if (!eligible) { releaseStagePictureCache(ctx, { preserveInteraction: true }); return paint(ctx, options); }
   const width = options.stageWidth ?? ctx.canvas.width / options.dpr;
   const height = options.stageHeight ?? ctx.canvas.height / options.dpr;
   // The engine supplies damage only when camera, selection, DPR and render

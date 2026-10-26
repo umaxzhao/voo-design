@@ -63,6 +63,7 @@ export async function startCliBridgeServer({
   host = "127.0.0.1",
   origins = DEFAULT_CLI_BRIDGE_ORIGINS,
   token,
+  persistToken = port !== 0,
   register = registerCliBridgeChannels,
 } = {}) {
   const activeToken = token || process.env.VOO_CLI_BRIDGE_TOKEN || randomBytes(32).toString("hex");
@@ -126,7 +127,9 @@ export async function startCliBridgeServer({
 
   process.env.VOO_CLI_BRIDGE_TOKEN = activeToken;
   try {
-    writeBridgeToken(activeToken);
+    // Ephemeral/test servers must not replace the running desktop's token.
+    // A random-port caller can explicitly opt in with an isolated config dir.
+    if (persistToken) writeBridgeToken(activeToken);
   } catch (err) {
     try {
       wss.close();

@@ -46,6 +46,7 @@ import { normalizeGradientStops, normalizeMixerRow, normalizeInkRow, normalizeCo
  * so a changed list (a new array, or a different length) rebuilds the tables.
  */
 const nodeIndexCache = new WeakMap();
+const ROOT_ANCESTRY = Object.freeze({ hidden: false, inBoolean: false });
 
 function nodeIndexOf(nodes) {
   const cached = nodeIndexCache.get(nodes);
@@ -71,6 +72,9 @@ function nodeIndexOf(nodes) {
  * remembered, so the paint loop does not walk the chain for every node on every frame.
  */
 function ancestryOf(doc, node) {
+  // Root objects cannot inherit group state. Avoid indexing the whole scene
+  // and allocating a visited set for every rectangle in a large flat frame.
+  if (!node.parentId) return ROOT_ANCESTRY;
   const index = nodeIndexOf(doc.nodes);
   if (!index.ancestry) index.ancestry = new Map();
   return ancestryFor(doc, index, node, new Set());
@@ -79,7 +83,7 @@ function ancestryOf(doc, node) {
 function ancestryFor(doc, index, node, visiting) {
   const known = index.ancestry.get(node.id);
   if (known) return known;
-  if (!node.parentId || visiting.has(node.id)) return { hidden: false, inBoolean: false };
+  if (!node.parentId || visiting.has(node.id)) return ROOT_ANCESTRY;
   visiting.add(node.id);
   const parent = index.byId.get(node.parentId);
   let result = { hidden: false, inBoolean: false };
@@ -325,6 +329,7 @@ export function isHiddenByGroup(doc, node) {
 
 /** True when any folder above the node is locked — the node must not move. */
 export function isLockedByGroup(doc, node) {
+  if (!node?.parentId) return false;
   let current = node;
   const seen = new Set();
   while (current?.parentId && !seen.has(current.parentId)) {

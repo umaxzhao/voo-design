@@ -8,7 +8,7 @@ import { isPlainRectList } from './render_plain_rects.js';
 
 import { resolveCornerRadii } from "./scene_model_core.js";
 import { isGroupNode, isHiddenByGroup } from "./scene_model.js";
-import { elementFor } from "./skia_adapter_elements.js";
+import { cachedElementFor as elementFor } from "./skia-rect-scene-cache.js";
 import { toSkiaBlendMode, strokeOf } from "./skia_adapter_paint.js";
 import { isBoxOffscreen } from "./viewport_culling.js";
 
@@ -99,6 +99,23 @@ export function documentToScene(
     if (isBoxOffscreen(frameBox, visibleRect)) {
       return [frame];
     }
+  }
+
+  // Flat rectangle frames dominate large design pages. Reuse immutable scene
+  // elements directly instead of allocating four intermediate lists and a new
+  // parented element per rectangle on every camera or single-object drag.
+  if (isPlainRectList(doc.nodes ?? [])) {
+    const elements = doc.isCanvasRoot ? [] : [frame];
+    const parentId = doc.isCanvasRoot ? null : frame.id;
+    for (let index = 0; index < (doc.nodes?.length ?? 0); index++) {
+      const node = doc.nodes[index];
+      const x = (node.x ?? 0) + offsetX;
+      const y = (node.y ?? 0) + offsetY;
+      if (visibleRect && (x + node.width < visibleRect.minX || y + node.height < visibleRect.minY ||
+          x > visibleRect.maxX || y > visibleRect.maxY)) continue;
+      elements.push(elementFor(node, index, offsetX, offsetY, resolveImageUrl, doc, parentId));
+    }
+    return elements;
   }
 
   const nodes = (doc.nodes || [])

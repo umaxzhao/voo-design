@@ -188,6 +188,7 @@ describe("CLI Bridge Token Management", () => {
 
     const bridge = await startCliBridgeServer({
       port: 0,
+      persistToken: true,
       host: "127.0.0.1",
       register: () => ({ dispose: async () => {} }),
     });
@@ -206,6 +207,16 @@ describe("CLI Bridge Token Management", () => {
     } finally {
       await bridge.close();
     }
+  });
+
+  it("ephemeral bridge tests leave the persistent token file unchanged", async () => {
+    const persistentToken = "persistent-token-for-isolated-test";
+    writeBridgeToken(persistentToken);
+    delete process.env.VOO_CLI_BRIDGE_TOKEN;
+    const { startCliBridgeServer } = await import("../../electron/cli_bridge_server.js");
+    const bridge = await startCliBridgeServer({ port: 0, register: () => ({ dispose: async () => {} }) });
+    try { expect(readBridgeToken()).toBe(persistentToken); }
+    finally { await bridge.close(); }
   });
 
   it("MCP connect with a 401 response throws the auth error and does not call the bridge start function", async () => {

@@ -10,9 +10,14 @@
 // fails with installation instructions. Install once with:
 //   npm i -D playwright && npx playwright install chromium
 //
-// This is instrumentation, not a gate: a low FPS is reported and the process
-// still exits 0. The latest numbers are written to docs/canvas-fps-results.json.
+// Fails below 30 FPS by default. VOO_FPS_MIN=0 explicitly selects measurement
+// only. Results go to the OS temp directory or VOO_FPS_RESULTS_PATH.
 import fs from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { verifyPreviewPixels } from "./canvas-preview-parity.mjs";
+import { verifySkiaRectPreview } from "./skia-rect-preview-parity.mjs";
+import { verifyCameraPixels } from "./canvas-camera-parity.mjs";
+import { assertFpsThreshold, fpsThreshold } from "./canvas-fps-gate.mjs";
 import { summarizeCpuProfile } from "./cpu_profile_summary.mjs";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -20,15 +25,21 @@ import { createServer as createTcpServer } from "node:net";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
-const RESULTS_PATH = path.join(ROOT, "docs", "canvas-fps-results.json");
+const RESULTS_PATH = process.env.VOO_FPS_RESULTS_PATH || path.join(tmpdir(), "voo-canvas-fps-results.json");
 const NODE_COUNTS = (process.env.VOO_FPS_NODES || "1000,5000,20000").split(",").map(Number);
 if (NODE_COUNTS.some(n => !Number.isInteger(n) || n < 1)) throw new Error("Invalid VOO_FPS_NODES");
 const SCENARIOS = (process.env.VOO_FPS_SCENARIOS || "pan,zoom,drag").split(",");
 if (SCENARIOS.some(s => !["pan", "zoom", "drag"].includes(s))) throw new Error("Invalid VOO_FPS_SCENARIOS");
+const MINIMUM_FPS = fpsThreshold(process.env.VOO_FPS_MIN);
 const SAMPLE_MS = Number(process.env.VOO_FPS_MS || 2000);
 if (!Number.isFinite(SAMPLE_MS) || SAMPLE_MS <= 0) throw new Error("Invalid VOO_FPS_MS");
 const SCREENSHOT_DIR = process.env.VOO_FPS_SCREENSHOT_DIR;
 const EXPLICIT_URL = process.env.VOO_URL || null;
+const GPU_MODE = process.env.VOO_FPS_GPU || "hardware";
+if (!["hardware", "software"].includes(GPU_MODE)) throw new Error("Invalid VOO_FPS_GPU");
+const LAUNCH_ARGS = GPU_MODE === "software"
+  ? ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
+  : ["--no-sandbox"];
 
 function log(value) {
   process.stdout.write(`${typeof value === "string" ? value : JSON.stringify(value, null, 2)}\n`);
@@ -134,7 +145,7 @@ try {
   }
 
   try {
-    browser = await playwright.launch({ headless: true, args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
+    browser = await playwright.launch({ headless: true, args: LAUNCH_ARGS });
   } catch (error) {
     log(`Cannot measure canvas FPS: chromium could not launch (${error?.message || error}). Run \`npx playwright install chromium\`.`);
     process.exitCode = 1;
@@ -162,7 +173,7 @@ try {
   if (profiler) await profiler.send("Profiler.enable");
   const cpuProfiles = [];
   const results = [];
-  for (const nodeCount of NODE_COUNTS) {
+  for (const nodeCount of (process.env.VOO_FPS_PIXELS_ONLY === "1" ? [] : NODE_COUNTS)) {
     await page.evaluate(async (nodeCount) => {
       const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
       const editor = window.__vooEditor;
@@ -281,89 +292,33 @@ try {
   }
   // Outside timed samples: partial paint must equal a subsequent full paint,
   // including opaque/translucent overlaps and the selection handles.
-  const previewPixelsMatch = await page.evaluate(async () => {
-    const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
-    const editor = window.__vooEditor;
-    for (const opacity of [1, .5]) {
-      const nodes = [
-        createRectNode({ x: 50, y: 50, width: 100, height: 100, fill: "#3366ff", opacity }),
-        createRectNode({ x: 100, y: 90, width: 100, height: 100, fill: "#ff6633", opacity }),
-      ];
-      editor.setDoc({ ...editor.getDocument(), width: 500, height: 500, nodes }, { commit: false });
-      editor.zoomToFit();
-      editor.selectExactly([nodes[0].id]);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const paint = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      // Free-mode pages own an offscreen canvas, so intercept the actual engine
-      // clear rather than assuming a per-artboard canvas exists in the DOM.
-      const proto = CanvasRenderingContext2D.prototype, clear = proto.clearRect;
-      let canvas = null;
-      proto.clearRect = function(x, y, width, height) {
-        if (width > 0 && height > 0 && width <= this.canvas.width && height <= this.canvas.height) canvas = this.canvas;
-        return clear.call(this, x, y, width, height);
-      };
-      try {
-        editor.updateNodes([{ id: nodes[0].id, x: 80, y: 70 }], { commit: false, preview: true });
-        await paint();
-      } finally { proto.clearRect = clear; }
-      if (!canvas) throw new Error("Preview did not repaint the stage");
-      const partial = canvas.toDataURL();
-      const { draw } = await import("/src/canvas/editor/scene_renderer.js");
-      const doc = editor.getDocument();
-      const selected = doc.nodes[0];
-      // No cullOffscreen flag: force the authoritative renderer, bypassing caches.
-      draw(canvas.getContext("2d"), { doc, viewport: editor.getViewport(),
-        dpr: window.devicePixelRatio || 1, selectionNode: selected,
-        selectionRect: { x: selected.x, y: selected.y, width: selected.width, height: selected.height },
-        bitmapOf: () => null, maskOf: () => null });
-      if (partial !== canvas.toDataURL()) return false;
-    }
-    return true;
-  });
+  const previewPixelsMatch = await page.evaluate(verifyPreviewPixels);
   // Compare settled camera output against the authoritative renderer on
   // independent canvases, including fractional pan, DPR, transparent overlap,
   // selection changes, edits and undo. No screenshot timing assumptions.
-  const cameraPixelsMatch = await page.evaluate(async () => {
-    const { draw } = await import("/src/canvas/editor/scene_renderer.js");
-    const { createRectNode, createTextNode } = await import("/src/canvas/editor/scene_model.js");
-    const { releaseStagePictureCache } = await import("/src/canvas/editor/stage_picture_cache.js");
-    for (const [dpr, willReadFrequently] of [1, 1.25, 2].flatMap(d => [[d, false], [d, true]])) {
-      const cached = document.createElement("canvas"), full = document.createElement("canvas");
-      cached.width = full.width = Math.round(501 * dpr); cached.height = full.height = Math.round(401 * dpr);
-      const parent = document.createElement("div");
-      Object.assign(parent.style, { position: "fixed", left: "-10000px", top: "0", width: "501px", height: "401px" });
-      cached.style.position = "absolute";
-      parent.append(cached); document.body.append(parent);
-      const ctx = cached.getContext("2d", { willReadFrequently });
-      const nodes = [createRectNode({ x: 20, y: 30, width: 230, height: 200, fill: "#3366ff" }),
-        createRectNode({ x: 100, y: 90, width: 220, height: 160, fill: "#ff6633", opacity: .5 }),
-        { ...createTextNode({ x: 40, y: 65, text: "Wrapped text 你好 canvas", fill: "#102030", fontSize: 18 }),
-          fontFamily: "sans-serif", width: 210, height: 100, boxWidth: 200 }];
-      let options = { doc: { width: 500, height: 400, backgroundColor: "#ffffff", nodes },
-        viewport: { zoom: 1, panX: 0, panY: 0 }, dpr, stageWidth: 501, stageHeight: 401,
-        bitmapOf: () => null, maskOf: () => null, cullOffscreen: true };
-      try {
-        for (const zoom of [.67, 1.37, 2.1]) {
-          for (let i = 0; i < 4; i++) draw(ctx, { ...options, cameraMoving: true,
-            viewport: { zoom: zoom + i * .01, panX: 13.25 - i * 10, panY: -31.5 + i * 7 } });
-          if (!parent.querySelector("[data-canvas-tile-layer]") || cached.style.visibility !== "hidden") throw new Error("Camera did not present independent tile layers");
-          options = { ...options, viewport: { zoom, panX: 13.25, panY: -31.5 }, cameraMoving: false };
-          for (const content of [nodes, [{ ...nodes[0], x: 45 }, ...nodes.slice(1)],
-            [nodes[0], nodes[1], { ...nodes[2], text: "Edited paragraph with a new wrap width", boxWidth: 150 }], nodes]) {
-            options = { ...options, doc: { ...options.doc, nodes: content, backgroundColor: zoom === 1.37 ? "#ddeeff" : "#ffffff" },
-              selectionNode: content[0], selectionRect: { x: content[0].x, y: 30, width: 230, height: 200 } };
-            draw(ctx, options);
-            if (parent.querySelector("[data-canvas-tile-layer]")) throw new Error("Settled camera retained a preview layer");
-            draw(full.getContext("2d", { willReadFrequently }), { ...options, cullOffscreen: false });
-            if (cached.toDataURL() !== full.toDataURL()) throw new Error(`Camera pixels differ: dpr=${dpr} zoom=${zoom}`);
-          }
-        }
-      } finally { releaseStagePictureCache(ctx); parent.remove(); cached.width = full.width = 0; }
-    }
-    return true;
-  });
+  const cameraPixelsMatch = await page.evaluate(verifyCameraPixels);
+  if (cameraPixelsMatch !== true) {
+    for (const key of ["cached", "full"]) await fs.writeFile(path.join(tmpdir(), `voo-camera-${key}.png`), Buffer.from(cameraPixelsMatch[key].split(",")[1], "base64"));
+    throw new Error(cameraPixelsMatch.error);
+  }
   if (!previewPixelsMatch) throw new Error("Cached/partial preview pixels differ from full repaint");
-  const gestureUiRestored = await page.evaluate(() => !document.querySelector('[data-voo-camera-preview]'));
+  const gpuPreviewPixelsMatch = await page.evaluate(verifySkiaRectPreview);
+  if (gpuPreviewPixelsMatch !== true) {
+    for (const key of ["cached", "full"]) await fs.writeFile(path.join(tmpdir(), `voo-gpu-${key}.png`), Buffer.from(gpuPreviewPixelsMatch[key].split(",")[1], "base64"));
+    throw new Error(gpuPreviewPixelsMatch.error);
+  }
+  const samplePixelsMatch = await page.evaluate(async () => {
+    const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
+    const editor = window.__vooEditor;
+    const node = createRectNode({ x: 50, y: 50, width: 100, height: 100, fill: "#123456" });
+    editor.setDoc({ ...editor.getDocument(), width: 500, height: 400, backgroundColor: "#ffffff", nodes: [node] }, { commit: false });
+    editor.zoomToFit();
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return editor.sampleColorAt({ x: 100, y: 100 }) === "#123456";
+  });
+  if (!samplePixelsMatch) throw new Error("Deferred stage color sampling is stale");
+  await page.waitForFunction(() => !document.querySelector('[data-voo-camera-preview]'), null, { timeout: 3000 });
+  const gestureUiRestored = true;
   if (!gestureUiRestored) throw new Error("Settled camera retained the UI preview tier");
   if (profiler) {
     log({ cpuProfiles });
@@ -371,27 +326,29 @@ try {
   if (pageErrors.length) throw new Error(`Browser errors: ${pageErrors.join("; ")}`);
   const summary = {
     browser: browser.version(),
-    launchArgs: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
-    renderer: "Canvas2D (default app renderer)",
+    launchArgs: LAUNCH_ARGS,
+    gpuMode: GPU_MODE,
+    renderer: "CanvasKit workspace with Canvas2D fallbacks",
     generatedAt: new Date().toISOString(),
     url,
     viewport: "1440x1000",
     requestedNodes: NODE_COUNTS,
     scenarios: SCENARIOS,
     previewPixelsMatch,
+    gpuPreviewPixelsMatch,
+    samplePixelsMatch,
     cameraPixelsMatch,
     gestureUiRestored,
     ...(process.env.VOO_FPS_DISABLE_BACKDROP === "1" ? { diagnosticBackdropDisabled: true } : {}),
     ...(idleFps == null ? {} : { idleFps }),
     sampleMs: SAMPLE_MS,
+    minimumFps: MINIMUM_FPS,
     results,
   };
   await fs.mkdir(path.dirname(RESULTS_PATH), { recursive: true });
   await fs.writeFile(RESULTS_PATH, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
   log(summary);
-  if (results.some(r => r.avgFps < 30)) {
-    process.stderr.write(`WARN canvas FPS is low: below 30 FPS\n`);
-  }
+  if (process.env.VOO_FPS_PIXELS_ONLY !== "1") assertFpsThreshold(results, MINIMUM_FPS);
   process.exitCode = 0;
 } catch (error) {
   process.stderr.write(`canvas FPS instrumentation failed: ${error?.stack || error}\n`);

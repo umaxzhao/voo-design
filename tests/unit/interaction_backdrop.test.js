@@ -37,6 +37,23 @@ it('does not change UI styles on hardware or unknown drivers', () => {
   expect(attrs.size).toBe(0); expect(styles).toHaveLength(0);
 });
 
+it('includes the application header and restores its previous document tier', () => {
+  vi.useFakeTimers();
+  vi.stubGlobal('requestAnimationFrame', cb => setTimeout(cb, 16));
+  vi.stubGlobal('cancelAnimationFrame', id => clearTimeout(id));
+  try {
+    const { ctx, attrs } = fixture();
+    const editor = ctx.canvas.closest();
+    editor.ownerDocument.documentElement = editor;
+    const quality = createInteractionBackdrop(() => true);
+    attrs.set('data-voo-camera-preview', 'previous');
+    quality.update(ctx, true);
+    expect(attrs.get('data-voo-camera-preview')).toBe('');
+    quality.release(ctx);
+    expect(attrs.get('data-voo-camera-preview')).toBe('previous');
+  } finally { vi.useRealTimers(); vi.unstubAllGlobals(); }
+});
+
 it('adapts unknown drivers only after a slow gesture frame and restores the settled tier', () => {
   vi.useFakeTimers();
   vi.stubGlobal('requestAnimationFrame', cb => setTimeout(cb, 16));

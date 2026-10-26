@@ -20,6 +20,22 @@ it('transforms overscan around camera origin and detects exposed edges', () => {
 import { vi } from 'vitest';
 import { drawCachedStage, releaseStagePictureCache } from '../../src/canvas/editor/stage_picture_cache.js';
 import { createRectNode } from '../../src/canvas/editor/scene_model.js';
+import { interactionBackdrop } from '../../src/canvas/editor/interaction_backdrop.js';
+
+it('keeps the interaction tier when mixed media cannot use a tile cache', () => {
+  const update = vi.spyOn(interactionBackdrop, 'update').mockImplementation(() => {});
+  const release = vi.spyOn(interactionBackdrop, 'release').mockImplementation(() => {});
+  try {
+    const ctx = { canvas: {} };
+    const paint = vi.fn();
+    drawCachedStage(ctx, { cameraMoving: true, cullOffscreen: false }, paint);
+    expect(update).toHaveBeenCalledWith(ctx, true);
+    expect(release).not.toHaveBeenCalled();
+    expect(paint).toHaveBeenCalledOnce();
+    releaseStagePictureCache(ctx);
+    expect(release).toHaveBeenCalledOnce();
+  } finally { update.mockRestore(); release.mockRestore(); }
+});
 
 it('keeps split layers for large drag damage and invalidates changes above the selection', () => {
   const context = () => ({ canvas: { width: 800, height: 600 }, save() {}, restore() {}, setTransform() {}, clearRect() {},

@@ -200,6 +200,7 @@ export function assembleEngineControllers({
   });
 
   const sampler = createEngineSampler({
+    beforeRead: () => getEngine()?.prepareCanvasReadback?.(),
     ctx,
     getDoc,
     cache,

@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { createSkiaHost } from "./editor/skia_host.js";
 import { WORKSPACE_BACKGROUND } from "./editor/render_canvas_base.js";
 import { THEME_CHANGED_EVENT } from "./theme_events.js";
-import { workspaceSkiaDocument } from "./editor/workspace-artwork-routing.js";
+import { createLiveWorkspaceDocuments } from "./editor/workspace-live-documents.js";
+import { sameWorkspacePaint } from "./editor/workspace-render-identity.js";
 
 /**
  * Paints one editor page through Skia instead of the 2D canvas (full mode / single page).
@@ -190,6 +191,8 @@ export function useWorkspaceSkia({
     if (!host || status !== "ready" || !stage) return;
     let frame = null;
     let disposed = false;
+    const resolveLiveDocuments = createLiveWorkspaceDocuments();
+    let previousPaint = null;
     const fail = (error) => {
       if (disposed) return;
       console.warn("Workspace Skia draw failed; using Canvas2D artwork", error);
@@ -224,11 +227,15 @@ export function useWorkspaceSkia({
         // Read the same live document that paints selection chrome in this frame.
         const liveDoc = latest.liveEngine?.getDocument?.();
         const priorDoc = latest.docs.find((doc) => doc.id === latest.livePageId);
-        const liveDocs = liveDoc && priorDoc
-          ? latest.docs.map((doc) => doc === priorDoc ? { ...liveDoc, id: doc.id } : doc)
-          : latest.docs;
+        const liveDocs = resolveLiveDocuments(latest.docs, latest.livePageId, liveDoc);
         const liveIndex = liveDoc && priorDoc?.nodes !== liveDoc.nodes ? null : latest.spatialIndex;
-        void host.draw({ ...latest, docs: liveDocs.map(workspaceSkiaDocument), spatialIndex: liveIndex, backgroundColor: ground, viewport: {
+        const layoutSignature = JSON.stringify(latest.layouts instanceof Map ? [...latest.layouts] : latest.layouts);
+        const paintIdentity = { docs: liveDocs, layouts: layoutSignature, panX, panY, zoom,
+          width, height, dpr, backgroundColor: ground, revision: latest.revision,
+          spatialIndex: liveIndex, resolveImageUrl: latest.resolveImageUrl };
+        if (sameWorkspacePaint(previousPaint, paintIdentity)) return;
+        previousPaint = paintIdentity;
+        void host.draw({ ...latest, docs: liveDocs, spatialIndex: liveIndex, backgroundColor: ground, viewport: {
           x: panX, y: panY, panX, panY, zoom, width, height, devicePixelRatio: dpr,
         } }).catch(fail);
       } catch (error) {

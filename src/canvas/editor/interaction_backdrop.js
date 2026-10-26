@@ -40,8 +40,11 @@ export function createInteractionBackdrop(shouldOptimize = softwareGpu) {
     const now = performance.now();
     const slowFrame = state && now - state.lastFrame > 24 && now - state.lastFrame < 400;
     if (!state) {
-      const root = ctx.canvas?.closest?.('[data-testid="design-editor"]');
-      if (!root) return;
+      const editor = ctx.canvas?.closest?.('[data-testid="design-editor"]');
+      if (!editor) return;
+      // The application header also blurs the moving workspace underneath.
+      // Share one document tier so it cannot keep forcing full-page sampling.
+      const root = editor.ownerDocument.documentElement ?? editor;
       state = { root, revision: 0, frame: 0, software: shouldOptimize(), active: false };
       states.set(ctx, state);
     }

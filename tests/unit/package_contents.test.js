@@ -2,6 +2,7 @@ import { createPackage } from '@electron/asar';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { finished } from 'node:stream/promises';
 import { afterEach, describe, expect, it } from 'vitest';
 import { verifyPackage } from '../../scripts/verify-package.mjs';
 
@@ -31,7 +32,10 @@ async function fixture({ omit, extra, locales = ['en-US', 'zh-CN'] } = {}) {
   await mkdir(path.join(app, 'resources'), { recursive: true });
   await mkdir(path.join(app, 'locales'));
   for (const locale of locales) await writeFile(path.join(app, 'locales', `${locale}.pak`), '');
-  await createPackage(source, path.join(app, 'resources/app.asar'));
+  const archiveStream = await createPackage(source, path.join(app, 'resources/app.asar'));
+  // asar 3 resolves with its writable stream after end() is queued. Wait for
+  // flushing/close before inspecting bytes, especially under full-suite load.
+  if (archiveStream) await finished(archiveStream);
   return app;
 }
 

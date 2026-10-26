@@ -67,11 +67,12 @@ export function renderEngineStage({
   previewMotion = false,
   requestRender = null,
   onRenderOptions = null,
+  paintStage = true,
 }) {
   const dpr = draftRender ? 1 : window.devicePixelRatio || 1;
   const width = stageWidth || stage.clientWidth;
   const height = stageHeight || stage.clientHeight;
-  resizeCanvas(canvas, width, height, dpr);
+  if (paintStage) resizeCanvas(canvas, width, height, dpr);
   const selectedId = selection.getId();
   const selectedNode = selectedContainer ?? (selectedId ? findNode(doc, selectedId) : null);
   // A paint tool on one image layer keeps only the faint outline (no handles)
@@ -220,7 +221,7 @@ export function renderEngineStage({
     docVersion: `${docVersion}:${renderVersion}`,
   };
   onRenderOptions?.(renderOptions);
-  draw(ctx, renderOptions);
+  if (paintStage) draw(ctx, renderOptions);
 
   return dpr;
 }

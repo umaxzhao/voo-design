@@ -11,7 +11,7 @@ import {
   startCliBridgeServer,
 } from "../electron/cli_bridge_server.js";
 import { CLI_BRIDGE_DEFAULT_PORT } from "../src/shared/cli_bridge_protocol.js";
-import { writeBridgeToken } from "../src/shared/cli_bridge_token.js";
+import { tokenFilePath } from "../src/shared/cli_bridge_token.js";
 
 const rawPort = process.env.VOO_CLI_BRIDGE_PORT;
 const port = rawPort ? Number(rawPort) : CLI_BRIDGE_DEFAULT_PORT;
@@ -27,13 +27,9 @@ const bridge = await startCliBridgeServer({
   port,
   origins: [...DEFAULT_CLI_BRIDGE_ORIGINS, ...extraOrigins],
 });
-const token = process.env.VOO_CLI_BRIDGE_TOKEN;
-if (!token) throw new Error("CLI bridge token was not initialized");
-const tokenPath = writeBridgeToken(token);
 process.stdout.write(
   `VOO CLI bridge listening on ws://127.0.0.1:${bridge.port}\n` +
-  `CLI bridge token: ${token}\n` +
-  `CLI bridge token file: ${tokenPath}\n`,
+  `CLI bridge token file: ${tokenFilePath()}\n`,
 );
 
 // close() also releases the Codex child process, MCP server and temp dir.

@@ -118,6 +118,7 @@ export function createEditor({
   let notifyFrame = 0;
   let disposed = false;
   let mixedLayerMode = false;
+  let stagePaintingEnabled = true;
   let chromeRenderOptions = null;
   const renderListeners = new Set();
 
@@ -367,6 +368,7 @@ export function createEditor({
     }
     videoLayers.prune(videoIds);
     renderedDpr = renderEngineStage({
+      paintStage: stagePaintingEnabled,
       ctx,
       canvas,
       stage,
@@ -738,6 +740,16 @@ export function createEditor({
       if (mixedLayerMode === Boolean(next)) return;
       mixedLayerMode = Boolean(next);
       requestRender();
+    },
+    setStagePaintingEnabled(enabled) {
+      if (stagePaintingEnabled === enabled) return;
+      stagePaintingEnabled = enabled;
+      requestRender();
+    },
+    prepareCanvasReadback() {
+      if (stagePaintingEnabled) return;
+      stagePaintingEnabled = true;
+      try { render(); } finally { stagePaintingEnabled = false; }
     },
     renderLayerPass(targetCanvas, nodeIds) {
       renderEngineLayerPass({

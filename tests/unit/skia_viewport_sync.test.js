@@ -9,7 +9,7 @@ vi.mock("@voo/canvas-core", () => ({
   SkiaRenderer: class { constructor() { return renderer; } },
 }));
 vi.mock("../../src/canvas/editor/skia_scene_adapter.js", () => ({
-  documentsToScene: () => [],
+  documentsToScene: docs => docs.some(doc => doc.resourceFree) ? [] : [{ nodeType: "image" }],
 }));
 import { createSkiaHost } from "../../src/canvas/editor/skia_host.js";
 
@@ -50,4 +50,14 @@ it("ignores obsolete resource completions and completions after disposal", async
   loads[1]();
   await next;
   expect(renderer.render).toHaveBeenCalledTimes(2);
+});
+
+it("does not double-paint geometry-only changes through an empty resource queue", async () => {
+  const host = await createSkiaHost({});
+  for (let revision = 0; revision < 3; revision++) {
+    await host.draw({ docs: [{ resourceFree: true }], revision, viewport: { zoom: 1 } });
+  }
+  expect(renderer.render).toHaveBeenCalledTimes(3);
+  expect(renderer.waitForResources).not.toHaveBeenCalled();
+  host.dispose();
 });

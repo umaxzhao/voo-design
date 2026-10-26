@@ -63,7 +63,9 @@ it("forwards live pixel, marquee, and lasso state from the page to the workspace
     penTools: { api: { getEdit: noop, getDraft: noop, insertionPreview: noop } },
     pixelSelection, marqueeRect, antsOffset: 3,
     onRenderOptions: value => { options = value; },
+    paintStage: false,
   });
+  expect(draw).not.toHaveBeenCalled();
   const viewport = { zoom: 1.5, panX: 300, panY: 120 };
   renderEngineChrome(canvas, options, viewport, 800, 600);
   expect(context.clearRect).toHaveBeenCalledWith(0, 0, 1600, 1200);

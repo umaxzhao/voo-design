@@ -19,8 +19,10 @@ export function createEngineSampler({
   getDropperSampleSize,
   getDropperSource,
   DROPPER_SAMPLE_RADII,
+  beforeRead = null,
 }) {
   function compositedPixelAt(docPoint, radius, size) {
+    beforeRead?.();
     syncTileLayerCanvas(ctx, () => ({ doc: getDoc(), viewport: viewportTools.getViewport(),
       cullOffscreen: false, spatialIndex: null }));
     const pixel = canvasPixelAt(

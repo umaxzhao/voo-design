@@ -17,6 +17,7 @@ import { assetUrl } from "../asset_url.js";
 import { documentsToScene } from "./skia_scene_adapter.js";
 import { visibleWorldRect } from "./viewport_culling.js";
 import { WORKSPACE_BACKGROUND } from "./render_canvas_base.js";
+import { createSkiaRectPreview } from "./skia-rect-preview.js";
 
 /** How long a frame waits on pictures before painting without them. */
 const RESOURCE_TIMEOUT_MS = 3000;
@@ -70,6 +71,7 @@ export async function createSkiaHost(canvas) {
   const backend = await instance.initialize(canvas);
 
   const wasmFrames = createWasmSkiaFrames();
+  const rectPreview = createSkiaRectPreview();
   let lastPixelWidth = 0;
   let lastPixelHeight = 0;
 
@@ -79,6 +81,7 @@ export async function createSkiaHost(canvas) {
   let disposed = false;
 
   function present(frame) {
+    if (rectPreview.draw(instance, frame)) return;
     if (!wasmFrames.draw(instance, frame.docs, frame.nativeIndex, frame.viewport,
         frame.visibleRect, frame.snapshot.backgroundColor, frame.layouts)) {
       instance.render(frame.snapshot, frame.viewport);
@@ -189,6 +192,12 @@ export async function createSkiaHost(canvas) {
       // frames neither wait for decoding nor register another completion draw.
       if (resourcesChanged) {
         const currentResources = ++resourceRevision;
+        const needsResources = snapshot.elements.some(element =>
+          ["image", "text"].includes(element.nodeType) || element.imageUrl || element.imageUrls?.length ||
+          element.fills?.some(fill => fill.type === "image" || fill.kind === "image"));
+        // Geometry/paint edits do not decode resources. Waiting on an empty
+        // load queue schedules a second identical GPU draw on every drag frame.
+        if (!needsResources) return snapshot;
         await instance.waitForResources(snapshot, RESOURCE_TIMEOUT_MS);
         if (!disposed && currentResources === resourceRevision) {
           present(latestFrame);
@@ -198,6 +207,7 @@ export async function createSkiaHost(canvas) {
     },
 
     dispose() {
+      rectPreview.dispose();
       disposed = true;
       ++resourceRevision;
       wasmFrames.clear();

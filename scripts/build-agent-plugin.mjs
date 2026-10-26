@@ -30,6 +30,7 @@ const wsPackage = require.resolve("ws/package.json");
 const wsVersion = JSON.parse(await readFile(wsPackage, "utf8")).version;
 await cp(path.dirname(wsPackage), path.join(destination, "node_modules/ws"), { recursive: true });
 await cp(path.join(root, "LICENSE"), path.join(destination, "LICENSE"));
+await cp(path.join(root, "build/icon.png"), path.join(destination, ".claude-plugin/icon.png"));
 await writeFile(path.join(destination, "package.json"), JSON.stringify({
   name: "voo-design-agent-connector", version: "1.0.0", private: true,
   type: "module", license: "MIT", engines: { node: ">=18" }, dependencies: { ws: wsVersion },
