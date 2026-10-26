@@ -20,6 +20,7 @@ import {
 import { IconEye, IconEyeOff, IconMinus } from "../../icons.jsx";
 import AddKindPicker from "./add_kind_picker.jsx";
 import AdjustmentPopover from "./adjustment_popover.jsx";
+import EffectControls from "./effect_controls.jsx";
 import { StaticSection } from "./property_section.jsx";
 import KindIcon from "./kind_icons.jsx";
 
@@ -49,6 +50,7 @@ export default function LayerEffectsSection({
   const { t } = useI18n();
   // Popover state for editing an existing or newly added item
   const [popover, setPopover] = useState(null); // { kind, isEffect }
+  const [inlineEffect, setInlineEffect] = useState(null);
   const [localPickerOpen, setLocalPickerOpen] = useState(false);
   const controlled = typeof onAddPickerChange === "function";
   const showAddPicker = controlled ? Boolean(addPickerOpen) : localPickerOpen;
@@ -80,7 +82,8 @@ export default function LayerEffectsSection({
           [kind]: initial,
         },
       });
-      setPopover({ kind, isEffect: true });
+      setInlineEffect(kind);
+      setPopover(null);
     } else {
       const initial = starterAdjustment(kind);
       editAndCommit({
@@ -106,6 +109,7 @@ export default function LayerEffectsSection({
     if (popover?.kind === kind && popover?.isEffect === isEffect) {
       setPopover(null);
     }
+    if (isEffect && inlineEffect === kind) setInlineEffect(null);
   };
 
   const toggleEnable = (kind, isEffect, currentEnabled) => {
@@ -251,11 +255,12 @@ export default function LayerEffectsSection({
           {configuredEffects.map((kind) => {
             const isEnabled = Boolean(object.effects?.[kind]?.enabled);
             const isEditing =
-              popover?.kind === kind && Boolean(popover?.isEffect);
+              inlineEffect === kind ||
+              (popover?.kind === kind && Boolean(popover?.isEffect));
 
             return (
+              <div key={`eff-${kind}`} className="flex flex-col gap-1">
               <div
-                key={`eff-${kind}`}
                 className={`flex h-7 items-center justify-between rounded-xl px-2.5 transition-all ${
                   isEditing
                     ? "bg-neutral-800 ring-1 ring-[#E5B2FF]/40"
@@ -264,7 +269,10 @@ export default function LayerEffectsSection({
               >
                 <button
                   type="button"
-                  onClick={() => setPopover({ kind, isEffect: true })}
+                  onClick={() => {
+                    setInlineEffect(inlineEffect === kind ? null : kind);
+                    setPopover(null);
+                  }}
                   aria-label={t(effectLabelKey(kind))}
                   className="flex items-center gap-2 min-w-0 flex-1 text-left rounded-lg focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
                 >
@@ -308,6 +316,20 @@ export default function LayerEffectsSection({
                     <IconMinus size={12} />
                   </button>
                 </div>
+              </div>
+              {inlineEffect === kind ? (
+                <div className="rounded-xl bg-neutral-900/70 p-2">
+                  <EffectControls
+                    kind={kind}
+                    effects={object.effects ?? {}}
+                    rawEffects={object.effects ?? null}
+                    edit={(patch) => _edit?.(patch)}
+                    editAndCommit={editAndCommit}
+                    commitNow={_commitNow}
+                    t={t}
+                  />
+                </div>
+              ) : null}
               </div>
             );
           })}
