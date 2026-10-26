@@ -29,10 +29,6 @@ export const DEFAULT_CLI_BRIDGE_ORIGINS = Object.freeze([
   "https://la.voo.run",
 ]);
 
-const SESSION_BRIDGE_TOKEN = process.env.VOO_CLI_BRIDGE_TOKEN || randomBytes(32).toString("hex");
-process.env.VOO_CLI_BRIDGE_TOKEN = SESSION_BRIDGE_TOKEN;
-writeBridgeToken(SESSION_BRIDGE_TOKEN);
-
 export function isAllowedOrigin(origin, allowedSet) {
   return typeof origin === "string" && allowedSet.has(origin);
 }
@@ -66,9 +62,10 @@ export async function startCliBridgeServer({
   port = CLI_BRIDGE_DEFAULT_PORT,
   host = "127.0.0.1",
   origins = DEFAULT_CLI_BRIDGE_ORIGINS,
-  token = SESSION_BRIDGE_TOKEN,
+  token,
   register = registerCliBridgeChannels,
 } = {}) {
+  const activeToken = token || process.env.VOO_CLI_BRIDGE_TOKEN || randomBytes(32).toString("hex");
   const adapter = createWsIpcAdapter();
   // `register` may be a custom registrar with nothing to dispose.
   const registration = register({ ipcMain: adapter.ipcMain });
@@ -93,7 +90,7 @@ export async function startCliBridgeServer({
     server,
     verifyClient: ({ origin, req }) => {
       if (origin !== undefined) return isAllowedOrigin(origin, allowed);
-      return hasValidBridgeToken(req.headers["x-voo-cli-bridge-token"], token);
+      return hasValidBridgeToken(req.headers["x-voo-cli-bridge-token"], activeToken);
     },
   });
 
@@ -127,10 +124,24 @@ export async function startCliBridgeServer({
     });
   });
 
+  process.env.VOO_CLI_BRIDGE_TOKEN = activeToken;
+  try {
+    writeBridgeToken(activeToken);
+  } catch (err) {
+    try {
+      wss.close();
+    } catch {}
+    try {
+      server.close();
+    } catch {}
+    throw err;
+  }
+
   return {
     server,
     wss,
     port: server.address().port,
+    token: activeToken,
     adapter,
     async close() {
       for (const client of wss.clients) {

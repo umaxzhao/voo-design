@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import http from "node:http";
 import { PassThrough } from "node:stream";
-import { describe, it, expect, beforeEach, afterEach, afterAll } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, afterAll, vi } from "vitest";
 import { WebSocketServer } from "ws";
 
 // Set a temporary XDG_CONFIG_HOME before importing modules that resolve config dir
@@ -164,5 +164,115 @@ describe("CLI Bridge Token Management", () => {
     process.env.VOO_CLI_BRIDGE_TOKEN = "token-in-env";
 
     expect(resolveBridgeToken()).toBe("token-in-env");
+  });
+
+  it("importing cli_bridge_server.js does not change the token file", async () => {
+    const preWrittenToken = `pre-written-token-${Date.now()}`;
+    writeBridgeToken(preWrittenToken);
+    delete process.env.VOO_CLI_BRIDGE_TOKEN;
+
+    const fileBefore = fs.readFileSync(tokenFilePath(), "utf8");
+    expect(fileBefore).toBe(`${preWrittenToken}\n`);
+
+    vi.resetModules();
+    await import("../../electron/cli_bridge_server.js");
+
+    const fileAfter = fs.readFileSync(tokenFilePath(), "utf8");
+    expect(fileAfter).toBe(fileBefore);
+    expect(readBridgeToken()).toBe(preWrittenToken);
+  });
+
+  it("starting the bridge writes the token file with mode 0600", async () => {
+    delete process.env.VOO_CLI_BRIDGE_TOKEN;
+    const { startCliBridgeServer } = await import("../../electron/cli_bridge_server.js");
+
+    const bridge = await startCliBridgeServer({
+      port: 0,
+      host: "127.0.0.1",
+      register: () => ({ dispose: async () => {} }),
+    });
+
+    try {
+      const filePath = tokenFilePath();
+      expect(fs.existsSync(filePath)).toBe(true);
+
+      const stat = fs.statSync(filePath);
+      expect(stat.mode & 0o777).toBe(0o600);
+
+      const savedToken = readBridgeToken();
+      expect(savedToken).toBe(bridge.token);
+      expect(savedToken).toBe(process.env.VOO_CLI_BRIDGE_TOKEN);
+      expect(fs.readFileSync(filePath, "utf8")).toBe(`${bridge.token}\n`);
+    } finally {
+      await bridge.close();
+    }
+  });
+
+  it("MCP connect with a 401 response throws the auth error and does not call the bridge start function", async () => {
+    const originalToken = "mcp-pre-written-token-401";
+    writeBridgeToken(originalToken);
+    delete process.env.VOO_CLI_BRIDGE_TOKEN;
+
+    const cliBridgeServer = await import("../../electron/cli_bridge_server.js");
+    const startSpy = vi.spyOn(cliBridgeServer, "startCliBridgeServer");
+
+    // HTTP / WS server that always rejects with 401 Unauthorized
+    const server = http.createServer((req, res) => {
+      res.writeHead(401, { "Content-Type": "text/plain" });
+      res.end("Unauthorized");
+    });
+    const wss = new WebSocketServer({
+      server,
+      verifyClient: () => false,
+    });
+
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const port = server.address().port;
+    process.env.VOO_CLI_BRIDGE_PORT = String(port);
+
+    const mcp = createMcpStdioServer({
+      input: new PassThrough(),
+      output: new PassThrough(),
+    });
+
+    try {
+      await expect(mcp.ready()).rejects.toThrow(
+        "VOO bridge rejected the token. Restart the VOO desktop app so the token file is refreshed.",
+      );
+      expect(startSpy).not.toHaveBeenCalled();
+      expect(readBridgeToken()).toBe(originalToken);
+    } finally {
+      startSpy.mockRestore();
+      await mcp.close();
+      wss.close();
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+
+  it("owned-bridge fallback does not write the token file if a bridge is already running on that port", async () => {
+    const existingToken = "existing-server-token";
+    writeBridgeToken(existingToken);
+    delete process.env.VOO_CLI_BRIDGE_TOKEN;
+
+    const occupiedServer = http.createServer();
+    await new Promise((resolve) => occupiedServer.listen(0, "127.0.0.1", resolve));
+    const occupiedPort = occupiedServer.address().port;
+
+    const { startCliBridgeServer } = await import("../../electron/cli_bridge_server.js");
+
+    try {
+      await expect(
+        startCliBridgeServer({
+          port: occupiedPort,
+          token: "new-token-that-must-not-be-written",
+          register: () => ({ dispose: async () => {} }),
+        }),
+      ).rejects.toThrow();
+
+      // Ensure the token file on disk was NOT overwritten
+      expect(readBridgeToken()).toBe(existingToken);
+    } finally {
+      await new Promise((resolve) => occupiedServer.close(resolve));
+    }
   });
 });
