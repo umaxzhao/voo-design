@@ -7,6 +7,11 @@ import FlatSelect from "../flat_select.jsx";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
 import { NODE_KIND } from "../../editor/scene_model.js";
 import { opacityPatch } from "../../color_picker/opacity_patch.js";
+import {
+  formatGradient,
+  isCssGradient,
+  parseGradient,
+} from "../../color_picker/gradient_fill.js";
 import { useI18n } from "../../use_i18n.js";
 import { IconEye, IconEyeOff, IconMinus } from "../../icons.jsx";
 import { Swatch, HexField, HEX_COLOUR } from "./colour_swatch.jsx";
@@ -143,6 +148,46 @@ export function FillSection({
   }, [isImageNode, imageKey, fillImage, getBitmap]);
 
   const rawFill = typeof object.fill === "string" ? object.fill : "transparent";
+  const parsedGradient = isCssGradient(rawFill) ? parseGradient(rawFill) : null;
+  const paintType = isImageUrlFill(rawFill)
+    ? "image"
+    : parsedGradient && parsedGradient.type !== "solid"
+      ? parsedGradient.type
+      : "solid";
+  const imageFileRef = useRef(null);
+  const paintTypeOptions = [
+    { value: "solid", label: t("editor.colorPicker.solid") },
+    { value: "linear", label: t("editor.props.gradient.linear") },
+    { value: "radial", label: t("editor.props.gradient.radial") },
+    { value: "angular", label: t("editor.props.gradient.angular") },
+    { value: "diamond", label: t("editor.props.gradient.diamond") },
+    { value: "image", label: t("editor.props.imageLabel") },
+  ];
+  const setPaintType = (nextType) => {
+    if (nextType === "image") {
+      imageFileRef.current?.click();
+      return;
+    }
+    if (nextType === "solid") {
+      const colour = parsedGradient?.stops?.[0]?.color ?? (HEX_COLOUR.test(rawFill) ? rawFill : "#D9D9D9");
+      editAndCommit({ fill: colour });
+      return;
+    }
+    const stops = parsedGradient?.stops?.length
+      ? parsedGradient.stops
+      : [
+          { color: HEX_COLOUR.test(rawFill) ? rawFill : "#D9D9D9", opacity: 100, position: 0 },
+          { color: "#FFFFFF", opacity: 100, position: 100 },
+        ];
+    editAndCommit({
+      fill: formatGradient(
+        nextType,
+        parsedGradient?.angle ?? "135deg",
+        stops,
+        parsedGradient?.geometry,
+      ),
+    });
+  };
   const rawIsGradient = rawFill.includes("-gradient");
   const explicitPaint =
     isImageNode ||
@@ -241,6 +286,37 @@ export function FillSection({
         </div>
       ) : null}
 
+      {none ? null : (
+        <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
+          <FlatSelect
+            value={paintType}
+            onChange={setPaintType}
+            options={paintTypeOptions}
+            label={t("editor.props.fillType")}
+            portal
+            className="w-[78px] shrink-0"
+            triggerClassName="!h-6 !w-full !rounded-lg !bg-neutral-800 !px-2 !text-[9px] !font-mono !text-neutral-200"
+            widthClass="w-40"
+          />
+          <input
+            ref={imageFileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            aria-label={t("editor.props.fillImage")}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => {
+                if (typeof reader.result === "string") editAndCommit({ fill: reader.result });
+              };
+              reader.readAsDataURL(file);
+            }}
+          />
+        </div>
+      )}
       {none ? null : (
         /* Row 1: Unified Pill (Swatch + Label/Hex + Opacity + Minus) */
         <div className={sectionRowClass}>

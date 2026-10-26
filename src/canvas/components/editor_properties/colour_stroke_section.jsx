@@ -17,6 +17,12 @@ import { AlignIcon } from "../alignment_icon.jsx";
 import StrokeStyleSection from "./stroke_style_section.jsx";
 import EditorTooltip from "../editor_tooltip.jsx";
 import ScrubField from "../scrub_field.jsx";
+import FlatSelect from "../flat_select.jsx";
+import {
+  formatGradient,
+  isCssGradient,
+  parseGradient,
+} from "../../color_picker/gradient_fill.js";
 import { Swatch, HexField, HEX_COLOUR } from "./colour_swatch.jsx";
 import { opacityPatch } from "../../color_picker/opacity_patch.js";
 import {
@@ -37,8 +43,42 @@ export function StrokeSection({
   const { t } = useI18n();
   const stroke =
     typeof object.stroke === "string" ? object.stroke : "transparent";
-  const isGradient = stroke.includes("-gradient");
+  const isGradient = isCssGradient(stroke);
+  const parsedStrokeGradient = isGradient ? parseGradient(stroke) : null;
+  const strokeType = parsedStrokeGradient && parsedStrokeGradient.type !== "solid"
+    ? parsedStrokeGradient.type
+    : "solid";
   const none = !HEX_COLOUR.test(stroke) && !isGradient;
+  const strokeTypeOptions = [
+    { value: "solid", label: t("editor.colorPicker.solid") },
+    { value: "linear", label: t("editor.props.gradient.linear") },
+    { value: "radial", label: t("editor.props.gradient.radial") },
+    { value: "angular", label: t("editor.props.gradient.angular") },
+    { value: "diamond", label: t("editor.props.gradient.diamond") },
+  ];
+  const setStrokeType = (nextType) => {
+    if (nextType === "solid") {
+      editAndCommit({
+        stroke: parsedStrokeGradient?.stops?.[0]?.color
+          ?? (HEX_COLOUR.test(stroke) ? stroke : "#FFFFFF"),
+      });
+      return;
+    }
+    const stops = parsedStrokeGradient?.stops?.length
+      ? parsedStrokeGradient.stops
+      : [
+          { color: HEX_COLOUR.test(stroke) ? stroke : "#FFFFFF", opacity: strokeOpacity, position: 0 },
+          { color: "#FFFFFF", opacity: strokeOpacity, position: 100 },
+        ];
+    editAndCommit({
+      stroke: formatGradient(
+        nextType,
+        parsedStrokeGradient?.angle ?? "135deg",
+        stops,
+        parsedStrokeGradient?.geometry,
+      ),
+    });
+  };
   const strokeWidth = Number.isFinite(object.strokeWidth)
     ? object.strokeWidth
     : 1;
@@ -117,6 +157,18 @@ export function StrokeSection({
 
       {none ? null : (
         <>
+          <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
+            <FlatSelect
+              value={strokeType}
+              onChange={setStrokeType}
+              options={strokeTypeOptions}
+              label={t("editor.props.strokeType")}
+              portal
+              className="w-[78px] shrink-0"
+              triggerClassName="!h-6 !w-full !rounded-lg !bg-neutral-800 !px-2 !text-[9px] !font-mono !text-neutral-200"
+              widthClass="w-40"
+            />
+          </div>
           {/* Row 1: Unified Pill (Swatch + Label/Hex + Opacity + Minus) */}
           <div className={sectionRowClass}>
             <Swatch
