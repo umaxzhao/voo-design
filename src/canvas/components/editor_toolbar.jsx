@@ -5,7 +5,6 @@ import {
   IconEraser,
   IconFrame,
   IconHand,
-  IconPipette,
   IconText,
 } from "../icons.jsx";
 import EditorBrushMenu from "./editor_brush_menu.jsx";
@@ -146,13 +145,6 @@ export default function EditorToolbar({
               id: TOOL.ERASER,
               icon: <IconEraser size={16} />,
               label: t("editor.tool.eraser"),
-            })}
-
-            {/* 6. 吸管工具（颜色取样，I） */}
-            {renderTool({
-              id: TOOL.DROPPER,
-              icon: <IconPipette size={16} />,
-              label: t("editor.tool.dropper"),
             })}
 
           </>

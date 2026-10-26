@@ -17,7 +17,8 @@ vi.mock("../../src/canvas/use_i18n.js", () => ({
 }));
 
 import EditorToolbar from "../../src/canvas/components/editor_toolbar.jsx";
-import { TOOL } from "../../src/canvas/editor/editor_constants.js";
+import { TOOL, TOOL_KEYS } from "../../src/canvas/editor/editor_constants.js";
+import { TOOL_SHORTCUTS } from "../../src/canvas/editor/editor_shortcuts.js";
 
 const noop = () => {};
 const AI_PURPLE_CLASS = "text-[#E5B2FF]";
@@ -31,7 +32,6 @@ const DESIGN_TOOL_ORDER = [
   "editor.tool.marquee",
   "editor.tool.brush",
   "editor.tool.eraser",
-  "editor.tool.dropper",
   "editor.tool.text",
   "editor.tool.pen",
   "editor.tool.fill",
@@ -66,9 +66,12 @@ function buttonMarkup(html, label) {
 }
 
 describe("top toolbar tool order", () => {
-  it("renders select, hand, frame, crop, marquee, brush, eraser, eyedropper, text, pen, fill, AI repair", () => {
+  it("renders select, hand, frame, crop, marquee, brush, eraser, text, pen, fill, AI repair", () => {
     const html = renderToolbar();
     expect(toolLabelsInOrder(html, DESIGN_TOOL_ORDER)).toEqual(DESIGN_TOOL_ORDER);
+    expect(html).not.toContain('aria-label="editor.tool.dropper"');
+    expect(TOOL_KEYS.KeyI).toBe(TOOL.DROPPER);
+    expect(TOOL_SHORTCUTS[TOOL.DROPPER]).toBe("I");
     // The select entry itself has no forced outline; active state is paint-only.
     const selectStart = html.indexOf('aria-label="editor.tool.select"');
     const wrapper = html.slice(Math.max(0, selectStart - 220), selectStart);
