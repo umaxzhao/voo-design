@@ -32,12 +32,14 @@ export async function detectLocalClis(resolveTransport = resolveCliTransport) {
 /** Runs the detection once each time the dialog opens; "checking" until it answers. */
 export function useAgentDetection(open) {
   const [detection, setDetection] = useState(CHECKING);
+  const [probe, setProbe] = useState(0);
+  const refresh = () => setProbe((value) => value + 1);
   useEffect(() => {
     if (!open) return undefined;
     let active = true;
     setDetection(CHECKING);
     detectLocalClis().then((next) => { if (active) setDetection(next); });
     return () => { active = false; };
-  }, [open]);
-  return detection;
+  }, [open, probe]);
+  return { ...detection, refresh };
 }

@@ -13,6 +13,8 @@ import CustomProviderInline from "./onboarding/custom_provider_inline.jsx";
 import { useAgentDetection } from "./onboarding/use_agent_detection.js";
 import FirstRunWorkspace from "./first_run_workspace.jsx";
 import { CLOUD_PROVIDER_PRESETS, VOO_CLOUD_PROVIDER } from "./onboarding/cloud_provider_presets.js";
+import { CLI_AGENTS } from "../../shared/cli-agents.js";
+import { AGENT_STATUS, cliAgentStatus } from "./onboarding/agent_status_model.js";
 import VooCloudLoginInline from "./onboarding/voo_cloud_login_inline.jsx";
 import { useUserStore } from "../store/user_store.js";
 
@@ -39,6 +41,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
   const customGroups = customModelGroups();
   const cloudPreset = CLOUD_PROVIDER_PRESETS.find(preset => preset.id === provider);
   const [vooCloudSignedIn, setVooCloudSignedIn] = useState(false);
+  const [copiedCommand, setCopiedCommand] = useState(false);
   const isVooCloud = provider === VOO_CLOUD_PROVIDER.id;
   const isApiProvider = !isVooCloud && (provider === "custom" || Boolean(cloudPreset));
   const cloudCards = [
@@ -48,12 +51,21 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
     })),
   ];
   const detection = useAgentDetection(open);
+  const selectedCli = CLI_AGENTS.find((agent) => agent.id === provider) ?? null;
+  const selectedCliStatus = selectedCli ? detection.statuses?.[selectedCli.id] ?? null : null;
+  const selectedCliCardStatus = selectedCli ? cliAgentStatus(selectedCli, detection) : null;
+  const selectedCliCmd = selectedCliStatus
+    ? selectedCliStatus.installed
+      ? selectedCliStatus.loginCmd
+      : selectedCliStatus.installCmd
+    : "";
   const { t, locale } = useI18n();
   useEffect(() => {
     if (open) {
       setProvider("");
       setCustomModel("");
       setStepIndex(0);
+      setCopiedCommand(false);
       setVooCloudSignedIn(Boolean(useUserStore.getState?.().user?.isLoggedIn));
     }
   }, [open]);
@@ -110,6 +122,45 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
                       applyAgentModel(id);
                     } else if (customModel) setSetting(AGENT_SETTING.MODEL, customModel);
                   }} />
+                {selectedCli && selectedCliCardStatus !== AGENT_STATUS.CONNECTED ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[11px] font-medium text-neutral-200">
+                        {t("firstRun.connection.title")}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => detection.refresh?.()}
+                        className="h-7 shrink-0 rounded-lg bg-white/[0.08] px-2.5 text-[10px] text-neutral-200 transition-colors hover:bg-white/[0.14]"
+                      >
+                        {t("firstRun.connection.retry")}
+                      </button>
+                    </div>
+                    <p className="mt-1 text-[10px] leading-4 text-neutral-400">
+                      {selectedCliStatus?.installed
+                        ? t("firstRun.connection.loginHint")
+                        : t("firstRun.connection.installHint")}
+                    </p>
+                    {selectedCliCmd ? (
+                      <div className="mt-2 flex items-center gap-2 rounded-lg bg-black/40 px-2 py-1.5">
+                        <code className="min-w-0 flex-1 truncate font-mono text-[10px] text-neutral-300">
+                          {selectedCliCmd}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void navigator.clipboard?.writeText(selectedCliCmd);
+                            setCopiedCommand(true);
+                            setTimeout(() => setCopiedCommand(false), 1200);
+                          }}
+                          className="shrink-0 text-[10px] text-neutral-400 transition-colors hover:text-white"
+                        >
+                          {copiedCommand ? t("firstRun.connection.copied") : t("firstRun.connection.copy")}
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
                 {isVooCloud ? (
                   <VooCloudLoginInline onSignedIn={() => setVooCloudSignedIn(true)} />
                 ) : null}
