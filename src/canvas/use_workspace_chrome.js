@@ -13,6 +13,35 @@ export function attachWorkspaceChrome({ canvas, stage, engine, getLayout, store 
       panX: panX + (layout?.x ?? 0) * zoom,
       panY: panY + (layout?.y ?? 0) * zoom,
     }, stage.clientWidth, stage.clientHeight);
+
+    // The focused artboard outline belongs to the same camera frame as the
+    // artwork. Draw it on the chrome canvas instead of a DOM ring so zooming
+    // can never leave the border one layout ahead of the canvas.
+    if (layout?.width > 0 && layout?.height > 0) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        const dpr = stage.clientWidth ? canvas.width / stage.clientWidth : 1;
+        const x = panX + layout.x * zoom;
+        const y = panY + layout.y * zoom;
+        const w = layout.width * zoom;
+        const h = layout.height * zoom;
+        const radius = Math.max(0, (engine.getDocument?.()?.cornerRadius ?? 0) * zoom);
+        ctx.save();
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = 0.6;
+        ctx.strokeStyle = "#b2ffd6";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        if (typeof ctx.roundRect === "function") {
+          ctx.roundRect(x + 0.5, y + 0.5, Math.max(0, w - 1), Math.max(0, h - 1), Math.min(radius, w / 2, h / 2));
+        } else {
+          ctx.rect(x + 0.5, y + 0.5, Math.max(0, w - 1), Math.max(0, h - 1));
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
   };
   const unsubscribeEngine = engine.subscribeRender(paint);
   const unsubscribeCamera = store.subscribe((state, previous) => {

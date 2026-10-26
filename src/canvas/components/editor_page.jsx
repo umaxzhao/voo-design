@@ -908,7 +908,15 @@ export default function EditorPage({
           onKeyDownCapture={handleAdjustmentKey}
           onDoubleClickCapture={openInstanceAtPoint}
           className={`absolute inset-0 touch-none overflow-hidden transition-colors ${
-            doc?.isCanvasRoot ? "" : focused ? "ring-1 ring-[#b2ffd6]/60" : "ring-1 ring-white/10"
+            doc?.isCanvasRoot
+              ? ""
+              : free && workspaceRendererReady
+                ? focused
+                  ? ""
+                  : "ring-1 ring-white/10"
+                : focused
+                  ? "ring-1 ring-[#b2ffd6]/60"
+                  : "ring-1 ring-white/10"
           }`}
           style={{
             borderRadius: doc?.cornerRadius ? `${doc.cornerRadius}px` : undefined,
