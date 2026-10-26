@@ -109,6 +109,9 @@ describe("inspect panel", () => {
     const html = renderToStaticMarkup(
       <PropertiesPanelHeader
         showInspect
+        showPrototype
+        prototypeOpen
+        onTogglePrototype={vi.fn()}
         onToggleInspect={vi.fn()}
         object={rect}
         selectionCount={1}
@@ -116,6 +119,10 @@ describe("inspect panel", () => {
       />,
     );
     expect(html).toContain('data-testid="editor-inspect-trigger"');
-    expect(html).toContain("editor.inspect.title");
+    expect(html).toContain("editor.inspect.code");
+    expect(html).toContain('data-testid="editor-prototype-trigger"');
+    expect(html).toContain('aria-controls="editor-prototype-panel"');
+    expect(html).toContain("lucide-workflow");
+    expect(html).toContain("lucide-code-xml");
   });
 });

@@ -2,8 +2,8 @@
 
 import PropTypes from "prop-types";
 import { useState } from "react";
+import { CodeXml as IconCode, Workflow as IconPrototype } from "lucide-react";
 import {
-  IconCode,
   IconSwap,
   IconMask,
   IconBrush,
@@ -119,6 +119,9 @@ export default function PropertiesPanelHeader({
   inspectOpen = false,
   showInspect = false,
   onToggleInspect = null,
+  showPrototype = false,
+  prototypeOpen = false,
+  onTogglePrototype = null,
   object = null,
   selectionCount = 1,
   onRename = null,
@@ -214,7 +217,7 @@ export default function PropertiesPanelHeader({
           </h2>
         )}
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1">
         {showMaskBtn ? (
           <EditorTooltip
             title={hasMask ? t("editor.mask.edit") : t("editor.mask.create")}
@@ -237,16 +240,26 @@ export default function PropertiesPanelHeader({
             </button>
           </EditorTooltip>
         ) : null}
+        {showPrototype ? (
+          <EditorTooltip title={t("editor.props.prototype")} side="bottom">
+            <button type="button" data-testid="editor-prototype-trigger"
+              aria-label={t("editor.props.prototype")} aria-pressed={prototypeOpen}
+              aria-controls="editor-prototype-panel" onClick={onTogglePrototype}
+              className={`flex h-7 w-7 max-md:h-12 max-md:w-12 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${prototypeOpen ? "bg-white/10 text-neutral-100 hover:bg-white/20" : "text-neutral-400 hover:bg-white/[0.08] hover:text-white"}`}>
+              <IconPrototype size={13} />
+            </button>
+          </EditorTooltip>
+        ) : null}
         {showInspect ? (
-          <EditorTooltip title={t("editor.inspect.title")} side="bottom">
+          <EditorTooltip title={t("editor.inspect.code")} side="bottom">
             <button
               type="button"
               onClick={onToggleInspect}
-              title={t("editor.inspect.title")}
-              aria-label={t("editor.inspect.title")}
+              title={t("editor.inspect.code")}
+              aria-label={t("editor.inspect.code")}
               aria-pressed={inspectOpen}
               data-testid="editor-inspect-trigger"
-              className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
+              className={`flex h-7 w-7 max-md:h-12 max-md:w-12 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
                 inspectOpen
                   ? "bg-white/10 text-neutral-100 hover:bg-white/20"
                   : "text-neutral-400 hover:bg-white/[0.08] hover:text-white"
@@ -286,5 +299,8 @@ PropertiesPanelHeader.propTypes = {
   inspectOpen: PropTypes.bool,
   showInspect: PropTypes.bool,
   onToggleInspect: PropTypes.func,
+  showPrototype: PropTypes.bool,
+  prototypeOpen: PropTypes.bool,
+  onTogglePrototype: PropTypes.func,
   t: PropTypes.func.isRequired,
 };

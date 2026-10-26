@@ -1,6 +1,8 @@
 import { resolvePanelForContext } from "./resolve_panel_context.js";
 import SelectedNodeActions from "./selected_node_actions.jsx";
 import InspectPanel from "./inspect_panel.jsx";
+import PrototypeSection from "./prototype_section.jsx";
+import { frameOfNode, isFrameNode } from "../../editor/prototype_model.js";
 /**
  * Editor properties panel: root component docked on canvas side showing
  * background, tool properties, mask editing, pen editing, or node properties.
@@ -113,7 +115,9 @@ export default function EditorProperties({
   });
 
   const [feather, setFeather] = useState(8);
-  const [inspectOpen, setInspectOpen] = useState(false);
+  const [panelView, setPanelView] = useState("properties");
+  const inspectOpen = panelView === "code";
+  const prototypeOpen = panelView === "prototype";
 
   // A warp tool owns the selection: while it is armed AND the selected object
   // actually carries warp data, the panel shows only what that tool adjusts.
@@ -158,6 +162,10 @@ export default function EditorProperties({
   // Inspect is a read-only Dev Mode-style view for one selected layer.
   const canInspect =
     Boolean(object?.id) && selectionCount === 1 && !isDedicatedToolActive;
+  const prototypeDoc = engine?.getDocument?.();
+  const canPrototype = canInspect && !isWarpTool && prototypeDoc &&
+    !["adjustment", "region", "audio"].includes(object.kind) &&
+    (isFrameNode(object) || Boolean(frameOfNode(prototypeDoc, object)));
 
   const header = (
     <PropertiesPanelHeader
@@ -180,7 +188,10 @@ export default function EditorProperties({
       onToggleSide={isDedicatedToolActive ? null : onToggleSide}
       showInspect={canInspect}
       inspectOpen={inspectOpen}
-      onToggleInspect={() => setInspectOpen((open) => !open)}
+      onToggleInspect={() => setPanelView(view => view === "code" ? "properties" : "code")}
+      showPrototype={Boolean(canPrototype)}
+      prototypeOpen={prototypeOpen}
+      onTogglePrototype={() => setPanelView(view => view === "prototype" ? "properties" : "prototype")}
       t={t}
     />
   );
@@ -311,8 +322,12 @@ export default function EditorProperties({
             object={object}
             parentNode={parentNode}
             engine={engine}
-            onClose={() => setInspectOpen(false)}
+            onClose={() => setPanelView("properties")}
           />
+        ) : canPrototype && prototypeOpen ? (
+          <div id="editor-prototype-panel" data-testid="editor-prototype-panel">
+            <PrototypeSection object={object} engine={engine} />
+          </div>
         ) : (
           <>
         <SelectedNodeActions
