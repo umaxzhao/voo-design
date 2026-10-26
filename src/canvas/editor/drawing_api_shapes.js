@@ -60,12 +60,23 @@ export function createDrawingShapesApi({
 
   /** Creates a zero-size frame at `point`; the frame tool drag shapes it. */
   function addFrameAt(point, options = {}) {
+    // A frame reads as a surface, not a transparent group: give it the page's
+    // own backdrop as an explicit fill so the Fill section shows the colour the
+    // user already sees. Transparent pages fall back to white.
+    const pageBackground = getDoc()?.backgroundColor;
+    const frameFill =
+      options.fill ??
+      (pageBackground && pageBackground !== "transparent"
+        ? pageBackground
+        : "#FFFFFF");
     const node = insideFrame(
       {
         ...createGroupNode({ x: point.x, y: point.y, width: 0, height: 0 }),
         frame: true,
         isFrame: true,
         name: "Frame",
+        fill: frameFill,
+        fillOpacity: 1,
       },
       point,
       options.intoFrame,
