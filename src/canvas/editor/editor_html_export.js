@@ -387,9 +387,9 @@ export function documentToHtml(
         1,
         Math.min(size.height - crop.y, node.crop.height || node.height),
       );
-      return `<div class="${className}"${layerName} style="overflow:hidden"><img src="${escapeHtml(source)}" alt="" style="position:absolute;left:${(-100 * crop.x) / crop.width}%;top:${(-100 * crop.y) / crop.height}%;width:${(100 * size.width) / crop.width}%;height:${(100 * size.height) / crop.height}%;max-width:none" /></div>`;
+      return `<div class="${className}"${layerName} style="overflow:hidden"><img src="${escapeHtml(source)}" alt="${escapeHtml(node.alt ?? "")}" style="position:absolute;left:${(-100 * crop.x) / crop.width}%;top:${(-100 * crop.y) / crop.height}%;width:${(100 * size.width) / crop.width}%;height:${(100 * size.height) / crop.height}%;max-width:none" /></div>`;
     }
-    return `<img class="${className}"${layerName} src="${escapeHtml(source)}" alt="" />`;
+    return `<img class="${className}"${layerName} src="${escapeHtml(source)}" alt="${escapeHtml(node.alt ?? "")}" />`;
   }
 
   const content = (children.get(null) ?? [])

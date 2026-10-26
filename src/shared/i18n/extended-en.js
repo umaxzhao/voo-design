@@ -2909,6 +2909,8 @@ export default {
   "editor.toolOptions.abrImportFailed": "Failed to import .ABR brush presets",
   "editor.props.fillLabel": "Fill",
   "editor.props.strokeLabel": "Stroke",
+  "editor.props.altText": "Alt text",
+  "editor.props.altTextPlaceholder": "Describe this image",
   "editor.props.addFill": "Add fill",
   "editor.props.removeFill": "Remove fill",
   "editor.props.addStroke": "Add stroke",

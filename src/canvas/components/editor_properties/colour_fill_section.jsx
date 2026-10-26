@@ -159,7 +159,10 @@ export function FillSection({
     selectedNodes.length > 1 &&
     commonValue(selectedNodes, "fillOpacity") === MIXED;
 
-  const paints = Array.isArray(object.fills) && object.fills.length ? object.fills : [{
+  const hasVisiblePaints = Array.isArray(object.fills) && object.fills.some((paint) =>
+    paint?.visible !== false && paint?.fill && paint.fill !== "transparent",
+  );
+  const paints = hasVisiblePaints ? object.fills : [{
     fill, opacity: object.fillOpacity ?? 1,
     visible: object.fillHidden !== true, blendMode: object.fillBlendMode ?? "source-over",
     ...(object.imageId ? { imageId: object.imageId } : {}),
@@ -192,6 +195,26 @@ export function FillSection({
         editAndCommit={(patch) => updatePaint(index, paintPatch(patch), true)}
         commitNow={commitNow} getBitmap={getBitmap} selectedNodes={selectedNodes}
         bindings={bindings} />)}
+      {isImageNode ? (
+        <label className="flex min-h-7 items-center gap-2 rounded-xl bg-neutral-800 px-2.5">
+          <span className="shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-400">
+            {t("editor.props.altText")}
+          </span>
+          <input
+            defaultValue={object.alt ?? ""}
+            onBlur={(event) => {
+              const next = event.target.value.trim();
+              if (next !== (object.alt ?? "")) editAndCommit({ alt: next });
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+            }}
+            placeholder={t("editor.props.altTextPlaceholder")}
+            aria-label={t("editor.props.altText")}
+            className="min-w-0 flex-1 bg-transparent text-[10px] font-mono text-neutral-100 outline-none placeholder:text-neutral-400"
+          />
+        </label>
+      ) : null}
       {object.maskBase && <span className="text-[11px] text-neutral-400">Mask · {object.maskType ?? "alpha"}</span>}
     </StaticSection>
   );

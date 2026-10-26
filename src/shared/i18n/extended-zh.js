@@ -2795,6 +2795,8 @@ export default {
   "editor.toolOptions.abrImportFailed": "导入.ABR笔刷预设失败",
   "editor.props.fillLabel": "填充",
   "editor.props.strokeLabel": "描边",
+  "editor.props.altText": "替代文本",
+  "editor.props.altTextPlaceholder": "描述这张图片",
   "editor.props.addFill": "添加填充",
   "editor.props.removeFill": "移除填充",
   "editor.props.addStroke": "添加描边",
