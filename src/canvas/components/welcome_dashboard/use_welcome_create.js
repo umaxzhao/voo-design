@@ -20,7 +20,7 @@ export function useWelcomeCreate({
   setWelcomeOpen,
 }) {
   const handleCreateNew = async (preset = null) => {
-    let baseLabel = "Design 1";
+    let baseLabel = "Design1";
     let width = 1200;
     let height = 800;
     let canvasType = CANVAS_TYPE.DESIGN;
@@ -34,13 +34,14 @@ export function useWelcomeCreate({
       category = preset.category || guessCategory(baseLabel);
     }
 
-    // Ensure unique file name
+    // Keep generated filenames whitespace-free without changing preset labels.
+    const baseName = baseLabel.replace(/\s+/gu, "");
     const existingNames = new Set(fileList.map((f) => f.name));
-    let uniqueName = `${baseLabel}.voo`;
+    let uniqueName = `${baseName}.voo`;
     let counter = 1;
     while (existingNames.has(uniqueName)) {
       counter += 1;
-      uniqueName = `${baseLabel} ${counter}.voo`;
+      uniqueName = preset ? `${baseName}${counter}.voo` : `Design${counter}.voo`;
     }
 
     const pageId = `page-${Date.now().toString(36)}`;
@@ -109,13 +110,13 @@ export function useWelcomeCreate({
       };
 
       const bytes = encodeVooBinary(vooFile);
-      const baseName = template.title || "Community Template";
+      const baseName = (template.title || "CommunityTemplate").replace(/\s+/gu, "");
       const existingNames = new Set(fileList.map((f) => f.name));
       let uniqueName = `${baseName}.voo`;
       let counter = 1;
       while (existingNames.has(uniqueName)) {
         counter += 1;
-        uniqueName = `${baseName} (${counter}).voo`;
+        uniqueName = `${baseName}(${counter}).voo`;
       }
 
       let saved = null;

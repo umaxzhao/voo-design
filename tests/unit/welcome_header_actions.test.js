@@ -73,23 +73,23 @@ describe("title bar New on the welcome page", () => {
     target.dispatchEvent(new Event(WELCOME_NEW_EVENT));
     await vi.waitFor(() => expect(setWelcomeOpen).toHaveBeenCalledWith(false));
     expect(mocks.writeFileBytes).toHaveBeenCalledTimes(1);
-    expect(mocks.writeFileBytes.mock.calls[0][0]).toBe("Design 1.voo");
+    expect(mocks.writeFileBytes.mock.calls[0][0]).toBe("Design1.voo");
     expect(mocks.loadVooProject).toHaveBeenCalledTimes(1);
     expect(reloadFiles).toHaveBeenCalledTimes(1);
 
     // Calling the handler directly yields the identical write.
     mocks.writeFileBytes.mockClear();
     await api.handleCreateNew();
-    expect(mocks.writeFileBytes.mock.calls[0][0]).toBe("Design 1.voo");
+    expect(mocks.writeFileBytes.mock.calls[0][0]).toBe("Design1.voo");
   });
 
   it("uses the latest file list so names stay unique, and unsubscribes on cleanup", async () => {
     const first = renderHook([]);
     // Re-render with a new file list; effects do not re-run (empty deps), only the ref updates.
-    renderHook([{ name: "Design 1.voo" }], { mount: false });
+    renderHook([{ name: "Design1.voo" }, { name: "Design2.voo" }], { mount: false });
     target.dispatchEvent(new Event(WELCOME_NEW_EVENT));
     await vi.waitFor(() => expect(mocks.writeFileBytes).toHaveBeenCalledTimes(1));
-    expect(mocks.writeFileBytes.mock.calls[0][0]).toBe("Design 1 2.voo");
+    expect(mocks.writeFileBytes.mock.calls[0][0]).toBe("Design3.voo");
 
     mocks.writeFileBytes.mockClear();
     first.cleanups.forEach((cleanup) => cleanup?.());
