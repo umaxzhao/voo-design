@@ -54,6 +54,7 @@ export async function writeDraftSnapshot({ store, enginesRef, snapshotsRef }) {
     const document = {
       ...(primary?.sceneDoc || { version: 1, width: 1200, height: 800, nodes: [] }),
       pages,
+      canvasBackgroundColor: store.canvasBackgroundColor,
       editorArtboardLayouts: store.editorArtboardLayouts || {},
       editorCamera: store.editorCamera || { panX: 0, panY: 0, zoom: 1 },
       editingNodeId: focusedId,

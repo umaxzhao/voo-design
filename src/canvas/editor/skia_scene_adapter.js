@@ -1,3 +1,4 @@
+import { frameSceneFills } from "./frame-fills.js";
 import { isPlainRectList } from './render_plain_rects.js';
 /**
  * Our editor document, expressed as the scene the Skia renderer draws.
@@ -89,12 +90,7 @@ export function documentToScene(
     cornerRadii: doc.cornerRadii ?? null,
     stroke: doc.stroke ? strokeOf(doc) : undefined,
     effects: doc.effects ?? [],
-    fills:
-      doc.fills && doc.fills.length > 0
-        ? doc.fills
-        : doc.backgroundColor && doc.backgroundColor !== "transparent"
-          ? [{ color: doc.backgroundColor, opacity: 1 }]
-          : [{ color: "#ffffff", opacity: 1 }],
+    fills: frameSceneFills(doc),
   };
 
   // Frustum culling: if frame is entirely offscreen, omit its children

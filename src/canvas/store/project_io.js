@@ -327,6 +327,7 @@ export async function buildProjectVooFile({
   const compositeDocument = {
     ...primaryDoc,
     pages,
+    canvasBackgroundColor: store.canvasBackgroundColor,
     editorArtboardLayouts: store.editorArtboardLayouts || {},
     editorCamera: store.editorCamera || { panX: 0, panY: 0, zoom: 1 },
     editingNodeId: focusedId,

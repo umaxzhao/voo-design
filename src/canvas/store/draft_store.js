@@ -77,7 +77,7 @@ export async function loadDraftBytes(id) {
     if (!db) return null;
     const row = await run(db, "readonly", (store) => store.get(String(id)));
     if (!row?.bytes) return null;
-    return { bytes: row.bytes, name: row.name || "" };
+    return { bytes: row.bytes, name: row.name || "", savedAt: row.savedAt };
   } catch (err) {
     console.warn("[VOO] Failed to load draft copy:", err);
     return null;

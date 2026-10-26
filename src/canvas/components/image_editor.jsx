@@ -1,3 +1,5 @@
+import { WORKSPACE_BACKGROUND } from "../editor/render_canvas_base.js";
+import { frameEditorFills } from "../editor/frame-fills.js";
 import { buildExtendedPaletteActions } from "../commands/palette_actions.js";
 import { exportTargetName } from "../editor/export_filename.js";
 import { setLocale } from "../../shared/i18n.js";
@@ -887,17 +889,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const doc = engine?.getDocument() ?? null;
   const canvasType = doc ? getCanvasType(doc) : "design";
   const workbench = getWorkbench(EDITOR_BETA_ENABLED ? canvasType : "design");
-  // A 3D frame paints its scene background over the page colour, so the
-  // Layers background row shows whichever one is actually visible.
-  const sceneBackground = doc?.scene3d?.backgroundColor;
-  const sceneBackgroundOpacity = doc?.scene3d?.backgroundOpacity ?? 1;
-  const frameBackground =
-    canvasType === "3d" &&
-    sceneBackground &&
-    sceneBackground !== "transparent" &&
-    sceneBackgroundOpacity >= 1
-      ? sceneBackground
-      : doc?.backgroundColor || "#262626";
   const hasDoc = Boolean(doc);
   const tool = engine?.getTool() ?? TOOL.SELECT;
   const color = engine?.getColor() ?? null;
@@ -980,15 +971,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     ? (engine?.getPuppetPinRotation?.(puppetPinId) ?? 0)
     : 0;
 
-  const workspaceBackgroundColor =
-    useDesignStore((state) => state.canvasBackgroundColor) || "#1e1e1e";
-  const layers = doc ? doc.nodes : [];
-  // The page backdrop is document state (doc.backgroundColor). The workspace
-  // store only holds the app-level fallback used outside a page.
+  // The workspace ground is project state; frame paint belongs to each document.
   const canvasBackgroundColor =
-    typeof doc?.backgroundColor === "string"
-      ? doc.backgroundColor
-      : workspaceBackgroundColor;
+    useDesignStore((state) => state.canvasBackgroundColor) ?? WORKSPACE_BACKGROUND;
+  const layers = doc ? doc.nodes : [];
   const setCanvasBackgroundColor = useDesignStore(
     (state) => state.setCanvasBackgroundColor,
   );
@@ -1100,12 +1086,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       opacity: doc.opacity ?? 1,
       blendMode: doc.blendMode ?? "normal",
       fill: doc.backgroundColor || "#ffffff",
-      fills:
-        doc.fills && doc.fills.length > 0
-          ? doc.fills
-          : doc.backgroundColor && doc.backgroundColor !== "transparent"
-            ? [{ color: doc.backgroundColor, opacity: 1, type: "solid" }]
-            : [{ color: "#ffffff", opacity: 1, type: "solid" }],
+      fills: frameEditorFills(doc),
+      fillOpacity: doc.fillOpacity ?? 1,
+      fillHidden: doc.fillHidden ?? false,
       stroke: doc.stroke ?? null,
       strokes:
         doc.strokes ??
@@ -1219,18 +1202,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         }
       }
 
-      if (patch.fill !== undefined) {
-        engine?.setBackgroundColor?.(patch.fill);
-        engine?.setDocumentBackgroundColor?.(patch.fill);
-      }
-      if (patch.fills !== undefined) {
-        const primaryColor = patch.fills?.[0]?.color;
-        if (primaryColor) {
-          engine?.setBackgroundColor?.(primaryColor);
-          engine?.setDocumentBackgroundColor?.(primaryColor);
-        }
-      }
-
       const docPatch = {};
       for (const [key, val] of Object.entries(patch)) {
         if (key === "x" || key === "y" || key === "width" || key === "height") continue;
@@ -1241,6 +1212,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         }
       }
 
+      if (patch.fills !== undefined && patch.fill === undefined) {
+        docPatch.backgroundColor = patch.fills?.[0]?.fill ?? patch.fills?.[0]?.color ?? "transparent";
+      }
       if (Object.keys(docPatch).length > 0) {
         if (typeof engine?.updateDocument === "function") {
           engine.updateDocument(docPatch, options);
@@ -1783,6 +1757,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     canvasRef: workspaceCanvasRef,
     stageRef: freeStageRef,
     docs: workspaceDocs,
+    backgroundColor: canvasBackgroundColor,
     layouts: layoutById,
     subscribeCamera: true,
     revision: `${positionSignature}|${engineVersion}`,
@@ -1986,7 +1961,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     });
 
   // Unsaved documents keep a local draft copy so Recents can reopen them.
-  useDraftAutosave({ enginesRef, snapshotsRef, revision: engineVersion });
+  useDraftAutosave({ enginesRef, snapshotsRef, revision: `${engineVersion}|${canvasBackgroundColor}` });
 
   /**
    * Tool selection. Shape tools stay armed across draws — a row of
@@ -3375,7 +3350,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       data-testid="design-editor"
       data-properties-open={propertiesOpen ? "true" : "false"}
       aria-hidden={!visible}
-      className={`absolute bottom-0 left-0 top-0 z-50 flex flex-col overflow-hidden rounded-b-2xl bg-surface-canvas ${isNarrow ? "editor-narrow" : ""} ${
+      style={{ backgroundColor: canvasBackgroundColor }}
+      className={`absolute bottom-0 left-0 top-0 z-50 flex flex-col overflow-hidden rounded-b-2xl ${isNarrow ? "editor-narrow" : ""} ${
         dockAgent ? "right-[376px]" : "right-0"
       } ${visible ? "" : "invisible pointer-events-none"}`}
       {...dropHandlers}
@@ -4575,7 +4551,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 ? (operation) => engine?.combineSelected(operation)
                 : null
             }
-            docSize={doc}
+            docSize={canvasBackgroundSelected ? null : doc}
             isBackground={canvasBackgroundSelected}
             backgroundColor={canvasBackgroundColor}
             onSetDocumentSize={applyPageResize}
@@ -4584,10 +4560,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               const layout = layoutById.get(focusedId);
               if (layout) setEditorArtboardLayout(focusedId, { ...layout, x, y });
             }}
-            onSetBackgroundColor={(next) => {
-              setCanvasBackgroundColor?.(next);
-              engine?.setDocumentBackgroundColor?.(next);
-            }}
+            onSetBackgroundColor={setCanvasBackgroundColor}
             maskActions={
               selected &&
               selected.kind !== "region" &&

@@ -1,6 +1,7 @@
 import { useDesignStore } from "../../../store/design_store.js";
 import { openVooProject } from "../../store/project_io.js";
 import { loadDraftBytes } from "../../store/draft_store.js";
+import { getRecentFiles } from "../../store/recent_files.js";
 import { workspaceStorage } from "../../../services/workspace_storage.js";
 
 export const OPEN_FAILED_KEY = "welcome.recent.openFailed";
@@ -22,9 +23,16 @@ async function openFile(file, name) {
   return res;
 }
 
-/** Reads a pathless item from the workspace first, then from its local draft copy. */
+/** Prefer a newer autosave even when workspace and recent-file IDs differ. */
 async function openPathless(item) {
   const name = item.name || "Untitled.voo";
+  const recent = getRecentFiles().find((entry) => !entry.path && entry.name === name);
+  const draft = await loadDraftBytes(recent?.id ?? item.id);
+  // Recent timestamps include opens; compare against the workspace file's timestamp.
+  const modifiedAt = item.updatedAt ?? 0;
+  if (draft?.savedAt && draft.savedAt >= modifiedAt) {
+    return openFile(toFile(draft.bytes, name), name);
+  }
   if (item.id) {
     try {
       const bytes = await workspaceStorage.readFileBytes(item.id);
@@ -33,7 +41,6 @@ async function openPathless(item) {
       console.warn("[VOO] Recent item is not in the workspace, trying its draft copy:", err);
     }
   }
-  const draft = await loadDraftBytes(item.id);
   if (!draft) return { missing: true };
   return openFile(toFile(draft.bytes, name), name);
 }

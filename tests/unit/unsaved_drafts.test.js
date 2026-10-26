@@ -76,7 +76,16 @@ describe("openRecentItem", () => {
     readFileBytes.mockResolvedValue(BYTES);
     openVooProject.mockResolvedValue({ success: true });
     expect((await openRecentItem({ id: "w1", name: "W.voo", path: null })).ok).toBe(true);
-    expect(loadDraftBytes).not.toHaveBeenCalled();
+    expect(loadDraftBytes).toHaveBeenCalledWith("w1");
+  });
+
+  it("opens a newer autosave before the older workspace copy", async () => {
+    readFileBytes.mockResolvedValue(BYTES);
+    loadDraftBytes.mockResolvedValue({ bytes: BYTES, name: "W.voo", savedAt: 200 });
+    openVooProject.mockResolvedValue({ success: true });
+    expect((await openRecentItem({ id: "w1", name: "W.voo", path: null, updatedAt: 100 })).ok).toBe(true);
+    expect(readFileBytes).not.toHaveBeenCalled();
+    expect(openVooProject).toHaveBeenCalledOnce();
   });
 
   it("shows openFailed with the reason when opening returns success:false", async () => {

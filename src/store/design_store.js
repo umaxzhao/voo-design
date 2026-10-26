@@ -1,3 +1,4 @@
+import { WORKSPACE_BACKGROUND } from "../canvas/editor/render_canvas_base.js";
 import { forgetPageCamera, pageCameraCache } from "../canvas/page_camera.js";
 import { createCameraRafBatcher } from "../canvas/camera_raf.js";
 import { create } from "zustand";
@@ -69,7 +70,7 @@ export const useDesignStore = create((set, get) => {
     get().suspendDocument();
     const id = `document-${++documentCounter}`;
     set(state => ({ activeDocumentId: id, openDocuments: [...state.openDocuments, { id }],
-      edges: [], images: {}, figSource: null, canvasBackgroundColor: "#1e1e1e",
+      edges: [], images: {}, figSource: null, canvasBackgroundColor: WORKSPACE_BACKGROUND,
       streamingPreview: null, streamingPreviewNodeId: null }));
   },
   switchDocument: (id) => {
@@ -112,7 +113,7 @@ export const useDesignStore = create((set, get) => {
   filePath: null,
   fileHandle: null,
   fileName: "Untitled.voo",
-  canvasBackgroundColor: "#1e1e1e",
+  canvasBackgroundColor: WORKSPACE_BACKGROUND,
   setCanvasBackgroundColor: (color) => set({ canvasBackgroundColor: color, isDirty: true }),
   /** The Figma envelope a `.fig` was opened from; saving writes back in the same schema. */
   figSource: null,
@@ -357,7 +358,7 @@ export const useDesignStore = create((set, get) => {
     if (!doc) return;
     get().beginDocument();
     cameraBatcher.flush();
-    set({ figSource, editorPageCameras: {}, pendingArtboardFitId: null, editorPageSession: get().editorPageSession + 1 });
+    set({ figSource, canvasBackgroundColor: doc.canvasBackgroundColor ?? WORKSPACE_BACKGROUND, editorPageCameras: {}, pendingArtboardFitId: null, editorPageSession: get().editorPageSession + 1 });
 
     if (Array.isArray(doc.pages) && doc.pages.length > 0) {
       const nextNodes = doc.pages.map((page, idx) => ({
