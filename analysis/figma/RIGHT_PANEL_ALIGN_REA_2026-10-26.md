@@ -140,7 +140,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 | Paragraph spacing / lists / variable font axes / RTL | 🟡 paragraph spacing 已有；lists/variable axes/RTL 缺 | P2 |
 | Text style chip 行内 | 🟡 独立 Styles 段 | P3 |
 | Component properties（boolean/text/instance swap） | ❌ 只有变体轴 | P1/P2 |
-| Component description / publish changes | ❌ | P2 |
+| Component description / publish changes | 🟡 description 本轮已加；publish changes 仍缺 | P2 |
 | Swap instance / go to main | ✅ swap instance 有；本轮新增 Go to main component | 已对齐（组件属性仍缺） |
 | Override reset 矩阵（size/name/exports/interactions/other） | 🟡 当前按 Text/Fill/Stroke/Effects/Opacity/Visibility/All 分组 | P2 细化 |
 | Missing component / variant states | ❌ | P2 |
