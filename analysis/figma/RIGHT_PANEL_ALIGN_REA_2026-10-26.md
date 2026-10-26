@@ -151,7 +151,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 |---|---|---|
 | Prototype：navigate/back | ✅ | — |
 | overlay / close overlay | ✅ 上一轮已有 | 已对齐 |
-| scroll / change-to / set variable / conditional / open link | ❌ | P2：要 runtime 扩展 |
+| scroll / change-to / set variable / conditional / open link | 🟡 本轮已支持 open link；scroll/change-to/set-variable/conditional 仍缺 | P2：runtime 扩展 |
 | Transition 播放（duration/easing/spring） | 🟡 模型/runner 有部分过渡；无 spring 参数 | P2 |
 | Flow starting points / device presets | 🟡 单 start frame；无设备预设 | P2 |
 | Export 格式/scale/suffix/remove | ✅ | — |
