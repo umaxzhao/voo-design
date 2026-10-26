@@ -3,6 +3,8 @@
  */
 
 import {
+  createRectNode,
+  effectivePage,
   findNode,
   NODE_KIND,
 } from "./scene_model.js";
@@ -15,6 +17,7 @@ import { BAKED_BITMAP_DEFORMATION_PATCH } from "./editor_deformation_patch.js";
 import {
   isPristineGradientStops,
 } from "./gradient_tool_state.js";
+import { formatGradient } from "../color_picker/gradient_fill.js";
 
 /** Hex + 0-100 opacity → the CSS colour CanvasGradient.addColorStop wants. */
 function stopCssColor(stop) {
@@ -157,6 +160,7 @@ export function createSelectionPaintEffects({
   getColor,
   getBackgroundColor,
   selection,
+  select,
   getPixelSelection,
   setPixelSelection,
   replaceNodeBitmap,
@@ -215,6 +219,37 @@ export function createSelectionPaintEffects({
     return true;
   }
 
+  /** A full-frame solid/gradient fill layer when the tool runs with nothing selected. */
+  function createFillLayer(fill, name) {
+    const doc = getDoc();
+    const page = effectivePage(doc);
+    const node = {
+      ...createRectNode({
+        x: page.x,
+        y: page.y,
+        width: page.width,
+        height: page.height,
+        fill,
+      }),
+      name,
+    };
+    commitSelectionEffect(ops.addNode(doc, node));
+    select?.(node.id);
+    requestRender();
+    notify();
+    return true;
+  }
+
+  /** CSS gradient string for a layer fill from the tool/drag inputs. */
+  function gradientFillString(type, angle, stops) {
+    return formatGradient(type, `${Math.round(angle)}deg`, stops);
+  }
+
+  /** CSS angle for a drag vector: 0deg points up, 90deg points right. */
+  function dragAngle(start, end) {
+    return ((Math.atan2(end.y - start.y, end.x - start.x) * 180) / Math.PI + 90 + 360) % 360;
+  }
+
   /**
    * Fills the active selection (or layer) with the specified colour (Photoshop's Edit → Fill).
    */
@@ -232,13 +267,8 @@ export function createSelectionPaintEffects({
         ? findNode(doc, selectedId)
         : null;
 
-    if (!node && doc.nodes?.length) {
-      node =
-        doc.nodes.find((n) => n.kind === NODE_KIND.IMAGE) ||
-        doc.nodes[doc.nodes.length - 1];
-    }
+    if (!node) return createFillLayer(fillColor, "Fill");
 
-    if (!node) return false;
     if (node.locked || node.lockImagePixels) return false;
 
     // If it's a vector / shape node: fill its vector color
@@ -402,10 +432,32 @@ export function createSelectionPaintEffects({
       ];
     }
     const gradientOpacity = getGradientOpacity?.() ?? 1;
+    const scaledStops = scaleGradientStops(stops, gradientOpacity);
+    const doc = getDoc();
+    const current = getPixelSelection();
+    const selectedId = selection.getId();
+    const node = current?.nodeId
+      ? findNode(doc, current.nodeId)
+      : selectedId
+        ? findNode(doc, selectedId)
+        : null;
+    const fillAngle = type === "linear" && endDocPt
+      ? dragAngle(startDocPt, endDocPt)
+      : angle;
+    if (!node) {
+      return createFillLayer(gradientFillString(type, fillAngle, scaledStops), "Gradient");
+    }
+    if (node.kind !== NODE_KIND.IMAGE) {
+      if (!("fill" in node) || node.locked || node.lockImagePixels) return false;
+      commitSelectionEffect(ops.updateNode(doc, node.id, { fill: gradientFillString(type, fillAngle, scaledStops) }));
+      requestRender();
+      notify();
+      return true;
+    }
     return paintNodeGradient({
       type,
       angle,
-      stops: scaleGradientStops(stops, gradientOpacity),
+      stops: scaledStops,
       buildGeometry: ({ box, node, scaleX, scaleY }) =>
         gradientGeometry(type, startDocPt, endDocPt, box, node, scaleX, scaleY),
     });
@@ -420,10 +472,23 @@ export function createSelectionPaintEffects({
     const state =
       typeof getGradientToolState === "function" ? getGradientToolState() : null;
     if (!state?.stops?.length) return false;
+    const scaledStops = scaleGradientStops(state.stops, getGradientOpacity?.() ?? 1);
+    const fill = gradientFillString(state.type, state.angle, scaledStops);
+    const doc = getDoc();
+    const selectedId = selection.getId();
+    const node = selectedId ? findNode(doc, selectedId) : null;
+    if (!node) return createFillLayer(fill, "Gradient");
+    if (node.kind !== NODE_KIND.IMAGE) {
+      if (!("fill" in node) || node.locked || node.lockImagePixels) return false;
+      commitSelectionEffect(ops.updateNode(doc, node.id, { fill }));
+      requestRender();
+      notify();
+      return true;
+    }
     return paintNodeGradient({
       type: state.type,
       angle: state.angle,
-      stops: scaleGradientStops(state.stops, getGradientOpacity?.() ?? 1),
+      stops: scaledStops,
       buildGeometry: ({ box }) => angleGeometry(state.type, state.angle, box),
     });
   }
