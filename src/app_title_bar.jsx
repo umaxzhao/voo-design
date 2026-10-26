@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import CanvasTabBar from "./canvas/components/canvas_tab_bar.jsx";
-import { Bolt } from "lucide-react";
+import { Bolt, Download, FolderOpen } from "lucide-react";
 import { useDesignStore } from "./store/design_store.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import CollabAvatars from "./canvas/components/collab_avatars.jsx";
@@ -106,8 +106,10 @@ export default function AppTitleBar() {
             onClick={() => window.dispatchEvent(new CustomEvent("voo:file-open"))}
             className="cursor-pointer rounded-lg px-2.5 py-1 text-neutral-400 transition-colors hover:bg-white/10 hover:text-neutral-200 font-medium"
             title={t("titlebar.openTitle")}
+            aria-label={t("titlebar.openTitle")}
           >
-            {t("titlebar.open")}
+            <FolderOpen className="app-title-action-icon" size={15} aria-hidden="true" />
+            <span className="app-title-action-label">{t("titlebar.open")}</span>
           </button>
           {/* Documents autosave; the primary action exports a portable snapshot. */}
           <button
@@ -115,8 +117,10 @@ export default function AppTitleBar() {
             onClick={() => window.dispatchEvent(new CustomEvent(welcomeOpen ? WELCOME_NEW_EVENT : "voo:file-export-snapshot"))}
             className="cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
             title={welcomeOpen ? t("welcome.header.new") : t("titlebar.snapshotTitle")}
+            aria-label={welcomeOpen ? t("welcome.header.new") : t("titlebar.snapshotTitle")}
           >
-            {welcomeOpen ? t("welcome.header.new") : t("editor.export")}
+            <Download className="app-title-action-icon" size={15} aria-hidden="true" />
+            <span className="app-title-action-label">{welcomeOpen ? t("welcome.header.new") : t("editor.export")}</span>
           </button>
           <button
             type="button"

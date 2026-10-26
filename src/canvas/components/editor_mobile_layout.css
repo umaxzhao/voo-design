@@ -1,6 +1,12 @@
+/* Desktop title-bar actions use text labels; mobile switches to compact icons. */
+.app-title-action-icon,
+.canvas-tab-bar-mobile {
+  display: none;
+}
+
 @media (max-width: 768px) {
   [data-testid="design-editor"].editor-narrow {
-    --editor-mobile-panel-gap: 0.75rem;
+    --editor-mobile-panel-gap: 0.375rem;
     right: 0;
   }
 
@@ -10,10 +16,17 @@
     min-height: 0;
     flex: 0 0 55%;
     overflow: visible;
+    transition: height 180ms ease, flex-basis 180ms ease;
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-mobile-panels-collapsed="true"] > [data-open-guard] {
+    height: 100%;
+    flex-basis: 100%;
   }
 
   [data-testid="design-editor"].editor-narrow [data-testid="editor-layers-panel"],
-  [data-testid="design-editor"].editor-narrow [data-testid="editor-properties-panel"] {
+  [data-testid="design-editor"].editor-narrow [data-testid="editor-properties-panel"],
+  [data-testid="design-editor"].editor-narrow [data-testid="editor-history-panel"] {
     position: absolute;
     top: calc(100% + var(--editor-mobile-panel-gap));
     bottom: auto;
@@ -25,9 +38,9 @@
     min-width: 0;
     transform: none;
     overflow: auto;
-    transition: width 180ms ease, left 180ms ease;
-    border-radius: 1.5rem;
-    padding: 0.5rem;
+    transition: width 180ms ease, left 180ms ease, opacity 180ms ease;
+    border-radius: 1rem;
+    padding: 0.375rem;
   }
 
   [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-layers-panel"],
@@ -39,6 +52,14 @@
     left: calc(50% + var(--editor-mobile-panel-gap) / 2);
   }
 
+  [data-testid="design-editor"].editor-narrow[data-mobile-panels-collapsed="true"] [data-testid="editor-layers-panel"],
+  [data-testid="design-editor"].editor-narrow[data-mobile-panels-collapsed="true"] [data-testid="editor-properties-panel"],
+  [data-testid="design-editor"].editor-narrow[data-mobile-panels-collapsed="true"] [data-testid="editor-history-panel"] {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
   [data-testid="design-editor"].editor-narrow [data-testid="editor-toolbar"] {
     top: 0.5rem;
     left: 0.5rem;
@@ -46,8 +67,9 @@
     transform: none;
   }
 
+  /* Keep the compact zoom row clear of the page, assistant and panel controls. */
   [data-testid="design-editor"].editor-narrow .viewport-tools {
-    bottom: calc(45% + 0.5rem);
+    bottom: calc(45% + 3.25rem);
   }
 
   [data-testid="design-editor"].editor-narrow [data-testid="editor-toolbar"] > div {
@@ -60,7 +82,204 @@
     min-height: 2.75rem;
   }
 
+  .app-title-tabs > .canvas-tab-bar-desktop {
+    display: none;
+  }
+
+  .app-title-tabs > .canvas-tab-bar-mobile {
+    display: block;
+  }
+
+  [data-testid="design-editor"].editor-narrow .editor-mobile-panel-toggle {
+    position: absolute;
+    z-index: 50;
+    top: calc(55% - 3rem);
+    left: 50%;
+    display: flex;
+    width: 2.75rem;
+    height: 2.75rem;
+    transform: translateX(-50%);
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-mobile-panels-collapsed="true"] .editor-mobile-panel-toggle {
+    top: auto;
+    bottom: 4rem;
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-mobile-panels-collapsed="true"] .viewport-tools {
+    bottom: 0.75rem;
+  }
+
+  [data-testid="page-switcher"] {
+    top: calc(55% - 3rem);
+    bottom: auto;
+    left: 0.375rem;
+    z-index: 60;
+  }
+
+  [data-testid="page-switcher"] > button {
+    max-width: min(9rem, 34vw);
+    min-height: 2.75rem;
+    padding-inline: 0.625rem;
+    font-size: 0.6875rem;
+  }
+
+  [data-testid="page-switcher"] > section {
+    width: min(20rem, calc(100vw - 0.75rem));
+    max-height: min(50vh, 24rem);
+  }
+
+  [data-testid="page-switcher"] > section li > button {
+    min-height: 2.75rem;
+  }
+
+  [data-testid="page-switcher"] > section [data-page-action] {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
   .voo-ai-fab {
-    bottom: calc(45% + 1rem);
+    top: calc(55% - 3rem);
+    right: 0.375rem;
+    bottom: auto;
+  }
+
+  [data-testid="editor-bottom-toolbar"] .mobile-hidden-control {
+    display: none;
+  }
+
+  [data-testid="editor-bottom-toolbar"] .editor-zoom-extra-controls {
+    display: none;
+  }
+
+  [data-testid="editor-bottom-toolbar"] button {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  [data-testid="editor-more-menu"] .mobile-more-command {
+    display: flex;
+  }
+}
+
+@media (max-width: 560px) {
+  .top-bar {
+    padding-inline: 12px;
+  }
+
+  header.app-title-bar {
+    position: relative;
+    height: 44px;
+    min-height: 44px;
+    flex-wrap: nowrap;
+    padding: 4px 8px;
+  }
+
+  .app-title-bar .app-title-brand-row {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 0.375rem;
+  }
+
+  .app-title-bar .app-title-brand-row > button {
+    flex: 0 0 auto;
+    padding-inline: 0.25rem;
+  }
+
+  .app-title-bar .app-title-brand-row > button > span {
+    display: none;
+  }
+
+  .app-title-bar .app-title-tabs {
+    order: initial;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .canvas-tab-bar-desktop {
+    display: none;
+  }
+
+  .app-title-tabs > .canvas-tab-bar-mobile {
+    display: block;
+  }
+
+  .canvas-tab-bar-mobile > button {
+    height: 2.5rem;
+  }
+
+  .app-title-bar .app-title-actions {
+    flex: 0 0 auto;
+    gap: 2px;
+    margin-left: auto;
+  }
+
+  .app-title-bar .app-title-actions > div {
+    display: none;
+  }
+
+  .app-title-bar .app-title-actions button {
+    display: flex;
+    width: 2.5rem;
+    min-width: 2.5rem;
+    height: 2.5rem;
+    min-height: 2.5rem;
+    justify-content: center;
+    padding: 0;
+    white-space: nowrap;
+  }
+
+  .app-title-action-label {
+    display: none;
+  }
+
+  .app-title-action-icon {
+    display: block;
+  }
+
+  .top-bar-actions {
+    gap: 4px;
+    margin-right: 0;
+  }
+
+  .workflow-title {
+    right: 124px;
+    left: 48px;
+    width: auto;
+    transform: translateY(-50%);
+  }
+
+  .canvas-rail {
+    left: 8px;
+    transform: translateY(-50%) scale(0.9);
+    transform-origin: left center;
+  }
+
+  .viewport-tools {
+    bottom: 8px;
+  }
+
+  .resource-button-label {
+    display: none;
+  }
+
+  .rail-flyout {
+    bottom: 8px;
+    left: 60px;
+    top: 8px;
+    width: min(280px, calc(100% - 68px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-testid="design-editor"].editor-narrow > [data-open-guard],
+  [data-testid="design-editor"].editor-narrow [data-testid="editor-layers-panel"],
+  [data-testid="design-editor"].editor-narrow [data-testid="editor-properties-panel"],
+  [data-testid="design-editor"].editor-narrow [data-testid="editor-history-panel"] {
+    transition: none;
   }
 }

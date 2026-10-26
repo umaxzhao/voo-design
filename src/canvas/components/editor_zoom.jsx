@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { Ruler, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Ruler, Trash2 } from "lucide-react";
 import {
   IconAdd,
   IconGrid3x3,
@@ -36,6 +36,8 @@ export function EditorZoom({
   showRulers = false,
   rulersAvailable = false,
   onToggleRulers = null,
+  showGuides = false,
+  onToggleGuides = null,
   canClearGuides = false,
   onClearGuides = null,
   onAddCanvas = null,
@@ -83,7 +85,7 @@ export function EditorZoom({
           onClick={onAddCanvas}
           title={t("editor.addCanvas")}
           aria-label={t("editor.addCanvas")}
-          className="flex h-12 w-12 md:h-7 md:w-7 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
+          className="mobile-hidden-control flex h-12 w-12 md:h-7 md:w-7 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
         >
           <IconAdd size={13} strokeWidth={1.5} />
         </button>
@@ -94,7 +96,7 @@ export function EditorZoom({
         disabled={!canUndo}
         title={t("editor.undo")}
         aria-label={t("editor.undo")}
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30 disabled:opacity-30 disabled:hover:opacity-30"
+        className="mobile-hidden-control flex h-7 w-7 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30 disabled:opacity-30 disabled:hover:opacity-30"
       >
         <IconUndo size={13} />
       </button>
@@ -104,12 +106,12 @@ export function EditorZoom({
         disabled={!canRedo}
         title={t("editor.redo")}
         aria-label={t("editor.redo")}
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30 disabled:opacity-30 disabled:hover:opacity-30"
+        className="mobile-hidden-control flex h-7 w-7 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30 disabled:opacity-30 disabled:hover:opacity-30"
       >
         <IconRedo size={13} />
       </button>
 
-      <div className="h-3.5 w-[1px] bg-black/15 mx-0.5" />
+      <div className="mobile-hidden-control h-3.5 w-[1px] bg-black/15 mx-0.5" />
 
       <button
         type="button"
@@ -143,10 +145,10 @@ export function EditorZoom({
 
       {/* Rulers and guides live inside this one bar. */}
       {children ? (
-        <>
+        <div className="editor-zoom-extra-controls contents">
           <div className="h-3.5 w-[1px] bg-black/15 mx-0.5" />
           {children}
-        </>
+        </div>
       ) : null}
 
       <div className="h-3.5 w-[1px] bg-black/15 mx-0.5" />
@@ -176,8 +178,62 @@ export function EditorZoom({
             data-testid="editor-more-menu"
             role="menu"
             aria-label={t("editor.taskbar.more")}
-            className="absolute bottom-full right-0 mb-2 min-w-44 rounded-xl border border-white/10 bg-neutral-900 p-1.5 text-[11px] text-white shadow-pop"
+            className="absolute bottom-full right-0 mb-2 max-h-[60vh] min-w-44 overflow-y-auto rounded-xl border border-white/10 bg-neutral-900 p-1.5 text-[11px] text-white shadow-pop"
           >
+            <button
+              type="button"
+              role="menuitem"
+              disabled={!canUndo}
+              onClick={() => {
+                onUndo?.();
+                setMoreOpen(false);
+              }}
+              className="mobile-more-command hidden w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-neutral-200 hover:bg-neutral-800 focus-visible:bg-neutral-800 outline-none disabled:opacity-30"
+            >
+              <IconUndo size={13} aria-hidden="true" />
+              {t("editor.undo")}
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              disabled={!canRedo}
+              onClick={() => {
+                onRedo?.();
+                setMoreOpen(false);
+              }}
+              className="mobile-more-command hidden w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-neutral-200 hover:bg-neutral-800 focus-visible:bg-neutral-800 outline-none disabled:opacity-30"
+            >
+              <IconRedo size={13} aria-hidden="true" />
+              {t("editor.redo")}
+            </button>
+            {onAddCanvas ? (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  onAddCanvas();
+                  setMoreOpen(false);
+                }}
+                className="mobile-more-command hidden w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-neutral-200 hover:bg-neutral-800 focus-visible:bg-neutral-800 outline-none"
+              >
+                <IconAdd size={13} aria-hidden="true" />
+                {t("editor.addCanvas")}
+              </button>
+            ) : null}
+            <div className="mobile-more-command hidden my-1 border-t border-white/10" role="separator" />
+            {rulersAvailable ? (
+              <button
+                type="button"
+                role="menuitemcheckbox"
+                aria-checked={Boolean(showGuides)}
+                onClick={() => onToggleGuides?.()}
+                className="mobile-more-command hidden w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-neutral-200 hover:bg-neutral-800 focus-visible:bg-neutral-800 outline-none"
+              >
+                {showGuides ? <Eye size={13} aria-hidden="true" /> : <EyeOff size={13} aria-hidden="true" />}
+                {t("editor.guides.toggle")}
+                <span aria-hidden="true" className="ml-auto text-neutral-400">{showGuides ? "✓" : ""}</span>
+              </button>
+            ) : null}
             <div className="px-2 py-1 text-neutral-400">{t("editor.menu.groupZoom")}</div>
             <button
               type="button"
@@ -337,6 +393,8 @@ EditorZoom.propTypes = {
   showRulers: PropTypes.bool,
   rulersAvailable: PropTypes.bool,
   onToggleRulers: PropTypes.func,
+  showGuides: PropTypes.bool,
+  onToggleGuides: PropTypes.func,
   canClearGuides: PropTypes.bool,
   onClearGuides: PropTypes.func,
   children: PropTypes.node,

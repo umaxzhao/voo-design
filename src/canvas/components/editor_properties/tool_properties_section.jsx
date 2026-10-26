@@ -3,7 +3,8 @@
  * Coordinates dedicated panels for brush, selection, pen, shape, eyedropper, crop, and color.
  */
 
-import { TOOL } from "../../editor/editor_constants.js";
+import { useState } from "react";
+import { TOOL, BRUSH_WIDTH_MIN, BRUSH_WIDTH_MAX } from "../../editor/editor_constants.js";
 import {
   brushModeHasColor,
   brushModeHasPresets,
@@ -12,6 +13,8 @@ import { toolPropertiesPropTypes } from "./tool_properties_types.js";
 import ToolColorProperties from "./tool_color_properties.jsx";
 import BrushProperties from "./brush_properties.jsx";
 import BrushPresets from "./brush_presets.jsx";
+import BrushDetailPopover from "./brush_detail_popover.jsx";
+import ToolSliderField from "./tool_slider_field.jsx";
 import SelectionProperties from "./selection_properties.jsx";
 import SelectionActions from "./selection_actions.jsx";
 import EyedropperProperties from "./eyedropper_properties.jsx";
@@ -20,6 +23,8 @@ import ShapeProperties from "./shape_properties.jsx";
 import CropProperties from "./crop_properties.jsx";
 import TextToolProperties from "./text_tool_properties.jsx";
 import GradientProperties from "./gradient_properties.jsx";
+import { StaticSection } from "./property_section.jsx";
+import { useI18n } from "../../use_i18n.js";
 
 export {
   ToolColorProperties,
@@ -40,6 +45,8 @@ export default function ToolPropertiesSection({
   color = "#ffffff",
   onColor,
   onPickColor,
+  backgroundColor = "#000000",
+  onBackgroundColor,
   brushWidth = 24,
   onBrushWidth,
   brushHardness = 0.5,
@@ -211,6 +218,8 @@ export default function ToolPropertiesSection({
   onFillSampleAll,
   onReverseGradient,
 }) {
+  const { t } = useI18n();
+  const [brushDetailOpen, setBrushDetailOpen] = useState(false);
   const isSelectionTool =
     tool === TOOL.MARQUEE ||
     tool === TOOL.LASSO ||
@@ -255,6 +264,21 @@ export default function ToolPropertiesSection({
   const showBrushPresets =
     tool === TOOL.BRUSH || (tool === TOOL.ERASER && brushModeHasPresets("eraser"));
 
+  // Frame/Hand/AI select/Retouch take over the inspector but have no controls;
+  // an explicit hint is better than a 62px blank header.
+  const hasToolContent =
+    Boolean(hasColor) ||
+    isShape ||
+    isPen ||
+    isArrow ||
+    tool === TOOL.TEXT ||
+    isBrushOrEraser ||
+    isSelectionTool ||
+    isDropper ||
+    isCrop ||
+    tool === TOOL.FILL ||
+    tool === TOOL.GRADIENT;
+
   return (
     <div className="flex flex-col font-mono text-neutral-200">
       {/* 1. Color properties (ColorWheel + Dual Swatches) */}
@@ -263,6 +287,8 @@ export default function ToolPropertiesSection({
           color={color}
           onColor={onColor}
           onPickColor={onPickColor}
+          backgroundColor={backgroundColor}
+          onBackgroundColor={onBackgroundColor}
           swapColorsRef={swapColorsRef}
         />
       )}
@@ -321,7 +347,79 @@ export default function ToolPropertiesSection({
       )}
 
       {/* 3. Brush, Eraser, Retouch, Healing & Presets */}
-      {isBrushOrEraser && (
+      {isBrushOrEraser && tool === TOOL.BRUSH && brushMode === "normal" ? (
+        <>
+          <StaticSection title={t("editor.tool.brush")} storageKey="brush">
+            <div className="space-y-2.5">
+              <ToolSliderField
+                label={t("editor.brushWidth")}
+                min={BRUSH_WIDTH_MIN}
+                max={BRUSH_WIDTH_MAX}
+                value={Math.round(brushWidth)}
+                onValueChange={onBrushWidth}
+                suffix="px"
+                ariaLabel={t("editor.brushWidth")}
+                scrubHint={t("editor.props.dragToAdjust")}
+              />
+              <ToolSliderField
+                label={t("editor.brushOpacity")}
+                min={1}
+                max={100}
+                value={Math.round(brushOpacity * 100)}
+                onValueChange={(value) => onBrushOpacity?.(value / 100)}
+                suffix="%"
+                ariaLabel={t("editor.brushOpacity")}
+                scrubHint={t("editor.props.dragToAdjust")}
+              />
+            </div>
+          </StaticSection>
+          <BrushPresets
+            brushPreset={brushPreset}
+            onBrushPreset={onBrushPreset}
+            onBrushHardness={onBrushHardness}
+            onBrushWidth={onBrushWidth}
+            onBrushOpacity={onBrushOpacity}
+            variant="list"
+            onOpenDetails={() => setBrushDetailOpen(true)}
+          />
+          <BrushDetailPopover open={brushDetailOpen} onClose={() => setBrushDetailOpen(false)}>
+            <BrushProperties
+              tool={tool}
+              brushWidth={brushWidth}
+              onBrushWidth={onBrushWidth}
+              brushHardness={brushHardness}
+              onBrushHardness={onBrushHardness}
+              brushOpacity={brushOpacity}
+              onBrushOpacity={onBrushOpacity}
+              brushMode={brushMode}
+              brushFlow={brushFlow}
+              onBrushFlow={onBrushFlow}
+              brushSmoothing={brushSmoothing}
+              onBrushSmoothing={onBrushSmoothing}
+              brushStrength={brushStrength}
+              onBrushStrength={onBrushStrength}
+              brushExposure={brushExposure}
+              onBrushExposure={onBrushExposure}
+              brushTonalRange={brushTonalRange}
+              onBrushTonalRange={onBrushTonalRange}
+              brushProtectLuminosity={brushProtectLuminosity}
+              onBrushProtectLuminosity={onBrushProtectLuminosity}
+              brushSaturating={brushSaturating}
+              onBrushSaturating={onBrushSaturating}
+              pressureSize={pressureSize}
+              onPressureSize={onPressureSize}
+              pressureOpacity={pressureOpacity}
+              onPressureOpacity={onPressureOpacity}
+              brushRoundness={brushRoundness}
+              onBrushRoundness={onBrushRoundness}
+              brushAngle={brushAngle}
+              onBrushAngle={onBrushAngle}
+              brushBlendMode={brushBlendMode}
+              onBrushBlendMode={onBrushBlendMode}
+            />
+          </BrushDetailPopover>
+        </>
+      ) : isBrushOrEraser ? (
         <>
           <BrushProperties
             tool={tool}
@@ -371,7 +469,7 @@ export default function ToolPropertiesSection({
             />
           )}
         </>
-      )}
+      ) : null}
 
       {/* 4. Selection Tool Properties & Actions */}
       {isSelectionTool && onSelectionMode && (
@@ -503,6 +601,14 @@ export default function ToolPropertiesSection({
           onReverseGradient={onReverseGradient}
         />
       )}
+
+      {!hasToolContent ? (
+        <StaticSection title={t("editor.toolOptions.emptyTitle")}>
+          <p className="px-1 py-2 text-[11px] leading-relaxed text-neutral-500">
+            {t("editor.toolOptions.emptyHint")}
+          </p>
+        </StaticSection>
+      ) : null}
     </div>
   );
 }

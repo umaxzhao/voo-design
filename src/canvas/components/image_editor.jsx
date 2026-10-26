@@ -10,6 +10,7 @@ import {
   settleImagePublication,
 } from "../store/image-publication.js";
 import PropTypes from "prop-types";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import {
   lazy,
   Suspense,
@@ -48,6 +49,7 @@ import EditorProperties from "./editor_properties/index.jsx";
 import { layoutPresentationPages } from "../presentation/presentation-document.js";
 import { usePresentationHistory } from "./presentation/use_presentation_history.js";
 import { usePresentationEditor } from "./presentation/use_presentation_editor.js";
+import { useMobileCanvasGestures } from "./use_mobile_canvas_gestures.js";
 import PresentationPageMenu from "./presentation/presentation_page_menu.jsx";
 const PresentationViewer = lazy(() => import("./presentation/presentation_viewer.jsx"));
 const PresentationExportDialog = lazy(() => import("./presentation/presentation_export_dialog.jsx"));
@@ -962,6 +964,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     nodeIds,
   );
   const { canUndo, canRedo } = presentationHistory;
+  const [mobilePanelsCollapsed, setMobilePanelsCollapsed] = useState(false);
+  const mobileCanvasGestures = useMobileCanvasGestures(presentationHistory.undo);
   /** The selected (blue) Puppet Warp pin, read straight from the engine. */
   const puppetPinId = engine?.getSelectedPuppetPin?.() ?? null;
   const puppetRotation = puppetPinId
@@ -3327,12 +3331,17 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       ref={editorRootRef}
       data-testid="design-editor"
       data-properties-open={propertiesOpen ? "true" : "false"}
+      data-mobile-panels-collapsed={mobilePanelsCollapsed ? "true" : "false"}
       aria-hidden={!visible}
       style={{ backgroundColor: canvasBackgroundColor }}
       className={`absolute bottom-0 left-0 top-0 z-50 flex flex-col overflow-hidden rounded-b-2xl ${isNarrow ? "editor-narrow" : ""} ${
         dockAgent ? "right-[376px]" : "right-0"
       } ${visible ? "" : "invisible pointer-events-none"}`}
       {...dropHandlers}
+      onPointerDownCapture={mobileCanvasGestures.onPointerDownCapture}
+      onPointerMoveCapture={mobileCanvasGestures.onPointerMoveCapture}
+      onPointerUpCapture={mobileCanvasGestures.onPointerUpCapture}
+      onPointerCancelCapture={mobileCanvasGestures.onPointerCancelCapture}
       onDropCapture={handleMediaDrop}
       onContextMenu={(event) => {
         event.preventDefault();
@@ -3346,6 +3355,17 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         setContextMenu({ x: event.clientX, y: event.clientY });
       }}
     >
+      <button
+        type="button"
+        data-testid="editor-mobile-panels-toggle"
+        aria-expanded={!mobilePanelsCollapsed}
+        aria-label={t(mobilePanelsCollapsed ? "editor.mobile.panels.expand" : "editor.mobile.panels.collapse")}
+        title={t(mobilePanelsCollapsed ? "editor.mobile.panels.expand" : "editor.mobile.panels.collapse")}
+        onClick={() => setMobilePanelsCollapsed((collapsed) => !collapsed)}
+        className="editor-mobile-panel-toggle hidden h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-neutral-900/95 text-neutral-200 shadow-menu"
+      >
+        {mobilePanelsCollapsed ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+      </button>
       <div
         data-open-guard={openGuard ? "on" : "off"}
         className={`relative min-h-0 flex-1 overflow-hidden ${
@@ -4972,6 +4992,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               showRulers={showRulers}
               rulersAvailable={rulersVisible}
               onToggleRulers={toggleRulers}
+              showGuides={showGuides}
+              onToggleGuides={toggleGuides}
               canClearGuides={documentGuides.length > 0}
               onClearGuides={handleClearGuides}
               onToggleSnapping={toggleSnapping}
