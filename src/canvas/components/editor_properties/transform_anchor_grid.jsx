@@ -54,12 +54,15 @@ export default function AnchorPointGrid({ value, onChange, label }) {
       {ANCHOR_KEYS.map((key) => {
         const isSelected = value === key;
         if (key === "center") {
-          const armClass =
-            "absolute z-10 flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/50";
           return (
-            <div
+            <button
               key={key}
-              className="relative flex h-3.5 w-3.5 items-center justify-center"
+              type="button"
+              role="radio"
+              aria-checked={isSelected}
+              aria-label={label}
+              onClick={() => onChange(key)}
+              className="relative flex h-3.5 w-3.5 items-center justify-center rounded-lg transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/50"
             >
               <span
                 aria-hidden="true"
@@ -73,39 +76,7 @@ export default function AnchorPointGrid({ value, onChange, label }) {
                   yCentred ? "bg-[#a7ffd4]" : "bg-neutral-500"
                 }`}
               />
-              <button
-                type="button"
-                data-testid="anchor-horizontal-start"
-                aria-label={t("editor.props.anchorHorizontal")}
-                aria-pressed={xCentred}
-                onClick={toggleHorizontal}
-                className={`${armClass} left-0 top-1/2 h-3 w-[35%] -translate-y-1/2`}
-              />
-              <button
-                type="button"
-                data-testid="anchor-horizontal-end"
-                aria-label={t("editor.props.anchorHorizontal")}
-                aria-pressed={xCentred}
-                onClick={toggleHorizontal}
-                className={`${armClass} right-0 top-1/2 h-3 w-[35%] -translate-y-1/2`}
-              />
-              <button
-                type="button"
-                data-testid="anchor-vertical-start"
-                aria-label={t("editor.props.anchorVertical")}
-                aria-pressed={yCentred}
-                onClick={toggleVertical}
-                className={`${armClass} left-1/2 top-0 h-[35%] w-3 -translate-x-1/2`}
-              />
-              <button
-                type="button"
-                data-testid="anchor-vertical-end"
-                aria-label={t("editor.props.anchorVertical")}
-                aria-pressed={yCentred}
-                onClick={toggleVertical}
-                className={`${armClass} bottom-0 left-1/2 h-[35%] w-3 -translate-x-1/2`}
-              />
-            </div>
+            </button>
           );
         }
         return (

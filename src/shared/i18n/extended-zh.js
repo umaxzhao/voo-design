@@ -869,8 +869,6 @@ export default {
   "editor.props.blendMode": "混合模式",
   "editor.props.rotation": "旋转",
   "editor.props.shear": "斜切",
-  "editor.props.anchorHorizontal": "横向居中锚点",
-  "editor.props.anchorVertical": "纵向居中锚点",
   "editor.props.anchorPoint": "调整尺寸与位置时保持固定的参考锚点",
   "editor.props.cornerRadius": "圆角",
   "editor.props.linkCorners": "关联所有圆角",
