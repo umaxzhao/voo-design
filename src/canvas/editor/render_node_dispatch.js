@@ -128,6 +128,23 @@ export function drawNode(
       targetCtx.restore();
     }
     if (node.strokeWidth > 0) paintOne(targetCtx, { ...node, fillHidden: true, fillOpacity: 0 });
+    // Additional strokes (Figma-style stroke list): the primary stroke above
+    // stays the legacy field, extras are painted over it.
+    if (Array.isArray(node.strokes)) {
+      for (const stroke of node.strokes) {
+        if (!stroke || stroke.visible === false || !(stroke.strokeWidth > 0)) continue;
+        paintOne(targetCtx, {
+          ...node,
+          fillHidden: true,
+          fillOpacity: 0,
+          stroke: stroke.stroke,
+          strokeWidth: stroke.strokeWidth,
+          strokeOpacity: stroke.strokeOpacity ?? 1,
+          strokeAlign: stroke.strokeAlign ?? node.strokeAlign,
+          strokes: null,
+        });
+      }
+    }
   };
 
   ctx.save();

@@ -57,11 +57,40 @@ export function StrokeSection({
     : STROKE_ALIGN.CENTER;
 
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const addStroke = () =>
+  const extraStrokes = Array.isArray(object.strokes) ? object.strokes : [];
+  const patchExtraStroke = (index, patch) =>
+    editAndCommit({
+      strokes: extraStrokes.map((entry, at) =>
+        at === index ? { ...entry, ...patch } : entry,
+      ),
+    });
+  const removeExtraStroke = (index) =>
+    editAndCommit({
+      strokes: extraStrokes.filter((_, at) => at !== index),
+    });
+  const addExtraStroke = () =>
+    editAndCommit({
+      strokes: [
+        ...extraStrokes,
+        {
+          stroke: "#FFFFFF",
+          strokeWidth: 1,
+          strokeOpacity: 1,
+          strokeAlign: STROKE_ALIGN.CENTER,
+          visible: true,
+        },
+      ],
+    });
+  const addStroke = () => {
+    if (!none) {
+      addExtraStroke();
+      return;
+    }
     editAndCommit({
       stroke: "#FFFFFF",
       strokeWidth: Math.max(1, strokeWidth || 1),
     });
+  };
 
   return (
     <StaticSection
@@ -245,6 +274,44 @@ export function StrokeSection({
               </button>
             </EditorTooltip>
           </div>
+
+          {extraStrokes.length ? (
+            <div className="flex flex-col gap-1.5 pt-1">
+              {extraStrokes.map((entry, index) => (
+                <div className={sectionRowClass} key={`extra-stroke-${index}`}>
+                  <Swatch
+                    value={entry.stroke}
+                    onPick={(colour) => patchExtraStroke(index, { stroke: colour })}
+                    ariaLabel={`${t("editor.props.stroke")} ${index + 2}`}
+                  />
+                  <HexField
+                    value={entry.stroke}
+                    onCommit={(colour) => patchExtraStroke(index, { stroke: colour })}
+                    ariaLabel={`${t("editor.props.stroke")} ${index + 2}`}
+                  />
+                  <ScrubField
+                    prefix="W"
+                    min={0}
+                    max={256}
+                    value={Math.round(entry.strokeWidth ?? 1)}
+                    onValueChange={(value) => patchExtraStroke(index, { strokeWidth: value })}
+                    onCommit={commitNow}
+                    ariaLabel={`${t("editor.props.strokeWidth")} ${index + 2}`}
+                    scrubHint={t("editor.props.dragToAdjust")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeExtraStroke(index)}
+                    title={t("editor.props.removeStroke")}
+                    aria-label={t("editor.props.removeStroke")}
+                    className={sectionActionClass}
+                  >
+                    <IconMinus size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
 
           {showAdvanced ? (
             <StrokeStyleSection
