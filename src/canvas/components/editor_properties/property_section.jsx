@@ -18,7 +18,7 @@ export const sectionTitleClass =
 // One vertical rhythm for every group: the divider sits centred between the
 // previous group's last row and the next group's header (12px on each side).
 const sectionRhythmClass =
-  "border-t border-white/10 py-2 first:border-t-0 first:pt-0";
+  "border-t border-white/10 pb-3 pt-1.5 first:border-t-0 first:pt-0";
 
 /** The header row shared by static and collapsible sections. */
 export const sectionHeaderClass =
