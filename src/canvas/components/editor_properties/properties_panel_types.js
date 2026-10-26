@@ -23,7 +23,6 @@ export const editorPropertiesPropTypes = {
   onMutate: PropTypes.func,
   onCommit: PropTypes.func,
   selectionCount: PropTypes.number,
-  hideFrameDetails: PropTypes.bool,
   /** Selected node objects when several are picked (plan 1.9). */
   selectedNodes: PropTypes.array,
   onCombine: PropTypes.func,

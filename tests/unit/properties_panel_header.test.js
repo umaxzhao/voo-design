@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { activateMaskAction } from "../../src/canvas/components/editor_properties/properties_panel_header.jsx";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import PropertiesPanelHeader, { activateMaskAction } from "../../src/canvas/components/editor_properties/properties_panel_header.jsx";
 
 describe("PropertiesPanelHeader mask action", () => {
   it("edits an existing mask instead of creating another", () => {
@@ -19,4 +21,17 @@ describe("PropertiesPanelHeader mask action", () => {
     expect(maskActions.onAddMask).toHaveBeenCalledOnce();
     expect(maskActions.onEditToggle).not.toHaveBeenCalled();
   });
+});
+
+it.each([{ kind: "frame" }, { kind: "group", isFrame: true }])("omits redundant frame type and dimensions for $kind headers", (frame) => {
+  const html = renderToStaticMarkup(React.createElement(PropertiesPanelHeader, {
+    object: { ...frame, id: "frame", name: "Hero", width: 1200, height: 800 },
+    selectionCount: 1,
+    t: (key) => key,
+  }));
+  expect(html).toContain("Hero");
+  expect(html).not.toContain("editor.nodeType.frame");
+  expect(html).not.toContain("editor.props.size");
+  expect(html).not.toContain("1200");
+  expect(html).not.toContain("800");
 });

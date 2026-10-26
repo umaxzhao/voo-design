@@ -264,7 +264,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     (state) => state.setEditorViewport,
   );
 
-  const multi = nodeIds.length > 1 || Boolean(presentationId);
+  // Every frame lives on the shared free canvas, including the first one.
+  // Adding or removing a frame must never switch camera or renderer modes.
+  const multi = nodeIds.length > 0 || Boolean(presentationId);
 
   // A design editor opened these pictures; the fast first paint shipped a
   // compressed preview, so fetch the untouched originals for editing (the
@@ -2085,15 +2087,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 height: Math.round(engineState.height),
               }
             : null;
-      // Adding the second page switches this page's camera mode and rebuilds
-      // its engine. Capture the live master before that transition so its
-      // document is available to instances and to the replacement engine.
-      if (nodeIds.length === 1 && refId && engineState?.ready) {
-        void handleBeforeDispose(refId, engineState.engine, true);
-      }
       return addEditorPage({ ...customSize });
     },
-    [focusedId, nodeIds, addEditorPage, handleBeforeDispose],
+    [focusedId, nodeIds, addEditorPage],
   );
 
   /**
@@ -2268,7 +2264,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   );
 
   // --------------------------------------------------------------------------
-  // Shared free-canvas camera (multi-page only).
+  // Shared free-canvas camera for every frame count.
 
   /** The free stage's centre in stage coordinates, for cursor-anchored zoom. */
   const stageCentre = useCallback(() => {
@@ -4165,7 +4161,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         ) : propertiesOpen ? (
           <EditorProperties
             isMainComponent={(instanceCounts.get(doc?.canvasId) ?? 0) > 0}
-            hideFrameDetails={multi}
             engine={engine}
             object={propertyObject}
             onDeleteCanvas={
