@@ -24,7 +24,7 @@ import zhDict from "../../src/shared/i18n/onboarding-guide-zh.js";
 const CJK = /[㐀-鿿＀-￯]/;
 const ONBOARDING_DIR = path.resolve("src/canvas/components/onboarding");
 const WORKSPACE = { path: "Virtual Workspace", type: "web-idb", name: "Virtual Workspace" };
-const ZH_TITLES = ["选择工作区", "选择智能体", "检测 CLI", "准备就绪"];
+const ZH_TITLES = ["选择智能体", "选择工作区", "检测 CLI", "准备就绪"];
 
 /** Renders the whole guide on a given step by seeding the session draft it resumes from. */
 function renderGuideAt(stepIndex) {
@@ -71,8 +71,8 @@ describe("setup guide i18n", () => {
 
   it("shows the English titles and buttons in English", async () => {
     await loadLocale("en");
-    expect(renderGuideAt(0)).toContain("Choose a workspace");
-    expect(renderGuideAt(1)).toContain("Choose an agent");
+    expect(renderGuideAt(0)).toContain("Choose an agent");
+    expect(renderGuideAt(1)).toContain("Choose a workspace");
     expect(renderGuideAt(2)).toContain("Detect CLI");
     const last = renderGuideAt(3);
     expect(last).toContain("Ready to go");

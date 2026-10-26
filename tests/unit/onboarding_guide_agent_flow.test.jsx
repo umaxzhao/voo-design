@@ -48,14 +48,14 @@ describe("onboarding guide agent selection flow", () => {
   afterEach(() => { hooks.active = false; });
 
   it("defaults to Claude Code and carries a picked card to detection and the summary", () => {
-    next(); // workspace -> agent select
     expect(find(StepAgentSelect).props.selectedAgent).toBe("claude");
 
     find(StepAgentSelect).props.onSelectAgent("codex");
     draw();
     expect(find(StepAgentSelect).props.selectedAgent).toBe("codex");
 
-    next(); // agent select -> detect
+    next(); // agent select -> workspace
+    next(); // workspace -> detect
     expect(find(StepLocalDetect).props.selectedAgent).toBe("codex");
 
     next(); // detect -> ready

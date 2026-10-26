@@ -26,6 +26,8 @@ export default {
   "firstRun.tour.agentHint": "Open the sparkle button at the bottom right to describe what you want to create.",
   "firstRun.provider.title": "Choose your Agent (optional)",
   "firstRun.provider.description": "Bring an assistant to your canvas. You can change this anytime.",
+  "firstRun.workspace.title": "Project directory",
+  "firstRun.workspace.description": "Choose where new projects are saved. You can change this later.",
   "firstRun.workspace.label": "Project directory",
   "firstRun.workspace.placeholder": "Choose where to save projects",
   "firstRun.workspace.desktopHint": "Enter a path and press Enter to apply, or click the folder icon to choose a directory.",

@@ -26,6 +26,8 @@ export default {
   "firstRun.tour.agentHint": "点击右下角的星光按钮，描述你想创建的内容。",
   "firstRun.provider.title": "选择智能体（可选）",
   "firstRun.provider.description": "为画布添加创作助手，随时可以更改。",
+  "firstRun.workspace.title": "项目目录",
+  "firstRun.workspace.description": "选择新项目的保存位置，之后也可以修改。",
   "firstRun.workspace.label": "项目目录",
   "firstRun.workspace.placeholder": "选择项目保存目录",
   "firstRun.workspace.desktopHint": "填写路径后按 Enter 应用，或点击文件夹图标选择目录。",

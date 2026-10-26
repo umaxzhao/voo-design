@@ -325,7 +325,7 @@ describe("Adversarial Challenge: Onboarding Workspace Guide Flow", () => {
       );
 
       expect(html).toContain("1 / 4");
-      expect(html).toContain("选择工作区");
+      expect(html).toContain("选择智能体");
       // Does not restore to Step 3 (2) as saved in draft
       expect(html).not.toContain("3 / 4");
     });

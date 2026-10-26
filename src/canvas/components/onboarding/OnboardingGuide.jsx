@@ -95,7 +95,9 @@ export default function OnboardingGuide({ open, onClose, steps = ONBOARDING_STEP
   });
   const [selectedAgent, setSelectedAgent] = useState(() => {
     const draft = loadDraft();
-    return draft?.selectedAgent || "claude";
+    // The first-run dialog writes the same choice; prefer the persisted value
+    // so the two entry points show ONE agent selection, not two.
+    return getSetting("voo.agent.llmProvider") || draft?.selectedAgent || "claude";
   });
   const [finishing, setFinishing] = useState(false);
   const finishingRef = useRef(false);
@@ -324,7 +326,11 @@ export default function OnboardingGuide({ open, onClose, steps = ONBOARDING_STEP
             {currentStep === GUIDE_STEP.AGENT_SELECT && (
               <StepAgentSelect
                 selectedAgent={selectedAgent}
-                onSelectAgent={setSelectedAgent}
+                onSelectAgent={(agent) => {
+                  setSelectedAgent(agent);
+                  setSetting("voo.agent.llmProvider", agent);
+                  applyAgentModel(agent);
+                }}
               />
             )}
             {currentStep === GUIDE_STEP.LOCAL_DETECT && (

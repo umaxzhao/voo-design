@@ -80,12 +80,9 @@ describe("commercial first run", () => {
     const html = renderToStaticMarkup(<FirstRunOnboarding open onClose={() => {}} onStart={() => {}} />);
     expect(html).toContain("first-run-title");
     expect(html).toContain(locale === "en" ? "Choose your Agent (optional)" : "选择智能体（可选）");
-    expect(html).toContain(locale === "en" ? "Set up later" : "稍后设置");
-    expect(html).toContain(locale === "en" ? "Project directory" : "项目目录");
-    expect(html).toContain('data-testid="first-run-workspace-choose"');
-    expect(html).not.toContain('data-testid="first-run-workspace-browser"');
-    expect(html).toContain("lucide-folder-open");
-    expect(html).toContain(locale === "en" ? "Browser storage" : "浏览器存储");
+    expect(html).toContain(locale === "en" ? "Next" : "下一步");
+    expect(html).not.toContain(locale === "en" ? "Set up later" : "稍后设置");
+    expect(html).not.toContain(locale === "en" ? "Project directory" : "项目目录");
     expect(html).not.toContain("firstRun.");
   });
   it("keeps the first-run dialog inset and content-sized below large screens", () => {
@@ -150,7 +147,10 @@ describe("first-run interactions", () => {
   const click = (predicate) => { const el = elements(tree).find(predicate); expect(el).toBeTruthy(); el.props.onClick(); draw(); };
   // The cards live inside AgentCardGrid, which this shallow tree does not expand: pick through its onSelect.
   const pick = (id) => { elements(tree).find(el => el.type === AgentCardGrid).props.onSelect(id); draw(); };
-  const next = () => click(el => el.props?.["data-testid"] === "first-run-next");
+  const next = () => {
+    click(el => el.props?.["data-testid"] === "first-run-next");
+    if (step() === "workspace") click(el => el.props?.["data-testid"] === "first-run-next");
+  };
   const step = () => elements(tree).find(el => el.props?.["data-step"])?.props["data-step"];
   beforeEach(async () => {
     await loadLocale("en");
@@ -170,6 +170,12 @@ describe("first-run interactions", () => {
     expect(getSetting(AGENT_SETTING.MODEL)).toBe(AGENT_DEFAULT_MODELS.claude);
     next(); expect(getSetting(FIRST_RUN_KEY)).toBe("completed"); expect(onClose).toHaveBeenCalled();
     expect(onStart).not.toHaveBeenCalled();
+  });
+  it("advances from Agent selection to the workspace step", () => {
+    click(el => el.props?.["data-testid"] === "first-run-next");
+    expect(step()).toBe("workspace");
+    expect(renderToStaticMarkup(tree)).toContain("Project directory");
+    expect(renderToStaticMarkup(tree)).toContain('data-testid="first-run-workspace-choose"');
   });
   it.each(["en", "zh"])("translates every step in %s", async locale => {
     await loadLocale(locale);

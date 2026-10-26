@@ -59,15 +59,15 @@ describe("Milestone 2: Onboarding Workspace Guide", () => {
   });
 
   describe("1. State Contracts & shouldShowOnboarding()", () => {
-    it("defines 4-step wizard sequence with WORKSPACE_SETUP as Step 1", () => {
+    it("defines 4-step wizard sequence with AGENT_SELECT as Step 1", () => {
       expect(GUIDE_STEP.WORKSPACE_SETUP).toBe("workspace_setup");
       expect(GUIDE_STEP.AGENT_SELECT).toBe("agent_select");
       expect(GUIDE_STEP.LOCAL_DETECT).toBe("local_detect");
       expect(GUIDE_STEP.READY).toBe("ready");
 
       expect(ONBOARDING_STEPS).toEqual([
-        GUIDE_STEP.WORKSPACE_SETUP,
         GUIDE_STEP.AGENT_SELECT,
+        GUIDE_STEP.WORKSPACE_SETUP,
         GUIDE_STEP.LOCAL_DETECT,
         GUIDE_STEP.READY,
       ]);
@@ -179,7 +179,7 @@ describe("Milestone 2: Onboarding Workspace Guide", () => {
   });
 
   describe("4. OnboardingGuide 4-Step Wizard Flow & Skip Logic", () => {
-    it("renders 4-step progress bar and initial Step 1 Workspace title", () => {
+    it("renders 4-step progress bar and initial Step 1 Agent title", () => {
       const html = renderToStaticMarkup(
         React.createElement(OnboardingGuide, { open: true, onClose: () => {} })
       );
@@ -187,8 +187,8 @@ describe("Milestone 2: Onboarding Workspace Guide", () => {
       expect(html).toContain('data-testid="onboarding-guide-modal"');
       expect(html).toContain('data-step-count="4"');
       expect(html).toContain("1 / 4");
-      expect(html).toContain("选择工作区");
-      expect(html).toContain('data-testid="onboarding-step-workspace"');
+      expect(html).toContain("选择智能体");
+      expect(html).toContain('data-testid="onboarding-agent-grid"');
       expect(html).toContain('data-testid="onboarding-skip-btn"');
       expect(html).toContain("稍后配置 (跳过)");
     });

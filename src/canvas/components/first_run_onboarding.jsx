@@ -16,7 +16,7 @@ import { CLOUD_PROVIDER_PRESETS, VOO_CLOUD_PROVIDER } from "./onboarding/cloud_p
 import VooCloudLoginInline from "./onboarding/voo_cloud_login_inline.jsx";
 import { useUserStore } from "../store/user_store.js";
 
-const steps = ["provider"];
+const steps = ["provider", "workspace"];
 const focusClass = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40";
 
 export function syncFirstRunDialog(dialog, open) {
@@ -31,6 +31,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
   const title = useRef(null);
   const contentRef = useRef(null);
   const [provider, setProvider] = useState("");
+  const [stepIndex, setStepIndex] = useState(0);
   const [customModel, setCustomModel] = useState("");
   // Bumped after the inline setup stores a provider so the groups below are read again.
   const [, setCustomVersion] = useState(0);
@@ -52,6 +53,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
     if (open) {
       setProvider("");
       setCustomModel("");
+      setStepIndex(0);
       setVooCloudSignedIn(Boolean(useUserStore.getState?.().user?.isLoggedIn));
     }
   }, [open]);
@@ -66,7 +68,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
   const complete = () => { if (!reopened) finishFirstRun(); onClose(); };
   const selectCustomModel = (id) => { setCustomModel(id); setSetting(AGENT_SETTING.MODEL, id); };
   if (!open) return null;
-  const [name] = steps;
+  const name = steps[stepIndex] ?? steps[0];
   return (
     <dialog ref={dialog} aria-labelledby="first-run-title" aria-describedby="first-run-description"
       onCancel={(event) => { event.preventDefault(); dismiss(); }}
@@ -91,43 +93,55 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
           <div ref={contentRef} data-testid="onboarding-scroll-content"
             className="ui-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden px-6 pb-6 pt-2">
             <p id="first-run-description" className="text-[11px] leading-relaxed text-neutral-400">{t(`firstRun.${name}.description`)}</p>
-            <div className="flex flex-col gap-3">
-              <AgentCardGrid t={t} label={t("firstRun.provider.label")} selected={provider} detection={detection}
-                cloudProviders={cloudCards}
-                customConfigured={customGroups.some(group => group.models.length > 0)}
-                onSelect={(id) => {
-                  setProvider(id);
-                  if (id === VOO_CLOUD_PROVIDER.id) return;
-                  const preset = CLOUD_PROVIDER_PRESETS.find(entry => entry.id === id);
-                  if (preset) {
-                    const model = customGroups.find(group => group.cliId === preset.customProviderId)?.models[0];
-                    if (model) selectCustomModel(model.id);
-                  } else if (id !== "custom") applyAgentModel(id);
-                  else if (customModel) setSetting(AGENT_SETTING.MODEL, customModel);
-                }} />
-              {isVooCloud ? (
-                <VooCloudLoginInline onSignedIn={() => setVooCloudSignedIn(true)} />
-              ) : null}
-              {isApiProvider && (
-                <CustomProviderInline key={provider} t={t} preset={cloudPreset ?? null}
-                  groups={cloudPreset ? customGroups.filter(group => group.cliId === cloudPreset.customProviderId) : customGroups} selectedModel={customModel}
-                  onSelectModel={selectCustomModel} onConfigured={refreshCustom} />
-              )}
-              {provider !== "" && !isApiProvider && (
-                <button type="button" onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("voo:open-onboarding")); }}
-                  className={`w-fit rounded-lg bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-neutral-100 hover:bg-white/[0.14] transition-colors ${focusClass}`}>{t("firstRun.provider.guide")}</button>
-              )}
-            </div>
-            <FirstRunWorkspace />
+            {name === "provider" ? (
+              <div className="flex flex-col gap-3">
+                <AgentCardGrid t={t} label={t("firstRun.provider.label")} selected={provider} detection={detection}
+                  cloudProviders={cloudCards}
+                  customConfigured={customGroups.some(group => group.models.length > 0)}
+                  onSelect={(id) => {
+                    setProvider(id);
+                    if (id === VOO_CLOUD_PROVIDER.id) return;
+                    const preset = CLOUD_PROVIDER_PRESETS.find(entry => entry.id === id);
+                    if (preset) {
+                      const model = customGroups.find(group => group.cliId === preset.customProviderId)?.models[0];
+                      if (model) selectCustomModel(model.id);
+                    } else if (id !== "custom") {
+                      setSetting("voo.agent.llmProvider", id);
+                      applyAgentModel(id);
+                    } else if (customModel) setSetting(AGENT_SETTING.MODEL, customModel);
+                  }} />
+                {isVooCloud ? (
+                  <VooCloudLoginInline onSignedIn={() => setVooCloudSignedIn(true)} />
+                ) : null}
+                {isApiProvider && (
+                  <CustomProviderInline key={provider} t={t} preset={cloudPreset ?? null}
+                    groups={cloudPreset ? customGroups.filter(group => group.cliId === cloudPreset.customProviderId) : customGroups} selectedModel={customModel}
+                    onSelectModel={selectCustomModel} onConfigured={refreshCustom} />
+                )}
+                {provider !== "" && !isApiProvider && (
+                  <button type="button" onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("voo:open-onboarding")); }}
+                    className={`w-fit rounded-lg bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-neutral-100 hover:bg-white/[0.14] transition-colors ${focusClass}`}>{t("firstRun.provider.guide")}</button>
+                )}
+              </div>
+            ) : (
+              <FirstRunWorkspace />
+            )}
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 bg-[#121212] px-6 py-4">
             <button type="button" onClick={dismiss}
               className={`rounded-lg px-3 py-2 text-xs text-neutral-400 hover:text-neutral-200 transition-colors disabled:opacity-40 ${focusClass}`}>{t("firstRun.skip")}</button>
             <div className="flex items-center gap-2">
-              <button type="button" data-testid="first-run-next" onClick={complete}
+              {stepIndex > 0 ? (
+                <button type="button" onClick={() => setStepIndex(0)}
+                  className={`rounded-lg bg-white/[0.06] px-4 py-2 text-xs font-medium text-neutral-200 transition-colors hover:bg-white/[0.12] ${focusClass}`}>
+                  {t("firstRun.back")}
+                </button>
+              ) : null}
+              <button type="button" data-testid="first-run-next"
+                onClick={() => (stepIndex < steps.length - 1 ? setStepIndex(stepIndex + 1) : complete())}
                 className={`rounded-lg bg-white px-5 py-2 text-xs font-medium text-black hover:bg-neutral-200 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none ${focusClass}`}>
-                {t(provider ? "firstRun.finish" : "firstRun.later")}
+                {stepIndex < steps.length - 1 ? t("firstRun.next") : t("firstRun.finish")}
               </button>
             </div>
           </div>
