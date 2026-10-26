@@ -67,6 +67,8 @@ export default {
   "editor.prototype.trigger.whilePress": "按住时",
   "editor.prototype.action": "动作",
   "editor.prototype.action.navigate": "跳转到",
+  "editor.prototype.action.openLink": "打开链接",
+  "editor.prototype.url": "链接",
   "editor.prototype.action.overlay": "打开浮层",
   "editor.prototype.action.closeOverlay": "关闭浮层",
   "editor.prototype.action.back": "返回",

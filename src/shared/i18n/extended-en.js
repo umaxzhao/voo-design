@@ -67,6 +67,8 @@ export default {
   "editor.prototype.trigger.whilePress": "While pressing",
   "editor.prototype.action": "Action",
   "editor.prototype.action.navigate": "Navigate to",
+  "editor.prototype.action.openLink": "Open link",
+  "editor.prototype.url": "URL",
   "editor.prototype.action.overlay": "Open overlay",
   "editor.prototype.action.closeOverlay": "Close overlay",
   "editor.prototype.action.back": "Back",

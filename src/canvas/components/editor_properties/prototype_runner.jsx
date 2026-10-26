@@ -146,6 +146,11 @@ export default function PrototypeRunner({ doc, engine, startFrameId, onClose }) 
         setOverlays((stack) => stack.slice(0, -1));
         return;
       }
+      if (interaction.action === "openLink") {
+        const url = typeof interaction.url === "string" ? interaction.url.trim() : "";
+        if (url) window.open?.(url, "_blank", "noopener,noreferrer");
+        return;
+      }
       if (!interaction.targetId) return;
       if (interaction.action === "overlay") {
         setOverlays((stack) => [...stack, { frameId: interaction.targetId }]);

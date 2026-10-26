@@ -36,6 +36,7 @@ const ACTION_LABEL = {
   back: "editor.prototype.action.back",
   overlay: "editor.prototype.action.overlay",
   closeOverlay: "editor.prototype.action.closeOverlay",
+  openLink: "editor.prototype.action.openLink",
 };
 const TRANSITION_LABEL = {
   instant: "editor.prototype.transition.instant",
@@ -172,7 +173,9 @@ export default function PrototypeSection({ object, engine }) {
                       patch(
                         action === "back" || action === "closeOverlay"
                           ? { action, targetId: undefined }
-                          : { action },
+                          : action === "openLink"
+                            ? { action, targetId: undefined, url: interaction.url ?? "https://" }
+                            : { action },
                       )
                     }
                     label={t("editor.prototype.action")}
@@ -194,6 +197,15 @@ export default function PrototypeSection({ object, engine }) {
                     ×
                   </button>
                 </div>
+                {interaction.action === "openLink" ? (
+                  <input
+                    value={interaction.url ?? ""}
+                    onChange={(event) => patch({ url: event.target.value })}
+                    placeholder={t("editor.prototype.url")}
+                    aria-label={t("editor.prototype.url")}
+                    className="h-6 w-full rounded-lg bg-neutral-800 px-2 text-[10px] font-mono text-neutral-100 outline-none placeholder:text-neutral-400 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+                  />
+                ) : null}
                 {interaction.action === "navigate" ||
                 interaction.action === "overlay" ? (
                   <FlatSelect

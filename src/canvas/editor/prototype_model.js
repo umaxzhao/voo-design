@@ -5,7 +5,7 @@
  */
 
 export const PROTOTYPE_TRIGGERS = Object.freeze(["click", "whilePress"]);
-export const PROTOTYPE_ACTIONS = Object.freeze(["navigate", "back", "overlay", "closeOverlay"]);
+export const PROTOTYPE_ACTIONS = Object.freeze(["navigate", "back", "overlay", "closeOverlay", "openLink"]);
 export const PROTOTYPE_TRANSITIONS = Object.freeze([
   "instant",
   "dissolve",
@@ -73,6 +73,10 @@ export function normalizeInteraction(raw, doc = null) {
       : null;
   if (needsTarget && !targetId) return null;
   const trigger = PROTOTYPE_TRIGGERS.includes(raw.trigger) ? raw.trigger : "click";
+  const url =
+    action === "openLink" && typeof raw.url === "string"
+      ? raw.url.trim().slice(0, 2048)
+      : null;
   const transition = PROTOTYPE_TRANSITIONS.includes(raw.transition)
     ? raw.transition
     : "instant";
@@ -88,6 +92,7 @@ export function normalizeInteraction(raw, doc = null) {
     trigger,
     action,
     ...(targetId ? { targetId } : {}),
+    ...(action === "openLink" ? { url: url ?? "" } : {}),
     transition,
     easing,
     duration,
