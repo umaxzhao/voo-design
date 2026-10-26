@@ -1,5 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { IconAdd, IconBold, IconCheck, IconClose, IconCopy, IconFlipH, IconFlipV, IconFolder, IconLayers, IconLock, IconMask, IconMinus, IconMore, IconSliders, IconSwap, IconTrash, IconUnlock, IconUnlink, IconDiamond, IconSparkles, IconEye, IconEyeOff, IconArrowUp, IconCrop } from "../icons.jsx";
+import { IconAdd, IconBold, IconCheck, IconClose, IconCopy, IconFlipH, IconFlipV, IconFolder, IconLayers, IconLock, IconMask, IconMinus, IconMore, IconAdjust, IconSwap, IconTrash, IconUnlock, IconUnlink, IconDiamond, IconSparkles, IconEye, IconEyeOff, IconArrowUp, IconCrop } from "../icons.jsx";
 import { OperationIcon } from "./editor_properties/combine_section.jsx";
 import { AlignIcon, DistributeIcon, TidyIcon } from "./alignment_icon.jsx";
 import { alignNodes, distributeNodes, tidyNodes } from "../editor/align_ops.js";
@@ -239,7 +239,7 @@ function EditorContextualTaskBar({
               label: label("matting"),
               disabled: maskBusy || !removeBackground
             })}
-        {action("adjust", <IconSliders size={14} />, () => {
+        {action("adjust", <IconAdjust size={14} />, () => {
               setAdjustOpen(!adjustOpen);
               setMoreOpen(false);
             }, {

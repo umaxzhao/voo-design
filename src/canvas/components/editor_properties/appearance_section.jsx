@@ -7,7 +7,7 @@ import ScrubField from "../scrub_field.jsx";
 import FlatSelect from "../flat_select.jsx";
 import { BLEND_MODES, DEFAULT_BLEND_MODE } from "../../editor/scene_model.js";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
-import { Blend } from "lucide-react";
+import { IconMix } from "../../icons.jsx";
 
 const blendModeLabelKey = (mode) =>
   `editor.blend.${mode.replace(/-([a-z])/g, (_, c) => c.toUpperCase())}`;
@@ -45,7 +45,7 @@ export default function AppearanceSection({
           value={object.blendMode ?? DEFAULT_BLEND_MODE}
           onChange={(next) => editAndCommit({ blendMode: next })}
           label={t("editor.props.blendMode")}
-          placeholderIcon={<Blend size={11} className="text-neutral-500" />}
+          placeholderIcon={<IconMix size={11} className="text-neutral-500" />}
           options={BLEND_MODES.map((mode) => ({
             value: mode,
             label: t(blendModeLabelKey(mode)),
