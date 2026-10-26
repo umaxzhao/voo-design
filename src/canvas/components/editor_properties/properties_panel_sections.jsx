@@ -302,6 +302,7 @@ export default function PropertiesPanelSections({
           object={object}
           engine={engine}
           editAndCommit={editAndCommit}
+          bitmap={getBitmap?.(object) ?? null}
         />
       ) : null}
       {show("variables") ? (

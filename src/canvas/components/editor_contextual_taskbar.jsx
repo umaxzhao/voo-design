@@ -1,5 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { IconAdd, IconBold, IconCheck, IconClose, IconCopy, IconFlipH, IconFlipV, IconFolder, IconLayers, IconLock, IconMask, IconMinus, IconMore, IconAdjust, IconSwap, IconTrash, IconUnlock, IconUnlink, IconDiamond, IconSparkles, IconEye, IconEyeOff, IconArrowUp, IconCrop } from "../icons.jsx";
+import { IconCheck, IconClose, IconCopy, IconFlipH, IconFlipV, IconFolder, IconLayers, IconLock, IconMask, IconMore, IconAdjust, IconSwap, IconTrash, IconUnlock, IconUnlink, IconDiamond, IconSparkles, IconEye, IconEyeOff, IconArrowUp, IconCrop } from "../icons.jsx";
 import { OperationIcon } from "./editor_properties/combine_section.jsx";
 import { AlignIcon, DistributeIcon, TidyIcon } from "./alignment_icon.jsx";
 import { alignNodes, distributeNodes, tidyNodes } from "../editor/align_ops.js";
@@ -180,7 +180,6 @@ function EditorContextualTaskBar({
       if (hasSelection) onRepaint?.(prompt);
       dispatch(prompt, context);
     }} />}</>;
-  const fontSize = Number(node?.fontSize) || 16;
   return <nav ref={barRef} data-testid="editor-contextual-taskbar" aria-label={label("ariaLabel")} style={docRect ? {
     left: position?.left ?? docRect.x + docRect.width / 2,
     top: position?.top ?? docRect.y + docRect.height + EDITOR_PAGE_TOOLBAR_GAP,
@@ -192,31 +191,6 @@ function EditorContextualTaskBar({
     {transforming ? <>{action("applyTransform", <IconCheck size={14} />, () => engine?.applySelectionTransform?.())}{action("cancelTransform", <IconClose size={14} />, () => engine?.cancelSelectionTransform?.())}</> : hasSelection ? <>{action("transform", <IconCrop size={14} />, () => engine?.beginSelectionTransform?.())}{action("invert", <IconSwap size={14} />, () => engine?.invertPixelSelection?.())}{action("deselect", <IconClose size={14} />, () => clearActivePixelSelection(engine))}<Divider />{ai}</> : <>
       {pen && <>{action("finishPath", <IconCheck size={14} />, () => finishPenPathEditing(engine), { label: t("editor.pen.closeEdit") })}{action("deleteAnchor", <IconTrash size={14} />, () => engine?.deleteActiveAnchor?.())}<Divider /></>}
       {!node && !count && selectionTool ? <>{action("marquee", <IconCrop size={14} />, () => engine?.setTool?.(TOOL.MARQUEE))}{action("lasso", <IconUnlink size={14} />, () => engine?.setTool?.(TOOL.LASSO))}</> : <>
-      {type === "text" && <>
-        <EditorTooltip title={label("fontFamily")}><select data-testid="editor-taskbar-font-family" aria-label={label("fontFamily")} className="h-7 max-w-24 rounded-lg bg-transparent px-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]" value={node?.fontFamily || "Inter"} onChange={event => edit({
-                fontFamily: event.target.value
-              })}>{Array.from(new Set([node?.fontFamily || "Inter", "Inter", "Arial", "Georgia", "monospace"])).map(font => <option className="bg-neutral-900" key={font}>{font}</option>)}</select></EditorTooltip>
-        {action("fontDecrease", <IconMinus size={14} />, () => edit({
-              fontSize: Math.max(1, fontSize - 1)
-            }))}
-        <input data-testid="editor-taskbar-font-size" aria-label={label("fontSize")} type="number" min="1" max="999" value={fontSize} className="h-7 w-10 rounded-lg bg-white/5 text-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]" onChange={event => {
-              const value = Number(event.target.value);
-              if (value > 0 && value <= 999) edit({
-                fontSize: value
-              });
-            }} />
-        {action("fontIncrease", <IconAdd size={14} />, () => edit({
-              fontSize: Math.min(999, fontSize + 1)
-            }))}
-        {action("bold", <IconBold size={14} />, () => edit({
-              fontWeight: node?.fontWeight === "bold" || Number(node?.fontWeight) >= 600 ? "normal" : "bold"
-            }), {
-              active: node?.fontWeight === "bold" || Number(node?.fontWeight) >= 600
-            })}
-        {["left", "center", "right"].map(align => <Action key={align} id={`text-align-${align}`} label={t(`editor.props.alignShapes.${align}`)} icon={<AlignIcon type={align} />} active={(node?.align || "left") === align} onClick={() => edit({
-              align
-            })} />)}
-      </>}
       {type === "image" && <>
         {action("crop", <IconCrop size={14} />, () => engine?.setTool?.(TOOL.CROP))}
         {action("replace", <IconSwap size={14} />, () => fileRef.current?.click())}

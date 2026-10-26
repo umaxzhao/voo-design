@@ -3,6 +3,12 @@
 import PropTypes from "prop-types";
 import { useI18n } from "../../use_i18n.js";
 import ToolSliderField from "./tool_slider_field.jsx";
+import FlatSelect from "../flat_select.jsx";
+import {
+  adjustmentLabelKey,
+  SIMPLE_ADJUSTMENTS,
+} from "../../editor/adjustment_kinds.js";
+import { STACK_BLEND_MODES } from "../../editor/live_filter_stack.js";
 
 export const DEFAULT_VALUE = 50;
 const PARAM_VALUE_LABELS = {
@@ -17,6 +23,17 @@ export default function LiveFilterStack({
   commitNow = null,
 }) {
   const { t } = useI18n();
+  const blendLabelKey = (mode) =>
+    mode === "normal"
+      ? "editor.blend.sourceOver"
+      : `editor.blend.${mode.replace(/-([a-z])/g, (_, c) => c.toUpperCase())}`;
+  const setEntryBlend = (entryId, blendMode) => {
+    setStack(
+      liveFilters.map((entry) =>
+        entry.id === entryId ? { ...entry, blendMode } : entry,
+      ),
+    );
+  };
 
   const setStack = (stack) => {
     editAndCommit({
@@ -76,6 +93,7 @@ export default function LiveFilterStack({
   <div className="flex flex-col gap-2">
     {liveFilters.map((entry, index) => {
       const hasRadius = entry.params?.radius !== undefined;
+      const meta = SIMPLE_ADJUSTMENTS.find((item) => item.kind === entry.kind);
       const mainParamKey = hasRadius ? "radius" : "value";
       const mainParamLabel = hasRadius
         ? "editor.liveFilters.radius"
@@ -103,7 +121,7 @@ export default function LiveFilterStack({
               data-testid={`live-filter-toggle-${entry.kind}`}
             />
             <span className="min-w-0 flex-1 truncate text-[10px] font-mono uppercase tracking-wide text-neutral-200">
-              {t(`editor.liveFilter.kind.${entry.kind}`)}
+              {t(adjustmentLabelKey(entry.kind))}
             </span>
             <button
               type="button"
@@ -170,8 +188,8 @@ export default function LiveFilterStack({
               label={t(mainParamLabel)}
               labelClassName="w-[48px]"
               fieldClassName="w-[72px]"
-              min={0}
-              max={100}
+              min={hasRadius ? 0 : (meta?.min ?? 0)}
+              max={hasRadius ? 100 : (meta?.max ?? 100)}
               value={mainParamValue}
               onValueChange={(val) =>
                 patchEntry(entry.id, { params: { ...(entry.params ?? {}), [mainParamKey]: val } })
@@ -211,6 +229,18 @@ export default function LiveFilterStack({
             ariaLabel={t("editor.liveFilters.opacity")}
             scrubHint={t("editor.props.dragToAdjust")}
           />
+          <div data-testid={`live-filter-blend-${entry.kind}`}>
+            <FlatSelect
+              value={entry.blendMode ?? "normal"}
+              onChange={(next) => setEntryBlend(entry.id, next)}
+              label={t("editor.props.blendMode")}
+              triggerClassName="!h-6 !w-full !rounded-lg !bg-neutral-900 !px-2 !text-[10px] !font-mono !uppercase !text-neutral-200 hover:!bg-neutral-800"
+              options={STACK_BLEND_MODES.map((mode) => ({
+                value: mode,
+                label: t(blendLabelKey(mode)),
+              }))}
+            />
+          </div>
         </div>
       );
     })}

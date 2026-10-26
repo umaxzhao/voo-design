@@ -36,18 +36,18 @@ describe("image as rectangle", () => {
     expect(PROPERTY_SECTIONS.image).toEqual(PROPERTY_SECTIONS.rectangle);
   });
 
-  it("renders the image tools in one disclosure that is closed by default", () => {
+  it("renders the image tools as an always-open inspector section", () => {
     const html = renderImagePanel();
-    const tags = html.match(/<details[^>]*data-testid="image-context-actions"[^>]*>/g) ?? [];
-    expect(tags).toHaveLength(1);
-    expect(tags[0]).not.toMatch(/\sopen(\s|>|=)/);
+    expect(html).toContain('data-testid="image-context-actions"');
+    expect(html).not.toContain('data-testid="image-context-toolbar"');
+    expect(html).toContain("editor.image.tools");
+    expect(html).toContain("editor.frequencySeparation.action");
   });
 
-  it("keeps crop and replace inside the disclosure", () => {
+  it("keeps crop and replace out of the image section", () => {
     const html = renderImagePanel();
     const start = html.indexOf('data-testid="image-context-actions"');
-    const end = html.indexOf("</details>", start);
-    const body = html.slice(start, end);
+    const body = html.slice(start, start + 3000);
     expect(body).toContain("editor.image.tools");
     expect(body).toContain("editor.frequencySeparation.action");
     expect(body).not.toContain('data-testid="editor-taskbar-crop"');

@@ -1398,6 +1398,8 @@ export default {
   "editor.layers.filters": "Filters",
   "editor.layers.effects": "Effects",
   "editor.layers.addAdjustment": "Effects",
+  "editor.layers.searchPlaceholder": "Search adjustments and filters",
+  "editor.layers.searchEmpty": "No matching effects",
   "editor.layers.groupSelected": "Group selected layers",
   "editor.layers.mergeSelected": "Merge layers",
   "editor.layers.noEffects": "Empty",

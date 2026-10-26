@@ -1,8 +1,8 @@
 import PropTypes from "prop-types";
 import { useRef, useState } from "react";
-import { normalizeAdjustments } from "../../editor/scene_model.js";
 import { useI18n } from "../../use_i18n.js";
-import ScrubField from "../scrub_field.jsx";
+import { StaticSection } from "./property_section.jsx";
+import HistogramStrip from "./histogram_strip.jsx";
 
 const ACTION_BUTTON_CLASS =
   "min-h-8 rounded-lg border border-white/10 bg-white/[0.04] px-2 text-left text-[11px] text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]";
@@ -11,6 +11,7 @@ export default function ImageContextActions({
   object,
   engine,
   editAndCommit,
+  bitmap = null,
 }) {
   const { t } = useI18n();
   const frequencyRadiusRef = useRef(null);
@@ -60,103 +61,62 @@ export default function ImageContextActions({
     });
   };
 
-  const adjustments = normalizeAdjustments(object.adjustments);
-  const updateAdjustment = (kind, value) => {
-    editAndCommit({
-      adjustments: {
-        ...adjustments,
-        [kind]: { ...adjustments[kind], enabled: true, value },
-      },
-    });
-  };
-
   return (
-    // Image-only tools sit in one disclosure, closed until asked; fill, stroke
-    // and effects live in the regular panel sections like any rectangle.
-    <details
-      data-testid="image-context-actions"
-      className="mb-3 rounded-lg border border-white/10 bg-white/[0.025] px-2"
-    >
-      <summary className="cursor-pointer rounded-md py-2 text-[10px] text-neutral-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]">
-        {t("editor.image.tools")}
-      </summary>
+    // Image-only tools now live in a regular, always-open inspector section so
+    // they are visible without opening a disclosure. The regular fill, stroke
+    // and effects sections still follow like any rectangle.
+    <StaticSection title={t("editor.image.tools")} testId="image-context-actions">
       <div
         role="group"
         aria-label={t("editor.context.image")}
-        className="border-t border-white/10 pb-2 pt-2"
+        className="flex flex-col gap-2 pb-1"
       >
-      <div className="grid grid-cols-2 gap-1.5">
-        <label className="col-span-2 flex min-h-8 items-center justify-between gap-2 rounded-lg bg-white/[0.04] px-2 text-[10px] text-neutral-400">
-          <span>{t("editor.frequencySeparation.radius")}</span>
-          <input
-            ref={frequencyRadiusRef}
-            type="number"
-            min="1"
-            max="100"
-            defaultValue="10"
-            aria-label={t("editor.frequencySeparation.radius")}
-            className="h-6 w-14 rounded-md border border-white/10 bg-neutral-900 px-1 text-right text-[11px] text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
-          />
-        </label>
-        <button
-          type="button"
-          aria-label={t("editor.frequencySeparation.action")}
-          className={`${ACTION_BUTTON_CLASS} col-span-2`}
-          onClick={applyFrequencySeparation}
-        >
-          {t("editor.frequencySeparation.action")}
-        </button>
-      </div>
-      {frequencyError ? (
-        <p
-          role="status"
-          aria-live="polite"
-          className="mt-1.5 text-[10px] text-rose-300"
-        >
-          {frequencyError}
-        </p>
-      ) : null}
-      <details className="mt-2 rounded-lg border border-white/10 bg-white/[0.025] px-2">
-        <summary className="cursor-pointer py-2 text-[10px] text-neutral-300">
-          {t("editor.taskbar.adjust")}
-        </summary>
-        <div className="space-y-2 border-t border-white/10 pb-2 pt-2">
-          {["brightness", "contrast"].map((kind) => (
-            <div
-              key={kind}
-              className="flex min-h-7 items-center gap-2 text-[10px] text-neutral-400"
-            >
-              <span aria-hidden="true" className="w-[84px] shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-500">
-                {t(`editor.adjust.${kind}`)}
-              </span>
-              <ScrubField
-                value={adjustments[kind].value}
-                min={-100}
-                max={100}
-                onValueChange={(next) => updateAdjustment(kind, next)}
-                ariaLabel={t(`editor.adjust.${kind}`)}
-                scrubHint={t("editor.props.dragToAdjust")}
-                showRange
-                className="min-w-0 flex-1"
-              />
-            </div>
-          ))}
+        <HistogramStrip bitmap={bitmap} />
+        <div className="grid grid-cols-2 gap-1.5">
+          <label className="col-span-2 flex min-h-8 items-center justify-between gap-2 rounded-lg bg-white/[0.04] px-2 text-[10px] text-neutral-400">
+            <span>{t("editor.frequencySeparation.radius")}</span>
+            <input
+              ref={frequencyRadiusRef}
+              type="number"
+              min="1"
+              max="100"
+              defaultValue="10"
+              aria-label={t("editor.frequencySeparation.radius")}
+              className="h-6 w-14 rounded-md border border-white/10 bg-neutral-900 px-1 text-right text-[11px] text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
+            />
+          </label>
+          <button
+            type="button"
+            aria-label={t("editor.frequencySeparation.action")}
+            className={`${ACTION_BUTTON_CLASS} col-span-2`}
+            onClick={applyFrequencySeparation}
+          >
+            {t("editor.frequencySeparation.action")}
+          </button>
         </div>
-      </details>
-      <select
-        aria-label={t("editor.image.fitFill")}
-        defaultValue=""
-        onChange={applyFitOrFill}
-        className="mt-2 h-8 w-full rounded-lg border border-white/10 bg-neutral-900 px-2 text-[10px] text-neutral-300 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
-      >
-        <option value="" disabled>
-          {t("editor.image.fitFill")}
-        </option>
-        <option value="fit">{t("editor.image.fit")}</option>
-        <option value="fill">{t("editor.image.fill")}</option>
-      </select>
+        {frequencyError ? (
+          <p
+            role="status"
+            aria-live="polite"
+            className="text-[10px] text-rose-300"
+          >
+            {frequencyError}
+          </p>
+        ) : null}
+        <select
+          aria-label={t("editor.image.fitFill")}
+          defaultValue=""
+          onChange={applyFitOrFill}
+          className="h-8 w-full rounded-lg border border-white/10 bg-neutral-900 px-2 text-[10px] text-neutral-300 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
+        >
+          <option value="" disabled>
+            {t("editor.image.fitFill")}
+          </option>
+          <option value="fit">{t("editor.image.fit")}</option>
+          <option value="fill">{t("editor.image.fill")}</option>
+        </select>
       </div>
-    </details>
+    </StaticSection>
   );
 }
 
@@ -164,4 +124,6 @@ ImageContextActions.propTypes = {
   object: PropTypes.object.isRequired,
   engine: PropTypes.object,
   editAndCommit: PropTypes.func.isRequired,
+  /** Decoded bitmap for the live histogram; null when unavailable. */
+  bitmap: PropTypes.object,
 };

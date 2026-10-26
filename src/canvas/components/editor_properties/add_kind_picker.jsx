@@ -8,7 +8,7 @@ import {
   effectLabelKey,
 } from "../../editor/adjustment_catalog.js";
 import { FILTER_CATEGORIES } from "../../editor/filter_presets.js";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useI18n } from "../../use_i18n.js";
 import { usePresetThumbs, useActivePresetKey } from "./use_preset_thumbs.js";
 import KindIcon from "./kind_icons.jsx";
@@ -85,6 +85,7 @@ KindButton.propTypes = {
 
 /** A titled group of kinds in the left column. */
 function KindGroup({ title, accent, kinds, labelOf, onPick }) {
+  if (kinds.length === 0) return null;
   return (
     <div>
       <div
@@ -140,6 +141,27 @@ export default function AddKindPicker({
   side = "left",
 }) {
   const { t } = useI18n();
+  const [query, setQuery] = useState("");
+  const needle = query.trim().toLowerCase();
+  const match = (label) => !needle || label.toLowerCase().includes(needle);
+  const visibleAdjustments = TONE_ADJUSTMENT_KINDS.filter((kind) =>
+    match(t(adjustmentLabelKey(kind))),
+  );
+  const visibleFilters = FILTER_KINDS.filter((kind) =>
+    match(t(adjustmentLabelKey(kind))),
+  );
+  const visibleEffects = EFFECT_KINDS.filter((kind) =>
+    match(t(effectLabelKey(kind))),
+  );
+  const visibleLayerEffects = LAYER_EFFECT_KINDS.filter((kind) =>
+    match(t(`editor.props.${kind}`)),
+  );
+  const hasMatches =
+    visibleAdjustments.length +
+      visibleFilters.length +
+      visibleEffects.length +
+      visibleLayerEffects.length >
+    0;
   // Templates are useful for frames/groups too (adjustments apply to the whole
   // layer), so the column follows the handler rather than the image kind.
   const showPresets = Boolean(onApplyPreset);
@@ -173,20 +195,37 @@ export default function AddKindPicker({
         </button>
       </div>
 
+      <div className="flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-neutral-950/60 px-2.5">
+        <span aria-hidden="true" className="text-[11px] text-neutral-500">⌕</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={t("editor.layers.searchPlaceholder")}
+          aria-label={t("editor.layers.searchPlaceholder")}
+          data-testid="adjustment-picker-search"
+          className="h-8 min-w-0 flex-1 bg-transparent text-[11px] font-mono text-neutral-200 placeholder:text-neutral-400 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+        />
+      </div>
+      {!hasMatches ? (
+        <div className="rounded-xl bg-neutral-950/40 px-3 py-4 text-center text-[11px] font-mono text-neutral-500">
+          {t("editor.layers.searchEmpty")}
+        </div>
+      ) : null}
       <div className="flex min-h-0 flex-1 gap-4">
         {/* Left: categories in scrollable body */}
         <div className="ui-scroll min-h-0 flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col gap-3">
           <KindGroup
             title={t("editor.layers.adjustments")}
             accent={ACCENT.adjustment}
-            kinds={TONE_ADJUSTMENT_KINDS}
+            kinds={visibleAdjustments}
             labelOf={(kind) => t(adjustmentLabelKey(kind))}
             onPick={(kind) => onPick(kind, false)}
           />
           <KindGroup
             title={t("editor.layers.filters")}
             accent={ACCENT.filter}
-            kinds={FILTER_KINDS}
+            kinds={visibleFilters}
             labelOf={(kind) => t(adjustmentLabelKey(kind))}
             onPick={(kind) => onPick(kind, false)}
           />
@@ -194,7 +233,7 @@ export default function AddKindPicker({
             <KindGroup
               title={t("editor.layers.effects")}
               accent={ACCENT.effect}
-              kinds={EFFECT_KINDS}
+              kinds={visibleEffects}
               labelOf={(kind) => t(effectLabelKey(kind))}
               onPick={(kind) => onPick(kind, true)}
             />
@@ -203,7 +242,7 @@ export default function AddKindPicker({
             <KindGroup
               title={t("editor.props.blurNoise")}
               accent={ACCENT.effect}
-              kinds={LAYER_EFFECT_KINDS}
+              kinds={visibleLayerEffects}
               labelOf={(kind) => t(`editor.props.${kind}`)}
               onPick={onPickLayerEffect}
             />
@@ -211,7 +250,7 @@ export default function AddKindPicker({
         </div>
 
         {/* Right: presets column */}
-        {showPresets ? (
+        {showPresets && !needle ? (
           <div className="ui-scroll min-h-0 w-[8.25rem] shrink-0 overflow-y-auto overflow-x-hidden flex flex-col gap-3">
             {FILTER_CATEGORIES.map((category) => (
               <div key={category.key}>

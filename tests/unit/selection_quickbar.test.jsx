@@ -41,7 +41,7 @@ beforeEach(() => {
   cursor = 0;
 });
 describe("selection quickbar", () => {
-  it.each([["image", "crop"], ["text", "font-size"], ["rect", "editor-taskbar-fill"], ["frame", "autoLayout"], ["group", "ungroup"]])("renders %s editing and common actions", (kind, specific) => {
+  it.each([["image", "crop"], ["rect", "editor-taskbar-fill"], ["frame", "autoLayout"], ["group", "ungroup"]])("renders %s editing and common actions", (kind, specific) => {
     const tree = render({
       selected: {
         id: "one",
@@ -54,6 +54,16 @@ describe("selection quickbar", () => {
     // Missing APIs are safe for every rendered button.
     for (const id of ["duplicate", "lock", "hide", "delete", "bringForward", "sendBackward"]) expect(() => find(tree, id).props.onClick()).not.toThrow();
   });
+  it("leaves text properties in the right panel instead of the taskbar", () => {
+    const tree = render({ selected: { id: "one", kind: "text" } });
+    expect(find(tree, "editor-taskbar-font-size")).toBeFalsy();
+    expect(find(tree, "editor-taskbar-font-family")).toBeFalsy();
+    expect(find(tree, "bold")).toBeFalsy();
+    expect(find(tree, "text-align-left")).toBeFalsy();
+    // Layer actions still work from the taskbar.
+    for (const id of ["duplicate", "lock", "hide", "delete"]) expect(find(tree, id)).toBeTruthy();
+  });
+
   it("opens and closes the AI input only through its toggle", () => {
     const props = {
       selected: {
@@ -94,7 +104,7 @@ describe("selection quickbar", () => {
     expect(engine.groupSelection).toHaveBeenCalledOnce();
     expect(engine.combineSelected).toHaveBeenCalledWith("union");
   });
-  it("updates real text, visibility, unlock and frame layout APIs", () => {
+  it("updates real visibility, unlock and frame layout APIs", () => {
     const engine = {
       updateNode: vi.fn(),
       toggleLockNode: vi.fn()
@@ -108,10 +118,6 @@ describe("selection quickbar", () => {
         locked: true,
         visible: false
       }
-    });
-    find(tree, "fontIncrease").props.onClick();
-    expect(engine.updateNode).toHaveBeenCalledWith("a", {
-      fontSize: 25
     });
     find(tree, "show").props.onClick();
     expect(engine.updateNode).toHaveBeenCalledWith("a", {

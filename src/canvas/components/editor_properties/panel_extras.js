@@ -4,10 +4,10 @@
  * rest stay behind the panel's add menu until the user asks for them.
  */
 
-import { isRegionNode, supportsColour, normalizeAdjustments } from "../../editor/scene_model.js";
+import { isRegionNode, supportsColour } from "../../editor/scene_model.js";
 import { listConfiguredAdjustments, listConfiguredEffects } from "../../editor/adjustment_catalog.js";
 
-export const EXTRA_KEYS = ["effects", "liveFilters", "modifiers", "variables", "styles", "constraints", "export"];
+export const EXTRA_KEYS = ["effects", "modifiers", "variables", "styles", "constraints", "export"];
 
 /** True when the node sits in a frame or auto-layout parent that can resize it. */
 function hasResizableParent({ object, parentLayout, parentIsFrame, parentNode, engine }) {
@@ -21,11 +21,9 @@ export function resolveExtras(context) {
   const { object, allowed, isWarpTool, isMedia, selectionCount = 1, parentLayout, colorVariableActions, styleActions, engine } = context;
   const has = (section) => allowed.includes(section);
   const single = selectionCount <= 1;
-  const live = !isWarpTool && has("effects") && !object.isFrame && (object.kind === "image" || object.kind === "raster");
   const fills = !isWarpTool && (has("fill") || has("stroke"));
   const eligible = {
     effects: !isWarpTool && has("effects") && object.kind !== "adjustment" && object.kind !== "region" && !isMedia,
-    liveFilters: live,
     modifiers: !isWarpTool && single && Boolean(object?.id) && !object.isFrame && object.kind !== "frame" && object.kind !== "adjustment",
     variables: !isWarpTool && has("fill") && Boolean(colorVariableActions) && supportsColour(object) && object.kind !== "image" && selectionCount === 1,
     styles: fills && Boolean(styleActions) && object.kind !== "adjustment" && !isMedia && selectionCount === 1,
@@ -39,7 +37,6 @@ export function resolveExtras(context) {
   const modifiers = engine?.getDocument?.()?.modifiers;
   const hasContent = {
     effects: listConfiguredAdjustments(object.adjustments).length + listConfiguredEffects(object.effects).length > 0,
-    liveFilters: (normalizeAdjustments(object.adjustments).liveFilters ?? []).length > 0,
     modifiers: Array.isArray(modifiers) && modifiers.some((modifier) => modifier.targetId === object.id),
     variables: bound,
     styles: Object.values(object.styleIds ?? {}).some(Boolean),

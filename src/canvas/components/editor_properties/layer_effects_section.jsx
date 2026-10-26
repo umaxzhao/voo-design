@@ -21,8 +21,13 @@ import { IconEye, IconEyeOff, IconMinus } from "../../icons.jsx";
 import AddKindPicker from "./add_kind_picker.jsx";
 import AdjustmentPopover from "./adjustment_popover.jsx";
 import EffectControls from "./effect_controls.jsx";
+import LiveFilterStack from "./live_filter_stack.jsx";
 import { StaticSection } from "./property_section.jsx";
 import KindIcon from "./kind_icons.jsx";
+import {
+  createLiveFilterEntry,
+  normalizeLiveFilterStack,
+} from "../../editor/live_filter_stack.js";
 
 /**
  * The one stack of everything applied to a layer: tone adjustments (green),
@@ -60,8 +65,16 @@ export default function LayerEffectsSection({
 
   const configuredAdjustments = listConfiguredAdjustments(object.adjustments);
   const configuredEffects = listConfiguredEffects(object.effects);
+  // Ordered filter stack (previously the separate "Live Filters" section).
+  // It now lives inside Effects so adding a filter has one entry point.
+  const liveFilters = normalizeLiveFilterStack(object.adjustments?.liveFilters);
+  const hasFilterStack = liveFilters.length > 0;
+  const isStackFilterHost =
+    object.kind === "image" || object.kind === "raster";
   const hasAny =
-    configuredAdjustments.length > 0 || configuredEffects.length > 0;
+    configuredAdjustments.length > 0 ||
+    configuredEffects.length > 0 ||
+    hasFilterStack;
   const hasBlurNoise =
     (object.layerBlur ?? 0) > 0 ||
     (object.backgroundBlur ?? 0) > 0 ||
@@ -74,6 +87,25 @@ export default function LayerEffectsSection({
 
   const handleAdd = (kind, isEffect) => {
     setShowAddPicker(false);
+    // Every filter on a raster layer joins the ordered stack, so all 23 kinds
+    // share the same per-filter order / opacity / visibility behaviour.
+    const joinsFilterStack =
+      !isEffect && isStackFilterHost && FILTER_KINDS.includes(kind);
+    if (joinsFilterStack) {
+      const starter = Number(starterAdjustment(kind).value ?? 50);
+      const params =
+        kind === "motionBlur"
+          ? { value: starter, angle: 0 }
+          : { value: starter };
+      editAndCommit({
+        adjustments: {
+          ...(object.adjustments ?? {}),
+          liveFilters: [...liveFilters, createLiveFilterEntry(kind, params)],
+        },
+      });
+      setPopover(null);
+      return;
+    }
     if (isEffect) {
       const initial = starterEffect(kind);
       editAndCommit({
@@ -419,6 +451,23 @@ export default function LayerEffectsSection({
             </button>
           )}
         </div>
+        {hasFilterStack ? (
+          <div
+            className="flex flex-col gap-2 pt-1"
+            data-testid="effects-filter-stack"
+          >
+            <div className="px-0.5 text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-500">
+              {t("editor.effects.filterStackTitle")}
+            </div>
+            <LiveFilterStack
+              object={object}
+              liveFilters={liveFilters}
+              edit={_edit}
+              editAndCommit={editAndCommit}
+              commitNow={_commitNow}
+            />
+          </div>
+        ) : null}
           </>
         )}
       </StaticSection>

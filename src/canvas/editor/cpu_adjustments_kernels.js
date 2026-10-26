@@ -272,6 +272,6 @@ export function applyAdjustmentKernels(data, width, height, naturalWidth, tone) 
   // over the adjusted pixels exactly like Affinity's Live Filters over an
   // adjustment chain.
   if (tone.liveFilters?.length) {
-    applyLiveFilterStack(data, width, height, tone.liveFilters);
+    applyLiveFilterStack(data, width, height, tone.liveFilters, naturalWidth ?? width);
   }
 }

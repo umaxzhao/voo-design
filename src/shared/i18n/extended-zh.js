@@ -1376,6 +1376,8 @@ export default {
   "editor.layers.filters": "滤镜",
   "editor.layers.effects": "效果",
   "editor.layers.addAdjustment": "效果",
+  "editor.layers.searchPlaceholder": "搜索调整与滤镜",
+  "editor.layers.searchEmpty": "没有匹配的项",
   "editor.layers.groupSelected": "编组选中图层",
   "editor.layers.mergeSelected": "合并图层",
   "editor.layers.noEffects": "无效果",

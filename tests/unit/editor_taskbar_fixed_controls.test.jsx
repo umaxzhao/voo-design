@@ -51,18 +51,21 @@ describe("EditorContextualTaskBar fixed controls", () => {
     expect(html).toContain('aria-label="editor.taskbar.unlock"');
   });
 
-  it("renders the text font controls as icons with aria labels", () => {
+  it("keeps text font properties out of the taskbar", () => {
     const html = renderToStaticMarkup(
       <EditorContextualTaskBar
         engine={{ getSelectedIds: () => ["t1"] }}
         selected={{ id: "t1", kind: "text", fontSize: 16, fontFamily: "Inter" }}
       />,
     );
+    // Typography lives in the right-hand inspector; the taskbar only keeps
+    // layer actions for text.
     for (const id of ["fontDecrease", "fontIncrease", "bold"]) {
-      expect(html).toContain(`aria-label="editor.taskbar.${id}"`);
+      expect(html).not.toContain(`aria-label="editor.taskbar.${id}"`);
     }
-    // Icon-only: no visible "−", "+" or "B" text remains inside the buttons.
-    expect(html).not.toMatch(/>[−+]</);
-    expect(html).not.toContain("<b>B</b>");
+    expect(html).not.toContain('data-testid="editor-taskbar-font-size"');
+    expect(html).not.toContain('data-testid="editor-taskbar-font-family"');
+    expect(html).toContain('data-testid="editor-taskbar-text-actions"');
+    expect(html).toContain('aria-label="editor.taskbar.duplicate"');
   });
 });
