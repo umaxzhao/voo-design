@@ -110,6 +110,7 @@ export function attachPointerHandlers({
   const {
     rectRadiusHandleUnder,
     handleUnder,
+    cropHandleUnder,
     nodeHandleUnder,
     rotateHandleUnder,
     imageAt,
@@ -189,6 +190,7 @@ export function attachPointerHandlers({
     stage,
     screenPoint,
     handleUnder,
+    cropHandleUnder,
     nodeHandleUnder,
     rotateHandleUnder,
     rectRadiusHandleUnder,

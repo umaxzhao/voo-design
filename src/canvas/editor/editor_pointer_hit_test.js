@@ -97,6 +97,45 @@ export function createPointerHitTester({ api, stage: _stage, screenPoint }) {
     );
 
   /**
+   * Crop handles include the four edge midpoints as invisible bands: clicking
+   * near a crop side resizes that side. Corners still win so diagonal resizes
+   * keep working, and the extra slop makes the thin crop border easy to grab.
+   */
+  const cropHandleUnder = (rect, event) => {
+    const viewport = api.getViewport();
+    const screenRect = docToScreenRect(rect, viewport);
+    const cursor = screenPoint(event);
+    const corner = handleAtPoint(screenRect, cursor, HANDLE_GRAB_RADIUS);
+    if (corner) return corner;
+    const tol = HANDLE_GRAB_RADIUS + 6;
+    const nearX =
+      cursor.x >= screenRect.x - tol &&
+      cursor.x <= screenRect.x + screenRect.width + tol;
+    const nearY =
+      cursor.y >= screenRect.y - tol &&
+      cursor.y <= screenRect.y + screenRect.height + tol;
+    const candidates = [];
+    if (nearY) {
+      candidates.push({ handle: "w", distance: Math.abs(cursor.x - screenRect.x) });
+      candidates.push({
+        handle: "e",
+        distance: Math.abs(cursor.x - (screenRect.x + screenRect.width)),
+      });
+    }
+    if (nearX) {
+      candidates.push({ handle: "n", distance: Math.abs(cursor.y - screenRect.y) });
+      candidates.push({
+        handle: "s",
+        distance: Math.abs(cursor.y - (screenRect.y + screenRect.height)),
+      });
+    }
+    const best = candidates
+      .filter((entry) => entry.distance <= tol)
+      .sort((a, b) => a.distance - b.distance)[0];
+    return best?.handle ?? null;
+  };
+
+  /**
    * The handle under the pointer for a node, or null.
    */
   const nodeHandleUnder = (node, event) => {
@@ -289,6 +328,7 @@ export function createPointerHitTester({ api, stage: _stage, screenPoint }) {
     rectRadiusHandleUnder,
     nodeRectContains,
     handleUnder,
+    cropHandleUnder,
     nodeHandleUnder,
     rotateHandleUnder,
     imageAt,

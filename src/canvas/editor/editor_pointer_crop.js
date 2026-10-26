@@ -14,13 +14,14 @@ import { HANDLE_GRAB_RADIUS } from "./scene_renderer.js";
 export function createCropPointerGestures({
   api,
   handleUnder,
+  cropHandleUnder,
   getGesture,
   setGesture,
 }) {
   function startCropDrag(event) {
     const rect = api.getCropRect();
     if (!rect) return false;
-    const handle = handleUnder(rect, event);
+    const handle = (cropHandleUnder ?? handleUnder)(rect, event);
     const point = api.toDocPoint(event.clientX, event.clientY);
     if (handle) {
       setGesture({ kind: "cropResize", handle, start: point, rect });

@@ -48,6 +48,7 @@ export function createHoverCursorController({
 }) {
   const {
     handleUnder,
+    cropHandleUnder,
     nodeHandleUnder,
     rotateHandleUnder,
     rectRadiusHandleUnder,
@@ -248,7 +249,7 @@ export function createHoverCursorController({
       }
     }
     const handle = crop
-      ? handleUnder(crop, event)
+      ? cropHandleUnder(crop, event)
       : selected
         ? nodeHandleUnder(selected, event)
         : null;
