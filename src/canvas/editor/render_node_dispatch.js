@@ -117,6 +117,11 @@ export function drawNode(
       case NODE_KIND.TEXT:
         drawTextNode(targetCtx, node);
         break;
+      case NODE_KIND.GROUP:
+        // A frame nested inside another frame is a group node, but unlike a
+        // plain folder it paints its own fill, stroke and radius.
+        if (node.isFrame) drawRectNode(targetCtx, node);
+        break;
       default:
         break;
     }

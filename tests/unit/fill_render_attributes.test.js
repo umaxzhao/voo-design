@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { drawNode } from "../../src/canvas/editor/render_node_dispatch.js";
 import { requiresCanvas2dMediaFallback } from "../../src/canvas/editor/skia_scene_adapter.js";
-import { createRectNode } from "../../src/canvas/editor/scene_model.js";
+import { createRectNode, createGroupNode } from "../../src/canvas/editor/scene_model.js";
 function context() {
  const painted=[], stack=[];
  const ctx={globalAlpha:1,globalCompositeOperation:"source-over",
@@ -27,6 +27,11 @@ describe("fill attributes at the renderer boundary",()=>{
    {fill:"#0000ff",opacity:.7,blendMode:"multiply"},
   ]},()=>null);
   expect(painted.map(p=>[p[0],p[2]])).toEqual([["rgba(255, 0, 0, 0.4)","source-over"],["rgba(0, 0, 255, 0.7)","multiply"]]);
+ });
+ it("paints a nested frame's own fill instead of treating it as a folder",()=>{
+  const {ctx,painted}=context();
+  drawNode(ctx,{...createGroupNode({x:0,y:0,width:100,height:100}),isFrame:true,parentId:"outer",fill:"#ab3737"},()=>null);
+  expect(painted.map(p=>p[0])).toEqual(["#ab3737"]);
  });
  it("does not draw a hidden fill",()=>{
   const {ctx,painted}=context();

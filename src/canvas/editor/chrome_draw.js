@@ -239,8 +239,11 @@ function drawUncached(
       // A hidden folder hides everything inside it, and the folder row itself
       // is chrome — it never paints.
       // A child inside a boolean group is painted composited by the boolean group itself.
+      // A nested frame is a group node but paints its own surface; a top-level
+      // artboard is represented by its child document and is skipped here.
+      const nestedFrame = Boolean(node.isFrame && node.parentId);
       if (
-        isGroupNode(node) ||
+        (isGroupNode(node) && !nestedFrame) ||
         isHiddenByGroup(doc, node) ||
         isInsideBooleanGroup(doc, node)
       )
