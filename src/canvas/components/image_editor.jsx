@@ -1574,6 +1574,16 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     },
     [focusedId, nodeIds, multi, focusEditorPage, openExistingEditorPage],
   );
+  useEffect(() => {
+    const handler = (event) =>
+      openCanvasSource(
+        event?.detail?.canvasId,
+        event?.detail?.instanceId ?? null,
+      );
+    window.addEventListener?.("voo:open-canvas-source", handler);
+    return () => window.removeEventListener?.("voo:open-canvas-source", handler);
+  }, [openCanvasSource]);
+
   const returnToCanvasInstance = useCallback(() => {
     const stack = returnCanvasStackRef.current;
     const context = stack[stack.length - 1];

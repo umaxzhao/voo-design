@@ -102,6 +102,7 @@ export default {
   "editor.sizing.fill": "填充容器",
   "editor.props.instance": "实例",
   "editor.props.swapInstance": "交换实例",
+  "editor.props.goToMainComponent": "前往主组件",
   "editor.props.instanceSource": "源组件",
   "editor.props.instanceOverrides": "覆盖",
   "editor.props.noOverrides": "没有覆盖",

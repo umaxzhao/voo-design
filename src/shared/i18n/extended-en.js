@@ -102,6 +102,7 @@ export default {
   "editor.sizing.fill": "Fill",
   "editor.props.instance": "Instance",
   "editor.props.swapInstance": "Swap instance",
+  "editor.props.goToMainComponent": "Go to main component",
   "editor.props.instanceSource": "Source component",
   "editor.props.instanceOverrides": "Overrides",
   "editor.props.noOverrides": "No overrides",

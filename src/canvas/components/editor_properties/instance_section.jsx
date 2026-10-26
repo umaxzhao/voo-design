@@ -78,6 +78,25 @@ export default function InstanceSection({ object, engine }) {
           />
         </div>
 
+        {object.sourceCanvasId ? (
+          <button
+            type="button"
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent("voo:open-canvas-source", {
+                  detail: {
+                    canvasId: object.sourceCanvasId,
+                    instanceId: object.id,
+                  },
+                }),
+              )
+            }
+            className={`${sectionRowClass} justify-center text-[10px] text-neutral-300`}
+          >
+            {t("editor.props.goToMainComponent")}
+          </button>
+        ) : null}
+
         <div className="flex items-center justify-between px-1">
           <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-400">
             {t("editor.props.instanceOverrides")}
