@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import CanvasTabBar from "./canvas/components/canvas_tab_bar.jsx";
-import { Bolt, Archive } from "lucide-react";
+import { Bolt, Download } from "lucide-react";
 import { useDesignStore } from "./store/design_store.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import CollabAvatars from "./canvas/components/collab_avatars.jsx";
@@ -127,7 +127,7 @@ export default function AppTitleBar() {
               className="-m-1 flex size-7 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-white"
               style={{ WebkitAppRegion: "no-drag" }}
             >
-              <Archive size={14} aria-hidden="true" />
+              <Download size={14} aria-hidden="true" />
             </button>
           )}
           <button

@@ -708,7 +708,7 @@ export default function EditorComments({
           onClick={onOpen}
           aria-label={label(t, "editor.comments.toggle", "Show/hide comments")}
           title={label(t, "editor.comments.toggle", "Show/hide comments")}
-          className="pointer-events-auto absolute bottom-3 left-3 z-30 flex h-7 items-center gap-1.5 rounded-lg bg-[#222222] px-2 text-[10px] leading-none text-neutral-300 shadow-pop outline-none transition-opacity hover:opacity-80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+          className="pointer-events-auto absolute bottom-14 left-3 z-30 flex h-7 items-center gap-1.5 rounded-lg bg-[#222222] px-2 text-[10px] leading-none text-neutral-300 shadow-pop outline-none transition-opacity hover:opacity-80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
         >
           <MessageSquare size={12} />
           {unreadCount > 0 ? (

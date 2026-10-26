@@ -5172,7 +5172,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
 
         <div
           data-testid="canvas-notice-column"
-          className="pointer-events-none absolute bottom-4 left-4 z-40 flex flex-col gap-2 max-w-[min(360px,calc(100%-32px))]"
+          // Sit at the top-right, left of the properties/comments panel so the
+          // bottom-left page switcher and comments toggle never cover a room
+          // or offline notice.
+          className="pointer-events-none absolute right-[20rem] top-4 z-40 flex flex-col gap-2 max-w-[min(360px,calc(100%-21rem))]"
         >
           <OfflineSessionNotice />
           <RoomProjectNotice />
