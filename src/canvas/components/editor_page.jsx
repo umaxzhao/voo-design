@@ -956,6 +956,18 @@ export default function EditorPage({
           ) : null}
                               {pageTitleActions}
         </div>
+        {focused && ready && !doc?.isCanvasRoot ? (
+          <div
+            data-testid="editor-page-size"
+            className="absolute left-1/2 z-40 flex -translate-x-1/2 -translate-y-full items-center pb-px text-[10px] font-mono"
+            style={{
+              top: -EDITOR_PAGE_HEADER_INSET - EDITOR_PAGE_TOOLBAR_GAP,
+            }}
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <EditorCanvasPresets engine={engine} doc={doc} />
+          </div>
+        ) : null}
         {/* Page tool row: the contextual task bar sits below the header, centred
             on the frame, so it does not cover the page itself. */}
         <div

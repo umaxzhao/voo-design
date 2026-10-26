@@ -124,6 +124,7 @@ export default function PropertiesPanelHeader({
   onTogglePrototype = null,
   object = null,
   selectionCount = 1,
+  hideFrameDetails = false,
   onRename = null,
   title = null,
   t,
@@ -192,11 +193,19 @@ export default function PropertiesPanelHeader({
             {name}
           </button>
         )}
-        {count > 1 ? null : (
+        {count > 1 || (kind === "frame" && hideFrameDetails) ? null : (
           <span className="shrink-0 text-[9px] font-mono uppercase tracking-wide text-neutral-500">
             {t(typeKey) === typeKey ? kind : t(typeKey)}
           </span>
         )}
+        {count === 1 && kind === "frame" && !hideFrameDetails ? (
+          <span
+            className="shrink-0 rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[9px] font-mono tabular-nums text-neutral-400"
+            aria-label={`${t("editor.props.size")}: ${Math.round(node.width ?? 0)} × ${Math.round(node.height ?? 0)}`}
+          >
+            {Math.round(node.width ?? 0)} × {Math.round(node.height ?? 0)}
+          </span>
+        ) : null}
       </div>
     );
   }
@@ -287,6 +296,9 @@ export default function PropertiesPanelHeader({
 }
 
 PropertiesPanelHeader.propTypes = {
+  object: PropTypes.object,
+  selectionCount: PropTypes.number,
+  hideFrameDetails: PropTypes.bool,
   tool: PropTypes.string,
   marqueeMode: PropTypes.string,
   isToolActive: PropTypes.bool,

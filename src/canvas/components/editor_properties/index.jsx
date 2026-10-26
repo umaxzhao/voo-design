@@ -56,6 +56,7 @@ export default function EditorProperties({
   onMutate = () => {},
   onCommit = () => {},
   selectionCount = 1,
+  hideFrameDetails = false,
   /** The selected node objects when several are picked (plan 1.9). */
   selectedNodes = [],
   onCombine = null,
@@ -175,6 +176,7 @@ export default function EditorProperties({
       healingMode={toolProps?.healingMode}
       object={object}
       selectionCount={selectionCount}
+      hideFrameDetails={hideFrameDetails}
       title={isBackground ? t("editor.layer.background") : null}
       onRename={(name) => {
         if (engine && object?.id) engine.updateNode?.(object.id, { name });

@@ -4165,6 +4165,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         ) : propertiesOpen ? (
           <EditorProperties
             isMainComponent={(instanceCounts.get(doc?.canvasId) ?? 0) > 0}
+            hideFrameDetails={multi}
             engine={engine}
             object={propertyObject}
             onDeleteCanvas={
