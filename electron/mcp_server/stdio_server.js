@@ -4,6 +4,31 @@ import { CLI_BRIDGE_CHANNEL as C, CLI_BRIDGE_DEFAULT_PORT } from "../../src/shar
 import { readBridgeToken } from "../../src/shared/cli_bridge_token.js";
 import { buildMcpTools } from "./tool_catalog.js";
 
+export const BRIDGE_AUTH_ERROR_MESSAGE =
+  "VOO bridge rejected the token. Restart the VOO desktop app so the token file is refreshed.";
+
+export function isAuthError(error) {
+  if (!error) return false;
+  if (error.statusCode === 401 || error.statusCode === 403) return true;
+  if (typeof error.message === "string") {
+    return (
+      error.message === BRIDGE_AUTH_ERROR_MESSAGE ||
+      error.message.includes("401") ||
+      error.message.includes("403") ||
+      error.message.toLowerCase().includes("unauthorized")
+    );
+  }
+  return false;
+}
+
+export function isConnectionRefused(error) {
+  if (!error) return false;
+  return (
+    error.code === "ECONNREFUSED" ||
+    (typeof error.message === "string" && error.message.includes("ECONNREFUSED"))
+  );
+}
+
 export function resolveBridgeToken() {
   const token = process.env.VOO_CLI_BRIDGE_TOKEN || readBridgeToken();
   if (!token) {
@@ -12,15 +37,45 @@ export function resolveBridgeToken() {
   return token;
 }
 
-function connect(port, token = resolveBridgeToken()) {
+export function connect(port, token = resolveBridgeToken()) {
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const fail = (err) => {
+      if (settled) return;
+      settled = true;
+      reject(err);
+    };
+    const succeed = (ws) => {
+      if (settled) return;
+      settled = true;
+      resolve(ws);
+    };
+
     const socket = new WebSocket(`ws://127.0.0.1:${port}`, {
       handshakeTimeout: 2000,
       headers: { "x-voo-cli-bridge-token": token },
     });
     socket.on("error", () => {});
-    socket.once("error", reject);
-    socket.once("open", () => resolve(socket));
+    socket.once("unexpected-response", (req, res) => {
+      req.destroy();
+      try { socket.terminate(); } catch {}
+      const status = res.statusCode;
+      if (status === 401 || status === 403) {
+        fail(new Error(BRIDGE_AUTH_ERROR_MESSAGE));
+      } else {
+        const err = new Error(`Unexpected server response: ${status}`);
+        err.statusCode = status;
+        fail(err);
+      }
+    });
+    socket.once("error", (err) => {
+      if (isAuthError(err)) {
+        fail(new Error(BRIDGE_AUTH_ERROR_MESSAGE));
+      } else {
+        fail(err);
+      }
+    });
+    socket.once("open", () => succeed(socket));
   });
 }
 
@@ -37,13 +92,23 @@ function createBridgeClient() {
     connection = (async () => {
       const token = resolveBridgeToken();
       const port = Number(process.env.VOO_CLI_BRIDGE_PORT || CLI_BRIDGE_DEFAULT_PORT);
-      try { socket = await connect(port, token); }
-      catch {
+      try {
+        socket = await connect(port, token);
+      } catch (connectError) {
+        if (isAuthError(connectError)) {
+          throw (connectError.message === BRIDGE_AUTH_ERROR_MESSAGE
+            ? connectError
+            : new Error(BRIDGE_AUTH_ERROR_MESSAGE));
+        }
+        if (!isConnectionRefused(connectError)) {
+          throw connectError;
+        }
         try {
           const { startCliBridgeServer } = await import("../cli_bridge_server.js");
           ownedBridge = await startCliBridgeServer({ port, token });
+        } catch (error) {
+          if (error.code !== "EADDRINUSE") throw error;
         }
-        catch (error) { if (error.code !== "EADDRINUSE") throw error; }
         socket = await connect(ownedBridge?.port ?? port, token);
       }
       socket.on("message", (data) => {
