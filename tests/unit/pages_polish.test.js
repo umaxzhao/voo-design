@@ -188,7 +188,8 @@ describe("page list polish", () => {
       },
     });
     expect(store.getState().nodes.map((n) => n.id)).toEqual(["b", "a"]);
-    expect(store.getState().editingNodeIds).toEqual(["a"]);
+    expect(store.getState().editingNodeIds).toEqual(["b", "a"]);
+    expect(store.getState().editingNodeId).toBe("a");
   });
   it("isolates local camera caches between document sessions", () => {
     const first = pageCameraCache(100);

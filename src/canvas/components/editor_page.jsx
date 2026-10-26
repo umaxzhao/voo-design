@@ -41,6 +41,8 @@ import { collectExternalImageLayers } from "../editor_open_state.js";
 import { useSkiaPage } from "../use_skia_page.js";
 import { skiaRendererEnabled } from "../editor/renderer_flag.js";
 import { requiresCanvas2dMediaFallback } from "../editor/skia_scene_adapter.js";
+import EditorArtworkFallback from "./editor_artwork_fallback.jsx";
+import { requiresWorkspaceCanvas2d } from "../editor/workspace-artwork-routing.js";
 import { useI18n } from "../use_i18n.js";
 import { useDesignStore } from "../../store/design_store.js";
 import {
@@ -706,6 +708,8 @@ export default function EditorPage({
           onSelectInstanceChild={onSelectInstanceChild}
         />
       </Suspense>
+    ) : doc && requiresWorkspaceCanvas2d(doc) ? (
+      <EditorArtworkFallback engine={engine} opacity={doc.opacity ?? 1} />
     ) : null
   ) : (
     <>

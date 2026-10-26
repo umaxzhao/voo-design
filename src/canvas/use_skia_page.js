@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { createSkiaHost } from "./editor/skia_host.js";
 import { WORKSPACE_BACKGROUND } from "./editor/render_canvas_base.js";
 import { THEME_CHANGED_EVENT } from "./theme_events.js";
+import { workspaceSkiaDocument } from "./editor/workspace-artwork-routing.js";
 
 /**
  * Paints one editor page through Skia instead of the 2D canvas (full mode / single page).
@@ -210,7 +211,7 @@ export function useWorkspaceSkia({
         ? latest.docs.map((doc) => doc === priorDoc ? { ...liveDoc, id: doc.id } : doc)
         : latest.docs;
       const liveIndex = liveDoc && priorDoc?.nodes !== liveDoc.nodes ? null : latest.spatialIndex;
-      void host.draw({ ...latest, docs: liveDocs, spatialIndex: liveIndex, backgroundColor: ground, viewport: {
+      void host.draw({ ...latest, docs: liveDocs.map(workspaceSkiaDocument), spatialIndex: liveIndex, backgroundColor: ground, viewport: {
         x: panX, y: panY, panX, panY, zoom, width, height, devicePixelRatio: dpr,
       } }).catch(error => console.warn("Workspace Skia draw failed", error));
     };

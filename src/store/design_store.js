@@ -375,8 +375,8 @@ export const useDesignStore = create((set, get) => {
       const nextFocused = doc.editingNodeId && nextIds.includes(doc.editingNodeId) ? doc.editingNodeId : nextIds[0];
       set({
         nodes: nextNodes,
-        // Only the focused page is on the canvas; the page switcher brings the others in.
-        editingNodeIds: [nextFocused],
+        // Focus selects one frame; every saved frame remains on the free canvas.
+        editingNodeIds: nextIds,
         editingNodeId: nextFocused,
         editorArtboardLayouts: doc.editorArtboardLayouts || {},
         editorCamera: doc.editorCamera || { panX: 0, panY: 0, zoom: 1 },
