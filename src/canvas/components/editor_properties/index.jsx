@@ -316,12 +316,12 @@ export default function EditorProperties({
       ref={panelRef}
       onMouseOver={promoteTitleOnHover}
     >
-      <div className="flex shrink-0 items-center gap-1.5 px-2 pt-2 pb-2">
+      <div className="flex shrink-0 items-stretch border-b border-white/10">
         <div
           role="tablist"
           aria-label={t("editor.props.panelTabs")}
           data-testid="editor-panel-tabs"
-          className="flex min-w-0 flex-1 items-center gap-1 rounded-xl bg-white/[0.04] p-1"
+          className="flex min-w-0 flex-1 items-stretch bg-white/[0.04]"
         >
           {(canPrototype
             ? [
@@ -339,7 +339,7 @@ export default function EditorProperties({
               aria-selected={panelView === view}
               data-testid={`editor-panel-tab-${key}`}
               onClick={() => setPanelView(view)}
-              className={`flex h-6 flex-1 items-center justify-center rounded-lg text-[10px] font-mono transition-colors ${
+              className={`flex h-9 flex-1 items-center justify-center text-[10px] font-mono transition-colors ${
                 panelView === view
                   ? "bg-white/[0.12] text-white"
                   : "text-neutral-400 hover:text-neutral-200"
@@ -355,7 +355,7 @@ export default function EditorProperties({
               aria-selected={inspectOpen}
               data-testid="editor-panel-tab-code"
               onClick={() => setPanelView(inspectOpen ? "properties" : "code")}
-              className={`flex h-6 flex-1 items-center justify-center rounded-lg text-[10px] font-mono transition-colors ${
+              className={`flex h-9 flex-1 items-center justify-center text-[10px] font-mono transition-colors ${
                 inspectOpen
                   ? "bg-white/[0.12] text-white"
                   : "text-neutral-400 hover:text-neutral-200"
@@ -371,7 +371,7 @@ export default function EditorProperties({
             onClick={onToggleSide}
             title={t("editor.pages.toggleAxis")}
             aria-label={t("editor.pages.toggleAxis")}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
+            className="flex h-9 w-10 shrink-0 items-center justify-center border-l border-white/10 text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
           >
             <IconSwap size={13} />
           </button>
