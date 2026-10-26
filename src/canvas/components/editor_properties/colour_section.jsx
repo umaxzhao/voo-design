@@ -24,11 +24,13 @@ export default function ColourSection({
   selectedNodes = [],
   getBitmap = null,
   bindings = null,
+  frameFallbackFill = null,
 }) {
   return (
     <>
       {showFill && <FillSection
         object={object}
+        fallbackFill={frameFallbackFill}
         edit={edit}
         editAndCommit={editAndCommit}
         commitNow={commitNow}
@@ -59,4 +61,6 @@ ColourSection.propTypes = {
   selectedNodes: PropTypes.array,
   getBitmap: PropTypes.func,
   bindings: PropTypes.object,
+  /** A frame with no explicit fill shows the page backdrop until edited. */
+  frameFallbackFill: PropTypes.string,
 };

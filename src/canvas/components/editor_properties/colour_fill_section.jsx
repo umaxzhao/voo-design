@@ -79,6 +79,7 @@ export function FillSection({
   paintRow = false,
   onRemove = null,
   bindings = null,
+  fallbackFill = null,
 }) {
   const { t } = useI18n();
   const isImageNode = isImageUrlFill(object.fill) || (object.kind === NODE_KIND.IMAGE && (!object.fill || object.fill === "transparent"));
@@ -141,7 +142,17 @@ export function FillSection({
     };
   }, [isImageNode, imageKey, fillImage, getBitmap]);
 
-  const fill = typeof object.fill === "string" ? object.fill : "transparent";
+  const rawFill = typeof object.fill === "string" ? object.fill : "transparent";
+  const rawIsGradient = rawFill.includes("-gradient");
+  const explicitPaint =
+    isImageNode ||
+    HEX_COLOUR.test(rawFill) ||
+    rawIsGradient ||
+    (Array.isArray(object.fills) &&
+      object.fills.some((paint) => paint?.visible !== false && paint?.fill && paint.fill !== "transparent"));
+  // A frame with no paint still reads as a surface: show the page backdrop in
+  // the Fill row until the user writes an explicit fill.
+  const fill = !explicitPaint && fallbackFill ? fallbackFill : rawFill;
   const isGradient = fill.includes("-gradient");
   const none = !isImageNode && !HEX_COLOUR.test(fill) && !isGradient;
   const fillOpacity = Math.round((object.fillOpacity ?? 1) * 100);
@@ -149,8 +160,8 @@ export function FillSection({
     selectedNodes.length > 1 &&
     commonValue(selectedNodes, "fillOpacity") === MIXED;
 
-  const paints = Array.isArray(object.fills) ? object.fills : [{
-    fill: object.fill ?? "transparent", opacity: object.fillOpacity ?? 1,
+  const paints = Array.isArray(object.fills) && object.fills.length ? object.fills : [{
+    fill, opacity: object.fillOpacity ?? 1,
     visible: object.fillHidden !== true, blendMode: object.fillBlendMode ?? "source-over",
     ...(object.imageId ? { imageId: object.imageId } : {}),
   }];
@@ -168,7 +179,7 @@ export function FillSection({
     <StaticSection title={t("editor.props.fillLabel")} storageKey="fill" extra={
       <SectionAddButton label={t("editor.props.addFill")} onClick={addFill} />
     }>
-      {none && paints.length <= 1 ? (
+      {!paints.some((paint) => paint?.visible !== false && paint?.fill && paint.fill !== "transparent") ? (
         <SectionEmptyRow
           label={t("editor.props.emptyState")}
           ariaLabel={t("editor.props.addFill")}
@@ -301,6 +312,8 @@ FillSection.propTypes = {
   editAndCommit: PropTypes.func.isRequired,
   /** Interaction-end commit for the continuous (debounced) fields. */
   commitNow: PropTypes.func,
+  /** Page backdrop shown for a frame that has no explicit paint yet. */
+  fallbackFill: PropTypes.string,
   /** Selected node objects when several are picked (plan 1.9). */
   selectedNodes: PropTypes.array,
   getBitmap: PropTypes.func,

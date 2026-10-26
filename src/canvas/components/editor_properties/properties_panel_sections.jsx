@@ -80,6 +80,14 @@ export default function PropertiesPanelSections({
 }) {
   const allowed = sections ?? resolvePanelForContext({ selection: [object] }).sections;
   const has = (section) => allowed.includes(section);
+  const frameFallbackFill =
+    object.isFrame &&
+    !(Array.isArray(object.fills) && object.fills.length) &&
+    (!object.fill || object.fill === "transparent") &&
+    typeof docSize?.backgroundColor === "string" &&
+    docSize.backgroundColor !== "transparent"
+      ? docSize.backgroundColor
+      : null;
   const isMedia =
     object.kind === "video" ||
     object.kind === "model3d" ||
@@ -286,6 +294,7 @@ export default function PropertiesPanelSections({
         <DocumentColoursContext.Provider value={colorVariableActions?.variables ?? NO_DOCUMENT_COLOURS}>
           <ColourSection
             object={object}
+            frameFallbackFill={frameFallbackFill}
             showFill={has("fill")}
             showStroke={has("stroke")}
             edit={edit}

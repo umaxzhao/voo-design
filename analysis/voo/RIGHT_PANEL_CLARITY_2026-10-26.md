@@ -106,3 +106,12 @@
 - Removed the Effects-local `pt-1` / `mt-2` and Prototype-local `gap-1.5`
   overrides so those groups match Transform/Layout/Fill/Stroke/Appearance.
 - Screenshot: `analysis/voo/assets/right-panel-spacing-2026-10-26.png`.
+
+## Frame fill defaults
+
+- The Frame tool now writes `doc.backgroundColor` as the new frame's explicit
+  fill (falling back to #FFFFFF on a transparent page), so the rendered frame
+  and the Fill row agree from the moment it is drawn.
+- Frames in older documents that still have no paint show the same page backdrop
+  as a read-only fallback row in Fill; editing that row writes an explicit fill.
+- Screenshot: `analysis/voo/assets/frame-default-fill-2026-10-26.png`.
