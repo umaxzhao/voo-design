@@ -1,6 +1,7 @@
 import { resolvePanelForContext } from "./resolve_panel_context.js";
 import InspectPanel from "./inspect_panel.jsx";
 import PrototypeSection from "./prototype_section.jsx";
+import { selectionColours } from "./selection_colors_section.jsx";
 import { frameOfNode, isFrameNode } from "../../editor/prototype_model.js";
 /**
  * Editor properties panel: root component docked on canvas side showing
@@ -235,6 +236,8 @@ export default function EditorProperties({
             backgroundColor={backgroundColor}
             onSetBackgroundColor={onSetBackgroundColor}
             docSize={docSize}
+            pageColours={selectionColours(docSize?.nodes ?? [])}
+            onSelectPageColour={(ids) => engine?.selectExactly?.(ids)}
           />
           {onDeleteCanvas ? (
             <div className="px-1 pb-1">

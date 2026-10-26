@@ -13,6 +13,11 @@ const FORMATS = [
   { value: "image/webp", labelKey: "editor.exportFormatWebp", ext: "webp" },
 ];
 const SCALES = [1, 2, 3];
+const QUALITIES = [
+  { value: "0.6", labelKey: "editor.exportQualityLow" },
+  { value: "0.8", labelKey: "editor.exportQualityMedium" },
+  { value: "0.92", labelKey: "editor.exportQualityHigh" },
+];
 const MAX_PRESETS = 4;
 
 let presetSeq = 0;
@@ -32,6 +37,7 @@ function download(dataUrl, filename) {
 
 export default function ExportSection({ object, selectedNodes = [], engine }) {
   const { t } = useI18n();
+  // One PNG preset is visible by default (Figma-style export row); "+" adds more.
   const [presets, setPresets] = useState(() => [makePreset()]);
   if (!engine?.exportSelectionPng) return null;
 
@@ -51,7 +57,9 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
     const result = engine.exportSelectionPng(ids, {
       scale: preset.scale,
       type: preset.type,
-      ...(preset.type === "image/jpeg" ? { quality: 0.92 } : {}),
+      ...(preset.type !== "image/png"
+        ? { quality: Number(preset.quality ?? 0.92) }
+        : {}),
     });
     const dataUrl = typeof result === "string" ? result : result?.dataUrl;
     if (!dataUrl) return;
@@ -76,7 +84,8 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
     >
       <div className="flex flex-col gap-1.5">
         {presets.map((preset) => (
-          <div key={preset.id} className="flex min-h-7 items-center gap-1.5">
+          <div key={preset.id} className="flex flex-col gap-1">
+          <div className="flex min-h-7 items-center gap-1.5">
             <FlatSelect
               value={preset.type}
               onChange={(type) => patch(preset.id, { type })}
@@ -114,24 +123,45 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
               type="button"
               aria-label={t("editor.props.removeExportSettings")}
               title={t("editor.props.removeExportSettings")}
-              disabled={presets.length <= 1}
               onClick={() =>
                 setPresets((rows) => rows.filter((row) => row.id !== preset.id))
               }
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white disabled:opacity-30"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white"
             >
               ×
             </button>
           </div>
+          {preset.type !== "image/png" ? (
+            <div className="flex min-h-7 items-center gap-1.5 pl-0.5">
+              <span className="w-[64px] shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-400">
+                {t("editor.exportQuality")}
+              </span>
+              <FlatSelect
+                value={String(preset.quality ?? "0.92")}
+                onChange={(quality) => patch(preset.id, { quality })}
+                label={t("editor.exportQuality")}
+                options={QUALITIES.map((quality) => ({
+                  value: quality.value,
+                  label: t(quality.labelKey),
+                }))}
+                className="min-w-0 flex-1"
+                triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2 !text-[10px] !font-mono !text-neutral-100 hover:!bg-neutral-800/80"
+                widthClass="w-full"
+              />
+            </div>
+          ) : null}
+          </div>
         ))}
-        <button
-          type="button"
-          onClick={() => presets.forEach(exportPreset)}
-          className="flex min-h-7 w-full items-center justify-center gap-1.5 rounded-xl bg-white/[0.08] text-[11px] font-mono text-neutral-100 transition-colors hover:bg-white/[0.14] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
-        >
-          <IconDownload size={12} />
-          {t("editor.export")}
-        </button>
+        {presets.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => presets.forEach(exportPreset)}
+            className="flex min-h-7 w-full items-center justify-center gap-1.5 rounded-xl bg-white/[0.08] text-[11px] font-mono text-neutral-100 transition-colors hover:bg-white/[0.14] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+          >
+            <IconDownload size={12} />
+            {t("editor.export")}
+          </button>
+        ) : null}
       </div>
     </StaticSection>
   );

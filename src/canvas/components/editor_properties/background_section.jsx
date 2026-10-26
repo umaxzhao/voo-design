@@ -22,6 +22,8 @@ export default function BackgroundSection({
   backgroundColor = "#262626",
   onSetBackgroundColor = null,
   docSize = null,
+  pageColours = [],
+  onSelectPageColour = null,
 }) {
   const { t } = useI18n();
   const currentBg = backgroundColor || "#262626";
@@ -85,6 +87,34 @@ export default function BackgroundSection({
           </div>
         </div>
       </EditorField>
+      {pageColours.length > 0 ? (
+        <div className="flex flex-col gap-2 pt-1">
+          <div className="px-0.5 text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-400">
+            {t("editor.props.pageColors")}
+          </div>
+          {pageColours.map((entry) => (
+            <button
+              key={entry.colour}
+              type="button"
+              onClick={() => onSelectPageColour?.(entry.nodes)}
+              title={t("editor.props.selectLayersUsingColour")}
+              className="flex min-h-7 items-center gap-2 rounded-xl bg-neutral-800 px-2.5 text-left transition-colors hover:bg-neutral-800/80"
+            >
+              <span
+                aria-hidden="true"
+                className="h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-white/20"
+                style={{ backgroundColor: entry.colour }}
+              />
+              <span className="min-w-0 flex-1 truncate text-[11px] font-mono uppercase text-neutral-200">
+                {entry.colour}
+              </span>
+              <span className="shrink-0 text-[10px] font-mono tabular-nums text-neutral-400">
+                ×{new Set(entry.nodes).size}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -96,4 +126,12 @@ BackgroundSection.propTypes = {
     width: PropTypes.number,
     height: PropTypes.number,
   }),
+  /** Unique paint colours on the page, for "On this page". */
+  pageColours: PropTypes.arrayOf(
+    PropTypes.shape({
+      colour: PropTypes.string.isRequired,
+      nodes: PropTypes.arrayOf(PropTypes.string).isRequired,
+    }),
+  ),
+  onSelectPageColour: PropTypes.func,
 };
