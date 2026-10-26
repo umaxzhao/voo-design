@@ -717,6 +717,8 @@ export default {
   "editor.view.grid": "Show grid",
   "editor.view.snapping": "Snapping",
   "editor.view.clearGuides": "Clear guides",
+  "editor.assets": "Assets",
+  "editor.assets.empty": "No assets on this page",
   "editor.layers": "Layers",
   "editor.layer.expandGroup": "Expand group",
   "editor.layer.collapseGroup": "Collapse group",

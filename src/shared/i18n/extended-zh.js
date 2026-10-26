@@ -702,6 +702,8 @@ export default {
   "editor.view.grid": "显示网格",
   "editor.view.snapping": "智能吸附",
   "editor.view.clearGuides": "清除参考线",
+  "editor.assets": "资源",
+  "editor.assets.empty": "当前页面暂无资源",
   "editor.layers": "图层",
   "editor.layer.expandGroup": "展开图层组",
   "editor.layer.collapseGroup": "折叠图层组",

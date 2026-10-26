@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   IconChevronDown,
@@ -320,6 +320,7 @@ export default function EditorLayers({
   /** Live search query; the panel filters its own rows — no parent wiring. */
   const [search, setSearch] = useState(initialSearch || "");
   const query = search.trim().toLowerCase();
+  const [panelTab, setPanelTab] = useState("layers");
   /** Which row's adjustment/effect editor popover is open, or null. */
   const [popover, setPopover] = useState(null); // { nodeId, kind, isEffect } — kind null = add picker
   const [newAdjustmentPicker, setNewAdjustmentPicker] = useState(false);
@@ -860,6 +861,193 @@ export default function EditorLayers({
     }
   };
 
+  const assetNodes = useMemo(
+    () =>
+      (Array.isArray(objects) ? objects : [])
+        .filter((node) => ["image", "video", "model3d"].includes(node?.kind))
+        .filter((node) => {
+          if (!query) return true;
+          const name = String(node?.name ?? node?.kind ?? "").toLowerCase();
+          return name.includes(query);
+        })
+        .map((node) => ({
+          node,
+          preview:
+            node?.fill && /^(?:data:|blob:|https?:)/i.test(node.fill)
+              ? node.fill
+              : node?.src ?? node?.url ?? node?.dataUrl ?? getBitmap?.(node)?.src ?? null,
+        })),
+    [objects, query, getBitmap],
+  );
+
+  const panelTabs = [
+    { key: "layers", label: t("editor.layers") },
+    { key: "assets", label: t("editor.assets") },
+  ];
+  const activePanelTab = Math.max(
+    0,
+    panelTabs.findIndex((tab) => tab.key === panelTab),
+  );
+
+  const panelHeader = (
+    <div className="flex items-center justify-between gap-2 px-1 pb-1.5 pt-1 mb-2">
+      <div
+        role="tablist"
+        aria-label={t("editor.props.panelTabs")}
+        data-testid="editor-layers-tabs"
+        className="relative flex min-w-0 flex-1 items-center rounded-xl bg-white/[0.04] p-0.5"
+      >
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-0.5 left-0.5 top-0.5 rounded-lg bg-white/[0.12] transition-transform duration-200 ease-out"
+          style={{
+            width: `calc((100% - 4px) / ${panelTabs.length})`,
+            transform: `translateX(${activePanelTab * 100}%)`,
+          }}
+        />
+        {panelTabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            aria-selected={panelTab === tab.key}
+            data-testid={`editor-layers-tab-${tab.key}`}
+            onClick={() => setPanelTab(tab.key)}
+            className={`relative z-10 flex h-7 flex-1 items-center justify-center rounded-lg text-[10px] font-mono transition-colors ${
+              panelTab === tab.key
+                ? "text-white"
+                : "text-neutral-400 hover:text-neutral-200"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div className="-my-1 flex shrink-0 items-center gap-1">
+        <button
+          type="button"
+          onClick={() => {
+            setShowSearch((prev) => {
+              const next = !prev;
+              if (next) {
+                setTimeout(() => searchInputRef.current?.focus(), 50);
+              } else {
+                setSearch("");
+              }
+              return next;
+            });
+          }}
+          aria-label={t("editor.layers.searchToggle")}
+          title={t("editor.layers.searchToggle")}
+          className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
+            showSearch || search
+              ? "bg-neutral-800 text-white"
+              : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
+          }`}
+        >
+          <IconSearch size={13} />
+        </button>
+        {onToggleSide ? (
+          <button
+            type="button"
+            onClick={onToggleSide}
+            aria-label={t("editor.pages.toggleAxis")}
+            title={t("editor.pages.toggleAxis")}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+          >
+            <IconSwap size={13} />
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+
+  const searchField = showSearch ? (
+    <input
+      ref={searchInputRef}
+      type="text"
+      value={search}
+      onChange={(event) => setSearch(event.target.value)}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          if (search) {
+            setSearch("");
+          } else {
+            setShowSearch(false);
+            listRef.current?.focus?.();
+          }
+        } else if (event.key === "ArrowDown" || event.key === "Enter") {
+          event.preventDefault();
+          listRef.current?.focus?.();
+        }
+      }}
+      placeholder={t("editor.layers.search")}
+      aria-label={t("editor.layers.search")}
+      className="mb-2 w-full rounded-xl border border-transparent bg-neutral-900 px-2.5 py-1.5 text-[11px] font-mono text-neutral-200 placeholder:text-neutral-400 outline-none transition-colors hover:bg-neutral-800 focus:border-[#a7ffd4]/40"
+    />
+  ) : null;
+
+  if (panelTab === "assets") {
+    return (
+      <aside
+        data-testid="editor-layers-panel"
+        aria-label={t("editor.assets")}
+        className={`absolute ${sideClass} top-1/2 z-30 flex ${LAYERS_PANEL_MAX_HEIGHT_CLASS} max-md:inset-x-3 max-md:w-auto md:w-64 -translate-y-1/2 flex-col rounded-3xl border border-white/10 bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200 transition-[top,max-height,transform] duration-200 ease-out`}
+        style={
+          bottomInset > 0
+            ? {
+                top: `calc(50% - ${bottomInset / 2}px)`,
+                maxHeight: `calc(100% - ${bottomInset + 80}px)`,
+              }
+            : undefined
+        }
+      >
+        {panelHeader}
+        {searchField}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {assetNodes.length ? (
+            <div className="grid grid-cols-2 gap-2">
+              {assetNodes.map(({ node, preview }) => (
+                <button
+                  key={node.id}
+                  type="button"
+                  onClick={() => {
+                    if (onSelectExactly) onSelectExactly([node.id]);
+                    else {
+                      const index = objects.findIndex((entry) => entry.id === node.id);
+                      if (index >= 0) onSelect(index);
+                    }
+                  }}
+                  className="group min-w-0 rounded-xl border border-white/10 bg-white/[0.03] p-1.5 text-left transition-colors hover:bg-white/[0.06]"
+                >
+                  <span className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-neutral-900">
+                    {preview ? (
+                      <img
+                        src={preview}
+                        alt=""
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      <IconFrame size={18} className="text-neutral-500" />
+                    )}
+                  </span>
+                  <span className="mt-1 block truncate text-[10px] text-neutral-300">
+                    {node.name || node.kind}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="px-1 py-3 text-[10px] leading-4 text-neutral-400">
+              {t("editor.assets.empty")}
+            </p>
+          )}
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside
       data-testid="editor-layers-panel"
@@ -874,73 +1062,9 @@ export default function EditorLayers({
           : undefined
       }
     >
-      <div className="flex items-center justify-between px-2 pb-1.5 pt-1 mb-2">
-        <h2 className="text-[11px] font-mono tracking-wider text-neutral-400 font-medium uppercase">
-          {t("editor.layers")}
-        </h2>
-        <div className="-my-1 flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => {
-              setShowSearch((prev) => {
-                const next = !prev;
-                if (next) {
-                  setTimeout(() => searchInputRef.current?.focus(), 50);
-                } else {
-                  setSearch("");
-                }
-                return next;
-              });
-            }}
-            aria-label={t("editor.layers.searchToggle")}
-            title={t("editor.layers.searchToggle")}
-            className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
-              showSearch || search
-                ? "bg-neutral-800 text-white"
-                : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
-            }`}
-          >
-            <IconSearch size={13} />
-          </button>
-          {onToggleSide ? (
-            <button
-              type="button"
-              onClick={onToggleSide}
-              aria-label={t("editor.pages.toggleAxis")}
-              title={t("editor.pages.toggleAxis")}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
-            >
-              <IconSwap size={13} />
-            </button>
-          ) : null}
-        </div>
-      </div>
+      {panelHeader}
 
-      {showSearch ? (
-        <input
-          ref={searchInputRef}
-          type="text"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") {
-              event.preventDefault();
-              if (search) {
-                setSearch("");
-              } else {
-                setShowSearch(false);
-                listRef.current?.focus?.();
-              }
-            } else if (event.key === "ArrowDown" || event.key === "Enter") {
-              event.preventDefault();
-              listRef.current?.focus?.();
-            }
-          }}
-          placeholder={t("editor.layers.search")}
-          aria-label={t("editor.layers.search")}
-          className="mb-2 w-full rounded-xl border border-transparent bg-neutral-900 px-2.5 py-1.5 text-[11px] font-mono text-neutral-200 placeholder:text-neutral-400 outline-none transition-colors hover:bg-neutral-800 focus:border-[#a7ffd4]/40"
-        />
-      ) : null}
+      {searchField}
 
       <div className="flex flex-row-reverse items-center gap-2 mb-2 border-b border-white/[0.08] pb-2 [&>*:first-child]:w-20 [&>*:last-child]:min-w-0 [&>*:last-child]:flex-1">
         <ScrubField
