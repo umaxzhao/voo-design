@@ -49,8 +49,9 @@ describe("image as rectangle", () => {
     const end = html.indexOf("</details>", start);
     const body = html.slice(start, end);
     expect(body).toContain("editor.image.tools");
-    expect(body).toContain('data-testid="editor-taskbar-crop"');
-    expect(body).toContain('data-testid="editor-taskbar-replace"');
+    expect(body).toContain("editor.frequencySeparation.action");
+    expect(body).not.toContain('data-testid="editor-taskbar-crop"');
+    expect(body).not.toContain('data-testid="editor-taskbar-replace"');
   });
 
   it("shows the regular fill, stroke and effects sections for an image", () => {
