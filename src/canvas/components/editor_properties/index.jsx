@@ -90,7 +90,7 @@ export default function EditorProperties({
   const { t } = useI18n();
   const sideClass = swapSide ? "left-4" : "right-4";
   const panelRef = useRef(null);
-  const dynamicPanelClass = `flex flex-col [&>div:first-child]:shrink-0 absolute ${sideClass} top-1/2 z-30 ${PROPERTIES_PANEL_MAX_HEIGHT_CLASS} max-md:inset-x-3 max-md:w-auto md:w-72 -translate-y-1/2 rounded-3xl bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200`;
+  const dynamicPanelClass = `flex flex-col [&>div:first-child]:shrink-0 absolute ${sideClass} top-1/2 z-30 ${PROPERTIES_PANEL_MAX_HEIGHT_CLASS} max-md:inset-x-3 max-md:w-auto md:w-72 -translate-y-1/2 rounded-3xl border border-white/10 bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200`;
   // The canvas-local timeline owns the reserved bottom area. Keep the
   // original horizontal placement and center within the remaining height.
   const panelStyle =
