@@ -1,0 +1,252 @@
+{
+ "evidence_id": "ev_37d627ac4a7e702c0ad682735d402ce913f8b3e243362389266bf83d3d04bf34",
+ "subject": {
+  "name": "Affinity Affinity Store",
+  "digest": {
+   "sha256": "a73efca930c2adb1f52eef0d1d3b17d375ee40290fc796653c91c33abf381938"
+  },
+  "local_path": "/private/tmp/AffinityMenu.app/Contents/MacOS/Affinity Affinity Store",
+  "format": "mach-o-universal",
+  "architecture": "arm64"
+ },
+ "provider": {
+  "id": "rea-artifact-graph",
+  "name": "REA safe artifact graph provider",
+  "version": "1"
+ },
+ "operation": "decode_interface_builder",
+ "parameters": {
+  "max_documents": 8,
+  "max_objects": 20000,
+  "max_connections": 40000
+ },
+ "confidence": "observed",
+ "authority": "shipped-artifact",
+ "limitations": [
+  "The graph reflects recognized Interface Builder archive fields and connections; omitted private or unrecognized archive fields remain unknown.",
+  "A target-action selector is an Interface Builder observation and does not prove that the binary contains a matching implementation.",
+  "Decoded constraints, runtime visibility, dynamic UI creation, and pixel geometry are not inferred from these archives.",
+  "Compiled Interface Builder archives are private serialized object graphs. The decoder reports only recognized keyed-archive objects and connections; unrecognized object classes and fields remain unknown.",
+  "Some recognized NIBArchive connectors declare no resolvable owner; they carry no connection evidence and are reported as omissions."
+ ],
+ "documents": [
+  {
+   "relative_path": "Contents/Resources/Base.lproj/MainMenu.nib",
+   "archive_sha256": "b021d535fd744dbd178b16285d6187e7ad8611df05d8faf8645d00c78249e54e",
+   "object_count": 2288,
+   "connection_count": 810
+  },
+  {
+   "relative_path": "Contents/Resources/Base.lproj/MainMenuAstroStack.nib",
+   "archive_sha256": "e5b3e7a4444f9793bfb3bd762c312a7b382cc26ad266d16c6aca513d7f87a30a",
+   "object_count": 266,
+   "connection_count": 83
+  },
+  {
+   "relative_path": "Contents/Resources/Base.lproj/MainMenuDevelop.nib",
+   "archive_sha256": "c44dcdcecd654463468f1d8c1db980a0a3f63113a03e9ab7440767405fb0ca0f",
+   "object_count": 278,
+   "connection_count": 88
+  },
+  {
+   "relative_path": "Contents/Resources/Base.lproj/MainMenuHDR.nib",
+   "archive_sha256": "ba2a915845fee58b1439877594b036799ea61f4825d15a1dd37f41be9439e8fe",
+   "object_count": 266,
+   "connection_count": 84
+  },
+  {
+   "relative_path": "Contents/Resources/Base.lproj/MainMenuLiquify.nib",
+   "archive_sha256": "02a59241f40db2cf2d05bfea52a38f7742d572f546e0c089851e9bd63a5566f5",
+   "object_count": 266,
+   "connection_count": 84
+  },
+  {
+   "relative_path": "Contents/Resources/Base.lproj/MainMenuPanorama.nib",
+   "archive_sha256": "a52eedc2a4ed1547774b0fb3f79c184a0a13216cff1f74c4c6c824ed2e78e3f1",
+   "object_count": 264,
+   "connection_count": 83
+  }
+ ],
+ "graph": {
+  "node_count": 6060,
+  "edge_count": 3662,
+  "coverage": [
+   {
+    "facet": "objects:Contents/Resources/Base.lproj/MainMenu.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 2288,
+    "omitted": 0
+   },
+   {
+    "facet": "connections:Contents/Resources/Base.lproj/MainMenu.nib",
+    "status": "partial",
+    "reason": "connection_unresolved",
+    "examined": 807,
+    "omitted": 3
+   },
+   {
+    "facet": "hierarchy:Contents/Resources/Base.lproj/MainMenu.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 1,
+    "omitted": 0
+   },
+   {
+    "facet": "classes:Contents/Resources/Base.lproj/MainMenu.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 17,
+    "omitted": 0
+   },
+   {
+    "facet": "objects:Contents/Resources/Base.lproj/MainMenuAstroStack.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 266,
+    "omitted": 0
+   },
+   {
+    "facet": "connections:Contents/Resources/Base.lproj/MainMenuAstroStack.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 83,
+    "omitted": 0
+   },
+   {
+    "facet": "hierarchy:Contents/Resources/Base.lproj/MainMenuAstroStack.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 1,
+    "omitted": 0
+   },
+   {
+    "facet": "classes:Contents/Resources/Base.lproj/MainMenuAstroStack.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 16,
+    "omitted": 0
+   },
+   {
+    "facet": "objects:Contents/Resources/Base.lproj/MainMenuDevelop.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 278,
+    "omitted": 0
+   },
+   {
+    "facet": "connections:Contents/Resources/Base.lproj/MainMenuDevelop.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 88,
+    "omitted": 0
+   },
+   {
+    "facet": "hierarchy:Contents/Resources/Base.lproj/MainMenuDevelop.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 1,
+    "omitted": 0
+   },
+   {
+    "facet": "classes:Contents/Resources/Base.lproj/MainMenuDevelop.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 16,
+    "omitted": 0
+   },
+   {
+    "facet": "objects:Contents/Resources/Base.lproj/MainMenuHDR.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 266,
+    "omitted": 0
+   },
+   {
+    "facet": "connections:Contents/Resources/Base.lproj/MainMenuHDR.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 84,
+    "omitted": 0
+   },
+   {
+    "facet": "hierarchy:Contents/Resources/Base.lproj/MainMenuHDR.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 1,
+    "omitted": 0
+   },
+   {
+    "facet": "classes:Contents/Resources/Base.lproj/MainMenuHDR.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 16,
+    "omitted": 0
+   },
+   {
+    "facet": "objects:Contents/Resources/Base.lproj/MainMenuLiquify.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 266,
+    "omitted": 0
+   },
+   {
+    "facet": "connections:Contents/Resources/Base.lproj/MainMenuLiquify.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 84,
+    "omitted": 0
+   },
+   {
+    "facet": "hierarchy:Contents/Resources/Base.lproj/MainMenuLiquify.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 1,
+    "omitted": 0
+   },
+   {
+    "facet": "classes:Contents/Resources/Base.lproj/MainMenuLiquify.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 16,
+    "omitted": 0
+   },
+   {
+    "facet": "objects:Contents/Resources/Base.lproj/MainMenuPanorama.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 264,
+    "omitted": 0
+   },
+   {
+    "facet": "connections:Contents/Resources/Base.lproj/MainMenuPanorama.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 83,
+    "omitted": 0
+   },
+   {
+    "facet": "hierarchy:Contents/Resources/Base.lproj/MainMenuPanorama.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 1,
+    "omitted": 0
+   },
+   {
+    "facet": "classes:Contents/Resources/Base.lproj/MainMenuPanorama.nib",
+    "status": "complete",
+    "reason": null,
+    "examined": 16,
+    "omitted": 0
+   },
+   {
+    "facet": "archive_decode",
+    "status": "complete",
+    "reason": null,
+    "examined": 6,
+    "omitted": 0
+   }
+  ],
+  "truncated": true
+ }
+}

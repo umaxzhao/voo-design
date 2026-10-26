@@ -1,0 +1,839 @@
+[
+ {
+  "nib": "MainMenu",
+  "action": "addToneCompressionAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "色调压缩...",
+  "title_en": "Tone Compression…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "separateCurves:",
+  "keyEquiv": "",
+  "title_zh": "分离曲线",
+  "title_en": "Separate Curves",
+  "parent_zh": "矢量",
+  "parent_en": "Vector"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addBandpassMaskRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "带通…",
+  "title_en": "Band-pass…",
+  "parent_zh": "实时蒙版图层",
+  "parent_en": "Live Mask Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addSphericalFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "球面...",
+  "title_en": "Spherical…",
+  "parent_zh": "畸变",
+  "parent_en": "Distort"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addCompoundMaskRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "复合蒙版图层",
+  "title_en": "Compound Mask Layer",
+  "parent_zh": "新建蒙版图层",
+  "parent_en": "New Mask Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addInvertAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "反转",
+  "title_en": "Invert",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "removeInnerCurves:",
+  "keyEquiv": "",
+  "title_zh": "删除内部曲线",
+  "title_en": "Remove Inner Curves",
+  "parent_zh": "矢量",
+  "parent_en": "Vector"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addBilateralBlurFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "双向...",
+  "title_en": "Bilateral…",
+  "parent_zh": "模糊",
+  "parent_en": "Blur"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addPhotoFilterAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "镜头滤镜...",
+  "title_en": "Lens Filter…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addShadowsHighlightsFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "阴影/高亮...",
+  "title_en": "Shadows / Highlights…",
+  "parent_zh": "光照",
+  "parent_en": "Lighting"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addChannelMixerAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "通道混合器...",
+  "title_en": "Channel Mixer…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addOCIOAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "OCIO...",
+  "title_en": "OCIO…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addDiffuseFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "扩散...",
+  "title_en": "Diffuse…",
+  "parent_zh": "噪声",
+  "parent_en": "Noise"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "changeToToneMappingPersona:",
+  "keyEquiv": "",
+  "title_zh": "色调映射...",
+  "title_en": "Tone Map…",
+  "parent_zh": "滤镜",
+  "parent_en": "Filters"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addDenoiseFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "去噪...",
+  "title_en": "Denoise…",
+  "parent_zh": "噪声",
+  "parent_en": "Noise"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addPinchPunchFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "收缩/膨胀...",
+  "title_en": "Pinch / Punch…",
+  "parent_zh": "畸变",
+  "parent_en": "Distort"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "keyCutCurves:",
+  "keyEquiv": "",
+  "title_zh": "使用关键对象切割曲线",
+  "title_en": "Cut Curves with Key Object",
+  "parent_zh": "矢量",
+  "parent_en": "Vector"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addSaturationHueCurvesAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "饱和度/色相曲线…",
+  "title_en": "Saturation / Hue Curves…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addBrightnessContrastAdjustmentRasterLayer:",
+  "keyEquiv": "b",
+  "title_zh": "明度/对比度…",
+  "title_en": "Brightness / Contrast…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addHighPassFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "高通...",
+  "title_en": "High Pass…",
+  "parent_zh": "锐化",
+  "parent_en": "Sharpen"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addGradientMapAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "渐变贴图...",
+  "title_en": "Gradient Map…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addCurvesAdjustmentRasterLayer:",
+  "keyEquiv": "m",
+  "title_zh": "曲线...",
+  "title_en": "Curves…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addProceduralTextureFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "过程纹理...",
+  "title_en": "Procedural Texture…",
+  "parent_zh": "颜色",
+  "parent_en": "Colours"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addGlitchFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "故障...",
+  "title_en": "Glitch…",
+  "parent_zh": "畸变",
+  "parent_en": "Distort"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addBoxBlurFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "方框...",
+  "title_en": "Box…",
+  "parent_zh": "模糊",
+  "parent_en": "Blur"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addHalftoneFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "半色调...",
+  "title_en": "Halftone…",
+  "parent_zh": "颜色",
+  "parent_en": "Colours"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addDiffuseGlowFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "扩散亮光...",
+  "title_en": "Diffuse Glow…",
+  "parent_zh": "模糊",
+  "parent_en": "Blur"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addMaskRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "蒙版图层",
+  "title_en": "Mask Layer",
+  "parent_zh": "新建蒙版图层",
+  "parent_en": "New Mask Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addLightingFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "光照...",
+  "title_en": "Lighting…",
+  "parent_zh": "光照",
+  "parent_en": "Lighting"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "doSelectObjectClosedCurves:",
+  "keyEquiv": "",
+  "title_zh": "闭合曲线",
+  "title_en": "Closed Curves",
+  "parent_zh": "图层",
+  "parent_en": "Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "mergeCurves:",
+  "keyEquiv": "",
+  "title_zh": "合并曲线",
+  "title_en": "Merge Curves",
+  "parent_zh": "矢量",
+  "parent_en": "Vector"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "doSelectObjectOpenCurves:",
+  "keyEquiv": "",
+  "title_zh": "开放曲线",
+  "title_en": "Open Curves",
+  "parent_zh": "图层",
+  "parent_en": "Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "doSelectObjectCurves:",
+  "keyEquiv": "",
+  "title_zh": "曲线",
+  "title_en": "Curves",
+  "parent_zh": "图层",
+  "parent_en": "Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addVoronoiFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "泰森多边形...",
+  "title_en": "Voronoi…",
+  "parent_zh": "颜色",
+  "parent_en": "Colours"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addFillRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "新建填充图层",
+  "title_en": "New Fill Layer",
+  "parent_zh": "像素",
+  "parent_en": "Pixel"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addWhiteBalanceAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "白平衡...",
+  "title_en": "White Balance…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "convertToCurves:",
+  "keyEquiv": "\r",
+  "title_zh": "转换为曲线",
+  "title_en": "Convert to Curves",
+  "parent_zh": "矢量",
+  "parent_en": "Vector"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addHueRangeMaskRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "色调范围…",
+  "title_en": "Hue Range…",
+  "parent_zh": "实时蒙版图层",
+  "parent_en": "Live Mask Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addSplitToningAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "分离色调...",
+  "title_en": "Split Toning…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "refineMask:",
+  "keyEquiv": "",
+  "title_zh": "优化蒙版…",
+  "title_en": "Refine Mask…",
+  "parent_zh": "像素",
+  "parent_en": "Pixel"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addIntensityRangeMaskRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "光度范围…",
+  "title_en": "Luminosity Range…",
+  "parent_zh": "实时蒙版图层",
+  "parent_en": "Live Mask Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addNormalsAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "法线…",
+  "title_en": "Normals…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addEmptyMaskRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "空白蒙版图层",
+  "title_en": "Empty Mask Layer",
+  "parent_zh": "新建蒙版图层",
+  "parent_en": "New Mask Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addMultiBandSharpenFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "多频段...",
+  "title_en": "Multi Band…",
+  "parent_zh": "锐化",
+  "parent_en": "Sharpen"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "changeToLiquifyPersona:",
+  "keyEquiv": "",
+  "title_zh": "液化…",
+  "title_en": "Liquify…",
+  "parent_zh": "滤镜",
+  "parent_en": "Filters"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addPixelateFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "像素化…",
+  "title_en": "Pixelate…",
+  "parent_zh": "畸变",
+  "parent_en": "Distort"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addDustAndScratchesFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "蒙尘与划痕...",
+  "title_en": "Dust & Scratches…",
+  "parent_zh": "噪声",
+  "parent_en": "Noise"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addMeshWarpFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "网格扭曲…",
+  "title_en": "Mesh Warp…",
+  "parent_zh": "畸变",
+  "parent_en": "Distort"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addBloomFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "光晕...",
+  "title_en": "Bloom…",
+  "parent_zh": "模糊",
+  "parent_en": "Blur"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addUnsharpMaskFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "钝化蒙版...",
+  "title_en": "Unsharp Mask…",
+  "parent_zh": "锐化",
+  "parent_en": "Sharpen"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addLUT3DAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "LUT...",
+  "title_en": "LUT…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addThresholdAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "阈值...",
+  "title_en": "Threshold…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addTextureFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "纹理…",
+  "title_en": "Texture…",
+  "parent_zh": "锐化",
+  "parent_en": "Sharpen"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addDefringeFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "去边...",
+  "title_en": "Defringe…",
+  "parent_zh": "颜色",
+  "parent_en": "Colours"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addDepthOfFieldFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "景深...",
+  "title_en": "Depth Of Field…",
+  "parent_zh": "模糊",
+  "parent_en": "Blur"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addWaveletDenoiseFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "小波去噪...",
+  "title_en": "Wavelet Denoise…",
+  "parent_zh": "噪声",
+  "parent_en": "Noise"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addMinimumBlurFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "最小模糊...",
+  "title_en": "Minimum…",
+  "parent_zh": "模糊",
+  "parent_en": "Blur"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addExposureAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "曝光...",
+  "title_en": "Exposure…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addLiquifyFilterRasterLayer:",
+  "keyEquiv": "X",
+  "title_zh": "液化…",
+  "title_en": "Liquify…",
+  "parent_zh": "畸变",
+  "parent_en": "Distort"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "changeToDevelopPersona:",
+  "keyEquiv": "A",
+  "title_zh": "开发...",
+  "title_en": "Develop…",
+  "parent_zh": "滤镜",
+  "parent_en": "Filters"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addSoftProofAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "软打样...",
+  "title_en": "Soft Proof…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addRippleFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "波纹...",
+  "title_en": "Ripple…",
+  "parent_zh": "畸变",
+  "parent_en": "Distort"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addMaximumBlurFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "最大模糊...",
+  "title_en": "Maximum…",
+  "parent_zh": "模糊",
+  "parent_en": "Blur"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addLensBlurFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "镜头...",
+  "title_en": "Lens…",
+  "parent_zh": "模糊",
+  "parent_en": "Blur"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addVibranceAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "自然饱和度...",
+  "title_en": "Vibrance…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addMedianBlurFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "中值...",
+  "title_en": "Median…",
+  "parent_zh": "模糊",
+  "parent_en": "Blur"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addRecolourAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "再上色...",
+  "title_en": "Recolour…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addPatternRasterLayerFromSelection:",
+  "keyEquiv": "",
+  "title_zh": "从选取项新建图案图层",
+  "title_en": "New Pattern Layer from Selection",
+  "parent_zh": "像素",
+  "parent_en": "Pixel"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addLensDistortionFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "镜头畸变...",
+  "title_en": "Lens Distortion…",
+  "parent_zh": "畸变",
+  "parent_en": "Distort"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addHSLShiftAdjustmentRasterLayer:",
+  "keyEquiv": "u",
+  "title_zh": "HSL...",
+  "title_en": "HSL…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addClarityFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "清晰度...",
+  "title_en": "Clarity…",
+  "parent_zh": "锐化",
+  "parent_en": "Sharpen"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addToneStretchAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "色调拉伸...",
+  "title_en": "Tone Stretch…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addMotionBlurFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "运动...",
+  "title_en": "Motion…",
+  "parent_zh": "模糊",
+  "parent_en": "Blur"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addTwirlFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "扭曲...",
+  "title_en": "Twirl…",
+  "parent_zh": "畸变",
+  "parent_en": "Distort"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addRadialBlurFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "径向...",
+  "title_en": "Radial…",
+  "parent_zh": "模糊",
+  "parent_en": "Blur"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addPatternRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "新建图案图层…",
+  "title_en": "New Pattern Layer…",
+  "parent_zh": "像素",
+  "parent_en": "Pixel"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addColourBalanceAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "色彩平衡...",
+  "title_en": "Colour Balance…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "dumpVectorCurves:",
+  "keyEquiv": "",
+  "title_zh": "Dump Vector Node Curves",
+  "title_en": "Dump Vector Node Curves",
+  "parent_zh": "Debug",
+  "parent_en": "Debug"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addGaussianBlurFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "高斯模糊...",
+  "title_en": "Gaussian…",
+  "parent_zh": "模糊",
+  "parent_en": "Blur"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "unsharpMask:",
+  "keyEquiv": "",
+  "title_zh": "钝化蒙版...",
+  "title_en": "Unsharp Mask…",
+  "parent_zh": "锐化",
+  "parent_en": "Sharpen"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addVignetteFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "晕影...",
+  "title_en": "Vignette…",
+  "parent_zh": "颜色",
+  "parent_en": "Colours"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "maskToBelow:",
+  "keyEquiv": "C",
+  "title_zh": "创建剪切蒙版",
+  "title_en": "Create Clipping Mask",
+  "parent_zh": "图层",
+  "parent_en": "Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addBlackAndWhiteAdjustmentRasterLayer:",
+  "keyEquiv": "B",
+  "title_zh": "黑白…",
+  "title_en": "Black & White…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "rasteriseToMask:",
+  "keyEquiv": "",
+  "title_zh": "栅格化为蒙版",
+  "title_en": "Rasterise to Mask",
+  "parent_zh": "栅格化",
+  "parent_en": "Rasterise"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addFieldBlurFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "字段...",
+  "title_en": "Field…",
+  "parent_zh": "模糊",
+  "parent_en": "Blur"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addSelectiveColourAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "选色...",
+  "title_en": "Selective Colour…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addLevelsAdjustmentRasterLayer:",
+  "keyEquiv": "l",
+  "title_zh": "色阶...",
+  "title_en": "Levels…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addRasterLayer:",
+  "keyEquiv": "N",
+  "title_zh": "新建像素图层",
+  "title_en": "New Pixel Layer",
+  "parent_zh": "像素",
+  "parent_en": "Pixel"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addPerspectiveFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "透视...",
+  "title_en": "Perspective…",
+  "parent_zh": "畸变",
+  "parent_en": "Distort"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "autoLevels:",
+  "keyEquiv": "",
+  "title_zh": "自动色阶",
+  "title_en": "Auto Levels",
+  "parent_zh": "颜色",
+  "parent_en": "Colours"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addPosteriseAdjustmentRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "色调分离...",
+  "title_en": "Posterise…",
+  "parent_zh": "新建调整图层",
+  "parent_en": "New Adjustment Layer"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addDisplacementMapFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "置换...",
+  "title_en": "Displace…",
+  "parent_zh": "畸变",
+  "parent_en": "Distort"
+ },
+ {
+  "nib": "MainMenu",
+  "action": "addNoiseFilterRasterLayer:",
+  "keyEquiv": "",
+  "title_zh": "添加噪声...",
+  "title_en": "Add Noise…",
+  "parent_zh": "噪声",
+  "parent_en": "Noise"
+ }
+]
