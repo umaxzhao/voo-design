@@ -57,6 +57,12 @@ export function StrokeSection({
     : STROKE_ALIGN.CENTER;
 
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const strokeSides = object.strokeSides ?? {};
+  const sideEnabled = (side) => strokeSides[side] !== false;
+  const toggleSide = (side) =>
+    editAndCommit({
+      strokeSides: { ...strokeSides, [side]: !sideEnabled(side) },
+    });
   const extraStrokes = Array.isArray(object.strokes) ? object.strokes : [];
   const patchExtraStroke = (index, patch) =>
     editAndCommit({
@@ -274,6 +280,32 @@ export function StrokeSection({
               </button>
             </EditorTooltip>
           </div>
+
+          {object.kind !== NODE_KIND.PATH ? (
+            <div className="flex items-center gap-1">
+              {[
+                ["top", "T", "editor.props.strokeSideTop"],
+                ["right", "R", "editor.props.strokeSideRight"],
+                ["bottom", "B", "editor.props.strokeSideBottom"],
+                ["left", "L", "editor.props.strokeSideLeft"],
+              ].map(([side, letter, labelKey]) => (
+                <button
+                  key={side}
+                  type="button"
+                  aria-label={t(labelKey)}
+                  aria-pressed={sideEnabled(side)}
+                  onClick={() => toggleSide(side)}
+                  className={`flex h-7 flex-1 items-center justify-center rounded-lg text-[10px] font-mono transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
+                    sideEnabled(side)
+                      ? "bg-white/[0.12] text-white"
+                      : "bg-neutral-800 text-neutral-500 hover:text-neutral-300"
+                  }`}
+                >
+                  {letter}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           {extraStrokes.length ? (
             <div className="flex flex-col gap-1.5 pt-1">

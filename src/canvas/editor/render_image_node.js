@@ -17,6 +17,7 @@ import {
   isImagePaint,
   resolvePaintStyle,
   roundRectPath,
+  clipStrokeSides,
   strokeRoundRect,
 } from "./render_basic_shapes.js";
 import { resolveCornerRadii } from "./scene_model_core.js";
@@ -137,6 +138,14 @@ export function drawImageNode(
             br: Math.max(0, radii.br - node.strokeWidth / 2),
             bl: Math.max(0, radii.bl - node.strokeWidth / 2),
           };
+      clipStrokeSides(
+        ctx,
+        node,
+        node.x + node.strokeWidth / 2,
+        node.y + node.strokeWidth / 2,
+        Math.max(0, node.width - node.strokeWidth),
+        Math.max(0, node.height - node.strokeWidth),
+      );
       strokeRoundRect(
         ctx,
         node.x + node.strokeWidth / 2,
@@ -381,6 +390,14 @@ export function drawImageNode(
             br: Math.max(0, radii.br - node.strokeWidth / 2),
             bl: Math.max(0, radii.bl - node.strokeWidth / 2),
           };
+      clipStrokeSides(
+        ctx,
+        node,
+        node.x + node.strokeWidth / 2,
+        node.y + node.strokeWidth / 2,
+        Math.max(0, node.width - node.strokeWidth),
+        Math.max(0, node.height - node.strokeWidth),
+      );
       strokeRoundRect(
         ctx,
         node.x + node.strokeWidth / 2,

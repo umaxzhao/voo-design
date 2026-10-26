@@ -321,6 +321,31 @@ export function drawEllipseNode(ctx, node) {
   ctx.restore();
 }
 
+/**
+ * Clip to the enabled stroke sides. A subset of sides strokes the same rounded
+ * rectangle through side bands, so joins/corners stay consistent; an undefined
+ * or all-true mask draws the normal full outline.
+ */
+export function clipStrokeSides(ctx, node, sx, sy, sw, sh) {
+  const sides = node?.strokeSides;
+  if (!sides || (sides.top !== false && sides.right !== false && sides.bottom !== false && sides.left !== false)) {
+    return false;
+  }
+  const line = Math.max(1, node.strokeWidth ?? 1);
+  const reach = line * 2;
+  const x = sx - reach;
+  const y = sy - reach;
+  const w = sw + reach * 2;
+  const h = sh + reach * 2;
+  ctx.beginPath();
+  if (sides.top !== false) ctx.rect(x, y, w, reach * 2);
+  if (sides.right !== false) ctx.rect(x + w - reach * 2, y, reach * 2, h);
+  if (sides.bottom !== false) ctx.rect(x, y + h - reach * 2, w, reach * 2);
+  if (sides.left !== false) ctx.rect(x, y, reach * 2, h);
+  ctx.clip();
+  return true;
+}
+
 export function drawRectNode(ctx, node) {
   const radii = resolveCornerRadii(node.cornerRadius, node.width, node.height);
   const fillAlpha = node.fillOpacity ?? 1;
@@ -394,6 +419,7 @@ export function drawRectNode(ctx, node) {
         };
   }
 
+  clipStrokeSides(ctx, node, sx, sy, sw, sh);
   const hasAnyRadius =
     typeof sr === "number"
       ? sr > 0
