@@ -56,11 +56,11 @@ async function rollbackCreated(providerId) {
  * @returns {Promise<{providerId: string, models: Array<{id: string, label: string}>}>}
  * @throws {Error} with a `code` the provider error helpers can translate
  */
-export async function fetchCustomProviderModels({ providerId = null, baseUrl, apiKey }) {
+export async function fetchCustomProviderModels({ providerId = null, baseUrl, apiKey, name = null, newProviderId = null }) {
   const created = !providerId;
   const saved = saveStoredCustomProvider({
-    id: providerId ?? undefined,
-    name: providerNameFor(baseUrl),
+    id: providerId ?? newProviderId ?? undefined,
+    name: name ?? providerNameFor(baseUrl),
     defaultBaseUrl: baseUrl,
   });
   try {

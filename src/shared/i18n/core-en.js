@@ -39,6 +39,8 @@ export default {
   "firstRun.provider.codex": "Codex",
   "firstRun.provider.claude": "Claude Code",
   "firstRun.provider.custom": "Custom model",
+  "firstRun.provider.dashscope": "Alibaba Cloud",
+  "firstRun.provider.volcengine": "Volcengine",
   "firstRun.provider.antigravity": "Antigravity",
   "firstRun.agentStatus.checking": "Checking…",
   "firstRun.agentStatus.connected": "Connected",

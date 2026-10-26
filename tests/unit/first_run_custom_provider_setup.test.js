@@ -66,6 +66,23 @@ describe("first-run custom provider setup", () => {
     expect(second.models.map(model => model.id)).toEqual(["m-1", "m-3"]);
   });
 
+  it("stores a branded shortcut under a stable provider id and preserves its display name", async () => {
+    registry.listRegisteredProviderModels.mockResolvedValue({ models: [{ id: "qwen-model", label: "Qwen model" }] });
+    const result = await fetchCustomProviderModels({ baseUrl: BASE_URL, apiKey: API_KEY,
+      name: "Alibaba Cloud", newProviderId: "custom:onboarding-dashscope" });
+    expect(result.providerId).toBe("custom:onboarding-dashscope");
+    expect(getStoredCustomProviders()).toEqual([expect.objectContaining({ id: result.providerId, name: "Alibaba Cloud" })]);
+    expect(customModelGroups()[0].models[0].id).toBe("api:custom%3Aonboarding-dashscope:qwen-model");
+  });
+
+  it("rolls back a new branded shortcut when model fetching fails", async () => {
+    registry.listRegisteredProviderModels.mockResolvedValue({ models: [] });
+    await expect(fetchCustomProviderModels({ baseUrl: BASE_URL, apiKey: API_KEY,
+      name: "Volcengine", newProviderId: "custom:onboarding-volcengine" })).rejects.toMatchObject({ code: "providerRequestFailed" });
+    expect(getStoredCustomProviders()).toEqual([]);
+    expect(local.dump()).not.toContain(API_KEY);
+  });
+
   it("rolls back a new provider when the registry returns no models", async () => {
     registry.listRegisteredProviderModels.mockResolvedValue({ models: [] });
     await expect(fetchCustomProviderModels({ baseUrl: BASE_URL, apiKey: API_KEY })).rejects.toMatchObject({ code: "providerRequestFailed" });

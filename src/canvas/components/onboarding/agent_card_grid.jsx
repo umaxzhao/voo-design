@@ -77,6 +77,7 @@ AgentCard.propTypes = {
 export default function AgentCardGrid({
   t, label, selected, detection, customConfigured = false, onSelect,
   agentIds, showCustom = true, testIds = DEFAULT_TEST_IDS,
+  cloudProviders = [],
 }) {
   const customStatus = customAgentStatus(customConfigured);
   const agents = selectableCliAgents(undefined, agentIds).filter((agent) => !agentIds || agentIds.includes(agent.id));
@@ -97,6 +98,13 @@ export default function AgentCardGrid({
             testIds={testIds}
           />
         );
+      })}
+      {cloudProviders.map((provider) => {
+        const status = customAgentStatus(provider.configured);
+        return <AgentCard key={provider.id} id={provider.id}
+          icon={<ProviderLogo providerId={provider.id} size={28} />}
+          name={t(provider.labelKey)} status={status} statusText={t(AGENT_STATUS_KEY[status])}
+          selected={selected === provider.id} onSelect={() => onSelect(provider.id)} testIds={testIds} />;
       })}
       {showCustom && <AgentCard
         id="custom"
@@ -121,5 +129,10 @@ AgentCardGrid.propTypes = {
   onSelect: PropTypes.func.isRequired,
   agentIds: PropTypes.arrayOf(PropTypes.string),
   showCustom: PropTypes.bool,
+  cloudProviders: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    labelKey: PropTypes.string.isRequired,
+    configured: PropTypes.bool,
+  })),
   testIds: PropTypes.shape({ grid: PropTypes.string, card: PropTypes.string.isRequired, status: PropTypes.string.isRequired }),
 };

@@ -20,6 +20,7 @@ vi.mock("../../src/canvas/components/onboarding/custom_provider_setup.js", () =>
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import CustomProviderInline from "../../src/canvas/components/onboarding/custom_provider_inline.jsx";
 import { loadLocale, t } from "../../src/shared/i18n.js";
+import { CLOUD_PROVIDER_PRESETS } from "../../src/canvas/components/onboarding/cloud_provider_presets.js";
 
 const GROUPS = [{ cliId: "custom:one", name: "gateway.example.com", models: [{ id: "api:custom%3Aone:m-1", label: "m-1" }, { id: "api:custom%3Aone:m-2", label: "m-2" }] }];
 
@@ -51,6 +52,22 @@ describe("first-run inline custom provider", () => {
     expect(byId("first-run-custom-key").props.type).toBe("password");
     expect(byId("first-run-custom-fetch").props.children).toContain("Fetch models");
     expect(byId("first-run-custom-models")).toBeUndefined();
+  });
+
+  it.each(CLOUD_PROVIDER_PRESETS)("prefills and saves the $id shortcut through the existing API setup", async preset => {
+    hooks.values = [];
+    props = { ...props, preset };
+    draw();
+    expect(byId("first-run-custom-url").props.value).toBe(preset.baseUrl);
+    setup.fetchCustomProviderModels.mockResolvedValue({ providerId: preset.customProviderId, models: [] });
+    type("first-run-custom-key", "sk-test");
+    await byId("first-run-custom-fetch").props.onClick(); draw();
+    expect(setup.fetchCustomProviderModels).toHaveBeenCalledWith({
+      providerId: null, baseUrl: preset.baseUrl, apiKey: "sk-test",
+      name: t(preset.labelKey), newProviderId: preset.customProviderId,
+    });
+    expect(byId("first-run-custom-key").props.value).toBe("");
+    expect(props.onConfigured).toHaveBeenCalledOnce();
   });
 
   it("rejects an invalid endpoint without calling the registry path", async () => {

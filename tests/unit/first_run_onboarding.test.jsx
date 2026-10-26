@@ -197,6 +197,14 @@ describe("first-run interactions", () => {
     expect(listener).toHaveBeenCalledOnce(); expect(onClose).toHaveBeenCalled();
   });
   const inline = () => elements(tree).find(el => el.type === CustomProviderInline);
+  it.each(["dashscope", "volcengine"])("opens %s API setup without applying a CLI model", id => {
+    const previousModel = getSetting(AGENT_SETTING.MODEL);
+    pick(id);
+    expect(inline().props.preset.id).toBe(id);
+    expect(getSetting(AGENT_SETTING.MODEL)).toBe(previousModel);
+    expect(elements(tree).filter(el => el.type === "button").map(el => el.props.children))
+      .not.toContain("Open Agent setup guide (CLI detection and connection test)");
+  });
   it("persists an existing custom model through the Agent model setting", () => {
     vi.stubGlobal("localStorage", { getItem: key => key === "voo.custom_providers" ? JSON.stringify([{ id: "custom:studio", name: "Studio", models: [{ id: "model-a", label: "Model A" }] }]) : null });
     pick("custom");

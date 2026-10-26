@@ -12,6 +12,7 @@ import AgentCardGrid from "./onboarding/agent_card_grid.jsx";
 import CustomProviderInline from "./onboarding/custom_provider_inline.jsx";
 import { useAgentDetection } from "./onboarding/use_agent_detection.js";
 import FirstRunWorkspace from "./first_run_workspace.jsx";
+import { CLOUD_PROVIDER_PRESETS } from "./onboarding/cloud_provider_presets.js";
 
 const steps = ["provider"];
 const focusClass = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40";
@@ -33,6 +34,8 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
   const [, setCustomVersion] = useState(0);
   const refreshCustom = () => setCustomVersion(version => version + 1);
   const customGroups = customModelGroups();
+  const cloudPreset = CLOUD_PROVIDER_PRESETS.find(preset => preset.id === provider);
+  const isApiProvider = provider === "custom" || Boolean(cloudPreset);
   const detection = useAgentDetection(open);
   const { t, locale } = useI18n();
   useEffect(() => {
@@ -79,13 +82,25 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
             <p id="first-run-description" className="text-[11px] leading-relaxed text-neutral-400">{t(`firstRun.${name}.description`)}</p>
             <div className="flex flex-col gap-3">
               <AgentCardGrid t={t} label={t("firstRun.provider.label")} selected={provider} detection={detection}
+                cloudProviders={CLOUD_PROVIDER_PRESETS.map(preset => ({ ...preset,
+                  configured: customGroups.some(group => group.cliId === preset.customProviderId && group.models.length > 0),
+                }))}
                 customConfigured={customGroups.some(group => group.models.length > 0)}
-                onSelect={(id) => { setProvider(id); if (id !== "custom") applyAgentModel(id); else if (customModel) setSetting(AGENT_SETTING.MODEL, customModel); }} />
-              {provider === "custom" && (
-                <CustomProviderInline t={t} groups={customGroups} selectedModel={customModel}
+                onSelect={(id) => {
+                  setProvider(id);
+                  const preset = CLOUD_PROVIDER_PRESETS.find(entry => entry.id === id);
+                  if (preset) {
+                    const model = customGroups.find(group => group.cliId === preset.customProviderId)?.models[0];
+                    if (model) selectCustomModel(model.id);
+                  } else if (id !== "custom") applyAgentModel(id);
+                  else if (customModel) setSetting(AGENT_SETTING.MODEL, customModel);
+                }} />
+              {isApiProvider && (
+                <CustomProviderInline key={provider} t={t} preset={cloudPreset ?? null}
+                  groups={cloudPreset ? customGroups.filter(group => group.cliId === cloudPreset.customProviderId) : customGroups} selectedModel={customModel}
                   onSelectModel={selectCustomModel} onConfigured={refreshCustom} />
               )}
-              {provider !== "" && provider !== "custom" && (
+              {provider !== "" && !isApiProvider && (
                 <button type="button" onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("voo:open-onboarding")); }}
                   className={`w-fit rounded-lg bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-neutral-100 hover:bg-white/[0.14] transition-colors ${focusClass}`}>{t("firstRun.provider.guide")}</button>
               )}

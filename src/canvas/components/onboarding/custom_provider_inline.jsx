@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useRef } from "react";
 import PropTypes from "prop-types";
-import { isValidCustomBaseUrl } from "../../../shared/custom_providers.js";
+import { getStoredCustomProviders, isValidCustomBaseUrl } from "../../../shared/custom_providers.js";
 import { IconCheck, IconRefresh } from "../../icons.jsx";
 import { getProviderErrorMessage } from "../provider_status_helpers.js";
 import { fetchCustomProviderModels } from "./custom_provider_setup.js";
@@ -69,9 +69,15 @@ function formReducer(state, action) {
  * Inline custom-provider setup under the first-run agent grid: endpoint, key,
  * "Fetch models", then a list to pick the default model.
  */
-export default function CustomProviderInline({ t, groups, selectedModel, onSelectModel, onConfigured }) {
+export default function CustomProviderInline({ t, groups, selectedModel, onSelectModel, onConfigured, preset = null }) {
   const section = useRef(null);
-  const [form, dispatch] = useReducer(formReducer, INITIAL_FORM);
+  const savedProvider = preset ? getStoredCustomProviders().find(provider => provider.id === preset.customProviderId) : null;
+  const [form, dispatch] = useReducer(formReducer, {
+    ...INITIAL_FORM,
+    baseUrl: savedProvider?.defaultBaseUrl ?? preset?.baseUrl ?? "",
+    providerId: savedProvider?.id ?? null,
+    savedUrl: savedProvider?.defaultBaseUrl ?? "",
+  });
   const { baseUrl, apiKey, providerId, savedUrl, loading, urlError, fetchError } = form;
 
   // The section is taller than the visible column once the model list appears.
@@ -89,7 +95,9 @@ export default function CustomProviderInline({ t, groups, selectedModel, onSelec
     }
     dispatch({ type: "start" });
     try {
-      const result = await fetchCustomProviderModels({ providerId, baseUrl: url, apiKey });
+      const result = await fetchCustomProviderModels({ providerId, baseUrl: url, apiKey,
+        ...(preset ? { name: t(preset.labelKey), newProviderId: preset.customProviderId } : {}),
+      });
       dispatch({ type: "success", providerId: result.providerId, savedUrl: url });
       onConfigured();
     } catch (error) {
@@ -98,7 +106,7 @@ export default function CustomProviderInline({ t, groups, selectedModel, onSelec
   };
 
   return (
-    <section ref={section} data-testid="first-run-custom-config" aria-label={t("firstRun.provider.custom")}
+    <section ref={section} data-testid="first-run-custom-config" aria-label={t(preset?.labelKey ?? "firstRun.provider.custom")}
       className="flex flex-col gap-3 rounded-2xl bg-white/[0.04] p-4">
       <label className="flex flex-col gap-1.5">
         <span className={LABEL_CLASS}>{t("settings.customProvider.baseUrl")}</span>
@@ -136,4 +144,9 @@ CustomProviderInline.propTypes = {
   selectedModel: PropTypes.string.isRequired,
   onSelectModel: PropTypes.func.isRequired,
   onConfigured: PropTypes.func.isRequired,
+  preset: PropTypes.shape({
+    customProviderId: PropTypes.string.isRequired,
+    baseUrl: PropTypes.string.isRequired,
+    labelKey: PropTypes.string.isRequired,
+  }),
 };

@@ -39,6 +39,8 @@ export default {
   "firstRun.provider.codex": "Codex",
   "firstRun.provider.claude": "Claude Code",
   "firstRun.provider.custom": "自定义模型",
+  "firstRun.provider.dashscope": "Alibaba Cloud",
+  "firstRun.provider.volcengine": "火山引擎",
   "firstRun.provider.antigravity": "Antigravity",
   "firstRun.agentStatus.checking": "检测中…",
   "firstRun.agentStatus.connected": "已连接",

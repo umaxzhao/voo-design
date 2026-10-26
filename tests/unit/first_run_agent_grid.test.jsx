@@ -5,6 +5,7 @@ import { AGENT_STATUS, DETECTION_PHASE, cliAgentStatus, customAgentStatus } from
 import { detectLocalClis } from "../../src/canvas/components/onboarding/use_agent_detection.js";
 import { CLI_AGENTS, CLI_TRANSPORT } from "../../src/shared/cli-agents.js";
 import { loadLocale, t } from "../../src/shared/i18n.js";
+import { CLOUD_PROVIDER_PRESETS } from "../../src/canvas/components/onboarding/cloud_provider_presets.js";
 
 const agent = (id) => CLI_AGENTS.find((entry) => entry.id === id);
 const ready = { status: "ready", installed: true, authenticated: true, ready: true };
@@ -61,6 +62,15 @@ describe("local CLI detection", () => {
 
 describe("agent card grid", () => {
   beforeEach(() => loadLocale("en"));
+  it("places branded cloud providers before Custom model with their sourced logos", () => {
+    const html = render(done({}), { cloudProviders: CLOUD_PROVIDER_PRESETS });
+    const ids = [...html.matchAll(/data-testid="first-run-agent-card-([a-z]+)"/g)].map(match => match[1]);
+    expect(ids).toEqual(["codex", "claude", "antigravity", "dashscope", "volcengine", "custom"]);
+    expect(html).toContain("Alibaba Cloud");
+    expect(html).toContain("Volcengine");
+    expect(html).toContain("brand-icons/alibabacloud.svg");
+    expect(html).toContain("brand-icons/volcengine.svg");
+  });
   it("lays cards out three per row, each with icon, name and status", () => {
     const html = render(done({ codex: ready, claude: { installed: false }, antigravity: { installed: true, authenticated: false } }));
     expect(html).toContain("grid-cols-3");
@@ -109,10 +119,13 @@ describe("agent card grid", () => {
   });
   it("forwards a card click as its platform id", () => {
     const onSelect = vi.fn();
-    const grid = AgentCardGrid({ t, label: "Agent", selected: "", detection: { phase: DETECTION_PHASE.UNAVAILABLE }, customConfigured: false, onSelect });
-    grid.props.children[0][0].props.onSelect();
-    grid.props.children[1].props.onSelect();
-    expect(onSelect.mock.calls).toEqual([["codex"], ["custom"]]);
+    const grid = AgentCardGrid({ t, label: "Agent", selected: "", detection: { phase: DETECTION_PHASE.UNAVAILABLE },
+      cloudProviders: CLOUD_PROVIDER_PRESETS, customConfigured: false, onSelect });
+    const cards = grid.props.children.flat();
+    for (const id of ["codex", "volcengine", "custom"]) {
+      cards.find(card => card?.props?.id === id).props.onSelect();
+    }
+    expect(onSelect.mock.calls).toEqual([["codex"], ["volcengine"], ["custom"]]);
   });
 });
 
