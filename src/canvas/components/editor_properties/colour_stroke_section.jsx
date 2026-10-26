@@ -20,6 +20,7 @@ import { Swatch, HexField, HEX_COLOUR } from "./colour_swatch.jsx";
 import { opacityPatch } from "../../color_picker/opacity_patch.js";
 import {
   SectionAddButton,
+  SectionEmptyRow,
   StaticSection,
   sectionActionClass,
   sectionRowClass,
@@ -56,21 +57,18 @@ export function StrokeSection({
     : STROKE_ALIGN.CENTER;
 
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const addStroke = () =>
+    editAndCommit({
+      stroke: "#FFFFFF",
+      strokeWidth: Math.max(1, strokeWidth || 1),
+    });
 
   return (
     <StaticSection
       title={t("editor.props.strokeLabel")}
       storageKey="stroke"
       extra={
-        <SectionAddButton
-          label={t("editor.props.addStroke")}
-          onClick={() =>
-            editAndCommit({
-              stroke: "#FFFFFF",
-              strokeWidth: Math.max(1, strokeWidth || 1),
-            })
-          }
-        />
+        <SectionAddButton label={t("editor.props.addStroke")} onClick={addStroke} />
       }
     >
       {bindings?.styleName ? (
@@ -82,7 +80,14 @@ export function StrokeSection({
         </div>
       ) : null}
 
-      {none ? null : (
+      {none ? (
+        <SectionEmptyRow
+          label={t("editor.props.addStroke")}
+          testId="editor-stroke-empty"
+          onClick={addStroke}
+          icon={<span className="block h-4 w-4 rounded-md border border-white/25 bg-white" />}
+        />
+      ) : (
         <>
           {/* Row 1: Unified Pill (Swatch + Label/Hex + Opacity + Minus) */}
           <div className={sectionRowClass}>

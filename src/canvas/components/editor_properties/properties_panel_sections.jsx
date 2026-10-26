@@ -194,7 +194,7 @@ export default function PropertiesPanelSections({
 
       {/* The constraints row appears once set or when the add menu reveals it.
           Image actions (crop / replace / fit) live in ImageContextActions. */}
-      {!isWarpTool && eligible.constraints ? (
+      {!isWarpTool && eligible.constraints && !object.isFrame ? (
         <ConstraintsSection object={object} editAndCommit={editAndCommit} />
       ) : null}
 

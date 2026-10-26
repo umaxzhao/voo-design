@@ -11,6 +11,7 @@ import { IconEye, IconEyeOff, IconMinus } from "../../icons.jsx";
 import { Swatch, HexField, HEX_COLOUR } from "./colour_swatch.jsx";
 import {
   SectionAddButton,
+  SectionEmptyRow,
   StaticSection,
   sectionActionClass,
   sectionRowClass,
@@ -159,12 +160,22 @@ export function FillSection({
     (commit ? editAndCommit : edit)({ fills: next, fill: first?.fill ?? "transparent",
       fillOpacity: first?.opacity ?? 1, fillHidden: first?.visible === false });
   };
+  const addFill = () =>
+    editAndCommit({
+      fills: [...paints, { fill: "#D9D9D9", opacity: 1, visible: true, blendMode: "source-over" }],
+    });
   if (!paintRow) return (
     <StaticSection title={t("editor.props.fillLabel")} storageKey="fill" extra={
-      <SectionAddButton label={t("editor.props.addFill")}
-        onClick={() => editAndCommit({ fills: [...paints, { fill: "#D9D9D9", opacity: 1, visible: true, blendMode: "source-over" }] })} />
+      <SectionAddButton label={t("editor.props.addFill")} onClick={addFill} />
     }>
-      {paints.map((paint, index) => <FillSection key={index}
+      {none && paints.length <= 1 ? (
+        <SectionEmptyRow
+          label={t("editor.props.addFill")}
+          testId="editor-fill-empty"
+          onClick={addFill}
+          icon={<span className="block h-4 w-4 rounded-md border border-white/25 bg-[#D9D9D9]" />}
+        />
+      ) : paints.map((paint, index) => <FillSection key={index}
         object={{ ...object, fills: undefined, fill: paint.fill, fillOpacity: paint.opacity,
           fillHidden: paint.visible === false, fillBlendMode: paint.blendMode,
           imageId: paint.imageId ?? object.imageId }}

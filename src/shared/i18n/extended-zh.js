@@ -5,6 +5,7 @@ export default {
   "editor.props.arcStart": "起始角度",
   "editor.props.arcSweep": "扫过角度",
   "editor.props.arcInnerRadius": "内半径比例",
+  "editor.props.frameLayout": "画框与布局",
   "editor.props.clip": "画框",
   "editor.props.clipContent": "裁剪内容",
   "editor.props.layoutGrid": "布局网格",

@@ -57,6 +57,39 @@ SectionAddButton.propTypes = {
 };
 
 /**
+ * A full-width "nothing here yet" row: the empty state for a paint/effect
+ * section, so the section shows a clear action instead of a bare header.
+ */
+export function SectionEmptyRow({ label, onClick, icon = null, testId = undefined }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      data-testid={testId}
+      className={`${sectionRowClass} justify-start text-[11px] text-neutral-400 hover:text-neutral-200`}
+    >
+      {icon ? (
+        <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">
+          {icon}
+        </span>
+      ) : (
+        <span aria-hidden="true" className="h-4 w-4 shrink-0 rounded-md border border-white/25" />
+      )}
+      <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+      <span aria-hidden="true" className="text-[12px] font-mono text-neutral-500">+</span>
+    </button>
+  );
+}
+
+SectionEmptyRow.propTypes = {
+  label: PropTypes.string.isRequired,
+  onClick: PropTypes.func.isRequired,
+  icon: PropTypes.node,
+  testId: PropTypes.string,
+};
+
+/**
  * One collapsible group in the property panel.
  *
  * Folding keeps the panel short; the body also scrolls inside its container.

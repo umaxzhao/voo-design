@@ -239,6 +239,8 @@ export default function EditorPage({
   const stageRef = useRef(null);
   const canvasRef = useRef(null);
   const titleRef = useRef(null);
+  const pageRingRef = useRef(null);
+  const streamRectRef = useRef(null);
   // Skia paints onto its own canvas so the engine keeps the 2D one it
   // measures text against and sizes from the stage.
   const free = mode === "free";
@@ -572,6 +574,41 @@ export default function EditorPage({
     stageRef,
     revision: revisionRef.current,
   });
+  // Camera-synced page chrome: the page outline and title are DOM while the
+  // artwork is canvas. React state lags a camera-only frame by one commit, so
+  // during a middle-button pan the frame outline could sit a frame behind the
+  // artwork. Re-position the DOM nodes from the same render callback the canvas
+  // paints in, so both share the live viewport without a React re-render.
+  useEffect(() => {
+    if (!engine || free) return undefined;
+    const sync = () => {
+      const liveDoc = engine.getDocument?.();
+      if (!liveDoc) return;
+      const rect = docToScreenRect(effectivePage(liveDoc), engine.getViewport());
+      const ring = pageRingRef.current;
+      if (ring) {
+        ring.style.left = `${rect.x}px`;
+        ring.style.top = `${rect.y}px`;
+        ring.style.width = `${rect.width}px`;
+        ring.style.height = `${rect.height}px`;
+      }
+      const stream = streamRectRef.current;
+      if (stream) {
+        stream.style.left = `${rect.x}px`;
+        stream.style.top = `${rect.y}px`;
+        stream.style.width = `${rect.width}px`;
+        stream.style.height = `${rect.height}px`;
+      }
+      const title = titleRef.current;
+      if (title) {
+        title.style.left = `${rect.x}px`;
+        title.style.top = `${rect.y - EDITOR_PAGE_HEADER_INSET}px`;
+      }
+    };
+    sync();
+    return engine.subscribeRender?.(sync) ?? undefined;
+  }, [engine, free, renaming]);
+
   const skiaPainting = skiaEnabled && !free && skiaStatus === "ready";
   const viewport = free
     ? { zoom: sharedZoom ?? 1, panX: 0, panY: 0 }
@@ -971,6 +1008,7 @@ export default function EditorPage({
         {canvases}
         {streamingContent && docRect ? (
           <div
+            ref={streamRectRef}
             className="pointer-events-none absolute z-10 overflow-hidden"
             style={{
               left: docRect.x,
@@ -1014,6 +1052,7 @@ export default function EditorPage({
         {docRect && !readOnly ? (
           <>
             <div
+              ref={pageRingRef}
               aria-hidden
               className="pointer-events-none absolute ring-1 ring-white/15"
               style={{

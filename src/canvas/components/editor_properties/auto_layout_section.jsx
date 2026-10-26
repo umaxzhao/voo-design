@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { useI18n } from "../../use_i18n.js";
 import { normalizeAutoLayout } from "../../editor/scene_auto_layout.js";
-import { CollapsibleSection, SectionAddButton } from "./property_section.jsx";
+import { CollapsibleSection, SectionAddButton, SectionEmptyRow } from "./property_section.jsx";
 
 const DEFAULT_LAYOUT = {
   direction: "vertical",
@@ -112,7 +112,13 @@ export default function AutoLayoutSection({ object, editAndCommit }) {
         </span>
       }
     >
-      {!layout ? null : (
+      {!layout ? (
+        <SectionEmptyRow
+          label={t("editor.autoLayout.enable")}
+          testId="editor-auto-layout-empty"
+          onClick={() => editAndCommit({ autoLayout: DEFAULT_LAYOUT })}
+        />
+      ) : (
         <div className="flex flex-col gap-2">
           <div className="flex gap-1">
             {["vertical", "horizontal"].map((direction) => (

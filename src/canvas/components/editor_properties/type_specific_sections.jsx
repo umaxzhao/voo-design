@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { SectionAddButton, StaticSection, fieldClass, sectionRowClass } from './property_section.jsx';
+import { SectionAddButton, SectionEmptyRow, StaticSection, fieldClass, sectionRowClass } from './property_section.jsx';
 import ScrubValueInput from './scrub_value_input.jsx';
 import FlatSelect from '../flat_select.jsx';
 import { normalizeLayoutGrid } from '../../editor/layout_grid.js';
@@ -28,32 +28,10 @@ export default function TypeSpecificSections({ object, sections, editAndCommit, 
   }} /></label>;
   return <>
     {has('arc') && <StaticSection title={t('editor.props.arc')} storageKey="arc"><div className="grid grid-cols-2 gap-2">{number(t('editor.props.arcStart'), 'arcStart', 0, -360, 360)}{number(t('editor.props.arcSweep'), 'arcSweep', 360, 0.01, 360)}{number(t('editor.props.arcInnerRadius'), 'arcInnerRadius', 0, 0, 0.99)}</div></StaticSection>}
-    {has('clip') && (
-      <StaticSection title={t('editor.props.clip')} storageKey="clip">
-        <button
-          type="button"
-          role="switch"
-          aria-label={t('editor.props.clipContent')}
-          aria-checked={object.clipContent !== false}
-          onClick={() => editAndCommit({ clipContent: object.clipContent === false })}
-          className={sectionRowClass}
-        >
-          <span className="flex-1 text-left">{t('editor.props.clipContent')}</span>
-          <span
-            aria-hidden="true"
-            className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${object.clipContent !== false ? 'bg-white' : 'bg-white/10'}`}
-          >
-            <span
-              className={`absolute top-0.5 h-3 w-3 rounded-full transition-transform ${object.clipContent !== false ? 'left-3.5 bg-black' : 'left-0.5 bg-neutral-400'}`}
-            />
-          </span>
-        </button>
-      </StaticSection>
-    )}
     {has('layoutGrid') && (
       <StaticSection
-        title={t('editor.props.layoutGrid')}
-        storageKey="layoutGrid"
+        title={t('editor.props.frameLayout')}
+        storageKey="frameLayout"
         extra={
           <SectionAddButton
             label={t('editor.props.addLayoutGrid')}
@@ -61,6 +39,26 @@ export default function TypeSpecificSections({ object, sections, editAndCommit, 
           />
         }
       >
+        {has('clip') && (
+          <button
+            type="button"
+            role="switch"
+            aria-label={t('editor.props.clipContent')}
+            aria-checked={object.clipContent !== false}
+            onClick={() => editAndCommit({ clipContent: object.clipContent === false })}
+            className={sectionRowClass}
+          >
+            <span className="flex-1 text-left">{t('editor.props.clipContent')}</span>
+            <span
+              aria-hidden="true"
+              className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${object.clipContent !== false ? 'bg-white' : 'bg-white/10'}`}
+            >
+              <span
+                className={`absolute top-0.5 h-3 w-3 rounded-full transition-transform ${object.clipContent !== false ? 'left-3.5 bg-black' : 'left-0.5 bg-neutral-400'}`}
+              />
+            </span>
+          </button>
+        )}
         {object.layoutGrid ? (() => {
           const grid = normalizeLayoutGrid(object.layoutGrid);
           const patch = (changes) => editAndCommit({ layoutGrid: normalizeLayoutGrid({ ...grid, ...changes }) });
@@ -118,7 +116,13 @@ export default function TypeSpecificSections({ object, sections, editAndCommit, 
               )}
             </div>
           );
-        })() : null}
+        })() : (
+          <SectionEmptyRow
+            label={t('editor.props.addLayoutGrid')}
+            testId="editor-layout-grid-empty"
+            onClick={() => editAndCommit({ layoutGrid: { ...normalizeLayoutGrid(object.layoutGrid), enabled: true } })}
+          />
+        )}
       </StaticSection>
     )}
     {has('component') && <><StaticSection title={t('editor.props.component')} storageKey="component"><span className="text-[11px]">{object.sourceCanvasId ? `${t('editor.props.mainComponent')}: ${object.sourceCanvasId}` : t('editor.props.mainComponent')}</span></StaticSection><VariantsSection engine={engine} node={object.sourceCanvasId ? object : null} isMainComponent={!object.sourceCanvasId} /></>}
