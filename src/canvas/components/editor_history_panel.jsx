@@ -28,6 +28,7 @@ export default function EditorHistoryPanel({
 
   return (
     <aside
+      data-testid="editor-history-panel"
       className={`absolute ${sideClass} top-1/2 z-30 flex max-h-[75%] w-64 -translate-y-1/2 flex-col rounded-3xl bg-black/95 p-3 shadow-panel backdrop-blur-md font-mono text-neutral-200`}
     >
       {/* Header */}

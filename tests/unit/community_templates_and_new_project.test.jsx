@@ -186,7 +186,8 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(html).toContain("grid grid-cols-1 sm:grid-cols-3");
     expect(html).toContain("whitespace-nowrap");
     expect(html).toContain("min-w-[5rem]");
-    expect(html).toContain("prompt-composer relative min-w-0");
+    expect(html).toContain("prompt-composer relative");
+    expect(html).toContain("min-w-0");
   });
 
   it("stacks welcome dashboard sidebar above main on phones and restores row layout on lg", () => {

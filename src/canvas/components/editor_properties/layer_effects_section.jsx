@@ -261,6 +261,7 @@ export default function LayerEffectsSection({
                     type="button"
                     onClick={() => toggleEnable(kind, false, isEnabled)}
                     title={t(isEnabled ? "editor.hide" : "editor.show")}
+                    aria-label={t(isEnabled ? "editor.hide" : "editor.show")}
                     className="p-1 text-neutral-400 hover:text-white transition-colors"
                   >
                     {isEnabled ? (
@@ -330,6 +331,7 @@ export default function LayerEffectsSection({
                     type="button"
                     onClick={() => toggleEnable(kind, true, isEnabled)}
                     title={t(isEnabled ? "editor.hide" : "editor.show")}
+                    aria-label={t(isEnabled ? "editor.hide" : "editor.show")}
                     className="p-1 text-neutral-400 hover:text-white transition-colors"
                   >
                     {isEnabled ? (
@@ -376,7 +378,7 @@ export default function LayerEffectsSection({
               min={0}
               max={100}
               value={object.layerBlur ?? 0}
-              onValueChange={(value) => editAndCommit({ layerBlur: value })}
+              onValueChange={(value) => _edit?.({ layerBlur: value })}
               onCommit={_commitNow}
               ariaLabel={t("editor.props.layerBlur")}
               scrubHint={t("editor.props.dragToAdjust")}
@@ -391,7 +393,7 @@ export default function LayerEffectsSection({
               min={0}
               max={100}
               value={object.backgroundBlur ?? 0}
-              onValueChange={(value) => editAndCommit({ backgroundBlur: value })}
+              onValueChange={(value) => _edit?.({ backgroundBlur: value })}
               onCommit={_commitNow}
               ariaLabel={t("editor.props.backgroundBlur")}
               scrubHint={t("editor.props.dragToAdjust")}
@@ -426,7 +428,7 @@ export default function LayerEffectsSection({
                     max={max * (key === "opacity" || key === "density" ? 100 : 1)}
                     value={Math.round((object.noise?.[key] ?? 0) * (key === "opacity" || key === "density" ? 100 : 1))}
                     onValueChange={(value) =>
-                      editAndCommit({
+                      _edit?.({
                         noise: { ...(object.noise ?? {}), [key]: toStored(value) },
                       })
                     }

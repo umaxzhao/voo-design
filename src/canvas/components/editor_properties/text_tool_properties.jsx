@@ -19,13 +19,23 @@ import {
 import {
   DEFAULT_FONT_FAMILY,
   DEFAULT_FONT_SIZE,
-  TEXT_FONT_WEIGHTS,
 } from "../../editor/scene_model_core.js";
 
 const QUICK_FONT_SIZES = [12, 14, 16, 20, 24, 32, 48, 64];
 
 function fontWeightLabelKey(weight) {
-  return `editor.props.weight.${weight === 400 ? "normal" : weight}`;
+  return `editor.props.weight.${String(weight) === "400" ? "normal" : weight}`;
+}
+
+/** Canonical UI options: 400 reads as Regular (legacy numeric saves), and
+ *  "bold" duplicates 700 in the whitelist, so neither is listed twice. */
+const UI_WEIGHT_OPTIONS = ["100", "200", "300", "normal", "500", "600", "700", "800", "900"];
+
+function weightOptionValue(weight) {
+  const value = String(weight ?? "");
+  if (value === "bold" || value === "700") return "700";
+  if (value === "400" || value === "normal") return "normal";
+  return UI_WEIGHT_OPTIONS.includes(value) ? value : "normal";
 }
 
 export default function TextToolProperties({
@@ -66,11 +76,11 @@ export default function TextToolProperties({
             {t("editor.props.fontWeight")}
           </span>
           <FlatSelect
-            value={String(fontWeight) === "400" ? "normal" : String(fontWeight)}
-            onChange={(value) => onFontWeight?.(value === "normal" ? 400 : Number(value))}
+            value={weightOptionValue(fontWeight)}
+            onChange={(value) => onFontWeight?.(value)}
             label={t("editor.props.fontWeight")}
-            options={TEXT_FONT_WEIGHTS.map((weight) => ({
-              value: String(weight),
+            options={UI_WEIGHT_OPTIONS.map((weight) => ({
+              value: weight,
               label: t(fontWeightLabelKey(weight)),
             }))}
             className="min-w-0 flex-1"
@@ -190,7 +200,7 @@ export default function TextToolProperties({
         <ToolSliderField
           label={t("editor.props.lineHeight")}
           icon={<span className="text-[11px] leading-none">↕</span>}
-          min={50}
+          min={80}
           max={300}
           step={5}
           value={Math.round(lineHeight * 100)}
@@ -202,12 +212,13 @@ export default function TextToolProperties({
         <ToolSliderField
           label={t("editor.props.letterSpacing")}
           icon={<span className="text-[11px] leading-none">↔</span>}
-          min={-20}
-          max={100}
-          step={1}
-          value={Math.round(letterSpacing * 100)}
-          onValueChange={(val) => onLetterSpacing?.(val / 100)}
-          suffix="%"
+          min={-10}
+          max={40}
+          step={0.5}
+          precision={1}
+          value={letterSpacing}
+          onValueChange={(val) => onLetterSpacing?.(val)}
+          suffix="px"
           ariaLabel={t("editor.props.letterSpacing")}
           scrubHint={t("editor.props.dragToAdjust")}
         />

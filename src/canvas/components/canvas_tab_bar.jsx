@@ -24,7 +24,9 @@ export default function CanvasTabBar() {
   const newVooProject = useDesignStore((state) => state.newVooProject);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
-  const activeDocument = documents.find((document) => document.id === activeId);
+  const activeDocument = documents.find(
+    (document) => document.id === activeId,
+  );
   const activeLabel = activeDocument
     ? documentLabel(activeDocument, true, fileName)
     : t("canvasTabs.selectProject");
@@ -136,13 +138,18 @@ export default function CanvasTabBar() {
           title={activeLabel}
         >
           <span className="min-w-0 flex-1 truncate text-left">{activeLabel}</span>
-          {activeDocument && (activeId === activeDocument.id ? isDirty : activeDocument.isDirty) ? (
+          {activeDocument && isDirty ? (
             <span
+              role="img"
               aria-label={t("canvasTabs.unsaved")}
               className="size-1.5 shrink-0 rounded-full bg-amber-400"
             />
           ) : null}
-          <ChevronDown size={13} className="shrink-0 text-white/60" aria-hidden="true" />
+          <ChevronDown
+            size={13}
+            className="shrink-0 text-white/60"
+            aria-hidden="true"
+          />
         </button>
         {mobileMenuOpen ? (
           <div
@@ -171,8 +178,18 @@ export default function CanvasTabBar() {
                     className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-200 focus-visible:outline focus-visible:outline-[#a7ffd4]"
                   >
                     <span className="min-w-0 flex-1 truncate">{label}</span>
-                    {dirty ? <span className="size-1.5 shrink-0 rounded-full bg-amber-400" aria-label={t("canvasTabs.unsaved")} /> : null}
-                    {active && !welcomeOpen ? <span aria-hidden="true" className="text-[#a7ffd4]">✓</span> : null}
+                    {dirty ? (
+                      <span
+                        role="img"
+                        aria-label={t("canvasTabs.unsaved")}
+                        className="size-1.5 shrink-0 rounded-full bg-amber-400"
+                      />
+                    ) : null}
+                    {active && !welcomeOpen ? (
+                      <span aria-hidden="true" className="text-[#a7ffd4]">
+                        ✓
+                      </span>
+                    ) : null}
                   </button>
                   <button
                     type="button"

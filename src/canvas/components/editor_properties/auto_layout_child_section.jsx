@@ -30,27 +30,6 @@ export default function AutoLayoutChildSection({ object, editAndCommit }) {
             <option value="absolute">{t("editor.autoLayout.absolute")}</option>
           </select>
         </label>
-        {!absolute &&
-          ["layoutWidth", "layoutHeight"].map((key) => (
-            <label
-              key={key}
-              className="flex items-center justify-between gap-2 text-[10px] text-neutral-400"
-            >
-              <span>{t(`editor.autoLayout.${key}`)}</span>
-              <select
-                data-testid={`editor-auto-layout-child-${key}`}
-                aria-label={t(`editor.autoLayout.${key}`)}
-                className={FIELD_CLASS}
-                value={object[key] === "fill" ? "fill" : "fixed"}
-                onChange={(event) =>
-                  editAndCommit({ [key]: event.target.value })
-                }
-              >
-                <option value="fixed">{t("editor.autoLayout.fixed")}</option>
-                <option value="fill">{t("editor.autoLayout.fill")}</option>
-              </select>
-            </label>
-          ))}
       </div>
     </CollapsibleSection>
   );

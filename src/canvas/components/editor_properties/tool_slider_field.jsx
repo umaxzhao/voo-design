@@ -19,6 +19,7 @@ export default function ToolSliderField({
   min,
   max,
   step = 1,
+  precision = 0,
   suffix = undefined,
   onValueChange,
   onCommit,
@@ -58,6 +59,7 @@ export default function ToolSliderField({
         min={min}
         max={max}
         step={step}
+        precision={precision}
         suffix={suffix}
         onValueChange={onValueChange}
         onCommit={onCommit}
@@ -78,6 +80,7 @@ ToolSliderField.propTypes = {
   min: PropTypes.number.isRequired,
   max: PropTypes.number.isRequired,
   step: PropTypes.number,
+  precision: PropTypes.number,
   suffix: PropTypes.node,
   onValueChange: PropTypes.func.isRequired,
   onCommit: PropTypes.func,

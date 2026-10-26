@@ -65,6 +65,7 @@ export const TEXT_FONT_WEIGHTS = [
   "100",
   "200",
   "300",
+  "400",
   "normal",
   "500",
   "600",

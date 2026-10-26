@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import { useI18n } from "../../use_i18n.js";
 import { StaticSection } from "./property_section.jsx";
 import ScrubField from "../scrub_field.jsx";
+import MixedField from "./mixed_field.jsx";
 import FlatSelect from "../flat_select.jsx";
 import { BLEND_MODES, DEFAULT_BLEND_MODE, normalizeBlendMode } from "../../editor/scene_model.js";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
@@ -34,17 +35,28 @@ export default function AppearanceSection({
   return (
     <StaticSection title={t("editor.props.appearance")} storageKey="appearance">
       <div className="grid grid-cols-2 items-center gap-2">
-        <ScrubField
-          suffix="%"
-          min={0}
-          max={100}
-          value={value}
-          onValueChange={(next) => edit({ opacity: next / 100 })}
-          onCommit={commitNow}
-          ariaLabel={t("editor.props.opacity")}
-          scrubHint={t("editor.props.dragToAdjust")}
-          disabled={mixed}
-        />
+        {mixed ? (
+          <MixedField
+            label={t("editor.props.opacity")}
+            suffix="%"
+            min={0}
+            max={100}
+            ariaLabel={t("editor.props.opacity")}
+            onValueChange={(next) => edit({ opacity: next / 100 })}
+            commitNow={commitNow}
+          />
+        ) : (
+          <ScrubField
+            suffix="%"
+            min={0}
+            max={100}
+            value={value}
+            onValueChange={(next) => edit({ opacity: next / 100 })}
+            onCommit={commitNow}
+            ariaLabel={t("editor.props.opacity")}
+            scrubHint={t("editor.props.dragToAdjust")}
+          />
+        )}
         <FlatSelect
           value={blendMode}
           onChange={(next) => editAndCommit({ blendMode: next })}

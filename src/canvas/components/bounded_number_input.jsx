@@ -16,6 +16,7 @@ export default function BoundedNumberInput({
   ariaLabel,
   inputRef = undefined,
   disabled = false,
+  precision = 0,
 }) {
   const [draft, setDraft] = useState(String(value));
   const draftRef = useRef(String(value));
@@ -42,10 +43,18 @@ export default function BoundedNumberInput({
     }
   }, [value]);
 
+  // Integer fields keep the original `Math.round`; decimal fields opt in with
+  // `precision` so line-height/letter-spacing can be typed instead of only
+  // scrubbed (0.05 / 0.5 steps previously snapped to whole numbers).
+  const roundToPrecision = (rawValue) => {
+    const factor = 10 ** precision;
+    return Math.round(rawValue * factor) / factor;
+  };
+
   const normalize = (rawValue) => {
     const parsed = Number(rawValue);
     const safeValue = Number.isFinite(parsed) ? parsed : value;
-    return Math.min(max, Math.max(min, Math.round(safeValue)));
+    return Math.min(max, Math.max(min, roundToPrecision(safeValue)));
   };
 
   const emitValue = (nextValue) => {
@@ -99,7 +108,7 @@ export default function BoundedNumberInput({
           parsed >= min &&
           parsed <= max
         ) {
-          emitValue(Math.round(parsed));
+          emitValue(roundToPrecision(parsed));
         }
       }}
       onBlur={() => {
@@ -122,7 +131,7 @@ export default function BoundedNumberInput({
           const direction = event.key === "ArrowUp" ? 1 : -1;
           const nextValue = Math.min(
             max,
-            Math.max(min, normalize(draftRef.current) + direction * 10 * step),
+            Math.max(min, roundToPrecision(normalize(draftRef.current) + direction * 10 * step)),
           );
           const nextDraft = String(nextValue);
           draftRef.current = nextDraft;
@@ -158,4 +167,6 @@ BoundedNumberInput.propTypes = {
     PropTypes.shape({ current: PropTypes.any }),
   ]),
   disabled: PropTypes.bool,
+  /** Decimal places kept when committing. 0 (default) keeps integer fields. */
+  precision: PropTypes.number,
 };

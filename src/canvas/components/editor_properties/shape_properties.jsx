@@ -48,8 +48,10 @@ export default function ShapeProperties({
   onArrowSize,
 }) {
   const { t } = useI18n();
-  const width = Math.round(brushWidth ?? strokeWidth ?? 1);
-  const setWidth = onBrushWidth ?? onStrokeWidth;
+  // Shape stroke weight is its own axis; the brush width is only a fallback
+  // for hosts that have not wired the shape-state setter yet.
+  const width = Math.round(strokeWidth ?? brushWidth ?? 1);
+  const setWidth = onStrokeWidth ?? onBrushWidth;
 
   const isRect = tool === TOOL.RECT;
   const isEllipse = tool === TOOL.ELLIPSE;

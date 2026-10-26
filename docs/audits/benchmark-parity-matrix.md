@@ -1,6 +1,6 @@
 # Benchmark Parity Matrix
 
-Companion to `docs/benchmark-parity-audit.md`. 50 performance criteria were
+Companion to `docs/audits/benchmark-parity-audit.md`. 50 performance criteria were
 benchmarked against Figma, Photoshop, Procreate, Affinity, Blender and Pencil.
 This matrix records the gaps shipped for product-impact parity (A–C), and the
 deferrals with their reasons.

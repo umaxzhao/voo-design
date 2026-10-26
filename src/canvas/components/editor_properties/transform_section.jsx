@@ -166,7 +166,16 @@ export default function TransformSection({
           )}
           <div className="min-w-0 flex-1 space-y-2.5">
             <div className="grid grid-cols-2 gap-2">
-              {commonX.mixed ? <MixedField label="X" /> : (
+              {commonX.mixed ? (
+                <MixedField
+                  label="X"
+                  min={-COORD_LIMIT}
+                  max={COORD_LIMIT}
+                  ariaLabel="X"
+                  onValueChange={(value) => editPosition("x", value)}
+                  commitNow={commitNow}
+                />
+              ) : (
                 <ScrubField
                   key={`${object.id}:x`}
                   prefix="X"
@@ -175,7 +184,16 @@ export default function TransformSection({
                   ariaLabel="X" scrubHint={t("editor.props.dragToAdjust")}
                 />
               )}
-              {commonY.mixed ? <MixedField label="Y" /> : (
+              {commonY.mixed ? (
+                <MixedField
+                  label="Y"
+                  min={-COORD_LIMIT}
+                  max={COORD_LIMIT}
+                  ariaLabel="Y"
+                  onValueChange={(value) => editPosition("y", value)}
+                  commitNow={commitNow}
+                />
+              ) : (
                 <ScrubField
                   key={`${object.id}:y`}
                   prefix="Y"
@@ -205,7 +223,17 @@ export default function TransformSection({
         {isRegion ? null : (
           <div className="flex items-center gap-2">
             <div className="grid min-w-0 flex-1 grid-cols-2 gap-2">
-              {commonR.mixed ? <MixedField label="R" suffix="°" /> : (
+              {commonR.mixed ? (
+                <MixedField
+                  label="R"
+                  suffix="°"
+                  min={-180}
+                  max={180}
+                  ariaLabel={t("editor.props.rotation")}
+                  onValueChange={(value) => edit({ rotation: value })}
+                  commitNow={commitNow}
+                />
+              ) : (
                 <ScrubField
                   prefix="R" suffix="°"
                   min={-180} max={180} value={commonR.value}
@@ -213,7 +241,17 @@ export default function TransformSection({
                   ariaLabel={t("editor.props.rotation")} scrubHint={t("editor.props.dragToAdjust")}
                 />
               )}
-              {commonS.mixed ? <MixedField label="S" suffix="°" /> : (
+              {commonS.mixed ? (
+                <MixedField
+                  label="S"
+                  suffix="°"
+                  min={-MAX_SHEAR_DEG}
+                  max={MAX_SHEAR_DEG}
+                  ariaLabel={t("editor.props.shear")}
+                  onValueChange={(value) => edit({ shear: value })}
+                  commitNow={commitNow}
+                />
+              ) : (
                 <ScrubField
                   prefix="S" suffix="°" min={-MAX_SHEAR_DEG} max={MAX_SHEAR_DEG}
                   value={commonS.value} onValueChange={(value) => edit({ shear: value })}

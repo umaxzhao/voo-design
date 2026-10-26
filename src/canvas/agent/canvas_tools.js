@@ -31,6 +31,8 @@ import { CANVAS_TOOL_LAYOUT_SCHEMAS, LAYOUT_TOOL_EXECUTORS } from "./canvas_tool
 import { CANVAS_TOOL_PLAN_SCHEMAS, PLAN_TOOL_EXECUTORS } from "./canvas_tools_plan.js";
 import { SCENE_OPS_TOOL_SCHEMAS, SCENE_OPS_TOOL_EXECUTORS } from "./canvas_tools_scene_ops.js";
 import { DOCUMENT_TOOL_SCHEMAS, DOCUMENT_TOOL_EXECUTORS } from "./canvas_tools_document.js";
+import { HANDOFF_TOOL_SCHEMAS, HANDOFF_TOOL_EXECUTORS } from "./canvas_tools_handoff.js";
+import { ASSET_TOOL_SCHEMAS, ASSET_TOOL_EXECUTORS } from "./canvas_tools_assets.js";
 
 import { BUILD_LAYOUT_SCHEMA, buildLayout } from "./canvas_tools_build_layout.js";
 
@@ -381,6 +383,8 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
   ...CANVAS_TOOL_PLAN_SCHEMAS,
   ...SCENE_OPS_TOOL_SCHEMAS,
   ...DOCUMENT_TOOL_SCHEMAS,
+  ...HANDOFF_TOOL_SCHEMAS,
+  ...ASSET_TOOL_SCHEMAS,
   LINT_TOOL_SCHEMA,
 ]);
 
@@ -931,6 +935,8 @@ export const EXECUTORS = Object.freeze({
   ...PLAN_TOOL_EXECUTORS,
   ...SCENE_OPS_TOOL_EXECUTORS,
   ...DOCUMENT_TOOL_EXECUTORS,
+  ...HANDOFF_TOOL_EXECUTORS,
+  ...ASSET_TOOL_EXECUTORS,
   lint_design: lintDesignTool,
   create_path: (args) => createPath(args),
   create_frame: (args) => LAYOUT_TOOL_EXECUTORS.create_frame(args),

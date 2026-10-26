@@ -71,6 +71,8 @@ The catalog follows `CANVAS_TOOL_SCHEMAS` and currently includes:
 - `mutate_auto_layout`
 - `batch_mutate_layers`
 - `create_shape`
+- `build_layout`
+- `new_document`
 - `delete_layers`
 - `duplicate_layer`
 - `select_layers`
@@ -79,6 +81,12 @@ The catalog follows `CANVAS_TOOL_SCHEMAS` and currently includes:
 - `rename_layer`
 - `create_component`
 - `create_instance`
+- `create_component_variant`
+- `create_component_variants_batch`
+- `create_component_variant_matrix`
+- `list_component_variants`
+- `list_instance_variant_properties`
+- `set_instance_variant`
 - `list_styles`
 - `create_style`
 - `apply_style`
@@ -107,10 +115,20 @@ The catalog follows `CANVAS_TOOL_SCHEMAS` and currently includes:
 - `boolean_combine`
 - `set_constraints`
 - `export_layers`
+- `lint_design`
+- `inspect_layout`
+- `export_code`
+- `generate_vector`
+- `vectorize_image`
+- `edit_image`
+- `stock_image`
 - `voo_status`
 
 Image generation and placement (`generate_image`, `generate_image_web`,
 `place_image`) and agent plan tools (`update_plan`, `get_plan`) are excluded.
+`generate_vector` needs the in-app API agent model (a nested text completion);
+an external MCP client receives `agentVectorNeedsApiModel` for it, while
+`vectorize_image`, `edit_image` and `stock_image` work from any client.
 `voo_status` reports `{canvasConnected: boolean}`. PNG data URLs returned by
 `capture_canvas` and `export_layers` become MCP image content alongside the
 remaining JSON metadata. Tool failures return MCP `isError` content.

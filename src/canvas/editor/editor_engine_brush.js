@@ -27,6 +27,8 @@ export function createEngineBrushController({
 }) {
   let brushMode = "normal";
   let color = DEFAULT_MARK_COLOR;
+  // Secondary colour used by Fill (Alt-click) and the FG/BG swatch pair.
+  let backgroundColor = "#000000";
   let brushWidth = DEFAULT_BRUSH_WIDTH;
   // The pixel brush starts with a soft edge; path nodes keep the hard
   // DEFAULT_BRUSH_HARDNESS as their own.
@@ -58,7 +60,9 @@ export function createEngineBrushController({
   // Shape-tool paint: the colour wheel is the fill, these are the other axes.
   let shapeStrokeColor = "#FFFFFF";
   let shapeStrokeWidth = 1;
+  let shapeStrokeDash = "solid";
   let shapeOpacity = 1;
+  let arrowEnd = true;
   const setGradientToolState = (patch = {}) => {
     gradientTool = normalizeGradientToolState({ ...gradientTool, ...patch });
     notify();
@@ -176,6 +180,13 @@ export function createEngineBrushController({
 
   return {
     getColor: () => color,
+    getToolBackgroundColor: () => backgroundColor,
+    setToolBackgroundColor(next) {
+      if (typeof next === "string" && /^#[0-9a-fA-F]{6}$/.test(next)) {
+        backgroundColor = next.toUpperCase();
+        notify?.();
+      }
+    },
     getGradientToolState: () => gradientTool,
     getShapeStrokeColor: () => shapeStrokeColor,
     setShapeStrokeColor(next) {
@@ -192,12 +203,22 @@ export function createEngineBrushController({
         : 1;
       notify?.();
     },
+    getShapeStrokeDash: () => shapeStrokeDash,
+    setShapeStrokeDash(next) {
+      shapeStrokeDash = next === "dashed" ? "dashed" : "solid";
+      notify?.();
+    },
     getShapeOpacity: () => shapeOpacity,
     setShapeOpacity(next) {
       const value = Number(next);
       shapeOpacity = Number.isFinite(value)
         ? Math.max(0, Math.min(1, value))
         : 1;
+      notify?.();
+    },
+    getArrowEnd: () => arrowEnd,
+    setArrowEnd(next) {
+      arrowEnd = Boolean(next);
       notify?.();
     },
     getFillOpacity: () => fillOpacity,

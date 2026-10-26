@@ -25,9 +25,10 @@ export default function AnchorPointGrid({ value, onChange, label }) {
             type="button"
             role="radio"
             aria-checked={isSelected}
-            aria-label={label}
+            aria-label={`${label} ${key}`}
+            title={`${label} ${key}`}
             onClick={() => onChange(key)}
-            className={`flex h-3.5 w-3.5 items-center justify-center rounded-full transition-all ${
+            className={`relative flex h-3.5 w-3.5 items-center justify-center rounded-full before:absolute before:-inset-1 before:content-[''] transition-all ${
               isSelected ? "cursor-default" : "cursor-pointer hover:scale-125"
             }`}
           >

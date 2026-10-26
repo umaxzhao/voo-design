@@ -11,6 +11,8 @@ export default {
   "editor.constraints.left": "左",
   "editor.constraints.right": "右",
   "editor.constraints.leftRight": "左右",
+  "editor.constraints.centerHorizontal": "水平居中",
+  "editor.constraints.centerVertical": "垂直居中",
   "editor.constraints.center": "居中",
   "editor.constraints.scale": "缩放",
   "editor.constraints.top": "上",

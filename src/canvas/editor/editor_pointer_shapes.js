@@ -69,12 +69,14 @@ export function createShapesPointerGestures({
       ],
       stroke: api.getColor(),
       strokeWidth: api.getPenStrokeWidth?.() ?? 2,
+      strokeDash: api.getShapeStrokeDash?.() ?? "solid",
       ...(line
         ? { line: true }
         : {
             arrow: true,
             arrowSize: api.getArrowSize?.() ?? 12,
             arrowStart: api.getArrowStart?.() ?? false,
+            arrowEnd: api.getArrowEnd?.() ?? true,
           }),
     });
     api.setDoc(
@@ -107,12 +109,14 @@ export function createShapesPointerGestures({
       ],
       stroke: gesture.node.stroke,
       strokeWidth: gesture.node.strokeWidth,
+      strokeDash: gesture.node.strokeDash,
       ...(gesture.line
         ? { line: true }
         : {
             arrow: true,
             arrowSize: gesture.node.arrowSize,
             arrowStart: gesture.node.arrowStart,
+            arrowEnd: gesture.node.arrowEnd,
           }),
     });
     api.setDoc(
@@ -153,6 +157,7 @@ export function createShapesPointerGestures({
       fill: api.getColor?.() ?? "#999999",
       stroke: api.getShapeStrokeColor?.() ?? "#ffffff",
       strokeWidth: api.getStrokeWidth?.() ?? 0,
+      strokeDash: api.getShapeStrokeDash?.() ?? "solid",
       opacity: api.getShapeOpacity?.() ?? 1,
     };
     const node =
@@ -199,6 +204,7 @@ export function createShapesPointerGestures({
           fill: gesture.fill,
           stroke: gesture.stroke ?? gesture.fill,
           strokeWidth: gesture.strokeWidth ?? 0,
+          ...(gesture.strokeDash ? { strokeDash: gesture.strokeDash } : {}),
         },
       );
       api.setDoc(
@@ -234,12 +240,13 @@ export function createShapesPointerGestures({
     const fill = api.getColor();
     const stroke = api.getShapeStrokeColor?.() ?? fill;
     const strokeWidth = api.getStrokeWidth?.() ?? 0;
+    const strokeDash = api.getShapeStrokeDash?.() ?? "solid";
     const opacity = api.getShapeOpacity?.() ?? 1;
     const star = api.getTool() === TOOL.STAR;
     const node = {
       ...(star ? starNodeFromBox : polygonNodeFromBox)(
         { x: point.x, y: point.y, width: 1, height: 1 },
-        { fill, stroke, strokeWidth },
+        { fill, stroke, strokeWidth, strokeDash },
       ),
       ...(opacity !== 1 ? { opacity } : {}),
     };
@@ -255,6 +262,7 @@ export function createShapesPointerGestures({
       fill,
       stroke,
       strokeWidth,
+      strokeDash,
       opacity,
     });
   }
@@ -268,7 +276,7 @@ export function createShapesPointerGestures({
       api.beginTextEdit(hit.id);
       return;
     }
-    const node = api.addTextAt(point, "", { intoFrame: true });
+    const node = api.addTextAt(point, "", { intoFrame: true, useToolDefaults: true });
     setGesture({ kind: "text", id: node.id, start: point });
   }
 

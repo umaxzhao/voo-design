@@ -8,7 +8,7 @@ import { runAgentTurn } from '../../src/canvas/agent/canvas_agent.js';
 const preset = () => fromStyleKit('linear');
 describe('versioned design system', () => {
   it('converts every shipped kit, flattening translucent glass colors', () => {
-    expect(Object.keys(DESIGN_SYSTEM_PRESETS)).toHaveLength(5);
+    expect(Object.keys(DESIGN_SYSTEM_PRESETS)).toHaveLength(20);
     for (const ds of Object.values(DESIGN_SYSTEM_PRESETS)) expect(validateDesignSystem(ds).ok).toBe(true);
     expect(DESIGN_SYSTEM_PRESETS.glass.colors.surface).toBe('#C3C5C7');
   });

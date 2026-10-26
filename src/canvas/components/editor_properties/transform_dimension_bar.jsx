@@ -21,7 +21,15 @@ export default function TransformDimensionBar({
   return (
     <div className="flex h-7 min-w-0 items-center rounded-xl bg-neutral-800 transition-colors hover:bg-neutral-800/80 focus-within:bg-neutral-800 focus-within:ring-1 focus-within:ring-[#a7ffd4]/40">
       {commonW.mixed ? (
-        <MixedField label="W" bare />
+        <MixedField
+          label="W"
+          bare
+          min={1}
+          max={COORD_LIMIT}
+          ariaLabel="W"
+          onValueChange={(value) => resizeTo("width", value)}
+          commitNow={commitNow}
+        />
       ) : (
         <ScrubField
           prefix="W"
@@ -63,7 +71,15 @@ export default function TransformDimensionBar({
         </button>
       </EditorTooltip>
       {commonH.mixed ? (
-        <MixedField label="H" bare />
+        <MixedField
+          label="H"
+          bare
+          min={1}
+          max={COORD_LIMIT}
+          ariaLabel="H"
+          onValueChange={(value) => resizeTo("height", value)}
+          commitNow={commitNow}
+        />
       ) : (
         <ScrubField
           prefix="H"

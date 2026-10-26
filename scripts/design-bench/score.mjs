@@ -85,7 +85,9 @@ async function main() {
   const args = process.argv.slice(2);
   const label = args.find(arg => arg.startsWith('--label='))?.slice(8) || 'after';
   if (!/^[a-z0-9-]+$/.test(label)) throw new Error('--label must match [a-z0-9-]+');
-  const directory = `/workspace/tmp/design-bench/${label}`;
+  const BENCH_ROOT = process.env.VOO_DESIGN_BENCH_ROOT || "/workspace/tmp/design-bench";
+
+  const directory = `${BENCH_ROOT}/${label}`;
   const path = `${directory}/scores.json`;
   const results = JSON.parse(await readFile(path, 'utf8'));
   const lint = await loadLinter();

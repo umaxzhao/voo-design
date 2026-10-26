@@ -8,8 +8,9 @@ import { designSystemPromptBlock } from '../design_system/apply.js';
 import { STYLE_KITS, pickStyleKit } from "./style_kits.js";
 import { pickExemplars } from "./exemplars.js";
 import { DESIGN_TOKENS } from "./tokens.js";
+import { sceneGuidePromptBlock } from "./scene_guides.js";
 
-export function buildDesignQualityPrompt({ userText, kit, designSystem } = {}) {
+export function buildDesignQualityPrompt({ userText, kit, designSystem, sceneKind = null } = {}) {
   const activeKit = STYLE_KITS[designSystem?.id] ?? (kit && STYLE_KIT_SHAPE_OK(kit) ? kit : pickStyleKit(userText));
   const exemplars = pickExemplars(userText, 4, activeKit?.id);
   const palette = activeKit?.palette ?? DESIGN_TOKENS.palettes.light;
@@ -59,6 +60,7 @@ export function buildDesignQualityPrompt({ userText, kit, designSystem } = {}) {
         ? `${i + 1}. (${e.kit}; structure only, restyle with the active kit) ${e.structure}`
         : `${i + 1}. (${e.kit}) ${e.description}`).join("\n")
       : "",
+    sceneGuidePromptBlock(sceneKind),
   ];
   if (designSystem) {
     kitInstructions.splice(1, 10, designSystemPromptBlock(designSystem));

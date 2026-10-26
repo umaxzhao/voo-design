@@ -20,6 +20,7 @@ export default function ScrubField({
   min,
   max,
   step = 1,
+  precision = 0,
   onValueChange,
   onCommit = undefined,
   onScrubStart = undefined,
@@ -71,6 +72,7 @@ export default function ScrubField({
         min={min}
         max={max}
         step={step}
+        precision={precision}
         value={value}
         onValueChange={onValueChange}
         onCommit={onCommit}
@@ -113,6 +115,8 @@ ScrubField.propTypes = {
   min: PropTypes.number.isRequired,
   max: PropTypes.number.isRequired,
   step: PropTypes.number,
+  /** Decimal places kept on commit; 0 keeps the historical integer fields. */
+  precision: PropTypes.number,
   onValueChange: PropTypes.func.isRequired,
   /** Called at the interaction boundary (scrub release / typed commit / arrow). */
   onCommit: PropTypes.func,

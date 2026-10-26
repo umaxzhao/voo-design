@@ -5,7 +5,9 @@ import { generateHtml } from './generate_html.js';
 import { CanvasStreamer } from './incremental.js';
 import { critiqueHtml, repairHtml } from './critique.js';
 import { setActiveDesignSystem } from '../design_system/store.js';
-export async function runHtmlPipeline({ brief, frame, editor, streamStep, config, signal = new AbortController().signal, onProgress, chooseDirection }) {
+import { fromStyleKit } from '../design_system/from_style_kit.js';
+import { STYLE_KITS } from '../design_quality/style_kits.js';
+export async function runHtmlPipeline({ brief, frame, styleKitId = null, editor, streamStep, config, signal = new AbortController().signal, onProgress, chooseDirection }) {
   const progress = (stage, status) => onProgress?.({ stage, status });
   const trace = [];
   let stage = 'directions', streamer;
@@ -16,7 +18,14 @@ export async function runHtmlPipeline({ brief, frame, editor, streamStep, config
     stage = 'selection'; progress(stage, 'in_progress');
     const choice = chooseDirection ? await chooseDirection(result.value, { signal }) : 'auto';
     signal?.throwIfAborted();
-    const direction = pickDirection(result.value, choice);
+    let direction = pickDirection(result.value, choice);
+    if (styleKitId && STYLE_KITS[styleKitId]) {
+      // The user explicitly picked a style kit on the welcome screen: it wins
+      // over the art-direction model's own palette so the preview matches the
+      // choice. Layout/mood text from the direction is kept.
+      const kit = STYLE_KITS[styleKitId];
+      direction = { ...direction, name: kit.name, mood: kit.mood, designSystem: fromStyleKit(kit) };
+    }
     progress(stage, 'completed');
     streamer = new CanvasStreamer({ editor, frame, signal }); streamer.start();
     setActiveDesignSystem(editor, direction.designSystem);
@@ -62,13 +71,18 @@ export async function runHtmlPipeline({ brief, frame, editor, streamStep, config
       } finally { clearTimeout(timeout); controller.abort(); signal?.removeEventListener('abort', abort); }
       signal?.throwIfAborted(); progress(stage, 'completed');
     }
-    return { html: reviewed.html, directionId: direction.id, nodeCount: streamer.previous.size, verbosityPenalty: checks.verbosityPenalty, trace };
+    return { html: reviewed.html, directionId: direction.id, frameId: streamer.frameId ?? null, nodeCount: streamer.previous.size, verbosityPenalty: checks.verbosityPenalty, trace };
   } catch (error) { progress(stage, signal?.aborted ? 'cancelled' : 'failed'); throw error; }
   finally { if (streamer) { try { await streamer.flush(); } finally { streamer.finish(); } } }
 }
+const CREATION_VERB = /\b(?:create|build|design|generate|make)\b|(?:生成|创建|设计|制作|搭建|构建|绘制|做|来一[张个套份])/i;
+const CREATION_NOUN = /\b(?:canvas|ui|layout|form|card|screen|page|website|dashboard|landing|app|interface|poster|modal|home|hero)\b|(?:页面|界面|落地页|首页|官网|网站|看板|仪表盘|大屏|应用|app|海报|移动端|幻灯片|演示文稿|演示|详情页|卡片|表单|导航页|作品集)/i;
+const EDIT_INTENT = /\b(?:edit|refine|fix|update|existing)\b|(?:修改|调整|修复|更新|编辑|修改一下|现有|已有)/i;
+
 export function shouldUseHtmlPipeline({ editor, userText, enabled = true }) {
   if (!enabled || !editor || typeof globalThis.document?.createElement !== 'function') return false;
   const doc = editor.getDocument?.() ?? editor.getDoc?.();
   if (!doc || !Array.isArray(doc.nodes) || doc.nodes.length !== 0) return false;
-  return /\b(create|build|design|generate|make)\b/i.test(userText) && /\b(canvas|ui|layout|form|card|screen|page|website|dashboard|landing|app|interface|poster|modal|home|hero)\b/i.test(userText) && !/\b(edit|refine|fix|update|existing)\b/i.test(userText);
+  const text = String(userText ?? '');
+  return CREATION_VERB.test(text) && CREATION_NOUN.test(text) && !EDIT_INTENT.test(text);
 }

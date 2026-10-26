@@ -4,6 +4,7 @@ import { shouldDragArtboardBody } from "./artboard-body-gesture.js";
 import { buildExtendedPaletteActions } from "../commands/palette_actions.js";
 import { exportTargetName } from "../editor/export_filename.js";
 import { setLocale } from "../../shared/i18n.js";
+import { patchForMultiResize } from "../editor/multi_selection_patch.js";
 import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
 import {
   consumeImagePublication,
@@ -3359,12 +3360,24 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         type="button"
         data-testid="editor-mobile-panels-toggle"
         aria-expanded={!mobilePanelsCollapsed}
-        aria-label={t(mobilePanelsCollapsed ? "editor.mobile.panels.expand" : "editor.mobile.panels.collapse")}
-        title={t(mobilePanelsCollapsed ? "editor.mobile.panels.expand" : "editor.mobile.panels.collapse")}
+        aria-label={t(
+          mobilePanelsCollapsed
+            ? "editor.mobile.panels.expand"
+            : "editor.mobile.panels.collapse",
+        )}
+        title={t(
+          mobilePanelsCollapsed
+            ? "editor.mobile.panels.expand"
+            : "editor.mobile.panels.collapse",
+        )}
         onClick={() => setMobilePanelsCollapsed((collapsed) => !collapsed)}
         className="editor-mobile-panel-toggle hidden h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-neutral-900/95 text-neutral-200 shadow-menu"
       >
-        {mobilePanelsCollapsed ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+        {mobilePanelsCollapsed ? (
+          <ChevronUp size={15} aria-hidden="true" />
+        ) : (
+          <ChevronDown size={15} aria-hidden="true" />
+        )}
       </button>
       <div
         data-open-guard={openGuard ? "on" : "off"}
@@ -4219,6 +4232,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 engine?.setColor(next);
               },
               onPickColor: () => engine?.setTool(TOOL.DROPPER),
+              backgroundColor: engine?.getToolBackgroundColor?.() ?? "#000000",
+              onBackgroundColor: (next) => engine?.setToolBackgroundColor?.(next),
               swapColorsRef,
               brushWidth:
                 tool === TOOL.REGION && engine?.getRegionMode?.() === "remove"
@@ -4427,82 +4442,97 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               },
               arrowSize: selected?.arrowSize ?? (engine?.getArrowSize?.() ?? 24),
               onArrowSize: (size) => {
-                if (selected?.id) engine?.updateNode(selected.id, { arrowSize: size });
+                if (selected?.id) (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { arrowSize: size });
                 else engine?.setArrowSize?.(size);
               },
               arrowStart: selected?.arrowStart ?? (engine?.getArrowStart?.() ?? false),
               onArrowStart: (val) => {
-                if (selected?.id) engine?.updateNode(selected.id, { arrowStart: val });
+                if (selected?.id) (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { arrowStart: val });
                 else engine?.setArrowStart?.(val);
               },
-              arrowEnd: selected?.arrowEnd ?? true,
+              arrowEnd: selected?.arrowEnd ?? engine?.getArrowEnd?.() ?? true,
               onArrowEnd: (val) => {
-                if (selected?.id) engine?.updateNode(selected.id, { arrowEnd: val });
+                if (selected?.id) (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { arrowEnd: val });
+                engine?.setArrowEnd?.(val);
               },
               strokeWidth: selected?.strokeWidth ?? (engine?.getStrokeWidth?.() ?? 1),
               onStrokeWidth: (val) => {
-                if (selected?.id) engine?.updateNode(selected.id, { strokeWidth: val });
-                else engine?.setStrokeWidth?.(val);
+                if (selected?.id) (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { strokeWidth: val });
+                engine?.setStrokeWidth?.(val);
               },
               shapeStrokeColor: engine?.getShapeStrokeColor?.() ?? "#FFFFFF",
               onShapeStrokeColor: (val) => engine?.setShapeStrokeColor?.(val),
               shapeOpacity: engine?.getShapeOpacity?.() ?? 1,
               onShapeOpacity: (val) => engine?.setShapeOpacity?.(val),
-              strokeStyle: selected?.strokeStyle || (selected?.strokeDashed ? "dashed" : "solid"),
+              strokeStyle: selected
+                ? (selected.strokeDash && selected.strokeDash !== "solid" ? "dashed" : "solid")
+                : (engine?.getShapeStrokeDash?.() === "dashed" ? "dashed" : "solid"),
               onStrokeStyle: (style) => {
-                if (selected?.id) engine?.updateNode(selected.id, { strokeStyle: style, strokeDashed: style === "dashed" });
+                if (selected?.id) {
+                  (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, {
+                    strokeDash: style === "dashed" ? [6, 4] : "solid",
+                  });
+                } else {
+                  engine?.setShapeStrokeDash?.(style);
+                }
               },
               cornerRadius: selected?.cornerRadius ?? selected?.radius ?? 0,
               onCornerRadius: (val) => {
-                if (selected?.id) engine?.updateNode(selected.id, { cornerRadius: val });
+                if (selected?.id) (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { cornerRadius: val });
               },
               cornerType: selected?.cornerType || "round",
               onCornerType: (type) => {
-                if (selected?.id) engine?.updateNode(selected.id, { cornerType: type });
+                if (selected?.id) (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { cornerType: type });
               },
               sides: selected?.spikes ?? selected?.sides ?? 5,
               onSides: (val) => {
-                if (selected?.id) engine?.updateNode(selected.id, { spikes: val, sides: val });
+                if (selected?.id) (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { spikes: val, sides: val });
               },
               starRatio: selected?.ratio ?? 0.5,
               onStarRatio: (val) => {
-                if (selected?.id) engine?.updateNode(selected.id, { ratio: val });
+                if (selected?.id) (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { ratio: val });
               },
-              // Text Tool properties (Affinity Style)
-              fontFamily: selected?.fontFamily || engine?.getDefaultFontFamily?.() || "Inter",
+              // Text Tool properties (Affinity Style). Without a selected text
+              // layer these edit the pending style used by the next text node.
+              fontFamily: selected?.fontFamily ?? engine?.getDefaultFontFamily?.() ?? "Inter",
               onFontFamily: (family) => {
-                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { fontFamily: family });
+                if (selected?.id && selected.kind === "text") (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { fontFamily: family });
                 else engine?.setDefaultFontFamily?.(family);
               },
-              fontWeight: selected?.fontWeight || 400,
+              fontWeight: selected?.fontWeight ?? engine?.getDefaultFontWeight?.() ?? "normal",
               onFontWeight: (weight) => {
-                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { fontWeight: weight });
+                if (selected?.id && selected.kind === "text") (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { fontWeight: weight });
                 else engine?.setDefaultFontWeight?.(weight);
               },
-              fontSize: selected?.fontSize || 16,
+              fontSize: selected?.fontSize ?? engine?.getDefaultFontSize?.() ?? 32,
               onFontSize: (sz) => {
-                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { fontSize: sz });
+                if (selected?.id && selected.kind === "text") (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { fontSize: sz });
                 else engine?.setDefaultFontSize?.(sz);
               },
-              italic: selected?.italic || false,
+              italic: selected?.italic ?? engine?.getDefaultItalic?.() ?? false,
               onItalic: (val) => {
-                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { italic: val });
+                if (selected?.id && selected.kind === "text") (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { italic: val });
+                else engine?.setDefaultItalic?.(val);
               },
-              underline: selected?.underline || false,
+              underline: selected?.underline ?? engine?.getDefaultUnderline?.() ?? false,
               onUnderline: (val) => {
-                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { underline: val });
+                if (selected?.id && selected.kind === "text") (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { underline: val });
+                else engine?.setDefaultUnderline?.(val);
               },
-              align: selected?.align || "left",
+              align: selected?.align ?? engine?.getDefaultAlign?.() ?? "left",
               onAlign: (val) => {
-                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { align: val });
+                if (selected?.id && selected.kind === "text") (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { align: val });
+                else engine?.setDefaultAlign?.(val);
               },
-              lineHeight: selected?.lineHeight || 1.25,
+              lineHeight: selected?.lineHeight ?? engine?.getDefaultLineHeight?.() ?? 1.25,
               onLineHeight: (val) => {
-                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { lineHeight: val });
+                if (selected?.id && selected.kind === "text") (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { lineHeight: val });
+                else engine?.setDefaultLineHeight?.(val);
               },
-              letterSpacing: selected?.letterSpacing || 0,
+              letterSpacing: selected?.letterSpacing ?? engine?.getDefaultLetterSpacing?.() ?? 0,
               onLetterSpacing: (val) => {
-                if (selected?.id && selected.kind === "text") engine?.updateNode(selected.id, { letterSpacing: val });
+                if (selected?.id && selected.kind === "text") (engine?.updateNodeCoalesced ?? engine?.updateNode)?.(selected.id, { letterSpacing: val });
+                else engine?.setDefaultLetterSpacing?.(val);
               },
               // Gradient & Fill properties (Affinity Style)
               gradientType: engine?.getGradientToolState?.()?.type ?? "linear",
@@ -4652,8 +4682,16 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                       )
                       .map((node) => node.id)
                   : [selected.id];
+              // A resize patch from Transform includes the primary node's
+              // absolute x/y. Broadcasting it verbatim stacks every selected
+              // layer at one point, so other layers keep their own origin and
+              // only receive the size change.
               for (const id of ids) {
-                engine?.updateNode(id, patch, { commit: false });
+                const nextPatch =
+                  ids.length > 1
+                    ? patchForMultiResize(patch, { primary: id === selected.id })
+                    : patch;
+                engine?.updateNode(id, nextPatch, { commit: false });
               }
             }}
             onCommit={() => {

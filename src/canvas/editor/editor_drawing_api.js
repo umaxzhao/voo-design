@@ -24,6 +24,7 @@ import { clampBrushWidth } from "./editor_constants.js";
 import * as ops from "./doc_ops.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
 import { createDrawingShapesApi } from "./drawing_api_shapes.js";
+import { getTextToolDefaults, setTextToolDefault } from "./text_tool_defaults.js";
 
 export { createDrawingShapesApi };
 
@@ -243,6 +244,41 @@ export function createDrawingApi({
     addFrameAt: shapes.addFrameAt,
     addEllipseAt: shapes.addEllipseAt,
     addTextAt: shapes.addTextAt,
+    // Text-tool pending style: the right panel edits these before any layer is
+    // selected, and interactive text creation reads the same values.
+    getTextToolDefaults,
+    getDefaultFontFamily: () => getTextToolDefaults().fontFamily,
+    setDefaultFontFamily: (value) => {
+      if (setTextToolDefault("fontFamily", value)) notify();
+    },
+    getDefaultFontWeight: () => getTextToolDefaults().fontWeight,
+    setDefaultFontWeight: (value) => {
+      if (setTextToolDefault("fontWeight", value)) notify();
+    },
+    getDefaultFontSize: () => getTextToolDefaults().fontSize,
+    setDefaultFontSize: (value) => {
+      if (setTextToolDefault("fontSize", value)) notify();
+    },
+    getDefaultItalic: () => getTextToolDefaults().italic,
+    setDefaultItalic: (value) => {
+      if (setTextToolDefault("italic", value)) notify();
+    },
+    getDefaultUnderline: () => getTextToolDefaults().underline,
+    setDefaultUnderline: (value) => {
+      if (setTextToolDefault("underline", value)) notify();
+    },
+    getDefaultAlign: () => getTextToolDefaults().align,
+    setDefaultAlign: (value) => {
+      if (setTextToolDefault("align", value)) notify();
+    },
+    getDefaultLineHeight: () => getTextToolDefaults().lineHeight,
+    setDefaultLineHeight: (value) => {
+      if (setTextToolDefault("lineHeight", value)) notify();
+    },
+    getDefaultLetterSpacing: () => getTextToolDefaults().letterSpacing,
+    setDefaultLetterSpacing: (value) => {
+      if (setTextToolDefault("letterSpacing", value)) notify();
+    },
     addPenNode: shapes.addPenNode,
     applyCopyStructure: shapes.applyCopyStructure,
     pathToShape() {

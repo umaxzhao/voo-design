@@ -1,0 +1,218 @@
+/**
+ * Welcome-screen generation handoff.
+ *
+ * The welcome composer builds ONE immutable intent object and writes it to the
+ * design store. The agent panel claims that object exactly once and turns it
+ * into a normal generation turn, so the dashboard no longer has to reason about
+ * DOM events, component mount order, or which panel is currently open.
+ */
+import { STYLE_KITS } from "../../agent/design_quality/style_kits.js";
+import { AI_GEN_TYPES } from "./welcome_constants.js";
+
+export const DEFAULT_STYLE_ID = "auto";
+export const MAX_REFERENCE_IMAGES = 4;
+export const MAX_REFERENCE_BYTES = 10 * 1024 * 1024;
+
+/** Style options for the welcome picker, derived from the agent style kits. */
+export function styleOptions() {
+  return Object.values(STYLE_KITS).map((kit) => ({
+    id: kit.id,
+    name: kit.name,
+    mood: kit.mood,
+    swatch: [kit.palette.bg, kit.palette.surface, kit.palette.accent],
+  }));
+}
+
+/** Unique canvas sizes offered by the size picker (preset defaults first). */
+export function sizeOptions() {
+  const seen = new Set();
+  const sizes = [];
+  for (const preset of AI_GEN_TYPES) {
+    const id = `${preset.width}x${preset.height}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    sizes.push({ id, width: preset.width, height: preset.height });
+  }
+  return sizes;
+}
+
+export function presetById(id) {
+  return AI_GEN_TYPES.find((preset) => preset.id === id) ?? AI_GEN_TYPES[0];
+}
+
+export function styleById(id) {
+  if (!id || id === DEFAULT_STYLE_ID) return null;
+  return STYLE_KITS[id] ?? null;
+}
+
+/**
+ * Assembles the final user prompt: the user's own words, the scene guidance of
+ * the selected design type, and (when the user picked one) the style kit's
+ * tokens. The agent receives the same scene kind + style id structurally too;
+ * this text keeps the model oriented even when it runs its own tool loop.
+ */
+export function buildGenerationPrompt({ preset, prompt, styleId, t = (key) => key }) {
+  const sections = [String(prompt ?? "").trim()];
+  if (preset?.guidance) {
+    sections.push(`Creation guide — ${t(preset.label)}:\n${t(preset.guidance)}`);
+  }
+  const style = styleById(styleId);
+  if (style) {
+    sections.push(
+      `Style — ${style.name}: ${style.mood}\n` +
+        `Use this one kit: background ${style.palette.bg}, surface ${style.palette.surface}, ` +
+        `text ${style.palette.text}, accent ${style.palette.accent}; display font "${style.fonts.display}", ` +
+        `body font "${style.fonts.body}"; radius md ${style.radius.md}px; spacing density ${style.spacingDensity}.`,
+    );
+  }
+  return sections.filter(Boolean).join("\n\n");
+}
+
+/**
+ * Builds the one-shot intent consumed by the agent panel.
+ * `preset` is an AI_GEN_TYPES entry; `size` defaults to the preset's frame.
+ */
+export function buildGenerationIntent({
+  preset,
+  prompt,
+  styleId = DEFAULT_STYLE_ID,
+  modelId = "",
+  size = null,
+  attachments = [],
+  candidates = 1,
+  t = (key) => key,
+  now = () => Date.now(),
+} = {}) {
+  const activePreset = preset ?? AI_GEN_TYPES[0];
+  const width = Math.round(Number(size?.width ?? activePreset.width));
+  const height = Math.round(Number(size?.height ?? activePreset.height));
+  const style = styleById(styleId);
+  const references = (attachments ?? []).filter((item) => item?.kind === "image");
+  const variantCount = Math.max(1, Math.min(3, Math.round(Number(candidates) || 1)));
+  return {
+    id: `gen_${now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    prompt: buildGenerationPrompt({ preset: activePreset, prompt, styleId, t }),
+    kind: activePreset.id,
+    kindLabel: t(activePreset.label),
+    frame: { width, height },
+    styleId: style?.id ?? DEFAULT_STYLE_ID,
+    styleName: style?.name ?? "",
+    modelId,
+    attachments: [...(attachments ?? [])],
+    referenceCount: references.length,
+    candidates: variantCount,
+    badge: `${t(activePreset.label)} · ${style?.name ?? t("welcome.prompt.styleAuto")} · ${width}×${height}${
+      variantCount > 1 ? ` · ${variantCount}×` : ""
+    }`,
+    origin: "welcome",
+    createdAt: now(),
+  };
+}
+
+/** Structural context handed to the agent as the first line of the turn. */
+export function generationContextText(intent) {
+  if (!intent) return "";
+  const parts = [
+    "kind=" + intent.kind,
+    "frame=" + `${intent.frame?.width ?? 0}x${intent.frame?.height ?? 0}`,
+    "style=" + (intent.styleId && intent.styleId !== DEFAULT_STYLE_ID ? intent.styleId : "auto"),
+  ];
+  if (intent.modelId) parts.push("model=" + intent.modelId);
+  parts.push("references=" + (intent.referenceCount ?? 0));
+  if ((intent.candidates ?? 1) > 1) parts.push("candidates=" + intent.candidates);
+  return `[Generation] ${parts.join(" ")}`;
+}
+
+/** Transcript badge for a generation turn. */
+export function generationBadgeText(intent, modelLabel = "") {
+  if (!intent) return "";
+  return modelLabel ? `${intent.badge} · ${modelLabel}` : intent.badge;
+}
+
+function readAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (typeof FileReader === "undefined") {
+      reject(new Error("FileReader is unavailable"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(reader.error ?? new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+const IMAGE_FILE = /\.(png|jpe?g|webp|gif)$/i;
+const IMAGE_MIME = /^image\/(png|jpeg|webp|gif)$/i;
+const DESIGN_FILE = /\.(voo|pen|fig|svg)$/i;
+
+/**
+ * Reads composer attachments into intent records. Images carry a data URL so
+ * the panel can drop them on the canvas as visual references; design files are
+ * recorded by name (the generation turn can then ask the user to import them).
+ * Returns `{ attachments, errors }`; never throws for one bad file.
+ */
+export async function readAttachmentFiles(fileList, { limit = MAX_REFERENCE_IMAGES, maxBytes = MAX_REFERENCE_BYTES } = {}) {
+  const files = Array.from(fileList ?? []).slice(0, limit);
+  const attachments = [];
+  const errors = [];
+  for (const file of files) {
+    if (!file) continue;
+    if (file.size > maxBytes) {
+      errors.push(`${file.name}: larger than ${Math.round(maxBytes / (1024 * 1024))}MB`);
+      continue;
+    }
+    const isImage = IMAGE_MIME.test(file.type ?? "") || IMAGE_FILE.test(file.name ?? "");
+    if (isImage) {
+      try {
+        attachments.push({ kind: "image", name: file.name, size: file.size, dataUrl: await readAsDataUrl(file) });
+      } catch (error) {
+        errors.push(`${file.name}: ${error?.message ?? "failed to read"}`);
+      }
+      continue;
+    }
+    if (DESIGN_FILE.test(file.name ?? "")) {
+      attachments.push({ kind: "file", name: file.name, size: file.size });
+      continue;
+    }
+    errors.push(`${file.name}: unsupported attachment type`);
+  }
+  return { attachments, errors };
+}
+
+function defaultEditor() {
+  return typeof window === "undefined" ? null : window.__vooEditor ?? null;
+}
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Drops attached images on the canvas as reference layers, next to the frame
+ * the user is about to generate. Best effort: if the editor is not ready yet we
+ * still send the prompt, but tell the model the references are named-only.
+ */
+export async function placeReferenceImages(attachments = [], { editor = defaultEditor, attempts = 40, intervalMs = 50 } = {}) {
+  const images = (attachments ?? []).filter((item) => item?.kind === "image" && item.dataUrl);
+  if (!images.length) return "";
+  let target = editor();
+  for (let attempt = 0; !target && attempt < attempts; attempt += 1) {
+    await wait(intervalMs);
+    target = editor();
+  }
+  if (!target || typeof target.insertImage !== "function") {
+    return `[Reference images attached but not placed on the canvas: ${images.map((item) => item.name).join(", ")}]`;
+  }
+  const placed = [];
+  for (const image of images) {
+    try {
+      const node = await target.insertImage(image.dataUrl);
+      if (node?.id) placed.push(image.name);
+    } catch {
+      // Keep going: one bad image must not block the whole generation turn.
+    }
+  }
+  if (!placed.length) {
+    return `[Reference images attached but not placed on the canvas: ${images.map((item) => item.name).join(", ")}]`;
+  }
+  return `[Reference images placed on the canvas: ${placed.join(", ")}. Use them as visual references; keep the generated design unobstructed.]`;
+}

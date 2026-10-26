@@ -28,8 +28,8 @@
 
 | 维度 | 评分 | 证据 |
 | --- | --- | --- |
-| **Figma UI**（顶栏 / 底栏 / 左图层 / 右属性） | **可用** | PR #4 完成主要工具属性面板（Brush/Eraser/Pen/Shapes/Text/Marquee/Wand/Crop/Eyedropper/Gradient/Healing 等）统一 64px 列 + `ToolSliderField`/`sectionRowClass`；左 `editor_layers.jsx`（~2k 行）、右 `properties_panel_sections.jsx` 已挂载 Transform/Warp/Text/Shape/Colour/Effects/Constraints/AutoLayout/Media/Affinity 调整等；`combine_section` 提供布尔 UI。缺口：渐变工具面板**无多色标/stop 编辑器**、也未见 PR 描述中的 angle slider（当前仅 type chips + reverse）；Brush roundness/angle/blend 在 **Advanced 折叠区**（引擎 `editor_paint_stamps.js` 已消费 `roundness`）；`docs/editor-ui-gaps.md` 称 array 段未挂载——**已过时**，main 上 `Linear/Grid/CircularArraySection` 已接入。Electron 冒烟与 zh/en 截图人工验收仍未勾完（见 PR #4 test plan）。 |
-| **Affinity 图处** | **可用** | PR #6 + `docs/image-processing-audit.md`：Curves/Levels/HSL/选色/通道混合/色彩平衡/B&W/滤镜/清晰度链路、blur/sharpen、clone（含 flow + OOB skip）、healing/LaMa、抠图+defringe、CPU **highPass / clarity / motionBlur** 已接线。`live_filter_stack.js` API+测试 **partial**：未写入节点、未进热渲染、无属性 UI。**缺失**：GL 版 highPass/clarity/motionBlur；频率分离；Liquify；RAW persona；PSD adjustment 导入仍不完整。 |
+| **Figma UI**（顶栏 / 底栏 / 左图层 / 右属性） | **可用** | PR #4 完成主要工具属性面板（Brush/Eraser/Pen/Shapes/Text/Marquee/Wand/Crop/Eyedropper/Gradient/Healing 等）统一 64px 列 + `ToolSliderField`/`sectionRowClass`；左 `editor_layers.jsx`（~2k 行）、右 `properties_panel_sections.jsx` 已挂载 Transform/Warp/Text/Shape/Colour/Effects/Constraints/AutoLayout/Media/Affinity 调整等；`combine_section` 提供布尔 UI。缺口：渐变工具面板**无多色标/stop 编辑器**、也未见 PR 描述中的 angle slider（当前仅 type chips + reverse）；Brush roundness/angle/blend 在 **Advanced 折叠区**（引擎 `editor_paint_stamps.js` 已消费 `roundness`）；`docs/audits/editor-ui-gaps.md` 称 array 段未挂载——**已过时**，main 上 `Linear/Grid/CircularArraySection` 已接入。Electron 冒烟与 zh/en 截图人工验收仍未勾完（见 PR #4 test plan）。 |
+| **Affinity 图处** | **可用** | PR #6 + `docs/audits/image-processing-audit.md`：Curves/Levels/HSL/选色/通道混合/色彩平衡/B&W/滤镜/清晰度链路、blur/sharpen、clone（含 flow + OOB skip）、healing/LaMa、抠图+defringe、CPU **highPass / clarity / motionBlur** 已接线。`live_filter_stack.js` API+测试 **partial**：未写入节点、未进热渲染、无属性 UI。**缺失**：GL 版 highPass/clarity/motionBlur；频率分离；Liquify；RAW persona；PSD adjustment 导入仍不完整。 |
 | **Pencil Agent** | **可用** | `CANVAS_TOOL_SCHEMAS` **46** 个工具（PR #7 新增 `create_frame` / `align_layers` / `distribute_layers` / `ungroup_layers` / `find_layers` / `undo` / `redo` / `update_plan` / `get_plan`）；组件/变量/样式/路径/富文本/web 生图/capture 已有。**缺口（PR #7 自述）**：Agent 侧 **boolean ops、constraints/resizing、export tool** 缺失；component **variants** 仅 swap+overrides（半成品）。`docs/agents.md` 工具表仍停在旧子集，文档滞后。 |
 | **画布性能** | **可用** | PR #5：hit-test @20k **~10.5ms → ~39µs**（~267×）；cull ~0.04ms；camera rAF、mip、dirty-rect 已接线。`docs/canvas-perf-benchmark.md` 明确：**无浏览器 FPS/paint**（无 Playwright）；tile/GPU 多层缓存未达 Figma；worker 解码/索引仍 partial；拖拽端到端延迟未仪器化。本机复跑 AFTER：20k hit ~43µs（与文档同量级）。 |
 | **工作区文件管理** | **半成品（Cursor 负责）** | Ning 明确交由 Cursor；本审计**不改**。仓库侧存在 `welcome_dashboard.jsx`（~1.8k 行）与 Electron/project IO，但产品优先级上的「工作区完备」状态**未在本轮 PR #4–#7 范围内验证**——仅记：**待 Cursor 线关闭**。 |
@@ -48,7 +48,7 @@
 5. **工作区文件管理未闭环（Cursor 线）**：欢迎页/工程 IO 存在，但 Ning 优先级 #1 未在本轮交付证明；上线前需 Cursor 侧给出「可用」结论。  
 6. **深度 Affinity 人格缺失（按定位可选阻塞）**：Liquify / 频率分离 / RAW 完全不存在——若营销对齐 Affinity Photo，则阻塞；若先对齐 Designer+基础 Photo，可降为缺口。
 
-非阻塞但需知情：Brush advanced 默认折叠；`docs/agents.md` / `docs/editor-ui-gaps.md` 部分过时；Electron Node 引擎版本警告。
+非阻塞但需知情：Brush advanced 默认折叠；`docs/agents.md` / `docs/audits/editor-ui-gaps.md` 部分过时；Electron Node 引擎版本警告。
 
 ---
 
@@ -91,7 +91,7 @@
 - [ ] 工作区 / 欢迎页 / 桌面扫描 / 文件夹物理子目录等——**由 Ning 的 Cursor 负责**；本轮 PR 未宣称交付；上线前需单独验收
 
 ### 文档与工程债
-- [ ] `docs/editor-ui-gaps.md` array 段「未挂载」陈述与 main **不符**
+- [ ] `docs/audits/editor-ui-gaps.md` array 段「未挂载」陈述与 main **不符**
 - [ ] `docs/agents.md` 工具列表过旧
 - [ ] Electron `engines` 要求 Node ≥22 vs CI/box Node 20 warning
 - [ ] Vite build CSS `arbitraryValue(` 相关 syntax warning（3 条）

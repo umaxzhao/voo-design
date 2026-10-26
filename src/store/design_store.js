@@ -122,6 +122,9 @@ export const useDesignStore = create((set, get) => {
   // Agent Panel & Hybrid Architecture State
   agentPanelOpen: false,
   pendingAgentIntent: null,
+  // One-shot handoff from the welcome composer: prompt + frame + style + model +
+  // references. The agent panel claims it exactly once (see pending_agent_intent).
+  pendingGeneration: null,
 
   editorPageCameras: {},
   pendingArtboardFitId: null,
@@ -506,6 +509,9 @@ export const useDesignStore = create((set, get) => {
     });
   },
   clearPendingAgentIntent: () => set({ pendingAgentIntent: null }),
+  setPendingGeneration: (pendingGeneration) =>
+    set({ agentPanelOpen: Boolean(pendingGeneration), pendingGeneration }),
+  clearPendingGeneration: () => set({ pendingGeneration: null }),
   };
 });
 

@@ -1,5 +1,7 @@
 # TEST READY: VOO Design — Smart Spacing & Gap Architecture
 
+> Snapshot from 2026-10-21. The counts below describe that run only; the full suite has since grown (about 420 test files). Run `npm test` for the current result.
+
 **Status**: READY FOR VERIFICATION & DEPLOYMENT  
 **Track**: Test Writer E2E (Test Track Lead)  
 **Verification Date**: 2026-10-21  

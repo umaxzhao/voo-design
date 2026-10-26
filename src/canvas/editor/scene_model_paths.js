@@ -64,7 +64,7 @@ import {
 } from "./scene_model_node_builders.js";
 
 /* eslint-enable no-unused-vars */
-export function createPathNode({ points, stroke, strokeWidth, hardness, arrow, arrowSize, arrowStart, arrowCap, line, poly, polyKind, sides, spikes, innerRatio, closed, fill }) {
+export function createPathNode({ points, stroke, strokeWidth, hardness, arrow, arrowSize, arrowStart, arrowEnd, arrowCap, line, poly, polyKind, sides, spikes, innerRatio, closed, fill, strokeDash }) {
   const bounds = pathBounds(points, strokeWidth);
   return {
     ...BASE_DEFAULTS,
@@ -90,8 +90,11 @@ export function createPathNode({ points, stroke, strokeWidth, hardness, arrow, a
     ...(Number.isFinite(arrowSize) && arrowSize > 0 ? { arrowSize } : {}),
     // An arrowhead at the first point too, for double-headed arrows.
     ...(arrowStart ? { arrowStart: true } : {}),
+    // Only stored when off; the renderer reads it as `!== false`.
+    ...(arrowEnd === false ? { arrowEnd: false } : {}),
     // The head shape; absent means the default open "lines" barbs.
     ...(arrowCap ? { arrowCap } : {}),
+    ...(strokeDash && strokeDash !== "solid" ? { strokeDash } : {}),
     /**
      * The line tool's two-point strokes: the arrow's sibling without the
      * head. Same additive-only-when-true convention as `arrow`.

@@ -43,6 +43,15 @@ describe("shape paint options", () => {
     expect(getDoc().nodes[0]).toMatchObject({ strokeWidth: 3, opacity: 0.5 });
   });
 
+  it("carries a dashed stroke into the created rect", () => {
+    const { api: drawing } = api();
+    const node = drawing.addRectAt(
+      { x: 0, y: 0 },
+      { strokeWidth: 4, strokeDash: "dashed" },
+    );
+    expect(node.strokeDash).toBe("dashed");
+  });
+
   it("creates an ellipse with the same paint axes", () => {
     const { api: drawing } = api();
     const node = drawing.addEllipseAt(

@@ -335,14 +335,32 @@ export function normalizeEffects(value) {
   return effects;
 }
 
+/** Text-case values the renderer understands; anything else reads as typed. */
+const TEXT_CASES = Object.freeze(["original", "upper", "lower", "title"]);
+
+/** Path-text geometry is user data, but its scalar controls are bounded here. */
+function normalizeTextPath(value) {
+  if (!value || typeof value !== "object") return null;
+  return {
+    ...value,
+    startOffset: parseAdjustmentValue(value.startOffset, -500, 2000, 0),
+    side: value.side === "bottom" ? "bottom" : "top",
+    reverse: Boolean(value.reverse),
+  };
+}
+
 /**
  * Reads a text node's additive styling fields, replacing anything missing or
  * unrecognised with the defaults. Old documents have none of these fields and
  * must come out exactly at DEFAULT_TEXT_STYLE.
+ *
+ * Weight is stored as a string (the panel's option values); older documents and
+ * the text-tool panel wrote numbers, so coerce before checking the whitelist.
  */
 export function normalizeTextStyle(node) {
+  const fontWeight = String(node.fontWeight ?? "");
   return {
-    fontWeight: TEXT_FONT_WEIGHTS.includes(node.fontWeight) ? node.fontWeight : DEFAULT_TEXT_STYLE.fontWeight,
+    fontWeight: TEXT_FONT_WEIGHTS.includes(fontWeight) ? fontWeight : DEFAULT_TEXT_STYLE.fontWeight,
     italic: Boolean(node.italic ?? DEFAULT_TEXT_STYLE.italic),
     underline: Boolean(node.underline ?? DEFAULT_TEXT_STYLE.underline),
     align: TEXT_ALIGNS.includes(node.align) ? node.align : DEFAULT_TEXT_STYLE.align,
@@ -351,6 +369,9 @@ export function normalizeTextStyle(node) {
     lineHeight: parseAdjustmentValue(node.lineHeight, TEXT_LINE_HEIGHT_BOUNDS.min, TEXT_LINE_HEIGHT_BOUNDS.max, DEFAULT_TEXT_STYLE.lineHeight),
     baselineShift: parseAdjustmentValue(node.baselineShift, -100, 100, DEFAULT_TEXT_STYLE.baselineShift),
     boxWidth: parseAdjustmentValue(node.boxWidth, 0, 8192, 0),
+    textCase: TEXT_CASES.includes(node.textCase) ? node.textCase : "original",
+    paragraphSpacing: parseAdjustmentValue(node.paragraphSpacing, 0, 200, DEFAULT_TEXT_STYLE.paragraphSpacing),
+    textPath: normalizeTextPath(node.textPath),
     stroke: normalizeColourOrNull(node.stroke),
     strokeWidth: parseAdjustmentValue(node.strokeWidth, 0, 40, DEFAULT_TEXT_STYLE.strokeWidth),
     shadow: normalizeTextShadow(node.shadow),

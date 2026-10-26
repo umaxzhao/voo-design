@@ -37,7 +37,7 @@
 
 ## Product Gates (Audit & Ship-Readiness)
 
-Reference: `docs/benchmark-parity-matrix.md` and `docs/editor-ui-gaps.md`
+Reference: `docs/audits/benchmark-parity-matrix.md` and `docs/audits/editor-ui-gaps.md`
 
 ### Ship-Blockers ✓ COMPLETE
 
@@ -57,7 +57,7 @@ These were audit items marked for post-release:
 | Deferral | Reason |
 |:---------|:-------|
 | **GL highPass / clarity / motionBlur twins** | ✅ SHIPPED in commercial-readiness — single-pass GLSL in `gl_spatial.js`; no longer force `cpuOnly` |
-| **Browser FPS e2e** | ✅ SHIPPED — `npm run test:e2e:fps` (`tests/e2e/canvas_fps.e2e.mjs`) writes `docs/canvas-fps-results.json` |
+| **Browser FPS e2e** | ✅ SHIPPED — `npm run test:e2e:fps` (`tests/e2e/canvas_fps.e2e.mjs`) writes `docs/canvas-fps-results.json` (gitignored run output; the committed baseline is `docs/canvas-perf-results.json`) |
 | **Workspace Cursor line** | Cursor is schema/file diff; UI gaps fixed were product-impact, not network schema |
 | **Agent session persistence** | Follows shipped JSONL session layer; quality follow-up post-release |
 | **Component variants (basic)** | ✅ Basic agent tools (`create_component_variant` / list) shipped; full UI variant picker still polish |
@@ -217,8 +217,8 @@ If critical issue discovered post-release:
 
 For detailed feature inventory, see:
 - `PROJECT.md` — Architecture and feature milestones
-- `docs/benchmark-parity-matrix.md` — Gap closure table and deferrals
-- `docs/editor-ui-gaps.md` — UI control audit findings
+- `docs/audits/benchmark-parity-matrix.md` — Gap closure table and deferrals
+- `docs/audits/editor-ui-gaps.md` — UI control audit findings
 - `docs/code-signing.md` — macOS & Windows certificate setup (to be added)
 - `README.md` — User-facing feature overview
 

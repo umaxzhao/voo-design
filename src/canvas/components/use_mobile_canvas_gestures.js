@@ -28,8 +28,6 @@ export function useMobileCanvasGestures(onUndo) {
 
     const now = performance.now();
     gesture.points.set(event.pointerId, {
-      x: event.clientX,
-      y: event.clientY,
       startX: event.clientX,
       startY: event.clientY,
       startAt: now,
@@ -63,8 +61,6 @@ export function useMobileCanvasGestures(onUndo) {
       point.moved = true;
       if (gesture.candidate) gesture.candidate.valid = false;
     }
-    point.x = event.clientX;
-    point.y = event.clientY;
   }, []);
 
   const onPointerUpCapture = useCallback((event) => {

@@ -1018,6 +1018,7 @@ export default {
   "editor.props.sepia": "泛黄",
   "editor.props.emboss": "浮雕",
   "editor.props.reset": "重置",
+  "editor.props.mixedValuesEditable": "多选值不同 — 输入一个值可统一应用到所有选中图层",
   "editor.props.mixedValues": "选中所选图层的属性值不一致",
   "editor.filters.category.colour": "调色",
   "editor.filters.category.pixel": "特效滤镜",

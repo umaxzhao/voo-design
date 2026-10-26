@@ -1,5 +1,7 @@
 # Project: VOO Design Canvas Engine Full-Stack Performance Architecture Upgrade
 
+> Historical record of the M1–M4 performance upgrade (October 2026). Current deployment is documented in [docs/deploy-la.md](docs/deploy-la.md); current verification in [docs/audits/effect-audit-verification.md](docs/audits/effect-audit-verification.md).
+
 ## Architecture
 VOO Design Canvas Engine delivers an ultra-high performance, 60 FPS vector and raster editing experience across 1,000+ nodes and high-frequency gestures. The performance architecture couples 2D R-Tree spatial indexing, visual-effect-aware viewport culling, offscreen layer caching, rAF gesture scheduling, Local AABB neighborhood snapping queries, byte-budgeted LRU texture caching, and structurally-shared undo/redo history.
 
@@ -50,7 +52,7 @@ VOO Design Canvas Engine delivers an ultra-high performance, 60 FPS vector and r
 | 17 | Specialized Performance Test Suite | Add automated tests for 1,000+ node culling, neighborhood snapping, and LRU eviction | M4 | DONE |
 | 18 | Full 60+ Suites Regression Gate | Execute and pass 100% of all unit and integration test suites via `npm test` | M4 | DONE |
 | 19 | Production Build Gate | Clean production bundle generation via `npm run build` | M4 | DONE |
-| 20 | Server `la` Automated Deployment | Deploy bundle to `la` (`103.114.160.86`) via `scripts/deploy-editor.sh` and verify live HTTP 200 | M4 | BLOCKED (SSH) |
+| 20 | Server `la` Automated Deployment | Deploy bundle via `scripts/deploy-editor.sh` (the old `la` host is obsolete; target is now `la2`) and verify live HTTP 200 | M4 | SUPERSEDED: deployment moved to `la2` and succeeded, see `docs/deploy-la.md` |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
@@ -58,7 +60,7 @@ VOO Design Canvas Engine delivers an ultra-high performance, 60 FPS vector and r
 | M1 | Viewport Culling & Layer Caching Engine | Features 1–5: Visual bounds (`nodeVisualAABB`), SpatialIndex integration in `chrome_draw.js`, and `layer_cache.js` | none | DONE |
 | M2 | Gesture & Snapping Optimization | Features 6–10: rAF pointer move throttling, Local AABB neighborhood snapping query in `scene_snapping.js`, batch node updates | M1 | DONE |
 | M3 | Memory, Texture & Undo/Redo Management | Features 11–14: Byte-budgeted LRU cache, WebGL texture cleanup on eviction, ref-counted pinning, structural sharing undo | M1 | DONE |
-| M4 | Verification, Quality Gate & Production Deployment | Features 15–20: Toolbar design token fix, test race fix, performance tests, 100% test pass, build, deploy to `la`, HTTP 200 | M1, M2, M3 | DONE (deploy blocked) |
+| M4 | Verification, Quality Gate & Production Deployment | Features 15–20: Toolbar design token fix, test race fix, performance tests, 100% test pass, build, deploy, HTTP 200 | M1, M2, M3 | DONE |
 
 ## Interface Contracts
 
@@ -102,4 +104,4 @@ VOO Design Canvas Engine delivers an ultra-high performance, 60 FPS vector and r
 - `src/canvas/editor/editor_history.js`: Document undo/redo history manager.
 - `src/canvas/components/editor_toolbar.jsx`: Top editing toolbar and action controls.
 - `tests/unit/`: Automated Vitest test suites.
-- `scripts/deploy-editor.sh`: Production deployment script to `la` server.
+- `scripts/deploy-editor.sh`: Production deployment script (target host `la2`).

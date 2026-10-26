@@ -5,6 +5,8 @@ import { PROVIDER_ID } from "../shared/providers.js";
 /** Maps adapter/executor error codes onto localized, actionable messages. */
 const CODE_TO_KEY = {
   agentStepLimit: "agent.error.agentStepLimit",
+  agentNotConfigured: "agent.error.agentNotConfigured",
+  "agent.connection.desktopOnly": "agent.connection.desktopOnly",
   agentNoCanvasContent: "agent.error.agentNoCanvasContent",
   noPlatform: "error.noPlatform",
   // A Batch node whose input has no runnable node wired into it.

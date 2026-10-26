@@ -41,7 +41,7 @@ async function main() {
     labels[match[1]] = match[2];
   }
   const runs = await Promise.all([labels.a, labels.b].map(async label => {
-    try { return JSON.parse(await readFile(`/workspace/tmp/design-bench/${label}/scores.json`, 'utf8')); }
+    try { return JSON.parse(await readFile(`${BENCH_ROOT}/${label}/scores.json`, 'utf8')); }
     catch (error) { if (error.code !== 'ENOENT') throw error; console.warn(`Warning: ${label} run missing`); return null; }
   }));
   console.log(formatReport(...runs, labels.a, labels.b));

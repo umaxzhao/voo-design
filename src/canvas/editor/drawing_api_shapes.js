@@ -15,6 +15,7 @@ import {
 } from "./scene_model.js";
 import { parseSvgPath } from "./editor_svg.js";
 import { DEFAULT_PEN_STROKE_WIDTH } from "./editor_constants.js";
+import { getTextToolDefaults } from "./text_tool_defaults.js";
 import * as ops from "./doc_ops.js";
 
 export function createDrawingShapesApi({
@@ -49,6 +50,7 @@ export function createDrawingShapesApi({
         }),
         ...(options.stroke ? { stroke: options.stroke } : {}),
         strokeWidth: Number(options.strokeWidth) || 0,
+        ...(options.strokeDash ? { strokeDash: options.strokeDash } : {}),
         ...(options.opacity != null ? { opacity: options.opacity } : {}),
       },
       point,
@@ -100,6 +102,7 @@ export function createDrawingShapesApi({
         }),
         ...(options.stroke ? { stroke: options.stroke } : {}),
         strokeWidth: Number(options.strokeWidth) || 0,
+        ...(options.strokeDash ? { strokeDash: options.strokeDash } : {}),
         ...(options.opacity != null ? { opacity: options.opacity } : {}),
       },
       point,
@@ -111,6 +114,9 @@ export function createDrawingShapesApi({
 
   /** Creates an empty text node at `point`; the drag (optionally) boxes it. */
   function addTextAt(point, text, options = {}) {
+    // Interactive creation inherits the text tool's pending style; agent calls
+    // keep the factory defaults unless they opt in explicitly.
+    const toolStyle = options.useToolDefaults ? getTextToolDefaults() : null;
     const node = insideFrame(
       {
         ...createTextNode({
@@ -119,6 +125,7 @@ export function createDrawingShapesApi({
           text,
           fill: options.fill ?? "#ffffff",
         }),
+        ...(toolStyle ?? {}),
         ...(options.opacity != null ? { opacity: options.opacity } : {}),
       },
       point,

@@ -1,11 +1,22 @@
-import { dispatchToAgent } from "./dispatch_to_agent.js";
 import { HTML_IMPORT_ACCEPT, SCREENSHOT_ACCEPT, importWelcomeHtml, recreateWelcomeScreenshot } from "./welcome_home_actions.js";
 import React, { useState, useRef } from "react";
 import { Trash2 } from "lucide-react";
 import { useDesignStore } from "../../store/design_store.js";
 import { openVooProject } from "../store/project_io.js";
 import { useI18n } from "../use_i18n.js";
-import { prepareCommunityTemplate } from "./community-template-selection.js";
+import { getSetting, setSetting } from "../../shared/settings.js";
+import { DEFAULT_AGENT_MODEL } from "../../shared/agent-defaults.js";
+import { AGENT_SETTING } from "../agent/canvas_tools.js";
+import { resolveAgentProvider } from "../agent/agent_provider.js";
+import { availableModelGroups, getModelDisplayLabel } from "./agent-panel/model_catalog.js";
+import {
+  DEFAULT_STYLE_ID,
+  MAX_REFERENCE_IMAGES,
+  buildGenerationIntent,
+  readAttachmentFiles,
+  sizeOptions,
+  styleOptions,
+} from "./welcome_dashboard/generation_intent.js";
 import CommunityTemplatesView from "./community_templates_view.jsx";
 import { AI_GEN_TYPES, CATEGORY_PILLS } from "./welcome_dashboard/welcome_constants.js";
 import { useWelcomeMenuDismiss } from "./welcome_dashboard/use_welcome_menu_dismiss.js";
@@ -26,6 +37,7 @@ import {
 } from "./welcome_dashboard/welcome_dialogs_and_shortcuts.jsx";
 
 export { AI_GEN_TYPES, CATEGORY_PILLS };
+import { prepareCommunityTemplate } from "./community-template-selection.js";
 
 export default function WelcomeDashboard() {
   const { t, locale } = useI18n();
@@ -40,13 +52,21 @@ export default function WelcomeDashboard() {
   const [viewMode, setViewMode] = useState("grid"); // "grid" | "list"
 
   const [promptText, setPromptText] = useState("");
-  const [selectedModel] = useState("VOO Agent 3.5");
+  const [modelId, setModelId] = useState(() => getSetting(AGENT_SETTING.MODEL) || DEFAULT_AGENT_MODEL);
+  const [styleId, setStyleId] = useState(DEFAULT_STYLE_ID);
+  const [size, setSize] = useState({ width: AI_GEN_TYPES[0].width, height: AI_GEN_TYPES[0].height });
+  const [attachments, setAttachments] = useState([]);
+  const [candidates, setCandidates] = useState(1);
+  const [attachmentError, setAttachmentError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [configNotice, setConfigNotice] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState(null);
 
   const fileInputRef = useRef(null);
   const htmlInputRef = useRef(null);
   const screenshotInputRef = useRef(null);
+  const attachmentInputRef = useRef(null);
   const menuRef = useRef(null);
   const setWelcomeOpen = useDesignStore((state) => state.setWelcomeOpen);
 
@@ -85,33 +105,83 @@ export default function WelcomeDashboard() {
     setActiveTab("recents");
   };
 
-  const handlePromptSubmit = async (e) => {
-    e?.preventDefault();
-    const activePreset = AI_GEN_TYPES.find((p) => p.id === activePill) || AI_GEN_TYPES[0];
+  const handleSelectPill = (pillId) => {
+    setActivePill(pillId);
+    const preset = AI_GEN_TYPES.find((item) => item.id === pillId);
+    if (preset) setSize({ width: preset.width, height: preset.height });
+  };
+
+  const handleSelectModel = (nextModelId) => {
+    setModelId(nextModelId);
+    setSetting(AGENT_SETTING.MODEL, nextModelId);
+    setConfigNotice("");
+  };
+
+  const openAgentSettings = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("voo:open-onboarding"));
+    }
+  };
+
+  const handleAttachmentsSelected = async (fileList) => {
+    if (attachments.length >= MAX_REFERENCE_IMAGES) {
+      setAttachmentError(t("welcome.prompt.attachmentLimit", { n: MAX_REFERENCE_IMAGES }));
+      return;
+    }
+    const { attachments: added, errors } = await readAttachmentFiles(fileList, {
+      limit: Math.max(1, MAX_REFERENCE_IMAGES - attachments.length),
+    });
+    if (added.length) setAttachments((current) => [...current, ...added].slice(0, MAX_REFERENCE_IMAGES));
+    setAttachmentError(errors.length ? errors.join("; ") : "");
+  };
+
+  const handlePromptSubmit = async (event) => {
+    event?.preventDefault();
+    if (submitting) return;
+    const activePreset = AI_GEN_TYPES.find((item) => item.id === activePill) || AI_GEN_TYPES[0];
     const userPrompt = promptText.trim();
     const docLabel = userPrompt ? userPrompt.slice(0, 24) : t(activePreset.label);
+    const intent = userPrompt
+      ? buildGenerationIntent({
+          preset: activePreset,
+          prompt: userPrompt,
+          styleId,
+          modelId,
+          size,
+          attachments,
+          candidates,
+          t,
+        })
+      : null;
 
-    await handleCreateNew({
-      label: docLabel,
-      width: activePreset.width,
-      height: activePreset.height,
-      type: activePreset.type,
-      category: activePreset.category,
-    });
-
-    if (typeof window !== "undefined") {
-      const promptToDispatch =
-        userPrompt ||
-        `${t(activePreset.label)}: Generate a modern, production-grade ${activePreset.id} interface with clean visual hierarchy.`;
-      const context = {
-        generationType: activePreset.id,
-        preset: activePreset.id,
-        targetWidth: activePreset.width,
-        targetHeight: activePreset.height,
-        fromWelcomeDashboard: true,
-      };
-
-      dispatchToAgent({ prompt: promptToDispatch, intent: "generate", tool: "canvas_generate", context, autoSend: true });
+    setSubmitting(true);
+    setConfigNotice("");
+    try {
+      if (intent) {
+        // Validate the provider BEFORE creating a document, so a misconfigured
+        // agent does not leave an empty project behind.
+        try {
+          await resolveAgentProvider(intent.modelId);
+        } catch {
+          setConfigNotice(t("welcome.prompt.configNeeded"));
+          openAgentSettings();
+          return;
+        }
+      }
+      await handleCreateNew({
+        label: docLabel,
+        width: size.width,
+        height: size.height,
+        type: activePreset.type,
+        category: activePreset.category,
+      });
+      if (intent) {
+        useDesignStore.getState().setPendingGeneration(intent);
+        setPromptText("");
+        setAttachments([]);
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -215,6 +285,19 @@ export default function WelcomeDashboard() {
           } catch (error) { console.error("[VOO] Screenshot import failed:", error); }
         }} />
 
+      <input
+        ref={attachmentInputRef}
+        type="file"
+        multiple
+        accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp,.voo,.pen,.fig,.svg"
+        className="hidden"
+        onChange={async (event) => {
+          const files = event.target.files;
+          event.target.value = "";
+          if (files?.length) await handleAttachmentsSelected(files);
+        }}
+      />
+
       <WelcomeDropOverlay t={t} isDragOver={isDragOver} />
 
       <WelcomeSidebar
@@ -264,13 +347,46 @@ export default function WelcomeDashboard() {
             <WelcomePromptComposer
               t={t}
               activePill={activePill}
-              setActivePill={setActivePill}
+              onSelectPill={handleSelectPill}
               promptText={promptText}
               setPromptText={setPromptText}
-              selectedModel={selectedModel}
-              fileInputRef={fileInputRef}
-              handlePromptSubmit={handlePromptSubmit}
+              modelLabel={getModelDisplayLabel(modelId)}
+              modelGroups={availableModelGroups()}
+              selectedModel={modelId}
+              onSelectModel={handleSelectModel}
+              styleId={styleId}
+              styleOptions={styleOptions()}
+              onSelectStyle={setStyleId}
+              size={size}
+              sizeOptions={sizeOptions()}
+              onSelectSize={setSize}
+              candidates={candidates}
+              onSelectCandidates={setCandidates}
+              attachments={attachments}
+              onAddAttachments={() => attachmentInputRef.current?.click()}
+              onRemoveAttachment={(target) =>
+                setAttachments((current) => current.filter((item) => item !== target))
+              }
+              submitting={submitting}
+              configNeeded={Boolean(configNotice)}
+              onOpenSettings={openAgentSettings}
+              onSubmit={handlePromptSubmit}
             />
+
+            {(configNotice || attachmentError) && (
+              <div className="mx-auto -mt-4 flex max-w-3xl flex-wrap items-center gap-2 rounded-xl bg-amber-500/10 px-3 py-2 text-[11px] text-amber-300">
+                <span className="min-w-0 flex-1">{configNotice || attachmentError}</span>
+                {configNotice && (
+                  <button
+                    type="button"
+                    onClick={openAgentSettings}
+                    className="shrink-0 rounded-lg bg-amber-500/15 px-2.5 py-1 text-amber-200 transition-colors hover:bg-amber-500/25"
+                  >
+                    {t("welcome.prompt.openSettings")}
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Quick Action Cards (Import Figma / Browser / Recreate) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

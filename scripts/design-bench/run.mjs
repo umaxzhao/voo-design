@@ -149,7 +149,7 @@ async function runInEditor({ task, model, timeout, critique, images }) {
 export async function main(args = process.argv.slice(2)) {
   const options = parseOptions(args);
   if (options.help) {
-    console.log('npm run bench:design -- [--model MODEL] [--tasks=id1,id2] [--critique] [--baseline] [--label=LABEL] [--judge] [--skip-existing] [--out=DIR]\nPorts: VOO_DESIGN_BENCH_BRIDGE_PORT (4290), VOO_DESIGN_BENCH_VITE_PORT (5199).\nOutputs: /workspace/tmp/design-bench/<label>/{<id>.png,<id>.json,scores.json}\nRescore: node scripts/design-bench/score.mjs --label=after [--judge]\nCompare: node scripts/design-bench/report.mjs --a=before --b=after');
+    console.log('npm run bench:design -- [--model MODEL] [--tasks=id1,id2] [--critique] [--baseline] [--label=LABEL] [--judge] [--skip-existing] [--out=DIR]\nPorts: VOO_DESIGN_BENCH_BRIDGE_PORT (4290), VOO_DESIGN_BENCH_VITE_PORT (5199).\nOutputs: $VOO_DESIGN_BENCH_ROOT (default /workspace/tmp/design-bench)/<label>/{<id>.png,<id>.json,scores.json}\nRescore: node scripts/design-bench/score.mjs --label=after [--judge]\nCompare: node scripts/design-bench/report.mjs --a=before --b=after');
     return;
   }
   const { chromium } = await import('playwright');
@@ -160,13 +160,21 @@ export async function main(args = process.argv.slice(2)) {
   console.error(`Design benchmark timeout: ${timeout}ms per task (including critique)`);
   const bridgePort = process.env.VOO_DESIGN_BENCH_BRIDGE_PORT || process.env.VOO_CODEX_BRIDGE_PORT || '4290';
   const vitePort = process.env.VOO_DESIGN_BENCH_VITE_PORT || process.env.VOO_CODEX_VITE_PORT || '5199';
+  const benchOrigins = [`http://127.0.0.1:${vitePort}`, `http://localhost:${vitePort}`];
   const env = {
     ...process.env,
     NO_PROXY: [...new Set(`${process.env.NO_PROXY || ''},127.0.0.1,localhost`.split(','))].join(','),
     VOO_CLI_BRIDGE_PORT: bridgePort, VITE_CLI_BRIDGE_URL: `ws://127.0.0.1:${bridgePort}`,
+    // The runner's own Vite port is not in the bridge's default allowlist.
+    VOO_CLI_BRIDGE_ORIGINS: [...new Set([
+      ...(process.env.VOO_CLI_BRIDGE_ORIGINS || '').split(',').filter(Boolean),
+      ...benchOrigins,
+    ])].join(','),
   };
   const children = [];
-  const output = `/workspace/tmp/design-bench/${options.label}`;
+  const BENCH_ROOT = process.env.VOO_DESIGN_BENCH_ROOT || "/workspace/tmp/design-bench";
+
+const output = `${BENCH_ROOT}/${options.label}`;
   await mkdir(output, { recursive: true });
   if (options.out) await mkdir(options.out, { recursive: true });
   const results = { label: options.label, model: options.model || process.env.VOO_CODEX_MODEL || null, critique: options.critique, startedAt: new Date().toISOString(), tasks: [] };

@@ -1,7 +1,7 @@
 # Editor UI control-gap audit
 
 Audit of handlers in `src/canvas/components/editor_toolbar.jsx`,
-`editor_tool_subbar.jsx`, `editor_contextual_taskbar.jsx` and
+`editor_toolbar.jsx` sub-menus (the former `editor_tool_subbar.jsx` no longer exists; `editor_pen_subbar.jsx` remains), `editor_contextual_taskbar.jsx` and
 `src/canvas/components/editor_properties/` against the engine API surface
 (`src/canvas/editor/editor_engine*.js` plus the controllers/subsystems spread
 into it by `editor_engine_assembly.js`).

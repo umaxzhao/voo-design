@@ -269,7 +269,10 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {!isWarpTool && object.kind !== "adjustment" && object.kind !== "region" && object.kind !== "audio" ? (
+      {/* Text keeps opacity/blend after Fill: the type → paint → appearance
+          order matches Figma, and the Fill row sits next to the text block
+          instead of behind a section the user rarely touches. */}
+      {!isWarpTool && object.kind !== "text" && object.kind !== "adjustment" && object.kind !== "region" && object.kind !== "audio" ? (
         <AppearanceSection
           object={object}
           selectedNodes={selectedNodes}
@@ -296,6 +299,16 @@ export default function PropertiesPanelSections({
           />
         </DocumentColoursContext.Provider>
       ) : null}
+      {!isWarpTool && object.kind === "text" ? (
+        <AppearanceSection
+          object={object}
+          selectedNodes={selectedNodes}
+          edit={edit}
+          editAndCommit={editAndCommit}
+          commitNow={commitNow}
+        />
+      ) : null}
+
       {/* Image-only tools: one collapsed disclosure right after fill / stroke. */}
       {!isWarpTool && object.kind === "image" && (tool ?? TOOL.SELECT) === TOOL.SELECT ? (
         <ImageContextActions

@@ -1,7 +1,7 @@
 # E2E Test Infra: VOO Design Local AI CLI Alignment & Onboarding Guide
 
 ## Test Philosophy
-- Opaque-box, requirement-driven derived from user specifications in `ORIGINAL_REQUEST.md`.
+- Opaque-box, requirement-driven derived from the original user specifications (the `ORIGINAL_REQUEST` document referenced below was not kept in this repository).
 - Dual validation across Desktop Electron IPC and Web loopback bridge environments.
 - Methodology: Category-Partition + Boundary Value Analysis + Pairwise Interaction Testing + Real-World Workload Testing.
 
@@ -40,7 +40,7 @@
   - `tests/unit/cli_bridge_protocol.test.js`: Message serialization, wire routing, event emission.
   - `tests/unit/provider_cli_registry.test.js`: Defaults, model resolution, provider availability.
   - `tests/unit/onboarding_guide.test.jsx`: 3-step wizard flow, persistence, UI rendering, automation gate.
-  - `tests/unit/agent_panel_dispatch.test.jsx`: Island Bar selection context, turn execution, plan status, undo/redo.
+  - Agent panel dispatch (Island Bar selection context, turn execution, plan status, undo/redo): the former `agent_panel_dispatch.test.jsx` no longer exists; see `tests/unit/agent_panel_model_selector.test.jsx` and the canvas agent tests.
 
 ## Real-World Application Scenarios (Tier 4)
 | # | Scenario | Features Exercised | Complexity |

@@ -120,6 +120,10 @@ export function createEditor({
   let mixedLayerMode = false;
   let stagePaintingEnabled = true;
   let chromeRenderOptions = null;
+  // Tool-panel edits update a node on every pointer tick; coalesce those into
+  // one history entry instead of letting the default commit-per-update model
+  // flood undo with one entry per tick.
+  let toolCommitTimer = null;
   const renderListeners = new Set();
 
   const history = createHistory();
@@ -549,6 +553,18 @@ export function createEditor({
       ctrl.nodesController.updateNodes(updates, options),
     updateNode: (id, patch, options) =>
       ctrl.nodesController.updateNodes([{ id, ...patch }], options),
+    /** Update a node without committing; commit once after the burst ends. */
+    updateNodeCoalesced: (id, patch, options = {}) => {
+      ctrl.nodesController.updateNodes([{ id, ...patch }], {
+        ...options,
+        commit: false,
+      });
+      if (toolCommitTimer) clearTimeout(toolCommitTimer);
+      toolCommitTimer = setTimeout(() => {
+        toolCommitTimer = null;
+        ctrl.historyApi.commit?.("editor.tool.update");
+      }, 250);
+    },
     getNode: (id) => getDoc()?.nodes?.find((n) => n.id === id) ?? null,
     getDoc: () => getDoc(),
     // Selection state lives in the nodes controller; the selection controller
@@ -876,6 +892,7 @@ export function createEditor({
     
     if (frame) cancelAnimationFrame(frame);
     if (notifyFrame) cancelAnimationFrame(notifyFrame);
+    if (toolCommitTimer) clearTimeout(toolCommitTimer);
     ctrl.selectionController.dispose();
     observer.disconnect();
     detachPointer();

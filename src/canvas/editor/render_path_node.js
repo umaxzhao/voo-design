@@ -329,7 +329,7 @@ export function drawPathNode(ctx, node, renderState = null) {
   // The arrowhead rides whatever body the stroke got, always as the plain
   // solid stroke — a soft brush's feathered barbs read as a smudge.
   if (node.arrow && points.length >= 2) {
-    drawArrowhead(ctx, node, at, points.length - 1);
+    if (node.arrowEnd !== false) drawArrowhead(ctx, node, at, points.length - 1);
     if (node.arrowStart) drawArrowhead(ctx, node, at, 0, -1);
   }
 }

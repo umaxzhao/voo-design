@@ -65,11 +65,14 @@ describe("welcome home actions", () => {
     await recreateWelcomeScreenshot({}, { createDesign: vi.fn(), getStore: () => ({ editingNodeId: ++calls === 1 ? "new" : "other" }), dispatch });
     expect(dispatch).not.toHaveBeenCalled();
   });
-  it("routes welcome generation through the shared dispatcher after creating the design", () => {
+  it("validates the provider, creates the design, then hands one generation intent to the panel", () => {
     const source = read("canvas/components/welcome_dashboard.jsx");
     const handler = source.slice(source.indexOf("const handlePromptSubmit"), source.indexOf("const handleOpenLocal"));
-    expect(handler).toContain('dispatchToAgent({ prompt: promptToDispatch, intent: "generate", tool: "canvas_generate", context, autoSend: true })');
-    expect(handler.indexOf("await handleCreateNew")).toBeLessThan(handler.indexOf("dispatchToAgent("));
+    expect(handler).toContain("buildGenerationIntent({");
+    expect(handler).toContain("await resolveAgentProvider(intent.modelId)");
+    expect(handler.indexOf("await resolveAgentProvider")).toBeLessThan(handler.indexOf("await handleCreateNew"));
+    expect(handler.indexOf("await handleCreateNew")).toBeLessThan(handler.indexOf("setPendingGeneration(intent)"));
+    expect(handler).not.toContain("dispatchToAgent(");
     expect(handler).not.toContain("setTimeout");
   });
 

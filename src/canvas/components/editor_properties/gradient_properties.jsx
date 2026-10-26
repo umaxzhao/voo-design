@@ -48,7 +48,6 @@ export default function GradientProperties({
   const { t } = useI18n();
   const [localActiveStop, setLocalActiveStop] = useState(0);
   const isGradient = tool === TOOL.GRADIENT;
-  const isFill = tool === TOOL.FILL;
 
   const stops = gradientStops?.length ? gradientStops : DEFAULT_TOOL_STOPS;
   // The stops bar needs an index that survives stop-list edits clamping; fall
@@ -173,54 +172,6 @@ export default function GradientProperties({
           </div>
         )}
 
-        {isFill && (
-          <div className="flex flex-col gap-1.5">
-            {onFillTolerance && (
-              <ToolSliderField
-                label={t("editor.fill.tolerance")}
-                min={0}
-                max={255}
-                step={1}
-                value={Math.round(fillTolerance)}
-                onValueChange={(val) => onFillTolerance(val)}
-                ariaLabel={t("editor.fill.tolerance")}
-                scrubHint={t("editor.props.dragToAdjust")}
-              />
-            )}
-            <div className="grid grid-cols-2 gap-1.5">
-              {onFillContiguous && (
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={fillContiguous}
-                  onClick={() => onFillContiguous(!fillContiguous)}
-                  className={`${sectionRowClass} justify-center text-[10px] ${
-                    fillContiguous
-                      ? "text-[#a7ffd4] ring-1 ring-[#a7ffd4]/40"
-                      : "text-neutral-400"
-                  }`}
-                >
-                  {t("editor.fill.contiguous")}
-                </button>
-              )}
-              {onFillSampleAll && (
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={fillSampleAll}
-                  onClick={() => onFillSampleAll(!fillSampleAll)}
-                  className={`${sectionRowClass} justify-center text-[10px] ${
-                    fillSampleAll
-                      ? "text-[#a7ffd4] ring-1 ring-[#a7ffd4]/40"
-                      : "text-neutral-400"
-                  }`}
-                >
-                  {t("editor.fill.sampleAll")}
-                </button>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </StaticSection>
   );

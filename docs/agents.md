@@ -3,7 +3,7 @@
 VOO can be driven by agents in two ways: the built-in **design agent** (a
 tool-calling chat powered by a configured model provider) and **local CLI
 agents** already installed on your machine (Claude Code, Codex, OpenCode,
-Antigravity). Both act on the canvas only through the same set of **canvas
+Antigravity, DeepSeek Harness). Both act on the canvas only through the same set of **canvas
 tools**.
 
 ## Canvas tools
@@ -98,7 +98,23 @@ kept in sync with undo/redo:
 
 | Tool | Effect |
 | :--- | :--- |
-| `lint_design` | Checks the design for quality issues. |
+| `lint_design` | Checks the design for quality issues (score + issues + metrics). |
+| `inspect_layout` | Structured layout QA: clipped/overflow/overlap/contrast/… problems with layer ids and fixes. |
+
+### Handoff & Code
+
+| Tool | Effect |
+| :--- | :--- |
+| `export_code` | Exports the selection or page as `html` (Tailwind), `react` (JSX) or `css`, with warnings and a size budget. |
+
+### Asset generation
+
+| Tool | Effect |
+| :--- | :--- |
+| `generate_vector` | Turns a prompt into editable SVG artwork (paths/rects) using the configured API agent model. |
+| `vectorize_image` | Traces a raster layer into editable vector paths locally (no provider). |
+| `edit_image` | Removes or replaces an image background through the configured image provider. |
+| `stock_image` | Searches Openverse (CC-licensed) and places a matching photo. |
 
 Mutations flash a visual focus overlay on the canvas
 (`src/canvas/editor/chrome_stage_overlays.js`) so you can see what the agent
@@ -141,6 +157,16 @@ the HTML pipeline applies `styleKitId` by replacing the art-direction model's
 own design system with the chosen kit. Attached images are placed on the canvas
 as visual references before the turn starts.
 
+### Variants
+
+The welcome composer offers 1–3 variants. `runAgentTurn({ variantCount })` runs
+the HTML pipeline once per variant, each with a different art direction from
+the same brief, and offsets the frames horizontally
+(`x + i * (width + 80)`). `onVariant({index, frameId, directionId, nodeCount})`
+lets the panel offer "keep variant N": keeping one deletes the other candidate
+frames and leaves a single design. Variants only apply to the HTML pipeline
+(empty document + generation brief); the tool loop stays single-solution.
+
 ### Scene guides and style kits
 
 `src/canvas/agent/design_quality/` holds the design knowledge injected into
@@ -167,6 +193,7 @@ the system prompt:
 | **Codex** | `npm install -g @openai/codex` | Same session contract as Claude. |
 | **OpenCode** | `npm install -g @opencode/cli` | Model list is discovered from the installed CLI. |
 | **Antigravity** | `npm install -g @google/antigravity-cli` | Model list is discovered from the installed CLI. |
+| **DeepSeek Harness** | Desktop app bundle (`dsh`) | External MCP client (`mcpOnly`): it is detected by its app bundle and connects through the VOO MCP server with the generated connector; its profile owns the model. No managed session. |
 
 Each CLI runs through an Electron session module with the same contract
 (`start` / `callTool` / `advance` / `close`, see

@@ -432,6 +432,7 @@ export const SYSTEM_FONTS_CATALOG = [
 ];
 
 export function CustomFontPicker({ value, onChange, defaultOpen = false, initialSearch = "" }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(defaultOpen);
   const [tab, setTab] = useState("google"); // 'google' | 'system'
   const [search, setSearch] = useState(initialSearch);
@@ -469,7 +470,7 @@ export function CustomFontPicker({ value, onChange, defaultOpen = false, initial
     };
   }, [open]);
 
-  // Outside click to close
+  // Outside click or Escape to close
   useLayoutEffect(() => {
     if (!open) return undefined;
     const onDown = (event) => {
@@ -477,8 +478,19 @@ export function CustomFontPicker({ value, onChange, defaultOpen = false, initial
       if (popRef.current?.contains(event.target)) return;
       setOpen(false);
     };
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
     document.addEventListener("pointerdown", onDown, true);
-    return () => document.removeEventListener("pointerdown", onDown, true);
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("keydown", onKeyDown, true);
+    };
   }, [open]);
 
   // Find label for current value
@@ -529,6 +541,10 @@ export function CustomFontPicker({ value, onChange, defaultOpen = false, initial
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={`${t("editor.fontPicker.title")}: ${currentFont}`}
+        title={`${t("editor.fontPicker.title")}: ${currentFont}`}
         className="flex w-full items-center justify-between rounded-xl bg-[#222222] pl-3 pr-2 py-1.5 text-[11px] font-mono text-neutral-100 outline-none transition-all hover:bg-[#282828] focus:ring-1 focus:ring-white/20"
       >
         <span
@@ -574,10 +590,17 @@ export function FontPickerPopover({
   filteredSystemFonts = [],
 }) {
   const { t } = useI18n();
+  const searchRef = useRef(null);
+
+  useEffect(() => {
+    searchRef.current?.focus();
+  }, []);
 
   return (
     <div
       ref={popRef}
+      role="dialog"
+      aria-label={t("editor.fontPicker.title")}
       className="fixed z-[100] w-72 rounded-2xl bg-[#1a1a1a]/98 p-2.5 shadow-menu backdrop-blur-xl border border-white/10 font-mono text-neutral-200"
       style={pos ?? { left: -9999, top: 0 }}
     >
@@ -610,9 +633,11 @@ export function FontPickerPopover({
       {/* Search Bar */}
       <div className="mt-2">
         <input
+          ref={searchRef}
           type="text"
           value={search}
           onChange={(e) => setSearch?.(e.target.value)}
+          aria-label={t("editor.fontPicker.search")}
           placeholder={t("editor.fontPicker.search")}
           className="w-full rounded-lg bg-[#111111] px-2.5 py-1 text-[11px] text-neutral-200 outline-none placeholder:text-neutral-400 focus:ring-1 focus:ring-white/20"
         />

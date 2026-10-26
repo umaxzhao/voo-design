@@ -26,7 +26,7 @@ export function createPointerDownDispatcher({
       if (drawing.pickColor(event)) api.setTool(api.getToolBeforeDropper());
     } else if (api.getTool() === TOOL.FILL) {
       const fillCol = event.altKey
-        ? api.getBackgroundColor?.() || "#ffffff"
+        ? api.getToolBackgroundColor?.() ?? api.getBackgroundColor?.() ?? "#ffffff"
         : api.getColor();
       void api.fillSelection?.(fillCol, { opacity: api.getFillOpacity?.() ?? 1 });
     } else if (api.getTool() === TOOL.GRADIENT) {

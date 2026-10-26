@@ -1,6 +1,7 @@
 import { useDesignStore } from "../../store/design_store.js";
-import { consumePendingAgentIntent } from "./pending_agent_intent.js";
-import { customModelGroups, resolveAgentProvider } from "../agent/agent_provider.js";
+import { consumePendingAgentIntent, consumePendingGeneration } from "./pending_agent_intent.js";
+import { generationContextText, generationBadgeText, placeReferenceImages } from "./welcome_dashboard/generation_intent.js";
+import { resolveAgentProvider } from "../agent/agent_provider.js";
 import { externalMcpTools } from "../agent/external_mcp_tools.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
@@ -29,66 +30,15 @@ import {
 } from "../agent/session_history.js";
 import { VooBrandLogo } from "../../app_title_bar.jsx";
 import ToolCallCard from "./tool_call_card.jsx";
+import { createUnmountGuard } from "./agent-panel/unmount_guard.js";
 
-/** Available CLI agent model groups for selection */
-export const CLI_MODEL_GROUPS = [
-  {
-    cliId: "claude",
-    name: "Claude Code",
-    models: [
-      { id: "claude:claude-opus-5-5", label: "Claude Opus 5.5" },
-      { id: "claude:sonnet", label: "Claude Sonnet" },
-      { id: "claude:haiku", label: "Claude Haiku" },
-      { id: "claude:opus", label: "Claude Opus" },
-      { id: "claude:best", label: "Claude Best" },
-      { id: "claude:default", label: "Claude Default" },
-    ],
-  },
-  {
-    cliId: "codex",
-    name: "Codex",
-    models: [
-      { id: "codex:gpt-6-astra", label: "GPT-6 Astra" },
-      { id: "codex:gpt-5.6-terra", label: "GPT-5.6 Terra" },
-      { id: "codex:gpt-5.6-sol", label: "GPT-5.6 Sol" },
-      { id: "codex:gpt-5.6-luna", label: "GPT-5.6 Luna" },
-    ],
-  },
-  {
-    cliId: "antigravity",
-    name: "Antigravity",
-    models: [
-      { id: "antigravity:gemini-3.8-flash-high", label: "Gemini 3.8 Flash (High)" },
-      { id: "antigravity:gemini-3.8-flash-medium", label: "Gemini 3.8 Flash (Medium)" },
-      { id: "antigravity:gemini-3.8-flash-low", label: "Gemini 3.8 Flash (Low)" },
-      { id: "antigravity:claude-sonnet-4-6", label: "Claude Sonnet 4.6 (Thinking)" },
-      { id: "antigravity:claude-opus-4-6-thinking", label: "Claude Opus 4.6 (Thinking)" },
-      { id: "antigravity:gpt-oss-120b-medium", label: "GPT-OSS 120B (Medium)" },
-    ],
-  },
-];
+import {
+  CLI_MODEL_GROUPS,
+  availableModelGroups,
+  getModelDisplayLabel,
+} from "./agent-panel/model_catalog.js";
 
-export function getModelDisplayLabel(modelId) {
-  if (!modelId) return "Flash";
-  for (const group of CLI_MODEL_GROUPS) {
-    for (const m of group.models) {
-      if (m.id === modelId) {
-        return `${group.name} · ${m.label.replace(/^Claude\s+|Gemini\s+/, "")}`;
-      }
-    }
-  }
-  for (const group of customModelGroups()) {
-    const model = group.models.find(model => model.id === modelId);
-    if (model) return `${group.name} · ${model.label}`;
-  }
-  const parts = String(modelId).split(":");
-  if (parts.length >= 2) {
-    const cli = parts[0];
-    const rest = parts.slice(1).join(":");
-    return `${cli.charAt(0).toUpperCase() + cli.slice(1)} · ${rest}`;
-  }
-  return modelId;
-}
+export { CLI_MODEL_GROUPS, getModelDisplayLabel };
 
 /** Starter prompts shown on an empty conversation; each fills the composer. */
 const SUGGESTION_KEYS = [
@@ -133,10 +83,11 @@ export default function CanvasAgentPanel({ onClose }) {
   const [streamingText, setStreamingText] = useState("");
   const [pipelineProgress, setPipelineProgress] = useState(null);
   const [directions, setDirections] = useState([]);
+  const [candidates, setCandidates] = useState([]);
   const directionChoice = useRef(null);
-  useEffect(() => () => directionChoice.current?.('auto'), []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [configError, setConfigError] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   const [lastRequest, setLastRequest] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -146,9 +97,19 @@ export default function CanvasAgentPanel({ onClose }) {
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [activeContext, setActiveContext] = useState(null);
   const turnRef = useRef(null);
-  useEffect(() => () => {
-    turnRef.current?.abort();
-    useDesignStore.setState({ agentGenerating: false });
+  // StrictMode runs effect cleanups once on a simulated unmount in development;
+  // the guard makes sure only a real unmount aborts the in-flight turn.
+  const unmountGuardRef = useRef(null);
+  if (!unmountGuardRef.current) {
+    unmountGuardRef.current = createUnmountGuard(() => {
+      turnRef.current?.abort();
+      directionChoice.current?.("auto");
+      useDesignStore.setState({ agentGenerating: false });
+    });
+  }
+  useEffect(() => {
+    unmountGuardRef.current.mount();
+    return () => unmountGuardRef.current.unmount();
   }, []);
   const historyRef = useRef([]);
   const sessionsRef = useRef(sessions);
@@ -252,36 +213,52 @@ export default function CanvasAgentPanel({ onClose }) {
   };
 
   const send = useCallback(
-    async (overrideText, contextAttachment, recoveryRequest) => {
+    async (overrideText, contextAttachment, recoveryRequest, generationIntent) => {
       const targetContext = contextAttachment !== undefined ? contextAttachment : activeContext;
       const text = (overrideText ?? input).trim();
       if (!text || busy || turnRef.current) return;
+      const model = generationIntent?.modelId || selectedModel || getSetting(AGENT_SETTING.MODEL);
+      if (generationIntent?.modelId && generationIntent.modelId !== selectedModel) {
+        setSetting(AGENT_SETTING.MODEL, generationIntent.modelId);
+        setSelectedModel(generationIntent.modelId);
+      }
       const controller = new AbortController();
       turnRef.current = controller;
       useDesignStore.setState({ agentGenerating: true });
       setInput("");
       setError(null);
+      setConfigError(false);
       setCancelled(false);
-      setLastRequest(recoveryRequest ?? { text, context: targetContext });
+      setLastRequest(recoveryRequest ?? { text, context: targetContext, generation: generationIntent ?? null });
       setBusy(true);
       setStreamingText("");
+      setCandidates([]);
+      const variantCount = Math.max(1, Math.min(3, Number(generationIntent?.candidates) || 1));
       const sessionId = activeId ?? createSessionId();
       setActiveId(sessionId);
       const userItem = {
         kind: "text",
         role: "user",
         content: text,
-        contextBadge: targetContext?.name ? `@${targetContext.name}` : undefined,
+        contextBadge: generationIntent
+          ? generationBadgeText(generationIntent, getModelDisplayLabel(model))
+          : (targetContext?.name ? `@${targetContext.name}` : undefined),
       };
       setTranscript((prev) => [...prev, userItem]);
       try {
-        const promptWithContext = targetContext?.name
-          ? `[Context: ${targetContext.name} (${targetContext.kind || "layer"}, id: ${targetContext.nodeId}${
-              targetContext.width ? `, ${targetContext.width}x${targetContext.height}` : ""
-            })]\n${text}`
-          : text;
+        let promptWithContext = text;
+        if (generationIntent) {
+          promptWithContext = `${generationContextText(generationIntent)}\n${text}`;
+          // Only the first attempt places references; a retry would duplicate them.
+          const referenceNote = recoveryRequest ? "" : await placeReferenceImages(generationIntent.attachments);
+          if (referenceNote) promptWithContext += `\n${referenceNote}`;
+          controller.signal.throwIfAborted();
+        } else if (targetContext?.name) {
+          promptWithContext = `[Context: ${targetContext.name} (${targetContext.kind || "layer"}, id: ${targetContext.nodeId}${
+            targetContext.width ? `, ${targetContext.width}x${targetContext.height}` : ""
+          })]\n${text}`;
+        }
 
-        const model = selectedModel || getSetting(AGENT_SETTING.MODEL);
         const provider = await abortable(() => resolveAgentProvider(model), controller.signal);
         const external = await abortable(() => externalMcpTools(), controller.signal);
         controller.signal.throwIfAborted();
@@ -290,21 +267,29 @@ export default function CanvasAgentPanel({ onClose }) {
           ...provider,
           maxSteps: Number(getSetting(AGENT_SETTING.MAX_STEPS)) || AGENT_DEFAULTS.maxSteps,
           styleNote: getSetting(AGENT_SETTING.STYLE_NOTE) ?? AGENT_DEFAULTS.styleNote,
+          styleId: generationIntent?.styleId ?? null,
+          sceneKind: generationIntent?.kind ?? null,
+          frame: generationIntent?.frame ?? null,
+          variantCount,
+          onVariant: (variant) => setCandidates((current) => [...current, variant]),
           history: historyRef.current,
           userText: promptWithContext,
           tools: [...CANVAS_TOOL_SCHEMAS, ...external.tools],
           executeTool: (name, args, context) => name.startsWith("mcp__") ? external.execute(name, args, context) : executeCanvasTool(name, args, context),
           onText: (text) => { if (!controller.signal.aborted) setStreamingText(text); },
           onProgress: setPipelineProgress,
-          chooseDirection: (choices, { signal } = {}) => new Promise((resolve, reject) => {
-            setDirections(choices);
-            const finish = choice => { clearTimeout(timer); signal?.removeEventListener('abort', abort); directionChoice.current = null; setDirections([]); resolve(choice); };
-            const abort = () => { clearTimeout(timer); directionChoice.current = null; setDirections([]); reject(new DOMException('Aborted', 'AbortError')); };
-            const timer = setTimeout(() => finish('auto'), 15000);
-            directionChoice.current = finish;
-            signal?.addEventListener('abort', abort, { once: true });
-            if (signal?.aborted) abort();
-          }),
+          chooseDirection: variantCount > 1
+            ? (choices, { variantIndex = 0 } = {}) =>
+                Promise.resolve(choices[variantIndex % choices.length]?.id ?? "auto")
+            : (choices, { signal } = {}) => new Promise((resolve, reject) => {
+                setDirections(choices);
+                const finish = choice => { clearTimeout(timer); signal?.removeEventListener('abort', abort); directionChoice.current = null; setDirections([]); resolve(choice); };
+                const abort = () => { clearTimeout(timer); directionChoice.current = null; setDirections([]); reject(new DOMException('Aborted', 'AbortError')); };
+                const timer = setTimeout(() => finish('auto'), 15000);
+                directionChoice.current = finish;
+                signal?.addEventListener('abort', abort, { once: true });
+                if (signal?.aborted) abort();
+              }),
           onToolEvent: updateToolItem,
         });
         controller.signal.throwIfAborted();
@@ -323,7 +308,19 @@ export default function CanvasAgentPanel({ onClose }) {
           createdAt: Date.now(),
         });
       } catch (caught) {
-        if (!controller.signal.aborted) setError(caught?.code === CHAT_ERROR.NOT_CONFIGURED ? t("agent.panel.notConfigured") : errorText({ code: caught?.code ?? caught?.message, message: caught?.message }));
+        if (!controller.signal.aborted) {
+          const code = caught?.code ?? caught?.message;
+          const wantsConfig =
+            code === CHAT_ERROR.NOT_CONFIGURED ||
+            code === "agentNotConfigured" ||
+            code === "agent.connection.desktopOnly";
+          setConfigError(wantsConfig);
+          setError(
+            code === CHAT_ERROR.NOT_CONFIGURED
+              ? t("agent.panel.notConfigured")
+              : errorText({ code, message: caught?.message }),
+          );
+        }
       } finally {
         turnRef.current = null;
         useDesignStore.setState({ agentGenerating: false });
@@ -342,9 +339,31 @@ export default function CanvasAgentPanel({ onClose }) {
     [busy, input, activeId, activeContext, selectedModel, t],
   );
 
+  const keepCandidate = useCallback(async (candidate) => {
+    const others = candidates
+      .map((item) => item.frameId)
+      .filter((frameId) => frameId && frameId !== candidate.frameId);
+    try {
+      if (others.length) await executeCanvasTool("delete_layers", { layerIds: others }, {});
+      setTranscript((prev) => [
+        ...prev,
+        { kind: "text", role: "assistant", content: t("agent.panel.variantKept", { n: candidate.index + 1 }) },
+      ]);
+    } catch (caught) {
+      setError(errorText({ code: caught?.code ?? caught?.message, message: caught?.message }));
+    } finally {
+      setCandidates([]);
+    }
+  }, [candidates, t]);
+
   useEffect(() => {
     const consume = () => {
-      if (!busy) consumePendingAgentIntent(useDesignStore, (prompt, context) => {
+      if (busy) return;
+      consumePendingGeneration(useDesignStore, (generation) => {
+        setActiveContext(null);
+        send(generation.prompt, null, undefined, generation);
+      });
+      consumePendingAgentIntent(useDesignStore, (prompt, context) => {
         if (context) setActiveContext(context);
         send(prompt, context);
       });
@@ -470,8 +489,8 @@ export default function CanvasAgentPanel({ onClose }) {
             </button>
           </div>
           <div className="px-2 text-[11px] text-neutral-400">{t("agent.providers.hint")}</div>
-          {customModelGroups().length === 0 && <p className="px-2 text-[11px] text-neutral-500">{t("agent.providers.customHint")}</p>}
-          {[...CLI_MODEL_GROUPS, ...customModelGroups()].map((group) => (
+          {availableModelGroups().length === CLI_MODEL_GROUPS.length && <p className="px-2 text-[11px] text-neutral-500">{t("agent.providers.customHint")}</p>}
+          {availableModelGroups().map((group) => (
             <div key={group.cliId} className="flex flex-col gap-0.5">
               <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-mono uppercase tracking-wider text-neutral-400">
                 {group.name}
@@ -607,6 +626,24 @@ export default function CanvasAgentPanel({ onClose }) {
         )}
       </div>
 
+      {candidates.length > 1 && !busy && (
+        <div className="mx-4 mb-2 rounded-xl bg-white/[0.04] p-2">
+          <p className="mb-1 text-[11px] text-neutral-400">{t("agent.panel.variantsTitle")}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {candidates.map((candidate) => (
+              <button
+                key={`${candidate.index}:${candidate.frameId ?? "?"}`}
+                type="button"
+                onClick={() => keepCandidate(candidate)}
+                className="rounded-lg bg-white/[0.06] px-2.5 py-1 text-[11px] text-neutral-200 transition-colors hover:bg-[#E5B2FF]/20 hover:text-white"
+              >
+                {t("agent.panel.keepVariant", { n: candidate.index + 1 })}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Pen App Style Context Attachment Badge */}
       {activeContext && (
         <div className="flex items-center gap-1.5 px-4 pt-1 pb-1">
@@ -639,15 +676,24 @@ export default function CanvasAgentPanel({ onClose }) {
       {!busy && lastRequest && (
         <div className="mx-4 mb-2 flex gap-2 text-[12px]">
           <button type="button" className="rounded-lg px-3 py-2 text-neutral-300 hover:bg-white/10"
-            onClick={() => send(lastRequest.text, lastRequest.context)}>{t("agent.panel.retry")}</button>
+            onClick={() => send(lastRequest.text, lastRequest.context, undefined, lastRequest.generation)}>{t("agent.panel.retry")}</button>
           {cancelled && <button type="button" className="rounded-lg px-3 py-2 text-neutral-300 hover:bg-white/10"
-            onClick={() => send(`${lastRequest.text}\n\n${t("agent.panel.resumePrompt")}`, lastRequest.context, lastRequest)}>{t("agent.panel.resume")}</button>}
+            onClick={() => send(`${lastRequest.text}\n\n${t("agent.panel.resumePrompt")}`, lastRequest.context, lastRequest, lastRequest.generation)}>{t("agent.panel.resume")}</button>}
         </div>
       )}
       {error && (
-        <p role="alert" className="mx-4 mb-2 rounded-xl bg-rose-500/10 px-3 py-2 text-[12px] text-rose-400">
-          {error}
-        </p>
+        <div role="alert" className="mx-4 mb-2 flex flex-wrap items-center gap-2 rounded-xl bg-rose-500/10 px-3 py-2 text-[12px] text-rose-400">
+          <span className="min-w-0 flex-1">{error}</span>
+          {configError && (
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("voo:open-onboarding"))}
+              className="shrink-0 rounded-lg bg-rose-500/15 px-2.5 py-1 text-rose-200 transition-colors hover:bg-rose-500/25"
+            >
+              {t("agent.panel.configureAgent")}
+            </button>
+          )}
+        </div>
       )}
       <form onSubmit={onSubmit} className="prompt-composer agent-composer relative mx-3 mb-3 rounded-2xl p-3">
         <textarea

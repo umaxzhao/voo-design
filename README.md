@@ -18,7 +18,7 @@
 
 ![VOO Design dashboard](docs/screenshots/dashboard.jpg)
 
-**VOO Design** is a design editor built around an AI agent. The agent works directly on the document: it reads the layer tree, applies transactional edits, and places generated images on the canvas, while you keep direct control of vector shapes, pixel layers, text, masks and filters in the same file. Local AI tools (background removal, upscaling, inpainting) run on your machine, and local CLI coding agents (Claude Code, Codex, OpenCode, Antigravity) can operate the canvas through a sandboxed tool interface.
+**VOO Design** is a design editor built around an AI agent. The agent works directly on the document: it reads the layer tree, applies transactional edits, and places generated images on the canvas, while you keep direct control of vector shapes, pixel layers, text, masks and filters in the same file. Local AI tools (background removal, upscaling, inpainting) run on your machine, and local CLI coding agents (Claude Code, Codex, OpenCode, Antigravity, DeepSeek Harness) can operate the canvas through a sandboxed tool interface.
 
 ![VOO Design editor](docs/screenshots/editor.jpg)
 
@@ -121,6 +121,8 @@ The **agent panel** is a tool-calling chat that can inspect the layer tree and a
 ```bash
 npm run bridge       # ws://127.0.0.1:4179 for the web editor to reach local CLIs
 ```
+
+DeepSeek Harness connects as an external MCP client instead of a managed session; see [docs/mcp-server.md](docs/mcp-server.md#portable-connectors).
 
 Details: [docs/agents.md](docs/agents.md).
 

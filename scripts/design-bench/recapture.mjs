@@ -9,7 +9,9 @@ const cwd = fileURLToPath(new URL('../../', import.meta.url));
 
 export async function recapture({ label, tasks, scoreOnly = false, repaint = false, out } = {}) {
   if (!/^[a-z0-9-]+$/.test(label || '')) throw new Error('--label must match [a-z0-9-]+');
-  const directory = `/workspace/tmp/design-bench/${label}`;
+  const BENCH_ROOT = process.env.VOO_DESIGN_BENCH_ROOT || "/workspace/tmp/design-bench";
+
+  const directory = `${BENCH_ROOT}/${label}`;
   const manifest = `${directory}/scores.json`;
   const scores = JSON.parse(await readFile(manifest, 'utf8'));
   const ids = tasks ?? scores.tasks.map(task => task.id);

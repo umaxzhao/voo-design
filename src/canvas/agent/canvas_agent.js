@@ -11,10 +11,11 @@ import { fromStyleKit } from './design_system/from_style_kit.js';
  */
 
 import { streamChatTurn } from "./chat_stream.js";
-import { buildDesignQualityPrompt, pickStyleKit } from "./design_quality/index.js";
+import { STYLE_KITS, buildDesignQualityPrompt, lintDesign, pickStyleKit } from "./design_quality/index.js";
 import { buildDocumentDesignContext } from "../editor/design_tokens.js";
 import { closeCodexSession } from "../components/agent-panel/codex_transport.js";
 import { abortable } from "./abortable.js";
+import { isCliAgentModel } from "./cli_agent_step.js";
 
 export const AGENT_ERROR = Object.freeze({
   STEP_LIMIT: "agentStepLimit",
@@ -44,7 +45,8 @@ export const SYSTEM_PROMPT =
   "5. Scene ops: boolean_combine merges shapes (union/subtract/intersect/exclude); set_constraints " +
   "(left/right/center/scale, top/bottom/center/scale) so children follow frame resizes; export_layers " +
   "rasterizes layers to base64 PNG for verification or handoff.\n" +
-  "6. Verify: After multi-step edits check inspect_layer_tree or capture_canvas (PNG returned to you). " +
+  "6. Verify: After multi-step edits check inspect_layer_tree or capture_canvas (PNG returned to you), " +
+  "and call inspect_layout for a machine-readable problem list (clipped/overflow/overlap/contrast). " +
   "If a step went wrong, use undo (and redo) rather than piling on fixes.\n" +
   "Design quality: plan first. Default to auto-layout frames for UI and composed layouts; pass layout " +
   "horizontal or vertical explicitly. Reserve layout: \"none\" for posters, free-form art, or intentional " +
@@ -57,12 +59,17 @@ export const SYSTEM_PROMPT =
   "unresolved failures.\n" +
   "7. Design quality: honor the Design quality block below — one style kit, tokens first, " +
   "clear hierarchy, no AI-template smells. For UI generation use Lucide icons, never emoji as icons. " +
-  "For HTML generation use Tailwind utility classes for layout and styling. Use short copy for on-canvas " +
-  "UI text: prefer concise labels, headlines and body text; avoid chatty paragraphs.\n" +
+  "Artwork: use generate_vector for original logo/illustration, vectorize_image to trace flat raster " +
+  "marks, edit_image for background removal/replacement and stock_image for photography; never hand-draw " +
+  "a logo out of primitive paths. For HTML generation use Tailwind utility classes for layout and styling. Use short copy for on-canvas " +
+  "UI text: prefer concise labels, headlines and body text; avoid chatty paragraphs. " +
+  "When the user asks for code, call export_code (html | react | css) and report the file name plus warnings.\n" +
   "Keep replies short.";
 
 const READ_ONLY_TOOLS = new Set([
   "lint_design",
+  "inspect_layout",
+  "export_code",
   "describe_selection",
   "inspect_layer_tree",
   "select_layers",
@@ -126,27 +133,68 @@ export async function runAgentTurn({
   onToolEvent,
   maxSteps = AGENT_DEFAULTS.maxSteps,
   styleNote = "",
+  styleId = null,
+  sceneKind = null,
   streamStep = streamChatTurn,
   htmlPipeline = true,
   onProgress,
   chooseDirection,
+  onVariant,
+  variantCount = 1,
   frame,
 }) {
   const base = styleNote.trim() ? `${SYSTEM_PROMPT}\n\nStyle notes from the user: ${styleNote.trim()}` : SYSTEM_PROMPT;
   let qualityOff = globalThis.__VOO_DESIGN_QUALITY_OFF__ === true;
   try { qualityOff ||= globalThis.localStorage?.getItem("voo.designQuality") === "off"; } catch {}
   const editor = activeEditor();
+  // One signal per turn: CLI transports key their session on it and the HTML
+  // pipeline aborts through it, so it must exist before the pipeline branch.
+  const turnSignal = signal ?? new AbortController().signal;
   if (!qualityOff && shouldUseHtmlPipeline({ editor, userText, enabled: htmlPipeline })) {
     const doc = editor.getDocument?.() ?? editor.getDoc?.();
-    // Pipeline owns bounded critique/repair. Propagate failures to the caller;
-    // retrying through the tool loop can leave an incomplete or blank design.
-    const result = await runHtmlPipeline({ brief: styleNote ? `${userText}\nStyle notes: ${styleNote}` : userText,
-      frame: frame ?? { width: doc.width || 1440, height: doc.height || 1000, x: 0, y: 0 },
-      editor, streamStep, config, signal, onProgress, chooseDirection });
-    return `Created page with ${result.nodeCount} editable layers (${result.directionId}).`;
+    const baseFrame = frame ?? { width: doc.width || 1440, height: doc.height || 1000, x: 0, y: 0 };
+    const brief = styleNote ? `${userText}\nStyle notes: ${styleNote}` : userText;
+    // Variants: the same brief, the same pipeline, N different art directions,
+    // laid out side by side so the user can compare them in place.
+    const count = Math.max(1, Math.min(4, Math.round(Number(variantCount) || 1)));
+    const variants = [];
+    const results = [];
+    for (let index = 0; index < count; index += 1) {
+      turnSignal.throwIfAborted();
+      const variantFrame = {
+        ...baseFrame,
+        x: (baseFrame.x ?? 0) + index * ((baseFrame.width || 1440) + 80),
+      };
+      const result = await runHtmlPipeline({
+        brief,
+        frame: variantFrame,
+        styleKitId: styleId,
+        editor, streamStep, config, signal,
+        onProgress,
+        chooseDirection: chooseDirection
+          ? (choices, options = {}) => chooseDirection(choices, { ...options, variantIndex: index })
+          : undefined,
+      });
+      results.push(result);
+      const variant = {
+        index,
+        frameId: result.frameId ?? null,
+        directionId: result.directionId,
+        nodeCount: result.nodeCount,
+      };
+      variants.push(variant);
+      onVariant?.(variant);
+    }
+    if (count === 1) {
+      return `Created page with ${results[0].nodeCount} editable layers (${results[0].directionId}).`;
+    }
+    return `Created ${variants.length} variants side by side (frames ${variants
+      .map((variant) => `${variant.index + 1}:${variant.frameId ?? "?"}`)
+      .join(", ")}). Compare them, keep the best one and delete the others.`;
   }
   const before = documentFingerprint(editor);
-  const kit = pickStyleKit(userText);
+  const explicitKit = styleId ? STYLE_KITS[styleId] : null;
+  const kit = explicitKit && explicitKit.id ? explicitKit : pickStyleKit(userText);
   let designSystem;
   if (!qualityOff) {
     const doc = editor?.getDocument?.() ?? editor?.getDoc?.();
@@ -154,16 +202,13 @@ export async function runAgentTurn({
     // A prompt fallback must not mutate the document or create an undo entry.
   }
   const documentContext = buildDocumentDesignContext(editor?.getDocument?.());
-  const designPrompt = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit, designSystem })}`;
+  const designPrompt = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit, designSystem, sceneKind })}`;
   const system = designPrompt + documentContext;
   const messages = [
     { role: "system", content: system },
     ...history,
     { role: "user", content: userText },
   ];
-  // A CLI agent keeps its native session across tool steps, keyed by the signal,
-  // so every step of one turn shares a single signal.
-  const turnSignal = signal ?? new AbortController().signal;
   let mutated = false;
   let writesSinceCapture = 0;
   let verificationNudged = false;
@@ -171,12 +216,34 @@ export async function runAgentTurn({
   let failurePending = false;
   let canvasCreated = false;
   let creationNudged = false;
+  let lintReport = null;
+  let lintNudged = false;
   const creationTools = new Set(["create_frame", "create_shape", "create_path", "place_image", "generate_image", "generate_image_web", "create_instance", "create_nodes", "edit_html"]);
   // Only creation briefs require new content; inspection and token-only tasks remain valid.
   // Without a creation tool in the toolset the requirement cannot be met, so do not enforce it.
   const needsCanvasContent = tools.some(tool => creationTools.has(tool?.function?.name))
     && /(?:create|draft|design|build|make).{0,60}(?:poster|layout|screen|landing page|dashboard)|(?:草拟|设计|生成|绘制|制作).{0,30}(?:海报|版式|页面|界面)/i.test(userText);
   const canCapture = tools.some(tool => tool.function?.name === "capture_canvas");
+  // Nested text completion for generate_vector. CLI transports drive their own
+  // agent loop and cannot be nested, so only API models expose this helper.
+  const llm = config?.model && !isCliAgentModel(config.model)
+    ? {
+        complete: async ({ system, user, signal: callSignal }) => {
+          const out = await streamStep({
+            config,
+            messages: [
+              { role: "system", content: String(system ?? "") },
+              { role: "user", content: String(user ?? "") },
+            ],
+            tools: [],
+            signal: callSignal ?? turnSignal,
+            onText: () => {},
+          });
+          return out?.text ?? "";
+        },
+      }
+    : null;
+  const toolContext = llm ? { signal: turnSignal, llm } : { signal: turnSignal };
 
   const runSteps = async () => {
     for (let step = 0; step < maxSteps; step += 1) {
@@ -208,6 +275,27 @@ export async function runAgentTurn({
           messages.push({ role: "assistant", content: text || null }, { role: "user", content: "Before finishing, call capture_canvas to verify the multi-step design edits. Review the image and fix visible problems." });
           continue;
         }
+        // Bounded automatic quality gate: a low deterministic layout score gets
+        // exactly one repair pass, and only for a design with real content.
+        if (
+          canCapture &&
+          lintReport &&
+          !lintNudged &&
+          (lintReport.metrics?.nodeCount ?? 0) >= 3 &&
+          lintReport.score < 60
+        ) {
+          lintNudged = true;
+          const issues = (lintReport.issues ?? [])
+            .filter((issue) => issue.severity === "error")
+            .slice(0, 5)
+            .map((issue) => `${issue.rule}: ${issue.message}`)
+            .join("; ");
+          messages.push({ role: "assistant", content: text || null }, {
+            role: "user",
+            content: `Automated layout check scored ${lintReport.score}/100. Fix the highest-impact problems (${issues || "overflow, clipping, contrast"}), then call capture_canvas once to verify. Do not start over.`,
+          });
+          continue;
+        }
         return text;
       }
 
@@ -233,7 +321,7 @@ export async function runAgentTurn({
         }
         onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "in_progress" });
         try {
-          const result = await abortable(() => executeTool(call.name, args, { signal: turnSignal }), turnSignal);
+          const result = await abortable(() => executeTool(call.name, args, toolContext), turnSignal);
           turnSignal.throwIfAborted();
           if (result?.isError || result?.error) throw new Error(JSON.stringify(result));
           if (!READ_ONLY_TOOLS.has(call.name) && designSystem && editor) {
@@ -246,7 +334,28 @@ export async function runAgentTurn({
           else if (!READ_ONLY_TOOLS.has(call.name)) { writesSinceCapture += 1; verificationNudged = false; }
           const { dataUrl, ...rest } = result && typeof result === "object" ? result : {};
           const hasImage = typeof dataUrl === "string" && dataUrl.startsWith("data:image");
-          const content = JSON.stringify(hasImage ? { ...rest, imageAttached: true } : result);
+          let lintSummary = null;
+          if (call.name === "capture_canvas" && editor) {
+            // Attach a deterministic layout check to every verification capture so
+            // the model sees overflow/contrast/hierarchy problems, not just pixels.
+            try {
+              const doc = editor.getDocument?.() ?? editor.getDoc?.();
+              if (doc) {
+                lintReport = lintDesign(doc);
+                const top = (lintReport.issues ?? [])
+                  .filter((issue) => issue.severity === "error")
+                  .concat((lintReport.issues ?? []).filter((issue) => issue.severity !== "error"))
+                  .slice(0, 6)
+                  .map((issue) => ({ rule: issue.rule, severity: issue.severity, message: issue.message, fix: issue.fix }));
+                lintSummary = { score: lintReport.score, nodeCount: lintReport.metrics?.nodeCount ?? 0, issues: top };
+              }
+            } catch {
+              lintReport = null;
+            }
+          }
+          const content = JSON.stringify(hasImage
+            ? { ...rest, imageAttached: true, ...(lintSummary ? { lint: lintSummary } : {}) }
+            : (lintSummary ? { ...(result ?? {}), lint: lintSummary } : result));
           messages.push({ role: "tool", tool_call_id: call.id, content });
           if (hasImage) {
             messages.push({

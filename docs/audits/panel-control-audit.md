@@ -3,6 +3,8 @@
 **Specification:** `WB-02` (Workbench / Design Editor Panel Control Audit)  
 **Date:** 2026-10-24  
 **Scope:** Left Panel, Right Panel, Top Toolbar/Subbar, Bottom Bar/Contextual Taskbar  
+> **Historical (2026-10-24).** Files named here such as `editor_tool_subbar.jsx`, `raster_context_toolbar.jsx` and `src/locales/*.json` have since been removed or replaced; translations now live in `src/shared/i18n/`. Re-audit before relying on line numbers.
+
 **Audit Standard:** Control selector/line, handler, engine/store method, definition verification, status.
 
 ---

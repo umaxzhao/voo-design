@@ -1033,6 +1033,7 @@ export default {
   "editor.props.sepia": "Sepia",
   "editor.props.emboss": "Emboss",
   "editor.props.reset": "Reset",
+  "editor.props.mixedValuesEditable": "Mixed — type a value to apply it to every selected layer",
   "editor.props.mixedValues": "Selected layers have different values",
   "editor.filters.category.colour": "Colour grading",
   "editor.filters.category.pixel": "Pixel filters",

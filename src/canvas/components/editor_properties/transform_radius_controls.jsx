@@ -44,7 +44,15 @@ export default function TransformRadiusControls({
       <div className="flex items-center gap-1">
         {commonCornerRadius.mixed ? (
           <div className="min-w-0 flex-1">
-            <MixedField label={t("editor.props.cornerRadius")} suffix="px" />
+            <MixedField
+              label={t("editor.props.cornerRadius")}
+              suffix="px"
+              min={0}
+              max={cornerRadiusMax}
+              ariaLabel={t("editor.props.cornerRadius")}
+              onValueChange={(value) => edit({ cornerRadius: value })}
+              commitNow={commitNow}
+            />
           </div>
         ) : !unlinkedRadii ? (
           <div className="min-w-0 flex-1">

@@ -12,6 +12,8 @@ export default {
   "editor.constraints.left": "Left",
   "editor.constraints.right": "Right",
   "editor.constraints.leftRight": "Left & right",
+  "editor.constraints.centerHorizontal": "Center horizontally",
+  "editor.constraints.centerVertical": "Center vertically",
   "editor.constraints.center": "Center",
   "editor.constraints.scale": "Scale",
   "editor.constraints.top": "Top",

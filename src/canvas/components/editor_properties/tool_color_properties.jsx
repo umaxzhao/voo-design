@@ -11,40 +11,25 @@ export default function ToolColorProperties({
   color = "#ffffff",
   onColor,
   onPickColor,
+  backgroundColor = "#000000",
+  onBackgroundColor,
   swapColorsRef = null,
 }) {
   const { t } = useI18n();
-  const [fgColor, setFgColor] = useState(color);
-  const [bgColor, setBgColor] = useState("#000000");
   const [activeSlot, setActiveSlot] = useState("fg");
 
-  useEffect(() => {
-    if (color && typeof color === "string") {
-      if (activeSlot === "bg") {
-        setBgColor(color);
-      } else {
-        setFgColor(color);
-      }
-    }
-  }, [color, activeSlot]);
-
+  const fgColor = color;
+  const bgColor = backgroundColor;
   const activeColor = activeSlot === "fg" ? fgColor : bgColor;
 
   const handleColorChange = (nextHex) => {
-    if (activeSlot === "fg") {
-      setFgColor(nextHex);
-      onColor?.(nextHex);
-    } else {
-      setBgColor(nextHex);
-    }
+    if (activeSlot === "fg") onColor?.(nextHex);
+    else onBackgroundColor?.(nextHex);
   };
 
   const handleSwapColors = () => {
-    const nextFg = bgColor;
-    const nextBg = fgColor;
-    setFgColor(nextFg);
-    setBgColor(nextBg);
-    onColor?.(nextFg);
+    onColor?.(bgColor);
+    onBackgroundColor?.(fgColor);
   };
 
   // Keep the ref (used by the global X-key shortcut) pointed at the latest swap closure.
@@ -69,10 +54,8 @@ export default function ToolColorProperties({
               {/* Background Color Swatch (Bottom-Right) */}
               <button
                 type="button"
-                onClick={() => {
-                  setActiveSlot("bg");
-                  onColor?.(bgColor);
-                }}
+                onClick={() => setActiveSlot("bg")}
+                aria-label={t("editor.toolOptions.backgroundColor")}
                 title={t("editor.toolOptions.backgroundColor")}
                 className={`absolute bottom-0 right-0 h-4.5 w-4.5 rounded-md before:absolute before:-inset-1 before:content-[''] transition-transform hover:scale-105 ${
                   activeSlot === "bg"
@@ -88,10 +71,8 @@ export default function ToolColorProperties({
               {/* Foreground Color Swatch (Top-Left) */}
               <button
                 type="button"
-                onClick={() => {
-                  setActiveSlot("fg");
-                  onColor?.(fgColor);
-                }}
+                onClick={() => setActiveSlot("fg")}
+                aria-label={t("editor.toolOptions.foregroundColor")}
                 title={t("editor.toolOptions.foregroundColor")}
                 className={`absolute top-0 left-0 h-4.5 w-4.5 rounded-md before:absolute before:-inset-1 before:content-[''] transition-transform hover:scale-105 ${
                   activeSlot === "fg"
@@ -146,5 +127,7 @@ ToolColorProperties.propTypes = {
   color: PropTypes.string,
   onColor: PropTypes.func,
   onPickColor: PropTypes.func,
+  backgroundColor: PropTypes.string,
+  onBackgroundColor: PropTypes.func,
   swapColorsRef: PropTypes.shape({ current: PropTypes.func }),
 };

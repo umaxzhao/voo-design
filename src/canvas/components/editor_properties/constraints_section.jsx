@@ -93,15 +93,15 @@ export default function ConstraintsSection({ object, editAndCommit }) {
           />
           <button
             type="button"
-            data-testid="editor-constraints-center"
-            aria-label={t("editor.constraints.center")}
+            data-testid="editor-constraints-center-horizontal"
+            aria-label={t("editor.constraints.centerHorizontal")}
             onClick={() => change({ horizontal: "center" })}
             className={`${pinClass(h === "center")} left-1/2 top-1/2 h-1 w-5 -translate-x-1/2 -translate-y-1/2`}
           />
           <button
             type="button"
-            data-testid="editor-constraints-center"
-            aria-label={t("editor.constraints.center")}
+            data-testid="editor-constraints-center-vertical"
+            aria-label={t("editor.constraints.centerVertical")}
             onClick={() => change({ vertical: "center" })}
             className={`${pinClass(v === "center")} left-1/2 top-1/2 h-5 w-1 -translate-x-1/2 -translate-y-1/2`}
           />

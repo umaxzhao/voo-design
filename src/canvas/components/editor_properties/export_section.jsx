@@ -1,7 +1,7 @@
 /** Export section: preset rows (format · scale · suffix) and one Export action. */
 
 import PropTypes from "prop-types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "../../use_i18n.js";
 import { StaticSection, SectionAddButton, fieldClass } from "./property_section.jsx";
 import FlatSelect from "../flat_select.jsx";
@@ -21,12 +21,34 @@ const QUALITIES = [
 const MAX_PRESETS = 4;
 
 let presetSeq = 0;
-const makePreset = () => ({
+const makePreset = (patch = {}) => ({
   id: `preset-${++presetSeq}`,
   type: "image/png",
   scale: 1,
   suffix: "",
+  ...patch,
 });
+
+const FORMAT_VALUES = new Set(FORMATS.map((format) => format.value));
+
+/** Node-stored export presets survive selection changes; bad rows are ignored. */
+export function normalizeExportPresets(raw) {
+  if (!Array.isArray(raw) || raw.length === 0) return [makePreset()];
+  const rows = raw
+    .slice(0, MAX_PRESETS)
+    .filter((row) => row && typeof row === "object")
+    .map((row) => ({
+      id: typeof row.id === "string" && row.id ? row.id : `preset-${++presetSeq}`,
+      type: FORMAT_VALUES.has(row.type) ? row.type : "image/png",
+      scale: SCALES.includes(Number(row.scale)) ? Number(row.scale) : 1,
+      suffix: typeof row.suffix === "string" ? row.suffix.slice(0, 32) : "",
+      ...(row.transparent === false ? { transparent: false } : {}),
+      ...(row.type !== "image/png" && row.quality != null
+        ? { quality: String(row.quality) }
+        : {}),
+    }));
+  return rows.length ? rows : [makePreset()];
+}
 
 function download(dataUrl, filename) {
   const anchor = document.createElement("a");
@@ -38,8 +60,22 @@ function download(dataUrl, filename) {
 export default function ExportSection({ object, selectedNodes = [], engine }) {
   const { t } = useI18n();
   // One PNG preset is visible by default (Figma-style export row); "+" adds more.
-  const [presets, setPresets] = useState(() => [makePreset()]);
+  // The rows live on the node, so switching layers no longer leaks or drops them.
+  const [presets, setPresets] = useState(() =>
+    normalizeExportPresets(object?.exportPresets),
+  );
+  useEffect(() => {
+    setPresets(normalizeExportPresets(object?.exportPresets));
+  }, [object?.id]);
+
   if (!engine?.exportSelectionPng) return null;
+
+  const persist = (next) => {
+    setPresets(next);
+    if (!object?.id) return;
+    const update = engine?.updateNodeCoalesced ?? engine?.updateNode;
+    update?.(object.id, { exportPresets: next });
+  };
 
   const ids = selectedNodes.length
     ? selectedNodes.map((node) => node.id)
@@ -48,8 +84,8 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
       : [];
 
   const patch = (id, changes) =>
-    setPresets((rows) =>
-      rows.map((row) => (row.id === id ? { ...row, ...changes } : row)),
+    persist(
+      presets.map((row) => (row.id === id ? { ...row, ...changes } : row)),
     );
 
   const exportPreset = (preset) => {
@@ -65,7 +101,10 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
     const dataUrl = typeof result === "string" ? result : result?.dataUrl;
     if (!dataUrl) return;
     const format = FORMATS.find((entry) => entry.value === preset.type);
-    const base = (object?.name || "export").trim() || "export";
+    const base =
+      selectedNodes.length > 1
+        ? `${(object?.name || "export").trim() || "export"}-${selectedNodes.length}`
+        : (object?.name || "export").trim() || "export";
     const suffix = preset.suffix ? `-${preset.suffix.trim()}` : "";
     download(dataUrl, `${base}${suffix}@${preset.scale}x.${format?.ext ?? "png"}`);
   };
@@ -78,7 +117,7 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
         presets.length < MAX_PRESETS ? (
           <SectionAddButton
             label={t("editor.props.addExportSettings")}
-            onClick={() => setPresets((rows) => [...rows, makePreset()])}
+            onClick={() => persist([...presets, makePreset()])}
           />
         ) : null
       }
@@ -125,7 +164,7 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
               aria-label={t("editor.props.removeExportSettings")}
               title={t("editor.props.removeExportSettings")}
               onClick={() =>
-                setPresets((rows) => rows.filter((row) => row.id !== preset.id))
+                persist(presets.filter((row) => row.id !== preset.id))
               }
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-white"
             >
