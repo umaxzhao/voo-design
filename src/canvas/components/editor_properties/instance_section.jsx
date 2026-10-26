@@ -97,6 +97,12 @@ export default function InstanceSection({ object, engine }) {
           </button>
         ) : null}
 
+        {components[object.sourceCanvasId]?.description ? (
+          <p className="rounded-lg bg-white/[0.03] px-2 py-1.5 text-[10px] leading-4 text-neutral-400">
+            {components[object.sourceCanvasId].description}
+          </p>
+        ) : null}
+
         <div className="flex items-center justify-between px-1">
           <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-400">
             {t("editor.props.instanceOverrides")}

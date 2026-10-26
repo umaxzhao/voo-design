@@ -2,6 +2,8 @@ export default {
   "editor.variants.title": "变体",
   "editor.variants.variant": "变体",
   "editor.variants.set": "变体集",
+  "editor.variants.description": "描述",
+  "editor.variants.descriptionPlaceholder": "这个组件是做什么的？",
   "editor.variants.properties": "属性",
   "editor.variants.noProperties": "还没有变体属性。",
   "editor.variants.propertyName": "属性",

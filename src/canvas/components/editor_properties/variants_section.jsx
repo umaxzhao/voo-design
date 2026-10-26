@@ -90,6 +90,33 @@ export default function VariantsSection({ engine, node = null, sourceDoc = null,
           </button>
         </div>
         {axisError ? <span className="text-[9px] text-rose-400">{axisError}</span> : null}
+        <label className="flex flex-col gap-1 pt-1">
+          <span className="text-[9px] uppercase tracking-[0.14em] text-neutral-400">
+            {t("editor.variants.description")}
+          </span>
+          <input
+            defaultValue={source.description ?? ""}
+            placeholder={t("editor.variants.descriptionPlaceholder")}
+            aria-label={t("editor.variants.description")}
+            onBlur={(event) => {
+              const next = event.target.value.trim();
+              if (next === (source.description ?? "")) return;
+              const hostDoc = engine.getDocument();
+              if (source.canvasId === hostDoc.canvasId) {
+                engine.setDoc({ ...hostDoc, description: next }, { name: t("editor.variants.description") });
+              } else {
+                engine.setDoc({
+                  ...hostDoc,
+                  components: {
+                    ...(hostDoc.components ?? {}),
+                    [source.canvasId]: { ...source, description: next },
+                  },
+                }, { name: t("editor.variants.description") });
+              }
+            }}
+            className="h-7 w-full rounded-lg bg-[#222222] px-2 text-[10px] font-mono text-neutral-200 outline-none placeholder:text-neutral-400 focus:ring-1 focus:ring-[#a7ffd4]/40"
+          />
+        </label>
         <button type="button" className={BUTTON_CLASS} onClick={() => {
           let index = 2;
           let name;

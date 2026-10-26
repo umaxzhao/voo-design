@@ -2,6 +2,8 @@ export default {
   "editor.variants.title": "Variants",
   "editor.variants.variant": "Variant",
   "editor.variants.set": "Variant set",
+  "editor.variants.description": "Description",
+  "editor.variants.descriptionPlaceholder": "What is this component for?",
   "editor.variants.properties": "Properties",
   "editor.variants.noProperties": "No variant properties yet.",
   "editor.variants.propertyName": "Property",
