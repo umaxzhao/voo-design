@@ -2184,6 +2184,7 @@ export default {
   "editor.mobile.panels.expand": "展开底部面板",
   "editor.mobile.panels.expandLayers": "展开图层面板",
   "editor.mobile.panels.expandProperties": "展开属性面板",
+  "titlebar.more": "更多操作",
   "pageSwitcher.untitled": "未命名页面",
   "pageSwitcher.close": "删除页面",
   "pageSwitcher.add": "新建页面",

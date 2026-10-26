@@ -5,6 +5,25 @@
 }
 
 @media (max-width: 768px) {
+  .app-title-actions > .app-title-desktop-action,
+  .app-title-actions > .app-title-desktop-collab {
+    display: none;
+  }
+
+  .app-title-actions > .app-title-mobile-more {
+    display: block;
+  }
+
+  .app-title-mobile-more > div[role="menu"] > button {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 2.75rem;
+    justify-content: flex-start;
+    padding: 0 0.75rem;
+  }
+
   [data-testid="design-editor"].editor-narrow {
     --editor-mobile-panel-gap: 0.375rem;
     right: 0;
@@ -248,6 +267,10 @@
     display: none;
   }
 
+  .app-title-bar .app-title-actions > .app-title-mobile-more {
+    display: block;
+  }
+
   .app-title-bar .app-title-actions button {
     display: flex;
     width: 2.5rem;
@@ -257,6 +280,15 @@
     justify-content: center;
     padding: 0;
     white-space: nowrap;
+  }
+
+  .app-title-mobile-more > div[role="menu"] > button {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 2.75rem;
+    justify-content: flex-start;
+    padding: 0 0.75rem;
   }
 
   .app-title-action-label {

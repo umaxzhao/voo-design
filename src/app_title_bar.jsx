@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import CanvasTabBar from "./canvas/components/canvas_tab_bar.jsx";
-import { Bolt, Download, FolderOpen } from "lucide-react";
+import { Bolt, Download, FolderOpen, MoreHorizontal } from "lucide-react";
 import { useDesignStore } from "./store/design_store.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import CollabAvatars from "./canvas/components/collab_avatars.jsx";
@@ -38,6 +38,24 @@ export default function AppTitleBar() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState("general");
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef(null);
+
+  useEffect(() => {
+    if (!moreOpen) return undefined;
+    const handlePointerDown = (event) => {
+      if (!moreRef.current?.contains(event.target)) setMoreOpen(false);
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setMoreOpen(false);
+    };
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      window.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [moreOpen]);
 
   useEffect(() => {
     const handleOpenSettings = (e) => {
@@ -97,14 +115,16 @@ export default function AppTitleBar() {
           {/* Presence and share live beside the file actions, only while a document is open. */}
           {welcomeOpen ? null : (
             <>
-              <CollabAvatars />
-              <div className="h-4 w-px shrink-0 bg-white/10" aria-hidden="true" />
+              <div className="app-title-desktop-collab contents">
+                <CollabAvatars />
+                <div className="h-4 w-px shrink-0 bg-white/10" aria-hidden="true" />
+              </div>
             </>
           )}
           <button
+            className="app-title-desktop-action cursor-pointer rounded-lg px-2.5 py-1 text-neutral-400 transition-colors hover:bg-white/10 hover:text-neutral-200 font-medium"
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("voo:file-open"))}
-            className="cursor-pointer rounded-lg px-2.5 py-1 text-neutral-400 transition-colors hover:bg-white/10 hover:text-neutral-200 font-medium"
             title={t("titlebar.openTitle")}
             aria-label={t("titlebar.openTitle")}
           >
@@ -113,15 +133,65 @@ export default function AppTitleBar() {
           </button>
           {/* Documents autosave; the primary action exports a portable snapshot. */}
           <button
+            className="app-title-desktop-action cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent(welcomeOpen ? WELCOME_NEW_EVENT : "voo:file-export-snapshot"))}
-            className="cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
             title={welcomeOpen ? t("welcome.header.new") : t("titlebar.snapshotTitle")}
             aria-label={welcomeOpen ? t("welcome.header.new") : t("titlebar.snapshotTitle")}
           >
             <Download className="app-title-action-icon" size={15} aria-hidden="true" />
             <span className="app-title-action-label">{welcomeOpen ? t("welcome.header.new") : t("editor.export")}</span>
           </button>
+          <div ref={moreRef} className="app-title-mobile-more relative hidden">
+            <button
+              type="button"
+              aria-label={t("titlebar.more")}
+              aria-haspopup="menu"
+              aria-expanded={moreOpen}
+              title={t("titlebar.more")}
+              onClick={() => setMoreOpen((open) => !open)}
+              className="flex size-10 items-center justify-center rounded-lg text-neutral-300 hover:bg-white/10"
+            >
+              <MoreHorizontal size={19} aria-hidden="true" />
+            </button>
+            {moreOpen ? (
+              <div
+                role="menu"
+                aria-label={t("titlebar.more")}
+                className="absolute right-0 top-full z-[100] mt-1.5 flex min-w-48 flex-col gap-1 rounded-xl border border-white/10 bg-neutral-900 p-1.5 text-left text-[12px] shadow-panel"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    window.dispatchEvent(new CustomEvent("voo:file-open"));
+                  }}
+                  className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-neutral-200 hover:bg-white/10"
+                >
+                  <FolderOpen size={16} aria-hidden="true" />
+                  <span>{t("titlebar.open")}</span>
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    window.dispatchEvent(new CustomEvent(welcomeOpen ? WELCOME_NEW_EVENT : "voo:file-export-snapshot"));
+                  }}
+                  className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-neutral-200 hover:bg-white/10"
+                >
+                  <Download size={16} aria-hidden="true" />
+                  <span>{welcomeOpen ? t("welcome.header.new") : t("editor.export")}</span>
+                </button>
+                {welcomeOpen ? null : (
+                  <div role="none" className="border-t border-white/10 pt-1">
+                    <CollabAvatars />
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
           <button
             type="button"
             aria-label={t("welcome.settings.open")}
