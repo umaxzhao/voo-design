@@ -207,10 +207,10 @@ export default function EditorPieMenu({
           aria-hidden="true"
           className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full backdrop-blur-md"
           style={{
-            width: (radius + 40) * 2,
-            height: (radius + 40) * 2,
+            width: (radius + 22) * 2,
+            height: (radius + 22) * 2,
             background:
-              "radial-gradient(circle, transparent 0 40%, rgba(0,0,0,0.66) 40% 92%, rgba(255,255,255,0.16) 92% 100%)",
+              "radial-gradient(circle, transparent 0 52%, rgba(0,0,0,0.66) 52% 93%, rgba(255,255,255,0.16) 93% 100%)",
           }}
         />
 
