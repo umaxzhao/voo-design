@@ -66,6 +66,7 @@ export function renderEngineStage({
   dirtyRects = null,
   previewMotion = false,
   requestRender = null,
+  onRenderOptions = null,
 }) {
   const dpr = draftRender ? 1 : window.devicePixelRatio || 1;
   const width = stageWidth || stage.clientWidth;
@@ -139,7 +140,7 @@ export function renderEngineStage({
         ),
       }
     : doc;
-  draw(ctx, {
+  const renderOptions = {
     doc: mixedLayerMode ? { ...renderDoc, backgroundColor: "transparent" } : renderDoc,
     viewport: viewportTools.getViewport(),
     dpr,
@@ -217,9 +218,34 @@ export function renderEngineStage({
     penInsertPreview: penTools.api.insertionPreview(),
     glRenderer: glAdjustments,
     docVersion: `${docVersion}:${renderVersion}`,
-  });
+  };
+  onRenderOptions?.(renderOptions);
+  draw(ctx, renderOptions);
 
   return dpr;
+}
+
+/** Paint live interaction chrome above the shared Skia workspace artwork. */
+export function renderEngineChrome(canvas, options, viewport, width, height) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Workspace chrome requires a 2D context");
+  const dpr = window.devicePixelRatio || 1;
+  resizeCanvas(canvas, width, height, dpr);
+  // Overlay-only draws preserve artwork underneath, so clear our separate
+  // transparent surface explicitly to remove old selection and gesture trails.
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!options) return;
+  draw(ctx, {
+    ...options,
+    viewport,
+    dpr,
+    stageWidth: width,
+    stageHeight: height,
+    overlaysOnly: true,
+    pageBackground: false,
+    dirtyRects: null,
+  });
 }
 
 /** Paint one contiguous 2D layer run without stage chrome or the page fill. */

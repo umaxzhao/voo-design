@@ -104,6 +104,7 @@ import { useEditorDnd } from "./use_editor_dnd.js";
 import { useI18n } from "../use_i18n.js";
 import { useDesignStore } from "../../store/design_store.js";
 import { useWorkspaceSkia } from "../use_skia_page.js";
+import { useWorkspaceChrome } from "../use_workspace_chrome.js";
 import { SpatialIndex } from "../editor/spatial_index.js";
 import { requestCollabOriginal, sendCollabCursor } from "../collab/use_collab.js";
 import RemoteCursors from "./remote_cursors.jsx";
@@ -315,6 +316,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
 
   const freeStageRef = useRef(null);
   const workspaceCanvasRef = useRef(null);
+  const workspaceChromeRef = useRef(null);
   const artboardLayerRef = useRef(null);
   const freeGridRef = useRef(null);
   const panGestureRef = useRef(null);
@@ -1763,6 +1765,14 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     }
     return index;
   }, [workspaceDocs, layoutById]);
+
+  useWorkspaceChrome({
+    enabled: multi,
+    canvasRef: workspaceChromeRef,
+    stageRef: freeStageRef,
+    engine,
+    layout: frameLayout,
+  });
 
   useWorkspaceSkia({
     enabled: multi,
@@ -3412,6 +3422,12 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               className="pointer-events-none absolute inset-0 h-full w-full"
             />
             <RemoteCursors />
+            <canvas
+              ref={workspaceChromeRef}
+              data-testid="workspace-chrome-canvas"
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-20 h-full w-full"
+            />
             <div
               aria-hidden
               ref={freeGridRef}

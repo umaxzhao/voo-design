@@ -63,6 +63,7 @@ import {
 import {
   renderEngineLayerPass,
   renderEngineStage,
+  renderEngineChrome,
 } from "./editor_engine_render.js";
 import { assembleEngineControllers } from "./editor_engine_assembly.js";
 import { createVideoLayerRuntime } from "./video-layer-runtime.js";
@@ -116,6 +117,7 @@ export function createEditor({
   let notifyFrame = 0;
   let disposed = false;
   let mixedLayerMode = false;
+  let chromeRenderOptions = null;
   const renderListeners = new Set();
 
   const history = createHistory();
@@ -372,6 +374,7 @@ export function createEditor({
       doc: evaluatedDoc,
       viewportTools,
       requestRender,
+      onRenderOptions: (options) => { chromeRenderOptions = options; },
       selection,
       selectedContainer: ctrl.nodesController?.getSelectedGroup?.() ?? null,
       tool: ctrl.toolsController.getTool(),
@@ -727,6 +730,9 @@ export function createEditor({
     panBy: viewportTools.panBy,
     setViewport: viewportTools.setViewport,
     requestRender,
+    renderChrome(targetCanvas, viewport, width, height) {
+      renderEngineChrome(targetCanvas, chromeRenderOptions, viewport, width, height);
+    },
     setMixedLayerMode(next) {
       if (mixedLayerMode === Boolean(next)) return;
       mixedLayerMode = Boolean(next);
