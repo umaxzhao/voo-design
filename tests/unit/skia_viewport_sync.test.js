@@ -22,7 +22,7 @@ it("presents each zoom camera synchronously and resource completion uses the lat
   const docs = [{ nodes: [] }];
   const first = host.draw({ docs, revision: 1, viewport: { zoom: 1, panX: 10 } });
   expect(renderer.render).toHaveBeenCalledTimes(1);
-  expect(renderer.render.mock.lastCall[0].backgroundColor).toBe("transparent");
+  expect(renderer.render.mock.lastCall[0].backgroundColor).toBe("#525252");
   for (const zoom of [1.1, 1.3, 0.9]) {
     const frame = host.draw({ docs, revision: 1, viewport: { zoom, panX: zoom * 10 } });
     // Assert before yielding: artwork follows chrome in this animation frame.
@@ -42,7 +42,7 @@ it("ignores obsolete resource completions and completions after disposal", async
   const host = await createSkiaHost({});
   const old = host.draw({ docs: [{}], revision: 1, viewport: { zoom: 1 } });
   const next = host.draw({ docs: [{}, {}], revision: 2, viewport: { zoom: 2 } });
-  expect(renderer.render.mock.lastCall[0].backgroundColor).toBe("transparent");
+  expect(renderer.render.mock.lastCall[0].backgroundColor).toBe("#525252");
   loads[0]();
   await old;
   expect(renderer.render).toHaveBeenCalledTimes(2);

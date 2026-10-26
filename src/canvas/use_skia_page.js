@@ -1,6 +1,8 @@
 import { useDesignStore } from "../store/design_store.js";
 import { useEffect, useRef, useState } from "react";
 import { createSkiaHost } from "./editor/skia_host.js";
+import { WORKSPACE_BACKGROUND } from "./editor/render_canvas_base.js";
+import { THEME_CHANGED_EVENT } from "./theme_events.js";
 
 /**
  * Paints one editor page through Skia instead of the 2D canvas (full mode / single page).
@@ -130,7 +132,7 @@ export function useWorkspaceSkia({
   revision = 0,
   spatialIndex = null,
   resolveImageUrl = null,
-  backgroundColor = "transparent",
+  backgroundColor = null,
 }) {
   const hostRef = useRef(null);
   const [status, setStatus] = useState("idle");
@@ -194,7 +196,11 @@ export function useWorkspaceSkia({
       const live = cameraOverride?.zoom !== undefined ? cameraOverride : null;
       const cam = (live ?? (subscribeCamera ? useDesignStore.getState().editorCamera : latest.camera)) ?? {};
       const { panX = 0, panY = 0, zoom = 1 } = cam;
-      void host.draw({ ...latest, viewport: {
+      const editor = liveStage.closest?.('[data-testid="design-editor"]');
+      const themeBackground = editor && window.getComputedStyle?.(editor).backgroundColor;
+      const ground = latest.backgroundColor ??
+        (themeBackground && themeBackground !== "rgba(0, 0, 0, 0)" ? themeBackground : WORKSPACE_BACKGROUND);
+      void host.draw({ ...latest, backgroundColor: ground, viewport: {
         x: panX, y: panY, panX, panY, zoom, width, height, devicePixelRatio: dpr,
       } }).catch(error => console.warn("Workspace Skia draw failed", error));
     };
@@ -216,6 +222,7 @@ export function useWorkspaceSkia({
     // camera changed.
     const onWindowResize = () => schedule();
     window.addEventListener?.("resize", onWindowResize);
+    window.addEventListener?.(THEME_CHANGED_EVENT, schedule);
     let dprQuery = null;
     const onDprChange = () => {
       watchDpr();
@@ -237,6 +244,7 @@ export function useWorkspaceSkia({
       unsubscribe?.();
       observer?.disconnect();
       window.removeEventListener?.("resize", onWindowResize);
+      window.removeEventListener?.(THEME_CHANGED_EVENT, schedule);
       dprQuery?.removeEventListener?.("change", onDprChange);
     };
   }, [status, stageRef, subscribeCamera]);

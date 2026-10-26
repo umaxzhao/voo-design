@@ -159,6 +159,7 @@ import {
   gridArtboardLayouts,
   presentationRowX,
   zoomCameraAt,
+  workspaceRenderDocument,
 } from "./image_editor_helpers.js";
 
 const EditorCanvasInstanceProperties = lazy(
@@ -1709,9 +1710,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       .map((id) => {
         const liveEngine = enginesRef.current.get(id)?.engine;
         const liveDoc = liveEngine?.getDocument?.();
-        if (liveDoc) return { ...liveDoc, id: liveDoc.id || liveDoc.canvasId || id };
-        const canvasDoc = nodes.find((n) => n.id === id)?.data?.canvasDoc;
-        if (canvasDoc) return { ...canvasDoc, id: canvasDoc.id || canvasDoc.canvasId || id };
+        if (liveDoc) return workspaceRenderDocument(liveDoc, id);
+        const canvasDoc = nodes.find((n) => n.id === id)?.data?.editorDoc ??
+          nodes.find((n) => n.id === id)?.data?.canvasDoc;
+        if (canvasDoc) return workspaceRenderDocument(canvasDoc, id);
         const rawNode = nodes.find((n) => n.id === id);
         if (rawNode) {
           return {

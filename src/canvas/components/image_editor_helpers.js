@@ -7,6 +7,11 @@ export const FREE_PADDING = 48;
 /** Artboards without a saved position fill a grid this many columns wide. */
 const FREE_COLUMNS = 3;
 
+/** Render placement is keyed by the editor page, not the persisted canvas ID. */
+export function workspaceRenderDocument(doc, pageId) {
+  return { ...doc, id: pageId };
+}
+
 /**
  * Default free-canvas placement: a grid of equal cells in reading order, each
  * artboard centred in its cell. Saved positions still win over this.

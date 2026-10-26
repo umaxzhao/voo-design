@@ -2,6 +2,9 @@
 
 export const PAGE_BACKGROUND = "#ffffff";
 
+/** Neutral workspace ground, matching the design system's surface-canvas token. */
+export const WORKSPACE_BACKGROUND = "#525252";
+
 /** Selection chrome, in screen pixels so it never scales with the zoom. */
 export const SELECTION_COLOR = "#b2ffd6";
 

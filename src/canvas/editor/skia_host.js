@@ -16,6 +16,7 @@ import { createWasmSkiaFrames } from '../../engine-wasm/skia-frame.js';
 import { assetUrl } from "../asset_url.js";
 import { documentsToScene } from "./skia_scene_adapter.js";
 import { visibleWorldRect } from "./viewport_culling.js";
+import { WORKSPACE_BACKGROUND } from "./render_canvas_base.js";
 
 /** How long a frame waits on pictures before painting without them. */
 const RESOURCE_TIMEOUT_MS = 3000;
@@ -164,8 +165,8 @@ export async function createSkiaHost(canvas) {
         ? await wasmFrames.prepare(docs, suppliedIndex) : suppliedIndex;
       const snapshot = {
         revision,
-        // Let the editor's themed CSS ground show through every render mode.
-        backgroundColor: backgroundColor ?? "transparent",
+        // Fill opaque GPU surfaces with the editor's themed workspace ground.
+        backgroundColor: backgroundColor ?? WORKSPACE_BACKGROUND,
         gridMode: "none",
         elements: documentsToScene(docs, {
           axis,
