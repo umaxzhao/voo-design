@@ -12,7 +12,8 @@ import {
   IconChevronDown,
   IconMinus,
 } from "../../icons.jsx";
-import { Paintbrush, AlignCenterHorizontal } from "lucide-react";
+import { Paintbrush } from "lucide-react";
+import { AlignIcon } from "../alignment_icon.jsx";
 import StrokeStyleSection from "./stroke_style_section.jsx";
 import EditorTooltip from "../editor_tooltip.jsx";
 import ScrubField from "../scrub_field.jsx";
@@ -156,7 +157,7 @@ export function StrokeSection({
                 className="pointer-events-none flex shrink-0 items-center pl-2.5 text-neutral-500"
                 aria-hidden="true"
               >
-                <AlignCenterHorizontal size={11} />
+                <AlignIcon type="center" size={11} />
               </span>
               <select
                 value={strokeAlign}

@@ -685,9 +685,11 @@ export { BringToFront as IconBringToFront } from "lucide-react";
 export { SendToBack as IconSendToBack } from "lucide-react";
 export { FlipHorizontal2 as IconFlipH } from "lucide-react";
 export { FlipVertical2 as IconFlipV } from "lucide-react";
-export { AlignLeft as IconAlignLeft } from "lucide-react";
-export { AlignCenter as IconAlignCenter } from "lucide-react";
-export { AlignRight as IconAlignRight } from "lucide-react";
+export {
+  AlignmentLeftIcon as IconAlignLeft,
+  AlignmentCenterIcon as IconAlignCenter,
+  AlignmentRightIcon as IconAlignRight,
+} from "./components/alignment_icon.jsx";
 
 /* Adjustment / filter / layer-style glyphs.
  *

@@ -1,7 +1,7 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { IconAdd, IconBold, IconCheck, IconClose, IconCopy, IconFlipH, IconFlipV, IconFolder, IconLayers, IconLock, IconMask, IconMinus, IconMore, IconSliders, IconSwap, IconTrash, IconUnlock, IconUnlink, IconDiamond, IconSparkles, IconEye, IconEyeOff, IconArrowUp, IconCrop } from "../icons.jsx";
 import { OperationIcon } from "./editor_properties/combine_section.jsx";
-import { AlignIcon, DistributeIcon, TidyIcon } from "./editor_properties/align_section.jsx";
+import { AlignIcon, DistributeIcon, TidyIcon } from "./alignment_icon.jsx";
 import { alignNodes, distributeNodes, tidyNodes } from "../editor/align_ops.js";
 import { BOOLEAN_OPERATIONS } from "../editor/scene_model.js";
 import AddKindPicker from "./editor_properties/add_kind_picker.jsx";
