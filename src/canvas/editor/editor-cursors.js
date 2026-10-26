@@ -7,6 +7,7 @@
  */
 
 import { rotationFromPointer } from "./scene_geometry.js";
+import { ROTATE_CURSOR } from "./cursor_assets.js";
 
 export const ROTATION_CURSOR_ANGLE_STEP = 15;
 
@@ -54,15 +55,10 @@ export function snapRotationCursorAngle(angle) {
 
 /** Returns a CSS cursor value with an explicit hotspot and system fallback. */
 export function rotationCursorForAngle(angle) {
-  const snapped = snapRotationCursorAngle(angle);
-  const hotspot = ROTATION_CURSOR_HOTSPOTS[snapped];
-  if (!hotspot) {
-    throw new RangeError(
-      `Missing rotation cursor metadata for ${snapped} degrees`,
-    );
-  }
-  const assetUrl = `${CURSOR_ASSET_BASE}cursors/affinity/cursor-rotate-${snapped}.png`;
-  return `url("${assetUrl}") ${hotspot[0]} ${hotspot[1]}, crosshair`;
+  // One supplied rotate cursor covers every snapped angle; the hotspot is the
+  // centre of its curved arrow.
+  snapRotationCursorAngle(angle);
+  return ROTATE_CURSOR;
 }
 
 /** Aligns the double-arrow cursor tangentially around a transform centre. */

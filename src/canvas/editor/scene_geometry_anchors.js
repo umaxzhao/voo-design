@@ -3,6 +3,10 @@
  */
 
 import { calculateRotationAngle } from "./box_transform_math.js";
+import {
+  HORIZONTAL_SCALE_CURSOR,
+  VERTICAL_SCALE_CURSOR,
+} from "./cursor_assets.js";
 import { fromNodeLocal } from "./scene_geometry_transform.js";
 import { nodeAABB } from "./scene_geometry_bounds.js";
 
@@ -166,7 +170,12 @@ const HANDLE_AXIS_DEG = {
   sw: 135,
 };
 
-const AXIS_CURSORS = ["ew-resize", "nwse-resize", "ns-resize", "nesw-resize"];
+const AXIS_CURSORS = [
+  HORIZONTAL_SCALE_CURSOR,
+  "nwse-resize",
+  VERTICAL_SCALE_CURSOR,
+  "nesw-resize",
+];
 
 export function cursorForHandle(handle, rotation = 0) {
   const axis = HANDLE_AXIS_DEG[handle];
