@@ -224,7 +224,12 @@ export default function AlignSection({ count, onLayout, selectedNodes = [], show
   const canSpread = count >= 3;
 
   return (
-    <StaticSection title={t("editor.props.align")} storageKey="align">
+    <StaticSection
+      title={t("editor.props.align")}
+      storageKey="align"
+      hideHeader
+      bodyClassName="space-y-2 px-2"
+    >
       {showQuickActions ? <Row>
         {ALIGN_TYPES.map((type) => (
           <EditorTooltip

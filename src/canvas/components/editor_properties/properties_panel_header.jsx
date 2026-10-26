@@ -205,7 +205,7 @@ export default function PropertiesPanelHeader({
   }
 
   return (
-    <div className="flex items-center justify-between px-2 pb-2.5 pt-1 border-b border-white/10 mb-2 select-none">
+    <div className="flex min-h-9 items-center justify-between px-2 py-2 select-none">
       <div className="flex items-center gap-1.5 min-w-0">
         {toolInfo ? (
           <div className="flex items-center gap-1 rounded-full bg-white/[0.08] px-2 py-0.5 text-[11px] font-mono text-neutral-100 ring-1 ring-white/10 truncate">

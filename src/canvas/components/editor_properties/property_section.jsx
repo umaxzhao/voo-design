@@ -179,20 +179,30 @@ CollapsibleSection.propTypes = {
  * persistence (it is expanded by default). Kept as a separate name so call
  * sites read as "fixed group" versus "opt-in fold".
  */
-export function StaticSection({ title, children = null, extra = null, storageKey = null, testId = undefined }) {
+export function StaticSection({
+  title,
+  children = null,
+  extra = null,
+  storageKey = null,
+  testId = undefined,
+  hideHeader = false,
+  bodyClassName = sectionBodyClass,
+}) {
   // Core property groups are always open: the panel is a scannable list like
   // Figma's, not a set of drawers. Empty groups show an explicit action row
   // instead of hiding their body behind a chevron.
   void storageKey;
   return (
     <div className={sectionRhythmClass} data-testid={testId}>
-      <div className={sectionHeaderClass}>
-        <div className={`flex min-w-0 items-center gap-1.5 ${sectionTitleClass}`}>
-          <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
+      {hideHeader ? null : (
+        <div className={sectionHeaderClass}>
+          <div className={`flex min-w-0 items-center gap-1.5 ${sectionTitleClass}`}>
+            <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
+          </div>
+          {extra ? <div className="flex shrink-0 items-center gap-2">{extra}</div> : null}
         </div>
-        {extra ? <div className="flex shrink-0 items-center gap-2">{extra}</div> : null}
-      </div>
-      <div className={sectionBodyClass}>{children}</div>
+      )}
+      <div className={bodyClassName}>{children}</div>
     </div>
   );
 }
