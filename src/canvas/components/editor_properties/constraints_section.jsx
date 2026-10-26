@@ -5,7 +5,7 @@ import {
   VERTICAL_CONSTRAINTS,
   normalizeConstraints,
 } from "../../editor/scene_constraints.js";
-import { CollapsibleSection } from "./property_section.jsx";
+import { StaticSection } from "./property_section.jsx";
 
 const FIELD_CLASS =
   "h-7 w-full min-w-0 flex-1 cursor-pointer appearance-none rounded-xl bg-neutral-800 pl-2.5 pr-6 text-[11px] font-mono tabular-nums text-neutral-100 uppercase outline-none transition-colors hover:bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
@@ -54,10 +54,9 @@ export default function ConstraintsSection({ object, editAndCommit }) {
   const v = constraints.vertical;
 
   return (
-    <CollapsibleSection
+    <StaticSection
       title={t("editor.constraints.title")}
-      storageKey="constraints"
-    >
+        >
       <div className="flex items-center gap-3">
         <div
           data-testid="editor-constraints-diagram"
@@ -124,7 +123,7 @@ export default function ConstraintsSection({ object, editAndCommit }) {
           )}
         </div>
       </div>
-    </CollapsibleSection>
+    </StaticSection>
   );
 }
 

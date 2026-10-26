@@ -1,9 +1,9 @@
 import PropTypes from "prop-types";
 import { useI18n } from "../../use_i18n.js";
 import { normalizeAutoLayout } from "../../editor/scene_auto_layout.js";
-import { CollapsibleSection, SectionAddButton, SectionEmptyRow } from "./property_section.jsx";
+import { SectionAddButton, SectionEmptyRow, StaticSection } from "./property_section.jsx";
 
-const DEFAULT_LAYOUT = {
+export const DEFAULT_AUTO_LAYOUT = {
   direction: "vertical",
   gap: 8,
   padding: 0,
@@ -25,7 +25,7 @@ const DISTRIBUTIONS = [
 const FIELD_CLASS =
   "w-full min-w-0 rounded-lg bg-neutral-800 px-2 py-1.5 text-[11px] tabular-nums text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
 
-export default function AutoLayoutSection({ object, editAndCommit }) {
+export function AutoLayoutFields({ object, editAndCommit }) {
   const { t } = useI18n();
   const layout = normalizeAutoLayout(object.autoLayout);
   const change = (patch) =>
@@ -100,23 +100,12 @@ export default function AutoLayoutSection({ object, editAndCommit }) {
   );
 
   return (
-    <CollapsibleSection
-      title={t("editor.autoLayout.title")}
-      storageKey="autoLayout.group"
-      extra={
-        <span data-testid="editor-auto-layout-enable">
-          <SectionAddButton
-            label={t("editor.autoLayout.enable")}
-            onClick={() => editAndCommit({ autoLayout: DEFAULT_LAYOUT })}
-          />
-        </span>
-      }
-    >
+    <div className="flex flex-col gap-2">
       {!layout ? (
         <SectionEmptyRow
           label={t("editor.autoLayout.enable")}
           testId="editor-auto-layout-empty"
-          onClick={() => editAndCommit({ autoLayout: DEFAULT_LAYOUT })}
+          onClick={() => editAndCommit({ autoLayout: DEFAULT_AUTO_LAYOUT })}
         />
       ) : (
         <div className="flex flex-col gap-2">
@@ -266,7 +255,37 @@ export default function AutoLayoutSection({ object, editAndCommit }) {
           </button>
         </div>
       )}
-    </CollapsibleSection>
+    </div>
+  );
+}
+
+AutoLayoutSection.propTypes = {
+  object: PropTypes.object.isRequired,
+  editAndCommit: PropTypes.func.isRequired,
+};
+
+
+/** Standalone group (kept for callers that show it outside the layout group). */
+export default function AutoLayoutSection({ object, editAndCommit }) {
+  const { t } = useI18n();
+  const layout = normalizeAutoLayout(object.autoLayout);
+  const enable = () => editAndCommit({ autoLayout: DEFAULT_AUTO_LAYOUT });
+  return (
+    <StaticSection
+      title={t("editor.autoLayout.title")}
+      storageKey="autoLayout.group"
+      extra={<SectionAddButton label={t("editor.autoLayout.enable")} onClick={enable} />}
+    >
+      {layout ? (
+        <AutoLayoutFields object={object} editAndCommit={editAndCommit} />
+      ) : (
+        <SectionEmptyRow
+          label={t("editor.autoLayout.enable")}
+          testId="editor-auto-layout-empty"
+          onClick={enable}
+        />
+      )}
+    </StaticSection>
   );
 }
 

@@ -46,18 +46,22 @@ const render = (object, extra = {}) =>
 const order = (html, labels) => labels.map((label) => html.indexOf(label));
 
 describe("phase-1 panel order", () => {
-  it("places Effects before Appearance before Export", () => {
+  it("follows Figma order: Appearance before Fill, Stroke, Effects, Export", () => {
     const html = render(base(), {
       sections: ["transform", "fill", "stroke", "effects", "export"],
     });
-    const [effects, appearance, exportSection] = order(html, [
-      "editor.props.effects",
+    const [appearance, fill, stroke, effects, exportSection] = order(html, [
       "editor.props.appearance",
+      "editor.props.fillLabel",
+      "editor.props.strokeLabel",
+      "editor.props.effects",
       "editor.props.exportTitle",
     ]);
-    expect(effects).toBeGreaterThan(-1);
-    expect(appearance).toBeGreaterThan(effects);
-    expect(exportSection).toBeGreaterThan(appearance);
+    expect(appearance).toBeGreaterThan(-1);
+    expect(fill).toBeGreaterThan(appearance);
+    expect(stroke).toBeGreaterThan(fill);
+    expect(effects).toBeGreaterThan(stroke);
+    expect(exportSection).toBeGreaterThan(effects);
   });
 
   it("puts Typography before Fill for a text layer", () => {

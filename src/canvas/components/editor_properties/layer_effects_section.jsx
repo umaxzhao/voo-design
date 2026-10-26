@@ -2,7 +2,6 @@ import PropTypes from "prop-types";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  CollapsibleSection,
   SectionAddButton,
   sectionActionClass,
   sectionRowClass,
@@ -21,7 +20,7 @@ import {
 import { IconEye, IconEyeOff, IconMinus } from "../../icons.jsx";
 import AddKindPicker from "./add_kind_picker.jsx";
 import AdjustmentPopover from "./adjustment_popover.jsx";
-import { SectionEmptyRow } from "./property_section.jsx";
+import { SectionEmptyRow, StaticSection } from "./property_section.jsx";
 import KindIcon from "./kind_icons.jsx";
 
 /**
@@ -147,7 +146,7 @@ export default function LayerEffectsSection({
   return (
     <>
       {/* Always present (Figma/Pen): an empty stack is just the header + button. */}
-      <CollapsibleSection
+      <StaticSection
         title={t("editor.props.effects")}
         extra={
           <SectionAddButton
@@ -158,14 +157,13 @@ export default function LayerEffectsSection({
             }}
           />
         }
-        defaultOpen={defaultOpen}
-        storageKey={`effects.${object.kind}`}
       >
         <div className="flex flex-col gap-1.5 pt-1">
           {!hasAny ? (
             <SectionEmptyRow
               label={t("editor.props.addEffect")}
               testId="editor-effects-empty"
+              showPlus={false}
               onClick={() => setShowAddPicker(true)}
             />
           ) : null}
@@ -302,12 +300,7 @@ export default function LayerEffectsSection({
             );
           })}
         </div>
-        {/* Layer-level blur and grain share the Effects section: they are
-            effects on the layer, not paint properties. */}
-        <div className="mt-2 flex flex-col gap-1.5 border-t border-white/10 pt-2">
-          <span className="px-1 text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-400">
-            {t("editor.props.blurNoise")}
-          </span>
+        <div className="mt-2 flex flex-col gap-1.5">
           <div className={sectionRowClass}>
             <span className="flex-1 text-left text-[10px] text-neutral-300">
               {t("editor.props.layerBlur")}
@@ -392,7 +385,7 @@ export default function LayerEffectsSection({
             </button>
           )}
         </div>
-      </CollapsibleSection>
+      </StaticSection>
 
       {/* Both cards mount on the panel element itself, clear of its scrolling
           body -- `overflow-y: auto` there computes overflow-x to auto as well,

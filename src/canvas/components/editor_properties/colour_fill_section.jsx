@@ -172,6 +172,7 @@ export function FillSection({
         <SectionEmptyRow
           label={t("editor.props.addFill")}
           testId="editor-fill-empty"
+          showPlus={false}
           onClick={addFill}
           icon={<span className="block h-4 w-4 rounded-md border border-white/25 bg-[#D9D9D9]" />}
         />

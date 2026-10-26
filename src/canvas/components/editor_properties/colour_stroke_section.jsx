@@ -84,6 +84,7 @@ export function StrokeSection({
         <SectionEmptyRow
           label={t("editor.props.addStroke")}
           testId="editor-stroke-empty"
+          showPlus={false}
           onClick={addStroke}
           icon={<span className="block h-4 w-4 rounded-md border border-white/25 bg-white" />}
         />

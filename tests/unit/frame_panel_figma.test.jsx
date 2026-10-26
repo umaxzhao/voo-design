@@ -50,15 +50,11 @@ describe("Figma-style frame panel", () => {
     expect(html).toContain('aria-checked="false"');
   });
 
-  it("puts layout grid and auto layout add controls in the section header", () => {
+  it("puts layout grid and auto layout controls in the Layout section body", () => {
     const html = renderFrame();
     expect(html).toContain('aria-label="editor.props.showGrid"');
     expect(html).toContain('aria-label="editor.autoLayout.enable"');
-    expect(html).toContain('data-testid="editor-auto-layout-enable"');
-    // The empty "Add auto layout" full-width button is gone.
-    expect(html).not.toContain(
-      'editor-auto-layout-enable">Add auto layout</button>',
-    );
+    expect(html).toContain('data-testid="editor-auto-layout-empty"');
     expect(html).toContain('aria-label="editor.props.gridSize"');
   });
 

@@ -6,6 +6,7 @@ import { normalizeLayoutGrid } from '../../editor/layout_grid.js';
 import { IconEye, IconEyeOff } from '../../icons.jsx';
 import VariantsSection from './variants_section.jsx';
 import { useI18n } from '../../use_i18n.js';
+import { AutoLayoutFields, DEFAULT_AUTO_LAYOUT } from './auto_layout_section.jsx';
 
 export function downloadSelectionPng(engine, object) {
   const result = engine?.exportSelectionPng?.([object.id]);
@@ -28,16 +29,10 @@ export default function TypeSpecificSections({ object, sections, editAndCommit, 
   }} /></label>;
   return <>
     {has('arc') && <StaticSection title={t('editor.props.arc')} storageKey="arc"><div className="grid grid-cols-2 gap-2">{number(t('editor.props.arcStart'), 'arcStart', 0, -360, 360)}{number(t('editor.props.arcSweep'), 'arcSweep', 360, 0.01, 360)}{number(t('editor.props.arcInnerRadius'), 'arcInnerRadius', 0, 0, 0.99)}</div></StaticSection>}
-    {has('layoutGrid') && (
+    {(has('layoutGrid') || has('autoLayout')) && (
       <StaticSection
-        title={t('editor.props.frameLayout')}
-        storageKey="frameLayout"
-        extra={
-          <SectionAddButton
-            label={t('editor.props.addLayoutGrid')}
-            onClick={() => editAndCommit({ layoutGrid: { ...normalizeLayoutGrid(object.layoutGrid), enabled: true } })}
-          />
-        }
+        title={t('editor.props.layout')}
+        storageKey="layout"
       >
         {has('clip') && (
           <button
@@ -59,6 +54,17 @@ export default function TypeSpecificSections({ object, sections, editAndCommit, 
             </span>
           </button>
         )}
+        {has('autoLayout') ? (
+          object.autoLayout ? (
+            <AutoLayoutFields object={object} editAndCommit={editAndCommit} />
+          ) : (
+            <SectionEmptyRow
+              label={t('editor.autoLayout.enable')}
+              testId="editor-auto-layout-empty"
+              onClick={() => editAndCommit({ autoLayout: DEFAULT_AUTO_LAYOUT })}
+            />
+          )
+        ) : null}
         {object.layoutGrid ? (() => {
           const grid = normalizeLayoutGrid(object.layoutGrid);
           const patch = (changes) => editAndCommit({ layoutGrid: normalizeLayoutGrid({ ...grid, ...changes }) });

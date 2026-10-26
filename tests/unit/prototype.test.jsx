@@ -128,7 +128,7 @@ describe("prototype panel", () => {
     const html = renderToStaticMarkup(<PrototypeSection object={button} engine={engine()} />);
     expect(html).toContain("editor.props.prototype");
     expect(html).toContain("editor.prototype.addInteraction");
-    expect(html).toContain("editor.prototype.empty");
+    expect(html).toContain("editor-prototype-empty");
   });
 
   it("renders existing interaction rows", () => {

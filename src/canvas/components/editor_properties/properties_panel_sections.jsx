@@ -16,7 +16,6 @@ import LayerEffectsSection from "./layer_effects_section.jsx";
 import LiveFilterSection from "./live_filter_section.jsx";
 import PuppetPinSection from "./puppet_pin_section.jsx";
 import WarpSection from "./warp_section.jsx";
-import AutoLayoutSection from "./auto_layout_section.jsx";
 import AutoLayoutChildSection from "./auto_layout_child_section.jsx";
 import ConstraintsSection from "./constraints_section.jsx";
 import ColorVariablesSection from "./color_variables_section.jsx";
@@ -218,10 +217,6 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {!isWarpTool && has("autoLayout") ? (
-        <AutoLayoutSection object={object} editAndCommit={editAndCommit} />
-      ) : null}
-
       {!isWarpTool && has("layoutChild") && parentLayout ? (
         <AutoLayoutChildSection object={object} editAndCommit={editAndCommit} />
       ) : null}
@@ -264,6 +259,16 @@ export default function PropertiesPanelSections({
 
       {!isWarpTool ? (
         <SelectionColorsSection selectedNodes={selectedNodes} engine={engine} />
+      ) : null}
+
+      {!isWarpTool && object.kind !== "adjustment" && object.kind !== "region" && object.kind !== "audio" ? (
+        <AppearanceSection
+          object={object}
+          selectedNodes={selectedNodes}
+          edit={edit}
+          editAndCommit={editAndCommit}
+          commitNow={commitNow}
+        />
       ) : null}
 
       {!isWarpTool && (has("fill") || has("stroke")) && supportsColour(object) ? (
@@ -326,16 +331,6 @@ export default function PropertiesPanelSections({
           swapSide={swapSide}
           panelRef={panelRef}
           getBitmap={getBitmap}
-        />
-      ) : null}
-
-      {!isWarpTool && object.kind !== "adjustment" && object.kind !== "region" && object.kind !== "audio" ? (
-        <AppearanceSection
-          object={object}
-          selectedNodes={selectedNodes}
-          edit={edit}
-          editAndCommit={editAndCommit}
-          commitNow={commitNow}
         />
       ) : null}
 

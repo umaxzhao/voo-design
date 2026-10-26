@@ -5,6 +5,7 @@ export default {
   "editor.props.arcStart": "Start angle",
   "editor.props.arcSweep": "Sweep angle",
   "editor.props.arcInnerRadius": "Inner radius ratio",
+  "editor.props.layout": "Layout",
   "editor.props.frameLayout": "Frame & layout",
   "editor.props.clip": "Frame",
   "editor.props.clipContent": "Clip content",

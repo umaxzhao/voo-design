@@ -60,7 +60,7 @@ SectionAddButton.propTypes = {
  * A full-width "nothing here yet" row: the empty state for a paint/effect
  * section, so the section shows a clear action instead of a bare header.
  */
-export function SectionEmptyRow({ label, onClick, icon = null, testId = undefined }) {
+export function SectionEmptyRow({ label, onClick, icon = null, testId = undefined, showPlus = true }) {
   return (
     <button
       type="button"
@@ -77,7 +77,9 @@ export function SectionEmptyRow({ label, onClick, icon = null, testId = undefine
         <span aria-hidden="true" className="h-4 w-4 shrink-0 rounded-md border border-white/25" />
       )}
       <span className="min-w-0 flex-1 truncate text-left">{label}</span>
-      <span aria-hidden="true" className="text-[12px] font-mono text-neutral-500">+</span>
+      {showPlus ? (
+        <span aria-hidden="true" className="text-[12px] font-mono text-neutral-500">+</span>
+      ) : null}
     </button>
   );
 }
@@ -87,6 +89,8 @@ SectionEmptyRow.propTypes = {
   onClick: PropTypes.func.isRequired,
   icon: PropTypes.node,
   testId: PropTypes.string,
+  /** Hide the trailing "+" when the section header already exposes the add action. */
+  showPlus: PropTypes.bool,
 };
 
 /**
@@ -150,8 +154,22 @@ CollapsibleSection.propTypes = {
  * persistence (it is expanded by default). Kept as a separate name so call
  * sites read as "fixed group" versus "opt-in fold".
  */
-export function StaticSection({ title, children = null, extra = null, storageKey = null }) {
-  return <CollapsibleSection title={title} extra={extra} storageKey={storageKey}>{children}</CollapsibleSection>;
+export function StaticSection({ title, children = null, extra = null, storageKey = null, testId = undefined }) {
+  // Core property groups are always open: the panel is a scannable list like
+  // Figma's, not a set of drawers. Empty groups show an explicit action row
+  // instead of hiding their body behind a chevron.
+  void storageKey;
+  return (
+    <div className={sectionRhythmClass} data-testid={testId}>
+      <div className={sectionHeaderClass}>
+        <div className={`flex min-w-0 items-center gap-1.5 ${sectionTitleClass}`}>
+          <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
+        </div>
+        {extra ? <div className="flex shrink-0 items-center gap-2">{extra}</div> : null}
+      </div>
+      <div className={sectionBodyClass}>{children}</div>
+    </div>
+  );
 }
 
 StaticSection.propTypes = {

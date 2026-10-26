@@ -50,3 +50,21 @@
 - `npm run lint:design`：1095 files clean
 - `npm run build`：通过
 - 深色/浅色 44 状态巡检：0 error / 0 clipped / 0 unnamed / 0 missing keys
+
+## 2nd pass — no drawers, merged Layout group
+
+- Core sections (Transform, Layout, Appearance, Fill, Stroke, Effects, Export,
+  Prototype) are now always-open `StaticSection`s: no chevron, no fold state.
+  Optional advanced groups (variables, styles, auto-layout child) keep folding.
+- `Frame & layout` + `Auto layout` + `Layout grid` merged into one **Layout**
+  group: Clip content, then auto-layout controls (or an "Add auto layout" row),
+  then layout grid controls (or an "Add layout grid" row).
+- Blur & noise rows merged into **Effects** under the same heading (the
+  "Blur & noise" subheader and divider are gone).
+- Empty rows hide their duplicate trailing "+" where the section header already
+  has one (Fill/Stroke/Effects/Prototype); Layout's header plus was removed
+  because its rows carry the add actions.
+- Panel order follows Figma: Transform → Layout → Appearance → Fill → Stroke →
+  Effects → Export → Prototype.
+- Prototype's no-interaction state is an "Add interaction" row (start-frame and
+  run controls stay available for frames).

@@ -7,8 +7,9 @@ import PropTypes from "prop-types";
 import { useState } from "react";
 import { useI18n } from "../../use_i18n.js";
 import {
-  CollapsibleSection,
   SectionAddButton,
+  SectionEmptyRow,
+  StaticSection,
   sectionRowClass,
 } from "./property_section.jsx";
 import FlatSelect from "../flat_select.jsx";
@@ -90,10 +91,8 @@ export default function PrototypeSection({ object, engine }) {
   };
 
   return (
-    <CollapsibleSection
+    <StaticSection
       title={t("editor.props.prototype")}
-      defaultOpen
-      storageKey="prototype"
       extra={
         <SectionAddButton
           label={t("editor.prototype.addInteraction")}
@@ -224,9 +223,12 @@ export default function PrototypeSection({ object, engine }) {
             );
           })
         ) : (
-          <p className="px-0.5 text-[10px] leading-4 text-neutral-400">
-            {t("editor.prototype.empty")}
-          </p>
+          <SectionEmptyRow
+            label={t("editor.prototype.addInteraction")}
+            testId="editor-prototype-empty"
+            showPlus={false}
+            onClick={add}
+          />
         )}
       </div>
       {running ? (
@@ -237,7 +239,7 @@ export default function PrototypeSection({ object, engine }) {
           onClose={() => setRunning(false)}
         />
       ) : null}
-    </CollapsibleSection>
+    </StaticSection>
   );
 }
 
