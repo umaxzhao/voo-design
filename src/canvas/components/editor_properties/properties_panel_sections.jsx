@@ -180,6 +180,7 @@ export default function PropertiesPanelSections({
         <TransformSection
           object={object}
           showRadius={has("radius")}
+          showDimensions={!(has("layoutGrid") || has("autoLayout"))}
           docSize={docSize}
           isRegion={isRegionNode(object)}
           edit={edit}
@@ -203,7 +204,16 @@ export default function PropertiesPanelSections({
 
       {!isWarpTool ? <InstanceSection object={object} engine={engine} /> : null}
 
-      {!isWarpTool && <TypeSpecificSections object={object} sections={allowed} engine={engine} editAndCommit={editAndCommit} />}
+      {!isWarpTool && (
+        <TypeSpecificSections
+          object={object}
+          sections={allowed}
+          engine={engine}
+          edit={edit}
+          editAndCommit={editAndCommit}
+          commitNow={commitNow}
+        />
+      )}
 
       {!isWarpTool && isMedia ? (
         <MediaSection

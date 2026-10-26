@@ -38,24 +38,30 @@ const renderFrame = (patch = {}) =>
   );
 
 describe("Figma-style frame panel", () => {
-  it("renders Clip content as a switch carrying its checked state", () => {
+  it("renders Clip content as a checked checkbox", () => {
     const html = renderFrame();
-    expect(html).toContain('role="switch"');
     expect(html).toContain('aria-label="editor.props.clipContent"');
-    expect(html).toContain('aria-checked="true"');
+    expect(html).toContain('type="checkbox"');
+    expect(html).toContain('checked=""');
   });
 
   it("reflects the unchecked clip state", () => {
     const html = renderFrame({ clipContent: false });
-    expect(html).toContain('aria-checked="false"');
+    expect(html).toContain('aria-label="editor.props.clipContent"');
+    expect(html).not.toContain('checked=""');
   });
 
-  it("puts layout grid and auto layout controls in the Layout section body", () => {
+  it("offers Figma's none / vertical / horizontal / grid layout modes", () => {
     const html = renderFrame();
+    for (const mode of ["none", "vertical", "horizontal", "grid"]) {
+      expect(html).toContain(`aria-label="editor.props.layoutMode.${mode}"`);
+    }
+    // The frame's enabled layout grid selects grid mode.
+    expect(html).toContain('aria-label="editor.props.layoutMode.grid" aria-pressed="true"');
     expect(html).toContain('aria-label="editor.props.showGrid"');
-    expect(html).toContain('aria-label="editor.autoLayout.enable"');
-    expect(html).toContain('data-testid="editor-auto-layout-empty"');
     expect(html).toContain('aria-label="editor.props.gridSize"');
+    expect(html).toContain('aria-label="W"');
+    expect(html).toContain('aria-label="H"');
   });
 
   it("shows paint sections for a frame (a group kind that paints)", () => {

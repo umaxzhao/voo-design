@@ -25,7 +25,7 @@ const DISTRIBUTIONS = [
 const FIELD_CLASS =
   "w-full min-w-0 rounded-lg bg-neutral-800 px-2 py-1.5 text-[11px] tabular-nums text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
 
-export function AutoLayoutFields({ object, editAndCommit }) {
+export function AutoLayoutFields({ object, editAndCommit, hideDirection = false }) {
   const { t } = useI18n();
   const layout = normalizeAutoLayout(object.autoLayout);
   const change = (patch) =>
@@ -109,6 +109,7 @@ export function AutoLayoutFields({ object, editAndCommit }) {
         />
       ) : (
         <div className="flex flex-col gap-2">
+          {hideDirection ? null : (
           <div className="flex gap-1">
             {["vertical", "horizontal"].map((direction) => (
               <button
@@ -126,6 +127,7 @@ export function AutoLayoutFields({ object, editAndCommit }) {
               </button>
             ))}
           </div>
+          )}
           <label className="flex items-center justify-between gap-2 text-[10px] text-neutral-400">
             <span>{t("editor.autoLayout.wrap")}</span>
             <button

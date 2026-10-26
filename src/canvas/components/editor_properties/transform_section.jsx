@@ -44,6 +44,7 @@ const COORD_LIMIT = 99999;
 export default function TransformSection({
   object,
   showRadius = true,
+  showDimensions = true,
   docSize: _docSize = null,
   isRegion = false,
   edit,
@@ -183,17 +184,20 @@ export default function TransformSection({
               )}
             </div>
 
-            {/* Unified full-width dimension bar: W | [Link/Unlink] | H */}
-            <TransformDimensionBar
-              commonW={commonW}
-              commonH={commonH}
-              lockRatio={lockRatio}
-              setLockRatio={setLockRatio}
-              resizeTo={resizeTo}
-              edit={edit}
-              commitNow={commitNow}
-              t={t}
-            />
+            {/* Unified full-width dimension bar: W | [Link/Unlink] | H.
+                Frames with a Layout group show W/H there (Figma parity). */}
+            {showDimensions ? (
+              <TransformDimensionBar
+                commonW={commonW}
+                commonH={commonH}
+                lockRatio={lockRatio}
+                setLockRatio={setLockRatio}
+                resizeTo={resizeTo}
+                edit={edit}
+                commitNow={commitNow}
+                t={t}
+              />
+            ) : null}
           </div>
         </div>
 
@@ -246,6 +250,7 @@ export default function TransformSection({
         {/* Opacity and blend mode live in the Appearance section (Figma/Pen). */}
 
         {(() => {
+          if (!showDimensions) return null;
           const isGroup = object.kind === "group";
           const frameLayout = isGroup ? normalizeAutoLayout(object.autoLayout) : null;
           const childOfLayout = Boolean(parentLayout) && !isGroup;
@@ -325,6 +330,8 @@ export default function TransformSection({
 TransformSection.propTypes = {
   object: PropTypes.object.isRequired,
   showRadius: PropTypes.bool,
+  /** False when the Layout group owns the W/H fields (frames). */
+  showDimensions: PropTypes.bool,
   docSize: PropTypes.shape({ width: PropTypes.number, height: PropTypes.number }),
   isRegion: PropTypes.bool,
   tool: PropTypes.string,

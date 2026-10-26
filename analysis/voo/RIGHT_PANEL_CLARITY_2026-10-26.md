@@ -81,3 +81,18 @@
   Noise), so those node-level controls stay discoverable even though the
   default Effects body is empty.
 - Screenshot: `analysis/voo/assets/right-panel-empty-effects-2026-10-26.png`.
+
+## 4th pass — Layout section matches Figma
+
+- Layout now opens with Figma's four-mode strip: **none / vertical / horizontal /
+  grid** (dashed-square, panel-top, panel-left, grid glyphs). Choosing vertical
+  or horizontal enables auto layout with that direction; grid enables the
+  layout grid; none clears both.
+- The strip is followed by **W / H** fields, then a **Clip content checkbox**
+  (Figma's checkbox instead of VOO's old switch).
+- For frames whose panel has a Layout group, W/H and the auto-size controls
+  moved out of Transform into Layout; other shapes keep them in Transform. No
+  duplicated W/H.
+- Auto-layout fields (gap, padding, align, distribute, sizing) render directly
+  under the strip; layout-grid fields render under the strip in grid mode.
+- Screenshot: `analysis/voo/assets/layout-figma-parity-2026-10-26.png`.
