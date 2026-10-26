@@ -5,6 +5,29 @@
 }
 
 @media (max-width: 768px) and (hover: none) and (pointer: coarse) {
+  .app-root-frame {
+    box-sizing: border-box;
+    padding: 4px;
+    overflow: hidden;
+    border-radius: 24px;
+    background: linear-gradient(
+      -90deg,
+      rgb(0 0 0) 52%,
+      rgb(178 255 214) 80%
+    ) !important;
+  }
+
+  .app-root-frame > .app-title-bar {
+    border-radius: 24px 24px 0 0;
+    background: transparent !important;
+  }
+
+  .app-root-frame > .relative.flex.min-h-0.flex-1 {
+    margin: 0 1px 1px;
+    overflow: hidden;
+    border-radius: 0 0 16px 16px;
+  }
+
   .app-title-actions > .app-title-desktop-action,
   .app-title-actions > .app-title-desktop-collab {
     display: none;

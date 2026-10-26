@@ -95,7 +95,7 @@ export default function App() {
 
   return (
     <main
-      className="relative flex h-full w-full select-none flex-col"
+      className="app-root-frame relative flex h-full w-full select-none flex-col"
       style={{
         background: "linear-gradient(-90deg, rgb(0, 0, 0) 70.123%, rgb(178, 255, 214) 89.855%)",
       }}
