@@ -208,8 +208,13 @@ VOO 侧：当前 `npm run build` 后用 Playwright 选中 Frame，截取
 - `7ef2b00` Design / Prototype 双 tab
 - `9593cbe` Layout W/H 旁 Fixed/Hug sizing 下拉 + 单图层 Selection colors
 - `d2d40f3` 页面 “On this page” 颜色 + Export 质量/默认 PNG 预设
-- `d2d40f3` 之后：多 stroke 列表（renderer + panel）；`6646faa` 笔刷标签裁切修复
+- `30cff2d` 多 stroke 列表（renderer + panel）
+- `b8dabb9` Instance 面板 Go to main component
+- `a7c4cb2` Prototype Open link 动作
+- `3c2e946` Image alt text（Fill + HTML 导出）
+- `5711432` Rectangle/image per-side stroke borders（T/R/B/L）
+- `6646faa` 笔刷标签裁切修复
 
-仍属引擎级、未在本批伪造的缺口：per-side borders、组件属性/publish、
-Prototype scroll/change-to/set-variable/conditional、Fill image scale/alt、
-Effects texture/shader、3D transform/corner smoothing、Export 色彩配置/sampling。
+仍属引擎级、未在本批伪造的缺口：组件属性/publish、Prototype scroll/change-to/
+set-variable/conditional、Fill image scale mode、Effects texture/shader、
+3D transform/corner smoothing、Export 色彩配置/sampling、path 的 per-side。
