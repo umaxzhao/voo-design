@@ -61,6 +61,7 @@ import {
   currentEditorHistoryLabel,
 } from "../undo-action-contracts.js";
 import {
+  renderEngineArtwork,
   renderEngineLayerPass,
   renderEngineStage,
   renderEngineChrome,
@@ -753,6 +754,9 @@ export function createEditor({
         docVersion,
         renderVersion,
       });
+    },
+    renderArtwork(targetCanvas) {
+      renderEngineArtwork(targetCanvas, chromeRenderOptions);
     },
     subscribeRender(listener, { documentOnly = false } = {}) {
       const callback = documentOnly ? documentRenderListener(getDoc, listener) : listener;

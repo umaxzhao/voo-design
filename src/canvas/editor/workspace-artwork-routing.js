@@ -12,8 +12,12 @@ export function workspaceSkiaDocument(doc) {
 }
 
 /** Paint decoded resources and gesture previews from the same live document. */
-export function attachArtboardArtwork({ canvas, engine }) {
+export function attachArtboardArtwork({ canvas, engine, includeFrame = false }) {
   const paint = () => {
+    if (includeFrame) {
+      engine.renderArtwork(canvas);
+      return;
+    }
     const doc = engine.getDocument();
     engine.renderLayerPass(canvas, doc.nodes.map(node => node.id));
   };

@@ -49,3 +49,15 @@ it("repaints decoded images, moves, and undo from live engine events without wai
   connection.dispose();
   expect(listeners.size).toBe(0);
 });
+
+it("paints the frame fill as well as every object when the workspace renderer is unavailable", () => {
+  const canvas = {};
+  const engine = {
+    renderArtwork: vi.fn(),
+    renderLayerPass: vi.fn(),
+    subscribeRender: vi.fn(() => () => {}),
+  };
+  attachArtboardArtwork({ canvas, engine, includeFrame: true });
+  expect(engine.renderArtwork).toHaveBeenCalledWith(canvas);
+  expect(engine.renderLayerPass).not.toHaveBeenCalled();
+});

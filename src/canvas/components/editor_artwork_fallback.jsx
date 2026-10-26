@@ -3,13 +3,13 @@ import { useLayoutEffect, useRef } from "react";
 import { attachArtboardArtwork } from "../editor/workspace-artwork-routing.js";
 
 /** Media, browser fonts, masks and layered paints keep the engine's compositor. */
-export default function EditorArtworkFallback({ engine, opacity = 1 }) {
+export default function EditorArtworkFallback({ engine, opacity = 1, includeFrame = false }) {
   const canvasRef = useRef(null);
   useLayoutEffect(() => {
     if (!engine || !canvasRef.current) return undefined;
-    const connection = attachArtboardArtwork({ canvas: canvasRef.current, engine });
+    const connection = attachArtboardArtwork({ canvas: canvasRef.current, engine, includeFrame });
     return connection.dispose;
-  }, [engine]);
+  }, [engine, includeFrame]);
   return (
     <canvas
       ref={canvasRef}
@@ -24,4 +24,5 @@ export default function EditorArtworkFallback({ engine, opacity = 1 }) {
 EditorArtworkFallback.propTypes = {
   engine: PropTypes.object,
   opacity: PropTypes.number,
+  includeFrame: PropTypes.bool,
 };

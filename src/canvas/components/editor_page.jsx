@@ -183,6 +183,7 @@ export default function EditorPage({
   mode,
   rect = null,
   sharedZoom = 1,
+  workspaceRendererReady = true,
   snapshot = null,
   onFocus,
   onEngine,
@@ -708,8 +709,8 @@ export default function EditorPage({
           onSelectInstanceChild={onSelectInstanceChild}
         />
       </Suspense>
-    ) : doc && requiresWorkspaceCanvas2d(doc) ? (
-      <EditorArtworkFallback engine={engine} opacity={doc.opacity ?? 1} />
+    ) : doc && (!workspaceRendererReady || requiresWorkspaceCanvas2d(doc)) ? (
+      <EditorArtworkFallback engine={engine} opacity={doc.opacity ?? 1} includeFrame={!workspaceRendererReady} />
     ) : null
   ) : (
     <>
@@ -1204,6 +1205,7 @@ EditorPage.propTypes = {
     height: PropTypes.number,
   }),
   sharedZoom: PropTypes.number,
+  workspaceRendererReady: PropTypes.bool,
   snapshot: PropTypes.object,
   onFocus: PropTypes.func.isRequired,
   onEngine: PropTypes.func.isRequired,

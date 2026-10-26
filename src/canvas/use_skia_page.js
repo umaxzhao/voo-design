@@ -145,10 +145,18 @@ export function useWorkspaceSkia({
   useEffect(() => {
     if (!enabled || !canvasRef.current) return undefined;
     let cancelled = false;
+    let contextLost = false;
+    const canvas = canvasRef.current;
+    const onContextLost = (event) => {
+      event.preventDefault();
+      contextLost = true;
+      if (!cancelled) setStatus("unavailable");
+    };
+    canvas.addEventListener?.("webglcontextlost", onContextLost);
     setStatus("loading");
-    createSkiaHost(canvasRef.current)
+    createSkiaHost(canvas)
       .then((host) => {
-        if (cancelled) {
+        if (cancelled || contextLost) {
           host.dispose();
           return;
         }
@@ -164,6 +172,7 @@ export function useWorkspaceSkia({
       });
     return () => {
       cancelled = true;
+      canvas.removeEventListener?.("webglcontextlost", onContextLost);
       hostRef.current?.dispose();
       hostRef.current = null;
       lastDimensionsRef.current = { width: 0, height: 0, dpr: 0 };
@@ -180,40 +189,51 @@ export function useWorkspaceSkia({
     const stage = stageRef.current;
     if (!host || status !== "ready" || !stage) return;
     let frame = null;
+    let disposed = false;
+    const fail = (error) => {
+      if (disposed) return;
+      console.warn("Workspace Skia draw failed; using Canvas2D artwork", error);
+      setStatus("unavailable");
+    };
     // `cameraOverride` is the exact camera the store just published, so the
     // canvas and the DOM overlay (synced from the same store event) share it.
     const paint = (cameraOverride) => {
-      if (frame !== null) cancelAnimationFrame(frame);
-      frame = null;
-      const liveStage = stageRef.current;
-      if (!liveStage) return;
-      const latest = latestRef.current;
-      const dpr = window.devicePixelRatio || 1;
-      const width = liveStage.clientWidth || 1024;
-      const height = liveStage.clientHeight || 768;
-      const last = lastDimensionsRef.current;
-      if (last.width !== width || last.height !== height || last.dpr !== dpr) {
-        lastDimensionsRef.current = { width, height, dpr };
-        host.resize(width, height, dpr);
+      if (disposed) return;
+      try {
+        if (frame !== null) cancelAnimationFrame(frame);
+        frame = null;
+        const liveStage = stageRef.current;
+        if (!liveStage) return;
+        const latest = latestRef.current;
+        const dpr = window.devicePixelRatio || 1;
+        const width = liveStage.clientWidth || 1024;
+        const height = liveStage.clientHeight || 768;
+        const last = lastDimensionsRef.current;
+        if (last.width !== width || last.height !== height || last.dpr !== dpr) {
+          lastDimensionsRef.current = { width, height, dpr };
+          host.resize(width, height, dpr);
+        }
+        const live = cameraOverride?.zoom !== undefined ? cameraOverride : null;
+        const cam = (live ?? (subscribeCamera ? useDesignStore.getState().editorCamera : latest.camera)) ?? {};
+        const { panX = 0, panY = 0, zoom = 1 } = cam;
+        const editor = liveStage.closest?.('[data-testid="design-editor"]');
+        const themeBackground = editor && window.getComputedStyle?.(editor).backgroundColor;
+        const ground = latest.backgroundColor ??
+          (themeBackground && themeBackground !== "rgba(0, 0, 0, 0)" ? themeBackground : WORKSPACE_BACKGROUND);
+        // Drag previews replace the engine document without a React notification.
+        // Read the same live document that paints selection chrome in this frame.
+        const liveDoc = latest.liveEngine?.getDocument?.();
+        const priorDoc = latest.docs.find((doc) => doc.id === latest.livePageId);
+        const liveDocs = liveDoc && priorDoc
+          ? latest.docs.map((doc) => doc === priorDoc ? { ...liveDoc, id: doc.id } : doc)
+          : latest.docs;
+        const liveIndex = liveDoc && priorDoc?.nodes !== liveDoc.nodes ? null : latest.spatialIndex;
+        void host.draw({ ...latest, docs: liveDocs.map(workspaceSkiaDocument), spatialIndex: liveIndex, backgroundColor: ground, viewport: {
+          x: panX, y: panY, panX, panY, zoom, width, height, devicePixelRatio: dpr,
+        } }).catch(fail);
+      } catch (error) {
+        fail(error);
       }
-      const live = cameraOverride?.zoom !== undefined ? cameraOverride : null;
-      const cam = (live ?? (subscribeCamera ? useDesignStore.getState().editorCamera : latest.camera)) ?? {};
-      const { panX = 0, panY = 0, zoom = 1 } = cam;
-      const editor = liveStage.closest?.('[data-testid="design-editor"]');
-      const themeBackground = editor && window.getComputedStyle?.(editor).backgroundColor;
-      const ground = latest.backgroundColor ??
-        (themeBackground && themeBackground !== "rgba(0, 0, 0, 0)" ? themeBackground : WORKSPACE_BACKGROUND);
-      // Drag previews replace the engine document without a React notification.
-      // Read the same live document that paints selection chrome in this frame.
-      const liveDoc = latest.liveEngine?.getDocument?.();
-      const priorDoc = latest.docs.find((doc) => doc.id === latest.livePageId);
-      const liveDocs = liveDoc && priorDoc
-        ? latest.docs.map((doc) => doc === priorDoc ? { ...liveDoc, id: doc.id } : doc)
-        : latest.docs;
-      const liveIndex = liveDoc && priorDoc?.nodes !== liveDoc.nodes ? null : latest.spatialIndex;
-      void host.draw({ ...latest, docs: liveDocs.map(workspaceSkiaDocument), spatialIndex: liveIndex, backgroundColor: ground, viewport: {
-        x: panX, y: panY, panX, panY, zoom, width, height, devicePixelRatio: dpr,
-      } }).catch(error => console.warn("Workspace Skia draw failed", error));
     };
     const schedule = () => {
       if (frame === null) frame = requestAnimationFrame(() => paint());
@@ -251,6 +271,7 @@ export function useWorkspaceSkia({
     watchDpr();
     schedule();
     return () => {
+      disposed = true;
       if (frame !== null) cancelAnimationFrame(frame);
       scheduleRef.current = null;
       unsubscribe?.();

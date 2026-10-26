@@ -1768,7 +1768,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     layout: frameLayout,
   });
 
-  useWorkspaceSkia({
+  const { status: workspaceRendererStatus } = useWorkspaceSkia({
     enabled: multi,
     canvasRef: workspaceCanvasRef,
     stageRef: freeStageRef,
@@ -3410,6 +3410,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             <canvas
               ref={workspaceCanvasRef}
               data-testid="workspace-skia-canvas"
+              data-renderer-status={workspaceRendererStatus}
+              hidden={workspaceRendererStatus !== "ready"}
               className="pointer-events-none absolute inset-0 h-full w-full"
             />
             <RemoteCursors />
@@ -3483,6 +3485,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                     mode="free"
                     rect={rect}
                     sharedZoom={cameraZoom}
+                    workspaceRendererReady={workspaceRendererStatus === "ready"}
                     snapshot={snapshotsRef.current.get(nodeId) ?? null}
                     onFocus={focusEditorPage}
                     resolveCanvas={resolveCanvas}

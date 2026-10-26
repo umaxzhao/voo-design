@@ -248,6 +248,15 @@ export function renderEngineChrome(canvas, options, viewport, width, height) {
   });
 }
 
+/** Paint the complete frame and artwork without duplicating selection chrome. */
+export function renderEngineArtwork(canvas, options) {
+  if (!options) return;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Artboard artwork requires a 2D context");
+  resizeCanvas(canvas, options.stageWidth, options.stageHeight, options.dpr);
+  draw(context, { ...options, artworkOnly: true, overlaysOnly: false, dirtyRects: null });
+}
+
 /** Paint one contiguous 2D layer run without stage chrome or the page fill. */
 export function renderEngineLayerPass({
   targetCanvas,

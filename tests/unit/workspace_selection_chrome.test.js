@@ -7,7 +7,7 @@ vi.mock("../../src/canvas/editor/scene_renderer.js", () => ({
 vi.mock("../../src/store/design_store.js", () => ({ useDesignStore: {} }));
 
 import { draw } from "../../src/canvas/editor/scene_renderer.js";
-import { renderEngineChrome, renderEngineStage } from "../../src/canvas/editor/editor_engine_render.js";
+import { renderEngineArtwork, renderEngineChrome, renderEngineStage } from "../../src/canvas/editor/editor_engine_render.js";
 import { attachWorkspaceChrome } from "../../src/canvas/use_workspace_chrome.js";
 
 let resizeCallback;
@@ -34,6 +34,17 @@ beforeEach(() => {
   canvas = { width: 1600, height: 1200, getContext: () => context };
 });
 afterEach(() => vi.unstubAllGlobals());
+
+it("preserves frame fill and artwork while excluding interaction chrome on fallback", () => {
+  const options = {
+    doc: { backgroundColor: "#171717", nodes: [{ id: "rect", kind: "rect" }] },
+    stageWidth: 800, stageHeight: 600, dpr: 2, dirtyRects: [{ x: 10 }],
+  };
+  renderEngineArtwork(canvas, options);
+  expect(draw).toHaveBeenCalledWith(context, expect.objectContaining({
+    doc: options.doc, artworkOnly: true, overlaysOnly: false, dirtyRects: null,
+  }));
+});
 
 it("forwards live pixel, marquee, and lasso state from the page to the workspace chrome", () => {
   const pixelSelection = { contours: [[[10, 20], [80, 20], [80, 60]]], nodeId: "image" };

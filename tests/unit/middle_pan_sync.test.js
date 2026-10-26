@@ -48,6 +48,7 @@ vi.mock("../../src/canvas/editor/skia_host.js", () => ({
   createSkiaHost: vi.fn(async () => host),
 }));
 import { useWorkspaceSkia } from "../../src/canvas/use_skia_page.js";
+import { createSkiaHost } from "../../src/canvas/editor/skia_host.js";
 
 function render(props) {
   hooks.cursor = 0;
@@ -68,7 +69,7 @@ beforeEach(async () => {
   props = {
     enabled: true,
     subscribeCamera: true,
-    canvasRef: { current: {} },
+    canvasRef: { current: { addEventListener: vi.fn(), removeEventListener: vi.fn() } },
     stageRef: { current: { clientWidth: 800, clientHeight: 600 } },
     docs: [],
   };
@@ -83,6 +84,7 @@ afterEach(() => {
   for (const slot of hooks.slots) slot.cleanup?.();
   hooks.slots = [];
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 it("repaints the canvas in the same tick as the overlay for every middle-button pan step", () => {
@@ -147,4 +149,43 @@ it("paints live object drag previews before React updates and releases the subsc
   for (const slot of hooks.slots) slot.cleanup?.();
   hooks.slots = [];
   expect(unsubscribe).toHaveBeenCalledTimes(1);
+});
+
+it("exposes initialization failure so ordinary frames use the full artwork fallback", async () => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  for (const slot of hooks.slots) slot.cleanup?.();
+  hooks.slots = [];
+  vi.mocked(createSkiaHost).mockRejectedValueOnce(new Error("GPU unavailable"));
+  render(props);
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(render(props).status).toBe("unavailable");
+});
+
+it("switches away from an opaque GPU surface when drawing fails", async () => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  host.draw.mockRejectedValueOnce(new Error("Surface lost"));
+  store.setCamera({ panX: 80, panY: 50, zoom: 1 });
+  await Promise.resolve();
+  expect(render(props).status).toBe("unavailable");
+});
+
+it("switches to fallback after a synchronous surface resize failure", () => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  host.resize.mockImplementationOnce(() => { throw new Error("Resize failed"); });
+  props.stageRef.current.clientWidth = 900;
+  store.setCamera({ panX: 90, panY: 50, zoom: 1 });
+  expect(render(props).status).toBe("unavailable");
+});
+
+it("handles GPU context loss and removes its listener on unmount", () => {
+  const canvas = props.canvasRef.current;
+  const onLost = canvas.addEventListener.mock.calls.find(([name]) => name === "webglcontextlost")[1];
+  const event = { preventDefault: vi.fn() };
+  onLost(event);
+  expect(event.preventDefault).toHaveBeenCalledOnce();
+  expect(render(props).status).toBe("unavailable");
+  for (const slot of hooks.slots) slot.cleanup?.();
+  hooks.slots = [];
+  expect(canvas.removeEventListener).toHaveBeenCalledWith("webglcontextlost", onLost);
 });
