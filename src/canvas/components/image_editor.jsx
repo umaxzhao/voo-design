@@ -1080,6 +1080,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       y: frameLayout.y ?? 0,
       width: doc.width ?? 1024,
       height: doc.height ?? 1024,
+      lockRatio: doc.lockRatio ?? false,
       rotation: doc.rotation ?? 0,
       flipX: doc.flipX ?? false,
       flipY: doc.flipY ?? false,
@@ -1192,12 +1193,16 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         const nextW = patch.width ?? doc.width;
         const nextH = patch.height ?? doc.height;
         applyPageResize(nextW, nextH, options);
+        const resized = engine?.getDocument?.();
         const layout = layoutById.get(focusedId);
         if (layout) {
           setEditorArtboardLayout(focusedId, {
             ...layout,
-            width: nextW,
-            height: nextH,
+            // Preserve the chosen anchor when size and position change together.
+            ...(patch.x !== undefined ? { x: patch.x } : {}),
+            ...(patch.y !== undefined ? { y: patch.y } : {}),
+            width: resized?.width ?? nextW,
+            height: resized?.height ?? nextH,
           });
         }
       }

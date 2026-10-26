@@ -57,20 +57,20 @@ export default function TransformSection({
   const { t } = useI18n();
   const [lockRatioState, setLockRatioState] = useState({
     objectId: object.id,
-    lockRatio: object.lockRatio ?? true,
+    lockRatio: object.lockRatio ?? !object.isFrame,
   });
   const lockRatio =
     lockRatioState.objectId === object.id
       ? lockRatioState.lockRatio
-      : (object.lockRatio ?? true);
+      : (object.lockRatio ?? !object.isFrame);
   const setLockRatio = (nextLock) =>
     setLockRatioState({ objectId: object.id, lockRatio: nextLock });
   useEffect(() => {
     setLockRatioState({
       objectId: object.id,
-      lockRatio: object.lockRatio ?? true,
+      lockRatio: object.lockRatio ?? !object.isFrame,
     });
-  }, [object.id, object.lockRatio]);
+  }, [object.id, object.lockRatio, object.isFrame]);
   const [anchor, setAnchor] = useState("nw");
 
   /**
@@ -184,8 +184,7 @@ export default function TransformSection({
               )}
             </div>
 
-            {/* Unified full-width dimension bar: W | [Link/Unlink] | H.
-                Frames with a Layout group show W/H there (Figma parity). */}
+            {/* Keep editable W/H beside position for every transformable object. */}
             {showDimensions ? (
               <TransformDimensionBar
                 commonW={commonW}

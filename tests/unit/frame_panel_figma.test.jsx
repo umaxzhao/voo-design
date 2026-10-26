@@ -38,6 +38,24 @@ const renderFrame = (patch = {}) =>
   );
 
 describe("Figma-style frame panel", () => {
+  it("shows one editable W/H pair under Transform before layout controls", () => {
+    const html = renderToStaticMarkup(
+      <PropertiesPanelSections
+        object={frame()}
+        sections={["transform", "clip", "layoutGrid", "autoLayout"]}
+        edit={vi.fn()}
+        editAndCommit={vi.fn()}
+        t={(key) => key}
+      />,
+    );
+    expect(html.match(/aria-label="W"/g)).toHaveLength(1);
+    expect(html.match(/aria-label="H"/g)).toHaveLength(1);
+    expect(html).toContain('value="200"');
+    expect(html).toContain('value="120"');
+    expect(html.indexOf('aria-label="W"')).toBeLessThan(html.indexOf('data-layout-mode-icon="none"'));
+    expect(html).toContain('aria-pressed="false" aria-label="editor.props.lockRatio"');
+  });
+
   it("renders Clip content as a checked checkbox", () => {
     const html = renderFrame();
     expect(html).toContain('aria-label="editor.props.clipContent"');

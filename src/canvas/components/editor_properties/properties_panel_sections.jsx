@@ -178,7 +178,6 @@ export default function PropertiesPanelSections({
         <TransformSection
           object={object}
           showRadius={has("radius")}
-          showDimensions={!(has("layoutGrid") || has("autoLayout"))}
           docSize={docSize}
           isRegion={isRegionNode(object)}
           edit={edit}
@@ -206,6 +205,7 @@ export default function PropertiesPanelSections({
         <TypeSpecificSections
           object={object}
           sections={allowed}
+          showDimensions={!has("transform")}
           engine={engine}
           edit={edit}
           editAndCommit={editAndCommit}

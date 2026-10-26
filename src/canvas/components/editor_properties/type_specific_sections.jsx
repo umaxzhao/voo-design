@@ -22,7 +22,7 @@ export function downloadSelectionPng(engine, object) {
 }
 
 /** Controls only appear when the resolver grants their capability. */
-export default function TypeSpecificSections({ object, sections, editAndCommit, edit = null, commitNow = null, engine }) {
+export default function TypeSpecificSections({ object, sections, showDimensions = true, editAndCommit, edit = null, commitNow = null, engine }) {
   const { t } = useI18n();
   const has = section => sections.includes(section);
   const number = (label, key, fallback, min, max) => <label className="block text-[11px]" key={key}>{label}<input className={fieldClass} type="number" aria-label={label} value={object[key] ?? fallback} min={min} max={max} onChange={event => {
@@ -81,7 +81,7 @@ export default function TypeSpecificSections({ object, sections, editAndCommit, 
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          {showDimensions ? <div className="grid grid-cols-2 gap-2">
             <ScrubField
               prefix="W"
               min={1}
@@ -102,7 +102,7 @@ export default function TypeSpecificSections({ object, sections, editAndCommit, 
               ariaLabel="H"
               scrubHint={t('editor.props.dragToAdjust')}
             />
-          </div>
+          </div> : null}
 
           {has('clip') ? (
             <label className="flex h-7 items-center gap-2 text-[11px] font-mono text-neutral-300">
@@ -184,4 +184,4 @@ export default function TypeSpecificSections({ object, sections, editAndCommit, 
     {has('component') && <><StaticSection title={t('editor.props.component')} storageKey="component"><span className="text-[11px]">{object.sourceCanvasId ? `${t('editor.props.mainComponent')}: ${object.sourceCanvasId}` : t('editor.props.mainComponent')}</span></StaticSection><VariantsSection engine={engine} node={object.sourceCanvasId ? object : null} isMainComponent={!object.sourceCanvasId} /></>}
   </>;
 }
-TypeSpecificSections.propTypes = { object: PropTypes.object.isRequired, sections: PropTypes.arrayOf(PropTypes.string).isRequired, editAndCommit: PropTypes.func.isRequired, engine: PropTypes.object };
+TypeSpecificSections.propTypes = { object: PropTypes.object.isRequired, sections: PropTypes.arrayOf(PropTypes.string).isRequired, showDimensions: PropTypes.bool, editAndCommit: PropTypes.func.isRequired, engine: PropTypes.object };
