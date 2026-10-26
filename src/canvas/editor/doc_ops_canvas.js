@@ -8,6 +8,7 @@ import {
 } from "./scene_model.js";
 import { nodeAABB, resizeDocument as resizeSize } from "./scene_geometry.js";
 import { MAX_CANVAS_SIZE } from "./canvas_presets.js";
+import { reflowDocumentResize } from "./document-resize-constraints.js";
 import { TOOL } from "./editor_constants.js";
 import { getCanvasType } from "./canvas-composition-model.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
@@ -61,9 +62,9 @@ export function cropDocument(doc, rect) {
 /**
  * Resizes the page itself by dragging its edges.
  *
- * Contents keep their offset from the top-left corner, so no node moves; the
- * caller compensates the viewport when the left or top edge is the one being
- * dragged, which pins the opposite edge on screen.
+ * Unconstrained contents keep their historical offset; constrained children
+ * follow the resized page. The caller compensates the viewport when dragging
+ * the left or top edge, which pins the opposite edge on screen.
  */
 export function resizeDocumentEdges(doc, edges, deltaX, deltaY, options = {}) {
   const size = resizeSize(doc, edges, deltaX, deltaY, MIN_DOC_SIZE, options);
@@ -78,7 +79,7 @@ export function resizeDocumentEdges(doc, edges, deltaX, deltaY, options = {}) {
       y: node.y + dy,
     }));
   }
-  return { ...doc, width: size.width, height: size.height, nodes };
+  return reflowDocumentResize(doc, { ...doc, width: size.width, height: size.height, nodes });
 }
 
 /**
@@ -91,9 +92,10 @@ export function resizeDocumentEdges(doc, edges, deltaX, deltaY, options = {}) {
 export function setDocumentSize(doc, width, height, options = {}) {
   const w = Math.max(MIN_DOC_SIZE, Math.min(MAX_CANVAS_SIZE, Math.round(width)));
   const h = Math.max(MIN_DOC_SIZE, Math.min(MAX_CANVAS_SIZE, Math.round(height)));
+  if (w === doc.width && h === doc.height) return doc;
   const scaleMode = options.scaleMode ?? "none";
 
-  if (scaleMode === "none" || (w === doc.width && h === doc.height)) {
+  if (scaleMode === "none") {
     const dx = (w - doc.width) / 2;
     const dy = (h - doc.height) / 2;
     const nodes = doc.nodes.map((node) => ({
@@ -101,7 +103,7 @@ export function setDocumentSize(doc, width, height, options = {}) {
       x: node.x + dx,
       y: node.y + dy,
     }));
-    return { ...doc, width: w, height: h, nodes };
+    return reflowDocumentResize(doc, { ...doc, width: w, height: h, nodes });
   }
 
   const scale = scaleMode === "width" ? w / doc.width : h / doc.height;
@@ -113,7 +115,7 @@ export function setDocumentSize(doc, width, height, options = {}) {
       x: node.x + dx,
       y: node.y + dy,
     }));
-    return { ...doc, width: w, height: h, nodes };
+    return reflowDocumentResize(doc, { ...doc, width: w, height: h, nodes });
   }
 
   // Calculate opposite-axis centring offset

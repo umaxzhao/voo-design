@@ -236,6 +236,7 @@ export function elementFor(node, index, offsetX, offsetY, resolveImageUrl, doc) 
       textColor: node.fill ?? "#000000",
       fontFamily: node.fontFamily,
       fontSize: node.fontSize,
+      italic: Boolean(node.italic),
       // Our model stores CSS keywords or numeric weights; Skia wants the
       // numeric axis. Legacy documents carry "normal"/"bold".
       fontWeight:

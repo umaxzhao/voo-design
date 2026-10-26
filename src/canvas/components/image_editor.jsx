@@ -40,10 +40,6 @@ import {
 } from "../editor/component_extract.js";
 import { effectivePage } from "../editor/scene_model_geometry.js";
 import { setDocumentSize as resizePageDocument } from "../editor/doc_ops_canvas.js";
-import {
-  hasConstraints,
-  reflowConstraints,
-} from "../editor/scene_constraints.js";
 import { selectionBounds } from "../editor/editor_export_bounds.js";
 import { alignNodes, distributeNodes } from "../editor/align_ops.js";
 import EditorPage from "./editor_page.jsx";
@@ -1119,51 +1115,16 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   /**
    * Page/frame resize through the engine's document path.
    *
-   * When top-level nodes carry explicit resize constraints, the resize and
-   * their reflow are resolved together and committed once, so one undo entry
-   * covers both. Documents without constraints keep the historical
-   * `setDocumentSize` path (which centres contents and refits the viewport).
+   * The document operation resolves page and child geometry together; one
+   * update preserves preview options and creates one undo entry on commit.
    */
   const applyPageResize = useCallback(
     (nextW, nextH, options = {}) => {
       const current = engine?.getDocument?.();
-      const constrained = Boolean(
-        current?.nodes?.some(
-          (entry) => !entry.parentId && hasConstraints(entry),
-        ),
-      );
-      if (!current || !constrained) {
-        engine?.setDocumentSize?.(nextW, nextH);
-        return;
-      }
-      const oldBox = {
-        x: 0,
-        y: 0,
-        width: current.width,
-        height: current.height,
-      };
-      // The resize op historically centres every top-level node, so capture
-      // the pre-resize boxes and let the constraints resolve from those.
-      const beforeBoxes = new Map(
-        current.nodes
-          .filter((entry) => !entry.parentId)
-          .map((entry) => [
-            entry.id,
-            {
-              x: entry.x,
-              y: entry.y,
-              width: entry.width,
-              height: entry.height,
-            },
-          ]),
-      );
-      const resized = resizePageDocument(current, nextW, nextH);
-      const next = reflowConstraints(resized, {
-        parentId: null,
-        oldBox,
-        newBox: { x: 0, y: 0, width: resized.width, height: resized.height },
-        beforeBoxes,
-      });
+      if (!current) return;
+      // Document operations resolve constraints for every resize entry point.
+      // Do not reflow here again: that would apply the same delta twice.
+      const next = resizePageDocument(current, nextW, nextH);
       // Same doc path as setDocumentSize: text measurement, auto-layout
       // reflow, render, history and persistence all stay in sync.
       engine.updateDocument(
