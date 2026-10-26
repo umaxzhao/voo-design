@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "vitest";
+import { test, vi } from "vitest";
 import { webcrypto } from "node:crypto";
 
 globalThis.crypto ??= webcrypto;
@@ -232,35 +232,35 @@ test("signalingUrl: derives a ws url from the page origin and honours overrides"
   const previousLocation = globalThis[locationKey];
   try {
     delete globalThis[urlKey];
-    delete globalThis[locationKey];
+    vi.stubGlobal(locationKey, undefined);
     assert.equal(
       signalingUrl(),
       "wss://la.voo.run/collab",
       "the default page origin (voo.run) uses the VPS signalling socket",
     );
 
-    globalThis[locationKey] = { origin: "http://localhost:5173" };
+    vi.stubGlobal(locationKey, { origin: "http://localhost:5173" });
     assert.equal(
       signalingUrl(),
       "ws://localhost:5173/collab",
       "http origin is swapped to ws",
     );
 
-    globalThis[locationKey] = { origin: "https://voo.run" };
+    vi.stubGlobal(locationKey, { origin: "https://voo.run" });
     assert.equal(
       signalingUrl(),
       "wss://la.voo.run/collab",
       "the site on voo.run has no socket of its own: use the VPS",
     );
 
-    globalThis[locationKey] = { origin: "https://www.voo.run" };
+    vi.stubGlobal(locationKey, { origin: "https://www.voo.run" });
     assert.equal(
       signalingUrl(),
       "wss://la.voo.run/collab",
       "www is the site too",
     );
 
-    globalThis[locationKey] = { origin: "https://staging.example.com" };
+    vi.stubGlobal(locationKey, { origin: "https://staging.example.com" });
     assert.equal(
       signalingUrl(),
       "wss://staging.example.com/collab",
@@ -270,7 +270,7 @@ test("signalingUrl: derives a ws url from the page origin and honours overrides"
     // The desktop app runs under the custom `voo://app` scheme: a non-http
     // origin must fall back to the hosted signalling server because WebSocket
     // only accepts ws/wss and `voo://app/collab` is not connectable.
-    globalThis[locationKey] = { origin: "voo://app" };
+    vi.stubGlobal(locationKey, { origin: "voo://app" });
     assert.equal(
       signalingUrl(),
       "wss://la.voo.run/collab",
@@ -284,6 +284,7 @@ test("signalingUrl: derives a ws url from the page origin and honours overrides"
       "explicit override wins over origin",
     );
   } finally {
+    vi.unstubAllGlobals();
     delete globalThis[urlKey];
     delete globalThis[locationKey];
     if (previousUrl !== undefined) globalThis[urlKey] = previousUrl;

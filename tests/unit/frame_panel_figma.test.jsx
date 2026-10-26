@@ -39,9 +39,9 @@ const renderFrame = (patch = {}) =>
   );
 
 describe("Figma-style frame panel", () => {
-  it.each(["none", "vertical", "horizontal", "grid"])("renders the %s layout icon at half size", (mode) => {
+  it.each(["none", "vertical", "horizontal", "grid"])("renders the %s layout icon at supplied size", (mode) => {
     const html = renderToStaticMarkup(<AutoLayoutModeIcon mode={mode} />);
-    expect(html).toContain('width="12" height="12"');
+    expect(html).toContain('width="16" height="16"');
     expect(html).toContain('viewBox="0 0 24 24"');
     expect(html).toContain('stroke-width="1.5"');
   });
