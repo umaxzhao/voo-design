@@ -3,7 +3,7 @@
 import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
 import ScrubValueInput from "./scrub_value_input.jsx";
-import FlatSelect from "../flat_select.jsx";
+import PaintTypeMenu from "./paint_type_menu.jsx";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
 import { NODE_KIND } from "../../editor/scene_model.js";
 import { opacityPatch } from "../../color_picker/opacity_patch.js";
@@ -155,14 +155,6 @@ export function FillSection({
       ? parsedGradient.type
       : "solid";
   const imageFileRef = useRef(null);
-  const paintTypeOptions = [
-    { value: "solid", label: t("editor.colorPicker.solid") },
-    { value: "linear", label: t("editor.props.gradient.linear") },
-    { value: "radial", label: t("editor.props.gradient.radial") },
-    { value: "angular", label: t("editor.props.gradient.angular") },
-    { value: "diamond", label: t("editor.props.gradient.diamond") },
-    { value: "image", label: t("editor.props.imageLabel") },
-  ];
   const setPaintType = (nextType) => {
     if (nextType === "image") {
       imageFileRef.current?.click();
@@ -287,16 +279,12 @@ export function FillSection({
       ) : null}
 
       {none ? null : (
-        <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
-          <FlatSelect
+        /* Row 1: Figma-style paint type + swatch + hex + opacity */
+        <div className={sectionRowClass}>
+          <PaintTypeMenu
             value={paintType}
             onChange={setPaintType}
-            options={paintTypeOptions}
             label={t("editor.props.fillType")}
-            portal
-            className="w-[78px] shrink-0"
-            triggerClassName="!h-6 !w-full !rounded-lg !bg-neutral-800 !px-2 !text-[9px] !font-mono !text-neutral-200"
-            widthClass="w-40"
           />
           <input
             ref={imageFileRef}
@@ -315,11 +303,6 @@ export function FillSection({
               reader.readAsDataURL(file);
             }}
           />
-        </div>
-      )}
-      {none ? null : (
-        /* Row 1: Unified Pill (Swatch + Label/Hex + Opacity + Minus) */
-        <div className={sectionRowClass}>
           <Swatch
             value={none ? null : fill}
             onPick={(colour) => editAndCommit({ fill: colour })}

@@ -17,7 +17,7 @@ import { AlignIcon } from "../alignment_icon.jsx";
 import StrokeStyleSection from "./stroke_style_section.jsx";
 import EditorTooltip from "../editor_tooltip.jsx";
 import ScrubField from "../scrub_field.jsx";
-import FlatSelect from "../flat_select.jsx";
+import PaintTypeMenu from "./paint_type_menu.jsx";
 import {
   formatGradient,
   isCssGradient,
@@ -49,13 +49,6 @@ export function StrokeSection({
     ? parsedStrokeGradient.type
     : "solid";
   const none = !HEX_COLOUR.test(stroke) && !isGradient;
-  const strokeTypeOptions = [
-    { value: "solid", label: t("editor.colorPicker.solid") },
-    { value: "linear", label: t("editor.props.gradient.linear") },
-    { value: "radial", label: t("editor.props.gradient.radial") },
-    { value: "angular", label: t("editor.props.gradient.angular") },
-    { value: "diamond", label: t("editor.props.gradient.diamond") },
-  ];
   const setStrokeType = (nextType) => {
     if (nextType === "solid") {
       editAndCommit({
@@ -157,20 +150,14 @@ export function StrokeSection({
 
       {none ? null : (
         <>
-          <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
-            <FlatSelect
+          {/* Row 1: Figma-style paint type + swatch + hex + opacity */}
+          <div className={sectionRowClass}>
+            <PaintTypeMenu
               value={strokeType}
               onChange={setStrokeType}
-              options={strokeTypeOptions}
               label={t("editor.props.strokeType")}
-              portal
-              className="w-[78px] shrink-0"
-              triggerClassName="!h-6 !w-full !rounded-lg !bg-neutral-800 !px-2 !text-[9px] !font-mono !text-neutral-200"
-              widthClass="w-40"
+              allowImage={false}
             />
-          </div>
-          {/* Row 1: Unified Pill (Swatch + Label/Hex + Opacity + Minus) */}
-          <div className={sectionRowClass}>
             <Swatch
               value={none ? null : stroke}
               onPick={(colour) => editAndCommit({ stroke: colour })}
