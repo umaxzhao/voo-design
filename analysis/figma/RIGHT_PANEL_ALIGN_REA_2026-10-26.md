@@ -116,7 +116,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 | Style / variable 行内 chip | ✅ 已有 | 已对齐 |
 | Gradient 插值 color space / hue method | ❌ | P2 |
 | Gradient diamond / pattern / noise / video / shader fill | ❌ | P3 |
-| Image scale mode（crop/fit/fill）/ alt text | ❌ | P2 |
+| Image scale mode（crop/fit/fill）/ alt text | 🟡 alt text 本轮已加；scale mode 仍缺 | P2 |
 | Selection colors / page colors / show in exports | 🟡 Selection colors 有；页面颜色清单/导出开关缺 | P2 |
 | Stroke：weight/color/opacity/position | ✅ | — |
 | 多 stroke 列表 / per-side borders | 🟡 多 stroke 列表 + 渲染已落地；per-side borders 仍缺 | 余：per-side |
