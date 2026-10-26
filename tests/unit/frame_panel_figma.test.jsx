@@ -10,6 +10,7 @@ vi.mock("../../src/canvas/use_i18n.js", () => ({
 }));
 
 import PropertiesPanelSections from "../../src/canvas/components/editor_properties/properties_panel_sections.jsx";
+import AutoLayoutModeIcon from "../../src/canvas/components/editor_properties/auto_layout_mode_icon.jsx";
 
 const frame = (patch = {}) => ({
   id: "frame-1",
@@ -38,6 +39,13 @@ const renderFrame = (patch = {}) =>
   );
 
 describe("Figma-style frame panel", () => {
+  it.each(["none", "vertical", "horizontal", "grid"])("renders the %s layout icon at half size", (mode) => {
+    const html = renderToStaticMarkup(<AutoLayoutModeIcon mode={mode} />);
+    expect(html).toContain('width="12" height="12"');
+    expect(html).toContain('viewBox="0 0 24 24"');
+    expect(html).toContain('stroke-width="1.5"');
+  });
+
   it("shows one editable W/H pair under Transform before layout controls", () => {
     const html = renderToStaticMarkup(
       <PropertiesPanelSections
