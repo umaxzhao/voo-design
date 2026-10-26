@@ -200,7 +200,7 @@ function GapControlRow({ selectedNodes = [], onLayout }) {
         onCommit={handleGapCommit}
         ariaLabel={gapLabel}
         scrubHint={gapHint}
-        className="flex-1"
+        className="flex-1 min-w-0"
       />
     </div>
   );
@@ -228,7 +228,7 @@ export default function AlignSection({ count, onLayout, selectedNodes = [], show
       title={t("editor.props.align")}
       storageKey="align"
       hideHeader
-      bodyClassName="space-y-2 -mx-3"
+      bodyClassName="space-y-2 px-0.5"
     >
       {showQuickActions ? <Row>
         {ALIGN_TYPES.map((type) => (
@@ -236,7 +236,7 @@ export default function AlignSection({ count, onLayout, selectedNodes = [], show
             key={type}
             title={t(`editor.props.alignShapes.${type}`)}
             side="top"
-            className="flex-1"
+            className="flex-1 min-w-0"
           >
             <button
               type="button"
@@ -261,7 +261,7 @@ export default function AlignSection({ count, onLayout, selectedNodes = [], show
                   : t("editor.props.distribute.requiresThree")
               }
               side="top"
-              className="flex-1"
+              className="flex-1 min-w-0"
             >
               <button
                 type="button"
@@ -291,7 +291,7 @@ export default function AlignSection({ count, onLayout, selectedNodes = [], show
               }
               shortcut={canSpread ? (axis === "horizontal" ? "⌥⇧H" : "⌥⇧V") : ""}
               side="top"
-              className="flex-1"
+              className="flex-1 min-w-0"
             >
               <button
                 type="button"
