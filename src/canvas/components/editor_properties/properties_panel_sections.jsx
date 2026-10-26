@@ -77,6 +77,9 @@ export default function PropertiesPanelSections({
 }) {
   const allowed = sections ?? resolvePanelForContext({ selection: [object] }).sections;
   const has = (section) => allowed.includes(section);
+  // Frames with a Layout group own W/H (Figma keeps them in Layout); other
+  // shapes keep the dimension bar in Transform.
+  const hasLayoutGroup = has("layoutGrid") || has("autoLayout");
   const frameFallbackFill =
     object.isFrame &&
     !(Array.isArray(object.fills) && object.fills.length) &&
@@ -143,10 +146,10 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {!isWarpTool && has("alignment") && onLayout && object.kind !== "adjustment" ? (
+      {!isWarpTool && (onLayout || engine?.layoutSelection) && object.kind !== "adjustment" ? (
         <AlignSection
           count={selectionCount}
-          onLayout={onLayout}
+          onLayout={onLayout ?? ((layout, argument) => engine.layoutSelection(layout, argument))}
           selectedNodes={selectedNodes}
           showQuickActions={(selectionCount ?? 1) < 2}
         />
@@ -178,6 +181,7 @@ export default function PropertiesPanelSections({
         <TransformSection
           object={object}
           showRadius={has("radius")}
+          showDimensions={!hasLayoutGroup}
           docSize={docSize}
           isRegion={isRegionNode(object)}
           edit={edit}
@@ -205,7 +209,7 @@ export default function PropertiesPanelSections({
         <TypeSpecificSections
           object={object}
           sections={allowed}
-          showDimensions={!has("transform")}
+          showDimensions={hasLayoutGroup}
           engine={engine}
           edit={edit}
           editAndCommit={editAndCommit}

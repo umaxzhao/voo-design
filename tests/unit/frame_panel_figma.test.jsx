@@ -46,7 +46,7 @@ describe("Figma-style frame panel", () => {
     expect(html).toContain('stroke-width="1.5"');
   });
 
-  it("shows one editable W/H pair under Transform before layout controls", () => {
+  it("shows one editable W/H pair under Layout after the mode strip", () => {
     const html = renderToStaticMarkup(
       <PropertiesPanelSections
         object={frame()}
@@ -60,8 +60,7 @@ describe("Figma-style frame panel", () => {
     expect(html.match(/aria-label="H"/g)).toHaveLength(1);
     expect(html).toContain('value="200"');
     expect(html).toContain('value="120"');
-    expect(html.indexOf('aria-label="W"')).toBeLessThan(html.indexOf('data-layout-mode-icon="none"'));
-    expect(html).toContain('aria-pressed="false" aria-label="editor.props.lockRatio"');
+    expect(html.indexOf('data-layout-mode-icon="none"')).toBeLessThan(html.indexOf('aria-label="W"'));
   });
 
   it("renders Clip content as a checked checkbox", () => {

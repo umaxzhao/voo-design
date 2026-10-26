@@ -4548,7 +4548,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             swapSide={sidePanelSwap}
             onToggleSide={toggleSwapPanels}
             onLayout={
-              selectedIds.length >= 1
+              engine?.layoutSelection && (selected || selectedIds.length >= 1)
                 ? (layout, argument) =>
                     engine?.layoutSelection(layout, argument)
                 : null

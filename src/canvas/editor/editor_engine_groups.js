@@ -182,7 +182,15 @@ export function createEngineGroups({
       );
       return box ? { ...unit, ...box, rotation: 0, shear: 0 } : unit;
     });
-    const canvasBounds = { x: 0, y: 0, w: doc.width, h: doc.height };
+    // A single layer aligns inside its parent frame when it has one; otherwise
+    // it aligns to the page. Multi-selection keeps the page bounds.
+    const single = units.length === 1 ? units[0] : null;
+    const parent = single?.parentId
+      ? doc.nodes.find((node) => node.id === single.parentId)
+      : null;
+    const canvasBounds = parent
+      ? { x: parent.x ?? 0, y: parent.y ?? 0, w: parent.width ?? 0, h: parent.height ?? 0 }
+      : { x: 0, y: 0, w: doc.width, h: doc.height };
     const patches = layout(measured, argument, canvasBounds);
     if (!patches || patches.length === 0) return;
     let next = doc;
