@@ -1,0 +1,207 @@
+@media (max-width: 768px) and (hover: none) and (pointer: coarse) {
+  .welcome-dashboard {
+    border-radius: 0;
+  }
+
+  .welcome-sidebar {
+    max-height: none;
+    overflow: visible;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem 0;
+    border-radius: 0;
+  }
+
+  .welcome-sidebar-content {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .welcome-sidebar-content > * + * {
+    margin-top: 0;
+  }
+
+  .welcome-sidebar-content.space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0;
+  }
+
+  .welcome-sidebar-search input {
+    height: 2.5rem;
+    font-size: 0.8125rem;
+  }
+
+  .welcome-sidebar-primary-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.25rem;
+  }
+
+  .welcome-sidebar-primary-nav > button {
+    min-width: 0;
+    min-height: 2.5rem;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.25rem;
+    font-size: 0.6875rem;
+  }
+
+  .welcome-sidebar-primary-nav.space-y-0\.5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0;
+  }
+
+  .welcome-sidebar-folders {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .welcome-sidebar-folders::-webkit-scrollbar {
+    display: none;
+  }
+
+  .welcome-sidebar-folders > * {
+    flex: 0 0 auto;
+    margin-top: 0;
+  }
+
+  .welcome-sidebar-folders.space-y-0\.5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0;
+  }
+
+  .welcome-sidebar-folders > div:first-child {
+    padding: 0 0.25rem;
+  }
+
+  .welcome-sidebar-folders > [data-testid="sidebar-folder"] {
+    max-width: 9rem;
+    background: rgb(255 255 255 / 4%);
+  }
+
+  .welcome-sidebar-folders > [data-testid="sidebar-folder"] > button:first-child {
+    min-height: 2.5rem;
+    padding-inline: 0.625rem;
+  }
+
+  .welcome-sidebar-library {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+  }
+
+  .welcome-sidebar-library > div:first-child {
+    display: none;
+  }
+
+  .welcome-sidebar-library > button {
+    min-height: 2.5rem;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.375rem;
+    font-size: 0.6875rem;
+  }
+
+  .welcome-sidebar-library.space-y-0\.5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0;
+  }
+
+  .welcome-sidebar-footer {
+    display: none;
+  }
+
+  .welcome-dashboard > main {
+    min-height: 0;
+  }
+
+  .welcome-dashboard > main > div.flex-1 {
+    padding: 0.75rem;
+  }
+
+  .welcome-dashboard > main > div.flex-1 > * + * {
+    margin-top: 1rem;
+  }
+
+  .welcome-dashboard[data-active-tab="recents"] > main > div.flex-1 > div:first-child > div:first-child > div {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.375rem;
+    width: 100%;
+  }
+
+  .welcome-dashboard[data-active-tab="recents"] > main > div.flex-1 > div:first-child > div:first-child > div > button {
+    min-width: 0;
+    justify-content: center;
+    padding: 0.375rem 0.25rem;
+    font-size: 0.6875rem;
+  }
+
+  .welcome-dashboard[data-active-tab="recents"] > main > div.flex-1 > div:first-child > p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .welcome-dashboard[data-active-tab="recents"] > main > div.flex-1 > div:first-child .prompt-composer {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 1.25rem;
+  }
+
+  .welcome-dashboard[data-active-tab="recents"] > main > div.flex-1 > div:first-child .prompt-composer textarea {
+    height: 3.5rem;
+  }
+
+  .welcome-dashboard[data-active-tab="recents"] > main > div.flex-1 > div:first-child .prompt-composer > div.mt-2 > div:last-child {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
+    width: calc(100% - 2.5rem);
+  }
+
+  .welcome-dashboard[data-active-tab="recents"] > main > div.flex-1 > div:first-child .prompt-composer > div.mt-2 > div:last-child > div,
+  .welcome-dashboard[data-active-tab="recents"] > main > div.flex-1 > div:first-child .prompt-composer > div.mt-2 > div:last-child > button {
+    min-width: 0;
+    max-width: none;
+    justify-content: center;
+  }
+
+  .welcome-dashboard[data-active-tab="recents"] > main > div.flex-1 > div:first-child .prompt-composer > div.mt-2 > div:last-child > div > button {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    justify-content: center;
+    padding-inline: 0.25rem;
+    font-size: 0.625rem;
+  }
+
+  .welcome-dashboard[data-active-tab="recents"] > main > div.flex-1 > div.grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.375rem;
+  }
+
+  .welcome-dashboard[data-active-tab="recents"] > main > div.flex-1 > div.grid > button {
+    min-width: 0;
+    min-height: 3rem;
+    gap: 0.25rem;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.625rem;
+  }
+
+  .welcome-dashboard[data-active-tab="recents"] > main > div.flex-1 > div.grid > button > span {
+    white-space: normal;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .welcome-dashboard > main > header {
+    position: static;
+    min-height: 3rem;
+  }
+
+  .welcome-dashboard:not([data-active-tab="trash"]) > main > header {
+    display: none;
+  }
+}

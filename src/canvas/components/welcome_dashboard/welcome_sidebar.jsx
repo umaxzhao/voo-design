@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import "./welcome_mobile_layout.css";
 import {
   File,
   Star,
@@ -59,11 +60,11 @@ export function WelcomeSidebar({
   };
 
   return (
-    <aside className="flex w-full shrink-0 flex-col bg-black pt-3 pb-3 px-2 rounded-tl-3xl justify-between lg:w-60 max-h-[34dvh] overflow-y-auto lg:max-h-none lg:overflow-visible">
-      <div className="space-y-4">
+    <aside data-testid="welcome-sidebar" className="welcome-sidebar flex w-full shrink-0 flex-col bg-black pt-3 pb-3 px-2 rounded-tl-3xl justify-between lg:w-60 max-h-[34dvh] overflow-y-auto lg:max-h-none lg:overflow-visible">
+      <div className="welcome-sidebar-content space-y-4">
 
         {/* Search lives in the sidebar, top-left, not in each page header */}
-        <div className="relative">
+        <div className="welcome-sidebar-search relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input
             type="text"
@@ -85,7 +86,7 @@ export function WelcomeSidebar({
         </div>
 
         {/* Core Navigation List */}
-        <div className="space-y-0.5">
+        <div className="welcome-sidebar-primary-nav space-y-0.5">
           <button
             type="button"
             onClick={() => {
@@ -146,7 +147,7 @@ export function WelcomeSidebar({
         </div>
 
         {/* Section: Project folders, created in the workspace (Figma-style sidebar) */}
-        <div className="space-y-0.5">
+        <div className="welcome-sidebar-folders space-y-0.5">
           <div className="flex items-center justify-between pt-2 pb-1 pl-2.5 pr-1.5">
             <span className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
               {t("welcome.folders.title")}
@@ -247,7 +248,7 @@ export function WelcomeSidebar({
         )}
 
         {/* Section: Templates & Systems */}
-        <div className="space-y-0.5">
+        <div className="welcome-sidebar-library space-y-0.5">
           <div className="pt-2 pb-1 px-2.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
             {t("welcome.nav.templates")}
           </div>
@@ -290,7 +291,7 @@ export function WelcomeSidebar({
       </div>
 
       {/* Sidebar Footer Status */}
-      <div className="px-2 pt-4">
+      <div className="welcome-sidebar-footer px-2 pt-4">
         <div className="flex items-center justify-between text-[11px] text-neutral-500 font-mono">
           <span>VOO Design 1.0</span>
           <span className="size-1.5 rounded-full bg-mint" />

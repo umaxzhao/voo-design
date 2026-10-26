@@ -239,6 +239,7 @@ export default function WelcomeDashboard() {
 
   return (
     <div
+      data-active-tab={activeTab}
       className="welcome-dashboard relative flex flex-col lg:flex-row h-full w-full select-none bg-black text-neutral-100 overflow-hidden rounded-3xl"
       onDragOver={(e) => {
         e.preventDefault();

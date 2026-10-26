@@ -4,7 +4,7 @@
   display: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px) and (hover: none) and (pointer: coarse) {
   .app-title-actions > .app-title-desktop-action,
   .app-title-actions > .app-title-desktop-collab {
     display: none;
@@ -47,7 +47,7 @@
     left: var(--editor-mobile-panel-gap);
     right: auto;
     width: calc(100% - 2 * var(--editor-mobile-panel-gap));
-    height: calc(81.818% - 2 * var(--editor-mobile-panel-gap));
+    height: calc(81.818% - var(--editor-mobile-panel-gap));
     max-height: none;
     min-width: 0;
     transform: none;
@@ -73,6 +73,12 @@
     overflow: hidden;
   }
 
+  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="false"] [data-testid="editor-layers-panel"],
+  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="false"] [data-testid="editor-properties-panel"],
+  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="false"] [data-testid="editor-history-panel"] {
+    top: calc(181.818% - 3.5rem);
+  }
+
   [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="false"] [data-testid="editor-layers-panel"] > *:not(:first-child),
   [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="false"] [data-testid="editor-properties-panel"] > *:not(:first-child),
   [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="false"] [data-testid="editor-history-panel"] > *:not(:first-child) {
@@ -83,7 +89,8 @@
   [data-testid="design-editor"].editor-narrow .editor-mobile-panel-expand {
     position: absolute;
     z-index: 40;
-    top: calc(55% + var(--editor-mobile-panel-gap));
+    top: auto;
+    bottom: 0;
     display: block;
     height: 3.5rem;
     border: 0;
@@ -147,7 +154,8 @@
   [data-testid="design-editor"].editor-narrow .editor-mobile-panel-toggle {
     position: absolute;
     z-index: 50;
-    top: calc(55% - 3rem);
+    top: auto;
+    bottom: calc(3.5rem + 3.25rem);
     left: 50%;
     display: flex;
     width: 2.75rem;
@@ -155,9 +163,15 @@
     transform: translateX(-50%);
   }
 
-  [data-testid="page-switcher"] {
+  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"] .editor-mobile-panel-toggle,
+  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="true"] .editor-mobile-panel-toggle {
     top: calc(55% - 3rem);
     bottom: auto;
+  }
+
+  [data-testid="page-switcher"].absolute {
+    top: auto;
+    bottom: calc(3.5rem + 3.25rem);
     left: 0.375rem;
     z-index: 60;
   }
@@ -183,9 +197,21 @@
     height: 2.75rem;
   }
 
-  .voo-ai-fab {
-    top: calc(55% - 3rem);
+  .voo-ai-fab.absolute {
+    top: auto;
+    bottom: calc(3.5rem + 3.25rem);
     right: 0.375rem;
+  }
+
+  .relative.flex:has(> .editor-shell [data-testid="design-editor"][data-mobile-layers-expanded="true"]) > [data-testid="page-switcher"],
+  .relative.flex:has(> .editor-shell [data-testid="design-editor"][data-mobile-properties-expanded="true"]) > [data-testid="page-switcher"] {
+    top: calc(55% - 3rem);
+    bottom: auto;
+  }
+
+  .relative.flex:has(> .editor-shell [data-testid="design-editor"][data-mobile-layers-expanded="true"]) > .voo-ai-fab.absolute,
+  .relative.flex:has(> .editor-shell [data-testid="design-editor"][data-mobile-properties-expanded="true"]) > .voo-ai-fab.absolute {
+    top: calc(55% - 3rem);
     bottom: auto;
   }
 
@@ -207,13 +233,15 @@
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 560px) and (hover: none) and (pointer: coarse) {
   .top-bar {
     padding-inline: 12px;
   }
 
   header.app-title-bar {
     position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
     height: 44px;
     min-height: 44px;
     flex-wrap: nowrap;
@@ -221,25 +249,30 @@
   }
 
   .app-title-bar .app-title-brand-row {
-    display: flex;
-    flex: 1 1 auto;
-    min-width: 0;
-    gap: 0.375rem;
+    display: contents;
   }
 
   .app-title-bar .app-title-brand-row > button {
-    flex: 0 0 auto;
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
     padding-inline: 0.25rem;
   }
 
   .app-title-bar .app-title-brand-row > button > span {
-    display: none;
+    display: inline;
+    font-size: 0.7rem;
+    color: rgb(231 255 243);
+  }
+
+  .app-title-bar .app-title-brand-row > button > svg {
+    color: #a7ffd4;
   }
 
   .app-title-bar .app-title-tabs {
-    order: initial;
-    flex: 1 1 auto;
-    width: auto;
+    grid-column: 2;
+    grid-row: 1;
+    width: min(10rem, 38vw);
     min-width: 0;
     padding: 0;
     overflow: visible;
@@ -255,12 +288,22 @@
 
   .canvas-tab-bar-mobile > button {
     height: 2.5rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .canvas-tab-bar-mobile > button > span:first-child {
+    flex: 0 1 auto;
+    max-width: calc(100% - 2.5rem);
   }
 
   .app-title-bar .app-title-actions {
-    flex: 0 0 auto;
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    min-width: 0;
     gap: 2px;
-    margin-left: auto;
+    margin-left: 0;
   }
 
   .app-title-bar .app-title-actions > div {
@@ -269,6 +312,10 @@
 
   .app-title-bar .app-title-actions > .app-title-mobile-more {
     display: block;
+  }
+
+  .app-title-bar .app-title-actions > button.app-title-desktop-action {
+    display: none;
   }
 
   .app-title-bar .app-title-actions button {
