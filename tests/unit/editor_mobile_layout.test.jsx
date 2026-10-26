@@ -25,10 +25,13 @@ describe("mobile editor layout", () => {
     const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
     expect(css).toContain("max-width: 768px");
     expect(css).toContain("height: 55%");
-    expect(css).toContain("height: 81.818%");
+    expect(css).toContain("height: calc(81.818% - 2 * var(--editor-mobile-panel-gap))");
     expect(css).toContain('data-properties-open="true"');
-    expect(css).toContain("width: 100%");
-    expect(css).toContain("width: 50%");
+    expect(css).toContain("width: calc(100% - 2 * var(--editor-mobile-panel-gap))");
+    expect(css).toContain("width: calc((100% - 3 * var(--editor-mobile-panel-gap)) / 2)");
+    expect(css).toContain("left: calc(50% + var(--editor-mobile-panel-gap) / 2)");
+    expect(css).toContain("--editor-mobile-panel-gap: 0.75rem");
+    expect(css).toContain("border-radius: 1.5rem");
     expect(css).toContain("transition: width 180ms ease, left 180ms ease");
     expect(css).toContain('data-testid="editor-layers-panel"');
     expect(css).toContain('data-testid="editor-properties-panel"');

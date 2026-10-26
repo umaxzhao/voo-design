@@ -1,5 +1,6 @@
 @media (max-width: 768px) {
   [data-testid="design-editor"].editor-narrow {
+    --editor-mobile-panel-gap: 0.75rem;
     right: 0;
   }
 
@@ -14,28 +15,28 @@
   [data-testid="design-editor"].editor-narrow [data-testid="editor-layers-panel"],
   [data-testid="design-editor"].editor-narrow [data-testid="editor-properties-panel"] {
     position: absolute;
-    top: 100%;
+    top: calc(100% + var(--editor-mobile-panel-gap));
     bottom: auto;
-    left: 0;
+    left: var(--editor-mobile-panel-gap);
     right: auto;
-    width: 100%;
-    height: 81.818%;
+    width: calc(100% - 2 * var(--editor-mobile-panel-gap));
+    height: calc(81.818% - 2 * var(--editor-mobile-panel-gap));
     max-height: none;
     min-width: 0;
     transform: none;
     overflow: auto;
     transition: width 180ms ease, left 180ms ease;
-    border-radius: 0;
+    border-radius: 1.5rem;
     padding: 0.5rem;
   }
 
   [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-layers-panel"],
   [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-properties-panel"] {
-    width: 50%;
+    width: calc((100% - 3 * var(--editor-mobile-panel-gap)) / 2);
   }
 
   [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-properties-panel"] {
-    left: 50%;
+    left: calc(50% + var(--editor-mobile-panel-gap) / 2);
   }
 
   [data-testid="design-editor"].editor-narrow [data-testid="editor-toolbar"] {
