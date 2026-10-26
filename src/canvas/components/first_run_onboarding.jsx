@@ -12,7 +12,9 @@ import AgentCardGrid from "./onboarding/agent_card_grid.jsx";
 import CustomProviderInline from "./onboarding/custom_provider_inline.jsx";
 import { useAgentDetection } from "./onboarding/use_agent_detection.js";
 import FirstRunWorkspace from "./first_run_workspace.jsx";
-import { CLOUD_PROVIDER_PRESETS } from "./onboarding/cloud_provider_presets.js";
+import { CLOUD_PROVIDER_PRESETS, VOO_CLOUD_PROVIDER } from "./onboarding/cloud_provider_presets.js";
+import VooCloudLoginInline from "./onboarding/voo_cloud_login_inline.jsx";
+import { useUserStore } from "../store/user_store.js";
 
 const steps = ["provider"];
 const focusClass = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40";
@@ -35,13 +37,22 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
   const refreshCustom = () => setCustomVersion(version => version + 1);
   const customGroups = customModelGroups();
   const cloudPreset = CLOUD_PROVIDER_PRESETS.find(preset => preset.id === provider);
-  const isApiProvider = provider === "custom" || Boolean(cloudPreset);
+  const [vooCloudSignedIn, setVooCloudSignedIn] = useState(false);
+  const isVooCloud = provider === VOO_CLOUD_PROVIDER.id;
+  const isApiProvider = !isVooCloud && (provider === "custom" || Boolean(cloudPreset));
+  const cloudCards = [
+    { ...VOO_CLOUD_PROVIDER, configured: vooCloudSignedIn },
+    ...CLOUD_PROVIDER_PRESETS.map(preset => ({ ...preset,
+      configured: customGroups.some(group => group.cliId === preset.customProviderId && group.models.length > 0),
+    })),
+  ];
   const detection = useAgentDetection(open);
   const { t, locale } = useI18n();
   useEffect(() => {
     if (open) {
       setProvider("");
       setCustomModel("");
+      setVooCloudSignedIn(Boolean(useUserStore.getState?.().user?.isLoggedIn));
     }
   }, [open]);
   useEffect(() => { syncFirstRunDialog(dialog.current, open); }, [open]);
@@ -82,12 +93,11 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
             <p id="first-run-description" className="text-[11px] leading-relaxed text-neutral-400">{t(`firstRun.${name}.description`)}</p>
             <div className="flex flex-col gap-3">
               <AgentCardGrid t={t} label={t("firstRun.provider.label")} selected={provider} detection={detection}
-                cloudProviders={CLOUD_PROVIDER_PRESETS.map(preset => ({ ...preset,
-                  configured: customGroups.some(group => group.cliId === preset.customProviderId && group.models.length > 0),
-                }))}
+                cloudProviders={cloudCards}
                 customConfigured={customGroups.some(group => group.models.length > 0)}
                 onSelect={(id) => {
                   setProvider(id);
+                  if (id === VOO_CLOUD_PROVIDER.id) return;
                   const preset = CLOUD_PROVIDER_PRESETS.find(entry => entry.id === id);
                   if (preset) {
                     const model = customGroups.find(group => group.cliId === preset.customProviderId)?.models[0];
@@ -95,6 +105,9 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
                   } else if (id !== "custom") applyAgentModel(id);
                   else if (customModel) setSetting(AGENT_SETTING.MODEL, customModel);
                 }} />
+              {isVooCloud ? (
+                <VooCloudLoginInline onSignedIn={() => setVooCloudSignedIn(true)} />
+              ) : null}
               {isApiProvider && (
                 <CustomProviderInline key={provider} t={t} preset={cloudPreset ?? null}
                   groups={cloudPreset ? customGroups.filter(group => group.cliId === cloudPreset.customProviderId) : customGroups} selectedModel={customModel}

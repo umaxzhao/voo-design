@@ -1,5 +1,8 @@
 /** Extended deferred English dictionary. */
 export default {
+  "firstRun.vooCloud.title": "Sign in to VOO Cloud",
+  "firstRun.vooCloud.hint": "One account for Agent, images and video",
+  "firstRun.vooCloud.ready": "Ready",
   // Properties panel labels
   "editor.props.arc": "Arc",
   "editor.props.arcStart": "Start angle",

@@ -113,7 +113,7 @@ export default function AgentCardGrid({
                 <AgentCard
                   key={provider.id}
                   id={provider.id}
-                  icon={<ProviderLogo providerId={provider.id} size={28} />}
+                  icon={<ProviderLogo providerId={provider.logoId ?? provider.id} size={28} />}
                   name={t(provider.labelKey)}
                   status={status}
                   statusText={t(AGENT_STATUS_KEY[status])}

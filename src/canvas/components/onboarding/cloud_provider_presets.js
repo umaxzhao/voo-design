@@ -4,6 +4,14 @@ import {
   PROVIDER_ID,
 } from "../../../shared/providers.js";
 
+/** VOO Cloud is the built-in credits provider: selecting it signs in, not API key. */
+export const VOO_CLOUD_PROVIDER = Object.freeze({
+  id: "vooCloud",
+  labelKey: "provider.vooCloud",
+  logoId: "voo_credits",
+  configured: false,
+});
+
 /** Branded shortcuts use the existing custom-provider credential/model pipeline. */
 export const CLOUD_PROVIDER_PRESETS = Object.freeze([
   {
