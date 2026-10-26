@@ -614,6 +614,7 @@ export default {
   "editor.clip.dismissError": "关闭",
   "editor.properties": "属性",
   "editor.saveVoo": "另存为.voo工程文件",
+  "editor.exportTransparent": "透明背景",
   "editor.exportQuality": "质量",
   "editor.exportResolution": "分辨率",
   "editor.exportQualityLow": "低",

@@ -60,6 +60,7 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
       ...(preset.type !== "image/png"
         ? { quality: Number(preset.quality ?? 0.92) }
         : {}),
+      transparent: preset.transparent !== false,
     });
     const dataUrl = typeof result === "string" ? result : result?.dataUrl;
     if (!dataUrl) return;
@@ -131,6 +132,20 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
               ×
             </button>
           </div>
+          {preset.type === "image/png" || preset.type === "image/webp" ? (
+            <label className="flex min-h-7 items-center gap-2 px-0.5 text-[10px] font-mono text-neutral-400">
+              <input
+                type="checkbox"
+                className="flat-check"
+                checked={preset.transparent !== false}
+                onChange={(event) =>
+                  patch(preset.id, { transparent: event.target.checked })
+                }
+                aria-label={t("editor.exportTransparent")}
+              />
+              {t("editor.exportTransparent")}
+            </label>
+          ) : null}
           {preset.type !== "image/png" ? (
             <div className="flex min-h-7 items-center gap-1.5 pl-0.5">
               <span className="w-[64px] shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-400">

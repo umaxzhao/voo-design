@@ -628,6 +628,7 @@ export default {
   "editor.clip.dismissError": "Dismiss",
   "editor.properties": "Properties",
   "editor.saveVoo": "Save this document as a .voo file",
+  "editor.exportTransparent": "Transparent background",
   "editor.exportQuality": "Quality",
   "editor.exportResolution": "Resolution",
   "editor.exportQualityLow": "Low",
