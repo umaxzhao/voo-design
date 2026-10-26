@@ -20,7 +20,7 @@ function Divider() {
 }
 function QuickbarAiIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 48 48" fill="none" stroke="currentColor" className="text-accent-purple" aria-hidden="true">
+    <svg width="14" height="14" viewBox="0 0 48 48" fill="none" stroke="currentColor" className="text-accent-purple" aria-hidden="true">
       <path d="M28.2308 19L24.5487 9.4267C24.22 8.572 23.0108 8.57201 22.682 9.4267L19 19L9.4267 22.682C8.572 23.0108 8.57201 24.22 9.4267 24.5487L19 28.2308L22.682 37.8041C23.0108 38.6588 24.22 38.6588 24.5487 37.8041L28.2308 28.2308L37.8041 24.5487C38.6588 24.22 38.6588 23.0108 37.8041 22.682L28.2308 19Z" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -188,12 +188,12 @@ function EditorContextualTaskBar({
     maxWidth: "calc(100vw - 16px)"
   }} className={`pointer-events-auto z-20 flex items-center gap-0.5 rounded-full bg-neutral-900/95 border border-white/10 px-2 py-1 shadow-pop backdrop-blur-md whitespace-nowrap text-[11px] text-neutral-200 select-none ${docRect ? "absolute -translate-x-1/2" : "relative"}`}>
     <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto" data-testid={`editor-taskbar-${type}-actions`}>
-    {transforming ? <>{action("applyTransform", <IconCheck size={14} />, () => engine?.applySelectionTransform?.())}{action("cancelTransform", <IconClose size={14} />, () => engine?.cancelSelectionTransform?.())}</> : hasSelection ? <>{action("transform", <IconCrop size={14} />, () => engine?.beginSelectionTransform?.())}{action("invert", <IconSwap size={14} />, () => engine?.invertPixelSelection?.())}{action("deselect", <IconClose size={14} />, () => clearActivePixelSelection(engine))}<Divider />{ai}</> : <>
-      {pen && <>{action("finishPath", <IconCheck size={14} />, () => finishPenPathEditing(engine), { label: t("editor.pen.closeEdit") })}{action("deleteAnchor", <IconTrash size={14} />, () => engine?.deleteActiveAnchor?.())}<Divider /></>}
-      {!node && !count && selectionTool ? <>{action("marquee", <IconCrop size={14} />, () => engine?.setTool?.(TOOL.MARQUEE))}{action("lasso", <IconUnlink size={14} />, () => engine?.setTool?.(TOOL.LASSO))}</> : <>
+    {transforming ? <>{action("applyTransform", <IconCheck size={14} strokeWidth={1.5} />, () => engine?.applySelectionTransform?.())}{action("cancelTransform", <IconClose size={14} strokeWidth={1.5} />, () => engine?.cancelSelectionTransform?.())}</> : hasSelection ? <>{action("transform", <IconCrop size={14} strokeWidth={1.5} />, () => engine?.beginSelectionTransform?.())}{action("invert", <IconSwap size={14} strokeWidth={1.5} />, () => engine?.invertPixelSelection?.())}{action("deselect", <IconClose size={14} strokeWidth={1.5} />, () => clearActivePixelSelection(engine))}<Divider />{ai}</> : <>
+      {pen && <>{action("finishPath", <IconCheck size={14} strokeWidth={1.5} />, () => finishPenPathEditing(engine), { label: t("editor.pen.closeEdit") })}{action("deleteAnchor", <IconTrash size={14} strokeWidth={1.5} />, () => engine?.deleteActiveAnchor?.())}<Divider /></>}
+      {!node && !count && selectionTool ? <>{action("marquee", <IconCrop size={14} strokeWidth={1.5} />, () => engine?.setTool?.(TOOL.MARQUEE))}{action("lasso", <IconUnlink size={14} strokeWidth={1.5} />, () => engine?.setTool?.(TOOL.LASSO))}</> : <>
       {type === "image" && <>
-        {action("crop", <IconCrop size={14} />, () => engine?.setTool?.(TOOL.CROP))}
-        {action("replace", <IconSwap size={14} />, () => fileRef.current?.click())}
+        {action("crop", <IconCrop size={14} strokeWidth={1.5} />, () => engine?.setTool?.(TOOL.CROP))}
+        {action("replace", <IconSwap size={14} strokeWidth={1.5} />, () => fileRef.current?.click())}
         <input ref={fileRef} hidden type="file" accept="image/*" aria-label={label("replace")} onChange={event => {
               const file = event.target.files?.[0];
               const id = node?.id;
@@ -208,19 +208,19 @@ function EditorContextualTaskBar({
               }
               event.target.value = "";
             }} />
-        {action("ai-remove-bg", <IconMask size={14} />, () => {
+        {action("ai-remove-bg", <IconMask size={14} strokeWidth={1.5} />, () => {
               void removeBackground?.();
             }, {
               label: label("matting"),
               disabled: maskBusy || !removeBackground
             })}
-        {action("adjust", <IconAdjust size={14} />, () => {
+        {action("adjust", <IconAdjust size={14} strokeWidth={1.5} />, () => {
               setAdjustOpen(!adjustOpen);
               setMoreOpen(false);
             }, {
               active: adjustOpen
             })}
-        {action("more", <IconMore size={14} />, () => {
+        {action("more", <IconMore size={14} strokeWidth={1.5} />, () => {
               setMoreOpen(!moreOpen);
               setAdjustOpen(false);
             }, {
@@ -237,10 +237,10 @@ function EditorContextualTaskBar({
                   } : {})
                 })} /></label></EditorTooltip>)}
         {booleanActions}
-        {action("flipH", <IconFlipH size={14} />, () => engine?.flipHorizontal?.())}
-        {action("flipV", <IconFlipV size={14} />, () => engine?.flipVertical?.())}
+        {action("flipH", <IconFlipH size={14} strokeWidth={1.5} />, () => engine?.flipHorizontal?.())}
+        {action("flipV", <IconFlipV size={14} strokeWidth={1.5} />, () => engine?.flipVertical?.())}
       </>}
-      {type === "frame" && action("autoLayout", <IconLayers size={14} />, () => edit({
+      {type === "frame" && action("autoLayout", <IconLayers size={14} strokeWidth={1.5} />, () => edit({
             autoLayout: node?.autoLayout ? null : {
               direction: "vertical",
               gap: 8,
@@ -253,32 +253,32 @@ function EditorContextualTaskBar({
           }), {
             active: Boolean(node?.autoLayout)
           })}
-      {type === "group" && action("ungroup", <IconUnlink size={14} />, () => engine?.ungroupSelection?.())}
+      {type === "group" && action("ungroup", <IconUnlink size={14} strokeWidth={1.5} />, () => engine?.ungroupSelection?.())}
       {type === "multi" && <>
         <EditorTaskbarActionMenu key={`align-${selectionKey}`} id="alignment" label={t("editor.props.align")} icon={<AlignIcon type="left" />}>
         {["left", "center", "right", "top", "middle", "bottom"].map(align => <Action key={align} id={`align-${align}`} label={t(`editor.props.alignShapes.${align}`)} icon={<AlignIcon type={align} />} onClick={() => engine?.layoutSelection?.(alignNodes, align)} />)}
         {["horizontal", "vertical"].map(axis => <Action key={axis} id={`distribute-${axis}`} label={t(`editor.props.distribute.${axis}`)} icon={<DistributeIcon axis={axis} />} disabled={count < 3 || !engine?.layoutSelection} onClick={() => engine?.layoutSelection?.(distributeNodes, axis)} />)}
         {["horizontal", "vertical"].map(axis => <Action key={`tidy-${axis}`} id={`tidy-${axis}`} label={t(axis === "horizontal" ? "editor.props.distributeSpacingH" : "editor.props.distributeSpacingV")} icon={<TidyIcon axis={axis} />} disabled={count < 3 || !engine?.layoutSelection} onClick={() => engine?.layoutSelection?.(tidyNodes, axis)} />)}
         </EditorTaskbarActionMenu>
-        {action("group", <IconFolder size={14} />, () => engine?.groupSelection?.())}{booleanActions}
+        {action("group", <IconFolder size={14} strokeWidth={1.5} />, () => engine?.groupSelection?.())}{booleanActions}
       </>}
       <Divider />
-      {action("bringForward", <IconArrowUp size={14} />, () => reorderSelection(engine, ids, 1))}
-      {action("sendBackward", <IconArrowUp size={14} className="rotate-180" />, () => reorderSelection(engine, ids, -1))}
+      {action("bringForward", <IconArrowUp size={14} strokeWidth={1.5} />, () => reorderSelection(engine, ids, 1))}
+      {action("sendBackward", <IconArrowUp size={14} strokeWidth={1.5} className="rotate-180" />, () => reorderSelection(engine, ids, -1))}
       <Divider />
-      {action("duplicate", <IconCopy size={14} />, () => engine?.duplicateSelected?.(), {
+      {action("duplicate", <IconCopy size={14} strokeWidth={1.5} />, () => engine?.duplicateSelected?.(), {
             shortcut: typeof navigator !== "undefined" && /Mac/.test(navigator.platform) ? "⌘D" : "Ctrl+D"
           })}
-      {action(node?.locked ? "unlock" : "lock", node?.locked ? <IconUnlock size={14} /> : <IconLock size={14} />, () => ids.forEach(id => engine?.toggleLockNode?.(id)))}
-      {action(node?.visible === false ? "show" : "hide", node?.visible === false ? <IconEyeOff size={14} /> : <IconEye size={14} />, () => editAll({
+      {action(node?.locked ? "unlock" : "lock", node?.locked ? <IconUnlock size={14} strokeWidth={1.5} /> : <IconLock size={14} strokeWidth={1.5} />, () => ids.forEach(id => engine?.toggleLockNode?.(id)))}
+      {action(node?.visible === false ? "show" : "hide", node?.visible === false ? <IconEyeOff size={14} strokeWidth={1.5} /> : <IconEye size={14} strokeWidth={1.5} />, () => editAll({
             visible: node?.visible === false
           }))}
-      {action("delete", <IconTrash size={14} />, () => engine?.deleteSelected?.(), {
+      {action("delete", <IconTrash size={14} strokeWidth={1.5} />, () => engine?.deleteSelected?.(), {
             shortcut: "⌫"
           })}
-      {node?.kind === "canvasInstance" && onDetachInstance ? action("detach-instance", <IconUnlink size={14} />, () => onDetachInstance(node.id), {
+      {node?.kind === "canvasInstance" && onDetachInstance ? action("detach-instance", <IconUnlink size={14} strokeWidth={1.5} />, () => onDetachInstance(node.id), {
             label: t("editor.component.detach")
-          }) : onCreateComponent ? action("create-component", <IconDiamond size={14} />, onCreateComponent, {
+          }) : onCreateComponent ? action("create-component", <IconDiamond size={14} strokeWidth={1.5} />, onCreateComponent, {
             label: t("editor.component.create")
           }) : null}
       <Divider />{ai}
@@ -292,7 +292,7 @@ function EditorContextualTaskBar({
         onApplyPreset?.(preset);
         setAdjustOpen(false);
       }} onClose={() => setAdjustOpen(false)} side="top" /></div>}
-    {moreOpen && <div className="absolute bottom-full right-0 z-50 mb-2 w-56 rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-pop"><EditorAiMenuSection onOutpaint={onOutpaint} onUpscale={onUpscale} upscaleBusy={upscaleBusy} onAutoEnhance={onAutoEnhance} onPortraitRetouch={onPortraitRetouch} portraitRetouchBusy={portraitRetouchBusy} onSplitLayers={onSplitLayers} splitLayersBusy={splitLayersBusy} onDone={() => setMoreOpen(false)} />{action("ai-repaint", <IconSparkles size={14} />, () => {
+    {moreOpen && <div className="absolute bottom-full right-0 z-50 mb-2 w-56 rounded-xl border border-white/10 bg-neutral-900 p-2 shadow-pop"><EditorAiMenuSection onOutpaint={onOutpaint} onUpscale={onUpscale} upscaleBusy={upscaleBusy} onAutoEnhance={onAutoEnhance} onPortraitRetouch={onPortraitRetouch} portraitRetouchBusy={portraitRetouchBusy} onSplitLayers={onSplitLayers} splitLayersBusy={splitLayersBusy} onDone={() => setMoreOpen(false)} />{action("ai-repaint", <IconSparkles size={14} strokeWidth={1.5} />, () => {
         setAiInputOpen(true);
         setMoreOpen(false);
       }, {
