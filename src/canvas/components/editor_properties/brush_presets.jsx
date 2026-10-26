@@ -78,7 +78,7 @@ export default function BrushPresets({
                 onBrushWidth?.(preset.width);
                 onBrushOpacity?.(preset.opacity);
               }}
-              className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2 transition-all ${
+              className={`flex flex-col items-center justify-center gap-1 rounded-xl p-1.5 transition-all ${
                 isActive
                   ? "bg-[#a7ffd4]/15 border border-[#a7ffd4]/50 text-white font-medium ring-1 ring-[#a7ffd4]/30"
                   : "bg-[#222222] border border-white/5 text-neutral-400 hover:bg-[#2a2a2a] hover:text-neutral-200"
@@ -115,7 +115,7 @@ export default function BrushPresets({
               setActivePresetId(`custom_${idx}`);
               if (brush.diameter) onBrushWidth?.(brush.diameter);
             }}
-            className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2 transition-all ${
+            className={`flex flex-col items-center justify-center gap-1 rounded-xl p-1.5 transition-all ${
               activePresetId === `custom_${idx}`
                 ? "bg-[#333333] text-white ring-1 ring-white/20 font-medium"
                 : "bg-[#222222] text-neutral-400 hover:bg-[#2a2a2a] hover:text-neutral-200"
