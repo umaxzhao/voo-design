@@ -1,5 +1,17 @@
 import PropTypes from "prop-types";
+import { useEffect, useRef } from "react";
 import { useI18n } from "../use_i18n.js";
+import { effectivePage } from "../editor/scene_model.js";
+import { docToScreenRect } from "../editor/scene_renderer.js";
+
+export function resizeHandleRects(rect) {
+  return {
+    left: { left: rect.x, top: rect.y, height: rect.height },
+    right: { left: rect.x + rect.width, top: rect.y, height: rect.height },
+    top: { left: rect.x, top: rect.y, width: rect.width },
+    bottom: { left: rect.x, top: rect.y + rect.height, width: rect.width },
+  };
+}
 
 /**
  * Edge handles that resize the document by dragging.
@@ -19,8 +31,27 @@ export default function EditorResizeHandles({
   hidden = false,
 }) {
   const { t } = useI18n();
+  const handleRefs = useRef(new Map());
+
+  useEffect(() => {
+    if (hidden || !docRect || !engine) return undefined;
+    const sync = () => {
+      const doc = engine.getDocument?.();
+      const viewport = engine.getViewport?.();
+      const rect = doc && viewport ? docToScreenRect(effectivePage(doc), viewport) : docRect;
+      // Camera-only frames skip React; grips must follow the live page anyway.
+      for (const [edge, style] of Object.entries(resizeHandleRects(rect))) {
+        const element = handleRefs.current.get(edge);
+        if (!element) continue;
+        for (const [property, value] of Object.entries(style)) element.style[property] = `${value}px`;
+      }
+    };
+    sync();
+    return engine.subscribeRender?.(sync);
+  }, [engine, hidden, docRect]);
 
   if (hidden || !docRect || !engine) return null;
+  const handleRects = resizeHandleRects(docRect);
 
   const startDrag = (edges) => (event) => {
     event.preventDefault();
@@ -78,36 +109,28 @@ export default function EditorResizeHandles({
     {
       key: "left",
       edges: { left: true },
-      style: { left: docRect.x, top: docRect.y, height: docRect.height },
+      style: handleRects.left,
       className: "w-4 -translate-x-1/2 cursor-ew-resize",
       pill: true,
     },
     {
       key: "right",
       edges: { right: true },
-      style: {
-        left: docRect.x + docRect.width,
-        top: docRect.y,
-        height: docRect.height,
-      },
+      style: handleRects.right,
       className: "w-4 -translate-x-1/2 cursor-ew-resize",
       pill: true,
     },
     {
       key: "top",
       edges: { top: true },
-      style: { left: docRect.x, top: docRect.y, width: docRect.width },
+      style: handleRects.top,
       className: "h-3 -translate-y-1/2 cursor-ns-resize",
       lineClass: "left-0 right-0 top-1/2 h-0.5 -translate-y-1/2",
     },
     {
       key: "bottom",
       edges: { bottom: true },
-      style: {
-        left: docRect.x,
-        top: docRect.y + docRect.height,
-        width: docRect.width,
-      },
+      style: handleRects.bottom,
       className: "h-3 -translate-y-1/2 cursor-ns-resize",
       lineClass: "left-0 right-0 top-1/2 h-0.5 -translate-y-1/2",
     },
@@ -118,6 +141,11 @@ export default function EditorResizeHandles({
       {handles.map((handle) => (
         <div
           key={handle.key}
+          ref={(element) => {
+            if (element) handleRefs.current.set(handle.key, element);
+            else handleRefs.current.delete(handle.key);
+          }}
+          data-editor-resize-edge={handle.key}
           role="separator"
           aria-label={t("editor.resizeCanvas")}
           title={t("editor.resizeCanvas")}

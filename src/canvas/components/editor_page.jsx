@@ -240,6 +240,8 @@ export default function EditorPage({
   const canvasRef = useRef(null);
   const titleRef = useRef(null);
   const pageRingRef = useRef(null);
+  const pageSizeRef = useRef(null);
+  const addCanvasRef = useRef(null);
   const streamRectRef = useRef(null);
   // Skia paints onto its own canvas so the engine keeps the 2D one it
   // measures text against and sizes from the stage.
@@ -603,6 +605,16 @@ export default function EditorPage({
       if (title) {
         title.style.left = `${rect.x}px`;
         title.style.top = `${rect.y - EDITOR_PAGE_HEADER_INSET}px`;
+      }
+      const size = pageSizeRef.current;
+      if (size) {
+        size.style.left = `${rect.x + rect.width / 2}px`;
+        size.style.top = `${rect.y - EDITOR_PAGE_HEADER_INSET - EDITOR_PAGE_TOOLBAR_GAP}px`;
+      }
+      const add = addCanvasRef.current;
+      if (add) {
+        add.style.left = `${rect.x + rect.width + 24}px`;
+        add.style.top = `${rect.y + rect.height / 2}px`;
       }
     };
     sync();
@@ -1122,6 +1134,8 @@ export default function EditorPage({
                 was pb-2 = 8px) halves the visible gap to the page header from
                 14px to 7px (1px padding + 6px header hit-area padding). */}
             <div
+              ref={pageSizeRef}
+              data-testid="editor-page-size"
               className="absolute z-20 flex -translate-x-1/2 -translate-y-full items-center gap-1 text-[10px] font-mono pb-px"
               style={{
                 left: docRect.x + docRect.width / 2,
@@ -1141,6 +1155,7 @@ export default function EditorPage({
             {onAddCanvas && isLast && canvasType !== "3d" ? (
               <button
                 type="button"
+                ref={addCanvasRef}
                 data-testid="editor-add-canvas-btn"
                 onClick={(e) => {
                   e.stopPropagation();
