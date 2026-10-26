@@ -59,10 +59,11 @@ describe("image controls live in the panel", () => {
   it("shows crop, replace and fit / fill in the image actions of an image selection", () => {
     const html = renderToStaticMarkup(<EditorProperties tool={TOOL.SELECT} object={image} engine={engine} />);
     expect(html).toContain('data-testid="image-context-actions"');
-    expect(html).toContain("editor.taskbar.crop");
-    expect(html).toContain("editor.taskbar.replace");
+    expect(html).toContain("editor.frequencySeparation.action");
     expect(html).toContain("editor.image.fitFill");
-    expect(html).toContain('type="file"');
+    expect(html).not.toContain("editor.taskbar.crop");
+    expect(html).not.toContain("editor.taskbar.replace");
+    expect(html).not.toContain('type="file"');
   });
 
   it("keeps the image tools in one disclosure that is closed by default", () => {

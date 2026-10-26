@@ -86,7 +86,8 @@ describe("right properties panel carries no AI entries", () => {
     const html = renderPanel(image);
     // Positive control: the panel itself and its non-AI image actions are rendered.
     expect(html).toContain('data-testid="image-context-actions"');
-    expect(html).toContain('data-testid="editor-taskbar-crop"');
+    expect(html).toContain("editor.frequencySeparation.action");
+    expect(html).not.toContain('data-testid="editor-taskbar-crop"');
     expect(html).not.toContain('data-testid="editor-taskbar-layer-actions"');
     for (const id of REMOVED_TEST_IDS) {
       expect(html, `test id ${id}`).not.toContain(`"${id}"`);
