@@ -96,3 +96,13 @@
 - Auto-layout fields (gap, padding, align, distribute, sizing) render directly
   under the strip; layout-grid fields render under the strip in grid mode.
 - Screenshot: `analysis/voo/assets/layout-figma-parity-2026-10-26.png`.
+
+## Spacing pass — one vertical rhythm for every group
+
+- Group shell: `pt-3 pb-3` (12px) with the divider centred — 12px from the last
+  row to the divider and 12px from the divider to the next header. The first
+  group has no top padding.
+- Header to body: 10px; every body row gap: 10px (`space-y-2.5`).
+- Removed the Effects-local `pt-1` / `mt-2` and Prototype-local `gap-1.5`
+  overrides so those groups match Transform/Layout/Fill/Stroke/Appearance.
+- Screenshot: `analysis/voo/assets/right-panel-spacing-2026-10-26.png`.

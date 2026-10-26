@@ -100,7 +100,7 @@ export default function PrototypeSection({ object, engine }) {
         />
       }
     >
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2.5">
         {isFrame ? (
           <>
             <button

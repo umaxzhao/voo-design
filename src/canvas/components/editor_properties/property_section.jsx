@@ -15,12 +15,14 @@ export const sectionTitleClass =
   "max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[9px] font-mono font-medium text-neutral-400 uppercase tracking-[0.14em]";
 
 /** The separator and vertical rhythm every section in the panel shares. */
+// One vertical rhythm for every group: the divider sits centred between the
+// previous group's last row and the next group's header (12px on each side).
 const sectionRhythmClass =
-  "border-t border-white/10 pt-2.5 pb-1 mt-2.5 first:border-t-0 first:pt-0 first:mt-0";
+  "border-t border-white/10 pt-3 pb-3 first:border-t-0 first:pt-0";
 
 /** The header row shared by static and collapsible sections. */
 export const sectionHeaderClass =
-  "flex min-w-0 items-center justify-between gap-2 px-1 pb-2 select-none";
+  "flex min-w-0 items-center justify-between gap-2 px-1 pb-2.5 select-none";
 
 /** The child wrapper shared by every section, so all rows share one inset. */
 export const sectionBodyClass = "space-y-2.5 px-0.5";

@@ -186,7 +186,7 @@ export default function LayerEffectsSection({
           />
         ) : (
           <>
-        <div className="flex flex-col gap-1.5 pt-1">
+        <div className="flex flex-col gap-2.5">
           {!hasAny ? (
             <SectionEmptyRow
               label={t("editor.props.addEffect")}
@@ -328,7 +328,7 @@ export default function LayerEffectsSection({
             );
           })}
         </div>
-        <div className="mt-2 flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2.5">
           <div className={sectionRowClass}>
             <span className="flex-1 text-left text-[10px] text-neutral-300">
               {t("editor.props.layerBlur")}
