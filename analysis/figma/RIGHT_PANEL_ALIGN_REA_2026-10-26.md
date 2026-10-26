@@ -215,8 +215,9 @@ VOO 侧：当前 `npm run build` 后用 Playwright 选中 Frame，截取
 - `5711432` Rectangle/image per-side stroke borders（T/R/B/L）
 - Texture 效果（tint/opacity/density/size/seed + 面板控件）
 - Export PNG/WebP Transparent 背景开关
+- `d611b9b` Image fill scale mode（fill/fit/tile）
 - `6646faa` 笔刷标签裁切修复
 
-仍属引擎级、未在本批伪造的缺口：组件属性/publish、Prototype scroll/change-to/
-set-variable/conditional、Fill image scale mode、Effects texture/shader、
-3D transform/corner smoothing、Export 色彩配置/sampling、path 的 per-side。
+仍属引擎级、未在本批伪造的缺口：组件 boolean/text properties/publish、Prototype
+scroll/change-to/set-variable/conditional、Effects shader、3D transform/corner
+smoothing、Export 色彩配置/sampling/PDF-SVG 高级项、path 的 per-side。
