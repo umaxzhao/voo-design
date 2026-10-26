@@ -210,7 +210,7 @@ export default function EditorPieMenu({
             width: (radius + 22) * 2,
             height: (radius + 22) * 2,
             background:
-              "radial-gradient(circle, transparent 0 52%, rgba(0,0,0,0.66) 52% 93%, rgba(255,255,255,0.16) 93% 100%)",
+              "radial-gradient(circle, transparent 0 36%, rgba(0,0,0,0.66) 36% 93%, rgba(255,255,255,0.16) 93% 100%)",
           }}
         />
 
