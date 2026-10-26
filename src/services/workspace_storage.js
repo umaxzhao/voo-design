@@ -7,6 +7,7 @@
 import { ElectronWorkspaceDriver } from "./drivers/electron_driver.js";
 import { WebFsaWorkspaceDriver } from "./drivers/web_fsa_driver.js";
 import { WebIdbWorkspaceDriver } from "./drivers/web_idb_driver.js";
+import { getSetting, setSetting } from "../shared/settings.js";
 
 export { ElectronWorkspaceDriver } from "./drivers/electron_driver.js";
 export { WebFsaWorkspaceDriver } from "./drivers/web_fsa_driver.js";
@@ -48,6 +49,7 @@ export class WorkspaceStorageEngine {
     this.driver = this.resolveDriver(forcedDriverType);
     this.listeners = new Set();
     this.driverUnsub = null;
+    this.initPromise = null;
     this._attachDriverEvents();
   }
 
@@ -55,7 +57,10 @@ export class WorkspaceStorageEngine {
     if (driverType === "electron" || (!driverType && ElectronWorkspaceDriver.isAvailable())) {
       return new ElectronWorkspaceDriver();
     }
-    if (driverType === "web-fsa" || (!driverType && WebFsaWorkspaceDriver.isAvailable())) {
+    // Supporting the picker does not grant directory access. An unconfigured
+    // browser starts in its usable sandbox; native mounts require an explicit choice.
+    if (driverType === "web-fsa" || (!driverType &&
+      getSetting("voo.workspace.type") === "web-fsa" && WebFsaWorkspaceDriver.isAvailable())) {
       return new WebFsaWorkspaceDriver();
     }
     return new WebIdbWorkspaceDriver();
@@ -75,6 +80,7 @@ export class WorkspaceStorageEngine {
       this.driverUnsub = null;
     }
     this.driver = this.resolveDriver(driverType);
+    this.initPromise = null;
     this._attachDriverEvents();
     return this.driver;
   }
@@ -94,35 +100,65 @@ export class WorkspaceStorageEngine {
   }
 
   async init() {
-    return this.driver.init();
+    this.initPromise ??= this.driver.init();
+    return this.initPromise;
+  }
+
+  async _run(method, ...args) {
+    const driver = this.driver;
+    await this.init();
+    return driver[method](...args);
+  }
+
+  _useConfiguredDriver(driver, config) {
+    this.driverUnsub?.();
+    this.driver = driver;
+    this.initPromise = null;
+    this._attachDriverEvents();
+    setSetting("voo.workspace.type", config.type);
+    setSetting("voo.workspace.path", config.path);
+    setSetting("voo.workspace.name", config.path);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("voo:workspace-changed", { detail: config }));
+    }
   }
 
   async getConfig() {
-    return this.driver.getConfig();
+    return this._run("getConfig");
   }
 
   async chooseDirectory() {
-    return this.driver.chooseDirectory();
+    const driver = !ElectronWorkspaceDriver.isAvailable() && WebFsaWorkspaceDriver.isAvailable()
+      ? new WebFsaWorkspaceDriver() : this.driver;
+    // Open the picker before awaiting initialization so browser user activation survives.
+    const result = await driver.chooseDirectory();
+    if (result.ok && result.config) this._useConfiguredDriver(driver, result.config);
+    return result;
   }
 
   async setDirectory(dirPathOrHandle) {
-    return this.driver.setDirectory(dirPathOrHandle);
+    const driver = ElectronWorkspaceDriver.isAvailable() ? this.driver
+      : dirPathOrHandle?.kind === "directory" ? new WebFsaWorkspaceDriver()
+        : new WebIdbWorkspaceDriver();
+    const result = await driver.setDirectory(dirPathOrHandle);
+    if (result.ok && result.config) this._useConfiguredDriver(driver, result.config);
+    return result;
   }
 
   async isConfigured() {
-    return this.driver.isConfigured();
+    return this._run("isConfigured");
   }
 
   async scanFiles(options = {}) {
-    return this.driver.scanFiles(options);
+    return this._run("scanFiles", options);
   }
 
   async listFolders() {
-    return this.driver.listFolders();
+    return this._run("listFolders");
   }
 
   async createFolder(name) {
-    return this.driver.createFolder(name);
+    return this._run("createFolder", name);
   }
 
   /**
@@ -134,43 +170,43 @@ export class WorkspaceStorageEngine {
     if (typeof this.driver.moveToFolder !== "function") {
       return { ok: false, error: "unsupported" };
     }
-    return this.driver.moveToFolder(fileIdOrPath, folderName);
+    return this._run("moveToFolder", fileIdOrPath, folderName);
   }
 
   async readFileBytes(fileIdOrPath) {
-    return this.driver.readFileBytes(fileIdOrPath);
+    return this._run("readFileBytes", fileIdOrPath);
   }
 
   async writeFileBytes(name, bytes, options = {}) {
-    return this.driver.writeFileBytes(name, bytes, options);
+    return this._run("writeFileBytes", name, bytes, options);
   }
 
   async renameFile(fileIdOrPath, newName) {
-    return this.driver.renameFile(fileIdOrPath, newName);
+    return this._run("renameFile", fileIdOrPath, newName);
   }
 
   async moveToTrash(fileIdOrPath) {
-    return this.driver.moveToTrash(fileIdOrPath);
+    return this._run("moveToTrash", fileIdOrPath);
   }
 
   async restoreFromTrash(fileIdOrPath) {
-    return this.driver.restoreFromTrash(fileIdOrPath);
+    return this._run("restoreFromTrash", fileIdOrPath);
   }
 
   async deletePermanently(fileIdOrPath) {
-    return this.driver.deletePermanently(fileIdOrPath);
+    return this._run("deletePermanently", fileIdOrPath);
   }
 
   async emptyTrash() {
-    return this.driver.emptyTrash();
+    return this._run("emptyTrash");
   }
 
   async toggleStar(fileIdOrPath) {
-    return this.driver.toggleStar(fileIdOrPath);
+    return this._run("toggleStar", fileIdOrPath);
   }
 
   async revealInFinder(fileIdOrPath) {
-    return this.driver.revealInFinder(fileIdOrPath);
+    return this._run("revealInFinder", fileIdOrPath);
   }
 
   subscribe(callback) {

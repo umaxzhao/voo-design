@@ -11,6 +11,7 @@ import OnboardingArt from "./onboarding/onboarding_art.jsx";
 import AgentCardGrid from "./onboarding/agent_card_grid.jsx";
 import CustomProviderInline from "./onboarding/custom_provider_inline.jsx";
 import { useAgentDetection } from "./onboarding/use_agent_detection.js";
+import FirstRunWorkspace from "./first_run_workspace.jsx";
 
 const steps = ["provider"];
 const focusClass = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40";
@@ -89,6 +90,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
                   className={`w-fit rounded-lg bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-neutral-100 hover:bg-white/[0.14] transition-colors ${focusClass}`}>{t("firstRun.provider.guide")}</button>
               )}
             </div>
+            <FirstRunWorkspace />
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 bg-[#121212] px-6 py-4">

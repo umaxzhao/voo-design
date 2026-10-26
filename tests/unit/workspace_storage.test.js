@@ -6,6 +6,7 @@ import {
   getWorkspaceStorage,
   resetWorkspaceStorage,
 } from "../../src/services/workspace_storage.js";
+import { setSetting } from "../../src/shared/settings.js";
 
 // ==========================================
 // Mock Harnesses for File System Access API
@@ -98,6 +99,7 @@ class MockDirectoryHandle {
 describe("Workspace Storage Engine: Web IDB, Web FSA & Polymorphic Factory", () => {
   beforeEach(() => {
     resetWorkspaceStorage();
+    setSetting("voo.workspace.type", null);
     delete globalThis.window;
   });
 
@@ -379,13 +381,14 @@ describe("Workspace Storage Engine: Web IDB, Web FSA & Polymorphic Factory", () 
       expect(engine.getDriverType()).toBe("electron");
     });
 
-    it("C2: auto-detects Web FSA when window.showDirectoryPicker exists", () => {
+    it("C2: starts with usable browser storage until a local directory is explicitly configured", async () => {
       globalThis.window = {
         showDirectoryPicker: vi.fn(),
       };
 
       const engine = getWorkspaceStorage();
-      expect(engine.getDriverType()).toBe("web-fsa");
+      expect(engine.getDriverType()).toBe("web-idb");
+      expect((await engine.createFolder("Campaign")).ok).toBe(true);
     });
 
     it("C3: falls back to Web IDB when neither Electron nor showDirectoryPicker exists", () => {

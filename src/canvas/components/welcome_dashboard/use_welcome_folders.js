@@ -20,22 +20,32 @@ export function useWelcomeFolders({ t }) {
   useEffect(() => {
     loadFolders();
     window.addEventListener("voo:workspace-changed", loadFolders);
-    return () => window.removeEventListener("voo:workspace-changed", loadFolders);
+    const unsubscribe = workspaceStorage.subscribe(loadFolders);
+    return () => {
+      window.removeEventListener("voo:workspace-changed", loadFolders);
+      unsubscribe();
+    };
   }, [loadFolders]);
 
   const handleCreateFolder = async (e) => {
     e.preventDefault();
     const name = folderName.trim();
     if (!name) return;
-    const res = await workspaceStorage.createFolder(name);
-    if (res.ok) {
-      setFolderName("");
-      setCreatingFolder(false);
-      loadFolders();
-      return;
+    setFolderError("");
+    try {
+      const res = await workspaceStorage.createFolder(name);
+      if (res.ok) {
+        setFolderName("");
+        setCreatingFolder(false);
+        await loadFolders();
+        return;
+      }
+      const messageKeys = { already_exists: "welcome.folders.exists", invalid_name: "welcome.folders.invalid" };
+      setFolderError(t(messageKeys[res.error] || "welcome.folders.failed"));
+    } catch (error) {
+      console.error("[VOO] createFolder failed:", error);
+      setFolderError(t("welcome.folders.failed"));
     }
-    const messageKeys = { already_exists: "welcome.folders.exists", invalid_name: "welcome.folders.invalid" };
-    setFolderError(t(messageKeys[res.error] || "welcome.folders.failed"));
   };
 
   return {
