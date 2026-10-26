@@ -7,9 +7,10 @@ the most recently connected editor page. It requires no MCP SDK or new dependenc
 ## Run
 
 Start the web editor with `npm run dev`.
-Run `npm run bridge` for a persistent bridge, then launch the MCP server with
-`npm run mcp`. Alternatively, `npm run mcp` starts its own bridge if none is
-reachable, so no separate bridge command is required. The editor must remain open.
+Run `npm run bridge` for a persistent web bridge, then launch the MCP server
+with `npm run mcp`. The MCP process only connects; it never owns the bridge
+port. Tool discovery works before a bridge starts, and tool calls retry the
+connection lazily. The editor must remain open.
 In a plain browser the page links only after opt-in: run
 `localStorage.setItem("voo.mcpLink", "on")` and reload, select a local CLI agent,
 or open a flow that dials the bridge. It then retries quietly with backoff
@@ -25,7 +26,9 @@ in the relay and fail if the selected canvas disconnects or is replaced.
 
 Open the desktop app with `npm run electron:dev` or launch the packaged app.
 Electron starts the same CLI bridge on `127.0.0.1:4179`, or reuses the bridge
-already listening there. It closes only its own bridge when quitting. Keep the
+already listening there. If that owner exits, Electron retries every two seconds
+and acquires the released port. It cancels retries and closes only its own bridge
+when quitting. Keep the
 app and document open, then configure Claude Code or Codex with
 `node /ABS/PATH/voo-design/scripts/mcp-server.mjs` as shown below; the Node entry
 and its dependencies must be available separately from the packaged app.
@@ -121,3 +124,15 @@ headline and three feature cards, then capture_canvas so I can review it.”
 npx vitest run tests/unit/mcp_server.test.js
 npm run build
 ```
+
+## Portable connectors
+
+Run `node scripts/build-agent-plugin.mjs /absolute/new/plugin-folder` to build a
+self-contained Claude Code plugin and a DeepSeek Harness Cordis overlay. The
+package includes the existing `ws` runtime dependency, never credentials. See
+[connector instructions](../plugins/voo-design/README.md). Claude Code validates
+the generated plugin with `claude plugin validate <folder>`. Harness CLI and MCP
+configuration were checked against upstream documentation and the installed
+0.2.1-rc.3 runtime's isolated `sdk-minimal` schema; model API execution requires
+the user's configured Harness profile and was not exercised. The Web profile's
+schema dump currently reports unrelated native Loader carrier errors.

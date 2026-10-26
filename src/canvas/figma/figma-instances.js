@@ -25,7 +25,10 @@ function indexBy(entries, keyFor) {
   const map = new Map();
   for (const entry of entries) {
     const key = keyFor(entry);
-    if (key) map.set(key, [...(map.get(key) ?? []), entry]);
+    if (!key) continue;
+    const entriesForKey = map.get(key);
+    if (entriesForKey) entriesForKey.push(entry);
+    else map.set(key, [entry]);
   }
   return map;
 }
@@ -70,7 +73,7 @@ export function expandInstances(changes) {
       parentIndex: { guid: parentGuid, position: source.parentIndex?.position ?? "" },
     };
     for (const override of overridesFor.get(sourceKey) ?? []) applyOverride(copy, override);
-    const derived = derivedFor.get(sourceKey);
+    const derived = derivedFor.get(sourceKey)?.[0];
     if (derived?.fillGeometry) copy.fillGeometry = derived.fillGeometry;
     if (derived?.strokeGeometry) copy.strokeGeometry = derived.strokeGeometry;
     const copyIndex = out.length;
@@ -85,8 +88,9 @@ export function expandInstances(changes) {
     return copy;
   };
 
-  while (queue.length > 0) {
-    const { instance, depth } = queue.shift();
+  // A cursor avoids shifting the remaining instance queue on every expansion.
+  for (let queueIndex = 0; queueIndex < queue.length; queueIndex++) {
+    const { instance, depth } = queue[queueIndex];
     const master = byKey.get(keyOf(instance.symbolData.symbolID));
     if (!master || depth >= MAX_INSTANCE_DEPTH) continue;
 

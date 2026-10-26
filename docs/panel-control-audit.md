@@ -7,6 +7,18 @@
 
 ---
 
+## Verification update — 2026-10-27
+
+The tables below are the historical 2026-10-24 audit, not the current open-bug count.
+
+- Selection PNG download now extracts `result.dataUrl`; the obsolete duplicate right-panel export control is removed.
+- The header's `activateMaskAction` distinguishes add from edit.
+- Forward/backward actions now use atomic `engine.reorderNodes`, preserving click-independent stack order, stack boundaries, group subtrees, locked layers and one document commit. `tests/unit/batch-layer-reorder.test.js` covers these behaviors.
+- The unimplemented 3D add control is rendered only when its callback exists.
+- `image_editor.jsx` supplies both color-variable and style actions.
+- Image crop/replace remain in the bottom contextual toolbar; the old raster context toolbar is removed.
+- Live Filter functionality was already merged; its ongoing Effects-section consolidation is separate concurrent work and must not be overwritten.
+
 ## 1. Audit Summary & Counts
 
 | Zone | Files | Controls Audited | Works | Dead | Unwired | Hardcoded Text |

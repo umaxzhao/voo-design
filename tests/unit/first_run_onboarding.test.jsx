@@ -167,7 +167,7 @@ describe("first-run interactions", () => {
     pick("claude");
     expect(getSetting(AGENT_SETTING.MODEL)).toBe(AGENT_DEFAULT_MODELS.claude);
     pick("deepseek-harness");
-    expect(getSetting(AGENT_SETTING.MODEL)).toBe(AGENT_DEFAULT_MODELS["deepseek-harness"]);
+    expect(getSetting(AGENT_SETTING.MODEL)).toBe(AGENT_DEFAULT_MODELS.claude);
     next(); expect(getSetting(FIRST_RUN_KEY)).toBe("completed"); expect(onClose).toHaveBeenCalled();
     expect(onStart).not.toHaveBeenCalled();
   });

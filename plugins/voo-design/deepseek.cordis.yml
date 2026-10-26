@@ -1,0 +1,11 @@
+- insert:
+    - id: mcp-voo-design
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: voo-design
+        transport: stdio
+        command: node
+        args:
+          - !!js process.env.VOO_MCP_ENTRY
+        toolCallTimeoutMs: 65000
+        cwd: !!js process.cwd()

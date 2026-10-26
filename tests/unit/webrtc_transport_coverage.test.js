@@ -6,6 +6,7 @@ globalThis.crypto ??= webcrypto;
 
 import { MSG, encode } from "../../src/canvas/collab/protocol.js";
 import { STATUS } from "../../src/canvas/collab/session.js";
+import { HOSTED_SIGNALING_URL } from "../../src/shared/vps_origin.js";
 import {
   createWebRtcTransport,
   resolveIceServers,
@@ -235,7 +236,7 @@ test("signalingUrl: derives a ws url from the page origin and honours overrides"
     vi.stubGlobal(locationKey, undefined);
     assert.equal(
       signalingUrl(),
-      "wss://la.voo.run/collab",
+      HOSTED_SIGNALING_URL,
       "the default page origin (voo.run) uses the VPS signalling socket",
     );
 
@@ -249,14 +250,14 @@ test("signalingUrl: derives a ws url from the page origin and honours overrides"
     vi.stubGlobal(locationKey, { origin: "https://voo.run" });
     assert.equal(
       signalingUrl(),
-      "wss://la.voo.run/collab",
+      HOSTED_SIGNALING_URL,
       "the site on voo.run has no socket of its own: use the VPS",
     );
 
     vi.stubGlobal(locationKey, { origin: "https://www.voo.run" });
     assert.equal(
       signalingUrl(),
-      "wss://la.voo.run/collab",
+      HOSTED_SIGNALING_URL,
       "www is the site too",
     );
 
@@ -273,7 +274,7 @@ test("signalingUrl: derives a ws url from the page origin and honours overrides"
     vi.stubGlobal(locationKey, { origin: "voo://app" });
     assert.equal(
       signalingUrl(),
-      "wss://la.voo.run/collab",
+      HOSTED_SIGNALING_URL,
       "custom non-http origin falls back to hosted signalling",
     );
 

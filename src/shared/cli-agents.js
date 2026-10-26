@@ -76,9 +76,12 @@ export const CLI_AGENTS = [
     displayName: "DeepSeek Harness",
     name: "DeepSeek Harness",
     labelKey: "agent.connection.deepseekHarness",
-    defaultModel: "deepseek-v4-flash",
+    // Harness owns its profile's model; it is an external MCP client, not
+    // the DeepSeek API provider or one of our native CLI session adapters.
+    defaultModel: "",
+    mcpOnly: true,
     models: [],
-    // Detected by macOS app bundle; no standalone CLI binary is documented.
+    // Official launcher: dsh web --patch <connector>/deepseek.cordis.yml.
     detectedBy: "app-bundle",
     detectionType: "app-bundle",
     appBundle: true,

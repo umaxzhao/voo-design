@@ -7,6 +7,7 @@ import { DEFAULT_CLI_BRIDGE_ORIGINS } from "../../electron/cli_bridge_server.js"
 function boot(startCliBridgeServer, env = {}) {
   const events = new Map();
   let ready;
+  let retry;
   const app = {
     whenReady: () => ({ then: (cb) => { ready = cb; } }),
     on: (name, cb) => events.set(name, cb),
@@ -34,9 +35,10 @@ function boot(startCliBridgeServer, env = {}) {
     __dirname: path.resolve("electron"),
     process: { env, platform: "linux" },
     console: { info: vi.fn(), warn: vi.fn() },
-    setTimeout() {}, importModule,
+    setTimeout(callback) { retry = callback; return 1; },
+    clearTimeout() { retry = null; }, importModule,
   });
-  return { ready, app, events, BrowserWindow };
+  return { ready, app, events, BrowserWindow, retry: () => retry?.() };
 }
 
 const flush = async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); };
@@ -82,5 +84,22 @@ describe("Electron external MCP bridge lifecycle", () => {
     await shutdown;
     expect(close).toHaveBeenCalledOnce();
     expect(main.app.quit).toHaveBeenCalledOnce();
+  });
+
+  it("acquires the bridge after the previous owner exits and cancels retries on quit", async () => {
+    const close = vi.fn(async () => {});
+    const start = vi.fn()
+      .mockRejectedValueOnce(Object.assign(new Error("occupied"), { code: "EADDRINUSE" }))
+      .mockResolvedValue({ port: 4179, close });
+    const main = boot(start);
+    main.ready();
+    await flush();
+    main.retry();
+    await flush();
+    expect(start).toHaveBeenCalledTimes(2);
+    await main.events.get("before-quit")({ preventDefault() {} });
+    main.retry();
+    expect(close).toHaveBeenCalledOnce();
+    expect(start).toHaveBeenCalledTimes(2);
   });
 });

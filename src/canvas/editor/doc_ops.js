@@ -36,6 +36,7 @@ export {
   pruneEmptyGroups,
   reorderGroupTo,
   reorderNode,
+  reorderNodes,
   reorderNodeTo,
   ungroupNodes,
 } from "./doc_ops_groups.js";

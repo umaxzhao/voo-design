@@ -10,6 +10,7 @@ import {
 import { groupBlockInsertIndex, withNodes } from "./doc_ops_nodes.js";
 import { moveAffectedIds } from "./doc_ops_move.js";
 import { extremeOrder, moveNodeToExtreme } from "./doc_ops_groups_helpers.js";
+import { reorderLayerBatch } from "./reorder-layer-batch.js";
 
 export { extremeOrder, moveNodeToExtreme };
 
@@ -52,6 +53,12 @@ export function reorderNode(doc, id, direction) {
   const nodes = [...doc.nodes];
   [nodes[index], nodes[target]] = [nodes[target], nodes[index]];
   return withNodes(doc, sanitizeInvertedClipping(nodes));
+}
+
+/** Move selected siblings one step as a stable batch, without swapping them. */
+export function reorderNodes(doc, ids, direction) {
+  const nodes = reorderLayerBatch(doc, ids, direction);
+  return nodes ? withNodes(doc, sanitizeInvertedClipping(nodes)) : doc;
 }
 
 /**

@@ -1,5 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use wasm_bindgen::prelude::*;
+#[cfg(test)]
+mod tests;
 const CELL: f32 = 256.;
 #[wasm_bindgen]
 pub struct Scene {

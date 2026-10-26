@@ -112,6 +112,13 @@ export function createEngineNodeOps({
     commitEditorDocument("editor.layer.order", setDoc, next);
   }
 
+  function reorderNodes(ids, direction) {
+    const doc = getDoc();
+    const next = ops.reorderNodes(doc, ids, direction);
+    if (next === doc) return;
+    commitEditorDocument("editor.layer.order", setDoc, next);
+  }
+
   function moveToFront(ids) {
     let next = getDoc();
     for (const id of ops.extremeOrder(next, ids, "front")) {
@@ -472,6 +479,7 @@ export function createEngineNodeOps({
     updateNode,
     updateNodes,
     reorderNode,
+    reorderNodes,
     reorderNodeTo,
     moveToFront,
     moveToBack,

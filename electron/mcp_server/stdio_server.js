@@ -81,7 +81,6 @@ export function connect(port, token = resolveBridgeToken()) {
 
 function createBridgeClient() {
   let connection;
-  let ownedBridge;
   let socket;
   let nextId = 0;
   let closed = false;
@@ -103,13 +102,7 @@ function createBridgeClient() {
         if (!isConnectionRefused(connectError)) {
           throw connectError;
         }
-        try {
-          const { startCliBridgeServer } = await import("../cli_bridge_server.js");
-          ownedBridge = await startCliBridgeServer({ port, token });
-        } catch (error) {
-          if (error.code !== "EADDRINUSE") throw error;
-        }
-        socket = await connect(ownedBridge?.port ?? port, token);
+        throw new Error("VOO bridge is not running. Start VOO Design or npm run bridge, then retry the tool call.");
       }
       socket.on("message", (data) => {
         let frame;
@@ -151,7 +144,6 @@ function createBridgeClient() {
       await connection?.catch(() => {});
       for (const call of pending.values()) call.finish(new Error("MCP server closed"));
       socket?.close();
-      await ownedBridge?.close();
     },
   };
 }
@@ -222,6 +214,7 @@ export async function startMcpStdioServer() {
   for (const signal of ["SIGINT", "SIGTERM"]) {
     process.once(signal, () => { void server.close().then(() => process.exit(0)); });
   }
-  await server.ready();
+  // Discovery must work before the desktop starts. Connect lazily on a tool
+  // call, and never bind the desktop's port from this short-lived MCP process.
   return server;
 }

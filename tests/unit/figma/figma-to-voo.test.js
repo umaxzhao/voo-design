@@ -260,12 +260,14 @@ describe("figmaMessageToVooFile", () => {
 describe("canvas-root Canvas2D fallback", () => {
   it.each([true, false])("only clips and paints an outer artboard for ordinary documents (root=%s)", (isCanvasRoot) => {
     const ctx = { canvas: { width: 800, height: 600 } };
-    for (const name of ["save", "restore", "setTransform", "clearRect", "translate", "scale", "beginPath", "rect", "clip", "fillRect"]) ctx[name] = vi.fn();
+    for (const name of ["save", "restore", "setTransform", "clearRect", "translate", "scale", "beginPath", "rect", "clip", "fill", "fillRect"]) ctx[name] = vi.fn();
     draw(ctx, {
       doc: { width: 100, height: 100, nodes: [], backgroundColor: "#ffffff", isCanvasRoot },
       viewport: { panX: 0, panY: 0, zoom: 1 }, dpr: 1, artworkOnly: true,
     });
     expect(ctx.clip).toHaveBeenCalledTimes(isCanvasRoot ? 0 : 1);
-    expect(ctx.fillRect).toHaveBeenCalledTimes(isCanvasRoot ? 0 : 1);
+    expect(ctx.fill).toHaveBeenCalledTimes(isCanvasRoot ? 0 : 1);
+    expect(ctx.fillRect).not.toHaveBeenCalled();
+    if (!isCanvasRoot) expect(ctx.rect).toHaveBeenCalledWith(0, 0, 100, 100);
   });
 });

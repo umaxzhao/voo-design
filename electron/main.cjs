@@ -367,11 +367,12 @@ try {
   console.warn("[electron] Could not register workspace IPC:", err);
 }
 
-// Reuse the external MCP/CLI bridge; the renderer registers its canvas there.
+// The desktop owns the bridge; an explicitly launched web bridge may share it.
 let cliBridge = null;
 let cliBridgeStartup = Promise.resolve();
 let cliBridgeShutdown = null;
 let cliBridgeQuitComplete = false;
+let cliBridgeRetry = null;
 
 async function startDesktopCliBridge() {
   try {
@@ -393,6 +394,12 @@ async function startDesktopCliBridge() {
     } catch (err) {
       if (err.code !== "EADDRINUSE") throw err;
       console.info(`[electron] Reusing existing CLI bridge on ws://127.0.0.1:${port}`);
+      // A pre-existing web/legacy MCP bridge can exit independently. Keep
+      // trying to acquire the port so the renderer can reconnect to the app.
+      if (!cliBridgeShutdown) cliBridgeRetry = setTimeout(() => {
+        cliBridgeRetry = null;
+        cliBridgeStartup = startDesktopCliBridge();
+      }, 2000);
     }
   } catch (err) {
     console.warn("[electron] Could not start CLI bridge:", err);
@@ -404,6 +411,8 @@ app.on("before-quit", (event) => {
   event.preventDefault();
   // Wait for in-flight startup too, so quitting during listen cannot leak a server.
   if (!cliBridgeShutdown) {
+    clearTimeout(cliBridgeRetry);
+    cliBridgeRetry = null;
     cliBridgeShutdown = cliBridgeStartup.then(async () => {
       if (cliBridge) await cliBridge.close();
     }).catch((err) => {
