@@ -86,7 +86,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 |---|---|---|
 | 6 align + distribute/tidy | 🟡 有全套操作，但单 Frame 不显示；图标已按新 20px 套件 | 补单 Frame 可见性 |
 | X/Y | ✅ | — |
-| W/H + sizing 下拉（Fixed/Hug/Fill） | 🟡 W/H 本轮已移到 Layout；sizing 下拉仍只在 auto-layout 字段里 | 余：普通 Frame 的 Fixed 语义下拉 |
+| W/H + sizing 下拉（Fixed/Hug/Fill） | ✅ W/H 与 Fixed/Hug 下拉已在 Layout 紧邻显示；普通 Frame 无 auto layout 时不显示 sizing | 已对齐（普通 Frame 可后续补 Fixed 下拉） |
 | Rotation / Flip | ✅ | — |
 | Corner radius + independent corners | ✅ | — |
 | Corner smoothing | ❌ | P2/长尾 |
@@ -169,13 +169,16 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 - W/H 对部分场景加 sizing 下拉；独立圆角、anchor grid 放大；
 - Background/Frame 默认 Fill、导出 icon、协作提示位置等已修；
 - **本轮新增修复**：Design/Prototype 双 tab；W/H 从 Transform 迁到 Layout 且不再重复；
-  单选 Frame 显示 ALIGN 并支持对齐到父 Frame/页面。
+  单选 Frame 显示 ALIGN 并支持对齐到父 Frame/页面；Layout W/H 下直接显示
+  Fixed/Hug 尺寸下拉；单图层也显示 Selection colors；页面 Background 面板新增
+  “On this page” 颜色；Export 增加 JPEG/WebP 质量并默认显示一条 PNG 预设。
 
 ## 6. 优先级建议（给下一轮实现）
 
 | 优先级 | 缺口 | 动作 | 量 |
 |---|---|---|---|
-| P1 | 普通 Frame 的 W/H sizing 下拉 | 已有 W/H 在 Layout；补 Fixed 下拉（auto layout 已有 Hug/Fill） | S |
+| P1 | 多 stroke 列表 + per-side borders | Figma 高频；VOO 仍是单 stroke（需要渲染模型扩展） | L |
+| P2 | 普通 Frame 的 Fixed sizing 下拉 | 纯 Frame 无 auto layout 时补语义 | S |
 | P1 | 多 stroke / per-side | stroke 数组 + 每边 border；面板多行列表 | M |
 | P1 | Design/Prototype 双 tab | 顶部 tab 切换，Prototype 从底部 section 迁出 | M |
 | P2 | Component properties + go-to-main + granular reset | 组件作者面 | M/L |
@@ -197,3 +200,15 @@ sha256sum /tmp/figma-window.png            # a9faebc1…
 
 VOO 侧：当前 `npm run build` 后用 Playwright 选中 Frame，截取
 `[data-testid="editor-properties-panel"]`。
+
+## 8. 修复批次状态（2026-10-26 晚）
+
+已提交：
+- `d8b182f` Layout W/H 迁移 + 单选 ALIGN + 单对象对齐父 Frame/页面
+- `7ef2b00` Design / Prototype 双 tab
+- `9593cbe` Layout W/H 旁 Fixed/Hug sizing 下拉 + 单图层 Selection colors
+- `d2d40f3` 页面 “On this page” 颜色 + Export 质量/默认 PNG 预设
+
+仍属引擎级、未在本批伪造的缺口：多 stroke/per-side、组件属性/publish/go-to-main、
+Prototype scroll/change-to/set-variable/conditional、Fill image scale/alt、
+Effects texture/shader、3D transform/corner smoothing、Export 色彩配置/sampling。
