@@ -8,22 +8,64 @@ import {
   effectLabelKey,
 } from "../../editor/adjustment_catalog.js";
 import { FILTER_CATEGORIES } from "../../editor/filter_presets.js";
+import { useMemo } from "react";
 import { useI18n } from "../../use_i18n.js";
 import { usePresetThumbs, useActivePresetKey } from "./use_preset_thumbs.js";
 import KindIcon from "./kind_icons.jsx";
 
 /**
+ * A small reference image for template swatches when the layer has no bitmap
+ * (frames, groups, shapes). Bands of sky, skin, foliage and neutral greys make
+ * a preset's tint/contrast readable without pretending to be the layer itself.
+ */
+function createPresetSample() {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 96;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  const bands = [
+    ["#27364a", 0, 0.28],
+    ["#7fb4d8", 0.22, 0.34],
+    ["#d9a07c", 0.55, 0.32],
+    ["#7d8a5a", 0.84, 0.3],
+  ];
+  ctx.fillStyle = "#dadada";
+  ctx.fillRect(0, 0, 96, 64);
+  for (const [colour, start, width] of bands) {
+    ctx.fillStyle = colour;
+    ctx.fillRect(start * 96, 0, width * 96, 64);
+  }
+  // White and black patches keep exposure/contrast presets legible.
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, 14, 12);
+  ctx.fillStyle = "#111111";
+  ctx.fillRect(0, 52, 14, 12);
+  return canvas;
+}
+
+const PRESET_SAMPLE = createPresetSample();
+
+/** Group accents, kept in sync with the dots on the effects list. */
+const ACCENT = {
+  adjustment: "#7fd4a8",
+  filter: "#38bdf8",
+  effect: "#b3a0ff",
+};
+
+/**
  * One tappable kind in the left column. The glyph carries what the kind does
  * and the accent carries which group it belongs to, so the row needs no dot.
  */
-function KindButton({ kind, label, onClick }) {
+function KindButton({ kind, accent, label, onClick }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className="flex items-center gap-1.5 rounded-xl bg-neutral-800 px-2.5 py-1.5 text-left text-[11px] font-mono text-neutral-200 hover:bg-neutral-700 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
     >
-      <span className="shrink-0 text-neutral-300">
+      <span className="shrink-0" style={{ color: accent }}>
         <KindIcon kind={kind} />
       </span>
       <span className="truncate">{label}</span>
@@ -33,16 +75,18 @@ function KindButton({ kind, label, onClick }) {
 
 KindButton.propTypes = {
   kind: PropTypes.string.isRequired,
+  accent: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
   onClick: PropTypes.func.isRequired,
 };
 
 /** A titled group of kinds in the left column. */
-function KindGroup({ title, kinds, labelOf, onPick }) {
+function KindGroup({ title, accent, kinds, labelOf, onPick }) {
   return (
     <div>
       <div
-        className="mb-1.5 px-0.5 text-[10px] font-mono uppercase tracking-wider font-semibold text-neutral-300"
+        className="mb-1.5 px-0.5 text-[10px] font-mono uppercase tracking-wider font-semibold"
+        style={{ color: accent }}
       >
         <span>{title}</span>
       </div>
@@ -51,6 +95,7 @@ function KindGroup({ title, kinds, labelOf, onPick }) {
           <KindButton
             key={kind}
             kind={kind}
+            accent={accent}
             label={labelOf(kind)}
             onClick={() => onPick(kind)}
           />
@@ -62,6 +107,7 @@ function KindGroup({ title, kinds, labelOf, onPick }) {
 
 KindGroup.propTypes = {
   title: PropTypes.string.isRequired,
+  accent: PropTypes.string.isRequired,
   kinds: PropTypes.arrayOf(PropTypes.string).isRequired,
   labelOf: PropTypes.func.isRequired,
   onPick: PropTypes.func.isRequired,
@@ -70,15 +116,13 @@ KindGroup.propTypes = {
 /**
  * The "add" popover for a layer's effect stack.
  *
- * Left column: every kind that can be added, grouped as tone adjustments,
- * pixel filters, and layer-style effects — the dot colours match the rows they
- * become. Right column: one-click presets, each a bundle of adjustments
- * rendered on the layer's own bitmap, because a look is judged on the picture
- * rather than a stock tile. Everything either column adds lands in the same
- * stack, which is why they share one entry point.
- *
- * The preset column only appears for image layers; nothing else has a bitmap
- * to preview against.
+ * Left column: every kind that can be added, grouped as tone adjustments
+ * (green), pixel filters (blue), and layer-style effects (purple) — the same
+ * accent colours the stack rows use. Right column: one-click templates
+ * (presets). An image layer previews them on its own bitmap; frames, groups and
+ * shapes use a small reference swatch so the column never collapses into empty
+ * placeholders. Everything either column adds lands in the same stack, which is
+ * why they share one entry point.
  */
 export default function AddKindPicker({
   isImage = true,
@@ -92,8 +136,17 @@ export default function AddKindPicker({
   side = "left",
 }) {
   const { t } = useI18n();
-  const showPresets = isImage && Boolean(onApplyPreset);
-  const thumbs = usePresetThumbs(showPresets ? bitmap : null, imageKey);
+  // Templates are useful for frames/groups too (adjustments apply to the whole
+  // layer), so the column follows the handler rather than the image kind.
+  const showPresets = Boolean(onApplyPreset);
+  const sample = useMemo(
+    () => bitmap ?? PRESET_SAMPLE,
+    [bitmap],
+  );
+  const thumbs = usePresetThumbs(
+    showPresets ? sample : null,
+    showPresets ? (bitmap ? imageKey ?? "bitmap" : "preset-sample") : null,
+  );
   const activePresetKey = useActivePresetKey(adjustments ?? {});
 
   return (
@@ -121,12 +174,14 @@ export default function AddKindPicker({
         <div className="ui-scroll min-h-0 flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col gap-3">
           <KindGroup
             title={t("editor.layers.adjustments")}
+            accent={ACCENT.adjustment}
             kinds={TONE_ADJUSTMENT_KINDS}
             labelOf={(kind) => t(adjustmentLabelKey(kind))}
             onPick={(kind) => onPick(kind, false)}
           />
           <KindGroup
             title={t("editor.layers.filters")}
+            accent={ACCENT.filter}
             kinds={FILTER_KINDS}
             labelOf={(kind) => t(adjustmentLabelKey(kind))}
             onPick={(kind) => onPick(kind, false)}
@@ -134,6 +189,7 @@ export default function AddKindPicker({
           {showEffects ? (
             <KindGroup
               title={t("editor.layers.effects")}
+              accent={ACCENT.effect}
               kinds={EFFECT_KINDS}
               labelOf={(kind) => t(effectLabelKey(kind))}
               onPick={(kind) => onPick(kind, true)}
@@ -175,7 +231,9 @@ export default function AddKindPicker({
                             className="h-12 w-full rounded-lg object-cover"
                           />
                         ) : (
-                          <div className="h-12 w-full rounded-lg bg-neutral-800" />
+                          <div className="flex h-12 w-full items-center justify-center rounded-lg bg-neutral-900 text-neutral-500 ring-1 ring-white/10">
+                            <KindIcon kind="brightness" />
+                          </div>
                         )}
                         <span className="w-full truncate text-center text-[10px] font-mono text-neutral-400 group-hover/preset:text-neutral-200 transition-colors">
                           {t(preset.labelKey)}
@@ -194,7 +252,7 @@ export default function AddKindPicker({
 }
 
 AddKindPicker.propTypes = {
-  /** Only image layers get the preset column; nothing else has a bitmap. */
+  /** Kept for callers that distinguish image layers; templates now always show. */
   isImage: PropTypes.bool,
   /** The decoded layer image the swatches are rendered from. */
   bitmap: PropTypes.object,
