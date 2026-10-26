@@ -61,7 +61,7 @@ export default function TypeSpecificSections({ object, sections, showDimensions 
       return (
         <StaticSection title={t('editor.props.layout')} storageKey="layout">
           {/* Figma's layout mode strip: none / vertical / horizontal / grid. */}
-          <div className="grid grid-cols-4 gap-1">
+          <div className="flex h-7 items-center gap-0.5 rounded-xl bg-neutral-800 p-0.5">
             {modes.map((mode) => (
               <button
                 key={mode}
@@ -70,10 +70,10 @@ export default function TypeSpecificSections({ object, sections, showDimensions 
                 aria-pressed={layoutMode === mode}
                 title={t(`editor.props.layoutMode.${mode}`)}
                 onClick={() => setMode(mode)}
-                className={`flex h-7 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
+                className={`flex h-6 flex-1 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
                   layoutMode === mode
-                    ? 'bg-white/[0.12] text-white'
-                    : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200'
+                    ? 'bg-black/40 text-white'
+                    : 'text-neutral-400 hover:bg-white/[0.06] hover:text-neutral-200'
                 }`}
               >
                 <AutoLayoutModeIcon mode={mode} />

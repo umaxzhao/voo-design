@@ -228,7 +228,7 @@ export default function AlignSection({ count, onLayout, selectedNodes = [], show
       title={t("editor.props.align")}
       storageKey="align"
       hideHeader
-      bodyClassName="space-y-2 px-2"
+      bodyClassName="space-y-2 -mx-3"
     >
       {showQuickActions ? <Row>
         {ALIGN_TYPES.map((type) => (
