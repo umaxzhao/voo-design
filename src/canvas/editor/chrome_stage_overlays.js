@@ -83,7 +83,7 @@ export function drawTextDraftRect(ctx, rect, viewport) {
 
 /**
  * The transform-selection chrome: a dashed box for the dragged target rect,
- * eight resize handles, and a rotation grip above the top edge.
+ * four corner resize handles, and a rotation grip above the top edge.
  */
 export function drawSelectionTransformBox(ctx, box, viewport) {
   const { rotation = 0, rect = box } = box ?? {};
@@ -143,20 +143,16 @@ export function drawSelectionTransformBox(ctx, box, viewport) {
   ctx.fillStyle = SELECTION_COLOR;
   ctx.fill();
 
-  // Eight resize handles, square like the object-selection handles.
+  // Four corner handles, matching object-selection chrome.
   const size = 7 / viewport.zoom;
   ctx.fillStyle = "#ffffff";
   ctx.strokeStyle = SELECTION_COLOR;
   ctx.lineWidth = 1 / viewport.zoom;
   const points = [
     [rect.x, rect.y],
-    [cx, rect.y],
     [rect.x + rect.width, rect.y],
-    [rect.x + rect.width, cy],
     [rect.x + rect.width, rect.y + rect.height],
-    [cx, rect.y + rect.height],
     [rect.x, rect.y + rect.height],
-    [rect.x, cy],
   ];
   for (const [hx, hy] of points) {
     ctx.fillRect(hx - size / 2, hy - size / 2, size, size);

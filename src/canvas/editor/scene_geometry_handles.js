@@ -6,8 +6,8 @@ import { NODE_KIND } from "./scene_model.js";
 import { resolveCornerRadii } from "./scene_model_core.js";
 import {
   OPPOSITE_HANDLE,
+  CORNER_HANDLES,
   edgesOfHandle as sharedEdgesOfHandle,
-  handleAtPoint as sharedHandleAtPoint,
   handleFromPoints as sharedHandleFromPoints,
   handlePoints as sharedHandlePoints,
   oppositeHandlePoint as sharedOppositeHandlePoint,
@@ -31,8 +31,8 @@ export { OPPOSITE_HANDLE };
  */
 export const HANDLES = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
 
-/** The handles the pointer can actually grab: all 8 handles (4 corners + 4 edge midpoints). */
-export const SELECTABLE_HANDLES = HANDLES;
+/** Selection chrome exposes only the four corners; numeric edge resizing remains available. */
+export const SELECTABLE_HANDLES = CORNER_HANDLES;
 
 /** Smallest node a resize drag may produce, in document pixels. */
 export const MIN_NODE_SIZE = 8;
@@ -47,7 +47,7 @@ export function edgesOfHandle(handle) {
  * Returned in `HANDLES` order so callers can render them without re-sorting.
  */
 export function handlePoints(rect) {
-  return sharedHandlePoints(rect);
+  return sharedHandlePoints(rect).filter((point) => SELECTABLE_HANDLES.includes(point.handle));
 }
 
 /**
@@ -66,7 +66,7 @@ export function oppositeHandlePoint(rect, handle) {
  * the same physical size at every zoom level.
  */
 export function handleAtPoint(rect, point, tolerance) {
-  return sharedHandleAtPoint(rect, point, tolerance);
+  return sharedHandleFromPoints(handlePoints(rect), point, tolerance);
 }
 
 /**
@@ -80,7 +80,7 @@ export function handleFromPoints(points, point, tolerance) {
 }
 
 /**
- * The eight resize handles of a node in document space, in HANDLES order.
+ * The four corner resize handles of a node in document space.
  *
  * drawSelection renders exactly these points and pointer hit-testing grabs
  * the same list, so the chrome can never draw a handle the pointer cannot

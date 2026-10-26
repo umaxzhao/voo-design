@@ -53,7 +53,7 @@ describe('one CSS pixel selection frame', () => {
   // The left/top stroke starts exactly on the integer CSS boundary.
   expect((strokes[0].rect[0] - strokes[0].width / 2) * dpr).toBe(10 * dpr);
   expect(strokes[0].width * dpr).toBe(dpr);
-  expect(fills).toHaveLength(8);
+  expect(fills).toHaveLength(4);
   for (const [index, rect] of fills.entries()) {
    expect(rect.slice(2)).toEqual([8, 8]);
    expect(strokes[index + 1]).toEqual({ rect, width: 1 });
