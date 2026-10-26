@@ -49,8 +49,11 @@ function AgentCard({ id, icon, name, status, statusText, selected, onSelect, tes
       <span
         data-testid={`${testIds.status}-${id}`}
         data-status={status}
-        className={`max-w-full break-words text-[11px] ${status === AGENT_STATUS.CONNECTED ? "text-neutral-100" : "text-neutral-400"} ${settled ? "" : "animate-pulse"}`}
+        className={`max-w-full break-words text-[11px] ${status === AGENT_STATUS.CONNECTED ? "text-[#a7ffd4]" : "text-neutral-400"} ${settled ? "" : "animate-pulse"}`}
       >
+        {status === AGENT_STATUS.CONNECTED ? (
+          <span className="mr-1 inline-block size-1.5 rounded-full bg-[#a7ffd4]" aria-hidden="true" />
+        ) : null}
         {statusText}
       </span>
     </button>
@@ -106,7 +109,7 @@ export default function AgentCardGrid({
       {hasApiProviders && (
         <div role="group" aria-label={apiLabel} className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-neutral-400">{apiLabel}</span>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {cloudProviders.map((provider) => {
               const status = customAgentStatus(provider.configured);
               return (
