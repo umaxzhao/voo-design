@@ -119,7 +119,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 | Image scale mode（crop/fit/fill）/ alt text | 🟡 alt text 本轮已加；scale mode 仍缺 | P2 |
 | Selection colors / page colors / show in exports | 🟡 Selection colors 有；页面颜色清单/导出开关缺 | P2 |
 | Stroke：weight/color/opacity/position | ✅ | — |
-| 多 stroke 列表 / per-side borders | 🟡 多 stroke 列表 + 渲染已落地；per-side borders 仍缺 | 余：per-side |
+| 多 stroke 列表 / per-side borders | ✅ 多 stroke 列表 + rectangle/image per-side borders 已落地 | 已对齐（path 仍全边） |
 | Join/cap/dash/miter/arrows | 🟡 仅 path 的高级 stroke 有；rect/ellipse/image 没有 | P1/P2 |
 | Advanced stroke flyout / width profile / path trim | 🟡 path 有部分；trim 缺 | P2 |
 
