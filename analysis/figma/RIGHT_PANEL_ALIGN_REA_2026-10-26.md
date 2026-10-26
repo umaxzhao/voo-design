@@ -129,7 +129,7 @@ Figma Desktop 选中一个 Frame 时，右侧 rail 从上到下：
 |---|---|---|
 | Drop/Inner shadow、layer/background blur | ✅ 已有（blur/noise 在 Effects 内） | 已对齐 |
 | Glass / Noise / Texture / Shader | 🟡 Glass 有近似实现；Noise 有；Texture/Shader 缺 | P2：Texture/Shader；Glass 参数深度不足 |
-| 每行 inline 参数 vs popover | 🟡 VOO 用 popover | P2：可选 inline 展开 |
+| 每行 inline 参数 vs popover | ✅ 本轮 layer effects 改为 inline 展开；adjustment/filter 仍用 popover | 已对齐（effects 范围） |
 | 禁用原因 tooltip（如 glass 仅 frame） | ❌ | P2 |
 
 ### 4.6 Typography / Component / Instance
