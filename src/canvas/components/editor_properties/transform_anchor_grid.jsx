@@ -15,10 +15,11 @@ export default function AnchorPointGrid({ value, onChange, label }) {
       role="radiogroup"
       aria-label={label}
       title={label}
-      className="grid shrink-0 h-11 w-11 grid-cols-3 content-center items-center justify-items-center rounded-xl bg-neutral-800 p-1.5"
+      className="grid shrink-0 h-14 w-14 grid-cols-3 content-center items-center justify-items-center rounded-xl bg-neutral-800 p-2"
     >
       {ANCHOR_KEYS.map((key) => {
         const isSelected = value === key;
+        const isCentre = key === "center";
         return (
           <button
             key={key}
@@ -27,17 +28,29 @@ export default function AnchorPointGrid({ value, onChange, label }) {
             aria-checked={isSelected}
             aria-label={label}
             onClick={() => onChange(key)}
-            className={`flex h-2.5 w-2.5 items-center justify-center rounded-full transition-all ${
+            className={`flex h-3.5 w-3.5 items-center justify-center rounded-full transition-all ${
               isSelected ? "cursor-default" : "cursor-pointer hover:scale-125"
             }`}
           >
-            <span
-              className={`rounded-full transition-all ${
-                isSelected
-                  ? "h-1.5 w-1.5 bg-[#a7ffd4]"
-                  : "h-1 w-1 bg-neutral-600 hover:bg-neutral-300"
-              }`}
-            />
+            {isCentre ? (
+              <span
+                aria-hidden="true"
+                className={`relative flex h-3.5 w-3.5 items-center justify-center ${
+                  isSelected ? "text-[#a7ffd4]" : "text-neutral-500"
+                }`}
+              >
+                <span className="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-current" />
+                <span className="absolute top-0 bottom-0 left-1/2 w-0.5 -translate-x-1/2 rounded-full bg-current" />
+              </span>
+            ) : (
+              <span
+                className={`rounded-full transition-all ${
+                  isSelected
+                    ? "h-1.5 w-1.5 bg-[#a7ffd4]"
+                    : "h-1 w-1 bg-neutral-600 hover:bg-neutral-300"
+                }`}
+              />
+            )}
           </button>
         );
       })}
