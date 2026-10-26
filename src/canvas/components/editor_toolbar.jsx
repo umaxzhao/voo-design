@@ -100,6 +100,18 @@ export default function EditorToolbar({
           label: t("editor.tool.hand"),
         })}
 
+        {/* Region selection is useful on motion pages as well as design pages. */}
+        <div className="relative flex items-center">
+          <EditorMarqueeMenu
+            tool={tool}
+            onTool={onTool}
+            marqueeMode={marqueeMode}
+            onMarqueeMode={onMarqueeMode}
+            regionMode={regionMode}
+            onRegionMode={onRegionMode}
+          />
+        </div>
+
         {!motionVariant ? (
           <>
             {renderTool({
@@ -114,20 +126,6 @@ export default function EditorToolbar({
               icon: <IconCrop size={16} />,
               label: t("editor.tool.crop"),
             })}
-
-            {/* 3. 选区工具组 (框选 / 椭圆 / 多边形 / 套索 / 魔棒 / 对象选择) */}
-            <div
-              className="relative flex items-center"
-            >
-              <EditorMarqueeMenu
-                tool={tool}
-                onTool={onTool}
-                marqueeMode={marqueeMode}
-                onMarqueeMode={onMarqueeMode}
-                regionMode={regionMode}
-                onRegionMode={onRegionMode}
-              />
-            </div>
 
             {/* 4. 画笔工具 */}
             <div
