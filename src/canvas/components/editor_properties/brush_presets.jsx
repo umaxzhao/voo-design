@@ -10,6 +10,9 @@ import { DEFAULT_BRUSH_PRESETS } from "../../editor/brush_presets.js";
 function BrushStrokePreview({ preset, active }) {
   const soft = preset.hardness === 0;
   const feather = preset.hardness < 0.8;
+  const roundness = Math.max(0.15, preset.roundness ?? 1);
+  const outerWidth = Math.max(1.5, Math.min(7, (preset.width / 5) * roundness));
+  const innerWidth = Math.max(1, Math.min(3, (preset.width / 12) * roundness));
   return (
     <svg
       viewBox="0 0 120 26"
@@ -21,7 +24,7 @@ function BrushStrokePreview({ preset, active }) {
         d="M3 18C22 16 31 7 47 9C63 11 69 20 84 17C97 14 108 9 117 11"
         fill="none"
         stroke="currentColor"
-        strokeWidth={Math.max(2, Math.min(7, preset.width / 5))}
+        strokeWidth={outerWidth}
         strokeLinecap="round"
         opacity={Math.max(0.35, preset.opacity)}
       />
@@ -29,7 +32,7 @@ function BrushStrokePreview({ preset, active }) {
         d="M3 18C22 16 31 7 47 9C63 11 69 20 84 17C97 14 108 9 117 11"
         fill="none"
         stroke="currentColor"
-        strokeWidth={Math.max(1, Math.min(3, preset.width / 12))}
+        strokeWidth={innerWidth}
         strokeLinecap="round"
         opacity={Math.min(1, preset.opacity * 1.2)}
       />
@@ -48,6 +51,8 @@ export default function BrushPresets({
   onBrushHardness,
   onBrushWidth,
   onBrushOpacity,
+  onBrushRoundness,
+  onBrushAngle,
   variant = "grid",
   onOpenDetails = null,
 }) {
@@ -115,6 +120,8 @@ export default function BrushPresets({
                   onBrushHardness?.(preset.hardness);
                   onBrushWidth?.(preset.width);
                   onBrushOpacity?.(preset.opacity);
+                  onBrushRoundness?.(preset.roundness ?? 1);
+                  onBrushAngle?.(preset.angle ?? 0);
                   onOpenDetails?.(preset.id);
                 }}
                 className={`flex min-h-10 w-full items-center gap-2 rounded-xl px-2.5 text-left transition-colors ${
@@ -171,6 +178,8 @@ export default function BrushPresets({
                   onBrushHardness?.(preset.hardness);
                   onBrushWidth?.(preset.width);
                   onBrushOpacity?.(preset.opacity);
+                  onBrushRoundness?.(preset.roundness ?? 1);
+                  onBrushAngle?.(preset.angle ?? 0);
                 }}
                 className={`flex flex-col items-center justify-center gap-1 rounded-xl p-1.5 transition-all ${
                   isActive
@@ -240,6 +249,8 @@ BrushPresets.propTypes = {
   onBrushHardness: PropTypes.func,
   onBrushWidth: PropTypes.func,
   onBrushOpacity: PropTypes.func,
+  onBrushRoundness: PropTypes.func,
+  onBrushAngle: PropTypes.func,
   variant: PropTypes.oneOf(["grid", "list"]),
   onOpenDetails: PropTypes.func,
 };

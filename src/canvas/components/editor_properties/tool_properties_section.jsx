@@ -379,6 +379,8 @@ export default function ToolPropertiesSection({
             onBrushHardness={onBrushHardness}
             onBrushWidth={onBrushWidth}
             onBrushOpacity={onBrushOpacity}
+            onBrushRoundness={onBrushRoundness}
+            onBrushAngle={onBrushAngle}
             variant="list"
             onOpenDetails={() => setBrushDetailOpen(true)}
           />
@@ -466,6 +468,8 @@ export default function ToolPropertiesSection({
               onBrushHardness={onBrushHardness}
               onBrushWidth={onBrushWidth}
               onBrushOpacity={onBrushOpacity}
+              onBrushRoundness={onBrushRoundness}
+              onBrushAngle={onBrushAngle}
             />
           )}
         </>
