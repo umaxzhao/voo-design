@@ -20,7 +20,6 @@ import { IconSwap } from "../../icons.jsx";
 import PropertiesPanelHeader from "./properties_panel_header.jsx";
 import PropertiesPanelMaskToolbar from "./properties_panel_mask_toolbar.jsx";
 import PropertiesPanelSections from "./properties_panel_sections.jsx";
-import LiveFilterSection from "./live_filter_section.jsx";
 import { editorPropertiesPropTypes } from "./properties_panel_types.js";
 import { PROPERTIES_PANEL_MAX_HEIGHT_CLASS } from "../editor_panel_clearance.js";
 
@@ -30,7 +29,6 @@ export {
   PropertiesPanelHeader,
   PropertiesPanelMaskToolbar,
   PropertiesPanelSections,
-  LiveFilterSection,
   editorPropertiesPropTypes,
 };
 
@@ -372,7 +370,7 @@ export default function EditorProperties({
             onClick={onToggleSide}
             title={t("editor.pages.toggleAxis")}
             aria-label={t("editor.pages.toggleAxis")}
-            className="flex w-10 shrink-0 items-center justify-center border-l border-white/10 text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
+            className="flex w-10 shrink-0 items-center justify-center text-neutral-400 transition-colors hover:text-white"
           >
             <IconSwap size={13} />
           </button>
