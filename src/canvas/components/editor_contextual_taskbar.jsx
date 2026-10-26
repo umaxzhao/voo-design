@@ -1,11 +1,12 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { IconAdd, IconBold, IconCheck, IconClose, IconCopy, IconFlipH, IconFlipV, IconFolder, IconLayers, IconLock, IconMask, IconMinus, IconMore, IconSliders, IconSwap, IconTrash, IconUnlock, IconUnlink, IconDiamond, IconSparkles, IconEye, IconEyeOff, IconArrowUp, IconCrop } from "../icons.jsx";
 import { OperationIcon } from "./editor_properties/combine_section.jsx";
-import { AlignIcon, DistributeIcon } from "./editor_properties/align_section.jsx";
-import { alignNodes, distributeNodes } from "../editor/align_ops.js";
+import { AlignIcon, DistributeIcon, TidyIcon } from "./editor_properties/align_section.jsx";
+import { alignNodes, distributeNodes, tidyNodes } from "../editor/align_ops.js";
 import { BOOLEAN_OPERATIONS } from "../editor/scene_model.js";
 import AddKindPicker from "./editor_properties/add_kind_picker.jsx";
 import EditorTooltip from "./editor_tooltip.jsx";
+import EditorTaskbarActionMenu from "./editor_taskbar_action_menu.jsx";
 import { EditorAiMenuSection } from "./editor_ai_taskbar_buttons.jsx";
 import { clearActivePixelSelection, finishPenPathEditing } from "./editor_taskbar_actions.js";
 import EditorContextualAiInput, { extractNodeContext, dispatchToAgent } from "./editor_contextual_ai_input.jsx";
@@ -151,7 +152,7 @@ function EditorContextualTaskBar({
   }, [docRect, active, selectionKey, aiInputOpen, type]);
   if (!active) return null;
   const action = (id, icon, onClick, extra = {}) => <Action key={id} id={id} label={label(id)} icon={icon} onClick={onClick} {...extra} />;
-  const booleanActions = engine?.canCombineSelection?.() ? BOOLEAN_OPERATIONS.map(op => <Action key={op} id={`boolean-${op}`} label={t(`editor.props.combine.${op}`)} icon={<OperationIcon operation={op} />} onClick={() => engine?.combineSelected?.(op)} />) : null;
+  const booleanActions = engine?.canCombineSelection?.() ? <EditorTaskbarActionMenu key={`boolean-${selectionKey}`} id="boolean" label={label("boolean")} icon={<OperationIcon operation="union" />}>{BOOLEAN_OPERATIONS.map(op => <Action key={op} id={`boolean-${op}`} label={t(`editor.props.combine.${op}`)} icon={<OperationIcon operation={op} />} onClick={() => engine?.combineSelected?.(op)} />)}</EditorTaskbarActionMenu> : null;
   const dispatch = (prompt, context) => {
     const payload = {
       prompt,
@@ -272,8 +273,11 @@ function EditorContextualTaskBar({
           })}
       {type === "group" && action("ungroup", <IconUnlink size={14} />, () => engine?.ungroupSelection?.())}
       {type === "multi" && <>
+        <EditorTaskbarActionMenu key={`align-${selectionKey}`} id="alignment" label={t("editor.props.align")} icon={<AlignIcon type="left" />}>
         {["left", "center", "right", "top", "middle", "bottom"].map(align => <Action key={align} id={`align-${align}`} label={t(`editor.props.alignShapes.${align}`)} icon={<AlignIcon type={align} />} onClick={() => engine?.layoutSelection?.(alignNodes, align)} />)}
         {["horizontal", "vertical"].map(axis => <Action key={axis} id={`distribute-${axis}`} label={t(`editor.props.distribute.${axis}`)} icon={<DistributeIcon axis={axis} />} disabled={count < 3 || !engine?.layoutSelection} onClick={() => engine?.layoutSelection?.(distributeNodes, axis)} />)}
+        {["horizontal", "vertical"].map(axis => <Action key={`tidy-${axis}`} id={`tidy-${axis}`} label={t(axis === "horizontal" ? "editor.props.distributeSpacingH" : "editor.props.distributeSpacingV")} icon={<TidyIcon axis={axis} />} disabled={count < 3 || !engine?.layoutSelection} onClick={() => engine?.layoutSelection?.(tidyNodes, axis)} />)}
+        </EditorTaskbarActionMenu>
         {action("group", <IconFolder size={14} />, () => engine?.groupSelection?.())}{booleanActions}
       </>}
       <Divider />

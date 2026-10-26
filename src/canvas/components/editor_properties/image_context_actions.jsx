@@ -1,6 +1,5 @@
 import PropTypes from "prop-types";
 import { useRef, useState } from "react";
-import { TOOL } from "../../editor/editor_constants.js";
 import { normalizeAdjustments } from "../../editor/scene_model.js";
 import { useI18n } from "../../use_i18n.js";
 import ScrubField from "../scrub_field.jsx";
@@ -14,7 +13,6 @@ export default function ImageContextActions({
   editAndCommit,
 }) {
   const { t } = useI18n();
-  const fileInputRef = useRef(null);
   const frequencyRadiusRef = useRef(null);
   const [frequencyError, setFrequencyError] = useState("");
   if (object?.kind !== "image") return null;
@@ -34,15 +32,6 @@ export default function ImageContextActions({
           : "editor.frequencySeparation.error.generic";
       setFrequencyError(t(key));
     }
-  };
-
-  const replaceImage = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => engine?.replaceNodeBitmap?.(object.id, reader.result);
-    reader.readAsDataURL(file);
-    event.target.value = "";
   };
 
   const applyFitOrFill = (event) => {
@@ -97,31 +86,6 @@ export default function ImageContextActions({
         className="border-t border-white/10 pb-2 pt-2"
       >
       <div className="grid grid-cols-2 gap-1.5">
-        <button
-          type="button"
-          data-testid="editor-taskbar-crop"
-          aria-label={t("editor.taskbar.crop")}
-          className={ACTION_BUTTON_CLASS}
-          onClick={() => engine?.setTool?.(TOOL.CROP)}
-        >
-          {t("editor.taskbar.crop")}
-        </button>
-        <button
-          type="button"
-          data-testid="editor-taskbar-replace"
-          aria-label={t("editor.taskbar.replace")}
-          className={ACTION_BUTTON_CLASS}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          {t("editor.taskbar.replace")}
-        </button>
-        <input
-          ref={fileInputRef}
-          hidden
-          type="file"
-          accept="image/*"
-          onChange={replaceImage}
-        />
         <label className="col-span-2 flex min-h-8 items-center justify-between gap-2 rounded-lg bg-white/[0.04] px-2 text-[10px] text-neutral-400">
           <span>{t("editor.frequencySeparation.radius")}</span>
           <input

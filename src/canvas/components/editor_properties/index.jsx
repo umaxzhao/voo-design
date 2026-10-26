@@ -1,5 +1,4 @@
 import { resolvePanelForContext } from "./resolve_panel_context.js";
-import SelectedNodeActions from "./selected_node_actions.jsx";
 import InspectPanel from "./inspect_panel.jsx";
 import PrototypeSection from "./prototype_section.jsx";
 import { frameOfNode, isFrameNode } from "../../editor/prototype_model.js";
@@ -59,7 +58,6 @@ export default function EditorProperties({
   hideFrameDetails = false,
   /** The selected node objects when several are picked (plan 1.9). */
   selectedNodes = [],
-  onCombine = null,
   onLayout = null,
   swapSide = false,
   onToggleSide = null,
@@ -88,8 +86,6 @@ export default function EditorProperties({
   imageAiActions = null,
   onRemoveBackground = null,
   removeBackgroundBusy = false,
-  onCreateComponent = null,
-  onDetachInstance = null,
   onDeleteCanvas = null,
 }) {
   const { t } = useI18n();
@@ -332,13 +328,6 @@ export default function EditorProperties({
           </div>
         ) : (
           <>
-        <SelectedNodeActions
-          object={object}
-          selectedNodes={selectedNodes}
-          engine={engine}
-          onCreateComponent={onCreateComponent}
-          onDetachInstance={onDetachInstance}
-        />
         {maskToolbar}
           <PropertiesPanelSections
             sections={context.sections}
@@ -363,7 +352,6 @@ export default function EditorProperties({
             selectionCount={selectionCount}
             selectedNodes={selectedNodes}
             onLayout={onLayout}
-            onCombine={onCombine}
             edit={edit}
             editAndCommit={editAndCommit}
             commitNow={commitNow}

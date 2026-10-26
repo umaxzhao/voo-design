@@ -8,7 +8,6 @@ import AffinityAdjustmentSection from "./affinity_adjustment_section.jsx";
 import ImageContextActions from "./image_context_actions.jsx";
 import AlignSection from "./align_section.jsx";
 import ColourSection from "./colour_section.jsx";
-import CombineSection from "./combine_section.jsx";
 import ShapeSection from "./shape_section.jsx";
 import TextSection from "./text_section.jsx";
 import TransformSection from "./transform_section.jsx";
@@ -64,7 +63,6 @@ export default function PropertiesPanelSections({
   selectionCount,
   selectedNodes,
   onLayout,
-  onCombine,
   edit,
   editAndCommit,
   commitNow,
@@ -150,14 +148,7 @@ export default function PropertiesPanelSections({
           count={selectionCount}
           onLayout={onLayout}
           selectedNodes={selectedNodes}
-        />
-      ) : null}
-      {!isWarpTool && onCombine ? (
-        <CombineSection
-          onCombine={onCombine}
-          currentOperation={
-            object?.kind === "boolean" ? object.operation : null
-          }
+          showQuickActions={(selectionCount ?? 1) < 2}
         />
       ) : null}
 
@@ -200,7 +191,7 @@ export default function PropertiesPanelSections({
       ) : null}
 
       {/* The constraints row appears once set or when the add menu reveals it.
-          Image actions (crop / replace / fit) live in ImageContextActions. */}
+          One-shot crop and replace actions live in the bottom quickbar. */}
       {!isWarpTool && eligible.constraints && !object.isFrame ? (
         <ConstraintsSection object={object} editAndCommit={editAndCommit} />
       ) : null}
@@ -399,7 +390,6 @@ PropertiesPanelSections.propTypes = {
   selectionCount: PropTypes.number,
   selectedNodes: PropTypes.array,
   onLayout: PropTypes.func,
-  onCombine: PropTypes.func,
   edit: PropTypes.func.isRequired,
   editAndCommit: PropTypes.func.isRequired,
   commitNow: PropTypes.func,

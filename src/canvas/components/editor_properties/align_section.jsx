@@ -151,7 +151,7 @@ export function DistributeIcon({ axis }) {
 DistributeIcon.propTypes = { axis: PropTypes.string.isRequired };
 
 /** Figma-style Tidy Up / Even Spacing SVG icons with inner gap lines. */
-function TidyIcon({ axis }) {
+export function TidyIcon({ axis }) {
   if (axis === "horizontal") {
     return (
       <svg
@@ -378,13 +378,13 @@ GapControlRow.propTypes = {
  * disabled rather than hidden at two, so the row does not change shape as
  * shapes are added to the selection.
  */
-export default function AlignSection({ count, onLayout, selectedNodes = [] }) {
+export default function AlignSection({ count, onLayout, selectedNodes = [], showQuickActions = true }) {
   const { t } = useI18n();
   const canSpread = count >= 3;
 
   return (
     <StaticSection title={t("editor.props.align")} storageKey="align">
-      <Row>
+      {showQuickActions ? <Row>
         {ALIGN_TYPES.map((type) => (
           <EditorTooltip
             key={type}
@@ -402,9 +402,9 @@ export default function AlignSection({ count, onLayout, selectedNodes = [] }) {
             </button>
           </EditorTooltip>
         ))}
-      </Row>
+      </Row> : null}
 
-      {count >= 2 && (
+      {showQuickActions && count >= 2 && (
         <Row>
           {DISTRIBUTE_AXES.map((axis) => (
             <EditorTooltip
@@ -484,4 +484,5 @@ AlignSection.propTypes = {
   count: PropTypes.number.isRequired,
   onLayout: PropTypes.func.isRequired,
   selectedNodes: PropTypes.array,
+  showQuickActions: PropTypes.bool,
 };
