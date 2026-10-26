@@ -48,6 +48,7 @@ export { Galaxy as IconGalaxy } from "lucide-react";
 export { GripVertical as IconDraggable } from "lucide-react";
 export { MousePointer2 as IconCursor } from "lucide-react";
 export { Maximize2 as IconExpand } from "lucide-react";
+export { Maximize as IconMaximize } from "lucide-react";
 export { Minimize2 as IconCollapse } from "lucide-react";
 export { CirclePlay as IconPlayCircle } from "lucide-react";
 export { Play as IconPlay } from "lucide-react";
