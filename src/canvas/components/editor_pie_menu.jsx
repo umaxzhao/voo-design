@@ -201,6 +201,19 @@ export default function EditorPieMenu({
           height: outerRadius * 2,
         }}
       >
+        {/* One glass ring groups every icon; the middle stays clear so the
+            canvas and centre dot remain readable. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full backdrop-blur-md"
+          style={{
+            width: (outerRadius + 16) * 2,
+            height: (outerRadius + 16) * 2,
+            background:
+              "radial-gradient(circle, transparent 0 45%, rgba(0,0,0,0.62) 45% 93%, rgba(255,255,255,0.12) 93% 100%)",
+          }}
+        />
+
         {/* Center indicator dot */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center">
           <div className="w-1 h-1 rounded-full bg-white/60" />
