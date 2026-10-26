@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { StaticSection, fieldClass, sectionRowClass } from './property_section.jsx';
 import ScrubField from '../scrub_field.jsx';
-import { PanelTop, PanelLeft, Grid3x3, SquareDashed } from 'lucide-react';
+import AutoLayoutModeIcon from './auto_layout_mode_icon.jsx';
 import ScrubValueInput from './scrub_value_input.jsx';
 import FlatSelect from '../flat_select.jsx';
 import { normalizeLayoutGrid } from '../../editor/layout_grid.js';
@@ -57,17 +57,12 @@ export default function TypeSpecificSections({ object, sections, editAndCommit, 
         });
       };
       const applyEdit = (patch) => (edit ?? editAndCommit)(patch);
-      const modes = [
-        ['none', SquareDashed],
-        ['vertical', PanelTop],
-        ['horizontal', PanelLeft],
-        ['grid', Grid3x3],
-      ];
+      const modes = ['none', 'vertical', 'horizontal', 'grid'];
       return (
         <StaticSection title={t('editor.props.layout')} storageKey="layout">
           {/* Figma's layout mode strip: none / vertical / horizontal / grid. */}
           <div className="grid grid-cols-4 gap-1">
-            {modes.map(([mode, Icon]) => (
+            {modes.map((mode) => (
               <button
                 key={mode}
                 type="button"
@@ -81,7 +76,7 @@ export default function TypeSpecificSections({ object, sections, editAndCommit, 
                     : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200'
                 }`}
               >
-                <Icon size={14} strokeWidth={1.5} />
+                <AutoLayoutModeIcon mode={mode} />
               </button>
             ))}
           </div>

@@ -55,6 +55,7 @@ describe("Figma-style frame panel", () => {
     const html = renderFrame();
     for (const mode of ["none", "vertical", "horizontal", "grid"]) {
       expect(html).toContain(`aria-label="editor.props.layoutMode.${mode}"`);
+      expect(html).toContain(`data-layout-mode-icon="${mode}"`);
     }
     // The frame's enabled layout grid selects grid mode.
     expect(html).toContain('aria-label="editor.props.layoutMode.grid" aria-pressed="true"');
