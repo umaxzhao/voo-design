@@ -9,7 +9,7 @@
 import { rotationFromPointer } from "./scene_geometry.js";
 import { rotateCursorForAngle as rotateCursorAsset } from "./cursor_assets.js";
 
-export const ROTATION_CURSOR_ANGLE_STEP = 15;
+export const ROTATION_CURSOR_ANGLE_STEP = 90;
 
 const ROTATION_CURSOR_HOTSPOTS = Object.freeze({
   0: [11, 7],

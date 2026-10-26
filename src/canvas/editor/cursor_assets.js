@@ -21,7 +21,7 @@ const rotationCursorCache = new Map();
 
 /** Rotation cursor rotated to the snapped pointer angle. */
 export function rotateCursorForAngle(angle) {
-  const normalized = ((Math.round(angle / 15) * 15) % 360 + 360) % 360;
+  const normalized = ((Math.round(angle / 90) * 90) % 360 + 360) % 360;
   if (!rotationCursorCache.has(normalized)) {
     rotationCursorCache.set(
       normalized,

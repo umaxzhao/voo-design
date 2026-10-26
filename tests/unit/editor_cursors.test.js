@@ -28,7 +28,8 @@ describe("editor cursors", () => {
   it("uses the supplied rotate cursor for the rotation grip", () => {
     expect(rotationCursorForAngle(0)).toBe(ROTATE_CURSOR);
     expect(rotationCursorForAngle(45)).not.toBe(rotationCursorForAngle(0));
-    expect(decodeURIComponent(rotationCursorForAngle(45))).toContain("rotate(45 148 21)");
+    expect(decodeURIComponent(rotationCursorForAngle(45))).toContain("rotate(90 148 21)");
+    expect(rotationCursorForAngle(180)).not.toBe(rotationCursorForAngle(0));
     expect(ROTATE_CURSOR).toContain("data:image/svg+xml");
   });
 });
