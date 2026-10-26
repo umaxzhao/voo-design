@@ -884,6 +884,8 @@ export default {
   "editor.props.blendMode": "Blend mode",
   "editor.props.rotation": "Rotation",
   "editor.props.shear": "Shear",
+  "editor.props.anchorHorizontal": "Centre anchor horizontally",
+  "editor.props.anchorVertical": "Centre anchor vertically",
   "editor.props.anchorPoint": "Anchor point kept fixed when editing X/Y/W/H",
   "editor.props.cornerRadius": "Corner radius",
   "editor.props.linkCorners": "Link corner radii",
