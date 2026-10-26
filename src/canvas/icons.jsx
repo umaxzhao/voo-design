@@ -683,8 +683,56 @@ export { RotateCcw as IconRotateCcw } from "lucide-react";
 export { RotateCw as IconRotateCw } from "lucide-react";
 export { BringToFront as IconBringToFront } from "lucide-react";
 export { SendToBack as IconSendToBack } from "lucide-react";
-export { FlipHorizontal2 as IconFlipH } from "lucide-react";
-export { FlipVertical2 as IconFlipV } from "lucide-react";
+/** Flip with a solid centreline (the supplied design uses a line, not dashes). */
+export function IconFlipH({
+  size = 16,
+  className = "",
+  strokeWidth = ICON_STROKE_WIDTH,
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M2 12h20" />
+      <path d="M7.298 3.712A1 1 0 018 2h8a1 1 0 01.703 1.712l-3.991 3.99a1 1 0 01-1.424.001z" />
+      <path d="M7.298 20.288A1 1 0 008 22h8a1 1 0 00.703-1.712l-3.991-3.99a1 1 0 00-1.424-.001z" />
+    </svg>
+  );
+}
+
+export function IconFlipV({
+  size = 16,
+  className = "",
+  strokeWidth = ICON_STROKE_WIDTH,
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12 2v20" />
+      <path d="M20.288 16.703A1 1 0 0022 16V8a1 1 0 00-1.712-.703l-3.99 3.991a1 1 0 00-.001 1.424z" />
+      <path d="M3.712 16.703A1 1 0 012 16V8a1 1 0 011.712-.703l3.99 3.991a1 1 0 01.001 1.424z" />
+    </svg>
+  );
+}
 export {
   AlignmentLeftIcon as IconAlignLeft,
   AlignmentCenterIcon as IconAlignCenter,

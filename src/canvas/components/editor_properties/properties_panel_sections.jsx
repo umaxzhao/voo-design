@@ -12,7 +12,6 @@ import ShapeSection from "./shape_section.jsx";
 import TextSection from "./text_section.jsx";
 import TransformSection from "./transform_section.jsx";
 import LayerEffectsSection from "./layer_effects_section.jsx";
-import LiveFilterSection from "./live_filter_section.jsx";
 import PuppetPinSection from "./puppet_pin_section.jsx";
 import WarpSection from "./warp_section.jsx";
 import AutoLayoutChildSection from "./auto_layout_child_section.jsx";
@@ -67,6 +66,7 @@ export default function PropertiesPanelSections({
   editAndCommit,
   commitNow,
   transformActions,
+  onRotate90,
   onMutate,
   onCommit,
   swapSide,
@@ -128,7 +128,6 @@ export default function PropertiesPanelSections({
   };
 
   const addItems = [
-    eligible.liveFilters && !show("liveFilters") && { key: "liveFilters", label: t("editor.liveFilters.title"), onSelect: () => reveal("liveFilters") },
     eligible.variables && !show("variables") && { key: "variables", label: t("editor.variables.title"), onSelect: () => reveal("variables") },
     eligible.styles && !show("styles") && { key: "styles", label: t("styles.title"), onSelect: () => reveal("styles") },
     showRepeatArray && !show("modifiers") && { key: "modifiers", label: t("editor.props.modifiers"), onSelect: () => reveal("modifiers") },
@@ -190,6 +189,7 @@ export default function PropertiesPanelSections({
           selectedNodes={selectedNodes}
           transformActions={transformActions}
           parentLayout={parentLayout}
+          onRotate90={onRotate90}
         />
       ) : null}
 
@@ -351,17 +351,6 @@ export default function PropertiesPanelSections({
         <ExportSection object={object} selectedNodes={selectedNodes} engine={engine} />
       ) : null}
 
-      {eligible.liveFilters ? (
-        <LiveFilterSection
-          object={object}
-          revealed={revealed("liveFilters")}
-          liveFilters={normalizeAdjustments(object.adjustments).liveFilters}
-          edit={edit}
-          editAndCommit={editAndCommit}
-          commitNow={commitNow}
-        />
-      ) : null}
-
       {showRepeatArray ? <ModifiersSection object={object} engine={engine} t={t} revealed={revealed("modifiers")} /> : null}
 
       <PanelAddMenu items={addItems} />
@@ -398,6 +387,7 @@ PropertiesPanelSections.propTypes = {
   editAndCommit: PropTypes.func.isRequired,
   commitNow: PropTypes.func,
   transformActions: PropTypes.object,
+  onRotate90: PropTypes.func,
   onMutate: PropTypes.func,
   onCommit: PropTypes.func,
   swapSide: PropTypes.bool,

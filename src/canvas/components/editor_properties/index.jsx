@@ -419,6 +419,7 @@ export default function EditorProperties({
             editAndCommit={editAndCommit}
             commitNow={commitNow}
             transformActions={transformActions}
+            onRotate90={() => engine?.rotateClockwise?.()}
             onMutate={onMutate}
             onCommit={onCommit}
             swapSide={swapSide}

@@ -22,6 +22,7 @@ import {
 import {
   IconFlipH,
   IconFlipV,
+  IconRotateCw,
 } from "../../icons.jsx";
 import { useI18n } from "../../use_i18n.js";
 import EditorTooltip from "../editor_tooltip.jsx";
@@ -53,6 +54,7 @@ export default function TransformSection({
   selectedNodes = [],
   transformActions = null,
   parentLayout = null,
+  onRotate90 = null,
 }) {
   const { t } = useI18n();
   const [lockRatioState, setLockRatioState] = useState({
@@ -220,6 +222,17 @@ export default function TransformSection({
               )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
+              <EditorTooltip title={t("editor.props.rotate90")} side="top">
+                <button
+                  type="button"
+                  disabled={Boolean(transformActions?.pending)}
+                  onClick={() => onRotate90?.()}
+                  aria-label={t("editor.props.rotate90")}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-800 text-neutral-400 transition-colors hover:bg-white/[0.08] hover:text-neutral-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 disabled:pointer-events-none disabled:opacity-40"
+                >
+                  <IconRotateCw size={14} />
+                </button>
+              </EditorTooltip>
               <EditorTooltip title={t("editor.props.flipH")} side="top">
                 <button
                   type="button"
@@ -327,6 +340,7 @@ export default function TransformSection({
 }
 
 TransformSection.propTypes = {
+  onRotate90: PropTypes.func,
   object: PropTypes.object.isRequired,
   showRadius: PropTypes.bool,
   /** False when the Layout group owns the W/H fields (frames). */
