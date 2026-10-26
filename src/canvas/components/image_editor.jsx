@@ -965,7 +965,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     nodeIds,
   );
   const { canUndo, canRedo } = presentationHistory;
-  const [mobilePanelsCollapsed, setMobilePanelsCollapsed] = useState(false);
+  const [mobileLayersExpanded, setMobileLayersExpanded] = useState(false);
+  const [mobilePropertiesExpanded, setMobilePropertiesExpanded] = useState(false);
+  const mobilePanelsExpanded =
+    mobileLayersExpanded || mobilePropertiesExpanded;
   const mobileCanvasGestures = useMobileCanvasGestures(presentationHistory.undo);
   /** The selected (blue) Puppet Warp pin, read straight from the engine. */
   const puppetPinId = engine?.getSelectedPuppetPin?.() ?? null;
@@ -3332,7 +3335,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       ref={editorRootRef}
       data-testid="design-editor"
       data-properties-open={propertiesOpen ? "true" : "false"}
-      data-mobile-panels-collapsed={mobilePanelsCollapsed ? "true" : "false"}
+      data-mobile-layers-expanded={mobileLayersExpanded ? "true" : "false"}
+      data-mobile-properties-expanded={mobilePropertiesExpanded ? "true" : "false"}
       aria-hidden={!visible}
       style={{ backgroundColor: canvasBackgroundColor }}
       className={`absolute bottom-0 left-0 top-0 z-50 flex flex-col overflow-hidden rounded-b-2xl ${isNarrow ? "editor-narrow" : ""} ${
@@ -3359,26 +3363,58 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       <button
         type="button"
         data-testid="editor-mobile-panels-toggle"
-        aria-expanded={!mobilePanelsCollapsed}
+        aria-expanded={mobilePanelsExpanded}
         aria-label={t(
-          mobilePanelsCollapsed
-            ? "editor.mobile.panels.expand"
-            : "editor.mobile.panels.collapse",
+          mobilePanelsExpanded
+            ? "editor.mobile.panels.collapse"
+            : "editor.mobile.panels.expand",
         )}
         title={t(
-          mobilePanelsCollapsed
-            ? "editor.mobile.panels.expand"
-            : "editor.mobile.panels.collapse",
+          mobilePanelsExpanded
+            ? "editor.mobile.panels.collapse"
+            : "editor.mobile.panels.expand",
         )}
-        onClick={() => setMobilePanelsCollapsed((collapsed) => !collapsed)}
+        onClick={() => {
+          const nextExpanded = !mobilePanelsExpanded;
+          setMobileLayersExpanded(nextExpanded);
+          setMobilePropertiesExpanded(nextExpanded);
+        }}
         className="editor-mobile-panel-toggle hidden h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-neutral-900/95 text-neutral-200 shadow-menu"
       >
-        {mobilePanelsCollapsed ? (
-          <ChevronUp size={15} aria-hidden="true" />
-        ) : (
+        {mobilePanelsExpanded ? (
           <ChevronDown size={15} aria-hidden="true" />
+        ) : (
+          <ChevronUp size={15} aria-hidden="true" />
         )}
       </button>
+      <button
+        type="button"
+        data-testid="editor-mobile-expand-layers"
+        aria-expanded={mobileLayersExpanded}
+        aria-label={t("editor.mobile.panels.expandLayers")}
+        onClick={(event) => {
+          const root = event.currentTarget.closest('[data-testid="design-editor"]');
+          setMobileLayersExpanded(true);
+          requestAnimationFrame(() =>
+            root?.querySelector('[data-testid="editor-layers-panel"] button')?.focus(),
+          );
+        }}
+        className="editor-mobile-panel-expand editor-mobile-panel-expand-layers hidden"
+      />
+      <button
+        type="button"
+        data-testid="editor-mobile-expand-properties"
+        aria-expanded={mobilePropertiesExpanded}
+        aria-label={t("editor.mobile.panels.expandProperties")}
+        onClick={(event) => {
+          const root = event.currentTarget.closest('[data-testid="design-editor"]');
+          setMobilePropertiesExpanded(true);
+          requestAnimationFrame(() =>
+            root?.querySelector('[data-testid="editor-properties-panel"] button')?.focus(),
+          );
+        }}
+        className="editor-mobile-panel-expand editor-mobile-panel-expand-properties hidden"
+      />
       <div
         data-open-guard={openGuard ? "on" : "off"}
         className={`relative min-h-0 flex-1 overflow-hidden ${

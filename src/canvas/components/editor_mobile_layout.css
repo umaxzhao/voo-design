@@ -19,11 +19,6 @@
     transition: height 180ms ease, flex-basis 180ms ease;
   }
 
-  [data-testid="design-editor"].editor-narrow[data-mobile-panels-collapsed="true"] > [data-open-guard] {
-    height: 100%;
-    flex-basis: 100%;
-  }
-
   [data-testid="design-editor"].editor-narrow [data-testid="editor-layers-panel"],
   [data-testid="design-editor"].editor-narrow [data-testid="editor-properties-panel"],
   [data-testid="design-editor"].editor-narrow [data-testid="editor-history-panel"] {
@@ -52,12 +47,52 @@
     left: calc(50% + var(--editor-mobile-panel-gap) / 2);
   }
 
-  [data-testid="design-editor"].editor-narrow[data-mobile-panels-collapsed="true"] [data-testid="editor-layers-panel"],
-  [data-testid="design-editor"].editor-narrow[data-mobile-panels-collapsed="true"] [data-testid="editor-properties-panel"],
-  [data-testid="design-editor"].editor-narrow[data-mobile-panels-collapsed="true"] [data-testid="editor-history-panel"] {
+  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="false"] [data-testid="editor-layers-panel"],
+  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="false"] [data-testid="editor-properties-panel"],
+  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="false"] [data-testid="editor-history-panel"] {
+    height: 3.5rem;
+    overflow: hidden;
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="false"] [data-testid="editor-layers-panel"] > *:not(:first-child),
+  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="false"] [data-testid="editor-properties-panel"] > *:not(:first-child),
+  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="false"] [data-testid="editor-history-panel"] > *:not(:first-child) {
     visibility: hidden;
-    opacity: 0;
     pointer-events: none;
+  }
+
+  [data-testid="design-editor"].editor-narrow .editor-mobile-panel-expand {
+    position: absolute;
+    z-index: 40;
+    top: calc(55% + var(--editor-mobile-panel-gap));
+    display: block;
+    height: 3.5rem;
+    border: 0;
+    background: transparent;
+    touch-action: manipulation;
+  }
+
+  [data-testid="design-editor"].editor-narrow .editor-mobile-panel-expand-layers {
+    left: var(--editor-mobile-panel-gap);
+    width: calc(100% - 2 * var(--editor-mobile-panel-gap));
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-properties-open="true"] .editor-mobile-panel-expand-layers {
+    width: calc((100% - 3 * var(--editor-mobile-panel-gap)) / 2);
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"] .editor-mobile-panel-expand-layers {
+    display: none;
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-properties-open="true"] .editor-mobile-panel-expand-properties {
+    left: calc(50% + var(--editor-mobile-panel-gap) / 2);
+    width: calc((100% - 3 * var(--editor-mobile-panel-gap)) / 2);
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-properties-open="false"] .editor-mobile-panel-expand-properties,
+  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="true"] .editor-mobile-panel-expand-properties {
+    display: none;
   }
 
   [data-testid="design-editor"].editor-narrow [data-testid="editor-toolbar"] {
@@ -99,15 +134,6 @@
     width: 2.75rem;
     height: 2.75rem;
     transform: translateX(-50%);
-  }
-
-  [data-testid="design-editor"].editor-narrow[data-mobile-panels-collapsed="true"] .editor-mobile-panel-toggle {
-    top: auto;
-    bottom: 4rem;
-  }
-
-  [data-testid="design-editor"].editor-narrow[data-mobile-panels-collapsed="true"] .viewport-tools {
-    bottom: 0.75rem;
   }
 
   [data-testid="page-switcher"] {

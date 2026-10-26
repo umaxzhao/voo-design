@@ -2255,6 +2255,8 @@ export default {
   "pageSwitcher.label": "Pages",
   "editor.mobile.panels.collapse": "Collapse bottom panels",
   "editor.mobile.panels.expand": "Expand bottom panels",
+  "editor.mobile.panels.expandLayers": "Expand layers panel",
+  "editor.mobile.panels.expandProperties": "Expand properties panel",
   "pageSwitcher.untitled": "Untitled page",
   "pageSwitcher.close": "Delete page",
   "pageSwitcher.add": "New page",

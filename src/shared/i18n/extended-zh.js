@@ -2182,6 +2182,8 @@ export default {
   "pageSwitcher.label": "页面",
   "editor.mobile.panels.collapse": "收起底部面板",
   "editor.mobile.panels.expand": "展开底部面板",
+  "editor.mobile.panels.expandLayers": "展开图层面板",
+  "editor.mobile.panels.expandProperties": "展开属性面板",
   "pageSwitcher.untitled": "未命名页面",
   "pageSwitcher.close": "删除页面",
   "pageSwitcher.add": "新建页面",
