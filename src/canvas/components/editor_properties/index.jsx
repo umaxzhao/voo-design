@@ -167,6 +167,7 @@ export default function EditorProperties({
       healingMode={toolProps?.healingMode}
       object={object}
       selectionCount={selectionCount}
+      title={isBackground ? t("editor.layer.background") : null}
       onRename={(name) => {
         if (engine && object?.id) engine.updateNode?.(object.id, { name });
       }}

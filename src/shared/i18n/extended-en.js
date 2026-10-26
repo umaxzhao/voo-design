@@ -1361,7 +1361,7 @@ export default {
   "editor.layer.group": "Group",
   "editor.layer.frame": "Frame",
   "editor.layer.background": "Background",
-  "editor.layer.canvasBackground": "Canvas Background",
+  "editor.layer.canvasBackground": "Background",
   "editor.layer.transparent": "Transparent",
   "editor.layer.new": "New layer",
   "editor.layer.rename": "Rename layer",

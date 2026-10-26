@@ -122,6 +122,7 @@ export default function PropertiesPanelHeader({
   object = null,
   selectionCount = 1,
   onRename = null,
+  title = null,
   t,
 }) {
   const [editing, setEditing] = useState(false);
@@ -129,7 +130,16 @@ export default function PropertiesPanelHeader({
   const toolInfo = isToolActive
     ? getToolHeaderInfo(tool, t, marqueeMode, brushMode, healingMode)
     : null;
-  const nodeHeader = !toolInfo && object ? objectHeader(object, selectionCount) : null;
+  const nodeHeader = !toolInfo && object
+    ? objectHeader(object, selectionCount)
+    : !toolInfo && title
+      ? (
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="shrink-0"><IconFrame size={12} className="text-neutral-300" /></span>
+          <span className="min-w-0 truncate text-[11px] font-mono text-neutral-200">{title}</span>
+        </div>
+      )
+      : null;
 
   function objectHeader(node, count) {
     const kind = node.isFrame || node.kind === "frame" ? "frame" : node.kind;

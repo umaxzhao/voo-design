@@ -1339,7 +1339,7 @@ export default {
   "editor.layer.group": "编组",
   "editor.layer.frame": "画板/框架",
   "editor.layer.background": "背景",
-  "editor.layer.canvasBackground": "整体画布背景",
+  "editor.layer.canvasBackground": "背景",
   "editor.layer.transparent": "透明",
   "editor.layer.new": "新建图层",
   "editor.layer.rename": "重命名图层",

@@ -975,9 +975,15 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     ? (engine?.getPuppetPinRotation?.(puppetPinId) ?? 0)
     : 0;
 
-  const layers = doc ? doc.nodes : [];
-  const canvasBackgroundColor =
+  const workspaceBackgroundColor =
     useDesignStore((state) => state.canvasBackgroundColor) || "#1e1e1e";
+  const layers = doc ? doc.nodes : [];
+  // The page backdrop is document state (doc.backgroundColor). The workspace
+  // store only holds the app-level fallback used outside a page.
+  const canvasBackgroundColor =
+    typeof doc?.backgroundColor === "string"
+      ? doc.backgroundColor
+      : workspaceBackgroundColor;
   const setCanvasBackgroundColor = useDesignStore(
     (state) => state.setCanvasBackgroundColor,
   );
@@ -4566,6 +4572,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             }}
             onSetBackgroundColor={(next) => {
               setCanvasBackgroundColor?.(next);
+              engine?.setDocumentBackgroundColor?.(next);
             }}
             maskActions={
               selected &&

@@ -72,6 +72,7 @@ export function createEngineDocumentController({
   }
 
   function setDocumentBackgroundColor(next) {
+    backgroundColor = next;
     return commitEditorDocument(
       "editor.document.set",
       setDoc,
