@@ -161,6 +161,11 @@ export class WorkspaceStorageEngine {
     return this._run("createFolder", name);
   }
 
+  async deleteFolder(name) {
+    if (typeof this.driver.deleteFolder !== "function") return { ok: false, error: "unsupported" };
+    return this._run("deleteFolder", name);
+  }
+
   /**
    * Moves a file into a project folder, or back to the workspace root when
    * `folderName` is null. Membership is the physical subdirectory (or the

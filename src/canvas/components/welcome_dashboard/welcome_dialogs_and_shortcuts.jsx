@@ -45,6 +45,11 @@ export function WelcomeShortcutsTab({ t }) {
       </div>
 
       <div className="rounded-3xl bg-neutral-900/20 p-6 space-y-2 text-xs text-neutral-400">
+        <h3 className="font-semibold text-neutral-200">{t("welcome.folders.guide.title")}</h3>
+        <p>{t("welcome.folders.guide.body")}</p>
+      </div>
+
+      <div className="rounded-3xl bg-neutral-900/20 p-6 space-y-2 text-xs text-neutral-400">
         <h3 className="font-semibold text-neutral-200">{t("welcome.voo.title")}</h3>
         <p>
           {t("welcome.voo.body.before")}{" "}

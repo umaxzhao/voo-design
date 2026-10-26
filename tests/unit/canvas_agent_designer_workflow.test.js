@@ -62,6 +62,7 @@ const ALL_TOOL_NAMES = [
   "boolean_combine",
   "set_constraints",
   "export_layers",
+  "new_document",
 ];
 
 describe("CANVAS_TOOL_SCHEMAS completeness", () => {

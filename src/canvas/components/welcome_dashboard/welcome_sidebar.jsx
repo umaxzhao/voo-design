@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   File,
   Star,
@@ -7,6 +8,7 @@ import {
   X,
   Plus,
   FolderOpen,
+  MoreHorizontal,
 } from "lucide-react";
 
 /** Left workspace navigation sidebar for the welcome dashboard. */
@@ -26,7 +28,36 @@ export function WelcomeSidebar({
   folderError,
   setFolderError,
   handleCreateFolder,
+  handleDeleteFolder,
 }) {
+  const [folderMenu, setFolderMenu] = useState(null);
+
+  useEffect(() => {
+    if (!folderMenu) return undefined;
+    const closeOnPointerDown = () => setFolderMenu(null);
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setFolderMenu(null);
+    };
+    window.addEventListener("pointerdown", closeOnPointerDown);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("pointerdown", closeOnPointerDown);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [folderMenu]);
+
+  const openFolderMenu = (event, folder) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const menuWidth = 160;
+    const menuHeight = 44;
+    setFolderMenu({
+      folder,
+      left: Math.min(event.clientX, window.innerWidth - menuWidth - 8),
+      top: Math.min(event.clientY, window.innerHeight - menuHeight - 8),
+    });
+  };
+
   return (
     <aside className="flex w-full shrink-0 flex-col bg-black pt-3 pb-3 px-2 rounded-tl-3xl justify-between lg:w-60 max-h-[34dvh] overflow-y-auto lg:max-h-none lg:overflow-visible">
       <div className="space-y-4">
@@ -156,25 +187,64 @@ export function WelcomeSidebar({
           )}
 
           {folders.map((folder) => (
-            <button
+            <div
               key={folder.id}
-              type="button"
               data-testid="sidebar-folder"
-              onClick={() => {
-                setActiveFolder(folder.name);
-                setActiveTab("recents");
-              }}
-              className={`w-full flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+              onContextMenu={(event) => openFolderMenu(event, folder)}
+              className={`group w-full flex items-center gap-2 rounded-xl pr-1 transition-colors ${
                 activeFolder === folder.name
                   ? "bg-neutral-800/90 text-white"
                   : "text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200"
               }`}
             >
-              <FolderOpen size={14} className="shrink-0 text-neutral-400" />
-              <span className="truncate">{folder.name}</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveFolder(folder.name);
+                  setActiveTab("recents");
+                }}
+                className="min-w-0 flex flex-1 items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-left text-xs font-medium cursor-pointer"
+              >
+                <FolderOpen size={14} className="shrink-0 text-neutral-400" />
+                <span className="truncate">{folder.name}</span>
+              </button>
+              <button
+                type="button"
+                aria-label={t("welcome.folders.manage", { name: folder.name })}
+                title={t("welcome.folders.manage", { name: folder.name })}
+                onClick={(event) => openFolderMenu(event, folder)}
+                className="shrink-0 rounded-lg p-1 text-neutral-500 hover:bg-neutral-700 hover:text-neutral-200 focus-visible:opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              >
+                <MoreHorizontal size={14} />
+              </button>
+            </div>
           ))}
         </div>
+
+        {folderMenu && createPortal(
+          <div
+            role="menu"
+            data-testid="sidebar-folder-menu"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+            style={{ top: folderMenu.top, left: folderMenu.left }}
+            className="fixed z-50 flex w-40 flex-col rounded-xl bg-neutral-900 p-1 shadow-menu ring-1 ring-white/10"
+          >
+            <button
+              type="button"
+              role="menuitem"
+              onClick={(event) => {
+                setFolderMenu(null);
+                handleDeleteFolder(event, folderMenu.folder);
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[11px] text-rose-400 hover:bg-rose-950/40 cursor-pointer"
+            >
+              <Trash2 size={12} />
+              <span>{t("welcome.folders.delete", { name: folderMenu.folder.name })}</span>
+            </button>
+          </div>,
+          document.body,
+        )}
 
         {/* Section: Templates & Systems */}
         <div className="space-y-0.5">

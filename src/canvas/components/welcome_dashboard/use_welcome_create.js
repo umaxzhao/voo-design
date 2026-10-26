@@ -106,7 +106,7 @@ export function useWelcomeCreate({
         version: VOO_FILE_VERSION,
         kind: "design",
         document: doc,
-        assets: {},
+        assets: template.assets ?? {},
       };
 
       const bytes = encodeVooBinary(vooFile);
@@ -148,6 +148,7 @@ export function useWelcomeCreate({
       setWelcomeOpen(false);
     } catch (err) {
       console.error("[VOO] Failed to instantiate community template:", err);
+      throw err;
     }
   };
 

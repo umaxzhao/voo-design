@@ -3,11 +3,10 @@ import { bytesToBase64 } from "./db_wire.js";
 import { MEDIA_UPLOAD_URL } from "./vps_origin.js";
 
 /**
- * Where the editor uploads a generation's reference media. Raw bytes go
- * straight to the VPS (la.voo.run/upload), which files them in a temp dir
- * and returns a public URL — the upstream video/image API then pulls that URL
- * directly. The host's cron deletes the file after the TTL, so nothing
- * accumulates.
+ * Where the editor uploads a generation's reference media. Raw bytes go to
+ * the hosted upload endpoint, which keeps them in a temporary directory and
+ * returns a public URL for the upstream video or image API. Expired files are
+ * removed after the configured TTL.
  */
 export const MEDIA_UPLOAD_BASE_URL = MEDIA_UPLOAD_URL;
 
@@ -67,8 +66,8 @@ export async function uploadMediaBlobDirect(blob, filename, contentType) {
   const resolvedType = contentType || inferContentType(blob, filename);
   const ext = extensionFor(resolvedType);
   const buffer = await blob.arrayBuffer();
-  // POST the raw bytes straight to the VOO host. No token round-trip: the
-  // upload endpoint stores the file in a temp dir and returns the public URL.
+  // POST raw bytes to the VOO host. The upload endpoint stores the file in a
+  // temporary directory and returns its public URL.
   const response = await uploadFetch(
     `${MEDIA_UPLOAD_BASE_URL}?ext=${encodeURIComponent(ext)}`,
     { method: "POST", headers: { "Content-Type": resolvedType }, body: buffer },

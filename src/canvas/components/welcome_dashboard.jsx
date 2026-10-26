@@ -5,6 +5,7 @@ import { Trash2 } from "lucide-react";
 import { useDesignStore } from "../../store/design_store.js";
 import { openVooProject } from "../store/project_io.js";
 import { useI18n } from "../use_i18n.js";
+import { prepareCommunityTemplate } from "./community-template-selection.js";
 import CommunityTemplatesView from "./community_templates_view.jsx";
 import { AI_GEN_TYPES, CATEGORY_PILLS } from "./welcome_dashboard/welcome_constants.js";
 import { useWelcomeMenuDismiss } from "./welcome_dashboard/use_welcome_menu_dismiss.js";
@@ -27,7 +28,7 @@ import {
 export { AI_GEN_TYPES, CATEGORY_PILLS };
 
 export default function WelcomeDashboard() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   // Navigation tabs: "recents" | "drafts" | "starred" | "trash" | "design-systems" | "shortcuts"
   const [activeTab, setActiveTab] = useState("recents");
@@ -67,7 +68,8 @@ export default function WelcomeDashboard() {
     folderError,
     setFolderError,
     handleCreateFolder,
-  } = useWelcomeFolders({ t });
+    handleDeleteFolder,
+  } = useWelcomeFolders({ t, activeFolder, setActiveFolder });
 
   const { handleCreateNew, handleUseTemplate } = useWelcomeCreate({
     t,
@@ -75,6 +77,13 @@ export default function WelcomeDashboard() {
     reloadFiles,
     setWelcomeOpen,
   });
+
+  const handleSelectOnlineTemplate = async (template) => {
+    const selection = prepareCommunityTemplate(template, locale);
+    if (selection.type === "design") return handleUseTemplate(selection.template);
+    setPromptText(selection.prompt);
+    setActiveTab("recents");
+  };
 
   const handlePromptSubmit = async (e) => {
     e?.preventDefault();
@@ -224,6 +233,7 @@ export default function WelcomeDashboard() {
         folderError={folderError}
         setFolderError={setFolderError}
         handleCreateFolder={handleCreateFolder}
+        handleDeleteFolder={handleDeleteFolder}
       />
 
       {/* Main Workspace */}
@@ -337,7 +347,7 @@ export default function WelcomeDashboard() {
         {/* =================== TAB 5: COMMUNITY TEMPLATES & DESIGN SYSTEMS =================== */}
         {activeTab === "design-systems" && (
           <div className="flex-1 p-8 max-w-6xl w-full mx-auto space-y-6">
-            <CommunityTemplatesView onUseTemplate={handleUseTemplate} />
+            <CommunityTemplatesView onUseTemplate={handleSelectOnlineTemplate} />
           </div>
         )}
 

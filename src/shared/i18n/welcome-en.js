@@ -36,6 +36,7 @@ export default {
   "welcome.community.empty": "No templates found",
   "welcome.community.loading": "Loading Voo Run templates…",
   "welcome.community.loadFailed": "Online templates could not be loaded. Try again later.",
+  "welcome.community.applyFailed": "Could not open this template. Try again or choose another template.",
   "welcome.community.reset": "Clear filters",
   "welcome.community.template.saas-analytics-dashboard": "Analytics dashboard",
   "welcome.community.template.ios-fintech-wallet": "Mobile wallet",

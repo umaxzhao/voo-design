@@ -147,6 +147,13 @@ export class ElectronWorkspaceDriver {
     return res?.ok ? { ok: true, folder: res.folder } : { ok: false, error: res?.error || "failed" };
   }
 
+  /** Moves a project folder to the operating system trash. */
+  async deleteFolder(name) {
+    if (!this.bridge?.deleteFolder) return { ok: false, error: "unsupported" };
+    const res = await this.bridge.deleteFolder(name);
+    return res?.ok ? { ok: true } : { ok: false, error: res?.error || "failed" };
+  }
+
   /** Moves a file into a project folder, or back to the root when folderName is null. */
   async moveToFolder(fileIdOrPath, folderName) {
     if (!this.bridge?.moveToFolder) return { ok: false, error: "unsupported" };

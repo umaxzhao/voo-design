@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { workspaceStorage } from "../../../services/workspace_storage.js";
 
 /** Project folder list plus the inline "new folder" form state and submit handler. */
-export function useWelcomeFolders({ t }) {
+export function useWelcomeFolders({ t, activeFolder, setActiveFolder }) {
   const [folders, setFolders] = useState([]);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [folderName, setFolderName] = useState("");
@@ -48,6 +48,24 @@ export function useWelcomeFolders({ t }) {
     }
   };
 
+  const handleDeleteFolder = async (e, folder) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(t("welcome.folders.deleteConfirm", { name: folder.name }))) return;
+    try {
+      const result = await workspaceStorage.deleteFolder(folder.name);
+      if (result.ok) {
+        if (activeFolder === folder.name) setActiveFolder(null);
+        await loadFolders();
+        return;
+      }
+      window.alert(t("welcome.folders.deleteFailed"));
+    } catch (error) {
+      console.error("[VOO] deleteFolder failed:", error);
+      window.alert(t("welcome.folders.deleteFailed"));
+    }
+  };
+
   return {
     folders,
     creatingFolder,
@@ -57,5 +75,6 @@ export function useWelcomeFolders({ t }) {
     folderError,
     setFolderError,
     handleCreateFolder,
+    handleDeleteFolder,
   };
 }

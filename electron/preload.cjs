@@ -14,6 +14,7 @@ const workspaceApi = {
   scanFiles: () => ipcRenderer.invoke("workspace:scanFiles"),
   listFolders: () => ipcRenderer.invoke("workspace:listFolders"),
   createFolder: (name) => ipcRenderer.invoke("workspace:createFolder", { name }),
+  deleteFolder: (name) => ipcRenderer.invoke("workspace:deleteFolder", { name }),
   moveToFolder: (filePath, folderName) =>
     ipcRenderer.invoke("workspace:moveToFolder", { filePath, folderName }),
   readFileBytes: (filePath) => ipcRenderer.invoke("workspace:readFileBytes", filePath),

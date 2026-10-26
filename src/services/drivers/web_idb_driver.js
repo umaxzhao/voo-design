@@ -221,6 +221,47 @@ export class WebIdbWorkspaceDriver {
     });
   }
 
+  /** Removes a project folder and all virtual files stored inside it. */
+  async deleteFolder(name) {
+    const safeName = typeof name === "string" ? name.trim() : "";
+    if (!safeName || safeName.startsWith(".") || /[/\\:*?\"<>|]/.test(safeName)) {
+      return { ok: false, error: "invalid_name" };
+    }
+    const db = await this._openDatabase();
+    if (!db) {
+      if (!this.memFolders.has(safeName)) return { ok: false, error: "directory_not_found" };
+      this.memFolders.delete(safeName);
+      for (const [id, file] of this.memFiles) if (file.folder === safeName) this.memFiles.delete(id);
+      this._emitChange("delete", safeName);
+      return { ok: true };
+    }
+    return new Promise((resolve) => {
+      const tx = db.transaction([STORE_FOLDERS, STORE_FILES], "readwrite");
+      const folders = tx.objectStore(STORE_FOLDERS);
+      const folderRequest = folders.get(safeName);
+      let found = false;
+      folderRequest.onsuccess = () => {
+        found = Boolean(folderRequest.result);
+        if (!found) return;
+        folders.delete(safeName);
+        const files = tx.objectStore(STORE_FILES);
+        const cursorRequest = files.openCursor();
+        cursorRequest.onsuccess = () => {
+          const cursor = cursorRequest.result;
+          if (!cursor) return;
+          if (cursor.value.folder === safeName) cursor.delete();
+          cursor.continue();
+        };
+      };
+      tx.oncomplete = () => {
+        if (found) this._emitChange("delete", safeName);
+        resolve(found ? { ok: true } : { ok: false, error: "directory_not_found" });
+      };
+      tx.onerror = () => resolve({ ok: false, error: tx.error?.message || "failed" });
+      tx.onabort = () => resolve({ ok: false, error: tx.error?.message || "aborted" });
+    });
+  }
+
   async _getFileRecord(fileId) {
     const db = await this._openDatabase();
     if (!db) return this.memFiles.get(fileId) || null;

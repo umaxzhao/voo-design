@@ -36,6 +36,7 @@ export default {
   "welcome.community.empty": "未找到模板",
   "welcome.community.loading": "正在加载 Voo Run 在线模板…",
   "welcome.community.loadFailed": "在线模板暂时无法加载，请稍后重试。",
+  "welcome.community.applyFailed": "无法打开此模板，请重试或选择其他模板。",
   "welcome.community.reset": "重置筛选",
   "welcome.community.template.saas-analytics-dashboard": "数据看板",
   "welcome.community.template.ios-fintech-wallet": "移动钱包",

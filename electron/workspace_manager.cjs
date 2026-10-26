@@ -842,6 +842,26 @@ function registerWorkspaceIpc(ipcMain, getMainWindow) {
     return createWorkspaceFolder(getWorkspaceConfig().path, name);
   });
 
+  ipcMain.handle("workspace:deleteFolder", async (_event, payload) => {
+    const name = typeof payload === "string" ? payload : payload?.name;
+    const safeName = typeof name === "string" ? name.trim() : "";
+    const root = getWorkspaceConfig().path;
+    if (
+      !safeName ||
+      safeName !== sanitizeFileName(safeName) ||
+      safeName.startsWith(".") ||
+      safeName.startsWith("__voo_")
+    ) {
+      return { ok: false, error: "invalid_name" };
+    }
+    if (!root) return { ok: false, error: "directory_not_found" };
+    const folderPath = path.join(root, safeName);
+    if (!fs.existsSync(folderPath) || !fs.lstatSync(folderPath).isDirectory()) {
+      return { ok: false, error: "directory_not_found" };
+    }
+    return moveWorkspaceFileToTrash(folderPath, root);
+  });
+
   ipcMain.handle("workspace:moveToFolder", (_event, payload) => {
     const filePath = typeof payload === "string" ? payload : payload?.filePath;
     const folderName =

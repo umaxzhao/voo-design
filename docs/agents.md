@@ -23,6 +23,7 @@ kept in sync with undo/redo:
 | `create_frame` | Creates a frame. |
 | `place_image` | Places an image on the canvas. |
 | `capture_canvas` | Captures the current canvas. |
+| `new_document` | Creates a new blank design document. |
 
 ### Layer Inspection & Mutation
 
@@ -117,6 +118,44 @@ current selection as the reference by default, the default image size
 (`1024x1024`, `1024x1536`, `1536x1024`), the step limit, and an optional
 style note appended to the system prompt. Session history persists between
 turns (`session_history.js`).
+
+### Generation handoff from the welcome screen
+
+The welcome composer does not talk to the agent panel through window events.
+It builds one immutable `GenerationIntent`
+(`src/canvas/components/welcome_dashboard/generation_intent.js`) and writes it
+to `pendingGeneration` in the design store; `CanvasAgentPanel` claims it
+exactly once (`consumePendingGeneration`), so mount order and React
+StrictMode's development double-mount cannot drop or duplicate the turn.
+
+The intent carries the user prompt, the selected design type and its scene
+guidance, the frame size, the style kit id, the provider model id and the
+reference attachments. The panel renders it as a structured first line:
+
+```
+[Generation] kind=landing frame=1440x900 style=linear model=claude:... references=1
+```
+
+`runAgentTurn` receives the same values as `styleId`, `sceneKind` and `frame`;
+the HTML pipeline applies `styleKitId` by replacing the art-direction model's
+own design system with the chosen kit. Attached images are placed on the canvas
+as visual references before the turn starts.
+
+### Scene guides and style kits
+
+`src/canvas/agent/design_quality/` holds the design knowledge injected into
+the system prompt:
+
+- `scene_guides.js` — six scene contracts (landing, mobile, web, slides,
+  dashboard, other) covering structure, typography, layout, content, quality
+  checks and pitfalls; looked up by `sceneKind` or by the prompt's own words.
+- `style_kits.js` — 20 complete style kits (palette, fonts, type scale,
+  radius, shadow, spacing density, layout patterns, dos/don'ts), selected
+  automatically by `pickStyleKit` or explicitly by the welcome picker.
+- `prompt.js` — assembles the quality block, the active kit, exemplars and the
+  scene guide. A deterministic `lint_design` report is attached to every
+  `capture_canvas` result, and a score below 60 on a real design triggers one
+  bounded repair pass.
 
 ## Local CLI agents
 

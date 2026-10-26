@@ -236,6 +236,22 @@ export class WebFsaWorkspaceDriver {
     return { ok: true, folder: { id: safeName, name: safeName, path: safeName } };
   }
 
+  /** Removes a project directory and its contents from the chosen workspace. */
+  async deleteFolder(name) {
+    if (!this.dirHandle) return { ok: false, error: "No workspace directory chosen" };
+    const safeName = typeof name === "string" ? name.trim() : "";
+    if (!safeName || safeName.startsWith(".") || safeName.startsWith("__voo_") || /[/\\:*?\"<>|]/.test(safeName)) {
+      return { ok: false, error: "invalid_name" };
+    }
+    if (!(await this._verifyPermission(this.dirHandle, true))) return { ok: false, error: "permission_denied" };
+    try {
+      await this.dirHandle.removeEntry(safeName, { recursive: true });
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.name === "NotFoundError" ? "directory_not_found" : err.message || "failed" };
+    }
+  }
+
   async _getTrashDir(create = false) {
     if (!this.dirHandle) return null;
     try {
