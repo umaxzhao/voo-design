@@ -1,5 +1,6 @@
 import { WORKSPACE_BACKGROUND } from "../editor/render_canvas_base.js";
 import { frameEditorFills } from "../editor/frame-fills.js";
+import { shouldDragArtboardBody } from "./artboard-body-gesture.js";
 import { buildExtendedPaletteActions } from "../commands/palette_actions.js";
 import { exportTargetName } from "../editor/export_filename.js";
 import { setLocale } from "../../shared/i18n.js";
@@ -1762,6 +1763,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     canvasRef: workspaceCanvasRef,
     stageRef: freeStageRef,
     docs: workspaceDocs,
+    liveEngine: engine,
+    livePageId: focusedId,
     backgroundColor: canvasBackgroundColor,
     layouts: layoutById,
     subscribeCamera: true,
@@ -3037,9 +3040,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   );
 
   /**
-   * Figma-like: with the Select tool and nothing selected in a frame, pressing
-   * on the frame body drags the frame. It runs the same gesture as the title
-   * bar, listening on the artboard element while the pointer is captured.
+   * Empty frame body can drag the frame; artwork keeps its own pointer events
+   * so an unselected object can be selected and moved on the first gesture.
    */
   const onArtboardBodyPointerDown = useCallback(
     (nodeId, event) => {
@@ -3051,8 +3053,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       )
         return;
       if (tool !== TOOL.SELECT) return;
-      const isFocused = nodeId === focusedId;
-      if (isFocused && (engine?.getSelectedIds?.().length ?? 0) > 0) return;
+      const targetEngine = enginesRef.current.get(nodeId)?.engine;
+      if (!shouldDragArtboardBody(targetEngine, event.clientX, event.clientY)) return;
       const board = event.currentTarget;
       onTitlePointerDown(nodeId, event);
       if (!artboardDragRef.current) return;
@@ -3067,7 +3069,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       board.addEventListener("pointerup", up);
       board.addEventListener("pointercancel", up);
     },
-    [engine, focusedId, tool, onTitlePointerDown, onTitlePointerMove, onTitlePointerUp],
+    [tool, onTitlePointerDown, onTitlePointerMove, onTitlePointerUp],
   );
 
   // Keyboard zoom steps the shared camera when several pages are open, and the

@@ -118,3 +118,33 @@ it("stops repainting once the workspace unmounts", () => {
   store.setCamera({ panX: 1, panY: 1, zoom: 1 });
   expect(host.draw).not.toHaveBeenCalled();
 });
+
+it("paints live object drag previews before React updates and releases the subscription", () => {
+  const initial = { id: "document", nodes: [{ id: "rect", x: 10 }] };
+  let current = initial;
+  let repaint;
+  const unsubscribe = vi.fn();
+  props = {
+    ...props,
+    docs: [{ ...initial, id: "artboard" }],
+    livePageId: "artboard",
+    spatialIndex: { stale: true },
+    liveEngine: {
+      getDocument: () => current,
+      subscribeRender(callback) { repaint = callback; return unsubscribe; },
+    },
+  };
+  render(props);
+  rafCallbacks.splice(0).forEach(cb => cb());
+  host.draw.mockClear();
+  current = { ...initial, nodes: [{ id: "rect", x: 80 }] };
+  repaint();
+  expect(host.draw).toHaveBeenCalledTimes(1);
+  const painted = host.draw.mock.calls[0][0];
+  expect(painted.docs[0].id).toBe("artboard");
+  expect(painted.docs[0].nodes).toBe(current.nodes);
+  expect(painted.spatialIndex).toBeNull();
+  for (const slot of hooks.slots) slot.cleanup?.();
+  hooks.slots = [];
+  expect(unsubscribe).toHaveBeenCalledTimes(1);
+});

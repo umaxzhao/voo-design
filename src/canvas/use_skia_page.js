@@ -133,6 +133,8 @@ export function useWorkspaceSkia({
   spatialIndex = null,
   resolveImageUrl = null,
   backgroundColor = null,
+  liveEngine = null,
+  livePageId = null,
 }) {
   const hostRef = useRef(null);
   const [status, setStatus] = useState("idle");
@@ -169,7 +171,7 @@ export function useWorkspaceSkia({
   }, [enabled, canvasRef]);
 
   const latestRef = useRef(null);
-  latestRef.current = { docs, layouts, camera, revision, spatialIndex, resolveImageUrl, backgroundColor };
+  latestRef.current = { docs, layouts, camera, revision, spatialIndex, resolveImageUrl, backgroundColor, liveEngine, livePageId };
   const scheduleRef = useRef(null);
 
   useEffect(() => {
@@ -200,7 +202,15 @@ export function useWorkspaceSkia({
       const themeBackground = editor && window.getComputedStyle?.(editor).backgroundColor;
       const ground = latest.backgroundColor ??
         (themeBackground && themeBackground !== "rgba(0, 0, 0, 0)" ? themeBackground : WORKSPACE_BACKGROUND);
-      void host.draw({ ...latest, backgroundColor: ground, viewport: {
+      // Drag previews replace the engine document without a React notification.
+      // Read the same live document that paints selection chrome in this frame.
+      const liveDoc = latest.liveEngine?.getDocument?.();
+      const priorDoc = latest.docs.find((doc) => doc.id === latest.livePageId);
+      const liveDocs = liveDoc && priorDoc
+        ? latest.docs.map((doc) => doc === priorDoc ? { ...liveDoc, id: doc.id } : doc)
+        : latest.docs;
+      const liveIndex = liveDoc && priorDoc?.nodes !== liveDoc.nodes ? null : latest.spatialIndex;
+      void host.draw({ ...latest, docs: liveDocs, spatialIndex: liveIndex, backgroundColor: ground, viewport: {
         x: panX, y: panY, panX, panY, zoom, width, height, devicePixelRatio: dpr,
       } }).catch(error => console.warn("Workspace Skia draw failed", error));
     };
@@ -215,6 +225,7 @@ export function useWorkspaceSkia({
     const unsubscribe = subscribeCamera ? useDesignStore.subscribe((state, previous) => {
       if (state.editorCamera !== previous.editorCamera) paint(state.editorCamera);
     }) : null;
+    const unsubscribeEngine = liveEngine?.subscribeRender?.(() => paint());
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(schedule) : null;
     observer?.observe(stage);
     // A DPR change (moving the window between displays) and a plain window
@@ -242,12 +253,13 @@ export function useWorkspaceSkia({
       if (frame !== null) cancelAnimationFrame(frame);
       scheduleRef.current = null;
       unsubscribe?.();
+      unsubscribeEngine?.();
       observer?.disconnect();
       window.removeEventListener?.("resize", onWindowResize);
       window.removeEventListener?.(THEME_CHANGED_EVENT, schedule);
       dprQuery?.removeEventListener?.("change", onDprChange);
     };
-  }, [status, stageRef, subscribeCamera]);
+  }, [status, stageRef, subscribeCamera, liveEngine]);
 
   useEffect(() => {
     scheduleRef.current?.();

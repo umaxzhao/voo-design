@@ -23,6 +23,7 @@ export function createHistoryApi({
   transformsInFlight,
   getAppliedSnapshot,
   setAppliedSnapshot,
+  onCommit = null,
 }) {
   const currentDocSnapshot = () =>
     snapshotDoc ? snapshotDoc() : snapshotState();
@@ -64,9 +65,12 @@ export function createHistoryApi({
     getAppliedDoc: () => getAppliedSnapshot(),
     canRedo: () => history.canRedo(),
     commit: (name) =>
-      commitEditorAction("editor.document.commit", () =>
-        history.push(snapshotState(), name),
-      ),
+      commitEditorAction("editor.document.commit", () => {
+        const result = history.push(snapshotState(), name);
+        // Preview gestures skip normal document notifications until release.
+        onCommit?.();
+        return result;
+      }),
     mute: (run) => history.mute(run),
     beginBatch: () => history.beginBatch?.(),
     endBatch: () => history.endBatch?.(),

@@ -179,6 +179,7 @@ export function assembleEngineControllers({
     transformsInFlight: bitmapWriter.transformsInFlight,
     getAppliedSnapshot,
     setAppliedSnapshot,
+    onCommit: notify,
   });
 
   selectionController = createEngineSelectionController({
