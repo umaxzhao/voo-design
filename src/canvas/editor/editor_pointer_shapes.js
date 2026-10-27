@@ -13,6 +13,7 @@ import {
 } from "./shape_geometry.js";
 import { normaliseRect } from "./scene_geometry.js";
 import { TOOL } from "./editor_constants.js";
+import { editorSnapOptions, snapNodeBounds } from "./scene_snapping.js";
 import { commitEditorAction } from "../undo-action-contracts.js";
 
 /**
@@ -184,7 +185,7 @@ export function createShapesPointerGestures({
       width = Math.sign(width || 1) * side;
       height = Math.sign(height || 1) * side;
     }
-    const box = event.altKey
+    let box = event.altKey
       ? {
           x: gesture.start.x - Math.abs(width),
           y: gesture.start.y - Math.abs(height),
@@ -197,6 +198,39 @@ export function createShapesPointerGestures({
           width,
           height,
         });
+    if (shape === TOOL.FRAME) {
+      const snapDisabled =
+        Boolean(event.metaKey || event.ctrlKey) ||
+        api.getSnappingEnabled?.() === false;
+      const handleX = point.x < gesture.start.x ? "w" : "e";
+      const handleY = point.y < gesture.start.y ? "n" : "s";
+      const snap = snapDisabled
+        ? null
+        : snapNodeBounds({
+            doc: api.getEvaluatedDocument?.() ?? api.getDocument(),
+            activeId: gesture.id,
+            rect: box,
+            zoom: api.getViewport()?.zoom ?? 1,
+            handle: `${handleX}${handleY}`,
+            options: {
+              ...editorSnapOptions({
+                grid: api.getGrid?.() ?? null,
+                activeSnap: Boolean(gesture.activeSnap),
+              }),
+              spatialIndex: api.getSpatialIndex?.(),
+            },
+          });
+      gesture.activeSnap = Boolean(snap?.guides?.length);
+      api.setGuides?.(snap?.guides ?? []);
+      if (snap) {
+        box = {
+          x: snap.x,
+          y: snap.y,
+          width: snap.width,
+          height: snap.height,
+        };
+      }
+    }
     if (shape === TOOL.POLYGON || shape === TOOL.STAR) {
       const next = (shape === TOOL.STAR ? starNodeFromBox : polygonNodeFromBox)(
         box,
