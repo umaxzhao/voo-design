@@ -155,7 +155,7 @@ export function WelcomePromptComposer({
               onClick={() => (configNeeded ? onOpenSettings?.() : setAdvancedOpen((open) => !open))}
               aria-label={t("welcome.prompt.modelLabel")}
               title={selectedModelName || ""}
-              className={`flex max-w-[13rem] min-w-0 items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] transition-colors hover:bg-white/[0.06] ${
+              className={`flex max-w-[13rem] min-w-0 flex-1 items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] transition-colors hover:bg-white/[0.06] ${
                 configNeeded ? "text-amber-300" : "text-neutral-400 hover:text-neutral-200"
               }`}
             >
