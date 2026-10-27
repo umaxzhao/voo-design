@@ -163,7 +163,7 @@ export default function CanvasTabBar() {
           aria-controls="mobile-project-switcher-options"
           aria-label={t("canvasTabs.label")}
           onClick={() => setMobileMenuOpen((open) => !open)}
-          className={`flex h-8 max-w-full min-w-0 items-center gap-1.5 rounded-lg px-2 text-[11px] font-medium transition-colors ${
+          className={`flex h-8 max-w-full min-w-0 items-center gap-1 rounded-lg px-1.5 text-[11px] font-medium transition-colors ${
             activeDocument && !welcomeOpen
               ? "bg-neutral-800/75 text-white"
               : "bg-neutral-800/50 text-white/85"

@@ -76,7 +76,7 @@ export function EditorZoom({
       data-testid="editor-bottom-toolbar"
       role="toolbar"
       aria-label={t("editor.bottomBar.label")}
-      className="viewport-tools absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-0 rounded-xl px-1 py-0.5 shadow-pop"
+      className="editor-zoom-bar viewport-tools absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-0 rounded-xl px-1 py-0.5 shadow-pop"
     >
       {onAddCanvas ? (
         <button
@@ -118,7 +118,7 @@ export function EditorZoom({
         onClick={onZoomOut}
         title={t("editor.zoomOut")}
         aria-label={t("editor.zoomOut")}
-        className="flex h-6 w-6 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
+        className="editor-zoom-step flex h-6 w-6 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
       >
         <IconMinus size={13} strokeWidth={ICON_STROKE_WIDTH} />
       </button>
@@ -138,7 +138,7 @@ export function EditorZoom({
         onClick={onZoomIn}
         title={t("editor.zoomIn")}
         aria-label={t("editor.zoomIn")}
-        className="flex h-6 w-6 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
+        className="editor-zoom-step flex h-6 w-6 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
       >
         <IconAdd size={13} strokeWidth={ICON_STROKE_WIDTH} />
       </button>
@@ -168,7 +168,7 @@ export function EditorZoom({
             setMoreOpen(true);
           }}
           onClick={() => setMoreOpen((open) => !open)}
-          className="flex h-6 w-6 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
+          className="editor-zoom-more flex h-6 w-6 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
         >
           <IconMore size={13} />
         </button>
