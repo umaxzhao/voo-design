@@ -38,7 +38,11 @@ describe("crash recovery prompt", () => {
     expect(state.isDirty).toBe(true);
     expect(state.fileName).toBe(draft.label);
     expect(state.filePath).toBeNull();
-    expect(state.nodes.find(n => n.id === state.editingNodeId).data.editorDoc).toEqual(draft.document);
+    const restored = state.nodes.find(n => n.id === state.editingNodeId).data.editorDoc;
+    expect(restored).toMatchObject({ width: 540, height: 360, isCanvasRoot: true });
+    expect(restored.nodes).toHaveLength(2);
+    expect(restored.nodes[1]).toEqual({ ...draft.document.nodes[0], parentId: restored.nodes[0].id });
+    expect(draft.document.nodes[0]).toEqual({ id: "restored-shape" });
     expect(await loadCrashDraft(draft.id)).toBeNull();
   });
   it("discards without opening a document", async () => {

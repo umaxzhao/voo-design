@@ -159,7 +159,11 @@ describe("Community Templates and New Project Workbench Experience", () => {
     const activeState = useDesignStore.getState();
     expect(activeState.welcomeOpen).toBe(false);
     expect(activeState.fileName).toContain("SaaS Analytics");
-    expect(activeState.nodes[0].data.editorDoc.nodes.length).toBe(78);
+    const migrated = activeState.nodes[0].data.editorDoc;
+    expect(migrated.nodes).toHaveLength(vooFile.document.nodes.length + 1);
+    expect(migrated.nodes[0]).toMatchObject({ isFrame: true });
+    expect(migrated.nodes.slice(1)).toEqual(vooFile.document.nodes.map(node =>
+      node.parentId ? node : { ...node, parentId: migrated.nodes[0].id }));
   });
 
   it("newVooProject in designStore registers in recent drafts automatically", () => {

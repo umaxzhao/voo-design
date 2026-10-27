@@ -50,9 +50,9 @@ describe("page list polish", () => {
     expect(store.getState().pendingArtboardFitId).toBeNull();
   });
   it.each(["addEditorPage", "duplicateEditorPage"])(
-    "requests a fit when returning to a local page after %s",
+    "restores the shared camera when returning to a page after %s",
     (action) => {
-      // A fresh document has a real page and focus, but its store camera is unused.
+      // Every page uses the shared canvas camera, including migrated documents.
       store.getState().loadVooProject({
         vooData: { document: { width: 1200, height: 800, nodes: [] } },
       });
@@ -67,16 +67,16 @@ describe("page list polish", () => {
         : store.getState().duplicateEditorPage(original);
       expect(store.getState().editingNodeId).toBe(added);
       expect(store.getState().pendingArtboardFitId).toBe(added);
-      expect(store.getState().editorPageCameras[original]).toBeUndefined();
+      expect(store.getState().editorPageCameras[original]).toEqual({ panX: 0, panY: 0, zoom: 1 });
 
       // Simulate the shared canvas completing the new page's requested fit.
       store.getState().setEditorCamera({ panX: -1400, panY: 80, zoom: 0.7 });
       store.setState({ pendingArtboardFitId: null });
       store.getState().focusEditorPage(original);
-      // The canvas consumes this request to fit the original artboard at its layout.
-      expect(store.getState().pendingArtboardFitId).toBe(original);
-      expect(store.getState().editorPageCameras[original]).toBeUndefined();
-      expect(store.getState().editorCamera).toEqual({ panX: -1400, panY: 80, zoom: 0.7 });
+      // Returning restores the original view rather than fitting it again.
+      expect(store.getState().pendingArtboardFitId).toBeNull();
+      expect(store.getState().editorPageCameras[original]).toEqual({ panX: 0, panY: 0, zoom: 1 });
+      expect(store.getState().editorCamera).toEqual({ panX: 0, panY: 0, zoom: 1 });
     },
   );
   it("provides bounded phone and desktop presets", () => {
@@ -169,7 +169,8 @@ describe("page list polish", () => {
       const before = JSON.stringify(doc);
       store.getState().loadVooProject({ vooData: { document: doc } });
       expect(store.getState().nodes).toHaveLength(1);
-      expect(store.getState().nodes[0].data.editorDoc).toBe(doc);
+      expect(store.getState().nodes[0].data.editorDoc).toMatchObject({ isCanvasRoot: true, backgroundColor: "transparent" });
+      expect(store.getState().nodes[0].data.editorDoc.nodes[0]).toMatchObject({ isFrame: true, width: 300, height: 200 });
       expect(JSON.stringify(doc)).toBe(before);
       expect(store.getState().isDirty).toBe(false);
       expect(store.getState().editorPageCameras).toEqual({});
@@ -188,7 +189,7 @@ describe("page list polish", () => {
       },
     });
     expect(store.getState().nodes.map((n) => n.id)).toEqual(["b", "a"]);
-    expect(store.getState().editingNodeIds).toEqual(["b", "a"]);
+    expect(store.getState().editingNodeIds).toEqual(["a"]);
     expect(store.getState().editingNodeId).toBe("a");
   });
   it("isolates local camera caches between document sessions", () => {

@@ -242,6 +242,12 @@ describe("Photoshop-style .voo File Save Mechanism", () => {
 
     expect(res.success).toBe(true);
     expect(useDesignStore.getState().nodes).toHaveLength(pagesBefore);
-    expect(useDesignStore.getState().nodes[0].data.editorDoc.nodes).toHaveLength(1);
+    const reopened = useDesignStore.getState().nodes[0].data.editorDoc;
+    expect(reopened.nodes).toHaveLength(2);
+    expect(reopened.nodes[0]).toMatchObject({ isFrame: true, width: 1200, height: 800 });
+    expect(reopened.nodes[1]).toMatchObject({ id: "rect-1", x: 10, y: 10, width: 100, height: 100, parentId: reopened.nodes[0].id });
+    await saveVooProject({ store: useDesignStore.getState(), saveAs: false });
+    await openVooProject({ store: useDesignStore.getState(), fileOrPath: file });
+    expect(useDesignStore.getState().nodes[0].data.editorDoc).toEqual(reopened);
   });
 });

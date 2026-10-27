@@ -132,7 +132,7 @@ export const useDesignStore = create((set, get) => {
   editorPageSession: 0,
 
   // Page / Artboard actions
-  focusEditorPage: (id, { rememberCamera = get().editingNodeIds.length > 1 || Boolean(get().editingPresentationId), exclusive = false } = {}) => {
+  focusEditorPage: (id, { rememberCamera = true, exclusive = false } = {}) => {
     const current = get();
     if (!id || !current.nodes.some((node) => node.id === id)) return;
     if (id === current.editingNodeId) {

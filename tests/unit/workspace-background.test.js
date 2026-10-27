@@ -18,7 +18,8 @@ it("changes the workspace ground without changing frame paint", () => {
   useDesignStore.getState().loadVooProject({ vooData: { document: doc } });
   useDesignStore.getState().setCanvasBackgroundColor("#737373");
   expect(useDesignStore.getState().canvasBackgroundColor).toBe("#737373");
-  expect(useDesignStore.getState().nodes[0].data.editorDoc).toEqual(doc);
+  expect(useDesignStore.getState().nodes[0].data.editorDoc).toMatchObject({ isCanvasRoot: true, backgroundColor: "transparent" });
+  expect(useDesignStore.getState().nodes[0].data.editorDoc.nodes[0]).toMatchObject({ fill: "#9C5252", fills: doc.fills });
   expect(doc.backgroundColor).toBe("#9C5252");
 });
 
@@ -27,10 +28,13 @@ it("saves and reopens the workspace and frame colors independently", async () =>
   useDesignStore.getState().setCanvasBackgroundColor("#737373");
   const { vooFile } = await buildProjectVooFile({ store: useDesignStore.getState() });
   expect(vooFile.document.canvasBackgroundColor).toBe("#737373");
-  expect(vooFile.document.pages[0].sceneDoc.backgroundColor).toBe("#9C5252");
+  expect(vooFile.document.pages[0].sceneDoc.backgroundColor).toBe("transparent");
+  expect(vooFile.document.pages[0].sceneDoc.nodes[0].fill).toBe("#9C5252");
   useDesignStore.getState().loadVooProject({ vooData: vooFile });
   expect(useDesignStore.getState().canvasBackgroundColor).toBe("#737373");
-  expect(useDesignStore.getState().nodes[0].data.editorDoc.backgroundColor).toBe("#9C5252");
+  expect(useDesignStore.getState().nodes[0].data.editorDoc.backgroundColor).toBe("transparent");
+  expect(useDesignStore.getState().nodes[0].data.editorDoc.nodes).toHaveLength(1);
+  expect(useDesignStore.getState().nodes[0].data.editorDoc.nodes[0].fill).toBe("#9C5252");
 });
 
 it("uses neutral gray for old projects without a workspace color", () => {
