@@ -16,7 +16,7 @@ import ToolPropertiesSection from "./tool_properties_section.jsx";
 import { usePropertyCommit } from "./use_property_commit.js";
 import { TOOL } from "../../editor/editor_constants.js";
 import { useI18n } from "../../use_i18n.js";
-import { IconSwap } from "../../icons.jsx";
+import { IconChevronDown, IconSwap } from "../../icons.jsx";
 import PropertiesPanelHeader from "./properties_panel_header.jsx";
 import PropertiesPanelMaskToolbar from "./properties_panel_mask_toolbar.jsx";
 import PropertiesPanelSections from "./properties_panel_sections.jsx";
@@ -60,6 +60,8 @@ export default function EditorProperties({
   onLayout = null,
   swapSide = false,
   onToggleSide = null,
+  mobileExpanded = false,
+  onMobileToggleExpanded = null,
   bottomInset = 0,
   engine = null,
   mediaError = null,
@@ -182,6 +184,8 @@ export default function EditorProperties({
       maskBusy={maskBusy}
       maskEditing={maskEditing}
       onToggleSide={isDedicatedToolActive ? null : onToggleSide}
+      mobileExpanded={mobileExpanded}
+      onMobileToggleExpanded={onMobileToggleExpanded}
       showInspect={canInspect}
       inspectOpen={inspectOpen}
       onToggleInspect={() => setPanelView(view => view === "code" ? "properties" : "code")}
@@ -370,9 +374,21 @@ export default function EditorProperties({
             onClick={onToggleSide}
             title={t("editor.pages.toggleAxis")}
             aria-label={t("editor.pages.toggleAxis")}
-            className="flex w-10 shrink-0 items-center justify-center text-neutral-400 transition-colors hover:text-white"
+            className="editor-panel-side-swap flex w-10 shrink-0 items-center justify-center text-neutral-400 transition-colors hover:text-white"
           >
             <IconSwap size={13} />
+          </button>
+        ) : null}
+        {onMobileToggleExpanded ? (
+          <button
+            type="button"
+            className="editor-mobile-panel-toggle hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg text-neutral-300 hover:bg-white/10"
+            aria-expanded={mobileExpanded}
+            aria-label={t(mobileExpanded ? "editor.mobile.panels.collapseProperties" : "editor.mobile.panels.expandProperties")}
+            title={t(mobileExpanded ? "editor.mobile.panels.collapseProperties" : "editor.mobile.panels.expandProperties")}
+            onClick={onMobileToggleExpanded}
+          >
+            <IconChevronDown size={16} className={mobileExpanded ? "" : "rotate-180"} />
           </button>
         ) : null}
       </div>

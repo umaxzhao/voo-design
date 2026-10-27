@@ -82,8 +82,7 @@
 
   [data-testid="design-editor"].editor-narrow[data-agent-open="true"] [data-testid="editor-layers-panel"],
   [data-testid="design-editor"].editor-narrow[data-agent-open="true"] [data-testid="editor-properties-panel"],
-  [data-testid="design-editor"].editor-narrow[data-agent-open="true"] [data-testid="editor-history-panel"],
-  [data-testid="design-editor"].editor-narrow[data-agent-open="true"] .editor-mobile-panel-expand {
+  [data-testid="design-editor"].editor-narrow[data-agent-open="true"] [data-testid="editor-history-panel"] {
     display: none;
   }
 
@@ -175,38 +174,11 @@
     pointer-events: none;
   }
 
-  [data-testid="design-editor"].editor-narrow .editor-mobile-panel-expand {
-    position: absolute;
-    z-index: 40;
-    top: auto;
-    bottom: 0;
-    display: block;
-    height: 3.5rem;
-    border: 0;
-    background: transparent;
-    touch-action: manipulation;
+  [data-testid="design-editor"].editor-narrow .editor-mobile-panel-toggle {
+    display: inline-flex;
   }
 
-  [data-testid="design-editor"].editor-narrow .editor-mobile-panel-expand-layers {
-    left: var(--editor-mobile-panel-gap);
-    width: calc(100% - 2 * var(--editor-mobile-panel-gap));
-  }
-
-  [data-testid="design-editor"].editor-narrow[data-properties-open="true"] .editor-mobile-panel-expand-layers {
-    width: calc((100% - 3 * var(--editor-mobile-panel-gap)) / 2);
-  }
-
-  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"] .editor-mobile-panel-expand-layers {
-    display: none;
-  }
-
-  [data-testid="design-editor"].editor-narrow[data-properties-open="true"] .editor-mobile-panel-expand-properties {
-    left: calc(50% + var(--editor-mobile-panel-gap) / 2);
-    width: calc((100% - 3 * var(--editor-mobile-panel-gap)) / 2);
-  }
-
-  [data-testid="design-editor"].editor-narrow[data-properties-open="false"] .editor-mobile-panel-expand-properties,
-  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="true"] .editor-mobile-panel-expand-properties {
+  [data-testid="design-editor"].editor-narrow .editor-panel-side-swap {
     display: none;
   }
 

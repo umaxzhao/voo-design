@@ -202,6 +202,8 @@ export default function EditorLayers({
   onEndMaskEdit = null,
   swapSide = false,
   onToggleSide = null,
+  mobileExpanded = false,
+  onMobileToggleExpanded = null,
   onAddAdjustmentLayer = null,
   onAddLayer = null,
   onAddMask = null,
@@ -923,7 +925,7 @@ export default function EditorLayers({
           </button>
         ))}
       </div>
-      <div className="-my-1 flex shrink-0 items-center gap-1">
+      <div className="editor-layers-header-actions -my-1 flex shrink-0 items-center gap-1">
         <button
           type="button"
           onClick={() => {
@@ -953,12 +955,24 @@ export default function EditorLayers({
             onClick={onToggleSide}
             aria-label={t("editor.pages.toggleAxis")}
             title={t("editor.pages.toggleAxis")}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+            className="editor-panel-side-swap flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
           >
             <IconSwap size={13} />
           </button>
         ) : null}
       </div>
+      {onMobileToggleExpanded ? (
+        <button
+          type="button"
+          className="editor-mobile-panel-toggle hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg text-neutral-300 hover:bg-white/10"
+          aria-expanded={mobileExpanded}
+          aria-label={t(mobileExpanded ? "editor.mobile.panels.collapseLayers" : "editor.mobile.panels.expandLayers")}
+          title={t(mobileExpanded ? "editor.mobile.panels.collapseLayers" : "editor.mobile.panels.expandLayers")}
+          onClick={onMobileToggleExpanded}
+        >
+          <IconChevronDown size={16} className={mobileExpanded ? "" : "rotate-180"} />
+        </button>
+      ) : null}
     </div>
   );
 
@@ -2182,6 +2196,8 @@ EditorLayers.propTypes = {
   /** True parks the panel on the opposite edge; the swap button flips it. */
   swapSide: PropTypes.bool,
   onToggleSide: PropTypes.func,
+  mobileExpanded: PropTypes.bool,
+  onMobileToggleExpanded: PropTypes.func,
   onAddAdjustmentLayer: PropTypes.func,
   onAddLayer: PropTypes.func,
   onAddMask: PropTypes.func,

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { CodeXml as IconCode, Workflow as IconPrototype } from "lucide-react";
 import {
   IconSwap,
+  IconChevronDown,
   IconMask,
   IconBrush,
   IconEraser,
@@ -116,6 +117,8 @@ export default function PropertiesPanelHeader({
   maskBusy,
   maskEditing,
   onToggleSide,
+  mobileExpanded = false,
+  onMobileToggleExpanded = null,
   inspectOpen = false,
   showInspect = false,
   onToggleInspect = null,
@@ -221,6 +224,18 @@ export default function PropertiesPanelHeader({
         )}
       </div>
       <div className="flex shrink-0 items-center gap-1">
+        {onMobileToggleExpanded && !tabsAtTop ? (
+          <button
+            type="button"
+            className="editor-mobile-panel-toggle hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg text-neutral-300 hover:bg-white/10"
+            aria-expanded={mobileExpanded}
+            aria-label={t(mobileExpanded ? "editor.mobile.panels.collapseProperties" : "editor.mobile.panels.expandProperties")}
+            title={t(mobileExpanded ? "editor.mobile.panels.collapseProperties" : "editor.mobile.panels.expandProperties")}
+            onClick={onMobileToggleExpanded}
+          >
+            <IconChevronDown size={16} className={mobileExpanded ? "" : "rotate-180"} />
+          </button>
+        ) : null}
         {showMaskBtn ? (
           <EditorTooltip
             title={hasMask ? t("editor.mask.edit") : t("editor.mask.create")}
@@ -278,7 +293,7 @@ export default function PropertiesPanelHeader({
               type="button"
               onClick={onToggleSide}
               aria-label={t("editor.pages.toggleAxis")}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
+              className="editor-panel-side-swap flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
             >
               <IconSwap size={13} />
             </button>
@@ -301,6 +316,8 @@ PropertiesPanelHeader.propTypes = {
   maskBusy: PropTypes.bool,
   maskEditing: PropTypes.object,
   onToggleSide: PropTypes.func,
+  mobileExpanded: PropTypes.bool,
+  onMobileToggleExpanded: PropTypes.func,
   inspectOpen: PropTypes.bool,
   showInspect: PropTypes.bool,
   onToggleInspect: PropTypes.func,

@@ -29,6 +29,8 @@ export const editorPropertiesPropTypes = {
   onLayout: PropTypes.func,
   swapSide: PropTypes.bool,
   onToggleSide: PropTypes.func,
+  mobileExpanded: PropTypes.bool,
+  onMobileToggleExpanded: PropTypes.func,
   bottomInset: PropTypes.number,
   engine: PropTypes.object,
   mediaError: PropTypes.string,

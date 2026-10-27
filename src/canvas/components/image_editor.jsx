@@ -3467,34 +3467,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         setContextMenu({ x: event.clientX, y: event.clientY });
       }}
     >
-      <button
-        type="button"
-        data-testid="editor-mobile-expand-layers"
-        aria-expanded={mobileLayersExpanded}
-        aria-label={t("editor.mobile.panels.expandLayers")}
-        onClick={(event) => {
-          const root = event.currentTarget.closest('[data-testid="design-editor"]');
-          setMobileLayersExpanded(true);
-          requestAnimationFrame(() =>
-            root?.querySelector('[data-testid="editor-layers-panel"] button')?.focus(),
-          );
-        }}
-        className="editor-mobile-panel-expand editor-mobile-panel-expand-layers hidden"
-      />
-      <button
-        type="button"
-        data-testid="editor-mobile-expand-properties"
-        aria-expanded={mobilePropertiesExpanded}
-        aria-label={t("editor.mobile.panels.expandProperties")}
-        onClick={(event) => {
-          const root = event.currentTarget.closest('[data-testid="design-editor"]');
-          setMobilePropertiesExpanded(true);
-          requestAnimationFrame(() =>
-            root?.querySelector('[data-testid="editor-properties-panel"] button')?.focus(),
-          );
-        }}
-        className="editor-mobile-panel-expand editor-mobile-panel-expand-properties hidden"
-      />
       <div
         data-open-guard={openGuard ? "on" : "off"}
         className={`relative min-h-0 flex-1 overflow-hidden ${
@@ -4151,6 +4123,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               testId="editor-properties-panel"
               swapSide={inspectorSwap}
               onToggleSide={toggleSwapPanels}
+              mobileExpanded={mobilePropertiesExpanded}
+              onMobileToggleExpanded={() => setMobilePropertiesExpanded((value) => !value)}
             >
               <Suspense fallback={null}>
                 <EditorCanvasInstanceProperties
@@ -4201,6 +4175,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               object={nestedNode}
               docSize={nestedDoc}
               tool={TOOL.SELECT}
+              mobileExpanded={mobilePropertiesExpanded}
+              onMobileToggleExpanded={() => setMobilePropertiesExpanded((value) => !value)}
               onMutate={(patch) =>
                 nestedEngine.updateNode(nestedNode.id, patch, { commit: false })
               }
@@ -4212,6 +4188,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             testId="editor-properties-panel"
             swapSide={inspectorSwap}
             onToggleSide={toggleSwapPanels}
+            mobileExpanded={mobilePropertiesExpanded}
+            onMobileToggleExpanded={() => setMobilePropertiesExpanded((value) => !value)}
           >
             <Suspense fallback={null}>
               <EditorCanvasInstanceProperties
@@ -4687,6 +4665,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             onDeleteAnchor={() => engine?.deleteActiveAnchor?.()}
             swapSide={sidePanelSwap}
             onToggleSide={toggleSwapPanels}
+            mobileExpanded={mobilePropertiesExpanded}
+            onMobileToggleExpanded={() => setMobilePropertiesExpanded((value) => !value)}
             onLayout={
               engine?.layoutSelection && (selected || selectedIds.length >= 1)
                 ? (layout, argument) =>
@@ -4856,6 +4836,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             isolationGroupId={isolationGroupId}
             swapSide={swapPanels}
             onToggleSide={toggleSwapPanels}
+            mobileExpanded={mobileLayersExpanded}
+            onMobileToggleExpanded={() => setMobileLayersExpanded((value) => !value)}
             onSelect={(index) => {
               setCanvasBackgroundSelected(false);
               setSelectedInstanceChild(null);
@@ -4980,6 +4962,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               onJumpTo={(idx) => void engine?.jumpToHistory?.(idx)}
               swapSide={sidePanelSwap}
               onToggleSide={toggleSwapPanels}
+              mobileExpanded={mobilePropertiesExpanded}
+              onMobileToggleExpanded={() => setMobilePropertiesExpanded((value) => !value)}
               onUndo={presentationHistory.undo}
               onRedo={presentationHistory.redo}
             />

@@ -5,6 +5,7 @@ import {
   IconHistory,
   IconSwap,
   IconCheck,
+  IconChevronDown,
 } from "../icons.jsx";
 import { useI18n } from "../use_i18n.js";
 import { isMacPlatform } from "../use_window_controls.js";
@@ -21,6 +22,8 @@ export default function EditorHistoryPanel({
   onRedo,
   swapSide = false,
   onToggleSide = null,
+  mobileExpanded = false,
+  onMobileToggleExpanded = null,
 }) {
   const { t } = useI18n();
   const isMac = isMacPlatform();
@@ -39,13 +42,25 @@ export default function EditorHistoryPanel({
             {t("editor.history")}
           </h2>
         </div>
+        {onMobileToggleExpanded ? (
+          <button
+            type="button"
+            onClick={onMobileToggleExpanded}
+            aria-expanded={mobileExpanded}
+            aria-label={t(mobileExpanded ? "editor.mobile.panels.collapseProperties" : "editor.mobile.panels.expandProperties")}
+            title={t(mobileExpanded ? "editor.mobile.panels.collapseProperties" : "editor.mobile.panels.expandProperties")}
+            className="editor-mobile-panel-toggle hidden h-10 w-10 items-center justify-center rounded-full text-neutral-300 hover:bg-white/10"
+          >
+            <IconChevronDown size={16} className={mobileExpanded ? "" : "rotate-180"} />
+          </button>
+        ) : null}
         {onToggleSide ? (
           <button
             type="button"
             onClick={onToggleSide}
             aria-label={t("editor.pages.toggleAxis")}
             title={t("editor.pages.toggleAxis")}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-[#262626] hover:text-white"
+            className="editor-panel-side-swap flex h-7 w-7 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-[#262626] hover:text-white"
           >
             <IconSwap size={13} />
           </button>
@@ -150,4 +165,6 @@ EditorHistoryPanel.propTypes = {
   onRedo: PropTypes.func.isRequired,
   swapSide: PropTypes.bool,
   onToggleSide: PropTypes.func,
+  mobileExpanded: PropTypes.bool,
+  onMobileToggleExpanded: PropTypes.func,
 };

@@ -12,6 +12,8 @@ export default function PropertiesPanelShell({
   swapSide = false,
   bottomInset = 0,
   onToggleSide = null,
+  mobileExpanded = false,
+  onMobileToggleExpanded = null,
   testId = undefined,
   children = null,
 }) {
@@ -41,6 +43,8 @@ export default function PropertiesPanelShell({
     >
       <PropertiesPanelHeader
         onToggleSide={onToggleSide}
+        mobileExpanded={mobileExpanded}
+        onMobileToggleExpanded={onMobileToggleExpanded}
         t={t}
       />
       <div className={contentClass}>{children}</div>
@@ -52,6 +56,8 @@ PropertiesPanelShell.propTypes = {
   swapSide: PropTypes.bool,
   bottomInset: PropTypes.number,
   onToggleSide: PropTypes.func,
+  mobileExpanded: PropTypes.bool,
+  onMobileToggleExpanded: PropTypes.func,
   testId: PropTypes.string,
   children: PropTypes.node,
 };

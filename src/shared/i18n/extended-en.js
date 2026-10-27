@@ -2257,6 +2257,8 @@ export default {
   "editor.mobile.panels.expand": "Expand bottom panels",
   "editor.mobile.panels.expandLayers": "Expand layers panel",
   "editor.mobile.panels.expandProperties": "Expand properties panel",
+  "editor.mobile.panels.collapseLayers": "Collapse layers panel",
+  "editor.mobile.panels.collapseProperties": "Collapse properties panel",
   "titlebar.more": "More actions",
   "pageSwitcher.untitled": "Untitled page",
   "pageSwitcher.close": "Delete page",
