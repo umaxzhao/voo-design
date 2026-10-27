@@ -2261,6 +2261,20 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     [engine, mediaImportBusy, t, openVooDocument],
   );
 
+  const openMediaPicker = useCallback(() => {
+    const input = mediaInputRef.current;
+    if (!input) return;
+    if (typeof input.showPicker === "function") {
+      try {
+        input.showPicker();
+        return;
+      } catch {
+        // Older mobile browsers may expose showPicker but reject hidden inputs.
+      }
+    }
+    input.click();
+  }, []);
+
   const handleMediaDrop = useCallback(
     (event) => {
       const files = Array.from(event.dataTransfer?.files ?? []).filter(
@@ -5145,6 +5159,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               onToggleGuides={toggleGuides}
               canClearGuides={documentGuides.length > 0}
               onClearGuides={handleClearGuides}
+              onImportMedia={openMediaPicker}
               onToggleSnapping={toggleSnapping}
             >
               {rulersVisible ? (
@@ -5354,7 +5369,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             }
             onDetachInstance={handleDetachInstance}
             onOpenShortcuts={() => setShortcutsOpen(true)}
-            onImportMedia={() => mediaInputRef.current?.click()}
+            onImportMedia={openMediaPicker}
           />
         ) : null}
 

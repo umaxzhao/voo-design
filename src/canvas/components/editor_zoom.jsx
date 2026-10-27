@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { Eye, EyeOff, Ruler, Trash2 } from "lucide-react";
+import { Eye, EyeOff, ImagePlus, Ruler, Trash2 } from "lucide-react";
 import {
   IconAdd,
   IconGrid3x3,
@@ -41,6 +41,7 @@ export function EditorZoom({
   canClearGuides = false,
   onClearGuides = null,
   onAddCanvas = null,
+  onImportMedia = null,
   children = null,
 }) {
   const { t } = useI18n();
@@ -206,6 +207,21 @@ export function EditorZoom({
               <IconRedo size={13} aria-hidden="true" />
               {t("editor.redo")}
             </button>
+            {onImportMedia ? (
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="editor-mobile-import-media"
+                onClick={() => {
+                  onImportMedia();
+                  setMoreOpen(false);
+                }}
+                className="mobile-more-command hidden w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-neutral-200 hover:bg-neutral-800 focus-visible:bg-neutral-800 outline-none"
+              >
+                <ImagePlus size={13} aria-hidden="true" />
+                {t("editor.menu.importMedia")}
+              </button>
+            ) : null}
             {onAddCanvas ? (
               <button
                 type="button"
@@ -397,5 +413,6 @@ EditorZoom.propTypes = {
   onToggleGuides: PropTypes.func,
   canClearGuides: PropTypes.bool,
   onClearGuides: PropTypes.func,
+  onImportMedia: PropTypes.func,
   children: PropTypes.node,
 };
