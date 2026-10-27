@@ -29,3 +29,9 @@ Run `node tests/e2e/layout-mask-audit.e2e.mjs`. It starts an isolated real app a
 ## Coverage boundary
 
 These checks certify the listed scenarios, not every combination of each feature. Wrap/hug/fill/min-max Auto Layout combinations, raster-painted masks, Live Filters/adjustments, all retouch/drawing tools, Warp/Pin/Variants/arrays, export settings and every history label remain outside this batch. See the [previous verification](agent-mutation-verification.md) for earlier paint/text and resize evidence.
+
+## Clean release verification
+
+The exported source snapshot matches commit `7e3815a` byte-for-byte, excluding concurrent uncommitted work. Its production build and design lint pass, and its full test run passes **3667 tests with 12 skips** (424 passing files, 3 skipped). The new twelve-scenario browser suite and both previous browser suites (seven paint/text/mobile scenarios and ten resize/typography scenarios) pass. An initial parallel build/test run was discarded because artifact checks ran before the build completed; the release gate ran tests after the build. Welcome tests now check the committed advanced-dialog/custom-dropdown surface instead of removed native-select/radio-row markup.
+
+Published directly through `ssh la2` to https://voo.run/editor/. Previous files are retained at `/srv/voo-run/editor-backups/7e3815a-20261027T043834Z`.

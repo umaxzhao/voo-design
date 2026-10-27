@@ -23,6 +23,7 @@
 ## Audits (point-in-time records; check the date and re-verify before relying on them)
 | Document | Topic | Status |
 | :--- | :--- | :--- |
+| [audits/layout-mask-verification.md](audits/layout-mask-verification.md) | Group/rotated alignment, Auto Layout, clipping and Boolean pixel/history checks | Current (2026-10-27) |
 | [audits/agent-mutation-verification.md](audits/agent-mutation-verification.md) | Agent paint/text parity, UI tests, real MCP/pixel evidence and remaining limits | Current (2026-10-27) |
 | [audits/effect-audit-verification.md](audits/effect-audit-verification.md) | Resize constraints, Skia italics: fixes and e2e evidence | Current (2026-10-27) |
 | [audits/editor-completion-verification.md](audits/editor-completion-verification.md) | Editor completion checks | Recent |
