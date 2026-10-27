@@ -79,14 +79,13 @@ describe("welcome prompt composer", () => {
     expect(html).toContain("welcome.prompt.candidates");
   });
 
-  it("exposes the design-system picker and disables the style kit once a system is chosen", () => {
+  it("renders advanced style selection as an accessible dropdown", () => {
     const html = render({ initialAdvancedOpen: true });
-    expect(html).toContain("welcome.prompt.designSystem");
-    const systemHtml = render({ designSystemId: "axiom", initialAdvancedOpen: true });
-    expect(systemHtml).toContain("AXIOM");
-    const styleIndex = systemHtml.indexOf('aria-label="welcome.prompt.styleLabel"');
-    expect(styleIndex).toBeGreaterThan(-1);
-    expect(systemHtml.slice(Math.max(0, styleIndex - 240), styleIndex)).toContain("disabled");
+    const labelIndex = html.indexOf('aria-label="welcome.prompt.styleLabel"');
+    expect(labelIndex).toBeGreaterThan(-1);
+    const trigger = html.slice(html.lastIndexOf("<button", labelIndex), html.indexOf(">", labelIndex));
+    expect(trigger).toContain('aria-haspopup="listbox"');
+    expect(html).toContain("welcome.prompt.styleAuto");
   });
 
   it("does not show a decorative 1x parallel badge", () => {
@@ -104,7 +103,9 @@ describe("welcome prompt composer", () => {
 
   it("keeps design-type selection in the advanced dialog", () => {
     const mobile = render({ activePill: "mobile", initialAdvancedOpen: true });
-    expect(mobile).toContain('<option value="mobile" selected="">welcome.pills.mobile</option>');
+    expect(mobile).toContain('aria-haspopup="listbox"');
+    expect(mobile).toContain('>welcome.pills.mobile</span>');
+    expect(mobile).not.toContain("<select");
     expect(mobile).not.toContain("welcome.guide.mobile");
   });
 });
