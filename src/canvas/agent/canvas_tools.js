@@ -39,6 +39,7 @@ import { BUILD_LAYOUT_SCHEMA, buildLayout } from "./canvas_tools_build_layout.js
 import { LINT_TOOL_SCHEMA, lintDesignTool } from "./design_quality/lint_tool.js";
 import { STYLE_PATCH_PROPERTIES, TEXT_PATCH_PROPERTIES } from "./canvas-mutation-schema.js";
 import { validateLayerId, validateLayerPatch, validateAutoLayout } from "./canvas_mutation_validation.js";
+import { resolveAgentAutoLayout } from "./resolve-auto-layout.js";
 
 export const AGENT_SETTING = Object.freeze({
   API_KEY: "agent.apiKey",
@@ -201,7 +202,7 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
               gap: { type: "number" },
               padding: { type: "number" },
               wrap: { type: "boolean" },
-              alignment: { type: "string" },
+              alignment: { type: "string", enum: ["start", "center", "end", "space-between"] },
             },
             required: ["enabled"],
           },
@@ -665,7 +666,8 @@ function mutateAutoLayout(args) {
 
   setAgentFocusNode(node, "AI: Auto Layout");
 
-  const patch = { autoLayout: config };
+  if (node.kind !== "group") invalidArgs('Invalid argument "layerId": expected a frame or group layer');
+  const patch = { autoLayout: resolveAgentAutoLayout(node, config) };
   editor.updateNode?.(layerId, patch);
   editor.commitEditorDocument?.({ message: "AI: Mutate Auto Layout" });
 
@@ -677,7 +679,7 @@ function mutateAutoLayout(args) {
     );
   }
 
-  return { ok: true, layerId, autoLayout: config };
+  return { ok: true, layerId, autoLayout: patch.autoLayout };
 }
 
 function batchMutateLayers(args) {
@@ -695,12 +697,13 @@ function batchMutateLayers(args) {
     const node = editor.getNode?.(layerId);
     if (!node) nodeNotFound();
     if (type === "text" && node.kind !== "text") invalidArgs('Invalid argument "layerId": expected a text layer');
+    if (type === "autoLayout" && node.kind !== "group") invalidArgs('Invalid argument "layerId": expected a frame or group layer');
     return { layerId, type, patch, node };
   });
   const updates = validated.map(({ layerId, type, patch, node }) => {
     setAgentFocusNode(node, `AI: Batch ${type}`);
     return type === "autoLayout"
-      ? { id: layerId, autoLayout: patch.autoLayout }
+      ? { id: layerId, autoLayout: resolveAgentAutoLayout(node, patch.autoLayout) }
       : { id: layerId, ...patch };
   });
 

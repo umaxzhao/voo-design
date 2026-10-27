@@ -9,6 +9,7 @@ import {
   distributeSpacingNodes,
 } from "../editor/align_ops.js";
 import { nodeAABB } from "../editor/scene_geometry.js";
+import { applyLayoutPatches } from "./apply-layout-patches.js";
 
 const ALIGN_TYPES = Object.freeze([
   "left",
@@ -159,15 +160,6 @@ function positionFor(box, target, align) {
   return { x, y };
 }
 
-function applyPatches(editor, patches, message) {
-  if (patches.length === 0) return 0;
-  for (const { id, patch } of patches) {
-    editor.updateNode?.(id, patch);
-  }
-  editor.commitEditorDocument?.({ message });
-  return patches.length;
-}
-
 function alignLayers(args = {}) {
   const editor = requireEditor();
   const nodes = requireNodes(editor, args.layerIds, { min: 1 });
@@ -188,13 +180,15 @@ function alignLayers(args = {}) {
     for (const node of nodes) {
       const box = boundsOf(node);
       const next = positionFor(box, target, align);
-      if (next.x !== node.x || next.y !== node.y) {
-        patches.push({ id: node.id, patch: next });
+      const x = node.x + next.x - box.x;
+      const y = node.y + next.y - box.y;
+      if (x !== node.x || y !== node.y) {
+        patches.push({ id: node.id, patch: { x, y } });
       }
     }
   }
 
-  const moved = applyPatches(editor, patches, "AI: Align Layers");
+  const moved = applyLayoutPatches(editor, patches, "AI: Align Layers");
   return { ok: true, align, relativeTo, moved };
 }
 
@@ -214,7 +208,7 @@ function distributeLayers(args = {}) {
     axis,
     ...(spacing !== null ? { gap: spacing } : {}),
   });
-  const moved = applyPatches(editor, patches, "AI: Distribute Layers");
+  const moved = applyLayoutPatches(editor, patches, "AI: Distribute Layers");
   return { ok: true, axis, spacing, moved };
 }
 

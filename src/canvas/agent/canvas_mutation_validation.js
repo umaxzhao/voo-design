@@ -99,7 +99,7 @@ export function validateAutoLayout(value) {
   if (config.direction !== undefined && !["horizontal", "vertical"].includes(config.direction)) invalid("config.direction", "horizontal or vertical", config.direction);
   for (const key of ["gap", "padding"]) if (config[key] !== undefined) finite(config[key], `config.${key}`, 0, MAX_SIZE);
   for (const key of ["wrap"]) if (config[key] !== undefined && typeof config[key] !== "boolean") invalid(`config.${key}`, "a boolean", config[key]);
-  if (config.alignment !== undefined && !["start", "center", "end", "stretch", "space-between"].includes(config.alignment)) invalid("config.alignment", "a supported alignment", config.alignment);
+  if (config.alignment !== undefined && !["start", "center", "end", "space-between"].includes(config.alignment)) invalid("config.alignment", "start, center, end or space-between", config.alignment);
   return config;
 }
 

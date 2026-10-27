@@ -29,6 +29,8 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
           id: "frame_hero",
           name: "Hero Section",
           type: "frame",
+          kind: "group",
+          isFrame: true,
           x: 100,
           y: 200,
           width: 800,
@@ -149,7 +151,7 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
       layerId: "frame_hero",
     });
 
-    expect(result.root.kind).toBe("frame");
+    expect(result.root.kind).toBe("group");
     expect(result.root.parentId).toBe(null);
 
     const cta = result.children.find((child) => child.id === "btn_cta");
