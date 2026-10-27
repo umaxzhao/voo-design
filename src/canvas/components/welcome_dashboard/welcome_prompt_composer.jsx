@@ -138,7 +138,7 @@ export function WelcomePromptComposer({
           </ul>
         )}
 
-        <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="welcome-prompt-controls-row mt-2 flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => onAddAttachments?.()}
@@ -149,7 +149,7 @@ export function WelcomePromptComposer({
             <Plus size={14} />
           </button>
 
-          <div className="flex min-w-0 items-center gap-1">
+          <div className="welcome-prompt-control-actions flex min-w-0 flex-1 items-center gap-1">
             <button
               type="button"
               onClick={() => (configNeeded ? onOpenSettings?.() : setAdvancedOpen((open) => !open))}
@@ -160,7 +160,7 @@ export function WelcomePromptComposer({
               }`}
             >
               <ProviderLogo providerId={providerLogoId} size={14} />
-              <span className="truncate">{selectedModelName}</span>
+              <span className="min-w-0 flex-1 truncate">{selectedModelName}</span>
             </button>
 
             <button
