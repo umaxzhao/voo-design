@@ -12,6 +12,12 @@ export default {
   "designSystem.editorialDescription": "Reading and publishing layouts",
   "designSystem.analytics": "Analytics",
   "designSystem.analyticsDescription": "Data dense dashboards",
+  "designSystem.axiom": "AXIOM",
+  "designSystem.axiomDescription": "Avant-garde editorial tech: paper ground, visible hairline grid, poster type and one signal orange",
+  "designSystem.voidOs": "VOID OS",
+  "designSystem.voidOsDescription": "Dark operator console: mint signal, monospaced data and dense, restrained monitoring UI",
+  "designSystem.bloom": "BLOOM",
+  "designSystem.bloomDescription": "Soft-pop trend: cream ground, raspberry pink, oversized radii and sticker badges",
   "node.layout.media.mobile": "Mobile app",
   "node.layout.skill.mobile": "Mobile UI",
   "node.layout.skill.mobileDesc":

@@ -90,7 +90,7 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(html).toContain("数据看板");
     expect(html).toContain("移动钱包");
     expect(html).toContain("1440 × 900 px");
-    expect(html.match(/data-testid="use-template"/g)).toHaveLength(6);
+    expect(html.match(/data-testid="use-template"/g)).toHaveLength(COMMUNITY_TEMPLATES.length);
     expect(html).toContain("预览: 数据看板");
     expect(html).not.toContain("Alex Rivera");
     expect(html).not.toContain("lucide-heart");

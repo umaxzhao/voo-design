@@ -37,10 +37,12 @@ function fakeEditor(doc = {}) {
 beforeEach(() => setSetting(CUSTOM_DESIGN_SYSTEMS_SETTING, null));
 
 describe("design system registry", () => {
-  it("lists the five built-in presets as read-only, valid document systems", () => {
+  it("lists the built-in presets as read-only, valid document systems", () => {
     const presets = listDesignSystems().filter((system) => system.builtIn);
-    expect(presets.map((system) => system.id)).toEqual(["studio", "wellness", "commerce", "editorial", "analytics"]);
     expect(presets.map((system) => system.id)).toEqual(Object.keys(DESIGN_SYSTEMS));
+    expect(presets.map((system) => system.id)).toEqual(
+      expect.arrayContaining(["studio", "wellness", "commerce", "editorial", "analytics", "axiom", "void-os", "bloom"]),
+    );
     for (const preset of presets) {
       expect(() => validateDesignTokens(preset.designTokens)).not.toThrow();
       expect(preset.designMd).toContain(preset.id);

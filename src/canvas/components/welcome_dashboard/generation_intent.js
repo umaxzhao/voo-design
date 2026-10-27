@@ -7,9 +7,14 @@
  * DOM events, component mount order, or which panel is currently open.
  */
 import { STYLE_KITS } from "../../agent/design_quality/style_kits.js";
+import { DESIGN_SYSTEMS } from "../../design_systems.js";
+import { fromDesignSystemPreset } from "../../agent/design_system/from-preset.js";
 import { AI_GEN_TYPES } from "./welcome_constants.js";
 
 export const DEFAULT_STYLE_ID = "auto";
+export const DEFAULT_DESIGN_SYSTEM_ID = "auto";
+/** Curated signature systems offered by the welcome composer. */
+export const SIGNATURE_DESIGN_SYSTEM_IDS = Object.freeze(["axiom", "void-os", "bloom"]);
 export const MAX_REFERENCE_IMAGES = 4;
 export const MAX_REFERENCE_BYTES = 10 * 1024 * 1024;
 
@@ -36,6 +41,37 @@ export function sizeOptions() {
   return sizes;
 }
 
+/** Picker options: automatic routing first, then the signature collection. */
+export function designSystemOptions(t = (key) => key) {
+  return [
+    { id: DEFAULT_DESIGN_SYSTEM_ID, label: t("designSystem.auto"), description: "" },
+    ...SIGNATURE_DESIGN_SYSTEM_IDS.filter((id) => DESIGN_SYSTEMS[id]).map((id) => ({
+      id,
+      label: t(DESIGN_SYSTEMS[id].labelKey),
+      description: t(DESIGN_SYSTEMS[id].descriptionKey),
+    })),
+  ];
+}
+
+export function designSystemById(id) {
+  if (!id || id === DEFAULT_DESIGN_SYSTEM_ID) return null;
+  const system = DESIGN_SYSTEMS[id];
+  if (!system) throw new Error(`unknown-design-system:${id}`);
+  return system;
+}
+
+/** Resolved contract + brief for an explicitly selected signature system. */
+export function resolveDesignSystemIntent(id, t = (key) => key, locale = "en") {
+  const system = designSystemById(id);
+  if (!system) return null;
+  const name = t(system.labelKey);
+  return {
+    id: system.id,
+    name,
+    contract: fromDesignSystemPreset(system, { locale, name }),
+  };
+}
+
 export function presetById(id) {
   return AI_GEN_TYPES.find((preset) => preset.id === id) ?? AI_GEN_TYPES[0];
 }
@@ -51,10 +87,14 @@ export function styleById(id) {
  * tokens. The agent receives the same scene kind + style id structurally too;
  * this text keeps the model oriented even when it runs its own tool loop.
  */
-export function buildGenerationPrompt({ preset, prompt, styleId, t = (key) => key }) {
+export function buildGenerationPrompt({ preset, prompt, styleId, designSystem, t = (key) => key }) {
   const sections = [String(prompt ?? "").trim()];
   if (preset?.guidance) {
     sections.push(`Creation guide — ${t(preset.label)}:\n${t(preset.guidance)}`);
+  }
+  if (designSystem?.contract) {
+    sections.push(`Design system — ${designSystem.name}:\n${designSystem.contract.designMd}`);
+    return sections.filter(Boolean).join("\n\n");
   }
   const style = styleById(styleId);
   if (style) {
@@ -76,10 +116,12 @@ export function buildGenerationIntent({
   preset,
   prompt,
   styleId = DEFAULT_STYLE_ID,
+  designSystemId = DEFAULT_DESIGN_SYSTEM_ID,
   modelId = "",
   size = null,
   attachments = [],
   candidates = 1,
+  locale = "en",
   t = (key) => key,
   now = () => Date.now(),
 } = {}) {
@@ -87,21 +129,25 @@ export function buildGenerationIntent({
   const width = Math.round(Number(size?.width ?? activePreset.width));
   const height = Math.round(Number(size?.height ?? activePreset.height));
   const style = styleById(styleId);
+  const designSystem = resolveDesignSystemIntent(designSystemId, t, locale);
   const references = (attachments ?? []).filter((item) => item?.kind === "image");
   const variantCount = Math.max(1, Math.min(3, Math.round(Number(candidates) || 1)));
   return {
     id: `gen_${now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
-    prompt: buildGenerationPrompt({ preset: activePreset, prompt, styleId, t }),
+    prompt: buildGenerationPrompt({ preset: activePreset, prompt, styleId, designSystem, t }),
     kind: activePreset.id,
     kindLabel: t(activePreset.label),
     frame: { width, height },
-    styleId: style?.id ?? DEFAULT_STYLE_ID,
-    styleName: style?.name ?? "",
+    styleId: designSystem ? DEFAULT_STYLE_ID : (style?.id ?? DEFAULT_STYLE_ID),
+    styleName: designSystem?.name ?? style?.name ?? "",
+    designSystemId: designSystem?.id ?? DEFAULT_DESIGN_SYSTEM_ID,
+    designSystemName: designSystem?.name ?? "",
+    designSystemContract: designSystem?.contract ?? null,
     modelId,
     attachments: [...(attachments ?? [])],
     referenceCount: references.length,
     candidates: variantCount,
-    badge: `${t(activePreset.label)} · ${style?.name ?? t("welcome.prompt.styleAuto")} · ${width}×${height}${
+    badge: `${t(activePreset.label)} · ${designSystem?.name ?? style?.name ?? t("welcome.prompt.styleAuto")} · ${width}×${height}${
       variantCount > 1 ? ` · ${variantCount}×` : ""
     }`,
     origin: "welcome",
@@ -117,6 +163,9 @@ export function generationContextText(intent) {
     "frame=" + `${intent.frame?.width ?? 0}x${intent.frame?.height ?? 0}`,
     "style=" + (intent.styleId && intent.styleId !== DEFAULT_STYLE_ID ? intent.styleId : "auto"),
   ];
+  if (intent.designSystemId && intent.designSystemId !== DEFAULT_DESIGN_SYSTEM_ID) {
+    parts.push("designSystem=" + intent.designSystemId);
+  }
   if (intent.modelId) parts.push("model=" + intent.modelId);
   parts.push("references=" + (intent.referenceCount ?? 0));
   if ((intent.candidates ?? 1) > 1) parts.push("candidates=" + intent.candidates);

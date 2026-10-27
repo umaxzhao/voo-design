@@ -184,6 +184,9 @@ export default {
   "welcome.prompt.candidates": "候选数量",
   "welcome.prompt.candidatesHint": "一次生成多个并排候选，保留最满意的一个",
   "welcome.prompt.candidateN": "{n} 个候选",
+  "welcome.prompt.designSystem": "设计系统",
+  "welcome.prompt.designSystemAuto": "自动选择设计系统",
+  "welcome.prompt.designSystemOverridesStyle": "色彩与字体由所选设计系统决定",
   "welcome.menu.sortAndView": "排序与视图",
   "welcome.menu.import": "导入与打开",
 };

@@ -57,13 +57,22 @@ describe("empty tool panels", () => {
 });
 
 describe("fill tool options", () => {
-  it("does not show the unsupported tolerance / contiguous / sample controls", () => {
+  it("shows tolerance and contiguous now that the bucket uses them", () => {
     const html = renderToStaticMarkup(
-      <GradientProperties tool={TOOL.FILL} />,
+      <GradientProperties
+        tool={TOOL.FILL}
+        fillTolerance={32}
+        onFillTolerance={() => {}}
+        fillContiguous
+        onFillContiguous={() => {}}
+        fillSampleAll={false}
+        onFillSampleAll={() => {}}
+      />,
     );
-    expect(html).not.toContain("editor.fill.tolerance");
-    expect(html).not.toContain("editor.fill.contiguous");
-    expect(html).not.toContain("editor.fill.sampleAll");
+    expect(html).toContain("editor.fill.tolerance");
+    expect(html).toContain("editor.fill.contiguous");
+    expect(html).toContain("editor.fill.sampleAll");
+    expect(html).toContain('aria-checked="false"');
   });
 });
 

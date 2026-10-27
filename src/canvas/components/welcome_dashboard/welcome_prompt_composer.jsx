@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Plus, SlidersHorizontal, X } from "lucide-react";
 import { AI_GEN_TYPES } from "./welcome_constants.js";
-import { DEFAULT_STYLE_ID } from "./generation_intent.js";
+import { DEFAULT_DESIGN_SYSTEM_ID, DEFAULT_STYLE_ID } from "./generation_intent.js";
 import FlatSelect from "../flat_select.jsx";
 import { ProviderLogo } from "../provider_icons.jsx";
 
@@ -23,6 +23,9 @@ export function WelcomePromptComposer({
   styleId,
   styleOptions,
   onSelectStyle,
+  designSystemId = DEFAULT_DESIGN_SYSTEM_ID,
+  designSystemOptions = [],
+  onSelectDesignSystem,
   size,
   sizeOptions,
   onSelectSize,
@@ -238,6 +241,7 @@ export function WelcomePromptComposer({
               <FlatSelect
                 value={styleId ?? DEFAULT_STYLE_ID}
                 onChange={(value) => onSelectStyle?.(value)}
+                disabled={designSystemId !== DEFAULT_DESIGN_SYSTEM_ID}
                 label={t("welcome.prompt.styleLabel")}
                 options={[
                   { value: DEFAULT_STYLE_ID, label: t("welcome.prompt.styleAuto") },
@@ -246,6 +250,22 @@ export function WelcomePromptComposer({
                     label: style.name,
                   })),
                 ]}
+                className="welcome-composer-select w-full min-w-0"
+                triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs"
+                panelClassName="!z-[400]"
+                portal
+              />
+            </ComposerField>
+
+            <ComposerField label={t("welcome.prompt.designSystem")}>
+              <FlatSelect
+                value={designSystemId}
+                onChange={(value) => onSelectDesignSystem?.(value)}
+                label={t("welcome.prompt.designSystem")}
+                options={(designSystemOptions ?? []).map((system) => ({
+                  value: system.id,
+                  label: system.label,
+                }))}
                 className="welcome-composer-select w-full min-w-0"
                 triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs"
                 panelClassName="!z-[400]"

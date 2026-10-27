@@ -1,3 +1,5 @@
+import { createSignatureDesignSystems } from "./design-system-signatures.js";
+
 /** Artifact design systems. These tokens style generated canvases, not VOO chrome. */
 const SPACING = Object.freeze({
   xs: 4,
@@ -17,14 +19,21 @@ function defineSystem(
   fonts,
   type,
   keywords,
+  options = {},
 ) {
+  const spacing = options.spacing ?? SPACING;
+  const radius = options.radius ?? RADIUS;
+  const resolvedFonts = options.fontsLabel ? { ...fonts, label: options.fontsLabel } : fonts;
   return Object.freeze({
     id,
     labelKey,
     descriptionKey,
     keywords,
+    // Extra art-direction lines appended to the generated brief, per locale.
+    briefZh: Object.freeze([...(options.brief?.zh ?? [])]),
+    briefEn: Object.freeze([...(options.brief?.en ?? [])]),
     tokens: {
-      primitive: { colors, spacing: SPACING, radius: RADIUS, fonts, type },
+      primitive: { colors, spacing, radius, fonts: resolvedFonts, type },
       semantic: {
         canvas: "paper",
         surface: "white",
@@ -172,6 +181,7 @@ export const DESIGN_SYSTEMS = Object.freeze({
     },
     ["analytics", "dashboard", "metrics", "仪表盘", "数据"],
   ),
+  ...createSignatureDesignSystems(defineSystem),
 });
 
 const INTENT_RULES = [
@@ -191,6 +201,9 @@ const INTENT_RULES = [
     "editorial",
     /\b(editorial|magazine|publication|reading)\b|杂志|出版|阅读|期刊/i,
   ],
+  ["axiom", /\b(avant[- ]garde|poster|editorial tech|brutalist)\b|前卫|先锋|海报|技术编辑/i],
+  ["void-os", /\b(terminal|operator|cyber|dark console|command)\b|终端|控制台|赛博|监控/i],
+  ["bloom", /\b(playful|soft pop|y2k|candy|cute)\b|潮流|活泼|多巴胺|可爱|糖果/i],
 ];
 
 /** Explicit ids are strict; auto-selection uses the artifact brief. */
@@ -245,7 +258,7 @@ const BRIEF_COPY = {
     title: (id) => `【Design System: ${id}】所有页面使用同一套 token。`,
     colors: (palette) => `语义颜色（只使用这些精确色值）：${palette}。`,
     type: (p, t) =>
-      `字体：标题 ${p.fonts.heading}，正文 ${p.fonts.body}。字号：展示 ${t.display}px，页面标题 ${t.title}px，正文 ${t.body}px，辅助 ${t.caption}px。`,
+      `字体：标题 ${p.fonts.heading}，正文 ${p.fonts.body}${p.fonts.label ? `，标签与数字 ${p.fonts.label}` : ""}。字号：展示 ${t.display}px，页面标题 ${t.title}px，正文 ${t.body}px，辅助 ${t.caption}px。`,
     spacing: (spaces, r) =>
       `间距基于 4px：${spaces}px；圆角：控件 ${r.control}px，卡片 ${r.card}px，面板 ${r.panel}px。`,
     components: (v) =>
@@ -258,7 +271,7 @@ const BRIEF_COPY = {
     colors: (palette) =>
       `Semantic colors (use only these exact values): ${palette}.`,
     type: (p, t) =>
-      `Fonts: headings ${p.fonts.heading}, body ${p.fonts.body}. Type sizes: display ${t.display}px, page title ${t.title}px, body ${t.body}px, caption ${t.caption}px.`,
+      `Fonts: headings ${p.fonts.heading}, body ${p.fonts.body}${p.fonts.label ? `, labels and numerals ${p.fonts.label}` : ""}. Type sizes: display ${t.display}px, page title ${t.title}px, body ${t.body}px, caption ${t.caption}px.`,
     spacing: (spaces, r) =>
       `Spacing on a 4px base: ${spaces}px; radii: control ${r.control}px, card ${r.card}px, panel ${r.panel}px.`,
     components: (v) =>
@@ -286,6 +299,7 @@ export function buildDesignSystemBrief(
     .map(([role, value]) => `${role}=${value}`)
     .join(", ");
   const spaces = Object.values(primitive.spacing).join(" / ");
+  const notes = locale === "zh" ? system.briefZh : system.briefEn;
   return [
     copy.title(system.id),
     copy.colors(palette),
@@ -302,6 +316,7 @@ export function buildDesignSystemBrief(
       navHeight: component.navigation.height,
       navActive: colors[component.navigation.active],
     }),
+    ...(Array.isArray(notes) ? notes : []),
     copy.states,
   ].join("\n");
 }

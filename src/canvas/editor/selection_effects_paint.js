@@ -1,3 +1,4 @@
+import { resolveBucketSelection } from "./paint-bucket-selection.js";
 /**
  * Painting, stroking, gradient, and path-to-selection effects for active selections.
  */
@@ -170,6 +171,7 @@ export function createSelectionPaintEffects({
   commitPaintBucket,
   commitSelectionEffect,
   getGradientToolState = null,
+  getWandComposite = null,
   getFillOpacity = null,
   getGradientOpacity = null,
 }) {
@@ -259,7 +261,7 @@ export function createSelectionPaintEffects({
       Math.min(1, Number(options.opacity ?? getFillOpacity?.() ?? 1)),
     );
     const doc = getDoc();
-    const current = getPixelSelection();
+    let current = getPixelSelection();
     const selectedId = selection.getId();
     let node = current?.nodeId
       ? findNode(doc, current.nodeId)
@@ -292,6 +294,16 @@ export function createSelectionPaintEffects({
 
     const bitmap = cache.get(node);
     if (!bitmap) return false;
+    // Bucket tolerance: when the click came from the Fill tool and no pixel
+    // selection exists yet, derive the contiguous region from the clicked
+    // pixel before filling it. Without a point (panel fill / shortcut) this
+    // keeps the historical whole-layer behaviour.
+    if ((!current?.contours?.length) && options.point && options.tolerance != null) {
+      const bucket = resolveBucketSelection({ bitmap, node, ...options, getComposite: getWandComposite });
+      // An out-of-bounds/empty bucket must never fall through to whole-layer fill.
+      if (!bucket) return false;
+      current = bucket;
+    }
     const bWidth = bitmap.naturalWidth ?? bitmap.width;
     const bHeight = bitmap.naturalHeight ?? bitmap.height;
     const scaleX = bWidth / (node.width || bWidth);

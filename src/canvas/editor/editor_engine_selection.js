@@ -201,8 +201,8 @@ export function createEngineSelectionController({
     notify();
   }
 
-  function getWandComposite() {
-    if (!wandSampleAll) return null;
+  function getWandComposite(force = false) {
+    if (!force && !wandSampleAll) return null;
     const canvas = exporter.exportPngCanvas?.();
     if (!canvas) return null;
     const page = effectivePage(getDoc());

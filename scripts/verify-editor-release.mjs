@@ -13,7 +13,7 @@ const commands = [
   ["npm", ["run", "build"]],
   ["npm", ["run", "lint:design"]],
   ["npm", ["test"]],
-  ...["editor-effects", "agent-paint-text", "layout-mask-audit", "inspector-controls", "drawing-retouch"]
+  ...["editor-effects", "agent-paint-text", "layout-mask-audit", "inspector-controls", "drawing-retouch", "pending-integration"]
     .map((suite) => [process.execPath, [`tests/e2e/${suite}.e2e.mjs`]]),
 ];
 const results = [];

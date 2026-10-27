@@ -87,7 +87,30 @@ export default function ColorVariablesSection({
     canCreate,
   ]);
 
-  const active = variables.find((item) => item.id === object.fillVariableId);
+  // v2-only colour variables never enter the legacy `doc.colorVariables`
+  // mirror, so the binding dropdown lists the live model's colour variables
+  // when one exists (D13). Legacy docs keep their original list.
+  const bindableVariables = useMemo(() => {
+    if (!liveModel) return variables;
+    return panelModel.collections.flatMap((collection) => {
+      const modeId =
+        panelModel.activeModeByCollection?.[collection.id] ??
+        collection.modes?.[0]?.id;
+      return collection.variables
+        .filter((variable) => variable.type === "color")
+        .map((variable) => ({
+          id: variable.id,
+          name: variable.name,
+          value: variable.valuesByMode?.[modeId],
+          modeId,
+        }))
+        .filter((variable) => typeof variable.value === "string");
+    });
+  }, [liveModel, panelModel, variables]);
+
+  const active = bindableVariables.find((item) => item.id === object.fillVariableId);
+  const bindVariable = (id) =>
+    liveModel && variableActions ? panelActions.bind?.(id) : onBind(id);
   const displayName = (item) =>
     item.id.startsWith("system:") && item.name === item.id.split(":").at(-1)
       ? t(`editor.variables.token.${item.name}`)
@@ -154,12 +177,12 @@ export default function ColorVariablesSection({
             aria-label={t("editor.variables.binding")}
             className="w-full appearance-none rounded-xl bg-[#222222] pl-8 pr-7 py-1.5 text-[11px] font-mono text-neutral-200 outline-none hover:bg-[#282828] focus:bg-[#282828] focus:ring-1 focus:ring-white/20 transition-colors cursor-pointer"
             value={active?.id ?? ""}
-            onChange={(event) => onBind(event.target.value || null)}
+            onChange={(event) => bindVariable(event.target.value || null)}
           >
             <option value="" className="bg-[#1e1e1e] text-neutral-300">
               {t("editor.variables.unlinked")}
             </option>
-            {variables.map((item) => (
+            {bindableVariables.map((item) => (
               <option
                 key={item.id}
                 value={item.id}
@@ -185,7 +208,11 @@ export default function ColorVariablesSection({
               onBlur={(event) => {
                 const name = event.target.value.trim();
                 if (name && name !== displayName(active)) {
-                  onUpdate(active.id, { name });
+                  if (liveModel && variableActions) {
+                    panelActions.renameVariable?.(active.id, name);
+                  } else {
+                    onUpdate(active.id, { name });
+                  }
                 }
               }}
               className="min-w-0 flex-1 rounded-lg bg-[#222222] px-2 py-1 text-[11px] font-mono text-neutral-200 outline-none focus:bg-[#282828] focus:ring-1 focus:ring-white/20"
@@ -193,11 +220,17 @@ export default function ColorVariablesSection({
             <HexField
               value={active.value}
               ariaLabel={t("editor.variables.value")}
-              onCommit={(value) => onUpdate(active.id, { value })}
+              onCommit={(value) => {
+                if (liveModel && variableActions) {
+                  panelActions.updateValue?.(active.id, active.modeId, value);
+                } else {
+                  onUpdate(active.id, { value });
+                }
+              }}
             />
             <button
               type="button"
-              onClick={() => onBind(null)}
+              onClick={() => bindVariable(null)}
               title={t("editor.variables.unlinked")}
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white transition-colors"
             >
@@ -207,7 +240,11 @@ export default function ColorVariablesSection({
               <button
                 type="button"
                 data-testid="editor-color-variable-delete"
-                onClick={() => onDelete(active.id)}
+                onClick={() =>
+                  liveModel && variableActions?.deleteVariable
+                    ? variableActions.deleteVariable(active.id)
+                    : onDelete(active.id)
+                }
                 title={t("editor.variables.delete")}
                 aria-label={t("editor.variables.delete")}
                 className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"

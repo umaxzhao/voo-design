@@ -57,6 +57,11 @@ export function createEngineBrushController({
   // applied at paint time; they are not layer opacity.
   let fillOpacity = 1;
   let gradientOpacity = 1;
+  // Fill tool tolerance: the bucket samples the clicked pixel with this
+  // distance before replacing the contiguous region.
+  let fillTolerance = 32;
+  let fillContiguous = true;
+  let fillSampleAll = false;
   // Shape-tool paint: the colour wheel is the fill, these are the other axes.
   let shapeStrokeColor = "#FFFFFF";
   let shapeStrokeWidth = 1;
@@ -219,6 +224,22 @@ export function createEngineBrushController({
     getArrowEnd: () => arrowEnd,
     setArrowEnd(next) {
       arrowEnd = Boolean(next);
+      notify?.();
+    },
+    getFillTolerance: () => fillTolerance,
+    setFillTolerance(next) {
+      const value = Number(next);
+      fillTolerance = Number.isFinite(value) ? Math.max(0, Math.min(255, value)) : 32;
+      notify?.();
+    },
+    getFillContiguous: () => fillContiguous,
+    setFillContiguous(next) {
+      fillContiguous = Boolean(next);
+      notify?.();
+    },
+    getFillSampleAll: () => fillSampleAll,
+    setFillSampleAll(next) {
+      fillSampleAll = Boolean(next);
       notify?.();
     },
     getFillOpacity: () => fillOpacity,

@@ -73,9 +73,9 @@ export default function ImageContextActions({
         className="flex flex-col gap-2 pb-1"
       >
         <HistogramStrip bitmap={bitmap} />
-        <div className="grid grid-cols-2 gap-1.5">
-          <label className="col-span-2 flex min-h-8 items-center justify-between gap-2 rounded-lg bg-white/[0.04] px-2 text-[10px] text-neutral-400">
-            <span>{t("editor.frequencySeparation.radius")}</span>
+        <div className="flex items-stretch gap-1.5">
+          <label className="flex min-h-8 min-w-0 flex-1 items-center justify-between gap-1 rounded-lg bg-white/[0.04] px-2 text-[10px] text-neutral-400">
+            <span className="truncate">{t("editor.frequencySeparation.radius")}</span>
             <input
               ref={frequencyRadiusRef}
               type="number"
@@ -83,13 +83,13 @@ export default function ImageContextActions({
               max="100"
               defaultValue="10"
               aria-label={t("editor.frequencySeparation.radius")}
-              className="h-6 w-14 rounded-md border border-white/10 bg-neutral-900 px-1 text-right text-[11px] text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
+              className="h-6 w-12 shrink-0 rounded-md border border-white/10 bg-neutral-900 px-1 text-right text-[11px] text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
             />
           </label>
           <button
             type="button"
             aria-label={t("editor.frequencySeparation.action")}
-            className={`${ACTION_BUTTON_CLASS} col-span-2`}
+            className={`${ACTION_BUTTON_CLASS} min-w-0 flex-1 truncate px-2 text-center`}
             onClick={applyFrequencySeparation}
           >
             {t("editor.frequencySeparation.action")}

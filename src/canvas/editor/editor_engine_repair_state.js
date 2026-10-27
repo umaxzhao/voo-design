@@ -75,6 +75,7 @@ export function createEngineRepairController({
     getColor,
     getBackgroundColor,
     getGradientToolState,
+    getWandComposite: selectionController.getWandComposite,
     selection,
     getPixelSelection: selectionController.getPixelSelection,
     setPixelSelection: selectionController.setPixelSelection,

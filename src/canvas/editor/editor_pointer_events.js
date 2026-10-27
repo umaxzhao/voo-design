@@ -28,7 +28,13 @@ export function createPointerDownDispatcher({
       const fillCol = event.altKey
         ? api.getToolBackgroundColor?.() ?? api.getBackgroundColor?.() ?? "#ffffff"
         : api.getColor();
-      void api.fillSelection?.(fillCol, { opacity: api.getFillOpacity?.() ?? 1 });
+      void api.fillSelection?.(fillCol, {
+        opacity: api.getFillOpacity?.() ?? 1,
+        point: api.toDocPoint(event.clientX, event.clientY),
+        tolerance: api.getFillTolerance?.() ?? 32,
+        contiguous: api.getFillContiguous?.() ?? true,
+        sampleAll: api.getFillSampleAll?.() ?? false,
+      });
     } else if (api.getTool() === TOOL.GRADIENT) {
       setGesture({
         kind: "gradient",

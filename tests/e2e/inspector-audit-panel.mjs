@@ -9,6 +9,8 @@ import AffinityAdjustmentSection from "../../src/canvas/components/editor_proper
 import { normalizeAdjustments } from "../../src/canvas/editor/scene_model.js";
 import { useI18n } from "../../src/canvas/use_i18n.js";
 import PropertiesPanelMaskToolbar from "../../src/canvas/components/editor_properties/properties_panel_mask_toolbar.jsx";
+import ColorVariablesSection from "../../src/canvas/components/editor_properties/color_variables_section.jsx";
+import { createVariablesPanelActions, bindColorVariable } from "../../src/canvas/editor/scene_variables.js";
 
 /** Mount the actual inspector against the real engine, without faking callbacks. */
 export function mountAuditPanel(kind, id) {
@@ -35,6 +37,12 @@ export function mountAuditPanel(kind, id) {
     if (kind === "filters") return React.createElement(LiveFilterStack, props);
     if (kind === "adjustment") return React.createElement(AffinityAdjustmentSection, { ...props, adjustments: normalizeAdjustments(object.adjustments) });
     if (kind === "export") return React.createElement(ExportSection, props);
+    if (kind === "variables") return React.createElement(ColorVariablesSection, {
+      object, variables: editor.getDocument().colorVariables ?? [], variablesV2: editor.getDocument().variablesV2, revealed: true,
+      onCreate: () => {}, onBind: (value) => editor.setDoc(bindColorVariable(editor.getDocument(), id, value)),
+      onUpdate: () => {}, variableActions: createVariablesPanelActions({ getDocument: editor.getDocument,
+        commit: editor.setDoc, getNodeId: () => id, historyName: "editor.history.entry.variables" }),
+    });
     if (kind === "mask") return React.createElement(PropertiesPanelMaskToolbar, {
       maskEditing: editor.getMaskEdit(), hasMask: Boolean(object.maskId), maskBusy: false, feather, setFeather, t,
       maskActions: { onMode: (value) => editor.setMaskMode(value), onSize: (value) => editor.setMaskBrushSize(value),

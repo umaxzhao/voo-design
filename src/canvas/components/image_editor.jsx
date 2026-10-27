@@ -1031,25 +1031,28 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     },
     [isNarrow, mobileLayersExpanded, mobilePropertiesExpanded],
   );
-  const onMobilePanelPointerMoveCapture = useCallback((event) => {
-    const drag = mobilePanelDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    const deltaY = event.clientY - drag.startY;
-    if (deltaY < -10) {
-      mobilePanelDragRef.current = null;
-      return;
-    }
-    if (deltaY < 10) return;
-    event.preventDefault();
-    event.stopPropagation();
-    drag.dragged = true;
-    if (deltaY < 28) return;
-    if (drag.panelId === "editor-layers-panel") {
-      setMobileLayersExpanded(false);
-    } else {
-      setMobilePropertiesExpanded(false);
-    }
-  }, []);
+  const onMobilePanelPointerMoveCapture = useCallback(
+    (event) => {
+      const drag = mobilePanelDragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      const deltaY = event.clientY - drag.startY;
+      if (deltaY < -10) {
+        mobilePanelDragRef.current = null;
+        return;
+      }
+      if (deltaY < 10) return;
+      event.preventDefault();
+      event.stopPropagation();
+      drag.dragged = true;
+      if (deltaY < 28) return;
+      if (drag.panelId === "editor-layers-panel") {
+        setMobileLayersExpanded(false);
+      } else {
+        setMobilePropertiesExpanded(false);
+      }
+    },
+    [],
+  );
   const onMobilePanelPointerUpCapture = useCallback((event) => {
     const drag = mobilePanelDragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
@@ -4782,6 +4785,12 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 return;
               }
               if (!selected) return;
+              // The engine owns frame geometry and descendant constraints as one edit.
+              if (selected.isFrame && selectedIds.length === 1 && engine?.updateFrameNode &&
+                  ["x", "y", "width", "height"].some((key) => key in patch)) {
+                engine.updateFrameNode(selected.id, patch, { commit: false });
+                return;
+              }
               // With several layers selected an edit reaches every selected
               // layer of the same kind (plan 1.9): a text-style patch must
               // not land on an image layer in a mixed selection.

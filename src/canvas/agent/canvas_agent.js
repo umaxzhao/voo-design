@@ -135,6 +135,7 @@ export async function runAgentTurn({
   styleNote = "",
   styleId = null,
   sceneKind = null,
+  designSystem = null,
   streamStep = streamChatTurn,
   htmlPipeline = true,
   onProgress,
@@ -169,6 +170,7 @@ export async function runAgentTurn({
         brief,
         frame: variantFrame,
         styleKitId: styleId,
+        designSystem,
         editor, streamStep, config, signal,
         onProgress,
         chooseDirection: chooseDirection
@@ -195,14 +197,15 @@ export async function runAgentTurn({
   const before = documentFingerprint(editor);
   const explicitKit = styleId ? STYLE_KITS[styleId] : null;
   const kit = explicitKit && explicitKit.id ? explicitKit : pickStyleKit(userText);
-  let designSystem;
+  let activeDesignSystem = null;
   if (!qualityOff) {
     const doc = editor?.getDocument?.() ?? editor?.getDoc?.();
-    designSystem = getActiveDesignSystem(doc) ?? fromStyleKit(kit);
+    // An explicit welcome-screen choice wins over the document's stored system.
+    activeDesignSystem = designSystem ?? getActiveDesignSystem(doc) ?? fromStyleKit(kit);
     // A prompt fallback must not mutate the document or create an undo entry.
   }
   const documentContext = buildDocumentDesignContext(editor?.getDocument?.());
-  const designPrompt = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit, designSystem, sceneKind })}`;
+  const designPrompt = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit, designSystem: activeDesignSystem, sceneKind })}`;
   const system = designPrompt + documentContext;
   const messages = [
     { role: "system", content: system },
@@ -324,9 +327,9 @@ export async function runAgentTurn({
           const result = await abortable(() => executeTool(call.name, args, toolContext), turnSignal);
           turnSignal.throwIfAborted();
           if (result?.isError || result?.error) throw new Error(JSON.stringify(result));
-          if (!READ_ONLY_TOOLS.has(call.name) && designSystem && editor) {
+          if (!READ_ONLY_TOOLS.has(call.name) && activeDesignSystem && editor) {
             const doc = editor.getDocument?.() ?? editor.getDoc?.();
-            if (doc && !getActiveDesignSystem(doc)) setActiveDesignSystem(editor, designSystem);
+            if (doc && !getActiveDesignSystem(doc)) setActiveDesignSystem(editor, activeDesignSystem);
           }
           failurePending = false;
           if (creationTools.has(call.name)) canvasCreated = true;

@@ -7,7 +7,7 @@ import { critiqueHtml, repairHtml } from './critique.js';
 import { setActiveDesignSystem } from '../design_system/store.js';
 import { fromStyleKit } from '../design_system/from_style_kit.js';
 import { STYLE_KITS } from '../design_quality/style_kits.js';
-export async function runHtmlPipeline({ brief, frame, styleKitId = null, editor, streamStep, config, signal = new AbortController().signal, onProgress, chooseDirection }) {
+export async function runHtmlPipeline({ brief, frame, styleKitId = null, designSystem = null, editor, streamStep, config, signal = new AbortController().signal, onProgress, chooseDirection }) {
   const progress = (stage, status) => onProgress?.({ stage, status });
   const trace = [];
   let stage = 'directions', streamer;
@@ -19,7 +19,11 @@ export async function runHtmlPipeline({ brief, frame, styleKitId = null, editor,
     const choice = chooseDirection ? await chooseDirection(result.value, { signal }) : 'auto';
     signal?.throwIfAborted();
     let direction = pickDirection(result.value, choice);
-    if (styleKitId && STYLE_KITS[styleKitId]) {
+    if (designSystem) {
+      // The user picked a design system on the welcome screen: its contract is
+      // the source of truth, the art-direction model only supplies layout copy.
+      direction = { ...direction, name: designSystem.name, mood: designSystem.colorMode, designSystem };
+    } else if (styleKitId && STYLE_KITS[styleKitId]) {
       // The user explicitly picked a style kit on the welcome screen: it wins
       // over the art-direction model's own palette so the preview matches the
       // choice. Layout/mood text from the direction is kept.

@@ -269,6 +269,7 @@ export default function CanvasAgentPanel({ onClose }) {
           styleNote: getSetting(AGENT_SETTING.STYLE_NOTE) ?? AGENT_DEFAULTS.styleNote,
           styleId: generationIntent?.styleId ?? null,
           sceneKind: generationIntent?.kind ?? null,
+          designSystem: generationIntent?.designSystemContract ?? null,
           frame: generationIntent?.frame ?? null,
           variantCount,
           onVariant: (variant) => setCandidates((current) => [...current, variant]),

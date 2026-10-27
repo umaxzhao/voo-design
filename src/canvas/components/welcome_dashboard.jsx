@@ -10,9 +10,11 @@ import { AGENT_SETTING } from "../agent/canvas_tools.js";
 import { resolveAgentProvider } from "../agent/agent_provider.js";
 import { availableModelGroups, getModelDisplayLabel } from "./agent-panel/model_catalog.js";
 import {
+  DEFAULT_DESIGN_SYSTEM_ID,
   DEFAULT_STYLE_ID,
   MAX_REFERENCE_IMAGES,
   buildGenerationIntent,
+  designSystemOptions,
   readAttachmentFiles,
   sizeOptions,
   styleOptions,
@@ -59,6 +61,7 @@ export default function WelcomeDashboard() {
   const [promptText, setPromptText] = useState("");
   const [modelId, setModelId] = useState(() => getSetting(AGENT_SETTING.MODEL) || DEFAULT_AGENT_MODEL);
   const [styleId, setStyleId] = useState(DEFAULT_STYLE_ID);
+  const [designSystemId, setDesignSystemId] = useState(DEFAULT_DESIGN_SYSTEM_ID);
   const [size, setSize] = useState({ width: AI_GEN_TYPES[0].width, height: AI_GEN_TYPES[0].height });
   const [attachments, setAttachments] = useState([]);
   const [candidates, setCandidates] = useState(1);
@@ -132,7 +135,11 @@ export default function WelcomeDashboard() {
       }
     };
     window.addEventListener(WELCOME_MENU_ACTION_EVENT, handleMobileMenuAction);
-    return () => window.removeEventListener(WELCOME_MENU_ACTION_EVENT, handleMobileMenuAction);
+    return () =>
+      window.removeEventListener(
+        WELCOME_MENU_ACTION_EVENT,
+        handleMobileMenuAction,
+      );
   }, []);
 
   useEffect(() => {
@@ -140,7 +147,9 @@ export default function WelcomeDashboard() {
   }, [mobileSearchOpen]);
 
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent(WELCOME_FOLDERS_EVENT, { detail: folders }));
+    window.dispatchEvent(
+      new CustomEvent(WELCOME_FOLDERS_EVENT, { detail: folders }),
+    );
   }, [folders]);
 
   const handleSelectOnlineTemplate = async (template) => {
@@ -154,6 +163,11 @@ export default function WelcomeDashboard() {
     setActivePill(pillId);
     const preset = AI_GEN_TYPES.find((item) => item.id === pillId);
     if (preset) setSize({ width: preset.width, height: preset.height });
+  };
+
+  const handleSelectDesignSystem = (nextId) => {
+    setDesignSystemId(nextId);
+    if (nextId !== DEFAULT_DESIGN_SYSTEM_ID) setStyleId(DEFAULT_STYLE_ID);
   };
 
   const handleSelectModel = (nextModelId) => {
@@ -191,10 +205,12 @@ export default function WelcomeDashboard() {
           preset: activePreset,
           prompt: userPrompt,
           styleId,
+          designSystemId,
           modelId,
           size,
           attachments,
           candidates,
+          locale,
           t,
         })
       : null;
@@ -404,6 +420,9 @@ export default function WelcomeDashboard() {
               styleId={styleId}
               styleOptions={styleOptions()}
               onSelectStyle={setStyleId}
+              designSystemId={designSystemId}
+              designSystemOptions={designSystemOptions(t)}
+              onSelectDesignSystem={handleSelectDesignSystem}
               size={size}
               sizeOptions={sizeOptions()}
               onSelectSize={setSize}
@@ -435,10 +454,13 @@ export default function WelcomeDashboard() {
               </div>
             )}
 
-            {/* Quick Action Cards (Import Figma / Browser / Recreate) */}
             {mobileSearchOpen && (
               <div className="welcome-mobile-search relative">
-                <Search size={15} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+                <Search
+                  size={15}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
+                />
                 <input
                   ref={mobileSearchRef}
                   type="search"
@@ -451,7 +473,10 @@ export default function WelcomeDashboard() {
                 <button
                   type="button"
                   aria-label={t("welcome.dialog.cancel")}
-                  onClick={() => { setMobileSearchOpen(false); setSearchQuery(""); }}
+                  onClick={() => {
+                    setMobileSearchOpen(false);
+                    setSearchQuery("");
+                  }}
                   className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white"
                 >
                   <X size={14} aria-hidden="true" />
@@ -459,6 +484,7 @@ export default function WelcomeDashboard() {
               </div>
             )}
 
+            {/* Quick Action Cards (Import Figma / Browser / Recreate) */}
             <div className="welcome-quick-imports grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button
                 type="button"

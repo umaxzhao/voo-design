@@ -184,6 +184,9 @@ export default {
   "welcome.prompt.candidates": "Variants",
   "welcome.prompt.candidatesHint": "Generate several candidates side by side and keep the best one",
   "welcome.prompt.candidateN": "{n} variant(s)",
+  "welcome.prompt.designSystem": "Design system",
+  "welcome.prompt.designSystemAuto": "Automatic design system",
+  "welcome.prompt.designSystemOverridesStyle": "Colour and type come from the selected design system",
   "welcome.menu.sortAndView": "Sort & view",
   "welcome.menu.import": "Import & open",
 };

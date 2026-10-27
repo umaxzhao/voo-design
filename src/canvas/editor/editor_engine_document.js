@@ -11,6 +11,7 @@ import {
   commitOrPreviewEditorDocument,
 } from "../undo-action-contracts.js";
 import * as ops from "./doc_ops.js";
+import { reflowFrameNodeResize } from "./document-resize-constraints.js";
 
 export function createEngineDocumentController({
   getDoc,
@@ -80,6 +81,17 @@ export function createEngineDocumentController({
     );
   }
 
+  /** Resize/move a frame node and resolve its constrained children in one doc. */
+  function updateFrameNode(id, patch, options = {}) {
+    const current = getDoc();
+    let next = reflowFrameNodeResize(current, id, patch);
+    const rest = Object.fromEntries(Object.entries(patch).filter(([key]) => !["x", "y", "width", "height"].includes(key)));
+    if (Object.keys(rest).length) next = ops.updateNode(next, id, rest);
+    if (next === current) return false;
+    commitOrPreviewEditorDocument("editor.node.frameResize", setDoc, next, options);
+    return true;
+  }
+
   function updateDocument(patch, options = {}) {
     const current = getDoc();
     const next = ops.updateDocument(current, patch);
@@ -102,6 +114,7 @@ export function createEngineDocumentController({
     },
     setDocumentBackgroundColor,
     updateDocument,
+    updateFrameNode,
     resizeDocumentEdges,
     setDocumentSize,
     minDocSize: MIN_DOC_SIZE,

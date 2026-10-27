@@ -27,11 +27,12 @@ describe("Design systems settings tab", () => {
 
     it("lists the presets and exposes only Duplicate and Use for a built-in system", () => {
       const html = renderToStaticMarkup(<SettingsDesignSystems />);
-      // Cards show the first COLLAPSED_COUNT (6) by default; the five built-in presets all fit, so no "Show more".
+      // Cards show the first COLLAPSED_COUNT (6) by default; the eight built-in
+      // presets overflow, so the collapsed list ends with "Show more".
       for (const id of ["studio", "wellness", "commerce", "editorial", "analytics"]) {
         expect(html).toContain(`data-testid="design-system-item-${id}"`);
       }
-      expect(html).not.toContain('data-testid="design-system-more"');
+      expect(html).toContain('data-testid="design-system-more"');
       expect(html).toContain("Studio");
       expect(html).toContain("Built-in");
       expect(html).toContain("Use for this document");
@@ -42,7 +43,7 @@ describe("Design systems settings tab", () => {
       expect(html).toContain('data-testid="design-token-panel"');
       // The systems are tabs; only the selected system's actions and editor render below them.
       expect(html).toContain('role="tablist"');
-      expect(html.match(/role="tab"/g)).toHaveLength(5);
+      expect(html.match(/role="tab"/g)).toHaveLength(6);
       expect(html.match(/aria-selected="true"/g)).toHaveLength(1);
       expect(html.match(/role="tabpanel"/g)).toHaveLength(1);
       expect(html.match(/data-testid="design-token-panel"/g)).toHaveLength(1);

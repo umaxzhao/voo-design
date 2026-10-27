@@ -698,6 +698,12 @@ export function createTransformPointerGestures(ctx) {
         patch.points = scaleNodePoints(gesture.points, sX, sY);
       }
     }
+    // A frame's children obey constraints while the frame is dragged/resized,
+    // not only when its W/H fields are edited from the panel.
+    if (node?.isFrame && typeof api.updateFrameNode === "function") {
+      api.updateFrameNode(gesture.id, patch, { commit: false, preview: true });
+      return;
+    }
     api.updateNode(gesture.id, patch, { commit: false, preview: true });
   }
 
