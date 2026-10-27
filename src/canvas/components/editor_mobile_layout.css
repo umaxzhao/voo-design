@@ -10,6 +10,8 @@
     padding: 4px;
     overflow: hidden;
     border-radius: 24px;
+    --mobile-frame-inset-radius: calc(24px - 4px);
+    --mobile-content-radius: calc(24px - 4px - 2px);
     background: linear-gradient(
       -90deg,
       rgb(0 0 0) 52%,
@@ -18,7 +20,7 @@
   }
 
   .app-root-frame > .app-title-bar {
-    border-radius: 24px 24px 0 0;
+    border-radius: var(--mobile-frame-inset-radius) var(--mobile-frame-inset-radius) 0 0;
     background: linear-gradient(
       90deg,
       rgb(178 255 214) 0%,
@@ -28,9 +30,21 @@
   }
 
   .app-root-frame > .relative.flex.min-h-0.flex-1 {
-    margin: 0 1px 1px;
+    margin: 0;
     overflow: hidden;
-    border-radius: 0 0 24px 24px;
+    border-radius: 0 0 var(--mobile-frame-inset-radius) var(--mobile-frame-inset-radius);
+  }
+
+  .app-root-frame .editor-shell {
+    border-radius: var(--mobile-frame-inset-radius);
+  }
+
+  .app-root-frame .editor-shell-inner {
+    border-radius: var(--mobile-content-radius);
+  }
+
+  .app-root-frame .editor-welcome-overlay {
+    border-radius: var(--mobile-content-radius);
   }
 
   .app-title-actions > .app-title-desktop-action,

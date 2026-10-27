@@ -118,7 +118,7 @@ export default function App() {
                 agentVisible={agentOpen && !welcomeOpen}
               />
               {welcomeOpen && (
-                <div className="absolute inset-0 z-50 overflow-hidden rounded-3xl bg-[#0c0c0c]">
+                <div className="editor-welcome-overlay absolute inset-0 z-50 overflow-hidden rounded-3xl bg-[#0c0c0c]">
                   <Suspense fallback={null}>
                     <WelcomeDashboard />
                   </Suspense>
