@@ -145,11 +145,28 @@
 
   [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-layers-panel"],
   [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-properties-panel"] {
-    width: calc((100% - 3 * var(--editor-mobile-panel-gap)) / 2);
+    width: calc((100% - 3 * var(--editor-mobile-panel-gap)) * 8 / 17);
   }
 
   [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-properties-panel"] {
-    left: calc(50% + var(--editor-mobile-panel-gap) / 2);
+    left: auto;
+    right: var(--editor-mobile-panel-gap);
+    width: calc((100% - 3 * var(--editor-mobile-panel-gap)) * 9 / 17);
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-layers-panel"],
+  [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-properties-panel"] {
+    font-size: 10px;
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-layers-panel"] [class*="text-[11px]"],
+  [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-properties-panel"] [class*="text-[11px]"] {
+    font-size: 10px;
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-layers-panel"] [class*="text-[12px]"],
+  [data-testid="design-editor"].editor-narrow[data-properties-open="true"] [data-testid="editor-properties-panel"] [class*="text-[12px]"] {
+    font-size: 11px;
   }
 
   [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="false"] [data-testid="editor-layers-panel"],
