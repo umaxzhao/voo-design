@@ -355,6 +355,7 @@ export default function PropertiesPanelSections({
           swapSide={swapSide}
           panelRef={panelRef}
           getBitmap={getBitmap}
+          engine={engine}
         />
       ) : null}
 

@@ -8,7 +8,10 @@ import {
   adjustmentLabelKey,
   SIMPLE_ADJUSTMENTS,
 } from "../../editor/adjustment_kinds.js";
-import { STACK_BLEND_MODES } from "../../editor/live_filter_stack.js";
+import {
+  STACK_BLEND_MODES,
+  normalizeFilterMask,
+} from "../../editor/live_filter_stack.js";
 
 export const DEFAULT_VALUE = 50;
 const PARAM_VALUE_LABELS = {
@@ -21,6 +24,7 @@ export default function LiveFilterStack({
   edit,
   editAndCommit,
   commitNow = null,
+  engine = null,
 }) {
   const { t } = useI18n();
   const blendLabelKey = (mode) =>
@@ -33,6 +37,33 @@ export default function LiveFilterStack({
         entry.id === entryId ? { ...entry, blendMode } : entry,
       ),
     );
+  };
+
+  const selection = engine?.getPixelSelection?.();
+  const selectionContours = selection?.contours ?? [];
+  const maskFromSelection = () => {
+    if (!selectionContours.length || !object?.width || !object?.height) {
+      return null;
+    }
+    const ox = object.x ?? 0;
+    const oy = object.y ?? 0;
+    const contours = selectionContours.map((ring) =>
+      ring.map(([x, y]) => [
+        Number(((x - ox) / object.width).toFixed(4)),
+        Number(((y - oy) / object.height).toFixed(4)),
+      ]),
+    );
+    return normalizeFilterMask({ contours });
+  };
+  const setEntryMask = (entry, mask) => {
+    editAndCommit({
+      adjustments: {
+        ...(object.adjustments ?? {}),
+        liveFilters: liveFilters.map((item) =>
+          item.id === entry.id ? { ...item, mask } : item,
+        ),
+      },
+    });
   };
 
   const setStack = (stack) => {
@@ -140,6 +171,35 @@ export default function LiveFilterStack({
               className="px-1 text-[10px] text-neutral-400 hover:text-white"
             >
               ↓
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setEntryMask(
+                  entry,
+                  entry.mask ? null : maskFromSelection(),
+                )
+              }
+              disabled={!entry.mask && selectionContours.length === 0}
+              aria-pressed={Boolean(entry.mask)}
+              aria-label={
+                entry.mask
+                  ? t("editor.liveFilters.maskRemove")
+                  : t("editor.liveFilters.maskFromSelection")
+              }
+              title={
+                entry.mask
+                  ? t("editor.liveFilters.maskRemove")
+                  : t("editor.liveFilters.maskFromSelection")
+              }
+              data-testid={`live-filter-mask-${entry.kind}`}
+              className={`px-1 text-[10px] font-mono disabled:cursor-default disabled:opacity-30 ${
+                entry.mask
+                  ? "text-[#a7ffd4] hover:text-white"
+                  : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              M
             </button>
             <button
               type="button"

@@ -48,6 +48,7 @@ export default function LayerEffectsSection({
   swapSide = false,
   panelRef = null,
   getBitmap = null,
+  engine = null,
   /** Controlled picker state: the panel's add menu opens the picker for an empty stack. */
   addPickerOpen = undefined,
   onAddPickerChange = undefined,
@@ -467,6 +468,7 @@ export default function LayerEffectsSection({
               edit={_edit}
               editAndCommit={editAndCommit}
               commitNow={_commitNow}
+              engine={engine}
             />
           </div>
         ) : null}
@@ -526,6 +528,8 @@ LayerEffectsSection.propTypes = {
   panelRef: PropTypes.object,
   /** Decoded bitmap lookup, for rendering preset swatches. */
   getBitmap: PropTypes.func,
+  /** Engine handle, used to read the current pixel selection for filter masks. */
+  engine: PropTypes.object,
   addPickerOpen: PropTypes.bool,
   onAddPickerChange: PropTypes.func,
 };

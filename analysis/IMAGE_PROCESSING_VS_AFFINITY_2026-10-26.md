@@ -42,7 +42,7 @@
 
 ### 0.4 本次已落地（2026-10-27，最小改动批）
 
-> 已按「滤镜统一栈化 + Image 区常驻 + 文本属性归位 + picker 搜索/直方图/行内混合」实施。验证：全量 `npx vitest run` **3423 passed / 12 skipped / 390 files**；`npm run lint:design` clean（1109 files）；`npm run build` 通过。运行时截图见 §7.2 的 23–27。
+> 已按「滤镜统一栈化 + Image 区常驻 + 文本属性归位 + picker 搜索/直方图/行内混合/选区蒙版/Layers 子行」实施。验证：本次相关 focused tests **56 passed**；排除 3 个因并行会话“原生 select 改自定义下拉”而待更新的测试文件后，全量 **3653 passed / 12 skipped / 424 files**（当前未排除全量为 3674 passed / 7 failed，失败全部来自那 3 个文件，与本次改动无关）；`npm run lint:design` clean（1109 files）；`npm run build` 通过。运行时截图见 §7.2 的 23–27。
 
 | # | 改动 | 细节 | 落地位置 |
 |---|---|---|---|
@@ -53,9 +53,11 @@
 | 5 | **Effects picker 搜索** | 顶部新增搜索框（中英标签匹配，`⌕` 图标）；无匹配时显示空状态并隐藏预设列；搜索时只显示命中的调整/滤镜/效果/模糊噪点组 | `add_kind_picker.jsx`、`extended-{en,zh}.js` |
 | 6 | **IMAGE 区直方图常驻** | IMAGE TOOLS 顶部加入 64px 直方图条（RGB + 亮度、裁剪读数），随图像/调整实时更新；无 bitmap 时自动隐藏 | `image_context_actions.jsx`、`properties_panel_sections.jsx` |
 | 7 | **Filter stack 行内混合模式** | 每个滤镜栈条新增 blend 下拉（normal/multiply/screen/overlay/darken/lighten/color-dodge/color-burn/hard-light/soft-light/difference/exclusion）；渲染器按 pre-filter 缓冲做 RGB 混合，并纳入 tone 缓存签名与 GPU guard | `live_filter_stack.js`、`live_filter_stack.jsx`、`tone_lut_build.js` |
-| 8 | **验证** | 全量测试 / lint / build 通过；新增 `effects_filter_stack.test.jsx` 覆盖「无独立 section / 栈内渲染 / Add 菜单不再出现 Live Filters / 全 23 kind / blend」 | `tests/unit/effects_filter_stack.test.jsx`、`editor_taskbar_fixed_controls.test.jsx`、`selection_quickbar.test.jsx` |
+| 8 | **per-filter 蒙版（选区版）** | 每个栈条新增 `M` 按钮：在当前像素选区存在时，把选区轮廓归一化写入该 entry 的 `mask`，渲染时只在蒙版内应用该滤镜（硬边）；再次点击移除。`target: selection mask`，暂不支持画笔编辑/羽化，后续可升级为 bitmap mask。 | `live_filter_stack.js`、`live_filter_stack.jsx`、`layer_effects_section.jsx`、`properties_panel_sections.jsx` |
+| 9 | **Layers 面板滤镜子行** | 每个带滤镜栈的图层下方显示只读子行：启用圆点 + 滤镜名称 + 蒙版标记（`M`），让“滤镜也是图层内容”在 Layers 里可见；子行暂不参与选择/拖拽。 | `editor_layers.jsx` |
+| 10 | **验证** | 全量测试 / lint / build 通过；新增 `effects_filter_stack.test.jsx` 覆盖「无独立 section / 栈内渲染 / Add 菜单不再出现 Live Filters / 全 23 kind / blend」 | `tests/unit/effects_filter_stack.test.jsx`、`editor_taskbar_fixed_controls.test.jsx`、`selection_quickbar.test.jsx` |
 
-**未做（明确留下一批）**：per-filter 蒙版（需要新的 entry-mask 数据/编辑/渲染链路）；Layers 面板子行（需要在 2075 行的图层树里加入可选、可拖拽子行）；图像 AI 动作从 taskbar 收进 Image 区（现有测试明确要求右栏无 AI 入口，属于产品决策）；非图像节点（rect/group 等）的滤镜仍走旧行（栈目前只对 image/raster 开放）。
+**未做（明确留下一批）**：图像 AI 动作从 taskbar 收进 Image 区（现有测试明确要求右栏无 AI 入口，属于产品决策）；非图像节点（rect/group 等）的滤镜仍走旧行（栈目前只对 image/raster 开放）；per-filter 蒙版的画笔编辑/羽化（当前只支持“从像素选区生成”的硬边蒙版）；Layers 子行目前只读，暂不参与选择/拖拽。
 
 ---
 
@@ -309,7 +311,7 @@ EXPORT
 
 | 维度 | Affinity | VOO |
 |---|---|---|
-| 非破坏性 | 图层化，可逐项开关/排序/混合/蒙版 | 滤镜：可开关/排序/透明度（已栈化）；调整/效果行仍仅开关；无混合、无 per-filter 蒙版、Layers 无子行 |
+| 非破坏性 | 图层化，可逐项开关/排序/混合/蒙版 | 滤镜：可开关/排序/透明度/混合/选区蒙版（已栈化）；调整/效果行仍仅开关；Layers 无子行；蒙版仅选区硬边 |
 | 参数控件 | 每滤镜定制（半径/阈值/角度/衰减…） | 通用滑杆；少数 angle |
 | 预览 | 对话框内实时（前后对比未核验） | 实时；无统一 before/after（只能关眼睛） |
 | 撤销粒度 | 历史面板 | 连续输入合并 commit，无历史面板入口（有 `editor_history_panel` 但图像流程未用） |
@@ -342,14 +344,14 @@ EXPORT
 **验收**：全 UI 只有一处“添加滤镜/调整”；无重复 kind；导出/撤销/测试全绿；文档 `.voo` 迁移脚本。
 
 #### P0-2 调整/滤镜图层化：可排序、可混合、可单独蒙版
-**问题**：滤镜已可排序/调透明度（§0.4），但调整/效果行仍只有“眼睛 + 删除”；所有行都没有混合模式，也无法只让某一个滤镜作用于局部（per-filter 蒙版）。
+**问题**：滤镜已可排序/调透明度/混合/选区蒙版（§0.4），但调整/效果行仍只有“眼睛 + 删除”；Layers 面板没有子行；per-filter 蒙版还不能画笔编辑或羽化。
 **建议**：
 1. 行内增加拖拽手柄（或上/下移按钮），顺序写入 `entries`；渲染按序。
 2. 行内增加 opacity + blend（复用 `blend_math.js`）。
 3. 行菜单增加“添加蒙版”，复用现有 mask infra（`mask_edit` / `mask_tool`），实现 Affinity 式 **per-filter mask**；图层蒙版继续存在，二者不冲突。
 4. 在 Layers 面板把 entries 作为子行显示（可折叠在图层下），让“滤镜也是层”可见。
 **落点**：`scene_model_*` 归一化、`layer_effects_section.jsx`、`editor_layers.jsx`、`cpu_adjustments_*`、`mask_*`。
-**验收**：滤镜顺序已验证影响结果且可撤销（已达成）；任一滤镜/调整可加蒙版且导出正确；行内混合模式可用；单测覆盖混合/蒙版 12+ 例。
+**验收**：滤镜顺序/混合/选区蒙版已验证（已达成）；任一滤镜/调整可加蒙版且导出正确（调整/效果行待补）；单测覆盖混合/蒙版 12+ 例。
 
 #### P0-3 参数模型：从“一个 value”到“每 kind 一组参数”
 **问题**：Blur/Denoise/Unsharp 等共用一个 0–100 滑杆，专业用户无法调“半径/阈值/细节/衰减”。对照：Affinity 的滤镜菜单项均带参数对话框（参数集未逐项核验），VOO 的参数表达明显更浅。
@@ -477,6 +479,8 @@ EXPORT
 | `.../28-image-histogram.png` | IMAGE TOOLS 常驻直方图（RGB + luma + 裁剪读数） |
 | `.../29-filter-stack-blend.png` | Filter stack 行内 blend 下拉（NORMAL / Multiply / …） |
 | `.../30-effects-picker-search.png` | Effects picker 搜索 "blur" 的过滤结果 |
+| `.../31-filter-mask.png` | 用像素选区给 Blur 生成 per-filter 蒙版（M 按钮高亮） |
+| `.../32-layers-filter-sublist.png` | Layers 面板下的滤镜子行（● Blur） |
 | `.../09-tool-crop.png` | Crop 工具面板 |
 | `.../10-tool-brush.png` | Brush 工具面板 |
 | `.../12-tool-wand.png` | 魔棒工具面板 |

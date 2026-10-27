@@ -881,6 +881,8 @@ export default {
   "editor.liveFilters.moveUp": "Move up in stack",
   "editor.liveFilters.moveDown": "Move down in stack",
   "editor.liveFilters.remove": "Remove filter",
+  "editor.liveFilters.maskFromSelection": "Mask from selection",
+  "editor.liveFilters.maskRemove": "Remove filter mask",
   "editor.liveFilter.kind.blur": "Blur",
   "editor.liveFilter.kind.sharpen": "Sharpen",
   "editor.liveFilter.kind.noise": "Noise",
