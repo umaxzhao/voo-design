@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Plus, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { AI_GEN_TYPES } from "./welcome_constants.js";
-import { DEFAULT_DESIGN_SYSTEM_ID, DEFAULT_STYLE_ID } from "./generation_intent.js";
+import { DEFAULT_STYLE_ID } from "./generation_intent.js";
 
 /**
  * Pen-style welcome composer: one quiet prompt surface, a model label, an
@@ -21,9 +21,6 @@ export function WelcomePromptComposer({
   styleId,
   styleOptions,
   onSelectStyle,
-  designSystemId = DEFAULT_DESIGN_SYSTEM_ID,
-  designSystemOptions = [],
-  onSelectDesignSystem,
   size,
   sizeOptions,
   onSelectSize,
@@ -69,9 +66,12 @@ export function WelcomePromptComposer({
     const place = () => {
       const rect = formRef.current?.getBoundingClientRect();
       if (!rect) return;
+      const isMobile = window.matchMedia("(max-width: 768px) and (hover: none) and (pointer: coarse)").matches;
+      const panelWidth = isMobile ? window.innerWidth - 32 : 320;
+      const panelGutter = isMobile ? 16 : 8;
       setPanelPos({
-        left: Math.max(8, Math.min(rect.right - 320, window.innerWidth - 328)),
-        top: Math.min(rect.bottom + 8, window.innerHeight - 360),
+        left: Math.max(panelGutter, Math.min(rect.right - panelWidth, window.innerWidth - panelWidth - panelGutter)),
+        top: Math.min(rect.bottom + 8, window.innerHeight - 260),
       });
     };
     place();
@@ -184,10 +184,10 @@ export function WelcomePromptComposer({
                 ref={panelRef}
                 role="dialog"
                 aria-label={t("welcome.prompt.generationTypeLabel")}
-                className="fixed z-[250] w-80 rounded-2xl border border-white/10 bg-[#171717] p-3 shadow-panel"
+                className="welcome-composer-settings fixed z-[250] w-80 rounded-2xl border border-white/10 bg-[#171717] p-3 shadow-panel"
                 style={panelPos ?? { left: -9999, top: 0 }}
               >
-          <div className="space-y-2">
+          <div className="welcome-composer-settings-grid space-y-2">
             <ComposerField label={t("welcome.prompt.generationTypeLabel")}>
               <select
                 value={activePill}
@@ -222,26 +222,12 @@ export function WelcomePromptComposer({
               <select
                 value={styleId ?? DEFAULT_STYLE_ID}
                 onChange={(event) => onSelectStyle?.(event.target.value)}
-                disabled={designSystemId !== DEFAULT_DESIGN_SYSTEM_ID}
                 className="composer-select appearance-none"
                 aria-label={t("welcome.prompt.styleLabel")}
               >
                 <option value={DEFAULT_STYLE_ID}>{t("welcome.prompt.styleAuto")}</option>
                 {(styleOptions ?? []).map((style) => (
                   <option key={style.id} value={style.id}>{style.name}</option>
-                ))}
-              </select>
-            </ComposerField>
-
-            <ComposerField label={t("welcome.prompt.designSystem")}>
-              <select
-                value={designSystemId}
-                onChange={(event) => onSelectDesignSystem?.(event.target.value)}
-                className="composer-select appearance-none"
-                aria-label={t("welcome.prompt.designSystem")}
-              >
-                {(designSystemOptions ?? []).map((system) => (
-                  <option key={system.id} value={system.id}>{system.label}</option>
                 ))}
               </select>
             </ComposerField>
@@ -287,8 +273,8 @@ export function WelcomePromptComposer({
 
 function ComposerField({ label, children }) {
   return (
-    <label className="flex items-center gap-2">
-      <span className="w-24 shrink-0 truncate text-[10px] text-neutral-500">{label}</span>
+    <label className="welcome-composer-field flex items-center gap-2">
+      <span className="welcome-composer-field-label w-24 shrink-0 truncate text-[10px] text-neutral-500">{label}</span>
       <span className="min-w-0 flex-1">{children}</span>
     </label>
   );

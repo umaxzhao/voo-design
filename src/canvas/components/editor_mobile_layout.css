@@ -25,7 +25,7 @@
   .app-root-frame > .relative.flex.min-h-0.flex-1 {
     margin: 0 1px 1px;
     overflow: hidden;
-    border-radius: 0 0 16px 16px;
+    border-radius: 0 0 24px 24px;
   }
 
   .app-title-actions > .app-title-desktop-action,
@@ -307,11 +307,11 @@
   .app-title-bar .app-title-brand-row > button > span {
     display: inline;
     font-size: 0.7rem;
-    color: rgb(231 255 243);
+    color: #000;
   }
 
   .app-title-bar .app-title-brand-row > button > svg {
-    color: #a7ffd4;
+    color: #000;
   }
 
   .app-title-bar .app-title-tabs {
