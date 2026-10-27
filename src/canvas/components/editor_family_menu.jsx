@@ -42,18 +42,47 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
   const rootRef = useRef(null);
   const menuRef = useRef(null);
   const chevronRef = useRef(null);
+  const longPressTimerRef = useRef(null);
+  const suppressToolClickRef = useRef(false);
   const menuLabel = t("editor.toolOptions");
 
-  const toggleMenu = () => {
-    if (open) {
-      setOpen(false);
-      return;
-    }
+  const openMenu = () => {
     const rect = rootRef.current?.getBoundingClientRect();
     if (!rect) return;
     setMenuPos({ top: rect.bottom + 8, left: rect.left + rect.width / 2 });
     setOpen(true);
   };
+
+  const toggleMenu = () => {
+    if (open) setOpen(false);
+    else openMenu();
+  };
+
+  const onPointerDownCapture = (event) => {
+    if (event.pointerType !== "touch") return;
+    window.clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = window.setTimeout(() => {
+      suppressToolClickRef.current = true;
+      openMenu();
+    }, 450);
+  };
+
+  const clearLongPress = () => {
+    window.clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = null;
+  };
+
+  const onClickCapture = (event) => {
+    if (!suppressToolClickRef.current) return;
+    suppressToolClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  useEffect(
+    () => () => window.clearTimeout(longPressTimerRef.current),
+    [],
+  );
 
   const chooseItem = (item) => {
     item.onChoose();
@@ -92,6 +121,10 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
       ref={rootRef}
       className="relative flex h-11 w-11 shrink-0 items-center justify-center"
       data-testid={`editor-${menuId}-menu`}
+      onPointerDownCapture={onPointerDownCapture}
+      onPointerUpCapture={clearLongPress}
+      onPointerCancelCapture={clearLongPress}
+      onClickCapture={onClickCapture}
     >
       {children}
       <button
@@ -129,7 +162,7 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
                     aria-current={item.active ? "true" : undefined}
                     data-testid={`editor-${menuId}-menu-${item.key}`}
                     onClick={() => chooseItem(item)}
-                    className={`group flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] transition-all hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4] ${
+                    className={`editor-family-menu-item group flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] transition-all hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4] ${
                       item.active ? "bg-white/10 text-white" : "text-neutral-300"
                     }`}
                   >

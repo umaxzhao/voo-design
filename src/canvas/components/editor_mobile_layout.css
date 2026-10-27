@@ -244,6 +244,18 @@
     min-height: 2.75rem;
   }
 
+  [data-testid="design-editor"].editor-narrow .editor-toolbar-menu-trigger {
+    width: 1.75rem;
+    height: 1.5rem;
+    min-width: 1.75rem;
+    min-height: 1.5rem;
+    touch-action: manipulation;
+  }
+
+  [data-testid$="-menu-list"][role="menu"] button {
+    min-height: 2.75rem;
+  }
+
   .app-title-tabs > .canvas-tab-bar-desktop {
     display: none;
   }

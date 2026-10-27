@@ -72,6 +72,8 @@ export default function EditorSelectMenu({ tool, onTool }) {
   const rootRef = useRef(null);
   const menuRef = useRef(null);
   const chevronRef = useRef(null);
+  const longPressTimerRef = useRef(null);
+  const suppressToolClickRef = useRef(false);
 
   const isSelectFamily =
     tool === TOOL.SELECT ||
@@ -93,16 +95,43 @@ export default function EditorSelectMenu({ tool, onTool }) {
   const selectLabel = t("editor.tool.select");
   const menuLabel = t("editor.toolOptions");
 
-  const toggleMenu = () => {
-    if (open) {
-      setOpen(false);
-      return;
-    }
+  const openMenu = () => {
     const rect = rootRef.current?.getBoundingClientRect();
     if (!rect) return;
     setMenuPos({ top: rect.bottom + 8, left: rect.left + rect.width / 2 });
     setOpen(true);
   };
+
+  const toggleMenu = () => {
+    if (open) setOpen(false);
+    else openMenu();
+  };
+
+  const onPointerDownCapture = (event) => {
+    if (event.pointerType !== "touch") return;
+    window.clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = window.setTimeout(() => {
+      suppressToolClickRef.current = true;
+      openMenu();
+    }, 450);
+  };
+
+  const clearLongPress = () => {
+    window.clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = null;
+  };
+
+  const onClickCapture = (event) => {
+    if (!suppressToolClickRef.current) return;
+    suppressToolClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  useEffect(
+    () => () => window.clearTimeout(longPressTimerRef.current),
+    [],
+  );
 
   const chooseItem = (item) => {
     onTool(item.tool);
@@ -140,7 +169,15 @@ export default function EditorSelectMenu({ tool, onTool }) {
   }, [open]);
 
   return (
-    <div ref={rootRef} className="relative flex h-11 w-11 shrink-0 items-center justify-center" data-testid="editor-select-menu">
+    <div
+      ref={rootRef}
+      className="relative flex h-11 w-11 shrink-0 items-center justify-center"
+      data-testid="editor-select-menu"
+      onPointerDownCapture={onPointerDownCapture}
+      onPointerUpCapture={clearLongPress}
+      onPointerCancelCapture={clearLongPress}
+      onClickCapture={onClickCapture}
+    >
       <EditorTooltip
         title={selectLabel}
         shortcut={TOOL_SHORTCUTS[TOOL.SELECT] || ""}
