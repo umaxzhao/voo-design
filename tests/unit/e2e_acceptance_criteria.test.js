@@ -1063,7 +1063,8 @@ describe("E2E Acceptance Criteria & 4-Tier Verification Suite", () => {
       const logo = pageDoc.nodes.find((node) => node.name === "Logo");
       expect(header).toMatchObject({ frame: true, parentId: null });
       expect(logo.parentId).toBe(header.id);
-      expect(scene.map((element) => element.id)).toEqual([logo.id]);
+      expect(scene.map((element) => element.id)).toEqual([header.id, logo.id]);
+      expect(scene[0]).toMatchObject({ shape: "rect", bounds: { x: 0, y: 0, width: 1440, height: 120 } });
 
       // 4. Index scene elements into R-Tree
       const rtree = new SpatialIndex();
