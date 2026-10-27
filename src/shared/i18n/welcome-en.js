@@ -184,4 +184,6 @@ export default {
   "welcome.prompt.candidates": "Variants",
   "welcome.prompt.candidatesHint": "Generate several candidates side by side and keep the best one",
   "welcome.prompt.candidateN": "{n} variant(s)",
+  "welcome.menu.sortAndView": "Sort & view",
+  "welcome.menu.import": "Import & open",
 };

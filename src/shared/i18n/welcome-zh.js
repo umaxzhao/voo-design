@@ -184,4 +184,6 @@ export default {
   "welcome.prompt.candidates": "候选数量",
   "welcome.prompt.candidatesHint": "一次生成多个并排候选，保留最满意的一个",
   "welcome.prompt.candidateN": "{n} 个候选",
+  "welcome.menu.sortAndView": "排序与视图",
+  "welcome.menu.import": "导入与打开",
 };

@@ -3,6 +3,8 @@ import { useCallback, useRef } from "react";
 const TAP_SLOP_PX = 12;
 const TWO_FINGER_START_WINDOW_MS = 180;
 const TWO_FINGER_TAP_WINDOW_MS = 360;
+const THREE_FINGER_START_WINDOW_MS = 180;
+const THREE_FINGER_TAP_WINDOW_MS = 360;
 
 function distanceBetween(first, second) {
   return Math.hypot(first.x - second.x, first.y - second.y);
@@ -15,12 +17,14 @@ function centerBetween(first, second) {
   };
 }
 
-/** Adds mobile canvas pinch navigation and a two-finger tap gesture for undo. */
-export function useMobileCanvasGestures(onUndo, onPinch) {
+/** Adds mobile canvas pinch navigation, two-finger undo, and three-finger redo. */
+export function useMobileCanvasGestures(onUndo, onPinch, onRedo) {
   const onUndoRef = useRef(onUndo);
   onUndoRef.current = onUndo;
   const onPinchRef = useRef(onPinch);
   onPinchRef.current = onPinch;
+  const onRedoRef = useRef(onRedo);
+  onRedoRef.current = onRedo;
   const gestureRef = useRef({ points: new Map(), candidate: null, pinch: null });
 
   const onPointerDownCapture = useCallback((event) => {
@@ -70,7 +74,24 @@ export function useMobileCanvasGestures(onUndo, onPinch) {
         : null;
       event.preventDefault();
       event.stopPropagation();
-    } else if (gesture.points.size > 2) {
+    } else if (gesture.points.size === 3) {
+      const points = [...gesture.points.entries()];
+      const startTimes = points.map(([, point]) => point.startAt);
+      const startedTogether =
+        Math.max(...startTimes) - Math.min(...startTimes) <=
+        THREE_FINGER_START_WINDOW_MS;
+      gesture.candidate = startedTogether
+        ? {
+            pointerIds: new Set(points.map(([pointerId]) => pointerId)),
+            startedAt: Math.min(...startTimes),
+            ended: new Set(),
+            valid: points.every(([, point]) => !point.moved),
+          }
+        : null;
+      gesture.pinch = null;
+      event.preventDefault();
+      event.stopPropagation();
+    } else if (gesture.points.size > 3) {
       gesture.candidate = null;
       gesture.pinch = null;
       event.preventDefault();
@@ -131,14 +152,20 @@ export function useMobileCanvasGestures(onUndo, onPinch) {
     if (candidate?.pointerIds.has(event.pointerId)) {
       candidate.ended.add(event.pointerId);
       gesture.points.delete(event.pointerId);
+      const fingerCount = candidate.pointerIds.size;
+      const tapWindow =
+        fingerCount === 2
+          ? TWO_FINGER_TAP_WINDOW_MS
+          : THREE_FINGER_TAP_WINDOW_MS;
       if (
         candidate.valid &&
-        candidate.ended.size === 2 &&
+        candidate.ended.size === fingerCount &&
         gesture.points.size === 0 &&
-        performance.now() - candidate.startedAt <= TWO_FINGER_TAP_WINDOW_MS
+        performance.now() - candidate.startedAt <= tapWindow
       ) {
         // Wait for the canvas pointer handlers to commit a stroke on pointerup.
-        window.setTimeout(() => void onUndoRef.current?.(), 0);
+        const historyAction = fingerCount === 2 ? onUndoRef : onRedoRef;
+        window.setTimeout(() => void historyAction.current?.(), 0);
       }
       if (gesture.points.size === 0) {
         gesture.candidate = null;

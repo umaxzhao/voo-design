@@ -331,6 +331,10 @@
     margin-top: 0.75rem;
   }
 
+  .welcome-home-projects > div > div:first-child > div:last-child {
+    display: none;
+  }
+
   .welcome-home-projects .grid.grid-cols-1 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.625rem;
@@ -362,5 +366,31 @@
   .welcome-mobile-project-menu .welcome-mobile-menu-section button {
     min-height: 2.75rem;
     font-size: 0.8125rem;
+  }
+
+  .welcome-mobile-menu-disclosure summary {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 0.75rem;
+    padding: 0 0.625rem;
+    color: rgb(255 255 255 / 75%);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .welcome-mobile-menu-disclosure summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .welcome-mobile-menu-disclosure summary::after {
+    content: "+";
+    color: rgb(255 255 255 / 45%);
+    font-size: 1rem;
+  }
+
+  .welcome-mobile-menu-disclosure[open] summary::after {
+    content: "−";
   }
 }

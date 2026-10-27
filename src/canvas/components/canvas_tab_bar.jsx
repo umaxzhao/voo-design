@@ -239,8 +239,9 @@ export default function CanvasTabBar() {
                     <span>{t("welcome.nav.shortcuts")}</span>
                   </button>
                 </div>
-                <div className="my-1.5 border-t border-white/10" role="separator" />
-                <div className="welcome-mobile-menu-section flex flex-col gap-0.5">
+                <details className="welcome-mobile-menu-disclosure">
+                  <summary>{t("welcome.menu.sortAndView")}</summary>
+                  <div className="welcome-mobile-menu-section flex flex-col gap-0.5">
                   {[
                     ["updatedAt", "welcome.sort.lastModified"],
                     ["oldest", "welcome.sort.oldestModified"],
@@ -278,27 +279,30 @@ export default function CanvasTabBar() {
                       <span>{t("welcome.view.list")}</span>
                     </button>
                   </div>
-                </div>
+                  </div>
+                </details>
                 <div className="my-1.5 border-t border-white/10" role="separator" />
-                <div className="welcome-mobile-menu-section flex flex-col gap-0.5">
-                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("open-file")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
-                    <FolderOpen size={14} aria-hidden="true" />
-                    <span>{t("welcome.actions.openLocal")}</span>
-                  </button>
-                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("import-figma")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
-                    <File size={14} aria-hidden="true" />
-                    <span>{t("welcome.actions.importFigma")}</span>
-                  </button>
-                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("import-browser")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
-                    <FolderOpen size={14} aria-hidden="true" />
-                    <span>{t("welcome.actions.importBrowser")}</span>
-                  </button>
-                  <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("recreate-screenshot")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
-                    <Image size={14} aria-hidden="true" />
-                    <span>{t("welcome.actions.recreateScreenshot")}</span>
-                  </button>
-                </div>
-                <div className="my-1.5 border-t border-white/10" role="separator" />
+                <details className="welcome-mobile-menu-disclosure">
+                  <summary>{t("welcome.menu.import")}</summary>
+                  <div className="welcome-mobile-menu-section flex flex-col gap-0.5">
+                    <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("open-file")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                      <FolderOpen size={14} aria-hidden="true" />
+                      <span>{t("welcome.actions.openLocal")}</span>
+                    </button>
+                    <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("import-figma")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                      <File size={14} aria-hidden="true" />
+                      <span>{t("welcome.actions.importFigma")}</span>
+                    </button>
+                    <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("import-browser")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                      <FolderOpen size={14} aria-hidden="true" />
+                      <span>{t("welcome.actions.importBrowser")}</span>
+                    </button>
+                    <button type="button" role="menuitem" onClick={() => dispatchWelcomeAction("recreate-screenshot")} className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-300 hover:bg-white/10">
+                      <Image size={14} aria-hidden="true" />
+                      <span>{t("welcome.actions.recreateScreenshot")}</span>
+                    </button>
+                  </div>
+                </details>
               </>
             ) : null}
             {documents.map((document) => {

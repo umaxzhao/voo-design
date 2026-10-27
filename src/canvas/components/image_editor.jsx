@@ -1000,6 +1000,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const mobileCanvasGestures = useMobileCanvasGestures(
     presentationHistory.undo,
     applyMobilePinch,
+    presentationHistory.redo,
   );
   const mobilePanelDragRef = useRef(null);
   const suppressPanelClickRef = useRef(false);
