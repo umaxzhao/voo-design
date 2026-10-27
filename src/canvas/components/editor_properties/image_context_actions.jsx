@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { useI18n } from "../../use_i18n.js";
 import { StaticSection } from "./property_section.jsx";
 import HistogramStrip from "./histogram_strip.jsx";
+import CustomSelect from "../custom_select.jsx";
 
 const ACTION_BUTTON_CLASS =
   "min-h-8 rounded-lg border border-white/10 bg-white/[0.04] px-2 text-left text-[11px] text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]";
@@ -103,7 +104,7 @@ export default function ImageContextActions({
             {frequencyError}
           </p>
         ) : null}
-        <select
+        <CustomSelect
           aria-label={t("editor.image.fitFill")}
           defaultValue=""
           onChange={applyFitOrFill}
@@ -114,7 +115,7 @@ export default function ImageContextActions({
           </option>
           <option value="fit">{t("editor.image.fit")}</option>
           <option value="fill">{t("editor.image.fill")}</option>
-        </select>
+        </CustomSelect>
       </div>
     </StaticSection>
   );

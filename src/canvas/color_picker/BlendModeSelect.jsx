@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { BLEND_MODES } from "../editor/scene_model.js";
 import { useI18n } from "../use_i18n.js";
+import CustomSelect from "../components/custom_select.jsx";
 
 /**
  * Blend mode dropdown of the fill colour picker. Normal is stored as
@@ -11,7 +12,7 @@ export function BlendModeSelect({ value, onChange }) {
   return (
     <label className="flex items-center gap-2 font-mono text-[11px] text-neutral-400">
       <span className="shrink-0">{t("editor.colorPicker.blendMode")}</span>
-      <select
+      <CustomSelect
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-label={t("editor.colorPicker.blendMode")}
@@ -23,7 +24,7 @@ export function BlendModeSelect({ value, onChange }) {
             {mode === "source-over" ? t("editor.colorPicker.blendNormal") : mode}
           </option>
         ))}
-      </select>
+      </CustomSelect>
     </label>
   );
 }

@@ -24,6 +24,7 @@ import {
 import { loadEditorPanelSectionState, toggleEditorPanelSectionState } from "../editor_panel_preferences.js";
 import { useI18n } from "../../use_i18n.js";
 import { CustomFontPicker } from "../font_picker.jsx";
+import CustomSelect from "../custom_select.jsx";
 
 /**
  * Weight menu: one entry per meaningful face. `"400"` reads as Regular and
@@ -209,7 +210,7 @@ export default function TextSection({
               scrubHint={t("editor.props.dragToAdjust")}
             />
           )}
-          <select
+          <CustomSelect
             aria-label={t("editor.props.fontWeight")}
             title={t("editor.props.fontWeight")}
             value={weightOptionValue(fontWeight)}
@@ -222,7 +223,7 @@ export default function TextSection({
                 {t(`editor.props.weight.${value}`)}
               </option>
             ))}
-          </select>
+          </CustomSelect>
         </div>
 
         {/* Units are part of the value: % for line height, px for tracking. */}

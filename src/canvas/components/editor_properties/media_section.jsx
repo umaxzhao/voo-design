@@ -2,6 +2,7 @@ import { EDITOR_BETA_ENABLED } from "../../editor-beta-features.js";
 import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
 import { CollapsibleSection, fieldClass } from "./property_section.jsx";
+import CustomSelect from "../custom_select.jsx";
 
 const NUMBER_FIELDS = {
   video: [
@@ -316,7 +317,7 @@ export default function MediaSection({
             <span className="w-20 shrink-0">
               {t("editor.media.environment")}
             </span>
-            <select
+            <CustomSelect
               className={`${fieldClass} min-w-0 flex-1 pr-2`}
               value={model.environment ?? "studio"}
               onChange={(event) =>
@@ -332,7 +333,7 @@ export default function MediaSection({
               <option value="neutral">
                 {t("editor.media.environmentNeutral")}
               </option>
-            </select>
+            </CustomSelect>
           </label>
         </div>
       )}

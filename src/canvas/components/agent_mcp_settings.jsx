@@ -3,6 +3,7 @@ import { useI18n } from '../use_i18n.js';
 import { getSetting, setSetting } from '../../shared/settings.js';
 import { MCP_SERVERS_KEY, validateMcpServers } from '../../shared/agent_mcp_servers.js';
 import SettingsSection, { SETTINGS_INPUT_CLASS, SettingsField } from './settings_section.jsx';
+import CustomSelect from "./custom_select.jsx";
 
 const LINK_BUTTON_CLASS =
   'self-start rounded-md px-1 py-1 text-xs text-neutral-200 underline-offset-2 outline-none hover:underline focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40';
@@ -40,9 +41,9 @@ export default function AgentMcpSettings() {
       {t(formOpen ? 'agent.mcp.hideForm' : 'agent.mcp.showForm')}
     </button>
     {formOpen && <form id={formId} onSubmit={add} className="flex flex-col gap-2">
-      <SettingsField label={t('agent.mcp.type')}><select className={SETTINGS_INPUT_CLASS} value={type} onChange={e => { setType(e.target.value); setTarget(''); setValues('{}'); }}>
+      <SettingsField label={t('agent.mcp.type')}><CustomSelect className={SETTINGS_INPUT_CLASS} value={type} onChange={e => { setType(e.target.value); setTarget(''); setValues('{}'); }}>
         <option value="stdio">{t('agent.mcp.stdio')}</option><option value="http">{t('agent.mcp.http')}</option>
-      </select></SettingsField>
+      </CustomSelect></SettingsField>
       <SettingsField label={t('agent.mcp.id')}><input className={SETTINGS_INPUT_CLASS} value={id} onChange={e => setId(e.target.value)} required /></SettingsField>
       <SettingsField label={t(type === 'stdio' ? 'agent.mcp.command' : 'agent.mcp.url')}><input className={SETTINGS_INPUT_CLASS} value={target} onChange={e => setTarget(e.target.value)} required /></SettingsField>
       {type === 'stdio' && <SettingsField label={t('agent.mcp.args')}><input className={SETTINGS_INPUT_CLASS} value={args} onChange={e => setArgs(e.target.value)} /></SettingsField>}

@@ -6,6 +6,7 @@ import {
   normalizeConstraints,
 } from "../../editor/scene_constraints.js";
 import { StaticSection } from "./property_section.jsx";
+import CustomSelect from "../custom_select.jsx";
 
 const FIELD_CLASS =
   "h-7 w-full min-w-0 flex-1 cursor-pointer appearance-none rounded-xl bg-neutral-800 pl-2.5 pr-6 text-[11px] font-mono tabular-nums text-neutral-100 uppercase outline-none transition-colors hover:bg-neutral-800/80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
@@ -30,7 +31,7 @@ export default function ConstraintsSection({ object, editAndCommit }) {
     <label key={key} className={ROW_CLASS}>
       <span className="w-[62px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap uppercase">{label}</span>
       <span className="relative flex min-w-0 flex-1">
-      <select
+      <CustomSelect
         data-testid={`editor-constraints-${key}`}
         aria-label={label}
         className={FIELD_CLASS}
@@ -42,10 +43,7 @@ export default function ConstraintsSection({ object, editAndCommit }) {
             {t(`editor.constraints.${option}`)}
           </option>
         ))}
-      </select>
-        <svg aria-hidden="true" viewBox="0 0 10 10" className="pointer-events-none absolute right-2 top-1/2 h-2.5 w-2.5 -translate-y-1/2 text-neutral-400">
-          <path d="M2 3.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.2" />
-        </svg>
+      </CustomSelect>
       </span>
     </label>
   );

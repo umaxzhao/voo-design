@@ -21,6 +21,7 @@ import { useI18n } from "../../use_i18n.js";
 import { HexField } from "./colour_swatch.jsx";
 import { IconAdd, IconClose, IconTrash } from "../../icons.jsx";
 import variablesEn from "../../../shared/i18n/variables-en.js";
+import CustomSelect from "../custom_select.jsx";
 
 /** Translation with a local fallback until `en.js`/`zh.js` import these keys. */
 function usePanelText() {
@@ -518,7 +519,7 @@ export default function VariablesPanel({
 
                 {/* Add variable */}
                 <div className="flex items-center gap-1.5">
-                  <select
+                  <CustomSelect
                     aria-label={tv("editor.variables.panel.variableType")}
                     disabled={!canCreateVariable}
                     value={addType}
@@ -530,7 +531,7 @@ export default function VariablesPanel({
                         {tv(`editor.variables.panel.type.${type}`)}
                       </option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   <button
                     type="button"
                     disabled={!canCreateVariable}

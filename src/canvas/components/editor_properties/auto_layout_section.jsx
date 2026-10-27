@@ -2,6 +2,7 @@ import PropTypes from "prop-types";
 import { useI18n } from "../../use_i18n.js";
 import { normalizeAutoLayout } from "../../editor/scene_auto_layout.js";
 import { SectionAddButton, SectionEmptyRow, StaticSection } from "./property_section.jsx";
+import CustomSelect from "../custom_select.jsx";
 
 export const DEFAULT_AUTO_LAYOUT = {
   direction: "vertical",
@@ -83,7 +84,7 @@ export function AutoLayoutFields({ object, editAndCommit, hideDirection = false,
       className="flex items-center justify-between gap-2 text-[10px] text-neutral-400"
     >
       <span>{label}</span>
-      <select
+      <CustomSelect
         data-testid={`editor-auto-layout-${key}`}
         aria-label={label}
         className={FIELD_CLASS}
@@ -95,7 +96,7 @@ export function AutoLayoutFields({ object, editAndCommit, hideDirection = false,
             {t(`editor.autoLayout.${option}`)}
           </option>
         ))}
-      </select>
+      </CustomSelect>
     </label>
   );
 

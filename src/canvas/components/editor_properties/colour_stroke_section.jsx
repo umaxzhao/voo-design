@@ -9,7 +9,6 @@ import { STROKE_ALIGN } from "../../editor/stroke_style.js";
 import { useI18n } from "../../use_i18n.js";
 import {
   IconSliders,
-  IconChevronDown,
   IconMinus,
 } from "../../icons.jsx";
 import { Paintbrush } from "lucide-react";
@@ -31,6 +30,7 @@ import {
   sectionActionClass,
   sectionRowClass,
 } from "./property_section.jsx";
+import CustomSelect from "../custom_select.jsx";
 
 export function StrokeSection({
   object,
@@ -233,7 +233,7 @@ export function StrokeSection({
               >
                 <AlignIcon type="center" size={11} />
               </span>
-              <select
+              <CustomSelect
                 value={strokeAlign}
                 disabled={!closed}
                 onChange={(e) => editAndCommit({ strokeAlign: e.target.value })}
@@ -258,10 +258,7 @@ export function StrokeSection({
                 >
                   {t("editor.strokeStyle.alignOutside")}
                 </option>
-              </select>
-              <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400">
-                <IconChevronDown size={12} />
-              </div>
+              </CustomSelect>
             </div>
 
             {/* Stroke Width ScrubField */}

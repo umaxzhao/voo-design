@@ -21,7 +21,7 @@ import {
   normalizeStrokeProps,
 } from "../../editor/stroke_style.js";
 import ScrubField from "../scrub_field.jsx";
-import { IconChevronDown } from "../../icons.jsx";
+import CustomSelect from "../custom_select.jsx";
 
 /** One row of a segmented control: label plus mutually exclusive options. */
 function SegmentedRow({
@@ -210,7 +210,7 @@ export default function StrokeStyleSection({
           {t("editor.strokeStyle.widthProfile")}
         </span>
         <div className="relative flex-1 min-w-0">
-          <select
+          <CustomSelect
             value={style.profile}
             onChange={(event) =>
               editAndCommit({
@@ -234,10 +234,7 @@ export default function StrokeStyleSection({
                 )}
               </option>
             ))}
-          </select>
-          <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400">
-            <IconChevronDown size={12} />
-          </div>
+          </CustomSelect>
         </div>
       </div>
 

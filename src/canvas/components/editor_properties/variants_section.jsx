@@ -2,6 +2,7 @@ import { useEffect, useReducer, useState } from "react";
 import { useI18n } from "../../use_i18n.js";
 import { InspectorGroup, InspectorRow } from "../inspector_primitives.jsx";
 import { componentVariants, variantProperties, parseVariantName, matchVariantProperty, createVariantDocument, extendVariantProperties, switchVariantDocument } from "../../editor/component_variants.js";
+import CustomSelect from "../custom_select.jsx";
 
 // Selected variant values sit on a purple wash, as selected rows do in the agent panel.
 const FIELD_CLASS = "h-8 w-full min-w-0 rounded-xl bg-[#E5B2FF]/15 px-2 text-[11px] text-[#eed0ff] outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]";
@@ -26,13 +27,13 @@ export default function VariantsSection({ engine, node = null, sourceDoc = null,
   };
   return <InspectorGroup title={t("editor.variants.title")} testId="editor-variants-section">
     {node ? properties ? properties.map(({ key, values }) => <InspectorRow key={key} label={key}>
-      <select className={FIELD_CLASS} aria-label={key} value={parseVariantName(current.variantName)?.[key] ?? ""} onChange={event => switchTo(matchVariantProperty(variants, current, key, event.target.value))}>
+      <CustomSelect className={FIELD_CLASS} aria-label={key} value={parseVariantName(current.variantName)?.[key] ?? ""} onChange={event => switchTo(matchVariantProperty(variants, current, key, event.target.value))}>
         {values.map(value => <option key={value} value={value} disabled={!matchVariantProperty(variants, current, key, value)}>{value}</option>)}
-      </select>
+      </CustomSelect>
     </InspectorRow>) : <InspectorRow label={t("editor.variants.variant")}>
-      <select className={FIELD_CLASS} aria-label={t("editor.variants.variant")} value={current.canvasId} onChange={event => switchTo(variants.find(doc => doc.canvasId === event.target.value))}>
+      <CustomSelect className={FIELD_CLASS} aria-label={t("editor.variants.variant")} value={current.canvasId} onChange={event => switchTo(variants.find(doc => doc.canvasId === event.target.value))}>
         {variants.map(doc => <option key={doc.canvasId} value={doc.canvasId}>{doc.variantName ?? doc.name ?? t("editor.variants.default")}</option>)}
-      </select>
+      </CustomSelect>
     </InspectorRow> : <>
       <InspectorRow label={t("editor.variants.set")}><span className="text-[11px] text-neutral-300">{source.name ?? source.variantGroupId ?? t("editor.variants.default")}</span></InspectorRow>
       {variants.map(doc => <InspectorRow key={doc.canvasId} label={doc.variantName ?? t("editor.variants.default")}><span className="text-[11px] text-neutral-300">{doc.name}</span></InspectorRow>)}

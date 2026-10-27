@@ -37,6 +37,7 @@ export default function FlatSelect({
   placeholder = null,
   placeholderIcon = null,
   portal = false,
+  triggerProps = {},
 }) {
   const normalized = useMemo(() => normalizeOptions(options), [options]);
   const selected = normalized.find((opt) => opt.value === value);
@@ -213,6 +214,7 @@ export default function FlatSelect({
       <button
         ref={triggerRef}
         type="button"
+        {...triggerProps}
         aria-label={label}
         aria-haspopup="listbox"
         aria-controls={open ? panelId : undefined}
@@ -269,4 +271,5 @@ FlatSelect.propTypes = {
   placeholder: PropTypes.string,
   placeholderIcon: PropTypes.node,
   portal: PropTypes.bool,
+  triggerProps: PropTypes.object,
 };

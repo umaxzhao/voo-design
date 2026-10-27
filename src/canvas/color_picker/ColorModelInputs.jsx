@@ -9,6 +9,7 @@ import {
   rgbToHsl,
 } from "./color_models.js";
 import { useI18n } from "../use_i18n.js";
+import CustomSelect from "../components/custom_select.jsx";
 
 const FIELD_CLASS =
   "flex items-center rounded-lg border border-white/10 bg-black/40 px-1 py-0.5 focus-within:border-[#a7ffd4]/40";
@@ -139,7 +140,7 @@ export function ColorModelInputs({
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-1.5 font-mono text-[11px]">
-      <select
+      <CustomSelect
         value={model}
         onChange={(event) => setModel(event.target.value)}
         aria-label={t("editor.colorPicker.colourModel")}
@@ -151,7 +152,7 @@ export function ColorModelInputs({
             {name}
           </option>
         ))}
-      </select>
+      </CustomSelect>
 
       {model === "HEX" ? (
         <TextColourField

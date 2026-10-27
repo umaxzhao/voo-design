@@ -13,6 +13,7 @@ import {
 import { InspectorGroup, InspectorRow } from "./inspector_primitives.jsx";
 import VectorRow from "./vector_row.jsx";
 import EditorInstanceOverrides from "./editor_instance_overrides.jsx";
+import CustomSelect from "./custom_select.jsx";
 
 const FIELD_CLASS =
   "h-8 w-full min-w-0 rounded-xl bg-[#222222] px-2 text-[11px] text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]";
@@ -234,7 +235,7 @@ export default function EditorCanvasInstanceProperties({
         t={t}
       />
       <InspectorGroup title={t("editor.instance.layout")}>
-        <select
+        <CustomSelect
           aria-label={t("editor.instance.layout")}
           value={instance.layoutMode ?? "fixed"}
           onChange={(event) =>
@@ -244,11 +245,11 @@ export default function EditorCanvasInstanceProperties({
         >
           <option value="fixed">{t("editor.instance.fixed")}</option>
           <option value="fill">{t("editor.instance.fill")}</option>
-        </select>
+        </CustomSelect>
       </InspectorGroup>
       {EDITOR_BETA_ENABLED && supportsPlayback ? (
         <InspectorGroup title={t("editor.instance.playback")}>
-          <select
+          <CustomSelect
             aria-label={t("editor.instance.playback")}
             value={instance.playbackMode ?? "live"}
             onChange={(event) =>
@@ -260,7 +261,7 @@ export default function EditorCanvasInstanceProperties({
             <option value="video" disabled={!instance.videoSrc}>
               {t("editor.instance.video")}
             </option>
-          </select>
+          </CustomSelect>
           <label className="flex flex-col gap-1 text-[10px] text-neutral-400">
             <span>{t("editor.instance.videoSource")}</span>
             <input

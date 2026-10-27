@@ -16,13 +16,13 @@ import { useI18n } from "../../use_i18n.js";
 import { CollapsibleSection } from "./property_section.jsx";
 import {
   IconAdd,
-  IconChevronDown,
   IconClose,
   IconSwap,
   IconTrash,
 } from "../../icons.jsx";
 import stylesEn from "../../../shared/i18n/styles-en.js";
 import { STYLE_TYPE_KEYS, normalizeStyles } from "../../editor/scene_styles.js";
+import CustomSelect from "../custom_select.jsx";
 
 /** Translation with a local fallback until en.js/zh.js import these keys. */
 function usePanelText() {
@@ -93,7 +93,7 @@ function StyleTypeRow({
 
       {/* Apply / detach: "No style" clears the reference but keeps the values. */}
       <div className="relative flex items-center">
-        <select
+        <CustomSelect
           data-testid={`editor-style-${type}`}
           aria-label={`${tv("styles.type." + type)} ${tv("styles.select")}`}
           value={activeStyle?.id ?? ""}
@@ -117,10 +117,7 @@ function StyleTypeRow({
               {style.name}
             </option>
           ))}
-        </select>
-        <span className="pointer-events-none absolute right-2.5 text-neutral-400">
-          <IconChevronDown size={12} />
-        </span>
+        </CustomSelect>
         {activeStyle ? (
           <button
             type="button"

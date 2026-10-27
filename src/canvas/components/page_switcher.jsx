@@ -3,6 +3,7 @@ import { ChevronUp, ChevronDown, Copy, Trash2 } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
 import { finishPageRename, movePageToEdge } from "./page_switcher_interactions.js";
 import { useDesignStore } from "../../store/design_store.js";
+import CustomSelect from "./custom_select.jsx";
 
 export default function PageSwitcher() {
   const { t } = useI18n();
@@ -199,7 +200,7 @@ export default function PageSwitcher() {
               );
             })}
           </ul>
-          <select
+          <CustomSelect
             aria-label={t("editor.canvas.size")}
             value={size}
             onChange={(event) => setSize(event.target.value)}
@@ -209,7 +210,7 @@ export default function PageSwitcher() {
             <option value="phone">{t("editor.canvas.group.phone")} · 393 × 852</option>
             <option value="desktop">{t("editor.canvas.group.desktop")} · 1440 × 900</option>
             <option value="social">{t("editor.canvas.group.social")} · 1080 × 1080</option>
-          </select>
+          </CustomSelect>
           <button
             type="button"
             onClick={add}

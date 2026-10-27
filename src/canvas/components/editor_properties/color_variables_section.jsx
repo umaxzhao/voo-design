@@ -4,7 +4,6 @@ import { useI18n } from "../../use_i18n.js";
 import { HEX_COLOUR, HexField } from "./colour_swatch.jsx";
 import { CollapsibleSection } from "./property_section.jsx";
 import {
-  IconChevronDown,
   IconMinus,
   IconSliders,
   IconTrash,
@@ -14,6 +13,7 @@ import {
   VARIABLE_TYPES,
   variablesFromLegacyColorVariables,
 } from "../../editor/scene_variables.js";
+import CustomSelect from "../custom_select.jsx";
 
 export default function ColorVariablesSection({
   object,
@@ -149,7 +149,7 @@ export default function ColorVariablesSection({
               }}
             />
           </div>
-          <select
+          <CustomSelect
             data-testid="editor-color-variable-select"
             aria-label={t("editor.variables.binding")}
             className="w-full appearance-none rounded-xl bg-[#222222] pl-8 pr-7 py-1.5 text-[11px] font-mono text-neutral-200 outline-none hover:bg-[#282828] focus:bg-[#282828] focus:ring-1 focus:ring-white/20 transition-colors cursor-pointer"
@@ -168,10 +168,7 @@ export default function ColorVariablesSection({
                 {displayName(item)}
               </option>
             ))}
-          </select>
-          <div className="pointer-events-none absolute right-2.5 text-neutral-400">
-            <IconChevronDown size={12} />
-          </div>
+          </CustomSelect>
         </div>
 
         {/* When a variable is bound, show the active variable card with editable name and value */}
