@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Plus, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { AI_GEN_TYPES } from "./welcome_constants.js";
 import { DEFAULT_STYLE_ID } from "./generation_intent.js";
+import FlatSelect from "../flat_select.jsx";
 
 /**
  * Pen-style welcome composer: one quiet prompt surface, a model label, an
@@ -48,6 +49,7 @@ export function WelcomePromptComposer({
     const onPointerDown = (event) => {
       if (rootRef.current?.contains(event.target)) return;
       if (panelRef.current?.contains(event.target)) return;
+      if (event.target instanceof Element && event.target.closest('[role="listbox"]')) return;
       setAdvancedOpen(false);
     };
     const onKeyDown = (event) => {
@@ -189,79 +191,92 @@ export function WelcomePromptComposer({
               >
           <div className="welcome-composer-settings-grid space-y-2">
             <ComposerField label={t("welcome.prompt.generationTypeLabel")}>
-              <select
+              <FlatSelect
                 value={activePill}
-                onChange={(event) => onSelectPill?.(event.target.value)}
-                className="composer-select appearance-none"
-                aria-label={t("welcome.prompt.generationTypeLabel")}
-              >
-                {AI_GEN_TYPES.map((typeItem) => (
-                  <option key={typeItem.id} value={typeItem.id}>{t(typeItem.label)}</option>
-                ))}
-              </select>
+                onChange={(value) => onSelectPill?.(value)}
+                label={t("welcome.prompt.generationTypeLabel")}
+                options={AI_GEN_TYPES.map((typeItem) => ({
+                  value: typeItem.id,
+                  label: t(typeItem.label),
+                }))}
+                className="welcome-composer-select w-full min-w-0"
+                triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs"
+                panelClassName="!z-[400]"
+                portal
+              />
             </ComposerField>
 
             <ComposerField label={t("welcome.prompt.modelLabel")}>
-              <select
+              <FlatSelect
                 value={selectedModel ?? ""}
-                onChange={(event) => onSelectModel?.(event.target.value)}
-                className="composer-select appearance-none"
-                aria-label={t("welcome.prompt.modelLabel")}
-              >
-                {(modelGroups ?? []).map((group) => (
-                  <optgroup key={group.cliId} label={group.name}>
-                    {group.models.map((model) => (
-                      <option key={model.id} value={model.id}>{model.label}</option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+                onChange={(value) => onSelectModel?.(value)}
+                label={t("welcome.prompt.modelLabel")}
+                options={(modelGroups ?? []).flatMap((group) =>
+                  group.models.map((model) => ({
+                    value: model.id,
+                    label: model.label,
+                  })),
+                )}
+                className="welcome-composer-select w-full min-w-0"
+                triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs"
+                panelClassName="!z-[400]"
+                portal
+              />
             </ComposerField>
 
             <ComposerField label={t("welcome.prompt.styleLabel")}>
-              <select
+              <FlatSelect
                 value={styleId ?? DEFAULT_STYLE_ID}
-                onChange={(event) => onSelectStyle?.(event.target.value)}
-                className="composer-select appearance-none"
-                aria-label={t("welcome.prompt.styleLabel")}
-              >
-                <option value={DEFAULT_STYLE_ID}>{t("welcome.prompt.styleAuto")}</option>
-                {(styleOptions ?? []).map((style) => (
-                  <option key={style.id} value={style.id}>{style.name}</option>
-                ))}
-              </select>
+                onChange={(value) => onSelectStyle?.(value)}
+                label={t("welcome.prompt.styleLabel")}
+                options={[
+                  { value: DEFAULT_STYLE_ID, label: t("welcome.prompt.styleAuto") },
+                  ...(styleOptions ?? []).map((style) => ({
+                    value: style.id,
+                    label: style.name,
+                  })),
+                ]}
+                className="welcome-composer-select w-full min-w-0"
+                triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs"
+                panelClassName="!z-[400]"
+                portal
+              />
             </ComposerField>
 
             <ComposerField label={t("welcome.prompt.candidates")}>
-                <select
-                  value={candidates}
-                  onChange={(event) => onSelectCandidates?.(Number(event.target.value))}
-                  className="composer-select appearance-none"
-                  aria-label={t("welcome.prompt.candidates")}
-                >
-                  {[1, 2, 3].map((count) => (
-                    <option key={count} value={count}>{t("welcome.prompt.candidateN", { n: count })}</option>
-                  ))}
-              </select>
+              <FlatSelect
+                value={candidates}
+                onChange={(value) => onSelectCandidates?.(Number(value))}
+                label={t("welcome.prompt.candidates")}
+                options={[1, 2, 3].map((count) => ({
+                  value: count,
+                  label: t("welcome.prompt.candidateN", { n: count }),
+                }))}
+                className="welcome-composer-select w-full min-w-0"
+                triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs"
+                panelClassName="!z-[400]"
+                portal
+              />
             </ComposerField>
             <ComposerField label={t("welcome.prompt.sizeLabel")}>
-                <select
-                  value={`${currentSize.width}x${currentSize.height}`}
-                  onChange={(event) => {
-                    const option = sizeOptions?.find(
-                      (item) => `${item.width}x${item.height}` === event.target.value,
-                    );
-                    if (option) onSelectSize?.({ width: option.width, height: option.height });
-                  }}
-                  className="composer-select appearance-none"
-                  aria-label={t("welcome.prompt.sizeLabel")}
-                >
-                  {(sizeOptions ?? []).map((option) => (
-                    <option key={option.id} value={`${option.width}x${option.height}`}>
-                      {option.width} × {option.height}
-                    </option>
-                  ))}
-              </select>
+              <FlatSelect
+                value={`${currentSize.width}x${currentSize.height}`}
+                onChange={(value) => {
+                  const option = sizeOptions?.find(
+                    (item) => `${item.width}x${item.height}` === value,
+                  );
+                  if (option) onSelectSize?.({ width: option.width, height: option.height });
+                }}
+                label={t("welcome.prompt.sizeLabel")}
+                options={(sizeOptions ?? []).map((option) => ({
+                  value: `${option.width}x${option.height}`,
+                  label: `${option.width} × ${option.height}`,
+                }))}
+                className="welcome-composer-select w-full min-w-0"
+                triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs"
+                panelClassName="!z-[400]"
+                portal
+              />
             </ComposerField>
               </div>
               </div>
@@ -273,9 +288,9 @@ export function WelcomePromptComposer({
 
 function ComposerField({ label, children }) {
   return (
-    <label className="welcome-composer-field flex items-center gap-2">
+    <div className="welcome-composer-field flex items-center gap-2">
       <span className="welcome-composer-field-label w-24 shrink-0 truncate text-[10px] text-neutral-500">{label}</span>
       <span className="min-w-0 flex-1">{children}</span>
-    </label>
+    </div>
   );
 }

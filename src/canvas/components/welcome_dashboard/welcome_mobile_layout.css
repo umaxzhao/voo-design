@@ -395,29 +395,6 @@
   }
 }
 
-/* Quiet native selects used by the welcome prompt advanced panel. */
-.composer-select {
-  width: 100%;
-  min-height: 1.75rem;
-  appearance: none;
-  -webkit-appearance: none;
-  border-radius: 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background-color: #202020;
-  color: #d4d4d4;
-  color-scheme: dark;
-  padding: 0 0.45rem;
-  font-size: 11px;
-  line-height: 1.75rem;
-  outline: none;
-}
-.composer-select:focus-visible {
-  border-color: rgba(167, 255, 212, 0.5);
-}
-.composer-select:disabled {
-  opacity: 0.4;
-}
-
 @media (max-width: 768px) and (hover: none) and (pointer: coarse) {
   .welcome-composer-settings {
     width: calc(100vw - 2rem);
@@ -445,10 +422,10 @@
     line-height: 1rem;
   }
 
-  .welcome-composer-settings .composer-select {
-    min-height: 2.25rem;
-    padding-inline: 0.5rem;
-    font-size: 0.75rem;
-    line-height: 1.25rem;
+  .welcome-composer-select > button {
+    height: 3rem !important;
+    min-height: 3rem;
+    padding-inline: 0.625rem !important;
+    font-size: 0.75rem !important;
   }
 }
