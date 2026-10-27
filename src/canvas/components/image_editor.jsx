@@ -3492,6 +3492,19 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               if (event.button === 1) event.preventDefault();
             }}
           >
+            <div
+              aria-hidden
+              ref={freeGridRef}
+              data-testid="editor-free-grid"
+              className="pointer-events-none absolute inset-0 transition-opacity duration-200"
+              style={{
+                opacity: cameraZoom >= 1 && cameraZoom <= 1.5 ? 1 : 0,
+                backgroundImage:
+                  "radial-gradient(rgba(255, 255, 255, 0.14) 1.2px, transparent 1.2px)",
+                backgroundSize: `${20 * cameraZoom}px ${20 * cameraZoom}px`,
+                backgroundPosition: `${useDesignStore.getState().editorCamera?.panX || 0}px ${useDesignStore.getState().editorCamera?.panY || 0}px`,
+              }}
+            />
             <canvas
               ref={workspaceCanvasRef}
               data-testid="workspace-skia-canvas"
@@ -3505,19 +3518,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               data-testid="workspace-chrome-canvas"
               aria-hidden="true"
               className="pointer-events-none absolute inset-0 z-20 h-full w-full"
-            />
-            <div
-              aria-hidden
-              ref={freeGridRef}
-              data-testid="editor-free-grid"
-              className="pointer-events-none absolute inset-0 transition-opacity duration-200"
-              style={{
-                opacity: cameraZoom >= 1 && cameraZoom <= 1.5 ? 1 : 0,
-                backgroundImage:
-                  "radial-gradient(rgba(255, 255, 255, 0.14) 1.2px, transparent 1.2px)",
-                backgroundSize: `${20 * cameraZoom}px ${20 * cameraZoom}px`,
-                backgroundPosition: `${useDesignStore.getState().editorCamera?.panX || 0}px ${useDesignStore.getState().editorCamera?.panY || 0}px`,
-              }}
             />
             <div
               ref={artboardLayerRef}
