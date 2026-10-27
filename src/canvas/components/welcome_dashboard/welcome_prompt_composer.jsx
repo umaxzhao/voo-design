@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronDown, Layers, Monitor, MoreHorizontal, Palette, Plus, Sparkles, X } from "lucide-react";
+import { Plus, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { AI_GEN_TYPES } from "./welcome_constants.js";
-import { DEFAULT_STYLE_ID } from "./generation_intent.js";
+import { DEFAULT_DESIGN_SYSTEM_ID, DEFAULT_STYLE_ID } from "./generation_intent.js";
 
 /**
- * The welcome-screen generation composer: design type + real provider model +
- * style kit + frame size + reference attachments, all on one surface. Every
- * control here is wired; nothing is decorative.
+ * Pen-style welcome composer: one quiet prompt surface, a model label, an
+ * advanced generation popover, and send. The type/style/system/size/candidate
+ * choices stay in the popover so the default surface has no chip row.
  */
 export function WelcomePromptComposer({
   t,
@@ -21,6 +21,9 @@ export function WelcomePromptComposer({
   styleId,
   styleOptions,
   onSelectStyle,
+  designSystemId = DEFAULT_DESIGN_SYSTEM_ID,
+  designSystemOptions = [],
+  onSelectDesignSystem,
   size,
   sizeOptions,
   onSelectSize,
@@ -33,23 +36,25 @@ export function WelcomePromptComposer({
   configNeeded = false,
   onOpenSettings,
   onSubmit,
+  initialAdvancedOpen = false,
 }) {
-  const [openMenu, setOpenMenu] = useState(null);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(initialAdvancedOpen);
+  const [panelPos, setPanelPos] = useState(null);
   const rootRef = useRef(null);
+  const formRef = useRef(null);
+  const panelRef = useRef(null);
   const activePreset = AI_GEN_TYPES.find((preset) => preset.id === activePill) ?? AI_GEN_TYPES[0];
-  const activeStyle = styleOptions?.find((style) => style.id === styleId);
-  const styleLabel = activeStyle?.name ?? t("welcome.prompt.styleAuto");
-  const sizeLabel = `${size?.width ?? activePreset.width} × ${size?.height ?? activePreset.height}`;
+  const currentSize = size ?? { width: activePreset.width, height: activePreset.height };
 
   useEffect(() => {
-    if (!openMenu) return undefined;
+    if (!advancedOpen) return undefined;
     const onPointerDown = (event) => {
       if (rootRef.current?.contains(event.target)) return;
-      setOpenMenu(null);
+      if (panelRef.current?.contains(event.target)) return;
+      setAdvancedOpen(false);
     };
     const onKeyDown = (event) => {
-      if (event.key === "Escape") setOpenMenu(null);
+      if (event.key === "Escape") setAdvancedOpen(false);
     };
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
@@ -57,61 +62,30 @@ export function WelcomePromptComposer({
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [openMenu]);
+  }, [advancedOpen]);
 
-  const toggle = (menu) => setOpenMenu((current) => (current === menu ? null : menu));
+  useEffect(() => {
+    if (!advancedOpen) return undefined;
+    const place = () => {
+      const rect = formRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setPanelPos({
+        left: Math.max(8, Math.min(rect.right - 320, window.innerWidth - 328)),
+        top: Math.min(rect.bottom + 8, window.innerHeight - 360),
+      });
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [advancedOpen]);
 
   return (
-    <div
-      ref={rootRef}
-      data-mobile-options-open={advancedOpen ? "true" : "false"}
-      className="welcome-prompt-root relative"
-    >
-      {/* Design type chips: they choose the scene guidance and the default frame. */}
-      <div className="welcome-prompt-type-options">
-        <div className="flex justify-center">
-          <div
-            className="flex items-center gap-1.5 flex-wrap justify-center"
-            role="radiogroup"
-            aria-label={t("welcome.prompt.generationTypeLabel")}
-          >
-            {AI_GEN_TYPES.map((typeItem) => {
-              const Icon = typeItem.icon;
-              const isSelected = activePill === typeItem.id;
-              return (
-                <button
-                  key={typeItem.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={isSelected}
-                  onClick={() => onSelectPill?.(typeItem.id)}
-                  className={`group flex min-w-[5rem] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
-                    isSelected
-                      ? "bg-neutral-800 text-white shadow-pop ring-1 ring-white/10"
-                      : "bg-neutral-900/70 text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200"
-                  }`}
-                >
-                  {Icon && (
-                    <Icon size={13} className={`transition-colors ${isSelected ? "text-neutral-200" : "text-neutral-500 group-hover:text-neutral-300"}`} />
-                  )}
-                  <span className="whitespace-nowrap">{t(typeItem.label)}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        <p className="mx-auto mt-2 max-w-3xl px-2 text-center text-[11px] leading-relaxed text-neutral-500">
-          {t(activePreset.guidance)}
-        </p>
-      </div>
-
-      {/* Central prompt box */}
+    <div ref={rootRef} data-advanced-open={advancedOpen ? "true" : "false"} className="welcome-prompt-root relative">
       <form
+        ref={formRef}
         onSubmit={onSubmit}
-        className="prompt-composer relative mt-3 min-w-0 rounded-3xl p-4 transition-all"
+        className={`prompt-composer relative mt-3 min-w-0 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3 transition-colors focus-within:border-white/15 ${advancedOpen ? "z-[300]" : ""}`}
       >
-        <div className="absolute -top-px left-1/4 right-1/4 h-px bg-white/10 pointer-events-none" />
-
         <textarea
           value={promptText}
           onChange={(event) => setPromptText(event.target.value)}
@@ -121,10 +95,10 @@ export function WelcomePromptComposer({
               onSubmit?.(event);
             }
           }}
-          placeholder={t(activePreset.placeholder)}
+          placeholder={t("welcome.prompt.placeholder")}
           rows={3}
           aria-label={t("welcome.prompt.placeholder")}
-          className="w-full resize-none bg-transparent text-xs text-neutral-100 placeholder-neutral-400 focus:outline-none"
+          className="w-full resize-none bg-transparent text-[12px] leading-6 text-neutral-100 placeholder-neutral-400 focus:outline-none"
         />
 
         {attachments?.length > 0 && (
@@ -153,269 +127,169 @@ export function WelcomePromptComposer({
           </ul>
         )}
 
-        <div className="welcome-prompt-controls-row mt-2 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => onAddAttachments?.()}
+            className="flex size-7 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-white/[0.06] hover:text-white"
+            title={t("welcome.prompt.addAttachment")}
+            aria-label={t("welcome.prompt.addAttachment")}
+          >
+            <Plus size={14} />
+          </button>
+
+          <div className="flex min-w-0 items-center gap-1">
             <button
               type="button"
-              onClick={() => onAddAttachments?.()}
-              className="flex size-7 items-center justify-center rounded-xl bg-neutral-800/60 text-neutral-400 transition-colors hover:bg-neutral-700/80 hover:text-white cursor-pointer"
-              title={t("welcome.prompt.addAttachment")}
-              aria-label={t("welcome.prompt.addAttachment")}
+              onClick={() => (configNeeded ? onOpenSettings?.() : setAdvancedOpen((open) => !open))}
+              aria-label={t("welcome.prompt.modelLabel")}
+              title={selectedModel || ""}
+              className={`flex max-w-[13rem] min-w-0 items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] transition-colors hover:bg-white/[0.06] ${
+                configNeeded ? "text-amber-300" : "text-neutral-400 hover:text-neutral-200"
+              }`}
             >
-              <Plus size={14} />
+              <Sparkles size={12} className="shrink-0" aria-hidden="true" />
+              <span className="truncate">{modelLabel}</span>
             </button>
-          </div>
-
-          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
-            {/* Style kit */}
-            <div className="welcome-prompt-option welcome-prompt-option-style relative">
-              <button
-                type="button"
-                onClick={() => toggle("style")}
-                aria-haspopup="listbox"
-                aria-expanded={openMenu === "style"}
-                aria-label={t("welcome.prompt.styleLabel")}
-                className="flex max-w-40 items-center gap-1 rounded-lg bg-neutral-800/70 px-2.5 py-1 text-[11px] text-neutral-300 transition-colors hover:bg-neutral-700/80 hover:text-white"
-              >
-                <Palette size={12} className="shrink-0 text-neutral-400" aria-hidden="true" />
-                <span className="truncate">{styleLabel}</span>
-                <ChevronDown size={10} className="shrink-0" aria-hidden="true" />
-              </button>
-              {openMenu === "style" && (
-                <div
-                  role="listbox"
-                  aria-label={t("welcome.prompt.styleLabel")}
-                  className="absolute right-0 top-9 z-30 max-h-72 w-64 overflow-y-auto rounded-xl border border-white/10 bg-[#171717] p-1.5 shadow-panel"
-                >
-                  <StyleOption
-                    label={t("welcome.prompt.styleAuto")}
-                    hint={t("welcome.prompt.styleAutoHint")}
-                    active={!styleId || styleId === DEFAULT_STYLE_ID}
-                    onClick={() => {
-                      onSelectStyle?.(DEFAULT_STYLE_ID);
-                      setOpenMenu(null);
-                    }}
-                  />
-                  {styleOptions?.map((style) => (
-                    <StyleOption
-                      key={style.id}
-                      label={style.name}
-                      hint={style.mood}
-                      swatch={style.swatch}
-                      active={styleId === style.id}
-                      onClick={() => {
-                        onSelectStyle?.(style.id);
-                        setOpenMenu(null);
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Provider model */}
-            <div className="welcome-prompt-option welcome-prompt-option-model relative">
-              <button
-                type="button"
-                onClick={() => toggle("model")}
-                aria-haspopup="listbox"
-                aria-expanded={openMenu === "model"}
-                aria-label={t("welcome.prompt.modelLabel")}
-                title={selectedModel || ""}
-                className={`flex max-w-48 items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] transition-colors hover:bg-neutral-700/80 ${
-                  configNeeded ? "bg-amber-500/15 text-amber-300" : "bg-neutral-800/70 text-neutral-300 hover:text-white"
-                }`}
-              >
-                <Sparkles size={12} className="shrink-0 text-neutral-400" aria-hidden="true" />
-                <span className="truncate">{modelLabel}</span>
-                <ChevronDown size={10} className="shrink-0" aria-hidden="true" />
-              </button>
-              {openMenu === "model" && (
-                <div
-                  role="listbox"
-                  aria-label={t("welcome.prompt.modelLabel")}
-                  className="absolute right-0 top-9 z-30 max-h-72 w-64 overflow-y-auto rounded-xl border border-white/10 bg-[#171717] p-1.5 shadow-panel"
-                >
-                  {configNeeded && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOpenMenu(null);
-                        onOpenSettings?.();
-                      }}
-                      className="mb-1 w-full rounded-lg bg-amber-500/15 px-2.5 py-2 text-left text-[11px] text-amber-300 transition-colors hover:bg-amber-500/25"
-                    >
-                      {t("welcome.prompt.configNeeded")}
-                    </button>
-                  )}
-                  {(modelGroups ?? []).map((group) => (
-                    <div key={group.cliId} className="flex flex-col">
-                      <div className="px-2 pb-0.5 pt-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-500">
-                        {group.name}
-                      </div>
-                      {group.models.map((model) => (
-                        <button
-                          key={model.id}
-                          type="button"
-                          role="option"
-                          aria-selected={selectedModel === model.id}
-                          onClick={() => {
-                            onSelectModel?.(model.id);
-                            setOpenMenu(null);
-                          }}
-                          className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-[12px] transition-colors hover:bg-white/[0.08] ${
-                            selectedModel === model.id
-                              ? "bg-[#E5B2FF]/15 font-medium text-[#eed0ff]"
-                              : "text-neutral-300"
-                          }`}
-                        >
-                          <span className="truncate">{model.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Variant count */}
-            <div className="welcome-prompt-option welcome-prompt-option-candidates relative">
-              <button
-                type="button"
-                onClick={() => toggle("candidates")}
-                aria-haspopup="listbox"
-                aria-expanded={openMenu === "candidates"}
-                aria-label={t("welcome.prompt.candidates")}
-                title={t("welcome.prompt.candidatesHint")}
-                className="flex items-center gap-1 rounded-lg bg-neutral-800/70 px-2.5 py-1 text-[11px] text-neutral-300 transition-colors hover:bg-neutral-700/80 hover:text-white"
-              >
-                <Layers size={12} className="shrink-0 text-neutral-400" aria-hidden="true" />
-                <span className="whitespace-nowrap">{t("welcome.prompt.candidateN", { n: candidates })}</span>
-              </button>
-              {openMenu === "candidates" && (
-                <div
-                  role="listbox"
-                  aria-label={t("welcome.prompt.candidates")}
-                  className="absolute right-0 top-9 z-30 w-48 overflow-hidden rounded-xl border border-white/10 bg-[#171717] p-1.5 shadow-panel"
-                >
-                  {[1, 2, 3].map((count) => (
-                    <button
-                      key={count}
-                      type="button"
-                      role="option"
-                      aria-selected={candidates === count}
-                      onClick={() => {
-                        onSelectCandidates?.(count);
-                        setOpenMenu(null);
-                      }}
-                      className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-[12px] transition-colors hover:bg-white/[0.08] ${
-                        candidates === count ? "bg-[#E5B2FF]/15 font-medium text-[#eed0ff]" : "text-neutral-300"
-                      }`}
-                    >
-                      <span>{t("welcome.prompt.candidateN", { n: count })}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Frame size */}
-            <div className="welcome-prompt-option welcome-prompt-option-size relative">
-              <button
-                type="button"
-                onClick={() => toggle("size")}
-                aria-haspopup="listbox"
-                aria-expanded={openMenu === "size"}
-                aria-label={t("welcome.prompt.sizeLabel")}
-                className="flex items-center gap-1 rounded-lg bg-neutral-800/70 px-2.5 py-1 text-[11px] text-neutral-300 transition-colors hover:bg-neutral-700/80 hover:text-white"
-              >
-                <Monitor size={12} className="shrink-0 text-neutral-400" aria-hidden="true" />
-                <span className="whitespace-nowrap font-mono">{sizeLabel}</span>
-              </button>
-              {openMenu === "size" && (
-                <div
-                  role="listbox"
-                  aria-label={t("welcome.prompt.sizeLabel")}
-                  className="absolute right-0 top-9 z-30 w-44 overflow-hidden rounded-xl border border-white/10 bg-[#171717] p-1.5 shadow-panel"
-                >
-                  {(sizeOptions ?? []).map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      role="option"
-                      aria-selected={size?.width === option.width && size?.height === option.height}
-                      onClick={() => {
-                        onSelectSize?.({ width: option.width, height: option.height });
-                        setOpenMenu(null);
-                      }}
-                      className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-[12px] transition-colors hover:bg-white/[0.08] ${
-                        size?.width === option.width && size?.height === option.height
-                          ? "bg-[#E5B2FF]/15 font-medium text-[#eed0ff]"
-                          : "text-neutral-300"
-                      }`}
-                    >
-                      <span className="font-mono">{option.width} × {option.height}</span>
-                      {option.id === `${activePreset.width}x${activePreset.height}` && (
-                        <span className="text-[10px] text-neutral-500">{t("welcome.prompt.sizePreset")}</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
 
             <button
               type="button"
-              className="welcome-prompt-more hidden size-9 items-center justify-center rounded-full text-neutral-400 hover:bg-white/10 hover:text-white"
-              aria-label={t("welcome.actions.more")}
-              aria-expanded={advancedOpen}
               onClick={() => setAdvancedOpen((open) => !open)}
+              aria-label={t("welcome.prompt.generationTypeLabel")}
+              aria-haspopup="dialog"
+              aria-expanded={advancedOpen}
+              className="flex size-7 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-white/[0.06] hover:text-neutral-200"
             >
-              <MoreHorizontal size={17} aria-hidden="true" />
+              <SlidersHorizontal size={14} />
             </button>
+
             <button
               type="submit"
               disabled={submitting}
-              className="flex size-7 items-center justify-center rounded-full bg-neutral-700 text-neutral-200 transition-colors hover:bg-mint hover:text-black disabled:opacity-50 cursor-pointer"
+              className="flex size-7 items-center justify-center rounded-full bg-white text-black transition-colors hover:bg-mint disabled:opacity-50"
               title={t("welcome.actions.createNowTitle")}
               aria-label={t("welcome.actions.createNowTitle")}
             >
-              <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+              <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
                 <line x1="12" y1="19" x2="12" y2="5" />
                 <polyline points="5 12 12 5 19 12" />
               </svg>
             </button>
           </div>
         </div>
+
+        {/* Advanced generation settings are portalled so the panel never clips. */}
+        {advancedOpen ? (
+              <div
+                ref={panelRef}
+                role="dialog"
+                aria-label={t("welcome.prompt.generationTypeLabel")}
+                className="fixed z-[250] w-80 rounded-2xl border border-white/10 bg-[#171717] p-3 shadow-panel"
+                style={panelPos ?? { left: -9999, top: 0 }}
+              >
+          <div className="space-y-2">
+            <ComposerField label={t("welcome.prompt.generationTypeLabel")}>
+              <select
+                value={activePill}
+                onChange={(event) => onSelectPill?.(event.target.value)}
+                className="composer-select appearance-none"
+                aria-label={t("welcome.prompt.generationTypeLabel")}
+              >
+                {AI_GEN_TYPES.map((typeItem) => (
+                  <option key={typeItem.id} value={typeItem.id}>{t(typeItem.label)}</option>
+                ))}
+              </select>
+            </ComposerField>
+
+            <ComposerField label={t("welcome.prompt.modelLabel")}>
+              <select
+                value={selectedModel ?? ""}
+                onChange={(event) => onSelectModel?.(event.target.value)}
+                className="composer-select appearance-none"
+                aria-label={t("welcome.prompt.modelLabel")}
+              >
+                {(modelGroups ?? []).map((group) => (
+                  <optgroup key={group.cliId} label={group.name}>
+                    {group.models.map((model) => (
+                      <option key={model.id} value={model.id}>{model.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </ComposerField>
+
+            <ComposerField label={t("welcome.prompt.styleLabel")}>
+              <select
+                value={styleId ?? DEFAULT_STYLE_ID}
+                onChange={(event) => onSelectStyle?.(event.target.value)}
+                disabled={designSystemId !== DEFAULT_DESIGN_SYSTEM_ID}
+                className="composer-select appearance-none"
+                aria-label={t("welcome.prompt.styleLabel")}
+              >
+                <option value={DEFAULT_STYLE_ID}>{t("welcome.prompt.styleAuto")}</option>
+                {(styleOptions ?? []).map((style) => (
+                  <option key={style.id} value={style.id}>{style.name}</option>
+                ))}
+              </select>
+            </ComposerField>
+
+            <ComposerField label={t("welcome.prompt.designSystem")}>
+              <select
+                value={designSystemId}
+                onChange={(event) => onSelectDesignSystem?.(event.target.value)}
+                className="composer-select appearance-none"
+                aria-label={t("welcome.prompt.designSystem")}
+              >
+                {(designSystemOptions ?? []).map((system) => (
+                  <option key={system.id} value={system.id}>{system.label}</option>
+                ))}
+              </select>
+            </ComposerField>
+
+            <ComposerField label={t("welcome.prompt.candidates")}>
+                <select
+                  value={candidates}
+                  onChange={(event) => onSelectCandidates?.(Number(event.target.value))}
+                  className="composer-select appearance-none"
+                  aria-label={t("welcome.prompt.candidates")}
+                >
+                  {[1, 2, 3].map((count) => (
+                    <option key={count} value={count}>{t("welcome.prompt.candidateN", { n: count })}</option>
+                  ))}
+              </select>
+            </ComposerField>
+            <ComposerField label={t("welcome.prompt.sizeLabel")}>
+                <select
+                  value={`${currentSize.width}x${currentSize.height}`}
+                  onChange={(event) => {
+                    const option = sizeOptions?.find(
+                      (item) => `${item.width}x${item.height}` === event.target.value,
+                    );
+                    if (option) onSelectSize?.({ width: option.width, height: option.height });
+                  }}
+                  className="composer-select appearance-none"
+                  aria-label={t("welcome.prompt.sizeLabel")}
+                >
+                  {(sizeOptions ?? []).map((option) => (
+                    <option key={option.id} value={`${option.width}x${option.height}`}>
+                      {option.width} × {option.height}
+                    </option>
+                  ))}
+              </select>
+            </ComposerField>
+              </div>
+              </div>
+        ) : null}
       </form>
     </div>
   );
 }
 
-function StyleOption({ label, hint, swatch, active, onClick }) {
+function ComposerField({ label, children }) {
   return (
-    <button
-      type="button"
-      role="option"
-      aria-selected={active}
-      onClick={onClick}
-      className={`flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/[0.08] ${
-        active ? "bg-[#E5B2FF]/15" : ""
-      }`}
-    >
-      {swatch ? (
-        <span className="mt-0.5 flex shrink-0 gap-0.5" aria-hidden="true">
-          {swatch.map((color) => (
-            <span key={color} className="size-2 rounded-full ring-1 ring-white/10" style={{ backgroundColor: color }} />
-          ))}
-        </span>
-      ) : (
-        <span className="mt-0.5 size-2 shrink-0 rounded-full bg-neutral-600" aria-hidden="true" />
-      )}
-      <span className="min-w-0">
-        <span className={`block truncate text-[12px] ${active ? "text-[#eed0ff]" : "text-neutral-200"}`}>{label}</span>
-        {hint && <span className="mt-0.5 block line-clamp-2 text-[10px] leading-snug text-neutral-500">{hint}</span>}
-      </span>
-    </button>
+    <label className="flex items-center gap-2">
+      <span className="w-24 shrink-0 truncate text-[10px] text-neutral-500">{label}</span>
+      <span className="min-w-0 flex-1">{children}</span>
+    </label>
   );
 }

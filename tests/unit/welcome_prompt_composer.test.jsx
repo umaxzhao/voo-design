@@ -42,6 +42,12 @@ function render(overrides = {}) {
       attachments={[]}
       candidates={1}
       onSelectCandidates={() => {}}
+      designSystemId="auto"
+      designSystemOptions={[
+        { id: "auto", label: "welcome.prompt.designSystemAuto", description: "" },
+        { id: "axiom", label: "AXIOM", description: "Avant-garde editorial tech" },
+      ]}
+      onSelectDesignSystem={() => {}}
       onAddAttachments={() => {}}
       onRemoveAttachment={() => {}}
       onSubmit={() => {}}
@@ -58,18 +64,29 @@ describe("welcome prompt composer", () => {
     expect(html).toContain("welcome.prompt.modelLabel");
   });
 
-  it("renders style, size and guidance controls", () => {
+  it("renders a quiet default surface with advanced settings hidden", () => {
     const html = render();
-    expect(html).toContain("welcome.prompt.styleAuto");
-    expect(html).toContain("1440 × 900");
-    expect(html).toContain("welcome.guide.landing");
     expect(html).toContain("welcome.prompt.addAttachment");
+    expect(html).toContain("welcome.prompt.generationTypeLabel");
+    expect(html).toContain('data-advanced-open="false"');
+    expect(html).toContain("hidden");
+    expect(html).not.toContain('role="radiogroup"');
   });
 
   it("exposes the variant count control", () => {
-    const html = render({ candidates: 2 });
+    const html = render({ candidates: 2, initialAdvancedOpen: true });
     expect(html).toContain("welcome.prompt.candidateN");
     expect(html).toContain("welcome.prompt.candidates");
+  });
+
+  it("exposes the design-system picker and disables the style kit once a system is chosen", () => {
+    const html = render({ initialAdvancedOpen: true });
+    expect(html).toContain("welcome.prompt.designSystem");
+    const systemHtml = render({ designSystemId: "axiom", initialAdvancedOpen: true });
+    expect(systemHtml).toContain("AXIOM");
+    const styleIndex = systemHtml.indexOf('aria-label="welcome.prompt.styleLabel"');
+    expect(styleIndex).toBeGreaterThan(-1);
+    expect(systemHtml.slice(Math.max(0, styleIndex - 240), styleIndex)).toContain("disabled");
   });
 
   it("does not show a decorative 1x parallel badge", () => {
@@ -85,9 +102,9 @@ describe("welcome prompt composer", () => {
     expect(html).toContain("welcome.prompt.removeAttachment");
   });
 
-  it("switches the guidance line with the selected design type", () => {
-    const html = render({ activePill: "mobile" });
-    expect(html).toContain("welcome.guide.mobile");
-    expect(html).not.toContain("welcome.guide.landing");
+  it("keeps design-type selection in the advanced dialog", () => {
+    const mobile = render({ activePill: "mobile", initialAdvancedOpen: true });
+    expect(mobile).toContain('<option value="mobile" selected="">welcome.pills.mobile</option>');
+    expect(mobile).not.toContain("welcome.guide.mobile");
   });
 });
