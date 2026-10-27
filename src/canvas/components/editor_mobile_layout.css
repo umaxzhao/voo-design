@@ -207,6 +207,13 @@
 
   [data-testid="design-editor"].editor-narrow .editor-mobile-panel-toggle {
     display: inline-flex;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  [data-testid="design-editor"].editor-narrow .editor-mobile-panel-toggle:hover,
+  [data-testid="design-editor"].editor-narrow .editor-mobile-panel-toggle:active {
+    background: transparent !important;
   }
 
   [data-testid="design-editor"].editor-narrow .editor-panel-side-swap {
@@ -220,13 +227,11 @@
     transform: none;
   }
 
-  /* Keep the page picker left, zoom controls right, and leave the outer edge
-     clear for the assistant button so the three canvas actions never collide. */
   [data-testid="design-editor"].editor-narrow .viewport-tools {
     bottom: calc(45% + 3.25rem);
-    left: auto;
-    right: calc(var(--editor-mobile-panel-gap) + 3rem);
-    transform: none;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
   }
 
   [data-testid="design-editor"].editor-narrow [data-testid="editor-toolbar"] > div {
@@ -302,25 +307,25 @@
   }
 
   [data-testid="editor-bottom-toolbar"] button {
-    min-width: 2.75rem;
-    min-height: 2.75rem;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
   }
 
   [data-testid="editor-bottom-toolbar"] {
-    padding: 2px 3px;
+    padding: 1px 2px;
   }
 
   [data-testid="editor-bottom-toolbar"] .editor-zoom-step,
   [data-testid="editor-bottom-toolbar"] .editor-zoom-more {
-    width: 2rem;
-    min-width: 2rem;
-    height: 2.75rem;
+    width: 2.25rem;
+    min-width: 2.5rem;
+    height: 2.5rem;
   }
 
   [data-testid="editor-bottom-toolbar"] [data-testid="editor-zoom-percent"] {
     width: 2.25rem;
     min-width: 2.25rem;
-    min-height: 2.75rem;
+    min-height: 2.5rem;
     padding-inline: 0;
   }
 

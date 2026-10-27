@@ -964,8 +964,11 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     nodeIds,
   );
   const { canUndo, canRedo } = presentationHistory;
-  const [mobileLayersExpanded, setMobileLayersExpanded] = useState(false);
-  const [mobilePropertiesExpanded, setMobilePropertiesExpanded] = useState(false);
+  const [mobilePanelsExpanded, setMobilePanelsExpanded] = useState(false);
+  const mobileLayersExpanded = mobilePanelsExpanded;
+  const mobilePropertiesExpanded = mobilePanelsExpanded;
+  const setMobileLayersExpanded = setMobilePanelsExpanded;
+  const setMobilePropertiesExpanded = setMobilePanelsExpanded;
   const applyMobilePinch = useCallback(
     ({ isStart, factor, centerX, centerY, deltaX, deltaY }) => {
       if (isStart) {
