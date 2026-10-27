@@ -1,0 +1,124 @@
+{
+  "revision": "59fc020cd433f7438d9b21e550b945d38fc5e988",
+  "verifiedAt": "2026-10-27T21:26:34.303Z",
+  "results": [
+    {
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "exitCode": 0,
+      "durationMs": 5879
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "lint:design"
+      ],
+      "exitCode": 0,
+      "durationMs": 2579
+    },
+    {
+      "command": [
+        "npm",
+        "test"
+      ],
+      "exitCode": 0,
+      "durationMs": 19950
+    },
+    {
+      "command": [
+        "/opt/homebrew/Cellar/node/26.7.0/bin/node",
+        "tests/e2e/editor-effects.e2e.mjs"
+      ],
+      "exitCode": 0,
+      "durationMs": 7070
+    },
+    {
+      "command": [
+        "/opt/homebrew/Cellar/node/26.7.0/bin/node",
+        "tests/e2e/agent-paint-text.e2e.mjs"
+      ],
+      "exitCode": 0,
+      "durationMs": 5930
+    },
+    {
+      "command": [
+        "/opt/homebrew/Cellar/node/26.7.0/bin/node",
+        "tests/e2e/layout-mask-audit.e2e.mjs"
+      ],
+      "exitCode": 0,
+      "durationMs": 6332
+    },
+    {
+      "command": [
+        "/opt/homebrew/Cellar/node/26.7.0/bin/node",
+        "tests/e2e/inspector-controls.e2e.mjs"
+      ],
+      "exitCode": 0,
+      "durationMs": 8047
+    },
+    {
+      "command": [
+        "/opt/homebrew/Cellar/node/26.7.0/bin/node",
+        "tests/e2e/drawing-retouch.e2e.mjs"
+      ],
+      "exitCode": 0,
+      "durationMs": 21763
+    },
+    {
+      "command": [
+        "/opt/homebrew/Cellar/node/26.7.0/bin/node",
+        "tests/e2e/pending-integration.e2e.mjs"
+      ],
+      "exitCode": 0,
+      "durationMs": 7061
+    }
+  ],
+  "unitTests": {
+    "passed": 3689,
+    "skipped": 12,
+    "failed": 0,
+    "passedFiles": 428,
+    "skippedFiles": 3
+  },
+  "browserChecks": {
+    "suites": 6,
+    "scenarios": 71
+  },
+  "deployment": {
+    "revision": "59fc020cd433f7438d9b21e550b945d38fc5e988",
+    "url": "https://voo.run/editor/",
+    "htmlMatches": true,
+    "assets": 30,
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "pageErrors": 0,
+        "textLength": 499
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "pageErrors": 0,
+        "textLength": 102
+      }
+    ],
+    "checkedAt": "2026-10-27T21:27:52.836Z",
+    "host": "la2",
+    "backupPath": "/srv/voo-run/editor-backups/59fc020cd433f7438d9b21e550b945d38fc5e988-20261027T212641Z"
+  },
+  "githubSync": {
+    "pushed": false,
+    "httpsFailure": "Configured GitHub credential is invalid; terminal cannot prompt for username.",
+    "sshFailure": "Existing SSH account kesyn lacks write permission to umaxzhao/voo-design.",
+    "historyPreserved": true
+  }
+}
