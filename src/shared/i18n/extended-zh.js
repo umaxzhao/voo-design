@@ -866,6 +866,8 @@ export default {
   "editor.liveFilters.moveUp": "在滤镜栈中上移",
   "editor.liveFilters.moveDown": "在滤镜栈中下移",
   "editor.liveFilters.remove": "移除滤镜",
+  "editor.liveFilters.maskFromSelection": "从选区生成蒙版",
+  "editor.liveFilters.maskRemove": "移除滤镜蒙版",
   "editor.liveFilter.kind.blur": "模糊",
   "editor.liveFilter.kind.sharpen": "锐化",
   "editor.liveFilter.kind.noise": "杂色",

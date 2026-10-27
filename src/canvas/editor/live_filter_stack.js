@@ -88,6 +88,7 @@ export function createLiveFilterEntry(kind, params = {}) {
     enabled = true,
     opacity = 1,
     blendMode = "normal",
+    mask = null,
     ...rest
   } = params;
   return {
@@ -96,6 +97,7 @@ export function createLiveFilterEntry(kind, params = {}) {
     enabled: Boolean(enabled),
     opacity: clamp01(opacity),
     blendMode: STACK_BLEND_MODES.includes(blendMode) ? blendMode : "normal",
+    mask: normalizeFilterMask(mask),
     params: rest,
   };
 }
@@ -121,6 +123,7 @@ export function normalizeLiveFilterStack(stack) {
       blendMode: STACK_BLEND_MODES.includes(entry.blendMode)
         ? entry.blendMode
         : "normal",
+      mask: normalizeFilterMask(entry.mask),
       params:
         entry.params && typeof entry.params === "object" ? entry.params : {},
     }));
@@ -153,7 +156,8 @@ export function applyLiveFilterStack(data, width, height, stack, naturalWidth = 
     const params = entry.params || {};
     const value = Number(params.value ?? params.amount ?? params.radius ?? 50);
     const blendMode = entry.blendMode ?? "normal";
-    const needsPre = opacity < 1 || blendMode !== "normal";
+    const mask = normalizeFilterMask(entry.mask);
+    const needsPre = opacity < 1 || blendMode !== "normal" || Boolean(mask);
     const pre = needsPre ? Uint8ClampedArray.from(data) : null;
 
     switch (entry.kind) {
@@ -251,8 +255,64 @@ export function applyLiveFilterStack(data, width, height, stack, naturalWidth = 
         data[i] = Math.round(data[i] * opacity + pre[i] * (1 - opacity));
       }
     }
+    if (pre && mask) {
+      applyFilterMask(data, pre, width, height, mask);
+    }
   }
   return data;
+}
+
+/** A filter mask is a set of normalised (0..1) contours in the node's box. */
+export function normalizeFilterMask(mask) {
+  if (!mask || typeof mask !== "object" || !Array.isArray(mask.contours)) {
+    return null;
+  }
+  const contours = mask.contours
+    .filter((ring) => Array.isArray(ring) && ring.length >= 3)
+    .map((ring) =>
+      ring
+        .map((point) =>
+          Array.isArray(point) && point.length >= 2
+            ? [Number(point[0]), Number(point[1])]
+            : null,
+        )
+        .filter(
+          (point) =>
+            point && Number.isFinite(point[0]) && Number.isFinite(point[1]),
+        ),
+    )
+    .filter((ring) => ring.length >= 3);
+  return contours.length ? { contours } : null;
+}
+
+/** Even-odd coverage for a stack entry mask at one normalised point. */
+function maskCovers(contours, nx, ny) {
+  let inside = false;
+  for (const ring of contours) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i += 1) {
+      const [xi, yi] = ring[i];
+      const [xj, yj] = ring[j];
+      if (yi > ny !== yj > ny && nx < ((xj - xi) * (ny - yi)) / (yj - yi) + xi) {
+        inside = !inside;
+      }
+    }
+  }
+  return inside;
+}
+
+/** Restores pre-filter pixels outside the mask (hard edge for now). */
+function applyFilterMask(data, pre, width, height, mask) {
+  const contours = mask.contours;
+  for (let i = 0, pixel = 0; i < data.length; i += 4, pixel += 1) {
+    const nx = ((pixel % width) + 0.5) / width;
+    const ny = (Math.floor(pixel / width) + 0.5) / height;
+    if (!maskCovers(contours, nx, ny)) {
+      data[i] = pre[i];
+      data[i + 1] = pre[i + 1];
+      data[i + 2] = pre[i + 2];
+      data[i + 3] = pre[i + 3];
+    }
+  }
 }
 
 /**

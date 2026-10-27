@@ -76,6 +76,46 @@ describe("single filter surface", () => {
     expect(html).not.toContain('data-testid="editor-live-filter-section"');
   });
 
+  it("applies a filter only inside its selection mask", () => {
+    const mask = {
+      contours: [
+        [
+          [0, 0],
+          [0.5, 0],
+          [0.5, 1],
+          [0, 1],
+        ],
+      ],
+    };
+    const data = new Uint8ClampedArray(4 * 4 * 4);
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = 120;
+      data[i + 1] = 120;
+      data[i + 2] = 120;
+      data[i + 3] = 255;
+    }
+    const masked = new Uint8ClampedArray(data);
+    applyLiveFilterStack(
+      masked,
+      4,
+      4,
+      [createLiveFilterEntry("sepia", { value: 100, mask })],
+    );
+    const unmasked = new Uint8ClampedArray(data);
+    applyLiveFilterStack(
+      unmasked,
+      4,
+      4,
+      [createLiveFilterEntry("sepia", { value: 100 })],
+    );
+    // Left half (masked) changed; right half stayed original.
+    expect(masked[0]).not.toBe(120);
+    expect(masked[3 * 4]).toBe(120);
+    expect(masked[3 * 4 + 1]).toBe(120);
+    // The full-frame filter changes both halves.
+    expect(unmasked[3 * 4]).not.toBe(120);
+  });
+
   it("keeps a per-entry blend mode and applies it over the pre-filter pixels", () => {
     const entry = createLiveFilterEntry("sepia", { value: 80, blendMode: "multiply" });
     expect(entry.blendMode).toBe("multiply");

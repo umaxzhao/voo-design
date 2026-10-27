@@ -32,6 +32,7 @@ import {
   isBooleanNode,
 } from "../editor/scene_model.js";
 import { isRowSelected } from "../editor/layer_selection.js";
+import { adjustmentLabelKey } from "../editor/adjustment_catalog.js";
 import { useI18n } from "../use_i18n.js";
 import EditorTooltip from "./editor_tooltip.jsx";
 import EditorLayerThumb, { MaskThumb } from "./editor_layer_thumb.jsx";
@@ -1680,6 +1681,42 @@ export default function EditorLayers({
                                       <div className="pointer-events-none absolute -bottom-[3px] left-1 right-1 z-20 h-[2px] rounded-full bg-[#a7ffd4]" />
                                     ) : null}
                                   </div>
+                                  {Array.isArray(object.adjustments?.liveFilters) &&
+                                  object.adjustments.liveFilters.length > 0 ? (
+                                    <div
+                                      className="ml-7 flex flex-col gap-0.5 pb-1"
+                                      data-testid={`layer-filter-sublist-${object.id}`}
+                                    >
+                                      {object.adjustments.liveFilters
+                                        .filter((entry) => entry?.kind)
+                                        .map((entry) => (
+                                          <div
+                                            key={entry.id ?? entry.kind}
+                                            className="flex items-center gap-1.5 rounded-md bg-white/[0.02] px-2 py-0.5 text-[10px] text-neutral-400"
+                                          >
+                                            <span
+                                              aria-hidden="true"
+                                              className={`h-1.5 w-1.5 rounded-full ${
+                                                entry.enabled === false
+                                                  ? "bg-neutral-600"
+                                                  : "bg-[#38bdf8]"
+                                              }`}
+                                            />
+                                            <span className="min-w-0 flex-1 truncate">
+                                              {t(adjustmentLabelKey(entry.kind))}
+                                            </span>
+                                            {entry.mask ? (
+                                              <span
+                                                className="text-[9px] font-mono text-[#a7ffd4]"
+                                                title={t("editor.liveFilters.maskFromSelection")}
+                                              >
+                                                M
+                                              </span>
+                                            ) : null}
+                                          </div>
+                                        ))}
+                                    </div>
+                                  ) : null}
                                   {instanceExpandable &&
                                   (!collapsed || query) ? (
                                     <EditorInstanceChildRows

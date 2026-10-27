@@ -269,6 +269,15 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
+      {!isWarpTool && object.kind === "image" && (tool ?? TOOL.SELECT) === TOOL.SELECT ? (
+        <ImageContextActions
+          object={object}
+          engine={engine}
+          editAndCommit={editAndCommit}
+          bitmap={getBitmap?.(object) ?? null}
+        />
+      ) : null}
+
       {/* Text keeps opacity/blend after Fill: the type → paint → appearance
           order matches Figma, and the Fill row sits next to the text block
           instead of behind a section the user rarely touches. */}
@@ -309,15 +318,7 @@ export default function PropertiesPanelSections({
         />
       ) : null}
 
-      {/* Image-only tools: one collapsed disclosure right after fill / stroke. */}
-      {!isWarpTool && object.kind === "image" && (tool ?? TOOL.SELECT) === TOOL.SELECT ? (
-        <ImageContextActions
-          object={object}
-          engine={engine}
-          editAndCommit={editAndCommit}
-          bitmap={getBitmap?.(object) ?? null}
-        />
-      ) : null}
+      {/* Image tools sit before Fill/Stroke so the histogram and image actions stay on the first screen. */}
       {show("variables") ? (
         <ColorVariablesSection
           object={object}
@@ -354,6 +355,7 @@ export default function PropertiesPanelSections({
           swapSide={swapSide}
           panelRef={panelRef}
           getBitmap={getBitmap}
+          engine={engine}
         />
       ) : null}
 
