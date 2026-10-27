@@ -21,11 +21,11 @@ describe("EditorContextualTaskBar fixed controls", () => {
     expect(html).toContain('aria-label="editor.taskbar.invert"');
   });
 
-  it("renders the finish-path button in the pen context", () => {
+  it.each([TOOL.PEN, TOOL.CURVATURE_PEN, TOOL.FREE_PEN])("renders the finish-path button for %s", (tool) => {
     const html = renderToStaticMarkup(
       <EditorContextualTaskBar
         engine={{ penEdit: true }}
-        tool={TOOL.PEN}
+        tool={tool}
       />,
     );
     expect(html).toContain('aria-label="editor.pen.closeEdit"');

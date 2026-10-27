@@ -59,7 +59,8 @@ function render(overrides = {}) {
 describe("welcome prompt composer", () => {
   it("shows the real provider model instead of a decorative label", () => {
     const html = render();
-    expect(html).toContain("Claude Code · Opus 5.5");
+    expect(html).toContain("Opus 5.5");
+    expect(html).toContain('title="Opus 5.5"');
     expect(html).not.toContain("VOO Agent 3.5");
     expect(html).toContain("welcome.prompt.modelLabel");
   });

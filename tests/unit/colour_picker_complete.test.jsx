@@ -24,7 +24,6 @@ import {
 } from "../../src/canvas/color_picker/opacity_patch.js";
 import extendedEnglish from "../../src/shared/i18n/extended-en.js";
 import extendedChinese from "../../src/shared/i18n/extended-zh.js";
-import { BLEND_MODES } from "../../src/canvas/editor/scene_model.js";
 import { FillSection } from "../../src/canvas/components/editor_properties/colour_fill_section.jsx";
 import { StrokeSection } from "../../src/canvas/components/editor_properties/colour_stroke_section.jsx";
 
@@ -70,29 +69,26 @@ describe("blend mode placement", () => {
     expect(html).not.toContain("<select");
   });
 
-  it("lists every BLEND_MODES entry in the picker, with source-over labelled Normal", () => {
+  it("shows Normal on the closed custom blend dropdown", () => {
     const html = picker({ blendMode: "source-over", onBlendModeChange: noop });
     expect(html).toContain('data-testid="picker-blend-mode"');
-    expect(html).toContain('<option value="source-over" class="bg-neutral-900" selected="">Normal</option>');
-    for (const mode of BLEND_MODES) expect(html).toContain(`value="${mode}"`);
-    expect(html.match(/<option value="[a-z-]+" class="bg-neutral-900"[^>]*>(?!RGB|HEX|CSS|HSL|HSB)/g)).toHaveLength(BLEND_MODES.length);
+    expect(html).toContain('aria-haspopup="listbox"');
+    expect(html).toContain('>Normal</span>');
+    expect(html).not.toContain("<select");
   });
 
-  it("selects the layer's current mode, and is hidden when no blend binding is given", () => {
-    expect(picker({ blendMode: "multiply", onBlendModeChange: noop })).toContain('value="multiply" class="bg-neutral-900" selected=""');
+  it("shows the current blend mode and hides unbound blend controls", () => {
+    expect(picker({ blendMode: "multiply", onBlendModeChange: noop })).toContain('>multiply</span>');
     expect(picker()).not.toContain("picker-blend-mode");
   });
 });
 
 describe("colour model dropdown", () => {
-  it("offers RGB, HEX, CSS, HSL and HSB", () => {
+  it("defaults to HEX in the closed custom model dropdown", () => {
     const html = picker();
-    expect(html).toContain('data-testid="colour-model-select"');
-    const select = html.match(/data-testid="colour-model-select".*?<\/select>/s)[0];
-    const options = [...select.matchAll(/<option value="([A-Z]+)"/g)].map((m) => m[1]);
-    expect(options).toEqual(["RGB", "HEX", "CSS", "HSL", "HSB"]);
-    // HEX stays the default model.
-    expect(select).toContain('value="HEX" class="bg-neutral-900" selected=""');
+    expect(html).toMatch(/<button[^>]*data-testid="colour-model-select"[^>]*aria-haspopup="listbox"/);
+    expect(html).toContain('>HEX</span>');
+    expect(html).not.toContain("<select");
   });
 
   it("shows different inputs after switching to HSL", () => {

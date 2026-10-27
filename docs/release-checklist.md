@@ -15,7 +15,7 @@
 - [ ] Update app icon files: `build/icon.ico`, `build/icon.png`, `build/icon.icns`
 
 ### Build & Testing
-- [ ] Run `npm test` — all suites pass (verified: 164 test files, 1954 passed, 5 skipped)
+- [ ] Run `npm run build` before `npm test` in a clean checkout; artifact tests require the generated `dist/` tree. Record the exact commit and current result rather than reusing a historical pass count.
   - Verify no flaky test failures (race conditions fixed in M4)
   - Verify agent tools e2e passes: `npm run test:e2e`
 - [ ] Run `npm run build` — production vite bundle succeeds
@@ -227,6 +227,8 @@ For detailed feature inventory, see:
 - [ ] Use Node 22.12+ for the current Electron/build tooling, then `npm ci` (npm network uses the configured HTTPS_PROXY/HTTP_PROXY).
 - [ ] Keep source under `LICENSE` (MIT); review `EULA.md` for binary distribution. About is available in the title bar and native Help menu (app menu on macOS), with English/Chinese labels.
 - [ ] `npm run notices` walks installed production dependencies recursively and produces `public/THIRD_PARTY_NOTICES.json`, `public/LICENSE`, and `public/EULA.md`. These are generated assets, bundled into `dist/`, and accessible in About. Review missing/undeclared licenses and upstream license supplements in `scripts/license-texts/` on dependency upgrades.
+
+  The generated `public/` notice/license/EULA files are intentionally ignored by Git and can be absent in a fresh checkout. `npm run build` runs `npm run notices` through `prebuild`; verify the resulting `dist/EULA.md` and `dist/THIRD_PARTY_NOTICES.json` after building. Their absence before generation is not a broken source-document link. The tracked source is [EULA.md](../EULA.md), [LICENSE](../LICENSE), and the [notice generator](../scripts/generate-third-party-notices.mjs).
 - [ ] Run `npm test`, `npm run build`, and `npm run dist`. Read the complete builder log; missing production modules are release blockers. Keep `release/` uncommitted.
 - [ ] Run `npm run smoke:packaged` on Linux with `xvfb-run` installed. It launches the actual AppImage with an isolated temporary profile, disables updates, asserts a nonzero canvas, rejects renderer console errors, captures `docs/screenshots/packaged-smoke.png`, and exits. Inspect the screenshot as well.
 - [ ] Packaged builds check GitHub Releases (`umaxzhao/voo-design`) once at launch, download automatically, and install on quit or explicit Restart. Offline failures are logged silently. `VOO_DISABLE_UPDATES=1` disables checks; development/browser builds do not check. Dismiss hides the current notification only.

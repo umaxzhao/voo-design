@@ -2,6 +2,10 @@
 
 ## 1.0.0
 
+- 2026-10-28 verification follow-up: replace stale native-select/radio-row assertions with custom-menu contracts and real browser option/callback checks; restore the pen taskbar's finish-path action.
+- Mobile editor: touch-aware layouts, independently collapsible panels and panel tabs, larger properties allocation, viewport gestures, compact file actions and mobile onboarding without local CLI setup.
+- Menus: editor colour/blend, typography, variants and other native dropdowns now use the shared custom menu with keyboard navigation and consistent dark styling.
+- Agent mutations: structured gradients, layer effects/blur, stroke details, blend modes and extended typography fields share validation across single and batch updates; group layout translates descendants atomically and Auto Layout enable/alignment aliases match the scene model.
 - Canvas resize: dragging page edges, size presets and exact sizes now resolve child constraints (right, bottom, centre, stretch, scale, nested containers) in one undoable step.
 - Skia text rendering keeps the italic style.
 - Right panel: Figma-style fill and stroke type menus, independent horizontal/vertical anchor arms, nine-position anchor selector, Layers/Assets tabs on the left panel.

@@ -12,12 +12,13 @@ describe('variant inspector', () => {
     const html = renderToStaticMarkup(<VariantsSection engine={engine} node={{ id: 'instance', sourceCanvasId: 'main' }} />);
     expect(html).toContain('aria-label="Size"');
     expect(html).toContain('aria-label="State"');
-    expect(html).toContain('value="Small" selected');
+    expect(html).toContain('>Small</span>');
+    expect(html).toContain('>Idle</span>');
   });
   it('renders a single dropdown for plain names', () => {
     const plainEngine = { getDocument: () => ({ ...host, components: { main: { ...main, variantName: 'Default' }, large } }) };
     const html = renderToStaticMarkup(<VariantsSection engine={plainEngine} node={{ id: 'instance', sourceCanvasId: 'main' }} />);
-    expect(html.match(/<select/g)).toHaveLength(1);
+    expect(html.match(/aria-haspopup="listbox"/g)).toHaveLength(1);
     expect(html).toContain('Default');
   });
   it('renders Add variant for main components', () => {
@@ -30,7 +31,7 @@ describe('variant inspector', () => {
   });
   it('shows the selected variant values with the purple accent, mint only on focus', () => {
     const html = renderToStaticMarkup(<VariantsSection engine={engine} node={{ id: 'instance', sourceCanvasId: 'main' }} />);
-    const selects = html.match(/<select[^>]*>/g) ?? [];
+    const selects = (html.match(/<button[^>]*>/g) ?? []).filter(tag => tag.includes('aria-haspopup="listbox"'));
     expect(selects).toHaveLength(2);
     for (const tag of selects) {
       expect(tag).toContain('bg-[#E5B2FF]/15');

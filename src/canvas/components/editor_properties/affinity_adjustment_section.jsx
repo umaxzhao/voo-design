@@ -144,13 +144,12 @@ export default function AffinityAdjustmentSection({
   // Determine if active category is enabled
   const isEnabled = adjustments[kind]?.enabled !== false;
   const toggleEnabled = (checked) => {
-    updateCategory(kind, { enabled: checked });
-    // Also toggle paired parameter if applicable
-    if (kind === "contrast" && adjustments.brightness) {
-      updateCategory("brightness", { enabled: checked });
-    } else if (kind === "brightness" && adjustments.contrast) {
-      updateCategory("contrast", { enabled: checked });
-    }
+    const next = { ...adjustments, [kind]: { ...adjustments[kind], enabled: checked } };
+    const paired = kind === "contrast" ? "brightness" : kind === "brightness" ? "contrast" : null;
+    // Both values share one snapshot; a second edit would restore the first
+    // category from the stale render props and create a second undo boundary.
+    if (paired && adjustments[paired]) next[paired] = { ...adjustments[paired], enabled: checked };
+    editAndCommit({ adjustments: next });
   };
 
   const titleKey = adjustmentLabelKey(kind);

@@ -6,7 +6,7 @@ vi.mock("react", async (importOriginal) => {
     useState: (initial) => {
       if (!hooks.active) return actual.useState(initial);
       const index = hooks.index++;
-      if (!(index in hooks.values)) hooks.values[index] = initial;
+      if (!(index in hooks.values)) hooks.values[index] = typeof initial === "function" ? initial() : initial;
       return [hooks.values[index], value => { hooks.values[index] = typeof value === "function" ? value(hooks.values[index]) : value; }];
     },
     useRef: (value) => {
@@ -154,6 +154,7 @@ describe("first-run interactions", () => {
   const step = () => elements(tree).find(el => el.props?.["data-step"])?.props["data-step"];
   beforeEach(async () => {
     await loadLocale("en");
+    vi.stubGlobal("window", Object.assign(new EventTarget(), { matchMedia: () => ({ matches: false }) }));
     hooks.active = true; hooks.values = []; hooks.refs = [];
     reopened = false;
     useDesignStore.setState({ isDirty: false, nodes: [] });

@@ -61,12 +61,14 @@ describe("compact text section", () => {
     expect(html).toContain("%");
   });
 
-  it("lists each font weight once (400 reads as Regular)", () => {
+  it("shows the current font weight once (400 reads as Regular)", () => {
     const html = render();
     const normalOptions = html.match(/editor\.props\.weight\.normal/g) ?? [];
     const boldOptions = html.match(/editor\.props\.weight\.700/g) ?? [];
     expect(normalOptions).toHaveLength(1);
-    expect(boldOptions).toHaveLength(1);
+    expect(boldOptions).toHaveLength(0);
+    expect(html).toContain('aria-label="editor.props.fontWeight"');
+    expect(html).toContain('aria-haspopup="listbox"');
     expect(html).not.toContain("editor.props.weight.400");
   });
 

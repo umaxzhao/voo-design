@@ -1,5 +1,7 @@
 # Agent mutation and documentation follow-up — 2026-10-27
 
+> Historical evidence for the commits named below, not a certification of current `origin/main`. The 3674 figure came from the shared working tree and must not be used as a clean-release result. A later clean checkout at `497a125` reproduced eleven failures after the custom-menu/mobile changes; see the 2026-10-28 verification follow-up for the current gate.
+
 ## Changes and confirmed defects
 
 The documentation reorganization was already committed in main before this follow-up. It was not recommitted wholesale. The remaining capability gaps were checked against the actual panel, model normalizers, renderer and MCP tool catalog.

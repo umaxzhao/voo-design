@@ -28,8 +28,9 @@ describe("mobile editor layout", () => {
     expect(css).toContain("height: calc(81.818% - var(--editor-mobile-panel-gap))");
     expect(css).toContain('data-properties-open="true"');
     expect(css).toContain("width: calc(100% - 2 * var(--editor-mobile-panel-gap))");
-    expect(css).toContain("width: calc((100% - 3 * var(--editor-mobile-panel-gap)) / 2)");
-    expect(css).toContain("left: calc(50% + var(--editor-mobile-panel-gap) / 2)");
+    expect(css).toContain("width: calc((100% - 3 * var(--editor-mobile-panel-gap)) * 8 / 17)");
+    expect(css).toContain("width: calc((100% - 3 * var(--editor-mobile-panel-gap)) * 9 / 17)");
+    expect(css).toContain("right: var(--editor-mobile-panel-gap)");
     expect(css).toContain("--editor-mobile-panel-gap: 0.375rem");
     expect(css).toContain("border-radius: 1rem");
     expect(css).toContain("transition: width 180ms ease, left 180ms ease, opacity 180ms ease");
@@ -37,7 +38,7 @@ describe("mobile editor layout", () => {
     expect(css).toContain('[data-mobile-layers-expanded="false"] [data-testid="editor-layers-panel"]');
     expect(css).toContain('[data-mobile-properties-expanded="false"] [data-testid="editor-properties-panel"]');
     expect(css).toContain("height: 3.5rem");
-    expect(css).toContain(".editor-mobile-panel-expand");
+    expect(css).toContain('[data-testid="editor-layers-tabs"]');
     expect(css).toContain('data-testid="editor-layers-panel"');
     expect(css).toContain('data-testid="editor-properties-panel"');
     const editor = await import("../../src/canvas/components/image_editor.jsx?raw");
