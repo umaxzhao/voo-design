@@ -79,33 +79,37 @@ AgentCard.propTypes = {
  */
 export default function AgentCardGrid({
   t, label, selected, detection, customConfigured = false, onSelect,
-  agentIds, showCustom = true, testIds = DEFAULT_TEST_IDS,
+  agentIds, showCustom = true, showCliAgents = true, testIds = DEFAULT_TEST_IDS,
   cloudProviders = [],
 }) {
   const customStatus = customAgentStatus(customConfigured);
-  const agents = selectableCliAgents(undefined, agentIds).filter((agent) => !agentIds || agentIds.includes(agent.id));
+  const agents = showCliAgents
+    ? selectableCliAgents(undefined, agentIds).filter((agent) => !agentIds || agentIds.includes(agent.id))
+    : [];
   const hasApiProviders = cloudProviders.length > 0 || showCustom;
   const apiLabel = t("firstRun.provider.apiLabel");
   return (
     <div data-testid={testIds.grid ?? DEFAULT_TEST_IDS.grid} className="flex flex-col gap-3">
-      <div role="group" aria-label={label} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {agents.map((agent) => {
-          const status = cliAgentStatus(agent, detection);
-          return (
-            <AgentCard
-              key={agent.id}
-              id={agent.id}
-              icon={<ProviderLogo providerId={agent.providerId} size={28} />}
-              name={t(`firstRun.provider.${agent.id}`)}
-              status={status}
-              statusText={t(AGENT_STATUS_KEY[status])}
-              selected={selected === agent.id}
-              onSelect={() => onSelect(agent.id)}
-              testIds={testIds}
-            />
-          );
-        })}
-      </div>
+      {agents.length > 0 ? (
+        <div role="group" aria-label={label} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {agents.map((agent) => {
+            const status = cliAgentStatus(agent, detection);
+            return (
+              <AgentCard
+                key={agent.id}
+                id={agent.id}
+                icon={<ProviderLogo providerId={agent.providerId} size={28} />}
+                name={t(`firstRun.provider.${agent.id}`)}
+                status={status}
+                statusText={t(AGENT_STATUS_KEY[status])}
+                selected={selected === agent.id}
+                onSelect={() => onSelect(agent.id)}
+                testIds={testIds}
+              />
+            );
+          })}
+        </div>
+      ) : null}
       {hasApiProviders && (
         <div role="group" aria-label={apiLabel} className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-neutral-400">{apiLabel}</span>
@@ -154,6 +158,7 @@ AgentCardGrid.propTypes = {
   onSelect: PropTypes.func.isRequired,
   agentIds: PropTypes.arrayOf(PropTypes.string),
   showCustom: PropTypes.bool,
+  showCliAgents: PropTypes.bool,
   cloudProviders: PropTypes.arrayOf(PropTypes.shape({
     id: PropTypes.string.isRequired,
     labelKey: PropTypes.string.isRequired,

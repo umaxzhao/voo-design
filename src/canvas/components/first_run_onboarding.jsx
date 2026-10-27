@@ -17,6 +17,7 @@ import { CLI_AGENTS } from "../../shared/cli-agents.js";
 import { AGENT_STATUS, cliAgentStatus } from "./onboarding/agent_status_model.js";
 import VooCloudLoginInline from "./onboarding/voo_cloud_login_inline.jsx";
 import { useUserStore } from "../store/user_store.js";
+import useIsNarrow from "../use_is_narrow.js";
 
 const steps = ["provider", "workspace"];
 const focusClass = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40";
@@ -42,6 +43,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
   const cloudPreset = CLOUD_PROVIDER_PRESETS.find(preset => preset.id === provider);
   const [vooCloudSignedIn, setVooCloudSignedIn] = useState(false);
   const [copiedCommand, setCopiedCommand] = useState(false);
+  const isNarrow = useIsNarrow();
   const isVooCloud = provider === VOO_CLOUD_PROVIDER.id;
   const isApiProvider = !isVooCloud && (provider === "custom" || Boolean(cloudPreset));
   const cloudCards = [
@@ -50,8 +52,10 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
       configured: customGroups.some(group => group.cliId === preset.customProviderId && group.models.length > 0),
     })),
   ];
-  const detection = useAgentDetection(open);
-  const selectedCli = CLI_AGENTS.find((agent) => agent.id === provider) ?? null;
+  const detection = useAgentDetection(open && !isNarrow);
+  const selectedCli = isNarrow
+    ? null
+    : CLI_AGENTS.find((agent) => agent.id === provider) ?? null;
   const selectedCliStatus = selectedCli ? detection.statuses?.[selectedCli.id] ?? null : null;
   const selectedCliCardStatus = selectedCli ? cliAgentStatus(selectedCli, detection) : null;
   const selectedCliCmd = selectedCliStatus
@@ -108,6 +112,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
             {name === "provider" ? (
               <div className="flex flex-col gap-3">
                 <AgentCardGrid t={t} label={t("firstRun.provider.label")} selected={provider} detection={detection}
+                  showCliAgents={!isNarrow}
                   cloudProviders={cloudCards}
                   customConfigured={customGroups.some(group => group.models.length > 0)}
                   onSelect={(id) => {
@@ -169,7 +174,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
                     groups={cloudPreset ? customGroups.filter(group => group.cliId === cloudPreset.customProviderId) : customGroups} selectedModel={customModel}
                     onSelectModel={selectCustomModel} onConfigured={refreshCustom} />
                 )}
-                {provider !== "" && !isApiProvider && (
+                {!isNarrow && provider !== "" && !isApiProvider && (
                   <button type="button" onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("voo:open-onboarding")); }}
                     className={`w-fit rounded-lg bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-neutral-100 hover:bg-white/[0.14] transition-colors ${focusClass}`}>{t("firstRun.provider.guide")}</button>
                 )}
