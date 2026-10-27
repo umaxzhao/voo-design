@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Plus, SlidersHorizontal, Sparkles, X } from "lucide-react";
+import { Plus, SlidersHorizontal, X } from "lucide-react";
 import { AI_GEN_TYPES } from "./welcome_constants.js";
 import { DEFAULT_STYLE_ID } from "./generation_intent.js";
 import FlatSelect from "../flat_select.jsx";
+import { ProviderLogo } from "../provider_icons.jsx";
 
 /**
  * Pen-style welcome composer: one quiet prompt surface, a model label, an
@@ -43,6 +44,14 @@ export function WelcomePromptComposer({
   const panelRef = useRef(null);
   const activePreset = AI_GEN_TYPES.find((preset) => preset.id === activePill) ?? AI_GEN_TYPES[0];
   const currentSize = size ?? { width: activePreset.width, height: activePreset.height };
+  const selectedModelGroup = (modelGroups ?? []).find((group) =>
+    group.models.some((model) => model.id === selectedModel),
+  );
+  const selectedModelEntry = selectedModelGroup?.models.find((model) => model.id === selectedModel);
+  const providerLogoId = getProviderLogoId(selectedModelGroup?.cliId ?? selectedModel?.split(":")[0]);
+  const selectedModelName = selectedModelEntry
+    ? getCompactModelName(selectedModelEntry.label, selectedModelGroup?.cliId)
+    : (modelLabel?.split(" · ").at(-1) ?? modelLabel);
 
   useEffect(() => {
     if (!advancedOpen) return undefined;
@@ -145,13 +154,13 @@ export function WelcomePromptComposer({
               type="button"
               onClick={() => (configNeeded ? onOpenSettings?.() : setAdvancedOpen((open) => !open))}
               aria-label={t("welcome.prompt.modelLabel")}
-              title={selectedModel || ""}
+              title={selectedModelName || ""}
               className={`flex max-w-[13rem] min-w-0 items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] transition-colors hover:bg-white/[0.06] ${
                 configNeeded ? "text-amber-300" : "text-neutral-400 hover:text-neutral-200"
               }`}
             >
-              <Sparkles size={12} className="shrink-0" aria-hidden="true" />
-              <span className="truncate">{modelLabel}</span>
+              <ProviderLogo providerId={providerLogoId} size={14} />
+              <span className="truncate">{selectedModelName}</span>
             </button>
 
             <button
@@ -214,7 +223,8 @@ export function WelcomePromptComposer({
                 options={(modelGroups ?? []).flatMap((group) =>
                   group.models.map((model) => ({
                     value: model.id,
-                    label: model.label,
+                    label: getCompactModelName(model.label, group.cliId),
+                    icon: <ProviderLogo providerId={getProviderLogoId(group.cliId)} size={14} />,
                   })),
                 )}
                 className="welcome-composer-select w-full min-w-0"
@@ -293,4 +303,18 @@ function ComposerField({ label, children }) {
       <span className="min-w-0 flex-1">{children}</span>
     </div>
   );
+}
+
+function getProviderLogoId(groupId) {
+  if (groupId === "claude") return "claude-cli";
+  if (groupId === "codex") return "cli";
+  if (groupId === "antigravity") return "antigravity-cli";
+  return groupId;
+}
+
+function getCompactModelName(label, groupId) {
+  if (groupId === "claude" || groupId === "claude-cli") {
+    return String(label ?? "").replace(/^Claude\s+/i, "");
+  }
+  return label;
 }
