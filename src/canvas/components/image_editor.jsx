@@ -4841,7 +4841,15 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             onSelect={(index) => {
               setCanvasBackgroundSelected(false);
               setSelectedInstanceChild(null);
-              engine?.selectExactly([layers[index].id]);
+              const layer = layers[index];
+              if (!layer) return;
+              engine?.selectExactly([layer.id]);
+              if (
+                isNarrow &&
+                (layer.kind === "frame" || layer.isFrame || layer.frame)
+              ) {
+                engine?.zoomToSelection?.([layer]);
+              }
             }}
             onToggleSelect={(index) => {
               setCanvasBackgroundSelected(false);
