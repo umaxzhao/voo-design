@@ -74,6 +74,7 @@ export default function EditorSelectMenu({ tool, onTool }) {
   const chevronRef = useRef(null);
   const longPressTimerRef = useRef(null);
   const suppressToolClickRef = useRef(false);
+  const lastPointerTypeRef = useRef(null);
 
   const isSelectFamily =
     tool === TOOL.SELECT ||
@@ -98,7 +99,15 @@ export default function EditorSelectMenu({ tool, onTool }) {
   const openMenu = () => {
     const rect = rootRef.current?.getBoundingClientRect();
     if (!rect) return;
-    setMenuPos({ top: rect.bottom + 8, left: rect.left + rect.width / 2 });
+    const menuWidth = Math.min(180, window.innerWidth - 16);
+    const center = rect.left + rect.width / 2;
+    setMenuPos({
+      top: rect.bottom + 8,
+      left: Math.max(
+        menuWidth / 2 + 8,
+        Math.min(window.innerWidth - menuWidth / 2 - 8, center),
+      ),
+    });
     setOpen(true);
   };
 
@@ -108,6 +117,7 @@ export default function EditorSelectMenu({ tool, onTool }) {
   };
 
   const onPointerDownCapture = (event) => {
+    lastPointerTypeRef.current = event.pointerType;
     if (event.pointerType !== "touch") return;
     window.clearTimeout(longPressTimerRef.current);
     longPressTimerRef.current = window.setTimeout(() => {
@@ -122,10 +132,18 @@ export default function EditorSelectMenu({ tool, onTool }) {
   };
 
   const onClickCapture = (event) => {
-    if (!suppressToolClickRef.current) return;
-    suppressToolClickRef.current = false;
-    event.preventDefault();
-    event.stopPropagation();
+    if (suppressToolClickRef.current) {
+      suppressToolClickRef.current = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    if (
+      lastPointerTypeRef.current === "touch" &&
+      !event.target.closest?.(".editor-toolbar-menu-trigger")
+    ) {
+      openMenu();
+    }
   };
 
   useEffect(
