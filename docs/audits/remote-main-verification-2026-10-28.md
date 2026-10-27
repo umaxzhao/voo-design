@@ -45,3 +45,9 @@ The two new suites use real Chromium, the real editor engine and an ephemeral pr
 ## Boundaries
 
 This is dedicated evidence for the previously unverified categories, not a blanket certification of every combination. External paid AI repair/background-removal/model calls were not invoked. Exhaustive filter kinds/parameters, multi-filter ordering/blend interactions, all export transparency/suffix/multi-preset combinations, all mask feather/refinement cases, complex nested layout/warp/pin/variants and every device/font remain separate test dimensions. No stored property alone is used to claim a final rendering passed.
+
+## Verified committed release
+
+The full clean-source gate passes at commit `1e5d8793a70ebc6cca972be77cfc2a2e4287b217`, after merging the remote mobile/tool-menu updates. Build and design lint pass; **3669 unit tests pass, twelve skip**, across 424 passing files and three skipped files. All five browser suites pass: 10 resize/typography, 7 paint/text/mobile, 12 layout/clipping/Boolean, 10 inspector, and 23 drawing/retouch scenarios (**62 total**). The final gate checks that HEAD and source cleanliness have not changed during the run. See the [machine-readable command record](remote-main-verification-2026-10-28.json).
+
+This exact application revision was pushed to `origin/main` and deployed through SSH alias `la2` to https://voo.run/editor/. Backup: `/srv/voo-run/editor-backups/1e5d879-20261027T204415Z`. Subsequent documentation-only commits do not change the deployed application. The original workspace's unrelated pending edits remain intact.
