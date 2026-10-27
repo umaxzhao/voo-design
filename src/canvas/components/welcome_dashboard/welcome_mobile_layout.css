@@ -319,6 +319,7 @@
   }
 
   .welcome-prompt-controls-row > div:last-child > button[type="submit"] {
+    margin-left: auto;
     width: 2.5rem;
     height: 2.5rem;
     flex: 0 0 auto;

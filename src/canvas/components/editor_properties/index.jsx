@@ -192,7 +192,7 @@ export default function EditorProperties({
       showPrototype={Boolean(canPrototype)}
       prototypeOpen={prototypeOpen}
       onTogglePrototype={() => setPanelView(view => view === "prototype" ? "properties" : "prototype")}
-      tabsAtTop
+      tabsAtTop={!isDedicatedToolActive}
       t={t}
     />
   );
