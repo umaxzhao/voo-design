@@ -76,7 +76,7 @@ export function EditorZoom({
       data-testid="editor-bottom-toolbar"
       role="toolbar"
       aria-label={t("editor.bottomBar.label")}
-      className="viewport-tools absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-0.5 rounded-xl px-1 py-0.5 shadow-pop"
+      className="viewport-tools absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-0 rounded-xl px-1 py-0.5 shadow-pop"
     >
       {onAddCanvas ? (
         <button
@@ -85,7 +85,7 @@ export function EditorZoom({
           onClick={onAddCanvas}
           title={t("editor.addCanvas")}
           aria-label={t("editor.addCanvas")}
-          className="mobile-hidden-control flex h-12 w-12 md:h-7 md:w-7 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
+          className="mobile-hidden-control flex h-12 w-12 md:h-6 md:w-6 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
         >
           <IconAdd size={13} strokeWidth={1.5} />
         </button>
@@ -96,7 +96,7 @@ export function EditorZoom({
         disabled={!canUndo}
         title={t("editor.undo")}
         aria-label={t("editor.undo")}
-        className="mobile-hidden-control flex h-7 w-7 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30 disabled:opacity-30 disabled:hover:opacity-30"
+        className="mobile-hidden-control flex h-6 w-6 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30 disabled:opacity-30 disabled:hover:opacity-30"
       >
         <IconUndo size={13} />
       </button>
@@ -106,19 +106,19 @@ export function EditorZoom({
         disabled={!canRedo}
         title={t("editor.redo")}
         aria-label={t("editor.redo")}
-        className="mobile-hidden-control flex h-7 w-7 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30 disabled:opacity-30 disabled:hover:opacity-30"
+        className="mobile-hidden-control flex h-6 w-6 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30 disabled:opacity-30 disabled:hover:opacity-30"
       >
         <IconRedo size={13} />
       </button>
 
-      <div className="mobile-hidden-control h-3.5 w-[1px] bg-black/15 mx-0.5" />
+      <div className="mobile-hidden-control h-3 w-[1px] bg-black/15 mx-px" />
 
       <button
         type="button"
         onClick={onZoomOut}
         title={t("editor.zoomOut")}
         aria-label={t("editor.zoomOut")}
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
+        className="flex h-6 w-6 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
       >
         <IconMinus size={13} strokeWidth={ICON_STROKE_WIDTH} />
       </button>
@@ -129,7 +129,7 @@ export function EditorZoom({
         onClick={() => onZoomReset?.()}
         title={t("editor.shortcut.zoom100")}
         aria-live="polite"
-        className="flex h-7 min-w-[2.75rem] items-center justify-center rounded-lg px-1 text-center text-[10px] tabular-nums text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
+        className="flex h-6 min-w-[2.25rem] items-center justify-center rounded-lg px-0.5 text-center text-[10px] tabular-nums text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
       >
         {`${zoomPercent}%`}
       </button>
@@ -138,7 +138,7 @@ export function EditorZoom({
         onClick={onZoomIn}
         title={t("editor.zoomIn")}
         aria-label={t("editor.zoomIn")}
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
+        className="flex h-6 w-6 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
       >
         <IconAdd size={13} strokeWidth={ICON_STROKE_WIDTH} />
       </button>
@@ -146,12 +146,12 @@ export function EditorZoom({
       {/* Rulers and guides live inside this one bar. */}
       {children ? (
         <div className="editor-zoom-extra-controls contents">
-          <div className="h-3.5 w-[1px] bg-black/15 mx-0.5" />
+          <div className="h-3 w-[1px] bg-black/15 mx-px" />
           {children}
         </div>
       ) : null}
 
-      <div className="h-3.5 w-[1px] bg-black/15 mx-0.5" />
+      <div className="h-3 w-[1px] bg-black/15 mx-px" />
 
       <div ref={moreControlRef} className="relative flex items-center">
         <button
@@ -168,7 +168,7 @@ export function EditorZoom({
             setMoreOpen(true);
           }}
           onClick={() => setMoreOpen((open) => !open)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
+          className="flex h-6 w-6 items-center justify-center rounded-lg text-black outline-none transition-opacity hover:opacity-60 focus-visible:ring-1 focus-visible:ring-black/30"
         >
           <IconMore size={13} />
         </button>

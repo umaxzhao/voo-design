@@ -97,7 +97,7 @@ describe("zoom percent label: value", () => {
   it("uses tabular numerals and a fixed minimum width so the bar does not jump", () => {
     const button = percentButton(render());
     expect(button).toContain("tabular-nums");
-    expect(button).toContain("min-w-[2.75rem]");
+    expect(button).toContain("min-w-[2.25rem]");
     expect(button).toContain("text-black");
   });
 
