@@ -130,7 +130,7 @@ export function documentToScene(
     // through the folder rather than through their own `visible` flag. Both
     // rules are the ones drawNode applies, so the two renderers agree about
     // what is on screen.
-    .filter((node) => !isGroupNode(node) && !isHiddenByGroup(doc, node))
+    .filter((node) => (!isGroupNode(node) || node.isFrame) && !isHiddenByGroup(doc, node))
     .filter((node) => {
       if (!visibleRect) return true;
       const nodeBox = {

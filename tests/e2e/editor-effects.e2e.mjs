@@ -12,7 +12,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   const seed = async () => {
     await page.evaluate(() => {
       const editor = window.__vooEditor;
-      editor.setDoc({ ...editor.getDocument(), width: 600, height: 400, backgroundColor: "#171717", nodes: [
+      editor.setDoc({ ...editor.getDocument(), width: 600, height: 400, isCanvasRoot: false, backgroundColor: "#171717", nodes: [
         { id: "pinned", kind: "rect", name: "Pinned", x: 480, y: 300, width: 60, height: 40, fill: "#ff0000",
           constraints: { horizontal: "right", vertical: "bottom" } },
       ] });

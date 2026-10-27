@@ -20,7 +20,7 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
   }, { x, y });
   const seedImage = () => page.evaluate(async () => {
     const e = window.__vooEditor;
-    e.setDoc({ ...e.getDocument(), width: 600, height: 400, backgroundColor: "#ffffff", nodes: [] });
+    e.setDoc({ ...e.getDocument(), width: 600, height: 400, isCanvasRoot: false, backgroundColor: "#ffffff", nodes: [] });
     const c = document.createElement("canvas"); c.width = 100; c.height = 100;
     const ctx = c.getContext("2d"); ctx.fillStyle = "#ff0000"; ctx.fillRect(0, 0, 50, 100);
     ctx.fillStyle = "#0000ff"; ctx.fillRect(50, 0, 50, 100);
@@ -93,6 +93,26 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
   await host.getByTestId("live-filter-remove-blur").click();
   assert.equal(await sample(149, 150), "#ff0000");
   checks.push("Live Filter toggle/opacity/remove changes pixels and one undo restores the filtered image");
+
+  id = await seedImage();
+  await page.evaluate(async (id) => {
+    const e = window.__vooEditor;
+    const { createLiveFilterEntry } = await import("/src/canvas/editor/live_filter_stack.js");
+    e.updateNode(id, { adjustments: { liveFilters: [createLiveFilterEntry("sepia", { value: 100 })] } });
+    e.setPixelSelection({ nodeId: id, contours: [[[100, 100], [150, 100], [150, 200], [100, 200]]] });
+  }, id);
+  await mount("filters", id);
+  const filteredRight = await sample(175, 150);
+  assert.notEqual(filteredRight, "#0000ff");
+  await host.getByTestId("live-filter-mask-sepia").click();
+  assert.equal(await sample(175, 150), "#0000ff");
+  assert.notEqual(await sample(125, 150), "#ff0000");
+  assert.deepEqual(await page.evaluate((id) => window.__vooEditor.getNode(id).adjustments.liveFilters[0].mask, id),
+    { contours: [[[0, 0], [0.5, 0], [0.5, 1], [0, 1]]] });
+  await tool("undo");
+  assert.equal(await sample(175, 150), filteredRight);
+  checks.push("per-filter selection mask limits rendered pixels to its own region and undoes once");
+  await page.evaluate(() => window.__vooEditor.setPixelSelection(null));
 
   const adjustmentId = await page.evaluate(async () => {
     const node = await window.__vooEditor.addAdjustmentLayer("brightness");

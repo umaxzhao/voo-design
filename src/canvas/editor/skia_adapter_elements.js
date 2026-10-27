@@ -79,7 +79,7 @@ export function elementFor(node, index, offsetX, offsetY, resolveImageUrl, doc) 
     };
   }
 
-  if (node.kind === NODE_KIND.RECT) {
+  if (node.kind === NODE_KIND.RECT || (node.kind === NODE_KIND.GROUP && node.isFrame)) {
     return {
       ...base,
       kind: "node",

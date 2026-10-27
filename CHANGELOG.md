@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Free-canvas migration preserves visible top-level Frame surfaces and page cameras; regression checks cover content-preserving save/reopen and per-filter selection masks.
+
 - Pending-work integration: signature artifact systems (AXIOM, VOID OS, BLOOM) now carry the welcome choice into agent contracts and starter templates; registry/template builders are split into focused modules.
 - Nested frame resize/move resolves descendant constraints; colour-variable v2 controls bind through the current model; bucket tolerance/contiguous/sample-all settings affect the clicked region and reject empty/out-of-bounds seeds.
 - 2026-10-28 verification follow-up: replace stale native-select/radio-row assertions with custom-menu contracts and real browser option/callback checks; restore the pen taskbar's finish-path action.

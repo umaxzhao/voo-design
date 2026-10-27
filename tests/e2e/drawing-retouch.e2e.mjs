@@ -6,7 +6,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   const reset = () => page.evaluate(async () => {
     const e = window.__vooEditor;
     e.endMaskEdit(); e.setTool("select"); e.selectExactly([]);
-    e.setDoc({ ...e.getDocument(), width: 600, height: 400, backgroundColor: "#ffffff", nodes: [] });
+    e.setDoc({ ...e.getDocument(), width: 600, height: 400, isCanvasRoot: false, backgroundColor: "#ffffff", nodes: [] });
     const { useDesignStore } = await import("/src/store/design_store.js");
     useDesignStore.setState({ editorCamera: { zoom: 1, panX: 300, panY: 100 } });
     e.setColor("#ff0000"); e.setBrushWidth(24); e.setBrushOpacity(1); e.setBrushFlow(1); e.setBrushStrength(1);

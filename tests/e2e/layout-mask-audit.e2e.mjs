@@ -6,7 +6,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   const seed = (nodes) => page.evaluate(async (nodes) => {
     const { createRectNode, createGroupNode } = await import("/src/canvas/editor/scene_model.js");
     const editor = window.__vooEditor;
-    editor.setDoc({ ...editor.getDocument(), width: 600, height: 400, backgroundColor: "#ffffff",
+    editor.setDoc({ ...editor.getDocument(), width: 600, height: 400, isCanvasRoot: false, backgroundColor: "#ffffff",
       nodes: nodes.map((node) => ({ ...(node.kind === "group" ? createGroupNode(node) : createRectNode(node)), ...node })) });
     editor.selectExactly([]);
     editor.setTool("select");

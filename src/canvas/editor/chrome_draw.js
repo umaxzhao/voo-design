@@ -239,11 +239,11 @@ function drawUncached(
       // A hidden folder hides everything inside it, and the folder row itself
       // is chrome — it never paints.
       // A child inside a boolean group is painted composited by the boolean group itself.
-      // A nested frame is a group node but paints its own surface; a top-level
-      // artboard is represented by its child document and is skipped here.
-      const nestedFrame = Boolean(node.isFrame && node.parentId);
+      // Free-canvas root frames own their paint just like nested frames.
+      // Fixed-page artboard containers are represented by their child document.
+      const paintedFrame = Boolean(node.isFrame && (node.parentId || doc.isCanvasRoot));
       if (
-        (isGroupNode(node) && !nestedFrame) ||
+        (isGroupNode(node) && !paintedFrame) ||
         isHiddenByGroup(doc, node) ||
         isInsideBooleanGroup(doc, node)
       )

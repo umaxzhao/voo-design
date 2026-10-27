@@ -25,7 +25,8 @@ The added regression suite `tests/e2e/pending-integration.e2e.mjs` runs the actu
 4. A rotated image receives the colour seed at the pointer's actual local position.
 5. Frame W editing reflows nested constraints and rendered child pixels, with one-step undo.
 6. A v2-only colour variable binds through the inspector and changes rendered fill.
-7. The welcome picker offers all three signature systems and disables competing style selection until Automatic is restored.
+7. A legacy fixed page opens as a free canvas Frame: its surface and child pixels remain visible, move together and undo once.
+8. The welcome picker offers all three signature systems and disables competing style selection until Automatic is restored.
 
 Unit tests cover the contracts, generation handoff, category counts, rounded templates, nested constraints, no-op resizing and Auto Layout ownership. The release verifier now includes this suite alongside all five previous browser suites and requires an unchanged, clean committed source tree.
 
@@ -36,3 +37,11 @@ Unit tests cover the contracts, generation handoff, category counts, rounded tem
 ## Boundaries
 
 No external paid model generation was invoked. The agent contract and forwarding were tested with controlled provider responses, and the real welcome control was exercised separately. The inherited large-file and bundle-size tasks remain separate. The focused integration does not certify every transformed/cropped bitmap, constraint combination or external provider.
+
+## Concurrent changes and migration follow-up
+
+The primary checkout gained commits `c51d930` and `d12a9ec` during integration. Both were merged with their history intact. The actual Live Filter inspector now has a browser regression for capturing a selection mask: pixels outside the selected region revert to the original bitmap, the inside stays filtered, and one undo restores the unrestricted filter.
+
+Remote page separation introduced eleven failures in five unit files. The tests now check authored content, original input immutability, independent workspace/frame paints and idempotent binary save/reopen. Page switching also had an actual camera regression: exclusive single-page display no longer met the old camera-recording condition. Switching pages now records the outgoing shared camera by default.
+
+The new real-browser migration scenario exposed an actual missing-paint defect: the Canvas2D compositor skipped top-level Frame groups even in a free canvas. It now paints those surfaces; the Skia adapter also retains painted Frame groups as rectangle elements instead of dropping them with plain folders. Existing bounded-page browser scenarios explicitly declare their fixed-page model; the new migration scenario independently exercises the free-canvas model.

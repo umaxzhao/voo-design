@@ -7,7 +7,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
     const editor = window.__vooEditor;
     const rect = { ...createRectNode({ x: 100, y: 100, width: 100, height: 100, fill: "#ffffff" }), id: "paint" };
-    editor.setDoc({ ...editor.getDocument(), width: 600, height: 400, backgroundColor: "#ffffff", nodes: [rect] });
+    editor.setDoc({ ...editor.getDocument(), width: 600, height: 400, isCanvasRoot: false, backgroundColor: "#ffffff", nodes: [rect] });
     editor.zoomToFit();
   });
   const sample = (point) => page.evaluate(async (point) => {

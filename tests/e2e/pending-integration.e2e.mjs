@@ -17,7 +17,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   const seed = () => page.evaluate(async () => {
     const e = window.__vooEditor;
     e.endMaskEdit(); e.setTool("select"); e.selectExactly([]);
-    e.setDoc({ ...e.getDocument(), width: 600, height: 400, backgroundColor: "#ffffff", nodes: [] });
+    e.setDoc({ ...e.getDocument(), width: 600, height: 400, isCanvasRoot: false, backgroundColor: "#ffffff", nodes: [] });
     const c = document.createElement("canvas"); c.width = 100; c.height = 100;
     const ctx = c.getContext("2d"); ctx.fillStyle = "#ff0000"; ctx.fillRect(0, 0, 50, 100);
     ctx.fillStyle = "#0000ff"; ctx.fillRect(50, 0, 50, 100);
@@ -94,8 +94,36 @@ await withEditorBrowser(async ({ page, tool }) => {
   checks.push("v2-only colour variable binds through the inspector and changes rendered fill");
   await page.evaluate(async () => {
     window.__auditPanelRoot.unmount(); document.getElementById("inspector-audit-host").remove();
-    (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(true);
+
   });
+  await page.evaluate(async () => {
+    const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
+    const { useDesignStore } = await import("/src/store/design_store.js");
+    useDesignStore.getState().setWelcomeOpen(false);
+    useDesignStore.getState().loadVooProject({ vooData: { document: {
+      version: 2, width: 600, height: 400, backgroundColor: "#171717",
+      nodes: [{ ...createRectNode({ x: 50, y: 50, width: 80, height: 80, fill: "#ff0000" }), id: "migration-child" }],
+    } } });
+  });
+  await page.waitForFunction(() => window.__vooEditor.getDocument().isCanvasRoot && window.__vooEditor.getNode("migration-child")).catch(async error => {
+    throw new Error(`${error.message}: ${await page.evaluate(async () => JSON.stringify({ editor: window.__vooEditor.getDocument(), store: (await import("/src/store/design_store.js")).useDesignStore.getState().nodes }))}`);
+  });
+  await page.evaluate(async () => {
+    const { useDesignStore } = await import("/src/store/design_store.js");
+    useDesignStore.setState({ editorCamera: { zoom: 1, panX: 300, panY: 100 } });
+  });
+  assert.equal(await sample(75, 75), "#ff0000");
+  assert.equal(await sample(200, 200), "#171717");
+  await page.evaluate(() => {
+    const e = window.__vooEditor;
+    const frame = e.getDocument().nodes.find(node => node.isFrame);
+    e.updateFrameNode(frame.id, { x: 100, y: 40 });
+  });
+  assert.equal(await sample(175, 115), "#ff0000");
+  assert.equal(await sample(75, 75), null);
+  await tool("undo"); assert.equal(await sample(75, 75), "#ff0000");
+  checks.push("legacy page opens as a free canvas frame with visible paint and children moving together, undoing once");
+  await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(true));
   await page.getByRole("button", {name:"Generation type",exact:true}).click();
   const settings = page.getByRole("dialog", {name:"Generation type",exact:true});
   await settings.getByRole("button", {name:"Design system",exact:true}).click();
