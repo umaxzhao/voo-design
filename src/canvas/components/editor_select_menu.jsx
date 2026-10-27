@@ -132,6 +132,10 @@ export default function EditorSelectMenu({ tool, onTool }) {
   };
 
   const onClickCapture = (event) => {
+    if (menuRef.current?.contains(event.target)) {
+      suppressToolClickRef.current = false;
+      return;
+    }
     if (suppressToolClickRef.current) {
       suppressToolClickRef.current = false;
       event.preventDefault();
@@ -140,9 +144,12 @@ export default function EditorSelectMenu({ tool, onTool }) {
     }
     if (
       lastPointerTypeRef.current === "touch" &&
+      isSelectFamily &&
       !event.target.closest?.(".editor-toolbar-menu-trigger")
     ) {
       openMenu();
+      event.preventDefault();
+      event.stopPropagation();
     }
   };
 

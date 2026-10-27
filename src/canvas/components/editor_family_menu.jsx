@@ -83,6 +83,10 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
   };
 
   const onClickCapture = (event) => {
+    if (menuRef.current?.contains(event.target)) {
+      suppressToolClickRef.current = false;
+      return;
+    }
     if (suppressToolClickRef.current) {
       suppressToolClickRef.current = false;
       event.preventDefault();
@@ -91,9 +95,12 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
     }
     if (
       lastPointerTypeRef.current === "touch" &&
+      items.some((item) => item.active) &&
       !event.target.closest?.(".editor-toolbar-menu-trigger")
     ) {
       openMenu();
+      event.preventDefault();
+      event.stopPropagation();
     }
   };
 
