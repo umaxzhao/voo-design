@@ -3,6 +3,7 @@ import { forgetPageCamera, pageCameraCache } from "../canvas/page_camera.js";
 import { createCameraRafBatcher } from "../canvas/camera_raf.js";
 import { create } from "zustand";
 import { createDocument, CANVAS_TYPE } from "../canvas/editor/scene_doc_factory.js";
+import { promoteFixedPageToFrame } from "../canvas/editor/page_to_canvas_root.js";
 import { addRecentFile } from "../canvas/store/recent_files.js";
 import { guessCategory } from "../services/workspace_storage.js";
 import { saveCrashDraft } from "../shared/crash_recovery.js";
@@ -131,8 +132,15 @@ export const useDesignStore = create((set, get) => {
   editorPageSession: 0,
 
   // Page / Artboard actions
-  focusEditorPage: (id, { rememberCamera = get().editingNodeIds.length > 1 || Boolean(get().editingPresentationId) } = {}) => {
-    if (!id || !get().nodes.some((node) => node.id === id) || id === get().editingNodeId) return;
+  focusEditorPage: (id, { rememberCamera = get().editingNodeIds.length > 1 || Boolean(get().editingPresentationId), exclusive = false } = {}) => {
+    const current = get();
+    if (!id || !current.nodes.some((node) => node.id === id)) return;
+    if (id === current.editingNodeId) {
+      if (exclusive && current.editingNodeIds.length !== 1) {
+        set({ editingNodeIds: [id] });
+      }
+      return;
+    }
     cameraBatcher.flush();
     set((state) => ({
       editorPageCameras: { ...state.editorPageCameras, ...(rememberCamera && state.editingNodeId ? { [state.editingNodeId]: { ...state.editorCamera } } : {}) },
@@ -140,15 +148,19 @@ export const useDesignStore = create((set, get) => {
       pendingArtboardFitId: state.editorPageCameras[id] ? null : id,
       editingNodeId: id,
       // A page the canvas does not show yet replaces what is on it, so the switcher brings it in.
-      editingNodeIds: state.editingNodeIds.includes(id) ? state.editingNodeIds : [id],
+      editingNodeIds: exclusive ? [id] : state.editingNodeIds.includes(id) ? state.editingNodeIds : [id],
     }));
   },
 
   addEditorPage: ({ label = "Untitled", canvasType = CANVAS_TYPE.DESIGN, width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT } = {}) => {
-    // Capture the outgoing mode before adding a second visible page.
-    // Local page cameras live in page_camera.js, not editorCamera.
-    const rememberCamera = get().editingNodeIds.length > 1 || Boolean(get().editingPresentationId);
+    // Page cameras live in page_camera.js; switching pages keeps each view.
+    const rememberCamera = true;
     const id = `page-${Date.now().toString(36)}-${(++pageCounter).toString(36)}`;
+    const editorDoc = createDocument(width, height, "transparent", {
+      canvasType,
+      canvasId: id,
+    });
+    editorDoc.isCanvasRoot = true;
     const newPage = {
       id,
       type: "imageEditor",
@@ -156,15 +168,15 @@ export const useDesignStore = create((set, get) => {
       data: {
         label,
         canvasType,
-        editorDoc: createDocument(width, height, "#171717", { canvasType, canvasId: id }),
+        editorDoc,
       },
     };
     set((state) => ({
       nodes: [...state.nodes, newPage],
-      editingNodeIds: [...state.editingNodeIds, id],
+      editingNodeIds: [id],
       isDirty: true,
     }));
-    get().focusEditorPage(id, { rememberCamera });
+    get().focusEditorPage(id, { rememberCamera, exclusive: true });
     return id;
   },
 
@@ -197,7 +209,7 @@ export const useDesignStore = create((set, get) => {
     const state = get();
     const sourceNode = state.nodes.find((n) => n.id === sourceId);
     if (!sourceNode) return null;
-    const rememberCamera = state.editingNodeIds.length > 1 || Boolean(state.editingPresentationId);
+    const rememberCamera = true;
     const newId = `page-${Date.now().toString(36)}-${(++pageCounter).toString(36)}`;
     const duplicatedNode = {
       ...sourceNode,
@@ -210,10 +222,10 @@ export const useDesignStore = create((set, get) => {
     };
     set((s) => ({
       nodes: [...s.nodes, duplicatedNode],
-      editingNodeIds: [...s.editingNodeIds, newId],
+      editingNodeIds: [newId],
       isDirty: true,
     }));
-    get().focusEditorPage(newId, { rememberCamera });
+    get().focusEditorPage(newId, { rememberCamera, exclusive: true });
     return newId;
   },
 
@@ -371,16 +383,19 @@ export const useDesignStore = create((set, get) => {
         data: {
           label: page.label || `Design ${idx + 1}`,
           canvasType: page.canvasType || CANVAS_TYPE.DESIGN,
-          editorDoc: page.sceneDoc || page.document || createDocument(DEFAULT_WIDTH, DEFAULT_HEIGHT, "#171717"),
+          editorDoc: promoteFixedPageToFrame(
+            page.sceneDoc || page.document || createDocument(DEFAULT_WIDTH, DEFAULT_HEIGHT, "transparent"),
+          ),
         },
       }));
       const nextIds = nextNodes.map((n) => n.id);
       const nextFocused = doc.editingNodeId && nextIds.includes(doc.editingNodeId) ? doc.editingNodeId : nextIds[0];
       set({
         nodes: nextNodes,
-        // Focus selects one frame; every saved frame remains on the free canvas.
-        editingNodeIds: nextIds,
+        // Pages are separate workspaces; only the current page is on stage.
+        editingNodeIds: [nextFocused],
         editingNodeId: nextFocused,
+        pendingArtboardFitId: nextFocused,
         editorArtboardLayouts: doc.editorArtboardLayouts || {},
         editorCamera: doc.editorCamera || { panX: 0, panY: 0, zoom: 1 },
         filePath,
@@ -398,7 +413,7 @@ export const useDesignStore = create((set, get) => {
         data: {
           label: doc.label || "Design 1",
           canvasType: vooData.kind || CANVAS_TYPE.DESIGN,
-          editorDoc: doc,
+          editorDoc: promoteFixedPageToFrame(doc),
         },
       };
       set({
@@ -409,7 +424,7 @@ export const useDesignStore = create((set, get) => {
           [pageId]: { x: 0, y: 0, width: doc.width || DEFAULT_WIDTH, height: doc.height || DEFAULT_HEIGHT },
         },
         editorCamera: { panX: 0, panY: 0, zoom: 1 },
-        editorPageCameras: {}, pendingArtboardFitId: null,
+        editorPageCameras: {}, pendingArtboardFitId: pageId,
         filePath,
         fileName,
         fileHandle,
@@ -422,6 +437,9 @@ export const useDesignStore = create((set, get) => {
   newVooProject: ({ label = "Design 1", width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT, canvasType = CANVAS_TYPE.DESIGN } = {}) => {
     get().beginDocument();
     const pageId = `page-${Date.now().toString(36)}-${++pageCounter}`;
+    const pageDoc = promoteFixedPageToFrame(
+      createDocument(width, height, "#171717", { canvasType, canvasId: pageId }),
+    );
     const page = {
       id: pageId,
       type: "imageEditor",
@@ -429,7 +447,7 @@ export const useDesignStore = create((set, get) => {
       data: {
         label,
         canvasType,
-        editorDoc: createDocument(width, height, "#171717", { canvasType, canvasId: pageId }),
+        editorDoc: pageDoc,
       },
     };
     const fileName = label.endsWith(".voo") ? label : `${label}.voo`;

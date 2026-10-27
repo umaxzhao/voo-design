@@ -136,7 +136,7 @@
     height: calc(81.818% - var(--editor-mobile-panel-gap));
     max-height: none;
     min-width: 0;
-    transform: none;
+    transform: translateY(calc(0px - var(--editor-mobile-panel-gap)));
     overflow: auto;
     transition: width 180ms ease, left 180ms ease, opacity 180ms ease;
     border-radius: 1rem;
