@@ -41,7 +41,7 @@ export default function EditorObject3dMenu({ onAdd }) {
   }, [open]);
 
   return (
-    <div ref={rootRef} className="relative flex items-center">
+    <div ref={rootRef} className="relative flex h-11 w-11 shrink-0 items-center justify-center">
       <EditorTooltip title={t("editor.three.addObject3d")} side="top">
         <button
           type="button"
@@ -50,7 +50,7 @@ export default function EditorObject3dMenu({ onAdd }) {
           aria-haspopup="menu"
           aria-expanded={open}
           onClick={() => setOpen((current) => !current)}
-          className={`relative rounded-full p-2.5 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
+          className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full p-0 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
             open
               ? "bg-white text-black font-medium"
               : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
@@ -58,8 +58,8 @@ export default function EditorObject3dMenu({ onAdd }) {
         >
           <IconBox3 size={16} />
           <IconChevronDown
-            size={7}
-            className={`pointer-events-none absolute bottom-1 right-1 ${
+            size={9}
+            className={`pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 ${
               open ? "text-black/70" : "text-neutral-400"
             }`}
           />

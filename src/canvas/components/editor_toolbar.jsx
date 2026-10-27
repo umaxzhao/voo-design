@@ -22,7 +22,7 @@ import EditorTooltip from "./editor_tooltip.jsx";
 
 /** Shared by every mode's top toolbar so the active tool reads the same. */
 export const toolButtonClass = (active) =>
-  `rounded-full p-2.5 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
+  `flex h-11 w-11 shrink-0 items-center justify-center rounded-full p-0 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
     active
       ? "bg-white text-black font-medium"
       : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"

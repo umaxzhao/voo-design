@@ -90,7 +90,7 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
   return (
     <div
       ref={rootRef}
-      className="relative flex items-center"
+      className="relative flex h-11 w-11 shrink-0 items-center justify-center"
       data-testid={`editor-${menuId}-menu`}
     >
       {children}
@@ -98,14 +98,14 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
         ref={chevronRef}
         type="button"
         data-testid={`editor-${menuId}-menu-trigger`}
+        className="editor-toolbar-menu-trigger absolute bottom-0 left-1/2 z-10 flex h-3.5 w-3.5 -translate-x-1/2 items-center justify-center rounded-full text-neutral-400 transition-colors hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900"
         aria-label={menuLabel}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={toggleMenu}
-        className="absolute bottom-0.5 right-0.5 rounded-full p-0.5 text-neutral-400 transition-colors hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900"
       >
         <IconChevronDown
-          size={8}
+          size={10}
           className={`pointer-events-none ${open ? "text-white" : ""}`}
         />
       </button>

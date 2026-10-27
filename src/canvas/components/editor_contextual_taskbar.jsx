@@ -8,7 +8,7 @@ import AddKindPicker from "./editor_properties/add_kind_picker.jsx";
 import EditorTooltip from "./editor_tooltip.jsx";
 import EditorTaskbarActionMenu from "./editor_taskbar_action_menu.jsx";
 import { EditorAiMenuSection } from "./editor_ai_taskbar_buttons.jsx";
-import { clearActivePixelSelection, finishPenPathEditing } from "./editor_taskbar_actions.js";
+import { clearActivePixelSelection } from "./editor_taskbar_actions.js";
 import EditorContextualAiInput, { extractNodeContext, dispatchToAgent } from "./editor_contextual_ai_input.jsx";
 import { useI18n } from "../use_i18n.js";
 import { TOOL } from "../editor/editor_constants.js";
@@ -189,7 +189,6 @@ function EditorContextualTaskBar({
   }} className={`pointer-events-auto z-20 flex items-center gap-0.5 rounded-full bg-neutral-900/95 border border-white/10 px-2 py-1 shadow-pop backdrop-blur-md whitespace-nowrap text-[11px] text-neutral-200 select-none ${docRect ? "absolute -translate-x-1/2" : "relative"}`}>
     <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto" data-testid={`editor-taskbar-${type}-actions`}>
     {transforming ? <>{action("applyTransform", <IconCheck size={14} strokeWidth={1.5} />, () => engine?.applySelectionTransform?.())}{action("cancelTransform", <IconClose size={14} strokeWidth={1.5} />, () => engine?.cancelSelectionTransform?.())}</> : hasSelection ? <>{action("transform", <IconCrop size={14} strokeWidth={1.5} />, () => engine?.beginSelectionTransform?.())}{action("invert", <IconSwap size={14} strokeWidth={1.5} />, () => engine?.invertPixelSelection?.())}{action("deselect", <IconClose size={14} strokeWidth={1.5} />, () => clearActivePixelSelection(engine))}<Divider />{ai}</> : <>
-      {pen && <>{action("finishPath", <IconCheck size={14} strokeWidth={1.5} />, () => finishPenPathEditing(engine), { label: t("editor.pen.closeEdit") })}{action("deleteAnchor", <IconTrash size={14} strokeWidth={1.5} />, () => engine?.deleteActiveAnchor?.())}<Divider /></>}
       {!node && !count && selectionTool ? <>{action("marquee", <IconCrop size={14} strokeWidth={1.5} />, () => engine?.setTool?.(TOOL.MARQUEE))}{action("lasso", <IconUnlink size={14} strokeWidth={1.5} />, () => engine?.setTool?.(TOOL.LASSO))}</> : <>
       {type === "image" && <>
         {action("crop", <IconCrop size={14} strokeWidth={1.5} />, () => engine?.setTool?.(TOOL.CROP))}

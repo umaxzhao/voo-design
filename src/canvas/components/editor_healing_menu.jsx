@@ -68,7 +68,7 @@ export default function EditorHealingMenu({
           }}
           aria-label={currentLabel}
           aria-pressed={isActive}
-          className={`relative rounded-full p-2.5 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
+          className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full p-0 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
             isActive
               ? isAiTool
                 ? "bg-[#E5B2FF] text-black font-medium"

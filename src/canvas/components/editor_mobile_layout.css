@@ -199,7 +199,7 @@
     touch-action: pan-x;
   }
 
-  [data-testid="design-editor"].editor-narrow [data-testid="editor-toolbar"] button {
+  [data-testid="design-editor"].editor-narrow [data-testid="editor-toolbar"] button:not(.editor-toolbar-menu-trigger) {
     min-width: 2.75rem;
     min-height: 2.75rem;
   }
