@@ -3,11 +3,9 @@ import { ChevronUp, ChevronDown, Copy, Trash2 } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
 import { finishPageRename, movePageToEdge } from "./page_switcher_interactions.js";
 import { useDesignStore } from "../../store/design_store.js";
-import CustomSelect from "./custom_select.jsx";
 
 export default function PageSwitcher() {
   const { t } = useI18n();
-  const [size, setSize] = useState("default");
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(null);
   const root = useRef(null);
@@ -52,10 +50,7 @@ export default function PageSwitcher() {
         ),
       0,
     );
-    actions.addEditorPage({
-      label: `${t("pageSwitcher.page")} ${highest + 1}`,
-      ...({ phone: { width: 393, height: 852 }, desktop: { width: 1440, height: 900 }, social: { width: 1080, height: 1080 } }[size] ?? {}),
-    });
+    actions.addEditorPage({ label: `${t("pageSwitcher.page")} ${highest + 1}` });
   };
   return (
     <div
@@ -162,7 +157,12 @@ export default function PageSwitcher() {
                       onDoubleClick={() => startRename(node.id)}
                       onPointerDown={() => { suppressClick.current = false; }}
                       onClick={(event) => {
-                        if (!suppressClick.current || event.detail === 0) actions.focusEditorPage(node.id);
+                        if (!suppressClick.current || event.detail === 0) {
+                          actions.focusEditorPage(node.id, {
+                            rememberCamera: true,
+                            exclusive: true,
+                          });
+                        }
                       }}
                       className="min-w-0 flex-1 truncate px-2 py-2.5 text-left focus-visible:outline focus-visible:outline-[#a7ffd4]"
                       title={label}
@@ -200,17 +200,6 @@ export default function PageSwitcher() {
               );
             })}
           </ul>
-          <CustomSelect
-            aria-label={t("editor.canvas.size")}
-            value={size}
-            onChange={(event) => setSize(event.target.value)}
-            className="mx-2 mt-2 rounded-lg border border-white/10 bg-neutral-800 px-2 py-1.5 text-xs text-neutral-300"
-          >
-            <option value="default">{t("editor.canvas.group.default")} · 1200 × 800</option>
-            <option value="phone">{t("editor.canvas.group.phone")} · 393 × 852</option>
-            <option value="desktop">{t("editor.canvas.group.desktop")} · 1440 × 900</option>
-            <option value="social">{t("editor.canvas.group.social")} · 1080 × 1080</option>
-          </CustomSelect>
           <button
             type="button"
             onClick={add}
