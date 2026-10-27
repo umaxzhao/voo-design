@@ -228,10 +228,47 @@
   }
 
   [data-testid="design-editor"].editor-narrow .viewport-tools {
-    bottom: calc(45% + 3.25rem);
+    bottom: calc(3.5rem + 3.25rem);
     left: 50%;
     right: auto;
     transform: translateX(-50%);
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"][data-mobile-properties-expanded="true"] .viewport-tools {
+    bottom: calc(45% + 0.25rem);
+  }
+
+  [data-testid="design-editor"].editor-narrow [data-testid="editor-contextual-taskbar"] {
+    position: fixed !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: calc(3.5rem + 3.25rem + 3rem) !important;
+    left: 50vw !important;
+    width: max-content;
+    max-width: calc(100vw - 1.5rem) !important;
+    box-sizing: border-box;
+    overflow: hidden;
+    transform: translateX(-50%) !important;
+    touch-action: pan-x;
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"][data-mobile-properties-expanded="true"] [data-testid="editor-contextual-taskbar"] {
+    bottom: calc(45% + 3.25rem) !important;
+  }
+
+  [data-testid="design-editor"].editor-narrow [data-testid^="editor-taskbar-"][data-testid$="-actions"] {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex-wrap: nowrap;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+    scrollbar-width: none;
+  }
+
+  [data-testid="design-editor"].editor-narrow [data-testid^="editor-taskbar-"][data-testid$="-actions"]::-webkit-scrollbar {
+    display: none;
   }
 
   [data-testid="design-editor"].editor-narrow [data-testid="editor-toolbar"] > div {
@@ -319,7 +356,7 @@
   }
 
   [data-testid="editor-bottom-toolbar"] button {
-    min-width: 2.5rem;
+    min-width: 2.25rem;
     min-height: 2.5rem;
   }
 
@@ -329,13 +366,13 @@
 
   [data-testid="editor-bottom-toolbar"] .editor-zoom-step,
   [data-testid="editor-bottom-toolbar"] .editor-zoom-more {
-    width: 2.25rem;
-    min-width: 2.5rem;
+    width: 2rem;
+    min-width: 2.25rem;
     height: 2.5rem;
   }
 
   [data-testid="editor-bottom-toolbar"] [data-testid="editor-zoom-percent"] {
-    width: 2.25rem;
+    width: 2rem;
     min-width: 2.25rem;
     min-height: 2.5rem;
     padding-inline: 0;
