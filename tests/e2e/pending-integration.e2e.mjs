@@ -163,8 +163,15 @@ await withEditorBrowser(async ({ page }) => {
   assert.equal(await page.getByRole("radiogroup").count(), 0);
   await trigger.tap();
   await settings.waitFor({ state: "visible" });
+  // Visibility does not imply that React's positioning effect has replaced
+  // the initial offscreen coordinates. Measure only the positioned panel.
+  await page.waitForFunction(() => {
+    const panel = document.querySelector(".welcome-composer-settings");
+    return panel && panel.style.left !== "-9999px";
+  });
   const panelBox = await settings.boundingBox();
-  assert.ok(panelBox.x >= 15 && panelBox.x + panelBox.width <= 375, "Mobile settings keep horizontal gutters");
+  assert.ok(panelBox.x >= 15 && panelBox.x + panelBox.width <= 375,
+    `Mobile settings keep horizontal gutters: ${JSON.stringify(panelBox)}`);
   await settings.getByRole("button", { name: "Generation type", exact: true }).tap();
   const types = page.locator('[role="listbox"]:visible').last().getByRole("option");
   assert.deepEqual(await types.allTextContents(), ["Landing page", "Mobile app", "Web app", "Slides", "Dashboard", "Something else..."]);
