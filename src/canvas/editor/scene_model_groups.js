@@ -1,43 +1,7 @@
 // Seam: Region and container node relationships and queries.
-/* eslint-disable no-unused-vars */
-import {
-  REGION_PALETTE,
-  REGION_COLOR,
-  getRegionColor,
-  MIN_REGION_SIZE,
-  LEGACY_DOC_VERSION,
-  DEFAULT_FONT_FAMILY,
-  DEFAULT_FONT_SIZE,
-  LINE_HEIGHT_RATIO,
-  TEXT_FONT_WEIGHTS,
-  TEXT_ALIGNS,
-  DEFAULT_TEXT_STYLE,
-  MIN_DOC_SIZE,
-  BLEND_MODES,
-  normalizeBlendMode,
-  MAX_SHEAR_DEG,
-  normalizeCornerRadius,
-  normalizeRotationDeg,
-  normalizeNodeTransform,
-  hasBlendModes,
-  DEFAULT_ADJUSTMENTS,
-  isDefaultAdjustments,
-  deepEqual,
-  normalizePoints,
-  parseAdjustmentValue,
-  HUE_BAND_KEYS,
-  normalizeHueSatBands,
-  DOC_VERSION,
-  NODE_KIND,
-  DEFAULT_BLEND_MODE,
-  newId,
-  createDefaultAdjustments,
-  getBaseDefaults,
-  createDocument,
-  createImageNode,
-} from "./scene_model_core.js";
-import { normalizeAdjustments } from "./scene_model_adjustments.js";
-import { normalizeGradientStops, normalizeMixerRow, normalizeInkRow, normalizeColorBalanceZone, normalizeHexColor, BASE_DEFAULTS, DEFAULT_PAGE_BACKGROUND, effectivePage } from "./scene_model_geometry.js";
+import { getRegionColor, NODE_KIND, newId, getBaseDefaults } from "./scene_model_core.js";
+
+import { BASE_DEFAULTS } from "./scene_model_geometry.js";
 
 /**
  * Lookup tables for one node list, built once and reused. Group and boolean
@@ -102,9 +66,6 @@ function ancestryFor(doc, index, node, visiting) {
 function findNode(doc, id) {
   return nodeIndexOf(doc.nodes).byId.get(id) ?? null;
 }
-import { createAdjustmentNode, isAdjustmentNode, createRectNode, createEllipseNode, BOOLEAN_OPERATIONS, BOOLEAN_SOURCE_KINDS, canCombine, booleanSourceOf, syncBooleanNode, createBooleanNode, DEFAULT_BRUSH_HARDNESS, DEFAULT_SOFT_BRUSH_HARDNESS, normalizePathHardness } from "./scene_model_node_builders.js";
-import { createPathNode, pathBounds, normalisePenAnchor, cubicExtrema1D, penAnchorsBounds, createPenNode } from "./scene_model_paths.js";
-import { createTextNode, normalizeColourOrNull, normalizeTextShadow, normalizeDropShadow, normalizeOuterGlow, normalizeBevel, normalizeFill, normalizeStroke, normalizeInnerShadow, normalizeInnerGlow, normalizeSatin, normalizeGradientOverlay, normalizeEffects, normalizeTextStyle } from "./scene_model_text_effects.js";
 
 /**
  * A reference region.
@@ -129,7 +90,6 @@ import { createTextNode, normalizeColourOrNull, normalizeTextShadow, normalizeDr
  * follows three short instructions far better than one list it has to read
  * intent out of.
  */
-/* eslint-enable no-unused-vars */
 export const REGION_INTENTS = ["place", "keep", "clear"];
 
 /** Documents written before intents existed all meant `place`. */

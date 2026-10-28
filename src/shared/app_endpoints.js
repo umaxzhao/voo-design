@@ -1,11 +1,12 @@
 /**
  * Hosted endpoints this app depends on, read from build-time env vars.
  *
- * The defaults keep the current hosted behaviour. A standalone build points
+ * The model default targets the editor's independently deployed static weights.
+ * A standalone build points
  * these at its own host through `.env` (VITE_MODEL_BASE_URL, VITE_APP_URL).
  */
 
-const DEFAULT_MODEL_BASE_URL = "https://voo.run/models";
+const DEFAULT_MODEL_BASE_URL = "https://voo.run/editor/models";
 const DEFAULT_APP_URL = "https://voo.run";
 
 function envValue(key) {

@@ -1,4 +1,4 @@
-import { createGroupNode } from "./scene_model.js";
+import { createGroupNode } from "./scene_model_groups.js";
 import { frameEditorFills } from "./frame-fills.js";
 
 /**

@@ -2,7 +2,7 @@
  * Base element generation, fill formatting, gradients, and stroke styles for Skia adapter.
  */
 
-import { isLockedByGroup } from "./scene_model.js";
+import { isLockedByGroup } from "./scene_model_groups.js";
 import { isCssGradient, parseGradient } from "../color_picker/gradient_fill.js";
 
 /**

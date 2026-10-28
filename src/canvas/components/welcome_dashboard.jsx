@@ -2,23 +2,20 @@ import { HTML_IMPORT_ACCEPT, SCREENSHOT_ACCEPT, importWelcomeHtml, recreateWelco
 import React, { useEffect, useState, useRef } from "react";
 import { Search, Trash2, X } from "lucide-react";
 import { useDesignStore } from "../../store/design_store.js";
-import { openVooProject } from "../store/project_io.js";
+import { openVooProject } from "../store/open-project.js";
 import { useI18n } from "../use_i18n.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import { DEFAULT_AGENT_MODEL } from "../../shared/agent-defaults.js";
-import { AGENT_SETTING } from "../agent/canvas_tools.js";
-import { resolveAgentProvider } from "../agent/agent_provider.js";
+import { AGENT_SETTING } from "../agent/agent-settings.js";
 import { availableModelGroups, getModelDisplayLabel } from "./agent-panel/model_catalog.js";
 import {
   DEFAULT_DESIGN_SYSTEM_ID,
   DEFAULT_STYLE_ID,
   MAX_REFERENCE_IMAGES,
-  buildGenerationIntent,
   designSystemOptions,
-  readAttachmentFiles,
   sizeOptions,
   styleOptions,
-} from "./welcome_dashboard/generation_intent.js";
+} from "./welcome_dashboard/generation-options.js";
 import CommunityTemplatesView from "./community_templates_view.jsx";
 import { AI_GEN_TYPES, CATEGORY_PILLS } from "./welcome_dashboard/welcome_constants.js";
 import { useWelcomeMenuDismiss } from "./welcome_dashboard/use_welcome_menu_dismiss.js";
@@ -187,6 +184,7 @@ export default function WelcomeDashboard() {
       setAttachmentError(t("welcome.prompt.attachmentLimit", { n: MAX_REFERENCE_IMAGES }));
       return;
     }
+    const { readAttachmentFiles } = await import("./welcome_dashboard/generation_intent.js");
     const { attachments: added, errors } = await readAttachmentFiles(fileList, {
       limit: Math.max(1, MAX_REFERENCE_IMAGES - attachments.length),
     });
@@ -200,28 +198,30 @@ export default function WelcomeDashboard() {
     const activePreset = AI_GEN_TYPES.find((item) => item.id === activePill) || AI_GEN_TYPES[0];
     const userPrompt = promptText.trim();
     const docLabel = userPrompt ? userPrompt.slice(0, 24) : t(activePreset.label);
-    const intent = userPrompt
-      ? buildGenerationIntent({
-          preset: activePreset,
-          prompt: userPrompt,
-          styleId,
-          designSystemId,
-          modelId,
-          size,
-          attachments,
-          candidates,
-          locale,
-          t,
-        })
-      : null;
 
     setSubmitting(true);
     setConfigNotice("");
     try {
+      const { buildGenerationIntent } = userPrompt ? await import("./welcome_dashboard/generation_intent.js") : {};
+      const intent = userPrompt
+        ? buildGenerationIntent({
+            preset: activePreset,
+            prompt: userPrompt,
+            styleId,
+            designSystemId,
+            modelId,
+            size,
+            attachments,
+            candidates,
+            locale,
+            t,
+          })
+        : null;
       if (intent) {
         // Validate the provider BEFORE creating a document, so a misconfigured
         // agent does not leave an empty project behind.
         try {
+          const { resolveAgentProvider } = await import("../agent/agent_provider.js");
           await resolveAgentProvider(intent.modelId);
         } catch {
           setConfigNotice(t("welcome.prompt.configNeeded"));

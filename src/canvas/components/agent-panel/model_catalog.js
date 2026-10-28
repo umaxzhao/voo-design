@@ -6,7 +6,7 @@
  * whole agent runtime. The panel re-exports these symbols for backwards
  * compatibility with existing tests and callers.
  */
-import { customModelGroups } from "../../agent/agent_provider.js";
+import { customModelGroups } from "../../agent/custom-model-groups.js";
 
 /** Available CLI agent model groups for selection. */
 export const CLI_MODEL_GROUPS = [

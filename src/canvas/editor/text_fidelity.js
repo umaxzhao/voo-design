@@ -6,7 +6,7 @@
  * and host metrics adapter seam.
  */
 
-import { DEFAULT_FONT_SIZE, LINE_HEIGHT_RATIO } from "./scene_model.js";
+import { DEFAULT_FONT_SIZE, LINE_HEIGHT_RATIO } from "./scene_model_core.js";
 
 /** 0.55em per Latin/ASCII glyph, 1em per wide (CJK etc.) glyph. */
 export function isWideChar(ch) {

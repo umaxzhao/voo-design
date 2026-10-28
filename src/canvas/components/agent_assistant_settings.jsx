@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "../use_i18n.js";
 import { setSetting } from "../../shared/settings.js";
-import { AGENT_DEFAULTS, AGENT_SETTING, IMAGE_SIZE_PRESETS } from "../agent/canvas_tools.js";
+import { AGENT_DEFAULTS, AGENT_SETTING, IMAGE_SIZE_PRESETS } from "../agent/agent-settings.js";
 import SettingsSection, { SETTINGS_INPUT_CLASS, SettingsField } from "./settings_section.jsx";
 import SettingsRow from "./settings_row.jsx";
 import { Switch } from "./ui/switch.jsx";

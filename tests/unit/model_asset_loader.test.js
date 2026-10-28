@@ -103,7 +103,8 @@ describe("model_asset_loader (Offline & Local Bundle & Browser Caching)", () => 
   it("caches downloaded model into browser CacheStorage and reads from cache without network", async () => {
     const memoryCache = new Map();
     const mockCache = {
-      match: vi.fn(async (key) => memoryCache.get(key) || null),
+      // CacheStorage returns a fresh response body for each match.
+      match: vi.fn(async (key) => memoryCache.get(key)?.clone() || null),
       put: vi.fn(async (key, resp) => {
         memoryCache.set(key, resp);
       }),
@@ -170,5 +171,106 @@ describe("model_asset_loader (Offline & Local Bundle & Browser Caching)", () => 
       fallbackUrl: "https://voo.run/models/test-model.onnx",
     });
     expect(isCachedAfterDelete).toBe(false);
+  });
+
+  it("falls back remotely when a local SPA route returns HTTP 200 HTML", async () => {
+    globalThis.window = { location: { href: "https://example.test/editor/" } };
+    const valid = new Uint8Array([1, 2, 3]);
+    const cache = { match: vi.fn().mockResolvedValue(null), put: vi.fn(), delete: vi.fn() };
+    globalThis.caches = { open: async () => cache };
+    globalThis.fetch = vi.fn(async url => url.startsWith("https://example.test/")
+      ? new Response("<!doctype html><html>Editor</html>", { headers: { "content-type": "text/html; charset=utf-8" } })
+      : new Response(valid, { headers: { "content-type": "application/octet-stream" } }));
+    expect(await loadModelAssetBytes({ filename: "test.onnx", fallbackUrl: "https://models.test/test.onnx" })).toEqual(valid);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    expect(cache.put).toHaveBeenCalled();
+    for (const [, response] of cache.put.mock.calls) {
+      expect(new Uint8Array(await response.arrayBuffer())).toEqual(valid);
+    }
+  });
+
+  it("rejects HTML even if a server incorrectly labels it as binary", async () => {
+    globalThis.window = { location: { href: "https://example.test/editor/" } };
+    const valid = new Uint8Array([4, 5, 6]);
+    globalThis.fetch = vi.fn(async url => url.startsWith("https://example.test/")
+      ? new Response("<!DOCTYPE html><html>Editor</html>", { headers: { "content-type": "application/octet-stream" } })
+      : new Response(valid));
+    expect(await loadModelAssetBytes({ filename: "test.onnx", fallbackUrl: "https://models.test/test.onnx" })).toEqual(valid);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not cache an HTML response from the remote fallback", async () => {
+    globalThis.window = { location: { href: "https://example.test/editor/" } };
+    const cache = { match: vi.fn().mockResolvedValue(null), put: vi.fn(), delete: vi.fn() };
+    globalThis.caches = { open: async () => cache };
+    globalThis.fetch = vi.fn(async url => url.startsWith("https://example.test/")
+      ? new Response(null, { status: 404 })
+      : new Response("<html>Error</html>", { headers: { "content-type": "text/html" } }));
+    await expect(loadModelAssetBytes({ filename: "test.onnx", fallbackUrl: "https://models.test/test.onnx" })).rejects.toThrow("modelAssetInvalidResponse");
+    expect(cache.put).not.toHaveBeenCalled();
+  });
+
+  it("evicts previously cached SPA HTML and replaces it with real model bytes", async () => {
+    globalThis.window = { location: { href: "https://example.test/editor/" } };
+    const valid = new Uint8Array([7, 8, 9]);
+    const cache = {
+      match: vi.fn(async () => new Response("<!doctype html><html>Stale editor</html>", { headers: { "content-type": "application/octet-stream" } })),
+      delete: vi.fn(), put: vi.fn(),
+    };
+    globalThis.caches = { open: async () => cache };
+    globalThis.fetch = vi.fn(async url => url.startsWith("https://example.test/") ? new Response(null, { status: 404 }) : new Response(valid));
+    expect(await loadModelAssetBytes({ filename: "test.onnx", fallbackUrl: "https://models.test/test.onnx" })).toEqual(valid);
+    expect(cache.delete).toHaveBeenCalledWith("https://example.test/editor/models/test.onnx");
+    expect(cache.put).toHaveBeenCalled();
+  });
+
+  it("rejects an empty local payload and fetches the remote model", async () => {
+    globalThis.window = { location: { href: "https://example.test/editor/" } };
+    const valid = new Uint8Array([10, 11]);
+    globalThis.fetch = vi.fn(async url => url.startsWith("https://example.test/") ? new Response(new Uint8Array()) : new Response(valid));
+    expect(await loadModelAssetBytes({ filename: "test.onnx", fallbackUrl: "https://models.test/test.onnx" })).toEqual(valid);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps remote downloads available to desktop builds without a bundled optional model", async () => {
+    const loadModelBytes = vi.fn().mockResolvedValue(null), valid = new Uint8Array([12, 13]);
+    globalThis.window = { location: { href: "file:///application/dist/index.html" }, electronAPI: { loadModelBytes } };
+    globalThis.fetch = vi.fn(async url => url.startsWith("file:") ? new Response(null, { status: 404 }) : new Response(valid));
+    expect(await loadModelAssetBytes({ filename: "test.onnx", fallbackUrl: "https://models.test/test.onnx" })).toEqual(valid);
+    expect(loadModelBytes).toHaveBeenCalledWith("test.onnx");
+    expect(globalThis.fetch).toHaveBeenCalledWith("https://models.test/test.onnx");
+  });
+
+  it("preserves native IPC availability reporting without reading a large model for status", async () => {
+    const loadModelBytes = vi.fn();
+    globalThis.window = { electronAPI: { loadModelBytes } };
+    expect(await isModelAssetCached({ filename: "optional.onnx" })).toBe(true);
+    expect(loadModelBytes).not.toHaveBeenCalled();
+  });
+
+  it("reports poisoned HTML cache entries as absent and removes them without fetching", async () => {
+    globalThis.window = { location: { href: "https://example.test/editor/" } };
+    const cache = {
+      match: vi.fn(async () => new Response("<!doctype html><html>Editor</html>", { headers: { "content-type": "application/octet-stream" } })),
+      delete: vi.fn(),
+    };
+    globalThis.caches = { open: async () => cache };
+    globalThis.fetch = vi.fn();
+    expect(await isModelAssetCached({ filename: "test.onnx" })).toBe(false);
+    expect(cache.delete).toHaveBeenCalledWith("https://example.test/editor/models/test.onnx");
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("checks only the first cache stream chunk and cancels further reading for status", async () => {
+    globalThis.window = { location: { href: "https://example.test/editor/" } };
+    let pulls = 0;
+    const cancel = vi.fn();
+    const cache = { match: vi.fn(async () => new Response(new ReadableStream({
+      pull(controller) { pulls += 1; controller.enqueue(new Uint8Array([1, 2, 3])); },
+      cancel,
+    }, { highWaterMark: 0 }))) };
+    globalThis.caches = { open: async () => cache };
+    expect(await isModelAssetCached({ filename: "test.onnx" })).toBe(true);
+    expect(pulls).toBe(1); expect(cancel).toHaveBeenCalledOnce();
   });
 });

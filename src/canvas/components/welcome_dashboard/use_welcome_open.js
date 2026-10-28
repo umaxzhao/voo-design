@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDesignStore } from "../../../store/design_store.js";
-import { openVooProject } from "../../store/project_io.js";
+import { openVooProject } from "../../store/open-project.js";
 import { openRecentItem } from "./open_recent.js";
 
 /** Handlers that open an existing project: file picker, recent item, or dropped file. */

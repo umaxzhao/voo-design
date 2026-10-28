@@ -12,6 +12,7 @@
  */
 
 import { getImageDataUrl, putImage } from "./db.js";
+import { pickProjectSource } from "./pick-project-source.js";
 import { dataUrlToBlob } from "../../shared/db_wire.js";
 import { useDesignStore } from "../../store/design_store.js";
 import { addRecentFile } from "./recent_files.js";
@@ -575,22 +576,6 @@ async function openBinaryDesignSource({ store, bytes, sourceName, sourcePath, ha
   return { success: true, fileName, filePath: keepsSource ? sourcePath : null, missingFonts };
 }
 
-/** Lets the user pick one file through a hidden input when no native picker is available. */
-function pickFileFromInput() {
-  return new Promise((resolve) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".voo,.zip,.json,.psd,.fig,.svg,.pen";
-    input.onchange = (e) => resolve(e.target.files?.[0] ?? null);
-    input.click();
-  });
-}
-
-/** Bytes of a file-like value, whatever the host hands back. */
-function toBytes(value) {
-  return value instanceof Uint8Array ? value : new Uint8Array(value);
-}
-
 /**
  * Opens a `.voo` (binary or legacy JSON), a PSD or a Figma file from a picked
  * file, a recent path, or the native dialog.
@@ -631,87 +616,11 @@ export async function openVooProject(options = {}) {
 async function openVooProjectUnlocked({
   store = useDesignStore.getState(),
   fileOrPath = null,
+  pickedSource,
 } = {}) {
-  let source = null;
-
-  if (
-    (typeof File !== "undefined" && fileOrPath instanceof File) ||
-    (typeof Blob !== "undefined" && fileOrPath instanceof Blob) ||
-    (fileOrPath && typeof fileOrPath.arrayBuffer === "function")
-  ) {
-    source = {
-      bytes: new Uint8Array(await fileOrPath.arrayBuffer()),
-      name: fileOrPath.name || "Untitled.voo",
-      path: null,
-      handle: null,
-    };
-  } else if (typeof fileOrPath === "string") {
-    if (!window.electronAPI?.readFileBytes) return { canceled: true };
-    source = {
-      bytes: toBytes(await window.electronAPI.readFileBytes(fileOrPath)),
-      name: fileOrPath.split(/[/\\]/).pop(),
-      path: fileOrPath,
-      handle: null,
-    };
-  } else if (window.electronAPI?.openFileDialog) {
-    const result = await window.electronAPI.openFileDialog({
-      filters: [
-        {
-          name: "VOO Design Document / PSD / Figma / SVG / Pen",
-          extensions: ["voo", "zip", "json", "psd", "fig", "svg", "pen"],
-        },
-      ],
-    });
-    if (!result?.bytes) return { canceled: true };
-    source = {
-      bytes: toBytes(result.bytes),
-      name: result.filePath.split(/[/\\]/).pop(),
-      path: result.filePath,
-      handle: null,
-    };
-  } else if (
-    typeof window !== "undefined" &&
-    typeof window.showOpenFilePicker === "function"
-  ) {
-    try {
-      const [handle] = await window.showOpenFilePicker({
-        types: [
-          {
-            description:
-              "VOO Design Document / PSD / Figma / SVG / Pen (*.voo, *.json, *.psd, *.fig, *.svg, *.pen)",
-            accept: {
-              "application/json": [".voo", ".json", ".pen"],
-              "image/vnd.adobe.photoshop": [".psd"],
-              "application/octet-stream": [".fig"],
-              "image/svg+xml": [".svg"],
-            },
-          },
-        ],
-      });
-      if (!handle) return { canceled: true };
-      const file = await handle.getFile();
-      source = {
-        bytes: new Uint8Array(await file.arrayBuffer()),
-        name: file.name,
-        path: null,
-        handle,
-      };
-    } catch (err) {
-      if (err.name === "AbortError") return { canceled: true };
-      console.warn("[VOO] showOpenFilePicker failed, falling back to input:", err);
-    }
-  }
-
-  if (!source && typeof document !== "undefined") {
-    const file = await pickFileFromInput();
-    if (!file) return { canceled: true };
-    source = {
-      bytes: new Uint8Array(await file.arrayBuffer()),
-      name: file.name,
-      path: null,
-      handle: null,
-    };
-  }
+  const source = pickedSource === undefined
+    ? await pickProjectSource({ fileOrPath })
+    : pickedSource;
   if (!source) return { canceled: true };
 
   return openVooSource({ store, ...source });

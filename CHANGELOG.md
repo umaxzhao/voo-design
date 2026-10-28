@@ -2,6 +2,10 @@
 
 ## 1.0.0
 
+- Separate welcome configuration and model catalogs from canvas tool execution, defer project parsers and generation contracts until use, and keep scene layout/variables and font catalogs out of first-welcome requests. Start file selection before loading parsers so slow networks preserve picker user activation and filesystem handles.
+- Extract canvas gestures and shared camera responsibilities; preserve pointer cancellation and Space-pan behavior with real input regressions. Remove scene model unused-import suppressions and guard public exports with actual ESLint checks.
+- Keep model weights out of ordinary web builds, publish them independently with a deployment preflight, retain optional desktop bundling, correct the remote fallback and reject HTML fallback pages as model bytes; serve models through a read-only CORS route with genuine missing-file responses.
+
 - Add real-browser GPU/CPU spatial-filter parity checks; align detail/motion radius bounds, transparent-pixel readback and motion sampling precision/direction while preserving the per-channel tolerance.
 
 - Remove eight unused legacy workflow/storage facades with missing imports, repair the active video-duration constant path, and guard all relative source imports in tests. Actual PSD import, storage and collaboration paths remain covered.

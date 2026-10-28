@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { AI_GEN_TYPES } from "./welcome_constants.js";
-import { DEFAULT_DESIGN_SYSTEM_ID, DEFAULT_STYLE_ID } from "./generation_intent.js";
+import { DEFAULT_DESIGN_SYSTEM_ID, DEFAULT_STYLE_ID } from "./generation-options.js";
 import FlatSelect from "../flat_select.jsx";
 import { ProviderLogo } from "../provider_icons.jsx";
 

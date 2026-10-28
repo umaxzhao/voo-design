@@ -1,45 +1,8 @@
 // Seam: Adjustment normalization and defensive value clamping.
-/* eslint-disable no-unused-vars */
-import {
-  REGION_PALETTE,
-  REGION_COLOR,
-  getRegionColor,
-  MIN_REGION_SIZE,
-  LEGACY_DOC_VERSION,
-  DEFAULT_FONT_FAMILY,
-  DEFAULT_FONT_SIZE,
-  LINE_HEIGHT_RATIO,
-  TEXT_FONT_WEIGHTS,
-  TEXT_ALIGNS,
-  DEFAULT_TEXT_STYLE,
-  MIN_DOC_SIZE,
-  BLEND_MODES,
-  normalizeBlendMode,
-  MAX_SHEAR_DEG,
-  normalizeCornerRadius,
-  normalizeRotationDeg,
-  normalizeNodeTransform,
-  hasBlendModes,
-  DEFAULT_ADJUSTMENTS,
-  isDefaultAdjustments,
-  deepEqual,
-  normalizePoints,
-  parseAdjustmentValue,
-  HUE_BAND_KEYS,
-  normalizeHueSatBands,
-  DOC_VERSION,
-  NODE_KIND,
-  DEFAULT_BLEND_MODE,
-  newId,
-  createDefaultAdjustments,
-  getBaseDefaults,
-  createDocument,
-  createImageNode,
-} from "./scene_model_core.js";
+import { DEFAULT_ADJUSTMENTS, normalizePoints, parseAdjustmentValue, normalizeHueSatBands, createDefaultAdjustments } from "./scene_model_core.js";
 import { normalizeLiveFilterStack } from "./live_filter_stack.js";
 
 /** Sorts and clamps a gradient stop list; falls back on a broken list. */
-/* eslint-enable no-unused-vars */
 export function normalizeGradientStops(stops, fallback) {
   const list = Array.isArray(stops)
     ? stops

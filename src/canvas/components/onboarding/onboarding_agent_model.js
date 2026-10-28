@@ -1,4 +1,4 @@
-import { AGENT_SETTING } from "../../agent/canvas_tools.js";
+import { AGENT_SETTING } from "../../agent/agent-settings.js";
 import { setSetting } from "../../../shared/settings.js";
 
 /**

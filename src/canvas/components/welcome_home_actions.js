@@ -1,6 +1,4 @@
 import { dispatchToAgent } from "./dispatch_to_agent.js";
-import { resolveLayoutImages } from "../store/layout_action_helpers.js";
-import { htmlToDocument } from "../editor/html_import.js";
 import {
   VOO_FILE_FORMAT,
   VOO_FILE_VERSION,
@@ -10,6 +8,9 @@ export const HTML_IMPORT_ACCEPT = ".html,.htm,text/html";
 export const SCREENSHOT_ACCEPT = "image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif";
 
 export async function importWelcomeHtml(file, store) {
+  const [{ htmlToDocument }, { resolveLayoutImages }] = await Promise.all([
+    import("../editor/html_import.js"), import("../store/layout_action_helpers.js"),
+  ]);
   const { doc: document, pendingImages } = htmlToDocument(await file.text(), { width: 1440, height: 900 });
   await resolveLayoutImages(document, pendingImages);
   store.loadVooProject({

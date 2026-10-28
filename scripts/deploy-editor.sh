@@ -23,13 +23,17 @@ if [ ! -f dist/index.html ]; then
   exit 1
 fi
 
+# Slim web builds intentionally omit weights. Check the separately published
+# assets before replacing the entry point; never turn a release into a model 404.
+bash scripts/deploy-editor-models.sh --check
+
 BACKUP_PATH="/srv/voo-run/editor-backups/${REVISION}-$(date -u +%Y%m%dT%H%M%SZ)"
 SSH_OPTIONS="ssh -o BatchMode=yes -o ConnectTimeout=12"
 
 # Hard-link the old release before rsync's atomic per-file replacements.
 # Keep old hashed chunks so open tabs can still load their lazy modules.
 $SSH_OPTIONS "$TARGET" "mkdir -p /srv/voo-run/editor-backups; if [ -d '$REMOTE_PATH' ]; then cp -al '$REMOTE_PATH' '$BACKUP_PATH'; else mkdir -p '$REMOTE_PATH'; fi"
-rsync -az --exclude '.DS_Store' --exclude 'index.html' -e "$SSH_OPTIONS" dist/ "${TARGET}:${REMOTE_PATH}/"
+rsync -az --exclude '.DS_Store' --exclude 'models/' --exclude 'index.html' -e "$SSH_OPTIONS" dist/ "${TARGET}:${REMOTE_PATH}/"
 # Publish the entry point last, only after every referenced asset arrived.
 rsync -az -e "$SSH_OPTIONS" dist/index.html "${TARGET}:${REMOTE_PATH}/index.html"
 

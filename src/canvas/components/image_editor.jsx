@@ -1,6 +1,5 @@
 import { WORKSPACE_BACKGROUND } from "../editor/render_canvas_base.js";
 import { frameEditorFills } from "../editor/frame-fills.js";
-import { shouldDragArtboardBody } from "./artboard-body-gesture.js";
 import { exportTargetName } from "../editor/export_filename.js";
 import { patchForMultiResize } from "../editor/multi_selection_patch.js";
 import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
@@ -27,8 +26,6 @@ import {
   editorPanelLayout,
   editorPageFitInsets,
   editorPanelVisibility,
-  fitEditorPageCamera,
-  shouldReserveBothPanelInsets,
 } from "./editor_panel_layout.js";
 import PropertiesPanelShell from "./editor_properties/properties_panel_shell.jsx";
 import { getWorkbench } from "./editor_workbench.js";
@@ -44,7 +41,6 @@ import { alignNodes, distributeNodes } from "../editor/align_ops.js";
 import EditorPage from "./editor_page.jsx";
 import LoadingModal from "./loading_modal.jsx";
 import EditorProperties from "./deferred_editor_properties.jsx";
-import { layoutPresentationPages } from "../presentation/presentation-document.js";
 import { usePresentationHistory } from "./presentation/use_presentation_history.js";
 import { usePresentationEditor } from "./presentation/use_presentation_editor.js";
 import { useMobileCanvasGestures } from "./use_mobile_canvas_gestures.js";
@@ -74,10 +70,7 @@ import { getSetting, setSetting } from "../../shared/settings.js";
 import { loadEditorPanelLayout, saveEditorPanelLayout } from "./editor_panel_preferences.js";
 import {
   TOOL,
-  ZOOM_STEP,
   clampZoom,
-  wheelPanDelta,
-  wheelZoomFactor,
 } from "../editor/editor_constants.js";
 import { marqueeItemForMode } from "../editor/tool_families.js";
 import { executeEditorCommand } from "../editor/command_table.js";
@@ -105,10 +98,6 @@ import {
   setInstanceCamera,
   setInstanceViewLocked,
 } from "../editor/instance-view.js";
-import {
-  dragArtboardPosition,
-  positionArtboard,
-} from "../editor/editor_artboard_positions.js";
 import { applySmartCrop } from "../editor/auto_crop_page.js";
 import {
   addColorVariable,
@@ -120,6 +109,9 @@ import { createStylePanelActions } from "../editor/scene_styles.js";
 import { useEditorApply } from "./editor_hooks/use_editor_apply.js";
 import { useEditorDocumentAids } from "./editor_hooks/use_editor_document_aids.js";
 import { useEditorPaletteActions } from "./editor_hooks/use_editor_palette_actions.js";
+import { useEditorCanvasGestures } from "./editor_hooks/use_editor_canvas_gestures.js";
+import { useEditorSharedCamera } from "./editor_hooks/use_editor_shared_camera.js";
+import { useEditorArtboardLayouts } from "./editor_hooks/use_editor_artboard_layouts.js";
 import { useDraftAutosave } from "./editor_hooks/use_draft_autosave.js";
 import { readImageRgba } from "./bitmap_pixels.js";
 import {
@@ -140,10 +132,7 @@ import { isLocalMattingSupported } from "../editor/ai_capabilities.js";
 import { maskErrorCopy } from "../error_text.js";
 import { subscribePersistenceAlert } from "../editor/editor_persist_events.js";
 import {
-  FREE_GUTTER,
   FREE_PADDING,
-  gridArtboardLayouts,
-  presentationRowX,
   zoomCameraAt,
   workspaceRenderDocument,
 } from "./image_editor_helpers.js";
@@ -185,6 +174,7 @@ const SNAP_TO_GRID_SETTING = "voo.editor.snapToGrid";
 export default function ImageEditor({ agentVisible = false, visible = true }) {
   const { t } = useI18n();
   const isNarrow = useIsNarrow();
+  const welcomeOpen = useDesignStore((state) => state.welcomeOpen);
 
   const nodeIds = useDesignStore((state) => state.editingNodeIds);
   const focusedId = useDesignStore((state) => state.editingNodeId);
@@ -230,35 +220,22 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     (state) => state.editorArtboardLayouts,
   );
   const setEditorCamera = useDesignStore((state) => state.setEditorCamera);
-  const panEditorCamera = useDesignStore((state) => state.panEditorCamera);
-  const setEditorArtboardLayouts = useDesignStore(
-    (state) => state.setEditorArtboardLayouts,
-  );
   const setEditorArtboardLayout = useDesignStore(
     (state) => state.setEditorArtboardLayout,
-  );
-  const moveEditorArtboard = useDesignStore(
-    (state) => state.moveEditorArtboard,
-  );
-  const setEditorViewport = useDesignStore(
-    (state) => state.setEditorViewport,
   );
 
   // Every frame lives on the shared free canvas, including the first one.
   // Adding or removing a frame must never switch camera or renderer modes.
   const multi = nodeIds.length > 0 || Boolean(presentationId);
 
-  // A design editor opened these pictures; the fast first paint shipped a
-  // compressed preview, so fetch the untouched originals for editing (the
-  // collab responds and the store's image map is replaced by the full-res blob).
+  // Request originals only when the actual image IDs change, not on every
+  // document update. The effect reads the same stable input it depends on.
+  const originalImageIdsJson = JSON.stringify(nodeIds.map((id) =>
+    nodes.find((node) => node.id === id)?.data?.imageId).filter(Boolean));
   useEffect(() => {
-    if (!nodeIds.length) return;
-    const imageIds = (nodeIds ?? [])
-      .map((id) => nodes.find((n) => n.id === id)?.data?.imageId)
-      .filter(Boolean);
+    const imageIds = JSON.parse(originalImageIdsJson);
     if (imageIds.length) requestCollabOriginal(imageIds);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodeIds.join(",")]);
+  }, [originalImageIdsJson]);
 
   /** nodeId -> live engine, and nodeId -> what an evicted page left behind. */
   const enginesRef = useRef(new Map());
@@ -302,7 +279,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const artboardLayerRef = useRef(null);
   const freeGridRef = useRef(null);
   const panGestureRef = useRef(null);
-  const artboardDragRef = useRef(null);
   const spaceRef = useRef(false);
   const [busy, setBusy] = useState(false);
   /** A save/export failed; the editor stays open so the work survives. */
@@ -851,73 +827,11 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     !canvasBackgroundSelected,
   );
 
-  /**
-   * Free-canvas layout: artboards laid out left to right in camera-space,
-   * each vertically centred against the tallest. Docs are read live because
-   * their sizes settle as engines finish opening.
-   */
-  const readySignature = nodeIds
-    .map((id) => {
-      const state = enginesRef.current.get(id);
-      return state?.ready ? `${state.width}x${state.height}` : "pending";
-    })
-    .join(",");
-  const savedPositionById = useMemo(() => {
-    const map = new Map();
-    for (const node of nodes) {
-      const saved =
-        (editorArtboardLayouts instanceof Map
-          ? editorArtboardLayouts.get(node.id)
-          : editorArtboardLayouts?.[node.id]) ||
-        node.data?.editorCanvasPosition;
-      if (saved && (saved.x !== undefined || saved.y !== undefined)) {
-        map.set(node.id, saved);
-      }
-    }
-    return map;
-  }, [nodes, editorArtboardLayouts]);
-  const positionSignature = nodeIds
-    .map((id) => {
-      const position = savedPositionById.get(id);
-      return `${position?.x ?? "auto"},${position?.y ?? "auto"}`;
-    })
-    .join(";");
-  const freeLayouts = useMemo(() => {
-    if (!multi) return [];
-    const sizes = nodeIds.map((nodeId) => {
-      const state = enginesRef.current.get(nodeId);
-      const width = state?.ready
-        ? state.width
-        : (presentationOwner?.data.presentation.width ?? 1024);
-      const height = state?.ready
-        ? state.height
-        : (presentationOwner?.data.presentation.height ?? 1024);
-      return { nodeId, width, height };
-    });
-    const automatic = presentationId
-      ? layoutPresentationPages(
-          sizes.map((size, index) => ({ ...size, x: presentationRowX(sizes, index) })),
-          { padding: FREE_PADDING, gap: FREE_GUTTER },
-        )
-      : gridArtboardLayouts(sizes);
-    return automatic.map((layout) =>
-      positionArtboard(layout, savedPositionById.get(layout.nodeId)),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    multi,
-    nodeIds,
-    readySignature,
-    positionSignature,
-    presentationId,
-    presentationOwner?.data.presentation.width,
-    presentationOwner?.data.presentation.height,
-  ]);
-
-  const layoutById = useMemo(
-    () => new Map(freeLayouts.map((entry) => [entry.nodeId, entry])),
-    [freeLayouts],
-  );
+  const { freeLayouts, layoutById, readySignature, positionSignature } = useEditorArtboardLayouts({
+    multi, nodeIds, nodes, enginesRef, editorArtboardLayouts, presentationId,
+    presentationWidth: presentationOwner?.data.presentation.width,
+    presentationHeight: presentationOwner?.data.presentation.height,
+  });
 
   const frameLayout = layoutById.get(focusedId) ?? {
     x: FREE_PADDING,
@@ -1613,48 +1527,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     }, []),
   });
 
-  // Sync artboard layouts and viewport dimensions into workflow store for target resolution.
-  useEffect(() => {
-    if (!multi || freeLayouts.length === 0) return;
-    const stage = freeStageRef.current;
-    if (stage) {
-      setEditorViewport({
-        width: stage.clientWidth || 1440,
-        height: stage.clientHeight || 900,
-      });
-    }
-    setEditorArtboardLayouts(layoutById);
-  }, [
-    multi,
-    freeLayouts,
-    layoutById,
-    setEditorArtboardLayouts,
-    setEditorViewport,
-  ]);
-
-  // Fine-grained hardware-accelerated transform sync for multi-artboard canvas pan.
-  // Directly updates layer transform so pan operations do not trigger React re-renders
-  // or individual artboard DOM mutations.
-  useEffect(() => {
-    if (!multi) return undefined;
-    const syncTransform = (cam) => {
-      const el = artboardLayerRef.current;
-      if (!cam) return;
-      if (freeGridRef.current) freeGridRef.current.style.backgroundPosition = `${cam.panX || 0}px ${cam.panY || 0}px`;
-      if (!el) return;
-      el.style.transform = `translate3d(${cam.panX || 0}px, ${cam.panY || 0}px, 0)`;
-    };
-    syncTransform(useDesignStore.getState().editorCamera);
-    let lastCamera = useDesignStore.getState().editorCamera;
-    return useDesignStore.subscribe((state) => {
-      const cam = state.editorCamera;
-      if (cam && cam !== lastCamera) {
-        lastCamera = cam;
-        syncTransform(cam);
-      }
-    });
-  }, [multi]);
-
   /** AI generation commits a new Group candidate instead of mutating its source. */
   const handleGroupGeneratedOutput = useCallback(
     async (result) => {
@@ -2096,93 +1968,13 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   // --------------------------------------------------------------------------
   // Shared free-canvas camera for every frame count.
 
-  /** The free stage's centre in stage coordinates, for cursor-anchored zoom. */
-  const stageCentre = useCallback(() => {
-    const stage = freeStageRef.current;
-    return {
-      x: (stage?.clientWidth ?? 0) / 2,
-      y: (stage?.clientHeight ?? 0) / 2,
-    };
-  }, []);
-
-  /** Fits the whole artboard row into the free stage. */
-  const fitAll = useCallback(() => {
-    const stage = freeStageRef.current;
-    if (!stage || freeLayouts.length === 0) return;
-    const fittingLayouts = presentationId
-      ? [layoutById.get(focusedId) ?? freeLayouts[0]]
-      : freeLayouts;
-    const box = fittingLayouts.reduce(
-      (acc, layout) => ({
-        x: Math.min(acc.x, layout.x),
-        y: Math.min(acc.y, layout.y),
-        right: Math.max(acc.right, layout.x + layout.width),
-        bottom: Math.max(acc.bottom, layout.y + layout.height),
-      }),
-      { x: Infinity, y: Infinity, right: -Infinity, bottom: -Infinity },
-    );
-    const width = box.right - box.x;
-    const height = box.bottom - box.y;
-    const panel = editorPanelLayout({
-      stageWidth: stage.clientWidth,
-      swapped: swapPanels,
-      // Multi-page actions must remain clear when Properties opens after the
-      // first Fit. Reserve its band so selection never moves the camera.
-      reserveBothPanels:
-        multi ||
-        shouldReserveBothPanelInsets({
-          layersPanelShown,
-          propertiesOpen,
-          historyOpen,
-        }),
-    });
-    const insets = panel.insets;
-    const camera = fitEditorPageCamera({
-      stageWidth: stage.clientWidth,
-      stageHeight: stage.clientHeight,
-      layout: { x: box.x, y: box.y, width, height },
-      insets,
-    });
-    if (!camera) return;
-    setEditorCamera(camera);
-  }, [
-    freeLayouts,
-    multi,
-    setEditorCamera,
-    presentationId,
-    focusedId,
-    layoutById,
-    swapPanels,
-    layersPanelShown,
-    propertiesOpen,
-    historyOpen,
-  ]);
-
-  const zoomSharedStep = useCallback(
-    (direction) =>
-      setEditorCamera((prev) =>
-        zoomCameraAt(prev, ZOOM_STEP ** direction, stageCentre()),
-      ),
-    [stageCentre, setEditorCamera],
-  );
-  const zoomSharedHundred = useCallback(
-    () =>
-      setEditorCamera((prev) => {
-        const stage = freeStageRef.current;
-        const focusedLayout = layoutById.get(focusedId);
-        if (stage && focusedLayout) {
-          return {
-            zoom: 1,
-            panX:
-              (stage.clientWidth - focusedLayout.width) / 2 - focusedLayout.x,
-            panY:
-              (stage.clientHeight - focusedLayout.height) / 2 - focusedLayout.y,
-          };
-        }
-        return zoomCameraAt(prev, 1 / prev.zoom, stageCentre());
-      }),
-    [stageCentre, setEditorCamera, focusedId, layoutById],
-  );
+  const { fitAll, zoomSharedStep, zoomSharedHundred } = useEditorSharedCamera({
+    multi, visible, freeStageRef, artboardLayerRef, freeGridRef,
+    freeLayouts, layoutById, nodeIds, focusedId, presentationId, swapPanels,
+    layersPanelShown, propertiesOpen, historyOpen, enginesRef, readySignature,
+    editorRememberCamera, editingGroupId, getGroupCamera, saveGroupCamera,
+    pendingArtboardFitId, pendingNavigationRef, setEditorCamera,
+  });
 
   const toggleGrid = useCallback(() => {
     const next = engine?.getGrid?.() ? null : { enabled: true, size: 32 };
@@ -2272,501 +2064,15 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     return unsubscribe;
   }, []);
 
-  // Wheel over the free stage: scroll pans, ⌘/Ctrl+wheel zooms around the
-  // cursor. Attached natively because React's onWheel is passive and would
-  // swallow preventDefault.
-  useEffect(() => {
-    if (!multi || !visible) return undefined;
-    const stage = freeStageRef.current;
-    if (!stage) return undefined;
-    const onWheel = (event) => {
-      event.preventDefault();
-      if (event.ctrlKey || event.metaKey) {
-        const bounds = stage.getBoundingClientRect();
-        setEditorCamera((prev) =>
-          zoomCameraAt(prev, wheelZoomFactor(event.deltaY), {
-            x: event.clientX - bounds.left,
-            y: event.clientY - bounds.top,
-          }),
-        );
-        return;
-      }
-      const { dx, dy } = wheelPanDelta(event);
-      panEditorCamera(dx, dy);
-    };
-    stage.addEventListener("wheel", onWheel, { passive: false });
-    return () => {
-      stage.removeEventListener("wheel", onWheel);
-
-    };
-  }, [multi, visible, panEditorCamera, setEditorCamera]);
-
-  // Fit the whole row once every page has finished opening.
-  const fittedRef = useRef(null);
-  useEffect(() => {
-    if (!multi) return;
-    const allReady = presentationId
-      ? enginesRef.current.get(focusedId)?.ready
-      : nodeIds.every((id) => enginesRef.current.get(id)?.ready);
-    if (!allReady) return;
-    const signature = (presentationId ? nodeIds : [...nodeIds].sort()).join(
-      "|",
-    );
-    if (fittedRef.current === signature) return;
-    const firstFit = fittedRef.current === null;
-    fittedRef.current = signature;
-    // A remembered group reopens exactly where its user left it; a hand
-    // multi-select (or a first group edit with no saved view) fits the pages.
-    const saved =
-      editorRememberCamera && (!presentationId || firstFit)
-        ? getGroupCamera(editingGroupId)
-        : null;
-    if (saved && saved.panX !== undefined && saved.panY !== undefined) {
-      setEditorCamera({
-        zoom: saved.zoom ?? 1,
-        panX: saved.panX,
-        panY: saved.panY,
-      });
-    } else {
-      fitAll();
-    }
-  }, [
-    multi,
-    nodeIds,
-    fitAll,
-    setEditorCamera,
-    editorRememberCamera,
-    editingGroupId,
-    getGroupCamera,
-    presentationId,
-    focusedId,
-  ]);
-
-  // Focus an unseen artboard after the initial row fit, using its world position.
-  useEffect(() => {
-    if (!pendingArtboardFitId || pendingArtboardFitId !== focusedId) return;
-    if (multi) {
-      const stage = freeStageRef.current;
-      const layout = layoutById.get(focusedId);
-      const allReady = presentationId
-        ? enginesRef.current.get(focusedId)?.ready
-        : nodeIds.every((id) => enginesRef.current.get(id)?.ready);
-      if (!stage || !layout || !allReady) return;
-      const camera = fitEditorPageCamera({
-        stageWidth: stage.clientWidth,
-        stageHeight: stage.clientHeight,
-        layout,
-        insets: editorPanelLayout({ stageWidth: stage.clientWidth, swapped: swapPanels, reserveBothPanels: true }).insets,
-      });
-      if (!camera) return;
-      setEditorCamera(camera);
-    }
-    useDesignStore.setState({ pendingArtboardFitId: null });
-  }, [pendingArtboardFitId, focusedId, multi, nodeIds, presentationId, layoutById, readySignature, swapPanels, setEditorCamera]);
-
-  // A component jump is complete when its live page and visible stage are
-  // ready. The normal multi-page fit runs first; this then focuses the target.
-  useEffect(() => {
-    const navigation = pendingNavigationRef.current;
-    if (!navigation || navigation.pageId !== focusedId) return;
-    const targetEngine = enginesRef.current.get(focusedId);
-    if (!targetEngine?.ready) return;
-
-    if (multi) {
-      const stage = freeStageRef.current;
-      const layout = layoutById.get(focusedId);
-      if (!stage || !layout) return;
-      if (navigation.kind === "enter") {
-        const panel = editorPanelLayout({
-          stageWidth: stage.clientWidth,
-          swapped: swapPanels,
-        });
-        const insets = panel.insets;
-        const camera = fitEditorPageCamera({
-          stageWidth: stage.clientWidth,
-          stageHeight: stage.clientHeight,
-          layout,
-          insets,
-        });
-        if (!camera) return;
-        setEditorCamera(camera);
-      } else if (navigation.camera) {
-        const camera = navigation.camera;
-        setEditorCamera(
-          navigation.cameraMode === "shared"
-            ? camera
-            : {
-                zoom: camera.zoom,
-                panX: camera.panX - layout.x * camera.zoom,
-                panY: camera.panY - layout.y * camera.zoom,
-              },
-        );
-      }
-    } else if (navigation.kind === "enter") {
-      targetEngine.engine.zoomToFit?.();
-    } else if (navigation.cameraMode === "local" && navigation.camera) {
-      targetEngine.engine.setViewport?.(navigation.camera);
-    }
-
-    if (navigation.kind === "return") {
-      const current = targetEngine.engine.getDocument();
-      const ids = navigation.selectedIds.filter((id) =>
-        current.nodes.some((node) => node.id === id),
-      );
-      targetEngine.engine.selectExactly(ids);
-      if (navigation.playback) {
-        targetEngine.engine.seekToTime(navigation.playback.time);
-        if (navigation.playback.playing) targetEngine.engine.play();
-      }
-    }
-    pendingNavigationRef.current = null;
-  }, [
-    focusedId,
-    multi,
-    readySignature,
-    layoutById,
-    swapPanels,
-    setEditorCamera,
-  ]);
-
-  // Remember the free-canvas view for a group: when the editor closes (or the
-  // set of pages changes), write the camera back onto the group node so the
-  // next open restores it. A hand multi-select (no group) is never written.
-  const cameraRef = useRef(useDesignStore.getState().editorCamera);
-  cameraRef.current = useDesignStore.getState().editorCamera;
-  useEffect(() => useDesignStore.subscribe((state) => {
-    cameraRef.current = state.editorCamera;
-  }), []);
-  const rememberedRef = useRef({ groupId: null, active: false });
-  useEffect(() => {
-    if (multi && editorRememberCamera && editingGroupId) {
-      rememberedRef.current = { groupId: editingGroupId, active: true };
-      return;
-    }
-    const prev = rememberedRef.current;
-    if (prev.active && prev.groupId) {
-      saveGroupCamera(prev.groupId, cameraRef.current);
-    }
-    rememberedRef.current = { groupId: null, active: false };
-  }, [multi, editorRememberCamera, editingGroupId, nodeIds, saveGroupCamera]);
-
-  // Space arms the hand tool over the free canvas.
-  useEffect(() => {
-    if (!multi) return undefined;
-    const isTypingTarget = (target) =>
-      target instanceof HTMLElement &&
-      (target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable);
-    const setHand = (active) => {
-      spaceRef.current = active;
-      const stage = freeStageRef.current;
-      if (stage) stage.style.cursor = active ? "grab" : "default";
-    };
-    const onKeyDown = (event) => {
-      if (event.code !== "Space") return;
-      if (event.target.closest?.("[data-presentation-overlay]")) return;
-      if (isTypingTarget(event.target)) return;
-      event.preventDefault();
-      setHand(true);
-    };
-    const onKeyUp = (event) => {
-      if (event.code !== "Space") return;
-      setHand(false);
-    };
-    const onBlur = () => setHand(false);
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
-    window.addEventListener("blur", onBlur);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
-      window.removeEventListener("blur", onBlur);
-    };
-  }, [multi, visible]);
-
-  // Free-stage pointer gestures: Space / middle-button drag pans, and clicking
-  // the empty canvas deselects the focused page. Left-button drag on the empty
-  // canvas (not over any artboard) also pans the free view — a view-only camera
-  // offset that never writes back to workflow node positions.
-  const onFreePointerDown = useCallback((event) => {
-    const isPanTrigger = event.button === 1 || spaceRef.current;
-    const isLeftClick = event.button === 0;
-
-    if (!isPanTrigger && !isLeftClick) return;
-
-    // Never pan when interacting with UI panels, menus, dialogs, form controls
-    if (
-      event.target.closest?.(
-        '[role="dialog"], [role="menu"], [data-testid="editor-top-bar"], [data-testid="editor-toolbar"], [data-testid="editor-layers-panel"], [data-testid="editor-properties-panel"], [data-testid="agent-panel"], button, input, textarea, select',
-      )
-    ) {
-      return;
-    }
-
-    // For plain left clicks without Space, let artboards handle their own selection/drawing/tools
-    if (!isPanTrigger && event.target.closest?.("[data-editor-artboard]")) {
-      return;
-    }
-
-    // Middle-button drag, space+drag, or drag on empty canvas: start panning camera
-    event.preventDefault();
-    if (isPanTrigger) {
-      event.stopPropagation();
-    }
-
-    try {
-      freeStageRef.current?.setPointerCapture?.(event.pointerId);
-    } catch {
-      // Synthetic pointers and already-released ids cannot be captured;
-      // the move/up handlers below still work without capture.
-    }
-
-    const stage = freeStageRef.current;
-    if (stage) stage.style.cursor = "grabbing";
-
-    panGestureRef.current = {
-      pointerId: event.pointerId,
-      lastX: event.clientX,
-      lastY: event.clientY,
-      startX: event.clientX,
-      startY: event.clientY,
-      moved: false,
-      button: event.button,
-    };
-  }, []);
-  const lastCollabCursorSentRef = useRef(0);
-  const handleCollabCursorMove = useCallback((event) => {
-    const now = performance.now();
-    if (now - lastCollabCursorSentRef.current < 50) return;
-    lastCollabCursorSentRef.current = now;
-    const stage = freeStageRef.current;
-    if (!stage) return;
-    const rect = stage.getBoundingClientRect();
-    const cam = useDesignStore.getState().editorCamera || { panX: 0, panY: 0, zoom: 1 };
-    const z = cam.zoom || 1;
-    const x = (event.clientX - rect.left - (cam.panX || 0)) / z;
-    const y = (event.clientY - rect.top - (cam.panY || 0)) / z;
-    sendCollabCursor({ x, y });
-  }, []);
-  const onFreePointerMove = useCallback(
-    (event) => {
-      handleCollabCursorMove(event);
-      const gesture = panGestureRef.current;
-      if (!gesture || gesture.pointerId !== event.pointerId) return;
-      const dx = event.clientX - gesture.lastX;
-      const dy = event.clientY - gesture.lastY;
-      gesture.lastX = event.clientX;
-      gesture.lastY = event.clientY;
-
-      if (!gesture.moved) {
-        const totalDist = Math.hypot(
-          event.clientX - (gesture.startX ?? gesture.lastX),
-          event.clientY - (gesture.startY ?? gesture.lastY),
-        );
-        // Middle button or space drag pans immediately (threshold 1px)
-        const threshold = gesture.button === 1 || spaceRef.current ? 1 : 4;
-        if (totalDist < threshold) return;
-        gesture.moved = true;
-      }
-
-      panEditorCamera(dx, dy);
-    },
-    [panEditorCamera],
-  );
-  const onFreePointerUp = useCallback(
-    (event) => {
-      const gesture = panGestureRef.current;
-      if (gesture?.pointerId !== event.pointerId) return;
-      panGestureRef.current = null;
-
-      try {
-        freeStageRef.current?.releasePointerCapture?.(event.pointerId);
-      } catch {
-        // The pointer may already be gone; nothing left to release.
-      }
-      const stage = freeStageRef.current;
-      if (stage) stage.style.cursor = spaceRef.current ? "grab" : "default";
-
-      // A bare left-click on empty canvas (never dragged) deselects the focused
-      // page and its selection, like Figma.
-      if (!gesture.moved && gesture.button === 0 && !spaceRef.current) {
-        setCanvasBackgroundSelected(true);
-        enginesRef.current.get(focusedId)?.engine?.select?.(null);
-        focusEditorPage(null);
-      }
-    },
-    [focusedId, focusEditorPage],
-  );
-
+  const { onFreePointerDown, onFreePointerMove, onFreePointerUp,
+    onTitlePointerDown, onTitlePointerMove, onTitlePointerUp, onArtboardBodyPointerDown,
+  } = useEditorCanvasGestures({
+    multi, visible, freeStageRef, spaceRef, panGestureRef, enginesRef,
+    layoutById, cameraZoom, tool, focusedId, focusEditorPage,
+    handleFocusCanvas, setCanvasBackgroundSelected,
+  });
   // Ref populated by ToolPropertiesSection so the X shortcut can swap colours.
   const swapColorsRef = useRef(null);
-
-  // Space-drag on a title keeps the camera pan gesture available.
-  const onTitlePanDown = useCallback((event) => {
-    if (
-      event.button !== 0 ||
-      event.target.closest?.(
-        "button, input, textarea, [role=dialog], [role=menu]",
-      )
-    )
-      return;
-    event.preventDefault();
-    event.stopPropagation();
-    try {
-      // Capture on the title label itself so the drag's move/up retarget here,
-      // independent of the (non-capturing) free-stage handlers.
-      event.currentTarget?.setPointerCapture?.(event.pointerId);
-    } catch {
-      // Synthetic pointers cannot be captured; move/up still work.
-    }
-    panGestureRef.current = {
-      pointerId: event.pointerId,
-      lastX: event.clientX,
-      lastY: event.clientY,
-      moved: false,
-      button: event.button,
-    };
-  }, []);
-
-  const onTitlePointerDown = useCallback(
-    (nodeId, event) => {
-      if (spaceRef.current) {
-        onTitlePanDown(event);
-        return;
-      }
-      if (
-        event.button !== 0 ||
-        event.target.closest?.(
-          "button, input, textarea, [role=dialog], [role=menu]",
-        )
-      )
-        return;
-      const layout = layoutById.get(nodeId);
-      if (!layout) return;
-      event.preventDefault();
-      event.stopPropagation();
-      try {
-        event.currentTarget?.setPointerCapture?.(event.pointerId);
-      } catch {
-        // Synthetic pointers can complete through the move/up handlers.
-      }
-      artboardDragRef.current = {
-        pointerId: event.pointerId,
-        nodeId,
-        start: { x: layout.x, y: layout.y },
-        clientX: event.clientX,
-        clientY: event.clientY,
-        next: { x: layout.x, y: layout.y },
-        moved: false,
-      };
-    },
-    [layoutById, onTitlePanDown],
-  );
-
-  const onTitlePointerMove = useCallback(
-    (event) => {
-      const gesture = artboardDragRef.current;
-      if (!gesture || gesture.pointerId !== event.pointerId) {
-        onFreePointerMove(event);
-        return;
-      }
-      const dx = event.clientX - gesture.clientX;
-      const dy = event.clientY - gesture.clientY;
-      if (!gesture.moved && Math.hypot(dx, dy) < 3) return;
-      const next = dragArtboardPosition(
-        gesture.start,
-        { x: dx, y: dy },
-        cameraZoom,
-      );
-      if (!next) return;
-      gesture.moved = true;
-      gesture.next = next;
-      const board = event.currentTarget.closest("[data-editor-artboard]");
-      if (board) {
-        board.style.left = `${next.x * cameraZoom}px`;
-        board.style.top = `${next.y * cameraZoom}px`;
-      }
-      const layout = layoutById.get(gesture.nodeId);
-      if (layout)
-        setEditorArtboardLayout(gesture.nodeId, { ...layout, ...next });
-    },
-    [cameraZoom, layoutById, onFreePointerMove, setEditorArtboardLayout],
-  );
-
-  const onTitlePointerUp = useCallback(
-    (event) => {
-      const gesture = artboardDragRef.current;
-      if (!gesture || gesture.pointerId !== event.pointerId) {
-        onFreePointerUp(event);
-        return;
-      }
-      artboardDragRef.current = null;
-      try {
-        event.currentTarget?.releasePointerCapture?.(event.pointerId);
-      } catch {
-        // The browser may release capture before pointercancel arrives.
-      }
-      const cancelled = event.type === "pointercancel";
-      if (!gesture.moved) {
-        // A plain click on a frame title selects that frame, as Figma does.
-        if (!cancelled) handleFocusCanvas(gesture.nodeId);
-        return;
-      }
-      if (cancelled) {
-        const board = event.currentTarget.closest("[data-editor-artboard]");
-        if (board) {
-          board.style.left = `${gesture.start.x * cameraZoom}px`;
-          board.style.top = `${gesture.start.y * cameraZoom}px`;
-        }
-        const layout = layoutById.get(gesture.nodeId);
-        if (layout) setEditorArtboardLayout(gesture.nodeId, layout);
-        return;
-      }
-      moveEditorArtboard(gesture.nodeId, gesture.next);
-    },
-    [
-      cameraZoom,
-      handleFocusCanvas,
-      layoutById,
-      moveEditorArtboard,
-      onFreePointerUp,
-      setEditorArtboardLayout,
-    ],
-  );
-
-  /**
-   * Empty frame body can drag the frame; artwork keeps its own pointer events
-   * so an unselected object can be selected and moved on the first gesture.
-   */
-  const onArtboardBodyPointerDown = useCallback(
-    (nodeId, event) => {
-      if (event.button !== 0 || spaceRef.current) return;
-      if (
-        event.target.closest?.(
-          "[data-editor-artboard-title], button, input, textarea, [role=dialog], [role=menu], [role=separator], [data-interactive]",
-        )
-      )
-        return;
-      if (tool !== TOOL.SELECT) return;
-      const targetEngine = enginesRef.current.get(nodeId)?.engine;
-      if (!shouldDragArtboardBody(targetEngine, event.clientX, event.clientY)) return;
-      const board = event.currentTarget;
-      onTitlePointerDown(nodeId, event);
-      if (!artboardDragRef.current) return;
-      const move = (e) => onTitlePointerMove(e);
-      const up = (e) => {
-        onTitlePointerUp(e);
-        board.removeEventListener("pointermove", move);
-        board.removeEventListener("pointerup", up);
-        board.removeEventListener("pointercancel", up);
-      };
-      board.addEventListener("pointermove", move);
-      board.addEventListener("pointerup", up);
-      board.addEventListener("pointercancel", up);
-    },
-    [tool, onTitlePointerDown, onTitlePointerMove, onTitlePointerUp],
-  );
 
   // Keyboard zoom steps the shared camera when several pages are open, and the
   // focused page's own viewport otherwise.
@@ -2775,7 +2081,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
 
   useEditorShortcuts({
     engine,
-    enabled: visible,
+    enabled: visible && !welcomeOpen,
     // Any open overlay must pause the capture-phase shortcut hook, otherwise Esc
     // "leaves" the canvas (unwinding the tool/selection) while merely dismissing
     // a popup, and single-key tool shortcuts fire behind open modals. Design.md

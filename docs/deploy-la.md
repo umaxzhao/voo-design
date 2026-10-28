@@ -25,6 +25,26 @@ Rsync replaces files atomically; it must not use `--inplace` with these backups.
 Verify the public index and its referenced assets after deployment. Rollback can
 restore the backup entry point while its old assets remain available.
 
+Web builds omit `public/models` but still copy fonts, ONNX/CanvasKit runtimes,
+brand assets and license notices. Model weights have an independent lifecycle:
+
+```sh
+VOO_DEPLOY_MODELS_SOURCE=/path/to/licensed/models bash scripts/deploy-editor-models.sh
+```
+
+Run that command when provisioning or changing weights, rather than with every
+web build. It preserves existing weights and requires the configured RMBG and
+two LaMa files. Normal editor deployment checks these files first and excludes
+`models/` from rsync; it never deletes them. Public checks must also confirm
+binary responses at `/editor/models/`, since an SPA HTML 200 is not a model.
+The server includes `scripts/nginx-editor-models.conf` as
+`/etc/nginx/snippets/voo-editor-models.conf` inside its VOO server block. This
+separate location returns a genuine 404 for absent weights and permits
+credential-free cross-origin GET/HEAD for desktop on-demand downloads. Back up
+the site configuration, run `nginx -t`, then reload after changing the snippet.
+The three upscale model files are not supplied by this installation; do not
+claim that upscaling or an offline desktop package is complete without them.
+
 GitHub Actions builds on main pushes. Its optional deployment requires both
 `LA2_SSH_KEY` and `LA2_SSH_HOST`; `LA2_SSH_USER` defaults to root. Without those
 secrets only the build runs. This does not prevent direct local SSH deployment.

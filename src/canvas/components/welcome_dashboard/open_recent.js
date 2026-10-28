@@ -1,5 +1,5 @@
 import { useDesignStore } from "../../../store/design_store.js";
-import { openVooProject } from "../../store/project_io.js";
+import { openVooProject } from "../../store/open-project.js";
 import { loadDraftBytes } from "../../store/draft_store.js";
 import { getRecentFiles } from "../../store/recent_files.js";
 import { workspaceStorage } from "../../../services/workspace_storage.js";

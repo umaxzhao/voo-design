@@ -11,6 +11,8 @@
  *    so subsequent runs in the browser are completely offline and instantaneous.
  */
 
+import { isHtmlModelResponse, isValidCachedModelResponse, isValidModelPayload } from "./model-asset-payload.js";
+
 export const DEFAULT_MODEL_CACHE_NAME = "voo-models-cache-v1";
 const IDB_NAME = "voo_browser_model_cache";
 const IDB_STORE = "models";
@@ -130,7 +132,8 @@ async function deleteIndexedDbModel(key) {
 }
 
 /**
- * Checks whether a model is already downloaded and cached in the browser or local disk.
+ * Checks browser caches or native IPC availability without reading whole native models.
+ * The native result is capability-only: this API cannot cheaply certify a particular file.
  *
  * @param {object} options
  * @param {string} options.filename - The model file name (e.g. "rmbg-1.4-fp16.onnx").
@@ -143,10 +146,9 @@ export async function isModelAssetCached({
   fallbackUrl,
   cacheName = DEFAULT_MODEL_CACHE_NAME,
 }) {
-  // 1. Electron IPC check (desktop app has models on disk)
-  if (typeof window !== "undefined" && window.electronAPI?.loadModelBytes) {
-    return true;
-  }
+  // Preserve native UI behavior without reading a 100MB model for a badge.
+  // Capability is not proof this particular optional weight is installed.
+  if (typeof window !== "undefined" && window.electronAPI?.loadModelBytes) return true;
 
   const localUrl = resolveLocalModelUrl(filename);
   const cacheKeys = [localUrl, fallbackUrl, `/models/${filename}`, filename].filter(Boolean);
@@ -157,7 +159,8 @@ export async function isModelAssetCached({
     for (const key of cacheKeys) {
       try {
         const match = await cache.match(key);
-        if (match) return true;
+        if (match && await isValidCachedModelResponse(match)) return true;
+        if (match) await cache.delete(key);
       } catch {
         // continue
       }
@@ -168,7 +171,8 @@ export async function isModelAssetCached({
   for (const key of cacheKeys) {
     try {
       const data = await getIndexedDbModel(key);
-      if (data && data.byteLength > 0) return true;
+      if (isValidModelPayload(data)) return true;
+      if (data) await deleteIndexedDbModel(key);
     } catch {
       // continue
     }
@@ -242,10 +246,11 @@ export async function loadModelAssetBytes({
         const cached = await cache.match(key);
         if (cached) {
           const buffer = await cached.arrayBuffer();
-          if (buffer && buffer.byteLength > 0) {
+          if (buffer && isValidModelPayload(new Uint8Array(buffer))) {
             onProgress?.({ phase: "cached", loaded: buffer.byteLength, total: buffer.byteLength, percent: 100 });
             return new Uint8Array(buffer);
           }
+          await cache.delete(key);
         }
       } catch {
         // continue to next key
@@ -257,10 +262,11 @@ export async function loadModelAssetBytes({
   for (const key of cacheKeys) {
     try {
       const idbBytes = await getIndexedDbModel(key);
-      if (idbBytes && idbBytes.byteLength > 0) {
+      if (isValidModelPayload(idbBytes)) {
         onProgress?.({ phase: "cached", loaded: idbBytes.byteLength, total: idbBytes.byteLength, percent: 100 });
         return idbBytes;
       }
+      if (idbBytes) await deleteIndexedDbModel(key);
     } catch {
       // continue
     }
@@ -293,6 +299,10 @@ export async function loadModelAssetBytes({
  * Streams the response body with progress tracking and caches the result into Chrome.
  */
 async function streamResponseAndCache(response, cacheKeys, cache, onProgress) {
+  if (isHtmlModelResponse(response)) {
+    await response.body?.cancel?.();
+    throw new Error("modelAssetInvalidResponse");
+  }
   const total = Number(response.headers.get("content-length")) || 0;
   const reader = response.body?.getReader();
 
@@ -300,6 +310,7 @@ async function streamResponseAndCache(response, cacheKeys, cache, onProgress) {
   if (!reader) {
     const buffer = await response.arrayBuffer();
     bytes = new Uint8Array(buffer);
+    if (!isValidModelPayload(bytes)) throw new Error("modelAssetInvalidResponse");
     onProgress?.({ phase: "loaded", loaded: bytes.byteLength, total: bytes.byteLength, percent: 100 });
   } else {
     const chunks = [];
@@ -319,6 +330,7 @@ async function streamResponseAndCache(response, cacheKeys, cache, onProgress) {
       bytes.set(chunk, offset);
       offset += chunk.length;
     }
+    if (!isValidModelPayload(bytes)) throw new Error("modelAssetInvalidResponse");
     onProgress?.({ phase: "loaded", loaded: bytes.byteLength, total: bytes.byteLength, percent: 100 });
   }
 

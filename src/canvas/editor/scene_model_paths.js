@@ -1,69 +1,9 @@
 // Seam: Path and pen geometry plus path-node builders.
-/* eslint-disable no-unused-vars */
-import {
-  REGION_PALETTE,
-  REGION_COLOR,
-  getRegionColor,
-  MIN_REGION_SIZE,
-  LEGACY_DOC_VERSION,
-  DEFAULT_FONT_FAMILY,
-  DEFAULT_FONT_SIZE,
-  LINE_HEIGHT_RATIO,
-  TEXT_FONT_WEIGHTS,
-  TEXT_ALIGNS,
-  DEFAULT_TEXT_STYLE,
-  MIN_DOC_SIZE,
-  BLEND_MODES,
-  normalizeBlendMode,
-  MAX_SHEAR_DEG,
-  normalizeCornerRadius,
-  normalizeRotationDeg,
-  normalizeNodeTransform,
-  hasBlendModes,
-  DEFAULT_ADJUSTMENTS,
-  isDefaultAdjustments,
-  deepEqual,
-  normalizePoints,
-  parseAdjustmentValue,
-  HUE_BAND_KEYS,
-  normalizeHueSatBands,
-  DOC_VERSION,
-  NODE_KIND,
-  DEFAULT_BLEND_MODE,
-  newId,
-  createDefaultAdjustments,
-  getBaseDefaults,
-  createDocument,
-  createImageNode,
-} from "./scene_model_core.js";
-import { normalizeAdjustments } from "./scene_model_adjustments.js";
-import {
-  normalizeGradientStops,
-  normalizeMixerRow,
-  normalizeInkRow,
-  normalizeColorBalanceZone,
-  normalizeHexColor,
-  BASE_DEFAULTS,
-  DEFAULT_PAGE_BACKGROUND,
-  effectivePage,
-} from "./scene_model_geometry.js";
-import {
-  createAdjustmentNode,
-  isAdjustmentNode,
-  createRectNode,
-  createEllipseNode,
-  BOOLEAN_OPERATIONS,
-  BOOLEAN_SOURCE_KINDS,
-  canCombine,
-  booleanSourceOf,
-  syncBooleanNode,
-  createBooleanNode,
-  DEFAULT_BRUSH_HARDNESS,
-  DEFAULT_SOFT_BRUSH_HARDNESS,
-  normalizePathHardness,
-} from "./scene_model_node_builders.js";
+import { NODE_KIND, newId } from "./scene_model_core.js";
 
-/* eslint-enable no-unused-vars */
+import { BASE_DEFAULTS } from "./scene_model_geometry.js";
+import { normalizePathHardness } from "./scene_model_node_builders.js";
+
 export function createPathNode({ points, stroke, strokeWidth, hardness, arrow, arrowSize, arrowStart, arrowEnd, arrowCap, line, poly, polyKind, sides, spikes, innerRatio, closed, fill, strokeDash }) {
   const bounds = pathBounds(points, strokeWidth);
   return {
@@ -549,8 +489,8 @@ export function smoothPenPoints(points, indices = null) {
     ? new Set(indices)
     : new Set(
         isClosed
-          ? points.map((_, i) => i)
-          : points.slice(1, -1).map((_, i) => i + 1),
+          ? points.map((unusedPoint, i) => i)
+          : points.slice(1, -1).map((unusedPoint, i) => i + 1),
       );
 
   let result = points.slice();
@@ -606,12 +546,6 @@ export function simplifyPenPoints(points, tolerance = 1.0) {
 
   // If anchors have curve handles, preserve them
   const hasHandles = (p) => Boolean((p.in && (p.in[0] || p.in[1])) || (p.out && (p.out[0] || p.out[1])));
-
-  function getSqDist(p1, p2) {
-    const dx = p1.x - p2.x;
-    const dy = p1.y - p2.y;
-    return dx * dx + dy * dy;
-  }
 
   function getSqSegDist(p, p1, p2) {
     let x = p1.x;
@@ -723,7 +657,7 @@ export function joinMultiplePenNodes(nodes) {
     const joined = joinPenNodes(nodeA, nodeB);
     if (!joined) break;
 
-    remaining = remaining.filter((_, idx) => idx !== i && idx !== j);
+    remaining = remaining.filter((unusedNode, idx) => idx !== i && idx !== j);
     remaining.push(joined);
   }
 

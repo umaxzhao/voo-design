@@ -5,7 +5,7 @@ import { useProviderConfigs } from "../use_provider_state.js";
 import { getSettingAsync, setSetting } from "../../shared/settings.js";
 import { PROVIDER_MODELS_KEY, providerModelList } from "../../shared/provider_models.js";
 import { API_MEDIA_TYPE, PROVIDERS } from "../../shared/providers.js";
-import { AGENT_SETTING } from "../agent/canvas_tools.js";
+import { AGENT_SETTING } from "../agent/agent-settings.js";
 import SettingsSection from "./settings_section.jsx";
 import SettingsRow from "./settings_row.jsx";
 import FlatSelect from "./flat_select.jsx";

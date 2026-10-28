@@ -1,70 +1,7 @@
 // Seam: Text nodes, text styling, and visual effect normalization.
-/* eslint-disable no-unused-vars */
-import {
-  REGION_PALETTE,
-  REGION_COLOR,
-  getRegionColor,
-  MIN_REGION_SIZE,
-  LEGACY_DOC_VERSION,
-  DEFAULT_FONT_FAMILY,
-  DEFAULT_FONT_SIZE,
-  LINE_HEIGHT_RATIO,
-  TEXT_FONT_WEIGHTS,
-  TEXT_ALIGNS,
-  DEFAULT_TEXT_STYLE,
-  MIN_DOC_SIZE,
-  BLEND_MODES,
-  normalizeBlendMode,
-  MAX_SHEAR_DEG,
-  normalizeCornerRadius,
-  normalizeRotationDeg,
-  normalizeNodeTransform,
-  hasBlendModes,
-  DEFAULT_ADJUSTMENTS,
-  isDefaultAdjustments,
-  deepEqual,
-  normalizePoints,
-  parseAdjustmentValue,
-  HUE_BAND_KEYS,
-  normalizeHueSatBands,
-  DOC_VERSION,
-  NODE_KIND,
-  DEFAULT_BLEND_MODE,
-  newId,
-  createDefaultAdjustments,
-  getBaseDefaults,
-  createDocument,
-  createImageNode,
-  TEXT_LETTER_SPACING_BOUNDS,
-  TEXT_LINE_HEIGHT_BOUNDS,
-} from "./scene_model_core.js";
-import { normalizeAdjustments } from "./scene_model_adjustments.js";
-import {
-  normalizeGradientStops,
-  normalizeMixerRow,
-  normalizeInkRow,
-  normalizeColorBalanceZone,
-  normalizeHexColor,
-  BASE_DEFAULTS,
-  DEFAULT_PAGE_BACKGROUND,
-  effectivePage,
-} from "./scene_model_geometry.js";
-import {
-  createAdjustmentNode,
-  isAdjustmentNode,
-  createRectNode,
-  createEllipseNode,
-  BOOLEAN_OPERATIONS,
-  BOOLEAN_SOURCE_KINDS,
-  canCombine,
-  booleanSourceOf,
-  syncBooleanNode,
-  createBooleanNode,
-  DEFAULT_BRUSH_HARDNESS,
-  DEFAULT_SOFT_BRUSH_HARDNESS,
-  normalizePathHardness,
-} from "./scene_model_node_builders.js";
-import { createPathNode, pathBounds, normalisePenAnchor, cubicExtrema1D, penAnchorsBounds, createPenNode } from "./scene_model_paths.js";
+import { DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE, TEXT_FONT_WEIGHTS, TEXT_ALIGNS, DEFAULT_TEXT_STYLE, parseAdjustmentValue, NODE_KIND, newId, TEXT_LETTER_SPACING_BOUNDS, TEXT_LINE_HEIGHT_BOUNDS } from "./scene_model_core.js";
+
+import { normalizeGradientStops, BASE_DEFAULTS } from "./scene_model_geometry.js";
 
 /**
  * A text node.
@@ -73,7 +10,6 @@ import { createPathNode, pathBounds, normalisePenAnchor, cubicExtrema1D, penAnch
  * only font metrics available; they are stored so hit-testing and the layers
  * panel work before the first paint.
  */
-/* eslint-enable no-unused-vars */
 export function createTextNode({ x, y, text, fill, fontSize }) {
   return {
     ...BASE_DEFAULTS,

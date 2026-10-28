@@ -8,17 +8,12 @@
  */
 import { buildVooFile } from "./project_io.js";
 import { encodeVooBinary } from "./voo_binary.js";
-import { getRecentFiles } from "./recent_files.js";
+import { findDraftEntry } from "./draft-entry.js";
+export { findDraftEntry } from "./draft-entry.js";
 import { saveDraftBytes } from "./draft_store.js";
 
 /** Quiet period after the last change before a draft copy is written. */
 export const DRAFT_AUTOSAVE_DELAY_MS = 1500;
-
-/** Finds the recent entry of an unsaved document; unsaved entries are unique by name. */
-export function findDraftEntry(fileName) {
-  if (!fileName) return null;
-  return getRecentFiles().find((item) => !item.path && item.name === fileName) || null;
-}
 
 /** Serialises the open pages the same way a manual save does, minus preview and engine flush. */
 function collectPages(store, enginesRef, snapshotsRef) {

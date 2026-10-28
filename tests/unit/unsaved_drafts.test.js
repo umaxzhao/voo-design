@@ -9,6 +9,9 @@ vi.mock("../../src/canvas/store/project_io.js", () => ({
   openVooProject: (...a) => openVooProject(...a),
   buildVooFile: vi.fn(),
 }));
+vi.mock("../../src/canvas/store/open-project.js", () => ({
+  openVooProject: (...a) => openVooProject(...a),
+}));
 vi.mock("../../src/services/workspace_storage.js", () => ({
   workspaceStorage: { readFileBytes: (...a) => readFileBytes(...a) },
 }));

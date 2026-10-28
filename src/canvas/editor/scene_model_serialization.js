@@ -1,43 +1,7 @@
 import { designSystemFields } from "./design_tokens.js";
 import { getActiveDesignSystem } from '../agent/design_system/store.js';
 // Seam: Document serialization, deserialization, and display helpers.
-/* eslint-disable no-unused-vars */
-import {
-  REGION_PALETTE,
-  REGION_COLOR,
-  getRegionColor,
-  MIN_REGION_SIZE,
-  LEGACY_DOC_VERSION,
-  DEFAULT_FONT_FAMILY,
-  DEFAULT_FONT_SIZE,
-  LINE_HEIGHT_RATIO,
-  TEXT_FONT_WEIGHTS,
-  TEXT_ALIGNS,
-  DEFAULT_TEXT_STYLE,
-  MIN_DOC_SIZE,
-  BLEND_MODES,
-  normalizeBlendMode,
-  MAX_SHEAR_DEG,
-  normalizeCornerRadius,
-  normalizeRotationDeg,
-  normalizeNodeTransform,
-  hasBlendModes,
-  DEFAULT_ADJUSTMENTS,
-  isDefaultAdjustments,
-  deepEqual,
-  normalizePoints,
-  parseAdjustmentValue,
-  HUE_BAND_KEYS,
-  normalizeHueSatBands,
-  DOC_VERSION,
-  NODE_KIND,
-  DEFAULT_BLEND_MODE,
-  newId,
-  createDefaultAdjustments,
-  getBaseDefaults,
-  createDocument,
-  createImageNode,
-} from "./scene_model_core.js";
+import { LEGACY_DOC_VERSION, normalizeBlendMode, normalizeCornerRadius, normalizeNodeTransform, isDefaultAdjustments, DOC_VERSION, NODE_KIND } from "./scene_model_core.js";
 import { normalizeAdjustments } from "./scene_model_adjustments.js";
 import { normalizeColorVariables } from "./scene_color_variables.js";
 import {
@@ -61,82 +25,13 @@ export { normalizeBooleanNode } from "./scene-boolean-serialization.js";
 import { validateAndNormalizeModifierCollection } from "./scene-linear-array-validation.js";
 import { assertNotEvaluatedFrame } from "./scene-evaluated-frame.js";
 import * as canvasComposition from "./canvas-composition-model.js";
-import {
-  normalizeGradientStops,
-  normalizeMixerRow,
-  normalizeInkRow,
-  normalizeColorBalanceZone,
-  normalizeHexColor,
-  BASE_DEFAULTS,
-  DEFAULT_PAGE_BACKGROUND,
-  effectivePage,
-} from "./scene_model_geometry.js";
-import {
-  createAdjustmentNode,
-  isAdjustmentNode,
-  createRectNode,
-  createEllipseNode,
-  BOOLEAN_SOURCE_KINDS,
-  canCombine,
-  booleanSourceOf,
-  syncBooleanNode,
-  createBooleanNode,
-  DEFAULT_BRUSH_HARDNESS,
-  DEFAULT_SOFT_BRUSH_HARDNESS,
-  normalizePathHardness,
-} from "./scene_model_node_builders.js";
-import {
-  createPathNode,
-  pathBounds,
-  normalisePenAnchor,
-  cubicExtrema1D,
-  penAnchorsBounds,
-  createPenNode,
-} from "./scene_model_paths.js";
-import {
-  createTextNode,
-  normalizeColourOrNull,
-  normalizeTextShadow,
-  normalizeDropShadow,
-  normalizeOuterGlow,
-  normalizeBevel,
-  normalizeFill,
-  normalizeStroke,
-  normalizeInnerShadow,
-  normalizeInnerGlow,
-  normalizeSatin,
-  normalizeGradientOverlay,
-  normalizeEffects,
-  normalizeTextStyle,
-} from "./scene_model_text_effects.js";
-import {
-  REGION_INTENTS,
-  DEFAULT_REGION_INTENT,
-  normalizeRegionIntent,
-  normalizeWarpControls,
-  createRegionNode,
-  isRegionNode,
-  createGroupNode,
-  isGroupNode,
-  isBooleanNode,
-  isContainerNode,
-  groupChildren,
-  booleanChildren,
-  isInsideBooleanGroup,
-  groupDescendants,
-  topLevelGroupOf,
-  isHiddenByGroup,
-  isLockedByGroup,
-  regionParts,
-  regionName,
-  regionsOf,
-  promptLayersOf,
-  imageUnderRect,
-  textLines,
-} from "./scene_model_groups.js";
+
+import { normalizePathHardness } from "./scene_model_node_builders.js";
+
+import { normalizeEffects, normalizeTextStyle } from "./scene_model_text_effects.js";
+import { normalizeRegionIntent, normalizeWarpControls, isRegionNode, isGroupNode } from "./scene_model_groups.js";
 
 /** Node box, for hit-testing and the selection frame. */
-/* eslint-enable no-unused-vars */
 export function nodeRect(node) {
   return { x: node.x, y: node.y, width: node.width, height: node.height };
 }

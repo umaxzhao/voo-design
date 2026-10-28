@@ -36,6 +36,22 @@ chunks, CSS, fonts and WASM are outside this static-closure metric. The browser
 `editor-loading` suite separately checks actual first-welcome requests and
 that opening/returning to the editor preserves artwork and undo history.
 
+The `5004f42` static-entry baseline is 1,232,507 bytes (356,535 summed gzip).
+The next boundary change separates agent settings/model menus from tool
+executors, draft lookup from serialization, and welcome metadata from design
+contract validation. File parsers and generation contracts load on use. The
+browser gate also rejects first-welcome requests for canvas tools, scene
+variables/Auto Layout/snapping and the full font index. These runtime checks
+matter because a dynamically loaded welcome chunk is outside the static-entry
+metric. Re-run the analyzer for exact bytes at the release being considered.
+
+Extracting gestures and shared camera hooks reduces the editor container from
+5,037 to 4,343 lines and removes its two dependency-rule suppressions; it does
+not by itself reduce the loaded editor chunk. The navigation gate exercises
+real pointer pan/drag/cancellation, zoom, history and welcome round trips.
+Other oversized editor modules and remaining hook suppressions still need
+separate behavior-preserving maintenance.
+
 ## GPU spatial-filter correctness
 
 `tests/e2e/gl-spatial-parity.e2e.mjs` replaces the three Node-only placeholder

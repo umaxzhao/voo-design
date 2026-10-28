@@ -19,7 +19,9 @@ await withEditorBrowser(async ({ page }) => {
     "The welcome screen must not request the editor implementation");
   assert.deepEqual(welcomeResources.filter(name => deferredBuilders.test(name)), [],
     "Opening the welcome screen must not request PDF/PPTX builders");
-  checks.push("first welcome screen loads without an editor engine or export builders");
+  assert.deepEqual(welcomeResources.filter(name => /\/(?:canvas_tools|scene_variables|scene_auto_layout|scene_snapping|google_fonts_index)\.js(?:\?|$)/.test(name)), [],
+    "Configuration and model menus must not request canvas execution, layout, variables or font catalogs");
+  checks.push("first welcome screen defers the editor, canvas executors, scene engines, font catalogs and export builders");
 
   // Use the actual title-bar action and persistent workspace creation path.
   await page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true }).click();
