@@ -7,6 +7,8 @@
 - Keep destructive Boolean results selected, preserve expanded-stroke layer IDs and retain source selections through undo/redo.
 - Replace snapping feature probes with mandatory regressions and fix nearest-vertex selection across staggered isometric grid rows at reduced zoom.
 - Materialize generated image results into persisted candidate pages instead of silently discarding them; preserve source documents and reject stale document contexts or failed asset writes.
+- Restore selection actions on the default free canvas: one contextual toolbar follows object bounds and camera movement, while an empty selection leaves the canvas clear.
+- Treat Frames as selection-container boundaries so a real child click and drag can target one object while ordinary Group behavior remains intact.
 
 - Separate welcome configuration and model catalogs from canvas tool execution, defer project parsers and generation contracts until use, and keep scene layout/variables and font catalogs out of first-welcome requests. Start file selection before loading parsers so slow networks preserve picker user activation and filesystem handles.
 - Extract canvas gestures and shared camera responsibilities; preserve pointer cancellation and Space-pan behavior with real input regressions. Remove scene model unused-import suppressions and guard public exports with actual ESLint checks.

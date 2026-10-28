@@ -10,8 +10,8 @@ import {
   groupDescendants,
   isGroupNode,
   isLockedByGroup,
-  topLevelGroupOf,
 } from "./scene_model.js";
+import { frameSelectionUnit, isFrameSelectionBoundary } from "./frame-selection-unit.js";
 import { createEngineLayersController } from "./editor_engine_layers.js";
 import { createFrequencySeparationController } from "./editor_frequency_separation.js";
 import { createEngineNodeOps } from "./editor_engine_node_ops.js";
@@ -48,12 +48,12 @@ export function createEngineNodesController({
         current = findNode(doc, current.parentId);
       }
     }
-    return topLevelGroupOf(doc, node) ?? node;
+    return frameSelectionUnit(doc, node);
   }
 
   function unitSelectionIds(unit) {
     if (!unit) return [];
-    if (!isGroupNode(unit)) return [unit.id];
+    if (isFrameSelectionBoundary(unit) || !isGroupNode(unit)) return [unit.id];
     return groupDescendants(getDoc(), unit.id)
       .filter((node) => !isGroupNode(node))
       .map((node) => node.id);
@@ -66,7 +66,7 @@ export function createEngineNodesController({
     for (const id of selection.getIds()) {
       const node = findNode(doc, id);
       if (!node || node.locked || isLockedByGroup(doc, node)) continue;
-      const unit = topLevelGroupOf(doc, node) ?? node;
+      const unit = frameSelectionUnit(doc, node);
       if (!seen.has(unit.id)) {
         seen.add(unit.id);
         units.push(unit);

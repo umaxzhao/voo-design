@@ -49,8 +49,8 @@ Extracting gestures and shared camera hooks reduces the editor container from
 5,037 to 4,343 lines and removes its two dependency-rule suppressions; it does
 not by itself reduce the loaded editor chunk. The navigation gate exercises
 real pointer pan/drag/cancellation, zoom, history and welcome round trips.
-Other oversized editor modules and remaining hook suppressions still need
-separate behavior-preserving maintenance.
+Other oversized editor modules still need behavior-preserving maintenance.
+The following batch removes the remaining explicit Hook dependency suppressions.
 
 The next maintenance batch separates optional raster action implementations
 from the always-mounted Hook. Matting, selection repair, repaint, outpaint and
@@ -64,6 +64,14 @@ sink. A successful CPU/provider result alone is insufficient: a separate
 candidate must load its new bitmap, leave the source intact and survive project
 save/reopen. Candidate creation belongs to the existing page workflow; it does
 not add a second generation menu or replace the source image silently.
+The default free-canvas root must expose those actions too: the
+`root-contextual-toolbar` gate starts with the actual New action and checks
+one selection bar, pointer access, object/camera anchoring and empty-selection
+cleanup. The final raster UI check keeps that root and a real containing Frame;
+an artificially bounded document is insufficient coverage for this entry point.
+`frame-child-pointer` additionally exercises multiple real children inside a
+Frame. A successful click on an unparented image does not establish that Frame
+children can be selected and moved independently of Group promotion.
 
 Destructive Boolean and stroke expansion have a synchronous public mutation
 contract. Their geometric implementation is split into focused modules while

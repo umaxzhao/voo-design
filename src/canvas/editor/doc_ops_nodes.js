@@ -12,6 +12,7 @@ import {
 import { toNodeLocal } from "./scene_geometry.js";
 import { regionLocalPoint } from "./doc_ops_regions.js";
 import { projectOntoPath } from "./editor_pen_math.js";
+import { isFrameSelectionBoundary } from "./frame-selection-unit.js";
 
 export function withNodes(doc, rawNodes, changes = null) {
   let nodes = rawNodes;
@@ -258,9 +259,9 @@ export function nodeAtPoint(
 
   for (let i = 0; i < length; i += 1) {
     const node = isReverse ? nodesToTest[length - 1 - i] : nodesToTest[i];
-    // A group is a folder, not a mark: its box covers its members, so testing
-    // it would swallow every click meant for them.
-    if (isGroupNode(node)) continue;
+    // Ordinary folders have no hit surface. Frames paint a real surface and
+    // are tested after their children so empty space can move the whole Frame.
+    if (isGroupNode(node) && !isFrameSelectionBoundary(node)) continue;
     // A boolean container with active children is hit-tested through its children,
     // which hold the actual vector outlines.
     if (

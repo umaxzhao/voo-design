@@ -1,16 +1,18 @@
 import PropTypes from "prop-types";
 import EditorContextualTaskBar from "./editor_contextual_taskbar.jsx";
+import { useContextualTaskbarRect } from "./editor_hooks/use_contextual_taskbar_rect.js";
 
 /**
  * Wires EditorPage's selection and AI handlers into the contextual task bar.
- * EditorPage mounts the bar in two places: the page tool row in free mode
- * (no docRect) and under the selection on a fixed canvas (docRect set). Both
- * mounts share this wiring so the handlers stay in one place.
+ * Bounded free pages use a bottom row; root canvases float at the active
+ * selection, and full mode supplies its viewport docRect. Each mode shares
+ * this wiring and mounts one bar, keeping the action handlers in one place.
  */
 export default function EditorContextualTaskBarSlot({
   focused,
   doc,
   docRect = null,
+  floating = false,
   engine,
   selectedIds,
   tool,
@@ -31,7 +33,9 @@ export default function EditorContextualTaskBarSlot({
   onSplitLayers,
   splitLayersBusy,
 }) {
+  const floatingRect = useContextualTaskbarRect(engine, floating && focused);
   if (!doc || !focused) return null;
+  if (floating && !floatingRect) return null;
 
   // A pixel selection repaints the selected region; otherwise an image layer
   // repaints itself. Any other selection has no repaint target.
@@ -76,7 +80,7 @@ export default function EditorContextualTaskBarSlot({
       onAddAdjustmentLayer={onAddAdjustmentLayer}
       onApplyPreset={onApplyPreset}
       getBitmap={getBitmap}
-      docRect={docRect}
+      docRect={floating ? floatingRect : docRect}
     />
   );
 }
@@ -84,6 +88,7 @@ export default function EditorContextualTaskBarSlot({
 EditorContextualTaskBarSlot.propTypes = {
   focused: PropTypes.bool,
   doc: PropTypes.object,
+  floating: PropTypes.bool,
   docRect: PropTypes.shape({
     x: PropTypes.number,
     y: PropTypes.number,

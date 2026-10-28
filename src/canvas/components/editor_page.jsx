@@ -995,15 +995,17 @@ export default function EditorPage({
             <EditorCanvasPresets engine={engine} doc={doc} />
           </div>
         ) : null}
-        {/* Page tool row: the contextual task bar sits below the header, centred
-            on the frame, so it does not cover the page itself. */}
-        <div
-          data-testid="editor-page-toolbar"
-          className="absolute left-1/2 z-40 flex -translate-x-1/2 items-center gap-1"
-          style={{ top: "calc(100% + 8px)", display: doc?.isCanvasRoot ? "none" : undefined }}
-        >
-          <EditorContextualTaskBarSlot {...contextualTaskBarProps} focused={focused} />
-        </div>
+        {doc?.isCanvasRoot ? (
+          <EditorContextualTaskBarSlot {...contextualTaskBarProps} focused={focused} floating />
+        ) : (
+          <div
+            data-testid="editor-page-toolbar"
+            className="absolute left-1/2 z-40 flex -translate-x-1/2 items-center gap-1"
+            style={{ top: "calc(100% + 8px)" }}
+          >
+            <EditorContextualTaskBarSlot {...contextualTaskBarProps} focused={focused} />
+          </div>
+        )}
         {/* Add Canvas Button in Free Mode - only on the right of the last canvas */}
         {onAddCanvas && isLast && !doc?.isCanvasRoot ? (
           <button

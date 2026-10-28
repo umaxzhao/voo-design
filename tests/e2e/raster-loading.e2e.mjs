@@ -18,28 +18,37 @@ export async function runRegionMatting(bitmap, _selection, options) { return run
 `;
 const checks = [];
 
-async function prepare(page) {
+async function prepare(page, { canvasRoot = false, harness = true } = {}) {
   await page.addInitScript(() => performance.setResourceTimingBufferSize(10000));
   await page.reload({ waitUntil: "networkidle" });
   await page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true }).click();
   await page.waitForFunction(() => window.__vooEditor?.getDocument()?.nodes.some(node => node.isFrame));
-  await page.evaluate(async () => {
+  await page.evaluate(async (canvasRoot) => {
     const e = window.__vooEditor;
-    e.setDoc({ ...e.getDocument(), width: 400, height: 300, isCanvasRoot: false, backgroundColor: "#ffffff", nodes: [] });
+    const initial = e.getDocument();
+    const frame = canvasRoot ? initial.nodes.find(node => node.isFrame) : null;
+    if (canvasRoot && (!initial.isCanvasRoot || !frame)) throw new Error("Real New must create a canvas root containing a Frame");
+    const nodes = frame ? [{ ...frame, x: 0, y: 0, width: 400, height: 300, clipContent: true,
+      fill: "#ffffff", fills: [{ fill: "#ffffff", opacity: 1, visible: true }], fillOpacity: 1, fillHidden: false }] : [];
+    e.setDoc({ ...initial, width: canvasRoot ? initial.width : 400, height: canvasRoot ? initial.height : 300, isCanvasRoot: canvasRoot,
+      backgroundColor: canvasRoot ? "transparent" : "#ffffff", nodes });
     const canvas = document.createElement("canvas"); canvas.width = 32; canvas.height = 32;
     const ctx = canvas.getContext("2d"); ctx.fillStyle = "#c09070"; ctx.fillRect(0, 0, 32, 32);
     const first = await e.insertImage(canvas.toDataURL(), { x: 116, y: 116 });
-    e.updateNode(first.id, { x: 100, y: 100, width: 32, height: 32 });
+    e.updateNode(first.id, { x: 100, y: 100, width: 32, height: 32, ...(frame ? { parentId: frame.id } : {}) });
     ctx.fillStyle = "#408020"; ctx.fillRect(0, 0, 32, 32);
     const second = await e.insertImage(canvas.toDataURL(), { x: 216, y: 116 });
-    e.updateNode(second.id, { x: 200, y: 100, width: 32, height: 32 });
-    e.selectExactly([first.id]);
-    window.__rasterNodes = { first: first.id, second: second.id };
-  });
+    e.updateNode(second.id, { x: 200, y: 100, width: 32, height: 32, ...(frame ? { parentId: frame.id } : {}) });
+    e.selectExactly(canvasRoot ? [] : [first.id]);
+    e.setTool("select");
+    window.__rasterNodes = { first: first.id, second: second.id, frame: frame?.id };
+  }, canvasRoot);
   const resources = await page.evaluate(() => performance.getEntriesByType("resource").map(entry => entry.name));
   assert.deepEqual(resources.filter(name => features.test(name)), [], "Opening an ordinary canvas must defer raster implementations");
-  await page.evaluate(async () => (await import("/tests/e2e/raster-action-harness.mjs")).mountRasterHarness());
-  await page.locator("#raster-action-harness button").first().waitFor();
+  if (harness) {
+    await page.evaluate(async () => (await import("/tests/e2e/raster-action-harness.mjs")).mountRasterHarness());
+    await page.locator("#raster-action-harness button").first().waitFor();
+  }
 }
 const state = page => page.locator("#raster-action-harness [data-raster-state]").getAttribute("data-raster-state").then(JSON.parse);
 const color = (page, x, y) => page.evaluate(point => window.__vooEditor.sampleColorAt(point), { x, y });
@@ -178,17 +187,30 @@ await withEditorBrowser(async ({ page }) => {
 }, { openDocument: false, mcpLink: false });
 
 await withEditorBrowser(async ({ page }) => {
-  await prepare(page);
+  await prepare(page, { canvasRoot: true, harness: false });
   await page.evaluate(async () => {
-    window.__rasterHarnessRoot.unmount();
-    document.getElementById("raster-action-harness").remove();
     const { useDesignStore } = await import("/src/store/design_store.js");
     useDesignStore.setState({ editorCamera: { zoom: 1, panX: 450, panY: 450 } });
     window.__uiRetouchSourceEngine = window.__vooEditor;
     window.__uiRetouchSourceId = useDesignStore.getState().editingNodeId;
     window.__rasterUiStore = useDesignStore;
-    window.__vooEditor.selectExactly([window.__rasterNodes.first]);
+    const doc = window.__vooEditor.getDocument();
+    if (!doc.isCanvasRoot || !doc.nodes.find(node => node.id === window.__rasterNodes.frame)?.isFrame) {
+      throw new Error("The real UI scenario must retain its default canvas root and Frame");
+    }
+    if (doc.nodes.filter(node => node.parentId === window.__rasterNodes.frame && node.kind === "image").length !== 2) {
+      throw new Error("Both images must be children of the real Frame");
+    }
   });
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const imagePoint = await page.evaluate(() => {
+    const rect = document.querySelector(`[data-editor-artboard][data-node-id="${window.__uiRetouchSourceId}"]`).getBoundingClientRect();
+    const doc = window.__vooEditor.getDocument();
+    return { x: rect.left + 116 * rect.width / doc.width, y: rect.top + 116 * rect.height / doc.height };
+  });
+  await page.mouse.click(imagePoint.x, imagePoint.y);
+  await page.waitForFunction(() => window.__vooEditor.getSelected()?.id === window.__rasterNodes.first);
+  assert.equal(await color(page, 50, 50), "#ffffff", "The actual Frame fill must be visible inside the free canvas");
   const more = page.getByTestId("editor-taskbar-more").first();
   await more.waitFor({ state: "visible" });
   await more.click();
@@ -215,7 +237,22 @@ await withEditorBrowser(async ({ page }) => {
   assert.notEqual(visible.candidatePixel, "#c09070");
   assert.equal(visible.unchangedSibling, "#408020");
   assert.equal(visible.persisted, true);
-  checks.push("actual image quickbar Retouch/Apply runs CPU pixels, persists and automatically opens the visible candidate while preserving source and sibling pixels");
+  const screenPixel = await page.evaluate(() => {
+    const rect = document.querySelector(`[data-editor-artboard][data-node-id="${window.__rasterUiStore.getState().editingNodeId}"]`).getBoundingClientRect();
+    const doc = window.__vooEditor.getDocument();
+    return { x: rect.left + 108 * rect.width / doc.width, y: rect.top + 116 * rect.height / doc.height };
+  });
+  const screenshot = await page.screenshot({ clip: { x: Math.floor(screenPixel.x), y: Math.floor(screenPixel.y), width: 1, height: 1 } });
+  const displayed = await page.evaluate(async base64 => {
+    const image = new Image(); image.src = `data:image/png;base64,${base64}`; await image.decode();
+    const canvas = document.createElement("canvas"); canvas.width = canvas.height = 1;
+    const ctx = canvas.getContext("2d"); ctx.drawImage(image, 0, 0);
+    return [...ctx.getImageData(0, 0, 1, 1).data];
+  }, screenshot.toString("base64"));
+  const hex = visible.candidatePixel.slice(1);
+  assert.deepEqual(displayed, [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16), 255],
+    "The candidate's actual displayed pixel must match its changed image, not only the engine sample");
+  checks.push("default New canvas root with a real Frame supports pointer-selected image Retouch/Apply and automatically displays the persisted candidate while preserving source and sibling pixels");
 }, { openDocument: false, mcpLink: false });
 
 console.log(JSON.stringify({ passed: checks }, null, 2));
