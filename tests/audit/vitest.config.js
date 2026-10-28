@@ -1,0 +1,10 @@
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: "node",
+    include: ["tests/audit/**/*.audit.test.js"],
+    cache: { dir: "/private/tmp/voo-panel-audit-vitest-cache" },
+  },
+});
