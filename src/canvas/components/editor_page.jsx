@@ -35,6 +35,7 @@ import {
   confirmCanvasDelete,
 } from "../editor/doc_ops_canvas.js";
 import { docToScreenRect } from "../editor/scene_renderer.js";
+import { visibleCanvasFrameLabels } from "../editor/frame-canvas-labels.js";
 import { useEditorEngine } from "../use_editor_engine.js";
 import { collectExternalImageLayers } from "../editor_open_state.js";
 import { useSkiaPage } from "../use_skia_page.js";
@@ -242,6 +243,7 @@ export default function EditorPage({
   const canvasRef = useRef(null);
   const skiaCanvasRef = useRef(null);
   const titleRef = useRef(null);
+  const canvasFrameLabelRefs = useRef(new Map());
   const pageRingRef = useRef(null);
   const pageSizeRef = useRef(null);
   const addCanvasRef = useRef(null);
@@ -587,39 +589,57 @@ export default function EditorPage({
   // artwork. Re-position the DOM nodes from the same render callback the canvas
   // paints in, so both share the live viewport without a React re-render.
   useEffect(() => {
-    if (!engine || free) return undefined;
+    if (!engine) return undefined;
     const sync = () => {
       const liveDoc = engine.getDocument?.();
       if (!liveDoc) return;
-      const rect = docToScreenRect(effectivePage(liveDoc), engine.getViewport());
-      const ring = pageRingRef.current;
-      if (ring) {
-        ring.style.left = `${rect.x}px`;
-        ring.style.top = `${rect.y}px`;
-        ring.style.width = `${rect.width}px`;
-        ring.style.height = `${rect.height}px`;
+      const liveViewport = engine.getViewport();
+      if (!free) {
+        const rect = docToScreenRect(effectivePage(liveDoc), liveViewport);
+        const ring = pageRingRef.current;
+        if (ring) {
+          ring.style.left = `${rect.x}px`;
+          ring.style.top = `${rect.y}px`;
+          ring.style.width = `${rect.width}px`;
+          ring.style.height = `${rect.height}px`;
+        }
+        const stream = streamRectRef.current;
+        if (stream) {
+          stream.style.left = `${rect.x}px`;
+          stream.style.top = `${rect.y}px`;
+          stream.style.width = `${rect.width}px`;
+          stream.style.height = `${rect.height}px`;
+        }
+        const title = titleRef.current;
+        if (title) {
+          title.style.left = `${rect.x}px`;
+          title.style.top = `${rect.y - EDITOR_PAGE_HEADER_INSET}px`;
+        }
+        const size = pageSizeRef.current;
+        if (size) {
+          size.style.left = `${rect.x + rect.width / 2}px`;
+          size.style.top = `${rect.y - EDITOR_PAGE_HEADER_INSET - EDITOR_PAGE_TOOLBAR_GAP}px`;
+        }
+        const add = addCanvasRef.current;
+        if (add) {
+          add.style.left = `${rect.x + rect.width + 24}px`;
+          add.style.top = `${rect.y + rect.height / 2}px`;
+        }
       }
-      const stream = streamRectRef.current;
-      if (stream) {
-        stream.style.left = `${rect.x}px`;
-        stream.style.top = `${rect.y}px`;
-        stream.style.width = `${rect.width}px`;
-        stream.style.height = `${rect.height}px`;
-      }
-      const title = titleRef.current;
-      if (title) {
-        title.style.left = `${rect.x}px`;
-        title.style.top = `${rect.y - EDITOR_PAGE_HEADER_INSET}px`;
-      }
-      const size = pageSizeRef.current;
-      if (size) {
-        size.style.left = `${rect.x + rect.width / 2}px`;
-        size.style.top = `${rect.y - EDITOR_PAGE_HEADER_INSET - EDITOR_PAGE_TOOLBAR_GAP}px`;
-      }
-      const add = addCanvasRef.current;
-      if (add) {
-        add.style.left = `${rect.x + rect.width + 24}px`;
-        add.style.top = `${rect.y + rect.height / 2}px`;
+
+      const visibleLabels = new Map(
+        visibleCanvasFrameLabels(liveDoc).map((frame) => [frame.id, frame]),
+      );
+      for (const [frameId, label] of canvasFrameLabelRefs.current) {
+        const frame = visibleLabels.get(frameId);
+        if (!frame) {
+          label.hidden = true;
+          continue;
+        }
+        const frameRect = docToScreenRect(frame, liveViewport);
+        label.hidden = false;
+        label.style.left = `${frameRect.x}px`;
+        label.style.top = `${frameRect.y - EDITOR_PAGE_HEADER_INSET}px`;
       }
     };
     sync();
@@ -631,6 +651,38 @@ export default function EditorPage({
     ? { zoom: sharedZoom ?? 1, panX: 0, panY: 0 }
     : (engine?.getViewport() ?? { zoom: 1, panX: 0, panY: 0 });
   const pageRect = doc ? docToScreenRect(effectivePage(doc), viewport) : null;
+  const canvasFrameLabels = visibleCanvasFrameLabels(doc);
+  const renderCanvasFrameLabels = () =>
+    canvasFrameLabels.map((frame) => {
+      const frameRect = docToScreenRect(frame, viewport);
+      return (
+        <div
+          key={frame.id}
+          ref={(element) => {
+            if (element) canvasFrameLabelRefs.current.set(frame.id, element);
+            else canvasFrameLabelRefs.current.delete(frame.id);
+          }}
+          data-testid="editor-canvas-frame-label"
+          data-frame-id={frame.id}
+          className={`pointer-events-none absolute z-40 ${FRAME_TITLE_HIT_AREA} flex max-w-[70%] items-center gap-1.5 text-[11px] font-mono leading-none text-neutral-400`}
+          style={{
+            left: frameRect.x,
+            top: frameRect.y - EDITOR_PAGE_HEADER_INSET,
+          }}
+        >
+          <IconFrame
+            data-testid="editor-canvas-frame-icon"
+            size={12}
+            strokeWidth={1.5}
+            className="shrink-0 text-neutral-400"
+            aria-hidden="true"
+          />
+          <span className="truncate">
+            {frame.name || t("editor.prototype.untitledFrame")}
+          </span>
+        </div>
+      );
+    });
   // Full-stage scene editing must reserve the same panel bands as page Fit.
   // Free artboards already sit inside the parent's fitted clear area.
   const sceneEditingInsets =
@@ -941,6 +993,7 @@ export default function EditorPage({
             </div>
           ) : null}
         </div>
+        {renderCanvasFrameLabels()}
         <div
           ref={titleRef}
           data-testid="editor-page-title"
@@ -1110,6 +1163,7 @@ export default function EditorPage({
               ref={titleRef}
               data-testid="editor-page-title"
               data-editor-artboard-title
+              hidden={doc?.isCanvasRoot}
               // Same full-width bar as a frame on the free canvas.
               className={`absolute z-20 ${FRAME_TITLE_HIT_AREA} flex max-w-[70%] items-center gap-1.5 text-[11px] font-mono leading-none transition-colors ${
                 focused ? "text-[#a7ffd4]" : "text-neutral-400 hover:text-neutral-200"
@@ -1118,6 +1172,7 @@ export default function EditorPage({
               style={{
                 left: docRect.x,
                 top: docRect.y - EDITOR_PAGE_HEADER_INSET,
+                display: doc?.isCanvasRoot ? "none" : undefined,
               }}
             >
               <span
@@ -1194,6 +1249,7 @@ export default function EditorPage({
 
         {overlays}
       </div>
+      {renderCanvasFrameLabels()}
     </section>
   );
 }

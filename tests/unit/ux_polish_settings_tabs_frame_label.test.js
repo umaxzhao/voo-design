@@ -37,8 +37,8 @@ describe("frame name tag hit area", () => {
     expect(FRAME_TITLE_HIT_AREA).toContain("-my-1.5");
   });
 
-  it("applies the class to both frame header bars", () => {
+  it("applies the class to page headers and canvas-root frame labels", () => {
     const src = readFileSync("src/canvas/components/editor_page.jsx", "utf8");
-    expect(src.match(/\$\{FRAME_TITLE_HIT_AREA\}/g)).toHaveLength(2);
+    expect(src.match(/\$\{FRAME_TITLE_HIT_AREA\}/g)).toHaveLength(3);
   });
 });

@@ -114,12 +114,18 @@ await withEditorBrowser(async ({ page, tool }) => {
     const { useDesignStore } = await import("/src/store/design_store.js");
     const e = window.__vooEditor;
     e.setDoc({ ...e.getDocument(), isCanvasRoot: true, nodes: [
-      { ...createGroupNode({ x: 80, y: 70, width: 300, height: 200 }), id: "current-frame", frame: true, isFrame: true, fill: "#222222" },
+      { ...createGroupNode({ x: 80, y: 70, width: 300, height: 200 }), id: "current-frame", name: "Outer Frame", frame: true, isFrame: true, fill: "#222222" },
       { ...createRectNode({ x: 110, y: 100, width: 60, height: 40, fill: "#ff0000" }), id: "frame-child", parentId: "current-frame" },
     ] }); e.selectExactly(["current-frame"]);
     useDesignStore.setState({ editorCamera: { zoom: 1, panX: 400, panY: 150 } });
   });
   await settled();
+  await page.waitForFunction(() =>
+    document.querySelector('[data-testid="editor-canvas-frame-label"]')?.textContent.trim() === "Outer Frame",
+  );
+  assert.equal(await page.locator('[data-testid="editor-canvas-frame-label"]').count(), 1);
+  assert.equal(await page.locator('[data-testid="editor-canvas-frame-icon"]').count(), 1);
+  checks.push("only the outermost root frame shows a name label and frame icon");
   await drag(await docPoint({ x: 140, y: 120 }), { x: 30, y: 20 });
   assert.deepEqual(await page.evaluate(() => [window.__vooEditor.getNode("current-frame").x, window.__vooEditor.getNode("frame-child").x]), [80, 140]);
   assert.equal(await page.evaluate(() => window.__vooEditor.sampleColorAt({ x: 150, y: 130 })), "#ff0000");
