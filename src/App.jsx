@@ -1,6 +1,6 @@
 import React, { useEffect, useState, Suspense, lazy } from "react";
 import ReleaseUI from "./release_ui.jsx";
-import ImageEditor from "./canvas/components/image_editor.jsx";
+const ImageEditor = lazy(() => import("./canvas/components/image_editor.jsx"));
 import AppTitleBar, { VooBrandLogo } from "./app_title_bar.jsx";
 const WelcomeDashboard = lazy(() => import("./canvas/components/welcome_dashboard.jsx"));
 import PageSwitcher from "./canvas/components/page_switcher.jsx";
@@ -30,6 +30,13 @@ export default function App() {
   const [firstRunReopened, setFirstRunReopened] = useState(false);
   const [firstRunOpen, setFirstRunOpen] = useState(shouldShowFirstRun);
   const { t } = useI18n();
+  // Defer the heavy editor on the first welcome screen. Once opened, keep it
+  // mounted behind the welcome overlay so history and pending edits survive.
+  const [editorActivated, setEditorActivated] = useState(false);
+  const needsEditor = Boolean(activeDocumentId) || !welcomeOpen;
+  useEffect(() => {
+    if (needsEditor) setEditorActivated(true);
+  }, [needsEditor]);
 
   // Listen for Electron native menu actions and Agent panel trigger events
   useEffect(() => {
@@ -112,11 +119,19 @@ export default function App() {
         <div className="editor-shell relative min-h-0 min-w-0 flex-1">
           <div className="editor-shell-inner flex flex-col">
             <div className="relative min-h-0 flex-1 overflow-hidden">
-              <ImageEditor
-                key={activeDocumentId}
-                visible={true}
-                agentVisible={agentOpen && !welcomeOpen}
-              />
+              {editorActivated || needsEditor ? (
+                <Suspense fallback={
+                  <div role="status" className="absolute inset-0 flex items-center justify-center">
+                    <LoadingModal label={t("editor.loading")} />
+                  </div>
+                }>
+                  <ImageEditor
+                    key={activeDocumentId}
+                    visible={true}
+                    agentVisible={agentOpen && !welcomeOpen}
+                  />
+                </Suspense>
+              ) : null}
               {welcomeOpen && (
                 <div className="editor-welcome-overlay absolute inset-0 z-50 overflow-hidden rounded-3xl bg-[#0c0c0c]">
                   <Suspense fallback={null}>

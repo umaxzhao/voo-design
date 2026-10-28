@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { useDesignStore } from "../../../store/design_store.js";
-import { buildPresentationPptx } from "../../presentation/presentation-pptx.js";
-import { buildPresentationPdf } from "../../presentation/presentation-pdf.js";
 import { flushEditorPendingWrites } from "../editor_hooks/editor-autosave.js";
 import {
   readPresentationDeck,
@@ -155,6 +153,8 @@ export function usePresentationEditor({
         let blob;
         let warnings = [];
         if (format === "pdf") {
+          const { buildPresentationPdf } = await import("../../presentation/presentation-pdf.js");
+          controller.signal.throwIfAborted();
           const result = await buildPresentationPdf(deck, {
             renderPage,
             signal: controller.signal,
@@ -162,6 +162,8 @@ export function usePresentationEditor({
           blob = result.blob;
           warnings = result.warnings ?? [];
         } else {
+          const { buildPresentationPptx } = await import("../../presentation/presentation-pptx.js");
+          controller.signal.throwIfAborted();
           const result = await buildPresentationPptx(deck, {
             resolveImage: resolvePresentationImage,
             renderPage,

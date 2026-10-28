@@ -15,8 +15,7 @@ export default function SettingsDrawer({
   onClose,
   initialTab = "general",
 }) {
-  const { t, locale } = useI18n();
-  const isZh = locale === "zh";
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState(
     TABS.some((tab) => tab.id === initialTab) ? initialTab : "general"
   );
@@ -56,7 +55,7 @@ export default function SettingsDrawer({
     onClose?.();
     window.dispatchEvent(new CustomEvent("voo:open-onboarding"));
   };
-  const title = isZh ? "设置与偏好" : "Settings & Preferences";
+  const title = t("settings.drawerTitle");
 
   return createPortal(
     <div
@@ -83,8 +82,8 @@ export default function SettingsDrawer({
           <button
             type="button"
             onClick={onClose}
-            aria-label={isZh ? "关闭" : "Close"}
-            title={isZh ? "关闭 (Esc)" : "Close (Esc)"}
+            aria-label={t("common.close")}
+            title={t("settings.closeHint")}
             className="flex size-12 items-center justify-center rounded-lg bg-white/[0.04] text-neutral-400 outline-none hover:bg-white/[0.08] focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
           >
             <IconClose size={16} />
@@ -93,7 +92,7 @@ export default function SettingsDrawer({
 
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           <nav
-            aria-label={isZh ? "设置分类" : "Settings Categories"}
+            aria-label={t("settings.categories")}
             className="grid shrink-0 grid-cols-2 gap-1 p-2 md:flex md:w-52 md:flex-col md:bg-neutral-900"
           >
             {TABS.map((tab) => {

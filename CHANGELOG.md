@@ -2,6 +2,13 @@
 
 ## 1.0.0
 
+- Add real-browser GPU/CPU spatial-filter parity checks; align detail/motion radius bounds, transparent-pixel readback and motion sampling precision/direction while preserving the per-channel tolerance.
+
+- Remove eight unused legacy workflow/storage facades with missing imports, repair the active video-duration constant path, and guard all relative source imports in tests. Actual PSD import, storage and collaboration paths remain covered.
+- Defer the editor on first welcome, isolate inspector loading and load PDF/PPTX builders on demand; extract document aids and palette responsibilities from the editor container with pointer/history regressions.
+- Normalize Settings text and shortcut groups through English/Chinese translations; language changes recompute search results and descriptions use the shared hint control.
+- Filesystem operations distinguish absent targets and cancellation from genuine failures, abort failed writes, and report sanitized operation/error diagnostics instead of false success.
+
 - Finish the retained compact histogram draft: image tools show one luminance row while Levels/Curves keep four channels and clipping readouts; add regression coverage and retain the custom font-weight menu assertions.
 - Remove the obsolete mobile generation-row CSS and duplicate open-state attribute; keep all six generation types reachable through the single advanced menu on touch devices.
 

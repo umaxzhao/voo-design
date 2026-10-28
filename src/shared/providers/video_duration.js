@@ -17,7 +17,7 @@
  */
 
 import { PROVIDER_ID } from "../providers.js";
-import { EXECUTION_MODE, PLATFORM_TARGET } from "../../canvas/nodes/types.js";
+import { EXECUTION_MODE, PLATFORM_TARGET } from "../../canvas/generation_routes.js";
 
 /**
  * Returns the duration profile for a video generation target.

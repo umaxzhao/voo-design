@@ -19,6 +19,37 @@ The renderer owns one design document per page. Pages themselves are canvas
 tabs managed by the zustand store, so a window can hold several open
 documents.
 
+Relative imports and re-exports in every source module are checked by
+`module-import-integrity.test.js`, including literal dynamic imports. Legacy
+unreferenced workflow facades have been removed; PSD import uses
+`src/canvas/store/psd_to_voo.js`, and persistence is owned by `src/storage/db.js`.
+
+## Loading and editor responsibilities
+
+The first welcome screen defers the editor module. Once opened, the editor stays
+mounted behind the welcome overlay so its history and pending edits survive a
+round trip. The inspector has a separate Suspense boundary; its code can load
+without suspending canvas interaction. PDF and presentation export builders are
+imported only by their export branches, including cancellation after loading.
+
+Feature loading follows actual dynamic imports. Whole-folder manual chunks for
+properties and presentation previously pulled shared engine/export dependencies
+into eagerly requested bundles; those artificial groups are removed. Chunk
+names alone are not a performance metric: compare the complete static entry
+closure and real browser requests.
+
+`image_editor.jsx` still owns layout, camera and selection wiring. Document aids
+(guides, comments, find/replace and their named undo commits) and palette state /
+command routing now live in two focused hooks under `editor_hooks/`. This is a
+bounded extraction, not a claim that the remaining container meets 400 lines.
+
+The web filesystem driver delegates handle persistence, scanning, transactions
+and diagnostics to small FSA modules. Not-found probes and user cancellation
+remain normal branches. Genuine permission/I/O failures propagate stable error
+codes or rejected promises instead of pretending an empty scan or successful
+delete. Diagnostics contain operation and error type, never native paths,
+messages or file contents.
+
 ## Document model
 
 - A document is a **flat, bottom-first node list**. Groups are folders: their

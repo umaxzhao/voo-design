@@ -36,8 +36,9 @@ export default defineConfig(({ mode }) => ({
             if (id.includes("zustand")) return "state-vendor";
             return "vendor";
           }
-          if (id.includes("/src/canvas/components/presentation/")) return "presentation";
-          if (id.includes("/src/canvas/components/editor_properties/")) return "properties";
+          // Feature boundaries follow actual dynamic imports. Grouping an
+          // entire feature folder here also hoists its shared engine and
+          // export dependencies into an eagerly imported monolithic chunk.
         },
       },
     },

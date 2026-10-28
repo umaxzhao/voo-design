@@ -172,7 +172,7 @@ uniform float u_radius;
 uniform sampler2D u_blurred;
 
 void main() {
-  vec4 center = texture(u_image, v_uv);
+  vec4 center = texelFetch(u_image, ivec2(gl_FragCoord.xy), 0);
   if (center.a <= 0.0) {
     outColor = center;
     return;
@@ -202,7 +202,7 @@ uniform sampler2D u_blurred;
 uniform float u_strength;
 
 void main() {
-  vec4 center = texture(u_image, v_uv);
+  vec4 center = texelFetch(u_image, ivec2(gl_FragCoord.xy), 0);
   if (center.a <= 0.0) {
     outColor = center;
     return;
@@ -230,7 +230,7 @@ uniform vec2 u_direction;
 uniform float u_radius;
 
 void main() {
-  vec4 center = texture(u_image, v_uv);
+  vec4 center = texelFetch(u_image, ivec2(gl_FragCoord.xy), 0);
   if (center.a <= 0.0) {
     outColor = center;
     return;
@@ -240,16 +240,20 @@ void main() {
     outColor = center;
     return;
   }
-  vec3 sum = center.rgb;
-  float count = 1.0;
-  for (int i = 1; i <= 32; i++) {
-    if (i > radius) break;
-    ivec2 size = textureSize(u_image, 0);
-    ivec2 p = ivec2(gl_FragCoord.xy);
-    ivec2 delta = ivec2(floor(u_direction * float(i) + 0.5));
-    sum += texelFetch(u_image, clamp(p + delta, ivec2(0), size - 1), 0).rgb;
-    sum += texelFetch(u_image, clamp(p - delta, ivec2(0), size - 1), 0).rgb;
-    count += 2.0;
+  ivec2 size = textureSize(u_image, 0);
+  ivec2 p = ivec2(gl_FragCoord.xy);
+  vec2 documentPoint = vec2(p.x, size.y - 1 - p.y);
+  vec2 documentDirection = vec2(u_direction.x, -u_direction.y);
+  vec3 sum = vec3(0.0);
+  float count = 0.0;
+  for (int i = -32; i <= 32; i++) {
+    if (abs(i) > radius) continue;
+    // Match Math.round on each absolute document-space sample before Y-flip.
+    ivec2 samplePoint = ivec2(floor(documentPoint + documentDirection * float(i) + 0.5));
+    samplePoint = clamp(samplePoint, ivec2(0), size - 1);
+    samplePoint.y = size.y - 1 - samplePoint.y;
+    sum += texelFetch(u_image, samplePoint, 0).rgb;
+    count += 1.0;
   }
   outColor = vec4(sum / count, center.a);
 }`;

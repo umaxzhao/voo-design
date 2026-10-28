@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildToneLut } from "../../src/canvas/editor/tone_lut_build.js";
+import { applyMotionBlur } from "../../src/canvas/editor/spatial_filter.js";
 import {
   CLARITY_FRAGMENT_SHADER,
   HIGH_PASS_FRAGMENT_SHADER,
@@ -7,14 +8,21 @@ import {
 } from "../../src/canvas/editor/gl_spatial_shaders.js";
 
 describe("GL spatial filter twins", () => {
-  describe("GPU and CPU pixel consistency", () => {
-    const skipReason = "no GL context in Node/jsdom";
+  // Real shader/readback parity runs in tests/e2e/gl-spatial-parity.e2e.mjs.
 
-    it.skip(`highPass maximum per-channel difference <= 3 (${skipReason})`);
-
-    it.skip(`clarity maximum per-channel difference <= 3 (${skipReason})`);
-
-    it.skip(`motionBlur maximum per-channel difference <= 3 (${skipReason})`);
+  it("uses the common float32 direction at half-pixel motion samples", () => {
+    const source = new Uint8ClampedArray(5 * 3 * 4);
+    for (let y = 0; y < 3; y += 1) for (let x = 0; x < 5; x += 1) {
+      source.set([y * 90, x * y * 20, 0, 255], (y * 5 + x) * 4);
+    }
+    // sin(30 degrees) is below 0.5 in JS double precision but exactly 0.5
+    // in a GL float uniform. Quantising once makes the top-edge tap shared.
+    const positive = Uint8ClampedArray.from(source);
+    applyMotionBlur(positive, 5, 3, 3.125, 30);
+    expect(Array.from(positive.slice(8, 12))).toEqual([30, 20, 0, 255]);
+    const negative = Uint8ClampedArray.from(source);
+    applyMotionBlur(negative, 5, 3, 3.125, -30);
+    expect(Array.from(negative.slice(8, 12))).toEqual([30, 7, 0, 255]);
   });
 
   it("exposes highPass / clarity / motionBlur fragment shaders", () => {

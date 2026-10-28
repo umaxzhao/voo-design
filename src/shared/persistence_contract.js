@@ -250,9 +250,8 @@ export const PERSISTENCE_WRITE_REGISTRY = Object.freeze([
  * durability point must be the one place that defines it).
  */
 export const IDB_OWNER_MODULES = Object.freeze([
+  "src/storage/db.js",
   "src/background/service-worker-task-payloads.js",
   // Dedicated extension-origin receipts flush before result collection starts.
   "src/background/web-generation-receipts.js",
-  "src/canvas/store/db_local.js",
-  "src/canvas/store/template_ugc.js",
 ]);

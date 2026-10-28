@@ -1,3 +1,4 @@
+import { cpuBlurRadius } from "./spatial_filter.js";
 import {
   BLUR_FRAGMENT_SHADER,
   BOX_BLUR_FRAGMENT_SHADER,
@@ -165,6 +166,8 @@ export function createSpatialStage(gl, accounting) {
     runMotionBlurPass(gl, motionBlurProgram, motionBlurUniforms, ...args);
 
   function drawAccurateDetail(program, uniforms, source, targetFbo, width, height, radius, extra) {
+    // Detail kernels share the CPU minimum radius and fallback cap.
+    radius = Math.max(1, Math.round(cpuBlurRadius(radius)));
     const scratch = [targets.a, targets.b, targets.c, targets.d].filter(
       (target) => target.texture !== source && target.fbo !== targetFbo,
     );
@@ -330,7 +333,7 @@ export function createSpatialStage(gl, accounting) {
         } else if (filter.kind === "motionBlur") {
           const target = last ? null : writeFbo;
           const angle = (filter.angle * Math.PI) / 180;
-          drawMotionBlurPass(readTexture, target, width, height, filter.radius, Math.cos(angle), Math.sin(angle));
+          drawMotionBlurPass(readTexture, target, width, height, filter.radius, Math.cos(angle), -Math.sin(angle));
         } else if (filter.kind === "highPass" || filter.kind === "clarity") {
           const target = last ? null : writeFbo;
           const program = filter.kind === "highPass" ? highPassProgram : clarityProgram;

@@ -1,9 +1,7 @@
 import { WORKSPACE_BACKGROUND } from "../editor/render_canvas_base.js";
 import { frameEditorFills } from "../editor/frame-fills.js";
 import { shouldDragArtboardBody } from "./artboard-body-gesture.js";
-import { buildExtendedPaletteActions } from "../commands/palette_actions.js";
 import { exportTargetName } from "../editor/export_filename.js";
-import { setLocale } from "../../shared/i18n.js";
 import { patchForMultiResize } from "../editor/multi_selection_patch.js";
 import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
 import {
@@ -45,7 +43,7 @@ import { selectionBounds } from "../editor/editor_export_bounds.js";
 import { alignNodes, distributeNodes } from "../editor/align_ops.js";
 import EditorPage from "./editor_page.jsx";
 import LoadingModal from "./loading_modal.jsx";
-import EditorProperties from "./editor_properties/index.jsx";
+import EditorProperties from "./deferred_editor_properties.jsx";
 import { layoutPresentationPages } from "../presentation/presentation-document.js";
 import { usePresentationHistory } from "./presentation/use_presentation_history.js";
 import { usePresentationEditor } from "./presentation/use_presentation_editor.js";
@@ -61,6 +59,8 @@ import {
 import EditorToolbar, { EditorZoom } from "./editor_toolbar.jsx";
 import EditorRulers, { EditorCanvasAids } from "./editor_rulers.jsx";
 import EditorComments from "./editor_comments.jsx";
+import { readDocumentGuides } from "../editor/rulers_geometry.js";
+import { normalizeComments } from "../comments/comment_model.js";
 import EditorPieMenu from "./editor_pie_menu.jsx";
 import EditorContextMenu from "./editor_context_menu.jsx";
 const EditorCommandPalette = lazy(() => import("./editor_command_palette.jsx"));
@@ -68,27 +68,10 @@ const EditorFindReplace = lazy(() => import("./editor_find_replace.jsx"));
 const ShortcutReferenceModal = lazy(() => import("./shortcut_reference_modal.jsx"));
 const SvgEditModal = lazy(() => import("./SvgEditModal.jsx"));
 import { DESIGN_SHORTCUT_GROUPS } from "../../shared/editor-shortcut-catalog.js";
-import { useShowRulers } from "../use_show_rulers.js";
 import useIsNarrow from "../use_is_narrow.js";
 import "./editor_mobile_layout.css";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import { loadEditorPanelLayout, saveEditorPanelLayout } from "./editor_panel_preferences.js";
-import {
-  addGuide,
-  createGuide,
-  readDocumentGuides,
-  removeGuide,
-  serialiseGuides,
-  updateGuide,
-} from "../editor/rulers_geometry.js";
-import {
-  addComment,
-  addReply,
-  deleteComment,
-  normalizeComments,
-  serializeComments,
-  setResolved,
-} from "../comments/comment_model.js";
 import {
   TOOL,
   ZOOM_STEP,
@@ -135,6 +118,8 @@ import {
 import { createVariablesPanelActions } from "../editor/scene_variables.js";
 import { createStylePanelActions } from "../editor/scene_styles.js";
 import { useEditorApply } from "./editor_hooks/use_editor_apply.js";
+import { useEditorDocumentAids } from "./editor_hooks/use_editor_document_aids.js";
+import { useEditorPaletteActions } from "./editor_hooks/use_editor_palette_actions.js";
 import { useDraftAutosave } from "./editor_hooks/use_draft_autosave.js";
 import { readImageRgba } from "./bitmap_pixels.js";
 import {
@@ -184,14 +169,7 @@ const MAX_LIVE_PAGES = 12;
  * Persisted view-aid keys. The pointer/snapping modules read the same keys
  * synchronously, so a toggle here changes the very next drag.
  */
-const SHOW_GUIDES_SETTING = "voo.editor.showGuides";
 const SNAP_TO_GRID_SETTING = "voo.editor.snapToGrid";
-/** History label for every guide edit (one entry per completed gesture). */
-const GUIDES_HISTORY_NAME = "editor.history.entry.guides";
-/** History label for every comment edit (create/reply/resolve/delete). */
-const COMMENTS_HISTORY_NAME = "editor.history.entry.comments";
-/** History label for find-and-replace commits (one entry per Replace All). */
-const FIND_REPLACE_HISTORY_NAME = "editor.history.entry.replaceText";
 
 /**
  * Full-screen editor for one or more image assets.
@@ -339,23 +317,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const [localMattingSupported] = useState(() => isLocalMattingSupported());
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedInstanceChild, setSelectedInstanceChild] = useState(null);
-  // Rulers/guides/snap-to-grid view aids. Persisted, not document state: they
-  // describe how the user looks at a canvas, not what the canvas contains.
-  const { showRulers, toggleRulers } = useShowRulers();
-  const [showGuides, setShowGuides] = useState(
-    () => getSetting(SHOW_GUIDES_SETTING) !== false,
-  );
-  const [snapToGrid, setSnapToGrid] = useState(
-    () => getSetting(SNAP_TO_GRID_SETTING) === true,
-  );
+  // Grid presentation is shared across the workspace; annotations belong to the focused page.
+  const [snapToGrid, setSnapToGrid] = useState(() => getSetting(SNAP_TO_GRID_SETTING) === true);
   const lastGridSizeRef = useRef(32);
-  const [selectedGuideId, setSelectedGuideId] = useState(null);
-  /** Document snapshot taken when a guide drag begins; the whole drag is one undo. */
-  const guideDragOriginRef = useRef(null);
-  // Comments panel/placement mode are view state, like rulers: the threads
-  // themselves live in the page document (`doc.comments`).
-  const [commentsOpen, setCommentsOpen] = useState(false);
-  const [commentMode, setCommentMode] = useState(false);
   const [adjustingInstance, setAdjustingInstance] = useState(null);
   const [returnCanvasId, setReturnCanvasId] = useState(null);
   const [navigationError, setNavigationError] = useState(false);
@@ -418,9 +382,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   });
   /** Pie Menu state: active family and screen coordinates { family, position: { x, y } } */
   const [pieMenu, setPieMenu] = useState(null);
-  /** ⌘K palette / ⌘F find bar: editor overlays, not document state. */
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const [findReplaceOpen, setFindReplaceOpen] = useState(false);
 
   /**
    * Open guard (plan-design-editor-fixes A6): for a short window after the
@@ -591,223 +552,15 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     [focusedId],
   );
 
-  /**
-   * Writes the guide list through the same `setDoc` path every node edit uses,
-   * so it persists in `.voo` (scene serialisation already carries `guides`)
-   * and lands in undo history exactly once per call.
-   */
-  const writeDocumentGuides = useCallback(
-    (nextGuides, { commit = true } = {}) => {
-      const pageEngine = focusedPageEngine();
-      if (!pageEngine) return;
-      const pageDoc = pageEngine.getDocument();
-      if (!pageDoc) return;
-      const guides = serialiseGuides(nextGuides);
-      pageEngine.setDoc(
-        { ...pageDoc, guides },
-        commit ? { name: GUIDES_HISTORY_NAME } : { commit: false },
-      );
-      bump();
-    },
-    [focusedPageEngine],
-  );
-
-  /** Drag out of the ruler: create one guide and one history entry. */
-  const handleCreateGuide = useCallback(
-    ({ type, pos }) => {
-      const pageEngine = focusedPageEngine();
-      if (!pageEngine) return;
-      const existing = readDocumentGuides(pageEngine.getDocument());
-      const created = createGuide({ type, pos }, existing);
-      if (!created) return;
-      writeDocumentGuides(addGuide(existing, created));
-      setSelectedGuideId(created.id);
-    },
-    [focusedPageEngine, writeDocumentGuides],
-  );
-
-  /**
-   * Move phases keep the drag atomic: `begin` snapshots the document, the
-   * previews write without committing, and `commit` pushes a single entry.
-   * `cancel` restores the snapshot (used by Escape and by drop-on-ruler).
-   */
-  const handleMoveGuide = useCallback(
-    (id, pos, phase) => {
-      const pageEngine = focusedPageEngine();
-      if (!pageEngine) return;
-      if (phase === "begin") {
-        guideDragOriginRef.current = pageEngine.getDocument();
-        return;
-      }
-      if (phase === "cancel" || phase === "preview") {
-        // Previews are drawn by the overlay from its own draft state; the
-        // document is untouched until release, so a drag never re-renders the
-        // whole editor on every pointer move and never spams history.
-        if (phase === "cancel") guideDragOriginRef.current = null;
-        return;
-      }
-      // Commit from the drag's origin snapshot so a multi-step move is one
-      // entry; keyboard nudges have no snapshot and commit from the live doc.
-      const baseDoc = guideDragOriginRef.current ?? pageEngine.getDocument();
-      guideDragOriginRef.current = null;
-      const guides = readDocumentGuides(baseDoc);
-      writeDocumentGuides(updateGuide(guides, id, pos));
-    },
-    [focusedPageEngine, writeDocumentGuides],
-  );
-
-  const handleRemoveGuide = useCallback(
-    (id) => {
-      const pageEngine = focusedPageEngine();
-      if (!pageEngine) return;
-      const guides = readDocumentGuides(pageEngine.getDocument());
-      if (!guides.some((guide) => guide.id === id)) return;
-      writeDocumentGuides(removeGuide(guides, id));
-      setSelectedGuideId((current) => (current === id ? null : current));
-    },
-    [focusedPageEngine, writeDocumentGuides],
-  );
-
-  const handleClearGuides = useCallback(() => {
-    const pageEngine = focusedPageEngine();
-    if (!pageEngine) return;
-    if (readDocumentGuides(pageEngine.getDocument()).length === 0) return;
-    writeDocumentGuides([]);
-    setSelectedGuideId(null);
-  }, [focusedPageEngine, writeDocumentGuides]);
-
-  /**
-   * Comment edits go through the focused page's `setDoc` exactly once, named
-   * so Undo reads "Comments". The mutator returns the same document for a
-   * no-op (empty body, unknown thread), which skips the history entry.
-   */
-  const mutateDocumentComments = useCallback(
-    (mutate) => {
-      const pageEngine = focusedPageEngine();
-      if (!pageEngine) return false;
-      const pageDoc = pageEngine.getDocument();
-      if (!pageDoc) return false;
-      const base = {
-        ...pageDoc,
-        comments: normalizeComments(pageDoc.comments),
-      };
-      const nextDoc = mutate(base);
-      if (!nextDoc || nextDoc === base) return false;
-      pageEngine.setDoc(
-        { ...nextDoc, comments: serializeComments(nextDoc) },
-        { name: COMMENTS_HISTORY_NAME },
-      );
-      bump();
-      return true;
-    },
-    [focusedPageEngine],
-  );
-
-  const handleCreateComment = useCallback(
-    (x, y, body, author) => {
-      mutateDocumentComments((pageDoc) =>
-        addComment(pageDoc, { x, y, body, author }),
-      );
-    },
-    [mutateDocumentComments],
-  );
-
-  const handleReplyComment = useCallback(
-    (commentId, body, author) => {
-      mutateDocumentComments((pageDoc) =>
-        addReply(pageDoc, commentId, { body, author }),
-      );
-    },
-    [mutateDocumentComments],
-  );
-
-  const handleResolveComment = useCallback(
-    (commentId, resolved) => {
-      mutateDocumentComments((pageDoc) =>
-        setResolved(pageDoc, commentId, resolved),
-      );
-    },
-    [mutateDocumentComments],
-  );
-
-  const handleDeleteComment = useCallback(
-    (commentId) => {
-      mutateDocumentComments((pageDoc) => deleteComment(pageDoc, commentId));
-    },
-    [mutateDocumentComments],
-  );
-
-  const closeComments = useCallback(() => {
-    setCommentsOpen(false);
-    setCommentMode(false);
-  }, []);
-
-  const toggleCommentsPanel = useCallback(() => {
-    setCommentsOpen((previous) => !previous);
-  }, []);
-
-  const toggleCommentMode = useCallback(() => {
-    setCommentMode((previous) => !previous);
-  }, []);
-
-  // Closing the panel disarms placement too, so the canvas never stays in a
-  // click-to-comment mode with no visible way out.
-  useEffect(() => {
-    if (!commentsOpen) setCommentMode(false);
-  }, [commentsOpen]);
-
-  const toggleGuides = useCallback(() => {
-    setShowGuides((previous) => {
-      const next = !previous;
-      void setSetting(SHOW_GUIDES_SETTING, next);
-      if (!next) setSelectedGuideId(null);
-      return next;
-    });
-  }, []);
-
-  // ⌘K palette and ⌘F find bar. Both are editor overlays rather than document
-  // state, so their open flags never reach `.voo` serialisation.
-  const toggleCommandPalette = useCallback(() => {
-    setCommandPaletteOpen((previous) => !previous);
-  }, []);
-
-  const closeCommandPalette = useCallback(() => {
-    setCommandPaletteOpen(false);
-  }, []);
-
-  const openFindReplace = useCallback(() => {
-    setFindReplaceOpen(true);
-  }, []);
-
-  const closeFindReplace = useCallback(() => {
-    setFindReplaceOpen(false);
-  }, []);
-
-  /** Selects the text layer that owns a find match, leaving the bar focused. */
-  const focusFindMatch = useCallback(
-    (match) => {
-      if (!match?.nodeId) return;
-      const pageEngine = focusedPageEngine();
-      pageEngine?.selectNode?.(match.nodeId);
-    },
-    [focusedPageEngine],
-  );
-
-  /**
-   * Commits a find & replace document through the focused page engine, named so
-   * Undo reads "Find and replace" and Replace All lands as exactly one entry.
-   */
-  const applyFindReplaceDoc = useCallback(
-    (nextDoc) => {
-      if (!nextDoc) return;
-      const pageEngine = focusedPageEngine();
-      if (!pageEngine) return;
-      if (pageEngine.getDocument?.() === nextDoc) return;
-      pageEngine.setDoc(nextDoc, { name: FIND_REPLACE_HISTORY_NAME });
-      bump();
-    },
-    [focusedPageEngine, bump],
-  );
+  const {
+    showRulers, toggleRulers, showGuides, toggleGuides,
+    selectedGuideId, setSelectedGuideId,
+    handleCreateGuide, handleMoveGuide, handleRemoveGuide, handleClearGuides,
+    commentsOpen, setCommentsOpen, commentMode, closeComments,
+    toggleCommentsPanel, toggleCommentMode,
+    handleCreateComment, handleReplyComment, handleResolveComment, handleDeleteComment,
+    findReplaceOpen, openFindReplace, closeFindReplace, focusFindMatch, applyFindReplaceDoc,
+  } = useEditorDocumentAids({ focusedPageEngine, bump });
 
   const beginInstanceCameraAdjustment = (instanceId) => {
     if (!EDITOR_BETA_ENABLED) return;
@@ -2439,163 +2192,14 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     bump();
   }, [engine, multi]);
 
-  /**
-   * Non-command-table actions the palette exposes: view toggles, zoom, panel
-   * openers. Handlers are closures over the live editor state, so a palette row
-   * always acts on the page the user is looking at.
-   */
-  const paletteActions = useMemo(
-    () => [
-      ...buildExtendedPaletteActions({
-        engine,
-        onTool: runTool,
-        onCreateComponent: handleCreateComponent,
-        onToggleGrid: toggleGrid,
-        onOpenAgent: () =>
-          window.dispatchEvent(new CustomEvent("voo:open-agent-panel")),
-        setLocale,
-      }),
-      {
-        id: "undo",
-        labelKey: "editor.undo",
-        label: "Undo",
-        catalogKey: "editor.undo",
-        run: () => void presentationHistory.undo(),
-      },
-      {
-        id: "redo",
-        labelKey: "editor.redo",
-        label: "Redo",
-        catalogKey: "editor.redo",
-        run: () => void presentationHistory.redo(),
-      },
-      {
-        id: "zoom-in",
-        labelKey: "editor.zoomIn",
-        label: "Zoom in",
-        run: () => (multi ? zoomSharedStep(1) : engine?.zoomStep?.(1)),
-      },
-      {
-        id: "zoom-out",
-        labelKey: "editor.zoomOut",
-        label: "Zoom out",
-        run: () => (multi ? zoomSharedStep(-1) : engine?.zoomStep?.(-1)),
-      },
-      {
-        id: "zoom-fit",
-        labelKey: "editor.zoomFit",
-        label: "Zoom to fit",
-        run: () => (multi ? fitAll() : engine?.zoomToFit?.()),
-      },
-      {
-        id: "zoom-100",
-        labelKey: "editor.shortcut.zoom100",
-        label: "Zoom to 100%",
-        run: () =>
-          multi ? zoomSharedHundred() : engine?.zoomToHundred?.(),
-      },
-      {
-        id: "toggle-rulers",
-        labelKey: "editor.rulers.toggle",
-        label: "Show/hide rulers",
-        catalogKey: "editor.rulers.toggle",
-        run: toggleRulers,
-      },
-      {
-        id: "toggle-guides",
-        labelKey: "editor.guides.toggle",
-        label: "Show/hide guides",
-        catalogKey: "editor.guides.toggle",
-        run: toggleGuides,
-      },
-      {
-        id: "clear-guides",
-        labelKey: "editor.guides.clearAll",
-        label: "Clear all guides",
-        run: handleClearGuides,
-      },
-      {
-        id: "snap-to-grid",
-        labelKey: "editor.snapping.toGrid",
-        label: "Snap to grid",
-        catalogKey: "editor.snapping.toGrid",
-        run: toggleSnapToGrid,
-      },
-      {
-        id: "toggle-comments",
-        labelKey: "editor.comments.toggle",
-        label: "Show/hide comments",
-        catalogKey: "editor.comments.toggle",
-        run: toggleCommentsPanel,
-      },
-      {
-        id: "comment-mode",
-        labelKey: "editor.comments.toggleAddMode",
-        label: "Comment mode",
-        run: toggleCommentMode,
-      },
-      {
-        id: "find-replace",
-        labelKey: "findReplace.title",
-        label: "Find and replace",
-        catalogKey: "findReplace.title",
-        run: openFindReplace,
-      },
-      {
-        id: "export",
-        labelKey: "editor.exportTitle",
-        label: "Export",
-        run: () => setExportOpen(true),
-      },
-      {
-        id: "shortcuts",
-        labelKey: "editor.shortcuts.title",
-        label: "Keyboard shortcuts",
-        run: () => setShortcutsOpen(true),
-      },
-    ],
-    [
-      runTool,
-      handleCreateComponent,
-      toggleGrid,
-      presentationHistory,
-      multi,
-      zoomSharedStep,
-      zoomSharedHundred,
-      engine,
-      fitAll,
-      toggleRulers,
-      toggleGuides,
-      handleClearGuides,
-      toggleSnapToGrid,
-      toggleCommentsPanel,
-      toggleCommentMode,
-      openFindReplace,
-    ],
-  );
-
-  /**
-   * Runs a palette row. Commands come from the editor's own command table, so
-   * palette execution and agent execution share one implementation; actions
-   * carry their handler from `paletteActions`.
-   */
-  const runPaletteCommand = useCallback(
-    (command) => {
-      setCommandPaletteOpen(false);
-      if (!command) return;
-      if (command.kind === "action") {
-        command.run?.();
-        return;
-      }
-      void executeEditorCommand(command.sourceId, engine).catch((error) => {
-        if (error?.code === "NO_SELECTION" || error?.code === "EDITOR_NOT_OPEN") {
-          return;
-        }
-        console.error(`command palette: ${command.sourceId} failed`, error);
-      });
-    },
-    [engine],
-  );
+  const {
+    commandPaletteOpen, toggleCommandPalette, closeCommandPalette, paletteActions, runPaletteCommand,
+  } = useEditorPaletteActions({
+    engine, runTool, handleCreateComponent, toggleGrid, presentationHistory, multi,
+    zoomSharedStep, zoomSharedHundred, fitAll, toggleRulers, toggleGuides,
+    handleClearGuides, toggleSnapToGrid, toggleCommentsPanel, toggleCommentMode,
+    openFindReplace, setExportOpen, setShortcutsOpen,
+  });
 
   // The saved notice hides itself. Owning the timer in an effect means closing
   // the editor inside those seconds cancels it, instead of leaving a

@@ -292,12 +292,6 @@ export function createWorkflowUndoActionContracts(UNDO_BOUNDARY) {
       UNDO_BOUNDARY.ATOMIC,
       "src/canvas/store/image_actions_merge.js",
     ),
-    "workflow.template.apply": workflowAction(
-      "workflow.template.apply",
-      "Apply one workflow template",
-      UNDO_BOUNDARY.ATOMIC,
-      "src/canvas/store/template_ugc.js",
-    ),
     "workflow.subgraph.instantiate": workflowAction(
       "workflow.subgraph.instantiate",
       "Instantiate one stored subgraph",

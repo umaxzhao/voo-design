@@ -9,6 +9,8 @@ import { CLI_BRIDGE_CHANNEL as C } from "../../src/shared/cli_bridge_protocol.js
 
 /** Isolated real editor + private MCP relay; never changes the user's open document. */
 export async function withEditorBrowser(run, pageOptions = {}) {
+  const { openDocument = true, mcpLink = true, ...browserOptions } = pageOptions;
+  if (openDocument && !mcpLink) throw new Error("Document fixtures require the MCP link");
   const port = await new Promise((resolve, reject) => {
     const server = createServer();
     server.once("error", reject);
@@ -41,18 +43,18 @@ export async function withEditorBrowser(run, pageOptions = {}) {
       await delay(200);
     }
     browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, ...pageOptions });
-    await page.addInitScript(() => localStorage.setItem("voo.mcpLink", "on"));
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, ...browserOptions });
+    if (mcpLink) await page.addInitScript(() => localStorage.setItem("voo.mcpLink", "on"));
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
     await page.goto(`${origin}/?voo-test=1`);
     await page.waitForLoadState("networkidle");
-    const back = page.getByTitle(/返回画布|Back to canvas/);
-    if (await back.count()) await back.click();
-    await page.waitForFunction(() => Boolean(window.__vooEditor), null, { timeout: 60000 });
-    socket = await connect(bridge.port, bridge.token);
+    // A welcome-only session deliberately has no engine. The MCP store-level
+    // new_document command below opens the workspace before waiting for one.
+    if (mcpLink) socket = await connect(bridge.port, bridge.token);
     let id = 0;
     const tool = (name, args = {}) => new Promise((resolve, reject) => {
+      if (!socket) { reject(new Error("MCP is disabled for this browser fixture")); return; }
       const callId = `effects_${++id}`;
       const finish = (error, value) => {
         clearTimeout(timer);
@@ -68,13 +70,15 @@ export async function withEditorBrowser(run, pageOptions = {}) {
       socket.send(JSON.stringify({ type: "invoke", id: callId, channel: name === "voo_status" ? C.MCP_STATUS : C.MCP_CALL,
         args: name === "voo_status" ? [] : [name, args] }));
     });
-    for (let attempt = 0; !(await tool("voo_status")).canvasConnected; attempt += 1) {
+    for (let attempt = 0; mcpLink && !(await tool("voo_status")).canvasConnected; attempt += 1) {
       if (attempt >= 40) throw new Error("Fixture canvas did not register with MCP");
       await delay(100);
     }
-    await tool("new_document", { width: 600, height: 400, name: "EffectsAudit", force: true });
-    await page.waitForFunction(() => window.__vooStore?.activeDocumentId && window.__vooEditor);
-    await page.waitForTimeout(300);
+    if (openDocument) {
+      await tool("new_document", { width: 600, height: 400, name: "EffectsAudit", force: true });
+      await page.waitForFunction(() => window.__vooStore?.activeDocumentId && window.__vooEditor);
+      await page.waitForTimeout(300);
+    }
     await run({ page, tool, origin, errors });
     if (errors.length) throw new Error(`Editor errors: ${errors.join("\n")}`);
   } finally {

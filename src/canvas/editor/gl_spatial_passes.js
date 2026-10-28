@@ -1,3 +1,4 @@
+import { cpuBlurRadius } from "./spatial_filter.js";
 /** Shared draw routines for the spatial stage's framebuffer passes. */
 export function deleteSpatialTarget(gl, target) {
   if (!target) return;
@@ -149,6 +150,6 @@ export function drawMotionBlurPass(
   gl.uniform1i(uniforms.image, 0);
   gl.uniform2f(uniforms.texel, 1 / width, 1 / height);
   gl.uniform2f(uniforms.direction, dirX, dirY);
-  gl.uniform1f(uniforms.radius, radius);
+  gl.uniform1f(uniforms.radius, Math.round(cpuBlurRadius(radius)));
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }

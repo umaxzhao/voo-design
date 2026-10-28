@@ -15,7 +15,7 @@
 
 ## Release and deployment
 
-Run `node scripts/verify-editor-release.mjs` on the exact clean commit being released. It checks the build, design rules, all unit tests, six browser suites and source immutability. The JSON output identifies that commit; copy it to the local delivery artifacts directory rather than adding another dated report to this index. Git/remote and production state must be checked independently, rather than inferred from a past report.
+Run `node scripts/verify-editor-release.mjs` on the exact clean commit being released. It checks the build, design rules, all unit tests, ten browser suites and source immutability. The JSON output identifies that commit; copy it to the local delivery artifacts directory rather than adding another dated report to this index. Git/remote and production state must be checked independently, rather than inferred from a past report.
 
 - [release-checklist.md](release-checklist.md), [code-signing.md](code-signing.md), [installer-size.md](installer-size.md), [deploy-la.md](deploy-la.md) (editor deploys to `la2`)
 

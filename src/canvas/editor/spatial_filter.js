@@ -260,8 +260,10 @@ export function applyMotionBlur(
   );
   if (radius < 1) return data;
   const angle = ((Number.isFinite(angleDeg) ? angleDeg : 0) * Math.PI) / 180;
-  const dirX = Math.cos(angle);
-  const dirY = Math.sin(angle);
+  // WebGL direction uniforms are float32. Quantise once so half-pixel taps
+  // share the same nearest-neighbour rule on CPU and GPU (for example 30°).
+  const dirX = Math.fround(Math.cos(angle));
+  const dirY = Math.fround(Math.sin(angle));
   const src = Uint8ClampedArray.from(data);
   const samples = 2 * radius + 1;
   for (let y = 0; y < height; y++) {

@@ -4,7 +4,6 @@ import { exportBackdropDocument } from "../../editor/editor_export_bounds.js";
 import { documentToSvg, nodesToSvg } from "../../editor/editor_svg.js";
 import { saveMediaExport } from "../../media_export.js";
 import { effectivePage } from "../../editor/scene_model_geometry.js";
-import { jpegPageToPdf } from "./export_editor_pdf.js";
 import { getCanvasType } from "../../editor/canvas-composition-model.js";
 import { expandInstancesForRaster } from "../../editor/editor_export_instances.js";
 import {
@@ -238,6 +237,8 @@ export async function exportEditorImage({
         throw new Error("EXPORT_SELECTION_EMPTY");
       }
       signal?.throwIfAborted();
+      const { jpegPageToPdf } = await import("./export_editor_pdf.js");
+      signal?.throwIfAborted();
       dataUrl = await jpegPageToPdf({
         dataUrl: exported.dataUrl,
         width: exported.bounds.width,
@@ -266,6 +267,8 @@ export async function exportEditorImage({
       resolveCanvas,
       transparent,
     });
+    signal?.throwIfAborted();
+    const { jpegPageToPdf } = await import("./export_editor_pdf.js");
     signal?.throwIfAborted();
     dataUrl = await jpegPageToPdf({
       dataUrl: png,

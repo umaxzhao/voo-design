@@ -38,7 +38,8 @@
     "notices": "node scripts/generate-third-party-notices.mjs",
     "smoke:packaged": "node scripts/smoke-packaged.mjs",
     "bench:wasm-engine": "node scripts/bench-wasm-engine.mjs",
-    "verify:package": "node scripts/verify-package.mjs"
+    "verify:package": "node scripts/verify-package.mjs",
+    "analyze:editor": "node scripts/analyze-editor-bundle.mjs"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
