@@ -124,8 +124,17 @@ await withEditorBrowser(async ({ page, tool }) => {
   await tool("undo"); assert.equal(await sample(75, 75), "#ff0000");
   checks.push("legacy page opens as a free canvas frame with visible paint and children moving together, undoing once");
   await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(true));
+  assert.equal(await page.getByRole("radiogroup").count(), 0);
+  assert.equal(await page.getByRole("dialog", {name:"Generation type",exact:true}).count(), 0);
   await page.getByRole("button", {name:"Generation type",exact:true}).click();
   const settings = page.getByRole("dialog", {name:"Generation type",exact:true});
+  await settings.getByRole("button", {name:"Generation type",exact:true}).click();
+  const types = page.locator('[role="listbox"]:visible').last().getByRole("option");
+  assert.equal(await types.count(), 6);
+  await types.filter({hasText:/Mobile/}).click();
+  assert.match(await settings.getByRole("button", {name:"Generation type",exact:true}).innerText(), /Mobile/);
+  assert.match(await settings.getByRole("button", {name:"Canvas size",exact:true}).innerText(), /393.*852/);
+  checks.push("generation type has one advanced menu, all six choices and working preset dimensions");
   await settings.getByRole("button", {name:"Design system",exact:true}).click();
   const options = page.locator('[role="listbox"]:visible').last().getByRole("option");
   assert.deepEqual(await options.allTextContents(), ["Automatic", "AXIOM", "VOID OS", "BLOOM"]);
@@ -135,5 +144,8 @@ await withEditorBrowser(async ({ page, tool }) => {
   await page.locator('[role="listbox"]:visible').getByRole("option", {name:"Automatic",exact:true}).click();
   assert.equal(await settings.getByRole("button", {name:"Style",exact:true}).isEnabled(), true);
   checks.push("welcome design-system picker exposes three signature contracts and owns style choice");
+  await page.keyboard.press("Escape");
+  assert.equal(await settings.count(), 0);
+  assert.equal(await page.getByRole("radiogroup").count(), 0);
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });

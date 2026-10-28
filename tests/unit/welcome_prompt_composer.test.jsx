@@ -70,7 +70,9 @@ describe("welcome prompt composer", () => {
     expect(html).toContain("welcome.prompt.addAttachment");
     expect(html).toContain("welcome.prompt.generationTypeLabel");
     expect(html).toContain('data-advanced-open="false"');
-    expect(html).toContain('role="radiogroup"');
+    expect(html).not.toContain('role="radiogroup"');
+    expect(html).not.toContain('aria-label="welcome.prompt.styleLabel"');
+    expect(html).not.toContain('aria-label="welcome.prompt.designSystemLabel"');
   });
 
   it("exposes the variant count control", () => {
@@ -103,7 +105,10 @@ describe("welcome prompt composer", () => {
 
   it("keeps design-type selection in the advanced dialog", () => {
     const mobile = render({ activePill: "mobile", initialAdvancedOpen: true });
-    expect(mobile).toContain('aria-haspopup="listbox"');
+    const triggers = mobile.match(/<button[^>]*aria-label="welcome.prompt.generationTypeLabel"[^>]*>/g) ?? [];
+    expect(triggers).toHaveLength(2);
+    expect(triggers.filter(trigger => trigger.includes('aria-haspopup="listbox"'))).toHaveLength(1);
+    expect(mobile).not.toContain('role="radiogroup"');
     expect(mobile).toContain('>welcome.pills.mobile</span>');
     expect(mobile).not.toContain("<select");
     expect(mobile).not.toContain("welcome.guide.mobile");

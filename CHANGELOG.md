@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Welcome composer: retain the clearer prompt/button surfaces, two-slider settings icon and right-aligned submit action from `aa9f6aa`; keep generation type together with advanced settings behind the existing popover, following Design.md.
+
 - Free-canvas migration preserves visible top-level Frame surfaces and page cameras; regression checks cover content-preserving save/reopen and per-filter selection masks.
 
 - Pending-work integration: signature artifact systems (AXIOM, VOID OS, BLOOM) now carry the welcome choice into agent contracts and starter templates; registry/template builders are split into focused modules.

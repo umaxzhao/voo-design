@@ -121,31 +121,6 @@ export function WelcomePromptComposer({
       data-mobile-options-open={advancedOpen ? "true" : "false"}
       className="welcome-prompt-root relative"
     >
-      <div className="welcome-prompt-type-options mb-2">
-        <div className="flex flex-wrap items-center justify-center gap-1" role="radiogroup" aria-label={t("welcome.prompt.generationTypeLabel")}>
-          {AI_GEN_TYPES.map((typeItem) => {
-            const Icon = typeItem.icon;
-            const selected = activePill === typeItem.id;
-            return (
-              <button
-                key={typeItem.id}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => onSelectPill?.(typeItem.id)}
-                className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] transition-colors ${
-                  selected
-                    ? "bg-white/[0.12] font-medium text-white"
-                    : "text-neutral-500 hover:bg-white/[0.05] hover:text-neutral-200"
-                }`}
-              >
-                {Icon ? <Icon size={11} aria-hidden="true" /> : null}
-                <span>{t(typeItem.label)}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
       <form
         ref={formRef}
         onSubmit={onSubmit}
@@ -253,6 +228,22 @@ export function WelcomePromptComposer({
                 style={panelPos ?? { left: -9999, top: 0 }}
               >
           <div className="welcome-composer-settings-grid space-y-2">
+            <ComposerField label={t("welcome.prompt.generationTypeLabel")}>
+              <FlatSelect
+                value={activePill}
+                onChange={(value) => onSelectPill?.(value)}
+                label={t("welcome.prompt.generationTypeLabel")}
+                options={AI_GEN_TYPES.map((typeItem) => ({
+                  value: typeItem.id,
+                  label: t(typeItem.label),
+                }))}
+                className="welcome-composer-select w-full min-w-0"
+                triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs"
+                panelClassName="!z-[400]"
+                portal
+              />
+            </ComposerField>
+
             <ComposerField label={t("welcome.prompt.modelLabel")}>
               <FlatSelect
                 value={selectedModel ?? ""}
