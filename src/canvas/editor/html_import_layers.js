@@ -1,8 +1,7 @@
 // HTML import box and layer construction seam.
 
+import { DEFAULT_FONT_SIZE, LINE_HEIGHT_RATIO } from "./scene_model_core.js";
 import {
-  DEFAULT_FONT_SIZE,
-  LINE_HEIGHT_RATIO,
   createEllipseNode,
   createRectNode,
   createTextNode,

@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { BLEND_MODES } from "../editor/scene_model.js";
+import { BLEND_MODES } from "../editor/scene_model_core.js";
 import { useI18n } from "../use_i18n.js";
 import CustomSelect from "../components/custom_select.jsx";
 

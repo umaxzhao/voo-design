@@ -6,7 +6,7 @@ import { StaticSection } from "./property_section.jsx";
 import ScrubField from "../scrub_field.jsx";
 import MixedField from "./mixed_field.jsx";
 import FlatSelect from "../flat_select.jsx";
-import { BLEND_MODES, DEFAULT_BLEND_MODE, normalizeBlendMode } from "../../editor/scene_model.js";
+import { BLEND_MODES, DEFAULT_BLEND_MODE, normalizeBlendMode } from "../../editor/scene_model_core.js";
 import { commonValue, MIXED } from "../../editor/selection_values.js";
 import { IconMix } from "../../icons.jsx";
 

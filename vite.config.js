@@ -23,6 +23,12 @@ export default defineConfig(({ mode }) => ({
     target: "esnext",
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
+      onwarn(warning, warn) {
+        // A split barrel cycle can change initialization order in production.
+        // Reject it rather than shipping a build that only works in dev.
+        if (warning.code === "CYCLIC_CROSS_CHUNK_REEXPORT") throw new Error(warning.message);
+        warn(warning);
+      },
       output: {
         manualChunks(id) {
           if (id.includes("node_modules")) {
