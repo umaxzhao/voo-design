@@ -72,7 +72,7 @@ export default function ImageContextActions({
         aria-label={t("editor.context.image")}
         className="flex flex-col gap-2 pb-1"
       >
-        <HistogramStrip bitmap={bitmap} />
+        <HistogramStrip bitmap={bitmap} compact />
         <div className="flex items-stretch gap-1.5">
           <label className="flex min-h-8 min-w-0 flex-1 items-center justify-between gap-1 rounded-lg bg-white/[0.04] px-2 text-[10px] text-neutral-400">
             <span className="truncate">{t("editor.frequencySeparation.radius")}</span>

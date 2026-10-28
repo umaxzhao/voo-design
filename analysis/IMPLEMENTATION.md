@@ -119,7 +119,7 @@ Continuation of the same cycle after wave 1. Three additional gaps from
 | Semantics | tolerant read (never throws), idempotent v1→v2 migration preserving ids + bindings, pure resolution + mode switch (bindings kept), CRUD for collections/modes/variables (deleting the active mode falls back to the default, last mode protected), first-use seeding: the first panel action migrates the legacy colours and creates `variablesV2` in one undo entry |
 | Serialisation | Lead wiring in `scene_model_serialization.js`: `serializeVariables`/`deserializeVariables` + `resolveDocumentVariables` on load, proven by `tests/unit/document_serialization_wave2.test.js` (v2 round-trip, active-mode materialisation, v1 migration, empty-model omission) |
 | Tests | 40 cases (`tests/unit/scene_variables.test.js`) + 4 document round-trip cases |
-| Known UI issue | the manager panel can close right after creating the very first collection; reopening shows the new collection and subsequent edits keep the panel open. Follow-up polish, tracked in BACKLOG |
+| Historical UI issue | The first-collection close report no longer reproduces in the 2026-10-28 browser check. `inspector-controls.e2e.mjs` uses the actual Add → Variables → Manage entry and verifies first creation, one-step undo/redo, rename, mode creation and reopen persistence. No manager implementation change was needed in this verification. |
 | Deferred | variable aliases, per-variable scopes/code syntax, number variables bound to auto-layout gap/padding, gradient values, panel docking/responsive |
 
 ## 6. Canvas comments / review threads  →  `src/canvas/comments/`
@@ -203,9 +203,7 @@ Third wave, again three parallel workstreams plus Lead wiring/verification.
 
 ## Known issues / follow-ups after wave 3
 
-- Variables manager can still close right after creating the very first collection (an automated
-  activation retargets the panel's close control during the commit re-render); reopening shows the
-  collection and later edits keep it open. A React-level fix is still pending.
+- Historical variables-manager first-collection close report: **not reproduced on 2026-10-28**. The actual inspector browser regression now covers staying open through first creation, undo/redo and subsequent editing. This is a verification update, not a new implementation fix.
 - Constraints: group/edge-drag resize hooks and command/agent page-resize paths listed above.
 - Prototyping / smart animate (largest remaining Figma gap), collaboration wiring, component variants,
   light theme and the Pen agent contract remain on [`BACKLOG.md`](BACKLOG.md).

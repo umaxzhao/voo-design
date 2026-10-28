@@ -1,5 +1,7 @@
 # Pending workspace integration — 2026-10-28
 
+> Historical snapshot for source `59fc020`. The publication failure recorded below was resolved by [541a170](https://github.com/umaxzhao/voo-design/commit/541a170e1ec4d197ac46f4cf1bc786ab7ba9e2a7), which was pushed and deployed with a clean release verification. This snapshot and its JSON evidence describe their recorded revision, not the current Git/production state.
+
 ## Source and preservation
 
 The primary checkout at `/Volumes/TD/Projects/voo_design` started at `ea98728` with thirty changed tracked files and five new source/document/test files. Git has no author record for uncommitted files; these drafts were identified by content and checked against their callers, tests and the newer remote implementation. An original patch and SHA-256 manifest were captured before integration. The original files remained untouched while the draft was applied to a separate checkout based on remote `88f37f0`.
@@ -57,3 +59,11 @@ GitHub publication is **not complete**: HTTPS credentials are invalid, and the e
 The primary checkout was fast-forwarded to the verified source, preserving the two concurrent committed changes in its ancestry. The original thirty tracked drafts and five new files were incorporated with the corrections described above. Exact originals and a retained Git stash are available under `/Users/tt/.codex/artifacts/voo-pending-integration-20261028` and `refs/voo-backups/primary-before-integration-20261028`. Three newer concurrent changes remain **uncommitted and outside the released build**: `histogram_strip.jsx`, `image_context_actions.jsx`, and `text_section_compact.test.jsx`. The overlapping text-menu test kept both the verified stronger assertions and the concurrent canonical-menu clarification. A focused check of the retained primary changes passed 13 tests in `text_section_compact` and `panel_wiring_fixes`; this is not a clean release verification of those additional drafts.
 
 Local `tmp/`, `.cursor/`, `.codegraph/` and `.dsh_tool_probe.txt` remain on disk and are excluded only through Git's repository-local `info/exclude`. The shared `.gitignore` was not modified. The historical oversized-file refactor and bundle analysis remain separate tasks; this release does not claim to complete them.
+
+## Follow-up review of the three retained drafts
+
+The compact histogram and image-tools call site were retained and covered by explicit four-channel/default, one-channel/compact, clipping-readout and missing-bitmap tests. The font-weight test clarification preserves the already verified custom-menu assertions. These three files are included in the follow-up application change rather than discarded.
+
+Additional touch-browser coverage selects all six generation types at 390px through the advanced dialog and confirms Mobile dimensions and close behavior. A second options-open attribute and dead generation-row CSS were removed. The variables-manager first-collection issue recorded in `analysis/IMPLEMENTATION.md` did not reproduce through the actual inspector entry; two browser regression groups now protect its open state, undo/redo and subsequent edits without changing its implementation.
+
+The repository also contains `gl_spatial_shaders.js` implementations for high-pass, clarity and motion blur, plus the frequency-separation controller and tests. Their existence does not certify complete GPU/CPU pixel parity: three GL pixel-comparison cases remain skipped without a GL context. Oversized-file refactoring, bundle-size work and a dedicated Liquify feature are separate tasks, not claimed complete by this review. Old stashes and unmanaged temporary checkouts are retained; no cleanup assumes their contents are redundant.

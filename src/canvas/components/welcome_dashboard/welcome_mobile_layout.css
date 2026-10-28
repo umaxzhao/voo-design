@@ -2,7 +2,6 @@
   .welcome-dashboard {
     border-radius: 0;
   }
-
   .welcome-sidebar {
     max-height: none;
     overflow: visible;
@@ -11,16 +10,13 @@
     padding: 0.5rem 0.75rem 0;
     border-radius: 0;
   }
-
   .welcome-sidebar-content {
     display: grid;
     gap: 0.5rem;
   }
-
   .welcome-sidebar-content > * + * {
     margin-top: 0;
   }
-
   .welcome-sidebar-content.space-y-4 > :not([hidden]) ~ :not([hidden]) {
     margin-top: 0;
   }
@@ -250,14 +246,6 @@
     font-size: 0.875rem;
   }
 
-  .welcome-prompt-type-options {
-    display: none;
-  }
-
-  .welcome-prompt-root[data-mobile-options-open="true"] .welcome-prompt-type-options {
-    display: block;
-  }
-
   .welcome-prompt-root .prompt-composer {
     margin-top: 0;
     padding: 0.875rem;
@@ -289,33 +277,6 @@
     min-width: 0;
     flex-wrap: nowrap;
     gap: 0.25rem;
-  }
-
-  .welcome-prompt-option-design-system,
-  .welcome-prompt-option-style,
-  .welcome-prompt-option-candidates,
-  .welcome-prompt-option-size {
-    display: none;
-  }
-
-  .welcome-prompt-root[data-mobile-options-open="true"] .welcome-prompt-option-design-system,
-  .welcome-prompt-root[data-mobile-options-open="true"] .welcome-prompt-option-style,
-  .welcome-prompt-root[data-mobile-options-open="true"] .welcome-prompt-option-candidates,
-  .welcome-prompt-root[data-mobile-options-open="true"] .welcome-prompt-option-size {
-    display: block;
-  }
-
-  .welcome-prompt-option-model > button {
-    max-width: 13rem;
-    min-height: 2.25rem;
-    padding-inline: 0.5rem;
-  }
-
-  .welcome-prompt-more {
-    display: inline-flex;
-    flex: 0 0 auto;
-    min-width: 2.5rem;
-    min-height: 2.5rem;
   }
 
   .welcome-prompt-controls-row > div:last-child > button[type="submit"] {

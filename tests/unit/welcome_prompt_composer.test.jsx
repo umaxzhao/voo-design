@@ -70,6 +70,7 @@ describe("welcome prompt composer", () => {
     expect(html).toContain("welcome.prompt.addAttachment");
     expect(html).toContain("welcome.prompt.generationTypeLabel");
     expect(html).toContain('data-advanced-open="false"');
+    expect(html).not.toContain("data-mobile-options-open");
     expect(html).not.toContain('role="radiogroup"');
     expect(html).not.toContain('aria-label="welcome.prompt.styleLabel"');
     expect(html).not.toContain('aria-label="welcome.prompt.designSystemLabel"');

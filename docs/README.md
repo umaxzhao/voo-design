@@ -14,6 +14,9 @@
 - [properties-panel.md](properties-panel.md), [pages-artboards.md](pages-artboards.md), [export-quality.md](export-quality.md), [web-image-extension.md](web-image-extension.md)
 
 ## Release and deployment
+
+Run `node scripts/verify-editor-release.mjs` on the exact clean commit being released. It checks the build, design rules, all unit tests, six browser suites and source immutability. The JSON output identifies that commit; copy it to the local delivery artifacts directory rather than adding another dated report to this index. Git/remote and production state must be checked independently, rather than inferred from a past report.
+
 - [release-checklist.md](release-checklist.md), [code-signing.md](code-signing.md), [installer-size.md](installer-size.md), [deploy-la.md](deploy-la.md) (editor deploys to `la2`)
 
 ## Performance
@@ -26,9 +29,9 @@
 | :--- | :--- | :--- |
 | [audits/pending-workspace-integration.md](audits/pending-workspace-integration.md) | Preserved pending drafts, signature systems, nested constraints and bucket/variable regressions | Workspace integration; [verified release evidence](audits/pending-integration-release.json) |
 | [audits/remote-main-verification-2026-10-28.md](audits/remote-main-verification-2026-10-28.md) | Clean remote reproduction, custom-menu regressions, dedicated inspector/drawing/retouch evidence | Verification at the recorded revision |
-| [audits/layout-mask-verification.md](audits/layout-mask-verification.md) | Group/rotated alignment, Auto Layout, clipping and Boolean pixel/history checks | Current (2026-10-27) |
-| [audits/agent-mutation-verification.md](audits/agent-mutation-verification.md) | Agent paint/text parity, UI tests, real MCP/pixel evidence and remaining limits | Current (2026-10-27) |
-| [audits/effect-audit-verification.md](audits/effect-audit-verification.md) | Resize constraints, Skia italics: fixes and e2e evidence | Current (2026-10-27) |
+| [audits/layout-mask-verification.md](audits/layout-mask-verification.md) | Group/rotated alignment, Auto Layout, clipping and Boolean pixel/history checks | Snapshot (2026-10-27) |
+| [audits/agent-mutation-verification.md](audits/agent-mutation-verification.md) | Agent paint/text parity, UI tests, real MCP/pixel evidence and remaining limits | Snapshot (2026-10-27) |
+| [audits/effect-audit-verification.md](audits/effect-audit-verification.md) | Resize constraints, Skia italics: fixes and e2e evidence | Snapshot (2026-10-27) |
 | [audits/editor-completion-verification.md](audits/editor-completion-verification.md) | Editor completion checks | Recent |
 | [audits/image-processing-audit.md](audits/image-processing-audit.md) | Affinity vs VOO image processing | Recent |
 | [audits/design-editor-interaction-audit.md](audits/design-editor-interaction-audit.md) | Editor interaction audit | Historical |

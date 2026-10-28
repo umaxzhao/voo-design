@@ -24,33 +24,36 @@ import { useLayerHistogram } from "./use_layer_histogram.js";
  * Semantic colour is carried by the clipping figures instead, where it means
  * "this end of the range is already gone".
  */
-export default function HistogramStrip({ bitmap = null, className = "" }) {
+export default function HistogramStrip({ bitmap = null, className = "", compact = false }) {
   const stats = useLayerHistogram(bitmap);
   if (!stats) return null;
-  return <HistogramView stats={stats} className={className} />;
+  return <HistogramView stats={stats} className={className} compact={compact} />;
 }
 
 /**
- * The strip itself: one measured `computeImageStats()` result in, four channel
- * rows and the clipping readout out. Split from the measuring above so the
- * drawing can be rendered — and asserted on — without a bitmap, a canvas or a
- * running effect.
+ * The strip itself: one measured `computeImageStats()` result in, channel
+ * rows and the clipping readout out. Compact contexts keep only luminance.
+ * Split from the measuring above so the drawing can be rendered and asserted
+ * without a bitmap, a canvas or a running effect.
  */
-export function HistogramView({ stats, className = "" }) {
+export function HistogramView({ stats, className = "", compact = false }) {
   const { t } = useI18n();
 
-  // Four rows, one per channel. Recomputed only when the analysis changes.
+  // Detailed panels retain RGB rows; compact image tools show luminance only.
   const rows = useMemo(() => {
-    return [
-      { key: "r", labelKey: "editor.props.cmRed", histogram: stats.channels.r.histogram },
-      { key: "g", labelKey: "editor.props.cmGreen", histogram: stats.channels.g.histogram },
-      { key: "b", labelKey: "editor.props.cmBlue", histogram: stats.channels.b.histogram },
-      { key: "luma", labelKey: "editor.histogram.luma", histogram: stats.channels.luma.histogram, primary: true },
-    ].map((row) => ({
+    const rows = compact
+      ? [{ key: "luma", labelKey: "editor.histogram.luma", histogram: stats.channels.luma.histogram, primary: true }]
+      : [
+          { key: "r", labelKey: "editor.props.cmRed", histogram: stats.channels.r.histogram },
+          { key: "g", labelKey: "editor.props.cmGreen", histogram: stats.channels.g.histogram },
+          { key: "b", labelKey: "editor.props.cmBlue", histogram: stats.channels.b.histogram },
+          { key: "luma", labelKey: "editor.histogram.luma", histogram: stats.channels.luma.histogram, primary: true },
+        ];
+    return rows.map((row) => ({
       ...row,
       path: histogramAreaPath(foldHistogramBins(row.histogram, HISTOGRAM_COLUMNS)),
     }));
-  }, [stats]);
+  }, [stats, compact]);
 
   const clip = clipPercentages(stats.clipping.luma);
   const clipTone = (percent) =>
@@ -112,10 +115,13 @@ HistogramStrip.propTypes = {
   /** The decoded layer image; null renders nothing, by design. */
   bitmap: PropTypes.object,
   className: PropTypes.string,
+  /** Show only the luma channel in tight contexts (image tools). */
+  compact: PropTypes.bool,
 };
 
 HistogramView.propTypes = {
   /** A `computeImageStats()` result. */
   stats: PropTypes.object.isRequired,
   className: PropTypes.string,
+  compact: PropTypes.bool,
 };

@@ -2,6 +2,9 @@
 
 ## 1.0.0
 
+- Finish the retained compact histogram draft: image tools show one luminance row while Levels/Curves keep four channels and clipping readouts; add regression coverage and retain the custom font-weight menu assertions.
+- Remove the obsolete mobile generation-row CSS and duplicate open-state attribute; keep all six generation types reachable through the single advanced menu on touch devices.
+
 - Welcome composer: retain the clearer prompt/button surfaces, two-slider settings icon and right-aligned submit action from `aa9f6aa`; keep generation type together with advanced settings behind the existing popover, following Design.md.
 
 - Free-canvas migration preserves visible top-level Frame surfaces and page cameras; regression checks cover content-preserving save/reopen and per-filter selection masks.

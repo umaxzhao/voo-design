@@ -188,5 +188,39 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
     assert.equal(await page.evaluate((id) => window.__vooEditor.getNode(id).exportPresets[0].quality,id), "0.6");
     checks.push(`${format}: inspector format/quality produces matching downloadable file bytes`);
   }
+  // Exercise the full inspector's add entry, not the isolated audit mount.
+  await page.evaluate(async () => {
+    window.__auditPanelRoot.unmount(); document.getElementById("inspector-audit-host").remove();
+    const e = window.__vooEditor;
+    const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
+    e.setDoc({ ...e.getDocument(), colorVariables: [], variablesV2: undefined,
+      nodes: [{ ...createRectNode({ x: 100, y: 100, width: 100, height: 100, fill: "#ff0000" }), id: "variable-manager-target" }] });
+    e.selectExactly(["variable-manager-target"]);
+  });
+  await page.getByTestId("properties-add-menu").last().getByRole("button").first().click();
+  await page.getByTestId("properties-add-variables").click();
+  await page.getByTestId("editor-variables-manage").click();
+  const variables = page.getByTestId("editor-variables-panel");
+  await variables.getByRole("button", { name: "Add collection", exact: true }).click();
+  await variables.getByRole("textbox", { name: "Collection name", exact: true }).waitFor();
+  assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().variablesV2.collections.length), 1);
+  await tool("undo");
+  assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().variablesV2), undefined);
+  assert.equal(await variables.count(), 1);
+  await tool("redo");
+  await variables.getByRole("textbox", { name: "Collection name", exact: true }).waitFor();
+  assert.equal(await variables.count(), 1);
+  checks.push("actual variables manager stays open after the first collection and one undo restores the unseeded document");
+  const collectionName = variables.getByRole("textbox", { name: "Collection name", exact: true });
+  await collectionName.fill("First collection"); await collectionName.press("Enter");
+  await variables.getByRole("button", { name: "Add mode", exact: true }).click();
+  assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().variablesV2.collections[0].modes.length), 2);
+  await variables.getByRole("button", { name: "Close variables", exact: true }).click();
+  await page.getByTestId("editor-variables-manage").click();
+  assert.equal(await variables.getByRole("textbox", { name: "Collection name", exact: true }).inputValue(), "First collection");
+  await tool("undo");
+  assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().variablesV2.collections[0].modes.length), 1);
+  assert.equal(await variables.count(), 1);
+  checks.push("variables manager accepts later edits, keeps them after reopening and preserves one-step mode undo");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });

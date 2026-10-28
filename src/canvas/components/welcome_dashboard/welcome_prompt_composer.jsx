@@ -118,7 +118,6 @@ export function WelcomePromptComposer({
     <div
       ref={rootRef}
       data-advanced-open={advancedOpen ? "true" : "false"}
-      data-mobile-options-open={advancedOpen ? "true" : "false"}
       className="welcome-prompt-root relative"
     >
       <form

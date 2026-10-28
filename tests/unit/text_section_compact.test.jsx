@@ -61,8 +61,9 @@ describe("compact text section", () => {
     expect(html).toContain("%");
   });
 
-  it("shows the current font weight once (400 reads as Regular)", () => {
+  it("uses the canonical weight menu without a duplicate 400 entry", () => {
     const html = render();
+    // Custom menu options live in the popover; SSR exposes the current value.
     const normalOptions = html.match(/editor\.props\.weight\.normal/g) ?? [];
     const boldOptions = html.match(/editor\.props\.weight\.700/g) ?? [];
     expect(normalOptions).toHaveLength(1);
