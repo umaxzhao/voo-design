@@ -1527,7 +1527,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     }, []),
   });
 
-  /** AI generation commits a new Group candidate instead of mutating its source. */
+  /** Generated images open as separate candidate pages, preserving the source. */
   const handleGroupGeneratedOutput = useCallback(
     async (result) => {
       const output = await materializeEditorGeneratedOutput({ result });

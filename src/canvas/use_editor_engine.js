@@ -10,14 +10,14 @@ import { openDecodeFailed } from "./editor_open_state.js";
 import { useDesignStore } from "../store/design_store.js";
 import { createWorkflowStoreEditorHost } from "../shared/editor-host-contract.js";
 import { ensureModule, moduleState } from "./module_loader.js";
+import { EDITOR_ENGINE_CHANGE_EVENT, setEditorEngineReady } from "./editor-engine-events.js";
 // Runtime-only sessions retain undo and selection when a document tab unmounts.
 const documentSessions = new Map();
 useDesignStore.subscribe(state => {
   const ids = new Set(state.openDocuments.map(doc => doc.id));
   for (const [key, entry] of documentSessions) if (!ids.has(entry.documentId)) documentSessions.delete(key);
 });
-/** Window event fired when the editor engine is (re)created or replaced. */
-export const EDITOR_ENGINE_CHANGE_EVENT = "voo:editor-engine-change";
+export { EDITOR_ENGINE_CHANGE_EVENT } from "./editor-engine-events.js";
 
 /**
  * Binds the editor engine to React.
@@ -37,6 +37,7 @@ export function useEditorEngine({
   canvasRef,
   stageRef,
   source,
+  getSource,
   active,
   onChange,
   onBeforeDispose,
@@ -64,13 +65,23 @@ export function useEditorEngine({
   const onBeforeDisposeRef = useRef(onBeforeDispose);
   const onGeneratedOutputRef = useRef(onGeneratedOutput);
   const getFitInsetsRef = useRef(getFitInsets);
+  const sourceRef = useRef(source);
+  const getSourceRef = useRef(getSource);
   onChangeRef.current = onChange;
   onBeforeDisposeRef.current = onBeforeDispose;
   onGeneratedOutputRef.current = onGeneratedOutput;
   getFitInsetsRef.current = getFitInsets;
+  sourceRef.current = source;
+  getSourceRef.current = getSource;
 
   useEffect(() => {
     if (!active || !canvasRef.current || !stageRef.current) return undefined;
+
+    // Capture the source once for this engine activation. Cache notifications
+    // may update the next source without replacing an in-progress document.
+    const openedSource = getSourceRef.current
+      ? getSourceRef.current()
+      : sourceRef.current;
 
     const host = createWorkflowStoreEditorHost(useDesignStore, {
       sourceWorkflowNodeId,
@@ -153,7 +164,7 @@ export function useEditorEngine({
     let cancelled = false;
     let opened = false;
     void created
-      .open(source)
+      .open(openedSource)
       .then(async () => {
         if (cancelled) return;
         if (previousSession) {
@@ -162,11 +173,12 @@ export function useEditorEngine({
           created.restoreDocumentSession(snapshot.state);
           created.setViewport(snapshot.viewport);
         }
-        if (openDecodeFailed(source, created.getDocument())) {
+        if (openDecodeFailed(openedSource, created.getDocument())) {
           setError({ code: "decodeFailed" });
           return;
         }
         opened = true;
+        setEditorEngineReady(created, true);
         setReady(true);
         if (commandBridge) {
           commandBridge.ready = true;
@@ -206,6 +218,7 @@ export function useEditorEngine({
 
     return () => {
       cancelled = true;
+      setEditorEngineReady(created, false);
       if (opened && cameraMode !== "shared")
         rememberPageCamera(
           pageCameras,
@@ -219,10 +232,16 @@ export function useEditorEngine({
       if (window.__vooEditor === created) {
         window.__vooEditor = null;
       }
-      if (commandBridge)
+      if (commandBridge) {
         useDesignStore
           .getState()
           .unregisterEditorBridge?.(sourceWorkflowNodeId, commandBridge);
+        window.dispatchEvent(
+          new CustomEvent(EDITOR_ENGINE_CHANGE_EVENT, {
+            detail: { nodeId: sourceWorkflowNodeId },
+          }),
+        );
+      }
       let snapshotWork = null;
       try {
         snapshotWork = onBeforeDisposeRef.current?.(created) ?? null;
@@ -246,9 +265,6 @@ export function useEditorEngine({
         created.dispose();
       }
     };
-    // `source` is read once per opened node; re-running on every image cache
-    // tick would throw away in-progress edits.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     active,
     canvasRef,

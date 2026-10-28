@@ -11,35 +11,46 @@ import { CLI_BRIDGE_CHANNEL as C } from "../../src/shared/cli_bridge_protocol.js
 export async function withEditorBrowser(run, pageOptions = {}) {
   const { openDocument = true, mcpLink = true, ...browserOptions } = pageOptions;
   if (openDocument && !mcpLink) throw new Error("Document fixtures require the MCP link");
+  const reservation = createServer();
   const port = await new Promise((resolve, reject) => {
-    const server = createServer();
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => {
-      const value = server.address().port;
-      server.close((error) => error ? reject(error) : resolve(value));
-    });
+    reservation.once("error", reject);
+    reservation.listen(0, "127.0.0.1", () => resolve(reservation.address().port));
   });
   const origin = `http://localhost:${port}`;
-  const bridge = await startCliBridgeServer({ port: 0, origins: [origin] });
+  let bridge;
+  try {
+    // Keep Vite's chosen port occupied while the relay gets its own random
+    // port. Releasing it first lets the relay accidentally claim that port.
+    bridge = await startCliBridgeServer({ port: 0, origins: [origin] });
+  } finally {
+    await new Promise((resolve, reject) => reservation.close(error => error ? reject(error) : resolve()));
+  }
   const vite = spawn("npx", ["vite", "--port", String(port), "--strictPort"], {
     cwd: fileURLToPath(new URL("../../", import.meta.url)), detached: true,
     env: { ...process.env, VITE_CLI_BRIDGE_URL: `ws://127.0.0.1:${bridge.port}` },
-    stdio: "ignore",
+    stdio: ["ignore", "pipe", "pipe"],
   });
+  let viteOutput = "", spawnError;
+  vite.once("error", error => { spawnError = error; });
+  for (const stream of [vite.stdout, vite.stderr]) {
+    stream.setEncoding("utf8");
+    stream.on("data", chunk => { viteOutput = (viteOutput + chunk).slice(-8192); });
+  }
   let browser;
   let socket;
   try {
     const deadline = Date.now() + 60000;
     while (true) {
-      if (vite.exitCode !== null) throw new Error("Fixture Vite exited before startup");
+      if (spawnError) throw spawnError;
+      if (vite.exitCode !== null) throw new Error(`Fixture Vite exited before startup (${vite.exitCode}):\n${viteOutput}`);
       try {
         const response = await fetch(origin, { signal: AbortSignal.timeout(1000) });
         await response.body?.cancel();
         if (response.ok) break;
       } catch (error) {
-        if (Date.now() >= deadline) throw error;
+        if (Date.now() >= deadline) throw new Error(`Fixture Vite did not respond:\n${viteOutput}`, { cause: error });
       }
-      if (Date.now() >= deadline) throw new Error("Fixture Vite startup timed out");
+      if (Date.now() >= deadline) throw new Error(`Fixture Vite startup timed out:\n${viteOutput}`);
       await delay(200);
     }
     browser = await chromium.launch({ headless: true });
@@ -85,7 +96,7 @@ export async function withEditorBrowser(run, pageOptions = {}) {
     socket?.close();
     await browser?.close();
     await bridge.close();
-    try { process.kill(-vite.pid, "SIGTERM"); }
+    try { if (vite.pid) process.kill(-vite.pid, "SIGTERM"); }
     catch (error) { if (error.code !== "ESRCH") throw error; }
   }
 }

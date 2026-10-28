@@ -36,6 +36,8 @@ export default function EditorRegionLabel({
   /** The live value, so a blur cannot commit a stale one. */
   const valueRef = useRef(value);
   valueRef.current = value;
+  const commitRef = useRef(onCommit);
+  commitRef.current = onCommit;
 
   /**
    * True while an IME is mid-composition.
@@ -61,9 +63,8 @@ export default function EditorRegionLabel({
   // closing, undo replacing the document, the region being deleted.
   useEffect(
     () => () => {
-      onCommit(valueRef.current);
+      commitRef.current(valueRef.current);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 

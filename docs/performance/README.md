@@ -52,6 +52,42 @@ real pointer pan/drag/cancellation, zoom, history and welcome round trips.
 Other oversized editor modules and remaining hook suppressions still need
 separate behavior-preserving maintenance.
 
+The next maintenance batch separates optional raster action implementations
+from the always-mounted Hook. Matting, selection repair, repaint, outpaint and
+image processing load at the action boundary; the Hook itself stays synchronous.
+`raster-loading` checks actual network requests, click-time targets, cancellation,
+single stroke consumption and bitmap/undo behavior. A physical ONNX model run
+is not part of that loading-contract test.
+
+Generated-output actions must also reach the application's real persistence
+sink. A successful CPU/provider result alone is insufficient: a separate
+candidate must load its new bitmap, leave the source intact and survive project
+save/reopen. Candidate creation belongs to the existing page workflow; it does
+not add a second generation menu or replace the source image silently.
+
+Destructive Boolean and stroke expansion have a synchronous public mutation
+contract. Their geometric implementation is split into focused modules while
+remaining synchronously available; moving it behind a Promise would change
+existing callers and history semantics. Do not report a lazy-loading benefit
+for that structural change. The `destructive-boolean` browser suite checks
+actual content pixels, stable layer IDs, result selection and source history.
+
+`hook-lifecycle` checks React engine activation, overlay commits, page readiness,
+draft/locale behavior, actual image loading and the independent CanvasKit canvas.
+The source-comment policy test prevents reintroducing explicit dependency-rule
+suppressions; it does not pretend the undeclared react-hooks plugin is installed.
+
+## Snapping coverage
+
+The legacy `tests/unit/snapping_e2e.test.js` filename denotes unit tests. Its grid,
+pixel and option coverage is now mandatory and split into files under 400 lines.
+The previous runtime probe incorrectly skipped five implemented isometric cases
+because its point was outside the acquisition tolerance. Removing that gate
+also removes pass-without-assertion fallbacks. Nearest isometric vertices are
+checked against independent lattice enumeration, including adjacent staggered
+rows and negative coordinates. `editor-snapping` separately uses real pointer
+gestures, document pixel exports and undo/redo at different zoom levels.
+
 ## GPU spatial-filter correctness
 
 `tests/e2e/gl-spatial-parity.e2e.mjs` replaces the three Node-only placeholder

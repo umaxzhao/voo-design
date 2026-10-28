@@ -263,7 +263,9 @@ export function createEditor({
     if (currentIds.length > 0) {
       const validIds = currentIds.filter((id) => Boolean(findNode(doc, id)));
       if (validIds.length !== currentIds.length) {
-        selection.selectNodes(validIds);
+        // Pruning belongs to the new document. Do not rewrite the previous
+        // history entry's selection before pushing this mutation's snapshot.
+        history.mute(() => selection.selectNodes(validIds));
       }
     }
     if (commit) {
@@ -892,7 +894,7 @@ export function createEditor({
     viewportTools.dispose();
     releaseStagePictureCache(ctx);
     renderListeners.clear();
-    
+
     if (frame) cancelAnimationFrame(frame);
     if (notifyFrame) cancelAnimationFrame(notifyFrame);
     if (toolCommitTimer) clearTimeout(toolCommitTimer);

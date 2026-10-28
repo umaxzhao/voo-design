@@ -8,7 +8,7 @@
  * tests assert both sides agree.
  */
 
-import { PORTRAIT_RETOUCH_STEPS } from "./portrait_retouch.js";
+import { PORTRAIT_RETOUCH_STEPS } from "./portrait-retouch-constants.js";
 
 /**
  * The three editable steps, in the order the panel lays them out (smooth,

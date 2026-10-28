@@ -77,8 +77,11 @@ HeaderButton.propTypes = {
 export default function CanvasAgentPanel({ onClose }) {
   const { t } = useI18n();
   const [sessions, setSessions] = useState(() => loadStoredSessions());
-  const [activeId, setActiveId] = useState(null);
-  const [transcript, setTranscript] = useState([]);
+  // Bootstrap once without an effect that calls changing session handlers.
+  const initialSessionRef = useRef(null);
+  if (!initialSessionRef.current) initialSessionRef.current = sessions[0] ?? createEmptySession();
+  const [activeId, setActiveId] = useState(initialSessionRef.current.id);
+  const [transcript, setTranscript] = useState(() => initialSessionRef.current.messages ?? []);
   const [input, setInput] = useState("");
   const [streamingText, setStreamingText] = useState("");
   const [pipelineProgress, setPipelineProgress] = useState(null);
@@ -111,20 +114,11 @@ export default function CanvasAgentPanel({ onClose }) {
     unmountGuardRef.current.mount();
     return () => unmountGuardRef.current.unmount();
   }, []);
-  const historyRef = useRef([]);
+  const historyRef = useRef(initialSessionRef.current.history ?? []);
   const sessionsRef = useRef(sessions);
   sessionsRef.current = sessions;
   const transcriptRef = useRef([]);
   transcriptRef.current = transcript;
-
-  // Start on the most recent saved conversation, or a fresh one.
-  useEffect(() => {
-    const [latest] = sessionsRef.current;
-    if (latest) openSession(latest);
-    else startNewSession();
-    // Runs once on mount; the handlers below read state through refs.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const persist = (session) => {
     const next = upsertSession(sessionsRef.current, session);

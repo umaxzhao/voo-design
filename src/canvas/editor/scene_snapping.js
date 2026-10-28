@@ -6,6 +6,7 @@
 
 import { nodeAABB } from "./scene_geometry.js";
 import { getSetting } from "../../shared/settings.js";
+import { nearestIsometricVertex } from "./isometric-grid.js";
 
 /** Screen-space distance to acquire a snap (Figma/Affinity tactile feel). */
 export const SNAP_ACQUIRE_PX = 5;
@@ -13,7 +14,6 @@ export const SNAP_ACQUIRE_PX = 5;
 export const SNAP_RELEASE_PX = 9;
 /** @deprecated Prefer SNAP_ACQUIRE_PX; kept for callers that override tolerance. */
 const SNAP_THRESHOLD_PX = SNAP_ACQUIRE_PX;
-const SQRT3_OVER_2 = Math.sqrt(3) / 2;
 
 /** Persisted settings keys that drive the snapping options below. */
 export const SNAP_SETTING_KEYS = Object.freeze({
@@ -327,25 +327,13 @@ export function snapNodeBounds({
   // 2. Evaluate Isometric Grid Snapping (O(1) Hexagonal Lattice)
   if (snapToGrid && gridType === "isometric") {
     const isoSize = Math.max(1, options.grid?.size || 30);
-    const dx = isoSize * SQRT3_OVER_2;
-    const dy = isoSize / 2;
-
-    const findNearestIsoVertex = (px, py) => {
-      const r = Math.round(py / dy);
-      const isOdd = Math.abs(r % 2) === 1;
-      const xOffset = isOdd ? dx : 0;
-      const c = Math.round((px - xOffset) / (2 * dx));
-      const isoX = c * 2 * dx + xOffset;
-      const isoY = r * dy;
-      return { x: isoX, y: isoY, dist: Math.hypot(px - isoX, py - isoY) };
-    };
 
     if (handle) {
       const targetPoint = {
         x: handle.includes("e") ? rect.x + rect.width : rect.x,
         y: handle.includes("s") ? rect.y + rect.height : rect.y,
       };
-      const nearest = findNearestIsoVertex(targetPoint.x, targetPoint.y);
+      const nearest = nearestIsometricVertex(targetPoint.x, targetPoint.y, isoSize);
       if (nearest.dist <= threshold * 1.5) {
         if (handle.includes("e")) snappedWidth = nearest.x - rect.x;
         if (handle.includes("w")) {
@@ -365,7 +353,7 @@ export function snapNodeBounds({
         });
       }
     } else {
-      const nearest = findNearestIsoVertex(rect.x, rect.y);
+      const nearest = nearestIsometricVertex(rect.x, rect.y, isoSize);
       if (nearest.dist <= threshold * 1.5) {
         snappedX = nearest.x;
         snappedY = nearest.y;

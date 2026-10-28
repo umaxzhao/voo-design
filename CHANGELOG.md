@@ -2,6 +2,12 @@
 
 ## 1.0.0
 
+- Load optional raster action implementations only when used, keep Hook state in a reducer and preserve cancellation/target snapshots across cold imports. Keep the synchronous Boolean API while splitting its geometry, clipping and reconstruction modules.
+- Remove the remaining Hook dependency suppressions; preserve engine activation, latest overlay commits and dirty design-system drafts, and fix image source and independent Skia canvas references.
+- Keep destructive Boolean results selected, preserve expanded-stroke layer IDs and retain source selections through undo/redo.
+- Replace snapping feature probes with mandatory regressions and fix nearest-vertex selection across staggered isometric grid rows at reduced zoom.
+- Materialize generated image results into persisted candidate pages instead of silently discarding them; preserve source documents and reject stale document contexts or failed asset writes.
+
 - Separate welcome configuration and model catalogs from canvas tool execution, defer project parsers and generation contracts until use, and keep scene layout/variables and font catalogs out of first-welcome requests. Start file selection before loading parsers so slow networks preserve picker user activation and filesystem handles.
 - Extract canvas gestures and shared camera responsibilities; preserve pointer cancellation and Space-pan behavior with real input regressions. Remove scene model unused-import suppressions and guard public exports with actual ESLint checks.
 - Keep model weights out of ordinary web builds, publish them independently with a deployment preflight, retain optional desktop bundling, correct the remote fallback and reject HTML fallback pages as model bytes; serve models through a read-only CORS route with genuine missing-file responses.

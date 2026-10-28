@@ -152,6 +152,14 @@ export const useDesignStore = create((set, get) => {
     }));
   },
 
+  openExistingEditorPage: (id) => {
+    const state = get();
+    if (!state.nodes.some(node => node.id === id && node.type === "imageEditor")) return false;
+    set({ editingNodeIds: state.editingNodeIds.includes(id) ? state.editingNodeIds : [...state.editingNodeIds, id], welcomeOpen: false });
+    get().focusEditorPage(id, { rememberCamera: true });
+    return true;
+  },
+
   addEditorPage: ({ label = "Untitled", canvasType = CANVAS_TYPE.DESIGN, width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT } = {}) => {
     // Page cameras live in page_camera.js; switching pages keeps each view.
     const rememberCamera = true;
@@ -490,7 +498,37 @@ export const useDesignStore = create((set, get) => {
     set({ isDirty: false });
   },
 
-  materializeEditorGeneratedOutput: () => {},
+  materializeEditorGeneratedOutput: async ({ result } = {}) => {
+    // Capture the originating tab before the optional materializer is loaded.
+    const initial = get();
+    const context = {
+      documentId: initial.activeDocumentId,
+      session: initial.editorPageSession,
+      sourceId: result?.sourceWorkflowNodeId,
+      focusedId: initial.editingNodeId,
+    };
+    const valid = (state) => Boolean(context.documentId && context.sourceId &&
+      context.focusedId === context.sourceId &&
+      state.activeDocumentId === context.documentId &&
+      state.editorPageSession === context.session &&
+      state.editingNodeId === context.focusedId &&
+      state.nodes.some(node => node.id === context.sourceId && node.type === "imageEditor"));
+    if (!valid(initial)) throw new Error("Generated output source is not active");
+    let invalidated = false;
+    const unsubscribe = useDesignStore.subscribe(state => {
+      if (!valid(state)) invalidated = true;
+    });
+    const assertCurrent = () => {
+      if (invalidated || !valid(get())) throw new Error("Generated output source changed");
+    };
+    try {
+      const { materializeGeneratedOutput } = await import("./materialize-generated-output.js");
+      assertCurrent();
+      return await materializeGeneratedOutput({ result, context, get, set, assertCurrent });
+    } finally {
+      unsubscribe();
+    }
+  },
 
   // Agent Panel & Hybrid Architecture Actions
   setAgentPanelOpen: (agentPanelOpen) =>

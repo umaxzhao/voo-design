@@ -35,6 +35,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   await page.evaluate(async () => {
     const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
     const { useDesignStore } = await import("/src/store/design_store.js");
+    window.__navigationAuditStore = useDesignStore;
     const e = window.__vooEditor;
     e.setDoc({ ...e.getDocument(), width: 600, height: 400, isCanvasRoot: false, backgroundColor: "#ffffff",
       nodes: [{ ...createRectNode({ x: 80, y: 80, width: 80, height: 60, fill: "#ff0000" }), id: "navigation-target" }] });
@@ -67,7 +68,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   const wheelAt = { x: Math.round(candidate.x), y: Math.round(candidate.y) };
   await page.mouse.move(wheelAt.x, wheelAt.y);
   const beforeWheel = await camera(); await page.mouse.wheel(20, 45);
-  await page.waitForFunction(async (previous) => (await import("/src/store/design_store.js")).useDesignStore.getState().editorCamera.panY !== previous, beforeWheel.panY);
+  await page.waitForFunction(previous => window.__navigationAuditStore.getState().editorCamera.panY !== previous, beforeWheel.panY);
   assert.equal((await camera()).zoom, beforeWheel.zoom);
   const worldPoint = await page.evaluate(async (point) => {
     const stage = document.querySelector('[data-testid="editor-pages"]').getBoundingClientRect();
@@ -75,7 +76,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     return { x: (point.x - stage.left - c.panX) / c.zoom, y: (point.y - stage.top - c.panY) / c.zoom };
   }, wheelAt);
   await page.keyboard.down("Control"); await page.mouse.wheel(0, -80); await page.keyboard.up("Control");
-  await page.waitForFunction(async (previous) => (await import("/src/store/design_store.js")).useDesignStore.getState().editorCamera.zoom !== previous, beforeWheel.zoom);
+  await page.waitForFunction(previous => window.__navigationAuditStore.getState().editorCamera.zoom !== previous, beforeWheel.zoom);
   const anchored = await page.evaluate(async (point) => {
     const stage = document.querySelector('[data-testid="editor-pages"]').getBoundingClientRect();
     const c = (await import("/src/store/design_store.js")).useDesignStore.getState().editorCamera;

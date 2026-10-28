@@ -1,3 +1,5 @@
+import { PORTRAIT_RETOUCH_STEPS } from "./portrait-retouch-constants.js";
+
 /**
  * On-device portrait retouching engine (skin smoothing / blemish removal /
  * skin brightening).
@@ -50,11 +52,7 @@ export { RETOUCH_ERRORS, PortraitRetouchError };
  * Exported as data so the UI can lay out its sliders in the same order instead
  * of hardcoding it a second place.
  */
-export const PORTRAIT_RETOUCH_STEPS = Object.freeze([
-  "blemish",
-  "skinSmooth",
-  "skinBrighten",
-]);
+export { PORTRAIT_RETOUCH_STEPS } from "./portrait-retouch-constants.js";
 
 // --- Tuning constants (single source of truth for every magic number below) ---
 

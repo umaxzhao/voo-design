@@ -2,8 +2,8 @@
  * Contract for AI-generated editor output.
  *
  * Generation code returns this value without mutating the live document.
- * The caller owns the sink and materialises the result through the workflow's
- * Group output pipeline without mutating the source editor document.
+ * The caller owns the sink and materialises a separate editor candidate page
+ * without mutating the source editor document.
  */
 
 import { outpaintPlacementForRect } from "./outpaint_geometry.js";
@@ -100,8 +100,8 @@ export function createOutpaintScenePatch(sourceSnapshot, rect) {
 }
 
 /**
- * Creates one image candidate result at the editor/workflow boundary.
- * Cross-candidate state is intentionally absent: Group owns it upstream.
+ * Creates one image candidate result at the action/editor boundary.
+ * The caller owns candidate placement and persistence outside this contract.
  */
 export function createEditorGeneratedOutput({
   dataUrl,

@@ -75,7 +75,8 @@ try {
   await input.fill("Switch language to Chinese");
   await page.waitForFunction(() => document.querySelector("#command-palette-option-0")?.textContent.includes("Switch language to Chinese"));
   await page.keyboard.press("Enter");
-  await page.waitForFunction(async () => (await import("/src/shared/i18n.js")).getLocale() === "zh");
+  await page.evaluate(async () => { window.__paletteAuditGetLocale = (await import("/src/shared/i18n.js")).getLocale; });
+  await page.waitForFunction(() => window.__paletteAuditGetLocale() === "zh");
   await page.keyboard.press("Control+k");
   await palette.waitFor();
   await input.fill("网格");

@@ -306,7 +306,8 @@ export function createEngineNodeOps({
     if (!node || node.locked || isLockedByGroup(doc, node)) return false;
     const expanded = expandStrokeToPathNode(node);
     if (!expanded) return false;
-    commitEditorDocument("editor.expand_stroke", setDoc, ops.updateNode(doc, node.id, expanded));
+    // Expanding replaces this layer's geometry, not its identity or references.
+    commitEditorDocument("editor.expand_stroke", setDoc, ops.updateNode(doc, node.id, { ...expanded, id: node.id }));
     requestRender?.();
     notify?.();
     return true;
@@ -338,7 +339,7 @@ export function createEngineNodeOps({
 
     const nextDoc = { ...doc, nodes: nextNodes };
     commitEditorDocument(`editor.boolean.${op}`, setDoc, nextDoc);
-    selection?.setIds?.([result.id]);
+    selection?.selectNodes?.([result.id]);
     requestRender?.();
     notify?.();
     return true;

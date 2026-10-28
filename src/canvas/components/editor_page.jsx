@@ -3,7 +3,6 @@ import React, {
   Suspense,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -96,7 +95,7 @@ function suggestOutpaintPlanForNode(engine, node) {
  * left off instead of reverting to the last applied state.
  */
 function buildEditorSource(nodeId, snapshot) {
-  const { nodes } = useDesignStore.getState();
+  const { nodes, images } = useDesignStore.getState();
   const node = nodes.find((candidate) => candidate.id === nodeId);
   const ownImageId = node?.data?.imageId ?? null;
   // Reference layers come from the canvas itself now, not from graph edges.
@@ -241,6 +240,7 @@ export default function EditorPage({
   const rootRef = useRef(null);
   const stageRef = useRef(null);
   const canvasRef = useRef(null);
+  const skiaCanvasRef = useRef(null);
   const titleRef = useRef(null);
   const pageRingRef = useRef(null);
   const pageSizeRef = useRef(null);
@@ -364,14 +364,6 @@ export default function EditorPage({
     return unsubscribe;
   }, [free, nodeId]);
 
-  const source = useMemo(
-    () => buildEditorSource(nodeId, snapshot),
-    // Built once per activation; see buildEditorSource on why this must not
-    // track the images map.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [nodeId, active, mode],
-  );
-
   // Held in a ref so the dispose callback can read the latest readiness
   // without re-creating the engine every time it changes.
   const readyRef = useRef(false);
@@ -395,7 +387,9 @@ export default function EditorPage({
     registerCommands: !readOnly,
     canvasRef,
     stageRef,
-    source: source,
+    // The engine captures this factory only when activating/retrying a page;
+    // ordinary snapshot/image-cache changes must preserve its live document.
+    getSource: () => buildEditorSource(nodeId, snapshot),
     active,
     onChange,
     onBeforeDispose: beforeDispose,
@@ -583,7 +577,7 @@ export default function EditorPage({
     enabled: skiaEnabled && !free,
     engine,
     doc,
-    canvasRef,
+    canvasRef: skiaCanvasRef,
     stageRef,
     revision: revisionRef.current,
   });
@@ -1195,7 +1189,7 @@ export default function EditorPage({
           </>
         ) : null}
 
-        
+
         {overlays}
       </div>
     </section>

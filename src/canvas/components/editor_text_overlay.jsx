@@ -29,6 +29,8 @@ export default function EditorTextOverlay({
   /** The live value, so the blur handler cannot commit a stale one. */
   const valueRef = useRef(value);
   valueRef.current = value;
+  const commitRef = useRef(onCommit);
+  commitRef.current = onCommit;
 
   useLayoutEffect(() => {
     const element = ref.current;
@@ -45,10 +47,8 @@ export default function EditorTextOverlay({
   // it. Real "emptied and done" exits all pass through the blur commit.
   useEffect(
     () => () => {
-      if (valueRef.current !== "") onCommit(valueRef.current);
+      if (valueRef.current !== "") commitRef.current(valueRef.current);
     },
-    // Re-running this on a new `onCommit` identity would commit mid-edit.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
