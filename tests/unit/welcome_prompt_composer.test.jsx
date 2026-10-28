@@ -70,8 +70,7 @@ describe("welcome prompt composer", () => {
     expect(html).toContain("welcome.prompt.addAttachment");
     expect(html).toContain("welcome.prompt.generationTypeLabel");
     expect(html).toContain('data-advanced-open="false"');
-    expect(html).toContain("hidden");
-    expect(html).not.toContain('role="radiogroup"');
+    expect(html).toContain('role="radiogroup"');
   });
 
   it("exposes the variant count control", () => {

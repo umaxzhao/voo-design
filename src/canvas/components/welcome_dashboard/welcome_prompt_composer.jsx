@@ -1,9 +1,30 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Plus, SlidersHorizontal, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { AI_GEN_TYPES } from "./welcome_constants.js";
 import { DEFAULT_DESIGN_SYSTEM_ID, DEFAULT_STYLE_ID } from "./generation_intent.js";
 import FlatSelect from "../flat_select.jsx";
 import { ProviderLogo } from "../provider_icons.jsx";
+
+/** Filled two-slider icon used for the generation settings trigger. */
+function TuneIcon({ size = 14 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 40 40"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d="M17.625 9.99992H3.75C3.41848 9.99992 3.10054 9.86822 2.86612 9.6338C2.6317 9.39938 2.5 9.08144 2.5 8.74992C2.5 8.4184 2.6317 8.10046 2.86612 7.86603C3.10054 7.63161 3.41848 7.49992 3.75 7.49992H17.625C17.9119 6.08706 18.6784 4.81682 19.7947 3.90445C20.9109 2.99207 22.3083 2.49365 23.75 2.49365C25.1917 2.49365 26.5891 2.99207 27.7053 3.90445C28.8216 4.81682 29.5881 6.08706 29.875 7.49992H36.25C36.5815 7.49992 36.8995 7.63161 37.1339 7.86603C37.3683 8.10046 37.5 8.4184 37.5 8.74992C37.5 9.08144 37.3683 9.39938 37.1339 9.6338C36.8995 9.86822 36.5815 9.99992 36.25 9.99992H29.875C29.5881 11.4128 28.8216 12.683 27.7053 13.5954C26.5891 14.5078 25.1917 15.0062 23.75 15.0062C22.3083 15.0062 20.9109 14.5078 19.7947 13.5954C18.6784 12.683 17.9119 11.4128 17.625 9.99992ZM2.5 26.2499C2.5 25.9184 2.6317 25.6005 2.86612 25.366C3.10054 25.1316 3.41848 24.9999 3.75 24.9999H10.125C10.4119 23.5871 11.1784 22.3168 12.2947 21.4044C13.4109 20.4921 14.8083 19.9937 16.25 19.9937C17.6917 19.9937 19.0891 20.4921 20.2053 21.4044C21.3216 22.3168 22.0881 23.5871 22.375 24.9999H36.25C36.5815 24.9999 36.8995 25.1316 37.1339 25.366C37.3683 25.6005 37.5 25.9184 37.5 26.2499C37.5 26.5814 37.3683 26.8994 37.1339 27.1338C36.8995 27.3682 36.5815 27.4999 36.25 27.4999H22.375C22.0881 28.9128 21.3216 30.183 20.2053 31.0954C19.0891 32.0078 17.6917 32.5062 16.25 32.5062C14.8083 32.5062 13.4109 32.0078 12.2947 31.0954C11.1784 30.183 10.4119 28.9128 10.125 27.4999H3.75C3.41848 27.4999 3.10054 27.3682 2.86612 27.1338C2.6317 26.8994 2.5 26.5814 2.5 26.2499ZM27.5 8.74992C27.5 9.74448 27.1049 10.6983 26.4017 11.4016C25.6984 12.1048 24.7446 12.4999 23.75 12.4999C22.7554 12.4999 21.8016 12.1048 21.0983 11.4016C20.3951 10.6983 20 9.74448 20 8.74992C20 7.75536 20.3951 6.80153 21.0983 6.09827C21.8016 5.39501 22.7554 4.99992 23.75 4.99992C24.7446 4.99992 25.6984 5.39501 26.4017 6.09827C27.1049 6.80153 27.5 7.75536 27.5 8.74992ZM16.25 29.9999C17.2446 29.9999 18.1984 29.6048 18.9017 28.9016C19.6049 28.1983 20 27.2445 20 26.2499C20 25.2554 19.6049 24.3015 18.9017 23.5983C18.1984 22.895 17.2446 22.4999 16.25 22.4999C15.2554 22.4999 14.3016 22.895 13.5983 23.5983C12.8951 24.3015 12.5 25.2554 12.5 26.2499C12.5 27.2445 12.8951 28.1983 13.5983 28.9016C14.3016 29.6048 15.2554 29.9999 16.25 29.9999Z"
+        fill="currentColor"
+        fillRule="evenodd"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
 
 /**
  * Pen-style welcome composer: one quiet prompt surface, a model label, an
@@ -94,11 +115,41 @@ export function WelcomePromptComposer({
   }, [advancedOpen]);
 
   return (
-    <div ref={rootRef} data-advanced-open={advancedOpen ? "true" : "false"} className="welcome-prompt-root relative">
+    <div
+      ref={rootRef}
+      data-advanced-open={advancedOpen ? "true" : "false"}
+      data-mobile-options-open={advancedOpen ? "true" : "false"}
+      className="welcome-prompt-root relative"
+    >
+      <div className="welcome-prompt-type-options mb-2">
+        <div className="flex flex-wrap items-center justify-center gap-1" role="radiogroup" aria-label={t("welcome.prompt.generationTypeLabel")}>
+          {AI_GEN_TYPES.map((typeItem) => {
+            const Icon = typeItem.icon;
+            const selected = activePill === typeItem.id;
+            return (
+              <button
+                key={typeItem.id}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => onSelectPill?.(typeItem.id)}
+                className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] transition-colors ${
+                  selected
+                    ? "bg-white/[0.12] font-medium text-white"
+                    : "text-neutral-500 hover:bg-white/[0.05] hover:text-neutral-200"
+                }`}
+              >
+                {Icon ? <Icon size={11} aria-hidden="true" /> : null}
+                <span>{t(typeItem.label)}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <form
         ref={formRef}
         onSubmit={onSubmit}
-        className={`prompt-composer relative mt-3 min-w-0 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3 transition-colors focus-within:border-white/15 ${advancedOpen ? "z-[300]" : ""}`}
+        className={`prompt-composer relative mt-0 min-w-0 rounded-2xl border border-white/10 bg-[#141414] p-3 transition-colors focus-within:border-white/20 ${advancedOpen ? "z-[300]" : ""}`}
       >
         <textarea
           value={promptText}
@@ -145,7 +196,7 @@ export function WelcomePromptComposer({
           <button
             type="button"
             onClick={() => onAddAttachments?.()}
-            className="flex size-7 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-white/[0.06] hover:text-white"
+            className="flex size-7 items-center justify-center rounded-lg bg-white/[0.1] text-neutral-400 transition-colors hover:bg-white/[0.16] hover:text-white"
             title={t("welcome.prompt.addAttachment")}
             aria-label={t("welcome.prompt.addAttachment")}
           >
@@ -172,9 +223,9 @@ export function WelcomePromptComposer({
               aria-label={t("welcome.prompt.generationTypeLabel")}
               aria-haspopup="dialog"
               aria-expanded={advancedOpen}
-              className="flex size-7 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-white/[0.06] hover:text-neutral-200"
+              className="flex size-7 items-center justify-center rounded-lg bg-white/[0.07] text-neutral-400 transition-colors hover:bg-white/[0.12] hover:text-neutral-200"
             >
-              <SlidersHorizontal size={14} />
+              <TuneIcon size={14} />
             </button>
 
             <button
@@ -202,22 +253,6 @@ export function WelcomePromptComposer({
                 style={panelPos ?? { left: -9999, top: 0 }}
               >
           <div className="welcome-composer-settings-grid space-y-2">
-            <ComposerField label={t("welcome.prompt.generationTypeLabel")}>
-              <FlatSelect
-                value={activePill}
-                onChange={(value) => onSelectPill?.(value)}
-                label={t("welcome.prompt.generationTypeLabel")}
-                options={AI_GEN_TYPES.map((typeItem) => ({
-                  value: typeItem.id,
-                  label: t(typeItem.label),
-                }))}
-                className="welcome-composer-select w-full min-w-0"
-                triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs"
-                panelClassName="!z-[400]"
-                portal
-              />
-            </ComposerField>
-
             <ComposerField label={t("welcome.prompt.modelLabel")}>
               <FlatSelect
                 value={selectedModel ?? ""}
