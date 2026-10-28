@@ -25,8 +25,20 @@ vi.mock("../../src/canvas/use_i18n.js", () => ({
 
 import { EditorZoom } from "../../src/canvas/components/editor_zoom.jsx";
 import { EditorCanvasAids } from "../../src/canvas/components/editor_rulers.jsx";
+import { useEditorPaletteActions } from "../../src/canvas/components/editor_hooks/use_editor_palette_actions.js";
 
 const noop = () => {};
+
+function paletteActionsFor(overrides) {
+  let actions;
+  function CapturePalette() {
+    actions = useEditorPaletteActions({ engine: null, presentationHistory: {}, ...overrides }).paletteActions;
+    return null;
+  }
+  renderToStaticMarkup(<CapturePalette />);
+  return actions;
+}
+
 const RULER_TESTID = "editor-toggle-rulers";
 const CLEAR_TESTID = "editor-clear-guides";
 const TRASH_CLASS = /lucide-trash/;
@@ -109,11 +121,11 @@ describe("bottom bar: clear-guides lives in the More menu", () => {
   });
 
   it("keeps the clear-guides command wired for the command palette", () => {
-    const src = fs.readFileSync(
-      path.resolve(__dirname, "../../src/canvas/components/image_editor.jsx"), "utf8",
-    );
-    expect(src).toContain('id: "clear-guides"');
-    expect(src).toContain("run: handleClearGuides");
+    const clear = vi.fn();
+    const action = paletteActionsFor({ handleClearGuides: clear }).find(item => item.id === "clear-guides");
+    expect(action.labelKey).toBe("editor.guides.clearAll");
+    action.run();
+    expect(clear).toHaveBeenCalledOnce();
   });
 });
 
@@ -168,12 +180,12 @@ describe("bottom bar: selecting the ruler item toggles rulers", () => {
   });
 
   it("keeps the Shift+R command wired to the same toggle", () => {
-    const src = fs.readFileSync(
-      path.resolve(__dirname, "../../src/canvas/components/image_editor.jsx"), "utf8",
-    );
-    expect(src).toContain('id: "toggle-rulers"');
-    expect(src).toContain('labelKey: "editor.rulers.toggle"');
-    expect(src).toContain("run: toggleRulers");
+    const toggle = vi.fn();
+    const action = paletteActionsFor({ toggleRulers: toggle }).find(item => item.id === "toggle-rulers");
+    expect(action.labelKey).toBe("editor.rulers.toggle");
+    expect(action.catalogKey).toBe("editor.rulers.toggle");
+    action.run();
+    expect(toggle).toHaveBeenCalledOnce();
   });
 
   it("image_editor wires the More-menu ruler and clear-guides items, not the bar aids", () => {
