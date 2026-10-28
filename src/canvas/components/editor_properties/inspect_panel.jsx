@@ -14,7 +14,7 @@ import {
   inspectNumber,
   inspectTailwind,
 } from "../../editor/inspect_code.js";
-import { Swatch } from "./colour_swatch.jsx";
+import { HEX_COLOUR, NONE_PATTERN } from "./colour_swatch.jsx";
 
 function Row({ label, value, mono = true }) {
   return (
@@ -148,7 +148,17 @@ export default function InspectPanel({
             {t("editor.props.fill")}
           </span>
           <span className="flex min-w-0 items-center gap-1.5">
-            <Swatch value={typeof fill === "string" ? fill : null} ariaLabel={t("editor.props.fill")} />
+            <span
+              role="img"
+              aria-label={t("editor.props.fill")}
+              className="block h-5 w-5 shrink-0 overflow-hidden rounded-md border border-white/10"
+              style={{
+                background: typeof fill === "string" &&
+                  (HEX_COLOUR.test(fill) || fill.includes("-gradient"))
+                  ? fill
+                  : NONE_PATTERN,
+              }}
+            />
             <span className="truncate text-[11px] font-mono uppercase text-neutral-100">
               {typeof fill === "string" && fill !== "transparent" ? fill.toUpperCase() : "—"}
             </span>

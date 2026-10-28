@@ -52,6 +52,19 @@ real pointer pan/drag/cancellation, zoom, history and welcome round trips.
 Other oversized editor modules still need behavior-preserving maintenance.
 The following batch removes the remaining explicit Hook dependency suppressions.
 
+The next structural extraction reduces `image_editor.jsx` from 4,343 to 3,967
+lines by moving mobile panels, media import, feedback and image actions into
+focused Hooks. These remain static imports; the extraction is a maintenance
+improvement, not evidence of a smaller editor download. `editor-refactor` mounts
+the real Hooks in React with recorded engine interfaces to check focus targeting,
+touch events, independent feedback timers and unmount cleanup. The full editor
+release suites separately cover actual engine and document behavior.
+
+PropTypes diagnostics now fail unit tests and browser release checks. Sparse
+multi-selection transform defaults and real inspector edit/undo are covered;
+`hook-lifecycle` also exercises full-page callback routing and read-only Inspect
+colour previews. SSR-only markup tests do not establish lifecycle behavior.
+
 The next maintenance batch separates optional raster action implementations
 from the always-mounted Hook. Matting, selection repair, repaint, outpaint and
 image processing load at the action boundary; the Hook itself stays synchronous.

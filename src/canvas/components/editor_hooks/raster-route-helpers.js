@@ -4,6 +4,7 @@ import { LOCAL_ENGINE_DEFAULT_MODEL_ID, PROVIDER_ID } from "../../../shared/prov
 import { PLATFORM_TARGET } from "../../generation_routes.js";
 import { resolveRepaintRoute } from "../../editor/repaint_route.js";
 import { MODEL_ROUTE_ID } from "../../../shared/model-routes.js";
+import { reportRasterFallback } from "./raster-fallback-diagnostics.js";
 
 /** Route helpers keep their public synchronous factories; provider reads load on use. */
 export function resolveSelectionRepaintRoute({
@@ -59,9 +60,10 @@ export async function editorRouteChain(routeId, providerId) {
     return await resolveCanvasModelRouteFallbackChain(routeId, {
       lockedProviderId: providerId,
     });
-  } catch {
+  } catch (error) {
     // A resolver that cannot read storage is an empty chain, not a crash: the
     // action then reports the same actionable "no route" state as an empty one.
+    reportRasterFallback("model-route-unavailable", error);
     return [];
   }
 }
@@ -72,7 +74,8 @@ async function providerIsConfigured(providerId) {
     const { getProviderConfig } = await import("../../provider_client.js");
     const config = await getProviderConfig({ providerId });
     return Boolean(config?.configured);
-  } catch {
+  } catch (error) {
+    reportRasterFallback("provider-config-unavailable", error);
     return false;
   }
 }

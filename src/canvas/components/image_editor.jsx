@@ -43,15 +43,10 @@ import LoadingModal from "./loading_modal.jsx";
 import EditorProperties from "./deferred_editor_properties.jsx";
 import { usePresentationHistory } from "./presentation/use_presentation_history.js";
 import { usePresentationEditor } from "./presentation/use_presentation_editor.js";
-import { useMobileCanvasGestures } from "./use_mobile_canvas_gestures.js";
 import PresentationPageMenu from "./presentation/presentation_page_menu.jsx";
 const PresentationViewer = lazy(() => import("./presentation/presentation_viewer.jsx"));
 const PresentationExportDialog = lazy(() => import("./presentation/presentation_export_dialog.jsx"));
 import PresentationSlide from "./presentation/presentation_slide.jsx";
-import {
-  editorMediaFileKind,
-  importEditorMediaFile,
-} from "./editor_media_import.js";
 import EditorToolbar, { EditorZoom } from "./editor_toolbar.jsx";
 import EditorRulers, { EditorCanvasAids } from "./editor_rulers.jsx";
 import EditorComments from "./editor_comments.jsx";
@@ -76,7 +71,7 @@ import { marqueeItemForMode } from "../editor/tool_families.js";
 import { executeEditorCommand } from "../editor/command_table.js";
 import { PendingCanvasSelectionManager } from "./editor_pending_canvas_selection.js";
 import { useEditorShortcuts } from "../use_editor_shortcuts.js";
-import { EDITOR_MEDIA_ACCEPT, importPickedEditorFile } from "./editor_import_files.js";
+import { EDITOR_MEDIA_ACCEPT } from "./editor_import_files.js";
 import { useEditorDnd } from "./use_editor_dnd.js";
 import { useI18n } from "../use_i18n.js";
 import { useDesignStore } from "../../store/design_store.js";
@@ -106,6 +101,10 @@ import {
 } from "../editor/scene_color_variables.js";
 import { createVariablesPanelActions } from "../editor/scene_variables.js";
 import { createStylePanelActions } from "../editor/scene_styles.js";
+import { useEditorMobilePanels } from "./editor_hooks/use_editor_mobile_panels.js";
+import { useEditorMediaImport } from "./editor_hooks/use_editor_media_import.js";
+import { useEditorFeedback } from "./editor_hooks/use_editor_feedback.js";
+import { useEditorImageActions } from "./editor_hooks/use_editor_image_actions.js";
 import { useEditorApply } from "./editor_hooks/use_editor_apply.js";
 import { useEditorDocumentAids } from "./editor_hooks/use_editor_document_aids.js";
 import { useEditorPaletteActions } from "./editor_hooks/use_editor_palette_actions.js";
@@ -114,12 +113,6 @@ import { useEditorSharedCamera } from "./editor_hooks/use_editor_shared_camera.j
 import { useEditorArtboardLayouts } from "./editor_hooks/use_editor_artboard_layouts.js";
 import { useDraftAutosave } from "./editor_hooks/use_draft_autosave.js";
 import { readImageRgba } from "./bitmap_pixels.js";
-import {
-  ENHANCE_SAMPLE_EDGE,
-  mergeEnhanceAdjustments,
-  planOneTapEnhance,
-} from "../editor/auto_enhance_apply.js";
-import { RETOUCH_TOO_LARGE } from "../editor/portrait_retouch_plan.js";
 import { useEditorRaster } from "./editor_hooks/use_editor_raster.js";
 import { useEditorLayerSplit } from "./editor_hooks/use_editor_layer_split.js";
 import {
@@ -129,11 +122,8 @@ import {
 } from "../editor/adjustment_catalog.js";
 import { layoutCanvasSize } from "../layout_geometry.js";
 import { isLocalMattingSupported } from "../editor/ai_capabilities.js";
-import { maskErrorCopy } from "../error_text.js";
-import { subscribePersistenceAlert } from "../editor/editor_persist_events.js";
 import {
   FREE_PADDING,
-  zoomCameraAt,
   workspaceRenderDocument,
 } from "./image_editor_helpers.js";
 
@@ -281,14 +271,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const panGestureRef = useRef(null);
   const spaceRef = useRef(false);
   const [busy, setBusy] = useState(false);
-  /** A save/export failed; the editor stays open so the work survives. */
-  const [applyError, setApplyError] = useState(false);
-  /** Why the region tool drew nothing (an i18n key), or null. */
-  const [regionHint, setRegionHint] = useState(null);
-  const [regionHintFading, setRegionHintFading] = useState(false);
-  /** Background mask/paint persist hit the storage quota; the warning stays
-   * until dismissed — pixels are at risk until the user frees space. */
-  const [persistQuota, setPersistQuota] = useState(null);
   /** Whether this browser can run the matting model in-page. */
   const [localMattingSupported] = useState(() => isLocalMattingSupported());
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -301,9 +283,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const [navigationError, setNavigationError] = useState(false);
   const returnCanvasStackRef = useRef([]);
   const pendingNavigationRef = useRef(null);
-  const [mediaImportBusy, setMediaImportBusy] = useState(false);
-  const [mediaImportError, setMediaImportError] = useState(null);
-  const mediaInputRef = useRef(null);
   const [swapPanels, setSwapPanels] = useState(
     () => loadEditorPanelLayout().swapped,
   );
@@ -331,18 +310,12 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     editorRootObserverRef.current = observer;
   }, []);
   const [exitPrompt, setExitPrompt] = useState(false);
-  /** Set on a successful apply; a timer clears it (see the effect below). */
-  const [savedNotice, setSavedNotice] = useState(false);
   /** Right-click menu position, or null when closed. */
   const [contextMenu, setContextMenu] = useState(null);
   /** Press-and-hold "compare with original" preview state. */
   const [comparing, setComparing] = useState(false);
-  /** Copy key for a failed one-click image action, shown as a toast. */
-  const [imageActionError, setImageActionError] = useState(null);
-  const [aiErrorText, setAiErrorText] = useState(null);
   /** Export popover state: open flag, chosen format and quality. */
   const [exportOpen, setExportOpen] = useState(false);
-  const [exportNotice, setExportNotice] = useState(false);
   const renderInstanceAbortRef = useRef(null);
   const [exportFormat, setExportFormat] = useState("png");
   const [exportQuality, setExportQuality] = useState(0.92);
@@ -693,111 +666,16 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     nodeIds,
   );
   const { canUndo, canRedo } = presentationHistory;
-  const [mobilePanelsExpanded, setMobilePanelsExpanded] = useState(false);
-  const mobileLayersExpanded = mobilePanelsExpanded;
-  const mobilePropertiesExpanded = mobilePanelsExpanded;
-  const setMobileLayersExpanded = setMobilePanelsExpanded;
-  const setMobilePropertiesExpanded = setMobilePanelsExpanded;
-  const applyMobilePinch = useCallback(
-    ({ isStart, factor, centerX, centerY, deltaX, deltaY }) => {
-      if (isStart) {
-        panGestureRef.current = null;
-        if (freeStageRef.current) {
-          freeStageRef.current.style.cursor = spaceRef.current ? "grab" : "default";
-        }
-        return;
-      }
-      const stage =
-        freeStageRef.current ??
-        editorRootRef.current?.querySelector('[data-testid="editor-pages"]');
-      if (!stage) return;
-      const bounds = stage.getBoundingClientRect();
-      const point = { x: centerX - bounds.left, y: centerY - bounds.top };
-      if (multi) {
-        setEditorCamera((previous) => {
-          const zoomed = zoomCameraAt(previous, factor, point);
-          return {
-            ...zoomed,
-            panX: zoomed.panX + deltaX,
-            panY: zoomed.panY + deltaY,
-          };
-        });
-        return;
-      }
-      engine?.zoomAt?.(factor, point);
-      engine?.panBy?.(deltaX, deltaY);
-    },
-    [engine, multi, setEditorCamera],
-  );
-  const mobileCanvasGestures = useMobileCanvasGestures(
-    presentationHistory.undo,
-    applyMobilePinch,
-    presentationHistory.redo,
-  );
-  const mobilePanelDragRef = useRef(null);
-  const suppressPanelClickRef = useRef(false);
-  const onMobilePanelPointerDownCapture = useCallback(
-    (event) => {
-      if (!isNarrow || event.pointerType !== "touch") return;
-      const panel = event.target.closest?.(
-        '[data-testid="editor-layers-panel"], [data-testid="editor-properties-panel"]',
-      );
-      if (!panel) return;
-      const panelId = panel.getAttribute("data-testid");
-      const isExpanded =
-        panelId === "editor-layers-panel"
-          ? mobileLayersExpanded
-          : mobilePropertiesExpanded;
-      if (!isExpanded) return;
-      const bounds = panel.getBoundingClientRect();
-      if (event.clientY > bounds.top + 56) return;
-      mobilePanelDragRef.current = {
-        pointerId: event.pointerId,
-        startY: event.clientY,
-        panelId,
-        dragged: false,
-      };
-    },
-    [isNarrow, mobileLayersExpanded, mobilePropertiesExpanded],
-  );
-  const onMobilePanelPointerMoveCapture = useCallback(
-    (event) => {
-      const drag = mobilePanelDragRef.current;
-      if (!drag || drag.pointerId !== event.pointerId) return;
-      const deltaY = event.clientY - drag.startY;
-      if (deltaY < -10) {
-        mobilePanelDragRef.current = null;
-        return;
-      }
-      if (deltaY < 10) return;
-      event.preventDefault();
-      event.stopPropagation();
-      drag.dragged = true;
-      if (deltaY < 28) return;
-      if (drag.panelId === "editor-layers-panel") {
-        setMobileLayersExpanded(false);
-      } else {
-        setMobilePropertiesExpanded(false);
-      }
-    },
-    [],
-  );
-  const onMobilePanelPointerUpCapture = useCallback((event) => {
-    const drag = mobilePanelDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    suppressPanelClickRef.current = drag.dragged;
-    mobilePanelDragRef.current = null;
-  }, []);
-  const onMobilePanelPointerCancelCapture = useCallback(() => {
-    mobilePanelDragRef.current = null;
-    suppressPanelClickRef.current = false;
-  }, []);
-  const onMobilePanelClickCapture = useCallback((event) => {
-    if (!suppressPanelClickRef.current) return;
-    suppressPanelClickRef.current = false;
-    event.preventDefault();
-    event.stopPropagation();
-  }, []);
+  const {
+    mobileLayersExpanded, mobilePropertiesExpanded, setMobileLayersExpanded,
+    setMobilePropertiesExpanded, mobileCanvasGestures,
+    onMobilePanelPointerDownCapture, onMobilePanelPointerMoveCapture,
+    onMobilePanelPointerUpCapture, onMobilePanelPointerCancelCapture,
+    onMobilePanelClickCapture,
+  } = useEditorMobilePanels({
+    isNarrow, engine, multi, setEditorCamera, freeStageRef, editorRootRef,
+    panGestureRef, spaceRef, undo: presentationHistory.undo, redo: presentationHistory.redo,
+  });
   /** The selected (blue) Puppet Warp pin, read straight from the engine. */
   const puppetPinId = engine?.getSelectedPuppetPin?.() ?? null;
   const puppetRotation = puppetPinId
@@ -1589,48 +1467,14 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     selected,
   });
 
-  // Split Layers failures must be visible, not console-only: the alert toast
-  // surfaces the reason for six seconds, the same pattern applyError uses.
-  useEffect(() => {
-    if (!splitLayersError) return undefined;
-    const timer = setTimeout(() => clearSplitLayersError(), 6000);
-    return () => clearTimeout(timer);
-  }, [splitLayersError, clearSplitLayersError]);
-
-  // The one-click image actions (auto enhance, portrait retouch) fail loudly
-  // for the same reason Split Layers does: a button that appears to do nothing
-  // reads as broken, and the retouch engine knows why it refused.
-  useEffect(() => {
-    if (!imageActionError) return undefined;
-    const timer = setTimeout(() => setImageActionError(null), 6000);
-    return () => clearTimeout(timer);
-  }, [imageActionError]);
-
-  // Repaint, expand, upscale and cutout report through maskError, which the
-  // Properties panel shows only while its mask section is open. Echo each new
-  // failure as a toast so a model run never ends in silence.
-  useEffect(() => {
-    if (!maskError) return undefined;
-    setAiErrorText(
-      maskError === true ? t("editor.ai.failed") : maskErrorCopy(maskError),
-    );
-    const timer = setTimeout(() => setAiErrorText(null), 8000);
-    return () => clearTimeout(timer);
-  }, [maskError, t]);
-
-  useEffect(() => {
-    if (!retouchError) return undefined;
-    setImageActionError(
-      retouchError === RETOUCH_TOO_LARGE
-        ? "editor.retouch.tooLarge"
-        : retouchError === "noImage"
-          ? "editor.imageAction.noImage"
-          : "editor.retouch.failed",
-    );
-    return undefined;
-    // retouchErrorSeq is the failure's identity: the same code failing twice is
-    // two events, and the second must toast as well.
-  }, [retouchError, retouchErrorSeq]);
+  const {
+    applyError, setApplyError, regionHint, regionHintFading, regionHintTone,
+    persistQuota, setPersistQuota, savedNotice, setSavedNotice,
+    imageActionError, setImageActionError, aiErrorText, setAiErrorText,
+    exportNotice, setExportNotice,
+  } = useEditorFeedback({
+    engine, t, splitLayersError, clearSplitLayersError, maskError, retouchError, retouchErrorSeq,
+  });
 
   // Save/export/exit actions (apply, .voo save, export, close) live in their
   // own hook (plan-design-editor-fixes A5); dirtyIds is shared with the exit
@@ -1859,90 +1703,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     [engine, resolveCanvas, t],
   );
 
-  const importMediaFiles = useCallback(
-    (files, { point = null, targetEngine = null } = {}) => {
-      const activeEngine = targetEngine || engine;
-      if (!files?.length || !activeEngine || mediaImportBusy) return;
-      setMediaImportBusy(true);
-      setMediaImportError(null);
-      void (async () => {
-        for (const file of files) {
-          await importPickedEditorFile(activeEngine, file, {
-            point,
-            openDocument: openVooDocument,
-            importMedia: (file) => importEditorMediaFile(
-              activeEngine, file, useDesignStore.getState(), { point },
-            ),
-          });
-        }
-      })()
-        .then(() => {
-          activeEngine.setTool(TOOL.SELECT);
-          // Sound has no box on the stage, so the timeline is the only place
-        })
-        .catch((error) => {
-          console.error("[Design Editor] Media import failed", error);
-          setMediaImportError(t("editor.media.importFailed"));
-        })
-        .finally(() => setMediaImportBusy(false));
-    },
-    [engine, mediaImportBusy, t, openVooDocument],
-  );
-
-  const openMediaPicker = useCallback(() => {
-    const input = mediaInputRef.current;
-    if (!input) return;
-    if (typeof input.showPicker === "function") {
-      try {
-        input.showPicker();
-        return;
-      } catch {
-        // Older mobile browsers may expose showPicker but reject hidden inputs.
-      }
-    }
-    input.click();
-  }, []);
-
-  const handleMediaDrop = useCallback(
-    (event) => {
-      const files = Array.from(event.dataTransfer?.files ?? []).filter(
-        editorMediaFileKind,
-      );
-      if (!files.length) return;
-      event.preventDefault();
-
-      const pageElement =
-        event.target?.closest?.('[data-testid="editor-page"]') ||
-        (typeof document !== "undefined" && document.elementsFromPoint
-          ? document
-              .elementsFromPoint(event.clientX, event.clientY)
-              .map((el) => el.closest?.('[data-testid="editor-page"]'))
-              .find(Boolean)
-          : null) ||
-        (typeof document !== "undefined" && document.elementFromPoint
-          ? document
-              .elementFromPoint(event.clientX, event.clientY)
-              ?.closest?.('[data-testid="editor-page"]')
-          : null);
-      const targetNodeId = pageElement?.getAttribute("data-node-id");
-      const targetEntry = targetNodeId
-        ? enginesRef.current.get(targetNodeId)
-        : null;
-      const targetEngine = targetEntry?.engine || engine;
-      const targetId = targetEntry ? targetNodeId : focusedId;
-      if (targetId && targetId !== focusedId) {
-        focusEditorPage(targetId);
-      }
-
-      const point =
-        targetEntry && targetEngine?.toDocPoint
-          ? targetEngine.toDocPoint(event.clientX, event.clientY)
-          : null;
-
-      importMediaFiles(files, { point, targetEngine });
-    },
-    [engine, focusedId, focusEditorPage, importMediaFiles],
-  );
+  const { mediaImportBusy, mediaImportError, mediaInputRef, importMediaFiles, openMediaPicker, handleMediaDrop } = useEditorMediaImport({
+    engine, enginesRef, focusedId, focusEditorPage, openVooDocument, t,
+  });
 
   const handleCanvasTypeChanged = useCallback(
     (_id, type) => {
@@ -1992,77 +1755,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     handleClearGuides, toggleSnapToGrid, toggleCommentsPanel, toggleCommentMode,
     openFindReplace, setExportOpen, setShortcutsOpen,
   });
-
-  // The saved notice hides itself. Owning the timer in an effect means closing
-  // the editor inside those seconds cancels it, instead of leaving a
-  // callback that sets state on a component that is gone. The notice also
-  // carries the "Tab returns to the canvas" hint, so it stays up long enough
-  // to be read, not just noticed.
-  useEffect(() => {
-    if (!savedNotice) return undefined;
-    const timer = setTimeout(() => setSavedNotice(false), 3200);
-    return () => clearTimeout(timer);
-  }, [savedNotice]);
-
-  useEffect(() => {
-    if (!exportNotice) return undefined;
-    const timer = setTimeout(() => setExportNotice(false), 8000);
-    return () => clearTimeout(timer);
-  }, [exportNotice]);
-
-  // The save-failed banner clears itself too; it must never pin the editor
-  // into a state that looks broken after the user has moved on.
-  useEffect(() => {
-    if (!applyError) return undefined;
-    const timer = setTimeout(() => setApplyError(false), 6000);
-    return () => clearTimeout(timer);
-  }, [applyError]);
-
-  // A region gesture that drew nothing (the pointer was not over a picture)
-  // surfaces here as a toast, and clears itself — the engine keeps the reason
-  // so the panel does not need its own copy. Error-toned hints are failures
-  // (a model run that produced nothing, a stroke that failed): they render as
-  // an alert pill and dwell six seconds instead of vanishing in a breath.
-  const regionHintFromEngine = engine?.getRegionHint() ?? null;
-  const regionHintTone = engine?.getRegionHintTone?.() ?? null;
-  useEffect(() => {
-    if (!regionHintFromEngine) {
-      setRegionHint(null);
-      setRegionHintFading(false);
-      return undefined;
-    }
-    setRegionHint(regionHintFromEngine);
-    setRegionHintFading(false);
-    const isError = regionHintTone === "error";
-    const fadeTimer = setTimeout(
-      () => setRegionHintFading(true),
-      isError ? 5600 : 1200,
-    );
-    const clearTimer = setTimeout(
-      () => {
-        engine?.setRegionHint(null);
-        setRegionHint(null);
-        setRegionHintFading(false);
-      },
-      isError ? 6000 : 1600,
-    );
-    return () => {
-      clearTimeout(fadeTimer);
-      clearTimeout(clearTimer);
-    };
-  }, [engine, regionHintFromEngine, regionHintTone]);
-
-  // Background persist failures reach us through the engine persistence alert
-  // bus: quota exhaustion must become a standing, dismissible warning — a
-  // silently-swallowed error loses the user's pixel work on the next reload.
-  useEffect(() => {
-    const unsubscribe = subscribePersistenceAlert((alert) => {
-      if (alert?.type === "persist-quota") {
-        setPersistQuota({ source: alert.source ?? "unknown" });
-      }
-    });
-    return unsubscribe;
-  }, []);
 
   const { onFreePointerDown, onFreePointerMove, onFreePointerUp,
     onTitlePointerDown, onTitlePointerMove, onTitlePointerUp, onArtboardBodyPointerDown,
@@ -2142,77 +1834,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     onClosePieMenu: () => setPieMenu(null),
   });
 
-  /**
-   * The page's own engine and the image a taskbar action should act on — the
-   * same resolution the adjustment and preset handlers use, so a click on a
-   * background page is not routed to the focused one.
-   */
-  const imageTargetFor = useCallback(
-    (nodeId) => {
-      const pageEngine = enginesRef.current.get(nodeId)?.engine || engine;
-      const pageDoc =
-        pageEngine?.getDocument?.() || snapshotsRef.current.get(nodeId)?.doc;
-      return {
-        pageEngine,
-        target:
-          pageEngine?.getSelected?.() ||
-          pageDoc?.nodes?.find((n) => n.kind === "image") ||
-          null,
-      };
-    },
-    [engine],
-  );
-
-  /**
-   * One-tap auto enhance: measure the layer's own pixels, plan the correction,
-   * and write the plan into the node's adjustments as one undoable edit.
-   *
-   * The measurement comes from a downscaled copy — statistics do not need
-   * resolution, and a click must not walk a full-size layer — while the edit
-   * itself stays in adjustment rows, so the picture is never re-encoded.
-   */
-  const runAutoEnhance = useCallback(
-    (nodeId) => {
-      const { pageEngine, target } = imageTargetFor(nodeId);
-      if (!pageEngine) return;
-      if (!target || target.kind !== "image") {
-        setImageActionError("editor.imageAction.noImage");
-        return;
-      }
-      try {
-        const bitmap = pageEngine.getNodeBitmap?.(target) ?? null;
-        if (!bitmap) throw new Error("bitmapMissing");
-        const { rgba } = readImageRgba(bitmap, {
-          maxEdge: ENHANCE_SAMPLE_EDGE,
-        });
-        const plan = planOneTapEnhance(rgba);
-        // updateNode commits: it goes through commitOrPreviewEditorDocument, so
-        // this single call is the whole history entry (there is no separate
-        // engine commit step to call).
-        pageEngine.updateNode(target.id, {
-          adjustments: mergeEnhanceAdjustments(target.adjustments, plan),
-        });
-      } catch (error) {
-        console.error("auto enhance failed", error);
-        setImageActionError("editor.enhance.failed");
-      }
-    },
-    [imageTargetFor],
-  );
-
-  /**
-   * Portrait retouch of the selected layer. The runner owns the focused page's
-   * engine, so a background page is refused here rather than retouched through
-   * the wrong one — the same limit the upscale button already has.
-   */
-  const runPortraitRetouch = useCallback(
-    (nodeId, strengths) => {
-      const { pageEngine } = imageTargetFor(nodeId);
-      if (!pageEngine || pageEngine !== engine) return;
-      void retouchImage(strengths);
-    },
-    [engine, imageTargetFor, retouchImage],
-  );
+  const { runAutoEnhance, runPortraitRetouch } = useEditorImageActions({
+    engine, enginesRef, snapshotsRef, retouchImage, setImageActionError,
+  });
 
   if (nodeIds.length === 0) return null;
   const exportDocument = exportOpen ? engine?.getDocument?.() : null;

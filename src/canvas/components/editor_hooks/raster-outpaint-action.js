@@ -14,6 +14,7 @@ import { resolveRepaintRoute } from "../../editor/repaint_route.js";
 import { createOutpaintScenePatch, EDITOR_GENERATED_OPERATION } from "../../editor/editor_generated_output.js";
 import { editorRouteChain } from "./raster-route-helpers.js";
 import { repaintFailureCode } from "./raster-action-helpers.js";
+import { reportRasterFallback } from "./raster-fallback-diagnostics.js";
 
 const OUTPAINT_INSTRUCTION =
   "Outpaint this image: the attached canvas has the original picture surrounded " +
@@ -39,7 +40,8 @@ function readBitmapSaliency(bitmap) {
       maxEdge: SALIENCY_ANALYSIS_MAX_EDGE,
     });
     return computeSaliencyMap({ rgba, width, height });
-  } catch {
+  } catch (error) {
+    reportRasterFallback("outpaint-saliency-unavailable", error);
     return null;
   }
 }

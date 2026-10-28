@@ -75,15 +75,25 @@ describe("inspect panel", () => {
   };
 
   it("renders geometry, spacing, code and copy actions", () => {
-    const html = renderToStaticMarkup(
-      <InspectPanel object={rect} parentNode={{ x: 0, y: 0, width: 400, height: 300 }} engine={engine} />,
-    );
+    const errorSpy = vi.spyOn(console, "error");
+    let html;
+    try {
+      html = renderToStaticMarkup(
+        <InspectPanel object={rect} parentNode={{ x: 0, y: 0, width: 400, height: 300 }} engine={engine} />,
+      );
+      expect(errorSpy).not.toHaveBeenCalled();
+    } finally {
+      errorSpy.mockRestore();
+    }
     expect(html).toContain("editor.inspect.geometry");
     expect(html).toContain("editor.inspect.spacing");
     expect(html).toContain("editor.inspect.code");
     expect(html).toContain("editor.inspect.copyCss");
     expect(html).toContain("editor.inspect.copyTailwind");
     expect(html).toContain("left: 40px;");
+    expect(html).toContain('role="img" aria-label="editor.props.fill"');
+    expect(html).toContain("background:#d4d4d4");
+    expect(html).not.toMatch(/<button[^>]*aria-label="editor.props.fill"/);
   });
 
   it("shows typography for text and token names when bound", () => {

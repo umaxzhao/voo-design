@@ -36,6 +36,7 @@ const renderSections = (object, extra = {}) =>
       selectedNodes={[object]}
       edit={noop}
       editAndCommit={noop}
+      commitNow={vi.fn()}
       t={(key) => key}
       {...extra}
     />,

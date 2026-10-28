@@ -81,7 +81,6 @@ await withEditorBrowser(async ({ page }) => {
   await settings.getByRole("button", { name: useLabel, exact: true }).waitFor();
   assert.equal(await settings.getByRole("button", { name: useLabel, exact: true }).isDisabled(), true);
   await page.evaluate(async () => {
-    const { useDesignStore } = await import("/src/store/design_store.js");
     const { EDITOR_ENGINE_CHANGE_EVENT, setEditorEngineReady } = await import("/src/canvas/editor-engine-events.js");
     setEditorEngineReady(window.__hookMainEngine, true);
     window.dispatchEvent(new CustomEvent(EDITOR_ENGINE_CHANGE_EVENT, { detail: { nodeId: window.__hookSettingsPage } }));
@@ -121,6 +120,49 @@ await withEditorBrowser(async ({ page }) => {
   await page.waitForFunction(() => window.__hookPage.entry?.ready);
   assert.equal(await page.evaluate(() => window.__hookPage.entry.engine.sampleColorAt({ x: 4, y: 4 })), "#22cc55");
   checks.push("a page carrying its own image ID resolves the live image map and paints the decoded bitmap");
+  await page.waitForFunction(() => window.__hookPage.visibility.some(entry => entry.visible));
+  await page.locator('#hook-page-audit [data-testid="editor-2d-canvas"]').click({ position: { x: 4, y: 4 }, force: true });
+  const callbacks = await page.evaluate(async () => {
+    const api = window.__hookPage;
+    const engine = api.entry.engine;
+    const changesBefore = api.changes;
+    engine.setColor("#ff0000");
+    const { createEditorGeneratedOutput } = await import("/src/canvas/editor/editor_generated_output.js");
+    const result = createEditorGeneratedOutput({
+      dataUrl: engine.exportPngCanvas().toDataURL(), operation: "aiRepair", sourceWorkflowNodeId: api.nodeId,
+      sourceSceneNodeId: engine.getDocument().nodes[0].id, sourceSnapshot: engine.serialise(),
+    });
+    // Exercise the real page -> hook -> host boundary, independently of model inference.
+    const returned = await engine.getHost().onGeneratedOutput(result);
+    return { engineNodeId: api.engines.at(-1).id, ready: api.engines.at(-1).ready,
+      focus: api.focus.at(-1), visibleNodeId: api.visibility.find(entry => entry.visible).id,
+      changed: api.changes > changesBefore, forwarded: api.generated.at(-1) === result,
+      sourceId: api.generated.at(-1).sourceWorkflowNodeId, returned, nodeId: api.nodeId };
+  });
+  assert.deepEqual(callbacks, { engineNodeId: callbacks.nodeId, ready: true, focus: callbacks.nodeId,
+    visibleNodeId: callbacks.nodeId, changed: true, forwarded: true, sourceId: callbacks.nodeId,
+    returned: "hook-page-candidate", nodeId: callbacks.nodeId });
+  checks.push("a mounted page routes readiness, focus, visibility, document changes and generated host output through its required callbacks");
+
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.evaluate(() => {
+    window.__hookInspectBefore = window.__hookPage.entry.engine.serialise();
+    window.__hookInspect = window.__hookHarness.mountInspectAudit(window.__hookPage.entry.engine);
+  });
+  const inspect = page.locator("#hook-inspect-audit");
+  const fillLabel = await page.evaluate(async () => (await import("/src/shared/i18n.js")).t("editor.props.fill"));
+  const preview = inspect.getByRole("img", { name: fillLabel, exact: true });
+  await preview.waitFor();
+  assert.equal(await inspect.getByRole("button", { name: fillLabel, exact: true }).count(), 0);
+  await preview.click();
+  const copyLabel = await page.evaluate(async () => (await import("/src/shared/i18n.js")).t("editor.inspect.copyCss"));
+  await inspect.getByRole("button", { name: copyLabel, exact: true }).click();
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  assert.match(copied, /width: 8px;/);
+  assert.deepEqual(await page.evaluate(() => window.__hookPage.entry.engine.serialise()),
+    await page.evaluate(() => window.__hookInspectBefore));
+  await page.evaluate(() => window.__hookInspect.close());
+  checks.push("Inspect exposes a non-editable fill preview and copies actual CSS without changing the document");
   await page.evaluate(() => { localStorage.setItem("voo.renderer", "skia"); window.__hookPage.render(); });
   await page.locator('#hook-page-audit [data-testid="skia-canvas"][data-status="ready"]').waitFor({ timeout: 30000 });
   assert.deepEqual(await page.evaluate(() => {
@@ -131,6 +173,11 @@ await withEditorBrowser(async ({ page }) => {
       active: skia.dataset.rendererActive };
   }), { separate: true, twoDContext: true, skiaContext: true, active: "true" });
   await page.evaluate(() => window.__hookPage.close());
+  assert.deepEqual(await page.evaluate(() => {
+    const api = window.__hookPage;
+    const last = api.disposals.at(-1);
+    return { nodeId: last.id, ready: last.ready, sameEngine: last.engine === api.engines.find(entry => entry.ready)?.engine };
+  }), { nodeId: callbacks.nodeId, ready: true, sameEngine: true });
   checks.push("full-mode Skia initializes on a separate live WebGL canvas while preserving the engine's 2D measurement canvas");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });

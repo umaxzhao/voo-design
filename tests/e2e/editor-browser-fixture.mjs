@@ -58,6 +58,13 @@ export async function withEditorBrowser(run, pageOptions = {}) {
     if (mcpLink) await page.addInitScript(() => localStorage.setItem("voo.mcpLink", "on"));
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
+    page.on("console", (message) => {
+      // Development React reports contract violations through console.error,
+      // so pageerror alone would let broken panel props pass release checks.
+      if (message.type() === "error" && /Warning: Failed (?:prop|%s) type:/.test(message.text())) {
+        errors.push(message.text());
+      }
+    });
     await page.goto(`${origin}/?voo-test=1`);
     await page.waitForLoadState("networkidle");
     // A welcome-only session deliberately has no engine. The MCP store-level

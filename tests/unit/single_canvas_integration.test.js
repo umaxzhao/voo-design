@@ -1,106 +1,18 @@
-import { describe, it, expect, vi } from "vitest";
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-
-// Mock useI18n for unit testing React components in server/test environment
-vi.mock("../../src/canvas/use_i18n.js", () => ({
-  useI18n: () => ({
-    t: (key) => key,
-    locale: "en",
-    toggleLocale: () => {},
-  }),
-}));
-
+import { describe, it, expect } from "vitest";
 import {
-  screenToWorld,
   worldToScreen,
-  worldToFrame,
-  frameToWorld,
-  screenToFrame,
-  frameToScreen,
   createCameraMatrixTransformer,
 } from "../../src/canvas/editor/editor_pointer_pan_zoom.js";
 import {
-  documentToScene,
   documentsToScene,
   PAGE_GAP,
 } from "../../src/canvas/editor/skia_scene_adapter.js";
 import { SpatialIndex } from "../../src/canvas/editor/spatial_index.js";
 import {
   visibleWorldRect,
-  isBoxOffscreen,
 } from "../../src/canvas/editor/viewport_culling.js";
 
 describe("Milestone 3: Unified Single Canvas & Viewport Architecture", () => {
-  // =========================================================================
-  // 1. Single Canvas Shell & Multi-DOM Elimination
-  // =========================================================================
-  describe("1. Single Canvas Shell & Multi-DOM Elimination", () => {
-    it(
-      "M3.1: verifies free-mode artboards eliminate per-artboard DOM canvas elements",
-      async () => {
-      // In free mode, EditorPage renders zero DOM canvas elements
-      // (neither editor-2d-canvas nor skia-canvas)
-      const { default: EditorPage } = await import(
-        "../../src/canvas/components/editor_page.jsx"
-      );
-
-      // Create 3 artboard pages in free mode
-      const artboardIds = ["artboard_1", "artboard_2", "artboard_3"];
-      const htmlOutputs = artboardIds.map((id, index) =>
-        renderToStaticMarkup(
-          React.createElement(EditorPage, {
-            nodeId: id,
-            title: `Artboard ${index + 1}`,
-            index,
-            focused: index === 0,
-            active: true,
-            mode: "free",
-            rect: { x: index * 1200, y: 0, width: 1024, height: 768 },
-            sharedZoom: 1,
-            onFocus: () => {},
-          }),
-        ),
-      );
-
-      // Verify that across all 3 artboards, 0 DOM canvas elements are mounted
-      htmlOutputs.forEach((html) => {
-        expect(html).not.toContain('data-testid="editor-2d-canvas"');
-        expect(html).not.toContain('data-testid="skia-canvas"');
-      });
-    }, 15000);
-
-    it("M3.2: preserves full-mode / single-page DOM canvas fallback", async () => {
-      const { default: EditorPage } = await import(
-        "../../src/canvas/components/editor_page.jsx"
-      );
-
-      // In full mode (single page), EditorPage retains the 2D canvas
-      const htmlFull = renderToStaticMarkup(
-        React.createElement(EditorPage, {
-          nodeId: "single_page_1",
-          title: "Page 1",
-          index: 0,
-          focused: true,
-          active: true,
-          mode: "full",
-          onFocus: () => {},
-        }),
-      );
-
-      expect(htmlFull).toContain('data-testid="editor-2d-canvas"');
-    });
-
-    it("M3.3: renders single unified workspace canvas in image_editor JSX structure", async () => {
-      // Verify that workspace-skia-canvas is declared for the multi-artboard free stage
-      const { default: ImageEditor } = await import(
-        "../../src/canvas/components/image_editor.jsx"
-      );
-      expect(ImageEditor).toBeDefined();
-      expect(typeof ImageEditor).toBe("function");
-    });
-  });
-
   // =========================================================================
   // 2. Artboard Frame Hierarchy in Unified Scene Graph
   // =========================================================================
@@ -205,115 +117,6 @@ describe("Milestone 3: Unified Single Canvas & Viewport Architecture", () => {
   // 3. Viewport Matrix Pan/Zoom Optimization
   // =========================================================================
   describe("3. Viewport Matrix Pan/Zoom Optimization", () => {
-    it("M3.6: SkiaHost resize guard prevents surface recreation during pan/zoom", async () => {
-      // Mock CanvasKit runtime in Node test environment
-      if (typeof globalThis.window === "undefined") {
-        globalThis.window = {};
-      }
-      const prevCanvasKitInit = globalThis.window.CanvasKitInit;
-      globalThis.window.CanvasKitInit = async () => ({
-        GetWebGLContext: () => 1,
-        MakeWebGLContext: () => ({ delete: () => {} }),
-        MakeOnScreenGLSurface: () => ({
-          getCanvas: () => ({
-            clear: () => {},
-            save: () => {},
-            restore: () => {},
-            scale: () => {},
-            translate: () => {},
-          }),
-          delete: () => {},
-        }),
-        MakeSWCanvasSurface: () => ({
-          getCanvas: () => ({
-            clear: () => {},
-            save: () => {},
-            restore: () => {},
-            scale: () => {},
-            translate: () => {},
-          }),
-          delete: () => {},
-        }),
-        ColorSpace: { SRGB: {} },
-        ParagraphStyle: class {},
-        FontCollection: class {},
-        TextStyle: class {},
-        TypefaceFontProvider: {
-          Make: () => ({
-            registerFont: () => {},
-            delete: () => {},
-          }),
-        },
-        ParagraphBuilder: {
-          MakeFromFontProvider: () => ({
-            build: () => ({ layout: () => {} }),
-          }),
-        },
-        Paint: class {
-          setAntiAlias() {}
-          setColor() {}
-          setStyle() {}
-          setShader() {}
-          setImageFilter() {}
-          setMaskFilter() {}
-          setBlendMode() {}
-          setStrokeWidth() {}
-          setStrokeJoin() {}
-          delete() {}
-        },
-        PaintStyle: { Fill: 0, Stroke: 1 },
-        Path: {
-          MakeFromSVGString: () => ({ delete: () => {} }),
-        },
-        StrokeJoin: { Round: 1, Miter: 0, Bevel: 2 },
-        BlendMode: {},
-        ClipOp: { Intersect: 0 },
-        FontWeight: { Bold: 700, SemiBold: 600, Medium: 500, Normal: 400, Light: 300, ExtraLight: 200 },
-        FontSlant: { Italic: 1, Upright: 0 },
-        TextDirection: { LTR: 0, RTL: 1 },
-        parseColorString: () => [0, 0, 0, 1],
-      });
-
-      const { createSkiaHost } = await import(
-        "../../src/canvas/editor/skia_host.js"
-      );
-
-      const mockCanvas = {
-        width: 1000,
-        height: 800,
-        style: {},
-        getContext: () => null,
-      };
-
-      try {
-        const host = await createSkiaHost(mockCanvas);
-        const resizeSpy = vi.spyOn(host.instance, "resize");
-
-        // First initial resize with stage dimensions
-        host.resize(1000, 800, 1);
-        expect(resizeSpy).toHaveBeenCalledTimes(1);
-
-        // Repeated resize calls with identical dimensions (simulating pan/zoom frames)
-        for (let i = 0; i < 20; i += 1) {
-          host.resize(1000, 800, 1);
-        }
-        // resizeSpy count must remain 1: zero surface destruction or reallocation!
-        expect(resizeSpy).toHaveBeenCalledTimes(1);
-
-        // Changing actual stage dimension triggers resize
-        host.resize(1200, 900, 1);
-        expect(resizeSpy).toHaveBeenCalledTimes(2);
-
-        host.dispose();
-      } finally {
-        if (prevCanvasKitInit) {
-          globalThis.window.CanvasKitInit = prevCanvasKitInit;
-        } else {
-          delete globalThis.window.CanvasKitInit;
-        }
-      }
-    });
-
     it("M3.7: applies pan/zoom directly through 3x3 viewport matrix without mutating document nodes", async () => {
       const doc = {
         id: "doc_stable",

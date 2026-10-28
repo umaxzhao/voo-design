@@ -14,6 +14,7 @@ vi.mock("../../src/canvas/use_i18n.js", () => ({
 
 import PropertiesPanelSections from "../../src/canvas/components/editor_properties/properties_panel_sections.jsx";
 import ModifiersSection from "../../src/canvas/components/editor_properties/modifiers_section.jsx";
+import { createAdjustmentNode } from "../../src/canvas/editor/scene_model.js";
 
 const t = (key) => key;
 const noop = () => {};
@@ -32,6 +33,7 @@ function renderSections(props) {
       engine={makeEngine()}
       edit={noop}
       editAndCommit={noop}
+      commitNow={vi.fn()}
       t={t}
       {...props}
     />
@@ -135,7 +137,7 @@ describe("Modifiers group", () => {
 
   it("hides the group for an adjustment layer", () => {
     const html = renderSections({
-      object: { id: "adj1", kind: "adjustment", adjustments: [] },
+      object: { ...createAdjustmentNode({ adjustmentKind: "brightness" }), id: "adj1" },
     });
     expect(html).not.toContain("editor.props.modifiers");
   });

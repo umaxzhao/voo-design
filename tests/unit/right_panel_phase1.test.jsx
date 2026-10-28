@@ -38,6 +38,7 @@ const render = (object, extra = {}) =>
       selectedNodes={[object]}
       edit={() => {}}
       editAndCommit={() => {}}
+      commitNow={vi.fn()}
       t={(key) => key}
       {...extra}
     />,

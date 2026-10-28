@@ -2,6 +2,11 @@
 
 ## 1.0.0
 
+- Keep Inspect colours read-only, preserve required edit/commit callbacks in real panel fixtures, and use renderer defaults for sparse multi-selection transform fields.
+- Fail unit and browser release checks on unhandled PropTypes warnings; verify full-page callback routing, inspector copy behavior, multi-selection edits and one-step undo.
+- Extract mobile panel gestures, media import, feedback timers and image actions from the editor container; retain loading boundaries and cover page targeting, timers and cleanup with mounted React regressions.
+- Report sanitized raster fallback diagnostics while preserving route/configuration and saliency fallbacks.
+
 - Load optional raster action implementations only when used, keep Hook state in a reducer and preserve cancellation/target snapshots across cold imports. Keep the synchronous Boolean API while splitting its geometry, clipping and reconstruction modules.
 - Remove the remaining Hook dependency suppressions; preserve engine activation, latest overlay commits and dirty design-system drafts, and fix image source and independent Skia canvas references.
 - Keep destructive Boolean results selected, preserve expanded-stroke layer IDs and retain source selections through undo/redo.

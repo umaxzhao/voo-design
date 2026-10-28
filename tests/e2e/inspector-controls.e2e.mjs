@@ -222,5 +222,32 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
   assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().variablesV2.collections[0].modes.length), 1);
   assert.equal(await variables.count(), 1);
   checks.push("variables manager accepts later edits, keeps them after reopening and preserves one-step mode undo");
+  await variables.getByRole("button", { name: "Close variables", exact: true }).click();
+  await page.evaluate(async () => {
+    const e = window.__vooEditor;
+    const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
+    const nodes = [100, 260].map((x, index) => {
+      const node = createRectNode({ x, y: 100, width: 100, height: 80 });
+      node.id = `sparse-transform-${index}`;
+      // Older document nodes omit optional transforms; the renderer uses zero.
+      delete node.rotation;
+      delete node.shear;
+      return node;
+    });
+    e.setDoc({ ...e.getDocument(), nodes });
+    e.selectExactly(nodes.map((node) => node.id));
+  });
+  await page.getByTestId("editor-properties-panel").getByText("2 selected", { exact: true }).waitFor();
+  const rotation = page.getByRole("spinbutton", { name: "Rotation", exact: true });
+  await rotation.waitFor();
+  assert.equal(await rotation.inputValue(), "0");
+  await rotation.fill("30");
+  await rotation.press("Enter");
+  assert.deepEqual(await page.evaluate(() => window.__vooEditor.getDocument().nodes.map((node) => node.rotation)), [30, 30]);
+  await tool("undo");
+  assert.deepEqual(await page.evaluate(() => window.__vooEditor.getDocument().nodes.map((node) => node.rotation ?? 0)), [0, 0]);
+  await page.waitForFunction(() => document.querySelector('[data-testid="editor-properties-panel"] input[aria-label="Rotation"]')?.value === "0");
+  assert.equal(await rotation.inputValue(), "0");
+  checks.push("sparse multi-selection shows effective zero rotation, edits both nodes and restores both with one undo");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });

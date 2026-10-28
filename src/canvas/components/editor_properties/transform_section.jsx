@@ -83,7 +83,8 @@ export default function TransformSection({
   const multi = selectedNodes.length > 1;
   const common = (key, fallback) => {
     if (!multi) return { value: fallback, mixed: false };
-    const value = commonValue(selectedNodes, key);
+    // Sparse/older nodes use the same effective defaults as the renderer.
+    const value = commonValue(selectedNodes, key, key === "opacity" ? 1 : 0);
     return value === MIXED
       ? { value: null, mixed: true }
       : { value, mixed: false };

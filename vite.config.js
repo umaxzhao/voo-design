@@ -54,6 +54,7 @@ export default defineConfig(({ mode }) => ({
   },
   test: {
     globals: true,
+    setupFiles: ["./tests/setup.js"],
     environment: "node",
     include: ["tests/unit/**/*.test.{js,jsx}"],
   },

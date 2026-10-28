@@ -28,13 +28,17 @@ function equalish(a, b) {
  *
  * @param {Array<object>} nodes selected node objects
  * @param {string} key a node property (e.g. "x", "rotation")
+ * @param {unknown} defaultValue effective value for an omitted property
  * @returns {unknown | typeof MIXED}
  */
-export function commonValue(nodes, key) {
+export function commonValue(nodes, key, defaultValue = undefined) {
   if (!Array.isArray(nodes) || nodes.length === 0) return MIXED;
-  const first = nodes[0]?.[key];
+  const valueOf = (node) => defaultValue === undefined
+    ? node?.[key]
+    : node?.[key] ?? defaultValue;
+  const first = valueOf(nodes[0]);
   for (const node of nodes) {
-    if (!equalish(node?.[key], first)) return MIXED;
+    if (!equalish(valueOf(node), first)) return MIXED;
   }
   return first;
 }

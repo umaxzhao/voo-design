@@ -8,6 +8,7 @@ import EditorRegionLabel from "../../src/canvas/components/editor_region_label.j
 import CanvasAgentPanel from "../../src/canvas/components/canvas_agent_panel.jsx";
 import SettingsDesignSystems from "../../src/canvas/components/settings_design_systems.jsx";
 import EditorPage from "../../src/canvas/components/editor_page.jsx";
+import InspectPanel from "../../src/canvas/components/editor_properties/inspect_panel.jsx";
 import { useDesignStore } from "../../src/store/design_store.js";
 
 function host(id) {
@@ -95,14 +96,17 @@ export function mountFullPageAudit() {
       ? { ...node, data: { ...node.data, editorDoc: null, imageId: "hook-page-image", layoutWidth: 8, layoutHeight: 8 } }
       : node),
   });
-  const api = { entry: null };
-  const onEngine = (_id, entry) => { api.entry = entry; };
-  const onBeforeDispose = () => {};
-  const onVisibility = () => {};
-  const onChange = () => {};
+  const api = { entry: null, engines: [], disposals: [], visibility: [], changes: 0, generated: [], focus: [] };
+  const onEngine = (id, entry) => { api.entry = entry; api.engines.push({ id, ...entry }); };
+  const onBeforeDispose = (id, engine, ready) => api.disposals.push({ id, engine, ready });
+  const onVisibility = (id, visible) => api.visibility.push({ id, visible });
+  const onChange = () => { api.changes += 1; };
+  const onGeneratedOutput = (result) => { api.generated.push(result); return "hook-page-candidate"; };
+  api.nodeId = nodeId;
   api.render = () => mounted.root.render(<EditorPage readOnly nodeId={nodeId} title="Image source audit"
     focused active mode="full" onEngine={onEngine} onBeforeDispose={onBeforeDispose}
-    onChange={onChange} onVisibility={onVisibility} onFocus={() => {}} />);
+    onChange={onChange} onVisibility={onVisibility} onGeneratedOutput={onGeneratedOutput}
+    onFocus={id => api.focus.push(id)} />);
   api.close = () => {
     mounted.close();
     localStorage.removeItem("voo.renderer");
@@ -111,4 +115,10 @@ export function mountFullPageAudit() {
   };
   api.render();
   return api;
+}
+
+export function mountInspectAudit(engine) {
+  const mounted = host("hook-inspect-audit");
+  mounted.root.render(<InspectPanel object={engine.getDocument().nodes[0]} engine={engine} />);
+  return { close: mounted.close };
 }
