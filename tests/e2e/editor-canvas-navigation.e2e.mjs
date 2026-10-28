@@ -133,6 +133,39 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.deepEqual(await page.evaluate(() => [window.__vooEditor.getNode("current-frame").x, window.__vooEditor.getNode("frame-child").x]), [80, 110]);
   checks.push("a child inside the current free-canvas Frame moves and repaints independently with one-step undo");
 
+  await page.evaluate(async () => {
+    const e = window.__vooEditor;
+    e.selectExactly(["current-frame"]);
+  });
+  const frameBody = await docPoint({ x: 200, y: 200 });
+  await page.mouse.click(frameBody.x, frameBody.y);
+  await page.keyboard.press("Control+c");
+  await page.waitForFunction(() => window.__vooEditor.hasLayerClipboard(), undefined, { timeout: 5000 });
+  await page.keyboard.press("Control+v");
+  await page.waitForFunction(() => window.__vooEditor.getDocument().nodes.length === 4, undefined, { timeout: 5000 });
+  const pastedFrame = await page.evaluate(() => {
+    const e = window.__vooEditor;
+    const selectedId = e.getSelectedIds()[0];
+    const frame = e.getNode(selectedId);
+    const child = e.getDocument().nodes.find(node => node.parentId === selectedId);
+    return { id: frame?.id, x: frame?.x, y: frame?.y, childX: child?.x, childY: child?.y };
+  });
+  assert.ok(pastedFrame.id && pastedFrame.id !== "current-frame");
+  await drag(await docPoint({ x: pastedFrame.x + 250, y: pastedFrame.y + 150 }), { x: 30, y: 20 });
+  assert.deepEqual(await page.evaluate(id => {
+    const e = window.__vooEditor;
+    const frame = e.getNode(id);
+    const child = e.getDocument().nodes.find(node => node.parentId === id);
+    return [frame.x, frame.y, child.x, child.y];
+  }, pastedFrame.id), [pastedFrame.x + 30, pastedFrame.y + 20, pastedFrame.childX + 30, pastedFrame.childY + 20]);
+  await page.evaluate(id => {
+    const e = window.__vooEditor;
+    e.selectExactly([id]);
+    e.cut();
+  }, pastedFrame.id);
+  await page.waitForFunction(() => window.__vooEditor.getDocument().nodes.length === 2, undefined, { timeout: 5000 });
+  checks.push("Ctrl+C/Ctrl+V paste selects the complete Frame hierarchy, and cutting it removes that hierarchy");
+
   await page.evaluate(() => window.__vooEditor.updateFrameNode("current-frame", { x: 110, y: 90 })); await settled();
   assert.deepEqual(await page.evaluate(() => [window.__vooEditor.getNode("current-frame").x, window.__vooEditor.getNode("frame-child").x]), [110, 140]);
   assert.equal(await page.evaluate(() => window.__vooEditor.sampleColorAt({ x: 150, y: 130 })), "#ff0000");

@@ -722,7 +722,7 @@ export function useEditorShortcuts({
               void engine.copySelectionPixels?.();
               return;
             }
-            if (engine.getSelected()) {
+            if (engine.getSelected() || engine.getSelectedIds?.()?.length) {
               event.preventDefault();
               engine.copy();
               return;
@@ -735,7 +735,7 @@ export function useEditorShortcuts({
               void engine.cutSelectionPixels?.();
               return;
             }
-            if (engine.getSelected()) {
+            if (engine.getSelected() || engine.getSelectedIds?.()?.length) {
               event.preventDefault();
               engine.cut();
               return;
@@ -747,8 +747,14 @@ export function useEditorShortcuts({
               engine.pasteStyle?.();
               return;
             }
-            // The paste event carries the current system clipboard data.
-            // Its handler decides whether it matches internal copied layers.
+            if (engine.canPasteFromInternalClipboard?.()) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              engine.paste();
+              return;
+            }
+            // Otherwise the paste event carries system clipboard data for
+            // external images, SVGs, or an application-owned layer copy.
             return;
           }
           case "KeyJ":

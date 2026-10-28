@@ -457,6 +457,10 @@ export function createClipboard({
     return Boolean(layerClipboard && layerClipboard.nodes?.length);
   }
 
+  function canPasteFromInternalClipboard() {
+    return hasLayerClipboard() && !layerClipboard.systemWriteSucceeded;
+  }
+
   function paste(clipboardData = null) {
     if (!layerClipboard || !layerClipboard.nodes?.length) {
       return false;
@@ -519,9 +523,10 @@ export function createClipboard({
       setDoc,
       ops.withNodes(doc, newNodes),
     );
+    // Keep the pasted selection at the same hierarchy level as the copied units.
     selectMany(
       [...copiesById.values()]
-        .filter((copy) => !isContainerNode(copy))
+        .filter((copy) => !copiesById.has(copy.parentId))
         .map((copy) => copy.id),
     );
     return true;
@@ -544,10 +549,11 @@ export function createClipboard({
       await deleteSelectionPixels();
       return;
     }
-    copySelected();
+    const copyPromise = copySelected();
     const selectedIds = selection.getIds();
     if (selectedIds.length === 0) return;
-    if (removeIds(selectedIds)) select(null);
+    if (removeIds(layerClipboard?.setIds ?? selectedIds)) select(null);
+    await copyPromise;
   }
 
   return {
@@ -558,6 +564,7 @@ export function createClipboard({
     copy,
     cut,
     hasLayerClipboard,
+    canPasteFromInternalClipboard,
     paste,
     deleteSelected,
     cutSelected,
