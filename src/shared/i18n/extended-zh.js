@@ -1240,6 +1240,7 @@ export default {
   "editor.history.entry.pasteStyle": "粘贴属性",
   "editor.menu.copySvg": "复制为SVG",
   "editor.menu.editSvg": "编辑SVG…",
+  "editor.menu.insertIcon": "插入矢量图标…",
   "editor.svgModal.title": "编辑SVG源码",
   "editor.svgModal.copy": "复制",
   "editor.svgModal.copied": "已复制",

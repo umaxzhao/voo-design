@@ -56,6 +56,7 @@ const EditorCommandPalette = lazy(() => import("./editor_command_palette.jsx"));
 const EditorFindReplace = lazy(() => import("./editor_find_replace.jsx"));
 const ShortcutReferenceModal = lazy(() => import("./shortcut_reference_modal.jsx"));
 const SvgEditModal = lazy(() => import("./SvgEditModal.jsx"));
+const EditorIconPickerModal = lazy(() => import("./editor_icon_picker_modal.jsx"));
 import { DESIGN_SHORTCUT_GROUPS } from "../../shared/editor-shortcut-catalog.js";
 import useIsNarrow from "../use_is_narrow.js";
 import "./editor_mobile_layout.css";
@@ -296,6 +297,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   });
   /** Pie Menu state: active family and screen coordinates { family, position: { x, y } } */
   const [pieMenu, setPieMenu] = useState(null);
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
 
 
   const engine = enginesRef.current.get(focusedId)?.engine ?? null;
@@ -661,6 +663,27 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       }
     },
     [engine, svgEditModal.node],
+  );
+
+  useEffect(() => {
+    const handleOpen = () => setIconPickerOpen(true);
+    window.addEventListener("voo:open-icon-picker", handleOpen);
+    return () => window.removeEventListener("voo:open-icon-picker", handleOpen);
+  }, []);
+
+  const handleSelectIcon = useCallback(
+    async (iconName) => {
+      const vp = engine?.getViewport?.();
+      let x = 100;
+      let y = 100;
+      if (vp && Number.isFinite(vp.zoom) && vp.zoom > 0) {
+        x = Math.round((window.innerWidth / 2 - vp.panX) / vp.zoom);
+        y = Math.round((window.innerHeight / 2 - vp.panY) / vp.zoom);
+      }
+      const { createIcon } = await import("../agent/canvas_tools_assets.js");
+      await createIcon({ icon: iconName, x, y, size: 32 }, { editor: engine });
+    },
+    [engine],
   );
 
   const workspaceDocs = useMemo(() => {
@@ -3095,6 +3118,14 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           }
           initialSvg={svgEditModal.svgString}
           onApply={handleApplySvgEdit}
+        />
+        </DeferredEditorSurface>
+
+        <DeferredEditorSurface open={iconPickerOpen} onClose={() => setIconPickerOpen(false)}>
+        <EditorIconPickerModal
+          open={iconPickerOpen}
+          onClose={() => setIconPickerOpen(false)}
+          onSelectIcon={handleSelectIcon}
         />
         </DeferredEditorSurface>
 

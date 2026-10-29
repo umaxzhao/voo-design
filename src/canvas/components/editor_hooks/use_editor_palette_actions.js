@@ -128,6 +128,13 @@ export function useEditorPaletteActions({
         label: "Keyboard shortcuts",
         run: () => setShortcutsOpen(true),
       },
+      {
+        id: "insert-icon",
+        labelKey: "editor.menu.insertIcon",
+        label: "Insert Vector Icon…",
+        shortcut: "⌥I",
+        run: () => window.dispatchEvent(new CustomEvent("voo:open-icon-picker")),
+      },
     ],
     [
       runTool,

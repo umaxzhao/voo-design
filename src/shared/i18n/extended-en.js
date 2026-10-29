@@ -1261,6 +1261,7 @@ export default {
   "editor.history.entry.pasteStyle": "Paste properties",
   "editor.menu.copySvg": "Copy as SVG",
   "editor.menu.editSvg": "Edit SVG…",
+  "editor.menu.insertIcon": "Insert Vector Icon…",
   "editor.svgModal.title": "Edit SVG",
   "editor.svgModal.copy": "Copy",
   "editor.svgModal.copied": "Copied",
