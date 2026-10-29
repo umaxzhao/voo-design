@@ -48,7 +48,7 @@ export default function PaintTypeMenu({ value, onChange, label, allowImage = tru
   }, [open]);
 
   return (
-    <div className="relative shrink-0">
+    <div className="relative shrink-0 -translate-x-1">
       <button
         ref={buttonRef}
         type="button"
@@ -68,7 +68,7 @@ export default function PaintTypeMenu({ value, onChange, label, allowImage = tru
           }
           setOpen((next) => !next);
         }}
-        className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-800 text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+        className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
       >
         <CurrentIcon size={13} strokeWidth={1.5} />
       </button>

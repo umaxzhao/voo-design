@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import CustomSelect from "../../src/canvas/components/custom_select.jsx";
 import ConstraintsSection from "../../src/canvas/components/editor_properties/constraints_section.jsx";
+import PaintTypeMenu from "../../src/canvas/components/editor_properties/paint_type_menu.jsx";
 
 describe("constraint dropdown styling", () => {
   it("applies the field appearance only to the dropdown trigger", () => {
@@ -38,5 +39,20 @@ describe("constraint dropdown styling", () => {
     expect(html).not.toContain("border-white/20");
     expect(html).toContain('data-testid="editor-constraints-left"');
     expect(html).toContain('data-testid="editor-constraints-top"');
+  });
+
+  it("keeps the paint type icon transparent and nudges it toward the row edge", () => {
+    const html = renderToStaticMarkup(
+      <PaintTypeMenu
+        value="solid"
+        onChange={() => {}}
+        label="Paint type"
+      />,
+    );
+
+    expect(html).toContain("shrink-0 -translate-x-1");
+    expect(html).toContain("rounded-lg text-neutral-300");
+    expect(html).not.toContain("bg-neutral-800");
+    expect(html).not.toContain("hover:bg-neutral-700");
   });
 });
