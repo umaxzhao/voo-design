@@ -13,6 +13,7 @@
  */
 
 import { isGroupNode } from "./scene_model.js";
+import { isFrameSelectionBoundary } from "./frame-selection-unit.js";
 
 /**
  * Lookup tables for one objects array, built once and reused by every row of
@@ -39,7 +40,7 @@ function indexOf(objects) {
   return index;
 }
 
-/** Every artwork id inside a folder, at any depth — its selection test. */
+/** Selectable units inside a folder; a nested Frame is one unit of its own. */
 export function groupArtworkIds(objects, groupId) {
   const index = indexOf(objects);
   const cached = index.artworkIds.get(groupId);
@@ -47,7 +48,8 @@ export function groupArtworkIds(objects, groupId) {
   const out = [];
   const walk = (id) => {
     for (const child of index.childrenMap.get(id) ?? []) {
-      if (isGroupNode(child)) walk(child.id);
+      if (isFrameSelectionBoundary(child)) out.push(child.id);
+      else if (isGroupNode(child)) walk(child.id);
       else out.push(child.id);
     }
   };
@@ -60,8 +62,8 @@ export function groupArtworkIds(objects, groupId) {
  * True when an ancestor folder of `node` has every one of its members
  * selected — the shape a canvas unit-selection leaves behind.
  *
- * Checks every ancestor, not just the immediate parent, so a member nested
- * two folders deep still defers to the outermost folder that is wholly lit.
+ * Checks every folder ancestor, but stops at a Frame boundary so selecting
+ * Frame contents cannot light a parent folder outside that Frame.
  */
 function coveredByWholeFolder(objects, node, chosen) {
   if (chosen.size === 0) return false;
@@ -70,9 +72,13 @@ function coveredByWholeFolder(objects, node, chosen) {
   const seen = new Set();
   while (parentId && !seen.has(parentId)) {
     seen.add(parentId);
+    const parent = byId.get(parentId);
+    // A Frame is its own selection boundary; child selection must not light
+    // its ancestor folders as though the whole hierarchy were selected.
+    if (isFrameSelectionBoundary(parent)) break;
     const ids = groupArtworkIds(objects, parentId);
     if (ids.length > 0 && ids.every((id) => chosen.has(id))) return true;
-    parentId = byId.get(parentId)?.parentId ?? null;
+    parentId = parent?.parentId ?? null;
   }
   return false;
 }
@@ -131,6 +137,10 @@ export function isRowSelected(
       chosen.has(node.id) ||
       (docIndex === activeIndex && !isBackgroundSelected)
     );
+  }
+
+  if (isFrameSelectionBoundary(node)) {
+    return node.id === isolationGroupId || chosen.has(node.id);
   }
 
   const ids = groupArtworkIds(objects, node.id);

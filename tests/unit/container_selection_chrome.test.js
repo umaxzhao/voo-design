@@ -65,3 +65,21 @@ describe('one CSS pixel selection frame', () => {
   expect(fills[0][0] + 4 - strokes[0].rect[0]).toBe(1);
  });
 });
+
+describe('selection size label placement', () => {
+ it('keeps the dimensions above the frame and within the visible stage', () => {
+  const labels = [];
+  const ctx = {
+   canvas: { width: 400, height: 300 },
+   getTransform: () => ({ a: 2 }),
+   save() {}, restore() {}, strokeRect() {}, fillRect() {}, beginPath() {},
+   roundRect(...rect) { labels.push(rect); }, fill() {},
+   measureText: () => ({ width: 100 }), fillText() {},
+  };
+  drawSelection(ctx, { x: 20, y: 40, width: 60, height: 20 },
+   { zoom: 1, panX: 0, panY: 0 }, true, { kind: 'rect', width: 60, height: 20 });
+
+  expect(labels).toHaveLength(1);
+  expect(labels[0]).toEqual([4, 16, 110, 18, 2]);
+ });
+});

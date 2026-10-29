@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import EditorLayers from "../../src/canvas/components/editor_layers.jsx";
+import { isRowSelected } from "../../src/canvas/editor/layer_selection.js";
 
 const drag = vi.hoisted(() => ({ overId: null }));
 vi.mock("../../src/canvas/components/use_layer_drag.js", () => ({
@@ -25,6 +26,37 @@ function renderRow({ overId = null, isolated = false, selected = true } = {}) {
 }
 
 describe("layer row selection styling", () => {
+  it("highlights a Frame row when the canvas selects the Frame boundary", () => {
+    const frame = { id: "frame", kind: "group", isFrame: true };
+    const child = { id: "child", kind: "rect", parentId: "frame" };
+
+    expect(isRowSelected([frame, child], frame, { selectedIds: ["frame"] })).toBe(true);
+    expect(isRowSelected([frame, child], child, { selectedIds: ["frame"] })).toBe(false);
+  });
+
+  it("keeps a selected rectangle visible in Layers instead of promoting it to its Frame", () => {
+    const outerFrame = { id: "outer", kind: "group", isFrame: true };
+    const innerFrame = { id: "inner", kind: "group", isFrame: true, parentId: "outer" };
+    const child = { id: "child", kind: "rect", parentId: "inner" };
+    const objects = [outerFrame, innerFrame, child];
+
+    expect(isRowSelected(objects, outerFrame, { selectedIds: ["child"] })).toBe(false);
+    expect(isRowSelected(objects, innerFrame, { selectedIds: ["child"] })).toBe(false);
+    expect(isRowSelected(objects, child, { selectedIds: ["child"] })).toBe(true);
+  });
+
+  it("keeps ordinary folder selection based on its complete set of children", () => {
+    const folder = { id: "folder", kind: "group" };
+    const first = { id: "first", kind: "rect", parentId: "folder" };
+    const second = { id: "second", kind: "rect", parentId: "folder" };
+    const objects = [folder, first, second];
+
+    expect(isRowSelected(objects, folder, { selectedIds: ["first"] })).toBe(false);
+    expect(isRowSelected(objects, first, { selectedIds: ["first"] })).toBe(true);
+    expect(isRowSelected(objects, folder, { selectedIds: ["first", "second"] })).toBe(true);
+    expect(isRowSelected(objects, first, { selectedIds: ["first", "second"] })).toBe(false);
+  });
+
   it.each([false, true])("selected row has gray fill and inset shadow (isolated=%s)", (isolated) => {
     const row = renderRow({ isolated });
     expect(row).toContain("bg-neutral-800");

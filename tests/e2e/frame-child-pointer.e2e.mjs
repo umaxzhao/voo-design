@@ -76,5 +76,28 @@ await withEditorBrowser(async ({ page }) => {
   }, seed.frame), [0, 0]);
   assert.equal(await pixel({ x: 116, y: 116 }), "#ff0000");
   checks.push("dragging the empty Frame surface moves the Frame and both children together in one undoable gesture");
+
+  await page.evaluate(() => {
+    const e = window.__vooEditor;
+    e.setDoc({ ...e.getDocument(), nodes: [
+      { id: "outer-frame", kind: "group", isFrame: true, x: 20, y: 20, width: 360, height: 260, fill: "#dddddd", visible: true },
+      { id: "inner-frame", kind: "group", isFrame: true, parentId: "outer-frame", x: 60, y: 50, width: 220, height: 180, fill: "#bbbbbb", visible: true },
+      { id: "nested-rect", kind: "rect", parentId: "inner-frame", x: 90, y: 80, width: 80, height: 60, fill: "#ff0000", visible: true, locked: false },
+    ] });
+    e.selectExactly([]);
+    e.setTool("select");
+  });
+  const nestedRectPoint = await client({ x: 120, y: 110 });
+  await page.mouse.click(nestedRectPoint.x, nestedRectPoint.y);
+  assert.deepEqual(await selectedIds(), ["nested-rect"]);
+  await page.evaluate(() => window.__vooEditor.updateNode("nested-rect", { visible: false, locked: true }));
+  const hiddenRectPoint = await client({ x: 120, y: 110 });
+  await page.mouse.click(hiddenRectPoint.x, hiddenRectPoint.y);
+  assert.deepEqual(await selectedIds(), ["inner-frame"]);
+  const rectRow = page.locator('[id="layer-row-nested-rect"]');
+  await rectRow.waitFor();
+  await rectRow.getByRole("button").filter({ hasText: /.+/ }).click();
+  assert.deepEqual(await selectedIds(), ["nested-rect"]);
+  checks.push("nested Frame hits select the clicked visible rectangle; hidden/locked rectangles fall through to the nearest Frame, but remain selectable from Layers");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });
