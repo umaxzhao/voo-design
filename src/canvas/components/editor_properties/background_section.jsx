@@ -1,3 +1,5 @@
+import { useId, useState } from "react";
+import { MousePointer2 } from "lucide-react";
 import PropTypes from "prop-types";
 import { EditorField } from "../editor_controls.jsx";
 import { useI18n } from "../../use_i18n.js";
@@ -26,11 +28,18 @@ export default function BackgroundSection({
   onSelectPageColour = null,
 }) {
   const { t } = useI18n();
+  const [expandedColour, setExpandedColour] = useState(null);
+  const detailsId = useId();
+  const expandedEntry = pageColours.find(
+    (entry) => entry.colour === expandedColour,
+  );
   const currentBg = backgroundColor || "#262626";
 
   return (
     <div className="space-y-2 px-1 py-1">
-      {docSize && Number.isFinite(docSize.width) && Number.isFinite(docSize.height) ? (
+      {docSize &&
+      Number.isFinite(docSize.width) &&
+      Number.isFinite(docSize.height) ? (
         <EditorField label={t("editor.frame.size")} compact>
           <div className="flex h-7 items-center rounded-xl bg-neutral-800 px-2.5 text-[11px] font-mono tabular-nums text-neutral-200">
             {Math.round(docSize.width)} × {Math.round(docSize.height)}
@@ -92,27 +101,62 @@ export default function BackgroundSection({
           <div className="px-0.5 text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-400">
             {t("editor.props.pageColors")}
           </div>
-          {pageColours.map((entry) => (
-            <button
-              key={entry.colour}
-              type="button"
-              onClick={() => onSelectPageColour?.(entry.nodes)}
-              title={t("editor.props.selectLayersUsingColour")}
-              className="flex min-h-7 items-center gap-2 rounded-xl bg-neutral-800 px-2.5 text-left transition-colors hover:bg-neutral-800/80"
-            >
-              <span
-                aria-hidden="true"
-                className="h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-white/20"
+          <div
+            className="flex flex-wrap gap-2"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setExpandedColour(null);
+            }}
+          >
+            {pageColours.map((entry) => (
+              <button
+                key={entry.colour}
+                type="button"
+                aria-label={`${entry.colour} ×${new Set(entry.nodes).size}`}
+                title={`${entry.colour} ×${new Set(entry.nodes).size}`}
+                aria-expanded={expandedEntry?.colour === entry.colour}
+                aria-controls={
+                  expandedEntry?.colour === entry.colour ? detailsId : undefined
+                }
+                onClick={() =>
+                  setExpandedColour((current) =>
+                    current === entry.colour ? null : entry.colour,
+                  )
+                }
+                className={`size-7 shrink-0 rounded-lg border border-white/20 transition-shadow hover:ring-1 hover:ring-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4] [@media(pointer:coarse)]:size-12 ${expandedEntry?.colour === entry.colour ? "ring-2 ring-[#a7ffd4]" : ""}`}
                 style={{ backgroundColor: entry.colour }}
               />
-              <span className="min-w-0 flex-1 truncate text-[11px] font-mono uppercase text-neutral-200">
-                {entry.colour}
-              </span>
-              <span className="shrink-0 text-[10px] font-mono tabular-nums text-neutral-400">
-                ×{new Set(entry.nodes).size}
-              </span>
-            </button>
-          ))}
+            ))}
+          </div>
+          {expandedEntry && (
+            <div
+              id={detailsId}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setExpandedColour(null);
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  onSelectPageColour?.([...new Set(expandedEntry.nodes)])
+                }
+                title={t("editor.props.selectLayersUsingColour")}
+                aria-label={`${t("editor.props.selectLayersUsingColour")} ${expandedEntry.colour}`}
+                className="flex min-h-7 w-full items-center gap-2 rounded-xl bg-neutral-800 px-2.5 text-left transition-colors hover:bg-neutral-800/80 [@media(pointer:coarse)]:min-h-12"
+              >
+                <span className="min-w-0 flex-1 truncate text-[11px] font-mono uppercase text-neutral-200">
+                  {expandedEntry.colour}
+                </span>
+                <span className="shrink-0 text-[10px] font-mono tabular-nums text-neutral-400">
+                  ×{new Set(expandedEntry.nodes).size}
+                </span>
+                <MousePointer2
+                  size={14}
+                  className="shrink-0 text-neutral-400"
+                  aria-hidden="true"
+                />
+              </button>
+            </div>
+          )}
         </div>
       ) : null}
     </div>
