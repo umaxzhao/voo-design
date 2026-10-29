@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronUp, ChevronDown, Copy, Trash2 } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
 import { finishPageRename, movePageToEdge } from "./page_switcher_interactions.js";
+import usePageSwitcherDrag from "./use_page_switcher_drag.js";
 import { useDesignStore } from "../../store/design_store.js";
 
 export default function PageSwitcher() {
@@ -10,9 +11,7 @@ export default function PageSwitcher() {
   const [renaming, setRenaming] = useState(null);
   const root = useRef(null);
   const edit = useRef(null);
-  const drag = useRef(null);
-  const suppressClick = useRef(false);
-  const [drop, setDrop] = useState(null);
+  const listRef = useRef(null);
   const startRename = (id) => {
     edit.current = id;
     setRenaming(id);
@@ -21,14 +20,17 @@ export default function PageSwitcher() {
     finishPageRename(edit, useDesignStore.getState(), value, cancel);
     setRenaming(null);
   };
-  const clearDrag = () => {
-    drag.current = null;
-    setDrop(null);
-  };
   const nodes = useDesignStore((s) => s.nodes);
   const focusedId = useDesignStore((s) => s.editingNodeId);
   const current = nodes.find((node) => node.id === focusedId) ?? nodes[0];
   const actions = useDesignStore.getState();
+  const { drag, beginRowDrag } = usePageSwitcherDrag({
+    listRef,
+    onDrop: (sourceId, targetId, edge) => {
+      const state = useDesignStore.getState();
+      movePageToEdge(state, state.nodes, sourceId, targetId, edge);
+    },
+  });
   useEffect(() => {
     if (!open) return;
     const dismiss = (event) => {
@@ -81,7 +83,7 @@ export default function PageSwitcher() {
               {t("pageSwitcher.empty")}
             </p>
           )}
-          <ul className="flex flex-col gap-1">
+          <ul ref={listRef} className="flex flex-col gap-1">
             {nodes.map((node) => {
               const active = node.id === current?.id;
               const label = node.data?.label ?? t("pageSwitcher.untitled");
@@ -89,43 +91,17 @@ export default function PageSwitcher() {
                 <li
                   key={node.id}
                   data-page-id={node.id}
-                  draggable={renaming === null}
-                  onDragStart={(event) => {
-                    if (renaming !== null || event.target.closest("input, [data-page-action]")) {
-                      event.preventDefault();
-                      return;
-                    }
-                    drag.current = node.id;
-                    suppressClick.current = true;
-                    event.dataTransfer.effectAllowed = "move";
-                    event.dataTransfer.setData("text/plain", node.id);
+                  onPointerDown={(event) => {
+                    if (renaming !== null) return;
+                    beginRowDrag(event, node.id);
                   }}
-                  onDragOver={(event) => {
-                    if (!drag.current) return;
-                    event.preventDefault();
-                    event.dataTransfer.dropEffect = "move";
-                    const bounds = event.currentTarget.getBoundingClientRect();
-                    setDrop({ id: node.id, edge: event.clientY < bounds.y + bounds.height / 2 ? "before" : "after" });
-                  }}
-                  onDragLeave={(event) => {
-                    if (!event.currentTarget.contains(event.relatedTarget)) setDrop(null);
-                  }}
-                  onDrop={(event) => {
-                    if (!drag.current) return;
-                    event.preventDefault();
-                    const bounds = event.currentTarget.getBoundingClientRect();
-                    movePageToEdge(useDesignStore.getState(), useDesignStore.getState().nodes,
-                      drag.current, node.id, event.clientY < bounds.y + bounds.height / 2 ? "before" : "after");
-                    clearDrag();
-                  }}
-                  onDragEnd={clearDrag}
-                  className={`relative group flex items-center gap-1 rounded-xl px-1 text-xs ${active ? "bg-white/10 text-white" : "text-neutral-300 hover:bg-white/5"}`}
+                  className={`relative group flex items-center gap-1 rounded-xl px-1 text-xs ${active ? "bg-white/10 text-white" : "text-neutral-300 hover:bg-white/5"}${drag?.id === node.id ? " opacity-60" : ""}`}
                 >
-                  {drop?.id === node.id && drag.current !== node.id && (
+                  {drag?.targetId === node.id && drag.id !== node.id && (
                     <span
                       data-testid="page-drop-indicator"
                       aria-hidden="true"
-                      className={`pointer-events-none absolute inset-x-1 z-10 h-px bg-neutral-300 ${drop.edge === "before" ? "-top-0.5" : "-bottom-0.5"}`}
+                      className={`pointer-events-none absolute inset-x-1 z-10 h-px bg-neutral-300 ${drag.edge === "before" ? "-top-0.5" : "-bottom-0.5"}`}
                     />
                   )}
                   {renaming === node.id ? (
@@ -155,15 +131,12 @@ export default function PageSwitcher() {
                       type="button"
                       aria-current={active ? "page" : undefined}
                       onDoubleClick={() => startRename(node.id)}
-                      onPointerDown={() => { suppressClick.current = false; }}
-                      onClick={(event) => {
-                        if (!suppressClick.current || event.detail === 0) {
-                          actions.focusEditorPage(node.id, {
-                            rememberCamera: true,
-                            exclusive: true,
-                          });
-                        }
-                      }}
+                      onClick={() =>
+                        actions.focusEditorPage(node.id, {
+                          rememberCamera: true,
+                          exclusive: true,
+                        })
+                      }
                       className="min-w-0 flex-1 truncate px-2 py-2.5 text-left focus-visible:outline focus-visible:outline-[#a7ffd4]"
                       title={label}
                     >
@@ -188,8 +161,6 @@ export default function PageSwitcher() {
                       aria-label={`${t(`pageSwitcher.${key}`)}: ${label}`}
                       title={t(`pageSwitcher.${key}`)}
                       data-page-action="true"
-                      draggable={false}
-                      onDragStart={(event) => event.preventDefault()}
                       onClick={onClick}
                       className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-[#a7ffd4]"
                     >
