@@ -7,36 +7,15 @@ import {
   isLockedByGroup,
   isRegionNode,
   NODE_KIND,
-  syncBooleanNode,
 } from "./scene_model.js";
+import { reconcileBooleanNodes } from "./boolean-node-reconcile.js";
 import { toNodeLocal } from "./scene_geometry.js";
 import { regionLocalPoint } from "./doc_ops_regions.js";
 import { projectOntoPath } from "./editor_pen_math.js";
 import { isFrameSelectionBoundary } from "./frame-selection-unit.js";
 
 export function withNodes(doc, rawNodes, changes = null) {
-  let nodes = rawNodes;
-  const booleanContainers = rawNodes?.filter(
-    (n) => n.kind === NODE_KIND.BOOLEAN,
-  );
-  if (booleanContainers && booleanContainers.length > 0) {
-    const childrenMap = new Map();
-    for (const node of rawNodes) {
-      if (node.parentId) {
-        if (!childrenMap.has(node.parentId)) childrenMap.set(node.parentId, []);
-        childrenMap.get(node.parentId).push(node);
-      }
-    }
-    nodes = rawNodes.map((node) => {
-      if (node.kind === NODE_KIND.BOOLEAN) {
-        const children = childrenMap.get(node.id);
-        if (children && children.length > 0) {
-          return syncBooleanNode(node, children);
-        }
-      }
-      return node;
-    });
-  }
+  const nodes = reconcileBooleanNodes(doc, rawNodes);
   journalNodes(doc.nodes, nodes, nodes === rawNodes ? changes : null);
   return { ...doc, nodes };
 }
@@ -90,42 +69,7 @@ export function addNode(doc, node) {
 }
 
 export function updateNode(doc, id, patch) {
-  const changes = nodesTracked(doc.nodes) ? [] : null;
-  return withNodes(
-    doc,
-    doc.nodes.map((node, z) => {
-      if (node.id !== id) return node;
-      const updated = {
-        ...node,
-        ...patch,
-        ...(Object.hasOwn(patch, "fill") &&
-        !Object.hasOwn(patch, "fillVariableId")
-          ? { fillVariableId: null }
-          : {}),
-        ...(Object.hasOwn(patch, "stroke") &&
-        !Object.hasOwn(patch, "strokeVariableId")
-          ? { strokeVariableId: null }
-          : {}),
-      };
-      if (patch.pen === true || (patch.kind === "path" && node.kind !== "path")) {
-        delete updated.cornerRadius;
-        delete updated.poly;
-        delete updated.polyKind;
-        delete updated.sides;
-        delete updated.spikes;
-        delete updated.innerRatio;
-        delete updated.line;
-      }
-      for (const key of Object.keys(patch)) {
-        if (patch[key] === undefined) {
-          delete updated[key];
-        }
-      }
-      changes?.push({ node: updated, z });
-      return updated;
-    }),
-    changes,
-  );
+  return updateNodes(doc, new Map([[id, patch]]));
 }
 
 export function updateNodes(doc, updates) {

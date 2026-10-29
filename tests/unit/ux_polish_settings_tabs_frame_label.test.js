@@ -38,7 +38,8 @@ describe("frame name tag hit area", () => {
   });
 
   it("applies the class to page headers and canvas-root frame labels", () => {
-    const src = readFileSync("src/canvas/components/editor_page.jsx", "utf8");
+    const src = ["editor_free_page.jsx", "editor_full_page.jsx", "editor_page_frame_labels.jsx"]
+      .map(file => readFileSync(`src/canvas/components/${file}`, "utf8")).join("\n");
     expect(src.match(/\$\{FRAME_TITLE_HIT_AREA\}/g)).toHaveLength(3);
   });
 });

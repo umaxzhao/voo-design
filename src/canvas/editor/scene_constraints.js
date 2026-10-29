@@ -1,4 +1,8 @@
 /** Resize constraints for VOO Design: pin / stretch / centre / scale children as their frame resizes. */
+import { reconcileBooleanDocument } from "./boolean-node-reconcile.js";
+import { DEFAULT_CONSTRAINTS, normalizeConstraints, constraintsEqual } from "./constraint-values.js";
+export { HORIZONTAL_CONSTRAINTS, VERTICAL_CONSTRAINTS, DEFAULT_CONSTRAINTS,
+  normalizeConstraints, constraintsEqual } from "./constraint-values.js";
 
 /**
  * Resize constraints (Figma / Pen parity).
@@ -48,59 +52,6 @@
  *   reflow writes the page `width`/`height` from `newBox`.
  */
 
-export const HORIZONTAL_CONSTRAINTS = Object.freeze([
-  "left",
-  "right",
-  "leftRight",
-  "center",
-  "scale",
-]);
-
-export const VERTICAL_CONSTRAINTS = Object.freeze([
-  "top",
-  "bottom",
-  "topBottom",
-  "center",
-  "scale",
-]);
-
-export const DEFAULT_CONSTRAINTS = Object.freeze({
-  horizontal: "left",
-  vertical: "top",
-});
-
-const HORIZONTAL_ALIASES = new Map([
-  ["left", "left"],
-  ["right", "right"],
-  ["leftright", "leftRight"],
-  ["left-right", "leftRight"],
-  ["left_right", "leftRight"],
-  ["stretch", "leftRight"],
-  ["fill", "leftRight"],
-  ["center", "center"],
-  ["centre", "center"],
-  ["middle", "center"],
-  ["scale", "scale"],
-]);
-
-const VERTICAL_ALIASES = new Map([
-  ["top", "top"],
-  ["bottom", "bottom"],
-  ["topbottom", "topBottom"],
-  ["top-bottom", "topBottom"],
-  ["top_bottom", "topBottom"],
-  ["stretch", "topBottom"],
-  ["fill", "topBottom"],
-  ["center", "center"],
-  ["centre", "center"],
-  ["middle", "center"],
-  ["scale", "scale"],
-  // Figma's panel names the vertical property "left/right" rows above a
-  // "top/bottom" row; accept the horizontal words as tolerant reads.
-  ["left", "top"],
-  ["right", "bottom"],
-]);
-
 function finiteNumber(value, fallback = 0) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
@@ -110,29 +61,9 @@ function nonNegative(value, fallback = 0) {
   return Math.max(0, finiteNumber(value, fallback));
 }
 
-function aliasFor(table, value) {
-  if (typeof value !== "string") return null;
-  return table.get(value.trim().toLowerCase()) ?? null;
-}
-
-/** Normalizes a stored constraint object; always returns a complete shape. */
-export function normalizeConstraints(value) {
-  return {
-    horizontal: aliasFor(HORIZONTAL_ALIASES, value?.horizontal) ?? "left",
-    vertical: aliasFor(VERTICAL_ALIASES, value?.vertical) ?? "top",
-  };
-}
-
 /** Whether a node carries explicit constraints (used to gate the resize hook). */
 export function hasConstraints(node) {
   return Boolean(node?.constraints);
-}
-
-/** True when two constraint objects normalize to the same modes. */
-export function constraintsEqual(left, right) {
-  const a = normalizeConstraints(left);
-  const b = normalizeConstraints(right);
-  return a.horizontal === b.horizontal && a.vertical === b.vertical;
 }
 
 function toBox(value) {
@@ -373,13 +304,15 @@ export function reflowConstraints(
   }
 
   if (!changed) return doc;
-  return {
+  const result = {
     ...doc,
     ...(targetParentId === null
       ? { width: newParent.width, height: newParent.height }
       : {}),
     nodes: nextNodes,
   };
+  const beforeDocument = before ? { ...doc, nodes: nodes.map((node) => before.get(node.id) ?? node) } : doc;
+  return reconcileBooleanDocument(beforeDocument, result, { inheritChildren: true });
 }
 
 /**

@@ -17,7 +17,8 @@ import {
   useState,
 } from "react";
 import EditorLayers from "./editor_layers.jsx";
-import AiRepairDownloadDialog from "./ai_repair_download_dialog.jsx";
+import EditorStatusNotices from "./editor_status_notices.jsx";
+import { aiProgressPct, aiProgressLabel as describeAiProgress } from "./editor_ai_progress.js";
 import { getSelectedCanvasPageIds } from "./editor_canvas_selection.js";
 import {
   calculateFitInsets,
@@ -1205,63 +1206,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       ? selectionBounds(exportSelectedNodes)
       : null;
 
-  /** 0..100 when the local model reports a definite download/encode share. */
-  const aiProgressPct = (progress) => {
-    if (!progress) return null;
-    if (progress.phase === "downloading" && progress.total > 0) {
-      return Math.min(
-        100,
-        Math.round((progress.loaded / progress.total) * 100),
-      );
-    }
-    if (progress.phase === "cached") return 100;
-    return null;
-  };
-
-  /** Human label for the running AI phase (local cutout, matting, repaint). */
-  const aiProgressLabel = (progress) => {
-    if (!progress) return t("editor.aiProgress.working");
-    switch (progress.phase) {
-      case "runtime":
-        return t("editor.aiProgress.loadingRuntime");
-      case "downloading":
-        return progress.total > 0
-          ? t("editor.aiProgress.downloading", {
-              pct: Math.min(
-                100,
-                Math.round((progress.loaded / progress.total) * 100),
-              ),
-            })
-          : t("editor.aiProgress.downloading", { pct: "…" });
-      case "compiling":
-        return t("editor.aiProgress.compiling");
-      case "starting":
-        // An installed-but-stopped managed backend is booting inside the
-        // submit call: the wait is real and the overlay has to name it, or a
-        // cold start reads as a dead canvas (contract §6.6).
-        return t("stage.starting");
-      case "running":
-        return t("editor.aiProgress.running");
-      case "encoding":
-        return t("editor.aiProgress.encoding");
-      case "tiling":
-        // Large-image upscales run tile by tile; the count is the only
-        // progress they can report, and a bare "Working..." for minutes is
-        // worse than a number.
-        return t("editor.aiProgress.tiling", {
-          tile: progress.tile ?? 0,
-          tiles: progress.tiles ?? 0,
-        });
-      case "cached":
-        return t("editor.aiProgress.ready");
-      case "fallback":
-        return t("editor.aiProgress.fallback", {
-          provider: progress.providerName || progress.providerId || "",
-        });
-      default:
-        return t("editor.aiProgress.working");
-    }
-  };
+  const aiProgressLabel = (progress) => describeAiProgress(progress, t);
 
   // A narrow single-page editor places Properties or History in the Layers
   // column; side-by-side pages can show both panels and reserve both sides.
@@ -3071,154 +3016,14 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           </div>
         </div>
 
-        {savedNotice ? (
-          <div
-            role="status"
-            className="absolute top-28 left-1/2 z-50 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-black/60 px-3.5 py-1 text-[11px] font-mono text-[#b2ffd6] shadow-pop backdrop-blur-md"
-          >
-            ✓{" "}
-            {typeof savedNotice === "string"
-              ? savedNotice.startsWith("✓")
-                ? savedNotice.slice(1).trim()
-                : `${savedNotice} ${t("editor.saved") || "已保存"}`
-              : t("editor.saved") || "已保存"}
-          </div>
-        ) : null}
-
-        {exportNotice ? (
-          <div
-            role="status"
-            className="absolute top-28 left-1/2 z-50 rounded-xl bg-surface-raised px-3 py-2 text-[11px] text-amber-300 shadow-pop"
-          >
-            {Array.isArray(exportNotice) && exportNotice.length > 0
-              ? t(
-                  typeof exportNotice[0] === "string"
-                    ? `editor.exportWarning.${exportNotice[0]}`
-                    : exportNotice[0]?.code
-                      ? `editor.exportWarning.${exportNotice[0].code}`
-                      : "editor.exportHtml3dWarning",
-                )
-              : typeof exportNotice === "string"
-                ? t(exportNotice)
-                : t("editor.exportHtml3dWarning")}
-          </div>
-        ) : null}
-
-        {applyError ? (
-          <div
-            role="alert"
-            className="absolute top-28 left-1/2 z-50 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-black/60 px-3.5 py-1 text-[11px] font-mono text-rose-300 shadow-pop backdrop-blur-md"
-          >
-            {applyError === "quotaExceeded"
-              ? t("error.quotaExceeded")
-              : typeof applyError === "string" && applyError !== "true"
-                ? t(applyError)
-                : t("editor.applyError")}
-          </div>
-        ) : null}
-
-        {persistQuota ? (
-          <div
-            role="alert"
-            className="absolute top-40 left-1/2 z-50 -translate-x-1/2 flex max-w-[520px] items-center gap-2 rounded-xl bg-rose-500/10 px-3 py-1.5 text-[11px] font-mono text-rose-400 shadow-pop backdrop-blur-md"
-          >
-            <span
-              aria-hidden
-              className="h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400"
-            />
-            <span>{t("editor.storage.persistQuotaWarning")}</span>
-            <button
-              type="button"
-              onClick={() => setPersistQuota(null)}
-              className="shrink-0 rounded-lg px-1.5 py-0.5 text-[11px] text-rose-300 transition-colors hover:bg-rose-500/10 hover:text-rose-200"
-            >
-              {t("error.dismiss")}
-            </button>
-          </div>
-        ) : null}
-
-        {imageActionError ? (
-          <div
-            role="alert"
-            className="absolute top-28 left-1/2 z-50 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-black/60 px-3.5 py-1 text-[11px] font-mono text-rose-300 shadow-pop backdrop-blur-md"
-          >
-            {t(imageActionError)}
-          </div>
-        ) : null}
-
-        {aiErrorText && !imageActionError ? (
-          <div
-            role="alert"
-            data-testid="editor-ai-error"
-            className="absolute top-28 left-1/2 z-50 flex max-w-[min(32rem,90%)] -translate-x-1/2 items-center gap-2 rounded-xl bg-black/60 px-3.5 py-1.5 text-[11px] font-mono text-rose-300 shadow-pop backdrop-blur-md"
-          >
-            <span className="min-w-0">{aiErrorText}</span>
-            <button
-              type="button"
-              onClick={() => setAiErrorText(null)}
-              aria-label={t("error.dismiss")}
-              className="shrink-0 rounded-lg px-1 text-rose-300 transition-colors hover:bg-rose-500/10 hover:text-rose-200"
-            >
-              ✕
-            </button>
-          </div>
-        ) : null}
-
-        {splitLayersError ? (
-          <div
-            role="alert"
-            // One step below imageActionError's top-28: both can fire from the
-            // same click on the taskbar, and stacked at the same offset the
-            // second toast lands exactly on the first.
-            className="absolute top-36 left-1/2 z-50 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-black/60 px-3.5 py-1 text-[11px] font-mono text-rose-300 shadow-pop backdrop-blur-md"
-          >
-            {t(
-              splitLayersError === "extensionRequired"
-                ? "editor.taskbar.splitLayersUnavailableWeb"
-                : splitLayersError === "noLayersIdentified"
-                  ? "editor.taskbar.splitNoLayers"
-                  : "editor.taskbar.splitError",
-            )}
-          </div>
-        ) : null}
-
-        {aiRepairDownload ? (
-          <AiRepairDownloadDialog
-            state={aiRepairDownload}
-            onDownload={() => void engine?.downloadAiRepairModel?.()}
-            onCancel={() => engine?.cancelAiRepairDownload?.()}
-          />
-        ) : null}
-
-        {mattingDownload ? (
-          <AiRepairDownloadDialog
-            state={{ ...mattingDownload, kind: "matting" }}
-            onDownload={() => void downloadMattingModel()}
-            onCancel={cancelMattingModelDownload}
-          />
-        ) : null}
-
-        {regionHint ? (
-          regionHintTone === "error" ? (
-            <div
-              role="alert"
-              className={`absolute top-28 left-1/2 z-50 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-black/60 px-3.5 py-1 text-[11px] font-mono text-rose-300 shadow-pop backdrop-blur-md transition-opacity duration-300 ${
-                regionHintFading ? "opacity-0" : "opacity-100"
-              }`}
-            >
-              {t(regionHint)}
-            </div>
-          ) : (
-            <div
-              role="status"
-              className={`pointer-events-none absolute top-28 left-1/2 z-50 -translate-x-1/2 text-center text-[12px] font-mono text-neutral-100 shadow-pop transition-opacity duration-300 ${
-                regionHintFading ? "opacity-0" : "opacity-100"
-              }`}
-            >
-              {t(regionHint)}
-            </div>
-          )
-        ) : null}
+        <EditorStatusNotices
+          savedNotice={savedNotice} exportNotice={exportNotice} applyError={applyError}
+          persistQuota={persistQuota} setPersistQuota={setPersistQuota} imageActionError={imageActionError}
+          aiErrorText={aiErrorText} setAiErrorText={setAiErrorText} splitLayersError={splitLayersError}
+          aiRepairDownload={aiRepairDownload} engine={engine} mattingDownload={mattingDownload}
+          downloadMattingModel={downloadMattingModel} cancelMattingModelDownload={cancelMattingModelDownload} regionHint={regionHint}
+          regionHintTone={regionHintTone} regionHintFading={regionHintFading} t={t}
+        />
 
         <SharedDocumentLoading />
 

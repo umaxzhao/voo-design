@@ -13,6 +13,7 @@ import { buildToneLut } from "./tone_lut.js";
 import { createFrameClipContext } from "./frame-clip-context.js";
 import { withFrameClips } from "./render-frame-clips.js";
 import { paintedNodeBounds } from "./painted-node-bounds.js";
+import { containerPaintNode, containerMaskNode, createContainerOpacityPlan } from "./container-opacity.js";
 
 // One latest result per immutable document prevents the 90ms selection timer
 // from rebuilding document-sized effect planes. Weak document keys release a
@@ -25,6 +26,17 @@ const adjustmentLayerFailures = new WeakMap();
 
 export function adjustmentLayerFailure(doc, nodeId) {
   return adjustmentLayerFailures.get(doc)?.get(nodeId) ?? null;
+}
+
+export function clearAdjustmentLayerFailure(doc, nodeId) {
+  adjustmentLayerFailures.get(doc)?.delete(nodeId);
+}
+
+export function reportAdjustmentLayerFailure(doc, nodeId, error) {
+  let failures = adjustmentLayerFailures.get(doc);
+  if (!failures) { failures = new Map(); adjustmentLayerFailures.set(doc, failures); }
+  if (!failures.has(nodeId)) console.warn("Adjustment layer render failed", error);
+  failures.set(nodeId, error instanceof Error ? error.message : String(error));
 }
 
 /**
@@ -72,15 +84,21 @@ export function drawClippingChain(
     gpu,
     bypassAdjustments,
     frameClips = createFrameClipContext(doc.nodes),
+    paintNodes = doc.nodes,
+    isolatedContainers = new Set(),
   },
 ) {
-  const base = doc.nodes.find((candidate) => candidate.id === baseId);
+  const rawBase = doc.nodes.find((candidate) => candidate.id === baseId);
+  const base = rawBase ? containerMaskNode(rawBase, isolatedContainers, createContainerOpacityPlan(doc.nodes)) : null;
   if (!base || base.visible === false || isHiddenByGroup(doc, base)) return;
 
   const chain = [];
+  const allowed = new Set(paintNodes.map((node) => node.id));
   for (let j = startIndex; j < doc.nodes.length; j += 1) {
-    const member = doc.nodes[j];
-    if (member.clipTo !== baseId) break;
+    const original = doc.nodes[j];
+    if (original.clipTo !== baseId) break;
+    if (!allowed.has(original.id)) continue;
+    const member = containerPaintNode(original, isolatedContainers);
     if (member.id === hiddenNodeId || member.visible === false) continue;
     if (
       (isGroupNode(member) && !member.isFrame) ||
@@ -92,7 +110,7 @@ export function drawClippingChain(
   }
   if (chain.length === 0) return;
 
-  const cacheKey = `${docVersion}|${startIndex}|${baseId}|${doc.width}x${doc.height}|${canvasWidth}x${canvasHeight}|${fullResolution ? 1 : 0}`;
+  const cacheKey = `${docVersion}|${startIndex}|${baseId}|${JSON.stringify([...isolatedContainers])}|${doc.width}x${doc.height}|${canvasWidth}x${canvasHeight}|${fullResolution ? 1 : 0}`;
   let chains = clippingChainCache.get(doc);
   const cached = chains?.get(cacheKey);
   if (cached) {
@@ -265,14 +283,6 @@ export function drawAdjustmentLayer(
       layers.set(cacheKey, offCanvas);
     }
   } catch (err) {
-    let failures = adjustmentLayerFailures.get(doc);
-    if (!failures) {
-      failures = new Map();
-      adjustmentLayerFailures.set(doc, failures);
-    }
-    if (!failures.has(node.id)) {
-      console.warn("Adjustment layer render failed", err);
-    }
-    failures.set(node.id, err instanceof Error ? err.message : String(err));
+    reportAdjustmentLayerFailure(doc, node.id, err);
   }
 }

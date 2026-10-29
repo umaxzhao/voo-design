@@ -9,6 +9,7 @@ import {
   unreadCommentIds,
   writeCommentSeenAt,
 } from "../../src/canvas/comments/comment_notifications.js";
+import { normalizeComments } from "../../src/canvas/comments/comment_model.js";
 
 const now = Date.now();
 const comments = [
@@ -19,6 +20,15 @@ const comments = [
 afterEach(() => vi.unstubAllGlobals());
 
 describe("comment notifications", () => {
+  it("reads canonical numeric activity and legacy ISO dates with the same unread boundary", () => {
+    const canonical = normalizeComments(comments.map((comment) => ({ ...comment, x: 10, y: 20 })));
+    expect(typeof canonical[0].createdAt).toBe("number");
+    expect(threadLastActivity(canonical[0])).toBe(now - 5000);
+    expect(unreadCommentIds(canonical, now - 3000)).toEqual(["c2"]);
+    expect(mentionedMessages(canonical, "you")[0].commentId).toBe("c2");
+    expect(threadLastActivity({ createdAt: now - 200, messages: [] })).toBe(now - 200);
+    expect(threadLastActivity({ createdAt: "invalid", messages: [{ createdAt: NaN }] })).toBe(0);
+  });
   it("computes thread activity and unread ids", () => {
     expect(threadLastActivity(comments[0])).toBe(now - 5000);
     const ids = unreadCommentIds(comments, now - 3000);

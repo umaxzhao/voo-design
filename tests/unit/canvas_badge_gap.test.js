@@ -2,12 +2,12 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { EDITOR_PAGE_TOOLBAR_GAP } from "../../src/canvas/components/editor_panel_layout.js";
 
-const SRC_PATH = "src/canvas/components/editor_page.jsx";
+const SRC_PATH = "src/canvas/components/editor_full_page.jsx";
 const src = readFileSync(SRC_PATH, "utf8");
 
 /**
  * The canvas size badge wrapper: the div whose class list follows the
- * "Canvas size presets" comment in editor_page.jsx.
+ * "Canvas size presets" comment in editor_full_page.jsx.
  */
 function sizeBadgeOpeningTag() {
   const start = src.indexOf("Canvas size presets sit above the artboard.");

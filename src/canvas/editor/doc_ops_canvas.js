@@ -12,6 +12,7 @@ import { reflowDocumentResize } from "./document-resize-constraints.js";
 import { TOOL } from "./editor_constants.js";
 import { getCanvasType } from "./canvas-composition-model.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
+import { reconcileBooleanDocument } from "./boolean-node-reconcile.js";
 
 /**
  * Appends a node on top of its own plane.
@@ -189,7 +190,7 @@ export function setDocumentSize(doc, width, height, options = {}) {
     return scaled;
   });
 
-  return { ...doc, width: w, height: h, nodes };
+  return reconcileBooleanDocument(doc, { ...doc, width: w, height: h, nodes });
 }
 
 

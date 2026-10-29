@@ -99,18 +99,49 @@ resize/move, screenshots and undo/redo exercise the visible stage as well.
 Nested Frame clips use Canvas2D compatibility while the flat Skia adapter has
 no representation for them. Boolean path operands and operand transforms unsupported
 by the native painter use the same compatibility route. This does not certify general SVG layer effects.
-One separately confirmed limitation remains: Frame/Group opacity currently
-affects its own paint rather than isolating and compositing the entire subtree.
-The diagnostic probe for this is excluded from passing clipping assertions.
-Boolean box resizing also still needs a separate mutation-contract correction: changing
-the box alone does not consistently scale stored operands or child-backed geometry.
-The outline/export checks do not certify that behavior.
+The following `container-opacity` gate isolates a Frame/Group subtree before
+applying alpha, including overlapping children, nested containers, clipping
+chains and PNG-only adjustment backdrops. SVG adjustment effects remain outside
+the supported export scope. Native blend modes composite the completed layer
+once against its backdrop. PSD-only blend math is supported in PNG; SVG rejects
+these unsupported modes explicitly instead of silently exporting normal blend.
+Only non-unit-alpha containers become atomic layers;
+their existing internal paint order is retained. An interleaved malformed
+subtree uses its first member's paint slot, while ordinary opaque containers
+retain the established flat order. The visible stage, one-step history and
+project readback have separate browser assertions.
+
+`boolean-resize` checks the shared synchronous mutation path through numerical
+edits, real pointer handles, agent calls, constraints and project readback.
+Stored operands and active child layers resize together; explicitly updated
+batch children are not scaled twice. Regular resize retains scalar stroke and
+radius values. An operand whose anisotropic transform exceeds the persisted
+shear range is baked to an editable path so save/reopen preserves its geometry;
+undo restores the original shape and hierarchy. This is correctness work, not
+evidence of a faster Boolean kernel.
 
 The following session extraction reduces `image_editor.jsx` from 3,687 to
 3,330 lines. The new `editor-session` gate mounts real React Hooks with two
 engines to check eviction snapshots, deferred selection, component-source return
 contexts, the live-page cap and remote-listener cleanup. These are static imports;
 the structural reduction alone is not evidence of a smaller initial download.
+
+The next structural batch reduces the editor container to 3,135 lines and the
+Page component from 1,330 to 168. Page activation, eviction, independent Skia
+canvas refs, imports and title controls retain their interfaces in focused
+modules. `editor-page-composition` covers real mount/unmount pixels, deduplicated
+external images, title double-click rename and notice controls. Auto Layout's
+public exports remain synchronous after normalization and reflow are separated.
+
+Comments have a genuine optional download boundary: an empty, closed canvas
+keeps the launcher while its thread views and controller load on demand. Saved
+comments load their pins automatically. `comments-loading` blocks and fails real
+module requests, checks cancellation and retry without replacing the canvas,
+and verifies post/reply undo. `comments-lifecycle` checks initial unread pins,
+camera geometry, draft/reply/filter retention, stale callbacks and unmount
+cleanup. Escape registration remains eager so a cold feature cannot clear the
+canvas selection while it is being dismissed. Compare clean release bundle
+reports and network assertions; file splitting alone does not reduce download.
 
 The next maintenance batch separates optional raster action implementations
 from the always-mounted Hook. Matting, selection repair, repaint, outpaint and

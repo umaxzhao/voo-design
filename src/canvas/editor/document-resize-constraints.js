@@ -1,4 +1,5 @@
 import { applyConstraints, reflowConstraints } from "./scene_constraints.js";
+import { reconcileBooleanDocument } from "./boolean-node-reconcile.js";
 
 /** Resolve from original boxes so historical centering never adds a second delta. */
 export function reflowDocumentResize(before, resized) {
@@ -31,6 +32,9 @@ function reflowDescendants(before, next, rootIds) {
     visited.add(parent.id);
     const oldParent = beforeBoxes.get(parent.id);
     if (!oldParent) continue;
+    // Boolean operands resize as one composite, independently of Frame pins.
+    // Their geometry has already followed the direct constraint resolution.
+    if (parent.kind === "boolean") continue;
     const dx = parent.x - oldParent.x;
     const dy = parent.y - oldParent.y;
     for (const id of children.get(parent.id) ?? []) {
@@ -46,7 +50,7 @@ function reflowDescendants(before, next, rootIds) {
       if (children.has(id)) queue.push(resolved);
     }
   }
-  return { ...next, nodes: next.nodes.map((node) => byId.get(node.id)) };
+  return reconcileBooleanDocument(before, { ...next, nodes: next.nodes.map((node) => byId.get(node.id)) });
 }
 
 /**

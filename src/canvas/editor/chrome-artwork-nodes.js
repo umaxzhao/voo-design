@@ -1,18 +1,35 @@
 import { NODE_KIND, isGroupNode, isHiddenByGroup, isInsideBooleanGroup } from "./scene_model.js";
 import { isBoxOffscreen, nodeVisualAABB } from "./viewport_culling.js";
 import { drawNode } from "./render_nodes.js";
-import { drawAdjustmentLayer, drawClippingChain } from "./chrome_layers.js";
+import { clearAdjustmentLayerFailure, drawAdjustmentLayer, drawClippingChain, reportAdjustmentLayerFailure } from "./chrome_layers.js";
 import { createFrameClipContext } from "./frame-clip-context.js";
 import { withFrameClips } from "./render-frame-clips.js";
+import { createContainerOpacityPlan, containerPaintNode } from "./container-opacity.js";
+import { drawContainerOpacity } from "./render-container-opacity.js";
+import { drawIsolatedAdjustment } from "./render-isolated-adjustment.js";
 
-/** Flat paint order is authoritative; ancestry contributes clipping, never reordering. */
+/** Opaque scenes stay flat; isolated subtrees preserve their member paint order. */
 export function drawArtworkNodes(ctx, { doc, paintNodeIds, hiddenNodeId, visibleSet,
   culledIds, visibleRect, docVersion, fullResolution, bitmapOf, maskOf, gpu,
-  bypassAdjustments, selectionTransformBox, videoFrameOf, stageCache }) {
+  bypassAdjustments, selectionTransformBox, videoFrameOf, stageCache,
+  paintNodes = doc.nodes, isolatedContainers = new Set(), opacityPlan = createContainerOpacityPlan(doc.nodes) }) {
   const canvas = ctx.canvas;
   const clips = createFrameClipContext(doc.nodes);
-  for (let i = 0; i < doc.nodes.length; i += 1) {
-    const node = doc.nodes[i];
+  const entries = opacityPlan.entries(paintNodes, isolatedContainers);
+  for (let position = 0; position < entries.length; position += 1) {
+    const entry = entries[position];
+    if (entry.container) {
+      const isolated = new Set([...isolatedContainers, entry.container.id]);
+      drawContainerOpacity(ctx, entry.container, (target) => drawArtworkNodes(target, {
+        doc, paintNodeIds, hiddenNodeId, visibleSet, culledIds, visibleRect, docVersion,
+        fullResolution, bitmapOf, maskOf, gpu, bypassAdjustments, selectionTransformBox,
+        videoFrameOf, stageCache: null, paintNodes: entry.nodes,
+        isolatedContainers: isolated, opacityPlan,
+      }), doc);
+      continue;
+    }
+    const node = containerPaintNode(entry.node, isolatedContainers);
+    const i = opacityPlan.positionOf(entry.node);
     if (paintNodeIds && !paintNodeIds.has(node.id)) continue;
     if (node.id === hiddenNodeId) continue;
     if (visibleSet && !visibleSet.has(node.id)) continue;
@@ -43,6 +60,8 @@ export function drawArtworkNodes(ctx, { doc, paintNodeIds, hiddenNodeId, visible
       drawClippingChain(ctx, doc, i, node.clipTo, {
         hiddenNodeId,
         frameClips: clips,
+        paintNodes,
+        isolatedContainers,
         docVersion,
         canvasWidth: canvas.width,
         canvasHeight: canvas.height,
@@ -53,20 +72,27 @@ export function drawArtworkNodes(ctx, { doc, paintNodeIds, hiddenNodeId, visible
         bypassAdjustments,
       });
       // Advance past every layer in the chain.
-      while (
-        i + 1 < doc.nodes.length &&
-        doc.nodes[i + 1].clipTo === node.clipTo
-      ) {
-        i += 1;
+      while (position + 1 < entries.length && entries[position + 1].node?.clipTo === node.clipTo) {
+        position += 1;
       }
       continue;
     }
     if (node.kind === NODE_KIND.ADJUSTMENT) {
       if (bypassAdjustments || !node.adjustments || node.visible === false)
         continue;
+      if (isolatedContainers.size) {
+        try {
+          drawIsolatedAdjustment(ctx, node, doc, clips.framesOf(node), maskOf);
+          clearAdjustmentLayerFailure(doc, node.id);
+        }
+        catch (error) { reportAdjustmentLayerFailure(doc, node.id, error); }
+        continue;
+      }
       withFrameClips(ctx, clips.framesOf(node), () => drawAdjustmentLayer(ctx, doc, node, i, {
         hiddenNodeId,
         frameClips: clips,
+        paintNodes,
+        isolatedContainers,
         docVersion,
         canvasWidth: canvas.width,
         canvasHeight: canvas.height,

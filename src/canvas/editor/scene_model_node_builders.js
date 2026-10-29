@@ -106,6 +106,9 @@ export function booleanSourceOf(node, originX, originY) {
     w: node.width,
     h: node.height,
     rotation: node.rotation ?? 0,
+    ...(node.shear ? { shear: node.shear } : {}),
+    ...(node.flipH ? { flipH: true } : {}),
+    ...(node.flipV ? { flipV: true } : {}),
     ...(node.kind === NODE_KIND.RECT ? { cornerRadius: node.cornerRadius ?? 0 } : {}),
     ...(node.kind === NODE_KIND.PATH
       ? {
@@ -124,7 +127,7 @@ export function booleanSourceOf(node, originX, originY) {
  * Recalculates a boolean container node's bounding box and source shapes
  * from its active child nodes in document coordinates.
  */
-export function syncBooleanNode(booleanNode, childNodes) {
+export function syncBooleanNode(booleanNode, childNodes, { preserveBox = false } = {}) {
   if (!childNodes || childNodes.length === 0) return booleanNode;
   const x = Math.min(...childNodes.map((node) => node.x));
   const y = Math.min(...childNodes.map((node) => node.y));
@@ -132,11 +135,12 @@ export function syncBooleanNode(booleanNode, childNodes) {
   const bottom = Math.max(...childNodes.map((node) => node.y + node.height));
   return {
     ...booleanNode,
-    x,
-    y,
-    width: Math.max(1, right - x),
-    height: Math.max(1, bottom - y),
-    sources: childNodes.map((child) => booleanSourceOf(child, x, y)),
+    x: preserveBox ? booleanNode.x : x,
+    y: preserveBox ? booleanNode.y : y,
+    width: preserveBox ? booleanNode.width : Math.max(1, right - x),
+    height: preserveBox ? booleanNode.height : Math.max(1, bottom - y),
+    sources: childNodes.map((child) => booleanSourceOf(child,
+      preserveBox ? booleanNode.x : x, preserveBox ? booleanNode.y : y)),
   };
 }
 

@@ -1,3 +1,4 @@
+import { containerOpacity } from "./container-opacity.js";
 import { frameSceneFills } from "./frame-fills.js";
 import { isPlainRectList } from './render_plain_rects.js';
 /**
@@ -42,6 +43,8 @@ export function requiresCanvas2dMediaFallback(doc) {
   const clippingFrames = new Set(nodes.filter((node) => node.isFrame && node.clipContent !== false).map((node) => node.id));
   return Boolean(
     doc?.timeline ||
+    // The flat adapter cannot isolate a Frame/Group subtree as one alpha layer.
+    nodes.some((node) => containerOpacity(node) !== 1) ||
     // Nested Frame ancestry is not represented by this flat scene adapter.
     // Preserve the established document coordinates and clips in Canvas2D.
     nodes.some((node) => clippingFrames.has(node.parentId)) ||

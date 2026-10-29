@@ -8,6 +8,8 @@
  * drive it without a DOM.
  */
 
+import { containerOpacity, createContainerOpacityPlan, containerPaintNode, containerMaskNode } from "./container-opacity.js";
+import { svgContainerBlend } from "./svg-container-opacity.js";
 import { booleanNodeMarkup } from "./svg-boolean.js";
 import { createSvgFrameClips } from "./svg-frame-clips.js";
 import { paintedNodeBounds } from "./painted-node-bounds.js";
@@ -244,7 +246,8 @@ export function documentToSvg(
     }
     return out;
   };
-  const nodeMarkup = (node) => {
+  const nodeMarkup = (node, isolated) => {
+    node = containerPaintNode(node, isolated);
     if (isHiddenByGroup(doc, node) || isInsideBooleanGroup(doc, node)) return [];
     return frameClips.wrap(node, svgStrokeMarkup(node, singleNodeMarkup, defs));
   };
@@ -252,37 +255,55 @@ export function documentToSvg(
   const nodes = doc.nodes ?? [];
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const clipRefs = new Map();
-  const clipRefOf = (base) => {
-    if (!clipRefs.has(base.id)) {
+  const opacityPlan = createContainerOpacityPlan(nodes);
+  // A mask-only container can still influence an external chain. Validate its
+  // blend semantics even when its own isolated paint unit would be empty.
+  for (const node of nodes) {
+    const opacity = containerOpacity(node);
+    if (opacity !== 1 && opacity !== 0 && node.visible !== false && !isHiddenByGroup(doc, node)) svgContainerBlend(node);
+  }
+  const clipRefOf = (base, isolated) => {
+    const key = JSON.stringify([base.id, [...isolated]]);
+    if (!clipRefs.has(key)) {
       // Source IDs may sanitize to the same token, and image corners own a
       // separate clip definition. Allocate a dedicated namespace per chain.
-      clipRefs.set(base.id, clipReference(base, nodeMarkup(base), defs, `chain-clip-${clipRefs.size}`));
+      const paint = containerMaskNode(base, isolated, opacityPlan);
+      clipRefs.set(key, clipReference(paint, nodeMarkup(paint, isolated), defs, `chain-clip-${clipRefs.size}`));
     }
-    return clipRefs.get(base.id);
+    return clipRefs.get(key);
   };
 
-  for (let i = 0; i < nodes.length; i += 1) {
-    const node = nodes[i];
-    if (node.clipTo) {
-      // Like the stage, consecutive layers clipped to one base composite as
-      // one group, and the group is clipped once by the base.
-      const baseId = node.clipTo;
-      const members = [];
-      while (i < nodes.length && nodes[i].clipTo === baseId) {
-        members.push(...nodeMarkup(nodes[i]));
-        i += 1;
+  const renderNodes = (paintNodes, isolated = new Set()) => {
+    const out = [], entries = opacityPlan.entries(paintNodes, isolated);
+    for (let i = 0; i < entries.length; i += 1) {
+      const entry = entries[i];
+      if (entry.container) {
+        const opacity = containerOpacity(entry.container);
+        if (opacity === 0) continue;
+        const inner = renderNodes(entry.nodes, new Set([...isolated, entry.container.id]));
+        if (inner.length) out.push(`<g opacity="${number(opacity)}"${svgContainerBlend(entry.container)}>${inner.join("")}</g>`);
+        continue;
       }
-      i -= 1;
-      const base = byId.get(baseId);
-      if (!base || base.visible === false || isHiddenByGroup(doc, base) || members.length === 0) continue;
-      const ref = clipRefOf(base);
-      if (ref) body.push(`<g ${ref}>${members.join("")}</g>`);
-      continue;
+      const node = entry.node;
+      if (node.clipTo) {
+        // Chain compositing happens within the same isolated container scope.
+        const baseId = node.clipTo, members = [];
+        while (i < entries.length && entries[i].node?.clipTo === baseId) {
+          members.push(...nodeMarkup(entries[i].node, isolated));
+          i += 1;
+        }
+        i -= 1;
+        const base = byId.get(baseId);
+        if (!base || base.visible === false || isHiddenByGroup(doc, base) || !members.length) continue;
+        const ref = clipRefOf(base, isolated);
+        if (ref) out.push(`<g ${ref}>${members.join("")}</g>`);
+        continue;
+      }
+      if (!node.maskBase) out.push(...nodeMarkup(node, isolated));
     }
-    // A Figma mask base paints nothing itself; it only clips its chain.
-    if (node.maskBase) continue;
-    body.push(...nodeMarkup(node));
-  }
+    return out;
+  };
+  body.push(...renderNodes(nodes));
 
   const content = frameClips.page(doc, page, body);
   return [

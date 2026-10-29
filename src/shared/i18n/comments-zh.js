@@ -6,6 +6,7 @@
  */
 export default {
   "editor.comments.new": "新",
+  "editor.comments.loadFailed": "评论面板加载失败。",
   "editor.comments.title": "评论",
   "editor.comments.toggle": "显示/隐藏评论",
   "editor.comments.toggleAddMode": "评论模式",

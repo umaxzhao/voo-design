@@ -8,6 +8,7 @@
  */
 export default {
   "editor.comments.new": "New",
+  "editor.comments.loadFailed": "Comments could not be loaded.",
   "editor.comments.title": "Comments",
   "editor.comments.toggle": "Show/hide comments",
   "editor.comments.toggleAddMode": "Comment mode",

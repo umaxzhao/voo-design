@@ -12,7 +12,8 @@ vi.mock("../../src/canvas/use_i18n.js", () => ({
 describe("secondary editor bars", () => {
   it("does not mount the removed tool subbar and keeps the contextual bar in the page", () => {
     const editor = readFileSync("src/canvas/components/image_editor.jsx", "utf8");
-    const page = readFileSync("src/canvas/components/editor_page.jsx", "utf8");
+    const page = ["editor_free_page.jsx", "editor_full_page.jsx"]
+      .map(file => readFileSync(`src/canvas/components/${file}`, "utf8")).join("\n");
     expect(editor).not.toContain("EditorToolSubbar");
     expect(editor).not.toContain("editor-tool-subbar");
     // The contextual bar is restored at its two render sites via the slot.

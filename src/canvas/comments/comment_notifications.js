@@ -36,9 +36,15 @@ export function writeCommentSeenAt(timestamp = Date.now()) {
   return Number(timestamp);
 }
 
-function messageTime(message) {
-  const parsed = Date.parse(message?.createdAt ?? "");
+function activityTime(value) {
+  // The canonical comment model stores epoch milliseconds; legacy documents
+  // still carry ISO strings. Date.parse(number) interprets it as date text.
+  const parsed = typeof value === "number" ? value : Date.parse(value ?? "");
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function messageTime(message) {
+  return activityTime(message?.createdAt);
 }
 
 /** Newest message time in a thread (0 when it has none). */
@@ -50,8 +56,7 @@ export function threadLastActivity(comment) {
 }
 
 function threadLastActivityFallback(comment) {
-  const parsed = Date.parse(comment?.createdAt ?? "");
-  return Number.isFinite(parsed) ? parsed : 0;
+  return activityTime(comment?.createdAt);
 }
 
 /** Threads whose latest message is newer than the last time the panel was seen. */

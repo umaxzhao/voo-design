@@ -2,6 +2,11 @@
 
 ## 1.0.0
 
+- Composite transparent Groups and Frames as isolated subtrees, applying alpha once to overlapping children; retain ancestor clips and mask scopes in PNG/SVG exports and preserve undo/project readback.
+- Synchronize Boolean operands and active children when boxes resize through numeric edits, handles, agent mutations and constraints; retain Boolean parent links when reopening projects and bake only affine operands that exceed the persisted shear range.
+- Defer the empty-canvas comments implementation, keep loading/error recovery local to comments, preserve Escape layering and draft/filter state, and restore unread badges for canonical numeric timestamps.
+- Split page lifecycle, artwork, overlays and status notices into focused modules; fix full-page title pointer capture so real double-click renaming works, and keep Auto Layout normalization/reflow behind synchronous public exports.
+
 - Apply transformed, rounded ancestor Frame clips consistently to Canvas2D, SVG, clipping-mask chains and Frame selection exports; retain empty Frame paint and remove fixed-world mask bounds.
 - Share merged Boolean contours between Canvas2D and SVG; preserve fills, transparent interiors, nested subtraction holes and independent inside/center/outside strokes without operand seams.
 - Extract engine registration/eviction snapshots and canvas-source navigation into focused Hooks, with real-engine coverage for deferred selection, source return contexts and listener cleanup.

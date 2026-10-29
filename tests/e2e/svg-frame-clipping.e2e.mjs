@@ -129,7 +129,14 @@ await withEditorBrowser(async ({ page, tool }) => {
   checks.push("half-alpha clipping mask at x=80000/y=90000 intersects Frame without a fixed world mask box");
 
   const opacity = await probe([frame({ opacity: 0.5 }), rect()], [[120, 120]]);
-  console.log(JSON.stringify({ diagnostic: "parent-opacity-not-certified", png: opacity.png.pixels, svg: opacity.svg.pixels }));
+  for (const kind of ["png", "svg"]) {
+    const [pixel] = opacity[kind].pixels;
+    assert.equal(pixel[0], 255, `${kind}: parent alpha keeps red hue`);
+    assert.ok(Math.abs(pixel[1] - 127) <= 1 && Math.abs(pixel[2] - 127) <= 1,
+      `${kind}: parent alpha applies once to the completed Frame subtree`);
+    assert.equal(pixel[3], 255);
+  }
+  checks.push("Frame opacity composites its opaque child together with the Frame surface");
 
   await probe([frame(), rect()], [[120, 120]]);
   await page.evaluate(async () => {

@@ -13,7 +13,7 @@ const commands = [
   ["npm", ["run", "build"]],
   ["npm", ["run", "lint:design"]],
   ["npm", ["test"]],
-  ...["editor-effects", "agent-paint-text", "layout-mask-audit", "inspector-controls", "stroke-controls", "boolean-stroke-export", "svg-frame-clipping", "frame-clip-review", "drawing-retouch", "pending-integration", "settings-i18n", "editor-document-aids", "editor-loading", "editor-optional-loading", "editor-canvas-navigation", "project-picker", "editor-snapping", "destructive-boolean", "hook-lifecycle", "editor-refactor", "editor-context", "editor-session", "raster-loading", "generated-output", "root-contextual-toolbar", "frame-child-pointer", "gl-spatial-parity"]
+  ...["editor-effects", "agent-paint-text", "layout-mask-audit", "inspector-controls", "stroke-controls", "boolean-stroke-export", "boolean-resize", "container-opacity", "svg-frame-clipping", "frame-clip-review", "drawing-retouch", "pending-integration", "settings-i18n", "editor-document-aids", "comments-loading", "comments-lifecycle", "editor-loading", "editor-optional-loading", "editor-canvas-navigation", "project-picker", "editor-snapping", "destructive-boolean", "hook-lifecycle", "editor-refactor", "editor-context", "editor-session", "editor-page-composition", "raster-loading", "generated-output", "root-contextual-toolbar", "frame-child-pointer", "gl-spatial-parity"]
     .map((suite) => [process.execPath, [`tests/e2e/${suite}.e2e.mjs`]]),
 ];
 const results = [];
