@@ -1,6 +1,15 @@
 import PropTypes from "prop-types";
 import { useI18n } from "../../use_i18n.js";
 import { STROKE_ALIGN } from "../../editor/stroke_style.js";
+import { NODE_KIND } from "../../editor/scene_doc_factory.js";
+
+export function strokeAlignmentState(node) {
+  const closed = node.kind !== NODE_KIND.TEXT && (node.kind !== NODE_KIND.PATH ||
+    node.poly === true || node.polygon === true || node.star === true || node.points?.at(-1)?.close === true);
+  const defaultAlign = [NODE_KIND.RECT, NODE_KIND.ELLIPSE, NODE_KIND.IMAGE].includes(node.kind) || node.isFrame
+    ? STROKE_ALIGN.INSIDE : STROKE_ALIGN.CENTER;
+  return { closed, align: closed ? node.strokeAlign || defaultAlign : STROKE_ALIGN.CENTER };
+}
 
 const ALIGNMENTS = [
   {

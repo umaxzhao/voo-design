@@ -21,6 +21,7 @@ import {
 } from "./scene_styles.js";
 import { normalizeBooleanNode } from "./scene-boolean-serialization.js";
 import { normalizeStoredImageCrop } from "./image_layer_crop.js";
+import { documentStrokeFields } from "./stroke-paint-passes.js";
 export { normalizeBooleanNode } from "./scene-boolean-serialization.js";
 import { validateAndNormalizeModifierCollection } from "./scene-linear-array-validation.js";
 import { assertNotEvaluatedFrame } from "./scene-evaluated-frame.js";
@@ -60,6 +61,7 @@ export function serialiseDocument(doc) {
     width: doc.width,
     height: doc.height,
     backgroundColor: doc.backgroundColor ?? "transparent",
+    ...documentStrokeFields(doc),
     ...(doc.isCanvasRoot === true ? { isCanvasRoot: true } : {}),
     ...(colorVariables.length > 0 ? { colorVariables } : {}),
     // A non-destructive crop travels with the document; without it the full
@@ -293,6 +295,7 @@ export function deserialiseDocument(value) {
     width: value.width,
     height: value.height,
     backgroundColor: value.backgroundColor ?? "transparent",
+    ...documentStrokeFields(value),
     ...(value.isCanvasRoot === true ? { isCanvasRoot: true } : {}),
     ...(colorVariables.length > 0 ? { colorVariables } : {}),
     // A non-destructive crop comes back only when it is a sane, in-bounds

@@ -32,6 +32,7 @@ import {
   drawNoiseOverlay,
   drawGlassOverlay,
 } from "./render_figma_effects.js";
+import { additionalStrokePaints, primaryStrokePaint } from "./stroke-paint-passes.js";
 
 export function drawNode(
   ctx,
@@ -56,7 +57,7 @@ export function drawNode(
 
   const paintOne = (targetCtx, node) => {
     if (node.fillHidden) node = { ...node, fillOpacity: 0 };
-    if (node.strokeHidden) node = { ...node, strokeWidth: 0 };
+    node = primaryStrokePaint(node);
     const imageFill = isImagePaint(node.fill);
     if (imageFill || (node.imageId && node.kind !== NODE_KIND.IMAGE && node.fill === "transparent")) {
       const bitmap = bitmapOf(imageFill ? { ...node, imageId: undefined, src: node.fill } : node);
@@ -89,6 +90,10 @@ export function drawNode(
     targetCtx.globalAlpha = node.opacity ?? 1;
     switch (node.kind) {
       case NODE_KIND.IMAGE:
+        if (node.fillHidden) {
+          drawRectNode(targetCtx, { ...node, fill: "transparent" });
+          break;
+        }
         drawImageNode(
           targetCtx,
           node,
@@ -136,9 +141,8 @@ export function drawNode(
         ? node.fillBlendMode : targetCtx.globalCompositeOperation;
       paintOne(targetCtx, node);
       targetCtx.restore();
-      return;
-    }
-    for (const paint of paints) {
+    } else {
+      for (const paint of paints) {
       if (paint.visible === false) continue;
       targetCtx.save();
       targetCtx.globalCompositeOperation = paint.blendMode ?? "source-over";
@@ -148,25 +152,12 @@ export function drawNode(
 
       paintOne(targetCtx, painted);
       targetCtx.restore();
+      }
+      if (node.strokeWidth > 0) paintOne(targetCtx, { ...node, fillHidden: true, fillOpacity: 0 });
     }
-    if (node.strokeWidth > 0) paintOne(targetCtx, { ...node, fillHidden: true, fillOpacity: 0 });
     // Additional strokes (Figma-style stroke list): the primary stroke above
     // stays the legacy field, extras are painted over it.
-    if (Array.isArray(node.strokes)) {
-      for (const stroke of node.strokes) {
-        if (!stroke || stroke.visible === false || !(stroke.strokeWidth > 0)) continue;
-        paintOne(targetCtx, {
-          ...node,
-          fillHidden: true,
-          fillOpacity: 0,
-          stroke: stroke.stroke,
-          strokeWidth: stroke.strokeWidth,
-          strokeOpacity: stroke.strokeOpacity ?? 1,
-          strokeAlign: stroke.strokeAlign ?? node.strokeAlign,
-          strokes: null,
-        });
-      }
-    }
+    for (const strokeNode of additionalStrokePaints(node)) paintOne(targetCtx, strokeNode);
   };
 
   ctx.save();

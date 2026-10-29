@@ -8,7 +8,7 @@ import { NODE_KIND } from "../../editor/scene_model.js";
 import { STROKE_ALIGN } from "../../editor/stroke_style.js";
 import { useI18n } from "../../use_i18n.js";
 import { IconSliders, IconMinus, IconEye, IconEyeOff } from "../../icons.jsx";
-import StrokeAlignmentControl from "./stroke_alignment_control.jsx";
+import StrokeAlignmentControl, { strokeAlignmentState } from "./stroke_alignment_control.jsx";
 import StrokeStyleSection from "./stroke_style_section.jsx";
 import EditorTooltip from "../editor_tooltip.jsx";
 import ScrubField from "../scrub_field.jsx";
@@ -83,12 +83,7 @@ export function StrokeSection({
   const strokeWidthMixed =
     selectedNodes.length > 1 &&
     commonValue(selectedNodes, "strokeWidth") === MIXED;
-  const closed =
-    object.kind !== NODE_KIND.PATH ||
-    object.points?.[object.points.length - 1]?.close === true;
-  const strokeAlign = closed
-    ? object.strokeAlign || STROKE_ALIGN.CENTER
-    : STROKE_ALIGN.CENTER;
+  const { closed, align: strokeAlign } = strokeAlignmentState(object);
 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const strokeSides = object.strokeSides ?? {};

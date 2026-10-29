@@ -106,7 +106,7 @@ export function shapeAttributes(node, idOf) {
   }
   if (node.strokeHidden !== true && node.strokeWidth > 0 && node.stroke && node.stroke !== "transparent") {
     parts.push(
-      `stroke="${escapeXml(node.stroke)}" stroke-width="${number(node.strokeWidth)}"`,
+      `stroke="${idOf(node.stroke) ?? escapeXml(node.stroke)}" stroke-width="${number(node.strokeWidth)}"`,
     );
     const style = normalizeStrokeProps(node);
     const join =
@@ -124,6 +124,8 @@ export function shapeAttributes(node, idOf) {
       parts.push(`stroke-dasharray="${dash.map(number).join(" ")}"`);
     }
   }
+  if (node.fillOpacity != null && node.fillOpacity < 1) parts.push(`fill-opacity="${number(node.fillOpacity)}"`);
+  if (node.strokeOpacity != null && node.strokeOpacity < 1) parts.push(`stroke-opacity="${number(node.strokeOpacity)}"`);
   if (node.opacity != null && node.opacity < 1)
     parts.push(`opacity="${number(node.opacity)}"`);
   const transformAttr = svgNodeTransform(node);
@@ -218,7 +220,7 @@ export function ribbonAttributes(node) {
 
 export function arrowheadSvgElements(node) {
   const points = node.points ?? [];
-  if (points.length < 2 || (!node.arrow && !node.arrowStart)) return [];
+  if (!(node.strokeWidth > 0) || node.strokeHidden || points.length < 2 || (!node.arrow && !node.arrowStart)) return [];
   const scaleX = node.baseWidth ? node.width / node.baseWidth : 1;
   const scaleY = node.baseHeight ? node.height / node.baseHeight : 1;
   const at = (index) => {

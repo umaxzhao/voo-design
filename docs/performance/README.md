@@ -65,6 +65,28 @@ multi-selection transform defaults and real inspector edit/undo are covered;
 `hook-lifecycle` also exercises full-page callback routing and read-only Inspect
 colour previews. SSR-only markup tests do not establish lifecycle behavior.
 
+The following extraction moves frame properties/resizing, component source
+resolution and property-library actions into focused modules. `editor-context`
+uses real engines to check constraint reflow, commit/undo and live/snapshot
+resolution order; the extraction keeps those APIs synchronous.
+
+Optional surfaces have a separate download boundary. A `lazy()` declaration
+alone does not defer a closed dialog when it is always mounted. Surfaces now
+mount on first use and retain their instance after closing so Find query state
+survives. The context menu loads on demand as well. `editor-optional-loading`
+blocks cold module requests and checks Escape/outside cancellation, canvas
+pixels, keyboard actions and reopening state. Re-run the bundle analyzer on
+the release commit; the clean `baaed91` editor chunk baseline is 1,093,665
+bytes (324,155 gzip). Its static import closure totals 2,513,663 bytes, including
+shared entry chunks and excluding optional runtime imports. Neither figure is
+an FPS measurement or a complete first-open network total.
+
+Stroke parity uses the existing authoritative Canvas2D fallback for additional
+paint lists and image/text strokes that the Skia scene format cannot carry.
+This prioritizes correct pixels; it does not establish a hardware-GPU speedup.
+The stroke export checks cover ordinary shapes, image borders and Frame bodies,
+not merged Boolean-outline strokes or complete nested Frame clipping in SVG.
+
 The next maintenance batch separates optional raster action implementations
 from the always-mounted Hook. Matting, selection repair, repaint, outpaint and
 image processing load at the action boundary; the Hook itself stays synchronous.

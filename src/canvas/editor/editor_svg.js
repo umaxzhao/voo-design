@@ -27,6 +27,7 @@ import {
 } from "./editor_svg_shapes.js";
 import { buildStrokeRibbon, normalizeStrokeProps } from "./stroke_style.js";
 import { detachInstance } from "./component_extract.js";
+import { paintsBeyondFill, svgStrokeDefinitionNodes, svgStrokeMarkup } from "./svg-stroke-paints.js";
 
 function expandInstances(doc, resolveCanvas, sourcePath = new Set()) {
   if (typeof resolveCanvas !== "function") return doc;
@@ -64,14 +65,6 @@ function isOpaqueSolid(fill) {
     return /^#[0-9a-f]{3}f$|^#[0-9a-f]{6}ff$/.test(value);
   }
   return /^rgb\(/.test(value) || /^[a-z]+$/.test(value);
-}
-
-function paintsBeyondFill(node) {
-  if (node.strokeWidth > 0 && node.stroke && node.stroke !== "transparent") return true;
-  if (node.layerBlur > 0 || node.noise?.opacity > 0 || node.shadow?.enabled) return true;
-  const effects = node.effects;
-  if (Array.isArray(effects)) return effects.some((effect) => effect && effect.enabled !== false);
-  return Boolean(effects && Object.values(effects).some((effect) => effect?.enabled));
 }
 
 /**
@@ -132,7 +125,8 @@ export function documentToSvg(
   if (!doc) return "";
   doc = expandInstances(doc, resolveCanvas);
   const page = effectivePage(doc);
-  const { defs, idOf } = gradientDefs(doc.nodes ?? []);
+  const svgNodes = doc.nodes ?? [];
+  const { defs, idOf } = gradientDefs([...svgNodes, ...svgStrokeDefinitionNodes(svgNodes)]);
   const body = [];
 
   if (!transparent && doc.backgroundColor && doc.backgroundColor !== "transparent") {
@@ -143,7 +137,7 @@ export function documentToSvg(
     );
   }
 
-  const nodeMarkup = (node) => {
+  const singleNodeMarkup = (node) => {
     const out = [];
     // Locking prevents edits; visible locked artwork still belongs in exports.
     if (node.visible === false) return out;
@@ -154,62 +148,6 @@ export function documentToSvg(
           node.width,
           node.height,
         );
-        if (
-          node.strokeAlign === "inside" &&
-          node.strokeWidth > 0 &&
-          node.stroke &&
-          node.stroke !== "transparent"
-        ) {
-          const sw = node.strokeWidth;
-          const inset = sw / 2;
-          const iw = Math.max(0, node.width - sw);
-          const ih = Math.max(0, node.height - sw);
-          const insetRadii = resolveCornerRadii(
-            radii.isUniform ? Math.max(0, radii.uniformRadius - inset) : radii,
-            iw,
-            ih,
-          );
-          const hasFill =
-            node.fill && node.fill !== "transparent" && node.fill !== "none";
-          if (hasFill) {
-            if (radii.isUniform) {
-              const r =
-                radii.uniformRadius > 0
-                  ? ` rx="${number(radii.uniformRadius)}"`
-                  : "";
-              out.push(
-                `<rect x="${number(node.x)}" y="${number(node.y)}" width="${number(node.width)}" height="${number(node.height)}"${r} fill="${idOf(node.fill) ?? escapeXml(node.fill)}"${node.opacity != null && node.opacity < 1 ? ` opacity="${number(node.opacity)}"` : ""}/>`,
-              );
-            } else {
-              out.push(
-                `<path d="${roundedRectPathData(node.x, node.y, node.width, node.height, radii)}" fill="${idOf(node.fill) ?? escapeXml(node.fill)}"${node.opacity != null && node.opacity < 1 ? ` opacity="${number(node.opacity)}"` : ""}/>`,
-              );
-            }
-          }
-          const strokeOnlyNode = {
-            ...node,
-            x: node.x + inset,
-            y: node.y + inset,
-            width: iw,
-            height: ih,
-            fill: "none",
-            strokeAlign: "center",
-          };
-          if (insetRadii.isUniform) {
-            const ir =
-              insetRadii.uniformRadius > 0
-                ? ` rx="${number(insetRadii.uniformRadius)}"`
-                : "";
-            out.push(
-              `<rect x="${number(node.x + inset)}" y="${number(node.y + inset)}" width="${number(iw)}" height="${number(ih)}"${ir} ${shapeAttributes(strokeOnlyNode, idOf)}/>`,
-            );
-          } else {
-            out.push(
-              `<path d="${roundedRectPathData(node.x + inset, node.y + inset, iw, ih, insetRadii)}" ${shapeAttributes(strokeOnlyNode, idOf)}/>`,
-            );
-          }
-          break;
-        }
         if (radii.isUniform) {
           const radius =
             radii.uniformRadius > 0
@@ -365,6 +303,7 @@ export function documentToSvg(
     }
     return out;
   };
+  const nodeMarkup = (node) => svgStrokeMarkup(node, singleNodeMarkup, defs);
 
   const nodes = doc.nodes ?? [];
   const byId = new Map(nodes.map((node) => [node.id, node]));

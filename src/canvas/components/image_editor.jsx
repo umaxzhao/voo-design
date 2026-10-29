@@ -1,5 +1,4 @@
 import { WORKSPACE_BACKGROUND } from "../editor/render_canvas_base.js";
-import { frameEditorFills } from "../editor/frame-fills.js";
 import { exportTargetName } from "../editor/export_filename.js";
 import { patchForMultiResize } from "../editor/multi_selection_patch.js";
 import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
@@ -30,12 +29,10 @@ import {
 import PropertiesPanelShell from "./editor_properties/properties_panel_shell.jsx";
 import { getWorkbench } from "./editor_workbench.js";
 import {
-  countInstances,
   detachInstance,
   extractComponent,
 } from "../editor/component_extract.js";
 import { effectivePage } from "../editor/scene_model_geometry.js";
-import { setDocumentSize as resizePageDocument } from "../editor/doc_ops_canvas.js";
 import { selectionBounds } from "../editor/editor_export_bounds.js";
 import { alignNodes, distributeNodes } from "../editor/align_ops.js";
 import EditorPage from "./editor_page.jsx";
@@ -53,7 +50,8 @@ import EditorComments from "./editor_comments.jsx";
 import { readDocumentGuides } from "../editor/rulers_geometry.js";
 import { normalizeComments } from "../comments/comment_model.js";
 import EditorPieMenu from "./editor_pie_menu.jsx";
-import EditorContextMenu from "./editor_context_menu.jsx";
+import DeferredEditorSurface from "./deferred_editor_surface.jsx";
+const EditorContextMenu = lazy(() => import("./editor_context_menu.jsx"));
 const EditorCommandPalette = lazy(() => import("./editor_command_palette.jsx"));
 const EditorFindReplace = lazy(() => import("./editor_find_replace.jsx"));
 const ShortcutReferenceModal = lazy(() => import("./shortcut_reference_modal.jsx"));
@@ -94,13 +92,9 @@ import {
   setInstanceViewLocked,
 } from "../editor/instance-view.js";
 import { applySmartCrop } from "../editor/auto_crop_page.js";
-import {
-  addColorVariable,
-  bindColorVariable,
-  updateColorVariable,
-} from "../editor/scene_color_variables.js";
-import { createVariablesPanelActions } from "../editor/scene_variables.js";
-import { createStylePanelActions } from "../editor/scene_styles.js";
+import { useEditorFrameProperties } from "./editor_hooks/use_editor_frame_properties.js";
+import { createEditorPropertyLibraries } from "./editor_hooks/editor_property_libraries.js";
+import { useEditorComponentContext } from "./editor_hooks/use_editor_component_context.js";
 import { useEditorMobilePanels } from "./editor_hooks/use_editor_mobile_panels.js";
 import { useEditorMediaImport } from "./editor_hooks/use_editor_media_import.js";
 import { useEditorFeedback } from "./editor_hooks/use_editor_feedback.js";
@@ -718,139 +712,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     height: doc?.height ?? 1024,
   };
 
-  const frameObject = useMemo(() => {
-    if (!doc || !isFrameSelected) return null;
-    return {
-      id: focusedId,
-      name: doc.title || "Frame",
-      kind: "rect",
-      isFrame: true,
-      x: frameLayout.x ?? 0,
-      y: frameLayout.y ?? 0,
-      width: doc.width ?? 1024,
-      height: doc.height ?? 1024,
-      lockRatio: doc.lockRatio ?? false,
-      rotation: doc.rotation ?? 0,
-      flipX: doc.flipX ?? false,
-      flipY: doc.flipY ?? false,
-      opacity: doc.opacity ?? 1,
-      blendMode: doc.blendMode ?? "normal",
-      fill: doc.backgroundColor || "#ffffff",
-      fills: frameEditorFills(doc),
-      fillOpacity: doc.fillOpacity ?? 1,
-      fillHidden: doc.fillHidden ?? false,
-      stroke: doc.stroke ?? null,
-      strokes:
-        doc.strokes ??
-        (doc.stroke
-          ? [
-              {
-                color: doc.stroke,
-                opacity: doc.strokeOpacity ?? 1,
-                width: doc.strokeWidth ?? 1,
-              },
-            ]
-          : []),
-      strokeWidth: doc.strokeWidth ?? 1,
-      strokeAlign: doc.strokeAlign ?? "inside",
-      cornerRadius: doc.cornerRadius ?? 0,
-      cornerRadii: doc.cornerRadii ?? null,
-      effects: doc.effects ?? [],
-      clipContent: doc.clipContent ?? true,
-      autoLayout: doc.autoLayout ?? null,
-      layoutGrid: doc.layoutGrid ?? null,
-      visible: true,
-      locked: false,
-    };
-  }, [doc, focusedId, isFrameSelected, frameLayout.x, frameLayout.y]);
-
-  /**
-   * Page/frame resize through the engine's document path.
-   *
-   * The document operation resolves page and child geometry together; one
-   * update preserves preview options and creates one undo entry on commit.
-   */
-  const applyPageResize = useCallback(
-    (nextW, nextH, options = {}) => {
-      const current = engine?.getDocument?.();
-      if (!current) return;
-      // Document operations resolve constraints for every resize entry point.
-      // Do not reflow here again: that would apply the same delta twice.
-      const next = resizePageDocument(current, nextW, nextH);
-      // Same doc path as setDocumentSize: text measurement, auto-layout
-      // reflow, render, history and persistence all stay in sync.
-      engine.updateDocument(
-        { width: next.width, height: next.height, nodes: next.nodes },
-        options,
-      );
-      if (!multi) engine?.zoomToFit?.();
-    },
-    [engine, multi],
-  );
-
-  const handleMutateFrame = useCallback(
-    (patch, options = {}) => {
-      if (!focusedId || !doc) return;
-
-      if (patch.x !== undefined || patch.y !== undefined) {
-        const layout = layoutById.get(focusedId);
-        if (layout) {
-          setEditorArtboardLayout(focusedId, {
-            ...layout,
-            ...(patch.x !== undefined ? { x: patch.x } : {}),
-            ...(patch.y !== undefined ? { y: patch.y } : {}),
-          });
-        }
-      }
-
-      if (patch.width !== undefined || patch.height !== undefined) {
-        const nextW = patch.width ?? doc.width;
-        const nextH = patch.height ?? doc.height;
-        applyPageResize(nextW, nextH, options);
-        const resized = engine?.getDocument?.();
-        const layout = layoutById.get(focusedId);
-        if (layout) {
-          setEditorArtboardLayout(focusedId, {
-            ...layout,
-            // Preserve the chosen anchor when size and position change together.
-            ...(patch.x !== undefined ? { x: patch.x } : {}),
-            ...(patch.y !== undefined ? { y: patch.y } : {}),
-            width: resized?.width ?? nextW,
-            height: resized?.height ?? nextH,
-          });
-        }
-      }
-
-      const docPatch = {};
-      for (const [key, val] of Object.entries(patch)) {
-        if (key === "x" || key === "y" || key === "width" || key === "height") continue;
-        if (key === "fill") {
-          docPatch.backgroundColor = val;
-        } else {
-          docPatch[key] = val;
-        }
-      }
-
-      if (patch.fills !== undefined && patch.fill === undefined) {
-        docPatch.backgroundColor = patch.fills?.[0]?.fill ?? patch.fills?.[0]?.color ?? "transparent";
-      }
-      if (Object.keys(docPatch).length > 0) {
-        if (typeof engine?.updateDocument === "function") {
-          engine.updateDocument(docPatch, options);
-        } else if (typeof engine?.setDoc === "function") {
-          engine.setDoc({ ...engine.getDocument(), ...docPatch });
-        }
-      }
-    },
-    [
-      focusedId,
-      doc,
-      layoutById,
-      engine,
-      setEditorArtboardLayout,
-      applyPageResize,
-    ],
-  );
+  const { frameObject, applyPageResize, handleMutateFrame } = useEditorFrameProperties({
+    engine, doc, focusedId, isFrameSelected, frameLayout, layoutById,
+    setEditorArtboardLayout, multi,
+  });
 
   const propertyObject =
     selectedGroup ?? selected ?? (isFrameSelected ? frameObject : null);
@@ -861,53 +726,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const parentIsFrame = Boolean(
     parentNode?.isFrame || parentNode?.kind === "frame",
   );
-  const colorVariableActions = propertyObject
-    ? {
-        documentId: doc?.canvasId,
-        variables: doc?.colorVariables ?? [],
-        // Variables v2 wiring: collections, modes and typed variables are
-        // document-scoped, so every action commits the focused page once.
-        variablesV2: doc?.variablesV2 ?? null,
-        variableActions: createVariablesPanelActions({
-          getDocument: () => engine.getDocument(),
-          commit: (next, options) => engine.setDoc(next, options),
-          getNodeId: () => propertyObject.id,
-          historyName: "editor.history.entry.variables",
-        }),
-        create: () => {
-          const current = engine.getDocument();
-          const id = crypto.randomUUID();
-          const name = t("editor.variables.defaultName", {
-            index: (current.colorVariables?.length ?? 0) + 1,
-          });
-          const next = addColorVariable(current, {
-            id,
-            name,
-            value: propertyObject.fill,
-          });
-          engine.setDoc(bindColorVariable(next, propertyObject.id, id));
-        },
-        bind: (id) =>
-          engine.setDoc(
-            bindColorVariable(engine.getDocument(), propertyObject.id, id),
-          ),
-        update: (id, patch) =>
-          engine.setDoc(updateColorVariable(engine.getDocument(), id, patch)),
-      }
-    : null;
-  // Named styles: document-scoped paint/text/effect library. Actions commit the
-  // focused page once (one undo entry), mirroring the variables wiring above.
-  const styleActions = propertyObject
-    ? {
-        styles: doc?.styles ?? null,
-        actions: createStylePanelActions({
-          getDocument: () => engine.getDocument(),
-          commit: (next, options) => engine.setDoc(next, options),
-          getNodeId: () => propertyObject.id,
-          historyName: "editor.history.entry.styles",
-        }),
-      }
-    : null;
+  const { colorVariableActions, styleActions } = createEditorPropertyLibraries({
+    engine, doc, propertyObject, t,
+  });
   const activeIndex = selected
     ? layers.findIndex((layer) => layer.id === selected.id)
     : -1;
@@ -924,118 +745,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     },
     [nodes, focusedId, t],
   );
-  const resolveCanvas = useCallback((sourceId) => {
-    for (const entry of enginesRef.current.values()) {
-      const component = entry?.engine?.getDocument?.()?.components?.[sourceId];
-      if (component) return component;
-    }
-    const fromLive = enginesRef.current.get(sourceId)?.engine?.getDocument?.();
-    if (fromLive) return fromLive;
-    for (const entry of enginesRef.current.values()) {
-      const doc = entry?.engine?.getDocument?.();
-      if (doc && (doc.canvasId === sourceId || doc.id === sourceId)) {
-        return doc;
-      }
-    }
-    const fromSnapshot = snapshotsRef.current.get(sourceId)?.doc;
-    if (fromSnapshot) return fromSnapshot;
-    for (const snap of snapshotsRef.current.values()) {
-      if (snap?.doc?.canvasId === sourceId || snap?.doc?.id === sourceId) {
-        return snap.doc;
-      }
-    }
-    const state = useDesignStore.getState();
-    const source = state.nodes.find(
-      (candidate) =>
-        candidate.id === sourceId ||
-        candidate.data?.editorDoc?.canvasId === sourceId,
-    );
-    return source?.data?.editorDoc ?? null;
-  }, []);
-  const nestedInstance = selectedInstanceChild
-    ? doc?.nodes.find(
-        (node) =>
-          node.id === selectedInstanceChild.instanceId &&
-          node.kind === "canvasInstance" &&
-          node.sourceCanvasId === selectedInstanceChild.sourceCanvasId,
-      )
-    : null;
-  const nestedSourcePageId = nestedInstance
-    ? nodes.find(
-        (node) =>
-          node.id === nestedInstance.sourceCanvasId ||
-          node.data?.editorDoc?.canvasId === nestedInstance.sourceCanvasId,
-      )?.id
-    : null;
-  const nestedEngineState = nestedSourcePageId
-    ? enginesRef.current.get(nestedSourcePageId)
-    : null;
-  const nestedEngine = nestedEngineState?.ready
-    ? nestedEngineState.engine
-    : null;
-  const nestedDoc = nestedInstance
-    ? (nestedEngine?.getDocument() ??
-      resolveCanvas(nestedInstance.sourceCanvasId))
-    : null;
-  const nestedNodeIds = useMemo(
-    () =>
-      Array.isArray(selectedInstanceChild?.nodeIds) &&
-      selectedInstanceChild.nodeIds.length > 0
-        ? selectedInstanceChild.nodeIds
-        : selectedInstanceChild?.nodeId
-          ? [selectedInstanceChild.nodeId]
-          : [],
-    [selectedInstanceChild?.nodeId, selectedInstanceChild?.nodeIds],
-  );
-  const nestedNode = nestedDoc?.nodes.find(
-    (node) => node.id === nestedNodeIds[0],
-  );
-  const nestedNodes = (nestedDoc?.nodes ?? []).filter((node) =>
-    nestedNodeIds.includes(node.id),
-  );
-  const instanceSources = (doc?.nodes ?? [])
-    .filter((node) => node.kind === "canvasInstance")
-    .map((node) => ({
-      instanceId: node.id,
-      sourceCanvasId: node.sourceCanvasId,
-      doc: resolveCanvas(node.sourceCanvasId),
-    }))
-    .filter((entry) => entry.doc);
-  useEffect(() => {
-    if (!selectedInstanceChild || !nestedEngine || nestedNodes.length === 0)
-      return;
-    const currentSelected = nestedEngine.getSelectedIds?.() ?? [];
-    const isSame =
-      currentSelected.length === nestedNodeIds.length &&
-      nestedNodeIds.every((id) => currentSelected.includes(id));
-    if (!isSame) {
-      nestedEngine.selectExactly(nestedNodeIds);
-    }
-  }, [selectedInstanceChild, nestedEngine, nestedNodes, nestedNodeIds]);
-  useEffect(() => {
-    setSelectedInstanceChild(null);
-  }, [focusedId]);
-  useEffect(() => {
-    if (selected?.id) setSelectedInstanceChild(null);
-  }, [selected?.id]);
-  const instanceCounts = countInstances(nodeIds.map((id) => resolveCanvas(id)));
-  const usesOfPage = (id) =>
-    instanceCounts.get(resolveCanvas(id)?.canvasId) ?? 0;
-  const canvasPages = nodeIds.map((id, index) => {
-    const pageDoc = resolveCanvas(id);
-    const pageEngine = enginesRef.current.get(id)?.engine;
-    const uses = usesOfPage(id);
-    return {
-      id,
-      title: pageTitle(id, index),
-      isCanvasRoot: pageDoc?.isCanvasRoot === true,
-      type: pageDoc ? getCanvasType(pageDoc) : "design",
-      nodes: pageDoc?.nodes ?? [],
-      selectedIds: pageEngine?.getSelectedIds?.() ?? [],
-      selectedGroupId: pageEngine?.getSelectedGroup?.()?.id ?? null,
-      isComponent: Boolean(pageDoc?.isComponent || uses > 0),
-      componentUses: uses,
-    };
+  const { resolveCanvas, nestedEngine, nestedDoc, nestedNode, instanceSources, instanceCounts, usesOfPage, canvasPages } = useEditorComponentContext({
+    doc, nodes, nodeIds, focusedId, selected, selectedInstanceChild,
+    setSelectedInstanceChild, enginesRef, snapshotsRef, pageTitle,
   });
   const selectedCanvasIds = getSelectedCanvasPageIds(
     nodeIds,
@@ -3896,6 +3608,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         />
 
         {contextMenu ? (
+          <DeferredEditorSurface open onClose={() => setContextMenu(null)} position={contextMenu}>
           <EditorContextMenu
             x={contextMenu.x}
             y={contextMenu.y}
@@ -3914,16 +3627,19 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             onOpenShortcuts={() => setShortcutsOpen(true)}
             onImportMedia={openMediaPicker}
           />
+          </DeferredEditorSurface>
         ) : null}
 
-        <Suspense fallback={null}>
+        <DeferredEditorSurface open={shortcutsOpen} onClose={() => setShortcutsOpen(false)}>
           <ShortcutReferenceModal
           isOpen={shortcutsOpen}
           onClose={() => setShortcutsOpen(false)}
           titleKey="editor.shortcuts.title"
           groups={DESIGN_SHORTCUT_GROUPS}
         />
+        </DeferredEditorSurface>
 
+        <DeferredEditorSurface open={svgEditModal.isOpen} onClose={() => setSvgEditModal((prev) => ({ ...prev, isOpen: false }))}>
         <SvgEditModal
           isOpen={svgEditModal.isOpen}
           onClose={() =>
@@ -3932,14 +3648,18 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           initialSvg={svgEditModal.svgString}
           onApply={handleApplySvgEdit}
         />
+        </DeferredEditorSurface>
 
+        <DeferredEditorSurface open={commandPaletteOpen} onClose={closeCommandPalette}>
         <EditorCommandPalette
           open={commandPaletteOpen}
           actions={paletteActions}
           onRun={runPaletteCommand}
           onClose={closeCommandPalette}
         />
+        </DeferredEditorSurface>
 
+        <DeferredEditorSurface open={findReplaceOpen} onClose={closeFindReplace}>
         <EditorFindReplace
           open={findReplaceOpen}
           doc={engine?.getDocument?.() ?? null}
@@ -3947,7 +3667,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           onFocusMatch={focusFindMatch}
           onApplyDoc={applyFindReplaceDoc}
         />
-        </Suspense>
+        </DeferredEditorSurface>
       </div>
     </div>
   );

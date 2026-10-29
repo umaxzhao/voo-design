@@ -17,8 +17,7 @@ import {
   isImagePaint,
   resolvePaintStyle,
   roundRectPath,
-  clipStrokeSides,
-  strokeRoundRect,
+  drawRectNode,
 } from "./render_basic_shapes.js";
 import { resolveCornerRadii } from "./scene_model_core.js";
 import {
@@ -75,6 +74,14 @@ function targetPixelSize(node, bitmap, rasterLevel) {
   };
 }
 
+function drawImageStroke(ctx, node, alpha) {
+  if (node.strokeHidden === true) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  drawRectNode(ctx, { ...node, fill: "transparent", fillOpacity: 0 });
+  ctx.restore();
+}
+
 export function drawImageNode(
   ctx,
   node,
@@ -88,7 +95,7 @@ export function drawImageNode(
   const hasRadius =
     radii.tl > 0 || radii.tr > 0 || radii.br > 0 || radii.bl > 0;
   const fillAlpha = node.fillOpacity ?? 1;
-  const strokeAlpha = node.strokeOpacity ?? 1;
+  const baseAlpha = ctx.globalAlpha;
 
   // On an image node the fill types are alternatives, not layers: the image
   // fill *is* the bitmap, while a solid or gradient fill replaces it. Painting
@@ -113,52 +120,14 @@ export function drawImageNode(
       fillAlpha,
     );
     fillRoundRect(ctx, node.x, node.y, node.width, node.height, radii);
-    if (
-      node.stroke &&
-      node.stroke !== "transparent" &&
-      node.strokeWidth > 0 &&
-      strokeAlpha > 0 &&
-      node.strokeHidden !== true
-    ) {
-      ctx.strokeStyle = resolvePaintStyle(
-        ctx,
-        node.stroke,
-        node.x,
-        node.y,
-        node.width,
-        node.height,
-        strokeAlpha,
-      );
-      ctx.lineWidth = node.strokeWidth;
-      const strokeRadii = radii.isUniform
-        ? Math.max(0, radii.uniformRadius - node.strokeWidth / 2)
-        : {
-            tl: Math.max(0, radii.tl - node.strokeWidth / 2),
-            tr: Math.max(0, radii.tr - node.strokeWidth / 2),
-            br: Math.max(0, radii.br - node.strokeWidth / 2),
-            bl: Math.max(0, radii.bl - node.strokeWidth / 2),
-          };
-      clipStrokeSides(
-        ctx,
-        node,
-        node.x + node.strokeWidth / 2,
-        node.y + node.strokeWidth / 2,
-        Math.max(0, node.width - node.strokeWidth),
-        Math.max(0, node.height - node.strokeWidth),
-      );
-      strokeRoundRect(
-        ctx,
-        node.x + node.strokeWidth / 2,
-        node.y + node.strokeWidth / 2,
-        Math.max(0, node.width - node.strokeWidth),
-        Math.max(0, node.height - node.strokeWidth),
-        strokeRadii,
-      );
-    }
+    drawImageStroke(ctx, node, baseAlpha);
     return;
   }
 
-  if (!bitmap || node.fillHidden === true || fillAlpha <= 0) return;
+  if (!bitmap || node.fillHidden === true || fillAlpha <= 0) {
+    drawImageStroke(ctx, node, baseAlpha);
+    return;
+  }
   ctx.globalAlpha *= fillAlpha;
 
   const fullResolution = Boolean(gpu?.fullResolution);
@@ -364,55 +333,5 @@ export function drawImageNode(
     ctx.restore();
   }
 
-  if (
-    node.stroke &&
-    node.stroke !== "transparent" &&
-    node.strokeWidth > 0 &&
-    strokeAlpha > 0 &&
-    node.strokeHidden !== true
-  ) {
-    ctx.strokeStyle = resolvePaintStyle(
-      ctx,
-      node.stroke,
-      node.x,
-      node.y,
-      node.width,
-      node.height,
-      strokeAlpha,
-    );
-    ctx.lineWidth = node.strokeWidth;
-    if (hasRadius) {
-      const strokeRadii = radii.isUniform
-        ? Math.max(0, radii.uniformRadius - node.strokeWidth / 2)
-        : {
-            tl: Math.max(0, radii.tl - node.strokeWidth / 2),
-            tr: Math.max(0, radii.tr - node.strokeWidth / 2),
-            br: Math.max(0, radii.br - node.strokeWidth / 2),
-            bl: Math.max(0, radii.bl - node.strokeWidth / 2),
-          };
-      clipStrokeSides(
-        ctx,
-        node,
-        node.x + node.strokeWidth / 2,
-        node.y + node.strokeWidth / 2,
-        Math.max(0, node.width - node.strokeWidth),
-        Math.max(0, node.height - node.strokeWidth),
-      );
-      strokeRoundRect(
-        ctx,
-        node.x + node.strokeWidth / 2,
-        node.y + node.strokeWidth / 2,
-        Math.max(0, node.width - node.strokeWidth),
-        Math.max(0, node.height - node.strokeWidth),
-        strokeRadii,
-      );
-    } else {
-      ctx.strokeRect(
-        node.x + node.strokeWidth / 2,
-        node.y + node.strokeWidth / 2,
-        Math.max(0, node.width - node.strokeWidth),
-        Math.max(0, node.height - node.strokeWidth),
-      );
-    }
-  }
+  drawImageStroke(ctx, node, baseAlpha);
 }

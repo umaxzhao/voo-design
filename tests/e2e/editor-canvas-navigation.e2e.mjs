@@ -187,5 +187,67 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.deepEqual(await camera(), beforeEdit);
   assert.deepEqual(await page.evaluate(() => ({ nodes: window.__vooEditor.getDocument().nodes, selection: window.__vooEditor.getSelectedIds() })), stateBeforeWelcome);
   checks.push("style edits do not refit geometry and welcome round trips preserve camera/document/selection without hidden Space capture");
+
+  const clipboardState = () => page.evaluate(() => {
+    const e = window.__vooEditor;
+    return {
+      selection: e.getSelectedIds(),
+      nodes: e.getDocument().nodes.map(node => ({
+        id: node.id, kind: node.kind, isFrame: Boolean(node.isFrame),
+        parentId: node.parentId ?? null, x: node.x, y: node.y,
+        width: node.width, height: node.height, fill: node.fill,
+      })),
+    };
+  });
+  for (const modifier of ["Control", "Meta"]) {
+    for (const target of ["clipboard-rect", "clipboard-frame"]) {
+      await page.evaluate(async () => {
+        const { createGroupNode, createRectNode } = await import("/src/canvas/editor/scene_model.js");
+        const e = window.__vooEditor;
+        e.setDoc({ ...e.getDocument(), isCanvasRoot: true, nodes: [
+          { ...createGroupNode({ x: 80, y: 70, width: 300, height: 200 }), id: "clipboard-frame", name: "Clipboard Frame", frame: true, isFrame: true, fill: "#222222" },
+          { ...createRectNode({ x: 110, y: 100, width: 60, height: 40, fill: "#ff0000" }), id: "clipboard-child", parentId: "clipboard-frame" },
+          { ...createRectNode({ x: 430, y: 90, width: 80, height: 60, fill: "#22cc55" }), id: "clipboard-rect" },
+        ] });
+        e.selectExactly([]); e.setTool("select");
+        window.__navigationAuditStore.setState({ editorCamera: { zoom: 1, panX: 400, panY: 150 } });
+      });
+      await settled();
+      const point = await docPoint(target === "clipboard-frame" ? { x: 280, y: 200 } : { x: 470, y: 120 });
+      await page.mouse.click(point.x, point.y);
+      await page.waitForFunction(id => {
+        const ids = window.__vooEditor.getSelectedIds();
+        return ids.length === 1 && ids[0] === id;
+      }, target);
+      const beforeDuplicate = await clipboardState();
+      const copiedCount = target === "clipboard-frame" ? 2 : 1;
+      await page.keyboard.press(`${modifier}+d`);
+      await page.waitForFunction(count => window.__vooEditor.getDocument().nodes.length === count, beforeDuplicate.nodes.length + copiedCount);
+      const duplicated = await clipboardState();
+      assert.equal(duplicated.selection.length, 1, `${modifier}+D should retain one selection unit`);
+      const duplicateId = duplicated.selection[0];
+      assert.ok(!beforeDuplicate.nodes.some(node => node.id === duplicateId));
+      const duplicate = duplicated.nodes.find(node => node.id === duplicateId);
+      const original = beforeDuplicate.nodes.find(node => node.id === target);
+      assert.deepEqual({ ...duplicate, id: original.id }, original);
+      assert.deepEqual(duplicated.nodes.filter(node => beforeDuplicate.nodes.some(originalNode => originalNode.id === node.id)), beforeDuplicate.nodes);
+      if (target === "clipboard-frame") {
+        const duplicateChildren = duplicated.nodes.filter(node => node.parentId === duplicateId);
+        assert.equal(duplicateChildren.length, 1);
+        assert.notEqual(duplicateChildren[0].id, "clipboard-child");
+        assert.deepEqual({ ...duplicateChildren[0], id: "clipboard-child", parentId: "clipboard-frame" }, beforeDuplicate.nodes.find(node => node.id === "clipboard-child"));
+      }
+      await page.keyboard.press(`${modifier}+x`);
+      await page.waitForFunction(count => window.__vooEditor.getDocument().nodes.length === count, beforeDuplicate.nodes.length);
+      assert.deepEqual(await clipboardState(), { nodes: beforeDuplicate.nodes, selection: [] });
+      await page.keyboard.press(`${modifier}+z`);
+      await page.waitForFunction(count => window.__vooEditor.getDocument().nodes.length === count, duplicated.nodes.length);
+      assert.deepEqual(await clipboardState(), duplicated, "One undo must restore the cut hierarchy and its selected unit");
+      await page.keyboard.press(`${modifier}+z`);
+      await page.waitForFunction(count => window.__vooEditor.getDocument().nodes.length === count, beforeDuplicate.nodes.length);
+      assert.deepEqual(await clipboardState(), beforeDuplicate, "A second undo must remove only the duplicate and restore the source selection");
+      checks.push(`${modifier}+D/X/Z preserves the ${target === "clipboard-frame" ? "complete Frame hierarchy" : "ordinary object"}, selected unit and one-step cut undo`);
+    }
+  }
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });

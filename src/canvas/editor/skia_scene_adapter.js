@@ -45,6 +45,10 @@ export function requiresCanvas2dMediaFallback(doc) {
         // or per-paint blends. Use the compositor that preserves their pixels.
         node.maskBase || node.clipTo || Array.isArray(node.fills) ||
         node.fillHidden || node.strokeHidden ||
+        (Array.isArray(node.strokes) && node.strokes.some((stroke) => stroke?.visible !== false && stroke?.strokeWidth > 0)) ||
+        // Image/text scene elements do not carry their node stroke. Keep the
+        // authoritative border/glyph compositor rather than silently dropping it.
+        (["image", "text"].includes(node.kind) && node.strokeWidth > 0 && node.stroke && node.stroke !== "transparent") ||
         // Effects and rectangle dash styles have no adapter representation.
         // Preserve their pixels with the existing authoritative compositor.
         node.layerBlur > 0 || node.backgroundBlur > 0 || node.noise ||

@@ -2,6 +2,11 @@
 
 ## 1.0.0
 
+- Preserve independent stroke visibility and placement for supported shapes and images across bitmap composition, SVG export, page promotion and project readback; retain additional paints when the primary stroke is hidden and keep unsupported placements disabled.
+- Load canvas context menus and closed optional dialogs on first use, keep the canvas mounted during loading, allow pending surfaces to dismiss, and retain query/draft state when reopening.
+- Route find matches through the public exact-selection API so matching text is selected correctly inside Groups.
+- Extract frame geometry, component context and property-library actions from the editor container; cover constraints, nested selection, library commits and real clipboard shortcuts with browser regressions.
+
 - Keep Inspect colours read-only, preserve required edit/commit callbacks in real panel fixtures, and use renderer defaults for sparse multi-selection transform fields.
 - Fail unit and browser release checks on unhandled PropTypes warnings; verify full-page callback routing, inspector copy behavior, multi-selection edits and one-step undo.
 - Extract mobile panel gestures, media import, feedback timers and image actions from the editor container; retain loading boundaries and cover page targeting, timers and cleanup with mounted React regressions.

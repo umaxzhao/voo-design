@@ -206,7 +206,8 @@ export function useEditorDocumentAids({ focusedPageEngine, bump }) {
     (match) => {
       if (!match?.nodeId) return;
       const pageEngine = focusedPageEngine();
-      pageEngine?.selectNode?.(match.nodeId);
+      // Search targets the matching text itself, including inside a Group.
+      pageEngine?.selectExactly([match.nodeId]);
     },
     [focusedPageEngine],
   );
