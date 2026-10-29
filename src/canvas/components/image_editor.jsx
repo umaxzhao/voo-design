@@ -254,7 +254,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   // A callback ref: the editor renders nothing until a node is open, so a
   // mount-time effect would find no element to measure.
   const [editorWidth, setEditorWidth] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(null);
   const editorRootObserverRef = useRef(null);
   const editorRootRef = useCallback((root) => {
     editorRootObserverRef.current?.disconnect();
@@ -262,15 +261,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     if (!root) return;
     const measure = () => {
       setEditorWidth(root.clientWidth);
-      const parentWidth = root.parentElement?.clientWidth ?? 0;
-      if (parentWidth > 0) {
-        setContainerWidth(parentWidth);
-      }
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(root);
-    if (root.parentElement) observer.observe(root.parentElement);
     editorRootObserverRef.current = observer;
   }, []);
   const [exitPrompt, setExitPrompt] = useState(false);
@@ -1267,18 +1261,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     requestAnimationFrame(() => engine?.zoomToFit?.());
   };
 
-  // When the container is wide enough (>= 696px), reserving the 376px agent dock
-  // leaves at least 320px for the design editor stage. On narrower viewports (< 696px,
-  // e.g. 375px mobile), the editor stops reserving the 376px dock (using right-0).
-  // The design editor stays at z-50 to remain above flow-stage overlays (z-40).
-  const hasDockSpace =
-    containerWidth === null
-      ? typeof window !== "undefined"
-        ? window.innerWidth >= 900
-        : true
-      : containerWidth >= 696;
-  const dockAgent = agentVisible && hasDockSpace;
-
   // The ruler reads the focused page's document coordinates: the shared camera
   // places that page at `layout * zoom + camera.pan` inside the stage, so that
   // offset is the page origin on screen. No second camera is introduced.
@@ -1308,9 +1290,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       data-mobile-properties-expanded={mobilePropertiesExpanded ? "true" : "false"}
       aria-hidden={!visible}
       style={{ backgroundColor: canvasBackgroundColor }}
-      className={`absolute bottom-0 left-0 top-0 z-50 flex flex-col overflow-hidden rounded-b-2xl ${isNarrow ? "editor-narrow" : ""} ${
-        dockAgent ? "right-[376px]" : "right-0"
-      } ${visible ? "" : "invisible pointer-events-none"}`}
+      className={`absolute bottom-0 left-0 right-0 top-0 z-50 flex flex-col overflow-hidden rounded-b-2xl ${isNarrow ? "editor-narrow" : ""} ${visible ? "" : "invisible pointer-events-none"}`}
       {...dropHandlers}
       onPointerDownCapture={(event) => {
         mobileCanvasGestures.onPointerDownCapture(event);
