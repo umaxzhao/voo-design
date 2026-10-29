@@ -97,6 +97,8 @@ The catalog follows `CANVAS_TOOL_SCHEMAS` and currently includes:
 - `set_instance_override`
 - `reset_instance_overrides`
 - `swap_instance`
+- `set_frame_slot`
+- `get_frame_slot`
 - `create_variable_collection`
 - `add_variable_mode`
 - `create_variable`

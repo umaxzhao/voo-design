@@ -70,6 +70,8 @@ kept in sync with undo/redo:
 | `list_component_variants` | Lists variants in a component group. |
 | `list_instance_variant_properties` | Lists current and available variant properties for an instance. |
 | `set_instance_variant` | Switches by variant name or property map in one document transaction. |
+| `set_frame_slot` | Declares component slot recommendations on a frame (e.g. `['Button', 'IconButton']`). |
+| `get_frame_slot` | Reads the declared component slot recommendations for a frame. |
 
 ### Design System & Variables
 

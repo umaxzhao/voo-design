@@ -278,8 +278,78 @@ export const COMPONENT_TOOL_SCHEMAS = Object.freeze([
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "set_frame_slot",
+      description:
+        "Mark a frame or container as a design system component slot with recommended component names (or clear it with null).",
+      parameters: {
+        type: "object",
+        properties: {
+          frameId: { type: "string", description: "Target frame or container ID." },
+          slot: {
+            type: "array",
+            items: { type: "string" },
+            description: "List of recommended component names, e.g. ['Button', 'IconButton'], or null to clear.",
+          },
+        },
+        required: ["frameId"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_frame_slot",
+      description: "Get the declared component slot recommendations for a frame.",
+      parameters: {
+        type: "object",
+        properties: {
+          frameId: { type: "string", description: "Target frame ID." },
+        },
+        required: ["frameId"],
+      },
+    },
+  },
 ]);
 
+export function setFrameSlot(args = {}, context = {}) {
+  context.signal?.throwIfAborted();
+  const editor = context.editor ?? (typeof window !== "undefined" ? window.__vooEditor : null);
+  if (!editor) throw new Error("agentNoEditor");
+  const frameId = String(args.frameId ?? "").trim();
+  if (!frameId) throw new Error("frameId is required");
+
+  const doc = editor.getDocument?.() ?? editor.getDoc?.() ?? null;
+  const node = doc?.nodes?.find?.((n) => n.id === frameId);
+  if (!node) throw new Error(`Node not found: ${frameId}`);
+
+  let slot = null;
+  if (Array.isArray(args.slot)) {
+    slot = args.slot.map(String).filter((s) => s.trim().length > 0);
+  } else if (typeof args.slot === "string" && args.slot.trim()) {
+    slot = [args.slot.trim()];
+  }
+
+  editor.updateNode?.(frameId, { slot: slot && slot.length > 0 ? slot : null });
+  editor.commitEditorDocument?.({ message: "AI: Configure component slot" });
+  return { ok: true, frameId, slot: slot && slot.length > 0 ? slot : null };
+}
+
+export function getFrameSlot(args = {}, context = {}) {
+  context.signal?.throwIfAborted();
+  const editor = context.editor ?? (typeof window !== "undefined" ? window.__vooEditor : null);
+  if (!editor) throw new Error("agentNoEditor");
+  const frameId = String(args.frameId ?? "").trim();
+  if (!frameId) throw new Error("frameId is required");
+
+  const doc = editor.getDocument?.() ?? editor.getDoc?.() ?? null;
+  const node = doc?.nodes?.find?.((n) => n.id === frameId);
+  if (!node) throw new Error(`Node not found: ${frameId}`);
+
+  return { ok: true, frameId, slot: node.slot ?? null };
+}
 
 export const COMPONENT_TOOL_EXECUTORS = Object.freeze({
   set_instance_override: setInstanceOverride,
@@ -296,4 +366,6 @@ export const COMPONENT_TOOL_EXECUTORS = Object.freeze({
   create_variable: createVariable,
   set_variable_value: setVariableValueTool,
   set_active_mode: setActiveMode,
+  set_frame_slot: setFrameSlot,
+  get_frame_slot: getFrameSlot,
 });

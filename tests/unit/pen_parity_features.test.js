@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { findEmptySpace } from "../../src/canvas/agent/canvas_tools_geometry.js";
 import { createIcon } from "../../src/canvas/agent/canvas_tools_assets.js";
+import { setFrameSlot, getFrameSlot } from "../../src/canvas/agent/canvas_tools_components.js";
 import {
   setAgentCursor,
   getAgentCursor,
@@ -132,5 +133,27 @@ describe("agent virtual cursor and focus overlays", () => {
     expect(cursor.x).toBe(400); // 200 + 400/2
     expect(cursor.y).toBe(300);
     expect(cursor.label).toBe("Creating card");
+  });
+});
+
+describe("component slots", () => {
+  it("configures and retrieves component slot on a frame", () => {
+    const node = { id: "f1", isFrame: true, name: "Card Slot" };
+    const editor = {
+      getDocument: () => ({ nodes: [node] }),
+      updateNode: vi.fn((id, patch) => Object.assign(node, patch)),
+      commitEditorDocument: vi.fn(),
+    };
+
+    const setRes = setFrameSlot({ frameId: "f1", slot: ["Button", "IconButton"] }, { editor });
+    expect(setRes).toEqual({ ok: true, frameId: "f1", slot: ["Button", "IconButton"] });
+    expect(editor.commitEditorDocument).toHaveBeenCalled();
+
+    const getRes = getFrameSlot({ frameId: "f1" }, { editor });
+    expect(getRes).toEqual({ ok: true, frameId: "f1", slot: ["Button", "IconButton"] });
+
+    // Clear slot
+    const clearRes = setFrameSlot({ frameId: "f1", slot: null }, { editor });
+    expect(clearRes.slot).toBeNull();
   });
 });

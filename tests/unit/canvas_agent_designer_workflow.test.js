@@ -52,6 +52,8 @@ const ALL_TOOL_NAMES = [
   "create_variable",
   "set_variable_value",
   "set_active_mode",
+  "set_frame_slot",
+  "get_frame_slot",
   "create_path",
   "place_image",
   "capture_canvas",
