@@ -11,6 +11,7 @@ import { groupBlockInsertIndex, withNodes } from "./doc_ops_nodes.js";
 import { moveAffectedIds } from "./doc_ops_move.js";
 import { extremeOrder, moveNodeToExtreme } from "./doc_ops_groups_helpers.js";
 import { reorderLayerBatch } from "./reorder-layer-batch.js";
+import { isFrameSelectionBoundary } from "./frame-selection-unit.js";
 
 export { extremeOrder, moveNodeToExtreme };
 
@@ -246,6 +247,7 @@ export function pruneEmptyGroups(doc) {
     const empty = current.nodes.filter(
       (node) =>
         (isGroupNode(node) || node.kind === NODE_KIND.BOOLEAN) &&
+        !isFrameSelectionBoundary(node) &&
         !parentIds.has(node.id),
     );
     if (empty.length === 0) return current;
