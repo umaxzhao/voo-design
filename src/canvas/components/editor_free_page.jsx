@@ -51,7 +51,7 @@ export default function EditorFreePage({ page }) {
           onClickCapture={finishAdjustmentOutside}
           onKeyDownCapture={handleAdjustmentKey}
           onDoubleClickCapture={openInstanceAtPoint}
-          className={`absolute inset-0 touch-none overflow-hidden transition-colors ${
+          className={`absolute inset-0 touch-none ${doc?.isCanvasRoot ? "overflow-visible" : "overflow-hidden"} transition-colors ${
             doc?.isCanvasRoot
               ? ""
               : free && workspaceRendererReady
@@ -64,7 +64,9 @@ export default function EditorFreePage({ page }) {
           }`}
           style={{
             borderRadius: doc?.cornerRadius ? `${doc.cornerRadius}px` : undefined,
-            outline: doc?.stroke && doc?.strokeWidth ? `${doc.strokeWidth}px solid ${doc.stroke}` : undefined,
+            outline: !doc?.isCanvasRoot && doc?.stroke && doc?.strokeWidth
+              ? `${doc.strokeWidth}px solid ${doc.stroke}`
+              : undefined,
           }}
         >
           {canvases}

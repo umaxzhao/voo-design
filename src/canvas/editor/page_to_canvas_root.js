@@ -48,6 +48,13 @@ export function promoteFixedPageToFrame(doc, frameName = "Frame") {
     ...doc,
     isCanvasRoot: true,
     backgroundColor: "transparent",
+    // The former page surface now belongs to the Frame layer. Keeping its
+    // stroke on the unbounded root creates a second outline that expands with
+    // the canvas and no longer matches the Frame.
+    stroke: null,
+    strokeWidth: 0,
+    strokeHidden: true,
+    strokes: [],
     nodes: [frame, ...nodes],
   };
 }

@@ -38,6 +38,12 @@ export function isMcpLinkWanted({ desktop = Boolean(window.vooDesktop) } = {}) {
   const switchValue = readStorage(MCP_LINK_STORAGE_KEY);
   if (switchValue === "off") return false;
   if (desktop || switchValue === "on") return true;
+  if (typeof window !== "undefined" && window.location) {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("embed") || params.has("minimal")) return true;
+    } catch {}
+  }
   return hasLocalCliAgentSelected();
 }
 

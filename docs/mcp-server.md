@@ -122,6 +122,8 @@ The catalog follows `CANVAS_TOOL_SCHEMAS` and currently includes:
 - `vectorize_image`
 - `edit_image`
 - `stock_image`
+- `create_icon`
+- `find_empty_space`
 - `voo_status`
 
 Image generation and placement (`generate_image`, `generate_image_web`,
@@ -132,6 +134,27 @@ an external MCP client receives `agentVectorNeedsApiModel` for it, while
 `voo_status` reports `{canvasConnected: boolean}`. PNG data URLs returned by
 `capture_canvas` and `export_layers` become MCP image content alongside the
 remaining JSON metadata. Tool failures return MCP `isError` content.
+
+## Resources
+
+The server exposes live canvas state as standard MCP resources for context-aware agents:
+
+- `voo://canvas/tree` — Structured layer tree JSON of the active document.
+- `voo://canvas/selection` — Metadata and properties of currently selected layers.
+- `voo://canvas/preview.png` — Real-time PNG screenshot of the canvas (`image/png` binary blob).
+- `voo://canvas/status` — Live connection and document readiness status.
+
+Agents can read these directly (e.g. `resources/read`) to inspect the document without executing mutating tool calls.
+
+## Embedded Component Mode (`?embed=1`)
+
+To embed Design Editor inside an IDE webview (VS Code / Cursor), iframe, or external tool pane:
+
+- Navigate to `http://localhost:5173/?embed=1` (or `?minimal=1`).
+- In embed mode:
+  - Outer app chrome (title bar, prompts, release banners) is hidden, giving full viewport to the canvas.
+  - An untitled canvas is automatically initialized so the editor is immediately interactive.
+  - The MCP loopback bridge link is automatically enabled without requiring manual `localStorage` toggles.
 
 Example prompt: “Check voo_status, create a 1440 × 900 landing page frame with a
 headline and three feature cards, then capture_canvas so I can review it.”

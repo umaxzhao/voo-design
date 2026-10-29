@@ -4,7 +4,13 @@
  * its own work. Registered in canvas_tools.js CANVAS_TOOL_SCHEMAS / EXECUTORS.
  */
 
-import { TOOL_ERROR } from "./canvas_tools.js";
+export const TOOL_ERROR = Object.freeze({
+  NO_EDITOR: "agentNoEditor",
+  NO_IMAGE_MODEL: "agentNoImageModel",
+  CANCELLED: "agentCancelled",
+  NODE_NOT_FOUND: "agentNodeNotFound",
+  INVALID_ARGS: "agentInvalidArgs",
+});
 
 const DEFAULT_CAPTURE_MAX_SIZE = 1024;
 
@@ -85,6 +91,28 @@ export const CANVAS_TOOL_GEOMETRY_SCHEMAS = Object.freeze([
         properties: {
           layerId: { type: "string", description: "Optional image-layer ID to capture instead of the whole page." },
           maxSize: { type: "number", description: "Max width/height in pixels for the returned capture (default 1024)." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "find_empty_space",
+      description:
+        "Find an empty, non-overlapping coordinate region (x, y) on the canvas to place a new screen or frame.",
+      parameters: {
+        type: "object",
+        properties: {
+          width: { type: "number", description: "Desired frame width (default 1440)." },
+          height: { type: "number", description: "Desired frame height (default 900)." },
+          direction: {
+            type: "string",
+            enum: ["auto", "right", "bottom"],
+            description: "Search direction relative to existing frames (default: 'auto').",
+          },
+          padding: { type: "number", description: "Spacing between frames in pixels (default: 80)." },
+          nodeId: { type: "string", description: "Optional anchor frame ID to place adjacent to." },
         },
       },
     },
@@ -246,4 +274,105 @@ export async function captureCanvas(args = {}) {
   const scaled = renderScaled(decoded, outW, outH);
   if (scaled) return { ok: true, ...scaled };
   return { ok: true, dataUrl: sourceUrl, width: w, height: h };
+}
+
+/**
+ * Finds an empty, non-overlapping canvas coordinate for a new frame or artboard.
+ */
+export function findEmptySpace(args = {}, hostEditor) {
+  const editor = hostEditor ?? requireEditor();
+  const width = Math.max(1, Number(args.width) || 1440);
+  const height = Math.max(1, Number(args.height) || 900);
+  const direction = args.direction || "auto";
+  const padding = Number.isFinite(Number(args.padding)) ? Number(args.padding) : 80;
+  const nodeId = typeof args.nodeId === "string" ? args.nodeId : null;
+
+  const doc = editor.getDocument?.() ?? editor.getDoc?.() ?? null;
+  const nodes = Array.isArray(doc?.nodes) ? doc.nodes : [];
+
+  const topLevel = nodes.filter(
+    (n) => !n.parentId && Number.isFinite(Number(n.x)) && Number.isFinite(Number(n.y))
+  );
+
+  if (!topLevel.length) {
+    return { ok: true, x: 0, y: 0, width, height };
+  }
+
+  const rectCollides = (x, y, w, h) =>
+    topLevel.some((n) => {
+      const nx = Number(n.x) || 0;
+      const ny = Number(n.y) || 0;
+      const nw = Number(n.width) || 100;
+      const nh = Number(n.height) || 100;
+      return (
+        x < nx + nw + padding &&
+        x + w + padding > nx &&
+        y < ny + nh + padding &&
+        y + h + padding > ny
+      );
+    });
+
+  if (nodeId) {
+    const anchor = topLevel.find((n) => n.id === nodeId);
+    if (anchor) {
+      const ax = Number(anchor.x) || 0;
+      const ay = Number(anchor.y) || 0;
+      const aw = Number(anchor.width) || 100;
+      const ah = Number(anchor.height) || 100;
+
+      if (direction === "bottom") {
+        let candidateY = ay + ah + padding;
+        while (rectCollides(ax, candidateY, width, height)) {
+          candidateY += height + padding;
+        }
+        return { ok: true, x: Math.round(ax), y: Math.round(candidateY), width, height };
+      }
+
+      let candidateX = ax + aw + padding;
+      while (rectCollides(candidateX, ay, width, height)) {
+        candidateX += width + padding;
+      }
+      return { ok: true, x: Math.round(candidateX), y: Math.round(ay), width, height };
+    }
+  }
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const n of topLevel) {
+    const nx = Number(n.x) || 0;
+    const ny = Number(n.y) || 0;
+    const nw = Number(n.width) || 100;
+    const nh = Number(n.height) || 100;
+    minX = Math.min(minX, nx);
+    minY = Math.min(minY, ny);
+    maxX = Math.max(maxX, nx + nw);
+    maxY = Math.max(maxY, ny + nh);
+  }
+
+  const totalWidth = maxX - minX;
+  const totalHeight = maxY - minY;
+
+  const targetDir =
+    direction === "auto"
+      ? totalWidth > totalHeight * 2.5
+        ? "bottom"
+        : "right"
+      : direction;
+
+  if (targetDir === "bottom") {
+    let candidateY = maxY + padding;
+    while (rectCollides(minX, candidateY, width, height)) {
+      candidateY += height + padding;
+    }
+    return { ok: true, x: Math.round(minX), y: Math.round(candidateY), width, height };
+  }
+
+  let candidateX = maxX + padding;
+  while (rectCollides(candidateX, minY, width, height)) {
+    candidateX += width + padding;
+  }
+  return { ok: true, x: Math.round(candidateX), y: Math.round(minY), width, height };
 }

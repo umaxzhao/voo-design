@@ -412,6 +412,39 @@ export function drawGuides(ctx, guides, viewport, dpr = 1) {
 let currentAgentFocus = null;
 let agentFocusTimeout = null;
 
+let currentAgentCursor = null;
+let agentCursorTimeout = null;
+
+export function setAgentCursor({ x, y, label = "Agent", active = true, durationMs = 3000 } = {}) {
+  if (!active || x == null || y == null) {
+    currentAgentCursor = null;
+    return;
+  }
+  currentAgentCursor = {
+    x: Number(x) || 0,
+    y: Number(y) || 0,
+    label: String(label || "Agent"),
+    timestamp: Date.now(),
+  };
+  if (agentCursorTimeout) clearTimeout(agentCursorTimeout);
+  if (typeof window !== "undefined") {
+    agentCursorTimeout = setTimeout(() => {
+      currentAgentCursor = null;
+      window.__vooEditor?.requestRender?.();
+    }, durationMs);
+    window.__vooEditor?.requestRender?.();
+  }
+}
+
+export function getAgentCursor() {
+  return currentAgentCursor;
+}
+
+export function clearAgentCursor() {
+  currentAgentCursor = null;
+  if (agentCursorTimeout) clearTimeout(agentCursorTimeout);
+}
+
 export function setAgentFocusNode(node, status = "AI: Mutating") {
   if (!node) {
     currentAgentFocus = null;
@@ -426,6 +459,13 @@ export function setAgentFocusNode(node, status = "AI: Mutating") {
     status,
     timestamp: Date.now(),
   };
+
+  setAgentCursor({
+    x: (node.x ?? 0) + (node.width ?? 100) / 2,
+    y: node.y ?? 0,
+    label: status.replace(/^AI:\s*/, "") || "Agent",
+    active: true,
+  });
 
   if (agentFocusTimeout) clearTimeout(agentFocusTimeout);
   if (typeof window !== "undefined") {
@@ -493,6 +533,59 @@ export function drawAgentFocusOverlay(ctx, focus, viewport) {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(text, pillX + pillW / 2, pillY + pillH / 2);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Draws the real-time agent cursor and status label on the canvas.
+ */
+export function drawAgentCursorOverlay(ctx, cursor, viewport) {
+  if (!cursor || !viewport) return;
+  const { zoom, panX, panY } = viewport;
+  const screenX = cursor.x * zoom + panX;
+  const screenY = cursor.y * zoom + panY;
+
+  ctx.save();
+
+  // 1. Sleek mint cursor arrow
+  ctx.fillStyle = "#a7ffd4";
+  ctx.strokeStyle = "#000000";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(screenX, screenY);
+  ctx.lineTo(screenX, screenY + 14);
+  ctx.lineTo(screenX + 4, screenY + 11);
+  ctx.lineTo(screenX + 8, screenY + 18);
+  ctx.lineTo(screenX + 11, screenY + 16);
+  ctx.lineTo(screenX + 7, screenY + 10);
+  ctx.lineTo(screenX + 12, screenY + 9);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // 2. Name badge beside the cursor
+  if (cursor.label) {
+    ctx.font = "600 10px sans-serif";
+    const labelW = ctx.measureText(cursor.label).width + 10;
+    const labelH = 18;
+    const labelX = screenX + 14;
+    const labelY = screenY + 10;
+
+    ctx.fillStyle = "rgba(18, 18, 20, 0.95)";
+    ctx.beginPath();
+    ctx.roundRect(labelX, labelY, labelW, labelH, 4);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(167, 255, 212, 0.5)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = "#a7ffd4";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(cursor.label, labelX + labelW / 2, labelY + labelH / 2);
   }
 
   ctx.restore();

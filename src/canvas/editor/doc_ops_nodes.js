@@ -17,6 +17,22 @@ import { isFrameSelectionBoundary } from "./frame-selection-unit.js";
 export function withNodes(doc, rawNodes, changes = null) {
   const nodes = reconcileBooleanNodes(doc, rawNodes);
   journalNodes(doc.nodes, nodes, nodes === rawNodes ? changes : null);
+  if (doc?.isCanvasRoot && Array.isArray(nodes)) {
+    let maxX = doc.width || 0;
+    let maxY = doc.height || 0;
+    for (const node of nodes) {
+      if (!node || node.parentId) continue;
+      if (Number.isFinite(node.x) && Number.isFinite(node.width)) {
+        maxX = Math.max(maxX, Math.ceil(node.x + node.width));
+      }
+      if (Number.isFinite(node.y) && Number.isFinite(node.height)) {
+        maxY = Math.max(maxY, Math.ceil(node.y + node.height));
+      }
+    }
+    if (maxX > (doc.width || 0) || maxY > (doc.height || 0)) {
+      return { ...doc, nodes, width: maxX, height: maxY };
+    }
+  }
   return { ...doc, nodes };
 }
 

@@ -14,6 +14,8 @@ const ALL_TOOL_NAMES = [
   "vectorize_image",
   "edit_image",
   "stock_image",
+  "create_icon",
+  "find_empty_space",
   "delete_layers",
   "duplicate_layer",
   "select_layers",

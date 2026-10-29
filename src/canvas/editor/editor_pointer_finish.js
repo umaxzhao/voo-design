@@ -5,6 +5,8 @@
 import { commitEditorAction } from "../undo-action-contracts.js";
 import { absolutePathEndpoints } from "./shape_geometry.js";
 import { TOOL } from "./editor_constants.js";
+import { frameAtPoint } from "./doc_ops_nodes.js";
+import { moveIntoGroup, moveNodeToRoot } from "./doc_ops_groups.js";
 
 export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
   function finishGesture(event, finished) {
@@ -288,6 +290,43 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
       finished.id
     ) {
       api.select(finished.id);
+    }
+
+    if (finished.kind === "move" && finished.moved) {
+      let doc = api.getDocument();
+      if (doc?.isCanvasRoot && Array.isArray(finished.origins)) {
+        let changedReparent = false;
+        for (const origin of finished.origins) {
+          const node = doc.nodes.find((n) => n.id === origin.id);
+          if (!node || (node.isFrame && !node.parentId)) continue;
+          const center = {
+            x: (node.x ?? 0) + (node.width ?? 0) / 2,
+            y: (node.y ?? 0) + (node.height ?? 0) / 2,
+          };
+          const targetFrame = frameAtPoint(doc, center);
+          if (targetFrame && targetFrame.id !== node.id) {
+            let isDescendant = false;
+            let p = targetFrame.parentId;
+            while (p) {
+              if (p === node.id) {
+                isDescendant = true;
+                break;
+              }
+              p = doc.nodes.find((n) => n.id === p)?.parentId;
+            }
+            if (!isDescendant && node.parentId !== targetFrame.id) {
+              doc = moveIntoGroup(doc, node.id, targetFrame.id);
+              changedReparent = true;
+            }
+          } else if (!targetFrame && node.parentId) {
+            doc = moveNodeToRoot(doc, node.id, doc.nodes.length);
+            changedReparent = true;
+          }
+        }
+        if (changedReparent) {
+          api.setDoc(doc);
+        }
+      }
     }
 
     const changed =

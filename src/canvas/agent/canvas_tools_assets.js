@@ -17,6 +17,7 @@ import { getSetting } from "../../shared/settings.js";
 import { runImageJob } from "./image_generation.js";
 import { parseSvgToNodes } from "./svg_to_nodes.js";
 import { traceBitmapToPaths } from "./image_trace.js";
+import { ICONS } from "./html_pipeline/lucide.js";
 
 const TOOL_ERROR = Object.freeze({
   NO_EDITOR: "agentNoEditor",
@@ -505,11 +506,83 @@ export async function stockImage(args = {}, context = {}) {
   return { ok: true, layerIds, attributions };
 }
 
+/* ------------------------------------------------------------------ create_icon */
+
+export const CREATE_ICON_SCHEMA = Object.freeze({
+  type: "function",
+  function: {
+    name: "create_icon",
+    description:
+      "Insert an editable vector icon from the built-in icon set (e.g. 'search', 'settings', 'user', 'bell', 'heart', 'download', 'chevron-right', 'arrow-left', etc.) onto the canvas.",
+    parameters: {
+      type: "object",
+      properties: {
+        icon: {
+          type: "string",
+          description: "Icon name, e.g. 'search', 'home', 'user', 'settings', 'bell', 'mail', 'heart', 'folder', 'plus'.",
+        },
+        x: { type: "number", description: "Canvas x position (optional; defaults to next available space)." },
+        y: { type: "number", description: "Canvas y position (optional; defaults to 0)." },
+        size: { type: "number", description: "Icon size in pixels (default 24)." },
+        color: { type: "string", description: "Icon stroke color, e.g. '#ffffff' or '#171717'." },
+        strokeWidth: { type: "number", description: "Icon stroke width in pixels (default 2)." },
+        name: { type: "string", description: "Optional layer name." },
+      },
+      required: ["icon"],
+    },
+  },
+});
+
+export async function createIcon(args = {}, context = {}) {
+  context.signal?.throwIfAborted();
+  const iconName = String(args.icon ?? "").toLowerCase().trim();
+  const iconData = ICONS[iconName];
+  if (!iconData) {
+    invalidArgs(
+      TOOL_ERROR.INVALID_ARGS,
+      `Unknown icon: "${iconName}". Available icons include: ${Object.keys(ICONS).slice(0, 15).join(", ")}...`
+    );
+  }
+
+  const editor = context.editor ?? requireEditor();
+
+  const size = Math.max(8, Number(args.size) || 24);
+  const color = typeof args.color === "string" ? args.color : "#ffffff";
+  const strokeWidth = Number.isFinite(Number(args.strokeWidth)) ? Number(args.strokeWidth) : 2;
+
+  const origin =
+    Number.isFinite(Number(args.x)) && Number.isFinite(Number(args.y))
+      ? { x: Number(args.x), y: Number(args.y) }
+      : placementFor(editor, size, size);
+
+  const body = iconData.node
+    .map(([tag, attrs]) => {
+      const attrsStr = Object.entries(attrs)
+        .filter(([key]) => key !== "key")
+        .map(([k, v]) => `${k}="${v}"`)
+        .join(" ");
+      return `<${tag} ${attrsStr}></${tag}>`;
+    })
+    .join("");
+
+  const svgText = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+  const parsed = parseSvgToNodes(svgText, { targetWidth: size, targetHeight: size });
+  const layerIds = await createVectorNodes(editor, parsed.nodes, origin);
+
+  if (args.name && layerIds.length > 0) {
+    editor.updateNode?.(layerIds[0], { name: args.name });
+  }
+
+  editor.commitEditorDocument?.({ message: `AI: Insert icon ${iconName}` });
+  return { ok: true, icon: iconName, size, x: origin.x, y: origin.y, layerIds };
+}
+
 export const ASSET_TOOL_SCHEMAS = Object.freeze([
   GENERATE_VECTOR_SCHEMA,
   VECTORIZE_IMAGE_SCHEMA,
   EDIT_IMAGE_SCHEMA,
   STOCK_IMAGE_SCHEMA,
+  CREATE_ICON_SCHEMA,
 ]);
 
 export const ASSET_TOOL_EXECUTORS = Object.freeze({
@@ -517,4 +590,5 @@ export const ASSET_TOOL_EXECUTORS = Object.freeze({
   vectorize_image: vectorizeImage,
   edit_image: editImage,
   stock_image: stockImage,
+  create_icon: createIcon,
 });

@@ -24,6 +24,7 @@ kept in sync with undo/redo:
 | `place_image` | Places an image on the canvas. |
 | `capture_canvas` | Captures the current canvas. |
 | `new_document` | Creates a new blank design document. |
+| `find_empty_space` | Finds non-overlapping coordinates (x, y) on the canvas for a new frame or screen. |
 
 ### Layer Inspection & Mutation
 
@@ -46,6 +47,7 @@ kept in sync with undo/redo:
 | `align_layers` | Aligns visible layer bounds, translating a container's descendants together in one undo transaction. |
 | `distribute_layers` | Distributes layers evenly. |
 | `find_layers` | Finds layers by properties. |
+| `find_empty_space` | Finds an available space on the canvas to place new content. |
 | `undo` | Undoes the last document action. |
 | `redo` | Redoes the last undone action. |
 | `set_text_range_style` | Styles a text range. |
@@ -115,6 +117,7 @@ kept in sync with undo/redo:
 | `vectorize_image` | Traces a raster layer into editable vector paths locally (no provider). |
 | `edit_image` | Removes or replaces an image background through the configured image provider. |
 | `stock_image` | Searches Openverse (CC-licensed) and places a matching photo. |
+| `create_icon` | Inserts a vector icon (from built-in Lucide set) directly onto the canvas. |
 
 Mutations flash a visual focus overlay on the canvas
 (`src/canvas/editor/chrome_stage_overlays.js`) so you can see what the agent

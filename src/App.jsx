@@ -18,6 +18,11 @@ import {
   VOO_FILE_VERSION,
 } from "../electron/voo_format.js";
 
+const isEmbed = typeof window !== "undefined" && Boolean(
+  new URLSearchParams(window.location.search).get("embed") ||
+  new URLSearchParams(window.location.search).get("minimal")
+);
+
 export default function App() {
   const activeDocumentId = useDesignStore(s => s.activeDocumentId);
   const welcomeOpen = useDesignStore((s) => s.welcomeOpen);
@@ -28,7 +33,7 @@ export default function App() {
   // Workspace/agent configuration remains available through voo:open-onboarding.
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [firstRunReopened, setFirstRunReopened] = useState(false);
-  const [firstRunOpen, setFirstRunOpen] = useState(shouldShowFirstRun);
+  const [firstRunOpen, setFirstRunOpen] = useState(() => !isEmbed && shouldShowFirstRun());
   const { t } = useI18n();
   // Defer the heavy editor on the first welcome screen. Once opened, keep it
   // mounted behind the welcome overlay so history and pending edits survive.
@@ -37,6 +42,16 @@ export default function App() {
   useEffect(() => {
     if (needsEditor) setEditorActivated(true);
   }, [needsEditor]);
+
+  // When embedded in an IDE webview or iframe, auto-open an untitled project if none exists
+  useEffect(() => {
+    if (isEmbed) {
+      const store = useDesignStore.getState();
+      if (store.welcomeOpen && !store.activeDocumentId) {
+        store.newVooProject({ label: "Untitled" });
+      }
+    }
+  }, []);
 
   // Listen for Electron native menu actions and Agent panel trigger events
   useEffect(() => {
@@ -102,15 +117,16 @@ export default function App() {
 
   return (
     <main
+      data-embed={isEmbed ? "true" : undefined}
       className="app-root-frame relative flex h-full w-full select-none flex-col"
-      style={{
+      style={isEmbed ? { background: "#000" } : {
         background: "linear-gradient(-90deg, rgb(0, 0, 0) 70.123%, rgb(178, 255, 214) 89.855%)",
       }}
     >
-      <CrashRecoveryPrompt />
-      <ImageSizeNotice />
-      <AppTitleBar />
-      <ReleaseUI />
+      {!isEmbed && <CrashRecoveryPrompt />}
+      {!isEmbed && <ImageSizeNotice />}
+      {!isEmbed && <AppTitleBar />}
+      {!isEmbed && <ReleaseUI />}
       <div
         className="relative flex min-h-0 flex-1"
         data-agent-open={agentOpen && !welcomeOpen ? "true" : "false"}

@@ -1,4 +1,5 @@
 import { CLI_BRIDGE_CHANNEL as C, CLI_BRIDGE_EVENT as E } from "../../shared/cli_bridge_protocol.js";
+import { setAgentCursor } from "../editor/chrome_stage_overlays.js";
 
 const RETRY_BASE_MS = 5000;
 const RETRY_MAX_MS = 60000;
@@ -41,6 +42,9 @@ export function startCanvasMcpLink({ url, executeTool, retryBaseMs = RETRY_BASE_
       try { frame = JSON.parse(event.data); } catch { return; }
       if (frame.type !== "event" || frame.channel !== E.MCP_TOOL_CALL || !frame.payload) return;
       const { id, name, args } = frame.payload;
+      if (typeof args?.x === "number" && typeof args?.y === "number") {
+        setAgentCursor({ x: args.x, y: args.y, label: name });
+      }
       let result;
       try {
         const value = await executeTool(name, args ?? {});

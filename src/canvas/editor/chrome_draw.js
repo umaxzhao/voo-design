@@ -29,6 +29,10 @@ import {
   drawMarquee,
   drawSelectionTransformBox,
   drawTextDraftRect,
+  drawAgentFocusOverlay,
+  drawAgentCursorOverlay,
+  getAgentFocusNode,
+  getAgentCursor,
 } from "./chrome_stage_overlays.js";
 import {
   drawLasso,
@@ -334,6 +338,12 @@ function drawUncached(
   }
 
   if (guides && guides.length > 0) drawGuides(ctx, guides, viewport, dpr);
+
+  const focus = getAgentFocusNode();
+  if (focus) drawAgentFocusOverlay(ctx, focus, viewport);
+
+  const agentCursor = getAgentCursor();
+  if (agentCursor) drawAgentCursorOverlay(ctx, agentCursor, viewport);
 
   ctx.restore();
 }

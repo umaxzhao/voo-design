@@ -36,7 +36,7 @@ function send(res, status, body) {
 export async function handleAgentMcp(frame, session) {
   if (frame.method === "initialize")
     return {
-      protocolVersion: frame.params?.protocolVersion || "2024-11-05",
+      protocolVersion: frame.params?.protocolVersion || "2025-06-18",
       capabilities: { tools: {} },
       serverInfo: { name: "voo", version: "1" },
     };

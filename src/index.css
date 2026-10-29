@@ -396,6 +396,11 @@
   transition: border-color 0.25s ease;
 }
 
+.app-root-frame[data-embed="true"] .editor-shell {
+  border: none;
+  border-radius: 0;
+}
+
 .editor-shell-inner {
   box-sizing: border-box;
   height: 100%;
@@ -403,6 +408,10 @@
   overflow: hidden;
   border-radius: 12px;
   background: #000;
+}
+
+.app-root-frame[data-embed="true"] .editor-shell-inner {
+  border-radius: 0;
 }
 
 /*

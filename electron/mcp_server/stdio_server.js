@@ -148,6 +148,33 @@ function createBridgeClient() {
   };
 }
 
+export const VOO_RESOURCES = Object.freeze([
+  {
+    uri: "voo://canvas/tree",
+    name: "Canvas Layer Tree",
+    description: "Hierarchical layer structure and metadata of the active VOO canvas.",
+    mimeType: "application/json",
+  },
+  {
+    uri: "voo://canvas/selection",
+    name: "Selected Layers",
+    description: "Details and properties of currently selected layers on the canvas.",
+    mimeType: "application/json",
+  },
+  {
+    uri: "voo://canvas/preview.png",
+    name: "Canvas Screenshot",
+    description: "Current visual render of the canvas as a PNG image.",
+    mimeType: "image/png",
+  },
+  {
+    uri: "voo://canvas/status",
+    name: "Canvas Status",
+    description: "Connection and document status of the active VOO canvas.",
+    mimeType: "application/json",
+  },
+]);
+
 function toolContent(name, value) {
   const images = [];
   const text = JSON.stringify(value ?? null, (key, item) => {
@@ -178,9 +205,53 @@ export function createMcpStdioServer({ input, output, callTool, listTools = buil
     try {
       switch (method) {
         case "initialize": return send(id, { protocolVersion: params.protocolVersion || "2025-06-18",
-          capabilities: { tools: {} }, serverInfo: { name: "voo-design", version: "1.0.0" } });
+          capabilities: { tools: {}, resources: {} }, serverInfo: { name: "voo-design", version: "1.0.0" } });
         case "ping": return send(id, {});
         case "tools/list": return send(id, { tools: await listTools() });
+        case "resources/list": return send(id, { resources: VOO_RESOURCES });
+        case "resources/templates/list": return send(id, { resourceTemplates: [] });
+        case "resources/read": {
+          try {
+            const uri = params?.uri;
+            if (typeof uri !== "string") throw new Error("Resource URI is required");
+            let content;
+            switch (uri) {
+              case "voo://canvas/tree": {
+                const value = await invoke("inspect_layer_tree", {});
+                content = { uri, mimeType: "application/json", text: JSON.stringify(value ?? null) };
+                break;
+              }
+              case "voo://canvas/selection": {
+                const value = await invoke("describe_selection", {});
+                content = { uri, mimeType: "application/json", text: JSON.stringify(value ?? null) };
+                break;
+              }
+              case "voo://canvas/preview.png": {
+                const value = await invoke("capture_canvas", {});
+                let blob = "";
+                const dataUrl = value?.dataUrl || (Array.isArray(value?.nested) && value.nested[0]?.dataUrl);
+                if (typeof dataUrl === "string" && dataUrl.startsWith("data:image/png;base64,")) {
+                  blob = dataUrl.slice(22);
+                }
+                content = { uri, mimeType: "image/png", blob };
+                break;
+              }
+              case "voo://canvas/status": {
+                const value = await invoke("voo_status", {});
+                content = { uri, mimeType: "application/json", text: JSON.stringify(value ?? null) };
+                break;
+              }
+              default:
+                return send(id, null, { code: -32602, message: `Unknown resource: ${uri}` });
+            }
+            return send(id, { contents: [content] });
+          } catch (error) {
+            const text = error.message === "mcp.noCanvas"
+              ? "No VOO canvas is connected. Open VOO Design (npm run dev / desktop) with the bridge enabled."
+              : error.message || "Failed to read resource";
+            return send(id, { isError: true, content: [{ type: "text", text }] });
+          }
+        }
         case "tools/call": {
           try {
             if (typeof params.name !== "string") throw new Error("Tool name is required");

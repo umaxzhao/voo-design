@@ -11,7 +11,7 @@ await withEditorBrowser(async ({ page }) => {
     function assertFrame(doc, node) {
       if (!doc.isCanvasRoot || !node) throw new Error("Default New must contain a real root Frame");
     }
-    editor.setDoc({ ...initial, nodes: [{ ...frame, x: 0, y: 0, width: 400, height: 300,
+    editor.setDoc({ ...initial, stroke: "#00ff00", strokeWidth: 8, nodes: [{ ...frame, x: 0, y: 0, width: 400, height: 300,
       fill: "#ffffff", fills: [{ fill: "#ffffff", opacity: 1, visible: true }], clipContent: true }] });
     const canvas = document.createElement("canvas"); canvas.width = canvas.height = 32;
     const ctx = canvas.getContext("2d"); ctx.fillStyle = "#ff0000"; ctx.fillRect(0, 0, 32, 32);
@@ -26,6 +26,11 @@ await withEditorBrowser(async ({ page }) => {
     return { first: first.id, second: second.id, frame: frame.id };
   });
   const settled = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const canvasOutline = await page.locator("[data-editor-artboard]").first().evaluate((artboard) =>
+    getComputedStyle(artboard.firstElementChild).outlineStyle,
+  );
+  assert.equal(canvasOutline, "none", "A free canvas root must not draw the former page border");
+  checks.push("the canvas root stays borderless while its child Frame owns the page surface");
   const client = async (point) => {
     await settled();
     return page.evaluate(point => {

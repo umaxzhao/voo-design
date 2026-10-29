@@ -90,6 +90,42 @@ describe("MCP stdio", () => {
       expect((await s.request("tools/call", { name: "create_frame" })).result.content[0].text).toContain("No VOO canvas is connected");
     } finally { await s.close(); }
   });
+  it("lists and reads canvas resources with binary blobs and error handling", async () => {
+    const s = stdio(async (name) => {
+      if (name === "inspect_layer_tree") return { root: "doc", children: [{ id: "layer1" }] };
+      if (name === "describe_selection") return { selected: ["layer1"] };
+      if (name === "capture_canvas") return { dataUrl: "data:image/png;base64,QUJDRA==" };
+      if (name === "voo_status") return { canvasConnected: true };
+      throw new Error("mcp.noCanvas");
+    });
+    try {
+      const list = (await s.request("resources/list")).result.resources;
+      expect(list.map((r) => r.uri)).toEqual([
+        "voo://canvas/tree",
+        "voo://canvas/selection",
+        "voo://canvas/preview.png",
+        "voo://canvas/status",
+      ]);
+      expect((await s.request("resources/templates/list")).result.resourceTemplates).toEqual([]);
+
+      const tree = (await s.request("resources/read", { uri: "voo://canvas/tree" })).result.contents[0];
+      expect(tree.mimeType).toBe("application/json");
+      expect(JSON.parse(tree.text)).toEqual({ root: "doc", children: [{ id: "layer1" }] });
+
+      const sel = (await s.request("resources/read", { uri: "voo://canvas/selection" })).result.contents[0];
+      expect(JSON.parse(sel.text)).toEqual({ selected: ["layer1"] });
+
+      const preview = (await s.request("resources/read", { uri: "voo://canvas/preview.png" })).result.contents[0];
+      expect(preview.mimeType).toBe("image/png");
+      expect(preview.blob).toBe("QUJDRA==");
+
+      const status = (await s.request("resources/read", { uri: "voo://canvas/status" })).result.contents[0];
+      expect(JSON.parse(status.text)).toEqual({ canvasConnected: true });
+
+      const unknown = (await s.request("resources/read", { uri: "voo://canvas/unknown" }));
+      expect(unknown.error.code).toBe(-32602);
+    } finally { await s.close(); }
+  });
 });
 
 describe("MCP relay", () => {

@@ -17,6 +17,7 @@ import {
   captureCanvas,
   createPath,
   placeImage,
+  findEmptySpace,
 } from "./canvas_tools_geometry.js";
 import {
   setAgentFocusNode,
@@ -43,14 +44,8 @@ import { validateLayerId, validateLayerPatch, validateAutoLayout } from "./canva
 import { resolveAgentAutoLayout } from "./resolve-auto-layout.js";
 
 export { AGENT_SETTING, AGENT_DEFAULTS, IMAGE_SIZE_PRESETS } from "./agent-settings.js";
-
-export const TOOL_ERROR = Object.freeze({
-  NO_EDITOR: "agentNoEditor",
-  NO_IMAGE_MODEL: "agentNoImageModel",
-  CANCELLED: "agentCancelled",
-  NODE_NOT_FOUND: "agentNodeNotFound",
-  INVALID_ARGS: "agentInvalidArgs",
-});
+import { TOOL_ERROR } from "./canvas_tools_geometry.js";
+export { TOOL_ERROR };
 
 export const CANVAS_TOOL_SCHEMAS = Object.freeze([
   BUILD_LAYOUT_SCHEMA,
@@ -912,6 +907,7 @@ export const EXECUTORS = Object.freeze({
   create_frame: (args) => LAYOUT_TOOL_EXECUTORS.create_frame(args),
   place_image: placeImage,
   capture_canvas: captureCanvas,
+  find_empty_space: findEmptySpace,
 });
 
 /** Runs a canvas tool by name; an unknown name is an error, not a silent no-op. */

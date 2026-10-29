@@ -25,6 +25,23 @@ Codex can use the same portable runtime:
 codex mcp add voo-design -- node /absolute/new/plugin-folder/scripts/mcp-server.mjs
 ```
 
+OpenCode / Antigravity:
+
+In `opencode.json` (or `~/.config/opencode/opencode.json`):
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "voo-design": {
+        "command": "node",
+        "args": ["/absolute/new/plugin-folder/scripts/mcp-server.mjs"]
+      }
+    }
+  }
+}
+```
+
 DeepSeek Harness uses its official Cordis MCP client overlay:
 
 ```sh

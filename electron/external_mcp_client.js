@@ -3,7 +3,7 @@ import { createInterface } from 'node:readline';
 
 /** Small MCP client. Each owner must close it, including after initialization failure. */
 export function createExternalMcpClient(server, { timeoutMs = 30000 } = {}) {
-  let child, sequence = 0, sessionId, protocolVersion = '2025-03-26';
+  let child, sequence = 0, sessionId, protocolVersion = '2025-06-18';
   const pending = new Map();
   const fail = (error) => { for (const job of pending.values()) job.reject(error); pending.clear(); };
   function receive(frame) {
