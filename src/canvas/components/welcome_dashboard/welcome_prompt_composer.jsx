@@ -72,10 +72,16 @@ export function WelcomePromptComposer({
     group.models.some((model) => model.id === selectedModel),
   );
   const selectedModelEntry = selectedModelGroup?.models.find((model) => model.id === selectedModel);
-  const providerLogoId = getProviderLogoId(selectedModelGroup?.cliId ?? selectedModel?.split(":")[0]);
   const selectedModelName = selectedModelEntry
     ? getCompactModelName(selectedModelEntry.label, selectedModelGroup?.cliId)
     : (modelLabel?.split(" · ").at(-1) ?? modelLabel);
+  const modelOptions = (modelGroups ?? []).flatMap((group) =>
+    group.models.map((model) => ({
+      value: model.id,
+      label: getCompactModelName(model.label, group.cliId),
+      icon: <ProviderLogo providerId={getProviderLogoId(group.cliId)} size={14} />,
+    })),
+  );
 
   useEffect(() => {
     if (!advancedOpen) return undefined;
@@ -123,7 +129,7 @@ export function WelcomePromptComposer({
       <form
         ref={formRef}
         onSubmit={onSubmit}
-        className={`prompt-composer relative mt-0 min-w-0 rounded-2xl border border-white/10 bg-[#141414] p-3 transition-colors focus-within:border-white/20 ${advancedOpen ? "z-[300]" : ""}`}
+          className={`prompt-composer relative mt-0 min-w-0 rounded-2xl border border-white/10 bg-[#141414] p-4 transition-colors focus-within:border-white/20 ${advancedOpen ? "z-[300]" : ""}`}
       >
         <textarea
           value={promptText}
@@ -135,9 +141,9 @@ export function WelcomePromptComposer({
             }
           }}
           placeholder={t("welcome.prompt.placeholder")}
-          rows={3}
+          rows={4}
           aria-label={t("welcome.prompt.placeholder")}
-          className="w-full resize-none bg-transparent text-[12px] leading-6 text-neutral-100 placeholder-neutral-400 focus:outline-none"
+          className="min-h-24 w-full resize-y bg-transparent text-[12px] leading-6 text-neutral-100 placeholder-neutral-400 focus:outline-none"
         />
 
         {attachments?.length > 0 && (
@@ -166,38 +172,47 @@ export function WelcomePromptComposer({
           </ul>
         )}
 
-        <div className="welcome-prompt-controls-row mt-2 flex items-center justify-between gap-2">
+        <div className="welcome-prompt-controls-row mt-3 flex items-center gap-2">
           <button
             type="button"
             onClick={() => onAddAttachments?.()}
-            className="flex size-7 items-center justify-center rounded-lg bg-white/[0.1] text-neutral-400 transition-colors hover:bg-white/[0.16] hover:text-white"
+            className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.08] text-neutral-400 transition-colors hover:bg-white/[0.14] hover:text-white"
             title={t("welcome.prompt.addAttachment")}
             aria-label={t("welcome.prompt.addAttachment")}
           >
             <Plus size={14} />
           </button>
 
-          <div className="welcome-prompt-control-actions flex min-w-0 flex-1 items-center gap-1">
-            <button
-              type="button"
-              onClick={() => (configNeeded ? onOpenSettings?.() : setAdvancedOpen((open) => !open))}
-              aria-label={t("welcome.prompt.modelLabel")}
-              title={selectedModelName || ""}
-              className={`flex max-w-[13rem] min-w-0 flex-1 items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] transition-colors hover:bg-white/[0.06] ${
-                configNeeded ? "text-amber-300" : "text-neutral-400 hover:text-neutral-200"
-              }`}
-            >
-              <ProviderLogo providerId={providerLogoId} size={14} />
-              <span className="min-w-0 flex-1 truncate">{selectedModelName}</span>
-            </button>
+          <div className="welcome-prompt-control-actions flex min-w-0 flex-1 items-center gap-2">
+            {configNeeded ? (
+              <button
+                type="button"
+                onClick={() => onOpenSettings?.()}
+                aria-label={t("welcome.prompt.modelLabel")}
+                className="min-w-0 flex-1 truncate text-left text-xs text-amber-300"
+              >
+                {t("welcome.prompt.modelLabel")}
+              </button>
+            ) : (
+              <FlatSelect
+                value={selectedModel ?? ""}
+                onChange={(value) => onSelectModel?.(value)}
+                label={t("welcome.prompt.modelLabel")}
+                options={modelOptions}
+                className="welcome-composer-model-select min-w-0 flex-1"
+                triggerClassName="!h-9 !w-full !max-w-64 !rounded-xl !bg-transparent !px-2 !text-xs !text-neutral-300 hover:!bg-white/[0.06]"
+                panelClassName="!z-[400]"
+                portal
+              />
+            )}
 
             <button
               type="button"
-              onClick={() => setAdvancedOpen((open) => !open)}
+              onClick={() => (configNeeded ? onOpenSettings?.() : setAdvancedOpen((open) => !open))}
               aria-label={t("welcome.prompt.generationTypeLabel")}
               aria-haspopup="dialog"
               aria-expanded={advancedOpen}
-              className="flex size-7 items-center justify-center rounded-lg bg-white/[0.07] text-neutral-400 transition-colors hover:bg-white/[0.12] hover:text-neutral-200"
+              className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.08] text-neutral-400 transition-colors hover:bg-white/[0.14] hover:text-neutral-200"
             >
               <TuneIcon size={14} />
             </button>
@@ -205,7 +220,7 @@ export function WelcomePromptComposer({
             <button
               type="submit"
               disabled={submitting}
-              className="flex size-7 items-center justify-center rounded-full bg-white text-black transition-colors hover:bg-mint disabled:opacity-50"
+              className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-black transition-colors hover:bg-mint disabled:opacity-50"
               title={t("welcome.actions.createNowTitle")}
               aria-label={t("welcome.actions.createNowTitle")}
             >
@@ -236,25 +251,6 @@ export function WelcomePromptComposer({
                   value: typeItem.id,
                   label: t(typeItem.label),
                 }))}
-                className="welcome-composer-select w-full min-w-0"
-                triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs"
-                panelClassName="!z-[400]"
-                portal
-              />
-            </ComposerField>
-
-            <ComposerField label={t("welcome.prompt.modelLabel")}>
-              <FlatSelect
-                value={selectedModel ?? ""}
-                onChange={(value) => onSelectModel?.(value)}
-                label={t("welcome.prompt.modelLabel")}
-                options={(modelGroups ?? []).flatMap((group) =>
-                  group.models.map((model) => ({
-                    value: model.id,
-                    label: getCompactModelName(model.label, group.cliId),
-                    icon: <ProviderLogo providerId={getProviderLogoId(group.cliId)} size={14} />,
-                  })),
-                )}
                 className="welcome-composer-select w-full min-w-0"
                 triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs"
                 panelClassName="!z-[400]"

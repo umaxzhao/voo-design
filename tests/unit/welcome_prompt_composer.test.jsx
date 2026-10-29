@@ -60,7 +60,8 @@ describe("welcome prompt composer", () => {
   it("shows the real provider model instead of a decorative label", () => {
     const html = render();
     expect(html).toContain("Opus 5.5");
-    expect(html).toContain('title="Opus 5.5"');
+    expect(html).toContain('aria-haspopup="listbox"');
+    expect(html).toContain('aria-label="welcome.prompt.modelLabel"');
     expect(html).not.toContain("VOO Agent 3.5");
     expect(html).toContain("welcome.prompt.modelLabel");
   });
@@ -74,6 +75,15 @@ describe("welcome prompt composer", () => {
     expect(html).not.toContain('role="radiogroup"');
     expect(html).not.toContain('aria-label="welcome.prompt.styleLabel"');
     expect(html).not.toContain('aria-label="welcome.prompt.designSystemLabel"');
+  });
+
+  it("keeps model selection separate from advanced generation settings", () => {
+    const html = render({ initialAdvancedOpen: true });
+    const modelIndex = html.indexOf('aria-label="welcome.prompt.modelLabel"');
+    const advancedIndex = html.indexOf('role="dialog"');
+    expect(modelIndex).toBeGreaterThan(-1);
+    expect(advancedIndex).toBeGreaterThan(modelIndex);
+    expect(html.slice(advancedIndex)).not.toContain('aria-label="welcome.prompt.modelLabel"');
   });
 
   it("exposes the variant count control", () => {
