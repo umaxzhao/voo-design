@@ -186,7 +186,7 @@ export function AutoLayoutFields({
         <div
           role="group"
           aria-label={t("editor.autoLayout.align")}
-          className="grid h-20 grid-cols-3 grid-rows-3 rounded-xl bg-neutral-800 p-1"
+          className="grid h-16 grid-cols-3 grid-rows-3 rounded-xl bg-neutral-800 p-1"
         >
           {positions.flatMap((row, y) =>
             positions.map((column, x) => {

@@ -1,6 +1,7 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { AutoLayoutFields } from "../../src/canvas/components/editor_properties/auto_layout_section.jsx";
+import AutoLayoutPositionToggle from "../../src/canvas/components/editor_properties/auto_layout_position_toggle.jsx";
 import { reflowAutoLayout } from "../../src/canvas/editor/scene_auto_layout.js";
 
 vi.mock("../../src/canvas/use_i18n.js", () => ({
@@ -69,4 +70,56 @@ describe("auto layout alignment controls", () => {
       expect(child.y).toBe(90);
     },
   );
+});
+
+it("keeps an absolute child in place and rejoins flow on the next click", () => {
+  const parent = {
+    id: "p",
+    kind: "group",
+    isFrame: true,
+    x: 0,
+    y: 0,
+    width: 200,
+    height: 100,
+    autoLayout: {
+      direction: "horizontal",
+      widthMode: "fixed",
+      heightMode: "fixed",
+      gap: 0,
+      padding: 0,
+    },
+  };
+  const child = {
+    id: "c",
+    kind: "group",
+    isFrame: true,
+    parentId: "p",
+    x: 60,
+    y: 40,
+    width: 20,
+    height: 10,
+    autoLayout: {
+      direction: "vertical",
+      widthMode: "fixed",
+      heightMode: "fixed",
+    },
+  };
+  let current = child;
+  const editAndCommit = (patch) => {
+    current = { ...current, ...patch };
+  };
+  AutoLayoutPositionToggle({ object: current, editAndCommit }).props.onClick();
+  expect(current.layoutPosition).toBe("absolute");
+  let result = reflowAutoLayout({ nodes: [parent, current] }).nodes.find(
+    (node) => node.id === "c",
+  );
+  expect([result.x, result.y]).toEqual([60, 40]);
+  expect(current.autoLayout).toBe(child.autoLayout);
+  const active = AutoLayoutPositionToggle({ object: current, editAndCommit });
+  expect(active.props["aria-pressed"]).toBe(true);
+  active.props.onClick();
+  result = reflowAutoLayout({ nodes: [parent, current] }).nodes.find(
+    (node) => node.id === "c",
+  );
+  expect([result.x, result.y]).toEqual([0, 0]);
 });

@@ -1,5 +1,4 @@
 /** Section list rendering for node properties: transform, warp, text, shape, colour, and effects. */
-
 import { useState } from "react";
 import { resolvePanelForContext } from "./resolve_panel_context.js";
 import PropTypes from "prop-types";
@@ -14,7 +13,7 @@ import TransformSection from "./transform_section.jsx";
 import LayerEffectsSection from "./layer_effects_section.jsx";
 import PuppetPinSection from "./puppet_pin_section.jsx";
 import WarpSection from "./warp_section.jsx";
-import AutoLayoutChildSection from "./auto_layout_child_section.jsx";
+import AutoLayoutPositionToggle from "./auto_layout_position_toggle.jsx";
 import ConstraintsSection from "./constraints_section.jsx";
 import ColorVariablesSection from "./color_variables_section.jsx";
 import { DocumentColoursContext } from "../../color_picker/document_colours_context.js";
@@ -35,10 +34,8 @@ import {
   normalizeAdjustments,
 } from "../../editor/scene_model.js";
 import { TOOL } from "../../editor/editor_constants.js";
-
 /** Stable empty list so the context value does not change identity per render. */
 const NO_DOCUMENT_COLOURS = [];
-
 export default function PropertiesPanelSections({
   object,
   sections = null,
@@ -80,6 +77,9 @@ export default function PropertiesPanelSections({
   // Frames with a Layout group own W/H (Figma keeps them in Layout); other
   // shapes keep the dimension bar in Transform.
   const hasLayoutGroup = has("layoutGrid") || has("autoLayout");
+  const positionAction = has("layoutChild") && parentLayout ? (
+    <AutoLayoutPositionToggle object={object} editAndCommit={editAndCommit} />
+  ) : null;
   const frameFallbackFill =
     object.isFrame &&
     !(Array.isArray(object.fills) && object.fills.length) &&
@@ -126,7 +126,6 @@ export default function PropertiesPanelSections({
     onDetachVariable: () => colorVariableActions?.variableActions?.bind?.(null),
     onDetachStyle: () => styleActions?.detach?.("paint"),
   };
-
   const addItems = [
     eligible.variables && !show("variables") && { key: "variables", label: t("editor.variables.title"), onSelect: () => reveal("variables") },
     eligible.styles && !show("styles") && { key: "styles", label: t("styles.title"), onSelect: () => reveal("styles") },
@@ -144,7 +143,6 @@ export default function PropertiesPanelSections({
           onToggleFixed={onTogglePuppetPinFixed}
         />
       ) : null}
-
       {!isWarpTool && (onLayout || engine?.layoutSelection) && object.kind !== "adjustment" ? (
         <AlignSection
           count={selectionCount}
@@ -153,7 +151,6 @@ export default function PropertiesPanelSections({
           showQuickActions={(selectionCount ?? 1) < 2}
         />
       ) : null}
-
       {isWarpTool ? (
         <WarpSection
           tool={tool}
@@ -189,26 +186,24 @@ export default function PropertiesPanelSections({
           selectedNodes={selectedNodes}
           transformActions={transformActions}
           parentLayout={parentLayout}
+          positionAction={!hasLayoutGroup ? positionAction : null}
           onRotate90={onRotate90}
         />
       ) : null}
-
       {/* The constraints row appears once set or when the add menu reveals it.
           One-shot crop and replace actions live in the bottom quickbar. */}
       {!isWarpTool && eligible.constraints && !object.isFrame ? (
         <ConstraintsSection object={object} editAndCommit={editAndCommit} />
       ) : null}
-
       {!isWarpTool && object.isFrame ? (
         <VariantsSection engine={engine} isMainComponent={isMainComponent} />
       ) : null}
-
       {!isWarpTool ? <InstanceSection object={object} engine={engine} /> : null}
-
       {!isWarpTool && (
         <TypeSpecificSections
           object={object}
           sections={allowed}
+          positionAction={positionAction}
           showDimensions={hasLayoutGroup}
           engine={engine}
           edit={edit}
@@ -216,7 +211,6 @@ export default function PropertiesPanelSections({
           commitNow={commitNow}
         />
       )}
-
       {!isWarpTool && isMedia ? (
         <MediaSection
           object={object}
@@ -227,10 +221,6 @@ export default function PropertiesPanelSections({
           error={mediaError}
           t={t}
         />
-      ) : null}
-
-      {!isWarpTool && has("layoutChild") && parentLayout ? (
-        <AutoLayoutChildSection object={object} editAndCommit={editAndCommit} />
       ) : null}
 
       {/* Polygon/star parameters and the line/arrow head menu. Single
@@ -246,7 +236,6 @@ export default function PropertiesPanelSections({
           commitNow={commitNow}
         />
       ) : null}
-
       {object.kind === "adjustment" ? (
         <AffinityAdjustmentSection
           object={object}
@@ -258,7 +247,6 @@ export default function PropertiesPanelSections({
           t={t}
         />
       ) : null}
-
       {!isWarpTool && object.kind === "text" ? (
         <TextSection
           object={object}
@@ -268,7 +256,6 @@ export default function PropertiesPanelSections({
           selectedNodes={selectedNodes}
         />
       ) : null}
-
       {!isWarpTool && object.kind === "image" && (tool ?? TOOL.SELECT) === TOOL.SELECT ? (
         <ImageContextActions
           object={object}
@@ -277,7 +264,6 @@ export default function PropertiesPanelSections({
           bitmap={getBitmap?.(object) ?? null}
         />
       ) : null}
-
       {/* Text keeps opacity/blend after Fill: the type → paint → appearance
           order matches Figma, and the Fill row sits next to the text block
           instead of behind a section the user rarely touches. */}
@@ -290,7 +276,6 @@ export default function PropertiesPanelSections({
           commitNow={commitNow}
         />
       ) : null}
-
       {!isWarpTool && (has("fill") || has("stroke")) && supportsColour(object) ? (
         // The picker's "Document colours" row reads the document's colour variables.
         <DocumentColoursContext.Provider value={colorVariableActions?.variables ?? NO_DOCUMENT_COLOURS}>
@@ -317,7 +302,6 @@ export default function PropertiesPanelSections({
           commitNow={commitNow}
         />
       ) : null}
-
       {/* Image tools sit before Fill/Stroke so the histogram and image actions stay on the first screen. */}
       {show("variables") ? (
         <ColorVariablesSection
@@ -332,7 +316,6 @@ export default function PropertiesPanelSections({
           revealed={revealed("variables")}
         />
       ) : null}
-
       {show("styles") ? (
         <StyleSection
           object={object}
@@ -341,7 +324,6 @@ export default function PropertiesPanelSections({
           revealed={revealed("styles")}
         />
       ) : null}
-
       {eligible.effects ? (
         <LayerEffectsSection
           addPickerOpen={current.effectsPicker}
@@ -358,23 +340,17 @@ export default function PropertiesPanelSections({
           engine={engine}
         />
       ) : null}
-
       {!isWarpTool ? (
         <SelectionColorsSection selectedNodes={selectedNodes} engine={engine} />
       ) : null}
-
       {eligible.export ? (
         <ExportSection object={object} selectedNodes={selectedNodes} engine={engine} />
       ) : null}
-
       {showRepeatArray ? <ModifiersSection object={object} engine={engine} t={t} revealed={revealed("modifiers")} /> : null}
-
       <PanelAddMenu items={addItems} />
-
     </>
   );
 }
-
 PropertiesPanelSections.propTypes = {
   object: PropTypes.object.isRequired,
   sections: PropTypes.arrayOf(PropTypes.string),

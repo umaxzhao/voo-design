@@ -22,7 +22,7 @@ export function downloadSelectionPng(engine, object) {
 }
 
 /** Controls only appear when the resolver grants their capability. */
-export default function TypeSpecificSections({ object, sections, showDimensions = true, editAndCommit, edit = null, commitNow = null, engine }) {
+export default function TypeSpecificSections({ object, sections, showDimensions = true, positionAction = null, editAndCommit, edit = null, commitNow = null, engine }) {
   const { t } = useI18n();
   const has = section => sections.includes(section);
   const number = (label, key, fallback, min, max) => <label className="block text-[11px]" key={key}>{label}<input className={fieldClass} type="number" aria-label={label} value={object[key] ?? fallback} min={min} max={max} onChange={event => {
@@ -59,7 +59,7 @@ export default function TypeSpecificSections({ object, sections, showDimensions 
       const applyEdit = (patch) => (edit ?? editAndCommit)(patch);
       const modes = ['none', 'vertical', 'horizontal', 'grid'];
       return (
-        <StaticSection title={t(layout ? 'editor.autoLayout.title' : 'editor.props.layout')} storageKey="layout">
+        <StaticSection title={t(layout ? 'editor.autoLayout.title' : 'editor.props.layout')} storageKey="layout" extra={positionAction}>
           {/* Figma's layout mode strip: none / vertical / horizontal / grid. */}
           <div className="flex h-7 items-center gap-0.5 rounded-xl bg-neutral-800 p-0.5">
             {modes.map((mode) => (
@@ -178,4 +178,4 @@ export default function TypeSpecificSections({ object, sections, showDimensions 
     {has('component') && <><StaticSection title={t('editor.props.component')} storageKey="component"><span className="text-[11px]">{object.sourceCanvasId ? `${t('editor.props.mainComponent')}: ${object.sourceCanvasId}` : t('editor.props.mainComponent')}</span></StaticSection><VariantsSection engine={engine} node={object.sourceCanvasId ? object : null} isMainComponent={!object.sourceCanvasId} /></>}
   </>;
 }
-TypeSpecificSections.propTypes = { object: PropTypes.object.isRequired, sections: PropTypes.arrayOf(PropTypes.string).isRequired, showDimensions: PropTypes.bool, editAndCommit: PropTypes.func.isRequired, engine: PropTypes.object };
+TypeSpecificSections.propTypes = { positionAction: PropTypes.node, object: PropTypes.object.isRequired, sections: PropTypes.arrayOf(PropTypes.string).isRequired, showDimensions: PropTypes.bool, editAndCommit: PropTypes.func.isRequired, engine: PropTypes.object };

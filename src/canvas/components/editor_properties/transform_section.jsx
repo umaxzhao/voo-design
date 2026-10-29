@@ -2,7 +2,6 @@
  * Transform section: reference-point anchor, position (X/Y), dimension (W/H),
  * rotation, shear, horizontal/vertical flip, and corner radius.
  */
-
 import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
 import { Contrast } from "lucide-react";
@@ -29,12 +28,9 @@ import EditorTooltip from "../editor_tooltip.jsx";
 import AnchorPointGrid from "./transform_anchor_grid.jsx";
 import TransformDimensionBar from "./transform_dimension_bar.jsx";
 import TransformRadiusControls from "./transform_radius_controls.jsx";
-
 export { AnchorPointGrid, TransformDimensionBar, TransformRadiusControls };
-
 /** Largest value the position/size fields accept — comfortably past any doc. */
 const COORD_LIMIT = 99999;
-
 /**
  * The always-visible block: region label, position, size and opacity.
  *
@@ -55,6 +51,7 @@ export default function TransformSection({
   transformActions = null,
   parentLayout = null,
   onRotate90 = null,
+  positionAction = null,
 }) {
   const { t } = useI18n();
   const [lockRatioState, setLockRatioState] = useState({
@@ -74,7 +71,6 @@ export default function TransformSection({
     });
   }, [object.id, object.lockRatio, object.isFrame]);
   const [anchor, setAnchor] = useState("nw");
-
   /**
    * Common value for a transform field across the selection (plan 1.9).
    * Single selection falls back to the primary node's value; a multi
@@ -100,19 +96,15 @@ export default function TransformSection({
   const commonOpacity = common("opacity", object.opacity ?? 1);
   const commonS = common("shear", Math.round(object.shear ?? 0));
   const commonCornerRadius = common("cornerRadius", object.cornerRadius);
-
   // X/Y report and edit the anchor's document position, not always the
   // top-left corner — with the default "nw" anchor they are exactly x and y.
-
   const editPosition = (axis, value) => {
     edit(resizeWithAnchor(object, { [axis]: value }, anchor));
   };
-
   const resizeTo = (axis, value) => {
     const currentW = object.width;
     const currentH = object.height;
     if (!currentW || !currentH) return;
-
     if (object.kind === "text") {
       // A fixed text box (drawn with the text tool) has an independent wrap
       // column: W edits that column, and its height is auto — it grows with
@@ -139,7 +131,6 @@ export default function TransformSection({
       edit({ x: resized.x, y: resized.y, fontSize: nextFontSize });
       return;
     }
-
     if (lockRatio && currentH > 0) {
       const ratio = currentW / currentH;
       if (axis === "width") {
@@ -153,10 +144,9 @@ export default function TransformSection({
       edit(resizeWithAnchor(object, { [axis]: value }, anchor));
     }
   };
-
   return (
     <>
-      <StaticSection title={t("editor.props.transform")} storageKey="transform">
+      <StaticSection title={t("editor.props.transform")} storageKey="transform" extra={positionAction}>
         <div className="flex items-start gap-2">
           {isRegion ? null : (
             <AnchorPointGrid
@@ -204,7 +194,6 @@ export default function TransformSection({
                 />
               )}
             </div>
-
             {/* Keep editable W/H beside position for every transformable object. */}
             {showDimensions ? (
               <TransformDimensionBar
@@ -220,7 +209,6 @@ export default function TransformSection({
             ) : null}
           </div>
         </div>
-
         {isRegion ? null : (
           <div className="flex items-center gap-2">
             <div className="grid min-w-0 flex-1 grid-cols-2 gap-2">
@@ -297,9 +285,7 @@ export default function TransformSection({
             </div>
           </div>
         )}
-
         {/* Opacity and blend mode live in the Appearance section (Figma/Pen). */}
-
         {(() => {
           if (!showDimensions) return null;
           const isGroup = object.kind === "group";
@@ -348,7 +334,6 @@ export default function TransformSection({
             </div>
           );
         })()}
-
         {showRadius && (object.kind === "rect" || object.isFrame || object.kind === "frame") ? (
           <TransformRadiusControls
             object={object}
@@ -359,7 +344,6 @@ export default function TransformSection({
             t={t}
           />
         ) : null}
-
         {(object.warpMesh || object.perspectiveCorners) && (
           <div>
             <button
@@ -377,8 +361,8 @@ export default function TransformSection({
     </>
   );
 }
-
 TransformSection.propTypes = {
+  positionAction: PropTypes.node,
   onRotate90: PropTypes.func,
   object: PropTypes.object.isRequired,
   showRadius: PropTypes.bool,
