@@ -656,9 +656,19 @@ export function useEditorShortcuts({
             if (event.altKey) {
               event.preventDefault();
               engine.destructiveBoolean?.("subtract");
-              return;
+            } else {
+              event.preventDefault();
+              if (event.shiftKey) {
+                if (onSaveAs) onSaveAs();
+                else if (onSave) onSave({ saveAs: true });
+                else onApply?.();
+              } else if (onSave) {
+                onSave({ saveAs: false });
+              } else {
+                onApply?.();
+              }
             }
-            break;
+            return;
           case "KeyI":
             if (event.altKey) {
               event.preventDefault();
@@ -672,19 +682,29 @@ export function useEditorShortcuts({
               engine.destructiveBoolean?.("exclude");
               return;
             }
-            break;
+            if (engine.getPixelSelection?.()) {
+              event.preventDefault();
+              void engine.cutSelectionPixels?.();
+              return;
+            }
+            if (engine.getSelected() || engine.getSelectedIds?.()?.length) {
+              event.preventDefault();
+              engine.cut();
+              return;
+            }
+            return;
           case "KeyO":
             if (event.shiftKey && event.altKey) {
               event.preventDefault();
               engine.expandSelectedStroke?.();
-              return;
-            }
-            if (event.shiftKey) {
+            } else if (event.shiftKey) {
               event.preventDefault();
               engine.convertSelectedToPath?.();
-              return;
+            } else {
+              event.preventDefault();
+              onOpen?.();
             }
-            break;
+            return;
           case "KeyD":
             event.preventDefault();
             if (engine.getPixelSelection?.()?.contours?.length) {
@@ -729,18 +749,6 @@ export function useEditorShortcuts({
             }
             return;
           }
-          case "KeyX":
-            if (engine.getPixelSelection?.()) {
-              event.preventDefault();
-              void engine.cutSelectionPixels?.();
-              return;
-            }
-            if (engine.getSelected() || engine.getSelectedIds?.()?.length) {
-              event.preventDefault();
-              engine.cut();
-              return;
-            }
-            return;
           case "KeyV": {
             if (event.altKey) {
               event.preventDefault();
@@ -860,21 +868,6 @@ export function useEditorShortcuts({
               else engine.createClippingMask();
             } else if (event.shiftKey) engine.ungroupSelection();
             else engine.groupSelection();
-            return;
-          case "KeyS":
-            event.preventDefault();
-            if (event.shiftKey) {
-              if (onSaveAs) onSaveAs();
-              else if (onSave) onSave({ saveAs: true });
-              else onApply?.();
-            } else {
-              if (onSave) onSave({ saveAs: false });
-              else onApply?.();
-            }
-            return;
-          case "KeyO":
-            event.preventDefault();
-            onOpen?.();
             return;
           case "KeyN":
             event.preventDefault();

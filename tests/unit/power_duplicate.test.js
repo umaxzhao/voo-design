@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { createClipboard } from "../../src/canvas/editor/editor_clipboard.js";
-import { createDocument, NODE_KIND } from "../../src/canvas/editor/scene_model.js";
+import {
+  createDocument,
+  createGroupNode,
+  NODE_KIND,
+} from "../../src/canvas/editor/scene_model.js";
 
 describe("Power Duplicate (Cmd+D) Geometric Progression", () => {
   it("repeats translation, rotation, and geometric scale deltas", () => {
@@ -48,6 +52,7 @@ describe("Power Duplicate (Cmd+D) Geometric Progression", () => {
     clipboard.duplicateSelected();
     expect(doc.nodes.length).toBe(2);
     const copy1 = doc.nodes[1];
+    expect(selectedIds).toEqual([copy1.id]);
     expect(copy1.x).toBe(100);
     expect(copy1.y).toBe(100);
 
@@ -76,5 +81,47 @@ describe("Power Duplicate (Cmd+D) Geometric Progression", () => {
     expect(copy3.y).toBe(160);
     expect(copy3.rotation).toBe(30);
     expect(copy3.width).toBe(Math.round(72 * 1.2));
+  });
+
+  it("keeps a duplicated frame selected instead of dropping the selection", () => {
+    let doc = createDocument(800, 600);
+    const frame = {
+      ...createGroupNode({ x: 50, y: 60, width: 300, height: 200 }),
+      isFrame: true,
+    };
+    const child = {
+      id: "frame-child",
+      kind: NODE_KIND.RECT,
+      parentId: frame.id,
+      x: 70,
+      y: 80,
+      width: 40,
+      height: 30,
+    };
+    doc.nodes.push(frame, child);
+    let selectedIds = [frame.id];
+    const clipboard = createClipboard({
+      getDoc: () => doc,
+      setDoc: (next) => { doc = next; },
+      selection: { getIds: () => selectedIds },
+      selectMany: (ids) => { selectedIds = ids; },
+      select: (id) => { selectedIds = id ? [id] : []; },
+      removeIds: () => true,
+      getPixelSelection: () => null,
+      layerFromSelection: () => {},
+      extractSelectionImageNode: () => null,
+      deleteSelectionPixels: () => {},
+      exportSelectionPng: () => null,
+      maskTools: {},
+      getViewportCenter: () => ({ x: 400, y: 300 }),
+    });
+
+    clipboard.duplicateSelected();
+
+    expect(selectedIds).toHaveLength(1);
+    expect(doc.nodes.find((node) => node.id === selectedIds[0])).toMatchObject({
+      kind: NODE_KIND.GROUP,
+      isFrame: true,
+    });
   });
 });

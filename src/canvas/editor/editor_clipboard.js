@@ -306,10 +306,12 @@ export function createClipboard({
       setDoc,
       ops.withNodes(doc, out),
     );
-    const duplicateUnits = [...copiesById.values()].filter(
-      (copy) => !isContainerNode(copy),
-    );
-    const newDuplicateIds = duplicateUnits.map((copy) => copy.id);
+    // Keep the same selection units active after duplication. Filtering out
+    // containers here deselected a duplicated frame/group entirely, while
+    // selecting every copied leaf instead of the user's original selection.
+    const newDuplicateIds = selectedIds
+      .map((id) => copiesById.get(id)?.id)
+      .filter(Boolean);
 
     powerDuplicateState = {
       lastDuplicateIds: newDuplicateIds,
