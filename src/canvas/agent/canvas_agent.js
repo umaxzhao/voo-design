@@ -148,6 +148,7 @@ export async function runAgentTurn({
   onVariant,
   variantCount = 1,
   frame,
+  visualReferences = [],
 }) {
   const base = styleNote.trim() ? `${SYSTEM_PROMPT}\n\nStyle notes from the user: ${styleNote.trim()}` : SYSTEM_PROMPT;
   let qualityOff = globalThis.__VOO_DESIGN_QUALITY_OFF__ === true;
@@ -165,6 +166,7 @@ export async function runAgentTurn({
     const count = Math.max(1, Math.min(4, Math.round(Number(variantCount) || 1)));
     const variants = [];
     const results = [];
+    let sharedVisualReferences = visualReferences;
     for (let index = 0; index < count; index += 1) {
       turnSignal.throwIfAborted();
       const variantFrame = {
@@ -178,10 +180,12 @@ export async function runAgentTurn({
         designSystem,
         editor, streamStep, config, signal,
         onProgress,
+        visualReferences: sharedVisualReferences,
         chooseDirection: chooseDirection
           ? (choices, options = {}) => chooseDirection(choices, { ...options, variantIndex: index })
           : undefined,
       });
+      if (result.visualReferences?.length) sharedVisualReferences = result.visualReferences;
       results.push(result);
       const variant = {
         index,
@@ -212,10 +216,17 @@ export async function runAgentTurn({
   const documentContext = buildDocumentDesignContext(editor?.getDocument?.());
   const designPrompt = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit, designSystem: activeDesignSystem, sceneKind })}`;
   const system = designPrompt + documentContext;
+  const referenceImages = visualReferences.filter((image) => typeof image?.dataUrl === "string" && image.dataUrl.startsWith("data:image/"));
+  const userContent = referenceImages.length
+    ? [
+        { type: "text", text: `${userText}\nUse the attached images as visual references; keep the final design editable.` },
+        ...referenceImages.map((image) => ({ type: "image_url", image_url: { url: image.dataUrl } })),
+      ]
+    : userText;
   const messages = [
     { role: "system", content: system },
     ...history,
-    { role: "user", content: userText },
+    { role: "user", content: userContent },
   ];
   let mutated = false;
   let writesSinceCapture = 0;

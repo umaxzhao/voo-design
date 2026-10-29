@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 vi.mock("../../src/canvas/agent/html_pipeline/pipeline.js", () => ({
-  shouldUseHtmlPipeline: () => true,
+  shouldUseHtmlPipeline: ({ enabled = true } = {}) => enabled,
   runHtmlPipeline: vi.fn(async ({ frame, chooseDirection }) => {
     const choices = [{ id: "a" }, { id: "b" }];
     const choice = chooseDirection ? await chooseDirection(choices, {}) : "auto";
@@ -82,6 +82,47 @@ describe("agent variants", () => {
     });
     expect(runHtmlPipeline).toHaveBeenCalledTimes(1);
     expect(reply).toContain("Created page with 3 editable layers");
+  });
+
+  it("reuses one generated visual reference across all variants", async () => {
+    const reference = [{ name: "Visual reference", dataUrl: "data:image/png;base64,AAAA" }];
+    runHtmlPipeline.mockImplementationOnce(async ({ frame }) => ({
+      html: "<html></html>", directionId: "a", frameId: `frame-${frame.x}`,
+      nodeCount: 3, trace: [], visualReferences: reference,
+    }));
+    await runAgentTurn({
+      config: { model: "gpt-5" },
+      history: [],
+      userText: "做一个音乐海报",
+      tools: [],
+      executeTool: vi.fn(),
+      streamStep: vi.fn(),
+      variantCount: 2,
+      frame: { x: 0, y: 0, width: 600, height: 900 },
+    });
+
+    expect(runHtmlPipeline.mock.calls[0][0].visualReferences).toEqual([]);
+    expect(runHtmlPipeline.mock.calls[1][0].visualReferences).toEqual(reference);
+  });
+
+  it("passes user-provided reference images to the non-HTML agent path", async () => {
+    const reference = { name: "guide.png", dataUrl: "data:image/png;base64,AAAA" };
+    const streamStep = vi.fn().mockResolvedValue({ text: "Done", toolCalls: [] });
+    await runAgentTurn({
+      config: { model: "gpt-5" },
+      history: [],
+      userText: "Use this reference to create a screen",
+      tools: [],
+      executeTool: vi.fn(),
+      streamStep,
+      htmlPipeline: false,
+      visualReferences: [reference],
+    });
+
+    expect(streamStep.mock.calls[0][0].messages.at(-1).content).toEqual([
+      expect.objectContaining({ type: "text", text: expect.stringContaining("Use this reference") }),
+      { type: "image_url", image_url: { url: reference.dataUrl } },
+    ]);
   });
 
   it("clamps the variant count to four", async () => {

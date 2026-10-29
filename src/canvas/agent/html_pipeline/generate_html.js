@@ -27,12 +27,19 @@ export function createSnapshotEmitter(onSnapshot, now = Date.now) {
     if (valid) { last = now(); onSnapshot(valid, { final }); }
   }, get lastValid() { return valid; } };
 }
-export async function generateHtml({ brief, frame, direction, streamStep, config, signal, onSnapshot }) {
+export async function generateHtml({ brief, frame, direction, streamStep, config, signal, onSnapshot = () => {}, visualReferences = [] }) {
   const vars = designSystemToCssVars(direction.designSystem);
-  const system = `Write ONE complete self-contained HTML document, no fences or explanations. Exact viewport ${frame.width}x${frame.height}px. Use Tailwind utility classes for layout, spacing, colors and typography. The offline utility stylesheet is provided by the renderer. Reserve style blocks for :root CSS variables and rare custom styles unsupported by utilities. No JavaScript, network, CDN, imports, external fonts or images. Use local fallback fonts. CSS variables: ${JSON.stringify(vars)}. Define these on :root and use them. Body margin:0, fixed page dimensions. Real polished copy, every brief section in top-down order. Give EVERY element a unique stable data-voo-id. Nest flex/grid containers to produce editable auto-layout frames. Use absolute positioning only for overlays. ${UI_RULES} Image slots must be divs with data-image-prompt, styled as attractive placeholders. Direction: ${JSON.stringify(direction)}.`;
+  const system = `Reconstruct the visual references as ONE complete self-contained HTML design, then refine it to match the written brief. Keep typography, layout, shapes, and controls editable. For photographs or complex illustrations that do not translate well to editable vectors, use separate div image slots with concise data-image-prompt values so they can become independent PNG layers. Exact viewport ${frame.width}x${frame.height}px. Use Tailwind utility classes for layout, spacing, colors and typography. The offline utility stylesheet is provided by the renderer. Reserve style blocks for :root CSS variables and rare custom styles unsupported by utilities. No JavaScript, network, CDN, imports, external fonts or images. Use local fallback fonts. CSS variables: ${JSON.stringify(vars)}. Define these on :root and use them. Body margin:0, fixed page dimensions. Real polished copy, every brief section in top-down order. Give EVERY element a unique stable data-voo-id. Nest flex/grid containers to produce editable auto-layout frames. Use absolute positioning only for overlays. ${UI_RULES} Direction: ${JSON.stringify(direction)}.`;
   const emitter = createSnapshotEmitter(onSnapshot);
   let buffer = '';
-  const result = await streamStep({ config, messages: [{ role: 'system', content: system }, { role: 'user', content: brief }], tools: [], signal, onText: text => {
+  const references = visualReferences.filter((image) => typeof image?.dataUrl === 'string' && image.dataUrl.startsWith('data:image/'));
+  const userContent = references.length
+    ? [
+        { type: 'text', text: brief },
+        ...references.map((image) => ({ type: 'image_url', image_url: { url: image.dataUrl } })),
+      ]
+    : brief;
+  const result = await streamStep({ config, messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }], tools: [], signal, onText: text => {
     // API transport emits accumulated text; CLI transport emits deltas.
     buffer = streamStep.textMode === 'delta' ? buffer + text : text.startsWith(buffer) ? text : buffer + text;
     emitter.push(buffer);

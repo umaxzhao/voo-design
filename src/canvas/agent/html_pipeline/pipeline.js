@@ -1,5 +1,5 @@
 import { runAntiAiChecks } from './anti_ai_checks.js';
-import { configuredImageGenerator } from './images.js';
+import { configuredImageGenerator, generateDesignReference } from './images.js';
 import { createDirections, pickDirection } from './directions.js';
 import { generateHtml } from './generate_html.js';
 import { CanvasStreamer } from './incremental.js';
@@ -7,11 +7,30 @@ import { critiqueHtml, repairHtml } from './critique.js';
 import { setActiveDesignSystem } from '../design_system/store.js';
 import { fromStyleKit } from '../design_system/from_style_kit.js';
 import { STYLE_KITS } from '../design_quality/style_kits.js';
-export async function runHtmlPipeline({ brief, frame, styleKitId = null, designSystem = null, editor, streamStep, config, signal = new AbortController().signal, onProgress, chooseDirection }) {
+export async function runHtmlPipeline({ brief, frame, styleKitId = null, designSystem = null, editor, streamStep, config, signal = new AbortController().signal, onProgress, chooseDirection, visualReferences = [] }) {
   const progress = (stage, status) => onProgress?.({ stage, status });
   const trace = [];
   let stage = 'directions', streamer;
+  let imageAssetSlots = 0;
+  let imageAssetsGenerated = 0;
+  let imageAssetFailures = 0;
   try {
+    let references = visualReferences.filter((image) => typeof image?.dataUrl === 'string' && image.dataUrl.startsWith('data:image/'));
+    let generatedReference = null;
+    if (references.length === 0) {
+      stage = 'reference';
+      progress(stage, 'in_progress');
+      try {
+        generatedReference = await (config?.htmlReferenceGenerator ?? generateDesignReference)({ brief, frame, signal });
+        if (generatedReference?.dataUrl) references = [generatedReference];
+        progress(stage, 'completed');
+      } catch (error) {
+        if (signal?.aborted) throw error;
+        trace.push({ stage: 'reference', errors: [error?.message ?? String(error)] });
+        progress(stage, 'failed');
+      }
+    }
+    stage = 'directions';
     progress(stage, 'in_progress');
     const result = await createDirections({ brief, streamStep, config, signal }); trace.push(...result.trace);
     progress(stage, 'completed');
@@ -34,7 +53,7 @@ export async function runHtmlPipeline({ brief, frame, styleKitId = null, designS
     streamer = new CanvasStreamer({ editor, frame, signal }); streamer.start();
     setActiveDesignSystem(editor, direction.designSystem);
     stage = 'generation'; progress(stage, 'in_progress');
-    const generated = await generateHtml({ brief, frame, direction, streamStep, config, signal, onSnapshot: html => { streamer.snapshot(html); } });
+    const generated = await generateHtml({ brief, frame, direction, streamStep, config, signal, visualReferences: references, onSnapshot: html => { streamer.snapshot(html); } });
     trace.push(...generated.trace);
     await streamer.flush(); progress(stage, 'completed');
     stage = 'critique'; progress(stage, 'in_progress');
@@ -58,24 +77,33 @@ export async function runHtmlPipeline({ brief, frame, styleKitId = null, designS
       if (stage !== 'repair') { stage = 'repair'; progress(stage, 'in_progress'); }
       await streamer.snapshot(reviewed.html); await streamer.flush(); progress(stage, 'completed');
     }
-    // Optional injected image provider must honor AbortSignal and return native
-    // image fill properties. The normal offline and benchmark path skips it.
+    const imageSlots = [...streamer.previous.values()].filter(v => v.node.imagePrompt).slice(0, 4);
+    imageAssetSlots = imageSlots.length;
+    // Image slots become independent editable raster layers when a provider is configured.
     const imageGenerator = (!globalThis.__VOO_DESIGN_BENCH__ || globalThis.__VOO_DESIGN_BENCH_IMAGES__) && (config?.htmlImageGenerator ?? configuredImageGenerator());
-    if (imageGenerator) {
+    if (imageGenerator && imageSlots.length > 0) {
       stage = 'images'; progress(stage, 'in_progress');
       const controller = new AbortController();
       const abort = () => controller.abort(); signal?.throwIfAborted(); signal?.addEventListener('abort', abort, { once: true });
       const timeout = setTimeout(abort, 20000);
       try {
-        const slots = [...streamer.previous.values()].filter(v => v.node.imagePrompt).slice(0, 4);
-        await Promise.race([Promise.all(slots.map(async slot => {
-          try { const fill = await imageGenerator({ prompt: slot.node.imagePrompt, signal: controller.signal }); if (!controller.signal.aborted && fill) editor.updateNode(slot.id, fill); }
-          catch (error) { trace.push({ stage: 'images', errors: [error.message] }); }
+        await Promise.race([Promise.all(imageSlots.map(async slot => {
+          try {
+            const fill = await imageGenerator({ prompt: slot.node.imagePrompt, frame: { width: slot.node.width, height: slot.node.height }, signal: controller.signal });
+            if (!controller.signal.aborted && fill) {
+              editor.updateNode(slot.id, fill);
+              imageAssetsGenerated += 1;
+            }
+          } catch (error) {
+            imageAssetFailures += 1;
+            trace.push({ stage: 'images', errors: [error.message] });
+          }
         })), new Promise(resolve => controller.signal.addEventListener('abort', resolve, { once: true }))]);
       } finally { clearTimeout(timeout); controller.abort(); signal?.removeEventListener('abort', abort); }
       signal?.throwIfAborted(); progress(stage, 'completed');
     }
-    return { html: reviewed.html, directionId: direction.id, frameId: streamer.frameId ?? null, nodeCount: streamer.previous.size, verbosityPenalty: checks.verbosityPenalty, trace };
+    const visualReferenceSource = generatedReference ? 'generated' : references.length ? 'provided' : 'none';
+    return { html: reviewed.html, directionId: direction.id, frameId: streamer.frameId ?? null, nodeCount: streamer.previous.size, verbosityPenalty: checks.verbosityPenalty, visualReferenceGenerated: Boolean(generatedReference), visualReferenceSource, visualReferences: references, imageAssetSlots, imageAssetsGenerated, imageAssetFailures, trace };
   } catch (error) { progress(stage, signal?.aborted ? 'cancelled' : 'failed'); throw error; }
   finally { if (streamer) { try { await streamer.flush(); } finally { streamer.finish(); } } }
 }

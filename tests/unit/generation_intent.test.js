@@ -5,6 +5,7 @@ import {
   buildGenerationPrompt,
   generationBadgeText,
   generationContextText,
+  referenceImageContext,
   sizeOptions,
   styleOptions,
 } from "../../src/canvas/components/welcome_dashboard/generation_intent.js";
@@ -95,6 +96,14 @@ describe("welcome generation intent", () => {
     expect(intent.styleId).toBe(DEFAULT_STYLE_ID);
     expect(intent.styleName).toBe("");
     expect(intent.referenceCount).toBe(0);
+  });
+
+  it("keeps user reference images out of the document while describing their use", () => {
+    expect(referenceImageContext([
+      { kind: "image", name: "poster.png", dataUrl: "data:image/png;base64,xx" },
+      { kind: "file", name: "brief.pen" },
+    ])).toContain("poster.png");
+    expect(referenceImageContext([{ kind: "file", name: "brief.pen" }])).toBe("");
   });
 
   it("serialises structural context for the agent turn", () => {

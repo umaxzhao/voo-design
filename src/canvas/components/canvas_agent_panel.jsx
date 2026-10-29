@@ -1,6 +1,6 @@
 import { useDesignStore } from "../../store/design_store.js";
 import { consumePendingAgentIntent, consumePendingGeneration } from "./pending_agent_intent.js";
-import { generationContextText, generationBadgeText, placeReferenceImages } from "./welcome_dashboard/generation_intent.js";
+import { generationContextText, generationBadgeText, referenceImageContext } from "./welcome_dashboard/generation_intent.js";
 import { resolveAgentProvider } from "../agent/agent_provider.js";
 import { externalMcpTools } from "../agent/external_mcp_tools.js";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -243,8 +243,7 @@ export default function CanvasAgentPanel({ onClose }) {
         let promptWithContext = text;
         if (generationIntent) {
           promptWithContext = `${generationContextText(generationIntent)}\n${text}`;
-          // Only the first attempt places references; a retry would duplicate them.
-          const referenceNote = recoveryRequest ? "" : await placeReferenceImages(generationIntent.attachments);
+          const referenceNote = referenceImageContext(generationIntent.attachments);
           if (referenceNote) promptWithContext += `\n${referenceNote}`;
           controller.signal.throwIfAborted();
         } else if (targetContext?.name) {
@@ -265,6 +264,9 @@ export default function CanvasAgentPanel({ onClose }) {
           sceneKind: generationIntent?.kind ?? null,
           designSystem: generationIntent?.designSystemContract ?? null,
           frame: generationIntent?.frame ?? null,
+          visualReferences: generationIntent?.attachments
+            ?.filter((attachment) => attachment?.kind === "image" && attachment.dataUrl)
+            .map((attachment) => ({ name: attachment.name, dataUrl: attachment.dataUrl })) ?? [],
           variantCount,
           onVariant: (variant) => setCandidates((current) => [...current, variant]),
           history: historyRef.current,

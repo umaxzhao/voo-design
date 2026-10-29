@@ -157,7 +157,7 @@ reported back to the model rather than swallowed.
 
 Agent behaviour is configured in **agent settings** (`AGENT_SETTING`
 keys): API key, base URL, model, separate text and image provider/model
-choices, whether to confirm before generating images, whether to use the
+choices, whether to confirm before generating image-slot assets, whether to use the
 current selection as the reference by default, the default image size
 (`1024x1024`, `1024x1536`, `1536x1024`), the step limit, and an optional
 style note appended to the system prompt. Session history persists between
@@ -182,8 +182,13 @@ reference attachments. The panel renders it as a structured first line:
 
 `runAgentTurn` receives the same values as `styleId`, `sceneKind` and `frame`;
 the HTML pipeline applies `styleKitId` by replacing the art-direction model's
-own design system with the chosen kit. Attached images are placed on the canvas
-as visual references before the turn starts.
+own design system with the chosen kit. User-provided images are passed directly
+to the model as visual references and stay out of the document so the empty
+canvas generation route remains available. Without an attached image, a
+configured image provider first creates a visual reference; the HTML model then
+reconstructs it as editable text, shapes and layout. Complex-photo or
+illustration slots can become independent PNG image layers when automatic
+image-slot generation is enabled.
 
 ### Variants
 

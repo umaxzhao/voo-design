@@ -171,39 +171,13 @@ export async function readAttachmentFiles(fileList, { limit = MAX_REFERENCE_IMAG
   return { attachments, errors };
 }
 
-function defaultEditor() {
-  return typeof window === "undefined" ? null : window.__vooEditor ?? null;
-}
-
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
 /**
- * Drops attached images on the canvas as reference layers, next to the frame
- * the user is about to generate. Best effort: if the editor is not ready yet we
- * still send the prompt, but tell the model the references are named-only.
+ * Describes attached images without inserting them into the document. Keeping
+ * references out of the scene lets the empty-canvas generation pipeline run
+ * and avoids mixing source images into the editable result.
  */
-export async function placeReferenceImages(attachments = [], { editor = defaultEditor, attempts = 40, intervalMs = 50 } = {}) {
+export function referenceImageContext(attachments = []) {
   const images = (attachments ?? []).filter((item) => item?.kind === "image" && item.dataUrl);
   if (!images.length) return "";
-  let target = editor();
-  for (let attempt = 0; !target && attempt < attempts; attempt += 1) {
-    await wait(intervalMs);
-    target = editor();
-  }
-  if (!target || typeof target.insertImage !== "function") {
-    return `[Reference images attached but not placed on the canvas: ${images.map((item) => item.name).join(", ")}]`;
-  }
-  const placed = [];
-  for (const image of images) {
-    try {
-      const node = await target.insertImage(image.dataUrl);
-      if (node?.id) placed.push(image.name);
-    } catch {
-      // Keep going: one bad image must not block the whole generation turn.
-    }
-  }
-  if (!placed.length) {
-    return `[Reference images attached but not placed on the canvas: ${images.map((item) => item.name).join(", ")}]`;
-  }
-  return `[Reference images placed on the canvas: ${placed.join(", ")}. Use them as visual references; keep the generated design unobstructed.]`;
+  return `[Visual reference images attached: ${images.map((item) => item.name).join(", ")}. Use them for composition, palette and hierarchy; rebuild the design as editable layers.]`;
 }

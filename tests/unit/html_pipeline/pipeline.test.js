@@ -1,10 +1,10 @@
 import { beforeEach, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ render: vi.fn(), convert: vi.fn(), create: vi.fn(), critique: vi.fn(), repair: vi.fn(), imageGenerator: vi.fn() }));
+const mocks = vi.hoisted(() => ({ render: vi.fn(), convert: vi.fn(), create: vi.fn(), critique: vi.fn(), repair: vi.fn(), imageGenerator: vi.fn(), referenceGenerator: vi.fn(async () => null) }));
 vi.mock('../../../src/canvas/agent/html_pipeline/render_html.js', () => ({ HtmlRenderer: class { render(...args) { return mocks.render(...args); } dispose() {} } }));
 vi.mock('../../../src/canvas/agent/html_pipeline/html_to_nodes.js', () => ({ htmlToNodes: (...args) => mocks.convert(...args) }));
 vi.mock('../../../src/canvas/agent/canvas_tools_build_layout.js', () => ({ createLayoutNode: (...args) => mocks.create(...args) }));
 vi.mock('../../../src/canvas/agent/html_pipeline/critique.js', () => ({ critiqueHtml: (...args) => mocks.critique(...args), repairHtml: (...args) => mocks.repair(...args) }));
-vi.mock('../../../src/canvas/agent/html_pipeline/images.js', () => ({ configuredImageGenerator: () => null }));
+vi.mock('../../../src/canvas/agent/html_pipeline/images.js', () => ({ configuredImageGenerator: () => null, generateDesignReference: (...args) => mocks.referenceGenerator(...args) }));
 import { runHtmlPipeline, shouldUseHtmlPipeline } from '../../../src/canvas/agent/html_pipeline/pipeline.js';
 import { DESIGN_SYSTEM_PRESETS } from '../../../src/canvas/agent/design_system/from_style_kit.js';
 const directions = Object.values(DESIGN_SYSTEM_PRESETS).slice(0, 2).map((designSystem, i) => ({ id: String(i), name: designSystem.name, mood: 'calm', layoutIdea: 'grid', designSystem }));
@@ -23,6 +23,83 @@ it('orchestrates selection, live snapshots, saved tokens and a single repair', a
   expect(editor.commit).toHaveBeenCalledOnce(); expect(editor.endBatch).toHaveBeenCalledOnce();
   expect(onProgress).toHaveBeenCalledWith({ stage: 'repair', status: 'completed' });
 });
+it('generates a visual reference before HTML and sends it to reconstruction', async () => {
+  const image = { name: 'Visual reference', dataUrl: 'data:image/png;base64,AAAA' };
+  const html = '<html><body><h1 data-voo-id="headline">Concert</h1></body></html>';
+  const order = [];
+  const streamStep = vi.fn()
+    .mockImplementationOnce(async () => ({ text: JSON.stringify(directions) }))
+    .mockImplementationOnce(async ({ messages }) => {
+      order.push('html');
+      expect(messages[1].content[1].image_url.url).toBe(image.dataUrl);
+      return { text: html };
+    });
+  const editor = { getDocument: () => ({ nodes: [] }), setDoc: vi.fn(), beginBatch: vi.fn(), endBatch: vi.fn(), commit: vi.fn(), updateNode: vi.fn(), removeNode: vi.fn() };
+  mocks.critique.mockResolvedValue({ html, repaired: false, trace: [] });
+  const result = await runHtmlPipeline({
+    brief: 'Create a concert poster',
+    frame: { width: 600, height: 900 },
+    editor,
+    streamStep,
+    config: { htmlReferenceGenerator: async () => { order.push('reference'); return image; } },
+  });
+
+  expect(order).toEqual(['reference', 'html']);
+  expect(result.visualReferenceGenerated).toBe(true);
+});
+
+it('uses a user-provided reference image instead of generating another', async () => {
+  const image = { name: 'Provided reference', dataUrl: 'data:image/png;base64,BBBB' };
+  const html = '<html><body><h1 data-voo-id="headline">Concert</h1></body></html>';
+  const referenceGenerator = vi.fn();
+  const streamStep = vi.fn()
+    .mockResolvedValueOnce({ text: JSON.stringify(directions) })
+    .mockImplementationOnce(async ({ messages }) => {
+      expect(messages[1].content[1].image_url.url).toBe(image.dataUrl);
+      return { text: html };
+    });
+  const editor = { getDocument: () => ({ nodes: [] }), setDoc: vi.fn(), beginBatch: vi.fn(), endBatch: vi.fn(), commit: vi.fn(), updateNode: vi.fn(), removeNode: vi.fn() };
+  mocks.critique.mockResolvedValue({ html, repaired: false, trace: [] });
+
+  const result = await runHtmlPipeline({
+    brief: 'Create a concert poster',
+    frame: { width: 600, height: 900 },
+    editor,
+    streamStep,
+    config: { htmlReferenceGenerator: referenceGenerator },
+    visualReferences: [image],
+  });
+
+  expect(referenceGenerator).not.toHaveBeenCalled();
+  expect(result.visualReferenceSource).toBe('provided');
+});
+
+it('replaces complex visual placeholders with independent image layers', async () => {
+  const imageLayer = { kind: 'image', src: 'data:image/png;base64,AAAA' };
+  const imageGenerator = vi.fn(async () => imageLayer);
+  const html = '<html><body><div data-voo-id="cover-art">Album art</div></body></html>';
+  const streamStep = vi.fn()
+    .mockResolvedValueOnce({ text: JSON.stringify(directions) })
+    .mockResolvedValueOnce({ text: html });
+  const editor = { getDocument: () => ({ nodes: [] }), setDoc: vi.fn(), beginBatch: vi.fn(), endBatch: vi.fn(), commit: vi.fn(), updateNode: vi.fn(), removeNode: vi.fn() };
+  mocks.convert.mockReturnValue([{ key: 'cover-art', type: 'rect', width: 320, height: 180, imagePrompt: 'abstract album cover' }]);
+  mocks.critique.mockResolvedValue({ html, repaired: false, trace: [] });
+
+  await runHtmlPipeline({
+    brief: 'Create a music page',
+    frame: { width: 800, height: 600 },
+    editor,
+    streamStep,
+    config: { htmlReferenceGenerator: async () => null, htmlImageGenerator: imageGenerator },
+  });
+
+  expect(imageGenerator).toHaveBeenCalledWith(expect.objectContaining({
+    prompt: 'abstract album cover',
+    frame: { width: 320, height: 180 },
+  }));
+  expect(editor.updateNode).toHaveBeenCalledWith('2', imageLayer);
+});
+
 it('restores history entry points after aborted generation', async () => {
   const controller = new AbortController(); const commit = vi.fn();
   const editor = { getDocument: () => ({ nodes: [] }), setDoc: vi.fn(), beginBatch: vi.fn(), endBatch: vi.fn(), commit };
