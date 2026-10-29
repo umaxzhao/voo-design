@@ -76,14 +76,14 @@ describe("AI floating button and agent avatars", () => {
     expect(css).toMatch(/\.voo-ai-fab-icon\s*\{[^}]*voo-ai-fab-spin/);
   });
 
-  it("fills the App floating button and both agent avatars with purple, never mint", () => {
+  it("fills the App floating button and the single agent welcome avatar with purple", () => {
     const app = read("src/App.jsx");
     const fab = app.match(/className="voo-ai-fab(?: [^"]*)?"/)?.[0] ?? "";
     expect(fab).toMatch(PURPLE);
     expect(fab).not.toContain(MINT);
 
     const avatars = read("src/canvas/components/canvas_agent_panel.jsx").match(/className="voo-ai-fab(?: [^"]*)?"/g) ?? [];
-    expect(avatars).toHaveLength(2);
+    expect(avatars).toHaveLength(1);
     for (const cls of avatars) {
       expect(cls).toMatch(PURPLE);
       expect(cls).not.toContain(MINT);

@@ -12,6 +12,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import CanvasAgentPanel, {
   CLI_MODEL_GROUPS,
   getModelDisplayLabel,
+  getModelDisplayParts,
 } from "../../src/canvas/components/canvas_agent_panel.jsx";
 import { getSetting, setSetting } from "../../src/shared/settings.js";
 import { AGENT_SETTING } from "../../src/canvas/agent/canvas_tools.js";
@@ -58,22 +59,31 @@ describe("Agent Panel Model Selector & CLI Groups", () => {
   describe("2. getModelDisplayLabel formatting", () => {
     it("formats known Claude models cleanly", () => {
       const label = getModelDisplayLabel("claude:claude-opus-5-5");
-      expect(label).toBe("Claude Code · Opus 5.5");
+      expect(label).toBe("Opus 5.5");
     });
 
     it("formats known Codex models cleanly", () => {
       const label = getModelDisplayLabel("codex:gpt-6-astra");
-      expect(label).toBe("Codex · GPT-6 Astra");
+      expect(label).toBe("GPT-6 Astra");
     });
 
     it("formats known Antigravity models cleanly", () => {
       const label = getModelDisplayLabel("antigravity:gemini-3.8-flash-high");
-      expect(label).toBe("Antigravity · 3.8 Flash (High)");
+      expect(label).toBe("3.8 FlashHigh");
     });
 
     it("gracefully falls back for unknown prefixes", () => {
       const label = getModelDisplayLabel("custom:special-v1");
-      expect(label).toBe("Custom · special-v1");
+      expect(label).toBe("special-v1");
+    });
+
+    it("separates platform icon metadata from adjacent model and tier text", () => {
+      expect(getModelDisplayParts("antigravity:gemini-3.8-flash-medium")).toMatchObject({
+        providerId: "antigravity-cli",
+        platformName: "Antigravity",
+        modelName: "3.8 Flash",
+        tier: "Medium",
+      });
     });
 
     it("falls back to Flash if null or empty", () => {
@@ -97,7 +107,8 @@ describe("Agent Panel Model Selector & CLI Groups", () => {
 
       // Model pill in header
       expect(html).toContain('data-testid="agent-model-pill"');
-      expect(html).toContain("Claude Code · Opus 5.5");
+      expect(html).toContain("Claude Code Opus 5.5");
+      expect(html.match(/voo-ai-fab-icon/g)).toHaveLength(1);
 
       // Model badge in bottom composer
       expect(html).toContain('data-testid="agent-composer-model-pill"');
@@ -107,7 +118,8 @@ describe("Agent Panel Model Selector & CLI Groups", () => {
       setSetting(AGENT_SETTING.MODEL, "antigravity:gemini-3.8-flash-high");
       const html = renderToStaticMarkup(<CanvasAgentPanel onClose={() => {}} />);
 
-      expect(html).toContain("Antigravity · 3.8 Flash (High)");
+      expect(html).toContain("3.8 FlashHigh");
+      expect(html).toContain("brand-icons/antigravity.svg");
     });
   });
 });

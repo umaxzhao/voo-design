@@ -31,14 +31,17 @@ import {
 import { VooBrandLogo } from "../../app_title_bar.jsx";
 import ToolCallCard from "./tool_call_card.jsx";
 import { createUnmountGuard } from "./agent-panel/unmount_guard.js";
+import AgentModelLabel from "./agent-panel/agent_model_label.jsx";
+import { ProviderLogo } from "./provider_icons.jsx";
 
 import {
   CLI_MODEL_GROUPS,
   availableModelGroups,
   getModelDisplayLabel,
+  getModelDisplayParts,
 } from "./agent-panel/model_catalog.js";
 
-export { CLI_MODEL_GROUPS, getModelDisplayLabel };
+export { CLI_MODEL_GROUPS, getModelDisplayLabel, getModelDisplayParts };
 
 /** Starter prompts shown on an empty conversation; each fills the composer. */
 const SUGGESTION_KEYS = [
@@ -235,7 +238,7 @@ export default function CanvasAgentPanel({ onClose }) {
         role: "user",
         content: text,
         contextBadge: generationIntent
-          ? generationBadgeText(generationIntent, getModelDisplayLabel(model))
+          ? { label: generationBadgeText(generationIntent), modelId: model }
           : (targetContext?.name ? `@${targetContext.name}` : undefined),
       };
       setTranscript((prev) => [...prev, userItem]);
@@ -410,6 +413,7 @@ export default function CanvasAgentPanel({ onClose }) {
   const isEmpty = transcript.length === 0 && !busy;
   const activeTitle = sessions.find((session) => session.id === activeId)?.title;
   const currentModel = selectedModel || getSetting(AGENT_SETTING.MODEL);
+  const modelGroups = availableModelGroups();
 
   return (
     <section
@@ -417,12 +421,6 @@ export default function CanvasAgentPanel({ onClose }) {
       className="relative flex h-full w-full flex-col overflow-hidden rounded-3xl bg-black text-neutral-100 shadow-panel"
     >
       <header className="flex h-12 items-center gap-2 px-4">
-        {/* Same animated circular badge as the floating button in App.jsx. */}
-        <span className="voo-ai-fab flex size-7 shrink-0 items-center justify-center rounded-full bg-[#E5B2FF]">
-          <span className="voo-ai-fab-icon flex items-center justify-center">
-            <VooBrandLogo className="size-4 text-black" />
-          </span>
-        </span>
         <h2 className="min-w-0 flex-1 truncate text-[12px] font-semibold text-neutral-100">
           {activeTitle || t("agent.history.untitled")}
         </h2>
@@ -440,8 +438,8 @@ export default function CanvasAgentPanel({ onClose }) {
           className="flex items-center gap-1.5 rounded-full bg-white/[0.06] px-2.5 py-1 text-[10px] text-neutral-300 transition-colors hover:bg-white/[0.12] focus:outline-none"
         >
           <span className="size-1.5 rounded-full bg-[#a7ffd4] animate-pulse" aria-hidden="true" />
-          <span className="font-mono text-[9px] text-neutral-200 max-w-[160px] truncate font-medium">
-            {getModelDisplayLabel(currentModel)}
+          <span className="font-mono text-[9px] text-neutral-200 max-w-[160px] min-w-0 truncate font-medium">
+            <AgentModelLabel modelId={currentModel} />
           </span>
           <ChevronDown
             size={11}
@@ -486,14 +484,15 @@ export default function CanvasAgentPanel({ onClose }) {
             </button>
           </div>
           <div className="px-2 text-[11px] text-neutral-400">{t("agent.providers.hint")}</div>
-          {availableModelGroups().length === CLI_MODEL_GROUPS.length && <p className="px-2 text-[11px] text-neutral-500">{t("agent.providers.customHint")}</p>}
-          {availableModelGroups().map((group) => (
+          {modelGroups.length === CLI_MODEL_GROUPS.length && <p className="px-2 text-[11px] text-neutral-500">{t("agent.providers.customHint")}</p>}
+          {modelGroups.map((group) => (
             <div key={group.cliId} className="flex flex-col gap-0.5">
-              <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-mono uppercase tracking-wider text-neutral-400">
-                {group.name}
+              <div className="flex items-center px-2 pt-1.5 pb-0.5" aria-label={group.name}>
+                <ProviderLogo providerId={getModelDisplayParts(group.models[0]?.id, modelGroups).providerId ?? group.cliId} size={13} />
               </div>
               {group.models.map((m) => {
                 const isSelected = currentModel === m.id;
+                const modelParts = getModelDisplayParts(m.id, modelGroups);
                 return (
                   <button
                     key={m.id}
@@ -505,7 +504,7 @@ export default function CanvasAgentPanel({ onClose }) {
                       isSelected ? "bg-[#E5B2FF]/15 text-[#eed0ff] font-medium" : "text-neutral-300"
                     }`}
                   >
-                    <span className="truncate">{m.label}</span>
+                    <span className="truncate">{modelParts.modelName}{modelParts.tier}</span>
                     {isSelected && <Check size={13} className="text-neutral-300 shrink-0 ml-2" />}
                   </button>
                 );
@@ -597,7 +596,12 @@ export default function CanvasAgentPanel({ onClose }) {
                 >
                   {item.contextBadge && (
                     <div className="mb-1.5 inline-flex items-center gap-1 rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-mono text-neutral-300">
-                      {item.contextBadge}
+                      {typeof item.contextBadge === "string" ? item.contextBadge : (
+                        <>
+                          <span>{item.contextBadge.label}</span>
+                          <AgentModelLabel modelId={item.contextBadge.modelId} size={10} />
+                        </>
+                      )}
                     </div>
                   )}
                   <div>{item.content}</div>
@@ -715,7 +719,7 @@ export default function CanvasAgentPanel({ onClose }) {
               data-testid="agent-composer-model-pill"
               className="max-w-[220px] truncate rounded-lg bg-white/[0.05] px-2 py-1 text-[11px] text-neutral-400 hover:bg-white/[0.1] hover:text-neutral-200 transition-colors"
             >
-              {getModelDisplayLabel(currentModel)}
+              <AgentModelLabel modelId={currentModel} size={12} />
             </button>
           )}
           {busy && (

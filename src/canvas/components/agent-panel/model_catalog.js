@@ -51,22 +51,50 @@ export function availableModelGroups(customGroups = customModelGroups()) {
   return [...CLI_MODEL_GROUPS, ...customGroups];
 }
 
-export function getModelDisplayLabel(modelId) {
-  if (!modelId) return "Flash";
-  for (const group of availableModelGroups()) {
-    for (const model of group.models) {
-      if (model.id === modelId) {
-        return `${group.name} · ${model.label.replace(/^Claude\s+|Gemini\s+/, "")}`;
-      }
-    }
+function platformProviderId(cliId) {
+  if (cliId === "claude") return "claude-cli";
+  if (cliId === "codex") return "cli";
+  if (cliId === "antigravity") return "antigravity-cli";
+  return cliId;
+}
+
+function splitModelLabel(label) {
+  const compact = String(label ?? "").replace(/^(?:Claude|Gemini)\s+/i, "");
+  const tier = compact.match(/\s+\((High|Medium|Low|Thinking)\)$/i);
+  return {
+    modelName: tier ? compact.slice(0, tier.index) : compact,
+    tier: tier?.[1] ?? "",
+  };
+}
+
+/** Provider mark and compact model parts for visual model-name labels. */
+export function getModelDisplayParts(modelId, groups = availableModelGroups()) {
+  if (!modelId) return { providerId: null, platformName: null, modelName: "Flash", tier: "" };
+  for (const group of groups) {
+    const model = group.models.find((entry) => entry.id === modelId);
+    if (model) return {
+      providerId: platformProviderId(group.cliId),
+      platformName: group.name,
+      ...splitModelLabel(model.label),
+    };
   }
   const parts = String(modelId).split(":");
   if (parts.length >= 2) {
-    const cli = parts[0];
-    const rest = parts.slice(1).join(":");
-    return `${cli.charAt(0).toUpperCase() + cli.slice(1)} · ${rest}`;
+    const platformId = parts[0];
+    const platformName = platformId.charAt(0).toUpperCase() + platformId.slice(1);
+    return {
+      providerId: platformProviderId(platformId),
+      platformName,
+      ...splitModelLabel(parts.slice(1).join(":")),
+    };
   }
-  return modelId;
+  return { providerId: null, platformName: null, ...splitModelLabel(modelId) };
+}
+
+/** Plain-text compact label for contexts that cannot render provider marks. */
+export function getModelDisplayLabel(modelId) {
+  const { modelName, tier } = getModelDisplayParts(modelId);
+  return `${modelName}${tier}`;
 }
 
 /** Group that owns a model id, or null for a model that is not in the catalog. */

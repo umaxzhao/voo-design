@@ -4,6 +4,7 @@ import { AI_GEN_TYPES } from "./welcome_constants.js";
 import { DEFAULT_DESIGN_SYSTEM_ID, DEFAULT_STYLE_ID } from "./generation-options.js";
 import FlatSelect from "../flat_select.jsx";
 import { ProviderLogo } from "../provider_icons.jsx";
+import { getModelDisplayParts } from "../agent-panel/model_catalog.js";
 
 /** Filled two-slider icon used for the generation settings trigger. */
 function TuneIcon({ size = 14 }) {
@@ -37,7 +38,6 @@ export function WelcomePromptComposer({
   onSelectPill,
   promptText,
   setPromptText,
-  modelLabel,
   modelGroups,
   selectedModel,
   onSelectModel,
@@ -68,19 +68,15 @@ export function WelcomePromptComposer({
   const panelRef = useRef(null);
   const activePreset = AI_GEN_TYPES.find((preset) => preset.id === activePill) ?? AI_GEN_TYPES[0];
   const currentSize = size ?? { width: activePreset.width, height: activePreset.height };
-  const selectedModelGroup = (modelGroups ?? []).find((group) =>
-    group.models.some((model) => model.id === selectedModel),
-  );
-  const selectedModelEntry = selectedModelGroup?.models.find((model) => model.id === selectedModel);
-  const selectedModelName = selectedModelEntry
-    ? getCompactModelName(selectedModelEntry.label, selectedModelGroup?.cliId)
-    : (modelLabel?.split(" · ").at(-1) ?? modelLabel);
   const modelOptions = (modelGroups ?? []).flatMap((group) =>
-    group.models.map((model) => ({
-      value: model.id,
-      label: getCompactModelName(model.label, group.cliId),
-      icon: <ProviderLogo providerId={getProviderLogoId(group.cliId)} size={14} />,
-    })),
+    group.models.map((model) => {
+      const parts = getModelDisplayParts(model.id, modelGroups ?? []);
+      return {
+        value: model.id,
+        label: `${parts.modelName}${parts.tier}`,
+        icon: <ProviderLogo providerId={parts.providerId ?? group.cliId} size={14} />,
+      };
+    }),
   );
 
   useEffect(() => {
@@ -345,18 +341,4 @@ function ComposerField({ label, children }) {
       <span className="min-w-0 flex-1">{children}</span>
     </div>
   );
-}
-
-function getProviderLogoId(groupId) {
-  if (groupId === "claude") return "claude-cli";
-  if (groupId === "codex") return "cli";
-  if (groupId === "antigravity") return "antigravity-cli";
-  return groupId;
-}
-
-function getCompactModelName(label, groupId) {
-  if (groupId === "claude" || groupId === "claude-cli") {
-    return String(label ?? "").replace(/^Claude\s+/i, "");
-  }
-  return label;
 }

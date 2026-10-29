@@ -7,7 +7,7 @@ import { useI18n } from "../use_i18n.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import { DEFAULT_AGENT_MODEL } from "../../shared/agent-defaults.js";
 import { AGENT_SETTING } from "../agent/agent-settings.js";
-import { availableModelGroups, getModelDisplayLabel } from "./agent-panel/model_catalog.js";
+import { availableModelGroups } from "./agent-panel/model_catalog.js";
 import {
   DEFAULT_DESIGN_SYSTEM_ID,
   DEFAULT_STYLE_ID,
@@ -413,7 +413,6 @@ export default function WelcomeDashboard() {
               onSelectPill={handleSelectPill}
               promptText={promptText}
               setPromptText={setPromptText}
-              modelLabel={getModelDisplayLabel(modelId)}
               modelGroups={availableModelGroups()}
               selectedModel={modelId}
               onSelectModel={handleSelectModel}

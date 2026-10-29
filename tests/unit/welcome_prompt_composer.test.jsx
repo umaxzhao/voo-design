@@ -66,6 +66,21 @@ describe("welcome prompt composer", () => {
     expect(html).toContain("welcome.prompt.modelLabel");
   });
 
+  it("shows a platform mark beside the compact model and tier", () => {
+    const html = render({
+      modelGroups: [{
+        cliId: "antigravity",
+        name: "Antigravity",
+        models: [{ id: "antigravity:gemini-3.8-flash-medium", label: "Gemini 3.8 Flash (Medium)" }],
+      }],
+      selectedModel: "antigravity:gemini-3.8-flash-medium",
+    });
+
+    expect(html).toContain("brand-icons/antigravity.svg");
+    expect(html).toContain("3.8 FlashMedium");
+    expect(html).not.toContain("Antigravity ·");
+  });
+
   it("shows the active design type's prompt guide in the input", () => {
     const html = render({ activePill: "mobile" });
     expect(html).toContain('placeholder="welcome.prompt.mobilePlaceholder"');
