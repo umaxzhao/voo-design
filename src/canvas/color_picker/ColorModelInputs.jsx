@@ -145,6 +145,7 @@ export function ColorModelInputs({
         onChange={(event) => setModel(event.target.value)}
         aria-label={t("editor.colorPicker.colourModel")}
         data-testid="colour-model-select"
+        rootClassName="shrink-0 !w-auto"
         className="h-6 shrink-0 cursor-pointer rounded-lg bg-white/5 px-1 text-neutral-300 outline-none hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
       >
         {COLOUR_MODELS.map((name) => (

@@ -524,6 +524,7 @@ export default function VariablesPanel({
                     disabled={!canCreateVariable}
                     value={addType}
                     onChange={(event) => setAddType(event.target.value)}
+                    rootClassName="shrink-0 !w-28"
                     className={`${CONTROL_CLASS} w-28 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40`}
                   >
                     {supportedTypes.map((type) => (

@@ -17,6 +17,7 @@ export function BlendModeSelect({ value, onChange }) {
         onChange={(event) => onChange(event.target.value)}
         aria-label={t("editor.colorPicker.blendMode")}
         data-testid="picker-blend-mode"
+        rootClassName="min-w-0 flex-1"
         className="h-6 min-w-0 flex-1 cursor-pointer rounded-lg bg-white/5 px-1.5 text-neutral-200 outline-none hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
       >
         {BLEND_MODES.map((mode) => (

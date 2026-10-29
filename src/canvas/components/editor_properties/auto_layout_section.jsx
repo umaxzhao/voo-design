@@ -87,6 +87,7 @@ export function AutoLayoutFields({ object, editAndCommit, hideDirection = false,
       <CustomSelect
         data-testid={`editor-auto-layout-${key}`}
         aria-label={label}
+        rootClassName="min-w-0 flex-1"
         className={FIELD_CLASS}
         value={value}
         onChange={(event) => onChange(event.target.value)}

@@ -21,6 +21,7 @@ export default function AutoLayoutChildSection({ object, editAndCommit }) {
           <CustomSelect
             data-testid="editor-auto-layout-child-position"
             aria-label={t("editor.autoLayout.position")}
+            rootClassName="min-w-0 flex-1"
             className={FIELD_CLASS}
             value={absolute ? "absolute" : "flow"}
             onChange={(event) =>

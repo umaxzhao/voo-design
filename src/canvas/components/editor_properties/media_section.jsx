@@ -318,6 +318,7 @@ export default function MediaSection({
               {t("editor.media.environment")}
             </span>
             <CustomSelect
+              rootClassName="min-w-0 flex-1"
               className={`${fieldClass} min-w-0 flex-1 pr-2`}
               value={model.environment ?? "studio"}
               onChange={(event) =>

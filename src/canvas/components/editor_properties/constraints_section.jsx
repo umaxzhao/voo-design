@@ -21,10 +21,10 @@ export default function ConstraintsSection({ object, editAndCommit }) {
     editAndCommit({ constraints: { ...constraints, ...patch } });
 
   const pinClass = (active) =>
-    `absolute rounded-full transition-colors ${
+    `absolute transition-colors ${
       active
-        ? "bg-[#a7ffd4]"
-        : "bg-neutral-600 hover:bg-neutral-400"
+        ? "bg-[#a8fcd4]"
+        : "bg-[#525252] hover:bg-neutral-400"
     }`;
 
   const selectRow = (key, label, value, options, onChange) => (
@@ -34,7 +34,7 @@ export default function ConstraintsSection({ object, editAndCommit }) {
         <CustomSelect
           data-testid={`editor-constraints-${key}`}
           aria-label={label}
-          className="flex-1"
+          rootClassName="flex-1"
           triggerClassName={FIELD_CLASS}
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -59,50 +59,50 @@ export default function ConstraintsSection({ object, editAndCommit }) {
       <div className="flex items-center gap-3">
         <div
           data-testid="editor-constraints-diagram"
-          className="relative h-16 w-16 shrink-0 rounded-lg border border-white/10 bg-[#1a1a1a]"
-        >          <div className="absolute inset-2 rounded-lg border border-white/20" />
-          <div className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-white/30 bg-white/[0.06]" />
+          className="relative h-[60px] w-[60px] shrink-0 overflow-hidden rounded-lg bg-[#1a1a1a]"
+        >
+          <div className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-md bg-[#262626]" />
           <button
             type="button"
             data-testid="editor-constraints-left"
             aria-label={t("editor.constraints.left")}
             onClick={() => change({ horizontal: "left" })}
-            className={`${pinClass(h === "left" || h === "leftRight")} left-1 top-1/2 h-5 w-1 -translate-y-1/2`}
+            className={`${pinClass(h === "left" || h === "leftRight")} left-2 top-[21px] h-[18px] w-[2px] rounded-md`}
           />
           <button
             type="button"
             data-testid="editor-constraints-right"
             aria-label={t("editor.constraints.right")}
             onClick={() => change({ horizontal: "right" })}
-            className={`${pinClass(h === "right" || h === "leftRight")} right-1 top-1/2 h-5 w-1 -translate-y-1/2`}
+            className={`${pinClass(h === "right" || h === "leftRight")} left-[50px] top-[21px] h-[18px] w-[2px] rounded-md`}
           />
           <button
             type="button"
             data-testid="editor-constraints-top"
             aria-label={t("editor.constraints.top")}
             onClick={() => change({ vertical: "top" })}
-            className={`${pinClass(v === "top" || v === "topBottom")} left-1/2 top-1 h-1 w-5 -translate-x-1/2`}
+            className={`${pinClass(v === "top" || v === "topBottom")} left-[21px] top-2 h-[2px] w-[18px] rounded-md`}
           />
           <button
             type="button"
             data-testid="editor-constraints-bottom"
             aria-label={t("editor.constraints.bottom")}
             onClick={() => change({ vertical: "bottom" })}
-            className={`${pinClass(v === "bottom" || v === "topBottom")} left-1/2 bottom-1 h-1 w-5 -translate-x-1/2`}
+            className={`${pinClass(v === "bottom" || v === "topBottom")} left-[21px] top-[50px] h-[2px] w-[18px] rounded-md`}
           />
           <button
             type="button"
             data-testid="editor-constraints-center-horizontal"
             aria-label={t("editor.constraints.centerHorizontal")}
             onClick={() => change({ horizontal: "center" })}
-            className={`${pinClass(h === "center")} left-1/2 top-1/2 h-1 w-5 -translate-x-1/2 -translate-y-1/2`}
+            className={`${pinClass(h === "center")} left-[21px] top-[29px] h-[2px] w-[19px] rounded-md`}
           />
           <button
             type="button"
             data-testid="editor-constraints-center-vertical"
             aria-label={t("editor.constraints.centerVertical")}
             onClick={() => change({ vertical: "center" })}
-            className={`${pinClass(v === "center")} left-1/2 top-1/2 h-5 w-1 -translate-x-1/2 -translate-y-1/2`}
+            className={`${pinClass(v === "center")} left-[29.5px] top-[20.5px] h-[19px] w-[2px] rounded-md`}
           />
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-2">

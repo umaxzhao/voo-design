@@ -1,13 +1,17 @@
 import { Children, isValidElement, useMemo, useState } from "react";
 import FlatSelect from "./flat_select.jsx";
 
-/** Adapter for legacy select-shaped call sites using the VOO menu UI. */
+/** Adapter for legacy select-shaped call sites using the VOO menu UI.
+ * className styles only the visible trigger; rootClassName controls its layout
+ * wrapper so composite controls can share one surface without nested pills.
+ */
 export default function CustomSelect({
   value,
   defaultValue,
   onChange,
   children,
   className = "",
+  rootClassName = "",
   triggerClassName = className,
   disabled = false,
   onClick,
@@ -30,7 +34,7 @@ export default function CustomSelect({
   const selectedValue = value === undefined ? uncontrolledValue : String(value);
 
   return (
-    <div className={`min-w-0 ${className}`} onClick={onClick}>
+    <div className={`min-w-0 ${rootClassName}`} onClick={onClick}>
       <FlatSelect
         value={selectedValue}
         options={options}

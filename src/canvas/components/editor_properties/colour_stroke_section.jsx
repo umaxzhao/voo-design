@@ -237,7 +237,8 @@ export function StrokeSection({
                 value={strokeAlign}
                 disabled={!closed}
                 onChange={(e) => editAndCommit({ strokeAlign: e.target.value })}
-                className="h-full w-full min-w-0 appearance-none rounded-xl bg-transparent py-0 pl-1.5 pr-6 text-[11px] font-mono uppercase text-neutral-200 outline-none transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                rootClassName="h-full min-w-0 flex-1"
+                className="!h-full w-full min-w-0 appearance-none rounded-xl !bg-transparent py-0 pl-1.5 pr-6 text-[11px] font-mono uppercase text-neutral-200 outline-none transition-colors cursor-pointer hover:!bg-transparent focus-visible:ring-0 disabled:opacity-40 disabled:cursor-not-allowed"
                 aria-label={t("editor.strokeStyle.align")}
               >
                 <option

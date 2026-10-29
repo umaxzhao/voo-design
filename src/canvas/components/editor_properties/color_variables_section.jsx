@@ -175,6 +175,7 @@ export default function ColorVariablesSection({
           <CustomSelect
             data-testid="editor-color-variable-select"
             aria-label={t("editor.variables.binding")}
+            rootClassName="min-w-0 flex-1"
             className="w-full appearance-none rounded-xl bg-[#222222] pl-8 pr-7 py-1.5 text-[11px] font-mono text-neutral-200 outline-none hover:bg-[#282828] focus:bg-[#282828] focus:ring-1 focus:ring-white/20 transition-colors cursor-pointer"
             value={active?.id ?? ""}
             onChange={(event) => bindVariable(event.target.value || null)}

@@ -27,11 +27,11 @@ export default function VariantsSection({ engine, node = null, sourceDoc = null,
   };
   return <InspectorGroup title={t("editor.variants.title")} testId="editor-variants-section">
     {node ? properties ? properties.map(({ key, values }) => <InspectorRow key={key} label={key}>
-      <CustomSelect className={FIELD_CLASS} aria-label={key} value={parseVariantName(current.variantName)?.[key] ?? ""} onChange={event => switchTo(matchVariantProperty(variants, current, key, event.target.value))}>
+      <CustomSelect rootClassName="min-w-0 flex-1" className={FIELD_CLASS} aria-label={key} value={parseVariantName(current.variantName)?.[key] ?? ""} onChange={event => switchTo(matchVariantProperty(variants, current, key, event.target.value))}>
         {values.map(value => <option key={value} value={value} disabled={!matchVariantProperty(variants, current, key, value)}>{value}</option>)}
       </CustomSelect>
     </InspectorRow>) : <InspectorRow label={t("editor.variants.variant")}>
-      <CustomSelect className={FIELD_CLASS} aria-label={t("editor.variants.variant")} value={current.canvasId} onChange={event => switchTo(variants.find(doc => doc.canvasId === event.target.value))}>
+      <CustomSelect rootClassName="min-w-0 flex-1" className={FIELD_CLASS} aria-label={t("editor.variants.variant")} value={current.canvasId} onChange={event => switchTo(variants.find(doc => doc.canvasId === event.target.value))}>
         {variants.map(doc => <option key={doc.canvasId} value={doc.canvasId}>{doc.variantName ?? doc.name ?? t("editor.variants.default")}</option>)}
       </CustomSelect>
     </InspectorRow> : <>

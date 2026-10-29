@@ -97,6 +97,7 @@ function StyleTypeRow({
           data-testid={`editor-style-${type}`}
           aria-label={`${tv("styles.type." + type)} ${tv("styles.select")}`}
           value={activeStyle?.id ?? ""}
+          rootClassName="min-w-0 flex-1"
           disabled={!canApply}
           onChange={(event) => {
             const styleId = event.target.value;
