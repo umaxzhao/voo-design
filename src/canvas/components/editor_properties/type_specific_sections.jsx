@@ -59,7 +59,7 @@ export default function TypeSpecificSections({ object, sections, showDimensions 
       const applyEdit = (patch) => (edit ?? editAndCommit)(patch);
       const modes = ['none', 'vertical', 'horizontal', 'grid'];
       return (
-        <StaticSection title={t('editor.props.layout')} storageKey="layout">
+        <StaticSection title={t(layout ? 'editor.autoLayout.title' : 'editor.props.layout')} storageKey="layout">
           {/* Figma's layout mode strip: none / vertical / horizontal / grid. */}
           <div className="flex h-7 items-center gap-0.5 rounded-xl bg-neutral-800 p-0.5">
             {modes.map((mode) => (
@@ -81,49 +81,25 @@ export default function TypeSpecificSections({ object, sections, showDimensions 
             ))}
           </div>
 
-          {showDimensions ? <div className="grid grid-cols-2 gap-2">
-            <ScrubField
-              prefix="W"
-              min={1}
-              max={99999}
-              value={Math.round(object.width ?? 0)}
-              onValueChange={(value) => applyEdit({ width: value })}
-              onCommit={commitNow}
-              ariaLabel="W"
-              scrubHint={t('editor.props.dragToAdjust')}
-            />
-            <ScrubField
-              prefix="H"
-              min={1}
-              max={99999}
-              value={Math.round(object.height ?? 0)}
-              onValueChange={(value) => applyEdit({ height: value })}
-              onCommit={commitNow}
-              ariaLabel="H"
-              scrubHint={t('editor.props.dragToAdjust')}
-            />
-          </div> : null}
+          {showDimensions && <div className="grid grid-cols-2 gap-2">
+            {[['width', 'W', 'widthMode'], ['height', 'H', 'heightMode']].map(([axis, label, modeKey]) => (
+              <div key={axis} className="flex h-7 min-w-0 items-center rounded-xl bg-neutral-800">
+                <ScrubField bare className="[&_input]:!px-1" prefix={label} min={1} max={99999} value={Math.round(object[axis] ?? 0)}
+                  onValueChange={(value) => applyEdit({ [axis]: value, ...(layout ? { autoLayout: { ...layout, [modeKey]: 'fixed' } } : {}) })}
+                  onCommit={commitNow} ariaLabel={label} scrubHint={t('editor.props.dragToAdjust')} />
+                {layout && <FlatSelect value={layout[modeKey]}
+                  onChange={(mode) => editAndCommit({ autoLayout: { ...layout, [modeKey]: mode } })}
+                  label={t(`editor.autoLayout.${modeKey}`)}
+                  options={['fixed', 'hug'].map((mode) => ({ value: mode, label: t(mode === 'hug' ? 'editor.autoLayout.hugCompact' : 'editor.sizing.fixed') }))}
+                  className="min-w-0 shrink-0"
+                  triggerClassName="!h-7 !rounded-none !bg-transparent !px-1 !text-[10px]"
+                  portal />}
+              </div>
+            ))}
+          </div>}
 
-          {layout ? (
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                ["widthMode", t('editor.autoLayout.widthMode')],
-                ["heightMode", t('editor.autoLayout.heightMode')],
-              ].map(([key, label]) => (
-                <FlatSelect
-                  key={key}
-                  value={layout[key]}
-                  onChange={(mode) => editAndCommit({ autoLayout: { ...layout, [key]: mode } })}
-                  label={label}
-                  options={["fixed", "hug"].map((mode) => ({
-                    value: mode,
-                    label: t(`editor.sizing.${mode}`),
-                  }))}
-                  triggerClassName="!h-7 !w-full !rounded-xl !bg-neutral-800 !px-2 !text-[10px] !font-mono !uppercase !text-neutral-100 hover:!bg-neutral-800/80"
-                  widthClass="w-full"
-                />
-              ))}
-            </div>
+          {layoutMode === 'vertical' || layoutMode === 'horizontal' ? (
+            <AutoLayoutFields object={object} editAndCommit={editAndCommit} hideDirection hideSizing />
           ) : null}
 
           {has('clip') ? (
@@ -137,10 +113,6 @@ export default function TypeSpecificSections({ object, sections, showDimensions 
               />
               {t('editor.props.clipContent')}
             </label>
-          ) : null}
-
-          {layoutMode === 'vertical' || layoutMode === 'horizontal' ? (
-            <AutoLayoutFields object={object} editAndCommit={editAndCommit} hideDirection hideSizing />
           ) : null}
 
           {layoutMode === 'grid' ? (() => {

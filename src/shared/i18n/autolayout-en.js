@@ -7,6 +7,13 @@
  * existing pre-wrap keys stay in `en.js` and are not duplicated here.
  */
 export default {
+  "editor.autoLayout.hugCompact": "Hug",
+  "editor.autoLayout.advanced": "Auto layout settings",
+  "editor.autoLayout.paddingHorizontal": "Horizontal padding",
+  "editor.autoLayout.paddingVertical": "Vertical padding",
+  "editor.autoLayout.mixed": "Mixed",
+  "editor.autoLayout.alignmentPoint": "Vertical {row}, horizontal {column}",
+
   "editor.autoLayout.wrap": "Wrap",
   "editor.autoLayout.on": "On",
   "editor.autoLayout.off": "Off",

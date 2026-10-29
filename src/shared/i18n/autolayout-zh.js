@@ -5,6 +5,13 @@
  * the Lead alongside the English module.
  */
 export default {
+  "editor.autoLayout.hugCompact": "适应",
+  "editor.autoLayout.advanced": "自动布局设置",
+  "editor.autoLayout.paddingHorizontal": "水平内边距",
+  "editor.autoLayout.paddingVertical": "垂直内边距",
+  "editor.autoLayout.mixed": "混合",
+  "editor.autoLayout.alignmentPoint": "纵向{row}，横向{column}",
+
   "editor.autoLayout.wrap": "换行",
   "editor.autoLayout.on": "开",
   "editor.autoLayout.off": "关",

@@ -1,7 +1,18 @@
+import {
+  SlidersHorizontal,
+  Columns2,
+  Rows2,
+  BetweenHorizontalStart,
+  CornerDownLeft,
+} from "lucide-react";
 import PropTypes from "prop-types";
 import { useI18n } from "../../use_i18n.js";
 import { normalizeAutoLayout } from "../../editor/scene_auto_layout.js";
-import { SectionAddButton, SectionEmptyRow, StaticSection } from "./property_section.jsx";
+import {
+  SectionAddButton,
+  SectionEmptyRow,
+  StaticSection,
+} from "./property_section.jsx";
 import CustomSelect from "../custom_select.jsx";
 
 export const DEFAULT_AUTO_LAYOUT = {
@@ -26,7 +37,12 @@ const DISTRIBUTIONS = [
 const FIELD_CLASS =
   "w-full min-w-0 rounded-lg bg-neutral-800 px-2 py-1.5 text-[11px] tabular-nums text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
 
-export function AutoLayoutFields({ object, editAndCommit, hideDirection = false, hideSizing = false }) {
+export function AutoLayoutFields({
+  object,
+  editAndCommit,
+  hideDirection = false,
+  hideSizing = false,
+}) {
   const { t } = useI18n();
   const layout = normalizeAutoLayout(object.autoLayout);
   const change = (patch) =>
@@ -101,173 +117,253 @@ export function AutoLayoutFields({ object, editAndCommit, hideDirection = false,
     </label>
   );
 
+  if (!layout)
+    return (
+      <SectionEmptyRow
+        label={t("editor.autoLayout.enable")}
+        testId="editor-auto-layout-empty"
+        onClick={() => editAndCommit({ autoLayout: DEFAULT_AUTO_LAYOUT })}
+      />
+    );
+  const horizontal = layout.direction === "horizontal";
+  const positions = ["start", "center", "end"];
+  const pairedPadding = (axis, first, second, Icon) => (
+    <label
+      className="flex h-7 min-w-0 items-center gap-2 rounded-xl bg-neutral-800 px-2"
+      title={t(`editor.autoLayout.padding${axis}`)}
+    >
+      <Icon
+        size={14}
+        className="shrink-0 text-neutral-400"
+        aria-hidden="true"
+      />
+      <input
+        type="number"
+        min="0"
+        step="1"
+        aria-label={t(`editor.autoLayout.padding${axis}`)}
+        placeholder={t("editor.autoLayout.mixed")}
+        className="w-full min-w-0 bg-transparent text-[11px] text-neutral-100 outline-none"
+        value={
+          layout.padding[first] === layout.padding[second]
+            ? layout.padding[first]
+            : ""
+        }
+        onChange={(event) => {
+          if (event.target.value === "") return;
+          const value = Number(event.target.value);
+          if (Number.isFinite(value))
+            change({
+              padding: {
+                ...layout.padding,
+                [first]: Math.max(0, value),
+                [second]: Math.max(0, value),
+              },
+            });
+        }}
+      />
+    </label>
+  );
+
   return (
-    <div className="flex flex-col gap-2">
-      {!layout ? (
-        <SectionEmptyRow
-          label={t("editor.autoLayout.enable")}
-          testId="editor-auto-layout-empty"
-          onClick={() => editAndCommit({ autoLayout: DEFAULT_AUTO_LAYOUT })}
-        />
-      ) : (
-        <div className="flex flex-col gap-2">
-          {hideDirection ? null : (
-          <div className="flex gap-1">
-            {["vertical", "horizontal"].map((direction) => (
-              <button
-                key={direction}
-                type="button"
-                aria-pressed={layout.direction === direction}
-                onClick={() => change({ direction })}
-                className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-[11px] ${
-                  layout.direction === direction
-                    ? "bg-white/[0.12] text-white"
-                    : "bg-white/[0.06] text-neutral-400"
-                }`}
-              >
-                {t(`editor.autoLayout.${direction}`)}
-              </button>
-            ))}
-          </div>
+    <div className="space-y-2">
+      {!hideDirection && (
+        <div className="flex gap-1">
+          {["vertical", "horizontal"].map((direction) => (
+            <button
+              key={direction}
+              type="button"
+              aria-pressed={layout.direction === direction}
+              onClick={() => change({ direction })}
+              className="flex-1 rounded-lg bg-neutral-800 p-1 text-[11px]"
+            >
+              {t(`editor.autoLayout.${direction}`)}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        <div
+          role="group"
+          aria-label={t("editor.autoLayout.align")}
+          className="grid h-20 grid-cols-3 grid-rows-3 rounded-xl bg-neutral-800 p-1"
+        >
+          {positions.flatMap((row, y) =>
+            positions.map((column, x) => {
+              // Horizontal layout packs along X; vertical layout packs along Y.
+              const patch = alignmentPatch(layout.direction, x, y);
+              const selected =
+                layout.alignItems === patch.alignItems &&
+                layout.justifyContent === patch.justifyContent;
+              return (
+                <button
+                  key={`${row}-${column}`}
+                  type="button"
+                  aria-label={t("editor.autoLayout.alignmentPoint", {
+                    row: t(`editor.autoLayout.${row}`),
+                    column: t(`editor.autoLayout.${column}`),
+                  })}
+                  aria-pressed={selected}
+                  onClick={() => change(patch)}
+                  className="flex items-center justify-center rounded-lg hover:bg-white/[0.06] focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+                >
+                  {selected ? (
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      aria-hidden="true"
+                      className="text-[#a7ffd4]"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    >
+                      <path
+                        d={
+                          horizontal
+                            ? "M3 3v10M8 3v6M13 3v8"
+                            : "M3 3h10M3 8h6M3 13h8"
+                        }
+                      />
+                    </svg>
+                  ) : (
+                    <span className="size-1 rounded-full bg-neutral-500" />
+                  )}
+                </button>
+              );
+            }),
           )}
-          <label className="flex items-center justify-between gap-2 text-[10px] text-neutral-400">
-            <span>{t("editor.autoLayout.wrap")}</span>
+        </div>
+        <div className="min-w-0 space-y-2">
+          <label
+            className="flex h-7 items-center gap-2 rounded-xl bg-neutral-800 px-2"
+            title={t("editor.autoLayout.gap")}
+          >
+            <BetweenHorizontalStart
+              size={14}
+              className="shrink-0 text-neutral-400"
+              aria-hidden="true"
+            />
+            <input
+              type="number"
+              min="0"
+              step="1"
+              aria-label={t("editor.autoLayout.gap")}
+              value={layout.gap}
+              className="w-full min-w-0 bg-transparent text-[11px] text-neutral-100 outline-none"
+              onChange={(event) => {
+                if (event.target.value === "") return;
+                const gap = Number(event.target.value);
+                if (Number.isFinite(gap)) change({ gap: Math.max(0, gap) });
+              }}
+            />
+          </label>
+          <div className="flex items-center justify-end gap-2">
             <button
               type="button"
               data-testid="editor-auto-layout-wrap"
+              title={t("editor.autoLayout.wrap")}
               aria-label={t("editor.autoLayout.wrap")}
               aria-pressed={layout.wrap}
               onClick={() => change({ wrap: !layout.wrap })}
-              className={`rounded-lg px-3 py-1 text-[10px] ${
-                layout.wrap
-                  ? "bg-white/[0.12] text-white"
-                  : "bg-white/[0.06] text-neutral-400"
-              }`}
+              className={`flex size-7 items-center justify-center rounded-lg hover:bg-white/[0.06] ${layout.wrap ? "text-[#a7ffd4]" : "text-neutral-400"}`}
             >
-              {layout.wrap
-                ? t("editor.autoLayout.on")
-                : t("editor.autoLayout.off")}
+              <CornerDownLeft size={14} />
             </button>
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {numericField(
-              "gap",
-              t("editor.autoLayout.gap"),
-              layout.gap,
-              (gap) => change({ gap }),
-            )}
-            {layout.wrap &&
-              numericField(
-                "crossGap",
-                t("editor.autoLayout.crossGap"),
-                layout.crossGap,
-                (crossGap) => change({ crossGap }),
-              )}
-            {numericField(
-              "paddingTop",
-              t("editor.autoLayout.paddingTop"),
-              layout.padding.top,
-              (top) => change({ padding: { ...layout.padding, top } }),
-            )}
-            {numericField(
-              "paddingRight",
-              t("editor.autoLayout.paddingRight"),
-              layout.padding.right,
-              (right) => change({ padding: { ...layout.padding, right } }),
-            )}
-            {numericField(
-              "paddingBottom",
-              t("editor.autoLayout.paddingBottom"),
-              layout.padding.bottom,
-              (bottom) => change({ padding: { ...layout.padding, bottom } }),
-            )}
-            {numericField(
-              "paddingLeft",
-              t("editor.autoLayout.paddingLeft"),
-              layout.padding.left,
-              (left) => change({ padding: { ...layout.padding, left } }),
-            )}
+            <details className="relative">
+              <summary
+                aria-label={t("editor.autoLayout.advanced")}
+                title={t("editor.autoLayout.advanced")}
+                className="flex size-7 cursor-pointer list-none items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] [&::-webkit-details-marker]:hidden"
+              >
+                <SlidersHorizontal size={14} />
+              </summary>
+              <div className="absolute right-0 top-full z-50 mt-1 w-56 space-y-2 rounded-xl border border-white/10 bg-neutral-900 p-3 shadow-panel">
+                {selectRow(
+                  "justifyContent",
+                  t("editor.autoLayout.justify"),
+                  layout.justifyContent,
+                  DISTRIBUTIONS,
+                  (justifyContent) => change({ justifyContent }),
+                )}
+                {layout.wrap && (
+                  <>
+                    {numericField(
+                      "crossGap",
+                      t("editor.autoLayout.crossGap"),
+                      layout.crossGap,
+                      (crossGap) => change({ crossGap }),
+                    )}
+                    {selectRow(
+                      "alignContent",
+                      t("editor.autoLayout.alignContent"),
+                      layout.alignContent,
+                      DISTRIBUTIONS,
+                      (alignContent) => change({ alignContent }),
+                    )}
+                  </>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  {["top", "right", "bottom", "left"].map((side) =>
+                    numericField(
+                      side,
+                      t(
+                        `editor.autoLayout.padding${side[0].toUpperCase()}${side.slice(1)}`,
+                      ),
+                      layout.padding[side],
+                      (value) =>
+                        change({
+                          padding: { ...layout.padding, [side]: value },
+                        }),
+                    ),
+                  )}
+                </div>
+                <div className="text-[10px] text-neutral-400">
+                  {t("editor.autoLayout.constraints")}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {["minWidth", "maxWidth", "minHeight", "maxHeight"].map(
+                    (key) =>
+                      optionalField(
+                        key,
+                        t(`editor.autoLayout.${key}`),
+                        layout[key],
+                        (value) => change({ [key]: value }),
+                      ),
+                  )}
+                </div>
+              </div>
+            </details>
           </div>
-          {selectRow(
-            "alignItems",
-            t("editor.autoLayout.align"),
-            layout.alignItems,
-            ["start", "center", "end"],
-            (alignItems) => change({ alignItems }),
-          )}
-          {selectRow(
-            "justifyContent",
-            t("editor.autoLayout.justify"),
-            layout.justifyContent,
-            DISTRIBUTIONS,
-            (justifyContent) => change({ justifyContent }),
-          )}
-          {layout.wrap &&
-            selectRow(
-              "alignContent",
-              t("editor.autoLayout.alignContent"),
-              layout.alignContent,
-              DISTRIBUTIONS,
-              (alignContent) => change({ alignContent }),
-            )}
-          {hideSizing ? null : ["widthMode", "heightMode"].map((key) =>
-            selectRow(
-              key,
-              t(`editor.autoLayout.${key}`),
-              layout[key],
-              ["fixed", "hug"],
-              (mode) => change({ [key]: mode }),
-            ),
-          )}
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-neutral-400">
-              {t("editor.autoLayout.constraints")}
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              {optionalField(
-                "minWidth",
-                t("editor.autoLayout.minWidth"),
-                layout.minWidth,
-                (minWidth) => change({ minWidth }),
-              )}
-              {optionalField(
-                "maxWidth",
-                t("editor.autoLayout.maxWidth"),
-                layout.maxWidth,
-                (maxWidth) => change({ maxWidth }),
-              )}
-              {optionalField(
-                "minHeight",
-                t("editor.autoLayout.minHeight"),
-                layout.minHeight,
-                (minHeight) => change({ minHeight }),
-              )}
-              {optionalField(
-                "maxHeight",
-                t("editor.autoLayout.maxHeight"),
-                layout.maxHeight,
-                (maxHeight) => change({ maxHeight }),
-              )}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => editAndCommit({ autoLayout: null })}
-            className="self-start rounded-lg px-2 py-1 text-[10px] text-neutral-400 hover:bg-white/[0.06] hover:text-neutral-200"
-          >
-            {t("editor.autoLayout.disable")}
-          </button>
         </div>
-      )}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {pairedPadding("Horizontal", "left", "right", Columns2)}
+        {pairedPadding("Vertical", "top", "bottom", Rows2)}
+      </div>
+      {!hideSizing &&
+        ["widthMode", "heightMode"].map((key) =>
+          selectRow(
+            key,
+            t(`editor.autoLayout.${key}`),
+            layout[key],
+            ["fixed", "hug"],
+            (mode) => change({ [key]: mode }),
+          ),
+        )}
     </div>
   );
 }
 
-AutoLayoutSection.propTypes = {
-  object: PropTypes.object.isRequired,
-  editAndCommit: PropTypes.func.isRequired,
-};
-
+/** Convert the visual grid position into the engine's axis-based alignment. */
+export function alignmentPatch(direction, x, y) {
+  const positions = ["start", "center", "end"];
+  return {
+    justifyContent: positions[direction === "horizontal" ? x : y],
+    alignItems: positions[direction === "horizontal" ? y : x],
+  };
+}
 
 /** Standalone group (kept for callers that show it outside the layout group). */
 export default function AutoLayoutSection({ object, editAndCommit }) {
@@ -278,7 +374,12 @@ export default function AutoLayoutSection({ object, editAndCommit }) {
     <StaticSection
       title={t("editor.autoLayout.title")}
       storageKey="autoLayout.group"
-      extra={<SectionAddButton label={t("editor.autoLayout.enable")} onClick={enable} />}
+      extra={
+        <SectionAddButton
+          label={t("editor.autoLayout.enable")}
+          onClick={enable}
+        />
+      }
     >
       {layout ? (
         <AutoLayoutFields object={object} editAndCommit={editAndCommit} />
