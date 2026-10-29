@@ -1350,3 +1350,12 @@ select {
     animation: none;
   }
 }
+
+@media (max-width: 768px) and (hover: none) and (pointer: coarse) {
+  /* Prevent iOS automatic viewport auto-zoom when focusing inputs */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    font-size: 16px !important;
+  }
+}

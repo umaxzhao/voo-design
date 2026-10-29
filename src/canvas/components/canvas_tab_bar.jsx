@@ -189,10 +189,8 @@ export default function CanvasTabBar() {
             id="mobile-project-switcher-options"
             aria-label={t("canvasTabs.label")}
             className={
-              "absolute top-full z-[90] mt-1.5 max-h-[min(74dvh,34rem)] min-w-48 max-w-[min(22rem,calc(100vw-1rem))] overflow-y-auto rounded-xl border border-white/10 bg-neutral-950 p-1.5 text-[11px] shadow-menu " +
-              (welcomeOpen
-                ? "welcome-mobile-project-menu left-1/2 w-[min(22rem,calc(100vw-1rem))] -translate-x-1/2"
-                : "left-0")
+              "absolute top-full z-[90] mt-1.5 max-h-[min(74dvh,34rem)] min-w-48 max-w-[min(22rem,calc(100vw-1rem))] overflow-y-auto rounded-xl border border-white/10 bg-neutral-950 p-1.5 text-[11px] shadow-menu left-1/2 w-[min(22rem,calc(100vw-1rem))] -translate-x-1/2" +
+              (welcomeOpen ? " welcome-mobile-project-menu" : "")
             }
           >
             {welcomeOpen ? (

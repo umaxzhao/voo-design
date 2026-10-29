@@ -110,9 +110,10 @@ export function WelcomePromptComposer({
       const isMobile = window.matchMedia("(max-width: 768px) and (hover: none) and (pointer: coarse)").matches;
       const panelWidth = isMobile ? window.innerWidth - 32 : 320;
       const panelGutter = isMobile ? 16 : 8;
+      const panelHeight = panelRef.current?.offsetHeight ?? (isMobile ? 320 : 260);
       setPanelPos({
         left: Math.max(panelGutter, Math.min(rect.right - panelWidth, window.innerWidth - panelWidth - panelGutter)),
-        top: Math.min(rect.bottom + 8, window.innerHeight - 260),
+        top: Math.max(panelGutter, Math.min(rect.bottom + 8, window.innerHeight - panelHeight - panelGutter)),
       });
     };
     place();

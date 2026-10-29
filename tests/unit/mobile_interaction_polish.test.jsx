@@ -58,9 +58,22 @@ describe("mobile interaction experience polish", () => {
     expect(html).toContain('user-scalable=no');
   });
 
-  it("uses pointerdown for welcome composer popup dismiss", () => {
+  it("uses pointerdown for welcome composer popup dismiss and clamps panel safely", () => {
     const composer = readFileSync("src/canvas/components/welcome_dashboard/welcome_prompt_composer.jsx", "utf8");
     expect(composer).toContain('document.addEventListener("pointerdown", onPointerDown)');
     expect(composer).not.toContain('document.addEventListener("mousedown", onPointerDown)');
+    expect(composer).toContain('panelHeight');
+  });
+
+  it("prevents iOS input focus auto-zoom and centers export modal on mobile screens", () => {
+    const indexCss = readFileSync("src/index.css", "utf8");
+    expect(indexCss).toContain("input:focus");
+    expect(indexCss).toContain("font-size: 16px !important;");
+
+    const exportDialog = readFileSync("src/canvas/components/editor_export_dialog.jsx", "utf8");
+    expect(exportDialog).toContain("items-center justify-center sm:items-start sm:justify-end");
+
+    const tabBar = readFileSync("src/canvas/components/canvas_tab_bar.jsx", "utf8");
+    expect(tabBar).toContain("left-1/2 w-[min(22rem,calc(100vw-1rem))] -translate-x-1/2");
   });
 });

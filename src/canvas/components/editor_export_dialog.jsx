@@ -115,7 +115,7 @@ export default function EditorExportDialog({
   useExportDialogKeyboard(dialogRef, onClose);
   return createPortal(
     <div
-      className="fixed inset-0 z-[110] flex items-start justify-end bg-black/40 p-4 pt-16"
+      className="fixed inset-0 z-[110] flex items-center justify-center sm:items-start sm:justify-end bg-black/40 p-4 sm:pt-16"
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
