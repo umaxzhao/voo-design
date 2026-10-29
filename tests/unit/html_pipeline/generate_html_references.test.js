@@ -22,6 +22,7 @@ it('sends visual references to the editable HTML reconstruction model', async ()
   expect(userContent[0]).toEqual({ type: 'text', text: 'Create a concert poster' });
   expect(userContent[1]).toEqual({ type: 'image_url', image_url: { url: reference.dataUrl } });
   expect(streamStep.mock.calls[0][0].messages[0].content).toContain('Keep typography, layout, shapes, and controls editable');
+  expect(streamStep.mock.calls[0][0].messages[0].content).toContain('these are imported as native editable Auto Layout frames');
 });
 
 it('keeps text-only generation when no visual references are available', async () => {

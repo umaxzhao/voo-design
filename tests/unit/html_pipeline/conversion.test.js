@@ -16,6 +16,55 @@ it('converts measured DOM geometry with native line height, gradients and hidden
   expect(nodes).toHaveLength(2);
 });
 
+it('imports UI flex and grid containers as nested native Auto Layout frames', () => {
+  const makeElement = (tagName, id, rect, css = {}, children = []) => ({
+    nodeType: 1,
+    tagName,
+    dataset: { vooId: id },
+    css: { opacity: '1', backgroundColor: 'transparent', ...css },
+    childNodes: children,
+    children: children.filter((child) => child.nodeType === 1),
+    getAttribute: () => null,
+    getBoundingClientRect: () => rect,
+  });
+  const button = makeElement('BUTTON', 'primary-action', { x: 16, y: 16, width: 120, height: 40 });
+  const nav = makeElement('NAV', 'navigation', { x: 0, y: 0, width: 320, height: 56 }, {
+    display: 'flex', flexDirection: 'row', gap: '12px', paddingLeft: '16px',
+    alignItems: 'center', justifyContent: 'space-between',
+  }, [button]);
+  const card = makeElement('ARTICLE', 'feature-card', { x: 0, y: 72, width: 320, height: 160 }, {
+    display: 'grid', gap: '16px', padding: '20px', paddingTop: '20px',
+    paddingRight: '20px', paddingBottom: '20px', paddingLeft: '20px',
+  });
+  const page = makeElement('MAIN', 'page-content', { x: 0, y: 0, width: 360, height: 260 }, {
+    display: 'flex', flexDirection: 'column', gap: '16px',
+  }, [nav, card]);
+  nav.parentElement = page;
+  card.parentElement = page;
+  button.parentElement = nav;
+  const doc = {
+    body: page,
+    defaultView: { getComputedStyle: (element) => element.css },
+    createRange: () => ({ getClientRects: () => [], getBoundingClientRect: () => null }),
+  };
+
+  const nodes = htmlToNodes(doc);
+  expect(nodes.find((node) => node.key === 'page-content')).toMatchObject({
+    type: 'frame',
+    autoLayout: { direction: 'vertical', gap: 16, wrap: false },
+  });
+  expect(nodes.find((node) => node.key === 'navigation')).toMatchObject({
+    type: 'frame',
+    parentKey: 'page-content',
+    autoLayout: { direction: 'horizontal', gap: 12, padding: { left: 16 }, justifyContent: 'space-between' },
+  });
+  expect(nodes.find((node) => node.key === 'feature-card')).toMatchObject({
+    type: 'frame',
+    parentKey: 'page-content',
+    autoLayout: { direction: 'horizontal', wrap: true, gap: 16, padding: { top: 20, right: 20, bottom: 20, left: 20 } },
+  });
+});
+
 function fixture({ css = {}, children, rect = { x: 10.4, y: 20.6, width: 120.3, height: 40 }, textRect = { x: 14.2, y: 24.4, width: 80.2, height: 20 }, rects } = {}) {
   const element = (tagName, id, overrides = {}, childNodes = []) => ({
     nodeType: 1, tagName, dataset: { vooId: id },

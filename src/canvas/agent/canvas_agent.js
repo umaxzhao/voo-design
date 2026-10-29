@@ -54,7 +54,9 @@ export const SYSTEM_PROMPT =
   "If a step went wrong, use undo (and redo) rather than piling on fixes.\n" +
   "Design quality: plan first. Default to auto-layout frames for UI and composed layouts; pass layout " +
   "horizontal or vertical explicitly. Reserve layout: \"none\" for posters, free-form art, or intentional " +
-  "absolute placement. Use spacing scale 4/8/12/16/24/32/48/64; establish typography hierarchy (display, " +
+  "absolute placement. For UI, use nested Auto Layout frames for navigation/toolbars, card content, form " +
+  "controls, repeated list rows and button groups; keep children in flow and use absolute placement only " +
+  "for intentional overlays. Use spacing scale 4/8/12/16/24/32/48/64; establish typography hierarchy (display, " +
   "heading, body, caption), consistent radius and clear contrast. Create color tokens/variables before use " +
   "and bind them. Keep initial token setup small, then build the layout before expanding the palette. " +
   "For a poster/layout brief, create visible canvas layers in this turn; plans and variables alone do not " +
