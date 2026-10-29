@@ -43,6 +43,7 @@ import { LINT_TOOL_SCHEMA, lintDesignTool } from "./design_quality/lint_tool.js"
 import { STYLE_PATCH_PROPERTIES, TEXT_PATCH_PROPERTIES } from "./canvas-mutation-schema.js";
 import { validateLayerId, validateLayerPatch, validateAutoLayout } from "./canvas_mutation_validation.js";
 import { resolveAgentAutoLayout } from "./resolve-auto-layout.js";
+import { mutateLayerGeometry } from "./agent-layout-transaction.js";
 
 export { AGENT_SETTING, AGENT_DEFAULTS, IMAGE_SIZE_PRESETS } from "./agent-settings.js";
 import { TOOL_ERROR } from "./canvas_tools_geometry.js";
@@ -601,27 +602,10 @@ function mutateLayerLayout(args) {
     throw Object.assign(new Error(TOOL_ERROR.NODE_NOT_FOUND), { code: TOOL_ERROR.NODE_NOT_FOUND });
   }
 
-  setAgentFocusNode(node, "AI: Updating layout");
-
-  const { x, y, ...geometryPatch } = patch;
-  const deltaX = x === undefined ? 0 : x - node.x;
-  const deltaY = y === undefined ? 0 : y - node.y;
-  if ((deltaX !== 0 || deltaY !== 0) && typeof editor.moveNodeBy === "function") {
-    const hasOtherGeometry = Object.keys(geometryPatch).length > 0;
-    const canBatch = hasOtherGeometry
-      && typeof editor.beginBatch === "function"
-      && typeof editor.endBatch === "function";
-    if (canBatch) editor.beginBatch();
-    try {
-      editor.moveNodeBy(layerId, deltaX, deltaY);
-      if (hasOtherGeometry) editor.updateNode?.(layerId, geometryPatch);
-    } finally {
-      if (canBatch) editor.endBatch();
-    }
-  } else {
-    editor.updateNode?.(layerId, patch);
+  if (!mutateLayerGeometry(editor, node, patch)) {
+    return { ok: false, layerId, reason: "locked", updated: {} };
   }
-  editor.commitEditorDocument?.({ message: "AI: Mutate Layer Layout" });
+  setAgentFocusNode(node, "AI: Updating layout");
 
   if (typeof window !== "undefined") {
     window.dispatchEvent(

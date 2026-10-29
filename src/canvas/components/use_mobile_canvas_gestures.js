@@ -26,6 +26,7 @@ export function useMobileCanvasGestures(onUndo, onPinch, onRedo) {
   const onRedoRef = useRef(onRedo);
   onRedoRef.current = onRedo;
   const gestureRef = useRef({ points: new Map(), candidate: null, pinch: null });
+  const canvasCancellationRef = useRef(null);
 
   const onPointerDownCapture = useCallback((event) => {
     const gesture = gestureRef.current;
@@ -52,6 +53,7 @@ export function useMobileCanvasGestures(onUndo, onPinch, onRedo) {
       y: event.clientY,
       startAt: now,
       moved: false,
+      target: event.target,
     });
     if (gesture.points.size === 2) {
       const points = [...gesture.points.entries()];
@@ -63,22 +65,22 @@ export function useMobileCanvasGestures(onUndo, onPinch, onRedo) {
         centerX: center.x,
         centerY: center.y,
       };
-      // Cancel any active drawing or drag on the first touch now that a pinch gesture owns the stage.
-      const stage = event.target.closest?.('[data-testid="editor-pages"]');
-      if (stage && typeof PointerEvent === "function") {
+      // Finish the original interaction on the engine's nested pointer surface.
+      // Ignore only this exact cancel here so the owning pinch stays alive.
+      if (typeof PointerEvent === "function") {
+        const cancellation = new PointerEvent("pointercancel", {
+          pointerId: points[0][0],
+          pointerType: "touch",
+          bubbles: true,
+          cancelable: true,
+          clientX: first.x,
+          clientY: first.y,
+        });
+        canvasCancellationRef.current = cancellation;
         try {
-          stage.dispatchEvent(
-            new PointerEvent("pointercancel", {
-              pointerId: points[0][0],
-              pointerType: "touch",
-              bubbles: true,
-              cancelable: true,
-              clientX: first.x,
-              clientY: first.y,
-            }),
-          );
-        } catch {
-          // Fallback on environments without full PointerEvent support
+          first.target.dispatchEvent(cancellation);
+        } finally {
+          canvasCancellationRef.current = null;
         }
       }
       onPinchRef.current?.({ isStart: true });
@@ -198,7 +200,8 @@ export function useMobileCanvasGestures(onUndo, onPinch, onRedo) {
     gesture.pinch = null;
   }, []);
 
-  const onPointerCancelCapture = useCallback(() => {
+  const onPointerCancelCapture = useCallback((event) => {
+    if ((event.nativeEvent ?? event) === canvasCancellationRef.current) return;
     gestureRef.current.points.clear();
     gestureRef.current.candidate = null;
     gestureRef.current.pinch = null;

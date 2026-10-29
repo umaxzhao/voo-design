@@ -30,6 +30,11 @@ await withEditorBrowser(async ({ page }) => {
     await stage.dispatchEvent(name, { pointerType: "touch", pointerId, clientX: x, clientY: 200 });
   }
   assert.equal(await page.evaluate(() => window.__refactor.calls.some(call => call.kind === "zoom" && call.values[0] === "first")), true);
+  const zoomsBeforeCancel = await page.evaluate(() => window.__refactor.calls.filter(call => call.kind === "zoom").length);
+  for (const [name, pointerId, x] of [["pointerdown", 5, 80], ["pointerdown", 6, 160], ["pointercancel", 5, 80], ["pointermove", 6, 240], ["pointerup", 6, 240]]) {
+    await stage.dispatchEvent(name, { pointerType: "touch", pointerId, clientX: x, clientY: 200 });
+  }
+  assert.equal(await page.evaluate(() => window.__refactor.calls.filter(call => call.kind === "zoom").length), zoomsBeforeCancel);
   await page.evaluate(() => window.__refactor.render({ focusedId: "second", multi: true }));
   await settle();
   for (const [name, pointerId, x] of [["pointerdown", 3, 80], ["pointerdown", 4, 160], ["pointermove", 4, 240], ["pointerup", 3, 80], ["pointerup", 4, 240]]) {
@@ -58,9 +63,9 @@ await withEditorBrowser(async ({ page }) => {
   assert.equal(await page.evaluate(() => window.__refactor.calls.find(call => call.kind === "open-document").values[0]), "captured.psd");
   checks.push("media imports retain the originating engine across focus changes and PSD files reach the document opener");
 
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     const a = window.__refactor;
-    a.current.image.runAutoEnhance("second");
+    await a.current.image.runAutoEnhance("second");
     a.current.image.runPortraitRetouch("second", { smooth: 10 });
     a.current.image.runPortraitRetouch("first", { smooth: 20 });
   });
@@ -106,3 +111,97 @@ await withEditorBrowser(async ({ page }) => {
   checks.push("quota feedback persists and unmount cancels region timers before they mutate the old engine");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 }, { openDocument: false, mcpLink: false });
+
+await withEditorBrowser(async ({ page, tool }) => {
+  const checks = [];
+  const settled = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.evaluate(async () => {
+    const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
+    const { useDesignStore } = await import("/src/store/design_store.js");
+    const e = window.__vooEditor;
+    e.setDoc({ ...e.getDocument(), width: 600, height: 400, isCanvasRoot: false, backgroundColor: "#ffffff",
+      nodes: [{ ...createRectNode({ x: 100, y: 100, width: 160, height: 100, fill: "#ff0000" }), id: "touch-target" }] });
+    e.setTool("select"); e.selectExactly([]); e.setSnappingEnabled(false);
+    useDesignStore.setState({ pendingArtboardFitId: null, editorCamera: { zoom: 1, panX: 300, panY: 150 } });
+  });
+  await settled();
+  const point = (x, y) => page.evaluate(({ x, y }) => {
+    const board = document.querySelector("[data-editor-artboard]").getBoundingClientRect();
+    const doc = window.__vooEditor.getDocument();
+    return { x: board.left + x * board.width / doc.width, y: board.top + y * board.height / doc.height };
+  }, { x, y });
+  const session = await page.context().newCDPSession(page);
+  const touch = (type, points) => session.send("Input.dispatchTouchEvent", {
+    type, touchPoints: points.map(({ id, x, y }) => ({ id, x, y, radiusX: 1, radiusY: 1, force: 1 })),
+  });
+  const snapshot = () => page.evaluate(() => JSON.stringify(window.__vooEditor.serialise()));
+  const index = () => page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex());
+  const beforeDrag = await snapshot(), beforeDragIndex = await index();
+  await page.evaluate(() => {
+    const trace = [];
+    const record = event => {
+      if (event.isTrusted && event.pointerType === "touch") trace.push({ type: event.type, id: event.pointerId });
+    };
+    const types = ["pointerdown", "pointermove", "pointerup"];
+    for (const type of types) document.addEventListener(type, record, true);
+    window.__pinchPointerTrace = { trace, dispose: () => types.forEach(type => document.removeEventListener(type, record, true)) };
+  });
+  const first = { ...await point(180, 150), id: 1 };
+  await touch("touchStart", [first]);
+  const moved = { ...first, x: first.x + 20, y: first.y + 10 };
+  await touch("touchMove", [moved]); await settled();
+  await page.evaluate(() => window.__vooEditor.flushTransforms());
+  assert.deepEqual(await page.evaluate(() => {
+    const n = window.__vooEditor.getNode("touch-target"); return [n.x, n.y];
+  }), [120, 110], "the original real touch must start an engine drag");
+  const second = { id: 2, x: moved.x + 80, y: moved.y };
+  await touch("touchStart", [moved, second]); await settled();
+  const takenOver = await snapshot(), takeoverIndex = await index();
+  assert.notEqual(takenOver, beforeDrag);
+  assert.equal(takeoverIndex, beforeDragIndex + 1, "pointer cancellation retains the engine's one-commit preview policy");
+  const zoomBefore = await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().editorCamera.zoom);
+  const spread = { ...second, x: second.x + 40 };
+  await touch("touchMove", [moved, spread]); await settled();
+  assert.ok(await page.evaluate(async previous => (await import("/src/store/design_store.js")).useDesignStore.getState().editorCamera.zoom > previous, zoomBefore));
+  // Lift the first finger, then move the remaining finger. Its old captured
+  // engine drag must already have ended, even though the stage still sees it.
+  await touch("touchEnd", [moved]);
+  await touch("touchMove", [{ ...spread, x: spread.x + 25, y: spread.y + 15 }]);
+  await touch("touchEnd", []); await settled();
+  const trace = await page.evaluate(() => {
+    const audit = window.__pinchPointerTrace;
+    audit.dispose(); delete window.__pinchPointerTrace;
+    return audit.trace;
+  });
+  const downIds = trace.filter(event => event.type === "pointerdown").map(event => event.id);
+  assert.equal(downIds.length, 2, "the browser must see exactly the original two trusted touch pointers");
+  assert.deepEqual(trace.filter(event => event.type === "pointerup").map(event => event.id), downIds);
+  const firstUp = trace.findIndex(event => event.type === "pointerup" && event.id === downIds[0]);
+  const remainingMoves = trace.slice(firstUp + 1).filter(event => event.type === "pointermove");
+  assert.ok(remainingMoves.length > 0, JSON.stringify(trace));
+  assert.ok(remainingMoves.every(event => event.id === downIds[1]), "remaining movement must retain the original second pointer ID");
+  assert.equal(await snapshot(), takenOver);
+  assert.equal(await index(), takeoverIndex);
+  assert.equal(await page.evaluate(() => window.__vooEditor.sampleColorAt({ x: 180, y: 150 })), "#ff0000");
+  await tool("undo"); assert.equal(await snapshot(), beforeDrag);
+  await tool("redo"); assert.equal(await snapshot(), takenOver);
+  checks.push("real CDP pinch finishes the nested engine drag once, zooms without dangling movement and one undo restores the complete pre-drag document");
+
+  await page.evaluate(() => window.__vooEditor.updateNode("touch-target", { fill: "#00ff00" }));
+  const green = await snapshot(), greenIndex = await index();
+  const tap = async count => {
+    const fingers = await Promise.all(Array.from({ length: count }, async (_, i) => ({ ...await point(400 + i * 30, 300), id: 10 + i })));
+    for (let i = 0; i < fingers.length; i++) await touch("touchStart", fingers.slice(0, i + 1));
+    await touch("touchEnd", []);
+  };
+  await tap(2);
+  await page.waitForFunction(() => window.__vooEditor.getNode("touch-target").fill === "#ff0000");
+  assert.equal(await index(), greenIndex - 1);
+  await tap(3);
+  await page.waitForFunction(() => window.__vooEditor.getNode("touch-target").fill === "#00ff00");
+  assert.equal(await snapshot(), green);
+  assert.equal(await index(), greenIndex);
+  checks.push("real two-finger undo and three-finger redo still own exactly one history action after pinch takeover");
+  await session.detach();
+  console.log(JSON.stringify({ passed: checks }, null, 2));
+}, { hasTouch: true });

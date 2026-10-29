@@ -118,5 +118,83 @@ await withEditorBrowser(async ({ page }) => {
   assert.deepEqual([movedFrame.inner.x, movedFrame.inner.y], [90, 70]);
   assert.deepEqual([movedFrame.outer.x, movedFrame.outer.y], [20, 20]);
   checks.push("dragging the exposed area of overlapping Frames moves the top Frame only");
+
+  const setHierarchy = async (nodes, selection) => {
+    await page.evaluate(({ nodes, selection }) => {
+      const e = window.__vooEditor;
+      e.setDoc({ ...e.getDocument(), width: 600, height: 400, crop: null, isCanvasRoot: true, nodes });
+      e.selectExactly(selection); e.setTool("select");
+    }, { nodes, selection });
+    await settled();
+  };
+  const frame = (id, x, y, width = 280, height = 220) => ({ id, kind: "group", isFrame: true,
+    visible: true, x, y, width, height, fill: "#dddddd" });
+  const group = (id, parentId, x, y) => ({ id, kind: "group", visible: true,
+    parentId, x, y, width: 80, height: 80 });
+  const rect = (id, parentId, x, y) => ({ id, kind: "rect", visible: true,
+    parentId, x, y, width: 40, height: 30, fill: "#ff0000" });
+  const hierarchy = ids => page.evaluate(ids => ids.map(id => {
+    const n = window.__vooEditor.getNode(id);
+    return { id: n.id, parentId: n.parentId ?? null, x: n.x, y: n.y };
+  }), ids);
+  await setHierarchy([
+    frame("overlap-original", 20, 20), frame("overlap-moved", 40, 40),
+    group("overlap-group", "overlap-moved", 80, 80), rect("overlap-child", "overlap-group", 90, 90),
+  ], ["overlap-moved"]);
+  const beforeOverlap = await hierarchy(["overlap-moved", "overlap-group", "overlap-child"]);
+  await drag({ x: 310, y: 250 }, { x: 30, y: 20 });
+  const afterOverlap = await hierarchy(["overlap-moved", "overlap-group", "overlap-child"]);
+  console.log(JSON.stringify({ beforeOverlap, afterOverlap }));
+  assert.deepEqual(afterOverlap, beforeOverlap.map(n => ({ ...n, x: n.x + 30, y: n.y + 20 })));
+  await page.evaluate(() => window.__vooEditor.undo());
+  assert.deepEqual(await hierarchy(["overlap-moved", "overlap-group", "overlap-child"]), beforeOverlap);
+  checks.push("moving an overlapping Frame preserves all nested parent links and restores geometry and hierarchy with one undo");
+
+  await setHierarchy([
+    frame("drop-source", 20, 20, 220), frame("drop-target", 300, 20, 220),
+    { ...group("moving-group", "drop-source", 80, 70), width: 160, height: 130 },
+    { ...group("moving-inner", "moving-group", 90, 80), width: 130, height: 110 },
+    { ...rect("moving-child", "moving-inner", 100, 90), width: 100, height: 80 },
+  ], ["moving-group"]);
+  // Layers selects an ordinary Group as one complete unit, including members.
+  await page.evaluate(() => window.__vooEditor.selectGroup("moving-group"));
+  const beforeGroup = await hierarchy(["moving-group", "moving-inner", "moving-child"]);
+  // Use a body point away from the selected rectangle's radius/resize controls.
+  await drag({ x: 150, y: 130 }, { x: 250, y: 0 });
+  assert.deepEqual(await hierarchy(["moving-group", "moving-inner", "moving-child"]), beforeGroup.map((n, i) =>
+    ({ ...n, x: n.x + 250, parentId: i === 0 ? "drop-target" : n.parentId })));
+  assert.equal(await pixel({ x: 365, y: 105 }), "#ff0000");
+  await page.evaluate(() => window.__vooEditor.undo());
+  assert.deepEqual(await hierarchy(["moving-group", "moving-inner", "moving-child"]), beforeGroup);
+  checks.push("moving an ordinary nested Group into another Frame reparents only the selected unit and undoes once");
+
+  for (const id of ["moving-group", "moving-child"]) {
+    await page.evaluate(id => {
+      const e = window.__vooEditor;
+      e.updateNode(id, { lockPosition: true }); e.selectGroup("moving-group");
+      window.__lockedGroupHistory = JSON.stringify(e.captureDocumentSession().history);
+    }, id);
+    await drag({ x: 150, y: 130 }, { x: 30, y: 20 });
+    assert.deepEqual(await hierarchy(["moving-group", "moving-inner", "moving-child"]), beforeGroup);
+    assert.equal(await page.evaluate(() => JSON.stringify(window.__vooEditor.captureDocumentSession().history)),
+      await page.evaluate(() => window.__lockedGroupHistory));
+    await page.evaluate(id => window.__vooEditor.updateNode(id, { lockPosition: false }), id);
+  }
+  checks.push("position-locked Group roots or members refuse partial pointer movement without adding history");
+
+  await setHierarchy([
+    frame("single-source", 20, 20, 220), frame("single-target", 300, 20, 220),
+    { ...rect("single-child", "single-source", 80, 80), width: 100, height: 80 },
+  ], ["single-child"]);
+  const beforeSingle = await hierarchy(["single-child"]);
+  await drag({ x: 130, y: 120 }, { x: 250, y: 0 });
+  assert.deepEqual(await hierarchy(["single-child"]), [{ ...beforeSingle[0], parentId: "single-target", x: 330 }]);
+  await page.evaluate(() => window.__vooEditor.undo());
+  assert.deepEqual(await hierarchy(["single-child"]), beforeSingle);
+  await drag({ x: 130, y: 120 }, { x: 0, y: 240 });
+  assert.deepEqual(await hierarchy(["single-child"]), [{ ...beforeSingle[0], parentId: null, y: 320 }]);
+  await page.evaluate(() => window.__vooEditor.undo());
+  assert.deepEqual(await hierarchy(["single-child"]), beforeSingle);
+  checks.push("an individually moved child still enters another Frame or leaves to the root with single-step undo");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });

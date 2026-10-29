@@ -30,7 +30,7 @@
  * floats in, plain data out.
  */
 
-import { subjectBounds } from "./auto_crop.js";
+import { subjectBounds } from "./subject-bounds.js";
 import { OUTPAINT_HANDLES } from "./outpaint_geometry.js";
 
 /** Default minimum empty margin kept around the subject, as a frame fraction. */

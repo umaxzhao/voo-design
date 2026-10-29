@@ -2,6 +2,15 @@
 
 ## 1.0.0
 
+- Split the layer tree, row controls and panel state into focused modules while retaining hierarchy selection, search, drag/drop and inline editing.
+- Split shortcut routing into ordered handlers; keep callbacks current after rerenders, retain the originating engine for arrow-key history bursts and finish them on blur/disable before engine snapshots.
+- Load Auto Enhance and Smart Crop planners on use, show local loading feedback, coalesce duplicate clicks and reject late results after document, engine or crop-context changes.
+- Keep complete Group move units and preserve descendant parent links when drag auto-parenting moves a Frame or Group across overlapping Frames.
+- Bind browser-verification listeners atomically and verify concurrent MCP origin/document isolation; wait for animation-frame change notifications in the lifecycle gate.
+- Preserve partial legacy Auto Layout alignment during agent updates and guard advertised canvas tools against missing executors.
+- Keep combined agent movement and resizing in one undo entry, retain Boolean operand geometry, preserve external clipping followers, reject locked move units atomically and use the inspector's constrained-child resize path for Frames.
+- Preserve mobile pinch state while finishing the original canvas pointer interaction; route its internal cancellation to the original target without suppressing real pointer cancellation.
+
 - Composite transparent Groups and Frames as isolated subtrees, applying alpha once to overlapping children; retain ancestor clips and mask scopes in PNG/SVG exports and preserve undo/project readback.
 - Synchronize Boolean operands and active children when boxes resize through numeric edits, handles, agent mutations and constraints; retain Boolean parent links when reopening projects and bake only affine operands that exceed the persisted shear range.
 - Defer the empty-canvas comments implementation, keep loading/error recovery local to comments, preserve Escape layering and draft/filter state, and restore unread badges for canonical numeric timestamps.

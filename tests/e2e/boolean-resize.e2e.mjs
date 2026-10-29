@@ -60,11 +60,99 @@ await withEditorBrowser(async ({ page, tool }) => {
   for (const children of [false, true]) {
     await seed(children);
     const before = await snapshot();
+    const beforeIndex = await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex());
     const response = await tool("mutate_layer_layout", { layerId: "boolean", patch: { x: 120, y: 110, width: 300, height: 160 } });
     assert.ok(response);
+    assert.equal(await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex()), beforeIndex + 1);
     assert.deepEqual(await sample([[370, 200], [430, 200], [110, 140]]), [red, white, white]);
+    const after = await snapshot();
     await tool("undo"); assert.equal(await snapshot(), before);
+    await tool("redo"); assert.equal(await snapshot(), after);
     checks.push(`${children ? "child-backed" : "sources-only"} MCP layout mutation synchronously moves and resizes with one undo`);
+  }
+
+  for (const frame of [false, true]) {
+    await page.evaluate(async frame => {
+      const { createRectNode } = await import("/src/canvas/editor/scene_model.js");
+      const e = window.__vooEditor;
+      const parent = { ...createRectNode({ x: 100, y: 100, width: 200, height: 100 }),
+        id: "container", kind: "group", isFrame: frame, rotation: 0 };
+      const nested = { ...createRectNode({ x: 110, y: 120, width: 40, height: 40 }),
+        id: "nested", kind: "group", parentId: parent.id };
+      const child = { ...createRectNode({ x: 115, y: 125, width: 10, height: 10, fill: "#ff0000" }),
+        id: "nested-child", parentId: nested.id };
+      const pinned = { ...createRectNode({ x: 260, y: 160, width: 20, height: 20, fill: "#ff0000" }),
+        id: "pinned", parentId: parent.id, constraints: { horizontal: "right", vertical: "bottom" } };
+      e.setDoc({ ...e.getDocument(), nodes: [parent, nested, child, pinned] });
+      e.selectExactly([parent.id]);
+    }, frame);
+    const before = await snapshot();
+    const initialIndex = await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex());
+    await tool("mutate_layer_layout", { layerId: "container", patch: { x: 120, y: 110, width: 300, height: 160 } });
+    assert.equal(await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex()), initialIndex + 1);
+    assert.deepEqual(await page.evaluate(() => ["nested-child", "pinned"].map(id => {
+      const node = window.__vooEditor.getNode(id); return [node.x, node.y];
+    })), [[135, 135], frame ? [380, 230] : [280, 170]]);
+    assert.deepEqual(await sample([[139, 139], frame ? [389, 239] : [289, 179]]), [red, red]);
+    await tool("undo"); assert.equal(await snapshot(), before);
+    if (!frame) {
+      for (const unchanged of [{ width: 200 }, { rotation: 0 }]) {
+        await tool("mutate_layer_layout", { layerId: "container", patch: { x: 120, y: 110, ...unchanged } });
+        assert.equal(await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex()), initialIndex + 1);
+        assert.deepEqual(await sample([[139, 139]]), [red]);
+        await tool("undo"); assert.equal(await snapshot(), before);
+      }
+    }
+    checks.push(`${frame ? "Frame pins" : "Group descendants and unchanged extra fields"} keep MCP geometry changes in one undo`);
+  }
+
+  for (const kind of ["boolean", "frame", "group"]) {
+    for (const scope of ["root", "follower"]) {
+      await seed(true);
+      const layerId = await page.evaluate(({ kind, scope }) => {
+        const e = window.__vooEditor;
+        const nodes = e.getDocument().nodes.map((node) => ({ ...node }));
+        const root = nodes[0];
+        if (kind !== "boolean") {
+          root.kind = "group";
+          root.isFrame = kind === "frame";
+          delete root.sources;
+        }
+        if (scope === "follower") nodes[1].locked = true;
+        else if (kind === "frame") root.lockPosition = true;
+        else root.locked = true;
+        e.setDoc({ ...e.getDocument(), nodes });
+        return root.id;
+      }, { kind, scope });
+      const before = await page.evaluate(() => JSON.stringify(window.__vooEditor.serialise()));
+      const index = await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex());
+      const response = await tool("mutate_layer_layout", { layerId, patch: { x: 120, y: 110, width: 300, height: 160 } });
+      assert.deepEqual(response, { ok: false, layerId, reason: "locked", updated: {} });
+      assert.equal(await page.evaluate(() => JSON.stringify(window.__vooEditor.serialise())), before);
+      assert.equal(await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex()), index);
+    }
+    checks.push(`${kind} root/follower locks reject the entire MCP patch without document or history changes`);
+  }
+
+  for (const frame of [false, true]) {
+    await seed(true);
+    await page.evaluate(frame => {
+      const e = window.__vooEditor;
+      const doc = e.getDocument();
+      const root = frame ? { ...doc.nodes[0], kind: "group", isFrame: true } : doc.nodes[0];
+      const clip = { ...doc.nodes[1], id: "external-clip", parentId: null, clipTo: root.id, x: 110, y: 120 };
+      const chain = { ...clip, id: "external-clip-chain", clipTo: clip.id, x: 115, y: 125 };
+      e.setDoc({ ...doc, nodes: [root, ...doc.nodes.slice(1), clip, chain] });
+    }, frame);
+    const before = await snapshot();
+    const index = await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex());
+    await tool("mutate_layer_layout", { layerId: "boolean", patch: { x: 120, y: 110, width: 300, height: 160 } });
+    assert.deepEqual(await page.evaluate(() => ["external-clip", "external-clip-chain"].map(id => {
+      const node = window.__vooEditor.getNode(id); return [node.x, node.y];
+    })), [[130, 130], [135, 135]]);
+    assert.equal(await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex()), index + 1);
+    await tool("undo"); assert.equal(await snapshot(), before);
+    checks.push(`${frame ? "Frame" : "Boolean"} external chained clip followers move and undo together through MCP`);
   }
 
   await seed(true);

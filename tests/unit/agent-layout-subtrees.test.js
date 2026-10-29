@@ -39,6 +39,11 @@ describe("agent layout subtree transactions", () => {
       { enabled: true, alignment: "space-between" }))
       .toMatchObject({ direction: "horizontal", alignItems: "end", justifyContent: "space-between" });
   });
+  it("keeps explicit distribution authoritative without assigning it to the cross axis", () => {
+    expect(resolveAgentAutoLayout({ autoLayout: { direction: "vertical", alignItems: "end" } },
+      { enabled: true, alignment: "space-between", justifyContent: "center" }))
+      .toMatchObject({ direction: "vertical", alignItems: "end", justifyContent: "center" });
+  });
   it("rejects stretch rather than silently accepting an unsupported engine mode", () => {
     expect(() => validateAutoLayout({ enabled: true, alignment: "stretch" })).toThrow();
   });

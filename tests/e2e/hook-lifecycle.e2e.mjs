@@ -127,6 +127,9 @@ await withEditorBrowser(async ({ page }) => {
     const engine = api.entry.engine;
     const changesBefore = api.changes;
     engine.setColor("#ff0000");
+    // Engine change notifications coalesce into animation frames, independently
+    // of how quickly the generated-output host resolves its synchronous result.
+    await new Promise(resolve => requestAnimationFrame(resolve));
     const { createEditorGeneratedOutput } = await import("/src/canvas/editor/editor_generated_output.js");
     const result = createEditorGeneratedOutput({
       dataUrl: engine.exportPngCanvas().toDataURL(), operation: "aiRepair", sourceWorkflowNodeId: api.nodeId,

@@ -1,5 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
+import { Loader2 } from "lucide-react";
 import AiRepairDownloadDialog from "./ai_repair_download_dialog.jsx";
 
 /** Existing status messages share rendering, while their timers stay in the host. */
@@ -8,9 +9,14 @@ export default function EditorStatusNotices({
   setPersistQuota, imageActionError, aiErrorText, setAiErrorText,
   splitLayersError, aiRepairDownload, engine, mattingDownload,
   downloadMattingModel, cancelMattingModelDownload, regionHint, regionHintTone,
-  regionHintFading, t,
+  regionHintFading, imageActionPending = false, t,
 }) {
   return <>
+        {imageActionPending ? <div role="status" data-testid="editor-image-action-loading"
+          className="pointer-events-none absolute top-28 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/60 px-3.5 py-1 font-mono text-[11px] text-neutral-300 shadow-pop backdrop-blur-md">
+          <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+          {t("common.loading")}
+        </div> : null}
         {savedNotice ? (
           <div
             role="status"
@@ -170,6 +176,7 @@ EditorStatusNotices.propTypes = {
   persistQuota: PropTypes.shape({ source: PropTypes.string.isRequired }),
   setPersistQuota: PropTypes.func.isRequired,
   imageActionError: PropTypes.string,
+  imageActionPending: PropTypes.bool,
   aiErrorText: PropTypes.string,
   setAiErrorText: PropTypes.func.isRequired,
   splitLayersError: PropTypes.string,

@@ -31,6 +31,7 @@ export function mountEditorRefactorAudit() {
   pixelCanvas.width = 8; pixelCanvas.height = 8;
   const ctx = pixelCanvas.getContext("2d");
   ctx.fillStyle = "#444444"; ctx.fillRect(0, 0, 8, 8);
+  const documents = { first: { nodes: [] }, second: { nodes: [] } };
   const makeEngine = name => ({
     insertImage: async (file, point) => {
       record("insert-image", name, file.name, point);
@@ -42,7 +43,7 @@ export function mountEditorRefactorAudit() {
     panBy: (...args) => record("pan", name, ...args),
     toDocPoint: (x, y) => ({ x: x - 10, y: y - 20 }),
     getSelected: () => ({ id: `${name}-image`, kind: "image", adjustments: {} }),
-    getDocument: () => ({ nodes: [] }),
+    getDocument: () => documents[name],
     getNodeBitmap: () => pixelCanvas,
     updateNode: (...args) => record("update", name, ...args),
   });

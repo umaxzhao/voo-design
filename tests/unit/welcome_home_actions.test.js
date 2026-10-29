@@ -95,7 +95,7 @@ describe("export and layer search accessibility", () => {
     expect(read("canvas/editor/export_shortcut.js")).toContain("shiftKey");
   });
   it("gives search toggle and input distinct labels in both languages", () => {
-    const source = read("canvas/components/editor_layers.jsx");
+    const source = read("canvas/components/editor_layers_header.jsx");
     expect(source).toContain('aria-label={t("editor.layers.searchToggle")}');
     expect(source).toContain('aria-label={t("editor.layers.search")}');
     for (const lang of ["en", "zh"]) {

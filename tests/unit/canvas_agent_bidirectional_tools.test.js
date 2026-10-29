@@ -87,6 +87,7 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
       getSelectedIds: vi.fn(() => ["frame_hero"]),
       getNode: vi.fn((id) => mockDoc.nodes.find((n) => n.id === id) || null),
       getDoc: vi.fn(() => mockDoc),
+      setDoc: vi.fn((next) => { mockDoc = next; }),
       updateNode: vi.fn((id, patch) => {
         const node = mockDoc.nodes.find((n) => n.id === id);
         if (node) {
@@ -199,12 +200,10 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(mockEditor.updateNode).toHaveBeenCalledWith("frame_hero", {
+    expect(mockEditor.getNode("frame_hero")).toMatchObject({
       width: 960,
       height: 720,
     });
-    expect(committedActions).toContain("AI: Mutate Layer Layout");
-
     // Check visual feedback overlay status
     const focus = getAgentFocusNode();
     expect(focus).not.toBeNull();
@@ -220,9 +219,10 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(mockEditor.moveNodeBy).toHaveBeenCalledWith("frame_hero", 40, -30);
-    expect(mockEditor.updateNode).toHaveBeenCalledWith("frame_hero", { width: 960 });
-    expect(committedActions).toContain("AI: Mutate Layer Layout");
+    expect(mockEditor.getNode("frame_hero")).toMatchObject({ x: 140, y: 170, width: 960 });
+    expect(mockEditor.getNode("text_title")).toMatchObject({ x: 172, y: 202 });
+    expect(mockEditor.getNode("btn_label")).toMatchObject({ x: 184, y: 286 });
+    expect(mockEditor.setDoc).toHaveBeenCalledTimes(1);
   });
 
   it("sets Auto Layout child sizing and absolute positioning", async () => {
@@ -232,7 +232,7 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(mockEditor.updateNode).toHaveBeenCalledWith("text_title", {
+    expect(mockEditor.getNode("text_title")).toMatchObject({
       layoutWidth: "fill", layoutHeight: "hug", layoutPosition: "absolute",
     });
   });

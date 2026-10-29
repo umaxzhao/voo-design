@@ -91,7 +91,6 @@ import {
   setInstanceCamera,
   setInstanceViewLocked,
 } from "../editor/instance-view.js";
-import { applySmartCrop } from "../editor/auto_crop_page.js";
 import { useEditorEngineRegistry } from "./editor_hooks/use_editor_engine_registry.js";
 import { useEditorCanvasNavigation } from "./editor_hooks/use_editor_canvas_navigation.js";
 import { useEditorFrameProperties } from "./editor_hooks/use_editor_frame_properties.js";
@@ -108,7 +107,6 @@ import { useEditorCanvasGestures } from "./editor_hooks/use_editor_canvas_gestur
 import { useEditorSharedCamera } from "./editor_hooks/use_editor_shared_camera.js";
 import { useEditorArtboardLayouts } from "./editor_hooks/use_editor_artboard_layouts.js";
 import { useDraftAutosave } from "./editor_hooks/use_draft_autosave.js";
-import { readImageRgba } from "./bitmap_pixels.js";
 import { useEditorRaster } from "./editor_hooks/use_editor_raster.js";
 import { useEditorLayerSplit } from "./editor_hooks/use_editor_layer_split.js";
 import {
@@ -1213,7 +1211,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     onClosePieMenu: () => setPieMenu(null),
   });
 
-  const { runAutoEnhance, runPortraitRetouch } = useEditorImageActions({
+  const { runAutoEnhance, runSmartCrop, runPortraitRetouch, imageActionPending } = useEditorImageActions({
     engine, enginesRef, snapshotsRef, retouchImage, setImageActionError,
   });
 
@@ -2392,13 +2390,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 engine?.setCropSize?.(width, height),
               cropAngle: engine?.getCropAngle?.() ?? 0,
               onCropAngle: (angle) => engine?.setCropAngle?.(angle),
-              // Smart crop: the panel's ratio is the engine's own crop ratio,
-              // so the solve reads it back off the engine rather than taking a
-              // second copy of it through props (auto_crop_page.js). The pixel
-              // reader is injected from here because the editor zone is
-              // DOM-free; `readImageRgba` is the only DOM/bitmap access.
-              onAutoCrop: () =>
-                applySmartCrop(engine, { readRgba: readImageRgba }),
+              onAutoCrop: runSmartCrop,
               onApplyCrop: () => {
                 engine?.applyCrop?.();
                 engine?.setTool?.(TOOL.SELECT);
@@ -3042,6 +3034,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
         <EditorStatusNotices
           savedNotice={savedNotice} exportNotice={exportNotice} applyError={applyError}
           persistQuota={persistQuota} setPersistQuota={setPersistQuota} imageActionError={imageActionError}
+          imageActionPending={imageActionPending}
           aiErrorText={aiErrorText} setAiErrorText={setAiErrorText} splitLayersError={splitLayersError}
           aiRepairDownload={aiRepairDownload} engine={engine} mattingDownload={mattingDownload}
           downloadMattingModel={downloadMattingModel} cancelMattingModelDownload={cancelMattingModelDownload} regionHint={regionHint}

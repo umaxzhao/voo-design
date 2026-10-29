@@ -143,6 +143,39 @@ cleanup. Escape registration remains eager so a cold feature cannot clear the
 canvas selection while it is being dismissed. Compare clean release bundle
 reports and network assertions; file splitting alone does not reduce download.
 
+Layer-panel extraction separates tree rows, interaction/state controllers,
+popovers and the public prop contract, reducing the public component from 2,252
+to 184 lines and the shortcut Hook from 1,399 to 119. `editor-layers-composition` exercises
+the real panel and document interactions; keeping these components as static
+imports is a maintenance change, not a download or FPS improvement.
+`editor-shortcut-lifecycle` separately checks ordered keyboard routing, current
+callbacks, focus ownership and history bursts across engine changes. Blur,
+disable and layout cleanup finish the originating history entry before passive
+engine snapshots so a held arrow cannot lose its undo record. The new
+shortcut modules keep the same synchronous engine APIs.
+
+Auto Enhance and Smart Crop load their planners only on an explicit action.
+The outpaint direction helper imports the small shared subject-bounds routine,
+so it does not accidentally retain the entire crop solver. `image-action-loading`
+blocks real requests, checks local loading/error recovery and duplicate-click
+history, and rejects results after document/engine/crop changes. Selecting a
+different image alone retains the click-time enhancement target. Public planner
+exports remain synchronous, and applying a successful edit still belongs to the
+engine's existing history operation. Compare clean bundle reports for the net
+result, including shared static imports; the size of a newly named chunk alone
+does not establish a smaller editor download.
+
+The browser fixture binds its actual HTTP listener before configuring Vite
+middleware and its private MCP origin. It never releases a reservation and then
+polls an unbound port. `editor-fixture-startup` checks concurrent port ownership,
+Origin rejection, isolated real-browser documents and listener cleanup. These
+startup checks do not replace any editor behavior or pixel assertion.
+Release verification keeps build, lint, unit tests and the startup-isolation
+gate sequential, then runs the remaining browser suites with at most three
+isolated processes. It preserves every command, complete per-suite logs and
+ordered results, stops scheduling after failure and waits for in-flight cleanup.
+Only an unchanged clean commit can produce a report marked complete.
+
 The next maintenance batch separates optional raster action implementations
 from the always-mounted Hook. Matting, selection repair, repaint, outpaint and
 image processing load at the action boundary; the Hook itself stays synchronous.
@@ -163,6 +196,21 @@ an artificially bounded document is insufficient coverage for this entry point.
 `frame-child-pointer` additionally exercises multiple real children inside a
 Frame. A successful click on an unparented image does not establish that Frame
 children can be selected and moved independently of Group promotion.
+Moving an explicitly selected ordinary Group retains its complete move unit;
+drag auto-parenting processes the unit's roots rather than detaching each child.
+The same pointer gate covers overlapping Frame hierarchies, Group movement
+between Frames, independent child drops and one-step hierarchy undo.
+Agent geometry mutations compute one document transaction: Boolean translation
+and scaling retain operand geometry, Frames use the inspector's constraint
+path, and Group and external clipping followers move before the final history commit.
+Moving a locked unit is rejected before any resize, without changing the document
+or history; a pure Frame resize retains the inspector's locked-child pin policy. `boolean-resize`
+checks complete pre/post node snapshots and one-step undo/redo through real MCP,
+including unchanged width/rotation fields accompanying a move.
+The real-touch portion of `editor-refactor` additionally checks pinch takeover
+of an active drag. Internal pointer completion retains the pinch's own state
+while ordinary cancellation still clears it; the engine's existing completion
+policy records the pre-pinch drag once, which remains undoable.
 
 Destructive Boolean and stroke expansion have a synchronous public mutation
 contract. Their geometric implementation is split into focused modules while

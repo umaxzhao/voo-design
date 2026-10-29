@@ -18,13 +18,14 @@ describe("mobile interaction experience polish", () => {
     expect(hookSource).toContain("setMobilePropertiesExpanded(true)");
   });
 
-  it("dispatches pointercancel to canvas stage when pinch gesture begins", () => {
+  it("cancels the original pointer surface without clearing the owning pinch", () => {
     const gestureSource = readFileSync(
       "src/canvas/components/use_mobile_canvas_gestures.js",
       "utf8",
     );
     expect(gestureSource).toContain('new PointerEvent("pointercancel"');
-    expect(gestureSource).toContain('stage.dispatchEvent');
+    expect(gestureSource).toContain('first.target.dispatchEvent(cancellation)');
+    expect(gestureSource).toContain('(event.nativeEvent ?? event) === canvasCancellationRef.current');
     expect(gestureSource).toContain('gesture.points.size === 2');
   });
 
