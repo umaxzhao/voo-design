@@ -4,6 +4,7 @@ import { createDrawingShapesApi } from "../../src/canvas/editor/drawing_api_shap
 import { createHistory } from "../../src/canvas/editor/editor_history.js";
 import { measureText } from "../../src/canvas/editor/text_metrics.js";
 import { documentToSvg } from "../../src/canvas/editor/editor_svg.js";
+import { reflowAutoLayout } from "../../src/canvas/editor/auto-layout-reflow.js";
 
 const node = (type = "rect", extra = {}) => ({ type, name: type, x: 100, y: 200, width: 240, height: 80, ...extra });
 
@@ -70,6 +71,36 @@ describe("build_layout", () => {
     expect(JSON.parse(history.redo().doc).nodes.find(item => item.id === pathId).points[0].x).toBe(originalX + 5);
   });
 
+  it("builds UI auto-layout frames with wrap, per-side padding and child sizing modes", async () => {
+    await executeCanvasTool("build_layout", { nodes: [node("frame", {
+      width: 360,
+      height: 240,
+      autoLayout: {
+        direction: "horizontal", wrap: true, gap: 12, crossGap: 20,
+        padding: { top: 8, right: 16, bottom: 24, left: 32 },
+        alignItems: "center", justifyContent: "space-evenly", alignContent: "end",
+        widthMode: "fixed", heightMode: "fixed", minWidth: 300, maxWidth: 420,
+      },
+      children: [
+        node("rect", { name: "Flexible card", width: 120, height: 60, layoutWidth: "fill", layoutHeight: "hug" }),
+        node("text", { name: "Absolute label", text: "Pinned", layoutPosition: "absolute" }),
+      ],
+    })] });
+
+    const [frame, flexible, absolute] = doc.nodes;
+    expect(frame.autoLayout).toMatchObject({
+      direction: "horizontal", wrap: true, gap: 12, crossGap: 20,
+      padding: { top: 8, right: 16, bottom: 24, left: 32 },
+      alignItems: "center", justifyContent: "space-evenly", alignContent: "end",
+      widthMode: "fixed", heightMode: "fixed", minWidth: 300, maxWidth: 420,
+    });
+    expect(flexible).toMatchObject({ layoutWidth: "fill", layoutHeight: "hug", parentId: frame.id });
+    expect(absolute).toMatchObject({ layoutPosition: "absolute", parentId: frame.id });
+    const resolved = reflowAutoLayout(doc);
+    expect(resolved.nodes.find(item => item.id === flexible.id).width).toBeGreaterThan(0);
+    expect(resolved.nodes.find(item => item.id === absolute.id).x).toBe(absolute.x);
+  });
+
   it("measures text with final fonts, wrapping, line height and letter spacing", async () => {
     await executeCanvasTool("build_layout", { nodes: [node("text", { text: "Hello\nWorld", fontSize: 30, fontFamily: "Inter", fontWeight: 700, lineHeight: 1.5, letterSpacing: 2, width: 200, height: 1 })] });
     expect(measured).toHaveBeenCalledWith(expect.objectContaining({ text: "Hello\nWorld", fontSize: 30, fontWeight: 700, fontFamily: "Inter", boxWidth: 200, lineHeight: 1.5, letterSpacing: 2 }));
@@ -92,6 +123,8 @@ describe("build_layout", () => {
     [{ nodes: [node("frame", { children: [node("path", { d: "not a path" })] })] }, /\.d is (invalid|must describe at least two path points)/],
     [{ nodes: [node("rect", { d: "M 0 0 L 1 1" })] }, /d is only supported for path nodes/],
     [{ nodes: [node("frame", { autoLayout: { layout: "diagonal" } })] }, /autoLayout.layout/],
+    [{ nodes: [node("frame", { autoLayout: { wrap: "yes" } })] }, /autoLayout.wrap/],
+    [{ nodes: [node("frame", { children: [node("rect", { layoutWidth: "stretch" })] })] }, /layoutWidth/],
     [{ nodes: [node("text", { fontSize: 0 })] }, /fontSize must be positive/],
     [{ nodes: [node("rect", { opacity: 2 })] }, /opacity/],
     [{ nodes: [node("rect", { shadow: { blur: "bad" } })] }, /shadow.blur/],

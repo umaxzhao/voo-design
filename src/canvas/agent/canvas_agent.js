@@ -36,8 +36,11 @@ export const SYSTEM_PROMPT =
   "padding); create_shape for rect/ellipse/text; create_path for vector art (SVG d); place_image for " +
   "raster at exact geometry when provided by the user. For one poster or composed page, create one " +
   "top-level Frame and nest its artwork and editable text layers under that Frame.\n" +
-  "3. Arrange: align_layers and distribute_layers instead of hand-computing coordinates; " +
-  "mutate_auto_layout for frames; mutate_layer_layout/style/text or batch_mutate_layers for edits; " +
+  "3. Arrange: align_layers and distribute_layers instead of hand-computing coordinates. For responsive UI, " +
+  "use frame Auto Layout direction, wrap, per-side padding, item/line gaps, alignment, distribution and " +
+  "fixed/hug sizing; set child layoutWidth/layoutHeight to fixed/hug/fill and layoutPosition to flow/absolute. " +
+  "Use no Auto Layout for free-form posters. Use mutate_auto_layout for frames; mutate_layer_layout/style/text " +
+  "or batch_mutate_layers for edits; " +
   "group_layers/ungroup_layers, reorder_layer, rename_layer (name every layer meaningfully).\n" +
   "4. Reuse: create_component then create_instance; set_instance_override, reset_instance_overrides, " +
   "swap_instance for variants. Design tokens: create_variable_collection, add_variable_mode, " +

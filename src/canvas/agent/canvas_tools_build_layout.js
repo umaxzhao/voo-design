@@ -7,19 +7,36 @@ import { parseSvgPath } from "../editor/editor_svg_parse.js";
 
 const strings = ["name", "fill", "stroke", "text", "fontFamily", "color", "d"];
 const numbers = ["x", "y", "width", "height", "strokeWidth", "cornerRadius", "opacity", "fontSize", "lineHeight", "letterSpacing"];
+const DISTRIBUTIONS = ["start", "center", "end", "space-between", "space-around", "space-evenly"];
 const nodeProperties = {
   type: { type: "string", enum: ["frame", "rect", "ellipse", "text", "line", "path"] },
   ...Object.fromEntries(strings.map(key => [key, { type: "string" }])),
   ...Object.fromEntries(numbers.map(key => [key, { type: "number" }])),
   fontWeight: { anyOf: [{ type: "string" }, { type: "number" }] },
   align: { type: "string", enum: ["left", "center", "right"] },
+  layoutPosition: { type: "string", enum: ["flow", "absolute"] },
+  layoutWidth: { type: "string", enum: ["fixed", "hug", "fill"] },
+  layoutHeight: { type: "string", enum: ["fixed", "hug", "fill"] },
   shadow: { type: "object", properties: {
     enabled: { type: "boolean" }, color: { type: "string" },
     blur: { type: "number" }, offsetX: { type: "number" }, offsetY: { type: "number" }, opacity: { type: "number" },
   }, additionalProperties: false },
   autoLayout: { type: "object", properties: {
     layout: { type: "string", enum: ["none", "horizontal", "vertical"] },
-    gap: { type: "number" }, padding: { type: "number" },
+    direction: { type: "string", enum: ["horizontal", "vertical"] },
+    gap: { type: "number" }, crossGap: { type: "number" },
+    padding: { anyOf: [
+      { type: "number" },
+      { type: "object", properties: { top: { type: "number" }, right: { type: "number" }, bottom: { type: "number" }, left: { type: "number" } }, additionalProperties: false },
+    ] },
+    wrap: { type: "boolean" },
+    alignItems: { type: "string", enum: ["start", "center", "end"] },
+    justifyContent: { type: "string", enum: DISTRIBUTIONS },
+    alignContent: { type: "string", enum: DISTRIBUTIONS },
+    widthMode: { type: "string", enum: ["fixed", "hug"] },
+    heightMode: { type: "string", enum: ["fixed", "hug"] },
+    minWidth: { type: "number", minimum: 0 }, maxWidth: { type: "number", minimum: 0 },
+    minHeight: { type: "number", minimum: 0 }, maxHeight: { type: "number", minimum: 0 },
   }, additionalProperties: false },
   children: { type: "array", items: { $ref: "#/$defs/node" } },
 };
@@ -27,7 +44,7 @@ export const BUILD_LAYOUT_SCHEMA = {
   type: "function",
   function: {
     name: "build_layout",
-    description: "Create a complete tree of up to 200 editable layers in one undoable batch. Supported types: frame, rect, ellipse, text, line and path (path requires SVG d data). For one poster, screen or composed page, make one top-level frame and put its artwork, vector paths and text in that frame's children so the result moves as one composition; use type=text for editable copy. Use separate top-level nodes only when they should be independent. All x/y coordinates are absolute canvas coordinates, including children (parentId establishes ownership, not a coordinate offset). Auto-layout may reposition children. autoLayout accepts create_frame's layout, gap and padding. Text is measured after its typography is applied; width is the wrapping box. Lines run from (x,y) to (x+width,y+height). After creating a composition, call capture_canvas and inspect_layout before finishing. Returns {created:[{id,name,type}],count}. You may batch multiple tool calls in one step.",
+    description: "Create a complete tree of up to 200 editable layers in one undoable batch. Supported types: frame, rect, ellipse, text, line and path (path requires SVG d data). For one poster, screen or composed page, make one top-level frame and put its artwork, vector paths and text in that frame's children so the result moves as one composition; use type=text for editable copy. Use separate top-level nodes only when they should be independent. All x/y coordinates are absolute canvas coordinates, including children (parentId establishes ownership, not a coordinate offset). Frame autoLayout supports direction, wrapping, item/cross gaps, per-side padding, alignment, distribution, fixed/hug sizing and min/max. Child layoutWidth/layoutHeight accept fixed, hug or fill; layoutPosition accepts flow or absolute. Text is measured after its typography is applied; width is the wrapping box. Lines run from (x,y) to (x+width,y+height). After creating a composition, call capture_canvas and inspect_layout before finishing. Returns {created:[{id,name,type}],count}. You may batch multiple tool calls in one step.",
     parameters: {
       type: "object",
       properties: { parentId: { type: "string" }, nodes: { type: "array", minItems: 1, maxItems: 200, items: { $ref: "#/$defs/node" } } },
@@ -39,6 +56,32 @@ export const BUILD_LAYOUT_SCHEMA = {
 
 function invalid(message) {
   throw Object.assign(new Error(`${TOOL_ERROR.INVALID_ARGS}: ${message}`), { code: TOOL_ERROR.INVALID_ARGS });
+}
+
+function validateAutoLayout(value, at) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) invalid(`${at} must be an object`);
+  const allowed = new Set([
+    "layout", "direction", "gap", "crossGap", "padding", "wrap", "alignItems",
+    "justifyContent", "alignContent", "widthMode", "heightMode",
+    "minWidth", "maxWidth", "minHeight", "maxHeight",
+  ]);
+  for (const [key, entry] of Object.entries(value)) {
+    if (!allowed.has(key)) invalid(`${at}.${key} is unsupported`);
+    if (["layout", "direction"].includes(key) && !["none", "horizontal", "vertical"].includes(entry)) invalid(`${at}.${key} is invalid`);
+    if (["gap", "crossGap", "minWidth", "maxWidth", "minHeight", "maxHeight"].includes(key) && (!Number.isFinite(entry) || entry < 0)) invalid(`${at}.${key} must be a non-negative finite number`);
+    if (key === "padding") {
+      if (typeof entry === "number") {
+        if (!Number.isFinite(entry) || entry < 0) invalid(`${at}.padding must be non-negative`);
+      } else if (!entry || typeof entry !== "object" || Array.isArray(entry)) invalid(`${at}.padding must be a number or per-side object`);
+      else for (const [side, amount] of Object.entries(entry)) {
+        if (!["top", "right", "bottom", "left"].includes(side) || !Number.isFinite(amount) || amount < 0) invalid(`${at}.padding.${side} must be a non-negative finite side value`);
+      }
+    }
+    if (key === "wrap" && typeof entry !== "boolean") invalid(`${at}.wrap must be a boolean`);
+    if (key === "alignItems" && !["start", "center", "end"].includes(entry)) invalid(`${at}.alignItems is invalid`);
+    if (["justifyContent", "alignContent"].includes(key) && !DISTRIBUTIONS.includes(entry)) invalid(`${at}.${key} is invalid`);
+    if (["widthMode", "heightMode"].includes(key) && !["fixed", "hug"].includes(entry)) invalid(`${at}.${key} must be fixed or hug`);
+  }
 }
 
 // Validate the entire tree before the first write, including total size and cycles.
@@ -54,7 +97,7 @@ function validate(args) {
       if (++count > 200) invalid("nodes must contain at most 200 nodes in total");
       if (!node || typeof node !== "object" || Array.isArray(node)) invalid(`${at} must be a node object`);
       for (const key of Object.keys(node)) if (!(key in nodeProperties)) invalid(`${at}.${key} is unsupported`);
-      if (!nodeProperties.type.enum.includes(node.type)) invalid(`${at}.type must be frame, rect, ellipse, text or line`);
+      if (!nodeProperties.type.enum.includes(node.type)) invalid(`${at}.type must be frame, rect, ellipse, text, line or path`);
       if (typeof node.name !== "string" || !node.name.trim()) invalid(`${at}.name must be a non-empty string`);
       for (const key of ["x", "y", "width", "height"]) if (!Number.isFinite(node[key])) invalid(`${at}.${key} must be a finite number`);
       for (const key of strings) if (node[key] !== undefined && typeof node[key] !== "string") invalid(`${at}.${key} must be a string`);
@@ -76,9 +119,16 @@ function validate(args) {
       for (const key of ["fontSize", "lineHeight"]) if (node[key] !== undefined && node[key] <= 0) invalid(`${at}.${key} must be positive`);
       if (node.fontWeight !== undefined && !(["normal", "bold"].includes(node.fontWeight) || /^(?:[1-9]00)$/.test(String(node.fontWeight)))) invalid(`${at}.fontWeight must be normal, bold or 100–900`);
       if (node.align !== undefined && !nodeProperties.align.enum.includes(node.align)) invalid(`${at}.align must be left, center or right`);
+      for (const key of ["layoutPosition", "layoutWidth", "layoutHeight"]) {
+        if (node[key] !== undefined && !nodeProperties[key].enum.includes(node[key])) invalid(`${at}.${key} is invalid`);
+      }
       for (const key of ["shadow", "autoLayout"]) {
         const value = node[key];
         if (value === undefined) continue;
+        if (key === "autoLayout") {
+          validateAutoLayout(value, `${at}.autoLayout`);
+          continue;
+        }
         if (!value || typeof value !== "object" || Array.isArray(value)) invalid(`${at}.${key} must be an object`);
         const props = nodeProperties[key].properties;
         for (const [field, entry] of Object.entries(value)) {
@@ -113,9 +163,7 @@ export function createLayoutNode(editor, node, parentId) {
   const frameLayout = {
     layout,
     ...(autoLayout?.gap !== undefined ? { gap: Number(autoLayout.gap) } : {}),
-    ...(autoLayout?.padding !== undefined ? {
-      padding: Number(typeof autoLayout.padding === "object" ? autoLayout.padding?.top ?? 0 : autoLayout.padding),
-    } : {}),
+    ...(typeof autoLayout?.padding === "number" ? { padding: autoLayout.padding } : {}),
   };
   const result = type === "frame" ? createFrame({ ...style, ...frameLayout }, editor)
     : type === "path" ? createPath({ ...style, d }, editor)

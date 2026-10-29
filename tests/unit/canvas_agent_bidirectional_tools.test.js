@@ -225,6 +225,18 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
     expect(committedActions).toContain("AI: Mutate Layer Layout");
   });
 
+  it("sets Auto Layout child sizing and absolute positioning", async () => {
+    const result = await executeCanvasTool("mutate_layer_layout", {
+      layerId: "text_title",
+      patch: { layoutWidth: "fill", layoutHeight: "hug", layoutPosition: "absolute" },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(mockEditor.updateNode).toHaveBeenCalledWith("text_title", {
+      layoutWidth: "fill", layoutHeight: "hug", layoutPosition: "absolute",
+    });
+  });
+
   it("mutates layer style (fills, cornerRadius, opacity)", async () => {
     const result = await executeCanvasTool("mutate_layer_style", {
       layerId: "btn_cta",
@@ -258,16 +270,38 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
   });
 
   it("mutates auto-layout properties", async () => {
+    const autoLayoutSchema = CANVAS_TOOL_SCHEMAS.find(schema => schema.function.name === "mutate_auto_layout").function.parameters.properties.config.properties;
+    expect(Object.keys(autoLayoutSchema)).toEqual(expect.arrayContaining([
+      "direction", "wrap", "gap", "crossGap", "padding", "alignItems",
+      "justifyContent", "alignContent", "widthMode", "heightMode", "minWidth", "maxHeight",
+    ]));
     const result = await executeCanvasTool("mutate_auto_layout", {
       layerId: "frame_hero",
-      config: { enabled: true, direction: "horizontal", gap: 16, padding: 24 },
+      config: {
+        enabled: true, direction: "horizontal", wrap: true, gap: 16, crossGap: 8,
+        padding: { left: 20 }, alignItems: "center", justifyContent: "space-around",
+        alignContent: "end", widthMode: "hug", heightMode: "fixed", minWidth: 300,
+        maxWidth: 900, minHeight: null,
+      },
     });
 
     expect(result.ok).toBe(true);
     expect(mockEditor.updateNode).toHaveBeenCalledWith("frame_hero", {
-      autoLayout: { enabled: true, direction: "horizontal", gap: 16, padding: 24 },
+      autoLayout: {
+        enabled: true, direction: "horizontal", wrap: true, gap: 16, crossGap: 8,
+        padding: { top: 32, right: 32, bottom: 32, left: 20 }, alignItems: "center",
+        justifyContent: "space-around", alignContent: "end", widthMode: "hug",
+        heightMode: "fixed", minWidth: 300, maxWidth: 900, minHeight: null, maxHeight: null,
+      },
     });
     expect(committedActions).toContain("AI: Mutate Auto Layout");
+  });
+
+  it("rejects unsupported auto-layout fields before writing", async () => {
+    await expect(executeCanvasTool("mutate_auto_layout", {
+      layerId: "frame_hero", config: { enabled: true, alignItems: "stretch" },
+    })).rejects.toThrow("config.alignItems");
+    expect(mockEditor.updateNode).not.toHaveBeenCalled();
   });
 
   it("executes batch mutations across multiple layers in a single commit", async () => {

@@ -51,11 +51,16 @@ async function client(port, token) {
 describe("MCP stdio", () => {
   it("publishes the composition and verification guidance in Codex tools", () => {
     const layoutTool = buildMcpTools().find((tool) => tool.name === "build_layout");
+    const autoLayoutTool = buildMcpTools().find((tool) => tool.name === "mutate_auto_layout");
     expect(layoutTool.description).toContain("one top-level frame");
     expect(layoutTool.description).toContain("type=text for editable copy");
     expect(layoutTool.description).toContain("capture_canvas and inspect_layout");
     expect(layoutTool.inputSchema.$defs.node.properties.type.enum).toContain("path");
     expect(layoutTool.inputSchema.$defs.node.properties.d.type).toBe("string");
+    expect(layoutTool.inputSchema.$defs.node.properties.autoLayout.properties.wrap.type).toBe("boolean");
+    expect(layoutTool.inputSchema.$defs.node.properties.layoutWidth.enum).toEqual(["fixed", "hug", "fill"]);
+    expect(autoLayoutTool.inputSchema.properties.config.properties.padding.anyOf).toHaveLength(2);
+    expect(autoLayoutTool.inputSchema.properties.config.properties.alignContent.enum).toContain("space-evenly");
   });
 
   it("initializes, lists safe tools, pings and ignores notifications", async () => {

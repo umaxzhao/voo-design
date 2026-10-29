@@ -59,8 +59,16 @@ function validatePaints(value, field) {
 export function validateLayerPatch(type, value) {
   if (type === "autoLayout") return { autoLayout: validateAutoLayout(value) };
   if (type === "layout") {
-    const patch = fields(value, ["x", "y", "width", "height", "rotation"], "patch");
-    for (const [key, item] of Object.entries(patch)) finite(item, `patch.${key}`, ["width", "height"].includes(key) ? 0 : -MAX_LAYOUT_VALUE, MAX_SIZE);
+    const patch = fields(value, ["x", "y", "width", "height", "rotation", "layoutWidth", "layoutHeight", "layoutPosition"], "patch");
+    for (const [key, item] of Object.entries(patch)) {
+      if (["layoutWidth", "layoutHeight"].includes(key)) {
+        if (!["fixed", "hug", "fill"].includes(item)) invalid(`patch.${key}`, "fixed, hug or fill", item);
+      } else if (key === "layoutPosition") {
+        if (!["flow", "absolute"].includes(item)) invalid(`patch.${key}`, "flow or absolute", item);
+      } else {
+        finite(item, `patch.${key}`, ["width", "height"].includes(key) ? 0 : -MAX_LAYOUT_VALUE, MAX_SIZE);
+      }
+    }
     return patch;
   }
   const properties = type === "style" ? STYLE_PATCH_PROPERTIES : type === "text" ? TEXT_PATCH_PROPERTIES : null;
@@ -94,12 +102,32 @@ export function validateLayerPatch(type, value) {
 }
 
 export function validateAutoLayout(value) {
-  const config = fields(value, ["enabled", "direction", "gap", "padding", "wrap", "alignment"], "config");
+  const config = fields(value, [
+    "enabled", "direction", "gap", "crossGap", "padding", "wrap", "alignment",
+    "alignItems", "justifyContent", "alignContent", "widthMode", "heightMode",
+    "minWidth", "maxWidth", "minHeight", "maxHeight",
+  ], "config");
   if (typeof config.enabled !== "boolean") invalid("config.enabled", "a boolean", config.enabled);
   if (config.direction !== undefined && !["horizontal", "vertical"].includes(config.direction)) invalid("config.direction", "horizontal or vertical", config.direction);
-  for (const key of ["gap", "padding"]) if (config[key] !== undefined) finite(config[key], `config.${key}`, 0, MAX_SIZE);
+  for (const key of ["gap", "crossGap"]) if (config[key] !== undefined) finite(config[key], `config.${key}`, 0, MAX_SIZE);
+  if (config.padding !== undefined) {
+    if (typeof config.padding === "number") finite(config.padding, "config.padding", 0, MAX_SIZE);
+    else {
+      const padding = object(config.padding, "config.padding");
+      for (const [side, size] of Object.entries(padding)) {
+        if (!["top", "right", "bottom", "left"].includes(side)) invalid(`config.padding.${side}`, "top, right, bottom or left", size);
+        finite(size, `config.padding.${side}`, 0, MAX_SIZE);
+      }
+    }
+  }
   for (const key of ["wrap"]) if (config[key] !== undefined && typeof config[key] !== "boolean") invalid(`config.${key}`, "a boolean", config[key]);
   if (config.alignment !== undefined && !["start", "center", "end", "space-between"].includes(config.alignment)) invalid("config.alignment", "start, center, end or space-between", config.alignment);
+  for (const key of ["alignItems"]) if (config[key] !== undefined && !["start", "center", "end"].includes(config[key])) invalid(`config.${key}`, "start, center or end", config[key]);
+  for (const key of ["justifyContent", "alignContent"]) if (config[key] !== undefined && !["start", "center", "end", "space-between", "space-around", "space-evenly"].includes(config[key])) invalid(`config.${key}`, "a supported distribution", config[key]);
+  for (const key of ["widthMode", "heightMode"]) if (config[key] !== undefined && !["fixed", "hug"].includes(config[key])) invalid(`config.${key}`, "fixed or hug", config[key]);
+  for (const key of ["minWidth", "maxWidth", "minHeight", "maxHeight"]) {
+    if (config[key] !== undefined && config[key] !== null) finite(config[key], `config.${key}`, 0, MAX_SIZE);
+  }
   return config;
 }
 

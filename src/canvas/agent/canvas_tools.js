@@ -95,7 +95,7 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
     type: "function",
     function: {
       name: "mutate_layer_layout",
-      description: "Update the position, size, or rotation of a canvas layer.",
+      description: "Update position, size, rotation, and Auto Layout child sizing/position mode (fixed, hug, fill; flow or absolute). Moving a frame moves its descendants together.",
       parameters: {
         type: "object",
         properties: {
@@ -108,6 +108,9 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
               width: { type: "number" },
               height: { type: "number" },
               rotation: { type: "number" },
+              layoutWidth: { type: "string", enum: ["fixed", "hug", "fill"] },
+              layoutHeight: { type: "string", enum: ["fixed", "hug", "fill"] },
+              layoutPosition: { type: "string", enum: ["flow", "absolute"] },
             },
           },
         },
@@ -159,7 +162,7 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
     type: "function",
     function: {
       name: "mutate_auto_layout",
-      description: "Configure or update Auto-Layout properties on a frame or group layer.",
+      description: "Configure or update Auto Layout on a frame/group: direction, wrapping, item and line gaps, per-side padding, item alignment, distribution, fixed/hug sizing and min/max constraints. Omitted fields preserve current settings; `enabled: false` disables it.",
       parameters: {
         type: "object",
         properties: {
@@ -170,9 +173,27 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
               enabled: { type: "boolean" },
               direction: { type: "string", enum: ["horizontal", "vertical"] },
               gap: { type: "number" },
-              padding: { type: "number" },
+              crossGap: { type: "number" },
+              padding: {
+                anyOf: [
+                  { type: "number" },
+                  { type: "object", properties: {
+                    top: { type: "number" }, right: { type: "number" },
+                    bottom: { type: "number" }, left: { type: "number" },
+                  }, additionalProperties: false },
+                ],
+              },
               wrap: { type: "boolean" },
               alignment: { type: "string", enum: ["start", "center", "end", "space-between"] },
+              alignItems: { type: "string", enum: ["start", "center", "end"] },
+              justifyContent: { type: "string", enum: ["start", "center", "end", "space-between", "space-around", "space-evenly"] },
+              alignContent: { type: "string", enum: ["start", "center", "end", "space-between", "space-around", "space-evenly"] },
+              widthMode: { type: "string", enum: ["fixed", "hug"] },
+              heightMode: { type: "string", enum: ["fixed", "hug"] },
+              minWidth: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
+              maxWidth: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
+              minHeight: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
+              maxHeight: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
             },
             required: ["enabled"],
           },
@@ -272,6 +293,28 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
           layerId: { type: "string" },
         },
         required: ["layerId"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "fork_frame",
+      description:
+        "Fork/duplicate an entire frame or artboard to an adjacent non-overlapping canvas position for side-by-side comparison, A/B testing, or iterative edits.",
+      parameters: {
+        type: "object",
+        properties: {
+          frameId: { type: "string", description: "Source frame ID to duplicate." },
+          name: { type: "string", description: "Optional name for the forked variant." },
+          direction: {
+            type: "string",
+            enum: ["right", "bottom"],
+            description: "Placement direction (default: 'right').",
+          },
+          padding: { type: "number", description: "Spacing in pixels from adjacent frames (default: 80)." },
+        },
+        required: ["frameId"],
       },
     },
   },
