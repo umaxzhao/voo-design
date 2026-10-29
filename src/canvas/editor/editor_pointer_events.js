@@ -172,12 +172,12 @@ export function handleEditorDoubleClick(event, { api }) {
   const point = api.toDocPoint(event.clientX, event.clientY);
   const hit = api.nodeAtPoint(point);
   if (!hit) return;
-  if (api.getTool() === TOOL.SELECT && api.enterGroup(hit.id)) return;
   if (hit.kind === NODE_KIND.TEXT) {
     api.select(hit.id);
     api.beginTextEdit(hit.id);
     return;
   }
+  if (api.getTool() === TOOL.SELECT && api.enterGroup(hit.id)) return;
   if (hit.kind === NODE_KIND.PATH && hit.pen === true) {
     api.select(hit.id);
     api.beginEdit(hit.id);
