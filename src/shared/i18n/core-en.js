@@ -1,5 +1,14 @@
 /** Critical initial-paint English dictionary. */
 export default {
+  // Keep essential properties-panel section labels available before the
+  // deferred full dictionary chunk has finished loading.
+  "editor.props.transform": "Transform",
+  "editor.props.layout": "Layout",
+  "editor.props.appearance": "Appearance",
+  "editor.props.clipContent": "Clip content",
+  "editor.props.fillLabel": "Fill",
+  "editor.props.strokeLabel": "Stroke",
+  "editor.props.effects": "Effects",
   "firstRun.keep": "Keep current document",
   "firstRun.replaceConfirm": "This replaces your current canvas",
   "firstRun.start.reopenedDescription": "Keep your current document, or explicitly choose a new starting point.",

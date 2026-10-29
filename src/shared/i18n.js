@@ -36,6 +36,7 @@ export function resolveInitialLocale({ stored, languages, automated } = {}) {
 const DICTIONARIES = {};
 const FULL_LOADED = {};
 let activeLocale = "en";
+let localeRequestId = 0;
 const listeners = new Set();
 
 /**
@@ -43,6 +44,10 @@ const listeners = new Set();
  * renders without waiting for the full ~130KB dictionary over the wire.
  */
 export async function loadCriticalLocale(locale) {
+  if (!SUPPORTED_LOCALES.includes(locale)) {
+    throw new Error(`Unsupported locale: ${locale}`);
+  }
+  localeRequestId += 1;
   activeLocale = locale;
   if (FULL_LOADED[locale] || DICTIONARIES[locale]) {
     return DICTIONARIES[locale];
@@ -65,8 +70,12 @@ export async function loadCriticalLocale(locale) {
  * per locale. Resolves with the dictionary, or rejects on a missing locale.
  */
 export async function loadLocale(locale) {
-  activeLocale = locale;
+  if (!SUPPORTED_LOCALES.includes(locale)) {
+    throw new Error(`Unsupported locale: ${locale}`);
+  }
+  const requestId = ++localeRequestId;
   if (FULL_LOADED[locale]) {
+    activeLocale = locale;
     return DICTIONARIES[locale];
   }
   const module = await import(`./i18n/${locale}.js`);
@@ -75,6 +84,7 @@ export async function loadLocale(locale) {
     ...(module.default ?? {}),
   };
   FULL_LOADED[locale] = true;
+  if (requestId === localeRequestId) activeLocale = locale;
   listeners.forEach((listener) => {
     try {
       listener(activeLocale);
@@ -108,6 +118,10 @@ export function getLocale() {
 /** Loads the locale's dictionary and switches the active locale. */
 export function setLocale(locale) {
   if (!locale) return Promise.resolve();
+  if (!SUPPORTED_LOCALES.includes(locale)) {
+    console.warn(`[i18n] Ignoring unsupported locale: ${locale}`);
+    return Promise.resolve();
+  }
   return loadLocale(locale)
     .then(() => {
       listeners.forEach((listener) => {
@@ -118,8 +132,8 @@ export function setLocale(locale) {
         }
       });
     })
-    .catch(() => {
-      // Ignore load error, keep current locale
+    .catch((error) => {
+      console.warn(`[i18n] Failed to load locale "${locale}"; keeping the current locale.`, error);
     });
 }
 

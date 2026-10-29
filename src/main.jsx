@@ -36,7 +36,9 @@ async function bootstrap() {
   } catch (err) {
     console.warn("[bootstrap] Locale initialization fallback:", err);
   }
-  void loadLocale(locale).catch(() => {});
+  void loadLocale(locale).catch((error) => {
+    console.warn(`[bootstrap] Full locale dictionary failed to load for "${locale}".`, error);
+  });
 
   const rootElement = document.getElementById("root");
   if (rootElement) {
@@ -52,7 +54,6 @@ async function bootstrap() {
       console.error("[bootstrap] Root render exception:", err);
     }
   }
-  loadLocale(locale).catch(() => {});
 }
 
 bootstrap();
