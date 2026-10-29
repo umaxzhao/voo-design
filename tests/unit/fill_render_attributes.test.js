@@ -3,16 +3,16 @@ import { drawNode } from "../../src/canvas/editor/render_node_dispatch.js";
 import { requiresCanvas2dMediaFallback } from "../../src/canvas/editor/skia_scene_adapter.js";
 import { createRectNode, createGroupNode } from "../../src/canvas/editor/scene_model.js";
 function context() {
- const painted=[], stack=[];
+ const painted=[], stroked=[], stack=[];
  const ctx={globalAlpha:1,globalCompositeOperation:"source-over",
  save(){stack.push([this.globalAlpha,this.globalCompositeOperation]);},
  restore(){[this.globalAlpha,this.globalCompositeOperation]=stack.pop();},
  beginPath(){},rect(){},roundRect(){},moveTo(){},lineTo(){},arcTo(){},closePath(){},
  translate(){},rotate(){},scale(){},transform(){},setTransform(){},
  fill(){painted.push([this.fillStyle,this.globalAlpha,this.globalCompositeOperation]);},
- fillRect(){this.fill();},stroke(){},strokeRect(){},
+ fillRect(){this.fill();},stroke(){stroked.push(this.strokeStyle);},strokeRect(){},
  };
- return {ctx,painted};
+ return {ctx,painted,stroked};
 }
 describe("fill attributes at the renderer boundary",()=>{
  it("routes masks and paint stacks to the compositor that supports them",()=>{
@@ -37,5 +37,10 @@ describe("fill attributes at the renderer boundary",()=>{
   const {ctx,painted}=context();
   drawNode(ctx,{...createRectNode({x:0,y:0,width:100,height:100,fill:"#ff0000"}),fillHidden:true},()=>null);
   expect(painted).toEqual([]);
+ });
+ it("does not draw a hidden stroke",()=>{
+  const {ctx,stroked}=context();
+  drawNode(ctx,{...createRectNode({x:0,y:0,width:100,height:100,stroke:"#ff0000",strokeWidth:2}),strokeHidden:true},()=>null);
+  expect(stroked).toEqual([]);
  });
 });

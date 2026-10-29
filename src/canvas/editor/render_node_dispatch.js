@@ -56,6 +56,7 @@ export function drawNode(
 
   const paintOne = (targetCtx, node) => {
     if (node.fillHidden) node = { ...node, fillOpacity: 0 };
+    if (node.strokeHidden) node = { ...node, strokeWidth: 0 };
     const imageFill = isImagePaint(node.fill);
     if (imageFill || (node.imageId && node.kind !== NODE_KIND.IMAGE && node.fill === "transparent")) {
       const bitmap = bitmapOf(imageFill ? { ...node, imageId: undefined, src: node.fill } : node);

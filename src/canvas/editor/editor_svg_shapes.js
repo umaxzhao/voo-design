@@ -104,7 +104,7 @@ export function shapeAttributes(node, idOf) {
   if (node.fillRule != null || isMultiContour) {
     parts.push(`fill-rule="${escapeXml(node.fillRule ?? "evenodd")}"`);
   }
-  if (node.strokeWidth > 0 && node.stroke && node.stroke !== "transparent") {
+  if (node.strokeHidden !== true && node.strokeWidth > 0 && node.stroke && node.stroke !== "transparent") {
     parts.push(
       `stroke="${escapeXml(node.stroke)}" stroke-width="${number(node.strokeWidth)}"`,
     );

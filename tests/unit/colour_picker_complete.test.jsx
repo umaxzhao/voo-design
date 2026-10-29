@@ -58,6 +58,22 @@ describe("row opacity field", () => {
     expect(html).not.toContain(OPACITY_ICON_PATH);
     expect(html).toContain(">50</button>");
   });
+
+  it("uses Figma-style stroke position buttons and keeps advanced controls collapsed", () => {
+    const html = english(renderToStaticMarkup(
+      <StrokeSection
+        object={{ kind: "rect", stroke: "#00ff00", strokeWidth: 2 }}
+        edit={noop}
+        editAndCommit={noop}
+      />,
+    ));
+    expect(html).toContain('role="group" aria-label="Position"');
+    expect(html).toContain('aria-label="Inside"');
+    expect(html).toContain('aria-label="Center"');
+    expect(html).toContain('aria-label="Outside"');
+    expect(html).toContain('aria-label="Stroke visibility"');
+    expect(html).not.toContain('aria-label="Top border"');
+  });
 });
 
 describe("blend mode placement", () => {

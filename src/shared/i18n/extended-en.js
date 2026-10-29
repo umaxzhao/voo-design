@@ -2959,6 +2959,7 @@ export default {
   "editor.props.strokeSideRight": "Right border",
   "editor.props.strokeSideBottom": "Bottom border",
   "editor.props.strokeSideLeft": "Left border",
+  "editor.props.strokeVisibility": "Stroke visibility",
   "editor.props.strokeType": "Stroke type",
   "editor.props.strokeLabel": "Stroke",
   "editor.props.altText": "Alt text",

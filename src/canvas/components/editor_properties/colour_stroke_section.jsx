@@ -7,12 +7,8 @@ import { commonValue, MIXED } from "../../editor/selection_values.js";
 import { NODE_KIND } from "../../editor/scene_model.js";
 import { STROKE_ALIGN } from "../../editor/stroke_style.js";
 import { useI18n } from "../../use_i18n.js";
-import {
-  IconSliders,
-  IconMinus,
-} from "../../icons.jsx";
-import { Paintbrush } from "lucide-react";
-import { AlignIcon } from "../alignment_icon.jsx";
+import { IconSliders, IconMinus, IconEye, IconEyeOff } from "../../icons.jsx";
+import StrokeAlignmentControl from "./stroke_alignment_control.jsx";
 import StrokeStyleSection from "./stroke_style_section.jsx";
 import EditorTooltip from "../editor_tooltip.jsx";
 import ScrubField from "../scrub_field.jsx";
@@ -30,7 +26,6 @@ import {
   sectionActionClass,
   sectionRowClass,
 } from "./property_section.jsx";
-import CustomSelect from "../custom_select.jsx";
 
 export function StrokeSection({
   object,
@@ -45,22 +40,28 @@ export function StrokeSection({
     typeof object.stroke === "string" ? object.stroke : "transparent";
   const isGradient = isCssGradient(stroke);
   const parsedStrokeGradient = isGradient ? parseGradient(stroke) : null;
-  const strokeType = parsedStrokeGradient && parsedStrokeGradient.type !== "solid"
-    ? parsedStrokeGradient.type
-    : "solid";
+  const strokeType =
+    parsedStrokeGradient && parsedStrokeGradient.type !== "solid"
+      ? parsedStrokeGradient.type
+      : "solid";
   const none = !HEX_COLOUR.test(stroke) && !isGradient;
   const setStrokeType = (nextType) => {
     if (nextType === "solid") {
       editAndCommit({
-        stroke: parsedStrokeGradient?.stops?.[0]?.color
-          ?? (HEX_COLOUR.test(stroke) ? stroke : "#FFFFFF"),
+        stroke:
+          parsedStrokeGradient?.stops?.[0]?.color ??
+          (HEX_COLOUR.test(stroke) ? stroke : "#FFFFFF"),
       });
       return;
     }
     const stops = parsedStrokeGradient?.stops?.length
       ? parsedStrokeGradient.stops
       : [
-          { color: HEX_COLOUR.test(stroke) ? stroke : "#FFFFFF", opacity: strokeOpacity, position: 0 },
+          {
+            color: HEX_COLOUR.test(stroke) ? stroke : "#FFFFFF",
+            opacity: strokeOpacity,
+            position: 0,
+          },
           { color: "#FFFFFF", opacity: strokeOpacity, position: 100 },
         ];
     editAndCommit({
@@ -136,12 +137,20 @@ export function StrokeSection({
       title={t("editor.props.strokeLabel")}
       storageKey="stroke"
       extra={
-        <SectionAddButton label={t("editor.props.addStroke")} onClick={addStroke} />
+        <SectionAddButton
+          label={t("editor.props.addStroke")}
+          onClick={addStroke}
+        />
       }
     >
       {bindings?.styleName ? (
         <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
-          <button type="button" onClick={bindings.onDetachStyle} className="flex max-w-full items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] font-mono uppercase tracking-wide text-neutral-300 hover:bg-white/[0.12]" title={bindings.styleName}>
+          <button
+            type="button"
+            onClick={bindings.onDetachStyle}
+            className="flex max-w-full items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] font-mono uppercase tracking-wide text-neutral-300 hover:bg-white/[0.12]"
+            title={bindings.styleName}
+          >
             <span className="truncate">{bindings.styleName}</span>
             <span aria-hidden="true">×</span>
           </button>
@@ -170,9 +179,6 @@ export function StrokeSection({
               }
               onOpacityCommit={commitNow}
             />
-            <span className="shrink-0 text-neutral-500" aria-hidden="true">
-              <Paintbrush size={11} />
-            </span>
             {isGradient ? (
               <span className="min-w-0 flex-1 truncate text-[11px] font-mono text-neutral-300">
                 {t("editor.props.gradientLabel")}
@@ -213,56 +219,41 @@ export function StrokeSection({
               )}
               <button
                 type="button"
-                onClick={() => editAndCommit({ stroke: "transparent" })}
+                aria-label={t("editor.props.strokeVisibility")}
+                aria-pressed={object.strokeHidden !== true}
+                title={t("editor.props.strokeVisibility")}
+                onClick={() =>
+                  editAndCommit({ strokeHidden: object.strokeHidden !== true })
+                }
+                className={sectionActionClass}
+              >
+                {object.strokeHidden === true ? (
+                  <IconEyeOff size={12} />
+                ) : (
+                  <IconEye size={12} />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  editAndCommit({ stroke: "transparent", strokeHidden: false })
+                }
                 title={t("editor.props.removeStroke")}
                 aria-label={t("editor.props.removeStroke")}
-                className={`${sectionActionClass} ml-1`}
+                className={sectionActionClass}
               >
                 <IconMinus size={12} />
               </button>
             </div>
           </div>
 
-          {/* Row 2: Figma-style Stroke Position dropdown + Width input + More Settings toggle */}
-          <div className="flex items-center gap-1.5">
-            {/* Stroke Position (Inside / Center / Outside) */}
-            <div className="relative flex h-7 flex-[1.2] min-w-0 items-center rounded-xl bg-neutral-800 transition-colors hover:bg-neutral-800/80 focus-within:bg-neutral-800 focus-within:ring-1 focus-within:ring-[#a7ffd4]/40">
-              <span
-                className="pointer-events-none flex shrink-0 items-center pl-2.5 text-neutral-500"
-                aria-hidden="true"
-              >
-                <AlignIcon type="center" size={11} />
-              </span>
-              <CustomSelect
-                value={strokeAlign}
-                disabled={!closed}
-                onChange={(e) => editAndCommit({ strokeAlign: e.target.value })}
-                rootClassName="h-full min-w-0 flex-1"
-                className="!h-full w-full min-w-0 appearance-none rounded-xl !bg-transparent py-0 pl-1.5 pr-6 text-[11px] font-mono uppercase text-neutral-200 outline-none transition-colors cursor-pointer hover:!bg-transparent focus-visible:ring-0 disabled:opacity-40 disabled:cursor-not-allowed"
-                aria-label={t("editor.strokeStyle.align")}
-              >
-                <option
-                  value={STROKE_ALIGN.INSIDE}
-                  className="bg-neutral-900 text-neutral-100"
-                >
-                  {t("editor.strokeStyle.alignInside")}
-                </option>
-                <option
-                  value={STROKE_ALIGN.CENTER}
-                  className="bg-neutral-900 text-neutral-100"
-                >
-                  {t("editor.strokeStyle.alignCenter")}
-                </option>
-                <option
-                  value={STROKE_ALIGN.OUTSIDE}
-                  className="bg-neutral-900 text-neutral-100"
-                >
-                  {t("editor.strokeStyle.alignOutside")}
-                </option>
-              </CustomSelect>
-            </div>
-
-            {/* Stroke Width ScrubField */}
+          {/* Position, width and advanced controls share one aligned row. */}
+          <div className="flex min-w-0 items-center gap-1.5">
+            <StrokeAlignmentControl
+              value={strokeAlign}
+              disabled={!closed}
+              onChange={(value) => editAndCommit({ strokeAlign: value })}
+            />
             <div className="flex-1 min-w-0">
               {strokeWidthMixed ? (
                 <div className="flex h-7 items-center gap-1 rounded-xl bg-neutral-800 px-2.5">
@@ -318,44 +309,22 @@ export function StrokeSection({
             </EditorTooltip>
           </div>
 
-          {object.kind !== NODE_KIND.PATH ? (
-            <div className="flex items-center gap-1">
-              {[
-                ["top", "T", "editor.props.strokeSideTop"],
-                ["right", "R", "editor.props.strokeSideRight"],
-                ["bottom", "B", "editor.props.strokeSideBottom"],
-                ["left", "L", "editor.props.strokeSideLeft"],
-              ].map(([side, letter, labelKey]) => (
-                <button
-                  key={side}
-                  type="button"
-                  aria-label={t(labelKey)}
-                  aria-pressed={sideEnabled(side)}
-                  onClick={() => toggleSide(side)}
-                  className={`flex h-7 flex-1 items-center justify-center rounded-lg text-[10px] font-mono transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
-                    sideEnabled(side)
-                      ? "bg-white/[0.12] text-white"
-                      : "bg-neutral-800 text-neutral-500 hover:text-neutral-300"
-                  }`}
-                >
-                  {letter}
-                </button>
-              ))}
-            </div>
-          ) : null}
-
           {extraStrokes.length ? (
             <div className="flex flex-col gap-1.5 pt-1">
               {extraStrokes.map((entry, index) => (
                 <div className={sectionRowClass} key={`extra-stroke-${index}`}>
                   <Swatch
                     value={entry.stroke}
-                    onPick={(colour) => patchExtraStroke(index, { stroke: colour })}
+                    onPick={(colour) =>
+                      patchExtraStroke(index, { stroke: colour })
+                    }
                     ariaLabel={`${t("editor.props.stroke")} ${index + 2}`}
                   />
                   <HexField
                     value={entry.stroke}
-                    onCommit={(colour) => patchExtraStroke(index, { stroke: colour })}
+                    onCommit={(colour) =>
+                      patchExtraStroke(index, { stroke: colour })
+                    }
                     ariaLabel={`${t("editor.props.stroke")} ${index + 2}`}
                   />
                   <ScrubField
@@ -363,7 +332,9 @@ export function StrokeSection({
                     min={0}
                     max={256}
                     value={Math.round(entry.strokeWidth ?? 1)}
-                    onValueChange={(value) => patchExtraStroke(index, { strokeWidth: value })}
+                    onValueChange={(value) =>
+                      patchExtraStroke(index, { strokeWidth: value })
+                    }
                     onCommit={commitNow}
                     ariaLabel={`${t("editor.props.strokeWidth")} ${index + 2}`}
                     scrubHint={t("editor.props.dragToAdjust")}
@@ -383,11 +354,38 @@ export function StrokeSection({
           ) : null}
 
           {showAdvanced ? (
-            <StrokeStyleSection
-              object={object}
-              editAndCommit={editAndCommit}
-              commitNow={commitNow}
-            />
+            <div className="flex flex-col gap-2">
+              {object.kind !== NODE_KIND.PATH ? (
+                <div className="flex items-center gap-1">
+                  {[
+                    ["top", "T", "editor.props.strokeSideTop"],
+                    ["right", "R", "editor.props.strokeSideRight"],
+                    ["bottom", "B", "editor.props.strokeSideBottom"],
+                    ["left", "L", "editor.props.strokeSideLeft"],
+                  ].map(([side, letter, labelKey]) => (
+                    <button
+                      key={side}
+                      type="button"
+                      aria-label={t(labelKey)}
+                      aria-pressed={sideEnabled(side)}
+                      onClick={() => toggleSide(side)}
+                      className={`flex h-7 flex-1 items-center justify-center rounded-lg text-[10px] font-mono transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${
+                        sideEnabled(side)
+                          ? "bg-white/[0.12] text-white"
+                          : "bg-neutral-800 text-neutral-500 hover:text-neutral-300"
+                      }`}
+                    >
+                      {letter}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              <StrokeStyleSection
+                object={object}
+                editAndCommit={editAndCommit}
+                commitNow={commitNow}
+              />
+            </div>
           ) : null}
         </>
       )}

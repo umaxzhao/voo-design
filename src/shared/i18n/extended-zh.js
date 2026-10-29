@@ -2845,6 +2845,7 @@ export default {
   "editor.props.strokeSideRight": "右边框",
   "editor.props.strokeSideBottom": "下边框",
   "editor.props.strokeSideLeft": "左边框",
+  "editor.props.strokeVisibility": "描边可见",
   "editor.props.strokeType": "描边类型",
   "editor.props.strokeLabel": "描边",
   "editor.props.altText": "替代文本",
