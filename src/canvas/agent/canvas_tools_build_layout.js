@@ -3,11 +3,12 @@ import { createShape, TOOL_ERROR } from "./canvas_tools.js";
 import { createFrame } from "./canvas_tools_layout.js";
 import { createPath } from "./canvas_tools_geometry.js";
 import { normalizeAutoLayout } from "../editor/scene_auto_layout.js";
+import { parseSvgPath } from "../editor/editor_svg_parse.js";
 
-const strings = ["name", "fill", "stroke", "text", "fontFamily", "color"];
+const strings = ["name", "fill", "stroke", "text", "fontFamily", "color", "d"];
 const numbers = ["x", "y", "width", "height", "strokeWidth", "cornerRadius", "opacity", "fontSize", "lineHeight", "letterSpacing"];
 const nodeProperties = {
-  type: { type: "string", enum: ["frame", "rect", "ellipse", "text", "line"] },
+  type: { type: "string", enum: ["frame", "rect", "ellipse", "text", "line", "path"] },
   ...Object.fromEntries(strings.map(key => [key, { type: "string" }])),
   ...Object.fromEntries(numbers.map(key => [key, { type: "number" }])),
   fontWeight: { anyOf: [{ type: "string" }, { type: "number" }] },
@@ -26,7 +27,7 @@ export const BUILD_LAYOUT_SCHEMA = {
   type: "function",
   function: {
     name: "build_layout",
-    description: "Create a complete tree of up to 200 layers in one undoable batch, using the same nodes as create_frame/create_shape. For one poster, screen or composed page, make one top-level frame and put its artwork and text in that frame's children so the result moves as one composition; use type=text for editable copy. Use separate top-level nodes only when they should be independent. All x/y coordinates are absolute canvas coordinates, including children (parentId establishes ownership, not a coordinate offset). Auto-layout may reposition children. autoLayout accepts create_frame's layout, gap and padding. Text is measured after its typography is applied; width is the wrapping box. Lines run from (x,y) to (x+width,y+height). After creating a composition, call capture_canvas and inspect_layout before finishing. Returns {created:[{id,name,type}],count}. You may batch multiple tool calls in one step.",
+    description: "Create a complete tree of up to 200 editable layers in one undoable batch. Supported types: frame, rect, ellipse, text, line and path (path requires SVG d data). For one poster, screen or composed page, make one top-level frame and put its artwork, vector paths and text in that frame's children so the result moves as one composition; use type=text for editable copy. Use separate top-level nodes only when they should be independent. All x/y coordinates are absolute canvas coordinates, including children (parentId establishes ownership, not a coordinate offset). Auto-layout may reposition children. autoLayout accepts create_frame's layout, gap and padding. Text is measured after its typography is applied; width is the wrapping box. Lines run from (x,y) to (x+width,y+height). After creating a composition, call capture_canvas and inspect_layout before finishing. Returns {created:[{id,name,type}],count}. You may batch multiple tool calls in one step.",
     parameters: {
       type: "object",
       properties: { parentId: { type: "string" }, nodes: { type: "array", minItems: 1, maxItems: 200, items: { $ref: "#/$defs/node" } } },
@@ -59,6 +60,18 @@ function validate(args) {
       for (const key of strings) if (node[key] !== undefined && typeof node[key] !== "string") invalid(`${at}.${key} must be a string`);
       for (const key of numbers) if (node[key] !== undefined && !Number.isFinite(node[key])) invalid(`${at}.${key} must be a finite number`);
       for (const key of ["width", "height", "strokeWidth", "cornerRadius"]) if (node[key] < 0) invalid(`${at}.${key} must be non-negative`);
+      if (node.type === "path") {
+        if (typeof node.d !== "string" || !node.d.trim()) invalid(`${at}.d is required for path nodes`);
+        let points;
+        try {
+          points = parseSvgPath(node.d);
+        } catch (error) {
+          invalid(`${at}.d is invalid: ${error.message}`);
+        }
+        if (points.length < 2) invalid(`${at}.d must describe at least two path points`);
+      } else if (node.d !== undefined) {
+        invalid(`${at}.d is only supported for path nodes`);
+      }
       if (node.opacity !== undefined && (node.opacity < 0 || node.opacity > 1)) invalid(`${at}.opacity must be between 0 and 1`);
       for (const key of ["fontSize", "lineHeight"]) if (node[key] !== undefined && node[key] <= 0) invalid(`${at}.${key} must be positive`);
       if (node.fontWeight !== undefined && !(["normal", "bold"].includes(node.fontWeight) || /^(?:[1-9]00)$/.test(String(node.fontWeight)))) invalid(`${at}.fontWeight must be normal, bold or 100–900`);
@@ -87,7 +100,7 @@ function validate(args) {
 /** Shared native creation path for bulk layout and HTML streaming. */
 export function createLayoutNode(editor, node, parentId) {
   const {
-    type, children, autoLayout, color,
+    type, children, autoLayout, color, d,
     key, htmlKey, htmlSource, parentKey, imagePrompt,
     layoutPosition, layoutWidth, layoutHeight, fillOpacity, strokeOpacity,
     ...style
@@ -105,7 +118,7 @@ export function createLayoutNode(editor, node, parentId) {
     } : {}),
   };
   const result = type === "frame" ? createFrame({ ...style, ...frameLayout }, editor)
-    : type === "path" ? createPath(style, editor)
+    : type === "path" ? createPath({ ...style, d }, editor)
     : type === "line" ? createPath({ ...style, fill: "none", d: `M 0 0 L ${node.width} ${node.height}` }, editor)
     : createShape({ ...style, kind: type }, editor);
   const patch = { ...style, ...(parentId ? { parentId } : {}) };

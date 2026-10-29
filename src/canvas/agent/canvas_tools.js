@@ -558,7 +558,24 @@ function mutateLayerLayout(args) {
 
   setAgentFocusNode(node, "AI: Updating layout");
 
-  editor.updateNode?.(layerId, patch);
+  const { x, y, ...geometryPatch } = patch;
+  const deltaX = x === undefined ? 0 : x - node.x;
+  const deltaY = y === undefined ? 0 : y - node.y;
+  if ((deltaX !== 0 || deltaY !== 0) && typeof editor.moveNodeBy === "function") {
+    const hasOtherGeometry = Object.keys(geometryPatch).length > 0;
+    const canBatch = hasOtherGeometry
+      && typeof editor.beginBatch === "function"
+      && typeof editor.endBatch === "function";
+    if (canBatch) editor.beginBatch();
+    try {
+      editor.moveNodeBy(layerId, deltaX, deltaY);
+      if (hasOtherGeometry) editor.updateNode?.(layerId, geometryPatch);
+    } finally {
+      if (canBatch) editor.endBatch();
+    }
+  } else {
+    editor.updateNode?.(layerId, patch);
+  }
   editor.commitEditorDocument?.({ message: "AI: Mutate Layer Layout" });
 
   if (typeof window !== "undefined") {

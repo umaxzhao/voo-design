@@ -61,6 +61,13 @@ connector intentionally omits provider-backed image generation tools. Rebuild
 the connector into a new empty folder after tool-schema changes so its catalog
 snapshot includes the latest guidance.
 
+Custom vector art can be created in the same tree with `type: "path"` and SVG
+path data in `d`; the path remains a native editable VOO path layer.
+`generate_vector` also creates editable path layers, but its MCP call requires
+an in-app API agent model. External Codex calls should use nested `path` nodes
+or `create_path`; `vectorize_image` can convert a placed flat raster into
+editable paths.
+
 Verification: ask the agent to call `voo_status`, inspect the layer tree, then
 create and undo a rectangle in a disposable document. A missing canvas is an
 explicit tool error, not a successful empty operation.

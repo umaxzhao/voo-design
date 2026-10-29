@@ -198,7 +198,7 @@ export async function generateVector(args = {}, context = {}) {
   if (!context.llm?.complete) {
     throw toolError(
       TOOL_ERROR.VECTOR_NEEDS_API_MODEL,
-      "Vector generation needs an API agent model. Switch the agent model to an API provider, or use generate_image / vectorize_image instead.",
+      "Vector generation needs an in-app API agent model. Switch to an API provider, or use build_layout path nodes with SVG d data to create editable vectors from an external MCP client; vectorize_image can trace a flat raster layer.",
     );
   }
   const width = Math.max(16, Math.min(2048, finiteOrNull(args.width) ?? 400));

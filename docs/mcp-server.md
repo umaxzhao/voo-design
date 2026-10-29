@@ -131,6 +131,12 @@ Image generation and placement (`generate_image`, `generate_image_web`,
 `generate_vector` needs the in-app API agent model (a nested text completion);
 an external MCP client receives `agentVectorNeedsApiModel` for it, while
 `vectorize_image`, `edit_image` and `stock_image` work from any client.
+Codex can still create native editable vector artwork directly in a composed
+layer tree: use `build_layout` with `type: "path"` and SVG path data in `d`,
+nested under the design's top-level frame. These are VOO path nodes, so their
+anchors remain editable with `get_path_nodes` and `edit_path_nodes`. This is
+also the direct route for combining a generated illustration, editable text
+and shapes into one movable composition.
 `voo_status` reports `{canvasConnected: boolean}`. PNG data URLs returned by
 `capture_canvas` and `export_layers` become MCP image content alongside the
 remaining JSON metadata. Tool failures return MCP `isError` content.

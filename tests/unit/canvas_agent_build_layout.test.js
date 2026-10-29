@@ -3,6 +3,7 @@ import { CANVAS_TOOL_SCHEMAS, executeCanvasTool } from "../../src/canvas/agent/c
 import { createDrawingShapesApi } from "../../src/canvas/editor/drawing_api_shapes.js";
 import { createHistory } from "../../src/canvas/editor/editor_history.js";
 import { measureText } from "../../src/canvas/editor/text_metrics.js";
+import { documentToSvg } from "../../src/canvas/editor/editor_svg.js";
 
 const node = (type = "rect", extra = {}) => ({ type, name: type, x: 100, y: 200, width: 240, height: 80, ...extra });
 
@@ -38,6 +39,7 @@ describe("build_layout", () => {
     expect(schema.description).toContain("absolute canvas coordinates");
     expect(schema.description).toContain("one top-level frame");
     expect(schema.description).toContain("type=text for editable copy");
+    expect(schema.description).toContain("path requires SVG d data");
     expect(schema.description).toContain("capture_canvas and inspect_layout");
     expect(schema.parameters.$defs.node.properties.children.items.$ref).toBe("#/$defs/node");
   });
@@ -46,15 +48,26 @@ describe("build_layout", () => {
     const result = await executeCanvasTool("build_layout", { nodes: [node("frame", { autoLayout: { layout: "vertical", gap: 12, padding: 16 }, children: [
       node("frame", { name: "Inner", children: [node("text", { text: "Hello", fontSize: 24, color: "#123456" })] }),
       node("ellipse", { fill: "#eee", opacity: 0.5 }), node("line", { width: 50, height: 0, stroke: "#333", strokeWidth: 2 }),
+      node("path", { name: "Vector leaf", d: "M 0 0 L 30 10 C 20 30 10 30 0 0 Z", x: 120, y: 220, fill: "#2b7a55" }),
     ] })] });
-    expect(result.count).toBe(5);
-    expect(result.created.map(n => n.type)).toEqual(["frame", "frame", "text", "ellipse", "line"]);
-    const [outer, inner, text, ellipse, line] = doc.nodes;
+    expect(result.count).toBe(6);
+    expect(result.created.map(n => n.type)).toEqual(["frame", "frame", "text", "ellipse", "line", "path"]);
+    const [outer, inner, text, ellipse, line, path] = doc.nodes;
     expect(outer).toMatchObject({ isFrame: true, autoLayout: { direction: "vertical", gap: 12, padding: { top: 16, right: 16, bottom: 16, left: 16 } } });
     expect(inner).toMatchObject({ parentId: outer.id, x: 100, y: 200 });
     expect(text).toMatchObject({ parentId: inner.id, text: "Hello", fill: "#123456", fontSize: 24 });
     expect(ellipse).toMatchObject({ parentId: outer.id, kind: "ellipse", opacity: 0.5 });
     expect(line).toMatchObject({ parentId: outer.id, kind: "path", stroke: "#333", strokeWidth: 2 });
+    expect(path).toMatchObject({ parentId: outer.id, kind: "path", name: "Vector leaf", fill: "#2b7a55" });
+    expect(path.points.length).toBeGreaterThanOrEqual(3);
+    expect(path.d).toBeUndefined();
+    expect(documentToSvg({ isCanvasRoot: true, width: 1440, height: 900, nodes: doc.nodes })).toContain("<path");
+    const pathId = path.id;
+    const originalX = path.points[0].x;
+    await executeCanvasTool("edit_path_nodes", { layerId: pathId, ops: [{ op: "move", index: 0, dx: 5, dy: 3 }] });
+    expect(doc.nodes.find(item => item.id === pathId).points[0].x).toBe(originalX + 5);
+    expect(JSON.parse(history.undo().doc).nodes.find(item => item.id === pathId).points[0].x).toBe(originalX);
+    expect(JSON.parse(history.redo().doc).nodes.find(item => item.id === pathId).points[0].x).toBe(originalX + 5);
   });
 
   it("measures text with final fonts, wrapping, line height and letter spacing", async () => {
@@ -75,6 +88,9 @@ describe("build_layout", () => {
     [{ nodes: [node("rect", { width: -1 })] }, /width must be non-negative/],
     [{ nodes: [node("rect", { x: NaN })] }, /x must be a finite number/],
     [{ nodes: [node("rect", { children: [node()] })] }, /children requires a frame/],
+    [{ nodes: [node("frame", { children: [node("path")] })] }, /d is required for path nodes/],
+    [{ nodes: [node("frame", { children: [node("path", { d: "not a path" })] })] }, /\.d is (invalid|must describe at least two path points)/],
+    [{ nodes: [node("rect", { d: "M 0 0 L 1 1" })] }, /d is only supported for path nodes/],
     [{ nodes: [node("frame", { autoLayout: { layout: "diagonal" } })] }, /autoLayout.layout/],
     [{ nodes: [node("text", { fontSize: 0 })] }, /fontSize must be positive/],
     [{ nodes: [node("rect", { opacity: 2 })] }, /opacity/],

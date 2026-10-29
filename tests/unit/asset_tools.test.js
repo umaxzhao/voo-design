@@ -81,6 +81,7 @@ describe("asset tools", () => {
       installEditor();
       await expect(generateVector({ prompt: "mark" }, {})).rejects.toMatchObject({
         code: "agentVectorNeedsApiModel",
+        message: expect.stringContaining("build_layout path nodes"),
       });
     });
 

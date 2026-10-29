@@ -212,6 +212,19 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
     expect(focus.status).toBe("AI: Updating layout");
   });
 
+  it("moves a frame and its descendants together through the layout tool", async () => {
+    mockEditor.moveNodeBy = vi.fn();
+    const result = await executeCanvasTool("mutate_layer_layout", {
+      layerId: "frame_hero",
+      patch: { x: 140, y: 170, width: 960 },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(mockEditor.moveNodeBy).toHaveBeenCalledWith("frame_hero", 40, -30);
+    expect(mockEditor.updateNode).toHaveBeenCalledWith("frame_hero", { width: 960 });
+    expect(committedActions).toContain("AI: Mutate Layer Layout");
+  });
+
   it("mutates layer style (fills, cornerRadius, opacity)", async () => {
     const result = await executeCanvasTool("mutate_layer_style", {
       layerId: "btn_cta",

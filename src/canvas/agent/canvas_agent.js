@@ -61,8 +61,9 @@ export const SYSTEM_PROMPT =
   "7. Design quality: honor the Design quality block below — one style kit, tokens first, " +
   "clear hierarchy, no AI-template smells. For UI generation use Lucide icons, never emoji as icons. " +
   "Artwork: use generate_vector for original logo/illustration, vectorize_image to trace flat raster " +
-  "marks, edit_image for background removal/replacement and stock_image for photography; never hand-draw " +
-  "a logo out of primitive paths. For HTML generation use Tailwind utility classes for layout and styling. Use short copy for on-canvas " +
+  "marks, edit_image for background removal/replacement and stock_image for photography. For external " +
+  "MCP clients without vector generation, use build_layout path nodes with SVG d data to create editable " +
+  "vectors inside the composed Frame. For HTML generation use Tailwind utility classes for layout and styling. Use short copy for on-canvas " +
   "UI text: prefer concise labels, headlines and body text; avoid chatty paragraphs. " +
   "When the user asks for code, call export_code (html | react | css) and report the file name plus warnings.\n" +
   "Keep replies short.";

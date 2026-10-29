@@ -102,6 +102,45 @@ const out = await page.evaluate(async (PNG) => {
   const inserted = await run("edit_path_nodes", { layerId: pathId, ops: [{ op: "insert", index: 1, x: 40, y: 20 }] });
   checks.insertPathNode = inserted?.points?.length === pathBefore?.points?.length + 1;
 
+  const composition = await run("build_layout", { nodes: [{
+    type: "frame", name: "Codex Vector Poster", x: 800, y: 400, width: 320, height: 220,
+    fill: "#f4eddf", children: [
+      { type: "text", name: "Poster title", x: 820, y: 420, width: 270, height: 40, text: "VECTOR STUDY", fontSize: 28, fontWeight: 700, fill: "#171717" },
+      { type: "path", name: "Editable sun", x: 830, y: 480, width: 100, height: 100, d: "M 50 0 C 77 0 100 23 100 50 C 100 77 77 100 50 100 C 23 100 0 77 0 50 C 0 23 23 0 50 0 Z", fill: "#ed553b" },
+      { type: "path", name: "Editable ray", x: 950, y: 495, width: 120, height: 72, d: "M 0 60 L 115 0 L 120 8 L 12 72 Z", fill: "#174b61" },
+    ],
+  }] });
+  const compositionIds = composition?.created?.map((item) => item.id) ?? [];
+  const [compositionId, titleId, sunId, rayId] = compositionIds;
+  checks.buildLayoutVectorTree = composition?.count === 4
+    && docNode(titleId)?.parentId === compositionId
+    && docNode(titleId)?.kind === "text"
+    && docNode(sunId)?.parentId === compositionId
+    && docNode(sunId)?.kind === "path"
+    && docNode(sunId)?.points?.length >= 4
+    && docNode(rayId)?.parentId === compositionId
+    && docNode(rayId)?.kind === "path";
+  await run("undo", {});
+  const afterCompositionUndo = compositionIds.some((layerId) => docNode(layerId));
+  await run("redo", {});
+  checks.compositionUndoRedo = !afterCompositionUndo && compositionIds.every((layerId) => docNode(layerId));
+  const pathBeforeEdit = await run("get_path_nodes", { layerId: sunId });
+  const pathEdit = await run("edit_path_nodes", { layerId: sunId, ops: [{ op: "move", index: 0, dx: 4, dy: 2 }] });
+  checks.vectorAnchorEdit = pathBeforeEdit?.points?.length >= 4
+    && pathEdit?.points?.[0]?.x === pathBeforeEdit.points[0].x + 4;
+  const titleEdit = await run("mutate_layer_text", { layerId: titleId, patch: { text: "EDITABLE VECTOR" } });
+  checks.textLayerEdit = titleEdit?.ok === true && docNode(titleId)?.text === "EDITABLE VECTOR";
+  const compositionX = docNode(compositionId)?.x;
+  const titleX = docNode(titleId)?.x;
+  const sunX = docNode(sunId)?.x;
+  const rayX = docNode(rayId)?.x;
+  const movedComposition = await run("mutate_layer_layout", { layerId: compositionId, patch: { x: compositionX + 24 } });
+  checks.moveComposition = movedComposition?.ok === true && docNode(compositionId)?.x === compositionX + 24
+    && docNode(titleId)?.x === titleX + 24
+    && docNode(sunId)?.x === sunX + 24
+    && docNode(rayId)?.x === rayX + 24
+    && [titleId, sunId, rayId].every((layerId) => docNode(layerId)?.parentId === compositionId);
+
   const img = await run("place_image", { url: PNG, x: 10, y: 10, width: 50, height: 50, name: "Hero image" });
   const imgNode = docNode(id(img));
   checks.placeImage = img?.ok === true

@@ -54,6 +54,8 @@ describe("MCP stdio", () => {
     expect(layoutTool.description).toContain("one top-level frame");
     expect(layoutTool.description).toContain("type=text for editable copy");
     expect(layoutTool.description).toContain("capture_canvas and inspect_layout");
+    expect(layoutTool.inputSchema.$defs.node.properties.type.enum).toContain("path");
+    expect(layoutTool.inputSchema.$defs.node.properties.d.type).toBe("string");
   });
 
   it("initializes, lists safe tools, pings and ignores notifications", async () => {
