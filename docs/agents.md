@@ -144,16 +144,6 @@ to have performed.
 | `stock_image` | Searches Openverse (CC-licensed) and places a matching photo. |
 | `create_icon` | Inserts a vector icon (from built-in Lucide set) directly onto the canvas. |
 
-### Comments & Review
-
-| Tool | Effect |
-| :--- | :--- |
-| `list_comments` | Lists review comments and discussion threads on the active page. |
-| `create_comment` | Places a new review comment pin and starts a thread. |
-| `reply_comment` | Replies to an existing comment thread. |
-| `resolve_comment` | Marks a comment thread as resolved or unresolves it. |
-| `delete_comment` | Deletes a comment or thread. |
-
 Mutations flash a visual focus overlay on the canvas
 (`src/canvas/editor/chrome_stage_overlays.js`) so you can see what the agent
 touched, then land as normal undoable actions.
