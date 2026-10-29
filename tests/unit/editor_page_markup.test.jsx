@@ -3,6 +3,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import EditorPage from "../../src/canvas/components/editor_page.jsx";
+import EditorPageFrameLabels from "../../src/canvas/components/editor_page_frame_labels.jsx";
 
 vi.mock("../../src/canvas/use_i18n.js", () => ({
   useI18n: () => ({ t: key => key, locale: "en", toggleLocale: () => {} }),
@@ -16,6 +17,29 @@ function pageCallbacks() {
 }
 
 describe("EditorPage markup contracts", () => {
+  it("selects a canvas Frame when its title is clicked", () => {
+    const selectExactly = vi.fn();
+    const labels = EditorPageFrameLabels({ page: {
+      doc: {
+        isCanvasRoot: true,
+        nodes: [{ id: "frame_1", name: "Hero", isFrame: true, x: 10, y: 30, width: 200, height: 100 }],
+      },
+      viewport: { zoom: 1, panX: 0, panY: 0 },
+      canvasFrameLabelRefs: { current: new Map() },
+      engine: { selectExactly },
+      t: key => key,
+    } });
+    const label = labels[0];
+    const event = { stopPropagation: vi.fn() };
+
+    expect(label.props.className).toContain("pointer-events-auto");
+    label.props.onPointerDown(event);
+    label.props.onClick(event);
+
+    expect(selectExactly).toHaveBeenCalledWith(["frame_1"]);
+    expect(event.stopPropagation).toHaveBeenCalledTimes(2);
+  });
+
   it("M3.1: omits per-artboard DOM canvases in free mode", () => {
     const callbacks = pageCallbacks();
     const artboardIds = ["artboard_1", "artboard_2", "artboard_3"];

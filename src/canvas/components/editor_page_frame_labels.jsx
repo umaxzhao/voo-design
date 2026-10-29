@@ -20,7 +20,14 @@ export default function EditorPageFrameLabels({ page }) {
           }}
           data-testid="editor-canvas-frame-label"
           data-frame-id={frame.id}
-          className={`pointer-events-none absolute z-40 ${FRAME_TITLE_HIT_AREA} flex max-w-[70%] items-center gap-1.5 text-[11px] font-mono leading-none text-neutral-400`}
+          className={`pointer-events-auto absolute z-40 ${FRAME_TITLE_HIT_AREA} flex max-w-[70%] cursor-pointer items-center gap-1.5 text-[11px] font-mono leading-none text-neutral-400`}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+          }}
+          onClick={(event) => {
+            event.stopPropagation();
+            page.engine?.selectExactly?.([frame.id]);
+          }}
           style={{
             left: frameRect.x,
             top: frameRect.y - EDITOR_PAGE_HEADER_INSET,

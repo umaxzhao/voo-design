@@ -47,6 +47,11 @@ describe("layers panel hit targets", () => {
     expect(tag).toBeDefined();
     expect(sizeOf(tag, "h")).toBeGreaterThanOrEqual(MIN_HIT_PX);
   });
+
+  it("allows long layer names to scroll horizontally instead of truncating", () => {
+    expect(html).toContain("overflow-x-auto whitespace-nowrap");
+    expect(html).toContain("w-max min-w-full whitespace-nowrap");
+  });
 });
 
 describe("keyboard focus indicator", () => {

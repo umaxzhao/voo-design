@@ -48,10 +48,10 @@ export default function EditorLayerName({
         setRenamingId(object.id);
       }}
       title={t("editor.layer.rename")}
-      className={`flex min-w-0 flex-1 items-center gap-1.5 h-5 truncate text-left text-[11px] font-mono leading-5 ${object.visible ? "text-neutral-200" : "text-neutral-500"}`}
+      className={`flex min-w-0 flex-1 items-center gap-1.5 h-5 overflow-x-auto whitespace-nowrap text-left text-[11px] font-mono leading-5 no-scrollbar ${object.visible ? "text-neutral-200" : "text-neutral-500"}`}
     >
       <span
-        className="truncate"
+        className="w-max min-w-full whitespace-nowrap"
       >
         {describeNode(object, index, labels)}
       </span>
