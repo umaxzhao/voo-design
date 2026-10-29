@@ -4,6 +4,13 @@ import { createIcon } from "../../src/canvas/agent/canvas_tools_assets.js";
 import { setFrameSlot, getFrameSlot } from "../../src/canvas/agent/canvas_tools_components.js";
 import { forkFrame } from "../../src/canvas/agent/canvas_tools.js";
 import {
+  isMeshGradient,
+  formatMeshGradient,
+  parseMeshGradient,
+  MESH_GRADIENT_PRESETS,
+} from "../../src/canvas/color_picker/mesh_gradient.js";
+import { validateLayerPatch } from "../../src/canvas/agent/canvas_mutation_validation.js";
+import {
   setAgentCursor,
   getAgentCursor,
   clearAgentCursor,
@@ -195,5 +202,33 @@ describe("fork_frame tool", () => {
     expect(res.x).toBe(1520); // 1440 + 80
     expect(res.y).toBe(0);
     expect(editor.commitEditorDocument).toHaveBeenCalled();
+  });
+});
+
+describe("mesh gradient", () => {
+  it("formats and parses mesh gradient SVG data URLs", () => {
+    const formatted = formatMeshGradient({ points: MESH_GRADIENT_PRESETS.sunset, blur: 50 });
+    expect(isMeshGradient(formatted)).toBe(true);
+
+    const parsed = parseMeshGradient(formatted);
+    expect(parsed.type).toBe("mesh");
+    expect(parsed.blur).toBe(50);
+    expect(parsed.points).toHaveLength(4);
+    expect(parsed.points[0].color).toBe("#FA709A");
+  });
+
+  it("validates and formats mesh gradient patch in mutate_layer_style", () => {
+    const patch = validateLayerPatch("style", {
+      gradient: {
+        type: "mesh",
+        geometry: {
+          points: MESH_GRADIENT_PRESETS.aurora,
+          blur: 40,
+        },
+      },
+    });
+
+    expect(patch.gradient).toBeUndefined();
+    expect(isMeshGradient(patch.fill)).toBe(true);
   });
 });

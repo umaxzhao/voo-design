@@ -11,8 +11,19 @@ const glow = object({ enabled, color, blur: opacity, spread: opacity, opacity })
 const stops = { type: "array", minItems: 2, items: object({
   color: { type: "string", pattern: "^#[0-9a-fA-F]{6}$" }, position: opacity, opacity,
 }, ["color", "position"]) };
-const geometry = object(Object.fromEntries(["centerX", "centerY", "width", "height", "startX", "startY", "endX", "endY"]
-  .map((key) => [key, ["width", "height"].includes(key) ? number(0, 400) : number(-200, 300)])));
+const meshPoint = object({
+  x: number(-200, 300),
+  y: number(-200, 300),
+  color: { type: "string" },
+  opacity,
+}, ["x", "y", "color"]);
+
+const geometry = object({
+  ...Object.fromEntries(["centerX", "centerY", "width", "height", "startX", "startY", "endX", "endY"]
+    .map((key) => [key, ["width", "height"].includes(key) ? number(0, 400) : number(-200, 300)])),
+  points: { type: "array", items: meshPoint },
+  blur: number(0, 500),
+});
 const nullable = (schema) => ({ anyOf: [schema, { type: "null" }] });
 
 export const STYLE_PATCH_PROPERTIES = {
@@ -28,7 +39,7 @@ export const STYLE_PATCH_PROPERTIES = {
   strokeDash: { anyOf: [choice("solid", "dashed", "dotted"), { type: "array", minItems: 1, items: number(0, 100000) }] },
   strokeMiterLimit: number(1, 100000),
   blendMode: choice(...BLEND_MODES), layerBlur: number(0, 100), backgroundBlur: number(0, 100),
-  gradient: object({ type: choice("linear", "radial", "angular", "diamond"), angle: number(-3600, 3600), stops, geometry }, ["type", "stops"]),
+  gradient: object({ type: choice("linear", "radial", "angular", "diamond", "mesh"), angle: number(-3600, 3600), stops, geometry }, ["type"]),
   effects: { ...nullable(object({
     shadow, innerShadow: shadow, glow, innerGlow: object({ enabled, color, blur: opacity, size: opacity, opacity }),
     bevel: object({ enabled, depth: opacity, size: number(0, 200), angle: number(0, 360), softness: opacity }),

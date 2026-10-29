@@ -3,6 +3,19 @@ import {
   isDiamondGradient,
   parseDiamondGradient,
 } from "./diamond_gradient.js";
+import {
+  formatMeshGradient,
+  isMeshGradient,
+  parseMeshGradient,
+  MESH_GRADIENT_PRESETS,
+} from "./mesh_gradient.js";
+
+export {
+  formatMeshGradient,
+  isMeshGradient,
+  parseMeshGradient,
+  MESH_GRADIENT_PRESETS,
+};
 
 const LINEAR_CENTER_METADATA =
   /\/\*\s*voo-gradient-center:\s*(-?\d+(?:\.\d+)?)%?\s+(-?\d+(?:\.\d+)?)%?\s*\*\//i;
@@ -24,7 +37,8 @@ export const DEFAULT_GRADIENT_GEOMETRY = {
 export function isCssGradient(value) {
   return (
     /^(?:linear|radial|conic)-gradient\(/i.test(value?.trim() ?? "") ||
-    isDiamondGradient(value)
+    isDiamondGradient(value) ||
+    isMeshGradient(value)
   );
 }
 
@@ -40,7 +54,8 @@ export function resolveActiveFillBackground(input) {
     input.fillType === "linear" ||
     input.fillType === "radial" ||
     input.fillType === "angular" ||
-    input.fillType === "diamond"
+    input.fillType === "diamond" ||
+    input.fillType === "mesh"
   ) {
     return isGradient ? backgroundImage : undefined;
   }
@@ -149,6 +164,11 @@ export function parseGradient(value) {
   const diamond = parseDiamondGradient(value);
   if (diamond) {
     return { type: "diamond", ...diamond };
+  }
+
+  const mesh = parseMeshGradient(value);
+  if (mesh) {
+    return mesh;
   }
 
   if (!isCssGradient(value)) {
@@ -278,7 +298,14 @@ export function formatGradient(
   stops,
   geometry = DEFAULT_GRADIENT_GEOMETRY,
 ) {
-  const stopStrings = [...stops]
+  if (type === "diamond") {
+    return formatDiamondGradient(angle, stops, geometry);
+  }
+  if (type === "mesh") {
+    return formatMeshGradient({ points: geometry?.points, blur: geometry?.blur });
+  }
+
+  const stopStrings = [...(stops || [])]
     .sort((left, right) => left.position - right.position)
     .map((stop) => {
       const alphaHex = opacityToHex(stop.opacity);
@@ -304,9 +331,6 @@ export function formatGradient(
   }
   if (type === "angular") {
     return `conic-gradient(from ${angle} at ${clampCenterPercent(geometry.centerX)}% ${clampCenterPercent(geometry.centerY)}%, ${stopStrings.join(", ")})`;
-  }
-  if (type === "diamond") {
-    return formatDiamondGradient(angle, stops, geometry);
   }
   return `radial-gradient(ellipse ${clampSizePercent(geometry.width) / 2}% ${clampSizePercent(geometry.height) / 2}% at ${clampCenterPercent(geometry.centerX)}% ${clampCenterPercent(geometry.centerY)}%, ${stopStrings.join(", ")})`;
 }

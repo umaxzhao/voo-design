@@ -92,10 +92,21 @@ export function validateLayerPatch(type, value) {
   if (patch.gradient) {
     if (Object.hasOwn(patch, "fill") || Object.hasOwn(patch, "fills")) invalid("patch.gradient", "a gradient without a competing fill/fills", patch.gradient);
     const { type: gradientType, angle = 135, stops, geometry = {} } = patch.gradient;
+    if (gradientType === "mesh") {
+      const points = geometry.points ?? (Array.isArray(stops) && stops.length >= 2 ? stops.map((s, idx) => ({
+        x: idx === 0 ? 20 : idx === 1 ? 80 : idx === 2 ? 20 : 80,
+        y: idx <= 1 ? 20 : 80,
+        color: s.color,
+        opacity: s.opacity ?? 100,
+      })) : undefined);
+      patch.fill = formatGradient("mesh", undefined, undefined, { points, blur: geometry.blur });
+      delete patch.gradient;
+      return patch;
+    }
     const endpointKeys = ["startX", "startY", "endX", "endY"];
     const count = endpointKeys.filter((key) => Object.hasOwn(geometry, key)).length;
     if (count !== 0 && count !== 4) invalid("patch.gradient.geometry", "all four gradient line endpoints", geometry);
-    patch.fill = formatGradient(gradientType, `${angle}deg`, stops.map((stop) => ({ opacity: 100, ...stop })), { ...DEFAULT_GRADIENT_GEOMETRY, ...geometry });
+    patch.fill = formatGradient(gradientType, `${angle}deg`, (stops || []).map((stop) => ({ opacity: 100, ...stop })), { ...DEFAULT_GRADIENT_GEOMETRY, ...geometry });
     delete patch.gradient;
   }
   return patch;
