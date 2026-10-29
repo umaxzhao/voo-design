@@ -187,7 +187,7 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
               },
               wrap: { type: "boolean" },
               alignment: { type: "string", enum: ["start", "center", "end", "space-between"] },
-              alignItems: { type: "string", enum: ["start", "center", "end"] },
+              alignItems: { type: "string", enum: ["start", "center", "end", "stretch"] },
               justifyContent: { type: "string", enum: ["start", "center", "end", "space-between", "space-around", "space-evenly"] },
               alignContent: { type: "string", enum: ["start", "center", "end", "space-between", "space-around", "space-evenly"] },
               widthMode: { type: "string", enum: ["fixed", "hug"] },

@@ -602,6 +602,7 @@ export default {
   "editor.autoLayout.start": "起始",
   "editor.autoLayout.center": "居中",
   "editor.autoLayout.end": "末端",
+  "editor.autoLayout.stretch": "拉伸填充",
   "editor.autoLayout.space-between": "两端对齐",
   "editor.autoLayout.widthMode": "宽度",
   "editor.autoLayout.heightMode": "高度",

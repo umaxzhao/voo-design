@@ -299,9 +299,22 @@ describe("Canvas Agent Bidirectional Tools & Visual Feedback", () => {
 
   it("rejects unsupported auto-layout fields before writing", async () => {
     await expect(executeCanvasTool("mutate_auto_layout", {
-      layerId: "frame_hero", config: { enabled: true, alignItems: "stretch" },
+      layerId: "frame_hero", config: { enabled: true, alignItems: "baseline" },
     })).rejects.toThrow("config.alignItems");
     expect(mockEditor.updateNode).not.toHaveBeenCalled();
+  });
+
+  it("accepts stretch as a cross-axis alignment", async () => {
+    const result = await executeCanvasTool("mutate_auto_layout", {
+      layerId: "frame_hero", config: { enabled: true, alignItems: "stretch" },
+    });
+    expect(result.ok).toBe(true);
+    expect(mockEditor.updateNode).toHaveBeenCalledWith(
+      "frame_hero",
+      expect.objectContaining({
+        autoLayout: expect.objectContaining({ alignItems: "stretch" }),
+      }),
+    );
   });
 
   it("executes batch mutations across multiple layers in a single commit", async () => {

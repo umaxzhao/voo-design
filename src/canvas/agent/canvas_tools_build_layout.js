@@ -30,7 +30,7 @@ const nodeProperties = {
       { type: "object", properties: { top: { type: "number" }, right: { type: "number" }, bottom: { type: "number" }, left: { type: "number" } }, additionalProperties: false },
     ] },
     wrap: { type: "boolean" },
-    alignItems: { type: "string", enum: ["start", "center", "end"] },
+    alignItems: { type: "string", enum: ["start", "center", "end", "stretch"] },
     justifyContent: { type: "string", enum: DISTRIBUTIONS },
     alignContent: { type: "string", enum: DISTRIBUTIONS },
     widthMode: { type: "string", enum: ["fixed", "hug"] },
@@ -78,7 +78,7 @@ function validateAutoLayout(value, at) {
       }
     }
     if (key === "wrap" && typeof entry !== "boolean") invalid(`${at}.wrap must be a boolean`);
-    if (key === "alignItems" && !["start", "center", "end"].includes(entry)) invalid(`${at}.alignItems is invalid`);
+    if (key === "alignItems" && !["start", "center", "end", "stretch"].includes(entry)) invalid(`${at}.alignItems is invalid`);
     if (["justifyContent", "alignContent"].includes(key) && !DISTRIBUTIONS.includes(entry)) invalid(`${at}.${key} is invalid`);
     if (["widthMode", "heightMode"].includes(key) && !["fixed", "hug"].includes(entry)) invalid(`${at}.${key} must be fixed or hug`);
   }

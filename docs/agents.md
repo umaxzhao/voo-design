@@ -35,7 +35,7 @@ kept in sync with undo/redo:
 | `mutate_layer_layout` | Updates layer position, size or rotation. |
 | `mutate_layer_style` | Updates solid/structured-gradient paints, stroke details/dashes, opacity, blend mode, layer/background blur and layer effects. |
 | `mutate_layer_text` | Updates content, font family/size/weight, italic, underline, line-height multiplier, pixel letter spacing, alignment, color and text-box width. Style-only patches preserve content. |
-| `mutate_auto_layout` | Configures frame/group Auto Layout. `enabled: false` clears layout; enabled partial changes preserve existing sizing/direction. `alignment` maps start/center/end to cross-axis alignment and space-between to main-axis distribution; stretch is unsupported and rejected. |
+| `mutate_auto_layout` | Configures frame/group Auto Layout. `enabled: false` clears layout; enabled partial changes preserve existing sizing/direction. `alignment` maps start/center/end/stretch to cross-axis alignment and space-between to main-axis distribution. `alignItems: "stretch"` gives every flow child the full line cross; a hugging cross axis keeps measured sizes. |
 | `batch_mutate_layers` | Runs multiple layer mutations atomically. |
 | `delete_layers` | Deletes layers. |
 | `duplicate_layer` | Duplicates a layer. |

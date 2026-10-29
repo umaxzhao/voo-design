@@ -274,6 +274,22 @@ export function reflowAutoLayout(doc) {
           }
         }
       }
+      // `alignItems: "stretch"` gives every flow child the full line cross: a
+      // hug cross axis has no free space to hand out, so it keeps the measured
+      // sizes (same rule as cross-axis fill).
+      if (!crossHugs && layout.alignItems === "stretch") {
+        if (layout.wrap) {
+          lines.forEach((line, index) => {
+            for (const child of line) {
+              setChildExtent(child, crossKey, lineCrosses[index]);
+            }
+          });
+        } else {
+          for (const child of flow) {
+            setChildExtent(child, crossKey, innerCross);
+          }
+        }
+      }
       // Cross-axis fill: the whole inner cross normally; in a wrapped frame a
       // child stretches to its own line, not across unrelated lines.
       if (!crossHugs) {

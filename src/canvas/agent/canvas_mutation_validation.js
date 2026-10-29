@@ -132,8 +132,8 @@ export function validateAutoLayout(value) {
     }
   }
   for (const key of ["wrap"]) if (config[key] !== undefined && typeof config[key] !== "boolean") invalid(`config.${key}`, "a boolean", config[key]);
-  if (config.alignment !== undefined && !["start", "center", "end", "space-between"].includes(config.alignment)) invalid("config.alignment", "start, center, end or space-between", config.alignment);
-  for (const key of ["alignItems"]) if (config[key] !== undefined && !["start", "center", "end"].includes(config[key])) invalid(`config.${key}`, "start, center or end", config[key]);
+  if (config.alignment !== undefined && !["start", "center", "end", "space-between", "stretch"].includes(config.alignment)) invalid("config.alignment", "start, center, end, space-between or stretch", config.alignment);
+  for (const key of ["alignItems"]) if (config[key] !== undefined && !["start", "center", "end", "stretch"].includes(config[key])) invalid(`config.${key}`, "start, center, end or stretch", config[key]);
   for (const key of ["justifyContent", "alignContent"]) if (config[key] !== undefined && !["start", "center", "end", "space-between", "space-around", "space-evenly"].includes(config[key])) invalid(`config.${key}`, "a supported distribution", config[key]);
   for (const key of ["widthMode", "heightMode"]) if (config[key] !== undefined && !["fixed", "hug"].includes(config[key])) invalid(`config.${key}`, "fixed or hug", config[key]);
   for (const key of ["minWidth", "maxWidth", "minHeight", "maxHeight"]) {

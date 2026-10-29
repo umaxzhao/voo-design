@@ -645,6 +645,7 @@ export default {
   "editor.autoLayout.start": "Start",
   "editor.autoLayout.center": "Center",
   "editor.autoLayout.end": "End",
+  "editor.autoLayout.stretch": "Stretch",
   "editor.autoLayout.space-between": "Space between",
   "editor.autoLayout.widthMode": "Width",
   "editor.autoLayout.heightMode": "Height",

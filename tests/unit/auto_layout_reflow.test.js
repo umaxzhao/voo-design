@@ -14,7 +14,6 @@ import {
  * no-op (idempotent).
  *
  * Deferred semantics (intentionally not asserted as supported):
- * - `alignItems: "stretch"` is not modelled; use child `layoutHeight/layoutWidth: "fill"`.
  * - Per-line main-axis fill in a wrapped frame: wrapped main-axis fill children
  *   keep their measured size; lines are formed from measured sizes.
  * - A wrapped nested frame whose main axis is pinned by a parent derives the
@@ -396,6 +395,51 @@ describe("auto layout — fill children", () => {
     );
     const out = reflow(doc);
     expectBox(out, "a", { x: 0, y: 10, width: 50, height: 80 });
+  });
+
+  it("stretches every flow child to the inner cross with alignItems stretch", () => {
+    const doc = docOf(
+      makeGroup({
+        id: "g",
+        width: 200,
+        height: 100,
+        autoLayout: {
+          direction: "horizontal",
+          gap: 10,
+          padding: { top: 10, right: 0, bottom: 10, left: 0 },
+          alignItems: "stretch",
+          justifyContent: "start",
+        },
+      }),
+      makeNode({ id: "a", parentId: "g", width: 50, height: 10, layoutWidth: "fixed" }),
+      makeNode({ id: "b", parentId: "g", x: 60, width: 50, height: 30, layoutWidth: "fixed" }),
+    );
+    const out = reflow(doc);
+    // Both children take the 80px inner cross, aligned at the padding top.
+    expectBox(out, "a", { x: 0, y: 10, width: 50, height: 80 });
+    expectBox(out, "b", { x: 60, y: 10, width: 50, height: 80 });
+  });
+
+  it("leaves stretched children at their measured size when the cross axis hugs", () => {
+    const doc = docOf(
+      makeGroup({
+        id: "g",
+        width: 200,
+        height: 100,
+        autoLayout: {
+          direction: "horizontal",
+          gap: 10,
+          alignItems: "stretch",
+          heightMode: "hug",
+          justifyContent: "start",
+        },
+      }),
+      makeNode({ id: "a", parentId: "g", width: 50, height: 24, layoutWidth: "fixed" }),
+      makeNode({ id: "b", parentId: "g", x: 60, width: 50, height: 40, layoutWidth: "fixed" }),
+    );
+    const out = reflow(doc);
+    expectBox(out, "a", { height: 24 });
+    expectBox(out, "b", { height: 40 });
   });
 
   it("keeps fill children at their measured size inside a hug parent", () => {

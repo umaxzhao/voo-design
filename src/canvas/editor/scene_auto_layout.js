@@ -46,8 +46,11 @@
  *
  * `justifyContent`/`alignContent` support start, center, end, space-between,
  * space-around and space-evenly (the last two are cheap here, so they ship).
- * `alignItems: "stretch"` and per-line main-axis fill are deliberately
- * omitted; see the deferred notes in the reflow tests.
+ * `alignItems` supports start/center/end and `stretch`, which gives every flow
+ * child the full line cross (or the inner cross when the frame does not wrap) —
+ * a hugging cross axis has no free space, so children keep their measured size.
+ * Per-line main-axis fill is still omitted; see the deferred notes in the
+ * reflow tests.
  */
 
 export { normalizeAutoLayout } from "./auto-layout-values.js";

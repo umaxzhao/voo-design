@@ -287,6 +287,13 @@ export function AutoLayoutFields({
                   DISTRIBUTIONS,
                   (justifyContent) => change({ justifyContent }),
                 )}
+                {selectRow(
+                  "alignItems",
+                  t("editor.autoLayout.align"),
+                  layout.alignItems,
+                  ["start", "center", "end", "stretch"],
+                  (alignItems) => change({ alignItems }),
+                )}
                 {layout.wrap && (
                   <>
                     {numericField(

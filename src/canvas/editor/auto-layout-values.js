@@ -1,6 +1,6 @@
 /** Shared normalization and sizing values for synchronous Auto Layout. */
 const DIRECTIONS = new Set(["horizontal", "vertical"]);
-const ALIGNMENTS = new Set(["start", "center", "end"]);
+const ALIGNMENTS = new Set(["start", "center", "end", "stretch"]);
 const DISTRIBUTIONS = new Set([
   "start",
   "center",
