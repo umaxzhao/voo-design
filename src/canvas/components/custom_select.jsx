@@ -8,6 +8,7 @@ export default function CustomSelect({
   onChange,
   children,
   className = "",
+  triggerClassName = className,
   disabled = false,
   onClick,
   ...triggerProps
@@ -36,7 +37,7 @@ export default function CustomSelect({
         label={triggerProps["aria-label"]}
         disabled={disabled}
         className="min-w-0 w-full"
-        triggerClassName={`w-full ${className}`}
+        triggerClassName={`w-full ${triggerClassName}`}
         widthClass="left-0 w-full min-w-0"
         triggerProps={triggerProps}
         portal
