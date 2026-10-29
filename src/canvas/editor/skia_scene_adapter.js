@@ -11,6 +11,7 @@ import { isGroupNode, isHiddenByGroup } from "./scene_model.js";
 import { cachedElementFor as elementFor } from "./skia-rect-scene-cache.js";
 import { toSkiaBlendMode, strokeOf } from "./skia_adapter_paint.js";
 import { isBoxOffscreen } from "./viewport_culling.js";
+import { hasUnsupportedBooleanSources } from "./unsupported-boolean-sources.js";
 
 /** Where a page sits in world space when several are laid out at once. */
 export const PAGE_GAP = 80;
@@ -37,13 +38,19 @@ function hasIndependentCornerRadius(node) {
  * modes. Route the whole composition through Canvas2D so layer order,
  * clipping, opacity and blending agree. */
 export function requiresCanvas2dMediaFallback(doc) {
+  const nodes = doc?.nodes ?? [];
+  const clippingFrames = new Set(nodes.filter((node) => node.isFrame && node.clipContent !== false).map((node) => node.id));
   return Boolean(
     doc?.timeline ||
+    // Nested Frame ancestry is not represented by this flat scene adapter.
+    // Preserve the established document coordinates and clips in Canvas2D.
+    nodes.some((node) => clippingFrames.has(node.parentId)) ||
     doc?.nodes?.some(
       (node) =>
         // The scene adapter cannot express painted alpha/luminance mask chains
         // or per-paint blends. Use the compositor that preserves their pixels.
         node.maskBase || node.clipTo || Array.isArray(node.fills) ||
+        hasUnsupportedBooleanSources(node) ||
         node.fillHidden || node.strokeHidden ||
         (Array.isArray(node.strokes) && node.strokes.some((stroke) => stroke?.visible !== false && stroke?.strokeWidth > 0)) ||
         // Image/text scene elements do not carry their node stroke. Keep the

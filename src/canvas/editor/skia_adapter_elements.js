@@ -113,11 +113,14 @@ export function elementFor(node, index, offsetX, offsetY, resolveImageUrl, doc) 
       shape: "boolean",
       title: node.name ?? "Combined shape",
       fills: fillsOf(node),
-      stroke: strokeOf(node),
+      // Element opacity is applied by the scene. A missing paint opacity must
+      // not apply that same alpha again, and Boolean borders default inside.
+      stroke: strokeOf({ ...node, strokeAlign: node.strokeAlign ?? "inside",
+        strokeOpacity: node.strokeOpacity ?? 1 }),
       // The renderer combines these with real path operations at paint time,
       // which is why the document stores the parts and not an outline — and
-      // why a nested combination stays exact here where the 2D path has to
-      // flatten it.
+      // why CanvasKit can retain exact curves while the 2D/export contour
+      // path uses the editor's bounded adaptive curve tessellation.
       booleanOperation: node.operation,
       booleanSources: node.sources,
     };

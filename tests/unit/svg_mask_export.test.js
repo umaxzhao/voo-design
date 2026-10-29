@@ -46,12 +46,12 @@ describe("SVG export of clipping masks", () => {
       ]),
     );
 
-    expect(defsOf(svg)).toContain('<clipPath id="clip-mask" clipPathUnits="userSpaceOnUse">');
+    expect(defsOf(svg)).toContain('<clipPath id="chain-clip-0" clipPathUnits="userSpaceOnUse">');
     expect(defsOf(svg)).toMatch(/<clipPath[^>]*><rect x="10" y="20" width="200" height="80"/);
     const body = bodyOf(svg);
     // Both members sit in one clipped group, in paint order.
     expect(body).toMatch(
-      /<g clip-path="url\(#clip-mask\)"><rect [^>]*fill="#00ff00"[^>]*\/><rect [^>]*fill="#0000ff"[^>]*\/><\/g>/,
+      /<g clip-path="url\(#chain-clip-0\)"><rect [^>]*fill="#00ff00"[^>]*\/><rect [^>]*fill="#0000ff"[^>]*\/><\/g>/,
     );
     expect(body).not.toContain('fill="#000000"');
     expect(() => parseSvgStringToNodes(svg)).not.toThrow();
@@ -63,7 +63,7 @@ describe("SVG export of clipping masks", () => {
     );
     const body = bodyOf(svg);
     expect(body).toContain('fill="#123456"');
-    expect(body).toMatch(/<g clip-path="url\(#clip-base\)"><rect [^>]*fill="#abcdef"/);
+    expect(body).toMatch(/<g clip-path="url\(#chain-clip-0\)"><rect [^>]*fill="#abcdef"/);
   });
 
   it("uses an alpha mask when the base's alpha is not just its outline", () => {
@@ -77,9 +77,9 @@ describe("SVG export of clipping masks", () => {
     for (const base of cases) {
       const svg = documentToSvg(doc([base, rect("art", { clipTo: "m" })]));
       expect(defsOf(svg)).not.toContain("<clipPath");
-      expect(defsOf(svg)).toContain('<mask id="clip-m"');
+      expect(defsOf(svg)).toContain('<mask id="chain-clip-0"');
       expect(defsOf(svg)).toContain('mask-type="alpha"');
-      expect(bodyOf(svg)).toContain('<g mask="url(#clip-m)">');
+      expect(bodyOf(svg)).toContain('<g mask="url(#chain-clip-0)">');
     }
   });
 
@@ -91,7 +91,7 @@ describe("SVG export of clipping masks", () => {
       ]),
     );
     expect(defsOf(svg)).toContain('mask-type="luminance" style="mask-type:luminance"');
-    expect(bodyOf(svg)).toContain('<g mask="url(#clip-lum)">');
+    expect(bodyOf(svg)).toContain('<g mask="url(#chain-clip-0)">');
   });
 
   it("carries an even-odd fill rule over to the clip rule", () => {
@@ -135,8 +135,8 @@ describe("SVG export of clipping masks", () => {
       ]),
     );
     const body = bodyOf(svg);
-    expect(body).toMatch(/<g clip-path="url\(#clip-a\)"><rect [^>]*#111111[^>]*\/><\/g>/);
-    expect(body).toMatch(/<g clip-path="url\(#clip-b\)"><rect [^>]*#222222[^>]*\/><\/g>/);
+    expect(body).toMatch(/<g clip-path="url\(#chain-clip-0\)"><rect [^>]*#111111[^>]*\/><\/g>/);
+    expect(body).toMatch(/<g clip-path="url\(#chain-clip-1\)"><rect [^>]*#222222[^>]*\/><\/g>/);
     expect(body).toMatch(/<\/g>\n<rect [^>]*#333333/);
   });
 });
@@ -148,7 +148,7 @@ describe("nodesToSvg with a mask base", () => {
       rect("art", { clipTo: "mask", x: 10, y: 10, width: 40, height: 30 }),
     ]);
     expect(svg).toContain('width="40" height="30"');
-    expect(svg).toContain('clip-path="url(#clip-mask)"');
+    expect(svg).toContain('clip-path="url(#chain-clip-0)"');
   });
 
   it("exports nothing when only mask bases are selected", () => {

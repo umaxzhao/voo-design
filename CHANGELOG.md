@@ -2,6 +2,10 @@
 
 ## 1.0.0
 
+- Apply transformed, rounded ancestor Frame clips consistently to Canvas2D, SVG, clipping-mask chains and Frame selection exports; retain empty Frame paint and remove fixed-world mask bounds.
+- Share merged Boolean contours between Canvas2D and SVG; preserve fills, transparent interiors, nested subtraction holes and independent inside/center/outside strokes without operand seams.
+- Extract engine registration/eviction snapshots and canvas-source navigation into focused Hooks, with real-engine coverage for deferred selection, source return contexts and listener cleanup.
+
 - Preserve independent stroke visibility and placement for supported shapes and images across bitmap composition, SVG export, page promotion and project readback; retain additional paints when the primary stroke is hidden and keep unsupported placements disabled.
 - Load canvas context menus and closed optional dialogs on first use, keep the canvas mounted during loading, allow pending surfaces to dismiss, and retain query/draft state when reopening.
 - Route find matches through the public exact-selection API so matching text is selected correctly inside Groups.

@@ -40,8 +40,9 @@ describe("export quality", () => {
     expect(svg).toContain("<linearGradient ");
     expect(svg).toContain("<stop ");
     expect(svg).toContain('fill="url(#');
-    expect(svg).toContain('<mask id="clip-mask"');
-    expect(svg).toContain('mask="url(#clip-mask)"');
+    const maskId = /<mask id="([^"]+)"[^>]*mask-type="alpha"/.exec(svg)?.[1];
+    expect(maskId).toBeTruthy();
+    expect(svg).toContain(`mask="url(#${maskId})"`);
     expect(svg).toContain("<text ");
     expect(svg).toContain("Editable");
     expect(svg).not.toContain("<image");

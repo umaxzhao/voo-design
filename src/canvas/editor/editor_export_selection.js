@@ -26,9 +26,16 @@ export function selectedExportNodes(doc, ids) {
       node.visible !== false &&
       !isHiddenByGroup(doc, node) &&
       (RENDERABLE_KINDS.has(node.kind) ||
+        node.kind === NODE_KIND.GROUP ||
         node.kind === NODE_KIND.CANVAS_INSTANCE) &&
       selectionBounds([node]),
   );
+}
+
+/** Structural folders carry ancestry, but do not add unpainted export padding. */
+export function selectedExportBounds(nodes) {
+  return selectionBounds(nodes.filter((node) =>
+    !node.maskBase && (node.kind !== NODE_KIND.GROUP || node.isFrame)));
 }
 
 export function renderSelectionPng(

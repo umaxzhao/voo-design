@@ -1057,7 +1057,12 @@ describe("E2E Acceptance Criteria & 4-Tier Verification Suite", () => {
 
       // 3. Convert page into Skia unified scene elements
       const pageDoc = vooFile.document.pages[0].sceneDoc;
-      const scene = documentToScene(pageDoc, { offsetX: 0, offsetY: 0 });
+      expect(requiresCanvas2dMediaFallback(pageDoc)).toBe(true);
+      expect(() => documentToScene(pageDoc, {})).toThrow("Canvas2D");
+      // Flat-scene structure stays testable separately from the Canvas2D clip route.
+      const flatPageDoc = { ...pageDoc, nodes: pageDoc.nodes.map((node) => node.isFrame ? { ...node, clipContent: false } : node) };
+      expect(requiresCanvas2dMediaFallback(flatPageDoc)).toBe(false);
+      const scene = documentToScene(flatPageDoc, { offsetX: 0, offsetY: 0 });
       expect(pageDoc.isCanvasRoot).toBe(true);
       const header = pageDoc.nodes.find((node) => node.name === "Header");
       const logo = pageDoc.nodes.find((node) => node.name === "Logo");

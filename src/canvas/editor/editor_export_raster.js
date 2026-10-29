@@ -18,7 +18,6 @@ import {
   exportPageBackground,
   exportBackdropDocument,
   encodeCanvas,
-  selectionBounds,
 } from "./editor_export_bounds.js";
 import { createRegionExport } from "./editor_export_regions.js";
 import { normalizeImageCrop } from "./image_layer_crop.js";
@@ -28,6 +27,7 @@ import {
 import {
   renderSelectionPng,
   selectedExportNodes,
+  selectedExportBounds,
 } from "./editor_export_selection.js";
 
 export function createExport({
@@ -253,14 +253,14 @@ export function createExport({
   function exportSelectionPng(ids, options = {}) {
     const doc = getDoc();
     const selected = selectedExportNodes(doc, ids);
-    const bounds = selectionBounds(selected);
+    const bounds = selectedExportBounds(selected);
     if (!bounds) return null;
     const expanded = expandInstancesForRaster(
       { ...doc, nodes: selected },
       options.resolveCanvas ?? resolveCanvas,
     );
     const nodes = expanded.nodes.filter((node) =>
-      RENDERABLE_KINDS.has(node.kind),
+      RENDERABLE_KINDS.has(node.kind) || node.kind === NODE_KIND.GROUP,
     );
     return renderSelectionPng(doc, nodes, bounds, options, {
       bitmapSourceOf,
@@ -273,14 +273,14 @@ export function createExport({
   async function exportSelectionPngAsync(ids, options = {}) {
     const doc = getDoc();
     const selected = selectedExportNodes(doc, ids);
-    const bounds = selectionBounds(selected);
+    const bounds = selectedExportBounds(selected);
     if (!bounds) return null;
     const expanded = expandInstancesForRaster(
       { ...doc, nodes: selected },
       options.resolveCanvas ?? resolveCanvas,
     );
     const nodes = expanded.nodes.filter((node) =>
-      RENDERABLE_KINDS.has(node.kind),
+      RENDERABLE_KINDS.has(node.kind) || node.kind === NODE_KIND.GROUP,
     );
     return renderSelectionPng(doc, nodes, bounds, options, {
       bitmapSourceOf,

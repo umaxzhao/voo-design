@@ -6,7 +6,7 @@ import {
 import { imageIdsOfDocument, isValidVooFile } from "../../../electron/voo_format.js";
 
 import { serialiseDocument, deserialiseDocument } from "../../../src/canvas/editor/scene_model_serialization.js";
-import { documentToScene } from "../../../src/canvas/editor/skia_scene_adapter.js";
+import { documentToScene, requiresCanvas2dMediaFallback } from "../../../src/canvas/editor/skia_scene_adapter.js";
 import { buildVisibleTreeItems } from "../../../src/canvas/components/editor_canvas_tree_items.js";
 
 import { draw } from "../../../src/canvas/editor/chrome_draw.js";
@@ -198,7 +198,12 @@ describe("figmaMessageToVooFile", () => {
     expect(roots[0]).toMatchObject({ frame: true, isFrame: true });
     expect(doc.nodes.some((node) => node.name === "Page 1")).toBe(false);
 
-    const scene = documentToScene(doc, {});
+    expect(requiresCanvas2dMediaFallback(doc)).toBe(true);
+    expect(() => documentToScene(doc, {})).toThrow("Canvas2D");
+    // This adapter-only assertion excludes ancestor clips, which use Canvas2D.
+    const flat = { ...doc, nodes: doc.nodes.map((node) => node.isFrame ? { ...node, clipContent: false } : node) };
+    expect(requiresCanvas2dMediaFallback(flat)).toBe(false);
+    const scene = documentToScene(flat, {});
     expect(scene.some((node) => node.id === `frame-${doc.id ?? "page"}`)).toBe(false);
     expect(scene.find((node) => node.id === roots[1].id).parentId ?? null).toBeNull();
     const loose = { ...roots[1], x: doc.width + 100, y: 0 };
@@ -207,7 +212,7 @@ describe("figmaMessageToVooFile", () => {
     });
     expect(outside.map((node) => node.id)).toEqual([loose.id]);
     // Regular editor documents still have their artboard frame.
-    expect(documentToScene({ ...doc, isCanvasRoot: false }, {})[0].kind).toBe("frame");
+    expect(documentToScene({ ...flat, isCanvasRoot: false }, {})[0].kind).toBe("frame");
 
     for (const activeCanvasId of [page.id, "another-page"]) {
       const items = buildVisibleTreeItems({

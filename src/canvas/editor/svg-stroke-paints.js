@@ -1,6 +1,6 @@
 import { NODE_KIND } from "./scene_model.js";
-import { nodeCorners } from "./scene_geometry_transform.js";
-import { boundsOfPoints } from "./scene_geometry_bounds.js";
+import { strokeMaskBounds } from "./painted-node-bounds.js";
+export { strokeMaskBounds } from "./painted-node-bounds.js";
 import { number } from "./editor_svg_xml.js";
 import { additionalStrokePaints, primaryStrokePaint } from "./stroke-paint-passes.js";
 
@@ -13,18 +13,10 @@ export function svgStrokeDefinitionNodes(nodes) {
 }
 
 function isClosedShape(node) {
-  if (node.kind === NODE_KIND.RECT || node.kind === NODE_KIND.ELLIPSE) return true;
+  if ([NODE_KIND.RECT, NODE_KIND.ELLIPSE, NODE_KIND.BOOLEAN].includes(node.kind)) return true;
   return node.kind === NODE_KIND.PATH && (node.poly || node.polygon || node.star || node.points?.at(-1)?.close);
 }
 
-export function strokeMaskBounds(node) {
-  // Expand in the node's own axes before transformation. This includes rotated
-  // and sheared miter tips at any world coordinate without a fixed world box.
-  const padding = Math.max(1, node.strokeWidth ?? 1) * Math.max(1, node.strokeMiterLimit ?? 4) + 1;
-  return boundsOfPoints(nodeCorners({ ...node, effectiveLocal: null,
-    x: node.x - padding, y: node.y - padding,
-    width: node.width + padding * 2, height: node.height + padding * 2 }).map(({ x, y }) => [x, y]));
-}
 
 export function paintsBeyondFill(node) {
   if (node.strokeHidden !== true && node.strokeWidth > 0 && node.stroke && node.stroke !== "transparent") return true;
@@ -37,7 +29,7 @@ export function paintsBeyondFill(node) {
 
 function alignedMarkup(node, render, defs, paintIndex) {
   const visibleStroke = node.strokeWidth > 0 && node.stroke && node.stroke !== "transparent";
-  const align = node.strokeAlign ?? ([NODE_KIND.RECT, NODE_KIND.ELLIPSE].includes(node.kind) ? "inside" : "center");
+  const align = node.strokeAlign ?? ([NODE_KIND.RECT, NODE_KIND.ELLIPSE, NODE_KIND.BOOLEAN].includes(node.kind) ? "inside" : "center");
   if (!visibleStroke || !isClosedShape(node) || align === "center") return render(node);
 
   // SVG has no widely supported inside/outside stroke property. Clip a

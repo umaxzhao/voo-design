@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { promoteFixedPageToFrame } from "../../src/canvas/editor/page_to_canvas_root.js";
 
-import { documentToScene } from "../../src/canvas/editor/skia_scene_adapter.js";
+import { documentToScene, requiresCanvas2dMediaFallback } from "../../src/canvas/editor/skia_scene_adapter.js";
 
 describe("fixed page migration", () => {
   it("preserves painted page properties and nested relationships without mutating input", () => {
@@ -21,7 +21,12 @@ describe("fixed page migration", () => {
     expect(child).toBe(doc.nodes[1]);
     expect(doc).toEqual(before);
     expect(promoteFixedPageToFrame(migrated)).toBe(migrated);
-    const paintedFrame = documentToScene({ ...migrated, nodes: migrated.nodes.map(({ fills, ...node }) => node) }, {}).find(element => element.id === frame.id);
+    expect(requiresCanvas2dMediaFallback(migrated)).toBe(true);
+    expect(() => documentToScene(migrated, {})).toThrow("Canvas2D");
+    // Isolate paint conversion from unsupported ancestor clipping and paint lists.
+    const flat = { ...migrated, nodes: migrated.nodes.map(({ fills, ...node }) => ({ ...node, clipContent: false })) };
+    expect(requiresCanvas2dMediaFallback(flat)).toBe(false);
+    const paintedFrame = documentToScene(flat, {}).find(element => element.id === frame.id);
     expect(paintedFrame).toMatchObject({ shape: "rect", fills: [{ color: "#123456", opacity: 0.75 }] });
   });
 

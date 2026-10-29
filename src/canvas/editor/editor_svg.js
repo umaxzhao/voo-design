@@ -8,19 +8,20 @@
  * drive it without a DOM.
  */
 
+import { booleanNodeMarkup } from "./svg-boolean.js";
+import { createSvgFrameClips } from "./svg-frame-clips.js";
+import { paintedNodeBounds } from "./painted-node-bounds.js";
 import { selectionBounds } from "./editor_export_bounds.js";
 import { resolveCornerRadii } from "./scene_model_core.js";
-import { NODE_KIND, effectivePage } from "./scene_model.js";
+import { NODE_KIND, effectivePage, isHiddenByGroup, isInsideBooleanGroup } from "./scene_model.js";
 import { escapeXml, number, svgNodeTransform } from "./editor_svg_xml.js";
 import { textElement } from "./editor_svg_text.js";
 import { imageElement, roundedRectPathData } from "./editor_svg_image.js";
 import {
   arrowheadSvgElements,
-  booleanSourceToPathData,
   gradientDefs,
   pathData,
   polyPathData,
-  renderBooleanSource,
   ribbonAttributes,
   ribbonPathData,
   shapeAttributes,
@@ -76,6 +77,8 @@ function clipsAsGeometry(base, markup) {
     base.maskType !== "luminance" &&
     CLIP_SHAPE_KINDS.has(base.kind) &&
     (base.opacity ?? 1) >= 1 &&
+    (base.fillOpacity ?? 1) >= 1 &&
+    base.fillHidden !== true &&
     isOpaqueSolid(base.fill) &&
     !paintsBeyondFill(base) &&
     markup.length === 1 &&
@@ -90,17 +93,17 @@ function clipsAsGeometry(base, markup) {
  * clipping mask (opacity, gradients and strokes all count, as on the stage),
  * luminance for a Figma luminance mask.
  */
-function clipReference(base, markup, defs) {
+function clipReference(base, markup, defs, id) {
   if (markup.length === 0) return null;
-  const id = `clip-${String(base.id).replace(/[^A-Za-z0-9_-]/g, "_")}`;
   if (clipsAsGeometry(base, markup)) {
     const shape = markup[0].replace(/fill-rule="([^"]+)"/, 'fill-rule="$1" clip-rule="$1"');
     defs.push(`<clipPath id="${id}" clipPathUnits="userSpaceOnUse">${shape}</clipPath>`);
     return `clip-path="url(#${id})"`;
   }
   const type = base.maskType === "luminance" ? "luminance" : "alpha";
+  const area = paintedNodeBounds(base);
   defs.push(
-    `<mask id="${id}" maskUnits="userSpaceOnUse" x="-50000" y="-50000" width="100000" height="100000" mask-type="${type}" style="mask-type:${type}">${markup.join("")}</mask>`,
+    `<mask id="${id}" maskUnits="userSpaceOnUse" x="${number(area.x - 1)}" y="${number(area.y - 1)}" width="${number(area.width + 2)}" height="${number(area.height + 2)}" mask-type="${type}" style="mask-type:${type}">${markup.join("")}</mask>`,
   );
   return `mask="url(#${id})"`;
 }
@@ -128,8 +131,9 @@ export function documentToSvg(
   const svgNodes = doc.nodes ?? [];
   const { defs, idOf } = gradientDefs([...svgNodes, ...svgStrokeDefinitionNodes(svgNodes)]);
   const body = [];
+  const frameClips = createSvgFrameClips(svgNodes, defs);
 
-  if (!transparent && doc.backgroundColor && doc.backgroundColor !== "transparent") {
+  if (!doc.isCanvasRoot && !transparent && doc.backgroundColor && doc.backgroundColor !== "transparent") {
     body.push(
       `<rect x="${number(page.x)}" y="${number(page.y)}" width="${number(page.width)}" height="${number(page.height)}" fill="${escapeXml(
         doc.backgroundColor,
@@ -215,70 +219,7 @@ export function documentToSvg(
         break;
       }
       case NODE_KIND.BOOLEAN: {
-        const fill = idOf(node.fill) ?? escapeXml(node.fill ?? "none");
-        const fillAttr = `fill="${fill}"`;
-        const sources = node.sources ?? [];
-        if (sources.length === 0) break;
-        const op = node.operation ?? "union";
-        const groupTransform =
-          svgNodeTransform(node) ||
-          (node.rotation
-            ? `transform="rotate(${number(node.rotation)} ${number(node.x)} ${number(node.y)})"`
-            : "");
-
-        if (op === "exclude") {
-          const combinedD = sources
-            .map((s) => booleanSourceToPathData(node, s))
-            .join(" ");
-          out.push(
-            `<path fill-rule="evenodd" d="${combinedD}" ${fillAttr} ${groupTransform}/>`,
-          );
-        } else if (op === "subtract" && sources.length > 1) {
-          const maskId = `mask_${node.id ?? Math.random().toString(36).slice(2)}`;
-          const baseSource = renderBooleanSource(
-            node,
-            sources[0],
-            'fill="white"',
-          );
-          const cutoutSources = sources
-            .slice(1)
-            .map((s) => renderBooleanSource(node, s, 'fill="black"'))
-            .join("");
-          defs.push(
-            `<mask id="${maskId}" maskUnits="userSpaceOnUse">\n` +
-              `    <rect x="-50000" y="-50000" width="100000" height="100000" fill="black"/>\n` +
-              `    <g fill="white">${baseSource}</g>\n` +
-              `    <g fill="black">${cutoutSources}</g>\n` +
-              `  </mask>`,
-          );
-          out.push(
-            `<g mask="url(#${maskId})" ${groupTransform}>${renderBooleanSource(node, sources[0], fillAttr)}</g>`,
-          );
-        } else if (op === "intersect" && sources.length > 1) {
-          const maskId = `mask_${node.id ?? Math.random().toString(36).slice(2)}`;
-          const clipSources = sources
-            .slice(1)
-            .map((s) => renderBooleanSource(node, s, 'fill="white"'))
-            .join("");
-          defs.push(
-            `<mask id="${maskId}" maskUnits="userSpaceOnUse">\n` +
-              `    <rect x="-50000" y="-50000" width="100000" height="100000" fill="black"/>\n` +
-              `    <g fill="white">${clipSources}</g>\n` +
-              `  </mask>`,
-          );
-          out.push(
-            `<g mask="url(#${maskId})" ${groupTransform}>${renderBooleanSource(node, sources[0], fillAttr)}</g>`,
-          );
-        } else {
-          // union (and single-source fallback):
-          out.push(
-            `<g ${groupTransform}>` +
-              sources
-                .map((source) => renderBooleanSource(node, source, fillAttr))
-                .join("") +
-              "</g>",
-          );
-        }
+        out.push(...booleanNodeMarkup(node, idOf));
         break;
       }
       case NODE_KIND.TEXT: {
@@ -303,14 +244,19 @@ export function documentToSvg(
     }
     return out;
   };
-  const nodeMarkup = (node) => svgStrokeMarkup(node, singleNodeMarkup, defs);
+  const nodeMarkup = (node) => {
+    if (isHiddenByGroup(doc, node) || isInsideBooleanGroup(doc, node)) return [];
+    return frameClips.wrap(node, svgStrokeMarkup(node, singleNodeMarkup, defs));
+  };
 
   const nodes = doc.nodes ?? [];
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const clipRefs = new Map();
   const clipRefOf = (base) => {
     if (!clipRefs.has(base.id)) {
-      clipRefs.set(base.id, clipReference(base, nodeMarkup(base), defs));
+      // Source IDs may sanitize to the same token, and image corners own a
+      // separate clip definition. Allocate a dedicated namespace per chain.
+      clipRefs.set(base.id, clipReference(base, nodeMarkup(base), defs, `chain-clip-${clipRefs.size}`));
     }
     return clipRefs.get(base.id);
   };
@@ -328,9 +274,9 @@ export function documentToSvg(
       }
       i -= 1;
       const base = byId.get(baseId);
-      if (!base || base.visible === false || members.length === 0) continue;
+      if (!base || base.visible === false || isHiddenByGroup(doc, base) || members.length === 0) continue;
       const ref = clipRefOf(base);
-      body.push(ref ? `<g ${ref}>${members.join("")}</g>` : members.join(""));
+      if (ref) body.push(`<g ${ref}>${members.join("")}</g>`);
       continue;
     }
     // A Figma mask base paints nothing itself; it only clips its chain.
@@ -338,6 +284,7 @@ export function documentToSvg(
     body.push(...nodeMarkup(node));
   }
 
+  const content = frameClips.page(doc, page, body);
   return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
     `<svg xmlns="http://www.w3.org/2000/svg" width="${number(page.width)}" height="${number(page.height)}" viewBox="${number(page.x)} ${number(page.y)} ${number(
@@ -346,7 +293,7 @@ export function documentToSvg(
     // A painted image base also renders its markup for the clip, which
     // repeats the image's own corner-clip def.
     defs.length ? `<defs>\n${[...new Set(defs)].join("\n")}\n</defs>` : "",
-    ...body,
+    ...content,
     `</svg>`,
   ]
     .filter(Boolean)
@@ -374,7 +321,7 @@ export function nodesToSvg(
   // paints nothing, so it neither sizes the export nor exports on its own.
   if (!list.some((node) => !node.maskBase)) return "";
 
-  const bounds = selectionBounds(list.filter((node) => node.kind !== NODE_KIND.GROUP && !node.maskBase && node.visible !== false));
+  const bounds = selectionBounds(list.filter((node) => (node.kind !== NODE_KIND.GROUP || node.isFrame) && !node.maskBase && node.visible !== false));
   if (!bounds) return "";
   const virtualDoc = {
     width: width ?? bounds.width,

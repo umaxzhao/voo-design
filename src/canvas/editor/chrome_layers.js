@@ -10,6 +10,9 @@ import {
 import { drawNode } from "./render_nodes.js";
 import { applyAdjustmentsToCanvas } from "./cpu_adjustments.js";
 import { buildToneLut } from "./tone_lut.js";
+import { createFrameClipContext } from "./frame-clip-context.js";
+import { withFrameClips } from "./render-frame-clips.js";
+import { paintedNodeBounds } from "./painted-node-bounds.js";
 
 // One latest result per immutable document prevents the 90ms selection timer
 // from rebuilding document-sized effect planes. Weak document keys release a
@@ -47,7 +50,7 @@ export function luminanceToAlpha(data) {
  *
  * `startIndex` is the first node whose `clipTo` names `baseId`. Every
  * consecutive node pointing at the same base is drawn into an offscreen
- * canvas at document size — each with its own opacity and blend mode, so
+ * canvas around the painted base — each with its own opacity and blend mode, so
  * the chain composites like a stack — and that canvas is then clipped to
  * the base layer's shape (`destination-in` keeps only the pixels inside
  * it) and stamped back onto the page. The base layer itself was already
@@ -68,10 +71,11 @@ export function drawClippingChain(
     maskOf,
     gpu,
     bypassAdjustments,
+    frameClips = createFrameClipContext(doc.nodes),
   },
 ) {
   const base = doc.nodes.find((candidate) => candidate.id === baseId);
-  if (!base || base.visible === false) return;
+  if (!base || base.visible === false || isHiddenByGroup(doc, base)) return;
 
   const chain = [];
   for (let j = startIndex; j < doc.nodes.length; j += 1) {
@@ -79,7 +83,7 @@ export function drawClippingChain(
     if (member.clipTo !== baseId) break;
     if (member.id === hiddenNodeId || member.visible === false) continue;
     if (
-      isGroupNode(member) ||
+      (isGroupNode(member) && !member.isFrame) ||
       isHiddenByGroup(doc, member) ||
       isInsideBooleanGroup(doc, member)
     )
@@ -92,17 +96,22 @@ export function drawClippingChain(
   let chains = clippingChainCache.get(doc);
   const cached = chains?.get(cacheKey);
   if (cached) {
-    ctx.drawImage(cached, 0, 0);
+    ctx.drawImage(cached.canvas, cached.x, cached.y);
     return;
   }
 
   // The chain paints into its own canvas so the base's alpha can clip it
   // without touching what is already on the page.
   const offCanvas = document.createElement("canvas");
-  offCanvas.width = doc.width;
-  offCanvas.height = doc.height;
+  // A free canvas can contain masks at negative or very large coordinates.
+  // Allocate around the painted base instead of truncating to document origin.
+  const area = paintedNodeBounds(base);
+  const originX = Math.floor(area.x), originY = Math.floor(area.y);
+  offCanvas.width = Math.max(1, Math.ceil(area.x + area.width) - originX);
+  offCanvas.height = Math.max(1, Math.ceil(area.y + area.height) - originY);
   const offCtx = offCanvas.getContext("2d");
   if (!offCtx) return;
+  offCtx.translate(-originX, -originY);
   for (let memberIndex = 0; memberIndex < chain.length; memberIndex += 1) {
     const member = chain[memberIndex];
     if (member.kind === NODE_KIND.ADJUSTMENT) {
@@ -110,30 +119,31 @@ export function drawClippingChain(
         applyAdjustmentsToCanvas(offCanvas, member.adjustments);
       continue;
     }
-    drawNode(offCtx, member, bitmapOf, maskOf, gpu, bypassAdjustments, {
+    withFrameClips(offCtx, frameClips.framesOf(member), () => drawNode(offCtx, member, bitmapOf, maskOf, gpu, bypassAdjustments, {
       docVersion,
       backdropGeneration: `${docVersion}:${startIndex + memberIndex}`,
       outputKey: `${offCanvas.width}x${offCanvas.height}|clip`,
-    });
+    }));
   }
 
   // The base's painted shape (its alpha) becomes the chain's mask: render
   // it alone, then clip the chain canvas to it (destination-in on the
   // offscreen canvas only, so the page underneath stays untouched).
   const maskCanvas = document.createElement("canvas");
-  maskCanvas.width = doc.width;
-  maskCanvas.height = doc.height;
+  maskCanvas.width = offCanvas.width;
+  maskCanvas.height = offCanvas.height;
   const maskCtx = maskCanvas.getContext("2d");
   if (!maskCtx) return;
+  maskCtx.translate(-originX, -originY);
   if (base.kind === NODE_KIND.ADJUSTMENT) {
     if (base.adjustments)
       applyAdjustmentsToCanvas(maskCanvas, base.adjustments);
   } else {
-    drawNode(maskCtx, base, bitmapOf, maskOf, gpu, bypassAdjustments, {
+    withFrameClips(maskCtx, frameClips.framesOf(base), () => drawNode(maskCtx, base, bitmapOf, maskOf, gpu, bypassAdjustments, {
       docVersion,
       backdropGeneration: `${docVersion}:mask`,
       outputKey: `${maskCanvas.width}x${maskCanvas.height}|mask`,
-    });
+    }));
     if (base.maskType === "luminance") {
       const pixels = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
       luminanceToAlpha(pixels.data);
@@ -141,20 +151,21 @@ export function drawClippingChain(
     }
   }
   offCtx.save();
+  offCtx.setTransform(1, 0, 0, 1, 0, 0);
   offCtx.globalCompositeOperation = "destination-in";
   offCtx.drawImage(maskCanvas, 0, 0);
   offCtx.restore();
 
   // Stamp the clipped chain back onto the page as one layer.
   ctx.save();
-  ctx.drawImage(offCanvas, 0, 0);
+  ctx.drawImage(offCanvas, originX, originY);
   ctx.restore();
   if (!chains) {
     chains = new Map();
     clippingChainCache.set(doc, chains);
   }
   chains.clear();
-  chains.set(cacheKey, offCanvas);
+  chains.set(cacheKey, { canvas: offCanvas, x: originX, y: originY });
 }
 
 /**
@@ -174,6 +185,7 @@ export function drawAdjustmentLayer(
     bitmapOf,
     maskOf,
     bypassAdjustments,
+    frameClips = createFrameClipContext(doc.nodes),
   },
 ) {
   try {
@@ -206,7 +218,7 @@ export function drawAdjustmentLayer(
         const prev = doc.nodes[i];
         if (
           prev.id === hiddenNodeId ||
-          isGroupNode(prev) ||
+          (isGroupNode(prev) && !(prev.isFrame && (prev.parentId || doc.isCanvasRoot))) ||
           isHiddenByGroup(doc, prev) ||
           isInsideBooleanGroup(doc, prev) ||
           prev.visible === false
@@ -217,11 +229,11 @@ export function drawAdjustmentLayer(
             applyAdjustmentsToCanvas(offCanvas, prev.adjustments);
           continue;
         }
-        drawNode(offCtx, prev, bitmapOf, maskOf, null, bypassAdjustments, {
+        withFrameClips(offCtx, frameClips.framesOf(prev), () => drawNode(offCtx, prev, bitmapOf, maskOf, null, bypassAdjustments, {
           docVersion,
           backdropGeneration: `${docVersion}:${i}`,
           outputKey: `${offCanvas.width}x${offCanvas.height}|adjustment`,
-        });
+        }));
       }
       applyAdjustmentsToCanvas(offCanvas, node.adjustments);
       // A selection-scoped adjustment layer carries a doc-space matte:

@@ -13,7 +13,6 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useReducer,
   useRef,
   useState,
 } from "react";
@@ -67,7 +66,6 @@ import {
 } from "../editor/editor_constants.js";
 import { marqueeItemForMode } from "../editor/tool_families.js";
 import { executeEditorCommand } from "../editor/command_table.js";
-import { PendingCanvasSelectionManager } from "./editor_pending_canvas_selection.js";
 import { useEditorShortcuts } from "../use_editor_shortcuts.js";
 import { EDITOR_MEDIA_ACCEPT } from "./editor_import_files.js";
 import { useEditorDnd } from "./use_editor_dnd.js";
@@ -92,6 +90,8 @@ import {
   setInstanceViewLocked,
 } from "../editor/instance-view.js";
 import { applySmartCrop } from "../editor/auto_crop_page.js";
+import { useEditorEngineRegistry } from "./editor_hooks/use_editor_engine_registry.js";
+import { useEditorCanvasNavigation } from "./editor_hooks/use_editor_canvas_navigation.js";
 import { useEditorFrameProperties } from "./editor_hooks/use_editor_frame_properties.js";
 import { createEditorPropertyLibraries } from "./editor_hooks/editor_property_libraries.js";
 import { useEditorComponentContext } from "./editor_hooks/use_editor_component_context.js";
@@ -126,17 +126,6 @@ const EditorCanvasInstanceProperties = lazy(
 );
 const EditorExportDialog = lazy(() => import("./editor_export_dialog.jsx"));
 const EditorHistoryPanel = lazy(() => import("./editor_history_panel.jsx"));
-
-/**
- * How many pages keep a live engine at once.
- *
- * The adjustment renderer is shared, so this is no longer about WebGL contexts
- * running out — it is about memory. Each live page owns a canvas backing store
- * the size of its stage times the device pixel ratio, plus its decoded
- * bitmaps, which on a large display runs to tens of megabytes apiece. Pages
- * past the cap are rebuilt from their snapshot when they scroll back in.
- */
-const MAX_LIVE_PAGES = 12;
 
 /**
  * Persisted view-aid keys. The pointer/snapping modules read the same keys
@@ -221,20 +210,11 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     if (imageIds.length) requestCollabOriginal(imageIds);
   }, [originalImageIdsJson]);
 
-  /** nodeId -> live engine, and nodeId -> what an evicted page left behind. */
-  const enginesRef = useRef(new Map());
-  const snapshotsRef = useRef(new Map());
-  useEffect(() => {
-    const reader = (id) => {
-      const live = enginesRef.current.get(id);
-      return live?.ready ? live.engine.serialise() : snapshotsRef.current.get(id)?.doc;
-    };
-    useDesignStore.setState({ editorPageDocumentReader: reader });
-    return () => {
-      if (useDesignStore.getState().editorPageDocumentReader === reader) useDesignStore.setState({ editorPageDocumentReader: null });
-    };
-  }, []);
-  const pendingCanvasSelectionRef = useRef(new PendingCanvasSelectionManager());
+  const [selectedInstanceChild, setSelectedInstanceChild] = useState(null);
+  const { enginesRef, snapshotsRef, pendingCanvasSelectionRef, engineVersion,
+    bump, openGuard, activeIds, handleEngine, handleBeforeDispose, handleVisibility } = useEditorEngineRegistry({
+    nodeIds, nodes, focusedId, selectedInstanceChild,
+  });
   const presentation = usePresentationEditor({
     ownerId: presentationId,
     focusedId,
@@ -249,13 +229,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       }
       rawFocusEditorPage?.(targetId);
     },
-    [focusedId, rawFocusEditorPage],
+    [focusedId, rawFocusEditorPage, enginesRef],
   );
-  const [visibleIds, setVisibleIds] = useState(() => new Set());
-  // Any engine reporting a change re-renders the shared panels, which read
-  // straight from the focused engine rather than mirroring its state.
-  // Every engine report bumps this; the workspace documents read the live engines, so they follow it.
-  const [engineVersion, bump] = useReducer((count) => count + 1, 0);
 
   const freeStageRef = useRef(null);
   const workspaceCanvasRef = useRef(null);
@@ -268,15 +243,10 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   /** Whether this browser can run the matting model in-page. */
   const [localMattingSupported] = useState(() => isLocalMattingSupported());
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [selectedInstanceChild, setSelectedInstanceChild] = useState(null);
   // Grid presentation is shared across the workspace; annotations belong to the focused page.
   const [snapToGrid, setSnapToGrid] = useState(() => getSetting(SNAP_TO_GRID_SETTING) === true);
   const lastGridSizeRef = useRef(32);
   const [adjustingInstance, setAdjustingInstance] = useState(null);
-  const [returnCanvasId, setReturnCanvasId] = useState(null);
-  const [navigationError, setNavigationError] = useState(false);
-  const returnCanvasStackRef = useRef([]);
-  const pendingNavigationRef = useRef(null);
   const [swapPanels, setSwapPanels] = useState(
     () => loadEditorPanelLayout().swapped,
   );
@@ -326,166 +296,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   /** Pie Menu state: active family and screen coordinates { family, position: { x, y } } */
   const [pieMenu, setPieMenu] = useState(null);
 
-  /**
-   * Open guard (plan-design-editor-fixes A6): for a short window after the
-   * editor mounts — and again the moment the first engine reports ready —
-   * the floating panels yield pointer events to the stage, so the first
-   * click/double-click after the editor opens reaches the canvas instead of
-   * being eaten by a panel that mounted with it.
-   */
-  const OPEN_GUARD_MS = 800;
-  const [openGuard, setOpenGuard] = useState(true);
-  /** Only the first engine-ready report re-arms the guard (see handleEngine). */
-  const readySeenRef = useRef(false);
-  useEffect(() => {
-    if (!openGuard) return undefined;
-    const timer = setTimeout(() => setOpenGuard(false), OPEN_GUARD_MS);
-    return () => clearTimeout(timer);
-  }, [openGuard]);
-
-  /**
-   * Each page reports its own engine, whether it finished opening, whether it
-   * has unsaved work and how big its document is. Asking the engines directly
-   * would mean reading them mid-open, when they still hold a blank placeholder
-   * and no applied snapshot — and would call every page modified.
-   */
-  const handleEngine = useCallback((nodeId, state) => {
-    if (state.engine) {
-      enginesRef.current.set(nodeId, state);
-      const store = useDesignStore.getState();
-      if (store.nodes.some(node => node.id === nodeId) && state.ready) {
-        const dirty = store.nodes.some(node => enginesRef.current.get(node.id)?.dirty || snapshotsRef.current.get(node.id)?.dirty);
-        if (dirty) store.setIsDirty(true);
-      }
-      // Its work is live again; the snapshot it was rebuilt from is spent.
-      if (state.ready) {
-        snapshotsRef.current.delete(nodeId);
-        // The stage becomes interactive the moment the first engine is up;
-        // re-arm the guard so the first pointer gesture is never eaten.
-        if (!readySeenRef.current) {
-          readySeenRef.current = true;
-          setOpenGuard(true);
-        }
-        pendingCanvasSelectionRef.current.consume(nodeId, state.engine);
-      }
-    } else {
-      enginesRef.current.delete(nodeId);
-    }
-    bump();
-  }, []);
-
-  /**
-   * An evicted page must keep everything an apply would need, because the
-   * engine that could produce it is about to be gone. The flattened picture is
-   * only worth carrying when there is an unsaved change to carry, and a page
-   * torn down before it opened has nothing worth keeping at all.
-   */
-  const handleBeforeDispose = useCallback(async (nodeId, engine, ready) => {
-    if (!ready) return;
-
-    const writeSnapshot = (png) => {
-      const dirty = engine.isDirty();
-      snapshotsRef.current.set(nodeId, {
-        doc: engine.serialise(),
-        appliedDoc: engine.getAppliedDoc?.() ?? null,
-        regions: engine.getRegions(),
-        promptLayers: engine.getPromptLayers?.() ?? [],
-        annotatedLayers: engine.exportAnnotatedLayers?.() ?? [],
-        dirty,
-        png: dirty ? png : null,
-      });
-    };
-
-    // Publish a synchronous fallback first so a failed async flush never
-    // discards the user's latest in-memory edit.
-    writeSnapshot(engine.exportPng());
-    try {
-      if (engine.getSelectionTransform?.()) {
-        await engine.applySelectionTransform?.();
-      }
-      await engine.flushTransforms?.();
-      await engine.flushPaints?.();
-      await engine.flushMasks?.();
-      const dirty = engine.isDirty();
-      const png = dirty
-        ? ((await engine.exportFullResPng?.()) ?? engine.exportPng())
-        : null;
-      writeSnapshot(png);
-    } catch (err) {
-      console.error("Failed to flush editor snapshot before eviction", err);
-    }
-  }, []);
-
-  const handleVisibility = useCallback((nodeId, visible) => {
-    setVisibleIds((current) => {
-      if (current.has(nodeId) === visible) return current;
-      const next = new Set(current);
-      if (visible) next.add(nodeId);
-      else next.delete(nodeId);
-      return next;
-    });
-  }, []);
-
-  /**
-   * Which pages get an engine: what the reader can see, then whatever sits
-   * nearest to the focused page, up to the cap. Distance rather than a
-   * least-recently-used list, so the set only depends on where the reader is
-   * now and scrolling back and forth cannot thrash it.
-   */
-  const activeIds = useMemo(() => {
-    const focusedIndex = Math.max(0, nodeIds.indexOf(focusedId));
-    const ranked = nodeIds
-      .map((id, index) => ({ id, index, visible: visibleIds.has(id) }))
-      .sort((left, right) => {
-        if (left.id === focusedId) return -1;
-        if (right.id === focusedId) return 1;
-        if (left.visible !== right.visible) return left.visible ? -1 : 1;
-        return (
-          Math.abs(left.index - focusedIndex) -
-          Math.abs(right.index - focusedIndex)
-        );
-      });
-    const active = new Set(
-      ranked.slice(0, MAX_LIVE_PAGES).map((entry) => entry.id),
-    );
-    // Keep the component master editable while its child is selected in a host.
-    const sourceId = selectedInstanceChild?.sourceCanvasId;
-    const sourcePageId = nodes.find(
-      (node) =>
-        node.id === sourceId || node.data?.editorDoc?.canvasId === sourceId,
-    )?.id;
-    if (sourcePageId && nodeIds.includes(sourcePageId)) {
-      active.add(sourcePageId);
-    }
-    return active;
-  }, [nodeIds, focusedId, visibleIds, selectedInstanceChild, nodes]);
-
-  // A collaborator's brush stroke, replayed into whichever open page holds
-  // that layer. Nothing is queued: a stroke only means something against the
-  // picture it was painted on, so one for a page that is not open is dropped
-  // rather than applied later to a document it was never about.
-  useEffect(() => {
-    let cancelled = false;
-    let detach = () => {};
-    void import("../collab/stroke_bus.js").then(({ onRemoteStroke }) => {
-      if (cancelled) return;
-      detach = onRemoteStroke((stroke) => {
-        for (const entry of enginesRef.current.values()) {
-          const held = entry?.engine
-            ?.getDocument()
-            ?.nodes.some((node) => node.id === stroke.nodeId);
-          if (held) {
-            entry.engine.replayMaskStroke(stroke);
-            return;
-          }
-        }
-      });
-    });
-    return () => {
-      cancelled = true;
-      detach();
-    };
-  }, []);
 
   const engine = enginesRef.current.get(focusedId)?.engine ?? null;
 
@@ -801,180 +611,13 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       historyOpen,
     ],
   );
-  const handleSelectCanvasLayer = useCallback(
-    (canvasId, layerId) => {
-      setSelectedInstanceChild(null);
-      if (canvasId !== focusedId) {
-        pendingCanvasSelectionRef.current.clear();
-        focusEditorPage(canvasId);
-        const targetEntry = enginesRef.current.get(canvasId);
-        if (targetEntry?.ready && targetEntry.engine) {
-          if (layerId) {
-            targetEntry.engine.selectExactly([layerId]);
-          } else {
-            targetEntry.engine.selectBackground?.();
-          }
-        } else {
-          pendingCanvasSelectionRef.current.set(canvasId, layerId, !layerId);
-        }
-      } else {
-        pendingCanvasSelectionRef.current.clear();
-        if (layerId) {
-          engine?.selectExactly([layerId]);
-        } else {
-          engine?.selectBackground?.();
-        }
-      }
-    },
-    [focusedId, focusEditorPage, engine],
-  );
-
-  const handleFocusCanvas = useCallback(
-    (canvasId) => {
-      setSelectedInstanceChild(null);
-      setCanvasBackgroundSelected(false);
-      if (canvasId !== focusedId) {
-        pendingCanvasSelectionRef.current.clear();
-        focusEditorPage(canvasId);
-        const targetEntry = enginesRef.current.get(canvasId);
-        if (targetEntry?.ready && targetEntry.engine) {
-          targetEntry.engine.selectBackground?.();
-        } else {
-          pendingCanvasSelectionRef.current.set(canvasId, null, true);
-        }
-      } else {
-        pendingCanvasSelectionRef.current.clear();
-        engine?.selectBackground?.();
-      }
-    },
-    [focusedId, focusEditorPage, engine],
-  );
-
-  useEffect(() => {
-    if (!focusedId) return;
-    pendingCanvasSelectionRef.current.clearIfCanvasChanges(focusedId);
-    const targetEntry = enginesRef.current.get(focusedId);
-    if (targetEntry?.ready && targetEntry.engine) {
-      pendingCanvasSelectionRef.current.consume(focusedId, targetEntry.engine);
-    }
-  }, [focusedId, engine]);
-  const openCanvasSource = useCallback(
-    (sourceId, instanceId = null) => {
-      const source = useDesignStore
-        .getState()
-        .nodes.find(
-          (candidate) =>
-            candidate.id === sourceId ||
-            candidate.data?.editorDoc?.canvasId === sourceId,
-        );
-      if (!source) {
-        setNavigationError(true);
-        return;
-      }
-      if (source.id === focusedId) return;
-      const hostEngine = enginesRef.current.get(focusedId)?.engine;
-      const context = {
-        pageId: focusedId,
-        instanceId,
-        selectedIds: hostEngine?.getSelectedIds?.() ?? [],
-        playback: hostEngine?.getPlaybackState?.() ?? null,
-        cameraMode: multi ? "shared" : "local",
-        camera: multi
-          ? useDesignStore.getState().editorCamera
-          : (hostEngine?.getViewport?.() ?? null),
-      };
-      pendingNavigationRef.current = { kind: "enter", pageId: source.id };
-      const opened = nodeIds.includes(source.id)
-        ? (focusEditorPage(source.id), true)
-        : openExistingEditorPage(source.id);
-      if (!opened) {
-        pendingNavigationRef.current = null;
-        setNavigationError(true);
-        return;
-      }
-      hostEngine?.pause?.();
-      returnCanvasStackRef.current.push(context);
-      setReturnCanvasId(context.pageId);
-      setNavigationError(false);
-    },
-    [focusedId, nodeIds, multi, focusEditorPage, openExistingEditorPage],
-  );
-  useEffect(() => {
-    const handler = (event) =>
-      openCanvasSource(
-        event?.detail?.canvasId,
-        event?.detail?.instanceId ?? null,
-      );
-    window.addEventListener?.("voo:open-canvas-source", handler);
-    return () => window.removeEventListener?.("voo:open-canvas-source", handler);
-  }, [openCanvasSource]);
-
-  const returnToCanvasInstance = useCallback(() => {
-    const stack = returnCanvasStackRef.current;
-    const context = stack[stack.length - 1];
-    if (!context) return;
-    const exists = useDesignStore
-      .getState()
-      .nodes.some((candidate) => candidate.id === context.pageId);
-    if (!exists) {
-      setNavigationError(true);
-      return;
-    }
-    pendingNavigationRef.current = { kind: "return", ...context };
-    const returned = nodeIds.includes(context.pageId)
-      ? (focusEditorPage(context.pageId), true)
-      : openExistingEditorPage(context.pageId);
-    if (!returned) {
-      pendingNavigationRef.current = null;
-      setNavigationError(true);
-      return;
-    }
-    enginesRef.current.get(focusedId)?.engine?.pause?.();
-    stack.pop();
-    setReturnCanvasId(stack[stack.length - 1]?.pageId ?? null);
-    setNavigationError(false);
-  }, [focusedId, nodeIds, focusEditorPage, openExistingEditorPage]);
-  const selectInstanceChild = useCallback(
-    (selection) => {
-      if (!selection) {
-        setSelectedInstanceChild(null);
-        return;
-      }
-      const hostDoc = engine?.getDocument();
-      const instance = hostDoc?.nodes.find(
-        (node) =>
-          node.id === selection.instanceId &&
-          node.kind === "canvasInstance" &&
-          node.sourceCanvasId === selection.sourceCanvasId,
-      );
-      const source = nodes.find(
-        (node) =>
-          node.id === selection.sourceCanvasId ||
-          node.data?.editorDoc?.canvasId === selection.sourceCanvasId,
-      );
-      if (!instance || !source) return;
-      if (!nodeIds.includes(source.id)) {
-        // A master opened from another workflow node must join this editor
-        // session so its live engine participates in save and undo.
-        if (nodeIds.length === 1 && enginesRef.current.get(focusedId)?.ready) {
-          void handleBeforeDispose(focusedId, engine, true);
-        }
-        if (!openExistingEditorPage(source.id)) return;
-        focusEditorPage(focusedId);
-      }
-      engine.selectExactly([]);
-      setSelectedInstanceChild(selection);
-    },
-    [
-      engine,
-      nodes,
-      nodeIds,
-      focusedId,
-      handleBeforeDispose,
-      openExistingEditorPage,
-      focusEditorPage,
-    ],
-  );
+  const { returnCanvasId, navigationError, pendingNavigationRef,
+    handleSelectCanvasLayer, handleFocusCanvas, openCanvasSource,
+    returnToCanvasInstance, selectInstanceChild } = useEditorCanvasNavigation({
+    focusedId, nodeIds, nodes, multi, engine, enginesRef, pendingCanvasSelectionRef,
+    focusEditorPage, openExistingEditorPage, handleBeforeDispose,
+    setSelectedInstanceChild, setCanvasBackgroundSelected,
+  });
   useEffect(() => {
     // A pie opened in Design must not survive into the 3D surface, where its
     // overlay is not mounted to catch the keyup that would close it.

@@ -84,8 +84,33 @@ an FPS measurement or a complete first-open network total.
 Stroke parity uses the existing authoritative Canvas2D fallback for additional
 paint lists and image/text strokes that the Skia scene format cannot carry.
 This prioritizes correct pixels; it does not establish a hardware-GPU speedup.
-The stroke export checks cover ordinary shapes, image borders and Frame bodies,
-not merged Boolean-outline strokes or complete nested Frame clipping in SVG.
+Merged Boolean strokes now share local contours between Canvas2D and SVG.
+The `boolean-stroke-export` gate checks four operations, three stroke positions,
+paint alpha, nested holes, operand transforms and distant world coordinates
+against explicit expected pixels. Curved operands retain the existing polygon
+kernel's approximately 0.25 document-pixel tessellation tolerance; this is not
+an unlimited-precision Bezier operation or a new GPU performance measurement.
+
+The `svg-frame-clipping` gate checks transformed, rounded ancestor Frame clips
+in the full PNG compositor and decoded SVG, including clipping-mask chains and
+Frame selection exports. Ordinary folders preserve ancestry metadata, and
+independently exported children remain standalone. Actual inspector toggles,
+resize/move, screenshots and undo/redo exercise the visible stage as well.
+Nested Frame clips use Canvas2D compatibility while the flat Skia adapter has
+no representation for them. Boolean path operands and operand transforms unsupported
+by the native painter use the same compatibility route. This does not certify general SVG layer effects.
+One separately confirmed limitation remains: Frame/Group opacity currently
+affects its own paint rather than isolating and compositing the entire subtree.
+The diagnostic probe for this is excluded from passing clipping assertions.
+Boolean box resizing also still needs a separate mutation-contract correction: changing
+the box alone does not consistently scale stored operands or child-backed geometry.
+The outline/export checks do not certify that behavior.
+
+The following session extraction reduces `image_editor.jsx` from 3,687 to
+3,330 lines. The new `editor-session` gate mounts real React Hooks with two
+engines to check eviction snapshots, deferred selection, component-source return
+contexts, the live-page cap and remote-listener cleanup. These are static imports;
+the structural reduction alone is not evidence of a smaller initial download.
 
 The next maintenance batch separates optional raster action implementations
 from the always-mounted Hook. Matting, selection repair, repaint, outpaint and
