@@ -29,10 +29,16 @@ describe("artboard body gesture routing", () => {
     expect(shouldDragArtboardBody(makeEngine(), 500, 400)).toBe(true);
   });
 
-  it("preserves existing selection and transform gestures", () => {
+  it("allows dragging empty frame body while another object remains selected", () => {
     const engine = makeEngine({ selectedIds: ["rect"] });
-    expect(shouldDragArtboardBody(engine, 500, 400)).toBe(false);
-    expect(engine.nodeAtPoint).not.toHaveBeenCalled();
+    expect(shouldDragArtboardBody(engine, 500, 400)).toBe(true);
+    expect(engine.nodeAtPoint).toHaveBeenCalledOnce();
+  });
+
+  it("leaves a selected object under the pointer to its transform gesture", () => {
+    const engine = makeEngine({ selectedIds: ["rect"] });
+    expect(shouldDragArtboardBody(engine, 150, 100)).toBe(false);
+    expect(engine.nodeAtPoint).toHaveBeenCalledOnce();
   });
 
   it("does not turn a locked object drag into a frame drag", () => {

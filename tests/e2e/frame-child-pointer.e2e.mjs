@@ -99,5 +99,19 @@ await withEditorBrowser(async ({ page }) => {
   await rectRow.getByRole("button").filter({ hasText: /.+/ }).click();
   assert.deepEqual(await selectedIds(), ["nested-rect"]);
   checks.push("nested Frame hits select the clicked visible rectangle; hidden/locked rectangles fall through to the nearest Frame, but remain selectable from Layers");
+
+  await page.evaluate(() => {
+    const e = window.__vooEditor;
+    e.updateNode("nested-rect", { visible: true, locked: false });
+    e.selectExactly([]);
+  });
+  await drag({ x: 250, y: 200 }, { x: 30, y: 20 });
+  const movedFrame = await page.evaluate(() => ({
+    outer: window.__vooEditor.getNode("outer-frame"),
+    inner: window.__vooEditor.getNode("inner-frame"),
+  }));
+  assert.deepEqual([movedFrame.inner.x, movedFrame.inner.y], [90, 70]);
+  assert.deepEqual([movedFrame.outer.x, movedFrame.outer.y], [20, 20]);
+  checks.push("dragging the exposed area of overlapping Frames moves the top Frame only");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });
