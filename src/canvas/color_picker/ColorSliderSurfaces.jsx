@@ -28,22 +28,29 @@ export function ColorSliderSurfaces({
   }, [hsv]);
 
   const startDrag = (update, e, recordRecent, onEnd) => {
+    e.preventDefault?.();
     update(e.clientX, e.clientY);
-    const handleMouseMove = (ev) => update(ev.clientX, ev.clientY);
-    const handleMouseUp = () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+    const handleMove = (ev) => update(ev.clientX, ev.clientY);
+    const handleUp = () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleUp);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
       onEnd?.();
       if (recordRecent && onAddRecentColor) {
         const cur = hsvRef.current;
         onAddRecentColor(hsvToHex(cur.h, cur.s, cur.v));
       }
     };
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    window.addEventListener("pointercancel", handleUp);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
   };
 
-  const handleSvMouseDown = (e) => {
+  const handleSvPointerDown = (e) => {
     const box = svBoxRef.current;
     if (!box) return;
     startDrag(
@@ -67,7 +74,7 @@ export function ColorSliderSurfaces({
     );
   };
 
-  const handleHueMouseDown = (e) => {
+  const handleHuePointerDown = (e) => {
     const slider = hueSliderRef.current;
     if (!slider) return;
     startDrag(
@@ -88,7 +95,7 @@ export function ColorSliderSurfaces({
     );
   };
 
-  const handleOpacityMouseDown = (e) => {
+  const handleOpacityPointerDown = (e) => {
     const slider = opacitySliderRef.current;
     if (!slider) return;
     startDrag(
@@ -116,9 +123,9 @@ export function ColorSliderSurfaces({
       {/* 2D SV Box */}
       <div
         ref={svBoxRef}
-        onMouseDown={handleSvMouseDown}
+        onPointerDown={handleSvPointerDown}
         style={{ backgroundColor: pureHueHex }}
-        className="relative h-32 w-full cursor-crosshair overflow-hidden rounded-lg select-none"
+        className="relative h-32 w-full cursor-crosshair overflow-hidden rounded-lg select-none touch-none"
       >
         <div
           className="absolute inset-0"
@@ -173,8 +180,8 @@ export function ColorSliderSurfaces({
           {/* Hue slider */}
           <div
             ref={hueSliderRef}
-            onMouseDown={handleHueMouseDown}
-            className="relative h-3 w-full cursor-pointer rounded-full select-none"
+            onPointerDown={handleHuePointerDown}
+            className="relative h-3 w-full cursor-pointer rounded-full select-none touch-none"
             style={{
               background:
                 "linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%)",
@@ -190,8 +197,8 @@ export function ColorSliderSurfaces({
           {showOpacity ? (
             <div
               ref={opacitySliderRef}
-              onMouseDown={handleOpacityMouseDown}
-              className="relative h-3 w-full cursor-pointer rounded-full select-none overflow-hidden"
+              onPointerDown={handleOpacityPointerDown}
+              className="relative h-3 w-full cursor-pointer rounded-full select-none overflow-hidden touch-none"
               style={{
                 background:
                   "linear-gradient(45deg, #222 25%, transparent 25%), linear-gradient(-45deg, #222 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #222 75%), linear-gradient(-45deg, transparent 75%, #222 75%)",

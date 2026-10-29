@@ -35,6 +35,7 @@ import { SCENE_OPS_TOOL_SCHEMAS, SCENE_OPS_TOOL_EXECUTORS } from "./canvas_tools
 import { DOCUMENT_TOOL_SCHEMAS, DOCUMENT_TOOL_EXECUTORS } from "./canvas_tools_document.js";
 import { HANDOFF_TOOL_SCHEMAS, HANDOFF_TOOL_EXECUTORS } from "./canvas_tools_handoff.js";
 import { ASSET_TOOL_SCHEMAS, ASSET_TOOL_EXECUTORS } from "./canvas_tools_assets.js";
+import { COMMENT_TOOL_SCHEMAS, COMMENT_TOOL_EXECUTORS } from "./canvas_tools_comments.js";
 
 import { BUILD_LAYOUT_SCHEMA, buildLayout } from "./canvas_tools_build_layout.js";
 
@@ -392,6 +393,7 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
   ...DOCUMENT_TOOL_SCHEMAS,
   ...HANDOFF_TOOL_SCHEMAS,
   ...ASSET_TOOL_SCHEMAS,
+  ...COMMENT_TOOL_SCHEMAS,
   LINT_TOOL_SCHEMA,
 ]);
 
@@ -845,6 +847,64 @@ function duplicateLayer(args = {}) {
   return { ok: true, layerId: newLayerId };
 }
 
+export function forkFrame(args = {}, context = {}) {
+  context.signal?.throwIfAborted();
+  const editor = context.editor ?? requireEditor();
+  const frameId = requireLayerId(args.frameId);
+  const sourceNode = requireNode(editor, frameId);
+
+  const padding = Number.isFinite(Number(args.padding)) ? Number(args.padding) : 80;
+  const direction = args.direction || "right";
+  const name = typeof args.name === "string" ? args.name.trim() : "";
+
+  const width = Number(sourceNode.width) || 1440;
+  const height = Number(sourceNode.height) || 900;
+  const emptySpace = findEmptySpace(
+    { width, height, direction, padding, nodeId: frameId },
+    editor
+  );
+
+  editor.selectExactly?.([frameId]);
+  editor.duplicateSelected?.();
+
+  const newFrameId = editor.getSelectedId?.() ?? null;
+  if (!newFrameId) throw new Error("Failed to fork frame");
+
+  const newDoc = editor.getDoc?.() ?? editor.getDocument?.() ?? null;
+  const newFrameNode = newDoc?.nodes?.find?.((n) => n.id === newFrameId);
+  if (newFrameNode) {
+    const deltaX = emptySpace.x - (newFrameNode.x ?? 0);
+    const deltaY = emptySpace.y - (newFrameNode.y ?? 0);
+
+    const affectedIds = editor.getAffectedIds?.(newDoc, [newFrameId]) ?? [newFrameId];
+    for (const id of affectedIds) {
+      const node = newDoc.nodes.find((n) => n.id === id);
+      if (node && Number.isFinite(node.x) && Number.isFinite(node.y)) {
+        editor.updateNode?.(id, {
+          x: Math.round(node.x + deltaX),
+          y: Math.round(node.y + deltaY),
+        });
+      }
+    }
+
+    const newName = name || `${sourceNode.name || "Frame"} (Variant)`;
+    editor.updateNode?.(newFrameId, { name: newName });
+  }
+
+  editor.commitEditorDocument?.({ message: `AI: Fork frame ${frameId}` });
+
+  return {
+    ok: true,
+    sourceFrameId: frameId,
+    newFrameId,
+    name: name || `${sourceNode.name || "Frame"} (Variant)`,
+    x: emptySpace.x,
+    y: emptySpace.y,
+    width,
+    height,
+  };
+}
+
 function selectLayers(args = {}) {
   const editor = requireEditor();
   const layerIds = requireLayerIds(args.layerIds, { min: 0 });
@@ -949,6 +1009,7 @@ export const EXECUTORS = Object.freeze({
   build_layout: buildLayout,
   delete_layers: deleteLayers,
   duplicate_layer: duplicateLayer,
+  fork_frame: forkFrame,
   select_layers: selectLayers,
   group_layers: groupLayers,
   reorder_layer: reorderLayer,
@@ -962,6 +1023,7 @@ export const EXECUTORS = Object.freeze({
   ...DOCUMENT_TOOL_EXECUTORS,
   ...HANDOFF_TOOL_EXECUTORS,
   ...ASSET_TOOL_EXECUTORS,
+  ...COMMENT_TOOL_EXECUTORS,
   lint_design: lintDesignTool,
   create_path: (args) => createPath(args),
   create_frame: (args) => LAYOUT_TOOL_EXECUTORS.create_frame(args),

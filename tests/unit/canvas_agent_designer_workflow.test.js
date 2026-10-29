@@ -18,6 +18,7 @@ const ALL_TOOL_NAMES = [
   "find_empty_space",
   "delete_layers",
   "duplicate_layer",
+  "fork_frame",
   "select_layers",
   "group_layers",
   "reorder_layer",
@@ -73,6 +74,11 @@ const ALL_TOOL_NAMES = [
   "set_constraints",
   "export_layers",
   "new_document",
+  "create_comment",
+  "delete_comment",
+  "list_comments",
+  "reply_comment",
+  "resolve_comment",
 ];
 
 describe("CANVAS_TOOL_SCHEMAS completeness", () => {

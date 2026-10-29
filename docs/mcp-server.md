@@ -75,6 +75,7 @@ The catalog follows `CANVAS_TOOL_SCHEMAS` and currently includes:
 - `new_document`
 - `delete_layers`
 - `duplicate_layer`
+- `fork_frame`
 - `select_layers`
 - `group_layers`
 - `reorder_layer`

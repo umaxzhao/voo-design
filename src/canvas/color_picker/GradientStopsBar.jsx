@@ -43,6 +43,7 @@ export function GradientStopsBar({
 
   const handleHandleMouseDown = (index, e) => {
     e.stopPropagation();
+    e.preventDefault?.();
     onSelectStop(index);
     if (e.currentTarget && typeof e.currentTarget.focus === "function") {
       e.currentTarget.focus();
@@ -55,7 +56,7 @@ export function GradientStopsBar({
     /** Track whether the pointer ever left the bar during this drag. */
     let deletePending = false;
 
-    const handleMouseMove = (ev) => {
+    const handlePointerMove = (ev) => {
       const rect = bar.getBoundingClientRect();
       // Drag more than 30 px above/below the bar to trigger delete
       const verticalOffset = Math.abs(ev.clientY - rect.top - rect.height / 2);
@@ -83,9 +84,12 @@ export function GradientStopsBar({
       }
     };
 
-    const handleMouseUp = () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+    const handlePointerUp = () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
+      window.removeEventListener("mousemove", handlePointerMove);
+      window.removeEventListener("mouseup", handlePointerUp);
 
       // Delete-by-drag-off: only when we still have more than the minimum.
       if (deletePending && stops.length > MIN_STOPS) {
@@ -101,8 +105,11 @@ export function GradientStopsBar({
       }
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
+    window.addEventListener("mousemove", handlePointerMove);
+    window.addEventListener("mouseup", handlePointerUp);
   };
 
   const handleDeleteStop = (index) => {
@@ -160,7 +167,7 @@ export function GradientStopsBar({
         }}
         tabIndex={0}
         style={{ background: previewGradient }}
-        className="relative h-4 w-full cursor-pointer rounded-md border border-white/10 select-none outline-none"
+        className="relative h-4 w-full cursor-pointer rounded-md border border-white/10 select-none touch-none outline-none"
       >
         {stops.map((stop, idx) => (
           <div
@@ -169,6 +176,7 @@ export function GradientStopsBar({
             role="button"
             tabIndex={0}
             aria-label={t("editor.colorPicker.gradientStop", { index: idx + 1 })}
+            onPointerDown={(e) => handleHandleMouseDown(idx, e)}
             onMouseDown={(e) => handleHandleMouseDown(idx, e)}
             onKeyDown={(e) => {
               if (e.key === "Backspace" || e.key === "Delete") {

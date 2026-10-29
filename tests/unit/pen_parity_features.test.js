@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { findEmptySpace } from "../../src/canvas/agent/canvas_tools_geometry.js";
 import { createIcon } from "../../src/canvas/agent/canvas_tools_assets.js";
 import { setFrameSlot, getFrameSlot } from "../../src/canvas/agent/canvas_tools_components.js";
+import { forkFrame } from "../../src/canvas/agent/canvas_tools.js";
 import {
   setAgentCursor,
   getAgentCursor,
@@ -155,5 +156,44 @@ describe("component slots", () => {
     // Clear slot
     const clearRes = setFrameSlot({ frameId: "f1", slot: null }, { editor });
     expect(clearRes.slot).toBeNull();
+  });
+});
+
+describe("fork_frame tool", () => {
+  it("duplicates frame and positions copy at adjacent non-overlapping coordinates", () => {
+    const f1 = { id: "f1", isFrame: true, name: "Landing Hero", x: 0, y: 0, width: 1440, height: 900 };
+    const child1 = { id: "c1", parentId: "f1", x: 100, y: 100, width: 200, height: 50 };
+
+    let currentSelectedId = null;
+    const doc = { nodes: [f1, child1] };
+
+    const editor = {
+      getDocument: () => doc,
+      getDoc: () => doc,
+      getNode: (id) => doc.nodes.find((item) => item.id === id),
+      selectExactly: vi.fn(([id]) => { currentSelectedId = id; }),
+      getSelectedId: () => "f1_copy",
+      duplicateSelected: vi.fn(() => {
+        const copyFrame = { id: "f1_copy", isFrame: true, name: "Landing Hero (Copy)", x: 10, y: 10, width: 1440, height: 900 };
+        const copyChild = { id: "c1_copy", parentId: "f1_copy", x: 110, y: 110, width: 200, height: 50 };
+        doc.nodes.push(copyFrame, copyChild);
+        currentSelectedId = "f1_copy";
+      }),
+      getAffectedIds: vi.fn((_doc, [id]) => [id, "c1_copy"]),
+      updateNode: vi.fn((id, patch) => {
+        const n = doc.nodes.find((item) => item.id === id);
+        if (n) Object.assign(n, patch);
+      }),
+      commitEditorDocument: vi.fn(),
+    };
+
+    const res = forkFrame({ frameId: "f1", name: "Landing Hero Variant B", direction: "right", padding: 80 }, { editor });
+    expect(res.ok).toBe(true);
+    expect(res.sourceFrameId).toBe("f1");
+    expect(res.newFrameId).toBe("f1_copy");
+    expect(res.name).toBe("Landing Hero Variant B");
+    expect(res.x).toBe(1520); // 1440 + 80
+    expect(res.y).toBe(0);
+    expect(editor.commitEditorDocument).toHaveBeenCalled();
   });
 });

@@ -39,6 +39,7 @@ kept in sync with undo/redo:
 | `batch_mutate_layers` | Runs multiple layer mutations atomically. |
 | `delete_layers` | Deletes layers. |
 | `duplicate_layer` | Duplicates a layer. |
+| `fork_frame` | Forks/duplicates an entire frame to an adjacent non-overlapping position for variant comparison or A/B testing. |
 | `select_layers` | Selects layers. |
 | `group_layers` | Groups layers. |
 | `reorder_layer` | Changes layer order. |
@@ -105,6 +106,28 @@ kept in sync with undo/redo:
 | `lint_design` | Checks the design for quality issues (score + issues + metrics). |
 | `inspect_layout` | Structured layout QA: clipped/overflow/overlap/contrast/… problems with layer ids and fixes. |
 
+### Review comments
+
+| Tool | Effect |
+| :--- | :--- |
+| `list_comments` | Lists page comments, optionally unresolved threads only. |
+| `create_comment` | Adds a page-coordinate comment with an undoable document edit. |
+| `reply_comment` | Adds a reply to an existing thread. |
+| `resolve_comment` | Resolves or reopens a thread. |
+| `delete_comment` | Deletes a thread and its replies. |
+
+### Current interaction boundary
+
+The agent works through document operations rather than simulating arbitrary
+pointer gestures. It can create editable vector paths, mutate geometry and
+styles, and use image-provider tools, but it does not yet expose the editor's
+freehand pixel brush/eraser/retouch gestures, mesh or puppet-warp sessions,
+text-on-path controls, file-picker workflows for every import/export format,
+or presentation-deck export as canvas tools. The editor's own stretch alignment
+and per-line main-axis fill behavior are also not implemented by the layout
+engine. These are explicit coverage gaps, not operations the agent should claim
+to have performed.
+
 ### Handoff & Code
 
 | Tool | Effect |
@@ -120,6 +143,16 @@ kept in sync with undo/redo:
 | `edit_image` | Removes or replaces an image background through the configured image provider. |
 | `stock_image` | Searches Openverse (CC-licensed) and places a matching photo. |
 | `create_icon` | Inserts a vector icon (from built-in Lucide set) directly onto the canvas. |
+
+### Comments & Review
+
+| Tool | Effect |
+| :--- | :--- |
+| `list_comments` | Lists review comments and discussion threads on the active page. |
+| `create_comment` | Places a new review comment pin and starts a thread. |
+| `reply_comment` | Replies to an existing comment thread. |
+| `resolve_comment` | Marks a comment thread as resolved or unresolves it. |
+| `delete_comment` | Deletes a comment or thread. |
 
 Mutations flash a visual focus overlay on the canvas
 (`src/canvas/editor/chrome_stage_overlays.js`) so you can see what the agent

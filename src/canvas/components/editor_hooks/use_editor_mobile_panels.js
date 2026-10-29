@@ -15,11 +15,8 @@ export function useEditorMobilePanels({
   undo,
   redo,
 }) {
-  const [mobilePanelsExpanded, setMobilePanelsExpanded] = useState(false);
-  const mobileLayersExpanded = mobilePanelsExpanded;
-  const mobilePropertiesExpanded = mobilePanelsExpanded;
-  const setMobileLayersExpanded = setMobilePanelsExpanded;
-  const setMobilePropertiesExpanded = setMobilePanelsExpanded;
+  const [mobileLayersExpanded, setMobileLayersExpanded] = useState(false);
+  const [mobilePropertiesExpanded, setMobilePropertiesExpanded] = useState(false);
   const applyMobilePinch = useCallback(
     ({ isStart, factor, centerX, centerY, deltaX, deltaY }) => {
       if (isStart) {
@@ -66,13 +63,13 @@ export function useEditorMobilePanels({
         panelId === "editor-layers-panel"
           ? mobileLayersExpanded
           : mobilePropertiesExpanded;
-      if (!isExpanded) return;
       const bounds = panel.getBoundingClientRect();
-      if (event.clientY > bounds.top + 56) return;
+      if (isExpanded && event.clientY > bounds.top + 56) return;
       mobilePanelDragRef.current = {
         pointerId: event.pointerId,
         startY: event.clientY,
         panelId,
+        isExpanded,
         dragged: false,
       };
     },
@@ -83,19 +80,36 @@ export function useEditorMobilePanels({
       const drag = mobilePanelDragRef.current;
       if (!drag || drag.pointerId !== event.pointerId) return;
       const deltaY = event.clientY - drag.startY;
-      if (deltaY < -10) {
-        mobilePanelDragRef.current = null;
-        return;
-      }
-      if (deltaY < 10) return;
-      event.preventDefault();
-      event.stopPropagation();
-      drag.dragged = true;
-      if (deltaY < 28) return;
-      if (drag.panelId === "editor-layers-panel") {
-        setMobileLayersExpanded(false);
+      if (drag.isExpanded) {
+        if (deltaY < -10) {
+          mobilePanelDragRef.current = null;
+          return;
+        }
+        if (deltaY < 10) return;
+        event.preventDefault();
+        event.stopPropagation();
+        drag.dragged = true;
+        if (deltaY < 28) return;
+        if (drag.panelId === "editor-layers-panel") {
+          setMobileLayersExpanded(false);
+        } else {
+          setMobilePropertiesExpanded(false);
+        }
       } else {
-        setMobilePropertiesExpanded(false);
+        if (deltaY > 10) {
+          mobilePanelDragRef.current = null;
+          return;
+        }
+        if (deltaY > -10) return;
+        event.preventDefault();
+        event.stopPropagation();
+        drag.dragged = true;
+        if (deltaY > -28) return;
+        if (drag.panelId === "editor-layers-panel") {
+          setMobileLayersExpanded(true);
+        } else {
+          setMobilePropertiesExpanded(true);
+        }
       }
     },
     [],

@@ -50,6 +50,10 @@ async function client(port, token) {
 
 describe("MCP stdio", () => {
   it("publishes the composition and verification guidance in Codex tools", () => {
+    const toolNames = new Set(buildMcpTools().map((tool) => tool.name));
+    for (const name of ["list_comments", "create_comment", "reply_comment", "resolve_comment", "delete_comment"]) {
+      expect(toolNames.has(name)).toBe(true);
+    }
     const layoutTool = buildMcpTools().find((tool) => tool.name === "build_layout");
     const autoLayoutTool = buildMcpTools().find((tool) => tool.name === "mutate_auto_layout");
     expect(layoutTool.description).toContain("one top-level frame");

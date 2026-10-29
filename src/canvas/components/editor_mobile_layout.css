@@ -234,6 +234,8 @@
     transform: translateX(-50%);
   }
 
+  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"] .viewport-tools,
+  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="true"] .viewport-tools,
   [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"][data-mobile-properties-expanded="true"] .viewport-tools {
     bottom: calc(45% + 0.25rem);
   }
@@ -252,6 +254,8 @@
     touch-action: pan-x;
   }
 
+  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"] [data-testid="editor-contextual-taskbar"],
+  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="true"] [data-testid="editor-contextual-taskbar"],
   [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"][data-mobile-properties-expanded="true"] [data-testid="editor-contextual-taskbar"] {
     bottom: calc(45% + 3.25rem) !important;
   }
@@ -380,6 +384,11 @@
 
   [data-testid="editor-more-menu"] .mobile-more-command {
     display: flex;
+  }
+
+  [data-testid="editor-more-menu"] button[role="menuitem"] {
+    min-height: 2.75rem;
+    font-size: 0.8125rem;
   }
 }
 

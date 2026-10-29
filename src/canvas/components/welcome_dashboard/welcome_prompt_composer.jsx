@@ -94,10 +94,10 @@ export function WelcomePromptComposer({
     const onKeyDown = (event) => {
       if (event.key === "Escape") setAdvancedOpen(false);
     };
-    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [advancedOpen]);

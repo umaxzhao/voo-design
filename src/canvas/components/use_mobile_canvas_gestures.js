@@ -63,6 +63,24 @@ export function useMobileCanvasGestures(onUndo, onPinch, onRedo) {
         centerX: center.x,
         centerY: center.y,
       };
+      // Cancel any active drawing or drag on the first touch now that a pinch gesture owns the stage.
+      const stage = event.target.closest?.('[data-testid="editor-pages"]');
+      if (stage && typeof PointerEvent === "function") {
+        try {
+          stage.dispatchEvent(
+            new PointerEvent("pointercancel", {
+              pointerId: points[0][0],
+              pointerType: "touch",
+              bubbles: true,
+              cancelable: true,
+              clientX: first.x,
+              clientY: first.y,
+            }),
+          );
+        } catch {
+          // Fallback on environments without full PointerEvent support
+        }
+      }
       onPinchRef.current?.({ isStart: true });
       gesture.candidate = Math.abs(first.startAt - second.startAt) <= TWO_FINGER_START_WINDOW_MS
         ? {
