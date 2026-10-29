@@ -66,6 +66,12 @@ describe("welcome prompt composer", () => {
     expect(html).toContain("welcome.prompt.modelLabel");
   });
 
+  it("shows the active design type's prompt guide in the input", () => {
+    const html = render({ activePill: "mobile" });
+    expect(html).toContain('placeholder="welcome.prompt.mobilePlaceholder"');
+    expect(html).toContain('aria-label="welcome.prompt.mobilePlaceholder"');
+  });
+
   it("renders a quiet default surface with advanced settings hidden", () => {
     const html = render();
     expect(html).toContain("welcome.prompt.addAttachment");

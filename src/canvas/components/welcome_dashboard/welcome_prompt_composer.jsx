@@ -140,9 +140,9 @@ export function WelcomePromptComposer({
               onSubmit?.(event);
             }
           }}
-          placeholder={t("welcome.prompt.placeholder")}
+          placeholder={t(activePreset.placeholder ?? "welcome.prompt.placeholder")}
           rows={4}
-          aria-label={t("welcome.prompt.placeholder")}
+          aria-label={t(activePreset.placeholder ?? "welcome.prompt.placeholder")}
           className="min-h-24 w-full resize-y bg-transparent text-[12px] leading-6 text-neutral-100 placeholder-neutral-400 focus:outline-none"
         />
 
