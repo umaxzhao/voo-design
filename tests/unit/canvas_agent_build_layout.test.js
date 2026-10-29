@@ -36,6 +36,9 @@ describe("build_layout", () => {
   it("registers its recursive schema and documents absolute coordinates", () => {
     const schema = CANVAS_TOOL_SCHEMAS.find(s => s.function.name === "build_layout").function;
     expect(schema.description).toContain("absolute canvas coordinates");
+    expect(schema.description).toContain("one top-level frame");
+    expect(schema.description).toContain("type=text for editable copy");
+    expect(schema.description).toContain("capture_canvas and inspect_layout");
     expect(schema.parameters.$defs.node.properties.children.items.$ref).toBe("#/$defs/node");
   });
 

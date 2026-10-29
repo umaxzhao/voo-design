@@ -3,6 +3,7 @@ import { PassThrough } from "node:stream";
 import { once } from "node:events";
 import { WebSocket } from "ws";
 import { createMcpStdioServer } from "../../electron/mcp_server/stdio_server.js";
+import { buildMcpTools } from "../../electron/mcp_server/tool_catalog.js";
 import { startCliBridgeServer } from "../../electron/cli_bridge_server.js";
 import { startCanvasMcpLink } from "../../src/canvas/mcp/canvas_mcp_link.js";
 import { CLI_BRIDGE_CHANNEL as C } from "../../src/shared/cli_bridge_protocol.js";
@@ -48,6 +49,13 @@ async function client(port, token) {
 }
 
 describe("MCP stdio", () => {
+  it("publishes the composition and verification guidance in Codex tools", () => {
+    const layoutTool = buildMcpTools().find((tool) => tool.name === "build_layout");
+    expect(layoutTool.description).toContain("one top-level frame");
+    expect(layoutTool.description).toContain("type=text for editable copy");
+    expect(layoutTool.description).toContain("capture_canvas and inspect_layout");
+  });
+
   it("initializes, lists safe tools, pings and ignores notifications", async () => {
     const s = stdio(async () => ({}));
     try {

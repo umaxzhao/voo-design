@@ -54,6 +54,13 @@ It does not select a guessed DeepSeek model or overwrite existing profile files.
 In the desktop app, merge the overlay's `insert` patch into the intended profile
 through Harness configuration; do not replace an existing `cordis.patch.yml`.
 
+For editable compositions from Codex, use `build_layout` with one top-level
+`frame` and nest its visual elements and `text` layers under `children`. Then
+call `capture_canvas` and `inspect_layout` to review the result. The portable
+connector intentionally omits provider-backed image generation tools. Rebuild
+the connector into a new empty folder after tool-schema changes so its catalog
+snapshot includes the latest guidance.
+
 Verification: ask the agent to call `voo_status`, inspect the layer tree, then
 create and undo a rectangle in a disposable document. A missing canvas is an
 explicit tool error, not a successful empty operation.

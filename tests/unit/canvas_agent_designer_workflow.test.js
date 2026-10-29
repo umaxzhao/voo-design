@@ -117,6 +117,49 @@ describe("design agent system prompt", () => {
 describe("runAgentTurn uses the shared tool list for every model kind", () => {
   const tools = CANVAS_TOOL_SCHEMAS;
 
+  it("treats one build_layout call as creation and requires a canvas capture", async () => {
+    const executed = [];
+    const prompts = [];
+    let step = 0;
+    const result = await runAgentTurn({
+      config: { model: "gpt-fake" },
+      history: [],
+      userText: "Design a Bauhaus poster",
+      tools,
+      htmlPipeline: false,
+      executeTool: async (name) => {
+        executed.push(name);
+        return name === "capture_canvas"
+          ? { dataUrl: "data:image/png;base64,YWJj" }
+          : { count: 12, created: [] };
+      },
+      streamStep: async ({ messages }) => {
+        step += 1;
+        if (step === 1) {
+          return {
+            text: "",
+            toolCalls: [{ id: "layout", name: "build_layout", arguments: "{}" }],
+          };
+        }
+        if (step === 2) {
+          return { text: "The poster is ready.", toolCalls: [] };
+        }
+        if (step === 3) {
+          prompts.push(...messages.map((message) => message.content).filter(Boolean));
+          return {
+            text: "",
+            toolCalls: [{ id: "capture", name: "capture_canvas", arguments: "{}" }],
+          };
+        }
+        return { text: "Verified poster.", toolCalls: [] };
+      },
+    });
+
+    expect(executed).toEqual(["build_layout", "capture_canvas"]);
+    expect(prompts.some((prompt) => prompt.includes("verify the generated design"))).toBe(true);
+    expect(result).toBe("Verified poster.");
+  });
+
   it("forwards the tool schemas to the stream step and executes tool calls", async () => {
     const seenTools = [];
     let calls = 0;

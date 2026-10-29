@@ -34,7 +34,8 @@ export const SYSTEM_PROMPT =
   "Use build_layout to efficiently create many layers or a whole tree in one call.\n" +
   "2. Structure: create_frame for containers (optionally with horizontal/vertical auto layout, gap, " +
   "padding); create_shape for rect/ellipse/text; create_path for vector art (SVG d); place_image for " +
-  "raster at exact geometry when provided by the user.\n" +
+  "raster at exact geometry when provided by the user. For one poster or composed page, create one " +
+  "top-level Frame and nest its artwork and editable text layers under that Frame.\n" +
   "3. Arrange: align_layers and distribute_layers instead of hand-computing coordinates; " +
   "mutate_auto_layout for frames; mutate_layer_layout/style/text or batch_mutate_layers for edits; " +
   "group_layers/ungroup_layers, reorder_layer, rename_layer (name every layer meaningfully).\n" +
@@ -221,7 +222,11 @@ export async function runAgentTurn({
   let creationNudged = false;
   let lintReport = null;
   let lintNudged = false;
-  const creationTools = new Set(["create_frame", "create_shape", "create_path", "place_image", "generate_image", "generate_image_web", "create_instance", "create_nodes", "edit_html"]);
+  const creationTools = new Set([
+    "build_layout", "create_frame", "create_shape", "create_path", "place_image",
+    "generate_image", "generate_image_web", "generate_vector", "vectorize_image",
+    "edit_image", "stock_image", "create_icon", "create_instance", "create_nodes", "edit_html",
+  ]);
   // Only creation briefs require new content; inspection and token-only tasks remain valid.
   // Without a creation tool in the toolset the requirement cannot be met, so do not enforce it.
   const needsCanvasContent = tools.some(tool => creationTools.has(tool?.function?.name))
@@ -273,9 +278,15 @@ export async function runAgentTurn({
           messages.push({ role: "assistant", content: text || null }, { role: "user", content: "A tool failed. Inspect its error and retry once with corrected arguments, or explain why it cannot be completed." });
           continue;
         }
-        if (canCapture && writesSinceCapture >= 2 && !verificationNudged) {
+        const generatedDesignNeedsVerification =
+          needsCanvasContent && canvasCreated && writesSinceCapture > 0;
+        if (
+          canCapture &&
+          (generatedDesignNeedsVerification || writesSinceCapture >= 2) &&
+          !verificationNudged
+        ) {
           verificationNudged = true;
-          messages.push({ role: "assistant", content: text || null }, { role: "user", content: "Before finishing, call capture_canvas to verify the multi-step design edits. Review the image and fix visible problems." });
+          messages.push({ role: "assistant", content: text || null }, { role: "user", content: "Before finishing, call capture_canvas to verify the generated design. Review the image and fix visible problems." });
           continue;
         }
         // Bounded automatic quality gate: a low deterministic layout score gets

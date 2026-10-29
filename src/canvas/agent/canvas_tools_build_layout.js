@@ -26,7 +26,7 @@ export const BUILD_LAYOUT_SCHEMA = {
   type: "function",
   function: {
     name: "build_layout",
-    description: "Create a complete tree of up to 200 layers in one undoable batch, using the same nodes as create_frame/create_shape. All x/y coordinates are absolute canvas coordinates, including children (parentId establishes ownership, not a coordinate offset). Auto-layout may reposition children. autoLayout accepts create_frame's layout, gap and padding. Text is measured after its typography is applied; width is the wrapping box. Lines run from (x,y) to (x+width,y+height). Returns {created:[{id,name,type}],count}. You may batch multiple tool calls in one step.",
+    description: "Create a complete tree of up to 200 layers in one undoable batch, using the same nodes as create_frame/create_shape. For one poster, screen or composed page, make one top-level frame and put its artwork and text in that frame's children so the result moves as one composition; use type=text for editable copy. Use separate top-level nodes only when they should be independent. All x/y coordinates are absolute canvas coordinates, including children (parentId establishes ownership, not a coordinate offset). Auto-layout may reposition children. autoLayout accepts create_frame's layout, gap and padding. Text is measured after its typography is applied; width is the wrapping box. Lines run from (x,y) to (x+width,y+height). After creating a composition, call capture_canvas and inspect_layout before finishing. Returns {created:[{id,name,type}],count}. You may batch multiple tool calls in one step.",
     parameters: {
       type: "object",
       properties: { parentId: { type: "string" }, nodes: { type: "array", minItems: 1, maxItems: 200, items: { $ref: "#/$defs/node" } } },
