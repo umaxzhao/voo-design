@@ -9,6 +9,7 @@ export default function useEditorLayerInteractions(model) {
     activeCanvasId,
     getSelectionKey,
     selectedIds,
+    selectedGroupId,
     isBackgroundSelected,
     activeIndex,
     objects,
@@ -80,6 +81,7 @@ export default function useEditorLayerInteractions(model) {
   /** Whether a row paints as selected; see layer_selection.js for the rule. */
   const rowSelectedOf = node => isRowSelected(objects, node, {
     selectedIds,
+    selectedGroupId,
     activeIndex,
     isBackgroundSelected,
     isolationGroupId

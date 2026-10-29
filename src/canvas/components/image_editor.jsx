@@ -2706,6 +2706,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             objects={layers}
             activeIndex={activeIndex}
             selectedIds={selectedIds}
+            selectedGroupId={selectedGroup?.id ?? null}
             backgroundColor={canvasBackgroundColor}
             isBackgroundSelected={canvasBackgroundSelected}
             isolationGroupId={isolationGroupId}

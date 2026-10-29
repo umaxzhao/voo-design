@@ -95,6 +95,18 @@ function chosenOf(selectedIds) {
   return chosen;
 }
 
+function isInsideGroup(objects, node, groupId) {
+  const { byId } = indexOf(objects);
+  let parentId = node.parentId;
+  const seen = new Set();
+  while (parentId && !seen.has(parentId)) {
+    if (parentId === groupId) return true;
+    seen.add(parentId);
+    parentId = byId.get(parentId)?.parentId ?? null;
+  }
+  return false;
+}
+
 /**
  * Whether the panel paints `node`'s row as selected.
  *
@@ -125,9 +137,14 @@ export function isRowSelected(
     activeIndex = -1,
     isBackgroundSelected = false,
     isolationGroupId = null,
+    selectedGroupId = null,
   } = {},
 ) {
   const chosen = chosenOf(selectedIds);
+  if (selectedGroupId) {
+    if (node.id === selectedGroupId) return true;
+    if (isInsideGroup(objects, node, selectedGroupId)) return false;
+  }
   if (!isGroupNode(node)) {
     // A member whose folder is lit as a whole unit defers to that folder's
     // row, so a group selection reads as one selected thing.
@@ -143,9 +160,14 @@ export function isRowSelected(
     return node.id === isolationGroupId || chosen.has(node.id);
   }
 
+  // A selected ancestor already communicates that this subtree is selected.
+  // Do not outline every nested folder as a separate selection as well; this
+  // is especially noisy for generated layouts with several levels of groups.
+  if (node.id === isolationGroupId || chosen.has(node.id)) return true;
+  if (coveredByWholeFolder(objects, node, chosen)) return false;
+
   const ids = groupArtworkIds(objects, node.id);
   return (
-    node.id === isolationGroupId ||
     (ids.length > 0 && ids.every((id) => chosen.has(id)))
   );
 }

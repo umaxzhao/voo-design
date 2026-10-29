@@ -57,6 +57,49 @@ describe("layer row selection styling", () => {
     expect(isRowSelected(objects, first, { selectedIds: ["first", "second"] })).toBe(false);
   });
 
+  it("highlights only the outermost selected folder in a nested hierarchy", () => {
+    const outer = { id: "outer", kind: "group" };
+    const inner = { id: "inner", kind: "group", parentId: "outer" };
+    const first = { id: "first", kind: "rect", parentId: "inner" };
+    const second = { id: "second", kind: "rect", parentId: "outer" };
+    const objects = [outer, inner, first, second];
+    const selectedIds = ["first", "second"];
+
+    expect(isRowSelected(objects, outer, { selectedIds })).toBe(true);
+    expect(isRowSelected(objects, inner, { selectedIds })).toBe(false);
+    expect(isRowSelected(objects, first, { selectedIds })).toBe(false);
+  });
+
+  it("still highlights a single selected child inside a nested folder", () => {
+    const outer = { id: "outer", kind: "group" };
+    const inner = { id: "inner", kind: "group", parentId: "outer" };
+    const first = { id: "first", kind: "rect", parentId: "inner" };
+    const second = { id: "second", kind: "rect", parentId: "inner" };
+    const third = { id: "third", kind: "rect", parentId: "outer" };
+    const objects = [outer, inner, first, second, third];
+
+    expect(isRowSelected(objects, outer, { selectedIds: ["first"] })).toBe(false);
+    expect(isRowSelected(objects, inner, { selectedIds: ["first"] })).toBe(false);
+    expect(isRowSelected(objects, first, { selectedIds: ["first"] })).toBe(true);
+  });
+
+  it("shows a selected group as one row instead of selecting all nested rows", () => {
+    const outer = { id: "outer", kind: "group" };
+    const inner = { id: "inner", kind: "group", parentId: "outer" };
+    const first = { id: "first", kind: "rect", parentId: "inner" };
+    const second = { id: "second", kind: "rect", parentId: "inner" };
+    const objects = [outer, inner, first, second];
+    const options = {
+      selectedIds: ["first", "second"],
+      selectedGroupId: "outer",
+    };
+
+    expect(isRowSelected(objects, outer, options)).toBe(true);
+    expect(isRowSelected(objects, inner, options)).toBe(false);
+    expect(isRowSelected(objects, first, options)).toBe(false);
+    expect(isRowSelected(objects, second, options)).toBe(false);
+  });
+
   it.each([false, true])("selected row has gray fill and inset shadow (isolated=%s)", (isolated) => {
     const row = renderRow({ isolated });
     expect(row).toContain("bg-neutral-800");

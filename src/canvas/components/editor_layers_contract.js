@@ -20,6 +20,7 @@ export const editorLayersPropTypes = {
   activeIndex: PropTypes.number,
   backgroundColor: PropTypes.string,
   selectedIds: PropTypes.arrayOf(PropTypes.string),
+  selectedGroupId: PropTypes.string,
   isBackgroundSelected: PropTypes.bool,
   /** The folder being edited in isolation; its row stays lit while open. */
   isolationGroupId: PropTypes.string,
