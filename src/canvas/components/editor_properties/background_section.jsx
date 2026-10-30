@@ -33,6 +33,8 @@ export default function BackgroundSection({
   const expandedEntry = pageColours.find(
     (entry) => entry.colour === expandedColour,
   );
+  const colourLabel = (entry) =>
+    entry.gradient ? t("editor.props.gradientLabel") : entry.colour;
   const currentBg = backgroundColor || "#262626";
 
   return (
@@ -122,8 +124,8 @@ export default function BackgroundSection({
               <button
                 key={entry.colour}
                 type="button"
-                aria-label={`${entry.colour} ×${new Set(entry.nodes).size}`}
-                title={`${entry.colour} ×${new Set(entry.nodes).size}`}
+                aria-label={`${colourLabel(entry)} ×${new Set(entry.nodes).size}`}
+                title={`${colourLabel(entry)} ×${new Set(entry.nodes).size}`}
                 aria-expanded={expandedEntry?.colour === entry.colour}
                 aria-controls={
                   expandedEntry?.colour === entry.colour ? detailsId : undefined
@@ -134,7 +136,10 @@ export default function BackgroundSection({
                   )
                 }
                 className={`size-5 shrink-0 rounded-full border border-white/20 transition-shadow hover:ring-1 hover:ring-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4] [@media(pointer:coarse)]:size-12 ${expandedEntry?.colour === entry.colour ? "ring-2 ring-[#a7ffd4]" : ""}`}
-                style={{ backgroundColor: entry.colour }}
+                style={{
+                  background: entry.colour,
+                  backgroundSize: "100% 100%",
+                }}
               />
             ))}
           </div>
@@ -151,11 +156,11 @@ export default function BackgroundSection({
                   onSelectPageColour?.([...new Set(expandedEntry.nodes)])
                 }
                 title={t("editor.props.selectLayersUsingColour")}
-                aria-label={`${t("editor.props.selectLayersUsingColour")} ${expandedEntry.colour}`}
+                aria-label={`${t("editor.props.selectLayersUsingColour")} ${colourLabel(expandedEntry)}`}
                 className="flex min-h-7 w-full items-center gap-2 rounded-xl bg-neutral-800 px-2.5 text-left transition-colors hover:bg-neutral-800/80 [@media(pointer:coarse)]:min-h-12"
               >
                 <span className="min-w-0 flex-1 truncate text-[11px] font-mono uppercase text-neutral-200">
-                  {expandedEntry.colour}
+                  {colourLabel(expandedEntry)}
                 </span>
                 <span className="shrink-0 text-[10px] font-mono tabular-nums text-neutral-400">
                   ×{new Set(expandedEntry.nodes).size}
@@ -185,6 +190,7 @@ BackgroundSection.propTypes = {
   pageColours: PropTypes.arrayOf(
     PropTypes.shape({
       colour: PropTypes.string.isRequired,
+      gradient: PropTypes.bool,
       nodes: PropTypes.arrayOf(PropTypes.string).isRequired,
     }),
   ),
