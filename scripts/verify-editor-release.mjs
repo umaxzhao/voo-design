@@ -27,7 +27,8 @@ const commands = [
     "editor-shortcut-lifecycle", "image-action-loading", "project-picker", "pages_dnd", "editor-snapping",
     "destructive-boolean", "hook-lifecycle", "editor-refactor", "editor-context", "editor-session",
     "editor-page-composition", "raster-loading", "generated-output", "root-contextual-toolbar",
-    "frame-child-pointer", "gl-spatial-parity",
+    "frame-child-pointer", "frame-negative-space", "frame-alt-duplicate", "frame-reparent-contracts",
+    "frame-surface-camera", "frame-adjustment-space", "gl-spatial-parity",
   ]
     .map((suite) => [process.execPath, [`tests/e2e/${suite}.e2e.mjs`]]),
 ];

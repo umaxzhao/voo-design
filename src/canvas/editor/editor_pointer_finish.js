@@ -6,10 +6,13 @@ import { commitEditorAction } from "../undo-action-contracts.js";
 import { absolutePathEndpoints } from "./shape_geometry.js";
 import { TOOL } from "./editor_constants.js";
 import { reparentMovedRoots } from "./reparent-moved-roots.js";
+import { rollbackMoveGesture } from "./move-gesture-transaction.js";
+import { isPointerHandoff } from "./pointer-gesture-handoff.js";
 
 export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
   function finishGesture(event, finished) {
     if (!finished) return;
+    if (event?.type === "pointercancel" && !isPointerHandoff(event) && rollbackMoveGesture(api, finished)) return;
 
     if (
       finished.kind === "gradientStop" ||

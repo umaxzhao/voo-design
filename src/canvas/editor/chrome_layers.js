@@ -14,6 +14,7 @@ import { createFrameClipContext } from "./frame-clip-context.js";
 import { withFrameClips } from "./render-frame-clips.js";
 import { paintedNodeBounds } from "./painted-node-bounds.js";
 import { containerPaintNode, containerMaskNode, createContainerOpacityPlan } from "./container-opacity.js";
+import { drawIsolatedAdjustment } from "./render-isolated-adjustment.js";
 
 // One latest result per immutable document prevents the 90ms selection timer
 // from rebuilding document-sized effect planes. Weak document keys release a
@@ -208,6 +209,13 @@ export function drawAdjustmentLayer(
 ) {
   try {
     adjustmentLayerFailures.get(doc)?.delete(node.id);
+    if (doc.isCanvasRoot) {
+      // A free world's backdrop is the actual device-sized composition, not
+      // a document-origin bitmap. Reuse the isolated pass so signed positions,
+      // earlier adjustments, container alpha and camera windows remain intact.
+      drawIsolatedAdjustment(ctx, node, doc, frameClips.framesOf(node), maskOf);
+      return;
+    }
     const signature = buildToneLut(node.adjustments).signature;
     const cacheKey = `${docVersion}|${nodeIndex}|${doc.width}x${doc.height}|${canvasWidth}x${canvasHeight}|${fullResolution ? 1 : 0}|${signature}|${node.maskId ?? ""}`;
     let layers = adjustmentLayerCache.get(doc);

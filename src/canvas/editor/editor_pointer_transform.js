@@ -27,6 +27,7 @@ import { visibleSelectedNode } from "./editor_pointer_hit_test.js";
 import { captureMoveGestureFrame, moveGestureIds } from "./move_gesture.js";
 import { editorSnapOptions, snapNodeBounds } from "./scene_snapping.js";
 import { rotationCursorForPoint } from "./editor-cursors.js";
+import { beginAltDuplicate } from "./move-gesture-transaction.js";
 
 export function scaleNodePoints(points, scaleX, scaleY) {
   if (!Array.isArray(points)) return points;
@@ -86,7 +87,6 @@ export function createTransformPointerGestures(ctx) {
       }
       api.endEdit?.();
     }
-    const frame = api.getEvaluatedDocument?.() ?? api.getDocument();
     const selected = visibleSelectedNode(api);
     function pointInWarpNode(node, pt) {
       if (!node) return false;
@@ -376,33 +376,22 @@ export function createTransformPointerGestures(ctx) {
         event.altKey &&
         api.getDocument().nodes.find((node) => node.id === hit.id)
           ?.lockPosition === true;
-      let target = hit;
-      let duplicated = false;
+      const target = hit;
+      let duplicateOnMove = false;
       if (event.altKey && !altTargetLocked) {
         const currentSelected = api.getSelectedNodes?.() ?? [];
         const isHitInMultiSelection =
           currentSelected.length > 1 &&
           currentSelected.some((n) => n.id === hit.id);
 
-        if (typeof api.duplicateSelected === "function") {
-          if (!isHitInMultiSelection && !api.isSelected(hit.id)) {
-            api.select(hit.id);
-          }
-          api.duplicateSelected();
-          duplicated = true;
-          target = api.getSelected?.() ?? hit;
-        } else {
-          const result = ops.duplicateNode(api.getDocument(), hit.id, 0);
-          if (result.id) {
-            api.setDoc(result.doc, { commit: false });
-            target = { ...hit, id: result.id };
-            duplicated = true;
-          }
+        if (!isHitInMultiSelection && !api.isSelected(hit.id)) {
+          api.select(hit.id);
         }
+        duplicateOnMove = true;
       }
 
       const deepSelect = Boolean(event.metaKey || event.ctrlKey);
-      if (event.shiftKey && !duplicated) {
+      if (event.shiftKey && !duplicateOnMove) {
         if (deepSelect && typeof api.toggleExactly === "function") {
           api.toggleExactly(target.id);
         } else if (api.toggleSelect) {
@@ -422,7 +411,10 @@ export function createTransformPointerGestures(ctx) {
       const moving = api.getSelectedNodes();
       const base = moving.length > 0 ? moving : [{ ...hit, id: target.id }];
       const docNow = api.getDocument();
-      const setIds = moveGestureIds(api, docNow, base);
+      const selectedGroup = api.getSelectedGroup?.();
+      const setIds = duplicateOnMove
+        ? ops.moveAffectedIds(docNow, selectedGroup ? [selectedGroup.id] : base.map(node => node.id))
+        : moveGestureIds(api, docNow, base);
       if (setIds.length === 0) return;
       const frame = captureMoveGestureFrame(docNow, setIds);
 
@@ -436,7 +428,8 @@ export function createTransformPointerGestures(ctx) {
           lastX: point.x,
           lastY: point.y,
           moved: false,
-          duplicated,
+          duplicated: false,
+          beginDuplicate: duplicateOnMove ? gesture => beginAltDuplicate(api, gesture) : null,
         });
       }
     } else {

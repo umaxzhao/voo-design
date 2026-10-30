@@ -10,7 +10,8 @@
 import { isContainerNode } from "./scene_model.js";
 import * as ops from "./doc_ops.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
-import { nodesToSvg } from "./editor_svg.js";
+import { exportSvgNodes } from "./editor-svg-resources.js";
+import { cloneNodeForDuplicate, remapDuplicateReferences } from "./node-duplicate.js";
 
 /** Internal layer clipboard holding serialized node data for copy/paste. */
 let layerClipboard = null;
@@ -115,6 +116,9 @@ export function createClipboard({
   selection,
   selectMany,
   select,
+  getSelectedGroup,
+  selectGroup,
+  cache = null,
   removeIds,
   getPixelSelection,
   layerFromSelection,
@@ -125,14 +129,19 @@ export function createClipboard({
   getViewportCenter,
 }) {
   let powerDuplicateState = null;
+  const selectedUnitIds = () => {
+    const group = getSelectedGroup?.();
+    return group ? [group.id] : selection.getIds();
+  };
 
-  function duplicateSelected() {
+  function duplicateSelected({ commit = true, repeatTransform = true } = {}) {
     if (getPixelSelection()?.contours?.length) {
       void layerFromSelection();
       return;
     }
     const doc = getDoc();
-    const selectedIds = selection.getIds();
+    const selectedGroup = getSelectedGroup?.();
+    const selectedIds = selectedUnitIds();
     if (selectedIds.length === 0) {
       powerDuplicateState = null;
       return;
@@ -151,6 +160,7 @@ export function createClipboard({
     let scaleX = 1;
     let scaleY = 1;
     const isConsecutiveDuplicate =
+      repeatTransform &&
       Boolean(powerDuplicateState) &&
       selectedIds.length === powerDuplicateState.lastDuplicateIds.length &&
       selectedIds.every((id) => powerDuplicateState.lastDuplicateIds.includes(id));
@@ -205,10 +215,9 @@ export function createClipboard({
       if (!set.has(node.id)) continue;
       const targetW = node.width !== undefined ? Math.round(node.width * scaleX) : undefined;
       const targetH = node.height !== undefined ? Math.round(node.height * scaleY) : undefined;
+      const detached = cloneNodeForDuplicate(node);
       const copy = {
-        ...node,
-        id: crypto.randomUUID(),
-        locked: false,
+        ...detached,
         x: (node.x ?? 0) + offsetX,
         y: (node.y ?? 0) + offsetY,
         ...(targetW !== undefined ? { width: targetW, baseWidth: targetW } : {}),
@@ -216,8 +225,8 @@ export function createClipboard({
         ...(offsetRotation
           ? { rotation: ((node.rotation ?? 0) + offsetRotation) % 360 }
           : {}),
-        points: node.points
-          ? node.points.map((point) =>
+        points: detached.points
+          ? detached.points.map((point) =>
               Array.isArray(point)
                 ? [point[0] * scaleX, point[1] * scaleY]
                 : {
@@ -234,12 +243,7 @@ export function createClipboard({
       copiesById.set(node.id, copy);
     }
     for (const copy of copiesById.values()) {
-      if (copy.parentId) {
-        copy.parentId = copiesById.get(copy.parentId)?.id ?? copy.parentId;
-      }
-      if (copy.clipTo) {
-        copy.clipTo = copiesById.get(copy.clipTo)?.id ?? copy.clipTo;
-      }
+      remapDuplicateReferences(copy, copiesById);
     }
 
     // The copies keep the original structure as one block: a folder's copy
@@ -305,6 +309,7 @@ export function createClipboard({
       "editor.clipboard.change",
       setDoc,
       ops.withNodes(doc, out),
+      commit ? undefined : { commit: false },
     );
     // Keep the same selection units active after duplication. Filtering out
     // containers here deselected a duplicated frame/group entirely, while
@@ -312,6 +317,13 @@ export function createClipboard({
     const newDuplicateIds = selectedIds
       .map((id) => copiesById.get(id)?.id)
       .filter(Boolean);
+
+    const selectCopies = () => {
+      if (selectedGroup && selectGroup) selectGroup(newDuplicateIds[0]);
+      else selectMany(newDuplicateIds);
+    };
+    // A cancelled pointer preview must not seed future Power Duplicate state.
+    if (!commit) { selectCopies(); return; }
 
     powerDuplicateState = {
       lastDuplicateIds: newDuplicateIds,
@@ -343,7 +355,7 @@ export function createClipboard({
           : null,
     };
 
-    selectMany(newDuplicateIds);
+    selectCopies();
   }
 
   async function copySelected() {
@@ -378,7 +390,7 @@ export function createClipboard({
       }
     }
     const doc = getDoc();
-    const selectedIds = selection.getIds();
+    const selectedIds = selectedUnitIds();
     if (selectedIds.length === 0) return;
     const setIds = ops.moveAffectedIds(doc, selectedIds);
     const set = new Set(setIds);
@@ -398,7 +410,7 @@ export function createClipboard({
     // with both alpha and editable vectors intact.
     try {
       const exported = exportSelectionPng?.(setIds);
-      const svgMarkup = nodesToSvg(nodesToCopy);
+      const svgMarkup = exportSvgNodes(nodesToCopy, { cache, maskTools });
       if (svgMarkup) {
         const succeeded = await writeSvgToSystemClipboard(
           svgMarkup,
@@ -420,14 +432,14 @@ export function createClipboard({
 
   async function copySelectedSvg() {
     const doc = getDoc();
-    const selectedIds = selection.getIds();
+    const selectedIds = selectedUnitIds();
     if (selectedIds.length === 0) return null;
     const setIds = ops.moveAffectedIds(doc, selectedIds);
     const set = new Set(setIds);
     const nodesToCopy = doc.nodes
       .filter((n) => set.has(n.id))
       .map((n) => JSON.parse(JSON.stringify(n)));
-    const svgMarkup = nodesToSvg(nodesToCopy);
+    const svgMarkup = exportSvgNodes(nodesToCopy, { cache, maskTools });
     if (svgMarkup) {
       await writeSvgToSystemClipboard(svgMarkup);
       return svgMarkup;
@@ -437,14 +449,14 @@ export function createClipboard({
 
   function getSelectedSvg() {
     const doc = getDoc();
-    const selectedIds = selection.getIds();
+    const selectedIds = selectedUnitIds();
     if (selectedIds.length === 0) return "";
     const setIds = ops.moveAffectedIds(doc, selectedIds);
     const set = new Set(setIds);
     const nodesToCopy = doc.nodes
       .filter((n) => set.has(n.id))
       .map((n) => JSON.parse(JSON.stringify(n)));
-    return nodesToSvg(nodesToCopy);
+    return exportSvgNodes(nodesToCopy, { cache, maskTools });
   }
 
   function copy() {
@@ -518,6 +530,7 @@ export function createClipboard({
             ? copy.clipTo
             : null);
       }
+      remapDuplicateReferences(copy, copiesById);
     }
     const newNodes = [...doc.nodes, ...copiesById.values()];
     commitEditorDocument(
@@ -526,9 +539,10 @@ export function createClipboard({
       ops.withNodes(doc, newNodes),
     );
     // Keep the pasted selection at the same hierarchy level as the copied units.
+    const copiedIds = new Set([...copiesById.values()].map(copy => copy.id));
     selectMany(
       [...copiesById.values()]
-        .filter((copy) => !copiesById.has(copy.parentId))
+        .filter((copy) => !copiedIds.has(copy.parentId))
         .map((copy) => copy.id),
     );
     return true;

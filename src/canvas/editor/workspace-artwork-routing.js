@@ -1,4 +1,5 @@
 import { requiresCanvas2dMediaFallback } from "./skia_scene_adapter.js";
+import { attachFreeCanvasArtwork } from "./workspace-free-artwork.js";
 
 /** Bitmaps outlive temporary URLs; browser fonts are not registered in the GPU host. */
 export function requiresWorkspaceCanvas2d(doc) {
@@ -12,7 +13,10 @@ export function workspaceSkiaDocument(doc) {
 }
 
 /** Paint decoded resources and gesture previews from the same live document. */
-export function attachArtboardArtwork({ canvas, engine, includeFrame = false }) {
+export function attachArtboardArtwork({ canvas, engine, includeFrame = false, store = null, paintArtwork = true }) {
+  if (engine.getDocument?.()?.isCanvasRoot && store) {
+    return attachFreeCanvasArtwork({ canvas, engine, store, paintArtwork });
+  }
   const paint = () => {
     if (includeFrame) {
       engine.renderArtwork(canvas);

@@ -12,7 +12,11 @@ export default function EditorPageArtwork({ page }) {
     workspaceRendererReady, canvasRef, skiaCanvasRef, skiaPainting,
     skiaEnabled, skiaStatus } = page;
   return free ? (
-    doc && mixedLayers ? (
+    doc?.isCanvasRoot && !mixedLayers ? (
+      <EditorArtworkFallback engine={engine} opacity={doc.opacity ?? 1}
+        includeFrame={!workspaceRendererReady}
+        paintArtwork={!workspaceRendererReady || requiresWorkspaceCanvas2d(doc)} />
+    ) : doc && mixedLayers ? (
       <Suspense fallback={null}>
         <EditorMixedLayers
           doc={doc}

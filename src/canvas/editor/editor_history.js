@@ -219,13 +219,14 @@ export function createHistory({
       entry.args = args;
     },
 
-    updateCurrentSelection(selectedIds) {
+    updateCurrentSelection(selectedIds, selectedGroupId = undefined) {
       if (isMuted()) return;
       const entry = entries[currentIndex];
       if (!entry) return;
       const nextIds = Array.isArray(selectedIds) ? [...selectedIds] : [];
       if (entry.snapshot && typeof entry.snapshot === "object") {
         entry.snapshot.selectedIds = nextIds;
+        if (selectedGroupId !== undefined) entry.snapshot.selectedGroupId = selectedGroupId;
         return;
       }
       if (typeof entry.snapshot !== "string") return;
@@ -233,6 +234,7 @@ export function createHistory({
         const raw = JSON.parse(entry.snapshot);
         if (raw && typeof raw === "object") {
           raw.selectedIds = nextIds;
+          if (selectedGroupId !== undefined) raw.selectedGroupId = selectedGroupId;
           entry.snapshot = JSON.stringify(raw);
         }
       } catch {

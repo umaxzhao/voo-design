@@ -13,41 +13,15 @@ import { toNodeLocal } from "./scene_geometry.js";
 import { regionLocalPoint } from "./doc_ops_regions.js";
 import { projectOntoPath } from "./editor_pen_math.js";
 import { isFrameSelectionBoundary } from "./frame-selection-unit.js";
+import { duplicateNodeTree } from "./node-duplicate.js";
 import { groupDescendants } from "./scene_model_groups.js";
 
 export function withNodes(doc, rawNodes, changes = null) {
   const nodes = reconcileBooleanNodes(doc, rawNodes);
   journalNodes(doc.nodes, nodes, nodes === rawNodes ? changes : null);
-  if (doc?.isCanvasRoot && Array.isArray(nodes)) {
-    let minX = 0;
-    let minY = 0;
-    let maxX = doc.width || 0;
-    let maxY = doc.height || 0;
-    for (const node of nodes) {
-      if (!node || node.parentId) continue;
-      if (Number.isFinite(node.x) && Number.isFinite(node.width)) {
-        minX = Math.min(minX, Math.floor(node.x));
-        maxX = Math.max(maxX, Math.ceil(node.x + node.width));
-      }
-      if (Number.isFinite(node.y) && Number.isFinite(node.height)) {
-        minY = Math.min(minY, Math.floor(node.y));
-        maxY = Math.max(maxY, Math.ceil(node.y + node.height));
-      }
-    }
-    if (minX < 0 || minY < 0) {
-      const shiftX = Math.max(0, -minX);
-      const shiftY = Math.max(0, -minY);
-      const shifted = nodes.map((node) => ({
-        ...node,
-        x: (node.x ?? 0) + shiftX,
-        y: (node.y ?? 0) + shiftY,
-      }));
-      return { ...doc, nodes: shifted, width: maxX + shiftX, height: maxY + shiftY };
-    }
-    if (maxX > (doc.width || 0) || maxY > (doc.height || 0)) {
-      return { ...doc, nodes, width: maxX, height: maxY };
-    }
-  }
+  // A free canvas has a stable world origin. Raster bounds belong to the
+  // renderer, not node edits: normalising one negative root moves every sibling
+  // and invalidates pointer anchors, crop coordinates and the spatial journal.
   return { ...doc, nodes };
 }
 
@@ -74,10 +48,11 @@ export function groupBlockInsertIndex(doc, node) {
     (candidate) => candidate.id === groupId,
   );
   if (groupIndex < 0) return -1;
+  // A folder is one complete stacking block, including nested descendants.
+  // Stopping at the first indirect child would split a nested folder in two.
+  const members = new Set(groupDescendants(doc, groupId).map(child => child.id));
   let index = groupIndex + 1;
-  while (index < doc.nodes.length && doc.nodes[index].parentId === groupId) {
-    index += 1;
-  }
+  while (index < doc.nodes.length && members.has(doc.nodes[index].id)) index += 1;
   return index;
 }
 
@@ -175,60 +150,11 @@ export function removeNode(doc, id) {
 }
 
 /** A copy of a node, offset so the duplicate is visibly on top of the original. */
-export function duplicateNode(doc, id, offset) {
+export function duplicateNode(doc, id, offset = 0) {
   const node = doc.nodes.find((candidate) => candidate.id === id);
   if (!node || node.locked) return { doc, id: null };
-  const newId = crypto.randomUUID();
-  const copy = {
-    ...node,
-    id: newId,
-    x: node.x + offset,
-    y: node.y + offset,
-    // A duplicate is never the locked base image, whatever it was copied from.
-    locked: false,
-    points: node.points
-      ? node.points.map((point) =>
-          Array.isArray(point)
-            ? [...point]
-            : {
-                ...point,
-                in: point.in ? [...point.in] : null,
-                out: point.out ? [...point.out] : null,
-              },
-        )
-      : undefined,
-  };
-  if (copy.points === undefined) delete copy.points;
-
-  if (isGroupNode(node)) {
-    const descendants = groupDescendants(doc, id);
-    if (descendants.length > 0) {
-      const idMap = new Map([[id, newId]]);
-      const copiedDescendants = descendants.map((desc) => {
-        const descId = crypto.randomUUID();
-        idMap.set(desc.id, descId);
-        return {
-          ...desc,
-          id: descId,
-          x: (desc.x ?? 0) + offset,
-          y: (desc.y ?? 0) + offset,
-          locked: false,
-        };
-      });
-      for (const d of copiedDescendants) {
-        if (d.parentId && idMap.has(d.parentId)) {
-          d.parentId = idMap.get(d.parentId);
-        }
-      }
-      let nextDoc = addNode(doc, copy);
-      for (const d of copiedDescendants) {
-        nextDoc = addNode(nextDoc, d);
-      }
-      return { doc: nextDoc, id: newId };
-    }
-  }
-
-  return { doc: addNode(doc, copy), id: copy.id };
+  const result = duplicateNodeTree(doc, id, offset);
+  return { doc: withNodes(doc, result.nodes), id: result.id };
 }
 
 /** Topmost selectable node under a document-space point. */

@@ -20,6 +20,12 @@ hide a stacking or interaction failure.
 | Stretch | The initial tests covered a subset of geometry without proving the real inspector, MCP and persistence paths. | `auto-layout-stretch.test.js` adds vertical, wrap, hug, nested constraints, purity and convergence. `stretch-layout.e2e.mjs` checks real inspector pixels, the MCP alias, one-step undo/redo, build-layout acceptance and project save/reopen. |
 | Batch creation | `build_layout` suppressed intermediate history but finished through an ineffective commit alias; runtime failures could retain a partial tree. | `build-layout-history.e2e.mjs` checks a single committed tree, nested batching and failure rollback without destroying the document, interaction context or redo branch. |
 | Comments | An enclosing stacking context trapped floating comments below the inspector even though their own panels had a higher local layer. | `comments-loading.e2e.mjs` and `comments-lifecycle.e2e.mjs` retain real filter/reply clicks, loading recovery, layered Escape and unchanged selection. |
+| Signed world coordinates | Normalising negative roots moved unrelated siblings and grew the document on every drag step. Native artwork outside the original page had no hit surface; Canvas2D media was physically clipped. | `frame-negative-space.e2e.mjs` checks real pixels, labels, selection, independent child movement and exact undo/redo on all sides in both renderers. A viewport-sized surface preserves the world origin and bounds allocation by the visible workspace. |
+| Complete duplication | Alt-click cloned before any movement, cancellation retained edits, and recursive copies shared mutable data or retained old clipping links. | `frame-alt-duplicate.e2e.mjs` and `frame-duplicate-contracts.test.js` check nested content, independent data, internal links, one history entry and cancellation. |
+| Reparenting | Drops could target a concealed rear Frame or a clipped descendant, split a nested paint block, or move new roots below a locked background. | `frame-reparent-contracts.e2e.mjs` checks real pointer drops, visible pixels, stacking, locks, complete subtrees and exact history restoration. |
+| Image SVG copy | The node/clipboard SVG entry points omitted bitmap resource callbacks, so persisted image-only nodes disappeared from the result. | Signed-coordinate selection exports check embedded SVG pixels against PNG and current composited sampling. |
+| Shared viewport surfaces | A focused root's full-viewport hit plane could hide other documents even when its artwork did not overlap them. | `frame-surface-camera.e2e.mjs` checks separate document focus and selection, actual pixels, pan/zoom, resize and DPR 2. Pointer reach follows clipped artwork rather than the full raster window. |
+| Global adjustments | The legacy document-origin effect plane left negative and overflow artwork unadjusted. | `frame-adjustment-space.e2e.mjs` checks signed-coordinate pixels and composited sampling through camera changes and history. Free roots use the existing device-sized adjustment compositor. |
 
 ## Product and implementation boundaries
 
@@ -44,6 +50,17 @@ hide a stacking or interaction failure.
   It does not overlay two competing hit regions or double the toolbar width.
 - Chromium touch and safe-area emulation provide repeatable browser evidence;
   they do not certify every physical iPhone, browser or assistive technology.
+- Free-canvas node coordinates remain signed and stable. Rendering and hit
+  windows follow the viewport without rewriting siblings, crop or document
+  dimensions. Explicit selection exports retain their own signed bounds;
+  this change does not redefine the full-document crop/export contract.
+- Selected Frame PNG exports retain their own adjustment children, excluding
+  adjustment metadata from bounds and excluding effects outside that selection.
+  History stores the selection unit as well as its leaf IDs so a restored
+  Group remains a complete unit on the next copy or drag.
+- An internal two-finger navigation handoff finishes the preceding edit once;
+  actual OS cancellation, Escape and blur restore the pending move instead.
+  The existing real-touch `editor-refactor.e2e.mjs` keeps both contracts visible.
 
 ## Existing skipped contracts
 

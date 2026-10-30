@@ -71,8 +71,6 @@ export function attachPointerHandlers({
   canvas,
   api,
   cameraMode = "page",
-  camera = null,
-  frameBounds = null,
 }) {
   const shared = cameraMode === "shared";
   let gesture = null;
@@ -375,6 +373,13 @@ export function attachPointerHandlers({
 
   const onKeyDown = (event) => {
     if (event.repeat) return;
+    if (event.key === "Escape" && gesture?.kind === "move") {
+      event.preventDefault();
+      event.stopPropagation();
+      const pointerId = gesture.pointerId;
+      onPointerUp({ type: "pointercancel", pointerId });
+      return;
+    }
     const isModifier =
       event.key === "Shift" ||
       event.key === "Alt" ||
@@ -417,6 +422,10 @@ export function attachPointerHandlers({
     event.preventDefault();
     spaceDown = true;
     if (!gesture) stage.style.cursor = "grab";
+  };
+
+  const onWindowBlur = () => {
+    if (gesture?.kind === "move") onPointerUp({ type: "pointercancel", pointerId: gesture.pointerId });
   };
 
   const onKeyUp = (event) => {
@@ -477,8 +486,10 @@ export function attachPointerHandlers({
   stage.addEventListener("dblclick", onDoubleClick);
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
+  window.addEventListener("blur", onWindowBlur);
 
   return () => {
+    onWindowBlur();
     if (api.refreshBrushCursor === hover.refreshBrushCursor) {
       delete api.refreshBrushCursor;
     }
@@ -494,5 +505,6 @@ export function attachPointerHandlers({
     stage.removeEventListener("dblclick", onDoubleClick);
     window.removeEventListener("keydown", onKeyDown);
     window.removeEventListener("keyup", onKeyUp);
+    window.removeEventListener("blur", onWindowBlur);
   };
 }

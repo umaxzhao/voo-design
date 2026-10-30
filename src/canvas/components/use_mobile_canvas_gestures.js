@@ -1,4 +1,5 @@
 import { useCallback, useRef } from "react";
+import { dispatchPointerHandoff } from "../editor/pointer-gesture-handoff.js";
 
 const TAP_SLOP_PX = 12;
 const TWO_FINGER_START_WINDOW_MS = 180;
@@ -78,7 +79,7 @@ export function useMobileCanvasGestures(onUndo, onPinch, onRedo) {
         });
         canvasCancellationRef.current = cancellation;
         try {
-          first.target.dispatchEvent(cancellation);
+          dispatchPointerHandoff(first.target, cancellation);
         } finally {
           canvasCancellationRef.current = null;
         }

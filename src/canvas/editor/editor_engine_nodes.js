@@ -33,9 +33,16 @@ export function createEngineNodesController({
   setTool,
   requestRender,
   notify,
+  onSelectionUnitChange,
 }) {
   let isolationGroupId = null;
   let selectedGroupId = null;
+
+  function setSelectedGroupId(id) {
+    selectedGroupId = id;
+    // Group identity can change while the selected leaf IDs remain identical.
+    onSelectionUnitChange?.(id);
+  }
 
   function clickUnitOf(node) {
     const doc = getDoc();
@@ -79,7 +86,7 @@ export function createEngineNodesController({
     if (!id) isolationGroupId = null;
     const node = id ? findNode(getDoc(), id) : null;
     const unit = node ? clickUnitOf(node) : null;
-    selectedGroupId = isGroupNode(unit) ? unit.id : null;
+    setSelectedGroupId(isGroupNode(unit) ? unit.id : null);
     const ids = unit ? unitSelectionIds(unit) : [];
     if (!selection.selectNodes(ids)) return;
     requestRender();
@@ -87,14 +94,14 @@ export function createEngineNodesController({
   }
 
   function selectMany(ids) {
-    selectedGroupId = null;
+    setSelectedGroupId(null);
     if (!selection.selectNodes(ids)) return;
     requestRender();
     notify();
   }
 
   function toggleSelect(id) {
-    selectedGroupId = null;
+    setSelectedGroupId(null);
     const node = id ? findNode(getDoc(), id) : null;
     if (!node) return;
     const unitIds = unitSelectionIds(clickUnitOf(node));
@@ -109,21 +116,21 @@ export function createEngineNodesController({
   }
 
   function selectExactly(ids) {
-    selectedGroupId = null;
+    setSelectedGroupId(null);
     if (!selection.selectNodes(ids ?? [])) return;
     requestRender();
     notify();
   }
 
   function toggleExactly(id) {
-    selectedGroupId = null;
+    setSelectedGroupId(null);
     if (!selection.toggleNode(id)) return;
     requestRender();
     notify();
   }
 
   function selectBackground() {
-    selectedGroupId = null;
+    setSelectedGroupId(null);
     if (!selection.selectBackground()) return;
     requestRender();
     notify();
@@ -134,7 +141,7 @@ export function createEngineNodesController({
     if (!isGroupNode(node)) return;
     isolationGroupId = null;
     const ids = unitSelectionIds(node);
-    selectedGroupId = id;
+    setSelectedGroupId(id);
     selection.selectNodes(ids);
     requestRender();
     notify();

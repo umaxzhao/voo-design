@@ -78,6 +78,8 @@ export function createEngineHistoryState({
   syncAnts,
   getIsolationGroupId,
   setIsolationGroupId,
+  getSelectedGroupId,
+  restoreSelectionUnit,
   clearSelectionTransform,
 }) {
   const contourSnapshotIds = new WeakMap();
@@ -106,6 +108,7 @@ export function createEngineHistoryState({
       doc: getDoc(),
       pixelSelection: savedSelection,
       selectedIds: [...(selection?.getIds?.() ?? [])],
+      ...(getSelectedGroupId ? { selectedGroupId: getSelectedGroupId() } : {}),
     };
     validateEditorDocumentSnapshot("design", state);
     return state;
@@ -130,6 +133,7 @@ export function createEngineHistoryState({
     let parsedDoc = null;
     let parsedSelection = null;
     let parsedSelectedIds = null;
+    let parsedGroupId;
 
     if (typeof snapshot === "object") {
       const raw = snapshot;
@@ -142,6 +146,7 @@ export function createEngineHistoryState({
         if (Array.isArray(raw.selectedIds)) {
           parsedSelectedIds = raw.selectedIds;
         }
+        if (Object.hasOwn(raw, "selectedGroupId")) parsedGroupId = raw.selectedGroupId;
       }
     } else {
       try {
@@ -154,6 +159,7 @@ export function createEngineHistoryState({
           if (Array.isArray(raw.selectedIds)) {
             parsedSelectedIds = raw.selectedIds;
           }
+          if (Object.hasOwn(raw, "selectedGroupId")) parsedGroupId = raw.selectedGroupId;
         } else {
           parsedDoc = deserialiseDocument(raw);
         }
@@ -180,7 +186,11 @@ export function createEngineHistoryState({
       const validIds = parsedSelectedIds.filter((id) =>
         Boolean(findNode(getDoc(), id)),
       );
-      selection.selectNodes(validIds);
+      if (parsedGroupId !== undefined && restoreSelectionUnit) {
+        const groupId = isGroupNode(findNode(getDoc(), parsedGroupId)) ? parsedGroupId : null;
+        // Restoring the container identity must not create selection history.
+        history.mute(() => restoreSelectionUnit(validIds, groupId));
+      } else selection.selectNodes(validIds);
     } else {
       const currentIds = selection.getIds();
       if (currentIds.length > 0) {

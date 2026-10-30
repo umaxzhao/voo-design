@@ -223,6 +223,11 @@ export function createEditor({
     getIsolationGroupId: () => ctrl?.nodesController?.getIsolationGroupId?.(),
     setIsolationGroupId: (id) =>
       ctrl?.nodesController?.setIsolationGroupId?.(id),
+    getSelectedGroupId: () => ctrl?.nodesController?.getSelectedGroup?.()?.id ?? null,
+    restoreSelectionUnit: (ids, groupId) => {
+      if (groupId) ctrl?.nodesController?.selectGroup(groupId);
+      else ctrl?.nodesController?.selectExactly(ids);
+    },
     // History restore drops an in-flight selection transform: its box refers to
     // the pre-undo pixels. The controller has no separate clear method, so this
     // goes through the public setter (the extra render is harmless).
@@ -772,13 +777,15 @@ export function createEditor({
       stagePaintingEnabled = true;
       try { render(); } finally { stagePaintingEnabled = wasPaintingEnabled; }
     },
-    renderLayerPass(targetCanvas, nodeIds) {
+    renderLayerPass(targetCanvas, nodeIds, surface = {}) {
       renderEngineLayerPass({
         targetCanvas,
         stage,
         nodeIds,
         doc: getDoc(),
-        viewport: viewportTools.getViewport(),
+        viewport: surface.viewport ?? viewportTools.getViewport(),
+        stageWidth: surface.stageWidth,
+        stageHeight: surface.stageHeight,
         dpr: renderedDpr,
         paintTools: ctrl.paintTools,
         maskTools: ctrl.maskTools,

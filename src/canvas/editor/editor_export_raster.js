@@ -260,7 +260,7 @@ export function createExport({
       options.resolveCanvas ?? resolveCanvas,
     );
     const nodes = expanded.nodes.filter((node) =>
-      RENDERABLE_KINDS.has(node.kind) || node.kind === NODE_KIND.GROUP,
+      RENDERABLE_KINDS.has(node.kind) || node.kind === NODE_KIND.GROUP || node.kind === NODE_KIND.ADJUSTMENT,
     );
     return renderSelectionPng(doc, nodes, bounds, options, {
       bitmapSourceOf,
@@ -280,7 +280,7 @@ export function createExport({
       options.resolveCanvas ?? resolveCanvas,
     );
     const nodes = expanded.nodes.filter((node) =>
-      RENDERABLE_KINDS.has(node.kind) || node.kind === NODE_KIND.GROUP,
+      RENDERABLE_KINDS.has(node.kind) || node.kind === NODE_KIND.GROUP || node.kind === NODE_KIND.ADJUSTMENT,
     );
     return renderSelectionPng(doc, nodes, bounds, options, {
       bitmapSourceOf,

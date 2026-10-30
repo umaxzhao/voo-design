@@ -25,7 +25,7 @@ import { dataUrlToBlob, getImageBlobMap, putImage } from "../store/db.js";
 import { toNodeLocal } from "./scene_geometry.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
 import * as ops from "./doc_ops.js";
-import { nodesToSvg } from "./editor_svg.js";
+import { exportSvgNodes } from "./editor-svg-resources.js";
 
 /**
  * Stores an inserted image so it survives a reload. Storage can be missing
@@ -589,7 +589,7 @@ export function createEngineLayersController({
     const nodes = doc.nodes
       .filter((n) => set.has(n.id))
       .map((n) => JSON.parse(JSON.stringify(n)));
-    return nodesToSvg(nodes);
+    return exportSvgNodes(nodes, { cache, maskTools });
   }
 
   return {

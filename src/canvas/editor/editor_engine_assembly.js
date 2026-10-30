@@ -17,6 +17,7 @@ import { createTransformApi } from "./editor_transform_api.js";
 import { createEngineDocumentController } from "./editor_engine_document.js";
 import { createEngineSelectionController } from "./editor_engine_selection.js";
 import { createEngineSampler } from "./editor_engine_sampling.js";
+import { sampleFreeCanvas } from "./free-canvas-sample.js";
 import { createEngineInitController } from "./editor_engine_init.js";
 import { createEngineNodesController } from "./editor_engine_nodes.js";
 import { createEngineBrushController } from "./editor_engine_brush.js";
@@ -201,6 +202,7 @@ export function assembleEngineControllers({
 
   const sampler = createEngineSampler({
     beforeRead: () => getEngine()?.prepareCanvasReadback?.(),
+    renderOutsidePixel: (point, radius) => sampleFreeCanvas(getEngine(), point, radius, getRenderedDpr?.() ?? 1),
     ctx,
     getDoc,
     cache,
@@ -246,6 +248,7 @@ export function assembleEngineControllers({
     setTool: (next) => toolsController.setTool(next),
     requestRender,
     notify,
+    onSelectionUnitChange: groupId => history.updateCurrentSelection(selection.getIds(), groupId),
   });
 
   const styleController = createEngineStyleController({
@@ -292,6 +295,8 @@ export function assembleEngineControllers({
     imageLayerCrop,
     selectNode: nodesController.select,
     selectMany: nodesController.selectMany,
+    getSelectedGroup: nodesController.getSelectedGroup,
+    selectGroup: nodesController.selectGroup,
     removeIds: nodesController.removeIds,
     maskTools,
     exporter,

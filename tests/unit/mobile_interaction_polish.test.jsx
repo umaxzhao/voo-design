@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { dispatchPointerHandoff, isPointerHandoff } from "../../src/canvas/editor/pointer-gesture-handoff.js";
 import { readFileSync } from "node:fs";
 
 describe("mobile interaction experience polish", () => {
@@ -24,9 +25,23 @@ describe("mobile interaction experience polish", () => {
       "utf8",
     );
     expect(gestureSource).toContain('new PointerEvent("pointercancel"');
-    expect(gestureSource).toContain('first.target.dispatchEvent(cancellation)');
+    expect(gestureSource).toContain('dispatchPointerHandoff(first.target, cancellation)');
     expect(gestureSource).toContain('(event.nativeEvent ?? event) === canvasCancellationRef.current');
     expect(gestureSource).toContain('gesture.points.size === 2');
+  });
+
+  it("distinguishes only the active internal handoff from real cancellation and cleans up on failure", () => {
+    const event = { type: "pointercancel", pointerId: 1 };
+    const osCancel = { type: "pointercancel", pointerId: 1 };
+    expect(isPointerHandoff(event)).toBe(false);
+    expect(() => dispatchPointerHandoff({ dispatchEvent(delivered) {
+      expect(delivered).toBe(event);
+      expect(isPointerHandoff(delivered)).toBe(true);
+      expect(isPointerHandoff({ nativeEvent: delivered })).toBe(true);
+      expect(isPointerHandoff(osCancel)).toBe(false);
+      throw new Error("Dispatch failed");
+    } }, event)).toThrow("Dispatch failed");
+    expect(isPointerHandoff(event)).toBe(false);
   });
 
   it("ensures mobile CSS docks tools above panels even when only one panel is expanded", () => {

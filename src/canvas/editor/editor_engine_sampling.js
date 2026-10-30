@@ -20,6 +20,7 @@ export function createEngineSampler({
   getDropperSource,
   DROPPER_SAMPLE_RADII,
   beforeRead = null,
+  renderOutsidePixel = null,
 }) {
   function compositedPixelAt(docPoint, radius, size) {
     beforeRead?.();
@@ -43,7 +44,13 @@ export function createEngineSampler({
     const w = cw > 0 ? Math.min(size, cw - sx) : size;
     const h = ch > 0 ? Math.min(size, ch - sy) : size;
     if (w <= 0 || h <= 0) return null;
-    const { data } = ctx.getImageData(sx, sy, w, h);
+    // A free world extends beyond the engine's document-origin readback. Never
+    // clamp those visible points onto the unrelated pixel at (0, 0).
+    const outside = getDoc().isCanvasRoot && (pixel.x - radius < 0 || pixel.y - radius < 0 ||
+      pixel.x + radius >= cw || pixel.y + radius >= ch);
+    const { data } = outside && renderOutsidePixel
+      ? renderOutsidePixel(docPoint, radius)
+      : ctx.getImageData(sx, sy, w, h);
     const hex = (value) => Math.round(value).toString(16).padStart(2, "0");
     if (radius === 0) {
       if (data[3] === 0) return null;

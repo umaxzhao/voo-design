@@ -4,6 +4,7 @@
 
 import { constrainAxisDelta } from "./axis_constraint.js";
 import { DRAG_SLOP_PX } from "./editor_constants.js";
+import { captureMoveRollback } from "./move-gesture-transaction.js";
 import { editorSnapOptions, snapNodeBounds } from "./scene_snapping.js";
 import {
   combinedBounds,
@@ -316,6 +317,7 @@ export function createPointerMoveDispatcher({
         break;
       case "move": {
         const point = api.toDocPoint(event.clientX, event.clientY);
+        captureMoveRollback(api, gesture);
         if (api.isSelected(gesture.id)) {
           const total = constrainAxisDelta(
             point.x - gesture.start.x,
@@ -328,6 +330,9 @@ export function createPointerMoveDispatcher({
             Math.hypot(total.dx, total.dy) * zoom < DRAG_SLOP_PX
           ) {
             break;
+          }
+          if (gesture.beginDuplicate && !gesture.duplicated) {
+            if (!gesture.beginDuplicate(gesture)) break;
           }
           const doc = api.getDocument();
           const visibleDoc = doc;

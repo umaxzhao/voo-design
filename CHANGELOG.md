@@ -2,6 +2,11 @@
 
 ## 1.0.0
 
+- Keep free-canvas world coordinates stable in every direction; size rendering and pointer surfaces to the viewport without shifting sibling artwork or growing document metadata.
+- Preserve signed-coordinate image/text pixels, composited colour sampling and embedded SVG image resources in node and clipboard exports.
+- Defer Alt duplication until an actual drag, keep complete Frame/Group trees and internal clipping links independent, and restore cancelled gestures without adding history.
+- Reparent dragged subtrees into the visible eligible Frame, respect ancestor clipping and locks, and keep nested paint blocks above their own backgrounds through one-step undo/redo.
+- Preserve Group selection identity across history, keep free-canvas adjustments effective outside document metadata bounds, and retain selected Frame adjustment children without enlarging export bounds.
 - Paint mesh gradients consistently in Canvas2D, Skia and vector exports; preserve visible vector fill stacks and report unsupported native Figma paints.
 - Respect the ask-first image preference when creating automatic design references, while keeping supplied references and editable-layout generation available.
 - Keep page reordering bound to its owning pointer, cancel pending drags on dismissal and verify touch scrolling, ordering, safe areas and toolbar hit regions in the real editor.

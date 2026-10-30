@@ -332,8 +332,8 @@ export function moveNodeToRoot(doc, id, targetRootIndex) {
   let at = Math.max(0, Math.min(roots.length, Math.round(targetRootIndex)));
   // A locked node keeps its slot: the lifted unit may not be placed on or
   // below the first locked node above the target (the base image).
-  const firstLocked = rest.findIndex((candidate) => candidate.locked);
-  if (firstLocked >= 0 && at > firstLocked) at = firstLocked;
+  const firstLocked = roots.findIndex((candidate) => candidate.locked);
+  if (firstLocked >= 0) at = Math.max(at, firstLocked + 1);
   const flatIndex =
     at >= roots.length
       ? rest.length
