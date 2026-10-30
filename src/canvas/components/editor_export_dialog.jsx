@@ -1,4 +1,5 @@
 import { hasBlendModes } from "../editor/scene_model_core.js";
+import { needsSvgRaster } from "../editor/svg-raster-support.js";
 import { exportFilename } from "../editor/export_filename.js";
 import PropTypes from "prop-types";
 import { useRef, useState } from "react";
@@ -251,6 +252,9 @@ export default function EditorExportDialog({
         )}
         {format === "jpeg" && (
           <p id="export-jpeg-background" className="text-[11px] text-neutral-400">{t("editor.exportJpegOpaqueBackground")}</p>
+        )}
+        {format === "svg" && doc?.nodes?.some(needsSvgRaster) && (
+          <p className="text-[11px] text-neutral-400">{t("svg.save.rasterized")}</p>
         )}
         <div className="flex gap-2">
           <button

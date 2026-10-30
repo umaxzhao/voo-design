@@ -122,6 +122,7 @@ export function documentToSvg(
     bitmapOf = null,
     bitmapSizeOf = null,
     maskOf = null,
+    rasterOf = null,
     measureCtx = null,
     transparent = false,
     resolveCanvas = null,
@@ -249,7 +250,8 @@ export function documentToSvg(
   const nodeMarkup = (node, isolated) => {
     node = containerPaintNode(node, isolated);
     if (isHiddenByGroup(doc, node) || isInsideBooleanGroup(doc, node)) return [];
-    return frameClips.wrap(node, svgStrokeMarkup(node, singleNodeMarkup, defs));
+    const raster = rasterOf?.(node.isFrame ? { ...node, kind: NODE_KIND.RECT } : node);
+    return frameClips.wrap(node, raster ? [raster] : svgStrokeMarkup(node, singleNodeMarkup, defs));
   };
 
   const nodes = doc.nodes ?? [];
@@ -332,6 +334,7 @@ export function nodesToSvg(
     bitmapOf = null,
     bitmapSizeOf = null,
     maskOf = null,
+    rasterOf = null,
     resolveCanvas = null,
     measureCtx = null,
     backgroundColor = "transparent",
@@ -357,6 +360,7 @@ export function nodesToSvg(
     bitmapOf,
     bitmapSizeOf,
     maskOf,
+    rasterOf,
     resolveCanvas,
   });
 }

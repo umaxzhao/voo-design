@@ -61,14 +61,19 @@ const upscaleImage = async (scaleOrOptions = 2) => {
 
       const { runLocalUpscale } = await import("../../editor/local_upscale.js");
       if (!isCurrent()) return false;
+      let usedInterpolation = false;
       const blob = await runLocalUpscale(bitmap, {
         scale,
         modelId,
-        onProgress: (p) => setUpscaleProgress(p),
+        onProgress: (progress) => {
+          if (progress.phase === "fallback") usedInterpolation = true;
+          setUpscaleProgress(progress);
+        },
         shouldStop: () => abortController.signal.aborted,
       });
 
       if (!blob) throw new Error("upscaleFailed");
+      if (usedInterpolation) engine.setRegionHint?.("editor.upscale.interpolationFallback");
       const dataUrl = await new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result);
@@ -78,7 +83,7 @@ const upscaleImage = async (scaleOrOptions = 2) => {
         {
           dataUrl,
           operation: EDITOR_GENERATED_OPERATION.UPSCALE,
-          parameters: { scale, modelId },
+          parameters: { scale, modelId, method: usedInterpolation ? "interpolation" : "model" },
           scenePatch: { type: EDITOR_SCENE_PATCH.REPLACE_BITMAP },
           sourceSceneNodeId: target.id,
           sourceSnapshot,

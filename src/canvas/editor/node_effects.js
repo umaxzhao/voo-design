@@ -212,8 +212,8 @@ export {
   nodeOutlinePath,
   booleanSourceBoxPath,
   paintShadowBehind,
-  drawBevelOverlay,
 } from "./node_effects_shadow.js";
+export { drawBevelOverlay } from "./node-effects-bevel.js";
 
 /**
  * Colour overlay (Photoshop's solid fill): paints the fill colour over the

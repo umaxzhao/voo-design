@@ -26,7 +26,6 @@ export const TOOL = Object.freeze({
   CROP: "crop",
   ERASER: "eraser",
   HEALING: "healing",
-  RETOUCH: "retouch",
   BLUR: "blur",
   SHARPEN: "sharpen",
   SMUDGE: "smudge",

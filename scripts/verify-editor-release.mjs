@@ -30,6 +30,8 @@ const commands = [
     "frame-child-pointer", "frame-negative-space", "frame-alt-duplicate", "frame-reparent-contracts",
     "frame-surface-camera", "frame-adjustment-space", "gl-spatial-parity",
     "ui-home-settings", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "editor-resources", "editor-resources-built", "welcome-covers",
+    "image-adjustments-complete", "image-selections-warp", "image-toolbar-complete", "image-agent-complete",
+    "image-assets-history", "image-svg-parity", "image-layer-alpha", "image-inspector-core", "image-export-formats",
   ]
     .map((suite) => [process.execPath, [`tests/e2e/${suite}.e2e.mjs`]]),
 ];

@@ -13,6 +13,8 @@
  * failed mid-run still fails loudly.
  */
 
+import { createCanvas, canvasToBlob, upscaleWithCanvas } from "./upscale-canvas.js";
+export { canvasToBlob, upscaleWithCanvas } from "./upscale-canvas.js";
 import { isLocalUpscaleSupported } from "./ai_capabilities.js";
 import { loadOrtRuntime } from "./ort_runtime.js";
 import { UPSCALE_MODEL_CACHE } from "./model_cache_names.js";
@@ -57,20 +59,6 @@ const TILE_SHARPEN_AMOUNT = 0.2;
 
 /** One box-blur pass worth of denoise; see the `denoise` option. */
 const TILE_DENOISE_RADIUS = 1;
-
-/** Canvas for the current environment, or a loud failure. */
-function createCanvas(width, height) {
-  if (typeof OffscreenCanvas !== "undefined") {
-    return new OffscreenCanvas(width, height);
-  }
-  if (typeof document !== "undefined" && typeof document.createElement === "function") {
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    return canvas;
-  }
-  throw new Error("canvasUnsupported");
-}
 
 /**
  * Source-pixel tile side keeping one tile's model output inside
@@ -177,49 +165,6 @@ async function getSession(model, onProgress) {
     throw error;
   });
   return sessionPromise;
-}
-
-/**
- * Helper to extract Blob from OffscreenCanvas or HTMLCanvasElement across environments.
- */
-export async function canvasToBlob(canvas, type = "image/png") {
-  if (typeof canvas.convertToBlob === "function") {
-    return await canvas.convertToBlob({ type });
-  }
-  if (typeof canvas.toBlob === "function") {
-    return new Promise((resolve) => canvas.toBlob(resolve, type));
-  }
-  if (typeof canvas.toDataURL === "function") {
-    const dataUrl = canvas.toDataURL(type);
-    const res = await fetch(dataUrl);
-    return await res.blob();
-  }
-  throw new Error("canvasToBlobUnsupported");
-}
-
-/**
- * Fallback high-quality bicubic & edge-sharpening upscaler when ONNX model is not available or downloads are skipped.
- */
-export function upscaleWithCanvas(bitmap, scale = 2) {
-  const width = bitmap.naturalWidth ?? bitmap.width;
-  const height = bitmap.naturalHeight ?? bitmap.height;
-  const targetWidth = Math.round(width * scale);
-  const targetHeight = Math.round(height * scale);
-
-  const canvas = createCanvas(targetWidth, targetHeight);
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
-
-  // Subtle unsharp mask to restore the high-frequency detail bicubic softened.
-  // This used to be a hand-rolled Laplacian loop that skipped the border and
-  // left alpha alone; the shared kernel does the same job with edge
-  // replication, and both the model path below and the GPU path use it too.
-  const imgData = ctx.getImageData(0, 0, targetWidth, targetHeight);
-  applySharpen(imgData.data, targetWidth, targetHeight, 0.35);
-  ctx.putImageData(imgData, 0, 0);
-  return canvas;
 }
 
 /**
@@ -390,16 +335,29 @@ export async function runLocalUpscale(bitmap, { scale = 2, modelId = null, model
     // The model's own scale drives the geometry, not the requested one:
     // resolveUpscaleModel answers an unsupported request with the 2x model, and
     // the tiles must be laid out for what the session will actually emit.
-    return await runTiledUpscale(bitmap, {
+    const result = await runTiledUpscale(bitmap, {
       ort: handle.ort,
       session: handle.session,
       width,
       height,
-      scale: model.scale,
+      scale: model.nativeScale ?? model.scale,
       denoise,
       onProgress,
       shouldStop,
     });
+    if (!model.nativeScale || model.nativeScale === model.scale) return result;
+    // One native 4x model supplies both outputs; 2x retains learned detail, then resamples.
+    const predicted = await createImageBitmap(result);
+    try {
+      if (shouldStop?.()) throw new Error("stopped");
+      const canvas = createCanvas(width * model.scale, height * model.scale);
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("canvasUnsupported");
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
+      context.drawImage(predicted, 0, 0, canvas.width, canvas.height);
+      return await canvasToBlob(canvas, "image/png");
+    } finally { predicted.close(); }
   } catch (error) {
     if (shouldStop?.() || error?.message === "stopped") {
       throw error?.message === "stopped" ? error : new Error("stopped");

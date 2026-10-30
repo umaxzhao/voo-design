@@ -178,17 +178,18 @@ const runObjectStroke = async ({
           return;
         }
         engine.setRegionHint("editor.objectSelect.working");
-        const { runRegionMatting, MATTE_REFINE_TOO_LARGE } =
+        const { runLocalMatting, MATTE_REFINE_TOO_LARGE } =
           await import("../../editor/local_matting.js");
         if (!isCurrent()) return false;
-      const { blob: matte, refinement } = await runRegionMatting(
+      const { blob: matte, refinement } = await runLocalMatting(
           bitmap,
-          { points: local },
           { onProgress: setMaskProgress },
         );
+        const { matteUnderObjectStroke } = await import("../../editor/object-stroke-mask.js");
+        const touchedMatte = await matteUnderObjectStroke(matte, local);
         const { selectionFromMatte } =
           await import("../../editor/pixel_selection.js");
-        const selection = await selectionFromMatte(matte, node);
+        const selection = await selectionFromMatte(touchedMatte, node);
         if (!selection) {
           // A whole model run that produces no selection is a failure the
           // user must see, not guidance that may fade in a breath.

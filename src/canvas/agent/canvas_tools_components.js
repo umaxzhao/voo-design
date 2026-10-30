@@ -29,14 +29,14 @@ export const COMPONENT_TOOL_SCHEMAS = Object.freeze([
               "With childId: { text?, fill?, visible? }. Without childId: { layoutMode?, " +
               "playbackMode?, playbackStart?, cameraId?, poster? }.",
             properties: {
-              text: { type: "string", description: "Text override; null removes it." },
-              fill: { type: "string", description: "Hex colour override; null removes it." },
-              visible: { type: "boolean", description: "Visibility override; null removes it." },
+              text: { type: ["string", "null"], description: "Text override; null removes it." },
+              fill: { type: ["string", "null"], description: "Hex colour override; null removes it." },
+              visible: { type: ["boolean", "null"], description: "Visibility override; null removes it." },
               layoutMode: { type: "string" },
               playbackMode: { type: "string" },
               playbackStart: { type: "number" },
-              cameraId: { type: "string", description: "Camera id; null clears it." },
-              poster: { type: "string", description: "Poster URL; null clears it." },
+              cameraId: { type: ["string", "null"], description: "Camera id; null clears it." },
+              poster: { type: ["string", "null"], description: "Poster URL; null clears it." },
             },
           },
         },
@@ -289,7 +289,7 @@ export const COMPONENT_TOOL_SCHEMAS = Object.freeze([
         properties: {
           frameId: { type: "string", description: "Target frame or container ID." },
           slot: {
-            type: "array",
+            type: ["array", "null"],
             items: { type: "string" },
             description: "List of recommended component names, e.g. ['Button', 'IconButton'], or null to clear.",
           },

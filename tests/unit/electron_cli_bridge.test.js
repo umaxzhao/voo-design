@@ -2,7 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
+import { createRequire } from "node:module";
 import { DEFAULT_CLI_BRIDGE_ORIGINS } from "../../electron/cli_bridge_server.js";
+const nativeRequire = createRequire(import.meta.url);
 
 function boot(startCliBridgeServer, env = {}) {
   const events = new Map();
@@ -30,6 +32,7 @@ function boot(startCliBridgeServer, env = {}) {
       if (id === "node:path") return path;
       if (id === "node:fs") return fs;
       if (id === "./packaged_smoke.cjs") return () => {};
+      if (id === "./client-models.cjs") return nativeRequire("../../electron/client-models.cjs");
       return { registerWorkspaceIpc() {}, setupUpdater() {} };
     },
     __dirname: path.resolve("electron"),

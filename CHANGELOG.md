@@ -2,6 +2,15 @@
 
 ## 1.0.0
 
+- Verify the image editor through real tool gestures, every adjustment/filter/style kind, inspector fields, live MCP operations, native file recovery and local-model inference. Retain explicit provider and platform blockers instead of counting them as passes.
+- Keep command recents unique and verify all six export formats through real downloads. Fall back to Wikimedia Commons for public stock search while preserving source, license, attribution and upstream warnings.
+- Render image/text bevels with effective size, isolate inner layer styles from the page backdrop, and retain pixel adjustments/styles in SVG through per-layer raster embedding with an export notice.
+- Select connected foreground touched by object-selection scribbles; retain hand-tool camera panning and modal keyboard focus for first-use model downloads.
+- Make native Trash recoverable within the workspace, preserve original folders and same-name entries, refuse restore collisions and remove destructive fallback deletion.
+- Share staged image insertion without overwriting intervening edits; commit vector/icon expansions and stock batches atomically, report partial failures, and accept embedded image sources.
+- Ship checksum-verified small client upscale weights with desktop builds and independently distribute browser downloads. Share one general model for 2x/4x, keep inference local and label interpolation fallback honestly.
+- Split asset tools, image insertion, SVG layer actions and Trash handling into focused modules; remove the unused Retouch tool ID and duplicate implementations.
+
 - Restore the workbench prompt heading and recover missing project covers without rewriting files. Generate compact draft previews, prefer newer recovery copies and load visible cards with bounded concurrency.
 - Keep early command-palette Tab navigation stable and return focus to Find after replacing the final match so Escape still closes the search surface.
 

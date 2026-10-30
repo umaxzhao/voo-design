@@ -3,32 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import { IconHd } from "../icons.jsx";
 import { useI18n } from "../use_i18n.js";
 import EditorTooltip from "./editor_tooltip.jsx";
+import { UPSCALE_MODELS, resolveUpscaleModel } from "../editor/upscale_models.js";
 import { ICON_BTN_AI } from "./editor_ai_taskbar_buttons.jsx";
 
-const UPSCALE_OPTIONS = [
-  {
-    id: "realesrgan-compact-2x",
-    scale: 2,
-    badge: "2X",
-    labelKey: "editor.upscale.2x",
-    hintKey: "editor.upscale.2xHint",
-    isRecommended: true,
-  },
-  {
-    id: "realesrgan-compact-4x",
-    scale: 4,
-    badge: "4X",
-    labelKey: "editor.upscale.4x",
-    hintKey: "editor.upscale.4xHint",
-  },
-  {
-    id: "realesrgan-anime-4x",
-    scale: 4,
-    badge: "4X",
-    labelKey: "editor.upscale.anime",
-    hintKey: "editor.upscale.animeHint",
-  },
-];
+const UPSCALE_OPTIONS = UPSCALE_MODELS.map(model => ({
+  ...model,
+  badge: `${model.scale}X`,
+  isRecommended: model.id === resolveUpscaleModel(2).id,
+}));
 
 export default function EditorUpscaleButton({
   onUpscale,
@@ -64,7 +46,7 @@ export default function EditorUpscaleButton({
   return (
     <div ref={rootRef} className={`relative shrink-0 ${className}`}>
       <EditorTooltip
-        title={busy ? t("editor.upscale.running") || "Upscaling..." : t("editor.upscale.button") || "HD Upscale"}
+        title={busy ? t("editor.upscale.running") : t("editor.upscale.button")}
         disabled={open}
       >
         <button
@@ -73,7 +55,7 @@ export default function EditorUpscaleButton({
           disabled={busy}
           aria-haspopup="dialog"
           aria-expanded={open}
-          aria-label={t("editor.upscale.button") || "HD Upscale"}
+          aria-label={t("editor.upscale.button")}
           className={`${ICON_BTN_AI} disabled:opacity-40 ${
             open ? "bg-white/10 text-neutral-300 ring-1 ring-white/30" : ""
           }`}
@@ -85,11 +67,11 @@ export default function EditorUpscaleButton({
       {open && (
         <div
           role="dialog"
-          aria-label={t("editor.upscale.button") || "HD Upscale"}
+          aria-label={t("editor.upscale.button")}
           className="node-editor-enter absolute bottom-full left-0 mb-2.5 w-64 rounded-xl bg-neutral-900 border border-white/10 p-1.5 shadow-menu z-50 select-none font-sans text-xs"
         >
           <div className="px-2 pb-1 pt-1 text-[9px] uppercase tracking-wider text-neutral-400 font-mono">
-            {t("editor.upscale.button") || "HD Upscale"}
+            {t("editor.upscale.button")}
           </div>
 
           <div className="flex flex-col gap-1">
