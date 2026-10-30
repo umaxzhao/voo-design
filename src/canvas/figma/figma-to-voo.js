@@ -251,10 +251,14 @@ function fillPaintsOf(raw, ctx) {
     if (paint.type === "IMAGE") {
       const hash = hashHex(asObject(paint.image)?.hash);
       const bytes = hash && ctx.images.get(hash);
-      if (!bytes) return null;
+      if (!hash || !ctx.imageHashes.has(hash)) return null;
       imageId = `img-${hash}`;
-      ctx.assets[imageId] = imageBytesToDataUrl(bytes);
-      fill = ctx.assets[imageId];
+      if (ctx.externalAssets) fill = "transparent";
+      else {
+        if (!bytes) return null;
+        ctx.assets[imageId] = imageBytesToDataUrl(bytes);
+        fill = ctx.assets[imageId];
+      }
     }
     if (!fill) return null;
     return { fill, ...(imageId ? { imageId } : {}), opacity: asNumber(paint.opacity, 1),
@@ -330,9 +334,15 @@ function buildLeaf(node, box, ctx) {
   if (image && !VECTOR_TYPES.has(node.type) && node.type !== "ELLIPSE") {
     const hash = hashHex(asObject(image.image)?.hash);
     const bytes = hash && ctx.images.get(hash);
-    if (bytes) {
+    if (hash && ctx.imageHashes.has(hash)) {
       const imageId = `img-${hash}`;
-      ctx.assets[imageId] = imageBytesToDataUrl(bytes);
+      if (!ctx.externalAssets) {
+        if (!bytes) {
+          note(ctx, "image-fill-missing");
+          return null;
+        }
+        ctx.assets[imageId] = imageBytesToDataUrl(bytes);
+      }
       return applyCommon(node, ctx, createImageNode({ ...box, imageId, name: node.name }));
     }
     note(ctx, "image-fill-missing");
@@ -561,7 +571,8 @@ function fontSummary(fonts) {
  * @param {Map<string, Uint8Array>} images archive images keyed by content hash
  */
 export function figmaMessageToPages(message, images = new Map()) {
-  const ctx = { images, assets: {}, warnings: new Map(), blobs: asArray(message.blobs), fonts: new Map() };
+  const imageHashes = new Set(images.keys());
+  const ctx = { images, imageHashes, externalAssets: false, assets: {}, warnings: new Map(), blobs: asArray(message.blobs), fonts: new Map() };
   const { roots, canvases } = buildTopLevel(message);
   const byCanvas = new Map();
   for (const root of roots) {
@@ -635,6 +646,7 @@ export async function figBytesToVooFileStreaming(bytes, options = {}) {
 
   let canvas = bytes;
   let images = new Map();
+  let imageHashes = new Set();
   const isZip =
     bytes.length >= 4 &&
     bytes[0] === 0x50 &&
@@ -648,25 +660,21 @@ export async function figBytesToVooFileStreaming(bytes, options = {}) {
         const pct = Math.min(20, Math.round(5 + (15 * current) / Math.max(1, total)));
         onProgress({ stage: "unpacking", percent: pct, message: `Extracting archive entry ${current}/${total}...` });
       }
-    });
+    }, onAsset ? async ({ hash, bytes: imageBytes }) => {
+      const buffer = imageBytes.buffer.slice(
+        imageBytes.byteOffset,
+        imageBytes.byteOffset + imageBytes.byteLength,
+      );
+      await onAsset({ assetId: `img-${hash}`, buffer });
+      imageHashes.add(hash);
+    } : null);
     canvas = archive.canvas;
     images = archive.images;
+    imageHashes = onAsset ? imageHashes : new Set(images.keys());
   }
 
   if (onProgress) {
     onProgress({ stage: "unpacking", percent: 20, message: "Archive unpacked" });
-  }
-
-  // Stream image assets if onAsset callback provided
-  if (onAsset && images.size > 0) {
-    for (const [hash, imgBytes] of images) {
-      const assetId = `img-${hash}`;
-      const copy = imgBytes.buffer.slice(
-        imgBytes.byteOffset,
-        imgBytes.byteOffset + imgBytes.byteLength,
-      );
-      onAsset({ assetId, buffer: copy });
-    }
   }
 
   // 2. Kiwi decoding stage (20% - 50%)
@@ -693,7 +701,7 @@ export async function figBytesToVooFileStreaming(bytes, options = {}) {
   }
 
   const message = parsed.message;
-  const ctx = { images, assets: {}, warnings: new Map(), blobs: asArray(message?.blobs), fonts: new Map() };
+  const ctx = { images, imageHashes, externalAssets: Boolean(onAsset), assets: {}, warnings: new Map(), blobs: asArray(message?.blobs), fonts: new Map() };
   const { roots, canvases } = buildTopLevel(message);
   const byCanvas = new Map();
   for (const root of roots) {

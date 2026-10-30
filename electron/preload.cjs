@@ -47,6 +47,8 @@ contextBridge.exposeInMainWorld("vooDesktop", {
     cancel: (options) => ipcRenderer.invoke("voo:codex-cancel", options),
     checkAll: (options) => ipcRenderer.invoke("voo:cli-check-all", options),
     checkStatus: (cliId, options) => ipcRenderer.invoke("voo:cli-status", cliId, options),
+    dshStatus: (options) => ipcRenderer.invoke("voo:dsh-connector-status", options),
+    dshInstall: (options) => ipcRenderer.invoke("voo:dsh-connector-install", options),
     runText: (cliId, options) => ipcRenderer.invoke("voo:cli-run-text", cliId, options),
     onText: (handler) => subscribe("voo:codex-text", handler),
   },

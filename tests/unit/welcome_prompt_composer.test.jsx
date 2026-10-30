@@ -33,7 +33,12 @@ function render(overrides = {}) {
       onSelectModel={() => {}}
       styleId="auto"
       styleOptions={[
-        { id: "linear", name: "Linear Dark", mood: "Restrained dark tool", swatch: ["#0B0B0F", "#101014", "#5E6AD2"] },
+        {
+          id: "linear",
+          name: "Linear Dark",
+          mood: "Restrained dark tool",
+          swatch: ["#0B0B0F", "#101014", "#5E6AD2"],
+        },
       ]}
       onSelectStyle={() => {}}
       size={{ width: 1440, height: 900 }}
@@ -44,8 +49,16 @@ function render(overrides = {}) {
       onSelectCandidates={() => {}}
       designSystemId="auto"
       designSystemOptions={[
-        { id: "auto", label: "welcome.prompt.designSystemAuto", description: "" },
-        { id: "axiom", label: "AXIOM", description: "Avant-garde editorial tech" },
+        {
+          id: "auto",
+          label: "welcome.prompt.designSystemAuto",
+          description: "",
+        },
+        {
+          id: "axiom",
+          label: "AXIOM",
+          description: "Avant-garde editorial tech",
+        },
       ]}
       onSelectDesignSystem={() => {}}
       onAddAttachments={() => {}}
@@ -67,11 +80,18 @@ describe("welcome prompt composer (Pen app parity)", () => {
 
   it("shows a platform mark beside the compact model and tier", () => {
     const html = render({
-      modelGroups: [{
-        cliId: "antigravity",
-        name: "Antigravity",
-        models: [{ id: "antigravity:gemini-3.8-flash-medium", label: "Gemini 3.8 Flash (Medium)" }],
-      }],
+      modelGroups: [
+        {
+          cliId: "antigravity",
+          name: "Antigravity",
+          models: [
+            {
+              id: "antigravity:gemini-3.8-flash-medium",
+              label: "Gemini 3.8 Flash (Medium)",
+            },
+          ],
+        },
+      ],
       selectedModel: "antigravity:gemini-3.8-flash-medium",
     });
 
@@ -83,12 +103,12 @@ describe("welcome prompt composer (Pen app parity)", () => {
   it("renders Pen-style generation type pills at the top", () => {
     const html = render({ activePill: "mobile" });
     expect(html).toContain('role="radiogroup"');
-    expect(html).toContain('welcome.pills.landing');
-    expect(html).toContain('welcome.pills.mobile');
-    expect(html).toContain('welcome.pills.web');
-    expect(html).toContain('welcome.pills.slides');
-    expect(html).toContain('welcome.pills.dashboard');
-    expect(html).toContain('welcome.pills.other');
+    expect(html).toContain("welcome.pills.landing");
+    expect(html).toContain("welcome.pills.mobile");
+    expect(html).toContain("welcome.pills.web");
+    expect(html).toContain("welcome.pills.slides");
+    expect(html).toContain("welcome.pills.dashboard");
+    expect(html).toContain("welcome.pills.other");
     // mobile is selected
     expect(html).toMatch(/aria-checked="true"[^>]*>.*welcome\.pills\.mobile/);
   });
@@ -96,21 +116,20 @@ describe("welcome prompt composer (Pen app parity)", () => {
   it("renders the prompt box with placeholder and ambient glow", () => {
     const html = render();
     expect(html).toContain('placeholder="welcome.prompt.placeholder"');
-    expect(html).toContain('welcome-prompt-glow');
+    expect(html).toContain("prompt-composer");
   });
 
-  it("exposes the Pen-style parallel agents control (⚡ 1x)", () => {
+  it("shows a single generation count without a decorative parallel count", () => {
     const html = render();
-    expect(html).toContain('aria-label="Parallel agents"');
-    expect(html).toContain('>1x<');
-    expect(html).toContain('lucide-zap');
+    expect(html.match(/>1x</g)).toHaveLength(1);
+    expect(html).not.toContain("lucide-zap");
   });
 
   it("exposes the Pen-style variant count control (⊞ 1x)", () => {
     const html = render({ candidates: 2 });
     expect(html).toContain('aria-label="welcome.prompt.candidates"');
-    expect(html).toContain('>2x<');
-    expect(html).toContain('lucide-layout-grid');
+    expect(html).toContain(">2x<");
+    expect(html).toContain("lucide-layout-grid");
   });
 
   it("renders Add to Context (+) button and submit button", () => {
@@ -130,7 +149,13 @@ describe("welcome prompt composer (Pen app parity)", () => {
 
   it("renders attachment chips with a remove action", () => {
     const html = render({
-      attachments: [{ kind: "image", name: "reference.png", dataUrl: "data:image/png;base64,xx" }],
+      attachments: [
+        {
+          kind: "image",
+          name: "reference.png",
+          dataUrl: "data:image/png;base64,xx",
+        },
+      ],
     });
     expect(html).toContain("reference.png");
     expect(html).toContain("welcome.prompt.removeAttachment");

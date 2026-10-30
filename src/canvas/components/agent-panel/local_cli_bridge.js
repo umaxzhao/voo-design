@@ -133,6 +133,21 @@ export function createDesktopLinkCliBridge({
     return res?.value;
   }
 
+  /**
+   * DeepSeek Harness connector surface: status is read-only, install mutates
+   * the user's DSH profile. A link that cannot forward CLI invocations can do
+   * neither, so it says so instead of rejecting — a first-run panel can still
+   * fall back to the manual command.
+   */
+  async function invokeDsh(channel, options) {
+    if (!canInvoke) return { ok: false, code: "cli.desktopOnly" };
+    try {
+      return await invoke(channel, options);
+    } catch (error) {
+      return { ok: false, code: "cli.failed", error: String(error?.message || error) };
+    }
+  }
+
   return {
     isDesktopLink: true,
     canInvokeCli: Boolean(canInvoke),
@@ -143,6 +158,8 @@ export function createDesktopLinkCliBridge({
     cancel: (options) => invoke(CLI_BRIDGE_CHANNEL.CANCEL, options),
     checkAll: (options) => invoke(CLI_BRIDGE_CHANNEL.CHECK_ALL, options),
     checkStatus: (cliId, options) => invoke("voo:cli-status", cliId, options),
+    dshStatus: (options) => invokeDsh(CLI_BRIDGE_CHANNEL.DSH_STATUS, options),
+    dshInstall: (options) => invokeDsh(CLI_BRIDGE_CHANNEL.DSH_INSTALL, options),
     launchLogin: (cliId) => invoke("voo:cli-launch-login", cliId),
     launch: (cliId, options) => invoke("voo:cli-launch", cliId, options),
     onText(listener) {
@@ -301,6 +318,18 @@ export function createWebCliBridge({
     });
   }
 
+  /** Dials if needed; a failure is a result, not a rejection. */
+  async function invokeDsh(channel, options) {
+    try {
+      if (!(await open())) {
+        return { ok: false, code: "cli.bridgeDisconnected" };
+      }
+      return await invoke(channel, options);
+    } catch (error) {
+      return { ok: false, code: "cli.failed", error: String(error?.message || error) };
+    }
+  }
+
   return {
     isOpen: () => socket?.readyState === SOCKET_OPEN,
     open,
@@ -325,6 +354,8 @@ export function createWebCliBridge({
     advance: (options) => invoke(CLI_BRIDGE_CHANNEL.ADVANCE, options),
     cancel: (options) => invoke(CLI_BRIDGE_CHANNEL.CANCEL, options),
     runText: (cliId, options) => invoke(CLI_BRIDGE_CHANNEL.RUN_TEXT, cliId, options),
+    dshStatus: (options) => invokeDsh(CLI_BRIDGE_CHANNEL.DSH_STATUS, options),
+    dshInstall: (options) => invokeDsh(CLI_BRIDGE_CHANNEL.DSH_INSTALL, options),
     checkAll: async () => {
       await open();
       return invoke(CLI_BRIDGE_CHANNEL.CHECK_ALL);

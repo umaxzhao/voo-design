@@ -69,7 +69,7 @@ describe("agent card grid", () => {
     expect(row1Ids).toEqual(["codex", "claude", "antigravity", "deepseek-harness"]);
 
     const row2Ids = [...parts[2].matchAll(/data-testid="first-run-agent-card-([a-z0-9-]+)"/g)].map(match => match[1]);
-    expect(row2Ids).toEqual(["dashscope", "volcengine", "custom"]);
+    expect(row2Ids).toEqual(["dashscope", "volcengine", "deepseek-harness-models", "custom"]);
 
     expect(html).toContain("Alibaba Cloud");
     expect(html).toContain("Volcengine");
@@ -86,6 +86,8 @@ describe("agent card grid", () => {
     const agentGroup = parts[1];
     const apiGroup = parts[2];
     expect(agentGroup).toContain("grid grid-cols-2 gap-2 sm:grid-cols-4");
+    // API cards wrap after four columns, matching the agent cards.
+    expect(apiGroup).toContain("grid grid-cols-2 gap-2 sm:grid-cols-4");
     const agentCards = agentGroup.match(/data-testid="first-run-agent-card-[a-z0-9-]+"/g);
     expect(agentCards).toEqual([
       'data-testid="first-run-agent-card-codex"',
@@ -97,6 +99,7 @@ describe("agent card grid", () => {
     expect(apiCards).toEqual([
       'data-testid="first-run-agent-card-dashscope"',
       'data-testid="first-run-agent-card-volcengine"',
+      'data-testid="first-run-agent-card-deepseek-harness-models"',
       'data-testid="first-run-agent-card-custom"',
     ]);
     expect(apiGroup).toContain("Alibaba Cloud");
@@ -111,8 +114,8 @@ describe("agent card grid", () => {
     expect(html).toContain("Not signed in");
     expect(html).toContain("Configure");
     expect(html).toContain("break-normal text-xs font-semibold");
-    expect(html).toContain("grid grid-cols-2 gap-2 sm:grid-cols-4");
-    expect(html).toContain("grid grid-cols-2 gap-2 sm:grid-cols-4");
+    expect(html).toContain('aria-label="Agent" class="grid grid-cols-2 gap-2 sm:grid-cols-4"');
+    expect(html).toContain('class="grid grid-cols-2 gap-2 sm:grid-cols-4"');
   });
   it("shows Checking… while pending and Not detected without a bridge", () => {
     expect(render({ phase: DETECTION_PHASE.CHECKING })).toContain("Checking…");

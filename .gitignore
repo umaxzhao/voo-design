@@ -17,3 +17,4 @@ public/EULA.md
 analysis/
 
 /native/voo-engine/target/
+build/connector

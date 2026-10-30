@@ -225,19 +225,6 @@ function drawUncached(
       visibleSet, culledIds, visibleRect, docVersion, fullResolution, bitmapOf,
       maskOf, gpu, bypassAdjustments, selectionTransformBox, videoFrameOf, stageCache });
 
-    if (penDraft || penEdit) {
-      drawPenOverlay(ctx, penDraft, penEdit, penEditNode, penInsertPreview);
-    }
-    // A selected pen path re-strokes its own outline in green, so the user can
-    // tell the line itself is selected — not just its bounding box. The node
-    // being anchor-edited is already painted that green by the overlay.
-    if (selectionSet) {
-      for (const selectedNode of selectionSet) {
-        if (penEditNode && selectedNode.id === penEditNode.id) continue;
-        drawPenSelectionTint(ctx, selectedNode);
-      }
-    }
-
     // Per-frame layout grids first (below the global pixel grid): they are
     // view-only chrome and clipped to the frame that owns them.
     drawLayoutGrids(ctx, doc, viewport, { hiddenNodeId });
@@ -275,6 +262,22 @@ function drawUncached(
 
   }
   if (artworkOnly) { ctx.restore(); return; }
+
+  // Anchors are interaction chrome. Shared GPU artwork skips this pass, so
+  // painting them in the artwork branch made otherwise editable paths blind.
+  ctx.save();
+  ctx.translate(viewport.panX, viewport.panY);
+  ctx.scale(viewport.zoom, viewport.zoom);
+  if (penDraft || penEdit) {
+    drawPenOverlay(ctx, penDraft, penEdit, penEditNode, penInsertPreview);
+  }
+  if (selectionSet) {
+    for (const selectedNode of selectionSet) {
+      if (penEditNode && selectedNode.id === penEditNode.id) continue;
+      drawPenSelectionTint(ctx, selectedNode);
+    }
+  }
+  ctx.restore();
 
   if (includeRegions && !isPlainRectList(doc.nodes)) drawRegions(ctx, doc, viewport, hiddenLabelId);
 

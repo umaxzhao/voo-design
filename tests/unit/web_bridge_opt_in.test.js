@@ -64,6 +64,14 @@ describe("web build loopback opt-in", () => {
     expect(isMcpLinkWanted({ desktop: false })).toBe(false);
   });
 
+  it("links for DeepSeek Harness, whose plugin reaches the canvas through the bridge", () => {
+    localStorage.setItem("voo.agent.llmProvider", JSON.stringify("deepseek-harness"));
+    expect(isMcpLinkWanted({ desktop: false })).toBe(true);
+    // The storage switch still wins.
+    localStorage.setItem(MCP_LINK_STORAGE_KEY, "off");
+    expect(isMcpLinkWanted({ desktop: false })).toBe(false);
+  });
+
   it("keeps the desktop link on by default", () => {
     expect(isMcpLinkWanted({ desktop: true })).toBe(true);
   });

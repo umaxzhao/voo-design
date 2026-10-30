@@ -416,12 +416,14 @@ let currentAgentCursor = null;
 let agentCursorTimeout = null;
 let cursorRenderX = null;
 let cursorRenderY = null;
+const cursorParticles = [];
 
 export function setAgentCursor({ x, y, label = "Agent", active = true, durationMs = 3000 } = {}) {
   if (!active || x == null || y == null) {
     currentAgentCursor = null;
     cursorRenderX = null;
     cursorRenderY = null;
+    cursorParticles.length = 0;
     return;
   }
   const targetX = Number(x) || 0;
@@ -442,6 +444,7 @@ export function setAgentCursor({ x, y, label = "Agent", active = true, durationM
       currentAgentCursor = null;
       cursorRenderX = null;
       cursorRenderY = null;
+      cursorParticles.length = 0;
       window.__vooEditor?.requestRender?.();
     }, durationMs);
     window.__vooEditor?.requestRender?.();
@@ -456,6 +459,7 @@ export function clearAgentCursor() {
   currentAgentCursor = null;
   cursorRenderX = null;
   cursorRenderY = null;
+  cursorParticles.length = 0;
   if (agentCursorTimeout) clearTimeout(agentCursorTimeout);
 }
 
@@ -503,6 +507,9 @@ export function clearAgentFocusNode() {
 /**
  * Draws a subtle mint accent (#a7ffd4) focus ring and status pill over the targeted layer.
  */
+/**
+ * Draws a futuristic Google Stitch-style holographic focus frame, laser scan, and status pill over the targeted layer.
+ */
 export function drawAgentFocusOverlay(ctx, focus, viewport) {
   if (!focus || !viewport) return;
 
@@ -513,47 +520,104 @@ export function drawAgentFocusOverlay(ctx, focus, viewport) {
   const screenH = focus.height * zoom;
 
   ctx.save();
+  const now = Date.now();
 
-  // 1. Transient pulsing focus ring
-  ctx.strokeStyle = "#a7ffd4";
+  // 1. Iridescent Stitch glowing perimeter
+  const grad = ctx.createLinearGradient(screenX, screenY, screenX + screenW, screenY + screenH);
+  grad.addColorStop(0, "rgba(99, 102, 241, 0.85)"); // Indigo
+  grad.addColorStop(0.33, "rgba(168, 85, 247, 0.85)"); // Electric Violet
+  grad.addColorStop(0.66, "rgba(6, 182, 212, 0.85)"); // Neon Cyan
+  grad.addColorStop(1, "rgba(16, 185, 129, 0.85)"); // Mint
+
+  const offset = (now % 3000) / 3000;
+  ctx.strokeStyle = grad;
   ctx.lineWidth = 2;
-  ctx.setLineDash([4, 4]);
+  ctx.setLineDash([8, 6]);
+  ctx.lineDashOffset = -offset * 28;
   ctx.strokeRect(screenX - 2, screenY - 2, screenW + 4, screenH + 4);
 
-  // 2. Status feedback pill above the node
-  if (focus.status) {
-    ctx.font = "500 10px sans-serif";
-    const text = focus.status;
-    const textMetrics = ctx.measureText(text);
-    const pillW = textMetrics.width + 16;
-    const pillH = 20;
-    const pillX = screenX + (screenW - pillW) / 2;
-    const pillY = Math.max(8, screenY - pillH - 6);
+  // 2. High-precision corner HUD brackets ⌜ ⌝ ⌞ ⌟
+  const cornerLen = Math.min(16, Math.max(8, Math.min(screenW, screenH) / 4));
+  ctx.setLineDash([]);
+  ctx.strokeStyle = "#00f0ff";
+  ctx.lineWidth = 2.5;
 
-    // Pill background
-    ctx.fillStyle = "rgba(18, 18, 20, 0.95)";
+  // Top-left
+  ctx.beginPath();
+  ctx.moveTo(screenX - 4, screenY - 4 + cornerLen);
+  ctx.lineTo(screenX - 4, screenY - 4);
+  ctx.lineTo(screenX - 4 + cornerLen, screenY - 4);
+  ctx.stroke();
+
+  // Top-right
+  ctx.beginPath();
+  ctx.moveTo(screenX + screenW + 4 - cornerLen, screenY - 4);
+  ctx.lineTo(screenX + screenW + 4, screenY - 4);
+  ctx.lineTo(screenX + screenW + 4, screenY - 4 + cornerLen);
+  ctx.stroke();
+
+  // Bottom-left
+  ctx.beginPath();
+  ctx.moveTo(screenX - 4, screenY + screenH + 4 - cornerLen);
+  ctx.lineTo(screenX - 4, screenY + screenH + 4);
+  ctx.lineTo(screenX - 4 + cornerLen, screenY + screenH + 4);
+  ctx.stroke();
+
+  // Bottom-right
+  ctx.beginPath();
+  ctx.moveTo(screenX + screenW + 4 - cornerLen, screenY + screenH + 4);
+  ctx.lineTo(screenX + screenW + 4, screenY + screenH + 4);
+  ctx.lineTo(screenX + screenW + 4, screenY + screenH + 4 - cornerLen);
+  ctx.stroke();
+
+  // 3. Sweeping holographic laser scan beam
+  if (screenH > 10) {
+    const scanProgress = (now % 2200) / 2200;
+    const scanY = screenY + scanProgress * screenH;
+    const laserGrad = ctx.createLinearGradient(screenX, scanY, screenX + screenW, scanY);
+    laserGrad.addColorStop(0, "rgba(0, 240, 255, 0)");
+    laserGrad.addColorStop(0.2, "rgba(168, 85, 247, 0.4)");
+    laserGrad.addColorStop(0.5, "rgba(0, 240, 255, 0.85)");
+    laserGrad.addColorStop(0.8, "rgba(168, 85, 247, 0.4)");
+    laserGrad.addColorStop(1, "rgba(0, 240, 255, 0)");
+    ctx.fillStyle = laserGrad;
+    ctx.fillRect(screenX, scanY - 1.5, screenW, 3);
+  }
+
+  // 4. Status feedback pill above the node with Stitch iridescent glow
+  if (focus.status) {
+    ctx.font = "600 11px sans-serif";
+    const text = `✦ ${focus.status}`;
+    const textMetrics = ctx.measureText(text);
+    const pillW = textMetrics.width + 20;
+    const pillH = 22;
+    const pillX = screenX + (screenW - pillW) / 2;
+    const pillY = Math.max(8, screenY - pillH - 8);
+
+    ctx.fillStyle = "rgba(10, 15, 26, 0.95)";
     ctx.beginPath();
-    ctx.roundRect(pillX, pillY, pillW, pillH, 10);
+    ctx.roundRect(pillX, pillY, pillW, pillH, 6);
     ctx.fill();
 
-    // Pill border
-    ctx.strokeStyle = "rgba(167, 255, 212, 0.5)";
+    ctx.strokeStyle = "rgba(0, 240, 255, 0.5)";
     ctx.lineWidth = 1;
-    ctx.setLineDash([]);
     ctx.stroke();
 
-    // Pill text
     ctx.fillStyle = "#a7ffd4";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(text, pillX + pillW / 2, pillY + pillH / 2);
   }
 
+  if (typeof window !== "undefined") {
+    requestAnimationFrame(() => window.__vooEditor?.requestRender?.());
+  }
+
   ctx.restore();
 }
 
 /**
- * Draws the real-time agent cursor and status label on the canvas.
+ * Draws the real-time agent cursor, particle trail, and status label on the canvas.
  */
 export function drawAgentCursorOverlay(ctx, cursor, viewport) {
   if (!cursor || !viewport) return;
@@ -569,9 +633,6 @@ export function drawAgentCursorOverlay(ctx, cursor, viewport) {
   if (dist > 0.5) {
     cursorRenderX += dx * 0.35;
     cursorRenderY += dy * 0.35;
-    if (typeof window !== "undefined") {
-      requestAnimationFrame(() => window.__vooEditor?.requestRender?.());
-    }
   } else {
     cursorRenderX = cursor.x;
     cursorRenderY = cursor.y;
@@ -581,9 +642,39 @@ export function drawAgentCursorOverlay(ctx, cursor, viewport) {
   const screenY = cursorRenderY * zoom + panY;
 
   ctx.save();
+  const now = Date.now();
+
+  // Stardust Particle Trail
+  if (dist > 1.2 && cursorParticles.length < 24) {
+    cursorParticles.push({
+      x: screenX + (Math.random() - 0.5) * 6,
+      y: screenY + (Math.random() - 0.5) * 6,
+      vx: (Math.random() - 0.5) * 0.6,
+      vy: (Math.random() - 0.5) * 0.6 - 0.4,
+      size: 1.5 + Math.random() * 2,
+      life: 1.0,
+      hue: Math.random() > 0.5 ? "#00f0ff" : "#a855f7",
+    });
+  }
+
+  for (let i = cursorParticles.length - 1; i >= 0; i--) {
+    const p = cursorParticles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= 0.035;
+    if (p.life <= 0) {
+      cursorParticles.splice(i, 1);
+      continue;
+    }
+    ctx.fillStyle = p.hue === "#00f0ff"
+      ? `rgba(0, 240, 255, ${p.life * 0.8})`
+      : `rgba(168, 85, 247, ${p.life * 0.8})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   // Thinking pulse wave
-  const now = Date.now();
   const pulsePhase = (now % 1200) / 1200;
   const pulseRadius = 6 + pulsePhase * 16;
   const pulseAlpha = Math.max(0, 0.5 * (1 - pulsePhase));
@@ -613,7 +704,8 @@ export function drawAgentCursorOverlay(ctx, cursor, viewport) {
   // 2. Name badge beside the cursor with glowing indicator dot
   if (cursor.label) {
     ctx.font = "600 11px sans-serif";
-    const textW = ctx.measureText(cursor.label).width;
+    const text = `✦ ${cursor.label}`;
+    const textW = ctx.measureText(text).width;
     const labelW = textW + 24;
     const labelH = 22;
     const labelX = screenX + 14;
@@ -638,7 +730,11 @@ export function drawAgentCursorOverlay(ctx, cursor, viewport) {
     ctx.fillStyle = "#a7ffd4";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(cursor.label, labelX + 16, labelY + labelH / 2);
+    ctx.fillText(text, labelX + 16, labelY + labelH / 2);
+  }
+
+  if (typeof window !== "undefined" && (dist > 0.5 || cursorParticles.length > 0)) {
+    requestAnimationFrame(() => window.__vooEditor?.requestRender?.());
   }
 
   ctx.restore();

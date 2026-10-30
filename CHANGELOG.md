@@ -56,6 +56,13 @@
 - Verify stretch through inspector edits, MCP aliases, constraints, wrapping, undo and project reopen; keep batch layout creation undoable and roll back failed partial builds.
 - Let floating comment controls participate in the editor's existing overlay layers so the inspector cannot cover their filters, replies or loading recovery.
 
+- Ship the portable connector as an installable DeepSeek Harness plugin bundle named `voo` (generated `cordis.patch.yml` over the same stdio MCP server — `serverName: voo`, tools `mcp__voo__*` — plus locale and icon metadata) and document `dsh plugin --profile desktop add "link:<folder>"`; the legacy Cordis overlay stays available.
+- Ship a Harness model bridge in the same plugin: the Harness profile's selected model is served as a loopback OpenAI-compatible endpoint (`http://127.0.0.1:4399/v1`, SSE + tool calling, CORS) and `~/.dsh/voo-model-bridge.json` advertises it.
+- Offer “DeepSeek Harness models” in the first-run API row: one click prefills the local bridge URL/key, fetches the Harness model list and lets the in-app Agent run on it without a separate DeepSeek key.
+- Install the connector from packaged builds without repository sources: the connector is prebuilt into `resources/connector` as an extra resource and copied into the user data directory with its baked MCP paths rewritten.
+- Unify the user-facing plug-in naming as VOO: the VS Code / Cursor extension shows “VOO”, the command and configuration titles read VOO, and its panel is titled VOO.
+- Detect the DeepSeek Harness desktop app and its installed VOO plugin in the CLI status check, surface “Plugin needed” on the first-run agent card, and guide installation with a copyable command, one-click install and re-detect.
+- Opt external MCP agents (DeepSeek Harness) into the canvas MCP link so a browser tab reaches the local bridge for their plugin.
 - Split the layer tree, row controls and panel state into focused modules while retaining hierarchy selection, search, drag/drop and inline editing.
 - Split shortcut routing into ordered handlers; keep callbacks current after rerenders, retain the originating engine for arrow-key history bursts and finish them on blur/disable before engine snapshots.
 - Load Auto Enhance and Smart Crop planners on use, show local loading feedback, coalesce duplicate clicks and reject late results after document, engine or crop-context changes.

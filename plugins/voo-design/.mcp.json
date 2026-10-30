@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "voo-design": {
-      "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/mcp-server.mjs"]
-    }
-  }
-}

@@ -7,30 +7,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: [
-          '"Intel One Mono"',
-          "ui-monospace",
-          '"SFMono-Regular"',
-          "Menlo",
-          "monospace",
-          '"PingFang SC"',
-          '"Hiragino Sans GB"',
-          '"Microsoft YaHei"',
-          '"微软雅黑"',
-          "sans-serif",
-        ],
-        mono: [
-          '"Intel One Mono"',
-          "ui-monospace",
-          '"SFMono-Regular"',
-          "Menlo",
-          "monospace",
-          '"PingFang SC"',
-          '"Hiragino Sans GB"',
-          '"Microsoft YaHei"',
-          '"微软雅黑"',
-          "sans-serif",
-        ],
+        sans: ["var(--font-ui)"],
+        mono: ["var(--font-mono)"],
       },
       colors: {
         surface: {

@@ -2,6 +2,7 @@ import { base64ToBytes } from "../../shared/base64.js";
 import { decompressFigChunk } from "./fig-compression.js";
 import { decodeBinarySchema } from "./fig-kiwi.js";
 import { FIGMA_SCHEMA_DEFLATE_BASE64 } from "./figma-schema-data.js";
+import { FIGMA_KIWI_VERSION } from "./fig-file.js";
 let schemaPromise = null;
 /**
  * The bundled OpenPencil schema predates the ordering metadata emitted by
@@ -56,4 +57,13 @@ export function loadFigmaSchema() {
         .then(decodeBinarySchema)
         .then(addNativeExportFields);
     return schemaPromise;
+}
+
+/** Create the protocol template used when exporting a VOO document with no Figma source. */
+export async function createFigmaExportTemplate() {
+    return {
+        version: FIGMA_KIWI_VERSION,
+        schema: await loadFigmaSchema(),
+        message: {},
+    };
 }

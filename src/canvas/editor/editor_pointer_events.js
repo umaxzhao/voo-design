@@ -2,7 +2,7 @@
  * Pointer down tool routing and double-click handlers for the editor stage.
  */
 
-import { NODE_KIND } from "./scene_model.js";
+import { NODE_KIND, canConvertToPath } from "./scene_model.js";
 import { TOOL, toolUsesColor } from "./editor_constants.js";
 import { marqueeItemForMode } from "./tool_families.js";
 
@@ -173,16 +173,25 @@ export function handleEditorDoubleClick(event, { api }) {
   const hit = api.nodeAtPoint(point);
   if (!hit) return;
   if (hit.kind === NODE_KIND.TEXT) {
-    api.select(hit.id);
+    api.selectExactly([hit.id]);
     api.beginTextEdit(hit.id);
     return;
   }
-  if (api.getTool() === TOOL.SELECT && api.enterGroup(hit.id)) return;
   if (hit.kind === NODE_KIND.PATH && hit.pen === true) {
-    api.select(hit.id);
+    api.selectExactly([hit.id]);
     api.beginEdit(hit.id);
     return;
   }
+  if (currentTool === TOOL.SELECT && canConvertToPath(hit)) {
+    // Basic vector shapes become editable anchors through the same undoable
+    // conversion as the inspector. Target the leaf, not its selected group.
+    if (api.convertSelectedToPath(hit.id)) {
+      api.selectExactly([hit.id]);
+      api.beginEdit(hit.id);
+    }
+    return;
+  }
+  if (currentTool === TOOL.SELECT && api.enterGroup(hit.id)) return;
   if (hit.kind === NODE_KIND.IMAGE) {
     if (hit.locked) return;
     api.select(hit.id);

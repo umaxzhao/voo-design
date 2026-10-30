@@ -1,6 +1,6 @@
 // Real-app MCP check: a coding CLI (Claude Code or Codex) drives a running VOO
 // canvas through `npm run mcp`. Prereqs: `npx vite --port 5231`, `npm run bridge`,
-// the voo-design server registered with the CLI (see docs/mcp-server.md), and
+// the VOO server registered with the CLI (see docs/mcp-server.md), and
 // `playwright` resolvable. Usage: node tests/e2e/mcp_cli.e2e.mjs [claude|codex]
 import { spawnSync } from "node:child_process";
 import { chromium } from "playwright";
@@ -8,7 +8,7 @@ import { chromium } from "playwright";
 const cli = process.argv[2] || "claude";
 const URL = process.env.VOO_URL || "http://localhost:5231/?voo-test=1";
 const PROMPT =
-  "Using the voo-design MCP tools, create a simple card on the VOO canvas: a 320x200 frame named 'Card' with a white fill, a title text 'Hello VOO' and a subtitle text 'MCP card' inside it. Reply DONE.";
+  "Using the VOO MCP tools, create a simple card on the VOO canvas: a 320x200 frame named 'Card' with a white fill, a title text 'Hello VOO' and a subtitle text 'MCP card' inside it. Reply DONE.";
 
 const browser = await chromium.launch();
 const page = await browser.newPage();
@@ -21,7 +21,7 @@ const before = await nodes();
 
 const cmd = cli === "codex"
   ? ["codex", ["exec", "--dangerously-bypass-approvals-and-sandbox", PROMPT]]
-  : ["claude", ["-p", "--model", process.env.CLAUDE_MODEL || "haiku", PROMPT, "--allowedTools", "mcp__voo-design__*"]];
+  : ["claude", ["-p", "--model", process.env.CLAUDE_MODEL || "haiku", PROMPT, "--allowedTools", "mcp__voo__*"]];
 const run = spawnSync(cmd[0], cmd[1], { encoding: "utf8", timeout: 600000, stdio: ["ignore", "pipe", "pipe"] });
 console.log(run.stdout.slice(-1500), run.stderr.slice(-500));
 

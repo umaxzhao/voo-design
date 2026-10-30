@@ -44,6 +44,7 @@ import PresentationPageMenu from "./presentation/presentation_page_menu.jsx";
 const PresentationViewer = lazy(() => import("./presentation/presentation_viewer.jsx"));
 const PresentationExportDialog = lazy(() => import("./presentation/presentation_export_dialog.jsx"));
 import PresentationSlide from "./presentation/presentation_slide.jsx";
+import { buildProjectVooFile } from "../store/project_io.js";
 import EditorToolbar, { EditorZoom } from "./editor_toolbar.jsx";
 import EditorRulers, { EditorCanvasAids } from "./editor_rulers.jsx";
 import EditorComments from "./editor_comments.jsx";
@@ -2823,6 +2824,28 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               onMobileToggleExpanded={() => setMobilePropertiesExpanded((value) => !value)}
               onUndo={presentationHistory.undo}
               onRedo={presentationHistory.redo}
+              documentId={useDesignStore.getState().filePath || useDesignStore.getState().fileName || "untitled-doc"}
+              onCaptureSnapshot={async () => {
+                const res = await buildProjectVooFile({
+                  store: useDesignStore.getState(),
+                  enginesRef,
+                  snapshotsRef,
+                });
+                return {
+                  vooFile: res.vooFile,
+                  preview: res.primaryPreview,
+                  layerCount: res.primaryDoc?.nodes?.length ?? 0,
+                };
+              }}
+              onRestoreSnapshot={async (vooFile) => {
+                if (!vooFile) return;
+                await openVooDocument({
+                  name: useDesignStore.getState().fileName || "Restored version",
+                  arrayBuffer: async () =>
+                    vooFile instanceof Uint8Array ? vooFile.buffer : new ArrayBuffer(0),
+                  vooFile,
+                });
+              }}
             />
           </Suspense>
         ) : null}

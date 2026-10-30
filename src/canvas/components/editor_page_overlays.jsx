@@ -48,7 +48,11 @@ export default function EditorPageOverlays({ page }) {
             node={editingTextNode}
             viewport={viewport}
             onUpdate={(text) => engine?.updateTextEdit(text)}
-            onCommit={(text) => engine?.endTextEdit(text)}
+            onCommit={(text) => {
+              // A deferred unmount of the previous overlay must never close
+              // a newer text session opened by the same pointer gesture.
+              if (engine?.getEditingTextId() === editingTextNode.id) engine.endTextEdit(text);
+            }}
           />
         ) : null}
 

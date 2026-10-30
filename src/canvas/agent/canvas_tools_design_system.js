@@ -26,7 +26,7 @@ const TOOL_ERROR = Object.freeze({
 });
 
 const STYLE_TYPES = Object.freeze(["paint", "text", "effect"]);
-const BINDING_TARGETS = Object.freeze(["fill", "stroke"]);
+const BINDING_TARGETS = Object.freeze(["fill", "stroke", "opacity", "cornerRadius", "text", "gap", "padding"]);
 
 /** Master documents created through the fallback path, per live editor. */
 const componentDocs = new WeakMap();

@@ -49,11 +49,20 @@ export async function serializeFigArchive(document, metadata) {
         developer_related_links: [],
         exported_at: new Date().toISOString(),
     }));
-    const archive = UZIP.encode({
+    const files = {
         "canvas.fig": canvas,
         "meta.json": meta,
         "thumbnail.png": TRANSPARENT_PNG,
-    });
+    };
+    for (const image of metadata.images?.values?.() ?? []) {
+        if (!image.hashHex || !(image.bytes instanceof Uint8Array))
+            throw new Error("fig-image-asset-invalid");
+        files[`images/${image.hashHex}`] = image.bytes;
+    }
+    const encodeZip = UZIP.encode ?? UZIP.default?.encode;
+    if (typeof encodeZip !== "function")
+        throw new Error("fig-zip-encoder-unavailable");
+    const archive = encodeZip(files);
     return new Uint8Array(archive);
 }
 export function detectImageMimeType(bytes) {

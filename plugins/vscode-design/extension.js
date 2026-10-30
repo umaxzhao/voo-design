@@ -1,7 +1,7 @@
 const vscode = require("vscode");
 
 /**
- * Activates the VOO Design VS Code / Cursor extension.
+ * Activates the VOO VS Code / Cursor extension.
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
@@ -18,7 +18,7 @@ function activate(context) {
 
     panel = vscode.window.createWebviewPanel(
       "vooDesignMode",
-      "VOO Design",
+      "VOO",
       vscode.ViewColumn.Beside,
       {
         enableScripts: true,
@@ -42,7 +42,7 @@ function getWebviewContent(editorUrl) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VOO Design</title>
+  <title>VOO</title>
   <style>
     body, html {
       margin: 0;

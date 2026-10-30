@@ -290,6 +290,48 @@ describe("Milestone 2: Web Worker Streaming Ingestion & Optimization", () => {
       expect(assets[0].buffer instanceof ArrayBuffer).toBe(true);
       expect(new Uint8Array(assets[0].buffer)).toEqual(fakeImageBytes);
     });
+
+    it("keeps streamed image bytes out of the decoded document asset map", async () => {
+      const schema = await loadFigmaSchema();
+      const hash = new Uint8Array(20).fill(9);
+      const hashHex = Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("");
+      const canvasBytes = await serializeFigFile({
+        version: 106,
+        schema,
+        message: {
+          nodeChanges: [
+            ...sampleNodeChanges(),
+            change(6, 2, "$", {
+              type: "RECTANGLE",
+              name: "Photo",
+              transform: { m00: 1, m01: 0, m02: 10, m10: 0, m11: 1, m12: 190 },
+              size: { x: 100, y: 50 },
+              fillPaints: [{
+                type: "IMAGE",
+                image: { hash },
+                imageScaleMode: "FILL",
+                opacity: 1,
+                visible: true,
+              }],
+            }),
+          ],
+        },
+      });
+      const imageBytes = new Uint8Array([1, 2, 3, 4]);
+      const archive = new Uint8Array(UZIP.encode({
+        "canvas.fig": canvasBytes,
+        [`images/${hashHex}`]: imageBytes,
+      }));
+      const received = [];
+      const result = await figBytesToVooFileStreaming(archive, {
+        onAsset: async (asset) => received.push(asset),
+      });
+
+      expect(received).toHaveLength(1);
+      expect(new Uint8Array(received[0].buffer)).toEqual(imageBytes);
+      expect(result.vooFile.assets).toEqual({});
+      expect(result.vooFile.document.pages[0].sceneDoc.nodes.some((node) => node.imageId === `img-${hashHex}`)).toBe(true);
+    });
   });
 
   describe("Task 4: Client Streaming Consumer & Fallback", () => {

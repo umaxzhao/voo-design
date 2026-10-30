@@ -10,6 +10,13 @@ import os from "node:os";
 import path from "node:path";
 import { CLI_BRIDGE_CHANNEL } from "../src/shared/cli_bridge_protocol.js";
 import { registerCodexAgentIpc } from "./codex_agent_bridge.js";
+import {
+  installDshConnector,
+  readDshStatus,
+} from "./dsh_connector.js";
+
+/** The harness is an external MCP client, not one of our spawnable CLIs. */
+export const DSH_CLI_ID = "deepseek-harness";
 
 export const CLI_DEFINITIONS = {
   claude: {
@@ -42,6 +49,19 @@ export const CLI_DEFINITIONS = {
     installCmd: "npm install -g @opencode/cli",
     loginCmd: "opencode auth login",
     docsUrl: "https://opencode.ai/v2/docs/cli/commands/",
+    defaultModel: "",
+  },
+  // DeepSeek Harness has no CLI of its own to look up: the desktop app plus a
+  // DSH profile carrying the VOO connector plugin is the whole installation.
+  // `checkCliStatus` special-cases this id and never spawns anything, so the
+  // empty `names` list is deliberate — it must not fall through to the
+  // generic "no binary, not installed" path.
+  [DSH_CLI_ID]: {
+    names: [],
+    defaultCmd: "",
+    installCmd: "",
+    loginCmd: "",
+    docsUrl: "https://github.com/deepseek-ai/deepseek-harness",
     defaultModel: "",
   },
 };
@@ -214,10 +234,55 @@ export async function checkCliAuth(cliId, binPath, options = {}) {
 }
 
 /**
+ * DeepSeek Harness status. Read-only: the app bundle and the DSH profiles are
+ * inspected on disk, nothing is spawned and nothing is cached, so a plugin the
+ * user just installed shows up on the very next call.
+ */
+function checkDshCliStatus(options = {}) {
+  const opts = options || {};
+  const dsh = readDshStatus({
+    userDataDir: opts.userDataDir,
+    home: opts.home,
+    platform: opts.platform,
+    env: opts.env,
+    appPaths: opts.appPaths,
+    dshHome: opts.dshHome,
+  });
+  const { appInstalled, pluginInstalled, appPath, installCommand } = dsh;
+  const ready = appInstalled && pluginInstalled;
+  let status = "not_installed";
+  if (appInstalled) status = pluginInstalled ? "ready" : "unauthenticated";
+  let reasonKey = null;
+  let reason = null;
+  if (!appInstalled) {
+    reasonKey = "provider.cli.notInstalled";
+    reason = "未检测到 DeepSeek Harness 应用";
+  } else if (!pluginInstalled) {
+    reasonKey = "agent.deepseek.pluginMissing";
+    reason = "已检测到 DeepSeek Harness 应用，但未安装 VOO 插件";
+  }
+  return {
+    status,
+    installed: appInstalled,
+    authenticated: pluginInstalled,
+    ready,
+    binPath: appPath,
+    installCmd: installCommand,
+    loginCmd: "",
+    reasonKey,
+    reason,
+    dsh,
+  };
+}
+
+/**
  * Checks a CLI tool's installation and authentication status.
  */
 export async function checkCliStatus(cliId, options = {}) {
   const opts = options || {};
+  if (cliId === DSH_CLI_ID) {
+    return checkDshCliStatus(opts);
+  }
   const def = CLI_DEFINITIONS[cliId];
   if (!def) {
     return {
@@ -515,12 +580,62 @@ export async function runCodexMcpSession(bin, { prompt, model, cwd }) {
  * @returns {{ dispose: () => Promise<void> }}
  */
 export function registerLocalCliIpc(ipcMain, { app = {}, isAuthorized = isAuthorizedSender } = {}) {
+  /**
+   * Electron's real userData directory wins over anything a caller passes:
+   * the browser bridge has no app, so it keeps the platform default.
+   */
+  function resolveUserDataDir(options) {
+    try {
+      const fromApp = app?.getPath?.("userData");
+      if (typeof fromApp === "string" && fromApp) return fromApp;
+    } catch {
+      // no Electron app here (loopback bridge, tests)
+    }
+    return options?.userDataDir;
+  }
+
   ipcMain.handle(CLI_BRIDGE_CHANNEL.CHECK_ALL, async (_event, options) => {
-    return await checkAllCliStatus(options || {});
+    return await checkAllCliStatus({
+      ...(options || {}),
+      userDataDir: resolveUserDataDir(options),
+    });
   });
 
   ipcMain.handle("voo:cli-status", async (_event, cliId, options) => {
-    return await checkCliStatus(cliId, options || {});
+    return await checkCliStatus(cliId, {
+      ...(options || {}),
+      userDataDir: resolveUserDataDir(options),
+    });
+  });
+
+  /** Detection only — what the first-run panel renders. */
+  ipcMain.handle(CLI_BRIDGE_CHANNEL.DSH_STATUS, async (_event, options) => {
+    const opts = options || {};
+    return readDshStatus({
+      home: opts.home,
+      platform: opts.platform,
+      env: opts.env,
+      appPaths: opts.appPaths,
+      dshHome: opts.dshHome,
+      userDataDir: resolveUserDataDir(opts),
+    });
+  });
+
+  /**
+   * One-click install: build the connector into userData, then `dsh plugin add`.
+   * The repository root is resolved on this side only; a renderer cannot point
+   * the installer at a directory of its choosing.
+   */
+  ipcMain.handle(CLI_BRIDGE_CHANNEL.DSH_INSTALL, async (event, options) => {
+    if (!isAuthorized(event)) {
+      return { ok: false, code: "cli.unauthorizedSender" };
+    }
+    const repoRoot =
+      process.env.VOO_REPO_ROOT || app?.getAppPath?.() || process.cwd();
+    return await installDshConnector({
+      repoRoot,
+      userDataDir: resolveUserDataDir(options),
+    });
   });
 
   /**

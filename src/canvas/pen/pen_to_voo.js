@@ -63,7 +63,7 @@ const ICON_FALLBACK_SIZE = 24;
 const FALLBACK_FONT_FAMILY = "system-ui, -apple-system, 'Segoe UI', sans-serif";
 
 /** Pen blend mode names -> the editor's canvas blend modes. */
-const BLEND_MODES = {
+export const BLEND_MODES = {
   normal: "source-over",
   darken: "darken",
   multiply: "multiply",

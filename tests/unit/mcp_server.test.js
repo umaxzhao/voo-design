@@ -71,7 +71,7 @@ describe("MCP stdio", () => {
     const s = stdio(async () => ({}));
     try {
       expect((await s.request("initialize", { protocolVersion: "2025-03-26" })).result).toMatchObject({
-        protocolVersion: "2025-03-26", capabilities: { tools: {} }, serverInfo: { name: "voo-design" },
+        protocolVersion: "2025-03-26", capabilities: { tools: {} }, serverInfo: { name: "voo" },
       });
       expect((await s.request("initialize")).result.protocolVersion).toBe("2025-06-18");
       const tools = (await s.request("tools/list")).result.tools;

@@ -12,6 +12,7 @@
  */
 
 import { getImageDataUrl, putImage } from "./db.js";
+import { mergeBlobsAsUrls } from "./image_cache.js";
 import { pickProjectSource } from "./pick-project-source.js";
 import { dataUrlToBlob } from "../../shared/db_wire.js";
 import { useDesignStore } from "../../store/design_store.js";
@@ -19,6 +20,7 @@ import { addRecentFile } from "./recent_files.js";
 import { isSvgFileName, svgBytesToVooFile } from "./svg_document_io.js";
 import { buildFigContainer } from "../figma/voo-to-fig.js";
 import { serializeFigArchive } from "../figma/fig-file.js";
+import { createFigmaExportTemplate } from "../figma/figma-schema.js";
 import {
   SAVE_FORMATS,
   formatSaveLosses,
@@ -28,6 +30,7 @@ import {
   saveFormatOf,
 } from "./save_formats.js";
 import { penBytesToVooFile } from "../pen/pen_import_client.js";
+import { serializePenDocument } from "../pen/voo_to_pen.js";
 import { renderEngineSvg } from "../components/editor_hooks/export_editor_image.js";
 import { documentToSvg } from "../editor/editor_svg.js";
 import { workspaceStorage } from "../../services/workspace_storage.js";
@@ -252,12 +255,39 @@ async function encodeForFormat(format, { vooFile, engine, sceneDoc, figSource, p
     return new Uint8Array(await engine.exportPsd());
   }
   if (format === "fig") {
-    // Only a `.fig` that was opened has the schema a Figma file needs.
-    if (!figSource) throw new Error("fig-save-needs-source");
-    const container = buildFigContainer(sceneDoc, figSource, { pageName });
-    return serializeFigArchive(container, { name: fileName });
+    const template = figSource ?? await createFigmaExportTemplate();
+    const imageAssets = await collectFigmaImageAssets(sceneDoc);
+    const container = buildFigContainer(sceneDoc, template, { pageName, imageAssets });
+    return serializeFigArchive(container, { name: fileName, images: imageAssets });
+  }
+  if (format === "pen") {
+    const images = vooFile?.images ?? {};
+    return serializePenDocument(sceneDoc, {
+      imageUrl: (id) => images[id] ?? null,
+    });
   }
   return encodeVooBinary(vooFile);
+}
+
+async function collectFigmaImageAssets(sceneDoc) {
+  const imageIds = new Set();
+  for (const node of sceneDoc?.nodes ?? []) {
+    if (node.imageId) imageIds.add(node.imageId);
+    for (const fill of node.fills ?? []) {
+      if (fill.imageId) imageIds.add(fill.imageId);
+    }
+  }
+
+  const assets = new Map();
+  for (const id of imageIds) {
+    const dataUrl = await readRequiredAsset(id);
+    const blob = dataUrlToBlob(dataUrl);
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const hash = new Uint8Array(await crypto.subtle.digest("SHA-1", bytes));
+    const hashHex = Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    assets.set(id, { hash, hashHex, bytes, name: id });
+  }
+  return assets;
 }
 
 /**
@@ -551,11 +581,29 @@ async function openBinaryDesignSource({ store, bytes, sourceName, sourcePath, ha
   if (/\.fig$/i.test(sourceName)) {
     store.setDocumentLoading?.(t("loading.importingFigma"));
   }
+  const pendingImageBlobs = new Map();
+  const flushImageBlobs = () => {
+    if (pendingImageBlobs.size === 0) return;
+    const nextImages = mergeBlobsAsUrls(
+      useDesignStore.getState().images,
+      pendingImageBlobs,
+    );
+    useDesignStore.setState({ images: nextImages });
+    pendingImageBlobs.clear();
+  };
+  const onAsset = async ({ assetId, buffer }) => {
+    const blob = new Blob([buffer]);
+    await putImage(assetId, blob);
+    pendingImageBlobs.set(assetId, blob);
+    if (pendingImageBlobs.size >= 16) flushImageBlobs();
+  };
   const { vooFile, fonts, figSource } = await binaryDesignToVooFile(bytes, sourceName, {
     onProgress,
     onChunk,
+    onAsset: /\.fig$/i.test(sourceName) ? onAsset : undefined,
   });
-  await hydrateVooImages(vooFile);
+  flushImageBlobs();
+  if (Object.keys(vooFile.assets ?? {}).length > 0) await hydrateVooImages(vooFile);
   // A PSD keeps its name and location, so saving writes it back in place.
   // A Figma file saves as a copy: its name gets a "(VOO)" suffix and no filePath,
   // so saving asks for a location and never overwrites the source.

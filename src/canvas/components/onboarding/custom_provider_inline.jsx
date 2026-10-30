@@ -75,6 +75,10 @@ export default function CustomProviderInline({ t, groups, selectedModel, onSelec
   const [form, dispatch] = useReducer(formReducer, {
     ...INITIAL_FORM,
     baseUrl: savedProvider?.defaultBaseUrl ?? preset?.baseUrl ?? "",
+    // A preset with a placeholder key (the loopback DSH bridge) fills it in so
+    // "Fetch models" works immediately; the field stays editable. A key already
+    // stored for a previously configured provider is never shown again.
+    apiKey: savedProvider ? "" : preset?.presetApiKey ?? "",
     providerId: savedProvider?.id ?? null,
     savedUrl: savedProvider?.defaultBaseUrl ?? "",
   });
@@ -108,6 +112,9 @@ export default function CustomProviderInline({ t, groups, selectedModel, onSelec
   return (
     <section ref={section} data-testid="first-run-custom-config" aria-label={t(preset?.labelKey ?? "firstRun.provider.custom")}
       className="flex flex-col gap-3 rounded-2xl bg-white/[0.04] p-4">
+      {preset?.hintKey ? (
+        <p data-testid="first-run-custom-hint" className="text-[10px] leading-4 text-neutral-400">{t(preset.hintKey)}</p>
+      ) : null}
       <label className="flex flex-col gap-1.5">
         <span className={LABEL_CLASS}>{t("settings.customProvider.baseUrl")}</span>
         <input type="url" data-testid="first-run-custom-url" value={baseUrl}
@@ -148,5 +155,7 @@ CustomProviderInline.propTypes = {
     customProviderId: PropTypes.string.isRequired,
     baseUrl: PropTypes.string.isRequired,
     labelKey: PropTypes.string.isRequired,
+    presetApiKey: PropTypes.string,
+    hintKey: PropTypes.string,
   }),
 };

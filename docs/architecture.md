@@ -149,12 +149,12 @@ not replace the persistent token. Named IPC channels are defined in
 
 Managed CLI agent sessions also use `electron/agent_mcp_server.js`, a private
 MCP-over-HTTP server for the current turn. This is separate from the external
-stdio connector. `plugins/voo-design/` provides the portable Claude plugin and
+stdio connector. `plugins/voo/` provides the portable Claude plugin and
 DeepSeek Harness overlay; `scripts/build-agent-plugin.mjs` builds a whitelist
 of runtime files and the existing WebSocket dependency. Harness is an external
 MCP client and owns its model/profile; VOO does not manage its conversation.
 See [agents.md](agents.md), [mcp-server.md](mcp-server.md) and the
-[connector guide](../plugins/voo-design/README.md) for setup and verification
+[connector guide](../plugins/voo/README.md) for setup and verification
 limits.
 
 ## Figma import and export

@@ -28,7 +28,7 @@ export function importFigFile(bytes, callbacks = {}) {
       type: "module",
     });
 
-    worker.onmessage = (event) => {
+    worker.onmessage = async (event) => {
       const data = event.data;
       if (!data) return;
 
@@ -37,7 +37,13 @@ export function importFigFile(bytes, callbacks = {}) {
       } else if (data.type === "PAGE_HEADER") {
         onHeader?.(data.pages);
       } else if (data.type === "IMAGE_ASSET") {
-        onAsset?.({ assetId: data.assetId, buffer: data.buffer });
+        try {
+          await onAsset?.({ assetId: data.assetId, buffer: data.buffer });
+          worker.postMessage({ type: "IMAGE_ASSET_ACK", assetId: data.assetId });
+        } catch (error) {
+          worker.terminate();
+          reject(error);
+        }
       } else if (data.type === "CHUNK_NODES") {
         onChunk?.({
           pageId: data.pageId,
