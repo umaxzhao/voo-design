@@ -6,6 +6,8 @@
  * whole agent runtime. The panel re-exports these symbols for backwards
  * compatibility with existing tests and callers.
  */
+import { CLAUDE_MODELS, CODEX_MODELS } from "../../../shared/agent-defaults.js";
+import { getDiscoveredModels } from "./model_discovery.js";
 import { customModelGroups } from "../../agent/custom-model-groups.js";
 
 /** Available CLI agent model groups for selection. */
@@ -13,34 +15,43 @@ export const CLI_MODEL_GROUPS = [
   {
     cliId: "claude",
     name: "Claude Code",
-    models: [
-      { id: "claude:claude-opus-5-5", label: "Claude Opus 5.5" },
-      { id: "claude:sonnet", label: "Claude Sonnet" },
-      { id: "claude:haiku", label: "Claude Haiku" },
-      { id: "claude:opus", label: "Claude Opus" },
-      { id: "claude:best", label: "Claude Best" },
-      { id: "claude:default", label: "Claude Default" },
-    ],
+    models: CLAUDE_MODELS.map((model) => ({
+      id: `claude:${model.id}`,
+      label: `Claude ${model.label}`,
+    })),
   },
   {
     cliId: "codex",
     name: "Codex",
-    models: [
-      { id: "codex:gpt-6-astra", label: "GPT-6 Astra" },
-      { id: "codex:gpt-5.6-terra", label: "GPT-5.6 Terra" },
-      { id: "codex:gpt-5.6-sol", label: "GPT-5.6 Sol" },
-      { id: "codex:gpt-5.6-luna", label: "GPT-5.6 Luna" },
-    ],
+    models: CODEX_MODELS.map((model) => ({
+      ...model,
+      id: `codex:${model.id}`,
+    })),
   },
   {
     cliId: "antigravity",
     name: "Antigravity",
     models: [
-      { id: "antigravity:gemini-3.8-flash-high", label: "Gemini 3.8 Flash (High)" },
-      { id: "antigravity:gemini-3.8-flash-medium", label: "Gemini 3.8 Flash (Medium)" },
-      { id: "antigravity:gemini-3.8-flash-low", label: "Gemini 3.8 Flash (Low)" },
-      { id: "antigravity:claude-sonnet-4-6", label: "Claude Sonnet 4.6 (Thinking)" },
-      { id: "antigravity:claude-opus-4-6-thinking", label: "Claude Opus 4.6 (Thinking)" },
+      {
+        id: "antigravity:gemini-3.8-flash-high",
+        label: "Gemini 3.8 Flash (High)",
+      },
+      {
+        id: "antigravity:gemini-3.8-flash-medium",
+        label: "Gemini 3.8 Flash (Medium)",
+      },
+      {
+        id: "antigravity:gemini-3.8-flash-low",
+        label: "Gemini 3.8 Flash (Low)",
+      },
+      {
+        id: "antigravity:claude-sonnet-4-6",
+        label: "Claude Sonnet 4.6 (Thinking)",
+      },
+      {
+        id: "antigravity:claude-opus-4-6-thinking",
+        label: "Claude Opus 4.6 (Thinking)",
+      },
       { id: "antigravity:gpt-oss-120b-medium", label: "GPT-OSS 120B (Medium)" },
     ],
   },
@@ -48,7 +59,13 @@ export const CLI_MODEL_GROUPS = [
 
 /** CLI groups plus the user's custom API providers (same order as the panel menu). */
 export function availableModelGroups(customGroups = customModelGroups()) {
-  return [...CLI_MODEL_GROUPS, ...customGroups];
+  return [
+    ...CLI_MODEL_GROUPS.map((group) => ({
+      ...group,
+      models: getDiscoveredModels(group.cliId) ?? group.models,
+    })),
+    ...customGroups,
+  ];
 }
 
 function platformProviderId(cliId) {
@@ -69,19 +86,27 @@ function splitModelLabel(label) {
 
 /** Provider mark and compact model parts for visual model-name labels. */
 export function getModelDisplayParts(modelId, groups = availableModelGroups()) {
-  if (!modelId) return { providerId: null, platformName: null, modelName: "Flash", tier: "" };
+  if (!modelId)
+    return {
+      providerId: null,
+      platformName: null,
+      modelName: "Flash",
+      tier: "",
+    };
   for (const group of groups) {
     const model = group.models.find((entry) => entry.id === modelId);
-    if (model) return {
-      providerId: platformProviderId(group.cliId),
-      platformName: group.name,
-      ...splitModelLabel(model.label),
-    };
+    if (model)
+      return {
+        providerId: platformProviderId(group.cliId),
+        platformName: group.name,
+        ...splitModelLabel(model.label),
+      };
   }
   const parts = String(modelId).split(":");
   if (parts.length >= 2) {
     const platformId = parts[0];
-    const platformName = platformId.charAt(0).toUpperCase() + platformId.slice(1);
+    const platformName =
+      platformId.charAt(0).toUpperCase() + platformId.slice(1);
     return {
       providerId: platformProviderId(platformId),
       platformName,
