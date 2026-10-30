@@ -186,7 +186,7 @@ export function WelcomeFileCollection({
               >
                 <button type="button" aria-label={item.name} onClick={() => (isTrash ? handleRestore(null, item.id) : handleOpenRecent(item))} className="absolute inset-0 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-mint" />
                 {/* Thumbnail Preview Area */}
-                <div className="pointer-events-none relative aspect-[16/10] bg-neutral-900 rounded-t-2xl flex items-center justify-center p-3">
+                <div className="pointer-events-none relative aspect-[16/10] bg-neutral-900 rounded-t-2xl flex items-center justify-center">
                   <WelcomeFileCover item={item} />
 
                   {/* Top action overlay: Star & More menu button */}
