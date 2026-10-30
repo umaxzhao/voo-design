@@ -61,6 +61,7 @@ export default function EditorLayerRow({
       {...draggable ? {
         "data-layer-row": true,
         "data-layer-row-id": object.id,
+        "data-layer-row-position": position,
         "data-layer-parent-id": object.parentId ?? ""
       } : null}
       // Hover is consumed only by isDropTarget,

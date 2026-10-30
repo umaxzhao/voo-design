@@ -56,7 +56,8 @@ export async function stockImage(args = {}, context = {}) {
     y: finiteOrNull(args.y) ?? 0
   };
   for (const [index, item] of results.entries()) {
-    const url = item.url ?? item.thumbnail;
+    // Preview-sized stock avoids decoding the original multi-megapixel upload for a small insertion.
+    const url = item.thumbnail ?? item.url;
     try {
       const prepared = editor.prepareImageInsertion ? await editor.prepareImageInsertion(url) : null;
       assertTarget();

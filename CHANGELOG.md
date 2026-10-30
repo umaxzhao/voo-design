@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Preserve absolute root/sibling reorder positions in windowed layer lists and verify scrolled pointer drops with one undo. Time out stalled stock-index requests so the public fallback can complete within the tool deadline; prefer thumbnail-sized insertions.
+
 - Keep large layer panels responsive with windowed rows, shared immutable contract validation and indexed child presence; retain keyboard focus, scrolling, search and rename behavior.
 - Enable GPU rectangle preview caching on unbounded free canvases without clipping negative coordinates; update exact pointer regions incrementally and avoid repeated renderer routing/index work.
 

@@ -57,12 +57,35 @@ await withEditorBrowser(async ({
   await audit.record("pointer-and-keyboard-selection", async () => {
     await page.locator('#layer-row-large-0 button[title="Rename layer"]').click();
     await page.waitForFunction(() => window.__vooEditor.getSelectedIds().includes("large-0"));
+    // Keyboard routing uses the panel selection, which follows the engine on the next paint.
+    await page.waitForFunction(() => document.querySelector("[data-layers-list]").getAttribute("aria-activedescendant") === "layer-row-large-0");
     await list.press("ArrowUp");
     await page.waitForFunction(() => window.__vooEditor.getSelectedIds().includes("large-1"));
+    await page.waitForFunction(() => document.querySelector("[data-layers-list]").getAttribute("aria-activedescendant") === "layer-row-large-1");
     assert.equal(await list.getAttribute("aria-activedescendant"), "layer-row-large-1");
     return {
       realClick: true,
       arrowSelection: true
+    };
+  });
+  await audit.record("scrolled-reorder-and-undo", async () => {
+    const source = await page.locator('#layer-row-large-1 button[title="Rename layer"]').boundingBox();
+    const target = await page.locator("#layer-row-large-3").boundingBox();
+    await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+    await page.mouse.down();
+    try {
+      await page.mouse.move(source.x + source.width / 2, target.y + 1, {
+        steps: 12
+      });
+    } finally {
+      await page.mouse.up();
+    }
+    await page.waitForFunction(() => window.__vooEditor.getDocument().nodes.findIndex(node => node.id === "large-1") === 3);
+    await tool("undo");
+    assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().nodes.findIndex(node => node.id === "large-1")), 1);
+    return {
+      absoluteDropPosition: true,
+      oneUndo: true
     };
   });
   await audit.record("offscreen-selection-mounts-focused-row", async () => {

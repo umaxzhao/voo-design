@@ -154,6 +154,8 @@ export default function useLayerDrag({ listRef, nodes, onDrop }) {
             top: rect.top,
             height: rect.height,
             id: row.getAttribute("data-layer-row-id"),
+            position: row.hasAttribute("data-layer-row-position")
+              ? Number(row.getAttribute("data-layer-row-position")) : undefined,
             parentId: row.getAttribute("data-layer-parent-id") || null,
           };
         });

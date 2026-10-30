@@ -1,15 +1,27 @@
 import { STOCK_SEARCH_URL, COMMONS_SEARCH_URL } from "../../shared/app_endpoints.js";
 import { TOOL_ERROR, toolError } from "./canvas-asset-shared.js";
-async function fetchJson(fetchImpl, url, signal) {
+const STOCK_REQUEST_TIMEOUT_MS = 6000;
+async function fetchJson(fetchImpl, url, signal, timeoutMs) {
   signal?.throwIfAborted();
-  const response = await fetchImpl(url, {
-    signal,
-    headers: {
-      Accept: "application/json"
-    }
+  const controller = new AbortController();
+  const cancel = () => controller.abort(signal.reason);
+  signal?.addEventListener("abort", cancel, {
+    once: true
   });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response.json();
+  const timer = setTimeout(() => controller.abort(new Error("Stock request timed out")), timeoutMs);
+  try {
+    const response = await fetchImpl(url, {
+      signal: controller.signal,
+      headers: {
+        Accept: "application/json"
+      }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", cancel);
+  }
 }
 function plainText(value) {
   if (typeof DOMParser === "function") {
@@ -21,7 +33,8 @@ function plainText(value) {
 /** Keep the public stock tool usable when its primary search index is unavailable. */
 export async function searchStock(query, count, {
   fetch: fetchImpl,
-  signal
+  signal,
+  timeoutMs = STOCK_REQUEST_TIMEOUT_MS
 }) {
   const warnings = [];
   const primary = new URL(STOCK_SEARCH_URL);
@@ -32,7 +45,7 @@ export async function searchStock(query, count, {
     mature: "false"
   });
   try {
-    const payload = await fetchJson(fetchImpl, primary.href, signal);
+    const payload = await fetchJson(fetchImpl, primary.href, signal, timeoutMs);
     const results = (payload.results ?? []).filter(item => item?.url || item?.thumbnail);
     if (results.length) return {
       results: results.slice(0, count),
@@ -64,7 +77,7 @@ export async function searchStock(query, count, {
     origin: "*"
   });
   try {
-    const payload = await fetchJson(fetchImpl, fallback.href, signal);
+    const payload = await fetchJson(fetchImpl, fallback.href, signal, timeoutMs);
     if (payload.error) throw new Error(payload.error.info ?? payload.error.code);
     const results = Object.values(payload.query?.pages ?? {}).map(page => {
       const image = page.imageinfo?.[0] ?? {},

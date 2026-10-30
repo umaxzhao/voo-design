@@ -41,8 +41,8 @@ Electron. No test edits the user's current document, workspace or OS Trash.
 | Agent/MCP | `image-agent-complete` | A registry guard accounts for all 74 advertised tools. 69 local/document tools use the real relay and assert document results. Five provider/network-dependent tools have explicit external evidence requirements. A successful basic call does not certify every argument combination. |
 | Touch and narrow layouts | `pages_dnd`, `ui-responsive-editor`, `ui-global-interaction` | Trusted touch input, long-press page ordering versus scrolling, pinch/cancel, keyboard menus, panel switching, safe-area geometry and contained floating controls. This is Chromium emulation, not physical iOS/Safari certification. |
 | GPU and CPU rendering | `gl-spatial-parity`, `mesh-gradient`, `image-adjustments-complete` | Real GL pixel comparisons and Canvas2D/Skia/PNG/SVG paint checks; no assertion that every backend supports every effect natively. |
-| Large layer trees | `image-layer-window` | Bounded DOM rows, end-of-list scrolling, pointer/arrow selection, offscreen focus mounting, rename/undo and full-tree search. Variable-height rows are measured without retaining deleted node objects. |
-| Performance | `canvas_fps` | Separate pan/zoom/drag measurements at 1k/5k/20k nodes with the existing 30 FPS gate. Results depend on the recorded device/backend. |
+| Large layer trees | `image-layer-window` | Bounded DOM rows, end-of-list scrolling, pointer/arrow selection, offscreen focus mounting, scrolled pointer reordering with one undo, rename/undo and full-tree search. Variable-height rows are measured without retaining deleted node objects. |
+| Performance | `canvas_fps` | Separate pan/zoom/drag measurements at 1k/5k/20k nodes with the existing 30 FPS gate. The fixture uses plain rectangles; results depend on the recorded device/backend. |
 
 The dead `RETOUCH` enum entry was removed; the functioning sidebar Retouch action
 is separate. `AI_SELECT` remains an object-selection alias, not an extra drawing
@@ -51,7 +51,7 @@ engine. The enumerated tool IDs and real menu submodes are different inventories
 ## Defects repaired by this audit
 
 - Large development documents repeatedly validated the same panel model in every
-  row and scanned rows quadratically. Immutable successful contracts are shared,
+  row and scanned rows quadratically. Scrolled drag slots retain their full root/sibling positions. Immutable successful contracts are shared,
   child presence is indexed and only visible layer rows are mounted. Validation
   errors and full-tree navigation remain active.
 - Free canvas roots bypassed the GPU rectangle preview cache. Cached pictures now

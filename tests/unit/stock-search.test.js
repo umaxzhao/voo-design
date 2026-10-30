@@ -81,3 +81,37 @@ describe("public stock search fallback", () => {
     expect(fetch).toHaveBeenCalledOnce();
   });
 });
+it("times out a stalled primary request before trying the public fallback", async () => {
+  const fetch = vi.fn((url, {
+    signal
+  }) => url.includes("openverse") ? new Promise((resolve, reject) => signal.addEventListener("abort", () => reject(signal.reason), {
+    once: true
+  })) : Promise.resolve({
+    ok: true,
+    json: async () => ({
+      query: {
+        pages: {
+          photo: {
+            imageinfo: [{
+              thumburl: "https://example.test/fern.jpg",
+              extmetadata: {
+                LicenseShortName: {
+                  value: "CC0"
+                }
+              }
+            }]
+          }
+        }
+      }
+    })
+  }));
+  const result = await searchStock("fern", 1, {
+    fetch,
+    timeoutMs: 10
+  });
+  expect(result.source).toBe("wikimedia-commons");
+  expect(result.warnings).toContainEqual({
+    source: "openverse",
+    reason: "Stock request timed out"
+  });
+});
