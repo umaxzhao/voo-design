@@ -27,7 +27,7 @@ const commands = [
     "editor-shortcut-lifecycle", "image-action-loading", "project-picker", "pages_dnd", "editor-snapping",
     "destructive-boolean", "hook-lifecycle", "editor-refactor", "editor-context", "editor-session",
     "editor-page-composition", "raster-loading", "generated-output", "root-contextual-toolbar",
-    "frame-child-pointer", "frame-negative-space", "frame-alt-duplicate", "frame-reparent-contracts",
+    "frame-child-pointer", "canvas-double-click", "frame-negative-space", "frame-alt-duplicate", "frame-reparent-contracts",
     "frame-surface-camera", "frame-adjustment-space", "gl-spatial-parity",
     "ui-home-settings", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "editor-resources", "editor-resources-built", "welcome-covers",
     "image-interaction-boundaries", "image-adjustments-complete", "image-selections-warp", "image-toolbar-complete", "image-agent-complete",

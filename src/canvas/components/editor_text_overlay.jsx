@@ -3,6 +3,7 @@ import { isFigmaFontAvailable } from "../figma/figma-text.js";
 import PropTypes from "prop-types";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { LINE_HEIGHT_RATIO } from "../editor/scene_model_core.js";
+import { createUnmountGuard } from "./agent-panel/unmount_guard.js";
 
 /**
  * The text caret, as a real `<textarea>` laid over the canvas.
@@ -31,6 +32,18 @@ export default function EditorTextOverlay({
   valueRef.current = value;
   const commitRef = useRef(onCommit);
   commitRef.current = onCommit;
+  const committedRef = useRef(false);
+  const finishEdit = () => {
+    if (committedRef.current) return;
+    committedRef.current = true;
+    commitRef.current(valueRef.current);
+  };
+  const unmountGuardRef = useRef(null);
+  if (!unmountGuardRef.current) {
+    unmountGuardRef.current = createUnmountGuard(() => {
+      if (valueRef.current !== "") finishEdit();
+    });
+  }
 
   useLayoutEffect(() => {
     const element = ref.current;
@@ -39,18 +52,13 @@ export default function EditorTextOverlay({
     element.select();
   }, []);
 
-  // Committing on unmount covers every exit that is not a blur — the tool
-  // changing, the editor closing, undo replacing the document. An empty
-  // value is the one exception: committing it deletes the node, and React
-  // StrictMode's dev-only remount fires this cleanup with the untouched
-  // empty value, which would discard a fresh box before anyone typed into
-  // it. Real "emptied and done" exits all pass through the blur commit.
-  useEffect(
-    () => () => {
-      if (valueRef.current !== "") commitRef.current(valueRef.current);
-    },
-    [],
-  );
+  // StrictMode's simulated unmount must not close a just-opened editor.
+  // A real unmount still commits once; empty drafts finish through blur.
+  useEffect(() => {
+    const guard = unmountGuardRef.current;
+    guard.mount();
+    return () => guard.unmount();
+  }, []);
 
   const fontSize = node.fontSize * viewport.zoom;
   const lineHeight = node.lineHeight ?? LINE_HEIGHT_RATIO;
@@ -87,7 +95,7 @@ export default function EditorTextOverlay({
             onUpdate(nextVal);
           }
         }}
-        onBlur={() => onCommit(valueRef.current)}
+        onBlur={finishEdit}
         onKeyDown={(event) => {
           // An IME composition owns every key while composing — Escape picks a
           // candidate (macOS) and Windows fires keystrokes with keyCode 229.
