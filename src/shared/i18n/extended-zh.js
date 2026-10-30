@@ -2234,7 +2234,7 @@ export default {
   "save.loss.confirm": "仍要保存吗？",
   "psd.save.lossRasterized": "{count} 个文字或形状图层会保存为像素图层，之后无法再作为矢量编辑",
   "svg.save.lossKinds": "{kinds} 图层无法写入 SVG",
-  "svg.save.rasterized": "像素调整、变形和图层效果会作为图片嵌入 SVG。请保留 .voo 文件，以便之后编辑这些效果。",
+  "svg.save.rasterized": "像素调整和图层效果会作为图片嵌入 SVG；背景效果和调整图层需要合成为整张图片。请保留 .voo 文件，以便之后编辑这些效果。",
   "agent.panel.suggestion.palette": "为这张图尝试一套配色",
   "agent.panel.suggestion.layers": "整理并对齐选中的图层",
   "agent.panel.suggestion.poster": "为一场音乐节草拟海报版式",

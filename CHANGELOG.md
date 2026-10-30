@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Preserve SVG backdrop blur, glass and adjustment layers through scene raster embedding, including isolated selection copies; retain an explicit export notice and verify actual pixels. Exit isolated native audit profiles without entering the production quit/recovery flow.
+
 - Verify the image editor through real tool gestures, every adjustment/filter/style kind, inspector fields, live MCP operations, native file recovery and local-model inference. Retain explicit provider and platform blockers instead of counting them as passes.
 - Keep command recents unique and verify all six export formats through real downloads. Fall back to Wikimedia Commons for public stock search while preserving source, license, attribution and upstream warnings.
 - Render image/text bevels with effective size, isolate inner layer styles from the page backdrop, and retain pixel adjustments/styles in SVG through per-layer raster embedding with an export notice.

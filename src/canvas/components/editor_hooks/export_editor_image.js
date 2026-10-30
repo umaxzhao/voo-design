@@ -7,6 +7,7 @@ import { effectivePage } from "../../editor/scene_model_geometry.js";
 import { getCanvasType } from "../../editor/canvas-composition-model.js";
 import { expandInstancesForRaster } from "../../editor/editor_export_instances.js";
 import { createSvgRasterResolver } from "../../editor/svg-raster-effects.js";
+import { createSvgSceneRasterResolver } from "../../editor/svg-scene-raster.js";
 import {
   bytesToDataUrl,
   mediaExportFormat,
@@ -89,7 +90,11 @@ function createSvgAssetResolvers(editorDocument, engine) {
     bitmapOf: node => engine.getNodeBitmap?.(node),
     maskOf: node => engine.getNodeMask?.(node),
   });
-  return { bitmapOf, bitmapSizeOf, maskOf, rasterOf };
+  const rasterSceneOf = createSvgSceneRasterResolver({
+    bitmapOf: node => engine.getNodeBitmap?.(node),
+    maskOf: node => engine.getNodeMask?.(node),
+  });
+  return { bitmapOf, bitmapSizeOf, maskOf, rasterOf, rasterSceneOf };
 }
 
 /** Encode the current document, keeping the DOM document distinct from it. */
@@ -209,7 +214,7 @@ export async function exportEditorImage({
   ) {
     if (format === "svg") {
       const selectedNodes = selectedExportNodes(editorDocument, selectedIds);
-      const { bitmapOf, bitmapSizeOf, maskOf, rasterOf } = createSvgAssetResolvers(
+      const { bitmapOf, bitmapSizeOf, maskOf, rasterOf, rasterSceneOf } = createSvgAssetResolvers(
         editorDocument,
         engine,
       );
@@ -223,6 +228,7 @@ export async function exportEditorImage({
         bitmapSizeOf,
         maskOf,
         rasterOf,
+        rasterSceneOf,
         measureCtx: document.createElement("canvas").getContext("2d"),
         resolveCanvas,
       });
@@ -286,7 +292,7 @@ export async function exportEditorImage({
     signal?.throwIfAborted();
     dataUrl = bytesToDataUrl(bytes, "image/vnd.adobe.photoshop");
   } else if (format === "svg") {
-    const { bitmapOf, bitmapSizeOf, maskOf, rasterOf } = createSvgAssetResolvers(
+    const { bitmapOf, bitmapSizeOf, maskOf, rasterOf, rasterSceneOf } = createSvgAssetResolvers(
       editorDocument,
       engine,
     );
@@ -296,6 +302,7 @@ export async function exportEditorImage({
       bitmapSizeOf,
       maskOf,
       rasterOf,
+      rasterSceneOf,
       transparent,
       measureCtx: document.createElement("canvas").getContext("2d"),
     });
@@ -357,10 +364,10 @@ async function encodeScenePreview({
  */
 export function renderEngineSvg(engine) {
   const editorDocument = assertExportableDocument(engine.getDocument?.());
-  const { bitmapOf, bitmapSizeOf, maskOf, rasterOf } = createSvgAssetResolvers(
+  const { bitmapOf, bitmapSizeOf, maskOf, rasterOf, rasterSceneOf } = createSvgAssetResolvers(
     editorDocument,
     engine,
   );
   const expanded = expandInstancesForRaster(editorDocument, null);
-  return documentToSvg(expanded, { bitmapOf, bitmapSizeOf, maskOf, rasterOf });
+  return documentToSvg(expanded, { bitmapOf, bitmapSizeOf, maskOf, rasterOf, rasterSceneOf });
 }

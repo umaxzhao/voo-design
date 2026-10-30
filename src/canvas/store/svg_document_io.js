@@ -7,7 +7,7 @@
 import { isSvgString, parseSvgStringToNodes } from "../editor/editor_svg.js";
 import { NODE_KIND, createDocument } from "../editor/scene_doc_factory.js";
 import { VOO_FILE_FORMAT } from "../../../electron/voo_format.js";
-import { needsSvgRaster } from "../editor/svg-raster-support.js";
+import { needsSvgRaster, requiresSvgSceneRaster } from "../editor/svg-raster-support.js";
 
 /** Node kinds the SVG writer represents. Other visible kinds are reported as losses. */
 const SVG_WRITABLE_KINDS = new Set([
@@ -56,6 +56,6 @@ export function svgSaveLosses({ pageCount, sceneDoc }) {
       .map((node) => node.kind),
   );
   if (kinds.size > 0) losses.push({ key: "svg.save.lossKinds", params: { kinds: [...kinds].join(", ") } });
-  if (sceneDoc?.nodes?.some(node => node.visible !== false && needsSvgRaster(node))) losses.push({ key: "svg.save.rasterized" });
+  if (requiresSvgSceneRaster(sceneDoc ?? {}) || sceneDoc?.nodes?.some(node => node.visible !== false && needsSvgRaster(node))) losses.push({ key: "svg.save.rasterized" });
   return losses;
 }

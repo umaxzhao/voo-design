@@ -2309,7 +2309,7 @@ export default {
   "save.loss.confirm": "Save anyway?",
   "psd.save.lossRasterized": "{count} text or shape layers will be saved as pixel layers and can no longer be edited as vectors",
   "svg.save.lossKinds": "{kinds} layers cannot be written to SVG",
-  "svg.save.rasterized": "Pixel adjustments, deformations and layer styles are embedded as images in SVG. Keep the .voo file to edit these effects later.",
+  "svg.save.rasterized": "Pixel adjustments and layer styles are embedded as images in SVG. Backdrop effects and adjustment layers require a flattened image. Keep the .voo file to edit these effects later.",
   "agent.panel.suggestion.palette": "Try a colour palette for this image",
   "agent.panel.suggestion.layers": "Tidy up and align the selected layers",
   "agent.panel.suggestion.poster": "Draft a poster layout for a music festival",

@@ -34,7 +34,7 @@ Electron. No test edits the user's current document, workspace or OS Trash.
 | Style alpha and text | `image-layer-alpha` | Seven inner styles preserve transparent holes and apply layer opacity once; text bevel renders glyph edges, responds to size, and undoes. |
 | Inspector fields | `image-inspector-core`, `ui-inspector-interaction`, `inspector-controls` | Actual image/rectangle/Frame X/Y/W/H/rotation/shear/radius edits, flips, Enter/blur/Escape, mixed selection, color/text/variants, variables, filter ordering and export controls. |
 | Layout and masks | `layout-mask-audit`, `stretch-layout`, `frame-clip-review`, `container-opacity`, `frame-adjustment-space` | Layout reflow, nested constraints, stretch/wrap/hug, clipping, layer opacity, masks and frame-scoped adjustments. |
-| Boolean/vector exports | `boolean-stroke-export`, `boolean-resize`, `svg-frame-clipping`, `image-svg-parity` | Real SVG decoding compared with rendered pixels, including crop, transforms, opacity, adjustments, styles, shadows and strokes. Unsupported pixel styles are embedded as images; ordinary vectors stay vector elements. |
+| Boolean/vector exports | `boolean-stroke-export`, `boolean-resize`, `svg-frame-clipping`, `image-svg-parity` | Real SVG decoding compared with rendered pixels, including crop, transforms, opacity, adjustments, styles, shadows, strokes, backdrop blur, glass and global adjustment layers. Backdrop readers use a flattened scene; selection copies include only selected artwork. Ordinary vectors stay vector elements. |
 | Images and asynchronous imports | `image-assets-history`, `image-agent-complete`, `generated-output` | In-flight image decoding retains later edits; successful images in one stock batch undo once; partial download failures are returned; generated apply/discard and stale-result ownership. |
 | Downloaded export formats | `image-export-formats` | Actual PNG/JPEG/WebP/SVG pixels, parsed layered PSD and PDF page units/embedded RGB, exported through the real dialog. Command recents retain unique rows and keyboard IDs. |
 | Native storage | `image-electron`, `workspace-trash-recovery.test.js` | Real image-bearing .voo bytes, folder move/rename, in-app Trash listing/read/restore, collision refusal, rollback on metadata failure and no permanent-delete fallback. |
@@ -105,6 +105,7 @@ independent delivery and local-cache paths.
   devices and cross-OS hardware are not certified by a development Electron run.
 - Four legacy collaboration/workflow compatibility tests remain skipped in the
   full suite. They are not counted as passes or removed to improve the totals.
-- Cross-layer backdrop effects and unsupported SVG blend modes retain their
-  established export limitations; a basic single-layer parity check cannot
-  certify every blend/mask/adjustment-layer combination.
+- SVG backdrop blur, glass and global adjustment layers are explicitly flattened
+  and pixel-compared, including transparent selection copies. Unsupported SVG
+  blend modes still fail explicitly; every possible blend/mask combination is
+  not certified. Keep the .voo source for editable effects.

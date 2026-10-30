@@ -176,6 +176,16 @@ try {
   audit.finish();
   assert.deepEqual(errors, []);
 } finally {
-  if (app) await app.close();
+  if (app && app.process().exitCode === null) {
+    // The production quit flow can wait for user-facing recovery/bridge work.
+    // This instance owns only a disposable profile; exit it after verifying disk bytes.
+    const closed = app.waitForEvent("close");
+    await app.evaluate(({
+      app
+    }) => app.exit(0)).catch(error => {
+      if (!/closed|destroyed/i.test(error.message)) throw error;
+    });
+    await closed;
+  }
   await server.close();
 }

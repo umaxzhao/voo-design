@@ -10,6 +10,7 @@
 
 import { containerOpacity, createContainerOpacityPlan, containerPaintNode, containerMaskNode } from "./container-opacity.js";
 import { svgContainerBlend } from "./svg-container-opacity.js";
+import { requiresSvgSceneRaster } from "./svg-raster-support.js";
 import { booleanNodeMarkup } from "./svg-boolean.js";
 import { createSvgFrameClips } from "./svg-frame-clips.js";
 import { paintedNodeBounds } from "./painted-node-bounds.js";
@@ -123,6 +124,7 @@ export function documentToSvg(
     bitmapSizeOf = null,
     maskOf = null,
     rasterOf = null,
+    rasterSceneOf = null,
     measureCtx = null,
     transparent = false,
     resolveCanvas = null,
@@ -131,6 +133,10 @@ export function documentToSvg(
   if (!doc) return "";
   doc = expandInstances(doc, resolveCanvas);
   const page = effectivePage(doc);
+  if (requiresSvgSceneRaster(doc)) {
+    if (!rasterSceneOf) throw new Error("SVG_SCENE_RENDERER_REQUIRED");
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${number(page.width)}" height="${number(page.height)}" viewBox="${number(page.x)} ${number(page.y)} ${number(page.width)} ${number(page.height)}">${rasterSceneOf(doc, { transparent })}</svg>`;
+  }
   const svgNodes = doc.nodes ?? [];
   const { defs, idOf } = gradientDefs([...svgNodes, ...svgStrokeDefinitionNodes(svgNodes)]);
   const body = [];
@@ -335,6 +341,7 @@ export function nodesToSvg(
     bitmapSizeOf = null,
     maskOf = null,
     rasterOf = null,
+    rasterSceneOf = null,
     resolveCanvas = null,
     measureCtx = null,
     backgroundColor = "transparent",
@@ -361,6 +368,7 @@ export function nodesToSvg(
     bitmapSizeOf,
     maskOf,
     rasterOf,
+    rasterSceneOf,
     resolveCanvas,
   });
 }

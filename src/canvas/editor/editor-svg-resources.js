@@ -1,5 +1,6 @@
 import { nodesToSvg } from "./editor_svg.js";
 import { createSvgRasterResolver } from "./svg-raster-effects.js";
+import { createSvgSceneRasterResolver } from "./svg-scene-raster.js";
 
 /** SVG images must own their bytes rather than depend on a live cache or blob URL. */
 export function exportSvgNodes(nodes, { cache = null, maskTools = null, measureCtx = null } = {}) {
@@ -32,6 +33,10 @@ export function exportSvgNodes(nodes, { cache = null, maskTools = null, measureC
   return nodesToSvg(nodes, {
     bitmapOf: id => images.get(id), bitmapSizeOf: id => sizes.get(id),
     maskOf: id => masks.get(id), measureCtx,
+    rasterSceneOf: createSvgSceneRasterResolver({
+      bitmapOf: node => cache?.get(node),
+      maskOf: node => maskTools?.maskSourceOf?.(node) ?? cache?.getMask?.(node),
+    }),
     rasterOf: createSvgRasterResolver({
       bitmapOf: node => cache?.get(node),
       maskOf: node => maskTools?.maskSourceOf?.(node) ?? cache?.getMask?.(node),
