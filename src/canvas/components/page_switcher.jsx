@@ -24,8 +24,9 @@ export default function PageSwitcher() {
   const focusedId = useDesignStore((s) => s.editingNodeId);
   const current = nodes.find((node) => node.id === focusedId) ?? nodes[0];
   const actions = useDesignStore.getState();
-  const { drag, beginRowDrag } = usePageSwitcherDrag({
+  const { drag, beginRowDrag, cancelDrag } = usePageSwitcherDrag({
     listRef,
+    enabled: open || nodes.length === 0,
     onDrop: (sourceId, targetId, edge) => {
       const state = useDesignStore.getState();
       movePageToEdge(state, state.nodes, sourceId, targetId, edge);
@@ -35,6 +36,7 @@ export default function PageSwitcher() {
     if (!open) return;
     const dismiss = (event) => {
       if (!root.current?.contains(event.target)) {
+        cancelDrag();
         finishPageRename(edit, useDesignStore.getState(), root.current?.querySelector("input")?.value);
         setRenaming(null);
         setOpen(false);
@@ -42,7 +44,7 @@ export default function PageSwitcher() {
     };
     document.addEventListener("pointerdown", dismiss);
     return () => document.removeEventListener("pointerdown", dismiss);
-  }, [open]);
+  }, [cancelDrag, open]);
   const add = () => {
     const highest = nodes.reduce(
       (max, node) =>
@@ -62,6 +64,7 @@ export default function PageSwitcher() {
       onKeyDown={(event) => {
         event.stopPropagation();
         if (event.key === "Escape") {
+          cancelDrag();
           setOpen(false);
           finishRename("", true);
         }
@@ -184,7 +187,10 @@ export default function PageSwitcher() {
         type="button"
         aria-label={t("pageSwitcher.label")}
         aria-expanded={open || nodes.length === 0}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          if (open) cancelDrag();
+          setOpen((value) => !value);
+        }}
         className="flex h-9 items-center gap-2 rounded-full border border-white/10 bg-neutral-900/95 px-3.5 text-xs text-neutral-100 shadow-menu backdrop-blur-2xl"
       >
         <span className="max-w-[160px] truncate">

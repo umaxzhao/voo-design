@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { IconChevronDown } from "../icons.jsx";
 import { useI18n } from "../use_i18n.js";
 import { toolFamilyIcon } from "./tool_family_icons.jsx";
+import { useTouchToolTarget, withTouchToolTarget } from "./editor_touch_tool_target.jsx";
 
 /**
  * Turns a tool family's items (see TOOL_FAMILIES) into dropdown entries. The
@@ -46,6 +47,8 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
   const suppressToolClickRef = useRef(false);
   const lastPointerTypeRef = useRef(null);
   const menuLabel = t("editor.toolOptions");
+  const touchTarget = useTouchToolTarget();
+  const active = items.some((item) => item.active);
 
   const openMenu = () => {
     const rect = rootRef.current?.getBoundingClientRect();
@@ -94,8 +97,8 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
       return;
     }
     if (
-      lastPointerTypeRef.current === "touch" &&
-      items.some((item) => item.active) &&
+      (touchTarget || lastPointerTypeRef.current === "touch") &&
+      active &&
       !event.target.closest?.(".editor-toolbar-menu-trigger")
     ) {
       openMenu();
@@ -125,7 +128,7 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
       if (event.key !== "Escape") return;
       event.stopPropagation();
       setOpen(false);
-      chevronRef.current?.focus();
+      (touchTarget ? rootRef.current?.querySelector("[data-toolbar-touch-tool]") : chevronRef.current)?.focus();
     };
     document.addEventListener("pointerdown", closeOutside, true);
     document.addEventListener("keydown", closeOnEscape);
@@ -133,7 +136,7 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
       document.removeEventListener("pointerdown", closeOutside, true);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [open]);
+  }, [open, touchTarget]);
 
   // Keyboard users opening the menu land on its first item.
   useEffect(() => {
@@ -144,14 +147,14 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
   return (
     <div
       ref={rootRef}
-      className="relative flex h-11 w-11 shrink-0 items-center justify-center"
+      className="editor-toolbar-family relative flex h-11 w-11 shrink-0 items-center justify-center"
       data-testid={`editor-${menuId}-menu`}
       onPointerDownCapture={onPointerDownCapture}
       onPointerUpCapture={clearLongPress}
       onPointerCancelCapture={clearLongPress}
       onClickCapture={onClickCapture}
     >
-      {children}
+      {touchTarget ? withTouchToolTarget(children, { active, open, menuId, menuLabel }) : children}
       <button
         ref={chevronRef}
         type="button"
@@ -160,6 +163,8 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
         aria-label={menuLabel}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-hidden={touchTarget || undefined}
+        tabIndex={touchTarget ? -1 : undefined}
         onClick={toggleMenu}
       >
         <IconChevronDown
@@ -172,6 +177,7 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
             <div
               ref={menuRef}
               role="menu"
+              id={`editor-${menuId}-menu-list`}
               aria-label={menuLabel}
               data-testid={`editor-${menuId}-menu-list`}
               className="fixed z-[9999] flex min-w-[142px] -translate-x-1/2 flex-col gap-0.5 rounded-xl border border-white/10 bg-black/90 p-1 font-mono shadow-panel backdrop-blur-md"

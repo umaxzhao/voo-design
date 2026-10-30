@@ -14,25 +14,8 @@ import {
   StaticSection,
 } from "./property_section.jsx";
 import CustomSelect from "../custom_select.jsx";
-
-export const DEFAULT_AUTO_LAYOUT = {
-  direction: "vertical",
-  gap: 8,
-  padding: 0,
-  alignItems: "start",
-  justifyContent: "start",
-  widthMode: "fixed",
-  heightMode: "hug",
-};
-
-const DISTRIBUTIONS = [
-  "start",
-  "center",
-  "end",
-  "space-between",
-  "space-around",
-  "space-evenly",
-];
+import { DEFAULT_AUTO_LAYOUT, DISTRIBUTIONS, alignmentPatch } from "./auto_layout_controls.js";
+export { DEFAULT_AUTO_LAYOUT, alignmentPatch } from "./auto_layout_controls.js";
 
 const FIELD_CLASS =
   "w-full min-w-0 rounded-lg bg-neutral-800 px-2 py-1.5 text-[11px] tabular-nums text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
@@ -361,15 +344,6 @@ export function AutoLayoutFields({
         )}
     </div>
   );
-}
-
-/** Convert the visual grid position into the engine's axis-based alignment. */
-export function alignmentPatch(direction, x, y) {
-  const positions = ["start", "center", "end"];
-  return {
-    justifyContent: positions[direction === "horizontal" ? x : y],
-    alignItems: positions[direction === "horizontal" ? y : x],
-  };
 }
 
 /** Standalone group (kept for callers that show it outside the layout group). */

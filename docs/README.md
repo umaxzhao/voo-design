@@ -15,7 +15,7 @@
 
 ## Release and deployment
 
-Run `node scripts/verify-editor-release.mjs` on the exact clean commit being released. It checks the build, design rules, all unit tests, ten browser suites and source immutability. The JSON output identifies that commit; copy it to the local delivery artifacts directory rather than adding another dated report to this index. Git/remote and production state must be checked independently, rather than inferred from a past report.
+Run `node scripts/verify-editor-release.mjs` on the exact clean commit being released. It checks the build, design rules, all unit tests, the registered browser suites and source immutability. The JSON output identifies that commit; copy it to the local delivery artifacts directory rather than adding another dated report to this index. Git/remote and production state must be checked independently, rather than inferred from a past report.
 
 - [release-checklist.md](release-checklist.md), [code-signing.md](code-signing.md), [installer-size.md](installer-size.md), [deploy-la.md](deploy-la.md) (editor deploys to `la2`)
 
@@ -27,6 +27,7 @@ Run `node scripts/verify-editor-release.mjs` on the exact clean commit being rel
 ## Audits (point-in-time records; check the date and re-verify before relying on them)
 | Document | Topic | Status |
 | :--- | :--- | :--- |
+| [audits/editor-closeout.md](audits/editor-closeout.md) | Mesh rendering, automatic image consent, touch page ordering and stretch layout | Coverage contracts and remaining limits; use the exact release report for execution results |
 | [audits/pending-workspace-integration.md](audits/pending-workspace-integration.md) | Preserved pending drafts, signature systems, nested constraints and bucket/variable regressions | Workspace integration; [verified release evidence](audits/pending-integration-release.json) |
 | [audits/remote-main-verification-2026-10-28.md](audits/remote-main-verification-2026-10-28.md) | Clean remote reproduction, custom-menu regressions, dedicated inspector/drawing/retouch evidence | Verification at the recorded revision |
 | [audits/layout-mask-verification.md](audits/layout-mask-verification.md) | Group/rotated alignment, Auto Layout, clipping and Boolean pixel/history checks | Snapshot (2026-10-27) |

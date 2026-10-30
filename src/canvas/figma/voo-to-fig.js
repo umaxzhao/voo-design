@@ -48,6 +48,9 @@ function paintOf(fill, opacity = 1, visible = true, blendMode = "source-over") {
     ...paint, opacity: paint.opacity * opacity, visible, blendMode: blend,
   }));
   const gradient = parseGradient(fill);
+  // Native Figma paints have no representation for the SVG mesh composite.
+  // Report this through figSaveLosses instead of failing on absent ramp stops.
+  if (gradient.type === "mesh") return [];
   const kinds = { linear: "GRADIENT_LINEAR", radial: "GRADIENT_RADIAL", angular: "GRADIENT_ANGULAR", diamond: "GRADIENT_DIAMOND" };
   const stops = gradient.stops.map((stop) => ({
     position: stop.position / 100,
@@ -82,7 +85,17 @@ function fillsOf(node) {
 
 /** Whether a fill can be written: absent, transparent, or a plain hex colour. */
 function hasSupportedFill(node) {
-  return node.fill === undefined || node.fill === null || node.fill === "transparent" || parseHexColor(node.fill) !== null || isCssGradient(node.fill);
+  const supported = (fill) => fill === undefined || fill === null || fill === "transparent" || parseHexColor(fill) !== null ||
+    (isCssGradient(fill) && parseGradient(fill).type !== "mesh");
+  return Array.isArray(node.fills) ? node.fills.every(paint => paint.visible === false || supported(paint.fill)) : node.fillHidden === true || supported(node.fill);
+}
+
+/** SVG meshes also have no native Figma stroke paint; do not silently omit them. */
+function hasUnsupportedMeshStroke(node) {
+  if (node.visible === false || node.opacity === 0) return false;
+  const lost = (stroke) => stroke.visible !== false && stroke.strokeWidth > 0 &&
+    stroke.strokeOpacity !== 0 && isCssGradient(stroke.stroke) && parseGradient(stroke.stroke).type === "mesh";
+  return (node.strokeHidden !== true && lost(node)) || (node.strokes ?? []).some(lost);
 }
 
 function isWritable(node) {
@@ -103,7 +116,7 @@ export function figSaveLosses(sceneDoc, { pageCount } = {}) {
       .map((node) => node.kind),
   );
   if (kinds.size > 0) losses.push({ key: "fig.save.lossKinds", params: { kinds: [...kinds].join(", ") } });
-  const unsupportedFills = nodes.filter((node) => isWritable(node) && !hasSupportedFill(node)).length;
+  const unsupportedFills = nodes.filter((node) => isWritable(node) && (!hasSupportedFill(node) || hasUnsupportedMeshStroke(node))).length;
   if (unsupportedFills > 0) losses.push({ key: "fig.save.lossFills", params: { count: unsupportedFills } });
   return losses;
 }

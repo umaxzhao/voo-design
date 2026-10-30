@@ -39,20 +39,22 @@ describe("page switcher pointer reorder", () => {
     expect(hook).toContain("passive: false");
     expect(hook).toContain("pointercancel");
     // A plain click or double click must not be swallowed as a drag.
-    expect(hook).toContain("!session.armed || !session.moved");
+    expect(hook).toContain("!commit || !session.armed || !session.moved");
   });
 
   it("keeps the mobile frame clear of the notch and home indicator", () => {
-    const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
+    const css = readFileSync("src/canvas/components/editor_touch_targets.css", "utf8");
     expect(css).toContain("env(safe-area-inset-top, 0px)");
     expect(css).toContain("env(safe-area-inset-bottom, 0px)");
     expect(css).toContain("env(safe-area-inset-left, 0px)");
     expect(css).toContain("env(safe-area-inset-right, 0px)");
   });
 
-  it("grows the mobile tool-family chevron hit area without growing the icon", () => {
-    const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
-    expect(css).toContain(".editor-toolbar-menu-trigger::after");
-    expect(css).toContain("inset: -6px -8px -10px;");
+  it("uses one 48px touch target for each tool family without overlapping the main action", () => {
+    const css = readFileSync("src/canvas/components/editor_touch_targets.css", "utf8");
+    expect(css).toContain("[data-toolbar-touch-tool]");
+    expect(css).toContain("min-width: 48px;");
+    expect(css).toContain("min-height: 48px;");
+    expect(css).toContain("pointer-events: none;");
   });
 });

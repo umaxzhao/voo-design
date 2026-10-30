@@ -4,6 +4,7 @@ import { createFrame } from "./canvas_tools_layout.js";
 import { createPath } from "./canvas_tools_geometry.js";
 import { normalizeAutoLayout } from "../editor/scene_auto_layout.js";
 import { parseSvgPath } from "../editor/editor_svg_parse.js";
+import { commitEditorDocument } from "../undo-action-contracts.js";
 
 const strings = ["name", "fill", "stroke", "text", "fontFamily", "color", "d"];
 const numbers = ["x", "y", "width", "height", "strokeWidth", "cornerRadius", "opacity", "fontSize", "lineHeight", "letterSpacing"];
@@ -181,6 +182,31 @@ export function createLayoutNode(editor, node, parentId) {
   return result.layerId;
 }
 
+/** Restore public interaction state after a failed tree build. */
+function restoreBuildContext(editor, context) {
+  if (context.tool !== undefined && editor.getTool?.() !== context.tool) editor.setTool?.(context.tool);
+  if (context.isolation !== undefined && editor.getIsolationGroupId?.() !== context.isolation) {
+    editor.exitGroup?.();
+    const visited = new Set();
+    // enterGroup follows visible selection boundaries, so repeatedly entering
+    // the saved container restores a nested isolation through public APIs.
+    while (editor.getIsolationGroupId?.() !== context.isolation) {
+      const current = editor.getIsolationGroupId?.();
+      if (!context.isolation || visited.has(current) || !editor.enterGroup?.(context.isolation)) {
+        throw new Error("build-layout-isolation-restore-failed");
+      }
+      visited.add(current);
+    }
+  }
+  if (context.kind === "background") editor.selectBackground?.();
+  else if (context.groupId) {
+    // selectGroup explicitly exits isolation. Inside an isolated container,
+    // selecting its original member recreates the same promoted Group context.
+    if (context.isolation) editor.select?.(context.ids?.[0] ?? context.groupId);
+    else editor.selectGroup?.(context.groupId);
+  } else if (Array.isArray(context.ids)) editor.selectExactly?.(context.ids);
+}
+
 export function buildLayout(args = {}) {
   validate(args);
   const editor = typeof window !== "undefined" ? window.__vooEditor : null;
@@ -192,30 +218,60 @@ export function buildLayout(args = {}) {
   }
   const created = [];
   const restores = [];
+  const readDocument = () => editor.getDocument?.() ?? editor.getDoc?.();
+  const before = readDocument();
+  const canRestoreDocument = before && typeof editor.setDoc === "function";
+  const selectedGroup = editor.getSelectedGroup?.();
+  const context = {
+    ids: editor.getSelectedIds?.()?.slice(),
+    kind: editor.getSelection?.()?.kind ?? (editor.isBackgroundSelected?.() ? "background" : null),
+    groupId: selectedGroup?.id,
+    isolation: editor.getIsolationGroupId?.(),
+    tool: editor.getTool?.(),
+  };
   const batched = typeof editor.beginBatch === "function" && typeof editor.endBatch === "function";
   if (batched) editor.beginBatch();
   try {
-    // Suppress helper commits even for older hosts without history batching.
-    for (const key of ["commitEditorDocument", "commit"]) {
-      const original = editor[key];
-      if (typeof original !== "function") continue;
-      editor[key] = () => {};
-      restores.push(() => { editor[key] = original; });
+    try {
+      // Suppress helper commits even for older hosts without history batching.
+      for (const key of ["commitEditorDocument", "commit"]) {
+        const original = editor[key];
+        if (typeof original !== "function") continue;
+        editor[key] = () => {};
+        restores.push(() => { editor[key] = original; });
+      }
+      function create(nodes, parentId) {
+        for (const node of nodes) {
+          const { type, children } = node;
+          const id = createLayoutNode(editor, node, parentId);
+          created.push({ id, name: node.name, type });
+          if (children?.length) create(children, id);
+        }
+      }
+      if (!batched && typeof editor.mute === "function") editor.mute(() => create(args.nodes, args.parentId));
+      else create(args.nodes, args.parentId);
+    } finally {
+      for (const restore of restores.reverse()) restore();
+      if (batched) editor.endBatch();
+      // Older adapters without public document replacement retain their
+      // original history hook; current engines commit through setDoc below.
+      if (!canRestoreDocument && created.length) editor.commitEditorDocument?.({ message: "AI: Build layout" });
     }
-    function create(nodes, parentId) {
-      for (const node of nodes) {
-        const { type, children } = node;
-        const id = createLayoutNode(editor, node, parentId);
-        created.push({ id, name: node.name, type });
-        if (children?.length) create(children, id);
+    if (canRestoreDocument && created.length) {
+      commitEditorDocument("editor.layer.add", editor.setDoc, readDocument());
+    }
+  } catch (error) {
+    // The whole tree was validated first, but host creation/measurement can
+    // still fail mid-build. Never publish its partial nodes as a successful edit.
+    if (canRestoreDocument) {
+      try {
+        editor.setDoc(before, { commit: false });
+        restoreBuildContext(editor, context);
+      } catch (rollbackError) {
+        throw new AggregateError([error, rollbackError], "build-layout-rollback-failed");
       }
     }
-    if (!batched && typeof editor.mute === "function") editor.mute(() => create(args.nodes, args.parentId));
-    else create(args.nodes, args.parentId);
-  } finally {
-    for (const restore of restores.reverse()) restore();
-    if (batched) editor.endBatch();
-    if (created.length) editor.commitEditorDocument?.({ message: "AI: Build layout" });
+    throw error;
   }
   return { created, count: created.length };
 }

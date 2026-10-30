@@ -1,0 +1,41 @@
+/* Physical display insets remain relevant when a mouse or trackpad is connected. */
+.app-root-frame {
+  box-sizing: border-box;
+  /* viewport-fit=cover: keep the frame clear of the notch and home indicator. */
+  padding:
+    calc(4px + env(safe-area-inset-top, 0px))
+    calc(4px + env(safe-area-inset-right, 0px))
+    calc(4px + env(safe-area-inset-bottom, 0px))
+    calc(4px + env(safe-area-inset-left, 0px));
+}
+
+@media (hover: none) and (pointer: coarse) {
+  [data-testid="design-editor"] .editor-toolbar-family,
+  [data-testid="design-editor"] .editor-toolbar-family [data-toolbar-touch-tool] {
+    position: relative;
+    width: 48px;
+    min-width: 48px;
+    height: 48px;
+    min-height: 48px;
+  }
+
+  [data-testid="design-editor"] [data-testid="editor-toolbar"] > div {
+    /* Keep the end targets inside the pill's curved scrolling clip. */
+    padding-inline: 12px;
+  }
+
+  /* One full tool-family target: select first, tap the active family for options. */
+  [data-testid="design-editor"] [data-toolbar-touch-tool]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  [data-testid="design-editor"] .editor-toolbar-family > .editor-toolbar-menu-trigger {
+    width: 14px;
+    min-width: 14px;
+    height: 14px;
+    min-height: 14px;
+    pointer-events: none;
+  }
+}

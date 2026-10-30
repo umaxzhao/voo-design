@@ -4,6 +4,7 @@
 
 import { isLockedByGroup } from "./scene_model_groups.js";
 import { isCssGradient, parseGradient } from "../color_picker/gradient_fill.js";
+import { meshSceneFill } from "./mesh-gradient-paint.js";
 
 /**
  * A CSS gradient string as the scene gradient the renderer paints.
@@ -18,6 +19,7 @@ import { isCssGradient, parseGradient } from "../color_picker/gradient_fill.js";
  * because it arrives as a CSS string like "135deg".
  */
 export function toSceneGradient(parsed) {
+  if (parsed.type === "mesh") return { type: "mesh", points: parsed.points, blur: parsed.blur };
   const geometry = parsed.geometry ?? {};
   return {
     type: parsed.type,
@@ -128,7 +130,9 @@ export function fillsOf(node) {
   if (!fill || fill === "transparent") return undefined;
   const fillOpacity = node.fillOpacity ?? 1;
   if (isCssGradient(fill)) {
-    const parsed = toSceneGradient(parseGradient(fill));
+    const gradient = parseGradient(fill);
+    if (gradient.type === "mesh") return [meshSceneFill(gradient, fillOpacity)];
+    const parsed = toSceneGradient(gradient);
     // Two stops are the least that makes a ramp; anything less is a colour
     // the parser could not read, and painting it as one would be a guess.
     if (parsed.stops.length >= 2) {

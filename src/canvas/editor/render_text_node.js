@@ -71,6 +71,7 @@ export function paintTextBody(ctx, node) {
             node.y,
             node.width,
             node.height,
+            node.strokeOpacity ?? 1,
           );
           ctx.lineWidth = strokeWidth;
           ctx.lineJoin = "round";
@@ -83,6 +84,7 @@ export function paintTextBody(ctx, node) {
           node.y,
           node.width,
           node.height,
+          node.fillOpacity ?? 1,
         );
         ctx.fillText(ch, colX, y);
       });
@@ -134,6 +136,7 @@ export function paintTextBody(ctx, node) {
         node.y,
         node.width,
         node.height,
+        node.strokeOpacity ?? 1,
       );
       ctx.lineWidth = strokeWidth;
       ctx.lineJoin = "round";
@@ -146,6 +149,7 @@ export function paintTextBody(ctx, node) {
       node.y,
       node.width,
       node.height,
+      node.fillOpacity ?? 1,
     );
     ctx.fillText(line, lineX[index], y);
     // Underline rides the glyph fill, just below the baseline.

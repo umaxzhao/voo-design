@@ -196,11 +196,11 @@ export function documentToSvg(
         const ribbon = hasStroke
           ? buildStrokeRibbon(node, normalizeStrokeProps(node).profile)
           : null;
-        const arrowHeads = arrowheadSvgElements(node);
+        const arrowHeads = arrowheadSvgElements(node, idOf);
         if (arrowHeads.length > 0) {
           const transformAttr = svgNodeTransform(node);
           const shaft = ribbon
-            ? `<path d="${ribbonPathData(ribbon)}" ${ribbonAttributes(node)}/>`
+            ? `<path d="${ribbonPathData(ribbon)}" ${ribbonAttributes(node, idOf)}/>`
             : `<path d="${pathData(node)}" ${shapeAttributes({ ...node, rotation: 0, flipH: false, flipV: false }, idOf)}/>`;
           if (transformAttr) {
             out.push(`<g ${transformAttr}>${shaft}${arrowHeads.join("")}</g>`);
@@ -211,7 +211,7 @@ export function documentToSvg(
         }
         if (ribbon) {
           out.push(
-            `<path d="${ribbonPathData(ribbon)}" ${ribbonAttributes(node)}/>`,
+            `<path d="${ribbonPathData(ribbon)}" ${ribbonAttributes(node, idOf)}/>`,
           );
         } else {
           out.push(
@@ -225,7 +225,7 @@ export function documentToSvg(
         break;
       }
       case NODE_KIND.TEXT: {
-        out.push(textElement(node, measureCtx));
+        out.push(textElement(node, measureCtx, idOf));
         break;
       }
       case NODE_KIND.IMAGE: {

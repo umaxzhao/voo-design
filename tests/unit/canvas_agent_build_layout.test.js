@@ -26,11 +26,14 @@ describe("build_layout", () => {
     editor = {
       ...createDrawingShapesApi({ getDoc: () => doc, setDoc, selectMany: vi.fn() }),
       getDoc: () => doc,
+      setDoc,
       getNode: id => doc.nodes.find(n => n.id === id),
       updateNode: vi.fn((id, patch) => setDoc({ ...doc, nodes: doc.nodes.map(n => n.id === id ? { ...n, ...patch } : n) })),
       beginBatch: vi.fn(() => history.beginBatch()),
       endBatch: vi.fn(() => history.endBatch()),
-      commitEditorDocument: vi.fn(() => history.push({ doc: JSON.stringify(doc) })),
+      // The current editor keeps this optional legacy alias, but it does not
+      // own a real commit. Public document replacement must close the batch.
+      commitEditorDocument: vi.fn(),
     };
     window.__vooEditor = editor;
   });
@@ -141,7 +144,7 @@ describe("build_layout", () => {
     await executeCanvasTool("build_layout", { nodes: [node("frame", { children: [node(), node("text", { text: "Done" })] })] });
     expect(editor.beginBatch).toHaveBeenCalledOnce();
     expect(editor.endBatch).toHaveBeenCalledOnce();
-    expect(editor.commitEditorDocument).toHaveBeenCalledOnce();
+    expect(editor.commitEditorDocument).not.toHaveBeenCalled();
     expect(JSON.parse(history.undo().doc).nodes).toEqual([]);
     expect(history.undo()).toBeNull();
     expect(JSON.parse(history.redo().doc).nodes).toHaveLength(3);
@@ -150,6 +153,8 @@ describe("build_layout", () => {
   it("batches older hosts through mute", async () => {
     delete editor.beginBatch;
     delete editor.endBatch;
+    delete editor.setDoc;
+    editor.commitEditorDocument.mockImplementation(() => history.push({ doc: JSON.stringify(doc) }));
     editor.mute = vi.fn(fn => history.mute(fn));
     await executeCanvasTool("build_layout", { nodes: [node(), node("text", { text: "Done" })] });
     expect(editor.mute).toHaveBeenCalledOnce();
@@ -162,7 +167,28 @@ describe("build_layout", () => {
     await executeCanvasTool("build_layout", { nodes: [node()] });
     expect(history.undo()).toBeNull();
     history.endBatch();
-    editor.commitEditorDocument();
+    editor.setDoc(editor.getDoc());
+    expect(JSON.parse(history.undo().doc).nodes).toEqual([]);
+  });
+
+  it.each(["first-patch", "second-child"])("rolls back a runtime failure at %s without adding history", async failure => {
+    const before = JSON.stringify(doc), beforeIndex = history.getCurrentIndex();
+    const key = failure === "first-patch" ? "updateNode" : "addRectAt";
+    const original = editor[key]; let calls = 0;
+    editor[key] = (...args) => {
+      if (++calls === (failure === "first-patch" ? 1 : 2)) throw new Error("injected-build-layout-failure");
+      return original(...args);
+    };
+    try {
+      await expect(executeCanvasTool("build_layout", { nodes: [node("frame", { children: [node(), node()] })] }))
+        .rejects.toThrow("injected-build-layout-failure");
+    } finally { editor[key] = original; }
+    expect(JSON.stringify(doc)).toBe(before);
+    expect(history.getCurrentIndex()).toBe(beforeIndex);
+    expect(editor.endBatch).toHaveBeenCalledOnce();
+    expect(history.isMuted()).toBe(false);
+    await executeCanvasTool("build_layout", { nodes: [node()] });
+    expect(history.getCurrentIndex()).toBe(beforeIndex + 1);
     expect(JSON.parse(history.undo().doc).nodes).toEqual([]);
   });
 });

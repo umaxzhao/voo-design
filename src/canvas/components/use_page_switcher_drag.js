@@ -31,9 +31,18 @@ export function pageSlotAt(rows, clientY) {
  * without movement. Once armed, a non-passive `touchmove` listener keeps the
  * browser from taking the gesture back as a scroll.
  */
-export default function usePageSwitcherDrag({ listRef, onDrop }) {
+export default function usePageSwitcherDrag({ listRef, onDrop, enabled = true }) {
   const [drag, setDrag] = useState(null);
   const sessionRef = useRef(null);
+  const clickSuppressionRef = useRef(null);
+
+  const clearClickSuppression = useCallback(() => {
+    const pending = clickSuppressionRef.current;
+    if (!pending) return;
+    window.removeEventListener("click", pending.swallow, true);
+    window.clearTimeout(pending.timer);
+    clickSuppressionRef.current = null;
+  }, []);
 
   const rowsNow = useCallback(
     () =>
@@ -51,7 +60,7 @@ export default function usePageSwitcherDrag({ listRef, onDrop }) {
   );
 
   const finish = useCallback(
-    (commit) => {
+    (commit, render = true) => {
       const session = sessionRef.current;
       if (!session) return;
       sessionRef.current = null;
@@ -59,41 +68,61 @@ export default function usePageSwitcherDrag({ listRef, onDrop }) {
       window.removeEventListener("pointermove", session.onMove);
       window.removeEventListener("pointerup", session.onUp);
       window.removeEventListener("pointercancel", session.onCancel);
-      window.removeEventListener("touchmove", session.stopScroll, {
-        passive: false,
-      });
-      setDrag(null);
-      if (!session.armed || !session.moved) return;
+      window.removeEventListener("pointerdown", session.onAdditionalPointer, true);
+      window.removeEventListener("blur", session.onBlur);
+      if (render) setDrag(null);
+      if (!commit || !session.armed || !session.moved) return;
       // The pointerup is followed by a click on the row underneath; after a
       // reorder that click must not also change the focused page.
       const swallow = (event) => {
+        if (event.pointerId !== undefined && event.pointerId !== session.pointerId) return;
         event.stopPropagation();
         event.preventDefault();
+        clearClickSuppression();
       };
-      window.addEventListener("click", swallow, { capture: true, once: true });
-      window.setTimeout(
-        () => window.removeEventListener("click", swallow, { capture: true }),
-        0,
-      );
-      if (!commit) return;
+      window.addEventListener("click", swallow, true);
+      clickSuppressionRef.current = { swallow, timer: window.setTimeout(clearClickSuppression, 0) };
       if (session.targetId && session.targetId !== session.id) {
         onDrop?.(session.id, session.targetId, session.edge);
       }
     },
-    [onDrop],
+    [clearClickSuppression, onDrop],
   );
 
   const finishRef = useRef(finish);
   finishRef.current = finish;
-  useEffect(() => () => finishRef.current(false), []);
+  useEffect(() => () => {
+    finishRef.current(false, false);
+    clearClickSuppression();
+  }, [clearClickSuppression]);
+  const cancelDrag = useCallback(() => finishRef.current(false), []);
+
+  useEffect(() => {
+    if (!enabled || !listRef.current) return undefined;
+    const list = listRef.current;
+    // Chromium chooses the scrolling path at touchstart. Register before the
+    // press, but prevent scrolling only after the deliberate hold has armed.
+    const stopArmedScroll = (event) => {
+      if (sessionRef.current?.armed) event.preventDefault();
+    };
+    list.addEventListener("touchmove", stopArmedScroll, { passive: false });
+    return () => {
+      list.removeEventListener("touchmove", stopArmedScroll);
+      finishRef.current(false, false);
+    };
+  }, [enabled, listRef]);
 
   const beginRowDrag = useCallback(
     (event, id) => {
       if (event.button !== 0 || sessionRef.current) return;
+      if (event.pointerType === "touch" && event.isPrimary === false) return;
       if (event.target.closest?.("[data-page-action], input")) return;
+      clearClickSuppression();
 
       const session = {
         id,
+        pointerId: event.pointerId,
+        startX: event.clientX,
         startY: event.clientY,
         pointerType: event.pointerType,
         armed: false,
@@ -104,23 +133,21 @@ export default function usePageSwitcherDrag({ listRef, onDrop }) {
         onMove: null,
         onUp: null,
         onCancel: null,
-        stopScroll: (touchEvent) => touchEvent.preventDefault(),
+        onAdditionalPointer: null,
+        onBlur: null,
       };
 
       const arm = () => {
-        if (!sessionRef.current || session.armed) return;
+        if (sessionRef.current !== session || !listRef.current || session.armed) return;
         session.armed = true;
-        window.addEventListener("touchmove", session.stopScroll, {
-          passive: false,
-        });
         setDrag({ id, targetId: null, edge: "before" });
       };
 
       session.onMove = (moveEvent) => {
-        if (moveEvent.pointerId !== event.pointerId) return;
+        if (moveEvent.pointerId !== session.pointerId) return;
         const deltaY = moveEvent.clientY - session.startY;
         if (!session.armed) {
-          if (Math.abs(deltaY) < DRAG_THRESHOLD_PX) return;
+          if (Math.hypot(moveEvent.clientX - session.startX, deltaY) < DRAG_THRESHOLD_PX) return;
           if (session.pointerType === "touch") {
             // Moving before the hold elapsed is a scroll, not a drag.
             window.clearTimeout(session.holdTimer);
@@ -137,8 +164,18 @@ export default function usePageSwitcherDrag({ listRef, onDrop }) {
         session.edge = slot.edge;
         setDrag({ id, targetId: slot.targetId, edge: slot.edge });
       };
-      session.onUp = () => finishRef.current(true);
-      session.onCancel = () => finishRef.current(false);
+      session.onUp = (upEvent) => {
+        if (upEvent.pointerId !== session.pointerId) return;
+        if (session.armed && session.moved) upEvent.preventDefault();
+        finishRef.current(true);
+      };
+      session.onCancel = (cancelEvent) => {
+        if (cancelEvent.pointerId === session.pointerId) finishRef.current(false);
+      };
+      session.onAdditionalPointer = (downEvent) => {
+        if (downEvent.pointerType === "touch" && downEvent.pointerId !== session.pointerId) finishRef.current(false);
+      };
+      session.onBlur = () => finishRef.current(false);
 
       sessionRef.current = session;
       // A mouse press only becomes a drag once it moves; arming on press
@@ -149,9 +186,11 @@ export default function usePageSwitcherDrag({ listRef, onDrop }) {
       window.addEventListener("pointermove", session.onMove);
       window.addEventListener("pointerup", session.onUp);
       window.addEventListener("pointercancel", session.onCancel);
+      window.addEventListener("pointerdown", session.onAdditionalPointer, true);
+      window.addEventListener("blur", session.onBlur);
     },
-    [rowsNow],
+    [clearClickSuppression, listRef, rowsNow],
   );
 
-  return { drag, beginRowDrag, cancelDrag: () => finish(false) };
+  return { drag, beginRowDrag, cancelDrag };
 }

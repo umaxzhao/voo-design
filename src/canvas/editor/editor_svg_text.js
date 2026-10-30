@@ -23,10 +23,17 @@ function textTransformAttr(node) {
  * <text> flattens every newline and wrap into a single horizontal run, the
  * canvas this exports never draws it that way.
  */
-export function textElement(node, measureCtx) {
+export function textElement(node, measureCtx, idOf = () => null) {
+  // A CSS url(data:image/svg+xml,...) is not an SVG paint server. Resolve
+  // fill and stroke through the same local definitions used by vector shapes.
+  const fill = idOf(node.fill) ?? node.fill ?? "#000000";
+  const stroke = idOf(node.stroke) ?? node.stroke;
   if (node.textPath) {
-    const svg = textOnPathToSvg(node, measureCtx);
-    if (svg) return svg;
+    const svg = textOnPathToSvg({ ...node, fill, stroke }, measureCtx);
+    if (svg) {
+      const transform = textTransformAttr(node);
+      return transform ? `<g${transform}>${svg}</g>` : svg;
+    }
   }
   const anchor =
     { left: "start", center: "middle", right: "end" }[node.align] ?? "start";
@@ -39,7 +46,7 @@ export function textElement(node, measureCtx) {
   const spacing = node.letterSpacing ?? 0;
   const strokeParts =
     node.stroke && (node.strokeWidth ?? 0) > 0
-      ? ` stroke="${escapeXml(node.stroke)}" stroke-width="${number(node.strokeWidth)}" stroke-linejoin="round" paint-order="stroke fill"`
+      ? ` stroke="${escapeXml(stroke)}" stroke-width="${number(node.strokeWidth)}" stroke-linejoin="round" paint-order="stroke fill"`
       : "";
   const shadow = node.shadow?.enabled ? node.shadow : null;
   const filterPart = shadow
@@ -52,6 +59,8 @@ export function textElement(node, measureCtx) {
     // SVG 1.1's writing-mode shorthand; "tb" stacks the glyphs top to bottom
     // like the canvas painter's 直排 columns.
     node.direction === "vertical" ? ' writing-mode="tb"' : "",
+    node.fillOpacity != null && node.fillOpacity < 1 ? ` fill-opacity="${number(node.fillOpacity)}"` : "",
+    node.strokeOpacity != null && node.strokeOpacity < 1 ? ` stroke-opacity="${number(node.strokeOpacity)}"` : "",
     strokeParts,
     filterPart,
   ].join("");
@@ -63,7 +72,7 @@ export function textElement(node, measureCtx) {
     `<text x="${number(x)}" y="${number(node.y + node.fontSize)}" font-family="${escapeXml(
       node.fontFamily ?? "sans-serif",
     )}" font-size="${number(node.fontSize)}" font-weight="${node.fontWeight ?? "normal"}" fill="${escapeXml(
-      node.fill ?? "#000000",
+      fill,
     )}"${node.opacity != null && node.opacity < 1 ? ` opacity="${number(node.opacity)}"` : ""} text-anchor="${anchor}"${styleParts}${textTransform}>`;
   const lines = svgTextLines(node, measureCtx);
   const textBody =

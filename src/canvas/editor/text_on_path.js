@@ -8,8 +8,11 @@
  * Clean-room implementation based on differential geometry & Bezier curve theory.
  */
 
-import { textFont, textLineHeight } from "./text_metrics.js";
+import { textFont } from "./text_metrics.js";
 import { resolvePaintStyle } from "./render_basic_shapes.js";
+import { isMeshGradient } from "../color_picker/mesh_gradient.js";
+import { parseGradient } from "../color_picker/gradient_fill.js";
+import { meshCanvasPattern } from "./mesh-gradient-paint.js";
 
 /** Evaluate a cubic Bezier point at parameter t in [0, 1]. */
 export function cubicBezierPoint(p0, p1, p2, p3, t) {
@@ -409,8 +412,6 @@ export function layoutTextOnPath(ctx, node) {
     });
 
     // Approximate bounding box bounds for each glyph
-    const cos = Math.cos(displayAngle);
-    const sin = Math.sin(displayAngle);
     const r = Math.max(charWidth, fontSize);
     minX = Math.min(minX, glyphX - r);
     maxX = Math.max(maxX, glyphX + r);
@@ -457,8 +458,10 @@ export function paintTextOnPath(ctx, node) {
   }
 
   const strokeWidth = node.stroke ? (node.strokeWidth ?? 0) : 0;
+  const meshFill = isMeshGradient(node.fill) ? parseGradient(node.fill) : null;
+  const meshStroke = isMeshGradient(node.stroke) ? parseGradient(node.stroke) : null;
   const strokeColor = node.stroke
-    ? resolvePaintStyle(ctx, node.stroke, node.x, node.y, node.width, node.height)
+    ? resolvePaintStyle(ctx, node.stroke, node.x, node.y, node.width, node.height, node.strokeOpacity ?? 1)
     : null;
   const fillColor = resolvePaintStyle(
     ctx,
@@ -467,6 +470,7 @@ export function paintTextOnPath(ctx, node) {
     node.y,
     node.width,
     node.height,
+    node.fillOpacity ?? 1,
   );
 
   const shadow = node.shadow?.enabled ? node.shadow : null;
@@ -482,14 +486,21 @@ export function paintTextOnPath(ctx, node) {
     ctx.translate(glyph.x, glyph.y);
     ctx.rotate(glyph.angle);
 
+    // Patterns follow the current glyph transform, unlike CanvasGradient.
+    // Cancel that local transform to keep the mesh anchored to the text box.
+    const inverse = meshFill || meshStroke
+      ? new DOMMatrix().translate(glyph.x, glyph.y).rotate(glyph.angle * 180 / Math.PI).inverse() : null;
+    const meshPaint = (parsed, alpha) => meshCanvasPattern(ctx, parsed,
+      node.x, node.y, node.width, node.height, alpha, inverse);
+
     if (strokeWidth > 0 && strokeColor) {
-      ctx.strokeStyle = strokeColor;
+      ctx.strokeStyle = meshStroke ? meshPaint(meshStroke, node.strokeOpacity ?? 1) : strokeColor;
       ctx.lineWidth = strokeWidth;
       ctx.lineJoin = "round";
       ctx.strokeText(glyph.char, 0, 0);
     }
 
-    ctx.fillStyle = fillColor;
+    ctx.fillStyle = meshFill ? meshPaint(meshFill, node.fillOpacity ?? 1) : fillColor;
     ctx.fillText(glyph.char, 0, 0);
 
     ctx.restore();
@@ -550,17 +561,17 @@ export function textOnPathToSvg(node, measureCtx = null) {
   else startOffset = `${startOffset}px`;
 
   const fontAttr = `font-family="${node.fontFamily || "sans-serif"}" font-size="${node.fontSize || 16}" font-weight="${node.fontWeight || "normal"}"`;
-  const fillAttr = `fill="${node.fill || "#000000"}"`;
+  const fillAttr = `fill="${node.fill || "#000000"}" fill-opacity="${node.fillOpacity ?? 1}"`;
   const strokeAttr =
     node.stroke && (node.strokeWidth ?? 0) > 0
-      ? `stroke="${node.stroke}" stroke-width="${node.strokeWidth}" stroke-linejoin="round"`
+      ? `stroke="${node.stroke}" stroke-width="${node.strokeWidth}" stroke-opacity="${node.strokeOpacity ?? 1}" stroke-linejoin="round"`
       : "";
 
   return `
     <defs>
       <path id="${pathId}" d="${pathD}" fill="none"/>
     </defs>
-    <text ${fontAttr} ${fillAttr} ${strokeAttr} text-anchor="${textAnchor}">
+    <text ${fontAttr} ${fillAttr} ${strokeAttr} opacity="${node.opacity ?? 1}" text-anchor="${textAnchor}">
       <textPath href="#${pathId}" startOffset="${startOffset}">
         ${node.text || ""}
       </textPath>

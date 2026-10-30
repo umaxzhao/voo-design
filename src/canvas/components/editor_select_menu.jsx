@@ -12,6 +12,7 @@ import { TOOL } from "../editor/editor_constants.js";
 import { TOOL_SHORTCUTS } from "../editor/editor_shortcuts.js";
 import { useI18n } from "../use_i18n.js";
 import EditorTooltip from "./editor_tooltip.jsx";
+import { touchToolAttributes, useTouchToolTarget } from "./editor_touch_tool_target.jsx";
 
 const toolButtonClass = (active) =>
   `flex h-11 w-11 shrink-0 items-center justify-center rounded-full p-0 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
@@ -95,6 +96,7 @@ export default function EditorSelectMenu({ tool, onTool }) {
 
   const selectLabel = t("editor.tool.select");
   const menuLabel = t("editor.toolOptions");
+  const touchTarget = useTouchToolTarget();
 
   const openMenu = () => {
     const rect = rootRef.current?.getBoundingClientRect();
@@ -143,7 +145,7 @@ export default function EditorSelectMenu({ tool, onTool }) {
       return;
     }
     if (
-      lastPointerTypeRef.current === "touch" &&
+      (touchTarget || lastPointerTypeRef.current === "touch") &&
       isSelectFamily &&
       !event.target.closest?.(".editor-toolbar-menu-trigger")
     ) {
@@ -177,7 +179,7 @@ export default function EditorSelectMenu({ tool, onTool }) {
       if (event.key !== "Escape") return;
       event.stopPropagation();
       setOpen(false);
-      chevronRef.current?.focus();
+      (touchTarget ? rootRef.current?.querySelector("[data-toolbar-touch-tool]") : chevronRef.current)?.focus();
     };
     document.addEventListener("pointerdown", closeOutside, true);
     document.addEventListener("keydown", closeOnEscape);
@@ -185,7 +187,7 @@ export default function EditorSelectMenu({ tool, onTool }) {
       document.removeEventListener("pointerdown", closeOutside, true);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [open]);
+  }, [open, touchTarget]);
 
   // Keyboard users opening the menu land on its first item.
   useEffect(() => {
@@ -196,7 +198,7 @@ export default function EditorSelectMenu({ tool, onTool }) {
   return (
     <div
       ref={rootRef}
-      className="relative flex h-11 w-11 shrink-0 items-center justify-center"
+      className="editor-toolbar-family relative flex h-11 w-11 shrink-0 items-center justify-center"
       data-testid="editor-select-menu"
       onPointerDownCapture={onPointerDownCapture}
       onPointerUpCapture={clearLongPress}
@@ -204,7 +206,7 @@ export default function EditorSelectMenu({ tool, onTool }) {
       onClickCapture={onClickCapture}
     >
       <EditorTooltip
-        title={selectLabel}
+        title={touchTarget && isSelectFamily ? `${selectLabel} · ${menuLabel}` : selectLabel}
         shortcut={TOOL_SHORTCUTS[TOOL.SELECT] || ""}
         side="top"
       >
@@ -215,6 +217,7 @@ export default function EditorSelectMenu({ tool, onTool }) {
           aria-label={selectLabel}
           aria-pressed={isSelectFamily}
           className={`relative ${toolButtonClass(isSelectFamily)}`}
+          {...(touchTarget ? touchToolAttributes({ active: isSelectFamily, open, menuId: "select", label: selectLabel, menuLabel }) : {})}
         >
           <ActiveIcon size={16} />
         </button>
@@ -227,6 +230,8 @@ export default function EditorSelectMenu({ tool, onTool }) {
         aria-label={menuLabel}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-hidden={touchTarget || undefined}
+        tabIndex={touchTarget ? -1 : undefined}
         onClick={toggleMenu}
       >
         <IconChevronDown
@@ -239,6 +244,7 @@ export default function EditorSelectMenu({ tool, onTool }) {
             <div
               ref={menuRef}
               role="menu"
+              id="editor-select-menu-list"
               aria-label={menuLabel}
               data-testid="editor-select-menu-list"
               className="fixed z-[9999] flex min-w-[142px] -translate-x-1/2 flex-col gap-0.5 rounded-xl border border-white/10 bg-black/90 p-1 font-mono shadow-panel backdrop-blur-md"

@@ -1,3 +1,5 @@
+@import "./editor_touch_targets.css";
+
 /* Desktop title-bar actions use text labels; mobile switches to compact icons. */
 .app-title-action-icon,
 .canvas-tab-bar-mobile {
@@ -6,13 +8,6 @@
 
 @media (max-width: 768px) and (hover: none) and (pointer: coarse) {
   .app-root-frame {
-    box-sizing: border-box;
-    /* viewport-fit=cover: keep the frame clear of the notch and home indicator. */
-    padding:
-      calc(4px + env(safe-area-inset-top, 0px))
-      calc(4px + env(safe-area-inset-right, 0px))
-      calc(4px + env(safe-area-inset-bottom, 0px))
-      calc(4px + env(safe-area-inset-left, 0px));
     overflow: hidden;
     border-radius: 24px;
     --mobile-frame-inset-radius: calc(24px - 4px);
@@ -288,24 +283,6 @@
   [data-testid="design-editor"].editor-narrow [data-testid="editor-toolbar"] button:not(.editor-toolbar-menu-trigger) {
     min-width: 2.75rem;
     min-height: 2.75rem;
-  }
-
-  [data-testid="design-editor"].editor-narrow .editor-toolbar-menu-trigger {
-    width: 1.75rem;
-    height: 1.5rem;
-    min-width: 1.75rem;
-    min-height: 1.5rem;
-    touch-action: manipulation;
-  }
-
-  /*
-   * The chevron stays 28x24 visually but its hit area grows to the mobile
-   * minimum, so the tool-family menus are reachable with a thumb.
-   */
-  [data-testid="design-editor"].editor-narrow .editor-toolbar-menu-trigger::after {
-    content: "";
-    position: absolute;
-    inset: -6px -8px -10px;
   }
 
   [data-testid$="-menu-list"][role="menu"] button {

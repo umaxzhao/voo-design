@@ -21,9 +21,11 @@ ReadySurface.propTypes = { readyRef: PropTypes.shape({ current: PropTypes.bool }
 
 /** Keep the existing launcher usable while a cold comments module is loading. */
 function PendingComments({ open, addMode, onOpen, onClose, onToggleAddMode, list, t, failed, onRetry }) {
+  // Child layers share the editor's stack: panels rise above the inspector,
+  // while placement remains below it. A root z-index would trap both together.
   return (
-    <div data-testid="editor-comments" className="pointer-events-none absolute inset-0 z-20 select-none font-mono">
-      {addMode ? <div className="pointer-events-auto absolute inset-0 cursor-wait" /> : null}
+    <div data-testid="editor-comments" className="pointer-events-none absolute inset-0 select-none font-mono">
+      {addMode ? <div className="pointer-events-auto absolute inset-0 z-20 cursor-wait" /> : null}
       <EditorCommentsLauncher open={open} onOpen={onOpen} openCount={countOpen(list)}
         unreadCount={unreadCommentCount(list, readCommentSeenAt())} t={t} />
       {open || addMode ? (

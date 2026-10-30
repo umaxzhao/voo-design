@@ -26,7 +26,9 @@ async function fetchImageDataUrl(url, signal) {
 export async function generateDesignReference({ brief, frame, signal }) {
   const providerId = getSetting('agent.imageProviderId');
   const model = getSetting('agent.imageModelId');
-  if (!providerId || !model) return null;
+  // A reconstruction reference is an automatic paid image request too. Only
+  // explicit automatic-generation consent may bypass the ask-first preference.
+  if (!providerId || !model || getSetting('agent.confirmBeforeImage') !== false) return null;
   signal?.throwIfAborted();
   const prompt = [
     'Create one polished visual reference image for a design editor to reconstruct as editable layers.',

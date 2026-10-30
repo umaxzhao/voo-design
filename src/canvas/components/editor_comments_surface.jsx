@@ -11,18 +11,20 @@ export default function EditorCommentsSurface(props) {
   const { open = false, addMode = false, onOpen, onClose, onToggleAddMode, t } = props;
   const model = useEditorCommentsSurface(props);
   const { rootRef, handleModePointerDown, handleModePointerUp, handleModePointerCancel } = model;
+  // Do not isolate this root: each child owns its position relative to the
+  // canvas aids, inspector and other floating editor surfaces.
   return (
     <div
       ref={rootRef}
       data-testid="editor-comments"
-      className="pointer-events-none absolute inset-0 z-20 select-none font-mono"
+      className="pointer-events-none absolute inset-0 select-none font-mono"
     >
       {addMode ? (
         <div
           data-testid="editor-comment-mode-overlay"
           data-comment-mode-overlay="true"
           role="presentation"
-          className="pointer-events-auto absolute inset-0 z-10 cursor-crosshair"
+          className="pointer-events-auto absolute inset-0 z-20 cursor-crosshair"
           onPointerDown={handleModePointerDown}
           onPointerUp={handleModePointerUp}
           onPointerCancel={handleModePointerCancel}

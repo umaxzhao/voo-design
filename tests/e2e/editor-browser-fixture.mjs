@@ -66,7 +66,10 @@ export async function withEditorBrowser(run, pageOptions = {}) {
     if (openDocument) {
       await tool("new_document", { width: 600, height: 400, name: "EffectsAudit", force: true });
       await page.waitForFunction(() => window.__vooStore?.activeDocumentId && window.__vooEditor);
-      await page.waitForTimeout(300);
+      // Exercise normal stacking and hit testing, not the entry guard that
+      // temporarily disables inspector pointer events during document opening.
+      await page.waitForFunction(() => document.querySelector('[data-testid="design-editor"] [data-open-guard]')
+        ?.getAttribute("data-open-guard") === "off");
     }
     await run({ page, tool, origin, errors });
     if (errors.length) throw new Error(`Editor errors: ${errors.join("\n")}`);

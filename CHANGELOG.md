@@ -2,6 +2,12 @@
 
 ## 1.0.0
 
+- Paint mesh gradients consistently in Canvas2D, Skia and vector exports; preserve visible vector fill stacks and report unsupported native Figma paints.
+- Respect the ask-first image preference when creating automatic design references, while keeping supplied references and editable-layout generation available.
+- Keep page reordering bound to its owning pointer, cancel pending drags on dismissal and verify touch scrolling, ordering, safe areas and toolbar hit regions in the real editor.
+- Verify stretch through inspector edits, MCP aliases, constraints, wrapping, undo and project reopen; keep batch layout creation undoable and roll back failed partial builds.
+- Let floating comment controls participate in the editor's existing overlay layers so the inspector cannot cover their filters, replies or loading recovery.
+
 - Split the layer tree, row controls and panel state into focused modules while retaining hierarchy selection, search, drag/drop and inline editing.
 - Split shortcut routing into ordered handlers; keep callbacks current after rerenders, retain the originating engine for arrow-key history bursts and finish them on blur/disable before engine snapshots.
 - Load Auto Enhance and Smart Crop planners on use, show local loading feedback, coalesce duplicate clicks and reject late results after document, engine or crop-context changes.

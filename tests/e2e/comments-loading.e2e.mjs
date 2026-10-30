@@ -1,8 +1,38 @@
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
+async function expectHit(target) {
+  const report = await target.evaluate(element => {
+    const bounds = element.getBoundingClientRect();
+    const hit = document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+    const ancestors = node => {
+      const chain = [];
+      while (node instanceof Element) {
+        const style = getComputedStyle(node);
+        chain.push({ node: node.getAttribute("data-testid") || node.tagName, z: style.zIndex,
+          position: style.position, transform: style.transform, opacity: style.opacity,
+          isolation: style.isolation, filter: style.filter, pointerEvents: style.pointerEvents });
+        node = node.parentElement;
+      }
+      return chain;
+    };
+    return { reachable: Boolean(hit && element.contains(hit)), target: ancestors(element), actual: ancestors(hit) };
+  });
+  assert.equal(report.reachable, true, JSON.stringify(report));
+}
+
+async function placeBesideInspector(page, mode) {
+  const position = await page.evaluate(() => {
+    const stage = document.querySelector('[data-testid="editor-comment-mode-overlay"]').getBoundingClientRect();
+    const inspector = document.querySelector('[data-testid="editor-properties-panel"]').getBoundingClientRect();
+    return { x: inspector.left - stage.left - 20, y: inspector.top - stage.top + 120 };
+  });
+  await mode.click({ position });
+}
+
 await withEditorBrowser(async ({ page, tool }) => {
   const checks = [];
+  await page.locator('[data-open-guard="off"]').waitFor();
   const pattern = /\/src\/canvas\/components\/editor_comments_surface\.jsx(?:\?|$)/;
   const requests = new Set(await page.evaluate(() => performance.getEntriesByType("resource").map(entry => entry.name)));
   page.on("request", request => requests.add(request.url()));
@@ -25,6 +55,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   try {
     await page.getByTestId("editor-comments-toggle").click();
     await page.getByTestId("editor-comments-loading").waitFor();
+    await expectHit(page.getByTestId("editor-comments-loading").getByRole("button", { name: "Close comments", exact: true }));
     assert.equal(await page.getByTestId("editor-pages").isVisible(), true);
     assert.deepEqual(await selected(), ["comment-loading-target"]);
     await page.keyboard.press("Escape");
@@ -41,11 +72,26 @@ await withEditorBrowser(async ({ page, tool }) => {
   await page.getByTestId("editor-comments-toggle").click();
   const panel = page.getByTestId("editor-comments-panel");
   await panel.waitFor();
-  await panel.getByRole("button", { name: /^All\b/ }).click();
+  const allFilter = panel.getByRole("button", { name: /^All\b/ });
+  await expectHit(allFilter);
+  await allFilter.click();
+  await page.evaluate(() => window.__vooEditor.updateDocument({
+    guides: [{ id: "comments-placement-guide", type: "vertical", pos: 300 }],
+  }));
+  await page.getByTestId("editor-guide").waitFor();
   await page.getByTestId("editor-comments-add-mode").click();
   const mode = page.getByTestId("editor-comment-mode-overlay");
-  await mode.click({ position: { x: 700, y: 350 } });
+  assert.equal(await page.getByTestId("editor-guide").evaluate(guide => {
+    const box = guide.getBoundingClientRect();
+    return document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)?.getAttribute("data-testid");
+  }), "editor-comment-mode-overlay", "comment placement still owns the canvas above guide hit bands");
+  const width = page.getByTestId("editor-properties-panel").getByRole("spinbutton", { name: "W", exact: true });
+  await expectHit(width); await width.click();
+  assert.equal(await mode.count(), 1, "placement mode must not cover the inspector controls");
+  await placeBesideInspector(page, mode);
   const composer = page.getByTestId("editor-comment-composer");
+  await expectHit(composer.getByRole("textbox"));
+  await composer.getByRole("textbox").click();
   await composer.getByRole("textbox").fill("Cancel only this draft");
   await page.keyboard.press("Escape");
   await composer.waitFor({ state: "hidden" });
@@ -62,7 +108,8 @@ await withEditorBrowser(async ({ page, tool }) => {
   await page.getByTestId("editor-comments-toggle").click();
   assert.equal(await panel.getByRole("button", { name: /^All\b/ }).getAttribute("aria-pressed"), "true");
   await page.getByTestId("editor-comments-add-mode").click();
-  await mode.click({ position: { x: 700, y: 350 } });
+  await placeBesideInspector(page, mode);
+  await expectHit(composer.getByRole("button", { name: "Post", exact: true }));
   await composer.getByRole("textbox").fill("Deferred comments remain undoable");
   await composer.getByRole("button", { name: "Post", exact: true }).click();
   const commentId = await page.evaluate(() => window.__vooEditor.getDocument().comments[0].id);
@@ -72,8 +119,18 @@ await withEditorBrowser(async ({ page, tool }) => {
   await tool("redo");
   assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().comments[0].id), commentId);
   await panel.getByRole("button", { name: "Close comments", exact: true }).click();
+  await page.evaluate(() => window.__vooEditor.selectExactly([]));
+  const canvasTarget = await page.evaluate(() => {
+    const board = document.querySelector("[data-editor-artboard]").getBoundingClientRect();
+    const doc = window.__vooEditor.getDocument();
+    return { x: board.left + 150 * board.width / doc.width, y: board.top + 140 * board.height / doc.height };
+  });
+  await page.mouse.click(canvasTarget.x, canvasTarget.y);
+  assert.deepEqual(await selected(), ["comment-loading-target"], "closed pins must not add a canvas-sized click blocker");
   await page.getByTestId("editor-comment-pin").click();
   const thread = page.getByTestId("editor-comment-thread");
+  await expectHit(thread.getByRole("textbox", { name: "Reply", exact: true }));
+  await thread.getByRole("textbox", { name: "Reply", exact: true }).click();
   await thread.getByRole("textbox", { name: "Reply", exact: true }).fill("Reply survives normal composition");
   await thread.getByRole("button", { name: "Reply", exact: true }).click();
   assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().comments[0].messages.length), 2);
@@ -81,9 +138,10 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().comments[0].messages.length), 1);
   checks.push("reopening keeps the filter and real create/reply operations retain single-step undo after lazy activation");
   console.log(JSON.stringify({ passed: checks }, null, 2));
-});
+}, { viewport: { width: 1440, height: 700 } });
 
 await withEditorBrowser(async ({ page }) => {
+  await page.locator('[data-open-guard="off"]').waitFor();
   const pattern = /\/src\/canvas\/components\/editor_comments_surface\.jsx(?:\?|$)/;
   await page.evaluate(() => {
     const e = window.__vooEditor;
@@ -101,6 +159,7 @@ await withEditorBrowser(async ({ page }) => {
   assert.deepEqual(await page.evaluate(() => window.__vooEditor.getSelectedIds()), ["comments-failure-target"]);
   assert.equal(await page.evaluate(() => window.__vooEditor.sampleColorAt({ x: 150, y: 140 })), "#ff0000");
   await page.unroute(pattern);
+  await expectHit(failure.getByRole("button", { name: "Retry", exact: true }));
   await failure.getByRole("button", { name: "Retry", exact: true }).click();
   await page.getByTestId("editor-comments-panel").waitFor();
   assert.equal(await page.getByTestId("editor-comments-error").count(), 0);

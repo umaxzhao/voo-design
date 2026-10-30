@@ -3,6 +3,7 @@ import { NODE_KIND } from "./scene_model.js";
 import { escapeXml, number, svgNodeTransform } from "./editor_svg_xml.js";
 import { roundedRectPathData } from "./editor_svg_image.js";
 import { isCssGradient, parseGradient } from "../color_picker/gradient_fill.js";
+import { isMeshGradient } from "../color_picker/mesh_gradient.js";
 import {
   dashPatternFor,
   effectiveStrokeCap,
@@ -24,7 +25,13 @@ export function gradientDefs(nodes) {
   const ids = new Map();
   nodes.forEach((node) => {
     if (typeof node.fill !== "string") return;
-    if (isCssGradient(node.fill) && !ids.has(node.fill)) {
+    if (isMeshGradient(node.fill) && !ids.has(node.fill)) {
+      const id = `mesh${ids.size}`;
+      ids.set(node.fill, id);
+      const source = node.fill.trim().match(/^url\(["']?(.*?)["']?\)$/i)?.[1];
+      defs.push(`<pattern id="${id}" width="1" height="1" patternUnits="objectBoundingBox" patternContentUnits="objectBoundingBox">` +
+        `<image href="${escapeXml(source)}" width="1" height="1" preserveAspectRatio="none"/></pattern>`);
+    } else if (isCssGradient(node.fill) && !ids.has(node.fill)) {
       const id = `g${ids.size}`;
       ids.set(node.fill, id);
       const parsed = parseGradient(node.fill);
@@ -209,8 +216,10 @@ export function ribbonPathData(ribbon) {
 }
 
 /** Attributes for a filled ribbon polygon. */
-export function ribbonAttributes(node) {
-  const parts = [`fill="${escapeXml(node.stroke)}"`];
+export function ribbonAttributes(node, idOf = () => null) {
+  const parts = [`fill="${idOf(node.stroke) ?? escapeXml(node.stroke)}"`];
+  if (node.strokeOpacity != null && node.strokeOpacity < 1)
+    parts.push(`fill-opacity="${number(node.strokeOpacity)}"`);
   if (node.opacity != null && node.opacity < 1)
     parts.push(`opacity="${number(node.opacity)}"`);
   const transformAttr = svgNodeTransform(node);
@@ -218,7 +227,7 @@ export function ribbonAttributes(node) {
   return parts.join(" ");
 }
 
-export function arrowheadSvgElements(node) {
+export function arrowheadSvgElements(node, idOf = () => null) {
   const points = node.points ?? [];
   if (!(node.strokeWidth > 0) || node.strokeHidden || points.length < 2 || (!node.arrow && !node.arrowStart)) return [];
   const scaleX = node.baseWidth ? node.width / node.baseWidth : 1;
@@ -239,23 +248,25 @@ export function arrowheadSvgElements(node) {
     const back = at(tipIndex + step);
     const angle = Math.atan2(tip.y - back.y, tip.x - back.x);
     const geometry = arrowheadGeometry(tip, angle, size, node.arrowCap);
-    const strokeColor = escapeXml(node.stroke || "#000000");
+    const strokeColor = idOf(node.stroke) ?? escapeXml(node.stroke || "#000000");
+    const opacity = (node.opacity ?? 1) * (node.strokeOpacity ?? 1);
+    const alpha = opacity < 1 ? ` opacity="${number(opacity)}"` : "";
     const strokeW = number(node.strokeWidth || 1);
     if (geometry.kind === "lines") {
       const [barb1, barb2] = geometry.barbs;
       elements.push(
-        `<path d="M${number(tip.x)} ${number(tip.y)} L${number(barb1.x)} ${number(barb1.y)} M${number(tip.x)} ${number(tip.y)} L${number(barb2.x)} ${number(barb2.y)}" fill="none" stroke="${strokeColor}" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round"/>`,
+        `<path d="M${number(tip.x)} ${number(tip.y)} L${number(barb1.x)} ${number(barb1.y)} M${number(tip.x)} ${number(tip.y)} L${number(barb2.x)} ${number(barb2.y)}" fill="none" stroke="${strokeColor}" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round"${alpha}/>`,
       );
     } else if (geometry.kind === "circle") {
       elements.push(
-        `<circle cx="${number(geometry.center.x)}" cy="${number(geometry.center.y)}" r="${number(geometry.radius)}" fill="${strokeColor}"/>`,
+        `<circle cx="${number(geometry.center.x)}" cy="${number(geometry.center.y)}" r="${number(geometry.radius)}" fill="${strokeColor}"${alpha}/>`,
       );
     } else if (geometry.kind === "polygon") {
       const d =
         geometry.points
           .map((p, i) => `${i === 0 ? "M" : "L"}${number(p.x)} ${number(p.y)}`)
           .join(" ") + " Z";
-      elements.push(`<path d="${d}" fill="${strokeColor}"/>`);
+      elements.push(`<path d="${d}" fill="${strokeColor}"${alpha}/>`);
     }
   };
   if (node.arrow || node.arrowEnd !== false) {

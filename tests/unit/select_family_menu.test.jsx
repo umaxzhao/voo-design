@@ -11,7 +11,7 @@ import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-// Hook harness: while `active`, useState/useRef/useEffect run against plain
+// Hook harness: while `active`, state, refs, effects and snapshots use plain
 // slots so the menu's handlers can be invoked without a DOM.
 const hooks = vi.hoisted(() => ({
   active: false,
@@ -38,6 +38,8 @@ vi.mock("react", async (original) => {
       hooks.active ? { current: initial } : actual.useRef(initial),
     useEffect: (effect, deps) =>
       hooks.active ? hooks.effects.push(effect) : actual.useEffect(effect, deps),
+    useSyncExternalStore: (subscribe, getSnapshot, getServerSnapshot) =>
+      hooks.active ? getSnapshot() : actual.useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot),
   };
 });
 
