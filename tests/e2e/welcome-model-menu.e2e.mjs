@@ -18,47 +18,8 @@ await withEditorBrowser(
 
     // Reproduce a tall model list inside a clipped, isolated composer container.
     await page.evaluate(async () => {
-      const { default: React } = await import(
-        "/node_modules/.vite/deps/react.js"
-      );
-      const {
-        default: { createRoot },
-      } = await import("/node_modules/.vite/deps/react-dom_client.js");
-      const { default: WelcomeModelSelect } = await import(
-        "/src/canvas/components/welcome_dashboard/welcome_model_select.jsx"
-      );
-      const host = document.createElement("div");
-      host.id = "model-menu-regression";
-      Object.assign(host.style, {
-        position: "fixed",
-        top: "40px",
-        right: "8px",
-        width: "260px",
-        height: "44px",
-        overflow: "hidden",
-        isolation: "isolate",
-        zIndex: "350",
-      });
-      document.body.append(host);
-      createRoot(host).render(
-        React.createElement(WelcomeModelSelect, {
-          label: "Regression models",
-          selectedModel: "claude:model-0",
-          modelGroups: [
-            {
-              cliId: "claude",
-              name: "Claude",
-              models: Array.from({ length: 40 }, (_, index) => ({
-                id: `claude:model-${index}`,
-                label: `Model ${index}`,
-              })),
-            },
-          ],
-          onSelectModel: (value) => {
-            host.dataset.selected = value;
-          },
-        }),
-      );
+      const { mountModelMenuRegression } = await import("/tests/e2e/welcome-model-menu-harness.jsx");
+      mountModelMenuRegression();
     });
     const testTrigger = page.getByRole("button", {
       name: "Regression models",

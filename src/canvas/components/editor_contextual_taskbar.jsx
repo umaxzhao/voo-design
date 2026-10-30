@@ -39,12 +39,15 @@ function Action({
 }
 
 // Coordinates are in the editor overlay's viewport coordinate system.
-export function clampQuickbar(docRect, width, height, viewportWidth, viewportHeight, bottomTop) {
+export function clampQuickbar(docRect, width, viewportWidth) {
   const half = Math.min(width, viewportWidth - 16) / 2;
-  const ceiling = Math.min(viewportHeight - 64, bottomTop ?? Infinity) - 8 - height;
   return {
-    left: Math.max(8 + half, Math.min(docRect.x + docRect.width / 2, viewportWidth - 8 - half)),
-    top: Math.max(8, Math.min(docRect.y + docRect.height + EDITOR_PAGE_TOOLBAR_GAP, ceiling))
+    left: Math.max(
+      8 + half,
+      Math.min(docRect.x + docRect.width / 2, viewportWidth - 8 - half),
+    ),
+    // Stay below the frame even when it extends beyond the visible viewport.
+    top: docRect.y + docRect.height + EDITOR_PAGE_TOOLBAR_GAP,
   };
 }
 
@@ -136,7 +139,6 @@ function EditorContextualTaskBar({
     if (!docRect || !active) return;
     const place = () => {
       const bar = barRef.current;
-      const bottom = document.querySelector('[data-testid="editor-bottom-toolbar"]')?.getBoundingClientRect();
       const parent = bar?.offsetParent?.getBoundingClientRect();
       const origin = {
         x: parent?.left || 0,
@@ -146,7 +148,7 @@ function EditorContextualTaskBar({
         ...docRect,
         x: docRect.x + origin.x,
         y: docRect.y + origin.y
-      }, bar?.offsetWidth || 400, bar?.offsetHeight || 38, window.innerWidth, window.innerHeight, bottom?.top);
+      }, bar?.offsetWidth || 400, window.innerWidth);
       setPosition({
         left: next.left - origin.x,
         top: next.top - origin.y

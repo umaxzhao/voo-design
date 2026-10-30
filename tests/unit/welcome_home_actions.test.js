@@ -31,7 +31,7 @@ describe("welcome home actions", () => {
       expect(button).toContain(`${ref}.current?.click()`);
       expect(button).not.toContain("handleCreateNew");
     }
-    expect(source).toContain('accept=".voo,.psd,.fig,.pen,.svg,application/json"');
+    expect(source).toContain('accept=".voo,.zip,.psd,.fig,.pen,.svg,application/json"');
   });
   it("waits for the target editor, inserts the screenshot, then sends a recreation prompt", async () => {
     const insertImage = vi.fn(async () => ({ id: "reference" }));

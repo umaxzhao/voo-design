@@ -8,8 +8,10 @@ function createApi(hit) {
     toDocPoint: vi.fn(() => ({ x: 20, y: 30 })),
     nodeAtPoint: vi.fn(() => hit),
     enterGroup: vi.fn(() => true),
-    select: vi.fn(),
+    selectExactly: vi.fn(),
     beginTextEdit: vi.fn(),
+    beginEdit: vi.fn(),
+    convertSelectedToPath: vi.fn(() => true),
   };
 }
 
@@ -23,13 +25,13 @@ describe("canvas text double-click editing", () => {
       { api },
     );
 
-    expect(api.select).toHaveBeenCalledWith(text.id);
+    expect(api.selectExactly).toHaveBeenCalledWith([text.id]);
     expect(api.beginTextEdit).toHaveBeenCalledWith(text.id);
     expect(api.enterGroup).not.toHaveBeenCalled();
   });
 
-  it("still enters a parent group when double-clicking a non-text child", () => {
-    const shape = { id: "nested-shape", kind: "rect" };
+  it("still isolates containers when double-clicking their surface", () => {
+    const shape = { id: "folder", kind: "group" };
     const api = createApi(shape);
 
     handleEditorDoubleClick(
@@ -39,5 +41,36 @@ describe("canvas text double-click editing", () => {
 
     expect(api.enterGroup).toHaveBeenCalledWith(shape.id);
     expect(api.beginTextEdit).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("canvas vector double-click editing", () => {
+  it("edits a nested pen path before trying to enter its parent group", () => {
+    const api = createApi({ id: "nested-path", kind: "path", pen: true });
+    handleEditorDoubleClick({ clientX: 20, clientY: 30 }, { api });
+    expect(api.beginEdit).toHaveBeenCalledWith("nested-path");
+    expect(api.selectExactly).toHaveBeenCalledWith(["nested-path"]);
+    expect(api.enterGroup).not.toHaveBeenCalled();
+    expect(api.convertSelectedToPath).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { kind: "rect" }, { kind: "ellipse" }, { kind: "path", poly: true },
+    { kind: "path", line: true }, { kind: "path", arrow: true },
+  ])("converts $kind to anchors before entering a parent group", (shape) => {
+    const api = createApi({ ...shape, id: "shape" });
+    handleEditorDoubleClick({ clientX: 20, clientY: 30 }, { api });
+    expect(api.convertSelectedToPath).toHaveBeenCalledWith("shape");
+    expect(api.beginEdit).toHaveBeenCalledWith("shape");
+    expect(api.selectExactly).toHaveBeenCalledWith(["shape"]);
+    expect(api.enterGroup).not.toHaveBeenCalled();
+  });
+
+  it("does not begin a path session when conversion refuses the target", () => {
+    const api = createApi({ id: "shape", kind: "rect" });
+    api.convertSelectedToPath.mockReturnValue(false);
+    handleEditorDoubleClick({ clientX: 20, clientY: 30 }, { api });
+    expect(api.beginEdit).not.toHaveBeenCalled();
   });
 });
