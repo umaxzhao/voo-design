@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { setTimeout as delay } from "node:timers/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { imageAudit } from "./image-audit-fixture.mjs";
 const pasteKey = process.platform === "darwin" ? "Meta+v" : "Control+v";
@@ -275,7 +276,13 @@ await withEditorBrowser(async ({
       original = await before();
     await focusCanvas();
     await page.keyboard.press("Control+c");
-    await page.waitForFunction(async () => (await navigator.clipboard.readText()).includes("<svg"));
+    let clipboard = "";
+    for (let attempt = 0; attempt < 50; attempt++) {
+      clipboard = await page.evaluate(() => navigator.clipboard.readText());
+      if (clipboard.includes("<svg")) break;
+      await delay(50);
+    }
+    assert.match(clipboard, /<svg/, "Copy must finish writing the browser clipboard before paste");
     await page.keyboard.press(pasteKey);
     const nodes = await added(original);
     assert.equal(nodes.length, 1);
