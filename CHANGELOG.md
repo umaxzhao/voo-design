@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Keep selected-layer suggestions inside the assistant conversation scroller and reserve a usable mobile panel height; pin its header and composer so model selection and sending remain reachable on short screens.
+
 - Restore referenced connector, version history, component slot, code handoff and Pen export modules omitted from the integration. Keep protocol helpers independently packaged, register batch variant execution under its advertised name and retain advanced generation settings in one secondary entry.
 
 - Retain locale dictionaries and mounted subscribers across development module replacements; keep existing translations during delayed or failed refreshes and retry deferred loading when components mount.

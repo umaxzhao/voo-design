@@ -80,7 +80,8 @@
     bottom: 0;
     left: var(--editor-mobile-panel-gap);
     width: auto;
-    height: calc(45% - var(--editor-mobile-panel-gap));
+    /* Leave usable conversation space above the pinned selection-aware composer. */
+    height: min(70%, 28rem);
     min-height: 0;
     padding: 0 0 env(safe-area-inset-bottom);
   }

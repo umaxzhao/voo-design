@@ -61,7 +61,7 @@ export default function AgentPanelView({
       aria-label={t("agent.panel.title")}
       className="relative flex h-full w-full flex-col overflow-hidden rounded-3xl bg-black text-neutral-100 shadow-panel"
     >
-      <header className="flex h-12 items-center gap-2 px-4">
+      <header className="flex h-12 shrink-0 items-center gap-2 px-4">
         <h2 className="min-w-0 flex-1 truncate text-[12px] font-semibold text-neutral-100">
           {activeTitle || t("agent.history.untitled")}
         </h2>
@@ -195,6 +195,11 @@ export default function AgentPanelView({
             )}
           </ol>
         )}
+      <AgentSelectionSuggestions context={activeContext} busy={busy} t={t}
+        onPick={(prompt) => {
+          setInput((current) => appendSuggestion(current, prompt));
+          composerRef.current?.querySelector("textarea")?.focus();
+        }} />
       </div>
 
       {candidates.length > 1 && !busy && (
@@ -240,12 +245,7 @@ export default function AgentPanelView({
           )}
         </div>
       )}
-      <AgentSelectionSuggestions context={activeContext} busy={busy} t={t}
-        onPick={(prompt) => {
-          setInput((current) => appendSuggestion(current, prompt));
-          composerRef.current?.querySelector("textarea")?.focus();
-        }} />
-      <form ref={composerRef} onSubmit={onSubmit} className="prompt-composer agent-composer relative mx-3 mb-3 rounded-2xl p-3">
+      <form ref={composerRef} onSubmit={onSubmit} className="prompt-composer agent-composer relative mx-3 shrink-0 mb-3 rounded-2xl p-3">
         <AgentContextChip context={activeContext} onDetach={() => setActiveContext(null)} t={t} />
         {modelMenuOpen && (
           <AgentModelMenu currentModel={currentModel} groups={modelGroups}
