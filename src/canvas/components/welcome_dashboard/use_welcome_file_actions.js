@@ -1,11 +1,10 @@
 import { useState } from "react";
+import { useI18n } from "../../use_i18n.js";
+import { changeWelcomeTrash } from "./welcome-trash-actions.js";
 import { useDesignStore } from "../../../store/design_store.js";
 import {
   renameRecentFile,
   addRecentFile,
-  moveToTrash,
-  restoreFromTrash,
-  deletePermanently,
   emptyTrash,
   syncRecentFile,
 } from "../../store/recent_files.js";
@@ -14,6 +13,13 @@ import { workspaceStorage } from "../../../services/workspace_storage.js";
 
 /** File item mutation state and handlers: star, folder move, rename, duplicate, trash. */
 export function useWelcomeFileActions({ reloadFiles, setActiveMenuId }) {
+  const { t } = useI18n();
+  const reportFailure = (error) =>
+    window.alert(
+      t("welcome.files.actionFailed", {
+        reason: error?.message || String(error),
+      }),
+    );
   const [renameItem, setRenameItem] = useState(null);
   const [renameInput, setRenameInput] = useState("");
   const [confirmEmptyTrashOpen, setConfirmEmptyTrashOpen] = useState(false);
@@ -44,7 +50,9 @@ export function useWelcomeFileActions({ reloadFiles, setActiveMenuId }) {
       setFileFolder(id, null);
       setFileFolder(movedFile?.id || id, folderName || null);
       syncRecentFile(id, {
-        ...(movedFile?.id ? { id: movedFile.id, path: movedFile.path || null } : {}),
+        ...(movedFile?.id
+          ? { id: movedFile.id, path: movedFile.path || null }
+          : {}),
         folder: folderName || null,
       });
     } catch (err) {
@@ -64,10 +72,16 @@ export function useWelcomeFileActions({ reloadFiles, setActiveMenuId }) {
   const handleConfirmRename = async () => {
     if (renameItem && renameInput.trim()) {
       const cleanName = renameInput.trim();
-      const formattedName = cleanName.endsWith(".voo") ? cleanName : `${cleanName}.voo`;
-      const previousFolder = folderOfFile(renameItem.id) || renameItem.folder || null;
+      const formattedName = cleanName.endsWith(".voo")
+        ? cleanName
+        : `${cleanName}.voo`;
+      const previousFolder =
+        folderOfFile(renameItem.id) || renameItem.folder || null;
       try {
-        const res = await workspaceStorage.renameFile(renameItem.id, formattedName);
+        const res = await workspaceStorage.renameFile(
+          renameItem.id,
+          formattedName,
+        );
         if (!res?.ok) throw new Error(res?.error || "rename-failed");
         const currentStore = useDesignStore.getState();
         // If currently open in canvas, update canvas filePath and fileName in designStore
@@ -115,14 +129,22 @@ export function useWelcomeFileActions({ reloadFiles, setActiveMenuId }) {
   const handleDuplicate = async (e, id) => {
     e.stopPropagation();
     try {
-      const source = (await workspaceStorage.scanFiles({ includeTrashed: true }))
-        .find((file) => file.id === id || file.path === id);
+      const source = (
+        await workspaceStorage.scanFiles({ includeTrashed: true })
+      ).find((file) => file.id === id || file.path === id);
       if (!source) return;
       const bytes = await workspaceStorage.readFileBytes(source.id);
-      const baseName = (source.name || "Untitled.voo").replace(/\.voo$/i, "").replace(/\s+/gu, "");
+      const baseName = (source.name || "Untitled.voo")
+        .replace(/\.voo$/i, "")
+        .replace(/\s+/gu, "");
       let copyName = `${baseName}Copy.voo`;
-      const names = new Set((await workspaceStorage.scanFiles({ includeTrashed: true })).map((file) => file.name));
-      for (let suffix = 2; names.has(copyName); suffix += 1) copyName = `${baseName}Copy${suffix}.voo`;
+      const names = new Set(
+        (await workspaceStorage.scanFiles({ includeTrashed: true })).map(
+          (file) => file.name,
+        ),
+      );
+      for (let suffix = 2; names.has(copyName); suffix += 1)
+        copyName = `${baseName}Copy${suffix}.voo`;
       const copied = await workspaceStorage.writeFileBytes(copyName, bytes, {
         category: source.category,
         preview: source.preview,
@@ -155,11 +177,10 @@ export function useWelcomeFileActions({ reloadFiles, setActiveMenuId }) {
   const handleMoveToTrash = async (e, id) => {
     e?.stopPropagation?.();
     try {
-      const result = await workspaceStorage.moveToTrash(id);
-      if (!result?.ok) return;
-      moveToTrash(id);
+      await changeWelcomeTrash("moveToTrash", id);
     } catch (err) {
-      console.warn("[VOO] workspaceStorage.moveToTrash error:", err);
+      console.error("[VOO] workspaceStorage.moveToTrash error:", err);
+      reportFailure(err);
       return;
     }
     await reloadFiles();
@@ -169,11 +190,10 @@ export function useWelcomeFileActions({ reloadFiles, setActiveMenuId }) {
   const handleRestore = async (e, id) => {
     e?.stopPropagation?.();
     try {
-      const result = await workspaceStorage.restoreFromTrash(id);
-      if (!result?.ok) return;
-      restoreFromTrash(id);
+      await changeWelcomeTrash("restoreFromTrash", id);
     } catch (err) {
-      console.warn("[VOO] workspaceStorage.restoreFromTrash error:", err);
+      console.error("[VOO] workspaceStorage.restoreFromTrash error:", err);
+      reportFailure(err);
       return;
     }
     await reloadFiles();
@@ -183,11 +203,10 @@ export function useWelcomeFileActions({ reloadFiles, setActiveMenuId }) {
   const handleDeletePermanently = async (e, id) => {
     e?.stopPropagation?.();
     try {
-      const result = await workspaceStorage.deletePermanently(id);
-      if (!result?.ok) return;
-      deletePermanently(id);
+      await changeWelcomeTrash("deletePermanently", id);
     } catch (err) {
-      console.warn("[VOO] workspaceStorage.deletePermanently error:", err);
+      console.error("[VOO] workspaceStorage.deletePermanently error:", err);
+      reportFailure(err);
       return;
     }
     await reloadFiles();
@@ -197,10 +216,11 @@ export function useWelcomeFileActions({ reloadFiles, setActiveMenuId }) {
   const handleEmptyTrash = async () => {
     try {
       const result = await workspaceStorage.emptyTrash();
-      if (!result?.ok) return;
+      if (!result?.ok) throw new Error(result?.error || "operation_failed");
       emptyTrash();
     } catch (err) {
-      console.warn("[VOO] workspaceStorage.emptyTrash error:", err);
+      console.error("[VOO] workspaceStorage.emptyTrash error:", err);
+      reportFailure(err);
       return;
     }
     setConfirmEmptyTrashOpen(false);

@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
-import { FileImage } from "lucide-react";
+import { FileImage, Folder } from "lucide-react";
 import { useI18n } from "../../use_i18n.js";
 
 /** Missing legacy previews are recovered without rewriting the user's project. */
@@ -45,7 +45,7 @@ export default function WelcomeFileCover({ item }) {
     };
   }, [item.name]);
   useEffect(() => {
-    if (!visible) return undefined;
+    if (!visible || item.isFolder) return undefined;
     let cancelled = false;
     setLoading(true);
     import("../../previews/load_project_cover.js")
@@ -73,9 +73,11 @@ export default function WelcomeFileCover({ item }) {
       ref={host}
       data-testid="welcome-file-cover"
       className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-t-2xl"
-      aria-busy={loading}
+      aria-busy={!item.isFolder && loading}
     >
-      {cover ? (
+      {item.isFolder ? (
+        <Folder size={28} strokeWidth={1.5} className="text-neutral-400" />
+      ) : cover ? (
         <img
           src={cover}
           alt=""
