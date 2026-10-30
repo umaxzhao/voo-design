@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { Check } from "lucide-react";
 import { ProviderLogo } from "../provider_icons.jsx";
 import { useI18n } from "../../use_i18n.js";
 import { getModelDisplayParts } from "./model_catalog.js";
+
+const useMenuMeasureEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /** A bottom-anchored picker: only provider headings and selectable models. */
 export default function AgentModelMenu({
@@ -18,7 +20,7 @@ export default function AgentModelMenu({
   const menuRef = useRef(null);
   const [maxHeight, setMaxHeight] = useState(420);
 
-  useEffect(() => {
+  useMenuMeasureEffect(() => {
     const menu = menuRef.current;
     const composer = composerRef.current;
     const panel = composer.closest("section");

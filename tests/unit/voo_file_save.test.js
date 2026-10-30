@@ -64,13 +64,20 @@ describe("Photoshop-style .voo File Save Mechanism", () => {
 
   it("useEditorAutosave in disabled mode performs no background writes or errors", async () => {
     const setError = vi.fn();
-    const saver = useEditorAutosave({
+    let saver;
+    const React = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    function AutosaveHarness() {
+      saver = useEditorAutosave({
       enginesRef: { current: new Map() },
       snapshotsRef: { current: new Map() },
       nodeIds: ["page-1"],
       disabled: true,
       setApplyError: setError,
-    });
+      });
+      return null;
+    }
+    renderToStaticMarkup(React.createElement(AutosaveHarness));
 
     expect(saver.needsSave()).toBe(false);
     expect(saver.hasUnsaved()).toBe(false);

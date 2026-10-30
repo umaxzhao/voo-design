@@ -13,6 +13,7 @@ import { TOOL_SHORTCUTS } from "../editor/editor_shortcuts.js";
 import { useI18n } from "../use_i18n.js";
 import EditorTooltip from "./editor_tooltip.jsx";
 import { touchToolAttributes, useTouchToolTarget } from "./editor_touch_tool_target.jsx";
+import { moveEditorMenuFocus } from "./editor_menu_navigation.js";
 
 const toolButtonClass = (active) =>
   `flex h-11 w-11 shrink-0 items-center justify-center rounded-full p-0 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
@@ -176,16 +177,20 @@ export default function EditorSelectMenu({ tool, onTool }) {
       setOpen(false);
     };
     const closeOnEscape = (event) => {
+      if (moveEditorMenuFocus(event, menuRef.current)) return;
       if (event.key !== "Escape") return;
       event.stopPropagation();
       setOpen(false);
       (touchTarget ? rootRef.current?.querySelector("[data-toolbar-touch-tool]") : chevronRef.current)?.focus();
     };
+    const closeOnViewportChange = () => setOpen(false);
     document.addEventListener("pointerdown", closeOutside, true);
     document.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("resize", closeOnViewportChange);
     return () => {
       document.removeEventListener("pointerdown", closeOutside, true);
       document.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("resize", closeOnViewportChange);
     };
   }, [open, touchTarget]);
 

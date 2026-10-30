@@ -121,6 +121,19 @@ export default function BoundedNumberInput({
           event.currentTarget.blur();
           return;
         }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          // Typing previews geometry live. Cancel must restore the value at
+          // the last committed boundary before blur can commit the draft.
+          const previousValue = committedValueRef.current;
+          const previousDraft = String(previousValue);
+          draftRef.current = previousDraft;
+          setDraft(previousDraft);
+          emitValue(previousValue);
+          transactionRef.current.cancel(NUMBER_INPUT_GESTURE_KEY);
+          event.currentTarget.blur();
+          return;
+        }
         // Plain arrows are the native number-input behaviour; Shift coarsens
         // to ±10×step, mirroring the scrub modifier.
         if (

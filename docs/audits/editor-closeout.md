@@ -71,3 +71,26 @@ graph migration, workflow-store write barriers, workflow undo ownership and a
 resource-authorization policy not defined by the free-canvas bridge. They are
 not evidence that those scenarios work. They remain separate from the editor
 renderer and interaction assertions above and must stay visible in test totals.
+
+## UI and interaction sweep
+
+The post-closeout sweep uses isolated real Chromium sessions, including trusted
+touch input. It checks the current interface at 320, 390, 768 and 1440 pixels
+and in narrow landscape, in both languages and interface themes. Screenshots
+are visual evidence in the temporary audit directory; the assertions below are
+retained in the release gate so this review is repeatable.
+
+| Surface | Confirmed issues repaired | Retained browser coverage |
+| --- | --- | --- |
+| Welcome and files | Outside-pointer dismissal removed the file menu before its commands could run; cards lacked a keyboard-open target and nested menus could be clipped. | `ui-home-settings.e2e.mjs`: create/open/rename, stars, search, views, project folders, file menus, dialog focus, first-run flow and responsive geometry. |
+| Settings | Modal focus could escape and was not restored; profile translation keys leaked into the UI. Changing the recovery-copy preference changed Hook order and crashed an open editor. | `ui-home-settings.e2e.mjs`: all Settings tabs, keyboard navigation, nested popovers, language/theme and the live preference switch. `ui-global-interaction.e2e.mjs`: the mounted production autosave Hook writes only while enabled and preserves its queue across toggles. |
+| Inspector | Escape committed numeric previews instead of cancelling; nested paint-menu Escape cleared the selection. Narrow tab labels intercepted the panel toggle. | `ui-inspector-interaction.e2e.mjs`: actual edits, Enter/blur/Escape, exact undo, paint-menu ownership, tabs and real hit testing. |
+| Touch workspace | Contextual actions inherited the camera transform and ran offscreen. Intermediate panel height transitions displaced the opposite toggle; the bottom More menu could open above the visible workspace. | `ui-responsive-editor.e2e.mjs`: immediate panel switching, viewport transitions, menu navigation and containment, contextual actions, camera gestures and Agent-panel entry. |
+| Global commands | Search and command dialogs did not close from their non-input controls; the mobile title menu had no arrow navigation or initial focus. | `ui-global-interaction.e2e.mjs`: search/replace and undo, command empty states, modal focus/restore, export transparency states and touch-title menu Home/End/Escape. |
+
+The existing renderer, export, drawing/retouch, page-drag, comments, loading and
+history suites still run alongside this UI sweep. They are not replaced by
+geometry-only assertions. These checks do not authorize or make paid provider
+requests, submit authentication forms, or certify native Electron dialogs.
+Uncommitted DeepSeek connector/plugin changes in the primary workspace are
+preserved separately and are outside this verified commit.

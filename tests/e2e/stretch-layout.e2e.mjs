@@ -32,9 +32,9 @@ await withEditorBrowser(async ({ page, tool }) => {
   const before = await snapshot(), beforeIndex = await historyIndex();
   assert.equal(await page.evaluate(() => window.__vooEditor.sampleColorAt({ x: 100, y: 190 })), "#ffffff");
   const panel = page.getByTestId("editor-properties-panel");
-  const selector = panel.getByTestId("editor-auto-layout-alignItems");
+  const selector = page.getByTestId("editor-auto-layout-alignItems");
   assert.equal(await selector.isVisible(), false, "stretch must stay behind the existing advanced entry");
-  await panel.locator('summary[aria-label="Auto layout settings"]').click();
+  await panel.getByRole("button", {name:"Auto layout settings",exact:true}).click();
   await selector.click();
   await page.getByRole("option", { name: "Stretch", exact: true }).click();
   await settled();

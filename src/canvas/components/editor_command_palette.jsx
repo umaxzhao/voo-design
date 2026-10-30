@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Search, X } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
+import { useModalFocus } from "./use_modal_focus.js";
 import {
   MAX_RECENT_COMMANDS,
   COMMAND_LABEL_KEYS,
@@ -56,6 +57,8 @@ export default function EditorCommandPalette({
 }) {
   const { t, locale } = useI18n();
   const inputRef = useRef(null);
+  const dialogRef = useRef(null);
+  useModalFocus({ open, dialogRef, onClose, initialFocus: '[role="combobox"]' });
   const listRef = useRef(null);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -211,10 +214,18 @@ export default function EditorCommandPalette({
       role="presentation"
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={labelOr(t, "commandPalette.title", "Command palette")}
         data-testid="command-palette"
+        onKeyDown={(event) => {
+          if (event.key !== "Escape") return;
+          event.preventDefault();
+          event.stopPropagation();
+          onClose?.();
+        }}
         className="w-[min(600px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-white/10 bg-black/95 font-mono shadow-panel backdrop-blur"
         onPointerDown={(event) => event.stopPropagation()}
       >

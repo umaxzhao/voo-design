@@ -22,6 +22,7 @@ vi.mock("../../src/canvas/use_i18n.js", () => ({
 }));
 
 import { EditorZoom } from "../../src/canvas/components/editor_toolbar.jsx";
+import EditorZoomGridMenu from "../../src/canvas/components/editor_zoom_grid_menu.jsx";
 import { EditorCanvasAids } from "../../src/canvas/components/editor_rulers.jsx";
 
 const noop = () => {};
@@ -86,7 +87,7 @@ describe("single bottom toolbar", () => {
       onToggleGrid: toggleGrid, onToggleSnapToGrid: toggleSnap, onSetGridSize: setSize,
     };
     const flatten = (node) => !node || typeof node !== "object" ? [] :
-      [node, ...React.Children.toArray(node.props?.children).flatMap(flatten)];
+      [node, ...(node.type === EditorZoomGridMenu ? flatten(EditorZoomGridMenu(node.props)) : React.Children.toArray(node.props?.children).flatMap(flatten))];
     const nodes = () => flatten(EditorZoom(props));
     const find = (id) => nodes().find((node) => node.props?.["data-testid"] === id);
     try {
@@ -121,16 +122,19 @@ describe("single bottom toolbar", () => {
         addEventListener: (type, handler) => { listeners[type] = handler; },
         removeEventListener: vi.fn(),
       });
-      const menu = find("editor-grid-menu");
-      const items = Array.from({ length: 5 }, () => ({ focus: vi.fn() }));
-      menu.ref.current = { querySelector: () => items[0] };
+      const menu = find("editor-more-menu");
+      const items = Array.from({ length: 5 }, () => ({ focus: vi.fn(), getClientRects: () => [{}], getAttribute: () => null }));
+      const fakeMenu = { contains: () => true, ownerDocument: { activeElement: items[0] }, querySelectorAll: () => items };
+      nodes().find(node => node.ref && node.props?.className === "relative flex items-center").ref.current = { contains: () => false, querySelector: () => fakeMenu };
       const cleanup = hooks.effects.at(-1)();
       expect(items[0].focus).toHaveBeenCalledOnce();
       const navigate = (key, index, expected) => {
         const preventDefault = vi.fn();
-        menu.props.onKeyDown({
+        fakeMenu.ownerDocument.activeElement = items[index];
+        listeners.keydown({
           key, target: items[index], preventDefault,
-          currentTarget: { querySelectorAll: () => items },
+          stopPropagation: vi.fn(),
+          currentTarget: { contains: () => true, ownerDocument: { activeElement: items[index] }, querySelectorAll: () => items },
         });
         expect(preventDefault).toHaveBeenCalledOnce();
         expect(items[expected].focus).toHaveBeenCalled();
@@ -142,7 +146,7 @@ describe("single bottom toolbar", () => {
       navigate("ArrowDown", 4, 0);
       navigate("End", 0, 4);
       navigate("Home", 4, 0);
-      listeners.keydown({ key: "Escape" });
+      listeners.keydown({ key: "Escape", preventDefault: vi.fn(), stopPropagation: vi.fn() });
       expect(hooks.open).toBe(false);
       hooks.open = true;
       listeners.pointerdown({ target: {} });

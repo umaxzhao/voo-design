@@ -14,6 +14,7 @@ import {
   topLevelGroupOf,
 } from "./scene_model.js";
 import { combinedBounds, nodeAABB } from "./scene_geometry.js";
+import { isFrameNode } from "./prototype_model.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
 import * as ops from "./doc_ops.js";
 
@@ -174,7 +175,9 @@ export function createEngineGroups({
     const units = selectionUnits();
     if (units.length === 0) return;
     const measured = units.map((unit) => {
-      if (!isContainerNode(unit)) return unit;
+      // A Frame owns its explicit bounds; only a regular group derives its
+      // alignment box from descendants. Its children still follow the delta.
+      if (!isContainerNode(unit) || isFrameNode(unit)) return unit;
       const box = combinedBounds(
         groupDescendants(doc, unit.id)
           .filter((node) => !isContainerNode(node))

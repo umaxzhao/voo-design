@@ -1,10 +1,15 @@
 import { useEffect, useRef } from "react";
+import { useModalFocus } from "../use_modal_focus.js";
 
 export function handleExportDialogKeyDown(
   event,
   { dialog, document, onClose },
 ) {
   if (!dialog) return;
+  // The command palette can be opened above an export dialog with Ctrl/Cmd+K.
+  // Its keys belong to that foreground dialog, never the export underneath.
+  const focusedDialog = event.target?.closest?.('[role="dialog"]');
+  if (focusedDialog && focusedDialog !== dialog && !dialog.contains(focusedDialog)) return;
   if (event.key === "Escape") {
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -36,11 +41,13 @@ export function handleExportDialogKeyDown(
 export function useExportDialogKeyboard(dialogRef, onClose) {
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  useModalFocus({
+    open: true,
+    dialogRef,
+    onClose,
+    initialFocus: 'button[aria-pressed="true"], button:not(:disabled)',
+  });
   useEffect(() => {
-    const previous = document.activeElement;
-    dialogRef.current
-      ?.querySelector('button[aria-pressed="true"], button:not(:disabled)')
-      ?.focus();
     const onKeyDown = (event) =>
       handleExportDialogKeyDown(event, {
         dialog: dialogRef.current,
@@ -50,7 +57,6 @@ export function useExportDialogKeyboard(dialogRef, onClose) {
     window.addEventListener("keydown", onKeyDown, true);
     return () => {
       window.removeEventListener("keydown", onKeyDown, true);
-      if (previous?.isConnected) previous.focus();
     };
   }, [dialogRef]);
 }

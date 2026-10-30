@@ -1,11 +1,12 @@
 import {
-  SlidersHorizontal,
   Columns2,
   Rows2,
   BetweenHorizontalStart,
   CornerDownLeft,
 } from "lucide-react";
 import PropTypes from "prop-types";
+import LayoutNumberInput from "./layout_number_input.jsx";
+import AutoLayoutAdvancedSettings from "./auto_layout_advanced_settings.jsx";
 import { useI18n } from "../../use_i18n.js";
 import { normalizeAutoLayout } from "../../editor/scene_auto_layout.js";
 import {
@@ -58,23 +59,8 @@ export function AutoLayoutFields({
       className="flex min-w-0 flex-col gap-1 text-[10px] text-neutral-400"
     >
       <span>{label}</span>
-      <input
-        type="number"
-        min="0"
-        step="1"
-        className={FIELD_CLASS}
-        aria-label={label}
-        value={value === null ? "" : value}
-        onChange={(event) => {
-          const raw = event.target.value;
-          if (raw === "") {
-            onChange(null);
-            return;
-          }
-          const next = Number(raw);
-          if (Number.isFinite(next)) onChange(Math.max(0, next));
-        }}
-      />
+      <LayoutNumberInput optional className={FIELD_CLASS} aria-label={label}
+        value={value} onChange={onChange} />
     </label>
   );
   const selectRow = (key, label, value, options, onChange) => (
@@ -254,15 +240,7 @@ export function AutoLayoutFields({
             >
               <CornerDownLeft size={14} />
             </button>
-            <details className="relative">
-              <summary
-                aria-label={t("editor.autoLayout.advanced")}
-                title={t("editor.autoLayout.advanced")}
-                className="flex size-7 cursor-pointer list-none items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] [&::-webkit-details-marker]:hidden"
-              >
-                <SlidersHorizontal size={14} />
-              </summary>
-              <div className="absolute right-0 top-full z-50 mt-1 w-56 space-y-2 rounded-xl border border-white/10 bg-neutral-900 p-3 shadow-panel">
+            <AutoLayoutAdvancedSettings>
                 {selectRow(
                   "justifyContent",
                   t("editor.autoLayout.justify"),
@@ -323,8 +301,7 @@ export function AutoLayoutFields({
                       ),
                   )}
                 </div>
-              </div>
-            </details>
+            </AutoLayoutAdvancedSettings>
           </div>
         </div>
       </div>

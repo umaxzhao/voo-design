@@ -143,12 +143,12 @@ export default function PropertiesPanelSections({
           onToggleFixed={onTogglePuppetPinFixed}
         />
       ) : null}
-      {!isWarpTool && (onLayout || engine?.layoutSelection) && object.kind !== "adjustment" ? (
+      {!isWarpTool && (selectionCount ?? 1) >= 2 && (onLayout || engine?.layoutSelection) && object.kind !== "adjustment" ? (
         <AlignSection
           count={selectionCount}
           onLayout={onLayout ?? ((layout, argument) => engine.layoutSelection(layout, argument))}
           selectedNodes={selectedNodes}
-          showQuickActions={(selectionCount ?? 1) < 2}
+          showQuickActions={false}
         />
       ) : null}
       {isWarpTool ? (

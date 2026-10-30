@@ -1,5 +1,7 @@
 /** Settings shell and shortcut-reference copy. */
 export default {
+  "collab.guestBadge": "Local guest profile",
+  "collab.nameField": "Display name",
   "settings.drawerTitle": "Settings & Preferences",
   "settings.closeHint": "Close (Esc)",
   "settings.categories": "Settings Categories",

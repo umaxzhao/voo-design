@@ -4,7 +4,6 @@ import { Eye, EyeOff, ImagePlus, Ruler, Trash2 } from "lucide-react";
 import {
   IconAdd,
   IconGrid3x3,
-  IconMagnet,
   IconMinus,
   IconMore,
   IconRedo,
@@ -12,6 +11,9 @@ import {
   ICON_STROKE_WIDTH,
 } from "../icons.jsx";
 import { useI18n } from "../use_i18n.js";
+import { moveEditorMenuFocus } from "./editor_menu_navigation.js";
+import EditorZoomGridMenu from "./editor_zoom_grid_menu.jsx";
+import { useZoomMenuHeight } from "./editor_hooks/use_zoom_menu_height.js";
 
 /**
  * The floating bottom-center zoom cluster: zoom out, live zoom percentage
@@ -49,17 +51,21 @@ export function EditorZoom({
   const [moreOpen, setMoreOpen] = useState(false);
   const moreControlRef = useRef(null);
   const moreTriggerRef = useRef(null);
-  const gridMenuRef = useRef(null);
+  const moreMaxHeight = useZoomMenuHeight(moreOpen, moreTriggerRef);
 
   useEffect(() => {
     if (!moreOpen) return;
-    const target = gridMenuRef.current || moreControlRef.current;
-    target?.querySelector('[role^="menuitem"]')?.focus();
+    const menu = moreControlRef.current?.querySelector('[data-testid="editor-more-menu"]');
+    [...(menu?.querySelectorAll('[role^="menuitem"]:not(:disabled)') || [])]
+      .find((item) => item.getClientRects().length)?.focus();
     const onOutside = (event) => {
       if (!moreControlRef.current?.contains(event.target)) setMoreOpen(false);
     };
     const onKey = (event) => {
+      if (moveEditorMenuFocus(event, menu)) return;
       if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
         setMoreOpen(false);
         moreTriggerRef.current?.focus();
       }
@@ -178,6 +184,7 @@ export function EditorZoom({
             id="editor-more-menu"
             data-testid="editor-more-menu"
             role="menu"
+            style={moreMaxHeight ? { maxHeight: moreMaxHeight } : undefined}
             aria-label={t("editor.taskbar.more")}
             className="absolute bottom-full right-0 mb-2 max-h-[60vh] min-w-44 overflow-y-auto rounded-xl border border-white/10 bg-neutral-900 p-1.5 text-[11px] text-white shadow-pop"
           >
@@ -330,58 +337,8 @@ export function EditorZoom({
               <span aria-hidden="true" className="text-neutral-400">{grid && grid.enabled !== false ? "✓" : ""}</span>
             </button>
 
-            <div
-              ref={gridMenuRef}
-              id="editor-grid-menu"
-              data-testid="editor-grid-menu"
-              role="menu"
-              aria-label={t("editor.grid.options")}
-              onKeyDown={(event) => {
-                if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
-                const items = Array.from(event.currentTarget.querySelectorAll('[role^="menuitem"]'));
-                if (!items.length) return;
-                event.preventDefault();
-                const index = items.indexOf(event.target);
-                const next = event.key === "Home" ? 0
-                  : event.key === "End" ? items.length - 1
-                  : (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
-                items[next].focus();
-              }}
-              className="mt-1 border-t border-white/10 pt-1"
-            >
-              <button
-                type="button"
-                role="menuitemcheckbox"
-                data-testid="editor-grid-menu-snap"
-                aria-checked={snapToGrid}
-                onClick={onToggleSnapToGrid}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-neutral-200 hover:bg-neutral-800 hover:text-white focus-visible:bg-neutral-800 outline-none"
-              >
-                <IconMagnet size={13} />
-                {t("editor.snapping.toGrid")}
-                <span aria-hidden="true" className="ml-auto text-neutral-400">{snapToGrid ? "✓" : ""}</span>
-              </button>
-
-              <div className="my-1 border-t border-white/10" role="separator" />
-              <div className="px-2 py-1 text-neutral-400">{t("editor.grid.size")}</div>
-              {[8, 16, 32, 64].map((size) => (
-                <button
-                  key={size}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={gridSize === size}
-                  data-testid={`editor-grid-size-${size}`}
-                  onClick={() => {
-                    onSetGridSize?.(size);
-                    setMoreOpen(false);
-                  }}
-                  className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-neutral-200 hover:bg-neutral-800 hover:text-white focus-visible:bg-neutral-800 outline-none"
-                >
-                  {t("editor.grid.sizeLabel", { size })}
-                  <span aria-hidden="true" className="text-neutral-400">{gridSize === size ? "✓" : ""}</span>
-                </button>
-              ))}
-            </div>
+            <EditorZoomGridMenu snapToGrid={snapToGrid} onToggleSnapToGrid={onToggleSnapToGrid}
+              gridSize={gridSize} onSetGridSize={onSetGridSize} onClose={() => setMoreOpen(false)} />
           </div>
         ) : null}
       </div>

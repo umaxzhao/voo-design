@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { IconClose } from "../icons.jsx";
 import { useI18n } from "../use_i18n.js";
@@ -9,6 +9,7 @@ import SettingsGeneral from "./settings_general.jsx";
 import SettingsShortcuts from "./settings_shortcuts.jsx";
 import SettingsDesignSystems from "./settings_design_systems.jsx";
 import { SETTINGS_TABS as TABS } from "./settings_tabs.js";
+import { useModalFocus } from "./use_modal_focus.js";
 
 export default function SettingsDrawer({
   open = false,
@@ -20,6 +21,8 @@ export default function SettingsDrawer({
     TABS.some((tab) => tab.id === initialTab) ? initialTab : "general"
   );
   const dialogRef = useRef(null);
+  const tabsId = useId();
+  useModalFocus({ open, dialogRef, onClose });
 
   // Sync initialTab when modal opens
   useEffect(() => {
@@ -27,23 +30,6 @@ export default function SettingsDrawer({
       setActiveTab(initialTab);
     }
   }, [open, initialTab]);
-
-  // Handle ESC key and focus trapping
-  useEffect(() => {
-    if (!open) return undefined;
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose?.();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -70,6 +56,7 @@ export default function SettingsDrawer({
       <div
         ref={dialogRef}
         role="dialog"
+        tabIndex={-1}
         aria-modal="true"
         aria-label={title}
         data-testid="settings-drawer"
@@ -95,6 +82,7 @@ export default function SettingsDrawer({
             aria-label={t("settings.categories")}
             className="grid shrink-0 grid-cols-2 gap-1 p-2 md:flex md:w-52 md:flex-col md:bg-neutral-900"
           >
+            <div role="tablist" aria-label={t("settings.categories")} className="contents">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const active = activeTab === tab.id;
@@ -103,9 +91,21 @@ export default function SettingsDrawer({
                   key={tab.id}
                   type="button"
                   role="tab"
+                  id={`${tabsId}-${tab.id}`}
+                  aria-controls={`${tabsId}-panel`}
+                  tabIndex={active ? 0 : -1}
                   aria-current={active ? "page" : undefined}
                   aria-selected={active}
                   onClick={() => setActiveTab(tab.id)}
+                  onKeyDown={(event) => {
+                    const direction = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[event.key];
+                    if (!direction && event.key !== "Home" && event.key !== "End") return;
+                    event.preventDefault();
+                    const index = TABS.findIndex((candidate) => candidate.id === tab.id);
+                    const next = event.key === "Home" ? TABS[0] : event.key === "End" ? TABS.at(-1) : TABS[(index + direction + TABS.length) % TABS.length];
+                    setActiveTab(next.id);
+                    document.getElementById(`${tabsId}-${next.id}`)?.focus();
+                  }}
                   className={`flex h-10 min-w-0 items-center justify-start gap-2 rounded-lg px-3 text-xs outline-none transition-colors focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${active ? "bg-white/[0.08] text-neutral-100" : "text-neutral-400 hover:bg-white/[0.04] hover:text-neutral-200"}`}
                 >
                   <Icon size={15} className="shrink-0" />
@@ -113,10 +113,14 @@ export default function SettingsDrawer({
                 </button>
               );
             })}
+            </div>
           </nav>
 
           <main
             key={activeTab}
+            role="tabpanel"
+            id={`${tabsId}-panel`}
+            aria-labelledby={`${tabsId}-${activeTab}`}
             className="ui-scroll min-h-0 min-w-0 flex-1 overflow-y-auto p-4"
           >
             <div className="flex flex-col gap-4">

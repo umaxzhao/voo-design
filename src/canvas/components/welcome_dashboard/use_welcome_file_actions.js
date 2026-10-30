@@ -119,10 +119,10 @@ export function useWelcomeFileActions({ reloadFiles, setActiveMenuId }) {
         .find((file) => file.id === id || file.path === id);
       if (!source) return;
       const bytes = await workspaceStorage.readFileBytes(source.id);
-      const baseName = (source.name || "Untitled.voo").replace(/\.voo$/i, "");
-      let copyName = `${baseName} (Copy).voo`;
+      const baseName = (source.name || "Untitled.voo").replace(/\.voo$/i, "").replace(/\s+/gu, "");
+      let copyName = `${baseName}Copy.voo`;
       const names = new Set((await workspaceStorage.scanFiles({ includeTrashed: true })).map((file) => file.name));
-      for (let suffix = 2; names.has(copyName); suffix += 1) copyName = `${baseName} (Copy ${suffix}).voo`;
+      for (let suffix = 2; names.has(copyName); suffix += 1) copyName = `${baseName}Copy${suffix}.voo`;
       const copied = await workspaceStorage.writeFileBytes(copyName, bytes, {
         category: source.category,
         preview: source.preview,

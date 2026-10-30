@@ -8,7 +8,7 @@ export default {
   "settings.appearance.title": "外观",
   "settings.appearance.hint": "编辑器界面的外观。",
   "settings.appearance.autoSaveDrafts": "自动保存编辑草稿",
-  "settings.appearance.autoSaveDraftsHint": "在本地保留编辑草稿以便崩溃恢复；保存文件仍需手动执行。",
+  "settings.appearance.autoSaveDraftsHint": "编辑时额外保留一份本地恢复副本，便于在意外退出后还原改动。",
   "settings.appearance.lightTheme": "浅色界面",
   "settings.appearance.lightThemeHint": "将面板和界面切换为浅色；画布保持自身颜色。",
   "settings.canvas.title": "画布",

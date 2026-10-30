@@ -6,6 +6,7 @@ import { useI18n } from "./canvas/use_i18n.js";
 import CollabAvatars from "./canvas/components/collab_avatars.jsx";
 import SettingsDrawer from "./canvas/components/settings_drawer.jsx";
 import { WELCOME_NEW_EVENT } from "./canvas/components/welcome_dashboard/welcome_events.js";
+import { moveEditorMenuFocus } from "./canvas/components/editor_menu_navigation.js";
 
 /** Brand name shown in the title bar. A product name, not translatable copy. */
 export const APP_DISPLAY_NAME = "VOO Design";
@@ -43,11 +44,16 @@ export default function AppTitleBar() {
 
   useEffect(() => {
     if (!moreOpen) return undefined;
+    moreRef.current?.querySelector('[role="menuitem"]')?.focus();
     const handlePointerDown = (event) => {
       if (!moreRef.current?.contains(event.target)) setMoreOpen(false);
     };
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") setMoreOpen(false);
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      setMoreOpen(false);
+      moreRef.current?.querySelector('[aria-haspopup="menu"]')?.focus();
     };
     document.addEventListener("pointerdown", handlePointerDown, true);
     window.addEventListener("keydown", handleKeyDown, true);
@@ -148,6 +154,7 @@ export default function AppTitleBar() {
               aria-label={t("titlebar.more")}
               aria-haspopup="menu"
               aria-expanded={moreOpen}
+              aria-controls={moreOpen ? "titlebar-more-menu" : undefined}
               title={t("titlebar.more")}
               onClick={() => setMoreOpen((open) => !open)}
               className="flex size-10 items-center justify-center rounded-lg text-neutral-300 hover:bg-white/10"
@@ -156,7 +163,9 @@ export default function AppTitleBar() {
             </button>
             {moreOpen ? (
               <div
+                id="titlebar-more-menu"
                 role="menu"
+                onKeyDown={(event) => moveEditorMenuFocus(event, event.currentTarget)}
                 aria-label={t("titlebar.more")}
                 className="absolute right-0 top-full z-[100] mt-1.5 flex min-w-48 flex-col gap-1 rounded-xl border border-white/10 bg-neutral-900 p-1.5 text-left text-[12px] shadow-panel"
               >

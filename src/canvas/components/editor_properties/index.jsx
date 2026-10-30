@@ -16,7 +16,7 @@ import ToolPropertiesSection from "./tool_properties_section.jsx";
 import { usePropertyCommit } from "./use_property_commit.js";
 import { TOOL } from "../../editor/editor_constants.js";
 import { useI18n } from "../../use_i18n.js";
-import { IconChevronDown, IconSwap } from "../../icons.jsx";
+import PropertiesPanelTabs from "./properties_panel_tabs.jsx";
 import PropertiesPanelHeader from "./properties_panel_header.jsx";
 import PropertiesPanelMaskToolbar from "./properties_panel_mask_toolbar.jsx";
 import PropertiesPanelSections from "./properties_panel_sections.jsx";
@@ -310,20 +310,6 @@ export default function EditorProperties({
     );
   }
 
-  const topTabs = [
-    ...(canPrototype
-      ? [
-          { key: "design", label: t("editor.panel.design"), view: "properties" },
-          { key: "prototype", label: t("editor.props.prototype"), view: "prototype" },
-        ]
-      : canInspect
-        ? [{ key: "design", label: t("editor.panel.design"), view: "properties" }]
-        : []),
-    ...(canInspect
-      ? [{ key: "code", label: t("editor.inspect.code"), view: "code" }]
-      : []),
-  ];
-  const activeTopTab = Math.max(0, topTabs.findIndex((tab) => tab.view === panelView));
 
   return (
     <aside
@@ -333,65 +319,16 @@ export default function EditorProperties({
       ref={panelRef}
       onMouseOver={promoteTitleOnHover}
     >
-      <div className="flex shrink-0 items-stretch overflow-hidden rounded-2xl">
-        <div
-          role="tablist"
-          aria-label={t("editor.props.panelTabs")}
-          data-testid="editor-panel-tabs"
-          className="relative flex min-w-0 flex-1 items-center rounded-2xl bg-white/[0.04] p-1"
-        >
-          {topTabs.length ? (
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute bottom-1 left-1 top-1 rounded-xl bg-white/[0.12] transition-transform duration-200 ease-out"
-              style={{
-                width: `calc((100% - 8px) / ${topTabs.length})`,
-                transform: `translateX(${activeTopTab * 100}%)`,
-              }}
-            />
-          ) : null}
-          {topTabs.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              role="tab"
-              aria-selected={panelView === tab.view}
-              data-testid={`editor-panel-tab-${tab.key}`}
-              onClick={() => setPanelView(tab.view)}
-              className={`relative z-10 flex h-8 flex-1 items-center justify-center rounded-xl text-[10px] font-mono transition-colors ${
-                panelView === tab.view
-                  ? "text-white"
-                  : "text-neutral-400 hover:text-neutral-200"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        {onToggleSide ? (
-          <button
-            type="button"
-            onClick={onToggleSide}
-            title={t("editor.pages.toggleAxis")}
-            aria-label={t("editor.pages.toggleAxis")}
-            className="editor-panel-side-swap flex w-10 shrink-0 items-center justify-center text-neutral-400 transition-colors hover:text-white"
-          >
-            <IconSwap size={13} />
-          </button>
-        ) : null}
-        {onMobileToggleExpanded ? (
-          <button
-            type="button"
-            className="editor-mobile-panel-toggle hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg text-neutral-300 hover:bg-white/10"
-            aria-expanded={mobileExpanded}
-            aria-label={t(mobileExpanded ? "editor.mobile.panels.collapseProperties" : "editor.mobile.panels.expandProperties")}
-            title={t(mobileExpanded ? "editor.mobile.panels.collapseProperties" : "editor.mobile.panels.expandProperties")}
-            onClick={onMobileToggleExpanded}
-          >
-            <IconChevronDown size={16} className={mobileExpanded ? "" : "rotate-180"} />
-          </button>
-        ) : null}
-      </div>
+      <PropertiesPanelTabs
+        canPrototype={canPrototype}
+        canInspect={canInspect}
+        value={panelView}
+        onChange={setPanelView}
+        onToggleSide={onToggleSide}
+        mobileExpanded={mobileExpanded}
+        onMobileToggleExpanded={onMobileToggleExpanded}
+        t={t}
+      />
       {header}
       <div className={contentClass}>
         {canInspect && inspectOpen ? (

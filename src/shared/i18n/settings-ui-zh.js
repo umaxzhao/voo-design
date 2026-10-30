@@ -1,5 +1,7 @@
 /** Settings shell and shortcut-reference copy. */
 export default {
+  "collab.guestBadge": "本地访客资料",
+  "collab.nameField": "显示名称",
   "settings.drawerTitle": "设置与偏好",
   "settings.closeHint": "关闭 (Esc)",
   "settings.categories": "设置分类",

@@ -5,6 +5,7 @@ import { IconChevronDown } from "../icons.jsx";
 import { useI18n } from "../use_i18n.js";
 import { toolFamilyIcon } from "./tool_family_icons.jsx";
 import { useTouchToolTarget, withTouchToolTarget } from "./editor_touch_tool_target.jsx";
+import { moveEditorMenuFocus } from "./editor_menu_navigation.js";
 
 /**
  * Turns a tool family's items (see TOOL_FAMILIES) into dropdown entries. The
@@ -125,16 +126,20 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
       setOpen(false);
     };
     const closeOnEscape = (event) => {
+      if (moveEditorMenuFocus(event, menuRef.current)) return;
       if (event.key !== "Escape") return;
       event.stopPropagation();
       setOpen(false);
       (touchTarget ? rootRef.current?.querySelector("[data-toolbar-touch-tool]") : chevronRef.current)?.focus();
     };
+    const closeOnViewportChange = () => setOpen(false);
     document.addEventListener("pointerdown", closeOutside, true);
     document.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("resize", closeOnViewportChange);
     return () => {
       document.removeEventListener("pointerdown", closeOutside, true);
       document.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("resize", closeOnViewportChange);
     };
   }, [open, touchTarget]);
 

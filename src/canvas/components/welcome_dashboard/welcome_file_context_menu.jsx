@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { WelcomeMenuSurface } from "./welcome_menu_surface.jsx";
 import {
   Star,
   Trash2,
@@ -47,7 +48,7 @@ function computeSubmenuAnchor(trigger) {
   const left = fitsRight
     ? rightSide
     : rect.left - SUBMENU_GAP_PX - SUBMENU_WIDTH_PX;
-  return { top: rect.top, left };
+  return { top: Math.max(8, Math.min(rect.top, window.innerHeight - 96)), left: Math.max(8, left) };
 }
 
 /**
@@ -66,12 +67,13 @@ export function WelcomeMoveToPanel({
     <div
       ref={panelRef}
       role="menu"
+      data-welcome-file-menu
       aria-label={t("welcome.folders.moveTo")}
       // Stops the dashboard's outside-mousedown dismiss from closing the whole
       // menu before the click on an option lands (the panel is outside menuRef).
       onMouseDown={(e) => e.stopPropagation()}
-      style={{ top: anchor.top, left: anchor.left }}
-      className="fixed z-40 w-36 rounded-2xl bg-neutral-900 border border-white/10 shadow-menu py-1"
+      style={{ top: anchor.top, left: anchor.left, maxHeight: `calc(100dvh - ${anchor.top + 8}px)` }}
+      className="ui-scroll fixed z-[60] w-36 overflow-y-auto rounded-2xl bg-neutral-900 border border-white/10 shadow-menu py-1"
     >
       {folderTargets.map((folder) => (
         <button
@@ -258,16 +260,15 @@ export function WelcomeFileContextMenu({
   handleStartRename,
   handleDuplicate,
   handleMoveToTrash,
+  onClose,
 }) {
   return (
-    <div
-      onClick={(e) => e.stopPropagation()}
-      className="absolute right-0 top-7 w-36 rounded-2xl bg-neutral-900 border border-white/10 shadow-menu py-1 z-30"
-    >
+    <WelcomeMenuSurface label={t("welcome.actions.more")} onClose={onClose}>
       {isTrash ? (
         <>
           <button
             type="button"
+            role="menuitem"
             onClick={(e) => handleRestore(e, item.id)}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 cursor-pointer"
           >
@@ -276,6 +277,7 @@ export function WelcomeFileContextMenu({
           </button>
           <button
             type="button"
+            role="menuitem"
             onClick={(e) => handleDeletePermanently(e, item.id)}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 cursor-pointer"
           >
@@ -287,6 +289,7 @@ export function WelcomeFileContextMenu({
         <>
           <button
             type="button"
+            role="menuitem"
             onClick={() => handleOpenRecent(item)}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 cursor-pointer"
           >
@@ -295,6 +298,7 @@ export function WelcomeFileContextMenu({
           </button>
           <button
             type="button"
+            role="menuitem"
             onClick={handleOpenLocal}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 cursor-pointer"
           >
@@ -303,6 +307,7 @@ export function WelcomeFileContextMenu({
           </button>
           <button
             type="button"
+            role="menuitem"
             onClick={(e) => handleToggleStar(e, item.id)}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 cursor-pointer"
           >
@@ -317,6 +322,7 @@ export function WelcomeFileContextMenu({
           />
           <button
             type="button"
+            role="menuitem"
             onClick={(e) => handleStartRename(e, item)}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 cursor-pointer"
           >
@@ -325,6 +331,7 @@ export function WelcomeFileContextMenu({
           </button>
           <button
             type="button"
+            role="menuitem"
             onClick={(e) => handleDuplicate(e, item.id)}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 cursor-pointer"
           >
@@ -334,6 +341,7 @@ export function WelcomeFileContextMenu({
           <div className="h-px bg-white/10 my-1" />
           <button
             type="button"
+            role="menuitem"
             onClick={(e) => handleMoveToTrash(e, item.id)}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 cursor-pointer"
           >
@@ -342,6 +350,6 @@ export function WelcomeFileContextMenu({
           </button>
         </>
       )}
-    </div>
+    </WelcomeMenuSurface>
   );
 }

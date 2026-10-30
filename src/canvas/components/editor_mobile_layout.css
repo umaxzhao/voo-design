@@ -1,4 +1,7 @@
 @import "./editor_touch_targets.css";
+@import "./editor_mobile_titlebar.css";
+@import "./editor_mobile_navigation.css";
+@import "./editor_mobile_inspector.css";
 
 /* Desktop title-bar actions use text labels; mobile switches to compact icons. */
 .app-title-action-icon,
@@ -6,7 +9,7 @@
   display: none;
 }
 
-@media (max-width: 768px) and (hover: none) and (pointer: coarse) {
+@media (max-width: 768px) {
   .app-root-frame {
     overflow: hidden;
     border-radius: 24px;
@@ -116,7 +119,8 @@
     min-height: 0;
     flex: 0 0 55%;
     overflow: visible;
-    transition: height 180ms ease, flex-basis 180ms ease;
+    /* Panel offsets derive from this height; interpolate neither or sibling
+       headers temporarily travel beyond the viewport during expansion. */
   }
 
   [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="false"][data-mobile-properties-expanded="false"] > [data-open-guard] {
@@ -352,8 +356,8 @@
   }
 
   [data-testid="editor-bottom-toolbar"] button {
-    min-width: 2.25rem;
-    min-height: 2.5rem;
+    min-width: 3rem;
+    min-height: 3rem;
   }
 
   [data-testid="editor-bottom-toolbar"] {
@@ -362,15 +366,15 @@
 
   [data-testid="editor-bottom-toolbar"] .editor-zoom-step,
   [data-testid="editor-bottom-toolbar"] .editor-zoom-more {
-    width: 2rem;
-    min-width: 2.25rem;
-    height: 2.5rem;
+    width: 3rem;
+    min-width: 3rem;
+    height: 3rem;
   }
 
   [data-testid="editor-bottom-toolbar"] [data-testid="editor-zoom-percent"] {
-    width: 2rem;
-    min-width: 2.25rem;
-    min-height: 2.5rem;
+    width: 3rem;
+    min-width: 3rem;
+    min-height: 3rem;
     padding-inline: 0;
   }
 
@@ -381,156 +385,6 @@
   [data-testid="editor-more-menu"] button[role="menuitem"] {
     min-height: 2.75rem;
     font-size: 0.8125rem;
-  }
-}
-
-@media (max-width: 560px) and (hover: none) and (pointer: coarse) {
-  .top-bar {
-    padding-inline: 12px;
-  }
-
-  header.app-title-bar {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
-    height: 44px;
-    min-height: 44px;
-    flex-wrap: nowrap;
-    padding: 4px 8px;
-  }
-
-  .app-title-bar .app-title-brand-row {
-    display: contents;
-  }
-
-  .app-title-bar .app-title-brand-row > button {
-    grid-column: 1;
-    grid-row: 1;
-    justify-self: start;
-    padding-inline: 0.25rem;
-  }
-
-  .app-title-bar .app-title-brand-row > button > span {
-    display: inline;
-    font-size: 0.7rem;
-    color: #000;
-  }
-
-  .app-title-bar .app-title-brand-row > button > svg {
-    color: #000;
-  }
-
-  .app-title-bar .app-title-tabs {
-    grid-column: 2;
-    grid-row: 1;
-    width: min(7.5rem, 32vw);
-    min-width: 0;
-    padding: 0;
-    overflow: visible;
-  }
-
-  .canvas-tab-bar-desktop {
-    display: none;
-  }
-
-  .app-title-tabs > .canvas-tab-bar-mobile {
-    display: block;
-  }
-
-  .canvas-tab-bar-mobile > button {
-    height: 2rem;
-    width: 100%;
-    gap: 0.125rem;
-    justify-content: center;
-    padding-inline: 0.25rem;
-    font-size: 0.625rem;
-  }
-
-  .canvas-tab-bar-mobile > button > span:first-child {
-    flex: 0 1 auto;
-    max-width: calc(100% - 2rem);
-  }
-
-  .app-title-bar .app-title-actions {
-    grid-column: 3;
-    grid-row: 1;
-    justify-self: end;
-    min-width: 0;
-    gap: 2px;
-    margin-left: 0;
-  }
-
-  .app-title-bar .app-title-actions > div {
-    display: none;
-  }
-
-  .app-title-bar .app-title-actions > .app-title-mobile-more {
-    display: block;
-  }
-
-  .app-title-bar .app-title-actions > button.app-title-desktop-action {
-    display: none;
-  }
-
-  .app-title-bar .app-title-actions button {
-    display: flex;
-    width: 2.5rem;
-    min-width: 2.5rem;
-    height: 2.5rem;
-    min-height: 2.5rem;
-    justify-content: center;
-    padding: 0;
-    white-space: nowrap;
-  }
-
-  .app-title-mobile-more > div[role="menu"] > button {
-    width: 100%;
-    min-width: 0;
-    height: auto;
-    min-height: 2.75rem;
-    justify-content: flex-start;
-    padding: 0 0.75rem;
-  }
-
-  .app-title-action-label {
-    display: none;
-  }
-
-  .app-title-action-icon {
-    display: block;
-  }
-
-  .top-bar-actions {
-    gap: 4px;
-    margin-right: 0;
-  }
-
-  .workflow-title {
-    right: 124px;
-    left: 48px;
-    width: auto;
-    transform: translateY(-50%);
-  }
-
-  .canvas-rail {
-    left: 8px;
-    transform: translateY(-50%) scale(0.9);
-    transform-origin: left center;
-  }
-
-  .viewport-tools {
-    bottom: 8px;
-  }
-
-  .resource-button-label {
-    display: none;
-  }
-
-  .rail-flyout {
-    bottom: 8px;
-    left: 60px;
-    top: 8px;
-    width: min(280px, calc(100% - 68px));
   }
 }
 

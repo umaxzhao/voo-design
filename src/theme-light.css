@@ -49,54 +49,54 @@ html[data-theme="light"] .prompt-composer {
 }
 
 /* Neutral surfaces ---------------------------------------------------------- */
-html[data-theme="light"] [class*="bg-neutral-950"],
-html[data-theme="light"] [class*="bg-[#0a0a0a]"],
-html[data-theme="light"] [class*="bg-[#0c0c0c]"],
-html[data-theme="light"] [class*="bg-[#0f0f0f]"],
-html[data-theme="light"] [class*="bg-black"] {
+html[data-theme="light"] :is([class~="bg-neutral-950"], [class^="bg-neutral-950/"], [class*=" bg-neutral-950/"]),
+html[data-theme="light"] [class~="bg-[#0a0a0a]"],
+html[data-theme="light"] [class~="bg-[#0c0c0c]"],
+html[data-theme="light"] [class~="bg-[#0f0f0f]"],
+html[data-theme="light"] :is([class~="bg-black"], [class^="bg-black/"], [class*=" bg-black/"]) {
   background-color: #fafafa !important;
 }
 
-html[data-theme="light"] [class*="bg-neutral-900"],
-html[data-theme="light"] [class*="bg-[#121212]"],
-html[data-theme="light"] [class*="bg-[#141414]"],
-html[data-theme="light"] [class*="bg-[#151515]"],
-html[data-theme="light"] [class*="bg-[#181818]"],
-html[data-theme="light"] [class*="bg-[#191919]"],
-html[data-theme="light"] [class*="bg-[#1a1a1a]"],
-html[data-theme="light"] [class*="bg-[#1c1c1c]"],
-html[data-theme="light"] [class*="bg-[#1d1d1d]"],
-html[data-theme="light"] [class*="bg-[#1e1e1e]"],
-html[data-theme="light"] [class*="bg-[#202020]"] {
+html[data-theme="light"] :is([class~="bg-neutral-900"], [class^="bg-neutral-900/"], [class*=" bg-neutral-900/"]),
+html[data-theme="light"] [class~="bg-[#121212]"],
+html[data-theme="light"] [class~="bg-[#141414]"],
+html[data-theme="light"] [class~="bg-[#151515]"],
+html[data-theme="light"] [class~="bg-[#181818]"],
+html[data-theme="light"] [class~="bg-[#191919]"],
+html[data-theme="light"] [class~="bg-[#1a1a1a]"],
+html[data-theme="light"] [class~="bg-[#1c1c1c]"],
+html[data-theme="light"] [class~="bg-[#1d1d1d]"],
+html[data-theme="light"] [class~="bg-[#1e1e1e]"],
+html[data-theme="light"] [class~="bg-[#202020]"] {
   background-color: #f5f5f5 !important;
 }
 
-html[data-theme="light"] [class*="bg-neutral-800"],
-html[data-theme="light"] [class*="bg-[#222222]"],
-html[data-theme="light"] [class*="bg-[#242424]"],
-html[data-theme="light"] [class*="bg-[#262626]"],
-html[data-theme="light"] [class*="bg-[#282828]"],
-html[data-theme="light"] [class*="bg-[#2a2a2a]"],
-html[data-theme="light"] [class*="bg-[#333333]"] {
+html[data-theme="light"] :is([class~="bg-neutral-800"], [class^="bg-neutral-800/"], [class*=" bg-neutral-800/"]),
+html[data-theme="light"] [class~="bg-[#222222]"],
+html[data-theme="light"] [class~="bg-[#242424]"],
+html[data-theme="light"] [class~="bg-[#262626]"],
+html[data-theme="light"] [class~="bg-[#282828]"],
+html[data-theme="light"] [class~="bg-[#2a2a2a]"],
+html[data-theme="light"] [class~="bg-[#333333]"] {
   background-color: #e5e5e5 !important;
 }
 
-html[data-theme="light"] [class*="bg-neutral-700"] {
+html[data-theme="light"] :is([class~="bg-neutral-700"], [class^="bg-neutral-700/"], [class*=" bg-neutral-700/"]) {
   background-color: #e5e5e5 !important;
 }
 
 /* Translucent white overlays become faint black washes. */
 html[data-theme="light"] [class~="bg-white/5"],
-html[data-theme="light"] [class*="bg-white/[0.04]"],
-html[data-theme="light"] [class*="bg-white/[0.05]"],
-html[data-theme="light"] [class*="bg-white/[0.06]"],
+html[data-theme="light"] [class~="bg-white/[0.04]"],
+html[data-theme="light"] [class~="bg-white/[0.05]"],
+html[data-theme="light"] [class~="bg-white/[0.06]"],
 html[data-theme="light"] [class~="bg-white/10"],
-html[data-theme="light"] [class*="bg-white/[0.08]"] {
+html[data-theme="light"] [class~="bg-white/[0.08]"] {
   background-color: rgba(0, 0, 0, 0.05) !important;
 }
 
-html[data-theme="light"] [class*="bg-white/[0.12]"],
-html[data-theme="light"] [class*="bg-white/[0.14]"],
+html[data-theme="light"] [class~="bg-white/[0.12]"],
+html[data-theme="light"] [class~="bg-white/[0.14]"],
 html[data-theme="light"] [class~="bg-white/20"] {
   background-color: rgba(0, 0, 0, 0.08) !important;
 }
@@ -151,7 +151,7 @@ html[data-theme="light"] [class*="ring-neutral-"] {
 /* Shared surfaces: panels, menus, dialogs, drawers, toolbars */
 html[data-theme="light"] [data-testid="editor-properties-panel"],
 html[data-theme="light"] [data-testid="editor-layers-panel"],
-html[data-theme="light"] [data-testid="editor-toolbar"],
+html[data-theme="light"] [data-testid="editor-toolbar"] > div,
 html[data-theme="light"] [data-testid="editor-top-bar"],
 html[data-theme="light"] [role="dialog"],
 html[data-theme="light"] [role="menu"],
@@ -229,7 +229,7 @@ html[data-theme="light"] [role="switch"][aria-checked="false"] {
   background-color: rgba(0, 0, 0, 0.18) !important;
 }
 
-html[data-theme="light"] [role="switch"] [class*="bg-neutral-900"] {
+html[data-theme="light"] [role="switch"] :is([class~="bg-neutral-900"], [class^="bg-neutral-900/"], [class*=" bg-neutral-900/"]) {
   background-color: #ffffff !important;
 }
 
@@ -237,3 +237,8 @@ html[data-theme="light"] [role="switch"] [class*="bg-neutral-900"] {
 html[data-theme="light"] .voo-ai-fab {
   color: #171717 !important;
 }
+
+/* Hover-only utility names must not paint dormant layer actions. */
+html[data-theme="light"] [data-testid="editor-layers-panel"] button[class*="hover:bg-"] { background-color: transparent !important; }
+html[data-theme="light"] [data-testid="editor-layers-panel"] button[class*="hover:bg-"]:hover { background-color: #e5e5e5 !important; }
+html[data-theme="light"] [data-testid="editor-toolbar"] > div { border-radius: 9999px; }

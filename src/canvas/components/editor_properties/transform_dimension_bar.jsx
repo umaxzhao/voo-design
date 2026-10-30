@@ -19,7 +19,7 @@ export default function TransformDimensionBar({
   t,
 }) {
   return (
-    <div className="flex h-7 min-w-0 items-center rounded-xl bg-neutral-800 transition-colors hover:bg-neutral-800/80 focus-within:bg-neutral-800 focus-within:ring-1 focus-within:ring-[#a7ffd4]/40">
+    <div data-transform-dimensions className="flex h-7 min-w-0 items-center rounded-xl bg-neutral-800 transition-colors hover:bg-neutral-800/80 focus-within:bg-neutral-800 focus-within:ring-1 focus-within:ring-[#a7ffd4]/40">
       {commonW.mixed ? (
         <MixedField
           label="W"

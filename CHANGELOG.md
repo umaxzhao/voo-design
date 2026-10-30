@@ -2,6 +2,11 @@
 
 ## 1.0.0
 
+- Keep recovery-copy preference changes safe while the editor is mounted; disable future draft scheduling without changing Hook order or losing pending-write ownership.
+- Repair welcome file-menu commands and keyboard opening, contain modal focus, translate profile labels and keep search, command and toolbar menus keyboard-operable.
+- Restore cancelled inspector number edits, let nested menus consume Escape before canvas selection, and keep touch panels and contextual actions reachable inside narrow viewports.
+- Keep alignment actions in the contextual menu; align Frames by their own bounds while retaining child movement and one-step undo. Float advanced layout controls outside the inspector's clipping box.
+
 - Hide legacy document-edge resize controls on unbounded canvas roots so Frames crossing world zero retain their own move, duplicate and resize gestures.
 - Exclude selection handles, hover controls and grids from the detached free-canvas colour readback while retaining full-surface spatial effect context.
 - Keep free-canvas world coordinates stable in every direction; size rendering and pointer surfaces to the viewport without shifting sibling artwork or growing document metadata.

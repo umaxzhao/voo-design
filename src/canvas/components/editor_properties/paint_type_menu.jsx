@@ -1,12 +1,14 @@
 /** Compact Figma-style paint-type switcher for Fill/Stroke rows. */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import PropTypes from "prop-types";
 import { useI18n } from "../../use_i18n.js";
 import { IconBucket, IconGradient, IconImage } from "../../icons.jsx";
+import { moveEditorMenuFocus } from "../editor_menu_navigation.js";
 
 const GRADIENT_TYPES = ["linear", "radial", "angular", "diamond"];
+const useViewportLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export default function PaintTypeMenu({ value, onChange, label, allowImage = true }) {
   const { t } = useI18n();
@@ -29,6 +31,24 @@ export default function PaintTypeMenu({ value, onChange, label, allowImage = tru
   const CurrentIcon =
     value === "image" ? IconImage : value === "solid" ? IconBucket : IconGradient;
 
+  useViewportLayoutEffect(() => {
+    if (!open || !buttonRef.current || !menuRef.current) return;
+    const anchor = buttonRef.current.getBoundingClientRect();
+    const menu = menuRef.current.getBoundingClientRect();
+    const below = anchor.bottom + 6;
+    const top = below + menu.height <= window.innerHeight - 8
+      ? below
+      : anchor.top - menu.height - 6;
+    setPos({
+      left: Math.max(8, Math.min(anchor.left, window.innerWidth - menu.width - 8)),
+      top: Math.max(8, Math.min(top, window.innerHeight - menu.height - 8)),
+    });
+  }, [open]);
+
+  useEffect(() => {
+    if (open && pos) menuRef.current?.querySelector('[aria-checked="true"]')?.focus();
+  }, [open, pos]);
+
   useEffect(() => {
     if (!open) return undefined;
     const onDown = (event) => {
@@ -37,13 +57,18 @@ export default function PaintTypeMenu({ value, onChange, label, allowImage = tru
       setOpen(false);
     };
     const onKey = (event) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key !== "Escape") return;
+      // Close this surface before the canvas shortcut clears its selection.
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      setOpen(false);
+      buttonRef.current?.focus();
     };
     document.addEventListener("pointerdown", onDown, true);
-    document.addEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey, true);
     return () => {
       document.removeEventListener("pointerdown", onDown, true);
-      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("keydown", onKey, true);
     };
   }, [open]);
 
@@ -56,29 +81,25 @@ export default function PaintTypeMenu({ value, onChange, label, allowImage = tru
         title={label}
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => {
-          if (!open) {
-            const rect = buttonRef.current?.getBoundingClientRect();
-            if (rect) {
-              setPos({
-                left: Math.max(8, Math.min(rect.left, window.innerWidth - 168)),
-                top: rect.bottom + 6,
-              });
-            }
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setOpen(true);
           }
-          setOpen((next) => !next);
         }}
+        onClick={() => setOpen((next) => !next)}
         className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
       >
         <CurrentIcon size={13} strokeWidth={1.5} />
       </button>
-      {open && pos
+      {open
         ? createPortal(
             <div
               ref={menuRef}
               role="menu"
-              className="fixed z-[150] w-40 rounded-xl border border-white/10 bg-[#181818] p-1 shadow-panel"
-              style={{ left: pos.left, top: pos.top }}
+              className="fixed z-[150] max-h-[calc(100dvh-16px)] w-40 overflow-y-auto rounded-xl border border-white/10 bg-[#181818] p-1 shadow-panel"
+              style={{ left: pos?.left ?? 8, top: pos?.top ?? 8, visibility: pos ? "visible" : "hidden" }}
+              onKeyDown={(event) => moveEditorMenuFocus(event, menuRef.current)}
             >
               {options.map(({ id, label: optionLabel, Icon }) => (
                 <button
@@ -86,9 +107,11 @@ export default function PaintTypeMenu({ value, onChange, label, allowImage = tru
                   type="button"
                   role="menuitemradio"
                   aria-checked={value === id}
+                  tabIndex={value === id ? 0 : -1}
                   onClick={() => {
                     onChange(id);
                     setOpen(false);
+                    buttonRef.current?.focus();
                   }}
                   className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[10px] font-mono transition-colors ${
                     value === id

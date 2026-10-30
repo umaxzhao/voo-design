@@ -11,21 +11,8 @@ export function useEditorAutosave({
   disabled = true,
   setApplyError,
 }) {
-  // In standalone desktop app mode, automatic background saving to server/draft is disabled.
-  // The document follows Photoshop-style manual save (Ctrl+S / Cmd+S).
-  if (disabled) {
-    return {
-      wait: () => Promise.resolve(),
-      hasUnsaved: () => false,
-      hasChangedDocument: () => false,
-      needsSave: () => false,
-      schedule: () => {},
-      flush: () => Promise.resolve(),
-      resume: () => {},
-      pause: () => {},
-      dispose: () => {},
-    };
-  }
+  // Preferences can change while the editor is mounted. Keep Hook order and
+  // the pending-write queue stable; only enable or disable future scheduling.
   const latest = useRef(null);
   latest.current = {
     enginesRef,
@@ -63,9 +50,10 @@ export function useEditorAutosave({
   }
   const saver = saverRef.current;
   useEffect(() => {
-    saver.resume();
+    if (disabled) saver.dispose();
+    else saver.resume();
     return () => saver.dispose();
-  }, [saver]);
+  }, [disabled, saver]);
   useEffect(() => {
     if (!disabled && saver.needsSave()) saver.schedule();
   });

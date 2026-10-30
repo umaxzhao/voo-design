@@ -1,6 +1,17 @@
 import { isTextEditingTarget, shortcutBlockedByTarget } from '../shared/dom_targets.js';
 import { TOOL } from './editor/tool_ids.js';
 
+/** A pointer-opened menu can leave focus on its trigger outside the portal. */
+function hasVisibleEscapeSurface(event) {
+  if (event.key !== "Escape") return false;
+  const ownerDocument = event.target?.ownerDocument;
+  if (!ownerDocument?.querySelectorAll) return false;
+  // The persistent Layers listbox is document navigation, not a dismissible overlay.
+  return [...ownerDocument.querySelectorAll('[role="menu"], [role="listbox"]:not([data-layers-list]), [role="dialog"]')]
+    .some((surface) => surface.getClientRects().length > 0 &&
+      ownerDocument.defaultView.getComputedStyle(surface).visibility !== "hidden");
+}
+
 export function handleOverlayShortcut(event, context) {
   const { onSaveAndExit, onToggleCommandPalette, onToggleShortcuts, onOpenFindReplace, modalOpen } = context;
   // Require three modifiers so saving and exiting cannot happen by accident.
@@ -61,7 +72,7 @@ export function shortcutTargetContext(event, context) {
   // A capture listener sees events before a dialog's DOM handlers. Pause
   // editor actions explicitly so export controls, dialogs, drawers, and menus retain their native keys.
   if (
-    modalOpen ||
+    modalOpen || hasVisibleEscapeSurface(event) ||
     event.target.closest?.(
       "[data-presentation-overlay], [data-modal-overlay], [data-floating-surface], [role='dialog'], [role='menu'], [data-settings-drawer]",
     )

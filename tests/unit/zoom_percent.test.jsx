@@ -16,6 +16,7 @@ vi.mock("react", async (original) => {
       : actual.useState(initial),
     useRef: (initial) => hooks.active ? { current: initial } : actual.useRef(initial),
     useEffect: (effect, deps) => hooks.active ? hooks.effects.push(effect) : actual.useEffect(effect, deps),
+    useLayoutEffect: (effect, deps) => hooks.active ? hooks.effects.push(effect) : actual.useLayoutEffect(effect, deps),
   };
 });
 

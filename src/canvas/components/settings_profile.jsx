@@ -197,7 +197,7 @@ export default function ProfileSection() {
             <button
               type="submit"
               disabled={authBusy}
-              className="min-h-9 rounded-xl bg-[#a7ffd4] px-3 text-xs font-medium text-neutral-500 hover:bg-[#a7ffd4] disabled:opacity-50"
+              className="min-h-9 rounded-xl bg-[#a7ffd4] px-3 text-xs font-medium text-black hover:bg-[#a7ffd4] disabled:opacity-50"
             >
               {authBusy && !oauthBusyProvider
                 ? t("user.authSubmitting")

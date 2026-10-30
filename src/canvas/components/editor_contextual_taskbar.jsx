@@ -1,4 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { IconCheck, IconClose, IconCopy, IconFlipH, IconFlipV, IconFolder, IconLayers, IconLock, IconMask, IconMore, IconAdjust, IconSwap, IconTrash, IconUnlock, IconUnlink, IconDiamond, IconSparkles, IconEye, IconEyeOff, IconArrowUp, IconCrop } from "../icons.jsx";
 import { OperationIcon } from "./editor_properties/combine_section.jsx";
 import { AlignIcon, DistributeIcon, TidyIcon } from "./alignment_icon.jsx";
@@ -13,6 +14,7 @@ import EditorContextualAiInput, { extractNodeContext, dispatchToAgent } from "./
 import { useI18n } from "../use_i18n.js";
 import { TOOL } from "../editor/editor_constants.js";
 import { EDITOR_PAGE_TOOLBAR_GAP } from "./editor_panel_layout.js";
+import { useMobileQuickbarPortal } from "./editor_hooks/use_mobile_quickbar_portal.js";
 export { extractNodeContext, dispatchToAgent };
 const BUTTON = "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-neutral-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4] disabled:opacity-40";
 function Divider() {
@@ -108,6 +110,7 @@ function EditorContextualTaskBar({
   const pen = [TOOL.PEN, TOOL.CURVATURE_PEN, TOOL.FREE_PEN].includes(tool) || Boolean(engine?.penEdit);
   const selectionTool = tool === TOOL.MARQUEE || tool === TOOL.LASSO;
   const active = Boolean(node || count || hasSelection || transforming || pen || selectionTool);
+  const mobilePortal = useMobileQuickbarPortal(barRef, active);
   const type = count > 1 ? "multi" : node?.isFrame || ["frame", "artboard"].includes(node?.kind) || node?.type === "imageEditor" ? "frame" : node?.kind === "group" ? "group" : node?.kind === "image" ? "image" : node?.kind === "text" ? "text" : "shape";
   const label = key => t(`editor.taskbar.${key}`);
   const edit = patch => {
@@ -157,7 +160,7 @@ function EditorContextualTaskBar({
       observer?.disconnect();
       window.removeEventListener("resize", place);
     };
-  }, [docRect, active, selectionKey, aiInputOpen, type]);
+  }, [docRect, active, selectionKey, aiInputOpen, type, mobilePortal]);
   if (!active) return null;
   const action = (id, icon, onClick, extra = {}) => <Action key={id} id={id} label={label(id)} icon={icon} onClick={onClick} {...extra} />;
   const booleanActions = engine?.canCombineSelection?.() ? <EditorTaskbarActionMenu key={`boolean-${selectionKey}`} id="boolean" label={label("boolean")} icon={<OperationIcon operation="union" />}>{BOOLEAN_OPERATIONS.map(op => <Action key={op} id={`boolean-${op}`} label={t(`editor.props.combine.${op}`)} icon={<OperationIcon operation={op} />} onClick={() => engine?.combineSelected?.(op)} />)}</EditorTaskbarActionMenu> : null;
@@ -180,7 +183,7 @@ function EditorContextualTaskBar({
       if (hasSelection) onRepaint?.(prompt);
       dispatch(prompt, context);
     }} />}</>;
-  return <nav ref={barRef} data-testid="editor-contextual-taskbar" aria-label={label("ariaLabel")} style={docRect ? {
+  const toolbar = <nav ref={barRef} data-testid="editor-contextual-taskbar" aria-label={label("ariaLabel")} style={docRect ? {
     left: position?.left ?? docRect.x + docRect.width / 2,
     top: position?.top ?? docRect.y + docRect.height + EDITOR_PAGE_TOOLBAR_GAP,
     maxWidth: "calc(100vw - 16px)"
@@ -253,12 +256,14 @@ function EditorContextualTaskBar({
             active: Boolean(node?.autoLayout)
           })}
       {type === "group" && action("ungroup", <IconUnlink size={14} strokeWidth={1.5} />, () => engine?.ungroupSelection?.())}
-      {type === "multi" && <>
+      {count > 0 && !["adjustment", "audio", "region"].includes(node?.kind) && <>
         <EditorTaskbarActionMenu key={`align-${selectionKey}`} id="alignment" label={t("editor.props.align")} icon={<AlignIcon type="left" />}>
         {["left", "center", "right", "top", "middle", "bottom"].map(align => <Action key={align} id={`align-${align}`} label={t(`editor.props.alignShapes.${align}`)} icon={<AlignIcon type={align} />} onClick={() => engine?.layoutSelection?.(alignNodes, align)} />)}
         {["horizontal", "vertical"].map(axis => <Action key={axis} id={`distribute-${axis}`} label={t(`editor.props.distribute.${axis}`)} icon={<DistributeIcon axis={axis} />} disabled={count < 3 || !engine?.layoutSelection} onClick={() => engine?.layoutSelection?.(distributeNodes, axis)} />)}
         {["horizontal", "vertical"].map(axis => <Action key={`tidy-${axis}`} id={`tidy-${axis}`} label={t(axis === "horizontal" ? "editor.props.distributeSpacingH" : "editor.props.distributeSpacingV")} icon={<TidyIcon axis={axis} />} disabled={count < 3 || !engine?.layoutSelection} onClick={() => engine?.layoutSelection?.(tidyNodes, axis)} />)}
         </EditorTaskbarActionMenu>
+      </>}
+      {type === "multi" && <>
         {action("group", <IconFolder size={14} strokeWidth={1.5} />, () => engine?.groupSelection?.())}{booleanActions}
       </>}
       <Divider />
@@ -298,5 +303,6 @@ function EditorContextualTaskBar({
         label: label("repaint")
       })}</div>}
   </nav>;
+  return mobilePortal ? createPortal(toolbar, mobilePortal) : toolbar;
 }
 export default memo(EditorContextualTaskBar);

@@ -17,6 +17,7 @@ vi.mock("react", async original => {
     useRef: value => ({
       current: value
     }),
+    useSyncExternalStore: (_subscribe, _snapshot, serverSnapshot) => serverSnapshot(),
     useEffect: () => {},
     useLayoutEffect: () => {}
   };

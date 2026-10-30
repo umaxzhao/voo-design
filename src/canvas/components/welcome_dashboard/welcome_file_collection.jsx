@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { formatRelativeTime, buildSortLabelMap } from "./welcome_helpers.js";
 import { WelcomeFileContextMenu } from "./welcome_file_context_menu.jsx";
+import { WelcomeMenuSurface } from "./welcome_menu_surface.jsx";
 
 /** File toolbar, empty states, grid view, and tabular list view for the welcome dashboard. */
 export function WelcomeFileCollection({
@@ -63,6 +64,8 @@ export function WelcomeFileCollection({
           <div className="relative" ref={menuRef}>
             <button
               type="button"
+              aria-haspopup="menu"
+              aria-expanded={sortMenuOpen}
               onClick={() => setSortMenuOpen(!sortMenuOpen)}
               className="flex items-center gap-1.5 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 px-2.5 py-1.5 text-xs text-neutral-300 transition-colors cursor-pointer"
             >
@@ -71,11 +74,13 @@ export function WelcomeFileCollection({
             </button>
 
             {sortMenuOpen && (
-              <div className="absolute right-0 mt-1 w-36 rounded-2xl bg-neutral-900 border border-white/10 shadow-menu py-1 z-30">
+              <WelcomeMenuSurface label={t("welcome.menu.sortAndView")} onClose={() => setSortMenuOpen(false)}>
                 {["updatedAt", "oldest", "nameAsc", "nameDesc"].map((key) => (
                   <button
                     key={key}
                     type="button"
+                    role="menuitemradio"
+                    aria-checked={sortBy === key}
                     onClick={() => {
                       setSortBy(key);
                       setSortMenuOpen(false);
@@ -87,7 +92,7 @@ export function WelcomeFileCollection({
                     {sortLabelMap[key]}
                   </button>
                 ))}
-              </div>
+              </WelcomeMenuSurface>
             )}
           </div>
 
@@ -175,11 +180,12 @@ export function WelcomeFileCollection({
             return (
               <div
                 key={item.id}
-                onClick={() => (isTrash ? handleRestore(null, item.id) : handleOpenRecent(item))}
+                data-welcome-file-id={item.id}
                 className="group relative flex flex-col rounded-2xl bg-neutral-900/40 hover:bg-neutral-900/90 transition-all cursor-pointer"
               >
+                <button type="button" aria-label={item.name} onClick={() => (isTrash ? handleRestore(null, item.id) : handleOpenRecent(item))} className="absolute inset-0 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-mint" />
                 {/* Thumbnail Preview Area */}
-                <div className="relative aspect-[16/10] bg-neutral-900 rounded-t-2xl flex items-center justify-center p-3">
+                <div className="pointer-events-none relative aspect-[16/10] bg-neutral-900 rounded-t-2xl flex items-center justify-center p-3">
                   {item.preview ? (
                     <img src={item.preview} alt="" className="h-full w-full object-contain" />
                   ) : (
@@ -187,13 +193,13 @@ export function WelcomeFileCollection({
                   )}
 
                   {/* Top action overlay: Star & More menu button */}
-                  <div className="absolute bottom-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <div className="pointer-events-auto absolute bottom-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity z-10">
                     {/* Star button */}
                     {!isTrash && (
                       <button
                         type="button"
                         onClick={(e) => handleToggleStar(e, item.id)}
-                        className={`flex size-6 items-center justify-center rounded-xl backdrop-blur-md transition-colors ${
+                        className={`flex size-12 sm:size-6 items-center justify-center rounded-xl backdrop-blur-md transition-colors ${
                           item.starred
                             ? "bg-black/80 text-neutral-100 !opacity-100"
                             : "bg-black/60 text-neutral-400 hover:text-neutral-100"
@@ -212,7 +218,7 @@ export function WelcomeFileCollection({
                           e.stopPropagation();
                           setActiveMenuId(isMenuOpen ? null : item.id);
                         }}
-                        className="flex size-6 items-center justify-center rounded-xl bg-black/60 text-neutral-300 hover:text-white backdrop-blur-md transition-colors"
+                        className="flex size-12 sm:size-6 items-center justify-center rounded-xl bg-black/60 text-neutral-300 hover:text-white backdrop-blur-md transition-colors"
                         title={t("welcome.actions.more")}
                       >
                         <MoreHorizontal size={13} />
@@ -222,6 +228,7 @@ export function WelcomeFileCollection({
                       {isMenuOpen && (
                         <WelcomeFileContextMenu
                           t={t}
+                          onClose={() => setActiveMenuId(null)}
                           item={item}
                           isTrash={isTrash}
                           folders={folders}
@@ -241,7 +248,7 @@ export function WelcomeFileCollection({
                 </div>
 
                 {/* Card Meta */}
-                <div className="p-3 space-y-1">
+                <div className="pointer-events-none p-3 space-y-1">
                   <div className="flex items-center justify-between gap-1.5">
                     <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-200 group-hover:text-white truncate">
                       <File size={12} className="shrink-0 text-neutral-500" />
@@ -295,6 +302,7 @@ export function WelcomeFileCollection({
             return (
               <div
                 key={item.id}
+                data-welcome-file-id={item.id}
                 onClick={() => (isTrash ? handleRestore(null, item.id) : handleOpenRecent(item))}
                 className="group grid grid-cols-12 gap-3 px-4 py-2.5 items-center hover:bg-neutral-900/60 transition-colors cursor-pointer text-xs"
               >
@@ -303,6 +311,7 @@ export function WelcomeFileCollection({
                   {!isTrash ? (
                     <button
                       type="button"
+                      title={item.starred ? t("welcome.actions.unstar") : t("welcome.actions.star")}
                       onClick={(e) => handleToggleStar(e, item.id)}
                       className={`p-1 rounded-xl transition-colors ${
                         item.starred ? "text-neutral-100" : "text-neutral-500 hover:text-neutral-400"
@@ -316,9 +325,9 @@ export function WelcomeFileCollection({
 
                   <File size={13} className="shrink-0 text-neutral-400" />
 
-                  <span className="truncate font-medium text-neutral-200 group-hover:text-white">
+                  <button type="button" onClick={(event) => { event.stopPropagation(); isTrash ? handleRestore(null, item.id) : handleOpenRecent(item); }} className="truncate text-left font-medium text-neutral-200 group-hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-mint">
                     {item.name || "Untitled.voo"}
-                  </span>
+                  </button>
 
                   {item.isDraft && (
                     <span className="text-[10px] text-neutral-400 bg-neutral-800 px-1.5 py-0.5 rounded-md font-mono">
@@ -341,6 +350,7 @@ export function WelcomeFileCollection({
                 <div className="col-span-1 flex items-center justify-end relative">
                   <button
                     type="button"
+                    title={t("welcome.actions.more")}
                     onClick={(e) => {
                       e.stopPropagation();
                       setActiveMenuId(isMenuOpen ? null : item.id);
@@ -354,6 +364,7 @@ export function WelcomeFileCollection({
                   {isMenuOpen && (
                     <WelcomeFileContextMenu
                       t={t}
+                      onClose={() => setActiveMenuId(null)}
                       item={item}
                       isTrash={isTrash}
                       folders={folders}

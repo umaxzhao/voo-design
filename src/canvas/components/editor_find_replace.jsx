@@ -156,6 +156,13 @@ export default function EditorFindReplace({
       role="search"
       aria-label={labelOr(t, "findReplace.title", "Find and replace")}
       onPointerDown={(event) => event.stopPropagation()}
+      onKeyDown={(event) => {
+        // Every control belongs to this search surface, including its toggles.
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        event.stopPropagation();
+        onClose?.();
+      }}
       className="fixed left-1/2 top-[52px] z-[125] w-[min(520px,calc(100vw-32px))] -translate-x-1/2 rounded-xl border border-white/10 bg-black/95 p-2 font-mono shadow-panel backdrop-blur"
     >
       <div className="flex items-center gap-1.5">

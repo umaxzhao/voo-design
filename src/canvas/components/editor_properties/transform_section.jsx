@@ -147,7 +147,7 @@ export default function TransformSection({
   return (
     <>
       <StaticSection title={t("editor.props.transform")} storageKey="transform" extra={positionAction}>
-        <div className="flex items-start gap-2">
+        <div data-transform-position className="flex items-start gap-2">
           {isRegion ? null : (
             <AnchorPointGrid
               value={anchor}
@@ -156,7 +156,7 @@ export default function TransformSection({
             />
           )}
           <div className="min-w-0 flex-1 space-y-2.5">
-            <div className="grid grid-cols-2 gap-2">
+            <div data-transform-position-fields className="grid grid-cols-2 gap-2">
               {commonX.mixed ? (
                 <MixedField
                   label="X"
@@ -210,8 +210,8 @@ export default function TransformSection({
           </div>
         </div>
         {isRegion ? null : (
-          <div className="flex items-center gap-2">
-            <div className="grid min-w-0 flex-1 grid-cols-2 gap-2">
+          <div data-transform-rotation className="flex items-center gap-2">
+            <div data-transform-angle-fields className="grid min-w-0 flex-1 grid-cols-2 gap-2">
               {commonR.mixed ? (
                 <MixedField
                   label="R"
@@ -248,7 +248,7 @@ export default function TransformSection({
                 />
               )}
             </div>
-            <div className="flex items-center gap-1 shrink-0">
+            <div data-transform-actions className="flex items-center gap-1 shrink-0">
               <EditorTooltip title={t("editor.props.rotate90")} side="top">
                 <button
                   type="button"
