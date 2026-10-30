@@ -46,27 +46,8 @@ await withEditorBrowser(
     assert.match(await welcomeTrigger.innerText(), /Account model/);
 
     await page.evaluate(async () => {
-      const { default: React } = await import(
-        "/node_modules/.vite/deps/react.js"
-      );
-      const {
-        default: { createRoot },
-      } = await import("/node_modules/.vite/deps/react-dom_client.js");
-      const { default: CanvasAgentPanel } = await import(
-        "/src/canvas/components/canvas_agent_panel.jsx"
-      );
-      const host = document.createElement("div");
-      host.id = "agent-catalog-test";
-      Object.assign(host.style, {
-        position: "fixed",
-        inset: "20px 20px 20px auto",
-        width: "380px",
-        zIndex: "500",
-      });
-      document.body.append(host);
-      createRoot(host).render(
-        React.createElement(CanvasAgentPanel, { onClose() {} }),
-      );
+      const { mountAgentCatalogPanel } = await import("/tests/e2e/agent-model-catalog-harness.jsx");
+      mountAgentCatalogPanel();
     });
     const agentTrigger = page.getByTestId("agent-composer-model-pill");
     await agentTrigger.waitFor();

@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Keep narrow inspector numeric fields readable and reachable when mobile layout CSS loads before utility styles during a cold start.
+
 - Reflow text bounds during pointer resizing, preserve font size on four-corner text-box drags and pin the opposite measured corner (or center) after wrapping, rotation, shear and flip. Keep mixed-selection text dimensions current.
 - Isolate browser-fixture Vite caches so parallel release checks cannot invalidate each other with outdated-dependency responses.
 

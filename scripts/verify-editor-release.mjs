@@ -29,7 +29,7 @@ const commands = [
     "editor-page-composition", "raster-loading", "generated-output", "root-contextual-toolbar",
     "frame-child-pointer", "canvas-double-click", "text-box-geometry", "frame-negative-space", "frame-alt-duplicate", "frame-reparent-contracts",
     "frame-surface-camera", "frame-adjustment-space", "gl-spatial-parity",
-    "titlebar-file-actions", "welcome-model-menu", "ui-home-settings", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "editor-resources", "editor-resources-built", "welcome-covers",
+    "titlebar-file-actions", "welcome-model-menu", "welcome-draft-trash", "agent-model-catalog", "ui-home-settings", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "editor-resources", "editor-resources-built", "welcome-covers",
     "image-interaction-boundaries", "image-adjustments-complete", "image-selections-warp", "image-toolbar-complete", "image-agent-complete",
     "image-assets-history", "image-svg-parity", "image-layer-alpha", "image-inspector-core", "image-export-formats", "image-layer-window",
     "image-file-clipboard", "image-generated-workflow",
