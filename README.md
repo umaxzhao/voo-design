@@ -141,7 +141,7 @@ npm run lint:design  # design-token lint
 
 Model weights are not stored in this repository.
 
-- **Desktop packaging**: the Electron build includes locally supplied `public/models` weights when present. Without them it uses the same on-demand download path as the web app. Set `VOO_BUNDLE_MODELS=1` to require a local models directory and fail if it is missing; including a directory alone does not guarantee that every feature's weights are present.
+- **Desktop packaging**: Electron builds bundle verified compact upscale weights from tracked `vendor/client-models` (run `git lfs pull` after checking out source). Optional additional `public/models` weights are included when present; otherwise those features use the same on-demand download path as the web app. Set `VOO_BUNDLE_MODELS=1` for an explicitly bundled build; this alone does not guarantee that every feature's weights are present.
 - **Web builds**: `npm run build` omits weights while retaining other public runtime assets. Models load when a feature is used, from a separately hosted `models/` beside the app first, then `VITE_MODEL_BASE_URL` (default `https://voo.run/editor/models`); valid downloads are cached by the browser. Use `VOO_BUNDLE_MODELS=1 npm run build` only for an explicitly bundled build.
 - The current deployment supplies RMBG background removal and the two LaMa repair weights. The three upscaler weights still require licensed provisioning; they are not included or verified here. See [independent weight deployment](docs/deploy-la.md).
 

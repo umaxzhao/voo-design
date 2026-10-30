@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Fetch client weights with Git LFS in CI, package desktop assets in Electron mode, and publish verified model files before deploying the web entry.
+
 - Preserve absolute root/sibling reorder positions in windowed layer lists and verify scrolled pointer drops with one undo. Time out stalled stock-index requests so the public fallback can complete within the tool deadline; prefer thumbnail-sized insertions.
 
 - Keep large layer panels responsive with windowed rows, shared immutable contract validation and indexed child presence; retain keyboard focus, scrolling, search and rename behavior.

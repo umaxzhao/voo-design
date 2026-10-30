@@ -21,6 +21,8 @@ jobs:
       deploy_enabled: ${{ steps.secrets.outputs.enabled }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -49,6 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - uses: actions/download-artifact@v4
         with:
           name: editor-dist
@@ -72,6 +76,8 @@ jobs:
             BatchMode yes
             StrictHostKeyChecking yes
           EOF
+      - name: Publish verified client model weights
+        run: bash scripts/deploy-editor-models.sh --client
       - name: Deploy editor artifact
         env:
           VOO_DEPLOY_SKIP_BUILD: '1'

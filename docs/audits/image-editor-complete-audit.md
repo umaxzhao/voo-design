@@ -92,7 +92,10 @@ the obsolete bevel implementation were removed. New code modules stay below
 already been refactored. No runtime dependency was added.
 
 Client weights live in tracked `vendor/client-models`, with a pinned provenance manifest and
-the upstream BSD notice. Electron builds include these small weights; native IPC
+the upstream BSD notice. Git LFS must be installed and fetched (`git lfs pull`)
+for source checkouts; release/deployment checkouts request LFS explicitly.
+Desktop CI uses Electron build mode, while web CI publishes model assets before
+the editor entry point. Electron builds include these small weights; native IPC
 reads them locally. Web builds continue to omit weights from ordinary asset
 copying; deployment publishes them independently for first-use browser caching.
 Inference stays on the device. General 2x/4x share one weight rather than keeping
