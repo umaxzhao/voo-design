@@ -32,13 +32,27 @@ export function mountEditorRefactorAudit() {
   const ctx = pixelCanvas.getContext("2d");
   ctx.fillStyle = "#444444"; ctx.fillRect(0, 0, 8, 8);
   const documents = { first: { nodes: [] }, second: { nodes: [] } };
+  const tools = { first: "select", second: "select" };
   const makeEngine = name => ({
-    insertImage: async (file, point) => {
-      record("insert-image", name, file.name, point);
+    prepareImageInsertion: async file => {
       if (api.holdImport) await api.holdImport;
       if (api.failImport) throw new Error("fixture-import-failed");
+      return { file };
     },
-    setTool: value => record("tool", name, value),
+    insertPreparedImages: entries => entries.map(({ prepared, point }) => {
+      record("insert-image", name, prepared.file.name, point);
+      const node = { id: `${name}-${documents[name].nodes.length}`, kind: "image" };
+      documents[name] = { nodes: [...documents[name].nodes, node] };
+      return node;
+    }),
+    getSelectedIds: () => [],
+    selectExactly: () => {},
+    setDoc: document => { documents[name] = document; },
+    getTool: () => tools[name],
+    setTool: value => {
+      tools[name] = value;
+      record("tool", name, value);
+    },
     zoomAt: (...args) => record("zoom", name, ...args),
     panBy: (...args) => record("pan", name, ...args),
     toDocPoint: (x, y) => ({ x: x - 10, y: y - 20 }),

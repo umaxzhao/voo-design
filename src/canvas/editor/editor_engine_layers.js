@@ -285,7 +285,7 @@ export function createEngineLayersController({
     getDoc, setDoc, cache, select, selectExactly,
   });
 
-  const { insertSvg, updateNodeFromSvg, getNodeSvg } = createSvgLayerActions({
+  const { insertSvg, prepareSvgInsertion, insertPreparedSvg, updateNodeFromSvg, getNodeSvg } = createSvgLayerActions({
     getDoc, setDoc, cache, maskTools, selection, select, selectExactly,
   });
 
@@ -298,6 +298,8 @@ export function createEngineLayersController({
     insertPreparedImages,
     appendImageLayers,
     insertSvg,
+    prepareSvgInsertion,
+    insertPreparedSvg,
     updateNodeFromSvg,
     getNodeSvg,
   };

@@ -16,6 +16,14 @@ pan/zoom/drag FPS gate, opening a real document from the workbench first. It rec
 nonzero if any required check remains blocked. It never makes a paid API call.
 Set `VOO_IMAGE_AUDIT_DIR` to an empty evidence directory outside the source tree.
 
+The user's 2026-10-30 request replaces the API-key generation step with Codex
+built-in image generation. For that explicitly scoped run, set
+`VOO_IMAGE_GENERATION_MODE=codex-built-in`. External paid generation is recorded
+as **excluded**, never passed. The default verifier still reports it blocked.
+`tests/fixtures/image-editor/generated-product.png` is the actual generated
+source; its adjacent Markdown records the prompt and generation mode. Release
+checks reuse the saved image and do not generate or spend money themselves.
+
 The isolated browser opens a new document through a private MCP relay. Native
 tests set private user-data, Documents and workspace directories before starting
 Electron. No test edits the user's current document, workspace or OS Trash.
@@ -27,15 +35,19 @@ Electron. No test edits the user's current document, workspace or OS Trash.
 | Workbench, onboarding, Settings | `ui-home-settings`, `ui-global-interaction`, `welcome-covers`, `project-picker` | Real navigation, menus, modal focus, theme/language, cover recovery and document opening. |
 | Assets and templates | `editor-resources`, `editor-resources-built` | Production build, persistent workspace Resources, image/SVG/.voo imports, components, template insertion and undo. |
 | Selection and Frame hierarchy | `frame-child-pointer`, `frame-negative-space`, `frame-alt-duplicate`, `frame-reparent-contracts`, `frame-surface-camera` | Real selection/movement, negative world coordinates, complete subtree duplication, reparenting, clipping and undo. |
+| Contextual toolbar anchoring | `root-contextual-toolbar` | Independent root artwork carries its toolbar during drag, pan and zoom. Nested artwork anchors tools below its outer Frame; moving the child leaves the anchor stable, while moving the Frame carries the toolbar. These scenarios explicitly separate loose artwork from automatic reparenting. |
 | Tool menu choices | `image-toolbar-complete`, `drawing-retouch` | Every option in seven real tool-family menus. Brush/eraser/blur/sharpen/smudge/dodge/burn/sponge, spot/clone/patch, shapes and pen variants assert pixels or created artwork and undo. Selection-only menu checks are not counted as drawing checks. |
 | Pixel selections and deformation | `image-selections-warp` | Rectangle/ellipse/lasso/polygon/magnetic, wand, inversion/clear, perspective/distort/puppet handles, eyedropper, grab-hand camera and crop cancellation. Model prompt focus and Escape do not claim inference. |
 | Local AI tools | `image-network` | Real model download, foreground removal with alpha change and undo, a straight object-selection scribble, AI repair with changed pixels and undo, all three upscale choices with actual ONNX execution; network-offline reloading verifies persistent browser bytes and SHA-256. Interpolation fallback cannot pass an AI inference assertion. |
 | Tonal adjustments, filters and styles | `image-adjustments-complete` | All 43 adjustment kinds, 11 layer styles and 23 ordered live filters change real exported pixels; undo restores the original; scalar/style redo paints again. These are engine outcome tests, not every possible slider value. |
 | Style alpha and text | `image-layer-alpha` | Seven inner styles preserve transparent holes and apply layer opacity once; text bevel renders glyph edges, responds to size, and undoes. |
 | Inspector fields | `image-inspector-core`, `ui-inspector-interaction`, `inspector-controls` | Actual image/rectangle/Frame X/Y/W/H/rotation/shear/radius edits, flips, Enter/blur/Escape, mixed selection, color/text/variants, variables, filter ordering and export controls. |
+| Consecutive edits and clipboard boundaries | `image-interaction-boundaries`, `transform-field-patches.test.js` | Trusted numeric input events compose before the next paint for images, rectangles and Frames. Page sizing, independent multi-selection dimensions, ratio/center anchors, selection-switch commits and debounce history are checked. Nested clipped Frame copies retain references and exact pixels; a real new document with a separate engine pastes the bitmap without foreign parents or clipping references. |
 | Layout and masks | `layout-mask-audit`, `stretch-layout`, `frame-clip-review`, `container-opacity`, `frame-adjustment-space` | Layout reflow, nested constraints, stretch/wrap/hug, clipping, layer opacity, masks and frame-scoped adjustments. |
 | Boolean/vector exports | `boolean-stroke-export`, `boolean-resize`, `svg-frame-clipping`, `image-svg-parity` | Real SVG decoding compared with rendered pixels, including crop, transforms, opacity, adjustments, styles, shadows, strokes, backdrop blur, glass and global adjustment layers. Backdrop readers use a flattened scene; selection copies include only selected artwork. Ordinary vectors stay vector elements. |
 | Images and asynchronous imports | `image-assets-history`, `image-agent-complete`, `generated-output` | In-flight image decoding retains later edits; successful images in one stock batch undo once; partial download failures are returned; generated apply/discard and stale-result ownership. |
+| Files, clipboard and menu reachability | `image-file-clipboard` | Actual PNG/JPEG/WebP/SVG picker input, clipboard PNG and copy/paste/cut history; mixed raster/vector batches undo once; a corrupt batch publishes no nodes; a narrow viewport keeps every context action reachable. |
+| Built-in generated image workflow | `image-generated-workflow` | The retained generated photo passes actual picker import, inspector edits, pointer drag, flip, tonal pixel changes, exact-pixel PNG download and portable snapshot download. A fresh browser with empty storage reopens that archive through the ordinary input fallback and renders identical edited pixels. No external image API is certified. |
 | Downloaded export formats | `image-export-formats` | Actual PNG/JPEG/WebP/SVG pixels, parsed layered PSD and PDF page units/embedded RGB, exported through the real dialog. Command recents retain unique rows and keyboard IDs. |
 | Native storage | `image-electron`, `workspace-trash-recovery.test.js` | Real image-bearing .voo bytes, folder move/rename, in-app Trash listing/read/restore, collision refusal, rollback on metadata failure and no permanent-delete fallback. |
 | Agent/MCP | `image-agent-complete` | A registry guard accounts for all 74 advertised tools. 69 local/document tools use the real relay and assert document results. Five provider/network-dependent tools have explicit external evidence requirements. A successful basic call does not certify every argument combination. |
@@ -49,6 +61,12 @@ is separate. `AI_SELECT` remains an object-selection alias, not an extra drawing
 engine. The enumerated tool IDs and real menu submodes are different inventories.
 
 ## Defects repaired by this audit
+
+- Consecutive W/H/X/Y confirmations used the inspector's previous paint snapshot
+  and could overwrite earlier edits. Geometry now reads the engine's current
+  node; position changes send only the edited axis, and unlocked dimension
+  changes preserve each selected object's unedited size. Pure field geometry
+  is isolated from the React panel and covers rotated anchors and text sizing.
 
 - Large development documents repeatedly validated the same panel model in every
   row and scanned rows quadratically. Scrolled drag slots retain their full root/sibling positions. Immutable successful contracts are shared,
@@ -104,16 +122,16 @@ independent delivery and local-cache paths.
 
 ## Explicit remaining evidence requirements
 
-- The requested Gen Image/OpenAI generation needs `OPENAI_API_KEY` in the process
-  environment. Never read a secret file or paste a key into a report. Provider
-  edit/vector requests require their actual configured provider and are not
-  certified by mocked contract tests.
+- Codex built-in generation and its local editing workflow are verified using
+  the retained photo. VOO's external paid generation/edit/vector endpoints still
+  require their actual configured service; the built-in result does not certify
+  those endpoints. Never read a secret file or paste a key into a report.
 - Public stock search is live-tested. Openverse returning zero results triggers
   a real Wikimedia Commons search and image download, with explicit source,
   licenses, attribution and warnings. If both sources fail, that remains blocked.
   The deterministic stock batch test verifies local insertion/history only.
-- Browser-extension image generation requires its signed-in extension; it is not
-  substituted for the user's requested API workflow.
+- Browser-extension image generation requires its signed-in extension and is
+  separate from the Codex built-in generation used for this acceptance run.
 - Signed installer behavior, native OS file chooser interactions, physical mobile
   devices and cross-OS hardware are not certified by a development Electron run.
 - Four legacy collaboration/workflow compatibility tests remain skipped in the

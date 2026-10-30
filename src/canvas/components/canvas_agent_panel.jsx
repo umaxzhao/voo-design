@@ -31,10 +31,10 @@ import {
 import { createUnmountGuard } from "./agent-panel/unmount_guard.js";
 import {
   CLI_MODEL_GROUPS,
-  availableModelGroups,
   getModelDisplayLabel,
   getModelDisplayParts,
 } from "./agent-panel/model_catalog.js";
+import { useModelGroups } from "./agent-panel/use_model_groups.js";
 export { CLI_MODEL_GROUPS, getModelDisplayLabel, getModelDisplayParts };
 /** Chat panel beside the editor frame: text in, canvas changes out, saved history. */
 export default function CanvasAgentPanel({ onClose }) {
@@ -358,7 +358,7 @@ export default function CanvasAgentPanel({ onClose }) {
   const isEmpty = transcript.length === 0 && !busy;
   const activeTitle = sessions.find((session) => session.id === activeId)?.title;
   const currentModel = selectedModel || getSetting(AGENT_SETTING.MODEL);
-  const modelGroups = availableModelGroups();
+  const modelGroups = useModelGroups();
   return <AgentPanelView {...{
     t, activeTitle, historyOpen, setHistoryOpen, setModelMenuOpen,
     startNewSession, onClose, modelMenuOpen, modelGroups, currentModel,

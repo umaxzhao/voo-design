@@ -2,12 +2,11 @@ import { HTML_IMPORT_ACCEPT, SCREENSHOT_ACCEPT, importWelcomeHtml, recreateWelco
 import React, { useEffect, useState, useRef } from "react";
 import { Search, Trash2, X } from "lucide-react";
 import { useDesignStore } from "../../store/design_store.js";
-import { openVooProject } from "../store/open-project.js";
 import { useI18n } from "../use_i18n.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import { DEFAULT_AGENT_MODEL } from "../../shared/agent-defaults.js";
 import { AGENT_SETTING } from "../agent/agent-settings.js";
-import { availableModelGroups } from "./agent-panel/model_catalog.js";
+import { useModelGroups } from "./agent-panel/use_model_groups.js";
 import {
   DEFAULT_DESIGN_SYSTEM_ID,
   DEFAULT_STYLE_ID,
@@ -44,6 +43,7 @@ import {
 
 export default function WelcomeDashboard() {
   const { t, locale } = useI18n();
+  const modelGroups = useModelGroups();
 
   // Navigation tabs: "recents" | "drafts" | "starred" | "trash" | "design-systems" | "shortcuts"
   const [activeTab, setActiveTab] = useState("recents");
@@ -318,14 +318,12 @@ export default function WelcomeDashboard() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".voo,.psd,.fig,.pen,.svg,application/json"
+        accept=".voo,.zip,.psd,.fig,.pen,.svg,application/json"
         className="hidden"
         onChange={async (e) => {
           const file = e.target.files?.[0];
-          if (file) {
-            const res = await openVooProject({ store: useDesignStore.getState(), fileOrPath: file });
-            if (res?.success) setWelcomeOpen(false);
-          }
+          e.target.value = "";
+          if (file) await handleOpenLocal(file);
         }}
       />
 
@@ -414,7 +412,7 @@ export default function WelcomeDashboard() {
               onSelectPill={handleSelectPill}
               promptText={promptText}
               setPromptText={setPromptText}
-              modelGroups={availableModelGroups()}
+              modelGroups={modelGroups}
               selectedModel={modelId}
               onSelectModel={handleSelectModel}
               styleId={styleId}

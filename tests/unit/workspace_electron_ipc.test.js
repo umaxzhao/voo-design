@@ -333,6 +333,17 @@ describe("Workspace Electron IPC & Filesystem Backend", () => {
   });
 
   describe("7. Electron Main & Preload Bridge Contracts", () => {
+    it("deletes and restores project folders through the registered IPC handlers", async () => {
+      const handlers = new Map();
+      workspaceManager.registerWorkspaceIpc({ handle: (channel, handler) => handlers.set(channel, handler) });
+      const folder = path.join(defaultWorkspaceDir, "Project");
+      fs.mkdirSync(folder);
+      fs.writeFileSync(path.join(folder, "Design.voo"), "keep");
+      expect((await handlers.get("workspace:deleteFolder")(null, { name: "Project" })).ok).toBe(true);
+      expect(fs.existsSync(folder)).toBe(false);
+      expect((await handlers.get("workspace:restoreFromTrash")(null, folder)).ok).toBe(true);
+      expect(fs.readFileSync(path.join(folder, "Design.voo"), "utf8")).toBe("keep");
+    });
     it("E23: registers all required workspace:* IPC channels", () => {
       const registeredChannels = new Set();
       const mockIpcMain = {

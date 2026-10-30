@@ -14,13 +14,13 @@ describe("recoverable desktop workspace trash", () => {
     vi.restoreAllMocks();
     fs.rmSync(sandbox, {
       recursive: true,
-      force: true
+      force: true,
     });
   });
   const write = (name, content = name) => {
     const file = path.join(root, name);
     fs.mkdirSync(path.dirname(file), {
-      recursive: true
+      recursive: true,
     });
     fs.writeFileSync(file, content);
     return file;
@@ -34,7 +34,7 @@ describe("recoverable desktop workspace trash", () => {
       id: file,
       name: "Artwork.voo",
       folder: "Project",
-      trashed: true
+      trashed: true,
     });
     expect(fs.existsSync(file)).toBe(false);
     expect((await trash.restoreFromTrash(file, root)).ok).toBe(true);
@@ -58,7 +58,7 @@ describe("recoverable desktop workspace trash", () => {
     write("Artwork.voo", "new");
     expect(await trash.restoreFromTrash(file, root)).toMatchObject({
       ok: false,
-      error: "already_exists"
+      error: "already_exists",
     });
     expect(fs.readFileSync(file, "utf8")).toBe("new");
     expect(trash.listTrash(root)).toHaveLength(1);
@@ -67,7 +67,8 @@ describe("recoverable desktop workspace trash", () => {
     const file = write("Artwork.voo", "keep");
     const rename = fs.renameSync;
     vi.spyOn(fs, "renameSync").mockImplementation((source, destination) => {
-      if (destination.endsWith(".index.json")) throw new Error("simulated disk failure");
+      if (destination.endsWith(".index.json"))
+        throw new Error("simulated disk failure");
       return rename(source, destination);
     });
     expect((await trash.moveToTrash(file, root)).ok).toBe(false);
@@ -99,12 +100,77 @@ describe("recoverable desktop workspace trash", () => {
     expect((await trash.deletePermanently(first, root)).ok).toBe(true);
     expect(await trash.emptyTrash(root)).toEqual({
       ok: true,
-      deletedCount: 1
+      deletedCount: 1,
     });
     expect(fs.readdirSync(path.join(root, ".trash"))).toEqual([]);
     const outside = path.join(sandbox, "Outside.voo");
     fs.writeFileSync(outside, "keep");
     expect((await trash.deletePermanently(outside, root)).ok).toBe(false);
     expect(fs.readFileSync(outside, "utf8")).toBe("keep");
+  });
+  it("moves and restores a whole project with nested assets and empty directories", async () => {
+    const file = write("Project/Nested/Artwork.voo", "design");
+    write("Project/reference.txt", "reference");
+    fs.mkdirSync(path.join(root, "Project/Empty"));
+    const folder = path.join(root, "Project");
+    expect(
+      (await trash.moveToTrash(folder, root, { directory: true })).ok,
+    ).toBe(true);
+    expect(fs.existsSync(folder)).toBe(false);
+    expect(trash.listTrash(root)).toMatchObject([
+      { id: folder, name: "Project", isFolder: true },
+    ]);
+    expect((await trash.restoreFromTrash(folder, root)).ok).toBe(true);
+    expect(fs.readFileSync(file, "utf8")).toBe("design");
+    expect(fs.readFileSync(path.join(folder, "reference.txt"), "utf8")).toBe(
+      "reference",
+    );
+    expect(fs.statSync(path.join(folder, "Empty")).isDirectory()).toBe(true);
+  });
+  it("handles empty folders and only permanently removes folders already in trash", async () => {
+    const folder = path.join(root, "Empty");
+    fs.mkdirSync(folder);
+    expect((await trash.deletePermanently(folder, root)).ok).toBe(false);
+    expect(
+      (await trash.moveToTrash(folder, root, { directory: true })).ok,
+    ).toBe(true);
+    expect(await trash.emptyTrash(root)).toEqual({ ok: true, deletedCount: 1 });
+    expect(trash.listTrash(root)).toEqual([]);
+  });
+  it("does not overwrite a recreated project and leaves the trash recoverable", async () => {
+    const folder = path.join(root, "Project");
+    write("Project/Original.voo");
+    await trash.moveToTrash(folder, root, { directory: true });
+    write("Project/New.voo");
+    expect(await trash.restoreFromTrash(folder, root)).toMatchObject({
+      ok: false,
+      error: "already_exists",
+    });
+    expect(trash.listTrash(root)).toHaveLength(1);
+    expect(fs.existsSync(path.join(folder, "New.voo"))).toBe(true);
+  });
+  it("rejects linked project folders and rolls back directory moves on index errors", async () => {
+    const outside = path.join(sandbox, "external");
+    fs.mkdirSync(outside);
+    fs.symlinkSync(outside, path.join(root, "Linked"));
+    expect(
+      (
+        await trash.moveToTrash(path.join(root, "Linked"), root, {
+          directory: true,
+        })
+      ).ok,
+    ).toBe(false);
+    const file = write("Project/Keep.voo", "keep");
+    const rename = fs.renameSync;
+    vi.spyOn(fs, "renameSync").mockImplementation((source, destination) => {
+      if (destination.endsWith(".index.json"))
+        throw new Error("index_write_failed");
+      return rename(source, destination);
+    });
+    expect(
+      (await trash.moveToTrash(path.dirname(file), root, { directory: true }))
+        .ok,
+    ).toBe(false);
+    expect(fs.readFileSync(file, "utf8")).toBe("keep");
   });
 });

@@ -5,7 +5,7 @@ import { useContextualTaskbarRect } from "./editor_hooks/use_contextual_taskbar_
 /**
  * Wires EditorPage's selection and AI handlers into the contextual task bar.
  * Bounded free pages use a bottom row; root canvases float at the active
- * selection, and full mode supplies its viewport docRect. Each mode shares
+ * selection's outer frame, and full mode supplies its viewport docRect. Each mode shares
  * this wiring and mounts one bar, keeping the action handlers in one place.
  */
 export default function EditorContextualTaskBarSlot({

@@ -3,7 +3,8 @@ import {
   editorMediaFileKind,
   importEditorMediaFile,
 } from "../editor_media_import.js";
-import { importPickedEditorFile } from "../editor_import_files.js";
+import { importPickedEditorFile, isEditorImageFile } from "../editor_import_files.js";
+import { importEditorImageBatch } from "../editor_image_batch.js";
 import { TOOL } from "../../editor/editor_constants.js";
 import { useDesignStore } from "../../../store/design_store.js";
 
@@ -25,7 +26,12 @@ export function useEditorMediaImport({
       if (!files?.length || !activeEngine || mediaImportBusy) return;
       setMediaImportBusy(true);
       setMediaImportError(null);
+      const previousTool = activeEngine.getTool();
       void (async () => {
+        const imageBatch = files.every(
+          (file) => isEditorImageFile(file) && !/\.psd$/i.test(file.name ?? ""),
+        );
+        if (imageBatch) return importEditorImageBatch(activeEngine, files, point);
         for (const file of files) {
           await importPickedEditorFile(activeEngine, file, {
             point,
@@ -37,8 +43,9 @@ export function useEditorMediaImport({
         }
       })()
         .then(() => {
-          activeEngine.setTool(TOOL.SELECT);
-          // Sound has no box on the stage, so the timeline is the only place
+          if (activeEngine.getTool() === previousTool) {
+            activeEngine.setTool(TOOL.SELECT);
+          }
         })
         .catch((error) => {
           console.error("[Design Editor] Media import failed", error);

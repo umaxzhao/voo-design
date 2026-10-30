@@ -58,6 +58,21 @@ await withEditorBrowser(async ({ page }) => {
     { kind: "insert-image", values: ["second", "captured.png", null] },
     { kind: "tool", values: ["second", "select"] },
   ]);
+  await page.evaluate(() => {
+    const a = window.__refactor;
+    a.holdImport = new Promise(resolve => { a.releaseImport = resolve; });
+    a.current.media.importMediaFiles([new File(["pixels"], "tool-change.png", { type: "image/png" })]);
+  });
+  await page.waitForFunction(() => window.__refactor.current.media.mediaImportBusy);
+  await page.evaluate(() => {
+    const a = window.__refactor;
+    a.engines.first.setTool("brush");
+    a.releaseImport();
+    a.holdImport = null;
+  });
+  await page.waitForFunction(() => !window.__refactor.current.media.mediaImportBusy);
+  assert.equal(await page.evaluate(() => window.__refactor.engines.first.getTool()), "brush");
+  checks.push("completed async image imports preserve tools chosen while decoding");
   await page.evaluate(() => window.__refactor.current.media.importMediaFiles([new File(["doc"], "captured.psd")]));
   await page.waitForFunction(() => window.__refactor.calls.some(call => call.kind === "open-document"));
   assert.equal(await page.evaluate(() => window.__refactor.calls.find(call => call.kind === "open-document").values[0]), "captured.psd");

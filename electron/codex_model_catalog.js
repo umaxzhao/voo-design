@@ -19,6 +19,8 @@ function modelCapabilities(value) {
     throw capabilitiesUnavailable();
   return {
     id,
+    label: value.displayName || id,
+    hidden: value.hidden === true,
     supportedReasoningEfforts: [
       ...new Set(efforts.map((effort) => effort.reasoningEffort)),
     ],
@@ -29,6 +31,7 @@ function modelCapabilities(value) {
 /** Native capabilities are cached per connection, including concurrent callers. */
 export function createCodexModelCatalog(connection) {
   let cached = null;
+  let expiresAt = 0;
   async function load() {
     const models = new Map();
     const cursors = new Set();
@@ -55,13 +58,19 @@ export function createCodexModelCatalog(connection) {
     return [...models.values()];
   }
   return () => {
-    if (!cached) {
-      cached = load().catch(() => {
-        // Metadata failures must be retryable while the authenticated native
-        // connection remains healthy; never permanently cache a rejection.
-        cached = null;
-        throw capabilitiesUnavailable();
-      });
+    if (!cached || Date.now() >= expiresAt) {
+      expiresAt = Infinity;
+      cached = load()
+        .catch(() => {
+          // Metadata failures must be retryable while the authenticated native
+          // connection remains healthy; never permanently cache a rejection.
+          cached = null;
+          throw capabilitiesUnavailable();
+        })
+        .then((models) => {
+          expiresAt = Date.now() + 5 * 60 * 1000;
+          return models;
+        });
     }
     return cached;
   };

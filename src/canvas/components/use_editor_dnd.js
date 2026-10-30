@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { isEditorImageFile } from "./editor_import_files.js";
 import { TOOL } from "../editor/editor_constants.js";
+import { importEditorImageBatch } from "./editor_image_batch.js";
 
 const WEB_IMAGE_TYPES = [
   "image/png",
@@ -130,7 +131,6 @@ export function extractPastedImageSource(clipboardData) {
 export function useEditorDnd({
   nodeId,
   engine,
-  insertImageFile,
   onInsertError,
   onOpenVoo,
 }) {
@@ -268,65 +268,19 @@ export function useEditorDnd({
       const previousTool = engine?.getTool?.();
       const point = engine?.toDocPoint(event.clientX, event.clientY);
 
-      // 1. Local files (support vector SVG as well as images)
-      const rawFiles = Array.from(event.dataTransfer.files ?? []).filter(
-        isEditorImageFile,
-      );
-      if (rawFiles.length > 0) {
-        rawFiles.forEach((file) => {
-          void (async () => {
-            if (isSvgFile(file)) {
-              try {
-                const text = await file.text();
-                await engine?.insertSvg(text, point);
-                selectAfterInsertIfUnchanged(engine, previousTool);
-                return;
-              } catch (err) {
-                console.warn("Failed to insert dropped SVG vector:", err);
-              }
-            }
-            await insertImageFile(file, point);
-            selectAfterInsertIfUnchanged(engine, previousTool);
-          })().catch((err) => {
-            console.warn("Failed to insert dropped file:", err);
+      // Some hosts expose only DataTransfer items. Decode the complete batch
+      // before publishing one synchronous, undoable document change.
+      const rawFiles = allFiles.filter(isEditorImageFile);
+      const imageFiles = rawFiles.length ? rawFiles : Array.from(event.dataTransfer.items ?? [])
+        .filter(item => item.kind === "file" && item.type.startsWith("image/"))
+        .map(item => item.getAsFile()).filter(Boolean);
+      if (imageFiles.length) {
+        void importEditorImageBatch(engine, imageFiles, point)
+          .then(() => selectAfterInsertIfUnchanged(engine, previousTool))
+          .catch(error => {
+            console.warn("Failed to insert dropped images:", error);
             onInsertError?.();
           });
-        });
-        return;
-      }
-
-      // 2. Dragged items
-      const rawItems = Array.from(event.dataTransfer.items ?? []).filter(
-        (item) =>
-          item.kind === "file" &&
-          (item.type.startsWith("image/") || item.type === "image/svg+xml"),
-      );
-      if (rawItems.length > 0) {
-        rawItems.forEach((item) => {
-          const file = item.getAsFile();
-          if (file) {
-            void (async () => {
-              if (isSvgFile(file)) {
-                try {
-                  const text = await file.text();
-                  await engine?.insertSvg(text, point);
-                  selectAfterInsertIfUnchanged(engine, previousTool);
-                  return;
-                } catch (err) {
-                  console.warn(
-                    "Failed to insert dropped SVG item as vector:",
-                    err,
-                  );
-                }
-              }
-              await insertImageFile(file, point);
-              selectAfterInsertIfUnchanged(engine, previousTool);
-            })().catch((err) => {
-              console.warn("Failed to insert dropped image item:", err);
-              onInsertError?.();
-            });
-          }
-        });
         return;
       }
 

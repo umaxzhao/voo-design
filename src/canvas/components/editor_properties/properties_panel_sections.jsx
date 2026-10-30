@@ -176,6 +176,7 @@ export default function PropertiesPanelSections({
       ) : has("transform") && object.kind !== "adjustment" && object.kind !== "audio" ? (
         <TransformSection
           object={object}
+          engine={engine}
           showRadius={has("radius")}
           showDimensions={!hasLayoutGroup}
           docSize={docSize}

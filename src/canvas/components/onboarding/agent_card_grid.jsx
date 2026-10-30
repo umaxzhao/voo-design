@@ -6,6 +6,8 @@ import { AGENT_DEFAULT_MODELS } from "./onboarding_agent_model.js";
 import { AGENT_STATUS, AGENT_STATUS_KEY, cliAgentStatus, customAgentStatus } from "./agent_status_model.js";
 
 const FOCUS_CLASS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40";
+// Both provider groups share four desktop columns; overflow wraps naturally.
+const CARD_GRID_CLASS = "grid grid-cols-2 gap-2 sm:grid-cols-4";
 /** Cards keep the dialog's established order; platforms not listed follow the catalog. */
 const CARD_ORDER = ["codex", "claude", "antigravity", "deepseek-harness"];
 
@@ -91,7 +93,7 @@ export default function AgentCardGrid({
   return (
     <div data-testid={testIds.grid ?? DEFAULT_TEST_IDS.grid} className="flex flex-col gap-3">
       {agents.length > 0 ? (
-        <div role="group" aria-label={label} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div role="group" aria-label={label} className={CARD_GRID_CLASS}>
           {agents.map((agent) => {
             const status = cliAgentStatus(agent, detection);
             return (
@@ -113,7 +115,7 @@ export default function AgentCardGrid({
       {hasApiProviders && (
         <div role="group" aria-label={apiLabel} className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-neutral-400">{apiLabel}</span>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className={CARD_GRID_CLASS}>
             {cloudProviders.map((provider) => {
               const status = customAgentStatus(provider.configured);
               return (

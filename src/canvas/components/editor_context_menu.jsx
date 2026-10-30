@@ -1,5 +1,7 @@
 import PropTypes from "prop-types";
-import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
+import { useContextMenuBounds } from "./use_context_menu_bounds.js";
 import { useI18n } from "../use_i18n.js";
 import { executeEditorCommand } from "../editor/command_table.js";
 import { generateCode } from "../codegen/index.js";
@@ -52,7 +54,7 @@ export default function EditorContextMenu({
   const is3D =
     engine?.getCanvasType?.() === "3d" ||
     engine?.getDocument?.()?.canvasType === "3d";
-  const ref = useRef(null);
+  const ref = useContextMenuBounds(x, y);
   const [codeDialogOpen, setCodeDialogOpen] = useState(false);
   const activeTargetNodeId =
     targetNodeId ?? engine?.sourceWorkflowNodeId ?? null;
@@ -178,10 +180,10 @@ export default function EditorContextMenu({
     selectedNode?.kind === "text" &&
     Boolean(selectedNode?.textPath);
 
-  return (
+  return createPortal(
     <div
       ref={ref}
-      className={`fixed z-50 rounded-2xl bg-neutral-900 p-1 shadow-menu ring-1 ring-white/10 font-mono ${codeDialogOpen ? "hidden" : ""}`}
+      className={`fixed z-50 overflow-y-auto overscroll-contain rounded-2xl bg-neutral-900 p-1 shadow-menu ring-1 ring-white/10 font-mono ${codeDialogOpen ? "hidden" : ""}`}
       style={{ left: x, top: y }}
       role="menu"
       aria-label={t("editor.menu.canvasMenu")}
@@ -740,7 +742,8 @@ export default function EditorContextMenu({
         />
         </Suspense>
       ) : null}
-    </div>
+    </div>,
+    document.body,
   );
 }
 

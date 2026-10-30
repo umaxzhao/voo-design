@@ -118,6 +118,15 @@ describe("welcome prompt composer (Pen app parity)", () => {
     expect(html).toContain('aria-label="welcome.prompt.addAttachment"');
     expect(html).toContain('aria-label="welcome.actions.createNowTitle"');
   });
+  it("keeps one candidate selector in the advanced panel and leaves the animated rim to shared CSS", () => {
+    const closed = render();
+    const open = render({ initialAdvancedOpen: true });
+    expect(closed).not.toContain('aria-label="welcome.prompt.candidates"');
+    expect(open.match(/aria-label="welcome.prompt.candidates"/g)).toHaveLength(1);
+    const form = /<form[^>]*class="([^"]+)"/.exec(closed)?.[1];
+    expect(form).toContain("prompt-composer");
+    expect(form).not.toMatch(/\bbg-|\bborder(?:-|\s)/);
+  });
 
   it("renders attachment chips with a remove action", () => {
     const html = render({

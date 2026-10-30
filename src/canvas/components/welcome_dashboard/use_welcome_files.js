@@ -82,6 +82,8 @@ export function useWelcomeFiles({ activeTab, searchQuery, sortBy, activeFolder }
         }
       } else if (activeTab === "trash") {
         files = await workspaceStorage.scanFiles({ ...options, trashOnly: true });
+        const seen = new Set(files.flatMap((file) => [file.id, file.path].filter(Boolean)));
+        files.push(...getTrashFiles(options).filter((file) => !seen.has(file.id) && !seen.has(file.path)));
       } else if (activeTab === "drafts") {
         const all = await workspaceStorage.scanFiles(options);
         files = all.filter((f) => f.isDraft);

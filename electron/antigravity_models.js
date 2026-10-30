@@ -39,3 +39,16 @@ export async function discoverAntigravityModels(binPath, run = execFileAsync) {
   });
   return parseAntigravityModels(stdout);
 }
+
+/** Model lookup failure must not mark a working CLI as unauthenticated. */
+export async function antigravityModelStatus(
+  binPath,
+  discover = discoverAntigravityModels,
+) {
+  try {
+    return { models: await discover(binPath) };
+  } catch {
+    // Do not forward stderr: provider diagnostics may contain credentials.
+    return { modelsError: "cli.modelCapabilitiesUnavailable" };
+  }
+}

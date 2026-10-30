@@ -30,13 +30,13 @@ const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8")
 
 describe("title bar actions", () => {
   it.each([
-    [true, 3, ["titlebar.openTitle", "welcome.header.new", "titlebar.settingsTitle"], ["voo:file-open", "voo:welcome-new"]],
+    [true, 3, ["titlebar.openTitle", "welcome.header.new", "titlebar.settingsTitle"], ["voo:welcome-menu-action", "voo:welcome-new"]],
     [false, 3, ["titlebar.openTitle", "titlebar.snapshotTitle", "titlebar.prefsTitle"], ["voo:file-open", "voo:file-export-snapshot"]],
   ])("offers open plus new/export and settings on the right (welcome=%s)", (welcomeOpen, count, titles, events) => {
     state.welcomeOpen = welcomeOpen;
     const dispatchEvent = vi.fn();
     vi.stubGlobal("window", { dispatchEvent });
-    vi.stubGlobal("CustomEvent", class { constructor(type) { this.type = type; } });
+    vi.stubGlobal("CustomEvent", class { constructor(type, options) { this.type = type; this.detail = options?.detail; } });
     try {
       const tree = AppTitleBar();
       const header = React.Children.toArray(tree.props.children)[0];
@@ -55,6 +55,7 @@ describe("title bar actions", () => {
         "titlebar.open", welcomeOpen ? "welcome.header.new" : "editor.export",
       ]);
       actions[0].props.onClick();
+      if (welcomeOpen) expect(dispatchEvent.mock.calls[0][0].detail).toEqual({ action: "open-file" });
       actions[1].props.onClick();
       expect(dispatchEvent.mock.calls.map(([event]) => event.type)).toEqual(events);
       expect(actions[2].props.onClick.toString()).toContain("setSettingsOpen(true)");

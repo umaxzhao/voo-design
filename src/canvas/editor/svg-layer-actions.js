@@ -13,11 +13,10 @@ export function createSvgLayerActions({
   select,
   selectExactly
 }) {
-  async function insertSvg(svgString, point) {
+  async function prepareSvgInsertion(svgString) {
     const {
       parseSvgStringToNodes
     } = await import("./editor_svg_import.js");
-    const doc = getDoc();
     const {
       nodes: parsedNodes,
       bounds
@@ -25,6 +24,16 @@ export function createSvgLayerActions({
     if (!parsedNodes || parsedNodes.length === 0) {
       throw new Error("No renderable shapes found in SVG");
     }
+    return {
+      nodes: parsedNodes,
+      bounds
+    };
+  }
+  function insertPreparedSvg({
+    nodes: parsedNodes,
+    bounds
+  }, point) {
+    const doc = getDoc();
     const page = doc;
     const targetX = point ? point.x : (page.width || 800) / 2;
     const targetY = point ? point.y : (page.height || 600) / 2;
@@ -58,6 +67,9 @@ export function createSvgLayerActions({
       select(positionedNodes[0].id);
     }
     return positionedNodes;
+  }
+  async function insertSvg(svgString, point) {
+    return insertPreparedSvg(await prepareSvgInsertion(svgString), point);
   }
   async function updateNodeFromSvg(nodeId, svgString) {
     const doc = getDoc();
@@ -119,6 +131,8 @@ export function createSvgLayerActions({
   }
   return {
     insertSvg,
+    prepareSvgInsertion,
+    insertPreparedSvg,
     updateNodeFromSvg,
     getNodeSvg
   };
