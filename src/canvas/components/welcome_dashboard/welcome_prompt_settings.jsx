@@ -2,12 +2,15 @@ import React from "react";
 import PropTypes from "prop-types";
 import FlatSelect from "../flat_select.jsx";
 import { DEFAULT_STYLE_ID, DEFAULT_DESIGN_SYSTEM_ID } from "./generation-options.js";
+import WelcomePromptTypes from "./welcome_prompt_types.jsx";
 
 /** One secondary home for every advanced generation option. */
 export default function WelcomePromptSettings({
   t,
   panelRef,
   panelPos,
+  activePill,
+  onSelectPill,
   styleId,
   styleOptions,
   onSelectStyle,
@@ -25,6 +28,10 @@ export default function WelcomePromptSettings({
     top: 0
   }}>
           <div className="welcome-composer-settings-grid space-y-2">
+            <ComposerField label={t("welcome.prompt.generationTypeLabel")}>
+              <WelcomePromptTypes t={t} activePill={activePill} onSelectPill={onSelectPill} />
+            </ComposerField>
+
             <ComposerField label={t("welcome.prompt.styleLabel")}>
               <FlatSelect value={styleId ?? DEFAULT_STYLE_ID} onChange={value => onSelectStyle?.(value)} disabled={designSystemId !== DEFAULT_DESIGN_SYSTEM_ID} label={t("welcome.prompt.styleLabel")} options={[{
           value: DEFAULT_STYLE_ID,
@@ -82,6 +89,8 @@ WelcomePromptSettings.propTypes = {
   t: PropTypes.func.isRequired,
   panelRef: PropTypes.object.isRequired,
   panelPos: PropTypes.object,
+  activePill: PropTypes.string,
+  onSelectPill: PropTypes.func,
   styleId: PropTypes.string,
   styleOptions: PropTypes.array,
   onSelectStyle: PropTypes.func,

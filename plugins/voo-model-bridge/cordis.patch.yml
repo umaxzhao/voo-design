@@ -1,0 +1,9 @@
+# voo-model-bridge bundle patch.
+#
+# One Host row starts a loopback OpenAI-compatible endpoint on 127.0.0.1:4399
+# that serves the profile's current Harness model to the VOO editor.
+- insert:
+    - id: voo-model-bridge
+      name: voo-model-bridge
+      config:
+        port: 4399

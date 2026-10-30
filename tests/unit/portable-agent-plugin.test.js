@@ -2,7 +2,7 @@ import { afterEach, expect, it } from "vitest";
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { buildPortableConnector } from "../../scripts/build-agent-plugin.mjs";
@@ -113,8 +113,9 @@ it("builds the portable folder as an installable DeepSeek Harness bundle", async
 
   // The model bridge ships in the same folder and is wired by a patch-relative row.
   const bridge = await readFile(path.join(destination, "lib/model-bridge.js"), "utf8");
-  expect(bridge).toContain('export const name = "voo-model-bridge"');
-  expect(bridge).toContain("export function apply(ctx, config");
+  const runtime = await import(pathToFileURL(path.join(destination, "lib/model-bridge.js")).href);
+  expect(runtime.name).toBe("voo-model-bridge");
+  expect(typeof runtime.apply).toBe("function");
   expect(bridge).not.toContain(repoRoot);
 
   const english = JSON.parse(await readFile(path.join(destination, "locale/en.json"), "utf8"));

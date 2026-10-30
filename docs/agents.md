@@ -74,6 +74,7 @@ kept in sync with undo/redo:
 | `set_instance_variant` | Switches by variant name or property map in one document transaction. |
 | `set_frame_slot` | Declares component slot recommendations on a frame (e.g. `['Button', 'IconButton']`). |
 | `get_frame_slot` | Reads the declared component slot recommendations for a frame. |
+| `set_code_connect` | Configures the component source, import metadata and property mappings for code handoff. |
 
 ### Design System & Variables
 

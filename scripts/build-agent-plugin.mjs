@@ -115,7 +115,7 @@ export async function buildPortableConnector({ root = defaultRoot, destination }
   // One install gives VOO both halves: the canvas MCP tools and the model
   // bridge row. The bridge stays a single source of truth in its own bundle.
   await mkdir(path.join(outputDirectory, "lib"), { recursive: true });
-  await cp(path.join(repositoryRoot, modelBridgeSource), path.join(outputDirectory, DSH_MODEL_BRIDGE_ENTRY));
+  await cp(path.dirname(path.join(repositoryRoot, modelBridgeSource)), path.join(outputDirectory, "lib"), { recursive: true });
   for (const file of portableRuntimeFiles) {
     const target = path.join(outputDirectory, file);
     await mkdir(path.dirname(target), { recursive: true });

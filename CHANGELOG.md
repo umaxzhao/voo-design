@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Restore referenced connector, version history, component slot, code handoff and Pen export modules omitted from the integration. Keep protocol helpers independently packaged, register batch variant execution under its advertised name and retain advanced generation settings in one secondary entry.
+
 - Retain locale dictionaries and mounted subscribers across development module replacements; keep existing translations during delayed or failed refreshes and retry deferred loading when components mount.
 - Preserve language-request ordering, notify cached locale switches and prevent late critical slices from replacing complete dictionaries. Verify real HMR, failed/recovered requests, language switches and ten minutes of editor timers without changing the document.
 
