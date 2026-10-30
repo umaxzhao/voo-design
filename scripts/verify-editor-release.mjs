@@ -29,7 +29,7 @@ const commands = [
     "editor-page-composition", "raster-loading", "generated-output", "root-contextual-toolbar",
     "frame-child-pointer", "frame-negative-space", "frame-alt-duplicate", "frame-reparent-contracts",
     "frame-surface-camera", "frame-adjustment-space", "gl-spatial-parity",
-    "ui-home-settings", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "editor-resources",
+    "ui-home-settings", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "editor-resources", "editor-resources-built",
   ]
     .map((suite) => [process.execPath, [`tests/e2e/${suite}.e2e.mjs`]]),
 ];

@@ -137,4 +137,6 @@ export default function EditorLayersAssets({ model }) {
     <p className="text-[10px] text-neutral-400">{t("editor.assets.folderHint")}</p>
   </div>;
 }
-EditorLayersAssets.propTypes = { model: layerPanelModelType.isRequired };
+if (import.meta.env.DEV) {
+  EditorLayersAssets.propTypes = { model: layerPanelModelType.isRequired };
+}

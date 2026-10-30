@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Guard development-only resource panel PropTypes in production and require a compiled editor/template-browser smoke check before release.
+
 - Implement the Assets browser with searchable file components, persistent workspace Resources, image/SVG/.voo imports, selection reuse and editable built-in template insertion. Keep inserts additive and undoable; isolate imported bitmap IDs.
 
 - Keep recovery-copy preference changes safe while the editor is mounted; disable future draft scheduling without changing Hook order or losing pending-write ownership.
