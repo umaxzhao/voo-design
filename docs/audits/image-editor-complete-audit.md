@@ -16,6 +16,14 @@ pan/zoom/drag FPS gate, opening a real document from the workbench first. It rec
 nonzero if any required check remains blocked. It never makes a paid API call.
 Set `VOO_IMAGE_AUDIT_DIR` to an empty evidence directory outside the source tree.
 
+The user's 2026-10-30 request replaces the API-key generation step with Codex
+built-in image generation. For that explicitly scoped run, set
+`VOO_IMAGE_GENERATION_MODE=codex-built-in`. External paid generation is recorded
+as **excluded**, never passed. The default verifier still reports it blocked.
+`tests/fixtures/image-editor/generated-product.png` is the actual generated
+source; its adjacent Markdown records the prompt and generation mode. Release
+checks reuse the saved image and do not generate or spend money themselves.
+
 The isolated browser opens a new document through a private MCP relay. Native
 tests set private user-data, Documents and workspace directories before starting
 Electron. No test edits the user's current document, workspace or OS Trash.
@@ -36,6 +44,8 @@ Electron. No test edits the user's current document, workspace or OS Trash.
 | Layout and masks | `layout-mask-audit`, `stretch-layout`, `frame-clip-review`, `container-opacity`, `frame-adjustment-space` | Layout reflow, nested constraints, stretch/wrap/hug, clipping, layer opacity, masks and frame-scoped adjustments. |
 | Boolean/vector exports | `boolean-stroke-export`, `boolean-resize`, `svg-frame-clipping`, `image-svg-parity` | Real SVG decoding compared with rendered pixels, including crop, transforms, opacity, adjustments, styles, shadows, strokes, backdrop blur, glass and global adjustment layers. Backdrop readers use a flattened scene; selection copies include only selected artwork. Ordinary vectors stay vector elements. |
 | Images and asynchronous imports | `image-assets-history`, `image-agent-complete`, `generated-output` | In-flight image decoding retains later edits; successful images in one stock batch undo once; partial download failures are returned; generated apply/discard and stale-result ownership. |
+| Files, clipboard and menu reachability | `image-file-clipboard` | Actual PNG/JPEG/WebP/SVG picker input, clipboard PNG and copy/paste/cut history; mixed raster/vector batches undo once; a corrupt batch publishes no nodes; a narrow viewport keeps every context action reachable. |
+| Built-in generated image workflow | `image-generated-workflow` | The retained generated photo passes actual picker import, inspector edits, pointer drag, flip, tonal pixel changes, exact-pixel PNG download and portable snapshot download. A fresh browser with empty storage reopens that archive through the ordinary input fallback and renders identical edited pixels. No external image API is certified. |
 | Downloaded export formats | `image-export-formats` | Actual PNG/JPEG/WebP/SVG pixels, parsed layered PSD and PDF page units/embedded RGB, exported through the real dialog. Command recents retain unique rows and keyboard IDs. |
 | Native storage | `image-electron`, `workspace-trash-recovery.test.js` | Real image-bearing .voo bytes, folder move/rename, in-app Trash listing/read/restore, collision refusal, rollback on metadata failure and no permanent-delete fallback. |
 | Agent/MCP | `image-agent-complete` | A registry guard accounts for all 74 advertised tools. 69 local/document tools use the real relay and assert document results. Five provider/network-dependent tools have explicit external evidence requirements. A successful basic call does not certify every argument combination. |
@@ -104,16 +114,16 @@ independent delivery and local-cache paths.
 
 ## Explicit remaining evidence requirements
 
-- The requested Gen Image/OpenAI generation needs `OPENAI_API_KEY` in the process
-  environment. Never read a secret file or paste a key into a report. Provider
-  edit/vector requests require their actual configured provider and are not
-  certified by mocked contract tests.
+- Codex built-in generation and its local editing workflow are verified using
+  the retained photo. VOO's external paid generation/edit/vector endpoints still
+  require their actual configured service; the built-in result does not certify
+  those endpoints. Never read a secret file or paste a key into a report.
 - Public stock search is live-tested. Openverse returning zero results triggers
   a real Wikimedia Commons search and image download, with explicit source,
   licenses, attribution and warnings. If both sources fail, that remains blocked.
   The deterministic stock batch test verifies local insertion/history only.
-- Browser-extension image generation requires its signed-in extension; it is not
-  substituted for the user's requested API workflow.
+- Browser-extension image generation requires its signed-in extension and is
+  separate from the Codex built-in generation used for this acceptance run.
 - Signed installer behavior, native OS file chooser interactions, physical mobile
   devices and cross-OS hardware are not certified by a development Electron run.
 - Four legacy collaboration/workflow compatibility tests remain skipped in the

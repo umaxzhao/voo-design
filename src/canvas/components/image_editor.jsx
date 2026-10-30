@@ -930,19 +930,11 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     return () => window.removeEventListener("keydown", onKey, true);
   }, [exitPrompt, visible]);
 
-  const insertImageFile = useCallback(
-    async (file, point) => {
-      await engine?.insertImage(file, point);
-    },
-    [engine],
-  );
-
   const { fileDragOver, dropHandlers } = useEditorDnd({
     nodeId: focusedId,
     engine,
-    insertImageFile,
     onOpenVoo: openVooDocument,
-    onInsertError: () => setApplyError("editor.saveFailed"),
+    onInsertError: () => setApplyError("editor.media.importFailed"),
   });
 
   // A frame's own name; an empty name returns it to the default.

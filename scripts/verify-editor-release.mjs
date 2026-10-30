@@ -32,6 +32,7 @@ const commands = [
     "ui-home-settings", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction", "editor-resources", "editor-resources-built", "welcome-covers",
     "image-adjustments-complete", "image-selections-warp", "image-toolbar-complete", "image-agent-complete",
     "image-assets-history", "image-svg-parity", "image-layer-alpha", "image-inspector-core", "image-export-formats", "image-layer-window",
+    "image-file-clipboard", "image-generated-workflow",
   ]
     .map((suite) => [process.execPath, [`tests/e2e/${suite}.e2e.mjs`]]),
 ];

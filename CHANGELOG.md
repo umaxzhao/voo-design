@@ -2,6 +2,10 @@
 
 ## 1.0.0
 
+- Keep canvas context menus inside the viewport with scrollable actions, including narrow layouts.
+- Stage image/SVG file batches before one atomic undo entry; preserve edits and tool choices made during decoding, and report import failures accurately.
+- Retain a Codex built-in generated photo and release checks for real file pickers, clipboard images, mixed batches, edited PNG downloads and exact-pixel snapshot reopening in a fresh browser.
+
 - Fetch client weights with Git LFS in CI, package desktop assets in Electron mode, and publish verified model files before deploying the web entry.
 
 - Preserve absolute root/sibling reorder positions in windowed layer lists and verify scrolled pointer drops with one undo. Time out stalled stock-index requests so the public fallback can complete within the tool deadline; prefer thumbnail-sized insertions.
