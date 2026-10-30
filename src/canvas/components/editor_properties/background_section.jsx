@@ -79,17 +79,28 @@ export default function BackgroundSection({
             })}
           </div>
           <div className="mt-1 flex items-center gap-2">
-            <input
-              type="color"
-              value={
-                currentBg.startsWith("#") && currentBg.length === 7
-                  ? currentBg
-                  : "#ffffff"
-              }
-              onChange={(event) => onSetBackgroundColor?.(event.target.value)}
-              aria-label={t("editor.props.bgColor")}
-              className="h-6 w-8 cursor-pointer rounded-lg bg-transparent p-0 border-0"
-            />
+            <span
+              className="relative size-5 shrink-0 overflow-hidden rounded-full focus-within:ring-2 focus-within:ring-white"
+              style={{
+                backgroundColor: currentBg,
+                backgroundImage:
+                  currentBg === "transparent" ? CHECKER_IMAGE : undefined,
+                backgroundSize: "8px 8px",
+                backgroundPosition: "0 0, 0 4px, 4px -4px, -4px 0px",
+              }}
+            >
+              <input
+                type="color"
+                value={
+                  currentBg.startsWith("#") && currentBg.length === 7
+                    ? currentBg
+                    : "#ffffff"
+                }
+                onChange={(event) => onSetBackgroundColor?.(event.target.value)}
+                aria-label={t("editor.props.bgColor")}
+                className="absolute inset-0 size-full cursor-pointer opacity-0"
+              />
+            </span>
             <span className="text-[11px] text-neutral-300 font-mono">
               {currentBg}
             </span>
@@ -122,7 +133,7 @@ export default function BackgroundSection({
                     current === entry.colour ? null : entry.colour,
                   )
                 }
-                className={`size-7 shrink-0 rounded-lg border border-white/20 transition-shadow hover:ring-1 hover:ring-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4] [@media(pointer:coarse)]:size-12 ${expandedEntry?.colour === entry.colour ? "ring-2 ring-[#a7ffd4]" : ""}`}
+                className={`size-5 shrink-0 rounded-full border border-white/20 transition-shadow hover:ring-1 hover:ring-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4] [@media(pointer:coarse)]:size-12 ${expandedEntry?.colour === entry.colour ? "ring-2 ring-[#a7ffd4]" : ""}`}
                 style={{ backgroundColor: entry.colour }}
               />
             ))}
