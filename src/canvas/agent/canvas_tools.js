@@ -38,6 +38,7 @@ import { ASSET_TOOL_SCHEMAS, ASSET_TOOL_EXECUTORS } from "./canvas_tools_assets.
 import { COMMENT_TOOL_SCHEMAS, COMMENT_TOOL_EXECUTORS } from "./canvas_tools_comments.js";
 
 import { BUILD_LAYOUT_SCHEMA, buildLayout } from "./canvas_tools_build_layout.js";
+import { STREAM_LAYOUT_SCHEMA, streamLayout } from "./canvas_tools_stream_layout.js";
 
 import { LINT_TOOL_SCHEMA, lintDesignTool } from "./design_quality/lint_tool.js";
 import { STYLE_PATCH_PROPERTIES, TEXT_PATCH_PROPERTIES } from "./canvas-mutation-schema.js";
@@ -51,6 +52,7 @@ export { TOOL_ERROR };
 
 export const CANVAS_TOOL_SCHEMAS = Object.freeze([
   BUILD_LAYOUT_SCHEMA,
+  STREAM_LAYOUT_SCHEMA,
   {
     type: "function",
     function: {
@@ -991,6 +993,7 @@ export const EXECUTORS = Object.freeze({
   batch_mutate_layers: batchMutateLayers,
   create_shape: (args) => createShape(args),
   build_layout: buildLayout,
+  stream_layout: streamLayout,
   delete_layers: deleteLayers,
   duplicate_layer: duplicateLayer,
   fork_frame: forkFrame,

@@ -45,13 +45,13 @@ apps) to the matching WebSocket URL. The default needs no configuration.
 Claude Code:
 
 ```sh
-claude mcp add voo-design -- node /ABS/PATH/voo-design/scripts/mcp-server.mjs
+claude mcp add voo -- node /ABS/PATH/voo-design/scripts/mcp-server.mjs
 ```
 
 Codex, in `~/.codex/config.toml`:
 
 ```toml
-[mcp_servers.voo-design]
+[mcp_servers.voo]
 command = "node"
 args = ["/ABS/PATH/voo-design/scripts/mcp-server.mjs"]
 ```
@@ -72,6 +72,7 @@ The catalog follows `CANVAS_TOOL_SCHEMAS` and currently includes:
 - `batch_mutate_layers`
 - `create_shape`
 - `build_layout`
+- `stream_layout`
 - `new_document`
 - `delete_layers`
 - `duplicate_layer`
@@ -177,8 +178,8 @@ npm run build
 
 ## Client configuration names
 
-`voo-design` is the canonical name in these examples, not a required protocol
-identifier. An existing local registration called `voo` can use the same entry
+`voo` is the canonical name in these examples, not a required protocol
+identifier. An existing local registration under another name can use the same entry
 point without being renamed or duplicated. Use the name actually registered
 with your client when editing or removing its configuration.
 
@@ -190,11 +191,50 @@ see the dated [audit index](README.md#audits-point-in-time-records-check-the-dat
 ## Portable connectors
 
 Run `node scripts/build-agent-plugin.mjs /absolute/new/plugin-folder` to build a
-self-contained Claude Code plugin and a DeepSeek Harness Cordis overlay. The
-package includes the existing `ws` runtime dependency, never credentials. See
-[connector instructions](../plugins/voo-design/README.md). Claude Code validates
-the generated plugin with `claude plugin validate <folder>`. Harness CLI and MCP
-configuration were checked against upstream documentation and the installed
-0.2.1-rc.3 runtime's isolated `sdk-minimal` schema; model API execution requires
-the user's configured Harness profile and was not exercised. The Web profile's
-schema dump currently reports unrelated native Loader carrier errors.
+self-contained folder that is simultaneously a Claude Code plugin, an MCP client
+configuration source, and an installable DeepSeek Harness plugin bundle. The
+package includes the existing `ws` runtime dependency and never credentials. See
+[connector instructions](../plugins/voo/README.md).
+
+DeepSeek Harness reads the generated `package.json` field `dsh.bundle.patch`,
+which points at the generated `cordis.patch.yml`. That patch inserts the official
+`@deepseek-ai/dsh-mcp-client` row (`serverName: voo`,
+`transport: stdio`, `command: node`) with the absolute built
+`scripts/mcp-server.mjs` entry, its folder as `cwd`, and a 65 s tool-call
+timeout, so a fresh Harness session exposes the same catalog as
+`mcp__voo__*` tools. Install a link to the folder and restart (the
+Harness CLI 0.2.1-rc.3 requires the profile before `add`; quote the whole
+`link:` argument when the path contains spaces):
+
+```sh
+dsh plugin --profile desktop add "link:/absolute/new/plugin-folder"
+```
+
+The folder also carries display metadata for the Harness Plugin Manager and
+Settings: exported `locale/en.json` and `locale/zh.json` (`meta.title` /
+`meta.description`) plus `icon.png`. Because the row stores an absolute path and
+a linked folder is used in place, rebuild into a new empty folder after moving
+it or after tool-schema changes. The legacy `deepseek.cordis.yml` overlay remains
+for `dsh web --patch ...` with `VOO_MCP_ENTRY`, but the plugin bundle is the
+supported desktop installation path.
+
+The same patch adds a second, patch-relative Host row (`voo-model-bridge`,
+`./lib/model-bridge.js`, port 4399) known as the **DSH model bridge**. It serves
+the Harness profile's current model (`agentDefaultModel.currentSelection()`) as
+an OpenAI-compatible endpoint at `http://127.0.0.1:4399/v1` (`/v1/models`, `/models`,
+`/v1/chat/completions` with streaming and tool calling), so VOO's built-in agent
+can use the Harness model and credentials. VOO's first-run **API provider** step
+offers a **DeepSeek Harness models** preset for it (base URL
+`http://127.0.0.1:4399/v1`, key `voo-local`). The endpoint binds only loopback,
+accepts any bearer value, answers CORS preflights, writes
+`~/.dsh/voo-model-bridge.json` with the actual port and model list, and removes
+that file when the plugin unloads. The standalone bundle lives in
+`plugins/voo-model-bridge` (source of truth copied by the builder); image content
+is ignored in this first version.
+
+Claude Code validates the generated plugin with `claude plugin validate
+<folder>`. Harness CLI and MCP configuration were checked against upstream
+documentation and the installed 0.2.1-rc.3 runtime's isolated `sdk-minimal`
+schema; model API execution requires the user's configured Harness profile and
+was not exercised. The Web profile's schema dump currently reports unrelated
+native Loader carrier errors.

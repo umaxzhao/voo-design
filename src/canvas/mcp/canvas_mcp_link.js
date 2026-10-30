@@ -40,6 +40,17 @@ export function startCanvasMcpLink({ url, executeTool, retryBaseMs = RETRY_BASE_
     ws.addEventListener("message", async (event) => {
       let frame;
       try { frame = JSON.parse(event.data); } catch { return; }
+      if (frame.type === "event" && frame.channel === E.STREAM_LAYOUT_UPDATE && frame.payload) {
+        const { html, clear } = frame.payload;
+        if (clear || (typeof html === "string" && !html.trim())) {
+          void executeTool("stream_layout", { clear: true });
+        } else if (typeof html === "string") {
+          const isFinal = /<!--\s*(?:voo:final|VOOFINISH)\s*-->/i.test(html);
+          const cleaned = html.replace(/<!--\s*(?:voo:final|VOOFINISH)\s*-->/gi, "");
+          void executeTool("stream_layout", { html: cleaned, final: isFinal });
+        }
+        return;
+      }
       if (frame.type !== "event" || frame.channel !== E.MCP_TOOL_CALL || !frame.payload) return;
       const { id, name, args } = frame.payload;
       if (typeof args?.x === "number" && typeof args?.y === "number") {
