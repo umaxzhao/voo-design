@@ -35,6 +35,8 @@ import {
   getModelDisplayParts,
 } from "./agent-panel/model_catalog.js";
 import { useModelGroups } from "./agent-panel/use_model_groups.js";
+import { useSelectionContext } from "./agent-panel/use_selection_context.js";
+import { contextLabel, promptWithSelection } from "./agent-panel/selection_context.js";
 export { CLI_MODEL_GROUPS, getModelDisplayLabel, getModelDisplayParts };
 /** Chat panel beside the editor frame: text in, canvas changes out, saved history. */
 export default function CanvasAgentPanel({ onClose }) {
@@ -61,7 +63,7 @@ export default function CanvasAgentPanel({ onClose }) {
     () => getSetting(AGENT_SETTING.MODEL) || DEFAULT_AGENT_MODEL,
   );
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
-  const [activeContext, setActiveContext] = useState(null);
+  const [activeContext, setActiveContext] = useSelectionContext();
   const turnRef = useRef(null);
   // StrictMode runs effect cleanups once on a simulated unmount in development;
   // the guard makes sure only a real unmount aborts the in-flight turn.
@@ -191,7 +193,7 @@ export default function CanvasAgentPanel({ onClose }) {
         content: text,
         contextBadge: generationIntent
           ? { label: generationBadgeText(generationIntent), modelId: model }
-          : (targetContext?.name ? `@${targetContext.name}` : undefined),
+          : (targetContext ? `@${contextLabel(targetContext, t)}` : undefined),
       };
       setTranscript((prev) => [...prev, userItem]);
       try {
@@ -201,10 +203,8 @@ export default function CanvasAgentPanel({ onClose }) {
           const referenceNote = referenceImageContext(generationIntent.attachments);
           if (referenceNote) promptWithContext += `\n${referenceNote}`;
           controller.signal.throwIfAborted();
-        } else if (targetContext?.name) {
-          promptWithContext = `[Context: ${targetContext.name} (${targetContext.kind || "layer"}, id: ${targetContext.nodeId}${
-            targetContext.width ? `, ${targetContext.width}x${targetContext.height}` : ""
-          })]\n${text}`;
+        } else {
+          promptWithContext = promptWithSelection(text, targetContext);
         }
         const provider = await abortable(() => resolveAgentProvider(model), controller.signal);
         const external = await abortable(() => externalMcpTools(), controller.signal);
@@ -247,7 +247,7 @@ export default function CanvasAgentPanel({ onClose }) {
         const replyItem = { kind: "text", role: "assistant", content: reply };
         historyRef.current = [
           ...historyRef.current,
-          { role: "user", content: text },
+          { role: "user", content: promptWithContext },
           { role: "assistant", content: reply },
         ];
         const messages = [...transcriptRef.current, replyItem];
