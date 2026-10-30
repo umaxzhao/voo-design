@@ -11,6 +11,8 @@ await withEditorBrowser(async ({ page }) => {
     const { useDesignStore } = await import("/src/store/design_store.js");
     window.__rootToolbarStore = useDesignStore;
     useDesignStore.setState({ editorCamera: { zoom: 1, panX: 260, panY: 100 } });
+    // Independent root artwork must not be adopted by New's default Frame.
+    e.setDoc({ ...e.getDocument(), nodes: [] });
     e.setTool("select"); e.selectExactly([]);
     const canvas = document.createElement("canvas"); canvas.width = 64; canvas.height = 64;
     const context = canvas.getContext("2d"); context.fillStyle = "#c09070"; context.fillRect(0, 0, 64, 64);
@@ -102,5 +104,30 @@ await withEditorBrowser(async ({ page }) => {
   await settle();
   assert.equal(await bars.count(), 0);
   checks.push("pixel and pen edit contexts remain reachable and clearing the selection returns the root canvas to a clean surface");
+  await page.evaluate(() => {
+    const e = window.__vooEditor;
+    const image = e.getNode(window.__rootToolbarImage);
+    const frame = { id: "toolbar-frame", kind: "group", isFrame: true,
+      x: 200, y: 100, width: 400, height: 300, visible: true, opacity: 1 };
+    e.setDoc({ ...e.getDocument(), nodes: [frame, { ...image, x: 300, y: 200, parentId: frame.id }] });
+    e.selectExactly([image.id]);
+  });
+  await settle();
+  const anchored = await bars.boundingBox(), frameBottom = await point(400, 400);
+  assert.ok(Math.abs(anchored.x + anchored.width / 2 - frameBottom.x) < 1);
+  assert.ok(Math.abs(anchored.y - frameBottom.y - 6) < 2);
+  await page.evaluate(() => {
+    const e = window.__vooEditor, image = e.getNode(window.__rootToolbarImage);
+    e.updateNode(image.id, { x: image.x + 30, y: image.y + 20 });
+  });
+  await settle();
+  const childMoved = await bars.boundingBox();
+  assert.ok(Math.abs(childMoved.x - anchored.x) < 1 && Math.abs(childMoved.y - anchored.y) < 1);
+  await page.evaluate(() => window.__vooEditor.moveNodesBy(["toolbar-frame"], 20, 15));
+  await settle();
+  const frameMoved = await bars.boundingBox();
+  assert.ok(Math.abs(frameMoved.x - anchored.x - 16) < 1);
+  assert.ok(Math.abs(frameMoved.y - anchored.y - 12) < 1);
+  checks.push("nested artwork keeps its bar below the Frame; child movement leaves it anchored and Frame movement carries it along");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 }, { openDocument: false });
