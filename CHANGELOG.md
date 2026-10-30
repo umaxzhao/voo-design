@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Preserve the animated prompt rim and one candidate selector while keeping generation options in one advanced panel; retain touch-first dismissal, responsive positioning and real model labels.
+
 - Keep canvas context menus inside the viewport with scrollable actions, including narrow layouts.
 - Stage image/SVG file batches before one atomic undo entry; preserve edits and tool choices made during decoding, and report import failures accurately.
 - Retain a Codex built-in generated photo and release checks for real file pickers, clipboard images, mixed batches, edited PNG downloads and exact-pixel snapshot reopening in a fresh browser.

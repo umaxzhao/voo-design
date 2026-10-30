@@ -33,12 +33,7 @@ function render(overrides = {}) {
       onSelectModel={() => {}}
       styleId="auto"
       styleOptions={[
-        {
-          id: "linear",
-          name: "Linear Dark",
-          mood: "Restrained dark tool",
-          swatch: ["#0B0B0F", "#101014", "#5E6AD2"],
-        },
+        { id: "linear", name: "Linear Dark", mood: "Restrained dark tool", swatch: ["#0B0B0F", "#101014", "#5E6AD2"] },
       ]}
       onSelectStyle={() => {}}
       size={{ width: 1440, height: 900 }}
@@ -49,16 +44,8 @@ function render(overrides = {}) {
       onSelectCandidates={() => {}}
       designSystemId="auto"
       designSystemOptions={[
-        {
-          id: "auto",
-          label: "welcome.prompt.designSystemAuto",
-          description: "",
-        },
-        {
-          id: "axiom",
-          label: "AXIOM",
-          description: "Avant-garde editorial tech",
-        },
+        { id: "auto", label: "welcome.prompt.designSystemAuto", description: "" },
+        { id: "axiom", label: "AXIOM", description: "Avant-garde editorial tech" },
       ]}
       onSelectDesignSystem={() => {}}
       onAddAttachments={() => {}}
@@ -69,29 +56,23 @@ function render(overrides = {}) {
   );
 }
 
-describe("welcome prompt composer (Pen app parity)", () => {
+describe("welcome prompt composer", () => {
   it("shows the real provider model instead of a decorative label", () => {
     const html = render();
     expect(html).toContain("Opus 5.5");
     expect(html).toContain('aria-haspopup="listbox"');
     expect(html).toContain('aria-label="welcome.prompt.modelLabel"');
     expect(html).not.toContain("VOO Agent 3.5");
+    expect(html).toContain("welcome.prompt.modelLabel");
   });
 
   it("shows a platform mark beside the compact model and tier", () => {
     const html = render({
-      modelGroups: [
-        {
-          cliId: "antigravity",
-          name: "Antigravity",
-          models: [
-            {
-              id: "antigravity:gemini-3.8-flash-medium",
-              label: "Gemini 3.8 Flash (Medium)",
-            },
-          ],
-        },
-      ],
+      modelGroups: [{
+        cliId: "antigravity",
+        name: "Antigravity",
+        models: [{ id: "antigravity:gemini-3.8-flash-medium", label: "Gemini 3.8 Flash (Medium)" }],
+      }],
       selectedModel: "antigravity:gemini-3.8-flash-medium",
     });
 
@@ -100,55 +81,77 @@ describe("welcome prompt composer (Pen app parity)", () => {
     expect(html).not.toContain("Antigravity ·");
   });
 
-  it("renders Pen-style generation type pills at the top", () => {
+  it("shows the active design type's prompt guide in the input", () => {
     const html = render({ activePill: "mobile" });
-    expect(html).toContain('role="radiogroup"');
-    expect(html).toContain("welcome.pills.landing");
-    expect(html).toContain("welcome.pills.mobile");
-    expect(html).toContain("welcome.pills.web");
-    expect(html).toContain("welcome.pills.slides");
-    expect(html).toContain("welcome.pills.dashboard");
-    expect(html).toContain("welcome.pills.other");
-    // mobile is selected
-    expect(html).toMatch(/aria-checked="true"[^>]*>.*welcome\.pills\.mobile/);
+    expect(html).toContain('placeholder="welcome.prompt.mobilePlaceholder"');
+    expect(html).toContain('aria-label="welcome.prompt.mobilePlaceholder"');
   });
 
-  it("renders the prompt box with placeholder and ambient glow", () => {
+  it("renders a quiet default surface with advanced settings hidden", () => {
     const html = render();
-    expect(html).toContain('placeholder="welcome.prompt.placeholder"');
-    expect(html).toContain("prompt-composer");
+    expect(html).toContain("welcome.prompt.addAttachment");
+    expect(html).toContain("welcome.prompt.generationTypeLabel");
+    expect(html).toContain('data-advanced-open="false"');
+    expect(html).not.toContain("data-mobile-options-open");
+    expect(html).not.toContain('role="radiogroup"');
+    expect(html).not.toContain('aria-label="welcome.prompt.styleLabel"');
+    expect(html).not.toContain('aria-label="welcome.prompt.designSystemLabel"');
   });
 
-  it("shows a single generation count without a decorative parallel count", () => {
+  it("keeps model selection separate from advanced generation settings", () => {
+    const html = render({ initialAdvancedOpen: true });
+    const modelIndex = html.indexOf('aria-label="welcome.prompt.modelLabel"');
+    const advancedIndex = html.indexOf('role="dialog"');
+    expect(modelIndex).toBeGreaterThan(-1);
+    expect(advancedIndex).toBeGreaterThan(modelIndex);
+    expect(html.slice(advancedIndex)).not.toContain('aria-label="welcome.prompt.modelLabel"');
+  });
+
+  it("exposes the variant count control", () => {
+    const html = render({ candidates: 2, initialAdvancedOpen: true });
+    expect(html).toContain("welcome.prompt.candidateN");
+    expect(html).toContain("welcome.prompt.candidates");
+  });
+
+  it("renders advanced style selection as an accessible dropdown", () => {
+    const html = render({ initialAdvancedOpen: true });
+    const labelIndex = html.indexOf('aria-label="welcome.prompt.styleLabel"');
+    expect(labelIndex).toBeGreaterThan(-1);
+    const trigger = html.slice(html.lastIndexOf("<button", labelIndex), html.indexOf(">", labelIndex));
+    expect(trigger).toContain('aria-haspopup="listbox"');
+    expect(html).toContain("welcome.prompt.styleAuto");
+  });
+
+  it("does not show a decorative 1x parallel badge", () => {
     const html = render();
-    expect(html.match(/>1x</g)).toHaveLength(1);
-    expect(html).not.toContain("lucide-zap");
+    expect(html).not.toContain(">1x<");
   });
-
-  it("exposes the Pen-style variant count control (⊞ 1x)", () => {
-    const html = render({ candidates: 2 });
-    expect(html).toContain('aria-label="welcome.prompt.candidates"');
-    expect(html).toContain(">2x<");
-    expect(html).toContain("lucide-layout-grid");
-  });
-
-  it("renders Add to Context (+) button and submit button", () => {
-    const html = render();
-    expect(html).toContain('aria-label="welcome.prompt.addAttachment"');
-    expect(html).toContain('aria-label="welcome.actions.createNowTitle"');
+  it("keeps one candidate selector in the advanced panel and leaves the animated rim to shared CSS", () => {
+    const closed = render();
+    const open = render({ initialAdvancedOpen: true });
+    expect(closed).not.toContain('aria-label="welcome.prompt.candidates"');
+    expect(open.match(/aria-label="welcome.prompt.candidates"/g)).toHaveLength(1);
+    const form = /<form[^>]*class="([^"]+)"/.exec(closed)?.[1];
+    expect(form).toContain("prompt-composer");
+    expect(form).not.toMatch(/\bbg-|\bborder(?:-|\s)/);
   });
 
   it("renders attachment chips with a remove action", () => {
     const html = render({
-      attachments: [
-        {
-          kind: "image",
-          name: "reference.png",
-          dataUrl: "data:image/png;base64,xx",
-        },
-      ],
+      attachments: [{ kind: "image", name: "reference.png", dataUrl: "data:image/png;base64,xx" }],
     });
     expect(html).toContain("reference.png");
     expect(html).toContain("welcome.prompt.removeAttachment");
+  });
+
+  it("keeps design-type selection in the advanced dialog", () => {
+    const mobile = render({ activePill: "mobile", initialAdvancedOpen: true });
+    const triggers = mobile.match(/<button[^>]*aria-label="welcome.prompt.generationTypeLabel"[^>]*>/g) ?? [];
+    expect(triggers).toHaveLength(2);
+    expect(triggers.filter(trigger => trigger.includes('aria-haspopup="listbox"'))).toHaveLength(1);
+    expect(mobile).not.toContain('role="radiogroup"');
+    expect(mobile).toContain('>welcome.pills.mobile</span>');
+    expect(mobile).not.toContain("<select");
+    expect(mobile).not.toContain("welcome.guide.mobile");
   });
 });

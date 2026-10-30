@@ -25,6 +25,14 @@ await withEditorBrowser(async ({ page, origin }) => {
   await page.evaluate(async () => { const { setLocale } = await import("/src/shared/i18n.js"); await setLocale("en"); });
   const home = page.locator(".welcome-dashboard");
   await home.waitFor();
+  const rim = await home.locator("form.prompt-composer").evaluate(form => {
+    const style = getComputedStyle(form, "::before");
+    return { image: style.backgroundImage, animation: style.animationName,
+      reduced: matchMedia("(prefers-reduced-motion: reduce)").matches };
+  });
+  assert.match(rim.image, /conic-gradient/);
+  assert.equal(rim.animation, rim.reduced ? "none" : "prompt-rim-spin");
+  checks.push("the shared animated prompt rim remains active and respects reduced motion");
 
   // Exercise the public creation/open path, rather than injecting a document fixture.
   await page.getByRole("button", { name: "New", exact: true }).click();
@@ -133,6 +141,20 @@ await withEditorBrowser(async ({ page, origin }) => {
   await page.keyboard.press("Escape");
   await advanced.waitFor({ state: "detached" });
   checks.push("advanced generation opens through one entry and nested selects own the first Escape");
+  await home.getByRole("button", { name: "Generation type", exact: true }).click();
+  await advanced.waitFor();
+  const touch = await page.context().newCDPSession(page);
+  await touch.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
+  try {
+    await touch.send("Input.dispatchTouchEvent", { type: "touchStart",
+      touchPoints: [{ x: 1400, y: 970, radiusX: 1, radiusY: 1, force: 1 }] });
+    await advanced.waitFor({ state: "detached" });
+  } finally {
+    await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await touch.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+    await touch.detach();
+  }
+  checks.push("a real outside touch closes advanced settings on pointerdown before compatibility mouse events");
 
   const settingsOpener = page.getByRole("button", { name: "Settings", exact: true });
   await settingsOpener.click();
