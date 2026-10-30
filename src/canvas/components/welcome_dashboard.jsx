@@ -2,7 +2,6 @@ import { HTML_IMPORT_ACCEPT, SCREENSHOT_ACCEPT, importWelcomeHtml, recreateWelco
 import React, { useEffect, useState, useRef } from "react";
 import { Search, Trash2, X } from "lucide-react";
 import { useDesignStore } from "../../store/design_store.js";
-import { openVooProject } from "../store/open-project.js";
 import { useI18n } from "../use_i18n.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import { DEFAULT_AGENT_MODEL } from "../../shared/agent-defaults.js";
@@ -318,14 +317,12 @@ export default function WelcomeDashboard() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".voo,.psd,.fig,.pen,.svg,application/json"
+        accept=".voo,.zip,.psd,.fig,.pen,.svg,application/json"
         className="hidden"
         onChange={async (e) => {
           const file = e.target.files?.[0];
-          if (file) {
-            const res = await openVooProject({ store: useDesignStore.getState(), fileOrPath: file });
-            if (res?.success) setWelcomeOpen(false);
-          }
+          e.target.value = "";
+          if (file) await handleOpenLocal(file);
         }}
       />
 
