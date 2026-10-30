@@ -160,6 +160,14 @@ try {
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(String(error)));
   await page.goto(url, { waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("networkidle");
+  // Test mode exposes the engine only after a real document has been opened.
+  // A fresh browser starts on the workbench, rather than an implicit blank page.
+  await page.evaluate(async () => {
+    if (window.__vooEditor) return;
+    const { useDesignStore } = await import("/src/store/design_store.js");
+    useDesignStore.getState().newVooProject({ label: "PerformanceAudit", width: 1440, height: 900 });
+  });
   await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
   if (process.env.VOO_WASM_ENGINE === '1') {
     await page.waitForFunction(() => window.__vooEditor?.getWasmEngineStatus?.() === 'ready', null, { timeout: 30000 });

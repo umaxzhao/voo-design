@@ -12,7 +12,7 @@ The release report records the revision and rejects source changes during testin
 
 `node scripts/verify-image-editor.mjs` additionally runs the native Electron
 filesystem and bundled-model checks, real network/model inference and the
-pan/zoom/drag FPS gate. It records external blockers separately and exits
+pan/zoom/drag FPS gate, opening a real document from the workbench first. It records external blockers separately and exits
 nonzero if any required check remains blocked. It never makes a paid API call.
 Set `VOO_IMAGE_AUDIT_DIR` to an empty evidence directory outside the source tree.
 
@@ -29,7 +29,7 @@ Electron. No test edits the user's current document, workspace or OS Trash.
 | Selection and Frame hierarchy | `frame-child-pointer`, `frame-negative-space`, `frame-alt-duplicate`, `frame-reparent-contracts`, `frame-surface-camera` | Real selection/movement, negative world coordinates, complete subtree duplication, reparenting, clipping and undo. |
 | Tool menu choices | `image-toolbar-complete`, `drawing-retouch` | Every option in seven real tool-family menus. Brush/eraser/blur/sharpen/smudge/dodge/burn/sponge, spot/clone/patch, shapes and pen variants assert pixels or created artwork and undo. Selection-only menu checks are not counted as drawing checks. |
 | Pixel selections and deformation | `image-selections-warp` | Rectangle/ellipse/lasso/polygon/magnetic, wand, inversion/clear, perspective/distort/puppet handles, eyedropper, grab-hand camera and crop cancellation. Model prompt focus and Escape do not claim inference. |
-| Local AI tools | `image-network` | Real model download, foreground removal with alpha change and undo, a straight object-selection scribble, AI repair with changed pixels and undo, all three upscale choices with actual ONNX execution. Interpolation fallback cannot pass an AI inference assertion. |
+| Local AI tools | `image-network` | Real model download, foreground removal with alpha change and undo, a straight object-selection scribble, AI repair with changed pixels and undo, all three upscale choices with actual ONNX execution; network-offline reloading verifies persistent browser bytes and SHA-256. Interpolation fallback cannot pass an AI inference assertion. |
 | Tonal adjustments, filters and styles | `image-adjustments-complete` | All 43 adjustment kinds, 11 layer styles and 23 ordered live filters change real exported pixels; undo restores the original; scalar/style redo paints again. These are engine outcome tests, not every possible slider value. |
 | Style alpha and text | `image-layer-alpha` | Seven inner styles preserve transparent holes and apply layer opacity once; text bevel renders glyph edges, responds to size, and undoes. |
 | Inspector fields | `image-inspector-core`, `ui-inspector-interaction`, `inspector-controls` | Actual image/rectangle/Frame X/Y/W/H/rotation/shear/radius edits, flips, Enter/blur/Escape, mixed selection, color/text/variants, variables, filter ordering and export controls. |

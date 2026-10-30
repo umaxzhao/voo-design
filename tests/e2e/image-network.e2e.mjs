@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { imageAudit } from "./image-audit-fixture.mjs";
 
@@ -221,8 +221,43 @@ await withEditorBrowser(async ({
       }, modelId);
     });
   }
+  await record("browser-model-offline-cache", async () => {
+    const manifest = JSON.parse(await readFile(new URL("../../vendor/client-models/manifest.json", import.meta.url), "utf8"));
+    await page.context().setOffline(true);
+    try {
+      const loaded = await page.evaluate(async models => {
+        const {
+          loadModelAssetBytes
+        } = await import("/src/canvas/editor/model_asset_loader.js");
+        const result = [];
+        for (const model of models) {
+          const phases = [];
+          const bytes = await loadModelAssetBytes({
+            filename: model.file,
+            onProgress: update => phases.push(update.phase)
+          });
+          const digest = await crypto.subtle.digest("SHA-256", bytes);
+          const sha256 = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
+          if (!phases.includes("cached") || sha256 !== model.sha256) throw new Error(`Offline cache mismatch: ${model.file}`);
+          result.push({
+            file: model.file,
+            bytes: bytes.byteLength,
+            sha256,
+            cached: true
+          });
+        }
+        return result;
+      }, manifest.models);
+      return {
+        networkOffline: true,
+        loaded
+      };
+    } finally {
+      await page.context().setOffline(false);
+    }
+  });
   await writeFile(`${process.env.VOO_IMAGE_AUDIT_DIR ?? "/private/tmp/voo-image-complete"}/network-diagnostics.json`, JSON.stringify(await page.locator("body").innerText(), null, 2));
   assert.ok(audit.results.length > 0, "At least one network scenario must execute");
-  if (!requested?.length) assert.equal(audit.results.length, 7);
+  if (!requested?.length) assert.equal(audit.results.length, 8);
   audit.finish();
 });
