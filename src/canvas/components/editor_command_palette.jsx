@@ -90,8 +90,11 @@ export default function EditorCommandPalette({
         commands: filtered,
       }];
     }
-    const commands = filtered.filter((command) => command.kind === "command");
-    const actionRows = filtered.filter((command) => command.kind === "action");
+    // A recent command has one home; duplicate rows also duplicate active-descendant IDs.
+    const recent = new Set(showRecent ? recentCommands.map(command => command.id) : []);
+    const remaining = filtered.filter(command => !recent.has(command.id));
+    const commands = remaining.filter((command) => command.kind === "command");
+    const actionRows = remaining.filter((command) => command.kind === "action");
     const result = [];
     if (showRecent) {
       result.push({

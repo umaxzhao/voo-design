@@ -33,6 +33,7 @@ import {
   drawGlassOverlay,
 } from "./render_figma_effects.js";
 import { additionalStrokePaints, primaryStrokePaint } from "./stroke-paint-passes.js";
+import { needsStyleIsolation, drawIsolatedStyle, isolatedStyleNode } from "./render-isolated-style.js";
 
 export function drawNode(
   ctx,
@@ -44,6 +45,12 @@ export function drawNode(
   renderState = null,
 ) {
   if (!node.visible) return;
+  if (needsStyleIsolation(node, renderState)) {
+    drawIsolatedStyle(ctx, node, context => drawNode(context,
+      isolatedStyleNode(node), bitmapOf, maskOf, gpu,
+      bypassAdjustments, { ...renderState, isolatedStyle: true }));
+    return;
+  }
   const effects = node.effects;
   const hasShadow = Boolean(effects?.shadow?.enabled);
   const hasGlow = Boolean(effects?.glow?.enabled);
@@ -248,7 +255,7 @@ export function drawNode(
     drawStrokeOverlay(ctx, node, effects.stroke, paintBody);
   }
   if (hasBevel && effects.bevel) {
-    drawBevelOverlay(ctx, node, effects.bevel);
+    drawBevelOverlay(ctx, node, effects.bevel, paintBody);
   }
   if (effects?.texture?.enabled) {
     drawNoiseOverlay(ctx, node, {

@@ -182,46 +182,4 @@ export function paintShadowBehind(ctx, node, effect, paintBody) {
   ctx.restore();
 }
 
-/**
- * Bevel/emboss overlay: a light-to-dark linear gradient clipped to the node's
- * outline, lit from `bevel.angle` (0° = light from above, clockwise).
- */
-export function drawBevelOverlay(ctx, node, bevel) {
-  const outline = nodeOutlinePath(ctx, node);
-  if (!outline) return;
-
-  const width = node.width;
-  const height = node.height;
-
-  // Gradient runs across the box, perpendicular to the light direction.
-  const angleRad = ((bevel.angle ?? 135) * Math.PI) / 180;
-  const dx = Math.sin(angleRad);
-  const dy = -Math.cos(angleRad);
-  const cx = node.x + width / 2;
-  const cy = node.y + height / 2;
-  const len = Math.hypot(width, height);
-  const fromX = cx - dx * len;
-  const fromY = cy - dy * len;
-  const toX = cx + dx * len;
-  const toY = cy + dy * len;
-
-  const depth = (bevel.depth ?? 60) / 100;
-  const softness = (bevel.softness ?? 30) / 100;
-  const inner = 0.5 - softness * 0.45;
-  const outer = 0.5 + softness * 0.45;
-  const alpha = Math.min(0.85, 0.15 + depth * 0.7);
-
-  ctx.save();
-  ctx.globalCompositeOperation = "source-over";
-  ctx.clip(outline);
-
-  const gradient = ctx.createLinearGradient(fromX, fromY, toX, toY);
-  gradient.addColorStop(0, `rgba(255,255,255,${alpha})`);
-  gradient.addColorStop(inner, "rgba(255,255,255,0)");
-  gradient.addColorStop(outer, "rgba(0,0,0,0)");
-  gradient.addColorStop(1, `rgba(0,0,0,${alpha})`);
-
-  ctx.fillStyle = gradient;
-  ctx.fillRect(node.x, node.y, width, height);
-  ctx.restore();
-}
+export { drawBevelOverlay } from "./node-effects-bevel.js";

@@ -397,8 +397,9 @@ describe("Adversarial Empirical Challenge: Workspace File Actions & Save Paths",
         "CurrentlyOpen.voo",
         workspaceDir
       );
-      // On macOS/POSIX, renameSync overwrites destPath:
-      expect(restoreRes.ok).toBe(true);
+      // Restoring must not overwrite the user's newer saved document.
+      expect(restoreRes).toMatchObject({ ok: false, error: "already_exists" });
+      expect(fs.readFileSync(trashCopy, "utf8")).toBe("Active in canvas");
     });
 
     it("3.4 Soft-deleting non-existent file returns error without crashing", async () => {
@@ -414,6 +415,7 @@ describe("Adversarial Empirical Challenge: Workspace File Actions & Save Paths",
   // =========================================================================
   describe("4. Permanent Deletion & Empty Trash Stress", () => {
     it("4.1 Permanently deletes multiple items individually", async () => {
+      expect(workspaceManager.setWorkspaceRootDir(workspaceDir).ok).toBe(true);
       const count = 10;
       const createdFiles = [];
       for (let i = 0; i < count; i++) {
@@ -429,7 +431,7 @@ describe("Adversarial Empirical Challenge: Workspace File Actions & Save Paths",
 
       // Verify all in trash
       const trashDir = path.join(workspaceDir, ".trash");
-      expect(fs.readdirSync(trashDir)).toHaveLength(count);
+      expect(fs.readdirSync(trashDir).filter(name => !name.startsWith("."))).toHaveLength(count);
 
       // Permanently delete 5 of them individually
       for (let i = 0; i < 5; i++) {
@@ -438,7 +440,7 @@ describe("Adversarial Empirical Challenge: Workspace File Actions & Save Paths",
         expect(delRes.ok).toBe(true);
       }
 
-      expect(fs.readdirSync(trashDir)).toHaveLength(5);
+      expect(fs.readdirSync(trashDir).filter(name => !name.startsWith("."))).toHaveLength(5);
     });
 
     it("4.2 Empties all items from trash in one batch call", async () => {
@@ -450,7 +452,7 @@ describe("Adversarial Empirical Challenge: Workspace File Actions & Save Paths",
       }
 
       const trashDir = path.join(workspaceDir, ".trash");
-      expect(fs.readdirSync(trashDir)).toHaveLength(count);
+      expect(fs.readdirSync(trashDir).filter(name => !name.startsWith("."))).toHaveLength(count);
 
       const emptyRes = await workspaceManager.emptyWorkspaceTrash(workspaceDir);
       expect(emptyRes.ok).toBe(true);

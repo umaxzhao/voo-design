@@ -1,0 +1,36 @@
+{
+  "models": [
+    {
+      "file": "realesr-general-x4v3.onnx",
+      "bytes": 4866428,
+      "sha256": "a946f7a9397021b9b6b7e71df3d2821b04cc09ff244423b7ca79cb191ce4a00e",
+      "url": "https://huggingface.co/skillsafe-ai/realesr-general-x4v3/resolve/042a40bc4c918349ad3e2e607a68ae509a4c27b5/model.onnx",
+      "upstream": {
+        "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-general-x4v3.pth",
+        "sha256": "8dc7edb9ac80ccdc30c3a5dca6616509367f05fbc184ad95b731f05bece96292",
+        "size_bytes": 4885111,
+        "pinned": true,
+        "kind": "github-release",
+        "state_dict_key": "params"
+      },
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2021, Xintao Wang"
+    },
+    {
+      "file": "realesr-animevideov3.onnx",
+      "bytes": 2492908,
+      "sha256": "78baa685a1a92cac6e14ab2af2a8ad0ef56fa48629563b1414e3a7acc54d86e2",
+      "url": "https://huggingface.co/skillsafe-ai/realesr-animevideov3/resolve/185e9142d439d17e3fb99395600fb7d08af09de5/model.onnx",
+      "upstream": {
+        "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-animevideov3.pth",
+        "sha256": "b8a8376811077954d82ca3fcf476f1ac3da3e8a68a4f4d71363008000a18b75d",
+        "size_bytes": 2504012,
+        "pinned": true,
+        "kind": "github-release",
+        "state_dict_key": "params"
+      },
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2021, Xintao Wang"
+    }
+  ]
+}

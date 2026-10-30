@@ -21,3 +21,7 @@ export const MODEL_BASE_URL = (envValue("VITE_MODEL_BASE_URL") || DEFAULT_MODEL_
 
 /** Public URL of this app, sent as the HTTP-Referer on provider requests. */
 export const APP_URL = envValue("VITE_APP_URL") || DEFAULT_APP_URL;
+
+/** Public stock search has no credentials and can be hosted by a standalone build. */
+export const STOCK_SEARCH_URL = envValue("VITE_STOCK_SEARCH_URL") || "https://api.openverse.org/v1/images/";
+export const COMMONS_SEARCH_URL = envValue("VITE_COMMONS_SEARCH_URL") || "https://commons.wikimedia.org/w/api.php";

@@ -72,12 +72,10 @@ describe("edit_image", () => {
     expect(runImageJob.mock.calls[0][0].request.background).toBeUndefined();
   });
 
-  it("rejects a non-http source image", async () => {
+  it("accepts an embedded source image supported by image providers", async () => {
     installEditor([{ ...IMAGE_NODE, src: "data:image/png;base64,xx" }]);
-    await expect(editImage({ operation: "remove-background", layerId: "img" })).rejects.toMatchObject({
-      code: "agentImageSourceRequired",
-    });
-    expect(runImageJob).not.toHaveBeenCalled();
+    await editImage({ operation: "remove-background", layerId: "img" });
+    expect(runImageJob.mock.calls[0][0].request.images).toEqual(["data:image/png;base64,xx"]);
   });
 
   it("reports a missing image provider", async () => {

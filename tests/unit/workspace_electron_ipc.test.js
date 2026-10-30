@@ -261,16 +261,18 @@ describe("Workspace Electron IPC & Filesystem Backend", () => {
   });
 
   describe("5. Trash Safety & Fallback", () => {
-    it("E17: moves file to OS trash via shell.trashItem", async () => {
+    it("E17: keeps application trash restorable instead of sending files to OS trash", async () => {
       const target = path.join(defaultWorkspaceDir, "TrashMe.voo");
       fs.writeFileSync(target, "delete me");
 
       const res = await workspaceManager.moveWorkspaceFileToTrash(target);
       expect(res.ok).toBe(true);
-      expect(mockShell.trashItem).toHaveBeenCalledWith(target);
+      expect(mockShell.trashItem).not.toHaveBeenCalled();
+      expect((await workspaceManager.restoreWorkspaceFileFromTrash(target)).ok).toBe(true);
+      expect(fs.readFileSync(target, "utf8")).toBe("delete me");
     });
 
-    it("E18: falls back to hidden .trash/ directory when shell.trashItem fails", async () => {
+    it("E18: uses the application trash independently of OS trash availability", async () => {
       mockShell.forceFail = true;
       const target = path.join(defaultWorkspaceDir, "FallbackTrash.voo");
       fs.writeFileSync(target, "fallback");

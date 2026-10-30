@@ -8,7 +8,9 @@ export const LINT_TOOL_SCHEMA = {
     parameters: { type: 'object', properties: { rootId: { type: 'string' } } },
   },
 };
-export function lintDesignTool({ rootId } = {}, editor = globalThis.window?.__vooEditor) {
+export function lintDesignTool({ rootId } = {}, editorOrContext = globalThis.window?.__vooEditor) {
+  // The executor passes a context as the second argument; direct callers may pass an engine.
+  const editor = editorOrContext?.getDocument ? editorOrContext : editorOrContext?.editor ?? globalThis.window?.__vooEditor;
   if (!editor?.getDocument) throw new Error('agentNoEditor');
   if (rootId !== undefined && typeof rootId !== 'string') throw new TypeError('rootId must be a string');
   return lintDesign(editor.getDocument(), { rootId });

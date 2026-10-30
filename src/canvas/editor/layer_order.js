@@ -49,8 +49,9 @@ export function childSlotToRootIndex(rootCount, slot) {
 export function insertionSlotAt(rowRects, pointerY) {
   for (let i = 0; i < rowRects.length; i += 1) {
     const mid = rowRects[i].top + rowRects[i].height / 2;
-    if (pointerY < mid) return i;
+    if (pointerY < mid) return Number.isFinite(rowRects[i].position) ? rowRects[i].position : i;
   }
+  if (Number.isFinite(rowRects.at(-1)?.position)) return rowRects.at(-1).position + 1;
   return rowRects.length;
 }
 

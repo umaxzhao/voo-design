@@ -1,4 +1,5 @@
 import PropTypes from "prop-types";
+import { immutablePropType } from "./immutable-prop-type.js";
 export const editorLayersPropTypes = {
   assetEngine: PropTypes.object,
   canvasPages: PropTypes.arrayOf(PropTypes.object),
@@ -89,7 +90,7 @@ export const layerRowType = import.meta.env.DEV ? PropTypes.shape({
   depth: PropTypes.number.isRequired,
   position: PropTypes.number.isRequired
 }) : null;
-export const layerPanelModelType = import.meta.env.DEV ? PropTypes.shape({
+export const layerPanelModelType = import.meta.env.DEV ? immutablePropType(PropTypes.shape({
   ...editorLayersPropTypes,
   listRef: PropTypes.object,
   renamingId: PropTypes.string,
@@ -185,4 +186,4 @@ export const layerPanelModelType = import.meta.env.DEV ? PropTypes.shape({
   labels: PropTypes.object,
   t: PropTypes.func,
   assetNodes: PropTypes.arrayOf(PropTypes.object)
-}) : null;
+})) : null;

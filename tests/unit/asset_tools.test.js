@@ -136,6 +136,7 @@ describe("asset tools", () => {
         ok: true,
         status: 200,
         json: async () => {
+          if (!String(url).includes("api.openverse.org")) return { query: { pages: {} } };
           expect(String(url)).toContain("api.openverse.org");
           expect(String(url)).toContain("q=fern");
           return payload;

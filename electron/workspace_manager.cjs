@@ -15,6 +15,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
+const workspaceTrash = require("./workspace-trash.cjs");
 
 function getElectron() {
   try {
@@ -262,6 +263,7 @@ function scanWorkspaceFiles(rootDir) {
       collectDesignFiles(path.join(dir, entry.name), entry.name, files);
     }
 
+    files.push(...workspaceTrash.listTrash(dir).slice(0, MAX_SCAN_ENTRIES - files.length));
     files.sort((a, b) => b.updatedAt - a.updatedAt);
     return { ok: true, files };
   } catch (err) {
@@ -454,125 +456,21 @@ function renameWorkspaceFile(filePath, newName, options = {}) {
  * Moves file to OS trash or hidden .trash/ folder fallback.
  */
 async function moveWorkspaceFileToTrash(filePath, workspaceRoot) {
-  if (!filePath || typeof filePath !== "string" || !fs.existsSync(filePath)) {
-    return { ok: false, error: "file_not_found" };
-  }
-
-  // 1. Native OS trash
-  const shell = getShell();
-  if (shell?.trashItem) {
-    try {
-      await shell.trashItem(filePath);
-      return { ok: true, method: "shell.trashItem" };
-    } catch {
-      // Continue to fallback
-    }
-  }
-
-  // 2. Hidden .trash/ directory fallback
-  try {
-    const root = workspaceRoot || path.dirname(filePath);
-    const trashDir = path.join(root, ".trash");
-    if (!fs.existsSync(trashDir)) {
-      fs.mkdirSync(trashDir, { recursive: true });
-    }
-    const baseName = path.basename(filePath);
-    const target = path.join(trashDir, baseName);
-    if (fs.existsSync(target)) {
-      try {
-        fs.unlinkSync(target);
-      } catch {}
-    }
-    fs.renameSync(filePath, target);
-    return { ok: true, method: "hidden_trash_folder" };
-  } catch {
-    // Continue to fallback
-  }
-
-  // 3. Safe unlink fallback
-  try {
-    if (fs.promises?.rm) {
-      await fs.promises.rm(filePath, { force: true, recursive: true });
-    } else {
-      fs.unlinkSync(filePath);
-    }
-    return { ok: true, method: "permanent_unlink_fallback" };
-  } catch (err) {
-    return { ok: false, error: err.message };
-  }
+  return workspaceTrash.moveToTrash(filePath, workspaceRoot || getWorkspaceConfig().path);
 }
-
 const moveFileToTrash = moveWorkspaceFileToTrash;
 
-/**
- * Restores file from .trash/ folder back to workspace root.
- */
 async function restoreWorkspaceFileFromTrash(filePathOrName, workspaceRoot) {
-  const root = workspaceRoot || getWorkspaceConfig().path;
-  const trashDir = path.join(root, ".trash");
-  const fileName = path.basename(filePathOrName);
-  const trashPath = path.join(trashDir, fileName);
-  const destPath = path.join(root, fileName);
-
-  if (!fs.existsSync(trashPath)) {
-    return { ok: false, error: "file_not_found_in_trash" };
-  }
-  try {
-    fs.renameSync(trashPath, destPath);
-    return { ok: true, path: destPath, name: fileName };
-  } catch (err) {
-    return { ok: false, error: err.message };
-  }
+  return workspaceTrash.restoreFromTrash(filePathOrName, workspaceRoot || getWorkspaceConfig().path);
 }
 
-/**
- * Permanently deletes a file from disk.
- */
 async function deleteWorkspaceFilePermanently(filePath) {
-  if (!filePath || typeof filePath !== "string" || !fs.existsSync(filePath)) {
-    return { ok: false, error: "file_not_found" };
-  }
-  try {
-    if (fs.promises?.rm) {
-      await fs.promises.rm(filePath, { force: true, recursive: true });
-    } else {
-      fs.unlinkSync(filePath);
-    }
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, error: err.message };
-  }
+  return workspaceTrash.deletePermanently(filePath, getWorkspaceConfig().path);
 }
-
 const deleteFilePermanently = deleteWorkspaceFilePermanently;
 
-/**
- * Empties all files from workspace .trash/ directory.
- */
 async function emptyWorkspaceTrash(workspaceRoot) {
-  const root = workspaceRoot || getWorkspaceConfig().path;
-  const trashDir = path.join(root, ".trash");
-  if (!fs.existsSync(trashDir)) {
-    return { ok: true, deletedCount: 0 };
-  }
-  try {
-    const entries = fs.readdirSync(trashDir);
-    let count = 0;
-    for (const file of entries) {
-      const full = path.join(trashDir, file);
-      try {
-        if (fs.promises?.rm) {
-          await fs.promises.rm(full, { recursive: true, force: true });
-        } else {
-          fs.unlinkSync(full);
-        }
-        count++;
-      } catch {}
-    }
-    return { ok: true, deletedCount: count };
-  } catch (err) {
-    return { ok: false, error: err.message, deletedCount: 0 };
-  }
+  return workspaceTrash.emptyTrash(workspaceRoot || getWorkspaceConfig().path);
 }
 
 /**

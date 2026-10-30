@@ -48,6 +48,7 @@ export function aiProgressLabel(progress, t) {
     case "cached":
       return t("editor.aiProgress.ready");
     case "fallback":
+      if (!progress.providerName && !progress.providerId) return t("editor.upscale.interpolationFallback");
       return t("editor.aiProgress.fallback", {
         provider: progress.providerName || progress.providerId || "",
       });

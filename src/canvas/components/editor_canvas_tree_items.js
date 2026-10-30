@@ -16,6 +16,7 @@ export function buildVisibleTreeItems({
   collapsedGroupIdsByCanvas = new Map(),
 }) {
   const items = [];
+  const visibleParentIds = new Set(activeRows.map(row => row.node.parentId).filter(Boolean));
   const pages =
     canvasPages.length > 0
       ? canvasPages
@@ -50,9 +51,7 @@ export function buildVisibleTreeItems({
       if (isActive) {
         for (const row of activeRows) {
           const isGroup = isGroupNode(row.node) || isBooleanNode(row.node);
-          const hasVisibleChildren = activeRows.some(
-            (candidate) => candidate.node.parentId === row.node.id,
-          );
+          const hasVisibleChildren = visibleParentIds.has(row.node.id);
           items.push({
             key: `layer-${page.id}-${row.node.id}`,
             domId: `layer-row-${row.node.id}`,

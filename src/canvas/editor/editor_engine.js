@@ -424,7 +424,8 @@ export function createEditor({
       draftRender,
       getEffectiveNode,
       mixedLayerMode,
-      spatialIndex: getSpatialIndex(evaluatedDoc),
+      // Shared-workspace chrome paints no artwork; pointer hit tests build the index lazily.
+      spatialIndex: stagePaintingEnabled ? getSpatialIndex(evaluatedDoc) : null,
       previewMotion: !!previewDirty,
       dirtyRects: previewCanRepaint &&
         previewDpr === (draftRender ? 1 : window.devicePixelRatio || 1) &&

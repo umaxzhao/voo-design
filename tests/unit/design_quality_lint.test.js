@@ -101,6 +101,13 @@ describe('critique loop and tool', () => {
     expect(lintDesignTool({ rootId: 'a' }, editor)).toEqual(lintDesign(editor.getDocument(), { rootId: 'a' }));
     expect(() => lintDesignTool({}, null)).toThrow('agentNoEditor');
   });
+  it('accepts an executor context without mistaking it for the engine', () => {
+    const editor = { getDocument: () => ({ nodes: [text('a', { fontSize: 17 })] }) };
+    expect(lintDesignTool({}, { editor })).toEqual(lintDesign(editor.getDocument()));
+    vi.stubGlobal('window', { __vooEditor: editor });
+    try { expect(lintDesignTool({}, {})).toEqual(lintDesign(editor.getDocument())); }
+    finally { vi.unstubAllGlobals(); }
+  });
 });
 
 describe('baseline kill switch', () => {

@@ -15,7 +15,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   await page.evaluate(() => {
     window.__opacityProbe = async (nodes, points, selection = null, backdropColor = "#ffffff") => {
       const e = window.__vooEditor;
-      const { documentToSvg } = await import("/src/canvas/editor/editor_svg.js");
+      const { renderEngineSvg } = await import("/src/canvas/components/editor_hooks/export_editor_image.js");
       e.setDoc({ ...e.getDocument(), width: 400, height: 300, isCanvasRoot: true,
         crop: { x: 0, y: 0, width: 400, height: 300 }, backgroundColor: "transparent", nodes: [
           { id: "backdrop", kind: "rect", visible: true, x: 0, y: 0, width: 400, height: 300, fill: backdropColor }, ...nodes] });
@@ -29,7 +29,7 @@ await withEditorBrowser(async ({ page, tool }) => {
       if (selection) {
         const result = e.exportSelectionPng([selection]); png = result.dataUrl; origin = result.bounds;
         svg = e.getNodeSvg(selection);
-      } else { png = await e.exportFullResPng(); svg = documentToSvg(e.getDocument()); }
+      } else { png = await e.exportFullResPng(); svg = renderEngineSvg(e); }
       const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
       try { return { png: await read(png, origin), svg: await read(url, origin) }; }
       finally { URL.revokeObjectURL(url); }

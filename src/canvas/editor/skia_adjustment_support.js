@@ -154,7 +154,7 @@ function curveNeutral(points) {
  * state). A factor that defaults to "disabled" (invert, threshold, gradientMap,
  * blackAndWhite) counts only when it has been enabled.
  */
-function factorIsSet(adjustments, key) {
+export function factorIsSet(adjustments, key) {
   const factor = adjustments[key];
   if (!factor) return false;
   if (factor.enabled === false) return false;

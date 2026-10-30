@@ -2,6 +2,26 @@
 
 ## 1.0.0
 
+- Fetch client weights with Git LFS in CI, package desktop assets in Electron mode, and publish verified model files before deploying the web entry.
+
+- Preserve absolute root/sibling reorder positions in windowed layer lists and verify scrolled pointer drops with one undo. Time out stalled stock-index requests so the public fallback can complete within the tool deadline; prefer thumbnail-sized insertions.
+
+- Keep large layer panels responsive with windowed rows, shared immutable contract validation and indexed child presence; retain keyboard focus, scrolling, search and rename behavior.
+- Enable GPU rectangle preview caching on unbounded free canvases without clipping negative coordinates; update exact pointer regions incrementally and avoid repeated renderer routing/index work.
+
+- Bootstrap the FPS audit through a real workbench document and verify cached client-model bytes with the browser network disabled. Exercise the production SVG exporter in container-compositing regressions.
+
+- Preserve SVG backdrop blur, glass and adjustment layers through scene raster embedding, including isolated selection copies; retain an explicit export notice and verify actual pixels. Exit isolated native audit profiles without entering the production quit/recovery flow.
+
+- Verify the image editor through real tool gestures, every adjustment/filter/style kind, inspector fields, live MCP operations, native file recovery and local-model inference. Retain explicit provider and platform blockers instead of counting them as passes.
+- Keep command recents unique and verify all six export formats through real downloads. Fall back to Wikimedia Commons for public stock search while preserving source, license, attribution and upstream warnings.
+- Render image/text bevels with effective size, isolate inner layer styles from the page backdrop, and retain pixel adjustments/styles in SVG through per-layer raster embedding with an export notice.
+- Select connected foreground touched by object-selection scribbles; retain hand-tool camera panning and modal keyboard focus for first-use model downloads.
+- Make native Trash recoverable within the workspace, preserve original folders and same-name entries, refuse restore collisions and remove destructive fallback deletion.
+- Share staged image insertion without overwriting intervening edits; commit vector/icon expansions and stock batches atomically, report partial failures, and accept embedded image sources.
+- Ship checksum-verified small client upscale weights with desktop builds and independently distribute browser downloads. Share one general model for 2x/4x, keep inference local and label interpolation fallback honestly.
+- Split asset tools, image insertion, SVG layer actions and Trash handling into focused modules; remove the unused Retouch tool ID and duplicate implementations.
+
 - Restore the workbench prompt heading and recover missing project covers without rewriting files. Generate compact draft previews, prefer newer recovery copies and load visible cards with bounded concurrency.
 - Keep early command-palette Tab navigation stable and return focus to Find after replacing the final match so Escape still closes the search surface.
 

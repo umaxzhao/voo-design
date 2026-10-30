@@ -1,5 +1,7 @@
 import PropTypes from "prop-types";
+import { useId, useRef } from "react";
 import { useI18n } from "../use_i18n.js";
+import { useModalFocus } from "./use_modal_focus.js";
 
 function AiRepairDownloadDialog({ state, onDownload, onCancel }) {
   const { t } = useI18n();
@@ -8,6 +10,11 @@ function AiRepairDownloadDialog({ state, onDownload, onCancel }) {
   const downloading = state.phase === "downloading";
   const running = state.phase === "running";
   const failed = state.phase === "failed" || state.phase === "runFailed";
+  const dialogRef = useRef(null);
+  const titleId = useId();
+  useModalFocus({ open: true, dialogRef, onClose: () => {
+    if (!downloading && !running) onCancel();
+  } });
   const detail = downloading
     ? t(`${copy}.downloading`, { percent: state.progress ?? 0 })
     : running
@@ -23,13 +30,15 @@ function AiRepairDownloadDialog({ state, onDownload, onCancel }) {
   return (
     <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]">
       <section
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="ai-repair-download-title"
+        aria-labelledby={titleId}
         className="w-full max-w-xs rounded-3xl border border-white/10 bg-neutral-900 p-4 shadow-panel"
       >
         <h2
-          id="ai-repair-download-title"
+          id={titleId}
           className="text-[12px] font-medium text-neutral-100"
         >
           {t(`${copy}.downloadTitle`)}

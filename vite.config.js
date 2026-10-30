@@ -2,11 +2,11 @@ import { defineConfig } from "vite";
 import { visualizer } from "rollup-plugin-visualizer";
 import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
-import { existsSync } from "node:fs";
+import { clientModelAssetsPlugin } from "./scripts/client-model-assets.mjs";
 import { editorPublicAssetsPlugin } from "./scripts/editor-public-assets.mjs";
 
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), editorPublicAssetsPlugin({ bundleModels: process.env.VOO_BUNDLE_MODELS === "1" || (mode === "electron" && existsSync(resolve(__dirname, "public/models"))) }), ...(process.env.ANALYZE === "1" ? [visualizer({ filename: "analysis/bundle.html", gzipSize: true, brotliSize: true, open: false })] : [])],
+  plugins: [react(), clientModelAssetsPlugin(), editorPublicAssetsPlugin({ bundleModels: process.env.VOO_BUNDLE_MODELS === "1" || mode === "electron" }), ...(process.env.ANALYZE === "1" ? [visualizer({ filename: "analysis/bundle.html", gzipSize: true, brotliSize: true, open: false })] : [])],
   base: "./",
   resolve: {
     // ONNX loads the single public/ort copy through env.wasm.wasmPaths.

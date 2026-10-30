@@ -57,7 +57,7 @@ export function useEditorCanvasGestures({
   // canvas (not over any artboard) also pans the free view — a view-only camera
   // offset that never writes back to workflow node positions.
   const onFreePointerDown = useCallback((event) => {
-    const isPanTrigger = event.button === 1 || spaceRef.current;
+    const isPanTrigger = event.button === 1 || spaceRef.current || tool === TOOL.HAND;
     const isLeftClick = event.button === 0;
 
     if (!isPanTrigger && !isLeftClick) return;
@@ -100,8 +100,9 @@ export function useEditorCanvasGestures({
       startY: event.clientY,
       moved: false,
       button: event.button,
+      panTrigger: isPanTrigger,
     };
-  }, [freeStageRef, panGestureRef, spaceRef]);
+  }, [freeStageRef, panGestureRef, spaceRef, tool]);
   const lastCollabCursorSentRef = useRef(0);
   const handleCollabCursorMove = useCallback((event) => {
     const now = performance.now();
@@ -132,7 +133,7 @@ export function useEditorCanvasGestures({
           event.clientY - (gesture.startY ?? gesture.lastY),
         );
         // Middle button or space drag pans immediately (threshold 1px)
-        const threshold = gesture.button === 1 || spaceRef.current ? 1 : 4;
+        const threshold = gesture.panTrigger || gesture.button === 1 || spaceRef.current ? 1 : 4;
         if (totalDist < threshold) return;
         gesture.moved = true;
       }
@@ -157,7 +158,7 @@ export function useEditorCanvasGestures({
 
       // A bare left-click on empty canvas (never dragged) deselects the focused
       // page and its selection, like Figma.
-      if (!gesture.moved && gesture.button === 0 && !spaceRef.current) {
+      if (!gesture.moved && gesture.button === 0 && !gesture.panTrigger && !spaceRef.current) {
         setCanvasBackgroundSelected(true);
         enginesRef.current.get(focusedId)?.engine?.select?.(null);
         focusEditorPage(null);

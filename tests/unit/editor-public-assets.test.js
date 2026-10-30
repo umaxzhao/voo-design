@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { build, createServer } from "vite";
 import { copyEditorPublicAssets, editorPublicAssetsPlugin } from "../../scripts/editor-public-assets.mjs";
+import { clientModelAssetsPlugin } from "../../scripts/client-model-assets.mjs";
 
 let root;
 beforeEach(async () => {
@@ -88,5 +89,32 @@ describe("editor public-asset model policy", () => {
   it("does not copy public assets during an in-memory bundle analysis", async () => {
     await production({ write: false });
     expect(await exists(join(root, "out"))).toBe(false);
+  });
+  it("bundles tracked client weights without depending on ignored public models", async () => {
+    await rm(join(root, "public/models"), { recursive: true });
+    const models = join(root, "vendor/client-models");
+    await mkdir(models, { recursive: true });
+    await writeFile(join(models, "client.onnx"), "tracked model bytes");
+    await writeFile(join(models, "realesrgan-license.txt"), "model notice");
+    await copy({ bundleModels: true });
+    expect(await readFile(join(root, "out/models/client.onnx"), "utf8")).toBe("tracked model bytes");
+    expect(await readFile(join(root, "out/models/realesrgan-license.txt"), "utf8")).toBe("model notice");
+    expect(await exists(join(root, "out/fonts/example.woff2"))).toBe(true);
+  });
+  it("serves tracked client weights on the same model URL during development", async () => {
+    await rm(join(root, "public/models"), { recursive: true });
+    const models = join(root, "vendor/client-models");
+    await mkdir(models, { recursive: true });
+    await writeFile(join(models, "client.onnx"), "tracked model bytes");
+    await writeFile(join(models, "manifest.json"), JSON.stringify({ models: [{ file: "client.onnx" }] }));
+    const server = await createServer({ configFile: false, root, logLevel: "silent",
+      plugins: [clientModelAssetsPlugin()], server: { port: 0, host: "127.0.0.1" } });
+    try {
+      await server.listen();
+      const response = await fetch(`http://127.0.0.1:${server.httpServer.address().port}/models/client.onnx`);
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toBe("application/octet-stream");
+      expect(await response.text()).toBe("tracked model bytes");
+    } finally { await server.close(); }
   });
 });
