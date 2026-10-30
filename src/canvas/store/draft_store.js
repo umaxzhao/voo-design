@@ -62,6 +62,11 @@ export async function saveDraftBytes(id, bytes, name) {
     await run(db, "readwrite", (store) =>
       store.put({ id: String(id), bytes, name: name || "", savedAt: Date.now() }),
     );
+    if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new CustomEvent("voo:draft-updated", {
+        detail: { id: String(id), name },
+      }));
+    }
     return true;
   } catch (err) {
     console.warn("[VOO] Failed to save draft copy:", err);

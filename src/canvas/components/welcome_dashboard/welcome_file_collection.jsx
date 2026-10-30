@@ -1,4 +1,5 @@
 import React from "react";
+import WelcomeFileCover from "./welcome_file_cover.jsx";
 import {
   File,
   Star,
@@ -186,11 +187,7 @@ export function WelcomeFileCollection({
                 <button type="button" aria-label={item.name} onClick={() => (isTrash ? handleRestore(null, item.id) : handleOpenRecent(item))} className="absolute inset-0 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-mint" />
                 {/* Thumbnail Preview Area */}
                 <div className="pointer-events-none relative aspect-[16/10] bg-neutral-900 rounded-t-2xl flex items-center justify-center p-3">
-                  {item.preview ? (
-                    <img src={item.preview} alt="" className="h-full w-full object-contain" />
-                  ) : (
-                    <div className="absolute inset-0 rounded-t-2xl bg-neutral-700" />
-                  )}
+                  <WelcomeFileCover item={item} />
 
                   {/* Top action overlay: Star & More menu button */}
                   <div className="pointer-events-auto absolute bottom-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity z-10">

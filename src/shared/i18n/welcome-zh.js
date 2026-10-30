@@ -1,5 +1,8 @@
 /** 欢迎页（最近文件、模板、快捷键）的界面文案。 */
 export default {
+  "welcome.prompt.heading": "今天想设计什么？",
+  "welcome.cover.loading": "正在加载封面",
+  "welcome.cover.unavailable": "暂无封面",
   "welcome.drop.title": "松开以打开 .voo 工程文件",
   "welcome.drop.subtitle": "自包含工程，自动恢复全部画板与矢量图层",
   "titlebar.backToCanvas": "返回画布",

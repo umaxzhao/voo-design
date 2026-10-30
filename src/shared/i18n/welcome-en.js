@@ -1,5 +1,8 @@
 /** User-facing copy for the welcome dashboard (recents, templates, shortcuts). */
 export default {
+  "welcome.prompt.heading": "What would you like to design?",
+  "welcome.cover.loading": "Loading cover",
+  "welcome.cover.unavailable": "Cover unavailable",
   "welcome.drop.title": "Release to open the .voo project",
   "welcome.drop.subtitle": "Self-contained project. All artboards and vector layers restore automatically.",
   "titlebar.backToCanvas": "Back to canvas",

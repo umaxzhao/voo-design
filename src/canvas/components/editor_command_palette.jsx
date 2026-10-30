@@ -56,7 +56,6 @@ export default function EditorCommandPalette({
   onClose,
 }) {
   const { t, locale } = useI18n();
-  const inputRef = useRef(null);
   const dialogRef = useRef(null);
   useModalFocus({ open, dialogRef, onClose, initialFocus: '[role="combobox"]' });
   const listRef = useRef(null);
@@ -130,13 +129,10 @@ export default function EditorCommandPalette({
 
   // Fresh mount/open starts from an empty query and the first row.
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open) return;
     setQuery("");
     setActiveIndex(0);
-    const frame = window.requestAnimationFrame(() => {
-      inputRef.current?.focus();
-    });
-    return () => window.cancelAnimationFrame(frame);
+    // The modal boundary owns initial focus; a later focus steals early Tab navigation.
   }, [open]);
 
   // Clamp the cursor when filtering shrinks the list under it.
@@ -237,7 +233,6 @@ export default function EditorCommandPalette({
             className="flex-none text-neutral-500"
           />
           <input
-            ref={inputRef}
             type="text"
             role="combobox"
             aria-expanded="true"

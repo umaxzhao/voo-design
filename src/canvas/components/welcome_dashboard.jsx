@@ -385,7 +385,7 @@ export default function WelcomeDashboard() {
       {/* Main Workspace */}
       <main className="welcome-main flex-1 flex flex-col min-w-0 min-h-0 bg-neutral-950 overflow-y-auto">
         {/* Top Header Strip with Search, View Mode, Sort and Actions */}
-        <header className="flex h-14 shrink-0 items-center justify-between px-8 bg-neutral-950/60 backdrop-blur-md sticky top-0 z-20 gap-4">
+        {activeTab !== "recents" && <header className="flex h-14 shrink-0 items-center justify-between px-8 bg-neutral-950/60 backdrop-blur-md sticky top-0 z-20 gap-4">
           {/* Right: Controls & Actions */}
           <div className="ml-auto flex items-center gap-2.5 shrink-0">
             {/* Trash specific action: Empty trash */}
@@ -400,13 +400,14 @@ export default function WelcomeDashboard() {
               </button>
             )}
           </div>
-        </header>
+        </header>}
 
         <WelcomeOpenNotice t={t} notice={openNotice} />
 
         {/* =================== TAB 1: RECENTS =================== */}
         {activeTab === "recents" && (
           <div className="welcome-home-content flex-1 p-4 lg:p-8 max-w-6xl w-full mx-auto space-y-8">
+            <h1 className="text-center text-[15px] font-medium text-neutral-100" data-testid="welcome-prompt-heading">{t("welcome.prompt.heading")}</h1>
             <WelcomePromptComposer
               t={t}
               activePill={activePill}

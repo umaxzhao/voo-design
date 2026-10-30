@@ -2,6 +2,9 @@
 
 ## 1.0.0
 
+- Restore the workbench prompt heading and recover missing project covers without rewriting files. Generate compact draft previews, prefer newer recovery copies and load visible cards with bounded concurrency.
+- Keep early command-palette Tab navigation stable and return focus to Find after replacing the final match so Escape still closes the search surface.
+
 - Guard development-only resource panel PropTypes in production and require a compiled editor/template-browser smoke check before release.
 
 - Implement the Assets browser with searchable file components, persistent workspace Resources, image/SVG/.voo imports, selection reuse and editable built-in template insertion. Keep inserts additive and undoable; isolate imported bitmap IDs.

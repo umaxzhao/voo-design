@@ -28,6 +28,7 @@ await withEditorBrowser(async ({ page }) => {
   await search.getByRole("textbox", { name: "Replace with", exact: true }).fill("Welcome");
   await search.getByRole("button", { name: "Replace all", exact: true }).click();
   await page.waitForFunction(() => window.__vooEditor.getDocument().nodes.find((node) => node.id === "global-ui-text").text === "Welcome VOO");
+  assert.equal(await search.getByRole("textbox", { name: "Find text", exact: true }).evaluate(element => element === document.activeElement), true);
   await page.keyboard.press("Escape");
   await search.waitFor({ state: "detached" });
   await page.evaluate(() => window.__vooEditor.undo());
@@ -53,6 +54,21 @@ await withEditorBrowser(async ({ page }) => {
 
   const opener = page.getByRole("button", { name: "Settings", exact: true });
   await opener.focus();
+  // Hold the next animation callbacks so a delayed autofocus cannot hide an early Tab race.
+  await page.evaluate(() => {
+    const request = window.requestAnimationFrame;
+    const cancel = window.cancelAnimationFrame;
+    const frames = new Map();
+    let nextId = 0;
+    window.requestAnimationFrame = callback => { frames.set(++nextId, callback); return nextId; };
+    window.cancelAnimationFrame = id => frames.delete(id);
+    window.__releaseFocusFrames = () => {
+      window.requestAnimationFrame = request;
+      window.cancelAnimationFrame = cancel;
+      for (const callback of frames.values()) callback(performance.now());
+      delete window.__releaseFocusFrames;
+    };
+  });
   await page.keyboard.press("Control+k");
   const palette = page.getByTestId("command-palette");
   const commandInput = palette.getByRole("combobox");
@@ -60,6 +76,8 @@ await withEditorBrowser(async ({ page }) => {
   await page.waitForFunction(() => document.activeElement?.getAttribute("role") === "combobox");
   const close = palette.getByRole("button", { name: "esc close", exact: true });
   await commandInput.press("Shift+Tab");
+  assert.equal(await close.evaluate((element) => element === document.activeElement), true);
+  await page.evaluate(() => window.__releaseFocusFrames());
   assert.equal(await close.evaluate((element) => element === document.activeElement), true);
   await page.keyboard.press("Tab");
   assert.equal(await commandInput.evaluate((element) => element === document.activeElement), true);
