@@ -414,15 +414,25 @@ let agentFocusTimeout = null;
 
 let currentAgentCursor = null;
 let agentCursorTimeout = null;
+let cursorRenderX = null;
+let cursorRenderY = null;
 
 export function setAgentCursor({ x, y, label = "Agent", active = true, durationMs = 3000 } = {}) {
   if (!active || x == null || y == null) {
     currentAgentCursor = null;
+    cursorRenderX = null;
+    cursorRenderY = null;
     return;
   }
+  const targetX = Number(x) || 0;
+  const targetY = Number(y) || 0;
+  if (cursorRenderX === null || cursorRenderY === null) {
+    cursorRenderX = targetX;
+    cursorRenderY = targetY;
+  }
   currentAgentCursor = {
-    x: Number(x) || 0,
-    y: Number(y) || 0,
+    x: targetX,
+    y: targetY,
     label: String(label || "Agent"),
     timestamp: Date.now(),
   };
@@ -430,6 +440,8 @@ export function setAgentCursor({ x, y, label = "Agent", active = true, durationM
   if (typeof window !== "undefined") {
     agentCursorTimeout = setTimeout(() => {
       currentAgentCursor = null;
+      cursorRenderX = null;
+      cursorRenderY = null;
       window.__vooEditor?.requestRender?.();
     }, durationMs);
     window.__vooEditor?.requestRender?.();
@@ -442,6 +454,8 @@ export function getAgentCursor() {
 
 export function clearAgentCursor() {
   currentAgentCursor = null;
+  cursorRenderX = null;
+  cursorRenderY = null;
   if (agentCursorTimeout) clearTimeout(agentCursorTimeout);
 }
 
@@ -544,10 +558,41 @@ export function drawAgentFocusOverlay(ctx, focus, viewport) {
 export function drawAgentCursorOverlay(ctx, cursor, viewport) {
   if (!cursor || !viewport) return;
   const { zoom, panX, panY } = viewport;
-  const screenX = cursor.x * zoom + panX;
-  const screenY = cursor.y * zoom + panY;
+
+  if (cursorRenderX === null) cursorRenderX = cursor.x;
+  if (cursorRenderY === null) cursorRenderY = cursor.y;
+
+  const dx = cursor.x - cursorRenderX;
+  const dy = cursor.y - cursorRenderY;
+  const dist = Math.hypot(dx, dy);
+
+  if (dist > 0.5) {
+    cursorRenderX += dx * 0.35;
+    cursorRenderY += dy * 0.35;
+    if (typeof window !== "undefined") {
+      requestAnimationFrame(() => window.__vooEditor?.requestRender?.());
+    }
+  } else {
+    cursorRenderX = cursor.x;
+    cursorRenderY = cursor.y;
+  }
+
+  const screenX = cursorRenderX * zoom + panX;
+  const screenY = cursorRenderY * zoom + panY;
 
   ctx.save();
+
+  // Thinking pulse wave
+  const now = Date.now();
+  const pulsePhase = (now % 1200) / 1200;
+  const pulseRadius = 6 + pulsePhase * 16;
+  const pulseAlpha = Math.max(0, 0.5 * (1 - pulsePhase));
+
+  ctx.strokeStyle = `rgba(0, 240, 255, ${pulseAlpha})`;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(screenX, screenY, pulseRadius, 0, Math.PI * 2);
+  ctx.stroke();
 
   // 1. Sleek mint cursor arrow
   ctx.fillStyle = "#a7ffd4";
@@ -565,27 +610,35 @@ export function drawAgentCursorOverlay(ctx, cursor, viewport) {
   ctx.fill();
   ctx.stroke();
 
-  // 2. Name badge beside the cursor
+  // 2. Name badge beside the cursor with glowing indicator dot
   if (cursor.label) {
-    ctx.font = "600 10px sans-serif";
-    const labelW = ctx.measureText(cursor.label).width + 10;
-    const labelH = 18;
+    ctx.font = "600 11px sans-serif";
+    const textW = ctx.measureText(cursor.label).width;
+    const labelW = textW + 24;
+    const labelH = 22;
     const labelX = screenX + 14;
     const labelY = screenY + 10;
 
-    ctx.fillStyle = "rgba(18, 18, 20, 0.95)";
+    ctx.fillStyle = "rgba(10, 15, 26, 0.95)";
     ctx.beginPath();
-    ctx.roundRect(labelX, labelY, labelW, labelH, 4);
+    ctx.roundRect(labelX, labelY, labelW, labelH, 6);
     ctx.fill();
 
-    ctx.strokeStyle = "rgba(167, 255, 212, 0.5)";
+    ctx.strokeStyle = "rgba(0, 240, 255, 0.4)";
     ctx.lineWidth = 1;
     ctx.stroke();
 
+    // Pulsing active dot
+    const dotAlpha = 0.5 + Math.sin(now / 150) * 0.4;
+    ctx.fillStyle = `rgba(0, 240, 255, ${dotAlpha})`;
+    ctx.beginPath();
+    ctx.arc(labelX + 8, labelY + labelH / 2, 3, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.fillStyle = "#a7ffd4";
-    ctx.textAlign = "center";
+    ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(cursor.label, labelX + labelW / 2, labelY + labelH / 2);
+    ctx.fillText(cursor.label, labelX + 16, labelY + labelH / 2);
   }
 
   ctx.restore();

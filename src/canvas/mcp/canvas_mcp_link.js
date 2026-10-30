@@ -53,8 +53,25 @@ export function startCanvasMcpLink({ url, executeTool, retryBaseMs = RETRY_BASE_
       }
       if (frame.type !== "event" || frame.channel !== E.MCP_TOOL_CALL || !frame.payload) return;
       const { id, name, args } = frame.payload;
-      if (typeof args?.x === "number" && typeof args?.y === "number") {
-        setAgentCursor({ x: args.x, y: args.y, label: name });
+      let cursorX = typeof args?.x === "number" ? args.x : null;
+      let cursorY = typeof args?.y === "number" ? args.y : null;
+      if (cursorX === null && Array.isArray(args?.nodes) && args.nodes.length > 0) {
+        cursorX = args.nodes[0].x ?? 0;
+        cursorY = args.nodes[0].y ?? 0;
+      }
+      if (cursorX !== null && cursorY !== null) {
+        const labelMap = {
+          build_layout: "构建设计图层...",
+          create_frame: "创建画板容器...",
+          create_shape: "绘制图形...",
+          create_path: "生成贝塞尔曲线...",
+          mutate_layer_style: "调整样式渐变...",
+          mutate_layer_layout: "调整位置尺寸...",
+          mutate_auto_layout: "计算弹性排版...",
+          stream_layout: "实时流式构建...",
+        };
+        const label = args?.label || labelMap[name] || name;
+        setAgentCursor({ x: cursorX, y: cursorY, label, durationMs: 4000 });
       }
       let result;
       try {
