@@ -46,7 +46,20 @@ export async function startEditorBrowserServer() {
       server: { middlewareMode: true, hmr: { server }, watch: { ignored: ["**/dist/**"] } },
     });
     server.on("request", vite.middlewares);
-    return { origin, bridge, close };
+    const reloadModule = async (url, dependencies = []) => {
+      const timestamp = Date.now();
+      for (const path of [...dependencies, url]) {
+        const module = await vite.moduleGraph.getModuleByUrl(path);
+        if (!module) throw new Error(`Browser fixture has not loaded ${path}`);
+        vite.moduleGraph.invalidateModule(module);
+        module.lastHMRTimestamp = timestamp;
+      }
+      // Exercise a real module replacement without editing repository files.
+      vite.ws.send({ type: "update", updates: [{ type: "js-update", path: url,
+        acceptedPath: url, timestamp }] });
+      return timestamp;
+    };
+    return { origin, bridge, close, reloadModule };
   } catch (error) {
     try { await close(); }
     catch (cleanupError) { throw new AggregateError([error, cleanupError], "Editor fixture startup failed"); }

@@ -22,7 +22,7 @@ const commands = [
     "editor-fixture-startup", "editor-effects", "agent-paint-text", "layout-mask-audit", "inspector-controls",
     "stretch-layout", "build-layout-history", "mesh-gradient", "stroke-controls", "boolean-stroke-export",
     "boolean-resize", "container-opacity", "svg-frame-clipping", "frame-clip-review", "drawing-retouch",
-    "pending-integration", "settings-i18n", "editor-document-aids", "comments-loading", "comments-lifecycle",
+    "pending-integration", "settings-i18n", "locale-lifecycle", "editor-document-aids", "comments-loading", "comments-lifecycle",
     "editor-loading", "editor-optional-loading", "editor-canvas-navigation", "editor-layers-composition",
     "editor-shortcut-lifecycle", "image-action-loading", "project-picker", "pages_dnd", "editor-snapping",
     "destructive-boolean", "hook-lifecycle", "editor-refactor", "editor-context", "editor-session",

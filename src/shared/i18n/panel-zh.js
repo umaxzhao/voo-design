@@ -1,5 +1,6 @@
 /** Right-panel add menu and compact-row copy (Simplified Chinese). Keys: `editor.panel.*`. */
 export default {
+  "editor.prototype.target": "目标画框",
   "editor.panel.add": "添加",
   "editor.panel.addMenu": "添加到此图层",
   "editor.panel.effects": "效果与调整",
