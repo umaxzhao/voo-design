@@ -397,3 +397,14 @@
     font-size: 0.75rem !important;
   }
 }
+
+
+/* Pen-style ambient aura glow behind the welcome prompt composer */
+.welcome-prompt-glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: 1.25rem;
+  background: radial-gradient(ellipse at 50% 0%, rgba(217, 70, 239, 0.22), rgba(168, 85, 247, 0.12), transparent 70%);
+  filter: blur(12px);
+  pointer-events: none;
+}

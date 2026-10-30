@@ -1,10 +1,10 @@
 import {
-  Globe,
+  GalleryHorizontalEnd,
   Smartphone,
-  Monitor,
+  AppWindow,
   Presentation,
   LayoutDashboard,
-  Sparkles,
+  FilePlus2,
 } from "lucide-react";
 import { CANVAS_TYPE } from "../../editor/scene_doc_factory.js";
 
@@ -19,7 +19,7 @@ export const AI_GEN_TYPES = [
     height: 900,
     type: CANVAS_TYPE.DESIGN,
     category: "landing",
-    icon: Globe,
+    icon: GalleryHorizontalEnd,
   },
   {
     id: "mobile",
@@ -41,7 +41,7 @@ export const AI_GEN_TYPES = [
     height: 900,
     type: CANVAS_TYPE.DESIGN,
     category: "web",
-    icon: Monitor,
+    icon: AppWindow,
   },
   {
     id: "slides",
@@ -74,7 +74,7 @@ export const AI_GEN_TYPES = [
     height: 800,
     type: CANVAS_TYPE.DESIGN,
     category: "other",
-    icon: Sparkles,
+    icon: FilePlus2,
   },
 ];
 
