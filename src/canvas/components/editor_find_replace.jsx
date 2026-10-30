@@ -58,12 +58,9 @@ export default function EditorFindReplace({
 
   // Open focuses and selects the query so ⌘F feels like the browser's find.
   useEffect(() => {
-    if (!open) return undefined;
-    const frame = window.requestAnimationFrame(() => {
-      queryRef.current?.focus();
-      queryRef.current?.select();
-    });
-    return () => window.cancelAnimationFrame(frame);
+    if (!open) return;
+    queryRef.current?.focus();
+    queryRef.current?.select();
   }, [open]);
 
   // Report the current match to the editor so the owning text node is selected.
@@ -115,6 +112,8 @@ export default function EditorFindReplace({
     const match = matches[Math.min(activeIndex, matches.length - 1)];
     const result = replaceOne(doc, match, replacement);
     if (result.replaced) onApplyDoc?.(result.doc);
+    // Replacing the last match disables its button. Keep Escape inside the search surface.
+    queryRef.current?.focus({ preventScroll: true });
   };
 
   const applyAll = () => {
@@ -125,6 +124,7 @@ export default function EditorFindReplace({
       replacement,
     );
     if (result.count > 0 && result.doc !== doc) onApplyDoc?.(result.doc);
+    queryRef.current?.focus({ preventScroll: true });
   };
 
   if (!open) return null;

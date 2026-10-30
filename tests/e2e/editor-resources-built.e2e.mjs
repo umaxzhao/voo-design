@@ -11,6 +11,7 @@ try {
   page.on("pageerror", error => errors.push(String(error)));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/?voo-test=1`, { waitUntil: "networkidle" });
+  assert.equal(await page.getByTestId("welcome-prompt-heading").innerText(), "What would you like to design?");
   await page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true }).click();
   await page.getByTestId("design-editor").waitFor();
   await page.waitForFunction(() => window.__vooEditor && document.querySelector('[data-testid="design-editor"] [data-open-guard]')?.getAttribute("data-open-guard") === "off");

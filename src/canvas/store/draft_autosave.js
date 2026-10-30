@@ -55,6 +55,12 @@ export async function writeDraftSnapshot({ store, enginesRef, snapshotsRef }) {
       editingNodeId: focusedId,
     };
     const vooFile = await buildVooFile({ document, kind: "design", version: 2 });
+    try {
+      const { createProjectCover } = await import("../previews/project_cover.js");
+      vooFile.preview = await createProjectCover(vooFile, { preferEmbedded: false });
+    } catch (error) {
+      console.warn("[VOO] Draft cover unavailable; retaining document snapshot:", error);
+    }
     return await saveDraftBytes(entry.id, encodeVooBinary(vooFile), entry.name);
   } catch (err) {
     console.warn("[VOO] Failed to write draft copy:", err);
