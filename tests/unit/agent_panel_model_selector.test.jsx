@@ -78,7 +78,9 @@ describe("Agent Panel Model Selector & CLI Groups", () => {
     });
 
     it("separates platform icon metadata from adjacent model and tier text", () => {
-      expect(getModelDisplayParts("antigravity:gemini-3.8-flash-medium")).toMatchObject({
+      expect(
+        getModelDisplayParts("antigravity:gemini-3.8-flash-medium"),
+      ).toMatchObject({
         providerId: "antigravity-cli",
         platformName: "Antigravity",
         modelName: "3.8 Flash",
@@ -98,25 +100,30 @@ describe("Agent Panel Model Selector & CLI Groups", () => {
       expect(getSetting(AGENT_SETTING.MODEL)).toBe("codex:gpt-6-astra");
 
       setSetting(AGENT_SETTING.MODEL, "antigravity:gemini-3.8-flash-high");
-      expect(getSetting(AGENT_SETTING.MODEL)).toBe("antigravity:gemini-3.8-flash-high");
+      expect(getSetting(AGENT_SETTING.MODEL)).toBe(
+        "antigravity:gemini-3.8-flash-high",
+      );
     });
 
-    it("renders CanvasAgentPanel with model selector pill and composer model badge", () => {
+    it("keeps the only model selector in the bottom composer", () => {
       setSetting(AGENT_SETTING.MODEL, "claude:claude-opus-5-5");
-      const html = renderToStaticMarkup(<CanvasAgentPanel onClose={() => {}} />);
+      const html = renderToStaticMarkup(
+        <CanvasAgentPanel onClose={() => {}} />,
+      );
 
-      // Model pill in header
-      expect(html).toContain('data-testid="agent-model-pill"');
+      expect(html).not.toContain('data-testid="agent-model-pill"');
       expect(html).toContain("Claude Code Opus 5.5");
       expect(html.match(/voo-ai-fab-icon/g)).toHaveLength(1);
 
-      // Model badge in bottom composer
       expect(html).toContain('data-testid="agent-composer-model-pill"');
+      expect(html.match(/aria-haspopup="menu"/g)).toHaveLength(1);
     });
 
     it("renders with chosen model when setting is changed", () => {
       setSetting(AGENT_SETTING.MODEL, "antigravity:gemini-3.8-flash-high");
-      const html = renderToStaticMarkup(<CanvasAgentPanel onClose={() => {}} />);
+      const html = renderToStaticMarkup(
+        <CanvasAgentPanel onClose={() => {}} />,
+      );
 
       expect(html).toContain("3.8 FlashHigh");
       expect(html).toContain("brand-icons/antigravity.svg");
