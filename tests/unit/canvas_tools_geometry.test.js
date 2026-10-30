@@ -206,6 +206,53 @@ describe("Canvas Agent Geometry Tools", () => {
       expect(committedMessages).toEqual(["AI: Place image"]);
     });
 
+    it("imports generated data URLs as native children of a Frame", async () => {
+      mockEditor.getNode = vi.fn((id) => (
+        id === "poster-frame" ? { id, kind: "group", isFrame: true } : null
+      ));
+      const dataUrl = "data:image/png;base64,AA==";
+
+      const result = await executeCanvasTool("place_image", {
+        url: dataUrl,
+        parentId: "poster-frame",
+        x: 540,
+        y: 450,
+        width: 450,
+        height: 640,
+        name: "Generated toothbrush hero",
+      });
+
+      expect(mockEditor.insertImage).toHaveBeenCalledWith(dataUrl);
+      expect(mockEditor.updateNode).toHaveBeenCalledWith("img_9", {
+        x: 540,
+        y: 450,
+        width: 450,
+        height: 640,
+        name: "Generated toothbrush hero",
+        parentId: "poster-frame",
+      });
+      expect(result).toMatchObject({
+        ok: true,
+        layerId: "img_9",
+        parentId: "poster-frame",
+      });
+    });
+
+    it("rejects missing and non-container parents", async () => {
+      mockEditor.getNode = vi.fn(() => ({ id: "not-a-frame", kind: "rect" }));
+
+      await expect(executeCanvasTool("place_image", {
+        url: "data:image/png;base64,AA==",
+        parentId: "not-a-frame",
+      })).rejects.toMatchObject({ code: "agentInvalidArgs" });
+
+      mockEditor.getNode = vi.fn(() => null);
+      await expect(executeCanvasTool("place_image", {
+        url: "data:image/png;base64,AA==",
+        parentId: "missing-frame",
+      })).rejects.toMatchObject({ code: "agentInvalidArgs" });
+    });
+
     it("rejects empty urls and invalid geometry", async () => {
       await expect(executeCanvasTool("place_image", {})).rejects.toMatchObject({
         code: "agentInvalidArgs",

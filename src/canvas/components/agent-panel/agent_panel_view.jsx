@@ -5,6 +5,8 @@ import { VooBrandLogo } from "../../../app_title_bar.jsx";
 import ToolCallCard from "../tool_call_card.jsx";
 import AgentModelLabel from "./agent_model_label.jsx";
 import AgentModelMenu from "./agent_model_menu.jsx";
+import AgentContextChip from "./agent_context_chip.jsx";
+import AgentSelectionSuggestions, { appendSuggestion } from "./agent_selection_suggestions.jsx";
 
 /** Starter prompts shown on an empty conversation; each fills the composer. */
 const SUGGESTION_KEYS = [
@@ -131,7 +133,7 @@ export default function AgentPanelView({
               </span>
               <h3 className="text-[15px] text-neutral-200">{t("agent.panel.emptyTitle")}</h3>
             </div>
-            <ul className="flex flex-col gap-2">
+            {!activeContext && <ul className="flex flex-col gap-2">
               {SUGGESTION_KEYS.map((key) => (
                 <li key={key}>
                   <button
@@ -143,7 +145,7 @@ export default function AgentPanelView({
                   </button>
                 </li>
               ))}
-            </ul>
+            </ul>}
             <p className="text-[12px] leading-relaxed text-neutral-500">{t("agent.panel.emptyHint")}</p>
           </div>
         ) : (
@@ -213,32 +215,6 @@ export default function AgentPanelView({
         </div>
       )}
 
-      {/* Pen App Style Context Attachment Badge */}
-      {activeContext && (
-        <div className="flex items-center gap-1.5 px-4 pt-1 pb-1">
-          <span
-            data-testid="agent-context-badge"
-            className="flex items-center gap-1 rounded-md bg-white/[0.06] px-2 py-0.5 text-[10px] font-mono text-neutral-300"
-          >
-            <span>@{activeContext.name || activeContext.kind}</span>
-            <button
-              type="button"
-              data-testid="agent-context-detach"
-              onClick={() => setActiveContext(null)}
-              className="text-neutral-400 hover:text-white"
-              aria-label="Remove context"
-            >
-              ✕
-            </button>
-          </span>
-          {activeContext.width && activeContext.height && (
-            <span className="text-[10px] text-neutral-500 font-mono">
-              {activeContext.width} × {activeContext.height}
-            </span>
-          )}
-        </div>
-      )}
-
       {!busy && cancelled && (
         <p role="status" className="mx-4 mb-2 text-[12px] text-neutral-400">{t("agent.panel.cancelled")}</p>
       )}
@@ -264,7 +240,13 @@ export default function AgentPanelView({
           )}
         </div>
       )}
+      <AgentSelectionSuggestions context={activeContext} busy={busy} t={t}
+        onPick={(prompt) => {
+          setInput((current) => appendSuggestion(current, prompt));
+          composerRef.current?.querySelector("textarea")?.focus();
+        }} />
       <form ref={composerRef} onSubmit={onSubmit} className="prompt-composer agent-composer relative mx-3 mb-3 rounded-2xl p-3">
+        <AgentContextChip context={activeContext} onDetach={() => setActiveContext(null)} t={t} />
         {modelMenuOpen && (
           <AgentModelMenu currentModel={currentModel} groups={modelGroups}
             onSelect={handleSelectModel} onClose={closeModelMenu}
@@ -272,7 +254,7 @@ export default function AgentPanelView({
         )}
         <textarea
           aria-label={t("agent.panel.placeholder")}
-          placeholder={t("agent.panel.placeholder")}
+          placeholder={t(activeContext ? "agent.panel.selectionPlaceholder" : "agent.panel.placeholder")}
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={onKeyDown}

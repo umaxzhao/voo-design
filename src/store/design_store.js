@@ -356,6 +356,17 @@ export const useDesignStore = create((set, get) => {
   // With no open document there is no canvas to go back to, so the welcome page stays.
   setWelcomeOpen: (welcomeOpen) => set(state => (!welcomeOpen && !state.activeDocumentId ? {} : { welcomeOpen })),
   setDocumentLoading: (documentLoading) => set({ documentLoading }),
+  setStreamingPreview: (streamingPreview, streamingPreviewNodeId = null) => {
+    const state = get();
+    const update = { streamingPreview, streamingPreviewNodeId };
+    if (streamingPreview && state.welcomeOpen) {
+      if (!state.activeDocumentId) {
+        get().beginDocument();
+      }
+      update.welcomeOpen = false;
+    }
+    set(update);
+  },
 
   restoreCrashDraft: (draft) => {
     if (!draft?.document) return;

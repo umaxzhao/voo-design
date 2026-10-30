@@ -3,6 +3,18 @@ import { getSetting, setSetting } from "./settings.js";
 
 export const ANTIGRAVITY_OPT_IN_KEY = "voo.agent.experimental.antigravity";
 
+/**
+ * DeepSeek Harness is an app + VOO plugin pair, not a native CLI session:
+ * "installed" means the app bundle exists, "authenticated" means the VOO
+ * connector plugin is installed in one of its profiles. Callers that treat
+ * the pair specially read this id rather than restating the string.
+ */
+export const DEEPSEEK_HARNESS_ID = "deepseek-harness";
+
+export function isDeepSeekHarnessAgent(agent) {
+  return agent?.id === DEEPSEEK_HARNESS_ID;
+}
+
 export function isAntigravityOptedIn() {
   return Boolean(getSetting(ANTIGRAVITY_OPT_IN_KEY));
 }
@@ -71,7 +83,7 @@ export const CLI_AGENTS = [
     experimental: false,
   },
   {
-    id: "deepseek-harness",
+    id: DEEPSEEK_HARNESS_ID,
     providerId: "deepseek",
     displayName: "DeepSeek Harness",
     name: "DeepSeek Harness",

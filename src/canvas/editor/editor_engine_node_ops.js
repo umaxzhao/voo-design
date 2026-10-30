@@ -73,7 +73,10 @@ export function createEngineNodeOps({
 
   function removeNode(id) {
     if (!removeIds([id])) return;
-    if (selection.forgetNode(id)) {
+    const remainingSelection = selection
+      .getIds()
+      .filter((selectedId) => findNode(getDoc(), selectedId));
+    if (selection.selectNodes(remainingSelection)) {
       requestRender();
       notify();
     }

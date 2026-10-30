@@ -14,6 +14,7 @@ import {
   inspectNumber,
   inspectTailwind,
 } from "../../editor/inspect_code.js";
+import { resolveCodeSnippet } from "../../codegen/code_connect.js";
 import { HEX_COLOUR, NONE_PATTERN } from "./colour_swatch.jsx";
 
 function Row({ label, value, mono = true }) {
@@ -71,6 +72,13 @@ export default function InspectPanel({
   const spacing = spacingRows(object, parentNode);
 
   const doc = engine?.getDocument?.();
+  const componentDoc = object?.sourceCanvasId
+    ? doc?.components?.[object.sourceCanvasId] ?? null
+    : null;
+  const codeConnect = useMemo(
+    () => resolveCodeSnippet(object, componentDoc),
+    [object, componentDoc],
+  );
   const boundVariable = object?.fillVariableId
     ? (doc?.variablesV2?.collections ?? [])
         .flatMap((collection) => collection.variables ?? [])
@@ -201,6 +209,23 @@ export default function InspectPanel({
           mono={Boolean(boundStyle)}
         />
       </Group>
+
+      {codeConnect ? (
+        <Group title={t("editor.inspect.codeConnect")}>
+          <pre className="max-h-40 overflow-auto rounded-xl bg-neutral-900 p-2 text-[10px] leading-4 text-[#a7ffd4]">
+            <code>{codeConnect.code}</code>
+          </pre>
+          <button
+            type="button"
+            onClick={() => copy("codeConnect", codeConnect.code)}
+            className="flex min-h-7 w-full items-center justify-center rounded-xl bg-white/[0.08] text-[10px] font-mono text-neutral-200 transition-colors hover:bg-white/[0.14]"
+          >
+            {copied === "codeConnect"
+              ? t("editor.inspect.copied")
+              : t("editor.inspect.copyCode")}
+          </button>
+        </Group>
+      ) : null}
 
       <Group title={t("editor.inspect.code")}>
         <pre className="max-h-40 overflow-auto rounded-xl bg-neutral-900 p-2 text-[10px] leading-4 text-neutral-300">

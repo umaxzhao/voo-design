@@ -68,6 +68,8 @@ export const VARIABLE_BINDINGS = Object.freeze({
     property: "cornerRadius",
   },
   text: { key: "textVariableId", type: "string", property: "text" },
+  gap: { key: "gapVariableId", type: "number", property: "gap" },
+  padding: { key: "paddingVariableId", type: "number", property: "padding" },
 });
 
 const BINDING_KEYS = Object.values(VARIABLE_BINDINGS).map((entry) => entry.key);
@@ -250,12 +252,14 @@ export function normalizeVariablesV2(value) {
         }
       }
 
+      const aliasOf = text(rawVariable.aliasOf) || null;
       seenVariableIds.add(variableId);
       variables.push({
         id: variableId,
         name: text(rawVariable.name) || variableId,
         type,
         valuesByMode,
+        ...(aliasOf ? { aliasOf } : {}),
       });
     }
 
@@ -375,13 +379,23 @@ export function activeModeId(model, collectionId) {
 }
 
 /**
- * Resolved value of a variable in the active mode of its collection.
+ * Resolved value of a variable in the active mode of its collection,
+ * following aliasOf links with cycle prevention.
  * Returns `null` when the variable/value cannot be resolved.
  */
-export function variableValue(doc, variableId) {
-  const found = findVariable(doc, variableId);
+export function variableValue(doc, variableId, seen = new Set()) {
+  const needle = text(variableId);
+  if (!needle || seen.has(needle)) return null;
+  seen.add(needle);
+
+  const found = findVariable(doc, needle);
   if (!found) return null;
   const { collection, variable, modeId } = found;
+
+  if (variable.aliasOf) {
+    return variableValue(doc, variable.aliasOf, seen);
+  }
+
   const value =
     variable.valuesByMode[modeId ?? collection.modes[0].id] ??
     variable.valuesByMode[collection.modes[0].id];
@@ -428,9 +442,10 @@ export function resolveDocumentVariables(doc) {
     const resolve = (bindingKey, expectedType) => {
       const variableId = node[bindingKey];
       if (!variableId) return null;
+      const val = variableValue(doc, variableId);
       const entry = index.get(variableId);
       if (!entry || entry.variable.type !== expectedType) return null;
-      return entry.value;
+      return val !== null ? val : entry.value;
     };
 
     const fill = resolve("fillVariableId", "color");
@@ -456,6 +471,22 @@ export function resolveDocumentVariables(doc) {
     const content = resolve("textVariableId", "string");
     if (typeof content === "string" && updated.text !== content) {
       updated = { ...updated, text: content };
+    }
+    const gap = clampedNumber(
+      resolve("gapVariableId", "number"),
+      0,
+      Number.POSITIVE_INFINITY,
+    );
+    if (gap !== null && updated.gap !== gap) {
+      updated = { ...updated, gap };
+    }
+    const padding = clampedNumber(
+      resolve("paddingVariableId", "number"),
+      0,
+      Number.POSITIVE_INFINITY,
+    );
+    if (padding !== null && updated.padding !== padding) {
+      updated = { ...updated, padding };
     }
     if (updated !== node) changed = true;
     return updated;
@@ -749,6 +780,29 @@ export function addVariable(
     type: variableType,
     valuesByMode: seeded,
   });
+  return withVariablesModel(doc, model);
+}
+
+export function setVariableAlias(doc, variableId, targetVariableId) {
+  const model = modelOrEmpty(doc);
+  const { variable } = requireVariable(model, variableId);
+  const targetId = text(targetVariableId) || null;
+  if (targetId) {
+    if (targetId === variable.id) throw new Error("variable-alias-cycle");
+    const { variable: target } = requireVariable(model, targetId);
+    if (target.type !== variable.type) throw new Error("variable-type-mismatch");
+    // Check transitive cycles
+    let current = target;
+    const visited = new Set([variable.id, target.id]);
+    while (current.aliasOf) {
+      if (visited.has(current.aliasOf)) throw new Error("variable-alias-cycle");
+      visited.add(current.aliasOf);
+      current = requireVariable(model, current.aliasOf).variable;
+    }
+    variable.aliasOf = targetId;
+  } else {
+    delete variable.aliasOf;
+  }
   return withVariablesModel(doc, model);
 }
 

@@ -1,10 +1,10 @@
-# VOO Design Mode for VS Code & Cursor
+# VOO for VS Code & Cursor
 
-Embed the VOO Design editor directly into your IDE alongside your code.
+Embed the VOO editor directly into your IDE alongside your code.
 
 ## Quick Start
 
-1. Start VOO Design in your terminal:
+1. Start VOO in your terminal:
    ```sh
    npm run dev
    ```

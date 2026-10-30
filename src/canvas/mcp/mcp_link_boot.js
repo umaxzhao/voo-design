@@ -7,6 +7,13 @@ export const MCP_LINK_WANTED_EVENT = "voo:mcp-link-wanted";
 
 const AGENT_PROVIDER_KEY = "voo.agent.llmProvider";
 
+/**
+ * External MCP clients that still need this page linked to the loopback
+ * bridge. DeepSeek Harness is not a native CLI we spawn, but its VOO plugin
+ * drives the canvas through the same bridge, so selecting it is an opt-in.
+ */
+const EXTERNAL_MCP_AGENT_IDS = Object.freeze(["deepseek-harness"]);
+
 function readStorage(key) {
   try {
     return localStorage.getItem(key);
@@ -15,8 +22,12 @@ function readStorage(key) {
   }
 }
 
-/** Whether the user picked a local CLI agent (Codex, Claude, ...) as the agent provider. */
-function hasLocalCliAgentSelected() {
+/**
+ * Whether the user picked an agent that reaches the canvas through the local
+ * bridge: a native CLI (Codex, Claude, ...) or an external MCP client with a
+ * VOO plugin (DeepSeek Harness).
+ */
+function hasBridgeAgentSelected() {
   const stored = readStorage(AGENT_PROVIDER_KEY);
   if (!stored) return false;
   // Settings mirror values as JSON strings; tolerate a bare id as well.
@@ -26,13 +37,16 @@ function hasLocalCliAgentSelected() {
   } catch {
     // bare id
   }
-  return NATIVE_AGENT_CLI_IDS.includes(provider);
+  return (
+    NATIVE_AGENT_CLI_IDS.includes(provider) ||
+    EXTERNAL_MCP_AGENT_IDS.includes(provider)
+  );
 }
 
 /**
  * Desktop keeps the link on unless switched off. A plain browser would only
  * log a refused loopback connection, so it links after explicit opt-in:
- * the storage switch or a selected local CLI agent.
+ * the storage switch or a selected bridge-backed agent.
  */
 export function isMcpLinkWanted({ desktop = Boolean(window.vooDesktop) } = {}) {
   const switchValue = readStorage(MCP_LINK_STORAGE_KEY);
@@ -44,7 +58,7 @@ export function isMcpLinkWanted({ desktop = Boolean(window.vooDesktop) } = {}) {
       if (params.has("embed") || params.has("minimal")) return true;
     } catch {}
   }
-  return hasLocalCliAgentSelected();
+  return hasBridgeAgentSelected();
 }
 
 let stopLink = null;

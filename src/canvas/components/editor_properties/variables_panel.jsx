@@ -460,14 +460,20 @@ export default function VariablesPanel({
                               actions.renameVariable?.(variable.id, name)
                             }
                           />
-                          <ValueEditor
-                            variable={variable}
-                            modeId={modeId}
-                            label={`${tv("editor.variables.panel.value")} ${variable.name}`}
-                            onCommit={(next) =>
-                              actions.updateValue?.(variable.id, modeId, next)
-                            }
-                          />
+                          {variable.aliasOf ? (
+                            <span className="text-[10px] text-neutral-400 italic px-1 truncate max-w-[120px]" title={`Alias of ${variable.aliasOf}`}>
+                              ↳ {variable.aliasOf}
+                            </span>
+                          ) : (
+                            <ValueEditor
+                              variable={variable}
+                              modeId={modeId}
+                              label={`${tv("editor.variables.panel.value")} ${variable.name}`}
+                              onCommit={(next) =>
+                                actions.updateValue?.(variable.id, modeId, next)
+                              }
+                            />
+                          )}
                           {variable.type === "color" && actions.bind ? (
                             <button
                               type="button"

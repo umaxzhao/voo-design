@@ -7,6 +7,7 @@
  */
 
 import { registerMcpRelayChannels } from "./mcp_server/canvas_relay.js";
+import { startDraftStreamWatcher } from "./draft_stream_watcher.js";
 import http from "node:http";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { WebSocketServer } from "ws";
@@ -51,8 +52,14 @@ function hasValidBridgeToken(candidate, expected) {
  */
 export function registerCliBridgeChannels({ ipcMain }) {
   const { dispose } = registerLocalCliIpc(ipcMain, { isAuthorized: () => true });
-  registerMcpRelayChannels(ipcMain);
-  return { dispose };
+  const relay = registerMcpRelayChannels(ipcMain);
+  return {
+    dispose: async () => {
+      await dispose?.();
+      relay?.dispose?.();
+    },
+    sendToCanvas: relay?.sendToCanvas,
+  };
 }
 
 /**
@@ -140,13 +147,19 @@ export async function startCliBridgeServer({
     throw err;
   }
 
+  const draftWatcher = startDraftStreamWatcher({
+    sendToCanvas: (channel, payload) => registration?.sendToCanvas?.(channel, payload),
+  });
+
   return {
     server,
     wss,
     port: server.address().port,
     token: activeToken,
     adapter,
+    draftWatcher,
     async close() {
+      draftWatcher?.close();
       for (const client of wss.clients) {
         try {
           client.terminate();

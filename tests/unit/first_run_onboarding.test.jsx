@@ -33,9 +33,10 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import FirstRunOnboarding, { syncFirstRunDialog } from "../../src/canvas/components/first_run_onboarding.jsx";
 import AgentCardGrid from "../../src/canvas/components/onboarding/agent_card_grid.jsx";
 import CustomProviderInline from "../../src/canvas/components/onboarding/custom_provider_inline.jsx";
+import DeepSeekConnectorInline from "../../src/canvas/components/onboarding/deepseek_connector_inline.jsx";
 import { FIRST_RUN_KEY, finishFirstRun, shouldShowFirstRun } from "../../src/canvas/components/first_run_state.js";
 import { getSetting, setSetting } from "../../src/shared/settings.js";
-import { loadLocale } from "../../src/shared/i18n.js";
+import { loadLocale, t } from "../../src/shared/i18n.js";
 import { readFileSync } from "node:fs";
 
 describe("commercial first run", () => {
@@ -205,11 +206,42 @@ describe("first-run interactions", () => {
     click(el => el.type === "button" && el.props.children === "Open Agent setup guide (CLI detection and connection test)");
     expect(listener).toHaveBeenCalledOnce(); expect(onClose).toHaveBeenCalled();
   });
+  it("shows the DeepSeek plugin panel instead of the generic connection panel", () => {
+    pick("codex");
+    expect(elements(tree).filter(el => el.type === "p").map(el => el.props.children)).toContain("Agent connection");
+    pick("deepseek-harness");
+    const panel = elements(tree).find(el => el.type === DeepSeekConnectorInline);
+    expect(panel).toBeTruthy();
+    expect(panel.props.status).toBeNull();
+    expect(typeof panel.props.detection.refresh).toBe("function");
+    expect(elements(tree).filter(el => el.type === "p").map(el => el.props.children)).not.toContain("Agent connection");
+    expect(elements(tree).filter(el => el.type === "button").map(el => el.props.children))
+      .not.toContain("Open Agent setup guide (CLI detection and connection test)");
+  });
   const inline = () => elements(tree).find(el => el.type === CustomProviderInline);
   it.each(["dashscope", "volcengine"])("opens %s API setup without applying a CLI model", id => {
     const previousModel = getSetting(AGENT_SETTING.MODEL);
     pick(id);
     expect(inline().props.preset.id).toBe(id);
+    expect(getSetting(AGENT_SETTING.MODEL)).toBe(previousModel);
+    expect(elements(tree).filter(el => el.type === "button").map(el => el.props.children))
+      .not.toContain("Open Agent setup guide (CLI detection and connection test)");
+  });
+  it("offers the DeepSeek Harness model card and prefills the local bridge form", () => {
+    const grid = elements(tree).find(el => el.type === AgentCardGrid);
+    expect(grid.props.cloudProviders.map(card => card.id))
+      .toEqual(["vooCloud", "dashscope", "volcengine", "deepseek-harness-models"]);
+    const previousModel = getSetting(AGENT_SETTING.MODEL);
+    pick("deepseek-harness-models");
+    expect(inline().props.preset.id).toBe("deepseek-harness-models");
+    expect(inline().props.preset.customProviderId).toBe("custom:onboarding-deepseek-harness");
+    // The preset is a shortcut into the same inline form: endpoint and a
+    // loopback placeholder key are prefilled, no model is written before fetch.
+    const html = renderToStaticMarkup(tree);
+    expect(html).toMatch(/data-testid="first-run-custom-url"[^>]* value="http:\/\/127\.0\.0\.1:4399\/v1"/);
+    expect(html).toMatch(/data-testid="first-run-custom-key"[^>]* value="voo-local"/);
+    expect(html).toContain('data-testid="first-run-custom-hint"');
+    expect(html).toContain("Needs the DeepSeek Harness desktop app");
     expect(getSetting(AGENT_SETTING.MODEL)).toBe(previousModel);
     expect(elements(tree).filter(el => el.type === "button").map(el => el.props.children))
       .not.toContain("Open Agent setup guide (CLI detection and connection test)");
@@ -258,4 +290,35 @@ describe("first-run interactions", () => {
     expect(elements(tree).find(el => el.type === AgentCardGrid).props.customConfigured).toBe(true);
   });
   it("can finish without choosing an Agent", () => { next(); expect(onClose).toHaveBeenCalled(); });
+});
+
+// Rendered outside the shallow harness so the inline panel keeps its real hooks.
+describe("first-run DeepSeek install panel", () => {
+  it.each(["en", "zh"])("renders the plugin install guidance without raw keys in %s", async (locale) => {
+    await loadLocale(locale);
+    const status = {
+      status: "unauthenticated",
+      installed: true,
+      authenticated: false,
+      ready: false,
+      dsh: {
+        appInstalled: true,
+        appPath: "/Applications/DeepSeek Harness.app",
+        pluginInstalled: false,
+        connectorDir: "/tmp/voo/connectors/voo",
+        installCommand: "dsh plugin add link:/tmp/voo/connectors/voo",
+      },
+    };
+    const html = renderToStaticMarkup(
+      <DeepSeekConnectorInline t={t} status={status} detection={{ phase: "done", refresh: () => {} }} />,
+    );
+    expect(html).toContain('data-testid="deepseek-connector-inline"');
+    expect(html).toContain('data-testid="deepseek-app-status"');
+    expect(html).toContain('data-testid="deepseek-plugin-status"');
+    expect(html).toContain('data-testid="deepseek-install-command"');
+    expect(html).toContain('data-testid="deepseek-install-button"');
+    expect(html).toContain('data-testid="deepseek-refresh"');
+    expect(html).not.toContain("firstRun.");
+    await loadLocale("en");
+  });
 });

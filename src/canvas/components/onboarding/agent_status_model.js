@@ -1,4 +1,4 @@
-import { CLI_TRANSPORT, isCliAgentConnected } from "../../../shared/cli-agents.js";
+import { CLI_TRANSPORT, isCliAgentConnected, isDeepSeekHarnessAgent } from "../../../shared/cli-agents.js";
 
 /** What a first-run agent card says about its platform. */
 export const AGENT_STATUS = Object.freeze({
@@ -6,6 +6,11 @@ export const AGENT_STATUS = Object.freeze({
   CONNECTED: "connected",
   NOT_INSTALLED: "notInstalled",
   NOT_SIGNED_IN: "notSignedIn",
+  /**
+   * DeepSeek Harness only: the app is installed, the VOO connector plugin is
+   * not. It is not a sign-in problem — the dialog shows install guidance.
+   */
+  PLUGIN_MISSING: "pluginMissing",
   /** No bridge to ask (web build, read-only link) or the bridge could not answer. */
   UNAVAILABLE: "unavailable",
   /** Custom model only: no provider with models yet. */
@@ -26,6 +31,7 @@ export const AGENT_STATUS_KEY = Object.freeze({
   [AGENT_STATUS.CONNECTED]: "firstRun.agentStatus.connected",
   [AGENT_STATUS.NOT_INSTALLED]: "firstRun.agentStatus.notInstalled",
   [AGENT_STATUS.NOT_SIGNED_IN]: "firstRun.agentStatus.notSignedIn",
+  [AGENT_STATUS.PLUGIN_MISSING]: "firstRun.agentStatus.pluginMissing",
   [AGENT_STATUS.UNAVAILABLE]: "firstRun.agentStatus.unavailable",
   [AGENT_STATUS.CONFIGURE]: "firstRun.agentStatus.configure",
   [AGENT_STATUS.CONFIGURED]: "firstRun.agentStatus.configured",
@@ -37,6 +43,11 @@ export const AGENT_STATUS_KEY = Object.freeze({
  * "Connected" is decided by `isCliAgentConnected` — the app's single rule for a
  * usable CLI — so this card cannot call green what a run would refuse.
  *
+ * DeepSeek Harness is the one exception: the bridge reports the app as
+ * `installed` and the VOO connector plugin as `authenticated`, so an installed
+ * app without the plugin is `PLUGIN_MISSING` — a "third fact" the generic
+ * signed-in/signed-out pair cannot express (the user has nothing to sign into).
+ *
  * @param {{id: string}} agent a `CLI_AGENTS` entry
  * @param {{phase: string, transport?: string, statuses?: object|null}} detection
  */
@@ -47,6 +58,9 @@ export function cliAgentStatus(agent, detection) {
   if (!status) return AGENT_STATUS.UNAVAILABLE;
   if (!status.installed) return AGENT_STATUS.NOT_INSTALLED;
   if (status.status === "unavailable") return AGENT_STATUS.UNAVAILABLE;
+  if (isDeepSeekHarnessAgent(agent)) {
+    return status.authenticated === true ? AGENT_STATUS.CONNECTED : AGENT_STATUS.PLUGIN_MISSING;
+  }
   return isCliAgentConnected(agent, status, detection.transport ?? CLI_TRANSPORT.NONE)
     ? AGENT_STATUS.CONNECTED
     : AGENT_STATUS.NOT_SIGNED_IN;

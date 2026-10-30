@@ -1,7 +1,7 @@
 {
   "name": "voo-design-vscode",
-  "displayName": "VOO Design Mode",
-  "description": "Embedded VOO Design editor component for VS Code and Cursor",
+  "displayName": "VOO",
+  "description": "Embedded VOO editor for VS Code and Cursor",
   "version": "1.0.0",
   "publisher": "voo-design",
   "license": "MIT",
@@ -21,17 +21,17 @@
     "commands": [
       {
         "command": "voo.openDesignMode",
-        "title": "VOO: Open Design Mode",
-        "category": "VOO Design"
+        "title": "Open Design Mode",
+        "category": "VOO"
       }
     ],
     "configuration": {
-      "title": "VOO Design",
+      "title": "VOO",
       "properties": {
         "voo.editorUrl": {
           "type": "string",
           "default": "http://localhost:5173/?embed=1",
-          "description": "URL of the running VOO Design editor instance."
+          "description": "URL of the running VOO editor instance."
         }
       }
     }

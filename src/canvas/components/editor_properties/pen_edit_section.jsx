@@ -9,6 +9,7 @@ import PropTypes from "prop-types";
 import { useI18n } from "../../use_i18n.js";
 import ColourSection from "./colour_section.jsx";
 import StrokeStyleSection from "./stroke_style_section.jsx";
+import { PenAnchorIcon } from "./stroke_style_icons.jsx";
 
 export default function PenEditSection({
   object,
@@ -34,11 +35,24 @@ export default function PenEditSection({
               key={type}
               type="button"
               onClick={() => onConvertAnchor?.(type)}
-              className="rounded-lg bg-[#222222] py-1 text-[10px] font-mono text-neutral-400 transition-all hover:bg-[#2a2a2a] hover:text-neutral-200"
+              title={
+                type === "corner"
+                  ? t("editor.pen.anchorCorner")
+                  : t("editor.pen.anchorSmooth")
+              }
+              aria-label={
+                type === "corner"
+                  ? t("editor.pen.anchorCorner")
+                  : t("editor.pen.anchorSmooth")
+              }
+              className="flex items-center justify-center gap-1 rounded-lg bg-[#222222] py-1 text-[10px] font-mono text-neutral-400 transition-all hover:bg-[#2a2a2a] hover:text-neutral-200"
             >
-              {type === "corner"
-                ? t("editor.pen.anchorCorner")
-                : t("editor.pen.anchorSmooth")}
+              <PenAnchorIcon type={type} size={12} />
+              <span>
+                {type === "corner"
+                  ? t("editor.pen.anchorCorner")
+                  : t("editor.pen.anchorSmooth")}
+              </span>
             </button>
           ))}
         </div>
@@ -47,9 +61,10 @@ export default function PenEditSection({
           onClick={() => onDeleteAnchor?.()}
           aria-label={t("editor.pen.deleteAnchor")}
           title={t("editor.pen.deleteAnchor")}
-          className="shrink-0 rounded-lg bg-[#222222] px-2 py-1 text-[10px] font-mono text-neutral-400 transition-all hover:bg-rose-500/20 hover:text-rose-300"
+          className="flex shrink-0 items-center justify-center gap-1 rounded-lg bg-[#222222] px-2 py-1 text-[10px] font-mono text-neutral-400 transition-all hover:bg-rose-500/20 hover:text-rose-300"
         >
-          {t("editor.pen.deleteAnchor")}
+          <PenAnchorIcon type="delete" size={12} />
+          <span>{t("editor.pen.deleteAnchor")}</span>
         </button>
       </div>
 

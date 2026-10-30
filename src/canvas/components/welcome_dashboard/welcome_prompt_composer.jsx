@@ -5,6 +5,7 @@ import WelcomePromptSettings from "./welcome_prompt_settings.jsx";
 import { AI_GEN_TYPES } from "./welcome_constants.js";
 import { DEFAULT_DESIGN_SYSTEM_ID } from "./generation-options.js";
 import WelcomeModelSelect from "./welcome_model_select.jsx";
+import WelcomePromptTypes from "./welcome_prompt_types.jsx";
 
 /** Filled two-slider icon used for the generation settings trigger. */
 function TuneIcon({
@@ -17,8 +18,8 @@ function TuneIcon({
 
 /**
  * Pen-style welcome composer: one quiet prompt surface, a model label, an
- * advanced generation popover, and send. The type/style/system/size/candidate
- * choices stay in the popover so the default surface has no chip row.
+ * advanced generation popover, and send. Design types remain visible above
+ * the input; style/system/size/candidate choices stay in the popover.
  */
 export function WelcomePromptComposer({
   t,
@@ -96,6 +97,7 @@ export function WelcomePromptComposer({
     return () => window.removeEventListener("resize", place);
   }, [advancedOpen]);
   return <div ref={rootRef} data-advanced-open={advancedOpen ? "true" : "false"} className="welcome-prompt-root relative">
+      <WelcomePromptTypes t={t} activePill={activePill} onSelectPill={onSelectPill} />
       <form ref={formRef} onSubmit={onSubmit} className={`prompt-composer relative mt-0 min-w-0 rounded-2xl p-4 transition-colors ${advancedOpen ? "z-[300]" : ""}`}>
         <textarea value={promptText} onChange={event => setPromptText(event.target.value)} onKeyDown={event => {
         if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent?.isComposing) {
@@ -142,8 +144,6 @@ export function WelcomePromptComposer({
         t,
         panelRef,
         panelPos,
-        activePill,
-        onSelectPill,
         styleId,
         styleOptions,
         onSelectStyle,

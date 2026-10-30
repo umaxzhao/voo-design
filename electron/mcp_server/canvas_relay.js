@@ -42,4 +42,20 @@ export function registerMcpRelayChannels(ipcMain) {
       catch (error) { finish(error); }
     });
   });
+  return {
+    dispose: () => {
+      canvas = null;
+      for (const call of pending.values()) call.finish(new Error("Relay disposed"));
+      pending.clear();
+    },
+    sendToCanvas: (channel, payload) => {
+      if (!canvas) return false;
+      try {
+        canvas.send(channel, payload);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+  };
 }

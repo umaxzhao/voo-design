@@ -312,6 +312,23 @@ export const COMPONENT_TOOL_SCHEMAS = Object.freeze([
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "set_code_connect",
+      description: "Set Code Connect production code mapping for a component or instance layer.",
+      parameters: {
+        type: "object",
+        properties: {
+          layerId: { type: "string", description: "Target layer or component ID." },
+          componentName: { type: "string", description: "Production component name (e.g. Button)." },
+          importPath: { type: "string", description: "Import path (e.g. @/components/ui/button)." },
+          template: { type: "string", description: "JSX template string with {propName} placeholders." },
+        },
+        required: ["layerId", "componentName"],
+      },
+    },
+  },
 ]);
 
 export function setFrameSlot(args = {}, context = {}) {
@@ -351,12 +368,34 @@ export function getFrameSlot(args = {}, context = {}) {
   return { ok: true, frameId, slot: node.slot ?? null };
 }
 
+export function setCodeConnectTool(args = {}, context = {}) {
+  context.signal?.throwIfAborted();
+  const editor = context.editor ?? (typeof window !== "undefined" ? window.__vooEditor : null);
+  if (!editor) throw new Error("agentNoEditor");
+  const layerId = String(args.layerId ?? "").trim();
+  if (!layerId) throw new Error("layerId is required");
+
+  const componentName = String(args.componentName ?? "").trim();
+  const importPath = String(args.importPath ?? "").trim();
+  const template = String(args.template ?? "").trim();
+
+  const codeConnect = {
+    componentName,
+    ...(importPath ? { importPath } : {}),
+    ...(template ? { template } : {}),
+  };
+
+  editor.updateNode?.(layerId, { codeConnect });
+  editor.commitEditorDocument?.({ message: "AI: Configure Code Connect" });
+  return { ok: true, layerId, codeConnect };
+}
+
 export const COMPONENT_TOOL_EXECUTORS = Object.freeze({
   set_instance_override: setInstanceOverride,
   reset_instance_overrides: resetInstanceOverrides,
   swap_instance: swapInstance,
   create_component_variant: createComponentVariant,
-  create_component_variants_batch: createComponentVariantsBatch,
+  createComponentVariantsBatch: createComponentVariantsBatch,
   list_component_variants: listComponentVariants,
   create_component_variant_matrix: createComponentVariantMatrix,
   list_instance_variant_properties: listInstanceVariantProperties,
@@ -368,4 +407,5 @@ export const COMPONENT_TOOL_EXECUTORS = Object.freeze({
   set_active_mode: setActiveMode,
   set_frame_slot: setFrameSlot,
   get_frame_slot: getFrameSlot,
+  set_code_connect: setCodeConnectTool,
 });

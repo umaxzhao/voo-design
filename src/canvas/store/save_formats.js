@@ -6,8 +6,9 @@
 import { NODE_KIND } from "../editor/scene_doc_factory.js";
 import { isSvgFileName, svgSaveLosses } from "./svg_document_io.js";
 import { figSaveLosses } from "../figma/voo-to-fig.js";
+import { penSaveLosses } from "../pen/voo_to_pen.js";
 
-/** The Figma save: frames, rectangles and ellipses with solid fills. */
+/** Native Figma document export. Editable layer coverage is described by figSaveLosses. */
 export const FIG_FORMAT = Object.freeze({
   extension: ".fig",
   mime: "application/octet-stream",
@@ -38,6 +39,15 @@ export const SAVE_FORMATS = Object.freeze({
     },
   },
   fig: FIG_FORMAT,
+  pen: {
+    extension: ".pen",
+    mime: "application/json",
+    electronFilter: { name: "Pen", extensions: ["pen"] },
+    pickerType: {
+      description: "Pen (*.pen)",
+      accept: { "application/json": [".pen"] },
+    },
+  },
   psd: {
     extension: ".psd",
     mime: "image/vnd.adobe.photoshop",
@@ -57,20 +67,20 @@ export function isPsdFileName(fileName) {
   return /\.psd$/i.test(fileName ?? "");
 }
 
-/** Pen documents are imported into a new `.voo`; there is no Pen writer. */
 export function isPenFileName(fileName) {
   return /\.pen$/i.test(fileName ?? "");
 }
 
 /**
  * The save format a document name implies. Unknown names save as `.voo`.
- * A `.pen` name also saves as `.voo`: Pen is an import-only format, so the
- * imported document is never written back over the source file.
+ * A `.pen` name writes a Pen document, but the save path treats it as an
+ * export: the `.voo` document stays the working file.
  */
 export function saveFormatOf(fileName) {
   if (isSvgFileName(fileName)) return "svg";
   if (isPsdFileName(fileName)) return "psd";
   if (isFigFileName(fileName)) return "fig";
+  if (isPenFileName(fileName)) return "pen";
   return "voo";
 }
 
@@ -87,6 +97,7 @@ export function formatSaveLosses(format, { pageCount, sceneDoc }) {
   if (format === "svg") return svgSaveLosses({ pageCount, sceneDoc });
   if (format === "psd") return psdSaveLosses({ pageCount, sceneDoc });
   if (format === "fig") return figSaveLosses(sceneDoc, { pageCount });
+  if (format === "pen") return penSaveLosses(sceneDoc, { pageCount });
   return [];
 }
 

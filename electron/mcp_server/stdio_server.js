@@ -205,7 +205,7 @@ export function createMcpStdioServer({ input, output, callTool, listTools = buil
     try {
       switch (method) {
         case "initialize": return send(id, { protocolVersion: params.protocolVersion || "2025-06-18",
-          capabilities: { tools: {}, resources: {} }, serverInfo: { name: "voo-design", version: "1.0.0" } });
+          capabilities: { tools: {}, resources: {} }, serverInfo: { name: "voo", version: "1.0.0" } });
         case "ping": return send(id, {});
         case "tools/list": return send(id, { tools: await listTools() });
         case "resources/list": return send(id, { resources: VOO_RESOURCES });

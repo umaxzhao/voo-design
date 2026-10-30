@@ -14,6 +14,11 @@ import {
   overriddenFields,
   swapInstanceSource,
 } from "../../editor/instance-overrides.js";
+import {
+  resolveInstanceComponentProperties,
+  setInstanceComponentProperty,
+  COMPONENT_PROP_TYPES,
+} from "../../editor/component_properties.js";
 
 const GROUPS = [
   ["text", "editor.props.resetText", ["text", "fontSize", "fontWeight"]],
@@ -58,6 +63,13 @@ export default function InstanceSection({ object, engine }) {
   const reset = (groupFields) =>
     commit({ instance: clearOverrideFields(object.instance ?? {}, groupFields) });
 
+  const typedProps = current ? resolveInstanceComponentProperties(object, current) : {};
+  const hasTypedProps = Object.keys(typedProps).length > 0;
+
+  const handleSetProp = (key, val) => {
+    commit(setInstanceComponentProperty(object, key, val));
+  };
+
   return (
     <StaticSection title={t("editor.props.instance")} storageKey="instance">
       <div className="flex flex-col gap-1.5">
@@ -77,6 +89,56 @@ export default function InstanceSection({ object, engine }) {
             widthClass="w-full"
           />
         </div>
+
+        {/* Typed Component Properties (Boolean, Text, InstanceSwap) */}
+        {hasTypedProps ? (
+          <div className="flex flex-col gap-1.5 py-1 border-t border-b border-white/5 my-1">
+            <span className="px-1 text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-400">
+              {t("editor.props.componentProperties")}
+            </span>
+            {Object.entries(typedProps).map(([key, prop]) => {
+              if (prop.type === COMPONENT_PROP_TYPES.BOOLEAN) {
+                return (
+                  <div key={key} className={`${sectionRowClass} justify-between px-1`}>
+                    <span className="text-[10px] font-mono text-neutral-300">{key}</span>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(prop.value)}
+                      onChange={(e) => handleSetProp(key, e.target.checked)}
+                      className="size-3.5 rounded-md border border-white/20 bg-neutral-800 accent-[#a7ffd4] cursor-pointer"
+                    />
+                  </div>
+                );
+              }
+              if (prop.type === COMPONENT_PROP_TYPES.INSTANCE_SWAP && prop.preferredValues?.length) {
+                return (
+                  <div key={key} className={sectionRowClass}>
+                    <span className="shrink-0 text-[10px] font-mono text-neutral-400">{key}</span>
+                    <FlatSelect
+                      value={String(prop.value ?? "")}
+                      onChange={(next) => handleSetProp(key, next)}
+                      options={prop.preferredValues.map((v) => ({ value: v, label: v }))}
+                      className="min-w-0 flex-1"
+                      triggerClassName="!h-6 !w-full !rounded-lg !bg-neutral-800 !px-2 !text-[10px] !font-mono !text-neutral-100"
+                      widthClass="w-full"
+                    />
+                  </div>
+                );
+              }
+              return (
+                <div key={key} className={sectionRowClass}>
+                  <span className="shrink-0 text-[10px] font-mono text-neutral-400">{key}</span>
+                  <input
+                    type="text"
+                    value={String(prop.value ?? "")}
+                    onChange={(e) => handleSetProp(key, e.target.value)}
+                    className="h-6 min-w-0 flex-1 rounded-lg bg-[#222222] px-2 text-[10px] font-mono text-neutral-200 outline-none focus:ring-1 focus:ring-[#a7ffd4]/40"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
 
         {object.sourceCanvasId ? (
           <button

@@ -87,7 +87,7 @@ async function decodeEntry(compressed, entry, retain) {
     }
 }
 /** Verify every entry; retain only the editable document and embedded images. */
-export async function extractFigZip(bytes, onProgress) {
+export async function extractFigZip(bytes, onProgress, onImage = null) {
     const entries = readFigZipDirectory(bytes);
     let canvas;
     const images = new Map();
@@ -101,8 +101,11 @@ export async function extractFigZip(bytes, onProgress) {
             const value = await decodeEntry(compressed, entry, isCanvas || isImage);
             if (isCanvas)
                 canvas = value;
-            else if (isImage && value)
-                images.set(entry.path.slice("images/".length), value);
+            else if (isImage) {
+                const hash = entry.path.slice("images/".length);
+                if (onImage) await onImage({ hash, bytes: value });
+                else if (value) images.set(hash, value);
+            }
             if (typeof onProgress === "function") {
                 onProgress({ current: i + 1, total, path: entry.path });
             }

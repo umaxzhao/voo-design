@@ -692,13 +692,13 @@ describe("pen asset collection", () => {
 });
 
 describe("pen save format", () => {
-  it("recognises .pen names and saves them as .voo", () => {
+  it("recognises .pen names and saves them as .pen", () => {
     expect(isPenFileName("design.pen")).toBe(true);
     expect(isPenFileName("DESIGN.PEN")).toBe(true);
     expect(isPenFileName("design.voo")).toBe(false);
     expect(isPenFileName(undefined)).toBe(false);
-    expect(saveFormatOf("design.pen")).toBe("voo");
-    expect(saveFormatOf("design (Pen).pen")).toBe("voo");
+    expect(saveFormatOf("design.pen")).toBe("pen");
+    expect(saveFormatOf("design (Pen).pen")).toBe("pen");
     expect(replaceDocumentExtension("design (Pen).pen", ".voo")).toBe(
       "design (Pen).voo",
     );

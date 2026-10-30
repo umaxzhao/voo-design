@@ -17,6 +17,7 @@ kept in sync with undo/redo:
 | Tool | Effect |
 | :--- | :--- |
 | `build_layout` | Builds a structured layout from a description. |
+| `stream_layout` | Streams incremental layout/HTML onto the canvas with live progressive rendering and commits upon completion. |
 | `generate_image` | Generates and places an image layer. |
 | `generate_image_web` | Finds and places a web image. |
 | `create_shape` | Creates a shape layer. |
@@ -226,12 +227,45 @@ the system prompt:
 | **Codex** | `npm install -g @openai/codex` | Same session contract as Claude. |
 | **OpenCode** | `npm install -g @opencode/cli` | Model list is discovered from the installed CLI. |
 | **Antigravity** | `npm install -g @google/antigravity-cli` | Model list is discovered from the installed CLI. |
-| **DeepSeek Harness** | Desktop app bundle (`dsh`) | External MCP client (`mcpOnly`): it is detected by its app bundle and connects through the VOO MCP server with the generated connector; its profile owns the model. No managed session. |
+| **DeepSeek Harness** | Desktop app + VOO plugin (`dsh plugin --profile desktop add "link:<connector>"`) | External MCP client (`mcpOnly`): it is detected by its app bundle and by the installed VOO plugin in `~/.dsh/profiles/*`; connects through the VOO MCP server with the generated connector; its profile owns the model. No managed session. |
 
 Each CLI runs through an Electron session module with the same contract
 (`start` / `callTool` / `advance` / `close`, see
 `electron/agent_tool_turn.js`), so the agent panel and the local bridge treat
 them identically.
+
+### DeepSeek Harness plugin
+
+DeepSeek Harness is not a managed CLI session: `dsh` is a desktop app, and its
+profile owns the model. The portable connector built by
+`node scripts/build-agent-plugin.mjs <folder>` doubles as a Harness plugin
+bundle: `package.json` declares `dsh.bundle.patch`, and the generated
+`cordis.patch.yml` inserts `@deepseek-ai/dsh-mcp-client` over the connector's
+stdio server (server name `voo`). Install it with
+`dsh plugin --profile desktop add "link:<folder>"` and restart Harness; new sessions get the same
+`mcp__voo__*` canvas tools as Codex's connector.
+
+The first-run agent step detects the desktop app bundle
+(`/Applications/DeepSeek Harness.app`) and the plugin in `~/.dsh/profiles/*`.
+When only the app is present the card reads “Plugin needed” and the step shows
+the install command, a copy button, a one-click install (desktop app) and a
+re-detect action. Selecting DeepSeek Harness also opts the page into the canvas
+MCP link, so a browser tab reaches the bridge for external MCP clients the same
+way it does for local CLIs. Packaging details: [mcp-server.md](mcp-server.md#portable-connectors).
+
+### Using the Harness model inside VOO
+
+The connector also ships a Harness **model bridge** (`voo-model-bridge`, installed
+by the same plugin bundle). It serves the profile's selected model
+(`agentDefaultModel.currentSelection()`) as an OpenAI-compatible endpoint on
+`http://127.0.0.1:4399/v1` — `/v1/models`, `/v1/chat/completions` with SSE and
+tool calling, loopback-only with CORS for the editor. Picking “DeepSeek Harness
+models” in the first-run API row (or adding a custom provider with that base URL
+and key `voo-local`) fetches the Harness model list; the in-app Agent then runs
+on the Harness profile's model without a separate DeepSeek key. The bridge is
+text-only for now: image content from `capture_canvas` is dropped, and reasoning
+deltas are not forwarded. It starts and stops with the Harness host process; the
+editor reports a fetch/chat failure while Harness is closed.
 
 ### Sandbox limits
 

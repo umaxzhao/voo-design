@@ -9,7 +9,14 @@
 
 import { figBytesToVooFileStreaming } from "./figma-to-voo.js";
 
+const imageAcknowledgements = new Map();
+
 self.onmessage = async (event) => {
+  if (event.data?.type === "IMAGE_ASSET_ACK") {
+    imageAcknowledgements.get(event.data.assetId)?.();
+    imageAcknowledgements.delete(event.data.assetId);
+    return;
+  }
   try {
     const rawBytes = event.data?.bytes;
     if (!rawBytes) {
@@ -35,17 +42,10 @@ self.onmessage = async (event) => {
           pages,
         });
       },
-      onAsset: ({ assetId, buffer }) => {
-        // Transfer raw ArrayBuffer directly across postMessage with zero-copy
-        self.postMessage(
-          {
-            type: "IMAGE_ASSET",
-            assetId,
-            buffer,
-          },
-          [buffer],
-        );
-      },
+      onAsset: ({ assetId, buffer }) => new Promise((resolve) => {
+        imageAcknowledgements.set(assetId, resolve);
+        self.postMessage({ type: "IMAGE_ASSET", assetId, buffer }, [buffer]);
+      }),
       onChunk: ({ pageId, nodes, isFirstScreen }) => {
         self.postMessage({
           type: "CHUNK_NODES",

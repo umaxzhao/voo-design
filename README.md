@@ -122,7 +122,16 @@ The **agent panel** is a tool-calling chat that can inspect the layer tree and a
 npm run bridge       # ws://127.0.0.1:4179 for the web editor to reach local CLIs
 ```
 
-DeepSeek Harness connects as an external MCP client instead of a managed session; see [docs/mcp-server.md](docs/mcp-server.md#portable-connectors).
+DeepSeek Harness connects as an external MCP client instead of a managed session.
+Build the portable connector, install it as the Harness plugin with
+`dsh plugin --profile desktop add "link:<connector-folder>"`, and restart Harness. The first-run agent
+step detects the app bundle and the installed plugin and guides the install when
+either is missing. The same plugin also serves the Harness profile's model as a
+local OpenAI-compatible endpoint (`http://127.0.0.1:4399/v1`): pick
+“DeepSeek Harness models” in the first-run API row, fetch the models and use
+them as the in-app Agent model. See
+[docs/mcp-server.md](docs/mcp-server.md#portable-connectors) and
+[plugins/voo/README.md](plugins/voo/README.md).
 
 Details: [docs/agents.md](docs/agents.md).
 

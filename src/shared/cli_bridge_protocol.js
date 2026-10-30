@@ -32,6 +32,9 @@ export const CLI_BRIDGE_CHANNEL = Object.freeze({
   CANCEL: "voo:codex-cancel",
   CHECK_ALL: "voo:cli-check-all",
   RUN_TEXT: "voo:cli-run-text",
+  // DeepSeek Harness connector: detection (read-only) and one-click install.
+  DSH_STATUS: "voo:dsh-connector-status",
+  DSH_INSTALL: "voo:dsh-connector-install",
   MCP_REGISTER_CANVAS: "voo:mcp-register-canvas",
   MCP_TOOL_RESULT: "voo:mcp-tool-result",
   MCP_CALL: "voo:mcp-call",
@@ -42,6 +45,7 @@ export const CLI_BRIDGE_CHANNEL = Object.freeze({
 export const CLI_BRIDGE_EVENT = Object.freeze({
   TEXT: "voo:codex-text",
   MCP_TOOL_CALL: "voo:mcp-tool-call",
+  STREAM_LAYOUT_UPDATE: "voo:stream-layout-update",
 });
 
 /** Frame `type` values. */
