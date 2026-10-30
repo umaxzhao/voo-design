@@ -40,6 +40,17 @@ export default function FlatSelect({
   triggerProps = {},
 }) {
   const normalized = useMemo(() => normalizeOptions(options), [options]);
+  // Keep headings out of the selectable list so keyboard navigation stays model-only.
+  const sections = useMemo(() => {
+    const result = [];
+    for (const option of normalized) {
+      const key = option.group?.id ?? option.value;
+      const previous = result[result.length - 1];
+      if (option.group && previous?.key === key) previous.options.push(option);
+      else result.push({ key, group: option.group, options: [option] });
+    }
+    return result;
+  }, [normalized]);
   const selected = normalized.find((opt) => opt.value === value);
   const [open, setOpen] = useState(false);
   const [openUpwards, setOpenUpwards] = useState(false);
@@ -146,6 +157,49 @@ export default function FlatSelect({
     if (normalized[nextIndex]) onChange?.(normalized[nextIndex].value);
   };
 
+  const renderOption = (opt) => {
+    const selectedOption = opt.value === value;
+    return (
+      <button
+        key={opt.value}
+        type="button"
+        role="option"
+        aria-selected={selectedOption}
+        disabled={opt.disabled}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={() => select(opt)}
+        className={`flex w-full items-center gap-2 rounded-lg ${portal ? "min-h-12 sm:min-h-0" : ""} px-2.5 py-2 text-left text-[11px] outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+          selectedOption
+            ? "bg-white/[0.08] text-white"
+            : "text-neutral-400 hover:bg-white/[0.05] hover:text-neutral-100"
+        }`}
+      >
+        {opt.icon && !opt.group ? (
+          <span className="shrink-0 flex items-center justify-center">
+            {opt.icon}
+          </span>
+        ) : opt.statusDot ? (
+          <span
+            className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+              typeof opt.statusDot === "string" ? opt.statusDot : "bg-[#b2ffd6]"
+            }`}
+          />
+        ) : null}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate">{opt.label}</span>
+          {opt.hint ? (
+            <span className="block truncate text-[9px] text-neutral-500">
+              {opt.hint}
+            </span>
+          ) : null}
+        </span>
+        {selectedOption ? (
+          <IconCheck size={14} className="shrink-0 text-neutral-100" />
+        ) : null}
+      </button>
+    );
+  };
+
   const menu = open ? (
     <div
       ref={panelRef}
@@ -160,52 +214,19 @@ export default function FlatSelect({
         portal ? "" : openUpwards ? "bottom-full mb-1.5" : "top-full mt-1.5"
       } ${panelClassName}`}
     >
-      {normalized.length === 0
-        ? null
-        : normalized.map((opt) => {
-            const selectedOption = opt.value === value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                role="option"
-                aria-selected={selectedOption}
-                disabled={opt.disabled}
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => select(opt)}
-                className={`flex w-full items-center gap-2 rounded-lg ${portal ? "min-h-12 sm:min-h-0" : ""} px-2.5 py-2 text-left text-[11px] outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                  selectedOption
-                    ? "bg-white/[0.08] text-white"
-                    : "text-neutral-400 hover:bg-white/[0.05] hover:text-neutral-100"
-                }`}
-              >
-                {opt.icon ? (
-                  <span className="shrink-0 flex items-center justify-center">
-                    {opt.icon}
-                  </span>
-                ) : opt.statusDot ? (
-                  <span
-                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                      typeof opt.statusDot === "string"
-                        ? opt.statusDot
-                        : "bg-[#b2ffd6]"
-                    }`}
-                  />
-                ) : null}
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate">{opt.label}</span>
-                  {opt.hint ? (
-                    <span className="block truncate text-[9px] text-neutral-500">
-                      {opt.hint}
-                    </span>
-                  ) : null}
-                </span>
-                {selectedOption ? (
-                  <IconCheck size={14} className="shrink-0 text-neutral-100" />
-                ) : null}
-              </button>
-            );
-          })}
+      {sections.map((section) =>
+        section.group ? (
+          <div key={section.key} role="group" aria-label={section.group.label}>
+            <div className="flex items-center gap-2 px-2.5 pb-1.5 pt-3 text-[11px] text-neutral-400">
+              {section.group.icon}
+              <span>{section.group.label}</span>
+            </div>
+            {section.options.map(renderOption)}
+          </div>
+        ) : (
+          section.options.map(renderOption)
+        ),
+      )}
     </div>
   ) : null;
 
@@ -260,7 +281,7 @@ export default function FlatSelect({
 FlatSelect.propTypes = {
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onChange: PropTypes.func,
-  /** Array of strings or {value, label, hint?, disabled?, icon?} objects. */
+  /** Array of strings or {value, label, hint?, disabled?, icon?, group?: {id, label, icon?}} objects. */
   options: PropTypes.array,
   label: PropTypes.string,
   className: PropTypes.string,
