@@ -1,4 +1,7 @@
 import { createServer as createHttpServer } from "node:http";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer as createViteServer } from "vite";
 import { startCliBridgeServer } from "../../electron/cli_bridge_server.js";
@@ -6,6 +9,9 @@ import { startCliBridgeServer } from "../../electron/cli_bridge_server.js";
 /** Keep the actual listener bound while configuring its bridge and Vite middleware. */
 export async function startEditorBrowserServer() {
   const root = fileURLToPath(new URL("../../", import.meta.url));
+  // Each bridge URL changes Vite's config hash. Sharing node_modules/.vite
+  // across concurrent fixtures invalidated active browsers with 504 errors.
+  const cacheDir = await mkdtemp(join(tmpdir(), "voo-editor-vite-"));
   const server = createHttpServer();
   let bridge;
   let vite;
@@ -18,6 +24,7 @@ export async function startEditorBrowserServer() {
       if (server.listening) {
         await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
       }
+      await rm(cacheDir, { recursive: true, force: true });
       const errors = results.filter(result => result.status === "rejected").map(result => result.reason);
       if (errors.length) throw new AggregateError(errors, "Editor fixture server cleanup failed");
     })();
@@ -32,6 +39,7 @@ export async function startEditorBrowserServer() {
     bridge = await startCliBridgeServer({ port: 0, origins: [origin] });
     vite = await createViteServer({
       root,
+      cacheDir,
       configFile: fileURLToPath(new URL("../../vite.config.js", import.meta.url)),
       logLevel: "error",
       define: { "import.meta.env.VITE_CLI_BRIDGE_URL": JSON.stringify(`ws://127.0.0.1:${bridge.port}`) },

@@ -2,6 +2,9 @@
 
 ## 1.0.0
 
+- Reflow text bounds during pointer resizing, preserve font size on four-corner text-box drags and pin the opposite measured corner (or center) after wrapping, rotation, shear and flip. Keep mixed-selection text dimensions current.
+- Isolate browser-fixture Vite caches so parallel release checks cannot invalidate each other with outdated-dependency responses.
+
 - Keep double-click text editing open through StrictMode effect replay, commit each overlay once and prevent stale cleanup from closing a newer text session.
 - Paint pen anchors, control handles and selection tints on the shared chrome surface instead of the artwork-only pass. Select the edited leaf in nested groups.
 - Open vector anchors before parent-group isolation; convert basic shapes through the existing undoable path operation and verify real double-click, typing, anchor drags and rendered undo/redo.

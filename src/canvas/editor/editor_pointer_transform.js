@@ -28,6 +28,7 @@ import { captureMoveGestureFrame, moveGestureIds } from "./move_gesture.js";
 import { editorSnapOptions, snapNodeBounds } from "./scene_snapping.js";
 import { rotationCursorForPoint } from "./editor-cursors.js";
 import { beginAltDuplicate } from "./move-gesture-transaction.js";
+import { resizeTextBox } from "./text-box-resize.js";
 
 export function scaleNodePoints(points, scaleX, scaleY) {
   if (!Array.isArray(points)) return points;
@@ -590,10 +591,10 @@ export function createTransformPointerGestures(ctx) {
         updates.push({ id: initial.id, ...patch });
       }
       if (typeof api.updateNodes === "function") {
-        api.updateNodes(updates, { commit: false, preview: true });
+        api.updateNodes(updates, { commit: false, preview: !gesture.nodes.some(n => n.kind === NODE_KIND.TEXT) });
       } else {
         for (const item of updates) {
-          api.updateNode(item.id, item, { commit: false, preview: true });
+          api.updateNode(item.id, item, { commit: false, preview: api.getNode(item.id)?.kind !== NODE_KIND.TEXT });
         }
       }
       return;
@@ -662,21 +663,8 @@ export function createTransformPointerGestures(ctx) {
     );
     let patch;
     if (node?.kind === NODE_KIND.TEXT) {
-      if (node.boxWidth > 0) {
-        patch = { x: rect.x, y: rect.y, boxWidth: rect.width };
-      } else if (gesture.handle === "e" || gesture.handle === "w") {
-        patch = { x: rect.x, y: rect.y, boxWidth: Math.max(1, rect.width) };
-      } else {
-        patch = {
-          x: rect.x,
-          y: rect.y,
-          fontSize: Math.max(
-            4,
-            (gesture.fontSize * rect.height) /
-              Math.max(1, gesture.rect.height),
-          ),
-        };
-      }
+      resizeTextBox(api, node, gesture, rect, fromCentre);
+      return;
     } else if (node?.kind === NODE_KIND.REGION) {
       patch = regionPatchFromDoc(node, rect);
     } else {
