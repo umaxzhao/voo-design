@@ -4,9 +4,7 @@ import { Plus, X } from "lucide-react";
 import WelcomePromptSettings from "./welcome_prompt_settings.jsx";
 import { AI_GEN_TYPES } from "./welcome_constants.js";
 import { DEFAULT_DESIGN_SYSTEM_ID } from "./generation-options.js";
-import FlatSelect from "../flat_select.jsx";
-import { ProviderLogo } from "../provider_icons.jsx";
-import { getModelDisplayParts } from "../agent-panel/model_catalog.js";
+import WelcomeModelSelect from "./welcome_model_select.jsx";
 
 /** Filled two-slider icon used for the generation settings trigger. */
 function TuneIcon({
@@ -61,14 +59,6 @@ export function WelcomePromptComposer({
     width: activePreset.width,
     height: activePreset.height
   };
-  const modelOptions = (modelGroups ?? []).flatMap(group => group.models.map(model => {
-    const parts = getModelDisplayParts(model.id, modelGroups ?? []);
-    return {
-      value: model.id,
-      label: `${parts.modelName}${parts.tier}`,
-      icon: <ProviderLogo providerId={parts.providerId ?? group.cliId} size={14} />
-    };
-  }));
   useEffect(() => {
     if (!advancedOpen) return undefined;
     const onPointerDown = event => {
@@ -132,7 +122,7 @@ export function WelcomePromptComposer({
           <div className="welcome-prompt-control-actions flex min-w-0 flex-1 items-center gap-2">
             {configNeeded ? <button type="button" onClick={() => onOpenSettings?.()} aria-label={t("welcome.prompt.modelLabel")} className="min-w-0 flex-1 truncate text-left text-xs text-amber-300">
                 {t("welcome.prompt.modelLabel")}
-              </button> : <FlatSelect value={selectedModel ?? ""} onChange={value => onSelectModel?.(value)} label={t("welcome.prompt.modelLabel")} options={modelOptions} className="welcome-composer-model-select min-w-0 flex-1" triggerClassName="!h-9 !w-full !max-w-64 !rounded-xl !bg-transparent !px-2 !text-xs !text-neutral-300 hover:!bg-white/[0.06]" panelClassName="!z-[400]" portal />}
+              </button> : <WelcomeModelSelect label={t("welcome.prompt.modelLabel")} modelGroups={modelGroups} selectedModel={selectedModel} onSelectModel={onSelectModel} />}
 
             <button type="button" onClick={() => configNeeded ? onOpenSettings?.() : setAdvancedOpen(open => !open)} aria-label={t("welcome.prompt.generationTypeLabel")} aria-haspopup="dialog" aria-expanded={advancedOpen} className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.08] text-neutral-400 transition-colors hover:bg-white/[0.14] hover:text-neutral-200">
               <TuneIcon size={14} />
