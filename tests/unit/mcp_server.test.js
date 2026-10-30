@@ -75,8 +75,24 @@ describe("MCP stdio", () => {
       });
       expect((await s.request("initialize")).result.protocolVersion).toBe("2025-06-18");
       const tools = (await s.request("tools/list")).result.tools;
-      expect(tools.map((t) => t.name)).toEqual(expect.arrayContaining(["create_frame", "create_shape", "capture_canvas", "voo_status"]));
-      for (const name of ["generate_image", "generate_image_web", "place_image", "update_plan", "get_plan"]) {
+      expect(tools.map((t) => t.name)).toEqual(
+        expect.arrayContaining([
+          "create_frame",
+          "create_shape",
+          "capture_canvas",
+          "place_image",
+          "voo_status",
+        ]),
+      );
+      const placeImageTool = tools.find((tool) => tool.name === "place_image");
+      expect(placeImageTool.inputSchema.properties.url.type).toBe("string");
+      expect(placeImageTool.inputSchema.properties.parentId.type).toBe("string");
+      for (const name of [
+        "generate_image",
+        "generate_image_web",
+        "update_plan",
+        "get_plan",
+      ]) {
         expect(tools.some((t) => t.name === name)).toBe(false);
       }
       s.input.write('{"jsonrpc":"2.0","method":"notifications/initialized"}\n');

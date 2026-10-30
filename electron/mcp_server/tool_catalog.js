@@ -1,6 +1,6 @@
 /**
  * Builds the MCP tool catalog from canvas tool schemas.
- * Filters out image/video generation tools and formats as MCP tool definitions.
+ * Filters out direct image/video generation tools and formats MCP definitions.
  */
 
 import { CANVAS_TOOL_SCHEMAS } from "../../src/canvas/agent/canvas_tools.js";
@@ -8,7 +8,6 @@ import { CANVAS_TOOL_SCHEMAS } from "../../src/canvas/agent/canvas_tools.js";
 const EXCLUDED_TOOLS = new Set([
   "generate_image",
   "generate_image_web",
-  "place_image",
   "update_plan",
   "get_plan",
 ]);

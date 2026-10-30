@@ -63,12 +63,16 @@ export const CANVAS_TOOL_GEOMETRY_SCHEMAS = Object.freeze([
     function: {
       name: "place_image",
       description:
-        "Place an image from a URL (or data URL) as a new image layer at exact " +
-        "canvas geometry: the layer is inserted, then repositioned/resized to x, y, width, height.",
+        "Import a generated or existing image from a URL or data URL as a native image layer. " +
+        "Optionally place it inside a Frame or group with parentId, and set exact canvas geometry.",
       parameters: {
         type: "object",
         properties: {
           url: { type: "string" },
+          parentId: {
+            type: "string",
+            description: "Optional Frame or group that owns this image layer.",
+          },
           x: { type: "number" },
           y: { type: "number" },
           width: { type: "number" },
@@ -157,7 +161,7 @@ export function createPath(args = {}, hostEditor) {
 /** Inserts an image layer, then pins it to the exact requested geometry. */
 export async function placeImage(args = {}) {
   const editor = requireEditor();
-  const { url, name } = args;
+  const { url, name, parentId } = args;
   const x = finiteOrNull(args.x);
   const y = finiteOrNull(args.y);
   const width = finiteOrNull(args.width);
@@ -168,8 +172,29 @@ export async function placeImage(args = {}) {
   if (width === null && args.width !== undefined) invalidArgs(`Invalid argument "width": expected a finite number, got ${JSON.stringify(args.width)}`);
   if (height === null && args.height !== undefined) invalidArgs(`Invalid argument "height": expected a finite number, got ${JSON.stringify(args.height)}`);
   if (name !== undefined && typeof name !== "string") invalidArgs(`Invalid argument "name": expected a string, got ${JSON.stringify(name)}`);
+  if (
+    parentId !== undefined &&
+    (typeof parentId !== "string" || parentId.trim() === "")
+  ) {
+    invalidArgs(
+      `Invalid argument "parentId": expected a non-empty string, got ${JSON.stringify(parentId)}`,
+    );
+  }
   if (width !== null && width < 0) invalidArgs(`Invalid argument "width": expected >= 0, got ${JSON.stringify(width)}`);
   if (height !== null && height < 0) invalidArgs(`Invalid argument "height": expected >= 0, got ${JSON.stringify(height)}`);
+
+  if (parentId !== undefined) {
+    const parent =
+      editor.getNode?.(parentId) ??
+      editor.getDocument?.()?.nodes?.find((node) => node.id === parentId);
+    const isContainer =
+      parent?.isFrame === true || parent?.kind === "group" || parent?.type === "frame";
+    if (!isContainer) {
+      invalidArgs(
+        `Invalid argument "parentId": expected an existing Frame or group, got ${JSON.stringify(parentId)}`,
+      );
+    }
+  }
 
   const node = await editor.insertImage?.(url);
   if (!node?.id) nodeNotFound();
@@ -180,6 +205,7 @@ export async function placeImage(args = {}) {
   if (width !== null) patch.width = width;
   if (height !== null) patch.height = height;
   if (name !== undefined) patch.name = name;
+  if (parentId !== undefined) patch.parentId = parentId;
   if (Object.keys(patch).length > 0) editor.updateNode?.(node.id, patch);
   editor.commitEditorDocument?.({ message: "AI: Place image" });
 
