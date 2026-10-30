@@ -14,10 +14,7 @@ import { StaticSection } from "./property_section.jsx";
 import {
   MAX_SHEAR_DEG,
 } from "../../editor/scene_model_core.js";
-import {
-  anchorDocPoint,
-  resizeWithAnchor,
-} from "../../editor/scene_geometry.js";
+import { anchorDocPoint } from "../../editor/scene_geometry.js";
 import {
   IconFlipH,
   IconFlipV,
@@ -28,6 +25,7 @@ import EditorTooltip from "../editor_tooltip.jsx";
 import AnchorPointGrid from "./transform_anchor_grid.jsx";
 import TransformDimensionBar from "./transform_dimension_bar.jsx";
 import TransformRadiusControls from "./transform_radius_controls.jsx";
+import { dimensionFieldPatch, positionFieldPatch } from "./transform-field-patches.js";
 export { AnchorPointGrid, TransformDimensionBar, TransformRadiusControls };
 /** Largest value the position/size fields accept — comfortably past any doc. */
 const COORD_LIMIT = 99999;
@@ -40,6 +38,7 @@ const COORD_LIMIT = 99999;
  */
 export default function TransformSection({
   object,
+  engine = null,
   showRadius = true,
   showDimensions = true,
   docSize: _docSize = null,
@@ -98,51 +97,14 @@ export default function TransformSection({
   const commonCornerRadius = common("cornerRadius", object.cornerRadius);
   // X/Y report and edit the anchor's document position, not always the
   // top-left corner — with the default "nw" anchor they are exactly x and y.
+  // Input events can arrive before the inspector's next paint snapshot.
+  const currentObject = () => engine?.getNode?.(object.id) ?? object;
   const editPosition = (axis, value) => {
-    edit(resizeWithAnchor(object, { [axis]: value }, anchor));
+    edit(positionFieldPatch(currentObject(), axis, value, anchor));
   };
   const resizeTo = (axis, value) => {
-    const currentW = object.width;
-    const currentH = object.height;
-    if (!currentW || !currentH) return;
-    if (object.kind === "text") {
-      // A fixed text box (drawn with the text tool) has an independent wrap
-      // column: W edits that column, and its height is auto — it grows with
-      // the lines — so H does nothing. Point text has no box of its own, so
-      // its W/H edits scale the font and let the measurement follow.
-      if (object.boxWidth > 0) {
-        if (axis === "width") {
-          const resized = resizeWithAnchor(object, { width: value }, anchor);
-          edit({ x: resized.x, boxWidth: value });
-        }
-        return;
-      }
-      const scaleFrom = axis === "width" ? currentW : currentH;
-      const nextFontSize = Math.max(4, (object.fontSize * value) / scaleFrom);
-      // Compute estimated text box dimensions with new font size
-      const scaleRatio = nextFontSize / object.fontSize;
-      const nextW = Math.max(1, Math.round(currentW * scaleRatio));
-      const nextH = Math.max(1, Math.round(currentH * scaleRatio));
-      const resized = resizeWithAnchor(
-        object,
-        { width: nextW, height: nextH },
-        anchor,
-      );
-      edit({ x: resized.x, y: resized.y, fontSize: nextFontSize });
-      return;
-    }
-    if (lockRatio && currentH > 0) {
-      const ratio = currentW / currentH;
-      if (axis === "width") {
-        const nextH = Math.max(1, Math.round(value / ratio));
-        edit(resizeWithAnchor(object, { width: value, height: nextH }, anchor));
-      } else {
-        const nextW = Math.max(1, Math.round(value * ratio));
-        edit(resizeWithAnchor(object, { width: nextW, height: value }, anchor));
-      }
-    } else {
-      edit(resizeWithAnchor(object, { [axis]: value }, anchor));
-    }
+    const patch = dimensionFieldPatch(currentObject(), axis, value, { anchor, lockRatio });
+    if (patch) edit(patch);
   };
   return (
     <>
@@ -362,6 +324,7 @@ export default function TransformSection({
   );
 }
 TransformSection.propTypes = {
+  engine: PropTypes.object,
   positionAction: PropTypes.node,
   onRotate90: PropTypes.func,
   object: PropTypes.object.isRequired,

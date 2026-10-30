@@ -64,7 +64,6 @@ await withEditorBrowser(async ({
         key,
         value
       });
-      await settled();
     }
     const original = await page.evaluate(() => window.__vooEditor.serialise());
     const pixels = await audit.pixels(id);

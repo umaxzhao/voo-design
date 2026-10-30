@@ -42,6 +42,7 @@ Electron. No test edits the user's current document, workspace or OS Trash.
 | Tonal adjustments, filters and styles | `image-adjustments-complete` | All 43 adjustment kinds, 11 layer styles and 23 ordered live filters change real exported pixels; undo restores the original; scalar/style redo paints again. These are engine outcome tests, not every possible slider value. |
 | Style alpha and text | `image-layer-alpha` | Seven inner styles preserve transparent holes and apply layer opacity once; text bevel renders glyph edges, responds to size, and undoes. |
 | Inspector fields | `image-inspector-core`, `ui-inspector-interaction`, `inspector-controls` | Actual image/rectangle/Frame X/Y/W/H/rotation/shear/radius edits, flips, Enter/blur/Escape, mixed selection, color/text/variants, variables, filter ordering and export controls. |
+| Consecutive edits and clipboard boundaries | `image-interaction-boundaries`, `transform-field-patches.test.js` | Trusted numeric input events compose before the next paint for images, rectangles and Frames. Page sizing, independent multi-selection dimensions, ratio/center anchors, selection-switch commits and debounce history are checked. Nested clipped Frame copies retain references and exact pixels; a real new document with a separate engine pastes the bitmap without foreign parents or clipping references. |
 | Layout and masks | `layout-mask-audit`, `stretch-layout`, `frame-clip-review`, `container-opacity`, `frame-adjustment-space` | Layout reflow, nested constraints, stretch/wrap/hug, clipping, layer opacity, masks and frame-scoped adjustments. |
 | Boolean/vector exports | `boolean-stroke-export`, `boolean-resize`, `svg-frame-clipping`, `image-svg-parity` | Real SVG decoding compared with rendered pixels, including crop, transforms, opacity, adjustments, styles, shadows, strokes, backdrop blur, glass and global adjustment layers. Backdrop readers use a flattened scene; selection copies include only selected artwork. Ordinary vectors stay vector elements. |
 | Images and asynchronous imports | `image-assets-history`, `image-agent-complete`, `generated-output` | In-flight image decoding retains later edits; successful images in one stock batch undo once; partial download failures are returned; generated apply/discard and stale-result ownership. |
@@ -60,6 +61,12 @@ is separate. `AI_SELECT` remains an object-selection alias, not an extra drawing
 engine. The enumerated tool IDs and real menu submodes are different inventories.
 
 ## Defects repaired by this audit
+
+- Consecutive W/H/X/Y confirmations used the inspector's previous paint snapshot
+  and could overwrite earlier edits. Geometry now reads the engine's current
+  node; position changes send only the edited axis, and unlocked dimension
+  changes preserve each selected object's unedited size. Pure field geometry
+  is isolated from the React panel and covers rotated anchors and text sizing.
 
 - Large development documents repeatedly validated the same panel model in every
   row and scanned rows quadratically. Scrolled drag slots retain their full root/sibling positions. Immutable successful contracts are shared,

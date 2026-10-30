@@ -2,6 +2,9 @@
 
 ## 1.0.0
 
+- Preserve consecutive inspector edits before canvas repaint, and retain each object's unedited dimensions during multi-selection resize. Share focused geometry calculations for ratio, anchor and text sizing.
+- Verify selection-switch history, clipped Frame clipboard pixels and real cross-document image pasting; include these interaction boundaries in release checks.
+
 - Preserve the animated prompt rim and one candidate selector while keeping generation options in one advanced panel; retain touch-first dismissal, responsive positioning and real model labels.
 
 - Keep canvas context menus inside the viewport with scrollable actions, including narrow layouts.
