@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { forgetDeletedFolderRecents } from "./welcome-trash-actions.js";
 import { workspaceStorage } from "../../../services/workspace_storage.js";
 
 /** Project folder list plus the inline "new folder" form state and submit handler. */
@@ -40,7 +41,10 @@ export function useWelcomeFolders({ t, activeFolder, setActiveFolder }) {
         await loadFolders();
         return;
       }
-      const messageKeys = { already_exists: "welcome.folders.exists", invalid_name: "welcome.folders.invalid" };
+      const messageKeys = {
+        already_exists: "welcome.folders.exists",
+        invalid_name: "welcome.folders.invalid",
+      };
       setFolderError(t(messageKeys[res.error] || "welcome.folders.failed"));
     } catch (error) {
       console.error("[VOO] createFolder failed:", error);
@@ -51,18 +55,26 @@ export function useWelcomeFolders({ t, activeFolder, setActiveFolder }) {
   const handleDeleteFolder = async (e, folder) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!window.confirm(t("welcome.folders.deleteConfirm", { name: folder.name }))) return;
+    if (
+      !window.confirm(t("welcome.folders.deleteConfirm", { name: folder.name }))
+    )
+      return;
     try {
       const result = await workspaceStorage.deleteFolder(folder.name);
       if (result.ok) {
+        forgetDeletedFolderRecents(result.originalPath);
         if (activeFolder === folder.name) setActiveFolder(null);
         await loadFolders();
         return;
       }
-      window.alert(t("welcome.folders.deleteFailed"));
+      throw new Error(result.error || "operation_failed");
     } catch (error) {
       console.error("[VOO] deleteFolder failed:", error);
-      window.alert(t("welcome.folders.deleteFailed"));
+      window.alert(
+        t("welcome.files.actionFailed", {
+          reason: error.message || String(error),
+        }),
+      );
     }
   };
 

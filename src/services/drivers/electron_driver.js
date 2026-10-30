@@ -147,11 +147,11 @@ export class ElectronWorkspaceDriver {
     return res?.ok ? { ok: true, folder: res.folder } : { ok: false, error: res?.error || "failed" };
   }
 
-  /** Moves a project folder to the operating system trash. */
+  /** Moves a project folder into the recoverable workspace trash. */
   async deleteFolder(name) {
     if (!this.bridge?.deleteFolder) return { ok: false, error: "unsupported" };
     const res = await this.bridge.deleteFolder(name);
-    return res?.ok ? { ok: true } : { ok: false, error: res?.error || "failed" };
+    return res?.ok ? res : { ok: false, error: res?.error || "failed" };
   }
 
   /** Moves a file into a project folder, or back to the root when folderName is null. */
@@ -190,6 +190,7 @@ export class ElectronWorkspaceDriver {
         category: m.category || f.category || guessCategory(f.name),
         preview: m.preview || f.preview || null,
         isDraft: Boolean(f.isDraft),
+        isFolder: Boolean(f.isFolder),
       };
     });
 

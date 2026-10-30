@@ -8,7 +8,7 @@
  * 4. Scans the workspace root and one level of project folders for design files
  *    (.voo, .fig, .psd, .svg); folder membership is the physical subdirectory.
  * 5. Handles atomic writes, path traversal prevention, case-only renames (APFS / NTFS), and collision checks.
- * 6. Executes safe deletions (shell.trashItem -> .trash/ folder -> safe unlink).
+ * 6. Moves deleted projects and files into the recoverable workspace .trash folder.
  * 7. Debounced (300ms) file watcher broadcasting `workspace:changed` to the renderer.
  */
 
@@ -757,7 +757,7 @@ function registerWorkspaceIpc(ipcMain, getMainWindow) {
     if (!fs.existsSync(folderPath) || !fs.lstatSync(folderPath).isDirectory()) {
       return { ok: false, error: "directory_not_found" };
     }
-    return moveWorkspaceFileToTrash(folderPath, root);
+    return workspaceTrash.moveToTrash(folderPath, root, { directory: true });
   });
 
   ipcMain.handle("workspace:moveToFolder", (_event, payload) => {

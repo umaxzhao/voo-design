@@ -3,6 +3,7 @@
  * for local CLI tools (Claude Code, OpenAI Codex, Google Antigravity, OpenCode).
  */
 
+import { antigravityModelStatus } from "./antigravity_models.js";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -267,6 +268,9 @@ export async function checkCliStatus(cliId, options = {}) {
   }
 
   return {
+    ...(cliId === "antigravity" && opts.includeModels
+      ? await antigravityModelStatus(binPath)
+      : {}),
     status: "ready",
     installed: true,
     authenticated: true,
