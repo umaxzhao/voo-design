@@ -19,6 +19,7 @@ export { handleLayerRenameKeyDown } from "./editor_layer_rename.js";
 const LAYER_PANEL_RENDER_COUNTER = typeof window !== "undefined" && window.location?.search?.includes("voo-test=1") ? "__vooTestLayerPanelRenders" : null;
 export default function EditorLayers({
   objects,
+  assetEngine = null,
   bottomInset = 0,
   activeIndex = -1,
   backgroundColor = "#262626",
@@ -84,6 +85,7 @@ export default function EditorLayers({
     window[LAYER_PANEL_RENDER_COUNTER] = (window[LAYER_PANEL_RENDER_COUNTER] ?? 0) + 1;
   }
   const props = {
+    assetEngine,
     objects,
     bottomInset,
     activeIndex,

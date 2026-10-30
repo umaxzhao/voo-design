@@ -47,11 +47,13 @@ export default function EditorLayersHeader({
         type="button"
         role="tab"
         aria-selected={panelTab === tab.key}
+        aria-label={tab.label}
+        title={tab.label}
         data-testid={`editor-layers-tab-${tab.key}`}
         onClick={() => setPanelTab(tab.key)}
-        className={`relative z-10 flex h-7 flex-1 items-center justify-center rounded-lg text-[10px] font-mono transition-colors ${panelTab === tab.key ? "text-white" : "text-neutral-400 hover:text-neutral-200"}`}
+        className={`relative z-10 flex h-7 min-w-0 flex-1 basis-0 items-center justify-center overflow-hidden rounded-lg px-1 text-[10px] font-mono transition-colors ${panelTab === tab.key ? "text-white" : "text-neutral-400 hover:text-neutral-200"}`}
       >
-        {tab.label}
+        <span className="truncate">{tab.label}</span>
       </button>)}
     </div>
     <div
@@ -70,8 +72,8 @@ export default function EditorLayersHeader({
             return next;
           });
         }}
-        aria-label={t("editor.layers.searchToggle")}
-        title={t("editor.layers.searchToggle")}
+        aria-label={t(panelTab === "assets" ? "editor.assets.searchToggle" : "editor.layers.searchToggle")}
+        title={t(panelTab === "assets" ? "editor.assets.searchToggle" : "editor.layers.searchToggle")}
         className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${showSearch || search ? "bg-neutral-800 text-white" : "text-neutral-400 hover:bg-neutral-800 hover:text-white"}`}
       >
         <IconSearch
@@ -123,8 +125,8 @@ export default function EditorLayersHeader({
         listRef.current?.focus?.();
       }
     }}
-    placeholder={t("editor.layers.search")}
-    aria-label={t("editor.layers.search")}
+    placeholder={t(panelTab === "assets" ? "editor.assets.search" : "editor.layers.search")}
+    aria-label={t(panelTab === "assets" ? "editor.assets.search" : "editor.layers.search")}
     className="mb-2 w-full rounded-xl border border-transparent bg-neutral-900 px-2.5 py-1.5 text-[11px] font-mono text-neutral-200 placeholder:text-neutral-400 outline-none transition-colors hover:bg-neutral-800 focus:border-[#a7ffd4]/40"
   /> : null;
   return <>{panelHeader}{searchField}</>;

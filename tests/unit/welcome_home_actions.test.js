@@ -96,8 +96,8 @@ describe("export and layer search accessibility", () => {
   });
   it("gives search toggle and input distinct labels in both languages", () => {
     const source = read("canvas/components/editor_layers_header.jsx");
-    expect(source).toContain('aria-label={t("editor.layers.searchToggle")}');
-    expect(source).toContain('aria-label={t("editor.layers.search")}');
+    expect(source).toContain('aria-label={t(panelTab === "assets" ? "editor.assets.searchToggle" : "editor.layers.searchToggle")}');
+    expect(source).toContain('aria-label={t(panelTab === "assets" ? "editor.assets.search" : "editor.layers.search")}');
     for (const lang of ["en", "zh"]) {
       const strings = read(`shared/i18n/extended-${lang}.js`);
       const label = (key) => strings.match(new RegExp(`"editor.layers.${key}": "([^"]+)"`))[1];

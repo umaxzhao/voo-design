@@ -29,6 +29,10 @@ await withEditorBrowser(async ({ page, origin }) => {
   // Exercise the public creation/open path, rather than injecting a document fixture.
   await page.getByRole("button", { name: "New", exact: true }).click();
   await page.getByTestId("design-editor").waitFor();
+  // A visible editor mounts before asynchronous project hydration finishes.
+  // Match the shared fixture's ready boundary before navigating away.
+  await page.waitForFunction(() => document.querySelector('[data-testid="design-editor"] [data-open-guard]')?.getAttribute("data-open-guard") === "off");
+  await settle(page);
   await page.locator("button").filter({ hasText: "VOO Design" }).first().click();
   await home.waitFor();
   await home.getByRole("button", { name: "Design1.voo", exact: true }).waitFor();
@@ -45,6 +49,10 @@ await withEditorBrowser(async ({ page, origin }) => {
   await home.getByRole("button", { name: "Design1.voo", exact: true }).focus();
   await page.keyboard.press("Enter");
   await page.getByTestId("design-editor").waitFor();
+  // A visible editor mounts before asynchronous project hydration finishes.
+  // Match the shared fixture's ready boundary before navigating away.
+  await page.waitForFunction(() => document.querySelector('[data-testid="design-editor"] [data-open-guard]')?.getAttribute("data-open-guard") === "off");
+  await settle(page);
   await page.locator("button").filter({ hasText: "VOO Design" }).first().click();
   await home.waitFor();
   await actions("Design1.voo");
@@ -186,6 +194,10 @@ await withEditorBrowser(async ({ page, origin }) => {
   await home.getByTestId("sidebar-folder").filter({ hasText: "AuditFolder" }).getByRole("button").first().click();
   await home.getByRole("button", { name: "AuditHome.voo", exact: true }).click();
   await page.getByTestId("design-editor").waitFor();
+  // A visible editor mounts before asynchronous project hydration finishes.
+  // Match the shared fixture's ready boundary before navigating away.
+  await page.waitForFunction(() => document.querySelector('[data-testid="design-editor"] [data-open-guard]')?.getAttribute("data-open-guard") === "off");
+  await settle(page);
   await settingsOpener.click();
   await drawer.waitFor();
   await drawer.getByRole("button", { name: "Close", exact: true }).focus();

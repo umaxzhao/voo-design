@@ -1,0 +1,30 @@
+[data-testid="editor-resource-browser"] {
+  container: resource-browser / inline-size;
+}
+
+@container resource-browser (max-width: 180px) {
+  .editor-resource-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .editor-resource-toolbar > :first-child {
+    flex-basis: 100%;
+  }
+
+  .editor-resource-toolbar > button {
+    flex: 1;
+    min-height: 48px;
+  }
+
+  .editor-resource-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .editor-resource-toolbar > button,
+  [data-resource-remove] {
+    min-width: 48px;
+    min-height: 48px;
+  }
+}

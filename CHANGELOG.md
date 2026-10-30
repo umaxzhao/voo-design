@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Implement the Assets browser with searchable file components, persistent workspace Resources, image/SVG/.voo imports, selection reuse and editable built-in template insertion. Keep inserts additive and undoable; isolate imported bitmap IDs.
+
 - Keep recovery-copy preference changes safe while the editor is mounted; disable future draft scheduling without changing Hook order or losing pending-write ownership.
 - Repair welcome file-menu commands and keyboard opening, contain modal focus, translate profile labels and keep search, command and toolbar menus keyboard-operable.
 - Restore cancelled inspector number edits, let nested menus consume Escape before canvas selection, and keep touch panels and contextual actions reachable inside narrow viewports.

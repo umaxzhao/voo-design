@@ -2674,6 +2674,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
 
         {layersPanelShown ? (
           <EditorLayers
+            assetEngine={engine}
             canvasPages={canvasPages}
             selectedCanvasIds={selectedCanvasIds}
             activeCanvasId={focusedId}

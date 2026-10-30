@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
 export const editorLayersPropTypes = {
+  assetEngine: PropTypes.object,
   canvasPages: PropTypes.arrayOf(PropTypes.object),
   selectedCanvasIds: PropTypes.arrayOf(PropTypes.string),
   activeCanvasId: PropTypes.string,

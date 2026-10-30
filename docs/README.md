@@ -10,6 +10,7 @@
 - [mcp-server.md](mcp-server.md): MCP server, bridge, client configuration, portable connectors
 
 ## Editor features
+- [editor-resources.md](editor-resources.md): Assets browser, workspace Resources directory, components and template insertion
 - [design-systems.md](design-systems.md): signature systems, welcome choice and agent contracts
 - [properties-panel.md](properties-panel.md), [pages-artboards.md](pages-artboards.md), [export-quality.md](export-quality.md), [web-image-extension.md](web-image-extension.md)
 
