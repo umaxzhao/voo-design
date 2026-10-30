@@ -6,6 +6,7 @@ import ToolCallCard from "../tool_call_card.jsx";
 import AgentModelLabel from "./agent_model_label.jsx";
 import AgentModelMenu from "./agent_model_menu.jsx";
 import AgentContextChip from "./agent_context_chip.jsx";
+import AgentSelectionSuggestions, { appendSuggestion } from "./agent_selection_suggestions.jsx";
 
 /** Starter prompts shown on an empty conversation; each fills the composer. */
 const SUGGESTION_KEYS = [
@@ -132,7 +133,7 @@ export default function AgentPanelView({
               </span>
               <h3 className="text-[15px] text-neutral-200">{t("agent.panel.emptyTitle")}</h3>
             </div>
-            <ul className="flex flex-col gap-2">
+            {!activeContext && <ul className="flex flex-col gap-2">
               {SUGGESTION_KEYS.map((key) => (
                 <li key={key}>
                   <button
@@ -144,7 +145,7 @@ export default function AgentPanelView({
                   </button>
                 </li>
               ))}
-            </ul>
+            </ul>}
             <p className="text-[12px] leading-relaxed text-neutral-500">{t("agent.panel.emptyHint")}</p>
           </div>
         ) : (
@@ -239,6 +240,11 @@ export default function AgentPanelView({
           )}
         </div>
       )}
+      <AgentSelectionSuggestions context={activeContext} busy={busy} t={t}
+        onPick={(prompt) => {
+          setInput((current) => appendSuggestion(current, prompt));
+          composerRef.current?.querySelector("textarea")?.focus();
+        }} />
       <form ref={composerRef} onSubmit={onSubmit} className="prompt-composer agent-composer relative mx-3 mb-3 rounded-2xl p-3">
         <AgentContextChip context={activeContext} onDetach={() => setActiveContext(null)} t={t} />
         {modelMenuOpen && (
