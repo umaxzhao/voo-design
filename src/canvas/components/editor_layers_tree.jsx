@@ -1,6 +1,6 @@
 import { checkCanvasMatch } from "./editor_canvas_tree_model.js";
 import EditorCanvasTreeRow from "./editor_canvas_tree_row.jsx";
-import EditorLayerRow from "./editor_layer_row.jsx";
+import EditorWindowedLayerRows from "./editor_windowed_layer_rows.jsx";
 import EditorCanvasInactiveLayers from "./editor_canvas_inactive_layers.jsx";
 import { layerPanelModelType } from "./editor_layers_contract.js";
 export default function EditorLayersTree({
@@ -71,11 +71,7 @@ export default function EditorLayersTree({
           className={`flex flex-col gap-0.5 ${page.isFallback || page.isCanvasRoot ? "" : "pl-2"}`}
         >
           {isActive ? <>
-            {rows.map(row => <EditorLayerRow
-              key={row.node.id}
-              model={model}
-              row={row}
-            />)}
+            <EditorWindowedLayerRows model={model} rows={rows} />
           </> : <EditorCanvasInactiveLayers
             canvasId={page.id}
             nodes={page.nodes}

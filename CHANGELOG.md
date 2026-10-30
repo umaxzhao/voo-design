@@ -2,6 +2,9 @@
 
 ## 1.0.0
 
+- Keep large layer panels responsive with windowed rows, shared immutable contract validation and indexed child presence; retain keyboard focus, scrolling, search and rename behavior.
+- Enable GPU rectangle preview caching on unbounded free canvases without clipping negative coordinates; update exact pointer regions incrementally and avoid repeated renderer routing/index work.
+
 - Bootstrap the FPS audit through a real workbench document and verify cached client-model bytes with the browser network disabled. Exercise the production SVG exporter in container-compositing regressions.
 
 - Preserve SVG backdrop blur, glass and adjustment layers through scene raster embedding, including isolated selection copies; retain an explicit export notice and verify actual pixels. Exit isolated native audit profiles without entering the production quit/recovery flow.
