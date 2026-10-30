@@ -13,21 +13,36 @@ import { toNodeLocal } from "./scene_geometry.js";
 import { regionLocalPoint } from "./doc_ops_regions.js";
 import { projectOntoPath } from "./editor_pen_math.js";
 import { isFrameSelectionBoundary } from "./frame-selection-unit.js";
+import { groupDescendants } from "./scene_model_groups.js";
 
 export function withNodes(doc, rawNodes, changes = null) {
   const nodes = reconcileBooleanNodes(doc, rawNodes);
   journalNodes(doc.nodes, nodes, nodes === rawNodes ? changes : null);
   if (doc?.isCanvasRoot && Array.isArray(nodes)) {
+    let minX = 0;
+    let minY = 0;
     let maxX = doc.width || 0;
     let maxY = doc.height || 0;
     for (const node of nodes) {
       if (!node || node.parentId) continue;
       if (Number.isFinite(node.x) && Number.isFinite(node.width)) {
+        minX = Math.min(minX, Math.floor(node.x));
         maxX = Math.max(maxX, Math.ceil(node.x + node.width));
       }
       if (Number.isFinite(node.y) && Number.isFinite(node.height)) {
+        minY = Math.min(minY, Math.floor(node.y));
         maxY = Math.max(maxY, Math.ceil(node.y + node.height));
       }
+    }
+    if (minX < 0 || minY < 0) {
+      const shiftX = Math.max(0, -minX);
+      const shiftY = Math.max(0, -minY);
+      const shifted = nodes.map((node) => ({
+        ...node,
+        x: (node.x ?? 0) + shiftX,
+        y: (node.y ?? 0) + shiftY,
+      }));
+      return { ...doc, nodes: shifted, width: maxX + shiftX, height: maxY + shiftY };
     }
     if (maxX > (doc.width || 0) || maxY > (doc.height || 0)) {
       return { ...doc, nodes, width: maxX, height: maxY };
@@ -163,9 +178,10 @@ export function removeNode(doc, id) {
 export function duplicateNode(doc, id, offset) {
   const node = doc.nodes.find((candidate) => candidate.id === id);
   if (!node || node.locked) return { doc, id: null };
+  const newId = crypto.randomUUID();
   const copy = {
     ...node,
-    id: crypto.randomUUID(),
+    id: newId,
     x: node.x + offset,
     y: node.y + offset,
     // A duplicate is never the locked base image, whatever it was copied from.
@@ -183,6 +199,35 @@ export function duplicateNode(doc, id, offset) {
       : undefined,
   };
   if (copy.points === undefined) delete copy.points;
+
+  if (isGroupNode(node)) {
+    const descendants = groupDescendants(doc, id);
+    if (descendants.length > 0) {
+      const idMap = new Map([[id, newId]]);
+      const copiedDescendants = descendants.map((desc) => {
+        const descId = crypto.randomUUID();
+        idMap.set(desc.id, descId);
+        return {
+          ...desc,
+          id: descId,
+          x: (desc.x ?? 0) + offset,
+          y: (desc.y ?? 0) + offset,
+          locked: false,
+        };
+      });
+      for (const d of copiedDescendants) {
+        if (d.parentId && idMap.has(d.parentId)) {
+          d.parentId = idMap.get(d.parentId);
+        }
+      }
+      let nextDoc = addNode(doc, copy);
+      for (const d of copiedDescendants) {
+        nextDoc = addNode(nextDoc, d);
+      }
+      return { doc: nextDoc, id: newId };
+    }
+  }
+
   return { doc: addNode(doc, copy), id: copy.id };
 }
 

@@ -82,7 +82,7 @@ describe("AI floating button and agent avatars", () => {
     expect(fab).toMatch(PURPLE);
     expect(fab).not.toContain(MINT);
 
-    const avatars = read("src/canvas/components/canvas_agent_panel.jsx").match(/className="voo-ai-fab(?: [^"]*)?"/g) ?? [];
+    const avatars = (read("src/canvas/components/agent-panel/agent_panel_view.jsx") || read("src/canvas/components/canvas_agent_panel.jsx")).match(/className="voo-ai-fab(?: [^"]*)?"/g) ?? [];
     expect(avatars).toHaveLength(1);
     for (const cls of avatars) {
       expect(cls).toMatch(PURPLE);

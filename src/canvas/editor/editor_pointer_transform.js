@@ -384,7 +384,10 @@ export function createTransformPointerGestures(ctx) {
           currentSelected.length > 1 &&
           currentSelected.some((n) => n.id === hit.id);
 
-        if (isHitInMultiSelection && typeof api.duplicateSelected === "function") {
+        if (typeof api.duplicateSelected === "function") {
+          if (!isHitInMultiSelection && !api.isSelected(hit.id)) {
+            api.select(hit.id);
+          }
           api.duplicateSelected();
           duplicated = true;
           target = api.getSelected?.() ?? hit;
