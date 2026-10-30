@@ -17,6 +17,16 @@ const FIXED_PROPERTIES_KEYS = [
   "editor.props.distributeSpacingV",
   "editor.strokeStyle.solid",
   "editor.strokeStyle.dashed",
+  "editor.strokeStyle.joinMiter",
+  "editor.strokeStyle.joinRound",
+  "editor.strokeStyle.joinBevel",
+  "editor.strokeStyle.capButt",
+  "editor.strokeStyle.capRound",
+  "editor.strokeStyle.capSquare",
+  "editor.strokeStyle.dashSolid",
+  "editor.strokeStyle.dashDashed",
+  "editor.strokeStyle.dashDotted",
+  "editor.strokeStyle.dashCustom",
   "editor.tool.selection",
 ];
 

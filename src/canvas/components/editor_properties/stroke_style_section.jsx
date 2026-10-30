@@ -20,6 +20,11 @@ import {
   WIDTH_PROFILE,
   normalizeStrokeProps,
 } from "../../editor/stroke_style.js";
+import {
+  StrokeJoinIcon,
+  StrokeCapIcon,
+  StrokeDashIcon,
+} from "./stroke_style_icons.jsx";
 import ScrubField from "../scrub_field.jsx";
 import CustomSelect from "../custom_select.jsx";
 
@@ -46,15 +51,18 @@ function SegmentedRow({
             type="button"
             disabled={disabled}
             onClick={() => onPick(option.value)}
-            className={`rounded-lg py-1 text-[10px] font-mono transition-all ${
+            title={option.label}
+            aria-label={option.label}
+            aria-pressed={value === option.value}
+            className={`flex h-7 items-center justify-center rounded-lg text-[10px] font-mono transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-400 ${
               disabled
                 ? "cursor-not-allowed bg-neutral-900 text-neutral-500"
                 : value === option.value
-                  ? "bg-neutral-700 font-medium text-neutral-100 shadow-xs"
+                  ? "bg-neutral-700 font-medium text-neutral-100 shadow-xs ring-1 ring-white/10"
                   : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200"
             }`}
           >
-            {option.label}
+            {option.icon ? option.icon : option.label}
           </button>
         ))}
       </div>
@@ -68,6 +76,7 @@ SegmentedRow.propTypes = {
     PropTypes.shape({
       value: PropTypes.string.isRequired,
       label: PropTypes.string.isRequired,
+      icon: PropTypes.node,
     }),
   ).isRequired,
   value: PropTypes.string.isRequired,
@@ -126,6 +135,7 @@ export default function StrokeStyleSection({
     current,
     nodeKey,
     labelStem,
+    renderIcon,
     disabled = false,
   ) => (
     <SegmentedRow
@@ -135,6 +145,7 @@ export default function StrokeStyleSection({
         label: t(
           `editor.strokeStyle.${labelStem}${value[0].toUpperCase()}${value.slice(1)}`,
         ),
+        icon: renderIcon ? renderIcon(value) : null,
       }))}
       value={current}
       onPick={(value) => editAndCommit({ [nodeKey]: value })}
@@ -150,8 +161,16 @@ export default function StrokeStyleSection({
         style.join,
         "strokeJoin",
         "join",
+        (val) => <StrokeJoinIcon join={val} size={15} />,
       )}
-      {row("editor.strokeStyle.cap", STROKE_CAP, style.cap, "strokeCap", "cap")}
+      {row(
+        "editor.strokeStyle.cap",
+        STROKE_CAP,
+        style.cap,
+        "strokeCap",
+        "cap",
+        (val) => <StrokeCapIcon cap={val} size={15} />,
+      )}
 
       {/* Dash: presets plus a custom dash/gap pair. */}
       <SegmentedRow
@@ -162,6 +181,7 @@ export default function StrokeStyleSection({
           label: t(
             `editor.strokeStyle.dash${value[0].toUpperCase()}${value.slice(1)}`,
           ),
+          icon: <StrokeDashIcon dash={value} size={15} />,
         }))}
         value={dashValue}
         onPick={(value) =>
