@@ -31,3 +31,6 @@ Verification: `tests/e2e/editor-resources.e2e.mjs` uses the real editor and chec
 selection save/reuse/undo, component instances, image pixels after hydration,
 templates, search, persistence across reload and the shared workspace directory.
 `tests/unit/workspace_resources.test.js` protects subtree and reference isolation.
+
+`editor-resources-built.e2e.mjs` additionally opens the compiled production bundle
+and verifies the actual template browser, insertion and undo before deployment.
