@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Hide legacy document-edge resize controls on unbounded canvas roots so Frames crossing world zero retain their own move, duplicate and resize gestures.
+- Exclude selection handles, hover controls and grids from the detached free-canvas colour readback while retaining full-surface spatial effect context.
 - Keep free-canvas world coordinates stable in every direction; size rendering and pointer surfaces to the viewport without shifting sibling artwork or growing document metadata.
 - Preserve signed-coordinate image/text pixels, composited colour sampling and embedded SVG image resources in node and clipboard exports.
 - Defer Alt duplication until an actual drag, keep complete Frame/Group trees and internal clipping links independent, and restore cancelled gestures without adding history.

@@ -775,7 +775,15 @@ export function createEditor({
       if (frame) { cancelAnimationFrame(frame); frame = 0; }
       const wasPaintingEnabled = stagePaintingEnabled;
       stagePaintingEnabled = true;
-      try { render(); } finally { stagePaintingEnabled = wasPaintingEnabled; }
+      try {
+        render();
+        // The free workspace owns a detached measurement canvas; its readback
+        // must exclude selection handles, hover controls, guides and grids.
+        // Keep the full surface so spatial effects retain their neighbourhood.
+        if (getDoc().isCanvasRoot && !canvas.isConnected) {
+          api.renderLayerPass(canvas, getDoc().nodes.map(node => node.id));
+        }
+      } finally { stagePaintingEnabled = wasPaintingEnabled; }
     },
     renderLayerPass(targetCanvas, nodeIds, surface = {}) {
       renderEngineLayerPass({

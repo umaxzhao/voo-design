@@ -34,6 +34,7 @@ export default function EditorPageOverlays({ page }) {
           }
           onDragStart={free ? handleResizeDragStart : null}
           hidden={
+            Boolean(doc?.isCanvasRoot) ||
             tool !== TOOL.SELECT ||
             Boolean(doc?.crop) ||
             Boolean(engine?.getSelectionTransform?.()) ||

@@ -167,8 +167,11 @@ await withEditorBrowser(async ({ page }) => {
   assert.equal(layout.moved.x, layout.existing.x + layout.existing.width + 10);
   assert.equal(layout.moved.y, layout.existing.y);
   await page.mouse.move(1040, 900); await settled();
+  await page.evaluate(() => window.__vooEditor.setHoveredNode("moving"));
   const layoutPixel = await pixel({ x: layout.moved.x + 20, y: layout.moved.y + 20 });
   assert.equal(layoutPixel, "#ff0000");
+  assert.equal(await pixel({ x: layout.moved.x, y: layout.moved.y + layout.moved.height / 2 }), "#ff0000",
+    "Selection borders and hovered corner controls must not contaminate composited colour sampling");
   await historyRoundTrip(before);
   checks.push("dropping into Auto Layout immediately joins its flow, paints at its computed position and undoes/redoes once");
 

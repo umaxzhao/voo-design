@@ -42,7 +42,7 @@ await withEditorBrowser(async ({ page }) => {
       const frame = (id, x, y, fill) => ({ ...createGroupNode({ x, y, width: 220, height: 170 }),
         id, name: id, isFrame: true, frame: true, fill, clipContent: false });
       e.setDoc({ ...e.getDocument(), isCanvasRoot: true, width: 700, height: 450,
-        crop: { x: 0, y: 0, width: 700, height: 450 }, backgroundColor: "transparent", nodes: [
+        crop: null, backgroundColor: "transparent", nodes: [
           frame("negative-moving", 60, 80, "#ffffff"),
           { ...createRectNode({ x: 90, y: 110, width: 70, height: 50, fill: "#ff0000" }),
             id: "negative-child", parentId: "negative-moving" },
@@ -57,6 +57,8 @@ await withEditorBrowser(async ({ page }) => {
     await settle();
   };
   await seed();
+  assert.equal(await page.locator("[data-editor-resize-edge]").count(), 0,
+    "An unbounded root has no legacy document edge controls to intercept Frame gestures at world zero");
   await page.locator('[data-testid="workspace-skia-canvas"][data-renderer-status="ready"]').waitFor({ state: "visible" });
   assert.equal(await page.getByTestId("editor-artwork-fallback").count(), 0,
     "The vector scenario must actually use the native workspace painter");
