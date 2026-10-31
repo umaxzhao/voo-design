@@ -8,7 +8,9 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
     await page.evaluate(id => window.__vooEditor.selectExactly([id]), id);
     await settle();
   };
-  const styles = locator => locator.evaluate(el => {
+  const styles = locator => locator.evaluate(async el => {
+    // Compare the settled visual state, not frame zero of a color transition.
+    await Promise.all(el.getAnimations().map(animation => animation.finished));
     const style = getComputedStyle(el);
     return { radius: parseFloat(style.borderRadius), height: el.getBoundingClientRect().height,
       background: style.backgroundColor, border: style.borderTopColor, borderWidth: style.borderTopWidth,
