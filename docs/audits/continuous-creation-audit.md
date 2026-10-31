@@ -104,10 +104,17 @@ its direct annotation checks separately verify unchanged updates, no-argument
 commits, deliberate emptying and returning to the original content.
 
 `drawing-cancellation.test.js` additionally verifies preservation of an
-intervening sibling edit and release of a child of a cancelled Frame. These
-are pure domain tests, not claims of a live collaborative browser session.
-Cancellation removes only the owned draft when another document change has
-arrived, rather than replacing the entire current document with an old copy.
+intervening sibling edit, release of a child of a cancelled Frame, and
+sub-threshold (`< 4px`) shape/arrow clicks rolling back via
+`rollbackDrawingGesture` without pushing a spurious delete commit, wiping the
+redo stack, or clearing the prior selection. `editor-module-audit-regressions.test.js`
+and `text-creation-boundaries.e2e.mjs` also verify that switching away from the
+Pen tool commits an open multi-anchor pen draft (`finishPen`) and clears draft
+state, that `Escape` during active `resize`/`rotate`/`cornerRadius`/`endpoint`
+handle drags unwinds the pointer gesture first and restores geometry, selection,
+and redo, and that 0-movement handle clicks do not commit duplicate history entries.
+These unit cases are pure domain tests alongside the 8-scene Chromium suite in
+`text-creation-boundaries.e2e.mjs`.
 
 Remaining: true OS IME composition, cross-client concurrent history, async
 same-node style changes and native-window teardown still need their own

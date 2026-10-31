@@ -52,16 +52,21 @@ pass inherited by newer source.
 | Group a Frame together with its selected descendant | The descendant was detached from the Frame | Deduplicate selected roots in the common domain operation; keep Frame subtree and initial wrapper bounds intact |
 | Group children of different nested Frames | The folder escaped to document root despite a shared outer Frame | Find their nearest surviving common parent; assert ownership, both colors and history |
 | Ungroup a clipping-mask container | Followers retained a missing `clipTo` base | Release that reference; assert actual clipped/unclipped pixels and one-step restoration |
+| Align/distribute selected containers and mask bases | Selected descendants inside a selected Frame moved twice, and clipped followers (`clipTo`) were left behind | Deduplicate `selectionUnits` via `groupingRoots` and move units via `moveAffectedIds`; assert single-delta child coordinates, mask-follower alignment, pixels and one-step undo/redo |
+| Arrow-key nudge on selected Auto Layout groups | `nudgeSelection` moved only leaf children so Auto Layout immediately snapped them back to the unmoved group origin | Move `[selectedGroup]` when a group unit is selected; assert group + child coordinates and one-step undo/redo |
+| Layer row selection and group duplication | Clicking a Boolean row called `selectGroup` (no-op), `unitSelectionIds` omitted nested Frames inside a Group, and Layer-panel folder duplication cleared `selectedGroupId` | Distinguish ordinary folders (`isFolderSelectionRow`) from Frames and Boolean layers, share `groupArtworkIds`, and select ordinary folders via `selectGroup` before duplicating |
 
 `container-command-boundaries.e2e.mjs` uses controlled seeded documents and
-initial selections, then actual keyboard commands. It does not claim that
-seeded selections were produced by physical modifier clicks. Its four scenes
-check state, hierarchy, pixels and complete undo/redo. The earlier continuous
-creation suite separately verifies mouse multiselection and group dragging.
+initial selections, then actual keyboard, alignment, and layer-panel actions.
+It does not claim that seeded selections were produced by physical modifier
+clicks. Its seven scenes check state, hierarchy, pixels and complete undo/redo.
+The earlier continuous creation suite separately verifies mouse multiselection
+and group dragging.
 
-Pure regressions in `container-command-boundaries.test.js` check the same four
-structural invariants. `nested-group-commands.test.js` adds the Frame-plus-leaf
-no-op and Auto Layout wrapper measurement for selected subtree roots. An
+Pure regressions in `container-command-boundaries.test.js`,
+`nested-group-commands.test.js`, and `editor-module-audit-regressions.test.js`
+check the same structural and selection invariants, including Auto Layout
+group nudging, nested Frame unit selection, and group duplication. An
 initial hypothesis that cross-Frame paint ordering alone hid content was not
 confirmed in Chromium; no stack-order rewrite was made on that assumption.
 

@@ -468,15 +468,17 @@ export function createPenEdit({
     const picked = edit.selected?.length
       ? new Set(edit.selected)
       : new Set([edit.active]);
+    const localDelta = toNodeLocalDelta(node, { x: dx, y: dy });
     const next = node.points.map((pt, index) => {
       if (!picked.has(index)) return pt;
       return {
         ...pt,
-        x: pt.x + dx / scaleX,
-        y: pt.y + dy / scaleY,
+        x: pt.x + localDelta.x / scaleX,
+        y: pt.y + localDelta.y / scaleY,
       };
     });
-    setDoc(ops.updateNode(getDoc(), node.id, { ...node, points: next }), {
+    const rebased = expandPenNodeBounds({ ...node, points: next });
+    setDoc(ops.updateNode(getDoc(), node.id, rebased), {
       commit: false,
     });
     requestRender();

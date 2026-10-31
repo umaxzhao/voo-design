@@ -43,8 +43,16 @@ export function beginAltDuplicate(api, gesture) {
   return true;
 }
 
+const TRANSFORM_ROLLBACK_KINDS = new Set([
+  "move",
+  "resize",
+  "rotate",
+  "cornerRadius",
+  "endpoint",
+]);
+
 export function rollbackMoveGesture(api, gesture) {
-  if (gesture?.kind !== "move" || !gesture.rollbackState) return false;
+  if (!TRANSFORM_ROLLBACK_KINDS.has(gesture?.kind) || !gesture.rollbackState) return false;
   const { doc, selectedIds, groupId, session } = gesture.rollbackState;
   if (session && api.restoreDocumentSession) {
     api.restoreDocumentSession(session);

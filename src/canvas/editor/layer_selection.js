@@ -171,3 +171,30 @@ export function isRowSelected(
     (ids.length > 0 && ids.every((id) => chosen.has(id)))
   );
 }
+
+/** True only for an ordinary group folder; Frames and Boolean nodes select by their own ID. */
+export function isFolderSelectionRow(node) {
+  return isGroupNode(node) && !isFrameSelectionBoundary(node);
+}
+
+/** Collect selectable node IDs across a range of layer rows (ordinary folders expand to artwork units). */
+export function collectLayerRowNodeIds(objects, rowList) {
+  const seen = new Set();
+  const ids = [];
+  const push = (id) => {
+    if (!seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
+    }
+  };
+  for (const r of rowList) {
+    const node = r?.node ?? r;
+    if (!node) continue;
+    if (isFolderSelectionRow(node)) {
+      for (const id of groupArtworkIds(objects, node.id)) push(id);
+    } else {
+      push(node.id);
+    }
+  }
+  return ids;
+}

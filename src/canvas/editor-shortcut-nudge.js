@@ -8,9 +8,10 @@ export function nudgeSelection({ engine, nudgedRef }, dx, dy) {
       return;
     }
   }
-  const selectedNodes = engine.getSelectedNodes?.() ?? [
-    engine.getSelected(),
-  ];
+  const selectedGroup = engine.getSelectedGroup?.() ?? null;
+  const selectedNodes = selectedGroup
+    ? [selectedGroup]
+    : (engine.getSelectedNodes?.() ?? [engine.getSelected()]);
   const movableNodes = selectedNodes.filter(
     (node) => node && !node.locked && !node.lockPosition,
   );

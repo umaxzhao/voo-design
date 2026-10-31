@@ -179,7 +179,10 @@ export function createEngineGroups({
 
   function layoutSelection(layout, argument) {
     const doc = getDoc();
-    const units = selectionUnits();
+    const units = groupingRoots(
+      doc,
+      selectionUnits().map((node) => node.id),
+    ).filter((unit) => !unit.lockPosition);
     if (units.length === 0) return;
     const measured = units.map((unit) => {
       // A Frame owns its explicit bounds; only a regular group derives its
@@ -209,12 +212,10 @@ export function createEngineGroups({
       const dx = (patch.x ?? unit.x) - unit.x;
       const dy = (patch.y ?? unit.y) - unit.y;
       if (dx === 0 && dy === 0) continue;
-      const moved = isContainerNode(findNode(doc, id))
-        ? [id, ...groupDescendants(doc, id).map((node) => node.id)]
-        : [id];
+      const moved = ops.moveAffectedIds(doc, [id]);
       for (const memberId of moved) {
         const member = findNode(next, memberId);
-        if (!member) continue;
+        if (!member || member.locked || member.lockPosition || isLockedByGroup(next, member)) continue;
         next = ops.updateNode(next, memberId, {
           x: member.x + dx,
           y: member.y + dy,

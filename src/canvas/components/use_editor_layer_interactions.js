@@ -1,9 +1,14 @@
 import { resolveCurrentTreeKey, computeActiveDescendantId, getTreeSelectionSignature, handleTreeNavigationKeyDown } from "./editor_canvas_tree_nav.js";
 import { useEffect } from "react";
 import { usePropertyCommit } from "./editor_properties/use_property_commit.js";
-import { isRowSelected } from "../editor/layer_selection.js";
+import {
+  collectLayerRowNodeIds,
+  groupArtworkIds,
+  isFolderSelectionRow,
+  isRowSelected,
+} from "../editor/layer_selection.js";
 import useLayerDrag from "./use_layer_drag.js";
-import { isContainerNode, isGroupNode, isBooleanNode, groupDescendants } from "../editor/scene_model.js";
+import { isContainerNode, isGroupNode, isBooleanNode } from "../editor/scene_model.js";
 export default function useEditorLayerInteractions(model) {
   const {
     activeCanvasId,
@@ -157,20 +162,7 @@ export default function useEditorLayerInteractions(model) {
     toggleCollapsed(groupId, canvasId);
     focusTreeItem(canvasId === effectiveActiveCanvasId ? `layer-${canvasId}-${groupId}` : `inactive-layer-${canvasId}-${groupId}`);
   };
-  const collectNodeIds = rowList => {
-    const ids = [];
-    for (const r of rowList) {
-      if (isGroupNode(r.node) || isBooleanNode(r.node)) {
-        const children = childrenMap.get(r.node.id) ?? [];
-        for (const child of children) {
-          if (!isGroupNode(child) && !isBooleanNode(child)) ids.push(child.id);
-        }
-      } else {
-        ids.push(r.node.id);
-      }
-    }
-    return ids;
-  };
+  const collectNodeIds = rowList => collectLayerRowNodeIds(objects, rowList);
   const selectRangeBetween = (anchorId, targetId) => {
     const anchorRowIdx = anchorId ? rows.findIndex(r => r.node.id === anchorId) : -1;
     const targetRowIdx = rows.findIndex(r => r.node.id === targetId);
@@ -193,17 +185,15 @@ export default function useEditorLayerInteractions(model) {
   const pickRow = (node, index, event) => {
     const rowKey = `layer-${effectiveActiveCanvasId}-${node.id}`;
     const exclusivePick = !event.shiftKey && !event.metaKey && !event.ctrlKey;
-    // selectGroup currently ignores boolean nodes, so retain the current selection signature.
-    focusTreeItem(rowKey, exclusivePick ? isGroupNode(node) ? getTreeSelectionSignature({
+    const isFolder = isFolderSelectionRow(node);
+    focusTreeItem(rowKey, exclusivePick ? isFolder ? getTreeSelectionSignature({
       canvasId: effectiveActiveCanvasId,
-      selectedIds: groupDescendants({
-        nodes: objects
-      }, node.id).filter(descendant => !isGroupNode(descendant)).map(descendant => descendant.id)
-    }) : isBooleanNode(node) ? getSelectionKey() : getTreeSelectionSignature({
+      selectedIds: groupArtworkIds(objects, node.id)
+    }) : getTreeSelectionSignature({
       canvasId: effectiveActiveCanvasId,
       selectedIds: [node.id]
     }) : getSelectionKey());
-    if ((isGroupNode(node) || isBooleanNode(node)) && exclusivePick) {
+    if (isFolder && exclusivePick) {
       anchorIdRef.current = node.id;
       onSelectGroup?.(node.id);
       return;
@@ -243,6 +233,18 @@ export default function useEditorLayerInteractions(model) {
         },
         onSelectLayer: index => {
           const row = visibleTreeItems.find(item => item.index === index && item.isActiveCanvas);
+          const layer = objects[index];
+          if (layer && isFolderSelectionRow(layer) && onSelectGroup) {
+            if (row) {
+              anchorIdRef.current = row.layerId;
+              focusTreeItem(row.key, getTreeSelectionSignature({
+                canvasId: effectiveCanvasId,
+                selectedIds: groupArtworkIds(objects, layer.id),
+              }));
+            }
+            onSelectGroup(layer.id);
+            return;
+          }
           if (row) {
             anchorIdRef.current = row.layerId;
             focusTreeItem(row.key, `${effectiveCanvasId}:${row.layerId}`);

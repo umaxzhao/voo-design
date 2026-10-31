@@ -11,6 +11,7 @@ await withEditorBrowser(
       page.waitForFunction(
         () =>
           window.__vooEditor &&
+          !window.__vooStore?.welcomeOpen &&
           document
             .querySelector('[data-testid="design-editor"] [data-open-guard]')
             ?.getAttribute("data-open-guard") === "off",

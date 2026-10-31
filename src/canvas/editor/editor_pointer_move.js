@@ -251,6 +251,8 @@ export function createPointerMoveDispatcher({
         }[gesture.handle];
 
         const adjustSingleCorner = event.altKey || gesture.isIndependent;
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         if (adjustSingleCorner && cornerKey) {
           const currentRadii = resolveCornerRadii(
             node.cornerRadius,
@@ -297,6 +299,8 @@ export function createPointerMoveDispatcher({
           .getDocument()
           .nodes.find((candidate) => candidate.id === gesture.id);
         if (node) {
+          captureMoveRollback(api, gesture);
+          gesture.moved = true;
           api.updateNode(
             gesture.id,
             movePathEndpoint(node, gesture.index, point),
@@ -306,9 +310,13 @@ export function createPointerMoveDispatcher({
         break;
       }
       case "resize":
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         dragResize(event);
         break;
       case "rotate":
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         dragRotate(event);
         break;
       case "cropMove":

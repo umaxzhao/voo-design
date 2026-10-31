@@ -59,7 +59,8 @@ export const EDITOR_MODULES = [
     paths: [
       "src/canvas/editor/editor_pointer*", "src/canvas/editor/*hit-test*", "src/canvas/editor/selection*",
       "src/canvas/editor/transform*", "src/canvas/*shortcut*",
-      "src/canvas/editor/drawing-gesture-*", "src/canvas/editor/editor-pointer-*",
+      "src/canvas/editor/drawing-gesture-*", "src/canvas/editor/move-gesture-*", "src/canvas/editor/editor-pointer-*",
+      "src/canvas/editor/editor_engine_tools.js", "tests/unit/editor-module-audit-regressions.test.js",
     ],
     related: ["canvas","layers","text","vectors","inspector"],
     features: ["selection.hit-testing","selection.transforms","selection.cancel","selection.shortcuts","selection.continuous-creation"],
@@ -76,6 +77,7 @@ export const EDITOR_MODULES = [
     title: "Layers, Frames and ownership",
     paths: [
       "src/canvas/components/editor_layer*", "src/canvas/components/use*layer*", "src/canvas/editor/*node*",
+      "src/canvas/editor/layer_selection.js", "src/canvas/components/image_editor.jsx",
       "src/canvas/editor/*frame*", "src/canvas/editor/*reparent*", "src/canvas/editor/*duplicate*",
       "src/canvas/editor/*paste*", "src/canvas/editor/*clipboard*",
       "src/canvas/editor/group-structure.js", "src/canvas/editor/doc_ops_groups.js", "src/canvas/editor/editor_engine_groups.js",

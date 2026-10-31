@@ -1,4 +1,5 @@
 import { WORKSPACE_BACKGROUND } from "../editor/render_canvas_base.js";
+import { isFolderSelectionRow } from "../editor/layer_selection.js";
 import { exportTargetName } from "../editor/export_filename.js";
 import { patchForMultiResize } from "../editor/multi_selection_patch.js";
 import { EDITOR_BETA_ENABLED } from "../editor-beta-features.js";
@@ -2704,7 +2705,13 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             onToggleSelect={(index) => {
               setCanvasBackgroundSelected(false);
               setSelectedInstanceChild(null);
-              engine?.toggleExactly(layers[index].id);
+              const layer = layers[index];
+              if (!layer) return;
+              if (isFolderSelectionRow(layer)) {
+                engine?.toggleSelect(layer.id);
+              } else {
+                engine?.toggleExactly(layer.id);
+              }
             }}
             onSelectExactly={(ids) => {
               setCanvasBackgroundSelected(false);
@@ -2763,7 +2770,13 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             onConvertToPath={(id) => engine?.convertSelectedToPath?.(id)}
             onDuplicateLayer={(index) => {
               if (!engine) return;
-              engine.selectExactly([layers[index].id]);
+              const layer = layers[index];
+              if (!layer) return;
+              if (isFolderSelectionRow(layer)) {
+                engine.selectGroup(layer.id);
+              } else {
+                engine.selectExactly([layer.id]);
+              }
               engine.duplicateSelected();
             }}
             onMutate={(id, patch) =>

@@ -23,6 +23,7 @@ function fixture(tool) {
     mute: run => history.mute(run), getColor: () => "#123456",
     getSnappingEnabled: () => false, nodeAtPoint: () => null, setTextDraftRect: vi.fn(),
     updateNode: (id, patch) => { doc = ops.updateNode(doc, id, patch); },
+    removeNode: vi.fn(id => { doc = ops.removeNode(doc, id); history.push(snapshot()); }),
     commit: vi.fn(() => history.push(snapshot())),
     beginTextEdit: vi.fn(), setTool: vi.fn(),
   };
@@ -49,6 +50,24 @@ describe("cancelled drawing transactions", () => {
     expect(f.history.redo().doc).toEqual(f.future);
     expect(f.api.commit).not.toHaveBeenCalled();
     expect(f.api.beginTextEdit).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["rect", "startShape"],
+    ["ellipse", "startShape"],
+    ["frame", "startShape"],
+    ["star", "startPolyShape"],
+    ["polygon", "startPolyShape"],
+    ["arrow", "startArrow"],
+  ])("restores selection and redo without committing when %s click is under 4px", (tool, start) => {
+    const f = fixture(tool), before = f.snapshot(), entries = f.history.captureSession();
+    f.shapes[start]({ clientX: 100, clientY: 100 });
+    f.finish("pointerup");
+    expect(f.snapshot()).toEqual(before);
+    expect(f.history.captureSession()).toEqual(entries);
+    expect(f.history.redo().doc).toEqual(f.future);
+    expect(f.api.removeNode).not.toHaveBeenCalled();
+    expect(f.api.commit).not.toHaveBeenCalled();
   });
 });
 

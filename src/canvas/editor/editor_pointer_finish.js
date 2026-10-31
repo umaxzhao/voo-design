@@ -15,7 +15,18 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
   function finishGesture(event, finished) {
     if (!finished) return;
     if (event?.type === "pointercancel" && rollbackDrawingGesture(api, finished)) return;
-    if (event?.type === "pointercancel" && !isPointerHandoff(event) && rollbackMoveGesture(api, finished)) return;
+    if (event?.type === "pointercancel" && !isPointerHandoff(event)) {
+      if (rollbackMoveGesture(api, finished)) return;
+      if (
+        finished.kind === "move" ||
+        finished.kind === "resize" ||
+        finished.kind === "rotate" ||
+        finished.kind === "cornerRadius" ||
+        finished.kind === "endpoint"
+      ) {
+        return;
+      }
+    }
 
     if (
       finished.kind === "gradientStop" ||
@@ -131,10 +142,21 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
     if (
       finished.kind === "perspectiveCorner" ||
       finished.kind === "meshPoint" ||
-      finished.kind === "puppetPin" ||
-      finished.kind === "endpoint"
+      finished.kind === "puppetPin"
     ) {
       commitEditorAction("editor.pointer.transform", () => api.commit());
+      return;
+    }
+
+    if (
+      finished.kind === "resize" ||
+      finished.kind === "rotate" ||
+      finished.kind === "cornerRadius" ||
+      finished.kind === "endpoint"
+    ) {
+      if (finished.moved) {
+        commitEditorAction("editor.pointer.transform", () => api.commit());
+      }
       return;
     }
 
@@ -150,8 +172,10 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
           endpoints[1].y - endpoints[0].y,
         ) < 4;
       if (tooShort) {
-        api.removeNode(finished.id);
-        api.select(null);
+        if (!rollbackDrawingGesture(api, finished)) {
+          api.removeNode(finished.id);
+          api.select(null);
+        }
       } else {
         api.select(finished.id);
         commitEditorAction("editor.pointer.draw", () => api.commit());
@@ -222,8 +246,10 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
         .nodes.find((candidate) => candidate.id === finished.id);
       const tooSmall = !node || node.width < 4 || node.height < 4;
       if (tooSmall) {
-        api.removeNode(finished.id);
-        api.select(null);
+        if (!rollbackDrawingGesture(api, finished)) {
+          api.removeNode(finished.id);
+          api.select(null);
+        }
       } else {
         api.select(finished.id);
         commitEditorAction("editor.pointer.draw", () => api.commit());

@@ -20,6 +20,8 @@ export function unwindEscape({
 
   return Boolean(
     firstHandledShortcutAction([
+      // An active pointer gesture (move/resize/rotate/draw) unwinds first.
+      () => (engine.cancelActiveGesture?.() ? "pointerGesture" : null),
       // A live selection transform cancels whole on Escape (Photoshop's Esc).
       () => {
         if (!engine.getSelectionTransform?.()) return null;

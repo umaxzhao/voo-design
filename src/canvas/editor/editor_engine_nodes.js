@@ -7,11 +7,11 @@
 
 import {
   findNode,
-  groupDescendants,
   isGroupNode,
   isLockedByGroup,
 } from "./scene_model.js";
 import { frameSelectionUnit, isFrameSelectionBoundary } from "./frame-selection-unit.js";
+import { groupArtworkIds } from "./layer_selection.js";
 import { createEngineLayersController } from "./editor_engine_layers.js";
 import { createFrequencySeparationController } from "./editor_frequency_separation.js";
 import { createEngineNodeOps } from "./editor_engine_node_ops.js";
@@ -61,9 +61,7 @@ export function createEngineNodesController({
   function unitSelectionIds(unit) {
     if (!unit) return [];
     if (isFrameSelectionBoundary(unit) || !isGroupNode(unit)) return [unit.id];
-    return groupDescendants(getDoc(), unit.id)
-      .filter((node) => !isGroupNode(node))
-      .map((node) => node.id);
+    return groupArtworkIds(getDoc().nodes, unit.id);
   }
 
   function selectionUnits() {
@@ -86,22 +84,26 @@ export function createEngineNodesController({
     if (!id) isolationGroupId = null;
     const node = id ? findNode(getDoc(), id) : null;
     const unit = node ? clickUnitOf(node) : null;
-    setSelectedGroupId(isGroupNode(unit) ? unit.id : null);
     const ids = unit ? unitSelectionIds(unit) : [];
-    if (!selection.selectNodes(ids)) return;
+    const nextGroupId = isGroupNode(unit) ? unit.id : null;
+    const groupChanged = selectedGroupId !== nextGroupId;
+    const selectionChanged = selection.selectNodes(ids);
+    setSelectedGroupId(nextGroupId);
+    if (!selectionChanged && !groupChanged) return;
     requestRender();
     notify();
   }
 
   function selectMany(ids) {
+    const groupChanged = selectedGroupId !== null;
+    const selectionChanged = selection.selectNodes(ids);
     setSelectedGroupId(null);
-    if (!selection.selectNodes(ids)) return;
+    if (!selectionChanged && !groupChanged) return;
     requestRender();
     notify();
   }
 
   function toggleSelect(id) {
-    setSelectedGroupId(null);
     const node = id ? findNode(getDoc(), id) : null;
     if (!node) return;
     const unitIds = unitSelectionIds(clickUnitOf(node));
@@ -110,28 +112,37 @@ export function createEngineNodesController({
     const next = allIn
       ? current.filter((each) => !unitIds.includes(each))
       : [...current, ...unitIds.filter((each) => !current.includes(each))];
-    if (!selection.selectNodes(next)) return;
+    const groupChanged = selectedGroupId !== null;
+    const selectionChanged = selection.selectNodes(next);
+    setSelectedGroupId(null);
+    if (!selectionChanged && !groupChanged) return;
     requestRender();
     notify();
   }
 
   function selectExactly(ids) {
+    const groupChanged = selectedGroupId !== null;
+    const selectionChanged = selection.selectNodes(ids ?? []);
     setSelectedGroupId(null);
-    if (!selection.selectNodes(ids ?? [])) return;
+    if (!selectionChanged && !groupChanged) return;
     requestRender();
     notify();
   }
 
   function toggleExactly(id) {
+    const groupChanged = selectedGroupId !== null;
+    const selectionChanged = selection.toggleNode(id);
     setSelectedGroupId(null);
-    if (!selection.toggleNode(id)) return;
+    if (!selectionChanged && !groupChanged) return;
     requestRender();
     notify();
   }
 
   function selectBackground() {
+    const groupChanged = selectedGroupId !== null;
+    const selectionChanged = selection.selectBackground();
     setSelectedGroupId(null);
-    if (!selection.selectBackground()) return;
+    if (!selectionChanged && !groupChanged) return;
     requestRender();
     notify();
   }
@@ -141,8 +152,8 @@ export function createEngineNodesController({
     if (!isGroupNode(node)) return;
     isolationGroupId = null;
     const ids = unitSelectionIds(node);
-    setSelectedGroupId(id);
     selection.selectNodes(ids);
+    setSelectedGroupId(id);
     requestRender();
     notify();
   }

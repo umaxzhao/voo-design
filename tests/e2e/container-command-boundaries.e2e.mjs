@@ -46,5 +46,107 @@ await withEditorBrowser(async ({ page }) => {
     await f.hierarchy(); await f.history(before);
     return { removedBaseReleased: true, actualPixels: true, undoRedo: true };
   });
+  await f.record("align-selected-frame-and-child-with-masked-sibling-moves-subtree-and-mask-follower-once", async () => {
+    await f.seed([
+      frame("host", 140, 40, 260, 220),
+      shape("child", "host", 170, 80, { width: 60, height: 40, fill: "#ff0000" }),
+      shape("base", null, 300, 320, { width: 100, height: 100, fill: "#ffffff", maskBase: true }),
+      shape("clipped", null, 310, 330, { width: 80, height: 80, fill: "#00aa00", clipTo: "base" }),
+      shape("anchor", null, 40, 80, { width: 50, height: 50, fill: "#0000ff" }),
+    ], ["host", "child", "base", "anchor"]);
+    const before = await f.snapshot();
+    await page.evaluate(async () => {
+      const { alignNodes } = await import("/src/canvas/editor/align_ops.js");
+      window.__vooEditor.layoutSelection(alignNodes, "left");
+    });
+    await f.settle();
+    assert.equal((await f.node("host")).x, 40);
+    assert.equal((await f.node("child")).x, 70);
+    assert.equal((await f.node("base")).x, 40);
+    assert.equal((await f.node("clipped")).x, 50);
+    assert.equal(await f.pixel({ x: 70, y: 360 }), "#00aa00");
+    await f.hierarchy(); await f.history(before);
+    return { frameChildSingleDelta: true, maskFollowerMoved: true, undoRedo: true };
+  });
+  await f.record("arrow-nudge-selected-auto-layout-group-moves-container-and-children-together", async () => {
+    await f.seed([
+      {
+        id: "auto-group",
+        name: "AutoGroup",
+        kind: "group",
+        parentId: null,
+        x: 100,
+        y: 100,
+        width: 100,
+        height: 88,
+        visible: true,
+        autoLayout: { direction: "vertical", gap: 8, padding: 0, alignItems: "start", justifyContent: "start", widthMode: "hug", heightMode: "hug" },
+      },
+      shape("item-a", "auto-group", 100, 100, { width: 80, height: 40, fill: "#ff0000" }),
+      shape("item-b", "auto-group", 100, 148, { width: 80, height: 40, fill: "#0000ff" }),
+    ], []);
+    await page.evaluate(() => window.__vooEditor.selectGroup("auto-group"));
+    await f.settle();
+    const before = await f.snapshot();
+    await f.focus();
+    await page.keyboard.press("Shift+ArrowRight");
+    await f.settle();
+    assert.equal((await f.node("auto-group")).x, 110);
+    assert.equal((await f.node("auto-group")).y, 100);
+    assert.equal((await f.node("item-a")).x, 110);
+    assert.equal((await f.node("item-a")).y, 100);
+    assert.equal((await f.node("item-b")).x, 110);
+    assert.equal((await f.node("item-b")).y, 148);
+    await f.history(before);
+    return { autoLayoutGroupNudged: true, undoRedo: true };
+  });
+  await f.record("layer-panel-boolean-click-and-group-duplicate-preserve-selection-units", async () => {
+    await f.seed([
+      {
+        id: "folder-1",
+        name: "FolderOne",
+        kind: "group",
+        parentId: null,
+        x: 60,
+        y: 60,
+        width: 100,
+        height: 80,
+        visible: true,
+      },
+      shape("member-1", "folder-1", 70, 70, { width: 60, height: 40 }),
+      {
+        id: "bool-1",
+        name: "BooleanBadge",
+        kind: "boolean",
+        operation: "union",
+        parentId: null,
+        x: 240,
+        y: 60,
+        width: 80,
+        height: 80,
+        fill: "#00aa88",
+        visible: true,
+        operands: [shape("op-a", null, 240, 60, { width: 50, height: 50 }), shape("op-b", null, 260, 80, { width: 50, height: 50 })],
+      },
+    ], []);
+    await page.getByTestId("editor-layers-panel").getByText("BooleanBadge", { exact: true }).click();
+    await f.settle();
+    assert.deepEqual(await page.evaluate(() => window.__vooEditor.getSelectedIds()), ["bool-1"]);
+    await page.getByTestId("editor-layers-panel").getByText("FolderOne", { exact: true }).click();
+    await f.settle();
+    assert.equal(await page.evaluate(() => window.__vooEditor.getSelectedGroup()?.id), "folder-1");
+    await f.focus();
+    await page.keyboard.press(key("d"));
+    await f.settle();
+    const state = await page.evaluate(() => ({
+      groupId: window.__vooEditor.getSelectedGroup()?.id ?? null,
+      selectedIds: window.__vooEditor.getSelectedIds(),
+      groups: window.__vooEditor.getDocument().nodes.filter((n) => n.kind === "group").map((n) => n.id),
+    }));
+    const duplicatedGroupId = state.groups.find((id) => id !== "folder-1");
+    assert.ok(duplicatedGroupId);
+    assert.equal(state.groupId, duplicatedGroupId);
+    return { booleanLayerSelected: true, duplicatedGroupSelectedAsUnit: true };
+  });
   f.finish();
 });
