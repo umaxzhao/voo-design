@@ -1,4 +1,4 @@
-![VOO Design — An AI agent-driven design editor, showing an editable music interface on the canvas](docs/screenshots/cover.png)
+![VOO Design — AI agent-driven design editor, showing an editable music interface on the canvas](docs/screenshots/cover.png)
 
 <p align="center">
   <a href="https://voo.run/editor/">Open the editor</a> ·
@@ -6,7 +6,7 @@
   <a href="docs/examples/README.md">Explore the examples</a>
 </p>
 
-**VOO Design is an AI agent-driven design editor.** Work in an independent app, or let Claude Code and Codex operate the same editable canvas through MCP.
+**AI agent-driven design editor.** Use VOO as an independent app, or let Claude Code and Codex operate the same editable canvas through MCP.
 
 ## Design your way
 
@@ -18,8 +18,7 @@
 - **Real edits, shared control.** Agent changes remain editable layers, with the same undo history as hands-on work.
 - **Keep your work.** Save portable `.voo` files and export images or handoff code.
 
-<details>
-<summary>Product tour — workspace, guided setup and editing</summary>
+## Product tour
 
 ### Workspace
 
@@ -39,14 +38,9 @@ The music design is open with its headline selected, alongside the layer tree an
 
 ![VOO Design editing a music interface, with the headline selected and the layer tree and text inspector visible](docs/screenshots/ui-editor.png)
 
-</details>
-
 ## Made with VOO
 
 Interfaces, posters and brand graphics. [Download the editable source files](docs/examples/README.md).
-
-<details>
-<summary>View the four example designs</summary>
 
 | Music discovery | F1 · Racing poster |
 | --- | --- |
@@ -59,8 +53,6 @@ Interfaces, posters and brand graphics. [Download the editable source files](doc
 | [Dashboard](docs/examples/pulse-dashboard.voo) | [Typography poster](docs/examples/form-poster.voo) |
 
 These are visual design examples with editable text, shapes and layer structure. Their controls do not implement running applications.
-
-</details>
 
 ## Connect your agent
 
