@@ -104,17 +104,21 @@ its direct annotation checks separately verify unchanged updates, no-argument
 commits, deliberate emptying and returning to the original content.
 
 `drawing-cancellation.test.js` additionally verifies preservation of an
-intervening sibling edit, release of a child of a cancelled Frame, and
-sub-threshold (`< 4px`) shape/arrow clicks rolling back via
-`rollbackDrawingGesture` without pushing a spurious delete commit, wiping the
-redo stack, or clearing the prior selection. `editor-module-audit-regressions.test.js`
+intervening sibling edit, release of a child of a cancelled Frame,
+sub-threshold (`< 4px`) shape/arrow clicks and `region` / `regionFree` drafts
+rolling back via `rollbackDrawingGesture` without pushing a spurious delete
+commit, wiping the redo stack, or clearing the prior selection, plus
+`cancelPolygonLasso` restoring the replaced pixel selection and
+`closePolygonLasso` applying `selectionFeather`. `editor-module-audit-regressions.test.js`
 and `text-creation-boundaries.e2e.mjs` also verify that switching away from the
 Pen tool commits an open multi-anchor pen draft (`finishPen`) and clears draft
 state, that `Escape` during active `resize`/`rotate`/`cornerRadius`/`endpoint`
-handle drags unwinds the pointer gesture first and restores geometry, selection,
-and redo, and that 0-movement handle clicks do not commit duplicate history entries.
-These unit cases are pure domain tests alongside the 8-scene Chromium suite in
-`text-creation-boundaries.e2e.mjs`.
+and `penEdit` anchor drags unwinds the pointer gesture first and restores
+geometry, selection, and redo (while keeping the Pen edit session open), that
+0-movement handle and Pen anchor/bend clicks do not commit duplicate history
+entries, and that `expandPenNodeBounds`, `bend`, and `cutAt` preserve resized
+and rotated Pen geometry. These unit cases are pure domain tests alongside the
+9-scene Chromium suite in `text-creation-boundaries.e2e.mjs`.
 
 Remaining: true OS IME composition, cross-client concurrent history, async
 same-node style changes and native-window teardown still need their own

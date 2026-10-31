@@ -88,6 +88,10 @@ export function createLayerDuplicator({ getDoc, setDoc, getPixelSelection, layer
       if (!set.has(node.id)) continue;
       const targetW = node.width !== undefined ? Math.round(node.width * scaleX) : undefined;
       const targetH = node.height !== undefined ? Math.round(node.height * scaleY) : undefined;
+      const pointScaleX =
+        node.baseWidth && targetW !== undefined ? targetW / node.baseWidth : scaleX;
+      const pointScaleY =
+        node.baseHeight && targetH !== undefined ? targetH / node.baseHeight : scaleY;
       const detached = cloneNodeForDuplicate(node);
       const copy = {
         ...detached,
@@ -101,13 +105,13 @@ export function createLayerDuplicator({ getDoc, setDoc, getPixelSelection, layer
         points: detached.points
           ? detached.points.map((point) =>
               Array.isArray(point)
-                ? [point[0] * scaleX, point[1] * scaleY]
+                ? [point[0] * pointScaleX, point[1] * pointScaleY]
                 : {
                     ...point,
-                    x: point.x * scaleX,
-                    y: point.y * scaleY,
-                    in: point.in ? [point.in[0] * scaleX, point.in[1] * scaleY] : null,
-                    out: point.out ? [point.out[0] * scaleX, point.out[1] * scaleY] : null,
+                    x: point.x * pointScaleX,
+                    y: point.y * pointScaleY,
+                    in: point.in ? [point.in[0] * pointScaleX, point.in[1] * pointScaleY] : null,
+                    out: point.out ? [point.out[0] * pointScaleX, point.out[1] * pointScaleY] : null,
                   },
             )
           : undefined,

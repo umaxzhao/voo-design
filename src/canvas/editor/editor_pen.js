@@ -95,6 +95,8 @@ export function createPenTools({
     getZoom,
     getRawEdit: edit.getRawEdit,
     endEdit: edit.endEdit,
+    expandPenNodeBounds: edit.expandPenNodeBounds,
+    rebasePenNodeBounds: edit.rebasePenNodeBounds,
   });
 
   return {
@@ -122,6 +124,7 @@ export function createPenTools({
       popDraftAnchor: draft.popDraftAnchor,
       // Editing.
       beginEdit: edit.beginEdit,
+      cancelEditDrag: edit.cancelEditDrag,
       endEdit: edit.endEdit,
       editDown: edit.editDown,
       editMove: edit.editMove,

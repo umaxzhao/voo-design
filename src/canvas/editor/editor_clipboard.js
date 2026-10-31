@@ -186,7 +186,7 @@ export function createClipboard({
       maskTools.api.clearMask(maskEdit.nodeId);
       return;
     }
-    const selectedIds = selection.getIds();
+    const selectedIds = [...new Set([...selectedUnitIds(), ...selection.getIds()])];
     if (selectedIds.length === 0) return;
     if (removeIds(selectedIds)) select(null);
   }
@@ -198,7 +198,7 @@ export function createClipboard({
       return;
     }
     const copyPromise = copySelected();
-    const selectedIds = selection.getIds();
+    const selectedIds = [...new Set([...selectedUnitIds(), ...selection.getIds()])];
     if (selectedIds.length === 0) return;
     if (removeIds(layerClipboard?.setIds ?? selectedIds)) select(null);
     await copyPromise;

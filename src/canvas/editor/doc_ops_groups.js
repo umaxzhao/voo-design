@@ -142,23 +142,24 @@ export function moveIntoGroup(doc, id, groupId) {
  * The result takes the stacking position of the bottom-most member in the stack.
  */
 export function combineNodes(doc, ids, operation) {
-  const chosen = new Set(ids ?? []);
-  const members = doc.nodes.filter((node) => chosen.has(node.id));
-  if (members.length === 1 && members[0].kind === NODE_KIND.BOOLEAN) {
+  const rawChosen = new Set(ids ?? []);
+  const rawMembers = doc.nodes.filter((node) => rawChosen.has(node.id));
+  if (rawMembers.length === 1 && rawMembers[0].kind === NODE_KIND.BOOLEAN) {
     return {
       doc: withNodes(
         doc,
         doc.nodes.map((node) =>
-          node.id === members[0].id ? { ...node, operation } : node,
+          node.id === rawMembers[0].id ? { ...node, operation } : node,
         ),
       ),
-      id: members[0].id,
+      id: rawMembers[0].id,
     };
   }
+  const members = groupingRoots(doc, ids);
+  const chosen = new Set(members.map((node) => node.id));
   if (!canCombine(members)) return { doc, id: null };
 
-  const [bottomMost] = members;
-  const parentId = bottomMost?.parentId ?? null;
+  const parentId = sharedGroupParent(doc, members);
   const combined = createBooleanNode(members, operation, parentId);
 
   let bottomIndex = doc.nodes.length;
@@ -166,9 +167,14 @@ export function combineNodes(doc, ids, operation) {
     if (chosen.has(node.id) && index < bottomIndex) bottomIndex = index;
   });
 
-  const nodes = doc.nodes.map((node) =>
-    chosen.has(node.id) ? { ...node, parentId: combined.id } : node,
-  );
+  const nodes = doc.nodes.map((node) => {
+    let next = chosen.has(node.id) ? { ...node, parentId: combined.id } : node;
+    if (next.clipTo && chosen.has(next.id) !== chosen.has(next.clipTo)) {
+      next = { ...next };
+      delete next.clipTo;
+    }
+    return next;
+  });
   nodes.splice(bottomIndex, 0, combined);
 
   return {

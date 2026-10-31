@@ -30,9 +30,9 @@
 
 - 新增两组核心浏览器套件，当前登记为 53 个能力分组、81 组浏览器、85 个发布步骤（含远程浏览器抽屉修复）；最终提交 `bfd7e5b` 已完成 85/85，所有通过结论仅属于该固定版本（证据：`/private/tmp/voo-release.json`）。
 - 先后在 `caf386a`（84/84）与变基远程 `origin/main` 后的 `bfd7e5b`（85/85）完成隔离副本全量门禁验证；原工作区未提交的外部改动保留，未混入发布依据。
-- 已复现并修复 14 类问题：多层解组孤儿节点、父子同时分组拆散子树、跨 Frame 分组跳过共同父级、解组蒙版后失效引用、放弃空文字清空重做、未修改文字清空重做、实际文字收尾遗漏提交回调、转换为钢笔路径后的线条/箭头仍进入旧端点分支、钢笔草稿切换工具未提交且残留预览、`< 4px` 形状/箭头点击误写删除历史并清空重做与原选区、`resize`/`rotate`/`cornerRadius`/`endpoint` 变换手柄 `Escape`/取消不回滚且零位移误提交、对齐选中 Frame+子图层双倍位移且遗漏剪切蒙版跟随层、方向键微调 Auto Layout 编组回弹与钢笔锚点越界未扩框、图层面板点击布尔层失效及图层面板复制编组丢失编组选区单位。
+- 已复现并修复 22 类问题：多层解组孤儿节点、父子同时分组拆散子树、跨 Frame 分组跳过共同父级、解组蒙版后失效引用、放弃空文字清空重做、未修改文字清空重做、实际文字收尾遗漏提交回调、转换为钢笔路径后的线条/箭头仍进入旧端点分支、钢笔草稿切换工具未提交且残留预览、`< 4px` 形状/箭头点击误写删除历史并清空重做与原选区、`resize`/`rotate`/`cornerRadius`/`endpoint` 变换手柄 `Escape`/取消不回滚且零位移误提交、对齐选中 Frame+子图层双倍位移且遗漏剪切蒙版跟随层、方向键微调 Auto Layout 编组回弹与钢笔锚点越界未扩框、图层面板点击布尔层失效及图层面板复制编组丢失编组选区单位、缩放后的钢笔路径在锚点越界扩框/复制/展开轮廓时缩回 `baseWidth`、钢笔编辑零位移点击锚点/弯曲段误写历史且中途 `Escape` 直接退出编辑会话、旋转/翻转路径下钢笔弯曲与剪刀子工具坐标未逆变换且开放路径剪断未重算边界与图层顺序、布尔组合与破坏性布尔丢失共享父容器及遗留失效 `clipTo`/空编组、路径排字 `typeOnSelectedPath`/`attachTextToPath` 丢失 `parentId` 且调用不存在的 `selection.setIds`、空普通编组无法通过 `Backspace`/剪切删除或 `Escape` 取消选中、多边形套索取消未恢复被替换的像素选区且闭合未应用羽化、`region`/`pixelMarquee`/`selectionMove`/`gradient*`/形变控制点取消未回滚。
 - 门禁过程还捕获并修复了 `titlebar-file-actions.e2e.mjs` 在已有后台编辑器实例时未等待首页遮罩（`welcomeOpen`）关闭即读取文件名的竞态。
-- 定向浏览器扩展至 15 个场景（`container-command-boundaries` 7 项、`text-creation-boundaries` 8 项），覆盖键盘命令、对齐/蒙版跟随、Auto Layout 方向键微调、图层面板布尔点击与编组复制、钢笔切换工具收尾、`< 4px` 形状点击与 `Escape` 缩放回滚及完整撤销重做。
+- 定向浏览器扩展至 17 个场景（`container-command-boundaries` 8 项、`text-creation-boundaries` 9 项），覆盖键盘命令、对齐/蒙版跟随、Auto Layout 方向键微调、图层面板布尔点击与编组复制、缩放钢笔复制与路径排字及空编组删除、钢笔切换工具收尾、钢笔锚点零位移与中途 `Escape` 回滚、`< 4px` 形状点击与 `Escape` 缩放回滚及完整撤销重做。
 - [容器边界范围](audits/nested-objects-audit.md#container-command-boundaries)、[文字收尾范围](audits/continuous-creation-audit.md#text-placement-and-close-boundaries)记录复现、断言和剩余上下文；临时编辑恢复、取消时保留外部新增节点也已加入纯回归。
 
 ## 各模块进度

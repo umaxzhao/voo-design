@@ -70,7 +70,12 @@ export function createEngineSelectionController({
 
   function cancelPolygonLasso() {
     if (!polygonDraft) return false;
+    const previousSelection = polygonDraft.previousSelection ?? null;
     polygonDraft = null;
+    if (!pixelSelection && previousSelection) {
+      pixelSelection = previousSelection;
+      syncAnts();
+    }
     requestRender();
     notify();
     return true;

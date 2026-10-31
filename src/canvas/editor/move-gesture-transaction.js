@@ -49,6 +49,12 @@ const TRANSFORM_ROLLBACK_KINDS = new Set([
   "rotate",
   "cornerRadius",
   "endpoint",
+  "gradientStop",
+  "gradientEndpoint",
+  "gradientLine",
+  "perspectiveCorner",
+  "meshPoint",
+  "puppetPin",
 ]);
 
 export function rollbackMoveGesture(api, gesture) {

@@ -83,6 +83,8 @@ export function createPointerMoveDispatcher({
         dragShape(event);
         break;
       case "gradientStop": {
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         const nextFill = dragGradientStop(
           gesture,
           api.toDocPoint(event.clientX, event.clientY),
@@ -91,6 +93,8 @@ export function createPointerMoveDispatcher({
         break;
       }
       case "gradientEndpoint": {
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         const nextFill = dragGradientEndpoint(
           gesture,
           api.toDocPoint(event.clientX, event.clientY),
@@ -100,6 +104,8 @@ export function createPointerMoveDispatcher({
         break;
       }
       case "gradientLine": {
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         const nextFill = dragGradientLine(
           gesture,
           api.toDocPoint(event.clientX, event.clientY),
@@ -222,12 +228,18 @@ export function createPointerMoveDispatcher({
         extendFreeRegion(event);
         break;
       case "perspectiveCorner":
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         dragPerspectiveCorner(event, gesture);
         break;
       case "meshPoint":
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         dragMeshPoint(event, gesture);
         break;
       case "puppetPin":
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         dragPuppetPin(event, gesture);
         break;
       case "cornerRadius": {

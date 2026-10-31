@@ -148,5 +148,65 @@ await withEditorBrowser(async ({ page }) => {
     assert.equal(state.groupId, duplicatedGroupId);
     return { booleanLayerSelected: true, duplicatedGroupSelectedAsUnit: true };
   });
+  await f.record("resized-pen-duplicate-empty-group-delete-and-type-on-path-preserve-container-state", async () => {
+    await f.seed([
+      frame("host", 40, 40, 600, 400),
+      {
+        id: "pen-scaled",
+        name: "ScaledPen",
+        kind: "path",
+        pen: true,
+        closed: false,
+        parentId: "host",
+        x: 80,
+        y: 80,
+        width: 120,
+        height: 60,
+        baseWidth: 60,
+        baseHeight: 30,
+        stroke: "#ff0055",
+        strokeWidth: 4,
+        visible: true,
+        points: [{ x: 0, y: 0 }, { x: 60, y: 30 }],
+      },
+      {
+        id: "empty-folder",
+        name: "EmptyFolder",
+        kind: "group",
+        parentId: "host",
+        x: 260,
+        y: 80,
+        width: 80,
+        height: 60,
+        visible: true,
+      },
+    ], ["pen-scaled"]);
+    await f.focus();
+    await page.keyboard.press(key("d"));
+    await f.settle();
+    const dupId = (await page.evaluate(() => window.__vooEditor.getSelectedIds()))[0];
+    const dupPen = await f.node(dupId);
+    assert.equal(dupPen.width, 120);
+    assert.equal(dupPen.baseWidth, 120);
+    assert.equal(dupPen.points[1].x, 120);
+    assert.equal(dupPen.points[1].y, 60);
+
+    await page.evaluate(() => window.__vooEditor.select("pen-scaled"));
+    assert.equal(await page.evaluate(() => window.__vooEditor.typeOnSelectedPath("CurveText")), true);
+    await f.settle();
+    const selectedAfterType = await page.evaluate(() => window.__vooEditor.getSelectedIds());
+    assert.equal(selectedAfterType.length, 1);
+    const typedNode = await f.node(selectedAfterType[0]);
+    assert.equal(typedNode.kind, "text");
+    assert.equal(typedNode.textPath?.points?.length, 2);
+    assert.equal(typedNode.parentId, "host");
+
+    await page.evaluate(() => window.__vooEditor.selectGroup("empty-folder"));
+    await f.focus();
+    await page.keyboard.press("Backspace");
+    await f.settle();
+    assert.equal(await f.node("empty-folder"), null);
+    return { resizedPenDuplicatedAtFullSize: true, typeOnPathSelectedInFrame: true, emptyGroupDeleted: true };
+  });
   f.finish();
 });

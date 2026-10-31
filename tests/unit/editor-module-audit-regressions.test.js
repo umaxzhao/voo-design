@@ -197,21 +197,74 @@ describe("keyboard arrow nudging for groups and pen anchors", () => {
     expect(doc.nodes.find((n) => n.id === childB.id)).toMatchObject({ x: 115, y: 152 });
   });
 
-  it("expands pen node bounds when nudging an anchor outside its initial box", () => {
+  it("expands pen node bounds when nudging an anchor outside its initial box, including resized paths", () => {
     let doc = {
       ...createDocument(400, 300),
-      nodes: [{ id: "pen-1", kind: NODE_KIND.PATH, pen: true, x: 50, y: 60, width: 40, height: 30, points: [{ x: 0, y: 0 }, { x: 40, y: 30 }] }],
+      nodes: [{
+        id: "pen-1", kind: NODE_KIND.PATH, pen: true,
+        x: 50, y: 60, width: 80, height: 60, baseWidth: 40, baseHeight: 30,
+        points: [{ x: 10, y: 10, out: [5, 0] }, { x: 40, y: 30, in: [-5, 0] }],
+      }],
     };
+    let commits = 0;
     const penTools = createPenTools({
-      getDoc: () => doc, setDoc: (next) => { doc = next; }, select: () => {},
+      getDoc: () => doc,
+      setDoc: (next, opts) => { doc = next; if (opts?.commit !== false) commits += 1; },
+      select: () => {},
       getColor: () => "#fff", getStrokeWidth: () => 2, requestRender: () => {}, getZoom: () => 1,
     });
     penTools.api.beginEdit("pen-1");
-    penTools.api.nudgeActiveAnchor(-15, -10);
+    // Zero-drag click on existing anchor does not commit history
+    penTools.api.editDown({ x: 70, y: 80 });
+    penTools.api.editUp();
+    expect(commits).toBe(0);
+
+    // Drag and cancelEditDrag restores preDragPoints while keeping edit session open
+    penTools.api.editDown({ x: 70, y: 80 });
+    penTools.api.editMove({ x: 90, y: 100 });
+    expect(penTools.api.cancelEditDrag()).toBe(true);
+    expect(penTools.api.isEditing()).toBe(true);
+    expect(doc.nodes[0].points[0].x).toBe(10);
+
+    // Nudge outside resized box scales all anchors/handles to new unit-scale baseWidth/baseHeight
+    penTools.api.nudgeActiveAnchor(-30, -30);
     const updated = doc.nodes[0];
-    expect(updated).toMatchObject({ x: 35, y: 50, width: 55, height: 40 });
-    expect(updated.points[0]).toMatchObject({ x: 0, y: 0 });
-    expect(updated.points[1]).toMatchObject({ x: 55, y: 40 });
+    expect(updated).toMatchObject({ x: 40, y: 50, width: 90, height: 70, baseWidth: 90, baseHeight: 70 });
+    expect(updated.points[0]).toMatchObject({ x: 0, y: 0, out: [10, 0] });
+    expect(updated.points[1]).toMatchObject({ x: 90, y: 70, in: [-10, 0] });
+  });
+
+  it("supports bend and cut sub-tools on rotated paths and rebases split open paths in stack order", () => {
+    let doc = {
+      ...createDocument(400, 300),
+      nodes: [
+        {
+          id: "rot-path", kind: NODE_KIND.PATH, pen: true, closed: false, rotation: 90,
+          x: 50, y: 100, width: 100, height: 0, baseWidth: 100, baseHeight: 0,
+          points: [{ x: 0, y: 0 }, { x: 50, y: 0 }, { x: 100, y: 0 }],
+        },
+        { ...createRectNode({ x: 250, y: 50, width: 40, height: 40 }), id: "top-rect" },
+      ],
+    };
+    let commits = 0;
+    const penTools = createPenTools({
+      getDoc: () => doc,
+      setDoc: (next, opts) => { doc = next; if (opts?.commit !== false) commits += 1; },
+      select: () => {},
+      getColor: () => "#fff", getStrokeWidth: () => 2, requestRender: () => {}, getZoom: () => 1,
+    });
+    penTools.api.beginEdit("rot-path");
+    // Center ofrot-path is (100, 100); rotated +90 deg maps local (25, 0) -> doc (100, 75)
+    expect(penTools.api.bendDown({ x: 100, y: 75 })).toBe(true);
+    penTools.api.bendUp();
+    expect(commits).toBe(0); // zero-drag bend click does not commit
+
+    // Cut at middle anchor (local (50, 0) -> doc (100, 100)) splits into 2 rebased paths before top-rect
+    expect(penTools.api.cutAt({ x: 100, y: 100 })).toBe(true);
+    expect(doc.nodes.map((n) => n.id)).toEqual(["rot-path", expect.any(String), "top-rect"]);
+    expect(doc.nodes[0]).toMatchObject({ x: 74.5, y: 74.5, width: 51 });
+    expect(doc.nodes[1]).toMatchObject({ x: 74.5, y: 124.5, width: 51 });
+    expect(doc.nodes[1].points[0]).toMatchObject({ x: 0.5, y: 0.5 });
   });
 });
 
@@ -243,26 +296,40 @@ describe("group, frame, and clipboard selection unit consistency", () => {
     expect(f.historySignals.at(-1)).toEqual({ groupId: "folder", ids: ["nested-frame", "leaf"] });
   });
 
-  it("duplicates a selected group as a group unit via selectGroup", () => {
+  it("duplicates a selected group as a group unit, preserves resized pen geometry on duplicate, and deletes empty selected groups", () => {
     const folder = { ...createGroupNode({ x: 10, y: 10, width: 100, height: 80 }), id: "g-1" };
-    const child = { ...createRectNode({ x: 20, y: 20, width: 40, height: 30 }), id: "c-1", parentId: "g-1" };
-    const f = createNodesFixture([folder, child]);
+    const child = {
+      id: "c-1", kind: NODE_KIND.PATH, pen: true, parentId: "g-1",
+      x: 20, y: 20, width: 80, height: 60, baseWidth: 40, baseHeight: 30,
+      points: [{ x: 0, y: 0 }, { x: 40, y: 30, in: [-10, -5] }],
+    };
+    const emptyFolder = { ...createGroupNode({ x: 200, y: 10, width: 50, height: 50 }), id: "g-empty" };
+    const f = createNodesFixture([folder, child, emptyFolder]);
+    const removedBatches = [];
     const clipboard = createClipboard({
       getDoc: f.doc, setDoc: f.setDoc, selection: f.selection,
       selectMany: f.controller.selectMany, select: f.controller.select,
       getSelectedGroup: f.controller.getSelectedGroup, selectGroup: f.controller.selectGroup,
-      removeIds: () => false, getPixelSelection: () => null, layerFromSelection: () => {},
+      removeIds: (ids) => { removedBatches.push(ids); return true; },
+      getPixelSelection: () => null, layerFromSelection: () => {},
       extractSelectionImageNode: () => null, deleteSelectionPixels: () => {},
-      exportSelectionPng: () => null, maskTools: {}, getViewportCenter: () => ({ x: 200, y: 150 }),
+      exportSelectionPng: () => null, maskTools: { api: { getMaskEdit: () => null } },
+      getViewportCenter: () => ({ x: 200, y: 150 }),
     });
 
     f.controller.selectGroup("g-1");
     clipboard.duplicateSelected();
 
-    const duplicatedGroup = f.doc().nodes.find((n) => n.kind === "group" && n.id !== "g-1");
-    const duplicatedChild = f.doc().nodes.find((n) => n.kind === "rect" && n.id !== "c-1");
+    const duplicatedGroup = f.doc().nodes.find((n) => n.kind === "group" && !["g-1", "g-empty"].includes(n.id));
+    const duplicatedChild = f.doc().nodes.find((n) => n.kind === "path" && n.id !== "c-1");
     expect(f.controller.getSelectedGroup()?.id).toBe(duplicatedGroup.id);
     expect(f.controller.getSelectedIds()).toEqual([duplicatedChild.id]);
+    expect(duplicatedChild).toMatchObject({ width: 80, height: 60, baseWidth: 80, baseHeight: 60 });
+    expect(duplicatedChild.points[1]).toMatchObject({ x: 80, y: 60, in: [-20, -10] });
+
+    f.controller.selectGroup("g-empty");
+    clipboard.deleteSelected();
+    expect(removedBatches.at(-1)).toEqual(["g-empty"]);
   });
 
   it("distinguishes ordinary folders from Frames and Boolean layers in layer row selection", () => {

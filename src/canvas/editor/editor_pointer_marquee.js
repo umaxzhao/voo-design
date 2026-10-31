@@ -86,8 +86,9 @@ export function createMarqueePointerGestures({
     }
     const point = clampToImage(rawPoint, host);
     const hostId = host.id;
+    const previousSelection = api.getPixelSelection?.() ?? null;
     const baseSelection =
-      selectionModeOf(event) === "replace" ? null : api.getPixelSelection();
+      selectionModeOf(event) === "replace" ? null : previousSelection;
     setGesture(
       api.getMarqueeMode?.() === "lasso"
         ? {
@@ -97,6 +98,8 @@ export function createMarqueePointerGestures({
             points: [[point.x, point.y]],
             mode: selectionModeOf(event),
             baseSelection,
+            previousSelection,
+            moved: false,
           }
         : {
             kind: "pixelMarquee",
@@ -105,6 +108,8 @@ export function createMarqueePointerGestures({
             bounds: nodeRect(host),
             mode: selectionModeOf(event),
             baseSelection,
+            previousSelection,
+            moved: false,
           },
     );
     if (getGesture().mode === "replace") api.clearPixelSelection();
@@ -212,6 +217,7 @@ export function createMarqueePointerGestures({
     if (Math.hypot(point.x - last[0], point.y - last[1]) < 1) return;
     gesture.points.push([point.x, point.y]);
     if (gesture.points.length < 3) return;
+    gesture.moved = true;
     const contours = [gesture.points.slice()];
     const selection = {
       nodeId: gesture.hostId,
@@ -227,6 +233,7 @@ export function createMarqueePointerGestures({
 
   function dragPixelMarquee(event) {
     const gesture = getGesture();
+    gesture.moved = true;
     const rawPoint = api.toDocPoint(event.clientX, event.clientY);
     const point = {
       x: Math.max(

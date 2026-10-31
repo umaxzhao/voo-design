@@ -9,7 +9,7 @@ export function selectDrawingDraft(api, id) {
 }
 
 export function rollbackDrawingGesture(api, gesture) {
-  if (!["shape", "arrow", "text"].includes(gesture?.kind) || !gesture.drawingRollback) return false;
+  if (!["shape", "arrow", "text", "region", "regionFree"].includes(gesture?.kind) || !gesture.drawingRollback) return false;
   const { doc, ids, groupId } = gesture.drawingRollback;
   const restore = () => {
     const current = api.getDocument();
