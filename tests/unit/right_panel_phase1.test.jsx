@@ -136,7 +136,7 @@ describe("phase-1 panel order", () => {
   });
 
   it("renders export presets with format, scale and suffix", () => {
-    const html = render(base(), { sections: ["export"] });
+    const html = render(base({ exportPresets: [{ id: "png", type: "image/png", scale: 1 }] }), { sections: ["export"] });
     expect(html).toContain("editor.props.exportFormat");
     expect(html).toContain("editor.props.exportSuffix");
     expect(html).toContain("editor.props.addExportSettings");

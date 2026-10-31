@@ -314,3 +314,24 @@ actual inspector switches, upload, texture pixels, undo/redo and Escape pass in 
 private production browser. Evidence: `/private/tmp/voo-unified-fill-deployment-proof.json`
 and `/private/tmp/voo-unified-fill-production-result.log`. The older recovered
 execution is retained separately and is not attributed to this final commit.
+
+## Opt-in layer export
+
+Capability: `inspector.export-opt-in`; the document's `exportPresets` is the
+single source of truth. Absent, invalid and explicitly empty lists must not
+synthesize a PNG row. The existing plus action enables export, and removing the
+last row hides its controls and action. Explicit saved configurations remain.
+
+Baseline `1dd3dac`: six regression assertions failed because normalization always
+created a default preset. Retained log: `/private/tmp/voo-export-opt-in-baseline.log`.
+
+| Context | Assertions | Status |
+| --- | --- | --- |
+| Actual inspector | Rectangle, Frame, text and image start without export controls; add/remove and reselection follow each layer | Targeted Chromium pass; final gate pending |
+| History | Undo/redo adding and removing the last preset immediately restores/hides the real controls | Targeted Chromium pass; final gate pending |
+| Active export | Explicit add retains PNG 2x dimensions and JPEG/WebP file signatures/quality | Targeted Chromium pass; final gate pending |
+| Normalization | Missing, empty and invalid presets remain empty; existing settings retain formats/scales/suffixes | Unit pass; final gate pending |
+| Remaining | Native OS download UI, physical touch devices and cold native-project reopen | Not certified by this change |
+
+Registered coverage: `export_presets.test.js`, `right_panel_phase1.test.jsx`,
+`ui-inspector-interaction.e2e.mjs` and `inspector-controls.e2e.mjs`.

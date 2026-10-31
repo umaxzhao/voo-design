@@ -7,6 +7,13 @@
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
 
+## 本轮：图层导出按需显示（最终门禁待完成）
+
+- `inspector.export-opt-in`：没有 `exportPresets` 或明确为空时，只保留导出标题和添加入口；用户点击“＋”后才显示格式、倍率、透明背景和导出按钮。
+- 已复现默认/移除后自动补回 PNG 的问题（6 个断言失败，证据 `/private/tmp/voo-export-opt-in-baseline.log`），移除默认回填；面板直接读取文档配置，撤销重做和切换图层不再保留过时本地状态。
+- 真实面板覆盖图形、Frame、文字、图片，验证添加/删除、切换图层及一次撤销重做。已有显式导出配置保留，主动添加后 PNG/JPEG/WebP 文件尺寸及签名验证通过。证据 `/private/tmp/voo-export-opt-in-browser.log`、`/private/tmp/voo-export-opt-in-download.log`。
+- 本轮不增加新的勾选开关，沿用既有添加/移除入口；不删除用户已明确保存的配置。完整固定提交门禁和线上证据待补录。[验收范围](audits/panel-control-audit.md#opt-in-layer-export)。
+
 ## 本轮：统一填充面板（已完成声明范围）
 
 - 代码版本 [`cb4d1c9`](https://github.com/umaxzhao/voo-design/commit/cb4d1c9fbfdba8e87282a0af500fa0f1e8120d79)；**89/89 发布步骤通过，85 组浏览器检查通过，单测 4567 通过、4 跳过、0 失败**。最终源码干净且验证期间未修改。证据：`/private/tmp/voo-unified-fill-release-final.json`。

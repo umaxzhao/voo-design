@@ -52,6 +52,38 @@ await withEditorBrowser(async ({ page, tool }) => {
 
   try {
     await seed();
+    const exportFormat = panel.getByRole("button", { name: "Format", exact: true });
+    const exportAction = panel.getByRole("button", { name: "Export", exact: true });
+    const addExport = panel.getByRole("button", { name: "Add export settings", exact: true });
+    for (const id of ["audit-rect", "audit-frame", "audit-text", "audit-image"]) {
+      await select([id]);
+      assert.equal(await exportFormat.count(), 0, `${id} must not invent an export preset`);
+      assert.equal(await exportAction.count(), 0);
+    }
+    await select(["audit-rect"]);
+    await addExport.click();
+    await exportFormat.waitFor();
+    const configured = (await node()).exportPresets;
+    assert.equal(configured.length, 1);
+    assert.equal(await exportAction.count(), 1);
+    await tool("undo"); await settle();
+    assert.equal(await exportFormat.count(), 0, "undo adding export removes its controls");
+    await tool("redo"); await exportFormat.waitFor();
+    assert.deepEqual((await node()).exportPresets, configured);
+    await select(["audit-text"]);
+    assert.equal(await exportAction.count(), 0, "export configuration belongs to its layer");
+    await select(["audit-rect"]); await exportFormat.waitFor();
+    await panel.getByRole("button", { name: "Remove export settings", exact: true }).click();
+    await settle();
+    assert.deepEqual((await node()).exportPresets, []);
+    assert.equal(await exportAction.count(), 0);
+    await select(["audit-image"]); await select(["audit-rect"]);
+    assert.equal(await exportFormat.count(), 0, "removing the last preset stays empty after reselection");
+    await tool("undo"); await exportFormat.waitFor();
+    await tool("redo"); await settle();
+    assert.equal(await exportAction.count(), 0, "redo removing export hides it again");
+    mark("export is opt-in for shapes, Frames, text and images; add/remove persist per layer and undo/redo immediately follow document state");
+
     const x = panel.getByRole("spinbutton", { name: "X", exact: true });
     await x.fill("150"); await x.press("Enter");
     assert.equal((await node()).x, 150);

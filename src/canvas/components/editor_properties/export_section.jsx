@@ -1,7 +1,7 @@
 /** Export section: preset rows (format · scale · suffix) and one Export action. */
 
 import PropTypes from "prop-types";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useI18n } from "../../use_i18n.js";
 import { StaticSection, SectionAddButton, fieldClass } from "./property_section.jsx";
 import FlatSelect from "../flat_select.jsx";
@@ -33,10 +33,10 @@ const FORMAT_VALUES = new Set(FORMATS.map((format) => format.value));
 
 /** Node-stored export presets survive selection changes; bad rows are ignored. */
 export function normalizeExportPresets(raw) {
-  if (!Array.isArray(raw) || raw.length === 0) return [makePreset()];
+  if (!Array.isArray(raw) || raw.length === 0) return [];
   const rows = raw
     .slice(0, MAX_PRESETS)
-    .filter((row) => row && typeof row === "object")
+    .filter((row) => row && typeof row === "object" && !Array.isArray(row))
     .map((row) => ({
       id: typeof row.id === "string" && row.id ? row.id : `preset-${++presetSeq}`,
       type: FORMAT_VALUES.has(row.type) ? row.type : "image/png",
@@ -47,7 +47,7 @@ export function normalizeExportPresets(raw) {
         ? { quality: String(row.quality) }
         : {}),
     }));
-  return rows.length ? rows : [makePreset()];
+  return rows;
 }
 
 function download(dataUrl, filename) {
@@ -59,21 +59,20 @@ function download(dataUrl, filename) {
 
 export default function ExportSection({ object, selectedNodes = [], engine }) {
   const { t } = useI18n();
-  // One PNG preset is visible by default (Figma-style export row); "+" adds more.
-  // The rows live on the node, so switching layers no longer leaks or drops them.
-  const [presets, setPresets] = useState(() =>
-    normalizeExportPresets(object?.exportPresets),
+  // Export is opt-in. Derive rows from the document so undo, redo and layer
+  // changes cannot revive removed presets or leave a stale local copy behind.
+  const presets = useMemo(
+    () => normalizeExportPresets(object?.exportPresets),
+    [object?.exportPresets],
   );
-  useEffect(() => {
-    setPresets(normalizeExportPresets(object?.exportPresets));
-  }, [object?.id]);
 
   if (!engine?.exportSelectionPng) return null;
 
-  const persist = (next) => {
-    setPresets(next);
+  const persist = (next, coalesced = false) => {
     if (!object?.id) return;
-    const update = engine?.updateNodeCoalesced ?? engine?.updateNode;
+    const update = coalesced
+      ? engine?.updateNodeCoalesced ?? engine?.updateNode
+      : engine?.updateNode ?? engine?.updateNodeCoalesced;
     update?.(object.id, { exportPresets: next });
   };
 
@@ -86,6 +85,7 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
   const patch = (id, changes) =>
     persist(
       presets.map((row) => (row.id === id ? { ...row, ...changes } : row)),
+      true,
     );
 
   const exportPreset = (preset) => {

@@ -186,6 +186,7 @@ export const EDITOR_MODULES = [
     id: "inspector",
     title: "Inspector, menus and shared UI",
     paths: [
+      "tests/unit/export_presets.test.js", "tests/unit/right_panel_phase1.test.jsx",
       "src/canvas/color_picker/*", "src/canvas/components/popover_scope.js", "tests/e2e/unified-fill-*.mjs", "tests/unit/unified-fill-picker.test.jsx", "tests/unit/fill-paint-values.test.js",
       "src/canvas/components/editor_properties/*", "src/canvas/components/*context*",
       "src/canvas/components/*taskbar*", "src/canvas/components/*toolbar*",
@@ -193,7 +194,7 @@ export const EDITOR_MODULES = [
       "src/shared/i18n*", "src/shared/i18n/*", "src/canvas/*layout.css", "src/canvas/*panels.css",
     ],
     related: ["selection","layers","text","images","layout"],
-    features: ["inspector.unified-fill", "inspector.impeccable-polish", "inspector.context-submenus",
+    features: ["inspector.export-opt-in", "inspector.unified-fill", "inspector.impeccable-polish", "inspector.context-submenus",
       "inspector.field-commit", "inspector.menu-focus", "inspector.responsive", "inspector.locale-lifecycle",
     ],
     suites: ["impeccable-polish",
