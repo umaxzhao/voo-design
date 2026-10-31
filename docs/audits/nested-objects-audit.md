@@ -56,11 +56,13 @@ pass inherited by newer source.
 | Arrow-key nudge on selected Auto Layout groups | `nudgeSelection` moved only leaf children so Auto Layout immediately snapped them back to the unmoved group origin | Move `[selectedGroup]` when a group unit is selected; assert group + child coordinates and one-step undo/redo |
 | Layer row selection and group duplication | Clicking a Boolean row called `selectGroup` (no-op), `unitSelectionIds` omitted nested Frames inside a Group, and Layer-panel folder duplication cleared `selectedGroupId` | Distinguish ordinary folders (`isFolderSelectionRow`) from Frames and Boolean layers, share `groupArtworkIds`, and select ordinary folders via `selectGroup` before duplicating |
 | Boolean combine, destructive boolean, text-on-path, resized pen duplication & empty group deletion | `combineNodes` and `destructiveBoolean` dropped `parentId` to root and left cross-container/dangling `clipTo` or emptied folders; `typeOnSelectedPath` omitted `parentId` and called non-existent `selection.setIds`; `duplicateSelected` and `expandStrokeToPathNode` lost resized Pen scale; `deleteSelected`/`cutSelected` ignored empty selected groups | Deduplicate via `groupingRoots`, resolve `sharedGroupParent`, release invalid `clipTo`, prune empty groups, inherit `parentId` + call `selectNodes`, scale `points`/handles by `width / baseWidth`, and include `selectedUnitIds()` on delete/cut |
+| Selected group Auto Layout toggle, empty group ungroup, component extract/detach inside Frames & `Enter` drill-down | `Shift+A` on a multi-child selected Group wrapped it in an extra Group instead of toggling `autoLayout`; `Cmd+Shift+G` ignored empty selected Groups; `extractComponent` and `detachInstance` dropped Frame `parentId`, left external `parentId`/`clipTo` on master nodes, and did not scale `path` geometry on resized instance detach; `Enter` checked `selected.kind === "pen"` and called non-existent `startEdit`, and ignored `getSelectedGroup()` | Resolve target container via `getSelectedGroup()` / single container root in `toggleAutoLayoutSelection` and `selectedContainerIds`, preserve `parentId` and scale `path` points in `extractComponent`/`detachInstance`, and route `Enter` to `enterGroup` for `getSelectedGroup()` and `beginEdit` for `kind === "path" && pen` |
+| Layer stack reordering, Frame/mask block integrity, extreme moves, group paste selection & group flip | `engine.bringForward` / `engine.sendBackward` / `bringToFront` / `sendToBack` were missing on `engine`, causing `]` and `[` keyboard shortcuts to throw `TypeError`; reordering frames or mask bases in `reorderLayerBatch` only checked `isGroupNode`, separating Frames and clipping masks from their children/followers; `moveNodeToExtreme` allowed child layers to escape their parent Frame; pasting a copied group reset `selectedGroupId` to `null`; and flipping a group did not mirror child coordinates across the group box | Implement `bringForward`/`sendBackward`/`bringToFront`/`sendToBack` across `engine`, contextual taskbar, and context menu; use `moveAffectedIds` in `reorderLayerBatch` and `moveNodeToExtreme` to preserve Frame blocks, clipping masks, and parent boundaries; call `selectGroup` on single-group paste; and mirror child coordinates and invert flips across group bounds in `flipHorizontal`/`flipVertical` |
 
 `container-command-boundaries.e2e.mjs` uses controlled seeded documents and
 initial selections, then actual keyboard, alignment, and layer-panel actions.
 It does not claim that seeded selections were produced by physical modifier
-clicks. Its eight scenes check state, hierarchy, pixels and complete undo/redo.
+clicks. Its nine scenes check state, hierarchy, pixels and complete undo/redo.
 The earlier continuous creation suite separately verifies mouse multiselection
 and group dragging.
 
@@ -77,3 +79,99 @@ physical touch/stylus commands need additional acceptance. Dissolving a mask
 base deliberately releases its followers; it does not flatten a replacement
 mask image. Cold persistence of these four command-specific scenes is not
 separately exhausted by this suite; portable nesting has its own release check.
+
+## Frame title pointer selection
+
+Capability: `selection.frame-title-selection`. Scope: visible Frame labels on
+a root canvas; nested Frames retain the existing outer-label visibility rule.
+
+A real mouse click hit the title span, but the artboard's capture-phase body
+handler captured the pointer on `editor-page` and cleared selection before the
+title click could select its Frame. The previous label was a generic div, so
+it was absent from the existing interactive-control exclusion. The label now
+uses a native button, preserves its styling/hit area and invokes the same
+`engine.selectExactly` operation. No additional selection implementation or
+new default control is introduced.
+
+| Acceptance context | Registered evidence |
+| --- | --- |
+| Real pointer routing | `frame-label-selection`: elementFromPoint hits the actual title; ordinary mouse click selects its Frame instead of losing the click to page capture |
+| Zoom and title contents | Text and icon clicks at 0.5x, 1x and 2x select the same Frame |
+| Nested ownership | A child starts selected; the visible outer label selects its parent Frame. Nested labels remain hidden under the existing policy |
+| State integrity | Serialized document, artboard layout and camera are unchanged by selection |
+| Prior selection | Clicking another title replaces an existing multiple selection with the target Frame |
+| Accessibility | Native button focus plus Enter selects the same Frame through the normal click handler |
+| Original failure | `/private/tmp/voo-license-regression/frame-label-before.log`: actual title span hit, `editor-page` pointer capture, empty selection |
+| Verification boundary | Selection-only change; no content mutation/save format to migrate. Header dragging, touch/stylus and hidden/locked Frame policies are not expanded by this repair |
+
+Clean revision `befffb37071baf1aa4c0cd3abf83452b092f650d` passed all 90 release
+steps (86 browser suites; 4,585 unit assertions passed, four skipped).
+Merge `49d85d8bd709b961c5f6be64ea5cd5dfad050f69` has the identical source tree.
+The deployed production entry and five direct assets match the verified build;
+an isolated production browser passed real name/icon clicks and Enter without
+document mutation or page errors. Evidence: `/private/tmp/voo-license-regression/`
+`frame-title-release-published.json` and `frame-title-production-proof.json`.
+Earlier incomplete/failed runs and the known cold-start New timing failure are
+retained in `docs/quality-progress.md`; passing this fixture does not certify
+physical devices, signed desktop cold starts or all private workspace drafts.
+
+
+## Agent selection context icon
+
+Capability: `platform.agent-contracts`. A single selected Frame now uses the
+same `IconFrame` as its canvas label. The chip previously always rendered
+Layers despite the existing normalized `kind: "frame"` descriptor. Selection
+snapshots, prompt payloads, chip labels and detach behavior are unchanged.
+Ordinary groups/layers and multiple selections retain Layers. Legacy artboard
+contexts use the Frame icon too; no new control or user-visible copy is added.
+
+`agent_selection_context.test.js` checks rendered SVG identity for Frame,
+artboard, ordinary group/layer and a multiple selection containing a Frame.
+`agent-selection-context.e2e.mjs` uses a real editor to switch child → Frame →
+child → multiple, checking actual chip SVGs, text, prompt preservation,
+submitted target IDs, detach, deselect and document switching. The original
+Frame SVG assertion fails before the fix (`agent-frame-icon-before.log`).
+This standalone suite is run explicitly; its other standalone classification
+and the 86-suite core inventory remain unchanged. Release evidence and exact
+revision are recorded in `docs/quality-progress.md`; signed native installs,
+physical input devices and all imported node variants are not certified.
+
+Verified clean revision: `bfbf91d040eebc3e1254f03c017fcc8f44677b6a`; all 90
+core steps passed (4,590 units passed, four skipped; 86 browser suites), plus
+explicit `agent-selection-context`. Production entry/direct/Agent assets
+(seven files) match the build; real Agent chip switching and detach pass with
+no document mutation or page errors. Evidence: `agent-frame-release.json`,
+`agent-frame-icon-committed.log` and `agent-frame-production-proof.json` in
+`/private/tmp/voo-license-regression/`. Signed native installation remains untested.
+
+
+## Single Agent suggestion group
+
+Capability: `platform.agent-contracts`. The private App workspace had two
+`AgentSelectionSuggestions` instances, one inside the conversation scroll
+region and an extra one before the composer. Only the extra local instance
+was removed; other uncommitted localization, attachments and mobile changes
+were preserved. Public product source already had one instance and was not
+changed in this task. No document mutation or persistence migration is involved.
+
+`agent-suggestions.e2e.mjs` now asserts exactly one group with three buttons,
+and one instance of each Frame label at 380px and 760px. Existing checks retain
+actual clicks, selection-type changes, input focus, draft preservation,
+idempotent repeated picks, detach and no automatic sending. Before the local
+repair the explicit count was two; afterward both local and public-baseline
+fixtures passed. Relevant units: 14 local, 25 public-baseline including module
+plans. Exact release evidence is maintained in `docs/quality-progress.md`.
+Production still uses `bfbf91d`; all seven previously verified assets match,
+with a single Frame suggestion group and no document mutation or script errors.
+Raw logs are `/private/tmp/voo-license-regression/agent-suggestions-*`.
+The local repair is not a clean-release certification of other private drafts,
+native signed installation or physical touch devices.
+
+Clean `aec278290c69990105c36b13cdd05420f7e5d24e` passed 90/90 core steps,
+4,590 units (four skipped), 86 core browser suites, and the explicit suggestion
+suite. After preserving upstream prompt commit `0274622`, integrated `3d98a78`
+passed 51 related units and the suggestion browser suite; it does not inherit
+the prior complete run. This task publishes regression/ownership/docs only.
+The later rebuilt entry differs from current production; the failed comparison
+is retained, not reported as byte identity. Current live single-row UI evidence
+is recorded separately in `agent-suggestions-live-ui-proof.json`.

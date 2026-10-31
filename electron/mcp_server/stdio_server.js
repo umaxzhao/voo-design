@@ -52,7 +52,10 @@ export function connect(port, token = resolveBridgeToken()) {
     };
 
     const socket = new WebSocket(`ws://127.0.0.1:${port}`, {
-      handshakeTimeout: 2000,
+      // Loopback should answer quickly, but a busy host can hold the main
+      // process event loop long enough to blow a 2s budget. 5s still fails fast
+      // on a dead bridge; VOO_MCP_HANDSHAKE_TIMEOUT overrides it (loaded CI).
+      handshakeTimeout: Number(process.env.VOO_MCP_HANDSHAKE_TIMEOUT ?? 5000),
       headers: { "x-voo-cli-bridge-token": token },
     });
     socket.on("error", () => {});

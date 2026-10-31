@@ -1,132 +1,72 @@
 import PropTypes from "prop-types";
+import { Grid2X2, X } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
-import { IconImage } from "../icons.jsx";
+import { IconBucket, IconGradient, IconImage } from "../icons.jsx";
+export const PRIMARY_FILL_TYPES = [{
+  id: "solid",
+  labelKey: "editor.colorPicker.solid",
+  Icon: IconBucket
+}, {
+  id: "gradient",
+  labelKey: "editor.colorPicker.gradient",
+  Icon: IconGradient
+}, {
+  id: "image",
+  labelKey: "editor.props.imageLabel",
+  Icon: IconImage,
+  media: true
+}, {
+  id: "texture",
+  labelKey: "editor.fillPicker.texture",
+  Icon: Grid2X2,
+  media: true
+}];
 
-// Texture and video tabs are not yet supported by the renderer:
-// - "texture" writes repeating-*-gradient() CSS that isCssGradient() won't
-//   match, so the fill is silently dropped.
-// - "video" writes a blob: URL that the canvas treats as a transparent image.
-// Both tabs are hidden until the renderer adds support. "image" routes through
-// blob: URLs the same way, so it too is hidden for now.
-// Only "solid" and "gradient" are connected to working renderer paths.
-export const PRIMARY_FILL_TYPES = [
-  { id: "solid", labelKey: "editor.colorPicker.solid", icon: "solid" },
-  { id: "gradient", labelKey: "editor.colorPicker.gradient", icon: "gradient" },
-  // image / texture / video deliberately omitted until renderer support lands.
-];
-
-/** Fill-type tabs (or the plain title) plus the close button. */
-export function PickerHeader({ showTypeTabs, activeType, onSelectType, onClose }) {
-  const { t } = useI18n();
-  return (
-    <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-      {showTypeTabs ? (
-        <div className="flex items-center gap-1">
-          {PRIMARY_FILL_TYPES.map((fillType) => (
-            <button
-              key={fillType.id}
-              type="button"
-              onClick={() => onSelectType(fillType.id)}
-              title={t(fillType.labelKey)}
-              aria-label={t(fillType.labelKey)}
-              className={`flex h-7 w-7 items-center justify-center rounded-lg text-[11px] font-mono transition-all ${
-                activeType === fillType.id
-                  ? "bg-white/20 text-white font-medium"
-                  : "text-neutral-400 hover:text-neutral-100 hover:bg-white/10"
-              }`}
-            >
-              {fillType.icon === "solid" ? (
-                <svg
-                  width={14}
-                  height={14}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect
-                    x="3"
-                    y="3"
-                    width="18"
-                    height="18"
-                    rx="3"
-                    fill="currentColor"
-                    fillOpacity={0.9}
-                  />
-                </svg>
-              ) : fillType.icon === "gradient" ? (
-                <svg
-                  width={14}
-                  height={14}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <defs>
-                    <linearGradient
-                      id="popover_grad_icon"
-                      x1="0"
-                      y1="0"
-                      x2="1"
-                      y2="1"
-                    >
-                      <stop
-                        offset="0%"
-                        stopColor="currentColor"
-                        stopOpacity="0.2"
-                      />
-                      <stop
-                        offset="100%"
-                        stopColor="currentColor"
-                        stopOpacity="1"
-                      />
-                    </linearGradient>
-                  </defs>
-                  <rect
-                    x="3"
-                    y="3"
-                    width="18"
-                    height="18"
-                    rx="3"
-                    fill="url(#popover_grad_icon)"
-                    stroke="currentColor"
-                  />
-                </svg>
-              ) : fillType.icon === "image" ? (
-                <IconImage size={14} />
-              ) : (
-                <span>{fillType.icon}</span>
-              )}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <span className="text-[12px] font-mono font-medium">
-          {t("editor.colorPicker.title")}
-        </span>
-      )}
-
-      {onClose ? (
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex h-5 w-5 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white"
-        >
-          ✕
-        </button>
-      ) : null}
-    </div>
-  );
+/** One type switcher for the paint editor, with roving keyboard focus. */
+export function PickerHeader({
+  showTypeTabs,
+  activeType,
+  onSelectType,
+  onClose,
+  allowMedia = false,
+  panelId
+}) {
+  const {
+    t
+  } = useI18n();
+  const types = PRIMARY_FILL_TYPES.filter(type => !type.media || allowMedia);
+  const navigate = (event, index) => {
+    const offsets = {
+      ArrowLeft: -1,
+      ArrowRight: 1,
+      ArrowUp: -1,
+      ArrowDown: 1
+    };
+    const next = event.key === "Home" ? 0 : event.key === "End" ? types.length - 1 : event.key in offsets ? (index + offsets[event.key] + types.length) % types.length : null;
+    if (next === null) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onSelectType(types[next].id);
+    event.currentTarget.parentElement.querySelectorAll('[role="tab"]')[next]?.focus();
+  };
+  return <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+    {showTypeTabs ? <div role="tablist" aria-label={t("editor.props.fillType")} className="flex items-center gap-1">
+      {types.map(({
+        id,
+        labelKey,
+        Icon
+      }, index) => <button key={id} type="button" role="tab" id={panelId ? `${panelId}-${id}` : undefined} aria-controls={panelId} aria-selected={activeType === id} tabIndex={activeType === id ? 0 : -1} onClick={() => onSelectType(id)} onKeyDown={event => navigate(event, index)} aria-label={t(labelKey)} title={t(labelKey)} className={`flex size-8 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-mint/40 [@media(pointer:coarse)]:size-12 ${activeType === id ? "bg-white/15 text-white" : "text-neutral-300 hover:bg-white/10 hover:text-white"}`}>
+        <Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+      </button>)}
+    </div> : <span className="text-[12px] font-medium">{t("editor.colorPicker.title")}</span>}
+    {onClose ? <button type="button" onClick={onClose} aria-label={t("common.close")} title={t("common.close")} className="flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-300 hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-mint/40"><X size={14} strokeWidth={1.5} /></button> : null}
+  </div>;
 }
-
 PickerHeader.propTypes = {
   showTypeTabs: PropTypes.bool.isRequired,
   activeType: PropTypes.string.isRequired,
   onSelectType: PropTypes.func.isRequired,
   onClose: PropTypes.func,
+  allowMedia: PropTypes.bool,
+  panelId: PropTypes.string
 };

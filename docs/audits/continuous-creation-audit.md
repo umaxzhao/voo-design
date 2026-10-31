@@ -107,18 +107,23 @@ commits, deliberate emptying and returning to the original content.
 intervening sibling edit, release of a child of a cancelled Frame,
 sub-threshold (`< 4px`) shape/arrow clicks and `region` / `regionFree` drafts
 rolling back via `rollbackDrawingGesture` without pushing a spurious delete
-commit, wiping the redo stack, or clearing the prior selection, plus
-`cancelPolygonLasso` restoring the replaced pixel selection and
-`closePolygonLasso` applying `selectionFeather`. `editor-module-audit-regressions.test.js`
-and `text-creation-boundaries.e2e.mjs` also verify that switching away from the
-Pen tool commits an open multi-anchor pen draft (`finishPen`) and clears draft
-state, that `Escape` during active `resize`/`rotate`/`cornerRadius`/`endpoint`
-and `penEdit` anchor drags unwinds the pointer gesture first and restores
-geometry, selection, and redo (while keeping the Pen edit session open), that
-0-movement handle and Pen anchor/bend clicks do not commit duplicate history
-entries, and that `expandPenNodeBounds`, `bend`, and `cutAt` preserve resized
-and rotated Pen geometry. These unit cases are pure domain tests alongside the
-9-scene Chromium suite in `text-creation-boundaries.e2e.mjs`.
+110: commit, wiping the redo stack, or clearing the prior selection, plus
+111: `cancelPolygonLasso` restoring the replaced pixel selection,
+112: `closePolygonLasso` applying `selectionFeather` and committing history,
+113: `Backspace` popping polygonal lasso vertices (`popPolygonVertex`) instead of
+114: deleting the host image layer, `Escape` unwinding `magneticLasso`, Curvature
+115: Pen `popDraftAnchor` recomputing smooth handles, and `pointercancel` cleaning
+116: up `pen`, `lasso`, `healing`, `cloneStamp`, `patchLasso`, `patchDrag`,
+117: `removeBrush`, `objectStroke`, and `gradient` gestures. `editor-module-audit-regressions.test.js`
+118: and `text-creation-boundaries.e2e.mjs` also verify that switching away from the
+119: Pen tool commits an open multi-anchor pen draft (`finishPen`) and clears draft
+120: state, that `Escape` during active `resize`/`rotate`/`cornerRadius`/`endpoint`
+121: and `penEdit` anchor drags unwinds the pointer gesture first and restores
+122: geometry, selection, and redo (while keeping the Pen edit session open), that
+123: 0-movement handle and Pen anchor/bend clicks do not commit duplicate history
+124: entries, and that `expandPenNodeBounds`, `bend`, and `cutAt` preserve resized
+125: and rotated Pen geometry. These unit cases are pure domain tests alongside the
+126: 10-scene Chromium suite in `text-creation-boundaries.e2e.mjs`.
 
 Remaining: true OS IME composition, cross-client concurrent history, async
 same-node style changes and native-window teardown still need their own

@@ -11,6 +11,7 @@ public/ort/
 release/
 docs/canvas-fps-results.json
 public/THIRD_PARTY_NOTICES.json
+public/NOTICE
 public/LICENSE
 public/EULA.md
 
@@ -18,3 +19,8 @@ analysis/
 
 /native/voo-engine/target/
 build/connector
+
+# Local agent coordination and developer launch settings
+/.agents/
+/.claude/
+/native_studio/.agents/

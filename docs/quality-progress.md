@@ -5,6 +5,49 @@
 更新时间：2026-10-31。
 最近一次完整核心验证提交：[9cd70af](https://github.com/umaxzhao/voo-design/commit/9cd70afd10df836c269b5597b5558a114e463640)；90/90 项通过（含启动夹具重试）。当前线上为合入 Agent 改动并完成定向复核的 e28b511；不继承前版本完整执行。
 以下结果只属于该固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+更新时间：2026-11-01。
+最近一次完整核心验证提交：[7e6a77a](https://github.com/umaxzhao/voo-design/commit/7e6a77a3d0836b7eecceeefddf3be3f94afb11c0)；91/91 项通过。当前线上 `7e6a77a`；集成版本单列验证，不继承不同版本结果。
+以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+
+
+
+## 本轮：右侧属性控件层级（已完成声明范围）
+
+- 按用户确认仅调整 `inspector.control-hierarchy`：大面板圆角、顶部页签、首页、外框、Agent 和工具栏视觉保持原样。规则限定在 `editor-properties-panel` 内，共享组件只增加语义标记，不改变其他位置的控件外观和文档操作。
+- 输入/颜色行采用 6px 圆角填充矩形；下拉为轻描边，切换项成组显示选中块，操作按钮使用轻背景。桌面主控件行高 32px、窄屏输入 48px；标题 11px，标签/数值/单位分层，数值保留等宽。Frame 宽高和文字/描边/布局共用规则。
+- 干净固定版本 [`7e6a77a`](https://github.com/umaxzhao/voo-design/commit/7e6a77a3d0836b7eecceeefddf3be3f94afb11c0)：**91/91 项执行通过，87 组浏览器通过，单测 4637 通过/4 跳过/0 失败**。用原发布脚本派生的临时运行器将浏览器并发从 3 降为 2，其余命令、断言与源码不变检查保持一致。证据 `/private/tmp/voo-inspector-controls-release-integrated.json`、同名 `.log`。之前的部分执行与失败独立保留，没有当成该固定版本通过。
+- 真实输入提交/取消、下拉键盘开关与焦点、旋转、Frame 布局及一次撤销通过；已有文字创建、字号/行距/字距、混合选区、填充/描边与拖动调值回归均由注册套件执行。16 组视口/主题/语言截图 `/private/tmp/voo-inspector-control-evidence/`；窄栏的锚点不与坐标字段重叠，合成宽高组保留自然高度。
+- 已推送并通过 SSH la2 部署 `7e6a77a`；正式入口及 9 个直接/控件资源与验证构建逐字节一致。正式中文 Frame 控件几何、输入修改/撤销、键盘下拉、布局选中反馈和文字字号/撤销实际通过，无页面脚本错误，未调用付费服务。证据 `/private/tmp/voo-inspector-controls-deployment-proof.json`、`/private/tmp/voo-inspector-controls-production-result.log`；截图 `/private/tmp/voo-inspector-controls-production-panel.png`。
+- 发布前合入同期新增的三份文档更新（`98678cf`）；产品源码、脚本及测试与完整验证的 `7e6a77a` 逐字相同，构建仍绑定该固定提交。
+- GitHub 检查 [本次运行](https://github.com/umaxzhao/voo-design/actions/runs/41223418888) 查询时为 `in_progress` / `尚未结束`；不继承历史 CI。上述部署由项目 SSH 脚本完成。
+- 本地 App 只三方合入本轮补丁，保留其他草稿；30 项定向单测及 16 组真实浏览器检查通过（`/private/tmp/voo-inspector-controls-primary-unit.log`、`/private/tmp/voo-inspector-controls-primary-browser-final.log`）。备份 `/private/tmp/voo-inspector-controls-primary/`；未认证整个私人草稿。
+- 原 12px 胶囊复现在 `/private/tmp/voo-inspector-controls-before.log`；首次完整运行的旧 SSR 正则属性顺序失败保留在 `/private/tmp/voo-inspector-controls-release.json`。原本地选中颜色失败证明采样于过渡第 0 帧，日志 `primary-browser-v2.log` 同前缀；检查现在等待真实过渡完成，没有放宽数值、单位、状态或撤销断言。Figma 冷重开旧失败（`release-final.json` / `release-recovered.json`）已定位为节点为空且 guard=on 的提前采样（`figma-ready.log`），只补夹具的真实导入节点/打开完成等待，所有精确像素断言保留；未改应用导入逻辑。
+- 功能覆盖仍为部分；实体触屏/IME/触控笔、所有高级独立浮层和所有历史项目不由本轮认证。[验收范围](audits/panel-control-audit.md#inspector-control-hierarchy)。
+
+## 浏览器右侧停靠与 Agent 互斥（历史固定版本记录）
+
+浏览器右侧停靠与 Agent 互斥已完成声明范围：固定源码提交 [04aa32b](https://github.com/umaxzhao/voo-design/commit/04aa32bd3ceb7e15f3f4ff09bb72be66288ffd6c) 通过 90/90 核心发布步骤（86 组浏览器、4604 项单测通过、4 项跳过），构建与设计检查通过。桌面浏览器与编辑器左右并排，窄屏从右侧展开；Browser 和 Agent 的公共打开入口互相关闭对方，关闭不自动重开另一面板。当前本地布局修复也已真实浏览器验证。原始证据 `/private/tmp/voo-browser-right-release.json`，线上资源和交互证据入口 `/private/tmp/voo-panel-exclusion-deployment.json`；功能覆盖保持部分，不继承为后续代码或其他平台通过。
+
+该浏览器任务分支的 90/90 结果只属于固定源码 04aa32b；随后合入的远程导入、采样和编辑器修复不继承该结果，合入当前主分支后在固定提交 47471c9d15d44dbfe957a9c7813a6d39915c183e 上重新构建、检查设计规则，4637 项单测通过、4 项跳过，浏览器切换、新建文件和首页设置三组浏览器检查通过；证据另记 `/private/tmp/voo-browser-right-integration.json`，不是新的全量门禁声明。
+
+## 本轮：矢量曲线拆分锚点切线重置、路径文字仿射变换矩阵与布尔运算图层顺序保持（已验证通过）
+
+- `vectors.path-edit` / `scene_model_paths.js`：
+  - 在 `breakPenPointsAtAnchor`（Affinity "Break Curve" 操作）中，当拆分或打开闭合曲线时，首尾开放端点此前保留了指向虚空的旧控制手柄（旧入点 / 出点切线）。
+  - 修复：对于解开闭合曲线的场景，将新起点端点的 `in` 切线置空（`in: null`），新终点端点的 `out` 切线置空（`out: null`）；对于开放曲线拆分为两个子路径（`split`），将前半段终点的 `out` 切线与后半段起点的 `in` 切线分别置空，彻底消除悬空手柄。
+- `text.typography` / `editor_engine_node_ops.js` / `editor_engine_text_path_ops.js`：
+  - 此前 `typeOnSelectedPath` 与 `attachTextToPath` 仅计算 `pathNode.x + pt.x * scaleX`，完全忽略了路径节点的旋转（`rotation`）、水平/垂直翻转（`flipH`, `flipV`）等变换，导致文字在旋转/翻转路径上产生错位的文档坐标。
+  - 修复：使用 `fromNodeLocal` 计算锚点和切线手柄向量的真实文档坐标；并将相关文字路径引擎逻辑抽取为 `editor_engine_text_path_ops.js`（144 行），`editor_engine_node_ops.js` 行数从 419 行减少至 302 行，严格契合 `Design.md` 的代码行数限制。
+- `layers.nesting` / `editor_engine_node_ops.js`：
+  - 在破坏性布尔运算 `destructiveBoolean` 中，此前通过 `doc.nodes.indexOf(n)` 计算 `bottomIndex`，并在过滤 `consumedSet` 后的 `nextNodes` 数组上执行 `splice(bottomIndex, 0, cleanedResult)`，因数组长度变化导致插入索引发生前移或错位。
+  - 修复：改为在单次线性扫描 `doc.nodes` 时就地将首个被消费节点替换为 `cleanedResult`，后续被消费节点剔除，严格维持所有剩余图层和新生成布尔结果的堆叠次序。
+- 自动化与测试验证：
+  - 补充 `tests/unit/pen_curve_math.test.js` 端点手柄切线清除单元测试。
+  - 补充 `tests/unit/text_on_path_engine_ops.test.js` 包含 90° 旋转与手柄向量映射的路径文字坐标测试。
+  - 补充 `tests/unit/container-command-boundaries.test.js` 布尔图层层级保持断言。
+  - 优化 `tests/unit/dirty_rect.test.js` 与 `tests/unit/open-project.test.js` 高负载单测超时时间，以及 `tests/unit/node_at_point_spatial.test.js` 门限。
+  - 固定验证提交 [`215d501`](https://github.com/umaxzhao/voo-design/commit/215d501534e696f35c1d1ab41c0e170c26eb8c9f)：**90/90 发布步骤通过，86 组核心浏览器通过，全量单测 4601 通过、4 跳过、0 失败**，证据 `/private/tmp/voo-release-round5.json`。
+
 
 ## 本轮：文字排版可读性与 Lucide 图标（已完成声明范围）
 
@@ -25,6 +68,33 @@
 - 发布前已合入远程 Frame 标题选择、蒙版对齐和社区模板翻译修复；前一个 `00dc8e7` 仅部分执行（`/private/tmp/voo-typography-release-verified.json`），没有当成最终集成提交的通过记录。
 - 未认证所有系统字体、实体 IME/触屏/触控笔、OS 级缩放和变量字体轴；未增加不受支持的文字能力。上轮首页冷加载 New 时序和 `.fig` 导入问题仍独立待修。[验收范围](audits/panel-control-audit.md#typography-clarity)。
 
+## 本轮：Agent 引导提示词重复（已完成声明范围）
+
+- 本地 `AgentPanelView` 在滚动区和输入框前各挂载一次建议组件；修改前浏览器明确得到 2 组（`agent-suggestions-duplicate-before.log`），仅移除后者，保留国际化、进度文案、附件及移动端草稿。原文件备份 `/private/tmp/voo-license-regression/agent-suggestions-primary-backup/`。
+- 本地 380/760px、Frame 三条按钮各出现一次、点击填入/重复点击幂等、草稿保留/焦点/解绑通过，相关单测 14 项通过；发布基线增强浏览器回归及 25 项定向单测通过。日志 `agent-suggestions-duplicate-after.log`、`agent-suggestions-published-regression.log`、`agent-suggestions-published-unit.log` 同目录。GitHub 产品源码原本只有一处，本轮只提交回归/登记/文档；当前正式构建 `bfbf91d` 的 7 文件字节与单组 Frame 建议已复核通过（`agent-suggestions-production-proof.json`），未重新部署未变化的产品。干净 `aec278290c69990105c36b13cdd05420f7e5d24e` 完整 90/90、核心浏览器 86 组、单测 4590 通过/4 跳过（`agent-suggestions-release.json`）；独立建议套件显式通过。合入远程 `0274622` 后 `3d98a78` 的 51 项相关单测及建议浏览器通过，未冒记为新完整门禁。随后重建入口与线上哈希不同（`agent-suggestions-rebuilt-comparison-failed.log`），不认定同版；当前页面单组建议另行实测记录 `agent-suggestions-live-ui-proof.json`。[验收](audits/nested-objects-audit.md#single-agent-suggestion-group)。
+
+## 本轮：Agent 选中 Frame 的图标（已验证并部署）
+
+- `platform.agent-contracts`：单选 Frame 时，上下文标签复用画布的 Frame 图标；普通图层/编组和多选保留 Layers，旧 artboard 上下文也使用 Frame。未改变上下文数据、提示词或选择逻辑。
+- 修改前真实浏览器 SVG 断言失败，证据 `/private/tmp/voo-license-regression/agent-frame-icon-before.log`。新增类型渲染断言及真实选区切换回归；9 项定向单测及真实 Agent 选区切换/提交/解绑/清空/跨文档回归通过（`agent-frame-icon-unit.log`、`agent-frame-icon-committed.log` 同目录）。[验收边界](audits/nested-objects-audit.md#agent-selection-context-icon)。
+
+- 精确干净版本 `bfbf91d040eebc3e1254f03c017fcc8f44677b6a`：**90/90 发布步骤通过、86 组核心浏览器通过，单测 4590 通过、4 跳过、0 失败**；验证期间源码未变化。证据 `/private/tmp/voo-license-regression/agent-frame-release.json`、同名 `.log`。独立 `agent-selection-context` 显式执行，不计入核心 86 组；其余 20 组独立检查本轮未运行，覆盖仍为部分。
+- [PR #70](https://github.com/umaxzhao/voo-design/pull/70) 合并为 `ffaf9406e5f07191d036473704219044896d6f64`，源码树与验证提交一致；[精确提交 GitHub build](https://github.com/umaxzhao/voo-design/actions/runs/41210654826/job/124564730088) 通过，CI deploy 跳过，使用项目脚本 SSH 部署 la2。备份 `la2:/srv/voo-run/editor-backups/bfbf91d040eebc3e1254f03c017fcc8f44677b6a-20261031T144458Z`。
+- 正式地址入口、5 个直接资源及 Agent 分块共 7 文件 HTTP 200、字节一致。隔离浏览器实际打开 Agent，验证子层 Layers → Frame 图标 → 多选 Layers → Frame 图标、解绑及文档不变，无页面脚本错误；没有发送模型请求。证据 `agent-frame-production-proof.json`、`agent-frame-production.png` 同目录。
+- 本地 App 仅应用本轮组件和回归补丁，保留既有分叉和其他草稿；真实 Agent 浏览器回归及 9 项单测通过（`agent-frame-primary-browser.log`、`agent-frame-primary-unit.log`），备份 `agent-frame-primary-backup/`。完整门禁属于上述干净提交，未认证私人草稿整体或签名 App 冷启动。
+
+## 本轮：Frame 标题点击选中（已验证并部署）
+
+- `selection.frame-title-selection`：标题原本是普通 div，外层画板在捕获阶段误接管指针。已改为原生按钮，使用现有交互控件排除规则和 `engine.selectExactly`，没有新增独立选择逻辑。
+- 新增真实浏览器回归：标题文字/图标在 0.5/1/2 倍缩放下选择正确 Frame；从子图层或多选切换正确；文档、画板布局和相机不变；键盘 Enter 可操作。原失败记录与修复后结果：`/private/tmp/voo-license-regression/frame-label-before.log`、`frame-label-after.log`。
+- 注册更新为 65 个能力分组、86 组核心浏览器套件。嵌套 Frame 继续沿用现有外层标签显示策略；未扩展拖拽、隐藏或锁定策略。18 项相关单测、四组真实浏览器（标题、子层命中、负坐标和导航）与设计/模块检查通过；证据 `frame-label-unit.log`、`frame-label-related.json` 同目录。完整发布和线上证据见下，不继承历史通过。详见 [标题命中验收](audits/nested-objects-audit.md#frame-title-pointer-selection)。
+
+- 固定干净版本 `befffb37071baf1aa4c0cd3abf83452b092f650d`：**90/90 发布步骤通过、86 组浏览器套件通过，单测 4585 通过、4 跳过、0 失败**。登记 12 模块、65 能力分组，selection 为 7/7，功能覆盖仍为部分。证据 `/private/tmp/voo-license-regression/frame-title-release-published.json`、同名 `.log`；源码验证期间未修改。
+- [PR #69](https://github.com/umaxzhao/voo-design/pull/69) 合并为 `49d85d8bd709b961c5f6be64ea5cd5dfad050f69`，源码树一致；[精确版本 GitHub build](https://github.com/umaxzhao/voo-design/actions/runs/41208362370/job/124558496923) 通过，CI deploy 跳过，实际使用项目脚本 SSH 部署 la2。备份 `la2:/srv/voo-run/editor-backups/befffb37071baf1aa4c0cd3abf83452b092f650d-20261031T142314Z`。
+- [正式页面](https://voo.run/editor/) 入口及 5 个直接资源共 6 文件 HTTP 200、字节哈希一致；隔离真实浏览器标题文字/图标点击、Enter、选中状态及文档不变通过，无页面脚本错误。证据 `frame-title-production-proof.json`、`frame-title-production.png` 同目录；只使用临时文档，未改用户项目。
+- 保留早期完整运行的触控超时（`frame-title-release.json`）、旋转输入超时（`frame-title-release-synced.json`）及各自独立复查；最终 `frame-title-release-published.json` 为重新完整执行，未拼接补跑。正式首次 New 冷启动未创建文档，证据 `frame-title-production-startup-attempt.log`；等待首页就绪后复核通过，不将该既有启动问题记为修复。
+- 本地 App 工作区有既有提交分叉和其他草稿，安全快进失败后仅应用本次标题补丁并保留其余内容；本地真实标题回归通过（`frame-title-primary-browser.log`），原文件备份 `frame-label-primary-before.jsx`。完整门禁只属于上述干净版本，不认证全部私人草稿或签名 App 冷启动。
+
 ## 本轮：图层导出按需显示（已完成声明范围）
 
 - `inspector.export-opt-in`：没有导出配置时，整个导出分组默认隐藏。用户从底部“添加 → 导出”启用后才显示标题、格式、倍率、透明背景和导出按钮；移除最后一条配置后整个分组消失，添加菜单恢复入口。没有新增勾选开关，保留用户已明确保存的配置。
@@ -35,7 +105,7 @@
 - 本地 App 工作区仅三方合入本任务源文件及回归测试，保留其他草稿；定向单测 18 项和真实本地添加/下载/移除/撤销重做通过（`/private/tmp/voo-export-opt-in-primary-browser.log`），不把独立干净版本的完整门禁冒记成全部私人草稿已通过。备份 `/private/tmp/voo-export-opt-in-primary/`、`/private/tmp/voo-export-opt-in-primary-final/`。
 - 原始缺陷保留 6 个配置失败和 2 个分组显示失败（`/private/tmp/voo-export-opt-in-baseline.log`、`/private/tmp/voo-export-opt-in-section-baseline.log`）。第一次未结束门禁为补齐整个分组隐藏而停止；`6ff7ef2` 的门禁因旧默认显示断言失败，修正后重新完整执行，未把先前部分执行算通过。
 - 未认证原生系统下载界面、实体触屏、原生项目冷启动重开及所有历史文档。上轮首页冷加载 New 事件时序问题和 `.fig` 导入问题仍未修复，不归入本轮通过。[详细范围](audits/panel-control-audit.md#opt-in-layer-export)。
-
+- 未认证原生系统下载界面、实体触屏、原生项目冷启动重开及所有历史文档。该轮未修复首页冷加载 New 和 `.fig` 导入问题，不归入该轮通过；后续整改见下方 Figma 记录。[详细范围](audits/panel-control-audit.md#opt-in-layer-export)。
 ## 本轮：统一填充面板（已完成声明范围）
 
 - 代码版本 [`cb4d1c9`](https://github.com/umaxzhao/voo-design/commit/cb4d1c9fbfdba8e87282a0af500fa0f1e8120d79)；**89/89 发布步骤通过，85 组浏览器检查通过，单测 4567 通过、4 跳过、0 失败**。最终源码干净且验证期间未修改。证据：`/private/tmp/voo-unified-fill-release-final.json`。
@@ -47,6 +117,30 @@
 - 先前版本的旧英文断言、新建就绪超时及补跑证据保留：`/private/tmp/voo-unified-fill-release.json`、`/private/tmp/voo-unified-fill-release-v2.json`、`/private/tmp/voo-unified-fill-release-recovered.json`；它们没有被伪装成最终固定提交的执行。
 - 额外发现待修：正式网站冷加载只有顶栏、首页尚未挂载时，点击 New 可能先于事件监听器而未创建文档。两次等待引擎超时；等待首页输入框就绪后，同一构建正常创建并通过填充实测。原始证据 `/private/tmp/voo-unified-fill-production-startup-attempt.log`、`/private/tmp/voo-unified-fill-production-startup-second-attempt.log`。这是未收口的启动上下文，不算作填充门禁证明已修复。
 - 功能覆盖仍有明确边界：实体设备、所有图片编解码/超大图片内存、克隆 ID 跨文档取消、穷尽多图片资源替换及原生 App 冷重启没有由本轮认证；不覆盖真实 `.fig` 导入审计已报告的缺陷。[详细验收](audits/panel-control-audit.md#unified-fill-editor)。
+
+- 额外发现待修：正式网站冷加载只有顶栏、首页尚未挂载时，点击 New 可能先于事件监听器而未创建文档。两次等待引擎超时；等待首页输入框就绪后，同一构建正常创建并通过填充实测。原始证据 `/private/tmp/voo-unified-fill-production-startup-attempt.log`、`/private/tmp/voo-unified-fill-production-startup-second-attempt.log`。这是该轮未收口的启动上下文；后续 New 修复已由下方 Figma 整改中的确定性回归与完整门禁认证，原始失败仍保留。
+- 功能覆盖仍有明确边界：实体设备、所有图片编解码/超大图片内存、克隆 ID 跨文档取消、穷尽多图片资源替换及原生 App 冷重启没有由本轮认证；不覆盖真实 `.fig` 导入审计已报告的缺陷。[详细验收](audits/panel-control-audit.md#unified-fill-editor)。
+
+## 本轮：桌面 test.fig 导入整改（已发布，保真与性能仍部分）
+
+- 补齐原生锁定、约束、自动布局、独立圆角、描边参数、溢出/图片裁切及父级变换；4 集合 / 5 变量保留模式值，移除 9 个误生矩形。实际文件导入 56,422 层无重复 ID / 悬空父级，478 图片哈希一致；原稿 SHA-256 未变。
+- `vectors.native-fig-properties` / `compositing.mask-cache`：独立图片填充不串用裁切；不可变绘制文档、多组蒙版缓存及异步图片失效得到回归。真实生成 `.fig` 选择器用例通过像素、约束重排、撤销/重做、二进制保存冷重开。
+- 串行 Metal 生产复测同一 241.86 MiB 文件：加载 **20.28 → 12.69 秒**，六次滚轮中位 **638 → 199 毫秒**；平移/缩放回调 1.95/0.95 → 5.54/1.78 次每秒。共享机器单轮样本，仍明显卡顿，**大文档性能验收未通过**；未宣称还原百分比。
+- 固定 `dd69368` **91/91** 发布步骤通过，含 **87 核心浏览器**及 **4615 单测通过 / 4 跳过**。原 ea90962 在 37/91 步的 New 竞态失败保留；冷启动请求回放、重名检查、原文件字节不变及连续创作在最终完整门禁通过。当前登记 12 模块 / 70 能力 / 87 核心浏览器，功能覆盖仍部分。
+- 保留远端改动：`3dfad79` 八项追加集成（含19单测）通过；Browser 更新的 `47471c9` 全量单测4637通过 / 4跳过及三组浏览器通过，源码与 `6d8cef7` 仅差文档。没有把旧完整门禁冒记为最新集成的完整执行。
+- [线上预览](https://voo.run/editor/) 当前 `6d8cef7`：入口与8个关键资源哈希一致，正式站合成 `.fig` 裁切/填充/旋转/溢出/蒙版、变量、约束和撤销像素通过，无脚本错误。选择器超时、早期引擎像素和并行部署版本不一致的尝试均留存；最终仅认证首页/文档就绪后的 DOM 输入路径，未认证原生 FSA 系统选择器。
+- 富文本、多重阴影、活动组件/变量绑定、所有字体/画板、非均匀文字缩放、子层 grow/stretch 及签名 Electron 仍未完整还原或验收；圆角平滑仅元数据。21项独立检查未运行，`native_studio` 排除。
+- [逐属性、性能与固定版本证据](audits/figma-import-audit.md#published-verification--2026-11-01)。完整私有日志、截图、原始失败及哈希清单存于本地 `figma-import-optimization/` 制品目录，未上传原稿或商业截图。
+
+## 本轮：Impeccable 整改与右键菜单（已发布）
+
+- 常用剪切、复制、删除和编组保留在主菜单；选择相同、属性、层级、蒙版、组件、复制/导出、路径使用一级子菜单。保留既有命令、快捷键和撤销逻辑，支持鼠标移入、方向键、Escape、屏幕边缘翻转和浮层避让。
+- 同轮完成隐藏编辑器焦点隔离、实际画布宽度适配、窄鼠标欢迎导航收纳、空 Slot 按需显示、说明文字层级与对比度；保留 VOO 字体与密集数值控件。
+- 固定应用版本 `6008dfa6fcd78e02abf14a27597fb0c1d584e770`：发布门禁 **89/89**，含 **85 组浏览器**、设计检查、构建和模块登记；单测 **4534 通过、4 跳过**（553 文件通过、3 文件跳过）。来源证据 `/tmp/voo-impeccable-verified-6008.json`、对应 `.log`；历史 25/40 为原审查分，未声称复评提高。
+- 推送前合入远端协作分享权限、搜索翻译和 SSH 部署修复，发布版本为 `9c5a063e874aaa5346a1804171d414740463032a`。该版本重新构建、设计检查、模块登记、Shell 语法和差异格式检查通过；协作/国际化专项 **169 通过、4 跳过**，三个浏览器套件 `settings-i18n`、`comments-lifecycle`、`impeccable-polish` 通过。**没有将 6008dfa 的完整门禁冒记为 9c5a063 的完整执行。**
+- [线上预览](https://voo.run/editor/) 已部署并在隔离浏览器核验：入口 HTML 与部署构建一致，五个直接脚本/样式资源返回 200；实际右键、子菜单键盘返回、900px Agent 面板和欢迎页焦点隔离通过，无页面脚本错误。只使用临时浏览器文档，不连接用户本地服务。
+- 当前登记 12 模块、62 能力、85 核心浏览器套件；功能覆盖仍为部分。21 项独立检查未运行，5 项既有外部图像服务阻断仍未执行；实际账户、付费服务、实体设备与签名安装包未认证。本轮排除 `native_studio`。
+- [固定执行与生产证据摘要](audits/impeccable-evidence/release-verification.json)、[生产菜单截图](audits/impeccable-evidence/context-menu-production.png)、[详细边界](audits/impeccable-review.md#published-verification--2026-10-31)。本条替代下方同轮历史待发布状态。
 
 ## 本轮：逐元素流式创作（已完成声明范围）
 
@@ -132,7 +226,13 @@
 | 线上部署 | a407ea5 验证构建已部署；主分支合并 b708127 的源码树一致；8 个线上文件哈希与关于页许可读取通过 |
 | 功能验收完整度 | 部分覆盖；60 个能力分组未穷尽所有入口、上下文和设备 |
 | 核心门禁外的独立检查 | 21 组本轮未运行：18 组待复核，3 组需单独运行 |
-
+| 工程规范与模块登记 | 已落地：12 个模块、71 个公开能力分组 |
+| 核心发布校验 | 7e6a77a：91/91 项通过，包含 87 组浏览器 |
+| 全量单元测试 | 4637 通过、4 跳过、0 失败（固定提交 7e6a77a） |
+| GitHub Ubuntu 基础检查 | 本轮 CI 按实际状态另记；本机完整门禁和线上实测已通过，不继承历史版本 CI |
+| 线上部署 | 7e6a77a 已部署 la2，控件资源与构建一致；中文 Frame/文字操作和撤销通过 |
+| 功能验收完整度 | 部分覆盖；71 个公开能力分组未穷尽所有入口、上下文和设备 |
+| 核心门禁外的独立检查 | 建议 1 组本轮显式通过；其余 20 组本轮未运行，不继承历史通过 |
 ## 连续创作首轮（f9102cd，已完成声明范围）
 
 - 已复现并修复：R/O 切换失效、分组脱离 Frame、分组后移动单位错误、解组误拆祖先 Frame、Esc 取消后仍创建对象，以及白色 Frame 中新建白字不可见。
@@ -141,10 +241,23 @@
 - 线上发布版本与构建资源哈希一致；本地主工作区仅同步本轮 10 个源码文件，11 场景复查通过，其他未提交草稿保留，未将其整体当作干净发布版本。
 - [验收范围与剩余边界](audits/continuous-creation-audit.md)：实际图像/文字像素、层级、历史和冷重开；实体设备、复杂组合和硬件性能仍单独验证。
 
+## 本轮：图层层叠、Frame与剪切蒙版整块移动、快捷键及编组翻转与属性联动（已完成声明范围）
+
+- 精确提交 `2f86bda191e4c3d2319efb0ca79758e57845f1b5`，完成 **89/89** 项全量发布门禁验证（含构建、设计规则、模块登记、全量单测，以及 **85 组 Chromium 浏览器套件** 全量通过）；证据：`/private/tmp/voo-release-round4-final.json`。
+- 复现并修复 5 类图层层叠与编组/Frame 联动缺陷：
+  1. `layers.placement`: 图层批量重排（`reorderLayerBatch`）原实现仅通过 `isGroupNode` 判定整块单元，导致 Frame（`isFrame: true` 或 `kind: "frame"`）、布尔容器（`kind: "boolean"`）以及剪切蒙版跟随图层（`clipTo`）被拆离移动，且目标相邻扫描未跳过整块导致蒙版关系破裂。现统一使用 `moveAffectedIds(doc, [unitOf(node).id])` 查找完整单元并越过邻居整块计算插入位置。
+  2. `layers.placement`: 移至顶层/底层（`moveNodeToExtreme`）原实现未限制父级边界，导致 Frame 内子图层被移出到画板根节点顶层/底层；现通过 `parentId` 严格限定在同一父容器内移动至首末位，整 Frame 移动时则完整携带全部子图层与蒙版跟随层。
+  3. `selection.shortcuts` & `layers.placement`: 键盘快捷键 `]` 和 `[` 调用 `engine.bringForward()` 与 `engine.sendBackward()` 时抛出 `TypeError: engine.bringForward is not a function` 崩溃；现于 `node-stack-actions.js` 和 `editor_engine_node_ops.js` 正式暴露领域层 `bringForward`/`sendBackward`/`bringToFront`/`sendToBack`，并统一上下文菜单和悬浮任务栏的调用路径。
+  4. `selection.transforms`: 选中普通编组水平/垂直翻转（`flipH`/`flipV`）时仅更新了编组层本身的标记，未对子节点在编组盒内镜像映射坐标（`x' = 2*gx + gw - cx - cw`）；现补齐子图层局部坐标镜像与子节点翻转状态更新。
+  5. `layers.nesting` & `layout.constraints`: 属性面板输入尺寸（W/H）修改 Frame 时，若被识别为 `selectedGroup` 导致仅调用 `engine.updateNode` 而跳过了 Frame 约束重排（`reflowFrameNodeResize`）；现于 `image_editor.jsx` 针对 `selectedGroup.isFrame` 补齐 `engine.updateFrameNode` 约束重排派发，同时保留 Frame 本身作为选区单元的契约。
+- 新增单元测试 `tests/unit/layer-hierarchy-stack.test.js`（编组坐标镜像与选区单元）与 `tests/unit/batch-layer-reorder.test.js` 扩展测试（Frame 与蒙版块在重排及极值移动中的完整性），并在 `tests/e2e/editor-layers-composition.e2e.mjs` 增补快捷键重排与单步撤销断言。
+- 功能覆盖仍为部分：物理设备触摸、OS 快捷键全局拦截、字体及 GPU 差异仍需专门验证。
+
 ## 继续检查：容器命令、手势回滚、选区单位、文字收尾与路径表示（已完成声明范围）
 
 - 新增两组核心浏览器套件，当前登记为 60 个能力分组、84 组浏览器、88 个发布步骤；先后在 `caf386a`（84/84）、`bfd7e5b`（85/85）、`a94365e`（85/85，证据：`/private/tmp/voo-release-round2.json`）与本批 `f7f4f59`（87/87，证据：`/private/tmp/voo-release-round3.json`，合入最新 `origin/main` 后为 `9c8be5c`，29 项新增单测与 19 项浏览器专项复核全过）完成隔离副本全量门禁验证；原工作区未提交的外部改动保留，未混入发布依据。
 - 已复现并修复 29 类问题：多层解组孤儿节点、父子同时分组拆散子树、跨 Frame 分组跳过共同父级、解组蒙版后失效引用、放弃空文字清空重做、未修改文字清空重做、实际文字收尾遗漏提交回调、转换为钢笔路径后的线条/箭头仍进入旧端点分支、钢笔草稿切换工具未提交且残留预览、`< 4px` 形状/箭头点击误写删除历史并清空重做与原选区、`resize`/`rotate`/`cornerRadius`/`endpoint` 变换手柄 `Escape`/取消不回滚且零位移误提交、对齐选中 Frame+子图层双倍位移且遗漏剪切蒙版跟随层、方向键微调 Auto Layout 编组回弹与钢笔锚点越界未扩框、图层面板点击布尔层失效及图层面板复制编组丢失编组选区单位、缩放后的钢笔路径在锚点越界扩框/复制/展开轮廓时缩回 `baseWidth`、钢笔编辑零位移点击锚点/弯曲段误写历史且中途 `Escape` 直接退出编辑会话、旋转/翻转路径下钢笔弯曲与剪刀子工具坐标未逆变换且开放路径剪断未重算边界与图层顺序、布尔组合与破坏性布尔丢失共享父容器及遗留失效 `clipTo`/空编组、路径排字 `typeOnSelectedPath`/`attachTextToPath` 丢失 `parentId` 且调用不存在的 `selection.setIds`、空普通编组无法通过 `Backspace`/剪切删除或 `Escape` 取消选中或 `Cmd+Shift+G` 解组、多子节点普通编组按 `Shift+A`（`toggleAutoLayoutSelection`）误套外层编组而非原地切换 Auto Layout、Frame 内创建/分离组件（`extractComponent`/`detachInstance`）丢失 `parentId`/残留外部引用/未缩放路径锚点、选中钢笔路径或普通编组按 `Enter` 因判定 `kind === "pen"` 与调用不存在的 `startEdit` 或忽略 `getSelectedGroup()` 而失效、多边形套索按 `Backspace` 误删宿主图层而非回退顶点（`popPolygonVertex`）且闭合与魔棒选区遗漏历史提交、磁性套索按 `Escape` 未回退、曲率钢笔按 `Backspace`（`popDraftAnchor`）残留旧平滑控制柄、以及 `region`/`pixelMarquee`/`selectionMove`/`gradient*`/形变控制点/`pen`/`lasso`/`healing`/`cloneStamp`/`patch*`/`removeBrush`/`objectStroke` 取消未回滚。
+- 已复现并修复 34 类问题：多层解组孤儿节点、父子同时分组拆散子树、跨 Frame 分组跳过共同父级、解组蒙版后失效引用、放弃空文字清空重做、未修改文字清空重做、实际文字收尾遗漏提交回调、转换为钢笔路径后的线条/箭头仍进入旧端点分支、钢笔草稿切换工具未提交且残留预览、`< 4px` 形状/箭头点击误写删除历史并清空重做与原选区、`resize`/`rotate`/`cornerRadius`/`endpoint` 变换手柄 `Escape`/取消不回滚且零位移误提交、对齐选中 Frame+子图层双倍位移且遗漏剪切蒙版跟随层、方向键微调 Auto Layout 编组回弹与钢笔锚点越界未扩框、图层面板点击布尔层失效及图层面板复制编组丢失编组选区单位、缩放后的钢笔路径在锚点越界扩框/复制/展开轮廓时缩回 `baseWidth`、钢笔编辑零位移点击锚点/弯曲段误写历史且中途 `Escape` 直接退出编辑会话、旋转/翻转路径下钢笔弯曲与剪刀子工具坐标未逆变换且开放路径剪断未重算边界与图层顺序、布尔组合与破坏性布尔丢失共享父容器及遗留失效 `clipTo`/空编组、路径排字 `typeOnSelectedPath`/`attachTextToPath` 丢失 `parentId` 且调用不存在的 `selection.setIds`、空普通编组无法通过 `Backspace`/剪切删除或 `Escape` 取消选中或 `Cmd+Shift+G` 解组、多子节点普通编组按 `Shift+A`（`toggleAutoLayoutSelection`）误套外层编组而非原地切换 Auto Layout、Frame 内创建/分离组件（`extractComponent`/`detachInstance`）丢失 `parentId`/残留外部引用/未缩放路径锚点、选中钢笔路径或普通编组按 `Enter` 因判定 `kind === "pen"` 与调用不存在的 `startEdit` 或忽略 `getSelectedGroup()` 而失效、多边形套索按 `Backspace` 误删宿主图层而非回退顶点（`popPolygonVertex`）且闭合与魔棒选区遗漏历史提交、磁性套索按 `Escape` 未回退、曲率钢笔按 `Backspace`（`popDraftAnchor`）残留旧平滑控制柄、`region`/`pixelMarquee`/`selectionMove`/`gradient*`/形变控制点/`pen`/`lasso`/`healing`/`cloneStamp`/`patch*`/`removeBrush`/`objectStroke` 取消未回滚、图层重排（`reorderLayerBatch` 与 `moveNodeToExtreme`）因仅判定 `isGroupNode` 导致 Frame 与剪切蒙版被拆散/破坏、移动至顶/底层（`moveNodeToExtreme`）允许子图层脱离 Frame 父级跳至画布顶层、图层层级领域方法 `bringForward`/`sendBackward`/`bringToFront`/`sendToBack` 缺失导致键盘 `]` 和 `[` 快捷键抛错崩溃、粘贴复制编组未调用 `selectGroup` 丢失 `selectedGroupId`、以及普通编组水平/垂直翻转未对子节点在编组盒内镜像坐标。
 - 门禁过程还捕获并修复了 `titlebar-file-actions.e2e.mjs` 在已有后台编辑器实例时未等待首页遮罩（`welcomeOpen`）关闭即读取文件名的竞态。
 - 定向浏览器扩展至 19 个场景（`container-command-boundaries` 9 项、`text-creation-boundaries` 10 项），覆盖键盘命令、对齐/蒙版跟随、Auto Layout 方向键微调与原地切换、图层面板布尔点击与编组复制、缩放钢笔复制与路径排字及空编组删除、`Enter` 进入编组与钢笔编辑、钢笔切换工具收尾、曲率钢笔 `Backspace` 重算控制柄、钢笔锚点零位移与中途 `Escape` 回滚、`< 4px` 形状点击与 `Escape` 缩放回滚及完整撤销重做。
 - [容器边界范围](audits/nested-objects-audit.md#container-command-boundaries)、[文字收尾范围](audits/continuous-creation-audit.md#text-placement-and-close-boundaries)记录复现、断言和剩余上下文；临时编辑恢复、取消时保留外部新增节点也已加入纯回归。
@@ -158,7 +271,7 @@
 | 工作台与资源 `workspace` | 8/8 | 部分 | 原生文件选择器、实体触屏、独立流程脚本复核 |
 | 文档与存储 `documents` | 6/6 | 部分 | 原生写入中断/恢复、旧版本文档、独立往返脚本 |
 | 画布与相机 `canvas` | 6/6 | 部分 | 硬件 FPS、内存、固定场景规模下的性能基准 |
-| 选择与变换 `selection` | 6/6 | 部分 | 实体压感笔、系统快捷键、多指触摸组合 |
+| 选择与变换 `selection` | 7/7 | 部分 | 实体压感笔、系统快捷键、多指触摸组合 |
 | 图层与 Frame `layers` | 7/7 | 部分 | Finder/Explorer 原生拖放；更多异常层级与组合 |
 | 蒙版与合成 `compositing` | 6/6 | 部分 | 更多混合/蒙版/效果组合、显卡差异、独立像素脚本 |
 | 矢量与形状 `vectors` | 5/5 | 部分 | 扩充第三方路径和格式往返样本、HTML 转节点脚本 |
@@ -328,7 +441,26 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - Replaced the composited header image with a centered 128px App Icon, native product heading and native “AI Agent Driven Design Editor” subtitle. A separate editing screenshot follows immediately.
 - Moved the editor screenshot from the product tour to the header, preserving one visible instance each of editor, workspace and onboarding. The four design previews remain visible; only installation and technical reference are folded.
 - Existing artwork and application source remain unchanged. Native GitHub Markdown structure, image/link checks and final revision: `/private/tmp/voo-showcase/product-ui/native-header-publication.json`. Functional product coverage remains unchanged and partial.
+## Impeccable 五项整改 — 2026-10-31
 
+- 用户“继续”后实施两项P1和三项P2：隐藏编辑器焦点隔离、按实际画布宽度适配面板、窄鼠标欢迎导航收纳、空Slot按需展示、说明文字排版/对比度。
+- 新增 `inspector.impeccable-polish` 及真实交互回归；合并其他Agent的文字尺寸能力后，登记共57能力、84核心浏览器套件。
+- 定向场景和既有响应式交互通过；不将临时非Git、未构建目录的全测失败当成产品结果或最终发布证据。
+- 最终执行证据：`/tmp/voo-impeccable-polish-release.json`，核对 `revision` 与 `complete`。原25/40为历史审查分，未声称复评提高。
+- [整改边界和前后截图](audits/impeccable-review.md#remediation--2026-10-31)。本轮仍按要求排除 `native_studio`；实际账户、付费服务、实体设备与签名安装包不计为已验证。
+
+
+## Context menu simplification — 2026-10-31
+
+- Inspector: retained common edits in the root; seven related action families
+  use one secondary level. Preserved domain commands and shortcuts.
+- Added `inspector.context-submenus`; inventory now has 62 capability groups
+  and 85 core browser suites. Real pointer/keyboard, edge/overlay placement,
+  style copy, clipping pixels and undo are registered regressions.
+- Targeted checks passed. Final execution, exact revision and deployment must
+  match `/tmp/voo-impeccable-polish-release.json`; coverage remains partial.
+- Scope excludes `native_studio`, real accounts, paid services and signed
+  installers. See [remediation](audits/impeccable-review.md#context-menu-simplification--2026-10-31).
 ## 工作台设置专项的历史阻断记录（本轮已整合收口）
 
 以下是整合前的记录，当前状态以上方固定发布证据为准。

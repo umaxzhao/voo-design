@@ -1,10 +1,9 @@
 import {
-  groupDescendants,
-  isGroupNode,
   isRegionNode,
   topLevelGroupOf,
 } from "./scene_model.js";
 import { withNodes } from "./doc_ops_nodes.js";
+import { moveAffectedIds } from "./doc_ops_move.js";
 
 /**
  * Brings a node to the very front or back of its plane in one step — the
@@ -28,13 +27,9 @@ export function moveNodeToExtreme(doc, id, direction) {
   if (node.locked) return doc;
 
   const unit = topLevelGroupOf(doc, node) ?? node;
-  const blockIds = new Set([
-    unit.id,
-    ...(isGroupNode(unit)
-      ? groupDescendants(doc, unit.id).map((member) => member.id)
-      : []),
-  ]);
+  const blockIds = new Set(moveAffectedIds(doc, [unit.id]));
   const plane = isRegionNode(unit);
+  const owner = unit.parentId ?? null;
   for (const candidate of doc.nodes) {
     if (!blockIds.has(candidate.id)) continue;
     // A locked member keeps its slot with the block, so the whole unit is
@@ -55,16 +50,44 @@ export function moveNodeToExtreme(doc, id, direction) {
 
   let insert = at;
   if (direction === "front") {
-    for (let target = at; target < rest.length; target += 1) {
+    let target = at;
+    while (target < rest.length) {
       const other = rest[target];
       if (other.locked || isRegionNode(other) !== plane) break;
-      insert = target + 1;
+      if ((other.parentId ?? null) !== owner) break;
+      const otherBlock = new Set(moveAffectedIds(doc, [other.id]));
+      let blocked = false;
+      let lastIndex = target;
+      for (let i = target; i < rest.length; i++) {
+        if (otherBlock.has(rest[i].id)) {
+          if (rest[i].locked) { blocked = true; break; }
+          lastIndex = i;
+        }
+      }
+      if (blocked) break;
+      insert = lastIndex + 1;
+      target = lastIndex + 1;
     }
   } else {
-    for (let target = at - 1; target >= 0; target -= 1) {
+    let target = at - 1;
+    while (target >= 0) {
       const other = rest[target];
       if (other.locked || isRegionNode(other) !== plane) break;
-      insert = target;
+      let sibling = other;
+      while (sibling && (sibling.parentId ?? null) !== owner) {
+        sibling = doc.nodes.find((n) => n.id === sibling.parentId);
+      }
+      if (!sibling || (sibling.parentId ?? null) !== owner) break;
+      const otherBlock = new Set(moveAffectedIds(doc, [sibling.id]));
+      let blocked = false;
+      const firstIndex = rest.findIndex((n) => n.id === sibling.id);
+      if (firstIndex < 0 || firstIndex > target) break;
+      for (let i = firstIndex; i <= target; i++) {
+        if (otherBlock.has(rest[i].id) && rest[i].locked) { blocked = true; break; }
+      }
+      if (blocked) break;
+      insert = firstIndex;
+      target = firstIndex - 1;
     }
   }
   if (insert === at) return doc;

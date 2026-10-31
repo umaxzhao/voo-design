@@ -17,6 +17,8 @@ export function drawArtworkNodes(ctx, { doc, paintNodeIds, hiddenNodeId, visible
   const canvas = ctx.canvas;
   const clips = createFrameClipContext(doc.nodes);
   const entries = opacityPlan.entries(paintNodes, isolatedContainers);
+  const allowedNodeIds = new Set(paintNodes.map(node => node.id));
+  const paintScopeKey = paintNodes === doc.nodes ? "all" : JSON.stringify(paintNodes.map(node => node.id));
   for (let position = 0; position < entries.length; position += 1) {
     const entry = entries[position];
     if (entry.container) {
@@ -65,6 +67,7 @@ export function drawArtworkNodes(ctx, { doc, paintNodeIds, hiddenNodeId, visible
     // collected below and drawn in one pass, so the loop skips every member.
     if (node.clipTo) {
       drawClippingChain(ctx, doc, i, node.clipTo, {
+        opacityPlan, allowedNodeIds, paintScopeKey,
         hiddenNodeId,
         frameClips: clips,
         paintNodes,

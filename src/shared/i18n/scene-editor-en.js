@@ -1,4 +1,12 @@
 export default {
+  "editor.menu.selectSame.title": "Select same",
+  "editor.menu.properties": "Properties",
+  "editor.menu.arrange": "Arrange",
+  "editor.menu.masks": "Masks",
+  "editor.menu.components": "Components",
+  "editor.menu.copyExport": "Copy / export",
+  "editor.menu.paths": "Path",
+
   "editor.variants.title": "Variants",
   "editor.variants.variant": "Variant",
   "editor.variants.set": "Variant set",

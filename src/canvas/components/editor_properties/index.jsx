@@ -1,3 +1,4 @@
+import "./inspector-control-surfaces.css";
 import { resolvePanelForContext } from "./resolve_panel_context.js";
 import InspectPanel from "./inspect_panel.jsx";
 import PrototypeSection from "./prototype_section.jsx";

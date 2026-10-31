@@ -1,20 +1,11 @@
-// Figma's public Kiwi protocol schema, deflate-raw compressed and base64 encoded.
-//
-// Redistributed verbatim, obtained via OpenPencil (https://github.com/ZSeven-W/openpencil):
-//   Copyright (c) OpenPencil contributors
-//   Permission is hereby granted, free of charge, to any person obtaining a
-//   copy of this software and associated documentation files (the "Software"),
-//   to deal in the Software without restriction, including without limitation
-//   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//   and/or sell copies of the Software, subject to the following condition:
-//   the above copyright notice and this permission notice shall be included in
-//   all copies or substantial portions of the Software. THE SOFTWARE IS
-//   PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. See NOTICE for the full
-//   attribution and license texts.
-//
-// Upstream carried this schema as packages/kiwi/src/fig/fig.kiwi; that path no
-// longer exists in their Rust tree. The decoder that consumes it (lib/figma/fig-kiwi.ts)
-// is Voo's own implementation against the Kiwi format (github.com/evanw/kiwi, MIT).
+// Figma/Kiwi interoperability schema, obtained from open-pencil/open-pencil.
+// Copyright (c) 2026 Danila Poyarkov; existing attribution: OpenPencil contributors.
+// SPDX-License-Identifier: MIT
+// Source revision: f5bd2425b6491be58b43c398ac1343e4d8249fe6
+// Source path: packages/kiwi/src/fig/schema/fig.kiwi
+// Full license and provenance: NOTICE and scripts/license-texts/openpencil.txt.
+// VOO stores the schema as deflate/base64; the separate export adapter adds fields.
+// The former ZSeven-W/openpencil link referred to a different project.
 export const FIGMA_SCHEMA_DEFLATE_BASE64 = "tL17nCvHUShc3TOSds+el5+xncR5vx/4kSfvkTTanXMkjTIj7Z7jy0XMSrO74yNpxMxoz1lfLjeYYIwxxgRjTDDBBGOMMcEYY4IxIRhjTDAmhBBCCMGEEEIIIYQQQgjhflXdPQ+tjpPf7/u+v6a7urv6Mf2oqq6q" +
     "/iu95cext+1396Y+wMXHbKvdd7uG0wUAaNt1s19bM9qrpgsArOeaTi7OKbfZrgOA5lqrbaMJALrbPdk0AaBEgb5rIq5yhrnvHrc6fcds2gaWrLTtrtU42XfX7F6z3u91Vh2jjuWXZLBft9sYX1Zxx2w4prsGAAfc" +
     "mtk2+6uO0Vnrv6lnOicBYCUPdMxOE4EH61ajAQCHak3LbHf7Vcc26jXDxbYdzrXtmN1z2kbTxJYdcbuOabTS8Tgq46LH51jtrukYta61bvbdppUOFQCc65g1u902a93+ohaetzhZtfV8Na59q11zzJbZ7hrNfloG" +

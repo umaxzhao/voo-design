@@ -38,7 +38,7 @@ import { HANDOFF_TOOL_SCHEMAS, HANDOFF_TOOL_EXECUTORS } from "./canvas_tools_han
 import { ASSET_TOOL_SCHEMAS, ASSET_TOOL_EXECUTORS } from "./canvas_tools_assets.js";
 import { COMMENT_TOOL_SCHEMAS, COMMENT_TOOL_EXECUTORS } from "./canvas_tools_comments.js";
 
-import { BUILD_LAYOUT_SCHEMA, buildLayout } from "./canvas_tools_build_layout.js";
+import { BUILD_LAYOUT_SCHEMA, buildLayoutForAgent } from "./canvas_tools_build_layout.js";
 import { STREAM_LAYOUT_SCHEMA, streamLayout } from "./canvas_tools_stream_layout.js";
 
 import { LINT_TOOL_SCHEMA, lintDesignTool } from "./design_quality/lint_tool.js";
@@ -400,6 +400,59 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
   ...COMMENT_TOOL_SCHEMAS,
   LINT_TOOL_SCHEMA,
 ]);
+
+/**
+ * The one source of truth for the canvas tool names.
+ *
+ * Tests, agent prompt guards and docs checks read this instead of repeating the
+ * registry by hand; a new schema appears here the moment it is registered.
+ *
+ * The list resolves lazily. `canvas_tools_build_layout.js` imports `createShape`
+ * from this module while this module imports `BUILD_LAYOUT_SCHEMA` from it, so a
+ * first import of that module evaluates this body before the schema binding is
+ * initialized and `CANVAS_TOOL_SCHEMAS` still holds a placeholder entry. A
+ * top-level `.map()` would throw there; reading the names after the module graph
+ * settles sees every registered tool, and one incomplete read is never cached.
+ */
+let resolvedToolNames = null;
+
+function resolveToolNames() {
+  if (resolvedToolNames) return resolvedToolNames;
+  const schemas = CANVAS_TOOL_SCHEMAS;
+  const valid = schemas.filter((schema) => schema && schema.function && schema.function.name);
+  const names = valid.map((schema) => schema.function.name);
+  if (valid.length !== schemas.length || names.length === 0) {
+    // A partly initialised cycle: expose what exists without poisoning the cache.
+    return names;
+  }
+  resolvedToolNames = Object.freeze(names);
+  return resolvedToolNames;
+}
+
+export const CANVAS_TOOL_NAMES = new Proxy([], {
+  get(_target, property) {
+    const list = resolveToolNames();
+    if (property === Symbol.iterator) return list[Symbol.iterator].bind(list);
+    const value = Reflect.get(list, property);
+    return typeof value === "function" ? value.bind(list) : value;
+  },
+  has(_target, property) {
+    return property in resolveToolNames();
+  },
+  ownKeys() {
+    return Reflect.ownKeys(resolveToolNames());
+  },
+  getOwnPropertyDescriptor(_target, property) {
+    const list = resolveToolNames();
+    const descriptor = Reflect.getOwnPropertyDescriptor(list, property);
+    if (!descriptor) return undefined;
+    // The proxy target is an empty (extensible) array: report its required
+    // non-configurable `length` unchanged, everything else as configurable.
+    return property === "length"
+      ? { value: list.length, writable: true, enumerable: false, configurable: false }
+      : { ...descriptor, configurable: true };
+  },
+});
 
 function requireEditor() {
   const editor = typeof window !== "undefined"
@@ -995,7 +1048,7 @@ export const EXECUTORS = Object.freeze({
   mutate_auto_layout: mutateAutoLayout,
   batch_mutate_layers: batchMutateLayers,
   create_shape: (args) => createShape(args),
-  build_layout: buildLayout,
+  build_layout: buildLayoutForAgent,
   stream_layout: streamLayout,
   delete_layers: deleteLayers,
   duplicate_layer: duplicateLayer,

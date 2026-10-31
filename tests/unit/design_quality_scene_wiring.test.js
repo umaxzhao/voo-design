@@ -15,9 +15,14 @@ describe("scene guide wiring in the design quality prompt", () => {
     expect(prompt).toContain("[Quality checks]");
   });
 
-  it("keeps the guide out of the prompt when no kind is supplied", () => {
-    const prompt = buildDesignQualityPrompt({ userText: "build a landing page", kit: STYLE_KITS.linear });
+  it("keeps the guide out when neither the kind nor the request names a scene", () => {
+    const prompt = buildDesignQualityPrompt({ userText: "把按钮变蓝", kit: STYLE_KITS.linear });
     expect(prompt).not.toContain("=== Scene guide:");
+  });
+
+  it("activates the guide from the request when the caller passes no structural kind", () => {
+    const prompt = buildDesignQualityPrompt({ userText: "build a landing page", kit: STYLE_KITS.linear });
+    expect(prompt).toContain(`=== Scene guide: ${SCENE_GUIDES.landing.name} ===`);
   });
 
   it("accepts natural language kinds with aliases", () => {

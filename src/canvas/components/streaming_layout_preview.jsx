@@ -175,22 +175,9 @@ export default function StreamingLayoutPreview({
       data-testid="streaming-layout-frame-preview"
       className="relative h-full w-full overflow-hidden bg-neutral-900/40"
     >
-      {/* Google Stitch Holographic Laser Beam */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-[#E5B2FF] opacity-60 motion-safe:animate-pulse z-20" />
-
-      {/* Holographic HUD corner brackets using AI accent #E5B2FF */}
-      <div className="pointer-events-none absolute top-2 left-2 size-3 border-t-2 border-l-2 border-[#E5B2FF]/70 z-20" />
-      <div className="pointer-events-none absolute top-2 right-2 size-3 border-t-2 border-r-2 border-[#E5B2FF]/70 z-20" />
-      <div className="pointer-events-none absolute bottom-2 left-2 size-3 border-b-2 border-l-2 border-[#E5B2FF]/70 z-20" />
-      <div className="pointer-events-none absolute bottom-2 right-2 size-3 border-b-2 border-r-2 border-[#E5B2FF]/70 z-20" />
-
       {!ready && <div data-testid="streaming-layout-skeleton" role="status" aria-label={t("agent.panel.busy")}
-        className="absolute inset-0 space-y-6 p-[8%] motion-safe:animate-pulse">
-        <div className="h-3 w-1/4 rounded-md bg-neutral-200" />
-        <div className="h-8 w-3/4 rounded-md bg-neutral-200" />
-        <div className="h-3 w-1/2 rounded-md bg-neutral-200" />
-        <div className="h-48 rounded-xl bg-neutral-200/70" />
-        <div className="h-3 w-2/3 rounded-md bg-neutral-200" />
+        className="absolute inset-x-0 top-6 flex justify-center text-[12px] text-neutral-300">
+        {t("agent.authoring.generation")}
       </div>}
       <canvas
         ref={canvasRef}
@@ -208,7 +195,7 @@ export default function StreamingLayoutPreview({
         <IconCursor size={18} strokeWidth={1.5} className="text-[#E5B2FF]" />
         <span className="ml-4 mt-1 flex items-center gap-1.5 w-max rounded-lg bg-neutral-950/95 border border-[#E5B2FF]/40 px-2.5 py-1 text-[11px] font-medium text-[#E5B2FF] shadow-panel">
           <span className="inline-block size-1.5 rounded-full bg-[#E5B2FF] motion-safe:animate-pulse" />
-          <span>✦ {t("agent.title")}</span>
+          <span>{t("agent.title")}</span>
         </span>
       </div>
     </div>

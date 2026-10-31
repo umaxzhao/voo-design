@@ -342,10 +342,10 @@ function drawUncached(
 
   if (guides && guides.length > 0) drawGuides(ctx, guides, viewport, dpr);
 
-  const focus = getAgentFocusNode();
+  const focus = getAgentFocusNode(doc);
   if (focus) drawAgentFocusOverlay(ctx, focus, viewport);
 
-  const agentCursor = getAgentCursor();
+  const agentCursor = getAgentCursor(doc);
   if (agentCursor) drawAgentCursorOverlay(ctx, agentCursor, viewport);
 
   ctx.restore();

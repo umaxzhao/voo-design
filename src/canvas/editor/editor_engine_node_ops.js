@@ -26,14 +26,14 @@ import {
   booleanIntersect,
   booleanExclude,
 } from "./path_boolean_engine.js";
-import { layoutTextOnPath } from "./text_on_path.js";
-import { newId } from "./scene_model_core.js";
 import { groupingRoots, sharedGroupParent } from "./group-structure.js";
+import { createTextPathEngineOps } from "./editor_engine_text_path_ops.js";
 
 export function createEngineNodeOps({
   getDoc, cache,
   setDoc,
   selection,
+  getSelectedGroup,
   releaseNodeTextures,
   maskTools,
   paintTools,
@@ -43,9 +43,10 @@ export function createEngineNodeOps({
   notify,
   getZoom,
 }) {
+  const stackActions = createNodeStackActions({ getDoc, setDoc,
+    selection, getSelectedGroup, releaseNodeTextures, maskTools, paintTools, penTools, requestRender, notify });
   const { removeIds, removeNode, reorderNode, reorderNodeTo, reorderNodes,
-    moveToFront, moveToBack, moveNodeToRoot } = createNodeStackActions({ getDoc, setDoc,
-    selection, releaseNodeTextures, maskTools, paintTools, penTools, requestRender, notify });
+    moveToFront, moveToBack, moveNodeToRoot, bringForward, sendBackward, bringToFront, sendToBack } = stackActions;
 
   function updateNode(id, patch, options) {
     return commitOrPreviewEditorDocument(
@@ -230,15 +231,23 @@ export function createEngineNodeOps({
       delete cleanedResult.clipTo;
     }
 
-    const bottomIndex = Math.min(...selectedNodes.map((n) => doc.nodes.indexOf(n)));
-    const nextNodes = doc.nodes
-      .filter((n) => !consumedSet.has(n.id))
-      .map((n) => {
-        if (!consumedSet.has(n.clipTo)) return n;
+    let inserted = false;
+    const nextNodes = [];
+    for (const n of doc.nodes) {
+      if (consumedSet.has(n.id)) {
+        if (!inserted) {
+          nextNodes.push(cleanedResult);
+          inserted = true;
+        }
+        continue;
+      }
+      if (consumedSet.has(n.clipTo)) {
         const { clipTo, ...released } = n;
-        return released;
-      });
-    nextNodes.splice(bottomIndex, 0, cleanedResult);
+        nextNodes.push(released);
+      } else {
+        nextNodes.push(n);
+      }
+    }
 
     const nextDoc = ops.pruneEmptyGroups({ ...doc, nodes: nextNodes });
     commitEditorDocument(`editor.boolean.${op}`, setDoc, nextDoc);
@@ -248,135 +257,13 @@ export function createEngineNodeOps({
     return true;
   }
 
-  function typeOnSelectedPath() {
-    const doc = getDoc();
-    const selectedIds = selection?.getIds?.() ?? [];
-    const pathNode = selectedIds
-      .map((id) => findNode(doc, id))
-      .find((n) => n && n.kind === NODE_KIND.PATH && (n.points?.length || n.anchors?.length));
-    if (!pathNode || pathNode.locked || isLockedByGroup(doc, pathNode)) return false;
-
-    const scaleX = pathNode.baseWidth ? pathNode.width / pathNode.baseWidth : 1;
-    const scaleY = pathNode.baseHeight ? pathNode.height / pathNode.baseHeight : 1;
-    const rawPoints = pathNode.points || pathNode.anchors || [];
-    const docPoints = rawPoints.map((pt) => ({
-      x: pathNode.x + pt.x * scaleX,
-      y: pathNode.y + pt.y * scaleY,
-      in: pt.in ? (Array.isArray(pt.in) ? [pt.in[0] * scaleX, pt.in[1] * scaleY] : { x: pt.in.x * scaleX, y: pt.in.y * scaleY }) : null,
-      out: pt.out ? (Array.isArray(pt.out) ? [pt.out[0] * scaleX, pt.out[1] * scaleY] : { x: pt.out.x * scaleX, y: pt.out.y * scaleY }) : null,
-      close: Boolean(pt.close),
-    }));
-
-    const textPath = {
-      points: docPoints,
-      closed: pathNode.closed || docPoints[docPoints.length - 1]?.close || false,
-      startOffset: 0,
-      align: "left",
-      side: "top",
-      reverse: false,
-      baselineOffset: 0,
-    };
-
-    const textNode = {
-      id: newId(),
-      kind: NODE_KIND.TEXT,
-      name: "Path Text",
-      text: "Type along path...",
-      fontSize: 22,
-      fontFamily: "Inter, sans-serif",
-      fontWeight: "normal",
-      fill: "#ffffff",
-      parentId: pathNode.parentId ?? null,
-      textPath,
-    };
-
-    const layout = layoutTextOnPath(null, textNode);
-    textNode.x = layout?.bounds?.x ?? pathNode.x;
-    textNode.y = layout?.bounds?.y ?? pathNode.y;
-    textNode.width = Math.max(20, layout?.bounds?.width ?? pathNode.width);
-    textNode.height = Math.max(20, layout?.bounds?.height ?? pathNode.height);
-
-    const pathIndex = doc.nodes.indexOf(pathNode);
-    const nextNodes = [...doc.nodes];
-    nextNodes.splice(pathIndex + 1, 0, textNode);
-
-    const nextDoc = { ...doc, nodes: nextNodes };
-    commitEditorDocument("editor.textOnPath.create", setDoc, nextDoc);
-    (selection?.selectNodes ?? selection?.setIds)?.([textNode.id]);
-    requestRender?.();
-    notify?.();
-    return true;
-  }
-
-  function attachTextToPath() {
-    const doc = getDoc();
-    const selectedIds = selection?.getIds?.() ?? [];
-    if (selectedIds.length !== 2) return false;
-    const nodes = selectedIds.map((id) => findNode(doc, id)).filter(Boolean);
-    const textNode = nodes.find((n) => n.kind === NODE_KIND.TEXT);
-    const pathNode = nodes.find((n) => n.kind === NODE_KIND.PATH && (n.points?.length || n.anchors?.length));
-    if (!textNode || !pathNode) return false;
-    if (textNode.locked || pathNode.locked || isLockedByGroup(doc, textNode) || isLockedByGroup(doc, pathNode)) return false;
-
-    const scaleX = pathNode.baseWidth ? pathNode.width / pathNode.baseWidth : 1;
-    const scaleY = pathNode.baseHeight ? pathNode.height / pathNode.baseHeight : 1;
-    const rawPoints = pathNode.points || pathNode.anchors || [];
-    const docPoints = rawPoints.map((pt) => ({
-      x: pathNode.x + pt.x * scaleX,
-      y: pathNode.y + pt.y * scaleY,
-      in: pt.in ? (Array.isArray(pt.in) ? [pt.in[0] * scaleX, pt.in[1] * scaleY] : { x: pt.in.x * scaleX, y: pt.in.y * scaleY }) : null,
-      out: pt.out ? (Array.isArray(pt.out) ? [pt.out[0] * scaleX, pt.out[1] * scaleY] : { x: pt.out.x * scaleX, y: pt.out.y * scaleY }) : null,
-      close: Boolean(pt.close),
-    }));
-
-    const textPath = {
-      points: docPoints,
-      closed: pathNode.closed || docPoints[docPoints.length - 1]?.close || false,
-      startOffset: 0,
-      align: textNode.align || "left",
-      side: "top",
-      reverse: false,
-      baselineOffset: 0,
-    };
-
-    const updatedText = {
-      ...textNode,
-      textPath,
-    };
-    const layout = layoutTextOnPath(null, updatedText);
-    if (layout?.bounds) {
-      updatedText.x = layout.bounds.x;
-      updatedText.y = layout.bounds.y;
-      updatedText.width = Math.max(20, layout.bounds.width);
-      updatedText.height = Math.max(20, layout.bounds.height);
-    }
-
-    const nextNodes = doc.nodes.map((n) => (n.id === textNode.id ? updatedText : n));
-    const nextDoc = { ...doc, nodes: nextNodes };
-    commitEditorDocument("editor.textOnPath.attach", setDoc, nextDoc);
-    (selection?.selectNodes ?? selection?.setIds)?.([textNode.id]);
-    requestRender?.();
-    notify?.();
-    return true;
-  }
-
-  function detachTextFromPath() {
-    const doc = getDoc();
-    const selectedIds = selection?.getIds?.() ?? [];
-    const textNode = selectedIds
-      .map((id) => findNode(doc, id))
-      .find((n) => n && n.kind === NODE_KIND.TEXT && n.textPath);
-    if (!textNode || textNode.locked || isLockedByGroup(doc, textNode)) return false;
-
-    const { textPath, ...rest } = textNode;
-    const nextNodes = doc.nodes.map((n) => (n.id === textNode.id ? rest : n));
-    const nextDoc = { ...doc, nodes: nextNodes };
-    commitEditorDocument("editor.textOnPath.detach", setDoc, nextDoc);
-    (selection?.selectNodes ?? selection?.setIds)?.([textNode.id]);
-    requestRender?.();
-    notify?.();
-    return true;
-  }
+  const textPathOps = createTextPathEngineOps({
+    getDoc,
+    setDoc,
+    selection,
+    requestRender,
+    notify,
+  });
 
   return {
     removeIds,
@@ -388,6 +275,10 @@ export function createEngineNodeOps({
     reorderNodeTo,
     moveToFront,
     moveToBack,
+    bringForward,
+    sendBackward,
+    bringToFront,
+    sendToBack,
     moveNodeBy,
     moveNodesBy,
     moveNodeToRoot,
@@ -406,8 +297,6 @@ export function createEngineNodeOps({
     offsetSelectedPath,
     expandSelectedStroke,
     destructiveBoolean,
-    typeOnSelectedPath,
-    attachTextToPath,
-    detachTextFromPath,
+    ...textPathOps,
   };
 }

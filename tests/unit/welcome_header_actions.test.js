@@ -7,6 +7,7 @@ import fs from "node:fs";
 const mocks = vi.hoisted(() => ({
   effects: [],
   refs: new Map(),
+  scanFiles: vi.fn(async () => []),
   writeFileBytes: vi.fn(async (name) => ({ name, path: `/ws/${name}` })),
   loadVooProject: vi.fn(),
   addRecentFile: vi.fn(),
@@ -23,16 +24,16 @@ vi.mock("react", async (original) => ({
   },
 }));
 vi.mock("../../src/services/workspace_storage.js", () => ({
-  workspaceStorage: { writeFileBytes: mocks.writeFileBytes },
+  workspaceStorage: { writeFileBytes: mocks.writeFileBytes, scanFiles: mocks.scanFiles },
   guessCategory: () => "web",
 }));
 vi.mock("../../src/store/design_store.js", () => ({
   useDesignStore: { getState: () => ({ loadVooProject: mocks.loadVooProject, newVooProject: vi.fn() }) },
 }));
-vi.mock("../../src/canvas/store/recent_files.js", () => ({ addRecentFile: mocks.addRecentFile }));
+vi.mock("../../src/canvas/store/recent_files.js", () => ({ addRecentFile: mocks.addRecentFile, getRecentFiles: () => [] }));
 
 import { useWelcomeCreate } from "../../src/canvas/components/welcome_dashboard/use_welcome_create.js";
-import { WELCOME_NEW_EVENT } from "../../src/canvas/components/welcome_dashboard/welcome_events.js";
+import { WELCOME_NEW_EVENT, requestWelcomeNew } from "../../src/canvas/components/welcome_dashboard/welcome_events.js";
 
 const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
@@ -61,12 +62,28 @@ describe("title bar New on the welcome page", () => {
   let target;
   beforeEach(() => {
     mocks.refs.clear();
+    mocks.scanFiles.mockResolvedValue([]);
     mocks.writeFileBytes.mockClear();
     mocks.loadVooProject.mockClear();
     target = new EventTarget();
     vi.stubGlobal("window", target);
   });
   afterEach(() => vi.unstubAllGlobals());
+
+  it("retains a cold-start request until the lazy dashboard subscribes", async () => {
+    mocks.scanFiles.mockResolvedValue([{ name: "Design1.voo" }, { name: "Design2.voo" }]);
+    requestWelcomeNew(target);
+    requestWelcomeNew(target);
+    expect(mocks.writeFileBytes).not.toHaveBeenCalled();
+    const mounted = renderHook([]);
+    await vi.waitFor(() => expect(mounted.setWelcomeOpen).toHaveBeenCalledWith(false));
+    expect(mocks.writeFileBytes).toHaveBeenCalledTimes(1);
+    expect(mocks.writeFileBytes.mock.calls[0][0]).toBe("Design3.voo");
+    mounted.cleanups.forEach(cleanup => cleanup?.());
+    renderHook([]);
+    await Promise.resolve();
+    expect(mocks.writeFileBytes).toHaveBeenCalledTimes(1);
+  });
 
   it("creates a design through the same handler as handleCreateNew", async () => {
     const { reloadFiles, setWelcomeOpen, api } = renderHook([]);

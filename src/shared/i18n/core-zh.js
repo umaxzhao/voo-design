@@ -57,6 +57,7 @@ export default {
   "firstRun.provider.claude": "Claude Code",
   "firstRun.provider.custom": "自定义模型",
   "firstRun.provider.dashscope": "Alibaba Cloud",
+  "firstRun.provider.deepseek": "DeepSeek",
   "firstRun.provider.volcengine": "火山引擎",
   "firstRun.provider.antigravity": "Antigravity",
   "firstRun.provider.deepseek-harness": "DeepSeek Harness",
@@ -123,6 +124,8 @@ export default {
   "common.loading": "加载中…",
   "common.close": "关闭",
   "common.apply": "应用",
+  "common.search": "搜索",
+  "common.noResults": "无结果",
   "dialog.loadFailed": "无法加载此面板，请重新加载应用后重试。",
   "error.jimengModelControlMissing": "找不到即梦的图片模型控件。",
   "error.jimengModelOptionMissing": "即梦页面已不再提供所选图片模型。",
@@ -747,4 +750,5 @@ export default {
   "editor.canvasType.threeD": "3D",
   "editor.component.label": "元件",
   "editor.component.uses": "{count} 处引用",
+  "contextualAi.send": "发送给 AI 智能体",
 };

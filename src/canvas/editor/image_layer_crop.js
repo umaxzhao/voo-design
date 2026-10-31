@@ -1,3 +1,4 @@
+import { drawImagePaint } from "./image-paint-layout.js";
 import { MIN_DOC_SIZE } from "./scene_model_core.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
 
@@ -110,7 +111,8 @@ export function croppedImageSource(image, node, bitmap) {
 
 export function drawImageCrop(ctx, image, node, bitmap) {
   if (!node.crop) {
-    ctx.drawImage(image, node.x, node.y, node.width, node.height);
+    if (node.imageTransform || ["fill", "fit", "tile"].includes(node.imageScaleMode)) drawImagePaint(ctx, image, node, bitmap);
+    else ctx.drawImage(image, node.x, node.y, node.width, node.height);
     return;
   }
   const sourceWidth = bitmap.naturalWidth ?? bitmap.width;

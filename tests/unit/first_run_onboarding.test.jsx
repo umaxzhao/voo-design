@@ -169,7 +169,7 @@ describe("first-run interactions", () => {
     localService.native = false; localService.available = false; draw();
     const grid = elements(tree).find(el => el.type === AgentCardGrid);
     expect(grid.props.showCliAgents).toBe(false);
-    expect(grid.props.cloudProviders.map(card => card.id)).toEqual(["vooCloud", "dashscope", "volcengine"]);
+    expect(grid.props.cloudProviders.map(card => card.id)).toEqual(["vooCloud", "dashscope", "volcengine", "deepseek"]);
   });
   it("renders the provider step and persists the chosen provider", () => {
     expect(step()).toBe("provider");
@@ -234,7 +234,7 @@ describe("first-run interactions", () => {
       .not.toContain("Open Agent setup guide (CLI detection and connection test)");
   });
   const inline = () => elements(tree).find(el => el.type === CustomProviderInline);
-  it.each(["dashscope", "volcengine"])("opens %s API setup without applying a CLI model", id => {
+  it.each(["dashscope", "volcengine", "deepseek"])("opens %s API setup without applying a CLI model", id => {
     const previousModel = getSetting(AGENT_SETTING.MODEL);
     pick(id);
     expect(inline().props.preset.id).toBe(id);
@@ -245,7 +245,7 @@ describe("first-run interactions", () => {
   it("offers the DeepSeek Harness model card and prefills the local bridge form", () => {
     const grid = elements(tree).find(el => el.type === AgentCardGrid);
     expect(grid.props.cloudProviders.map(card => card.id))
-      .toEqual(["vooCloud", "dashscope", "volcengine", "deepseek-harness-models"]);
+      .toEqual(["vooCloud", "dashscope", "volcengine", "deepseek", "deepseek-harness-models"]);
     const previousModel = getSetting(AGENT_SETTING.MODEL);
     pick("deepseek-harness-models");
     expect(inline().props.preset.id).toBe("deepseek-harness-models");

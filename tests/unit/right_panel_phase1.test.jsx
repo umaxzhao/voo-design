@@ -48,7 +48,7 @@ const order = (html, labels) => labels.map((label) => html.indexOf(label));
 
 describe("phase-1 panel order", () => {
   it("follows Figma order: Appearance before Fill, Stroke, Effects, Export", () => {
-    const html = render(base(), {
+    const html = render(base({ exportPresets: [{ id: "png", type: "image/png", scale: 1 }] }), {
       sections: ["transform", "fill", "stroke", "effects", "export"],
     });
     const [appearance, fill, stroke, effects, exportSection] = order(html, [
@@ -135,8 +135,15 @@ describe("phase-1 panel order", () => {
     expect(html).toContain("Card paint");
   });
 
+  it.each([undefined, []])("hides the entire export section until configured: %j", (exportPresets) => {
+    const html = render(base({ exportPresets }), { sections: ["export"] });
+    expect(html).not.toContain("editor.props.exportTitle");
+    expect(html).not.toContain("editor.props.addExportSettings");
+    expect(html).toContain('data-testid="properties-add-menu"');
+  });
+
   it("renders export presets with format, scale and suffix", () => {
-    const html = render(base(), { sections: ["export"] });
+    const html = render(base({ exportPresets: [{ id: "png", type: "image/png", scale: 1 }] }), { sections: ["export"] });
     expect(html).toContain("editor.props.exportFormat");
     expect(html).toContain("editor.props.exportSuffix");
     expect(html).toContain("editor.props.addExportSettings");

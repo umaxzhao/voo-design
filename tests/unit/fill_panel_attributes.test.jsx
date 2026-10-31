@@ -1,8 +1,12 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { FillSection } from "../../src/canvas/components/editor_properties/colour_fill_section.jsx";
 import { parseHex } from "../../src/canvas/components/editor_properties/colour_swatch.jsx";
+vi.mock("../../src/canvas/use_i18n.js", async () => {
+ const { default: en } = await import("../../src/shared/i18n/en.js");
+ return { useI18n: () => ({ t: key => en[key] ?? key }) };
+});
 const render = (object) => renderToStaticMarkup(<FillSection object={object} edit={()=>{}} editAndCommit={()=>{}} />);
 describe("Fill panel paints",()=>{
  it("accepts alpha hex colors without losing their alpha",()=>{

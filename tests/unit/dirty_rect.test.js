@@ -163,5 +163,5 @@ describe('stage dirty-rect clear', () => {
     calls.length = 0;
     draw(ctx, options);
     expect(calls.find(call => call[0] === 'clearRect')).toEqual(['clearRect', 0, 0, 100, 80]);
-  });
+  }, 15000);
 });

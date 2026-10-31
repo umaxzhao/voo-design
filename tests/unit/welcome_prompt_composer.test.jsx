@@ -87,13 +87,14 @@ describe("welcome prompt composer", () => {
     expect(html).toContain('aria-label="welcome.prompt.mobilePlaceholder"');
   });
 
-  it("renders a quiet default surface with advanced settings hidden", () => {
+  it("keeps illustrated types and advanced settings behind one entry", () => {
     const html = render();
     expect(html).toContain("welcome.prompt.addAttachment");
-    expect(html).toContain("welcome.prompt.generationTypeLabel");
+    expect(html).not.toContain("welcome.prompt.generationTypeLabel");
     expect(html).toContain('data-advanced-open="false"');
     expect(html).not.toContain("data-mobile-options-open");
     expect(html).not.toContain('role="radiogroup"');
+    expect(html).not.toContain("welcome.pills.poster");
     expect(html).not.toContain('aria-label="welcome.prompt.styleLabel"');
     expect(html).not.toContain('aria-label="welcome.prompt.designSystemLabel"');
   });
@@ -102,6 +103,9 @@ describe("welcome prompt composer", () => {
     const html = render({ initialAdvancedOpen: true });
     const modelIndex = html.indexOf('aria-label="welcome.prompt.modelLabel"');
     const advancedIndex = html.indexOf('role="dialog"');
+    expect(html.match(/role="radio"/g)).toHaveLength(8);
+    expect(html).toContain("welcome.pills.poster");
+    expect(html).toContain("welcome.pills.storyboard");
     expect(modelIndex).toBeGreaterThan(-1);
     expect(advancedIndex).toBeGreaterThan(modelIndex);
     expect(html.slice(advancedIndex)).not.toContain('aria-label="welcome.prompt.modelLabel"');
@@ -144,12 +148,13 @@ describe("welcome prompt composer", () => {
     expect(html).toContain("welcome.prompt.removeAttachment");
   });
 
-  it("keeps design-type selection in the advanced dialog", () => {
+  it("shows illustrated design types above the composer and keeps advanced options grouped", () => {
     const mobile = render({ activePill: "mobile", initialAdvancedOpen: true });
-    const triggers = mobile.match(/<button[^>]*aria-label="welcome.prompt.generationTypeLabel"[^>]*>/g) ?? [];
-    expect(triggers).toHaveLength(2);
-    expect(triggers.filter(trigger => trigger.includes('aria-haspopup="listbox"'))).toHaveLength(1);
-    expect(mobile).not.toContain('role="radiogroup"');
+    const settingsTrigger = mobile.match(/<button[^>]*aria-label="welcome.prompt.settingsLabel"[^>]*>/g) ?? [];
+    expect(settingsTrigger).toHaveLength(1);
+    expect(mobile).toContain('role="radiogroup"');
+    expect(mobile.match(/role="radio"/g)).toHaveLength(8);
+    expect(mobile).toContain('aria-label="welcome.prompt.settingsLabel"');
     expect(mobile).toContain('>welcome.pills.mobile</span>');
     expect(mobile).not.toContain("<select");
     expect(mobile).not.toContain("welcome.guide.mobile");

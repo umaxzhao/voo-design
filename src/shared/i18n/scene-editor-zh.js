@@ -1,4 +1,12 @@
 export default {
+  "editor.menu.selectSame.title": "选择相同",
+  "editor.menu.properties": "属性",
+  "editor.menu.arrange": "排列",
+  "editor.menu.masks": "蒙版",
+  "editor.menu.components": "组件",
+  "editor.menu.copyExport": "复制 / 导出",
+  "editor.menu.paths": "路径",
+
   "editor.variants.title": "变体",
   "editor.variants.variant": "变体",
   "editor.variants.set": "变体集",

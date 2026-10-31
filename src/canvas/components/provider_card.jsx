@@ -206,8 +206,8 @@ export default function ProviderCard({
               )}
             </h3>
             <span
-              className={`text-[9px] tracking-[-0.01em] ${
-                errorCode ? "text-rose-400" : "text-neutral-500"
+              className={`text-[11px] leading-4 ${
+                errorCode ? "text-rose-400" : "text-neutral-400"
               }`}
             >
               {statusLabel}
@@ -254,7 +254,7 @@ export default function ProviderCard({
       ) : null}
 
       <label className="mt-3 flex flex-col gap-1.5">
-        <span className="text-[10px] uppercase tracking-wide text-neutral-500">
+        <span className="text-[11px] uppercase tracking-wide text-neutral-400">
           {config.configured ? t("provider.replaceKey") : t("provider.apiKey")}
         </span>
         <input
@@ -271,7 +271,7 @@ export default function ProviderCard({
 
       {showBaseUrl ? (
         <label className="mt-3 flex flex-col gap-1.5">
-          <span className="text-[10px] uppercase tracking-wide text-neutral-500">
+          <span className="text-[11px] uppercase tracking-wide text-neutral-400">
             {t("provider.baseUrl")}
           </span>
           <input
@@ -284,7 +284,7 @@ export default function ProviderCard({
             spellCheck={false}
             className={inputClass}
           />
-          <span className="text-[9px] leading-relaxed text-neutral-500">
+          <span className="text-xs leading-5 text-neutral-400">
             {t("provider.baseUrlHint")}
           </span>
         </label>
@@ -298,7 +298,7 @@ export default function ProviderCard({
             isDesktop ? "provider.rememberDesktop" : "provider.remember",
           )}
         />
-        <p className="mt-1 text-[9px] leading-relaxed text-neutral-500">
+        <p className="mt-1 text-xs leading-5 text-neutral-400">
           {t(
             remember
               ? isDesktop

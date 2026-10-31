@@ -57,6 +57,7 @@ export default {
   "firstRun.provider.claude": "Claude Code",
   "firstRun.provider.custom": "Custom model",
   "firstRun.provider.dashscope": "Alibaba Cloud",
+  "firstRun.provider.deepseek": "DeepSeek",
   "firstRun.provider.volcengine": "Volcengine",
   "firstRun.provider.antigravity": "Antigravity",
   "firstRun.provider.deepseek-harness": "DeepSeek Harness",
@@ -123,6 +124,8 @@ export default {
   "common.loading": "Loading…",
   "common.close": "Close",
   "common.apply": "Apply",
+  "common.search": "Search",
+  "common.noResults": "No results",
   "dialog.loadFailed": "Could not load this panel. Reload the app and try again.",
   "error.jimengModelControlMissing":
     "Could not find the Dreamina image-model control.",
@@ -555,7 +558,7 @@ export default {
   "run.retryTargetMissing":
     "That node is no longer on the canvas, so there is nothing to retry.",
   "error.noPlatform":
-    "Open this extension on a ChatGPT, Gemini or 即梦 conversation page",
+    "Open this extension on a ChatGPT, Gemini or Dreamina conversation page",
   "error.templateDeepLinkMissed":
     "That template link is no longer valid — the starter canvas was loaded instead",
   "error.probeFailed":
@@ -838,4 +841,5 @@ export default {
   "editor.canvasType.threeD": "3D",
   "editor.component.label": "Component",
   "editor.component.uses": "{count} uses",
+  "contextualAi.send": "Send to AI Agent",
 };

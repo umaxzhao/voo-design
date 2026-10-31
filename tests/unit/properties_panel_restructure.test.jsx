@@ -99,18 +99,19 @@ describe("brush options live in the right panel", () => {
 });
 
 describe("core sections are always visible; advanced extras hide behind one add menu", () => {
-  it("renders paint, effects, constraints, appearance and export for a plain shape", () => {
+  it("renders core shape sections while unconfigured export stays behind Add", () => {
     const html = renderSections(rect, { sections: ["alignment", "transform", "constraints", "layer", "fill", "stroke", "effects", "export"] });
     for (const shown of [
       "editor.constraints.title",
       "editor.props.effects",
       "editor.props.addEffect",
       "editor.props.appearance",
-      "editor.props.exportTitle",
     ]) {
       expect(html, shown).toContain(shown);
     }
     for (const hidden of [
+      "editor.props.exportTitle",
+      "editor.props.addExportSettings",
       "editor-live-filter-section",
       "editor-modifiers-section",
       "editor-style-section",
@@ -155,7 +156,7 @@ describe("fill row", () => {
       <FillSection object={{ kind: "rect", fill: "#ff0000" }} edit={noop} editAndCommit={noop} />,
     );
     expect(html).not.toContain('aria-label="Fill blend mode"');
-    expect(html.match(/aria-label="Fill visible"/g)).toHaveLength(1);
+    expect(html.match(/aria-label="editor.fillPicker.visibility"/g)).toHaveLength(1);
     expect(html).not.toContain('type="checkbox"');
     // Even a non-normal mode no longer names itself in the row.
     const dodge = renderToStaticMarkup(

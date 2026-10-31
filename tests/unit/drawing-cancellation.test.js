@@ -7,6 +7,10 @@ import { createSelectionPointerGestures } from "../../src/canvas/editor/editor_p
 import { createPointerFinishDispatcher } from "../../src/canvas/editor/editor_pointer_finish.js";
 import { createEngineSelectionController } from "../../src/canvas/editor/editor_engine_selection.js";
 import { createSelection } from "../../src/canvas/editor/editor_selection.js";
+import { createPenDraft } from "../../src/canvas/editor/editor_pen_draft.js";
+import { handleGestureShortcut } from "../../src/canvas/editor-shortcut-gestures.js";
+import { handleDrawingShortcut } from "../../src/canvas/editor-shortcut-drawing.js";
+import { unwindEscape } from "../../src/canvas/editor-shortcut-actions.js";
 import * as ops from "../../src/canvas/editor/doc_ops.js";
 
 function fixture(tool) {
@@ -153,5 +157,90 @@ describe("region and pixel selection gesture cancellation", () => {
     selectionController.addPolygonVertex({ x: 80, y: 80 });
     expect(selectionController.closePolygonLasso()).toBe(true);
     expect(selectionController.getPixelSelection()?.feather).toBe(4);
+  });
+
+  it("pops polygon lasso vertices on Backspace, unwinds magnetic lasso on Escape, and recomputes curvature handles on popDraftAnchor", () => {
+    const img = { ...createImageNode({ x: 0, y: 0, width: 200, height: 200 }), id: "img-1", visible: true };
+    const doc = { ...createDocument(300, 300), nodes: [img] };
+    const commit = vi.fn();
+    const sel = createEngineSelectionController({
+      getDoc: () => doc, setDoc: () => {}, selection: createSelection({}), cache: { get: () => null },
+      viewportTools: { getViewport: () => ({ zoom: 1 }) }, maskTools: { api: { getMaskEdit: () => null } },
+      paintTools: {}, historyApi: { commit }, selectNode: () => {},
+      getEffectiveNode: (n) => n, setTool: () => {}, requestRender: () => {}, notify: () => {},
+    });
+
+    sel.startPolygonLasso("img-1", { x: 20, y: 20 }, "replace");
+    sel.addPolygonVertex({ x: 80, y: 20 });
+    const deleteSelected = vi.fn();
+    handleDrawingShortcut(
+      { key: "Backspace", preventDefault: vi.fn() },
+      {
+        engine: { getPolygonDraft: sel.getPolygonDraft, popPolygonVertex: sel.popPolygonVertex, deleteSelected },
+        toolRef: { current: "lasso" },
+        targetNodeIdRef: { current: "img-1" },
+      },
+    );
+    expect(deleteSelected).not.toHaveBeenCalled();
+    expect(sel.getPolygonDraft().points).toHaveLength(1);
+    sel.popPolygonVertex();
+    expect(sel.getPolygonDraft()).toBeNull();
+
+    // Escape unwinds magneticLasso before selection
+    const cancelMagneticLasso = vi.fn();
+    expect(
+      unwindEscape({
+        engine: { getMagneticLassoDraft: () => ({ anchors: [1] }), cancelMagneticLasso },
+        tool: "lasso",
+      }),
+    ).toBe(true);
+    expect(cancelMagneticLasso).toHaveBeenCalledOnce();
+
+    // Curvature pen popDraftAnchor recomputes handles and clears single-anchor handles
+    const penDraft = createPenDraft({
+      getDoc: () => doc, setDoc: () => {}, select: () => {}, requestRender: () => {},
+      getZoom: () => 1, getAnchorType: () => "smooth", getPenMode: () => "path", getEdit: () => null,
+    });
+    penDraft.penDown({ x: 0, y: 0 }, "#000", 2, "curvature_pen");
+    penDraft.penUp();
+    penDraft.penDown({ x: 60, y: 0 }, "#000", 2, "curvature_pen");
+    penDraft.penUp();
+    penDraft.penDown({ x: 60, y: 60 }, "#000", 2, "curvature_pen");
+    penDraft.penUp();
+    expect(penDraft.getDraft().anchors[1].out).not.toBeNull();
+    penDraft.popDraftAnchor();
+    expect(penDraft.getDraft().anchors).toHaveLength(2);
+    expect(penDraft.getDraft().anchors[1].out).toBeNull();
+    penDraft.popDraftAnchor();
+    expect(penDraft.getDraft().anchors[0].out).toBeNull();
+  });
+
+  it("cancels pen, lasso, retouch, and gradient gestures on pointercancel and starts pen edit on Enter", () => {
+    const cancelPen = vi.fn(), cancelLasso = vi.fn(), setRemoveStroke = vi.fn(), setPatchDraft = vi.fn(), applyGradientSelection = vi.fn();
+    const finish = createPointerFinishDispatcher({
+      api: { cancelPen, cancelLasso, setRemoveStroke, setPatchDraft, applyGradientSelection },
+    });
+    finish.finishGesture({ type: "pointercancel" }, { kind: "pen" });
+    finish.finishGesture({ type: "pointercancel" }, { kind: "lasso" });
+    finish.finishGesture({ type: "pointercancel" }, { kind: "healing" });
+    finish.finishGesture({ type: "pointercancel" }, { kind: "patchDrag", patch: { nodeId: "img-1", points: [[0, 0], [9, 0], [9, 9]] } });
+    finish.finishGesture({ type: "pointercancel" }, { kind: "gradient", start: { x: 0, y: 0 } });
+    expect(cancelPen).toHaveBeenCalledOnce();
+    expect(cancelLasso).toHaveBeenCalledOnce();
+    expect(setRemoveStroke).toHaveBeenCalledWith(null);
+    expect(setPatchDraft).toHaveBeenCalledWith({ nodeId: "img-1", points: [[0, 0], [9, 0], [9, 9]], offset: { dx: 0, dy: 0 } });
+    expect(applyGradientSelection).not.toHaveBeenCalled();
+
+    const beginEdit = vi.fn(), enterGroup = vi.fn();
+    expect(
+      handleGestureShortcut(
+        { key: "Enter", preventDefault: vi.fn() },
+        {
+          engine: { getSelected: () => ({ id: "p-1", kind: "path", pen: true }), getSelectedGroup: () => null, beginEdit, enterGroup },
+          pressedFamilyCodeRef: { current: null },
+        },
+      ),
+    ).toBe(true);
+    expect(beginEdit).toHaveBeenCalledWith("p-1");
   });
 });

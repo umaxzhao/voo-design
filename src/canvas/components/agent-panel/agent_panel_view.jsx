@@ -180,7 +180,7 @@ export default function AgentPanelView({
               ),
             )}
             {directions.length > 0 && (
-              <li className="flex flex-wrap gap-1.5" aria-label="Visual directions">
+              <li className="flex flex-wrap gap-1.5" aria-label={t("agent.authoring.directions")}>
                 {directions.map(direction => (
                   <button key={direction.id} type="button" title={`${direction.mood} — ${direction.layoutIdea}`} onClick={() => directionChoice.current?.(direction.id)} className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-neutral-200 hover:bg-white/10">
                     {direction.name}
@@ -191,7 +191,7 @@ export default function AgentPanelView({
             {busy && (
               <li className="flex items-center gap-2 text-[12px] text-neutral-400">
                 <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-[#E5B2FF]" aria-hidden="true" />
-                {pipelineProgress ? `${pipelineProgress.stage} · ${pipelineProgress.status}` : streamingText || t("agent.panel.busy")}
+                {pipelineProgress ? t(`agent.authoring.${pipelineProgress.status === "cancelled" || pipelineProgress.status === "failed" ? pipelineProgress.status : pipelineProgress.stage}`) : streamingText || t("agent.panel.busy")}
               </li>
             )}
           </ol>

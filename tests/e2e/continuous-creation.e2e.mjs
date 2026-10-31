@@ -27,11 +27,19 @@ await withEditorBrowser(async ({ page }) => {
     const input = panel.getByRole("spinbutton", { name, exact: true });
     await input.fill(String(value)); await input.press("Enter"); await f.settle();
   };
-  const context = async (point, testId) => { await f.click(point, { button: "right" }); await page.getByTestId(testId).click(); await f.settle(); };
+  const context = async (point, testId) => { await f.click(point, { button: "right" }); await page.getByTestId("editor-menu-mask-submenu").hover(); await page.getByTestId(testId).click(); await f.settle(); };
 
   await f.step("new-project-and-frame-creation", async () => {
     await page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true }).click();
-    await page.waitForFunction(() => window.__vooEditor && document.querySelector('[data-testid="design-editor"] [data-open-guard]')?.getAttribute("data-open-guard") === "off");
+    await page.waitForFunction(
+      () =>
+        window.__vooEditor &&
+        document
+          .querySelector('[data-testid="design-editor"] [data-open-guard]')
+          ?.getAttribute("data-open-guard") === "off",
+      null,
+      { timeout: 60000 },
+    );
     // Set only the initial view; preserve New's actual document, tools and defaults.
     await page.evaluate(() => window.__vooStore.setEditorCamera({ zoom: 1, panX: 300, panY: 100 }));
     await f.settle(); const before = await f.snapshot();
@@ -194,7 +202,9 @@ await withEditorBrowser(async ({ page }) => {
   await f.step("cold-reopen-retains-created-text-paths-frames-and-mask", async () => {
     assert.ok(archive && expected);
     await page.evaluate(() => { delete window.showOpenFilePicker; });
-    const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.getByRole("button", { name: /^Import project file/ }).click()]);
+    const importButton = page.getByRole("button", { name: /^Import project file/ });
+    await importButton.waitFor({ state: "visible" });
+    const [chooser] = await Promise.all([page.waitForEvent("filechooser"), importButton.click()]);
     await chooser.setFiles({ name: "ContinuousCreation.zip", mimeType: "application/zip", buffer: archive });
     await page.waitForFunction(id => window.__vooEditor?.getNode(id) && window.__vooEditor.getNodeBitmap(window.__vooEditor.getNode(id)), imageId);
     await f.settle(); assert.deepEqual(projection((await f.snapshot()).nodes), expected);

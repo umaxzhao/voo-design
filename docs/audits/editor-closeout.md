@@ -127,3 +127,104 @@ unchanged throughout this final gate. GitHub Ubuntu basic checks passed in
 run `41176262001`; deployment was performed separately over SSH to `la2`.
 The public index and its five direct asset references match the verified build;
 production provider setup, local-CLI hiding and New passed without JS errors.
+
+
+## Streamed native authoring
+
+Capability: `platform.streaming-authoring`. The baseline regression reproduces
+synchronous snapshot insertion without move/paint steps, unchanged-node replay,
+missing cancellation checks between placement steps and duplicate-key partial writes.
+
+The built-in HTML pipeline and browser-native external `stream_layout` share
+`CanvasStreamer` and `createLayoutNode`. The bulk tool consumes the same validated
+creation transaction as its synchronous domain entry. The shared timeline moves
+a purple cursor, carries an outline, then creates/updates the actual native layer
+at its final geometry. It does not mutate artwork opacity/position for animation,
+move the user's camera, or spend a long post-response interval replaying a design.
+At most eight travels per snapshot/batch are paced, followed by periodic paint
+yields; reduced motion bypasses travel. Chrome is excluded from artwork exports.
+A per-engine lease prevents overlapping Agent transactions from restoring each
+other's muted history hooks. Streamed partial work remains one undoable generation;
+a cancelled bulk tree rolls back its transaction. Clearing an external stream
+removes only its owned nodes. A stale external continuation after a project or canvas switch
+is rejected until clear; idle writers finalize partial work after 60 seconds and
+must clear before restarting rather than duplicating it.
+
+| Axis | Evidence and boundary |
+| --- | --- |
+| Native visible result | `agent-authoring.e2e.mjs` holds a real OpenAI-compatible SSE response open, reads real red native pixels before final, samples a real animation frame/cursor and checks blue final pixels. Stable IDs survive snapshots. The controlled model output is a fixture, not a paid provider certificate. |
+| Shared entry points | Actual MCP `stream_layout` inserts before final with the same layer IDs; actual `build_layout` places 100 layers with normal/reduced motion and a bounded duration. Web and Electron use these shared modules; signed App execution is not independently certified here. |
+| Cancel/history | Real transport abort prevents the last element; generation completes as one undo/redo entry. Bulk cancellation during placement restores the document, history hooks and redo. Clear preserves pre-existing artwork; a new-document continuation cannot alter the new project. Same-project page switching also rejects retargeting, retains the original partial work and requires clear before resuming. |
+| Lifecycle and performance | Unit checks cover reduced motion, bounded travel count, cancelled RAF/listener cleanup, canvas identity, chrome ownership and failed initialization. Browser batch duration is recorded as a local sample, not a hardware FPS/parity benchmark. |
+| Remaining contexts | Physical touch, background/foreground OS timing, every provider's delta behavior, user edits concurrent with streamed generation, and signed installers need separate evidence. Advanced individual tool mutations retain their existing feedback; there is no claim of one-for-one simulated gestures for every tool. |
+
+The exact final revision, full gate and deployment evidence are maintained in
+[quality-progress.md](../quality-progress.md); local targeted results are not a
+certificate for a later commit.
+
+
+Final streamed-authoring execution: `d0b9ec5a9df445e073c689597ff890350d500856` completed all 88 registered release checks, with sequential recovery of page-load timeouts,
+84 browser suites and 4521 unit passes / 4 skips on a clean, unchanged source.
+Evidence: `/private/tmp/voo-authoring-release-recovered.json`. The production index and lazy authoring resources
+match the verified build; actual Agent Send through a controlled provider places
+real layers across animation frames, paints red/blue pixels and undoes once.
+The earlier integration run in `/private/tmp/voo-authoring-release-complete.json`
+was interrupted by SIGTERM in the unit-test child and is not a passing execution.
+The next run, `/private/tmp/voo-authoring-release-complete-v2.json`, found an obsolete
+generation-type dropdown browser selector; all three affected suites were updated
+to exercise eight real radio choices and the remaining nested Style listbox before
+this fixed-source run. Two later parallel suites timed out during page.goto before
+assertions; `/private/tmp/voo-authoring-release-recovered.json` retains these failures
+and records serial reruns plus the previously unstarted suites on the same clean revision.
+An additional comments-loading page.goto timeout is retained in the recovery
+attempt history; it passed on the next serial execution without a source edit.
+Production evidence: `/private/tmp/voo-authoring-deployment-proof.json` and
+`/private/tmp/voo-authoring-production-result.log`. Paid endpoints were not invoked.
+
+GitHub Ubuntu CI for integration commit `dac68a5` passed module registration,
+design checks, build and unit tests: https://github.com/umaxzhao/voo-design/actions/runs/41188844041.
+The CI deployment job was skipped; SSH deployment to la2 was independently verified above.
+
+## Browser fixture lifecycle
+
+Capability: `platform.browser-fixture-lifecycle`. The shared fixture owns
+navigation, a private Vite dependency cache, MCP origin/port isolation and
+teardown; no product interaction assertion is removed by this repair.
+
+The previous full release stopped on a cache-directory `ENOTEMPTY` and a
+30-second `page.goto` load timeout. A deterministic regression now keeps a
+noncritical image pending on a real loopback document. The original load-based
+startup timed out before entering the callback; the new path must expose the
+real editor, connect MCP and open a document while the page remains interactive.
+Only then is the image released and the load event allowed to complete.
+
+Startup uses one 90-second cold-start budget for DOM/UI readiness and caps the
+existing MCP handshake within that budget. It does not wait for network idle
+or every optional image/font. Functional assertions and performance thresholds
+remain unchanged. `preparePage` is a fixture-only hook for controlled requests;
+the main HTML response stays on the real loopback connection so Chromium's
+local-network security model is retained.
+
+Vite may finish deleting an optimizer batch as shutdown settles. The private
+cache removal uses Node's bounded retry support for transient filesystem
+contention (five retries, 100ms linear backoff); persistent errors still reject.
+The startup suite closes four cold servers concurrently, checks that repeated
+close calls share the same promise, verifies that both listeners are released
+and that each private cache directory is gone. It then opens three real editors
+in parallel and verifies separate MCP documents and final port cleanup.
+
+| Context | Evidence / boundary |
+| --- | --- |
+| Slow noncritical resource | `editor-fixture-startup`: pending image, interactive document, real MCP status and positive editor document width before image release |
+| Cache and listener lifetime | Four concurrent real Vite/bridge instances, unique ports and authenticated origins; private caches absent after idempotent close |
+| Parallel editing | Three real browser contexts create different document widths; each has an isolated MCP canvas |
+| Previous release failures | `root-contextual-toolbar` and `frame-child-pointer` remain registered, with their original interaction assertions |
+| Original reproduction | `/private/tmp/voo-license-regression/fixture-pending-before.log` and the earlier incomplete `release-capped.json` |
+| Remaining limits | No permission fault injection, signed installer or arbitrary filesystem/storage platform certification; exact clean release evidence is in quality-progress.md |
+
+Lifecycle and release verification completed on `a407ea58d446b6f4f73d6ecd430cb37d4548d17b`: the full
+88-step verifier passed with all 84 browser groups, including the controlled
+slow-resource case and the two original failures in the regular three-worker
+pool. Main merge `b708127f0732635d0cb1dbf2d0212ec49ceacd6f` has an identical source tree. Online legal
+asset hashes and the actual About dialog were verified after deployment;
+receipts remain under `/private/tmp/voo-license-regression/`.

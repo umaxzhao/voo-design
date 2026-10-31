@@ -4,6 +4,7 @@
  * rest stay behind the panel's add menu until the user asks for them.
  */
 
+import { normalizeExportPresets } from "./export-presets.js";
 import { isRegionNode, supportsColour } from "../../editor/scene_model.js";
 import { listConfiguredAdjustments, listConfiguredEffects } from "../../editor/adjustment_catalog.js";
 
@@ -42,7 +43,7 @@ export function resolveExtras(context) {
     styles: Object.values(object.styleIds ?? {}).some(Boolean),
     // Constraints are stored only once the user sets them.
     constraints: Boolean(object.constraints),
-    export: false,
+    export: normalizeExportPresets(object.exportPresets).length > 0,
   };
   return { eligible, hasContent };
 }

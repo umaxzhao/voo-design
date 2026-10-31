@@ -1,3 +1,4 @@
+import fillPicker from "./fill-picker-zh.js";
 /**
  * Simplified Chinese (zh) dictionary. Complete aggregate dictionary.
  * 100% key parity with en.js is maintained here.
@@ -33,6 +34,7 @@ import designSystemsZh from "./design-systems-zh.js";
 import settingsUiZh from "./settings-ui-zh.js";
 
 export default {
+  ...fillPicker,
   "agent.providers.hint": "Codex CLI · Claude Code CLI · 自定义模型",
   "agent.providers.customHint": "在 AI 服务商中添加兼容 OpenAI 的服务商和文本模型。",
   "agent.mcp.title": "外部 MCP 服务器",

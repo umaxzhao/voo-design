@@ -46,7 +46,7 @@ function deletedSubtree(doc, ids) {
   return gone;
 }
 
-export function createNodeStackActions({ getDoc, setDoc, selection, releaseNodeTextures,
+export function createNodeStackActions({ getDoc, setDoc, selection, getSelectedGroup, releaseNodeTextures,
   maskTools, paintTools, penTools, requestRender, notify }) {
   function removeIds(ids) {
     const doc = getDoc(), gone = deletedSubtree(doc, ids);
@@ -128,5 +128,42 @@ export function createNodeStackActions({ getDoc, setDoc, selection, releaseNodeT
     return true;
   }
 
-  return { removeIds, removeNode, reorderNode, reorderNodeTo, reorderNodes, moveToFront, moveToBack, moveNodeToRoot };
+  function bringForward(targetIds = null) {
+    const group = getSelectedGroup?.();
+    const ids = targetIds ?? (group ? [group.id] : selection?.getIds?.() ?? []);
+    if (ids.length) reorderNodes(ids, 1);
+  }
+
+  function sendBackward(targetIds = null) {
+    const group = getSelectedGroup?.();
+    const ids = targetIds ?? (group ? [group.id] : selection?.getIds?.() ?? []);
+    if (ids.length) reorderNodes(ids, -1);
+  }
+
+  function bringToFront(targetIds = null) {
+    const group = getSelectedGroup?.();
+    const ids = targetIds ?? (group ? [group.id] : selection?.getIds?.() ?? []);
+    if (ids.length) moveToFront(ids);
+  }
+
+  function sendToBack(targetIds = null) {
+    const group = getSelectedGroup?.();
+    const ids = targetIds ?? (group ? [group.id] : selection?.getIds?.() ?? []);
+    if (ids.length) moveToBack(ids);
+  }
+
+  return {
+    removeIds,
+    removeNode,
+    reorderNode,
+    reorderNodeTo,
+    reorderNodes,
+    moveToFront,
+    moveToBack,
+    moveNodeToRoot,
+    bringForward,
+    sendBackward,
+    bringToFront,
+    sendToBack,
+  };
 }

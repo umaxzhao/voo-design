@@ -12,7 +12,9 @@ async function expectViewport(locator, width) {
 }
 
 await withEditorBrowser(async ({ page, origin }) => {
-  page.setDefaultTimeout(15000);
+  // Mounting the real editor pulls in CanvasKit/Skia WASM; under three parallel
+  // release suites that cold mount can pass 15s, so keep Playwright's 30s budget.
+  page.setDefaultTimeout(30000);
   // These paths must never reach a paid generation or authentication service in a UI audit.
   let blockedRequests = 0;
   await page.route("**/*", async (route) => {
@@ -132,18 +134,18 @@ await withEditorBrowser(async ({ page, origin }) => {
 
   // Advanced generation remains behind its existing trigger; nested Escape leaves it open.
   await home.getByRole("button", { name: "Recents", exact: true }).click();
-  await home.getByRole("button", { name: "Generation type", exact: true }).click();
-  const advanced = page.getByRole("dialog", { name: "Generation type", exact: true });
+  await home.getByRole("button", { name: "Generation settings", exact: true }).click();
+  const advanced = page.getByRole("dialog", { name: "Generation settings", exact: true });
   await advanced.waitFor();
-  await advanced.locator('button[aria-haspopup="listbox"]').first().click();
-  await page.getByRole("listbox", { name: "Generation type", exact: true }).waitFor();
+  await advanced.getByRole("button", { name: "Style", exact: true }).click();
+  await page.getByRole("listbox", { name: "Style", exact: true }).waitFor();
   await page.keyboard.press("Escape");
-  await page.getByRole("listbox", { name: "Generation type", exact: true }).waitFor({ state: "detached" });
+  await page.getByRole("listbox", { name: "Style", exact: true }).waitFor({ state: "detached" });
   assert.ok(await advanced.isVisible());
   await page.keyboard.press("Escape");
   await advanced.waitFor({ state: "detached" });
   checks.push("advanced generation opens through one entry and nested selects own the first Escape");
-  await home.getByRole("button", { name: "Generation type", exact: true }).click();
+  await home.getByRole("button", { name: "Generation settings", exact: true }).click();
   await advanced.waitFor();
   const touch = await page.context().newCDPSession(page);
   await touch.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });

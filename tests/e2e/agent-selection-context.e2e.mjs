@@ -58,12 +58,22 @@ await withEditorBrowser(async ({ page, tool }) => {
     ),
     true,
   );
+  assert.equal(await chip.locator("svg.lucide-layers").count(), 1);
+  await page.evaluate(() => window.__vooEditor.selectExactly(["reference-frame"]));
+  await chip.getByText("@Poster", { exact: true }).waitFor();
+  assert.equal(await chip.locator("svg.lucide-frame").count(), 1,
+    "A selected Frame uses the canvas Frame icon");
+  assert.equal(await chip.locator("svg.lucide-layers").count(), 0);
+  await page.evaluate(() => window.__vooEditor.selectExactly(["reference-a"]));
+  await chip.getByText("@Heading", { exact: true }).waitFor();
+  assert.equal(await chip.locator("svg.lucide-layers").count(), 1);
   const input = page.locator("form.agent-composer textarea");
   await input.fill("Make these green");
   await page.evaluate(() =>
     window.__vooEditor.selectExactly(["reference-a", "reference-b"]),
   );
   await chip.getByText("@2 selected objects", { exact: true }).waitFor();
+  assert.equal(await chip.locator("svg.lucide-layers").count(), 1);
   assert.equal(await input.inputValue(), "Make these green");
   await input.press("Enter");
   await page.waitForFunction(() => window.__capturedAgentRequests.length > 0);

@@ -1,4 +1,12 @@
-![VOO Design — AI agent-driven design editor, showing an editable music interface on the canvas](docs/screenshots/cover.png)
+<p align="center">
+  <img src="build/icon.png" width="128" height="128" alt="VOO Design App Icon" />
+</p>
+
+<h1 align="center">VOO Design</h1>
+
+<p align="center"><strong>AI Agent Driven Design Editor</strong></p>
+
+![VOO Design editing a music interface, with the headline selected and the layer tree and text inspector visible](docs/screenshots/ui-editor.png)
 
 <p align="center">
   <a href="https://voo.run/editor/">Open the editor</a> ·
@@ -6,7 +14,7 @@
   <a href="docs/examples/README.md">Explore the examples</a>
 </p>
 
-**AI agent-driven design editor.** Use VOO as an independent app, or let Claude Code and Codex operate the same editable canvas through MCP.
+**VOO Design** is an independent app. Claude Code and Codex can operate the same editable canvas through MCP.
 
 ## Design your way
 
@@ -31,12 +39,6 @@ Start a design, import work and return to recent projects.
 Choose an agent or model provider during optional first-run setup.
 
 ![VOO Design first-run guide with agent and model provider choices](docs/screenshots/ui-onboarding.png)
-
-### Edit on the canvas
-
-The music design is open with its headline selected, alongside the layer tree and text inspector.
-
-![VOO Design editing a music interface, with the headline selected and the layer tree and text inspector visible](docs/screenshots/ui-editor.png)
 
 ## Made with VOO
 
@@ -248,4 +250,6 @@ The editor is React on top of a document store, rendered through a Skia/CanvasKi
 
 ---
 
-[Documentation](docs/README.md) · [Contributing](docs/contributing.md) · [MIT License](LICENSE)
+[Documentation](docs/README.md) · [Contributing](docs/contributing.md) · [MIT License](LICENSE) · [Third-party notices](NOTICE)
+
+VOO-authored code is licensed under MIT. Bundled third-party material retains its respective licenses; see [NOTICE](NOTICE).

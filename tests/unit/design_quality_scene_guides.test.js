@@ -6,7 +6,17 @@ import {
   sceneGuidePromptBlock,
 } from "../../src/canvas/agent/design_quality/scene_guides.js";
 
-const GUIDE_KEYS = ["landing", "mobile", "web", "slides", "dashboard", "other"];
+const GUIDE_KEYS = [
+  "landing",
+  "mobile",
+  "web",
+  "slides",
+  "dashboard",
+  "poster",
+  "xiaohongshu",
+  "banner",
+  "other",
+];
 const GUIDE_SECTIONS = [
   "structure",
   "typography",
@@ -47,7 +57,7 @@ const guideLength = (guide) =>
   [guide.name, guide.whenToUse, ...GUIDE_SECTIONS.flatMap((s) => guide[s])].join("\n").length;
 
 describe("scene guides data contract", () => {
-  it("defines exactly the six supported scenes", () => {
+  it("defines exactly the nine supported scenes", () => {
     expect(Object.keys(SCENE_GUIDES).sort()).toEqual([...GUIDE_KEYS].sort());
     for (const key of GUIDE_KEYS) {
       expect(SCENE_GUIDES[key]).toBeTruthy();
@@ -111,9 +121,39 @@ describe("scene guides data contract", () => {
     expect(guideText(dashboard, "content")).toMatch(/donut/);
     expect(guideText(dashboard, "content")).toContain("单位");
 
+    const poster = SCENE_GUIDES.poster;
+    expect(guideText(poster, "structure")).toContain("1080×1440");
+    expect(guideText(poster, "structure")).toContain("1080×1920");
+    expect(guideText(poster, "structure")).toContain("时间/地点/门票");
+    expect(guideText(poster, "structure")).toMatch(/50-60%/);
+    expect(guideText(poster, "typography")).toContain("10-14%");
+    expect(guideText(poster, "typography")).toContain("108-150px");
+    expect(guideText(poster, "content")).toContain("扫码购票");
+
+    const xiaohongshu = SCENE_GUIDES.xiaohongshu;
+    expect(guideText(xiaohongshu, "structure")).toContain("1080×1440");
+    expect(guideText(xiaohongshu, "structure")).toContain("3:4");
+    expect(guideText(xiaohongshu, "structure")).toContain("期数");
+    expect(guideText(xiaohongshu, "structure")).toContain("标签胶囊");
+    expect(guideText(xiaohongshu, "structure")).toContain("作者水印");
+    expect(guideText(xiaohongshu, "typography")).toContain("80-104px");
+    expect(guideText(xiaohongshu, "typography")).toContain("1.6-1.8");
+    expect(guideText(xiaohongshu, "layout")).toMatch(/≥40%/);
+    expect(guideText(xiaohongshu, "content")).toContain("收藏");
+
+    const bannerScene = SCENE_GUIDES.banner;
+    expect(guideText(bannerScene, "structure")).toContain("1920×480");
+    expect(guideText(bannerScene, "structure")).toContain("1200×400");
+    expect(guideText(bannerScene, "structure")).toContain("60/40");
+    expect(guideText(bannerScene, "structure")).toMatch(/≥48px/);
+    expect(guideText(bannerScene, "typography")).toContain("56-72px");
+    expect(guideText(bannerScene, "layout")).toMatch(/≥80px/);
+    expect(guideText(bannerScene, "content")).toContain("满 300 减 50");
+
     const other = SCENE_GUIDES.other;
     expect(guideText(other, "layout")).toContain("安全边距");
     expect(guideText(other, "content")).toContain("lorem ipsum");
+    expect(guideText(other, "structure")).toContain("品牌手册");
   });
 
   it("maps quality checks onto existing lint rule names", () => {
@@ -167,13 +207,65 @@ describe("getSceneGuide recognition", () => {
       ["仪表盘", "dashboard"],
       ["KPI 看板", "dashboard"],
       ["设计一个数据看板", "dashboard"],
+      ["poster", "poster"],
+      ["posters", "poster"],
+      ["event poster", "poster"],
+      ["movie poster", "poster"],
+      ["flyer", "poster"],
+      ["海报", "poster"],
+      ["活动海报", "poster"],
+      ["展讯海报", "poster"],
+      ["单页海报", "poster"],
+      ["宣传海报", "poster"],
+      ["帮我做一张活动海报", "poster"],
+      ["xiaohongshu", "xiaohongshu"],
+      ["redbook", "xiaohongshu"],
+      ["xhs", "xiaohongshu"],
+      ["feed card", "xiaohongshu"],
+      ["social card", "xiaohongshu"],
+      ["knowledge card", "xiaohongshu"],
+      ["小红书", "xiaohongshu"],
+      ["小红书卡片", "xiaohongshu"],
+      ["种草卡", "xiaohongshu"],
+      ["知识卡片", "xiaohongshu"],
+      ["图文笔记", "xiaohongshu"],
+      ["干货卡片", "xiaohongshu"],
+      ["图文卡", "xiaohongshu"],
+      ["做一套小红书图文笔记", "xiaohongshu"],
+      ["banner", "banner"],
+      ["web banner", "banner"],
+      ["marketing banner", "banner"],
+      ["header banner", "banner"],
+      ["hero banner", "banner"],
+      ["横幅", "banner"],
+      ["通栏", "banner"],
+      ["电商横幅", "banner"],
+      ["品宣横幅", "banner"],
+      ["活动横幅", "banner"],
+      ["营销横幅", "banner"],
+      ["首图", "banner"],
+      ["设计一张电商横幅", "banner"],
       ["other", "other"],
       ["其他", "other"],
-      ["海报", "other"],
       ["社媒", "other"],
+      ["品牌手册", "other"],
+      ["brandbook", "other"],
+      ["vi", "other"],
+      ["freeform", "other"],
     ];
     for (const [input, expected] of cases) {
       expect(getSceneGuide(input)?.id, `input: ${input}`).toBe(expected);
+    }
+  });
+
+  it("routes poster, xiaohongshu and banner away from the freeform fallback", () => {
+    // These used to be `other` aliases; each now owns a dedicated contract.
+    for (const input of ["海报", "poster", "flyer", "banner", "横幅", "小红书", "知识卡片", "电商横幅"]) {
+      expect(getSceneGuide(input)?.id, `input: ${input}`).not.toBe("other");
+    }
+    // Freeform stays available for genuinely free-form deliverables.
+    for (const input of ["brandbook", "vi", "general", "freeform", "品牌手册", "自由版式"]) {
+      expect(getSceneGuide(input)?.id, `input: ${input}`).toBe("other");
     }
   });
 
@@ -233,6 +325,12 @@ describe("sceneGuidePromptBlock", () => {
   it("keeps the requested scene, not the fallback scene", () => {
     expect(sceneGuidePromptBlock("演示文稿")).toContain("Slides / 演示文稿");
     expect(sceneGuidePromptBlock("演示文稿")).not.toContain("Landing Page");
+    expect(sceneGuidePromptBlock("活动海报")).toContain("Poster / 活动海报");
+    expect(sceneGuidePromptBlock("活动海报")).not.toContain("Other / 自由版式");
+    expect(sceneGuidePromptBlock("小红书卡片")).toContain("Xiaohongshu Card / 小红书卡片");
+    expect(sceneGuidePromptBlock("小红书卡片")).not.toContain("Other / 自由版式");
+    expect(sceneGuidePromptBlock("电商横幅")).toContain("Banner / 电商横幅");
+    expect(sceneGuidePromptBlock("电商横幅")).not.toContain("Other / 自由版式");
     expect(sceneGuidePromptBlock("数据看板")).toContain("Dashboard / 数据看板");
     expect(sceneGuidePromptBlock("落地页")).toContain("Landing Page / 落地页");
   });

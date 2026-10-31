@@ -25,6 +25,7 @@ kept in sync with undo/redo:
 | `place_image` | Places an image on the canvas. |
 | `capture_canvas` | Captures the current canvas. |
 | `new_document` | Creates a new blank design document. |
+| `resize_document` | Sets the active document width and height in pixels through the shared constraint-aware engine operation. |
 | `find_empty_space` | Finds non-overlapping coordinates (x, y) on the canvas for a new frame or screen. |
 
 ### Layer Inspection & Mutation
@@ -165,6 +166,25 @@ current selection as the reference by default, the default image size
 style note appended to the system prompt. Session history persists between
 turns (`session_history.js`).
 
+### Incremental edits (surgical delta workflow)
+
+A follow-up change to an existing design must not rebuild the screen. The
+system prompt tells the model to inspect first and then patch in place:
+
+1. `inspect_layer_tree` (or `find_layers`) to read the current hierarchy and
+   collect the target layer ids — never guess ids.
+2. Apply the smallest delta that achieves the request with
+   `mutate_layer_style`, `mutate_layer_layout`, `mutate_layer_text`, or several
+   of them atomically through `batch_mutate_layers`.
+3. Reuse the full-document tools (`build_layout`, `stream_layout`,
+   `new_document`) only for a new design or an explicit "redo it from scratch"
+   request; every other turn preserves the rest of the canvas, its history
+   and its clip relationships.
+
+This keeps multi-turn work incremental: one edit lands as one undoable action
+and the rest of the canvas (artwork, masks, comments, component links) stays
+untouched.
+
 ### Generation handoff from the welcome screen
 
 The welcome composer does not talk to the agent panel through window events.
@@ -207,9 +227,10 @@ frames and leaves a single design. Variants only apply to the HTML pipeline
 `src/canvas/agent/design_quality/` holds the design knowledge injected into
 the system prompt:
 
-- `scene_guides.js` — six scene contracts (landing, mobile, web, slides,
-  dashboard, other) covering structure, typography, layout, content, quality
-  checks and pitfalls; looked up by `sceneKind` or by the prompt's own words.
+- `scene_guides.js` — nine scene contracts (landing, mobile, web, slides,
+  dashboard, poster, banner, xiaohongshu, other) covering structure, typography,
+  layout, content, quality checks and pitfalls; looked up by `sceneKind` or by
+  the prompt's own words.
 - `style_kits.js` — 20 complete style kits (palette, fonts, type scale,
   radius, shadow, spacing density, layout patterns, dos/don'ts), selected
   automatically by `pickStyleKit` or explicitly by the welcome picker.

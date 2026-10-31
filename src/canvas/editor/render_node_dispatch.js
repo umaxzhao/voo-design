@@ -34,6 +34,7 @@ import {
 } from "./render_figma_effects.js";
 import { additionalStrokePaints, primaryStrokePaint } from "./stroke-paint-passes.js";
 import { needsStyleIsolation, drawIsolatedStyle, isolatedStyleNode } from "./render-isolated-style.js";
+import { imagePaintMatrix } from "./image-paint-layout.js";
 
 export function drawNode(
   ctx,
@@ -80,17 +81,7 @@ export function drawNode(
         if (!pattern) return;
         const bitmapWidth = bitmap.naturalWidth ?? bitmap.width;
         const bitmapHeight = bitmap.naturalHeight ?? bitmap.height;
-        let scale = 1;
-        let offsetX = node.x;
-        let offsetY = node.y;
-        if (mode === "fit") {
-          scale = Math.min(node.width / bitmapWidth, node.height / bitmapHeight);
-          offsetX += (node.width - bitmapWidth * scale) / 2;
-          offsetY += (node.height - bitmapHeight * scale) / 2;
-        } else if (mode !== "tile") {
-          scale = Math.max(node.width / bitmapWidth, node.height / bitmapHeight);
-        }
-        pattern.setTransform(new DOMMatrix().translate(offsetX, offsetY).scale(scale));
+        pattern.setTransform(new DOMMatrix(imagePaintMatrix(node, bitmapWidth, bitmapHeight)));
         node = { ...node, fill: pattern, opacity: (node.opacity ?? 1) * (node.fillOpacity ?? 1), fillOpacity: 1 };
       }
     }
@@ -155,7 +146,10 @@ export function drawNode(
       targetCtx.globalCompositeOperation = paint.blendMode ?? "source-over";
       const painted = { ...node, fill: paint.fill, fillOpacity: paint.opacity ?? 1,
         fillHidden: false, strokeHidden: true, imageId: paint.imageId ?? node.imageId,
-        imageScaleMode: paint.imageScaleMode ?? node.imageScaleMode };
+        imageScaleMode: paint.imageScaleMode ?? node.imageScaleMode,
+        // Each fill owns its sampling; a cover fill must not inherit another crop.
+        imageTransform: paint.imageTransform,
+        imageTileScale: paint.imageTileScale };
 
       paintOne(targetCtx, painted);
       targetCtx.restore();

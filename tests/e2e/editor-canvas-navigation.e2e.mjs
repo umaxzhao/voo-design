@@ -178,9 +178,9 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.deepEqual(await camera(), beforeEdit);
   const stateBeforeWelcome = await page.evaluate(() => ({ nodes: window.__vooEditor.getDocument().nodes, selection: window.__vooEditor.getSelectedIds() }));
   await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(true));
-  const settings = page.getByRole("button", { name: "Generation type", exact: true });
+  const settings = page.getByRole("button", { name: "Generation settings", exact: true });
   await settings.focus(); await page.keyboard.press("Space");
-  await page.getByRole("dialog", { name: "Generation type", exact: true }).waitFor();
+  await page.getByRole("dialog", { name: "Generation settings", exact: true }).waitFor();
   await page.keyboard.press("Escape");
   await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(false));
   await page.getByTestId("editor-toolbar").waitFor(); await settled();

@@ -25,12 +25,12 @@ The release verifier imports this catalog; do not create another suite list.
 | `inspector` | Fields, menus, toolbar, responsive UI and i18n | Commit/cancel, selection changes, focus and async locale |
 | `platform` | Agent, runtime, loading, native integration and collaboration | Auth, process ownership, reconnect and unmount |
 
-The current inventory contains 55 capability groups, not a census of every
+The current inventory contains 71 capability groups, not a census of every
 button or parameter. All groups remain **partial** until specific acceptance
 rows cover their declared entry points and contexts. Registration is not
 execution, and execution is not exhaustive functional coverage.
 
-The existing core release contains 83 browser suites. Another 21 standalone
+The existing core release contains 87 browser suites. Another 21 standalone
 suites are explicitly listed in `ADDITIONAL_BROWSER_CHECKS`: 18 need fixture,
 assertion and service-requirement review; `canvas_fps`, `image-electron` and
 `image-network` run separately for hardware, native-host and network/model
@@ -58,6 +58,11 @@ npm run test:module -- --module layers
 # Release: clean source, metadata, build, design lint, all units and browsers.
 VOO_RELEASE_REPORT=/private/tmp/voo-release.json node scripts/verify-editor-release.mjs
 node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
+
+# Reduce compiler/unit contention on a busy developer host; assertions stay unchanged.
+GOMAXPROCS=1 VITEST_MAX_FORKS=2 VITEST_MIN_FORKS=1 \
+  VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1 \
+  VOO_RELEASE_REPORT=/private/tmp/voo-release.json node scripts/verify-editor-release.mjs
 ```
 
 Module plans include one hop of explicitly related modules, not a claim of

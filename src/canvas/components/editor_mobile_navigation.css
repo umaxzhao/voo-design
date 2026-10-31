@@ -26,9 +26,37 @@
     border-radius: 1rem;
   }
 
-  [data-testid="design-editor"][data-agent-open="true"] [data-testid="editor-layers-panel"],
-  [data-testid="design-editor"][data-agent-open="true"] [data-testid="editor-properties-panel"],
-  [data-testid="design-editor"][data-agent-open="true"] [data-testid="editor-history-panel"] {
+  [data-testid="design-editor"][data-agent-open="true"]
+    [data-testid="editor-layers-panel"],
+  [data-testid="design-editor"][data-agent-open="true"]
+    [data-testid="editor-properties-panel"],
+  [data-testid="design-editor"][data-agent-open="true"]
+    [data-testid="editor-history-panel"] {
     display: none;
   }
+}
+
+/* Compact canvas navigation has its own band, away from panel footers and zoom. */
+.app-root-frame
+  .relative.flex:has(> .editor-shell .editor-narrow)
+  > [data-testid="page-switcher"].absolute,
+.app-root-frame
+  .relative.flex:has(> .editor-shell .editor-narrow)
+  > .voo-ai-fab.absolute {
+  top: 5rem !important;
+  bottom: auto !important;
+}
+
+.app-root-frame
+  .relative.flex:has(> .editor-shell .editor-narrow)
+  > [data-testid="page-switcher"]
+  > button {
+  max-width: min(14rem, calc(100vw - 2rem));
+}
+
+.app-root-frame
+  .relative.flex:has(> .editor-shell .editor-narrow)
+  > [data-testid="page-switcher"]
+  > section {
+  max-width: calc(100vw - 2rem);
 }

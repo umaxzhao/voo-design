@@ -77,6 +77,9 @@ await withEditorBrowser(async ({ page }) => {
     window.__hookSettings = window.__hookHarness.mountSettingsAudit();
   });
   const settings = page.locator("#hook-settings-audit");
+  // Choose the audited preset explicitly; gallery order is not the behavior under test.
+  await settings.getByTestId("design-system-more").click();
+  await settings.getByTestId("design-system-item-studio").click();
   const useLabel = await page.evaluate(async () => (await import("/src/shared/i18n.js")).t("designSystems.use"));
   await settings.getByRole("button", { name: useLabel, exact: true }).waitFor();
   assert.equal(await settings.getByRole("button", { name: useLabel, exact: true }).isDisabled(), true);
@@ -88,9 +91,12 @@ await withEditorBrowser(async ({ page }) => {
     // still target the actual focused page's registered engine.
     window.__vooEditor = window.__hookEngine.engine;
   });
+  const selectedSystem = (await settings.getByRole("tab", { selected: true }).getAttribute("data-testid"))
+    .replace("design-system-item-", "");
+  assert.ok(selectedSystem);
   await settings.getByRole("button", { name: useLabel, exact: true }).click();
   assert.deepEqual(await page.evaluate(() => ({ actual: window.__hookMainEngine.getDocument().designSystemId,
-    preview: window.__hookEngine.engine.getDocument().designSystemId ?? null })), { actual: "studio", preview: null });
+    preview: window.__hookEngine.engine.getDocument().designSystemId ?? null })), { actual: selectedSystem, preview: null });
   checks.push("design-system settings react to delayed engine readiness and apply to the focused page rather than a stale global preview");
 
   const markdown = settings.getByRole("textbox", { name: "designMd", exact: true });
@@ -105,6 +111,9 @@ await withEditorBrowser(async ({ page }) => {
   });
   await settled();
   assert.equal(await markdown.inputValue(), "Dirty draft must survive registry and language changes");
+  const galleryToggle = settings.getByTestId("design-system-more");
+  if (await galleryToggle.getAttribute("aria-expanded") === "false") await galleryToggle.click();
+  assert.equal(await galleryToggle.getAttribute("aria-expanded"), "true");
   await settings.getByTestId("design-system-item-wellness").click();
   const chinese = await markdown.inputValue();
   await page.evaluate(async () => (await import("/src/shared/i18n.js")).setLocale("en"));

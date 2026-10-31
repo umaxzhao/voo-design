@@ -8,7 +8,7 @@
  */
 
 import { commitEditorDocument } from "../undo-action-contracts.js";
-import { findNode, NODE_KIND } from "./scene_model.js";
+import { findNode, groupDescendants, NODE_KIND } from "./scene_model.js";
 import * as ops from "./doc_ops.js";
 import { createPuppetTransformApi } from "./transform_api_puppet.js";
 import { createBakeTransformApi } from "./transform_api_bake.js";
@@ -67,16 +67,26 @@ export function createTransformApi(deps) {
   });
 
   async function flipHorizontal(targetId = null) {
+    const group = deps.getSelectedGroup?.();
     const ids = targetId
       ? [targetId]
-      : (deps.getSelectedIds?.() ??
-        (deps.getSelectedId?.() ? [deps.getSelectedId()] : []));
+      : (group ? [group.id] : (deps.getSelectedIds?.() ??
+        (deps.getSelectedId?.() ? [deps.getSelectedId()] : [])));
     if (!ids || ids.length === 0) return false;
     const allPatches = [];
     for (const id of ids) {
       const node = findNode(deps.getDoc(), id);
       if (!node) continue;
-      if (node.kind === NODE_KIND.IMAGE) {
+      if (node.kind === NODE_KIND.GROUP) {
+        const children = groupDescendants(deps.getDoc(), node.id);
+        for (const child of children) {
+          const patch = { flipH: !child.flipH };
+          if (node.width && child.width !== undefined && child.x !== undefined) {
+            patch.x = 2 * (node.x ?? 0) + node.width - child.x - (child.width ?? 0);
+          }
+          allPatches.push({ nodeId: child.id, patch });
+        }
+      } else if (node.kind === NODE_KIND.IMAGE) {
         const fn =
           deps.getTransformNodeBitmap?.() ??
           deps.transformNodeBitmap ??
@@ -104,16 +114,26 @@ export function createTransformApi(deps) {
   }
 
   async function flipVertical(targetId = null) {
+    const group = deps.getSelectedGroup?.();
     const ids = targetId
       ? [targetId]
-      : (deps.getSelectedIds?.() ??
-        (deps.getSelectedId?.() ? [deps.getSelectedId()] : []));
+      : (group ? [group.id] : (deps.getSelectedIds?.() ??
+        (deps.getSelectedId?.() ? [deps.getSelectedId()] : [])));
     if (!ids || ids.length === 0) return false;
     const allPatches = [];
     for (const id of ids) {
       const node = findNode(deps.getDoc(), id);
       if (!node) continue;
-      if (node.kind === NODE_KIND.IMAGE) {
+      if (node.kind === NODE_KIND.GROUP) {
+        const children = groupDescendants(deps.getDoc(), node.id);
+        for (const child of children) {
+          const patch = { flipV: !child.flipV };
+          if (node.height && child.height !== undefined && child.y !== undefined) {
+            patch.y = 2 * (node.y ?? 0) + node.height - child.y - (child.height ?? 0);
+          }
+          allPatches.push({ nodeId: child.id, patch });
+        }
+      } else if (node.kind === NODE_KIND.IMAGE) {
         const fn =
           deps.getTransformNodeBitmap?.() ??
           deps.transformNodeBitmap ??

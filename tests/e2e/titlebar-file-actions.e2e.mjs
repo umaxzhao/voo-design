@@ -2,6 +2,42 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
+// Hold the lazy dashboard so New is clicked before its effect can subscribe.
+let releaseWelcome;
+let sawWelcome;
+const delayedWelcome = new Promise(resolve => { releaseWelcome = resolve; });
+const requestedWelcome = new Promise(resolve => { sawWelcome = resolve; });
+await withEditorBrowser(async ({ page, errors }) => {
+  await Promise.race([requestedWelcome, new Promise((_, reject) => setTimeout(() => reject(new Error("Welcome module was not requested")), 15000))]);
+  const original = await page.evaluate(async () => {
+    const { workspaceStorage } = await import("/src/services/workspace_storage.js");
+    const { createDocument } = await import("/src/canvas/editor/scene_doc_factory.js");
+    const { emptyVooFile } = await import("/electron/voo_format.js");
+    const bytes = new TextEncoder().encode(JSON.stringify(emptyVooFile(createDocument(123, 456))));
+    const saved = await workspaceStorage.writeFileBytes("Design1.voo", bytes, { category: "web" });
+    return { id: saved.id ?? saved.path ?? saved.name, bytes: [...bytes] };
+  });
+  await page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true }).click();
+  assert.equal(await page.evaluate(() => Boolean(window.__vooEditor)), false);
+  releaseWelcome();
+  await page.waitForFunction(() => window.__vooEditor && !window.__vooStore.welcomeOpen, null, { timeout: 30000 });
+  assert.equal(await page.evaluate(() => window.__vooStore.openDocuments.length), 1);
+  assert.equal(await page.evaluate(() => window.__vooStore.fileName), "Design2.voo");
+  const retained = await page.evaluate(async id => {
+    const { workspaceStorage } = await import("/src/services/workspace_storage.js");
+    return [...await workspaceStorage.readFileBytes(id)];
+  }, original.id);
+  assert.deepEqual(retained, original.bytes, "Cold New must not replace the existing workspace file");
+  assert.deepEqual(errors, []);
+  console.log("Title bar: New requested before lazy welcome subscription creates exactly one document.");
+}, { openDocument: false, mcpLink: false, preparePage: async page => {
+  await page.route("**/src/canvas/components/welcome_dashboard.jsx*", async route => {
+    sawWelcome();
+    await delayedWelcome;
+    await route.continue();
+  });
+} });
+
 await withEditorBrowser(
   async ({ page, errors }) => {
     page.setDefaultTimeout(15000);

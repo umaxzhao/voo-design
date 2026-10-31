@@ -1,5 +1,9 @@
 /**
  * Design-skill presets and rule tables for the Design node's AI layout generation.
+ * OpenDesign-derived guidance below is adapted under Apache-2.0; see NOTICE
+ * and scripts/license-texts/opendesign.txt. VOO condensed the guidance and
+ * added its own examples, dimensions and constraints. Original import revision
+ * was not recorded; the independently reviewed upstream revision is in NOTICE.
  */
 
 export { LAYOUT_MEDIA, layoutMedia } from "./layout-media-presets.js";

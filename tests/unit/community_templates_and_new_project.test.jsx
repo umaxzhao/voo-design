@@ -51,7 +51,8 @@ import {
 import { useDesignStore } from "../../src/store/design_store.js";
 import { encodeVooBinary } from "../../src/canvas/store/voo_binary.js";
 import { addRecentFile, getRecentFiles } from "../../src/canvas/store/recent_files.js";
-import { loadLocale } from "../../src/shared/i18n.js";
+import { loadLocale, t } from "../../src/shared/i18n.js";
+import WelcomePromptSettings from "../../src/canvas/components/welcome_dashboard/welcome_prompt_settings.jsx";
 
 describe("Community Templates and New Project Workbench Experience", () => {
   beforeEach(async () => {
@@ -107,6 +108,50 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(html).toContain("Preview: Mobile wallet");
     expect(html).not.toContain("使用");
     expect(html).not.toContain("社区");
+  });
+
+  it("stores a bilingual description for every community template", () => {
+    for (const template of COMMUNITY_TEMPLATES) {
+      expect(template.description, template.id).toBeTypeOf("object");
+      expect(typeof template.description.en, template.id).toBe("string");
+      expect(typeof template.description.zh, template.id).toBe("string");
+      expect(template.description.en.trim().length, template.id).toBeGreaterThan(20);
+      expect(template.description.zh.trim().length, template.id).toBeGreaterThan(10);
+      expect(template.description.en, template.id).toMatch(/[A-Za-z]/);
+      expect(template.description.zh, template.id).toMatch(/[\u4e00-\u9fff]/);
+      // A new template without a dictionary title would silently ship its raw
+      // English data title in Chinese; require a real translated key.
+      const titleKey = `welcome.community.template.${template.id}`;
+      expect(t(titleKey), template.id).not.toBe(titleKey);
+    }
+  });
+
+  it("renders English template cards without Chinese copy", async () => {
+    await loadLocale("en");
+    const html = renderToStaticMarkup(<CommunityTemplatesView />);
+    // Every card description comes from the `en` value: no Chinese may leak.
+    expect(html).not.toMatch(/[\u4e00-\u9fff]/);
+    for (const template of COMMUNITY_TEMPLATES) {
+      expect(html, template.id).toContain(template.description.en);
+    }
+    // The three newer templates resolve through their English dictionary titles.
+    for (const id of ["axiom-product-landing", "void-os-observability", "bloom-mobile-launch"]) {
+      expect(html, id).toContain(t(`welcome.community.template.${id}`));
+    }
+    expect(html).not.toContain("AXIOM — Avant-garde Product Landing");
+  });
+
+  it("renders Chinese template cards with Chinese copy and localized titles", async () => {
+    await loadLocale("zh");
+    const html = renderToStaticMarkup(<CommunityTemplatesView />);
+    for (const template of COMMUNITY_TEMPLATES) {
+      expect(html, template.id).toContain(template.description.zh);
+      expect(html, template.id).toContain(t(`welcome.community.template.${template.id}`));
+    }
+    // No untranslated English data titles may leak when a Chinese title exists.
+    expect(html).not.toContain("AXIOM — Avant-garde Product Landing");
+    expect(html).not.toContain("VOID OS — Observability Console");
+    expect(html).not.toContain("BLOOM — Soft-pop Mobile Launch");
   });
 
   it("instantiating a community template produces a valid .voo file and registers in workspace", async () => {
@@ -217,20 +262,33 @@ describe("Community Templates and New Project Workbench Experience", () => {
 
   it("keeps generation settings behind one advanced entry", () => {
     const html = renderToStaticMarkup(React.createElement(WelcomeDashboard));
-    expect(html).toContain('aria-label="生成类型"');
+    expect(html).toContain('aria-label="生成设置"');
     expect(html).toContain('aria-haspopup="dialog"');
     expect(html).toContain('data-advanced-open="false"');
     expect(html).not.toContain('role="radiogroup"');
     expect(html).not.toContain('role="radio"');
+    expect(html).not.toContain('role="dialog"');
+    for (const label of ["风格", "设计系统", "候选数量", "画布尺寸"]) {
+      expect(html).not.toContain(`aria-label="${label}"`);
+    }
+    const advancedHtml = renderToStaticMarkup(React.createElement(WelcomePromptSettings, {
+      t, panelRef: { current: null }, activePill: "mobile", designSystemId: "auto",
+      styleOptions: [], designSystemOptions: [], candidates: 1,
+      currentSize: { width: 393, height: 852 }, sizeOptions: [],
+    }));
+    expect(advancedHtml).toContain('role="radiogroup" aria-label="生成类型"');
+    expect(advancedHtml.match(/role="radio"/g)).toHaveLength(8);
   });
 
   it("AI_GEN_TYPES defines tailored dimensions, categories, and placeholders for AI generation", () => {
-    expect(AI_GEN_TYPES.length).toBe(6);
+    expect(AI_GEN_TYPES.length).toBe(8);
     expect(AI_GEN_TYPES.some((t) => t.id === "all")).toBe(false);
 
     const ids = AI_GEN_TYPES.map((t) => t.id);
-    expect(ids).toEqual(["landing", "mobile", "web", "slides", "dashboard", "other"]);
+    expect(ids).toEqual(["landing", "mobile", "web", "poster", "slides", "storyboard", "dashboard", "other"]);
 
+    expect(AI_GEN_TYPES.find(type => type.id === "poster")).toMatchObject({ width: 1080, height: 1350, category: "poster", placeholder: "welcome.prompt.posterPlaceholder" });
+    expect(AI_GEN_TYPES.find(type => type.id === "storyboard")).toMatchObject({ width: 1920, height: 1080, category: "storyboard", placeholder: "welcome.prompt.storyboardPlaceholder" });
     const mobile = AI_GEN_TYPES.find((t) => t.id === "mobile");
     expect(mobile.width).toBe(393);
     expect(mobile.height).toBe(852);

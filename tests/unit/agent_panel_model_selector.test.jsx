@@ -34,8 +34,8 @@ describe("Agent Panel Model Selector & CLI Groups", () => {
       expect(claudeGroup).toBeDefined();
       const ids = claudeGroup.models.map((m) => m.id);
       expect(ids).toContain("claude:claude-opus-5-5");
-      expect(ids).toContain("claude:sonnet");
-      expect(ids).toContain("claude:haiku");
+      expect(ids).toContain("claude:claude-sonnet-5-5");
+      expect(ids).toContain("claude:claude-haiku-5-5");
     });
 
     it("includes required models in Codex group", () => {
@@ -43,7 +43,7 @@ describe("Agent Panel Model Selector & CLI Groups", () => {
       expect(codexGroup).toBeDefined();
       const ids = codexGroup.models.map((m) => m.id);
       expect(ids).toContain("codex:gpt-6-astra");
-      expect(ids).toContain("codex:gpt-5.6-terra");
+      expect(ids).not.toContain("codex:gpt-5.6-terra");
     });
 
     it("includes required models in Antigravity group", () => {
@@ -51,8 +51,11 @@ describe("Agent Panel Model Selector & CLI Groups", () => {
       expect(agyGroup).toBeDefined();
       const ids = agyGroup.models.map((m) => m.id);
       expect(ids).toContain("antigravity:gemini-3.8-flash-high");
-      expect(ids).toContain("antigravity:claude-sonnet-4-6");
+      expect(ids).toContain("antigravity:claude-sonnet-5-5-high");
+      expect(ids).toContain("antigravity:claude-opus-5-5-high");
       expect(ids).toContain("antigravity:gpt-oss-120b-medium");
+      expect(ids).not.toContain("antigravity:claude-sonnet-4-6");
+      expect(ids).not.toContain("antigravity:gemini-2.5-pro");
     });
   });
 

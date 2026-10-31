@@ -9,7 +9,7 @@ import { svgContainerBlend } from "./svg-container-opacity.js";
 export function svgStrokeDefinitionNodes(nodes) {
   return nodes.flatMap((node) => [
     { fill: node.stroke },
-    ...(Array.isArray(node.fills) ? node.fills.map((paint) => ({ fill: paint?.fill })) : []),
+    ...(Array.isArray(node.fills) ? node.fills.map((paint) => ({ ...node, fill: paint?.fill })) : []),
     ...(Array.isArray(node.strokes) ? node.strokes.map((stroke) => ({ fill: stroke?.stroke })) : []),
   ]);
 }

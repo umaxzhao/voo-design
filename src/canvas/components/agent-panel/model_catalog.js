@@ -45,12 +45,12 @@ export const CLI_MODEL_GROUPS = [
         label: "Gemini 3.8 Flash (Low)",
       },
       {
-        id: "antigravity:claude-sonnet-4-6",
-        label: "Claude Sonnet 4.6 (Thinking)",
+        id: "antigravity:claude-sonnet-5-5-high",
+        label: "Claude Sonnet 5.5 (High)",
       },
       {
-        id: "antigravity:claude-opus-4-6-thinking",
-        label: "Claude Opus 4.6 (Thinking)",
+        id: "antigravity:claude-opus-5-5-high",
+        label: "Claude Opus 5.5 (High)",
       },
       { id: "antigravity:gpt-oss-120b-medium", label: "GPT-OSS 120B (Medium)" },
     ],

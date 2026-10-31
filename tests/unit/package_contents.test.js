@@ -4,10 +4,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { finished } from 'node:stream/promises';
 import { afterEach, describe, expect, it } from 'vitest';
+import { generateBundledNotices } from '../../scripts/bundled-third-party-notices.mjs';
 import { verifyPackage } from '../../scripts/verify-package.mjs';
 
 const roots = [];
-async function fixture({ omit, extra, locales = ['en-US', 'zh-CN'] } = {}) {
+async function fixture({ omit, extra, missingEmbeddedNotice = false, locales = ['en-US', 'zh-CN'] } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'voo-package-test-'));
   roots.push(root);
   const source = path.join(root, 'source');
@@ -15,7 +16,7 @@ async function fixture({ omit, extra, locales = ['en-US', 'zh-CN'] } = {}) {
   const files = [
     'electron/main.cjs', 'electron/preload.cjs', 'dist/index.html',
     'dist/canvaskit.js', 'dist/canvaskit.wasm', 'dist/EULA.md',
-    'dist/LICENSE', 'dist/THIRD_PARTY_NOTICES.json',
+    'dist/LICENSE', 'dist/THIRD_PARTY_NOTICES.json', 'dist/NOTICE', 'NOTICE',
     'dist/ort/ort-wasm-simd-threaded.wasm', 'dist/ort/ort-wasm-simd-threaded.mjs',
     'dist/ort/ort-wasm-simd-threaded.jsep.wasm', 'dist/ort/ort-wasm-simd-threaded.jsep.mjs',
     'dist/assets/voo_engine_bg-fixture.wasm',
@@ -27,6 +28,9 @@ async function fixture({ omit, extra, locales = ['en-US', 'zh-CN'] } = {}) {
   for (const file of files.filter(file => file !== omit)) {
     await mkdir(path.dirname(path.join(source, file)), { recursive: true });
     await writeFile(path.join(source, file), '{}');
+  }
+  if (omit !== 'dist/THIRD_PARTY_NOTICES.json') {
+    await writeFile(path.join(source, 'dist/THIRD_PARTY_NOTICES.json'), JSON.stringify(missingEmbeddedNotice ? [] : await generateBundledNotices()));
   }
   await writeFile(path.join(source, 'package.json'), JSON.stringify({ dependencies: { ws: '*' } }));
   await mkdir(path.join(app, 'resources'), { recursive: true });
@@ -67,12 +71,16 @@ describe('shipped package inspection', () => {
     const app = await fixture(options);
     expect(() => verifyPackage(app)).toThrow('Expected exactly one native canvas engine WASM');
   });
-  it.each(['dist/ort/ort-wasm-simd-threaded.jsep.wasm', 'dist/fonts/inter.woff2', 'dist/EULA.md'])(
+  it.each(['dist/ort/ort-wasm-simd-threaded.jsep.wasm', 'dist/fonts/inter.woff2', 'dist/EULA.md', 'dist/NOTICE', 'NOTICE'])(
     'rejects removal of required asset %s', async omit => {
       const app = await fixture({ omit });
       expect(() => verifyPackage(app)).toThrow('Missing runtime asset');
     },
   );
+  it('rejects missing embedded licenses in the actual ASAR', async () => {
+    const app = await fixture({ missingEmbeddedNotice: true });
+    expect(() => verifyPackage(app)).toThrow('Missing embedded component license');
+  });
   it('rejects missing runtime dependencies', async () => {
     const app = await fixture({ omit: 'node_modules/ws/package.json' });
     expect(() => verifyPackage(app)).toThrow('Missing runtime dependency: ws');

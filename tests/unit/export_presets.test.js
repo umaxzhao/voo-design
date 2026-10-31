@@ -1,12 +1,26 @@
 // Export presets live on the node, so normalize must tolerate old/absent data.
-import { describe, expect, it } from "vitest";
-import { normalizeExportPresets } from "../../src/canvas/components/editor_properties/export_section.jsx";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+import ExportSection, { normalizeExportPresets } from "../../src/canvas/components/editor_properties/export_section.jsx";
+
+vi.mock("../../src/canvas/use_i18n.js", () => ({ useI18n: () => ({ t: (key) => key }) }));
 
 describe("export preset normalization", () => {
-  it("falls back to one PNG preset", () => {
-    const rows = normalizeExportPresets(undefined);
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ type: "image/png", scale: 1, suffix: "" });
+  it.each([undefined, null, [], [null, false, "invalid"]])("keeps unconfigured export presets empty: %j", (raw) => {
+    expect(normalizeExportPresets(raw)).toEqual([]);
+  });
+
+  it.each([undefined, []])("shows only the add entry without configured exports: %j", (exportPresets) => {
+    const html = renderToStaticMarkup(React.createElement(ExportSection, {
+      object: { id: "unconfigured", exportPresets },
+      engine: { exportSelectionPng: () => null },
+    }));
+    expect(html).not.toContain('role="combobox"');
+    expect(html).not.toContain('type="checkbox"');
+    expect(html.match(/<button/g)).toHaveLength(1);
+    expect(html).not.toContain('aria-label="editor.props.exportFormat"');
+    expect(html).toContain('aria-label="editor.props.addExportSettings"');
   });
 
   it("sanitizes unknown formats/scales and caps the row count", () => {

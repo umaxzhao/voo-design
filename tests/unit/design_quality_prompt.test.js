@@ -180,7 +180,12 @@ describe("buildDesignQualityPrompt", () => {
           expect(prompt).toContain(`(${e.kit}; structure only, restyle with the active kit) ${e.structure}`);
           expect(prompt).not.toContain(e.description);
         }
-        const recipes = prompt.split("[Exemplar recipes — follow the nearest one]\n")[1].split("\n");
+        // The recipe list now may be followed by a scene-guide block (user-text
+        // activation), so scope the recipe assertions to the recipe section.
+        const recipesSection = prompt
+          .split("[Exemplar recipes — follow the nearest one]\n")[1]
+          .split("\n=== Scene guide:")[0];
+        const recipes = recipesSection.split("\n").filter((line) => line.trim().length > 0);
         for (const recipe of recipes) {
           expect(recipe.includes(`(${kit.id})`) || recipe.includes("structure only, restyle with the active kit")).toBe(true);
         }
@@ -200,10 +205,74 @@ describe("buildDesignQualityPrompt", () => {
     expect(promptText).toContain("Exemplar recipes");
   });
 
+  it("injects surgical delta edits into the workflow and keeps the prompt bounded", () => {
+    const prompt = buildDesignQualityPrompt({ userText: "dashboard" });
+    const workflow = prompt.indexOf("[Workflow — tokens first]");
+    const delta = prompt.indexOf("6. Surgical delta edits:");
+    const hierarchy = prompt.indexOf("[Visual hierarchy]");
+    expect(workflow).toBeGreaterThan(-1);
+    expect(delta).toBeGreaterThan(workflow);
+    expect(delta).toBeLessThan(hierarchy);
+    expect(prompt).toContain("DO NOT rebuild the screen from scratch with build_layout");
+    expect(prompt).toContain("inspect_layer_tree to find target layer IDs");
+    for (const tool of ["mutate_layer_style", "mutate_layer_layout", "mutate_layer_text", "batch_mutate_layers"]) {
+      expect(prompt, `delta rule mentions ${tool}`).toContain(tool);
+    }
+    expect(prompt).toContain("preserve the rest of the canvas");
+    // Length budget: the pre-rule prompt was ~12.3k chars; the two new rule
+    // lines add <1k, so a 12k-15k window keeps later additions honest.
+    expect(prompt.length).toBeGreaterThan(12000);
+    expect(prompt.length).toBeLessThan(15000);
+  });
+
+  it("injects layered surface depth into the human-design principles", () => {
+    const prompt = buildDesignQualityPrompt({ userText: "dashboard" });
+    const principles = prompt.indexOf("[Dribbble-human principles & MotionSites impact]");
+    const depth = prompt.indexOf("Layered depth:");
+    const exemplars = prompt.indexOf("[Exemplar recipes — follow the nearest one]");
+    expect(depth).toBeGreaterThan(principles);
+    expect(exemplars === -1 || depth < exemplars).toBe(true);
+    expect(prompt).toContain("soft multi-stop shadows");
+    expect(prompt).toContain("0 12px 32px rgba(0,0,0,0.18)");
+    expect(prompt).toContain("1px hairline borders");
+    expect(prompt).toContain("frosted translucent surfaces");
+    expect(prompt).toContain("rgba(255,255,255,0.06)");
+  });
+
   it("falls back to picking the kit from user text", () => {
     const promptText = buildDesignQualityPrompt({ userText: "editorial magazine article" });
     expect(promptText).toContain("Editorial Print");
     expect(promptText).toContain("ONE kit");
+  });
+
+  it("injects the scene guide named by an explicit sceneKind", () => {
+    const prompt = buildDesignQualityPrompt({ userText: "make something sharp", sceneKind: "poster" });
+    expect(prompt).toContain("=== Scene guide: Poster / 活动海报 ===");
+    expect(prompt).toContain("主标题字号 = 画布宽 10-14%");
+  });
+
+  it("activates a scene guide from the natural-language request when sceneKind is absent", () => {
+    for (const [userText, sceneName] of [
+      ["帮我设计活动海报", "Poster / 活动海报"],
+      ["做个小红书卡片", "Xiaohongshu Card / 小红书卡片"],
+      ["设计一张电商横幅", "Banner / 电商横幅"],
+      ["做一个落地页", "Landing Page / 落地页"],
+    ]) {
+      const prompt = buildDesignQualityPrompt({ userText });
+      expect(prompt, `userText: ${userText}`).toContain(`=== Scene guide: ${sceneName} ===`);
+    }
+  });
+
+  it("prefers an explicit sceneKind over the words in the request", () => {
+    const prompt = buildDesignQualityPrompt({ userText: "帮我设计活动海报", sceneKind: "xiaohongshu" });
+    expect(prompt).toContain("=== Scene guide: Xiaohongshu Card / 小红书卡片 ===");
+    expect(prompt).not.toContain("Poster / 活动海报");
+  });
+
+  it("injects no scene guide when neither sceneKind nor the request names a scene", () => {
+    for (const input of [{ userText: "把按钮变蓝" }, { userText: "" }, {}]) {
+      expect(buildDesignQualityPrompt(input)).not.toContain("=== Scene guide:");
+    }
   });
 });
 

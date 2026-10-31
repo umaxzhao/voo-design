@@ -54,6 +54,7 @@ export function WelcomePromptComposer({
   const rootRef = useRef(null);
   const formRef = useRef(null);
   const panelRef = useRef(null);
+  const settingsTriggerRef = useRef(null);
   const activePreset = AI_GEN_TYPES.find(preset => preset.id === activePill) ?? AI_GEN_TYPES[0];
   const currentSize = size ?? {
     width: activePreset.width,
@@ -68,7 +69,11 @@ export function WelcomePromptComposer({
       setAdvancedOpen(false);
     };
     const onKeyDown = event => {
-      if (event.key === "Escape") setAdvancedOpen(false);
+      if (event.key === "Escape" && !event.defaultPrevented) {
+        event.preventDefault();
+        setAdvancedOpen(false);
+        settingsTriggerRef.current?.focus();
+      }
     };
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
@@ -83,8 +88,8 @@ export function WelcomePromptComposer({
       const rect = formRef.current?.getBoundingClientRect();
       if (!rect) return;
       const isMobile = window.matchMedia("(max-width: 768px) and (hover: none) and (pointer: coarse)").matches;
-      const panelWidth = isMobile ? window.innerWidth - 32 : 320;
       const panelGutter = isMobile ? 16 : 8;
+      const panelWidth = Math.min(isMobile ? window.innerWidth - 32 : 320, window.innerWidth - panelGutter * 2);
       const panelHeight = panelRef.current?.offsetHeight ?? (isMobile ? 320 : 260);
       setPanelPos({
         left: Math.max(panelGutter, Math.min(rect.right - panelWidth, window.innerWidth - panelWidth - panelGutter)),
@@ -95,7 +100,7 @@ export function WelcomePromptComposer({
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
   }, [advancedOpen]);
-  return <div ref={rootRef} data-advanced-open={advancedOpen ? "true" : "false"} className="welcome-prompt-root relative">
+  return <div ref={rootRef} data-advanced-open={advancedOpen ? "true" : "false"} className="welcome-prompt-root relative w-full">
     <form ref={formRef} onSubmit={onSubmit} className={`prompt-composer relative mt-0 min-w-0 rounded-2xl p-4 transition-colors ${advancedOpen ? "z-[300]" : ""}`}>
       <textarea value={promptText} onChange={event => setPromptText(event.target.value)} onKeyDown={event => {
         if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent?.isComposing) {
@@ -124,7 +129,7 @@ export function WelcomePromptComposer({
             {t("welcome.prompt.modelLabel")}
           </button> : <WelcomeModelSelect label={t("welcome.prompt.modelLabel")} modelGroups={modelGroups} selectedModel={selectedModel} onSelectModel={onSelectModel} />}
 
-          <button type="button" onClick={() => configNeeded ? onOpenSettings?.() : setAdvancedOpen(open => !open)} aria-label={t("welcome.prompt.generationTypeLabel")} aria-haspopup="dialog" aria-expanded={advancedOpen} className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.08] text-neutral-400 transition-colors hover:bg-white/[0.14] hover:text-neutral-200">
+          <button ref={settingsTriggerRef} type="button" onClick={() => configNeeded ? onOpenSettings?.() : setAdvancedOpen(open => !open)} aria-label={t("welcome.prompt.settingsLabel")} aria-haspopup="dialog" aria-expanded={advancedOpen} className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.08] text-neutral-400 transition-colors hover:bg-white/[0.14] hover:text-neutral-200">
             <TuneIcon size={14} />
           </button>
 

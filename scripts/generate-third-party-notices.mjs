@@ -1,11 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { generateBundledNotices } from './bundled-third-party-notices.mjs';
 
 export async function generateNotices(root = process.cwd()) {
   const manifest = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
   const seen = new Set();
-  const notices = [];
+  const notices = await generateBundledNotices();
   async function visit(name, from) {
     let dir = from;
     let location;
@@ -50,6 +51,6 @@ export async function writeNotices(root = process.cwd()) {
   const output = path.join(root, 'public');
   await fs.mkdir(output, { recursive: true });
   await fs.writeFile(path.join(output, 'THIRD_PARTY_NOTICES.json'), JSON.stringify(await generateNotices(root), null, 2) + '\n');
-  for (const file of ['LICENSE', 'EULA.md']) await fs.copyFile(path.join(root, file), path.join(output, file));
+  for (const file of ['LICENSE', 'EULA.md', 'NOTICE']) await fs.copyFile(path.join(root, file), path.join(output, file));
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await writeNotices();

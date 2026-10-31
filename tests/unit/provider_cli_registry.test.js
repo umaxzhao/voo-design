@@ -55,14 +55,12 @@ describe("Provider CLI Registry & Local Agent Defaults", () => {
       expect(agent.installCmd).toContain("@anthropic-ai/claude-code");
     });
 
-    it("exports comprehensive Claude model definitions", () => {
+    it("exports one current Claude version per model family", () => {
       const ids = CLAUDE_MODELS.map((m) => m.id);
       expect(ids).toContain("claude-opus-5-5");
-      expect(ids).toContain("opus");
-      expect(ids).toContain("sonnet");
-      expect(ids).toContain("haiku");
-      expect(ids).toContain("best");
-      expect(ids).toContain("default");
+      expect(ids).toContain("claude-sonnet-5-5");
+      expect(ids).toContain("claude-haiku-5-5");
+      expect(ids).not.toEqual(expect.arrayContaining(["opus", "sonnet", "haiku", "best", "default"]));
     });
   });
 
@@ -70,10 +68,14 @@ describe("Provider CLI Registry & Local Agent Defaults", () => {
     it("CLI_TEXT_MODELS includes Claude Code, Codex, and Antigravity models", () => {
       const modelIds = CLI_TEXT_MODELS.map((m) => m.id);
       expect(modelIds).toContain("claude:claude-opus-5-5");
-      expect(modelIds).toContain("claude:sonnet");
       expect(modelIds).toContain("codex:gpt-6-astra");
-      expect(modelIds).toContain("antigravity:gemini-2.5-pro");
-      expect(modelIds).toContain("antigravity:claude-3-7-sonnet");
+      expect(modelIds).toContain("antigravity:gemini-3.8-flash-high");
+      expect(modelIds).toContain("antigravity:claude-sonnet-5-5-high");
+      expect(modelIds).not.toEqual(expect.arrayContaining([
+        "antigravity:gemini-2.5-pro",
+        "antigravity:claude-3-7-sonnet",
+        "codex:gpt-5.6-terra",
+      ]));
     });
 
     it("CLI_TEXT_MODEL_ID matches DEFAULT_AGENT_MODEL", () => {

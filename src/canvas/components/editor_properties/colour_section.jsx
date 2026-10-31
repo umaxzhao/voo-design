@@ -25,6 +25,7 @@ export default function ColourSection({
   getBitmap = null,
   bindings = null,
   frameFallbackFill = null,
+  replaceBitmap = null,
 }) {
   return (
     <>
@@ -37,6 +38,7 @@ export default function ColourSection({
         selectedNodes={selectedNodes}
         getBitmap={getBitmap}
         bindings={bindings}
+        replaceBitmap={replaceBitmap}
       />}
       {showStroke && <StrokeSection
         object={object}
@@ -63,4 +65,5 @@ ColourSection.propTypes = {
   bindings: PropTypes.object,
   /** A frame with no explicit fill shows the page backdrop until edited. */
   frameFallbackFill: PropTypes.string,
+  replaceBitmap: PropTypes.func,
 };
