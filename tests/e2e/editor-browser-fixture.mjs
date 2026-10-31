@@ -27,6 +27,9 @@ export async function withEditorBrowser(run, pageOptions = {}) {
         errors.push(message.text());
       }
     });
+    // Release suites boot three cold Vite servers at once, so the first
+    // navigation can exceed Playwright's 30s default while deps are optimized.
+    page.setDefaultNavigationTimeout(90000);
     await page.goto(`${origin}/?voo-test=1`);
     await page.waitForLoadState("networkidle");
     // A welcome-only session deliberately has no engine. The MCP store-level

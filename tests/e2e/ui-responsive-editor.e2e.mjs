@@ -210,9 +210,13 @@ await withEditorBrowser(async ({ page, tool }) => {
 
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 12, right: 10, bottom: 8, left: 6 } });
   await settlePanels(page);
-  assert.deepEqual(await page.locator(".app-root-frame").evaluate(element => {
+  // Vertical insets stay per side; the horizontal pair is balanced to the
+  // larger side so the frame does not shift between landscape orientations.
+  const safeAreaPadding = await page.locator(".app-root-frame").evaluate(element => {
     const s = getComputedStyle(element); return [s.paddingTop, s.paddingRight, s.paddingBottom, s.paddingLeft].map(parseFloat);
-  }), [16, 14, 12, 10]);
+  });
+  assert.deepEqual(safeAreaPadding, [4 + 12, 4 + 10, 4 + 8, 4 + 10]);
+  assert.ok(safeAreaPadding.every(value => value > 4), "every physical inset reaches the frame");
   await assertReachable(page.getByTestId("editor-zoom-percent"), "safe-area zoom");
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 0, bottom: 0, left: 0 } });
   await session.detach();

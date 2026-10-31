@@ -130,20 +130,43 @@ await withEditorBrowser(async ({ page, origin }) => {
   await home.getByRole("button", { name: "AuditHome.voo", exact: true }).waitFor();
   checks.push("starred, search, list/grid switch, browser project creation and nested Move to all mutate the actual workspace");
 
-  // Advanced generation remains behind its existing trigger; nested Escape leaves it open.
+  // The design type is one inline radiogroup; advanced generation options stay
+  // behind their single settings trigger.
   await home.getByRole("button", { name: "Recents", exact: true }).click();
-  await home.getByRole("button", { name: "Generation type", exact: true }).click();
-  const advanced = page.getByRole("dialog", { name: "Generation type", exact: true });
+  const typeGroup = home.getByRole("radiogroup", { name: "Generation type", exact: true });
+  await typeGroup.waitFor();
+  const typeOptions = typeGroup.getByRole("radio");
+  assert.ok(await typeOptions.count() >= 2, "the type picker exposes its options inline");
+  assert.equal(await typeGroup.locator('[role="radio"][aria-checked="true"]').count(), 1);
+  const options = await typeOptions.all();
+  const checkedIndex = await typeGroup.locator('[role="radio"]').evaluateAll(radios =>
+    radios.findIndex(radio => radio.getAttribute("aria-checked") === "true"));
+  assert.ok(checkedIndex >= 0, "exactly one type option is checked");
+  const nextIndex = (checkedIndex + 1) % options.length;
+  await options[nextIndex].click();
+  assert.equal(await options[nextIndex].getAttribute("aria-checked"), "true");
+  assert.equal(await typeGroup.locator('[role="radio"][aria-checked="true"]').count(), 1);
+  checks.push("the design type stays one inline radiogroup with a single checked option that follows a real click");
+
+  // Advanced generation keeps its one settings entry; a nested select owns the first Escape.
+  const settingsTrigger = home.getByRole("button", { name: "Generation settings", exact: true });
+  assert.equal(await page.getByRole("dialog", { name: "Generation settings", exact: true }).count(), 0);
+  await settingsTrigger.click();
+  const advanced = page.getByRole("dialog", { name: "Generation settings", exact: true });
   await advanced.waitFor();
+  assert.equal(await settingsTrigger.getAttribute("aria-expanded"), "true");
   await advanced.locator('button[aria-haspopup="listbox"]').first().click();
-  await page.getByRole("listbox", { name: "Generation type", exact: true }).waitFor();
+  const nestedListbox = page.getByRole("listbox", { name: "Style", exact: true });
+  await nestedListbox.waitFor();
   await page.keyboard.press("Escape");
-  await page.getByRole("listbox", { name: "Generation type", exact: true }).waitFor({ state: "detached" });
+  await nestedListbox.waitFor({ state: "detached" });
   assert.ok(await advanced.isVisible());
+  assert.equal(await settingsTrigger.getAttribute("aria-expanded"), "true");
   await page.keyboard.press("Escape");
   await advanced.waitFor({ state: "detached" });
+  assert.equal(await settingsTrigger.getAttribute("aria-expanded"), "false");
   checks.push("advanced generation opens through one entry and nested selects own the first Escape");
-  await home.getByRole("button", { name: "Generation type", exact: true }).click();
+  await settingsTrigger.click();
   await advanced.waitFor();
   const touch = await page.context().newCDPSession(page);
   await touch.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });

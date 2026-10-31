@@ -83,7 +83,14 @@ await withEditorBrowser(async ({ page }) => {
     const style = getComputedStyle(document.querySelector(".app-root-frame"));
     return [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft].map(parseFloat);
   });
-  assert.deepEqual(await padding(), [16, 14, 12, 10], "safe-area protection does not depend on a coarse pointer");
+  // Horizontal insets are balanced to the larger side so the frame does not
+  // shift between landscape orientations; vertical insets stay per side.
+  const [top, right, bottom, left] = await padding();
+  assert.equal(top, 4 + 12, "safe-area protection does not depend on a coarse pointer");
+  assert.equal(bottom, 4 + 8, "safe-area protection does not depend on a coarse pointer");
+  assert.equal(right, 4 + 10, "the larger horizontal inset is applied on the right");
+  assert.equal(left, 4 + 10, "the larger horizontal inset is balanced onto the left");
+  assert.ok(top > 4 && right > 4 && bottom > 4 && left > 4, "insets are honored without a coarse pointer");
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 0, bottom: 0, left: 0 } });
   await settle(page);
   assert.deepEqual(await padding(), [4, 4, 4, 4]);
@@ -171,11 +178,13 @@ await withEditorBrowser(async ({ page }) => {
   });
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 20, right: 8, bottom: 16, left: 12 } });
   await settle(page);
-  assert.deepEqual(await padding(), [24, 12, 20, 16]);
+  // Horizontal insets are balanced to the larger side; vertical stay per side.
+  assert.deepEqual(await padding(), [4 + 20, 4 + Math.max(8, 12), 4 + 16, 4 + Math.max(8, 12)]);
   await page.setViewportSize({ width: 844, height: 390 });
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 20, bottom: 12, left: 36 } });
   await settle(page);
-  assert.deepEqual(await padding(), [4, 24, 16, 40], "landscape phones retain nonzero safe insets above the narrow breakpoint");
+  assert.deepEqual(await padding(), [4, 4 + Math.max(20, 36), 4 + 12, 4 + Math.max(20, 36)],
+    "landscape phones retain nonzero safe insets above the narrow breakpoint");
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.setViewportSize({ width: 390, height: 844 });
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 0, bottom: 0, left: 0 } });

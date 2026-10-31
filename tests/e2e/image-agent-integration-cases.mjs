@@ -27,6 +27,19 @@ export function integrationAgentCases({ call, doc, node, page }) {
       await call("redo");
       assert.deepEqual((await doc()).nodes, after.nodes);
     },
+    resize_document: async () => {
+      const before = await doc();
+      const resized = await call("resize_document", { width: 800, height: 600 });
+      assert.equal(resized.ok, true);
+      assert.deepEqual([resized.width, resized.height], [800, 600]);
+      const after = await doc();
+      assert.deepEqual([after.width, after.height], [800, 600]);
+      assert.equal(after.nodes.length, before.nodes.length, "Resizing the canvas cannot drop artwork");
+      await call("undo");
+      assert.deepEqual([(await doc()).width, (await doc()).height], [before.width, before.height]);
+      await call("redo");
+      assert.deepEqual([(await doc()).width, (await doc()).height], [800, 600]);
+    },
     set_code_connect: async () => {
       const before = await node("a");
       const mapping = { componentName: "AuditButton", importPath: "@audit/components" };

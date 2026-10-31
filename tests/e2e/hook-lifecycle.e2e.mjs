@@ -88,6 +88,12 @@ await withEditorBrowser(async ({ page }) => {
     // still target the actual focused page's registered engine.
     window.__vooEditor = window.__hookEngine.engine;
   });
+  // Built-in systems now start with curated presets; select studio explicitly so
+  // this check names the system it applies instead of assuming list order.
+  const studioTab = settings.getByTestId("design-system-item-studio");
+  if (await studioTab.count() === 0) await settings.getByTestId("design-system-more").click();
+  await studioTab.click();
+  assert.equal(await studioTab.getAttribute("aria-selected"), "true");
   await settings.getByRole("button", { name: useLabel, exact: true }).click();
   assert.deepEqual(await page.evaluate(() => ({ actual: window.__hookMainEngine.getDocument().designSystemId,
     preview: window.__hookEngine.engine.getDocument().designSystemId ?? null })), { actual: "studio", preview: null });
