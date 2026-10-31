@@ -8,6 +8,7 @@
  * another, the way every other clipboard in the app behaves.
  */
 import * as ops from "./doc_ops.js";
+import { findNode, isGroupNode } from "./scene_model.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
 import { exportSvgNodes } from "./editor-svg-resources.js";
 import { createLayerDuplicator } from "./layer-duplicate.js";

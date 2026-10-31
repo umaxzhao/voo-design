@@ -169,10 +169,34 @@ export function createEngineNodesController({
     );
   }
 
+  function getSelectedGroup() {
+    const group = selectedGroupId
+      ? findNode(getDoc(), selectedGroupId)
+      : null;
+    if (isGroupNode(group)) {
+      const expected = unitSelectionIds(group);
+      const selectedIds = selection.getIds();
+      if (
+        (expected.length === selectedIds.length &&
+          expected.every((id) => selectedIds.includes(id))) ||
+        (selectedIds.length === 1 && selectedIds[0] === group.id)
+      ) {
+        return getEffectiveNode(group);
+      }
+    }
+    const selectedIds = selection.getIds();
+    if (selectedIds.length === 1) {
+      const single = findNode(getDoc(), selectedIds[0]);
+      if (isGroupNode(single)) return getEffectiveNode(single);
+    }
+    return null;
+  }
+
   const nodeOps = createEngineNodeOps({
     getDoc, cache,
     setDoc,
     selection,
+    getSelectedGroup,
     releaseNodeTextures,
     maskTools,
     paintTools,
@@ -181,19 +205,6 @@ export function createEngineNodesController({
     requestRender,
     notify,
   });
-
-  function getSelectedGroup() {
-    const group = selectedGroupId
-      ? findNode(getDoc(), selectedGroupId)
-      : null;
-    if (!isGroupNode(group)) return null;
-    const expected = unitSelectionIds(group);
-    const selectedIds = selection.getIds();
-    return expected.length === selectedIds.length &&
-      expected.every((id) => selectedIds.includes(id))
-      ? getEffectiveNode(group)
-      : null;
-  }
 
   const groups = createEngineGroups({
     getDoc,

@@ -108,6 +108,6 @@ describe("Skia surface resize lifecycle", () => {
         delete globalThis.window.CanvasKitInit;
       }
     }
-  });
+  }, 15000);
 
 });

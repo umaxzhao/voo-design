@@ -1,4 +1,5 @@
-import { groupDescendants, isGroupNode, isRegionNode } from "./scene_model.js";
+import { isRegionNode } from "./scene_model.js";
+import { moveAffectedIds } from "./doc_ops_move.js";
 
 /** Preserve group subtrees and selection order while moving sibling blocks. */
 export function reorderLayerBatch(doc, ids, direction) {
@@ -15,20 +16,42 @@ export function reorderLayerBatch(doc, ids, direction) {
   };
   const roots = doc.nodes.filter(node => selected.has(node.id) && !selectedAncestor(node));
   if (direction > 0) roots.reverse();
-  const blockIds = node => new Set([node.id, ...(isGroupNode(node)
-    ? groupDescendants(doc, node.id).map(child => child.id) : [])]);
+  const unitOf = node => {
+    let current = node;
+    const seen = new Set();
+    while (current?.clipTo && !seen.has(current.clipTo)) {
+      seen.add(current.clipTo);
+      const base = byId.get(current.clipTo);
+      if (base) current = base;
+      else break;
+    }
+    return current;
+  };
+  const blockIds = node => new Set(moveAffectedIds(doc, [unitOf(node).id]));
   let nodes = doc.nodes;
-  for (const root of roots) {
+  for (const rawRoot of roots) {
+    const root = unitOf(rawRoot);
+    const moving = blockIds(root);
     const siblings = nodes.filter(node => (node.parentId ?? null) === (root.parentId ?? null));
     const index = siblings.findIndex(node => node.id === root.id);
-    const neighbor = siblings[index + direction];
+    if (index < 0) continue;
+    let neighbor = null;
+    if (direction > 0) {
+      for (let i = index + 1; i < siblings.length; i++) {
+        if (!moving.has(siblings[i].id)) { neighbor = unitOf(siblings[i]); break; }
+      }
+    } else {
+      for (let i = index - 1; i >= 0; i--) {
+        if (!moving.has(siblings[i].id)) { neighbor = unitOf(siblings[i]); break; }
+      }
+    }
     if (!neighbor || selected.has(neighbor.id) || isRegionNode(root) !== isRegionNode(neighbor)) continue;
-    const moving = blockIds(root);
     const adjacent = blockIds(neighbor);
     if (nodes.some(node => (moving.has(node.id) || adjacent.has(node.id)) && node.locked)) continue;
     const block = nodes.filter(node => moving.has(node.id));
     const rest = nodes.filter(node => !moving.has(node.id));
     let target = rest.findIndex(node => adjacent.has(node.id));
+    if (target < 0) continue;
     if (direction > 0) {
       for (let i = target; i < rest.length; i++) if (adjacent.has(rest[i].id)) target = i + 1;
     }

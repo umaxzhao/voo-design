@@ -58,9 +58,12 @@ async function canBind(port) {
 }
 
 async function upgradeStatus(port, origin) {
-  const socket = new WebSocket(`ws://127.0.0.1:${port}`, { origin });
+  // Four Vite servers plus their bridges cold-start in parallel here; under high
+  // CPU contention the default 5s handshake and probe budget can expire before
+  // the socket settles, so both get the same generous 20s ceiling.
+  const socket = new WebSocket(`ws://127.0.0.1:${port}`, { origin, handshakeTimeout: 20000 });
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { socket.terminate(); reject(new Error("Origin probe timed out")); }, 5000);
+    const timer = setTimeout(() => { socket.terminate(); reject(new Error("Origin probe timed out")); }, 20000);
     const finish = status => { clearTimeout(timer); socket.terminate(); resolve(status); };
     socket.once("open", () => finish(101));
     socket.once("unexpected-response", (_request, response) => { response.resume(); finish(response.statusCode); });

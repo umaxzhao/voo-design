@@ -155,13 +155,7 @@ export default function EditorContextObjectItems({ model }) {
           type="button"
           role="menuitem"
           className={itemClass}
-          onClick={() =>
-            run(() =>
-              engine
-                .getSelectedIds()
-                .forEach((id) => engine.reorderNode(id, 1)),
-            )
-          }
+          onClick={() => run(() => engine.bringForward?.())}
         >
           <span>{t("editor.menu.bringForward")}</span>
           <span className="text-[9px] text-neutral-500">]</span>
@@ -170,13 +164,7 @@ export default function EditorContextObjectItems({ model }) {
           type="button"
           role="menuitem"
           className={itemClass}
-          onClick={() =>
-            run(() =>
-              engine
-                .getSelectedIds()
-                .forEach((id) => engine.reorderNode(id, -1)),
-            )
-          }
+          onClick={() => run(() => engine.sendBackward?.())}
         >
           <span>{t("editor.menu.sendBackward")}</span>
           <span className="text-[9px] text-neutral-500">[</span>
@@ -188,7 +176,7 @@ export default function EditorContextObjectItems({ model }) {
           type="button"
           role="menuitem"
           className={itemClass}
-          onClick={() => run(() => engine.moveToFront(engine.getSelectedIds()))}
+          onClick={() => run(() => engine.bringToFront?.())}
         >
           <span>{t("editor.menu.bringToFront")}</span>
           <span className="text-[9px] text-neutral-500">
@@ -199,7 +187,7 @@ export default function EditorContextObjectItems({ model }) {
           type="button"
           role="menuitem"
           className={itemClass}
-          onClick={() => run(() => engine.moveToBack(engine.getSelectedIds()))}
+          onClick={() => run(() => engine.sendToBack?.())}
         >
           <span>{t("editor.menu.sendToBack")}</span>
           <span className="text-[9px] text-neutral-500">

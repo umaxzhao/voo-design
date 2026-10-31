@@ -34,6 +34,7 @@ export function createEngineNodeOps({
   getDoc, cache,
   setDoc,
   selection,
+  getSelectedGroup,
   releaseNodeTextures,
   maskTools,
   paintTools,
@@ -43,9 +44,10 @@ export function createEngineNodeOps({
   notify,
   getZoom,
 }) {
+  const stackActions = createNodeStackActions({ getDoc, setDoc,
+    selection, getSelectedGroup, releaseNodeTextures, maskTools, paintTools, penTools, requestRender, notify });
   const { removeIds, removeNode, reorderNode, reorderNodeTo, reorderNodes,
-    moveToFront, moveToBack, moveNodeToRoot } = createNodeStackActions({ getDoc, setDoc,
-    selection, releaseNodeTextures, maskTools, paintTools, penTools, requestRender, notify });
+    moveToFront, moveToBack, moveNodeToRoot, bringForward, sendBackward, bringToFront, sendToBack } = stackActions;
 
   function updateNode(id, patch, options) {
     return commitOrPreviewEditorDocument(
@@ -388,6 +390,10 @@ export function createEngineNodeOps({
     reorderNodeTo,
     moveToFront,
     moveToBack,
+    bringForward,
+    sendBackward,
+    bringToFront,
+    sendToBack,
     moveNodeBy,
     moveNodesBy,
     moveNodeToRoot,
