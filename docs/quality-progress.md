@@ -6,6 +6,11 @@
 最近一次完整核心验证提交：[457b149](https://github.com/umaxzhao/voo-design/commit/457b149d4c1da1ecb1073fa7b7c87be47276f92c)；91/91 项通过，当前线上为该构建。主线 326860d 应用源码一致，仅验收文档不同。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
+## 本轮：评论复用右侧面板（验证中）
+
+- `inspector.comments-panel-slot`：入口移到页面名称右侧，评论的加载/错误/列表内容复用右侧属性外壳，属性/历史让位；关闭恢复原面板，历史命令可切换回来。紧凑画布使用同一底部区域，评论关闭后恢复原折叠状态。
+- 修改前入口位置失败 `comments-panel-before.log`；58 项相关单测、评论生命周期和 1600/900/390px 单槽位、触摸关闭、宿主重挂载及原评论发布/回复/撤销通过。首轮 `826e9fd` 单测 4686 通过/4 跳过，完整门禁在 `pages_dnd` 的旧直接子按钮定位超时（`comments-panel-release.json`）；改用稳定入口标记，原重命名/拖拽/取消断言保留且独立复查通过，修正固定版本门禁与线上实测待补录。[验收范围](audits/nested-objects-audit.md#comments-shared-right-panel)。证据目录 `/private/tmp/voo-license-regression/`；登记 76 能力，功能覆盖仍部分。
+
 ## 本轮：尺寸标签位于对象下方（已完成声明范围）
 
 - `compositing.selection-size-label`：默认下方居中，底部空间不足才回退上方。修改前单测期望 y=66、实际 y=16 的失败保留于 `/private/tmp/voo-license-regression/size-label-before.log`；20 项相关单测及真实截图像素回归通过，覆盖 0.5/1/2×、旋转、Frame 和多选原策略，文档/选区不变。
@@ -21,7 +26,6 @@
 - [详细范围、对照方法与未验证项](audits/figma-import-audit.md#openpencil-control-and-further-rendering-optimization--2026-11-01)。`native_studio` 排除，卡顿和全部属性还原仍为部分完成。
 
 ## 本轮：分享与页面外浮层遮挡（已完成声明范围）
-
 - `inspector.global-overlay-stacking`：已复现分享框被 `editor-pages` 覆盖。顶栏统一层级；分享使用 body 锚定浮层，窄屏限制位置和滚动高度；快捷键、图标、SVG 与懒加载占位共用全局 Portal。[逐类验收与原始失败](audits/nested-objects-audit.md#global-overlay-stacking)。
 - 回归覆盖 1600/1280/900px 分享、320px 嵌套分享、裁切/变换宿主下的实际弹窗九点命中、输入与 Escape，以及文档和选区不变。本地主工作区增量修复及浏览器复查通过，其他草稿保留。
 - 同时修复冷首页导入事件丢失和分享身份在 React updater 重放时重复发布；保留主线提前点击 New 的排队机制，受控延迟与批量真实输入回归保留。Figma 夹具仅补导入引擎绑定前提，精确像素断言不变。
@@ -274,8 +278,7 @@
 | Agent 与平台 `platform` | 14/14 | 部分 | 分享身份重放、懒加载与共享夹具通过；真实外部服务、原生安装包与其他平台上下文仍待核验 |
 
 ## 21 组独立检查的待办
-“待复核”表示需要先确认夹具、断言与服务要求，再决定纳入核心门禁或单独执行；
-不能推断它们已通过、已失败或已经失效。
+“待复核”表示需要先确认夹具、断言与服务要求，再决定纳入核心门禁或单独执行； 不能推断它们已通过、已失败或已经失效。
 
 | 状态 | 脚本名称（位于 `tests/e2e/`） |
 | --- | --- |
@@ -310,16 +313,13 @@
 - [图片编辑器验收](audits/image-editor-complete-audit.md)：工具、像素、原生环境与模型边界。
 - [性能证据索引](performance/README.md)：区分 CPU、GPU、FPS 与历史测量。
 
-每轮更新：先更新受影响模块的状态和剩余项，再填入准确提交、运行环境和原始报告位置。
-修复关闭前补上回归用例；只有实际完成并有证据的项才能勾选。
+每轮更新：先更新受影响模块的状态和剩余项，再填入准确提交、运行环境和原始报告位置。 修复关闭前补上回归用例；只有实际完成并有证据的项才能勾选。
 
-最近完整报告：`/private/tmp/voo-release-round2.json`（a94365e，85/85，隔离源码前后均干净）；上一批报告为 `/private/tmp/voo-release.json`（bfd7e5b，85/85），历史基线报告为 `/private/tmp/voo-deeper-release.json`（ebab451，85/85）。
-线上资源证据：`/private/tmp/voo-deeper-deployment-proof.json`；新场景结果：
+最近完整报告：`/private/tmp/voo-release-round2.json`（a94365e，85/85，隔离源码前后均干净）；上一批报告为 `/private/tmp/voo-release.json`（bfd7e5b，85/85），历史基线报告为 `/private/tmp/voo-deeper-release.json`（ebab451，85/85）。 线上资源证据：`/private/tmp/voo-deeper-deployment-proof.json`；新场景结果：
 `/private/tmp/voo-deeper-production/`；笔触与路径额外结果：`/private/tmp/voo-deeper-production-{brush,vector}.log`。
 执行条件：`/private/tmp/voo-deeper-execution-context.json`，单测使用
 `VITEST_MAX_FORKS=2 VITEST_MIN_FORKS=1 VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1`。
-前期失败和混杂工作区的报告另行保留；不能沿用其通过项作为最终证据。临时文件可能被清理，
-需要长期保存时移入交付证据目录。重新生成和核对的命令：
+前期失败和混杂工作区的报告另行保留；不能沿用其通过项作为最终证据。临时文件可能被清理， 需要长期保存时移入交付证据目录。重新生成和核对的命令：
 
 ```bash
 VOO_RELEASE_REPORT=/private/tmp/voo-release.json node scripts/verify-editor-release.mjs

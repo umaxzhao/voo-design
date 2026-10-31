@@ -1,3 +1,4 @@
+import { checkCommentPanelSlot } from "./comment-panel-slot-checks.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
@@ -38,7 +39,11 @@ await withEditorBrowser(async ({ page, tool }) => {
   page.on("request", request => requests.add(request.url()));
   assert.equal([...requests].some(url => pattern.test(url)), false);
   await page.getByTestId("editor-comments-toggle").waitFor();
-  checks.push("an empty editor exposes its comment launcher without downloading the comments surface");
+  const launcher = await page.getByTestId("editor-comments-toggle").boundingBox();
+  const navigation = await page.getByTestId("page-switcher").getByRole("button", { name: "Pages", exact: true }).boundingBox();
+  assert.ok(launcher.x >= navigation.x + navigation.width && Math.abs(launcher.y + launcher.height / 2 - navigation.y - navigation.height / 2) < 2,
+    "Comments must sit beside the page name on its right");
+  checks.push("an empty editor exposes its comment launcher beside page navigation without downloading the comments surface");
 
   await page.evaluate(() => {
     const e = window.__vooEditor;
@@ -55,6 +60,8 @@ await withEditorBrowser(async ({ page, tool }) => {
   try {
     await page.getByTestId("editor-comments-toggle").click();
     await page.getByTestId("editor-comments-loading").waitFor();
+    assert.equal(await page.getByTestId("editor-properties-panel").count(), 1);
+    assert.equal(await page.getByTestId("editor-properties-panel").getByRole("spinbutton", { name: "W", exact: true }).count(), 0);
     await expectHit(page.getByTestId("editor-comments-loading").getByRole("button", { name: "Close comments", exact: true }));
     assert.equal(await page.getByTestId("editor-pages").isVisible(), true);
     assert.deepEqual(await selected(), ["comment-loading-target"]);
@@ -72,6 +79,9 @@ await withEditorBrowser(async ({ page, tool }) => {
   await page.getByTestId("editor-comments-toggle").click();
   const panel = page.getByTestId("editor-comments-panel");
   await panel.waitFor();
+  assert.equal(await page.getByTestId("editor-properties-panel").count(), 1);
+  assert.equal(await panel.locator("xpath=ancestor::aside").getAttribute("data-testid"), "editor-properties-panel");
+  assert.equal(await page.getByTestId("editor-properties-panel").getByRole("spinbutton", { name: "W", exact: true }).count(), 0);
   const allFilter = panel.getByRole("button", { name: /^All\b/ });
   await expectHit(allFilter);
   await allFilter.click();
@@ -85,9 +95,8 @@ await withEditorBrowser(async ({ page, tool }) => {
     const box = guide.getBoundingClientRect();
     return document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)?.getAttribute("data-testid");
   }), "editor-comment-mode-overlay", "comment placement still owns the canvas above guide hit bands");
-  const width = page.getByTestId("editor-properties-panel").getByRole("spinbutton", { name: "W", exact: true });
-  await expectHit(width); await width.click();
-  assert.equal(await mode.count(), 1, "placement mode must not cover the inspector controls");
+  await expectHit(allFilter); await allFilter.click();
+  assert.equal(await mode.count(), 1, "placement mode must leave the shared right-panel controls reachable");
   await placeBesideInspector(page, mode);
   const composer = page.getByTestId("editor-comment-composer");
   await expectHit(composer.getByRole("textbox"));
@@ -102,6 +111,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.equal(await panel.count(), 1);
   await page.keyboard.press("Escape");
   await panel.waitFor({ state: "hidden" });
+  await page.getByTestId("editor-properties-panel").getByRole("spinbutton", { name: "W", exact: true }).waitFor();
   assert.deepEqual(await selected(), ["comment-loading-target"]);
   checks.push("warm Escape unwinds draft, placement mode and panel one at a time without changing artwork selection");
 
@@ -137,8 +147,9 @@ await withEditorBrowser(async ({ page, tool }) => {
   await tool("undo");
   assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().comments[0].messages.length), 1);
   checks.push("reopening keeps the filter and real create/reply operations retain single-step undo after lazy activation");
+  await checkCommentPanelSlot(page);
   console.log(JSON.stringify({ passed: checks }, null, 2));
-}, { viewport: { width: 1440, height: 700 } });
+}, { viewport: { width: 1440, height: 700 }, hasTouch: true });
 
 await withEditorBrowser(async ({ page }) => {
   await page.locator('[data-open-guard="off"]').waitFor();
