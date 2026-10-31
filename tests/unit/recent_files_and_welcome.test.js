@@ -12,6 +12,7 @@ import {
   deletePermanently,
   emptyTrash,
   addRecentFile,
+  syncRecentFile,
   removeRecentFile,
   clearRecentFiles,
 } from "../../src/canvas/store/recent_files.js";
@@ -64,6 +65,23 @@ describe("Recent Files Management & Welcome Dashboard State", () => {
     // Most recent should be first
     expect(list[0].name).toBe("WebLayout.voo");
     expect(list[1].name).toBe("Poster.voo");
+  });
+
+  it("treats path-backed files without a project folder as drafts", () => {
+    const loose = addRecentFile({
+      name: "LooseProject.voo",
+      path: "/Users/test/LooseProject.voo",
+      isDraft: false,
+    });
+    const filed = addRecentFile({
+      name: "FiledProject.voo",
+      path: "/Users/test/Project2/FiledProject.voo",
+      isDraft: false,
+    });
+    syncRecentFile(filed.id, { folder: "Project2" });
+
+    expect(getDrafts().map((item) => item.id)).toContain(loose.id);
+    expect(getDrafts().map((item) => item.id)).not.toContain(filed.id);
   });
 
   it("updates existing item if the same path or name is added again", () => {

@@ -6,6 +6,7 @@ import {
   getTrashFiles,
 } from "../../store/recent_files.js";
 import { migrateLegacyFolderMembership } from "../../store/file_folders.js";
+import { collectDraftFiles } from "./welcome_draft_files.js";
 import {
   workspaceStorage,
   ElectronWorkspaceDriver,
@@ -86,14 +87,7 @@ export function useWelcomeFiles({ activeTab, searchQuery, sortBy, activeFolder }
         files.push(...getTrashFiles(options).filter((file) => !seen.has(file.id) && !seen.has(file.path)));
       } else if (activeTab === "drafts") {
         const all = await workspaceStorage.scanFiles(options);
-        files = all.filter((f) => f.isDraft);
-        const localDrafts = getDrafts(options);
-        const seenIds = new Set(files.map((d) => d.id || d.name));
-        for (const ld of localDrafts) {
-          if (!seenIds.has(ld.id) && !seenIds.has(ld.name)) {
-            files.push(ld);
-          }
-        }
+        files = collectDraftFiles(all, getDrafts(options));
       }
 
       // A project folder shows only the files that live in that subdirectory.

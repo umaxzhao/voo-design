@@ -68,7 +68,9 @@ export function getRecentFiles(options = {}) {
     if (trashOnly) return isTrashed;
     if (!includeTrashed && isTrashed) return false;
     if (starredOnly && !item.starred) return false;
-    if (draftsOnly && !item.isDraft && item.path) return false;
+    // Files without project-folder membership belong to Drafts, including
+    // existing path-backed files that were opened before this classification.
+    if (draftsOnly && item.folder) return false;
     if (category && category !== "all" && item.category && item.category !== category) return false;
     if (search && search.trim()) {
       const q = search.trim().toLowerCase();
@@ -142,6 +144,7 @@ export function addRecentFile({
       trashedAt: null,
       category: category || existing?.category || "web",
       isDraft: isDraft ?? existing?.isDraft ?? !path,
+      folder: existing?.folder ?? null,
       type: type || existing?.type || "design",
     };
 
