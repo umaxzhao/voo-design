@@ -52,16 +52,20 @@ by this entry. Recovering the original import record remains open.
 
 Targeted tests: 33 passed in the isolated checkout before full release
 verification; evidence `/private/tmp/voo-license-regression/isolated-after.log`.
-Application revision `1f3266e604f740c0d7463e6c2f1c9d7f73ae2b29` passed the
-build/design/catalog gates and 4,529 unit tests (four skipped) with Vitest capped
-at two workers. Earlier uncapped performance timing failures remain recorded.
-The full release run stopped at 26/88 steps: 20 browser groups passed, two
-failed on cache cleanup/navigation startup, and 62 were not run. The two failed
-groups passed standalone sequential rechecks, without changing the full run's
-incomplete status. The built legal-asset browser assertion passed on this
-revision. No signed installer or deployment is certified; main is not updated
-by this draft branch. See `../quality-progress.md` and
-`/private/tmp/voo-license-regression/release-capped.json`.
+Application revision `a407ea58d446b6f4f73d6ecd430cb37d4548d17b` completed the full release verifier:
+88/88 steps including 84 browser groups, build/design/catalog checks and
+4,529 passing unit tests (four skipped). Vitest was capped at two workers;
+browser concurrency remained three. The prior incomplete runs and performance
+failures remain recorded rather than being relabeled as passes.
+
+PR #68 merged as `b708127f0732635d0cb1dbf2d0212ec49ceacd6f` with the same source tree. The verified build
+was deployed through the configured script. Eight online entry/asset/legal
+files match the built SHA-256 values, and a fresh browser opened About,
+read the two full component licenses and closed the dialog successfully.
+Evidence: `/private/tmp/voo-license-regression/release-fixture-fixed.json` and
+`production-attribution-proof.json`. This does not certify a signed installer,
+all platforms or historical authorization. See `../quality-progress.md`.
+
 
 ## Remaining historical review
 

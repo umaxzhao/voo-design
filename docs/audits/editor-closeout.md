@@ -221,3 +221,10 @@ in parallel and verifies separate MCP documents and final port cleanup.
 | Previous release failures | `root-contextual-toolbar` and `frame-child-pointer` remain registered, with their original interaction assertions |
 | Original reproduction | `/private/tmp/voo-license-regression/fixture-pending-before.log` and the earlier incomplete `release-capped.json` |
 | Remaining limits | No permission fault injection, signed installer or arbitrary filesystem/storage platform certification; exact clean release evidence is in quality-progress.md |
+
+Lifecycle and release verification completed on `a407ea58d446b6f4f73d6ecd430cb37d4548d17b`: the full
+88-step verifier passed with all 84 browser groups, including the controlled
+slow-resource case and the two original failures in the regular three-worker
+pool. Main merge `b708127f0732635d0cb1dbf2d0212ec49ceacd6f` has an identical source tree. Online legal
+asset hashes and the actual About dialog were verified after deployment;
+receipts remain under `/private/tmp/voo-license-regression/`.
