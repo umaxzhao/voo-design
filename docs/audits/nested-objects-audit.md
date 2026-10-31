@@ -114,3 +114,24 @@ document mutation or page errors. Evidence: `/private/tmp/voo-license-regression
 Earlier incomplete/failed runs and the known cold-start New timing failure are
 retained in `docs/quality-progress.md`; passing this fixture does not certify
 physical devices, signed desktop cold starts or all private workspace drafts.
+
+
+## Agent selection context icon
+
+Capability: `platform.agent-contracts`. A single selected Frame now uses the
+same `IconFrame` as its canvas label. The chip previously always rendered
+Layers despite the existing normalized `kind: "frame"` descriptor. Selection
+snapshots, prompt payloads, chip labels and detach behavior are unchanged.
+Ordinary groups/layers and multiple selections retain Layers. Legacy artboard
+contexts use the Frame icon too; no new control or user-visible copy is added.
+
+`agent_selection_context.test.js` checks rendered SVG identity for Frame,
+artboard, ordinary group/layer and a multiple selection containing a Frame.
+`agent-selection-context.e2e.mjs` uses a real editor to switch child → Frame →
+child → multiple, checking actual chip SVGs, text, prompt preservation,
+submitted target IDs, detach, deselect and document switching. The original
+Frame SVG assertion fails before the fix (`agent-frame-icon-before.log`).
+This standalone suite is run explicitly; its other standalone classification
+and the 86-suite core inventory remain unchanged. Release evidence and exact
+revision are recorded in `docs/quality-progress.md`; signed native installs,
+physical input devices and all imported node variants are not certified.
