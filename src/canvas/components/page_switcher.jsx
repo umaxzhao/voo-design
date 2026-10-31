@@ -1,3 +1,4 @@
+import { CommentLauncherHost } from "./comment_launcher_host.jsx";
 import { useEffect, useRef, useState } from "react";
 import { ChevronUp, ChevronDown, Copy, Trash2 } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
@@ -183,24 +184,28 @@ export default function PageSwitcher() {
           </button>
         </section>
       )}
-      <button
-        type="button"
-        aria-label={t("pageSwitcher.label")}
-        aria-expanded={open || nodes.length === 0}
-        onClick={() => {
-          if (open) cancelDrag();
-          setOpen((value) => !value);
-        }}
-        className="flex h-9 items-center gap-2 rounded-full border border-white/10 bg-neutral-900/95 px-3.5 text-xs text-neutral-100 shadow-menu backdrop-blur-2xl"
-      >
-        <span className="max-w-[160px] truncate">
-          {current?.data?.label ?? t("pageSwitcher.untitled")}
-        </span>
-        <span className="text-neutral-400">
-          {current ? nodes.indexOf(current) + 1 : 0}/{nodes.length}
-        </span>
-        {open || nodes.length === 0 ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
-      </button>
+      <div className="flex max-w-[calc(100vw-2rem)] items-center gap-2">
+        <button
+          type="button"
+          data-page-switcher-trigger="true"
+          aria-label={t("pageSwitcher.label")}
+          aria-expanded={open || nodes.length === 0}
+          onClick={() => {
+            if (open) cancelDrag();
+            setOpen((value) => !value);
+          }}
+          className="flex h-9 min-w-0 items-center gap-2 rounded-full border border-white/10 bg-neutral-900/95 px-3.5 text-xs text-neutral-100 shadow-menu backdrop-blur-2xl"
+        >
+          <span className="min-w-0 max-w-[160px] truncate">
+            {current?.data?.label ?? t("pageSwitcher.untitled")}
+          </span>
+          <span className="text-neutral-400">
+            {current ? nodes.indexOf(current) + 1 : 0}/{nodes.length}
+          </span>
+          {open || nodes.length === 0 ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
+        </button>
+        <CommentLauncherHost />
+      </div>
     </div>
   );
 }

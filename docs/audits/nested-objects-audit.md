@@ -317,3 +317,40 @@ Document/selection were unchanged and there were no page errors. Evidence:
 `size-production-frame.png` under `/private/tmp/voo-license-regression/`.
 No physical display scaling, signed native builds or every clipping/overlay
 combination is certified by these Chromium/unit scenarios.
+
+
+## Comments shared right panel
+
+Capability: `inspector.comments-panel-slot`; comments keep their existing
+focused-document operations and deferred surface. The launcher is portalled
+into the page-navigation row's stable host, immediately after the page name.
+The host subscription follows unmount/remount; inactive editors cannot publish
+a launcher. No second comment state or document mutation path is introduced.
+
+Comments, cold loading and retry/error states use `PropertiesPanelShell` with
+the property header omitted. The original property/instance/history render
+branches yield while Comments owns the rail. Closing restores their existing
+state, and the existing History event switches from Comments into History.
+Compact canvases use the existing inspector shelf at readable full width,
+with layers hidden only while Comments is open and 48px touch controls.
+
+| Context | Acceptance |
+| --- | --- |
+| Position reproduction | `comments-panel-before.log` fails the original above-navigation launcher position |
+| Single panel | SSR asserts one aside and no inner card; cold/warm browser assertions require one `editor-properties-panel` containing comment content and no hidden property W control |
+| Desktop/compact | 1600/900/390px launcher adjacency, rail bounds, mobile touch close and original document/selection preservation |
+| Mode replacement | Close restores properties/previous History; History's registered command replaces Comments without a second panel |
+| Launcher lifecycle | Browser drawer unmounts the page host; returning produces exactly one launcher |
+| Comment operations | Existing draft/thread/mode/panel Escape sequence, seen state, camera pins, draft/reply retention, create/reply and one-step undo, cold cancellation/unmount and error/retry remain exercised |
+
+Before-fix source and local App backups are retained in
+`/private/tmp/voo-license-regression/comments-panel-primary-backup/`.
+Initial responsive fixtures lacked a touch context and queried hidden mobile
+fields without `includeHidden`; those failed logs are retained separately from
+`comments-panel-switching.log`. The initial SSR fixture expected an untranslated
+key although the existing label helper intentionally falls back to `Comments`;
+that failure remains in `comments-panel-unit-final.log`, with corrected 57-unit
+results in `comments-panel-unit-verified.log`. No product assertion was relaxed.
+Exact committed release, local App and production evidence are maintained in
+`docs/quality-progress.md`; not every native install, physical device, canvas
+type, panel placement or keyboard/service combination is certified here.

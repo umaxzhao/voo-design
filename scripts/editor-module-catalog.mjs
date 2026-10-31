@@ -4,7 +4,7 @@ export const EDITOR_MODULES = [
     id: "workspace",
     title: "Workspace and resources",
     paths: [
-      "src/app_title_bar.jsx", "src/welcome_settings.css",
+      "src/app_title_bar.jsx", "src/welcome_settings.css", "src/canvas/components/page_switcher.jsx",
       "tests/unit/titlebar_actions.test.jsx", "tests/unit/welcome_header_actions.test.js",
       "src/canvas/components/welcome*", "src/canvas/components/welcome_dashboard/*",
       "src/canvas/components/editor*resources*", "src/canvas/components/editor_layers_assets*",
@@ -198,6 +198,9 @@ export const EDITOR_MODULES = [
     id: "inspector",
     title: "Inspector, menus and shared UI",
     paths: [
+      "src/canvas/components/editor_hooks/use_comments_history_switch.js", "tests/e2e/comment-panel-slot-checks.mjs", "src/canvas/components/editor_comments_layout.css",
+      "tests/unit/comments_panel_slot.test.jsx", "src/canvas/components/editor_mobile_navigation.css",
+      "src/canvas/components/comment_view_types.js", "src/canvas/components/comment_launcher_host.jsx", "src/canvas/components/editor_comment*",
       "tests/e2e/inspector-control-cases.mjs", "src/canvas/components/scrub_field.jsx",
       "tests/e2e/typography-inspector-cases.mjs", "tests/e2e/context-submenu-checks.mjs",
       "tests/unit/opacity_icon_blend_bg.test.jsx", "tests/unit/export_presets.test.js", "tests/unit/right_panel_phase1.test.jsx", "tests/unit/properties_panel_restructure.test.jsx",
@@ -211,7 +214,7 @@ export const EDITOR_MODULES = [
       "src/shared/i18n*", "src/shared/i18n/*", "src/canvas/*layout.css", "src/canvas/*panels.css",
     ],
     related: ["selection","layers","text","images","layout"],
-    features: ["inspector.control-hierarchy", "inspector.typography-clarity", "inspector.export-opt-in", "inspector.unified-fill", "inspector.impeccable-polish", "inspector.context-submenus",
+    features: ["inspector.comments-panel-slot", "inspector.control-hierarchy", "inspector.typography-clarity", "inspector.export-opt-in", "inspector.unified-fill", "inspector.impeccable-polish", "inspector.context-submenus",
       "inspector.global-overlay-stacking", "inspector.field-commit", "inspector.menu-focus", "inspector.responsive", "inspector.locale-lifecycle",
     ],
     suites: ["impeccable-polish",

@@ -1,0 +1,33 @@
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+import EditorCommentsPanel from "../../src/canvas/components/editor_comments_panel.jsx";
+
+vi.mock("../../src/canvas/use_i18n.js", () => ({ useI18n: () => ({ t: key => key }) }));
+
+function emptyModel() {
+  const actions = Object.fromEntries([
+    "setDraft", "setReplyBody", "setFilter", "closeThread", "submitDraft",
+    "submitReply", "handleDelete", "handleResolve", "focusThread", "popoverStyle",
+  ].map(name => [name, vi.fn()]));
+  return { ...actions, list: [], threads: [], openCount: 0, unreadCount: 0,
+    unreadIds: new Set(), filter: "open", selectedId: null, selected: null,
+    draft: null, replyBody: "", author: {}, cameraX: {}, cameraY: {} };
+}
+
+describe("comments replace the shared inspector", () => {
+  it("renders one docked inspector shell with comment content and no second card", () => {
+    const html = renderToStaticMarkup(<EditorCommentsPanel model={emptyModel()} open t={key => key} />);
+    expect(html.match(/<aside\b/g)).toHaveLength(1);
+    expect(html).toContain('data-testid="editor-properties-panel"');
+    expect(html).toContain('data-testid="editor-comments-panel"');
+    expect(html).toContain('aria-label="Comments"');
+    const content = html.match(/<section[^>]+>/)?.[0];
+    expect(content).toBeDefined();
+    expect(content).not.toMatch(/absolute|shadow|rounded|bg-/);
+    expect(html).not.toContain('data-inspector-control=');
+  });
+  it("does not leave a second shell behind when closed", () => {
+    expect(renderToStaticMarkup(<EditorCommentsPanel model={emptyModel()} open={false} />)).toBe("");
+  });
+});

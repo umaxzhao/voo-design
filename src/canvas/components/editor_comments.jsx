@@ -1,3 +1,5 @@
+import "./editor_comments_layout.css";
+import PropertiesPanelShell from "./editor_properties/properties_panel_shell.jsx";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import PropTypes from "prop-types";
 import { Loader2, X } from "lucide-react";
@@ -20,17 +22,17 @@ ReadySurface.propTypes = { readyRef: PropTypes.shape({ current: PropTypes.bool }
   children: PropTypes.node.isRequired };
 
 /** Keep the existing launcher usable while a cold comments module is loading. */
-function PendingComments({ open, addMode, onOpen, onClose, onToggleAddMode, list, t, failed, onRetry }) {
-  // Child layers share the editor's stack: panels rise above the inspector,
-  // while placement remains below it. A root z-index would trap both together.
+function PendingComments({ open, addMode, onOpen, onClose, onToggleAddMode, list, t, failed, onRetry, launcherVisible = true }) {
+  // The list replaces the inspector; placement stays in the document overlay.
   return (
     <div data-testid="editor-comments" className="pointer-events-none absolute inset-0 select-none font-mono">
       {addMode ? <div className="pointer-events-auto absolute inset-0 z-20 cursor-wait" /> : null}
-      <EditorCommentsLauncher open={open} onOpen={onOpen} openCount={countOpen(list)}
+      <EditorCommentsLauncher open={open} onOpen={onOpen} visible={launcherVisible} openCount={countOpen(list)}
         unreadCount={unreadCommentCount(list, readCommentSeenAt())} t={t} />
       {open || addMode ? (
+        <PropertiesPanelShell testId="editor-properties-panel" showHeader={false} ariaLabel={t("editor.comments.title")}>
         <div role={failed ? "alert" : "status"} aria-busy={!failed} data-testid={failed ? "editor-comments-error" : "editor-comments-loading"}
-          className="pointer-events-auto absolute right-4 top-4 z-40 flex items-center gap-2 rounded-2xl bg-neutral-900 p-3 text-neutral-300 shadow-panel">
+          className="pointer-events-auto flex items-center gap-2 p-3 text-neutral-300">
           {failed ? null : <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
           <span className="text-[11px]">{t(failed ? "editor.comments.loadFailed" : "common.loading")}</span>
           {failed ? <button type="button" onClick={onRetry}
@@ -43,6 +45,7 @@ function PendingComments({ open, addMode, onOpen, onClose, onToggleAddMode, list
             <X size={13} />
           </button>
         </div>
+        </PropertiesPanelShell>
       ) : null}
     </div>
   );

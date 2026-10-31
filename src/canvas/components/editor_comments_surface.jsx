@@ -8,7 +8,7 @@ import EditorCommentsPanel from "./editor_comments_panel.jsx";
 import EditorCommentsLauncher from "./editor_comments_launcher.jsx";
 
 export default function EditorCommentsSurface(props) {
-  const { open = false, addMode = false, onOpen, onClose, onToggleAddMode, t } = props;
+  const { open = false, addMode = false, onOpen, onClose, onToggleAddMode, t, launcherVisible = true } = props;
   const model = useEditorCommentsSurface(props);
   const { rootRef, handleModePointerDown, handleModePointerUp, handleModePointerCancel } = model;
   // Do not isolate this root: each child owns its position relative to the
@@ -45,7 +45,7 @@ export default function EditorCommentsSurface(props) {
       <EditorCommentPins model={model} t={t} />
       <EditorCommentDraft model={model} t={t} />
       <EditorCommentThread model={model} t={t} />
-      <EditorCommentsLauncher open={open} onOpen={onOpen} unreadCount={model.unreadCount} openCount={model.openCount} t={t} />
+      <EditorCommentsLauncher visible={launcherVisible} open={open} onOpen={onOpen} unreadCount={model.unreadCount} openCount={model.openCount} t={t} />
       <EditorCommentsPanel model={model} t={t} open={open} addMode={addMode} onClose={onClose} onToggleAddMode={onToggleAddMode} />
     </div>
   );
