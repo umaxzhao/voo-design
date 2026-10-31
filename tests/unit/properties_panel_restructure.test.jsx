@@ -155,7 +155,7 @@ describe("fill row", () => {
       <FillSection object={{ kind: "rect", fill: "#ff0000" }} edit={noop} editAndCommit={noop} />,
     );
     expect(html).not.toContain('aria-label="Fill blend mode"');
-    expect(html.match(/aria-label="Fill visible"/g)).toHaveLength(1);
+    expect(html.match(/aria-label="editor.fillPicker.visibility"/g)).toHaveLength(1);
     expect(html).not.toContain('type="checkbox"');
     // Even a non-normal mode no longer names itself in the row.
     const dodge = renderToStaticMarkup(
