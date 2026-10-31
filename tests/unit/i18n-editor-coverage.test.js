@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import en from "../../src/shared/i18n/en.js";
+import { COMMUNITY_TEMPLATES } from "../../src/canvas/components/community_templates_data.js";
 import zh from "../../src/shared/i18n/zh.js";
 
 /**
@@ -122,5 +123,71 @@ describe("editor translation coverage", () => {
       'blank        fixture.jsx  labelKey("editor.__blank__")',
       'untranslated fixture.jsx  t()("editor.__fallback__")',
     ]);
+  });
+});
+
+/**
+ * Templated keys cannot be found by the literal scan above: the value is built
+ * at runtime from an enum (`editor.props.combine.${op}`). Enumerate each
+ * template's full value domain so a missing permutation fails here instead of
+ * shipping a raw key.
+ */
+const DYNAMIC_KEY_FAMILIES = [
+  ["editor.props.combine.", ["union", "subtract", "intersect", "exclude"]],
+  ["editor.props.alignShapes.", ["left", "center", "right", "top", "middle", "bottom"]],
+  ["editor.props.distribute.", ["horizontal", "vertical"]],
+  ["editor.props.layoutMode.", ["none", "horizontal", "vertical"]],
+  ["editor.constraints.", ["left", "right", "leftRight", "center", "scale", "top", "bottom", "topBottom"]],
+  ["editor.mask.", ["erase", "restore"]],
+  ["agent.authoring.", ["reference", "directions", "selection", "generation", "critique", "repair", "images", "cancelled", "failed"]],
+];
+
+/** Body-copy keys are split per first-run step, not enumerated in the source. */
+const FIRST_RUN_STEPS = ["provider", "workspace"];
+
+/** Every curated community template gets its own copy block. */
+const COMMUNITY_TEMPLATE_IDS = COMMUNITY_TEMPLATES.map((template) => template.id);
+
+function dynamicKeys() {
+  const keys = [];
+  for (const [prefix, values] of DYNAMIC_KEY_FAMILIES) {
+    for (const value of values) keys.push(`${prefix}${value}`);
+  }
+  for (const step of FIRST_RUN_STEPS) {
+    for (const suffix of ["title", "description"]) keys.push(`firstRun.${step}.${suffix}`);
+  }
+  for (const id of COMMUNITY_TEMPLATE_IDS) keys.push(`welcome.community.template.${id}`);
+  return keys;
+}
+
+describe("dynamic template key coverage", () => {
+  it("enumerates the complete value domain of every templated key", () => {
+    expect(COMMUNITY_TEMPLATE_IDS).toHaveLength(9);
+    expect(new Set(dynamicKeys()).size).toBe(
+      4 + 6 + 2 + 3 + 8 + 2 + 9 + FIRST_RUN_STEPS.length * 2 + COMMUNITY_TEMPLATE_IDS.length,
+    );
+  });
+
+  it.each([["en", en], ["zh", zh]])(
+    "has a translated value for every dynamic template key in %s",
+    (_locale, dictionary) => {
+      const problems = [];
+      for (const key of dynamicKeys()) {
+        const value = dictionary[key];
+        if (typeof value !== "string") problems.push(`missing      ${key}`);
+        else if (value.trim() === "") problems.push(`blank        ${key}`);
+        else if (value === key) problems.push(`untranslated ${key}`);
+      }
+      expect(problems, `\n${problems.join("\n")}\n`).toEqual([]);
+    },
+  );
+
+  it("proves the dynamic guard catches a missing permutation", () => {
+    const dictionary = Object.fromEntries(
+      dynamicKeys().map((key) => [key, `value:${key}`]),
+    );
+    delete dictionary["editor.mask.erase"];
+    const missing = dynamicKeys().filter((key) => typeof dictionary[key] !== "string");
+    expect(missing).toEqual(["editor.mask.erase"]);
   });
 });

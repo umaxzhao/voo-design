@@ -558,7 +558,7 @@ export default {
   "run.retryTargetMissing":
     "That node is no longer on the canvas, so there is nothing to retry.",
   "error.noPlatform":
-    "Open this extension on a ChatGPT, Gemini or 即梦 conversation page",
+    "Open this extension on a ChatGPT, Gemini or Dreamina conversation page",
   "error.templateDeepLinkMissed":
     "That template link is no longer valid — the starter canvas was loaded instead",
   "error.probeFailed":
@@ -841,4 +841,5 @@ export default {
   "editor.canvasType.threeD": "3D",
   "editor.component.label": "Component",
   "editor.component.uses": "{count} uses",
+  "contextualAi.send": "Send to AI Agent",
 };
