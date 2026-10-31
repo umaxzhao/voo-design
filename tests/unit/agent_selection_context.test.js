@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import AgentContextChip from "../../src/canvas/components/agent-panel/agent_context_chip.jsx";
 import {
   readSelectionContext,
   selectionContextKey,
@@ -71,5 +74,23 @@ describe("Agent selection context", () => {
     expect(contextLabel(first, (key, args) => `${key}:${args.count}`)).toBe(
       "agent.panel.selectedCount:2",
     );
+  });
+});
+
+
+describe("Agent context icons", () => {
+  it.each([
+    ["frame", readSelectionContext(engine(["frame"]), scope), "frame"],
+    ["artboard", { kind: "artboard", name: "Artboard" }, "frame"],
+    ["ordinary layer", readSelectionContext(engine(["title"]), scope), "layers"],
+    ["multiple including Frame", readSelectionContext(engine(["frame", "shape"]), scope), "layers"],
+    ["ordinary group", { kind: "group", name: "Group" }, "layers"],
+  ])("renders the correct icon for %s", (_name, context, icon) => {
+    const html = renderToStaticMarkup(React.createElement(AgentContextChip, {
+      context, onDetach: () => {}, t: (key) => key,
+    }));
+    expect(html).toContain(`lucide-${icon}`);
+    expect(html).not.toContain(`lucide-${icon === "frame" ? "layers" : "frame"}`);
+    expect(html).toContain('aria-hidden="true"');
   });
 });

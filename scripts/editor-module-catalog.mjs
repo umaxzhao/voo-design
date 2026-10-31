@@ -217,6 +217,7 @@ export const EDITOR_MODULES = [
       "src/canvas/agent/*", "src/canvas/mcp/*", "src/canvas/collab/*", "src/canvas/comments/*",
       "src/canvas/components/agent-panel/*", "src/canvas/components/onboarding/*", "electron/*", "plugins/*",
       "src/shared/providers/*", "src/canvas/components/browser_drawer/*", "tests/unit/browser_drawer_import.test.js",
+      "tests/unit/agent_selection_context.test.js",
       "tests/unit/canvas_agent_build_layout.test.js", "tests/unit/canvas_tools_build_layout.test.js",
     ],
     related: ["workspace","documents","inspector","images","text"],

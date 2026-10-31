@@ -7,6 +7,11 @@
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
 
+## 本轮：Agent 选中 Frame 的图标（验证中）
+
+- `platform.agent-contracts`：单选 Frame 时，上下文标签复用画布的 Frame 图标；普通图层/编组和多选保留 Layers，旧 artboard 上下文也使用 Frame。未改变上下文数据、提示词或选择逻辑。
+- 修改前真实浏览器 SVG 断言失败，证据 `/private/tmp/voo-license-regression/agent-frame-icon-before.log`。新增类型渲染断言及真实选区切换回归；完整验证和上线结果完成后补录。[验收边界](audits/nested-objects-audit.md#agent-selection-context-icon)。
+
 ## 本轮：Frame 标题点击选中（已验证并部署）
 
 - `selection.frame-title-selection`：标题原本是普通 div，外层画板在捕获阶段误接管指针。已改为原生按钮，使用现有交互控件排除规则和 `engine.selectExactly`，没有新增独立选择逻辑。
