@@ -19,12 +19,14 @@ The F1 file includes a second artboard to the right of the document canvas; zoom
 
 ## Product interface screenshots
 
-The three `ui-*.png` images in [screenshots](../screenshots/) are unaltered 1600 × 1000 captures of the live web editor at [voo.run/editor](https://voo.run/editor/), in an isolated browser profile. They show the workspace with these four examples, optional agent setup, and a selected text layer in the music design.
+The three `ui-*.png` images in [screenshots](../screenshots/) are 1600 × 1000 captures with 24px transparent outer corners of the live web editor at [voo.run/editor](https://voo.run/editor/), in an isolated browser profile. They show the workspace with these four examples, optional agent setup, and a selected text layer in the music design.
 
 ## Repository artwork
 
-- [README cover](../screenshots/cover.png): 1800 × 1460, composed from actual canvas exports and the existing App Icon.
-- [Social preview](../screenshots/social-preview.png): 1280 × 640, prepared for repository sharing.
+- [README cover](../screenshots/cover.png): 1800 × 1400, featuring a real editing screenshot on a dark mint-to-purple gradient. Headings use Intel One Mono Regular (400).
+- [Social preview](../screenshots/social-preview.png): 1280 × 640, using the same brand colors and typography for repository sharing.
 - The four `showcase-*.png` files in [screenshots](../screenshots/) are exports of the corresponding document canvases.
 
 The App Icon is referenced directly from [build/icon.png](../../build/icon.png), retaining its light gradient tile for contrast on both light and dark GitHub themes.
+
+The screenshot content is preserved; only the four outer corners are clipped. The cover layout source is [cover-source.html](../screenshots/cover-source.html).

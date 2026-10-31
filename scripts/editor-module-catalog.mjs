@@ -4,12 +4,13 @@ export const EDITOR_MODULES = [
     id: "workspace",
     title: "Workspace and resources",
     paths: [
+      "src/app_title_bar.jsx", "src/welcome_settings.css",
       "src/canvas/components/welcome*", "src/canvas/components/welcome_dashboard/*",
       "src/canvas/components/editor*resources*", "src/canvas/components/editor_layers_assets*",
       "src/canvas/components/titlebar*",
     ],
     related: ["documents","inspector","platform"],
-    features: ["workspace.projects","workspace.covers","workspace.assets","workspace.templates"],
+    features: ["workspace.projects","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry"],
     suites: [
       "project-picker", "titlebar-file-actions", "welcome-model-menu", "welcome-draft-trash",
       "ui-home-settings", "welcome-covers", "editor-resources", "editor-resources-built",

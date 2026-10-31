@@ -25,6 +25,8 @@ await withEditorBrowser(async ({ page, origin }) => {
   await page.evaluate(async () => { const { setLocale } = await import("/src/shared/i18n.js"); await setLocale("en"); });
   const home = page.locator(".welcome-dashboard");
   await home.waitFor();
+  assert.equal(await home.getByText("VOO Design 1.0", { exact: true }).count(), 0);
+  assert.equal(await page.locator('.app-title-actions').getByRole("button", { name: "Settings", exact: true }).count(), 0);
   const rim = await home.locator("form.prompt-composer").evaluate(form => {
     const style = getComputedStyle(form, "::before");
     return { image: style.backgroundImage, animation: style.animationName,
@@ -247,6 +249,12 @@ await withEditorBrowser(async ({ page, origin }) => {
     await settle(page);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await expectViewport(home, width);
+    const settingsRect = await settingsOpener.boundingBox();
+    assert.ok(settingsRect && settingsRect.x < width / 2 && settingsRect.y > 800,
+      `Settings must stay in the bottom-left at ${width}px: ${JSON.stringify(settingsRect)}`);
+    assert.ok(settingsRect.width >= 48 && settingsRect.height >= 48);
+    assert.ok(Math.abs(900 - settingsRect.y - settingsRect.height - 12) <= 1,
+      `Settings bottom gap must be 12px at ${width}px`);
     await page.screenshot({ path: `/private/tmp/voo-ui-home-${width}.png` });
     await actions("AuditHome.voo");
     const menu = page.locator("[data-welcome-file-menu]").first();

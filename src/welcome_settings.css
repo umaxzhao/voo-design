@@ -1,0 +1,6 @@
+/* Keep the single welcome settings entry clear of scrollable workspace content. */
+@media (max-width: 1023px) {
+  .welcome-dashboard .welcome-main {
+    padding-bottom: 5rem;
+  }
+}

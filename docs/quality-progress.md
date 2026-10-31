@@ -3,6 +3,8 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
+首页 Settings 底部间距微调：从 24px 减至 12px（向下移动 12px），保持左侧位置与点击区域；沿用 `workspace.settings-entry`，在既有首页套件检查四个宽度的精确底边间距。本轮精确提交及执行结果见 `/private/tmp/voo-settings-lower-release.json`，此前基线发布阻断不能视为已解决。
+本轮首页设置入口调整：已移除侧栏版本号，将首页 Settings 移至左下角；能力 `workspace.settings-entry`。本次相关 17 项单测和 320/390/768/1440px 首页浏览器专项通过。完整门禁因基线既有的 10 项 Agent 工具清单/首次引导失败而阻断（已在修改前提交 `e2d3517` 复现，`/private/tmp/voo-settings-baseline.log`），本轮尚未推送或部署。精确最终 revision 与逐项执行结果见 `/private/tmp/voo-settings-release.json`，不得继承历史通过结果。详细范围见 [面板审查](audits/panel-control-audit.md#welcome-settings-entry--2026-10-31)。
 最近一次完整核心验证提交：[26de3f9](https://github.com/umaxzhao/voo-design/commit/26de3f948f17fdc9b9167ef25affaa5c487eec0c)。
 以下最新结果仅属于该提交，不代表其他未验证版本。
 
@@ -20,7 +22,7 @@
 - 范围：`platform.streaming-authoring`；内置 HTML 生成、外部 `stream_layout` 与 `build_layout` 共用真实原生落图与紫色鼠标反馈；不在最终生成完成后补播一段长动画。
 - 已复现：快照内所有元素同步创建，没有逐元素绘制机会；外部入口仅预览到最终才提交；取消发生在异步放置之间时缺少检查，重复 HTML 键可产生半次写入。保留对应失败用例。
 - 当前局部证据：`tests/unit/html_pipeline/authoring.test.js`、`tests/unit/authoring-timeline.test.js` 与 `tests/e2e/agent-authoring.e2e.mjs`；真实 SSE 暂停在半程时读取原生层和红色像素、紫色鼠标、稳定 ID、完成后蓝色像素和一次撤销重做。大批量与减弱动态效果、外部草稿清除、文档切换及批量取消检查一并登记。
-- 合并文本尺寸更新后，新登记为 57 个能力分组、84 组核心浏览器套件；完整门禁和线上发布结果将在固定提交验证后补录，历史通过不覆盖这批改动。
+- 合并文本尺寸及工作台设置入口更新后，新登记为 58 个能力分组、84 组核心浏览器套件；完整门禁和线上发布结果将在固定提交验证后补录，历史通过不覆盖这批改动。
 - 限制：受控离线模型输出、真实 Chromium 渲染与 MCP 传输；未请求付费模型，未把浏览器通过等同于签名 App、实体触屏或所有第三方客户端通过。完整范围见[验收说明](audits/editor-closeout.md#streamed-native-authoring)。
 
 ## 上轮：本地服务发现与同源画布预览
@@ -195,3 +197,17 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - README, cover and social preview use “An AI agent-driven design editor.” Functional module coverage remains unchanged and partial; the final publication revision and document/image checks are recorded in `/private/tmp/voo-showcase/product-ui/publication.json`.
 
 - Introduction now leads with standalone use and Claude Code plugin / Codex MCP integration, with connection commands matched to the existing connector guide. A separate review of public-tree wording is recorded outside the repository at `/private/tmp/voo-showcase/product-ui/published-wording-audit.json`; no source or historical research files were changed.
+
+## Repository introduction: hierarchy, brand and rounded screenshots — 2026-10-31
+
+- Scope: README, artwork, example guide and this progress record only. No application source or native example documents changed; functional module coverage remains partial.
+- Simplified the default introduction to product positioning, standalone / MCP workflows and three core capabilities. Product tour, four-design gallery, connector commands and technical reference remain accessible through native GitHub disclosure sections.
+- The cover uses a real editing screenshot, the UI colors `#B2FFD6` → `#E5B2FF`, and Intel One Mono Regular (400). A relative-path HTML composition is retained beside the PNG.
+- All three product UI screenshots retain their original 1600 × 1000 content with 24px transparent outer corners. Pixel comparison found zero changes outside the four corner regions; screenshot-state evidence remains tied to its original captured production entry.
+- Exact publication revision, disclosure/link/image checks and layout/typography evidence: `/private/tmp/voo-showcase/product-ui/redesign-publication.json`. No application deployment is required for this documentation and artwork update.
+
+## Visible product screenshots and darker artwork — 2026-10-31
+
+- Restored the workspace, setup and editing screenshots and all four design examples to the default README view. Only connector installation and the technical reference remain collapsed.
+- The cover and social image now use darker green/purple tones (`#173D30` → `#352448`) and the slogan “AI agent-driven design editor.” Intel One Mono Regular and rounded screenshot edges are retained.
+- Scope remains documentation and artwork only. Exact publication revision and visibility/link/layout checks: `/private/tmp/voo-showcase/product-ui/visible-showcase-publication.json`; functional product coverage remains unchanged and partial.
