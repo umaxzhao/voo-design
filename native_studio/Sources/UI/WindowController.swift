@@ -610,6 +610,10 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             ThemeManager.shared.currentMode = isLight ? .light : .dark
             self.applyTheme(ThemeManager.shared.currentMode)
         }
+        view.settingsDrawer.onAgentChange = { [weak self] _ in
+            self?.syncAgentModelLabel()
+        }
+        syncAgentModelLabel()
 
         // Apply saved theme mode (default dark)
         applyTheme(ThemeManager.shared.currentMode)
@@ -3152,8 +3156,37 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     /// Shows / hides the AI agent panel and reflows the editor shell (web parity).
     public func setAgentPanelOpen(_ open: Bool) {
+        if open {
+            syncAgentModelLabel()
+        }
         mainContentView.setAgentPanelOpen(open)
         mainContentView.refreshChromeVisibility()
+    }
+
+    /// Syncs the composer model chip label ("Opus 5.5", "GPT-5", "Gemini 3.8", etc.) with the active agent provider.
+    public func syncAgentModelLabel() {
+        let raw = UserDefaults.standard.string(forKey: SettingsDrawerView.agentProviderDefaultsKey) ?? "claude"
+        let customModel = UserDefaults.standard.string(forKey: "voo.agent.model")
+        if let customModel, !customModel.isEmpty {
+            mainContentView.agentPanel.modelLabel = customModel
+            return
+        }
+        let friendly: String
+        switch raw.lowercased() {
+        case "claude":
+            friendly = "Opus 5.5"
+        case "codex", "openai":
+            friendly = "GPT-5"
+        case "antigravity", "agy":
+            friendly = "Gemini 3.8"
+        case "deepseekharness", "deepseek-harness", "dsh":
+            friendly = "DeepSeek V3"
+        case "opencode":
+            friendly = "OpenCode"
+        default:
+            friendly = "Opus 5.5"
+        }
+        mainContentView.agentPanel.modelLabel = friendly
     }
 
     public func toggleAgentPanel() {

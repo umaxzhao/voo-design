@@ -396,3 +396,19 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - **新增回归测试**：`test_ThemeManager_LightAndDarkSwitchingAndWindowBackground`，验证浅色/深色模式切换、持久化、以及窗口背景色在 `#171717` 与 `#f5f5f5` 间的精准切换。
 
 验证：`./build.sh` 通过（binary 4.94 MB ≤ 5 MB，bundle 10.27 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **389/389 通过**。
+
+## 原生界面优化（第十轮：AI 智能体模型名动态联动与多 Provider 适配）— 2026-10-31
+
+- **AI 侧栏模型胶囊动态联动**：
+  - `WindowController` 增加 `syncAgentModelLabel()`，自动监听 `SettingsDrawerView.onAgentChange` 与 `UserDefaults` 中的 `voo.agent.llmProvider` 配置；
+  - 动态为不同 Provider 映射最精准的友好模型标签：
+    - Claude Code $\to$ `Opus 5.5`（与 Web 截图默认模型标签完全对齐）
+    - OpenAI Codex $\to$ `GPT-5`
+    - Google Antigravity $\to$ `Gemini 3.8`
+    - DeepSeek Harness $\to$ `DeepSeek V3`
+    - OpenCode $\to$ `OpenCode`
+    - 用户自定义 `voo.agent.model` 时自动优先采用自定义模型名；
+  - 设置中切换 Provider 时立即实时刷新 Agent 侧栏输入框内的胶囊标签。
+- **新增回归测试**：`test_AgentPanel_ModelLabelSyncWithProvider`，验证默认映射、各提供商切换、以及自定义模型配置优先级的完整流转。
+
+验证：`./build.sh` 通过（binary 4.95 MB ≤ 5 MB，bundle 10.27 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **390/390 通过**。

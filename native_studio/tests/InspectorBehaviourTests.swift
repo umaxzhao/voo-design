@@ -350,6 +350,53 @@ public final class InspectorBehaviourTests {
             try TestAssertions.assertEqual(window.backgroundColor, ThemeTokens.colorPanel)
             try TestAssertions.assertEqual(controller.mainContentView.editorShell.layer?.backgroundColor, NSColor.black.cgColor)
         }
+
+        // 13. Agent panel model chip label synchronisation
+        registry.register(tier: 1, feature: "Agent-ModelSync", name: "test_AgentPanel_ModelLabelSyncWithProvider") {
+            let prevProvider = UserDefaults.standard.string(forKey: SettingsDrawerView.agentProviderDefaultsKey)
+            let prevModel = UserDefaults.standard.string(forKey: "voo.agent.model")
+            defer {
+                if let prevProvider {
+                    UserDefaults.standard.set(prevProvider, forKey: SettingsDrawerView.agentProviderDefaultsKey)
+                } else {
+                    UserDefaults.standard.removeObject(forKey: SettingsDrawerView.agentProviderDefaultsKey)
+                }
+                if let prevModel {
+                    UserDefaults.standard.set(prevModel, forKey: "voo.agent.model")
+                } else {
+                    UserDefaults.standard.removeObject(forKey: "voo.agent.model")
+                }
+            }
+            UserDefaults.standard.removeObject(forKey: "voo.agent.model")
+
+            let controller = WindowController()
+            guard let window = controller.window else {
+                throw TestFailure(message: "WindowController has no window", file: #file, line: #line)
+            }
+            window.setContentSize(NSSize(width: 1440, height: 900))
+            controller.mainContentView.frame = NSRect(x: 0, y: 0, width: 1440, height: 900)
+            controller.mainContentView.layoutSubtreeIfNeeded()
+
+            // Default provider (claude) produces "Opus 5.5"
+            UserDefaults.standard.set("claude", forKey: SettingsDrawerView.agentProviderDefaultsKey)
+            controller.syncAgentModelLabel()
+            try TestAssertions.assertEqual(controller.mainContentView.agentPanel.modelLabel, "Opus 5.5")
+
+            // Antigravity maps to Gemini 3.8
+            UserDefaults.standard.set("antigravity", forKey: SettingsDrawerView.agentProviderDefaultsKey)
+            controller.syncAgentModelLabel()
+            try TestAssertions.assertEqual(controller.mainContentView.agentPanel.modelLabel, "Gemini 3.8")
+
+            // DeepSeek Harness maps to DeepSeek V3
+            UserDefaults.standard.set("deepseekHarness", forKey: SettingsDrawerView.agentProviderDefaultsKey)
+            controller.syncAgentModelLabel()
+            try TestAssertions.assertEqual(controller.mainContentView.agentPanel.modelLabel, "DeepSeek V3")
+
+            // Custom model override takes precedence
+            UserDefaults.standard.set("custom-fine-tuned", forKey: "voo.agent.model")
+            controller.syncAgentModelLabel()
+            try TestAssertions.assertEqual(controller.mainContentView.agentPanel.modelLabel, "custom-fine-tuned")
+        }
     }
 
     private static func requireButton(_ root: NSView, id: String) throws -> PropertiesIconButton {

@@ -854,6 +854,8 @@ public final class SettingsDrawerView: NSView {
     public var onToggleLightInterface: ((Bool) -> Void)?
     /// Invoked after the "Auto-save edit drafts" switch is toggled (already persisted).
     public var onToggleAutoSaveDrafts: ((Bool) -> Void)?
+    /// Invoked when the user selects a different AI Agent / Provider.
+    public var onAgentChange: ((String) -> Void)?
 
     // MARK: Public state
 
@@ -2099,10 +2101,12 @@ public final class SettingsDrawerView: NSView {
     private func selectAgent(_ index: Int) {
         guard copy.agents.indices.contains(index) else { return }
         selectedAgentIndex = index
+        let provider = copy.agents[index].provider
         UserDefaults.standard.set(
-            copy.agents[index].provider,
+            provider,
             forKey: SettingsDrawerView.agentProviderDefaultsKey
         )
+        onAgentChange?(provider)
         needsDisplay = true
     }
 
