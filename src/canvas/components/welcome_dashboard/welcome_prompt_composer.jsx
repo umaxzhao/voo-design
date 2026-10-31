@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { Plus, X } from "lucide-react";
 import WelcomePromptSettings from "./welcome_prompt_settings.jsx";
+import WelcomePromptTypes from "./welcome_prompt_types.jsx";
 import { AI_GEN_TYPES } from "./welcome_constants.js";
 import { DEFAULT_DESIGN_SYSTEM_ID } from "./generation-options.js";
 import WelcomeModelSelect from "./welcome_model_select.jsx";
@@ -95,7 +96,8 @@ export function WelcomePromptComposer({
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
   }, [advancedOpen]);
-  return <div ref={rootRef} data-advanced-open={advancedOpen ? "true" : "false"} className="welcome-prompt-root relative">
+  return <div ref={rootRef} data-advanced-open={advancedOpen ? "true" : "false"} className="welcome-prompt-root relative w-full">
+    <WelcomePromptTypes t={t} activePill={activePill} onSelectPill={onSelectPill} />
     <form ref={formRef} onSubmit={onSubmit} className={`prompt-composer relative mt-0 min-w-0 rounded-2xl p-4 transition-colors ${advancedOpen ? "z-[300]" : ""}`}>
       <textarea value={promptText} onChange={event => setPromptText(event.target.value)} onKeyDown={event => {
         if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent?.isComposing) {
@@ -124,7 +126,7 @@ export function WelcomePromptComposer({
             {t("welcome.prompt.modelLabel")}
           </button> : <WelcomeModelSelect label={t("welcome.prompt.modelLabel")} modelGroups={modelGroups} selectedModel={selectedModel} onSelectModel={onSelectModel} />}
 
-          <button type="button" onClick={() => configNeeded ? onOpenSettings?.() : setAdvancedOpen(open => !open)} aria-label={t("welcome.prompt.generationTypeLabel")} aria-haspopup="dialog" aria-expanded={advancedOpen} className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.08] text-neutral-400 transition-colors hover:bg-white/[0.14] hover:text-neutral-200">
+          <button type="button" onClick={() => configNeeded ? onOpenSettings?.() : setAdvancedOpen(open => !open)} aria-label={t("welcome.prompt.settingsLabel")} aria-haspopup="dialog" aria-expanded={advancedOpen} className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.08] text-neutral-400 transition-colors hover:bg-white/[0.14] hover:text-neutral-200">
             <TuneIcon size={14} />
           </button>
 
@@ -142,8 +144,6 @@ export function WelcomePromptComposer({
         t,
         panelRef,
         panelPos,
-        activePill,
-        onSelectPill,
         styleId,
         styleOptions,
         onSelectStyle,
