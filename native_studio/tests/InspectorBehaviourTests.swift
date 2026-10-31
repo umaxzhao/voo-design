@@ -122,6 +122,43 @@ public final class InspectorBehaviourTests {
             try TestAssertions.assertApproxEqual(left.x, 10, accuracy: 0.5, "Left-pinned child keeps its offset")
             try TestAssertions.assertApproxEqual(right.x, 250, accuracy: 0.5, "Right-pinned child keeps its right inset")
         }
+
+        // 6. Island bar actions reach the document (align / lock / visibility).
+        registry.register(tier: 3, feature: "Island-Actions", name: "test_IslandBar_ActionsDriveTheDocument") {
+            let controller = WindowController()
+            guard let window = controller.window else {
+                throw TestFailure(message: "WindowController has no window", file: #file, line: #line)
+            }
+            window.setContentSize(NSSize(width: 1440, height: 900))
+            controller.mainContentView.frame = NSRect(x: 0, y: 0, width: 1440, height: 900)
+            controller.mainContentView.isWelcomeOpen = false
+            controller.mainContentView.layoutSubtreeIfNeeded()
+
+            let stage = controller.mainContentView.canvasStageView
+            let a = VOONode(id: "a", kind: .rect, name: "A", x: 100, y: 100, width: 50, height: 50,
+                            style: LayerStyle(fill: "#ffffff"))
+            let b = VOONode(id: "b", kind: .rect, name: "B", x: 300, y: 200, width: 50, height: 50,
+                            style: LayerStyle(fill: "#ffffff"))
+            stage.document.nodes = [a, b]
+            stage.selectedNodeIds = ["a", "b"]
+            stage.needsDisplay = true
+
+            let island = controller.mainContentView.islandBar
+            island.update(selectionLabel: "2 layers")
+            island.layoutSubtreeIfNeeded()
+
+            // glyphButtons[2] is "align left" in the web order.
+            island.glyphButtons[2].performClick(nil)
+            let lefts = stage.document.nodes.map { $0.x }
+            try TestAssertions.assertApproxEqual(lefts.max() ?? -1, lefts.min() ?? -2, accuracy: 0.5,
+                                                 "Align left gives every selected layer the same x")
+
+            // Lock and visibility act on the selection.
+            island.glyphButtons[6].performClick(nil)
+            try TestAssertions.assertTrue(stage.document.nodes.allSatisfy { $0.style.locked }, "Lock marks every selected layer locked")
+            island.glyphButtons[7].performClick(nil)
+            try TestAssertions.assertTrue(stage.document.nodes.allSatisfy { !$0.style.visible }, "Eye hides every selected layer")
+        }
     }
 
     private static func requireButton(_ root: NSView, id: String) throws -> PropertiesIconButton {
