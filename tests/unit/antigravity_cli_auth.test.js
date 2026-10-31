@@ -39,19 +39,49 @@ describe("Antigravity account authentication", () => {
     const backup = JSON.parse(await readFile(result.backupPath, "utf8"));
 
     expect(result.changed).toBe(true);
-    expect(settings).toEqual({ theme: "dark", permissions: { mode: "ask" } });
+    expect(settings).toEqual({
+      theme: "dark",
+      permissions: { mode: "ask", allow: ["mcp(voo/*)"] },
+    });
     expect(backup.modelProvider).toBe("gemini");
   });
 
-  it("keeps Gemini API-key mode when its key is present", async () => {
+  it("keeps Gemini API-key mode and allows VOO MCP tools when its key is present", async () => {
     vi.stubEnv("GEMINI_API_KEY", "configured-key");
     const settingsPath = await createSettingsFile({ modelProvider: "gemini" });
 
     const result = await prepareAntigravityAccountAuth({ settingsPath });
 
-    expect(result.changed).toBe(false);
+    expect(result.changed).toBe(true);
     expect(JSON.parse(await readFile(settingsPath, "utf8"))).toEqual({
       modelProvider: "gemini",
+      permissions: { allow: ["mcp(voo/*)"] },
+    });
+  });
+
+  it("creates narrowly scoped MCP permission in an empty settings profile", async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), "voo-agy-empty-"));
+    temporaryDirectories.push(directory);
+    const settingsPath = path.join(directory, "settings.json");
+
+    const result = await prepareAntigravityAccountAuth({ settingsPath });
+
+    expect(result.changed).toBe(true);
+    expect(JSON.parse(await readFile(settingsPath, "utf8"))).toEqual({
+      permissions: { allow: ["mcp(voo/*)"] },
+    });
+  });
+
+  it("preserves existing permissions and does not duplicate the VOO rule", async () => {
+    const settingsPath = await createSettingsFile({
+      permissions: { allow: ["command(git)", "mcp(voo/*)"] },
+    });
+
+    const result = await prepareAntigravityAccountAuth({ settingsPath });
+
+    expect(result.changed).toBe(false);
+    expect(JSON.parse(await readFile(settingsPath, "utf8"))).toEqual({
+      permissions: { allow: ["command(git)", "mcp(voo/*)"] },
     });
   });
 
