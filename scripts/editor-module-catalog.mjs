@@ -221,6 +221,8 @@ export const EDITOR_MODULES = [
     id: "platform",
     title: "Agent, runtime and platform integration",
     paths: [
+      "native_studio/Sources/UI/island-bar-position.swift", "native_studio/tests/IslandAnchorTests.swift",
+      "native_studio/Sources/UI/WindowController.swift", "native_studio/tests/main.swift", "native_studio/tests/run_tests.sh",
       "src/store/design_store.js", "src/store/editor-panel-actions.js", "tests/unit/editor-panel-actions.test.js",
       "scripts/generate-third-party-notices.mjs", "scripts/bundled-third-party-notices.mjs",
       "scripts/license-texts/*", "scripts/verify-package.mjs", "NOTICE",
@@ -235,7 +237,7 @@ export const EDITOR_MODULES = [
     ],
     related: ["workspace","documents","inspector","images","text"],
     features: [
-      "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
+      "platform.native-island-anchor", "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
       "platform.native-collaboration", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
     ],

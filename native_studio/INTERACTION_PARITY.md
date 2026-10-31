@@ -11,6 +11,37 @@ Scope: 对比 VOO Design Web 编辑器（`src/canvas/editor/`、`src/canvas/comp
 
 ---
 
+## Current scoped verification — 2026-11-01
+
+Capability: `platform.native-island-anchor`. This entry supersedes historical
+whole-product parity claims only for the scope below; overall native parity is partial.
+
+- Electron authority: `use_contextual_taskbar_rect.js` (`outerFrame`, `contextualBounds`)
+  and `scene_geometry_bounds.js` (`nodesBounds`). The native island now follows the
+  outermost frame through groups, retains the selected artwork when no frame exists,
+  deduplicates board anchors and uses the visible bounds of rotated anchors.
+- Reproduced before repair: 3 failures in 5 production-AppKit checks; nested-board
+  centre was 85pt off, group centre 100pt off, rotated lower edge 50pt off.
+  Evidence: `/tmp/voo-native-anchor-before.log`.
+- Registered native checks: `IslandAnchorTests.swift`, invoked by `tests/main.swift`
+  and `tests/run_tests.sh`. Five scenarios assert real view geometry, the 8pt gap,
+  mixed selection at 75% zoom with pan, cycle termination and unchanged document nodes.
+- Execution: full integrated suite **395/395**, metadata tests **11/11**, Swift format/lint,
+  shell/JavaScript syntax and catalog registration passed. Production arm64 build and
+  ad-hoc signature passed: executable 5,192,096 bytes; bundle 10,520 KB.
+- Exact source revision, logs and source fingerprint: `/tmp/voo-native-parity-publication.json`.
+  `/tmp/voo-native-parity-editor.png` is a 1440×900 production-app smoke capture, not
+  evidence of pixel-perfect nested-frame interaction or a cross-platform comparison.
+- Remaining: actual pointer/keyboard-created nested boards, exhaustive edge flipping,
+  physical input devices, light-theme parity, warped shapes and the missing features
+  listed below are unverified in this round. This chrome change does not alter history,
+  persistence or exports; it adds no document mutation or alternate command path.
+- Work lives in the isolated `native-parity-20261101` branch. The original workspace's
+  uncommitted changes remain untouched. Hosted `/editor/` is not a native-app preview;
+  no web deployment was performed because it would publish unrelated local web work.
+
+---
+
 ## 1. 画布导航与视口
 
 | 交互 | 状态 | 原生实现 |

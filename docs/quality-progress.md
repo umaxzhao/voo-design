@@ -1,3 +1,18 @@
+## Native Electron parity continuation — 2026-11-01
+
+- Module `platform`, capability `platform.native-island-anchor`: repaired outermost-board,
+  unframed-group and rotated-anchor placement. Native parity remains **partial**.
+- Reproduced 3 failing production-AppKit scenarios before the change. The final
+  integrated native suite passes **395/395**; module-planning tests pass **11/11**.
+  Format/lint, catalog registration, syntax, production build and ad-hoc signing pass.
+- Exact clean source revision, fingerprints and execution receipts are recorded in
+  `/tmp/voo-native-parity-publication.json`; details and unverified contexts are in
+  [the native audit](../native_studio/INTERACTION_PARITY.md#current-scoped-verification--2026-11-01).
+- Isolated branch `native-parity-20261101` preserves the original dirty workspace.
+  Native deliverable: `native_studio/build/VOO Design Native.app` in that worktree.
+  The hosted editor was not deployed: this round changes the native app, and the
+  local branch also contains unrelated, previously unpushed web changes.
+
 # 项目检查总进度
 
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。

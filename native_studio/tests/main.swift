@@ -17,6 +17,7 @@ M1_ToolFlyoutContextualTaskbarTests.registerTests()
 M2_InspectorStudioTests.registerTests()
 WorkspaceManagerTests.registerTests()
 InspectorBehaviourTests.registerTests()
+IslandAnchorTests.registerTests()
 // AIAgentTests.registerTests()
 
 let args = CommandLine.arguments

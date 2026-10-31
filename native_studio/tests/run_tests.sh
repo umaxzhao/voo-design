@@ -20,6 +20,7 @@ TEST_FILES=(
   "$DIR/M2_InspectorStudioTests.swift"
   "$DIR/WorkspaceManagerTests.swift"
   "$DIR/InspectorBehaviourTests.swift"
+  "$DIR/IslandAnchorTests.swift"
   # "$DIR/AIAgentTests.swift"
   "$DIR/main.swift"
 )
