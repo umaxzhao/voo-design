@@ -23,30 +23,35 @@ ReadySurface.propTypes = { readyRef: PropTypes.shape({ current: PropTypes.bool }
 
 /** Keep the existing launcher usable while a cold comments module is loading. */
 function PendingComments({ open, addMode, onOpen, onClose, onToggleAddMode, list, t, failed, onRetry, launcherVisible = true, swapSide = false }) {
-  // The list replaces the inspector; placement stays in the document overlay.
+  // Only an open list owns the inspector. Standalone placement keeps its controls.
+  const status = (
+    <div role={failed ? "alert" : "status"} aria-busy={!failed} data-testid={failed ? "editor-comments-error" : "editor-comments-loading"}
+      className="pointer-events-auto flex items-center gap-2 p-3 text-neutral-300">
+      {failed ? null : <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
+      <span className="text-[11px]">{t(failed ? "editor.comments.loadFailed" : "common.loading")}</span>
+      {failed ? <button type="button" onClick={onRetry}
+        className="rounded-lg px-2 py-1 text-[11px] outline-none hover:bg-neutral-800 focus-visible:ring-1 focus-visible:ring-white/40">
+        {t("error.retry")}
+      </button> : null}
+      <button type="button" onClick={open ? onClose : onToggleAddMode}
+        aria-label={t("editor.comments.close")}
+        className="flex size-7 items-center justify-center rounded-lg outline-none hover:bg-neutral-800 focus-visible:ring-1 focus-visible:ring-white/40">
+        <X size={13} />
+      </button>
+    </div>
+  );
   return (
-    <div data-testid="editor-comments" className="pointer-events-none absolute inset-0 select-none font-mono">
+    <div data-testid="editor-comments" aria-busy={(open || addMode) && !failed} className="pointer-events-none absolute inset-0 select-none font-mono">
       {addMode ? <div className="pointer-events-auto absolute inset-0 z-20 cursor-wait" /> : null}
-      <EditorCommentsLauncher open={open} onOpen={onOpen} visible={launcherVisible} openCount={countOpen(list)}
+      <EditorCommentsLauncher busy={addMode && !open && !failed} open={open} onOpen={onOpen} visible={launcherVisible} openCount={countOpen(list)}
         unreadCount={unreadCommentCount(list, readCommentSeenAt())} t={t} />
-      {open || addMode ? (
+      {open ? (
         <PropertiesPanelShell swapSide={swapSide} testId="editor-properties-panel" showHeader={false} ariaLabel={t("editor.comments.title")}>
-        <div role={failed ? "alert" : "status"} aria-busy={!failed} data-testid={failed ? "editor-comments-error" : "editor-comments-loading"}
-          className="pointer-events-auto flex items-center gap-2 p-3 text-neutral-300">
-          {failed ? null : <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
-          <span className="text-[11px]">{t(failed ? "editor.comments.loadFailed" : "common.loading")}</span>
-          {failed ? <button type="button" onClick={onRetry}
-            className="rounded-lg px-2 py-1 text-[11px] outline-none hover:bg-neutral-800 focus-visible:ring-1 focus-visible:ring-white/40">
-            {t("error.retry")}
-          </button> : null}
-          <button type="button" onClick={open ? onClose : onToggleAddMode}
-            aria-label={t("editor.comments.close")}
-            className="flex size-7 items-center justify-center rounded-lg outline-none hover:bg-neutral-800 focus-visible:ring-1 focus-visible:ring-white/40">
-            <X size={13} />
-          </button>
-        </div>
+          {status}
         </PropertiesPanelShell>
-      ) : null}
+      ) : addMode && failed ? (
+        <div className="pointer-events-auto absolute bottom-20 left-1/2 z-40 -translate-x-1/2 rounded-xl bg-neutral-900 shadow-pop">{status}</div>
+      ) : addMode ? <span role="status" className="sr-only">{t("common.loading")}</span> : null}
     </div>
   );
 }

@@ -177,3 +177,46 @@ await withEditorBrowser(async ({ page }) => {
   assert.deepEqual(await page.evaluate(() => window.__vooEditor.getSelectedIds()), ["comments-failure-target"]);
   console.log(JSON.stringify({ passed: ["a failed optional comments download reports a local error, preserves canvas pixels/selection and retries without reloading the document"] }, null, 2));
 });
+
+await withEditorBrowser(async ({ page, errors }) => {
+  await page.locator('[data-open-guard="off"]').waitFor();
+  await page.evaluate(() => {
+    const e = window.__vooEditor;
+    e.setDoc({ ...e.getDocument(), nodes: [...e.getDocument().nodes, {
+      id: "standalone-mode-target", kind: "rect", visible: true,
+      x: 100, y: 100, width: 80, height: 80, fill: "#ff0000",
+    }] });
+    e.selectExactly(["standalone-mode-target"]);
+  });
+  const rail = page.getByTestId("editor-properties-panel");
+  const width = rail.getByRole("spinbutton", { name: "W", exact: true });
+  await width.waitFor();
+  const before = await page.evaluate(() => JSON.stringify(window.__vooEditor.getDocument()));
+  const pattern = /\/src\/canvas\/components\/editor_comments_surface\.jsx(?:\?|$)/;
+  let release;
+  const blocked = new Promise(resolve => { release = resolve; });
+  await page.route(pattern, async route => { await blocked; await route.continue(); });
+  try {
+    await page.keyboard.press("Control+k");
+    const commands = page.getByTestId("command-palette");
+    await commands.getByRole("combobox").fill("Comment mode");
+    await commands.getByRole("option").filter({ hasText: /^Comment mode$/ }).click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="editor-comments-toggle"]')?.getAttribute("aria-busy") === "true");
+    assert.equal(await rail.count(), 1, "Standalone placement loading must not create a second inspector");
+    await expectHit(width);
+    assert.equal(await page.getByTestId("editor-comments-panel").count(), 0);
+    await expectHit(page.getByTestId("editor-comments-toggle"));
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => document.querySelector('[data-testid="editor-comments-toggle"]')?.getAttribute("aria-busy") === "false");
+    const responded = page.waitForResponse(response => pattern.test(response.url()) && response.ok());
+    release(); await responded; await page.unroute(pattern);
+    await page.waitForLoadState("networkidle");
+    assert.equal(await page.getByTestId("editor-comments-panel").count(), 0);
+    assert.equal(await page.getByTestId("editor-comment-mode-overlay").count(), 0);
+    assert.equal(await rail.count(), 1);
+    assert.equal(await page.evaluate(() => JSON.stringify(window.__vooEditor.getDocument())), before);
+    assert.deepEqual(await page.evaluate(() => window.__vooEditor.getSelectedIds()), ["standalone-mode-target"]);
+    assert.deepEqual(errors, []);
+    console.log("Standalone Comment mode keeps the original inspector, shows progress in its launcher and cancels cold loading without late UI or document edits.");
+  } finally { release(); await page.unroute(pattern); }
+});

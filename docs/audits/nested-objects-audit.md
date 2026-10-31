@@ -366,3 +366,17 @@ The final targeted 58 units (`comments-panel-unit-sides.log`) and comment suite
 (`comments-panel-sides.log`) also cover the saved left/right inspector side and
 page-menu dismissal when opening Comments. Full fixed-revision release results
 are still pending; these independent runs are not a stitched release pass.
+
+
+Clean `daea9ce` independently passed 91/91 release steps, all 87 browser suites
+and 4,687 unit tests (four skipped), recorded in `comments-panel-release-fixed.json`.
+A subsequent standalone-placement loading check exposed a remaining second
+inspector in the pending facade (`comments-panel-mode-only-before.log`). Only
+an explicitly open list now owns the rail; standalone loading uses its existing
+launcher for progress, and failures retain retry/close outside the inspector.
+Sixty related units and the actual palette-triggered cold mode/cancel/late-load
+scenario pass in `comments-panel-mode-unit-final.log` and
+`comments-panel-mode-browser.log`. Its final complete gate is recorded separately.
+The extra focus-null exploratory fixture never entered its intended state and
+timed out (`comments-panel-unfocused-before.log`); it was removed from the
+registered suite, and is neither a product regression nor a passing acceptance.
