@@ -166,3 +166,12 @@ with a single Frame suggestion group and no document mutation or script errors.
 Raw logs are `/private/tmp/voo-license-regression/agent-suggestions-*`.
 The local repair is not a clean-release certification of other private drafts,
 native signed installation or physical touch devices.
+
+Clean `aec278290c69990105c36b13cdd05420f7e5d24e` passed 90/90 core steps,
+4,590 units (four skipped), 86 core browser suites, and the explicit suggestion
+suite. After preserving upstream prompt commit `0274622`, integrated `3d98a78`
+passed 51 related units and the suggestion browser suite; it does not inherit
+the prior complete run. This task publishes regression/ownership/docs only.
+The later rebuilt entry differs from current production; the failed comparison
+is retained, not reported as byte identity. Current live single-row UI evidence
+is recorded separately in `agent-suggestions-live-ui-proof.json`.

@@ -3,14 +3,14 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
-最近一次完整核心验证提交：[bfbf91d](https://github.com/umaxzhao/voo-design/commit/bfbf91d040eebc3e1254f03c017fcc8f44677b6a)；90/90 项通过，当前线上部署为该固定版本；合并提交 ffaf940 的完整源码树与其一致。
+最近一次完整核心验证提交：[aec2782](https://github.com/umaxzhao/voo-design/commit/aec278290c69990105c36b13cdd05420f7e5d24e)；90/90 项通过。本轮只发布测试/登记/文档，不重新部署产品；后续 main 的提示词更新仅单独复核，不继承该完整执行。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
 
-## 本轮：Agent 引导提示词重复（本地修复，回归验证中）
+## 本轮：Agent 引导提示词重复（已完成声明范围）
 
 - 本地 `AgentPanelView` 在滚动区和输入框前各挂载一次建议组件；修改前浏览器明确得到 2 组（`agent-suggestions-duplicate-before.log`），仅移除后者，保留国际化、进度文案、附件及移动端草稿。原文件备份 `/private/tmp/voo-license-regression/agent-suggestions-primary-backup/`。
-- 本地 380/760px、Frame 三条按钮各出现一次、点击填入/重复点击幂等、草稿保留/焦点/解绑通过，相关单测 14 项通过；发布基线增强浏览器回归及 25 项定向单测通过。日志 `agent-suggestions-duplicate-after.log`、`agent-suggestions-published-regression.log`、`agent-suggestions-published-unit.log` 同目录。GitHub 产品源码原本只有一处，本轮只提交回归/登记/文档；当前正式构建 `bfbf91d` 的 7 文件字节与单组 Frame 建议已复核通过（`agent-suggestions-production-proof.json`），未重新部署未变化的产品。完整测试登记验证另行补录。[验收](audits/nested-objects-audit.md#single-agent-suggestion-group)。
+- 本地 380/760px、Frame 三条按钮各出现一次、点击填入/重复点击幂等、草稿保留/焦点/解绑通过，相关单测 14 项通过；发布基线增强浏览器回归及 25 项定向单测通过。日志 `agent-suggestions-duplicate-after.log`、`agent-suggestions-published-regression.log`、`agent-suggestions-published-unit.log` 同目录。GitHub 产品源码原本只有一处，本轮只提交回归/登记/文档；当前正式构建 `bfbf91d` 的 7 文件字节与单组 Frame 建议已复核通过（`agent-suggestions-production-proof.json`），未重新部署未变化的产品。干净 `aec278290c69990105c36b13cdd05420f7e5d24e` 完整 90/90、核心浏览器 86 组、单测 4590 通过/4 跳过（`agent-suggestions-release.json`）；独立建议套件显式通过。合入远程 `0274622` 后 `3d98a78` 的 51 项相关单测及建议浏览器通过，未冒记为新完整门禁。随后重建入口与线上哈希不同（`agent-suggestions-rebuilt-comparison-failed.log`），不认定同版；当前页面单组建议另行实测记录 `agent-suggestions-live-ui-proof.json`。[验收](audits/nested-objects-audit.md#single-agent-suggestion-group)。
 
 ## 本轮：Agent 选中 Frame 的图标（已验证并部署）
 
@@ -154,12 +154,12 @@
 | 项目 | 状态 |
 | --- | --- |
 | 工程规范与模块登记 | 已落地：12 个模块、65 个公开能力分组 |
-| 核心发布校验 | bfbf91d：90/90 步通过，包含 86 组浏览器套件 |
+| 核心发布校验 | aec2782：90/90 步通过，包含 86 组浏览器套件；后续提示词整合只跑相关复核 |
 | 全量单元测试 | 4590 通过、4 跳过、0 失败；跳过项不算通过 |
 | GitHub Ubuntu 基础检查 | [bfbf91d CI build](https://github.com/umaxzhao/voo-design/actions/runs/41210654826/job/124564730088) 通过；CI deploy 跳过，SSH 部署另有证据 |
-| 线上部署 | bfbf91d 已部署 la2，入口及 Agent 资源字节一致；正式 Frame 上下文图标与解绑通过 |
+| 线上部署 | bfbf91d 上轮已部署并核对；本轮未部署，当前正式单组建议独立复核，不与后续重建混称同版 |
 | 功能验收完整度 | 部分覆盖；65 个公开能力分组未穷尽所有入口、上下文和设备 |
-| 核心门禁外的独立检查 | Agent 上下文 1 组本轮显式执行通过；其余 20 组未运行，不算通过 |
+| 核心门禁外的独立检查 | 建议 1 组本轮显式通过；其余 20 组本轮未运行，不继承历史通过 |
 
 ## 连续创作首轮（f9102cd，已完成声明范围）
 
