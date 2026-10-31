@@ -1,9 +1,9 @@
 # 项目检查总进度
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
-最近一次完整核心验证提交：[44e0714](https://github.com/umaxzhao/voo-design/commit/44e07147f7b7f29cc876284ab3900fee76a13e1a)；91/91 项通过，当前线上为该构建。
+最近一次完整核心验证提交：[56ef64f](https://github.com/umaxzhao/voo-design/commit/56ef64fb36f9c327bd5ea58830aca42b027a1b64)；91/91 项通过，当前线上为该构建。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
-## 本轮：正式分享链接（验证中）
-- `platform.native-collaboration`：分享链接统一 `https://voo.run/editor/?r=...`，本地/桌面/扩展/预览均不泄漏私有域名；默认信令共用正式服务，保留显式本地测试覆盖。72 项定向单测及真实复制/只读切换/密钥保留浏览器回归通过，完整门禁与正式验收待完成。[范围与证据](audits/design-editor-interaction-audit.md#canonical-share-links--2026-11-01)。
+## 本轮：正式分享链接（已完成声明范围）
+- `platform.native-collaboration`：分享链接统一 `https://voo.run/editor/?r=...`，本地/桌面/扩展/预览均不泄漏私有域名；默认信令共用正式服务，保留显式本地测试覆盖。72 项定向单测及真实复制/只读切换/密钥保留浏览器回归通过，固定 `56ef64f` **91/91 发布步骤、87 组核心浏览器、4713 单测通过/4 跳过**，GitHub CI 通过。[PR #77](https://github.com/umaxzhao/voo-design/pull/77) 合入 `9f37259` 且源码树一致，本地 18 组实际函数输出及默认信令通过，查询解析草稿保留。已部署 la2；正式入口及 85 个加载资源 SHA-256 一致，真实复制/只读打开（HTTP 200）/访客转发保持房间与密钥、文档不变和零页面异常通过。正式服务接受 localhost Origin 的 WebSocket 握手，未发送 JOIN；浏览器信令使用隔离 socket，不认证真实多人 P2P/TURN。证据 `/private/tmp/voo-license-regression/canonical-share-{release,ci,primary-proof,main-tree-proof,production-proof,signaling-handshake}.json`。[范围与证据](audits/design-editor-interaction-audit.md#canonical-share-links--2026-11-01)。
 
 ## 本轮：进入编辑器的品牌 Loading（已完成声明范围）
 - `platform.loading`：去紫色转圈，改为旋转 VOO 图标 + 中性细进度条；未知进度不虚构百分比，减少动态效果保留静态提示，任务阶段说明与取消继续可用。23 项定向单测及真实冷进入/320px 双主题/旋转与减少动效/画布绘制/撤销和延迟导出通过，固定 `44e0714` 重新完整运行 **91/91 发布步骤、87 组核心浏览器、4704 单测通过/4 跳过**，GitHub CI 通过。首轮临时缓存清理断言失败原始报告保留，单独复查及同版本完整重跑通过，不拼接结果。本地仅应用本轮补丁并保留顶栏既有草稿；[PR #76](https://github.com/umaxzhao/voo-design/pull/76) 合入 `005f8e2` 且源码树一致。已部署 la2，正式入口及 83 个加载资源 SHA-256 一致；真实阻断编辑器 chunk 后的品牌 Loading、旋转/减少动效/窄屏及完成后的指针绘制、红色像素、撤销重做通过，零页面异常。证据 `/private/tmp/voo-license-regression/loading-brand-{release,release-initial,ci,primary-proof,main-tree-proof,production-proof}.json`。功能覆盖仍部分，不认证签名桌面安装包和实体移动设备。[范围与证据](audits/design-editor-interaction-audit.md#brand-loading-feedback--2026-11-01)。
