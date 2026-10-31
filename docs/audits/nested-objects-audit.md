@@ -238,3 +238,17 @@ the exact expected pixels once the imported document binds. Its picker helper
 now waits for the imported document marker and the normal open guard to turn
 off before exporting pixels; it does not wait for pixel values to match or
 change any pixel assertions. Evidence: `global-overlay-figma-engine-probe.log`.
+
+
+### Share identity update replay
+
+The real share input exposed an existing side effect inside a functional React
+state updater: saving and publishing identity from that updater fed external
+collaboration-store updates back into rendering. React replay could repeatedly
+publish or hit maximum update depth. Two real input events batched before paint
+reproduce excess publications in `global-overlay-identity-before.log`.
+Identity edits now merge through a current ref, enqueue a plain state value,
+and save/publish once from the input event. Opening the popover refreshes both
+state and ref. The browser regression preserves the live session callback and
+asserts two inputs produce exactly two publications, the latest field value,
+no page errors and unchanged document/selection; it does not stub publishing out.

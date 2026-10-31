@@ -1,4 +1,5 @@
 import React from "react";
+import { unstable_batchedUpdates } from "react-dom";
 import { createRoot } from "react-dom/client";
 import ShortcutReferenceModal from "../../src/canvas/components/shortcut_reference_modal.jsx";
 import EditorIconPickerModal from "../../src/canvas/components/editor_icon_picker_modal.jsx";
@@ -26,4 +27,17 @@ export function mountGlobalOverlayAudit(kind) {
   };
   if (!components[kind]) throw new Error(`Unknown overlay fixture: ${kind}`);
   root.render(components[kind]);
+}
+
+/** Real input events in one batch expose side effects inside React updater replay. */
+export function editShareIdentityBeforePaint(values) {
+  const input = document.querySelector('[role="dialog"] input:not([readonly])');
+  if (!input) throw new Error("Share name input missing");
+  const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+  unstable_batchedUpdates(() => {
+    for (const value of values) {
+      setValue.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  });
 }

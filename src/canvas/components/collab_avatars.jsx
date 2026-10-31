@@ -79,6 +79,7 @@ export default function CollabAvatars({
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [identity, setIdentity] = useState(loadIdentity);
+  const identityRef = useRef(identity);
   const [explained, setExplained] = useState(false);
   const [sharedLink, setSharedLink] = useState(null);
   const [access, setAccess] = useState(state?.access ?? "edit");
@@ -90,17 +91,19 @@ export default function CollabAvatars({
   const clearShareError = useDesignStore((store) => store.clearShareError);
 
   const updateIdentity = (patch) => {
-    setIdentity((current) => {
-      const next = { ...current, ...patch };
-      saveIdentity(next);
-      onIdentity?.(next);
-      return next;
-    });
+    // React may replay state updaters; publish only from the input event.
+    const next = { ...identityRef.current, ...patch };
+    identityRef.current = next;
+    setIdentity(next);
+    saveIdentity(next);
+    onIdentity?.(next);
   };
 
   useEffect(() => {
     if (!open) return undefined;
-    setIdentity(loadIdentity());
+    const current = loadIdentity();
+    identityRef.current = current;
+    setIdentity(current);
     const onDown = (event) => {
       if (!boxRef.current?.contains(event.target) && !popoverRef.current?.contains(event.target)) setOpen(false);
     };

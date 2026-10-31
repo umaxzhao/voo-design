@@ -33,6 +33,13 @@ await withEditorBrowser(async ({ page }) => {
 
   // A docked Agent leaves the share popover overlapping the real inspector.
   await page.getByRole("button", { name: "Open VOO Agent", exact: true }).click();
+  await page.evaluate(async () => {
+    const { getCollabSession } = await import("/src/canvas/collab/use_collab.js");
+    const session = getCollabSession();
+    const update = session.setIdentity.bind(session);
+    window.__identityUpdateCount = 0;
+    session.setIdentity = (identity) => { window.__identityUpdateCount++; return update(identity); };
+  });
   const beforeOverlays = await page.evaluate(() => ({ doc: window.__vooEditor.getDocument(), selected: window.__vooEditor.getSelectedIds() }));
   for (const width of [1600, 1280, 900]) {
     await page.setViewportSize({ width, height: 1000 });
@@ -40,6 +47,17 @@ await withEditorBrowser(async ({ page }) => {
     const share = page.getByRole("dialog", { name: "Share", exact: true });
     await assertUncovered(share, `Share at ${width}px`);
     await share.getByRole("textbox", { name: "Your display name", exact: true }).fill("Overlay audit");
+    if (width === 1600) {
+      const count = await page.evaluate(() => window.__identityUpdateCount);
+      await page.evaluate(async () => {
+        const { editShareIdentityBeforePaint } = await import("/tests/e2e/global-overlay-harness.jsx");
+        editShareIdentityBeforePaint(["Rapid A", "Rapid B"]);
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      });
+      assert.equal(await share.getByRole("textbox", { name: "Your display name", exact: true }).inputValue(), "Rapid B");
+      assert.equal(await page.evaluate(() => window.__identityUpdateCount), count + 2,
+        "Each input publishes identity once even when React batches updates");
+    }
     await page.keyboard.press("Escape");
     await share.waitFor({ state: "detached" });
   }
