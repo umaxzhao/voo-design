@@ -2,8 +2,11 @@ import { MSG, ProtocolError, decode, encode } from "./protocol.js";
 import { decodeBinaryFrame } from "./chunking.js";
 import { verifyHello } from "./room-security.js";
 
+/** Messages that change the shared document; a read-only viewer may not send them. */
+const EDIT_MESSAGES = new Set([MSG.DOC, MSG.STROKE]);
+
 export function createMessageHandler({ roomSecret: getRoomSecret, verifiedPeers, whoIs, peerCaps,
-  requestedDocs, presence, sendHello, dispatch, sink: getSink, joinedViaLink: isJoinedViaLink,
+  peerReadOnly, requestedDocs, presence, sendHello, dispatch, sink: getSink, joinedViaLink: isJoinedViaLink,
   getAccess, setAccess, transportTypes, announce, setReceivedDocument }) {
   const roomSecret = () => getRoomSecret();
   const sink = () => getSink();
@@ -56,12 +59,20 @@ export function createMessageHandler({ roomSecret: getRoomSecret, verifiedPeers,
       if (roomSecret() && !(await verifyHello(roomSecret(), message))) return;
       verifiedPeers.add(fromPeerId);
       whoIs.set(fromPeerId, message.peerId);
+      peerReadOnly.set(fromPeerId, message.readOnly === true);
       peerCaps.set(
         fromPeerId,
         new Set(Array.isArray(message.caps) ? message.caps : []),
       );
     }
     if (roomSecret() && !verifiedPeers.has(fromPeerId)) return;
+    // Read-only peers (guests that joined a view link) cannot edit the shared
+    // document, even when their client is modified to publish anyway. Peers on
+    // older builds announce no flag and stay writable for link compatibility.
+    if (EDIT_MESSAGES.has(message.type) && peerReadOnly.get(fromPeerId)) {
+      console.warn("collab: dropped write from a read-only peer", message.type);
+      return;
+    }
     presence.touch(whoIs.get(fromPeerId));
 
     switch (message.type) {

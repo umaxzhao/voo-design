@@ -6,7 +6,7 @@ import {
 } from "./protocol.js";
 import { createPresence, colourFor } from "./presence.js";
 import { createRoomId, createRoomSecret, roomUrl } from "./room.js";
-import { isProtectedWire, proofFor } from "./room-security.js";
+import { isEditWire, isProtectedWire, proofFor } from "./room-security.js";
 import { createPeerRoster } from "./peer-roster.js";
 import { createMessageHandler } from "./message-handler.js";
 
@@ -34,8 +34,12 @@ export function createCollabSession({
 }) {
   let currentConnectionId = connectionId;
   let roomSecret = null;
+  /** roomId -> secret, so a re-shared link keeps the same #k proof. */
+  const roomSecrets = new Map();
   const presence = createPresence(userId, now);
   const { whoIs, peerCaps, verifiedPeers, requestedDocs, transportTypes } = createPeerRoster();
+  /** Connections whose peer announced it is a read-only viewer. */
+  const peerReadOnly = new Map();
 
   let status = STATUS.OFF;
   let roomId = null;
@@ -43,6 +47,9 @@ export function createCollabSession({
   const outbox = [];
 
   function dispatch(peerId, wire) {
+    // A read-only viewer must never publish edits, even if a caller forgets its
+    // own guard; drop the wire before any peer can see it.
+    if (readOnly() && isEditWire(wire)) return;
     if (roomSecret && isProtectedWire(wire)) {
       if (peerId) {
         if (!verifiedPeers.has(peerId)) return;
@@ -63,7 +70,7 @@ export function createCollabSession({
   async function helloWire({ reply = true } = {}) {
     return encode(MSG.HELLO, {
       peerId: userId, name: displayName, colour: colourFor(userId), avatarSeed,
-      workflowId, caps: [CAP_BINARY_BLOBS], access, reply,
+      workflowId, caps: [CAP_BINARY_BLOBS], access, readOnly: readOnly(), reply,
       ...(roomSecret ? { proof: await proofFor(roomSecret, userId) } : {}),
     });
   }
@@ -72,7 +79,7 @@ export function createCollabSession({
     if (!roomSecret) {
       dispatch(peerId, encode(MSG.HELLO, {
         peerId: userId, name: displayName, colour: colourFor(userId), avatarSeed,
-        workflowId, caps: [CAP_BINARY_BLOBS], access,
+        workflowId, caps: [CAP_BINARY_BLOBS], access, readOnly: readOnly(),
         reply: options?.reply ?? true,
       }));
       return;
@@ -112,7 +119,10 @@ export function createCollabSession({
     }, timeoutMs);
   }
 
-  const readOnly = () => access === "view" && joinedViaLink;
+  /** A guest that joined through a view link is read-only for the room. */
+  function readOnly() {
+    return access === "view" && joinedViaLink;
+  }
 
   const snapshot = () => ({
     status,
@@ -149,7 +159,7 @@ export function createCollabSession({
   }
 
   const handleMessage = createMessageHandler({
-    roomSecret: () => roomSecret, verifiedPeers, whoIs, peerCaps, requestedDocs, presence,
+    roomSecret: () => roomSecret, verifiedPeers, whoIs, peerCaps, peerReadOnly, requestedDocs, presence,
     sendHello, dispatch, sink: () => sink, joinedViaLink: () => joinedViaLink,
     getAccess: () => access, setAccess: (next) => { access = next; }, transportTypes,
     announce, setReceivedDocument: (next) => { receivedDocument = next; },
@@ -203,7 +213,12 @@ export function createCollabSession({
         this.stop();
       }
       roomId = joinRoom;
-      roomSecret = secret ?? (existingRoomId ? null : createRoomSecret());
+      const knownSecret = roomSecrets.get(joinRoom);
+      // Hosting (no explicit via-link join) mints the room secret the share
+      // link carries in its `#k=` fragment; a link guest adopts the secret it
+      // was handed, and a legacy link without one stays secret-less.
+      roomSecret = secret ?? knownSecret ?? (existingRoomId && viaLink ? null : createRoomSecret());
+      if (roomSecret) roomSecrets.set(joinRoom, roomSecret);
       joinedAt = Date.now();
       joinedViaLink = Boolean(existingRoomId && viaLink);
       receivedDocument = false;
@@ -228,6 +243,7 @@ export function createCollabSession({
           verifiedPeers.delete(peerId);
           requestedDocs.delete(peerId);
           peerCaps.delete(peerId);
+          peerReadOnly.delete(peerId);
           transportTypes.delete(peerId);
           if (gone && ![...whoIs.values()].includes(gone)) {
             presence.remove(gone);
@@ -269,6 +285,7 @@ export function createCollabSession({
       outbox.length = 0;
       presence.clear();
       peerCaps.clear();
+      peerReadOnly.clear();
       verifiedPeers.clear();
       requestedDocs.clear();
       whoIs.clear();
