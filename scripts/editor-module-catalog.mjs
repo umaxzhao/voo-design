@@ -107,6 +107,8 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/clipping-chain-cache.js", "src/canvas/editor/layer-pass-document.js",
       "tests/e2e/selection-size-label-checks.mjs", "tests/unit/container_selection_chrome.test.js",
       "tests/unit/clipping-chain-cache.test.js", "tests/unit/layer-pass-document.test.js",
+      "tests/unit/frame-clip-run.test.js", "src/canvas/editor/editor_engine_render.js",
+      "src/canvas/editor/node_effects.js", "tests/unit/empty-effect-cache.test.js", "tests/unit/container-opacity.test.js",
       "src/canvas/editor/chrome*", "src/canvas/editor/render*", "src/canvas/editor/skia*",
       "src/canvas/editor/*mask*", "src/canvas/editor/*opacity*", "src/canvas/editor/*sampling*",
       "src/canvas/editor/*readback*", "src/canvas/editor/doc_ops_clipping.js",
@@ -114,6 +116,7 @@ export const EDITOR_MODULES = [
     related: ["layers","images","vectors","documents"],
     features: [
       "compositing.selection-size-label", "compositing.mask-cache",
+      "compositing.clip-run-culling",
       "compositing.masks", "compositing.frame-clips", "compositing.alpha", "compositing.artwork-parity",
     ],
     suites: [

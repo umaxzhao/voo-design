@@ -256,3 +256,68 @@ initial aborted/incomplete reports remain separate evidence.
   manifest. No private `.fig`, decoded design or commercial screenshot is
   committed. Twenty-one separately registered checks and native/paid-service
   contexts are not certified by this release; functional coverage stays partial.
+
+### OpenPencil control and further rendering optimization — 2026-11-01
+
+Owner: `compositing.clip-run-culling`, with `canvas.performance`. The original
+253,604,553-byte `test.fig` stays read-only; no private fixture is committed.
+OpenPencil is independently installed at
+`/Volumes/TD/Projects/open-pencil-benchmark`, served at `http://127.0.0.1:5188/`.
+Its official source is unmodified. Both v0.16.0 (`ffe2fc5`) and master
+`e0defef2298957b7f36f19d6a7847a37f3e8ac44` build using the declared Bun 1.4.2.
+An earlier build with system Bun 1.3.12 failed; that is runtime mismatch evidence,
+not an upstream product defect. Local startup instructions are beside the clone.
+
+Both OpenPencil builds produce nonfinite default fit camera coordinates on this
+file. v0.16.0 additionally throws on a null gradient shader; its callback scores
+are invalid and discarded. Official master already guards that shader. Its
+control run manually restores finite camera coordinates without changing graph
+data, waits for the official navigation settlement hook, and verifies changing
+canvas screenshots with zero page script errors during camera/wheel sampling.
+Blocked online fonts remain console errors and 31 font faces are unavailable.
+
+Master first-page readiness is 7.577 s in the settled run. It initially stores
+24,025 nodes (20,992 descendants on the active page); other pages populate on
+first visit, taking 3.246/1.116/3.136 s and reaching 58,504 nodes. VOO eagerly
+imports all five pages, so initial readiness alone is not equal import work.
+Both retain 478 images, four variable collections and five variables. Different
+expanded node counts do not establish missing properties or visual parity.
+
+The camera control uses production builds, fresh Chromium 156/Metal on M4 Pro,
+1440x1000/DPR1, external network blocked, zoom 0.024, 10-second sinusoidal pan
+and zoom plus six real wheel inputs. UI remains visible: OpenPencil's artwork
+surface is 924x931 versus VOO's 1428x948. This is an observed application test,
+not a pure engine ranking. OpenPencil master records 1.175 pan / 0.734 zoom
+rAF callbacks/s, wheel median 667 ms; it is also visibly slow. These are callback
+cadences, never GPU FPS, and the manual-camera qualification is essential.
+
+VOO changes share equal ancestor Frame clips only for consecutive paints on
+one context, clear them around isolated containers/mask chains, restore the
+caller state on failures, and enable conservative offscreen culling for mixed
+layer passes. The existing 240-world-pixel safety margin is retained. Static
+vector empty-effect results are cached; image/text results retry for asynchronous
+resources. Immutable isolated container paints retain identity across camera
+passes and invalidate when their source node is replaced.
+
+Red regressions retain 200 clip operations for 200 sibling paints, three image
+fills including one beyond the safety margin, repeated empty-effect readback,
+and changing isolated paint identity. Green assertions require two clip runs,
+two nearby image fills, every visible RGBA byte unchanged, caller-clip cleanup,
+empty-vector reuse, image/text retries and edit invalidation. Existing native
+Figma crop/cover/rotation/overflow/mask/variables/undo/cold-reopen checks remain.
+Private evidence is under `/tmp/voo-open-pencil-comparison/`; red/green logs use
+`/tmp/voo-clip-*`, `/tmp/voo-container-paint-*` and `/tmp/voo-empty-effect-*`.
+The sequential VOO comparison uses baseline application `b965942` (all later
+`68c3790` changes are documentation) and the final performance patch. Initial
+readiness changes from 12.249 to 11.003 s; pan cadence from 3.306 to 6.020 and
+zoom from 0.960 to 1.776 callbacks/s. Three repeated full-pass diagnostics reduce
+effect pixel reads from 97 (2,098,764 pixels) to two (84,535 pixels) each. The
+intermediate clip-only trial (3.707/1.111 callbacks/s) is retained separately.
+These are single sequential shared-machine samples, not universal speedups;
+61/18 final pan/zoom intervals still show unacceptable stalls. Final fixed-
+revision release and production proof are recorded after verification below;
+no pending gate is counted as passed.
+
+Still partial: readable-scale fidelity across every page/font/property, signed
+Electron, other GPUs/input devices, all effect/mask combinations and sustained
+smooth large-scene navigation. `native_studio` remains excluded.
