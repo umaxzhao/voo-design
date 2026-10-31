@@ -9,7 +9,7 @@
 ## 本轮：分享与页面外浮层遮挡（验证中）
 
 - `inspector.global-overlay-stacking`：真实分享框左侧命中 `editor-pages`，证据 `/private/tmp/voo-license-regression/global-overlay-before.log`。顶栏统一高于编辑器；分享移至 body 的锚定浮层，窄屏限制位置/滚动高度；快捷键、图标、SVG 与懒加载占位共用全局 Portal，既有设置/导出/命令面板等路径已审查。[逐类验收](audits/panel-control-audit.md#global-overlay-stacking)。
-- `ui-global-interaction` 检查桌面 1600/1280/900px 分享、320px 嵌套分享、跨弹窗点击/关闭/焦点/选区与文档不变，及三个真实弹窗在变换/裁切宿主下的 9 点命中；设计/模块/格式与 20 项相关单测通过。证据 `global-overlay-after-final.log`、`global-overlay-unit-final.log` 同目录。登记 66 能力、86 浏览器；本地补丁保留其他草稿，备份 `global-overlay-primary-backup/`。完整门禁与线上结果待固定提交补录，不继承历史通过。
+- `ui-global-interaction` 检查桌面 1600/1280/900px 分享、320px 嵌套分享、跨弹窗点击/关闭/焦点/选区与文档不变，及三个真实弹窗在变换/裁切宿主下的 9 点命中；设计/模块/格式与 20 项相关单测通过。证据 `global-overlay-after-final.log`、`global-overlay-unit-final.log` 同目录。登记 66 能力、86 浏览器；本地补丁保留其他草稿，备份 `global-overlay-primary-backup/`。首次完整门禁 `439c9d9` 中顶栏旧 Hook 模拟缺少 `useId`，4 项失败（`global-overlay-release.json`）；补齐模拟后重新完整执行，不以单项补跑替代。最终完整门禁与线上结果待补录，不继承历史通过。
 
 ## 本轮：Agent 引导提示词重复（已完成声明范围）
 

@@ -8,6 +8,7 @@ vi.mock("react", async (original) => ({
   useState: (initial) => [initial, vi.fn()],
   useEffect: () => {},
   useRef: (current) => ({ current }),
+  useId: () => "titlebar-popover-scope",
 }));
 vi.mock("../../src/store/design_store.js", () => ({ useDesignStore: (selector) => selector(state) }));
 vi.mock("../../src/canvas/use_i18n.js", () => ({ useI18n: () => ({ t: (key) => key }) }));

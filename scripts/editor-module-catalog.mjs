@@ -4,7 +4,7 @@ export const EDITOR_MODULES = [
     id: "workspace",
     title: "Workspace and resources",
     paths: [
-      "src/app_title_bar.jsx", "src/welcome_settings.css",
+      "tests/unit/titlebar_actions.test.jsx", "src/app_title_bar.jsx", "src/welcome_settings.css",
       "src/canvas/components/welcome*", "src/canvas/components/welcome_dashboard/*",
       "src/canvas/components/editor*resources*", "src/canvas/components/editor_layers_assets*",
       "src/canvas/components/titlebar*",
