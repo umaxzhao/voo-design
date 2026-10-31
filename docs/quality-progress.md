@@ -1,9 +1,9 @@
 # 项目检查总进度
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
-最近一次完整核心验证提交：[62a41ee](https://github.com/umaxzhao/voo-design/commit/62a41ee32c335951df862e5c20079b72e0299ce0)；91/91 项通过，当前线上为该构建。
+最近一次完整核心验证提交：[92feeaa](https://github.com/umaxzhao/voo-design/commit/92feeaa82ef28dbe97cfcc324707ea3920a706fd)；91/91 项通过，当前线上为该构建。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
-## 本轮：统一圆形色块（验证中）
-- `inspector.control-hierarchy` / `inspector.unified-fill`：预设、文档颜色、填充/描边、效果、工具栏、前背景、渐变色标、网格点及设计系统调色板统一圆形；原生颜色输入补圆形裁切/正方比例。32 项定向单测及完整属性面板浏览器场景通过；完整发布与线上验收待完成。[范围与证据](audits/design-editor-interaction-audit.md#circular-color-swatches--2026-11-01)。
+## 本轮：统一圆形色块（已完成声明范围）
+- `inspector.control-hierarchy` / `inspector.unified-fill`：预设、文档颜色、填充/描边、效果、工具栏、前背景、渐变色标、网格点及设计系统调色板统一圆形；原生颜色输入补圆形裁切/正方比例。32 项定向单测及完整属性面板浏览器场景通过；固定 `92feeaa` **91/91 发布步骤、87 组核心浏览器、4692 单测通过/4 跳过**，GitHub CI 通过；本地 13 个源码文件与修复一致，其他草稿保留。[PR #75](https://github.com/umaxzhao/voo-design/pull/75) 已合入 `455cb16` 且源码树一致，已部署 la2。正式入口及 83 个加载资源 SHA-256 一致，19 个预设/文档色块、填充描边、渐变/网格点、移动端、9 个原生令牌输入和设计调色板圆形通过；实际文档颜色选择/撤销和 Escape 焦点正常，零页面异常。证据 `/private/tmp/voo-license-regression/circular-swatches-{release,ci,primary-proof,main-tree-proof,production-proof}.json`。功能覆盖仍部分，原生系统对话框、其他浏览器和签名安装包未认证。[范围与证据](audits/design-editor-interaction-audit.md#circular-color-swatches--2026-11-01)。
 
 ## 本轮：描边颜色行简化（已完成声明范围）
 - `inspector.control-hierarchy`：去掉描边色块左侧重复的填充类型图标，统一从色块进入纯色/渐变编辑。已保留修复前失败、修复后单测与真实渐变切换/Escape 焦点/一次撤销回归；固定 `62a41ee` 完成 **91/91 发布步骤、87 组核心浏览器、4691 单测通过/4 跳过**，GitHub CI 通过；本地源码补丁与该组件完全一致，其他草稿保留。已合并 [PR #74](https://github.com/umaxzhao/voo-design/pull/74) 并部署 la2，正式页面 83 个入口/加载资源 SHA-256 一致，描边色块渐变/Escape/键盘撤销和零页面异常通过。证据 `/private/tmp/voo-license-regression/stroke-row-icon-{release,production-proof,primary-proof,ci}.json`。功能覆盖仍部分，不认证签名桌面安装包或实体触屏。[范围与证据](audits/design-editor-interaction-audit.md#stroke-paint-row--2026-11-01)。
