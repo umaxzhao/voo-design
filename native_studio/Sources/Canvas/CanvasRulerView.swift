@@ -8,6 +8,7 @@
 
 import AppKit
 import CoreGraphics
+import CoreText
 import Foundation
 
 // MARK: - Ruler Orientation
@@ -81,17 +82,26 @@ public class CanvasRulerView: NSView {
 
     // MARK: - Drawing & Layout
 
+    private static let majorTickLength: CGFloat = 7.0
+    private static let minorTickLength: CGFloat = 3.0
+    private static let labelFontSize: CGFloat = 9.0
+    /// Web `MIN_MINOR_SPACING_PX` in `rulers_geometry.js`.
+    private static let minMinorSpacing: CGFloat = 6.0
+
     public override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
         let b = bounds
 
-        // 1. Background fill (#171717)
-        ctx.setFillColor(ThemeTokens.colorPanel.cgColor)
+        // 1. Track ground: web `bg-[#1c1c1c]/95` over the #1c1c1c stage.
+        ctx.setFillColor(ThemeTokens.colorRulerBackground.cgColor)
         ctx.fill(b)
 
-        // 2. Separator border line (#262626 / borderDefault)
-        ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.12).cgColor)
+        // 2. Inner-edge separator: web `border-b border-white/10` (horizontal)
+        // / `border-r border-white/10` (vertical). In this y-up view the canvas
+        // edge is the bottom for the horizontal ruler and the right for the
+        // vertical one.
+        ctx.setStrokeColor(ThemeTokens.colorRulerSeparator.cgColor)
         ctx.setLineWidth(1.0)
         if orientation == .horizontal {
             ctx.strokeLineSegments(between: [CGPoint(x: 0, y: 0.5), CGPoint(x: b.width, y: 0.5)])
@@ -118,14 +128,26 @@ public class CanvasRulerView: NSView {
         }
 
         let screenStep = majorStep * zoom
-        guard screenStep > 8.0 else { return }
+        guard screenStep > 4.0 else { return }
 
+        // Minor ticks follow the web rule: divide by 5 while they stay at least
+        // `MIN_MINOR_SPACING_PX` apart, otherwise fall back to halves (or none).
+        let minorDivisions: Int
+        if screenStep / 5.0 >= Self.minMinorSpacing {
+            minorDivisions = 5
+        } else if screenStep / 2.0 >= Self.minMinorSpacing {
+            minorDivisions = 2
+        } else {
+            minorDivisions = 0
+        }
+
+        let font = ThemeFonts.monoDigit(size: Self.labelFontSize, weight: .regular)
         let textAttrs: [NSAttributedString.Key: Any] = [
-            .font: ThemeFonts.monoDigit(size: 9, weight: .regular),
-            .foregroundColor: NSColor(white: 0.60, alpha: 1.0)
+            .font: font,
+            .foregroundColor: ThemeTokens.colorRulerLabel
         ]
 
-        ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.25).cgColor)
+        ctx.setStrokeColor(ThemeTokens.colorRulerTick.cgColor)
 
         if orientation == .horizontal {
             let startDocX = -panOffset / zoom
@@ -137,32 +159,39 @@ public class CanvasRulerView: NSView {
                 if screenX > b.width + 100.0 { break }
 
                 if screenX >= -50.0 {
-                    // Major tick (8px high)
+                    // Major tick: 7px tall from the canvas edge (bottom in y-up).
                     ctx.setLineWidth(1.0)
-                    ctx.strokeLineSegments(between: [CGPoint(x: screenX, y: 0), CGPoint(x: screenX, y: 8)])
+                    ctx.strokeLineSegments(between: [CGPoint(x: screenX, y: 0), CGPoint(x: screenX, y: Self.majorTickLength)])
 
-                    // Tick numeric label
-                    let label = String(format: "%.0f", docX)
-                    let attrStr = NSAttributedString(string: label, attributes: textAttrs)
-                    attrStr.draw(at: CGPoint(x: screenX + 3.0, y: 2.0))
+                    // Label: web `top-[2px] ... left: tick + 3px`, 9px mono,
+                    // top-aligned near the ruler's outer edge.
+                    let attrStr = NSAttributedString(string: String(Int(round(docX))), attributes: textAttrs)
+                    let line = CTLineCreateWithAttributedString(attrStr)
+                    var ascent: CGFloat = 0
+                    var descent: CGFloat = 0
+                    var leading: CGFloat = 0
+                    _ = CTLineGetTypographicBounds(line, &ascent, &descent, &leading)
+                    ctx.saveGState()
+                    ctx.textPosition = CGPoint(x: screenX + 3.0, y: b.height - 2.0 - ascent)
+                    CTLineDraw(line, ctx)
+                    ctx.restoreGState()
 
-                    // Minor ticks (5 subdivisions)
-                    ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.15).cgColor)
-                    for sub in 1...4 {
-                        let subScreenX = floor(screenX + (screenStep / 5.0) * CGFloat(sub)) + 0.5
-                        let tickH: CGFloat = (sub == 2 || sub == 3) ? 5.0 : 3.0
-                        ctx.strokeLineSegments(between: [CGPoint(x: subScreenX, y: 0), CGPoint(x: subScreenX, y: tickH)])
+                    // Minor ticks: same white/25 as the majors, 3px tall.
+                    if minorDivisions > 0 {
+                        for sub in 1..<minorDivisions {
+                            let subScreenX = floor(screenX + (screenStep / CGFloat(minorDivisions)) * CGFloat(sub)) + 0.5
+                            ctx.strokeLineSegments(between: [CGPoint(x: subScreenX, y: 0), CGPoint(x: subScreenX, y: Self.minorTickLength)])
+                        }
                     }
-                    ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.25).cgColor)
                 }
 
                 docX += majorStep
             }
 
-            // 4. Cursor Projection Guide (VOO Mint #b2ffd6)
+            // 4. Cursor Projection Guide (VOO mint #a7ffd4)
             if let cur = cursorPosition {
                 let curScreen = floor(cur * zoom + panOffset) + 0.5
-                ctx.setStrokeColor(ThemeTokens.colorMint.cgColor)
+                ctx.setStrokeColor(NSColor(hex: ThemeTokens.accentMint).cgColor)
                 ctx.setLineWidth(1.0)
                 ctx.strokeLineSegments(between: [CGPoint(x: curScreen, y: 0), CGPoint(x: curScreen, y: b.height)])
             }
@@ -177,32 +206,37 @@ public class CanvasRulerView: NSView {
                 if screenY > b.height + 100.0 { break }
 
                 if screenY >= -50.0 {
-                    // Major tick (8px wide from right edge)
+                    // Major tick: 7px wide, anchored to the canvas edge (right).
                     ctx.setLineWidth(1.0)
-                    ctx.strokeLineSegments(between: [CGPoint(x: b.width - 8, y: screenY), CGPoint(x: b.width, y: screenY)])
+                    ctx.strokeLineSegments(between: [CGPoint(x: b.width - Self.majorTickLength, y: screenY), CGPoint(x: b.width, y: screenY)])
 
-                    // Number label rotated or placed vertically
-                    let label = String(format: "%.0f", docY)
-                    let attrStr = NSAttributedString(string: label, attributes: textAttrs)
-                    attrStr.draw(at: CGPoint(x: 2.0, y: screenY + 2.0))
+                    // Label rotated 90° like the web (`rotate(90deg)`, origin
+                    // left/top), reading top-to-bottom next to the track edge.
+                    let attrStr = NSAttributedString(string: String(Int(round(docY))), attributes: textAttrs)
+                    let line = CTLineCreateWithAttributedString(attrStr)
+                    ctx.saveGState()
+                    ctx.translateBy(x: 2.0, y: screenY - 3.0)
+                    ctx.rotate(by: -CGFloat.pi / 2.0)
+                    ctx.textPosition = .zero
+                    CTLineDraw(line, ctx)
+                    ctx.restoreGState()
 
-                    // Minor ticks
-                    ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.15).cgColor)
-                    for sub in 1...4 {
-                        let subScreenY = floor(screenY + (screenStep / 5.0) * CGFloat(sub)) + 0.5
-                        let tickW: CGFloat = (sub == 2 || sub == 3) ? 5.0 : 3.0
-                        ctx.strokeLineSegments(between: [CGPoint(x: b.width - tickW, y: subScreenY), CGPoint(x: b.width, y: subScreenY)])
+                    // Minor ticks: white/25, 3px wide.
+                    if minorDivisions > 0 {
+                        for sub in 1..<minorDivisions {
+                            let subScreenY = floor(screenY + (screenStep / CGFloat(minorDivisions)) * CGFloat(sub)) + 0.5
+                            ctx.strokeLineSegments(between: [CGPoint(x: b.width - Self.minorTickLength, y: subScreenY), CGPoint(x: b.width, y: subScreenY)])
+                        }
                     }
-                    ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.25).cgColor)
                 }
 
                 docY += majorStep
             }
 
-            // Cursor Projection Guide (VOO Mint #b2ffd6)
+            // Cursor Projection Guide (VOO mint #a7ffd4)
             if let cur = cursorPosition {
                 let curScreen = floor(cur * zoom + panOffset) + 0.5
-                ctx.setStrokeColor(ThemeTokens.colorMint.cgColor)
+                ctx.setStrokeColor(NSColor(hex: ThemeTokens.accentMint).cgColor)
                 ctx.setLineWidth(1.0)
                 ctx.strokeLineSegments(between: [CGPoint(x: 0, y: curScreen), CGPoint(x: b.width, y: curScreen)])
             }

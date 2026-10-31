@@ -40,6 +40,21 @@ export const DOCUMENT_TOOL_SCHEMAS = Object.freeze([
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "resize_document",
+      description: "Resize the active canvas document dimensions (width, height in pixels).",
+      parameters: {
+        type: "object",
+        properties: {
+          width: { type: "number", description: "New document width in pixels." },
+          height: { type: "number", description: "New document height in pixels." },
+        },
+        required: ["width", "height"],
+      },
+    },
+  },
 ]);
 
 function isDocumentDirty(store) {
@@ -97,6 +112,23 @@ export function newDocument(args = {}) {
   return { ok: true, width, height, name };
 }
 
+export function resizeDocument(args = {}) {
+  const width = Math.max(1, Number(args.width) || 1440);
+  const height = Math.max(1, Number(args.height) || 900);
+  const editor = typeof window !== "undefined"
+    ? window.__vooEditor || Object.values(window.__vooEditors || {})[0] || null
+    : null;
+  if (!editor) throw new Error("No active editor");
+  if (typeof editor.setDocumentSize === "function") {
+    editor.setDocumentSize(width, height);
+  } else if (typeof editor.setDoc === "function") {
+    const doc = editor.getDocument?.() || editor.getDoc?.() || {};
+    editor.setDoc({ ...doc, width, height }, { name: "Resize document" });
+  }
+  return { ok: true, width, height };
+}
+
 export const DOCUMENT_TOOL_EXECUTORS = Object.freeze({
   new_document: newDocument,
+  resize_document: resizeDocument,
 });

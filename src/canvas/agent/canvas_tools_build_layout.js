@@ -14,6 +14,7 @@ const nodeProperties = {
   type: { type: "string", enum: ["frame", "rect", "ellipse", "text", "line", "path"] },
   ...Object.fromEntries(strings.map(key => [key, { type: "string" }])),
   ...Object.fromEntries(numbers.map(key => [key, { type: "number" }])),
+  textSizing: { type: "string", enum: ["auto", "fixed"] },
   fontWeight: { anyOf: [{ type: "string" }, { type: "number" }] },
   align: { type: "string", enum: ["left", "center", "right"] },
   layoutPosition: { type: "string", enum: ["flow", "absolute"] },
@@ -46,7 +47,7 @@ export const BUILD_LAYOUT_SCHEMA = {
   type: "function",
   function: {
     name: "build_layout",
-    description: "Create a complete tree of up to 200 editable layers in one undoable batch. Supported types: frame, rect, ellipse, text, line and path (path requires SVG d data). For one poster, screen or composed page, make one top-level frame and put its artwork, vector paths and text in that frame's children so the result moves as one composition; use type=text for editable copy. Use separate top-level nodes only when they should be independent. All x/y coordinates are absolute canvas coordinates, including children (parentId establishes ownership, not a coordinate offset). Frame autoLayout supports direction, wrapping, item/cross gaps, per-side padding, alignment, distribution, fixed/hug sizing and min/max. Child layoutWidth/layoutHeight accept fixed, hug or fill; layoutPosition accepts flow or absolute. Text is measured after its typography is applied; width is the wrapping box. Lines run from (x,y) to (x+width,y+height). After creating a composition, call capture_canvas and inspect_layout before finishing. Returns {created:[{id,name,type}],count}. You may batch multiple tool calls in one step.",
+    description: "Create a complete tree of up to 200 editable layers in one undoable batch. Supported types: frame, rect, ellipse, text, line and path (path requires SVG d data). For one poster, screen or composed page, make one top-level frame and put its artwork, vector paths and text in that frame's children so the result moves as one composition; use type=text for editable copy. Text defaults to auto sizing from its content; set textSizing:'fixed' only when a text layer should wrap to its width. Use separate top-level nodes only when they should be independent. All x/y coordinates are absolute canvas coordinates, including children (parentId establishes ownership, not a coordinate offset). Frame autoLayout supports direction, wrapping, item/cross gaps, per-side padding, alignment, distribution, fixed/hug sizing and min/max. Child layoutWidth/layoutHeight accept fixed, hug or fill; layoutPosition accepts flow or absolute. Text is measured after its typography is applied. Lines run from (x,y) to (x+width,y+height). After creating a composition, call capture_canvas and inspect_layout before finishing. Returns {created:[{id,name,type}],count}. You may batch multiple tool calls in one step.",
     parameters: {
       type: "object",
       properties: { parentId: { type: "string" }, nodes: { type: "array", minItems: 1, maxItems: 200, items: { $ref: "#/$defs/node" } } },
@@ -121,6 +122,8 @@ function validate(args) {
       for (const key of ["fontSize", "lineHeight"]) if (node[key] !== undefined && node[key] <= 0) invalid(`${at}.${key} must be positive`);
       if (node.fontWeight !== undefined && !(["normal", "bold"].includes(node.fontWeight) || /^(?:[1-9]00)$/.test(String(node.fontWeight)))) invalid(`${at}.fontWeight must be normal, bold or 100–900`);
       if (node.align !== undefined && !nodeProperties.align.enum.includes(node.align)) invalid(`${at}.align must be left, center or right`);
+      if (node.textSizing !== undefined && !nodeProperties.textSizing.enum.includes(node.textSizing)) invalid(`${at}.textSizing must be auto or fixed`);
+      if (node.textSizing !== undefined && node.type !== "text") invalid(`${at}.textSizing requires a text node`);
       for (const key of ["layoutPosition", "layoutWidth", "layoutHeight"]) {
         if (node[key] !== undefined && !nodeProperties[key].enum.includes(node[key])) invalid(`${at}.${key} is invalid`);
       }
@@ -152,7 +155,7 @@ function validate(args) {
 /** Shared native creation path for bulk layout and HTML streaming. */
 export function createLayoutNode(editor, node, parentId) {
   const {
-    type, children, autoLayout, color, d,
+    type, children, autoLayout, color, d, textSizing,
     key, htmlKey, htmlSource, parentKey, imagePrompt,
     layoutPosition, layoutWidth, layoutHeight, fillOpacity, strokeOpacity,
     ...style
@@ -178,7 +181,13 @@ export function createLayoutNode(editor, node, parentId) {
   if (type === "frame" && layout !== "none") {
     patch.autoLayout = normalizeAutoLayout({ ...autoLayout, direction: layout });
   }
-  if (type === "text") { patch.boxWidth = node.width; if (color !== undefined) patch.fill = color; }
+  if (type === "text") {
+    const importedBoxWidth = Number(style.boxWidth);
+    patch.boxWidth = textSizing === "fixed"
+      ? node.width
+      : Number.isFinite(importedBoxWidth) && importedBoxWidth > 0 ? importedBoxWidth : 0;
+    if (color !== undefined) patch.fill = color;
+  }
   editor.updateNode(result.layerId, patch);
   return result.layerId;
 }

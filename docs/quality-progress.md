@@ -3,15 +3,24 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
-最近一次完整核心验证提交：[23d961c](https://github.com/umaxzhao/voo-design/commit/23d961ca7bc6a526447e821488290f76bd295693)。
-以下结果属于该提交，不能直接代表后续改动已经验证。
+最近一次完整核心验证提交：[26de3f9](https://github.com/umaxzhao/voo-design/commit/26de3f948f17fdc9b9167ef25affaa5c487eec0c)。
+以下最新结果仅属于该提交，不代表其他未验证版本。
+
+## 本轮：AI 生成文本按内容自适应尺寸
+
+- 已修复 `build_layout` 将普通 AI 生成文本强制设为占位宽度的问题。现在文本默认按内容自然测宽；只有显式传入 `textSizing: "fixed"` 才按给定宽度换行。流式 HTML 中已测出的文本换行宽度仍保留。
+- 新增能力 `platform.agent-generated-text-sizing`，关联 `text.box-sizing`；登记总数更新为 56 个能力分组，核心门禁仍为 83 组浏览器套件。
+- 验收覆盖 `build_layout` 默认尺寸、固定换行、流式 HTML 文本宽度、真实画布测量和原有单步撤销/重做。定向 37 项单测及真实编辑器场景通过；完整证据见 `/private/tmp/voo-text-sizing-release-merged.json`。
+- 合并最新远程改动后的干净提交 `26de3f9` 完成 87/87 发布步骤：构建、设计检查、4501 项单测通过、4 项跳过，以及 83 组浏览器套件通过。`image-inspector-core` 首次运行超时，独立重跑及最终完整门禁均通过；同步进入的移动工具栏回归也通过。
+- 已推送至 GitHub 主分支并部署到 la2，入口为 [voo.run/editor](https://voo.run/editor/)。线上 `index.html` 和包含文本尺寸规则的 `canvas_tools` 分块均返回 HTTP 200，字节及 SHA-256 与构建一致；隔离线上浏览器完成首次引导并进入项目工作台。证据：`/private/tmp/voo-text-sizing-deployment-proof.json`；备份：`/srv/voo-run/editor-backups/5601167-20261031T071032Z`。
+- 该证据确认的是 Chromium 中 `build_layout` 与流式 HTML 文本路径。其他外部模型客户端、各模型设计变体和设备/平台特定生成路径仍未逐一覆盖，功能覆盖保持“部分”。
 
 ## 本轮：逐元素流式创作（正在完成发布验证）
 
 - 范围：`platform.streaming-authoring`；内置 HTML 生成、外部 `stream_layout` 与 `build_layout` 共用真实原生落图与紫色鼠标反馈；不在最终生成完成后补播一段长动画。
 - 已复现：快照内所有元素同步创建，没有逐元素绘制机会；外部入口仅预览到最终才提交；取消发生在异步放置之间时缺少检查，重复 HTML 键可产生半次写入。保留对应失败用例。
 - 当前局部证据：`tests/unit/html_pipeline/authoring.test.js`、`tests/unit/authoring-timeline.test.js` 与 `tests/e2e/agent-authoring.e2e.mjs`；真实 SSE 暂停在半程时读取原生层和红色像素、紫色鼠标、稳定 ID、完成后蓝色像素和一次撤销重做。大批量与减弱动态效果、外部草稿清除、文档切换及批量取消检查一并登记。
-- 新登记为 56 个能力分组、84 组核心浏览器套件；完整门禁和线上发布结果将在固定提交验证后补录，历史通过不覆盖这批改动。
+- 合并文本尺寸更新后，新登记为 57 个能力分组、84 组核心浏览器套件；完整门禁和线上发布结果将在固定提交验证后补录，历史通过不覆盖这批改动。
 - 限制：受控离线模型输出、真实 Chromium 渲染与 MCP 传输；未请求付费模型，未把浏览器通过等同于签名 App、实体触屏或所有第三方客户端通过。完整范围见[验收说明](audits/editor-closeout.md#streamed-native-authoring)。
 
 ## 上轮：本地服务发现与同源画布预览
@@ -28,12 +37,12 @@
 
 | 项目 | 状态 |
 | --- | --- |
-| 工程规范与模块登记 | 已落地：12 个模块、55 个能力分组 |
-| 核心发布校验 | 87/87 步通过，包含 83 组浏览器套件 |
-| 全量单元测试 | 4496 通过、4 跳过、0 失败；跳过项不算通过 |
+| 工程规范与模块登记 | 已落地：12 个模块、56 个能力分组 |
+| 核心发布校验 | 26de3f9：87/87 步通过，包含 83 组浏览器套件 |
+| 全量单元测试 | 4501 通过、4 跳过、0 失败；跳过项不算通过 |
 | GitHub Ubuntu 基础检查 | [已通过](https://github.com/umaxzhao/voo-design/actions/runs/41176262001)：模块登记、设计检查、构建、单测；部署步骤跳过，已通过本机 SSH 部署 la2 |
-| 线上部署 | 23d961c 已部署到 la2，首页/引用资源字节一致；本地服务隐藏、API 配置入口、新建画布的线上操作通过；包含同步合入的画布二轮修复 |
-| 功能验收完整度 | 部分覆盖；55 个能力分组尚未逐一穷尽所有入口、上下文和设备 |
+| 线上部署 | 5601167 已部署到 la2；线上入口和文本生成工具分块与验证构建哈希一致，隔离浏览器工作台交互通过；此前发布验收见历史轮次 |
+| 功能验收完整度 | 部分覆盖；56 个能力分组尚未逐一穷尽所有入口、上下文和设备 |
 | 核心门禁外的独立检查 | 21 组本轮未运行：18 组待复核，3 组需单独运行 |
 
 ## 连续创作首轮（f9102cd，已完成声明范围）
@@ -152,6 +161,14 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - Harness 的 VOO 插件认证成功后，Agent 设置中的本地模型桥接卡片自动隐藏；连接尚未完成时保留入口。
 - `tests/unit/first_run_agent_grid.test.jsx` 覆盖已连接、检测中和插件未连接状态；配合 `tests/unit/first_run_onboarding.test.jsx`，定向 58 项通过。
 
+## 原生界面字体对齐 Intel One Mono — 2026-10-31
+
+- 能力：`platform.native-typography`。原生壳此前用 `NSFont.monospacedSystemFont`（SF Mono），与 Web 的 `--font-mono: "Intel One Mono"` 字宽不同（12pt 下 7.418 vs 7.368），导致标题栏/图层/属性/Island Bar 的文字与省略号位置略有偏差。
+- 实现：把 Web 同一套 OFL 字体打进 `native_studio/Resources/Fonts`（Intel One Mono regular/medium/bold + Inter），`build.sh` 随包复制到 `Contents/Resources/Fonts`，`Info.plist` 声明 `ATSApplicationFontsPath=Fonts`，并在 `VooMonoTypeface.registerBundledFonts()` 内按 PostScript 名（`IntelOneMono-*`）注册、按 CSS 权重规则（≥600 用 bold、≥500 用 medium）解析；缺失时回退 SF Mono，不影响无字体资源的构建（如测试二进制，可用 `VOO_FONT_DIR` 指向源目录）。
+- 顺带对齐画布文字：`TextStyleResolver.resolveFamily` 支持 CSS 字族栈（`"'Inter', system-ui, sans-serif"`），新文本节点默认 Inter 现在真实命中打包字体，内联编辑器与画布渲染共用同一解析路径。
+- 验证：`./build.sh` 通过（binary 4.57 MB ≤ 5 MB，bundle 7.31 MB ≤ 35 MB）；`./tests/run_tests.sh` **377/377 通过**（含新字体的真实度量）；应用日志 `bundled typeface Intel One Mono: ready (4 face file(s))`；截图 `native_studio/docs/screenshots/v5_font_editor.png`、`v5_font_text.png`。
+- 未覆盖：只打包了 Web 字体清单中的 Inter 与 Intel One Mono，其余 12 个可选字族（Roboto/Montserrat/Noto Sans SC 等）仍回退系统字体；实体设备上的字重合成与中文渲染未单独验收。
+
 ## Impeccable 界面审查 — 2026-10-31
 
 - [完整报告与证据](audits/impeccable-review.md)：layout、typeset、distill、polish、critique；按用户要求排除 `native_studio`。
@@ -161,3 +178,20 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - 保留黑色面板、薄荷绿/紫色品牌、11–12px专业数值密度；不机械删除已确认的绿紫发光边框。
 - 本轮实际查看代表页面与中英文字面；未验收真实触摸、Electron壳、真实账户/支付/模型和完整导入导出。服务与标签已清理。
 - 关键截图与焦点记录保存在 `docs/audits/impeccable-evidence/`；其他原始证据位于 `/tmp/voo-impeccable-a/`、`/tmp/voo-impeccable-b/`。本轮没有UI实现改动。
+
+## GitHub introduction and four editable examples — 2026-10-31
+
+- Scope: README, artwork and example documents only; no application behavior or module capability changed. Product module coverage remains partial and historical execution results above are not inherited.
+- The header now uses the existing App Icon. The cover uses canvas exports of the selected music interface, F1 poster, PULSE dashboard and FORM poster. ROAM is excluded from this publication.
+- Local cleanup moved 20 old files to recoverable workspace trash; the user restored the music and F1 projects, and the active library was checked to contain exactly the four selected projects. Cleanup stopped after that selection.
+- Verification: native container decoding, unique layer IDs and parent references, retained editable text, PNG dimensions, local documentation links and light/dark presentation checks. Exact publication revision and execution receipts: `/private/tmp/voo-showcase/evidence.json`.
+- This is documentation/example validation, not a new product release or a full functional audit. No application deployment is required; signed installers, external services and other platforms remain outside this check.
+
+## Product screenshots and agent-driven slogan — 2026-10-31
+
+- Scope: documentation and repository artwork only; no application source, module capabilities or original example documents changed.
+- Added three real 1600 × 1000 web screenshots: workspace with four project covers, optional Agent setup, and music design with the headline selected and the text inspector visible. Capture used an isolated browser profile and did not modify the user's project library.
+- Captured production entry: `assets/index-D9WDURy-.js`; capture receipt: `/private/tmp/voo-showcase/product-ui/capture.json`. This documents the live interface at capture time, not proof that every later revision or platform was tested.
+- README, cover and social preview use “An AI agent-driven design editor.” Functional module coverage remains unchanged and partial; the final publication revision and document/image checks are recorded in `/private/tmp/voo-showcase/product-ui/publication.json`.
+
+- Introduction now leads with standalone use and Claude Code plugin / Codex MCP integration, with connection commands matched to the existing connector guide. A separate review of public-tree wording is recorded outside the repository at `/private/tmp/voo-showcase/product-ui/published-wording-audit.json`; no source or historical research files were changed.

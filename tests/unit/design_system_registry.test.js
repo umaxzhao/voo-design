@@ -41,14 +41,20 @@ describe("design system registry", () => {
     const presets = listDesignSystems().filter((system) => system.builtIn);
     expect(presets.map((system) => system.id)).toEqual(Object.keys(DESIGN_SYSTEMS));
     expect(presets.map((system) => system.id)).toEqual(
-      expect.arrayContaining(["studio", "wellness", "commerce", "editorial", "analytics", "axiom", "void-os", "bloom"]),
+      expect.arrayContaining(["stripe", "linear", "vercel", "anthropic", "notion", "figma", "studio", "wellness", "commerce", "editorial", "analytics", "axiom", "void-os", "bloom"]),
     );
     for (const preset of presets) {
       expect(() => validateDesignTokens(preset.designTokens)).not.toThrow();
       expect(preset.designMd).toContain(preset.id);
       expect(Object.isFrozen(preset)).toBe(true);
     }
-    expect(presets[0].designTokens.colors.action).toBe(DESIGN_SYSTEMS.studio.tokens.primitive.colors.brand);
+    expect(presets[0]).toMatchObject({
+      id: "stripe",
+      sourceName: "Stripe",
+      sourceUrl: "https://designmd.me/discover/stripe",
+      coverImage: expect.stringContaining("designmd-production-assets.s3.ca-central-1.amazonaws.com"),
+    });
+    expect(presets[0].designTokens.colors.action).toBe(DESIGN_SYSTEMS.stripe.tokens.primitive.colors.brand);
     expect(presets[0].designTokens.components.button.paddingX).toBe(24);
   });
 
@@ -116,10 +122,10 @@ describe("design system registry", () => {
   });
 
   it("keeps the applied copy and id self-contained in the saved document, and feeds only the copy to the agent", () => {
-    const preset = BUILT_IN_DESIGN_SYSTEMS[1];
+    const preset = BUILT_IN_DESIGN_SYSTEMS.find((system) => system.id === "studio");
     const doc = { ...createDocument(800, 600), designTokens: preset.designTokens, designMd: preset.designMd, designSystemId: preset.id };
     const restored = deserialiseDocument(JSON.parse(JSON.stringify(serialiseDocument(doc))));
-    expect(restored.designSystemId).toBe("wellness");
+    expect(restored.designSystemId).toBe(preset.id);
     expect(restored.designTokens).toEqual(preset.designTokens);
     const context = buildDocumentDesignContext(restored);
     expect(context).toContain(JSON.stringify(preset.designTokens));

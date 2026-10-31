@@ -8,6 +8,7 @@ export default {
   "designSystems.listTitle": "Design systems",
   "designSystems.listHint":
     "Choose a design system to apply to this page or edit. Built-in systems are read-only; duplicate one to make your own.",
+  "designSystems.reference": "DesignMD reference · {source}",
   "designSystems.listLabel": "Available design systems",
   "designSystems.builtIn": "Built-in",
   "designSystems.custom": "Custom",

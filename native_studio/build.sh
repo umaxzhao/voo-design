@@ -38,8 +38,10 @@ echo "--> Using macOS SDK: $SDK_PATH"
 
 # 4. Compile Mach-O 64-bit arm64 Binary via swiftc
 echo "--> Compiling with swiftc (-O, arm64-apple-macosx14.0)..."
+mkdir -p "$BUILD_DIR/ModuleCache"
 swiftc \
   -O \
+  -module-cache-path "$BUILD_DIR/ModuleCache" \
   -target arm64-apple-macosx14.0 \
   -sdk "$SDK_PATH" \
   -framework AppKit \
@@ -80,6 +82,13 @@ fi
 if [ -d "$DIR/Resources/Onboarding" ]; then
   echo "--> Copying onboarding guide assets..."
   cp -r "$DIR/Resources/Onboarding" "$RESOURCES_DIR/Onboarding"
+fi
+
+# Bundled UI typeface (Intel One Mono, OFL) — the same mono face the web editor
+# declares in src/index.css, so advance widths/tracking match the browser build.
+if [ -d "$DIR/Resources/Fonts" ]; then
+  echo "--> Copying bundled fonts (Intel One Mono)..."
+  cp -r "$DIR/Resources/Fonts" "$RESOURCES_DIR/Fonts"
 fi
 
 # 6. Install Info.plist

@@ -158,7 +158,7 @@ describe("settings tab layout", () => {
       expect(count(html, 'role="tablist"')).toBe(1);
       const tabs = tabButtons(html);
       expect(tabs.length).toBeGreaterThanOrEqual(5);
-      for (const id of ["studio", "wellness", "commerce", "editorial", "analytics"]) {
+      for (const id of ["stripe", "linear", "vercel", "anthropic", "notion", "figma"]) {
         expect(html).toContain(`data-testid="design-system-item-${id}"`);
       }
       expect(selectedTabs(html)).toHaveLength(1);

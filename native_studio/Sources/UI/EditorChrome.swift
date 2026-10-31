@@ -815,14 +815,17 @@ public final class EditorChromeSeparatorView: NSView {
 
 // MARK: - Page Switcher Pill
 
-/// Bottom-left page switcher: a 32pt capsule reading "Design 1  1/1".
+/// Bottom-left page switcher: a 36pt capsule reading "Design 1  1/1".
 /// Clicking it asks the host to open the page menu (`onTap`).
+/// Web: `h-9 rounded-full px-3.5 gap-2 text-xs bg-neutral-900/95 border-white/10`.
 public final class PageSwitcherPillView: NSView {
 
     // MARK: Metrics
 
     public static let preferredHeight: CGFloat = 36.0
-    public static let dotPillHorizontalPadding: CGFloat = 10.0
+    /// Web: `px-3.5` = 14pt horizontal padding.
+    public static let dotPillHorizontalPadding: CGFloat = 14.0
+    /// Web: `gap-2` = 8pt between the page name and the counter.
     public static let dotPillGap: CGFloat = 8.0
 
     // MARK: State
@@ -851,11 +854,11 @@ public final class PageSwitcherPillView: NSView {
 
     // MARK: Styling
 
-    public var nameFont: NSFont = ThemeFonts.mono(size: 11.0) {
+    public var nameFont: NSFont = ThemeFonts.mono(size: 12.0) {
         didSet { needsDisplay = true }
     }
 
-    public var counterFont: NSFont = ThemeFonts.mono(size: 11.0) {
+    public var counterFont: NSFont = ThemeFonts.mono(size: 12.0) {
         didSet { needsDisplay = true }
     }
 
@@ -867,7 +870,7 @@ public final class PageSwitcherPillView: NSView {
         didSet { needsDisplay = true }
     }
 
-    public var pillBackgroundColor: NSColor = NSColor(hex: ThemeTokens.surfacePanel) {
+    public var pillBackgroundColor: NSColor = NSColor(hex: ThemeTokens.surfacePanel).withAlphaComponent(0.95) {
         didSet { needsDisplay = true }
     }
 
@@ -875,7 +878,7 @@ public final class PageSwitcherPillView: NSView {
         didSet { needsDisplay = true }
     }
 
-    public var borderColor: NSColor = NSColor(white: 1.0, alpha: 0.08) {
+    public var borderColor: NSColor = NSColor(white: 1.0, alpha: 0.10) {
         didSet { needsDisplay = true }
     }
 
@@ -1649,7 +1652,7 @@ public final class ContextIslandBar: NSView {
         quickActionChips = ContextIslandBar.quickActionTitles.map {
             EditorChromePillButton(
                 text: $0,
-                font: ThemeFonts.mono(size: 9.0),
+                font: ThemeFonts.mono(size: 10.0),
                 frame: .zero
             )
         }
@@ -1670,7 +1673,7 @@ public final class ContextIslandBar: NSView {
         quickActionChips = ContextIslandBar.quickActionTitles.map {
             EditorChromePillButton(
                 text: $0,
-                font: ThemeFonts.mono(size: 9.0),
+                font: ThemeFonts.mono(size: 10.0),
                 frame: .zero
             )
         }
@@ -1683,6 +1686,15 @@ public final class ContextIslandBar: NSView {
         setAccessibilityRole(.toolbar)
         setAccessibilityIdentifier(EditorChromeAccessibility.islandBar)
         setAccessibilityLabel("Selection actions and AI prompt")
+
+        // Web `shadow-pop` on the floating capsule; match the rail / zoom bar so
+        // the floating chrome shares one shadow treatment.
+        wantsLayer = true
+        layer?.masksToBounds = false
+        layer?.shadowColor = NSColor.black.cgColor
+        layer?.shadowOpacity = 0.35
+        layer?.shadowRadius = 12.0
+        layer?.shadowOffset = CGSize(width: 0, height: -4)
 
         configureGlyphButtons()
         configureSparkleButton()
@@ -1865,7 +1877,8 @@ public final class ContextIslandBar: NSView {
 
     private func configureSeparators() {
         for separator in separators {
-            separator.lineColor = NSColor(white: 1.0, alpha: 0.08)
+            // Web: `bg-white/15` divider.
+            separator.lineColor = NSColor(white: 1.0, alpha: 0.15)
             separator.setAccessibilityElement(false)
         }
     }
@@ -1979,8 +1992,8 @@ public final class ContextIslandBar: NSView {
         let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
         let path = chromeCapsulePath(in: rect)
 
-        // Neutral-900 at 95% + a hairline white border, like the web island.
-        ctx.setFillColor(NSColor(hex: ThemeTokens.surfacePanel).withAlphaComponent(0.97).cgColor)
+        // Web: `bg-neutral-900/95` + a hairline white/10 border.
+        ctx.setFillColor(NSColor(hex: ThemeTokens.surfacePanel).withAlphaComponent(0.95).cgColor)
         ctx.addPath(path)
         ctx.fillPath()
 

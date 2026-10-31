@@ -72,8 +72,11 @@ public class FloatingPropertiesCardView: NSView {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
         // Floating Card Shell: cornerRadius 24, near-black rgba(0, 0, 0, 0.95)
-        // matching the web editor's PROPERTIES card over the canvas stage.
-        let path = CGPath(roundedRect: bounds, cornerWidth: 24, cornerHeight: 24, transform: nil)
+        // matching the web editor's PROPERTIES card over the canvas stage. The
+        // 0.5pt inset keeps the 1px border inside the view, exactly like the
+        // LAYERS card, so both floating cards stroke identically.
+        let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
+        let path = CGPath(roundedRect: rect, cornerWidth: 24, cornerHeight: 24, transform: nil)
         ctx.setFillColor(NSColor(white: 0.0, alpha: 0.95).cgColor)
         ctx.addPath(path)
         ctx.fillPath()
@@ -83,6 +86,39 @@ public class FloatingPropertiesCardView: NSView {
         ctx.setLineWidth(1.0)
         ctx.addPath(path)
         ctx.strokePath()
+    }
+}
+
+// MARK: - Properties scroll container (web `no-scrollbar`)
+
+/// Scroll container for the PROPERTIES card content. It mirrors the web panel's
+/// `no-scrollbar` class: no scrollbar is ever drawn, but wheel/trackpad scrolling
+/// still reaches the sections below the 368pt fold. `NSScrollView` handles wheel
+/// events itself, so removing the scrollers keeps scrolling; the manual fallback
+/// only runs if that default path produced no movement.
+public final class PropertiesScrollView: NSScrollView {
+    public override func scrollWheel(with event: NSEvent) {
+        let documentHeight = documentView?.frame.height ?? 0
+        let clip = contentView
+        let maxOffset = max(0, documentHeight - clip.bounds.height)
+        guard maxOffset > 0 else {
+            super.scrollWheel(with: event)
+            return
+        }
+        let before = clip.bounds.origin.y
+        super.scrollWheel(with: event)
+        guard abs(clip.bounds.origin.y - before) < 0.01 else { return }
+
+        // No scrollers configured: scroll the clip view directly. The content is a
+        // flipped document, so a positive (upward) delta decreases the y origin.
+        let delta = event.hasPreciseScrollingDeltas
+            ? event.scrollingDeltaY
+            : event.scrollingDeltaY * 12.0
+        guard abs(delta) > 0.01 else { return }
+        let target = min(max(before - delta, 0), maxOffset)
+        guard abs(target - before) > 0.01 else { return }
+        clip.scroll(to: NSPoint(x: clip.bounds.origin.x, y: target))
+        reflectScrolledClipView(clip)
     }
 }
 
@@ -98,7 +134,7 @@ public class InspectorView: NSView {
     public let propertiesPanel = PropertiesPanelView()
     /// Scroll container that keeps the native-only TRANSFORM / APPEARANCE sections
     /// reachable below the 368pt-tall web-sized card fold.
-    public let propertiesScrollView = NSScrollView()
+    public let propertiesScrollView = PropertiesScrollView()
     /// Legacy Affinity-style panels kept as hidden subviews for backward compatibility
     /// (`WindowController` and the accessibility test-suite still reference them).
     public let transformPanel = TransformPanelView()
@@ -147,30 +183,38 @@ public class InspectorView: NSView {
         propertiesCard.translatesAutoresizingMaskIntoConstraints = false
         addSubview(propertiesCard)
 
-        // Scrollable content: the card is web-sized (252×368) so TRANSFORM and
-        // APPEARANCE live below the fold and remain reachable by scrolling.
+        // Scrollable content: the card keeps the web inspector's fixed 368pt
+        // visible height, so TRANSFORM and APPEARANCE live below the fold and
+        // remain reachable by scrolling.
         propertiesScrollView.translatesAutoresizingMaskIntoConstraints = false
         propertiesScrollView.drawsBackground = false
         propertiesScrollView.backgroundColor = .clear
         propertiesScrollView.contentView.drawsBackground = false
         propertiesScrollView.borderType = .noBorder
-        propertiesScrollView.hasVerticalScroller = true
+        // Web parity: the panel clips its content with `no-scrollbar`, so no
+        // scrollbar is drawn at rest or while scrolling (wheel scrolling still
+        // works — see PropertiesScrollView).
+        propertiesScrollView.hasVerticalScroller = false
         propertiesScrollView.hasHorizontalScroller = false
         propertiesScrollView.autohidesScrollers = true
         propertiesScrollView.scrollerStyle = .overlay
         propertiesScrollView.verticalScrollElasticity = .automatic
         propertiesScrollView.horizontalScrollElasticity = .none
-        // Clip the scrolling document to the card's 20pt rounded corners.
+        // The document is clipped to the scroll view's own bounds. Keep that clip
+        // RECTANGULAR: the card's rounded corners are respected by insetting the
+        // scroll area inside the card's 12pt padding (below), so content can never
+        // paint into the corner arcs (a corner-radius mask is layer-only and is
+        // dropped by drawing-based renderings such as the screenshot harness).
         propertiesScrollView.wantsLayer = true
-        propertiesScrollView.layer?.cornerRadius = 24
+        propertiesScrollView.layer?.cornerRadius = 0
         propertiesScrollView.layer?.masksToBounds = true
         propertiesCard.addSubview(propertiesScrollView)
 
         propertiesScrollView.documentView = propertiesPanel
 
-        // The panel is the scroll document: fixed 252pt width, 520pt scrollable
+        // The panel is the scroll document: fixed 288pt width, 520pt scrollable
         // height. Auto Layout (rather than autoresizing) keeps the width locked
-        // to the clip view at 252 irrespective of when the card is first laid out.
+        // to the clip view at 288 irrespective of when the card is first laid out.
         propertiesPanel.translatesAutoresizingMaskIntoConstraints = false
         let heightConstraint = propertiesPanel.heightAnchor.constraint(equalToConstant: PropertiesPanelView.preferredContentHeight)
         self.panelHeightConstraint = heightConstraint
@@ -193,24 +237,30 @@ public class InspectorView: NSView {
         // Layers Panel: Floating on the left
         // Properties Card: Floating on the right
         NSLayoutConstraint.activate([
-            // Left Floating Card
+            // Left Floating Card (web: md:w-64 = 256, p12, rounded-3xl, centred).
+            // 244pt = header(50) + pills(28) + 8 + three 32pt rows + 2*4 spacing
+            // + footer gap(8+10) + 24pt toolbar + 12pt card padding.
             layersPanel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             layersPanel.centerYAnchor.constraint(equalTo: centerYAnchor),
             layersPanel.widthAnchor.constraint(equalToConstant: 256),
-            layersPanel.heightAnchor.constraint(equalToConstant: 238),
+            layersPanel.heightAnchor.constraint(equalToConstant: 244),
 
-            // Right Floating Card (matched to the live web inspector: 252×368,
-            // vertically centred in the editor shell).
+            // Right Floating Card (web: md:w-72 = 288, p12, rounded-3xl, centred;
+            // the fixed 368pt visible height scrolls to the rest of the sections).
             propertiesCard.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             propertiesCard.centerYAnchor.constraint(equalTo: centerYAnchor),
-            propertiesCard.widthAnchor.constraint(equalToConstant: 256),
+            propertiesCard.widthAnchor.constraint(equalToConstant: 288),
             propertiesCard.heightAnchor.constraint(equalToConstant: 368),
 
-            // Scroll view fills the card with zero insets.
+            // Scroll box = the card's padded content box: full width (the panel
+            // carries the 12pt side padding itself) but stopped 12pt above the
+            // card bottom (web `p-3`), so the rounded bottom corners never receive
+            // document content.
             propertiesScrollView.topAnchor.constraint(equalTo: propertiesCard.topAnchor),
             propertiesScrollView.leadingAnchor.constraint(equalTo: propertiesCard.leadingAnchor),
             propertiesScrollView.trailingAnchor.constraint(equalTo: propertiesCard.trailingAnchor),
-            propertiesScrollView.bottomAnchor.constraint(equalTo: propertiesCard.bottomAnchor),
+            propertiesScrollView.bottomAnchor.constraint(equalTo: propertiesCard.bottomAnchor,
+                                                         constant: -12),
 
             // Hidden legacy panels keep their original layout (offscreen, non-interactive).
             transformPanel.topAnchor.constraint(equalTo: propertiesCard.topAnchor, constant: 8),

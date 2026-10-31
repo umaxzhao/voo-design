@@ -18,6 +18,7 @@ TEST_FILES=(
   "$DIR/CanvasInteractionTests.swift"
   "$DIR/M1_ToolFlyoutContextualTaskbarTests.swift"
   "$DIR/M2_InspectorStudioTests.swift"
+  "$DIR/WorkspaceManagerTests.swift"
   # "$DIR/AIAgentTests.swift"
   "$DIR/main.swift"
 )
@@ -62,8 +63,10 @@ else
 fi
 
 echo "=== 正在编译 VOO Design Native Studio E2E 测试套件 ==="
+mkdir -p "$BUILD_DIR/ModuleCache"
 swiftc \
   -O \
+  -module-cache-path "$BUILD_DIR/ModuleCache" \
   -target arm64-apple-macosx14.0 \
   -sdk $(xcrun --show-sdk-path) \
   -framework AppKit \
@@ -76,4 +79,6 @@ swiftc \
   -o "$TEST_BIN"
 
 echo "=== 正在执行 VOO Design Native Studio E2E 测试 ==="
-"$TEST_BIN" "${EXTRA_ARGS[@]}"
+# The harness binary is not an .app bundle, so point the theme at the source fonts
+# to exercise the same bundled faces (Intel One Mono / Inter) as the shipped app.
+VOO_FONT_DIR="$STUDIO_DIR/Resources/Fonts" "$TEST_BIN" "${EXTRA_ARGS[@]}"

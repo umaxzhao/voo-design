@@ -27,13 +27,15 @@ describe("Design systems settings tab", () => {
 
     it("lists the presets and exposes only Duplicate and Use for a built-in system", () => {
       const html = renderToStaticMarkup(<SettingsDesignSystems />);
-      // Cards show the first COLLAPSED_COUNT (6) by default; the eight built-in
-      // presets overflow, so the collapsed list ends with "Show more".
-      for (const id of ["studio", "wellness", "commerce", "editorial", "analytics"]) {
+      // The first six cards are visual DesignMD references with source covers.
+      for (const id of ["stripe", "linear", "vercel", "anthropic", "notion", "figma"]) {
         expect(html).toContain(`data-testid="design-system-item-${id}"`);
       }
       expect(html).toContain('data-testid="design-system-more"');
-      expect(html).toContain("Studio");
+      expect(html).toContain("Stripe");
+      expect(html).toContain('src="https://designmd-production-assets.s3.ca-central-1.amazonaws.com/screenshots/a59178aa-71f3-4771-b756-ecbb557550c3/0-0.jpg"');
+      expect(html).toContain('href="https://designmd.me/discover/stripe"');
+      expect(html).toContain("DesignMD reference · Stripe");
       expect(html).toContain("Built-in");
       expect(html).toContain("Use for this document");
       expect(html).toContain("Duplicate");

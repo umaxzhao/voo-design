@@ -38,15 +38,16 @@ Packaging gates enforced by `build.sh`:
 
 | Artifact | Limit | Actual |
 | :--- | ---: | ---: |
-| Executable binary | ≤ 5 MB | **~3.5 MB** |
-| `.app` bundle | ≤ 35 MB | **~5.1 MB** |
-| Cold launch (window ready) | < 0.1 s target | **~0.14 s** |
+| Executable binary | ≤ 5 MB | **~4.6 MB** |
+| `.app` bundle | ≤ 35 MB | **~7.3 MB** (includes the bundled OFL faces) |
+| Cold launch (window ready) | < 0.2 s target | **~0.15 s** |
 
 ## What is replicated
 
 | VOO Design (web/Electron) | Native studio |
 | :--- | :--- |
 | Mint-on-black gradient title bar, document tab + `+`, 保存/打开/bolt | `AppTitleBar` with tab pill, close/new tab, white save pill, settings bolt |
+| UI typeface: **Intel One Mono** (`--font-mono`), Inter for canvas text | Same OFL faces bundled in `Resources/Fonts` and registered via `VooMonoTypeface` (`ATSApplicationFontsPath` + programmatic fallback) |
 | Welcome dashboard (search, workspace bar, category pills, prompt composer, imports, recents, drafts/starred/trash, design systems, shortcuts) | `WelcomeDashboardView` — custom-drawn, fully interactive |
 | Floating tool rail with active white circular tool | `ToolRailView` — 8 tools + hand/lasso/wand + VOO avatar (AI entry) |
 | Floating left **LAYERS** card (checkboxes, kind glyphs, opacity/blend menus, footer add/mask/group/delete, drag reorder) | `LayersPanelView` |
@@ -61,8 +62,9 @@ Packaging gates enforced by `build.sh`:
 | Lasso select, magic wand (same fill), hand/pan tool | `CanvasStageView` + `ToolRailView` |
 | Image import (file menu / drag & drop / clipboard paste), in-canvas image rendering + export | `ImageImporter` + `CanvasStageView` + `ExportEngine` |
 | Full text typography (family/size/weight/align/line-height/letter-spacing) | `PropertiesPanelView` + `TextStyleResolver` |
-| Real local CLI agents (Claude Code / OpenAI Codex / Antigravity) with streamed replies | `LocalCLIBridge` + `AgentPanelView` |
-| Multi-select move, undoable drag/resize/rotate, right-click menus (canvas + layers), align/distribute, grid & snapping toggles, 16 blend modes in-canvas | `CanvasStageView` + `WindowController` |
+| Real local CLI agents (Claude Code / OpenAI Codex / Antigravity / OpenCode / DeepSeek Harness) with streamed replies | `LocalCLIBridge` + `AgentPanelView` |
+| Workspace directory management (.voo/.fig/.psd/.svg scanner, subfolders, recoverable .trash with manifest, rename, duplicate, star, file watcher) | `WorkspaceManager` + `WelcomeDashboardView` + `SettingsDrawerView` |
+| Multi-select move, undoable drag/resize/rotate, right-click menus (canvas + layers + project cards), align/distribute, grid & snapping toggles, 16 blend modes in-canvas | `CanvasStageView` + `WindowController` |
 | Text layer typography (font family + size) in PROPERTIES | `PropertiesPanelView` |
 | Export dialog (PNG / JPG / PDF / SVG, 1x–4x) | `ExportEngine` + native export sheet |
 | `.voo` document format, undo/redo, boolean ops, bezier nodes, blend modes, brush, snapping, rulers, 8-point transform | native `Engine` + `Canvas` (pure CoreGraphics/Metal) |
@@ -89,7 +91,7 @@ Pixel spec for spacing, margins and icon sizes across every UI component:
 
 ```bash
 cd native_studio
-./tests/run_tests.sh            # 336 tests, 4 tiers + canvas interaction suite, 100% pass
+./tests/run_tests.sh            # 377 tests, 4 tiers + canvas interaction, workspace & quality suite, 100% pass
 ./tests/run_tests.sh --verbose
 ./tests/run_tests.sh --tier 2
 ./tests/run_tests.sh --filter UIParity

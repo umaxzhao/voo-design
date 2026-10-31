@@ -1021,8 +1021,24 @@ public class UIParityTests {
             try requireView(dashboard, id: "Dashboard.Toolbar.Open").accessibilityPerformPress()
             try TestAssertions.assertEqual(openFileCount, 1, "Toolbar Open opens a local file")
 
+            // Demo cards are gone: the dashboard now renders only real workspace files.
+            dashboard.setWorkspaceFiles([
+                WorkspaceFile(
+                    name: "Web app.voo",
+                    path: "/tmp/voo-workspace/Web app.voo",
+                    extensionName: "voo",
+                    size: 1024,
+                    updatedAt: 1_700_000_000_000,
+                    createdAt: 1_700_000_000_000
+                )
+            ])
+            dashboard.layoutSubtreeIfNeeded()
             try requireView(dashboard, id: "Dashboard.ProjectCard.0").accessibilityPerformPress()
-            try TestAssertions.assertEqual(openedProjects, ["Web app.voo"], "Recent project card opens the editor")
+            try TestAssertions.assertEqual(
+                openedProjects,
+                ["/tmp/voo-workspace/Web app.voo"],
+                "Recent project card opens the workspace file"
+            )
 
             // Prompt composer submit path.
             guard let promptField = findView(dashboard, id: "Dashboard.Prompt.Input") as? NSTextField else {
@@ -1126,8 +1142,27 @@ public class UIParityTests {
             try TestAssertions.assertEqual(titleBar.state.documentTitle, "Moon.voo")
             try TestAssertions.assertNotNil(findView(dashboard, id: "Dashboard.Toolbar.New"))
 
+            dashboard.setWorkspaceFiles([
+                WorkspaceFile(
+                    name: "Web App / SaaS Starter.voo",
+                    path: "/tmp/voo-workspace/Web App / SaaS Starter.voo",
+                    extensionName: "voo",
+                    size: 2048,
+                    updatedAt: 1_700_000_000_000,
+                    createdAt: 1_700_000_000_000
+                ),
+                WorkspaceFile(
+                    name: "iPhone 16 Pro Prototype.voo",
+                    path: "/tmp/voo-workspace/iPhone 16 Pro Prototype.voo",
+                    extensionName: "voo",
+                    size: 2048,
+                    updatedAt: 1_699_000_000_000,
+                    createdAt: 1_699_000_000_000
+                )
+            ])
+            dashboard.layoutSubtreeIfNeeded()
             try requireView(dashboard, id: "Dashboard.ProjectCard.1").accessibilityPerformPress()
-            try TestAssertions.assertEqual(opened, ["iPhone 16 Pro Prototype.voo"])
+            try TestAssertions.assertEqual(opened, ["/tmp/voo-workspace/iPhone 16 Pro Prototype.voo"])
 
             try renderSnapshot(size: canvas, views: [host])
         }
@@ -1195,23 +1230,26 @@ public class UIParityTests {
 
         registry.register(tier: 1, feature: "UIParity-Export", name: "test_UIParity_Export_FormatMetadata") {
             let allFormats = ExportFormat.allCases
-            try TestAssertions.assertEqual(allFormats.count, 4)
-            try TestAssertions.assertEqual(allFormats, [ExportFormat.png, ExportFormat.jpg, ExportFormat.pdf, ExportFormat.svg])
+            try TestAssertions.assertEqual(allFormats.count, 5)
+            try TestAssertions.assertEqual(allFormats, [ExportFormat.png, ExportFormat.jpg, ExportFormat.pdf, ExportFormat.svg, ExportFormat.html])
 
             try TestAssertions.assertEqual(ExportFormat.png.rawValue, "PNG")
             try TestAssertions.assertEqual(ExportFormat.jpg.rawValue, "JPG")
             try TestAssertions.assertEqual(ExportFormat.pdf.rawValue, "PDF")
             try TestAssertions.assertEqual(ExportFormat.svg.rawValue, "SVG")
+            try TestAssertions.assertEqual(ExportFormat.html.rawValue, "HTML")
 
             try TestAssertions.assertEqual(ExportFormat.png.fileExtension, "png")
             try TestAssertions.assertEqual(ExportFormat.jpg.fileExtension, "jpg")
             try TestAssertions.assertEqual(ExportFormat.pdf.fileExtension, "pdf")
             try TestAssertions.assertEqual(ExportFormat.svg.fileExtension, "svg")
+            try TestAssertions.assertEqual(ExportFormat.html.fileExtension, "html")
 
             try TestAssertions.assertTrue(ExportFormat.png.allowsScale, "PNG supports 1x-4x")
             try TestAssertions.assertTrue(ExportFormat.jpg.allowsScale, "JPG supports 1x-4x")
             try TestAssertions.assertFalse(ExportFormat.pdf.allowsScale, "PDF is vector")
             try TestAssertions.assertFalse(ExportFormat.svg.allowsScale, "SVG is vector")
+            try TestAssertions.assertFalse(ExportFormat.html.allowsScale, "HTML is markup")
 
             try TestAssertions.assertEqual(ExportFormat.png.contentType, UTType.png)
             try TestAssertions.assertEqual(ExportFormat.jpg.contentType, UTType.jpeg)
@@ -1308,6 +1346,11 @@ public class UIParityTests {
                 case .pdf:
                     let header = String(data: Data(data.prefix(4)), encoding: .ascii)
                     try TestAssertions.assertEqual(header, "%PDF")
+                case .html:
+                    guard let markup = String(data: data, encoding: .utf8) else {
+                        throw TestFailure(message: "HTML was not UTF-8", file: #file, line: #line)
+                    }
+                    try TestAssertions.assertTrue(markup.contains("<!DOCTYPE html>"), "HTML payload contains DOCTYPE")
                 }
             }
         }
@@ -2801,6 +2844,7 @@ public class UIParityTests {
             try TestAssertions.assertNil(stage.pathEditingOverlay.hitTest(NSPoint(x: 1, y: 2)))
             stage.zoom = 0.58
             stage.panOffset = CGPoint(x: 300, y: 200)
+            stage.showRulers = true
             try TestAssertions.assertApproxEqual(stage.pathEditingOverlay.zoom, 0.58)
             try TestAssertions.assertApproxEqual(stage.pathEditingOverlay.panOffset.x, 300)
             try TestAssertions.assertApproxEqual(stage.pathEditingOverlay.rulerOffset, ThemeTokens.rulerTrackThickness)
@@ -2875,10 +2919,12 @@ public class UIParityTests {
     private static func registerLocalCLIBridgeTests(_ registry: TestRegistry) {
 
         registry.register(tier: 1, feature: "UIParity-CLI", name: "test_UIParity_CLI_AgentMetadata") {
-            try TestAssertions.assertEqual(LocalCLIAgent.allCases.count, 3)
+            try TestAssertions.assertEqual(LocalCLIAgent.allCases.count, 5)
             try TestAssertions.assertEqual(LocalCLIAgent.claude.binaryName, "claude")
             try TestAssertions.assertEqual(LocalCLIAgent.codex.binaryName, "codex")
             try TestAssertions.assertEqual(LocalCLIAgent.antigravity.binaryName, "agy")
+            try TestAssertions.assertEqual(LocalCLIAgent.opencode.binaryName, "opencode")
+            try TestAssertions.assertEqual(LocalCLIAgent.deepseekHarness.binaryName, "dsh")
 
             for agent in LocalCLIAgent.allCases {
                 try TestAssertions.assertFalse(agent.displayName.isEmpty)
@@ -3103,15 +3149,17 @@ public class UIParityTests {
         registry.register(tier: 1, feature: "UIParity-Spacing", name: "test_UIParity_Spacing_ToolRail_ToolButtonSizes") {
             let rail = ToolRailView()
             rail.layoutSubtreeIfNeeded()
-            try TestAssertions.assertApproxEqual(rail.frame.width, 512, accuracy: 1.5, "Default rail width is ~512")
-            try TestAssertions.assertApproxEqual(rail.frame.height, 48, accuracy: 1.5, "Rail height is 48")
+            // Web `editor_toolbar.jsx`: p-1.5 (6) + 11 entries × 44 + 10 gaps × 4 = 536,
+            // plus the trailing divider + 44pt VOO avatar run => 589; height 6+44+6 = 56.
+            try TestAssertions.assertApproxEqual(rail.frame.width, 589, accuracy: 1.5, "Default rail width is ~589")
+            try TestAssertions.assertApproxEqual(rail.frame.height, 56, accuracy: 1.5, "Rail height is 56")
             try TestAssertions.assertEqual(rail.toolButtons.count, 8, "Eight canonical tools")
 
             for tool in StudioToolType.allCases {
                 guard let button = rail.toolButtons[tool] else {
                     throw TestFailure(message: "Missing tool button \(tool.rawValue)", file: #file, line: #line)
                 }
-                try assertFrameSize(button, width: 36, height: 36, "Tool \(tool.rawValue)")
+                try assertFrameSize(button, width: 44, height: 44, "Tool \(tool.rawValue)")
             }
         }
 
@@ -3124,13 +3172,14 @@ public class UIParityTests {
                 guard let button = rail.accessoryButtons[accessory] else {
                     throw TestFailure(message: "Missing accessory \(accessory.rawValue)", file: #file, line: #line)
                 }
-                try assertFrameSize(button, width: 36, height: 36, "Accessory \(accessory.rawValue)")
+                try assertFrameSize(button, width: 44, height: 44, "Accessory \(accessory.rawValue)")
             }
             try TestAssertions.assertNotNil(rail.handButton)
             try TestAssertions.assertNotNil(rail.lassoButton)
             try TestAssertions.assertNotNil(rail.wandButton)
 
-            try assertFrameSize(rail.brandAvatarButton, width: 36, height: 36, "VOO brand avatar")
+            // The brand/agent avatar is now a real rail item at the shared 44pt button size.
+            try assertFrameSize(rail.brandAvatarButton, width: 44, height: 44, "VOO brand avatar")
         }
     }
 
@@ -3214,11 +3263,13 @@ public class UIParityTests {
             let inspector = InspectorView(frame: NSRect(x: 0, y: 0, width: 1436, height: 857))
             inspector.layoutSubtreeIfNeeded()
 
-            try assertFrameSize(inspector.layersPanel, width: 256, height: 238, "UI_SPEC §4 layers card")
+            // Web layers card: md:w-64 (256) with 3 rows at h32 need a 244pt list box.
+            try assertFrameSize(inspector.layersPanel, width: 256, height: 244, "UI_SPEC §4 layers card")
             try TestAssertions.assertApproxEqual(inspector.layersPanel.frame.minX, 16, accuracy: 1.5, "Layers card leading margin")
             try TestAssertions.assertApproxEqual(inspector.layersPanel.frame.midY, inspector.bounds.midY, accuracy: 1.5, "Layers card vertically centred")
 
-            try assertFrameSize(inspector.propertiesCard, width: 256, height: 368, "UI_SPEC §5 properties card")
+            // Web properties card: md:w-72 = 288, max-h-75vh, 368pt visible content.
+            try assertFrameSize(inspector.propertiesCard, width: 288, height: 368, "UI_SPEC §5 properties card")
             try TestAssertions.assertApproxEqual(
                 inspector.propertiesCard.frame.maxX,
                 inspector.bounds.width - 16,
@@ -3227,7 +3278,8 @@ public class UIParityTests {
             )
             try TestAssertions.assertApproxEqual(inspector.propertiesCard.frame.midY, inspector.bounds.midY, accuracy: 1.5, "Properties card vertically centred")
 
-            try assertFrameSize(inspector.propertiesScrollView, width: 256, height: 368, "Properties scroll view fills the card")
+            // The properties card keeps a 12pt bottom inset (web p-3), so the scroll box is 356 tall.
+            try assertFrameSize(inspector.propertiesScrollView, width: 288, height: 356, "Properties scroll view fills the card content box")
         }
 
         registry.register(tier: 1, feature: "UIParity-Spacing", name: "test_UIParity_Spacing_Inspector_PropertiesDocumentHeight") {
@@ -3272,11 +3324,12 @@ public class UIParityTests {
         }
 
         registry.register(tier: 1, feature: "UIParity-Spacing", name: "test_UIParity_Spacing_LayersPanel_FooterButtonsAndRowHeight") {
-            let panel = LayersPanelView(frame: NSRect(x: 0, y: 0, width: 256, height: 238))
+            let panel = LayersPanelView(frame: NSRect(x: 0, y: 0, width: 256, height: 244))
             panel.layoutSubtreeIfNeeded()
 
+            // Web footer buttons are h-7 w-7 (28x28) with 13pt icons.
             for identifier in ["Layers.Add", "Layers.Mask", "Layers.Group", "Layers.Delete"] {
-                try assertFrameSize(try requireButton(panel, id: identifier), width: 24, height: 24, "Footer \(identifier)")
+                try assertFrameSize(try requireButton(panel, id: identifier), width: 28, height: 28, "Footer \(identifier)")
             }
 
             let card = VOONode(kind: .rect, name: "Card A", x: 0, y: 0, width: 100, height: 80)

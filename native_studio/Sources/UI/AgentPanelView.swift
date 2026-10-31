@@ -17,7 +17,8 @@ import Foundation
 public enum AgentPanelMetrics {
     /// Canonical panel card width (UI_SPEC §7: x1064 w364, 12pt gap to window edge).
     public static let panelWidth: CGFloat = 364
-    public static let cornerRadius: CGFloat = 16
+    /// Web agent column is `rounded-3xl bg-black` (24pt corners).
+    public static let cornerRadius: CGFloat = 24
     /// Host adds the 12pt outer window padding; this is the panel's inner gutter.
     public static let contentInset: CGFloat = 16
 
@@ -78,7 +79,8 @@ public enum AgentPanelAccessibility {
 // MARK: - Palette (reference-sampled)
 
 private enum AgentPalette {
-    static let panelBackground = NSColor(hex: "#0C0C0C")
+    /// Web panel section is `bg-black`; the chips are `bg-white/[0.06]` on it.
+    static let panelBackground = NSColor(hex: "#000000")
     static let panelBorder = NSColor(white: 1.0, alpha: 0.08)
 
     static let chipFill = NSColor(hex: "#0F0F0F")

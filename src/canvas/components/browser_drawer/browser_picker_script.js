@@ -234,13 +234,23 @@ export const INJECTED_PICKER_CODE = `
 
   window.__vooExtractFullPage = function() {
     const root = document.querySelector('main') || document.querySelector('#root') || document.querySelector('#app') || document.body;
-    const html = serializeNodeWithStyles(root, 7, 0);
+    const bodyBg = window.getComputedStyle(document.body).backgroundColor;
+    const docBg = window.getComputedStyle(document.documentElement).backgroundColor;
+    const resolvedBg = (bodyBg && bodyBg !== 'rgba(0, 0, 0, 0)' && bodyBg !== 'transparent')
+      ? bodyBg
+      : (docBg && docBg !== 'rgba(0, 0, 0, 0)' && docBg !== 'transparent') ? docBg : null;
+
+    let html = serializeNodeWithStyles(root, 7, 0);
+    if (resolvedBg && !html.includes('background-color:')) {
+      html = '<div style="background-color:' + resolvedBg + ';width:100%;min-height:100%;">' + html + '</div>';
+    }
     const title = document.title || 'Imported Web Page';
     return {
       html,
       width: Math.max(1080, window.innerWidth),
       height: Math.max(900, document.body.scrollHeight || window.innerHeight),
       title,
+      backgroundColor: resolvedBg,
     };
   };
 

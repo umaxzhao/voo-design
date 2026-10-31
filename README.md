@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="public/voo-mark.svg" width="96" height="96" alt="VOO Design" />
+  <img src="build/icon.png" width="96" height="96" alt="VOO Design" />
 </p>
 
 <h1 align="center">VOO Design</h1>
 
 <p align="center">
-  <strong>An agent-driven design editor for the future</strong><br />
-  <sub>Design with an AI agent that works directly on the canvas. Vector, pixel and layout editing in one document. Runs on the desktop (Electron) and in the browser.</sub>
+  <strong>An AI agent-driven design editor.</strong><br />
+  <sub>A standalone design app. A canvas for Claude Code and Codex plugins through MCP.</sub>
 </p>
 
 <p align="center">
@@ -16,11 +16,86 @@
   <img src="https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 5" />
 </p>
 
-![VOO Design dashboard](docs/screenshots/dashboard.jpg)
+![VOO Design — a music interface, a racing poster, an analytics dashboard and a typography poster created as editable canvas designs](docs/screenshots/cover.png)
 
-**VOO Design** is a design editor built around an AI agent. The agent works directly on the document: it reads the layer tree, applies transactional edits, and places generated images on the canvas, while you keep direct control of vector shapes, pixel layers, text, masks and filters in the same file. Local AI tools (background removal, upscaling, inpainting) run on your machine, and local CLI coding agents (Claude Code, Codex, OpenCode, Antigravity, DeepSeek Harness) can operate the canvas through a sandboxed tool interface.
+<p align="center">
+  <a href="https://voo.run/editor/">Try the web editor</a> ·
+  <a href="https://github.com/umaxzhao/voo-design/releases">Desktop releases</a> ·
+  <a href="docs/examples/README.md">Open the example designs</a> ·
+  <a href="docs/mcp-server.md">Connect your agent</a>
+</p>
 
-![VOO Design editor](docs/screenshots/editor.jpg)
+**VOO Design is an AI agent-driven design editor — use it as an independent app, or connect it to Claude Code and Codex through a plugin/MCP connector.** Both workflows operate on the same editable canvas.
+
+| Use VOO on its own | Use VOO from your agent |
+| --- | --- |
+| Open the desktop app or web editor. Create and refine vector paths, text, images and layouts directly, with an optional in-app Agent. | Load the Claude Code plugin or register the VOO MCP connector in Codex. Your agent can inspect layers, create designs, edit text and styles, and capture the canvas through real editor operations. |
+
+The editor stays open as the canvas host. MCP connects your agent to that live document, so agent edits and direct editing share the same layers and undo history.
+
+### Connect Claude Code or Codex
+
+Build the portable connector into a new folder:
+
+```bash
+export VOO_PLUGIN_DIR=/absolute/new/voo-plugin
+node scripts/build-agent-plugin.mjs "$VOO_PLUGIN_DIR"
+```
+
+Load it as a **Claude Code plugin**:
+
+```bash
+claude --plugin-dir "$VOO_PLUGIN_DIR"
+```
+
+Or connect **Codex through MCP**:
+
+```bash
+codex mcp add voo -- node "$VOO_PLUGIN_DIR/scripts/mcp-server.mjs"
+```
+
+Keep VOO open. For the web editor, also run `npm run bridge`. Then ask your agent to inspect the canvas or create a design. See the [plugin guide](plugins/voo/README.md) and [MCP setup](docs/mcp-server.md) for requirements and connection details.
+
+- **One canvas for different kinds of work.** Compose interfaces, brand graphics and presentations with vector paths, text, images, masks, filters and Auto Layout.
+- **Agents work on the design itself.** Use a configured model provider, connect a local CLI agent, or drive the canvas from an external MCP client.
+- **Keep a portable source file.** Save editable projects as `.voo`, import existing work and export images, documents or handoff code.
+- **Choose desktop or web.** Electron adds native files, workspace folders and direct local CLI sessions. The browser editor can reach local CLIs through the loopback bridge.
+
+## Product tour
+
+### Workspace
+
+Start a design, import existing work and return to recent projects from one workspace.
+
+![VOO Design workspace showing the four example projects](docs/screenshots/ui-workspace.png)
+
+### Guided setup
+
+Choose an agent or model provider during the optional first-run setup.
+
+![VOO Design first-run guide with agent and model provider choices](docs/screenshots/ui-onboarding.png)
+
+### Edit on the canvas
+
+The music design is open in the editor below, with its headline selected. The layer tree, canvas selection and text properties are all part of the real editing interface.
+
+![VOO Design editing a music interface, with the headline selected and the layer tree and text inspector visible](docs/screenshots/ui-editor.png)
+
+## Made with VOO
+
+Four designs, one editor: a music discovery interface, an F1-inspired racing poster, a business dashboard and an editorial typography study. These previews are actual canvas exports. The source files retain editable text, vector shapes and layer structure; they are visual design examples rather than running applications.
+
+| Music discovery | F1 · Racing poster |
+| --- | --- |
+| ![Dark music discovery interface with lime accents and gradient album artwork](docs/screenshots/showcase-music.png) | ![Red open-wheel racing car and telemetry-inspired Monaco poster concept](docs/screenshots/showcase-f1.png) |
+| [Open editable music interface](docs/examples/music-discovery.voo) | [Open editable racing poster](docs/examples/f1-grand-prix.voo) |
+
+| PULSE · Product dashboard | FORM · Brand & typography |
+| --- | --- |
+| ![PULSE — a green analytics dashboard with metrics and a revenue chart](docs/screenshots/showcase-dashboard.png) | ![FORM — orange and black editorial typography poster](docs/screenshots/showcase-poster.png) |
+| [Open editable dashboard](docs/examples/pulse-dashboard.voo) | [Open editable poster](docs/examples/form-poster.voo) |
+
+Download a source file and open it with **Open File** in VOO. See the [example guide](docs/examples/README.md) for dimensions and editing notes.
 
 ---
 

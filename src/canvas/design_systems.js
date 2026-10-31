@@ -1,4 +1,5 @@
 import { createSignatureDesignSystems } from "./design-system-signatures.js";
+import { createDiscoverDesignSystems } from "./design_systems_discover.js";
 
 /** Artifact design systems. These tokens style generated canvases, not VOO chrome. */
 const SPACING = Object.freeze({
@@ -29,6 +30,9 @@ function defineSystem(
     labelKey,
     descriptionKey,
     keywords,
+    coverImage: options.coverImage ?? null,
+    sourceName: options.sourceName ?? null,
+    sourceUrl: options.sourceUrl ?? null,
     // Extra art-direction lines appended to the generated brief, per locale.
     briefZh: Object.freeze([...(options.brief?.zh ?? [])]),
     briefEn: Object.freeze([...(options.brief?.en ?? [])]),
@@ -77,6 +81,7 @@ const DEFAULT_TYPE = Object.freeze({
 });
 
 export const DESIGN_SYSTEMS = Object.freeze({
+  ...createDiscoverDesignSystems(defineSystem),
   studio: defineSystem(
     "studio",
     "designSystem.studio",
@@ -185,6 +190,12 @@ export const DESIGN_SYSTEMS = Object.freeze({
 });
 
 const INTENT_RULES = [
+  ["stripe", /\b(stripe|payments?|fintech|financial infrastructure)\b|支付|金融科技|收款/i],
+  ["linear", /\b(linear|issue tracker|roadmap|product development)\b|项目管理|产品研发|路线图/i],
+  ["vercel", /\b(vercel|deployment|developer platform|hosting)\b|开发者平台|部署平台/i],
+  ["anthropic", /\b(anthropic|ai safety|research lab)\b|人工智能安全|研究机构/i],
+  ["notion", /\b(notion|knowledge base|workspace|documents)\b|知识库|工作空间|文档/i],
+  ["figma", /\b(figma|design tool|creative canvas)\b|设计工具|创作画布/i],
   [
     "wellness",
     /\b(fitness|workout|wellness|health|training|meditation)\b|健身|运动|健康|训练|冥想/i,

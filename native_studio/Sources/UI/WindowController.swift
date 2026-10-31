@@ -89,6 +89,13 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             self.mainContentView.islandBar.update(selectionLabel: hasSelection ? (selectionName ?? "Selection") : nil)
             self.mainContentView.sessionHasSelection = hasSelection
             self.mainContentView.refreshChromeVisibility()
+            self.mainContentView.updateIslandBarPosition()
+        }
+
+        // Panning / ruler toggles move the stage without changing zoom; keep the
+        // selection island bar glued to its anchor frame (web parity).
+        view.canvasStageView.onViewportChanged = { [weak self] in
+            self?.mainContentView.updateIslandBarPosition()
         }
 
         view.canvasStageView.onZoomChanged = { [weak self] zoom in
@@ -102,6 +109,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             if self.textEditingOverlay.isEditing {
                 self.textEditingOverlay.refreshGeometry()
             }
+            self.mainContentView.updateIslandBarPosition()
         }
 
         // Wire Dashboard & Editor Navigation
@@ -140,6 +148,12 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             alert.alertStyle = .informational
             alert.runModal()
         }
+        // Wire Workspace Manager
+        WorkspaceManager.shared.onWorkspaceChanged = { [weak self] in
+            self?.refreshWorkspaceFiles()
+        }
+        refreshWorkspaceFiles()
+
         view.welcomeDashboard.onChangeWorkspace = { [weak self] in
             guard let self = self else { return }
             let panel = NSOpenPanel()
@@ -147,11 +161,101 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             panel.canChooseFiles = false
             panel.prompt = "选择工作区"
             if panel.runModal() == .OK, let url = panel.url {
-                self.showChromeToast("工作区已切换: \(url.lastPathComponent)")
+                let res = WorkspaceManager.shared.setWorkspaceDirectory(url.path)
+                if res.ok {
+                    self.refreshWorkspaceFiles()
+                    self.showChromeToast("工作区已切换: \(url.lastPathComponent)")
+                } else {
+                    self.showChromeToast("切换失败: \(res.error ?? "")")
+                }
             }
         }
         view.welcomeDashboard.onRescan = { [weak self] in
-            self?.showChromeToast("工作区已重新扫描")
+            guard let self = self else { return }
+            _ = WorkspaceManager.shared.rescan()
+            self.refreshWorkspaceFiles()
+            self.showChromeToast("工作区已重新扫描")
+        }
+        view.welcomeDashboard.onEmptyTrash = { [weak self] in
+            guard let self = self else { return }
+            let alert = NSAlert()
+            alert.messageText = "清空回收站"
+            alert.informativeText = "确定要永久删除回收站中的所有文件吗？此操作无法撤销。"
+            alert.alertStyle = .critical
+            alert.addButton(withTitle: "清空")
+            alert.addButton(withTitle: "取消")
+            if alert.runModal() == .alertFirstButtonReturn {
+                do {
+                    let count = try WorkspaceManager.shared.emptyTrash()
+                    self.refreshWorkspaceFiles()
+                    self.showChromeToast("已永久删除 \(count) 个文件")
+                } catch {
+                    self.showChromeToast("清空失败: \(error.localizedDescription)")
+                }
+            }
+        }
+        view.welcomeDashboard.onCreateFolder = { [weak self] in
+            guard let self = self else { return }
+            let alert = NSAlert()
+            alert.messageText = "新建文件夹"
+            alert.informativeText = "请输入新文件夹名称："
+            alert.addButton(withTitle: "创建")
+            alert.addButton(withTitle: "取消")
+            let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 220, height: 24))
+            input.placeholderString = "新文件夹"
+            alert.accessoryView = input
+            if alert.runModal() == .alertFirstButtonReturn {
+                let name = input.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !name.isEmpty {
+                    do {
+                        _ = try WorkspaceManager.shared.createFolder(name: name)
+                        self.refreshWorkspaceFiles()
+                        self.showChromeToast("已创建文件夹: \(name)")
+                    } catch {
+                        self.showChromeToast("创建失败: \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
+        view.welcomeDashboard.onFileAction = { [weak self] action, filePath in
+            guard let self = self else { return }
+            do {
+                switch action {
+                case .revealInFinder:
+                    WorkspaceManager.shared.revealInFinder(filePath: filePath)
+                case .duplicate:
+                    let newPath = try WorkspaceManager.shared.duplicateFile(filePath: filePath)
+                    self.refreshWorkspaceFiles()
+                    self.showChromeToast("已创建副本: \((newPath as NSString).lastPathComponent)")
+                case .rename(let newName):
+                    let newPath = try WorkspaceManager.shared.renameFile(filePath: filePath, newName: newName)
+                    self.refreshWorkspaceFiles()
+                    self.showChromeToast("已重命名为: \((newPath as NSString).lastPathComponent)")
+                case .moveToFolder(let folder):
+                    _ = try WorkspaceManager.shared.moveToFolder(filePath: filePath, folderName: folder)
+                    self.refreshWorkspaceFiles()
+                    let targetName = folder ?? "工作区根目录"
+                    self.showChromeToast("已移至: \(targetName)")
+                case .toggleStar:
+                    let starred = WorkspaceManager.shared.toggleStar(filePath: filePath)
+                    self.refreshWorkspaceFiles()
+                    self.showChromeToast(starred ? "已加入星标" : "已取消星标")
+                case .moveToTrash:
+                    _ = try WorkspaceManager.shared.moveToTrash(filePath: filePath)
+                    self.refreshWorkspaceFiles()
+                    self.showChromeToast("已移至回收站")
+                case .restoreFromTrash:
+                    let restoredPath = try WorkspaceManager.shared.restoreFromTrash(filePath: filePath)
+                    self.refreshWorkspaceFiles()
+                    self.showChromeToast("已恢复: \((restoredPath as NSString).lastPathComponent)")
+                case .deletePermanently:
+                    try WorkspaceManager.shared.deletePermanently(filePath: filePath)
+                    self.refreshWorkspaceFiles()
+                    self.showChromeToast("已永久删除")
+                }
+            } catch {
+                self.showChromeToast("操作失败: \(error.localizedDescription)")
+            }
         }
         view.canvasStageView.onUndoRequested = { [weak self] in
             self?.undoAction(nil)
@@ -377,7 +481,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             self?.addRectangleLayer()
         }
         layers.onAddMask = { [weak self] in
-            self?.showChromeToast("蒙版功能由图层属性驱动 (mask comes from layer properties)")
+            self?.addMaskToSelection()
         }
         layers.onGroupLayers = { [weak self] in
             self?.groupAction(nil)
@@ -418,12 +522,36 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             panel.canChooseFiles = false
             panel.prompt = "选择工作区"
             if panel.runModal() == .OK, let url = panel.url {
-                self.showChromeToast("工作区已切换: \(url.lastPathComponent)")
+                let res = WorkspaceManager.shared.setWorkspaceDirectory(url.path)
+                if res.ok {
+                    self.refreshWorkspaceFiles()
+                    self.mainContentView.settingsDrawer.needsDisplay = true
+                    self.showChromeToast("工作区已切换: \(url.lastPathComponent)")
+                } else {
+                    self.showChromeToast("切换失败: \(res.error ?? "")")
+                }
             }
         }
         view.settingsDrawer.onRescan = { [weak self] in
-            self?.showChromeToast("工作区已重新扫描")
+            guard let self = self else { return }
+            _ = WorkspaceManager.shared.rescan()
+            self.refreshWorkspaceFiles()
+            self.mainContentView.settingsDrawer.needsDisplay = true
+            self.showChromeToast("工作区已重新扫描")
         }
+        // Settings → General → Canvas: "Show rulers" mirrors `voo.editor.showRulers`
+        // and stays in sync with ⇧R / the zoom bar (web parity).
+        view.settingsDrawer.onToggleRulers = { [weak self] show in
+            guard let self = self else { return }
+            self.mainContentView.canvasStageView.showRulers = show
+            self.mainContentView.canvasStageView.needsDisplay = true
+            self.mainContentView.updateIslandBarPosition()
+        }
+
+        // Rulers stay hidden unless the persisted preference says otherwise (web default off).
+        view.canvasStageView.showRulers = UserDefaults.standard.bool(
+            forKey: SettingsDrawerView.showRulersDefaultsKey
+        )
 
         setupKeyMonitoring()
     }
@@ -486,8 +614,10 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             return true
         }
 
-        // 0. Escape dismisses transient overlays (agent panel / onboarding guide).
+        // 0. Escape dismisses transient overlays and cancels canvas in-flight creation gestures.
         if event.keyCode == 53 {
+            mainContentView.canvasStageView.cancelCreation()
+            mainContentView.canvasStageView.cancelPathEditing()
             if mainContentView.isAgentPanelOpen {
                 setAgentPanelOpen(false)
                 return true
@@ -530,6 +660,22 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                 deleteAction(nil)
                 return true
             }
+        }
+
+        // 5.5 R / O shape tool switching (Figma / VOO web parity)
+        if first == "o" || first == "O" {
+            mainContentView.canvasStageView.activeShapeSubTool = .ellipse
+            mainContentView.toolRail.state.selectTool(.shapes)
+            mainContentView.toolRail.updateSelection()
+            didSelectTool(.shapes)
+            return true
+        }
+        if first == "r" || first == "R" {
+            mainContentView.canvasStageView.activeShapeSubTool = .rect
+            mainContentView.toolRail.state.selectTool(.shapes)
+            mainContentView.toolRail.updateSelection()
+            didSelectTool(.shapes)
+            return true
         }
 
         // 6. Dispatch to ToolRail
@@ -842,7 +988,9 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             y: 0,
             width: 1200,
             height: 800,
-            style: LayerStyle(fill: "#171717", stroke: "#b2ffd6", strokeWidth: 2.0)
+            // Web `promoteFixedPageToFrame`: frame stroke stays null and the outline
+            // seen on screen is the 1px selection border drawn by the stage.
+            style: LayerStyle(fill: "#171717", stroke: "none", strokeWidth: 1.0)
         )
         doc.nodes = [artboard]
         mainContentView.canvasStageView.document = doc
@@ -1111,9 +1259,15 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         let maxX = selectedNodes.map { $0.x + $0.width }.max() ?? 100
         let maxY = selectedNodes.map { $0.y + $0.height }.max() ?? 100
 
+        // Determine if selected nodes share a common parent Frame (prevent detaching from Frame)
+        let commonParentId = selectedNodes.first?.parentId
+        let sharesParent = selectedNodes.allSatisfy { $0.parentId == commonParentId }
+        let parentFrameId = sharesParent ? commonParentId : nil
+
         let groupId = UUID().uuidString
         let groupNode = VOONode(
             id: groupId,
+            parentId: parentFrameId,
             kind: .group,
             name: "Group",
             x: minX,
@@ -1122,11 +1276,29 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             height: maxY - minY,
             childIds: Array(selectedIds)
         )
-        let cmd = InsertNodeCommand(node: groupNode)
+
+        let cmd = BasicCommand(
+            name: "编组",
+            execute: { doc in
+                doc.nodes.append(groupNode)
+                for idx in doc.nodes.indices {
+                    if selectedIds.contains(doc.nodes[idx].id) {
+                        doc.nodes[idx].parentId = groupId
+                    }
+                }
+                return true
+            },
+            undo: { doc in
+                doc.nodes.removeAll(where: { $0.id == groupId })
+                for idx in doc.nodes.indices {
+                    if selectedIds.contains(doc.nodes[idx].id) {
+                        doc.nodes[idx].parentId = parentFrameId
+                    }
+                }
+                return true
+            }
+        )
         _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
-        for var n in selectedNodes {
-            n.parentId = groupId
-        }
         mainContentView.canvasStageView.selectedNodeIds = [groupId]
         refreshAfterDocumentMutation()
     }
@@ -1135,9 +1307,37 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         let selectedIds = mainContentView.canvasStageView.selectedNodeIds
         guard let firstId = selectedIds.first,
               let groupNode = mainContentView.canvasStageView.document.nodes.first(where: { $0.id == firstId && $0.kind == .group }) else { return }
-        let cmd = DeleteNodeCommand(nodeId: groupNode.id)
+
+        let parentId = groupNode.parentId
+        let childIds = Set(groupNode.childIds ?? [])
+
+        let cmd = BasicCommand(
+            name: "取消编组",
+            execute: { doc in
+                // 1. Reparent children to group's parent Frame / container (prevents dismantling ancestor Frame)
+                for idx in doc.nodes.indices {
+                    if childIds.contains(doc.nodes[idx].id) {
+                        doc.nodes[idx].parentId = parentId
+                    }
+                }
+                // 2. Remove group node
+                doc.nodes.removeAll(where: { $0.id == groupNode.id })
+                return true
+            },
+            undo: { doc in
+                // 1. Restore group node
+                doc.nodes.append(groupNode)
+                // 2. Repoint children back to group
+                for idx in doc.nodes.indices {
+                    if childIds.contains(doc.nodes[idx].id) {
+                        doc.nodes[idx].parentId = groupNode.id
+                    }
+                }
+                return true
+            }
+        )
         _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
-        mainContentView.canvasStageView.selectedNodeIds = Set(groupNode.childIds ?? [])
+        mainContentView.canvasStageView.selectedNodeIds = childIds
         refreshAfterDocumentMutation()
     }
 
@@ -1688,6 +1888,12 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     public func toggleRulersAction(_ sender: Any?) {
         mainContentView.canvasStageView.showRulers.toggle()
+        // Persist + let the Settings drawer stay in sync (web `voo.editor.showRulers`).
+        UserDefaults.standard.set(
+            mainContentView.canvasStageView.showRulers,
+            forKey: SettingsDrawerView.showRulersDefaultsKey
+        )
+        mainContentView.updateIslandBarPosition()
     }
 
     private func refreshAfterDocumentMutation() {
@@ -2497,7 +2703,22 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     private func createTextNodeFromCanvas(at point: CGPoint) {
         let textCount = mainContentView.canvasStageView.document.nodes.filter { $0.kind == .text }.count
-        let node = TextEditingOverlay.defaultTextNode(at: point, index: textCount + 1)
+
+        // Contrast check: if point is on a white / light frame or rect, use dark text (#171717)
+        var isLightBg = false
+        for node in mainContentView.canvasStageView.document.nodes.reversed() {
+            let r = CGRect(x: node.x, y: node.y, width: node.width, height: node.height)
+            if r.contains(point) && (node.kind == .frame || node.kind == .rect) {
+                let color = NSColor(hex: node.style.fill)
+                let lum = 0.299 * color.redComponent + 0.587 * color.greenComponent + 0.114 * color.blueComponent
+                if lum > 0.6 && color.alphaComponent > 0.5 {
+                    isLightBg = true
+                }
+                break
+            }
+        }
+
+        let node = TextEditingOverlay.defaultTextNode(at: point, index: textCount + 1, onLightBackground: isLightBg)
         let cmd = InsertNodeCommand(node: node)
         _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
         mainContentView.canvasStageView.selectedNodeIds = [node.id]
@@ -2541,6 +2762,75 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
         textEditingOverlay.isHidden = true
         refreshAfterDocumentMutation()
+    }
+
+    public func addMaskToSelection() {
+        let selectedIds = mainContentView.canvasStageView.selectedNodeIds
+        guard let firstId = selectedIds.first,
+              let node = mainContentView.canvasStageView.document.nodes.first(where: { $0.id == firstId }) else {
+            showChromeToast("请先选择一个图层添加蒙版")
+            return
+        }
+
+        if let existingMaskId = node.maskId {
+            let cmd = BasicCommand(
+                name: "取消蒙版",
+                execute: { doc in
+                    guard let i = doc.nodes.firstIndex(where: { $0.id == firstId }) else { return false }
+                    doc.nodes[i].maskId = nil
+                    return true
+                },
+                undo: { doc in
+                    guard let i = doc.nodes.firstIndex(where: { $0.id == firstId }) else { return false }
+                    doc.nodes[i].maskId = existingMaskId
+                    return true
+                }
+            )
+            _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
+            refreshAfterDocumentMutation()
+            showChromeToast("已取消蒙版: \(node.name)")
+            return
+        }
+
+        let maskId = UUID().uuidString
+        let maskNode = VOONode(
+            id: maskId,
+            parentId: node.parentId,
+            kind: .rect,
+            name: "\(node.name) Mask",
+            x: node.x,
+            y: node.y,
+            width: node.width,
+            height: node.height,
+            style: LayerStyle(
+                fill: "#ffffff",
+                stroke: "none",
+                strokeWidth: 0,
+                opacity: 1.0
+            ),
+            cornerRadii: node.cornerRadii
+        )
+
+        let cmd = BasicCommand(
+            name: "添加蒙版",
+            execute: { doc in
+                doc.nodes.append(maskNode)
+                if let i = doc.nodes.firstIndex(where: { $0.id == firstId }) {
+                    doc.nodes[i].maskId = maskId
+                }
+                return true
+            },
+            undo: { doc in
+                doc.nodes.removeAll(where: { $0.id == maskId })
+                if let i = doc.nodes.firstIndex(where: { $0.id == firstId }) {
+                    doc.nodes[i].maskId = nil
+                }
+                return true
+            }
+        )
+        _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
+        refreshAfterDocumentMutation()
+        showChromeToast("已为「\(node.name)」添加蒙版")
     }
 
     // MARK: - Layers Panel Actions
@@ -2780,6 +3070,8 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         switch raw.lowercased() {
         case "codex", "openai": return .codex
         case "antigravity", "agy": return .antigravity
+        case "opencode": return .opencode
+        case "deepseekharness", "deepseek-harness", "dsh": return .deepseekHarness
         default: return .claude
         }
     }
@@ -2999,18 +3291,49 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         studioWindow.makeFirstResponder(mainContentView.canvasStageView)
     }
 
+    public func refreshWorkspaceFiles() {
+        let files = WorkspaceManager.shared.scanFiles()
+        mainContentView.welcomeDashboard.setWorkspaceFiles(files)
+        mainContentView.welcomeDashboard.needsDisplay = true
+    }
+
     public func openEditor(project: String) {
         mainContentView.isWelcomeOpen = false
-        mainContentView.titleBar.setDocumentTitle((project as NSString).deletingPathExtension)
-        mainContentView.canvasStageView.document.title = project.replacingOccurrences(of: ".voo", with: "")
-        if project.contains("Web app") {
-            loadWebAppProject()
-        } else if mainContentView.canvasStageView.document.nodes.isEmpty {
-            loadDemoProject()
+        let title = (project as NSString).lastPathComponent.replacingOccurrences(of: ".voo", with: "")
+        mainContentView.titleBar.setDocumentTitle(title)
+        mainContentView.canvasStageView.document.title = title
+
+        let fileManager = FileManager.default
+        let wsPath = WorkspaceManager.shared.currentWorkspacePath
+        let possiblePaths = [
+            project,
+            (wsPath as NSString).appendingPathComponent(project),
+            (wsPath as NSString).appendingPathComponent("\(project).voo")
+        ]
+        var loaded = false
+        for candidate in possiblePaths {
+            if fileManager.fileExists(atPath: candidate) {
+                let url = URL(fileURLWithPath: candidate)
+                openDocumentFromURL(url)
+                loaded = true
+                break
+            }
+        }
+        if !loaded {
+            // Web parity: a project that is no longer on disk opens the same blank
+            // "Design 1" document as the New action instead of fabricated demo art.
+            if project.contains("Web app") {
+                loadWebAppProject()
+            } else {
+                newDocument(nil)
+                mainContentView.isWelcomeOpen = false
+                showChromeToast("找不到工程文件，已新建空白文档")
+            }
         }
         mainContentView.canvasStageView.zoomFit()
         syncChromeState()
         refreshAfterDocumentMutation()
+        focusCanvas()
     }
 }
 
@@ -3023,27 +3346,26 @@ public class StageViewportView: NSView {
     }
 }
 
-// MARK: - Editor Shell Container (Iconic VOO Refined Mint Border with 14px Radius)
+// MARK: - Editor Shell Container (web `.editor-shell`: 2px mint border, 16px radius)
 
 public final class EditorShellView: NSView {
+    private static func applyShellStyle(to view: NSView) {
+        view.wantsLayer = true
+        view.layer?.cornerRadius = 16
+        view.layer?.masksToBounds = true
+        view.layer?.borderColor = ThemeTokens.colorMint.cgColor
+        view.layer?.borderWidth = 2.0
+        view.layer?.backgroundColor = NSColor.black.cgColor
+    }
+
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
-        wantsLayer = true
-        layer?.cornerRadius = 16
-        layer?.masksToBounds = true
-        layer?.borderColor = ThemeTokens.colorMint.withAlphaComponent(0.85).cgColor
-        layer?.borderWidth = 1.0
-        layer?.backgroundColor = NSColor.black.cgColor
+        Self.applyShellStyle(to: self)
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
-        wantsLayer = true
-        layer?.cornerRadius = 16
-        layer?.masksToBounds = true
-        layer?.borderColor = ThemeTokens.colorMint.withAlphaComponent(0.85).cgColor
-        layer?.borderWidth = 1.0
-        layer?.backgroundColor = NSColor.black.cgColor
+        Self.applyShellStyle(to: self)
     }
 }
 
@@ -3159,6 +3481,10 @@ public class MainContentView: NSView {
             chromeView.translatesAutoresizingMaskIntoConstraints = false
             editorShell.addSubview(chromeView)
         }
+        // The island bar is anchored to the selection's outer frame rather than pinned
+        // to the bottom chrome, so it lays itself out with an explicit frame.
+        islandBar.translatesAutoresizingMaskIntoConstraints = true
+        islandBar.frame = CGRect(x: 0, y: 0, width: 0, height: ContextIslandBar.preferredHeight)
         // The legacy silver canvas pill is replaced by the dark VOO zoom bar.
         canvasStageView.bottomToolsPill.isHidden = true
         // The legacy Affinity-style contextual toolbar is hidden by default; the
@@ -3201,7 +3527,7 @@ public class MainContentView: NSView {
             editorShell.bottomAnchor.constraint(equalTo: bottomAnchor, constant: 0),
 
             // AI agent panel: right column outside the editor shell
-            agentPanel.topAnchor.constraint(equalTo: titleBar.bottomAnchor, constant: 12),
+            agentPanel.topAnchor.constraint(equalTo: titleBar.bottomAnchor, constant: 0),
             agentPanel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
             agentPanel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
             agentPanel.widthAnchor.constraint(equalToConstant: 364),
@@ -3225,9 +3551,9 @@ public class MainContentView: NSView {
             pageSwitcher.widthAnchor.constraint(greaterThanOrEqualToConstant: 70),
             pageSwitcher.widthAnchor.constraint(lessThanOrEqualToConstant: 220),
 
-            // Bottom-center zoom bar
+            // Bottom-center zoom bar (web `absolute bottom-3`)
             bottomZoomBar.centerXAnchor.constraint(equalTo: editorShell.centerXAnchor),
-            bottomZoomBar.bottomAnchor.constraint(equalTo: editorShell.bottomAnchor, constant: -16),
+            bottomZoomBar.bottomAnchor.constraint(equalTo: editorShell.bottomAnchor, constant: -12),
             bottomZoomBar.widthAnchor.constraint(equalToConstant: StudioBottomZoomBar.preferredWidth),
             bottomZoomBar.heightAnchor.constraint(equalToConstant: StudioBottomZoomBar.preferredHeight),
 
@@ -3237,10 +3563,9 @@ public class MainContentView: NSView {
             aiButton.widthAnchor.constraint(equalToConstant: 44),
             aiButton.heightAnchor.constraint(equalToConstant: 44),
 
-            // Selection island bar (above the zoom bar)
-            islandBar.centerXAnchor.constraint(equalTo: editorShell.centerXAnchor),
-            islandBar.bottomAnchor.constraint(equalTo: bottomZoomBar.topAnchor, constant: -8),
-            islandBar.heightAnchor.constraint(equalToConstant: 32),
+            // Selection island bar: the contextual taskbar floats at the selection's
+            // outermost frame (web `use_contextual_taskbar_rect.js`), so its frame is
+            // positioned imperatively in `updateIslandBarPosition()`.
 
             // Canvas Stage Viewport: Fills editorShell
             canvasStageView.topAnchor.constraint(equalTo: editorShell.topAnchor),
@@ -3254,11 +3579,12 @@ public class MainContentView: NSView {
             welcomeDashboard.trailingAnchor.constraint(equalTo: editorShell.trailingAnchor),
             welcomeDashboard.bottomAnchor.constraint(equalTo: editorShell.bottomAnchor),
 
-            // ToolRail: Floating centered pill at top of editorShell
-            toolRail.topAnchor.constraint(equalTo: editorShell.topAnchor, constant: 16),
+            // ToolRail: Floating centered pill at top of editorShell (web `top-[14px]`,
+            // p-1.5 + 44px tool buttons => 56pt tall; 11 native tools + gaps => 536pt).
+            toolRail.topAnchor.constraint(equalTo: editorShell.topAnchor, constant: 14),
             toolRail.centerXAnchor.constraint(equalTo: editorShell.centerXAnchor),
-            toolRail.widthAnchor.constraint(equalToConstant: 512),
-            toolRail.heightAnchor.constraint(equalToConstant: 48),
+            toolRail.widthAnchor.constraint(equalToConstant: 589),
+            toolRail.heightAnchor.constraint(equalToConstant: 56),
 
             // ContextToolbar: Floating centered pill below ToolRail
             contextToolbar.topAnchor.constraint(equalTo: toolRail.bottomAnchor, constant: 8),
@@ -3296,6 +3622,73 @@ public class MainContentView: NSView {
         aiButton.isHidden = dashboard || isAgentPanelOpen
         agentPanel.isHidden = !isAgentPanelOpen || dashboard
         needsLayout = true
+        updateIslandBarPosition()
+    }
+
+    // MARK: - Island bar anchoring (web `use_contextual_taskbar_rect.js`)
+
+    /// Union of the selected nodes promoted to their outermost frame ancestor, in
+    /// document coordinates. Matches the web rule that nested selections anchor to
+    /// the board instead of the artwork.
+    private func islandAnchorDocRect() -> CGRect? {
+        let stage = canvasStageView
+        let nodes = stage.document.nodes
+        let selected = stage.selectedNodeIds.compactMap { id in nodes.first(where: { $0.id == id }) }
+        guard !selected.isEmpty else { return nil }
+
+        var anchors: [CGRect] = []
+        for node in selected {
+            var anchor = node
+            var guardCount = 0
+            while let parentId = anchor.parentId,
+                  let parent = nodes.first(where: { $0.id == parentId }),
+                  guardCount < 64 {
+                anchor = parent
+                guardCount += 1
+                if parent.kind == .frame { break }
+            }
+            anchors.append(CGRect(x: anchor.x, y: anchor.y, width: anchor.width, height: anchor.height))
+        }
+        guard var union = anchors.first else { return nil }
+        for rect in anchors.dropFirst() { union = union.union(rect) }
+        return union
+    }
+
+    /// Places the island bar 6pt below the selection's outer frame, centred on it,
+    /// flipping above when it would leave the stage, clamped 8pt inside the viewport.
+    public func updateIslandBarPosition() {
+        guard !islandBar.isHidden else { return }
+        guard let docRect = islandAnchorDocRect() else { return }
+        let stage = canvasStageView
+        let stageRect = stage.viewRect(from: docRect)
+        let size = islandBar.intrinsicContentSize
+        let barSize = CGSize(width: max(size.width, 120), height: ContextIslandBar.preferredHeight)
+        let bounds = stage.bounds
+        let gap: CGFloat = 6
+        let inset: CGFloat = 8
+
+        var x = stageRect.midX - barSize.width / 2
+        x = min(max(x, inset), max(bounds.width - barSize.width - inset, inset))
+
+        var y = stageRect.maxY + gap
+        if y + barSize.height > bounds.height - inset {
+            let above = stageRect.minY - gap - barSize.height
+            if above >= inset {
+                y = above
+            } else {
+                y = max(bounds.height - barSize.height - inset, inset)
+            }
+        }
+        y = min(max(y, inset), max(bounds.height - barSize.height - inset, inset))
+
+        // The stage view shares editorShell's coordinate space.
+        let stageOrigin = stage.frame.origin
+        islandBar.frame = CGRect(
+            x: stageOrigin.x + x,
+            y: stageOrigin.y + y,
+            width: barSize.width,
+            height: barSize.height
+        )
     }
 
     // MARK: - Agent panel & onboarding presentation

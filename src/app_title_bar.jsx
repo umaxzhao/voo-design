@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./canvas/components/editor_mobile_layout.css";
 import CanvasTabBar from "./canvas/components/canvas_tab_bar.jsx";
-import { Bolt, Download, FolderOpen, MoreHorizontal, PanelsTopLeft } from "lucide-react";
+import { Bolt, Download, FolderOpen, Globe, MoreHorizontal } from "lucide-react";
 import { useDesignStore } from "./store/design_store.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import CollabAvatars from "./canvas/components/collab_avatars.jsx";
@@ -206,7 +206,7 @@ export default function AppTitleBar() {
             }`}
             style={{ WebkitAppRegion: "no-drag" }}
           >
-            <PanelsTopLeft size={16} strokeWidth={1.75} aria-hidden="true" />
+            <Globe size={16} strokeWidth={1.75} aria-hidden="true" />
           </button>
           <div ref={moreRef} className="app-title-mobile-more relative hidden">
             <button

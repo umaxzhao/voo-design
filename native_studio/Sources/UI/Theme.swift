@@ -7,6 +7,7 @@
 //
 
 import AppKit
+import CoreText
 import Foundation
 
 // MARK: - VOO Dark Theme Design Tokens
@@ -14,7 +15,10 @@ import Foundation
 public struct ThemeTokens {
     // MARK: - 6-Tier Surface Lightness Ladder (VOO Dark)
     public static let surfacePage = "#000000"     // html/body, window background
-    public static let surfaceStage = "#525252"    // Canvas stage work area background (neutral-600)
+    /// Design-system "surface-canvas" token (web `WORKSPACE_BACKGROUND`). The
+    /// editor stage itself is the darker `colorStageStudio` below; this token
+    /// stays as the documented ladder rung the test suite pins.
+    public static let surfaceStage = "#525252"
     public static let surfacePanel = "#171717"    // Studio Inspector & floating overlay panels, TitleBar chrome
     public static let surfaceRaised = "#262626"   // Control resting surface, input fields, cards
     public static let surfaceHover = "#404040"    // Hover wash over raised controls
@@ -47,8 +51,28 @@ public struct ThemeTokens {
     // MARK: - NSColor Instances (Deterministic sRGB, Zero OS Theme Drift)
     public static let colorPanel = NSColor(red: 0.09, green: 0.09, blue: 0.09, alpha: 1.0) // #171717 (23/255)
     public static let colorStage = NSColor(red: 0.06, green: 0.06, blue: 0.06, alpha: 1.0) // #0f0f0f (15/255)
-    public static let colorStageStudio = NSColor(red: 0.28, green: 0.28, blue: 0.30, alpha: 1.0) // Sleek neutral studio gray
-    public static let colorArtboard = NSColor(red: 0.13, green: 0.13, blue: 0.14, alpha: 1.0) // #202022
+    /// Editor workspace ground around the artboards. Measured from the web
+    /// editor: `rgb(28,28,28)` = `#1c1c1c` (the value the web rulers also use).
+    public static let colorStageStudio = NSColor(hex: "#1c1c1c")
+    /// Default canvas/artboard surface when a document carries no explicit
+    /// background: web document background `#171717`.
+    public static let colorArtboard = NSColor(hex: "#171717")
+    /// Focused frame outline: 1px mint, measured `rgb(165,252,210)` = `#a5fcd2`.
+    public static let colorFrameSelection = NSColor(hex: "#a5fcd2")
+    /// Unselected frame outline: `ring-1 ring-white/10`.
+    public static let colorFrameIdleBorder = NSColor(white: 1.0, alpha: 0.10)
+    /// Canvas type / frame label colour for a selected (or focused) frame:
+    /// web `text-[#a7ffd4]`.
+    public static let colorFrameLabelSelected = NSColor(hex: "#a7ffd4")
+    /// Frame label colour for an unselected frame: web `text-neutral-400`.
+    public static let colorFrameLabelIdle = NSColor(hex: "#a3a3a3")
+    /// Ruler strip ground (`bg-[#1c1c1c]/95` over the stage).
+    public static let colorRulerBackground = NSColor(hex: "#1c1c1c")
+    /// Ruler tick labels: web `text-[9px] ... text-neutral-400`.
+    public static let colorRulerLabel = NSColor(hex: "#a3a3a3")
+    /// Ruler ticks: web `bg-white/25` for major and minor ticks.
+    public static let colorRulerTick = NSColor(white: 1.0, alpha: 0.25)
+    public static let colorRulerSeparator = NSColor(white: 1.0, alpha: 0.10)
     public static let colorFloatingCard = NSColor(red: 0.07, green: 0.07, blue: 0.08, alpha: 0.96) // #121214 with blur
     public static let colorBottomTools = NSColor(red: 0.89, green: 0.89, blue: 0.89, alpha: 1.0) // #e3e3e3 silver pill
     public static let colorMintDark = NSColor(red: 0.12, green: 0.22, blue: 0.18, alpha: 1.0) // #1e382d highlight
@@ -65,12 +89,106 @@ public struct ThemeTokens {
 
 // MARK: - Typography & Focus Helpers
 
+/// The bundled UI typeface. The web editor renders all chrome in **Intel One Mono**
+/// (`src/index.css` `--font-mono`), so the native shell bundles the same three OFL
+/// weights (`Resources/Fonts`) and resolves them by weight instead of falling back
+/// to SF Mono, which has different advance widths (±0.3pt at 11–12pt).
+public enum VooMonoTypeface {
+    /// PostScript names shipped in `Resources/Fonts` (see `Info.plist`
+    /// `ATSApplicationFontsPath`, plus the programmatic fallback below).
+    public enum Weight: String, CaseIterable {
+        case regular = "IntelOneMono-Regular"
+        case medium = "IntelOneMono-Medium"
+        case bold = "IntelOneMono-Bold"
+    }
+
+    /// True once at least the regular face resolved; the theme falls back to the
+    /// system monospaced design when a build ships without the font resources.
+    public private(set) static var isAvailable: Bool = false
+
+    private static var didRegister = false
+
+    /// Registers the bundled faces for this process. Called once at launch; also
+    /// covers the un-bundled (test / `swiftc` binary) case by looking next to the
+    /// executable and in the source resource folder.
+    public static func registerBundledFonts() {
+        guard !didRegister else { return }
+        didRegister = true
+
+        let urls = candidateFontURLs()
+        for url in urls {
+            var error: Unmanaged<CFError>?
+            _ = CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error)
+        }
+        isAvailable = NSFont(name: Weight.regular.rawValue, size: 12) != nil
+        NSLog(
+            "[VOO Design Native] bundled typeface Intel One Mono: %@ (%d face file(s))",
+            isAvailable ? "ready" : "missing — falling back to SF Mono",
+            urls.count
+        )
+    }
+
+    private static func candidateFontURLs() -> [URL] {
+        var urls: [URL] = []
+        let fileManager = FileManager.default
+        var directories: [URL] = []
+        // Test/source-tree override so the harness exercises the real faces.
+        if let override = ProcessInfo.processInfo.environment["VOO_FONT_DIR"], !override.isEmpty {
+            directories.append(URL(fileURLWithPath: override, isDirectory: true))
+        }
+        if let resources = Bundle.main.resourceURL {
+            directories.append(resources.appendingPathComponent("Fonts", isDirectory: true))
+        }
+        // Un-bundled binaries (test harness / swiftc output) still sit in the repo.
+        let executableDir = URL(fileURLWithPath: CommandLine.arguments.first ?? "")
+            .deletingLastPathComponent()
+        directories.append(executableDir.appendingPathComponent("Fonts", isDirectory: true))
+        directories.append(executableDir.appendingPathComponent("Resources/Fonts", isDirectory: true))
+
+        for directory in directories {
+            guard let entries = try? fileManager.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: nil
+            ) else { continue }
+            urls.append(contentsOf: entries.filter { $0.pathExtension.lowercased() == "ttf" })
+        }
+        return urls
+    }
+
+    /// Resolves the bundled face closest to `weight` (CSS-like matching: the web
+    /// build only ships 400/500/700, so ≥600 uses the bold face).
+    public static func font(size: CGFloat, weight: NSFont.Weight) -> NSFont? {
+        if !didRegister { registerBundledFonts() }
+        let face: Weight
+        if weight >= .semibold {
+            face = .bold
+        } else if weight >= .medium {
+            face = .medium
+        } else {
+            face = .regular
+        }
+        if let font = NSFont(name: face.rawValue, size: size) {
+            return font
+        }
+        return NSFont(name: Weight.regular.rawValue, size: size)
+    }
+}
+
 public struct ThemeFonts {
+    /// Chrome / body mono face (`font-mono` in the web build): Intel One Mono when
+    /// bundled, otherwise the system monospaced font with the same metrics request.
     public static func mono(size: CGFloat, weight: NSFont.Weight = .regular) -> NSFont {
+        if let bundled = VooMonoTypeface.font(size: size, weight: weight) {
+            return bundled
+        }
         return NSFont.monospacedSystemFont(ofSize: size, weight: weight)
     }
 
+    /// Tabular figures. Intel One Mono is fixed-advance, so the same face is used.
     public static func monoDigit(size: CGFloat, weight: NSFont.Weight = .regular) -> NSFont {
+        if let bundled = VooMonoTypeface.font(size: size, weight: weight) {
+            return bundled
+        }
         return NSFont.monospacedDigitSystemFont(ofSize: size, weight: weight)
     }
 

@@ -7,6 +7,7 @@ import { AGENT_SETTING, AGENT_DEFAULTS } from "./agent-settings.js";
  */
 
 import { getSetting } from "../../shared/settings.js";
+import { useDesignStore } from "../../store/design_store.js";
 import {
   placeImageInEditor,
   runImageJob,
@@ -401,7 +402,9 @@ export const CANVAS_TOOL_SCHEMAS = Object.freeze([
 ]);
 
 function requireEditor() {
-  const editor = typeof window !== "undefined" ? window.__vooEditor : null;
+  const editor = typeof window !== "undefined"
+    ? window.__vooEditor || Object.values(window.__vooEditors || {})[0] || null
+    : null;
   if (!editor) throw Object.assign(new Error(TOOL_ERROR.NO_EDITOR), { code: TOOL_ERROR.NO_EDITOR });
   return editor;
 }
@@ -1019,10 +1022,46 @@ export const EXECUTORS = Object.freeze({
   find_empty_space: findEmptySpace,
 });
 
+export async function ensureEditorReady(maxWaitMs = 2500) {
+  if (typeof window === "undefined") return null;
+  let editor = window.__vooEditor || Object.values(window.__vooEditors || {})[0] || null;
+  if (editor) return editor;
+
+  try {
+    const store = useDesignStore.getState();
+    if (store?.welcomeOpen) {
+      if (!store.activeDocumentId) {
+        store.newVooProject?.({ label: "Design 1" });
+      } else {
+        store.setWelcomeOpen?.(false);
+      }
+    }
+  } catch {}
+
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    await new Promise((r) => setTimeout(r, 60));
+    editor = window.__vooEditor || Object.values(window.__vooEditors || {})[0] || null;
+    if (!editor) {
+      try {
+        const store = useDesignStore.getState();
+        const bridges = Object.values(store?.editorBridges || {});
+        editor = bridges.find((b) => b?.engine)?.engine || null;
+        if (editor) window.__vooEditor = editor;
+      } catch {}
+    }
+    if (editor) return editor;
+  }
+  return null;
+}
+
 /** Runs a canvas tool by name; an unknown name is an error, not a silent no-op. */
 export async function executeCanvasTool(name, args, context = {}) {
   context.signal?.throwIfAborted();
   const executor = EXECUTORS[name];
   if (!executor) throw new Error(`unknown tool: ${name}`);
+  if (name !== "new_document" && name !== "voo_status") {
+    await ensureEditorReady();
+  }
   return executor(args, context);
 }

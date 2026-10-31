@@ -27,16 +27,47 @@ export function coverColors(system) {
 /** Decorative token stripe; the card name carries the accessible label. */
 function Cover({ system }) {
   const colors = coverColors(system);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => setImageFailed(false), [system.id, system.coverImage]);
+
   return (
-    <div aria-hidden="true" data-testid="design-system-cover" className="flex h-16 w-full overflow-hidden rounded-lg bg-white/[0.08]">
+    <div
+      aria-hidden="true"
+      data-testid="design-system-cover"
+      className="relative flex h-16 w-full overflow-hidden rounded-lg bg-white/[0.08]"
+    >
       {colors.map((color) => (
-        <span key={color} data-testid="design-system-cover-swatch" className="h-full min-w-0 flex-1" style={{ backgroundColor: color }} />
+        <span
+          key={color}
+          data-testid="design-system-cover-swatch"
+          className="h-full min-w-0 flex-1"
+          style={{ backgroundColor: color }}
+        />
       ))}
+      {system.coverImage && !imageFailed && (
+        <img
+          src={system.coverImage}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setImageFailed(true)}
+          className="absolute inset-0 size-full object-cover"
+        />
+      )}
     </div>
   );
 }
 
-Cover.propTypes = { system: PropTypes.shape({ designTokens: PropTypes.shape({ colors: PropTypes.objectOf(PropTypes.string) }) }).isRequired };
+Cover.propTypes = {
+  system: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    coverImage: PropTypes.string,
+    sourceName: PropTypes.string,
+    designTokens: PropTypes.shape({ colors: PropTypes.objectOf(PropTypes.string) }),
+  }).isRequired,
+};
 
 /** Cover, name and badges shown inside one design-system tab tile. */
 function DesignSystemTile({ system, applied }) {

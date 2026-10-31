@@ -4,6 +4,8 @@
  * its own work. Registered in canvas_tools.js CANVAS_TOOL_SCHEMAS / EXECUTORS.
  */
 
+import { useDesignStore } from "../../store/design_store.js";
+
 export const TOOL_ERROR = Object.freeze({
   NO_EDITOR: "agentNoEditor",
   NO_IMAGE_MODEL: "agentNoImageModel",
@@ -15,7 +17,20 @@ export const TOOL_ERROR = Object.freeze({
 const DEFAULT_CAPTURE_MAX_SIZE = 1024;
 
 function requireEditor() {
-  const editor = typeof window !== "undefined" ? window.__vooEditor : null;
+  let editor = typeof window !== "undefined"
+    ? window.__vooEditor || Object.values(window.__vooEditors || {})[0] || null
+    : null;
+  if (!editor && typeof window !== "undefined") {
+    try {
+      const store = useDesignStore.getState();
+      const bridges = Object.values(store?.editorBridges || {});
+      const candidate = bridges.find((b) => b?.engine)?.engine;
+      if (candidate) {
+        editor = candidate;
+        window.__vooEditor = editor;
+      }
+    } catch {}
+  }
   if (!editor) throw Object.assign(new Error(TOOL_ERROR.NO_EDITOR), { code: TOOL_ERROR.NO_EDITOR });
   return editor;
 }

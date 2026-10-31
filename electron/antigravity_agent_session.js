@@ -11,7 +11,9 @@ const STDERR_TAIL_CHARS = 2000;
 export const ANTIGRAVITY_MODEL_ALIASES = Object.freeze({
   "gemini-2.5-flash": "gemini-3.8-flash-high",
   "gemini-2.5-pro": "gemini-3.8-flash-high",
-  "claude-3-7-sonnet": "claude-sonnet-4-6",
+  "claude-3-7-sonnet": "claude-sonnet-5-5-high",
+  "claude-sonnet-4-6": "claude-sonnet-5-5-high",
+  "claude-opus-4-6-thinking": "claude-opus-5-5-high",
 });
 
 /**
@@ -19,12 +21,14 @@ export const ANTIGRAVITY_MODEL_ALIASES = Object.freeze({
  */
 export function antigravityArgs({ model, effort } = {}) {
   const resolvedModel = (model && ANTIGRAVITY_MODEL_ALIASES[model]) || model;
+  const hasApiKey = Boolean(process.env.GEMINI_API_KEY);
   return [
     "--sandbox",
     "--input-format",
     "stream-json",
     "--output-format",
     "stream-json",
+    ...(!hasApiKey ? ["--settings", '{"modelProvider":""}'] : []),
     ...(resolvedModel ? ["--model", resolvedModel] : []),
     ...(effort !== undefined ? ["--effort", effort] : []),
   ];

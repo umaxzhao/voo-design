@@ -33,8 +33,15 @@ export function parseAntigravityModels(output) {
 
 /** Query the installed CLI, which applies the current account's model access. */
 export async function discoverAntigravityModels(binPath, run = execFileAsync) {
-  const { stdout } = await run(binPath, ["--output-format", "json", "models"], {
-    timeout: 5000,
+  const hasApiKey = Boolean(process.env.GEMINI_API_KEY);
+  const args = [
+    "--output-format",
+    "json",
+    ...(!hasApiKey ? ["--settings", '{"modelProvider":""}'] : []),
+    "models",
+  ];
+  const { stdout } = await run(binPath, args, {
+    timeout: 10000,
     maxBuffer: 1024 * 1024,
   });
   return parseAntigravityModels(stdout);

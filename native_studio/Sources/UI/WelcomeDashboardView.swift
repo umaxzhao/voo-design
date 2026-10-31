@@ -30,6 +30,23 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
     public var onChangeWorkspace: (() -> Void)?
     /// Hook for the toolbar "Rescan" chip.
     public var onRescan: (() -> Void)?
+    /// Actions on workspace files (reveal, duplicate, rename, move, star, trash)
+    public var onFileAction: ((FileActionKind, String) -> Void)?
+    /// Hook to empty the workspace .trash folder
+    public var onEmptyTrash: (() -> Void)?
+    /// Hook to create a new folder in the workspace
+    public var onCreateFolder: (() -> Void)?
+
+    public enum FileActionKind {
+        case revealInFinder
+        case duplicate
+        case rename(String)
+        case moveToFolder(String?)
+        case toggleStar
+        case moveToTrash
+        case restoreFromTrash
+        case deletePermanently
+    }
 
     // MARK: - Visual Tokens (mirrors the web dashboard palette)
 
@@ -79,14 +96,31 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         }
     }
 
-    private enum ProjectKind { case web, mobile }
+    public enum ProjectKind: Sendable { case web, mobile }
 
-    private struct ProjectItem {
-        let title: String
-        let dimensions: String
-        let category: String
-        let openName: String
-        let kind: ProjectKind
+    public struct ProjectItem: Sendable {
+        public let title: String
+        public let dimensions: String
+        public let category: String
+        public let openName: String
+        public let kind: ProjectKind
+        public let realFile: WorkspaceFile?
+
+        public init(
+            title: String,
+            dimensions: String,
+            category: String,
+            openName: String,
+            kind: ProjectKind,
+            realFile: WorkspaceFile? = nil
+        ) {
+            self.title = title
+            self.dimensions = dimensions
+            self.category = category
+            self.openName = openName
+            self.kind = kind
+            self.realFile = realFile
+        }
     }
 
     private struct TemplateItem {
@@ -99,18 +133,40 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         let keys: String
     }
 
-    private static let projects: [ProjectItem] = [
-        ProjectItem(title: "Web App / SaaS Starter",
-                    dimensions: "1440 × 900",
-                    category: "Web app",
-                    openName: "Web app.voo",
-                    kind: .web),
-        ProjectItem(title: "iPhone 16 Pro Prototype",
-                    dimensions: "393 × 852",
-                    category: "Mobile app",
-                    openName: "iPhone 16 Pro Prototype.voo",
-                    kind: .mobile)
-    ]
+    public var workspaceFiles: [WorkspaceFile] = [] {
+        didSet {
+            rebuildProjectItems()
+            rebuildMetrics()
+            needsDisplay = true
+        }
+    }
+
+    private var customProjects: [ProjectItem] = []
+
+    public func setWorkspaceFiles(_ files: [WorkspaceFile]) {
+        self.workspaceFiles = files
+    }
+
+    private func rebuildProjectItems() {
+        if workspaceFiles.isEmpty {
+            customProjects = []
+        } else {
+            customProjects = workspaceFiles.map { file in
+                let title = (file.name as NSString).deletingPathExtension
+                let dim = file.formattedSize
+                let cat = file.folder ?? file.extensionName.uppercased()
+                let kind: ProjectKind = file.name.lowercased().contains("mobile") || file.name.lowercased().contains("iphone") ? .mobile : .web
+                return ProjectItem(
+                    title: title,
+                    dimensions: dim,
+                    category: cat,
+                    openName: file.path,
+                    kind: kind,
+                    realFile: file
+                )
+            }
+        }
+    }
 
     private static let filters: [String] = [
         "All", "Landing page", "Mobile app", "Web app", "Slides", "Dashboard", "Something else..."
@@ -187,9 +243,7 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         var navRows: [CGRect] = []
         var templatesHeader = CGRect.zero
         var templateRows: [CGRect] = []
-        var footerRow = CGRect.zero
         var footerText = CGRect.zero
-        var backLink = CGRect.zero
         var toolbarPill = CGRect.zero
         var toolbarLabel = CGRect.zero
         var toolbarChange = CGRect.zero
@@ -245,10 +299,44 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         setAccessibilityRole(.group)
         setAccessibilityLabel("VOO Design workspace dashboard")
 
+        registerForDraggedTypes([.fileURL])
+
         configureSearchField()
         configurePromptField()
         buildHitTargets()
         rebuildMetrics()
+    }
+
+    // MARK: - Drag & Drop (Finder file drops)
+
+    public override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        let pboard = sender.draggingPasteboard
+        if let types = pboard.types, types.contains(.fileURL) {
+            return .copy
+        }
+        return []
+    }
+
+    public override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        let pboard = sender.draggingPasteboard
+        guard let urls = pboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL], !urls.isEmpty else {
+            return false
+        }
+        for url in urls {
+            let ext = url.pathExtension.lowercased()
+            if ext == "voo" || ext == "fig" {
+                onOpenEditor?(url.path)
+                return true
+            } else if ["png", "jpg", "jpeg", "webp", "svg"].contains(ext) {
+                let wsPath = WorkspaceManager.shared.currentWorkspacePath
+                let dest = (wsPath as NSString).appendingPathComponent(url.lastPathComponent)
+                try? FileManager.default.copyItem(at: url, to: URL(fileURLWithPath: dest))
+                _ = WorkspaceManager.shared.rescan()
+                onOpenEditor?(url.path)
+                return true
+            }
+        }
+        return false
     }
 
     // MARK: - Text Fields
@@ -327,6 +415,7 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
 
     private final class HitTarget: NSView {
         var onClick: (() -> Void)?
+        var onRightClick: ((NSEvent) -> Void)?
         var onHover: ((Bool) -> Void)?
         var hoverKey: String?
         var cursor: NSCursor = .pointingHand
@@ -354,6 +443,13 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         override func mouseEntered(with event: NSEvent) { onHover?(true) }
         override func mouseExited(with event: NSEvent) { onHover?(false) }
         override func mouseDown(with event: NSEvent) { onClick?() }
+        override func rightMouseDown(with event: NSEvent) {
+            if let onRightClick = onRightClick {
+                onRightClick(event)
+            } else {
+                super.rightMouseDown(with: event)
+            }
+        }
         override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
         override func resetCursorRects() { addCursorRect(bounds, cursor: cursor) }
         override func accessibilityPerformPress() -> Bool {
@@ -420,13 +516,6 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             navTargets[tab] = target
         }
 
-        // Sidebar back-to-canvas link.
-        searchTargets["back"] = makeTarget(
-            key: "back",
-            label: "返回当前画布",
-            accessibilityID: "Dashboard.Sidebar.BackToCanvas"
-        ) { [weak self] in self?.onOpenEditor?("Web app.voo") }
-
         // Toolbar.
         searchTargets["toolbar.change"] = makeTarget(
             key: "toolbar.change",
@@ -438,6 +527,11 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             label: "Rescan workspace",
             accessibilityID: "Dashboard.Toolbar.Rescan"
         ) { [weak self] in self?.onRescan?() }
+        searchTargets["toolbar.emptyTrash"] = makeTarget(
+            key: "toolbar.emptyTrash",
+            label: "Empty Trash",
+            accessibilityID: "Dashboard.Toolbar.EmptyTrash"
+        ) { [weak self] in self?.onEmptyTrash?() }
         searchTargets["toolbar.open"] = makeTarget(
             key: "toolbar.open",
             label: "Open a .voo file",
@@ -531,20 +625,38 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         }
 
         // Recents project cards (grid + list variants).
-        for (index, project) in Self.projects.enumerated() {
+        for index in 0..<100 {
             let target = makeTarget(
                 key: "project.\(index)",
-                label: project.title,
+                label: "Project Card \(index)",
                 accessibilityID: "Dashboard.ProjectCard.\(index)"
-            ) { [weak self] in self?.onOpenEditor?(project.openName) }
+            ) { [weak self] in
+                guard let self = self else { return }
+                let items = self.filteredProjects()
+                if items.indices.contains(index) {
+                    self.onOpenEditor?(items[index].openName)
+                }
+            }
+            target.onRightClick = { [weak self] event in
+                self?.showContextMenu(for: index, event: event)
+            }
             projectTargets.append(target)
         }
-        for (index, project) in Self.projects.enumerated() {
+        for index in 0..<100 {
             let target = makeTarget(
                 key: "list.\(index)",
-                label: project.title,
+                label: "Project Row \(index)",
                 accessibilityID: "Dashboard.ProjectRow.\(index)"
-            ) { [weak self] in self?.onOpenEditor?(project.openName) }
+            ) { [weak self] in
+                guard let self = self else { return }
+                let items = self.filteredProjects()
+                if items.indices.contains(index) {
+                    self.onOpenEditor?(items[index].openName)
+                }
+            }
+            target.onRightClick = { [weak self] event in
+                self?.showContextMenu(for: index, event: event)
+            }
             listTargets.append(target)
         }
 
@@ -639,9 +751,7 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         m.templateRows = (0..<2).map { index in
             CGRect(x: sideRowX, y: 273 + CGFloat(index) * 30, width: sideRowWidth, height: 28)
         }
-        m.footerRow = CGRect(x: sideRowX, y: height - 46, width: sideRowWidth, height: 36)
         m.footerText = CGRect(x: 19, y: height - 28, width: 130, height: 14)
-        m.backLink = CGRect(x: max(sideRowX + sideRowWidth - 100, 18), y: height - 29, width: 92, height: 16)
 
         // Toolbar workspace bar (aligned with the shell top inset; y56 window = y16 view buttons).
         let toolbarLeft = mainStartX + 32
@@ -706,15 +816,26 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         m.gridToggle = CGRect(x: m.viewToggle.minX + 2, y: headerTop + 4, width: 21, height: 21)
         m.listToggle = CGRect(x: m.viewToggle.minX + 24, y: headerTop + 4, width: 21, height: 21)
 
-        // Recents project content.
-        let cardsTop: CGFloat = 442
+        // Project cards layout (grid + list variants).
+        let cardsTop: CGFloat = activeTab == .recents ? 442 : 138
         let cardWidth: CGFloat = 220
         let cardHeight: CGFloat = 190
-        m.projectCards = (0..<2).map { index in
-            CGRect(x: contentX + CGFloat(index) * (cardWidth + 16), y: cardsTop, width: cardWidth, height: cardHeight)
+        let cardGap: CGFloat = 16
+        let cols = max(1, Int((contentWidth + cardGap) / (cardWidth + cardGap)))
+        let items = filteredProjects()
+        let cardCount = items.count
+        m.projectCards = (0..<cardCount).map { index in
+            let col = index % cols
+            let row = index / cols
+            return CGRect(
+                x: contentX + CGFloat(col) * (cardWidth + cardGap),
+                y: cardsTop + CGFloat(row) * (cardHeight + cardGap),
+                width: cardWidth,
+                height: cardHeight
+            )
         }
         let listRowHeight: CGFloat = 56
-        m.projectListRows = (0..<2).map { index in
+        m.projectListRows = (0..<cardCount).map { index in
             CGRect(x: contentX, y: cardsTop + CGFloat(index) * (listRowHeight + 8), width: contentWidth, height: listRowHeight)
         }
         m.emptyBox = CGRect(x: contentX, y: 134, width: contentWidth, height: 205)
@@ -805,7 +926,6 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         setFrame(navTargets[.trash], m.navRows.count > 3 ? m.navRows[3] : .zero)
         setFrame(navTargets[.designSystems], m.templateRows.count > 0 ? m.templateRows[0] : .zero)
         setFrame(navTargets[.shortcuts], m.templateRows.count > 1 ? m.templateRows[1] : .zero)
-        setFrame(searchTargets["back"], CGRect(x: m.footerRow.minX + m.footerRow.width - 108, y: m.footerRow.minY, width: 108, height: m.footerRow.height))
 
         // Toolbar.
         setFrame(searchTargets["toolbar.change"], CGRect(x: m.toolbarChange.minX - 8, y: m.toolbarPill.minY, width: m.toolbarChange.width + 16, height: m.toolbarPill.height))
@@ -846,19 +966,25 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
 
         // Project cards / rows.
         let visibleProjects = filteredProjects()
+        let isProjectTab = (activeTab == .recents || activeTab == .drafts || activeTab == .starred || activeTab == .trash)
         for (index, target) in projectTargets.enumerated() {
-            let visible = showRecentsChrome && usesGridView && visibleProjects.indices.contains(index)
-            target.frame = visibleProjects.indices.contains(index)
-                ? m.projectCards[index]
-                : .zero
+            let visible = isProjectTab && usesGridView && visibleProjects.indices.contains(index) && m.projectCards.indices.contains(index)
+            target.frame = visible ? m.projectCards[index] : .zero
             target.isHidden = !visible
         }
         for (index, target) in listTargets.enumerated() {
-            let visible = showRecentsChrome && !usesGridView && visibleProjects.indices.contains(index)
-            target.frame = visibleProjects.indices.contains(index)
-                ? m.projectListRows[index]
-                : .zero
+            let visible = isProjectTab && !usesGridView && visibleProjects.indices.contains(index) && m.projectListRows.indices.contains(index)
+            target.frame = visible ? m.projectListRows[index] : .zero
             target.isHidden = !visible
+        }
+
+        let emptyTrashTarget = searchTargets["toolbar.emptyTrash"]
+        if activeTab == .trash && visibleProjects.count > 0 {
+            emptyTrashTarget?.frame = CGRect(x: m.sortChip.minX - 110, y: m.sortChip.minY, width: 100, height: 28)
+            emptyTrashTarget?.isHidden = false
+        } else {
+            emptyTrashTarget?.frame = .zero
+            emptyTrashTarget?.isHidden = true
         }
 
         // Template cards.
@@ -884,8 +1010,29 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
     // MARK: - Filtering / Sorting
 
     private func filteredProjects() -> [ProjectItem] {
+        // Web parity: the dashboard only renders real workspace files. An empty
+        // workspace shows the "Recents 0" state with no cards (no demo fallback).
+        let sourceProjects: [ProjectItem]
+        switch activeTab {
+        case .recents:
+            sourceProjects = customProjects.filter { !($0.realFile?.trashed ?? false) }
+        case .drafts:
+            sourceProjects = customProjects.filter {
+                !($0.realFile?.trashed ?? false) &&
+                ($0.title.hasPrefix("Untitled") || $0.category.lowercased() == "drafts" || $0.title.lowercased().contains("draft"))
+            }
+        case .starred:
+            sourceProjects = customProjects.filter {
+                !($0.realFile?.trashed ?? false) && ($0.realFile?.starred ?? false)
+            }
+        case .trash:
+            sourceProjects = customProjects.filter { $0.realFile?.trashed ?? false }
+        case .designSystems, .shortcuts:
+            sourceProjects = []
+        }
+
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        var items = Self.projects.filter { project in
+        var items = sourceProjects.filter { project in
             let matchesFilter = activeFilter == "All" || project.category == activeFilter
             let matchesQuery = query.isEmpty
                 || project.title.lowercased().contains(query)
@@ -945,13 +1092,15 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         }
         strokeRounded(m.workspaceRow, radius: 12, color: Palette.border, lineWidth: 1)
         drawVooIcon(CGRect(x: m.workspaceRow.minX + 10, y: m.workspaceRow.minY + 10, width: 14, height: 14)) { iconRect in VooIconFactory.drawFolder(in: iconRect, color: Palette.mint.withAlphaComponent(0.8), strokeWidth: 1.6) }
+        let wsConfig = WorkspaceManager.shared.getWorkspaceConfig()
+        let wsName = (wsConfig.path as NSString).lastPathComponent
         drawText(
-            "Browser Workspace",
+            wsName,
             x: m.workspaceRow.minX + 30,
             top: m.workspaceRow.minY + 10,
             width: max(m.workspaceRow.width - 30 - 84, 10),
             height: 16,
-            font: ThemeFonts.mono(size: 11),
+            font: ThemeFonts.mono(size: 12),
             color: Palette.textSecondary
         )
         drawText(
@@ -1010,7 +1159,8 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             width: m.templatesHeader.width,
             height: 14,
             font: ThemeFonts.mono(size: 11, weight: .semibold),
-            color: Palette.textMuted
+            color: Palette.textMuted,
+            tracking: 0.55
         )
         let templateTabs: [Tab] = [.designSystems, .shortcuts]
         for (index, tab) in templateTabs.enumerated() {
@@ -1041,7 +1191,7 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             )
         }
 
-        // Footer: brand + subtle back-to-canvas action (native navigation affordance).
+        // Footer: web only shows the version label at the bottom-left.
         drawText(
             "VOO Design 1.0",
             x: m.footerText.minX,
@@ -1051,17 +1201,6 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             font: ThemeFonts.mono(size: 11),
             color: Palette.textMuted
         )
-        let backHovered = hoveredKey == "back"
-        drawText(
-            "返回当前画布 →",
-            x: m.backLink.minX,
-            top: m.backLink.minY,
-            width: m.backLink.width,
-            height: 14,
-            font: ThemeFonts.mono(size: 10),
-            color: backHovered ? Palette.mint : Palette.textMuted,
-            alignment: .right
-        )
     }
 
     // MARK: Toolbar
@@ -1070,8 +1209,12 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         fillRounded(m.toolbarPill, radius: 12, color: NSColor(hex: "#141414"))
         strokeRounded(m.toolbarPill, radius: 12, color: Palette.border, lineWidth: 1)
         drawVooIcon(CGRect(x: m.toolbarPill.minX + 14, y: m.toolbarPill.minY + 9, width: 16, height: 16)) { iconRect in VooIconFactory.drawFolder(in: iconRect, color: Palette.mint.withAlphaComponent(0.85), strokeWidth: 1.6) }
+        let wsConfig = WorkspaceManager.shared.getWorkspaceConfig()
+        let wsName = (wsConfig.path as NSString).lastPathComponent
+        // Web shows the storage-driver badge (welcome.workspace.badgeDesktop),
+        // e.g. "Browser Workspace [Browser Mount]"; native is a macOS workspace.
         drawText(
-            "Browser Workspace [Browser Mount]",
+            "\(wsName) [macOS Native]",
             x: m.toolbarLabel.minX,
             top: m.toolbarLabel.minY,
             width: m.toolbarLabel.width,
@@ -1141,13 +1284,18 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
 
         let items = filteredProjects()
         if items.isEmpty {
-            drawEmptyState(
-                ctx: ctx,
-                rect: m.recentsEmptyBox,
-                icon: .search,
-                title: "No matching files",
-                hint: "Try a different search or category filter."
-            )
+            // Web parity: an empty Recents tab renders no cards and no empty-state
+            // panel; the search empty state only appears while filtering by query.
+            let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !query.isEmpty {
+                drawEmptyState(
+                    ctx: ctx,
+                    rect: m.recentsEmptyBox,
+                    icon: .search,
+                    title: "No matching files found",
+                    hint: "\"\(query)\""
+                )
+            }
             return
         }
         if usesGridView {
@@ -1338,7 +1486,8 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             width: 120,
             height: 14,
             font: headerFont,
-            color: Palette.textPrimary
+            color: Palette.textPrimary,
+            tracking: 0.3
         )
         let badgeText = "\(count)"
         let badgeWidth = max(textWidth(badgeText, font: ThemeFonts.mono(size: 10)) + 16, 24)
@@ -1359,6 +1508,23 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         )
 
         // Sort chip (h28, 10pt horizontal padding, radius 12, 12/400, 13pt chevron).
+        if activeTab == .trash && count > 0 {
+            let emptyTrashRect = CGRect(x: m.sortChip.minX - 110, y: m.sortChip.minY, width: 100, height: 28)
+            let isHovered = hoveredKey == "toolbar.emptyTrash"
+            fillRounded(emptyTrashRect, radius: 12, color: isHovered ? NSColor(hex: "#3a1d1d") : NSColor(hex: "#261515"))
+            strokeRounded(emptyTrashRect, radius: 12, color: NSColor(hex: "#ff4444").withAlphaComponent(0.3), lineWidth: 1)
+            drawText(
+                "Empty Trash",
+                x: emptyTrashRect.minX,
+                top: emptyTrashRect.minY + 7,
+                width: emptyTrashRect.width,
+                height: 14,
+                font: ThemeFonts.mono(size: 11, weight: .medium),
+                color: NSColor(hex: "#ff6b6b"),
+                alignment: .center
+            )
+        }
+
         let sortHovered = hoveredKey == "sort"
         fillRounded(m.sortChip, radius: 12, color: sortHovered ? NSColor(hex: "#1a1a1a") : NSColor(hex: "#141414"))
         drawText(
@@ -1508,45 +1674,200 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
     // MARK: File tabs (drafts / starred / trash)
 
     private func drawFileTab(ctx: CGContext, metrics m: Metrics) {
-        drawContentHeader(count: 0, metrics: m)
-        switch activeTab {
-        case .drafts:
-            drawEmptyState(
-                ctx: ctx,
-                rect: m.emptyBox,
-                icon: .draft,
-                title: "No drafts yet",
-                hint: "Drafts you create will appear here."
-            )
-        case .starred:
-            drawEmptyState(
-                ctx: ctx,
-                rect: m.emptyBox,
-                icon: .star,
-                title: "No starred files yet",
-                hint: "Star files to keep them easily accessible here."
-            )
-        case .trash:
-            drawEmptyState(
-                ctx: ctx,
-                rect: m.emptyBox,
-                icon: .trash,
-                title: "Trash is empty",
-                hint: "Deleted files will appear here and can be restored."
-            )
-        default:
-            break
+        let items = filteredProjects()
+        drawContentHeader(count: items.count, metrics: m)
+
+        if items.isEmpty {
+            switch activeTab {
+            case .drafts:
+                drawEmptyState(
+                    ctx: ctx,
+                    rect: m.emptyBox,
+                    icon: .draft,
+                    title: "No drafts yet",
+                    hint: "Unsaved canvases will be organized as local drafts here."
+                )
+            case .starred:
+                drawEmptyState(
+                    ctx: ctx,
+                    rect: m.emptyBox,
+                    icon: .star,
+                    title: "No starred files yet",
+                    hint: "Star files to keep them easily accessible here."
+                )
+            case .trash:
+                drawEmptyState(
+                    ctx: ctx,
+                    rect: m.emptyBox,
+                    icon: .trash,
+                    title: "Trash is empty",
+                    hint: "Deleted files will appear here and can be restored."
+                )
+            default:
+                break
+            }
+            return
         }
+
+        if usesGridView {
+            for (index, item) in items.enumerated() where m.projectCards.indices.contains(index) {
+                drawProjectCard(item: item, rect: m.projectCards[index], index: index)
+            }
+        } else {
+            for (index, item) in items.enumerated() where m.projectListRows.indices.contains(index) {
+                drawProjectRow(item: item, rect: m.projectListRows[index], index: index)
+            }
+        }
+    }
+
+    // MARK: - Context Menu for Project Items
+
+    public func showContextMenu(for index: Int, event: NSEvent) {
+        let items = filteredProjects()
+        guard items.indices.contains(index) else { return }
+        let item = items[index]
+        let menu = NSMenu(title: "Project Actions")
+
+        if item.realFile?.trashed ?? false {
+            let restoreItem = NSMenuItem(title: "Restore to Original Location", action: #selector(contextMenuRestore(_:)), keyEquivalent: "")
+            restoreItem.target = self
+            restoreItem.representedObject = item
+            menu.addItem(restoreItem)
+
+            let deleteItem = NSMenuItem(title: "Delete Permanently", action: #selector(contextMenuDeletePermanently(_:)), keyEquivalent: "")
+            deleteItem.target = self
+            deleteItem.representedObject = item
+            menu.addItem(deleteItem)
+            NSMenu.popUpContextMenu(menu, with: event, for: self)
+            return
+        }
+
+        let openItem = NSMenuItem(title: "Open", action: #selector(contextMenuOpen(_:)), keyEquivalent: "")
+        openItem.target = self
+        openItem.representedObject = item
+        menu.addItem(openItem)
+
+        let revealItem = NSMenuItem(title: "Reveal in Finder", action: #selector(contextMenuReveal(_:)), keyEquivalent: "")
+        revealItem.target = self
+        revealItem.representedObject = item
+        menu.addItem(revealItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        let dupItem = NSMenuItem(title: "Duplicate", action: #selector(contextMenuDuplicate(_:)), keyEquivalent: "")
+        dupItem.target = self
+        dupItem.representedObject = item
+        menu.addItem(dupItem)
+
+        let renameItem = NSMenuItem(title: "Rename...", action: #selector(contextMenuRename(_:)), keyEquivalent: "")
+        renameItem.target = self
+        renameItem.representedObject = item
+        menu.addItem(renameItem)
+
+        let folders = WorkspaceManager.shared.listFolders()
+        let moveMenu = NSMenu(title: "Move to Folder")
+        let rootItem = NSMenuItem(title: "Workspace Root", action: #selector(contextMenuMoveToFolder(_:)), keyEquivalent: "")
+        rootItem.target = self
+        rootItem.representedObject = (item, "")
+        moveMenu.addItem(rootItem)
+
+        for folder in folders {
+            let folderItem = NSMenuItem(title: folder, action: #selector(contextMenuMoveToFolder(_:)), keyEquivalent: "")
+            folderItem.target = self
+            folderItem.representedObject = (item, folder)
+            moveMenu.addItem(folderItem)
+        }
+        let moveMenuItem = NSMenuItem(title: "Move to Folder", action: nil, keyEquivalent: "")
+        moveMenuItem.submenu = moveMenu
+        menu.addItem(moveMenuItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        let isStarred = item.realFile?.starred ?? false
+        let starItem = NSMenuItem(title: isStarred ? "Unstar" : "Star", action: #selector(contextMenuToggleStar(_:)), keyEquivalent: "")
+        starItem.target = self
+        starItem.representedObject = item
+        menu.addItem(starItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        let trashItem = NSMenuItem(title: "Move to Trash", action: #selector(contextMenuTrash(_:)), keyEquivalent: "")
+        trashItem.target = self
+        trashItem.representedObject = item
+        menu.addItem(trashItem)
+
+        NSMenu.popUpContextMenu(menu, with: event, for: self)
+    }
+
+    @objc private func contextMenuOpen(_ sender: NSMenuItem) {
+        guard let item = sender.representedObject as? ProjectItem else { return }
+        onOpenEditor?(item.openName)
+    }
+
+    @objc private func contextMenuReveal(_ sender: NSMenuItem) {
+        guard let item = sender.representedObject as? ProjectItem, let path = item.realFile?.path else { return }
+        onFileAction?(.revealInFinder, path)
+    }
+
+    @objc private func contextMenuDuplicate(_ sender: NSMenuItem) {
+        guard let item = sender.representedObject as? ProjectItem, let path = item.realFile?.path else { return }
+        onFileAction?(.duplicate, path)
+    }
+
+    @objc private func contextMenuRename(_ sender: NSMenuItem) {
+        guard let item = sender.representedObject as? ProjectItem, let path = item.realFile?.path else { return }
+        let alert = NSAlert()
+        alert.messageText = "Rename File"
+        alert.informativeText = "Enter a new name for \(item.title):"
+        alert.addButton(withTitle: "Rename")
+        alert.addButton(withTitle: "Cancel")
+        let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 220, height: 24))
+        input.stringValue = item.title
+        alert.accessoryView = input
+        if alert.runModal() == .alertFirstButtonReturn {
+            let newName = input.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !newName.isEmpty && newName != item.title {
+                onFileAction?(.rename(newName), path)
+            }
+        }
+    }
+
+    @objc private func contextMenuMoveToFolder(_ sender: NSMenuItem) {
+        guard let pair = sender.representedObject as? (ProjectItem, String),
+              let path = pair.0.realFile?.path else { return }
+        let folderName = pair.1.isEmpty ? nil : pair.1
+        onFileAction?(.moveToFolder(folderName), path)
+    }
+
+    @objc private func contextMenuToggleStar(_ sender: NSMenuItem) {
+        guard let item = sender.representedObject as? ProjectItem, let path = item.realFile?.path else { return }
+        onFileAction?(.toggleStar, path)
+    }
+
+    @objc private func contextMenuTrash(_ sender: NSMenuItem) {
+        guard let item = sender.representedObject as? ProjectItem, let path = item.realFile?.path else { return }
+        onFileAction?(.moveToTrash, path)
+    }
+
+    @objc private func contextMenuRestore(_ sender: NSMenuItem) {
+        guard let item = sender.representedObject as? ProjectItem, let path = item.realFile?.path else { return }
+        onFileAction?(.restoreFromTrash, path)
+    }
+
+    @objc private func contextMenuDeletePermanently(_ sender: NSMenuItem) {
+        guard let item = sender.representedObject as? ProjectItem, let path = item.realFile?.path else { return }
+        onFileAction?(.deletePermanently, path)
     }
 
     private enum EmptyIcon { case search, star, trash, draft }
 
     private func drawEmptyState(ctx: CGContext, rect: CGRect, icon: EmptyIcon, title: String, hint: String) {
         guard rect.width > 10 && rect.height > 10 else { return }
-        fillRounded(rect, radius: 16, color: Palette.emptyBox)
-        strokeRounded(rect, radius: 16, color: NSColor(white: 1.0, alpha: 0.035), lineWidth: 1)
+        // Web empty state: rounded-3xl (24) bg-neutral-900/20, 28px muted icon.
+        fillRounded(rect, radius: 24, color: Palette.emptyBox)
+        strokeRounded(rect, radius: 24, color: NSColor(white: 1.0, alpha: 0.035), lineWidth: 1)
 
-        let iconRect = CGRect(x: rect.midX - 13, y: rect.midY - 39, width: 26, height: 26)
+        let iconRect = CGRect(x: rect.midX - 14, y: rect.midY - 41, width: 28, height: 28)
         switch icon {
         case .search:
             drawVooIcon(iconRect) { iconRect in VooIconFactory.drawSearch(in: iconRect, color: Palette.textTertiary, strokeWidth: 1.5) }

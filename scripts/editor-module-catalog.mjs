@@ -133,7 +133,7 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/editor_annotations.js", "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js", "src/canvas/components/editor_text*",
       "src/canvas/components/editor_properties/text*",
     ],
-    related: ["selection","layout","compositing","documents"],
+    related: ["selection","layout","compositing","documents","platform"],
     features: ["text.edit","text.box-sizing","text.typography","text.font-loading","text.placement-transactions"],
     suites: ["agent-paint-text", "text-creation-boundaries"],
     remaining: [
@@ -169,7 +169,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/editor_properties/*constraint*",
       "src/canvas/components/editor_properties/*variant*", "src/canvas/design_systems/*",
     ],
-    related: ["layers","text","inspector","documents"],
+    related: ["layers","text","inspector","documents","platform"],
     features: ["layout.auto-layout","layout.constraints","layout.variables","layout.components"],
     suites: [
       "editor-effects", "stretch-layout", "build-layout-history", "mesh-gradient", "stroke-controls",
@@ -207,11 +207,13 @@ export const EDITOR_MODULES = [
       "src/canvas/agent/*", "src/canvas/mcp/*", "src/canvas/collab/*", "src/canvas/comments/*",
       "src/canvas/components/agent-panel/*", "src/canvas/components/onboarding/*", "electron/*", "plugins/*",
       "src/shared/providers/*", "src/canvas/components/browser_drawer/*", "tests/unit/browser_drawer_import.test.js",
+      "tests/unit/canvas_agent_build_layout.test.js", "tests/unit/canvas_tools_build_layout.test.js",
     ],
-    related: ["workspace","documents","inspector","images"],
+    related: ["workspace","documents","inspector","images","text"],
     features: [
       "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
-      "platform.native-collaboration", "platform.browser-drawer", "platform.local-service-discovery", "platform.live-preview", "platform.streaming-authoring",
+      "platform.native-collaboration", "platform.browser-drawer", "platform.local-service-discovery", "platform.live-preview",
+      "platform.streaming-authoring", "platform.agent-generated-text-sizing",
     ],
     suites: [
       "editor-fixture-startup", "browser-drawer", "pending-integration", "agent-model-catalog", "editor-loading",

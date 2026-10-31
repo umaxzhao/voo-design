@@ -129,6 +129,22 @@ describe("DesignSystemCards", () => {
     expect(coverColors(systems[1])).not.toEqual(colors);
   });
 
+  it("uses DesignMD page covers for the curated presets", () => {
+    const presets = listDesignSystems().slice(0, COLLAPSED_COUNT);
+    const html = render(props(presets));
+
+    expect(presets.map((system) => system.id)).toEqual([
+      "stripe",
+      "linear",
+      "vercel",
+      "anthropic",
+      "notion",
+      "figma",
+    ]);
+    expect(html.match(/loading="lazy"/g)).toHaveLength(COLLAPSED_COUNT);
+    expect(presets.every((system) => system.sourceUrl && system.sourceName && system.coverImage)).toBe(true);
+  });
+
   it("falls back to the neutral swatch when a system has no colours", () => {
     const bare = { ...customSystem(9), designTokens: { colors: {} } };
     expect(coverColors(bare)).toEqual([]);

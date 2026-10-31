@@ -282,6 +282,7 @@ public final class TextEditingOverlay: NSView {
         autoresizingMask = [.width, .height]
         isHidden = !isEditing
         if isEditing {
+            if let node = editingNode { stage.editingTextNodeId = node.id }
             refreshGeometry()
         }
     }
@@ -313,6 +314,10 @@ public final class TextEditingOverlay: NSView {
         editorTextView.string = node.text ?? ""
         applyEditorStyle(for: node, zoom: stage.zoom, force: true)
 
+        // The canvas hides the edited layer while the editor is up (web
+        // `hiddenNodeId = editingTextId`); otherwise the rendered glyphs and the
+        // text view glyphs double-paint and the text reads 1-2px bolder/offset.
+        stage.editingTextNodeId = node.id
         updateEditorFrame()
 
         // Focus: the stage lives in the window in the real app; in offscreen tests
@@ -343,6 +348,10 @@ public final class TextEditingOverlay: NSView {
         // Clear the session flag first so callbacks can safely start a new session;
         // keep `editingNode` alive through the callbacks (see its documentation).
         isEditing = false
+        // Unhide the canvas layer again so the committed glyphs repaint.
+        if let stage = attachedStage, stage.editingTextNodeId == editingNode?.id {
+            stage.editingTextNodeId = nil
+        }
         let finalText = editorTextView.string
 
         // Restore focus BEFORE hiding: a hidden view must not remain the first
@@ -442,44 +451,59 @@ public final class TextEditingOverlay: NSView {
         // alignment, line height, letter spacing) so inline editing matches the
         // rendered canvas exactly.
         TextStyleResolver.apply(to: editorTextView, node: node, color: NSColor.white, size: fontSize)
+
+        // Web textarea mirrors CSS `line-height: fontSize * multiplier`; AppKit's
+        // `lineHeightMultiple` multiplies the FONT's natural line height instead.
+        // Pin the exact line box (CSS half-leading) so the caret and glyphs sit on
+        // the same baselines as the canvas renderer.
+        let ratio = max(CGFloat(node.lineHeight ?? 1.2), 0.8)
+        let lineBox = max(fontSize * ratio, 1.0)
+        let paragraph = (editorTextView.defaultParagraphStyle?.mutableCopy() as? NSMutableParagraphStyle)
+            ?? NSMutableParagraphStyle()
+        paragraph.lineHeightMultiple = 1.0
+        paragraph.minimumLineHeight = lineBox
+        paragraph.maximumLineHeight = lineBox
+        editorTextView.defaultParagraphStyle = paragraph
+
+        var typing = editorTextView.typingAttributes
+        typing[.paragraphStyle] = paragraph
+        typing[.font] = TextStyleResolver.font(for: node, size: fontSize)
+        editorTextView.typingAttributes = typing
+
+        // Seeded text (assigned through `string`) keeps its old paragraph style,
+        // so re-apply the pinned line box to the whole content.
+        if let storage = editorTextView.textStorage, storage.length > 0 {
+            storage.addAttribute(.paragraphStyle, value: paragraph, range: NSRange(location: 0, length: storage.length))
+        }
+
         lastAppliedFontSize = fontSize
         lastAppliedFontFamily = node.fontFamily
         editorTextView.insertionPointColor = Self.borderColor
     }
 
-    /// Resolves the editor font: node family when installed, "Helvetica Neue" as
-    /// the family fallback, and the themed system font as the last resort.
+    /// Resolves the editor font with the same stack as the canvas renderer, so the
+    /// caret and glyph baselines agree (bundled Inter / Intel One Mono first).
     public static func resolveFont(family: String?, size: CGFloat) -> NSFont {
-        if let family = family, !family.isEmpty {
-            if let font = NSFont(name: family, size: size) {
-                return font
-            }
-            if let fallback = NSFont(name: "Helvetica Neue", size: size) {
-                return fallback
-            }
+        if let family = family, !family.isEmpty,
+           let font = TextStyleResolver.resolveFamily(family, size: size) {
+            return font
         }
         return ThemeFonts.system(size: size, weight: .regular)
     }
 
-    // MARK: - Drawing (mint border + translucent scrim)
+    // MARK: - Drawing (mint border)
 
     public override func draw(_ dirtyRect: NSRect) {
         guard isEditing, editorFrame.width > 1, editorFrame.height > 1 else { return }
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
         // 1px mint border drawn just outside the text view so glyphs stay aligned
-        // with the canvas renderer.
+        // with the canvas renderer. The editor surface itself stays transparent
+        // like the web textarea: the canvas hides the edited layer while editing,
+        // so there is no glyph double-paint and no scrim to tint the artwork.
         let borderRect = editorFrame.insetBy(dx: -1.0, dy: -1.0)
         let radius = Self.borderCornerRadius
         let path = CGPath(roundedRect: borderRect, cornerWidth: radius, cornerHeight: radius, transform: nil)
-
-        // Dark scrim ("dark transparent" editor) so white text stays legible over
-        // any artboard colour; the NSTextView itself stays transparent. The canvas
-        // renderer may paint a bright fill behind a text node (it currently fills
-        // .text rects with style.fill), so this needs to be stronger than a hint.
-        ctx.setFillColor(NSColor(white: 0.02, alpha: 0.45).cgColor)
-        ctx.addPath(path)
-        ctx.fillPath()
 
         ctx.setStrokeColor(Self.borderColor.cgColor)
         ctx.setLineWidth(1.0)
@@ -582,9 +606,9 @@ public final class TextEditingOverlay: NSView {
     /// Creates the standard text node the host inserts when the text tool is used.
     ///
     /// - kind: `.text`, name `"Text N"`, 160x28, text `"Text"`, font size 24,
-    ///   family `"Inter"` (falls back to Helvetica Neue / system), fill `#ffffff`,
+    ///   family `"Inter"` (falls back to Helvetica Neue / system), fill `#ffffff` (or `#171717` on light backgrounds),
     ///   stroke `"none"`, stroke width 0.
-    public static func defaultTextNode(at point: CGPoint, index: Int) -> VOONode {
+    public static func defaultTextNode(at point: CGPoint, index: Int, onLightBackground: Bool = false) -> VOONode {
         VOONode(
             kind: .text,
             name: "Text \(index)",
@@ -592,7 +616,7 @@ public final class TextEditingOverlay: NSView {
             y: point.y,
             width: 160.0,
             height: 28.0,
-            style: LayerStyle(fill: "#ffffff", stroke: "none", strokeWidth: 0),
+            style: LayerStyle(fill: onLightBackground ? "#171717" : "#ffffff", stroke: "none", strokeWidth: 0),
             text: "Text",
             fontSize: 24.0,
             fontFamily: "Inter"

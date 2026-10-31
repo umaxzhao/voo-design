@@ -32,6 +32,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
+        // Bundled UI typeface first: every chrome font is measured against it.
+        VooMonoTypeface.registerBundledFonts()
+
         setupMainMenu()
 
         let controller = WindowController()

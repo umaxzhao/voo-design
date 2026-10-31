@@ -143,6 +143,18 @@ export default function SettingsDesignSystems() {
           onDeleteToggle={(value) => dispatch({ type: "confirmDelete", value })}
           onDelete={remove}
         />
+        {selected.sourceUrl && (
+          <p className="text-xs text-neutral-500">
+            <a
+              href={selected.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="underline decoration-white/20 underline-offset-2 hover:text-neutral-300"
+            >
+              {t("designSystems.reference", { source: selected.sourceName })}
+            </a>
+          </p>
+        )}
         {state.dirty && <p className="text-xs text-neutral-500">{t("designSystems.saveFirst")}</p>}
         <SettingsSection title={`${t("designSystems.editorTitle")} · ${selectedName}`} hint={t("designSystems.editorHint")}>
           {selected.builtIn && <p className="text-xs text-neutral-400">{t("designSystems.builtInNotice")}</p>}

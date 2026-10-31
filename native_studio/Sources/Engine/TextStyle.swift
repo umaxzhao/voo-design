@@ -29,14 +29,47 @@ public enum TextStyleResolver {
 
     public static func font(for node: VOONode, size: CGFloat) -> NSFont {
         let resolvedSize = max(size, 1.0)
-        let family = node.fontFamily ?? "Helvetica Neue"
-        let base = NSFont(name: family, size: resolvedSize)
+        let familyToken = node.fontFamily ?? "Inter"
+        let base = resolveFamily(familyToken, size: resolvedSize)
             ?? NSFont.systemFont(ofSize: resolvedSize, weight: .regular)
         let weight = nsWeight(for: node.fontWeight)
         guard weight != .regular else { return base }
         let traits: [NSFontDescriptor.TraitKey: Any] = [.weight: weight.rawValue]
         let weighted = base.fontDescriptor.addingAttributes([.traits: traits])
         return NSFont(descriptor: weighted, size: resolvedSize) ?? base
+    }
+
+    /// Resolves a document `fontFamily` value. Web nodes store a CSS stack such as
+    /// `"'Inter', system-ui, sans-serif"`, so the first concrete family that the
+    /// system (or the bundled OFL faces in `Resources/Fonts`) can provide wins.
+    public static func resolveFamily(_ token: String, size: CGFloat) -> NSFont? {
+        // Ensure the bundled faces (Intel One Mono + Inter) are registered.
+        VooMonoTypeface.registerBundledFonts()
+
+        let candidates = token
+            .split(separator: ",")
+            .map { raw -> String in
+                raw.trimmingCharacters(in: CharacterSet(charactersIn: " '\"\t\n"))
+            }
+            .filter { candidate in
+                !candidate.isEmpty && ![
+                    "system-ui", "ui-sans-serif", "ui-monospace", "ui-serif",
+                    "sans-serif", "serif", "monospace", "cursive", "fantasy",
+                    "-apple-system", "inherit", "initial"
+                ].contains(candidate.lowercased())
+            }
+
+        for family in candidates {
+            if let direct = NSFont(name: family, size: size) {
+                return direct
+            }
+            if let member = NSFontManager.shared.availableMembers(ofFontFamily: family)?.first,
+               let name = member.first as? String,
+               let font = NSFont(name: name, size: size) {
+                return font
+            }
+        }
+        return nil
     }
 
     public static func alignment(for token: String?) -> NSTextAlignment {

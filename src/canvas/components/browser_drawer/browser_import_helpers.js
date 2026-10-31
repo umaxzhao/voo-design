@@ -115,6 +115,21 @@ export async function importHtmlSnippetToCanvas({
       rootNodes[0].name = `Web: ${title}`;
     }
 
+    // Automatically trigger font loading for any custom WebFonts referenced in the imported text nodes
+    try {
+      const { ensureFontLoaded } = await import("../../editor/font_loader.js");
+      const fontFamilies = new Set();
+      for (const node of newNodes) {
+        if (node.kind === "text" && node.fontFamily) {
+          fontFamilies.add(node.fontFamily);
+        }
+      }
+      for (const family of fontFamilies) {
+        void ensureFontLoaded(family);
+      }
+    } catch {
+      // Font loader may be absent in pure headless/unit environments
+    }
     const combinedNodes = [...existingNodes, ...newNodes];
     const nextDoc = {
       ...currentDoc,

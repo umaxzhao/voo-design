@@ -16,40 +16,50 @@ public enum LocalCLIAgent: String, CaseIterable, Sendable, Codable {
     case claude
     case codex
     case antigravity
+    case opencode
+    case deepseekHarness
 
     /// Human readable provider name shown in the agent panel / onboarding.
     public var displayName: String {
         switch self {
-        case .claude:      return "Claude Code"
-        case .codex:       return "OpenAI Codex"
-        case .antigravity: return "Google Antigravity CLI"
+        case .claude:          return "Claude Code"
+        case .codex:           return "OpenAI Codex"
+        case .antigravity:     return "Google Antigravity CLI"
+        case .opencode:        return "OpenCode CLI"
+        case .deepseekHarness: return "DeepSeek Harness"
         }
     }
 
     /// Executable name looked up on PATH.
     public var binaryName: String {
         switch self {
-        case .claude:      return "claude"
-        case .codex:       return "codex"
-        case .antigravity: return "agy"
+        case .claude:          return "claude"
+        case .codex:           return "codex"
+        case .antigravity:     return "agy"
+        case .opencode:        return "opencode"
+        case .deepseekHarness: return "dsh"
         }
     }
 
     /// Global npm install command surfaced in onboarding / troubleshooting UI.
     public var installCommand: String {
         switch self {
-        case .claude:      return "npm install -g @anthropic-ai/claude-code"
-        case .codex:       return "npm install -g @openai/codex"
-        case .antigravity: return "npm install -g @google/antigravity-cli"
+        case .claude:          return "npm install -g @anthropic-ai/claude-code"
+        case .codex:           return "npm install -g @openai/codex"
+        case .antigravity:     return "npm install -g @google/antigravity-cli"
+        case .opencode:        return "npm install -g @opencode/cli"
+        case .deepseekHarness: return "npm install -g @deepseek/harness"
         }
     }
 
     /// npm package identifier (used by the onboarding walkthrough).
     public var packageName: String {
         switch self {
-        case .claude:      return "@anthropic-ai/claude-code"
-        case .codex:       return "@openai/codex"
-        case .antigravity: return "@google/antigravity-cli"
+        case .claude:          return "@anthropic-ai/claude-code"
+        case .codex:           return "@openai/codex"
+        case .antigravity:     return "@google/antigravity-cli"
+        case .opencode:        return "@opencode/cli"
+        case .deepseekHarness: return "deepseek-harness"
         }
     }
 
@@ -62,6 +72,10 @@ public enum LocalCLIAgent: String, CaseIterable, Sendable, Codable {
             return ["gpt-5-codex", "gpt-5", "gpt-5-mini"]
         case .antigravity:
             return ["gemini-2.5-pro", "gemini-2.5-flash", "claude-sonnet-4-5"]
+        case .opencode:
+            return ["default"]
+        case .deepseekHarness:
+            return ["deepseek-chat", "deepseek-reasoner"]
         }
     }
 
@@ -76,6 +90,8 @@ public enum LocalCLIAgent: String, CaseIterable, Sendable, Codable {
     /// - Claude Code: `claude -p "<prompt>"` (print mode, exits when finished)
     /// - OpenAI Codex: `codex exec "<prompt>"`
     /// - Antigravity CLI (`agy`): `agy -p "<prompt>"` (same convention as Claude Code)
+    /// - OpenCode: `opencode run "<prompt>"`
+    /// - DeepSeek Harness: `dsh agent "<prompt>"`
     ///
     /// Context, when supplied, is appended to the prompt as plain text so it stays a
     /// single argv element (no shell quoting hazards, no temp files).
@@ -88,6 +104,10 @@ public enum LocalCLIAgent: String, CaseIterable, Sendable, Codable {
             return ["exec", fullPrompt]
         case .antigravity:
             return ["-p", fullPrompt]
+        case .opencode:
+            return ["run", fullPrompt]
+        case .deepseekHarness:
+            return ["agent", fullPrompt]
         }
     }
 }
@@ -193,10 +213,17 @@ public final class LocalCLIBridge: @unchecked Sendable {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "/opt/homebrew/bin",
+            "/opt/homebrew/sbin",
             "/usr/local/bin",
+            "/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin",
+            home + "/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin",
             home + "/.local/bin",
+            home + "/.local/share/pnpm",
             home + "/.npm-global/bin",
+            home + "/.cargo/bin",
+            home + "/.bun/bin",
             "/usr/bin",
+            "/bin",
             home + "/.antigravity/antigravity/bin"
         ]
     }
@@ -286,15 +313,89 @@ public final class LocalCLIBridge: @unchecked Sendable {
 
     // MARK: Detection
 
+    public struct DSHStatus: Sendable, Equatable {
+        public var appInstalled: Bool
+        public var appPath: String?
+        public var connectorInstalled: Bool
+        public var dshCliFound: Bool
+        public var profilePath: String?
+
+        public init(appInstalled: Bool, appPath: String?, connectorInstalled: Bool, dshCliFound: Bool, profilePath: String?) {
+            self.appInstalled = appInstalled
+            self.appPath = appPath
+            self.connectorInstalled = connectorInstalled
+            self.dshCliFound = dshCliFound
+            self.profilePath = profilePath
+        }
+    }
+
+    public func checkDshStatus() -> DSHStatus {
+        let fileManager = FileManager.default
+        let home = fileManager.homeDirectoryForCurrentUser.path
+        let appCandidates = [
+            "/Applications/DeepSeek Harness.app",
+            home + "/Applications/DeepSeek Harness.app"
+        ]
+        var foundAppPath: String?
+        for path in appCandidates {
+            if fileManager.fileExists(atPath: path) {
+                foundAppPath = path
+                break
+            }
+        }
+        let dshCli = findBinary("dsh")
+        let dshHome = ProcessInfo.processInfo.environment["DSH_HOME"] ?? (home + "/.dsh")
+        let profilePatch = dshHome + "/profiles/desktop/cordis.patch.yml"
+        let rootPatch = dshHome + "/cordis.patch.yml"
+        var connectorInstalled = false
+        var profilePath: String?
+
+        if fileManager.fileExists(atPath: profilePatch) {
+            profilePath = dshHome + "/profiles/desktop"
+            if let content = try? String(contentsOfFile: profilePatch, encoding: .utf8) {
+                if content.contains("mcp-voo") || content.contains("serverName: voo") || content.contains("serverName: \"voo\"") {
+                    connectorInstalled = true
+                }
+            }
+        } else if fileManager.fileExists(atPath: rootPatch) {
+            profilePath = dshHome
+            if let content = try? String(contentsOfFile: rootPatch, encoding: .utf8) {
+                if content.contains("mcp-voo") || content.contains("serverName: voo") || content.contains("serverName: \"voo\"") {
+                    connectorInstalled = true
+                }
+            }
+        }
+
+        return DSHStatus(
+            appInstalled: foundAppPath != nil,
+            appPath: foundAppPath,
+            connectorInstalled: connectorInstalled,
+            dshCliFound: dshCli != nil,
+            profilePath: profilePath
+        )
+    }
+
     /// Detects a single CLI: resolves the binary, then runs `<bin> --version`.
     public func detect(_ agent: LocalCLIAgent) async -> LocalCLIStatus {
         guard let binPath = findBinary(agent.binaryName) else {
+            if agent == .deepseekHarness {
+                let dsh = checkDshStatus()
+                if dsh.appInstalled {
+                    return LocalCLIStatus(
+                        installed: true,
+                        ready: true,
+                        binPath: dsh.appPath,
+                        version: "Desktop App",
+                        error: nil
+                    )
+                }
+            }
             return LocalCLIStatus(
                 installed: false,
                 ready: false,
                 binPath: nil,
                 version: nil,
-                error: "\(agent.displayName) CLI not found (`\(agent.binaryName)`). Install with: \(agent.installCommand)"
+                error: "\(agent.displayName) not found (`\(agent.binaryName)`). Install with: \(agent.installCommand)"
             )
         }
 

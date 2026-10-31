@@ -19,6 +19,7 @@ public enum ExportFormat: String, CaseIterable, Sendable {
     case jpg = "JPG"
     case pdf = "PDF"
     case svg = "SVG"
+    case html = "HTML"
 
     public var fileExtension: String {
         switch self {
@@ -26,13 +27,14 @@ public enum ExportFormat: String, CaseIterable, Sendable {
         case .jpg: return "jpg"
         case .pdf: return "pdf"
         case .svg: return "svg"
+        case .html: return "html"
         }
     }
 
     public var allowsScale: Bool {
         switch self {
         case .png, .jpg: return true
-        case .pdf, .svg: return false
+        case .pdf, .svg, .html: return false
         }
     }
 
@@ -42,6 +44,7 @@ public enum ExportFormat: String, CaseIterable, Sendable {
         case .jpg: return .jpeg
         case .pdf: return .pdf
         case .svg: return UTType(filenameExtension: "svg") ?? .data
+        case .html: return .html
         }
     }
 }
@@ -139,6 +142,9 @@ public final class ExportEngine {
         case .svg:
             let svg = DocumentIO.shared.exportToSVG(document: document)
             try svg.write(to: url, atomically: true, encoding: .utf8)
+        case .html:
+            let html = exportHTML(document: document)
+            try html.write(to: url, atomically: true, encoding: .utf8)
         case .pdf:
             let data = try renderPDF(document: document)
             try data.write(to: url, options: .atomic)
@@ -157,6 +163,89 @@ public final class ExportEngine {
             }
             try data.write(to: url, options: .atomic)
         }
+    }
+
+    /// Exports the document to a standalone, responsive HTML file matching VOO canvas layout.
+    public func exportHTML(document: VOODocument) -> String {
+        let canvas = normalizedCanvas(document)
+        var html = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>\(document.title)</title>
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              background-color: #0d0d0d;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            }
+            .canvas-container {
+              position: relative;
+              width: \(Int(canvas.width))px;
+              height: \(Int(canvas.height))px;
+              background-color: \(document.canvas.backgroundColor);
+              overflow: hidden;
+              box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            }
+            .layer {
+              position: absolute;
+              transform-origin: center center;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="canvas-container">
+        """
+
+        for node in document.nodes where node.style.visible {
+            let left = Int(node.x - canvas.minX)
+            let top = Int(node.y - canvas.minY)
+            let width = Int(node.width)
+            let height = Int(node.height)
+            let opacity = node.style.opacity
+            let radius = node.cornerRadii?.tl ?? 0
+            let bg = node.style.fill.isEmpty || node.style.fill == "none" ? "transparent" : node.style.fill
+            let border = node.style.strokeWidth > 0 && node.style.stroke != "none" ? "\(node.style.strokeWidth)px solid \(node.style.stroke)" : "none"
+            let rot = node.rotation != 0 ? "transform: rotate(\(node.rotation)deg);" : ""
+
+            switch node.kind {
+            case .text:
+                let font = node.fontFamily ?? "sans-serif"
+                let size = node.fontSize ?? 16
+                let weight = node.fontWeight ?? "400"
+                let align = node.textAlign ?? "left"
+                let text = node.text ?? node.name
+                html += """
+                    <div class="layer" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); color: \(node.style.fill); font-family: \(font); font-size: \(size)px; font-weight: \(weight); text-align: \(align); \(rot)">\(text)</div>
+                """
+            case .ellipse:
+                html += """
+                    <div class="layer" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); background-color: \(bg); border: \(border); border-radius: 50%; \(rot)"></div>
+                """
+            case .image:
+                let src = node.text?.hasPrefix("data:") == true ? (node.text ?? "") : ""
+                html += """
+                    <img class="layer" src="\(src)" alt="\(node.name)" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); border-radius: \(radius)px; object-fit: cover; \(rot)">
+                """
+            default:
+                html += """
+                    <div class="layer" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); background-color: \(bg); border: \(border); border-radius: \(radius)px; \(rot)"></div>
+                """
+            }
+        }
+
+        html += """
+          </div>
+        </body>
+        </html>
+        """
+        return html
     }
 
     // MARK: Canvas
@@ -186,13 +275,13 @@ public final class ExportEngine {
         }
 
         for node in document.nodes where node.style.visible {
-            drawNode(node, in: ctx)
+            drawNode(node, in: ctx, document: document)
         }
 
         ctx.restoreGState()
     }
 
-    private func drawNode(_ node: VOONode, in ctx: CGContext) {
+    private func drawNode(_ node: VOONode, in ctx: CGContext, document: VOODocument) {
         ctx.saveGState()
 
         // Rotation around the node centre.
@@ -205,6 +294,26 @@ public final class ExportEngine {
 
         ctx.setAlpha(node.style.opacity)
         ctx.setBlendMode(cgBlendMode(for: node.style.blendMode))
+
+        // Layer mask clipping
+        if let maskId = node.maskId,
+           let maskNode = document.nodes.first(where: { $0.id == maskId }) {
+            let maskRect = CGRect(x: maskNode.x, y: maskNode.y, width: maskNode.width, height: maskNode.height)
+            if maskNode.kind == .ellipse {
+                ctx.addEllipse(in: maskRect)
+                ctx.clip()
+            } else {
+                let radius = maskNode.cornerRadii?.tl ?? 0
+                if radius > 0 {
+                    let path = CGPath(roundedRect: maskRect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+                    ctx.addPath(path)
+                    ctx.clip()
+                } else {
+                    ctx.clip(to: maskRect)
+                }
+            }
+        }
+
         let fillColor = NSColor(hex: node.style.fill)
         let strokeColor = NSColor(hex: node.style.stroke)
 

@@ -46,6 +46,23 @@ await withEditorBrowser(async ({ page, tool }) => {
   checks.push("real MCP builds a visible stretch tree with one history entry and exact full-document undo/redo");
 
   await seed();
+  await tool("build_layout", { nodes: [
+    { type: "text", name: "Natural text", text: "Hairline 01", x: 80, y: 260, width: 240, height: 80, fontSize: 24 },
+    { type: "text", name: "Wrapped text", text: "A long line that must wrap", x: 80, y: 320, width: 120, height: 80, fontSize: 24, textSizing: "fixed" },
+  ] }); await settled();
+  const textSizing = await page.evaluate(() => {
+    const nodes = window.__vooEditor.getDocument().nodes;
+    return ["Natural text", "Wrapped text"].map(name => {
+      const node = nodes.find(item => item.name === name);
+      return { name, width: node.width, boxWidth: node.boxWidth };
+    });
+  });
+  assert.equal(textSizing[0].boxWidth, 0, "generated text defaults to natural content width");
+  assert.ok(textSizing[0].width > 0 && textSizing[0].width < 240, "short text should not retain the layout's placeholder width");
+  assert.equal(textSizing[1].boxWidth, 120, "explicit fixed text keeps its requested wrapping width");
+  checks.push("generated text sizes to content by default and wraps only when fixed sizing is explicit");
+
+  await seed();
   const nestedBefore = await snapshot(), nestedIndex = await historyIndex();
   await page.evaluate(() => window.__vooEditor.beginBatch());
   try {
