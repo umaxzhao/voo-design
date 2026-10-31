@@ -231,3 +231,10 @@ checks are retained. Raw before/after and baseline logs are under
 `/private/tmp/voo-license-regression/global-overlay-*`. Earlier 15-second import
 readiness and cold filechooser failures remain separate evidence, not passed
 results. This repair does not certify every slow-device/native startup path.
+
+The incoming Figma fidelity fixture initially sampled a zero-node placeholder
+engine after a cold reopen. The diagnostic preserves that failure and shows
+the exact expected pixels once the imported document binds. Its picker helper
+now waits for the imported document marker and the normal open guard to turn
+off before exporting pixels; it does not wait for pixel values to match or
+change any pixel assertions. Evidence: `global-overlay-figma-engine-probe.log`.
