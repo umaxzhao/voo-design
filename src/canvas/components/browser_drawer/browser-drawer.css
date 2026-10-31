@@ -1,5 +1,6 @@
 [data-testid="editor-workspace-layout"][data-browser-open="true"] {
   overflow: hidden;
+  flex-direction: row;
 }
 
 [data-testid="editor-workspace-layout"][data-browser-open="true"] > [data-testid="editor-shell"] {
@@ -34,21 +35,20 @@
 }
 
 @media (max-width: 768px) {
-  [data-testid="editor-workspace-layout"][data-browser-open="true"] {
-    flex-direction: column;
-  }
-
   [data-testid="editor-workspace-layout"][data-browser-open="true"] > [data-testid="editor-shell"] {
-    flex: 1 1 50%;
+    flex: 1 1 0%;
     min-height: 0;
   }
 
   .voo-browser-drawer {
-    width: 100%;
+    position: absolute;
+    inset: 0 0 0 auto;
+    z-index: 70;
+    width: min(92%, 32rem);
     min-width: 0;
-    flex: 1 1 50%;
-    border-top: 1px solid rgb(255 255 255 / 10%);
-    border-left: 0;
+    flex: none;
+    border-top: 0;
+    border-left: 1px solid rgb(255 255 255 / 10%);
   }
 
   .browser-drawer-toolbar {
