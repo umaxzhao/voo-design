@@ -175,3 +175,39 @@ the prior complete run. This task publishes regression/ownership/docs only.
 The later rebuilt entry differs from current production; the failed comparison
 is retained, not reported as byte identity. Current live single-row UI evidence
 is recorded separately in `agent-suggestions-live-ui-proof.json`.
+
+
+## Global overlay stacking
+
+Capability: `inspector.global-overlay-stacking`; shared with workspace title
+menus and platform sharing. A real share popover was partially covered by the
+editor's root z-50 stacking context. Its left-side pointer samples hit
+`editor-pages` instead of the share surface (`global-overlay-before.log`).
+
+The title bar owns a z-60 layer above editor content. Sharing uses a body portal
+at z-100, anchored to its trigger with viewport bounds and internal scrolling.
+Nested mobile sharing retains the existing popover ownership context so input
+inside its portal does not dismiss the parent menu. Global modal content uses
+body portals at z-110 or its existing higher layer; pending lazy surfaces also
+escape editor transforms and clipping. Portal content retains server-rendered
+semantics when there is no browser body.
+
+| Surface group | Review and acceptance |
+| --- | --- |
+| Share | Real title-bar trigger, 1600/1280/900px, docked Agent, nine pointer samples, identity input and Escape; 320x568 nested More → Share stays inside viewport and remains open while typing |
+| Title menus | Common title layer plus existing body workflow-menu portal; narrow More keyboard/focus and pointer hits retained |
+| Shortcuts, icon insertion, SVG | Previously inline fixed dialogs now portal to body; real components mounted under a deliberately transformed 40px clipped host remain fully hittable, with dialog semantics retained in SSR |
+| Lazy pending UI | Real suspended component's modal placeholder uses the same global portal and passes pointer samples outside its clipped host |
+| Settings, image export, commands | Existing body portals retained; real UI entry, pointer sampling, layered Escape, focus return and existing export state checks pass in `ui-global-interaction` |
+| Code export, variables, presentation export/viewer, font/menu pickers | Existing body portals reviewed in source; not all individual controls newly interaction-certified by this task |
+| First-run, setup, recovery, About | Native top-layer dialog or application-level modal reviewed; existing individual suites retained, not counted as new exhaustive runtime coverage |
+| Page-owned comments, retouch/download, prototype and exit prompt | Intentionally scoped to the page; not converted to unrelated application-wide dialogs |
+
+`ui-global-interaction.e2e.mjs` asserts actual `elementFromPoint` hits across
+surfaces and unchanged document/selection. The isolated modal harness tests
+component placement, not every production opening command. No share-room
+creation, snapshot upload, paid model, user document or collaboration session
+is started by these checks. Exact clean revision, release and production
+receipts are recorded in `docs/quality-progress.md`. Physical touch/stylus,
+signed native installs, all popover combinations and every service state remain
+outside this acceptance; a source audit alone is not a runtime pass.

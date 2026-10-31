@@ -346,38 +346,44 @@ Production evidence: `/private/tmp/voo-export-opt-in-production-result.log` and
 `/private/tmp/voo-export-opt-in-deployment-proof.json`. Earlier incomplete/failed
 attempts are retained separately and are not attributed to the final revision.
 
+## Typography clarity
 
-## Global overlay stacking
+Capabilities: `inspector.typography-clarity`, `text.typography`, `text.box-sizing`.
+Reference: [Figma type properties](https://help.figma.com/hc/en-us/articles/360039956634-Explore-text-properties).
+The existing VOO visual identity remains; the refinement adds visible metric
+captions, consistent units and Lucide icons rather than new unimplemented type
+features. Common settings share one implementation for editing and creation.
+Text-box sizing is visible, while all less frequent options have one disclosure.
 
-Capability: `inspector.global-overlay-stacking`; shared with workspace title
-menus and platform sharing. A real share popover was partially covered by the
-editor's root z-50 stacking context. Its left-side pointer samples hit
-`editor-pages` instead of the share surface (`global-overlay-before.log`).
+| Context | Registered assertions | Status |
+| --- | --- | --- |
+| Labels/icons | Explicit visible captions; 16px icons and actual 1.5px stroke after scaling | Passed on `9cd70af` |
+| Real text | Size/line-height/tracking alter actual bounds; cancel and one-step undo/redo; weight/decoration/alignment | Passed on `9cd70af` |
+| Advanced | Box width wraps actual text; direction/case/paragraph/baseline/path offset retain writes and undo | Passed on `9cd70af` |
+| Shared creation | Same basic controls, actual pointer creates text with selected size/weight/spacing; one-step undo/redo | Passed on `9cd70af` |
+| Font/multi | Existing font picker applies a real family; mixed numeric fields update both layers and undo each original value | Passed on `9cd70af` |
+| Layout | 320/390/768/1440px, both themes and languages; numeric space and readable captions; 48px narrow controls | Passed on `9cd70af` |
+| Window menu events | Reproduced non-Node Window target crash in `image-file-clipboard`; guard preserves inner scrolling and dismisses safely on resize/scroll | Passed on `9cd70af` |
+| Remaining | Physical IME/touch/stylus, every installed font and variable-font axis, OS-level scaling | Not certified |
 
-The title bar owns a z-60 layer above editor content. Sharing uses a body portal
-at z-100, anchored to its trigger with viewport bounds and internal scrolling.
-Nested mobile sharing retains the existing popover ownership context so input
-inside its portal does not dismiss the parent menu. Global modal content uses
-body portals at z-110 or its existing higher layer; pending lazy surfaces also
-escape editor transforms and clipping. Portal content retains server-rendered
-semantics when there is no browser body.
+Evidence: `text_section_compact.test.jsx`, `tools_text_pen_shape.test.jsx`,
+`paragraph_spacing.test.jsx`, `text_case.test.jsx`; registered
+`ui-inspector-interaction.e2e.mjs` calls `typography-inspector-cases.mjs`.
+Before screenshots: `/private/tmp/voo-typography-before.png`; targeted after
+matrix: `/private/tmp/voo-typography-only/`. The two baseline regressions are in
+`/private/tmp/voo-typography-baseline.log`. Mechanical typography scan returned
+no findings; it does not certify every contrast or accessibility context.
 
-| Surface group | Review and acceptance |
-| --- | --- |
-| Share | Real title-bar trigger, 1600/1280/900px, docked Agent, nine pointer samples, identity input and Escape; 320x568 nested More → Share stays inside viewport and remains open while typing |
-| Title menus | Common title layer plus existing body workflow-menu portal; narrow More keyboard/focus and pointer hits retained |
-| Shortcuts, icon insertion, SVG | Previously inline fixed dialogs now portal to body; real components mounted under a deliberately transformed 40px clipped host remain fully hittable, with dialog semantics retained in SSR |
-| Lazy pending UI | Real suspended component's modal placeholder uses the same global portal and passes pointer samples outside its clipped host |
-| Settings, image export, commands | Existing body portals retained; real UI entry, pointer sampling, layered Escape, focus return and existing export state checks pass in `ui-global-interaction` |
-| Code export, variables, presentation export/viewer, font/menu pickers | Existing body portals reviewed in source; not all individual controls newly interaction-certified by this task |
-| First-run, setup, recovery, About | Native top-layer dialog or application-level modal reviewed; existing individual suites retained, not counted as new exhaustive runtime coverage |
-| Page-owned comments, retouch/download, prototype and exit prompt | Intentionally scoped to the page; not converted to unrelated application-wide dialogs |
-
-`ui-global-interaction.e2e.mjs` asserts actual `elementFromPoint` hits across
-surfaces and unchanged document/selection. The isolated modal harness tests
-component placement, not every production opening command. No share-room
-creation, snapshot upload, paid model, user document or collaboration session
-is started by these checks. Exact clean revision, release and production
-receipts are recorded in `docs/quality-progress.md`. Physical touch/stylus,
-signed native installs, all popover combinations and every service state remain
-outside this acceptance; a source audit alone is not a runtime pass.
+Final execution `9cd70afd10df836c269b5597b5558a114e463640`: all 90 release steps, including 86 browser suites,
+4587 unit passes and 4 skips on clean unchanged source. Report:
+`/private/tmp/voo-typography-release-recovered.json`. All 16 viewport/theme/locale contexts have retained screenshots.
+This is a same-source recovery after a private startup-cache teardown assertion,
+not a single first-pass invocation: the original failure remains in
+`/private/tmp/voo-typography-release-complete.json`; startup was rechecked serially
+and remaining browser suites completed at reduced concurrency.
+A later integrated revision `e28b5110896851246e12ffbfc0571284851f1265` preserves incoming Agent refinements and separately passes a new build, design/module validation, full unit run and the inspector/Agent-context/Agent-suggestions browser suites. It does not inherit the earlier revision's full 90-check execution. Public resources match this integrated build; the actual Chinese production panel
+passes captions, 16px/1.5px SVG metrics, size geometry, weight, text wrapping,
+paragraph updates and undo without page errors. Production evidence:
+`/private/tmp/voo-typography-production-result.log` and
+`/private/tmp/voo-typography-deployment-proof.json`. Earlier failed execution
+remains separate and is not attributed to the final revision.

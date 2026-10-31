@@ -50,7 +50,8 @@ export default function EditorContextSubmenu({
     if (focusOnOpen.current)
       element.querySelector('[role="menuitem"]:not(:disabled)')?.focus();
     const reposition = (event) => {
-      if (!element.contains(event.target)) setActive(null);
+      // Window resize/scroll targets are EventTargets, not DOM Nodes.
+      if (!(event.target instanceof Node) || !element.contains(event.target)) setActive(null);
     };
     window.addEventListener("resize", reposition);
     window.addEventListener("scroll", reposition, true);

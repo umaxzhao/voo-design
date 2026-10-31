@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { runTypographyCases } from "./typography-inspector-cases.mjs";
 import { runUnifiedFillCases } from "./unified-fill-picker-cases.mjs";
 
 const evidence = process.env.VOO_INSPECTOR_EVIDENCE_DIR ?? "/private/tmp/voo-ui-inspector";
@@ -236,6 +237,9 @@ await withEditorBrowser(async ({ page, tool }) => {
     await tool("undo"); assert.equal(Boolean((await node()).locked), false);
     mark("Layers selection, rename cancel/commit, hide and lock alter real nodes and each undo once");
 
+    await runTypographyCases({ page, tool, mark, evidence });
+    // Typography creation replaces the document; restore this suite's scene.
+    await seed();
     await runUnifiedFillCases({ page, tool, mark });
 
     for (const viewport of [{ width: 1440, height: 1000 }, { width: 768, height: 1024 }, { width: 390, height: 844 }, { width: 320, height: 640 }]) {

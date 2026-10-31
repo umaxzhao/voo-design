@@ -135,7 +135,7 @@ export const EDITOR_MODULES = [
     title: "Text editing and typography",
     paths: [
       "src/canvas/editor/editor_annotations.js", "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js", "src/canvas/components/editor_text*",
-      "src/canvas/components/editor_properties/text*",
+      "src/canvas/components/editor_properties/text*", "tests/unit/text_section_compact.test.jsx", "tests/unit/tools_text_pen_shape.test.jsx", "tests/unit/affinity_tool_properties_panel.test.jsx",
     ],
     related: ["selection","layout","compositing","documents","platform"],
     features: ["text.edit","text.box-sizing","text.typography","text.font-loading","text.placement-transactions"],
@@ -187,6 +187,7 @@ export const EDITOR_MODULES = [
     id: "inspector",
     title: "Inspector, menus and shared UI",
     paths: [
+      "tests/e2e/typography-inspector-cases.mjs", "tests/e2e/context-submenu-checks.mjs",
       "tests/unit/export_presets.test.js", "tests/unit/right_panel_phase1.test.jsx", "tests/unit/properties_panel_restructure.test.jsx",
       "src/canvas/components/anchored_global_popover.jsx", "src/canvas/components/global_overlay_portal.jsx", "src/canvas/components/deferred_editor_surface.jsx",
       "src/canvas/components/shortcut_reference_modal.jsx", "src/canvas/components/editor_icon_picker_modal.jsx", "src/canvas/components/SvgEditModal.jsx",
@@ -198,7 +199,7 @@ export const EDITOR_MODULES = [
       "src/shared/i18n*", "src/shared/i18n/*", "src/canvas/*layout.css", "src/canvas/*panels.css",
     ],
     related: ["selection","layers","text","images","layout"],
-    features: ["inspector.export-opt-in", "inspector.unified-fill", "inspector.impeccable-polish", "inspector.context-submenus",
+    features: ["inspector.typography-clarity", "inspector.export-opt-in", "inspector.unified-fill", "inspector.impeccable-polish", "inspector.context-submenus",
       "inspector.global-overlay-stacking", "inspector.field-commit", "inspector.menu-focus", "inspector.responsive", "inspector.locale-lifecycle",
     ],
     suites: ["impeccable-polish",
