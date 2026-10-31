@@ -2836,24 +2836,30 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     private func commitPaintStroke(nodeId: String?, dataURL: String) {
         let document = mainContentView.canvasStageView.document
-        if let nodeId = nodeId,
-           let index = document.nodes.firstIndex(where: { $0.id == nodeId }) {
+        var targetId = nodeId
+        if targetId == nil {
+            if let existing = document.nodes.first(where: { $0.name == Self.paintNodeName && $0.kind == .image }) {
+                targetId = existing.id
+            }
+        }
+        if let targetId = targetId,
+           let index = document.nodes.firstIndex(where: { $0.id == targetId }) {
             let previous = document.nodes[index].src
             let cmd = BasicCommand(
                 name: "画笔笔触",
                 execute: { doc in
-                    guard let i = doc.nodes.firstIndex(where: { $0.id == nodeId }) else { return false }
+                    guard let i = doc.nodes.firstIndex(where: { $0.id == targetId }) else { return false }
                     doc.nodes[i].src = dataURL
                     return true
                 },
                 undo: { doc in
-                    guard let i = doc.nodes.firstIndex(where: { $0.id == nodeId }) else { return false }
+                    guard let i = doc.nodes.firstIndex(where: { $0.id == targetId }) else { return false }
                     doc.nodes[i].src = previous
                     return true
                 }
             )
             _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
-            mainContentView.canvasStageView.setPaintNode(id: nodeId, dataURL: dataURL)
+            mainContentView.canvasStageView.setPaintNode(id: targetId, dataURL: dataURL)
         } else {
             let canvas = document.canvas
             var node = VOONode(

@@ -397,6 +397,52 @@ public final class InspectorBehaviourTests {
             controller.syncAgentModelLabel()
             try TestAssertions.assertEqual(controller.mainContentView.agentPanel.modelLabel, "custom-fine-tuned")
         }
+
+        // 14. Real-world Web .voo file decoding and loading
+        registry.register(tier: 1, feature: "SerDe-RealVooFiles", name: "test_WebExamples_RealVooFilesDecodeAndLoadCleanly") {
+            let samples = [
+                ("docs/examples/f1-grand-prix.voo", 131),
+                ("docs/examples/form-poster.voo", 14),
+                ("docs/examples/pulse-dashboard.voo", 75),
+                ("docs/examples/music-discovery.voo", 175)
+            ]
+            let root = (ProcessInfo.processInfo.environment["PROJECT_ROOT"] ?? ".") as NSString
+            for (relPath, minNodes) in samples {
+                let candidatePaths = [
+                    relPath,
+                    root.appendingPathComponent(relPath),
+                    (root.deletingLastPathComponent as NSString).appendingPathComponent(relPath),
+                    ("/Volumes/TD/Projects/voo_design" as NSString).appendingPathComponent(relPath)
+                ]
+                guard let found = candidatePaths.first(where: { FileManager.default.fileExists(atPath: $0) }) else {
+                    continue
+                }
+                let url = URL(fileURLWithPath: found)
+                let doc = try DocumentIO.shared.loadDocument(from: url)
+                try TestAssertions.assertTrue(doc.nodes.count >= minNodes, "\(relPath) must decode at least \(minNodes) nodes (got \(doc.nodes.count))")
+                try TestAssertions.assertTrue(doc.canvas.width > 0, "\(relPath) canvas width > 0")
+                try TestAssertions.assertTrue(doc.canvas.height > 0, "\(relPath) canvas height > 0")
+            }
+        }
+
+        // 15. Opening a real .voo file through WindowController opens editor without error alerts
+        registry.register(tier: 1, feature: "WindowController-OpenVoo", name: "test_WindowController_OpenRealVooFileDirectlyLoadsSceneAndSetsTitle") {
+            let controller = WindowController()
+            guard let window = controller.window else {
+                throw TestFailure(message: "WindowController has no window", file: #file, line: #line)
+            }
+            window.setContentSize(NSSize(width: 1440, height: 900))
+            controller.mainContentView.frame = NSRect(x: 0, y: 0, width: 1440, height: 900)
+            controller.mainContentView.layoutSubtreeIfNeeded()
+
+            let sample = "/Volumes/TD/Projects/voo_design/docs/examples/f1-grand-prix.voo"
+            guard FileManager.default.fileExists(atPath: sample) else { return }
+
+            controller.openEditor(project: sample)
+            try TestAssertions.assertFalse(controller.mainContentView.isWelcomeOpen, "Welcome dashboard must close")
+            try TestAssertions.assertTrue(controller.mainContentView.canvasStageView.document.nodes.count >= 130, "Document nodes loaded")
+            try TestAssertions.assertEqual(controller.currentFileURL?.path, sample)
+        }
     }
 
     private static func requireButton(_ root: NSView, id: String) throws -> PropertiesIconButton {
