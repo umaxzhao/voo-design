@@ -180,3 +180,7 @@ An additional comments-loading page.goto timeout is retained in the recovery
 attempt history; it passed on the next serial execution without a source edit.
 Production evidence: `/private/tmp/voo-authoring-deployment-proof.json` and
 `/private/tmp/voo-authoring-production-result.log`. Paid endpoints were not invoked.
+
+GitHub Ubuntu CI for integration commit `dac68a5` passed module registration,
+design checks, build and unit tests: https://github.com/umaxzhao/voo-design/actions/runs/41188844041.
+The CI deployment job was skipped; SSH deployment to la2 was independently verified above.

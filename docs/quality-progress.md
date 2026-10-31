@@ -8,6 +8,7 @@
 
 ## 本轮：逐元素流式创作（已完成声明范围）
 
+- 合入提交 `dac68a5` 的 [GitHub Ubuntu CI](https://github.com/umaxzhao/voo-design/actions/runs/41188844041) 已通过模块登记、设计检查、构建和全量单测；CI 部署作业跳过，正式部署由本机 SSH 到 la2 完成并核对。
 - 已推送并部署应用提交 [`d0b9ec5`](https://github.com/umaxzhao/voo-design/commit/d0b9ec5a9df445e073c689597ff890350d500856)；登记发布检查 **88/88**（页面加载超时后串行补跑），含 **84 组浏览器**，单测 **4521 通过、4 跳过、0 失败**。证据：`/private/tmp/voo-authoring-release-recovered.json`。跳过和未运行的上下文不算通过。
 - `platform.streaming-authoring`：内置 HTML、外部 `stream_layout` 和批量 `build_layout` 共用原生落图与 VOO 紫色鼠标。鼠标定位、携带轮廓、放置元素和下一步跟随实际文档操作；快照合并、稳定图层 ID、动画预算与减弱动态效果避免重复播放和长时间收尾。
 - 推送前合入远程认证/归档提交 `dac68a5`；网页源码、公共资源、构建脚本和配置与上述固定版本逐项一致，新增桌面认证 4 项定向单测通过。原生签名 App 没有据此被标记为通过；证据：`/private/tmp/voo-authoring-final-integration-proof.json`。
@@ -64,7 +65,7 @@
 | 工程规范与模块登记 | 已落地：12 个模块、58 个公开能力分组 |
 | 核心发布校验 | d0b9ec5：88/88 登记项通过（含页面加载超时后串行补跑），包含 84 组浏览器套件 |
 | 全量单元测试 | 4521 通过、4 跳过、0 失败；跳过项不算通过 |
-| GitHub Ubuntu 基础检查 | 本轮远程 CI 单独记录；本机完整门禁和线上实测已通过，不继承历史 CI 结果 |
+| GitHub Ubuntu 基础检查 | [dac68a5 已通过](https://github.com/umaxzhao/voo-design/actions/runs/41188844041)：模块登记、设计检查、构建及单测；CI 部署跳过，已通过 SSH 部署 la2 |
 | 线上部署 | d0b9ec5 已部署 la2；入口及流式模块哈希一致，正式页面生成、渐进绘制、像素和撤销通过 |
 | 功能验收完整度 | 部分覆盖；58 个公开能力分组未穷尽所有入口、上下文和设备 |
 | 核心门禁外的独立检查 | 21 组本轮未运行：18 组待复核，3 组需单独运行 |
