@@ -52,6 +52,8 @@ export function clampQuickbar(docRect, width, viewportWidth) {
 }
 
 export function reorderSelection(engine, ids, direction) {
+  if (direction > 0 && engine?.bringForward) return engine.bringForward();
+  if (direction < 0 && engine?.sendBackward) return engine.sendBackward();
   if (engine?.reorderNodes) return engine.reorderNodes(ids, direction);
   if (!engine?.reorderNode || !Array.isArray(ids) || ids.length === 0) return;
   const nodes = engine.getDoc?.()?.nodes ?? [];

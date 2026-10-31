@@ -341,6 +341,7 @@ export function assembleEngineControllers({
     setSelectionTransform: selectionController.setSelectionTransform,
     getSelectedId: () => selection.getId(),
     getSelectedIds: () => selection.getIds(),
+    getSelectedGroup: selectionController.getSelectedGroup,
     getSelectedPuppetPin,
     setSelectedPuppetPin,
     setRegionHint: (next, tone = null) =>

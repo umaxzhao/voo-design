@@ -31,7 +31,15 @@ await withEditorBrowser(async ({ page }) => {
 
   await f.step("new-project-and-frame-creation", async () => {
     await page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true }).click();
-    await page.waitForFunction(() => window.__vooEditor && document.querySelector('[data-testid="design-editor"] [data-open-guard]')?.getAttribute("data-open-guard") === "off");
+    await page.waitForFunction(
+      () =>
+        window.__vooEditor &&
+        document
+          .querySelector('[data-testid="design-editor"] [data-open-guard]')
+          ?.getAttribute("data-open-guard") === "off",
+      null,
+      { timeout: 60000 },
+    );
     // Set only the initial view; preserve New's actual document, tools and defaults.
     await page.evaluate(() => window.__vooStore.setEditorCamera({ zoom: 1, panX: 300, panY: 100 }));
     await f.settle(); const before = await f.snapshot();

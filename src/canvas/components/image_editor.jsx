@@ -2588,6 +2588,14 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             }
             onMutate={(patch) => {
               if (selectedGroup) {
+                if (
+                  selectedGroup.isFrame &&
+                  engine?.updateFrameNode &&
+                  ["x", "y", "width", "height"].some((key) => key in patch)
+                ) {
+                  engine.updateFrameNode(selectedGroup.id, patch, { commit: false });
+                  return;
+                }
                 engine?.updateNode(selectedGroup.id, patch, { commit: false });
                 return;
               }

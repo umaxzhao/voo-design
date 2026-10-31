@@ -50,4 +50,81 @@ describe("batch layer order", () => {
     doc.nodes[1].locked = true;
     expect(reorderNodes(doc, ["g"], 1)).toBe(doc);
   });
+
+  it("moves a Frame and all its children together without splitting", () => {
+    const doc = documentWith(["f", "c1", "c2", "other"]);
+    doc.nodes[0].kind = "frame";
+    doc.nodes[1].parentId = "f";
+    doc.nodes[2].parentId = "f";
+    expect(order(reorderNodes(doc, ["f"], 1))).toEqual(["other", "f", "c1", "c2"]);
+    expect(order(reorderNodes(doc, ["other"], -1))).toEqual(["other", "f", "c1", "c2"]);
+  });
+
+  it("moves a clipped layer together with its mask base during reorder", () => {
+    const doc = documentWith(["base", "clipped", "other"]);
+    doc.nodes[1].clipTo = "base";
+    expect(order(reorderNodes(doc, ["base"], 1))).toEqual(["other", "base", "clipped"]);
+    expect(order(reorderNodes(doc, ["other"], -1))).toEqual(["other", "base", "clipped"]);
+  });
+
+  it("moves a node to extreme front and back within its parent frame boundary", () => {
+    const doc = documentWith(["f1", "a", "b", "c", "f2", "d"]);
+    doc.nodes[0].kind = "frame";
+    doc.nodes[1].parentId = "f1";
+    doc.nodes[2].parentId = "f1";
+    doc.nodes[3].parentId = "f1";
+    doc.nodes[4].kind = "frame";
+    doc.nodes[5].parentId = "f2";
+
+    let current = doc;
+    const setDoc = (next) => { current = next; };
+    const selection = { getIds: () => ["a"] };
+    const engine = createEngineNodeOps({ getDoc: () => current, setDoc, selection });
+
+    engine.moveToFront(["a"]);
+    expect(order(current)).toEqual(["f1", "b", "c", "a", "f2", "d"]);
+
+    engine.moveToBack(["a"]);
+    expect(order(current)).toEqual(["f1", "a", "b", "c", "f2", "d"]);
+  });
+
+  it("moves an entire Frame to extreme front and back with all its children", () => {
+    const doc = documentWith(["f1", "a", "b", "f2", "c", "d"]);
+    doc.nodes[0].kind = "frame";
+    doc.nodes[1].parentId = "f1";
+    doc.nodes[2].parentId = "f1";
+    doc.nodes[3].kind = "frame";
+    doc.nodes[4].parentId = "f2";
+    doc.nodes[5].parentId = "f2";
+
+    let current = doc;
+    const setDoc = (next) => { current = next; };
+    const selection = { getIds: () => ["f1"] };
+    const engine = createEngineNodeOps({ getDoc: () => current, setDoc, selection });
+
+    engine.bringToFront(["f1"]);
+    expect(order(current)).toEqual(["f2", "c", "d", "f1", "a", "b"]);
+
+    engine.sendToBack(["f1"]);
+    expect(order(current)).toEqual(["f1", "a", "b", "f2", "c", "d"]);
+  });
+
+  it("supports engine.bringForward and sendBackward on selection and selected group", () => {
+    const doc = documentWith(["g", "c1", "c2", "outside"]);
+    doc.nodes[0].kind = "group";
+    doc.nodes[1].parentId = "g";
+    doc.nodes[2].parentId = "g";
+
+    let current = doc;
+    const setDoc = (next) => { current = next; };
+    const selection = { getIds: () => ["c1", "c2"] };
+    const getSelectedGroup = () => current.nodes.find((n) => n.id === "g");
+    const engine = createEngineNodeOps({ getDoc: () => current, setDoc, selection, getSelectedGroup });
+
+    engine.bringForward();
+    expect(order(current)).toEqual(["outside", "g", "c1", "c2"]);
+
+    engine.sendBackward();
+    expect(order(current)).toEqual(["g", "c1", "c2", "outside"]);
+  });
 });
