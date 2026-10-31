@@ -1,9 +1,0 @@
-&&a instanceof Promise)throw new Error(
-)})()}catch{}function t(e){return function(...n){let a=e(...n);if(a&&typeof a==
-,e._sentryDebugIdIdentifier=
-?global:typeof globalThis<
-?globalThis:typeof self<
-?self:{},n=new e.Error().stack;n&&(e._sentryDebugIds=e._sentryDebugIds||{},e._sentryDebugIds[n]=
-?self:{};e.SENTRY_RELEASE={id:
-?window:typeof global<
-}}catch{}})();try{(function(){var e=typeof window<
