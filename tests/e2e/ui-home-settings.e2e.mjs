@@ -12,7 +12,9 @@ async function expectViewport(locator, width) {
 }
 
 await withEditorBrowser(async ({ page, origin }) => {
-  page.setDefaultTimeout(15000);
+  // Mounting the real editor pulls in CanvasKit/Skia WASM; under three parallel
+  // release suites that cold mount can pass 15s, so keep Playwright's 30s budget.
+  page.setDefaultTimeout(30000);
   // These paths must never reach a paid generation or authentication service in a UI audit.
   let blockedRequests = 0;
   await page.route("**/*", async (route) => {
