@@ -191,3 +191,132 @@ revision establishes release execution. Before/after captures are in
 installers, physical devices, real accounts/paid services and every external
 browser embedding policy. The account form and external-site recovery proposal
 were not part of the recommended five-priority implementation scope.
+
+
+### Context menu simplification — 2026-10-31
+
+- Kept cut, duplicate, delete and grouping in the root menu. Moved selection
+  matching, properties, ordering, masks, components, copy/export and path
+  operations to one secondary level. No domain operation or shortcut removed.
+- Extracted the former oversized menu into lifecycle, object, path and submenu
+  modules, each below 400 lines. Submenus portal outside scroll clipping, flip
+  at viewport edges and share one expanded group. Pointer traversal, Right/Left,
+  Up/Down/Home/End, disabled-item skipping, Escape and outside dismissal have
+  real-browser checks in `context-submenu-checks.mjs`, owned by the registered
+  `impeccable-polish` suite and `inspector.context-submenus` capability.
+- The pre-fix reproduction failed because the four select-same commands were
+  flat entries. The updated check verifies the collapsed group and actual
+  style-copy dispatch, as well as compact height, edge placement and layering
+  above the floating Agent launcher. The continuous creation regression now
+  reaches clipping operations through their menu, retaining pixel and undo
+  assertions. Screenshot: `impeccable-evidence/context-menu-fixed.png`.
+- Integration gate also caught an untranslated upstream DeepSeek cloud label
+  and stale provider/tool inventories. Reused the existing translated provider
+  label, included DeepSeek in card/setup assertions and documented the already
+  registered `resize_document` tool. Four targeted unit files passed 80 tests.
+- Full release evidence remains revision-bound in the report referenced above;
+  historical scores and unverified platform contexts are unchanged.
+
+
+The first complete gate on `e460d84` passed build, design lint, 4,508 unit
+assertions (four existing collaboration assertions skipped) and the completed
+browser checks, then stopped at the hook lifecycle suite. Its settings fixture
+assumed Studio was the first gallery card. The curated gallery now starts with
+Stripe and collapses older presets. The regression now expands the gallery and
+selects Studio explicitly before retaining the original focused-engine and
+locale/draft assertions. The failed report is retained at
+`/tmp/voo-impeccable-before-preset-fixture-fix.json`; it is not a passing release.
+
+
+The next gate on `aeb8f36` retained the same passing build/unit stages but
+stopped at a stale safe-area expectation after upstream `a11e7f4` intentionally
+balanced both horizontal insets. Page drag and responsive checks now assert
+`4px + max(left, right)` on both sides for mouse, portrait and landscape,
+retaining all real drag, pointer ownership, touch and cancellation checks.
+Failed evidence: `/tmp/voo-impeccable-before-safe-area-fixture-fix.json`.
+
+
+After integrating the concurrently published illustrated type picker, the
+legacy welcome workbench unit fixture still expected six types and no radio
+group anywhere on the default surface. It now asserts the eight visible type
+choices while explicitly keeping the advanced dialog and style/system/variant/
+size controls absent. Failed evidence is retained in
+`/tmp/voo-impeccable-before-welcome-fixture-fix.json`.
+
+
+The browser workbench fixtures also used the previous `Generation type`
+settings trigger and nested type dropdown. Updated all three affected suites
+(`ui-home-settings`, `editor-canvas-navigation`, `pending-integration`) to the
+new `Generation settings` entry and the visible eight-choice radio picker.
+Desktop/mobile dimensions, selected type retention, advanced style ownership,
+nested Escape, real outside touch, canvas camera/document retention and
+Meta/Control duplicate/cut/undo assertions remain and pass targeted execution.
+The prior failed gate is retained at
+`/tmp/voo-impeccable-before-generation-menu-fixture-fix.json`.
+
+
+The tool census then exposed the missing positive scenario for the already
+advertised `resize_document`. Added `image-agent-document-cases.mjs` to the
+existing registered tool suite: real MCP changes dimensions, preserves artwork
+around the canvas center without scaling or reparenting, and restores the full
+document with one undo/redo. Its default centered-anchor behavior is asserted;
+absolute coordinates are intentionally not assumed fixed. The complete live
+tool suite now passes its available scenarios; its five existing external
+provider blockers remain explicit and unexecuted. Failed gate evidence:
+`/tmp/voo-impeccable-before-resize-tool-case.json`.
+
+All 28 previously uncompleted browser suites also passed targeted execution,
+including inspector/menus, responsive/touch, locale lifecycle, loading,
+collaboration and runtime. This preflight uses an uncommitted harness and does
+not replace final clean-revision evidence:
+`/tmp/voo-remaining-browser-checks.json`.
+
+
+The gate on `ffa83f2` reached the final loading/lifecycle group, where three
+fixtures failed after their esbuild services stopped (EPIPE / stopped transform
+service), rather than a failed product assertion. The same focused suites had
+passed the targeted remaining-suite run. Failed evidence is retained at
+`/tmp/voo-impeccable-before-esbuild-interruption.json`. Final verification uses
+an isolated copy of the already installed declared dependencies in
+`/tmp/voo-impeccable-deps`, preserving package versions and the existing vendor
+package. No dependency was added. Concurrent Antigravity account-auth changes
+were merged before the final run to prevent a production rollback.
+
+
+A subsequent isolated run had one 91ms viewport-culling measurement against
+the unchanged 25ms unit threshold; its three assertions passed alone and the
+next full run passed at two unit workers. Evidence:
+`/tmp/voo-impeccable-before-performance-contention.json` and
+`/tmp/voo-performance-targeted.log`. No performance threshold was relaxed.
+That run later stopped before Boolean assertions because a cold development
+page exceeded Playwright's implicit 30s navigation deadline. The shared fixture
+now gives only initial Vite navigation/network idle a named 60s setup allowance;
+MCP readiness, functional assertions and performance limits remain unchanged.
+The incomplete report is retained at
+`/tmp/voo-impeccable-before-cold-start-timeout.json`.
+
+
+The latest main branch includes the P0 boundary suite and moves the illustrated
+eight-choice gallery into accessible advanced settings (`cfc3c21`). Conflict
+resolution preserves both scopes: default SSR has no radio group; advanced SSR
+still asserts eight radios. Desktop/mobile tests retain all eight choices,
+Mobile dimensions, design-system style ownership, default collapse and selected
+type retention after reopening. Only conflicting hunks were reconciled; no
+remote file replaced a complete local test file. The menu implementation is
+unchanged. Inventory now contains 60 capability groups and 85 browser suites;
+final clean verification therefore has 89 steps. Historical failed-run counts
+above remain tied to their recorded source revisions.
+
+
+The combined gallery fixtures also required a state-aware expansion precondition:
+Studio selection already expands the gallery, so the later Wellness step now
+ensures `aria-expanded=true` instead of toggling an already-open gallery.
+All subsequent engine, dirty draft, locale and rendering assertions remain.
+The remaining 60-suite batch completed without stopping at failures: 58 passed;
+mesh/stroke setup failed when esbuild stopped. Both then passed separately with
+`GOMAXPROCS=1`, including actual pixels, SVG, history and save/reopen assertions.
+No product assertion or performance threshold was relaxed. Evidence:
+`/tmp/voo-final-remaining-browser.json`, `/tmp/voo-mesh-targeted.log`,
+`/tmp/voo-stroke-targeted.log`. Compiler termination cause remains unconfirmed.
+Final execution retains isolated dependencies, two unit workers, one Go compiler
+scheduler processor and the standard three-browser pool.

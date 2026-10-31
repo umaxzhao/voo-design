@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
+import { checkContextSubmenus } from "./context-submenu-checks.mjs";
+
 await withEditorBrowser(async ({ page, errors }) => {
+  await checkContextSubmenus(page);
   const editor = page.getByTestId("design-editor");
   const brand = page
     .getByTestId("editor-top-bar")
@@ -134,6 +137,6 @@ await withEditorBrowser(async ({ page, errors }) => {
   );
   assert.deepEqual(errors, []);
   console.log(
-    "Verified hidden focus, preserved document, canvas-width panels, toolbar and narrow welcome.",
+    "Verified context submenus, hidden focus, preserved document, canvas-width panels, toolbar and narrow welcome.",
   );
 });

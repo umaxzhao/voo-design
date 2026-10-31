@@ -234,7 +234,7 @@ describe("first-run interactions", () => {
       .not.toContain("Open Agent setup guide (CLI detection and connection test)");
   });
   const inline = () => elements(tree).find(el => el.type === CustomProviderInline);
-  it.each(["dashscope", "volcengine"])("opens %s API setup without applying a CLI model", id => {
+  it.each(["dashscope", "volcengine", "deepseek"])("opens %s API setup without applying a CLI model", id => {
     const previousModel = getSetting(AGENT_SETTING.MODEL);
     pick(id);
     expect(inline().props.preset.id).toBe(id);

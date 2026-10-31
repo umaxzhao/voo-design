@@ -27,7 +27,7 @@ await withEditorBrowser(async ({ page }) => {
     const input = panel.getByRole("spinbutton", { name, exact: true });
     await input.fill(String(value)); await input.press("Enter"); await f.settle();
   };
-  const context = async (point, testId) => { await f.click(point, { button: "right" }); await page.getByTestId(testId).click(); await f.settle(); };
+  const context = async (point, testId) => { await f.click(point, { button: "right" }); await page.getByTestId("editor-menu-mask-submenu").hover(); await page.getByTestId(testId).click(); await f.settle(); };
 
   await f.step("new-project-and-frame-creation", async () => {
     await page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true }).click();

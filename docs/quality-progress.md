@@ -271,3 +271,16 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - 定向场景和既有响应式交互通过；不将临时非Git、未构建目录的全测失败当成产品结果或最终发布证据。
 - 最终执行证据：`/tmp/voo-impeccable-polish-release.json`，核对 `revision` 与 `complete`。原25/40为历史审查分，未声称复评提高。
 - [整改边界和前后截图](audits/impeccable-review.md#remediation--2026-10-31)。本轮仍按要求排除 `native_studio`；实际账户、付费服务、实体设备与签名安装包不计为已验证。
+
+
+## Context menu simplification — 2026-10-31
+
+- Inspector: retained common edits in the root; seven related action families
+  use one secondary level. Preserved domain commands and shortcuts.
+- Added `inspector.context-submenus`; inventory now has 60 capability groups
+  and 85 core browser suites. Real pointer/keyboard, edge/overlay placement,
+  style copy, clipping pixels and undo are registered regressions.
+- Targeted checks passed. Final execution, exact revision and deployment must
+  match `/tmp/voo-impeccable-polish-release.json`; coverage remains partial.
+- Scope excludes `native_studio`, real accounts, paid services and signed
+  installers. See [remediation](audits/impeccable-review.md#context-menu-simplification--2026-10-31).

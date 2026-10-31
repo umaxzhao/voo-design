@@ -50,7 +50,7 @@ export const CLOUD_PROVIDER_PRESETS = Object.freeze([
   {
     id: PROVIDER_ID.DEEPSEEK,
     customProviderId: "custom:onboarding-deepseek",
-    labelKey: "firstRun.provider.deepseek",
+    labelKey: "provider.deepseek.label",
     baseUrl: DEEPSEEK_DEFAULT_BASE_URL,
   },
   DSH_MODEL_PROVIDER_PRESET,

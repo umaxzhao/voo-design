@@ -51,7 +51,8 @@ import {
 import { useDesignStore } from "../../src/store/design_store.js";
 import { encodeVooBinary } from "../../src/canvas/store/voo_binary.js";
 import { addRecentFile, getRecentFiles } from "../../src/canvas/store/recent_files.js";
-import { loadLocale } from "../../src/shared/i18n.js";
+import { loadLocale, t } from "../../src/shared/i18n.js";
+import WelcomePromptSettings from "../../src/canvas/components/welcome_dashboard/welcome_prompt_settings.jsx";
 
 describe("Community Templates and New Project Workbench Experience", () => {
   beforeEach(async () => {
@@ -222,6 +223,17 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(html).toContain('data-advanced-open="false"');
     expect(html).not.toContain('role="radiogroup"');
     expect(html).not.toContain('role="radio"');
+    expect(html).not.toContain('role="dialog"');
+    for (const label of ["风格", "设计系统", "候选数量", "画布尺寸"]) {
+      expect(html).not.toContain(`aria-label="${label}"`);
+    }
+    const advancedHtml = renderToStaticMarkup(React.createElement(WelcomePromptSettings, {
+      t, panelRef: { current: null }, activePill: "mobile", designSystemId: "auto",
+      styleOptions: [], designSystemOptions: [], candidates: 1,
+      currentSize: { width: 393, height: 852 }, sizeOptions: [],
+    }));
+    expect(advancedHtml).toContain('role="radiogroup" aria-label="生成类型"');
+    expect(advancedHtml.match(/role="radio"/g)).toHaveLength(8);
   });
 
   it("AI_GEN_TYPES defines tailored dimensions, categories, and placeholders for AI generation", () => {

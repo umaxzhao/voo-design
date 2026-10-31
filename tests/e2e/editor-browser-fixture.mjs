@@ -4,6 +4,8 @@ import { connect } from "../../electron/mcp_server/stdio_server.js";
 import { CLI_BRIDGE_CHANNEL as C } from "../../src/shared/cli_bridge_protocol.js";
 import { startEditorBrowserServer } from "./editor-browser-server.mjs";
 
+const EDITOR_BOOTSTRAP_TIMEOUT_MS = 60_000;
+
 /** Isolated real editor + private MCP relay; never changes the user's open document. */
 export async function withEditorBrowser(run, pageOptions = {}) {
   const { openDocument = true, mcpLink = true, ...browserOptions } = pageOptions;
@@ -27,8 +29,10 @@ export async function withEditorBrowser(run, pageOptions = {}) {
         errors.push(message.text());
       }
     });
-    await page.goto(`${origin}/?voo-test=1`);
-    await page.waitForLoadState("networkidle");
+    // Cold Vite transforms contend during parallel release runs. Keep this setup
+    // allowance separate from the editor readiness and functional assertions.
+    await page.goto(`${origin}/?voo-test=1`, { timeout: EDITOR_BOOTSTRAP_TIMEOUT_MS });
+    await page.waitForLoadState("networkidle", { timeout: EDITOR_BOOTSTRAP_TIMEOUT_MS });
     // A welcome-only session deliberately has no engine. The MCP store-level
     // new_document command below opens the workspace before waiting for one.
     if (mcpLink) socket = await connect(bridge.port, bridge.token);
