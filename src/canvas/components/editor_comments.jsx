@@ -22,7 +22,7 @@ ReadySurface.propTypes = { readyRef: PropTypes.shape({ current: PropTypes.bool }
   children: PropTypes.node.isRequired };
 
 /** Keep the existing launcher usable while a cold comments module is loading. */
-function PendingComments({ open, addMode, onOpen, onClose, onToggleAddMode, list, t, failed, onRetry, launcherVisible = true }) {
+function PendingComments({ open, addMode, onOpen, onClose, onToggleAddMode, list, t, failed, onRetry, launcherVisible = true, swapSide = false }) {
   // The list replaces the inspector; placement stays in the document overlay.
   return (
     <div data-testid="editor-comments" className="pointer-events-none absolute inset-0 select-none font-mono">
@@ -30,7 +30,7 @@ function PendingComments({ open, addMode, onOpen, onClose, onToggleAddMode, list
       <EditorCommentsLauncher open={open} onOpen={onOpen} visible={launcherVisible} openCount={countOpen(list)}
         unreadCount={unreadCommentCount(list, readCommentSeenAt())} t={t} />
       {open || addMode ? (
-        <PropertiesPanelShell testId="editor-properties-panel" showHeader={false} ariaLabel={t("editor.comments.title")}>
+        <PropertiesPanelShell swapSide={swapSide} testId="editor-properties-panel" showHeader={false} ariaLabel={t("editor.comments.title")}>
         <div role={failed ? "alert" : "status"} aria-busy={!failed} data-testid={failed ? "editor-comments-error" : "editor-comments-loading"}
           className="pointer-events-auto flex items-center gap-2 p-3 text-neutral-300">
           {failed ? null : <Loader2 size={14} className="animate-spin" aria-hidden="true" />}

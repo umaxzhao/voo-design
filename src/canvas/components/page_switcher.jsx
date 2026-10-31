@@ -36,7 +36,7 @@ export default function PageSwitcher() {
   useEffect(() => {
     if (!open) return;
     const dismiss = (event) => {
-      if (!root.current?.contains(event.target)) {
+      if (!root.current?.contains(event.target) || event.target.closest?.('[data-testid="editor-comments-toggle"]')) {
         cancelDrag();
         finishPageRename(edit, useDesignStore.getState(), root.current?.querySelector("input")?.value);
         setRenaming(null);

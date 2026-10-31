@@ -16,7 +16,7 @@ async function seedPages(page, count = 4) {
   }, count);
   await settle(page);
   const switcher = page.getByTestId("page-switcher");
-  await switcher.locator(":scope > button").click();
+  await switcher.locator("[data-page-switcher-trigger]").click();
   return switcher;
 }
 const center = box => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
@@ -65,7 +65,7 @@ await withEditorBrowser(async ({ page }) => {
   await page.mouse.up(); await settle(page);
   assert.deepEqual(await pageState(page), beforeCancel, "closing the popup must cancel the in-flight reorder");
   checks.push("Escape closes an active drag without a late reorder");
-  await switcher.locator(":scope > button").click();
+  await switcher.locator("[data-page-switcher-trigger]").click();
   await dragTo("Page 3", 2);
   await page.evaluate(() => window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 999, pointerType: "touch" })));
   assert.deepEqual(await pageState(page), beforeCancel, "another pointer cannot commit this mouse drag");

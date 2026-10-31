@@ -1756,7 +1756,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           <CameraPositionedOverlay
             component={EditorComments}
             layout={focusedLayout}
-            open={commentsOpen} launcherVisible={visible}
+            open={commentsOpen} launcherVisible={visible} swapSide={inspectorSwap}
             addMode={commentMode}
             comments={documentComments}
             zoom={cameraZoom}

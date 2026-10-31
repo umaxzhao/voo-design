@@ -15,7 +15,7 @@ export const commentViewModelType = PropTypes.shape({
 });
 
 export const commentSurfaceProps = {
-  launcherVisible: PropTypes.bool, open: PropTypes.bool, addMode: PropTypes.bool, comments: PropTypes.array,
+  swapSide: PropTypes.bool, launcherVisible: PropTypes.bool, open: PropTypes.bool, addMode: PropTypes.bool, comments: PropTypes.array,
   zoom: PropTypes.number, offsetX: PropTypes.number, offsetY: PropTypes.number,
   onOpen: PropTypes.func, onClose: PropTypes.func, onToggleAddMode: PropTypes.func,
   onCreate: PropTypes.func, onReply: PropTypes.func, onResolve: PropTypes.func,

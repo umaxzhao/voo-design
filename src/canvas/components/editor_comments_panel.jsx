@@ -4,11 +4,11 @@ import { Check, MessageSquare, MessageSquarePlus, X } from "lucide-react";
 import { label, authorName, formatWhen, pointText, CommentAvatar } from "./comment_view_helpers.jsx";
 import { commentViewModelType } from "./comment_view_types.js";
 
-export default function EditorCommentsPanel({ model, t, open, addMode, onClose, onToggleAddMode }) {
+export default function EditorCommentsPanel({ model, t, open, addMode, onClose, onToggleAddMode, swapSide = false }) {
   const { openCount, list, filter, setFilter, threads, selectedId, focusThread, unreadIds } = model;
   return <>
       {open ? (
-        <PropertiesPanelShell testId="editor-properties-panel" showHeader={false} ariaLabel={label(t, "editor.comments.title", "Comments")}>
+        <PropertiesPanelShell swapSide={swapSide} testId="editor-properties-panel" showHeader={false} ariaLabel={label(t, "editor.comments.title", "Comments")}>
           <section
             data-testid="editor-comments-panel"
             data-comment-surface="true"
@@ -178,4 +178,4 @@ export default function EditorCommentsPanel({ model, t, open, addMode, onClose, 
       ) : null}
   </>;
 }
-EditorCommentsPanel.propTypes = { model: commentViewModelType.isRequired, t: PropTypes.func, open: PropTypes.bool, addMode: PropTypes.bool, onClose: PropTypes.func, onToggleAddMode: PropTypes.func };
+EditorCommentsPanel.propTypes = { model: commentViewModelType.isRequired, t: PropTypes.func, open: PropTypes.bool, addMode: PropTypes.bool, onClose: PropTypes.func, onToggleAddMode: PropTypes.func, swapSide: PropTypes.bool };

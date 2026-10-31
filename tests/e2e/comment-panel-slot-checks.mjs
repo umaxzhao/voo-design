@@ -16,8 +16,14 @@ export async function checkCommentPanelSlot(page) {
     const title = await page.locator('[data-page-switcher-trigger]').boundingBox();
     assert.ok(button.x >= title.x + title.width && button.x + button.width <= width);
     assert.ok(Math.abs(button.y + button.height / 2 - title.y - title.height / 2) < 2);
+    if (width === 1600) {
+      await page.locator('[data-page-switcher-trigger]').click();
+      await page.getByTestId("page-switcher").locator("section").waitFor();
+    }
     await launcher.click();
     await panel.waitFor();
+    assert.equal(await page.getByTestId("page-switcher").locator("section").count(), 0,
+      "Opening comments still dismisses page navigation");
     assert.equal(await rail.count(), 1);
     assert.equal(await panel.locator("xpath=ancestor::aside").getAttribute("data-testid"), "editor-properties-panel");
     assert.equal(await rail.getByRole("spinbutton", { name: "W", exact: true, includeHidden: true }).count(), 0);
@@ -38,6 +44,16 @@ export async function checkCommentPanelSlot(page) {
     assert.deepEqual(await page.evaluate(() => ({ doc: JSON.stringify(window.__vooEditor.getDocument()), ids: window.__vooEditor.getSelectedIds() })), before);
   }
   await page.setViewportSize({ width: 1600, height: 1000 });
+  const swap = page.getByTestId("editor-layers-panel").getByRole("button", { name: "Switch between rows and columns", exact: true });
+  await swap.click(); await settle();
+  const swapped = await rail.boundingBox();
+  await page.getByTestId("editor-comments-toggle").click(); await panel.waitFor();
+  const swappedComments = await rail.boundingBox();
+  assert.ok(Math.abs(swappedComments.x - swapped.x) < 1 && Math.abs(swappedComments.width - swapped.width) < 1,
+    "Comments use the inspector's chosen side without covering Layers");
+  await panel.getByRole("button", { name: "Close comments", exact: true }).click();
+  await rail.getByRole("spinbutton", { name: "W", exact: true }).waitFor();
+  await swap.click(); await settle();
   const history = page.getByTestId("editor-history-panel");
   const toggleHistory = () => page.evaluate(() => window.dispatchEvent(new CustomEvent("voo:editor-toggle-history")));
   await toggleHistory(); await history.waitFor();
@@ -62,5 +78,5 @@ export async function checkCommentPanelSlot(page) {
   });
   await page.getByTestId("editor-comments-toggle").waitFor();
   assert.equal(await page.getByTestId("editor-comments-toggle").count(), 1);
-  console.log("Comments share one right-panel slot at 1600/900/390px, restore the inspector and selection, support touch close, switch with History and remount one page-row launcher.");
+  console.log("Comments share one right-panel slot at 1600/900/390px, restore the inspector and selection, support touch close, respect swapped sides, switch with History and remount one page-row launcher.");
 }

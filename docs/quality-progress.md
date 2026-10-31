@@ -9,7 +9,7 @@
 ## 本轮：评论复用右侧面板（验证中）
 
 - `inspector.comments-panel-slot`：入口移到页面名称右侧，评论的加载/错误/列表内容复用右侧属性外壳，属性/历史让位；关闭恢复原面板，历史命令可切换回来。紧凑画布使用同一底部区域，评论关闭后恢复原折叠状态。
-- 修改前入口位置失败 `comments-panel-before.log`；57 项相关单测、评论生命周期和 1600/900/390px 单槽位、触摸关闭、宿主重挂载及原评论发布/回复/撤销通过。完整固定版本门禁与线上实测待补录。[验收范围](audits/nested-objects-audit.md#comments-shared-right-panel)。证据目录 `/private/tmp/voo-license-regression/`；登记 76 能力，功能覆盖仍部分。
+- 修改前入口位置失败 `comments-panel-before.log`；58 项相关单测、评论生命周期和 1600/900/390px 单槽位、触摸关闭、宿主重挂载及原评论发布/回复/撤销通过。首轮 `826e9fd` 单测 4686 通过/4 跳过，完整门禁在 `pages_dnd` 的旧直接子按钮定位超时（`comments-panel-release.json`）；改用稳定入口标记，原重命名/拖拽/取消断言保留且独立复查通过，修正固定版本门禁与线上实测待补录。[验收范围](audits/nested-objects-audit.md#comments-shared-right-panel)。证据目录 `/private/tmp/voo-license-regression/`；登记 76 能力，功能覆盖仍部分。
 
 ## 本轮：尺寸标签位于对象下方（已完成声明范围）
 

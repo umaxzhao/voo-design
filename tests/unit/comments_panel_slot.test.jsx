@@ -16,8 +16,9 @@ function emptyModel() {
 }
 
 describe("comments replace the shared inspector", () => {
-  it("renders one docked inspector shell with comment content and no second card", () => {
-    const html = renderToStaticMarkup(<EditorCommentsPanel model={emptyModel()} open t={key => key} />);
+  it.each([false, true])("uses the same single docked inspector shell (swapped=%s)", swapSide => {
+    const html = renderToStaticMarkup(<EditorCommentsPanel model={emptyModel()} open swapSide={swapSide} t={key => key} />);
+    expect(html).toContain(swapSide ? "absolute left-4" : "absolute right-4");
     expect(html.match(/<aside\b/g)).toHaveLength(1);
     expect(html).toContain('data-testid="editor-properties-panel"');
     expect(html).toContain('data-testid="editor-comments-panel"');

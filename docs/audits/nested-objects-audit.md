@@ -354,3 +354,15 @@ results in `comments-panel-unit-verified.log`. No product assertion was relaxed.
 Exact committed release, local App and production evidence are maintained in
 `docs/quality-progress.md`; not every native install, physical device, canvas
 type, panel placement or keyboard/service combination is certified here.
+
+
+The first clean `826e9fd` core attempt passed 4,686 units (four skipped) but
+stopped at `pages_dnd` because its direct-child button selector no longer
+matched the navigation row. `comments-panel-release.json` preserves this failed
+attempt. The suite now uses the explicit page-trigger marker, retaining all
+rename, mouse/touch reorder, cancellation, focus, safe-area and tool-hit assertions;
+its separate passing run is `comments-panel-pages.log`.
+The final targeted 58 units (`comments-panel-unit-sides.log`) and comment suite
+(`comments-panel-sides.log`) also cover the saved left/right inspector side and
+page-menu dismissal when opening Comments. Full fixed-revision release results
+are still pending; these independent runs are not a stitched release pass.
