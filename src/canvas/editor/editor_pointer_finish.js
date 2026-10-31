@@ -404,9 +404,12 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
     }
 
     if (finished.kind === "move" && finished.moved) {
-      const doc = api.getDocument();
-      const reparented = reparentMovedRoots(doc, finished.origins);
-      if (reparented !== doc) api.setDoc(reparented);
+      const skipReparent = Boolean(event?.ctrlKey || event?.metaKey);
+      if (!skipReparent) {
+        const doc = api.getDocument();
+        const reparented = reparentMovedRoots(doc, finished.origins);
+        if (reparented !== doc) api.setDoc(reparented);
+      }
     }
 
     const changed =
