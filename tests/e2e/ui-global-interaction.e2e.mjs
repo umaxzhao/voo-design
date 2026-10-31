@@ -72,11 +72,12 @@ await withEditorBrowser(async ({ page }) => {
     }, access);
     const link = new URL(await linkField.inputValue());
     assert.equal(link.origin, "https://voo.run", "Share on loopback must hand recipients the public app");
-    assert.match(link.pathname, /^\/r\/[a-z2-9]{20}$/);
+    assert.equal(link.pathname, "/editor/");
+    assert.match(link.searchParams.get("r"), /^[a-z2-9]{20}$/);
     assert.match(link.hash, /^#k=[A-Za-z0-9_-]{22}$/);
     assert.equal(await page.evaluate(() => window.__copiedShareLink), link.href, "Displayed and copied links are identical");
     if (previousLink) {
-      assert.equal(link.pathname, previousLink.pathname);
+      assert.equal(link.searchParams.get("r"), previousLink.searchParams.get("r"));
       assert.equal(link.hash, previousLink.hash, "Changing permission preserves the room secret");
     }
     previousLink = link;

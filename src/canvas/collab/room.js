@@ -1,7 +1,7 @@
 /**
  * Collaboration room links.
  *
- * A room is the whole address of a session: `voo.run/r/XXXXXXXX`. The id is
+ * A room is the whole address of a session: `voo.run/editor/?r=XXXXXXXX`. The id is
  * generated on the sharing side and never registered anywhere first — the
  * signalling server learns about a room when someone joins it, which is what
  * keeps sharing instant and the server stateless between sessions.
@@ -96,8 +96,8 @@ export const CANONICAL_ORIGIN = VOO_RUN_ORIGIN;
  * @param {string} [secret] A URL-fragment room secret, never sent in HTTP requests.
  */
 export function roomUrl(roomId, _origin, access, secret) {
-  const base = `${CANONICAL_ORIGIN}${ROOM_PATH}${roomId}`;
-  const withAccess = access === "view" ? `${base}?access=view` : base;
+  const base = `${CANONICAL_ORIGIN}/editor/?r=${roomId}`;
+  const withAccess = access === "view" ? `${base}&access=view` : base;
   return secret && ROOM_SECRET_PATTERN.test(secret)
     ? `${withAccess}#k=${secret}`
     : withAccess;
@@ -157,6 +157,16 @@ export function parseRoomId(input) {
   if (!text) return null;
   if (isValidRoomId(text)) return text;
 
+  // Public editor links carry their room in the query; legacy /r/ paths remain valid.
+  try {
+    const url = new URL(text, CANONICAL_ORIGIN);
+    const queryRoom = url.searchParams.get("r") ?? url.searchParams.get("room");
+    if (queryRoom && isValidRoomId(queryRoom.trim())) return queryRoom.trim();
+  } catch (error) {
+    if (!(error instanceof TypeError)) throw error;
+    // Malformed URLs may still be legacy room paths handled below.
+  }
+
   // `voo://r/abcdefgh` is the deep link the desktop app is launched with. The
   // OS may hand back the id as the host or as the path depending on platform,
   // so the scheme is stripped and what is left read as a path either way.
@@ -180,10 +190,8 @@ export function deepLinkUrl(roomId) {
 /** The room this page was opened into, or null for an ordinary editor load. */
 export function roomIdFromLocation(location = globalThis.location) {
   if (!location) return null;
-  // Two shapes, because two things produce them: `/r/<id>` is the link people
-  // share, and `?r=<id>` is what the landing page falls back to when the
-  // desktop app did not take the deep link — the editor lives under /editor/,
-  // so it cannot keep the room in its path.
+  // Current public links open /editor/?r=<id>; retain legacy /r/<id> paths
+  // and the desktop deep-link handoff for existing invitations.
   const fromPath = parseRoomId(location.pathname ?? "");
   if (fromPath) return fromPath;
   try {
