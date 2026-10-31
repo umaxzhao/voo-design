@@ -1,5 +1,6 @@
 /** Pen path drafting gestures: anchor placement, curvature preview, and commit. */
 
+import { findPenInsertion } from "./pen-midpoint-insertion.js";
 import * as ops from "./doc_ops.js";
 import { createPenNode, findNode } from "./scene_model.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
@@ -8,8 +9,6 @@ import {
   constrainAngle45,
   distance,
   HANDLE_THRESHOLD,
-  projectOntoPath,
-  segmentHitRadius,
 } from "./editor_pen_math.js";
 
 export function createPenDraft({
@@ -328,27 +327,12 @@ export function createPenDraft({
     }
   }
 
-  /**
-   * The doc-space point an edit-mode click would insert an anchor at, or null
-   * when the hover is not near a segment. Drives the hover preview dot; the
-   * insertion itself (`addAnchorAt`) repeats the same projection.
-   */
+  /** The same fixed midpoint used by addAnchorAt, in document coordinates. */
   function insertionPreview() {
     const edit = getEdit?.();
     if (!edit?.hover || edit.dragging) return null;
     const node = findNode(getDoc(), edit.nodeId);
-    if (!node) return null;
-    const scaleX = node.baseWidth ? node.width / node.baseWidth : 1;
-    const scaleY = node.baseHeight ? node.height / node.baseHeight : 1;
-    const local = {
-      x: (edit.hover.x - node.x) / scaleX,
-      y: (edit.hover.y - node.y) / scaleY,
-    };
-    const best = projectOntoPath(node.points, local);
-    // The same threshold addAnchorAt applies, so the dot appears exactly when
-    // a click would insert.
-    if (!best || best.dist > segmentHitRadius(getZoom)) return null;
-    return { x: node.x + best.x * scaleX, y: node.y + best.y * scaleY };
+    return findPenInsertion(node, edit.hover, getZoom?.() || 1)?.point ?? null;
   }
 
   return {

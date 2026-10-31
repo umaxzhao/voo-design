@@ -113,11 +113,11 @@ export const EDITOR_MODULES = [
     paths: [
       "src/canvas/editor/*boolean*", "src/canvas/editor/*path*", "src/canvas/editor/*pen*",
       "src/canvas/editor/*svg*", "src/canvas/editor/editor_export*", "src/canvas/figma/*", "src/canvas/pen/*",
-      "src/canvas/codegen/*",
+      "src/canvas/codegen/*", "tests/unit/pen-midpoint-insertion.test.js",
     ],
     related: ["selection","compositing","documents","inspector"],
-    features: ["vectors.path-edit","vectors.booleans","vectors.stroke","vectors.format-losses"],
-    suites: ["boolean-stroke-export","boolean-resize","destructive-boolean","image-svg-parity"],
+    features: ["vectors.path-edit","vectors.midpoint-insertion","vectors.booleans","vectors.stroke","vectors.format-losses"],
+    suites: ["pen-midpoint-insertion","boolean-stroke-export","boolean-resize","destructive-boolean","image-svg-parity"],
     remaining: [
       "Arbitrary third-party paths/fonts and every format round-trip loss require corpus expansion.",
     ],
