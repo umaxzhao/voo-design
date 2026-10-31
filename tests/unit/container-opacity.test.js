@@ -35,6 +35,19 @@ describe("isolated container opacity", () => {
     expect(outer.opacity).toBe(0.5);
   });
 
+  it("retains a container's paint identity across camera passes and invalidates on edits", () => {
+    const original = group("frame", { clipTo: "mask" });
+    const isolated = new Set([original.id]);
+    const painted = containerPaintNode(original, isolated);
+    expect(containerPaintNode(original, new Set(isolated))).toBe(painted);
+    expect(painted).toMatchObject({ opacity: 1, clipTo: null, blendMode: "source-over" });
+    const edited = { ...original, width: 240 };
+    expect(containerPaintNode(edited, isolated)).not.toBe(painted);
+    expect(containerPaintNode(edited, isolated).width).toBe(240);
+    expect(containerPaintNode(original, new Set())).toBe(original);
+    expect(original.clipTo).toBe("mask");
+  });
+
   it("terminates malformed cycles and clamps finite alpha", () => {
     const a = group("a", { parentId: "b", opacity: -1 }), b = group("b", { parentId: "a", opacity: 2 });
     expect(containerOpacity(a)).toBe(0);

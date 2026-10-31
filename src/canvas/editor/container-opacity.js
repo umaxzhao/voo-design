@@ -1,4 +1,5 @@
 const plans = new WeakMap();
+const isolatedPaints = new WeakMap();
 
 /** Containers isolate their subtree before applying alpha, as one paint layer. */
 export function containerOpacity(node) {
@@ -70,7 +71,14 @@ export function createContainerOpacityPlan(allNodes) {
 
 /** The container's own paint participates at full alpha inside its isolated unit. */
 export function containerPaintNode(node, isolated) {
-  return isolated.has(node.id) ? { ...node, opacity: 1, blendMode: "source-over", ...(node.clipTo ? { clipTo: null } : {}) } : node;
+  if (!isolated.has(node.id)) return node;
+  // Stable immutable paint objects keep per-node effect caches alive during navigation.
+  let paint = isolatedPaints.get(node);
+  if (!paint) {
+    paint = { ...node, opacity: 1, blendMode: "source-over", ...(node.clipTo ? { clipTo: null } : {}) };
+    isolatedPaints.set(node, paint);
+  }
+  return paint;
 }
 
 /** A cross-container mask inherits only alpha not already applied by this unit. */
