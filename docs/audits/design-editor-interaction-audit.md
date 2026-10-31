@@ -230,3 +230,12 @@ certification of signed installers or every external website.
 Remaining contexts: third-party iframe embedding policies, authenticated sites,
 all DOM extraction/remote-navigation combinations, touch resizing, Windows/Linux
 native webview composition, and signed packaging are not certified here.
+
+
+## Stroke paint row — 2026-11-01
+
+- Capability: `inspector.control-hierarchy`; reuse the existing inspector source/unit/browser ownership.
+- Remove the separate paint-type button from the primary stroke row, matching Fill. The existing swatch still owns solid/gradient editing; opacity, visibility, width and alignment stay available. No document operation or dependency changes.
+- Reproduction: `stroke-row-icon-before.log` records both solid/gradient cases failing the new menu-absence assertion. `opacity_icon_blend_bg.test.jsx` retains those assertions; `inspector-control-cases.mjs` clicks the actual stroke swatch, switches to Gradient, checks the node, closes with Escape, checks focus and undoes once.
+- Targeted units and the inspector browser suite pass; exact clean release revision and final results are recorded in `/private/tmp/voo-license-regression/stroke-row-icon-release.json`. Production evidence is recorded separately in `stroke-row-icon-production-proof.json`; pending until those runs complete.
+- Coverage is limited to registered Chromium scenarios. Signed desktop installers, physical touch/IME and every stroke combination are not certified. This visual removal needs no persistence migration.

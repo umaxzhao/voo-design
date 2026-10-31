@@ -23,6 +23,22 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   assert.equal((await styles(field)).height, 32);
   assert.ok((await styles(panel)).radius >= 16, "Keep the large floating panel rounded");
   const original = await page.evaluate(() => window.__vooEditor.getNode("audit-rect"));
+  assert.equal(await panel.getByRole("button", { name: "Stroke type", exact: true }).count(), 0,
+    "Stroke uses the swatch as its only paint editor, matching Fill");
+  const stroke = panel.getByRole("button", { name: "Stroke", exact: true });
+  await stroke.click();
+  const strokeDialog = page.getByRole("dialog", { name: "Stroke", exact: true });
+  await strokeDialog.waitFor();
+  await strokeDialog.getByRole("tab", { name: "Gradient", exact: true }).click();
+  await settle();
+  assert.match(await page.evaluate(() => window.__vooEditor.getNode("audit-rect").stroke), /^linear-gradient/);
+  await page.keyboard.press("Escape");
+  await strokeDialog.waitFor({ state: "detached" });
+  assert.equal(await stroke.evaluate(el => el === document.activeElement), true);
+  await tool("undo"); await settle();
+  assert.equal(await page.evaluate(() => window.__vooEditor.getNode("audit-rect").stroke), original.stroke);
+  mark("stroke row removes its duplicate paint-type icon; swatch gradient editing, Escape focus and one-step undo remain available");
+
   await x.fill(String(original.x + 20)); await x.press("Enter"); await settle();
   assert.equal(await page.evaluate(() => window.__vooEditor.getNode("audit-rect").x), original.x + 20);
   await tool("undo"); await settle();

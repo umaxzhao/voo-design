@@ -1,29 +1,24 @@
 # 项目检查总进度
-
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
 最近一次完整核心验证提交：[12b9aba](https://github.com/umaxzhao/voo-design/commit/12b9abae4f72e987fd14230791ad4de9df37cae1)；91/91 项通过，当前线上为该构建。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+## 本轮：描边颜色行简化（验证中）
+- `inspector.control-hierarchy`：去掉描边色块左侧重复的填充类型图标，统一从色块进入纯色/渐变编辑。已保留修复前失败、修复后单测与真实渐变切换/Escape 焦点/一次撤销回归；完整固定版本门禁与上线验收待完成。[范围与证据](audits/design-editor-interaction-audit.md#stroke-paint-row--2026-11-01)。
 
 ## 本轮：评论复用右侧面板（已完成声明范围）
-
 - `inspector.comments-panel-slot`：入口放到页面名称右侧；评论列表、加载和错误状态复用属性面板外壳，关闭恢复原面板，历史可互相替换，左右交换布局受尊重。紧凑画布用原面板区域并恢复原折叠状态；仅放置评论时加载进度显示在原按钮，不额外生成侧栏。
 - 固定 [`12b9aba`](https://github.com/umaxzhao/voo-design/commit/12b9abae4f72e987fd14230791ad4de9df37cae1) **91/91 发布步骤、87 组浏览器、4689 单测通过/4 跳过**，GitHub CI 通过。60 项定向单测及 1600/900/390px、触摸、左右换位、历史恢复、入口重挂载、原评论操作和独立模式冷加载均通过；本地 App 最小补丁与最终浏览器复查通过，其他草稿保留。[验收与原始失败](audits/nested-objects-audit.md#comments-shared-right-panel)。证据目录 `/private/tmp/voo-license-regression/`，`comments-panel-release-final.json` / `comments-panel-final-ci.json` / `comments-panel-primary-mode-final.log`。登记 76 能力，覆盖仍部分。
 - [PR #73](https://github.com/umaxzhao/voo-design/pull/73) 及最终冷加载补丁均已进入主线，源码树与固定验证版本一致（`comments-panel-main-tree-proof.json`）。已经项目脚本部署 la2；正式页面位置、冷热两条入口、九点命中、草稿取消、历史恢复、移动触摸关闭和文档/选区不变通过，零页面异常，87 个入口及实际脚本/样式资源逐字节/SHA-256 一致。证据 `comments-panel-production-proof.json`，截图 `comments-panel-production-desktop.png` / `comments-panel-production-mobile.png`；备份 `/srv/voo-run/editor-backups/12b9abae4f72e987fd14230791ad4de9df37cae1-20261031T201538Z`。
-
 ## 本轮：尺寸标签位于对象下方（已完成声明范围）
-
 - `compositing.selection-size-label`：默认下方居中，底部空间不足才回退上方。修改前单测期望 y=66、实际 y=16 的失败保留于 `/private/tmp/voo-license-regression/size-label-before.log`；20 项相关单测及真实截图像素回归通过，覆盖 0.5/1/2×、旋转、Frame 和多选原策略，文档/选区不变。
 - 固定 `e2e3e0b` 完整门禁 91/91、87 浏览器、4678 单测通过/4 跳过（`size-label-release.json`）；GitHub CI 通过。整合固定 `457b149` 再次完成 91/91、87 浏览器、4684 单测通过/4 跳过（`size-label-release-integrated.json`），GitHub CI 通过；主线随后仅文档变动，线上实测通过，不继承不同应用源码通过。[验收范围](audits/nested-objects-audit.md#selection-size-label-placement)。登记 75 能力，功能覆盖仍部分。
 - [PR #72](https://github.com/umaxzhao/voo-design/pull/72) 已合并 `326860d`（`size-label-main-source-proof.json`），已通过项目脚本部署 la2。正式页面实际点击对象、对象/Frame 下方标签像素、原上方标签消失、文档与选区不变及零页面异常通过；83 个实际加载资源与验证构建逐字节/SHA-256 一致。证据 `size-label-production-proof.json`，截图 `size-production-child.png` / `size-production-frame.png`，备份 `/srv/voo-run/editor-backups/457b149d4c1da1ecb1073fa7b7c87be47276f92c-20261031T185117Z`。
-
 ## 本轮：同一 Figma 文件与 OpenPencil 对照（已完成声明范围）
-
 - OpenPencil 已独立部署在 `/Volumes/TD/Projects/open-pencil-benchmark`，本机预览 `http://127.0.0.1:5188/`；官方源码未改，正式版和 master 均按要求使用 Bun 1.4.2 构建。默认缩放 NaN、正式版空渐变异常及字体缺失已单独记录；异常回调分数不当作性能通过。
 - master 手动恢复有限相机、不改图层后，等待官方稳定信号，仍约 1.175/0.734 次每秒平移/缩放回调。加载提示结束约 7.577 秒，但默认视图无效且采用按页延迟展开，不能直接与 VOO 全页导入耗时等同；两者均保留 478 张图片、4 个变量集合及 5 个变量。不是所有属性或平台的还原认证。
 - VOO 已复现并修复连续子层重复 Frame 裁剪、混合画布未启用屏幕外剔除，以及静态空效果反复像素读取。保留 240 世界像素安全边距，图片/文字重试、源节点替换失效及调用者裁剪恢复；无新增 UI 或依赖。
 - 合入浮层/新建更新后的 `0a3ba24` 干净源码已重新完成 **91/91 发布步骤、87 组核心浏览器、4680 单测通过/4 跳过**；原 `25bda7a` 的独立完整门禁另保留。首屏相机微基准平移/缩放约快 1.85/1.93 倍；真实空白画布拖动确认视图改变且文档不变，等待中位数 VOO/OpenPencil 为 180/1911.5ms，Ctrl+滚轮为 918/559ms，后者 OpenPencil 更快。手势/缩放因子不同，不作全面排名。证据 `/tmp/voo-clip-integrated-release.json`、`/tmp/voo-open-pencil-comparison/`；首屏独立画面仍有 28/800000 像素差异，未认证所有属性或完全一致。已推送并经项目脚本部署；正式入口及关键资源与验证构建逐字节一致，正式 native Figma 导入/可见像素/蒙版/剔除/约束/撤销通过，无页面异常。证据 `/tmp/voo-clip-deployment-proof.json`、`/tmp/voo-clip-production-fidelity.json`；私有报告在当前可视化目录 `open-pencil-comparison/`，不含公开设计文件。
 - [详细范围、对照方法与未验证项](audits/figma-import-audit.md#openpencil-control-and-further-rendering-optimization--2026-11-01)。`native_studio` 排除，卡顿和全部属性还原仍为部分完成。
-
 ## 本轮：分享与页面外浮层遮挡（已完成声明范围）
 - `inspector.global-overlay-stacking`：已复现分享框被 `editor-pages` 覆盖。顶栏统一层级；分享使用 body 锚定浮层，窄屏限制位置和滚动高度；快捷键、图标、SVG 与懒加载占位共用全局 Portal。[逐类验收与原始失败](audits/nested-objects-audit.md#global-overlay-stacking)。
 - 回归覆盖 1600/1280/900px 分享、320px 嵌套分享、裁切/变换宿主下的实际弹窗九点命中、输入与 Escape，以及文档和选区不变。本地主工作区增量修复及浏览器复查通过，其他草稿保留。
@@ -31,7 +26,6 @@
 - 固定 [`9d0a1d2`](https://github.com/umaxzhao/voo-design/commit/9d0a1d23babf4ac38a4922b86227ed162ee7c77f) 全新完整执行 **91/91 步、87 组浏览器、4654 单测通过/4 跳过**。证据 `/private/tmp/voo-license-regression/global-overlay-release-acceptance.json`，不拼接此前失败补跑。
 - 最终整合 [`8af23f5`](https://github.com/umaxzhao/voo-design/commit/8af23f5ec05055be85e96c2cc87353cd80c2f495) 保留主线新增 Frame/拖动修复并补齐测试归属；**91/91 步、87 组浏览器、4674 单测通过/4 跳过**，GitHub CI 通过。证据同目录 `global-overlay-release-final-integration.json`、`global-overlay-pr-checks.json`。登记 12 模块/73 能力/87 核心浏览器，功能覆盖仍部分。
 - [PR #71](https://github.com/umaxzhao/voo-design/pull/71) 已合并为 `4e8f506`，与固定验证提交源码树一致（`global-overlay-main-tree-proof.json`）。已通过项目脚本部署 la2，97 个实际入口/加载资源与验证构建逐字节及 SHA-256 一致。正式页面桌面/320px 分享、设置、命令和导出九点命中、输入/关闭、文档选区不变及零页面异常通过。证据 `global-overlay-production-proof.json`、截图 `global-overlay-production-share.png` / `global-overlay-production-narrow.png`；原版本备份 `/srv/voo-run/editor-backups/8af23f5ec05055be85e96c2cc87353cd80c2f495-20261031T181829Z`。
-
 ## 本轮：右侧控件恢复品牌大圆角（已完成声明范围）
 - 按用户反馈，右侧输入、下拉、切换组/选中项及操作按钮统一恢复 **12px** 品牌大圆角；共享 `--inspector-control-radius`，外层面板圆角保持原样。保留上一轮的填充/描边区别、选中反馈、字号与行高，不修改其他界面或文档操作。
 - 干净固定提交 [`b965942`](https://github.com/umaxzhao/voo-design/commit/b965942e22bcfb408015acdba58f49d8d7c3cd8c) 完成 **91/91 发布检查、87 组浏览器、单测 4637 通过/4 跳过/0 失败**。沿用原检查与浏览器并发 2，验证期间源码未修改。证据 `/private/tmp/voo-inspector-radius-release.json`、同名 `.log`，不继承上轮不同提交的通过。
@@ -39,7 +33,6 @@
 - 已推送并 SSH 部署 la2；入口和 9 个相关资源与验证构建逐字节一致。正式中文面板实际确认 12px 圆角、32px 桌面行高、Frame 输入/下拉/布局、文字与撤销，无脚本错误，未调用付费服务。证据 `/private/tmp/voo-inspector-radius-deployment-proof.json`、`/private/tmp/voo-inspector-radius-production-result.log`，截图 `/private/tmp/voo-inspector-radius-production-panel.png`。
 - 本地 App 只三方应用两个文件的圆角补丁并保留其他草稿；同一组 16 个浏览器上下文通过（`/private/tmp/voo-inspector-radius-primary-browser.log`），备份 `/private/tmp/voo-inspector-radius-primary/`。不认证整个私人工作区。
 - 功能覆盖仍为部分；实体触屏/IME/触控笔与全部高级独立浮层未由本轮认证。此前 6px 记录只属于其历史版本，当前规范以本轮用户确认的 12px 为准。
-
 ## 本轮：右侧属性控件层级（已完成声明范围）
 - 按用户确认仅调整 `inspector.control-hierarchy`：大面板圆角、顶部页签、首页、外框、Agent 和工具栏视觉保持原样。规则限定在 `editor-properties-panel` 内，共享组件只增加语义标记，不改变其他位置的控件外观和文档操作。
 - 输入/颜色行采用 6px 圆角填充矩形；下拉为轻描边，切换项成组显示选中块，操作按钮使用轻背景。桌面主控件行高 32px、窄屏输入 48px；标题 11px，标签/数值/单位分层，数值保留等宽。Frame 宽高和文字/描边/布局共用规则。
