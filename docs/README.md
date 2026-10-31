@@ -1,6 +1,7 @@
 # VOO Design documentation index
 
 ## Start here
+- [quality-progress.md](quality-progress.md): maintained inspection progress, module status, unverified checks and next work
 - [../README.md](../README.md): product overview, setup, scripts
 - [contributing.md](contributing.md): workflow, design-token gate, how to add canvas tools
 - [architecture.md](architecture.md): stack, document model, rendering, Electron layer

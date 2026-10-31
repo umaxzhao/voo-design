@@ -41,3 +41,7 @@ revision. Never mark an untested context, skipped test, blocked service or
 different platform passed. Keep execution and functional coverage separate in
 delivery reports. Reproduce defects before fixing them and retain the failing
 scenario as a regression check.
+
+Maintain `docs/quality-progress.md` as the user's single progress entry. After
+each audit, update affected module status, remaining contexts and the exact
+verified revision/evidence; never inherit a historical pass for changed code.
