@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import WelcomePromptTypes from "./welcome_prompt_types.jsx";
 import FlatSelect from "../flat_select.jsx";
-import { DEFAULT_STYLE_ID, DEFAULT_DESIGN_SYSTEM_ID } from "./generation-options.js";
+import { AUTO_SIZE_ID, DEFAULT_STYLE_ID, DEFAULT_DESIGN_SYSTEM_ID } from "./generation-options.js";
 
 /** One secondary home for every advanced generation option. */
 export default function WelcomePromptSettings({
@@ -55,16 +55,20 @@ export default function WelcomePromptSettings({
         }))} className="welcome-composer-select w-full min-w-0" triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs" panelClassName="!z-[400]" portal />
             </ComposerField>
             <ComposerField label={t("welcome.prompt.sizeLabel")}>
-              <FlatSelect value={`${currentSize.width}x${currentSize.height}`} onChange={value => {
+              <FlatSelect value={currentSize ? `${currentSize.width}x${currentSize.height}` : AUTO_SIZE_ID} onChange={value => {
+          if (value === AUTO_SIZE_ID) {
+            onSelectSize?.(null);
+            return;
+          }
           const option = sizeOptions?.find(item => `${item.width}x${item.height}` === value);
           if (option) onSelectSize?.({
             width: option.width,
             height: option.height
           });
-        }} label={t("welcome.prompt.sizeLabel")} options={(sizeOptions ?? []).map(option => ({
+        }} label={t("welcome.prompt.sizeLabel")} options={[{ value: AUTO_SIZE_ID, label: t("welcome.prompt.sizeAuto") }, ...(sizeOptions ?? []).map(option => ({
           value: `${option.width}x${option.height}`,
           label: `${option.width} × ${option.height}`
-        }))} className="welcome-composer-select w-full min-w-0" triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs" panelClassName="!z-[400]" portal />
+        }))]} className="welcome-composer-select w-full min-w-0" triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs" panelClassName="!z-[400]" portal />
             </ComposerField>
               </div>
               </div>;
@@ -99,7 +103,7 @@ WelcomePromptSettings.propTypes = {
   currentSize: PropTypes.shape({
     width: PropTypes.number,
     height: PropTypes.number
-  }).isRequired,
+  }),
   sizeOptions: PropTypes.array,
   onSelectSize: PropTypes.func
 };

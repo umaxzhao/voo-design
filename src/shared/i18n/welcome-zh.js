@@ -180,6 +180,7 @@ export default {
   "welcome.prompt.styleAutoHint": "按提示词自动选择一套风格 kit",
   "welcome.prompt.modelLabel": "模型",
   "welcome.prompt.sizeLabel": "画布尺寸",
+  "welcome.prompt.sizeAuto": "自动",
   "welcome.prompt.sizePreset": "该类型默认",
   "welcome.prompt.attachments": "参考图与附件",
   "welcome.prompt.addAttachment": "添加参考图或工程文件",
