@@ -4,6 +4,7 @@ export const EDITOR_MODULES = [
     id: "workspace",
     title: "Workspace and resources",
     paths: [
+      "tests/unit/collab_core.test.js", "tests/unit/webrtc_transport_coverage.test.js",
       "src/App.jsx", "src/app_title_bar.jsx", "src/welcome_settings.css", "src/canvas/components/page_switcher.jsx",
       "tests/unit/titlebar_actions.test.jsx", "tests/unit/welcome_header_actions.test.js",
       "src/canvas/components/welcome*", "src/canvas/components/welcome_dashboard/*",
@@ -232,6 +233,7 @@ export const EDITOR_MODULES = [
     title: "Agent, runtime and platform integration",
     paths: [
       "src/main.jsx",
+      "tests/unit/collab_core.test.js", "tests/unit/webrtc_transport_coverage.test.js",
       "src/App.jsx", "src/app_title_bar.jsx", "src/canvas/components/voo_brand_logo.jsx",
       "src/canvas/components/loading_modal.*", "tests/unit/loading_modal.test.jsx",
       "scripts/release-command-pool.mjs", "scripts/verify-editor-release.mjs", "tests/unit/release-command-pool.test.js",

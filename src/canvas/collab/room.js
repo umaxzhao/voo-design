@@ -11,6 +11,8 @@
  * `0/O` or `1/I/l`, because these get read off screens and retyped.
  */
 
+import { VOO_RUN_ORIGIN } from "../../shared/vps_origin.js";
+
 const ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
 // A bound link is a stable identity for the workflow, not a throwaway session
 // id, so it needs to be long enough to stay unguessable across the workflow's
@@ -75,19 +77,13 @@ export function isValidRoomId(value) {
   return typeof value === "string" && ID_PATTERN.test(value);
 }
 
-/** Where a link points when this build is not itself served over the web. */
-export const CANONICAL_ORIGIN = "https://voo.run";
+/** The public app origin shared by browser, desktop and preview builds. */
+export const CANONICAL_ORIGIN = VOO_RUN_ORIGIN;
 
 /**
- * The shareable link for a room.
- *
- * A link is for someone else, so it can only ever be an http(s) address. The
- * desktop app serves its canvas from `voo://app` and the extension from
- * `chrome-extension://…` — sharing either would hand the other person a URL
- * that only opens on the machine it came from, which is the one thing a share
- * link must never be. Those fall back to voo.run; a build served over http
- * (localhost during development, or voo.run itself) keeps its own origin so
- * the link works where it was made.
+ * The shareable link always opens the published app, never a private host.
+ * Local, desktop, extension and preview origins are implementation details
+ * that recipients cannot necessarily reach.
  *
  * `access` encodes the room's permission on the link (`?access=view` for a
  * read-only share) so the recipient knows immediately; the guest also adopts
@@ -95,16 +91,12 @@ export const CANONICAL_ORIGIN = "https://voo.run";
  * still lands on the right permission.
  *
  * @param {string} roomId
- * @param {string} [origin] overrides the detected one, for tests.
+ * @param {string} [_origin] Legacy argument retained for call compatibility; ignored.
  * @param {string} [access] "view" appends the read-only marker; "edit"/undefined leave it off.
  * @param {string} [secret] A URL-fragment room secret, never sent in HTTP requests.
  */
-export function roomUrl(roomId, origin, access, secret) {
-  const detected = origin ?? globalThis.location?.origin ?? "";
-  const shareable = /^https?:\/\//i.test(detected)
-    ? detected
-    : CANONICAL_ORIGIN;
-  const base = `${shareable.replace(/\/+$/, "")}${ROOM_PATH}${roomId}`;
+export function roomUrl(roomId, _origin, access, secret) {
+  const base = `${CANONICAL_ORIGIN}${ROOM_PATH}${roomId}`;
   const withAccess = access === "view" ? `${base}?access=view` : base;
   return secret && ROOM_SECRET_PATTERN.test(secret)
     ? `${withAccess}#k=${secret}`

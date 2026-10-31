@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "vitest";
+import { test, vi } from "vitest";
 import { webcrypto } from "node:crypto";
 
 globalThis.crypto ??= webcrypto;
@@ -220,4 +220,24 @@ test("a peer that keeps talking is kept", () => {
   presence.touch("chatty");
   clock += PEER_TIMEOUT_MS - 1;
   assert.deepEqual(presence.sweep(), []);
+});
+
+
+test.each([
+  "http://localhost:5173", "http://127.0.0.1:5173", "http://[::1]:5173",
+  "http://192.168.1.5:5173", "voo://app", "chrome-extension://test",
+  "https://preview.example.com", "https://www.voo.run", "https://voo.run",
+])("room links use the published origin when created on %s", origin => {
+  const id = "23456789abcdefghjkmn";
+  const secret = "abcdefghijklmnopqrstuv";
+  vi.stubGlobal("location", { origin });
+  try {
+    for (const access of ["edit", "view"]) {
+      const expected = `https://voo.run/r/${id}${access === "view" ? "?access=view" : ""}#k=${secret}`;
+      assert.equal(roomUrl(id, undefined, access, secret), expected);
+      assert.equal(roomUrl(id, origin, access, secret), expected, "legacy origin argument cannot leak a private host");
+      assert.equal(parseRoomId(expected), id);
+      assert.equal(roomSecretFromLink(expected), secret);
+    }
+  } finally { vi.unstubAllGlobals(); }
 });
