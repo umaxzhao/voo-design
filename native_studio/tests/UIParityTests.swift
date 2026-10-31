@@ -224,7 +224,10 @@ public class UIParityTests {
             // Web dashboard mode has no document tab pill (brand + "+" only).
             try TestAssertions.assertTrue(bar.tabCloseButton.isHidden)
             try TestAssertions.assertFalse(bar.tabPlusButton.isHidden)
-            try TestAssertions.assertFalse(bar.settingsButton.isHidden)
+            // Web dashboard mode hides title bar settings (settings is the bottom-left floating button)
+            // and shows the browser globe button as the rightmost item.
+            try TestAssertions.assertTrue(bar.settingsButton.isHidden)
+            try TestAssertions.assertFalse(bar.browserButton.isHidden)
 
             bar.setDocumentTitle("NewProject.voo")
             try TestAssertions.assertEqual(bar.docTitleField.stringValue, "Untitled", "Dashboard mode keeps showing Untitled after a title change")

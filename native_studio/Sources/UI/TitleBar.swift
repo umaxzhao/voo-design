@@ -308,6 +308,7 @@ public final class TitleBarIconButton: NSButton {
         case plus
         case settings
         case browser
+        case collab
     }
 
     public let glyph: Glyph
@@ -320,6 +321,7 @@ public final class TitleBarIconButton: NSButton {
         let side: CGFloat
         switch glyph {
         case .close: side = 16.0
+        case .collab: side = 22.0
         case .plus: side = 24.0
         case .settings, .browser: side = 28.0
         }
@@ -375,6 +377,22 @@ public final class TitleBarIconButton: NSButton {
             ctx.addLine(to: CGPoint(x: center.x + s, y: center.y + s))
             ctx.move(to: CGPoint(x: center.x - s, y: center.y + s))
             ctx.addLine(to: CGPoint(x: center.x + s, y: center.y - s))
+            ctx.strokePath()
+
+        case .collab:
+            // Web CollabAvatars: size-22 rounded-full bg-neutral-800 text-neutral-400
+            // transition-colors group-hover:bg-neutral-700 group-hover:text-white
+            let circle = bounds.insetBy(dx: 0.5, dy: 0.5)
+            ctx.setFillColor(NSColor(white: hovered ? 0.25 : 0.15, alpha: 1.0).cgColor)
+            ctx.fillEllipse(in: circle)
+            ctx.setStrokeColor(NSColor(white: hovered ? 1.0 : 0.65, alpha: 1.0).cgColor)
+            ctx.setLineWidth(1.6)
+            ctx.setLineCap(.round)
+            let cs: CGFloat = 4.2
+            ctx.move(to: CGPoint(x: center.x - cs, y: center.y))
+            ctx.addLine(to: CGPoint(x: center.x + cs, y: center.y))
+            ctx.move(to: CGPoint(x: center.x, y: center.y - cs))
+            ctx.addLine(to: CGPoint(x: center.x, y: center.y + cs))
             ctx.strokePath()
 
         case .plus:
@@ -444,6 +462,17 @@ public final class TitleBarIconButton: NSButton {
     }
 }
 
+// MARK: - TitleBar Divider
+
+public final class TitleBarDivider: NSView {
+    public override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.backgroundColor = NSColor(white: 1.0, alpha: 0.10).cgColor
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+}
+
 // MARK: - AppTitleBar View (40px Fixed Height Chrome with Gradient)
 
 public class AppTitleBar: NSView {
@@ -465,6 +494,13 @@ public class AppTitleBar: NSView {
     public let settingsButton = TitleBarIconButton(glyph: .settings)
     /// Editor-only browser (globe) button that sits just left of the settings gear.
     public let browserButton = TitleBarIconButton(glyph: .browser)
+    /// Editor-only presence / collaboration button (web parity).
+    public let collabButton = TitleBarIconButton(glyph: .collab)
+    /// 1px vertical hairline between collab avatar and action pills.
+    public let collabDivider = TitleBarDivider()
+
+    /// Invoked when the editor collab button is pressed.
+    public var onCollabTapped: (() -> Void)?
 
     /// Dashboard-only "Import" ghost pill (calls the open-document action).
     public let dashboardImportButton = DarkActionButton()
@@ -478,6 +514,9 @@ public class AppTitleBar: NSView {
     // State & Delegation
     public weak var delegate: AppTitleBarDelegate?
     public private(set) var state = AppTitleBarState()
+
+    private var browserTrailingToSettings: NSLayoutConstraint?
+    private var browserTrailingToBar: NSLayoutConstraint?
 
     private var isBrandHovered: Bool = false {
         didSet {
@@ -574,18 +613,28 @@ public class AppTitleBar: NSView {
         saveButton.setAccessibilityIdentifier("title_bar_save_button")
         addSubview(saveButton)
 
-        // 5. Open Button: "打开"
+        // 5. Open Button: "打开" (Web desktop has clean text-only "Import" / "打开")
         openButton.translatesAutoresizingMaskIntoConstraints = false
         openButton.isWhitePill = false
         openButton.title = "打开"
-        // Web editor action is icon+label: 16pt glyph + 6pt gap inside px2.5.
-        openButton.leadingGlyph = .folderOpen
-        openButton.leadingGlyphSize = 16.0
-        openButton.leadingGlyphGap = 6.0
+        openButton.leadingGlyph = nil
         openButton.target = self
         openButton.action = #selector(handleOpenClicked)
         openButton.setAccessibilityIdentifier("title_bar_open_button")
         addSubview(openButton)
+
+        // 5b. Collab / Presence button & divider (editor mode only, web parity)
+        collabButton.translatesAutoresizingMaskIntoConstraints = false
+        collabButton.setAccessibilityIdentifier("title_bar_collab_button")
+        collabButton.setAccessibilityRole(.button)
+        collabButton.setAccessibilityLabel("Live Collaboration")
+        collabButton.onClick = { [weak self] in
+            self?.onCollabTapped?()
+        }
+        addSubview(collabButton)
+
+        collabDivider.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(collabDivider)
 
         // 6. Settings gear
         settingsButton.translatesAutoresizingMaskIntoConstraints = false
@@ -675,8 +724,11 @@ public class AppTitleBar: NSView {
         // Web: grey action `px-2.5` => 10, white primary action `px-3` => 12.
         let openHorizontalPadding: CGFloat = 10.0
         let saveHorizontalPadding: CGFloat = 12.0
-        let openGlyphWidth: CGFloat = 16.0
-        let openGlyphGap: CGFloat = 6.0
+
+        let browserToSettings = browserButton.trailingAnchor.constraint(equalTo: settingsButton.leadingAnchor, constant: -4)
+        let browserToBar = browserButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16)
+        browserTrailingToSettings = browserToSettings
+        browserTrailingToBar = browserToBar
 
         NSLayoutConstraint.activate([
             // Brand Logo button: traffic-light inset; 28pt tall with 6pt inner padding.
@@ -713,10 +765,10 @@ public class AppTitleBar: NSView {
             settingsButton.widthAnchor.constraint(equalToConstant: 28),
             settingsButton.heightAnchor.constraint(equalToConstant: 28),
 
-            browserButton.trailingAnchor.constraint(equalTo: settingsButton.leadingAnchor, constant: -4),
             browserButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             browserButton.widthAnchor.constraint(equalToConstant: 28),
             browserButton.heightAnchor.constraint(equalToConstant: 28),
+            browserToSettings,
 
             // White primary action sits between the globe and the ghost action,
             // exactly like the web's Import (grey) / Export (white) order.
@@ -727,16 +779,22 @@ public class AppTitleBar: NSView {
 
             openButton.trailingAnchor.constraint(equalTo: saveButton.leadingAnchor, constant: -8),
             openButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            openButton.widthAnchor.constraint(
-                equalToConstant: ceil(
-                    openHorizontalPadding * 2 + openGlyphWidth + openGlyphGap + openTextWidth
-                )
-            ),
+            openButton.widthAnchor.constraint(equalToConstant: ceil(openHorizontalPadding * 2 + openTextWidth)),
             openButton.heightAnchor.constraint(equalToConstant: 28),
 
-            // Dashboard-only pair sits directly left of the gear (the web dashboard
-            // has no browser button between the action pills and the right icon).
-            dashboardNewButton.trailingAnchor.constraint(equalTo: settingsButton.leadingAnchor, constant: -8),
+            collabDivider.trailingAnchor.constraint(equalTo: openButton.leadingAnchor, constant: -8),
+            collabDivider.centerYAnchor.constraint(equalTo: centerYAnchor),
+            collabDivider.widthAnchor.constraint(equalToConstant: 1),
+            collabDivider.heightAnchor.constraint(equalToConstant: 16),
+
+            collabButton.trailingAnchor.constraint(equalTo: collabDivider.leadingAnchor, constant: -8),
+            collabButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            collabButton.widthAnchor.constraint(equalToConstant: 22),
+            collabButton.heightAnchor.constraint(equalToConstant: 22),
+
+            // Dashboard-only pair sits left of browserButton (in dashboard mode,
+            // browserButton is the rightmost control at trailing -16, matching web).
+            dashboardNewButton.trailingAnchor.constraint(equalTo: browserButton.leadingAnchor, constant: -8),
             dashboardNewButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             dashboardNewButton.widthAnchor.constraint(
                 equalToConstant: ceil(newTextWidth + saveHorizontalPadding * 2)
@@ -808,21 +866,27 @@ public class AppTitleBar: NSView {
 
     private func updateDashboardMode() {
         // Live web dashboard title bar: brand + the round "+" (no document tab
-        // pill), and Import (ghost) / New (white) / settings on the right.
+        // pill), and Import (ghost) / New (white) / browser globe on the right.
+        // Settings gear is hidden in dashboard mode (web settings is the bottom-left floating button).
         saveButton.isHidden = isDashboardMode
         openButton.isHidden = isDashboardMode
-        browserButton.isHidden = isDashboardMode
+        collabButton.isHidden = isDashboardMode
+        collabDivider.isHidden = isDashboardMode
+        browserButton.isHidden = false
+        settingsButton.isHidden = isDashboardMode
         dashboardImportButton.isHidden = !isDashboardMode
         dashboardNewButton.isHidden = !isDashboardMode
-        settingsButton.isHidden = false
         docTitleField.isHidden = isDashboardMode
         tabCloseButton.isHidden = isDashboardMode
         tabPlusButton.isHidden = false
-        // Show a generic "Untitled" tab while browsing the dashboard, exactly like
-        // the web app (the loaded project is not "active" until the editor opens).
+
         if isDashboardMode {
+            browserTrailingToSettings?.isActive = false
+            browserTrailingToBar?.isActive = true
             applyDocumentTitle("Untitled")
         } else {
+            browserTrailingToBar?.isActive = false
+            browserTrailingToSettings?.isActive = true
             applyDocumentTitle(state.documentTitle)
         }
         needsDisplay = true

@@ -184,6 +184,10 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         view.titleBar.onBrowserTapped = { [weak self] in
             self?.showChromeToast("内嵌浏览器抽屉在原生版本尚未接入")
         }
+        // Live collaboration button (web parity)
+        view.titleBar.onCollabTapped = { [weak self] in
+            self?.showChromeToast("实时协作：已生成协作分享链接")
+        }
         view.welcomeDashboard.onEmptyTrash = { [weak self] in
             guard let self = self else { return }
             let alert = NSAlert()

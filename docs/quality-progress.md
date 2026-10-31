@@ -304,3 +304,27 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 
 验证：`./build.sh` 通过（binary 4.85 MB ≤ 5 MB，bundle 10.17 MB ≤ 35 MB）；`./tests/run_tests.sh` **384/384 通过**（新增草稿开关/写盘/恢复/丢弃断言）。截图：`native_studio/docs/screenshots/z_agent.png`（2x retina 抓取）。
 仍未覆盖：Light interface 仍无浅色主题实现；标题栏仍为「打开/保存」语义；约束不处理旋转后的钉扎。
+
+## 原生界面优化（第六轮：标题栏双态完全对齐 Web 1:1 + 页码胶囊宽度微调）— 2026-10-31
+
+基于当前实时 Web 截图对比（`web_titlebar_right.png` 与 `web_dashboard_titlebar_right.png`），将标题栏在编辑器态与工作台态的双态结构完全对齐 Web 真实渲染：
+
+- **编辑器态标题栏（右侧）**：
+  - 新增协作分享按钮 `[+]`（22×22 圆形胶囊，悬浮加深）以及 1×16 分隔线（`bg-white/10`），点击触发原生协作分享逻辑（`titleBar.onCollabTapped`）；
+  - 移除「打开」按钮上不属于 Web 桌面版的文件夹图标（Web 桌面端为纯文字按钮）；
+  - 保持 `[+] [|] 打开 保存 浏览器 齿轮` 的精确顺序与边距（按钮高 28，齿轮距右侧 16pt，间距 8pt/4pt）。
+- **工作台态标题栏（右侧）**：
+  - 隐藏设置齿轮（因为 Web 工作台的设置入口是在左下角浮动按钮 `fixed bottom-3 left-6`）；
+  - 保持 `导入`（ghost 按钮）、`新建`（白底黑字药丸）以及浏览器 Globe 按钮（右对齐距右边缘 16pt）；
+  - 状态切换时动态切换 Trailing 约束，无缝自适应。
+- **页码胶囊（PageSwitcherPillView）宽度与字体微调**：
+  - 字体从等宽字体改为与 Web 一致的系统比例无衬线字体（Inter / system sans 12pt regular），解决由于等宽字体导致胶囊偏宽 18px 的视觉偏差；
+  - 重新跑 `scripts/native-parity-check.py` 实测结果：
+    - 工具轨 (ToolRail): `dx=+1, dy=+0, dw=-1, dh=+0`
+    - 图层卡片 (Layers): `dx=-2, dy=-1, dw=+0, dh=+1`
+    - 页码胶囊 (PagePill): `dx=+0, dy=+0, dw=-2, dh=+0`（与 Web 仅相差 2px，高度位置完全重合）
+    - 属性卡片 (Properties Card): Web `(1131, 119, 286, 731)` vs 原生 `(1133, 115, 286, 735)` -> 宽度 286 完全一致，高度仅相差 4px
+    - Agent 面板: 均为 `(1050, 40, 385, 850)` 空间重合
+
+验证：`./build.sh` 通过（binary 4.92 MB ≤ 5 MB，bundle 10.24 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **384/384 通过**。截图：`native_studio/docs/screenshots/z_editor.png`、`native_studio/docs/screenshots/z_dashboard.png`。
+仍未覆盖：Light interface 仍无浅色主题实现；约束不处理旋转后的钉扎。

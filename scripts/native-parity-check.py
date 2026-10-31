@@ -108,35 +108,35 @@ def bbox_of_dark_surface(
 REGIONS: dict[str, dict] = {
     # name: window, detection strategy, params
     "toolrail": {
-        "native": "w_editor.png",
+        "native": "z_editor.png",
         "web": "web_editor.png",
         "window": (250, 40, 1200, 125),
         "mode": "dark",
         "args": {"max_luma": 20, "min_run": 120},
     },
     "layers": {
-        "native": "w_editor.png",
+        "native": "z_editor.png",
         "web": "web_editor.png",
         "window": (10, 340, 300, 600),
         "mode": "dark",
         "args": {"max_luma": 20, "min_run": 80},
     },
     "zoom_bar": {
-        "native": "w_editor.png",
+        "native": "z_editor.png",
         "web": "web_editor.png",
         "window": (590, 835, 860, 900),
         "mode": "light",
         "args": {"colour": (227, 227, 227), "tol": 12, "min_run": 20},
     },
     "page_pill": {
-        "native": "w_editor.png",
+        "native": "z_editor.png",
         "web": "web_editor.png",
         "window": (8, 840, 220, 900),
         "mode": "dark",
         "args": {"max_luma": 26, "min_run": 40},
     },
     "properties": {
-        "native": "w_editor.png",
+        "native": "z_editor.png",
         "web": "web_editor.png",
         "window": (1080, 240, 1440, 760),
         "mode": "dark",

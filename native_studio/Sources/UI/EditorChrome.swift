@@ -984,13 +984,13 @@ public final class PageSwitcherPillView: NSView {
         }
     }
 
-    // MARK: Styling
+    // MARK: Styling (Web `text-xs text-neutral-100 font-normal` uses system sans / Inter)
 
-    public var nameFont: NSFont = ThemeFonts.mono(size: 12.0) {
+    public var nameFont: NSFont = ThemeFonts.system(size: 12.0, weight: .regular) {
         didSet { needsDisplay = true }
     }
 
-    public var counterFont: NSFont = ThemeFonts.mono(size: 12.0) {
+    public var counterFont: NSFont = ThemeFonts.system(size: 12.0, weight: .regular) {
         didSet { needsDisplay = true }
     }
 
