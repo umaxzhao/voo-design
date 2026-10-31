@@ -135,3 +135,11 @@ This standalone suite is run explicitly; its other standalone classification
 and the 86-suite core inventory remain unchanged. Release evidence and exact
 revision are recorded in `docs/quality-progress.md`; signed native installs,
 physical input devices and all imported node variants are not certified.
+
+Verified clean revision: `bfbf91d040eebc3e1254f03c017fcc8f44677b6a`; all 90
+core steps passed (4,590 units passed, four skipped; 86 browser suites), plus
+explicit `agent-selection-context`. Production entry/direct/Agent assets
+(seven files) match the build; real Agent chip switching and detach pass with
+no document mutation or page errors. Evidence: `agent-frame-release.json`,
+`agent-frame-icon-committed.log` and `agent-frame-production-proof.json` in
+`/private/tmp/voo-license-regression/`. Signed native installation remains untested.

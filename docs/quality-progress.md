@@ -3,14 +3,19 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
-最近一次完整核心验证提交：[befffb3](https://github.com/umaxzhao/voo-design/commit/befffb37071baf1aa4c0cd3abf83452b092f650d)；90/90 项通过，当前线上部署为该固定版本；合并提交 49d85d8 的完整源码树与其一致。
+最近一次完整核心验证提交：[bfbf91d](https://github.com/umaxzhao/voo-design/commit/bfbf91d040eebc3e1254f03c017fcc8f44677b6a)；90/90 项通过，当前线上部署为该固定版本；合并提交 ffaf940 的完整源码树与其一致。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
 
-## 本轮：Agent 选中 Frame 的图标（验证中）
+## 本轮：Agent 选中 Frame 的图标（已验证并部署）
 
 - `platform.agent-contracts`：单选 Frame 时，上下文标签复用画布的 Frame 图标；普通图层/编组和多选保留 Layers，旧 artboard 上下文也使用 Frame。未改变上下文数据、提示词或选择逻辑。
-- 修改前真实浏览器 SVG 断言失败，证据 `/private/tmp/voo-license-regression/agent-frame-icon-before.log`。新增类型渲染断言及真实选区切换回归；完整验证和上线结果完成后补录。[验收边界](audits/nested-objects-audit.md#agent-selection-context-icon)。
+- 修改前真实浏览器 SVG 断言失败，证据 `/private/tmp/voo-license-regression/agent-frame-icon-before.log`。新增类型渲染断言及真实选区切换回归；9 项定向单测及真实 Agent 选区切换/提交/解绑/清空/跨文档回归通过（`agent-frame-icon-unit.log`、`agent-frame-icon-committed.log` 同目录）。[验收边界](audits/nested-objects-audit.md#agent-selection-context-icon)。
+
+- 精确干净版本 `bfbf91d040eebc3e1254f03c017fcc8f44677b6a`：**90/90 发布步骤通过、86 组核心浏览器通过，单测 4590 通过、4 跳过、0 失败**；验证期间源码未变化。证据 `/private/tmp/voo-license-regression/agent-frame-release.json`、同名 `.log`。独立 `agent-selection-context` 显式执行，不计入核心 86 组；其余 20 组独立检查本轮未运行，覆盖仍为部分。
+- [PR #70](https://github.com/umaxzhao/voo-design/pull/70) 合并为 `ffaf9406e5f07191d036473704219044896d6f64`，源码树与验证提交一致；[精确提交 GitHub build](https://github.com/umaxzhao/voo-design/actions/runs/41210654826/job/124564730088) 通过，CI deploy 跳过，使用项目脚本 SSH 部署 la2。备份 `la2:/srv/voo-run/editor-backups/bfbf91d040eebc3e1254f03c017fcc8f44677b6a-20261031T144458Z`。
+- 正式地址入口、5 个直接资源及 Agent 分块共 7 文件 HTTP 200、字节一致。隔离浏览器实际打开 Agent，验证子层 Layers → Frame 图标 → 多选 Layers → Frame 图标、解绑及文档不变，无页面脚本错误；没有发送模型请求。证据 `agent-frame-production-proof.json`、`agent-frame-production.png` 同目录。
+- 本地 App 仅应用本轮组件和回归补丁，保留既有分叉和其他草稿；真实 Agent 浏览器回归及 9 项单测通过（`agent-frame-primary-browser.log`、`agent-frame-primary-unit.log`），备份 `agent-frame-primary-backup/`。完整门禁属于上述干净提交，未认证私人草稿整体或签名 App 冷启动。
 
 ## 本轮：Frame 标题点击选中（已验证并部署）
 
@@ -144,12 +149,12 @@
 | 项目 | 状态 |
 | --- | --- |
 | 工程规范与模块登记 | 已落地：12 个模块、65 个公开能力分组 |
-| 核心发布校验 | befffb3：90/90 步通过，包含 86 组浏览器套件 |
-| 全量单元测试 | 4585 通过、4 跳过、0 失败；跳过项不算通过 |
-| GitHub Ubuntu 基础检查 | [befffb3 CI build](https://github.com/umaxzhao/voo-design/actions/runs/41208362370/job/124558496923) 通过；CI deploy 跳过，SSH 部署另有证据 |
-| 线上部署 | befffb3 已部署 la2，入口及直接资源字节一致；正式 Frame 标题/图标/Enter 选中通过 |
+| 核心发布校验 | bfbf91d：90/90 步通过，包含 86 组浏览器套件 |
+| 全量单元测试 | 4590 通过、4 跳过、0 失败；跳过项不算通过 |
+| GitHub Ubuntu 基础检查 | [bfbf91d CI build](https://github.com/umaxzhao/voo-design/actions/runs/41210654826/job/124564730088) 通过；CI deploy 跳过，SSH 部署另有证据 |
+| 线上部署 | bfbf91d 已部署 la2，入口及 Agent 资源字节一致；正式 Frame 上下文图标与解绑通过 |
 | 功能验收完整度 | 部分覆盖；65 个公开能力分组未穷尽所有入口、上下文和设备 |
-| 核心门禁外的独立检查 | 21 组本轮未运行：18 组待复核，3 组需单独运行 |
+| 核心门禁外的独立检查 | Agent 上下文 1 组本轮显式执行通过；其余 20 组未运行，不算通过 |
 
 ## 连续创作首轮（f9102cd，已完成声明范围）
 
