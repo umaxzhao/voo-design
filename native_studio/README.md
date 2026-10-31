@@ -38,15 +38,16 @@ Packaging gates enforced by `build.sh`:
 
 | Artifact | Limit | Actual |
 | :--- | ---: | ---: |
-| Executable binary | ≤ 5 MB | **~3.5 MB** |
-| `.app` bundle | ≤ 35 MB | **~5.1 MB** |
-| Cold launch (window ready) | < 0.1 s target | **~0.14 s** |
+| Executable binary | ≤ 5 MB | **~4.6 MB** |
+| `.app` bundle | ≤ 35 MB | **~7.3 MB** (includes the bundled OFL faces) |
+| Cold launch (window ready) | < 0.2 s target | **~0.15 s** |
 
 ## What is replicated
 
 | VOO Design (web/Electron) | Native studio |
 | :--- | :--- |
 | Mint-on-black gradient title bar, document tab + `+`, 保存/打开/bolt | `AppTitleBar` with tab pill, close/new tab, white save pill, settings bolt |
+| UI typeface: **Intel One Mono** (`--font-mono`), Inter for canvas text | Same OFL faces bundled in `Resources/Fonts` and registered via `VooMonoTypeface` (`ATSApplicationFontsPath` + programmatic fallback) |
 | Welcome dashboard (search, workspace bar, category pills, prompt composer, imports, recents, drafts/starred/trash, design systems, shortcuts) | `WelcomeDashboardView` — custom-drawn, fully interactive |
 | Floating tool rail with active white circular tool | `ToolRailView` — 8 tools + hand/lasso/wand + VOO avatar (AI entry) |
 | Floating left **LAYERS** card (checkboxes, kind glyphs, opacity/blend menus, footer add/mask/group/delete, drag reorder) | `LayersPanelView` |

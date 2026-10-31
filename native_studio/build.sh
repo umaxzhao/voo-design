@@ -84,6 +84,13 @@ if [ -d "$DIR/Resources/Onboarding" ]; then
   cp -r "$DIR/Resources/Onboarding" "$RESOURCES_DIR/Onboarding"
 fi
 
+# Bundled UI typeface (Intel One Mono, OFL) — the same mono face the web editor
+# declares in src/index.css, so advance widths/tracking match the browser build.
+if [ -d "$DIR/Resources/Fonts" ]; then
+  echo "--> Copying bundled fonts (Intel One Mono)..."
+  cp -r "$DIR/Resources/Fonts" "$RESOURCES_DIR/Fonts"
+fi
+
 # 6. Install Info.plist
 if [ -f "$DIR/Info.plist" ]; then
   cp "$DIR/Info.plist" "$CONTENTS_DIR/Info.plist"

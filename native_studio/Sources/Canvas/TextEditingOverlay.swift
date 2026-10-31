@@ -481,16 +481,12 @@ public final class TextEditingOverlay: NSView {
         editorTextView.insertionPointColor = Self.borderColor
     }
 
-    /// Resolves the editor font: node family when installed, "Helvetica Neue" as
-    /// the family fallback, and the themed system font as the last resort.
+    /// Resolves the editor font with the same stack as the canvas renderer, so the
+    /// caret and glyph baselines agree (bundled Inter / Intel One Mono first).
     public static func resolveFont(family: String?, size: CGFloat) -> NSFont {
-        if let family = family, !family.isEmpty {
-            if let font = NSFont(name: family, size: size) {
-                return font
-            }
-            if let fallback = NSFont(name: "Helvetica Neue", size: size) {
-                return fallback
-            }
+        if let family = family, !family.isEmpty,
+           let font = TextStyleResolver.resolveFamily(family, size: size) {
+            return font
         }
         return ThemeFonts.system(size: size, weight: .regular)
     }

@@ -79,4 +79,6 @@ swiftc \
   -o "$TEST_BIN"
 
 echo "=== 正在执行 VOO Design Native Studio E2E 测试 ==="
-"$TEST_BIN" "${EXTRA_ARGS[@]}"
+# The harness binary is not an .app bundle, so point the theme at the source fonts
+# to exercise the same bundled faces (Intel One Mono / Inter) as the shipped app.
+VOO_FONT_DIR="$STUDIO_DIR/Resources/Fonts" "$TEST_BIN" "${EXTRA_ARGS[@]}"

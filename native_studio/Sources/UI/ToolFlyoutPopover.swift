@@ -190,7 +190,7 @@ public final class ToolFlyoutRowView: NSView {
         // 4. Shortcut Text
         if !item.shortcut.isEmpty {
             let shortcutAttrs: [NSAttributedString.Key: Any] = [
-                .font: NSFont.monospacedSystemFont(ofSize: 10.0, weight: .regular),
+                .font: ThemeFonts.mono(size: 10.0, weight: .regular),
                 .foregroundColor: NSColor(white: 0.50, alpha: 1.0)
             ]
             let shortcutStr = NSAttributedString(string: item.shortcut, attributes: shortcutAttrs)

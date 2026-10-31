@@ -2453,7 +2453,9 @@ public final class PropertiesPanelView: NSView {
         (PropertiesColorMath.englishBlendModeName($0.rawValue), $0.rawValue)
     }
 
-    private static let fontFamilies = ["Inter", "Helvetica Neue", "SF Pro Text", "Arial", "Georgia", "Menlo"]
+    /// Inter (bundled, the web default) plus the bundled mono face; remaining
+    /// entries resolve from installed system fonts exactly as the web stack does.
+    private static let fontFamilies = ["Inter", "Intel One Mono", "Helvetica Neue", "SF Pro Text", "Arial", "Georgia"]
     private static let fontFamilyItems: [(title: String, value: String)] = fontFamilies.map { ($0, $0) }
 
     // MARK: Configure

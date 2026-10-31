@@ -3,19 +3,29 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
-最近一次完整核心验证提交：[a94365e](https://github.com/umaxzhao/voo-design/commit/a94365e747563bf40d1b1c9fe52088a779b38675)。
+最近一次完整核心验证提交：[23d961c](https://github.com/umaxzhao/voo-design/commit/23d961ca7bc6a526447e821488290f76bd295693)。
 以下结果属于该提交，不能直接代表后续改动已经验证。
+
+## 本轮：本地服务发现与同源画布预览
+
+- 已完成声明范围：应用提交 `23d961c` 通过 87/87 步（83 组浏览器）；证据 `/private/tmp/voo-local-service-final-release-v4.json`。
+- 新增 `platform.local-service-discovery`、`platform.live-preview`，当前登记 55 个能力分组、83 组核心浏览器套件。
+- 已验证服务缺失/发现/断开/恢复、旧版 1.0 桥接兼容、网页只展示已安装 CLI、设置页与引导隐藏本地入口、保留 API 与模型选择、空目录进入 API 设置；断线后也不会残留本地向导入口。
+- 只读预览通过独立浏览器读取原画布红/绿图形真实像素，验证更新、缩放、保持生成目标与文档切换失效。缺少文档身份的旧渲染器不暴露预览；旧 MCP 协议保留图片和文本 URL。过期响应支持中英文。
+- 已推送并部署 la2，线上首页和 5 个引用资源与验证构建字节一致；线上配置入口、CLI 隐藏和真实新建操作通过。证据 `/private/tmp/voo-local-service-deployment-proof.json`，截图 `/private/tmp/voo-local-service-production.png`。
+- 本机旧版 Electron 桥接通过网页冷启动自动发现与只读安装状态 RPC；新增预览服务需 App 重启载入更新代码。主工作区仅增量同步本轮源码，其余草稿和旧工作树保留，不作为干净发布依据。
+- [验收范围](audits/editor-closeout.md#local-services-and-source-bound-preview)：不把浏览器通过当成所有客户端自动右侧面板、签名 App 安装包或本地网络权限弹窗已验证。
 
 ## 当前概况
 
 | 项目 | 状态 |
 | --- | --- |
-| 工程规范与模块登记 | 已落地：12 个模块、53 个能力分组 |
-| 核心发布校验 | 85/85 步通过，包含 81 组浏览器套件 |
-| 全量单元测试 | 4481 通过、4 跳过、0 失败；跳过项不算通过 |
-| GitHub Ubuntu 基础检查 | [已通过](https://github.com/umaxzhao/voo-design/actions/runs/41169601103)：模块登记、设计检查、构建、单测；la 通过本机 SSH 部署 |
-| 线上部署 | a94365e 已部署到 la，资源哈希一致；新增 17 场景、手势回滚、钢笔切换/编辑回滚、对齐/布尔/路径排字、方向键微调及混合图层选区复查通过 |
-| 功能验收完整度 | 部分覆盖；53 个能力分组尚未逐一穷尽所有入口、上下文和设备 |
+| 工程规范与模块登记 | 已落地：12 个模块、55 个能力分组 |
+| 核心发布校验 | 87/87 步通过，包含 83 组浏览器套件 |
+| 全量单元测试 | 4496 通过、4 跳过、0 失败；跳过项不算通过 |
+| GitHub Ubuntu 基础检查 | [已通过](https://github.com/umaxzhao/voo-design/actions/runs/41176262001)：模块登记、设计检查、构建、单测；部署步骤跳过，已通过本机 SSH 部署 la2 |
+| 线上部署 | 23d961c 已部署到 la2，首页/引用资源字节一致；本地服务隐藏、API 配置入口、新建画布的线上操作通过；包含同步合入的画布二轮修复 |
+| 功能验收完整度 | 部分覆盖；55 个能力分组尚未逐一穷尽所有入口、上下文和设备 |
 | 核心门禁外的独立检查 | 21 组本轮未运行：18 组待复核，3 组需单独运行 |
 
 ## 连续创作首轮（f9102cd，已完成声明范围）
@@ -52,7 +62,7 @@
 | 图片与修图 `images` | 12/12 | 部分 | 独立模型/网络检查、硬件内存/FPS；本轮排除视频 |
 | 布局与设计系统 `layout` | 6/6 | 部分 | 组件/变量 alias、嵌套布局组合、设计系统预设细查 |
 | 属性面板与共享 UI `inspector` | 6/6 | 部分 | 每个控件、输入方式与参数组合的逐项验收 |
-| Agent 与平台 `platform` | 11/11 | 部分 | 真实外部服务、原生安装包、协作跳过项、独立脚本复核 |
+| Agent 与平台 `platform` | 13/13 | 部分 | 真实外部服务、原生安装包、协作跳过项、独立脚本复核 |
 
 ## 21 组独立检查的待办
 
@@ -134,18 +144,10 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - Harness 的 VOO 插件认证成功后，Agent 设置中的本地模型桥接卡片自动隐藏；连接尚未完成时保留入口。
 - `tests/unit/first_run_agent_grid.test.jsx` 覆盖已连接、检测中和插件未连接状态；配合 `tests/unit/first_run_onboarding.test.jsx`，定向 58 项通过。
 
-## 原生 macOS 应用样式与形态整体对齐 — 2026-10-31
+## 原生界面字体对齐 Intel One Mono — 2026-10-31
 
-范围：`native_studio`（Swift 6 + AppKit 自绘 UI）对照 Web/Electron 当前源码逐模块复核样式与形态。差异以 `src/canvas/components/*` 的 Tailwind 类为准；`.agents/teamwork/lead_refs/*.png` 为 10-23 的旧截图，与源码冲突时不作为依据。
-
-- **工具轨 `editor_toolbar.jsx`**：按钮 36→44（`h-11 w-11`），药丸 512×48→589×56（`p-1.5` + 11 项 + 分隔 + 44pt VOO 头像），顶部 16→14；图标改为 Lucide（hand/crop/squaredashed/brush/pentool/type/eraser/square/scan/wand2），家族箭头修正到按钮右下（`NSButton` 为 flipped，旧代码画到了顶部）。
-- **面板 `editor_layers.jsx` / `editor_properties/index.jsx`**：PROPERTIES 宽 256→**288**（`md:w-72`，此前误按 `w-64`）；LAYERS 256×244，行高 32、行距 4、层级缩进 8+depth×14、类型图标 13；底部工具条与 Web 一致（28×28、13pt、`h-7 w-7`，顺序 mask/adjustment/add + 右侧删除），并新增可折叠 chevron（`collapsedIds`，含选中项祖先自动展开）。
-- **属性面板结构**：删除自造的 `Solid|Linear|Radial` 整行分段控件，改为 Web 的「漆类型菜单」（24×24 触发器 + 菜单）；368pt 折叠线内现在显示 COLOR + SHAPE + TRANSFORM 标题；底部留 12pt 内边距 + 矩形裁剪，修复内容溢出圆角/卡片的问题；滚动条隐藏（Web `no-scrollbar`）。
-- **画布 `editor_page*` / chrome**：舞台底色 `#47474d`→`#1c1c1c`；编辑壳边框 1px/85%→**2px `#b2ffd6`**；画板填充取 `document.canvas.backgroundColor`（`#171717`）；画板描边改由舞台绘制 1px 米白选中环（原 2px 模型描边）；画板标签 11pt mono、上移 20pt、12pt 网格图标；尺寸胶囊仅在拖拽/创建时出现；`clipContent` 与 `clipTo` 生效；容器不透明度继承；文本行盒改 CSS 精确（`lineHeight` 倍数）；标尺底色/刻度/竖排标签对齐 Web；网格按钮误绑标尺的缺陷修复；新增 `editingTextNodeId` 消除内联编辑双绘；新增 `onViewportChanged` 供 Island Bar 跟随平移。
-- **选择手柄 `TransformHandlesView`**：1px `#b2ffd6` 环（原黑色）+ 去掉阴影；选择框与手柄中心做半像素对齐（「手柄歪」根因）；旋转销改白底 + 米白环。
-- **底部 chrome**：缩放条贴底 16→**12**；Island Bar 不再固定在缩放条上方，改为按 Web `use_contextual_taskbar_rect.js` 锚定选区最外层 Frame（下 +6，越界翻上，视口内缩 8）；旧版内嵌 contextual pill 退休，避免与新 Island Bar 重叠。
-- **工作台/设置/Agent**：清除设置页泄露的 i18n 原始键（`collab.guestBadge` / `COLLAB.NAMEFIELD`）→ “Local guest profile / Display name”；删除工作台注入的两张演示卡片、底部「返回当前画布」入口与 `[Custom]` 徽章，Recents 空态与 Web 一致（仅标题 + 计数 0）；新增设置 CANVAS→“Show rulers” 开关（`voo.editor.showRulers`，与 ⇧R、缩放条、启动读取同步）；Agent 面板底色 `#0C0C0C`→`#000000`、圆角 16→24，顶部与编辑壳齐平。
-- **默认文档**：新建文档保持 Web 的 `Design 1` 1200×800 @58%；打开磁盘上已不存在的工程时改为新建空白文档并提示，不再加载演示样机。
-- 验证：`./build.sh` 通过（二进制 4.56 MB ≤ 5 MB，包 6.07 MB ≤ 35 MB，冷启动 ~0.15s）；`./tests/run_tests.sh` **377/377 通过**（已同步更新工具轨 589×56/44pt、面板 288/244/356、头像 44、工作台真实文件等断言）。
-- 证据截图：`native_studio/docs/screenshots/v4_selected.png`、`v3_editor.png`、`v3_dashboard.png`、`v2_settings.png`、`v2_agent.png`。
-- 未覆盖/仍不同：原生工具集与 Web 不同（无 crop/fill/healing，Web 的 fill 与 healing 未实现），故工具轨宽度按原生 11 项计算；字体用 SF Mono 而非 Intel One Mono，字宽略有差异；未在实体设备上验证触控板手势与硬件 FPS。
+- 能力：`platform.native-typography`。原生壳此前用 `NSFont.monospacedSystemFont`（SF Mono），与 Web 的 `--font-mono: "Intel One Mono"` 字宽不同（12pt 下 7.418 vs 7.368），导致标题栏/图层/属性/Island Bar 的文字与省略号位置略有偏差。
+- 实现：把 Web 同一套 OFL 字体打进 `native_studio/Resources/Fonts`（Intel One Mono regular/medium/bold + Inter），`build.sh` 随包复制到 `Contents/Resources/Fonts`，`Info.plist` 声明 `ATSApplicationFontsPath=Fonts`，并在 `VooMonoTypeface.registerBundledFonts()` 内按 PostScript 名（`IntelOneMono-*`）注册、按 CSS 权重规则（≥600 用 bold、≥500 用 medium）解析；缺失时回退 SF Mono，不影响无字体资源的构建（如测试二进制，可用 `VOO_FONT_DIR` 指向源目录）。
+- 顺带对齐画布文字：`TextStyleResolver.resolveFamily` 支持 CSS 字族栈（`"'Inter', system-ui, sans-serif"`），新文本节点默认 Inter 现在真实命中打包字体，内联编辑器与画布渲染共用同一解析路径。
+- 验证：`./build.sh` 通过（binary 4.57 MB ≤ 5 MB，bundle 7.31 MB ≤ 35 MB）；`./tests/run_tests.sh` **377/377 通过**（含新字体的真实度量）；应用日志 `bundled typeface Intel One Mono: ready (4 face file(s))`；截图 `native_studio/docs/screenshots/v5_font_editor.png`、`v5_font_text.png`。
+- 未覆盖：只打包了 Web 字体清单中的 Inter 与 Intel One Mono，其余 12 个可选字族（Roboto/Montserrat/Noto Sans SC 等）仍回退系统字体；实体设备上的字重合成与中文渲染未单独验收。

@@ -134,7 +134,7 @@ public class ScrubbableNumberField: NSView, NSTextFieldDelegate {
         addSubview(labelView)
 
         textField.translatesAutoresizingMaskIntoConstraints = false
-        textField.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
+        textField.font = ThemeFonts.monoDigit(size: 11, weight: .regular)
         textField.textColor = .white
         textField.isBordered = false
         textField.drawsBackground = false

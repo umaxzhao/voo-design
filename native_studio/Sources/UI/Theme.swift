@@ -7,6 +7,7 @@
 //
 
 import AppKit
+import CoreText
 import Foundation
 
 // MARK: - VOO Dark Theme Design Tokens
@@ -88,12 +89,106 @@ public struct ThemeTokens {
 
 // MARK: - Typography & Focus Helpers
 
+/// The bundled UI typeface. The web editor renders all chrome in **Intel One Mono**
+/// (`src/index.css` `--font-mono`), so the native shell bundles the same three OFL
+/// weights (`Resources/Fonts`) and resolves them by weight instead of falling back
+/// to SF Mono, which has different advance widths (±0.3pt at 11–12pt).
+public enum VooMonoTypeface {
+    /// PostScript names shipped in `Resources/Fonts` (see `Info.plist`
+    /// `ATSApplicationFontsPath`, plus the programmatic fallback below).
+    public enum Weight: String, CaseIterable {
+        case regular = "IntelOneMono-Regular"
+        case medium = "IntelOneMono-Medium"
+        case bold = "IntelOneMono-Bold"
+    }
+
+    /// True once at least the regular face resolved; the theme falls back to the
+    /// system monospaced design when a build ships without the font resources.
+    public private(set) static var isAvailable: Bool = false
+
+    private static var didRegister = false
+
+    /// Registers the bundled faces for this process. Called once at launch; also
+    /// covers the un-bundled (test / `swiftc` binary) case by looking next to the
+    /// executable and in the source resource folder.
+    public static func registerBundledFonts() {
+        guard !didRegister else { return }
+        didRegister = true
+
+        let urls = candidateFontURLs()
+        for url in urls {
+            var error: Unmanaged<CFError>?
+            _ = CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error)
+        }
+        isAvailable = NSFont(name: Weight.regular.rawValue, size: 12) != nil
+        NSLog(
+            "[VOO Design Native] bundled typeface Intel One Mono: %@ (%d face file(s))",
+            isAvailable ? "ready" : "missing — falling back to SF Mono",
+            urls.count
+        )
+    }
+
+    private static func candidateFontURLs() -> [URL] {
+        var urls: [URL] = []
+        let fileManager = FileManager.default
+        var directories: [URL] = []
+        // Test/source-tree override so the harness exercises the real faces.
+        if let override = ProcessInfo.processInfo.environment["VOO_FONT_DIR"], !override.isEmpty {
+            directories.append(URL(fileURLWithPath: override, isDirectory: true))
+        }
+        if let resources = Bundle.main.resourceURL {
+            directories.append(resources.appendingPathComponent("Fonts", isDirectory: true))
+        }
+        // Un-bundled binaries (test harness / swiftc output) still sit in the repo.
+        let executableDir = URL(fileURLWithPath: CommandLine.arguments.first ?? "")
+            .deletingLastPathComponent()
+        directories.append(executableDir.appendingPathComponent("Fonts", isDirectory: true))
+        directories.append(executableDir.appendingPathComponent("Resources/Fonts", isDirectory: true))
+
+        for directory in directories {
+            guard let entries = try? fileManager.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: nil
+            ) else { continue }
+            urls.append(contentsOf: entries.filter { $0.pathExtension.lowercased() == "ttf" })
+        }
+        return urls
+    }
+
+    /// Resolves the bundled face closest to `weight` (CSS-like matching: the web
+    /// build only ships 400/500/700, so ≥600 uses the bold face).
+    public static func font(size: CGFloat, weight: NSFont.Weight) -> NSFont? {
+        if !didRegister { registerBundledFonts() }
+        let face: Weight
+        if weight >= .semibold {
+            face = .bold
+        } else if weight >= .medium {
+            face = .medium
+        } else {
+            face = .regular
+        }
+        if let font = NSFont(name: face.rawValue, size: size) {
+            return font
+        }
+        return NSFont(name: Weight.regular.rawValue, size: size)
+    }
+}
+
 public struct ThemeFonts {
+    /// Chrome / body mono face (`font-mono` in the web build): Intel One Mono when
+    /// bundled, otherwise the system monospaced font with the same metrics request.
     public static func mono(size: CGFloat, weight: NSFont.Weight = .regular) -> NSFont {
+        if let bundled = VooMonoTypeface.font(size: size, weight: weight) {
+            return bundled
+        }
         return NSFont.monospacedSystemFont(ofSize: size, weight: weight)
     }
 
+    /// Tabular figures. Intel One Mono is fixed-advance, so the same face is used.
     public static func monoDigit(size: CGFloat, weight: NSFont.Weight = .regular) -> NSFont {
+        if let bundled = VooMonoTypeface.font(size: size, weight: weight) {
+            return bundled
+        }
         return NSFont.monospacedDigitSystemFont(ofSize: size, weight: weight)
     }
 
