@@ -325,6 +325,9 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
     - 页码胶囊 (PagePill): `dx=+0, dy=+0, dw=-2, dh=+0`（与 Web 仅相差 2px，高度位置完全重合）
     - 属性卡片 (Properties Card): Web `(1131, 119, 286, 731)` vs 原生 `(1133, 115, 286, 735)` -> 宽度 286 完全一致，高度仅相差 4px
     - Agent 面板: 均为 `(1050, 40, 385, 850)` 空间重合
+- **缩放条 ⋯ 更多菜单完全对齐 Web**：
+  - 补全「自适应画板 (Fit to Screen) ⇧1」、「显示标尺 (Rulers)」、「清除所有参考线 (Clear Guides)」、「网格 (Grid) ⌃'」、「磁性吸附 (Snap to Grid)」完整项；
+  - 真实联动画布 `zoomFit`、`showRulers` 状态持久化与 `guides.removeAll()`。
 
-验证：`./build.sh` 通过（binary 4.92 MB ≤ 5 MB，bundle 10.24 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **384/384 通过**。截图：`native_studio/docs/screenshots/z_editor.png`、`native_studio/docs/screenshots/z_dashboard.png`。
+验证：`./build.sh` 通过（binary 4.92 MB ≤ 5 MB，bundle 10.25 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **386/386 通过**（新增缩放条更多菜单及标题栏协作与工作台布局测试）。截图：`native_studio/docs/screenshots/z_editor.png`、`native_studio/docs/screenshots/z_dashboard.png`。
 仍未覆盖：Light interface 仍无浅色主题实现；约束不处理旋转后的钉扎。

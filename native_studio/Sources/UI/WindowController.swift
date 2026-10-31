@@ -333,12 +333,29 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         view.bottomZoomBar.onGridToggle = { [weak self] enabled in
             self?.mainContentView.canvasStageView.showGrid = enabled
         }
+        view.bottomZoomBar.onZoomFit = { [weak self] in
+            self?.mainContentView.canvasStageView.zoomFit()
+        }
+        view.bottomZoomBar.onClearGuides = { [weak self] in
+            guard let self = self else { return }
+            self.mainContentView.canvasStageView.document.guides?.removeAll()
+            self.mainContentView.canvasStageView.needsDisplay = true
+            self.showChromeToast("参考线已清除")
+        }
         // Web `editor_zoom.jsx`: "Rulers and guides live inside this one bar", so the
         // middle control toggles rulers; snapping moved behind the "..." menu.
         view.bottomZoomBar.onVisibilityToggle = { [weak self] enabled in
             guard let self = self else { return }
             self.mainContentView.canvasStageView.showRulers = enabled
             UserDefaults.standard.set(enabled, forKey: SettingsDrawerView.showRulersDefaultsKey)
+            self.mainContentView.bottomZoomBar.setRulersEnabled(enabled)
+            self.mainContentView.updateIslandBarPosition()
+        }
+        view.bottomZoomBar.onToggleRulers = { [weak self] enabled in
+            guard let self = self else { return }
+            self.mainContentView.canvasStageView.showRulers = enabled
+            UserDefaults.standard.set(enabled, forKey: SettingsDrawerView.showRulersDefaultsKey)
+            self.mainContentView.bottomZoomBar.setVisibilityEnabled(enabled)
             self.mainContentView.updateIslandBarPosition()
         }
         view.bottomZoomBar.onSnapToggle = { [weak self] enabled in
@@ -3454,6 +3471,10 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             canUndo: commandManager.canUndo,
             canRedo: commandManager.canRedo
         )
+        mainContentView.bottomZoomBar.setRulersEnabled(mainContentView.canvasStageView.showRulers)
+        mainContentView.bottomZoomBar.setVisibilityEnabled(mainContentView.canvasStageView.showRulers)
+        mainContentView.bottomZoomBar.setGridEnabled(mainContentView.canvasStageView.showGrid)
+        mainContentView.bottomZoomBar.setSnapToGridEnabled(mainContentView.canvasStageView.isSnappingEnabled)
         let hasSelection = !mainContentView.canvasStageView.selectedNodeIds.isEmpty
         let nodes = mainContentView.canvasStageView.document.nodes
         let name = nodes.first(where: { $0.id == mainContentView.canvasStageView.selectedNodeIds.first })?.name

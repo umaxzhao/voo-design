@@ -202,6 +202,51 @@ public final class InspectorBehaviourTests {
             DraftAutosave.shared.discard(drafts[0])
             try TestAssertions.assertTrue(DraftAutosave.shared.recoverableDrafts().isEmpty, "Discarding removes the draft")
         }
+
+        // 8. Zoom bar more menu: fit, rulers, clear guides callbacks
+        registry.register(tier: 1, feature: "ZoomBar-MoreMenu", name: "test_ZoomBar_MoreMenuAndRulersState") {
+            let bar = StudioBottomZoomBar(frame: NSRect(x: 0, y: 0, width: StudioBottomZoomBar.preferredWidth, height: StudioBottomZoomBar.preferredHeight))
+            var fitCalled = false
+            var rulersToggled: Bool?
+            var clearGuidesCalled = false
+
+            bar.onZoomFit = { fitCalled = true }
+            bar.onToggleRulers = { rulersToggled = $0 }
+            bar.onClearGuides = { clearGuidesCalled = true }
+
+            try TestAssertions.assertFalse(bar.isRulersEnabled, "Rulers start disabled")
+            bar.setRulersEnabled(true)
+            try TestAssertions.assertTrue(bar.isRulersEnabled, "setRulersEnabled updates state")
+
+            bar.onZoomFit?()
+            try TestAssertions.assertTrue(fitCalled)
+
+            bar.onToggleRulers?(true)
+            try TestAssertions.assertEqual(rulersToggled, true)
+
+            bar.onClearGuides?()
+            try TestAssertions.assertTrue(clearGuidesCalled)
+        }
+
+        // 9. Title bar: collab button present in editor mode, hidden in dashboard mode
+        registry.register(tier: 1, feature: "TitleBar-Collab", name: "test_TitleBar_CollabButtonAndDashboardLayout") {
+            let bar = AppTitleBar(frame: NSRect(x: 0, y: 0, width: 1440, height: 40))
+            var collabTapped = false
+            bar.onCollabTapped = { collabTapped = true }
+
+            try TestAssertions.assertFalse(bar.collabButton.isHidden, "Collab button is visible in editor mode")
+            try TestAssertions.assertFalse(bar.collabDivider.isHidden, "Collab divider is visible in editor mode")
+            try TestAssertions.assertEqual(bar.collabButton.accessibilityIdentifier(), "title_bar_collab_button")
+
+            bar.collabButton.performClick(nil)
+            try TestAssertions.assertTrue(collabTapped, "Collab button fires onCollabTapped")
+
+            bar.isDashboardMode = true
+            try TestAssertions.assertTrue(bar.collabButton.isHidden, "Collab button is hidden in dashboard mode")
+            try TestAssertions.assertTrue(bar.collabDivider.isHidden, "Collab divider is hidden in dashboard mode")
+            try TestAssertions.assertFalse(bar.browserButton.isHidden, "Browser button stays visible in dashboard mode")
+            try TestAssertions.assertTrue(bar.settingsButton.isHidden, "Settings button is hidden in dashboard mode")
+        }
     }
 
     private static func requireButton(_ root: NSView, id: String) throws -> PropertiesIconButton {

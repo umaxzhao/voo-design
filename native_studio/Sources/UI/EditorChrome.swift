@@ -1457,6 +1457,9 @@ public final class StudioBottomZoomBar: NSView {
     public var onZoomIn: (() -> Void)?
     public var onZoomOut: (() -> Void)?
     public var onZoomReset: (() -> Void)?
+    public var onZoomFit: (() -> Void)?
+    public var onToggleRulers: ((Bool) -> Void)?
+    public var onClearGuides: (() -> Void)?
 
     // MARK: Controls (public read-only accessors)
 
@@ -1484,6 +1487,7 @@ public final class StudioBottomZoomBar: NSView {
     public private(set) var canRedo: Bool = false
     public private(set) var isGridEnabled: Bool = false
     public private(set) var isVisibilityEnabled: Bool = true
+    public private(set) var isRulersEnabled: Bool = false
     /// Magnet/snap state, surfaced from the ⋯ menu (web keeps it there).
     public private(set) var isSnapToGridEnabled: Bool = false
 
@@ -1674,6 +1678,11 @@ public final class StudioBottomZoomBar: NSView {
         isSnapToGridEnabled = enabled
     }
 
+    public func setRulersEnabled(_ enabled: Bool) {
+        guard isRulersEnabled != enabled else { return }
+        isRulersEnabled = enabled
+    }
+
     public var preferredSize: NSSize {
         NSSize(width: StudioBottomZoomBar.preferredWidth, height: StudioBottomZoomBar.preferredHeight)
     }
@@ -1715,17 +1724,46 @@ public final class StudioBottomZoomBar: NSView {
         let menu = NSMenu()
         menu.autoenablesItems = false
 
-        let gridItem = NSMenuItem(
-            title: "网格",
-            action: #selector(toggleGridFromMenu(_:)),
+        let fitItem = NSMenuItem(
+            title: "自适应画板 (Fit to Screen)",
+            action: #selector(handleFitFromMenu(_:)),
+            keyEquivalent: "1"
+        )
+        fitItem.keyEquivalentModifierMask = [.shift]
+        fitItem.target = self
+        menu.addItem(fitItem)
+
+        let rulersItem = NSMenuItem(
+            title: "显示标尺 (Rulers)",
+            action: #selector(toggleRulersFromMenu(_:)),
             keyEquivalent: ""
         )
+        rulersItem.target = self
+        rulersItem.state = isRulersEnabled ? .on : .off
+        menu.addItem(rulersItem)
+
+        let clearGuidesItem = NSMenuItem(
+            title: "清除所有参考线 (Clear Guides)",
+            action: #selector(clearGuidesFromMenu(_:)),
+            keyEquivalent: ""
+        )
+        clearGuidesItem.target = self
+        menu.addItem(clearGuidesItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        let gridItem = NSMenuItem(
+            title: "网格 (Grid)",
+            action: #selector(toggleGridFromMenu(_:)),
+            keyEquivalent: "'"
+        )
+        gridItem.keyEquivalentModifierMask = [.control]
         gridItem.target = self
         gridItem.state = isGridEnabled ? .on : .off
         menu.addItem(gridItem)
 
         let snapItem = NSMenuItem(
-            title: "磁性吸附",
+            title: "磁性吸附 (Snap to Grid)",
             action: #selector(toggleSnapFromMenu(_:)),
             keyEquivalent: ""
         )
@@ -1738,6 +1776,19 @@ public final class StudioBottomZoomBar: NSView {
             at: NSPoint(x: moreButton.frame.minX, y: moreButton.frame.maxY + 4.0),
             in: self
         )
+    }
+
+    @objc private func handleFitFromMenu(_ sender: NSMenuItem) {
+        onZoomFit?()
+    }
+
+    @objc private func toggleRulersFromMenu(_ sender: NSMenuItem) {
+        isRulersEnabled.toggle()
+        onToggleRulers?(isRulersEnabled)
+    }
+
+    @objc private func clearGuidesFromMenu(_ sender: NSMenuItem) {
+        onClearGuides?()
     }
 
     @objc private func toggleGridFromMenu(_ sender: NSMenuItem) {
