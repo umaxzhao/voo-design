@@ -1979,44 +1979,110 @@ public class CanvasStageView: NSView {
         let childIndices = document.nodes.indices.filter { document.nodes[$0].parentId == frameId }
         guard !childIndices.isEmpty else { return }
 
+        let rotationDeg = frame.rotation
+        let isRotated = abs(rotationDeg.truncatingRemainder(dividingBy: 360.0)) > 0.001
+        let rad = rotationDeg * .pi / 180.0
+        let cosA = cos(rad)
+        let sinA = sin(rad)
+
         var doc = document
+        var resizedNestedFrames: [String] = []
+
         for index in childIndices {
             var child = doc.nodes[index]
             let constraints = child.constraints ?? NodeConstraints()
             let childWidth = max(child.width, 0.001)
             let childHeight = max(child.height, 0.001)
 
-            switch constraints.horizontal {
-            case "right":
-                child.x = newRect.maxX - (oldRect.maxX - child.x)
-            case "center":
-                let relativeCentre = (child.x + childWidth / 2 - oldRect.midX) / oldRect.width
-                child.x = newRect.midX + relativeCentre * newRect.width - childWidth / 2
-            case "scale":
-                let relative = (child.x - oldRect.minX) / oldRect.width
-                child.x = newRect.minX + relative * newRect.width
-                child.width = max(child.width * scaleX, 0.001)
-            default: // left
-                child.x = newRect.minX + (child.x - oldRect.minX)
-            }
+            if !isRotated {
+                // Fast path for standard unrotated frames
+                switch constraints.horizontal {
+                case "right":
+                    child.x = newRect.maxX - (oldRect.maxX - child.x)
+                case "center":
+                    let relativeCentre = (child.x + childWidth / 2 - oldRect.midX) / oldRect.width
+                    child.x = newRect.midX + relativeCentre * newRect.width - childWidth / 2
+                case "scale":
+                    let relative = (child.x - oldRect.minX) / oldRect.width
+                    child.x = newRect.minX + relative * newRect.width
+                    child.width = max(child.width * scaleX, 0.001)
+                    if child.kind == .frame { resizedNestedFrames.append(child.id) }
+                default: // left
+                    child.x = newRect.minX + (child.x - oldRect.minX)
+                }
 
-            switch constraints.vertical {
-            case "bottom":
-                child.y = newRect.maxY - (oldRect.maxY - child.y)
-            case "middle":
-                let relativeCentre = (child.y + childHeight / 2 - oldRect.midY) / oldRect.height
-                child.y = newRect.midY + relativeCentre * newRect.height - childHeight / 2
-            case "scale":
-                let relative = (child.y - oldRect.minY) / oldRect.height
-                child.y = newRect.minY + relative * newRect.height
-                child.height = max(child.height * scaleY, 0.001)
-            default: // top
-                child.y = newRect.minY + (child.y - oldRect.minY)
+                switch constraints.vertical {
+                case "bottom":
+                    child.y = newRect.maxY - (oldRect.maxY - child.y)
+                case "middle":
+                    let relativeCentre = (child.y + childHeight / 2 - oldRect.midY) / oldRect.height
+                    child.y = newRect.midY + relativeCentre * newRect.height - childHeight / 2
+                case "scale":
+                    let relative = (child.y - oldRect.minY) / oldRect.height
+                    child.y = newRect.minY + relative * newRect.height
+                    child.height = max(child.height * scaleY, 0.001)
+                    if child.kind == .frame && !resizedNestedFrames.contains(child.id) {
+                        resizedNestedFrames.append(child.id)
+                    }
+                default: // top
+                    child.y = newRect.minY + (child.y - oldRect.minY)
+                }
+            } else {
+                // Rotated frame: transform child origin into frame's local unrotated coordinate space
+                let dx = child.x - oldRect.minX
+                let dy = child.y - oldRect.minY
+                let localX = dx * cosA + dy * sinA
+                let localY = -dx * sinA + dy * cosA
+
+                var newLocalX = localX
+                var newLocalY = localY
+
+                switch constraints.horizontal {
+                case "right":
+                    newLocalX = newRect.width - (oldRect.width - localX)
+                case "center":
+                    let relativeCentre = (localX + childWidth / 2 - oldRect.width / 2) / oldRect.width
+                    newLocalX = newRect.width / 2 + relativeCentre * newRect.width - childWidth / 2
+                case "scale":
+                    let relative = localX / oldRect.width
+                    newLocalX = relative * newRect.width
+                    child.width = max(child.width * scaleX, 0.001)
+                    if child.kind == .frame { resizedNestedFrames.append(child.id) }
+                default: // left
+                    newLocalX = localX
+                }
+
+                switch constraints.vertical {
+                case "bottom":
+                    newLocalY = newRect.height - (oldRect.height - localY)
+                case "middle":
+                    let relativeCentre = (localY + childHeight / 2 - oldRect.height / 2) / oldRect.height
+                    newLocalY = newRect.height / 2 + relativeCentre * newRect.height - childHeight / 2
+                case "scale":
+                    let relative = localY / oldRect.height
+                    newLocalY = relative * newRect.height
+                    child.height = max(child.height * scaleY, 0.001)
+                    if child.kind == .frame && !resizedNestedFrames.contains(child.id) {
+                        resizedNestedFrames.append(child.id)
+                    }
+                default: // top
+                    newLocalY = localY
+                }
+
+                // Transform back to canvas space using new frame origin
+                child.x = newRect.minX + newLocalX * cosA - newLocalY * sinA
+                child.y = newRect.minY + newLocalX * sinA + newLocalY * cosA
             }
 
             doc.nodes[index] = child
         }
         document = doc
+
+        // Recursively apply constraints to any nested frames that were resized via scale
+        for nestedId in resizedNestedFrames {
+            applyConstraints(frameId: nestedId)
+        }
+
         needsDisplay = true
     }
 

@@ -284,6 +284,33 @@ public final class InspectorBehaviourTests {
             controller.sendToBackAction(nil)
             try TestAssertions.assertEqual(stage.document.nodes.map { $0.id }, ["node_1", "node_2", "node_3"])
         }
+
+        // 11. Rotated frame constraints: pinning works along rotated local axes
+        registry.register(tier: 1, feature: "Canvas-Constraints", name: "test_Constraints_RotatedFramePinsAlongLocalAxes") {
+            let stage = CanvasStageView(frame: NSRect(x: 0, y: 0, width: 1200, height: 800))
+            var document = VOODocument()
+            document.canvas = CanvasFrame(x: 0, y: 0, width: 1200, height: 800, backgroundColor: "#171717")
+
+            var frame = VOONode(id: "rot_frame", kind: .frame, name: "Rotated Frame", x: 100, y: 100,
+                                width: 200, height: 100, style: LayerStyle(fill: "#171717"))
+            frame.rotation = 90.0
+
+            var child = VOONode(id: "rot_child", parentId: "rot_frame", kind: .rect, name: "Rot Child",
+                                x: 90, y: 280, width: 20, height: 20, style: LayerStyle(fill: "#ffffff"))
+            child.constraints = NodeConstraints(horizontal: "right", vertical: "top")
+            document.nodes = [frame, child]
+            stage.document = document
+
+            // Grow the frame width from 200 to 300 along its local X axis
+            stage.document.nodes[0].width = 300
+            stage.applyConstraints(frameId: "rot_frame", previousFrame: CGRect(x: 100, y: 100, width: 200, height: 100))
+
+            guard let updated = stage.document.nodes.first(where: { $0.id == "rot_child" }) else {
+                throw TestFailure(message: "Missing child", file: #file, line: #line)
+            }
+            try TestAssertions.assertApproxEqual(updated.x, 90, accuracy: 0.5, "Child x stays aligned with rotated local frame")
+            try TestAssertions.assertApproxEqual(updated.y, 380, accuracy: 0.5, "Child y moves along rotated local width axis")
+        }
     }
 
     private static func requireButton(_ root: NSView, id: String) throws -> PropertiesIconButton {

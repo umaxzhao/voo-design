@@ -371,3 +371,16 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 
 验证：`./build.sh` 通过（binary 4.92 MB ≤ 5 MB，bundle 10.25 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **387/387 通过**。
 仍未覆盖：Light interface 仍无浅色主题实现；约束不处理旋转后的钉扎。
+
+## 原生界面优化（第八轮：旋转画板约束联动与多层级嵌套自适应）— 2026-10-31
+
+- **旋转画板（Rotated Frame）约束空间投影**：
+  - 支持画板带有任意旋转角（`rotation != 0`）时的子节点自动约束计算；
+  - 核心算法：将画布全局绝对坐标通过逆变换矩阵投影至画板自身的局部正交坐标系（沿画板旋转后的宽高向量轴 $(\cos\theta, \sin\theta)$ 与 $(-\sin\theta, \cos\theta)$），在局部空间完成与未旋转画板完全等价的 `left/center/right/scale` 和 `top/middle/bottom/scale` 钉扎计算，再通过正变换投影回画布空间；
+  - 彻底消除了旋转画板拉伸时子节点沿未旋转绝对轴跑偏的问题。
+- **嵌套画板（Nested Frames）递归级联重排**：
+  - 当子画板因外层画板的 `scale` 约束发生尺寸变化时，自动递归调用 `applyConstraints(frameId:)` 重新排列其内部子图层。
+- **新增回归测试**：`test_Constraints_RotatedFramePinsAlongLocalAxes`，精准验证 90° 旋转画板拉伸时右侧钉扎子节点沿局部轴正确定位（共 388 项测试，100% 通过）。
+
+验证：`./build.sh` 通过（binary 4.94 MB ≤ 5 MB，bundle 10.26 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **388/388 通过**。
+仍未覆盖：Light interface 仍无浅色主题实现。
