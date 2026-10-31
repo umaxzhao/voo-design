@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { extractComponent, detachInstance } from "../../src/canvas/editor/component_extract.js";
 import { combineNodes, insertGroup, ungroupNodes } from "../../src/canvas/editor/doc_ops_groups.js";
+import { createEngineNodesController } from "../../src/canvas/editor/editor_engine_nodes.js";
 import { createEngineNodeOps } from "../../src/canvas/editor/editor_engine_node_ops.js";
 import { createSelection } from "../../src/canvas/editor/editor_selection.js";
 import { expandStrokeToPathNode } from "../../src/canvas/editor/path_expand_stroke.js";
@@ -110,5 +112,63 @@ describe("container command boundaries", () => {
     const expanded = expandStrokeToPathNode(resizedOpenPath);
     expect(expanded.width).toBeCloseTo(200, 1);
     expect(expanded.x).toBeCloseTo(10, 1);
+  });
+  it("toggles autoLayout on a selected multi-child or empty group without wrapping, and ungroups empty groups", () => {
+    let doc = document([
+      group("g-multi", null, { x: 10, y: 10, width: 120, height: 80 }),
+      rect("c-1", "g-multi", { x: 10, y: 10, width: 40, height: 30 }),
+      rect("c-2", "g-multi", { x: 60, y: 10, width: 40, height: 30 }),
+      group("g-empty", null, { x: 200, y: 10, width: 80, height: 60 }),
+    ]);
+    const selection = createSelection({});
+    const controller = createEngineNodesController({
+      getDoc: () => doc, setDoc: (next) => { doc = next; }, selection, cache: {},
+      maskTools: { api: { getMaskEdit: () => null }, maskSourceOf: () => null },
+      paintTools: { bitmapSourceOf: () => null }, penTools: { api: {} },
+      releaseNodeTextures: () => {}, getEffectiveNode: (n) => n, getPixelSelection: () => null,
+      clearPixelSelection: () => {}, setTool: () => {}, requestRender: () => {}, notify: () => {},
+    });
+
+    controller.selectGroup("g-multi");
+    controller.toggleAutoLayoutSelection();
+    expect(doc.nodes.filter((n) => n.kind === "group").map((n) => n.id)).toEqual(["g-multi", "g-empty"]);
+    expect(get(doc, "g-multi").autoLayout).toMatchObject({ direction: "vertical", gap: 8 });
+    controller.toggleAutoLayoutSelection();
+    expect(get(doc, "g-multi").autoLayout).toBeNull();
+
+    controller.selectGroup("g-empty");
+    expect(controller.canUngroupSelection()).toBe(true);
+    controller.ungroupSelection();
+    expect(get(doc, "g-empty")).toBeUndefined();
+    expect(controller.getSelectedGroup()).toBeNull();
+  });
+  it("preserves Frame parentId, strips external refs, and scales path geometry across extractComponent and detachInstance", () => {
+    const hostDoc = document([
+      group("frame-1", null, { isFrame: true, x: 0, y: 0, width: 400, height: 300 }),
+      rect("external-base", "frame-1", { x: 10, y: 10, width: 100, height: 100 }),
+      rect("r-1", "frame-1", { x: 20, y: 30, width: 60, height: 40, clipTo: "external-base" }),
+      {
+        id: "p-1", kind: "path", pen: true, parentId: "frame-1",
+        x: 20, y: 30, width: 60, height: 40, baseWidth: 60, baseHeight: 40,
+        points: [{ x: 0, y: 0 }, { x: 60, y: 40, in: [-15, -10] }],
+      },
+    ]);
+
+    const { master, instance, doc: withInstance } = extractComponent(hostDoc, ["r-1", "p-1"], { name: "Card" });
+    expect(instance.parentId).toBe("frame-1");
+    expect(master.nodes.every((n) => !n.parentId && !n.clipTo)).toBe(true);
+    expect(get(withInstance, "external-base")).toBeDefined();
+
+    // Scale instance 2x and detach inside frame-1
+    const scaledDoc = {
+      ...withInstance,
+      nodes: withInstance.nodes.map((n) => (n.id === instance.id ? { ...n, width: n.width * 2, height: n.height * 2 } : n)),
+    };
+    const { doc: detachedDoc, ids: topIds } = detachInstance(scaledDoc, instance.id, master);
+    expect(topIds).toHaveLength(2);
+    const detachedPath = detachedDoc.nodes.find((n) => n.kind === "path");
+    expect(detachedPath.parentId).toBe("frame-1");
+    expect(detachedPath).toMatchObject({ width: 120, height: 80, baseWidth: 120, baseHeight: 80 });
+    expect(detachedPath.points[1]).toMatchObject({ x: 120, y: 80, in: [-30, -20] });
   });
 });

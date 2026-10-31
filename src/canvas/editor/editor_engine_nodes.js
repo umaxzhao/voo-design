@@ -182,6 +182,19 @@ export function createEngineNodesController({
     notify,
   });
 
+  function getSelectedGroup() {
+    const group = selectedGroupId
+      ? findNode(getDoc(), selectedGroupId)
+      : null;
+    if (!isGroupNode(group)) return null;
+    const expected = unitSelectionIds(group);
+    const selectedIds = selection.getIds();
+    return expected.length === selectedIds.length &&
+      expected.every((id) => selectedIds.includes(id))
+      ? getEffectiveNode(group)
+      : null;
+  }
+
   const groups = createEngineGroups({
     getDoc,
     setDoc,
@@ -191,6 +204,7 @@ export function createEngineNodesController({
     unitSelectionIds,
     selectionUnits,
     clickUnitOf,
+    getSelectedGroup,
     getIsolationGroupId: () => isolationGroupId,
     setIsolationGroupId: (id) => {
       isolationGroupId = id;
@@ -245,18 +259,7 @@ export function createEngineNodesController({
       const node = id ? findNode(getDoc(), id) : null;
       return node ? getEffectiveNode(node) : null;
     },
-    getSelectedGroup: () => {
-      const group = selectedGroupId
-        ? findNode(getDoc(), selectedGroupId)
-        : null;
-      if (!isGroupNode(group)) return null;
-      const expected = unitSelectionIds(group);
-      const selectedIds = selection.getIds();
-      return expected.length === selectedIds.length &&
-        expected.every((id) => selectedIds.includes(id))
-        ? getEffectiveNode(group)
-        : null;
-    },
+    getSelectedGroup,
     getSelectedNodes: () => {
       const ids = new Set(selection.getIds());
       const doc = getDoc();

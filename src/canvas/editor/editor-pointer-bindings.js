@@ -23,6 +23,15 @@ const CANCELLABLE_KINDS = new Set([
   "penEdit",
   "penBend",
   "penLasso",
+  "pen",
+  "lasso",
+  "healing",
+  "cloneStamp",
+  "patchLasso",
+  "patchDrag",
+  "removeBrush",
+  "objectStroke",
+  "gradient",
 ]);
 const cancellable = gesture => CANCELLABLE_KINDS.has(gesture?.kind);
 

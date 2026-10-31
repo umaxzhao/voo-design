@@ -86,14 +86,24 @@ export function handleGestureShortcut(event, context) {
 
   if (event.key === "Enter") {
     const selected = engine.getSelected();
+    const selectedGroup = engine.getSelectedGroup?.();
+    if (selectedGroup && selected) {
+      event.preventDefault();
+      engine.enterGroup(selected.id);
+      return true;
+    }
     if (selected && selected.kind === "group") {
       event.preventDefault();
       engine.enterGroup(selected.id);
       return true;
     }
-    if (selected && selected.kind === "pen") {
+    if (
+      selected &&
+      (selected.kind === "pen" || (selected.kind === "path" && selected.pen))
+    ) {
       event.preventDefault();
-      engine.startEdit(selected.id);
+      if (typeof engine.beginEdit === "function") engine.beginEdit(selected.id);
+      else engine.startEdit?.(selected.id);
       return true;
     }
   }

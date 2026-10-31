@@ -161,5 +161,28 @@ await withEditorBrowser(async ({ page }) => {
     assert.deepEqual(await f.snapshot(), future);
     return { zeroDragNoCommit: true, escapedDragRestoredInSession: true, redoPreserved: true };
   });
+  await f.record("curvature-pen-backspace-recomputes-handles-without-deleting-layer", async () => {
+    await seedFuture();
+    await page.evaluate(() => window.__vooEditor.setTool("curvature_pen"));
+    await f.settle();
+    const p1 = await f.client({ x: 140, y: 240 });
+    const p2 = await f.client({ x: 240, y: 240 });
+    const p3 = await f.client({ x: 240, y: 320 });
+    await page.mouse.click(p1.x, p1.y);
+    await page.mouse.click(p2.x, p2.y);
+    await page.mouse.click(p3.x, p3.y);
+    await f.settle();
+    assert.equal(await page.evaluate(() => window.__vooEditor.getPenDraft()?.anchors?.length), 3);
+    assert.notEqual(await page.evaluate(() => window.__vooEditor.getPenDraft()?.anchors?.[1]?.out), null);
+    await f.focus();
+    await page.keyboard.press("Backspace");
+    await f.settle();
+    assert.equal(await page.evaluate(() => window.__vooEditor.getPenDraft()?.anchors?.length), 2);
+    assert.equal(await page.evaluate(() => window.__vooEditor.getPenDraft()?.anchors?.[1]?.out), null);
+    await page.keyboard.press("Escape");
+    await f.settle();
+    assert.equal(await page.evaluate(() => window.__vooEditor.getPenDraft()), null);
+    return { curvatureBackspaceRecomputedHandles: true };
+  });
   f.finish();
 });

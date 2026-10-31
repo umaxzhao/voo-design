@@ -7,6 +7,7 @@
  * layers. Both are pure: the editor shell decides where the new frame goes.
  */
 import { moveAffectedIds } from "./doc_ops_move.js";
+import { groupingRoots, sharedGroupParent } from "./group-structure.js";
 import { createDocument } from "./scene_doc_factory.js";
 import { normalizeCornerRadius } from "./scene_model_core.js";
 import {
@@ -81,12 +82,14 @@ function unionBounds(nodes) {
  */
 export function extractComponent(hostDoc, selectedIds, { name }) {
   const hostType = getCanvasType(hostDoc);
-  const ids = new Set(moveAffectedIds(hostDoc, selectedIds));
+  const roots = groupingRoots(hostDoc, selectedIds);
+  const ids = new Set(moveAffectedIds(hostDoc, roots.map((node) => node.id)));
   if (ids.size === 0) throw new RangeError("Select at least one layer");
   const members = hostDoc.nodes.filter((node) => ids.has(node.id));
   const bounds = unionBounds(members);
   if (!bounds) throw new RangeError("The selection has no visible area");
 
+  const parentId = sharedGroupParent(hostDoc, roots);
   const width = Math.max(1, Math.round(bounds.width));
   const height = Math.max(1, Math.round(bounds.height));
   const frame = createDocument(width, height, "transparent", {
@@ -94,23 +97,38 @@ export function extractComponent(hostDoc, selectedIds, { name }) {
   });
   const master = {
     ...frame,
-    nodes: members.map((node) => ({
-      ...node,
-      x: node.x - bounds.x,
-      y: node.y - bounds.y,
-    })),
+    nodes: members.map((node) => {
+      const copy = {
+        ...node,
+        x: node.x - bounds.x,
+        y: node.y - bounds.y,
+      };
+      if (copy.parentId && !ids.has(copy.parentId)) delete copy.parentId;
+      if (copy.clipTo && !ids.has(copy.clipTo)) delete copy.clipTo;
+      return copy;
+    }),
   };
-  const instance = createCanvasInstanceNode({
-    sourceCanvasId: master.canvasId,
-    x: bounds.x,
-    y: bounds.y,
-    width: bounds.width,
-    height: bounds.height,
-    name,
-  });
+  const instance = {
+    ...createCanvasInstanceNode({
+      sourceCanvasId: master.canvasId,
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      name,
+    }),
+    ...(parentId ? { parentId } : {}),
+  };
   // The instance takes the place of the lowest selected layer.
   const insertAt = hostDoc.nodes.findIndex((node) => ids.has(node.id));
-  const rest = hostDoc.nodes.filter((node) => !ids.has(node.id));
+  const rest = hostDoc.nodes
+    .filter((node) => !ids.has(node.id))
+    .map((node) => {
+      if (!node.clipTo || !ids.has(node.clipTo)) return node;
+      const copy = { ...node };
+      delete copy.clipTo;
+      return copy;
+    });
   const before = hostDoc.nodes
     .slice(0, insertAt)
     .filter((node) => !ids.has(node.id)).length;
@@ -202,6 +220,41 @@ export function detachInstance(hostDoc, instanceId, componentDoc) {
     for (const field of REFERENCE_FIELDS) {
       if (node[field]) copy[field] = idMap.get(node[field]) ?? null;
     }
+    if (!node.parentId && instanceNode.parentId) {
+      copy.parentId = instanceNode.parentId;
+    }
+    if (node.kind === "path" && Array.isArray(node.points)) {
+      const pointScaleX = node.baseWidth
+        ? copy.width / node.baseWidth
+        : fit.scaleX * cameraZoom;
+      const pointScaleY = node.baseHeight
+        ? copy.height / node.baseHeight
+        : fit.scaleY * cameraZoom;
+      copy.points = node.points.map((point) =>
+        Array.isArray(point)
+          ? point.length > 2
+            ? [point[0] * pointScaleX, point[1] * pointScaleY, point[2]]
+            : [point[0] * pointScaleX, point[1] * pointScaleY]
+          : {
+              ...point,
+              x: point.x * pointScaleX,
+              y: point.y * pointScaleY,
+              ...(Array.isArray(point.in)
+                ? { in: [point.in[0] * pointScaleX, point.in[1] * pointScaleY] }
+                : {}),
+              ...(Array.isArray(point.out)
+                ? {
+                    out: [
+                      point.out[0] * pointScaleX,
+                      point.out[1] * pointScaleY,
+                    ],
+                  }
+                : {}),
+            },
+      );
+      copy.baseWidth = copy.width;
+      copy.baseHeight = copy.height;
+    }
     if (Number.isFinite(node.fontSize)) copy.fontSize = node.fontSize * uniform;
     if (Number.isFinite(node.strokeWidth))
       copy.strokeWidth = node.strokeWidth * uniform;
@@ -262,7 +315,10 @@ export function detachInstance(hostDoc, instanceId, componentDoc) {
     ...copies,
     ...hostDoc.nodes.slice(at + 1),
   ];
-  const topLevelIds = copies.filter((copy) => !copy.parentId).map((c) => c.id);
+  const hostParentId = instanceNode.parentId ?? null;
+  const topLevelIds = copies
+    .filter((copy) => (copy.parentId ?? null) === hostParentId)
+    .map((c) => c.id);
   return { doc: { ...hostDoc, nodes }, ids: topLevelIds };
 }
 

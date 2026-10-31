@@ -298,6 +298,14 @@ export function createPenDraft({
     draft.down = null;
     draft.dragging = false;
     draft.maybeClose = false;
+    if (draft.toolKind === "curvature_pen") {
+      if (draft.anchors.length >= 2) {
+        recomputeCurvatureHandles(draft.anchors);
+      } else if (draft.anchors[0]) {
+        draft.anchors[0].in = null;
+        draft.anchors[0].out = null;
+      }
+    }
     requestRender();
     return true;
   }
