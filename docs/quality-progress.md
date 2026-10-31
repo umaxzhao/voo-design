@@ -3,10 +3,19 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
-首页 Settings 底部间距微调：从 24px 减至 12px（向下移动 12px），保持左侧位置与点击区域；沿用 `workspace.settings-entry`，在既有首页套件检查四个宽度的精确底边间距。本轮精确提交及执行结果见 `/private/tmp/voo-settings-lower-release.json`，此前基线发布阻断不能视为已解决。
-本轮首页设置入口调整：已移除侧栏版本号，将首页 Settings 移至左下角；能力 `workspace.settings-entry`。本次相关 17 项单测和 320/390/768/1440px 首页浏览器专项通过。完整门禁因基线既有的 10 项 Agent 工具清单/首次引导失败而阻断（已在修改前提交 `e2d3517` 复现，`/private/tmp/voo-settings-baseline.log`），本轮尚未推送或部署。精确最终 revision 与逐项执行结果见 `/private/tmp/voo-settings-release.json`，不得继承历史通过结果。详细范围见 [面板审查](audits/panel-control-audit.md#welcome-settings-entry--2026-10-31)。
-最近一次完整核心验证提交：[26de3f9](https://github.com/umaxzhao/voo-design/commit/26de3f948f17fdc9b9167ef25affaa5c487eec0c)。
-以下最新结果仅属于该提交，不代表其他未验证版本。
+最近一次完整核心验证提交：[d0b9ec5](https://github.com/umaxzhao/voo-design/commit/d0b9ec5a9df445e073c689597ff890350d500856)。
+以下结果只属于该固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+
+## 本轮：逐元素流式创作（已完成声明范围）
+
+- 已推送并部署应用提交 [`d0b9ec5`](https://github.com/umaxzhao/voo-design/commit/d0b9ec5a9df445e073c689597ff890350d500856)；登记发布检查 **88/88**（页面加载超时后串行补跑），含 **84 组浏览器**，单测 **4521 通过、4 跳过、0 失败**。证据：`/private/tmp/voo-authoring-release-recovered.json`。跳过和未运行的上下文不算通过。
+- `platform.streaming-authoring`：内置 HTML、外部 `stream_layout` 和批量 `build_layout` 共用原生落图与 VOO 紫色鼠标。鼠标定位、携带轮廓、放置元素和下一步跟随实际文档操作；快照合并、稳定图层 ID、动画预算与减弱动态效果避免重复播放和长时间收尾。
+- 推送前合入远程认证/归档提交 `dac68a5`；网页源码、公共资源、构建脚本和配置与上述固定版本逐项一致，新增桌面认证 4 项定向单测通过。原生签名 App 没有据此被标记为通过；证据：`/private/tmp/voo-authoring-final-integration-proof.json`。
+- 真实 SSE 在响应结束前已出现原生图层与红色像素；最终蓝色像素、紫色鼠标、一次撤销/重做均通过。取消后不继续插入，批量取消保留原文档与重做；外部清除保留已有作品。同项目切页与跨文档迟到消息被拒绝；初始化冲突不能结束另一轮生成的历史批次。
+- 整合期间一并收口：旧鼠标反馈契约、DeepSeek 首次引导文案/卡片断言、新 `resize_document` 文档与真实操作用例、设计系统默认项/展开路径、文件监听固定延时，对称安全区的竖屏/横屏/鼠标断言，以及八类设计类型的高级入口、桌面/触屏窄屏布局和键盘选择。
+- 线上入口及 7 个直接/流式模块资源与验证构建逐字节一致。正式地址实际点击 Agent 发送，验证两块图形分阶段出现、真实红/蓝像素、一次撤销和无脚本错误；模型响应使用受控离线夹具，没有调用付费服务。证据：`/private/tmp/voo-authoring-deployment-proof.json`、`/private/tmp/voo-authoring-production-result.log`。
+- 本地主工作区仅合并本轮模块，保留并发草稿、额外能力登记、旧备份和原有辅助工作树；镜像后专项通过。同步复核中误带的三处旧样式已按备份恢复。详细记录：`/private/tmp/voo-authoring-primary-final-merge/`。主工作区的其他任务源码不属于这次干净发布证据。
+- 功能覆盖仍为部分：付费模型设计质量、独立原生客户端/签名安装包、实体设备、所有工具的逐手势动画，以及用户与 Agent 并发编辑仍需分别验收。[验收范围](audits/editor-closeout.md#streamed-native-authoring)。
 
 ## 本轮：Pen / Figma 来源与许可定向审查
 
@@ -38,14 +47,6 @@
 - 已推送至 GitHub 主分支并部署到 la2，入口为 [voo.run/editor](https://voo.run/editor/)。线上 `index.html` 和包含文本尺寸规则的 `canvas_tools` 分块均返回 HTTP 200，字节及 SHA-256 与构建一致；隔离线上浏览器完成首次引导并进入项目工作台。证据：`/private/tmp/voo-text-sizing-deployment-proof.json`；备份：`/srv/voo-run/editor-backups/5601167-20261031T071032Z`。
 - 该证据确认的是 Chromium 中 `build_layout` 与流式 HTML 文本路径。其他外部模型客户端、各模型设计变体和设备/平台特定生成路径仍未逐一覆盖，功能覆盖保持“部分”。
 
-## 本轮：逐元素流式创作（正在完成发布验证）
-
-- 范围：`platform.streaming-authoring`；内置 HTML 生成、外部 `stream_layout` 与 `build_layout` 共用真实原生落图与紫色鼠标反馈；不在最终生成完成后补播一段长动画。
-- 已复现：快照内所有元素同步创建，没有逐元素绘制机会；外部入口仅预览到最终才提交；取消发生在异步放置之间时缺少检查，重复 HTML 键可产生半次写入。保留对应失败用例。
-- 当前局部证据：`tests/unit/html_pipeline/authoring.test.js`、`tests/unit/authoring-timeline.test.js` 与 `tests/e2e/agent-authoring.e2e.mjs`；真实 SSE 暂停在半程时读取原生层和红色像素、紫色鼠标、稳定 ID、完成后蓝色像素和一次撤销重做。大批量与减弱动态效果、外部草稿清除、文档切换及批量取消检查一并登记。
-- 合并文本尺寸及工作台设置入口更新后，新登记为 58 个能力分组、84 组核心浏览器套件；完整门禁和线上发布结果将在固定提交验证后补录，历史通过不覆盖这批改动。
-- 限制：受控离线模型输出、真实 Chromium 渲染与 MCP 传输；未请求付费模型，未把浏览器通过等同于签名 App、实体触屏或所有第三方客户端通过。完整范围见[验收说明](audits/editor-closeout.md#streamed-native-authoring)。
-
 ## 上轮：本地服务发现与同源画布预览
 
 - 已完成声明范围：应用提交 `23d961c` 通过 87/87 步（83 组浏览器）；证据 `/private/tmp/voo-local-service-final-release-v4.json`。
@@ -60,12 +61,12 @@
 
 | 项目 | 状态 |
 | --- | --- |
-| 工程规范与模块登记 | 已落地：12 个模块、56 个能力分组 |
-| 核心发布校验 | 26de3f9：87/87 步通过，包含 83 组浏览器套件 |
-| 全量单元测试 | 4501 通过、4 跳过、0 失败；跳过项不算通过 |
-| GitHub Ubuntu 基础检查 | [已通过](https://github.com/umaxzhao/voo-design/actions/runs/41176262001)：模块登记、设计检查、构建、单测；部署步骤跳过，已通过本机 SSH 部署 la2 |
-| 线上部署 | 5601167 已部署到 la2；线上入口和文本生成工具分块与验证构建哈希一致，隔离浏览器工作台交互通过；此前发布验收见历史轮次 |
-| 功能验收完整度 | 部分覆盖；56 个能力分组尚未逐一穷尽所有入口、上下文和设备 |
+| 工程规范与模块登记 | 已落地：12 个模块、58 个公开能力分组 |
+| 核心发布校验 | d0b9ec5：88/88 登记项通过（含页面加载超时后串行补跑），包含 84 组浏览器套件 |
+| 全量单元测试 | 4521 通过、4 跳过、0 失败；跳过项不算通过 |
+| GitHub Ubuntu 基础检查 | 本轮远程 CI 单独记录；本机完整门禁和线上实测已通过，不继承历史 CI 结果 |
+| 线上部署 | d0b9ec5 已部署 la2；入口及流式模块哈希一致，正式页面生成、渐进绘制、像素和撤销通过 |
+| 功能验收完整度 | 部分覆盖；58 个公开能力分组未穷尽所有入口、上下文和设备 |
 | 核心门禁外的独立检查 | 21 组本轮未运行：18 组待复核，3 组需单独运行 |
 
 ## 连续创作首轮（f9102cd，已完成声明范围）
@@ -102,7 +103,7 @@
 | 图片与修图 `images` | 12/12 | 部分 | 独立模型/网络检查、硬件内存/FPS；本轮排除视频 |
 | 布局与设计系统 `layout` | 6/6 | 部分 | 组件/变量 alias、嵌套布局组合、设计系统预设细查 |
 | 属性面板与共享 UI `inspector` | 6/6 | 部分 | 每个控件、输入方式与参数组合的逐项验收 |
-| Agent 与平台 `platform` | 13/13 | 部分 | 真实外部服务、原生安装包、协作跳过项、独立脚本复核 |
+| Agent 与平台 `platform` | 14/14 | 部分 | 真实外部服务、原生安装包、协作跳过项、独立脚本复核 |
 
 ## 21 组独立检查的待办
 
@@ -264,3 +265,11 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - Replaced the composited header image with a centered 128px App Icon, native product heading and native “AI Agent Driven Design Editor” subtitle. A separate editing screenshot follows immediately.
 - Moved the editor screenshot from the product tour to the header, preserving one visible instance each of editor, workspace and onboarding. The four design previews remain visible; only installation and technical reference are folded.
 - Existing artwork and application source remain unchanged. Native GitHub Markdown structure, image/link checks and final revision: `/private/tmp/voo-showcase/product-ui/native-header-publication.json`. Functional product coverage remains unchanged and partial.
+
+## 工作台设置专项的历史阻断记录（本轮已整合收口）
+
+以下是整合前的记录，当前状态以上方固定发布证据为准。
+
+> 首页 Settings 底部间距微调：从 24px 减至 12px（向下移动 12px），保持左侧位置与点击区域；沿用 `workspace.settings-entry`，在既有首页套件检查四个宽度的精确底边间距。本轮精确提交及执行结果见 `/private/tmp/voo-settings-lower-release.json`，此前基线发布阻断不能视为已解决。
+
+> 本轮首页设置入口调整：已移除侧栏版本号，将首页 Settings 移至左下角；能力 `workspace.settings-entry`。本次相关 17 项单测和 320/390/768/1440px 首页浏览器专项通过。完整门禁因基线既有的 10 项 Agent 工具清单/首次引导失败而阻断（已在修改前提交 `e2d3517` 复现，`/private/tmp/voo-settings-baseline.log`），本轮尚未推送或部署。精确最终 revision 与逐项执行结果见 `/private/tmp/voo-settings-release.json`，不得继承历史通过结果。详细范围见 [面板审查](audits/panel-control-audit.md#welcome-settings-entry--2026-10-31)。
