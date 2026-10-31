@@ -166,6 +166,25 @@ current selection as the reference by default, the default image size
 style note appended to the system prompt. Session history persists between
 turns (`session_history.js`).
 
+### Incremental edits (surgical delta workflow)
+
+A follow-up change to an existing design must not rebuild the screen. The
+system prompt tells the model to inspect first and then patch in place:
+
+1. `inspect_layer_tree` (or `find_layers`) to read the current hierarchy and
+   collect the target layer ids — never guess ids.
+2. Apply the smallest delta that achieves the request with
+   `mutate_layer_style`, `mutate_layer_layout`, `mutate_layer_text`, or several
+   of them atomically through `batch_mutate_layers`.
+3. Reuse the full-document tools (`build_layout`, `stream_layout`,
+   `new_document`) only for a new design or an explicit "redo it from scratch"
+   request; every other turn preserves the rest of the canvas, its history
+   and its clip relationships.
+
+This keeps multi-turn work incremental: one edit lands as one undoable action
+and the rest of the canvas (artwork, masks, comments, component links) stays
+untouched.
+
 ### Generation handoff from the welcome screen
 
 The welcome composer does not talk to the agent panel through window events.

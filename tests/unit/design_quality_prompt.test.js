@@ -205,6 +205,40 @@ describe("buildDesignQualityPrompt", () => {
     expect(promptText).toContain("Exemplar recipes");
   });
 
+  it("injects surgical delta edits into the workflow and keeps the prompt bounded", () => {
+    const prompt = buildDesignQualityPrompt({ userText: "dashboard" });
+    const workflow = prompt.indexOf("[Workflow — tokens first]");
+    const delta = prompt.indexOf("6. Surgical delta edits:");
+    const hierarchy = prompt.indexOf("[Visual hierarchy]");
+    expect(workflow).toBeGreaterThan(-1);
+    expect(delta).toBeGreaterThan(workflow);
+    expect(delta).toBeLessThan(hierarchy);
+    expect(prompt).toContain("DO NOT rebuild the screen from scratch with build_layout");
+    expect(prompt).toContain("inspect_layer_tree to find target layer IDs");
+    for (const tool of ["mutate_layer_style", "mutate_layer_layout", "mutate_layer_text", "batch_mutate_layers"]) {
+      expect(prompt, `delta rule mentions ${tool}`).toContain(tool);
+    }
+    expect(prompt).toContain("preserve the rest of the canvas");
+    // Length budget: the pre-rule prompt was ~12.3k chars; the two new rule
+    // lines add <1k, so a 12k-15k window keeps later additions honest.
+    expect(prompt.length).toBeGreaterThan(12000);
+    expect(prompt.length).toBeLessThan(15000);
+  });
+
+  it("injects layered surface depth into the human-design principles", () => {
+    const prompt = buildDesignQualityPrompt({ userText: "dashboard" });
+    const principles = prompt.indexOf("[Dribbble-human principles & MotionSites impact]");
+    const depth = prompt.indexOf("Layered depth:");
+    const exemplars = prompt.indexOf("[Exemplar recipes — follow the nearest one]");
+    expect(depth).toBeGreaterThan(principles);
+    expect(exemplars === -1 || depth < exemplars).toBe(true);
+    expect(prompt).toContain("soft multi-stop shadows");
+    expect(prompt).toContain("0 12px 32px rgba(0,0,0,0.18)");
+    expect(prompt).toContain("1px hairline borders");
+    expect(prompt).toContain("frosted translucent surfaces");
+    expect(prompt).toContain("rgba(255,255,255,0.06)");
+  });
+
   it("falls back to picking the kit from user text", () => {
     const promptText = buildDesignQualityPrompt({ userText: "editorial magazine article" });
     expect(promptText).toContain("Editorial Print");
