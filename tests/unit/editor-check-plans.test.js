@@ -13,7 +13,7 @@ describe("module ownership and conservative check planning", () => {
   it("retains all existing release suites exactly once and keeps startup first", () => {
     const discoveredSuites = readdirSync("tests/e2e").filter(path => path.endsWith(".e2e.mjs")).map(path => path.slice(0, -8));
     expect(validateModuleCatalog(EDITOR_MODULES, path => existsSync(path), { discoveredSuites,
-      additionalChecks: ADDITIONAL_BROWSER_CHECKS })).toEqual({ modules: 12, features: 59, browserSuites: 84, additionalChecks: 21 });
+      additionalChecks: ADDITIONAL_BROWSER_CHECKS })).toEqual({ modules: 12, features: 60, browserSuites: 84, additionalChecks: 21 });
     expect(RELEASE_BROWSER_SUITES[0]).toBe("editor-fixture-startup");
     expect(new Set(RELEASE_BROWSER_SUITES).size).toBe(84);
     const release = readFileSync("scripts/verify-editor-release.mjs", "utf8");

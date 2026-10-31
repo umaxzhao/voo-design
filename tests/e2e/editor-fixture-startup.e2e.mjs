@@ -1,10 +1,45 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:net";
+import { access } from "node:fs/promises";
 import { WebSocket } from "ws";
 import { startEditorBrowserServer } from "./editor-browser-server.mjs";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
 const checks = [];
+
+// An optional image must not hold the real editor's startup behind window.load.
+let releaseImage;
+const imageReleased = new Promise(resolve => { releaseImage = resolve; });
+let imageRequested = false;
+try {
+  await withEditorBrowser(async ({ page, tool }) => {
+    assert.equal(imageRequested, true);
+    assert.equal(await page.evaluate(() => document.readyState), "interactive");
+    assert.equal((await tool("voo_status")).canvasConnected, true);
+    assert.ok(await page.evaluate(() => window.__vooEditor.getDocument().width > 0));
+    releaseImage();
+    await page.waitForLoadState("load");
+  }, {
+    preparePage: async page => {
+      await page.route("**/__fixture-pending-image.svg", async route => {
+        imageRequested = true;
+        await imageReleased;
+        await route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg"/>' });
+      });
+      // Keep the main document on a real loopback connection: fulfilling it
+      // through request interception changes Chromium's local-network checks.
+      await page.addInitScript(() => {
+        document.addEventListener("DOMContentLoaded", () => {
+          const image = document.createElement("img");
+          image.src = "/__fixture-pending-image.svg";
+          image.alt = "";
+          document.body.append(image);
+        }, { once: true });
+      });
+    },
+  });
+  checks.push("real editor and MCP become usable while a noncritical image still holds the load event open");
+} finally { releaseImage(); }
 
 async function canBind(port) {
   const server = createServer();
@@ -52,13 +87,18 @@ try {
   }
   checks.push("concurrent listeners retain unique OS-assigned ports and bind bridge authentication to the actual Vite origin");
 } finally {
-  await Promise.all(environments.map(environment => environment.close()));
+  await Promise.all(environments.map(environment => {
+    const firstClose = environment.close();
+    assert.equal(environment.close(), firstClose, "concurrent callers share one teardown");
+    return firstClose;
+  }));
 }
-for (const { origin, bridge } of environments) {
+for (const { origin, bridge, cacheDir } of environments) {
+  await assert.rejects(access(cacheDir), { code: "ENOENT" });
   assert.equal(await canBind(Number(new URL(origin).port)), true);
   assert.equal(await canBind(bridge.port), true);
 }
-checks.push("closing each fixture releases both its Vite/HMR and MCP listening ports");
+checks.push("closing concurrent cold fixtures releases Vite/HMR and MCP ports and removes private optimizer caches");
 
 const origins = [];
 await Promise.all(Array.from({ length: 3 }, (_, index) => withEditorBrowser(async ({ page, tool, origin }) => {

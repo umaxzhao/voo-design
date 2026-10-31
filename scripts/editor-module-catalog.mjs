@@ -207,6 +207,7 @@ export const EDITOR_MODULES = [
     paths: [
       "scripts/generate-third-party-notices.mjs", "scripts/bundled-third-party-notices.mjs",
       "scripts/license-texts/*", "scripts/verify-package.mjs", "NOTICE",
+      "tests/e2e/editor-browser-server.mjs", "tests/e2e/editor-browser-fixture.mjs",
       "tests/unit/third_party_notices.test.js", "tests/unit/package_contents.test.js",
       "src/canvas/agent/*", "src/canvas/mcp/*", "src/canvas/collab/*", "src/canvas/comments/*",
       "src/canvas/components/agent-panel/*", "src/canvas/components/onboarding/*", "electron/*", "plugins/*",
@@ -217,7 +218,7 @@ export const EDITOR_MODULES = [
     features: [
       "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
       "platform.native-collaboration", "platform.browser-drawer", "platform.local-service-discovery", "platform.live-preview",
-      "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution",
+      "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
     ],
     suites: [
       "editor-fixture-startup", "browser-drawer", "pending-integration", "agent-model-catalog", "editor-loading",
