@@ -26,7 +26,7 @@ function textTransformAttr(node) {
 export function textElement(node, measureCtx, idOf = () => null) {
   // A CSS url(data:image/svg+xml,...) is not an SVG paint server. Resolve
   // fill and stroke through the same local definitions used by vector shapes.
-  const fill = idOf(node.fill) ?? node.fill ?? "#000000";
+  const fill = idOf(node.fill, node) ?? node.fill ?? "#000000";
   const stroke = idOf(node.stroke) ?? node.stroke;
   if (node.textPath) {
     const svg = textOnPathToSvg({ ...node, fill, stroke }, measureCtx);

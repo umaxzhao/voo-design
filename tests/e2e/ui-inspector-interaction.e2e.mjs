@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { runUnifiedFillCases } from "./unified-fill-picker-cases.mjs";
 
 const evidence = process.env.VOO_INSPECTOR_EVIDENCE_DIR ?? "/private/tmp/voo-ui-inspector";
 await mkdir(evidence, { recursive: true });
@@ -75,19 +76,21 @@ await withEditorBrowser(async ({ page, tool }) => {
     await tool("undo"); assert.equal((await node()).name, "Audit Rectangle");
     mark("inspector layer-name Escape cancels; Enter updates the actual layer and undoes once");
 
-    const fillType = panel.getByRole("button", { name: "Fill type", exact: true });
-    await fillType.click(); await page.getByRole("menu").waitFor();
-    await inViewport(page.getByRole("menu"), "paint menu");
+    const fillType = panel.getByRole("button", { name: "Fill", exact: true });
+    const fillDialog = page.getByRole("dialog", { name: "Fill", exact: true });
+    await fillType.click(); await fillDialog.waitFor();
+    await inViewport(fillDialog, "fill editor");
     await page.keyboard.press("Escape");
-    await page.getByRole("menu").waitFor({ state: "hidden" });
-    assert.deepEqual(await selected(), ["audit-rect"], "closing paint menu must retain selection");
+    await fillDialog.waitFor({ state: "detached" });
+    assert.deepEqual(await selected(), ["audit-rect"], "closing the paint editor retains selection");
     await page.keyboard.press("Escape");
-    assert.deepEqual(await selected(), [], "Escape after the menu closes still clears canvas selection");
+    assert.deepEqual(await selected(), [], "Escape after the editor closes still clears canvas selection");
     await select(["audit-rect"]);
     await fillType.focus(); await fillType.press("ArrowDown");
-    await page.getByRole("menuitemradio", { name: "Solid", exact: true }).waitFor();
-    await page.keyboard.press("ArrowDown"); await page.keyboard.press("Enter");
+    await fillDialog.getByRole("tab", { name: "Solid", exact: true }).waitFor();
+    await page.keyboard.press("ArrowRight");
     assert.match((await node()).fill, /linear-gradient/);
+    await page.keyboard.press("Escape");
     await tool("undo"); assert.equal((await node()).fill, "#ff0000");
     await panel.getByRole("button", { name: "Fill visible", exact: true }).click();
     assert.equal((await node()).fills[0].visible, false);
@@ -196,7 +199,9 @@ await withEditorBrowser(async ({ page, tool }) => {
     await tool("undo"); assert.equal(Boolean((await node()).locked), false);
     mark("Layers selection, rename cancel/commit, hide and lock alter real nodes and each undo once");
 
-    for (const viewport of [{ width: 1440, height: 1000 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
+    await runUnifiedFillCases({ page, tool, mark });
+
+    for (const viewport of [{ width: 1440, height: 1000 }, { width: 768, height: 1024 }, { width: 390, height: 844 }, { width: 320, height: 640 }]) {
       await page.setViewportSize(viewport);
       for (const theme of ["dark", "light"]) {
         for (const locale of ["en", "zh"]) {
@@ -210,16 +215,16 @@ await withEditorBrowser(async ({ page, tool }) => {
           if (await toggle.isVisible() && await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
           await inViewport(panel, `${viewport.width}/${theme}/${locale} inspector`);
           await inViewport(layers, `${viewport.width}/${theme}/${locale} layers`);
-          const fill = panel.getByRole("button", { name: locale === "en" ? "Fill type" : "填充类型", exact: true });
+          const fill = panel.getByRole("button", { name: locale === "en" ? "Fill" : "填充", exact: true });
           await fill.click();
-          await inViewport(page.getByRole("menu"), `${viewport.width}/${theme}/${locale} paint menu`);
+          await inViewport(page.getByRole("dialog", { name: locale === "en" ? "Fill" : "填充", exact: true }), `${viewport.width}/${theme}/${locale} fill editor`);
           await page.screenshot({ path: `${evidence}/${viewport.width}-${theme}-${locale}.png` });
           await page.keyboard.press("Escape");
           assert.deepEqual(await selected(), ["audit-rect"]);
         }
       }
     }
-    mark("390/768/1440, light/dark and Chinese/English panels and paint menus remain on screen and retain selection after Escape");
+    mark("320/390/768/1440, light/dark and Chinese/English panels and fill editors remain on screen and retain selection after Escape");
     await writeFile(`${evidence}/result.json`, JSON.stringify({ passed: checks }, null, 2));
     console.log(JSON.stringify({ passed: checks, evidence }, null, 2));
   } catch (error) {

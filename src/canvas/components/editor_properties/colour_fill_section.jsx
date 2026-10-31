@@ -1,429 +1,112 @@
-/** Fill section controls for nodes: solid, gradient, image fills, and opacity. */
-
+/** One paint stack; every fill type is edited through its shared swatch. */
 import PropTypes from "prop-types";
-import { useEffect, useRef, useState } from "react";
-import ScrubValueInput from "./scrub_value_input.jsx";
-import PaintTypeMenu from "./paint_type_menu.jsx";
-import { commonValue, MIXED } from "../../editor/selection_values.js";
-import { NODE_KIND } from "../../editor/scene_model.js";
-import { opacityPatch } from "../../color_picker/opacity_patch.js";
-import {
-  formatGradient,
-  isCssGradient,
-  parseGradient,
-} from "../../color_picker/gradient_fill.js";
+import { X } from "lucide-react";
+import { useRef } from "react";
+import { isImageFill, parseTextureFill } from "../../color_picker/texture-fill.js";
 import { useI18n } from "../../use_i18n.js";
-import { IconEye, IconEyeOff, IconMinus } from "../../icons.jsx";
-import { Swatch, HexField, HEX_COLOUR } from "./colour_swatch.jsx";
-import {
-  SectionAddButton,
-  StaticSection,
-  sectionActionClass,
-  sectionRowClass,
-} from "./property_section.jsx";
-
-/** imageId → preview URL, so the fill picker never re-encodes per render. */
-const fillPreviewCache = new Map();
-const FILL_PREVIEW_LIMIT = 64;
-/** The bitmap cache decodes lazily — give up polling after this many tries. */
-const FILL_PREVIEW_POLL_TRIES = 20;
-const FILL_PREVIEW_POLL_MS = 200;
-/** Encode the preview at most this wide/tall; the picker shows it at ~256px. */
-const FILL_PREVIEW_MAX = 512;
-
-/** A displayable URL for a node's bitmap, mirroring the layers panel. */
-function bitmapPreviewUrl(bmp) {
-  if (!bmp) return null;
-  // A decoded <img> with a data/http src keeps a usable URL — using it
-  // directly keeps the full resolution instead of re-encoding a thumbnail.
-  if (typeof bmp.src === "string" && bmp.src && !bmp.src.startsWith("blob:")) {
-    return bmp.src;
-  }
-  if (bmp instanceof HTMLCanvasElement) {
-    try {
-      return bmp.toDataURL();
-    } catch {
-      return null;
-    }
-  }
-  // HTMLImageElement without a src, or an ImageBitmap: draw into a canvas.
-  try {
-    const sourceWidth = bmp.naturalWidth ?? bmp.width ?? 1;
-    const sourceHeight = bmp.naturalHeight ?? bmp.height ?? 1;
-    const scale = Math.min(
-      1,
-      FILL_PREVIEW_MAX / Math.max(sourceWidth, sourceHeight),
-    );
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(sourceWidth * scale));
-    canvas.height = Math.max(1, Math.round(sourceHeight * scale));
-    canvas.getContext("2d")?.drawImage(bmp, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL();
-  } catch {
-    return null;
-  }
-}
-
-/** Whether a fill string names a picture (a URL) rather than a paint. */
-function isImageUrlFill(fill) {
-  return (
-    typeof fill === "string" &&
-    (fill.startsWith("data:") ||
-      fill.startsWith("blob:") ||
-      fill.startsWith("http"))
-  );
-}
-
+import { NODE_KIND } from "../../editor/scene_model.js";
+import { SectionAddButton, StaticSection } from "./property_section.jsx";
+import FillPaintRow from "./fill_paint_row.jsx";
+import { fillPaintsOf, fillStackPatch, paintPatch, hasFillContent } from "./fill-paints.js";
 export function FillSection({
   object,
   edit,
   editAndCommit,
-  commitNow = undefined,
+  commitNow,
   selectedNodes = [],
   getBitmap = null,
-  paintRow = false,
-  onRemove = null,
   bindings = null,
   fallbackFill = null,
+  replaceBitmap = null
 }) {
-  const { t } = useI18n();
-  const isImageNode = isImageUrlFill(object.fill) || (object.kind === NODE_KIND.IMAGE && (!object.fill || object.fill === "transparent"));
-  const imageKey = object.imageId ?? object.src ?? null;
-
-  const [imageUrl, setImageUrl] = useState(() => {
-    if (!isImageNode) return null;
-    if (isImageUrlFill(object.fill)) return object.fill;
-    return imageKey ? (fillPreviewCache.get(imageKey) ?? null) : null;
-  });
-  // `object` is rebuilt on every document edit; only the image identity should
-  // restart the poll, so the latest node reaches it via a ref.
-  const objectRef = useRef(object);
-  objectRef.current = object;
-  /** A fill that names a picture replaces the bitmap preview when set. */
-  const fillImage = isImageUrlFill(object.fill) ? object.fill : null;
-
-  useEffect(() => {
-    if (!isImageNode) return undefined;
-    if (fillImage) {
-      setImageUrl(fillImage);
-      return undefined;
+  const {
+    t
+  } = useI18n();
+  const paints = fillPaintsOf(object, fallbackFill);
+  const owner = useRef(object.id);
+  owner.current = object.id;
+  const updatePaint = (index, patch, commit, options) => {
+    const nativeBitmap = object.kind === NODE_KIND.IMAGE && index === 0;
+    const replacement = nativeBitmap && isImageFill(patch.fill) && !parseTextureFill(patch.fill);
+    const paint = paintPatch(patch);
+    // The lead image paint follows its node's canonical asset. It must not pin
+    // an old imageId after a retouch/repair writes the next bitmap revision.
+    if (nativeBitmap) paint.imageId = null;
+    if (replacement) paint.fill = "transparent";
+    const next = paints.map((entry, at) => at === index ? {
+      ...entry,
+      ...paint
+    } : entry);
+    const documentPatch = fillStackPatch(next);
+    if (replacement) {
+      if (!replaceBitmap) throw new Error("Image replacement requires the editor bitmap operation");
+      return replaceBitmap(object.id, patch.fill, {
+        resetCrop: true,
+        patch: {
+          ...documentPatch,
+          src: null
+        },
+        shouldApply: () => owner.current === object.id && (options?.shouldApply?.() ?? true)
+      });
     }
-    if (!imageKey) {
-      setImageUrl(null);
-      return undefined;
-    }
-    const cached = fillPreviewCache.get(imageKey);
-    if (cached) {
-      setImageUrl(cached);
-      return undefined;
-    }
-    setImageUrl(null);
-    let cancelled = false;
-    let timer = 0;
-    let tries = 0;
-    // The bitmap decodes lazily in the engine's cache, so the first read often
-    // returns nothing; poll until it lands or the budget runs out.
-    const poll = () => {
-      if (cancelled) return;
-      const bmp = getBitmap?.(objectRef.current);
-      const url = bitmapPreviewUrl(bmp);
-      if (url) {
-        if (fillPreviewCache.size >= FILL_PREVIEW_LIMIT) {
-          fillPreviewCache.delete(fillPreviewCache.keys().next().value);
-        }
-        fillPreviewCache.set(imageKey, url);
-        setImageUrl(url);
-        return;
-      }
-      tries += 1;
-      if (tries < FILL_PREVIEW_POLL_TRIES) {
-        timer = setTimeout(poll, FILL_PREVIEW_POLL_MS);
-      }
-    };
-    poll();
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [isImageNode, imageKey, fillImage, getBitmap]);
-
-  const rawFill = typeof object.fill === "string" ? object.fill : "transparent";
-  const parsedGradient = isCssGradient(rawFill) ? parseGradient(rawFill) : null;
-  const paintType = isImageUrlFill(rawFill)
-    ? "image"
-    : parsedGradient && parsedGradient.type !== "solid"
-      ? parsedGradient.type
-      : "solid";
-  const imageFileRef = useRef(null);
-  const setPaintType = (nextType) => {
-    if (nextType === "image") {
-      imageFileRef.current?.click();
-      return;
-    }
-    if (nextType === "solid") {
-      const colour = parsedGradient?.stops?.[0]?.color ?? (HEX_COLOUR.test(rawFill) ? rawFill : "#D9D9D9");
-      editAndCommit({ fill: colour });
-      return;
-    }
-    const stops = parsedGradient?.stops?.length
-      ? parsedGradient.stops
-      : [
-          { color: HEX_COLOUR.test(rawFill) ? rawFill : "#D9D9D9", opacity: 100, position: 0 },
-          { color: "#FFFFFF", opacity: 100, position: 100 },
-        ];
-    editAndCommit({
-      fill: formatGradient(
-        nextType,
-        parsedGradient?.angle ?? "135deg",
-        stops,
-        parsedGradient?.geometry,
-      ),
-    });
+    if (nativeBitmap && "imageId" in patch) documentPatch.imageId = patch.imageId;
+    if (nativeBitmap && "src" in patch) documentPatch.src = patch.src;
+    return (commit ? editAndCommit : edit)(documentPatch);
   };
-  const rawIsGradient = rawFill.includes("-gradient");
-  const explicitPaint =
-    isImageNode ||
-    HEX_COLOUR.test(rawFill) ||
-    rawIsGradient ||
-    (Array.isArray(object.fills) &&
-      object.fills.some((paint) => paint?.visible !== false && paint?.fill && paint.fill !== "transparent"));
-  // A frame with no paint still reads as a surface: show the page backdrop in
-  // the Fill row until the user writes an explicit fill.
-  const fill = !explicitPaint && fallbackFill ? fallbackFill : rawFill;
-  const isGradient = fill.includes("-gradient");
-  const none = !isImageNode && !HEX_COLOUR.test(fill) && !isGradient;
-  const fillOpacity = Math.round((object.fillOpacity ?? 1) * 100);
-  const fillOpacityMixed =
-    selectedNodes.length > 1 &&
-    commonValue(selectedNodes, "fillOpacity") === MIXED;
-
-  const hasVisiblePaints = Array.isArray(object.fills) && object.fills.some((paint) =>
-    paint?.visible !== false && paint?.fill && paint.fill !== "transparent",
-  );
-  const paints = hasVisiblePaints ? object.fills : [{
-    fill, opacity: object.fillOpacity ?? 1,
-    visible: object.fillHidden !== true, blendMode: object.fillBlendMode ?? "source-over",
-    ...(object.imageId ? { imageId: object.imageId } : {}),
-  }];
-  const updatePaint = (index, patch, commit) => {
-    const next = paints.map((paint, at) => at === index ? { ...paint, ...patch } : paint);
-    const first = next[0];
-    (commit ? editAndCommit : edit)({ fills: next, fill: first?.fill ?? "transparent",
-      fillOpacity: first?.opacity ?? 1, fillHidden: first?.visible === false });
-  };
-  const addFill = () =>
-    editAndCommit({
-      fills: [...paints, { fill: "#D9D9D9", opacity: 1, visible: true, blendMode: "source-over" }],
-    });
-  if (!paintRow) return (
-    <StaticSection title={t("editor.props.fillLabel")} storageKey="fill" extra={
-      <SectionAddButton label={t("editor.props.addFill")} onClick={addFill} />
-    }>
-      {!paints.some((paint) => paint?.visible !== false && paint?.fill && paint.fill !== "transparent")
-        ? null
-        : paints.map((paint, index) => <FillSection key={index}
-        object={{ ...object, fills: undefined, fill: paint.fill, fillOpacity: paint.opacity,
-          fillHidden: paint.visible === false, fillBlendMode: paint.blendMode,
-          imageId: paint.imageId ?? object.imageId,
-          imageScaleMode: paint.imageScaleMode ?? object.imageScaleMode }}
-        paintRow onRemove={() => {
-          const next = paints.filter((_, at) => at !== index);
-          editAndCommit({ fills: next, fill: next[0]?.fill ?? "transparent", fillOpacity: next[0]?.opacity ?? 1 });
-        }}
-        edit={(patch) => updatePaint(index, paintPatch(patch), false)}
-        editAndCommit={(patch) => updatePaint(index, paintPatch(patch), true)}
-        commitNow={commitNow} getBitmap={getBitmap} selectedNodes={selectedNodes}
-        bindings={bindings} />)}
-      {isImageNode ? (
-        <label className="flex min-h-7 items-center gap-2 rounded-xl bg-neutral-800 px-2.5">
-          <span className="shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-400">
-            {t("editor.props.altText")}
-          </span>
-          <input
-            defaultValue={object.alt ?? ""}
-            onBlur={(event) => {
-              const next = event.target.value.trim();
-              if (next !== (object.alt ?? "")) editAndCommit({ alt: next });
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur();
-            }}
-            placeholder={t("editor.props.altTextPlaceholder")}
-            aria-label={t("editor.props.altText")}
-            className="min-w-0 flex-1 bg-transparent text-[10px] font-mono text-neutral-100 outline-none placeholder:text-neutral-400"
-          />
-        </label>
-      ) : null}
-      {object.maskBase && <span className="text-[11px] text-neutral-400">Mask · {object.maskType ?? "alpha"}</span>}
-    </StaticSection>
-  );
-
-  return (
-    <div
-    >
-      {bindings?.variableName || bindings?.styleName ? (
-        <div className="mb-1.5 flex flex-wrap items-center gap-1.5 px-0.5">
-          {bindings.variableName ? (
-            <button type="button" onClick={bindings.onDetachVariable} className="flex max-w-full items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] font-mono uppercase tracking-wide text-neutral-300 hover:bg-white/[0.12]" title={bindings.variableName}>
-              <span className="truncate">{bindings.variableName}</span>
-              <span aria-hidden="true">×</span>
-            </button>
-          ) : null}
-          {bindings.styleName ? (
-            <button type="button" onClick={bindings.onDetachStyle} className="flex max-w-full items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] font-mono uppercase tracking-wide text-neutral-300 hover:bg-white/[0.12]" title={bindings.styleName}>
-              <span className="truncate">{bindings.styleName}</span>
-              <span aria-hidden="true">×</span>
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-
-      {none ? null : (
-        /* Row 1: Figma-style paint type + swatch + hex + opacity */
-        <div className={sectionRowClass}>
-          <PaintTypeMenu
-            value={paintType}
-            onChange={setPaintType}
-            label={t("editor.props.fillType")}
-          />
-          <input
-            ref={imageFileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            aria-label={t("editor.props.fillImage")}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              event.target.value = "";
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onload = () => {
-                if (typeof reader.result === "string") editAndCommit({ fill: reader.result });
-              };
-              reader.readAsDataURL(file);
-            }}
-          />
-          <Swatch
-            value={none ? null : fill}
-            onPick={(colour) => editAndCommit({ fill: colour })}
-            ariaLabel={t("editor.props.fill")}
-            previewImage={imageUrl}
-            isImage={isImageNode}
-            opacity={fillOpacityMixed ? null : fillOpacity}
-            onOpacityChange={fillOpacityMixed ? null : (val) => edit(opacityPatch("fillOpacity", val))}
-            onOpacityCommit={commitNow}
-            blendMode={object.fillBlendMode ?? "source-over"}
-            onBlendModeChange={(mode) => editAndCommit({ fillBlendMode: mode })}
-          />
-          {isImageNode ? (
-            <span className="min-w-0 flex-1 truncate text-[11px] font-mono text-neutral-200">
-              {object.name || t("editor.props.imageLabel")}
-            </span>
-          ) : isGradient ? (
-            <span className="min-w-0 flex-1 truncate text-[11px] font-mono text-neutral-300">
-              {t("editor.props.gradientLabel")}
-            </span>
-          ) : (
-            <HexField
-              value={fill}
-              onCommit={(colour) => editAndCommit({ fill: colour })}
-              ariaLabel={t("editor.props.customColour")}
-            />
-          )}
-          <div className="flex shrink-0 items-center gap-0.5 border-l border-white/10 pl-2">
-            {fillOpacityMixed ? (
-              <span
-                className="text-[11px] font-mono text-neutral-500"
-                title={t("editor.props.mixedValues")}
-              >
-                —%
-              </span>
-            ) : (
-              <>
-                <ScrubValueInput
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={fillOpacity}
-                  format={(val) => `${val}`}
-                  onChange={(val) => edit(opacityPatch("fillOpacity", val))}
-                  onCommit={commitNow}
-                  ariaLabel={t("editor.props.opacity")}
-                  scrubHint={t("editor.props.dragToAdjust")}
-                  className="!w-7 !p-0 bg-transparent text-right text-[11px] font-mono text-neutral-300 outline-none"
-                />
-                <span className="text-[10px] font-mono text-neutral-400">
-                  %
-                </span>
-              </>
-            )}
-            <button
-              type="button"
-              aria-label="Fill visible"
-              aria-pressed={object.fillHidden !== true}
-              title={t("editor.panel.fillVisible")}
-              onClick={() => editAndCommit({ fillHidden: object.fillHidden !== true })}
-              className={sectionActionClass}
-            >
-              {object.fillHidden === true ? <IconEyeOff size={12} /> : <IconEye size={12} />}
-            </button>
-            <button
-              type="button"
-              onClick={() => onRemove?.()}
-              title={t("editor.props.removeFill")}
-              aria-label={t("editor.props.removeFill")}
-              className={sectionActionClass}
-            >
-              <IconMinus size={12} />
-            </button>
-          </div>
-          {isImageNode || object.imageId ? (
-            <div className="flex min-h-7 items-center gap-2 pt-1">
-              <span className="shrink-0 text-[9px] font-mono uppercase tracking-tight text-neutral-400">
-                {t("editor.props.imageScaleMode")}
-              </span>
-              <FlatSelect
-                value={object.imageScaleMode ?? "fill"}
-                onChange={(imageScaleMode) => editAndCommit({ imageScaleMode })}
-                label={t("editor.props.imageScaleMode")}
-                options={[
-                  ["fill", t("editor.props.imageScaleFill")],
-                  ["fit", t("editor.props.imageScaleFit")],
-                  ["tile", t("editor.props.imageScaleTile")],
-                ].map(([value, label]) => ({ value, label }))}
-                className="min-w-0 flex-1"
-                triggerClassName="!h-6 !w-full !rounded-lg !bg-neutral-800 !px-2 !text-[10px] !font-mono !text-neutral-100"
-                widthClass="w-full"
-              />
-            </div>
-          ) : null}
-        </div>
-      )}
-    </div>
-  );
+  const addFill = () => editAndCommit(fillStackPatch([...paints.filter((paint, index) => hasFillContent(paint, index, object)), {
+    id: crypto.randomUUID(),
+    fill: "#D9D9D9",
+    opacity: 1,
+    visible: true,
+    blendMode: "source-over"
+  }]));
+  return <StaticSection title={t("editor.props.fillLabel")} storageKey="fill" extra={<SectionAddButton label={t("editor.props.addFill")} onClick={addFill} />}>
+    {bindings?.variableName || bindings?.styleName ? <div className="flex flex-wrap items-center gap-1.5">
+      {[{
+        id: "variable",
+        name: bindings.variableName,
+        detach: bindings.onDetachVariable
+      }, {
+        id: "style",
+        name: bindings.styleName,
+        detach: bindings.onDetachStyle
+      }].filter(item => item.name).map(item => <button key={item.id} type="button" onClick={item.detach} className="flex max-w-full items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] text-neutral-300" title={item.name}><span className="truncate">{item.name}</span><X size={10} strokeWidth={1.5} aria-hidden="true" /></button>)}
+    </div> : null}
+    {paints.filter((paint, index) => hasFillContent(paint, index, object)).map(paint => {
+      const index = paints.indexOf(paint);
+      return <FillPaintRow key={paint.id} object={{
+        ...object,
+        fills: undefined,
+        fill: paint.fill,
+        fillOpacity: paint.opacity,
+        fillHidden: paint.visible === false,
+        fillBlendMode: paint.blendMode,
+        imageId: paint.imageId ?? object.imageId,
+        imageScaleMode: paint.imageScaleMode ?? object.imageScaleMode
+      }} edit={patch => updatePaint(index, patch, false)} editAndCommit={(patch, options) => updatePaint(index, patch, true, options)} commitNow={commitNow} getBitmap={getBitmap} selectedPaints={selectedNodes.map(node => fillPaintsOf(node)[index])} onRemove={() => editAndCommit(fillStackPatch(paints.filter(item => item.id !== paint.id)))} />;
+    })}
+    {object.kind === NODE_KIND.IMAGE ? <label className="flex min-h-7 items-center gap-2 rounded-xl bg-neutral-800 px-2.5">
+      <span className="shrink-0 text-[9px] text-neutral-400">{t("editor.props.altText")}</span>
+      <input key={object.id} defaultValue={object.alt ?? ""} onBlur={event => {
+        const alt = event.target.value.trim();
+        if (alt !== (object.alt ?? "")) editAndCommit({
+          alt
+        });
+      }} onKeyDown={event => {
+        if (event.key === "Enter") event.currentTarget.blur();
+      }} placeholder={t("editor.props.altTextPlaceholder")} aria-label={t("editor.props.altText")} className="min-w-0 flex-1 bg-transparent text-[10px] text-neutral-100 outline-none placeholder:text-neutral-400" />
+    </label> : null}
+    {object.maskBase ? <span className="text-[11px] text-neutral-400">{t("editor.props.mask")} · {object.maskType ?? "alpha"}</span> : null}
+  </StaticSection>;
 }
-
 FillSection.propTypes = {
   object: PropTypes.object.isRequired,
   edit: PropTypes.func.isRequired,
   editAndCommit: PropTypes.func.isRequired,
-  /** Interaction-end commit for the continuous (debounced) fields. */
   commitNow: PropTypes.func,
-  /** Page backdrop shown for a frame that has no explicit paint yet. */
-  fallbackFill: PropTypes.string,
-  /** Selected node objects when several are picked (plan 1.9). */
   selectedNodes: PropTypes.array,
   getBitmap: PropTypes.func,
-  paintRow: PropTypes.bool,
-  onRemove: PropTypes.func,
+  bindings: PropTypes.object,
+  fallbackFill: PropTypes.string,
+  replaceBitmap: PropTypes.func
 };
-
-function paintPatch(patch) {
-  const result = {};
-  if ("fill" in patch) result.fill = patch.fill;
-  if ("fillOpacity" in patch) result.opacity = patch.fillOpacity;
-  if ("fillHidden" in patch) result.visible = !patch.fillHidden;
-  if ("fillBlendMode" in patch) result.blendMode = patch.fillBlendMode;
-  if ("imageScaleMode" in patch) result.imageScaleMode = patch.imageScaleMode;
-  return result;
-}

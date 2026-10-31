@@ -298,6 +298,7 @@ export default function PropertiesPanelSections({
             commitNow={commitNow}
             selectedNodes={selectedNodes}
             getBitmap={getBitmap}
+            replaceBitmap={engine?.replaceNodeBitmap}
             bindings={bindings}
           />
         </DocumentColoursContext.Provider>

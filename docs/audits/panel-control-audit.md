@@ -278,3 +278,31 @@ Grouped into focused pull request batches of at most 5 files per batch:
   3. `src/canvas/components/editor_properties/colour_stroke_section.jsx` (Ensure all stroke alignment tooltips use i18n keys)
   4. `src/locales/zh-CN.json` / `src/locales/en-US.json` (Register corresponding localized dictionary keys)
 - **Objective:** Complete 100% i18n coverage across all properties panel controls per Spec `WB-02` criterion 3.
+
+
+## Unified fill editor
+
+Capability: `inspector.unified-fill`, related to image placement and SVG rendering.
+One swatch opens Solid / Gradient / Image / Texture in the same editor. The old
+fill-only type menu, separate image file input and inline image-fit row are removed;
+stroke and effect colour pickers retain only their supported paint modes.
+
+Baseline `64e6ddd`: `unified-fill-picker.test.jsx` reproduced four failures: missing
+media tabs, an empty image editor, undefined image-fit control, and hidden/empty
+paint stacks reviving legacy fills. Real-browser checks additionally reproduced
+nested portal clicks closing the parent, native image restoration hiding its row,
+and native picture type/undo state not following its underlying asset.
+
+| Context | Assertions / evidence | Status |
+| --- | --- | --- |
+| Actual inspector in Chromium | Mode drafts, mesh opening, real image decode/retry, shared alpha, centred fit, independent paints, hidden rows, removing/undo, selection-switch cancellation | Targeted pass; final fixed-revision release pending |
+| Bitmap resource ownership | Type round trips preserve the original asset, image replacement calls the existing bitmap operation, subsequent bitmap editing remains visible; undo/redo restore resources | Targeted pass in `unified-fill-native-cases.mjs`; final release pending |
+| Visible/export result | Real image and texture pixels; texture size/colour; decoded PNG/SVG selection pixel parity. Image sizing uses the authoritative SVG raster fallback; texture silhouettes keep native SVG patterns | Targeted pass; final release pending |
+| Responsive / input | Keyboard tabs, nested menu Escape, 320/390/768/1440px, English/Chinese, light/dark, emulated touch | Final matrix pending |
+| Remaining | Physical devices, every image codec and large-image memory limit, cross-document cancellation with cloned IDs, exhaustive multi-image bitmap replacement and cold native-app restart | Not certified by these checks |
+
+Tests: `fill-paint-values.test.js`, `unified-fill-picker.test.jsx`, and the registered
+`ui-inspector-interaction.e2e.mjs` with its two unified-fill helper modules. Source
+modules remain below 400 lines; picker state is held by one reducer and assets use
+the editor's shared bitmap replacement operation. Exact final revision and online
+evidence are maintained in [quality-progress.md](../quality-progress.md).

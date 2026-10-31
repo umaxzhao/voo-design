@@ -34,6 +34,7 @@ import {
 } from "./render_figma_effects.js";
 import { additionalStrokePaints, primaryStrokePaint } from "./stroke-paint-passes.js";
 import { needsStyleIsolation, drawIsolatedStyle, isolatedStyleNode } from "./render-isolated-style.js";
+import { imagePaintLayout } from "./image-paint-layout.js";
 
 export function drawNode(
   ctx,
@@ -80,17 +81,8 @@ export function drawNode(
         if (!pattern) return;
         const bitmapWidth = bitmap.naturalWidth ?? bitmap.width;
         const bitmapHeight = bitmap.naturalHeight ?? bitmap.height;
-        let scale = 1;
-        let offsetX = node.x;
-        let offsetY = node.y;
-        if (mode === "fit") {
-          scale = Math.min(node.width / bitmapWidth, node.height / bitmapHeight);
-          offsetX += (node.width - bitmapWidth * scale) / 2;
-          offsetY += (node.height - bitmapHeight * scale) / 2;
-        } else if (mode !== "tile") {
-          scale = Math.max(node.width / bitmapWidth, node.height / bitmapHeight);
-        }
-        pattern.setTransform(new DOMMatrix().translate(offsetX, offsetY).scale(scale));
+        const layout = imagePaintLayout(node, bitmapWidth, bitmapHeight, mode);
+        pattern.setTransform(new DOMMatrix().translate(layout.x, layout.y).scale(layout.scale));
         node = { ...node, fill: pattern, opacity: (node.opacity ?? 1) * (node.fillOpacity ?? 1), fillOpacity: 1 };
       }
     }

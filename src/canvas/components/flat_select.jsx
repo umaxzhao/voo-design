@@ -9,10 +9,11 @@
  * and auto up/down expansion based on available space.
  */
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { createPortal } from "react-dom";
 import { IconCheck, IconChevronDown } from "../icons.jsx";
+import { PopoverScopeContext } from "./popover_scope.js";
 
 const PANEL_CLASS =
   "absolute z-50 overflow-hidden rounded-xl bg-[#181818] p-1 border border-white/10 shadow-menu";
@@ -39,6 +40,7 @@ export default function FlatSelect({
   portal = false,
   triggerProps = {},
 }) {
+  const popoverScope = useContext(PopoverScopeContext);
   const normalized = useMemo(() => normalizeOptions(options), [options]);
   // Keep headings out of the selectable list so keyboard navigation stays model-only.
   const sections = useMemo(() => {
@@ -206,6 +208,7 @@ export default function FlatSelect({
       id={panelId}
       style={portal ? position : undefined}
       role="listbox"
+      data-popover-scope={popoverScope ?? undefined}
       aria-label={label}
       onKeyDown={(event) => {
         if (closeOnMenuEscape(event)) triggerRef.current?.focus();
