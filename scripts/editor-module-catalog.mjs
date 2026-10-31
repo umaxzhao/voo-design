@@ -78,14 +78,14 @@ export const EDITOR_MODULES = [
       "src/canvas/components/editor_layer*", "src/canvas/components/use*layer*", "src/canvas/editor/*node*",
       "src/canvas/editor/*frame*", "src/canvas/editor/*reparent*", "src/canvas/editor/*duplicate*",
       "src/canvas/editor/*paste*", "src/canvas/editor/*clipboard*",
-      "src/canvas/editor/doc_ops_groups.js", "src/canvas/editor/editor_engine_groups.js",
+      "src/canvas/editor/group-structure.js", "src/canvas/editor/doc_ops_groups.js", "src/canvas/editor/editor_engine_groups.js",
       "src/canvas/components/editor_image_batch.js", "src/canvas/components/use_editor_dnd.js",
     ],
     related: ["selection","compositing","layout","documents"],
-    features: ["layers.nesting","layers.placement","layers.reparent","layers.duplicate-delete-lock"],
+    features: ["layers.nesting","layers.placement","layers.reparent","layers.duplicate-delete-lock","layers.container-boundaries"],
     suites: [
       "editor-layers-composition", "image-layer-window", "frame-alt-duplicate", "frame-reparent-contracts",
-      "nested-placement", "nested-object-lifecycle",
+      "nested-placement", "nested-object-lifecycle", "container-command-boundaries",
     ],
     remaining: [
       "Browser File drops are injected DataTransfer events, not Finder/Explorer drag certification.",
@@ -113,7 +113,7 @@ export const EDITOR_MODULES = [
     id: "vectors",
     title: "Shapes, paths and Boolean geometry",
     paths: [
-      "src/canvas/editor/*boolean*", "src/canvas/editor/*path*", "src/canvas/editor/*pen*",
+      "src/canvas/editor/shape_geometry.js", "src/canvas/editor/*boolean*", "src/canvas/editor/*path*", "src/canvas/editor/*pen*",
       "src/canvas/editor/*svg*", "src/canvas/editor/editor_export*", "src/canvas/figma/*", "src/canvas/pen/*",
       "src/canvas/codegen/*", "tests/unit/pen-midpoint-insertion.test.js",
     ],
@@ -128,12 +128,12 @@ export const EDITOR_MODULES = [
     id: "text",
     title: "Text editing and typography",
     paths: [
-      "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js", "src/canvas/components/editor_text*",
+      "src/canvas/editor/editor_annotations.js", "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js", "src/canvas/components/editor_text*",
       "src/canvas/components/editor_properties/text*",
     ],
     related: ["selection","layout","compositing","documents"],
-    features: ["text.edit","text.box-sizing","text.typography","text.font-loading"],
-    suites: ["agent-paint-text"],
+    features: ["text.edit","text.box-sizing","text.typography","text.font-loading","text.placement-transactions"],
+    suites: ["agent-paint-text", "text-creation-boundaries"],
     remaining: [
       "Physical IME composition, installed-font differences, RTL and arbitrary variable fonts need dedicated acceptance.",
     ],

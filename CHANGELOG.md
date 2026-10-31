@@ -2,6 +2,12 @@
 
 ## 1.0.0
 
+- Keep converted line/arrow Bezier paths out of primitive endpoint grips and array-only selection rendering; retain full browser exception stacks and explicitly exercise chrome repaint after conversion.
+
+- Preserve complete ancestry when ungrouping multiple nested containers, group only selected subtree roots and retain the nearest shared parent for cross-Frame grouping. Release clipping followers when their mask container is dissolved.
+- Share the live pointer and text-overlay placement transaction: abandoned empty text and unchanged edits preserve redo, no-argument tool closure commits typed content once and unchanged overlays actually close. Preserve intervening document edits when cancelling an owned draft.
+- Add container-command and text-creation boundary browser checks with explicit seeded/API entry scopes, hierarchy/pixel/history assertions and remaining device/concurrency limits.
+
 - Verify a continuous real-UI creation session from New through drawing, typing, grouping, path editing, image placement, masking, undo/redo and cold ZIP reopening. Register it in the core release gate with explicit platform/performance limits.
 - Make named shape shortcuts choose their own tool while preserving radial pointer choices. Keep new groups in their shared Frame, select the new movement unit and ungroup only the intended unlocked container.
 - Roll back cancelled shape, arrow and text drafts without altering existing history/redo; share pointer keyboard/listener cleanup in a focused module. Give newly drawn text contrasting initial ink on solid Frame surfaces while preserving explicit and programmatic colors.

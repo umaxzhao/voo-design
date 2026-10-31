@@ -47,4 +47,16 @@ describe("group commands inside Frames", () => {
     const f = fixture([{ ...frame("folder"), isFrame: false, locked: true }, rect("a", "folder")], ["folder"]);
     f.api.ungroupSelection(); expect(f.setDoc).not.toHaveBeenCalled();
   });
+  it("does not offer grouping for one Frame plus its already-contained selected leaf", () => {
+    const f = fixture([frame("frame"), rect("a", "frame")], ["frame", "a"]);
+    expect(f.api.canGroupSelection()).toBe(false); f.api.groupSelection();
+    expect(f.setDoc).not.toHaveBeenCalled();
+  });
+  it("uses selected subtree roots for an Auto Layout wrapper's initial bounds", () => {
+    const f = fixture([frame("frame"), { ...rect("a", "frame"), x: 900 }, { ...rect("loose", null), x: 550 }], ["frame", "a", "loose"]);
+    f.api.toggleAutoLayoutSelection();
+    const wrapper = f.doc().nodes.find(node => node.autoLayout);
+    expect(wrapper.width).toBe(590);
+    expect(f.doc().nodes.find(node => node.id === "a").parentId).toBe("frame");
+  });
 });

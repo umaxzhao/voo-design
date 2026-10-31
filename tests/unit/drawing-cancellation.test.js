@@ -51,3 +51,25 @@ describe("cancelled drawing transactions", () => {
     expect(f.api.beginTextEdit).not.toHaveBeenCalled();
   });
 });
+
+describe("draft cancellation with intervening document edits", () => {
+  it("preserves a sibling added while a text placement is open", () => {
+    const f = fixture("text");
+    f.shapes.startText({ clientX: 100, clientY: 100 });
+    const sibling = createRectNode({ x: 200, y: 300, width: 40, height: 30 });
+    f.api.setDoc(ops.addNode(f.snapshot().doc, sibling));
+    f.finish("pointercancel");
+    expect(f.snapshot().doc.nodes.map(node => node.id)).toContain(sibling.id);
+    expect(f.snapshot().doc.nodes.some(node => node.kind === "text")).toBe(false);
+    expect(f.api.commit).not.toHaveBeenCalled();
+  });
+  it("releases an intervening child instead of leaving a missing Frame parent", () => {
+    const f = fixture("frame"), original = f.snapshot();
+    f.shapes.startShape({ clientX: 100, clientY: 100 });
+    const draft = f.snapshot().doc.nodes.find(node => !original.doc.nodes.some(old => old.id === node.id));
+    const child = { ...createRectNode({ x: 130, y: 130, width: 40, height: 30 }), parentId: draft.id };
+    f.api.setDoc(ops.addNode(f.snapshot().doc, child)); f.finish("pointercancel");
+    expect(f.snapshot().doc.nodes.find(node => node.id === child.id).parentId).toBeNull();
+    expect(f.snapshot().doc.nodes.some(node => node.id === draft.id)).toBe(false);
+  });
+});

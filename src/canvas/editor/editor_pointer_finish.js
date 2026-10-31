@@ -9,6 +9,7 @@ import { reparentMovedRoots } from "./reparent-moved-roots.js";
 import { rollbackMoveGesture } from "./move-gesture-transaction.js";
 import { isPointerHandoff } from "./pointer-gesture-handoff.js";
 import { rollbackDrawingGesture } from "./drawing-gesture-transaction.js";
+import { finishTextPlacement } from "./text-placement-transaction.js";
 
 export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
   function finishGesture(event, finished) {
@@ -231,10 +232,7 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
     }
 
     if (finished.kind === "text") {
-      api.setTextDraftRect?.(null);
-      api.select(finished.id);
-      api.setTool(TOOL.SELECT);
-      api.beginTextEdit(finished.id);
+      finishTextPlacement(api, finished);
       return;
     }
 

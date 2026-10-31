@@ -17,6 +17,7 @@ import { combinedBounds, nodeAABB } from "./scene_geometry.js";
 import { isFrameNode } from "./prototype_model.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
 import * as ops from "./doc_ops.js";
+import { groupingRoots } from "./group-structure.js";
 
 export function createEngineGroups({
   getDoc,
@@ -31,7 +32,7 @@ export function createEngineGroups({
   setIsolationGroupId,
 }) {
   function groupSelection() {
-    const units = selectionUnits();
+    const units = groupingRoots(getDoc(), selectionUnits().map(node => node.id));
     if (units.length < 2) return;
     const left = Math.min(...units.map((node) => node.x));
     const top = Math.min(...units.map((node) => node.y));
@@ -253,7 +254,7 @@ export function createEngineGroups({
       }
     }
 
-    const units = selectionUnits();
+    const units = groupingRoots(getDoc(), selectionUnits().map(node => node.id));
     if (units.length === 0) return;
 
     const left = Math.min(...units.map((node) => node.x));
@@ -297,7 +298,10 @@ export function createEngineGroups({
       selection
         .getIds()
         .some((id) => Boolean(findNode(getDoc(), id)?.clipTo)),
-    canGroupSelection: () => selectionUnits().length >= 2,
+    canGroupSelection: () => {
+      const units = selectionUnits();
+      return units.length >= 2 && groupingRoots(getDoc(), units.map(node => node.id)).length >= 2;
+    },
     canUngroupSelection: () => selectedContainerIds().size > 0,
     enterGroup,
     exitGroup,

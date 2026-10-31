@@ -39,3 +39,35 @@ Every new browser suite also checks parent existence, unique IDs and absence of 
 ## Verification boundary
 
 The fixtures use isolated Chromium canvases and generated local images. They do not modify the user's open document or call paid generation providers. File pickers and browser clipboard operations are real; the file-drop event is injected with real File bytes, not a Finder/Explorer operating-system drag. This audit does not certify every native desktop host, physical touch device, font installation or arbitrary third-party imported document.
+
+## Container command boundaries
+
+Capability: `layers.container-boundaries`. The maintained release evidence is
+in `docs/quality-progress.md`; this section declares scope, not a historical
+pass inherited by newer source.
+
+| Operation | Confirmed previous failure | Regression |
+| --- | --- | --- |
+| Ungroup selected nested containers | Children inherited an ancestor ID that was removed in the same command | Resolve the complete dissolved ancestry; real shortcut, valid parent chain, visible pixels and full undo/redo |
+| Group a Frame together with its selected descendant | The descendant was detached from the Frame | Deduplicate selected roots in the common domain operation; keep Frame subtree and initial wrapper bounds intact |
+| Group children of different nested Frames | The folder escaped to document root despite a shared outer Frame | Find their nearest surviving common parent; assert ownership, both colors and history |
+| Ungroup a clipping-mask container | Followers retained a missing `clipTo` base | Release that reference; assert actual clipped/unclipped pixels and one-step restoration |
+
+`container-command-boundaries.e2e.mjs` uses controlled seeded documents and
+initial selections, then actual keyboard commands. It does not claim that
+seeded selections were produced by physical modifier clicks. Its four scenes
+check state, hierarchy, pixels and complete undo/redo. The earlier continuous
+creation suite separately verifies mouse multiselection and group dragging.
+
+Pure regressions in `container-command-boundaries.test.js` check the same four
+structural invariants. `nested-group-commands.test.js` adds the Frame-plus-leaf
+no-op and Auto Layout wrapper measurement for selected subtree roots. An
+initial hypothesis that cross-Frame paint ordering alone hid content was not
+confirmed in Chromium; no stack-order rewrite was made on that assumption.
+
+Remaining: translucent/transformed container flattening, arbitrary imported
+hierarchies, mixed-owner masks during grouping, every isolation mode and
+physical touch/stylus commands need additional acceptance. Dissolving a mask
+base deliberately releases its followers; it does not flatten a replacement
+mask image. Cold persistence of these four command-specific scenes is not
+separately exhausted by this suite; portable nesting has its own release check.

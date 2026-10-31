@@ -167,6 +167,12 @@ await withEditorBrowser(async ({ page }) => {
     await doubleClick({ x: 160, y: 220 });
     assert.equal(await editId(), shape.id, `${tool} must support double-click anchor editing`);
     assert.equal((await node(shape.id)).pen, true);
+    // Exercise the chrome path that camera changes can call synchronously,
+    // including the transient converted line/arrow before the next redraw.
+    await page.evaluate(() => {
+      const e = window.__vooEditor, surface = document.createElement("canvas");
+      e.renderChrome(surface, e.getViewport(), 600, 400);
+    });
     await page.keyboard.press("Escape");
     await page.evaluate(() => window.__vooEditor.undo());
     assert.deepEqual(await node(shape.id), original);

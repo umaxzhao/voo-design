@@ -16,6 +16,7 @@ import { TOOL } from "./editor_constants.js";
 import { editorSnapOptions, snapNodeBounds } from "./scene_snapping.js";
 import { commitEditorAction } from "../undo-action-contracts.js";
 import { drawingRollbackState, selectDrawingDraft } from "./drawing-gesture-transaction.js";
+import { finishTextPlacement } from "./text-placement-transaction.js";
 
 /**
  * One text-tool drag step, in document space.
@@ -332,14 +333,7 @@ export function createShapesPointerGestures({
   }
 
   function finishText(event, finished) {
-    api.setTextDraftRect?.(null);
-    api.select(finished.id);
-    api.setTool(TOOL.SELECT);
-    // Defer the placement snapshot until content exists, so undo never
-    // resurrects an empty box between placing and typing.
-    api.beginTextEdit(finished.id, {
-      commitPlacement: () => commitEditorAction("editor.pointer.draw", () => api.commit()),
-    });
+    finishTextPlacement(api, finished);
   }
 
   return {
