@@ -57,6 +57,7 @@ export default {
   "firstRun.provider.claude": "Claude Code",
   "firstRun.provider.custom": "自定义模型",
   "firstRun.provider.dashscope": "Alibaba Cloud",
+  "firstRun.provider.deepseek": "DeepSeek",
   "firstRun.provider.volcengine": "火山引擎",
   "firstRun.provider.antigravity": "Antigravity",
   "firstRun.provider.deepseek-harness": "DeepSeek Harness",

@@ -96,7 +96,7 @@ describe("agent card grid", () => {
     expect(row1Ids).toEqual(["codex", "claude", "antigravity", "deepseek-harness"]);
 
     const row2Ids = [...parts[2].matchAll(/data-testid="first-run-agent-card-([a-z0-9-]+)"/g)].map(match => match[1]);
-    expect(row2Ids).toEqual(["dashscope", "volcengine", "deepseek-harness-models", "custom"]);
+    expect(row2Ids).toEqual(["dashscope", "volcengine", "deepseek", "deepseek-harness-models", "custom"]);
 
     expect(html).toContain("Alibaba Cloud");
     expect(html).toContain("Volcengine");
@@ -126,6 +126,7 @@ describe("agent card grid", () => {
     expect(apiCards).toEqual([
       'data-testid="first-run-agent-card-dashscope"',
       'data-testid="first-run-agent-card-volcengine"',
+      'data-testid="first-run-agent-card-deepseek"',
       'data-testid="first-run-agent-card-deepseek-harness-models"',
       'data-testid="first-run-agent-card-custom"',
     ]);

@@ -61,8 +61,8 @@ export function setAgentFocusNode(node, status = "", options = {}) {
     editor, owner: options.owner, canvasId: readDocument(editor)?.canvasId,
   };
   if (options.cursor !== false) setAgentCursor({
-    x: focus.x + Math.min(focus.width / 2, 24), y: focus.y,
-    label: options.label ?? "VOO", editor, owner: options.owner,
+    x: focus.x + focus.width / 2, y: focus.y,
+    label: options.label ?? (status.replace(/^AI:\s*/, "") || "VOO"), editor, owner: options.owner,
   });
   focusTimer = setTimeout(() => clearAgentFocusNode(options.owner), 1400);
   focusTimer.unref?.();

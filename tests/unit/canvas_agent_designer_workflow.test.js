@@ -76,6 +76,7 @@ const ALL_TOOL_NAMES = [
   "set_constraints",
   "export_layers",
   "new_document",
+  "resize_document",
   "create_comment",
   "delete_comment",
   "list_comments",
