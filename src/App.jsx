@@ -154,10 +154,12 @@ export default function App() {
       {!isEmbed && <ReleaseUI />}
       <div
         className="relative flex min-h-0 flex-1"
-        data-agent-open={agentOpen && !welcomeOpen ? "true" : "false"}
+        data-testid="editor-workspace-layout"
+        data-agent-open={agentOpen && !welcomeOpen && !browserDrawerOpen ? "true" : "false"}
+        data-browser-open={browserDrawerOpen ? "true" : "false"}
       >
         {/* The rounded green frame wraps the workspace below the title bar. */}
-        <div className="editor-shell relative min-h-0 min-w-0 flex-1">
+        <div className="editor-shell relative min-h-0 min-w-0 flex-1" data-testid="editor-shell">
           <div className="editor-shell-inner flex flex-col">
             <div className="relative min-h-0 flex-1 overflow-hidden">
               {editorActivated || needsEditor ? (
@@ -183,17 +185,20 @@ export default function App() {
             </div>
           </div>
         </div>
+        <Suspense fallback={browserDrawerOpen ? <aside className="voo-browser-drawer" aria-hidden="true" /> : null}>
+          <BrowserDrawer open={browserDrawerOpen} onClose={() => setBrowserDrawerOpen(false)} />
+        </Suspense>
         {/* The assistant sits outside the green frame, beside it. It is for the
             editor only: the workbench (welcome) page does not show it. */}
-        {agentOpen && !welcomeOpen && (
+        {agentOpen && !welcomeOpen && !browserDrawerOpen && (
           <aside className="flex w-[376px] shrink-0 flex-col py-3 pr-3">
             <Suspense fallback={null}>
               <CanvasAgentPanel onClose={() => setAgentOpen(false)} />
             </Suspense>
           </aside>
         )}
-        {!welcomeOpen && <PageSwitcher />}
-        {!agentOpen && !welcomeOpen && (
+        {!welcomeOpen && !browserDrawerOpen && <PageSwitcher />}
+        {!agentOpen && !welcomeOpen && !browserDrawerOpen && (
           <button
             type="button"
             onClick={() => setAgentOpen(true)}
@@ -235,13 +240,6 @@ export default function App() {
         open={onboardingOpen}
         onClose={() => setOnboardingOpen(false)}
       />
-      {/* Embedded Web Browser & Element Import Drawer */}
-      <Suspense fallback={null}>
-        <BrowserDrawer
-          open={browserDrawerOpen}
-          onClose={() => setBrowserDrawerOpen(false)}
-        />
-      </Suspense>
     </main>
   );
 }

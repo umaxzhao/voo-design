@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
 await withEditorBrowser(async ({ page, errors }) => {
-  await page.route("https://www.awwwards.com/**", (route) =>
+  await page.route("https://example.com/**", (route) =>
     route.fulfill({
       contentType: "text/html",
       body: "<html><body>Browser preview fixture</body></html>",
@@ -10,18 +10,16 @@ await withEditorBrowser(async ({ page, errors }) => {
   );
   const trigger = page.getByTestId("titlebar-browser-button");
   const drawer = page.getByTestId("voo-browser-drawer");
+  assert.ok(await trigger.locator("svg circle").count(), "Browser action uses the globe browser icon");
   await trigger.click();
   await drawer.waitFor();
-  assert.equal(
-    await drawer.evaluate((element) => {
-      const bounds = element.getBoundingClientRect();
-      return element.contains(
-        document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + 20),
-      );
-    }),
-    true,
-    "Browser toolbar must be above the editor",
-  );
+  const editor = page.getByTestId("editor-shell");
+  const desktopEditorBounds = await editor.boundingBox();
+  const desktopBrowserBounds = await drawer.boundingBox();
+  assert.ok(desktopEditorBounds.x + desktopEditorBounds.width <= desktopBrowserBounds.x + 1);
+  await page.frameLocator('[data-testid="voo-browser-drawer"] iframe')
+    .getByText("Browser preview fixture")
+    .waitFor();
   assert.equal(await trigger.getAttribute("aria-pressed"), "true");
   await page.waitForFunction(
     () =>
@@ -37,21 +35,16 @@ await withEditorBrowser(async ({ page, errors }) => {
     background: "rgb(178, 255, 214)",
     icon: "rgb(0, 0, 0)",
   });
-  for (const width of [1440, 390]) {
-    await page.setViewportSize({ width, height: 800 });
-    const bounds = await drawer.boundingBox();
-    assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width);
-    assert.equal(
-      await drawer.evaluate((element) => {
-        const box = element.getBoundingClientRect();
-        return element.contains(
-          document.elementFromPoint(box.right - 18, box.top + 20),
-        );
-      }),
-      true,
-      "Close button stays reachable",
-    );
-  }
+  await page.screenshot({ path: "/private/tmp/voo-browser-split.png" });
+  await page.setViewportSize({ width: 390, height: 800 });
+  const mobileEditorBounds = await editor.boundingBox();
+  const mobileBrowserBounds = await drawer.boundingBox();
+  assert.ok(mobileEditorBounds.y + mobileEditorBounds.height <= mobileBrowserBounds.y + 1);
+  assert.equal(mobileBrowserBounds.x, mobileEditorBounds.x);
+  assert.ok(mobileBrowserBounds.x + mobileBrowserBounds.width <= 390);
+  await page.getByRole("button", { name: /Browser tools|浏览器工具/i }).click();
+  await page.getByRole("menuitem", { name: /Open in default browser|在默认浏览器中打开/i }).waitFor();
+  await page.screenshot({ path: "/private/tmp/voo-browser-split-mobile.png" });
   await page.keyboard.press("Escape");
   await drawer.waitFor({ state: "detached" });
   assert.equal(await trigger.getAttribute("aria-pressed"), "false");
@@ -63,6 +56,6 @@ await withEditorBrowser(async ({ page, errors }) => {
   await drawer.waitFor({ state: "detached" });
   assert.deepEqual(errors, []);
   console.log(
-    "Browser drawer: foreground hit targets, mint/black toggle, viewport bounds, Escape and reopen passed.",
+    "Browser split pane: desktop side-by-side, mobile stacked, page rendering, tools menu and Escape passed.",
   );
 });

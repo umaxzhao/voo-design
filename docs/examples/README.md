@@ -17,6 +17,10 @@ Four designs selected from the local VOO project library for the repository intr
 
 The F1 file includes a second artboard to the right of the document canvas; zoom out to inspect it. The README export shows the primary Monaco poster. Its event copy, performance figures and status labels are illustrative concept content, not event information or a claim of official affiliation. The music interface and dashboard use fictional demonstration content and do not implement playback, payments or live data.
 
+## Product interface screenshots
+
+The three `ui-*.png` images in [screenshots](../screenshots/) are unaltered 1600 × 1000 captures of the live web editor at [voo.run/editor](https://voo.run/editor/), in an isolated browser profile. They show the workspace with these four examples, optional agent setup, and a selected text layer in the music design.
+
 ## Repository artwork
 
 - [README cover](../screenshots/cover.png): 1800 × 1460, composed from actual canvas exports and the existing App Icon.
