@@ -190,35 +190,57 @@ public enum VooIconFactory {
         return path
     }
 
-    // MARK: - 93. Figma Brand Mark
+    // MARK: - 93. Figma Brand Mark (Lucide `figma`, 24×24, stroke 1.5)
+
+    /// Five modules on the canonical 24×24 box: two half-pills, the middle-left
+    /// half-pill, the middle-right circle and the rounded-bottom bottom-left.
+    /// Geometry follows Lucide's `figma` glyph, so it keeps its proportions at
+    /// every requested rect instead of the old ad-hoc rounded rectangles (which
+    /// squared off the wrong corners).
     public static func drawFigma(in rect: CGRect, color: NSColor = .white, strokeWidth: CGFloat = 1.5) {
         withCanonicalCanvas(in: rect, color: color, strokeWidth: strokeWidth) { ctx in
-            // Top-left pill:
-            let topLeft = CGPath(roundedRect: CGRect(x: 5, y: 2.5, width: 7, height: 7), cornerWidth: 3.5, cornerHeight: 3.5, transform: nil)
+            // Top-left half-pill: square on the right, rounded on the left.
+            let topLeft = CGMutablePath()
+            topLeft.move(to: CGPoint(x: 12, y: 2))
+            topLeft.addLine(to: CGPoint(x: 8.5, y: 2))
+            topLeft.addArc(center: CGPoint(x: 8.5, y: 5.5), radius: 3.5,
+                           startAngle: -.pi / 2, endAngle: .pi / 2, clockwise: true)
+            topLeft.addLine(to: CGPoint(x: 12, y: 9))
+            topLeft.closeSubpath()
             ctx.addPath(topLeft); ctx.strokePath()
 
-            // Top-right half-pill:
+            // Top-right half-pill: square on the left, rounded on the right.
             let topRight = CGMutablePath()
-            topRight.move(to: CGPoint(x: 12, y: 2.5))
-            topRight.addLine(to: CGPoint(x: 15.5, y: 2.5))
-            topRight.addArc(center: CGPoint(x: 15.5, y: 6), radius: 3.5, startAngle: -.pi / 2, endAngle: .pi / 2, clockwise: false)
-            topRight.addLine(to: CGPoint(x: 12, y: 9.5))
+            topRight.move(to: CGPoint(x: 12, y: 2))
+            topRight.addLine(to: CGPoint(x: 15.5, y: 2))
+            topRight.addArc(center: CGPoint(x: 15.5, y: 5.5), radius: 3.5,
+                            startAngle: -.pi / 2, endAngle: .pi / 2, clockwise: false)
+            topRight.addLine(to: CGPoint(x: 12, y: 9))
             topRight.closeSubpath()
             ctx.addPath(topRight); ctx.strokePath()
 
-            // Middle-left pill:
-            let middleLeft = CGPath(roundedRect: CGRect(x: 5, y: 9.5, width: 7, height: 7), cornerWidth: 3.5, cornerHeight: 3.5, transform: nil)
+            // Middle-left half-pill.
+            let middleLeft = CGMutablePath()
+            middleLeft.move(to: CGPoint(x: 12, y: 9))
+            middleLeft.addLine(to: CGPoint(x: 8.5, y: 9))
+            middleLeft.addArc(center: CGPoint(x: 8.5, y: 12.5), radius: 3.5,
+                              startAngle: -.pi / 2, endAngle: .pi / 2, clockwise: true)
+            middleLeft.addLine(to: CGPoint(x: 12, y: 16))
+            middleLeft.closeSubpath()
             ctx.addPath(middleLeft); ctx.strokePath()
 
-            // Middle-right circle:
-            ctx.strokeEllipse(in: CGRect(x: 12, y: 9.5, width: 7, height: 7))
+            // Middle-right circle.
+            ctx.strokeEllipse(in: CGRect(x: 12, y: 9, width: 7, height: 7))
 
-            // Bottom-left teardrop:
+            // Bottom-left module: square shoulders, rounded on the left and bottom.
             let bottomLeft = CGMutablePath()
-            bottomLeft.move(to: CGPoint(x: 12, y: 16.5))
-            bottomLeft.addLine(to: CGPoint(x: 8.5, y: 16.5))
-            bottomLeft.addArc(center: CGPoint(x: 8.5, y: 20), radius: 3.5, startAngle: -.pi / 2, endAngle: .pi / 2, clockwise: true)
-            bottomLeft.addLine(to: CGPoint(x: 12, y: 23.5))
+            bottomLeft.move(to: CGPoint(x: 5, y: 19.5))
+            bottomLeft.addArc(center: CGPoint(x: 8.5, y: 19.5), radius: 3.5,
+                              startAngle: .pi, endAngle: 3 * .pi / 2, clockwise: false)
+            bottomLeft.addLine(to: CGPoint(x: 12, y: 16))
+            bottomLeft.addLine(to: CGPoint(x: 12, y: 19.5))
+            bottomLeft.addArc(center: CGPoint(x: 8.5, y: 19.5), radius: 3.5,
+                              startAngle: 0, endAngle: .pi, clockwise: false)
             bottomLeft.closeSubpath()
             ctx.addPath(bottomLeft); ctx.strokePath()
         }

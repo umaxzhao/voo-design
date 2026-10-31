@@ -18,20 +18,22 @@ import AppKit
 import CoreGraphics
 import Foundation
 
-// MARK: - Card Geometry Metrics (256 × 520 scrollable content box)
+// MARK: - Card Geometry Metrics (288 × 520 scrollable content box)
 
 public struct PropertiesPanelMetrics {
-    /// Scroll-document width (the floating web card itself is 256pt wide, p12).
-    public static let width: CGFloat = 256
+    /// Scroll-document width. Web card: `md:w-72` = 288pt with `p-3` (12) padding,
+    /// so the usable column is 288 − 2×12 = 264.
+    public static let width: CGFloat = 288
     public static let contentInset: CGFloat = 12
-    public static let contentWidth: CGFloat = 232
+    public static let contentWidth: CGFloat = 264
     public static let dividerInset: CGFloat = 12
-    public static let headerDividerY: CGFloat = 46
+    public static let headerDividerY: CGFloat = 46   // p12 + pt4 + title 20 + pb10
     public static let headerTitleTop: CGFloat = 16
     public static let headerTitleHeight: CGFloat = 20
-    public static let headerIconSize: CGFloat = 21
+    public static let headerIconSize: CGFloat = 21   // 13pt icon + p4
     public static let wheelDiameter: CGFloat = 140
     public static let sectionLabelHeight: CGFloat = 12
+    public static let sectionGap: CGFloat = 12       // each side of a section divider
     public static let rowHeight: CGFloat = 24
 }
 
@@ -136,6 +138,10 @@ public enum PropertiesGlyphFactory {
         case alignCenter
         case alignRight
         case alignJustify
+        /// Mini paint chips for the fill row's paint-type trigger (web PaintTypeMenu).
+        case paintSolid
+        case paintLinear
+        case paintRadial
     }
 
     public static func draw(kind: Kind, in rect: CGRect, color: NSColor, strokeWidth: CGFloat = 1.5) {
@@ -166,7 +172,50 @@ public enum PropertiesGlyphFactory {
             VooIconFactory.drawAlignTextRight(in: rect, color: color, strokeWidth: strokeWidth)
         case .alignJustify:
             VooIconFactory.drawAlignJustify(in: rect, color: color, strokeWidth: strokeWidth)
+        case .paintSolid:
+            drawPaintChip(.solid, in: rect, color: color, strokeWidth: strokeWidth)
+        case .paintLinear:
+            drawPaintChip(.linear, in: rect, color: color, strokeWidth: strokeWidth)
+        case .paintRadial:
+            drawPaintChip(.radial, in: rect, color: color, strokeWidth: strokeWidth)
         }
+    }
+
+    /// Paint-type chips: a 13pt rounded square previewing the paint kind — solid
+    /// filled, linear ramp or radial ramp — so the trigger reads like the web's
+    /// PaintTypeMenu icon at the same optical weight as the other 13pt glyphs.
+    private enum PaintChip { case solid, linear, radial }
+
+    private static func drawPaintChip(_ chip: PaintChip, in rect: CGRect, color: NSColor, strokeWidth: CGFloat) {
+        var chipRect = rect
+        if chipRect.width > chipRect.height {
+            chipRect.origin.x += (chipRect.width - chipRect.height) / 2
+            chipRect.size.width = chipRect.height
+        } else if chipRect.height > chipRect.width {
+            chipRect.origin.y += (chipRect.height - chipRect.width) / 2
+            chipRect.size.height = chipRect.width
+        }
+        guard chipRect.width > 2 else { return }
+        let inset = max(0.5, chipRect.width * 0.06)
+        let path = NSBezierPath(
+            roundedRect: chipRect.insetBy(dx: inset, dy: inset),
+            xRadius: chipRect.width * 0.22,
+            yRadius: chipRect.width * 0.22
+        )
+        switch chip {
+        case .solid:
+            color.setFill()
+            path.fill()
+        case .linear:
+            NSGradient(colors: [color, color.withAlphaComponent(0.15)])?
+                .draw(in: path, angle: 0)
+        case .radial:
+            NSGradient(colors: [color, color.withAlphaComponent(0.15)])?
+                .draw(in: path, relativeCenterPosition: .zero)
+        }
+        color.setStroke()
+        path.lineWidth = max(0.5, strokeWidth * 0.6)
+        path.stroke()
     }
 }
 
@@ -472,7 +521,8 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
         setAccessibilityLabel(labelText.isEmpty ? "Value" : labelText)
 
         labelField.stringValue = labelText
-        labelField.font = NSFont.systemFont(ofSize: 9, weight: .semibold)
+        // Mono like the rest of the web card (`font-mono` on the aside).
+        labelField.font = ThemeFonts.mono(size: 9, weight: .medium)
         labelField.textColor = NSColor(hex: "8a8a8a")
         labelField.isBordered = false
         labelField.drawsBackground = false
@@ -541,12 +591,25 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
         } else {
             labelSpace = labelText.count >= 2 ? 17 : 9
         }
-        labelField.frame = CGRect(x: 7 + glyphSpace, y: round((bounds.height - 11) / 2),
-                                  width: max(labelSpace, 1), height: 11)
+        // One baseline shared by the inline prefix and the value. Both fields
+        // are sized to exactly their line height, so their text is top-aligned
+        // inside the frame and the baseline math is exact (a plain "centre each
+        // font box" placement left the small prefix ~1pt above the value).
+        let valueFont = ThemeFonts.mono(size: 10, weight: .regular)
+        let valueLineHeight = ceil(valueFont.ascender - valueFont.descender)
+        let valueY = round((bounds.height - valueLineHeight) / 2.0)
+        let baselineFromBottom = valueY + valueLineHeight - valueFont.ascender
+
+        let labelFont = ThemeFonts.mono(size: 9, weight: .medium)
+        let labelLineHeight = ceil(labelFont.ascender - labelFont.descender)
+        let labelY = round(baselineFromBottom - labelLineHeight + labelFont.ascender)
+
+        labelField.frame = CGRect(x: 7 + glyphSpace, y: labelY,
+                                  width: max(labelSpace, 1), height: labelLineHeight)
         labelField.isHidden = labelText.isEmpty || leadingGlyph != nil
         let textX = 7 + glyphSpace + labelSpace + 2
-        valueField.frame = CGRect(x: textX, y: round((bounds.height - 15) / 2),
-                                  width: max(bounds.width - textX - 4, 8), height: 15)
+        valueField.frame = CGRect(x: textX, y: valueY,
+                                  width: max(bounds.width - textX - 4, 8), height: valueLineHeight)
     }
 
     // MARK: Drawing
@@ -562,7 +625,7 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
 
         if let glyph = leadingGlyph {
             PropertiesGlyphFactory.draw(kind: glyph,
-                                        in: CGRect(x: 8, y: (bounds.height - 12) / 2, width: 12, height: 12),
+                                        in: CGRect(x: 8, y: floor((bounds.height - 12) / 2), width: 12, height: 12),
                                         color: NSColor(hex: "c9c9c9"), strokeWidth: 1.4)
         }
     }
@@ -706,10 +769,16 @@ public final class PropertiesHexPill: NSView, NSTextFieldDelegate {
 
     public override func layout() {
         super.layout()
-        let left: CGFloat = showsColorDot ? 24 : 8
+        // px8 on both sides and a line box that is an exact height, so the hex
+        // text sits on the pill's true vertical centre (the old 7pt right inset
+        // and 15pt-tall field pushed centred text 0.5pt left and off-centre).
+        let left: CGFloat = showsColorDot ? 23 : 8
         textField.alignment = showsColorDot ? .left : .center
-        textField.frame = CGRect(x: left, y: round((bounds.height - 15) / 2),
-                                 width: max(bounds.width - left - 7, 8), height: 15)
+        let font = textField.font ?? ThemeFonts.mono(size: 10, weight: .regular)
+        let lineHeight = ceil(font.ascender - font.descender)
+        let textY = round((bounds.height - lineHeight) / 2.0)
+        textField.frame = CGRect(x: left, y: textY,
+                                 width: max(bounds.width - left - 8, 8), height: lineHeight)
     }
 
     public override func draw(_ dirtyRect: NSRect) {
@@ -722,7 +791,7 @@ public final class PropertiesHexPill: NSView, NSTextFieldDelegate {
         path.stroke()
 
         if showsColorDot {
-            let dotRect = CGRect(x: 8, y: (bounds.height - 11) / 2, width: 11, height: 11)
+            let dotRect = CGRect(x: 8, y: floor((bounds.height - 11) / 2), width: 11, height: 11)
             let dot = NSBezierPath(roundedRect: dotRect, xRadius: 3, yRadius: 3)
             NSColor(hex: hex).setFill()
             dot.fill()
@@ -815,19 +884,21 @@ public final class PropertiesFillSwatchView: NSView {
     }
 
     public override func draw(_ dirtyRect: NSRect) {
-        // Rear stroke swatch (offset bottom-right), then front fill swatch.
-        let backRect = CGRect(x: 9, y: 1, width: 19, height: 19)
+        // Rear stroke swatch (offset bottom-right), then front fill swatch. Both
+        // faces are 20×20 with a symmetric 1pt margin, so the 30×30 control is
+        // exactly filled and the pair reads as one icon.
+        let backRect = CGRect(x: 9, y: 1, width: 20, height: 20)
         let back = NSBezierPath(roundedRect: backRect, xRadius: 8, yRadius: 8)
         NSColor(white: 1.0, alpha: 0.16).setStroke()
         back.lineWidth = 1.2
         back.stroke()
 
-        let frontRect = CGRect(x: 0, y: 9, width: 21, height: 21)
+        let frontRect = CGRect(x: 1, y: 9, width: 20, height: 20)
         let front = NSBezierPath(roundedRect: frontRect, xRadius: 8, yRadius: 8)
         NSColor(hex: fillHex).setFill()
         front.fill()
-        NSColor(white: 1.0, alpha: 0.85).setStroke()
-        front.lineWidth = 1.6
+        NSColor(white: 1.0, alpha: 0.28).setStroke()
+        front.lineWidth = 1
         front.stroke()
     }
 
@@ -873,10 +944,16 @@ public final class PropertiesIconButton: NSButton {
     }
 
     public override func draw(_ dirtyRect: NSRect) {
-        if showsHoverBackground && isHovered {
-            let wash = NSBezierPath(ovalIn: bounds.insetBy(dx: 0.5, dy: 0.5))
+        if isHovered {
             NSColor(white: 1.0, alpha: 0.08).setFill()
-            wash.fill()
+            if showsHoverBackground {
+                // Header controls: round hover wash (UI spec: p4, radius-full).
+                NSBezierPath(ovalIn: bounds.insetBy(dx: 0.5, dy: 0.5)).fill()
+            } else if buttonStyle == .plain {
+                // Inline controls share the pill radius of the fields beside them.
+                NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
+                             xRadius: 8, yRadius: 8).fill()
+            }
         }
         if buttonStyle == .circular {
             let bg = NSBezierPath(ovalIn: bounds.insetBy(dx: 0.5, dy: 0.5))
@@ -969,9 +1046,12 @@ public final class PropertiesBlendModeButton: NSButton {
         path.lineWidth = 1
         path.stroke()
 
-        let textRect = CGRect(x: 10, y: round((bounds.height - 14) / 2), width: max(bounds.width - 34, 10), height: 14)
+        let font = ThemeFonts.mono(size: 10, weight: .medium)
+        let lineHeight = ceil(font.ascender - font.descender)
+        let textRect = CGRect(x: 10, y: round((bounds.height - lineHeight) / 2),
+                              width: max(bounds.width - 34, 10), height: lineHeight)
         (displayTitle as NSString).draw(in: textRect, withAttributes: [
-            .font: NSFont.systemFont(ofSize: 10, weight: .medium),
+            .font: font,
             .foregroundColor: NSColor(hex: "d6d6d6")
         ])
         PropertiesGlyphFactory.draw(kind: .chevronDown,
@@ -1016,6 +1096,123 @@ public final class PropertiesBlendModeButton: NSButton {
         guard let value = sender.representedObject as? String else { return }
         selectedValue = value
         onValueChange?(value)
+    }
+}
+
+// MARK: - Paint-Type Menu Trigger (COLOR fill row, web: PaintTypeMenu)
+
+/// Compact 24pt paint-type trigger for the COLOR fill row. Shows a 13pt paint
+/// chip for the current paint type and opens a menu with Solid / Linear
+/// gradient / Radial gradient, so paint switching lives in a menu on the fill
+/// row (web `PaintTypeMenu`) instead of a full-width segmented bar. It routes
+/// through `PropertiesSegmentedControl`'s `applyFillMode` path, keeping the old
+/// behaviour (and `fillModeControl`) reachable.
+public final class PropertiesPaintTypeButton: NSButton {
+    public private(set) var paintType: String = "solid"
+
+    public var onPaintTypeChange: ((String) -> Void)?
+
+    private static let options: [(title: String, value: String)] = [
+        ("Solid", "solid"),
+        ("Linear gradient", "linear"),
+        ("Radial gradient", "radial")
+    ]
+
+    private var isHovered: Bool = false {
+        didSet { if oldValue != isHovered { needsDisplay = true } }
+    }
+
+    private var displayTitle: String {
+        Self.options.first(where: { $0.value == paintType })?.title ?? "Solid"
+    }
+
+    public init() {
+        super.init(frame: .zero)
+        isBordered = false
+        focusRingType = .none
+        title = ""
+        setAccessibilityElement(true)
+        setAccessibilityRole(.popUpButton)
+        setAccessibilityLabel("Fill type")
+        setAccessibilityValue(displayTitle)
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        isBordered = false
+        focusRingType = .none
+        title = ""
+    }
+
+    public func setPaintType(_ value: String) {
+        let resolved = Self.options.contains(where: { $0.value == value }) ? value : "solid"
+        guard resolved != paintType else { return }
+        paintType = resolved
+        setAccessibilityValue(displayTitle)
+        needsDisplay = true
+    }
+
+    public override func draw(_ dirtyRect: NSRect) {
+        if isHovered {
+            NSColor(white: 1.0, alpha: 0.08).setFill()
+            NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
+                         xRadius: 8, yRadius: 8).fill()
+        }
+        let side: CGFloat = 13
+        let chipRect = CGRect(x: round(bounds.midX - side / 2),
+                              y: round(bounds.midY - side / 2),
+                              width: side, height: side)
+        let kind: PropertiesGlyphFactory.Kind
+        switch paintType {
+        case "linear": kind = .paintLinear
+        case "radial": kind = .paintRadial
+        default: kind = .paintSolid
+        }
+        PropertiesGlyphFactory.draw(
+            kind: kind,
+            in: chipRect,
+            color: isHovered ? NSColor(hex: "e5e5e5") : NSColor(hex: "c9c9c9"),
+            strokeWidth: 1.4
+        )
+    }
+
+    public override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas where area.owner === self && area.userInfo == nil {
+            removeTrackingArea(area)
+        }
+        addTrackingArea(NSTrackingArea(rect: .zero,
+                                       options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+                                       owner: self, userInfo: nil))
+    }
+
+    public override func mouseEntered(with event: NSEvent) {
+        isHovered = true
+    }
+
+    public override func mouseExited(with event: NSEvent) {
+        isHovered = false
+    }
+
+    public override func mouseDown(with event: NSEvent) {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        for option in Self.options {
+            let item = NSMenuItem(title: option.title,
+                                  action: #selector(selectOption(_:)),
+                                  keyEquivalent: "")
+            item.target = self
+            item.representedObject = option.value
+            item.state = option.value == paintType ? .on : .off
+            menu.addItem(item)
+        }
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: -4), in: self)
+    }
+
+    @objc private func selectOption(_ sender: NSMenuItem) {
+        guard let value = sender.representedObject as? String else { return }
+        setPaintType(value)
+        onPaintTypeChange?(value)
     }
 }
 
@@ -1197,7 +1394,7 @@ public final class PropertiesSegmentedControl: NSView {
         self.segments = segments
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.cornerRadius = 6
+        layer?.cornerRadius = 8
         layer?.masksToBounds = true
         setAccessibilityElement(true)
         setAccessibilityRole(.radioGroup)
@@ -1206,7 +1403,7 @@ public final class PropertiesSegmentedControl: NSView {
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         wantsLayer = true
-        layer?.cornerRadius = 6
+        layer?.cornerRadius = 8
         layer?.masksToBounds = true
     }
 
@@ -1246,7 +1443,7 @@ public final class PropertiesSegmentedControl: NSView {
                                   y: 1,
                                   width: segmentWidth - 2,
                                   height: bounds.height - 2)
-        let selectedPath = CGPath(roundedRect: selectedRect, cornerWidth: 5, cornerHeight: 5, transform: nil)
+        let selectedPath = CGPath(roundedRect: selectedRect, cornerWidth: 7, cornerHeight: 7, transform: nil)
         ctx.setFillColor(NSColor(hex: "333333").cgColor)
         ctx.addPath(selectedPath)
         ctx.fillPath()
@@ -1258,7 +1455,7 @@ public final class PropertiesSegmentedControl: NSView {
         for (i, seg) in segments.enumerated() {
             let segRect = CGRect(x: CGFloat(i) * segmentWidth, y: 0, width: segmentWidth, height: bounds.height)
             let isSelected = (i == selectedIndex)
-            let textColor = isSelected ? NSColor.white : NSColor(hex: "888888")
+            let textColor = isSelected ? NSColor.white : NSColor(hex: "a3a3a3")
 
             if let iconKind = seg.icon {
                 let iconSize: CGFloat = min(segRect.height - 8, 14)
@@ -1271,7 +1468,7 @@ public final class PropertiesSegmentedControl: NSView {
                 let paragraphStyle = NSMutableParagraphStyle()
                 paragraphStyle.alignment = .center
                 let attrs: [NSAttributedString.Key: Any] = [
-                    .font: NSFont.systemFont(ofSize: 10, weight: isSelected ? .medium : .regular),
+                    .font: ThemeFonts.mono(size: 10, weight: isSelected ? .medium : .regular),
                     .foregroundColor: textColor,
                     .paragraphStyle: paragraphStyle
                 ]
@@ -1532,6 +1729,10 @@ public final class PropertiesPanelView: NSView {
         .init(title: "Linear", value: "linear"),
         .init(title: "Radial", value: "radial")
     ])
+    /// Visible paint-type control: a compact 24pt menu trigger on the COLOR fill
+    /// row (web PaintTypeMenu). `fillModeControl` stays as the hidden state carrier
+    /// so existing `select(value:notify:)` call paths keep working.
+    public let paintTypeButton = PropertiesPaintTypeButton()
     private let wheel = PropertiesColorWheelView()
     private let fillSwatch = PropertiesFillSwatchView()
     private let swapButton = PropertiesIconButton(kind: .transfer, style: .plain)
@@ -1705,8 +1906,8 @@ public final class PropertiesPanelView: NSView {
         setAccessibilityLabel("Properties inspector")
 
         // Header
-        applyAttributedLabel(headerLabel, text: "PROPERTIES", size: 11, weight: .semibold,
-                             color: NSColor(hex: "a3a3a3"), kern: 1.0)
+        applyAttributedLabel(headerLabel, text: "PROPERTIES", size: 11, weight: .medium,
+                             color: NSColor(hex: "a3a3a3"), kern: 0.55)
         addSubview(headerLabel)
 
         settingsButton.iconPadding = 4
@@ -1726,8 +1927,8 @@ public final class PropertiesPanelView: NSView {
         addSubview(transferButton)
 
         // COLOR
-        applyAttributedLabel(colorLabel, text: "COLOR", size: 10, weight: .semibold,
-                             color: NSColor(hex: "8f8f8f"), kern: 1.2)
+        applyAttributedLabel(colorLabel, text: "COLOR", size: 10, weight: .medium,
+                             color: NSColor(hex: "a3a3a3"), kern: 1.4)
         addSubview(colorLabel)
 
         fillModeControl.setAccessibilityIdentifier("Inspector.Properties.FillMode")
@@ -1735,7 +1936,18 @@ public final class PropertiesPanelView: NSView {
         fillModeControl.onSelectionChanged = { [weak self] _, mode in
             self?.applyFillMode(mode)
         }
+        // The inline Solid/Linear/Radial bar is gone: paint type now lives in the
+        // fill row's small menu trigger (web PaintTypeMenu), which keeps COLOR at
+        // the web height. The segmented control stays as a hidden state carrier.
+        fillModeControl.isHidden = true
         addSubview(fillModeControl)
+
+        paintTypeButton.setAccessibilityIdentifier("Inspector.Properties.PaintType")
+        paintTypeButton.onPaintTypeChange = { [weak self] mode in
+            guard let self = self else { return }
+            self.fillModeControl.select(value: mode, notify: true)
+        }
+        addSubview(paintTypeButton)
 
         wheel.onColorChanged = { [weak self] hex in
             self?.currentSolidHex = hex
@@ -1746,6 +1958,7 @@ public final class PropertiesPanelView: NSView {
         fillSwatch.onClick = { [weak self] in self?.presentColorPanel() }
         addSubview(fillSwatch)
 
+        swapButton.iconPadding = 1.5        // 16pt slot -> 13pt glyph
         swapButton.iconColor = NSColor(hex: "737373")
         swapButton.setAccessibilityIdentifier("Inspector.Properties.SwapInline")
         swapButton.setAccessibilityLabel("Swap fill and stroke")
@@ -1761,6 +1974,7 @@ public final class PropertiesPanelView: NSView {
         }
         addSubview(hexPill)
 
+        eyedropperButton.iconPadding = 8.5  // 30pt circle -> 13pt glyph
         eyedropperButton.setAccessibilityIdentifier("Inspector.Properties.Eyedropper")
         eyedropperButton.setAccessibilityLabel("Eyedropper")
         eyedropperButton.target = self
@@ -1801,8 +2015,8 @@ public final class PropertiesPanelView: NSView {
         addSubview(gradientStopOpacityPill)
 
         // SHAPE
-        applyAttributedLabel(shapeLabel, text: "SHAPE", size: 10, weight: .semibold,
-                             color: NSColor(hex: "8f8f8f"), kern: 1.2)
+        applyAttributedLabel(shapeLabel, text: "SHAPE", size: 10, weight: .medium,
+                             color: NSColor(hex: "a3a3a3"), kern: 1.4)
         addSubview(shapeLabel)
 
         radiusPill.leadingGlyph = .cornerRadius
@@ -1823,8 +2037,8 @@ public final class PropertiesPanelView: NSView {
         textContainer.setAccessibilityLabel("Text typography")
         addSubview(textContainer)
 
-        applyAttributedLabel(textLabel, text: "TEXT", size: 10, weight: .semibold,
-                             color: NSColor(hex: "8f8f8f"), kern: 1.2)
+        applyAttributedLabel(textLabel, text: "TEXT", size: 10, weight: .medium,
+                             color: NSColor(hex: "a3a3a3"), kern: 1.4)
         textContainer.addSubview(textLabel)
 
         fontFamilyPill.placeholderTitle = "Inter"
@@ -1903,12 +2117,14 @@ public final class PropertiesPanelView: NSView {
         letterSpacingPill.onValueChanged = { [weak self] ls in self?.applyLetterSpacing(ls) }
         textContainer.addSubview(letterSpacingPill)
 
+        italicButton.iconPadding = 5.5      // 24pt slot -> 13pt glyph
         italicButton.setAccessibilityIdentifier("Inspector.Properties.Italic")
         italicButton.setAccessibilityLabel("Italic")
         italicButton.target = self
         italicButton.action = #selector(didClickItalic)
         textContainer.addSubview(italicButton)
 
+        underlineButton.iconPadding = 5.5   // 24pt slot -> 13pt glyph
         underlineButton.setAccessibilityIdentifier("Inspector.Properties.Underline")
         underlineButton.setAccessibilityLabel("Underline")
         underlineButton.target = self
@@ -1916,8 +2132,8 @@ public final class PropertiesPanelView: NSView {
         textContainer.addSubview(underlineButton)
 
         // TRANSFORM
-        applyAttributedLabel(transformLabel, text: "TRANSFORM", size: 10, weight: .semibold,
-                             color: NSColor(hex: "8f8f8f"), kern: 1.2)
+        applyAttributedLabel(transformLabel, text: "TRANSFORM", size: 10, weight: .medium,
+                             color: NSColor(hex: "a3a3a3"), kern: 1.4)
         addSubview(transformLabel)
 
         anchorGrid.setAccessibilityIdentifier("Inspector.Properties.AnchorGrid")
@@ -1950,12 +2166,14 @@ public final class PropertiesPanelView: NSView {
 
         lockRatioButton.setAccessibilityIdentifier("Inspector.Properties.LockRatio")
         lockRatioButton.setAccessibilityLabel("Lock aspect ratio")
+        lockRatioButton.iconPadding = 2
         lockRatioButton.target = self
         lockRatioButton.action = #selector(didClickLockRatio)
         transformContainer.addSubview(lockRatioButton)
 
         crLinkButton.setAccessibilityIdentifier("Inspector.Properties.CornerRadiiLink")
         crLinkButton.setAccessibilityLabel("Link corner radii")
+        crLinkButton.iconPadding = 2
         crLinkButton.target = self
         crLinkButton.action = #selector(didClickCornerRadiiLink)
         transformContainer.addSubview(crLinkButton)
@@ -2000,8 +2218,8 @@ public final class PropertiesPanelView: NSView {
         }
 
         // APPEARANCE
-        applyAttributedLabel(appearanceLabel, text: "APPEARANCE", size: 10, weight: .semibold,
-                             color: NSColor(hex: "8f8f8f"), kern: 1.2)
+        applyAttributedLabel(appearanceLabel, text: "APPEARANCE", size: 10, weight: .medium,
+                             color: NSColor(hex: "a3a3a3"), kern: 1.4)
         addSubview(appearanceLabel)
 
         fillHexPill.setAccessibilityIdentifier("Inspector.Properties.FillHex")
@@ -2114,8 +2332,8 @@ public final class PropertiesPanelView: NSView {
         effectsContainer.setAccessibilityLabel("Effects")
         addSubview(effectsContainer)
 
-        applyAttributedLabel(effectsLabel, text: "EFFECTS", size: 10, weight: .semibold,
-                             color: NSColor(hex: "8f8f8f"), kern: 1.2)
+        applyAttributedLabel(effectsLabel, text: "EFFECTS", size: 10, weight: .medium,
+                             color: NSColor(hex: "a3a3a3"), kern: 1.4)
         effectsContainer.addSubview(effectsLabel)
 
         blurCheckbox.setAccessibilityIdentifier("Inspector.Properties.BlurCheckbox")
@@ -2217,8 +2435,9 @@ public final class PropertiesPanelView: NSView {
 
     private func applyAttributedLabel(_ label: NSTextField, text: String, size: CGFloat,
                                       weight: NSFont.Weight, color: NSColor, kern: CGFloat) {
+        // The web card is `font-mono`, so every uppercase group title is mono too.
         label.attributedStringValue = NSAttributedString(string: text, attributes: [
-            .font: NSFont.systemFont(ofSize: size, weight: weight),
+            .font: ThemeFonts.mono(size: size, weight: weight),
             .foregroundColor: color,
             .kern: kern
         ])
@@ -2303,6 +2522,8 @@ public final class PropertiesPanelView: NSView {
             hexPill.setHex(currentSolidHex)
             fillHexPill.setHex(currentSolidHex)
         }
+
+        syncPaintTypeUI()
 
         let isGradient = (currentFillMode != "solid")
         wheel.isHidden = isGradient
@@ -2423,6 +2644,7 @@ public final class PropertiesPanelView: NSView {
         currentSolidHex = "#000000"
         currentFillMode = "solid"
         fillModeControl.select(value: "solid")
+        syncPaintTypeUI()
         wheel.setHex(currentFillHex)
         fillSwatch.fillHex = currentFillHex
         fillSwatch.strokeHex = "#b2ffd6"
@@ -2531,8 +2753,14 @@ public final class PropertiesPanelView: NSView {
         }
     }
 
+    /// Mirrors `currentFillMode` into the fill row's paint-type trigger.
+    private func syncPaintTypeUI() {
+        paintTypeButton.setPaintType(currentFillMode)
+    }
+
     private func applyFillMode(_ mode: String) {
         currentFillMode = mode
+        syncPaintTypeUI()
         let isGradient = (mode != "solid")
         wheel.isHidden = isGradient
         fillSwatch.isHidden = isGradient
@@ -2983,6 +3211,13 @@ public final class PropertiesPanelView: NSView {
         let inset = PropertiesPanelMetrics.contentInset
         dividerYs = [PropertiesPanelMetrics.headerDividerY]
 
+        // Sections share one rhythm: 12pt above and 12pt below every divider.
+        func closeSection(at contentBottom: CGFloat) -> CGFloat {
+            let dividerY = contentBottom + PropertiesPanelMetrics.sectionGap
+            dividerYs.append(dividerY)
+            return dividerY + PropertiesPanelMetrics.sectionGap
+        }
+
         // Header
         headerLabel.frame = CGRect(x: inset + 8,
                                    y: PropertiesPanelMetrics.headerTitleTop,
@@ -2997,11 +3232,15 @@ public final class PropertiesPanelView: NSView {
                                       y: headerIconY, width: headerIcon, height: headerIcon)
 
         // COLOR section
-        colorLabel.frame = CGRect(x: inset, y: 56,
+        colorLabel.frame = CGRect(x: inset, y: PropertiesPanelMetrics.headerDividerY + 8,
                                   width: 100, height: PropertiesPanelMetrics.sectionLabelHeight)
-        fillModeControl.frame = CGRect(x: inset, y: 72, width: contentWidth, height: 22)
+        // The inline Solid/Linear/Radial bar is hidden (paint type lives in the
+        // fill row menu now), so COLOR starts right below its label: label bottom
+        // 66 + 6 = 72 for the 140pt wheel.
+        fillModeControl.isHidden = true
+        fillModeControl.frame = .zero
 
-        var cursorY: CGFloat = 100
+        var cursorY: CGFloat = 72
 
         if currentFillMode == "solid" {
             wheel.isHidden = false
@@ -3019,11 +3258,13 @@ public final class PropertiesPanelView: NSView {
             wheel.frame = CGRect(x: round((width - wheelSide) / 2), y: cursorY, width: wheelSide, height: wheelSide)
             cursorY += wheelSide + 10
 
-            fillSwatch.frame = CGRect(x: inset, y: cursorY, width: 30, height: 30)
-            swapButton.frame = CGRect(x: inset + 36, y: cursorY + 7, width: 16, height: 16)
+            // Fill row (web: [paint type] [swatch] … [hex] [opacity]).
+            paintTypeButton.frame = CGRect(x: inset, y: cursorY + 3, width: 24, height: 24)
+            fillSwatch.frame = CGRect(x: inset + 30, y: cursorY, width: 30, height: 30)
+            swapButton.frame = CGRect(x: inset + 66, y: cursorY + 7, width: 16, height: 16)
             hexPill.frame = CGRect(x: contentRight - 30 - 6 - 70, y: cursorY + 3, width: 70, height: 24)
             eyedropperButton.frame = CGRect(x: contentRight - 30, y: cursorY, width: 30, height: 30)
-            cursorY += 38
+            cursorY += 30
         } else {
             wheel.isHidden = true
             fillSwatch.isHidden = true
@@ -3035,7 +3276,9 @@ public final class PropertiesPanelView: NSView {
             gradientStopHexPill.isHidden = false
             gradientStopOpacityPill.isHidden = false
 
-            gradientStopsBar.frame = CGRect(x: inset, y: cursorY, width: contentWidth, height: 24)
+            paintTypeButton.frame = CGRect(x: inset, y: cursorY, width: 24, height: 24)
+            gradientStopsBar.frame = CGRect(x: inset + 30, y: cursorY,
+                                            width: max(contentWidth - 30, 0), height: 24)
             cursorY += 28
 
             let stopRowY = cursorY
@@ -3049,11 +3292,10 @@ public final class PropertiesPanelView: NSView {
                 gradientAnglePill.isHidden = true
                 gradientAnglePill.frame = .zero
             }
-            cursorY += 32
+            cursorY += 24
         }
 
-        dividerYs.append(cursorY)
-        cursorY += 8
+        cursorY = closeSection(at: cursorY)
 
         // SHAPE / TEXT section
         if showsShape {
@@ -3065,9 +3307,8 @@ public final class PropertiesPanelView: NSView {
                                       width: 100, height: PropertiesPanelMetrics.sectionLabelHeight)
             cursorY += 16
             radiusPill.frame = CGRect(x: inset, y: cursorY, width: 108, height: 26)
-            cursorY += 32
-            dividerYs.append(cursorY)
-            cursorY += 8
+            cursorY += 26
+            cursorY = closeSection(at: cursorY)
         } else if showsText {
             shapeLabel.isHidden = true
             radiusPill.isHidden = true
@@ -3091,12 +3332,11 @@ public final class PropertiesPanelView: NSView {
 
             lineHeightPill.frame = CGRect(x: 0, y: 78, width: 50, height: 24)
             letterSpacingPill.frame = CGRect(x: 56, y: 78, width: 50, height: 24)
-            italicButton.frame = CGRect(x: contentWidth - 54, y: 78, width: 24, height: 24)
-            underlineButton.frame = CGRect(x: contentWidth - 26, y: 78, width: 24, height: 24)
+            italicButton.frame = CGRect(x: contentWidth - 52, y: 78, width: 24, height: 24)
+            underlineButton.frame = CGRect(x: contentWidth - 24, y: 78, width: 24, height: 24)
 
-            cursorY += textContainerH + 12
-            dividerYs.append(cursorY)
-            cursorY += 8
+            cursorY += textContainerH
+            cursorY = closeSection(at: cursorY)
         } else {
             shapeLabel.isHidden = true
             radiusPill.isHidden = true
@@ -3112,34 +3352,39 @@ public final class PropertiesPanelView: NSView {
         let transformH: CGFloat = isCornerRadiiLinked ? 60 : 92
         transformContainer.frame = CGRect(x: inset, y: cursorY, width: contentWidth, height: transformH)
 
-        let col = (contentWidth - 28) / 4
+        // X · Y · W · [ratio lock] · H: four equal 26pt pills with 4pt gaps and a
+        // real 16pt slot for the lock (it used to be drawn on top of W and H).
+        let fieldGap: CGFloat = 4
+        let lockSlot: CGFloat = 16
+        let col = (contentWidth - lockSlot - fieldGap * 4) / 4
         xPill.frame = CGRect(x: 0, y: 0, width: col, height: 26)
-        yPill.frame = CGRect(x: col + 4, y: 0, width: col, height: 26)
-        wPill.frame = CGRect(x: (col + 4) * 2, y: 0, width: col - 8, height: 26)
-        lockRatioButton.frame = CGRect(x: (col + 4) * 2 + col - 6, y: 3, width: 16, height: 20)
-        hPill.frame = CGRect(x: (col + 4) * 3, y: 0, width: col, height: 26)
+        yPill.frame = CGRect(x: col + fieldGap, y: 0, width: col, height: 26)
+        wPill.frame = CGRect(x: (col + fieldGap) * 2, y: 0, width: col, height: 26)
+        lockRatioButton.frame = CGRect(x: (col + fieldGap) * 3, y: 3, width: lockSlot, height: 20)
+        hPill.frame = CGRect(x: (col + fieldGap) * 3 + lockSlot + fieldGap, y: 0, width: col, height: 26)
 
+        // R · [link] · CR (or TL/TR/BR/BL when unlinked) on the second row.
+        let radiiX: CGFloat = 124
         rPill.frame = CGRect(x: 0, y: 30, width: 100, height: 26)
-        crLinkButton.frame = CGRect(x: 106, y: 33, width: 16, height: 20)
+        crLinkButton.frame = CGRect(x: 104, y: 33, width: 16, height: 20)
 
         if isCornerRadiiLinked {
             crPill.isHidden = false
             tlPill.isHidden = true; trPill.isHidden = true; brPill.isHidden = true; blPill.isHidden = true
-            crPill.frame = CGRect(x: 128, y: 30, width: contentWidth - 128, height: 26)
+            crPill.frame = CGRect(x: radiiX, y: 30, width: contentWidth - radiiX, height: 26)
         } else {
             crPill.isHidden = true
             tlPill.isHidden = false; trPill.isHidden = false; brPill.isHidden = false; blPill.isHidden = false
-            let half = (contentWidth - 128 - 4) / 2
-            tlPill.frame = CGRect(x: 128, y: 30, width: half, height: 26)
-            trPill.frame = CGRect(x: 128 + half + 4, y: 30, width: half, height: 26)
+            let half = (contentWidth - radiiX - fieldGap) / 2
+            tlPill.frame = CGRect(x: radiiX, y: 30, width: half, height: 26)
+            trPill.frame = CGRect(x: radiiX + half + fieldGap, y: 30, width: half, height: 26)
 
-            blPill.frame = CGRect(x: 128, y: 60, width: half, height: 26)
-            brPill.frame = CGRect(x: 128 + half + 4, y: 60, width: half, height: 26)
+            blPill.frame = CGRect(x: radiiX, y: 60, width: half, height: 26)
+            brPill.frame = CGRect(x: radiiX + half + fieldGap, y: 60, width: half, height: 26)
         }
 
-        cursorY += transformH + 8
-        dividerYs.append(cursorY)
-        cursorY += 8
+        cursorY += transformH
+        cursorY = closeSection(at: cursorY)
 
         // APPEARANCE section
         appearanceLabel.frame = CGRect(x: inset, y: cursorY,
@@ -3172,10 +3417,9 @@ public final class PropertiesPanelView: NSView {
 
         opacityPill.frame = CGRect(x: inset, y: cursorY, width: 54, height: 24)
         blendButton.frame = CGRect(x: inset + 60, y: cursorY, width: contentWidth - 60, height: 24)
-        cursorY += 32
+        cursorY += 24
 
-        dividerYs.append(cursorY)
-        cursorY += 8
+        cursorY = closeSection(at: cursorY)
 
         // EFFECTS section
         effectsContainer.frame = CGRect(x: inset, y: cursorY, width: contentWidth, height: 160)
@@ -3185,16 +3429,16 @@ public final class PropertiesPanelView: NSView {
         blurPill.frame = CGRect(x: contentWidth - 60, y: 14, width: 60, height: 24)
 
         dropShadowCheckbox.frame = CGRect(x: 0, y: 46, width: 110, height: 20)
-        dropShadowHexPill.frame = CGRect(x: 116, y: 44, width: 64, height: 22)
-        dropShadowOpacityPill.frame = CGRect(x: contentWidth - 48, y: 44, width: 48, height: 22)
+        dropShadowHexPill.frame = CGRect(x: 116, y: 45, width: 64, height: 22)
+        dropShadowOpacityPill.frame = CGRect(x: contentWidth - 48, y: 45, width: 48, height: 22)
 
         dropShadowBlurPill.frame = CGRect(x: 0, y: 72, width: 50, height: 22)
         dropShadowXPill.frame = CGRect(x: 56, y: 72, width: 50, height: 22)
         dropShadowYPill.frame = CGRect(x: 112, y: 72, width: 50, height: 22)
 
         innerShadowCheckbox.frame = CGRect(x: 0, y: 102, width: 110, height: 20)
-        innerShadowHexPill.frame = CGRect(x: 116, y: 100, width: 64, height: 22)
-        innerShadowOpacityPill.frame = CGRect(x: contentWidth - 48, y: 100, width: 48, height: 22)
+        innerShadowHexPill.frame = CGRect(x: 116, y: 101, width: 64, height: 22)
+        innerShadowOpacityPill.frame = CGRect(x: contentWidth - 48, y: 101, width: 48, height: 22)
 
         innerShadowBlurPill.frame = CGRect(x: 0, y: 128, width: 50, height: 22)
         innerShadowXPill.frame = CGRect(x: 56, y: 128, width: 50, height: 22)

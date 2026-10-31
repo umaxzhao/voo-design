@@ -56,13 +56,15 @@ private enum LayersPalette {
     static let cardBorder = NSColor(white: 1.0, alpha: 0.08)
     static let divider = NSColor(white: 1.0, alpha: 0.10)
 
-    static let headerText = NSColor(white: 0.60, alpha: 1.0)
+    static let headerText = NSColor(hex: "#a3a3a3")   // neutral-400
     static let iconResting = NSColor(white: 0.62, alpha: 1.0)
     static let iconHover = NSColor(white: 0.95, alpha: 1.0)
     static let iconMuted = NSColor(white: 0.45, alpha: 1.0)
 
-    static let pillFill = NSColor(white: 1.0, alpha: 0.14)
-    static let pillFillHover = NSColor(white: 1.0, alpha: 0.20)
+    /// neutral-800: the web panel's field surface (`bg-neutral-800`) — the same
+    /// value the PROPERTIES pills use, so both floating cards share one token.
+    static let pillFill = NSColor(hex: "#262626")
+    static let pillFillHover = NSColor(hex: "#2d2d2d")
     static let pillText = NSColor(white: 0.86, alpha: 1.0)
     static let pillTextMuted = NSColor(white: 0.38, alpha: 1.0)
     static let chevron = NSColor(white: 0.55, alpha: 1.0)
@@ -70,7 +72,7 @@ private enum LayersPalette {
     static let rowHover = NSColor(white: 1.0, alpha: 0.08)
     static let rowSelectedFill = ThemeTokens.colorMint.withAlphaComponent(0.10)
     static let rowSelectedBorder = NSColor.clear
-    static let rowName = NSColor(hex: "#d4d4d4")
+    static let rowName = NSColor(hex: "#e5e5e5")   // neutral-200
     static let rowNameSelected = ThemeTokens.colorMint
     static let rowNameMuted = NSColor(white: 0.45, alpha: 1.0)
     static let hexText = NSColor(white: 0.42, alpha: 1.0)
@@ -97,18 +99,29 @@ private enum LayersMetrics {
     static let pillRadius: CGFloat = 12
     static let pillGap: CGFloat = 6
     static let pillTop: CGFloat = 50
-    static let rowHeight: CGFloat = 30
+    static let rowHeight: CGFloat = 32       // web: min-h-8 (h32, py6)
     static let rowSpacing: CGFloat = 4
     static let rowInset: CGFloat = 12
-    static let checkboxSize: CGFloat = 16
-    static let checkboxLeading: CGFloat = 8
+    /// Disclosure slot: 28×28 hit area with a 12pt chevron (web `-mx-1.5 -my-1`).
+    static let disclosureSlot: CGFloat = 28
+    static let disclosureGlyphSize: CGFloat = 12
+    /// Visibility slot: 20×20 with a 14pt eye, no box (web shows the eye at rest).
+    static let visibilitySlot: CGFloat = 20
+    static let visibilityGlyphSize: CGFloat = 14
+    static let checkboxLeading: CGFloat = 8   // row content starts here (before indent)
+    static let depthIndent: CGFloat = 14      // per nesting level (UI spec §4)
     static let kindContainerSize: CGFloat = 28
-    static let kindGlyphSize: CGFloat = 14
+    static let kindGlyphSize: CGFloat = 13    // web `TypeIcon size={13}`
     static let rowContentGap: CGFloat = 8
-    static let footerButtonSize: CGFloat = 24
+    static let footerButtonSize: CGFloat = 28 // web footer buttons h-7 w-7
+    static let footerIconSize: CGFloat = 13   // web footer icons 13
     static let footerBottomInset: CGFloat = 12
     static let footerLeadingInset: CGFloat = 16   // card padding 12 + footer px 4
     static let footerSpacing: CGFloat = 4
+    /// Footer gap budget: 14pt total (7 above + 7 below the divider) so the 104pt
+    /// list still fits inside the verified 244pt card with 28pt footer buttons.
+    static let footerGapAboveDivider: CGFloat = 7
+    static let footerGapBelowDivider: CGFloat = 7
     static let iconGlyphSize: CGFloat = 14
 }
 
@@ -124,6 +137,7 @@ public enum LayersPanelGlyph {
     case folder
     case trash
     case chevronDown
+    case chevronRight
     case square
     case circle
     case frame
@@ -159,6 +173,8 @@ private enum LayersGlyphDrawing {
             VooIconFactory.drawFolder(in: rect, color: color, strokeWidth: strokeWidth)
         case .chevronDown:
             VooIconFactory.drawChevronDown(in: rect, color: color, strokeWidth: strokeWidth)
+        case .chevronRight:
+            VooIconFactory.drawChevronRight(in: rect, color: color, strokeWidth: strokeWidth)
         case .diamond:
             VooIconFactory.drawDiamond(in: rect, color: color, strokeWidth: strokeWidth)
         case .penCurve:
@@ -174,9 +190,13 @@ private enum LayersGlyphDrawing {
 // MARK: - Small icon button (header search / sort, footer actions)
 
 public final class LayersIconButton: NSButton {
-    public let glyph: LayersPanelGlyph
+    public var glyph: LayersPanelGlyph {
+        didSet { if oldValue != glyph { needsDisplay = true } }
+    }
     public var onClick: (() -> Void)?
-    /// Icon side length (header 13 / footer 14).
+    /// Colour of the glyph at rest; nil keeps the neutral panel icon colour.
+    public var idleColor: NSColor? { didSet { needsDisplay = true } }
+    /// Icon side length (header 13 / footer 13 / disclosure 12).
     public var iconSize: CGFloat = LayersMetrics.iconGlyphSize
     /// Hover wash corner radius (8pt per UI spec).
     public var hoverRadius: CGFloat = 8
@@ -259,7 +279,9 @@ public final class LayersIconButton: NSButton {
         if let tint = hoverTint, isHovered {
             color = tint
         } else {
-            color = (isHovered || isHighlighted) ? LayersPalette.iconHover : LayersPalette.iconResting
+            color = (isHovered || isHighlighted)
+                ? LayersPalette.iconHover
+                : (idleColor ?? LayersPalette.iconResting)
         }
         let side = iconSize
         let glyphRect = CGRect(
@@ -353,9 +375,18 @@ public final class LayersPillButton: NSButton {
         let textColor = isActive ? LayersPalette.pillText : LayersPalette.pillTextMuted
         let chevronColor = isActive ? LayersPalette.chevron : LayersPalette.pillTextMuted.withAlphaComponent(0.5)
 
+        // One mono 10 line box shared by the value, the "%" suffix and the blend
+        // label, so every glyph in the pill sits on the same baseline. The line
+        // box is centred in the 28pt pill: cap-centre lands exactly on pill midY.
         let font = ThemeFonts.mono(size: 10.0, weight: .medium)
-        let textHeight = ceil(font.ascender - font.descender)
-        let textY = floor((bounds.height - textHeight) / 2.0)
+        let lineHeight = ceil(font.ascender - font.descender)
+        let textTopFromTop = floor((bounds.height - lineHeight) / 2.0)
+        // Unflipped view: a text rect whose top edge is `textTopFromTop` below the
+        // pill top puts the glyph baseline at `baseline` measured from the bottom.
+        let textRectY = bounds.height - textTopFromTop - lineHeight
+        func textRect(x: CGFloat, width: CGFloat) -> NSRect {
+            NSRect(x: x, y: textRectY, width: width, height: lineHeight)
+        }
 
         switch style {
         case .opacity:
@@ -375,22 +406,24 @@ public final class LayersPillButton: NSButton {
             )
             let value = titleText as NSString
             value.draw(
-                with: NSRect(x: 34.0, y: textY, width: 44.0, height: textHeight),
+                with: textRect(x: 34.0, width: 44.0),
                 options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine],
                 attributes: [.font: font, .foregroundColor: textColor]
             )
-            let percentFont = ThemeFonts.mono(size: 9.0, weight: .regular)
-            let percentWidth = ("%" as NSString).size(withAttributes: [.font: percentFont]).width
-            ("%" as NSString).draw(
-                with: NSRect(x: bounds.width - 10.0 - percentWidth, y: textY,
-                             width: percentWidth + 1.0, height: textHeight),
+            // The suffix shares the value's font and baseline (was 9pt on a
+            // different baseline, which read as a 1pt vertical jitter).
+            let percent = "%" as NSString
+            let percentWidth = percent.size(withAttributes: [.font: font]).width
+            percent.draw(
+                with: textRect(x: bounds.width - 10.0 - percentWidth, width: percentWidth + 1.0),
                 options: [.usesLineFragmentOrigin],
-                attributes: [.font: percentFont, .foregroundColor: LayersPalette.pillTextMuted]
+                attributes: [.font: font, .foregroundColor: LayersPalette.pillTextMuted]
             )
 
         case .blendMode:
+            // px10 field padding, matching the web FlatSelect trigger.
             (titleText as NSString).draw(
-                with: NSRect(x: 12.0, y: textY, width: max(0, bounds.width - 40.0), height: textHeight),
+                with: textRect(x: 10.0, width: max(0, bounds.width - 36.0)),
                 options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine],
                 attributes: [.font: font, .foregroundColor: textColor]
             )
@@ -413,30 +446,32 @@ public final class LayersPillButton: NSButton {
     }
 }
 
-// MARK: - Web-style visibility checkbox
+// MARK: - Row visibility affordance (web: eye, shown on hover or when hidden)
 
 public final class LayerVisibilityCheckbox: NSButton {
     public var isVisibleState: Bool = true {
-        didSet { if oldValue != isVisibleState { needsDisplay = true } }
+        didSet { if oldValue != isVisibleState { refreshAffordance() } }
     }
-    public var isHovered: Bool = false {
-        didSet { if oldValue != isHovered { needsDisplay = true } }
+    /// True while the owning row is hovered: the eye lifts from white/45 to
+    /// white/90 (a hidden layer always draws the eye-off at white/90).
+    public var isRowHovered: Bool = false {
+        didSet { if oldValue != isRowHovered { needsDisplay = true } }
     }
     public var onToggle: (() -> Void)?
 
     public override init(frame frameRect: NSRect) {
-        super.init(frame: NSRect(x: 0, y: 0, width: LayersMetrics.checkboxSize, height: LayersMetrics.checkboxSize))
-        isBordered = false
-        focusRingType = .none
-        title = ""
-        target = self
-        action = #selector(handleClick)
-        setAccessibilityRole(.button)
-        setAccessibilityLabel("Toggle visibility")
+        super.init(frame: NSRect(x: 0, y: 0,
+                                 width: LayersMetrics.visibilitySlot,
+                                 height: LayersMetrics.visibilitySlot))
+        configure()
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
+        configure()
+    }
+
+    private func configure() {
         isBordered = false
         focusRingType = .none
         title = ""
@@ -444,55 +479,37 @@ public final class LayerVisibilityCheckbox: NSButton {
         action = #selector(handleClick)
         setAccessibilityRole(.button)
         setAccessibilityLabel("Toggle visibility")
+        refreshAffordance()
     }
 
     @objc private func handleClick() { onToggle?() }
 
+    private func refreshAffordance() {
+        isHidden = false
+        needsDisplay = true
+    }
+
     /// Drawn in the same y-down design space as `VooIconFactory` (unflipped context).
     public override var isFlipped: Bool { false }
-
-    public override func updateTrackingAreas() {
-        super.updateTrackingAreas()
-        trackingAreas.forEach { removeTrackingArea($0) }
-        addTrackingArea(NSTrackingArea(
-            rect: bounds,
-            options: [.mouseEnteredAndExited, .activeAlways],
-            owner: self,
-            userInfo: nil
-        ))
-    }
 
     public override func resetCursorRects() {
         addCursorRect(bounds, cursor: .pointingHand)
     }
 
-    public override func mouseEntered(with event: NSEvent) { isHovered = true }
-    public override func mouseExited(with event: NSEvent) { isHovered = false }
-
     public override func draw(_ dirtyRect: NSRect) {
-        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-        let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
-        let path = CGPath(roundedRect: rect, cornerWidth: 4, cornerHeight: 4, transform: nil)
-
-        if isHovered {
-            ctx.setFillColor(LayersPalette.checkboxFillHover.cgColor)
-            ctx.addPath(path)
-            ctx.fillPath()
+        // No checkbox box: a bare 14pt eye/eye-off glyph like the web row, white/45
+        // at rest, white/90 on row hover or when the layer is hidden.
+        let idle: CGFloat = isVisibleState && !isRowHovered ? 0.45 : 0.90
+        let color = NSColor(white: idle, alpha: 1.0)
+        let side = LayersMetrics.visibilityGlyphSize
+        let glyphRect = CGRect(x: bounds.midX - side / 2.0,
+                               y: bounds.midY - side / 2.0,
+                               width: side, height: side)
+        if isVisibleState {
+            VooIconFactory.drawEye(in: glyphRect, color: color, strokeWidth: 1.5)
+        } else {
+            VooIconFactory.drawEyeOff(in: glyphRect, color: color, strokeWidth: 1.5)
         }
-        ctx.setStrokeColor(
-            (isHovered ? LayersPalette.checkboxBorderHover : LayersPalette.checkboxBorder).cgColor
-        )
-        ctx.setLineWidth(1.0)
-        ctx.addPath(path)
-        ctx.strokePath()
-
-        guard isVisibleState else { return }
-        let eyeRect = bounds.insetBy(dx: 1.0, dy: 2.0)
-        VooIconFactory.drawEye(
-            in: eyeRect,
-            color: LayersPalette.checkboxOn,
-            strokeWidth: 1.5
-        )
     }
 }
 
@@ -570,6 +587,12 @@ public final class LayerLockButton: NSButton {
 // MARK: - Layer Row Cell (web-style row)
 
 public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
+    /// 28×28 disclosure hit area with a 12pt chevron (web row chevron).
+    public let disclosureButton = LayersIconButton(
+        glyph: .chevronDown,
+        tooltip: "Collapse layer",
+        accessibilityLabel: "Collapse layer"
+    )
     public let visibilityButton = LayerVisibilityCheckbox()
     public let lockButton = LayerLockButton()
     /// Retained for API compatibility (custom kind glyphs are drawn in `draw(_:)`).
@@ -579,9 +602,14 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
 
     public var onToggleVisible: (() -> Void)?
     public var onToggleLock: (() -> Void)?
+    public var onToggleDisclosure: (() -> Void)?
     public var onRename: ((String) -> Void)?
 
     private var currentNode: VOONode?
+    /// Nesting depth of the row; drives `left padding = 8 + depth*14`.
+    private var rowDepth: Int = 0
+    private var rowInset: CGFloat = LayersMetrics.checkboxLeading
+    private var disclosureLeadingConstraint: NSLayoutConstraint?
     private var isRowSelected: Bool = false
     private var isHovered: Bool = false
     private var committedName: String = ""
@@ -602,6 +630,13 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
     private func setupCell() {
         wantsLayer = false
 
+        disclosureButton.translatesAutoresizingMaskIntoConstraints = false
+        disclosureButton.iconSize = LayersMetrics.disclosureGlyphSize
+        disclosureButton.idleColor = NSColor(white: 0.40, alpha: 1.0)
+        disclosureButton.hoverRadius = 8
+        disclosureButton.onClick = { [weak self] in self?.onToggleDisclosure?() }
+        addSubview(disclosureButton)
+
         visibilityButton.translatesAutoresizingMaskIntoConstraints = false
         visibilityButton.onToggle = { [weak self] in self?.onToggleVisible?() }
         addSubview(visibilityButton)
@@ -616,7 +651,8 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
         titleField.focusRingType = .none
         titleField.isEditable = false
         titleField.isSelectable = false
-        titleField.font = ThemeFonts.mono(size: 11, weight: .regular)
+        // Web row title: 11px mono medium with a leading-none line box.
+        titleField.font = ThemeFonts.mono(size: 11, weight: .medium)
         titleField.textColor = LayersPalette.rowName
         titleField.cell?.wraps = false
         titleField.cell?.isScrollable = true
@@ -625,7 +661,7 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
         addSubview(titleField)
 
         hexLabel.translatesAutoresizingMaskIntoConstraints = false
-        hexLabel.font = ThemeFonts.mono(size: 9, weight: .regular)
+        hexLabel.font = ThemeFonts.mono(size: 10, weight: .regular)
         hexLabel.textColor = LayersPalette.hexText
         hexLabel.alignment = .right
         hexLabel.isHidden = true
@@ -639,11 +675,26 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
         lockWidthConstraint = lockWidth
         hexWidthConstraint = hexWidth
 
+        let disclosureLeading = disclosureButton.leadingAnchor.constraint(
+            equalTo: leadingAnchor,
+            constant: LayersMetrics.checkboxLeading
+        )
+        disclosureLeadingConstraint = disclosureLeading
+        let titleLineHeight = ceil(
+            (titleField.font ?? ThemeFonts.mono(size: 11, weight: .medium)).ascender
+                - (titleField.font ?? ThemeFonts.mono(size: 11, weight: .medium)).descender
+        )
+
         NSLayoutConstraint.activate([
-            visibilityButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.checkboxLeading),
+            disclosureLeading,
+            disclosureButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            disclosureButton.widthAnchor.constraint(equalToConstant: LayersMetrics.disclosureSlot),
+            disclosureButton.heightAnchor.constraint(equalToConstant: LayersMetrics.disclosureSlot),
+
+            visibilityButton.leadingAnchor.constraint(equalTo: disclosureButton.trailingAnchor),
             visibilityButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            visibilityButton.widthAnchor.constraint(equalToConstant: LayersMetrics.checkboxSize),
-            visibilityButton.heightAnchor.constraint(equalToConstant: LayersMetrics.checkboxSize),
+            visibilityButton.widthAnchor.constraint(equalToConstant: LayersMetrics.visibilitySlot),
+            visibilityButton.heightAnchor.constraint(equalToConstant: LayersMetrics.visibilitySlot),
 
             lockButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
             lockButton.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -655,25 +706,44 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
             hexLabel.heightAnchor.constraint(equalToConstant: 12),
             hexWidth,
 
-            titleField.leadingAnchor.constraint(equalTo: leadingAnchor, constant:
-                LayersMetrics.checkboxLeading + LayersMetrics.checkboxSize
-                + LayersMetrics.rowContentGap + LayersMetrics.kindContainerSize
-                + LayersMetrics.rowContentGap),
+            titleField.leadingAnchor.constraint(
+                equalTo: visibilityButton.trailingAnchor,
+                constant: LayersMetrics.kindContainerSize + LayersMetrics.rowContentGap
+            ),
             titleField.centerYAnchor.constraint(equalTo: centerYAnchor),
-            titleField.heightAnchor.constraint(equalToConstant: 15),
+            titleField.heightAnchor.constraint(equalToConstant: titleLineHeight),
             titleField.trailingAnchor.constraint(lessThanOrEqualTo: hexLabel.leadingAnchor, constant: -8),
             titleField.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -8)
         ])
     }
 
-    public func configure(node: VOONode, isSelected: Bool) {
+    public func configure(node: VOONode, isSelected: Bool, depth: Int = 0,
+                          hasChildren: Bool = false, isCollapsed: Bool = false) {
         currentNode = node
+        apply(rowDepth: depth)
         committedName = node.name
         titleField.stringValue = node.name
-        titleField.textColor = isSelected ? LayersPalette.rowNameSelected : LayersPalette.rowName
-        titleField.font = ThemeFonts.mono(size: 11, weight: isSelected ? .medium : .regular)
+        // Web row name: 11px mono medium; mint when selected, neutral-500 when hidden.
+        titleField.font = ThemeFonts.mono(size: 11, weight: .medium)
+        if isSelected {
+            titleField.textColor = LayersPalette.rowNameSelected
+        } else if !node.style.visible {
+            titleField.textColor = LayersPalette.rowNameMuted
+        } else {
+            titleField.textColor = LayersPalette.rowName
+        }
+
+        // Disclosure chevron only for nodes that have children; the 28pt slot is
+        // always reserved, so leaf rows keep the same content grid. The chevron
+        // points down when the subtree is open and right when it is collapsed.
+        disclosureButton.isHidden = !hasChildren
+        disclosureButton.glyph = (hasChildren && isCollapsed) ? .chevronRight : .chevronDown
+        disclosureButton.setAccessibilityLabel(
+            hasChildren ? (isCollapsed ? "Expand layer" : "Collapse layer") : "Layer"
+        )
 
         visibilityButton.isVisibleState = node.style.visible
+        visibilityButton.isRowHovered = isHovered
         lockButton.isLocked = node.style.locked
         lockWidthConstraint?.constant = node.style.locked ? 14 : 0
 
@@ -684,6 +754,16 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
 
         isRowSelected = isSelected
         setAccessibilityIdentifier("Inspector.LayersTree.Row.\(node.name)")
+        needsDisplay = true
+    }
+
+    /// Applies the tree indent to the row's leading slot (web: `paddingLeft: 8 + depth*14`).
+    private func apply(rowDepth newDepth: Int) {
+        rowDepth = max(0, newDepth)
+        let inset = LayersMetrics.checkboxLeading + CGFloat(rowDepth) * LayersMetrics.depthIndent
+        guard abs(inset - rowInset) > 0.01 else { return }
+        rowInset = inset
+        disclosureLeadingConstraint?.constant = inset
         needsDisplay = true
     }
 
@@ -715,14 +795,16 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
         guard let node = currentNode else { return }
         // Kind glyph: 14pt glyph centred inside a 28×28 container.
         let container = NSRect(
-            x: LayersMetrics.checkboxLeading + LayersMetrics.checkboxSize + LayersMetrics.rowContentGap,
+            x: rowInset + LayersMetrics.disclosureSlot + LayersMetrics.visibilitySlot,
             y: floor((bounds.height - LayersMetrics.kindContainerSize) / 2.0),
             width: LayersMetrics.kindContainerSize,
             height: LayersMetrics.kindContainerSize
         )
+        // 13pt glyph inside the 28pt container; floor the origin so an odd glyph
+        // size still lands on whole pixels (13 in 28 would otherwise sit on ½pt).
         let glyphRect = NSRect(
-            x: container.midX - LayersMetrics.kindGlyphSize / 2.0,
-            y: container.midY - LayersMetrics.kindGlyphSize / 2.0,
+            x: floor(container.midX - LayersMetrics.kindGlyphSize / 2.0),
+            y: floor(container.midY - LayersMetrics.kindGlyphSize / 2.0),
             width: LayersMetrics.kindGlyphSize,
             height: LayersMetrics.kindGlyphSize
         )
@@ -755,7 +837,10 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
 
     private func drawShapeGlyph(isCircle: Bool, fill: NSColor?, outline: NSColor, in rect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-        let glyphRect = rect.insetBy(dx: 1.0, dy: 1.0)
+        // 14pt optical box (`kindGlyphSize`) for every kind glyph: shrink by half
+        // the 1pt stroke so the inked square/circle is exactly 14×14 like the
+        // vector type icons (was 12×12, which read smaller than the rest).
+        let glyphRect = rect.insetBy(dx: 0.5, dy: 0.5)
         ctx.saveGState()
         if let fill = fill {
             ctx.setFillColor(fill.cgColor)
@@ -798,11 +883,13 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
 
     public override func mouseEntered(with event: NSEvent) {
         isHovered = true
+        visibilityButton.isRowHovered = true
         needsDisplay = true
     }
 
     public override func mouseExited(with event: NSEvent) {
         isHovered = false
+        visibilityButton.isRowHovered = false
         needsDisplay = true
     }
 
@@ -841,7 +928,7 @@ public final class LayersTableView: NSTableView {
     public override func menu(for event: NSEvent) -> NSMenu? {
         guard let panel = ownerPanel else { return super.menu(for: event) }
         let row = clickedRow
-        guard row >= 0, row < panel.nodes.count else { return super.menu(for: event) }
+        guard row >= 0, row < panel.visibleRowCount else { return super.menu(for: event) }
         panel.selectRowForContextMenu(row)
         return panel.buildRowContextMenu(row: row)
     }
@@ -883,6 +970,11 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
     public var onSortTapped: (() -> Void)?
     public var onAddLayer: (() -> Void)?
     public var onAddMask: (() -> Void)?
+    /// Web footer "add adjustment" action (was mis-wired to `onAddMask`).
+    public var onAddAdjustment: (() -> Void)?
+    /// Optional expand/collapse hook for the new disclosure chevron. Nil keeps the
+    /// chevron visual-only (rows are always expanded until the host adds the state).
+    public var onToggleLayerExpanded: ((String) -> Void)?
     public var onGroupLayers: (() -> Void)?
     public var onDeleteSelected: (() -> Void)?
     public var onOpacityChange: ((CGFloat) -> Void)?
@@ -892,6 +984,16 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
 
     public private(set) var nodes: [VOONode] = []
     public private(set) var selectedNodeId: String?
+    /// Ids of nodes that have at least one child in the current list (chevron rows).
+    private var parentNodeIds: Set<String> = []
+    /// Rows hidden behind a collapsed ancestor are dropped from `visibleNodes`.
+    private var collapsedIds: Set<String> = []
+    /// Nodes actually rendered by the table, in `nodes` order but with the
+    /// subtrees of collapsed nodes removed. All table row indexes address this
+    /// array, while ids/core logic keep using `nodes`.
+    private(set) var visibleNodes: [VOONode] = []
+    /// Number of table rows currently rendered (used by the table subclass).
+    var visibleRowCount: Int { visibleNodes.count }
 
     public var selectedNode: VOONode? {
         guard let id = selectedNodeId else { return nil }
@@ -992,14 +1094,15 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         layer?.shadowRadius = 18.0
         layer?.shadowOffset = CGSize(width: 0, height: -6)
 
-        // 1. Header "LAYERS" (11pt semibold, letterspaced, muted).
+        // 1. Header "LAYERS" (11pt mono medium, trailing-wide tracking, muted).
+        //    The web card is `font-mono`, so the title must be monospaced too.
         headerLabel.translatesAutoresizingMaskIntoConstraints = false
         headerLabel.attributedStringValue = NSAttributedString(
             string: "LAYERS",
             attributes: [
-                .font: ThemeFonts.system(size: 11, weight: .semibold),
+                .font: ThemeFonts.mono(size: 11, weight: .medium),
                 .foregroundColor: LayersPalette.headerText,
-                .kern: 1.0
+                .kern: 0.55   // tracking-wider (0.05em @11px)
             ]
         )
         addSubview(headerLabel)
@@ -1088,11 +1191,12 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         listContainer.addSubview(tableView)
         scrollView.documentView = listContainer
 
-        // 5. Footer toolbar.
+        // 5. Footer toolbar. Web order (footer.jsx): [mask][adjustment][new layer]
+        // on the left, trash right-aligned; 28×28 buttons with 13pt icons.
         let footerButtons: [(LayersIconButton, String, String)] = [
-            (addButton, "Layers.Add", "Add layer"),
-            (contrastButton, "Layers.Contrast", "Add adjustment"),
             (maskButton, "Layers.Mask", "Add mask"),
+            (contrastButton, "Layers.Contrast", "Add adjustment"),
+            (addButton, "Layers.Add", "Add layer"),
             (groupButton, "Layers.Group", "Group layers"),
             (deleteButton, "Layers.Delete", "Delete layer")
         ]
@@ -1100,14 +1204,17 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
             button.translatesAutoresizingMaskIntoConstraints = false
             button.setAccessibilityIdentifier(identifier)
             button.setAccessibilityLabel(label)
+            button.iconSize = LayersMetrics.footerIconSize
             addSubview(button)
         }
-        addButton.onClick = { [weak self] in self?.onAddLayer?() }
-        contrastButton.onClick = { [weak self] in self?.onAddMask?() }
         maskButton.onClick = { [weak self] in self?.onAddMask?() }
+        contrastButton.onClick = { [weak self] in self?.onAddAdjustment?() }
+        addButton.onClick = { [weak self] in self?.onAddLayer?() }
         groupButton.onClick = { [weak self] in self?.onGroupLayers?() }
         deleteButton.hoverTint = NSColor(hex: "#FB7185")
         deleteButton.onClick = { [weak self] in self?.onDeleteSelected?() }
+        // The group affordance only exists in the multi-select state on the web.
+        groupButton.isHidden = true
 
         // 6. Constraints.
         let footerSize = LayersMetrics.footerButtonSize
@@ -1144,30 +1251,33 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
             scrollView.topAnchor.constraint(equalTo: opacityPill.bottomAnchor, constant: 8),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.rowInset),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -LayersMetrics.rowInset),
-            scrollView.bottomAnchor.constraint(lessThanOrEqualTo: addButton.topAnchor, constant: -18),
+            scrollView.bottomAnchor.constraint(
+                lessThanOrEqualTo: maskButton.topAnchor,
+                constant: -(LayersMetrics.footerGapAboveDivider + LayersMetrics.footerGapBelowDivider)
+            ),
 
-            addButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.footerLeadingInset),
-            addButton.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -LayersMetrics.footerBottomInset),
-            addButton.widthAnchor.constraint(equalToConstant: footerSize),
-            addButton.heightAnchor.constraint(equalToConstant: footerSize),
-
-            contrastButton.leadingAnchor.constraint(equalTo: addButton.trailingAnchor, constant: LayersMetrics.footerSpacing),
-            contrastButton.centerYAnchor.constraint(equalTo: addButton.centerYAnchor),
-            contrastButton.widthAnchor.constraint(equalToConstant: footerSize),
-            contrastButton.heightAnchor.constraint(equalToConstant: footerSize),
-
-            maskButton.leadingAnchor.constraint(equalTo: contrastButton.trailingAnchor, constant: LayersMetrics.footerSpacing),
-            maskButton.centerYAnchor.constraint(equalTo: addButton.centerYAnchor),
+            maskButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.footerLeadingInset),
+            maskButton.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -LayersMetrics.footerBottomInset),
             maskButton.widthAnchor.constraint(equalToConstant: footerSize),
             maskButton.heightAnchor.constraint(equalToConstant: footerSize),
 
-            groupButton.leadingAnchor.constraint(equalTo: maskButton.trailingAnchor, constant: LayersMetrics.footerSpacing),
-            groupButton.centerYAnchor.constraint(equalTo: addButton.centerYAnchor),
+            contrastButton.leadingAnchor.constraint(equalTo: maskButton.trailingAnchor, constant: LayersMetrics.footerSpacing),
+            contrastButton.centerYAnchor.constraint(equalTo: maskButton.centerYAnchor),
+            contrastButton.widthAnchor.constraint(equalToConstant: footerSize),
+            contrastButton.heightAnchor.constraint(equalToConstant: footerSize),
+
+            addButton.leadingAnchor.constraint(equalTo: contrastButton.trailingAnchor, constant: LayersMetrics.footerSpacing),
+            addButton.centerYAnchor.constraint(equalTo: maskButton.centerYAnchor),
+            addButton.widthAnchor.constraint(equalToConstant: footerSize),
+            addButton.heightAnchor.constraint(equalToConstant: footerSize),
+
+            groupButton.leadingAnchor.constraint(equalTo: addButton.trailingAnchor, constant: LayersMetrics.footerSpacing),
+            groupButton.centerYAnchor.constraint(equalTo: maskButton.centerYAnchor),
             groupButton.widthAnchor.constraint(equalToConstant: footerSize),
             groupButton.heightAnchor.constraint(equalToConstant: footerSize),
 
             deleteButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -LayersMetrics.footerLeadingInset),
-            deleteButton.centerYAnchor.constraint(equalTo: addButton.centerYAnchor),
+            deleteButton.centerYAnchor.constraint(equalTo: maskButton.centerYAnchor),
             deleteButton.widthAnchor.constraint(equalToConstant: footerSize),
             deleteButton.heightAnchor.constraint(equalToConstant: footerSize)
         ])
@@ -1189,64 +1299,142 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
             + CGFloat(count - 1) * LayersMetrics.rowSpacing
     }
 
+    // MARK: Collapse state
+
+    /// Rebuilds the rendered rows from `nodes` minus the subtrees of collapsed ids.
+    private func computeVisibleNodes() -> [VOONode] {
+        guard !collapsedIds.isEmpty else { return nodes }
+        var byId: [String: VOONode] = [:]
+        for candidate in nodes { byId[candidate.id] = candidate }
+        var result: [VOONode] = []
+        result.reserveCapacity(nodes.count)
+        for node in nodes {
+            var cursor = node.parentId
+            var steps = 0
+            var hidden = false
+            while let parentId = cursor, steps < 64 {
+                if collapsedIds.contains(parentId) { hidden = true; break }
+                guard let parent = byId[parentId] else { break }
+                cursor = parent.parentId
+                steps += 1
+            }
+            if !hidden { result.append(node) }
+        }
+        return result
+    }
+
+    /// Expands every collapsed ancestor so `nodeId` is rendered (used when the
+    /// host selects a node that lives inside a collapsed group).
+    private func expandAncestors(of nodeId: String) {
+        guard !collapsedIds.isEmpty else { return }
+        var byId: [String: VOONode] = [:]
+        for candidate in nodes { byId[candidate.id] = candidate }
+        var cursor = byId[nodeId]?.parentId
+        var steps = 0
+        while let parentId = cursor, steps < 64 {
+            collapsedIds.remove(parentId)
+            guard let parent = byId[parentId] else { break }
+            cursor = parent.parentId
+            steps += 1
+        }
+    }
+
+    /// Chevron action: toggles the subtree, refreshes the table and tells the host.
+    private func toggleCollapsed(_ nodeId: String) {
+        guard parentNodeIds.contains(nodeId) else { return }
+        if collapsedIds.contains(nodeId) {
+            collapsedIds.remove(nodeId)
+        } else {
+            collapsedIds.insert(nodeId)
+        }
+        onToggleLayerExpanded?(nodeId)
+        rebuildVisibleRows()
+    }
+
+    /// Recomputes `visibleNodes`, reloads the table and restores the selection.
+    private func rebuildVisibleRows() {
+        isSyncingSelection = true
+        visibleNodes = computeVisibleNodes()
+        tableView.reloadData()
+        updateVisibleRowHeight()
+        syncTableGeometry()
+        if let id = selectedNodeId, let idx = visibleNodes.firstIndex(where: { $0.id == id }) {
+            tableView.selectRowIndexes(IndexSet(integer: idx), byExtendingSelection: false)
+            pendingRevealRow = idx
+        } else {
+            tableView.deselectAll(nil)
+        }
+        isSyncingSelection = false
+        updateFooterSelectionState()
+        needsLayout = true
+        needsDisplay = true
+    }
+
     // MARK: Public configuration
 
     // MARK: - Row Context Menu
 
     public func selectRowForContextMenu(_ row: Int) {
-        guard row >= 0, row < nodes.count else { return }
-        selectedNodeId = nodes[row].id
+        guard row >= 0, row < visibleNodes.count else { return }
+        let node = visibleNodes[row]
+        selectedNodeId = node.id
         tableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-        onSelectNode?(nodes[row].id)
+        onSelectNode?(node.id)
         needsDisplay = true
     }
 
     public func buildRowContextMenu(row: Int) -> NSMenu {
         let menu = NSMenu()
-        guard row >= 0, row < nodes.count else { return menu }
-        let node = nodes[row]
+        guard row >= 0, row < visibleNodes.count else { return menu }
+        let node = visibleNodes[row]
+        let nodeId = node.id
 
         let rename = NSMenuItem(title: "重命名 (Rename)", action: #selector(contextRename(_:)), keyEquivalent: "")
         rename.target = self
-        rename.tag = row
+        rename.representedObject = nodeId
         menu.addItem(rename)
 
         let visibility = NSMenuItem(title: node.style.visible ? "隐藏 (Hide)" : "显示 (Show)",
                                     action: #selector(contextToggleVisibility(_:)), keyEquivalent: "")
         visibility.target = self
-        visibility.tag = row
+        visibility.representedObject = nodeId
         menu.addItem(visibility)
 
         let lock = NSMenuItem(title: node.style.locked ? "解锁 (Unlock)" : "锁定 (Lock)",
                               action: #selector(contextToggleLock(_:)), keyEquivalent: "")
         lock.target = self
-        lock.tag = row
+        lock.representedObject = nodeId
         menu.addItem(lock)
 
         menu.addItem(NSMenuItem.separator())
 
         let duplicate = NSMenuItem(title: "创建副本 (Duplicate)", action: #selector(contextDuplicate(_:)), keyEquivalent: "")
         duplicate.target = self
-        duplicate.tag = row
+        duplicate.representedObject = nodeId
         menu.addItem(duplicate)
 
         let group = NSMenuItem(title: "编组 (Group)", action: #selector(contextGroup(_:)), keyEquivalent: "")
         group.target = self
-        group.tag = row
+        group.representedObject = nodeId
         menu.addItem(group)
 
         let delete = NSMenuItem(title: "删除 (Delete)", action: #selector(contextDelete(_:)), keyEquivalent: "")
         delete.target = self
-        delete.tag = row
+        delete.representedObject = nodeId
         menu.addItem(delete)
 
         return menu
     }
 
+    /// Node id carried by a context-menu item (indices can shift when rows collapse).
+    private func contextNodeId(_ sender: NSMenuItem) -> String? {
+        sender.representedObject as? String
+    }
+
     @objc private func contextRename(_ sender: NSMenuItem) {
-        let row = sender.tag
-        guard row >= 0, row < nodes.count else { return }
-        selectedNodeId = nodes[row].id
+        guard let nodeId = contextNodeId(sender),
+              let row = visibleNodes.firstIndex(where: { $0.id == nodeId }) else { return }
+        selectedNodeId = nodeId
         tableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
         if let cell = tableView.view(atColumn: 0, row: row, makeIfNecessary: true) as? LayerRowCell {
             cell.beginRename()
@@ -1254,25 +1442,23 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
     }
 
     @objc private func contextToggleVisibility(_ sender: NSMenuItem) {
-        let row = sender.tag
-        guard row >= 0, row < nodes.count else { return }
-        let node = nodes[row]
+        guard let nodeId = contextNodeId(sender),
+              let node = nodes.first(where: { $0.id == nodeId }) else { return }
         onToggleVisibility?(node.id, !node.style.visible)
     }
 
     @objc private func contextToggleLock(_ sender: NSMenuItem) {
-        let row = sender.tag
-        guard row >= 0, row < nodes.count else { return }
-        let node = nodes[row]
+        guard let nodeId = contextNodeId(sender),
+              let node = nodes.first(where: { $0.id == nodeId }) else { return }
         onToggleLock?(node.id, !node.style.locked)
     }
 
     @objc private func contextDuplicate(_ sender: NSMenuItem) {
-        let row = sender.tag
-        guard row >= 0, row < nodes.count else { return }
-        selectedNodeId = nodes[row].id
+        guard let nodeId = contextNodeId(sender),
+              let row = visibleNodes.firstIndex(where: { $0.id == nodeId }) else { return }
+        selectedNodeId = nodeId
         tableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-        onSelectNode?(nodes[row].id)
+        onSelectNode?(nodeId)
         onDuplicateSelected?()
     }
 
@@ -1287,22 +1473,30 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
     public func configure(with nodes: [VOONode], selectedId: String?) {
         self.nodes = nodes
         self.selectedNodeId = selectedId
+        parentNodeIds = Set(nodes.compactMap { $0.parentId })
+        // Drop collapse state for nodes that are gone or no longer have children,
+        // then make sure the selected node is not hidden inside a collapsed group.
+        collapsedIds = collapsedIds.filter { parentNodeIds.contains($0) }
+        if let selectedId = selectedId { expandAncestors(of: selectedId) }
+        visibleNodes = computeVisibleNodes()
         countBadge.stringValue = "\(nodes.count)"
 
+        isSyncingSelection = true
         tableView.reloadData()
         refreshPills()
         updateVisibleRowHeight()
         syncTableGeometry()
         needsDisplay = true
 
-        isSyncingSelection = true
-        if let selectedId = selectedId, let idx = nodes.firstIndex(where: { $0.id == selectedId }) {
+        if let selectedId = selectedId,
+           let idx = visibleNodes.firstIndex(where: { $0.id == selectedId }) {
             tableView.selectRowIndexes(IndexSet(integer: idx), byExtendingSelection: false)
             pendingRevealRow = idx
         } else {
             tableView.deselectAll(nil)
         }
         isSyncingSelection = false
+        updateFooterSelectionState()
         needsLayout = true
     }
 
@@ -1345,11 +1539,12 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         guard bounds.height > 0 else { return }
         let stride = LayersMetrics.rowHeight + LayersMetrics.rowSpacing
         let scrollTopFromTop = bounds.height - scrollView.frame.maxY
-        let footerTopFromTop = bounds.height - addButton.frame.maxY
-        // 18 = footer mt8 + divider 1 + pt10 (list bottom sits 8pt above the divider).
-        let available = max(0, footerTopFromTop - 18.0 - scrollTopFromTop)
+        let footerTopFromTop = bounds.height - maskButton.frame.maxY
+        // 14 = 7pt above the divider + 7pt below it (the 28pt footer buttons grew,
+        // so the gap budget shrank to keep the verified 244pt card and 3 rows).
+        let available = max(0, footerTopFromTop - 14.0 - scrollTopFromTop)
         let capacity = max(1, Int(floor((available + LayersMetrics.rowSpacing) / stride)))
-        let count = max(1, nodes.count)
+        let count = max(1, visibleNodes.count)
         let wanted = rowBlockHeight(min(count, capacity))
         let desired = max(0, min(available, wanted))
         if let constraint = scrollViewHeightConstraint, abs(constraint.constant - desired) > 0.5 {
@@ -1362,7 +1557,7 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         if let column = tableView.tableColumns.first, abs(column.width - width) > 0.5 {
             column.width = width
         }
-        let rowsHeight = rowBlockHeight(max(nodes.count, 1))
+        let rowsHeight = rowBlockHeight(max(visibleNodes.count, 1))
         let requiredHeight = max(scrollView.contentSize.height, rowsHeight)
         let target = NSRect(x: 0, y: 0, width: width, height: requiredHeight)
         if abs(listContainer.frame.width - width) > 0.5 || abs(listContainer.frame.height - requiredHeight) > 0.5 {
@@ -1476,15 +1671,17 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
 
     private func moveSelectedRow(by offset: Int) {
         let row = tableView.selectedRow
-        guard row >= 0, row < nodes.count, let callback = onMoveLayer else { return }
-        let target = max(0, min(nodes.count - 1, row + offset))
-        guard target != row else { return }
-        callback(nodes[row].id, target)
+        guard row >= 0, row < visibleNodes.count, let callback = onMoveLayer else { return }
+        let nodeId = visibleNodes[row].id
+        guard let sourceIndex = nodes.firstIndex(where: { $0.id == nodeId }) else { return }
+        let target = max(0, min(nodes.count - 1, sourceIndex + offset))
+        guard target != sourceIndex else { return }
+        callback(nodeId, target)
     }
 
     @objc private func handleTableDoubleClick() {
         let row = tableView.clickedRow
-        guard row >= 0, row < nodes.count,
+        guard row >= 0, row < visibleNodes.count,
               let cell = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? LayerRowCell
         else { return }
         cell.beginRename()
@@ -1493,16 +1690,42 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
     // MARK: NSTableViewDataSource & Delegate
 
     public func numberOfRows(in tableView: NSTableView) -> Int {
-        return nodes.count
+        return visibleNodes.count
+    }
+
+    /// Nesting depth of `node` within the rows this panel was given (0 = top level).
+    /// The controller hands us a flat list, so the depth comes from `parentId`.
+    private func depth(of node: VOONode) -> Int {
+        guard node.parentId != nil else { return 0 }
+        var byId: [String: VOONode] = [:]
+        for candidate in nodes {
+            byId[candidate.id] = candidate
+        }
+        var depth = 0
+        var cursor = node.parentId
+        var visited: Set<String> = []
+        while let parentId = cursor, depth < 32, visited.insert(parentId).inserted,
+              let parent = byId[parentId] {
+            depth += 1
+            cursor = parent.parentId
+        }
+        return depth
     }
 
     public func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        guard row < nodes.count else { return nil }
-        let node = nodes[row]
+        guard row < visibleNodes.count else { return nil }
+        let node = visibleNodes[row]
         let cell = (tableView.makeView(withIdentifier: Self.cellIdentifier, owner: self) as? LayerRowCell)
             ?? LayerRowCell(identifier: Self.cellIdentifier)
         let isSelected = (node.id == selectedNodeId)
-        cell.configure(node: node, isSelected: isSelected)
+        cell.configure(node: node,
+                       isSelected: isSelected,
+                       depth: depth(of: node),
+                       hasChildren: parentNodeIds.contains(node.id),
+                       isCollapsed: collapsedIds.contains(node.id))
+        cell.onToggleDisclosure = { [weak self] in
+            self?.toggleCollapsed(node.id)
+        }
 
         cell.onToggleVisible = { [weak self] in
             guard let self = self else { return }
@@ -1522,35 +1745,48 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
     public func tableViewSelectionDidChange(_ notification: Notification) {
         guard !isSyncingSelection else { return }
         let row = tableView.selectedRow
-        guard row >= 0 && row < nodes.count else { return }
-        let node = nodes[row]
+        guard row >= 0 && row < visibleNodes.count else { return }
+        let node = visibleNodes[row]
         let changed = (selectedNodeId != node.id)
         selectedNodeId = node.id
         refreshPills()
         refreshVisibleCellsSelection()
+        updateFooterSelectionState()
         if changed {
             onSelectNode?(node.id)
         }
+    }
+
+    /// Web parity: the group/folder footer action only exists while several layers
+    /// are selected (native rows are single-select, so it stays hidden).
+    private func updateFooterSelectionState() {
+        let selectedCount = tableView.selectedRowIndexes.count
+        groupButton.isHidden = selectedCount <= 1
     }
 
     /// Re-configures the visible cells so the mint selected row follows the table
     /// selection without calling `reloadData()` (which would drop the row selection).
     private func refreshVisibleCellsSelection() {
         for row in 0..<tableView.numberOfRows {
-            guard row < nodes.count else { continue }
+            guard row < visibleNodes.count else { continue }
             guard let cell = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? LayerRowCell else {
                 continue
             }
-            cell.configure(node: nodes[row], isSelected: nodes[row].id == selectedNodeId)
+            let node = visibleNodes[row]
+            cell.configure(node: node,
+                           isSelected: node.id == selectedNodeId,
+                           depth: depth(of: node),
+                           hasChildren: parentNodeIds.contains(node.id),
+                           isCollapsed: collapsedIds.contains(node.id))
         }
     }
 
     // MARK: Drag to reorder
 
     public func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> NSPasteboardWriting? {
-        guard row >= 0, row < nodes.count else { return nil }
+        guard row >= 0, row < visibleNodes.count else { return nil }
         let item = NSPasteboardItem()
-        item.setString(nodes[row].id, forType: Self.rowDragType)
+        item.setString(visibleNodes[row].id, forType: Self.rowDragType)
         return item
     }
 
@@ -1578,7 +1814,14 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
               let callback = onMoveLayer
         else { return false }
 
-        var targetIndex = row
+        // `row` is a rendered-row index; translate it back to a node index first.
+        var targetIndex: Int
+        if row < visibleNodes.count,
+           let idx = nodes.firstIndex(where: { $0.id == visibleNodes[row].id }) {
+            targetIndex = idx
+        } else {
+            targetIndex = nodes.count
+        }
         if sourceIndex < targetIndex {
             targetIndex -= 1
         }
@@ -1609,8 +1852,8 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         ctx.addPath(path)
         ctx.strokePath()
 
-        // Footer divider sits pt10 above the footer toolbar.
-        let dividerY = addButton.frame.maxY + 10.0
+        // Footer divider sits 7pt above the 28pt footer toolbar.
+        let dividerY = maskButton.frame.maxY + LayersMetrics.footerGapAboveDivider
         ctx.setStrokeColor(LayersPalette.divider.cgColor)
         ctx.setLineWidth(1.0)
         ctx.strokeLineSegments(between: [

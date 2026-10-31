@@ -253,10 +253,12 @@ public class TransformHandlesView: NSView {
         let hitSlop = ThemeTokens.handleHitSlop / zoom
         let hitRadius = (handleSize / 2.0) + hitSlop
 
-        // Check rotate pin first (priority over topCenter)
+        // Check rotate pin first (priority over topCenter). Web rotates from a
+        // grip 20 screen-px above the top edge with a 16px grab radius
+        // (`HANDLE_GRAB_RADIUS + 8`).
         if let pin = points[.rotatePin] {
             let d = hypot(localPoint.x - pin.x, localPoint.y - pin.y)
-            if d <= hitRadius + 2.0 {
+            if d <= hitRadius + 8.0 / zoom {
                 return .rotatePin
             }
         }
@@ -294,42 +296,63 @@ public class TransformHandlesView: NSView {
             ctx.translateBy(x: -center.x, y: -center.y)
         }
 
+        // Web `SELECTION_COLOR = #b2ffd6`: one selection colour for the frame,
+        // the stalk and the 1px handle rings (no black outline, no shadow).
+        let ringColor = NSColor(hex: ThemeTokens.accentSelection)
         let points = handlePointsView(for: r)
         let handleSize = ThemeTokens.handleSize
         let half = handleSize / 2.0
 
-        // 1. Selection Bounding Box Rectangle (Mint #b2ffd6)
-        ctx.setStrokeColor(ThemeTokens.colorMint.cgColor)
+        // 1. Selection box: 1px and crisp. A half-pixel inset keeps the stroke on
+        // device pixel edges, so the handles share one centreline with the box
+        // instead of sitting half a pixel off it (the "crooked handles" report).
+        ctx.setStrokeColor(ringColor.cgColor)
         ctx.setLineWidth(1.0)
-        ctx.stroke(r)
+        if rotationAngle == 0 {
+            let minX = floor(r.minX) + 0.5
+            let minY = floor(r.minY) + 0.5
+            let maxX = floor(r.maxX) - 0.5
+            let maxY = floor(r.maxY) - 0.5
+            if maxX > minX, maxY > minY {
+                ctx.stroke(CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY))
+            }
+        } else {
+            ctx.stroke(r)
+        }
 
-        // 2. Rotation Stalk Connecting Line (from Top Center to Pin)
-        if let bc = points[.bottomCenter], let pin = points[.rotatePin] {
-            ctx.setStrokeColor(ThemeTokens.colorMint.cgColor)
+        // 2. Rotation stalk: from the visual top-edge centre to the pin (the
+        // handle map is y-up, so `.bottomCenter` is the visual top centre).
+        if let topCenter = points[.bottomCenter], let pin = points[.rotatePin] {
+            ctx.setStrokeColor(ringColor.cgColor)
             ctx.setLineWidth(1.0)
-            ctx.strokeLineSegments(between: [bc, pin])
+            ctx.strokeLineSegments(between: [topCenter, pin])
 
-            // Rotation Circular Pin Dot
             let pinRadius: CGFloat = 4.5
             let pinRect = CGRect(x: pin.x - pinRadius, y: pin.y - pinRadius, width: pinRadius * 2.0, height: pinRadius * 2.0)
-            ctx.setFillColor(NSColor(red: 0.70, green: 1.00, blue: 0.84, alpha: 1.0).cgColor)
+            ctx.setFillColor(NSColor.white.cgColor)
             ctx.fillEllipse(in: pinRect)
-            ctx.setStrokeColor(NSColor.black.cgColor)
+            ctx.setStrokeColor(ringColor.cgColor)
             ctx.setLineWidth(1.0)
             ctx.strokeEllipse(in: pinRect)
         }
 
-        // 3. Draw 8 Square Handles
+        // 3. Eight 8×8 white resize handles with a 1px mint ring, centred on the
+        // crisp frame edge (web `paintHandle`).
         for handle in TransformHandleType.allCases where handle != .rotatePin {
-            guard let pt = points[handle] else { continue }
-            let hRect = CGRect(x: pt.x - half, y: pt.y - half, width: handleSize, height: handleSize)
+            guard let rawPoint = points[handle] else { continue }
+            let centre: CGPoint
+            if rotationAngle == 0 {
+                centre = CGPoint(x: floor(rawPoint.x) + 0.5, y: floor(rawPoint.y) + 0.5)
+            } else {
+                centre = rawPoint
+            }
+            let hRect = CGRect(x: centre.x - half + 0.5, y: centre.y - half + 0.5, width: handleSize, height: handleSize)
 
             ctx.setFillColor(NSColor.white.cgColor)
             ctx.fill(hRect)
 
-            // 8x8 white squares with a 1px black border; hover / active-drag turns mint.
             let isHighlighted = (activeHoverHandle == handle) || (activeDragHandle == handle)
-            ctx.setStrokeColor(isHighlighted ? ThemeTokens.colorMint.cgColor : NSColor.black.cgColor)
+            ctx.setStrokeColor(isHighlighted ? NSColor(hex: ThemeTokens.accentMint).cgColor : ringColor.cgColor)
             ctx.setLineWidth(1.0)
             ctx.stroke(hRect)
         }

@@ -159,9 +159,9 @@ private struct SettingsShortcutCopy {
     let keys: String
 }
 
-/// All visible copy for the drawer, in English and Simplified Chinese. The two
-/// untranslated web keys ("collab.guestBadge" / "COLLAB.NAMEFIELD") are kept
-/// verbatim so the native dialog matches the reference pixel-for-pixel.
+/// All visible copy for the drawer, in English and Simplified Chinese. Copy is
+/// taken from the web i18n sources (`settings-ui-en/zh.js`, `core-en/zh.js`,
+/// `en/zh.js`), never raw keys.
 private struct SettingsCopy {
     let language: String
 
@@ -186,6 +186,10 @@ private struct SettingsCopy {
     let languageLabel: String
     let chineseLabel: String
     let englishLabel: String
+
+    // Canvas (web `settings.canvas.*`, persisted `voo.editor.showRulers`).
+    let canvasLabel: String
+    let showRulersLabel: String
 
     let agentSectionLabel: String
     let agents: [SettingsAgentCopy]
@@ -227,18 +231,20 @@ private struct SettingsCopy {
         tabTitles: ["General", "AI Assistant", "AI Providers", "Shortcuts"],
         profileLabel: "PROFILE",
         guestName: "Guest",
-        guestBadge: "collab.guestBadge",
-        nameFieldLabel: "COLLAB.NAMEFIELD",
+        guestBadge: "Local guest profile",
+        nameFieldLabel: "Display name",
         namePlaceholder: "Your name",
         workspaceLabel: "PROJECT WORKSPACE",
         activeWorkspace: "ACTIVE WORKSPACE",
-        workspaceBadge: "[Browser Mount]",
+        workspaceBadge: "[macOS Native]",
         workspaceName: "Browser Workspace",
         changeDirectory: "Change Directory",
         rescan: "Rescan",
         languageLabel: "LANGUAGE",
         chineseLabel: "简体中文",
         englishLabel: "English",
+        canvasLabel: "CANVAS",
+        showRulersLabel: "Show rulers",
         agentSectionLabel: "LOCAL AGENT",
         agents: [
             SettingsAgentCopy(
@@ -307,18 +313,20 @@ private struct SettingsCopy {
         tabTitles: ["常规偏好", "AI 助手", "AI 供应商", "快捷键速查"],
         profileLabel: "个人资料",
         guestName: "访客",
-        guestBadge: "collab.guestBadge",
-        nameFieldLabel: "COLLAB.NAMEFIELD",
+        guestBadge: "本地访客资料",
+        nameFieldLabel: "显示名称",
         namePlaceholder: "你的昵称",
         workspaceLabel: "项目工作区",
         activeWorkspace: "当前工作区",
-        workspaceBadge: "[浏览器挂载]",
+        workspaceBadge: "[macOS 原生]",
         workspaceName: "Browser Workspace",
         changeDirectory: "更换目录",
         rescan: "重新扫描",
         languageLabel: "语言",
         chineseLabel: "简体中文",
         englishLabel: "English",
+        canvasLabel: "画布",
+        showRulersLabel: "显示标尺",
         agentSectionLabel: "本地智能体",
         agents: [
             SettingsAgentCopy(
@@ -709,6 +717,8 @@ public final class SettingsDrawerView: NSView {
     public static let languageDefaultsKey = "voo.locale"
     public static let collabNameDefaultsKey = "voo.collab.name"
     public static let agentProviderDefaultsKey = "voo.agent.llmProvider"
+    /// Mirrors the web canvas ruler preference (`voo.editor.showRulers`), default off.
+    public static let showRulersDefaultsKey = "voo.editor.showRulers"
 
     public static let preferredModalSize = NSSize(
         width: SettingsMetrics.modalWidth,
@@ -731,6 +741,8 @@ public final class SettingsDrawerView: NSView {
     public var onRescan: (() -> Void)?
     /// Invoked after the user changes the language (already persisted).
     public var onLanguageChange: ((String) -> Void)?
+    /// Invoked after the "Show rulers" switch is toggled (already persisted).
+    public var onToggleRulers: ((Bool) -> Void)?
 
     // MARK: Public state
 
@@ -770,17 +782,20 @@ public final class SettingsDrawerView: NSView {
         case agent(Int)
         case agentSegment(Int)
         case onboarding
+        case showRulers
     }
 
     private var languageCode: String = "en"
     private var copy: SettingsCopy = .english
     private var selectedAgentIndex: Int = 0
+    private var showsRulers: Bool = false
     private var hoveredControl: ControlID?
     private var pressedControl: ControlID?
     private var scrimPress = false
     private var nameFieldEditing = false
     private var keyMonitor: Any?
     private var trackingAreaReference: NSTrackingArea?
+    private var defaultsObserver: NSObjectProtocol?
 
     private var proxies: [ControlID: SettingsProxyButton] = [:]
 
@@ -849,6 +864,20 @@ public final class SettingsDrawerView: NSView {
         if let storedAgent = UserDefaults.standard.string(forKey: SettingsDrawerView.agentProviderDefaultsKey) {
             selectedAgentIndex = Self.agentIndex(forProvider: storedAgent)
         }
+        showsRulers = UserDefaults.standard.bool(forKey: SettingsDrawerView.showRulersDefaultsKey)
+        // Live-sync with ⇧R / the zoom-bar toggle (both persist the same key).
+        defaultsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            let next = UserDefaults.standard.bool(forKey: SettingsDrawerView.showRulersDefaultsKey)
+            guard next != self.showsRulers else { return }
+            self.showsRulers = next
+            self.refreshProxyLabels()
+            self.needsDisplay = true
+        }
 
         addSubview(nameField)
         nameField.isHidden = true
@@ -861,6 +890,9 @@ public final class SettingsDrawerView: NSView {
     deinit {
         if let keyMonitor {
             NSEvent.removeMonitor(keyMonitor)
+        }
+        if let defaultsObserver {
+            NotificationCenter.default.removeObserver(defaultsObserver)
         }
         blurBackdrop.removeFromSuperview()
     }
@@ -913,6 +945,10 @@ public final class SettingsDrawerView: NSView {
         if let storedAgent = UserDefaults.standard.string(forKey: SettingsDrawerView.agentProviderDefaultsKey) {
             selectedAgentIndex = Self.agentIndex(forProvider: storedAgent)
         }
+        // Re-read the ruler pref so an ⇧R / zoom-bar toggle made while the drawer
+        // was closed shows up immediately (web live-syncs the same setting).
+        showsRulers = UserDefaults.standard.bool(forKey: SettingsDrawerView.showRulersDefaultsKey)
+        refreshProxyLabels()
 
         hoveredControl = nil
         pressedControl = nil
@@ -1042,6 +1078,9 @@ public final class SettingsDrawerView: NSView {
         proxies[.rescan]?.toolTip = copy.rescan
         proxies[.onboarding]?.setAccessibilityLabel(copy.onboardingButton)
         proxies[.onboarding]?.toolTip = copy.onboardingButton
+        proxies[.showRulers]?.setAccessibilityLabel(copy.showRulersLabel)
+        proxies[.showRulers]?.setAccessibilityValue(showsRulers ? 1 : 0)
+        proxies[.showRulers]?.toolTip = copy.showRulersLabel
 
         for (index, agent) in copy.agents.enumerated() {
             proxies[.agent(index)]?.setAccessibilityLabel(agent.title)
@@ -1111,6 +1150,9 @@ public final class SettingsDrawerView: NSView {
         let languageLabel: CGRect
         let languageChinese: CGRect
         let languageEnglish: CGRect
+        let canvasLabel: CGRect
+        let canvasRow: CGRect
+        let canvasSwitch: CGRect
 
         // AI Assistant
         let agentSectionLabel: CGRect
@@ -1234,8 +1276,10 @@ public final class SettingsDrawerView: NSView {
         )
         let chipTextSize = settingsTextSize(copy.workspaceBadge, font: ThemeFonts.mono(size: 10, weight: .medium))
         let chipWidth = ceil(chipTextSize.width) + 14
+        // Badge centre matches the "Active Workspace" label row centre
+        // (folder icon spans 14…29 from the card top → centre 21.5).
         let workspaceChip = rect(
-            top: workspaceCard.maxY - SettingsMetrics.workspaceCardPadding - 1,
+            top: workspaceCard.maxY - 12.5,
             height: 18,
             x: workspaceCard.maxX - SettingsMetrics.workspaceCardPadding - chipWidth,
             width: chipWidth
@@ -1265,6 +1309,22 @@ public final class SettingsDrawerView: NSView {
                                    x: sectionX, width: segmentWidth)
         let languageEnglish = rect(top: segmentsTop, height: SettingsMetrics.languageHeight,
                                    x: sectionX + segmentWidth + languageGap, width: segmentWidth)
+
+        // Canvas: compact section label + one 28pt toggle row (UI_SPEC §9 content
+        // rhythm: section label 48pt below the previous content, then 16pt gap).
+        let segmentsBottom = segmentsTop - SettingsMetrics.languageHeight
+        let canvasSectionTop = segmentsBottom - SettingsMetrics.sectionGap - 16
+        let canvasLabel = rect(top: canvasSectionTop - 16, height: 14, x: sectionX, width: sectionWidth)
+        let canvasRowTop = canvasSectionTop - 16 - 14 - 16
+        let canvasRow = rect(top: canvasRowTop, height: 28, x: sectionX, width: sectionWidth)
+        let canvasSwitchWidth: CGFloat = 32
+        let canvasSwitchHeight: CGFloat = 20
+        let canvasSwitch = rect(
+            top: canvasRowTop - (28 - canvasSwitchHeight) / 2,
+            height: canvasSwitchHeight,
+            x: canvasRow.maxX - canvasSwitchWidth,
+            width: canvasSwitchWidth
+        )
 
         // MARK: AI Assistant layout
         let agentSectionLabel = rect(top: stackTop, height: 14, x: sectionX, width: sectionWidth)
@@ -1361,6 +1421,9 @@ public final class SettingsDrawerView: NSView {
             languageLabel: languageLabel,
             languageChinese: languageChinese,
             languageEnglish: languageEnglish,
+            canvasLabel: canvasLabel,
+            canvasRow: canvasRow,
+            canvasSwitch: canvasSwitch,
             agentSectionLabel: agentSectionLabel,
             agentCards: agentCards,
             defaultAgentLabel: defaultAgentLabel,
@@ -1399,7 +1462,8 @@ public final class SettingsDrawerView: NSView {
             (.agentSegment(2), "Settings.DefaultAgent.Antigravity"),
             (.agentSegment(3), "Settings.DefaultAgent.OpenCode"),
             (.agentSegment(4), "Settings.DefaultAgent.DeepSeekHarness"),
-            (.onboarding, "Settings.Onboarding")
+            (.onboarding, "Settings.Onboarding"),
+            (.showRulers, "Settings.Canvas.ShowRulers")
         ]
 
         for (control, identifier) in identifiers {
@@ -1413,6 +1477,8 @@ public final class SettingsDrawerView: NSView {
             addSubview(proxy)
             proxies[control] = proxy
         }
+        // The rulers control is a switch, not a button.
+        proxies[.showRulers]?.setAccessibilityRole(.checkBox)
     }
 
     private func activeControlRects(_ layout: SettingsLayout) -> [(ControlID, CGRect)] {
@@ -1430,6 +1496,7 @@ public final class SettingsDrawerView: NSView {
             rects.append((.language("en"), layout.languageEnglish))
             rects.append((.workspaceChange, layout.changeDirectory))
             rects.append((.rescan, layout.rescan))
+            rects.append((.showRulers, layout.canvasRow))
         case .aiAssistant:
             for (index, rect) in layout.agentCards.enumerated() {
                 rects.append((.agent(index), rect))
@@ -1661,7 +1728,19 @@ public final class SettingsDrawerView: NSView {
             selectAgent(index)
         case .onboarding:
             onOpenOnboarding?()
+        case .showRulers:
+            toggleShowRulers()
         }
+    }
+
+    /// Flips the canvas rulers preference (same `voo.editor.showRulers` key the
+    /// web settings drawer and the ⇧R shortcut use) and forwards it to the host.
+    private func toggleShowRulers() {
+        showsRulers.toggle()
+        UserDefaults.standard.set(showsRulers, forKey: SettingsDrawerView.showRulersDefaultsKey)
+        refreshProxyLabels()
+        onToggleRulers?(showsRulers)
+        needsDisplay = true
     }
 
     private func selectAgent(_ index: Int) {
@@ -1918,11 +1997,10 @@ public final class SettingsDrawerView: NSView {
         )
         settingsFillRounded(layout.workspaceChip, radius: 9, color: SettingsPalette.hover)
         let wsConfig = WorkspaceManager.shared.getWorkspaceConfig()
-        let badgeText = wsConfig.isConfigured
-            ? (languageCode == "zh" ? "[自定义工作区]" : "[Custom]")
-            : (languageCode == "zh" ? "[默认工作区]" : "[Default]")
+        // Web shows the storage-driver platform badge (`settings.workspace.badgeDesktop`,
+        // e.g. "[macOS Native]"), not a custom/default workspace label.
         settingsDrawText(
-            badgeText,
+            copy.workspaceBadge,
             in: layout.workspaceChip,
             font: ThemeFonts.mono(size: 10, weight: .medium),
             color: SettingsPalette.textStrong,
@@ -1963,6 +2041,55 @@ public final class SettingsDrawerView: NSView {
             isSelected: languageCode == "en",
             control: .language("en")
         )
+
+        // Canvas — one "Show rulers" toggle row (web settings.canvas.showRulers).
+        drawSectionLabel(copy.canvasLabel, in: layout.canvasLabel, showsHint: false)
+        drawShowRulersRow(layout.canvasRow, switchRect: layout.canvasSwitch)
+    }
+
+    private func drawShowRulersRow(_ row: CGRect, switchRect: CGRect) {
+        let isHovered = hoveredControl == .showRulers
+        let isPressed = pressedControl == .showRulers
+        if isHovered || isPressed {
+            settingsFillRounded(
+                row,
+                radius: 8,
+                color: isPressed ? SettingsPalette.hover : SettingsPalette.hoverSoft
+            )
+        }
+        settingsDrawText(
+            copy.showRulersLabel,
+            in: CGRect(
+                x: row.minX,
+                y: row.minY,
+                width: max(row.width - switchRect.width - 12, 60),
+                height: row.height
+            ),
+            font: ThemeFonts.mono(size: 12),
+            color: isHovered ? SettingsPalette.textPrimary : SettingsPalette.textSecondary
+        )
+        drawSwitch(in: switchRect)
+    }
+
+    /// Square-ish web `Switch` (white/80 on, white/15 off, dark knob), sized to
+    /// the settings 20pt control height.
+    private func drawSwitch(in rect: CGRect) {
+        settingsFillRounded(
+            rect,
+            radius: rect.height / 2,
+            color: NSColor(white: 1.0, alpha: showsRulers ? 0.80 : 0.15)
+        )
+        let knobSize: CGFloat = 14
+        let inset: CGFloat = 3
+        let knob = CGRect(
+            x: showsRulers ? rect.maxX - inset - knobSize : rect.minX + inset,
+            y: rect.midY - knobSize / 2,
+            width: knobSize,
+            height: knobSize
+        )
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        ctx.setFillColor(SettingsPalette.sidebarBackground.cgColor)
+        ctx.fillEllipse(in: knob)
     }
 
     private func drawAvatar(in rect: CGRect) {
@@ -2232,16 +2359,18 @@ public final class SettingsDrawerView: NSView {
             alignment: .center
         )
 
+        // Two-line label block vertically centred in the row: name (16) above
+        // subtitle (14) with a 2pt gap, so their centres straddle midY evenly.
         settingsDrawText(
             provider.name,
-            in: CGRect(x: badgeRect.maxX + 12, y: rect.midY - 2, width: rect.width * 0.4, height: 16),
+            in: CGRect(x: badgeRect.maxX + 12, y: rect.midY, width: rect.width * 0.4, height: 16),
             font: ThemeFonts.mono(size: 12, weight: .semibold),
             color: SettingsPalette.textSecondary,
             truncating: true
         )
         settingsDrawText(
             provider.subtitle,
-            in: CGRect(x: badgeRect.maxX + 12, y: rect.midY - 18, width: rect.width * 0.5, height: 14),
+            in: CGRect(x: badgeRect.maxX + 12, y: rect.midY - 16, width: rect.width * 0.5, height: 14),
             font: ThemeFonts.mono(size: 10.5),
             color: SettingsPalette.textFaint,
             truncating: true

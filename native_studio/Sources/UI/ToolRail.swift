@@ -207,7 +207,8 @@ public final class ToolButton: NSButton {
     public init(toolType: StudioToolType, toolRailState: ToolRailState? = nil) {
         self.toolType = toolType
         self.toolRailState = toolRailState
-        super.init(frame: NSRect(x: 0, y: 0, width: 36, height: 36))
+        // Web parity: `toolButtonClass` is `h-11 w-11 rounded-full p-0` (44×44).
+        super.init(frame: NSRect(x: 0, y: 0, width: 44, height: 44))
         self.title = ""
         self.isBordered = false
         self.focusRingType = .none
@@ -251,7 +252,9 @@ public final class ToolButton: NSButton {
         let b = bounds
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
-        let circleSize: CGFloat = 36.0
+        // Web parity: the active white circle is the whole 44pt `h-11 w-11
+        // rounded-full` button.
+        let circleSize: CGFloat = 44.0
         let circleRect = CGRect(x: (b.width - circleSize) / 2.0, y: (b.height - circleSize) / 2.0, width: circleSize, height: circleSize)
 
         // 1. Background Fill
@@ -260,20 +263,23 @@ public final class ToolButton: NSButton {
             ctx.setFillColor(NSColor.white.cgColor)
             ctx.fillEllipse(in: circleRect)
         } else if isHighlighted {
-            // Hover state: subtle wash
-            ctx.setFillColor(NSColor(white: 1.0, alpha: 0.12).cgColor)
+            // Hover state: `hover:bg-neutral-800` (#262626).
+            ctx.setFillColor(NSColor(white: 0.15, alpha: 1.0).cgColor)
             ctx.fillEllipse(in: circleRect)
         }
 
-        // 2. Vector Icon Glyph Drawing
-        let iconColor: NSColor = isToolActive ? .black : (isHighlighted ? .white : NSColor(white: 0.65, alpha: 1.0))
+        // 2. Vector Icon Glyph Drawing (web icons are size 16 inside the 44pt button)
+        let iconColor: NSColor = isToolActive ? .black : (isHighlighted ? NSColor(white: 0.96, alpha: 1.0) : NSColor(white: 0.64, alpha: 1.0))
         let glyphRect = CGRect(x: b.midX - 8, y: b.midY - 8, width: 16, height: 16)
 
         switch toolType {
         case .move:
             VooIconFactory.drawCursor(in: glyphRect, color: iconColor, isSolid: isToolActive)
         case .node:
-            VooIconFactory.drawFrame(in: glyphRect, color: iconColor)
+            // Web rail slot 2 is Lucide `crop` (a frame with corner ticks). The
+            // shared `.frame` entry is Lucide `frame` (a # hash), which reads as a
+            // grid at 16pt, so draw the crop geometry the rail actually shows.
+            RailGlyphDrawing.draw(.crop, in: glyphRect, color: iconColor)
         case .pen:
             let sub = toolRailState?.penSubTool ?? .pen
             switch sub {
@@ -304,24 +310,148 @@ public final class ToolButton: NSButton {
             let sub = toolRailState?.selectionSubTool ?? .marqueeRect
             switch sub {
             case .marqueeRect:
-                VooIconFactory.drawMarquee(in: glyphRect, color: iconColor)
+                // The native `.brush` tool paints (`activeTool == .brush`), so its
+                // glyph is Lucide `brush` (paintbrush), not the old marquee square
+                // with a floating pointer.
+                VooIconFactory.draw(.brush, in: glyphRect, color: iconColor)
             case .lassoFree:
-                VooIconFactory.drawLasso(in: glyphRect, color: iconColor)
+                VooIconFactory.draw(.lasso, in: glyphRect, color: iconColor)
             }
         case .eraser:
-            VooIconFactory.drawEraser(in: glyphRect, color: iconColor)
+            VooIconFactory.draw(.eraser, in: glyphRect, color: iconColor)
         case .text:
-            VooIconFactory.drawText(in: glyphRect, color: iconColor)
+            VooIconFactory.draw(.text, in: glyphRect, color: iconColor)
         case .artboard:
-            VooIconFactory.drawCube(in: glyphRect, color: iconColor)
+            // Lucide `scan`: an artboard/frame boundary with corner brackets (a 3D
+            // cube is the object tool's glyph, not the artboard's).
+            RailGlyphDrawing.draw(.artboard, in: glyphRect, color: iconColor)
         }
 
-        // 3. Chevron Down Indicator
+        // 3. Family chevron: web caret at the button's bottom-right. `NSButton` is
+        //    flipped (y grows downwards), so the bottom edge is `bounds.maxY`;
+        //    honour that explicitly so the caret cannot drift back to the top.
         if hasSubtools {
             let chevronColor: NSColor = isToolActive ? NSColor(white: 0, alpha: 0.65) : (isHighlighted ? NSColor.white : NSColor(white: 1.0, alpha: 0.40))
-            let chevronRect = CGRect(x: b.maxX - 9, y: b.minY + 4, width: 6, height: 6)
+            let chevronY = isFlipped ? b.maxY - 10 : b.minY + 4
+            let chevronRect = CGRect(x: b.maxX - 9, y: chevronY, width: 6, height: 6)
             VooIconFactory.drawChevronDown(in: chevronRect, color: chevronColor, strokeWidth: 1.2)
         }
+    }
+}
+
+// MARK: - Rail-only Lucide glyph geometry
+
+/// Geometry for the few Lucide paths the shared icon table does not carry.
+/// Authored on the canonical 24×24 box (SVG y-down coordinates) so it renders
+/// upright in both flipped (`NSButton`) and unflipped contexts.
+enum RailGlyphDrawing {
+    case crop
+    case squareDashed
+    case artboard
+
+    static func draw(
+        _ glyph: RailGlyphDrawing,
+        in rect: CGRect,
+        color: NSColor,
+        strokeWidth: CGFloat = 1.5
+    ) {
+        VooIconFactory.withCanonicalCanvas(in: rect, color: color, strokeWidth: strokeWidth) { ctx in
+            for path in paths(for: glyph) {
+                ctx.addPath(path)
+                ctx.strokePath()
+            }
+        }
+    }
+
+    private static func paths(for glyph: RailGlyphDrawing) -> [CGPath] {
+        switch glyph {
+        case .crop:
+            // lucide `crop`: M6 2v14a2 2 0 0 0 2 2h14 / M18 22V8a2 2 0 0 0-2-2H2
+            return [
+                path { p in
+                    p.move(to: CGPoint(x: 6, y: 2))
+                    p.addLine(to: CGPoint(x: 6, y: 16))
+                    p.addQuadCurve(to: CGPoint(x: 8, y: 18), control: CGPoint(x: 6, y: 18))
+                    p.addLine(to: CGPoint(x: 22, y: 18))
+                },
+                path { p in
+                    p.move(to: CGPoint(x: 18, y: 22))
+                    p.addLine(to: CGPoint(x: 18, y: 8))
+                    p.addQuadCurve(to: CGPoint(x: 16, y: 6), control: CGPoint(x: 18, y: 6))
+                    p.addLine(to: CGPoint(x: 2, y: 6))
+                }
+            ]
+        case .squareDashed:
+            // lucide `square-dashed`: four rounded corner arcs + eight dash marks.
+            var result: [CGPath] = []
+            result.append(path { p in
+                p.move(to: CGPoint(x: 5, y: 3))
+                p.addQuadCurve(to: CGPoint(x: 3, y: 5), control: CGPoint(x: 3, y: 3))
+            })
+            result.append(path { p in
+                p.move(to: CGPoint(x: 19, y: 3))
+                p.addQuadCurve(to: CGPoint(x: 21, y: 5), control: CGPoint(x: 21, y: 3))
+            })
+            result.append(path { p in
+                p.move(to: CGPoint(x: 21, y: 19))
+                p.addQuadCurve(to: CGPoint(x: 19, y: 21), control: CGPoint(x: 21, y: 21))
+            })
+            result.append(path { p in
+                p.move(to: CGPoint(x: 5, y: 21))
+                p.addQuadCurve(to: CGPoint(x: 3, y: 19), control: CGPoint(x: 3, y: 21))
+            })
+            let dashes: [(CGPoint, CGPoint)] = [
+                (CGPoint(x: 9, y: 3), CGPoint(x: 10, y: 3)),
+                (CGPoint(x: 9, y: 21), CGPoint(x: 10, y: 21)),
+                (CGPoint(x: 14, y: 3), CGPoint(x: 15, y: 3)),
+                (CGPoint(x: 14, y: 21), CGPoint(x: 15, y: 21)),
+                (CGPoint(x: 3, y: 9), CGPoint(x: 3, y: 10)),
+                (CGPoint(x: 21, y: 9), CGPoint(x: 21, y: 10)),
+                (CGPoint(x: 3, y: 14), CGPoint(x: 3, y: 15)),
+                (CGPoint(x: 21, y: 14), CGPoint(x: 21, y: 15))
+            ]
+            for (start, end) in dashes {
+                result.append(path { p in
+                    p.move(to: start)
+                    p.addLine(to: end)
+                })
+            }
+            return result
+        case .artboard:
+            // lucide `scan`: four corner brackets.
+            return [
+                path { p in
+                    p.move(to: CGPoint(x: 3, y: 7))
+                    p.addLine(to: CGPoint(x: 3, y: 5))
+                    p.addQuadCurve(to: CGPoint(x: 5, y: 3), control: CGPoint(x: 3, y: 3))
+                    p.addLine(to: CGPoint(x: 7, y: 3))
+                },
+                path { p in
+                    p.move(to: CGPoint(x: 17, y: 3))
+                    p.addLine(to: CGPoint(x: 19, y: 3))
+                    p.addQuadCurve(to: CGPoint(x: 21, y: 5), control: CGPoint(x: 21, y: 3))
+                    p.addLine(to: CGPoint(x: 21, y: 7))
+                },
+                path { p in
+                    p.move(to: CGPoint(x: 21, y: 17))
+                    p.addLine(to: CGPoint(x: 21, y: 19))
+                    p.addQuadCurve(to: CGPoint(x: 19, y: 21), control: CGPoint(x: 21, y: 21))
+                    p.addLine(to: CGPoint(x: 17, y: 21))
+                },
+                path { p in
+                    p.move(to: CGPoint(x: 7, y: 21))
+                    p.addLine(to: CGPoint(x: 5, y: 21))
+                    p.addQuadCurve(to: CGPoint(x: 3, y: 19), control: CGPoint(x: 3, y: 21))
+                    p.addLine(to: CGPoint(x: 3, y: 17))
+                }
+            ]
+        }
+    }
+
+    private static func path(_ build: (CGMutablePath) -> Void) -> CGPath {
+        let p = CGMutablePath()
+        build(p)
+        return p
     }
 }
 
@@ -359,7 +489,8 @@ public final class ToolRailAccessoryButton: NSButton {
 
     public init(accessory: ToolRailAccessory) {
         self.accessory = accessory
-        super.init(frame: NSRect(x: 0, y: 0, width: 36, height: 36))
+        // Rail buttons are 44×44 to match the web `h-11 w-11` tool buttons.
+        super.init(frame: NSRect(x: 0, y: 0, width: 44, height: 44))
         self.title = ""
         self.isBordered = false
         self.focusRingType = .none
@@ -396,51 +527,43 @@ public final class ToolRailAccessoryButton: NSButton {
     public override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
         let b = bounds
-        let circleSize: CGFloat = 36
+        let circleSize: CGFloat = 44
         let circleRect = CGRect(x: (b.width - circleSize) / 2, y: (b.height - circleSize) / 2,
                                 width: circleSize, height: circleSize)
         if isAccessoryActive {
             ctx.setFillColor(NSColor.white.cgColor)
             ctx.fillEllipse(in: circleRect)
         } else if isHovered {
-            ctx.setFillColor(NSColor(white: 1.0, alpha: 0.10).cgColor)
+            // Web: `hover:bg-neutral-800` (#262626).
+            ctx.setFillColor(NSColor(white: 0.15, alpha: 1.0).cgColor)
             ctx.fillEllipse(in: circleRect)
         }
-        let color: NSColor = isAccessoryActive ? .black : NSColor(white: 0.68, alpha: 1.0)
+        let color: NSColor = isAccessoryActive ? .black : (isHovered ? NSColor(white: 0.96, alpha: 1.0) : NSColor(white: 0.64, alpha: 1.0))
         let glyph = CGRect(x: b.midX - 8, y: b.midY - 8, width: 16, height: 16)
-        ctx.setStrokeColor(color.cgColor)
-        ctx.setFillColor(color.cgColor)
-        ctx.setLineWidth(1.5)
-        ctx.setLineCap(.round)
+        // Exact Lucide geometry from the shared icon table (hand / wand-2). The
+        // rail's slot 4 is the selection family and shows Lucide's dashed marquee
+        // square (`square-dashed`, no floating pointer) like the web rail.
         switch accessory {
         case .hand:
-            let palm = CGPath(roundedRect: glyph.insetBy(dx: 3, dy: 5), cornerWidth: 4, cornerHeight: 4, transform: nil)
-            ctx.addPath(palm)
-            ctx.strokePath()
-            for index in 0..<3 {
-                let x = glyph.minX + 4 + CGFloat(index) * 3.4
-                ctx.move(to: CGPoint(x: x, y: glyph.maxY - 2))
-                ctx.addLine(to: CGPoint(x: x, y: glyph.maxY - 5))
-            }
-            ctx.strokePath()
+            VooIconFactory.draw(.hand, in: glyph, color: color, strokeWidth: 1.5)
         case .lasso:
-            ctx.strokeEllipse(in: glyph.insetBy(dx: 1, dy: 4))
-            ctx.move(to: CGPoint(x: glyph.minX + 4, y: glyph.maxY - 5))
-            ctx.addLine(to: CGPoint(x: glyph.midX - 2, y: glyph.maxY - 1))
-            ctx.strokePath()
+            RailGlyphDrawing.draw(.squareDashed, in: glyph, color: color)
         case .wand:
-            ctx.move(to: CGPoint(x: glyph.minX + 2, y: glyph.minY + 2))
-            ctx.addLine(to: CGPoint(x: glyph.maxX - 5, y: glyph.maxY - 5))
-            ctx.strokePath()
-            for point in [CGPoint(x: glyph.maxX - 2, y: glyph.maxY - 8),
-                          CGPoint(x: glyph.maxX - 7, y: glyph.maxY - 1)] {
-                ctx.move(to: CGPoint(x: point.x - 2, y: point.y))
-                ctx.addLine(to: CGPoint(x: point.x + 2, y: point.y))
-                ctx.move(to: CGPoint(x: point.x, y: point.y - 2))
-                ctx.addLine(to: CGPoint(x: point.x, y: point.y + 2))
-            }
-            ctx.strokePath()
+            VooIconFactory.draw(.wand, in: glyph, color: color, strokeWidth: 1.5)
         }
+    }
+}
+
+// MARK: - Rail Divider (1×20, white/12)
+
+/// The thin divider between the tool cluster and the trailing VOO medallion.
+public final class ToolRailDividerView: NSView {
+    public static let preferredHeight: CGFloat = 20.0
+
+    public override func draw(_ dirtyRect: NSRect) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        ctx.setFillColor(NSColor(white: 1.0, alpha: 0.12).cgColor)
+        ctx.fill(CGRect(x: 0, y: (bounds.height - ToolRailDividerView.preferredHeight) / 2.0, width: bounds.width, height: ToolRailDividerView.preferredHeight))
     }
 }
 
@@ -482,29 +605,64 @@ public final class ToolRailBrandAvatarButton: NSButton {
 
     public override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-        let circle = bounds.insetBy(dx: 1, dy: 1)
-        if hovered {
-            ctx.setFillColor(NSColor(white: 1.0, alpha: 0.10).cgColor)
-            ctx.fillEllipse(in: circle)
-        }
-        // Solid dark circular medallion with white VOO mark, mirroring the web rail.
-        ctx.setFillColor(NSColor(white: 0.06, alpha: 1.0).cgColor)
+        let circle = bounds.insetBy(dx: 0.5, dy: 0.5)
+        // Web rail's trailing medallion: a white circle with the black VOO mark
+        // (same treatment as the bottom-right AI FAB). Slight dim on hover.
+        let white = hovered
+            ? (NSColor.white.blended(withFraction: 0.14, of: NSColor(white: 0.0, alpha: 1.0)) ?? NSColor.white)
+            : NSColor.white
+        ctx.setFillColor(white.cgColor)
         ctx.fillEllipse(in: circle)
-        let logoRect = CGRect(x: bounds.midX - 8, y: bounds.midY - 8, width: 16, height: 16)
-        VooIconFactory.drawBrandLogo(in: logoRect, color: .white)
+        let logoDiameter: CGFloat = 24.0
+        let logoRect = CGRect(
+            x: bounds.midX - logoDiameter / 2.0,
+            y: bounds.midY - logoDiameter / 2.0,
+            width: logoDiameter,
+            height: logoDiameter
+        )
+        VooIconFactory.drawBrandLogo(in: logoRect, color: .black)
     }
 }
 
 // MARK: - ToolRail View (Floating Horizontal Pill Toolbar)
 
 public final class ToolRailView: NSView {
+    // MARK: Web parity metrics
+    //
+    // Container: `absolute top-[14px] left-1/2 -translate-x-1/2` (top inset 14 is
+    // applied by the host's constraint).
+    // Pill:      `flex items-center gap-1 rounded-full border border-white/10
+    //             bg-black/90 p-1.5`  -> padding 6, gap 4, radius full.
+    // Button:    `h-11 w-11 rounded-full p-0` -> 44x44, icon 16.
+    // Trailing:  1×20 divider (white/12) + 44pt VOO brand/AI avatar, 4pt gaps.
+    public static let buttonSize: CGFloat = 44.0
+    public static let itemGap: CGFloat = 4.0
+    public static let horizontalPadding: CGFloat = 6.0
+    public static let pillHeight: CGFloat = 56.0
+    public static let entryCount: Int = 11
+    public static let dividerWidth: CGFloat = 1.0
+    public static let avatarSize: CGFloat = 44.0
+
+    /// Width is derived from the layout (not hardcoded):
+    /// padding + 11 tools + 10 gaps + gap + divider + gap + avatar + padding
+    /// = 6 + 524 + 4 + 1 + 4 + 44 + 6 = 589.
+    public static var preferredWidth: CGFloat {
+        let toolRow = buttonSize * CGFloat(entryCount) + itemGap * CGFloat(entryCount - 1)
+        return horizontalPadding * 2
+            + toolRow
+            + itemGap + dividerWidth + itemGap
+            + avatarSize
+    }
+
     public let state: ToolRailState
     public weak var delegate: StudioDelegate?
 
     public private(set) var toolButtons: [StudioToolType: ToolButton] = [:]
     public private(set) var accessoryButtons: [ToolRailAccessory: ToolRailAccessoryButton] = [:]
     public var onAccessoryAction: ((ToolRailAccessory) -> Void)?
-    public let brandAvatarButton = ToolRailBrandAvatarButton()
+    /// Web rail's trailing brand medallion; opens the AI agent panel.
+    public let brandAvatarButton = ToolRailBrandAvatarButton(frame: NSRect(x: 0, y: 0, width: 44, height: 44))
+    private let dividerView = ToolRailDividerView(frame: .zero)
     public var onBrandAvatarTapped: (() -> Void)?
 
     // Direct accessors for tests & legacy compatibility
@@ -517,9 +675,32 @@ public final class ToolRailView: NSView {
     public var textToolButton: NSButton { toolButtons[.text]! }
     public var artboardToolButton: NSButton { toolButtons[.artboard]! }
 
+    /// One entry in the pill, in left-to-right order, matching the web rail's
+    /// glyph sequence as closely as the native tool inventory allows:
+    /// Select, Hand, Frame/Crop, Marquee, Brush, Pen, Text, Eraser, Shape,
+    /// Artboard, Wand.
+    private enum RailEntry {
+        case tool(StudioToolType)
+        case accessory(ToolRailAccessory)
+    }
+
+    private static let orderedEntries: [RailEntry] = [
+        .tool(.move),
+        .accessory(.hand),
+        .tool(.node),
+        .accessory(.lasso),
+        .tool(.brush),
+        .tool(.pen),
+        .tool(.text),
+        .tool(.eraser),
+        .tool(.shapes),
+        .tool(.artboard),
+        .accessory(.wand)
+    ]
+
     public init(state: ToolRailState = ToolRailState()) {
         self.state = state
-        super.init(frame: NSRect(x: 0, y: 0, width: 512, height: 48))
+        super.init(frame: NSRect(x: 0, y: 0, width: ToolRailView.preferredWidth, height: ToolRailView.pillHeight))
         setupView()
     }
 
@@ -527,6 +708,14 @@ public final class ToolRailView: NSView {
         self.state = ToolRailState()
         super.init(coder: coder)
         setupView()
+    }
+
+    public override var intrinsicContentSize: NSSize {
+        NSSize(width: ToolRailView.preferredWidth, height: ToolRailView.pillHeight)
+    }
+
+    public var preferredSize: NSSize {
+        NSSize(width: ToolRailView.preferredWidth, height: ToolRailView.pillHeight)
     }
 
     private func setupView() {
@@ -541,90 +730,92 @@ public final class ToolRailView: NSView {
         layer?.shadowOffset = CGSize(width: 0, height: -4)
 
         // Bind state callbacks
-        state.onActiveToolChanged = { [weak self] newTool in
+        state.onActiveToolChanged = { [weak self] _ in
             self?.updateSelection()
         }
 
-        // Horizontal pill layout matching VOO Design 1:1:
-        // Move -> Frame -> Marquee -> Pen -> Eraser -> Text -> Shapes -> 3D Cube
-        let orderedTools: [StudioToolType] = [.move, .node, .brush, .pen, .eraser, .text, .shapes, .artboard]
-        var previousAnchor = leadingAnchor
-        var leadOffset: CGFloat = 6.0
-
-        for tool in orderedTools {
-            let btn = ToolButton(toolType: tool, toolRailState: state)
-            btn.translatesAutoresizingMaskIntoConstraints = false
-            btn.target = self
-            btn.action = #selector(toolButtonClicked(_:))
-            if tool == .pen || tool == .shapes || tool == .brush {
-                btn.hasSubtools = true
+        // The rail is laid out manually in `layout()` (centred content) so the
+        // pill stays correct when the host pins the derived `preferredWidth`.
+        for entry in ToolRailView.orderedEntries {
+            switch entry {
+            case .tool(let tool):
+                let btn = ToolButton(toolType: tool, toolRailState: state)
+                btn.target = self
+                btn.action = #selector(toolButtonClicked(_:))
+                if tool == .pen || tool == .shapes || tool == .brush {
+                    btn.hasSubtools = true
+                }
+                btn.onTriggerFlyout = { [weak self] button in
+                    self?.showFlyout(for: button)
+                }
+                addSubview(btn)
+                toolButtons[tool] = btn
+            case .accessory(let accessory):
+                let button = ToolRailAccessoryButton(accessory: accessory)
+                button.onClick = { [weak self] in
+                    self?.onAccessoryAction?(accessory)
+                }
+                addSubview(button)
+                accessoryButtons[accessory] = button
             }
-            btn.onTriggerFlyout = { [weak self] button in
-                self?.showFlyout(for: button)
-            }
-            addSubview(btn)
-            toolButtons[tool] = btn
-
-            NSLayoutConstraint.activate([
-                btn.leadingAnchor.constraint(equalTo: previousAnchor, constant: leadOffset),
-                btn.centerYAnchor.constraint(equalTo: centerYAnchor),
-                btn.widthAnchor.constraint(equalToConstant: 36),
-                btn.heightAnchor.constraint(equalToConstant: 36)
-            ])
-
-            previousAnchor = btn.trailingAnchor
-            leadOffset = 4.0
         }
 
-        // One extra 8pt group gap before the accessory cluster.
-        leadOffset = 8.0
+        // Trailing brand/AI medallion, preceded by the web rail's 1×20 divider.
+        dividerView.translatesAutoresizingMaskIntoConstraints = true
+        addSubview(dividerView)
 
-        // Extra web-rail tools: hand / lasso / magic wand
-        for accessory in ToolRailAccessory.allCases {
-            let button = ToolRailAccessoryButton(accessory: accessory)
-            button.translatesAutoresizingMaskIntoConstraints = false
-            button.onClick = { [weak self] in
-                self?.onAccessoryAction?(accessory)
-            }
-            addSubview(button)
-            accessoryButtons[accessory] = button
-            NSLayoutConstraint.activate([
-                button.leadingAnchor.constraint(equalTo: previousAnchor, constant: leadOffset),
-                button.centerYAnchor.constraint(equalTo: centerYAnchor),
-                button.widthAnchor.constraint(equalToConstant: 36),
-                button.heightAnchor.constraint(equalToConstant: 36)
-            ])
-            previousAnchor = button.trailingAnchor
-            leadOffset = 4.0
-        }
-
-        // Divider + VOO avatar medallion anchoring the right edge of the rail
-        let divider = NSView()
-        divider.translatesAutoresizingMaskIntoConstraints = false
-        divider.wantsLayer = true
-        divider.layer?.backgroundColor = NSColor(white: 1.0, alpha: 0.12).cgColor
-        addSubview(divider)
-        NSLayoutConstraint.activate([
-            divider.leadingAnchor.constraint(equalTo: previousAnchor, constant: 8),
-            divider.centerYAnchor.constraint(equalTo: centerYAnchor),
-            divider.widthAnchor.constraint(equalToConstant: 1),
-            divider.heightAnchor.constraint(equalToConstant: 20)
-        ])
-
-        brandAvatarButton.translatesAutoresizingMaskIntoConstraints = false
+        brandAvatarButton.translatesAutoresizingMaskIntoConstraints = true
         brandAvatarButton.onClick = { [weak self] in
             self?.onBrandAvatarTapped?()
         }
         addSubview(brandAvatarButton)
-        NSLayoutConstraint.activate([
-            brandAvatarButton.leadingAnchor.constraint(equalTo: divider.trailingAnchor, constant: 8),
-            brandAvatarButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            brandAvatarButton.widthAnchor.constraint(equalToConstant: 36),
-            brandAvatarButton.heightAnchor.constraint(equalToConstant: 36),
-            brandAvatarButton.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -12)
-        ])
 
         updateSelection()
+        needsLayout = true
+    }
+
+    public override func layout() {
+        super.layout()
+        let count = CGFloat(ToolRailView.orderedEntries.count)
+        let toolRow = count * ToolRailView.buttonSize + (count - 1) * ToolRailView.itemGap
+        let trailingRow = ToolRailView.itemGap
+            + ToolRailView.dividerWidth
+            + ToolRailView.itemGap
+            + ToolRailView.avatarSize
+        let contentWidth = toolRow + trailingRow
+        var x = max(ToolRailView.horizontalPadding, (bounds.width - contentWidth) / 2.0)
+        let y = (bounds.height - ToolRailView.buttonSize) / 2.0
+
+        for entry in ToolRailView.orderedEntries {
+            let view: NSView
+            switch entry {
+            case .tool(let tool):
+                guard let button = toolButtons[tool] else { continue }
+                view = button
+            case .accessory(let accessory):
+                guard let button = accessoryButtons[accessory] else { continue }
+                view = button
+            }
+            view.frame = NSRect(x: ceil(x), y: y, width: ToolRailView.buttonSize, height: ToolRailView.buttonSize)
+            x += ToolRailView.buttonSize + ToolRailView.itemGap
+        }
+
+        // 1×20 divider, centred vertically.
+        x += ToolRailView.itemGap
+        dividerView.frame = NSRect(
+            x: ceil(x),
+            y: (bounds.height - ToolRailDividerView.preferredHeight) / 2.0,
+            width: ToolRailView.dividerWidth,
+            height: ToolRailDividerView.preferredHeight
+        )
+        x += ToolRailView.dividerWidth + ToolRailView.itemGap
+
+        brandAvatarButton.frame = NSRect(
+            x: ceil(x),
+            y: y,
+            width: ToolRailView.avatarSize,
+            height: ToolRailView.avatarSize
+        )
     }
 
     @objc private func toolButtonClicked(_ sender: ToolButton) {
@@ -685,13 +876,12 @@ public final class ToolRailView: NSView {
     public override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
-        // Floating Pill Chrome:
-        // Capsule radius: bounds.height / 2 (22px)
+        // Floating Pill Chrome (web: `rounded-full border border-white/10 bg-black/90`)
         let pillRadius = bounds.height / 2.0
         let path = CGPath(roundedRect: bounds, cornerWidth: pillRadius, cornerHeight: pillRadius, transform: nil)
 
-        // Background: rgba(18, 18, 20, 0.94)
-        ctx.setFillColor(NSColor(red: 0.07, green: 0.07, blue: 0.08, alpha: 0.94).cgColor)
+        // Background: black/90
+        ctx.setFillColor(NSColor.black.withAlphaComponent(0.90).cgColor)
         ctx.addPath(path)
         ctx.fillPath()
 

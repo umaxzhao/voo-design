@@ -133,19 +133,6 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         let keys: String
     }
 
-    private static let projects: [ProjectItem] = [
-        ProjectItem(title: "Web App / SaaS Starter",
-                    dimensions: "1440 × 900",
-                    category: "Web app",
-                    openName: "Web app.voo",
-                    kind: .web),
-        ProjectItem(title: "iPhone 16 Pro Prototype",
-                    dimensions: "393 × 852",
-                    category: "Mobile app",
-                    openName: "iPhone 16 Pro Prototype.voo",
-                    kind: .mobile)
-    ]
-
     public var workspaceFiles: [WorkspaceFile] = [] {
         didSet {
             rebuildProjectItems()
@@ -256,9 +243,7 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         var navRows: [CGRect] = []
         var templatesHeader = CGRect.zero
         var templateRows: [CGRect] = []
-        var footerRow = CGRect.zero
         var footerText = CGRect.zero
-        var backLink = CGRect.zero
         var toolbarPill = CGRect.zero
         var toolbarLabel = CGRect.zero
         var toolbarChange = CGRect.zero
@@ -531,13 +516,6 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             navTargets[tab] = target
         }
 
-        // Sidebar back-to-canvas link.
-        searchTargets["back"] = makeTarget(
-            key: "back",
-            label: "返回当前画布",
-            accessibilityID: "Dashboard.Sidebar.BackToCanvas"
-        ) { [weak self] in self?.onOpenEditor?("Web app.voo") }
-
         // Toolbar.
         searchTargets["toolbar.change"] = makeTarget(
             key: "toolbar.change",
@@ -773,9 +751,7 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         m.templateRows = (0..<2).map { index in
             CGRect(x: sideRowX, y: 273 + CGFloat(index) * 30, width: sideRowWidth, height: 28)
         }
-        m.footerRow = CGRect(x: sideRowX, y: height - 46, width: sideRowWidth, height: 36)
         m.footerText = CGRect(x: 19, y: height - 28, width: 130, height: 14)
-        m.backLink = CGRect(x: max(sideRowX + sideRowWidth - 100, 18), y: height - 29, width: 92, height: 16)
 
         // Toolbar workspace bar (aligned with the shell top inset; y56 window = y16 view buttons).
         let toolbarLeft = mainStartX + 32
@@ -847,7 +823,7 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         let cardGap: CGFloat = 16
         let cols = max(1, Int((contentWidth + cardGap) / (cardWidth + cardGap)))
         let items = filteredProjects()
-        let cardCount = max(2, items.count)
+        let cardCount = items.count
         m.projectCards = (0..<cardCount).map { index in
             let col = index % cols
             let row = index / cols
@@ -950,7 +926,6 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         setFrame(navTargets[.trash], m.navRows.count > 3 ? m.navRows[3] : .zero)
         setFrame(navTargets[.designSystems], m.templateRows.count > 0 ? m.templateRows[0] : .zero)
         setFrame(navTargets[.shortcuts], m.templateRows.count > 1 ? m.templateRows[1] : .zero)
-        setFrame(searchTargets["back"], CGRect(x: m.footerRow.minX + m.footerRow.width - 108, y: m.footerRow.minY, width: 108, height: m.footerRow.height))
 
         // Toolbar.
         setFrame(searchTargets["toolbar.change"], CGRect(x: m.toolbarChange.minX - 8, y: m.toolbarPill.minY, width: m.toolbarChange.width + 16, height: m.toolbarPill.height))
@@ -1035,31 +1010,25 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
     // MARK: - Filtering / Sorting
 
     private func filteredProjects() -> [ProjectItem] {
+        // Web parity: the dashboard only renders real workspace files. An empty
+        // workspace shows the "Recents 0" state with no cards (no demo fallback).
         let sourceProjects: [ProjectItem]
-        if !customProjects.isEmpty {
-            switch activeTab {
-            case .recents:
-                sourceProjects = customProjects.filter { !($0.realFile?.trashed ?? false) }
-            case .drafts:
-                sourceProjects = customProjects.filter {
-                    !($0.realFile?.trashed ?? false) &&
-                    ($0.title.hasPrefix("Untitled") || $0.category.lowercased() == "drafts" || $0.title.lowercased().contains("draft"))
-                }
-            case .starred:
-                sourceProjects = customProjects.filter {
-                    !($0.realFile?.trashed ?? false) && ($0.realFile?.starred ?? false)
-                }
-            case .trash:
-                sourceProjects = customProjects.filter { $0.realFile?.trashed ?? false }
-            case .designSystems, .shortcuts:
-                sourceProjects = []
+        switch activeTab {
+        case .recents:
+            sourceProjects = customProjects.filter { !($0.realFile?.trashed ?? false) }
+        case .drafts:
+            sourceProjects = customProjects.filter {
+                !($0.realFile?.trashed ?? false) &&
+                ($0.title.hasPrefix("Untitled") || $0.category.lowercased() == "drafts" || $0.title.lowercased().contains("draft"))
             }
-        } else {
-            if activeTab == .recents {
-                sourceProjects = Self.projects
-            } else {
-                sourceProjects = []
+        case .starred:
+            sourceProjects = customProjects.filter {
+                !($0.realFile?.trashed ?? false) && ($0.realFile?.starred ?? false)
             }
+        case .trash:
+            sourceProjects = customProjects.filter { $0.realFile?.trashed ?? false }
+        case .designSystems, .shortcuts:
+            sourceProjects = []
         }
 
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -1131,7 +1100,7 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             top: m.workspaceRow.minY + 10,
             width: max(m.workspaceRow.width - 30 - 84, 10),
             height: 16,
-            font: ThemeFonts.mono(size: 11),
+            font: ThemeFonts.mono(size: 12),
             color: Palette.textSecondary
         )
         drawText(
@@ -1190,7 +1159,8 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             width: m.templatesHeader.width,
             height: 14,
             font: ThemeFonts.mono(size: 11, weight: .semibold),
-            color: Palette.textMuted
+            color: Palette.textMuted,
+            tracking: 0.55
         )
         let templateTabs: [Tab] = [.designSystems, .shortcuts]
         for (index, tab) in templateTabs.enumerated() {
@@ -1221,7 +1191,7 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             )
         }
 
-        // Footer: brand + subtle back-to-canvas action (native navigation affordance).
+        // Footer: web only shows the version label at the bottom-left.
         drawText(
             "VOO Design 1.0",
             x: m.footerText.minX,
@@ -1230,17 +1200,6 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             height: 14,
             font: ThemeFonts.mono(size: 11),
             color: Palette.textMuted
-        )
-        let backHovered = hoveredKey == "back"
-        drawText(
-            "返回当前画布 →",
-            x: m.backLink.minX,
-            top: m.backLink.minY,
-            width: m.backLink.width,
-            height: 14,
-            font: ThemeFonts.mono(size: 10),
-            color: backHovered ? Palette.mint : Palette.textMuted,
-            alignment: .right
         )
     }
 
@@ -1252,9 +1211,10 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         drawVooIcon(CGRect(x: m.toolbarPill.minX + 14, y: m.toolbarPill.minY + 9, width: 16, height: 16)) { iconRect in VooIconFactory.drawFolder(in: iconRect, color: Palette.mint.withAlphaComponent(0.85), strokeWidth: 1.6) }
         let wsConfig = WorkspaceManager.shared.getWorkspaceConfig()
         let wsName = (wsConfig.path as NSString).lastPathComponent
-        let badge = wsConfig.isConfigured ? "[Custom]" : "[Default]"
+        // Web shows the storage-driver badge (welcome.workspace.badgeDesktop),
+        // e.g. "Browser Workspace [Browser Mount]"; native is a macOS workspace.
         drawText(
-            "\(wsName) \(badge)",
+            "\(wsName) [macOS Native]",
             x: m.toolbarLabel.minX,
             top: m.toolbarLabel.minY,
             width: m.toolbarLabel.width,
@@ -1324,13 +1284,18 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
 
         let items = filteredProjects()
         if items.isEmpty {
-            drawEmptyState(
-                ctx: ctx,
-                rect: m.recentsEmptyBox,
-                icon: .search,
-                title: "No matching files",
-                hint: "Try a different search or category filter."
-            )
+            // Web parity: an empty Recents tab renders no cards and no empty-state
+            // panel; the search empty state only appears while filtering by query.
+            let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !query.isEmpty {
+                drawEmptyState(
+                    ctx: ctx,
+                    rect: m.recentsEmptyBox,
+                    icon: .search,
+                    title: "No matching files found",
+                    hint: "\"\(query)\""
+                )
+            }
             return
         }
         if usesGridView {
@@ -1521,7 +1486,8 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             width: 120,
             height: 14,
             font: headerFont,
-            color: Palette.textPrimary
+            color: Palette.textPrimary,
+            tracking: 0.3
         )
         let badgeText = "\(count)"
         let badgeWidth = max(textWidth(badgeText, font: ThemeFonts.mono(size: 10)) + 16, 24)
@@ -1719,7 +1685,7 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
                     rect: m.emptyBox,
                     icon: .draft,
                     title: "No drafts yet",
-                    hint: "Drafts you create will appear here."
+                    hint: "Unsaved canvases will be organized as local drafts here."
                 )
             case .starred:
                 drawEmptyState(
@@ -1897,10 +1863,11 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
 
     private func drawEmptyState(ctx: CGContext, rect: CGRect, icon: EmptyIcon, title: String, hint: String) {
         guard rect.width > 10 && rect.height > 10 else { return }
-        fillRounded(rect, radius: 16, color: Palette.emptyBox)
-        strokeRounded(rect, radius: 16, color: NSColor(white: 1.0, alpha: 0.035), lineWidth: 1)
+        // Web empty state: rounded-3xl (24) bg-neutral-900/20, 28px muted icon.
+        fillRounded(rect, radius: 24, color: Palette.emptyBox)
+        strokeRounded(rect, radius: 24, color: NSColor(white: 1.0, alpha: 0.035), lineWidth: 1)
 
-        let iconRect = CGRect(x: rect.midX - 13, y: rect.midY - 39, width: 26, height: 26)
+        let iconRect = CGRect(x: rect.midX - 14, y: rect.midY - 41, width: 28, height: 28)
         switch icon {
         case .search:
             drawVooIcon(iconRect) { iconRect in VooIconFactory.drawSearch(in: iconRect, color: Palette.textTertiary, strokeWidth: 1.5) }

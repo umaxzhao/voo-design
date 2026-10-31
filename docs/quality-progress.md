@@ -3,7 +3,7 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
-最近一次完整核心验证提交：[bfd7e5b](https://github.com/umaxzhao/voo-design/commit/bfd7e5b65296b270182318f8176fa13dc9499413)。
+最近一次完整核心验证提交：[a94365e](https://github.com/umaxzhao/voo-design/commit/a94365e747563bf40d1b1c9fe52088a779b38675)。
 以下结果属于该提交，不能直接代表后续改动已经验证。
 
 ## 当前概况
@@ -12,9 +12,9 @@
 | --- | --- |
 | 工程规范与模块登记 | 已落地：12 个模块、53 个能力分组 |
 | 核心发布校验 | 85/85 步通过，包含 81 组浏览器套件 |
-| 全量单元测试 | 4471 通过、4 跳过、0 失败；跳过项不算通过 |
+| 全量单元测试 | 4481 通过、4 跳过、0 失败；跳过项不算通过 |
 | GitHub Ubuntu 基础检查 | [已通过](https://github.com/umaxzhao/voo-design/actions/runs/41169601103)：模块登记、设计检查、构建、单测；la 通过本机 SSH 部署 |
-| 线上部署 | bfd7e5b 已部署到 la，资源哈希一致；新增 15 场景、手势回滚、钢笔切换收尾、对齐/蒙版跟随、方向键微调及混合图层选区复查通过 |
+| 线上部署 | a94365e 已部署到 la，资源哈希一致；新增 17 场景、手势回滚、钢笔切换/编辑回滚、对齐/布尔/路径排字、方向键微调及混合图层选区复查通过 |
 | 功能验收完整度 | 部分覆盖；53 个能力分组尚未逐一穷尽所有入口、上下文和设备 |
 | 核心门禁外的独立检查 | 21 组本轮未运行：18 组待复核，3 组需单独运行 |
 
@@ -28,11 +28,11 @@
 
 ## 继续检查：容器命令、手势回滚、选区单位、文字收尾与路径表示（已完成声明范围）
 
-- 新增两组核心浏览器套件，当前登记为 53 个能力分组、81 组浏览器、85 个发布步骤（含远程浏览器抽屉修复）；最终提交 `bfd7e5b` 已完成 85/85，所有通过结论仅属于该固定版本（证据：`/private/tmp/voo-release.json`）。
-- 先后在 `caf386a`（84/84）与变基远程 `origin/main` 后的 `bfd7e5b`（85/85）完成隔离副本全量门禁验证；原工作区未提交的外部改动保留，未混入发布依据。
-- 已复现并修复 14 类问题：多层解组孤儿节点、父子同时分组拆散子树、跨 Frame 分组跳过共同父级、解组蒙版后失效引用、放弃空文字清空重做、未修改文字清空重做、实际文字收尾遗漏提交回调、转换为钢笔路径后的线条/箭头仍进入旧端点分支、钢笔草稿切换工具未提交且残留预览、`< 4px` 形状/箭头点击误写删除历史并清空重做与原选区、`resize`/`rotate`/`cornerRadius`/`endpoint` 变换手柄 `Escape`/取消不回滚且零位移误提交、对齐选中 Frame+子图层双倍位移且遗漏剪切蒙版跟随层、方向键微调 Auto Layout 编组回弹与钢笔锚点越界未扩框、图层面板点击布尔层失效及图层面板复制编组丢失编组选区单位。
+- 新增两组核心浏览器套件，当前登记为 53 个能力分组、81 组浏览器、85 个发布步骤（含远程浏览器抽屉修复）；最终提交 `a94365e` 已完成 85/85，所有通过结论仅属于该固定版本（证据：`/private/tmp/voo-release-round2.json`）。
+- 先后在 `caf386a`（84/84）、`bfd7e5b`（85/85）与本批 `a94365e`（85/85）完成隔离副本全量门禁验证；原工作区未提交的外部改动保留，未混入发布依据。
+- 已复现并修复 22 类问题：多层解组孤儿节点、父子同时分组拆散子树、跨 Frame 分组跳过共同父级、解组蒙版后失效引用、放弃空文字清空重做、未修改文字清空重做、实际文字收尾遗漏提交回调、转换为钢笔路径后的线条/箭头仍进入旧端点分支、钢笔草稿切换工具未提交且残留预览、`< 4px` 形状/箭头点击误写删除历史并清空重做与原选区、`resize`/`rotate`/`cornerRadius`/`endpoint` 变换手柄 `Escape`/取消不回滚且零位移误提交、对齐选中 Frame+子图层双倍位移且遗漏剪切蒙版跟随层、方向键微调 Auto Layout 编组回弹与钢笔锚点越界未扩框、图层面板点击布尔层失效及图层面板复制编组丢失编组选区单位、缩放后的钢笔路径在锚点越界扩框/复制/展开轮廓时缩回 `baseWidth`、钢笔编辑零位移点击锚点/弯曲段误写历史且中途 `Escape` 直接退出编辑会话、旋转/翻转路径下钢笔弯曲与剪刀子工具坐标未逆变换且开放路径剪断未重算边界与图层顺序、布尔组合与破坏性布尔丢失共享父容器及遗留失效 `clipTo`/空编组、路径排字 `typeOnSelectedPath`/`attachTextToPath` 丢失 `parentId` 且调用不存在的 `selection.setIds`、空普通编组无法通过 `Backspace`/剪切删除或 `Escape` 取消选中、多边形套索取消未恢复被替换的像素选区且闭合未应用羽化、`region`/`pixelMarquee`/`selectionMove`/`gradient*`/形变控制点取消未回滚。
 - 门禁过程还捕获并修复了 `titlebar-file-actions.e2e.mjs` 在已有后台编辑器实例时未等待首页遮罩（`welcomeOpen`）关闭即读取文件名的竞态。
-- 定向浏览器扩展至 15 个场景（`container-command-boundaries` 7 项、`text-creation-boundaries` 8 项），覆盖键盘命令、对齐/蒙版跟随、Auto Layout 方向键微调、图层面板布尔点击与编组复制、钢笔切换工具收尾、`< 4px` 形状点击与 `Escape` 缩放回滚及完整撤销重做。
+- 定向浏览器扩展至 17 个场景（`container-command-boundaries` 8 项、`text-creation-boundaries` 9 项），覆盖键盘命令、对齐/蒙版跟随、Auto Layout 方向键微调、图层面板布尔点击与编组复制、缩放钢笔复制与路径排字及空编组删除、钢笔切换工具收尾、钢笔锚点零位移与中途 `Escape` 回滚、`< 4px` 形状点击与 `Escape` 缩放回滚及完整撤销重做。
 - [容器边界范围](audits/nested-objects-audit.md#container-command-boundaries)、[文字收尾范围](audits/continuous-creation-audit.md#text-placement-and-close-boundaries)记录复现、断言和剩余上下文；临时编辑恢复、取消时保留外部新增节点也已加入纯回归。
 
 ## 各模块进度
@@ -97,7 +97,7 @@
 每轮更新：先更新受影响模块的状态和剩余项，再填入准确提交、运行环境和原始报告位置。
 修复关闭前补上回归用例；只有实际完成并有证据的项才能勾选。
 
-最近完整报告：`/private/tmp/voo-release.json`（bfd7e5b，85/85，隔离源码前后均干净）；历史基线报告为 `/private/tmp/voo-deeper-release.json`（ebab451，85/85）。
+最近完整报告：`/private/tmp/voo-release-round2.json`（a94365e，85/85，隔离源码前后均干净）；上一批报告为 `/private/tmp/voo-release.json`（bfd7e5b，85/85），历史基线报告为 `/private/tmp/voo-deeper-release.json`（ebab451，85/85）。
 线上资源证据：`/private/tmp/voo-deeper-deployment-proof.json`；新场景结果：
 `/private/tmp/voo-deeper-production/`；笔触与路径额外结果：`/private/tmp/voo-deeper-production-{brush,vector}.log`。
 执行条件：`/private/tmp/voo-deeper-execution-context.json`，单测使用
@@ -128,3 +128,24 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - 未覆盖：所有第三方网页与登录态、全部网页提取组合、触摸调整宽度、其他桌面操作系统与签名安装包。
 
 - 发布检查曾发现网页导入解析器提前加载字体与变量模块；已改为实际导入时才加载，并由原有 `editor-loading` 回归保留验证。
+
+## Onboarding: connected Harness hides duplicate model setup — 2026-10-31
+
+- Harness 的 VOO 插件认证成功后，Agent 设置中的本地模型桥接卡片自动隐藏；连接尚未完成时保留入口。
+- `tests/unit/first_run_agent_grid.test.jsx` 覆盖已连接、检测中和插件未连接状态；配合 `tests/unit/first_run_onboarding.test.jsx`，定向 58 项通过。
+
+## 原生 macOS 应用样式与形态整体对齐 — 2026-10-31
+
+范围：`native_studio`（Swift 6 + AppKit 自绘 UI）对照 Web/Electron 当前源码逐模块复核样式与形态。差异以 `src/canvas/components/*` 的 Tailwind 类为准；`.agents/teamwork/lead_refs/*.png` 为 10-23 的旧截图，与源码冲突时不作为依据。
+
+- **工具轨 `editor_toolbar.jsx`**：按钮 36→44（`h-11 w-11`），药丸 512×48→589×56（`p-1.5` + 11 项 + 分隔 + 44pt VOO 头像），顶部 16→14；图标改为 Lucide（hand/crop/squaredashed/brush/pentool/type/eraser/square/scan/wand2），家族箭头修正到按钮右下（`NSButton` 为 flipped，旧代码画到了顶部）。
+- **面板 `editor_layers.jsx` / `editor_properties/index.jsx`**：PROPERTIES 宽 256→**288**（`md:w-72`，此前误按 `w-64`）；LAYERS 256×244，行高 32、行距 4、层级缩进 8+depth×14、类型图标 13；底部工具条与 Web 一致（28×28、13pt、`h-7 w-7`，顺序 mask/adjustment/add + 右侧删除），并新增可折叠 chevron（`collapsedIds`，含选中项祖先自动展开）。
+- **属性面板结构**：删除自造的 `Solid|Linear|Radial` 整行分段控件，改为 Web 的「漆类型菜单」（24×24 触发器 + 菜单）；368pt 折叠线内现在显示 COLOR + SHAPE + TRANSFORM 标题；底部留 12pt 内边距 + 矩形裁剪，修复内容溢出圆角/卡片的问题；滚动条隐藏（Web `no-scrollbar`）。
+- **画布 `editor_page*` / chrome**：舞台底色 `#47474d`→`#1c1c1c`；编辑壳边框 1px/85%→**2px `#b2ffd6`**；画板填充取 `document.canvas.backgroundColor`（`#171717`）；画板描边改由舞台绘制 1px 米白选中环（原 2px 模型描边）；画板标签 11pt mono、上移 20pt、12pt 网格图标；尺寸胶囊仅在拖拽/创建时出现；`clipContent` 与 `clipTo` 生效；容器不透明度继承；文本行盒改 CSS 精确（`lineHeight` 倍数）；标尺底色/刻度/竖排标签对齐 Web；网格按钮误绑标尺的缺陷修复；新增 `editingTextNodeId` 消除内联编辑双绘；新增 `onViewportChanged` 供 Island Bar 跟随平移。
+- **选择手柄 `TransformHandlesView`**：1px `#b2ffd6` 环（原黑色）+ 去掉阴影；选择框与手柄中心做半像素对齐（「手柄歪」根因）；旋转销改白底 + 米白环。
+- **底部 chrome**：缩放条贴底 16→**12**；Island Bar 不再固定在缩放条上方，改为按 Web `use_contextual_taskbar_rect.js` 锚定选区最外层 Frame（下 +6，越界翻上，视口内缩 8）；旧版内嵌 contextual pill 退休，避免与新 Island Bar 重叠。
+- **工作台/设置/Agent**：清除设置页泄露的 i18n 原始键（`collab.guestBadge` / `COLLAB.NAMEFIELD`）→ “Local guest profile / Display name”；删除工作台注入的两张演示卡片、底部「返回当前画布」入口与 `[Custom]` 徽章，Recents 空态与 Web 一致（仅标题 + 计数 0）；新增设置 CANVAS→“Show rulers” 开关（`voo.editor.showRulers`，与 ⇧R、缩放条、启动读取同步）；Agent 面板底色 `#0C0C0C`→`#000000`、圆角 16→24，顶部与编辑壳齐平。
+- **默认文档**：新建文档保持 Web 的 `Design 1` 1200×800 @58%；打开磁盘上已不存在的工程时改为新建空白文档并提示，不再加载演示样机。
+- 验证：`./build.sh` 通过（二进制 4.56 MB ≤ 5 MB，包 6.07 MB ≤ 35 MB，冷启动 ~0.15s）；`./tests/run_tests.sh` **377/377 通过**（已同步更新工具轨 589×56/44pt、面板 288/244/356、头像 44、工作台真实文件等断言）。
+- 证据截图：`native_studio/docs/screenshots/v4_selected.png`、`v3_editor.png`、`v3_dashboard.png`、`v2_settings.png`、`v2_agent.png`。
+- 未覆盖/仍不同：原生工具集与 Web 不同（无 crop/fill/healing，Web 的 fill 与 healing 未实现），故工具轨宽度按原生 11 项计算；字体用 SF Mono 而非 Intel One Mono，字宽略有差异；未在实体设备上验证触控板手势与硬件 FPS。

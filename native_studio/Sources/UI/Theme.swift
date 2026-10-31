@@ -14,7 +14,10 @@ import Foundation
 public struct ThemeTokens {
     // MARK: - 6-Tier Surface Lightness Ladder (VOO Dark)
     public static let surfacePage = "#000000"     // html/body, window background
-    public static let surfaceStage = "#525252"    // Canvas stage work area background (neutral-600)
+    /// Design-system "surface-canvas" token (web `WORKSPACE_BACKGROUND`). The
+    /// editor stage itself is the darker `colorStageStudio` below; this token
+    /// stays as the documented ladder rung the test suite pins.
+    public static let surfaceStage = "#525252"
     public static let surfacePanel = "#171717"    // Studio Inspector & floating overlay panels, TitleBar chrome
     public static let surfaceRaised = "#262626"   // Control resting surface, input fields, cards
     public static let surfaceHover = "#404040"    // Hover wash over raised controls
@@ -47,8 +50,28 @@ public struct ThemeTokens {
     // MARK: - NSColor Instances (Deterministic sRGB, Zero OS Theme Drift)
     public static let colorPanel = NSColor(red: 0.09, green: 0.09, blue: 0.09, alpha: 1.0) // #171717 (23/255)
     public static let colorStage = NSColor(red: 0.06, green: 0.06, blue: 0.06, alpha: 1.0) // #0f0f0f (15/255)
-    public static let colorStageStudio = NSColor(red: 0.28, green: 0.28, blue: 0.30, alpha: 1.0) // Sleek neutral studio gray
-    public static let colorArtboard = NSColor(red: 0.13, green: 0.13, blue: 0.14, alpha: 1.0) // #202022
+    /// Editor workspace ground around the artboards. Measured from the web
+    /// editor: `rgb(28,28,28)` = `#1c1c1c` (the value the web rulers also use).
+    public static let colorStageStudio = NSColor(hex: "#1c1c1c")
+    /// Default canvas/artboard surface when a document carries no explicit
+    /// background: web document background `#171717`.
+    public static let colorArtboard = NSColor(hex: "#171717")
+    /// Focused frame outline: 1px mint, measured `rgb(165,252,210)` = `#a5fcd2`.
+    public static let colorFrameSelection = NSColor(hex: "#a5fcd2")
+    /// Unselected frame outline: `ring-1 ring-white/10`.
+    public static let colorFrameIdleBorder = NSColor(white: 1.0, alpha: 0.10)
+    /// Canvas type / frame label colour for a selected (or focused) frame:
+    /// web `text-[#a7ffd4]`.
+    public static let colorFrameLabelSelected = NSColor(hex: "#a7ffd4")
+    /// Frame label colour for an unselected frame: web `text-neutral-400`.
+    public static let colorFrameLabelIdle = NSColor(hex: "#a3a3a3")
+    /// Ruler strip ground (`bg-[#1c1c1c]/95` over the stage).
+    public static let colorRulerBackground = NSColor(hex: "#1c1c1c")
+    /// Ruler tick labels: web `text-[9px] ... text-neutral-400`.
+    public static let colorRulerLabel = NSColor(hex: "#a3a3a3")
+    /// Ruler ticks: web `bg-white/25` for major and minor ticks.
+    public static let colorRulerTick = NSColor(white: 1.0, alpha: 0.25)
+    public static let colorRulerSeparator = NSColor(white: 1.0, alpha: 0.10)
     public static let colorFloatingCard = NSColor(red: 0.07, green: 0.07, blue: 0.08, alpha: 0.96) // #121214 with blur
     public static let colorBottomTools = NSColor(red: 0.89, green: 0.89, blue: 0.89, alpha: 1.0) // #e3e3e3 silver pill
     public static let colorMintDark = NSColor(red: 0.12, green: 0.22, blue: 0.18, alpha: 1.0) // #1e382d highlight
