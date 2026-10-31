@@ -160,7 +160,10 @@ Agents can read these directly (e.g. `resources/read`) to inspect the document w
 ## Read-only live preview
 
 After generation, `capture_canvas` returns the PNG plus a `previewUrl` and MCP
-`resource_link`. `voo_status` also returns this link. Open it in a browser or a
+`resource_link` when both the host and renderer support document binding.
+`voo_status` also returns this link. Legacy renderers keep their tools without
+an unbound preview link; pre-June-2025 MCP clients receive PNG and URL text
+without unsupported resource-link content. Open it in a browser or a
 host's supported side pane; it displays the original connected canvas, with
 pan/zoom and live screenshots every 1.5 seconds while visible. It neither opens
 an editor nor registers another writable tool target. Local services and the

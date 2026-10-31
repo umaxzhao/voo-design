@@ -136,6 +136,17 @@ describe("MCP stdio", () => {
       expect(result.content).toContainEqual(expect.objectContaining({ type: "resource_link", uri: previewUrl }));
     } finally { await s.close(); }
   });
+  it("retains PNG and preview URL text for legacy MCP clients without unsupported resource-link content", async () => {
+    const previewUrl = `http://127.0.0.1:4179/preview/${"b".repeat(48)}`;
+    const s = stdio(async () => ({ dataUrl: "data:image/png;base64,YWJj", previewUrl }));
+    try {
+      await s.request("initialize", { protocolVersion: "2025-03-26" });
+      const result = (await s.request("tools/call", { name: "capture_canvas" })).result;
+      expect(result.content.some(item => item.type === "resource_link")).toBe(false);
+      expect(result.content.some(item => item.type === "image")).toBe(true);
+      expect(result.content[0].text).toContain(previewUrl);
+    } finally { await s.close(); }
+  });
   it("lists and reads canvas resources with binary blobs and error handling", async () => {
     const s = stdio(async (name) => {
       if (name === "inspect_layer_tree") return { root: "doc", children: [{ id: "layer1" }] };

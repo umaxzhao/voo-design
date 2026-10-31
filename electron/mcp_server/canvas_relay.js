@@ -34,9 +34,17 @@ export function registerMcpRelayChannels(ipcMain, { getPreviewBaseUrl } = {}) {
     if (canvas === sender) updateContext(value);
     return { ok: canvas === sender };
   });
-  const getStatus = () => ({ canvasConnected: !!canvas, ...(context ? JSON.parse(context) : {}), ...(previewSession ? { previewSession } : {}),
-    ...(previewSession && getPreviewBaseUrl ? { previewUrl: `${getPreviewBaseUrl()}/preview/${previewSession}` } : {}),
-  });
+  const getStatus = () => {
+    const metadata = context ? JSON.parse(context) : {};
+    // Legacy renderers cannot revoke a link on document switch. Keep their
+    // ordinary MCP tools usable, but never advertise an unbound preview.
+    const canPreview = typeof metadata.documentId === "string" && metadata.documentId.length > 0;
+    return { canvasConnected: !!canvas, ...metadata,
+      ...(previewSession && canPreview ? { previewSession,
+        ...(getPreviewBaseUrl ? { previewUrl: `${getPreviewBaseUrl()}/preview/${previewSession}` } : {}),
+      } : {}),
+    };
+  };
   ipcMain.handle(C.MCP_STATUS, getStatus);
   ipcMain.handle(C.MCP_TOOL_RESULT, ({ sender }, result = {}) => {
     const call = pending.get(result.id);
@@ -70,7 +78,7 @@ export function registerMcpRelayChannels(ipcMain, { getPreviewBaseUrl } = {}) {
   return {
     getStatus,
     async capturePreview(session) {
-      if (!canvas || !session || session !== previewSession) throw new Error("preview.expired");
+      if (!canvas || !session || session !== getStatus().previewSession) throw new Error("preview.expired");
       // Read-only capture cannot register or mutate a canvas. Share in-flight
       // work between viewers, and reject a document switch during rendering.
       const current = canvas;
