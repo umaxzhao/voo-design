@@ -111,7 +111,7 @@ export function croppedImageSource(image, node, bitmap) {
 
 export function drawImageCrop(ctx, image, node, bitmap) {
   if (!node.crop) {
-    if (["fill", "fit", "tile"].includes(node.imageScaleMode)) drawImagePaint(ctx, image, node, bitmap);
+    if (node.imageTransform || ["fill", "fit", "tile"].includes(node.imageScaleMode)) drawImagePaint(ctx, image, node, bitmap);
     else ctx.drawImage(image, node.x, node.y, node.width, node.height);
     return;
   }

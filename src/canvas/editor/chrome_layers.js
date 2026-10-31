@@ -16,12 +16,12 @@ import { withFrameClips } from "./render-frame-clips.js";
 import { paintedNodeBounds } from "./painted-node-bounds.js";
 import { containerPaintNode, containerMaskNode, createContainerOpacityPlan } from "./container-opacity.js";
 import { drawIsolatedAdjustment } from "./render-isolated-adjustment.js";
+import { cachedClippingChain, rememberClippingChain, clippingResources, sameClippingResources } from "./clipping-chain-cache.js";
 
 // One latest result per immutable document prevents the 90ms selection timer
 // from rebuilding document-sized effect planes. Weak document keys release a
 // discarded undo/redo snapshot without manual lifecycle work.
 const adjustmentLayerCache = new WeakMap();
-const clippingChainCache = new WeakMap();
 // Adjustment failures remain visible to the engine/UI without breaking the
 // frame. Weak document keys prevent discarded undo snapshots from leaking.
 const adjustmentLayerFailures = new WeakMap();
@@ -80,18 +80,20 @@ export function drawClippingChain(
     frameClips = createFrameClipContext(doc.nodes),
     paintNodes = doc.nodes,
     isolatedContainers = new Set(),
+    opacityPlan = createContainerOpacityPlan(doc.nodes),
+    allowedNodeIds = new Set(paintNodes.map(node => node.id)),
+    paintScopeKey = paintNodes === doc.nodes ? "all" : JSON.stringify(paintNodes.map(node => node.id)),
   },
 ) {
-  const rawBase = doc.nodes.find((candidate) => candidate.id === baseId);
-  const base = rawBase ? containerMaskNode(rawBase, isolatedContainers, createContainerOpacityPlan(doc.nodes)) : null;
+  const rawBase = opacityPlan.nodeOf(baseId);
+  const base = rawBase ? containerMaskNode(rawBase, isolatedContainers, opacityPlan) : null;
   if (!base || base.visible === false || isHiddenByGroup(doc, base)) return;
 
   const chain = [];
-  const allowed = new Set(paintNodes.map((node) => node.id));
   for (let j = startIndex; j < doc.nodes.length; j += 1) {
     const original = doc.nodes[j];
     if (original.clipTo !== baseId) break;
-    if (!allowed.has(original.id)) continue;
+    if (!allowedNodeIds.has(original.id)) continue;
     const member = containerPaintNode(original, isolatedContainers);
     if (member.id === hiddenNodeId || member.visible === false) continue;
     if (
@@ -104,10 +106,10 @@ export function drawClippingChain(
   }
   if (chain.length === 0) return;
 
-  const cacheKey = `${docVersion}|${startIndex}|${baseId}|${JSON.stringify([...isolatedContainers])}|${doc.width}x${doc.height}|${canvasWidth}x${canvasHeight}|${fullResolution ? 1 : 0}`;
-  let chains = clippingChainCache.get(doc);
-  const cached = chains?.get(cacheKey);
-  if (cached) {
+  const cacheKey = `${docVersion}|${startIndex}|${baseId}|${hiddenNodeId ?? ""}|${paintScopeKey}|${JSON.stringify([...isolatedContainers])}|${doc.width}x${doc.height}|${canvasWidth}x${canvasHeight}|${fullResolution ? 1 : 0}`;
+  const cached = cachedClippingChain(doc, cacheKey);
+  const resources = clippingResources([base, ...chain], bitmapOf, maskOf);
+  if (cached && sameClippingResources(resources, cached.resources)) {
     ctx.drawImage(cached.canvas, cached.x, cached.y);
     return;
   }
@@ -172,12 +174,7 @@ export function drawClippingChain(
   ctx.save();
   ctx.drawImage(offCanvas, originX, originY);
   ctx.restore();
-  if (!chains) {
-    chains = new Map();
-    clippingChainCache.set(doc, chains);
-  }
-  chains.clear();
-  chains.set(cacheKey, { canvas: offCanvas, x: originX, y: originY });
+  if (resources) rememberClippingChain(doc, cacheKey, { canvas: offCanvas, x: originX, y: originY, resources });
 }
 
 /**

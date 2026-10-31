@@ -9,7 +9,7 @@
 ## 本轮：分享与页面外浮层遮挡（验证中）
 
 - `inspector.global-overlay-stacking`：真实分享框左侧命中 `editor-pages`，证据 `/private/tmp/voo-license-regression/global-overlay-before.log`。顶栏统一高于编辑器；分享移至 body 的锚定浮层，窄屏限制位置/滚动高度；快捷键、图标、SVG 与懒加载占位共用全局 Portal，既有设置/导出/命令面板等路径已审查。[逐类验收](audits/nested-objects-audit.md#global-overlay-stacking)。
-- `ui-global-interaction` 检查桌面 1600/1280/900px 分享、320px 嵌套分享、跨弹窗点击/关闭/焦点/选区与文档不变，及三个真实弹窗在变换/裁切宿主下的 9 点命中；设计/模块/格式与 20 项相关单测通过。证据 `global-overlay-after-final.log`、`global-overlay-unit-final.log` 同目录。登记 67 能力、86 浏览器；本地补丁保留其他草稿，备份 `global-overlay-primary-backup/`。首次完整门禁 `439c9d9` 中顶栏旧 Hook 模拟缺少 `useId`，4 项失败（`global-overlay-release.json`）；补齐模拟后重新完整执行，不以单项补跑替代。后续 `3ebb891` 单测 4601 通过/4 跳过，默认并发的导入就绪超时（`global-overlay-release-final.json`），未改断言独立复查通过（`global-overlay-import-recheck.log`）；发布调度新增 1–3 显式选项，默认仍 3、记录实际并发，准备重新完整执行。最终结果待补录。
+- `ui-global-interaction` 检查桌面 1600/1280/900px 分享、320px 嵌套分享、跨弹窗点击/关闭/焦点/选区与文档不变，及三个真实弹窗在变换/裁切宿主下的 9 点命中；设计/模块/格式与 20 项相关单测通过。证据 `global-overlay-after-final.log`、`global-overlay-unit-final.log` 同目录。登记 69 能力、87 浏览器；本地补丁保留其他草稿，备份 `global-overlay-primary-backup/`。首次完整门禁 `439c9d9` 中顶栏旧 Hook 模拟缺少 `useId`，4 项失败（`global-overlay-release.json`）；补齐模拟后重新完整执行，不以单项补跑替代。后续 `3ebb891` 单测 4601 通过/4 跳过，默认并发的导入就绪超时（`global-overlay-release-final.json`），未改断言独立复查通过（`global-overlay-import-recheck.log`）；发布调度新增 1–3 显式选项，默认仍 3、记录实际并发，准备重新完整执行。最终结果待补录。
 
 ## 本轮：文字排版可读性与 Lucide 图标（已完成声明范围）
 
@@ -80,14 +80,14 @@
 - 额外发现待修：正式网站冷加载只有顶栏、首页尚未挂载时，点击 New 可能先于事件监听器而未创建文档。两次等待引擎超时；等待首页输入框就绪后，同一构建正常创建并通过填充实测。原始证据 `/private/tmp/voo-unified-fill-production-startup-attempt.log`、`/private/tmp/voo-unified-fill-production-startup-second-attempt.log`。这是未收口的启动上下文，不算作填充门禁证明已修复。
 - 功能覆盖仍有明确边界：实体设备、所有图片编解码/超大图片内存、克隆 ID 跨文档取消、穷尽多图片资源替换及原生 App 冷重启没有由本轮认证；不覆盖真实 `.fig` 导入审计已报告的缺陷。[详细验收](audits/panel-control-audit.md#unified-fill-editor)。
 
-## 本轮：桌面 test.fig 导入性能与还原检查
+## 本轮：桌面 test.fig 导入整改（验证中）
 
-- 固定应用基线 `9c5a063`，只读使用 241.86 MiB 实际文件：29,235 原始记录、478 图片资源，导入 56,431 层。未改应用代码，未上传原稿或商业截图，未重新部署。
-- `documents.import-export` / `vectors.format-losses` / layout / text / compositing：**存在明确失败，不能认定所有属性正确还原**。已匹配原始节点中，1,286 自动布局、13,209 非默认约束、197 锁定状态、985 实例关系、223 图片变换等未保留；4 个变量集合及5个变量误变成矩形；裁切、圆角、描边、富文本和多重阴影也有差异。
-- 已映射文字内容/字号、隐藏和透明度专项正确；无重复 ID、悬空父级/裁切引用。源图片哈希全部一致，浏览器实测入库 478 资源。仅证明这些已检查范围，不等同全图保真。
-- 生产构建软件 GPU 两轮加载结束为 16.96 / 23.42 秒；M4 Pro Metal 为 30.93 秒，真滚轮后等待两帧为 0.783–4.809 秒。硬件全景相机仍明显卡顿；CPU 采样集中于蒙版合成和祖先裁切。Metal 轮在后续细节截图时目标异常关闭，原因未明，不能标记整轮通过。
-- 既有 Figma 单测 17 文件 / 135 断言通过，但未覆盖这些真实大文件问题。原生 Electron、逐字体、全分辨率逐画板、保存重开及编辑撤销仍未验收；`native_studio` 排除。
-- [逐属性、性能与边界](audits/figma-import-audit.md)。完整私有报告、截图、原始日志及哈希保存在本地 `figma-import-audit/` 制品目录；当前模块状态为失败/部分，历史发布门禁通过不覆盖本样本的未测属性。
+- 延续只读 241.86 MiB 实际文件测试；本轮补齐原生锁定、约束、自动布局、独立圆角、描边参数、溢出裁切、父级仿射变换及有效图片裁切。4 集合 / 5 变量保留模式值，移除 9 个误生矩形；56,422 层无重复 ID / 悬空父级，478 图片哈希一致。未上传原稿或商业截图。
+- 新增 `vectors.native-fig-properties` / `compositing.mask-cache` 及真实文件选择器像素回归，专项通过裁切/填充/旋转/溢出/两组蒙版、约束重排、撤销重做、二进制保存冷重开；复用不可变绘制文档和多蒙版缓存，处理图片异步解码失效。
+- 两次同脚本 Metal 生产测量：加载 21.19 → 19.20 秒，六次真实滚轮中位 623.5 → 276 毫秒；平移/缩放回调约 2.02/0.69 → 4.31/1.62 次每秒。共享机器单轮样本，前测导入与属性分析重叠；仍有明显停顿，**大文档性能未通过**。
+- 先前完整单测受沙箱监听限制及文件监听/性能断言影响，41 失败未记作通过；最终固定提交的发布门禁与生产证据待补。当前 12 模块 / 68 能力 / 87 浏览器套件；登记不等于全面验收。
+- 富文本、多重阴影、活动组件关系、变量绑定、所有字体/画板、非均匀文字缩放及签名 Electron 尚未完整还原或验收；圆角平滑仅保存元数据，子层 grow/stretch 待补。`native_studio` 排除。
+- [逐属性、性能与边界](audits/figma-import-audit.md#native-property-and-compositor-remediation--2026-10-31)。私有原始证据保存在本地 `voo-fig-opt-*` 目录；历史审计保留，未声称全部属性正确还原。
 
 ## 本轮：Impeccable 整改与右键菜单（已发布）
 
@@ -319,13 +319,7 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 
 ## Impeccable 界面审查 — 2026-10-31
 
-- [完整报告与证据](audits/impeccable-review.md)：layout、typeset、distill、polish、critique；按用户要求排除 `native_studio`。
-- 审查源码 `23d961ca7bc6a526447e821488290f76bd295693`；归档前 `6c91f83` 仅有后续文档变化。两份独立评估，主观评分25/40，不是功能覆盖率。
-- 静态扫描302个界面文件、10组范围、0提示；独立浏览器实际取证发现跨状态焦点、受限画布遮挡、窄鼠标窗口导航、空Slot和说明文字可读性问题。
-- P1：欢迎覆盖层后的隐藏编辑器仍可聚焦；900px窗口打开Agent后图层/属性面板重叠64px。均仅登记，尚未修复。
-- 保留黑色面板、薄荷绿/紫色品牌、11–12px专业数值密度；不机械删除已确认的绿紫发光边框。
-- 本轮实际查看代表页面与中英文字面；未验收真实触摸、Electron壳、真实账户/支付/模型和完整导入导出。服务与标签已清理。
-- 关键截图与焦点记录保存在 `docs/audits/impeccable-evidence/`；其他原始证据位于 `/tmp/voo-impeccable-a/`、`/tmp/voo-impeccable-b/`。本轮没有UI实现改动。
+- [完整报告与证据](audits/impeccable-review.md)：layout、typeset、distill、polish、critique；按用户要求排除 `native_studio`。 审查源码 `23d961ca7bc6a526447e821488290f76bd295693`；归档前 `6c91f83` 仅有后续文档变化。两份独立评估，主观评分25/40，不是功能覆盖率。 静态扫描302个界面文件、10组范围、0提示；独立浏览器实际取证发现跨状态焦点、受限画布遮挡、窄鼠标窗口导航、空Slot和说明文字可读性问题。 P1：欢迎覆盖层后的隐藏编辑器仍可聚焦；900px窗口打开Agent后图层/属性面板重叠64px。均仅登记，尚未修复。 保留黑色面板、薄荷绿/紫色品牌、11–12px专业数值密度；不机械删除已确认的绿紫发光边框。 本轮实际查看代表页面与中英文字面；未验收真实触摸、Electron壳、真实账户/支付/模型和完整导入导出。服务与标签已清理。 关键截图与焦点记录保存在 `docs/audits/impeccable-evidence/`；其他原始证据位于 `/tmp/voo-impeccable-a/`、`/tmp/voo-impeccable-b/`。本轮没有UI实现改动。
 
 ## GitHub introduction and four editable examples — 2026-10-31
 
@@ -369,18 +363,11 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 
 ## Impeccable 五项整改 — 2026-10-31
 
-- 用户“继续”后实施两项P1和三项P2：隐藏编辑器焦点隔离、按实际画布宽度适配面板、窄鼠标欢迎导航收纳、空Slot按需展示、说明文字排版/对比度。
-- 新增 `inspector.impeccable-polish` 及真实交互回归；合并其他Agent的文字尺寸能力后，登记共57能力、84核心浏览器套件。
-- 定向场景和既有响应式交互通过；不将临时非Git、未构建目录的全测失败当成产品结果或最终发布证据。
-- 最终执行证据：`/tmp/voo-impeccable-polish-release.json`，核对 `revision` 与 `complete`。原25/40为历史审查分，未声称复评提高。
-- [整改边界和前后截图](audits/impeccable-review.md#remediation--2026-10-31)。本轮仍按要求排除 `native_studio`；实际账户、付费服务、实体设备与签名安装包不计为已验证。
+- 用户“继续”后实施两项P1和三项P2：隐藏编辑器焦点隔离、按实际画布宽度适配面板、窄鼠标欢迎导航收纳、空Slot按需展示、说明文字排版/对比度。 新增 `inspector.impeccable-polish` 及真实交互回归；合并其他Agent的文字尺寸能力后，登记共57能力、84核心浏览器套件。 定向场景和既有响应式交互通过；不将临时非Git、未构建目录的全测失败当成产品结果或最终发布证据。 最终执行证据：`/tmp/voo-impeccable-polish-release.json`，核对 `revision` 与 `complete`。原25/40为历史审查分，未声称复评提高。 [整改边界和前后截图](audits/impeccable-review.md#remediation--2026-10-31)。本轮仍按要求排除 `native_studio`；实际账户、付费服务、实体设备与签名安装包不计为已验证。
 
 ## Context menu simplification — 2026-10-31
 
-- Inspector: retained common edits in the root; seven related action families use one secondary level. Preserved domain commands and shortcuts.
-- Added `inspector.context-submenus`; inventory now has 62 capability groups and 85 core browser suites. Real pointer/keyboard, edge/overlay placement, style copy, clipping pixels and undo are registered regressions.
-- Targeted checks passed. Final execution, exact revision and deployment must match `/tmp/voo-impeccable-polish-release.json`; coverage remains partial.
-- Scope excludes `native_studio`, real accounts, paid services and signed installers. See [remediation](audits/impeccable-review.md#context-menu-simplification--2026-10-31).
+- Inspector: retained common edits in the root; seven related action families use one secondary level. Preserved domain commands and shortcuts. Added `inspector.context-submenus`; inventory now has 62 capability groups and 85 core browser suites. Real pointer/keyboard, edge/overlay placement, style copy, clipping pixels and undo are registered regressions. Targeted checks passed. Final execution, exact revision and deployment must match `/tmp/voo-impeccable-polish-release.json`; coverage remains partial. Scope excludes `native_studio`, real accounts, paid services and signed installers. See [remediation](audits/impeccable-review.md#context-menu-simplification--2026-10-31).
 
 ## 工作台设置专项的历史阻断记录（本轮已整合收口）
 

@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { memo, useCallback, useMemo, useState } from "react";
 import { IconArrowUp, IconClose } from "../icons.jsx";
+import { useI18n } from "../use_i18n.js";
 import { useDesignStore } from "../../store/design_store.js";
 
 /**
@@ -92,6 +93,7 @@ function EditorContextualAiInput({
 }) {
   const [prompt, setPrompt] = useState("");
 
+  const { t } = useI18n();
   const context = useMemo(
     () => extractNodeContext(selectedNode),
     [selectedNode]
@@ -180,7 +182,7 @@ function EditorContextualAiInput({
       <button
         type="submit"
         data-testid={submitTestId}
-        aria-label="Send to AI Agent"
+        aria-label={t("contextualAi.send") || "Send to AI Agent"}
         disabled={!canSubmit}
         className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#E5B2FF] text-black hover:bg-[#eed0ff] disabled:opacity-30 disabled:hover:bg-[#E5B2FF] transition-colors"
       >
@@ -191,7 +193,7 @@ function EditorContextualAiInput({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close AI input"
+          aria-label={t("common.close") || "Close AI input"}
           className="flex size-5 shrink-0 items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
         >
           <IconClose size={11} />
