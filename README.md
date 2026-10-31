@@ -5,8 +5,8 @@
 <h1 align="center">VOO Design</h1>
 
 <p align="center">
-  <strong>Your ideas. One shared canvas.</strong><br />
-  <sub>Design with an agent. Refine every layer. An open-source editor for vector, image and layout design on desktop and web.</sub>
+  <strong>An AI agent-driven design editor.</strong><br />
+  <sub>A standalone design app. A canvas for Claude Code and Codex plugins through MCP.</sub>
 </p>
 
 <p align="center">
@@ -25,12 +25,61 @@
   <a href="docs/mcp-server.md">Connect your agent</a>
 </p>
 
-**VOO Design** brings hands-on editing and AI agents into the same document. Start with a blank canvas, an imported file or a prompt. Your agent can read the layer tree, build layouts and edit the canvas through undoable operations; you can select and refine the resulting text, shapes and images directly.
+**VOO Design is an AI agent-driven design editor — use it as an independent app, or connect it to Claude Code and Codex through a plugin/MCP connector.** Both workflows operate on the same editable canvas.
+
+| Use VOO on its own | Use VOO from your agent |
+| --- | --- |
+| Open the desktop app or web editor. Create and refine vector paths, text, images and layouts directly, with an optional in-app Agent. | Load the Claude Code plugin or register the VOO MCP connector in Codex. Your agent can inspect layers, create designs, edit text and styles, and capture the canvas through real editor operations. |
+
+The editor stays open as the canvas host. MCP connects your agent to that live document, so agent edits and direct editing share the same layers and undo history.
+
+### Connect Claude Code or Codex
+
+Build the portable connector into a new folder:
+
+```bash
+export VOO_PLUGIN_DIR=/absolute/new/voo-plugin
+node scripts/build-agent-plugin.mjs "$VOO_PLUGIN_DIR"
+```
+
+Load it as a **Claude Code plugin**:
+
+```bash
+claude --plugin-dir "$VOO_PLUGIN_DIR"
+```
+
+Or connect **Codex through MCP**:
+
+```bash
+codex mcp add voo -- node "$VOO_PLUGIN_DIR/scripts/mcp-server.mjs"
+```
+
+Keep VOO open. For the web editor, also run `npm run bridge`. Then ask your agent to inspect the canvas or create a design. See the [plugin guide](plugins/voo/README.md) and [MCP setup](docs/mcp-server.md) for requirements and connection details.
 
 - **One canvas for different kinds of work.** Compose interfaces, brand graphics and presentations with vector paths, text, images, masks, filters and Auto Layout.
 - **Agents work on the design itself.** Use a configured model provider, connect a local CLI agent, or drive the canvas from an external MCP client.
 - **Keep a portable source file.** Save editable projects as `.voo`, import existing work and export images, documents or handoff code.
 - **Choose desktop or web.** Electron adds native files, workspace folders and direct local CLI sessions. The browser editor can reach local CLIs through the loopback bridge.
+
+## Product tour
+
+### Workspace
+
+Start a design, import existing work and return to recent projects from one workspace.
+
+![VOO Design workspace showing the four example projects](docs/screenshots/ui-workspace.png)
+
+### Guided setup
+
+Choose an agent or model provider during the optional first-run setup.
+
+![VOO Design first-run guide with agent and model provider choices](docs/screenshots/ui-onboarding.png)
+
+### Edit on the canvas
+
+The music design is open in the editor below, with its headline selected. The layer tree, canvas selection and text properties are all part of the real editing interface.
+
+![VOO Design editing a music interface, with the headline selected and the layer tree and text inspector visible](docs/screenshots/ui-editor.png)
 
 ## Made with VOO
 
