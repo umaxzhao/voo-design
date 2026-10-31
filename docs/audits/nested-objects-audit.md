@@ -104,5 +104,13 @@ new default control is introduced.
 | Original failure | `/private/tmp/voo-license-regression/frame-label-before.log`: actual title span hit, `editor-page` pointer capture, empty selection |
 | Verification boundary | Selection-only change; no content mutation/save format to migrate. Header dragging, touch/stylus and hidden/locked Frame policies are not expanded by this repair |
 
-Final clean revision and full release/production evidence are recorded in
-`docs/quality-progress.md`; passing this fixture does not certify all platforms.
+Clean revision `befffb37071baf1aa4c0cd3abf83452b092f650d` passed all 90 release
+steps (86 browser suites; 4,585 unit assertions passed, four skipped).
+Merge `49d85d8bd709b961c5f6be64ea5cd5dfad050f69` has the identical source tree.
+The deployed production entry and five direct assets match the verified build;
+an isolated production browser passed real name/icon clicks and Enter without
+document mutation or page errors. Evidence: `/private/tmp/voo-license-regression/`
+`frame-title-release-published.json` and `frame-title-production-proof.json`.
+Earlier incomplete/failed runs and the known cold-start New timing failure are
+retained in `docs/quality-progress.md`; passing this fixture does not certify
+physical devices, signed desktop cold starts or all private workspace drafts.

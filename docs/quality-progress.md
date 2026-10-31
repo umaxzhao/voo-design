@@ -3,15 +3,21 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
-最近一次完整核心验证提交：[da86f56](https://github.com/umaxzhao/voo-design/commit/da86f56a14a4080265fb46b834b5df363056660c)；89/89 项通过，当前线上部署为该固定版本。
+最近一次完整核心验证提交：[befffb3](https://github.com/umaxzhao/voo-design/commit/befffb37071baf1aa4c0cd3abf83452b092f650d)；90/90 项通过，当前线上部署为该固定版本；合并提交 49d85d8 的完整源码树与其一致。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
 
-## 本轮：Frame 标题点击选中（验证中）
+## 本轮：Frame 标题点击选中（已验证并部署）
 
 - `selection.frame-title-selection`：标题原本是普通 div，外层画板在捕获阶段误接管指针。已改为原生按钮，使用现有交互控件排除规则和 `engine.selectExactly`，没有新增独立选择逻辑。
 - 新增真实浏览器回归：标题文字/图标在 0.5/1/2 倍缩放下选择正确 Frame；从子图层或多选切换正确；文档、画板布局和相机不变；键盘 Enter 可操作。原失败记录与修复后结果：`/private/tmp/voo-license-regression/frame-label-before.log`、`frame-label-after.log`。
-- 注册更新为 65 个能力分组、86 组核心浏览器套件。嵌套 Frame 继续沿用现有外层标签显示策略；未扩展拖拽、隐藏或锁定策略。18 项相关单测、四组真实浏览器（标题、子层命中、负坐标和导航）与设计/模块检查通过；证据 `frame-label-unit.log`、`frame-label-related.json` 同目录。完整发布与线上验证待固定提交完成后补录，不继承历史通过。详见 [标题命中验收](audits/nested-objects-audit.md#frame-title-pointer-selection)。
+- 注册更新为 65 个能力分组、86 组核心浏览器套件。嵌套 Frame 继续沿用现有外层标签显示策略；未扩展拖拽、隐藏或锁定策略。18 项相关单测、四组真实浏览器（标题、子层命中、负坐标和导航）与设计/模块检查通过；证据 `frame-label-unit.log`、`frame-label-related.json` 同目录。完整发布和线上证据见下，不继承历史通过。详见 [标题命中验收](audits/nested-objects-audit.md#frame-title-pointer-selection)。
+
+- 固定干净版本 `befffb37071baf1aa4c0cd3abf83452b092f650d`：**90/90 发布步骤通过、86 组浏览器套件通过，单测 4585 通过、4 跳过、0 失败**。登记 12 模块、65 能力分组，selection 为 7/7，功能覆盖仍为部分。证据 `/private/tmp/voo-license-regression/frame-title-release-published.json`、同名 `.log`；源码验证期间未修改。
+- [PR #69](https://github.com/umaxzhao/voo-design/pull/69) 合并为 `49d85d8bd709b961c5f6be64ea5cd5dfad050f69`，源码树一致；[精确版本 GitHub build](https://github.com/umaxzhao/voo-design/actions/runs/41208362370/job/124558496923) 通过，CI deploy 跳过，实际使用项目脚本 SSH 部署 la2。备份 `la2:/srv/voo-run/editor-backups/befffb37071baf1aa4c0cd3abf83452b092f650d-20261031T142314Z`。
+- [正式页面](https://voo.run/editor/) 入口及 5 个直接资源共 6 文件 HTTP 200、字节哈希一致；隔离真实浏览器标题文字/图标点击、Enter、选中状态及文档不变通过，无页面脚本错误。证据 `frame-title-production-proof.json`、`frame-title-production.png` 同目录；只使用临时文档，未改用户项目。
+- 保留早期完整运行的触控超时（`frame-title-release.json`）、旋转输入超时（`frame-title-release-synced.json`）及各自独立复查；最终 `frame-title-release-published.json` 为重新完整执行，未拼接补跑。正式首次 New 冷启动未创建文档，证据 `frame-title-production-startup-attempt.log`；等待首页就绪后复核通过，不将该既有启动问题记为修复。
+- 本地 App 工作区有既有提交分叉和其他草稿，安全快进失败后仅应用本次标题补丁并保留其余内容；本地真实标题回归通过（`frame-title-primary-browser.log`），原文件备份 `frame-label-primary-before.jsx`。完整门禁只属于上述干净版本，不认证全部私人草稿或签名 App 冷启动。
 
 ## 本轮：图层导出按需显示（已完成声明范围）
 
@@ -132,12 +138,12 @@
 
 | 项目 | 状态 |
 | --- | --- |
-| 工程规范与模块登记 | 已落地：12 个模块、64 个公开能力分组 |
-| 核心发布校验 | da86f56：89/89 步通过，包含 85 组浏览器套件 |
-| 全量单元测试 | 4574 通过、4 跳过、0 失败；跳过项不算通过 |
-| GitHub Ubuntu 基础检查 | [本轮 CI](https://github.com/umaxzhao/voo-design/actions/runs/41203688825)：截至本次记录为 in_progress；本机 89/89 门禁与线上实测已通过，不继承历史 CI |
-| 线上部署 | da86f56 已部署 la2，入口及导出相关资源字节一致；正式按需显示、实际下载和撤销重做通过 |
-| 功能验收完整度 | 部分覆盖；64 个公开能力分组未穷尽所有入口、上下文和设备 |
+| 工程规范与模块登记 | 已落地：12 个模块、65 个公开能力分组 |
+| 核心发布校验 | befffb3：90/90 步通过，包含 86 组浏览器套件 |
+| 全量单元测试 | 4585 通过、4 跳过、0 失败；跳过项不算通过 |
+| GitHub Ubuntu 基础检查 | [befffb3 CI build](https://github.com/umaxzhao/voo-design/actions/runs/41208362370/job/124558496923) 通过；CI deploy 跳过，SSH 部署另有证据 |
+| 线上部署 | befffb3 已部署 la2，入口及直接资源字节一致；正式 Frame 标题/图标/Enter 选中通过 |
+| 功能验收完整度 | 部分覆盖；65 个公开能力分组未穷尽所有入口、上下文和设备 |
 | 核心门禁外的独立检查 | 21 组本轮未运行：18 组待复核，3 组需单独运行 |
 
 ## 连续创作首轮（f9102cd，已完成声明范围）
@@ -177,7 +183,7 @@
 | 工作台与资源 `workspace` | 8/8 | 部分 | 原生文件选择器、实体触屏、独立流程脚本复核 |
 | 文档与存储 `documents` | 6/6 | 部分 | 原生写入中断/恢复、旧版本文档、独立往返脚本 |
 | 画布与相机 `canvas` | 6/6 | 部分 | 硬件 FPS、内存、固定场景规模下的性能基准 |
-| 选择与变换 `selection` | 6/6 | 部分 | 实体压感笔、系统快捷键、多指触摸组合 |
+| 选择与变换 `selection` | 7/7 | 部分 | 实体压感笔、系统快捷键、多指触摸组合 |
 | 图层与 Frame `layers` | 7/7 | 部分 | Finder/Explorer 原生拖放；更多异常层级与组合 |
 | 蒙版与合成 `compositing` | 6/6 | 部分 | 更多混合/蒙版/效果组合、显卡差异、独立像素脚本 |
 | 矢量与形状 `vectors` | 5/5 | 部分 | 扩充第三方路径和格式往返样本、HTML 转节点脚本 |
