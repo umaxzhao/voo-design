@@ -161,3 +161,26 @@ must clear before restarting rather than duplicating it.
 The exact final revision, full gate and deployment evidence are maintained in
 [quality-progress.md](../quality-progress.md); local targeted results are not a
 certificate for a later commit.
+
+
+Final streamed-authoring execution: `d0b9ec5a9df445e073c689597ff890350d500856` completed all 88 registered release checks, with sequential recovery of page-load timeouts,
+84 browser suites and 4521 unit passes / 4 skips on a clean, unchanged source.
+Evidence: `/private/tmp/voo-authoring-release-recovered.json`. The production index and lazy authoring resources
+match the verified build; actual Agent Send through a controlled provider places
+real layers across animation frames, paints red/blue pixels and undoes once.
+The earlier integration run in `/private/tmp/voo-authoring-release-complete.json`
+was interrupted by SIGTERM in the unit-test child and is not a passing execution.
+The next run, `/private/tmp/voo-authoring-release-complete-v2.json`, found an obsolete
+generation-type dropdown browser selector; all three affected suites were updated
+to exercise eight real radio choices and the remaining nested Style listbox before
+this fixed-source run. Two later parallel suites timed out during page.goto before
+assertions; `/private/tmp/voo-authoring-release-recovered.json` retains these failures
+and records serial reruns plus the previously unstarted suites on the same clean revision.
+An additional comments-loading page.goto timeout is retained in the recovery
+attempt history; it passed on the next serial execution without a source edit.
+Production evidence: `/private/tmp/voo-authoring-deployment-proof.json` and
+`/private/tmp/voo-authoring-production-result.log`. Paid endpoints were not invoked.
+
+GitHub Ubuntu CI for integration commit `dac68a5` passed module registration,
+design checks, build and unit tests: https://github.com/umaxzhao/voo-design/actions/runs/41188844041.
+The CI deployment job was skipped; SSH deployment to la2 was independently verified above.
