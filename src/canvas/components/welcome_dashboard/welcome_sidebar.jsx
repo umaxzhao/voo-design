@@ -146,6 +146,8 @@ export function WelcomeSidebar({
           </button>
         </div>
 
+        <div role="separator" aria-orientation="horizontal" className="border-t border-mint/25" />
+
         {/* Section: Project folders, created in the workspace (Figma-style sidebar) */}
         <div className="welcome-sidebar-folders space-y-0.5">
           <div className="flex items-center justify-between pt-2 pb-1 pl-2.5 pr-1.5">
@@ -221,6 +223,8 @@ export function WelcomeSidebar({
             </div>
           ))}
         </div>
+
+        <div role="separator" aria-orientation="horizontal" className="border-t border-mint/25" />
 
         {folderMenu && createPortal(
           <div
