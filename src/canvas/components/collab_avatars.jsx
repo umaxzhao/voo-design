@@ -1,3 +1,4 @@
+import AnchoredGlobalPopover from "./anchored_global_popover.jsx";
 import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
 import { initialsFor } from "../collab/presence.js";
@@ -82,6 +83,7 @@ export default function CollabAvatars({
   const [sharedLink, setSharedLink] = useState(null);
   const [access, setAccess] = useState(state?.access ?? "edit");
   const boxRef = useRef(null);
+  const popoverRef = useRef(null);
 
   const storeShareWorkflow = useDesignStore((store) => store.shareWorkflow);
   const shareError = useDesignStore((store) => store.shareError);
@@ -100,7 +102,7 @@ export default function CollabAvatars({
     if (!open) return undefined;
     setIdentity(loadIdentity());
     const onDown = (event) => {
-      if (boxRef.current && !boxRef.current.contains(event.target)) setOpen(false);
+      if (!boxRef.current?.contains(event.target) && !popoverRef.current?.contains(event.target)) setOpen(false);
     };
     const onKey = (event) => {
       if (event.key === "Escape") setOpen(false);
@@ -184,10 +186,9 @@ export default function CollabAvatars({
       </button>
 
       {open ? (
-        <div
-          role="dialog"
-          aria-label={t("collab.share")}
-          className="absolute right-0 top-full z-50 mt-2 w-[300px] rounded-2xl border border-white/10 bg-neutral-900 p-3.5 shadow-panel"
+        <AnchoredGlobalPopover anchorRef={boxRef} surfaceRef={popoverRef}
+          label={t("collab.share")}
+          className="rounded-2xl border border-white/10 bg-neutral-900 p-3.5 shadow-panel"
         >
           <div className="mb-2.5 flex items-center gap-1.5">
             <span className="text-[12px] font-medium text-neutral-100">
@@ -344,7 +345,7 @@ export default function CollabAvatars({
           >
             {t("collab.stop")}
           </button>
-        </div>
+        </AnchoredGlobalPopover>
       ) : null}
     </div>
   );

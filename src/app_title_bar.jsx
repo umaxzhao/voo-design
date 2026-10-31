@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import { PopoverScopeContext, isOwnedPopoverTarget } from "./canvas/components/popover_scope.js";
+import React, { useEffect, useId, useRef, useState } from "react";
 import "./canvas/components/editor_mobile_layout.css";
 import "./welcome_settings.css";
 import CanvasTabBar from "./canvas/components/canvas_tab_bar.jsx";
@@ -48,6 +49,7 @@ export default function AppTitleBar() {
   const [settingsTab, setSettingsTab] = useState("general");
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef(null);
+  const moreScope = useId();
   // Home is lazy and has no editor event listeners until a document is opened.
   const handleImport = () =>
     window.dispatchEvent(
@@ -61,7 +63,7 @@ export default function AppTitleBar() {
     if (!moreOpen) return undefined;
     moreRef.current?.querySelector('[role="menuitem"]')?.focus();
     const handlePointerDown = (event) => {
-      if (!moreRef.current?.contains(event.target)) setMoreOpen(false);
+      if (!moreRef.current?.contains(event.target) && !isOwnedPopoverTarget(event.target, moreScope)) setMoreOpen(false);
     };
     const handleKeyDown = (event) => {
       if (event.key !== "Escape") return;
@@ -76,7 +78,7 @@ export default function AppTitleBar() {
       document.removeEventListener("pointerdown", handlePointerDown, true);
       window.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [moreOpen]);
+  }, [moreOpen, moreScope]);
 
   useEffect(() => {
     const handleOpenSettings = (e) => {
@@ -107,7 +109,7 @@ export default function AppTitleBar() {
     <>
       <header
         data-testid="editor-top-bar"
-        className="app-title-bar flex h-[40px] shrink-0 items-center justify-between px-4 text-xs font-medium tracking-wide select-none border-b border-white/10"
+        className="app-title-bar relative z-[60] flex h-[40px] shrink-0 items-center justify-between px-4 text-xs font-medium tracking-wide select-none border-b border-white/10"
         style={{
           ...(isMac ? { paddingLeft: MAC_TRAFFIC_LIGHT_INSET_PX } : {}),
           WebkitAppRegion: "drag",
@@ -223,6 +225,7 @@ export default function AppTitleBar() {
               <MoreHorizontal size={19} aria-hidden="true" />
             </button>
             {moreOpen ? (
+              <PopoverScopeContext.Provider value={moreScope}>
               <div
                 id="titlebar-more-menu"
                 role="menu"
@@ -270,6 +273,7 @@ export default function AppTitleBar() {
                   </div>
                 )}
               </div>
+              </PopoverScopeContext.Provider>
             ) : null}
           </div>
           {!welcomeOpen && (

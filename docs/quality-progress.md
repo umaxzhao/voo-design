@@ -6,6 +6,10 @@
 最近一次完整核心验证提交：[aec2782](https://github.com/umaxzhao/voo-design/commit/aec278290c69990105c36b13cdd05420f7e5d24e)；90/90 项通过。本轮只发布测试/登记/文档，不重新部署产品；后续 main 的提示词更新仅单独复核，不继承该完整执行。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
+## 本轮：分享与页面外浮层遮挡（验证中）
+
+- `inspector.global-overlay-stacking`：真实分享框左侧命中 `editor-pages`，证据 `/private/tmp/voo-license-regression/global-overlay-before.log`。顶栏统一高于编辑器；分享移至 body 的锚定浮层，窄屏限制位置/滚动高度；快捷键、图标、SVG 与懒加载占位共用全局 Portal，既有设置/导出/命令面板等路径已审查。[逐类验收](audits/panel-control-audit.md#global-overlay-stacking)。
+- `ui-global-interaction` 检查桌面 1600/1280/900px 分享、320px 嵌套分享、跨弹窗点击/关闭/焦点/选区与文档不变，及三个真实弹窗在变换/裁切宿主下的 9 点命中；设计/模块/格式与 20 项相关单测通过。证据 `global-overlay-after-final.log`、`global-overlay-unit-final.log` 同目录。登记 66 能力、86 浏览器；本地补丁保留其他草稿，备份 `global-overlay-primary-backup/`。完整门禁与线上结果待固定提交补录，不继承历史通过。
 
 ## 本轮：Agent 引导提示词重复（已完成声明范围）
 
@@ -264,14 +268,12 @@ VOO_RELEASE_REPORT=/private/tmp/voo-release.json node scripts/verify-editor-rele
 node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 ```
 
-
 ## 路径固定中点加点 — 2026-10-31
 
 - 能力：`vectors.midpoint-insertion`，详细边界见 [交互审查](audits/design-editor-interaction-audit.md#fixed-midpoint-insertion--2026-10-31)。
 - 复现：旧实现的 5 个定向断言失败；修复后 25 项相关单测及真实鼠标加点、预览、单步撤销/重做验证通过。
 - 完整发布的精确提交与逐项结果记录在 `/tmp/voo-midpoint-release.json`；须核对 `revision` 和 `complete`，不得沿用上方历史提交的通过状态。
 - 仍未验证：实体笔/触摸、签名 Electron 安装包、多轮廓交叉路径、冷重开和像素级导出对比。功能覆盖仍为部分。
-
 
 ## 浏览器遮挡与选中样式 — 2026-10-31
 
@@ -375,7 +377,6 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - 定向场景和既有响应式交互通过；不将临时非Git、未构建目录的全测失败当成产品结果或最终发布证据。
 - 最终执行证据：`/tmp/voo-impeccable-polish-release.json`，核对 `revision` 与 `complete`。原25/40为历史审查分，未声称复评提高。
 - [整改边界和前后截图](audits/impeccable-review.md#remediation--2026-10-31)。本轮仍按要求排除 `native_studio`；实际账户、付费服务、实体设备与签名安装包不计为已验证。
-
 
 ## Context menu simplification — 2026-10-31
 
