@@ -7,7 +7,6 @@
 
 import {
   findNode,
-  isGroupNode,
   isRegionNode,
   NODE_KIND,
   nodeRect,
@@ -17,6 +16,7 @@ import { draw, resizeCanvas } from "./scene_renderer.js";
 import { TOOL } from "./editor_constants.js";
 import { isPaintTool } from "./paint_tool_ids.js";
 import * as ops from "./doc_ops.js";
+import { layerPassDocument } from "./layer-pass-document.js";
 
 export function renderEngineStage({
   ctx,
@@ -280,22 +280,10 @@ export function renderEngineLayerPass({
   const width = stageWidth || stage.clientWidth;
   const height = stageHeight || stage.clientHeight;
   resizeCanvas(targetCanvas, width, height, dpr);
-  const paintNodeIds = new Set(nodeIds);
-  // Backdrop effects and clipping chains must not pull lower runs above a 3D layer.
-  const passNodes = doc.nodes
-    .filter(
-      (node) =>
-        paintNodeIds.has(node.id) ||
-        isGroupNode(node) ||
-        node.kind === NODE_KIND.BOOLEAN,
-    )
-    .map((node) =>
-      node.kind === NODE_KIND.BOOLEAN && !paintNodeIds.has(node.id)
-        ? { ...node, visible: false }
-        : node,
-    );
+  const pass = layerPassDocument(doc, nodeIds);
+  const { paintNodeIds } = pass;
   draw(ctx, {
-    doc: { ...doc, nodes: passNodes, backgroundColor: "transparent" },
+    doc: pass.doc,
     artworkOnly: true,
     viewport,
     dpr,

@@ -34,7 +34,7 @@ import {
 } from "./render_figma_effects.js";
 import { additionalStrokePaints, primaryStrokePaint } from "./stroke-paint-passes.js";
 import { needsStyleIsolation, drawIsolatedStyle, isolatedStyleNode } from "./render-isolated-style.js";
-import { imagePaintLayout } from "./image-paint-layout.js";
+import { imagePaintMatrix } from "./image-paint-layout.js";
 
 export function drawNode(
   ctx,
@@ -81,8 +81,7 @@ export function drawNode(
         if (!pattern) return;
         const bitmapWidth = bitmap.naturalWidth ?? bitmap.width;
         const bitmapHeight = bitmap.naturalHeight ?? bitmap.height;
-        const layout = imagePaintLayout(node, bitmapWidth, bitmapHeight, mode);
-        pattern.setTransform(new DOMMatrix().translate(layout.x, layout.y).scale(layout.scale));
+        pattern.setTransform(new DOMMatrix(imagePaintMatrix(node, bitmapWidth, bitmapHeight)));
         node = { ...node, fill: pattern, opacity: (node.opacity ?? 1) * (node.fillOpacity ?? 1), fillOpacity: 1 };
       }
     }
@@ -147,7 +146,9 @@ export function drawNode(
       targetCtx.globalCompositeOperation = paint.blendMode ?? "source-over";
       const painted = { ...node, fill: paint.fill, fillOpacity: paint.opacity ?? 1,
         fillHidden: false, strokeHidden: true, imageId: paint.imageId ?? node.imageId,
-        imageScaleMode: paint.imageScaleMode ?? node.imageScaleMode };
+        imageScaleMode: paint.imageScaleMode ?? node.imageScaleMode,
+        imageTransform: paint.imageTransform ?? node.imageTransform,
+        imageTileScale: paint.imageTileScale ?? node.imageTileScale };
 
       paintOne(targetCtx, painted);
       targetCtx.restore();
