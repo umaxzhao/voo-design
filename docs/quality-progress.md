@@ -3,6 +3,7 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
+本轮浏览器右侧停靠与 Agent 互斥：`platform.side-panel-exclusivity`。桌面浏览器与编辑器左右并排，窄屏从右侧覆盖展开，不再排到底部。打开浏览器关闭 Agent，Agent 按钮、旧接口、事件和待执行生成请求打开 Agent 时关闭浏览器；关闭操作不自动重开另一面板。32 项定向单测通过，修复前 6 项失败已留证。精确提交与完整执行结果见 `/private/tmp/voo-panel-exclusion-release.json`；验收范围见 [面板审查](audits/panel-control-audit.md#exclusive-browser-and-agent-panels--2026-10-31)。功能覆盖仍为部分，不沿用历史通过。
 最近一次完整核心验证提交：[215d501](https://github.com/umaxzhao/voo-design/commit/215d501534e696f35c1d1ab41c0e170c26eb8c9f)；90/90 项通过（全量构建、设计规则、4601 项单测、86 组核心浏览器套件全部 0 失败）。证据 `/private/tmp/voo-release-round5.json`。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 

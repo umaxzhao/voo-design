@@ -387,3 +387,13 @@ paragraph updates and undo without page errors. Production evidence:
 `/private/tmp/voo-typography-production-result.log` and
 `/private/tmp/voo-typography-deployment-proof.json`. Earlier failed execution
 remains separate and is not attributed to the final revision.
+
+## Exclusive Browser and Agent panels — 2026-10-31
+
+- Capability: `platform.side-panel-exclusivity`; shared operation: `sidePanelVisibility` / `createEditorPanelActions`; ownership: platform. Existing `browser-drawer` suite retains the real UI scenario.
+- Opening Browser atomically closes Agent; opening Agent through either setter alias, legacy dispatch or queued generation atomically closes Browser. Closing a panel does not reopen its sibling or clear pending request content. This changes chrome state only, with no document/history mutation.
+- Reproduction: `editor-panel-actions.test.js` initially failed six assertions (`/private/tmp/voo-panel-exclusion-before.log`). The retained tests verify one subscriber publication, every public opening path, queue preservation and close behavior.
+- Real Chromium checks open Agent with its button, switch to Browser with the title-bar button, request Agent through its public event, and switch back. Desktop remains side-by-side; narrow Browser opens as a right-hand overlay, never a bottom pane. Menu, Escape and close assertions remain. Color sampling waits for both existing transitions to finish before checking exact colors.
+- Exact verified revision and release result: `/private/tmp/voo-panel-exclusion-release.json`; targeted units: `/private/tmp/voo-panel-exclusion-targeted.log`; browser: `/private/tmp/voo-panel-exclusion-browser.log`.
+- Local placement repair: the original checkout had moved BrowserDrawer out of the horizontal workspace into the root column. Its browser placement, workspace attributes and public panel actions were safely updated in place, preserving the other draft changes. The right-overlay regression first failed against the former narrow-screen bottom layout (`/private/tmp/voo-browser-right-before.log`).
+- The original checkout could not be globally synchronized: remote synchronization there was blocked by numerous untracked paths already present upstream. Implementation and verification use an isolated checkout based on current GitHub main. Native installers, physical touch and live model/service execution remain unverified; functional coverage stays partial.
