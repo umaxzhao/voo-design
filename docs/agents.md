@@ -208,9 +208,10 @@ frames and leaves a single design. Variants only apply to the HTML pipeline
 `src/canvas/agent/design_quality/` holds the design knowledge injected into
 the system prompt:
 
-- `scene_guides.js` — six scene contracts (landing, mobile, web, slides,
-  dashboard, other) covering structure, typography, layout, content, quality
-  checks and pitfalls; looked up by `sceneKind` or by the prompt's own words.
+- `scene_guides.js` — nine scene contracts (landing, mobile, web, slides,
+  dashboard, poster, banner, xiaohongshu, other) covering structure, typography,
+  layout, content, quality checks and pitfalls; looked up by `sceneKind` or by
+  the prompt's own words.
 - `style_kits.js` — 20 complete style kits (palette, fonts, type scale,
   radius, shadow, spacing density, layout patterns, dos/don'ts), selected
   automatically by `pickStyleKit` or explicitly by the welcome picker.
