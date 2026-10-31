@@ -345,3 +345,30 @@ a 160x100 PNG and hides it after removal; undo/redo pass without page errors.
 Production evidence: `/private/tmp/voo-export-opt-in-production-result.log` and
 `/private/tmp/voo-export-opt-in-deployment-proof.json`. Earlier incomplete/failed
 attempts are retained separately and are not attributed to the final revision.
+
+## Typography clarity
+
+Capabilities: `inspector.typography-clarity`, `text.typography`, `text.box-sizing`.
+Reference: [Figma type properties](https://help.figma.com/hc/en-us/articles/360039956634-Explore-text-properties).
+The existing VOO visual identity remains; the refinement adds visible metric
+captions, consistent units and Lucide icons rather than new unimplemented type
+features. Common settings share one implementation for editing and creation.
+Text-box sizing is visible, while all less frequent options have one disclosure.
+
+| Context | Registered assertions | Status |
+| --- | --- | --- |
+| Labels/icons | Explicit visible captions; 16px icons and actual 1.5px stroke after scaling | Targeted Chromium pass; final gate pending |
+| Real text | Size/line-height/tracking alter actual bounds; cancel and one-step undo/redo; weight/decoration/alignment | Targeted Chromium pass; final gate pending |
+| Advanced | Box width wraps actual text; direction/case/paragraph/baseline/path offset retain writes and undo | Targeted Chromium pass; final gate pending |
+| Shared creation | Same basic controls, actual pointer creates text with selected size/weight/spacing; one-step undo/redo | Targeted Chromium pass; final gate pending |
+| Font/multi | Existing font picker applies a real family; mixed numeric fields update both layers and undo each original value | Targeted Chromium pass; final gate pending |
+| Layout | 320/390/768/1440px, both themes and languages; numeric space and readable captions; 48px narrow controls | Targeted Chromium pass; final gate pending |
+| Remaining | Physical IME/touch/stylus, every installed font and variable-font axis, OS-level scaling | Not certified |
+
+Evidence: `text_section_compact.test.jsx`, `tools_text_pen_shape.test.jsx`,
+`paragraph_spacing.test.jsx`, `text_case.test.jsx`; registered
+`ui-inspector-interaction.e2e.mjs` calls `typography-inspector-cases.mjs`.
+Before screenshots: `/private/tmp/voo-typography-before.png`; targeted after
+matrix: `/private/tmp/voo-typography-only/`. The two baseline regressions are in
+`/private/tmp/voo-typography-baseline.log`. Mechanical typography scan returned
+no findings; it does not certify every contrast or accessibility context.
