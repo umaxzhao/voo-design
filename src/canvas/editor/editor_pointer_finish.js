@@ -400,7 +400,7 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
       !event?.shiftKey &&
       finished.id
     ) {
-      api.select(finished.id);
+      api.select(finished.clickTargetId ?? finished.id);
     }
 
     if (finished.kind === "move" && finished.moved) {

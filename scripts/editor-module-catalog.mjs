@@ -89,7 +89,7 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/doc_ops_groups_helpers.js", "src/canvas/editor/reorder-layer-batch.js",
       "src/canvas/components/editor_image_batch.js", "src/canvas/components/use_editor_dnd.js",
       "tests/unit/batch-layer-reorder.test.js", "tests/unit/layer-hierarchy-stack.test.js",
-      "tests/unit/container-command-boundaries.test.js",
+      "tests/unit/container-command-boundaries.test.js", "tests/e2e/duplicate-frame-drag-checks.mjs",
       "tests/unit/frame_fit_to_content.test.js", "tests/unit/reparent-moved-roots.test.js",
     ],
     related: ["selection","compositing","layout","documents"],
