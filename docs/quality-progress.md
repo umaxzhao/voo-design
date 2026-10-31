@@ -1,15 +1,14 @@
 # 项目检查总进度
 
-这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
-
-更新时间：2026-11-01。
-最近一次完整核心验证提交：[457b149](https://github.com/umaxzhao/voo-design/commit/457b149d4c1da1ecb1073fa7b7c87be47276f92c)；91/91 项通过，当前线上为该构建。主线 326860d 应用源码一致，仅验收文档不同。
+这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
+最近一次完整核心验证提交：[12b9aba](https://github.com/umaxzhao/voo-design/commit/12b9abae4f72e987fd14230791ad4de9df37cae1)；91/91 项通过，当前线上为该构建。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
-## 本轮：评论复用右侧面板（验证中）
+## 本轮：评论复用右侧面板（已完成声明范围）
 
-- `inspector.comments-panel-slot`：入口移到页面名称右侧，评论的加载/错误/列表内容复用右侧属性外壳，属性/历史让位；关闭恢复原面板，历史命令可切换回来。紧凑画布使用同一底部区域，评论关闭后恢复原折叠状态。
-- 修改前入口位置失败 `comments-panel-before.log`；60 项相关单测、评论生命周期和 1600/900/390px 单槽位、触摸关闭、宿主重挂载及原评论发布/回复/撤销通过。首轮 `826e9fd` 单测 4686 通过/4 跳过，完整门禁在 `pages_dnd` 的旧直接子按钮定位超时（`comments-panel-release.json`）；改用稳定入口标记，原重命名/拖拽/取消断言保留且独立复查通过，`daea9ce` 已独立完成 91/91、87 浏览器、4687 单测通过/4 跳过。追加仅放置模式冷加载的单面板回归曾失败（`comments-panel-mode-only-before.log`）；改为原按钮显示进度、错误仍可重试，不额外占用侧栏，60 项相关单测及真实命令入口通过，最终完整门禁与线上实测待补录。[验收范围](audits/nested-objects-audit.md#comments-shared-right-panel)。证据目录 `/private/tmp/voo-license-regression/`；登记 76 能力，功能覆盖仍部分。
+- `inspector.comments-panel-slot`：入口放到页面名称右侧；评论列表、加载和错误状态复用属性面板外壳，关闭恢复原面板，历史可互相替换，左右交换布局受尊重。紧凑画布用原面板区域并恢复原折叠状态；仅放置评论时加载进度显示在原按钮，不额外生成侧栏。
+- 固定 [`12b9aba`](https://github.com/umaxzhao/voo-design/commit/12b9abae4f72e987fd14230791ad4de9df37cae1) **91/91 发布步骤、87 组浏览器、4689 单测通过/4 跳过**，GitHub CI 通过。60 项定向单测及 1600/900/390px、触摸、左右换位、历史恢复、入口重挂载、原评论操作和独立模式冷加载均通过；本地 App 最小补丁与最终浏览器复查通过，其他草稿保留。[验收与原始失败](audits/nested-objects-audit.md#comments-shared-right-panel)。证据目录 `/private/tmp/voo-license-regression/`，`comments-panel-release-final.json` / `comments-panel-final-ci.json` / `comments-panel-primary-mode-final.log`。登记 76 能力，覆盖仍部分。
+- [PR #73](https://github.com/umaxzhao/voo-design/pull/73) 及最终冷加载补丁均已进入主线，源码树与固定验证版本一致（`comments-panel-main-tree-proof.json`）。已经项目脚本部署 la2；正式页面位置、冷热两条入口、九点命中、草稿取消、历史恢复、移动触摸关闭和文档/选区不变通过，零页面异常，87 个入口及实际脚本/样式资源逐字节/SHA-256 一致。证据 `comments-panel-production-proof.json`，截图 `comments-panel-production-desktop.png` / `comments-panel-production-mobile.png`；备份 `/srv/voo-run/editor-backups/12b9abae4f72e987fd14230791ad4de9df37cae1-20261031T201538Z`。
 
 ## 本轮：尺寸标签位于对象下方（已完成声明范围）
 
@@ -226,12 +225,12 @@
 ## 当前概况
 | 项目 | 状态 |
 | --- | --- |
-| 工程规范与模块登记 | 已落地：12 个模块、75 个公开能力分组 |
-| 核心发布校验 | 457b149：91/91 项通过，包含 87 组浏览器 |
-| 全量单元测试 | 4684 通过、4 跳过、0 失败（固定提交 457b149） |
-| GitHub Ubuntu 基础检查 | 固定提交 457b149 build 通过，原始 run 41230487157 |
-| 线上部署 | 457b149 已部署 la2，尺寸标签对象/Frame 真实像素通过 |
-| 功能验收完整度 | 部分覆盖；75 个公开能力分组未穷尽所有入口、上下文和设备 |
+| 工程规范与模块登记 | 已落地：12 个模块、76 个公开能力分组 |
+| 核心发布校验 | 12b9aba：91/91 项通过，包含 87 组浏览器 |
+| 全量单元测试 | 4689 通过、4 跳过、0 失败（固定提交 12b9aba） |
+| GitHub Ubuntu 基础检查 | 固定提交 12b9aba build 通过，原始 run 41236843323 |
+| 线上部署 | 12b9aba 已部署 la2，评论共享侧栏及独立模式实测通过 |
+| 功能验收完整度 | 部分覆盖；76 个公开能力分组未穷尽所有入口、上下文和设备 |
 | 核心门禁外的独立检查 | 本轮 21 组未运行，不继承历史通过 |
 
 ## 连续创作首轮（f9102cd，已完成声明范围）
@@ -260,7 +259,7 @@
 - [容器边界范围](audits/nested-objects-audit.md#container-command-boundaries)、[文字收尾范围](audits/continuous-creation-audit.md#text-placement-and-close-boundaries)记录复现、断言和剩余上下文；临时编辑恢复、取消时保留外部新增节点也已加入纯回归。
 
 ## 各模块进度
-下表按固定 457b149 完整门禁记录，套件数按主归属计一次。跨模块回归会关联执行，不能理解为功能覆盖率。
+下表按固定 12b9aba 完整门禁记录，套件数按主归属计一次。跨模块回归会关联执行，不能理解为功能覆盖率。
 
 | 模块 | 已通过核心套件 | 功能覆盖 | 仍需补齐的重点 |
 | --- | --- | --- | --- |

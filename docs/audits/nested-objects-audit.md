@@ -380,3 +380,15 @@ scenario pass in `comments-panel-mode-unit-final.log` and
 The extra focus-null exploratory fixture never entered its intended state and
 timed out (`comments-panel-unfocused-before.log`); it was removed from the
 registered suite, and is neither a product regression nor a passing acceptance.
+
+
+Final clean `12b9aba` passed a fresh uninterrupted 91/91 core run, all 87 browser
+suites and 4,689 units (four skipped), with matching GitHub CI success. Evidence:
+`comments-panel-release-final.json` and `comments-panel-final-ci.json`.
+Main had the identical tree before the documentation receipt. The project script
+deployed that verified build to la2. Production matched 87 entry/loaded script
+and style resources byte-for-byte, and passed launcher adjacency, both cold
+activation paths, one rail and nine-point hit tests, draft cancellation,
+previous-history restore, mobile touch close and unchanged document/selection
+with no page errors (`comments-panel-production-proof.json`). No comment was
+posted, room joined or existing user project changed by these isolated checks.
