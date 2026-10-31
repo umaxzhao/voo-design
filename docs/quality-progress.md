@@ -3,8 +3,16 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-11-01。
-最近一次完整核心验证提交：[8af23f5](https://github.com/umaxzhao/voo-design/commit/8af23f5ec05055be85e96c2cc87353cd80c2f495)；91/91 项通过。当前线上为该固定版本，主线合并提交 4e8f506 源码树完全一致。
+最近一次完整核心验证提交：[0a3ba24](https://github.com/umaxzhao/voo-design/commit/0a3ba248c8d2da6ef1a2699403097b8fd39a8210)；91/91 项通过。当前线上为该固定版本。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+
+## 本轮：同一 Figma 文件与 OpenPencil 对照（已完成声明范围）
+
+- OpenPencil 已独立部署在 `/Volumes/TD/Projects/open-pencil-benchmark`，本机预览 `http://127.0.0.1:5188/`；官方源码未改，正式版和 master 均按要求使用 Bun 1.4.2 构建。默认缩放 NaN、正式版空渐变异常及字体缺失已单独记录；异常回调分数不当作性能通过。
+- master 手动恢复有限相机、不改图层后，等待官方稳定信号，仍约 1.175/0.734 次每秒平移/缩放回调。加载提示结束约 7.577 秒，但默认视图无效且采用按页延迟展开，不能直接与 VOO 全页导入耗时等同；两者均保留 478 张图片、4 个变量集合及 5 个变量。不是所有属性或平台的还原认证。
+- VOO 已复现并修复连续子层重复 Frame 裁剪、混合画布未启用屏幕外剔除，以及静态空效果反复像素读取。保留 240 世界像素安全边距，图片/文字重试、源节点替换失效及调用者裁剪恢复；无新增 UI 或依赖。
+- 合入浮层/新建更新后的 `0a3ba24` 干净源码已重新完成 **91/91 发布步骤、87 组核心浏览器、4680 单测通过/4 跳过**；原 `25bda7a` 的独立完整门禁另保留。首屏相机微基准平移/缩放约快 1.85/1.93 倍；真实空白画布拖动确认视图改变且文档不变，等待中位数 VOO/OpenPencil 为 180/1911.5ms，Ctrl+滚轮为 918/559ms，后者 OpenPencil 更快。手势/缩放因子不同，不作全面排名。证据 `/tmp/voo-clip-integrated-release.json`、`/tmp/voo-open-pencil-comparison/`；首屏独立画面仍有 28/800000 像素差异，未认证所有属性或完全一致。已推送并经项目脚本部署；正式入口及关键资源与验证构建逐字节一致，正式 native Figma 导入/可见像素/蒙版/剔除/约束/撤销通过，无页面异常。证据 `/tmp/voo-clip-deployment-proof.json`、`/tmp/voo-clip-production-fidelity.json`；私有报告在当前可视化目录 `open-pencil-comparison/`，不含公开设计文件。
+- [详细范围、对照方法与未验证项](audits/figma-import-audit.md#openpencil-control-and-further-rendering-optimization--2026-11-01)。`native_studio` 排除，卡顿和全部属性还原仍为部分完成。
 
 ## 本轮：分享与页面外浮层遮挡（已完成声明范围）
 
@@ -14,14 +22,6 @@
 - 固定 [`9d0a1d2`](https://github.com/umaxzhao/voo-design/commit/9d0a1d23babf4ac38a4922b86227ed162ee7c77f) 全新完整执行 **91/91 步、87 组浏览器、4654 单测通过/4 跳过**。证据 `/private/tmp/voo-license-regression/global-overlay-release-acceptance.json`，不拼接此前失败补跑。
 - 最终整合 [`8af23f5`](https://github.com/umaxzhao/voo-design/commit/8af23f5ec05055be85e96c2cc87353cd80c2f495) 保留主线新增 Frame/拖动修复并补齐测试归属；**91/91 步、87 组浏览器、4674 单测通过/4 跳过**，GitHub CI 通过。证据同目录 `global-overlay-release-final-integration.json`、`global-overlay-pr-checks.json`。登记 12 模块/73 能力/87 核心浏览器，功能覆盖仍部分。
 - [PR #71](https://github.com/umaxzhao/voo-design/pull/71) 已合并为 `4e8f506`，与固定验证提交源码树一致（`global-overlay-main-tree-proof.json`）。已通过项目脚本部署 la2，97 个实际入口/加载资源与验证构建逐字节及 SHA-256 一致。正式页面桌面/320px 分享、设置、命令和导出九点命中、输入/关闭、文档选区不变及零页面异常通过。证据 `global-overlay-production-proof.json`、截图 `global-overlay-production-share.png` / `global-overlay-production-narrow.png`；原版本备份 `/srv/voo-run/editor-backups/8af23f5ec05055be85e96c2cc87353cd80c2f495-20261031T181829Z`。
-
-## 本轮：同一 Figma 文件与 OpenPencil 对照（验证中）
-
-- OpenPencil 已独立部署在 `/Volumes/TD/Projects/open-pencil-benchmark`，本机预览 `http://127.0.0.1:5188/`；官方源码未改，正式版和 master 均按要求使用 Bun 1.4.2 构建。默认缩放 NaN、正式版空渐变异常及字体缺失已单独记录；异常回调分数不当作性能通过。
-- master 手动恢复有限相机、不改图层后，等待官方稳定信号，仍约 1.175/0.734 次每秒平移/缩放回调。首屏 7.577 秒采用按页延迟展开，不能直接与 VOO 全页导入耗时等同；两者均保留 478 张图片、4 个变量集合及 5 个变量。不是所有属性或平台的还原认证。
-- VOO 已复现并修复连续子层重复 Frame 裁剪、混合画布未启用屏幕外剔除，以及静态空效果反复像素读取。保留 240 世界像素安全边距，图片/文字重试、源节点替换失效及调用者裁剪恢复；无新增 UI 或依赖。
-- 新增 `compositing.clip-run-culling` 验收登记；真实 native Figma 可见区域逐字节像素对比、既有蒙版/裁剪/约束/撤销/冷重开及定向单测已执行，固定提交完整发布与线上验证待本轮最终记录，不继承历史门禁。
-- [详细范围、对照方法与未验证项](audits/figma-import-audit.md#openpencil-control-and-further-rendering-optimization--2026-11-01)。`native_studio` 排除，卡顿和全部属性还原仍为部分完成。
 
 ## 本轮：右侧控件恢复品牌大圆角（已完成声明范围）
 

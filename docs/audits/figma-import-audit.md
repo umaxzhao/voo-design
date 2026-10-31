@@ -276,7 +276,8 @@ data, waits for the official navigation settlement hook, and verifies changing
 canvas screenshots with zero page script errors during camera/wheel sampling.
 Blocked online fonts remain console errors and 31 font faces are unavailable.
 
-Master first-page readiness is 7.577 s in the settled run. It initially stores
+Master preparation ends at 7.577 s in the settled run; its default viewport
+is still invalid, so this is not normal usable-view readiness. It initially stores
 24,025 nodes (20,992 descendants on the active page); other pages populate on
 first visit, taking 3.246/1.116/3.136 s and reaching 58,504 nodes. VOO eagerly
 imports all five pages, so initial readiness alone is not equal import work.
@@ -321,3 +322,73 @@ no pending gate is counted as passed.
 Still partial: readable-scale fidelity across every page/font/property, signed
 Electron, other GPUs/input devices, all effect/mask combinations and sustained
 smooth large-scene navigation. `native_studio` remains excluded.
+
+
+The first clean combined revision `25bda7ab1c4f8f1f0e2e62af979fc4aac21e6a12`
+passed 91/91 release steps, all 87 core browser suites and 4,663 unit assertions
+(four skipped), with unchanged source. Evidence: `/tmp/voo-clip-release.json`
+and `.log`. Subsequent remote overlay/readiness changes are preserved in the
+integration commit and receive their own full gate; this receipt is not inherited.
+
+After that gate, a frozen baseline build `b965942` and the clean `25bda7a` build
+were measured sequentially without concurrent builds/tests. Baseline HTML SHA-256
+matches its recorded release. Both samples have no page script errors.
+
+| Measurement | Frozen baseline | Clean performance revision |
+| --- | ---: | ---: |
+| Loading ended / actual viewport ready | 11.167 s | 9.186 s |
+| Pan rAF cadence | 3.769 callbacks/s (38 intervals) | 6.954 callbacks/s (70 intervals) |
+| Zoom rAF cadence | 1.061 callbacks/s (11 intervals) | 2.046 callbacks/s (21 intervals) |
+| Six wheel waits, median | 315 ms | 184.5 ms |
+| Wheel range | 277-2,375 ms | 167-653 ms |
+
+This repeats the improvement seen in the earlier patch trials, but remains a
+single shared-machine pair with small samples, not a smoothness certification.
+Evidence: `/tmp/voo-open-pencil-comparison/voo-final-before/` and
+`voo-final-after/`. The unchanged source file SHA-256 was independently rechecked.
+
+
+Final integration `0a3ba248c8d2da6ef1a2699403097b8fd39a8210` preserves the new
+upstream global overlays/readiness and passes a fresh 91/91 release gate,
+87 core browser suites and 4,680 unit assertions (four skipped). Evidence:
+`/tmp/voo-clip-integrated-release.json` and `.log`; 21 additional suites and
+native/paid-service contexts remain unverified. Renderer source is unchanged
+from `25bda7a`; the direct-camera numbers above belong to that recorded revision.
+
+Direct camera mutation bypasses each app's gesture state machine, so the
+additional real-input control is reported separately. Twelve Space-drag steps
+and six Ctrl-wheel inputs confirm actual viewport changes, with zero page
+script errors. VOO uses live engine zoom and the screen artboard origin, not
+the stale initial `window.__vooStore` snapshot. An earlier VOO pointer attempt
+did not pan and is excluded; the final blank-canvas gesture preserves the exact
+document object. OpenPencil still requires finite manual camera recovery.
+
+| Real input wait, median | VOO integrated | OpenPencil master |
+| --- | ---: | ---: |
+| Twelve drag steps | 180 ms | 1,911.5 ms |
+| Six Ctrl-wheel inputs | 918 ms | 559 ms |
+
+These include automation plus two rAF waits, not hardware event latency or FPS.
+The apps apply different zoom factors per wheel event; the small shared-machine
+sample shows mixed results, not a universal ranking. VOO zoom remains slow.
+First-page isolated 1000x800 artwork comparison (three stable draws, zoom .024)
+finds 28 differing pixels / 800,000, maximum channel delta 36. This is unresolved,
+not a pixel-identical or all-property fidelity pass. Generated-fixture exact
+RGBA assertions are a separate, passing context. Evidence:
+`voo-real-gestures-background/`, `open-pencil-real-gestures/` and
+`isolated-artwork-pixel-comparison-final.json` in the private comparison folder.
+
+
+Published integration `0a3ba24` is pushed to GitHub main and deployed by
+`scripts/deploy-editor.sh` to https://voo.run/editor/. Canonical HTML and all
+critical assets selected by the independent verifier match the verified build
+byte-for-byte (HTTP 200). A separate production Chromium imports the generated
+native archive and passes crop/cover/rotation/overflow/two-mask pixels, unchanged
+mask reuse, offscreen-culling pixel equality, typed variables, constraints and
+undo/redo without page script errors. Evidence: `/tmp/voo-clip-deploy.log`,
+`/tmp/voo-clip-deployment-proof.json` and `/tmp/voo-clip-production-fidelity.json`.
+This is the DOM file-input path, not an OS/FSA chooser or signed Electron pass.
+The persistent private `open-pencil-comparison/` visualization bundle includes
+raw reports, scripts, screenshots and a SHA-256 manifest; no private design is
+published. Twenty-one additional checks, full readable-scale fidelity and
+smooth large-scene zoom remain unverified or incomplete.
