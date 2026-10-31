@@ -180,7 +180,12 @@ describe("buildDesignQualityPrompt", () => {
           expect(prompt).toContain(`(${e.kit}; structure only, restyle with the active kit) ${e.structure}`);
           expect(prompt).not.toContain(e.description);
         }
-        const recipes = prompt.split("[Exemplar recipes — follow the nearest one]\n")[1].split("\n");
+        // The recipe list now may be followed by a scene-guide block (user-text
+        // activation), so scope the recipe assertions to the recipe section.
+        const recipesSection = prompt
+          .split("[Exemplar recipes — follow the nearest one]\n")[1]
+          .split("\n=== Scene guide:")[0];
+        const recipes = recipesSection.split("\n").filter((line) => line.trim().length > 0);
         for (const recipe of recipes) {
           expect(recipe.includes(`(${kit.id})`) || recipe.includes("structure only, restyle with the active kit")).toBe(true);
         }
@@ -204,6 +209,36 @@ describe("buildDesignQualityPrompt", () => {
     const promptText = buildDesignQualityPrompt({ userText: "editorial magazine article" });
     expect(promptText).toContain("Editorial Print");
     expect(promptText).toContain("ONE kit");
+  });
+
+  it("injects the scene guide named by an explicit sceneKind", () => {
+    const prompt = buildDesignQualityPrompt({ userText: "make something sharp", sceneKind: "poster" });
+    expect(prompt).toContain("=== Scene guide: Poster / 活动海报 ===");
+    expect(prompt).toContain("主标题字号 = 画布宽 10-14%");
+  });
+
+  it("activates a scene guide from the natural-language request when sceneKind is absent", () => {
+    for (const [userText, sceneName] of [
+      ["帮我设计活动海报", "Poster / 活动海报"],
+      ["做个小红书卡片", "Xiaohongshu Card / 小红书卡片"],
+      ["设计一张电商横幅", "Banner / 电商横幅"],
+      ["做一个落地页", "Landing Page / 落地页"],
+    ]) {
+      const prompt = buildDesignQualityPrompt({ userText });
+      expect(prompt, `userText: ${userText}`).toContain(`=== Scene guide: ${sceneName} ===`);
+    }
+  });
+
+  it("prefers an explicit sceneKind over the words in the request", () => {
+    const prompt = buildDesignQualityPrompt({ userText: "帮我设计活动海报", sceneKind: "xiaohongshu" });
+    expect(prompt).toContain("=== Scene guide: Xiaohongshu Card / 小红书卡片 ===");
+    expect(prompt).not.toContain("Poster / 活动海报");
+  });
+
+  it("injects no scene guide when neither sceneKind nor the request names a scene", () => {
+    for (const input of [{ userText: "把按钮变蓝" }, { userText: "" }, {}]) {
+      expect(buildDesignQualityPrompt(input)).not.toContain("=== Scene guide:");
+    }
   });
 });
 
