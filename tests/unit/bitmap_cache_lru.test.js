@@ -86,4 +86,20 @@ describe("byte-budgeted bitmap cache", () => {
     expect(evicted).toEqual([a]);
     expect(cache.stats()).toMatchObject({ size: 1, pinnedCount: 1 });
   });
+
+  it("zeroes the byte accounting and entry count after dispose", () => {
+    const evicted = [];
+    const cache = createBitmapCache({ maxEntries: 32, onEvict: (image) => evicted.push(image) });
+    const a = fakeImage(10, 10);
+    const b = fakeImage(20, 20);
+    cache.put({ imageId: "a" }, a);
+    cache.put({ imageId: "b" }, b);
+    expect(cache.stats().totalBytes).toBeGreaterThan(0);
+
+    cache.dispose();
+
+    // Diagnostics must not keep reporting bytes that were already released.
+    expect(cache.stats()).toMatchObject({ size: 0, totalBytes: 0 });
+    expect(evicted).toEqual(expect.arrayContaining([a, b]));
+  });
 });
