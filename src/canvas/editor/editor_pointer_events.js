@@ -5,6 +5,31 @@
 import { NODE_KIND, canConvertToPath } from "./scene_model.js";
 import { TOOL, toolUsesColor } from "./editor_constants.js";
 import { marqueeItemForMode } from "./tool_families.js";
+import { isFrameSelectionBoundary } from "./frame-selection-unit.js";
+import {
+  handleFromPoints,
+  nodesBounds,
+  selectionHandlePoints,
+} from "./scene_geometry.js";
+import { HANDLE_GRAB_RADIUS } from "./scene_renderer.js";
+import * as ops from "./doc_ops.js";
+
+function getFrameHandleUnder(frame, point, api) {
+  if (!frame) return null;
+  const zoom = api.getViewport?.()?.zoom ?? 1;
+  const tolerance = (HANDLE_GRAB_RADIUS || 8) / (zoom || 1);
+  const targetNode = api.getEffectiveNode?.(frame) ?? frame;
+  const points = selectionHandlePoints(targetNode);
+  return handleFromPoints(points, point, tolerance);
+}
+
+function findHitHandle(frame, point, event, api, nodeHandleUnder) {
+  if (typeof nodeHandleUnder === "function") {
+    const handle = nodeHandleUnder(frame, event);
+    if (handle) return handle;
+  }
+  return getFrameHandleUnder(frame, point, api);
+}
 
 export function createPointerDownDispatcher({
   api,
@@ -127,7 +152,7 @@ export function createPointerDownDispatcher({
   return { dispatchDown };
 }
 
-export function handleEditorDoubleClick(event, { api }) {
+export function handleEditorDoubleClick(event, { api, nodeHandleUnder } = {}) {
   if (api.getTool() === TOOL.CROP && api.getCropRect?.()) {
     const point = api.toDocPoint(event.clientX, event.clientY);
     const rect = api.getCropRect();
@@ -171,26 +196,103 @@ export function handleEditorDoubleClick(event, { api }) {
   }
   const point = api.toDocPoint(event.clientX, event.clientY);
   const hit = api.nodeAtPoint(point);
-  if (!hit) return;
-  if (hit.kind === NODE_KIND.TEXT) {
-    api.selectExactly([hit.id]);
-    api.beginTextEdit(hit.id);
-    return;
-  }
-  if (hit.kind === NODE_KIND.PATH && hit.pen === true) {
-    api.selectExactly([hit.id]);
-    api.beginEdit(hit.id);
-    return;
-  }
-  if (currentTool === TOOL.SELECT && canConvertToPath(hit)) {
-    // Basic vector shapes become editable anchors through the same undoable
-    // conversion as the inspector. Target the leaf, not its selected group.
-    if (api.convertSelectedToPath(hit.id)) {
+  if (hit) {
+    if (hit.kind === NODE_KIND.TEXT) {
+      api.selectExactly([hit.id]);
+      api.beginTextEdit(hit.id);
+      return;
+    }
+    if (hit.kind === NODE_KIND.PATH && hit.pen === true) {
       api.selectExactly([hit.id]);
       api.beginEdit(hit.id);
+      return;
     }
-    return;
+    if (currentTool === TOOL.SELECT && canConvertToPath(hit)) {
+      // Basic vector shapes become editable anchors through the same undoable
+      // conversion as the inspector. Target the leaf, not its selected group.
+      if (api.convertSelectedToPath(hit.id)) {
+        api.selectExactly([hit.id]);
+        api.beginEdit(hit.id);
+      }
+      return;
+    }
   }
+
+  if (currentTool === TOOL.SELECT) {
+    const doc = api.getDocument?.();
+    const selected = api.getSelected?.() ?? api.getSelectedNodes?.()?.[0] ?? null;
+    const selectedNode = typeof selected === "string" ? api.getNode?.(selected) : selected;
+    let targetFrame = null;
+    let hitHandle = null;
+
+    if (selectedNode && isFrameSelectionBoundary(selectedNode)) {
+      hitHandle = findHitHandle(selectedNode, point, event, api, nodeHandleUnder);
+      if (hitHandle) targetFrame = selectedNode;
+    }
+    if (!targetFrame && hit && isFrameSelectionBoundary(hit)) {
+      hitHandle = findHitHandle(hit, point, event, api, nodeHandleUnder);
+      if (hitHandle) targetFrame = hit;
+    }
+    if (!targetFrame && doc?.nodes) {
+      for (let i = doc.nodes.length - 1; i >= 0; i--) {
+        const candidate = doc.nodes[i];
+        if (isFrameSelectionBoundary(candidate)) {
+          hitHandle = findHitHandle(candidate, point, event, api, nodeHandleUnder);
+          if (hitHandle) {
+            targetFrame = candidate;
+            break;
+          }
+        }
+      }
+    }
+
+    if (targetFrame && hitHandle) {
+      if (targetFrame.locked || targetFrame.lockPosition) return;
+      const directChildren = (doc?.nodes ?? []).filter(
+        (node) => node.parentId === targetFrame.id && node.kind !== NODE_KIND.REGION,
+      );
+      if (directChildren.length === 0) return;
+
+      const aabb = nodesBounds(directChildren);
+      if (!aabb) return;
+
+      const snap4 = (v) => Math.round(v / 4) * 4;
+      const newX = snap4(aabb.x);
+      const newY = snap4(aabb.y);
+      const newWidth = Math.max(4, snap4(aabb.width));
+      const newHeight = Math.max(4, snap4(aabb.height));
+
+      const changed =
+        targetFrame.x !== newX ||
+        targetFrame.y !== newY ||
+        targetFrame.width !== newWidth ||
+        targetFrame.height !== newHeight;
+
+      if (changed) {
+        if (typeof api.updateNode === "function") {
+          api.updateNode(targetFrame.id, {
+            x: newX,
+            y: newY,
+            width: newWidth,
+            height: newHeight,
+          });
+        } else if (typeof api.setDoc === "function") {
+          api.setDoc(
+            ops.updateNode(doc, targetFrame.id, {
+              x: newX,
+              y: newY,
+              width: newWidth,
+              height: newHeight,
+            }),
+          );
+        }
+      }
+      api.selectExactly?.([targetFrame.id]) ?? api.select?.(targetFrame.id);
+      return;
+    }
+  }
+
+  if (!hit) return;
   if (currentTool === TOOL.SELECT && api.enterGroup(hit.id)) return;
   if (hit.kind === NODE_KIND.IMAGE) {
     if (hit.locked) return;
