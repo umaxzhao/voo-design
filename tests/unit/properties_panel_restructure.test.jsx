@@ -99,18 +99,19 @@ describe("brush options live in the right panel", () => {
 });
 
 describe("core sections are always visible; advanced extras hide behind one add menu", () => {
-  it("renders paint, effects, constraints, appearance and export for a plain shape", () => {
+  it("renders core shape sections while unconfigured export stays behind Add", () => {
     const html = renderSections(rect, { sections: ["alignment", "transform", "constraints", "layer", "fill", "stroke", "effects", "export"] });
     for (const shown of [
       "editor.constraints.title",
       "editor.props.effects",
       "editor.props.addEffect",
       "editor.props.appearance",
-      "editor.props.exportTitle",
     ]) {
       expect(html, shown).toContain(shown);
     }
     for (const hidden of [
+      "editor.props.exportTitle",
+      "editor.props.addExportSettings",
       "editor-live-filter-section",
       "editor-modifiers-section",
       "editor-style-section",
