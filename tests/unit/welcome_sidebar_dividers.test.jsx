@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { WelcomeSidebar } from "../../src/canvas/components/welcome_dashboard/welcome_sidebar.jsx";
 
 describe("welcome sidebar section dividers", () => {
-  it("separates navigation, project folders and templates with mint rules", () => {
+  it("separates sidebar sections with subtle inset rules", () => {
     const html = renderToStaticMarkup(
       <WelcomeSidebar
         t={(key) => key}
@@ -27,6 +27,6 @@ describe("welcome sidebar section dividers", () => {
     );
 
     expect(html.match(/role="separator"/g)).toHaveLength(2);
-    expect(html.match(/border-mint\/25/g)).toHaveLength(2);
+    expect(html.match(/mx-2\.5 border-t border-white\/10/g)).toHaveLength(2);
   });
 });
