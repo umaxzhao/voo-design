@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { StrokeSection } from "../../src/canvas/components/editor_properties/colour_stroke_section.jsx";
+import { SwatchGrid } from "../../src/canvas/color_picker/SwatchGrid.jsx";
+import { DocumentColourRow } from "../../src/canvas/color_picker/DocumentColourRow.jsx";
+import { DocumentColoursContext } from "../../src/canvas/color_picker/document_colours_context.js";
 import EditorLayers from "../../src/canvas/components/editor_layers.jsx";
 
 vi.mock("../../src/canvas/components/use_layer_drag.js", () => ({
@@ -54,4 +57,20 @@ describe("stroke paint row", () => {
       expect(html).toContain(stroke);
     },
   );
+});
+
+
+describe("picker color chips", () => {
+  it("uses circles for both presets and user document colors", () => {
+    const presets = renderToStaticMarkup(createElement(SwatchGrid, { onSelectColor: vi.fn() }));
+    const documentColors = renderToStaticMarkup(createElement(DocumentColoursContext.Provider, {
+      value: [{ id: "brand", name: "Brand", value: "#3366FF" }],
+    }, createElement(DocumentColourRow, { onSelectColor: vi.fn() })));
+    for (const html of [presets, documentColors]) {
+      const buttons = [...html.matchAll(/<button[^>]*class="([^"]+)"/g)];
+      expect(buttons.length).toBeGreaterThan(0);
+      for (const [, classes] of buttons) expect(classes.split(" ")).toContain("rounded-full");
+    }
+    expect(documentColors).toContain("#3366FF");
+  });
 });
