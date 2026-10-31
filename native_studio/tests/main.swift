@@ -15,6 +15,7 @@ UIParityTests.registerTests()
 CanvasInteractionTests.registerTests()
 M1_ToolFlyoutContextualTaskbarTests.registerTests()
 M2_InspectorStudioTests.registerTests()
+WorkspaceManagerTests.registerTests()
 // AIAgentTests.registerTests()
 
 let args = CommandLine.arguments

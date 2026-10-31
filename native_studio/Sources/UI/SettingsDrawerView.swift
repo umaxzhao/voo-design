@@ -264,6 +264,22 @@ private struct SettingsCopy {
                 description: "Google's multi-agent orchestration engine for deep canvas understanding and end-to-end collaboration.",
                 models: "Models: Gemini 2.5 Flash / Pro",
                 provider: "antigravity"
+            ),
+            SettingsAgentCopy(
+                title: "OpenCode CLI",
+                badge: nil,
+                handle: "@opencode/cli",
+                description: "Open-source coding agent supporting multi-model pipelines and local filesystem context.",
+                models: "Models: Configurable / Local",
+                provider: "opencode"
+            ),
+            SettingsAgentCopy(
+                title: "DeepSeek Harness",
+                badge: "Native Connector",
+                handle: "DeepSeek Harness desktop app",
+                description: "DeepSeek Harness integration via high-performance MCP socket connector.",
+                models: "Models: DeepSeek Chat / Reasoner (R1)",
+                provider: "deepseekHarness"
             )
         ],
         defaultAgentLabel: "DEFAULT AGENT",
@@ -328,6 +344,22 @@ private struct SettingsCopy {
                 description: "Google 先锋多 Agent 编排引擎，支持画布节点深度理解与端到端协同。",
                 models: "支持模型: Gemini 2.5 Flash / Pro",
                 provider: "antigravity"
+            ),
+            SettingsAgentCopy(
+                title: "OpenCode CLI",
+                badge: nil,
+                handle: "@opencode/cli",
+                description: "开源代码智能体，支持多模型流水线与本地上下文执行。",
+                models: "支持模型: 自定义 / 本地模型",
+                provider: "opencode"
+            ),
+            SettingsAgentCopy(
+                title: "DeepSeek Harness",
+                badge: "原生连接器",
+                handle: "DeepSeek Harness 桌面应用",
+                description: "通过高性能 MCP 接口直连 DeepSeek Harness 智能体，支持双向画布通信。",
+                models: "支持模型: DeepSeek Chat / Reasoner (R1)",
+                provider: "deepseekHarness"
             )
         ],
         defaultAgentLabel: "默认智能体",
@@ -1238,7 +1270,8 @@ public final class SettingsDrawerView: NSView {
         let agentSectionLabel = rect(top: stackTop, height: 14, x: sectionX, width: sectionWidth)
         var agentCards: [CGRect] = []
         var agentCardTop = stackTop - 14 - 16
-        for _ in 0..<3 {
+        let agentCount = copy.agents.count
+        for _ in 0..<agentCount {
             agentCards.append(rect(top: agentCardTop, height: SettingsMetrics.agentCardHeight,
                                    x: sectionX, width: sectionWidth))
             agentCardTop -= SettingsMetrics.agentCardHeight + SettingsMetrics.agentCardGap
@@ -1247,10 +1280,10 @@ public final class SettingsDrawerView: NSView {
         let defaultAgentLabel = rect(top: assistantSectionTwoTop - 16, height: 14,
                                      x: sectionX, width: sectionWidth)
         let agentSegmentsTop = assistantSectionTwoTop - 16 - 14 - 16
-        let agentSegmentGap: CGFloat = 8
-        let agentSegmentWidth = (sectionWidth - agentSegmentGap * 2) / 3
+        let agentSegmentGap: CGFloat = 6
+        let agentSegmentWidth = max(30, (sectionWidth - agentSegmentGap * CGFloat(agentCount - 1)) / CGFloat(agentCount))
         var agentSegments: [CGRect] = []
-        for index in 0..<3 {
+        for index in 0..<agentCount {
             agentSegments.append(rect(
                 top: agentSegmentsTop,
                 height: SettingsMetrics.languageHeight,
@@ -1359,9 +1392,13 @@ public final class SettingsDrawerView: NSView {
             (.agent(0), "Settings.Agent.Claude"),
             (.agent(1), "Settings.Agent.Codex"),
             (.agent(2), "Settings.Agent.Antigravity"),
+            (.agent(3), "Settings.Agent.OpenCode"),
+            (.agent(4), "Settings.Agent.DeepSeekHarness"),
             (.agentSegment(0), "Settings.DefaultAgent.Claude"),
             (.agentSegment(1), "Settings.DefaultAgent.Codex"),
             (.agentSegment(2), "Settings.DefaultAgent.Antigravity"),
+            (.agentSegment(3), "Settings.DefaultAgent.OpenCode"),
+            (.agentSegment(4), "Settings.DefaultAgent.DeepSeekHarness"),
             (.onboarding, "Settings.Onboarding")
         ]
 
@@ -1447,9 +1484,13 @@ public final class SettingsDrawerView: NSView {
         case .agent(0): return "Settings.Agent.Claude"
         case .agent(1): return "Settings.Agent.Codex"
         case .agent(2): return "Settings.Agent.Antigravity"
+        case .agent(3): return "Settings.Agent.OpenCode"
+        case .agent(4): return "Settings.Agent.DeepSeekHarness"
         case .agentSegment(0): return "Settings.DefaultAgent.Claude"
         case .agentSegment(1): return "Settings.DefaultAgent.Codex"
         case .agentSegment(2): return "Settings.DefaultAgent.Antigravity"
+        case .agentSegment(3): return "Settings.DefaultAgent.OpenCode"
+        case .agentSegment(4): return "Settings.DefaultAgent.DeepSeekHarness"
         case .onboarding: return "Settings.Onboarding"
         default: return nil
         }
@@ -1876,15 +1917,19 @@ public final class SettingsDrawerView: NSView {
             kern: 0.4
         )
         settingsFillRounded(layout.workspaceChip, radius: 9, color: SettingsPalette.hover)
+        let wsConfig = WorkspaceManager.shared.getWorkspaceConfig()
+        let badgeText = wsConfig.isConfigured
+            ? (languageCode == "zh" ? "[自定义工作区]" : "[Custom]")
+            : (languageCode == "zh" ? "[默认工作区]" : "[Default]")
         settingsDrawText(
-            copy.workspaceBadge,
+            badgeText,
             in: layout.workspaceChip,
             font: ThemeFonts.mono(size: 10, weight: .medium),
             color: SettingsPalette.textStrong,
             alignment: .center
         )
         settingsDrawText(
-            copy.workspaceName,
+            wsConfig.path,
             in: layout.workspacePath,
             font: ThemeFonts.mono(size: 12),
             color: SettingsPalette.textSecondary,

@@ -1521,6 +1521,25 @@ public class CanvasStageView: NSView {
         ctx.setAlpha(node.style.opacity)
         ctx.setBlendMode(Self.cgBlendMode(for: node.style.blendMode))
 
+        // Layer mask clipping
+        if let maskId = node.maskId,
+           let maskNode = document.nodes.first(where: { $0.id == maskId }) {
+            let maskRect = CGRect(x: maskNode.x, y: maskNode.y, width: maskNode.width, height: maskNode.height)
+            if maskNode.kind == .ellipse {
+                ctx.addEllipse(in: maskRect)
+                ctx.clip()
+            } else {
+                let radius = maskNode.cornerRadii?.tl ?? 0
+                if radius > 0 {
+                    let path = CGPath(roundedRect: maskRect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+                    ctx.addPath(path)
+                    ctx.clip()
+                } else {
+                    ctx.clip(to: maskRect)
+                }
+            }
+        }
+
         if let gBlur = node.effects?.gaussianBlur, gBlur.enabled, gBlur.radius > 0 {
             renderNodeWithGaussianBlur(node: node, in: ctx, rect: rect, blurRadius: gBlur.radius)
         } else {
@@ -1599,6 +1618,19 @@ public class CanvasStageView: NSView {
         // the bounding box so transform-handle resizing stays visually in sync.
         if document.nodes[idx].kind == .path {
             scalePathPoints(of: idx, from: previousRect, to: newRect)
+        } else if document.nodes[idx].kind == .group {
+            let scaleX = previousRect.width > 0 ? newRect.width / previousRect.width : 1.0
+            let scaleY = previousRect.height > 0 ? newRect.height / previousRect.height : 1.0
+            let childIds = collectDescendantIds(of: document.nodes[idx].id)
+            for cId in childIds {
+                guard let cIdx = document.nodes.firstIndex(where: { $0.id == cId }) else { continue }
+                let relX = document.nodes[cIdx].x - previousRect.origin.x
+                let relY = document.nodes[cIdx].y - previousRect.origin.y
+                document.nodes[cIdx].x = newRect.origin.x + relX * scaleX
+                document.nodes[cIdx].y = newRect.origin.y + relY * scaleY
+                document.nodes[cIdx].width *= scaleX
+                document.nodes[cIdx].height *= scaleY
+            }
         }
 
         onNodeTransformed?(document.nodes[idx])
@@ -1935,6 +1967,16 @@ public class CanvasStageView: NSView {
         needsDisplay = true
     }
 
+    private func collectDescendantIds(of parentId: String) -> [String] {
+        var results: [String] = []
+        let children = document.nodes.filter { $0.parentId == parentId }
+        for child in children {
+            results.append(child.id)
+            results.append(contentsOf: collectDescendantIds(of: child.id))
+        }
+        return results
+    }
+
     public override func mouseDown(with event: NSEvent) {
         let loc = convert(event.locationInWindow, from: nil)
         let docPt = documentPoint(from: loc)
@@ -2086,10 +2128,16 @@ public class CanvasStageView: NSView {
                 nodeDragStartMouse = docPt
                 nodeInitialRect = CGRect(x: node.x, y: node.y, width: node.width, height: node.height)
                 dragInitialRects = [:]
+                var allIdsToMove = selectedNodeIds
                 for selectedId in selectedNodeIds {
-                    if let selected = document.nodes.first(where: { $0.id == selectedId }) {
-                        dragInitialRects[selectedId] = CGRect(x: selected.x, y: selected.y,
-                                                              width: selected.width, height: selected.height)
+                    for descId in collectDescendantIds(of: selectedId) {
+                        allIdsToMove.insert(descId)
+                    }
+                }
+                for moveId in allIdsToMove {
+                    if let selected = document.nodes.first(where: { $0.id == moveId }) {
+                        dragInitialRects[moveId] = CGRect(x: selected.x, y: selected.y,
+                                                          width: selected.width, height: selected.height)
                     }
                 }
             }
@@ -2684,6 +2732,31 @@ public class CanvasStageView: NSView {
             return true
         }
 
+        // 2.5 Midpoint anchor insertion on segment click (vectors.midpoint-insertion)
+        if let (insertIndex, midpoint) = pathSegmentMidpointHitTest(at: docPt, points: points),
+           let nodeId = pathEditingNodeId,
+           let nodeIndex = document.nodes.firstIndex(where: { $0.id == nodeId }) {
+            let before = points
+            let newAnchor = PenAnchor(
+                x: midpoint.x,
+                y: midpoint.y,
+                inHandle: nil,
+                outHandle: nil,
+                isClosed: points.first?.isClosed ?? false,
+                type: .smooth
+            )
+            var updatedPoints = points
+            updatedPoints.insert(newAnchor, at: insertIndex)
+            document.nodes[nodeIndex].points = updatedPoints
+            selectedAnchorIndex = insertIndex
+            pathEditBeforePoints = before
+            onPathPointsCommitted?(nodeId, before, updatedPoints)
+            syncPathEditingOverlay()
+            needsDisplay = true
+            onToolActionCompleted?("path.midpoint.inserted")
+            return true
+        }
+
         // 3. Clicking another path re-targets the editor.
         if let hit = hitTestNode(at: docPt), hit.kind == .path,
            hit.id != pathEditingNodeId, (hit.points?.count ?? 0) >= 2 {
@@ -2844,6 +2917,36 @@ public class CanvasStageView: NSView {
             needsDisplay = true
             onToolActionCompleted?("path.curve.split")
         }
+    }
+
+    private func pathSegmentMidpointHitTest(at docPt: CGPoint, points: [PenAnchor], threshold: CGFloat = 8.0) -> (index: Int, point: CGPoint)? {
+        guard points.count >= 2 else { return nil }
+        let count = points.count
+        let isClosed = points.first?.isClosed ?? false
+        let maxSegments = isClosed ? count : count - 1
+
+        var bestMatch: (index: Int, point: CGPoint)?
+        var bestDist = CGFloat.greatestFiniteMagnitude
+
+        for i in 0..<maxSegments {
+            let next = (i + 1) % count
+            let p1 = CGPoint(x: points[i].x, y: points[i].y)
+            let p2 = CGPoint(x: points[next].x, y: points[next].y)
+            let mid = CGPoint(x: (p1.x + p2.x) / 2.0, y: (p1.y + p2.y) / 2.0)
+
+            let dx = p2.x - p1.x
+            let dy = p2.y - p1.y
+            let lenSq = dx * dx + dy * dy
+            if lenSq <= 0.0001 { continue }
+            let t = max(0, min(1, ((docPt.x - p1.x) * dx + (docPt.y - p1.y) * dy) / lenSq))
+            let proj = CGPoint(x: p1.x + t * dx, y: p1.y + t * dy)
+            let dist = hypot(docPt.x - proj.x, docPt.y - proj.y) * max(zoom, 0.0001)
+            if dist <= threshold && dist < bestDist {
+                bestDist = dist
+                bestMatch = (i + 1, mid)
+            }
+        }
+        return bestMatch
     }
 
     private func pathAnchorHitTest(at docPt: CGPoint, points: [PenAnchor]) -> Int? {

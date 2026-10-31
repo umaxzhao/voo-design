@@ -61,8 +61,9 @@ Packaging gates enforced by `build.sh`:
 | Lasso select, magic wand (same fill), hand/pan tool | `CanvasStageView` + `ToolRailView` |
 | Image import (file menu / drag & drop / clipboard paste), in-canvas image rendering + export | `ImageImporter` + `CanvasStageView` + `ExportEngine` |
 | Full text typography (family/size/weight/align/line-height/letter-spacing) | `PropertiesPanelView` + `TextStyleResolver` |
-| Real local CLI agents (Claude Code / OpenAI Codex / Antigravity) with streamed replies | `LocalCLIBridge` + `AgentPanelView` |
-| Multi-select move, undoable drag/resize/rotate, right-click menus (canvas + layers), align/distribute, grid & snapping toggles, 16 blend modes in-canvas | `CanvasStageView` + `WindowController` |
+| Real local CLI agents (Claude Code / OpenAI Codex / Antigravity / OpenCode / DeepSeek Harness) with streamed replies | `LocalCLIBridge` + `AgentPanelView` |
+| Workspace directory management (.voo/.fig/.psd/.svg scanner, subfolders, recoverable .trash with manifest, rename, duplicate, star, file watcher) | `WorkspaceManager` + `WelcomeDashboardView` + `SettingsDrawerView` |
+| Multi-select move, undoable drag/resize/rotate, right-click menus (canvas + layers + project cards), align/distribute, grid & snapping toggles, 16 blend modes in-canvas | `CanvasStageView` + `WindowController` |
 | Text layer typography (font family + size) in PROPERTIES | `PropertiesPanelView` |
 | Export dialog (PNG / JPG / PDF / SVG, 1x–4x) | `ExportEngine` + native export sheet |
 | `.voo` document format, undo/redo, boolean ops, bezier nodes, blend modes, brush, snapping, rulers, 8-point transform | native `Engine` + `Canvas` (pure CoreGraphics/Metal) |
@@ -89,7 +90,7 @@ Pixel spec for spacing, margins and icon sizes across every UI component:
 
 ```bash
 cd native_studio
-./tests/run_tests.sh            # 336 tests, 4 tiers + canvas interaction suite, 100% pass
+./tests/run_tests.sh            # 377 tests, 4 tiers + canvas interaction, workspace & quality suite, 100% pass
 ./tests/run_tests.sh --verbose
 ./tests/run_tests.sh --tier 2
 ./tests/run_tests.sh --filter UIParity

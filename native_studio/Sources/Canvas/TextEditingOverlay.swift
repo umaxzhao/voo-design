@@ -582,9 +582,9 @@ public final class TextEditingOverlay: NSView {
     /// Creates the standard text node the host inserts when the text tool is used.
     ///
     /// - kind: `.text`, name `"Text N"`, 160x28, text `"Text"`, font size 24,
-    ///   family `"Inter"` (falls back to Helvetica Neue / system), fill `#ffffff`,
+    ///   family `"Inter"` (falls back to Helvetica Neue / system), fill `#ffffff` (or `#171717` on light backgrounds),
     ///   stroke `"none"`, stroke width 0.
-    public static func defaultTextNode(at point: CGPoint, index: Int) -> VOONode {
+    public static func defaultTextNode(at point: CGPoint, index: Int, onLightBackground: Bool = false) -> VOONode {
         VOONode(
             kind: .text,
             name: "Text \(index)",
@@ -592,7 +592,7 @@ public final class TextEditingOverlay: NSView {
             y: point.y,
             width: 160.0,
             height: 28.0,
-            style: LayerStyle(fill: "#ffffff", stroke: "none", strokeWidth: 0),
+            style: LayerStyle(fill: onLightBackground ? "#171717" : "#ffffff", stroke: "none", strokeWidth: 0),
             text: "Text",
             fontSize: 24.0,
             fontFamily: "Inter"

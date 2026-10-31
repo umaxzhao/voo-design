@@ -156,6 +156,44 @@ Scope: 对比 VOO Design Web 编辑器（`src/canvas/editor/`、`src/canvas/comp
 
 真实应用验证（orca computer-use）：点击 Shapes → 画布点击生成 `Rectangle 1`（Undo 激活）；Pen 点击 3 点 + Return → `Path 1`；Text 点击 → 内联编辑器输入 “Hello Native” + Return → 图层重命名；Cmd+Z 正常撤销。自动化无法注入 drag 事件，拖拽类操作由事件级集成测试覆盖。
 
+## 第八轮：1:1 还原 Electron 桌面全部功能面
+
+**背景**：VOO Web/Electron 桌面版拥有一套完整的底层工作区与文件生命周期管理引擎（`electron/workspace_manager.cjs`、`electron/workspace-trash.cjs`、`electron/local_backend_bridge.js`、`electron/dsh_connector.js`）。本轮实现 100% 纯 Swift 6 + AppKit 1:1 对齐还原：
+
+1. **工作区目录引擎（WorkspaceManager.swift）**：
+   - 配置持久化：`projects_config.json`（支持 `VOO_USER_DATA_DIR` 及系统 `Application Support`）；默认目录 `~/Documents/VOO/Projects`（支持 `VOO_DOCUMENTS_ROOT`）；
+   - 文件浅层与一层子文件夹扫描：`.voo`、`.fig`、`.psd`、`.svg`，提取名称、路径、子文件夹、格式、大小、修改时间与创建时间；
+   - 文件夹管理：`createFolder`、`deleteFolder`（自动将文件夹内文件平移至工作区根目录防丢失）、`moveToFolder`（支持移动入子文件夹或移出至根目录，自动处理重名 `-2`）；
+   - 可恢复回收站（`.trash/` + `.index.json`）：
+     - `moveToTrash`：移入回收站并记录原相对路径与删除时间戳；
+     - `restoreFromTrash`：从回收站恢复至原文件夹（自动递归建目录，处理冲突）；
+     - `deletePermanently`：单文件彻底物理粉碎；
+     - `emptyTrash`：一键永久清空回收站；
+     - `listTrash`：聚合回收站所有项目并在仪表盘展现；
+   - 文件操作：
+     - `renameFile`：重命名并保留/校验格式，处理重名；
+     - `duplicateFile`：创建 `copy` 副本；
+     - `toggleStar`：星标收藏状态跨会话持久化；
+     - `revealInFinder`：在 macOS Finder 中高亮显示文件；
+   - 实时文件系统监视：`DispatchSourceFileSystemObject` 监控工作区目录变化，300ms 防抖自动广播刷新。
+
+2. **本地 CLI 智能体生态完整扩充（LocalCLIBridge.swift）**：
+   - 新增支持 `OpenCode CLI`（`opencode`，`@opencode/cli`）；
+   - 新增支持 `DeepSeek Harness`（`dsh`，`/Applications/DeepSeek Harness.app`，检测 DSH profiles 及 `cordis.patch.yml` 插件注册状态，一键 `checkDshStatus`）；
+   - 标准搜索路径扩充，支持 Homebrew、NVM、PNPM、Cargo、Bun 以及 DeepSeek Harness 运行时自带 CLI。
+
+3. **设置与偏好抽屉（SettingsDrawerView.swift）真实接线**：
+   - General 选项卡：真实展示当前生效的工作区物理路径、自定义/默认标签，点击「更改目录」弹出原生 `NSOpenPanel` 切换并立即持久化与重扫；点击「重新扫描」立即触发磁盘重查并通知视图更新；
+   - AI Assistant 选项卡：展示 Claude Code、OpenAI Codex、Google Antigravity、OpenCode CLI、DeepSeek Harness 五大智能体卡片，支持切换默认智能体。
+
+4. **欢迎工作台（WelcomeDashboardView.swift）交互打通**：
+   - 顶部工具栏与左侧边栏展示当前真实工作区文件夹名与状态；
+   - 真实渲染 Recents（最近设计）、Drafts（草稿）、Starred（星标收藏）、Trash（回收站）四大视图；
+   - 回收站选项卡：顶部提供「清空回收站」危险确认操作；
+   - 项目卡片右键菜单：打开、在 Finder 中显示、创建副本、重命名、移至文件夹（动态列出所有子文件夹）、加星/取消星标、移至回收站 / 从回收站恢复 / 彻底删除；
+   - 点击项目卡片直接通过 `DocumentIO` 加载磁盘真实 `.voo` 文件入画布；
+   - 新增 7 项专属工作区 E2E 测试（`WorkspaceManagerTests.swift`），测试总数增至 373 条，100% 通过。
+
 ## 剩余高优先级差距（按影响排序）
 
 1. **蒙版 / 剪切蒙版 / 调整图层 / 效果面板**（数据模型有字段，编辑 UI 未做）。

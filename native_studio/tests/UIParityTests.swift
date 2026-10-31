@@ -1195,23 +1195,26 @@ public class UIParityTests {
 
         registry.register(tier: 1, feature: "UIParity-Export", name: "test_UIParity_Export_FormatMetadata") {
             let allFormats = ExportFormat.allCases
-            try TestAssertions.assertEqual(allFormats.count, 4)
-            try TestAssertions.assertEqual(allFormats, [ExportFormat.png, ExportFormat.jpg, ExportFormat.pdf, ExportFormat.svg])
+            try TestAssertions.assertEqual(allFormats.count, 5)
+            try TestAssertions.assertEqual(allFormats, [ExportFormat.png, ExportFormat.jpg, ExportFormat.pdf, ExportFormat.svg, ExportFormat.html])
 
             try TestAssertions.assertEqual(ExportFormat.png.rawValue, "PNG")
             try TestAssertions.assertEqual(ExportFormat.jpg.rawValue, "JPG")
             try TestAssertions.assertEqual(ExportFormat.pdf.rawValue, "PDF")
             try TestAssertions.assertEqual(ExportFormat.svg.rawValue, "SVG")
+            try TestAssertions.assertEqual(ExportFormat.html.rawValue, "HTML")
 
             try TestAssertions.assertEqual(ExportFormat.png.fileExtension, "png")
             try TestAssertions.assertEqual(ExportFormat.jpg.fileExtension, "jpg")
             try TestAssertions.assertEqual(ExportFormat.pdf.fileExtension, "pdf")
             try TestAssertions.assertEqual(ExportFormat.svg.fileExtension, "svg")
+            try TestAssertions.assertEqual(ExportFormat.html.fileExtension, "html")
 
             try TestAssertions.assertTrue(ExportFormat.png.allowsScale, "PNG supports 1x-4x")
             try TestAssertions.assertTrue(ExportFormat.jpg.allowsScale, "JPG supports 1x-4x")
             try TestAssertions.assertFalse(ExportFormat.pdf.allowsScale, "PDF is vector")
             try TestAssertions.assertFalse(ExportFormat.svg.allowsScale, "SVG is vector")
+            try TestAssertions.assertFalse(ExportFormat.html.allowsScale, "HTML is markup")
 
             try TestAssertions.assertEqual(ExportFormat.png.contentType, UTType.png)
             try TestAssertions.assertEqual(ExportFormat.jpg.contentType, UTType.jpeg)
@@ -1308,6 +1311,11 @@ public class UIParityTests {
                 case .pdf:
                     let header = String(data: Data(data.prefix(4)), encoding: .ascii)
                     try TestAssertions.assertEqual(header, "%PDF")
+                case .html:
+                    guard let markup = String(data: data, encoding: .utf8) else {
+                        throw TestFailure(message: "HTML was not UTF-8", file: #file, line: #line)
+                    }
+                    try TestAssertions.assertTrue(markup.contains("<!DOCTYPE html>"), "HTML payload contains DOCTYPE")
                 }
             }
         }
@@ -2801,6 +2809,7 @@ public class UIParityTests {
             try TestAssertions.assertNil(stage.pathEditingOverlay.hitTest(NSPoint(x: 1, y: 2)))
             stage.zoom = 0.58
             stage.panOffset = CGPoint(x: 300, y: 200)
+            stage.showRulers = true
             try TestAssertions.assertApproxEqual(stage.pathEditingOverlay.zoom, 0.58)
             try TestAssertions.assertApproxEqual(stage.pathEditingOverlay.panOffset.x, 300)
             try TestAssertions.assertApproxEqual(stage.pathEditingOverlay.rulerOffset, ThemeTokens.rulerTrackThickness)
@@ -2875,10 +2884,12 @@ public class UIParityTests {
     private static func registerLocalCLIBridgeTests(_ registry: TestRegistry) {
 
         registry.register(tier: 1, feature: "UIParity-CLI", name: "test_UIParity_CLI_AgentMetadata") {
-            try TestAssertions.assertEqual(LocalCLIAgent.allCases.count, 3)
+            try TestAssertions.assertEqual(LocalCLIAgent.allCases.count, 5)
             try TestAssertions.assertEqual(LocalCLIAgent.claude.binaryName, "claude")
             try TestAssertions.assertEqual(LocalCLIAgent.codex.binaryName, "codex")
             try TestAssertions.assertEqual(LocalCLIAgent.antigravity.binaryName, "agy")
+            try TestAssertions.assertEqual(LocalCLIAgent.opencode.binaryName, "opencode")
+            try TestAssertions.assertEqual(LocalCLIAgent.deepseekHarness.binaryName, "dsh")
 
             for agent in LocalCLIAgent.allCases {
                 try TestAssertions.assertFalse(agent.displayName.isEmpty)

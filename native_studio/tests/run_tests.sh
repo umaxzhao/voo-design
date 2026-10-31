@@ -18,6 +18,7 @@ TEST_FILES=(
   "$DIR/CanvasInteractionTests.swift"
   "$DIR/M1_ToolFlyoutContextualTaskbarTests.swift"
   "$DIR/M2_InspectorStudioTests.swift"
+  "$DIR/WorkspaceManagerTests.swift"
   # "$DIR/AIAgentTests.swift"
   "$DIR/main.swift"
 )
@@ -62,8 +63,10 @@ else
 fi
 
 echo "=== 正在编译 VOO Design Native Studio E2E 测试套件 ==="
+mkdir -p "$BUILD_DIR/ModuleCache"
 swiftc \
   -O \
+  -module-cache-path "$BUILD_DIR/ModuleCache" \
   -target arm64-apple-macosx14.0 \
   -sdk $(xcrun --show-sdk-path) \
   -framework AppKit \
