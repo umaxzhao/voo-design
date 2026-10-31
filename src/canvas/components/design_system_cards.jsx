@@ -35,13 +35,13 @@ function Cover({ system }) {
     <div
       aria-hidden="true"
       data-testid="design-system-cover"
-      className="relative flex h-16 w-full overflow-hidden rounded-lg bg-white/[0.08]"
+      className="relative flex h-16 w-full flex-wrap content-center items-center justify-center gap-1 overflow-hidden rounded-lg bg-white/[0.08]"
     >
       {colors.map((color) => (
         <span
           key={color}
           data-testid="design-system-cover-swatch"
-          className="h-full min-w-0 flex-1"
+          className="size-6 shrink-0 rounded-full"
           style={{ backgroundColor: color }}
         />
       ))}

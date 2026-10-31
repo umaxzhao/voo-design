@@ -36,7 +36,7 @@ export function SwatchGrid({ onSelectColor, swatches = DEFAULT_SWATCHES }) {
             onClick={() => onSelectColor(color)}
             aria-label={t("editor.colorPicker.colorSwatch", { color })}
             style={{ backgroundColor: color }}
-            className="h-5 w-5 rounded-md border border-white/10 transition-transform hover:scale-110 active:scale-95"
+            className="h-5 w-5 rounded-full border border-white/10 transition-transform hover:scale-110 active:scale-95"
           />
         ))}
       </div>
