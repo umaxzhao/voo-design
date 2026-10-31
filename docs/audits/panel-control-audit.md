@@ -390,6 +390,9 @@ remains separate and is not attributed to the final revision.
 
 ## Inspector control hierarchy
 
+The 6px radius recorded for that historical revision is superseded by the
+user-approved 12px large-radius follow-up below.
+
 Capability: `inspector.control-hierarchy`. Styling opts in only inside
 `editor-properties-panel`; shared field/dropdown markers have no effect in
 Layers, the welcome page, Agent or toolbar. Large panel radii remain unchanged.
@@ -434,5 +437,4 @@ fill/outline distinctions and existing commands remain unchanged.
 Baseline `/private/tmp/voo-inspector-radius-before.log` reproduces 6px versus
 12px. The existing inspector control browser helper verifies every control
 category, actual commit/cancel, dropdown keyboard/focus, rotation/layout undo,
-and 16 viewport/theme/locale contexts. Final revision and production evidence
-are pending; physical devices and all advanced dialogs remain unverified.
+and 16 viewport/theme/locale contexts. Final revision `b965942e22bcfb408015acdba58f49d8d7c3cd8c`: all 91 release checks including 87 browser suites, 4637 unit passes/4 skips. Evidence `/private/tmp/voo-inspector-radius-release.json`. Production resources match the build; actual Chinese Frame and text controls, keyboard and undo pass without errors (`/private/tmp/voo-inspector-radius-production-result.log`). Physical devices and all advanced dialogs remain unverified.

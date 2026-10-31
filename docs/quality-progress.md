@@ -3,17 +3,19 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-11-01。
-最近一次完整核心验证提交：[7e6a77a](https://github.com/umaxzhao/voo-design/commit/7e6a77a3d0836b7eecceeefddf3be3f94afb11c0)；91/91 项通过。当前线上 `7e6a77a`；集成版本单列验证，不继承不同版本结果。
+最近一次完整核心验证提交：[b965942](https://github.com/umaxzhao/voo-design/commit/b965942e22bcfb408015acdba58f49d8d7c3cd8c)；91/91 项通过。当前线上为该固定版本。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
 
 
-## 本轮：右侧控件恢复品牌大圆角（验证中）
+## 本轮：右侧控件恢复品牌大圆角（已完成声明范围）
 
-- 按用户反馈，仅将右侧控件恢复为原有的 12px 大圆角；输入、下拉、切换项与操作按钮共享 `--inspector-control-radius`，外层面板圆角保持原样。
-- 保留上一轮的填充/描边区别、切换选中反馈、标签/数值/单位层级、32px 桌面行高及窄屏输入尺寸，不调整其他界面或业务逻辑。
-- 旧 6px 样式与用户要求的差异在 `/private/tmp/voo-inspector-radius-before.log` 复现。沿用已有真实编辑、键盘、撤销及 16 组响应式回归，最终固定版本与线上证据待补录。
-
+- 按用户反馈，右侧输入、下拉、切换组/选中项及操作按钮统一恢复 **12px** 品牌大圆角；共享 `--inspector-control-radius`，外层面板圆角保持原样。保留上一轮的填充/描边区别、选中反馈、字号与行高，不修改其他界面或文档操作。
+- 干净固定提交 [`b965942`](https://github.com/umaxzhao/voo-design/commit/b965942e22bcfb408015acdba58f49d8d7c3cd8c) 完成 **91/91 发布检查、87 组浏览器、单测 4637 通过/4 跳过/0 失败**。沿用原检查与浏览器并发 2，验证期间源码未修改。证据 `/private/tmp/voo-inspector-radius-release.json`、同名 `.log`，不继承上轮不同提交的通过。
+- 已有真实数值提交/取消、键盘下拉、布局/旋转及一次撤销通过；16 个视口/主题/语言上下文验证圆角与尺寸，截图 `/private/tmp/voo-inspector-radius-evidence/`。旧 6px 样式的差异复现保留在 `/private/tmp/voo-inspector-radius-before.log`。
+- 已推送并 SSH 部署 la2；入口和 9 个相关资源与验证构建逐字节一致。正式中文面板实际确认 12px 圆角、32px 桌面行高、Frame 输入/下拉/布局、文字与撤销，无脚本错误，未调用付费服务。证据 `/private/tmp/voo-inspector-radius-deployment-proof.json`、`/private/tmp/voo-inspector-radius-production-result.log`，截图 `/private/tmp/voo-inspector-radius-production-panel.png`。
+- 本地 App 只三方应用两个文件的圆角补丁并保留其他草稿；同一组 16 个浏览器上下文通过（`/private/tmp/voo-inspector-radius-primary-browser.log`），备份 `/private/tmp/voo-inspector-radius-primary/`。不认证整个私人工作区。
+- 功能覆盖仍为部分；实体触屏/IME/触控笔与全部高级独立浮层未由本轮认证。此前 6px 记录只属于其历史版本，当前规范以本轮用户确认的 12px 为准。
 
 ## 本轮：右侧属性控件层级（已完成声明范围）
 
@@ -222,10 +224,10 @@
 | 项目 | 状态 |
 | --- | --- |
 | 工程规范与模块登记 | 已落地：12 个模块、71 个公开能力分组 |
-| 核心发布校验 | 7e6a77a：91/91 项通过，包含 87 组浏览器 |
-| 全量单元测试 | 4637 通过、4 跳过、0 失败（固定提交 7e6a77a） |
+| 核心发布校验 | b965942：91/91 项通过，包含 87 组浏览器 |
+| 全量单元测试 | 4637 通过、4 跳过、0 失败（固定提交 b965942） |
 | GitHub Ubuntu 基础检查 | 本轮 CI 按实际状态另记；本机完整门禁和线上实测已通过，不继承历史版本 CI |
-| 线上部署 | 7e6a77a 已部署 la2，控件资源与构建一致；中文 Frame/文字操作和撤销通过 |
+| 线上部署 | b965942 已部署 la2，12px 控件圆角及真实编辑/撤销通过 |
 | 功能验收完整度 | 部分覆盖；71 个公开能力分组未穷尽所有入口、上下文和设备 |
 | 核心门禁外的独立检查 | 建议 1 组本轮显式通过；其余 20 组本轮未运行，不继承历史通过 |
 
