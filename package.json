@@ -23,6 +23,8 @@
     "build:extension": "node scripts/build-extension.mjs",
     "test:watch": "vitest",
     "lint:design": "node scripts/check-design.mjs",
+    "check:modules": "node scripts/editor-checks.mjs --check",
+    "test:module": "node scripts/editor-checks.mjs --run",
     "bridge": "node scripts/cli-bridge.mjs",
     "signal": "node scripts/signaling-server.mjs",
     "mcp": "node scripts/mcp-server.mjs",

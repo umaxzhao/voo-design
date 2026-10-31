@@ -1,6 +1,8 @@
-name: Deploy editor to la2
+name: Verify and deploy editor to la2
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -28,7 +30,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run check:modules
+      - run: npm run lint:design
       - run: npm run build
+      - run: npm test
       - uses: actions/upload-artifact@v4
         with:
           name: editor-dist
@@ -36,6 +41,7 @@ jobs:
           if-no-files-found: error
       # Secrets cannot be referenced directly in a job-level if expression.
       - name: Check deployment configuration
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         id: secrets
         env:
           LA2_SSH_KEY: ${{ secrets.LA2_SSH_KEY }}
@@ -47,7 +53,7 @@ jobs:
 
   deploy:
     needs: build
-    if: needs.build.outputs.deploy_enabled == 'true'
+    if: needs.build.outputs.deploy_enabled == 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

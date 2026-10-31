@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Establish a shared module/capability inventory and conservative affected-check planning. Group release evidence by module while keeping functional coverage and platform gaps separate from test execution; document the maintained acceptance/refactoring workflow.
+
 - Prevent duplicate nested-mask layer rows and stale React children after document replacement; keep eyedropper sampling, raster exports, SVG raster fallback and previews independent of animated Agent chrome.
 
 - Unify visible Frame targeting for drawing, import, drop and clipboard placement; honor nested/rounded clips, selected destinations and context-menu coordinates without changing programmatic root insertion.

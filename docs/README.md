@@ -4,6 +4,7 @@
 - [../README.md](../README.md): product overview, setup, scripts
 - [contributing.md](contributing.md): workflow, design-token gate, how to add canvas tools
 - [architecture.md](architecture.md): stack, document model, rendering, Electron layer
+- [engineering-workflow.md](engineering-workflow.md): module ownership, acceptance rows, affected checks and evidence limits
 
 ## Agents and MCP
 - [agents.md](agents.md): design agent, canvas tools, local CLI agents (Claude Code, Codex, OpenCode, Antigravity, DeepSeek Harness)
