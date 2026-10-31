@@ -260,7 +260,12 @@ function* buildLayoutSteps(args = {}, editor = typeof window !== "undefined" ? w
           if (children?.length) yield* create(children, id);
         }
       }
-      yield* create(args.nodes, args.parentId);
+      const sequence = create(args.nodes, args.parentId);
+      if (!batched && typeof editor.mute === "function") {
+        // Legacy history.mute is synchronous: preserve one undo entry instead
+        // of holding a synchronous mute scope across animation awaits.
+        editor.mute(() => { for (const operation of sequence) void operation; });
+      } else yield* sequence;
     } finally {
       for (const restore of restores.reverse()) restore();
       if (batched) editor.endBatch();
