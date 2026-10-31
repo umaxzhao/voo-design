@@ -6,6 +6,11 @@
 最近一次完整核心验证提交：[0a3ba24](https://github.com/umaxzhao/voo-design/commit/0a3ba248c8d2da6ef1a2699403097b8fd39a8210)；91/91 项通过。当前线上为该固定版本。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
+## 本轮：尺寸标签位于对象下方（验证中）
+
+- `compositing.selection-size-label`：默认下方居中，底部空间不足才回退上方。修改前单测期望 y=66、实际 y=16 的失败保留于 `/private/tmp/voo-license-regression/size-label-before.log`；20 项相关单测及真实截图像素回归通过，覆盖 0.5/1/2×、旋转、Frame 和多选原策略，文档/选区不变。
+- 固定 `e2e3e0b` 完整门禁 91/91、87 浏览器、4678 单测通过/4 跳过（`size-label-release.json`）；GitHub CI 通过。整合固定 `457b149` 再次完成 91/91、87 浏览器、4684 单测通过/4 跳过（`size-label-release-integrated.json`），GitHub CI 通过；主线随后仅文档变动，线上实测待补录，不继承不同应用源码通过。[验收范围](audits/nested-objects-audit.md#selection-size-label-placement)。登记 75 能力，功能覆盖仍部分。
+
 ## 本轮：同一 Figma 文件与 OpenPencil 对照（已完成声明范围）
 
 - OpenPencil 已独立部署在 `/Volumes/TD/Projects/open-pencil-benchmark`，本机预览 `http://127.0.0.1:5188/`；官方源码未改，正式版和 master 均按要求使用 Bun 1.4.2 构建。默认缩放 NaN、正式版空渐变异常及字体缺失已单独记录；异常回调分数不当作性能通过。
@@ -24,7 +29,6 @@
 - [PR #71](https://github.com/umaxzhao/voo-design/pull/71) 已合并为 `4e8f506`，与固定验证提交源码树一致（`global-overlay-main-tree-proof.json`）。已通过项目脚本部署 la2，97 个实际入口/加载资源与验证构建逐字节及 SHA-256 一致。正式页面桌面/320px 分享、设置、命令和导出九点命中、输入/关闭、文档选区不变及零页面异常通过。证据 `global-overlay-production-proof.json`、截图 `global-overlay-production-share.png` / `global-overlay-production-narrow.png`；原版本备份 `/srv/voo-run/editor-backups/8af23f5ec05055be85e96c2cc87353cd80c2f495-20261031T181829Z`。
 
 ## 本轮：右侧控件恢复品牌大圆角（已完成声明范围）
-
 - 按用户反馈，右侧输入、下拉、切换组/选中项及操作按钮统一恢复 **12px** 品牌大圆角；共享 `--inspector-control-radius`，外层面板圆角保持原样。保留上一轮的填充/描边区别、选中反馈、字号与行高，不修改其他界面或文档操作。
 - 干净固定提交 [`b965942`](https://github.com/umaxzhao/voo-design/commit/b965942e22bcfb408015acdba58f49d8d7c3cd8c) 完成 **91/91 发布检查、87 组浏览器、单测 4637 通过/4 跳过/0 失败**。沿用原检查与浏览器并发 2，验证期间源码未修改。证据 `/private/tmp/voo-inspector-radius-release.json`、同名 `.log`，不继承上轮不同提交的通过。
 - 已有真实数值提交/取消、键盘下拉、布局/旋转及一次撤销通过；16 个视口/主题/语言上下文验证圆角与尺寸，截图 `/private/tmp/voo-inspector-radius-evidence/`。旧 6px 样式的差异复现保留在 `/private/tmp/voo-inspector-radius-before.log`。
@@ -33,7 +37,6 @@
 - 功能覆盖仍为部分；实体触屏/IME/触控笔与全部高级独立浮层未由本轮认证。此前 6px 记录只属于其历史版本，当前规范以本轮用户确认的 12px 为准。
 
 ## 本轮：右侧属性控件层级（已完成声明范围）
-
 - 按用户确认仅调整 `inspector.control-hierarchy`：大面板圆角、顶部页签、首页、外框、Agent 和工具栏视觉保持原样。规则限定在 `editor-properties-panel` 内，共享组件只增加语义标记，不改变其他位置的控件外观和文档操作。
 - 输入/颜色行采用 6px 圆角填充矩形；下拉为轻描边，切换项成组显示选中块，操作按钮使用轻背景。桌面主控件行高 32px、窄屏输入 48px；标题 11px，标签/数值/单位分层，数值保留等宽。Frame 宽高和文字/描边/布局共用规则。
 - 干净固定版本 [`7e6a77a`](https://github.com/umaxzhao/voo-design/commit/7e6a77a3d0836b7eecceeefddf3be3f94afb11c0)：**91/91 项执行通过，87 组浏览器通过，单测 4637 通过/4 跳过/0 失败**。用原发布脚本派生的临时运行器将浏览器并发从 3 降为 2，其余命令、断言与源码不变检查保持一致。证据 `/private/tmp/voo-inspector-controls-release-integrated.json`、同名 `.log`。之前的部分执行与失败独立保留，没有当成该固定版本通过。
@@ -46,13 +49,11 @@
 - 功能覆盖仍为部分；实体触屏/IME/触控笔、所有高级独立浮层和所有历史项目不由本轮认证。[验收范围](audits/panel-control-audit.md#inspector-control-hierarchy)。
 
 ## 浏览器右侧停靠与 Agent 互斥（历史固定版本记录）
-
 浏览器右侧停靠与 Agent 互斥已完成声明范围：固定源码提交 [04aa32b](https://github.com/umaxzhao/voo-design/commit/04aa32bd3ceb7e15f3f4ff09bb72be66288ffd6c) 通过 90/90 核心发布步骤（86 组浏览器、4604 项单测通过、4 项跳过），构建与设计检查通过。桌面浏览器与编辑器左右并排，窄屏从右侧展开；Browser 和 Agent 的公共打开入口互相关闭对方，关闭不自动重开另一面板。当前本地布局修复也已真实浏览器验证。原始证据 `/private/tmp/voo-browser-right-release.json`，线上资源和交互证据入口 `/private/tmp/voo-panel-exclusion-deployment.json`；功能覆盖保持部分，不继承为后续代码或其他平台通过。
 
 该浏览器任务分支的 90/90 结果只属于固定源码 04aa32b；随后合入的远程导入、采样和编辑器修复不继承该结果，合入当前主分支后在固定提交 47471c9d15d44dbfe957a9c7813a6d39915c183e 上重新构建、检查设计规则，4637 项单测通过、4 项跳过，浏览器切换、新建文件和首页设置三组浏览器检查通过；证据另记 `/private/tmp/voo-browser-right-integration.json`，不是新的全量门禁声明。
 
 ## 本轮：矢量曲线拆分锚点切线重置、路径文字仿射变换矩阵与布尔运算图层顺序保持（已验证通过）
-
 - `vectors.path-edit` / `scene_model_paths.js`：
   - 在 `breakPenPointsAtAnchor`（Affinity "Break Curve" 操作）中，当拆分或打开闭合曲线时，首尾开放端点此前保留了指向虚空的旧控制手柄（旧入点 / 出点切线）。
   - 修复：对于解开闭合曲线的场景，将新起点端点的 `in` 切线置空（`in: null`），新终点端点的 `out` 切线置空（`out: null`）；对于开放曲线拆分为两个子路径（`split`），将前半段终点的 `out` 切线与后半段起点的 `in` 切线分别置空，彻底消除悬空手柄。
@@ -71,7 +72,6 @@
 
 
 ## 本轮：文字排版可读性与 Lucide 图标（已完成声明范围）
-
 - `inspector.typography-clarity` / `text.typography`：参考 [Figma 文字属性分组](https://help.figma.com/hc/en-us/articles/360039956634-Explore-text-properties)，直接显示字体、字重、字号、行高、字距、格式和对齐标签，明确 px/% 单位。文本框自动/固定宽度放在常用区；方向、大小写、段落、基线与路径文字保留在一个高级入口。
 - 新增图标统一使用 [Lucide](https://lucide.dev/icons)：`ALargeSmall` / `MoveVertical` / `MoveHorizontal` / `Pilcrow` / `Baseline`，配合文字对齐、斜体、下划线与曲线路径图标。实际可见 SVG（含下拉箭头）验证为 16px / 1.5px CSS 描边。
 - 创建和编辑文字共用基础控件，移除重复的字号预设按钮，输入保留原有范围；`text_section.jsx` 536→67 行、工具面板 247→73 行，3 个共享模块分别 139/136/106 行，没有新增依赖和字体资源。

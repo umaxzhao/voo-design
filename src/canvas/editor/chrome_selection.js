@@ -66,7 +66,7 @@ function paintHandle(ctx, point, color, size = HANDLE_SIZE) {
 }
 
 /**
- * The W × H chip stays above the selection when space allows.
+ * The W × H chip stays below the selection when space allows.
  *
  * Light ground, near-black text: the chip floats on top of the artwork, so it
  * has to stay legible against whatever is underneath, and a light ground keeps
@@ -108,7 +108,9 @@ function paintSizeLabel(ctx, box, text, color) {
     : Math.round(box.x + box.width / 2 - width / 2);
   const above = Math.round(box.y - SIZE_LABEL_HEIGHT - SIZE_LABEL_GAP);
   const below = Math.round(box.y + box.height + SIZE_LABEL_GAP);
-  const preferredTop = above >= 4 ? above : below;
+  const fitsBelow = !Number.isFinite(stageHeight) ||
+    below + SIZE_LABEL_HEIGHT <= stageHeight - 4;
+  const preferredTop = fitsBelow ? below : above;
   const top = Number.isFinite(stageHeight)
     ? Math.max(
         4,
