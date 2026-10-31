@@ -217,7 +217,7 @@ describe("Community Templates and New Project Workbench Experience", () => {
 
   it("keeps generation settings behind one advanced entry", () => {
     const html = renderToStaticMarkup(React.createElement(WelcomeDashboard));
-    expect(html).toContain('aria-label="生成类型"');
+    expect(html).toContain('aria-label="生成设置"');
     expect(html).toContain('aria-haspopup="dialog"');
     expect(html).toContain('data-advanced-open="false"');
     expect(html).not.toContain('role="radiogroup"');
@@ -225,12 +225,14 @@ describe("Community Templates and New Project Workbench Experience", () => {
   });
 
   it("AI_GEN_TYPES defines tailored dimensions, categories, and placeholders for AI generation", () => {
-    expect(AI_GEN_TYPES.length).toBe(6);
+    expect(AI_GEN_TYPES.length).toBe(8);
     expect(AI_GEN_TYPES.some((t) => t.id === "all")).toBe(false);
 
     const ids = AI_GEN_TYPES.map((t) => t.id);
-    expect(ids).toEqual(["landing", "mobile", "web", "slides", "dashboard", "other"]);
+    expect(ids).toEqual(["landing", "mobile", "web", "poster", "slides", "storyboard", "dashboard", "other"]);
 
+    expect(AI_GEN_TYPES.find(type => type.id === "poster")).toMatchObject({ width: 1080, height: 1350, category: "poster", placeholder: "welcome.prompt.posterPlaceholder" });
+    expect(AI_GEN_TYPES.find(type => type.id === "storyboard")).toMatchObject({ width: 1920, height: 1080, category: "storyboard", placeholder: "welcome.prompt.storyboardPlaceholder" });
     const mobile = AI_GEN_TYPES.find((t) => t.id === "mobile");
     expect(mobile.width).toBe(393);
     expect(mobile.height).toBe(852);

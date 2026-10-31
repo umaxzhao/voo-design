@@ -77,6 +77,21 @@ function TypePreview({ type }) {
 TypePreview.propTypes = { type: PropTypes.string.isRequired };
 
 export default function WelcomePromptTypes({ t, activePill, onSelectPill }) {
+  const selectedId = AI_GEN_TYPES.some(item => item.id === activePill) ? activePill : AI_GEN_TYPES[0].id;
+  const navigate = (event, index) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const offsets = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 };
+    let next;
+    if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = AI_GEN_TYPES.length - 1;
+    else if (offsets[event.key]) next = (index + offsets[event.key] + AI_GEN_TYPES.length) % AI_GEN_TYPES.length;
+    else return;
+    event.preventDefault();
+    event.stopPropagation();
+    const buttons = event.currentTarget.parentElement.querySelectorAll('[role="radio"]');
+    onSelectPill?.(AI_GEN_TYPES[next].id);
+    buttons[next]?.focus();
+  };
   return (
     <>
       <div
@@ -84,14 +99,16 @@ export default function WelcomePromptTypes({ t, activePill, onSelectPill }) {
         role="radiogroup"
         aria-label={t("welcome.prompt.generationTypeLabel")}
       >
-        {AI_GEN_TYPES.map((typeItem) => {
-          const isSelected = activePill === typeItem.id;
+        {AI_GEN_TYPES.map((typeItem, index) => {
+          const isSelected = selectedId === typeItem.id;
           return (
             <button
               key={typeItem.id}
               type="button"
               role="radio"
               aria-checked={isSelected}
+              tabIndex={isSelected ? 0 : -1}
+              onKeyDown={event => navigate(event, index)}
               onClick={() => onSelectPill?.(typeItem.id)}
               className={`flex min-w-[4.75rem] flex-col items-center gap-1 rounded-xl px-2.5 py-2 text-[11px] font-medium transition-colors cursor-pointer select-none ${
                 isSelected

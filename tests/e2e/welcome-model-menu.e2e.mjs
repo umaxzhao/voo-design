@@ -139,6 +139,40 @@ try {
     "true",
   );
   await page.keyboard.press("Escape");
+  for (const hasTouch of [false, true]) {
+    const settingsPage = await browser.newPage({ viewport: { width: 390, height: 568 }, hasTouch });
+    try {
+      settingsPage.on("pageerror", error => errors.push(String(error)));
+      await settingsPage.goto(`${server.resolvedUrls.local[0]}__model-menu`);
+      const labels = await settingsPage.evaluate(async () => (await import("/tests/e2e/welcome-generation-settings-harness.jsx")).mountGenerationSettings());
+      const composer = settingsPage.locator("#generation-settings-regression");
+      const trigger = composer.getByRole("button", { name: labels.settings, exact: true });
+      for (const width of [1440, 320]) {
+        await settingsPage.setViewportSize({ width, height: 568 });
+        assert.equal(await composer.getByRole("radio").count(), 0, "types stay behind the advanced entry");
+        await trigger.click();
+        const dialog = composer.getByRole("dialog");
+        await dialog.waitFor();
+        await settingsPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        assert.equal(await dialog.getByRole("radio").count(), 8);
+        const bounds = await dialog.boundingBox();
+        assert.ok(bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= width && bounds.y + bounds.height <= 568, JSON.stringify(bounds));
+        await dialog.getByRole("radio", { name: labels.poster, exact: true }).click();
+        assert.equal(await composer.getAttribute("data-selected"), "poster");
+        await settingsPage.keyboard.press("ArrowRight");
+        assert.equal(await composer.getAttribute("data-selected"), "slides");
+        await settingsPage.keyboard.press("Home");
+        assert.equal(await composer.getAttribute("data-selected"), "landing");
+        await settingsPage.keyboard.press("End");
+        assert.equal(await composer.getAttribute("data-selected"), "other");
+        assert.equal(await composer.locator("textarea").getAttribute("placeholder"), labels.otherPlaceholder);
+        assert.match(await dialog.getByRole("button", { name: labels.size, exact: true }).innerText(), /1200.*800/);
+        await settingsPage.keyboard.press("Escape");
+        await dialog.waitFor({ state: "detached" });
+        assert.ok(await trigger.evaluate(button => document.activeElement === button));
+      }
+    } finally { await settingsPage.close(); }
+  }
   assert.deepEqual(errors, []);
   console.log(
     "Welcome model menu: portal, clipping, viewport edges, scrolling, selection and dismissal passed.",

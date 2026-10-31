@@ -87,14 +87,14 @@ describe("welcome prompt composer", () => {
     expect(html).toContain('aria-label="welcome.prompt.mobilePlaceholder"');
   });
 
-  it("shows the type previews by default and keeps advanced settings hidden", () => {
+  it("keeps illustrated types and advanced settings behind one entry", () => {
     const html = render();
     expect(html).toContain("welcome.prompt.addAttachment");
-    expect(html).toContain("welcome.prompt.generationTypeLabel");
+    expect(html).not.toContain("welcome.prompt.generationTypeLabel");
     expect(html).toContain('data-advanced-open="false"');
     expect(html).not.toContain("data-mobile-options-open");
-    expect(html).toContain('role="radiogroup"');
-    expect(html).toContain("welcome.pills.poster");
+    expect(html).not.toContain('role="radiogroup"');
+    expect(html).not.toContain("welcome.pills.poster");
     expect(html).not.toContain('aria-label="welcome.prompt.styleLabel"');
     expect(html).not.toContain('aria-label="welcome.prompt.designSystemLabel"');
   });
@@ -103,6 +103,9 @@ describe("welcome prompt composer", () => {
     const html = render({ initialAdvancedOpen: true });
     const modelIndex = html.indexOf('aria-label="welcome.prompt.modelLabel"');
     const advancedIndex = html.indexOf('role="dialog"');
+    expect(html.match(/role="radio"/g)).toHaveLength(8);
+    expect(html).toContain("welcome.pills.poster");
+    expect(html).toContain("welcome.pills.storyboard");
     expect(modelIndex).toBeGreaterThan(-1);
     expect(advancedIndex).toBeGreaterThan(modelIndex);
     expect(html.slice(advancedIndex)).not.toContain('aria-label="welcome.prompt.modelLabel"');
