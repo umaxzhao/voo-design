@@ -1808,6 +1808,43 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         }
     }
 
+    // MARK: - Fast Cover Image Extraction & Caching
+
+    private static let previewCache = NSCache<NSString, NSImage>()
+
+    public static func previewImage(forPath path: String) -> NSImage? {
+        let nsPath = path as NSString
+        if let cached = previewCache.object(forKey: nsPath) {
+            return cached
+        }
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)), data.count >= 12 else {
+            return nil
+        }
+        guard VOOBinaryContainer.isVooBinary(data: data) else {
+            return nil
+        }
+        let headerLength: UInt32 = data.subdata(in: 8..<12).withUnsafeBytes { $0.load(as: UInt32.self) }.littleEndian
+        let headerStart = 12
+        let headerEnd = headerStart + Int(headerLength)
+        guard data.count >= headerEnd else { return nil }
+        let headerData = data.subdata(in: headerStart..<headerEnd)
+
+        guard let json = try? JSONSerialization.jsonObject(with: headerData) as? [String: Any],
+              let assetIndex = json["assetIndex"] as? [String: Any],
+              let previewEntry = assetIndex["__preview"] as? [String: Any],
+              let offset = previewEntry["offset"] as? Int,
+              let length = previewEntry["length"] as? Int else {
+            return nil
+        }
+
+        let previewStart = headerEnd + offset
+        guard data.count >= previewStart + length else { return nil }
+        let previewData = data.subdata(in: previewStart..<(previewStart + length))
+        guard let image = NSImage(data: previewData) else { return nil }
+        previewCache.setObject(image, forKey: nsPath)
+        return image
+    }
+
     private func drawProjectCard(item: ProjectItem, rect: CGRect, index: Int) {
         let isHovered = hoveredKey == "project.\(index)"
         fillRounded(rect, radius: 16, color: isHovered ? NSColor(hex: "#141414") : Palette.card)
@@ -1815,8 +1852,36 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
 
         let thumbnail = CGRect(x: rect.minX + 8, y: rect.minY + 8, width: rect.width - 16, height: 124)
         fillRounded(thumbnail, radius: 8, color: NSColor(hex: "#171717"))
-        strokeRounded(thumbnail, radius: 8, color: NSColor(white: 1.0, alpha: 0.04), lineWidth: 1)
-        drawThumbnailWireframe(kind: item.kind, rect: thumbnail)
+
+        if let image = Self.previewImage(forPath: item.openName) {
+            let ctx = NSGraphicsContext.current?.cgContext
+            ctx?.saveGState()
+            let thumbPath = CGPath(roundedRect: thumbnail, cornerWidth: 8, cornerHeight: 8, transform: nil)
+            ctx?.addPath(thumbPath)
+            ctx?.clip()
+
+            let imgSize = image.size
+            if imgSize.width > 0, imgSize.height > 0 {
+                // In non-flipped NSView, flip vertically so PNG row 0 stays at top
+                ctx?.translateBy(x: 0, y: thumbnail.minY + thumbnail.maxY)
+                ctx?.scaleBy(x: 1.0, y: -1.0)
+
+                let scale = max(thumbnail.width / imgSize.width, thumbnail.height / imgSize.height)
+                let drawW = imgSize.width * scale
+                let drawH = imgSize.height * scale
+                let drawX = thumbnail.midX - drawW / 2.0
+                let drawY = thumbnail.midY - drawH / 2.0
+                image.draw(in: CGRect(x: drawX, y: drawY, width: drawW, height: drawH),
+                           from: NSRect(origin: .zero, size: imgSize),
+                           operation: .sourceOver,
+                           fraction: 1.0)
+            }
+            ctx?.restoreGState()
+            strokeRounded(thumbnail, radius: 8, color: NSColor(white: 1.0, alpha: 0.12), lineWidth: 1)
+        } else {
+            strokeRounded(thumbnail, radius: 8, color: NSColor(white: 1.0, alpha: 0.04), lineWidth: 1)
+            drawThumbnailWireframe(kind: item.kind, rect: thumbnail)
+        }
 
         drawText(
             item.title,
@@ -1845,7 +1910,34 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
 
         let thumbnail = CGRect(x: rect.minX + 12, y: rect.minY + 10, width: 44, height: 36)
         fillRounded(thumbnail, radius: 6, color: NSColor(hex: "#171717"))
-        drawThumbnailWireframe(kind: item.kind, rect: thumbnail)
+
+        if let image = Self.previewImage(forPath: item.openName) {
+            let ctx = NSGraphicsContext.current?.cgContext
+            ctx?.saveGState()
+            let thumbPath = CGPath(roundedRect: thumbnail, cornerWidth: 6, cornerHeight: 6, transform: nil)
+            ctx?.addPath(thumbPath)
+            ctx?.clip()
+
+            let imgSize = image.size
+            if imgSize.width > 0, imgSize.height > 0 {
+                ctx?.translateBy(x: 0, y: thumbnail.minY + thumbnail.maxY)
+                ctx?.scaleBy(x: 1.0, y: -1.0)
+
+                let scale = max(thumbnail.width / imgSize.width, thumbnail.height / imgSize.height)
+                let drawW = imgSize.width * scale
+                let drawH = imgSize.height * scale
+                let drawX = thumbnail.midX - drawW / 2.0
+                let drawY = thumbnail.midY - drawH / 2.0
+                image.draw(in: CGRect(x: drawX, y: drawY, width: drawW, height: drawH),
+                           from: NSRect(origin: .zero, size: imgSize),
+                           operation: .sourceOver,
+                           fraction: 1.0)
+            }
+            ctx?.restoreGState()
+            strokeRounded(thumbnail, radius: 6, color: NSColor(white: 1.0, alpha: 0.12), lineWidth: 1)
+        } else {
+            drawThumbnailWireframe(kind: item.kind, rect: thumbnail)
+        }
         drawText(
             item.title,
             x: rect.minX + 68,

@@ -687,14 +687,14 @@ public final class ToolRailView: NSView {
     private static let orderedEntries: [RailEntry] = [
         .tool(.move),
         .accessory(.hand),
+        .tool(.artboard),
         .tool(.node),
         .accessory(.lasso),
         .tool(.brush),
-        .tool(.pen),
-        .tool(.text),
         .tool(.eraser),
+        .tool(.text),
+        .tool(.pen),
         .tool(.shapes),
-        .tool(.artboard),
         .accessory(.wand)
     ]
 

@@ -472,6 +472,8 @@ public class CanvasStageView: NSView {
 
     // Interactive Drag Tracking
     private var isPanningWithSpace: Bool = false
+    private var isPanningFreeStage: Bool = false
+    private var isPanningWithMiddleMouse: Bool = false
     private var isSpaceKeyDown: Bool = false
     private var panDragStartMouse: CGPoint = .zero
     private var panDragStartOffset: CGPoint = .zero
@@ -2591,7 +2593,23 @@ public class CanvasStageView: NSView {
                 }
             }
         } else {
-            // Marquee selection start
+            // Check if the click is on empty stage background outside all artboards
+            let canvas = document.canvas
+            let pageRect = CGRect(x: canvas.x, y: canvas.y, width: canvas.width, height: canvas.height)
+            let isOverArtboard = pageRect.contains(docPt) || document.nodes.contains {
+                $0.kind == .frame && $0.style.visible && CGRect(x: $0.x, y: $0.y, width: $0.width, height: $0.height).contains(docPt)
+            }
+            if !isOverArtboard && !event.modifierFlags.contains(.shift) {
+                // Free-stage background panning (web `useEditorCanvasGestures` parity)
+                selectedNodeIds.removeAll()
+                isPanningFreeStage = true
+                panDragStartMouse = loc
+                panDragStartOffset = panOffset
+                NSCursor.closedHand.set()
+                return
+            }
+
+            // Marquee selection start (dragging inside an artboard or holding Shift)
             if !event.modifierFlags.contains(.shift) {
                 selectedNodeIds.removeAll()
             }
@@ -2630,11 +2648,13 @@ public class CanvasStageView: NSView {
             return
         }
 
-        // 1. Spacebar Panning
-        if isPanningWithSpace {
+        // 1. Spacebar & Free-Stage Panning
+        if isPanningWithSpace || isPanningFreeStage {
             let dx = loc.x - panDragStartMouse.x
             let dy = loc.y - panDragStartMouse.y
             panOffset = CGPoint(x: panDragStartOffset.x + dx, y: panDragStartOffset.y + dy)
+            onViewportChanged?()
+            needsDisplay = true
             return
         }
 
@@ -2795,6 +2815,12 @@ public class CanvasStageView: NSView {
             isPanningWithSpace = false
             updateCursorForTool()
         }
+        if isPanningFreeStage {
+            isPanningFreeStage = false
+            updateCursorForTool()
+            needsDisplay = true
+            return
+        }
         if isPanningWithHand {
             isPanningWithHand = false
             updateCursorForTool()
@@ -2876,6 +2902,43 @@ public class CanvasStageView: NSView {
             }
         }
         return provider(docPt)
+    }
+
+    // MARK: - Middle Mouse Button Panning
+
+    public override func otherMouseDown(with event: NSEvent) {
+        if event.buttonNumber == 2 {
+            let loc = convert(event.locationInWindow, from: nil)
+            isPanningWithMiddleMouse = true
+            panDragStartMouse = loc
+            panDragStartOffset = panOffset
+            NSCursor.closedHand.set()
+        } else {
+            super.otherMouseDown(with: event)
+        }
+    }
+
+    public override func otherMouseDragged(with event: NSEvent) {
+        if isPanningWithMiddleMouse {
+            let loc = convert(event.locationInWindow, from: nil)
+            let dx = loc.x - panDragStartMouse.x
+            let dy = loc.y - panDragStartMouse.y
+            panOffset = CGPoint(x: panDragStartOffset.x + dx, y: panDragStartOffset.y + dy)
+            onViewportChanged?()
+            needsDisplay = true
+        } else {
+            super.otherMouseDragged(with: event)
+        }
+    }
+
+    public override func otherMouseUp(with event: NSEvent) {
+        if isPanningWithMiddleMouse {
+            isPanningWithMiddleMouse = false
+            updateCursorForTool()
+            needsDisplay = true
+        } else {
+            super.otherMouseUp(with: event)
+        }
     }
 
     // MARK: - Trackpad Scroll & Pinch Zoom
@@ -3595,6 +3658,7 @@ public class CanvasStageView: NSView {
         if isPainting {
             cancelPaintStroke(restore: true)
         }
+        let wasSame = (paintNodeId == id) && (paintBitmap != nil)
         paintNodeId = id
 
         guard let dataURL, !dataURL.isEmpty else {
@@ -3606,6 +3670,13 @@ public class CanvasStageView: NSView {
             paintLayerDocumentId = nil
             paintStrokeBackup = nil
             lastPaintDocPoint = nil
+            needsDisplay = true
+            return
+        }
+
+        // If paintBitmap already has the current pixels, keep them!
+        if wasSame && paintBitmap != nil {
+            paintCGImage = nil
             needsDisplay = true
             return
         }
@@ -3623,6 +3694,7 @@ public class CanvasStageView: NSView {
                 in: CGRect(x: 0, y: 0, width: CGFloat(bitmap.pixelsWide), height: CGFloat(bitmap.pixelsHigh))
             )
             context.restoreGState()
+            context.flush()
             paintCGImage = nil
         }
         paintLayerDocumentId = document.id
@@ -3813,6 +3885,7 @@ public class CanvasStageView: NSView {
             height: radius * 2.0
         ))
         context.restoreGState()
+        context.flush()
 
         paintCGImage = nil
     }

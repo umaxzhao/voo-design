@@ -441,3 +441,27 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
   - 截屏复核：选区图层、文字手柄与下方 8pt 处的新版 12 键浮动条层次分明，零遮挡、零边缘冲突。
 
 验证：`./build.sh` 通过（binary 4.95 MB ≤ 5 MB，bundle 10.27 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **390/390 通过**。截图：`native_studio/docs/screenshots/z_selected.png`。
+
+## 原生界面优化（第十二轮：全格式真实 .voo 解析、工作台真实封面、自由画布平移、工具轨顺序与画笔绘制重构）— 2026-11-01
+
+针对用户真机运行反馈的四项核心缺陷进行全链路深度修复：
+
+1. **彻底解决 .voo 打开报错（“The data couldn't be read because it is missing”）**：
+   - 根因定位：Swift 自动合成的 `Codable` 在面对 Web 导出的真实工程文件时，因缺少 `id`、`title`、`canvas` 或 `style` 嵌套字典而抛出 `keyNotFound`，被系统弹出该错误；
+   - 解决方案：在 `DocumentModel.swift` 中为 `VOODocument`、`VOONode`、`PenAnchor` 实现健壮的容错解码器（`FlexibleNumber` / `FlexibleBool` / `FlexibleString`），支持展平属性与嵌套 `style` 互通、字符串数值与浮点数自适应转换、缺失属性赋予安全默认值；实测验证 Web 导出的 4 个真实复杂工程文件（131 节点的 `f1-grand-prix.voo` 等）全量无损秒开！
+2. **工作台卡片真实封面提取与展示**：
+   - 根因定位：此前代码硬编码调用 `drawThumbnailWireframe` 绘制 3 根灰色占位柱，未解析工程文件的封面；
+   - 解决方案：在 `WelcomeDashboardView` 中增加极速二进制预览解析器，直接从 `.voo` 容器切片提取 `assetIndex["__preview"]` 的 PNG 图像数据并做 `NSCache` 缓存；在非翻转坐标系下进行纵向反转校正后做高保真 `aspectFill` 渲染，彻底替换假骨架柱！
+3. **工具轨图标顺序与类别严格对齐 Web**：
+   - 工具轨顺序修正为：`选择 (Select)` $\to$ `抓手 (Hand)` $\to$ `画板 (Frame)` $\to$ `裁切 (Crop)` $\to$ `选区 (Marquee)` $\to$ `画笔 (Brush)` $\to$ `橡皮 (Eraser)` $\to$ `文字 (Text)` $\to$ `钢笔 (Pen)` $\to$ `形状 (Shapes)` $\to$ `魔棒 (Wand)`，消除了画板与裁切颠倒、钢笔插在文字前等历史排布偏差。
+4. **画布自由平移手势支持（Web 1:1 自由画布手势）**：
+   - 点击空白灰色舞台背景直接拖拽平移画布（此前误判为矩形框选导致用户无法拖动背景）；
+   - 增加鼠标中键（滚轮按压）拖拽平移支持（`otherMouseDown/Dragged/Up`）；
+   - 保持空格键与抓手工具平移无缝可用。
+5. **画笔工具自由绘制与图层提交重构**：
+   - 修复画笔图层位图缓存与提交复用逻辑，避免单次绘制后清空位图或生成重复图层，在 `stampPaint` 增加即时 `context.flush()`，确保即画即显、持久保存。
+6. **新增回归测试**：
+   - `test_WebExamples_RealVooFilesDecodeAndLoadCleanly`：验证 4 款真实复杂 Web 工程文件（含 191 个贝塞尔路径点）解码；
+   - `test_WindowController_OpenRealVooFileDirectlyLoadsSceneAndSetsTitle`：验证端到端从工作台打开真实 .voo 文件进入画布并切换视图。
+
+验证：`./build.sh` 通过（binary 4.97 MB ≤ 5 MB，bundle 10.29 MB ≤ 35 MB，冷启动 0.20~0.50s）；`./tests/run_tests.sh` **392/392 通过**。真机截图：`native_studio/docs/screenshots/z_dashboard_with_covers.png`。

@@ -248,6 +248,56 @@ public struct CornerRadii: Codable, Sendable, Equatable {
     public var uniformRadius: CGFloat { tl }
 }
 
+// MARK: - Flexible JSON Value Deserializers (Web SerDe Interop)
+
+public struct FlexibleNumber: Decodable, Sendable {
+    public let cgFloatValue: CGFloat
+    public init(from decoder: Decoder) throws {
+        let single = try decoder.singleValueContainer()
+        if let d = try? single.decode(Double.self) {
+            cgFloatValue = CGFloat(d)
+        } else if let s = try? single.decode(String.self), let d = Double(s) {
+            cgFloatValue = CGFloat(d)
+        } else if let i = try? single.decode(Int.self) {
+            cgFloatValue = CGFloat(i)
+        } else {
+            cgFloatValue = 0
+        }
+    }
+}
+
+public struct FlexibleBool: Decodable, Sendable {
+    public let boolValue: Bool
+    public init(from decoder: Decoder) throws {
+        let single = try decoder.singleValueContainer()
+        if let b = try? single.decode(Bool.self) {
+            boolValue = b
+        } else if let i = try? single.decode(Int.self) {
+            boolValue = (i != 0)
+        } else if let s = try? single.decode(String.self) {
+            boolValue = (s == "1" || s.lowercased() == "true")
+        } else {
+            boolValue = false
+        }
+    }
+}
+
+public struct FlexibleString: Decodable, Sendable {
+    public let stringValue: String
+    public init(from decoder: Decoder) throws {
+        let single = try decoder.singleValueContainer()
+        if let s = try? single.decode(String.self) {
+            stringValue = s
+        } else if let i = try? single.decode(Int.self) {
+            stringValue = String(i)
+        } else if let d = try? single.decode(Double.self) {
+            stringValue = String(d)
+        } else {
+            stringValue = ""
+        }
+    }
+}
+
 // MARK: - Pen Curve Node Anchors
 
 public enum NodeType: String, Codable, Sendable, CaseIterable, Equatable {
@@ -306,31 +356,31 @@ public struct PenAnchor: Codable, Sendable, Equatable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.x = try container.decode(CGFloat.self, forKey: .x)
-        self.y = try container.decode(CGFloat.self, forKey: .y)
+        self.x = (try? container.decode(FlexibleNumber.self, forKey: .x))?.cgFloatValue ?? 0
+        self.y = (try? container.decode(FlexibleNumber.self, forKey: .y))?.cgFloatValue ?? 0
 
-        // Decode inHandle (CGPoint or [dx, dy])
+        // Decode inHandle (CGPoint or [dx, dy] with flexible numbers)
         if let directIn = try? container.decode(CGPoint.self, forKey: .inHandle) {
             self.inHandle = directIn
-        } else if let arr = try? container.decode([CGFloat].self, forKey: .vooIn), arr.count >= 2 {
-            self.inHandle = CGPoint(x: x + arr[0], y: y + arr[1])
+        } else if let arr = try? container.decode([FlexibleNumber].self, forKey: .vooIn), arr.count >= 2 {
+            self.inHandle = CGPoint(x: x + arr[0].cgFloatValue, y: y + arr[1].cgFloatValue)
         } else {
             self.inHandle = nil
         }
 
-        // Decode outHandle (CGPoint or [dx, dy])
+        // Decode outHandle (CGPoint or [dx, dy] with flexible numbers)
         if let directOut = try? container.decode(CGPoint.self, forKey: .outHandle) {
             self.outHandle = directOut
-        } else if let arr = try? container.decode([CGFloat].self, forKey: .vooOut), arr.count >= 2 {
-            self.outHandle = CGPoint(x: x + arr[0], y: y + arr[1])
+        } else if let arr = try? container.decode([FlexibleNumber].self, forKey: .vooOut), arr.count >= 2 {
+            self.outHandle = CGPoint(x: x + arr[0].cgFloatValue, y: y + arr[1].cgFloatValue)
         } else {
             self.outHandle = nil
         }
 
         if let closed = try? container.decode(Bool.self, forKey: .isClosed) {
             self.isClosed = closed
-        } else if let vooClose = try? container.decode(Bool.self, forKey: .vooClose) {
-            self.isClosed = vooClose
+        } else if let vooClose = try? container.decode(FlexibleBool.self, forKey: .vooClose) {
+            self.isClosed = vooClose.boolValue
         } else {
             self.isClosed = false
         }
@@ -979,6 +1029,150 @@ public struct VOONode: Codable, Sendable, Equatable, Identifiable {
     public init(name: String, kind: NodeKind) {
         self.init(kind: kind, name: name)
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, parentId, kind, name, x, y, width, height, rotation, shear
+        case style, cornerRadii, cornerRadius, lockRatio, points
+        case text, fontSize, fontFamily, fontWeight, textAlign, lineHeight, letterSpacing
+        case italic, underline, boxWidth, booleanOperation, clipTo, maskId
+        case fillVariableId, strokeVariableId, adjustments, effects, src, imageId, paint, childIds, constraints
+        // Web flat style keys:
+        case fill, stroke, strokeWidth, opacity, blendMode, visible, locked
+        case strokeCap, strokeJoin, strokeMiterLimit, strokeDash, strokeAlign, fillOpacity, strokeOpacity
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        self.id = (try? container.decode(String.self, forKey: .id)) ?? UUID().uuidString
+        self.parentId = try? container.decodeIfPresent(String.self, forKey: .parentId)
+
+        // Kind
+        if let directKind = try? container.decode(NodeKind.self, forKey: .kind) {
+            self.kind = directKind
+        } else if let kindStr = try? container.decode(String.self, forKey: .kind),
+                  let parsed = NodeKind(rawValue: kindStr.lowercased()) {
+            self.kind = parsed
+        } else {
+            self.kind = .rect
+        }
+
+        self.name = (try? container.decode(String.self, forKey: .name)) ?? "Layer"
+
+        self.x = (try? container.decode(FlexibleNumber.self, forKey: .x))?.cgFloatValue ?? 0
+        self.y = (try? container.decode(FlexibleNumber.self, forKey: .y))?.cgFloatValue ?? 0
+        self.width = max((try? container.decode(FlexibleNumber.self, forKey: .width))?.cgFloatValue ?? 100, 0.001)
+        self.height = max((try? container.decode(FlexibleNumber.self, forKey: .height))?.cgFloatValue ?? 100, 0.001)
+
+        self.rotation = (try? container.decode(FlexibleNumber.self, forKey: .rotation))?.cgFloatValue ?? 0
+        self.shear = (try? container.decode(FlexibleNumber.self, forKey: .shear))?.cgFloatValue ?? 0
+
+        // Style: nested or flat
+        if let directStyle = try? container.decode(LayerStyle.self, forKey: .style) {
+            self.style = directStyle
+        } else {
+            let fill = (try? container.decode(String.self, forKey: .fill)) ?? "#262626"
+            let stroke = (try? container.decode(String.self, forKey: .stroke)) ?? "none"
+            let strokeWidth = (try? container.decode(FlexibleNumber.self, forKey: .strokeWidth))?.cgFloatValue ?? 0
+            let opacity = (try? container.decode(FlexibleNumber.self, forKey: .opacity))?.cgFloatValue ?? 1.0
+            let blendMode = (try? container.decode(String.self, forKey: .blendMode)) ?? "source-over"
+            let visible = (try? container.decode(FlexibleBool.self, forKey: .visible))?.boolValue ?? true
+            let locked = (try? container.decode(FlexibleBool.self, forKey: .locked))?.boolValue ?? false
+
+            var st = LayerStyle(
+                fill: fill,
+                stroke: stroke,
+                strokeWidth: strokeWidth,
+                opacity: opacity,
+                blendMode: blendMode,
+                visible: visible,
+                locked: locked
+            )
+            st.strokeCap = try? container.decodeIfPresent(String.self, forKey: .strokeCap)
+            st.strokeJoin = try? container.decodeIfPresent(String.self, forKey: .strokeJoin)
+            st.strokeMiterLimit = (try? container.decode(FlexibleNumber.self, forKey: .strokeMiterLimit))?.cgFloatValue
+            st.strokeAlign = try? container.decodeIfPresent(String.self, forKey: .strokeAlign)
+            st.fillOpacity = (try? container.decode(FlexibleNumber.self, forKey: .fillOpacity))?.cgFloatValue
+            st.strokeOpacity = (try? container.decode(FlexibleNumber.self, forKey: .strokeOpacity))?.cgFloatValue
+            self.style = st
+        }
+
+        // Corner radius
+        if let directRadii = try? container.decodeIfPresent(CornerRadii.self, forKey: .cornerRadii) {
+            self.cornerRadii = directRadii
+        } else if let cr = (try? container.decode(FlexibleNumber.self, forKey: .cornerRadius))?.cgFloatValue {
+            self.cornerRadii = CornerRadii(uniform: cr)
+        } else {
+            self.cornerRadii = nil
+        }
+
+        self.lockRatio = (try? container.decode(FlexibleBool.self, forKey: .lockRatio))?.boolValue
+        self.points = try? container.decodeIfPresent([PenAnchor].self, forKey: .points)
+
+        // Text
+        self.text = try? container.decodeIfPresent(FlexibleString.self, forKey: .text)?.stringValue
+        self.fontSize = (try? container.decode(FlexibleNumber.self, forKey: .fontSize))?.cgFloatValue
+        self.fontFamily = try? container.decodeIfPresent(String.self, forKey: .fontFamily)
+        self.fontWeight = try? container.decodeIfPresent(FlexibleString.self, forKey: .fontWeight)?.stringValue
+        self.textAlign = try? container.decodeIfPresent(String.self, forKey: .textAlign)
+        self.lineHeight = (try? container.decode(FlexibleNumber.self, forKey: .lineHeight))?.cgFloatValue
+        self.letterSpacing = (try? container.decode(FlexibleNumber.self, forKey: .letterSpacing))?.cgFloatValue
+        self.italic = (try? container.decode(FlexibleBool.self, forKey: .italic))?.boolValue
+        self.underline = (try? container.decode(FlexibleBool.self, forKey: .underline))?.boolValue
+        self.boxWidth = (try? container.decode(FlexibleNumber.self, forKey: .boxWidth))?.cgFloatValue
+        self.booleanOperation = try? container.decodeIfPresent(String.self, forKey: .booleanOperation)
+        self.clipTo = try? container.decodeIfPresent(String.self, forKey: .clipTo)
+        self.maskId = try? container.decodeIfPresent(String.self, forKey: .maskId)
+        self.fillVariableId = try? container.decodeIfPresent(String.self, forKey: .fillVariableId)
+        self.strokeVariableId = try? container.decodeIfPresent(String.self, forKey: .strokeVariableId)
+        self.adjustments = try? container.decodeIfPresent(LayerAdjustments.self, forKey: .adjustments)
+        self.effects = try? container.decodeIfPresent(LayerEffects.self, forKey: .effects)
+        self.src = try? container.decodeIfPresent(String.self, forKey: .src)
+        self.imageId = try? container.decodeIfPresent(String.self, forKey: .imageId)
+        self.paint = (try? container.decode(FlexibleBool.self, forKey: .paint))?.boolValue
+        self.childIds = try? container.decodeIfPresent([String].self, forKey: .childIds)
+        self.constraints = try? container.decodeIfPresent(NodeConstraints.self, forKey: .constraints)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encodeIfPresent(parentId, forKey: .parentId)
+        try container.encode(kind, forKey: .kind)
+        try container.encode(name, forKey: .name)
+        try container.encode(x, forKey: .x)
+        try container.encode(y, forKey: .y)
+        try container.encode(width, forKey: .width)
+        try container.encode(height, forKey: .height)
+        try container.encode(rotation, forKey: .rotation)
+        try container.encode(shear, forKey: .shear)
+        try container.encode(style, forKey: .style)
+        try container.encodeIfPresent(cornerRadii, forKey: .cornerRadii)
+        try container.encodeIfPresent(lockRatio, forKey: .lockRatio)
+        try container.encodeIfPresent(points, forKey: .points)
+        try container.encodeIfPresent(text, forKey: .text)
+        try container.encodeIfPresent(fontSize, forKey: .fontSize)
+        try container.encodeIfPresent(fontFamily, forKey: .fontFamily)
+        try container.encodeIfPresent(fontWeight, forKey: .fontWeight)
+        try container.encodeIfPresent(textAlign, forKey: .textAlign)
+        try container.encodeIfPresent(lineHeight, forKey: .lineHeight)
+        try container.encodeIfPresent(letterSpacing, forKey: .letterSpacing)
+        try container.encodeIfPresent(italic, forKey: .italic)
+        try container.encodeIfPresent(underline, forKey: .underline)
+        try container.encodeIfPresent(boxWidth, forKey: .boxWidth)
+        try container.encodeIfPresent(booleanOperation, forKey: .booleanOperation)
+        try container.encodeIfPresent(clipTo, forKey: .clipTo)
+        try container.encodeIfPresent(maskId, forKey: .maskId)
+        try container.encodeIfPresent(fillVariableId, forKey: .fillVariableId)
+        try container.encodeIfPresent(strokeVariableId, forKey: .strokeVariableId)
+        try container.encodeIfPresent(adjustments, forKey: .adjustments)
+        try container.encodeIfPresent(effects, forKey: .effects)
+        try container.encodeIfPresent(src, forKey: .src)
+        try container.encodeIfPresent(imageId, forKey: .imageId)
+        try container.encodeIfPresent(paint, forKey: .paint)
+        try container.encodeIfPresent(childIds, forKey: .childIds)
+        try container.encodeIfPresent(constraints, forKey: .constraints)
+    }
 }
 
 // MARK: - Root Scene Document AST (`VOODocument`)
@@ -1012,6 +1206,51 @@ public struct VOODocument: Codable, Sendable, Equatable {
         self.nodes = nodes
         self.selectedNodeIds = selectedNodeIds
         self.guides = guides
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, version, canvasType, canvas, nodes, selectedNodeIds, guides
+        // Web flat document envelope keys:
+        case canvasId, width, height, backgroundColor, canvasBackgroundColor
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        self.id = (try? container.decode(String.self, forKey: .id))
+            ?? (try? container.decode(String.self, forKey: .canvasId))
+            ?? UUID().uuidString
+
+        self.title = (try? container.decode(String.self, forKey: .title)) ?? "Untitled"
+        self.version = (try? container.decode(Int.self, forKey: .version)) ?? 2
+        self.canvasType = (try? container.decode(String.self, forKey: .canvasType)) ?? "design"
+
+        if let directCanvas = try? container.decode(CanvasFrame.self, forKey: .canvas) {
+            self.canvas = directCanvas
+        } else {
+            let width = (try? container.decode(FlexibleNumber.self, forKey: .width))?.cgFloatValue ?? 1200
+            let height = (try? container.decode(FlexibleNumber.self, forKey: .height))?.cgFloatValue ?? 800
+            let bg = (try? container.decode(String.self, forKey: .canvasBackgroundColor))
+                ?? (try? container.decode(String.self, forKey: .backgroundColor))
+                ?? "#171717"
+            self.canvas = CanvasFrame(x: 0, y: 0, width: width, height: height, backgroundColor: bg)
+        }
+
+        self.nodes = (try? container.decode([VOONode].self, forKey: .nodes)) ?? []
+        self.selectedNodeIds = (try? container.decode(Set<String>.self, forKey: .selectedNodeIds)) ?? []
+        self.guides = try? container.decodeIfPresent([GuideLine].self, forKey: .guides)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(version, forKey: .version)
+        try container.encode(canvasType, forKey: .canvasType)
+        try container.encode(canvas, forKey: .canvas)
+        try container.encode(nodes, forKey: .nodes)
+        try container.encode(selectedNodeIds, forKey: .selectedNodeIds)
+        try container.encodeIfPresent(guides, forKey: .guides)
     }
 
     // Direct JSON SerDe API (Required by PROJECT.md Contract)
