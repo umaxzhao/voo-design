@@ -320,3 +320,43 @@ No product assertion or performance threshold was relaxed. Evidence:
 `/tmp/voo-stroke-targeted.log`. Compiler termination cause remains unconfirmed.
 Final execution retains isolated dependencies, two unit workers, one Go compiler
 scheduler processor and the standard three-browser pool.
+
+
+## Published verification — 2026-10-31
+
+The clean revision `6008dfa6fcd78e02abf14a27597fb0c1d584e770` completed
+all 89 registered release steps with zero failures: 85 browser suites,
+module registration, build, design lint and unit tests. Units recorded 4,534
+passed and four skipped assertions (553 passed and three skipped files).
+The immutable report and log are `/tmp/voo-impeccable-verified-6008.json`
+and `/tmp/voo-impeccable-verified-6008.log`.
+
+The final deployed application is `9c5a063e874aaa5346a1804171d414740463032a`,
+which additionally merges upstream collaboration share-secret/read-only
+permissions, missing search translations and deployment SSH isolation.
+It passed a fresh build, design lint, module registration, shell syntax and
+diff formatting checks; collaboration/i18n units recorded 169 passed and four
+skipped assertions. Three browser suites passed again: `settings-i18n`,
+`comments-lifecycle` and `impeccable-polish`. This is incremental evidence,
+not a claim that all 89 steps ran on the final merge. Related logs are
+`/tmp/voo-impeccable-merge-tests.log`, `-merge-browser.log` and
+`-final-merge-build.log` under the same prefix.
+
+Production `https://voo.run/editor/` matches the final local HTML; all five
+direct JS/CSS assets return 200. A fresh, isolated browser verified real canvas
+right-click, submenu pointer and keyboard traversal, Escape return/dismissal,
+900px canvas-with-Agent panel separation and hidden-editor focus isolation.
+No page errors occurred. The check waits for actual geometry after panel
+transitions; it opens the object menu inside the selected frame rather than
+right-clicking its external title. Browser storage and loopback connections
+are isolated from the user's installed application and documents.
+
+The checked-in [receipt](impeccable-evidence/release-verification.json) and
+[production screenshot](impeccable-evidence/context-menu-production.png)
+retain the exact revisions, check scope and evidence hashes. Current inventory
+is 12 modules / 62 capabilities / 85 registered browser suites. Functional
+coverage remains partial: 21 standalone checks, five existing external-image
+provider blockers, real accounts, paid inference, physical devices and signed
+installers are not certified. `native_studio` is excluded. The historical
+25/40 audit score was not re-scored. Documentation-only publication does not
+change the deployed application revision.
