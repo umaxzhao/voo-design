@@ -257,7 +257,17 @@ export function createMcpStdioServer({ input, output, callTool, listTools = buil
             if (typeof params.name !== "string") throw new Error("Tool name is required");
             if (!(await listTools()).some((tool) => tool.name === params.name)) throw new Error(`Unknown tool: ${params.name}`);
             const value = await invoke(params.name, params.arguments ?? {});
-            return send(id, { content: toolContent(params.name, value) });
+            const content = toolContent(params.name, value);
+            // Capture is already the shared post-generation verification step.
+            // Offer the same live source without creating another editor.
+            if (["capture_canvas", "voo_status"].includes(params.name)) {
+              const status = value;
+              if (typeof status?.previewUrl === "string" && /^http:\/\/127\.0\.0\.1:\d+\/preview\/[a-f0-9]{48}$/.test(status.previewUrl)) {
+                content.push({ type: "resource_link", uri: status.previewUrl, name: "VOO Live Preview",
+                  mimeType: "text/html", description: "Read-only live view of this source canvas. Open beside the conversation when supported." });
+              }
+            }
+            return send(id, { content });
           } catch (error) {
             const text = error.message === "mcp.noCanvas"
               ? "No VOO canvas is connected. Open VOO Design (npm run dev / desktop) with the bridge enabled."

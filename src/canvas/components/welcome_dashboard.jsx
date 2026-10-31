@@ -6,6 +6,7 @@ import { useI18n } from "../use_i18n.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import { DEFAULT_AGENT_MODEL } from "../../shared/agent-defaults.js";
 import { AGENT_SETTING } from "../agent/agent-settings.js";
+import { openAgentModelSettings } from "./agent-panel/model-settings.js";
 import { useModelGroups } from "./agent-panel/use_model_groups.js";
 import {
   DEFAULT_DESIGN_SYSTEM_ID,
@@ -173,11 +174,7 @@ export default function WelcomeDashboard() {
     setConfigNotice("");
   };
 
-  const openAgentSettings = () => {
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("voo:open-onboarding"));
-    }
-  };
+  const openAgentSettings = openAgentModelSettings;
 
   const handleAttachmentsSelected = async (fileList) => {
     if (attachments.length >= MAX_REFERENCE_IMAGES) {

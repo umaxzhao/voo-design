@@ -6,12 +6,13 @@
  * Provides a /health endpoint and WS wire protocol adapter.
  */
 
+import { handlePreviewRequest } from "./mcp_server/preview-http.js";
 import { registerMcpRelayChannels } from "./mcp_server/canvas_relay.js";
 import { startDraftStreamWatcher } from "./draft_stream_watcher.js";
 import http from "node:http";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { WebSocketServer } from "ws";
-import { CLI_BRIDGE_DEFAULT_PORT } from "../src/shared/cli_bridge_protocol.js";
+import { CLI_BRIDGE_DEFAULT_PORT, CLI_BRIDGE_SERVICE_ID } from "../src/shared/cli_bridge_protocol.js";
 import { writeBridgeToken } from "../src/shared/cli_bridge_token.js";
 import { createWsIpcAdapter } from "./ws_ipc_adapter.js";
 import { registerLocalCliIpc } from "./local_backend_bridge.js";
@@ -50,15 +51,17 @@ function hasValidBridgeToken(candidate, expected) {
  *
  * @returns {{ dispose: () => Promise<void> }}
  */
-export function registerCliBridgeChannels({ ipcMain }) {
+export function registerCliBridgeChannels({ ipcMain, getPreviewBaseUrl }) {
   const { dispose } = registerLocalCliIpc(ipcMain, { isAuthorized: () => true });
-  const relay = registerMcpRelayChannels(ipcMain);
+  const relay = registerMcpRelayChannels(ipcMain, { getPreviewBaseUrl });
   return {
     dispose: async () => {
       await dispose?.();
       relay?.dispose?.();
     },
     sendToCanvas: relay?.sendToCanvas,
+    getStatus: relay.getStatus,
+    capturePreview: relay.capturePreview,
   };
 }
 
@@ -76,17 +79,25 @@ export async function startCliBridgeServer({
   const activeToken = token || process.env.VOO_CLI_BRIDGE_TOKEN || randomBytes(32).toString("hex");
   const adapter = createWsIpcAdapter();
   // `register` may be a custom registrar with nothing to dispose.
-  const registration = register({ ipcMain: adapter.ipcMain });
+  const registration = register({ ipcMain: adapter.ipcMain,
+    getPreviewBaseUrl: () => `http://127.0.0.1:${server.address().port}`,
+  });
 
   const allowed = new Set(origins);
-  const server = http.createServer((request, response) => {
+  const server = http.createServer(async (request, response) => {
+    // Reject DNS rebinding; preview URLs are always loopback-only.
+    const expectedHost = `127.0.0.1:${server.address().port}`;
+    if (request.headers.host !== expectedHost && request.headers.host !== `localhost:${server.address().port}`) {
+      response.writeHead(403); response.end(); return;
+    }
+    if (await handlePreviewRequest(request, response, registration)) return;
     // Health probe for scripts and liveness checks
     if (request.url === "/health") {
       response.writeHead(200, {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
       });
-      response.end(JSON.stringify({ ok: true, version: "1.0.0" }));
+      response.end(JSON.stringify({ ok: true, version: "1.0.0", service: CLI_BRIDGE_SERVICE_ID }));
       return;
     }
 

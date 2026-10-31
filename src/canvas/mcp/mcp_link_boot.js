@@ -68,7 +68,12 @@ export async function ensureCanvasMcpLink() {
   if (stopLink) return;
   stopLink = () => {};
   const { startCanvasMcpLink } = await import("./canvas_mcp_link.js");
+  const { useDesignStore } = await import("../../store/design_store.js");
   stopLink = startCanvasMcpLink({
+    getContext: () => ({ documentId: useDesignStore.getState().activeDocumentId }),
+    subscribeContext: listener => useDesignStore.subscribe((state, previous) => {
+      if (state.activeDocumentId !== previous.activeDocumentId) listener();
+    }),
     executeTool: async (name, args) => {
       const { executeCanvasTool } = await import("../agent/canvas_tools.js");
       return executeCanvasTool(name, args);

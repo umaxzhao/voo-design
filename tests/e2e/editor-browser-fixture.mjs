@@ -71,7 +71,7 @@ export async function withEditorBrowser(run, pageOptions = {}) {
       await page.waitForFunction(() => document.querySelector('[data-testid="design-editor"] [data-open-guard]')
         ?.getAttribute("data-open-guard") === "off");
     }
-    await run({ page, tool, origin, errors, reloadModule: environment.reloadModule });
+    await run({ page, tool, origin, bridge, errors, reloadModule: environment.reloadModule });
     if (errors.length) throw new Error(`Editor errors: ${errors.join("\n")}`);
   } finally {
     try { socket?.close(); await browser?.close(); }

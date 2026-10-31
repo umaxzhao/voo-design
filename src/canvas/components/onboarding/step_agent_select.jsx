@@ -25,6 +25,7 @@ export default function StepAgentSelect({ selectedAgent, onSelectAgent }) {
       detection={detection}
       agentIds={GUIDE_AGENT_IDS}
       showCustom={false}
+      showCliAgents={detection.showLocal}
       testIds={GUIDE_TEST_IDS}
       onSelect={onSelectAgent}
     />

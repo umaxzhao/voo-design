@@ -1,4 +1,6 @@
 import React from "react";
+const localService = vi.hoisted(() => ({ native: true, available: true, phase: "unavailable", statuses: null }));
+vi.mock("../../src/canvas/components/agent-panel/use_local_service.js", () => ({ useLocalService: () => localService }));
 const hooks = vi.hoisted(() => ({ active: false, values: [], refs: [], refIndex: 0, index: 0 }));
 vi.mock("react", async (importOriginal) => {
   const actual = await importOriginal();
@@ -154,6 +156,7 @@ describe("first-run interactions", () => {
   };
   const step = () => elements(tree).find(el => el.props?.["data-step"])?.props["data-step"];
   beforeEach(async () => {
+    localService.native = true; localService.available = true;
     await loadLocale("en");
     vi.stubGlobal("window", Object.assign(new EventTarget(), { matchMedia: () => ({ matches: false }) }));
     hooks.active = true; hooks.values = []; hooks.refs = [];
@@ -162,6 +165,12 @@ describe("first-run interactions", () => {
     onStart = vi.fn(); onClose = vi.fn(); draw();
   });
   afterEach(() => { hooks.active = false; vi.unstubAllGlobals(); });
+  it("hides local agent cards and the local API shortcut when the web service is absent", () => {
+    localService.native = false; localService.available = false; draw();
+    const grid = elements(tree).find(el => el.type === AgentCardGrid);
+    expect(grid.props.showCliAgents).toBe(false);
+    expect(grid.props.cloudProviders.map(card => card.id)).toEqual(["vooCloud", "dashscope", "volcengine"]);
+  });
   it("renders the provider step and persists the chosen provider", () => {
     expect(step()).toBe("provider");
     pick("codex");

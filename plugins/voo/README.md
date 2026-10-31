@@ -14,6 +14,13 @@ persistent `npm run bridge`) are required. No credentials are included. Tool
 discovery works before the desktop starts; canvas calls connect lazily and report
 a clear error while it is unavailable.
 
+After generating, call `capture_canvas` or `voo_status` and open the returned
+`previewUrl`. It shows the same source canvas in a read-only browser view and
+never opens a competing editor. The App/bridge must remain running; the link
+expires on a source-document switch or disconnect. Host-side automatic panes
+are client-specific; this is a local browser link, not a hosted public URL.
+Rebuild the connector after updating the runtime/tool catalog.
+
 Claude Code:
 
 ```sh

@@ -2,6 +2,9 @@
 
 ## 1.0.0
 
+- Discover the local CLI service before exposing browser-only local model choices, share reconnect state across menus/onboarding/settings, retain API settings and route empty catalogs to provider setup.
+- Return source-bound, read-only live preview links from MCP status and canvas capture. View the same design in a browser without registering another editor; expire links on source disconnect or document switch.
+
 - Keep converted line/arrow Bezier paths out of primitive endpoint grips and array-only selection rendering; retain full browser exception stacks and explicitly exercise chrome repaint after conversion.
 - Commit open Pen drafts via `finishPen` when switching tools, roll back `< 4px` shape/arrow clicks via `rollbackDrawingGesture` without spurious delete commits or lost redo, and extend `Escape`/cancel rollback and zero-drag guards to `resize`, `rotate`, `cornerRadius`, and `endpoint` handle gestures.
 - Deduplicate selected ancestors and move clipped followers in `layoutSelection`, nudge selected Group units (including Auto Layout groups) as a container, expand Pen bounds when nudging anchors, and keep Layer panel row picking, `unitSelectionIds`, and folder duplication consistent across Boolean layers, Frames, and ordinary folders.

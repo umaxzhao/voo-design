@@ -47,14 +47,15 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
   const isNarrow = useIsNarrow();
   const isVooCloud = provider === VOO_CLOUD_PROVIDER.id;
   const isApiProvider = !isVooCloud && (provider === "custom" || Boolean(cloudPreset));
+  const detection = useAgentDetection(open && !isNarrow);
   const cloudCards = [
     { ...VOO_CLOUD_PROVIDER, configured: vooCloudSignedIn },
-    ...CLOUD_PROVIDER_PRESETS.map(preset => ({ ...preset,
+    ...CLOUD_PROVIDER_PRESETS.filter(preset => preset.id !== "deepseek-harness-models" || detection.showLocal ||
+      customGroups.some(group => group.cliId === preset.customProviderId && group.models.length > 0)).map(preset => ({ ...preset,
       configured: customGroups.some(group => group.cliId === preset.customProviderId && group.models.length > 0),
     })),
   ];
-  const detection = useAgentDetection(open && !isNarrow);
-  const selectedCli = isNarrow
+  const selectedCli = isNarrow || !detection.showLocal
     ? null
     : CLI_AGENTS.find((agent) => agent.id === provider) ?? null;
   const selectedCliStatus = selectedCli ? detection.statuses?.[selectedCli.id] ?? null : null;
@@ -117,7 +118,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
             {name === "provider" ? (
               <div className="flex flex-col gap-3">
                 <AgentCardGrid t={t} label={t("firstRun.provider.label")} selected={provider} detection={detection}
-                  showCliAgents={!isNarrow}
+                  showCliAgents={!isNarrow && detection.showLocal}
                   cloudProviders={cloudCards}
                   customConfigured={customGroups.some(group => group.models.length > 0)}
                   onSelect={(id) => {

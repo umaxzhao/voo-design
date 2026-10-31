@@ -3,16 +3,13 @@ import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
 await withEditorBrowser(
   async ({ page }) => {
-    const welcomeTrigger = page.locator(
-      '.welcome-composer-model-select button[aria-haspopup="listbox"]',
-    );
+    await page.route("**/health", route => route.abort());
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    const welcomeTrigger = page.locator(".welcome-composer-model-select button");
     await welcomeTrigger.click();
-    await page
-      .getByRole("option", { name: "Sonnet 5.5", exact: true })
-      .waitFor();
-    await page
-      .getByRole("option", { name: "GPT-6.1 Sol", exact: true })
-      .waitFor();
+    await page.getByTestId("settings-drawer").waitFor();
+    assert.equal(await page.getByRole("option", { name: /Sonnet|GPT-6/ }).count(), 0);
     await page.keyboard.press("Escape");
 
     // A connected desktop returns its own account-specific catalog, not a UI constant.

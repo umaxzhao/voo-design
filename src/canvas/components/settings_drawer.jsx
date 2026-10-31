@@ -9,6 +9,7 @@ import SettingsGeneral from "./settings_general.jsx";
 import SettingsShortcuts from "./settings_shortcuts.jsx";
 import SettingsDesignSystems from "./settings_design_systems.jsx";
 import { SETTINGS_TABS as TABS } from "./settings_tabs.js";
+import { useLocalService } from "./agent-panel/use_local_service.js";
 import { useModalFocus } from "./use_modal_focus.js";
 
 export default function SettingsDrawer({
@@ -22,6 +23,7 @@ export default function SettingsDrawer({
   );
   const dialogRef = useRef(null);
   const tabsId = useId();
+  const service = useLocalService();
   useModalFocus({ open, dialogRef, onClose });
 
   // Sync initialTab when modal opens
@@ -83,36 +85,36 @@ export default function SettingsDrawer({
             className="grid shrink-0 grid-cols-2 gap-1 p-2 md:flex md:w-52 md:flex-col md:bg-neutral-900"
           >
             <div role="tablist" aria-label={t("settings.categories")} className="contents">
-            {TABS.map((tab) => {
-              const Icon = tab.icon;
-              const active = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  id={`${tabsId}-${tab.id}`}
-                  aria-controls={`${tabsId}-panel`}
-                  tabIndex={active ? 0 : -1}
-                  aria-current={active ? "page" : undefined}
-                  aria-selected={active}
-                  onClick={() => setActiveTab(tab.id)}
-                  onKeyDown={(event) => {
-                    const direction = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[event.key];
-                    if (!direction && event.key !== "Home" && event.key !== "End") return;
-                    event.preventDefault();
-                    const index = TABS.findIndex((candidate) => candidate.id === tab.id);
-                    const next = event.key === "Home" ? TABS[0] : event.key === "End" ? TABS.at(-1) : TABS[(index + direction + TABS.length) % TABS.length];
-                    setActiveTab(next.id);
-                    document.getElementById(`${tabsId}-${next.id}`)?.focus();
-                  }}
-                  className={`flex h-10 min-w-0 items-center justify-start gap-2 rounded-lg px-3 text-xs outline-none transition-colors focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${active ? "bg-white/[0.08] text-neutral-100" : "text-neutral-400 hover:bg-white/[0.04] hover:text-neutral-200"}`}
-                >
-                  <Icon size={15} className="shrink-0" />
-                  <span>{tabLabel(tab)}</span>
-                </button>
-              );
-            })}
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    id={`${tabsId}-${tab.id}`}
+                    aria-controls={`${tabsId}-panel`}
+                    tabIndex={active ? 0 : -1}
+                    aria-current={active ? "page" : undefined}
+                    aria-selected={active}
+                    onClick={() => setActiveTab(tab.id)}
+                    onKeyDown={(event) => {
+                      const direction = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[event.key];
+                      if (!direction && event.key !== "Home" && event.key !== "End") return;
+                      event.preventDefault();
+                      const index = TABS.findIndex((candidate) => candidate.id === tab.id);
+                      const next = event.key === "Home" ? TABS[0] : event.key === "End" ? TABS.at(-1) : TABS[(index + direction + TABS.length) % TABS.length];
+                      setActiveTab(next.id);
+                      document.getElementById(`${tabsId}-${next.id}`)?.focus();
+                    }}
+                    className={`flex h-10 min-w-0 items-center justify-start gap-2 rounded-lg px-3 text-xs outline-none transition-colors focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${active ? "bg-white/[0.08] text-neutral-100" : "text-neutral-400 hover:bg-white/[0.04] hover:text-neutral-200"}`}
+                  >
+                    <Icon size={15} className="shrink-0" />
+                    <span>{tabLabel(tab)}</span>
+                  </button>
+                );
+              })}
             </div>
           </nav>
 
@@ -125,7 +127,7 @@ export default function SettingsDrawer({
           >
             <div className="flex flex-col gap-4">
               <h2 className="text-xs font-medium text-neutral-200">{activeLabel}</h2>
-              {activeTab === "providers" && (
+              {activeTab === "providers" && (service.native || service.available) && (
                 <button
                   type="button"
                   onClick={openWizard}

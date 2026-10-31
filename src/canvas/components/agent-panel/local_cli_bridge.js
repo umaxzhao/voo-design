@@ -13,15 +13,14 @@ import {
   CLI_BRIDGE_CHANNEL,
   CLI_BRIDGE_DEFAULT_PORT,
   CLI_BRIDGE_EVENT,
-  CLI_BRIDGE_MESSAGE,
 } from "../../../shared/cli_bridge_protocol.js";
 import { CLI_TRANSPORT } from "../../../shared/cli-agents.js";
 import { BG, EVENTS } from "../../../shared/messages.js";
 import { MCP_LINK_WANTED_EVENT } from "../../mcp/mcp_link_boot.js";
 
-/** A refused loopback port fails at once; this only bounds a hung dial. */
-const CONNECT_TIMEOUT_MS = 1500;
-const SOCKET_OPEN = 1;
+import { createWebCliBridge } from "./web-cli-bridge.js";
+export { createWebCliBridge } from "./web-cli-bridge.js";
+export const LOCAL_CLI_STATE_EVENT = "voo:local-cli-state";
 
 export const CLI_BRIDGE_URL =
   import.meta.env?.VITE_CLI_BRIDGE_URL ||
@@ -181,7 +180,11 @@ export async function ensureLocalCliBridge({
   url = CLI_BRIDGE_URL,
   WebSocketImpl = globalThis.WebSocket,
   dial = true,
+  linkCanvas = true,
 } = {}) {
+  if (dial && linkCanvas && typeof window !== "undefined") {
+    window.dispatchEvent?.(new Event(MCP_LINK_WANTED_EVENT));
+  }
   const ready = getLocalCliBridge();
   if (ready) return ready;
 
@@ -219,150 +222,8 @@ export async function ensureLocalCliBridge({
   }
   // Dialing means the user asked for a bridge-backed flow, so the canvas MCP
   // link may now join it (it stays off in a plain browser until then).
-  window.dispatchEvent(new Event(MCP_LINK_WANTED_EVENT));
-  webBridge ??= createWebCliBridge({ url, WebSocketImpl });
+  webBridge ??= createWebCliBridge({ url, WebSocketImpl,
+    onDisconnect: () => globalThis.window?.dispatchEvent?.(new Event(LOCAL_CLI_STATE_EVENT)),
+  });
   return (await webBridge.open()) ? webBridge : null;
-}
-
-/** The `vooDesktop.localCli` surface over one loopback WebSocket. */
-export function createWebCliBridge({
-  url,
-  WebSocketImpl,
-  connectTimeoutMs = CONNECT_TIMEOUT_MS,
-}) {
-  let socket = null;
-  let opening = null;
-  let nextId = 1;
-  const pending = new Map();
-  const textListeners = new Set();
-
-  function failPending(reason) {
-    for (const { reject } of pending.values()) reject(new Error(reason));
-    pending.clear();
-  }
-
-  function onMessage(event) {
-    let frame;
-    try {
-      frame = JSON.parse(event.data);
-    } catch (error) {
-      console.warn("[cli-bridge] Ignoring malformed frame", error);
-      return;
-    }
-    if (frame.type === CLI_BRIDGE_MESSAGE.RESULT) {
-      const entry = pending.get(frame.id);
-      if (!entry) return;
-      pending.delete(frame.id);
-      if (frame.ok) entry.resolve(frame.value);
-      else entry.reject(new Error(frame.error || "cli.failed"));
-      return;
-    }
-    if (
-      frame.type === CLI_BRIDGE_MESSAGE.EVENT &&
-      frame.channel === CLI_BRIDGE_EVENT.TEXT
-    ) {
-      for (const listener of textListeners) {
-        try {
-          listener(frame.payload);
-        } catch (error) {
-          // One faulty listener must not stop the others or the socket.
-          console.warn("[cli-bridge] Text listener failed", error);
-        }
-      }
-    }
-  }
-
-  function open() {
-    if (socket?.readyState === SOCKET_OPEN) return Promise.resolve(true);
-    opening ??= new Promise((resolve) => {
-      const candidate = new WebSocketImpl(url);
-      let settled = false;
-      const settle = (ok) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        opening = null;
-        resolve(ok);
-      };
-      const timer = setTimeout(() => {
-        candidate.close();
-        settle(false);
-      }, connectTimeoutMs);
-      candidate.addEventListener("open", () => {
-        socket = candidate;
-        settle(true);
-      });
-      candidate.addEventListener("error", () => settle(false));
-      candidate.addEventListener("close", () => {
-        if (socket === candidate) {
-          socket = null;
-          failPending("cli.bridgeDisconnected");
-        }
-        settle(false);
-      });
-      candidate.addEventListener("message", onMessage);
-    });
-    return opening;
-  }
-
-  function invoke(channel, ...args) {
-    if (socket?.readyState !== SOCKET_OPEN) {
-      return Promise.reject(new Error("cli.bridgeDisconnected"));
-    }
-    const id = String(nextId++);
-    return new Promise((resolve, reject) => {
-      pending.set(id, { resolve, reject });
-      socket.send(
-        JSON.stringify({ type: CLI_BRIDGE_MESSAGE.INVOKE, id, channel, args }),
-      );
-    });
-  }
-
-  /** Dials if needed; a failure is a result, not a rejection. */
-  async function invokeDsh(channel, options) {
-    try {
-      if (!(await open())) {
-        return { ok: false, code: "cli.bridgeDisconnected" };
-      }
-      return await invoke(channel, options);
-    } catch (error) {
-      return { ok: false, code: "cli.failed", error: String(error?.message || error) };
-    }
-  }
-
-  return {
-    isOpen: () => socket?.readyState === SOCKET_OPEN,
-    open,
-    /** Dials if needed, then connects. Failures are reported in the result, never thrown. */
-    async connect() {
-      try {
-        if (!(await open())) {
-          return { ok: false, transport: "web_loopback", error: "cli.bridgeDisconnected" };
-        }
-        const value = await invoke(CLI_BRIDGE_CHANNEL.CONNECT);
-        return { ok: true, transport: "web_loopback", value };
-      } catch (error) {
-        return { ok: false, transport: "web_loopback", error: error.message };
-      }
-    },
-    close() {
-      const current = socket;
-      socket = null;
-      failPending("cli.bridgeClosed");
-      current?.close();
-    },
-    advance: (options) => invoke(CLI_BRIDGE_CHANNEL.ADVANCE, options),
-    cancel: (options) => invoke(CLI_BRIDGE_CHANNEL.CANCEL, options),
-    runText: (cliId, options) => invoke(CLI_BRIDGE_CHANNEL.RUN_TEXT, cliId, options),
-    dshStatus: (options) => invokeDsh(CLI_BRIDGE_CHANNEL.DSH_STATUS, options),
-    dshInstall: (options) => invokeDsh(CLI_BRIDGE_CHANNEL.DSH_INSTALL, options),
-    checkAll: async () => {
-      await open();
-      return invoke(CLI_BRIDGE_CHANNEL.CHECK_ALL);
-    },
-    onText(listener) {
-      textListeners.add(listener);
-      return () => textListeners.delete(listener);
-    },
-  };
 }

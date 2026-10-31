@@ -6,6 +6,14 @@
 最近一次完整核心验证提交：[bfd7e5b](https://github.com/umaxzhao/voo-design/commit/bfd7e5b65296b270182318f8176fa13dc9499413)。
 以下结果属于该提交，不能直接代表后续改动已经验证。
 
+## 本轮：本地服务发现与同源画布预览
+
+- 待完整发布门禁验证；下面的历史完整通过记录仍只属于 `bfd7e5b`。
+- 新增 `platform.local-service-discovery`、`platform.live-preview`，当前登记 55 个能力分组、83 组核心浏览器套件。
+- 已定向验证服务缺失/发现/断开/恢复、网页只展示已安装 CLI、设置页隐藏本地入口、保留模型选择、空目录进入 API 设置。
+- 只读预览通过独立浏览器读取原画布红/绿图形真实像素，验证更新、缩放、保持生成目标与文档切换失效。图片工具会返回预览链接。
+- [验收范围](audits/editor-closeout.md#local-services-and-source-bound-preview)：不把浏览器通过当成所有客户端自动右侧面板、签名 App 安装包或本地网络权限弹窗已验证。
+
 ## 当前概况
 
 | 项目 | 状态 |
