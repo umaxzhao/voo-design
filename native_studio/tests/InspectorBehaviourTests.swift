@@ -311,6 +311,45 @@ public final class InspectorBehaviourTests {
             try TestAssertions.assertApproxEqual(updated.x, 90, accuracy: 0.5, "Child x stays aligned with rotated local frame")
             try TestAssertions.assertApproxEqual(updated.y, 380, accuracy: 0.5, "Child y moves along rotated local width axis")
         }
+
+        // 12. Light interface theme switching (web parity: theme-light.css)
+        registry.register(tier: 1, feature: "Theme-LightMode", name: "test_ThemeManager_LightAndDarkSwitchingAndWindowBackground") {
+            let previous = UserDefaults.standard.string(forKey: SettingsDrawerView.editorThemeDefaultsKey)
+            defer {
+                if let previous {
+                    UserDefaults.standard.set(previous, forKey: SettingsDrawerView.editorThemeDefaultsKey)
+                } else {
+                    UserDefaults.standard.removeObject(forKey: SettingsDrawerView.editorThemeDefaultsKey)
+                }
+                ThemeManager.shared.currentMode = .dark
+            }
+
+            // Default mode is dark
+            UserDefaults.standard.removeObject(forKey: SettingsDrawerView.editorThemeDefaultsKey)
+            try TestAssertions.assertEqual(ThemeManager.shared.currentMode, .dark)
+            try TestAssertions.assertFalse(ThemeManager.shared.isLight)
+
+            let controller = WindowController()
+            guard let window = controller.window else {
+                throw TestFailure(message: "WindowController has no window", file: #file, line: #line)
+            }
+            window.setContentSize(NSSize(width: 1440, height: 900))
+            controller.mainContentView.frame = NSRect(x: 0, y: 0, width: 1440, height: 900)
+            controller.mainContentView.layoutSubtreeIfNeeded()
+
+            // In dark mode, window background is ThemeTokens.colorPanel (#171717)
+            try TestAssertions.assertEqual(window.backgroundColor, ThemeTokens.colorPanel)
+
+            // Switch to light mode
+            controller.applyTheme(.light)
+            try TestAssertions.assertEqual(window.backgroundColor, NSColor(hex: "#f5f5f5"))
+            try TestAssertions.assertEqual(controller.mainContentView.editorShell.layer?.backgroundColor, NSColor(hex: "#f5f5f5").cgColor)
+
+            // Switch back to dark mode
+            controller.applyTheme(.dark)
+            try TestAssertions.assertEqual(window.backgroundColor, ThemeTokens.colorPanel)
+            try TestAssertions.assertEqual(controller.mainContentView.editorShell.layer?.backgroundColor, NSColor.black.cgColor)
+        }
     }
 
     private static func requireButton(_ root: NSView, id: String) throws -> PropertiesIconButton {

@@ -383,4 +383,16 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - **新增回归测试**：`test_Constraints_RotatedFramePinsAlongLocalAxes`，精准验证 90° 旋转画板拉伸时右侧钉扎子节点沿局部轴正确定位（共 388 项测试，100% 通过）。
 
 验证：`./build.sh` 通过（binary 4.94 MB ≤ 5 MB，bundle 10.26 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **388/388 通过**。
-仍未覆盖：Light interface 仍无浅色主题实现。
+
+## 原生界面优化（第九轮：浅色界面主题架构与设置联动）— 2026-10-31
+
+- **浅色主题协调器（ThemeManager）实现**：
+  - 新增 `native_studio/Sources/UI/ThemeManager.swift`，与 Web `use_editor_theme.js` 与 `theme-light.css` 保持严格规范对齐（持久化键 `voo.editor.theme`，支持 `dark` / `light` 双向切换）；
+  - 遵循 Web 设计哲学：“It is deliberately scoped to the app chrome: the document canvas keeps its own background/checkerboard”；画布保持自身真实渲染与设计稿色彩，界面外框与顶栏根据主题无缝切换；
+  - 浅色模式下：窗口底色自动切换为 `#f5f5f5`，编辑外框背景切换为 `#f5f5f5`，标题栏自动绘制 `#fafafa` 平铺背景与浅色底边描边 `rgba(0,0,0,0.1)`；
+  - 深色模式下：完全保留既有的 `#000000` / `#171717` 与薄荷到纯黑的标志性渐变顶栏，386+ 测试基线 100% 字节无损。
+- **设置面板开关真实联动**：
+  - `WindowController` 接入 `settingsDrawer.onToggleLightInterface`，设置中点击“Light interface”开关立即广播并触发各视图片段重绘。
+- **新增回归测试**：`test_ThemeManager_LightAndDarkSwitchingAndWindowBackground`，验证浅色/深色模式切换、持久化、以及窗口背景色在 `#171717` 与 `#f5f5f5` 间的精准切换。
+
+验证：`./build.sh` 通过（binary 4.94 MB ≤ 5 MB，bundle 10.27 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **389/389 通过**。

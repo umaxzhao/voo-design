@@ -896,31 +896,36 @@ public class AppTitleBar: NSView {
         super.draw(dirtyRect)
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
-        // 1. Signature VOO Titlebar Gradient:
-        // CSS: linear-gradient(-90deg, rgb(0, 0, 0) 70.123%, rgb(178, 255, 214) 89.855%)
-        // Maps left-to-right (0 to bounds.width):
-        // 0.0 -> 0.10145: solid mint rgb(178, 255, 214)
-        // 0.10145 -> 0.29877: transition to black rgb(0, 0, 0)
-        // 0.29877 -> 1.0: solid black rgb(0, 0, 0)
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let mintColor = ThemeTokens.colorMint.cgColor
-        let blackColor = NSColor.black.cgColor
-        let gradientColors = [mintColor, mintColor, blackColor, blackColor] as CFArray
-        let locations: [CGFloat] = [0.0, 0.10145, 0.29877, 1.0]
-
-        if let gradient = CGGradient(colorsSpace: colorSpace, colors: gradientColors, locations: locations) {
-            let startPoint = CGPoint(x: 0, y: bounds.midY)
-            let endPoint = CGPoint(x: bounds.width, y: bounds.midY)
-            ctx.drawLinearGradient(gradient, start: startPoint, end: endPoint, options: [])
-        } else {
-            ctx.setFillColor(blackColor)
+        if ThemeManager.shared.isLight {
+            // Web `theme-light.css`: .app-title-bar background #fafafa, border-b rgba(0,0,0,0.1)
+            ctx.setFillColor(NSColor(hex: "#fafafa").cgColor)
             ctx.fill(bounds)
-        }
+            ctx.setStrokeColor(NSColor(white: 0.0, alpha: 0.10).cgColor)
+            ctx.setLineWidth(1.0)
+            ctx.strokeLineSegments(between: [CGPoint(x: 0, y: 0.5), CGPoint(x: bounds.width, y: 0.5)])
+        } else {
+            // 1. Signature VOO Titlebar Gradient (dark mode):
+            // CSS: linear-gradient(-90deg, rgb(0, 0, 0) 70.123%, rgb(178, 255, 214) 89.855%)
+            let colorSpace = CGColorSpaceCreateDeviceRGB()
+            let mintColor = ThemeTokens.colorMint.cgColor
+            let blackColor = NSColor.black.cgColor
+            let gradientColors = [mintColor, mintColor, blackColor, blackColor] as CFArray
+            let locations: [CGFloat] = [0.0, 0.10145, 0.29877, 1.0]
 
-        // 2. Bottom border: border-b border-white/10
-        ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.10).cgColor)
-        ctx.setLineWidth(1.0)
-        ctx.strokeLineSegments(between: [CGPoint(x: 0, y: 0.5), CGPoint(x: bounds.width, y: 0.5)])
+            if let gradient = CGGradient(colorsSpace: colorSpace, colors: gradientColors, locations: locations) {
+                let startPoint = CGPoint(x: 0, y: bounds.midY)
+                let endPoint = CGPoint(x: bounds.width, y: bounds.midY)
+                ctx.drawLinearGradient(gradient, start: startPoint, end: endPoint, options: [])
+            } else {
+                ctx.setFillColor(blackColor)
+                ctx.fill(bounds)
+            }
+
+            // 2. Bottom border: border-b border-white/10
+            ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.10).cgColor)
+            ctx.setLineWidth(1.0)
+            ctx.strokeLineSegments(between: [CGPoint(x: 0, y: 0.5), CGPoint(x: bounds.width, y: 0.5)])
+        }
 
         // 3. Brand block: h28 hover pill (radius 8), 20pt logo, 6pt gap,
         //    12pt/500 black wordmark with tight tracking.

@@ -605,6 +605,14 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             self.mainContentView.canvasStageView.needsDisplay = true
             self.mainContentView.updateIslandBarPosition()
         }
+        view.settingsDrawer.onToggleLightInterface = { [weak self] isLight in
+            guard let self = self else { return }
+            ThemeManager.shared.currentMode = isLight ? .light : .dark
+            self.applyTheme(ThemeManager.shared.currentMode)
+        }
+
+        // Apply saved theme mode (default dark)
+        applyTheme(ThemeManager.shared.currentMode)
 
         // Rulers stay hidden unless the persisted preference says otherwise (web default off).
         view.canvasStageView.showRulers = UserDefaults.standard.bool(
@@ -3361,6 +3369,20 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             detail = "已检测到 \(agent.displayName)\(status.version.map { " \($0)" } ?? "")，但当前不可用：\(status.error ?? "未就绪")。"
         }
         self.mainContentView.agentPanel.addAgentMessage("收到：「\(prompt)」。\(detail)\n\(contextLine)")
+    }
+
+    public func applyTheme(_ mode: ThemeManager.Mode) {
+        let isLight = mode == .light
+        studioWindow.backgroundColor = isLight ? NSColor(hex: "#f5f5f5") : ThemeTokens.colorPanel
+        mainContentView.editorShell.layer?.backgroundColor = isLight ? NSColor(hex: "#f5f5f5").cgColor : NSColor.black.cgColor
+        mainContentView.titleBar.needsDisplay = true
+        mainContentView.toolRail.needsDisplay = true
+        mainContentView.bottomZoomBar.needsDisplay = true
+        mainContentView.inspector.needsDisplay = true
+        mainContentView.welcomeDashboard.needsDisplay = true
+        mainContentView.settingsDrawer.needsDisplay = true
+        mainContentView.agentPanel.needsDisplay = true
+        mainContentView.canvasStageView.needsDisplay = true
     }
 
     private func showChromeToast(_ message: String) {
