@@ -14,6 +14,10 @@ to refresh them by hand, run `npm run copy:ort` and `npm run copy:canvaskit`.
 
 ## Development workflow
 
+Follow [engineering-workflow.md](engineering-workflow.md) for module ownership,
+acceptance scope and cross-module regressions. The machine-readable inventory
+is `scripts/editor-module-catalog.mjs`; release checks consume the same list.
+
 | Command | What it does |
 | :--- | :--- |
 | `npm run dev` | Web dev server at `http://localhost:5173` |
@@ -21,6 +25,9 @@ to refresh them by hand, run `npm run copy:ort` and `npm run copy:canvaskit`.
 | `npm test` | Full unit test suite (vitest, run once) |
 | `npm run test:watch` | Unit tests in watch mode |
 | `npm run lint:design` | Design-token lint over the whole tree |
+| `npm run check:modules` | Validate feature/module IDs, suite ownership and referenced files |
+| `node scripts/editor-checks.mjs --changed --json` | Plan affected modules; unowned executable paths require the full gate |
+| `npm run test:module -- --module layers` | Run the module and its declared related browser regressions |
 | `node scripts/check-design.mjs src/foo.jsx` | Lint specific paths |
 | `node scripts/check-design.mjs --staged` | Lint staged content (use this before committing) |
 | `npm run build` / `npm run electron:build` | Production builds |

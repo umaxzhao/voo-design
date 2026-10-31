@@ -6,6 +6,8 @@ import { findPersonaById, formatPersonaPrompt } from "../../src/shared/agent_per
 
 const ALL_TOOL_NAMES = [
   "build_layout",
+  "stream_layout",
+  "set_code_connect",
   "create_shape",
   "lint_design",
   "inspect_layout",

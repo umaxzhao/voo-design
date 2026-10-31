@@ -395,7 +395,7 @@ export const COMPONENT_TOOL_EXECUTORS = Object.freeze({
   reset_instance_overrides: resetInstanceOverrides,
   swap_instance: swapInstance,
   create_component_variant: createComponentVariant,
-  createComponentVariantsBatch: createComponentVariantsBatch,
+  create_component_variants_batch: createComponentVariantsBatch,
   list_component_variants: listComponentVariants,
   create_component_variant_matrix: createComponentVariantMatrix,
   list_instance_variant_properties: listInstanceVariantProperties,

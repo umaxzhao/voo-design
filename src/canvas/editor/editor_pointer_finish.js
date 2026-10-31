@@ -8,10 +8,12 @@ import { TOOL } from "./editor_constants.js";
 import { reparentMovedRoots } from "./reparent-moved-roots.js";
 import { rollbackMoveGesture } from "./move-gesture-transaction.js";
 import { isPointerHandoff } from "./pointer-gesture-handoff.js";
+import { rollbackDrawingGesture } from "./drawing-gesture-transaction.js";
 
 export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
   function finishGesture(event, finished) {
     if (!finished) return;
+    if (event?.type === "pointercancel" && rollbackDrawingGesture(api, finished)) return;
     if (event?.type === "pointercancel" && !isPointerHandoff(event) && rollbackMoveGesture(api, finished)) return;
 
     if (

@@ -187,7 +187,10 @@ export function combineNodes(doc, ids, operation) {
  */
 export function insertGroup(doc, groupNode, childIds) {
   const chosen = new Set(childIds);
-  if (!doc.nodes.some((node) => chosen.has(node.id))) return doc;
+  const members = doc.nodes.filter(node => chosen.has(node.id));
+  if (!members.length) return doc;
+  const parents = new Set(members.map(node => node.parentId ?? null));
+  const folder = { ...groupNode, parentId: groupNode.parentId ?? (parents.size === 1 ? [...parents][0] : null) };
   let bottomIndex = doc.nodes.length;
   doc.nodes.forEach((node, index) => {
     if (chosen.has(node.id) && index < bottomIndex) bottomIndex = index;
@@ -195,7 +198,7 @@ export function insertGroup(doc, groupNode, childIds) {
   const nodes = doc.nodes.map((node) =>
     chosen.has(node.id) ? { ...node, parentId: groupNode.id } : node,
   );
-  nodes.splice(bottomIndex, 0, groupNode);
+  nodes.splice(bottomIndex, 0, folder);
   return withNodes(doc, nodes);
 }
 

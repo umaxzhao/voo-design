@@ -25,7 +25,30 @@ await withEditorBrowser(async ({ page, tool }) => {
   ]);
   await tool("align_layers", { layerIds: ["group", "anchor"], align: "top" });
   assert.equal((await node("anchor")).y, 100);
+  await page.evaluate(async () => {
+    const overlays = await import("/src/canvas/editor/chrome_stage_overlays.js");
+    overlays.setAgentFocusNode(window.__vooEditor.getNode("anchor"));
+    overlays.setAgentCursor({ x: 340, y: 140, label: "Sampling audit", durationMs: 10000 });
+  });
   assert.equal(await pixel(340, 140), "#0000ff");
+  const cleanExports = await page.evaluate(async () => {
+    const e = window.__vooEditor;
+    const read = async (source, x, y) => {
+      const image = new Image(); image.src = source; await image.decode();
+      const canvas = document.createElement("canvas"); canvas.width = image.width; canvas.height = image.height;
+      const ctx = canvas.getContext("2d"); ctx.drawImage(image, 0, 0);
+      return [...ctx.getImageData(x, y, 1, 1).data];
+    };
+    return { png: await read(e.exportPng(), 340, 140),
+      fullResolution: await read(await e.exportFullResPng(), 340, 140),
+      selection: await read(e.exportSelectionPng(["anchor"]).dataUrl, 40, 40) };
+  });
+  for (const pixels of Object.values(cleanExports)) assert.deepEqual(pixels, [0, 0, 255, 255]);
+  await page.evaluate(async () => {
+    const overlays = await import("/src/canvas/editor/chrome_stage_overlays.js");
+    overlays.clearAgentCursor(); overlays.clearAgentFocusNode();
+  });
+  checks.push("eyedropper, PNG, full-resolution and selection exports exclude active Agent cursor/focus chrome");
   await tool("align_layers", { layerIds: ["group"], align: "right", relativeTo: "parent" });
   assert.equal((await node("group")).x, 520);
   assert.equal((await node("child")).x, 520, "Aligning a container must move its child artwork");

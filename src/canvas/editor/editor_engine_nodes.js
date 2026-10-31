@@ -159,7 +159,7 @@ export function createEngineNodesController({
   }
 
   const nodeOps = createEngineNodeOps({
-    getDoc,
+    getDoc, cache,
     setDoc,
     selection,
     releaseNodeTextures,

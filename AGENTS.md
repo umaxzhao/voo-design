@@ -26,3 +26,22 @@ deployment fails, report the failure and its cause instead of claiming success.
 
 Other project conventions and verification commands are in `README.md` and
 `docs/agents.md`.
+
+## Module ownership and acceptance
+
+Follow `docs/engineering-workflow.md`. Before changing a behavior, identify its
+module in `scripts/editor-module-catalog.mjs` and inspect the affected/related
+checks with `node scripts/editor-checks.mjs --changed --json`. Add new behavior
+IDs and test ownership to that catalog; keep detailed scope and unverified
+contexts in the relevant audit document. Use one common domain operation for
+UI, shortcut and Agent entry points.
+
+A passing test run proves only its registered assertions on its recorded
+revision. Never mark an untested context, skipped test, blocked service or
+different platform passed. Keep execution and functional coverage separate in
+delivery reports. Reproduce defects before fixing them and retain the failing
+scenario as a regression check.
+
+Maintain `docs/quality-progress.md` as the user's single progress entry. After
+each audit, update affected module status, remaining contexts and the exact
+verified revision/evidence; never inherit a historical pass for changed code.

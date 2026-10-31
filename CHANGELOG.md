@@ -2,6 +2,30 @@
 
 ## 1.0.0
 
+- Verify a continuous real-UI creation session from New through drawing, typing, grouping, path editing, image placement, masking, undo/redo and cold ZIP reopening. Register it in the core release gate with explicit platform/performance limits.
+- Make named shape shortcuts choose their own tool while preserving radial pointer choices. Keep new groups in their shared Frame, select the new movement unit and ungroup only the intended unlocked container.
+- Roll back cancelled shape, arrow and text drafts without altering existing history/redo; share pointer keyboard/listener cleanup in a focused module. Give newly drawn text contrasting initial ink on solid Frame surfaces while preserving explicit and programmatic colors.
+
+- Account for every existing browser suite: retain 76 core release checks and explicitly list 21 standalone/unreviewed checks with reasons. Reject newly unclassified suites and keep separate checks out of core pass totals.
+
+- Restore temporary-directory environment aliases correctly in bridge disposal tests, including platforms where TMPDIR is initially absent; retain the required Linux CI test gate.
+
+- Establish a shared module/capability inventory and conservative affected-check planning. Group release evidence by module while keeping functional coverage and platform gaps separate from test execution; document the maintained acceptance/refactoring workflow.
+
+- Prevent duplicate nested-mask layer rows and stale React children after document replacement; keep eyedropper sampling, raster exports, SVG raster fallback and previews independent of animated Agent chrome.
+
+- Unify visible Frame targeting for drawing, import, drop and clipboard placement; honor nested/rounded clips, selected destinations and context-menu coordinates without changing programmatic root insertion.
+- Keep pasted subtrees in their destination paint blocks and remap internal ownership/mask references. Preserve independent duplicate image mattes and one-step history.
+- Make locked deletion a complete no-op, remove complete unlocked parent subtrees without orphaning locked descendants and restrict automatic clipping masks to valid sibling ownership.
+- Apply a Frame clipping mask to its full subtree in Canvas and SVG, retain chained/fractional alpha and make clipped/erased pixels fall through hit testing. Add nested object, mask, placement and cold project round-trip release checks.
+
+- Keep selected-layer suggestions inside the assistant conversation scroller and reserve a usable mobile panel height; pin its header and composer so model selection and sending remain reachable on short screens.
+
+- Restore referenced connector, version history, component slot, code handoff and Pen export modules omitted from the integration. Keep protocol helpers independently packaged, register batch variant execution under its advertised name and retain advanced generation settings in one secondary entry.
+
+- Retain locale dictionaries and mounted subscribers across development module replacements; keep existing translations during delayed or failed refreshes and retry deferred loading when components mount.
+- Preserve language-request ordering, notify cached locale switches and prevent late critical slices from replacing complete dictionaries. Verify real HMR, failed/recovered requests, language switches and ten minutes of editor timers without changing the document.
+
 - Keep narrow inspector numeric fields readable and reachable when mobile layout CSS loads before utility styles during a cold start.
 
 - Reflow text bounds during pointer resizing, preserve font size on four-corner text-box drags and pin the opposite measured corner (or center) after wrapping, rotation, shear and flip. Keep mixed-selection text dimensions current.

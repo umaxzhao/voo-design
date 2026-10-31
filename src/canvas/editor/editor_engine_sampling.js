@@ -23,16 +23,16 @@ export function createEngineSampler({
   renderOutsidePixel = null,
 }) {
   function compositedPixelAt(docPoint, radius, size) {
-    beforeRead?.();
-    syncTileLayerCanvas(ctx, () => ({ doc: getDoc(), viewport: viewportTools.getViewport(),
+    const source = beforeRead?.() ?? ctx;
+    syncTileLayerCanvas(source, () => ({ doc: getDoc(), viewport: viewportTools.getViewport(),
       cullOffscreen: false, spatialIndex: null }));
     const pixel = canvasPixelAt(
       docPoint,
       viewportTools.getViewport(),
       getRenderedDpr?.() ?? 1,
     );
-    const cw = ctx.canvas?.width ?? 0;
-    const ch = ctx.canvas?.height ?? 0;
+    const cw = source.canvas?.width ?? 0;
+    const ch = source.canvas?.height ?? 0;
     const sx =
       cw > 0
         ? Math.max(0, Math.min(pixel.x - radius, cw - 1))
@@ -50,7 +50,7 @@ export function createEngineSampler({
       pixel.x + radius >= cw || pixel.y + radius >= ch);
     const { data } = outside && renderOutsidePixel
       ? renderOutsidePixel(docPoint, radius)
-      : ctx.getImageData(sx, sy, w, h);
+      : source.getImageData(sx, sy, w, h);
     const hex = (value) => Math.round(value).toString(16).padStart(2, "0");
     if (radius === 0) {
       if (data[3] === 0) return null;

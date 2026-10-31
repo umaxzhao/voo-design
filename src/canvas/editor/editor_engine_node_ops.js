@@ -1,3 +1,5 @@
+import { createNodeHitTester } from "./node-hit-test.js";
+import { createNodeStackActions } from "./node-stack-actions.js";
 /**
  * Node mutation, reordering, locking, removal, and hit-testing operations.
  *
@@ -8,12 +10,9 @@ import {
   canConvertToPath,
   convertShapeToPathNode,
   findNode,
-  groupDescendants,
-  isGroupNode,
   isLockedByGroup,
   NODE_KIND,
 } from "./scene_model.js";
-import { toNodeLocal } from "./scene_geometry.js";
 import {
   commitEditorDocument,
   commitOrPreviewEditorDocument,
@@ -31,7 +30,7 @@ import { layoutTextOnPath } from "./text_on_path.js";
 import { newId } from "./scene_model_core.js";
 
 export function createEngineNodeOps({
-  getDoc,
+  getDoc, cache,
   setDoc,
   selection,
   releaseNodeTextures,
@@ -43,44 +42,9 @@ export function createEngineNodeOps({
   notify,
   getZoom,
 }) {
-  function removeIds(ids) {
-    const doc = getDoc();
-    const expanded = new Set();
-    for (const id of ids) {
-      const node = findNode(doc, id);
-      if (!node) continue;
-      expanded.add(id);
-      if (isGroupNode(node)) {
-        for (const member of groupDescendants(doc, id)) expanded.add(member.id);
-      }
-    }
-    let next = doc;
-    for (const id of expanded) {
-      releaseNodeTextures?.(findNode(doc, id));
-      maskTools?.onNodeRemoved?.(id);
-      paintTools?.onNodeRemoved?.(id);
-      penTools?.onNodeRemoved?.(id);
-      next = ops.removeNode(next, id);
-    }
-    for (const id of expanded) {
-      next = ops.releaseClippingMasksTo(next, id);
-    }
-    next = ops.pruneEmptyGroups(next);
-    if (next === doc) return false;
-    commitEditorDocument("editor.layer.delete", setDoc, next);
-    return true;
-  }
-
-  function removeNode(id) {
-    if (!removeIds([id])) return;
-    const remainingSelection = selection
-      .getIds()
-      .filter((selectedId) => findNode(getDoc(), selectedId));
-    if (selection.selectNodes(remainingSelection)) {
-      requestRender();
-      notify();
-    }
-  }
+  const { removeIds, removeNode, reorderNode, reorderNodeTo, reorderNodes,
+    moveToFront, moveToBack, moveNodeToRoot } = createNodeStackActions({ getDoc, setDoc,
+    selection, releaseNodeTextures, maskTools, paintTools, penTools, requestRender, notify });
 
   function updateNode(id, patch, options) {
     return commitOrPreviewEditorDocument(
@@ -100,49 +64,10 @@ export function createEngineNodeOps({
     );
   }
 
-  function reorderNode(id, direction) {
-    return commitEditorDocument(
-      "editor.layer.order",
-      setDoc,
-      ops.reorderNode(getDoc(), id, direction),
-    );
-  }
 
-  function reorderNodeTo(id, index) {
-    const doc = getDoc();
-    const next = ops.reorderNodeTo(doc, id, index);
-    if (next === doc) return;
-    commitEditorDocument("editor.layer.order", setDoc, next);
-  }
 
-  function reorderNodes(ids, direction) {
-    const doc = getDoc();
-    const next = ops.reorderNodes(doc, ids, direction);
-    if (next === doc) return;
-    commitEditorDocument("editor.layer.order", setDoc, next);
-  }
 
-  function moveToFront(ids) {
-    let next = getDoc();
-    for (const id of ops.extremeOrder(next, ids, "front")) {
-      next = ops.moveNodeToExtreme(next, id, "front");
-    }
-    if (next === getDoc()) return;
-    commitEditorDocument("editor.layer.order", setDoc, next, {
-      name: "editor.history.entry.bringToFront",
-    });
-  }
 
-  function moveToBack(ids) {
-    let next = getDoc();
-    for (const id of ops.extremeOrder(next, ids, "back")) {
-      next = ops.moveNodeToExtreme(next, id, "back");
-    }
-    if (next === getDoc()) return;
-    commitEditorDocument("editor.layer.order", setDoc, next, {
-      name: "editor.history.entry.sendToBack",
-    });
-  }
 
   function moveNodesBy(ids, dx, dy, options) {
     const list = Array.isArray(ids) ? ids : [ids];
@@ -158,47 +83,8 @@ export function createEngineNodeOps({
     return moveNodesBy(id, dx, dy, options);
   }
 
-  function moveNodeToRoot(id, targetRootIndex) {
-    const doc = getDoc();
-    const next = ops.moveNodeToRoot(doc, id, targetRootIndex);
-    if (next === doc) return false;
-    commitEditorDocument("editor.layer.move", setDoc, next, {
-      name: "editor.history.entry.moveOutOfGroup",
-    });
-    return true;
-  }
 
-  function nodeAtPoint(point, options = {}) {
-    // Hit testing must use the frame painted on the stage. A saved X/Y value
-    // can be far from an animated node's visible position at the playhead.
-    const doc = getDoc();
-    const zoom = options.zoom ?? (typeof getZoom === "function" ? getZoom() : 1);
-    return ops.nodeAtPoint(doc, point, {
-      zoom,
-      ...options,
-      reject: (node, at) => {
-        if (node.paint === true && !paintTools.api.isPaintOpaqueAt(node, at)) {
-          return true;
-        }
-        if (node.kind === NODE_KIND.IMAGE) {
-          const eff = getEffectiveNode?.(node);
-          if (eff?.effectiveLocal) {
-            const local = toNodeLocal(node, at);
-            const el = eff.effectiveLocal;
-            if (
-              local.x < el.x ||
-              local.x > el.x + el.width ||
-              local.y < el.y ||
-              local.y > el.y + el.height
-            ) {
-              return true;
-            }
-          }
-        }
-        return false;
-      },
-    });
-  }
+  const nodeAtPoint = createNodeHitTester({ getDoc, getZoom, paintTools, getEffectiveNode, cache, maskTools });
 
   function toggleLockNode(id) {
     const doc = getDoc();

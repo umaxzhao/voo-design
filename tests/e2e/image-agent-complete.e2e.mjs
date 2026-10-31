@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { imageAudit } from "./image-audit-fixture.mjs";
+import { integrationAgentCases } from "./image-agent-integration-cases.mjs";
 import { basicAgentCases } from "./image-agent-basic-cases.mjs";
 import { componentAgentCases } from "./image-agent-components-cases.mjs";
 await withEditorBrowser(async ({
@@ -104,7 +105,8 @@ await withEditorBrowser(async ({
     await run(name, async () => {
       const cases = {
         ...basicAgentCases(context),
-        ...componentAgentCases(context)
+        ...componentAgentCases(context),
+        ...integrationAgentCases(context)
       };
       assert.equal(typeof cases[name], "function", `No positive scenario registered for ${name}`);
       await cases[name]();

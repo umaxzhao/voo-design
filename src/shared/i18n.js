@@ -32,121 +32,156 @@ export function resolveInitialLocale({ stored, languages, automated } = {}) {
   return "en";
 }
 
-/** The loaded tables; keys are locale codes. */
-const DICTIONARIES = {};
-const FULL_LOADED = {};
-let activeLocale = "en";
-let localeRequestId = 0;
-const listeners = new Set();
+// Vite can replace this module while mounted React components still hold its
+// exports. Share the complete state with the replacement, including subscribers
+// and request ordering, so neither old nor new consumers lose their dictionary.
+const previousState = import.meta.hot?.data.localeState;
+const state = previousState ?? {
+  dictionaries: {},
+  fullLoaded: {},
+  pendingCore: new Map(),
+  pendingFull: new Map(),
+  activeLocale: "en",
+  requestedLocale: "en",
+  requestId: 0,
+  generation: 0,
+  listeners: new Set(),
+};
 
-/**
- * Loads the critical initial-paint slice of a dictionary so the initial frame
- * renders without waiting for the full ~130KB dictionary over the wire.
- */
-export async function loadCriticalLocale(locale) {
+function validateLocale(locale) {
   if (!SUPPORTED_LOCALES.includes(locale)) {
     throw new Error(`Unsupported locale: ${locale}`);
   }
-  localeRequestId += 1;
-  activeLocale = locale;
-  if (FULL_LOADED[locale] || DICTIONARIES[locale]) {
-    return DICTIONARIES[locale];
-  }
-  try {
-    const module = await import(`./i18n/core-${locale}.js`);
-    DICTIONARIES[locale] = {
-      ...(DICTIONARIES[locale] ?? {}),
-      ...(module.default ?? {}),
-    };
-  } catch {
-    // If core slice fails or is missing, fallback to full load
-    await loadLocale(locale);
-  }
-  return DICTIONARIES[locale];
 }
 
-/**
- * Loads a locale's complete dictionary and makes it the active table. Idempotent
- * per locale. Resolves with the dictionary, or rejects on a missing locale.
- */
-export async function loadLocale(locale) {
-  if (!SUPPORTED_LOCALES.includes(locale)) {
-    throw new Error(`Unsupported locale: ${locale}`);
-  }
-  const requestId = ++localeRequestId;
-  if (FULL_LOADED[locale]) {
-    activeLocale = locale;
-    return DICTIONARIES[locale];
-  }
-  const module = await import(`./i18n/${locale}.js`);
-  DICTIONARIES[locale] = {
-    ...(DICTIONARIES[locale] ?? {}),
-    ...(module.default ?? {}),
-  };
-  FULL_LOADED[locale] = true;
-  if (requestId === localeRequestId) activeLocale = locale;
-  listeners.forEach((listener) => {
+function notifyListeners() {
+  for (const listener of [...state.listeners]) {
     try {
-      listener(activeLocale);
-    } catch {
-      // ignore listener errors
+      listener(state.activeLocale);
+    } catch (error) {
+      console.error("[i18n] Locale listener failed.", error);
     }
-  });
-  return DICTIONARIES[locale];
+  }
 }
 
-/**
- * Translates a key, interpolating `{name}` placeholders.
- * Unknown keys fall back to the key itself so missing strings stay visible.
- */
+function mergeDictionary(locale, dictionary) {
+  state.dictionaries[locale] = { ...state.dictionaries[locale], ...dictionary };
+  if (state.activeLocale === locale) notifyListeners();
+  return state.dictionaries[locale];
+}
+
+function ensureFullLocale(locale) {
+  if (state.fullLoaded[locale]) return Promise.resolve(state.dictionaries[locale]);
+  if (state.pendingFull.has(locale)) return state.pendingFull.get(locale);
+  const generation = state.generation;
+  const pending = import(`./i18n/${locale}.js`).then((module) => {
+    // A response started by a replaced module cannot overwrite newer strings.
+    if (generation !== state.generation) return state.dictionaries[locale];
+    state.fullLoaded[locale] = true;
+    return mergeDictionary(locale, module.default);
+  }).finally(() => {
+    if (state.pendingFull.get(locale) === pending) state.pendingFull.delete(locale);
+  });
+  state.pendingFull.set(locale, pending);
+  return pending;
+}
+
+function ensureCriticalLocale(locale) {
+  if (state.dictionaries[locale]) return Promise.resolve(state.dictionaries[locale]);
+  if (state.pendingCore.has(locale)) return state.pendingCore.get(locale);
+  const generation = state.generation;
+  const pending = import(`./i18n/core-${locale}.js`).then((module) => {
+    // A late critical slice must never overwrite the full dictionary.
+    if (generation !== state.generation || state.fullLoaded[locale]) return state.dictionaries[locale];
+    return mergeDictionary(locale, module.default);
+  }).catch((error) => {
+    console.warn(`[i18n] Critical dictionary failed for "${locale}"; loading the full dictionary.`, error);
+    return ensureFullLocale(locale);
+  }).finally(() => {
+    if (state.pendingCore.get(locale) === pending) state.pendingCore.delete(locale);
+  });
+  state.pendingCore.set(locale, pending);
+  return pending;
+}
+
+function activateLocale(locale, requestId) {
+  if (requestId !== state.requestId || state.activeLocale === locale) return;
+  state.activeLocale = locale;
+  notifyListeners();
+}
+
+/** Keep the current language usable until its replacement has loaded. */
+export async function loadCriticalLocale(locale) {
+  validateLocale(locale);
+  state.requestedLocale = locale;
+  const requestId = ++state.requestId;
+  const dictionary = await ensureCriticalLocale(locale);
+  activateLocale(locale, requestId);
+  return dictionary;
+}
+
+/** Load once per locale; only the latest requested language can become active. */
+export async function loadLocale(locale) {
+  validateLocale(locale);
+  state.requestedLocale = locale;
+  const requestId = ++state.requestId;
+  const dictionary = await ensureFullLocale(locale);
+  activateLocale(locale, requestId);
+  return dictionary;
+}
+
+/** Retry deferred loading on component mount without changing language intent. */
+export function ensureCurrentLocale() {
+  return ensureFullLocale(state.requestedLocale);
+}
+
+/** Translate and interpolate; genuinely unknown keys remain visible for diagnosis. */
 export function t(key, params) {
-  const template =
-    DICTIONARIES[activeLocale]?.[key] ?? DICTIONARIES.en?.[key] ?? key;
+  const template = state.dictionaries[state.activeLocale]?.[key] ?? state.dictionaries.en?.[key] ?? key;
   if (!params) return template;
   return template.replace(/\{(\w+)\}/g, (match, name) =>
-    Object.prototype.hasOwnProperty.call(params, name)
-      ? String(params[name])
-      : match,
+    Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : match,
   );
 }
 
-/** Returns the active locale. */
 export function getLocale() {
-  return activeLocale;
+  return state.activeLocale;
 }
 
-/** Loads the locale's dictionary and switches the active locale. */
-export function setLocale(locale) {
-  if (!locale) return Promise.resolve();
+export async function setLocale(locale) {
+  if (!locale) return;
   if (!SUPPORTED_LOCALES.includes(locale)) {
     console.warn(`[i18n] Ignoring unsupported locale: ${locale}`);
-    return Promise.resolve();
+    return;
   }
-  return loadLocale(locale)
-    .then(() => {
-      listeners.forEach((listener) => {
-        try {
-          listener(activeLocale);
-        } catch {
-          // ignore listener errors
-        }
-      });
-    })
-    .catch((error) => {
-      console.warn(`[i18n] Failed to load locale "${locale}"; keeping the current locale.`, error);
-    });
+  try {
+    return await loadLocale(locale);
+  } catch (error) {
+    console.warn(`[i18n] Failed to load locale "${locale}"; keeping the current locale.`, error);
+  }
 }
 
-/** Toggles between English and Simplified Chinese. */
 export function toggleLocale() {
-  const next = activeLocale === "zh" ? "en" : "zh";
-  setLocale(next);
+  return setLocale(state.requestedLocale === "zh" ? "en" : "zh");
 }
 
-/** Subscribes to locale changes. */
 export function onLocaleChange(listener) {
-  if (typeof listener === "function") {
-    listeners.add(listener);
+  if (typeof listener !== "function") return () => {};
+  state.listeners.add(listener);
+  return () => state.listeners.delete(listener);
+}
+
+if (import.meta.hot) {
+  import.meta.hot.data.localeState = state;
+  import.meta.hot.accept();
+  if (previousState) {
+    // Retain readable cached strings while fetching updated dictionaries.
+    state.generation += 1;
+    state.fullLoaded = {};
+    state.pendingCore.clear();
+    state.pendingFull.clear();
+    void ensureCurrentLocale().catch((error) => {
+      console.warn("[i18n] Updated dictionary failed to load; keeping cached translations.", error);
+    });
   }
-  return () => listeners.delete(listener);
 }

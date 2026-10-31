@@ -173,3 +173,30 @@
 
 额外环境观察：并行修改与热更新期间，界面曾显示 `editor.props.*` 等原始翻译键。
 此现象尚未在冷启动生产构建中复测，暂不归因为稳定产品缺陷，也未计入上述问题数量。
+
+
+## Fixed midpoint insertion — 2026-10-31
+
+Capability: `vectors.midpoint-insertion`. Hover and pointer insertion share one
+fixed t=0.5 target per adjacent anchor pair, including the closing edge.
+Subdivision preserves the original cubic geometry; existing handles and anchors
+keep pointer priority. Selection-mode artboard dragging yields to active path
+editing. Insertion and any following drag commit once on release; cancelling
+restores the pre-insertion points.
+
+Evidence: `tests/unit/pen-midpoint-insertion.test.js` first reproduced five
+failures on the former moving-target implementation. Its eight assertions cover
+arbitrary-position rejection, fixed straight/curved targets, rotation/nonuniform
+scale at 0.5/1/3 zoom, exact curve samples, closure, overlap and cancellation.
+`tests/e2e/pen-midpoint-insertion.e2e.mjs` uses real Chromium mouse events to
+verify preview coordinates, rejected off-midpoint clicks, insertion, selected
+new anchor, and one-step undo/redo. The preview assertion reads the rendered
+chrome target; it is not a pixel comparison. Retained artboard/anchor tests cover
+existing gestures. The clean release report at `/tmp/voo-midpoint-release.json`
+records the exact verified revision and execution status; only `complete: true`
+with that revision is release evidence.
+
+Scope remains partial: physical pen/touch input, signed Electron packages,
+self-overlapping multi-contour imports, cold project reopen and render/export
+pixel comparisons are not certified by this targeted scenario. Bend/cut tools
+retain their own segment projections; this change restricts anchor insertion.

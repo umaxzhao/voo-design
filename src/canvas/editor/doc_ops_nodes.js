@@ -1,3 +1,5 @@
+import { createFrameClipContext } from "./frame-clip-context.js";
+import { visibleFrameAtPoint, containsFramePoint } from "./frame-target.js";
 import { journalNodes, nodesTracked } from "../../engine-wasm/journal.js";
 import { hitTestMetadata, orderedCandidates } from "./hit_test_candidates.js";
 import {
@@ -184,6 +186,7 @@ export function nodeAtPoint(
     candidateNodes = orderedCandidates(doc.nodes, candidates, metadata.fills);
   }
 
+  const frameClips = createFrameClipContext(doc.nodes);
   const nodesToTest = candidateNodes ?? doc.nodes;
   const isReverse = !candidateNodes;
   const length = nodesToTest.length;
@@ -201,7 +204,8 @@ export function nodeAtPoint(
     ) {
       continue;
     }
-    if (!node.visible || isHiddenByGroup(doc, node)) continue;
+    if (node.visible === false || node.maskBase || isHiddenByGroup(doc, node)) continue;
+    if (!frameClips.framesOf(node).every(frame => containsFramePoint(frame, point))) continue;
     // Sound has no box to be inside: it is reached from Layers and the
     // timeline, never from the stage.
     if ((node.locked || isLockedByGroup(doc, node)) && !includeLocked) continue;
@@ -252,6 +256,8 @@ export function nodeAtPoint(
       local.y >= -slop &&
       local.y <= node.height + slop
     ) {
+      if (isFrameSelectionBoundary(node) && local.x >= 0 && local.y >= 0 &&
+        local.x <= node.width && local.y <= node.height && !containsFramePoint(node, point)) continue;
       if (node.kind === NODE_KIND.ELLIPSE) {
         const rx = node.width / 2;
         const ry = node.height / 2;
@@ -291,30 +297,7 @@ export function nodeAtPoint(
  * becomes its child rather than its sibling.
  */
 export function frameAtPoint(doc, point) {
-  if (!doc?.nodes?.length) return null;
-  let best = null;
-  let bestArea = Infinity;
-  for (const node of doc.nodes) {
-    if (!(node.isFrame || node.kind === "frame")) continue;
-    if (!node.visible || isHiddenByGroup(doc, node)) continue;
-    if (node.locked || isLockedByGroup(doc, node)) continue;
-    if (!(node.width > 0) || !(node.height > 0)) continue;
-    const local = toNodeLocal(node, point);
-    if (
-      local.x < 0 ||
-      local.y < 0 ||
-      local.x > node.width ||
-      local.y > node.height
-    ) {
-      continue;
-    }
-    const area = node.width * node.height;
-    if (area < bestArea) {
-      best = node;
-      bestArea = area;
-    }
-  }
-  return best;
+  return visibleFrameAtPoint(doc, point);
 }
 
 /**

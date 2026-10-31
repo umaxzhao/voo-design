@@ -16,6 +16,7 @@ import {
 import { parseSvgPath } from "./editor_svg.js";
 import { DEFAULT_PEN_STROKE_WIDTH } from "./editor_constants.js";
 import { getTextToolDefaults } from "./text_tool_defaults.js";
+import { textCreationFill } from "./text-creation-fill.js";
 import * as ops from "./doc_ops.js";
 
 export function createDrawingShapesApi({
@@ -117,13 +118,16 @@ export function createDrawingShapesApi({
     // Interactive creation inherits the text tool's pending style; agent calls
     // keep the factory defaults unless they opt in explicitly.
     const toolStyle = options.useToolDefaults ? getTextToolDefaults() : null;
+    const initialFill = options.useToolDefaults
+      ? textCreationFill(getDoc(), options.intoFrame ? ops.frameAtPoint(getDoc(), point) : null)
+      : "#ffffff";
     const node = insideFrame(
       {
         ...createTextNode({
           x: point.x,
           y: point.y,
           text,
-          fill: options.fill ?? "#ffffff",
+          fill: options.fill ?? initialFill,
         }),
         ...(toolStyle ?? {}),
         ...(options.opacity != null ? { opacity: options.opacity } : {}),

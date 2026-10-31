@@ -15,6 +15,7 @@ import { normaliseRect } from "./scene_geometry.js";
 import { TOOL } from "./editor_constants.js";
 import { editorSnapOptions, snapNodeBounds } from "./scene_snapping.js";
 import { commitEditorAction } from "../undo-action-contracts.js";
+import { drawingRollbackState, selectDrawingDraft } from "./drawing-gesture-transaction.js";
 
 /**
  * One text-tool drag step, in document space.
@@ -62,6 +63,7 @@ export function createShapesPointerGestures({
   setGesture,
 }) {
   function startArrow(event, { line = false } = {}) {
+    const drawingRollback = drawingRollbackState(api);
     const point = api.toDocPoint(event.clientX, event.clientY);
     const node = createPathNode({
       points: [
@@ -74,18 +76,18 @@ export function createShapesPointerGestures({
       ...(line
         ? { line: true }
         : {
-            arrow: true,
-            arrowSize: api.getArrowSize?.() ?? 12,
-            arrowStart: api.getArrowStart?.() ?? false,
-            arrowEnd: api.getArrowEnd?.() ?? true,
-          }),
+          arrow: true,
+          arrowSize: api.getArrowSize?.() ?? 12,
+          arrowStart: api.getArrowStart?.() ?? false,
+          arrowEnd: api.getArrowEnd?.() ?? true,
+        }),
     });
     api.setDoc(
       ops.addNode(api.getDocument(), insideFrame(api.getDocument(), node, point)),
       { commit: false },
     );
-    api.select(node.id);
-    setGesture({ kind: "arrow", id: node.id, start: point, node, line });
+    selectDrawingDraft(api, node.id);
+    setGesture({ kind: "arrow", id: node.id, start: point, node, line, drawingRollback });
   }
 
   function dragArrow(event) {
@@ -114,11 +116,11 @@ export function createShapesPointerGestures({
       ...(gesture.line
         ? { line: true }
         : {
-            arrow: true,
-            arrowSize: gesture.node.arrowSize,
-            arrowStart: gesture.node.arrowStart,
-            arrowEnd: gesture.node.arrowEnd,
-          }),
+          arrow: true,
+          arrowSize: gesture.node.arrowSize,
+          arrowStart: gesture.node.arrowStart,
+          arrowEnd: gesture.node.arrowEnd,
+        }),
     });
     api.setDoc(
       ops.updateNode(api.getDocument(), gesture.id, {
@@ -150,6 +152,7 @@ export function createShapesPointerGestures({
   }
 
   function startShape(event) {
+    const drawingRollback = drawingRollbackState(api);
     const point = api.toDocPoint(event.clientX, event.clientY);
     // The colour wheel is the fill; stroke colour/weight and opacity are the
     // shape tool's other paint axes (Pen-style).
@@ -167,8 +170,8 @@ export function createShapesPointerGestures({
         : api.getTool() === TOOL.ELLIPSE
           ? api.addEllipseAt(point, style)
           : api.addRectAt(point, style);
-    api.select(node.id);
-    setGesture({ kind: "shape", id: node.id, start: point });
+    selectDrawingDraft(api, node.id);
+    setGesture({ kind: "shape", id: node.id, start: point, drawingRollback });
   }
 
   function dragShape(event) {
@@ -187,17 +190,17 @@ export function createShapesPointerGestures({
     }
     let box = event.altKey
       ? {
-          x: gesture.start.x - Math.abs(width),
-          y: gesture.start.y - Math.abs(height),
-          width: Math.abs(width) * 2,
-          height: Math.abs(height) * 2,
-        }
+        x: gesture.start.x - Math.abs(width),
+        y: gesture.start.y - Math.abs(height),
+        width: Math.abs(width) * 2,
+        height: Math.abs(height) * 2,
+      }
       : normaliseRect({
-          x: gesture.start.x,
-          y: gesture.start.y,
-          width,
-          height,
-        });
+        x: gesture.start.x,
+        y: gesture.start.y,
+        width,
+        height,
+      });
     if (shape === TOOL.FRAME) {
       const snapDisabled =
         Boolean(event.metaKey || event.ctrlKey) ||
@@ -207,19 +210,19 @@ export function createShapesPointerGestures({
       const snap = snapDisabled
         ? null
         : snapNodeBounds({
-            doc: api.getEvaluatedDocument?.() ?? api.getDocument(),
-            activeId: gesture.id,
-            rect: box,
-            zoom: api.getViewport()?.zoom ?? 1,
-            handle: `${handleX}${handleY}`,
-            options: {
-              ...editorSnapOptions({
-                grid: api.getGrid?.() ?? null,
-                activeSnap: Boolean(gesture.activeSnap),
-              }),
-              spatialIndex: api.getSpatialIndex?.(),
-            },
-          });
+          doc: api.getEvaluatedDocument?.() ?? api.getDocument(),
+          activeId: gesture.id,
+          rect: box,
+          zoom: api.getViewport()?.zoom ?? 1,
+          handle: `${handleX}${handleY}`,
+          options: {
+            ...editorSnapOptions({
+              grid: api.getGrid?.() ?? null,
+              activeSnap: Boolean(gesture.activeSnap),
+            }),
+            spatialIndex: api.getSpatialIndex?.(),
+          },
+        });
       gesture.activeSnap = Boolean(snap?.guides?.length);
       api.setGuides?.(snap?.guides ?? []);
       if (snap) {
@@ -270,6 +273,7 @@ export function createShapesPointerGestures({
   }
 
   function startPolyShape(event) {
+    const drawingRollback = drawingRollbackState(api);
     const point = api.toDocPoint(event.clientX, event.clientY);
     const fill = api.getColor();
     const stroke = api.getShapeStrokeColor?.() ?? fill;
@@ -288,9 +292,10 @@ export function createShapesPointerGestures({
       ops.addNode(api.getDocument(), insideFrame(api.getDocument(), node, point)),
       { commit: false },
     );
-    api.select(node.id);
+    selectDrawingDraft(api, node.id);
     setGesture({
       kind: "shape",
+      drawingRollback,
       id: node.id,
       start: point,
       fill,
@@ -310,8 +315,9 @@ export function createShapesPointerGestures({
       api.beginTextEdit(hit.id);
       return;
     }
+    const drawingRollback = drawingRollbackState(api);
     const node = api.addTextAt(point, "", { intoFrame: true, useToolDefaults: true });
-    setGesture({ kind: "text", id: node.id, start: point });
+    setGesture({ kind: "text", id: node.id, start: point, drawingRollback });
   }
 
   function dragText(event) {

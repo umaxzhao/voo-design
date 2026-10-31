@@ -29,7 +29,7 @@ export function createContainerOpacityPlan(allNodes) {
     let current = node;
     while (current && !visited.has(current.id)) {
       visited.add(current.id);
-      if (containerOpacity(current) !== 1) path.push(current);
+      if (containerOpacity(current) !== 1 || (current.kind === "group" && current.clipTo)) path.push(current);
       current = byId.get(current.parentId);
     }
     path.reverse();
@@ -38,6 +38,7 @@ export function createContainerOpacityPlan(allNodes) {
   };
   const entryCache = new WeakMap();
   const plan = {
+    nodeOf: (id) => byId.get(id),
     positionOf: (node) => positions.get(node.id),
     inheritedOpacityOf: (node, isolated) => pathOf(node)
       .filter((container) => container.id !== node.id && !isolated.has(container.id))
@@ -69,7 +70,7 @@ export function createContainerOpacityPlan(allNodes) {
 
 /** The container's own paint participates at full alpha inside its isolated unit. */
 export function containerPaintNode(node, isolated) {
-  return isolated.has(node.id) ? { ...node, opacity: 1, blendMode: "source-over" } : node;
+  return isolated.has(node.id) ? { ...node, opacity: 1, blendMode: "source-over", ...(node.clipTo ? { clipTo: null } : {}) } : node;
 }
 
 /** A cross-container mask inherits only alpha not already applied by this unit. */

@@ -41,6 +41,7 @@ import { createPointerHitTester } from "./editor_pointer_hit_test.js";
 import { createHoverCursorController } from "./editor_pointer_hover.js";
 import { createPointerMoveDispatcher } from "./editor_pointer_move.js";
 import { createPointerFinishDispatcher } from "./editor_pointer_finish.js";
+import { createPointerKeyboard, bindPointerEvents } from "./editor-pointer-bindings.js";
 import {
   createPointerDownDispatcher,
   handleEditorDoubleClick,
@@ -371,97 +372,12 @@ export function attachPointerHandlers({
     handleEditorDoubleClick(event, { api });
   };
 
-  const onKeyDown = (event) => {
-    if (event.repeat) return;
-    if (event.key === "Escape" && gesture?.kind === "move") {
-      event.preventDefault();
-      event.stopPropagation();
-      const pointerId = gesture.pointerId;
-      onPointerUp({ type: "pointercancel", pointerId });
-      return;
-    }
-    const isModifier =
-      event.key === "Shift" ||
-      event.key === "Alt" ||
-      event.key === "Meta" ||
-      event.key === "Control";
-
-    if (isModifier && gesture && lastPointerEvent) {
-      const shiftKey = event.key === "Shift" ? true : event.shiftKey;
-      const altKey = event.key === "Alt" ? true : event.altKey;
-      const metaKey = event.key === "Meta" ? true : event.metaKey;
-      const ctrlKey = event.key === "Control" ? true : event.ctrlKey;
-      dispatchMove(
-        {
-          ...lastPointerEvent,
-          shiftKey,
-          altKey,
-          metaKey,
-          ctrlKey,
-        },
-        gesture,
-      );
-    }
-    if (event.key === "Alt" && !gesture && lastPointerEvent) {
-      hover.updateHoverCursor({ ...lastPointerEvent, altKey: true });
-    }
-    if (event.code === "AltLeft" || event.code === "AltRight") {
-      return;
-    }
-    if (event.code !== "Space") return;
-    if (shared) return;
-    const target = event.target;
-    if (
-      target instanceof HTMLElement &&
-      (target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable)
-    ) {
-      return;
-    }
-    event.preventDefault();
-    spaceDown = true;
-    if (!gesture) stage.style.cursor = "grab";
-  };
-
-  const onWindowBlur = () => {
-    if (gesture?.kind === "move") onPointerUp({ type: "pointercancel", pointerId: gesture.pointerId });
-  };
-
-  const onKeyUp = (event) => {
-    const isModifier =
-      event.key === "Shift" ||
-      event.key === "Alt" ||
-      event.key === "Meta" ||
-      event.key === "Control";
-
-    if (isModifier && gesture && lastPointerEvent) {
-      const shiftKey = event.key === "Shift" ? false : event.shiftKey;
-      const altKey = event.key === "Alt" ? false : event.altKey;
-      const metaKey = event.key === "Meta" ? false : event.metaKey;
-      const ctrlKey = event.key === "Control" ? false : event.ctrlKey;
-      dispatchMove(
-        {
-          ...lastPointerEvent,
-          shiftKey,
-          altKey,
-          metaKey,
-          ctrlKey,
-        },
-        gesture,
-      );
-    }
-    if (event.key === "Alt" && !gesture && lastPointerEvent) {
-      hover.updateHoverCursor({ ...lastPointerEvent, altKey: false });
-    }
-    if (event.code === "AltLeft" || event.code === "AltRight") {
-      return;
-    }
-    if (event.code !== "Space") return;
-    if (shared) return;
-    spaceDown = false;
-    if (!gesture) stage.style.cursor = "default";
-  };
+  const keyboard = createPointerKeyboard({
+    stage, shared, getGesture: () => gesture,
+    getLastPointerEvent: () => lastPointerEvent,
+    setSpaceDown: value => { spaceDown = value; },
+    dispatchMove, onPointerUp, hover,
+  });
 
   const onPointerLeave = () => {
     hover.clearLastPointerEvent?.();
@@ -474,37 +390,7 @@ export function attachPointerHandlers({
     }
   };
 
-  if (!shared) {
-    stage.addEventListener("wheel", pan.onWheel, { passive: false });
-  }
-  stage.addEventListener("pointerdown", onPointerDown);
-  stage.addEventListener("pointermove", onPointerMove);
-  stage.addEventListener("pointerup", onPointerUp);
-  stage.addEventListener("pointercancel", onPointerUp);
-  stage.addEventListener("pointerleave", onPointerLeave);
-  stage.addEventListener("auxclick", onAuxClick);
-  stage.addEventListener("dblclick", onDoubleClick);
-  window.addEventListener("keydown", onKeyDown);
-  window.addEventListener("keyup", onKeyUp);
-  window.addEventListener("blur", onWindowBlur);
-
-  return () => {
-    onWindowBlur();
-    if (api.refreshBrushCursor === hover.refreshBrushCursor) {
-      delete api.refreshBrushCursor;
-    }
-    if (!shared) {
-      stage.removeEventListener("wheel", pan.onWheel);
-    }
-    stage.removeEventListener("pointerdown", onPointerDown);
-    stage.removeEventListener("pointermove", onPointerMove);
-    stage.removeEventListener("pointerup", onPointerUp);
-    stage.removeEventListener("pointercancel", onPointerUp);
-    stage.removeEventListener("pointerleave", onPointerLeave);
-    stage.removeEventListener("auxclick", onAuxClick);
-    stage.removeEventListener("dblclick", onDoubleClick);
-    window.removeEventListener("keydown", onKeyDown);
-    window.removeEventListener("keyup", onKeyUp);
-    window.removeEventListener("blur", onWindowBlur);
-  };
+  return bindPointerEvents({ stage, shared, api, hover, pan, keyboard,
+    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerLeave, onAuxClick, onDoubleClick },
+  });
 }

@@ -1,20 +1,14 @@
 /** Anchor and control-handle editing session for existing pen nodes. */
 
+import {
+  findPenInsertion,
+  insertPenMidpoint,
+} from "./pen-midpoint-insertion.js";
 import * as ops from "./doc_ops.js";
 import { findNode, NODE_KIND, penAnchorsBounds } from "./scene_model.js";
-import {
-  fromNodeLocal,
-  toNodeLocal,
-  toNodeLocalDelta,
-} from "./scene_geometry.js";
+import { fromNodeLocal, toNodeLocalDelta } from "./scene_geometry.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
-import {
-  CLOSE_THRESHOLD,
-  distance,
-  projectOntoPath,
-  segmentHitRadius,
-  splitSegment,
-} from "./editor_pen_math.js";
+import { CLOSE_THRESHOLD, distance } from "./editor_pen_math.js";
 import {
   snapHandle45,
   smartSmoothPenAnchor,
@@ -137,47 +131,24 @@ export function createPenEdit({
     return null;
   }
 
-  /**
-   * Clicks a point on a path segment to insert an anchor there, then starts
-   * dragging it — the Photoshop "add anchor" interaction. The segment is
-   * split with a de Casteljau subdivision, so the curve keeps its exact shape
-   * through the new point (a plain midpoint insert would flatten every curve).
-   * Returns the new anchor's index, or null when nothing was hit.
-   */
+  /** Insert only at the fixed segment midpoint, preserving the curve's shape. */
   function addAnchorAt(point) {
     const node = findNode(getDoc(), edit?.nodeId);
-    if (!node || node.points.length < 2) return null;
-    const scaleX = node.baseWidth ? node.width / node.baseWidth : 1;
-    const scaleY = node.baseHeight ? node.height / node.baseHeight : 1;
-    const localDoc = toNodeLocal(node, point);
-    const local = {
-      x: localDoc.x / scaleX,
-      y: localDoc.y / scaleY,
-    };
-
-    // Project the click onto the outline. Sampling the actual bezier (rather
-    // than projecting onto the chord) matters: on a strongly curved segment
-    // the curve can sit tens of pixels off the straight line between anchors,
-    // and a click on the curve must still hit.
-    const best = projectOntoPath(node.points, local);
-    if (!best || best.dist > segmentHitRadius(getZoom)) return null;
-
-    const i = best.index;
-    const { left, mid, right } = splitSegment(node.points, i, best.t);
-    const points = [...node.points];
-    points[i] = left;
-    points.splice(i + 1, 0, mid);
-    points[i + 2] = right;
+    const hit = findPenInsertion(node, point, getZoom?.() || 1);
+    if (!hit) return null;
+    const i = hit.index;
+    const points = insertPenMidpoint(node.points, i);
     commitEditorDocument(
       "editor.pen.change",
       setDoc,
       ops.updateNode(getDoc(), node.id, { ...node, points }),
+      { commit: false },
     );
 
     // Grab the new anchor so the click can immediately drag it into place.
     edit.active = i + 1;
     edit.selected = [i + 1];
-    edit.preDragPoints = points;
+    edit.preDragPoints = node.points;
     edit.down = point;
     edit.dragging = "anchor";
     edit.handlePointerOrigin = null;
@@ -343,26 +314,38 @@ export function createPenEdit({
       maxX = Math.max(maxX, pt.x);
       maxY = Math.max(maxY, pt.y);
     });
-    if (minX >= 0 && minY >= 0 && maxX <= node.width / scaleX && maxY <= node.height / scaleY) {
+    if (
+      minX >= 0 &&
+      minY >= 0 &&
+      maxX <= node.width / scaleX &&
+      maxY <= node.height / scaleY
+    ) {
       return node;
     }
     const shiftX = minX < 0 ? -minX : 0;
     const shiftY = minY < 0 ? -minY : 0;
     const newWidth = Math.max(node.width, (maxX + shiftX) * scaleX);
     const newHeight = Math.max(node.height, (maxY + shiftY) * scaleY);
-    const nextPoints = (shiftX > 0 || shiftY > 0)
-      ? node.points.map((pt) => ({
-          ...pt,
-          x: pt.x + shiftX,
-          y: pt.y + shiftY,
-        }))
-      : node.points;
+    const nextPoints =
+      shiftX > 0 || shiftY > 0
+        ? node.points.map((pt) => ({
+            ...pt,
+            x: pt.x + shiftX,
+            y: pt.y + shiftY,
+          }))
+        : node.points;
 
     const rotation = node.rotation ?? 0;
     const shear = node.shear ?? 0;
     let newX = node.x - shiftX * scaleX;
     let newY = node.y - shiftY * scaleY;
-    if ((rotation || shear) && (shiftX > 0 || shiftY > 0 || newWidth !== node.width || newHeight !== node.height)) {
+    if (
+      (rotation || shear) &&
+      (shiftX > 0 ||
+        shiftY > 0 ||
+        newWidth !== node.width ||
+        newHeight !== node.height)
+    ) {
       const deltaX = node.x + node.width / 2 - (newX + newWidth / 2);
       const deltaY = node.y + node.height / 2 - (newY + newHeight / 2);
       const radians = (rotation * Math.PI) / 180;

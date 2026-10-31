@@ -63,19 +63,18 @@ function registerCodex(extra = {}) {
 }
 
 let scratch;
-let previousTmpdir;
 
 beforeEach(async () => {
   children.length = 0;
   mcpServers.length = 0;
   scratch = await mkdtemp(path.join(tmpdir(), "voo-dispose-test-"));
-  previousTmpdir = process.env.TMPDIR;
   // The bridge creates its work dir under os.tmpdir(); isolate it per test.
-  process.env.TMPDIR = scratch;
+  // Stub all platform aliases and restore absence without writing "undefined".
+  for (const name of ["TMPDIR", "TEMP", "TMP"]) vi.stubEnv(name, scratch);
 });
 
 afterEach(async () => {
-  process.env.TMPDIR = previousTmpdir;
+  vi.unstubAllEnvs();
   await rm(scratch, { recursive: true, force: true });
 });
 

@@ -17,6 +17,7 @@ import { createTransformApi } from "./editor_transform_api.js";
 import { createEngineDocumentController } from "./editor_engine_document.js";
 import { createEngineSelectionController } from "./editor_engine_selection.js";
 import { createEngineSampler } from "./editor_engine_sampling.js";
+import { createArtworkReadback } from "./artwork-readback.js";
 import { sampleFreeCanvas } from "./free-canvas-sample.js";
 import { createEngineInitController } from "./editor_engine_init.js";
 import { createEngineNodesController } from "./editor_engine_nodes.js";
@@ -201,7 +202,7 @@ export function assembleEngineControllers({
   });
 
   const sampler = createEngineSampler({
-    beforeRead: () => getEngine()?.prepareCanvasReadback?.(),
+    beforeRead: createArtworkReadback(getEngine),
     renderOutsidePixel: (point, radius) => sampleFreeCanvas(getEngine(), point, radius, getRenderedDpr?.() ?? 1),
     ctx,
     getDoc,

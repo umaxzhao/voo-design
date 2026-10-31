@@ -20,6 +20,7 @@ export function createSvgSceneRasterResolver({
       const context = canvas.getContext("2d");
       if (!context) throw new Error("SVG_RASTER_CONTEXT_UNAVAILABLE");
       draw(context, {
+        artworkOnly: true,
         doc,
         viewport: {
           zoom: 1,

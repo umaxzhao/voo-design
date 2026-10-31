@@ -56,6 +56,7 @@ export function renderSelectionPng(
   const ctx = output.getContext("2d");
   if (!ctx) return null;
   draw(ctx, {
+    artworkOnly: true,
     doc: { ...exportBackdropDocument(doc, options.transparent !== false), nodes, crop: bounds },
     viewport: { zoom: size.scale, panX: -originX * size.scale, panY: -originY * size.scale },
     dpr: 1,

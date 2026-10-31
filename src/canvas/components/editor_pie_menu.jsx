@@ -63,7 +63,9 @@ export default function EditorPieMenu({
   }, [items, triggerCode]);
 
   // Track the last hovered valid item index
-  const lastHoveredIndexRef = useRef(activeIndex >= 0 ? activeIndex : defaultIndex);
+  // Only real pointer travel counts as a remembered choice. Seeding this with
+  // the active tool made O retain Rectangle and R retain Ellipse on a tap.
+  const lastHoveredIndexRef = useRef(-1);
 
   // Handle pointer tracking to find which radial sector is hovered
   const handlePointerMove = useCallback(
@@ -150,9 +152,11 @@ export default function EditorPieMenu({
             ? hoveredIndex
             : lastHoveredIndexRef.current >= 0
               ? lastHoveredIndexRef.current
-              : activeIndex >= 0
-                ? activeIndex
-                : defaultIndex;
+              : triggerCode && PIE_DEFAULT_ITEM_BY_CODE[triggerCode]
+                ? defaultIndex
+                : activeIndex >= 0
+                  ? activeIndex
+                  : defaultIndex;
         selectItemRef.current(targetIdx);
       }
     };

@@ -1,9 +1,11 @@
 # VOO Design documentation index
 
 ## Start here
+- [quality-progress.md](quality-progress.md): maintained inspection progress, module status, unverified checks and next work
 - [../README.md](../README.md): product overview, setup, scripts
 - [contributing.md](contributing.md): workflow, design-token gate, how to add canvas tools
 - [architecture.md](architecture.md): stack, document model, rendering, Electron layer
+- [engineering-workflow.md](engineering-workflow.md): module ownership, acceptance rows, affected checks and evidence limits
 
 ## Agents and MCP
 - [agents.md](agents.md): design agent, canvas tools, local CLI agents (Claude Code, Codex, OpenCode, Antigravity, DeepSeek Harness)
@@ -28,6 +30,8 @@ Run `node scripts/verify-editor-release.mjs` on the exact clean commit being rel
 ## Audits (point-in-time records; check the date and re-verify before relying on them)
 | Document | Topic | Status |
 | :--- | :--- | :--- |
+| [audits/continuous-creation-audit.md](audits/continuous-creation-audit.md) | One real UI creation session, shortcut/group/cancel/ink defects and cold ZIP reopening | Registered core check; desktop Chromium scope and remaining cases explicit |
+| [audits/nested-objects-audit.md](audits/nested-objects-audit.md) | Nested Frame placement, masks, hit testing, deletion, clipboard and cold project reopening | Real-pointer, pixel and hierarchy coverage; use the exact release report for results |
 | [audits/image-editor-complete-audit.md](audits/image-editor-complete-audit.md) | Image tool, pixel, inspector, MCP, native storage and real-model acceptance matrix | Maintained coverage and explicit external/platform requirements; execution results belong to the exact revision report |
 | [audits/editor-closeout.md](audits/editor-closeout.md) | Mesh rendering, automatic image consent, touch page ordering and stretch layout | Coverage contracts and remaining limits; use the exact release report for execution results |
 | [audits/pending-workspace-integration.md](audits/pending-workspace-integration.md) | Preserved pending drafts, signature systems, nested constraints and bucket/variable regressions | Workspace integration; [verified release evidence](audits/pending-integration-release.json) |

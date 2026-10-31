@@ -18,6 +18,16 @@ export default function WelcomeModelSelect({
       return {
         value: model.id,
         label: `${parts.modelName}${parts.tier}`,
+        group: {
+          id: group.cliId,
+          label: group.name,
+          icon: (
+            <ProviderLogo
+              providerId={parts.providerId ?? group.cliId}
+              size={14}
+            />
+          ),
+        },
         icon: (
           <ProviderLogo
             providerId={parts.providerId ?? group.cliId}

@@ -175,7 +175,15 @@ await withEditorBrowser(async ({ page, tool }) => {
     // The section's accessible name comes from i18n; scope by its model pill to
     // avoid coupling this check to the current locale's panel title.
     const pill = page.getByTestId("agent-composer-model-pill");
-    await pill.waitFor(); await assertReachable(pill, `agent model pill ${width}`); await pill.tap();
+    await pill.waitFor();
+    const suggestions = page.getByTestId("agent-selection-suggestions").getByRole("button");
+    for (const suggestion of [suggestions.first(), suggestions.last()]) {
+      await suggestion.scrollIntoViewIfNeeded();
+      await assertReachable(suggestion, `selection suggestion ${width}`);
+      await suggestion.tap();
+    }
+    assert.ok((await page.locator(".agent-composer textarea").inputValue()).trim());
+    await assertReachable(pill, `agent model pill ${width}`); await pill.tap();
     const menu = page.getByTestId("agent-model-menu");
     const firstFrame = await assertReachable(menu, `agent model menu first frame ${width}`);
     await settled(page);

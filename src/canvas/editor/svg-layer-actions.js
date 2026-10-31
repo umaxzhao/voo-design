@@ -32,7 +32,7 @@ export function createSvgLayerActions({
   function insertPreparedSvg({
     nodes: parsedNodes,
     bounds
-  }, point) {
+  }, point, { parentId = null } = {}) {
     const doc = getDoc();
     const page = doc;
     const targetX = point ? point.x : (page.width || 800) / 2;
@@ -41,7 +41,9 @@ export function createSvgLayerActions({
     const boundsCenterY = bounds.y + bounds.height / 2;
     const offsetX = targetX - boundsCenterX;
     const offsetY = targetY - boundsCenterY;
-    const positionedNodes = parsedNodes.map(node => {
+    const parsedIds = new Set(parsedNodes.map(node => node.id));
+    const positionedNodes = parsedNodes.map(original => {
+      const node = parentId && !parsedIds.has(original.parentId) ? { ...original, parentId } : original;
       if (node.kind === NODE_KIND.GROUP) {
         return {
           ...node,

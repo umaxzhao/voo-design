@@ -1,5 +1,11 @@
 # VOO Design 商业版 释放清单 / Commercial Release Checklist
 
+Historical commercial/packaging checklist: checked boxes below are not current
+execution evidence. For the current web editor gate and module acceptance
+rules, use [engineering-workflow.md](engineering-workflow.md) and run
+`node scripts/verify-editor-release.mjs` on the exact clean revision. Current
+UI rules in `Design.md` supersede historical descriptions of default controls.
+
 **Version**: 1.0.0  
 **Target Branch**: main  
 **Release Artifacts**: AppImage (Linux), DMG (macOS), NSIS (Windows)
