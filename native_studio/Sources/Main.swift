@@ -56,6 +56,12 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             controller.mainContentView.isWelcomeOpen = true
         }
 
+        // Crash recovery: a local draft newer than the file it mirrors is restored
+        // silently (the Settings → Appearance toggle controls the whole feature).
+        if ProcessInfo.processInfo.environment["VOO_SKIP_DRAFT_RESTORE"] != "1" {
+            controller.restoreDraftIfAvailable()
+        }
+
         NSLog("[VOO Design Native] controller.window = %@", String(describing: controller.window))
         controller.showWindow(nil)
         if let window = controller.window {

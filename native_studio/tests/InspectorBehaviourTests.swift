@@ -159,6 +159,49 @@ public final class InspectorBehaviourTests {
             island.glyphButtons[7].performClick(nil)
             try TestAssertions.assertTrue(stage.document.nodes.allSatisfy { !$0.style.visible }, "Eye hides every selected layer")
         }
+
+        // 7. Draft autosave: writes only when enabled, restores newer-than-file drafts.
+        registry.register(tier: 2, feature: "Draft-Autosave", name: "test_DraftAutosave_DisabledByDefaultAndWritesWhenEnabled") {
+            let previous = UserDefaults.standard.object(forKey: SettingsDrawerView.autoSaveDraftsDefaultsKey)
+            defer {
+                if let previous { UserDefaults.standard.set(previous, forKey: SettingsDrawerView.autoSaveDraftsDefaultsKey) }
+                else { UserDefaults.standard.removeObject(forKey: SettingsDrawerView.autoSaveDraftsDefaultsKey) }
+                DraftAutosave.shared.discardAll()
+            }
+            // Never touch the real Application Support directory from tests.
+            let sandboxDir = (NSTemporaryDirectory() as NSString)
+                .appendingPathComponent("voo_draft_test_\(UUID().uuidString)")
+            setenv("VOO_DRAFT_DIR", sandboxDir, 1)
+            defer {
+                setenv("VOO_DRAFT_DIR", "", 1)
+                try? FileManager.default.removeItem(atPath: sandboxDir)
+            }
+            UserDefaults.standard.set(false, forKey: SettingsDrawerView.autoSaveDraftsDefaultsKey)
+
+            var document = VOODocument()
+            document.title = "DraftProbe"
+            document.canvas = CanvasFrame(x: 0, y: 0, width: 200, height: 100, backgroundColor: "#171717")
+            document.nodes = [VOONode(id: "n1", kind: .rect, name: "R", x: 0, y: 0, width: 50, height: 50,
+                                      style: LayerStyle(fill: "#ffffff"))]
+
+            try TestAssertions.assertFalse(DraftAutosave.shared.isEnabled, "Drafts are off by default")
+            DraftAutosave.shared.flush(document: document, currentFileURL: nil)
+            try TestAssertions.assertTrue(DraftAutosave.shared.recoverableDrafts().isEmpty,
+                                          "Disabled autosave writes nothing")
+
+            UserDefaults.standard.set(true, forKey: SettingsDrawerView.autoSaveDraftsDefaultsKey)
+            try TestAssertions.assertTrue(DraftAutosave.shared.isEnabled, "Autosave follows the defaults key")
+            DraftAutosave.shared.flush(document: document, currentFileURL: nil)
+            let drafts = DraftAutosave.shared.recoverableDrafts()
+            try TestAssertions.assertEqual(drafts.count, 1, "Enabled autosave writes one recovery copy")
+            try TestAssertions.assertNotNil(DraftAutosave.shared.loadDraft(drafts[0]), "Draft decodes")
+            let restored = DraftAutosave.shared.loadDraft(drafts[0])
+            try TestAssertions.assertEqual(restored?.title, "DraftProbe")
+            try TestAssertions.assertEqual(restored?.nodes.count, 1)
+
+            DraftAutosave.shared.discard(drafts[0])
+            try TestAssertions.assertTrue(DraftAutosave.shared.recoverableDrafts().isEmpty, "Discarding removes the draft")
+        }
     }
 
     private static func requireButton(_ root: NSView, id: String) throws -> PropertiesIconButton {

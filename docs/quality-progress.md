@@ -294,3 +294,13 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 > 首页 Settings 底部间距微调：从 24px 减至 12px（向下移动 12px），保持左侧位置与点击区域；沿用 `workspace.settings-entry`，在既有首页套件检查四个宽度的精确底边间距。本轮精确提交及执行结果见 `/private/tmp/voo-settings-lower-release.json`，此前基线发布阻断不能视为已解决。
 
 > 本轮首页设置入口调整：已移除侧栏版本号，将首页 Settings 移至左下角；能力 `workspace.settings-entry`。本次相关 17 项单测和 320/390/768/1440px 首页浏览器专项通过。完整门禁因基线既有的 10 项 Agent 工具清单/首次引导失败而阻断（已在修改前提交 `e2d3517` 复现，`/private/tmp/voo-settings-baseline.log`），本轮尚未推送或部署。精确最终 revision 与逐项执行结果见 `/private/tmp/voo-settings-release.json`，不得继承历史通过结果。详细范围见 [面板审查](audits/panel-control-audit.md#welcome-settings-entry--2026-10-31)。
+
+## 原生界面优化（第五轮：Agent 面板 1:1 + 草稿自动保存）— 2026-10-31
+
+用实时 Web 构建重新截取 Agent 面板（`native_studio/docs/refs/web_20261031/web_agent_open.png`，注：仓库里旧的 `web_agent.png` 是 10-23 的过期构建，已确认不可用），并补齐设置中「Auto-save edit drafts」原先只有开关没有行为的缺口。
+
+- **Agent 面板按截图重建**：头部只保留「Untitled」与 3 个 32×32 图标（历史 / 新建 / 收起），移除原生的紫色头像与「● Flash ACTIVE」徽章；问候语改为 system 15pt 单行；三个建议胶囊改为 system 12pt、h38、r12、`#0F0F0F` 无描边、铺满 332pt 内容宽；提示段改为 system 12pt neutral-500 两行；composer 保持 340×130 / r16 / `#171717` / white-8 描边，并新增**模型胶囊**（✳ + "Opus 5.5"，h24、r8、white/5，`AgentPanelView.modelLabel` 可外部设置），发送键 32×32（空态紫 42%、有内容变白底黑箭头）；对话区用户消息右侧白/8 气泡，Agent 消息左侧无气泡正文、仅每轮首条显示 40pt 头像，工具/CLI 行仍为等宽 11.5。面板几何对齐实测值：顶部 56（内容区顶 +12）、右 16、宽 364。
+- **草稿自动保存（崩溃恢复）**：新增 `Sources/Engine/DraftAutosave.swift`——按设置里的 `voo.editor.autoSaveDrafts` 开关，在编辑时以 3s 去抖把归一化 `.voo` 快照写入 `Application Support/VOO Design/Drafts/`；下次启动若草稿比对应磁盘文件更新（或文件根本不存在），自动恢复并提示「已恢复上次未保存的草稿」；保存成功后清理对应草稿；测试通过 `VOO_DRAFT_DIR` 重定向到临时目录，不触碰真实用户目录。该开关此前只持久化键值，现在有真实行为。
+
+验证：`./build.sh` 通过（binary 4.85 MB ≤ 5 MB，bundle 10.17 MB ≤ 35 MB）；`./tests/run_tests.sh` **384/384 通过**（新增草稿开关/写盘/恢复/丢弃断言）。截图：`native_studio/docs/screenshots/z_agent.png`（2x retina 抓取）。
+仍未覆盖：Light interface 仍无浅色主题实现；标题栏仍为「打开/保存」语义；约束不处理旋转后的钉扎。

@@ -1040,6 +1040,22 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     // MARK: - StudioMenuActions Implementation
 
+    /// Restores a newer local recovery copy after a crash (silent when disabled).
+    public func restoreDraftIfAvailable() {
+        guard let draft = DraftAutosave.shared.recoverableDrafts().first,
+              let document = DraftAutosave.shared.loadDraft(draft) else { return }
+        mainContentView.canvasStageView.document = document
+        mainContentView.canvasStageView.clearSelection()
+        commandManager.clear()
+        currentFileURL = draft.originalFileURL
+        mainContentView.titleBar.setDocumentTitle(document.title)
+        mainContentView.inspector.layersPanel.configure(with: document.nodes, selectedId: nil)
+        mainContentView.inspector.setPropertiesVisible(false)
+        syncChromeState()
+        DraftAutosave.shared.discard(draft)
+        showChromeToast("已恢复上次未保存的草稿")
+    }
+
     public func newDocument(_ sender: Any?) {
         // Web `newVooProject` → `promoteFixedPageToFrame("Frame")`: a 1200x800 frame
         // named "Frame" whose background child carries the page colour.
@@ -1148,6 +1164,13 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         if let url = currentFileURL {
             do {
                 try DocumentIO.shared.saveDocument(mainContentView.canvasStageView.document, to: url)
+                // The work is on disk now, so the recovery copy is no longer needed.
+                DraftAutosave.shared.flush(document: mainContentView.canvasStageView.document,
+                                           currentFileURL: currentFileURL)
+                if let draft = DraftAutosave.shared.recoverableDrafts().first,
+                   draft.originalFileURL?.standardizedFileURL == url.standardizedFileURL {
+                    DraftAutosave.shared.discard(draft)
+                }
             } catch {
                 let alert = NSAlert(error: error)
                 alert.runModal()
@@ -1993,6 +2016,11 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         }
         mainContentView.canvasStageView.needsDisplay = true
         syncChromeState()
+        // Local recovery copy (Settings → Appearance → Auto-save edit drafts).
+        DraftAutosave.shared.scheduleAutosave(
+            document: mainContentView.canvasStageView.document,
+            currentFileURL: currentFileURL
+        )
     }
 
     // MARK: - NSMenuItemValidation
@@ -3694,8 +3722,10 @@ public class MainContentView: NSView {
             editorShell.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
 
             // AI agent panel: right column outside the editor shell
-            agentPanel.topAnchor.constraint(equalTo: titleBar.bottomAnchor, constant: 0),
-            agentPanel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+            // Web `aside`: panel content starts 12pt below the app content top and
+            // keeps a 16pt gutter on the right (measured 1440×900: y56..888, w364).
+            agentPanel.topAnchor.constraint(equalTo: titleBar.bottomAnchor, constant: 16),
+            agentPanel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             agentPanel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
             agentPanel.widthAnchor.constraint(equalToConstant: 364),
 
