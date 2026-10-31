@@ -387,3 +387,25 @@ paragraph updates and undo without page errors. Production evidence:
 `/private/tmp/voo-typography-production-result.log` and
 `/private/tmp/voo-typography-deployment-proof.json`. Earlier failed execution
 remains separate and is not attributed to the final revision.
+
+## Inspector control hierarchy
+
+Capability: `inspector.control-hierarchy`. Styling opts in only inside
+`editor-properties-panel`; shared field/dropdown markers have no effect in
+Layers, the welcome page, Agent or toolbar. Large panel radii remain unchanged.
+
+| Context | Assertions | Status |
+| --- | --- | --- |
+| Numeric fields | 6px field radius, 32px desktop row, explicit label/value/unit roles; actual typed commit/cancel and undo | Targeted Chromium pass |
+| Dropdown | Distinct outlined surface, real keyboard open/Escape and focus retention | Targeted Chromium pass |
+| Switch/command | Grouped Frame layout modes and lighter rotate command keep actual operations and one-step undo | Targeted Chromium pass |
+| Responsive | 320/390/768/1440px, light/dark, English/Chinese; 48px narrow inputs, no anchor/field overlap | Targeted Chromium pass |
+| Existing editing | Typography creation/editing, mixed selection, fill/stroke and scrub interactions | Final gate pending |
+| Remaining | Physical touch/IME/stylus, all advanced portaled dialogs, private workspace as a whole | Not certified |
+
+Baseline `/private/tmp/voo-inspector-controls-before.log` fails the old 12px
+capsule against the new geometry requirement. Targeted checks and screenshots:
+`/private/tmp/voo-inspector-controls-after-v2.log` and
+`/private/tmp/voo-inspector-control-evidence/`. Registered helper
+`tests/e2e/inspector-control-cases.mjs` runs inside the existing UI inspector suite.
+Final clean revision and production evidence will be recorded after execution.

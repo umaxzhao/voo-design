@@ -19,7 +19,7 @@ import { DEFAULT_AUTO_LAYOUT, DISTRIBUTIONS, alignmentPatch } from "./auto_layou
 export { DEFAULT_AUTO_LAYOUT, alignmentPatch } from "./auto_layout_controls.js";
 
 const FIELD_CLASS =
-  "w-full min-w-0 rounded-lg bg-neutral-800 px-2 py-1.5 text-[11px] tabular-nums text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
+  "inspector-field w-full min-w-0 rounded-lg bg-neutral-800 px-2 py-1.5 text-[11px] tabular-nums text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40";
 
 export function AutoLayoutFields({
   object,
@@ -98,6 +98,7 @@ export function AutoLayoutFields({
   const positions = ["start", "center", "end"];
   const pairedPadding = (axis, first, second, Icon) => (
     <label
+      data-inspector-control="field"
       className="flex h-7 min-w-0 items-center gap-2 rounded-xl bg-neutral-800 px-2"
       title={t(`editor.autoLayout.padding${axis}`)}
     >

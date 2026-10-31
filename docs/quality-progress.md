@@ -7,6 +7,14 @@
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
 
+
+## 本轮：右侧属性控件层级（验证中）
+
+- 仅 `inspector.control-hierarchy`：保留大面板圆角、顶部页签及其他界面。右栏数值/颜色输入改为 6px 圆角填充矩形，下拉采用细描边，切换成组并显示选中块，操作按钮保持轻背景。共享组件只增加语义标记，视觉规则限定在右侧属性面板内。
+- 桌面主控件行高 32px，窄屏输入 48px；分组标题、标签、数值和单位统一层级，数字保留等宽。Frame 宽高、文字、填充、描边和布局复用同一套规则；不修改文档操作、撤销和模型配置。
+- 原 12px 胶囊断言失败已复现：`/private/tmp/voo-inspector-controls-before.log`。定向真实输入提交/取消、下拉键盘开关与焦点、旋转/布局及一次撤销通过；16 组视口/主题/语言截图在 `/private/tmp/voo-inspector-control-evidence/`。同轮修正窄栏 44px 网格容不下 56px 锚点的重叠，合成宽高组保留自然高度。
+- 完整固定版本门禁和正式站证据待补录；实体设备、所有深层属性弹窗及私人草稿全量不由本轮认证。[验收范围](audits/panel-control-audit.md#inspector-control-hierarchy)。
+
 ## 本轮：文字排版可读性与 Lucide 图标（已完成声明范围）
 
 - `inspector.typography-clarity` / `text.typography`：参考 [Figma 文字属性分组](https://help.figma.com/hc/en-us/articles/360039956634-Explore-text-properties)，直接显示字体、字重、字号、行高、字距、格式和对齐标签，明确 px/% 单位。文本框自动/固定宽度放在常用区；方向、大小写、段落、基线与路径文字保留在一个高级入口。

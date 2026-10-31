@@ -191,6 +191,7 @@ export const EDITOR_MODULES = [
     id: "inspector",
     title: "Inspector, menus and shared UI",
     paths: [
+      "tests/e2e/inspector-control-cases.mjs", "src/canvas/components/scrub_field.jsx",
       "tests/e2e/typography-inspector-cases.mjs", "tests/e2e/context-submenu-checks.mjs",
       "tests/unit/export_presets.test.js", "tests/unit/right_panel_phase1.test.jsx", "tests/unit/properties_panel_restructure.test.jsx",
       "src/canvas/color_picker/*", "src/canvas/components/popover_scope.js", "tests/e2e/unified-fill-*.mjs", "tests/unit/unified-fill-picker.test.jsx", "tests/unit/fill-paint-values.test.js",
@@ -200,7 +201,7 @@ export const EDITOR_MODULES = [
       "src/shared/i18n*", "src/shared/i18n/*", "src/canvas/*layout.css", "src/canvas/*panels.css",
     ],
     related: ["selection","layers","text","images","layout"],
-    features: ["inspector.typography-clarity", "inspector.export-opt-in", "inspector.unified-fill", "inspector.impeccable-polish", "inspector.context-submenus",
+    features: ["inspector.control-hierarchy", "inspector.typography-clarity", "inspector.export-opt-in", "inspector.unified-fill", "inspector.impeccable-polish", "inspector.context-submenus",
       "inspector.field-commit", "inspector.menu-focus", "inspector.responsive", "inspector.locale-lifecycle",
     ],
     suites: ["impeccable-polish",

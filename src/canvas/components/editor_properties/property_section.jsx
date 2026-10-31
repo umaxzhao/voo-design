@@ -5,14 +5,14 @@ import { loadEditorPanelSectionState, toggleEditorPanelSectionState } from "../e
 
 /** Shared input skin for every field in the panel. */
 export const fieldClass =
-  "h-7 w-full rounded-xl bg-neutral-800 px-2.5 text-[11px] font-mono tabular-nums text-neutral-100 outline-none transition-colors hover:bg-neutral-800/80 focus:ring-1 focus:ring-[#a7ffd4]/40";
+  "inspector-field h-7 w-full rounded-xl bg-neutral-800 px-2.5 text-[11px] font-mono tabular-nums text-neutral-100 outline-none transition-colors hover:bg-neutral-800/80 focus:ring-1 focus:ring-[#a7ffd4]/40";
 
 /**
- * The one section-title style every group in the panel shares — collapsible
- * or not — strictly matching Design.md: 9px uppercase tracking-[0.14em].
+ * Section titles share a scope hook; the inspector applies readable label
+ * typography without changing other surfaces that reuse these primitives.
  */
 export const sectionTitleClass =
-  "max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[9px] font-mono font-medium text-neutral-400 uppercase tracking-[0.14em]";
+  "inspector-section-title max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[9px] font-mono font-medium text-neutral-400 uppercase tracking-[0.14em]";
 
 /** The separator and vertical rhythm every section in the panel shares. */
 // One vertical rhythm for every group: the divider sits centred between the
@@ -32,7 +32,7 @@ export const sectionBodyClass = "space-y-2 px-0.5";
  * built on `ScrubField`, so paint rows and transform rows line up exactly.
  */
 export const sectionRowClass =
-  "flex h-7 w-full min-w-0 items-center gap-2 rounded-xl bg-neutral-800 px-2.5 transition-colors hover:bg-neutral-800/80";
+  "inspector-row flex h-7 w-full min-w-0 items-center gap-2 rounded-xl bg-neutral-800 px-2.5 transition-colors hover:bg-neutral-800/80";
 
 /** Header "+" and row "−" actions share one quiet, compact shape. */
 export const sectionActionClass =
@@ -76,6 +76,7 @@ export function SectionEmptyRow({
     <button
       type="button"
       onClick={onClick}
+      data-inspector-control="action"
       aria-label={ariaLabel ?? label}
       data-testid={testId}
       className={

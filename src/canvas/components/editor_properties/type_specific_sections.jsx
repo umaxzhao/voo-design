@@ -61,11 +61,12 @@ export default function TypeSpecificSections({ object, sections, showDimensions 
       return (
         <StaticSection title={t(layout ? 'editor.autoLayout.title' : 'editor.props.layout')} storageKey="layout" extra={positionAction}>
           {/* Figma's layout mode strip: none / vertical / horizontal / grid. */}
-          <div className="flex h-7 items-center gap-0.5 rounded-xl bg-neutral-800 p-0.5">
+          <div data-inspector-control="segments" className="flex h-7 items-center gap-0.5 rounded-xl bg-neutral-800 p-0.5">
             {modes.map((mode) => (
               <button
                 key={mode}
                 type="button"
+                data-inspector-control="toggle"
                 aria-label={t(`editor.props.layoutMode.${mode}`)}
                 aria-pressed={layoutMode === mode}
                 title={t(`editor.props.layoutMode.${mode}`)}
@@ -83,7 +84,7 @@ export default function TypeSpecificSections({ object, sections, showDimensions 
 
           {showDimensions && <div className="grid grid-cols-2 gap-2">
             {[['width', 'W', 'widthMode'], ['height', 'H', 'heightMode']].map(([axis, label, modeKey]) => (
-              <div key={axis} className="flex h-7 min-w-0 items-center rounded-xl bg-neutral-800">
+              <div key={axis} data-inspector-control="field" className="flex h-7 min-w-0 items-center rounded-xl bg-neutral-800">
                 <ScrubField bare className="[&_input]:!px-1" prefix={label} min={1} max={99999} value={Math.round(object[axis] ?? 0)}
                   onValueChange={(value) => applyEdit({ [axis]: value, ...(layout ? { autoLayout: { ...layout, [modeKey]: 'fixed' } } : {}) })}
                   onCommit={commitNow} ariaLabel={label} scrubHint={t('editor.props.dragToAdjust')} />
