@@ -1,3 +1,5 @@
+import { latestModelVersions } from "../../../shared/agent-defaults.js";
+
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 const discovered = new Map();
 const listeners = new Set();
@@ -22,7 +24,7 @@ function updateModels(cliId, entries) {
     const id = `${cliId}:${entry.id}`;
     models.set(id, { id, label: entry.label?.trim() || entry.id });
   }
-  discovered.set(cliId, [...models.values()]);
+  discovered.set(cliId, latestModelVersions([...models.values()]));
   revision += 1;
   for (const listener of listeners) listener();
 }

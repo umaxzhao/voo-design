@@ -731,12 +731,9 @@ export const ANTIGRAVITY_TEXT_MODELS = [
   { id: "gemini-3.8-flash-high", label: "Gemini 3.8 Flash (High)" },
   { id: "gemini-3.8-flash-medium", label: "Gemini 3.8 Flash (Medium)" },
   { id: "gemini-3.8-flash-low", label: "Gemini 3.8 Flash (Low)" },
-  { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6 (Thinking)" },
-  { id: "claude-opus-4-6-thinking", label: "Claude Opus 4.6 (Thinking)" },
+  { id: "claude-sonnet-5-5-high", label: "Claude Sonnet 5.5 (High)" },
+  { id: "claude-opus-5-5-high", label: "Claude Opus 5.5 (High)" },
   { id: "gpt-oss-120b-medium", label: "GPT-OSS 120B (Medium)" },
-  { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
-  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-  { id: "claude-3-7-sonnet", label: "Claude 3.7 Sonnet" },
 ];
 
 export const CLI_TEXT_MODELS = [
