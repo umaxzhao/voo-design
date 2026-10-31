@@ -97,6 +97,15 @@ describe("Streaming Layout Channel", () => {
     expect(getStreamBuffer()).toBe("");
   });
 
+  it("rejects stale continuation after a document switch until explicitly cleared", async () => {
+    await streamLayout({ html: "<div>Old document</div>" });
+    useDesignStore.setState({ activeDocumentId: "doc-2" });
+    await expect(streamLayout({ final: true })).rejects.toMatchObject({ name: "AbortError" });
+    await expect(streamLayout({ chunk: "<p>Late content</p>" })).rejects.toMatchObject({ name: "AbortError" });
+    await streamLayout({ clear: true });
+    expect((await streamLayout({ html: "<div>New document</div>" })).status).toBe("streaming");
+  });
+
   describe("Draft File Watcher", () => {
     let tmpDir;
 

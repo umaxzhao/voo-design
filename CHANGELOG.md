@@ -2,6 +2,8 @@
 
 ## 1.0.0
 
+- Present streamed HTML and bulk Agent layouts as native element-by-element authoring with a VOO-purple cursor, carried placement outlines and bounded paint pacing. Share this path with external MCP/App streams; retain stable layer IDs, one-step undo, cancel rollback and document-bound continuation guards. Respect reduced motion and remove decorative scanner/skeleton effects.
+
 - Discover the local CLI service before exposing browser-only local model choices, share reconnect state across menus/onboarding/settings, retain API settings and route empty catalogs to provider setup.
 - Return source-bound, read-only live preview links from MCP status and canvas capture. View the same design in a browser without registering another editor; expire links on source disconnect or document switch.
 

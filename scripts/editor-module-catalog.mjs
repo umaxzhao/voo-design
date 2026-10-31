@@ -211,12 +211,12 @@ export const EDITOR_MODULES = [
     related: ["workspace","documents","inspector","images"],
     features: [
       "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
-      "platform.native-collaboration", "platform.browser-drawer", "platform.local-service-discovery", "platform.live-preview",
+      "platform.native-collaboration", "platform.browser-drawer", "platform.local-service-discovery", "platform.live-preview", "platform.streaming-authoring",
     ],
     suites: [
       "editor-fixture-startup", "browser-drawer", "pending-integration", "agent-model-catalog", "editor-loading",
       "editor-optional-loading", "comments-loading", "comments-lifecycle", "editor-refactor",
-      "editor-context", "editor-page-composition", "local-service", "canvas-live-preview",
+      "editor-context", "editor-page-composition", "local-service", "canvas-live-preview", "agent-authoring",
     ],
     remaining: [
       "Paid endpoints, authenticated external clients, signed installers and skipped collaboration cases require separate evidence and cannot inherit an offline pass.",

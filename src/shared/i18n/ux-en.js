@@ -1,5 +1,15 @@
 /** User-facing copy for the workflow and editor experience. */
 export default {
+  "agent.authoring.reference": "Preparing visual references…",
+  "agent.authoring.directions": "Exploring design directions…",
+  "agent.authoring.selection": "Choosing a direction…",
+  "agent.authoring.generation": "Placing editable elements…",
+  "agent.authoring.critique": "Checking the composition…",
+  "agent.authoring.repair": "Refining the details…",
+  "agent.authoring.images": "Adding image assets…",
+  "agent.authoring.cancelled": "Generation stopped",
+  "agent.authoring.failed": "Generation could not finish",
+
   "designSystem.label": "Design system",
   "designSystem.auto": "Automatic",
   "designSystem.studio": "Studio",

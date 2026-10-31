@@ -37,7 +37,7 @@ import { HANDOFF_TOOL_SCHEMAS, HANDOFF_TOOL_EXECUTORS } from "./canvas_tools_han
 import { ASSET_TOOL_SCHEMAS, ASSET_TOOL_EXECUTORS } from "./canvas_tools_assets.js";
 import { COMMENT_TOOL_SCHEMAS, COMMENT_TOOL_EXECUTORS } from "./canvas_tools_comments.js";
 
-import { BUILD_LAYOUT_SCHEMA, buildLayout } from "./canvas_tools_build_layout.js";
+import { BUILD_LAYOUT_SCHEMA, buildLayoutForAgent } from "./canvas_tools_build_layout.js";
 import { STREAM_LAYOUT_SCHEMA, streamLayout } from "./canvas_tools_stream_layout.js";
 
 import { LINT_TOOL_SCHEMA, lintDesignTool } from "./design_quality/lint_tool.js";
@@ -992,7 +992,7 @@ export const EXECUTORS = Object.freeze({
   mutate_auto_layout: mutateAutoLayout,
   batch_mutate_layers: batchMutateLayers,
   create_shape: (args) => createShape(args),
-  build_layout: buildLayout,
+  build_layout: buildLayoutForAgent,
   stream_layout: streamLayout,
   delete_layers: deleteLayers,
   duplicate_layer: duplicateLayer,

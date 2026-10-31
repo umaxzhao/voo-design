@@ -6,7 +6,15 @@
 最近一次完整核心验证提交：[23d961c](https://github.com/umaxzhao/voo-design/commit/23d961ca7bc6a526447e821488290f76bd295693)。
 以下结果属于该提交，不能直接代表后续改动已经验证。
 
-## 本轮：本地服务发现与同源画布预览
+## 本轮：逐元素流式创作（正在完成发布验证）
+
+- 范围：`platform.streaming-authoring`；内置 HTML 生成、外部 `stream_layout` 与 `build_layout` 共用真实原生落图与紫色鼠标反馈；不在最终生成完成后补播一段长动画。
+- 已复现：快照内所有元素同步创建，没有逐元素绘制机会；外部入口仅预览到最终才提交；取消发生在异步放置之间时缺少检查，重复 HTML 键可产生半次写入。保留对应失败用例。
+- 当前局部证据：`tests/unit/html_pipeline/authoring.test.js`、`tests/unit/authoring-timeline.test.js` 与 `tests/e2e/agent-authoring.e2e.mjs`；真实 SSE 暂停在半程时读取原生层和红色像素、紫色鼠标、稳定 ID、完成后蓝色像素和一次撤销重做。大批量与减弱动态效果、外部草稿清除、文档切换及批量取消检查一并登记。
+- 新登记为 56 个能力分组、84 组核心浏览器套件；完整门禁和线上发布结果将在固定提交验证后补录，历史通过不覆盖这批改动。
+- 限制：受控离线模型输出、真实 Chromium 渲染与 MCP 传输；未请求付费模型，未把浏览器通过等同于签名 App、实体触屏或所有第三方客户端通过。完整范围见[验收说明](audits/editor-closeout.md#streamed-native-authoring)。
+
+## 上轮：本地服务发现与同源画布预览
 
 - 已完成声明范围：应用提交 `23d961c` 通过 87/87 步（83 组浏览器）；证据 `/private/tmp/voo-local-service-final-release-v4.json`。
 - 新增 `platform.local-service-discovery`、`platform.live-preview`，当前登记 55 个能力分组、83 组核心浏览器套件。

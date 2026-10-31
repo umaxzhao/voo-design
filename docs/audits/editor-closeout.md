@@ -127,3 +127,37 @@ unchanged throughout this final gate. GitHub Ubuntu basic checks passed in
 run `41176262001`; deployment was performed separately over SSH to `la2`.
 The public index and its five direct asset references match the verified build;
 production provider setup, local-CLI hiding and New passed without JS errors.
+
+
+## Streamed native authoring
+
+Capability: `platform.streaming-authoring`. The baseline regression reproduces
+synchronous snapshot insertion without move/paint steps, unchanged-node replay,
+missing cancellation checks between placement steps and duplicate-key partial writes.
+
+The built-in HTML pipeline and browser-native external `stream_layout` share
+`CanvasStreamer` and `createLayoutNode`. The bulk tool consumes the same validated
+creation transaction as its synchronous domain entry. The shared timeline moves
+a purple cursor, carries an outline, then creates/updates the actual native layer
+at its final geometry. It does not mutate artwork opacity/position for animation,
+move the user's camera, or spend a long post-response interval replaying a design.
+At most eight travels per snapshot/batch are paced, followed by periodic paint
+yields; reduced motion bypasses travel. Chrome is excluded from artwork exports.
+A per-engine lease prevents overlapping Agent transactions from restoring each
+other's muted history hooks. Streamed partial work remains one undoable generation;
+a cancelled bulk tree rolls back its transaction. Clearing an external stream
+removes only its owned nodes. A stale external continuation after a project switch
+is rejected until clear; idle writers finalize partial work after 60 seconds and
+must clear before restarting rather than duplicating it.
+
+| Axis | Evidence and boundary |
+| --- | --- |
+| Native visible result | `agent-authoring.e2e.mjs` holds a real OpenAI-compatible SSE response open, reads real red native pixels before final, samples a real animation frame/cursor and checks blue final pixels. Stable IDs survive snapshots. The controlled model output is a fixture, not a paid provider certificate. |
+| Shared entry points | Actual MCP `stream_layout` inserts before final with the same layer IDs; actual `build_layout` places 100 layers with normal/reduced motion and a bounded duration. Web and Electron use these shared modules; signed App execution is not independently certified here. |
+| Cancel/history | Real transport abort prevents the last element; generation completes as one undo/redo entry. Bulk cancellation during placement restores the document, history hooks and redo. Clear preserves pre-existing artwork; a new-document continuation cannot alter the new project. |
+| Lifecycle and performance | Unit checks cover reduced motion, bounded travel count, cancelled RAF/listener cleanup, canvas identity, chrome ownership and failed initialization. Browser batch duration is recorded as a local sample, not a hardware FPS/parity benchmark. |
+| Remaining contexts | Physical touch, background/foreground OS timing, every provider's delta behavior, user edits concurrent with streamed generation, and signed installers need separate evidence. Advanced individual tool mutations retain their existing feedback; there is no claim of one-for-one simulated gestures for every tool. |
+
+The exact final revision, full gate and deployment evidence are maintained in
+[quality-progress.md](../quality-progress.md); local targeted results are not a
+certificate for a later commit.
