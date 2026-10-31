@@ -86,6 +86,14 @@ public enum PropertiesColorMath {
     }
 
     /// Returns an uppercase "#RRGGBB" string, or nil when the input is not a 3/6 digit hex color.
+    /// True when a paint string actually paints something ("none"/empty/clear are not).
+    public static func isVisiblePaint(_ raw: String) -> Bool {
+        let value = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if value.isEmpty || value == "none" || value == "transparent" { return false }
+        if value.hasPrefix("rgba(") && value.hasSuffix(", 0)") { return false }
+        return true
+    }
+
     public static func normalizeHex(_ raw: String) -> String? {
         var clean = raw.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         if clean.hasPrefix("#") { clean.removeFirst() }
@@ -1905,6 +1913,10 @@ public final class PropertiesPanelView: NSView {
     public override func scrollToVisible(_ rect: NSRect) -> Bool { false }
 
     // Public API -------------------------------------------------------------
+    /// Last non-`none` fill / stroke, so the row eye can restore what it hid.
+    private var lastVisibleFill: String = "#D4D4D4"
+    private var lastVisibleStroke: String = "#FFFFFF"
+
     public var onFillChange: ((String) -> Void)?
     public var onStrokeChange: ((String) -> Void)?
     public var onStrokeWidthChange: ((CGFloat) -> Void)?
@@ -1932,6 +1944,9 @@ public final class PropertiesPanelView: NSView {
     public var onUnderlineChange: ((Bool) -> Void)?
     public var onEffectsChange: ((LayerEffects) -> Void)?
     public var onAnchorChanged: ((TransformAnchor3x3) -> Void)?
+    /// Auto-layout constraints (horizontal, vertical): left|center|right|scale /
+    /// top|middle|bottom|scale.
+    public var onConstraintsChange: ((String, String) -> Void)?
 
     public private(set) var node: VOONode?
 
@@ -2137,6 +2152,8 @@ public final class PropertiesPanelView: NSView {
     private var dividerYs: [CGFloat] = []
     private var showsShape = true
     private var showsText = false
+    private var currentConstraintHorizontal = "left"
+    private var currentConstraintVertical = "top"
     private var currentX: CGFloat = 0
     private var currentY: CGFloat = 0
     private var currentW: CGFloat = 0
@@ -2778,6 +2795,12 @@ public final class PropertiesPanelView: NSView {
         hConstraintDropdown.select(value: "left")
         hConstraintDropdown.setAccessibilityIdentifier("Inspector.Properties.HorizontalConstraint")
         hConstraintDropdown.setAccessibilityLabel("Horizontal constraint")
+        hConstraintDropdown.onValueChange = { [weak self] value in
+            guard let self = self else { return }
+            self.currentConstraintHorizontal = value
+            self.hConstraintDropdown.select(value: value)
+            self.onConstraintsChange?(self.currentConstraintHorizontal, self.currentConstraintVertical)
+        }
         addSubview(hConstraintDropdown)
 
         vConstraintDropdown.setItems([("Top", "top"), ("Middle", "middle"),
@@ -2786,6 +2809,12 @@ public final class PropertiesPanelView: NSView {
         vConstraintDropdown.select(value: "top")
         vConstraintDropdown.setAccessibilityIdentifier("Inspector.Properties.VerticalConstraint")
         vConstraintDropdown.setAccessibilityLabel("Vertical constraint")
+        vConstraintDropdown.onValueChange = { [weak self] value in
+            guard let self = self else { return }
+            self.currentConstraintVertical = value
+            self.vConstraintDropdown.select(value: value)
+            self.onConstraintsChange?(self.currentConstraintHorizontal, self.currentConstraintVertical)
+        }
         addSubview(vConstraintDropdown)
 
         // FILL --------------------------------------------------------------
@@ -2824,7 +2853,17 @@ public final class PropertiesPanelView: NSView {
         fillRowRemove.iconColor = NSColor(hex: "a3a3a3")
         fillRowRemove.setAccessibilityIdentifier("Inspector.Properties.FillRemove")
         fillRowRemove.setAccessibilityLabel("Remove fill")
+        fillRowRemove.target = self
+        fillRowRemove.action = #selector(didRemoveFill)
         addSubview(fillRowRemove)
+
+        fillRowEye.target = self
+        fillRowEye.action = #selector(didToggleFillVisible)
+        fillRowToggle.target = self
+        fillRowToggle.action = #selector(didToggleFillVisible)
+        // The model carries a single fill paint, so an extra-paint "+" would be a
+        // dead control; the web's add-fill affordance is not offered natively.
+        fillAddButton.isHidden = true
 
         // STROKE ------------------------------------------------------------
         applyAttributedLabel(strokeLabel, text: "STROKE", size: 9, weight: .medium,
@@ -2856,7 +2895,18 @@ public final class PropertiesPanelView: NSView {
 
         strokeRowRemove.iconPadding = 4
         strokeRowRemove.iconColor = NSColor(hex: "a3a3a3")
+        strokeRowRemove.setAccessibilityIdentifier("Inspector.Properties.StrokeRemove")
+        strokeRowRemove.setAccessibilityLabel("Remove stroke")
+        strokeRowRemove.target = self
+        strokeRowRemove.action = #selector(didRemoveStroke)
         addSubview(strokeRowRemove)
+
+        strokeRowToggle.target = self
+        strokeRowToggle.action = #selector(didToggleStrokeVisible)
+        strokeRowToggle.setAccessibilityIdentifier("Inspector.Properties.StrokeVisible")
+        strokeRowToggle.setAccessibilityLabel("Stroke visible")
+        // Single-paint model: the web's extra-paint "+" is not offered natively.
+        strokeAddButton.isHidden = true
 
         strokeAlignButton.iconPadding = 4
         strokeAlignButton.iconColor = NSColor(hex: "a3a3a3")
@@ -3063,11 +3113,13 @@ public final class PropertiesPanelView: NSView {
         syncPaintTypeUI()
 
         let isGradient = (currentFillMode != "solid")
-        wheel.isHidden = isGradient
-        fillSwatch.isHidden = isGradient
-        swapButton.isHidden = isGradient
-        hexPill.isHidden = isGradient
-        eyedropperButton.isHidden = isGradient
+        // The legacy COLOR-wheel controls are retired by the web inspector layout and
+        // must stay hidden in every mode (a gradient used to bring the wheel back).
+        wheel.isHidden = true
+        fillSwatch.isHidden = true
+        swapButton.isHidden = true
+        hexPill.isHidden = true
+        eyedropperButton.isHidden = true
         gradientStopsBar.isHidden = !isGradient
         gradientStopHexPill.isHidden = !isGradient
         gradientStopOpacityPill.isHidden = !isGradient
@@ -3158,6 +3210,11 @@ public final class PropertiesPanelView: NSView {
         showsShape = isShapeLike(node.kind)
         showsText = node.kind == .text
         showsFrameBlock = (node.kind == .frame)
+        let constraints = node.constraints ?? NodeConstraints()
+        currentConstraintHorizontal = constraints.horizontal
+        currentConstraintVertical = constraints.vertical
+        hConstraintDropdown.select(value: constraints.horizontal)
+        vConstraintDropdown.select(value: constraints.vertical)
         updateIdentityRow(for: node)
         updatePaintRows()
         radiusPill.suffix = "px"
@@ -3177,6 +3234,10 @@ public final class PropertiesPanelView: NSView {
         identityKind.stringValue = "—"
         frameSizeValue.stringValue = ""
         frameHexField.stringValue = ""
+        currentConstraintHorizontal = "left"
+        currentConstraintVertical = "top"
+        hConstraintDropdown.select(value: "left")
+        vConstraintDropdown.select(value: "top")
         applySectionVisibility()
         currentX = 0; currentY = 0; currentW = 0; currentH = 0; currentR = 0; currentCornerRadius = 0
         currentCornerRadii = CornerRadii(uniform: 0)
@@ -3326,7 +3387,10 @@ public final class PropertiesPanelView: NSView {
     // MARK: Edits (internal state + node mirror + callbacks)
 
     private func applyFill(hex: String, notify: Bool) {
-        let normalized = PropertiesColorMath.normalizeHex(hex) ?? currentFillHex
+        // "none" is a valid paint (the row's eye/remove toggles it on and off).
+        let normalized = PropertiesColorMath.isVisiblePaint(hex)
+            ? (PropertiesColorMath.normalizeHex(hex) ?? currentFillHex)
+            : "none"
         currentFillHex = normalized
         currentSolidHex = normalized
         updatePaintRows()
@@ -3354,11 +3418,11 @@ public final class PropertiesPanelView: NSView {
         currentFillMode = mode
         syncPaintTypeUI()
         let isGradient = (mode != "solid")
-        wheel.isHidden = isGradient
-        fillSwatch.isHidden = isGradient
-        swapButton.isHidden = isGradient
-        hexPill.isHidden = isGradient
-        eyedropperButton.isHidden = isGradient
+        wheel.isHidden = true
+        fillSwatch.isHidden = true
+        swapButton.isHidden = true
+        hexPill.isHidden = true
+        eyedropperButton.isHidden = true
         gradientStopsBar.isHidden = !isGradient
         gradientStopHexPill.isHidden = !isGradient
         gradientStopOpacityPill.isHidden = !isGradient
@@ -3429,7 +3493,9 @@ public final class PropertiesPanelView: NSView {
     }
 
     private func applyStroke(hex: String, notify: Bool) {
-        let normalized = PropertiesColorMath.normalizeHex(hex) ?? currentStrokeHex
+        let normalized = PropertiesColorMath.isVisiblePaint(hex)
+            ? (PropertiesColorMath.normalizeHex(hex) ?? currentStrokeHex)
+            : "none"
         currentStrokeHex = normalized
         updatePaintRows()
         strokeHexPill.setHex(normalized)
@@ -3769,6 +3835,34 @@ public final class PropertiesPanelView: NSView {
     @objc private func colorPanelDidChange(_ sender: NSColorPanel) {
         let hex = PropertiesColorMath.hexString(from: sender.color)
         applyFill(hex: hex, notify: true)
+    }
+
+    @objc private func didToggleFillVisible() {
+        if PropertiesColorMath.isVisiblePaint(currentFillHex) {
+            lastVisibleFill = currentFillHex
+            applyFill(hex: "none", notify: true)
+        } else {
+            applyFill(hex: lastVisibleFill, notify: true)
+        }
+    }
+
+    @objc private func didRemoveFill() {
+        if PropertiesColorMath.isVisiblePaint(currentFillHex) { lastVisibleFill = currentFillHex }
+        applyFill(hex: "none", notify: true)
+    }
+
+    @objc private func didToggleStrokeVisible() {
+        if PropertiesColorMath.isVisiblePaint(currentStrokeHex) {
+            lastVisibleStroke = currentStrokeHex
+            applyStroke(hex: "none", notify: true)
+        } else {
+            applyStroke(hex: lastVisibleStroke, notify: true)
+        }
+    }
+
+    @objc private func didRemoveStroke() {
+        if PropertiesColorMath.isVisiblePaint(currentStrokeHex) { lastVisibleStroke = currentStrokeHex }
+        applyStroke(hex: "none", notify: true)
     }
 
     @objc private func didClickSwap() {

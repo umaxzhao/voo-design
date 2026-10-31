@@ -128,6 +128,43 @@ public enum NodeKind: String, Codable, Sendable, CaseIterable, Equatable {
 // MARK: - Corner Radii & Geometry Helpers
 
 /// Corner radii configuration supporting uniform or individual four-corner radii.
+/// Figma-style auto-layout constraints: how a child layer reacts when its parent
+/// frame is resized. `horizontal` is one of left/center/right/scale, `vertical`
+/// one of top/middle/bottom/scale. Decoding is tolerant (malformed or missing
+/// values fall back to left/top) so old `.voo` files keep loading.
+public struct NodeConstraints: Codable, Sendable, Equatable {
+    public var horizontal: String
+    public var vertical: String
+
+    public static let horizontalValues = ["left", "center", "right", "scale"]
+    public static let verticalValues = ["top", "middle", "bottom", "scale"]
+
+    public init(horizontal: String = "left", vertical: String = "top") {
+        self.horizontal = NodeConstraints.normalized(horizontal,
+                                                     allowed: NodeConstraints.horizontalValues,
+                                                     fallback: "left")
+        self.vertical = NodeConstraints.normalized(vertical,
+                                                   allowed: NodeConstraints.verticalValues,
+                                                   fallback: "top")
+    }
+
+    private static func normalized(_ raw: String, allowed: [String], fallback: String) -> String {
+        let key = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return allowed.contains(key) ? key : fallback
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case horizontal, vertical
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let h = (try? container.decodeIfPresent(String.self, forKey: .horizontal)) ?? nil ?? "left"
+        let v = (try? container.decodeIfPresent(String.self, forKey: .vertical)) ?? nil ?? "top"
+        self.init(horizontal: h, vertical: v)
+    }
+}
+
 public struct CornerRadii: Codable, Sendable, Equatable {
     public var tl: CGFloat
     public var tr: CGFloat
@@ -792,6 +829,9 @@ public struct VOONode: Codable, Sendable, Equatable, Identifiable {
     public var imageId: String?
     public var paint: Bool?
     public var childIds: [String]?
+    /// Optional auto-layout constraints. `nil` means the default left/top pinning,
+    /// and old documents without the key decode to `nil` (backwards compatible).
+    public var constraints: NodeConstraints?
 
     // Convenience computed accessors bridging LayerStyle
     public var fill: String {
@@ -894,7 +934,8 @@ public struct VOONode: Codable, Sendable, Equatable, Identifiable {
         src: String? = nil,
         imageId: String? = nil,
         paint: Bool? = nil,
-        childIds: [String]? = nil
+        childIds: [String]? = nil,
+        constraints: NodeConstraints? = nil
     ) {
         self.id = id
         self.parentId = parentId
@@ -931,6 +972,7 @@ public struct VOONode: Codable, Sendable, Equatable, Identifiable {
         self.imageId = imageId
         self.paint = paint
         self.childIds = childIds
+        self.constraints = constraints
     }
 
     // Convenience Initializer (name before kind)

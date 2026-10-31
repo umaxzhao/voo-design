@@ -371,10 +371,26 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                 self.deleteAction(nil)
             case .copy:
                 self.duplicateAction(nil)
+            case .lock:
+                self.toggleLockAction(nil)
+            case .eye:
+                self.toggleVisibilityAction(nil)
+            case .alignLeftH:
+                self.performAlign("left")
+            case .alignCenterH:
+                self.performAlign("center")
+            case .distributeH:
+                self.performDistribute(horizontal: true)
+            case .arrowUp:
+                self.moveSelectionInLayerOrder(forward: true)
+            case .arrowDown:
+                self.moveSelectionInLayerOrder(forward: false)
+            case .fillSwatch:
+                self.presentSelectionColourPanel(isStroke: false)
+            case .strokeSwatch:
+                self.presentSelectionColourPanel(isStroke: true)
             case .flipHorizontal, .flipVertical:
                 self.showChromeToast("翻转选区 (Flip selection)")
-            case .lock:
-                self.showChromeToast("选区已锁定 (Selection locked)")
             default:
                 break
             }
@@ -824,6 +840,12 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         // Geometry: undoable transform command.
         let cmd = TransformNodeCommand(nodeId: id, x: x, y: y, width: width, height: height, rotation: rotation)
         _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
+        if oldNode.kind == .frame, oldNode.width != width || oldNode.height != height {
+            mainContentView.canvasStageView.applyConstraints(
+                frameId: id,
+                previousFrame: CGRect(x: oldNode.x, y: oldNode.y, width: oldNode.width, height: oldNode.height)
+            )
+        }
 
         // Corner radius: keep it on the node (rounded rect) and record through a
         // lightweight style-preserving command so undo restores it too.
@@ -848,6 +870,27 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                 _ = newNode
             }
         }
+        refreshAfterDocumentMutation()
+    }
+
+    public func inspectorDidChangeConstraints(id: String, horizontal: String, vertical: String) {
+        guard let index = mainContentView.canvasStageView.document.nodes.firstIndex(where: { $0.id == id }) else { return }
+        let previous = mainContentView.canvasStageView.document.nodes[index].constraints
+        let updated = NodeConstraints(horizontal: horizontal, vertical: vertical)
+        let cmd = BasicCommand(
+            name: "修改约束",
+            execute: { doc in
+                guard let i = doc.nodes.firstIndex(where: { $0.id == id }) else { return false }
+                doc.nodes[i].constraints = updated
+                return true
+            },
+            undo: { doc in
+                guard let i = doc.nodes.firstIndex(where: { $0.id == id }) else { return false }
+                doc.nodes[i].constraints = previous
+                return true
+            }
+        )
+        _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
         refreshAfterDocumentMutation()
     }
 
@@ -1757,10 +1800,25 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         let nodes = mainContentView.canvasStageView.document.nodes.filter { selectedIds.contains($0.id) }
         guard !nodes.isEmpty else { return }
 
-        let minX = nodes.map { $0.x }.min() ?? 0
-        let maxX = nodes.map { $0.x + $0.width }.max() ?? 0
-        let minY = nodes.map { $0.y }.min() ?? 0
-        let maxY = nodes.map { $0.y + $0.height }.max() ?? 0
+        // Web `align_layers`: a single layer aligns inside its container (parent
+        // frame, else the page canvas); a multi-selection aligns to its own bounds.
+        let container: CGRect?
+        if nodes.count == 1, let node = nodes.first {
+            let all = mainContentView.canvasStageView.document.nodes
+            if let parentId = node.parentId, let parent = all.first(where: { $0.id == parentId }) {
+                container = CGRect(x: parent.x, y: parent.y, width: parent.width, height: parent.height)
+            } else {
+                let canvas = mainContentView.canvasStageView.document.canvas
+                container = CGRect(x: canvas.x, y: canvas.y, width: canvas.width, height: canvas.height)
+            }
+        } else {
+            container = nil
+        }
+
+        let minX = container?.minX ?? nodes.map { $0.x }.min() ?? 0
+        let maxX = container?.maxX ?? nodes.map { $0.x + $0.width }.max() ?? 0
+        let minY = container?.minY ?? nodes.map { $0.y }.min() ?? 0
+        let maxY = container?.maxY ?? nodes.map { $0.y + $0.height }.max() ?? 0
         let midX = (minX + maxX) / 2.0
         let midY = (minY + maxY) / 2.0
 
@@ -2254,6 +2312,16 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     private func recordHandleCommit(nodeId: String, beforeRect: CGRect, beforeRotation: CGFloat,
                                     afterRect: CGRect, afterRotation: CGFloat) {
+        let isFrame = mainContentView.canvasStageView.document.nodes.first { $0.id == nodeId }?.kind == .frame
+        let sizeChanged = beforeRect.size != afterRect.size
+        defer {
+            // A frame resize re-pins its children according to their constraints
+            // (web "Constraints" behaviour); ordinary layers keep their geometry.
+            if isFrame && sizeChanged {
+                mainContentView.canvasStageView.applyConstraints(frameId: nodeId, previousFrame: beforeRect)
+                refreshAfterDocumentMutation()
+            }
+        }
         let cmd = BasicCommand(
             name: "变换图层",
             execute: { doc in
@@ -2902,6 +2970,70 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         refreshAfterDocumentMutation()
     }
 
+    /// Island bar ↑/↓: shifts every selected layer one step in the paint order
+    /// (web "move up / move down"), recorded as one undoable command per step.
+    private func moveSelectionInLayerOrder(forward: Bool) {
+        let stage = mainContentView.canvasStageView
+        let selected = stage.selectedNodeIds
+        guard !selected.isEmpty else { return }
+        let indices = stage.document.nodes.enumerated()
+            .filter { selected.contains($0.element.id) }
+            .map { $0.offset }
+        guard !indices.isEmpty else { return }
+        // Forward = toward the front of the list (painted last).
+        let ordered = forward ? indices.sorted(by: >) : indices.sorted()
+        for index in ordered {
+            let target = forward ? index + 1 : index - 1
+            guard target >= 0, target < stage.document.nodes.count else { continue }
+            let nodeId = stage.document.nodes[index].id
+            guard !selected.contains(stage.document.nodes[target].id) else { continue }
+            moveLayer(nodeId, to: target)
+        }
+        refreshAfterDocumentMutation()
+    }
+
+    /// Island bar colour swatches: applies a fill/stroke colour to the selection.
+    private func presentSelectionColourPanel(isStroke: Bool) {
+        let stage = mainContentView.canvasStageView
+        guard !stage.selectedNodeIds.isEmpty else { return }
+        let panel = NSColorPanel.shared
+        panel.setTarget(self)
+        panel.setAction(#selector(selectionColourPanelChanged(_:)))
+        colourPanelStrokeTarget = isStroke
+        panel.orderFront(nil)
+    }
+
+    @objc private func selectionColourPanelChanged(_ sender: NSColorPanel) {
+        let hex = sender.color.hexString
+        applyColourToSelection(hex, isStroke: colourPanelStrokeTarget)
+    }
+
+    private func applyColourToSelection(_ hex: String, isStroke: Bool) {
+        let stage = mainContentView.canvasStageView
+        let selected = stage.selectedNodeIds
+        guard !selected.isEmpty else { return }
+        let before: [String: LayerStyle] = stage.document.nodes
+            .filter { selected.contains($0.id) }
+            .reduce(into: [:]) { $0[$1.id] = $1.style }
+        let cmd = BasicCommand(
+            name: isStroke ? "修改描边颜色" : "修改填充颜色",
+            execute: { doc in
+                for index in doc.nodes.indices where selected.contains(doc.nodes[index].id) {
+                    if isStroke { doc.nodes[index].style.stroke = hex } else { doc.nodes[index].style.fill = hex }
+                }
+                return true
+            },
+            undo: { doc in
+                for index in doc.nodes.indices {
+                    if let style = before[doc.nodes[index].id] { doc.nodes[index].style = style }
+                }
+                return true
+            }
+        )
+        _ = commandManager.execute(cmd, on: &stage.document)
+        refreshAfterDocumentMutation()
+    }
+
     private func moveLayer(_ nodeId: String, to targetIndex: Int) {
         let nodes = mainContentView.canvasStageView.document.nodes
         guard let from = nodes.firstIndex(where: { $0.id == nodeId }) else { return }
@@ -3087,6 +3219,9 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             }
         }
     }
+
+    /// Which channel the shared NSColorPanel is currently editing.
+    private var colourPanelStrokeTarget: Bool = false
 
     private var activeCLIRunID: UUID?
 

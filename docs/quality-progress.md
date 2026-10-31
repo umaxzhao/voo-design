@@ -278,3 +278,17 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 
 验证：`./build.sh`（binary 4.79 MB ≤ 5 MB，bundle 10.12 MB ≤ 35 MB，冷启动 ~0.15s）；`./tests/run_tests.sh` **377/377 通过**（同步更新了属性卡/滚动区高度、Island Bar 9 个按钮与 28pt、glyph 26 项、仪表盘首启磁贴等断言）。截图：`native_studio/docs/screenshots/y_dashboard.png`、`y_editor.png`、`y_selected.png`、`y_settings.png`。
 未覆盖：CONSTRAINTS 下拉与 FILL/STROKE 的「+ / 眼睛 / −」目前为展示层（模型无对应字段）；Light interface 与 Auto-save 仅持久化 Web 同名键，原生暂无浅色主题/恢复副本引擎；编辑器标题栏仍是「打开/保存」语义而非 Import/Export。
+
+## 原生界面优化（第四轮：把「只有外观」的控件接上真实行为）— 2026-10-31
+
+上一轮新增的检查器/浮动条控件有一部分只有外观（点了没反应），本轮全部接线，并补了约束模型与 5 条回归用例。
+
+- **浮动选择条全部可用**：左对齐 / 水平居中 → `performAlign`（**单个图层对齐到父 Frame，若无父 Frame 则对齐画布**，多选仍对齐选区包围盒）；水平分布 → `performDistribute`（≥3 个图层）；上移 / 下移 → 按绘制顺序逐级移动（可撤销）；复制 / 锁定 / 显隐 / 删除 → 复用既有命令；两个色板圆点 → 打开 `NSColorPanel` 并以可撤销命令写入选区填充 / 描边。
+- **属性面板 FILL / STROKE 行可用**：眼睛与「−」现在真正修改样式——「−」把填充/描边设为 `none`，眼睛在 `none` 与上次颜色之间切换（记住上一次可见颜色）；模型的单填充限制下，Web 的「+ 新增填充」不再渲染（避免出现点了没反应的控件）。
+- **CONSTRAINTS 真正落库**：`VOONode` 新增 `constraints: NodeConstraints?`（水平 left/center/right/scale、垂直 top/middle/bottom/scale，未知值归一化，`Codable` 可选因此旧 `.voo` 文件照常读取、未设置时不写键，既有 JSON 字节不变）；属性面板下拉读写真实模型，改动走可撤销命令 `修改约束`。
+- **约束在画板缩放时生效**：`CanvasStageView.applyConstraints(frameId:previousFrame:)` 按 left/right/center/scale、top/middle/bottom/scale 规则重新钉住子图层（scale 同时按比例缩放子层）；已接到**手柄拖拽改尺寸**与**检查器数值改宽高**两条路径（仅针对 frame 且尺寸变化时触发，普通图层的既有拖拽逻辑不变）。
+- **修复**：属性面板左上角残留的旧彩色取色环（渐变模式会把已下线的 `wheel` 重新显示）——旧 COLOR 控件在所有模式下永久隐藏。
+- **新增回归用例**（`tests/InspectorBehaviourTests.swift`，5 条）：FILL 行删除/眼睛、STROKE 行删除/眼睛、约束 Codable 往返 + 旧文档兼容 + 未知值归一化、画板放大后右侧钉住/左侧保持偏移。
+
+验证：`./build.sh` 通过（binary 4.85 MB ≤ 5 MB，bundle 10.17 MB ≤ 35 MB）；`./tests/run_tests.sh` **382/382 通过**（377 + 5 新增）。截图：`native_studio/docs/screenshots/z_selected.png`。
+仍未覆盖：Light interface / Auto-save 仅持久化键；标题栏仍为「打开/保存」语义；CONSTRAINTS 仅作用于直接子图层、未处理旋转后的钉扎。

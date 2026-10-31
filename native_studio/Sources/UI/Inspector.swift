@@ -27,6 +27,9 @@ public protocol InspectorDelegate: AnyObject {
     func inspectorDidChangeEffects(id: String, effects: LayerEffects)
     func inspectorDidToggleVisibility(id: String, visible: Bool)
     func inspectorDidToggleLock(id: String, locked: Bool)
+    /// Figma-style constraints changed for a layer:
+    /// `horizontal` = left|center|right|scale, `vertical` = top|middle|bottom|scale.
+    func inspectorDidChangeConstraints(id: String, horizontal: String, vertical: String)
 }
 
 public extension InspectorDelegate {
@@ -43,6 +46,7 @@ public extension InspectorDelegate {
     func inspectorDidChangeEffects(id: String, effects: LayerEffects) {}
     func inspectorDidToggleVisibility(id: String, visible: Bool) {}
     func inspectorDidToggleLock(id: String, locked: Bool) {}
+    func inspectorDidChangeConstraints(id: String, horizontal: String, vertical: String) {}
 }
 
 // MARK: - Right Floating Properties Card Shell
@@ -428,6 +432,11 @@ public class InspectorView: NSView {
 
         propertiesPanel.onItalicChange = { [weak self] it in self?.forwardPropertiesTextDecoration(italic: it) }
         propertiesPanel.onUnderlineChange = { [weak self] un in self?.forwardPropertiesTextDecoration(underline: un) }
+
+        propertiesPanel.onConstraintsChange = { [weak self] horizontal, vertical in
+            guard let self = self, let id = self.layersPanel.selectedNodeId else { return }
+            self.delegate?.inspectorDidChangeConstraints(id: id, horizontal: horizontal, vertical: vertical)
+        }
 
         propertiesPanel.onEffectsChange = { [weak self] effects in
             guard let self = self, let id = self.layersPanel.selectedNodeId else { return }

@@ -19,6 +19,7 @@ TEST_FILES=(
   "$DIR/M1_ToolFlyoutContextualTaskbarTests.swift"
   "$DIR/M2_InspectorStudioTests.swift"
   "$DIR/WorkspaceManagerTests.swift"
+  "$DIR/InspectorBehaviourTests.swift"
   # "$DIR/AIAgentTests.swift"
   "$DIR/main.swift"
 )

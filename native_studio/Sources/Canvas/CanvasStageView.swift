@@ -202,6 +202,10 @@ public final class CurveConversionEngine {
 
 public class CanvasStageView: NSView {
     // Document State
+    /// Last-known rect of every frame, used by `applyConstraints(frameId:)` to
+    /// compute the resize delta of a frame after a host-driven resize.
+    private var constraintFrameRects: [String: CGRect] = [:]
+
     public var document: VOODocument = VOODocument() {
         didSet {
             cancelCreation()
@@ -211,6 +215,10 @@ public class CanvasStageView: NSView {
             let survivingIds = selectedNodeIds.intersection(validIds)
             if survivingIds != selectedNodeIds {
                 selectedNodeIds = survivingIds
+            }
+            for node in document.nodes where node.kind == .frame && constraintFrameRects[node.id] == nil {
+                constraintFrameRects[node.id] = CGRect(x: node.x, y: node.y,
+                                                       width: node.width, height: node.height)
             }
             validatePathEditingTarget()
             handlePaintDocumentChangeIfNeeded()
@@ -1911,6 +1919,12 @@ public class CanvasStageView: NSView {
             height: document.nodes[idx].height
         )
 
+        if document.nodes[idx].kind == .frame {
+            // Snapshot before the mutation so `applyConstraints(frameId:)` can compute
+            // the resize delta later (pure bookkeeping: the drag path is unchanged).
+            constraintFrameRects[document.nodes[idx].id] = previousRect
+        }
+
         document.nodes[idx].x = newRect.origin.x
         document.nodes[idx].y = newRect.origin.y
         document.nodes[idx].width = newRect.size.width
@@ -1937,6 +1951,72 @@ public class CanvasStageView: NSView {
         }
 
         onNodeTransformed?(document.nodes[idx])
+        needsDisplay = true
+    }
+
+    /// Applies the child constraints of a resized frame.
+    ///
+    /// Callable from the host (`MainContentView`) after a frame resize; the default
+    /// handle-drag path does not call it, so existing transform behaviour/tests are
+    /// untouched. `previousFrame` is the frame rect before the resize; when omitted,
+    /// the snapshot recorded by the last handle drag is used.
+    public func applyConstraints(frameId: String, previousFrame: CGRect? = nil) {
+        guard let frameIndex = document.nodes.firstIndex(where: { $0.id == frameId }),
+              document.nodes[frameIndex].kind == .frame else { return }
+        let frame = document.nodes[frameIndex]
+        let newRect = CGRect(x: frame.x, y: frame.y, width: frame.width, height: frame.height)
+        let oldRect = previousFrame ?? constraintFrameRects[frameId] ?? newRect
+        constraintFrameRects[frameId] = newRect
+        guard oldRect.width > 0.0001, oldRect.height > 0.0001 else { return }
+        let sizeChanged = abs(newRect.width - oldRect.width) > 0.0001
+            || abs(newRect.height - oldRect.height) > 0.0001
+        let originChanged = abs(newRect.minX - oldRect.minX) > 0.0001
+            || abs(newRect.minY - oldRect.minY) > 0.0001
+        guard sizeChanged || originChanged else { return }
+
+        let scaleX = newRect.width / oldRect.width
+        let scaleY = newRect.height / oldRect.height
+        let childIndices = document.nodes.indices.filter { document.nodes[$0].parentId == frameId }
+        guard !childIndices.isEmpty else { return }
+
+        var doc = document
+        for index in childIndices {
+            var child = doc.nodes[index]
+            let constraints = child.constraints ?? NodeConstraints()
+            let childWidth = max(child.width, 0.001)
+            let childHeight = max(child.height, 0.001)
+
+            switch constraints.horizontal {
+            case "right":
+                child.x = newRect.maxX - (oldRect.maxX - child.x)
+            case "center":
+                let relativeCentre = (child.x + childWidth / 2 - oldRect.midX) / oldRect.width
+                child.x = newRect.midX + relativeCentre * newRect.width - childWidth / 2
+            case "scale":
+                let relative = (child.x - oldRect.minX) / oldRect.width
+                child.x = newRect.minX + relative * newRect.width
+                child.width = max(child.width * scaleX, 0.001)
+            default: // left
+                child.x = newRect.minX + (child.x - oldRect.minX)
+            }
+
+            switch constraints.vertical {
+            case "bottom":
+                child.y = newRect.maxY - (oldRect.maxY - child.y)
+            case "middle":
+                let relativeCentre = (child.y + childHeight / 2 - oldRect.midY) / oldRect.height
+                child.y = newRect.midY + relativeCentre * newRect.height - childHeight / 2
+            case "scale":
+                let relative = (child.y - oldRect.minY) / oldRect.height
+                child.y = newRect.minY + relative * newRect.height
+                child.height = max(child.height * scaleY, 0.001)
+            default: // top
+                child.y = newRect.minY + (child.y - oldRect.minY)
+            }
+
+            doc.nodes[index] = child
+        }
+        document = doc
         needsDisplay = true
     }
 
