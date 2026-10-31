@@ -110,5 +110,56 @@ await withEditorBrowser(async ({ page }) => {
     assert.deepEqual(await f.snapshot(), future);
     return { subThresholdClickRolledBack: true, resizeEscapedAndRolledBack: true, redoPreserved: true };
   });
+  await f.record("pen-anchor-zero-drag-and-escaped-drag-preserve-edit-session-and-redo", async () => {
+    const penNode = {
+      id: "pen-edit-node",
+      name: "PenEditNode",
+      kind: "path",
+      pen: true,
+      closed: false,
+      parentId: "host",
+      x: 160,
+      y: 220,
+      width: 120,
+      height: 60,
+      baseWidth: 120,
+      baseHeight: 60,
+      stroke: "#112233",
+      strokeWidth: 3,
+      visible: true,
+      points: [{ x: 0, y: 0 }, { x: 120, y: 60 }],
+    };
+    const future = await seedFuture([penNode]);
+    await page.evaluate(() => {
+      window.__vooEditor.select("pen-edit-node");
+      window.__vooEditor.beginEdit("pen-edit-node");
+    });
+    await f.settle();
+    const before = await f.snapshot(), previousHistory = await history();
+    const anchorPt = await f.client({ x: 160, y: 220 });
+    const dragPt = await f.client({ x: 210, y: 270 });
+
+    // 1. Zero-drag click on existing anchor does not commit or wipe redo
+    await page.mouse.click(anchorPt.x, anchorPt.y);
+    await f.settle();
+    assert.deepEqual(await history(), previousHistory);
+
+    // 2. Drag anchor then press Escape mid-drag -> restores anchor, keeps pen edit open, preserves redo
+    await page.mouse.move(anchorPt.x, anchorPt.y);
+    await page.mouse.down();
+    await page.mouse.move(dragPt.x, dragPt.y, { steps: 5 });
+    await f.settle();
+    assert.notEqual((await f.node("pen-edit-node")).points[0].x, 0);
+    await page.keyboard.press("Escape");
+    await page.mouse.up();
+    await f.settle();
+    assert.equal(await page.evaluate(() => window.__vooEditor.isEditing()), true);
+    assert.deepEqual(await f.snapshot(), before);
+    assert.deepEqual(await history(), previousHistory);
+    await page.evaluate(() => window.__vooEditor.endEdit());
+    await f.focus(); await page.keyboard.press(key("Shift+z")); await f.settle();
+    assert.deepEqual(await f.snapshot(), future);
+    return { zeroDragNoCommit: true, escapedDragRestoredInSession: true, redoPreserved: true };
+  });
   f.finish();
 });

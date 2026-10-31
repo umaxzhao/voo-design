@@ -7,6 +7,7 @@
 import { NODE_KIND } from "./scene_model.js";
 import { normaliseRect, toNodeLocal } from "./scene_geometry.js";
 import { commitEditorAction } from "../undo-action-contracts.js";
+import { drawingRollbackState } from "./drawing-gesture-transaction.js";
 import { createMarqueePointerGestures } from "./editor_pointer_marquee.js";
 
 export function createSelectionPointerGestures(ctx) {
@@ -71,6 +72,7 @@ export function createSelectionPointerGestures(ctx) {
       return;
     }
 
+    const drawingRollback = drawingRollbackState(api);
     const local = toNodeLocal(host, point);
     const free = mode === "free";
     const ellipse = mode === "ellipse";
@@ -90,6 +92,7 @@ export function createSelectionPointerGestures(ctx) {
       localStart: local,
       free,
       ellipse,
+      drawingRollback,
     });
   }
 

@@ -76,6 +76,7 @@ export function unwindEscape({
       () => {
         if (
           !engine.getSelected?.() &&
+          !engine.getSelectedGroup?.() &&
           !(engine.getSelectedIds?.()?.length > 0)
         ) {
           return null;

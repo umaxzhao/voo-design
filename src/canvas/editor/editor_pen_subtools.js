@@ -2,6 +2,7 @@
 
 import * as ops from "./doc_ops.js";
 import { findNode, newId } from "./scene_model.js";
+import { toNodeLocal } from "./scene_geometry.js";
 import { commitEditorDocument } from "../undo-action-contracts.js";
 import {
   anchorsInRect,
@@ -18,7 +19,16 @@ export function createPenSubtools({
   getZoom,
   getRawEdit,
   endEdit,
+  expandPenNodeBounds = (node) => node,
+  rebasePenNodeBounds = (node, points) => ({ ...node, points }),
 }) {
+  const scaledLocalOf = (node, point) => {
+    const scaleX = node.baseWidth ? node.width / node.baseWidth : 1;
+    const scaleY = node.baseHeight ? node.height / node.baseHeight : 1;
+    const raw = toNodeLocal(node, point);
+    return { x: raw.x / scaleX, y: raw.y / scaleY };
+  };
+
   /**
    * Bend: pointer-down on a segment remembers where the drag grabbed the
    * curve (segment index and parameter t), so the drag can pull that exact
@@ -28,18 +38,14 @@ export function createPenSubtools({
     const edit = getRawEdit();
     const node = findNode(getDoc(), edit?.nodeId);
     if (!node || node.points.length < 2) return false;
-    const scaleX = node.baseWidth ? node.width / node.baseWidth : 1;
-    const scaleY = node.baseHeight ? node.height / node.baseHeight : 1;
-    const local = {
-      x: (point.x - node.x) / scaleX,
-      y: (point.y - node.y) / scaleY,
-    };
+    const local = scaledLocalOf(node, point);
     const best = projectOntoPath(node.points, local);
     if (!best || best.dist > segmentHitRadius(getZoom)) return false;
-    edit.bend = { index: best.index, t: best.t };
+    edit.bend = { index: best.index, t: best.t, moved: false };
     // As with anchor drags: the pre-bend points let an Escape mid-drag put
     // the shape back (see endEdit).
     edit.preDragPoints = node.points;
+    edit.preDragNode = node;
     requestRender();
     return true;
   }
@@ -50,21 +56,17 @@ export function createPenSubtools({
     const node = findNode(getDoc(), edit?.nodeId);
     if (!node || !edit?.bend) return;
     const { index, t } = edit.bend;
-    const scaleX = node.baseWidth ? node.width / node.baseWidth : 1;
-    const scaleY = node.baseHeight ? node.height / node.baseHeight : 1;
     const a = node.points[index];
     const b = node.points[index + 1];
     if (!a || !b) return;
-    const handles = bendHandlesThrough(a, b, t, {
-      x: (point.x - node.x) / scaleX,
-      y: (point.y - node.y) / scaleY,
-    });
+    const handles = bendHandlesThrough(a, b, t, scaledLocalOf(node, point));
     if (!handles) return;
     const next = node.points.map((pt, i) => {
       if (i === index) return { ...pt, out: handles.out };
       if (i === index + 1) return { ...pt, in: handles.in };
       return pt;
     });
+    edit.bend.moved = true;
     setDoc(ops.updateNode(getDoc(), node.id, { ...node, points: next }), {
       commit: false,
     });
@@ -74,13 +76,23 @@ export function createPenSubtools({
   function bendUp() {
     const edit = getRawEdit();
     if (!edit?.bend) return;
+    const moved = Boolean(edit.bend.moved);
+    const nodeId = edit.nodeId;
     edit.bend = null;
     edit.preDragPoints = null;
+    edit.preDragNode = null;
     // The drag wrote uncommitted frames; commit once so Undo returns to the
     // state before the gesture, the same contract editUp keeps.
-    commitEditorDocument("editor.pen.change", setDoc, getDoc(), {
-      commit: true,
-    });
+    if (moved) {
+      const node = findNode(getDoc(), nodeId);
+      if (node) {
+        const rebased = expandPenNodeBounds(node);
+        setDoc(ops.updateNode(getDoc(), node.id, rebased), { commit: false });
+      }
+      commitEditorDocument("editor.pen.change", setDoc, getDoc(), {
+        commit: true,
+      });
+    }
     requestRender();
   }
 
@@ -130,34 +142,38 @@ export function createPenSubtools({
     const edit = getRawEdit();
     const node = findNode(getDoc(), edit?.nodeId);
     if (!node || node.points.length < 2) return false;
-    const scaleX = node.baseWidth ? node.width / node.baseWidth : 1;
-    const scaleY = node.baseHeight ? node.height / node.baseHeight : 1;
-    const local = {
-      x: (point.x - node.x) / scaleX,
-      y: (point.y - node.y) / scaleY,
-    };
+    const local = scaledLocalOf(node, point);
     const best = projectOntoPath(node.points, local);
     if (!best || best.dist > segmentHitRadius(getZoom)) return false;
     const closed = node.points[node.points.length - 1]?.close === true;
     const halves = cutPathPoints(node.points, best.index, best.t, closed);
     if (closed || halves.length === 1) {
       // One open chain replaces the original node in place.
+      const updated = rebasePenNodeBounds(node, halves[0]);
       commitEditorDocument(
         "editor.pen.change",
         setDoc,
-        ops.updateNode(getDoc(), node.id, { ...node, points: halves[0] }),
+        ops.updateNode(getDoc(), node.id, updated),
       );
     } else {
-      // Both halves keep the original node's box: the anchors are stored
-      // relative to it, so the two new nodes need no re-normalisation.
-      const second = { ...node, id: newId(), points: halves[1] };
+      const first = rebasePenNodeBounds(node, halves[0]);
+      const second = rebasePenNodeBounds(
+        { ...node, id: newId(), locked: false },
+        halves[1],
+      );
+      const doc = getDoc();
+      const nextNodes = [];
+      for (const candidate of doc.nodes) {
+        if (candidate.id === node.id) {
+          nextNodes.push(first, second);
+        } else {
+          nextNodes.push(candidate);
+        }
+      }
       commitEditorDocument(
         "editor.pen.change",
         setDoc,
-        ops.addNode(
-          ops.updateNode(getDoc(), node.id, { ...node, points: halves[0] }),
-          second,
-        ),
+        ops.withNodes(doc, nextNodes),
       );
     }
     endEdit();

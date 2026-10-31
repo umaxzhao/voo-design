@@ -58,26 +58,47 @@ export function createPenEdit({
     notify();
   }
 
+  function cancelEditDrag() {
+    if (!edit || (!edit.dragging && !edit.bend && !edit.lasso)) return false;
+    if ((edit.dragging || edit.bend) && edit.preDragPoints) {
+      const doc = getDoc();
+      const node = findNode(doc, edit.nodeId);
+      if (node) {
+        const restoredNode = edit.preDragNode
+          ? { ...edit.preDragNode, points: edit.preDragPoints }
+          : { ...node, points: edit.preDragPoints };
+        commitEditorDocument(
+          "editor.pen.change",
+          setDoc,
+          {
+            ...doc,
+            nodes: doc.nodes.map((n) => (n.id === node.id ? restoredNode : n)),
+          },
+          { commit: false },
+        );
+      }
+    }
+    edit.down = null;
+    edit.dragging = null;
+    edit.moved = false;
+    edit.bend = null;
+    edit.lasso = null;
+    edit.preDragPoints = null;
+    edit.preDragNode = null;
+    edit.handlePointerOrigin = null;
+    edit.handleValueOrigin = null;
+    requestRender();
+    notify();
+    return true;
+  }
+
   function endEdit() {
     if (!edit) return;
     // A gesture cut short (Escape mid-drag) would otherwise keep its
     // uncommitted frames: the half-finished drag silently becomes the shape,
     // which reads as "the shape jumped when I pressed Escape". Restore the
     // points as they were when the drag started.
-    if ((edit.dragging || edit.bend) && edit.preDragPoints) {
-      const node = findNode(getDoc(), edit.nodeId);
-      if (node) {
-        commitEditorDocument(
-          "editor.pen.change",
-          setDoc,
-          ops.updateNode(getDoc(), node.id, {
-            ...node,
-            points: edit.preDragPoints,
-          }),
-          { commit: false },
-        );
-      }
-    }
+    cancelEditDrag();
     edit = null;
     onResetSubTool();
     requestRender();
@@ -149,8 +170,10 @@ export function createPenEdit({
     edit.active = i + 1;
     edit.selected = [i + 1];
     edit.preDragPoints = node.points;
+    edit.preDragNode = node;
     edit.down = point;
     edit.dragging = "anchor";
+    edit.moved = true;
     edit.handlePointerOrigin = null;
     edit.handleValueOrigin = null;
     edit.handleAnchor = points[i + 1];
@@ -186,8 +209,10 @@ export function createPenEdit({
       // The pre-drag points, so an Escape mid-drag can put the shape back
       // instead of keeping the half-finished drag (see endEdit).
       edit.preDragPoints = node.points;
+      edit.preDragNode = node;
       edit.down = point;
       edit.dragging = hit.handle ?? "anchor";
+      edit.moved = false;
       edit.handlePointerOrigin = hit.handle ? { x: point.x, y: point.y } : null;
       edit.handleValueOrigin = hit.handle ? [...hit.anchor[hit.handle]] : null;
       requestRender();
@@ -233,6 +258,7 @@ export function createPenEdit({
         };
       });
       // Uncommitted while dragging: one undo step covers the whole gesture.
+      edit.moved = true;
       setDoc(ops.updateNode(getDoc(), node.id, { ...node, points: next }), {
         commit: false,
       });
@@ -270,6 +296,7 @@ export function createPenEdit({
       ];
     }
     const next = node.points.map((pt) => (pt === anchor ? patch : pt));
+    edit.moved = true;
     setDoc(ops.updateNode(getDoc(), node.id, { ...node, points: next }), {
       commit: false,
     });
@@ -280,15 +307,18 @@ export function createPenEdit({
   function editUp() {
     if (!edit) return;
     const dragging = edit.dragging;
+    const moved = Boolean(edit.moved);
     const nodeId = edit.nodeId;
     edit.down = null;
     edit.dragging = null;
+    edit.moved = false;
     edit.preDragPoints = null;
+    edit.preDragNode = null;
     edit.handlePointerOrigin = null;
     edit.handleValueOrigin = null;
     // The drag wrote uncommitted frames; commit once so Undo returns to the
     // state before the gesture instead of stepping through every pointer move.
-    if (dragging) {
+    if (dragging && moved) {
       const node = findNode(getDoc(), nodeId);
       if (node) {
         const rebased = expandPenNodeBounds(node);
@@ -327,11 +357,17 @@ export function createPenEdit({
     const newWidth = Math.max(node.width, (maxX + shiftX) * scaleX);
     const newHeight = Math.max(node.height, (maxY + shiftY) * scaleY);
     const nextPoints =
-      shiftX > 0 || shiftY > 0
+      shiftX > 0 || shiftY > 0 || scaleX !== 1 || scaleY !== 1
         ? node.points.map((pt) => ({
             ...pt,
-            x: pt.x + shiftX,
-            y: pt.y + shiftY,
+            x: (pt.x + shiftX) * scaleX,
+            y: (pt.y + shiftY) * scaleY,
+            ...(pt.in
+              ? { in: [pt.in[0] * scaleX, pt.in[1] * scaleY] }
+              : {}),
+            ...(pt.out
+              ? { out: [pt.out[0] * scaleX, pt.out[1] * scaleY] }
+              : {}),
           }))
         : node.points;
 
@@ -655,12 +691,15 @@ export function createPenEdit({
   return {
     isEditing,
     beginEdit,
+    cancelEditDrag,
     endEdit,
     hitTestEdit,
     addAnchorAt,
     editDown,
     editMove,
     editUp,
+    expandPenNodeBounds,
+    rebasePenNodeBounds,
     deleteActiveAnchor,
     nudgeActiveAnchor,
     convertActiveAnchor,

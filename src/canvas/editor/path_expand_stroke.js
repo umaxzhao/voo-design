@@ -23,6 +23,7 @@ import {
   booleanUnion,
   reconstructBezierPath,
   clipMultiLoopShapes,
+  normalizeNodeToDocPenAnchors,
   tessellateNodeToWorldPolygons,
   polygonSignedArea,
   ensurePositiveOrientation,
@@ -37,13 +38,19 @@ const KAPPA = 4 * (Math.SQRT2 - 1) / 3; // ~0.5522847498 for exact 90-degree Bez
  */
 function toDocSpacePoints(node) {
   if (!node || !Array.isArray(node.points)) return [];
+  const normalized = normalizeNodeToDocPenAnchors(node);
+  if (normalized && normalized.length === node.points.length) {
+    return normalized;
+  }
   const originX = node.x ?? 0;
   const originY = node.y ?? 0;
+  const scaleX = node.baseWidth ? node.width / node.baseWidth : 1;
+  const scaleY = node.baseHeight ? node.height / node.baseHeight : 1;
   return node.points.map((p) => ({
-    x: originX + p.x,
-    y: originY + p.y,
-    in: p.in ? [p.in[0], p.in[1]] : null,
-    out: p.out ? [p.out[0], p.out[1]] : null,
+    x: originX + p.x * scaleX,
+    y: originY + p.y * scaleY,
+    in: p.in ? [p.in[0] * scaleX, p.in[1] * scaleY] : null,
+    out: p.out ? [p.out[0] * scaleX, p.out[1] * scaleY] : null,
     close: Boolean(p.close),
   }));
 }

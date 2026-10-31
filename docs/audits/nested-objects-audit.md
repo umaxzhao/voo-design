@@ -55,11 +55,12 @@ pass inherited by newer source.
 | Align/distribute selected containers and mask bases | Selected descendants inside a selected Frame moved twice, and clipped followers (`clipTo`) were left behind | Deduplicate `selectionUnits` via `groupingRoots` and move units via `moveAffectedIds`; assert single-delta child coordinates, mask-follower alignment, pixels and one-step undo/redo |
 | Arrow-key nudge on selected Auto Layout groups | `nudgeSelection` moved only leaf children so Auto Layout immediately snapped them back to the unmoved group origin | Move `[selectedGroup]` when a group unit is selected; assert group + child coordinates and one-step undo/redo |
 | Layer row selection and group duplication | Clicking a Boolean row called `selectGroup` (no-op), `unitSelectionIds` omitted nested Frames inside a Group, and Layer-panel folder duplication cleared `selectedGroupId` | Distinguish ordinary folders (`isFolderSelectionRow`) from Frames and Boolean layers, share `groupArtworkIds`, and select ordinary folders via `selectGroup` before duplicating |
+| Boolean combine, destructive boolean, text-on-path, resized pen duplication & empty group deletion | `combineNodes` and `destructiveBoolean` dropped `parentId` to root and left cross-container/dangling `clipTo` or emptied folders; `typeOnSelectedPath` omitted `parentId` and called non-existent `selection.setIds`; `duplicateSelected` and `expandStrokeToPathNode` lost resized Pen scale; `deleteSelected`/`cutSelected` ignored empty selected groups | Deduplicate via `groupingRoots`, resolve `sharedGroupParent`, release invalid `clipTo`, prune empty groups, inherit `parentId` + call `selectNodes`, scale `points`/handles by `width / baseWidth`, and include `selectedUnitIds()` on delete/cut |
 
 `container-command-boundaries.e2e.mjs` uses controlled seeded documents and
 initial selections, then actual keyboard, alignment, and layer-panel actions.
 It does not claim that seeded selections were produced by physical modifier
-clicks. Its seven scenes check state, hierarchy, pixels and complete undo/redo.
+clicks. Its eight scenes check state, hierarchy, pixels and complete undo/redo.
 The earlier continuous creation suite separately verifies mouse multiselection
 and group dragging.
 

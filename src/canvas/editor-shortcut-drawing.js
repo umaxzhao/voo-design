@@ -174,6 +174,7 @@ export function handleDrawingShortcut(event, context) {
       });
     } else if (
       engine.getSelected?.() ||
+      engine.getSelectedGroup?.() ||
       (engine.getSelectedIds?.()?.length ?? 0) > 0
     ) {
       engine.deleteSelected();
