@@ -1,8 +1,8 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
-import { EDITOR_MODULES } from "./editor-module-catalog.mjs";
+import { ADDITIONAL_BROWSER_CHECKS, EDITOR_MODULES } from "./editor-module-catalog.mjs";
 import { validateModuleCatalog, modulesForChanges, createModulePlan, summarizeModuleEvidence } from "./editor-check-plans.mjs";
 import { runCommandPool } from "./release-command-pool.mjs";
 
@@ -22,7 +22,10 @@ if (values["--module"] && flags.has("--changed")) throw new Error("Choose --modu
 if (flags.has("--check") && (flags.has("--run") || flags.has("--changed") || values["--module"] || values["--evidence"])) throw new Error("--check only validates registration");
 if (values["--base"] && !flags.has("--changed")) throw new Error("--base requires --changed");
 if (values["--evidence"] && (flags.has("--run") || flags.has("--changed") || values["--module"])) throw new Error("Evidence inspection does not execute a plan");
-const validation = validateModuleCatalog(EDITOR_MODULES, path => existsSync(resolve(root, path)));
+const discoveredSuites = readdirSync(resolve(root, "tests/e2e")).filter(path => path.endsWith(".e2e.mjs"))
+  .map(path => path.slice(0, -".e2e.mjs".length));
+const validation = validateModuleCatalog(EDITOR_MODULES, path => existsSync(resolve(root, path)),
+  { discoveredSuites, additionalChecks: ADDITIONAL_BROWSER_CHECKS });
 const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" });
 let result;
 if (values["--evidence"]) {
@@ -51,7 +54,7 @@ if (values["--evidence"]) {
   }
 } else {
   if (flags.has("--run")) throw new Error("--run requires --module or --changed");
-  result = { ...validation, modules: EDITOR_MODULES.map(({ id, title, features, suites, remaining }) => ({
+  result = { ...validation, additional: ADDITIONAL_BROWSER_CHECKS, modules: EDITOR_MODULES.map(({ id, title, features, suites, remaining }) => ({
     id, title, features, suites, functionalCoverage: "partial", remaining,
   })) };
 }

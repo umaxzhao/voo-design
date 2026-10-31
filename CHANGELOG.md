@@ -2,6 +2,10 @@
 
 ## 1.0.0
 
+- Account for every existing browser suite: retain 76 core release checks and explicitly list 21 standalone/unreviewed checks with reasons. Reject newly unclassified suites and keep separate checks out of core pass totals.
+
+- Restore temporary-directory environment aliases correctly in bridge disposal tests, including platforms where TMPDIR is initially absent; retain the required Linux CI test gate.
+
 - Establish a shared module/capability inventory and conservative affected-check planning. Group release evidence by module while keeping functional coverage and platform gaps separate from test execution; document the maintained acceptance/refactoring workflow.
 
 - Prevent duplicate nested-mask layer rows and stale React children after document replacement; keep eyedropper sampling, raster exports, SVG raster fallback and previews independent of animated Agent chrome.

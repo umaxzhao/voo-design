@@ -30,6 +30,15 @@ button or parameter. All groups remain **partial** until specific acceptance
 rows cover their declared entry points and contexts. Registration is not
 execution, and execution is not exhaustive functional coverage.
 
+The existing core release contains 76 browser suites. Another 21 standalone
+suites are explicitly listed in `ADDITIONAL_BROWSER_CHECKS`: 18 need fixture,
+assertion and service-requirement review; `canvas_fps`, `image-electron` and
+`image-network` run separately for hardware, native-host and network/model
+acceptance. They appear as **not-run** in a core release report. They are not
+counted as passing, removed or claimed obsolete. A new top-level `.e2e.mjs`
+file without release registration or an explicit standalone classification
+fails `check:modules`, preventing silently orphaned tests.
+
 ## Practical commands
 
 ```bash
@@ -121,6 +130,9 @@ pointer test. Generated fixtures must not touch the user's current project.
   artwork, exports and sampling. Changes require stage/export parity checks.
 - Pure geometry, constraints and format transforms stay independent of React,
   storage and network. Host/storage/model adapters own those side effects.
+- Test environment changes use reversible stubs (`vi.stubEnv`/`vi.unstubAllEnvs`)
+  and OS temporary-directory APIs. Restore absent variables by deleting them,
+  never by assigning `undefined`; do not assume macOS environment defaults.
 - New files stay within 400 lines. Do not grow an existing oversized module;
   extract one coherent responsibility with behavior regression per change.
 - Removing dead code requires checking static/dynamic imports, public exports,

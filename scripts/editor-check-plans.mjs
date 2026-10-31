@@ -1,9 +1,10 @@
-import { ACCEPTANCE_AXES, EDITOR_MODULES } from "./editor-module-catalog.mjs";
+import { ACCEPTANCE_AXES, ADDITIONAL_BROWSER_CHECKS, EDITOR_MODULES } from "./editor-module-catalog.mjs";
 
 const identifier = /^[a-z][a-z0-9-]*$/;
 const suitePath = suite => `tests/e2e/${suite}.e2e.mjs`;
 
-export function validateModuleCatalog(modules = EDITOR_MODULES, suiteExists = () => true) {
+export function validateModuleCatalog(modules = EDITOR_MODULES, suiteExists = () => true,
+  { discoveredSuites = [], additionalChecks = [] } = {}) {
   const ids = new Set(), suites = new Set(), features = new Set();
   for (const module of modules) {
     if (!identifier.test(module.id) || ids.has(module.id)) throw new Error(`Invalid/duplicate module: ${module.id}`);
@@ -27,7 +28,18 @@ export function validateModuleCatalog(modules = EDITOR_MODULES, suiteExists = ()
   for (const module of modules) for (const related of module.related) {
     if (!ids.has(related) || related === module.id) throw new Error(`Invalid related module: ${module.id} -> ${related}`);
   }
-  return { modules: ids.size, features: features.size, browserSuites: suites.size };
+  const additional = new Set();
+  for (const check of additionalChecks) {
+    if (!/^[a-z][a-z0-9_-]*$/.test(check.suite) || !ids.has(check.owner) || !check.reason?.trim() ||
+      !["unreviewed", "hardware", "native", "network"].includes(check.kind)) throw new Error(`Invalid standalone check: ${check.suite}`);
+    if (suites.has(check.suite) || additional.has(check.suite)) throw new Error(`Duplicate standalone suite: ${check.suite}`);
+    if (!suiteExists(suitePath(check.suite))) throw new Error(`Missing standalone browser suite: ${check.suite}`);
+    additional.add(check.suite);
+  }
+  for (const suite of discoveredSuites) {
+    if (!suites.has(suite) && !additional.has(suite)) throw new Error(`Unclassified browser suite: ${suite}`);
+  }
+  return { modules: ids.size, features: features.size, browserSuites: suites.size, additionalChecks: additional.size };
 }
 
 function matches(path, pattern) {
@@ -61,6 +73,8 @@ export function createModulePlan(ids, modules = EDITOR_MODULES) {
   return { requested: ids, modules: planned.map(module => module.id),
     suites: [...new Set(planned.flatMap(module => module.suites))],
     acceptanceAxes: ACCEPTANCE_AXES,
+    additionalChecks: ADDITIONAL_BROWSER_CHECKS.filter(check => selected.has(check.owner))
+      .map(check => ({ ...check, execution: "not-run" })),
     coverage: "partial", remaining: planned.flatMap(module => module.remaining) };
 }
 
@@ -91,5 +105,7 @@ export function summarizeModuleEvidence(report, revision, modules = EDITOR_MODUL
       return { id: module.id, execution: stale ? "stale" : failed ? "failed" : passed === results.length ? "passed" : "not-run",
         passed, failed, missing: results.filter(result => !result).length,
         functionalCoverage: "partial", features: module.features, remaining: module.remaining };
-    }) };
+    }),
+    additionalChecks: ADDITIONAL_BROWSER_CHECKS.map(check => ({ ...check, execution: "not-run" })),
+  };
 }

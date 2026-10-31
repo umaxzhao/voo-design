@@ -225,3 +225,23 @@ export const EDITOR_MODULES = [
 export const ACCEPTANCE_AXES = ["entry-points", "document-state", "visible-result", "undo-redo", "persistence", "failure-cancel", "platform-performance"];
 export const RELEASE_BROWSER_SUITES = ["editor-fixture-startup", ...EDITOR_MODULES
   .flatMap(module => module.suites).filter(suite => suite !== "editor-fixture-startup")];
+
+// Standalone checks are visible debt, not implicit passes or silent omissions.
+const unreviewedSuites = {
+  platform: ["agent-selection-context", "agent-suggestions", "agent_cancel_polish", "agent_pencil_tools",
+    "agent_tools", "claude_agent", "codex_agent", "mcp_cli", "qa3_electron"],
+  workspace: ["critical_flows", "qa_flows"],
+  inspector: ["command_palette", "design_tokens"],
+  documents: ["multi_document_tabs", "qa3_roundtrip", "roundtrip"],
+  compositing: ["ed04_pixel_consistency"],
+  vectors: ["html2nodes"],
+};
+export const ADDITIONAL_BROWSER_CHECKS = [
+  ...Object.entries(unreviewedSuites).flatMap(([owner, suites]) => suites.map(suite => ({
+    suite, owner, kind: "unreviewed",
+    reason: "Existing standalone suite: review its fixtures, assertions and service requirements before gate registration.",
+  }))),
+  { suite: "canvas_fps", owner: "canvas", kind: "hardware", reason: "Hardware/scene-specific FPS gate; preserve environment and scene sizes." },
+  { suite: "image-electron", owner: "platform", kind: "native", reason: "Separate isolated Electron and native filesystem acceptance." },
+  { suite: "image-network", owner: "images", kind: "network", reason: "Separate real model downloads, inference and network acceptance." },
+];

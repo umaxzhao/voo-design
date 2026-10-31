@@ -3,7 +3,7 @@ import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runCommandPool } from "./release-command-pool.mjs";
-import { RELEASE_BROWSER_SUITES } from "./editor-module-catalog.mjs";
+import { ADDITIONAL_BROWSER_CHECKS, RELEASE_BROWSER_SUITES } from "./editor-module-catalog.mjs";
 import { summarizeModuleEvidence } from "./editor-check-plans.mjs";
 
 const BROWSER_CONCURRENCY = 3;
@@ -29,6 +29,7 @@ const writeReport = (complete = false) => writeFileSync(reportPath, JSON.stringi
   revision, verifiedAt: new Date().toISOString(), expectedSteps: commands.length,
   browserConcurrency: BROWSER_CONCURRENCY, complete,
   functionalCoverage: "partial",
+  additionalChecks: ADDITIONAL_BROWSER_CHECKS.map(check => ({ ...check, execution: "not-run" })),
   moduleResults: summarizeModuleEvidence({ revision, complete, results }, revision).modules,
   results: [...results].sort((left, right) => left.step - right.step),
 }, null, 2));

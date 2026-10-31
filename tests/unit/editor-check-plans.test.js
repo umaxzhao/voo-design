@@ -1,7 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { execFileSync, spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { EDITOR_MODULES, RELEASE_BROWSER_SUITES } from "../../scripts/editor-module-catalog.mjs";
+import { ADDITIONAL_BROWSER_CHECKS, EDITOR_MODULES, RELEASE_BROWSER_SUITES } from "../../scripts/editor-module-catalog.mjs";
 import { validateModuleCatalog, modulesForChanges, createModulePlan, summarizeModuleEvidence } from "../../scripts/editor-check-plans.mjs";
 
 const module = (id, suites, related = []) => ({ id, title: id, paths: [`src/${id}/*`], related,
@@ -11,7 +11,9 @@ const result = (suite, exitCode = 0) => ({ command: [process.execPath, `tests/e2
 
 describe("module ownership and conservative check planning", () => {
   it("retains all existing release suites exactly once and keeps startup first", () => {
-    expect(validateModuleCatalog(EDITOR_MODULES, path => existsSync(path))).toEqual({ modules: 12, features: 48, browserSuites: 76 });
+    const discoveredSuites = readdirSync("tests/e2e").filter(path => path.endsWith(".e2e.mjs")).map(path => path.slice(0, -8));
+    expect(validateModuleCatalog(EDITOR_MODULES, path => existsSync(path), { discoveredSuites,
+      additionalChecks: ADDITIONAL_BROWSER_CHECKS })).toEqual({ modules: 12, features: 48, browserSuites: 76, additionalChecks: 21 });
     expect(RELEASE_BROWSER_SUITES[0]).toBe("editor-fixture-startup");
     expect(new Set(RELEASE_BROWSER_SUITES).size).toBe(76);
     const release = readFileSync("scripts/verify-editor-release.mjs", "utf8");
@@ -29,6 +31,13 @@ describe("module ownership and conservative check planning", () => {
     expect(createModulePlan(["layers"], catalog)).toMatchObject({ modules: ["layers", "masks"],
       suites: ["nested-placement", "nested-mask-lifecycle"], coverage: "partial" });
     expect(() => createModulePlan(["layerz"], catalog)).toThrow("Unknown module");
+  });
+  it("rejects a new browser test that was never registered or explicitly scoped out", () => {
+    expect(() => validateModuleCatalog(catalog, () => true, { discoveredSuites: ["forgotten-test"] })).toThrow("Unclassified browser suite");
+    const additionalChecks = [{ suite: "forgotten-test", owner: "layers", kind: "unreviewed", reason: "Needs actual fixture review" }];
+    expect(validateModuleCatalog(catalog, () => true, { discoveredSuites: ["forgotten-test"], additionalChecks }).additionalChecks).toBe(1);
+    expect(() => validateModuleCatalog(catalog, () => true, { additionalChecks: [{ ...additionalChecks[0], reason: "" }] })).toThrow("Invalid standalone");
+    expect(() => validateModuleCatalog(catalog, () => true, { additionalChecks: [{ ...additionalChecks[0], suite: "nested-placement" }] })).toThrow("Duplicate standalone");
   });
   it("broadens unowned executable paths to the complete gate instead of skipping them", () => {
     expect(modulesForChanges(["src/layers/drag.js"], catalog)).toMatchObject({ ids: ["layers"], unmapped: [] });
