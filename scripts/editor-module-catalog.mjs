@@ -190,10 +190,10 @@ export const EDITOR_MODULES = [
       "src/shared/i18n*", "src/shared/i18n/*", "src/canvas/*layout.css", "src/canvas/*panels.css",
     ],
     related: ["selection","layers","text","images","layout"],
-    features: [
+    features: ["inspector.impeccable-polish",
       "inspector.field-commit", "inspector.menu-focus", "inspector.responsive", "inspector.locale-lifecycle",
     ],
-    suites: [
+    suites: ["impeccable-polish",
       "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction",
       "settings-i18n", "locale-lifecycle",
     ],

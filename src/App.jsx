@@ -170,7 +170,7 @@ export default function App() {
                 }>
                   <ImageEditor
                     key={activeDocumentId}
-                    visible={true}
+                    visible={!welcomeOpen}
                     agentVisible={agentOpen && !welcomeOpen}
                   />
                 </Suspense>

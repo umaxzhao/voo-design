@@ -147,3 +147,47 @@ B 的检测注入成功，结束时移除overlay、恢复标题，并使用
 项目模块登记有效：12模块、55能力、83核心浏览器套件、21独立检查。
 设计lint在同修订的隔离副本通过（1374文件）；这不是完整功能验收。
 本轮文档与证据更新，不重新部署界面或沿用历史发布测试作为本轮通过记录。
+
+## Remediation — 2026-10-31
+
+After the user's continuation, this pass implements the five priority findings.
+The assessment and 25/40 score above remain the historical baseline; this pass
+is not a new independent whole-product score.
+
+- Hidden editors receive `visible=false`, `aria-hidden` and `inert`; the mounted
+  engine/document stays intact when navigating through welcome.
+- Compact panels now follow measured canvas width, including the space left by
+  a docked Agent. Existing bottom panels and expand/collapse controls are reused;
+  no extra panel switcher was added. Toolbar bounds use the canvas width.
+  Page navigation occupies a separate compact band, leaving collapsed/expanded
+  panel actions and zoom controls reachable even with long page names.
+- Welcome's existing compact project menu also serves narrow mouse windows.
+  Search remains on demand through that menu; the sidebar no longer consumes
+  a third of the narrow viewport.
+- Empty Slot content is opt-in through the existing Add menu; configured slots
+  and main components retain their section. Switching selection resets reveal.
+- Guide prose uses the existing 15px role, 24px leading and a 70ch maximum.
+  Provider explanations use 12px/20px and status labels 11px with stronger
+  contrast. Dense editor values and font families remain unchanged.
+
+`tests/e2e/impeccable-polish.e2e.mjs` first failed on the formerly focusable
+covered editor. It now checks real Tab traversal, document preservation,
+900px Agent/panel layout, toolbar bounds, Slot opt-in, narrow-mouse search
+through the existing menu and computed guide typography. Existing responsive
+checks additionally cover numeric edits/undo, live resize, touch panel gestures
+and Agent open/close. The prior static expectations now read the extracted
+compact stylesheet as well as its importing mobile stylesheet.
+
+Changed-markup Impeccable scan: `/tmp/voo-impeccable-polish-detect.json` (zero
+static findings). Design lint passed on the isolated changed source. Initial
+broad unit execution from a non-Git archive without dist/listener permissions
+was invalid release evidence; its log is retained separately. Complete release
+results must come from the clean committed checkout and report below.
+
+Final revision, build, unit and browser steps are recorded in
+`/tmp/voo-impeccable-polish-release.json`; only `complete: true` for the deployed
+revision establishes release execution. Before/after captures are in
+`impeccable-evidence/`. Scope still excludes native_studio, signed Electron
+installers, physical devices, real accounts/paid services and every external
+browser embedding policy. The account form and external-site recovery proposal
+were not part of the recommended five-priority implementation scope.

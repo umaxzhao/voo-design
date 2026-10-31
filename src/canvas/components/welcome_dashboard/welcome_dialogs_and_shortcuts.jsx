@@ -45,14 +45,14 @@ export function WelcomeShortcutsTab({ t }) {
         </div>
       </div>
 
-      <div className="rounded-3xl bg-neutral-900/20 p-6 space-y-2 text-xs text-neutral-400">
-        <h3 className="font-semibold text-neutral-200">{t("welcome.folders.guide.title")}</h3>
-        <p>{t("welcome.folders.guide.body")}</p>
+      <div className="rounded-3xl bg-neutral-900/20 p-6 space-y-3 text-[15px] leading-6 text-neutral-300">
+        <h3 className="text-[15px] leading-6 font-semibold text-neutral-100">{t("welcome.folders.guide.title")}</h3>
+        <p className="max-w-[70ch] text-pretty">{t("welcome.folders.guide.body")}</p>
       </div>
 
-      <div className="rounded-3xl bg-neutral-900/20 p-6 space-y-2 text-xs text-neutral-400">
-        <h3 className="font-semibold text-neutral-200">{t("welcome.voo.title")}</h3>
-        <p>
+      <div className="rounded-3xl bg-neutral-900/20 p-6 space-y-3 text-[15px] leading-6 text-neutral-300">
+        <h3 className="text-[15px] leading-6 font-semibold text-neutral-100">{t("welcome.voo.title")}</h3>
+        <p className="max-w-[70ch] text-pretty">
           {t("welcome.voo.body.before")}{" "}
           <code className="text-mint font-mono">.voo</code>{" "}
           {t("welcome.voo.body.after")}

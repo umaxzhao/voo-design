@@ -22,7 +22,7 @@ describe("mobile editor layout", () => {
   });
 
   it("uses the desktop visibility signal to expand layers when properties are absent", async () => {
-    const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
+    const css = (readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8") + readFileSync("src/canvas/components/editor_compact_layout.css", "utf8")).replace(/\s+/g, " ");
     expect(css).toContain("max-width: 768px");
     expect(css).toContain("height: 55%");
     expect(css).toContain("height: calc(81.818% - var(--editor-mobile-panel-gap))");
@@ -58,14 +58,14 @@ describe("mobile editor layout", () => {
   });
 
   it("docks the bottom toolbar above the bottom panels only on narrow screens", () => {
-    const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
+    const css = (readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8") + readFileSync("src/canvas/components/editor_compact_layout.css", "utf8")).replace(/\s+/g, " ");
     expect(css).toContain("--editor-mobile-zoom-bottom: calc(45% + 0.25rem)");
     expect(css).toContain("bottom: var(--editor-mobile-zoom-bottom)");
     expect(css).toContain('[data-testid="design-editor"].editor-narrow .viewport-tools');
   });
 
   it("keeps the desktop panel rules outside narrow media styling", () => {
-    const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
+    const css = (readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8") + readFileSync("src/canvas/components/editor_compact_layout.css", "utf8")).replace(/\s+/g, " ");
     const desktopRules = css.slice(0, css.indexOf("@media (max-width: 768px)"));
     expect(desktopRules).not.toContain('[data-testid="editor-layers-panel"]');
     expect(desktopRules).not.toContain('[data-testid="editor-properties-panel"]');
@@ -73,7 +73,7 @@ describe("mobile editor layout", () => {
   });
 
   it("keeps desktop panels floating and places the narrow agent button above them", async () => {
-    const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
+    const css = (readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8") + readFileSync("src/canvas/components/editor_compact_layout.css", "utf8")).replace(/\s+/g, " ");
     expect(css).toMatch(/\.voo-ai-fab(?:\.absolute)?\s*\{[^}]*top: calc\(55% - 3rem\)/);
     const app = await import("../../src/App.jsx?raw");
     expect(app.default).toContain('className="voo-ai-fab absolute bottom-4 right-4');

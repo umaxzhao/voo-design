@@ -33,7 +33,7 @@ export function getProviderStatusInfo(t, { configured, verification }) {
     return {
       statusText: t("provider.status.idle"),
       dotClass: "bg-neutral-600",
-      statusClass: "text-neutral-500",
+      statusClass: "text-neutral-400",
       isVerified: false,
       isError: false,
     };

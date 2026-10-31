@@ -127,7 +127,11 @@ export default function PropertiesPanelSections({
     onDetachVariable: () => colorVariableActions?.variableActions?.bind?.(null),
     onDetachStyle: () => styleActions?.detach?.("paint"),
   };
+  const slotEligible = !isWarpTool && (object.isFrame || object.kind === "frame" || object.kind === "group");
+  const hasSlots = Array.isArray(object.slot) ? object.slot.length > 0 : Boolean(object.slot);
+  const showSlot = slotEligible && (hasSlots || isMainComponent || revealed("slot"));
   const addItems = [
+    slotEligible && !showSlot && { key: "slot", label: t("editor.props.componentSlot"), onSelect: () => reveal("slot") },
     eligible.variables && !show("variables") && { key: "variables", label: t("editor.variables.title"), onSelect: () => reveal("variables") },
     eligible.styles && !show("styles") && { key: "styles", label: t("styles.title"), onSelect: () => reveal("styles") },
     showRepeatArray && !show("modifiers") && { key: "modifiers", label: t("editor.props.modifiers"), onSelect: () => reveal("modifiers") },
@@ -200,7 +204,7 @@ export default function PropertiesPanelSections({
       {!isWarpTool && object.isFrame ? (
         <VariantsSection engine={engine} isMainComponent={isMainComponent} />
       ) : null}
-      {!isWarpTool && (object.isFrame || object.kind === "frame" || object.kind === "group") ? (
+      {showSlot ? (
         <FrameSlotSection object={object} editAndCommit={editAndCommit} />
       ) : null}
       {!isWarpTool ? <InstanceSection object={object} engine={engine} /> : null}
