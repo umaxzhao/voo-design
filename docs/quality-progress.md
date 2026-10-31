@@ -1,9 +1,9 @@
 # 项目检查总进度
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
-最近一次完整核心验证提交：[56ef64f](https://github.com/umaxzhao/voo-design/commit/56ef64fb36f9c327bd5ea58830aca42b027a1b64)；91/91 项通过，当前线上为该构建。
+最近一次完整核心验证提交：[c67a950](https://github.com/umaxzhao/voo-design/commit/c67a950c4f0456fcf627f46306fa19c48ebe3d8e)；91/91 项通过，当前线上为该构建。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
-## 本轮：复制 Frame 的整体拖动（验证中）
-- `selection.transforms` / `selection.frame-title-selection` / `layers.duplicate-delete-lock`：已复现 FORM 复制件内容区误拖子图层、标题不启动拖动。统一复用原移动事务，保留单击与 Ctrl/Meta 选子图层；39 项定向单测、复制/粘贴三入口拖动、原稿不变、一次撤销/重做、取消及锁定和原有 Frame 浏览器回归通过，完整门禁与正式验收待完成。[范围与证据](audits/design-editor-interaction-audit.md#duplicated-frame-dragging--2026-11-01)。
+## 本轮：复制 Frame 的整体拖动（已完成声明范围）
+- `selection.transforms` / `selection.frame-title-selection` / `layers.duplicate-delete-lock`：已复现 FORM 复制件内容区误拖子图层、标题不启动拖动。统一复用原移动事务，保留单击与 Ctrl/Meta 选子图层；39 项定向单测、复制/粘贴三入口拖动、原稿不变、一次撤销/重做、取消及锁定和原有 Frame 浏览器回归通过，固定 `c67a950` **91/91 发布步骤、87 组核心浏览器、4713 单测通过/4 跳过**，GitHub CI 通过；旧导航场景增加先单击选子层的前提和无历史断言，原有位置/像素/撤销断言保留，首次失败另存。本地主应用 16 个实际交互场景通过，钢笔修饰键草稿保留。[PR #78](https://github.com/umaxzhao/voo-design/pull/78) 合入 `f854d27` 且源码树一致。已部署 la2，正式入口及 82 个加载资源 SHA-256 一致，真实复制后内容/标题拖动 13 个节点、原稿不变、像素及一次撤销/重做通过，零页面异常。证据 `/private/tmp/voo-license-regression/duplicate-frame-{release,release-initial,ci,primary-proof,main-tree-proof,production-proof}.json`。功能覆盖仍部分，不认证实体触屏/触控笔及签名安装包。[范围与证据](audits/design-editor-interaction-audit.md#duplicated-frame-dragging--2026-11-01)。
 ## 本轮：正式分享链接（已完成声明范围）
 - `platform.native-collaboration`：分享链接统一 `https://voo.run/editor/?r=...`，本地/桌面/扩展/预览均不泄漏私有域名；默认信令共用正式服务，保留显式本地测试覆盖。72 项定向单测及真实复制/只读切换/密钥保留浏览器回归通过，固定 `56ef64f` **91/91 发布步骤、87 组核心浏览器、4713 单测通过/4 跳过**，GitHub CI 通过。[PR #77](https://github.com/umaxzhao/voo-design/pull/77) 合入 `9f37259` 且源码树一致，本地 18 组实际函数输出及默认信令通过，查询解析草稿保留。已部署 la2；正式入口及 85 个加载资源 SHA-256 一致，真实复制/只读打开（HTTP 200）/访客转发保持房间与密钥、文档不变和零页面异常通过。正式服务接受 localhost Origin 的 WebSocket 握手，未发送 JOIN；浏览器信令使用隔离 socket，不认证真实多人 P2P/TURN。证据 `/private/tmp/voo-license-regression/canonical-share-{release,ci,primary-proof,main-tree-proof,production-proof,signaling-handshake}.json`。[范围与证据](audits/design-editor-interaction-audit.md#canonical-share-links--2026-11-01)。
 
