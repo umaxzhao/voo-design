@@ -7,6 +7,12 @@
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
 
+## 本轮：Frame 标题点击选中（验证中）
+
+- `selection.frame-title-selection`：标题原本是普通 div，外层画板在捕获阶段误接管指针。已改为原生按钮，使用现有交互控件排除规则和 `engine.selectExactly`，没有新增独立选择逻辑。
+- 新增真实浏览器回归：标题文字/图标在 0.5/1/2 倍缩放下选择正确 Frame；从子图层或多选切换正确；文档、画板布局和相机不变；键盘 Enter 可操作。原失败记录与修复后结果：`/private/tmp/voo-license-regression/frame-label-before.log`、`frame-label-after.log`。
+- 注册更新为 65 个能力分组、86 组核心浏览器套件。嵌套 Frame 继续沿用现有外层标签显示策略；未扩展拖拽、隐藏或锁定策略。18 项相关单测、四组真实浏览器（标题、子层命中、负坐标和导航）与设计/模块检查通过；证据 `frame-label-unit.log`、`frame-label-related.json` 同目录。完整发布与线上验证待固定提交完成后补录，不继承历史通过。详见 [标题命中验收](audits/nested-objects-audit.md#frame-title-pointer-selection)。
+
 ## 本轮：图层导出按需显示（已完成声明范围）
 
 - `inspector.export-opt-in`：没有导出配置时，整个导出分组默认隐藏。用户从底部“添加 → 导出”启用后才显示标题、格式、倍率、透明背景和导出按钮；移除最后一条配置后整个分组消失，添加菜单恢复入口。没有新增勾选开关，保留用户已明确保存的配置。

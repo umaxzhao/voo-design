@@ -79,3 +79,30 @@ physical touch/stylus commands need additional acceptance. Dissolving a mask
 base deliberately releases its followers; it does not flatten a replacement
 mask image. Cold persistence of these four command-specific scenes is not
 separately exhausted by this suite; portable nesting has its own release check.
+
+## Frame title pointer selection
+
+Capability: `selection.frame-title-selection`. Scope: visible Frame labels on
+a root canvas; nested Frames retain the existing outer-label visibility rule.
+
+A real mouse click hit the title span, but the artboard's capture-phase body
+handler captured the pointer on `editor-page` and cleared selection before the
+title click could select its Frame. The previous label was a generic div, so
+it was absent from the existing interactive-control exclusion. The label now
+uses a native button, preserves its styling/hit area and invokes the same
+`engine.selectExactly` operation. No additional selection implementation or
+new default control is introduced.
+
+| Acceptance context | Registered evidence |
+| --- | --- |
+| Real pointer routing | `frame-label-selection`: elementFromPoint hits the actual title; ordinary mouse click selects its Frame instead of losing the click to page capture |
+| Zoom and title contents | Text and icon clicks at 0.5x, 1x and 2x select the same Frame |
+| Nested ownership | A child starts selected; the visible outer label selects its parent Frame. Nested labels remain hidden under the existing policy |
+| State integrity | Serialized document, artboard layout and camera are unchanged by selection |
+| Prior selection | Clicking another title replaces an existing multiple selection with the target Frame |
+| Accessibility | Native button focus plus Enter selects the same Frame through the normal click handler |
+| Original failure | `/private/tmp/voo-license-regression/frame-label-before.log`: actual title span hit, `editor-page` pointer capture, empty selection |
+| Verification boundary | Selection-only change; no content mutation/save format to migrate. Header dragging, touch/stylus and hidden/locked Frame policies are not expanded by this repair |
+
+Final clean revision and full release/production evidence are recorded in
+`docs/quality-progress.md`; passing this fixture does not certify all platforms.
