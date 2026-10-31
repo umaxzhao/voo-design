@@ -1,3 +1,9 @@
+> **Historical test-suite description, not current parity acceptance.** The
+> 2026-11-01 integrated run passes 397 registered tests, while the manual and
+> production-API parity audit finds 24 differences, including four P0 blockers.
+> See [the current audit](INTERACTION_PARITY.md). Counts and completion claims
+> below describe historical assertions only.
+
 # TEST_READY: VOO Design Native Studio E2E Test Suite
 
 **Owner**: Native Studio engineering team (Lead + teammates)

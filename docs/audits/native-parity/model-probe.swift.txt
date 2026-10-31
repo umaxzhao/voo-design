@@ -1,0 +1,17 @@
+import Foundation
+import CoreGraphics
+
+let arguments = CommandLine.arguments
+let sourceURL = URL(fileURLWithPath: arguments[1])
+let outputURL = URL(fileURLWithPath: arguments[2])
+let input = try Data(contentsOf: sourceURL)
+let document: VOODocument
+if VOOBinaryContainer.isVooBinary(data: input) {
+    document = try VOOBinaryContainer.decode(data: input).document
+} else {
+    document = try VOOSerializer.shared.deserialize(from: input)
+}
+let output = try VOOSerializer.shared.serialize(document: document)
+try output.write(to: outputURL)
+let result: [String: Any] = ["nodes": document.nodes.count, "canvasWidth": document.canvas.width, "canvasHeight": document.canvas.height, "title": document.title]
+FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: result, options: [.sortedKeys]))

@@ -1,3 +1,15 @@
+## Electron → 原生版重新审查 — 2026-11-01
+
+- **当前结论：未达到 1:1，整体功能验收不通过。** 本轮确认 24 项差异（4 P0、17 P1、3 P2），
+  同文档渲染、未保存文档保护、`.voo` 往返/资源、首页任务、工具接线均有明确失败。
+- 原生基线 `392f45f147e9b33ba5a749d9b69081e2b4cd2b77` 的 397/397 集成测试与生产构建通过；
+  该结果只证明登记断言，不能覆盖现场与诊断发现的失败。
+- [逐项复现、源码位置、两版截图、模块状态与修复顺序](../native_studio/INTERACTION_PARITY.md)。
+  [机器记录、运行来源与证据指纹](audits/native-parity/audit-summary.json)。
+- workspace/documents/canvas/compositing/inspector 等均保留失败或部分状态；真实服务、IME、
+  完整多页/蒙版/布局、VoiceOver、性能和签名安装包继续未验证，不能继承历史通过记录。
+- 本轮为审查及证据归档，未修应用行为；独立工作区保留原工作区未提交改动。无应用部署。
+
 ## Native Electron parity continuation — 2026-11-01
 
 - Module `platform`, capability `platform.native-island-anchor`: repaired outermost-board,
