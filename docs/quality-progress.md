@@ -3,16 +3,20 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
-最近一次完整核心验证提交：[cb4d1c9](https://github.com/umaxzhao/voo-design/commit/cb4d1c9fbfdba8e87282a0af500fa0f1e8120d79)；89/89 项通过，当前线上部署为该固定版本。
+最近一次完整核心验证提交：[da86f56](https://github.com/umaxzhao/voo-design/commit/da86f56a14a4080265fb46b834b5df363056660c)；89/89 项通过，当前线上部署为该固定版本。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
 
-## 本轮：图层导出按需显示（最终门禁待完成）
+## 本轮：图层导出按需显示（已完成声明范围）
 
-- `inspector.export-opt-in`：没有 `exportPresets` 或明确为空时，整个导出分组隐藏；用户从底部“添加 → 导出”启用后，才显示标题、格式、倍率、透明背景和导出按钮。移除最后一条配置后整个分组消失。
-- 已复现默认/移除后自动补回 PNG 的问题（6 个配置断言失败，证据 `/private/tmp/voo-export-opt-in-baseline.log`；整个分组仍强制显示的 2 个失败见 `/private/tmp/voo-export-opt-in-section-baseline.log`），移除默认回填；面板直接读取文档配置，撤销重做和切换图层不再保留过时本地状态。
-- 真实面板覆盖图形、Frame、文字、图片，验证添加/删除、切换图层及一次撤销重做。已有显式导出配置保留，主动添加后 PNG/JPEG/WebP 文件尺寸及签名验证通过。证据 `/private/tmp/voo-export-opt-in-browser.log`、`/private/tmp/voo-export-opt-in-download.log`。
-- 本轮不增加新的勾选开关，沿用底部添加菜单及配置移除入口；不删除用户已明确保存的配置。完整固定提交门禁和线上证据待补录。[验收范围](audits/panel-control-audit.md#opt-in-layer-export)。
+- `inspector.export-opt-in`：没有导出配置时，整个导出分组默认隐藏。用户从底部“添加 → 导出”启用后才显示标题、格式、倍率、透明背景和导出按钮；移除最后一条配置后整个分组消失，添加菜单恢复入口。没有新增勾选开关，保留用户已明确保存的配置。
+- 导出可用性、两个添加入口及文档写入共用 `export-presets.js`；面板直接读取文档，消除未选中时补回 PNG、删除后重选复活、撤销重做显示旧配置的问题。新增/删除各为一个撤销步骤，字段连续输入保留合并行为。
+- 固定代码版本 [`da86f56`](https://github.com/umaxzhao/voo-design/commit/da86f56a14a4080265fb46b834b5df363056660c)：**89/89 发布步骤通过，85 组浏览器检查通过，单测 4574 通过、4 跳过、0 失败**。验证期间源码干净且未修改。证据 `/private/tmp/voo-export-opt-in-release-verified.json`。
+- 实际 Chromium 面板覆盖图形、Frame、文字、图片的默认隐藏；从添加菜单启用、最后一项移除、切换图层、一次撤销重做；主动配置后 PNG 2x 尺寸、JPEG/WebP 文件签名及质量设置通过。该套件另执行既有的双语、深浅主题和 320–1440px 面板布局检查；导出配置的具体操作路径使用英文桌面 Chromium。没有调用生成服务。
+- 已推送并通过 SSH 部署 la2，线上入口及 6 个相关资源与验证构建逐字节一致。隔离正式浏览器复核默认整个分组隐藏、添加后实际下载 160×100 PNG、移除后隐藏及撤销重做，无页面脚本错误。截图 `/private/tmp/voo-export-opt-in-default.png`、`/private/tmp/voo-export-opt-in-removed.png`；证据 `/private/tmp/voo-export-opt-in-deployment-proof.json`、`/private/tmp/voo-export-opt-in-production-result.log`。
+- 本地 App 工作区仅三方合入本任务源文件及回归测试，保留其他草稿；定向单测 18 项和真实本地添加/下载/移除/撤销重做通过（`/private/tmp/voo-export-opt-in-primary-browser.log`），不把独立干净版本的完整门禁冒记成全部私人草稿已通过。备份 `/private/tmp/voo-export-opt-in-primary/`、`/private/tmp/voo-export-opt-in-primary-final/`。
+- 原始缺陷保留 6 个配置失败和 2 个分组显示失败（`/private/tmp/voo-export-opt-in-baseline.log`、`/private/tmp/voo-export-opt-in-section-baseline.log`）。第一次未结束门禁为补齐整个分组隐藏而停止；`6ff7ef2` 的门禁因旧默认显示断言失败，修正后重新完整执行，未把先前部分执行算通过。
+- 未认证原生系统下载界面、实体触屏、原生项目冷启动重开及所有历史文档。上轮首页冷加载 New 事件时序问题和 `.fig` 导入问题仍未修复，不归入本轮通过。[详细范围](audits/panel-control-audit.md#opt-in-layer-export)。
 
 ## 本轮：统一填充面板（已完成声明范围）
 
@@ -122,12 +126,12 @@
 
 | 项目 | 状态 |
 | --- | --- |
-| 工程规范与模块登记 | 已落地：12 个模块、63 个公开能力分组 |
-| 核心发布校验 | cb4d1c9：89/89 步通过，包含 85 组浏览器套件 |
-| 全量单元测试 | 4567 通过、4 跳过、0 失败；跳过项不算通过 |
-| GitHub Ubuntu 基础检查 | [本轮 CI 通过](https://github.com/umaxzhao/voo-design/actions/runs/41201433520)：模块登记、设计检查、构建和全量单测；CI 部署跳过，实际由 SSH 部署 la2 |
-| 线上部署 | cb4d1c9 已部署 la2，入口及填充模块字节一致；正式面板切换、真实像素和撤销重做通过 |
-| 功能验收完整度 | 部分覆盖；63 个公开能力分组未穷尽所有入口、上下文和设备 |
+| 工程规范与模块登记 | 已落地：12 个模块、64 个公开能力分组 |
+| 核心发布校验 | da86f56：89/89 步通过，包含 85 组浏览器套件 |
+| 全量单元测试 | 4574 通过、4 跳过、0 失败；跳过项不算通过 |
+| GitHub Ubuntu 基础检查 | [本轮 CI](https://github.com/umaxzhao/voo-design/actions/runs/41203688825)：截至本次记录为 in_progress；本机 89/89 门禁与线上实测已通过，不继承历史 CI |
+| 线上部署 | da86f56 已部署 la2，入口及导出相关资源字节一致；正式按需显示、实际下载和撤销重做通过 |
+| 功能验收完整度 | 部分覆盖；64 个公开能力分组未穷尽所有入口、上下文和设备 |
 | 核心门禁外的独立检查 | 21 组本轮未运行：18 组待复核，3 组需单独运行 |
 
 ## 连续创作首轮（f9102cd，已完成声明范围）

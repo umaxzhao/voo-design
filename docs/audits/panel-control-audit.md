@@ -328,11 +328,20 @@ created a default preset. Retained log: `/private/tmp/voo-export-opt-in-baseline
 
 | Context | Assertions | Status |
 | --- | --- | --- |
-| Actual inspector | Rectangle, Frame, text and image start without the entire export section; bottom Add-menu enable, remove and reselection follow each layer | Targeted Chromium pass; final gate pending |
-| History | Undo/redo adding and removing the last preset immediately restores/hides the real controls | Targeted Chromium pass; final gate pending |
-| Active export | Explicit add retains PNG 2x dimensions and JPEG/WebP file signatures/quality | Targeted Chromium pass; final gate pending |
-| Normalization | Missing, empty and invalid presets remain empty; existing settings retain formats/scales/suffixes | Unit pass; final gate pending |
+| Actual inspector | Rectangle, Frame, text and image start without the entire export section; bottom Add-menu enable, remove and reselection follow each layer | Passed on `da86f56` |
+| History | Undo/redo adding and removing the last preset immediately restores/hides the real controls | Passed on `da86f56` |
+| Active export | Explicit add retains PNG 2x dimensions and JPEG/WebP file signatures/quality | Passed on `da86f56` |
+| Normalization | Missing, empty and invalid presets remain empty; existing settings retain formats/scales/suffixes | Passed on `da86f56` |
 | Remaining | Native OS download UI, physical touch devices and cold native-project reopen | Not certified by this change |
 
 Registered coverage: `export_presets.test.js`, `right_panel_phase1.test.jsx`,
 `ui-inspector-interaction.e2e.mjs` and `inspector-controls.e2e.mjs`.
+
+Final execution: `da86f56a14a4080265fb46b834b5df363056660c` completed all 89 release steps, including 85
+browser suites, 4574 unit passes and 4 skips on clean unchanged source.
+Evidence: `/private/tmp/voo-export-opt-in-release-verified.json`. Public resources match the build; the real production
+inspector hides the entire unconfigured section, enables it through Add, downloads
+a 160x100 PNG and hides it after removal; undo/redo pass without page errors.
+Production evidence: `/private/tmp/voo-export-opt-in-production-result.log` and
+`/private/tmp/voo-export-opt-in-deployment-proof.json`. Earlier incomplete/failed
+attempts are retained separately and are not attributed to the final revision.
