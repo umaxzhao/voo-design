@@ -40,6 +40,8 @@ export function VooBrandLogo({ className = "size-5 text-black" }) {
 export default function AppTitleBar() {
   const isMac = window.electronAPI?.platform === "darwin";
   const welcomeOpen = useDesignStore((state) => state.welcomeOpen);
+  const welcomeActionsReady = useDesignStore((state) => state.welcomeActionsReady);
+  const welcomeActionsPending = welcomeOpen && !welcomeActionsReady;
   const setWelcomeOpen = useDesignStore((state) => state.setWelcomeOpen);
   const browserDrawerOpen = useDesignStore((state) => state.browserDrawerOpen);
   const setBrowserDrawerOpen = useDesignStore((state) => state.setBrowserDrawerOpen);
@@ -160,8 +162,9 @@ export default function AppTitleBar() {
             </>
           )}
           <button
-            className="app-title-desktop-action inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap leading-none cursor-pointer rounded-lg px-2.5 py-1 text-neutral-400 transition-colors hover:bg-white/10 hover:text-neutral-200 font-medium"
+            className="app-title-desktop-action disabled:cursor-wait disabled:opacity-40 inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap leading-none cursor-pointer rounded-lg px-2.5 py-1 text-neutral-400 transition-colors hover:bg-white/10 hover:text-neutral-200 font-medium"
             type="button"
+            disabled={welcomeActionsPending}
             onClick={handleImport}
             title={t("titlebar.openTitle")}
             aria-label={t("titlebar.openTitle")}
@@ -170,8 +173,9 @@ export default function AppTitleBar() {
           </button>
           {/* Documents autosave; the primary action exports a portable snapshot. */}
           <button
-            className="app-title-desktop-action inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap leading-none cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
+            className="app-title-desktop-action disabled:cursor-wait disabled:opacity-40 inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap leading-none cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
             type="button"
+            disabled={welcomeActionsPending}
             onClick={() =>
               window.dispatchEvent(
                 new CustomEvent(
@@ -238,6 +242,7 @@ export default function AppTitleBar() {
                 <button
                   type="button"
                   role="menuitem"
+                  disabled={welcomeActionsPending}
                   onClick={() => {
                     setMoreOpen(false);
                     handleImport();
@@ -250,6 +255,7 @@ export default function AppTitleBar() {
                 <button
                   type="button"
                   role="menuitem"
+                  disabled={welcomeActionsPending}
                   onClick={() => {
                     setMoreOpen(false);
                     window.dispatchEvent(

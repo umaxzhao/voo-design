@@ -1,3 +1,4 @@
+import { useWelcomeActionReadiness } from "./welcome_dashboard/use_welcome_action_readiness.js";
 import { HTML_IMPORT_ACCEPT, SCREENSHOT_ACCEPT, importWelcomeHtml, recreateWelcomeScreenshot } from "./welcome_home_actions.js";
 import React, { useEffect, useState, useRef } from "react";
 import { Search, Trash2, X } from "lucide-react";
@@ -294,6 +295,8 @@ export default function WelcomeDashboard() {
     handleDuplicate,
     handleMoveToTrash,
   };
+
+  useWelcomeActionReadiness();
 
   return (
     <div

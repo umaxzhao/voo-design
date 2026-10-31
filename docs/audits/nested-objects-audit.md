@@ -211,3 +211,23 @@ is started by these checks. Exact clean revision, release and production
 receipts are recorded in `docs/quality-progress.md`. Physical touch/stylus,
 signed native installs, all popover combinations and every service state remain
 outside this acceptance; a source audit alone is not a runtime pass.
+
+
+### Welcome action readiness found during overlay acceptance
+
+Capability: `workspace.file-actions-ready`. The cold-reopen import button was
+clickable before the lazy welcome page registered its file input listeners.
+The unmodified `24085cc` baseline reproduces the lost filechooser event too.
+The welcome page now marks its UI-only readiness after its existing action
+effects mount, and clears readiness on unmount. Desktop and narrow title-bar
+Import/New wait for that signal; editing/export actions remain available.
+This flag is not document content or a new user setting.
+
+`titlebar-file-actions` holds the welcome module request, verifies both buttons
+are disabled before registration, then releases it and retains the actual file
+picker, cancellation, portable snapshot import/export and New assertions.
+The original `continuous-creation` archive, geometry, bitmap pixels and undo
+checks are retained. Raw before/after and baseline logs are under
+`/private/tmp/voo-license-regression/global-overlay-*`. Earlier 15-second import
+readiness and cold filechooser failures remain separate evidence, not passed
+results. This repair does not certify every slow-device/native startup path.

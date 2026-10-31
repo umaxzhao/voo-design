@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
+let releaseWelcome;
+const welcomeGate = new Promise(resolve => { releaseWelcome = resolve; });
+
 await withEditorBrowser(
   async ({ page, errors }) => {
     page.setDefaultTimeout(15000);
@@ -30,6 +33,10 @@ await withEditorBrowser(
       else await chooser.setFiles([]);
       return chooser;
     };
+    try {
+      assert.equal(await openButton().isDisabled(), true, "Import waits for the welcome action listeners");
+      assert.equal(await bar.getByRole("button", { name: "New", exact: true }).isDisabled(), true);
+    } finally { releaseWelcome(); }
     await home.waitFor();
     assert.equal(
       await page.getByTestId("mobile-project-switcher").isVisible(),
@@ -117,5 +124,10 @@ await withEditorBrowser(
       "Title bar: cold-start layout, cancelled import, file import, snapshot export/import, new document and narrow navigation passed.",
     );
   },
-  { openDocument: false, mcpLink: false },
+  { openDocument: false, mcpLink: false, preparePage: async page => {
+    await page.route("**/src/canvas/components/welcome_dashboard.jsx*", async route => {
+      await welcomeGate;
+      await route.continue();
+    });
+  } },
 );

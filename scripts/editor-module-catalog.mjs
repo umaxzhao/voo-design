@@ -10,7 +10,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/titlebar*",
     ],
     related: ["documents","inspector","platform"],
-    features: ["workspace.projects","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry"],
+    features: ["workspace.file-actions-ready","workspace.projects","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry"],
     suites: [
       "project-picker", "titlebar-file-actions", "welcome-model-menu", "welcome-draft-trash",
       "ui-home-settings", "welcome-covers", "editor-resources", "editor-resources-built",
@@ -21,7 +21,7 @@ export const EDITOR_MODULES = [
     id: "documents",
     title: "Documents, persistence and history",
     paths: [
-      "src/canvas/store/*", "src/storage/*", "src/services/*", "src/canvas/editor/editor_history*",
+      "src/store/design_store.js", "src/canvas/store/*", "src/storage/*", "src/services/*", "src/canvas/editor/editor_history*",
       "src/canvas/editor/editor_engine_history*", "src/canvas/undo*",
     ],
     related: ["workspace","layers","images","platform"],

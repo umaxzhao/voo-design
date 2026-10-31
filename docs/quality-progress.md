@@ -9,7 +9,7 @@
 ## 本轮：分享与页面外浮层遮挡（验证中）
 
 - `inspector.global-overlay-stacking`：真实分享框左侧命中 `editor-pages`，证据 `/private/tmp/voo-license-regression/global-overlay-before.log`。顶栏统一高于编辑器；分享移至 body 的锚定浮层，窄屏限制位置/滚动高度；快捷键、图标、SVG 与懒加载占位共用全局 Portal，既有设置/导出/命令面板等路径已审查。[逐类验收](audits/nested-objects-audit.md#global-overlay-stacking)。
-- `ui-global-interaction` 检查桌面 1600/1280/900px 分享、320px 嵌套分享、跨弹窗点击/关闭/焦点/选区与文档不变，及三个真实弹窗在变换/裁切宿主下的 9 点命中；设计/模块/格式与 20 项相关单测通过。证据 `global-overlay-after-final.log`、`global-overlay-unit-final.log` 同目录。登记 69 能力、87 浏览器；本地补丁保留其他草稿，备份 `global-overlay-primary-backup/`。首次完整门禁 `439c9d9` 中顶栏旧 Hook 模拟缺少 `useId`，4 项失败（`global-overlay-release.json`）；补齐模拟后重新完整执行，不以单项补跑替代。后续 `3ebb891` 单测 4601 通过/4 跳过，默认并发的导入就绪超时（`global-overlay-release-final.json`），未改断言独立复查通过（`global-overlay-import-recheck.log`）；发布调度新增 1–3 显式选项，默认仍 3、记录实际并发，准备重新完整执行。最终结果待补录。
+- `ui-global-interaction` 检查桌面 1600/1280/900px 分享、320px 嵌套分享、跨弹窗点击/关闭/焦点/选区与文档不变，及三个真实弹窗在变换/裁切宿主下的 9 点命中；设计/模块/格式与 20 项相关单测通过。证据 `global-overlay-after-final.log`、`global-overlay-unit-final.log` 同目录。登记 70 能力、87 浏览器；本地补丁保留其他草稿，备份 `global-overlay-primary-backup/`。首次完整门禁 `439c9d9` 中顶栏旧 Hook 模拟缺少 `useId`，4 项失败（`global-overlay-release.json`）；补齐模拟后重新完整执行，不以单项补跑替代。后续 `3ebb891` 单测 4601 通过/4 跳过，默认并发的导入就绪超时（`global-overlay-release-final.json`），未改断言独立复查通过（`global-overlay-import-recheck.log`）；发布调度新增 1–3 显式选项，默认仍 3、记录实际并发，准备重新完整执行。串行 `13185d6` 单测 4627 通过/4 跳过，在连续创作冷重开等待 filechooser 时失败（`global-overlay-release-serial.json`）；独立复查通过，且不含本轮改动的 `24085cc` 也复现早点击丢事件（`global-overlay-baseline-import.log`）。新增 `workspace.file-actions-ready`，首页监听器注册后才启用顶栏导入/新建；受控延迟回归修改前失败、修改后真实选择器/快照通过（`global-overlay-welcome-ready-before/after.log`），43 项相关单测通过。最终完整门禁与线上结果待补录。
 
 ## 本轮：文字排版可读性与 Lucide 图标（已完成声明范围）
 
