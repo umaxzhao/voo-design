@@ -175,3 +175,81 @@ the prior complete run. This task publishes regression/ownership/docs only.
 The later rebuilt entry differs from current production; the failed comparison
 is retained, not reported as byte identity. Current live single-row UI evidence
 is recorded separately in `agent-suggestions-live-ui-proof.json`.
+
+
+## Global overlay stacking
+
+Capability: `inspector.global-overlay-stacking`; shared with workspace title
+menus and platform sharing. A real share popover was partially covered by the
+editor's root z-50 stacking context. Its left-side pointer samples hit
+`editor-pages` instead of the share surface (`global-overlay-before.log`).
+
+The title bar owns a z-60 layer above editor content. Sharing uses a body portal
+at z-100, anchored to its trigger with viewport bounds and internal scrolling.
+Nested mobile sharing retains the existing popover ownership context so input
+inside its portal does not dismiss the parent menu. Global modal content uses
+body portals at z-110 or its existing higher layer; pending lazy surfaces also
+escape editor transforms and clipping. Portal content retains server-rendered
+semantics when there is no browser body.
+
+| Surface group | Review and acceptance |
+| --- | --- |
+| Share | Real title-bar trigger, 1600/1280/900px, docked Agent, nine pointer samples, identity input and Escape; 320x568 nested More → Share stays inside viewport and remains open while typing |
+| Title menus | Common title layer plus existing body workflow-menu portal; narrow More keyboard/focus and pointer hits retained |
+| Shortcuts, icon insertion, SVG | Previously inline fixed dialogs now portal to body; real components mounted under a deliberately transformed 40px clipped host remain fully hittable, with dialog semantics retained in SSR |
+| Lazy pending UI | Real suspended component's modal placeholder uses the same global portal and passes pointer samples outside its clipped host |
+| Settings, image export, commands | Existing body portals retained; real UI entry, pointer sampling, layered Escape, focus return and existing export state checks pass in `ui-global-interaction` |
+| Code export, variables, presentation export/viewer, font/menu pickers | Existing body portals reviewed in source; not all individual controls newly interaction-certified by this task |
+| First-run, setup, recovery, About | Native top-layer dialog or application-level modal reviewed; existing individual suites retained, not counted as new exhaustive runtime coverage |
+| Page-owned comments, retouch/download, prototype and exit prompt | Intentionally scoped to the page; not converted to unrelated application-wide dialogs |
+
+`ui-global-interaction.e2e.mjs` asserts actual `elementFromPoint` hits across
+surfaces and unchanged document/selection. The isolated modal harness tests
+component placement, not every production opening command. No share-room
+creation, snapshot upload, paid model, user document or collaboration session
+is started by these checks. Exact clean revision, release and production
+receipts are recorded in `docs/quality-progress.md`. Physical touch/stylus,
+signed native installs, all popover combinations and every service state remain
+outside this acceptance; a source audit alone is not a runtime pass.
+
+
+### Welcome action readiness found during overlay acceptance
+
+Capability: `workspace.file-actions-ready`. The cold-reopen import button was
+clickable before the lazy welcome page registered its file input listeners.
+The unmodified `24085cc` baseline reproduces the lost filechooser event too.
+The welcome page now marks its UI-only readiness after its existing action
+effects mount, and clears readiness on unmount. Desktop and narrow title-bar
+Import waits for that signal; New retains the mainline queued, idempotent
+request so an early click creates one document after dashboard registration.
+This flag is not document content or a new user setting.
+
+`titlebar-file-actions` holds the welcome module request, verifies Import is disabled and New remains enabled
+before registration, then releases it and retains the actual file
+picker, cancellation, portable snapshot import/export and New assertions.
+The original `continuous-creation` archive, geometry, bitmap pixels and undo
+checks are retained. Raw before/after and baseline logs are under
+`/private/tmp/voo-license-regression/global-overlay-*`. Earlier 15-second import
+readiness and cold filechooser failures remain separate evidence, not passed
+results. This repair does not certify every slow-device/native startup path.
+
+The incoming Figma fidelity fixture initially sampled a zero-node placeholder
+engine after a cold reopen. The diagnostic preserves that failure and shows
+the exact expected pixels once the imported document binds. Its picker helper
+now waits for the imported document marker and the normal open guard to turn
+off before exporting pixels; it does not wait for pixel values to match or
+change any pixel assertions. Evidence: `global-overlay-figma-engine-probe.log`.
+
+
+### Share identity update replay
+
+The real share input exposed an existing side effect inside a functional React
+state updater: saving and publishing identity from that updater fed external
+collaboration-store updates back into rendering. React replay could repeatedly
+publish or hit maximum update depth. Two real input events batched before paint
+reproduce excess publications in `global-overlay-identity-before.log`.
+Identity edits now merge through a current ref, enqueue a plain state value,
+and save/publish once from the input event. Opening the popover refreshes both
+state and ref. The browser regression preserves the live session callback and
+asserts two inputs produce exactly two publications, the latest field value,
+no page errors and unchanged document/selection; it does not stub publishing out.
