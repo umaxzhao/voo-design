@@ -23,10 +23,12 @@ The three `ui-*.png` images in [screenshots](../screenshots/) are 1600 × 1000 c
 
 ## Repository artwork
 
-- [README cover](../screenshots/cover.png): 1800 × 1896, featuring a real editing screenshot on a dark mint-to-purple gradient. Headings use Intel One Mono Regular (400).
+- [Promotional cover](../screenshots/cover.png): 1800 × 1896, featuring a real editing screenshot on a dark mint-to-purple gradient. Headings use Intel One Mono Regular (400).
 - [Social preview](../screenshots/social-preview.png): 1280 × 640, using the same brand colors and typography for repository sharing.
 - The four `showcase-*.png` files in [screenshots](../screenshots/) are exports of the corresponding document canvases.
 
 The App Icon is referenced directly from [build/icon.png](../../build/icon.png), retaining its light gradient tile for contrast on both light and dark GitHub themes.
 
 The screenshot content is preserved; only the four outer corners are clipped. The cover layout source is [cover-source.html](../screenshots/cover-source.html).
+
+The repository introduction uses GitHub-native centered Icon, title and subtitle, followed by the independent editor screenshot. The promotional cover is retained as a separate asset and is not used as the README header.
