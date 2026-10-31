@@ -16,32 +16,29 @@
       main {
         position: relative;
         width: 1800px;
-        height: 1720px;
+        height: 2344px;
         overflow: hidden;
         border-radius: 32px;
         background: linear-gradient(125deg, #173d30 0%, #352448 100%);
       }
       .brand {
         position: absolute;
-        top: 72px;
+        top: 144px;
         left: 0;
         width: 100%;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 24px;
-        font-size: 40px;
-        font-weight: 400;
       }
       .brand img { width: 128px; height: 128px; }
       h1 {
         position: absolute;
-        top: 344px;
+        top: 688px;
         left: 0;
         width: 100%;
         text-align: center;
         margin: 0;
-        font-size: 76px;
+        font-size: 112px;
         line-height: 1.15;
         font-weight: 400;
         letter-spacing: -2px;
@@ -49,20 +46,20 @@
       }
       .subtitle {
         position: absolute;
-        top: 480px;
+        top: 960px;
         left: 0;
         width: 100%;
         justify-content: center;
         display: flex;
         gap: 32px;
         margin: 0;
-        font-size: 26px;
+        font-size: 44px;
         color: #d5d1dd;
         line-height: 1.6;
       }
       .editor {
         position: absolute;
-        top: 624px;
+        top: 1248px;
         left: 100px;
         display: block;
         width: 1600px;
@@ -72,20 +69,19 @@
       }
       @media (max-width: 1280px) {
         main { width: 1280px; height: 640px; border-radius: 24px; }
-        .brand { top: 20px; left: 0; font-size: 24px; gap: 12px; }
+        .brand { top: 20px; left: 0; }
         .brand img { width: 96px; height: 96px; }
-        h1 { top: 184px; left: 0; font-size: 46px; letter-spacing: -1.5px; }
-        .subtitle { top: 262px; left: 0; display: flex; gap: 16px; font-size: 18px; line-height: 1.6; }
-        .subtitle span { display: block; }
-        .editor { top: 332px; left: 416px; width: 448px; height: 280px; border-radius: 12px; }
+        h1 { top: 172px; left: 0; font-size: 64px; letter-spacing: -1.5px; }
+        .subtitle { top: 276px; left: 0; display: flex; font-size: 24px; line-height: 1.6; }
+        .editor { top: 352px; left: 448px; width: 384px; height: 240px; border-radius: 12px; }
       }
     </style>
   </head>
   <body>
     <main>
-      <div class="brand"><img src="../../build/icon.png" alt="VOO App Icon" />VOO Design</div>
-      <h1>AI agent-driven design editor.</h1>
-      <p class="subtitle"><span>Standalone app.</span><span>Claude Code + Codex via MCP.</span></p>
+      <div class="brand"><img src="../../build/icon.png" alt="VOO App Icon" /></div>
+      <h1>VOO Design</h1>
+      <p class="subtitle">AI Agent Driven Design Editor</p>
       <img class="editor" src="ui-editor.png" alt="VOO editing a music interface with a text layer selected" />
     </main>
   </body>

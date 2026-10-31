@@ -23,7 +23,7 @@ The three `ui-*.png` images in [screenshots](../screenshots/) are 1600 × 1000 c
 
 ## Repository artwork
 
-- [README cover](../screenshots/cover.png): 1800 × 1720, featuring a real editing screenshot on a dark mint-to-purple gradient. Headings use Intel One Mono Regular (400).
+- [README cover](../screenshots/cover.png): 1800 × 2344, featuring a real editing screenshot on a dark mint-to-purple gradient. Headings use Intel One Mono Regular (400).
 - [Social preview](../screenshots/social-preview.png): 1280 × 640, using the same brand colors and typography for repository sharing.
 - The four `showcase-*.png` files in [screenshots](../screenshots/) are exports of the corresponding document canvases.
 
