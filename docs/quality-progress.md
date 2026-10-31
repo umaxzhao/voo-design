@@ -3,8 +3,31 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
-最近一次完整核心验证提交：[a407ea5](https://github.com/umaxzhao/voo-design/commit/a407ea58d446b6f4f73d6ecd430cb37d4548d17b)；经 PR #68 合并为 `b708127`，两者源码树一致。
+最近一次完整核心验证提交：[da86f56](https://github.com/umaxzhao/voo-design/commit/da86f56a14a4080265fb46b834b5df363056660c)；89/89 项通过，当前线上部署为该固定版本。
 以下结果只属于该固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+
+## 本轮：图层导出按需显示（已完成声明范围）
+
+- `inspector.export-opt-in`：没有导出配置时，整个导出分组默认隐藏。用户从底部“添加 → 导出”启用后才显示标题、格式、倍率、透明背景和导出按钮；移除最后一条配置后整个分组消失，添加菜单恢复入口。没有新增勾选开关，保留用户已明确保存的配置。
+- 导出可用性、两个添加入口及文档写入共用 `export-presets.js`；面板直接读取文档，消除未选中时补回 PNG、删除后重选复活、撤销重做显示旧配置的问题。新增/删除各为一个撤销步骤，字段连续输入保留合并行为。
+- 固定代码版本 [`da86f56`](https://github.com/umaxzhao/voo-design/commit/da86f56a14a4080265fb46b834b5df363056660c)：**89/89 发布步骤通过，85 组浏览器检查通过，单测 4574 通过、4 跳过、0 失败**。验证期间源码干净且未修改。证据 `/private/tmp/voo-export-opt-in-release-verified.json`。
+- 实际 Chromium 面板覆盖图形、Frame、文字、图片的默认隐藏；从添加菜单启用、最后一项移除、切换图层、一次撤销重做；主动配置后 PNG 2x 尺寸、JPEG/WebP 文件签名及质量设置通过。该套件另执行既有的双语、深浅主题和 320–1440px 面板布局检查；导出配置的具体操作路径使用英文桌面 Chromium。没有调用生成服务。
+- 已推送并通过 SSH 部署 la2，线上入口及 6 个相关资源与验证构建逐字节一致。隔离正式浏览器复核默认整个分组隐藏、添加后实际下载 160×100 PNG、移除后隐藏及撤销重做，无页面脚本错误。截图 `/private/tmp/voo-export-opt-in-default.png`、`/private/tmp/voo-export-opt-in-removed.png`；证据 `/private/tmp/voo-export-opt-in-deployment-proof.json`、`/private/tmp/voo-export-opt-in-production-result.log`。
+- 本地 App 工作区仅三方合入本任务源文件及回归测试，保留其他草稿；定向单测 18 项和真实本地添加/下载/移除/撤销重做通过（`/private/tmp/voo-export-opt-in-primary-browser.log`），不把独立干净版本的完整门禁冒记成全部私人草稿已通过。备份 `/private/tmp/voo-export-opt-in-primary/`、`/private/tmp/voo-export-opt-in-primary-final/`。
+- 原始缺陷保留 6 个配置失败和 2 个分组显示失败（`/private/tmp/voo-export-opt-in-baseline.log`、`/private/tmp/voo-export-opt-in-section-baseline.log`）。第一次未结束门禁为补齐整个分组隐藏而停止；`6ff7ef2` 的门禁因旧默认显示断言失败，修正后重新完整执行，未把先前部分执行算通过。
+- 未认证原生系统下载界面、实体触屏、原生项目冷启动重开及所有历史文档。上轮首页冷加载 New 事件时序问题和 `.fig` 导入问题仍未修复，不归入本轮通过。[详细范围](audits/panel-control-audit.md#opt-in-layer-export)。
+
+## 本轮：统一填充面板（已完成声明范围）
+
+- 代码版本 [`cb4d1c9`](https://github.com/umaxzhao/voo-design/commit/cb4d1c9fbfdba8e87282a0af500fa0f1e8120d79)；**89/89 发布步骤通过，85 组浏览器检查通过，单测 4567 通过、4 跳过、0 失败**。最终源码干净且验证期间未修改。证据：`/private/tmp/voo-unified-fill-release-final.json`。
+- `inspector.unified-fill`：点击填充色板，在同一浮层切换纯色、渐变（含网格）、图片和纹理；图片替换/适配方式、透明度和混合模式在此完成。移除旧的分散填充类型菜单、图片文件入口和面板内适配行。
+- 已实测真实图层与像素、图片失败重试、填充独立透明度/混合、纹理缩放/颜色、PNG/SVG 像素对照、隐藏/移除/撤销重做、关闭待解码图片后切换选区。原生图片类型往返保留原始资源；替换使用既有位图操作，随后修图与撤销均有效。
+- 320/390/768/1440px、深浅主题、中英文、模拟触屏和键盘切换均通过。浅色主题额外方形底层已修复；真正的对话框就是圆角视觉面板，保留圆角自动断言。截图：`/private/tmp/voo-unified-fill-inspector-final/`。
+- 已推送并通过 SSH 部署 la2；正式入口及 7 个直接/填充分块与验证构建逐字节一致。正式地址实际打开右侧面板，切换渐变、上传图片、修改纹理，验证真实像素、一次撤销/重做及 Escape 保留选区，无页面脚本错误。未调用付费模型。证据：`/private/tmp/voo-unified-fill-deployment-proof.json`、`/private/tmp/voo-unified-fill-production-result.log`。
+- 定向 48 项单测、完整右侧面板路径和本地 App 核心填充路径分别记录；主工作区保留其他并行草稿，只合并本轮相关文件；最终本地真实填充路径复核见 `/private/tmp/voo-unified-fill-primary-browser-final.log`。主工作区已有的 `impeccable-polish` 登记文件缺失在本轮登记更新前已记录，不把公开版本门禁通过冒记为整个本地草稿通过。合并备份：`/private/tmp/voo-unified-fill-primary-merge/`、`/private/tmp/voo-unified-fill-primary-rounded/`。
+- 先前版本的旧英文断言、新建就绪超时及补跑证据保留：`/private/tmp/voo-unified-fill-release.json`、`/private/tmp/voo-unified-fill-release-v2.json`、`/private/tmp/voo-unified-fill-release-recovered.json`；它们没有被伪装成最终固定提交的执行。
+- 额外发现待修：正式网站冷加载只有顶栏、首页尚未挂载时，点击 New 可能先于事件监听器而未创建文档。两次等待引擎超时；等待首页输入框就绪后，同一构建正常创建并通过填充实测。原始证据 `/private/tmp/voo-unified-fill-production-startup-attempt.log`、`/private/tmp/voo-unified-fill-production-startup-second-attempt.log`。这是未收口的启动上下文，不算作填充门禁证明已修复。
+- 功能覆盖仍有明确边界：实体设备、所有图片编解码/超大图片内存、克隆 ID 跨文档取消、穷尽多图片资源替换及原生 App 冷重启没有由本轮认证；不覆盖真实 `.fig` 导入审计已报告的缺陷。[详细验收](audits/panel-control-audit.md#unified-fill-editor)。
 
 ## 本轮：逐元素流式创作（已完成声明范围）
 
@@ -330,4 +353,21 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
   - 真实联动画布 `zoomFit`、`showRulers` 状态持久化与 `guides.removeAll()`。
 
 验证：`./build.sh` 通过（binary 4.92 MB ≤ 5 MB，bundle 10.25 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **386/386 通过**（新增缩放条更多菜单及标题栏协作与工作台布局测试）。截图：`native_studio/docs/screenshots/z_editor.png`、`native_studio/docs/screenshots/z_dashboard.png`。
+仍未覆盖：Light interface 仍无浅色主题实现；约束不处理旋转后的钉扎。
+
+## 原生界面优化（第七轮：图层层级快捷键与菜单 1:1 对齐）— 2026-10-31
+
+- **图层排序快捷键对齐 Web & Figma 工业标准**：
+  - `[`：下移一层（Send Backward / `sendBackwardAction`）；
+  - `]`：上移一层（Bring Forward / `bringForwardAction`）；
+  - `⌘[`：置底（Send to Back / `sendToBackAction`）；
+  - `⌘]`：置顶（Bring to Front / `bringToFrontAction`）；
+  - `⌘J` / `⌘\`：切换显示/隐藏右侧 AI Agent 面板。
+- **全方位打通三处操作入口**：
+  - 菜单栏「图层与几何 (Geometry)」子菜单；
+  - 画布右键上下文菜单（Context Menu）；
+  - 全局键盘事件监听器 `handleKeyDown`（输入框处于编辑聚焦状态时自动规避，仅在非编辑时生效）。
+- **新增回归测试**：`test_LayerOrdering_StepAndJumpActionsAndShortcuts`，验证单步与跳跃重排的正确性与撤销链完整性。
+
+验证：`./build.sh` 通过（binary 4.92 MB ≤ 5 MB，bundle 10.25 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **387/387 通过**。
 仍未覆盖：Light interface 仍无浅色主题实现；约束不处理旋转后的钉扎。

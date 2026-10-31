@@ -691,16 +691,34 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             return false
         }
 
-        // 1. Guard against system modifier keys (⌘, ⌃, ⌥)
-        let relevantModifiers = event.modifierFlags.intersection([.command, .control, .option])
-        guard relevantModifiers.isEmpty else { return false }
-
-        // 2. Guard against active text editing in first responder
+        // Guard against active text editing in first responder
         if let responder = studioWindow.firstResponder {
             if responder is NSText || responder is NSTextView || responder is NSTextField {
                 return false
             }
         }
+
+        // Command shortcuts (web / Figma parity): ⌘\ and ⌘J for Agent panel, ⌘] / ⌘[ for front / back
+        if event.modifierFlags.contains(.command) && !event.modifierFlags.contains(.shift) && !event.modifierFlags.contains(.option) {
+            if let chars = event.charactersIgnoringModifiers, let first = chars.first {
+                if first == "j" || first == "J" || first == "\\" {
+                    toggleAgentPanel()
+                    return true
+                }
+                if first == "]" {
+                    bringToFrontAction(nil)
+                    return true
+                }
+                if first == "[" {
+                    sendToBackAction(nil)
+                    return true
+                }
+            }
+        }
+
+        // 1. Guard against system modifier keys (⌘, ⌃, ⌥)
+        let relevantModifiers = event.modifierFlags.intersection([.command, .control, .option])
+        guard relevantModifiers.isEmpty else { return false }
 
         // 3. Extract character
         guard let chars = event.charactersIgnoringModifiers, let first = chars.first else {
@@ -718,6 +736,16 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                 deleteAction(nil)
                 return true
             }
+        }
+
+        // 5.4 Layer order shortcuts (Figma / VOO web parity): [ = send backward, ] = bring forward
+        if first == "]" {
+            bringForwardAction(nil)
+            return true
+        }
+        if first == "[" {
+            sendBackwardAction(nil)
+            return true
         }
 
         // 5.5 R / O shape tool switching (Figma / VOO web parity)
@@ -2621,10 +2649,21 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             menu.addItem(copyCode)
 
             menu.addItem(NSMenuItem.separator())
-            let front = NSMenuItem(title: "置顶 (Bring to Front)", action: #selector(bringForwardAction(_:)), keyEquivalent: "")
+            let forward = NSMenuItem(title: "上移一层 (Bring Forward)", action: #selector(bringForwardAction(_:)), keyEquivalent: "]")
+            forward.target = self
+            menu.addItem(forward)
+
+            let backward = NSMenuItem(title: "下移一层 (Send Backward)", action: #selector(sendBackwardAction(_:)), keyEquivalent: "[")
+            backward.target = self
+            menu.addItem(backward)
+
+            let front = NSMenuItem(title: "置顶 (Bring to Front)", action: #selector(bringToFrontAction(_:)), keyEquivalent: "]")
+            front.keyEquivalentModifierMask = [.command]
             front.target = self
             menu.addItem(front)
-            let back = NSMenuItem(title: "置底 (Send to Back)", action: #selector(sendBackwardAction(_:)), keyEquivalent: "")
+
+            let back = NSMenuItem(title: "置底 (Send to Back)", action: #selector(sendToBackAction(_:)), keyEquivalent: "[")
+            back.keyEquivalentModifierMask = [.command]
             back.target = self
             menu.addItem(back)
         } else {
@@ -2652,11 +2691,19 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         performDistribute(horizontal: key == "distributeH")
     }
 
-    @objc private func bringForwardAction(_ sender: Any?) {
+    @objc public func bringForwardAction(_ sender: Any?) {
+        moveSelectionInLayerOrder(forward: true)
+    }
+
+    @objc public func sendBackwardAction(_ sender: Any?) {
+        moveSelectionInLayerOrder(forward: false)
+    }
+
+    @objc public func bringToFrontAction(_ sender: Any?) {
         reorderSelection(toFront: true)
     }
 
-    @objc private func sendBackwardAction(_ sender: Any?) {
+    @objc public func sendToBackAction(_ sender: Any?) {
         reorderSelection(toFront: false)
     }
 

@@ -247,6 +247,43 @@ public final class InspectorBehaviourTests {
             try TestAssertions.assertFalse(bar.browserButton.isHidden, "Browser button stays visible in dashboard mode")
             try TestAssertions.assertTrue(bar.settingsButton.isHidden, "Settings button is hidden in dashboard mode")
         }
+
+        // 10. Layer ordering shortcuts and actions (Figma / Web parity: [ and ], ⌘[ and ⌘])
+        registry.register(tier: 1, feature: "Layer-Ordering", name: "test_LayerOrdering_StepAndJumpActionsAndShortcuts") {
+            let controller = WindowController()
+            guard let window = controller.window else {
+                throw TestFailure(message: "WindowController has no window", file: #file, line: #line)
+            }
+            window.setContentSize(NSSize(width: 1440, height: 900))
+            controller.mainContentView.frame = NSRect(x: 0, y: 0, width: 1440, height: 900)
+            controller.mainContentView.isWelcomeOpen = false
+            controller.mainContentView.layoutSubtreeIfNeeded()
+
+            let stage = controller.mainContentView.canvasStageView
+            let n1 = VOONode(id: "node_1", kind: .rect, name: "Node 1", x: 0, y: 0, width: 100, height: 100)
+            let n2 = VOONode(id: "node_2", kind: .rect, name: "Node 2", x: 50, y: 50, width: 100, height: 100)
+            let n3 = VOONode(id: "node_3", kind: .rect, name: "Node 3", x: 100, y: 100, width: 100, height: 100)
+            stage.document.nodes = [n1, n2, n3]
+
+            // Select node_1 (currently at bottom, index 0)
+            stage.selectedNodeIds = ["node_1"]
+
+            // Bring forward: moves node_1 to index 1
+            controller.bringForwardAction(nil)
+            try TestAssertions.assertEqual(stage.document.nodes.map { $0.id }, ["node_2", "node_1", "node_3"])
+
+            // Bring to front: moves node_1 to index 2 (top)
+            controller.bringToFrontAction(nil)
+            try TestAssertions.assertEqual(stage.document.nodes.map { $0.id }, ["node_2", "node_3", "node_1"])
+
+            // Send backward: moves node_1 to index 1
+            controller.sendBackwardAction(nil)
+            try TestAssertions.assertEqual(stage.document.nodes.map { $0.id }, ["node_2", "node_1", "node_3"])
+
+            // Send to back: moves node_1 to index 0
+            controller.sendToBackAction(nil)
+            try TestAssertions.assertEqual(stage.document.nodes.map { $0.id }, ["node_1", "node_2", "node_3"])
+        }
     }
 
     private static func requireButton(_ root: NSView, id: String) throws -> PropertiesIconButton {
