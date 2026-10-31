@@ -279,3 +279,30 @@ entry/loaded resources byte-for-byte and sampled real desktop/narrow Share,
 Settings, Commands and Export surfaces, inputs, Escape and unchanged document
 and selection with no page errors (`global-overlay-production-proof.json`).
 This is separate evidence from `9d0a1d2`, not an inherited pass.
+
+
+## Selection size label placement
+
+Capability: `compositing.selection-size-label`. The existing selection renderer
+preferred the upper side even when the lower side was unobstructed. The size
+chip now prefers the lower centre with the existing six-CSS-pixel gap; it falls
+back above only when the stage bottom cannot accommodate its 18px height and
+four-pixel margin. Existing horizontal and vertical clamping remain unchanged.
+The numeric label, colours, handles and underlying document operations are unchanged.
+
+| Context | Evidence |
+| --- | --- |
+| Reproduction | `size-label-before.log`: expected lower y=66, actual upper y=16 |
+| Zoom, DPR and edges | `container_selection_chrome.test.js`: 0.5/1/2x, DPR 1/2, top edge and bottom fallback; 18px screen height and original dimension text |
+| Real pointer selection | Existing `frame-label-selection` suite clicks the child in an actual editor before sampling chrome |
+| Visible object, rotation and Frame | `selection-size-label-checks.mjs` reads actual screenshot pixels below the selected bounds and asserts the upper badge is absent at 0.5/1/2x and 30 degrees |
+| Multi-selection | Preserves the existing no-size-chip policy; no unrelated new badge is introduced |
+| Document and selection | Exact document and selected IDs retained after each visible-chrome check; this presentation path adds no document/history command |
+
+The initial expanded browser check incorrectly assumed multi-selection already
+had a size chip. Its failure is retained in `size-label-browser.log`; the
+existing renderer was confirmed to draw only multi-selection outlines/handles.
+The corrected scope preserves that behaviour (`size-label-browser-final.log`).
+Core release and production receipts are pending in `docs/quality-progress.md`.
+No physical display scaling, signed native builds or every clipping/overlay
+combination is certified by these Chromium/unit scenarios.

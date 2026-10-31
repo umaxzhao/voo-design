@@ -6,6 +6,11 @@
 最近一次完整核心验证提交：[8af23f5](https://github.com/umaxzhao/voo-design/commit/8af23f5ec05055be85e96c2cc87353cd80c2f495)；91/91 项通过。当前线上为该固定版本，主线合并提交 4e8f506 源码树完全一致。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
+## 本轮：尺寸标签位于对象下方（验证中）
+
+- `compositing.selection-size-label`：默认下方居中，底部空间不足才回退上方。修改前单测期望 y=66、实际 y=16 的失败保留于 `/private/tmp/voo-license-regression/size-label-before.log`；20 项相关单测及真实截图像素回归通过，覆盖 0.5/1/2×、旋转、Frame 和多选原策略，文档/选区不变。
+- 完整门禁、GitHub 同步与线上实测待补录；不继承上一轮通过。[验收范围](audits/nested-objects-audit.md#selection-size-label-placement)。登记 74 能力，功能覆盖仍部分。
+
 ## 本轮：分享与页面外浮层遮挡（已完成声明范围）
 
 - `inspector.global-overlay-stacking`：已复现分享框被 `editor-pages` 覆盖。顶栏统一层级；分享使用 body 锚定浮层，窄屏限制位置和滚动高度；快捷键、图标、SVG 与懒加载占位共用全局 Portal。[逐类验收与原始失败](audits/nested-objects-audit.md#global-overlay-stacking)。

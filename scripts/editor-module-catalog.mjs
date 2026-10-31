@@ -105,6 +105,7 @@ export const EDITOR_MODULES = [
     title: "Masks, clipping and rendering",
     paths: [
       "src/canvas/editor/clipping-chain-cache.js", "src/canvas/editor/layer-pass-document.js",
+      "tests/e2e/selection-size-label-checks.mjs", "tests/unit/container_selection_chrome.test.js",
       "tests/unit/clipping-chain-cache.test.js", "tests/unit/layer-pass-document.test.js",
       "src/canvas/editor/chrome*", "src/canvas/editor/render*", "src/canvas/editor/skia*",
       "src/canvas/editor/*mask*", "src/canvas/editor/*opacity*", "src/canvas/editor/*sampling*",
@@ -112,7 +113,7 @@ export const EDITOR_MODULES = [
     ],
     related: ["layers","images","vectors","documents"],
     features: [
-      "compositing.mask-cache",
+      "compositing.selection-size-label", "compositing.mask-cache",
       "compositing.masks", "compositing.frame-clips", "compositing.alpha", "compositing.artwork-parity",
     ],
     suites: [
