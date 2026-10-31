@@ -37,6 +37,10 @@ import {
 import { useModelGroups } from "./agent-panel/use_model_groups.js";
 import { useSelectionContext } from "./agent-panel/use_selection_context.js";
 import { contextLabel, promptWithSelection } from "./agent-panel/selection_context.js";
+import { getDiscoveredModels } from "./agent-panel/model_discovery.js";
+import { useReferenceImages } from "./agent-panel/use_reference_images.js";
+import { useReasoningEffort } from "./agent-panel/use_reasoning_effort.js";
+import { useSessionRename } from "./agent-panel/use_session_rename.js";
 export { CLI_MODEL_GROUPS, getModelDisplayLabel, getModelDisplayParts };
 /** Chat panel beside the editor frame: text in, canvas changes out, saved history. */
 export default function CanvasAgentPanel({ onClose }) {
@@ -55,6 +59,7 @@ export default function CanvasAgentPanel({ onClose }) {
   const directionChoice = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const { attachments: imageAttachments, addFiles, remove: removeReference, clear: clearReferences } = useReferenceImages(setError);
   const [configError, setConfigError] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   const [lastRequest, setLastRequest] = useState(null);
@@ -82,10 +87,15 @@ export default function CanvasAgentPanel({ onClose }) {
   const historyRef = useRef(initialSessionRef.current.history ?? []);
   const sessionsRef = useRef(sessions);
   sessionsRef.current = sessions;
+  const sessionRename = useSessionRename(sessionsRef, setSessions, () => Boolean(turnRef.current));
   const transcriptRef = useRef([]);
   transcriptRef.current = transcript;
   const persist = (session) => {
-    const next = upsertSession(sessionsRef.current, session);
+    const existing = sessionsRef.current.find((entry) => entry.id === session.id);
+    const next = upsertSession(sessionsRef.current, {
+      ...session,
+      title: existing?.title ?? session.title ?? "",
+    });
     sessionsRef.current = next;
     setSessions(next);
     saveStoredSessions(next);
@@ -164,7 +174,7 @@ export default function CanvasAgentPanel({ onClose }) {
     });
   };
   const send = useCallback(
-    async (overrideText, contextAttachment, recoveryRequest, generationIntent) => {
+    async (overrideText, contextAttachment, recoveryRequest, generationIntent, referenceAttachments = []) => {
       const targetContext = contextAttachment !== undefined ? contextAttachment : activeContext;
       const text = (overrideText ?? input).trim();
       if (!text || busy || turnRef.current) return;
@@ -180,7 +190,7 @@ export default function CanvasAgentPanel({ onClose }) {
       setError(null);
       setConfigError(false);
       setCancelled(false);
-      setLastRequest(recoveryRequest ?? { text, context: targetContext, generation: generationIntent ?? null });
+      setLastRequest(recoveryRequest ?? { text, context: targetContext, generation: generationIntent ?? null, attachments: referenceAttachments });
       setBusy(true);
       setStreamingText("");
       setCandidates([]);
@@ -207,6 +217,10 @@ export default function CanvasAgentPanel({ onClose }) {
           promptWithContext = promptWithSelection(text, targetContext);
         }
         const provider = await abortable(() => resolveAgentProvider(model), controller.signal);
+        if (model.startsWith("codex:")) {
+          const { reasoningEffort } = getCodexReasoningSettings(model, getDiscoveredModels("codex") ?? []);
+          if (reasoningEffort) provider.config = { ...provider.config, reasoningEffort };
+        }
         const external = await abortable(() => externalMcpTools(), controller.signal);
         controller.signal.throwIfAborted();
         const reply = await runAgentTurn({
@@ -218,9 +232,12 @@ export default function CanvasAgentPanel({ onClose }) {
           sceneKind: generationIntent?.kind ?? null,
           designSystem: generationIntent?.designSystemContract ?? null,
           frame: generationIntent?.frame ?? null,
-          visualReferences: generationIntent?.attachments
-            ?.filter((attachment) => attachment?.kind === "image" && attachment.dataUrl)
-            .map((attachment) => ({ name: attachment.name, dataUrl: attachment.dataUrl })) ?? [],
+          visualReferences: [
+            ...(generationIntent?.attachments
+              ?.filter((attachment) => attachment?.kind === "image" && attachment.dataUrl)
+              .map((attachment) => ({ name: attachment.name, dataUrl: attachment.dataUrl })) ?? []),
+            ...referenceAttachments.map(({ name, dataUrl }) => ({ name, dataUrl })),
+          ],
           variantCount,
           onVariant: (variant) => setCandidates((current) => [...current, variant]),
           history: historyRef.current,
@@ -347,22 +364,32 @@ export default function CanvasAgentPanel({ onClose }) {
   }, [send]);
   const onSubmit = (event) => {
     event.preventDefault();
-    send();
+    if (!input.trim() || busy || turnRef.current) return;
+    send(undefined, undefined, undefined, undefined, imageAttachments);
+    clearReferences();
   };
   const onKeyDown = (event) => {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent?.isComposing) {
       event.preventDefault();
-      send();
+      if (!input.trim() || busy || turnRef.current) return;
+      send(undefined, undefined, undefined, undefined, imageAttachments);
+      clearReferences();
     }
   };
   const isEmpty = transcript.length === 0 && !busy;
   const activeTitle = sessions.find((session) => session.id === activeId)?.title;
   const currentModel = selectedModel || getSetting(AGENT_SETTING.MODEL);
   const modelGroups = useModelGroups();
+  const { reasoningEfforts, reasoningEffort, selectReasoningEffort } = useReasoningEffort(currentModel, modelGroups);
   return <AgentPanelView {...{
     t, activeTitle, historyOpen, setHistoryOpen, setModelMenuOpen,
     startNewSession, onClose, modelMenuOpen, modelGroups, currentModel,
     handleSelectModel, sessions, activeId, openSession, removeSession,
+    renamingSessionId: sessionRename.sessionId, renameDraft: sessionRename.draft,
+    setRenameDraft: sessionRename.setDraft, setRenamingSessionId: sessionRename.setSessionId,
+    renameSession: sessionRename.rename,
+    reasoningEfforts, reasoningEffort, onSelectReasoningEffort: selectReasoningEffort,
+    imageAttachments, onAddReferenceFiles: addFiles, onRemoveReference: removeReference,
     isEmpty, setInput, transcript, directions, directionChoice, busy,
     pipelineProgress, streamingText, candidates, keepCandidate,
     activeContext, setActiveContext, cancelled, lastRequest, send,

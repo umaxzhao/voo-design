@@ -30,6 +30,7 @@ export async function streamCliStep({ config, messages, tools, signal, onText })
     model: config.model,
     messages,
     tools: tools ?? CANVAS_TOOL_SCHEMAS,
+    reasoningEffort: config.reasoningEffort,
     signal,
   })) {
     const delta = chunk.choices?.[0]?.delta ?? {};

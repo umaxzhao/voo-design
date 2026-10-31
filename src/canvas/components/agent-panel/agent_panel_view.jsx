@@ -1,12 +1,14 @@
 import { useCallback, useRef } from "react";
 import PropTypes from "prop-types";
-import { ArrowUp, History, PanelLeft, Plus, X } from "lucide-react";
+import { ArrowUp, Check, History, PanelLeft, Paperclip, Pencil, Plus, X } from "lucide-react";
 import { VooBrandLogo } from "../../../app_title_bar.jsx";
 import ToolCallCard from "../tool_call_card.jsx";
 import AgentModelLabel from "./agent_model_label.jsx";
 import AgentModelMenu from "./agent_model_menu.jsx";
 import AgentContextChip from "./agent_context_chip.jsx";
 import AgentSelectionSuggestions, { appendSuggestion } from "./agent_selection_suggestions.jsx";
+import ReasoningEffortControl from "./reasoning_effort_control.jsx";
+import AssistantMessageCopy from "./assistant_message_copy.jsx";
 
 /** Starter prompts shown on an empty conversation; each fills the composer. */
 const SUGGESTION_KEYS = [
@@ -48,6 +50,9 @@ export default function AgentPanelView({
   t, activeTitle, historyOpen, setHistoryOpen, setModelMenuOpen,
   startNewSession, onClose, modelMenuOpen, modelGroups, currentModel,
   handleSelectModel, sessions, activeId, openSession, removeSession,
+  renamingSessionId, renameDraft, setRenameDraft, setRenamingSessionId, renameSession,
+  reasoningEfforts, reasoningEffort, onSelectReasoningEffort,
+  imageAttachments, onAddReferenceFiles, onRemoveReference,
   isEmpty, setInput, transcript, directions, directionChoice, busy,
   pipelineProgress, streamingText, candidates, keepCandidate,
   activeContext, setActiveContext, cancelled, lastRequest, send,
@@ -55,6 +60,7 @@ export default function AgentPanelView({
 }) {
   const composerRef = useRef(null);
   const modelTriggerRef = useRef(null);
+  const fileInputRef = useRef(null);
   const closeModelMenu = useCallback(() => setModelMenuOpen(false), [setModelMenuOpen]);
   return (
     <section
@@ -95,17 +101,26 @@ export default function AgentPanelView({
           {sessions.map((session) => {
             const isActive = session.id === activeId;
             return (
-              <li key={session.id} className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => openSession(session)}
-                  aria-current={isActive}
-                  className={`flex-1 truncate rounded-xl px-2.5 py-2 text-left text-[12px] transition-colors hover:bg-white/[0.06] ${
-                    isActive ? "bg-[#E5B2FF]/10 text-[#eed0ff]" : "text-neutral-300"
-                  }`}
-                >
-                  {session.title || t("agent.history.untitled")}
-                </button>
+              <li key={session.id} className="group flex items-center gap-1">
+                {renamingSessionId === session.id ? (
+                  <form className="flex min-w-0 flex-1 items-center gap-1" onSubmit={(event) => { event.preventDefault(); renameSession(session.id, renameDraft); }}>
+                    <input autoFocus value={renameDraft} onChange={(event) => setRenameDraft(event.target.value)} aria-label={t("agent.history.rename")} className="min-w-0 flex-1 rounded-lg bg-white/[0.06] px-2.5 py-2 text-[12px] text-neutral-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#E5B2FF]" />
+                    <button type="submit" aria-label={t("agent.history.saveRename")} title={t("agent.history.saveRename")} className="flex size-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.08] hover:text-white"><Check size={14} /></button>
+                    <button type="button" aria-label={t("agent.history.cancelRename")} title={t("agent.history.cancelRename")} onClick={() => { setRenamingSessionId(null); setRenameDraft(""); }} className="flex size-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.08] hover:text-white"><X size={14} /></button>
+                  </form>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => openSession(session)}
+                    aria-current={isActive}
+                    className={`flex-1 truncate rounded-xl px-2.5 py-2 text-left text-[12px] transition-colors hover:bg-white/[0.06] ${
+                      isActive ? "bg-[#E5B2FF]/10 text-[#eed0ff]" : "text-neutral-300"
+                    }`}
+                  >
+                    {session.title || t("agent.history.untitled")}
+                  </button>
+                )}
+                {renamingSessionId !== session.id && <button type="button" onClick={() => { setRenamingSessionId(session.id); setRenameDraft(session.title || ""); }} aria-label={t("agent.history.rename")} title={t("agent.history.rename")} className="flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-500 opacity-0 transition-all hover:bg-white/[0.08] hover:text-white focus-visible:opacity-100 group-hover:opacity-100"><Pencil size={13} /></button>}
                 <button
                   type="button"
                   onClick={() => removeSession(session.id)}
@@ -175,6 +190,7 @@ export default function AgentPanelView({
                     </div>
                   )}
                   <div>{item.content}</div>
+                  {item.role === "assistant" && <AssistantMessageCopy content={item.content} t={t} />}
                 </li>
               ),
             )}
@@ -226,9 +242,9 @@ export default function AgentPanelView({
       {!busy && lastRequest && (
         <div className="mx-4 mb-2 flex gap-2 text-[12px]">
           <button type="button" className="rounded-lg px-3 py-2 text-neutral-300 hover:bg-white/10"
-            onClick={() => send(lastRequest.text, lastRequest.context, undefined, lastRequest.generation)}>{t("agent.panel.retry")}</button>
+            onClick={() => send(lastRequest.text, lastRequest.context, undefined, lastRequest.generation, lastRequest.attachments)}>{t("agent.panel.retry")}</button>
           {cancelled && <button type="button" className="rounded-lg px-3 py-2 text-neutral-300 hover:bg-white/10"
-            onClick={() => send(`${lastRequest.text}\n\n${t("agent.panel.resumePrompt")}`, lastRequest.context, lastRequest, lastRequest.generation)}>{t("agent.panel.resume")}</button>}
+            onClick={() => send(`${lastRequest.text}\n\n${t("agent.panel.resumePrompt")}`, lastRequest.context, lastRequest, lastRequest.generation, lastRequest.attachments)}>{t("agent.panel.resume")}</button>}
         </div>
       )}
       {error && (
@@ -247,6 +263,18 @@ export default function AgentPanelView({
       )}
       <form ref={composerRef} onSubmit={onSubmit} className="prompt-composer agent-composer relative mx-3 shrink-0 mb-3 rounded-2xl p-3">
         <AgentContextChip context={activeContext} onDetach={() => setActiveContext(null)} t={t} />
+        {imageAttachments.length > 0 && (
+          <ul className="mb-2 flex flex-wrap gap-1.5" aria-label={t("welcome.prompt.attachments")}>
+            {imageAttachments.map((attachment) => (
+              <li key={attachment.id} className="flex max-w-40 items-center gap-1.5 rounded-lg bg-white/[0.06] px-1.5 py-1 text-[11px] text-neutral-300">
+                <img src={attachment.dataUrl} alt="" className="size-8 rounded-md object-cover" />
+                <span className="truncate">{attachment.name}</span>
+                <button type="button" onClick={() => onRemoveReference(attachment)} aria-label={t("welcome.prompt.removeAttachment")} title={t("welcome.prompt.removeAttachment")} className="flex size-5 shrink-0 items-center justify-center rounded-lg text-neutral-500 hover:bg-white/10 hover:text-white"><X size={12} /></button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple className="sr-only" onChange={(event) => { void onAddReferenceFiles(event.target.files); event.target.value = ""; }} />
         {modelMenuOpen && (
           <AgentModelMenu currentModel={currentModel} groups={modelGroups}
             onSelect={handleSelectModel} onClose={closeModelMenu}
@@ -258,10 +286,18 @@ export default function AgentPanelView({
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={onKeyDown}
+          onPaste={(event) => {
+            const images = Array.from(event.clipboardData?.files ?? []).filter((file) => file.type.startsWith("image/"));
+            if (images.length) {
+              event.preventDefault();
+              void onAddReferenceFiles(images);
+            }
+          }}
           rows={3}
           className="w-full resize-none bg-transparent text-xs leading-relaxed text-neutral-100 placeholder-neutral-400 focus:outline-none"
         />
         <div className="flex items-center gap-2 pt-2">
+          <button type="button" onClick={() => fileInputRef.current?.click()} aria-label={t("welcome.prompt.addAttachment")} title={t("welcome.prompt.addAttachment")} className="flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-white/[0.08] hover:text-neutral-200"><Paperclip size={15} /></button>
           <span className="min-w-0 flex-1" aria-hidden="true" />
           {currentModel && (
             <button
@@ -282,6 +318,7 @@ export default function AgentPanelView({
               <AgentModelLabel modelId={currentModel} size={12} />
             </button>
           )}
+          <ReasoningEffortControl efforts={reasoningEfforts} value={reasoningEffort} onChange={onSelectReasoningEffort} t={t} />
           {busy && (
             <button
               type="button"
@@ -323,6 +360,17 @@ AgentPanelView.propTypes = {
   activeId: PropTypes.string,
   openSession: PropTypes.func.isRequired,
   removeSession: PropTypes.func.isRequired,
+  renamingSessionId: PropTypes.string,
+  renameDraft: PropTypes.string,
+  setRenameDraft: PropTypes.func.isRequired,
+  setRenamingSessionId: PropTypes.func.isRequired,
+  renameSession: PropTypes.func.isRequired,
+  reasoningEfforts: PropTypes.arrayOf(PropTypes.string),
+  reasoningEffort: PropTypes.string,
+  onSelectReasoningEffort: PropTypes.func.isRequired,
+  imageAttachments: PropTypes.array.isRequired,
+  onAddReferenceFiles: PropTypes.func.isRequired,
+  onRemoveReference: PropTypes.func.isRequired,
   isEmpty: PropTypes.bool,
   setInput: PropTypes.func.isRequired,
   transcript: PropTypes.array.isRequired,
