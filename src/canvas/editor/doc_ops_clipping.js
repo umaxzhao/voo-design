@@ -1,4 +1,4 @@
-import { NODE_KIND, isRegionNode } from "./scene_model.js";
+import { NODE_KIND, isRegionNode, isLockedByGroup } from "./scene_model.js";
 import { withNodes } from "./doc_ops_nodes.js";
 
 /**
@@ -10,7 +10,7 @@ import { withNodes } from "./doc_ops_nodes.js";
  */
 export function clipNodeInto(doc, sourceId, targetId) {
   const source = doc.nodes.find((node) => node.id === sourceId);
-  if (!source) return doc;
+  if (!source || source.locked || isLockedByGroup(doc, source)) return doc;
   if (
     isRegionNode(source) ||
     source.kind === NODE_KIND.GROUP ||
@@ -19,7 +19,7 @@ export function clipNodeInto(doc, sourceId, targetId) {
     return doc;
   }
   const target = doc.nodes.find((node) => node.id === targetId);
-  if (!target || target.visible === false) return doc;
+  if (!target || target.visible === false || (target.parentId ?? null) !== (source.parentId ?? null)) return doc;
   if (
     isRegionNode(target) ||
     target.kind === NODE_KIND.GROUP ||
@@ -49,6 +49,7 @@ export function clipBaseBelow(doc, node) {
   if (index <= 0) return null;
   for (let i = index - 1; i >= 0; i -= 1) {
     const below = doc.nodes[i];
+    if ((below.parentId ?? null) !== (node.parentId ?? null)) continue;
     if (
       below.visible === false ||
       isRegionNode(below) ||
@@ -71,8 +72,10 @@ export function clipBaseBelow(doc, node) {
  */
 export function createClippingMasks(doc, ids) {
   const targets = new Set(ids);
+  let changed = false;
   const nodes = doc.nodes.map((node) => {
     if (
+      node.locked || isLockedByGroup(doc, node) ||
       !targets.has(node.id) ||
       isRegionNode(node) ||
       node.kind === NODE_KIND.ADJUSTMENT
@@ -81,9 +84,10 @@ export function createClippingMasks(doc, ids) {
     }
     const below = clipBaseBelow(doc, node);
     if (!below || node.clipTo === below.id) return node;
+    changed = true;
     return { ...node, clipTo: below.id };
   });
-  return withNodes(doc, nodes);
+  return changed ? withNodes(doc, nodes) : doc;
 }
 
 /**
@@ -92,14 +96,16 @@ export function createClippingMasks(doc, ids) {
  */
 export function releaseClippingMasks(doc, ids = null) {
   const targets = ids ? new Set(ids) : null;
+  let changed = false;
   const nodes = doc.nodes.map((node) => {
-    if (!node.clipTo) return node;
+    if (!node.clipTo || node.locked || isLockedByGroup(doc, node)) return node;
     if (targets && !targets.has(node.id)) return node;
+    changed = true;
     const { clipTo, ...rest } = node;
     void clipTo;
     return rest;
   });
-  return withNodes(doc, nodes);
+  return changed ? withNodes(doc, nodes) : doc;
 }
 
 /**

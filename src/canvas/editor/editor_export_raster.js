@@ -59,6 +59,7 @@ export function createExport({
     const outputCtx = output.getContext("2d");
     if (!outputCtx) return null;
     draw(outputCtx, {
+      artworkOnly: true,
       doc,
       // Shift the page origin to the crop's top-left so the cropped content
       // fills the output canvas exactly; `scale` renders at 2×/3× output.
@@ -324,6 +325,7 @@ export function createExport({
       }
     }
     draw(outputCtx, {
+      artworkOnly: true,
       doc,
       viewport: { zoom: 1, panX: -page.x, panY: -page.y },
       dpr: 1,

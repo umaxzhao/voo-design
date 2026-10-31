@@ -2,6 +2,13 @@
 
 ## 1.0.0
 
+- Prevent duplicate nested-mask layer rows and stale React children after document replacement; keep eyedropper sampling, raster exports, SVG raster fallback and previews independent of animated Agent chrome.
+
+- Unify visible Frame targeting for drawing, import, drop and clipboard placement; honor nested/rounded clips, selected destinations and context-menu coordinates without changing programmatic root insertion.
+- Keep pasted subtrees in their destination paint blocks and remap internal ownership/mask references. Preserve independent duplicate image mattes and one-step history.
+- Make locked deletion a complete no-op, remove complete unlocked parent subtrees without orphaning locked descendants and restrict automatic clipping masks to valid sibling ownership.
+- Apply a Frame clipping mask to its full subtree in Canvas and SVG, retain chained/fractional alpha and make clipped/erased pixels fall through hit testing. Add nested object, mask, placement and cold project round-trip release checks.
+
 - Keep selected-layer suggestions inside the assistant conversation scroller and reserve a usable mobile panel height; pin its header and composer so model selection and sending remain reachable on short screens.
 
 - Restore referenced connector, version history, component slot, code handoff and Pen export modules omitted from the integration. Keep protocol helpers independently packaged, register batch variant execution under its advertised name and retain advanced generation settings in one secondary entry.

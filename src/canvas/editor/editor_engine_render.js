@@ -296,6 +296,7 @@ export function renderEngineLayerPass({
     );
   draw(ctx, {
     doc: { ...doc, nodes: passNodes, backgroundColor: "transparent" },
+    artworkOnly: true,
     viewport,
     dpr,
     pageBackground: false,

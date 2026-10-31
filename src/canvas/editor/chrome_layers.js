@@ -1,3 +1,4 @@
+import { luminanceToAlpha } from "./mask-alpha.js";
 // Clipping-mask chains and adjustment-layer backdrop compositing passes.
 
 import {
@@ -48,15 +49,7 @@ export function reportAdjustmentLayerFailure(doc, nodeId, error) {
  *
  * @param {Uint8ClampedArray} data
  */
-export function luminanceToAlpha(data) {
-  for (let i = 0; i < data.length; i += 4) {
-    const luminance = 0.2125 * data[i] + 0.7154 * data[i + 1] + 0.0721 * data[i + 2];
-    data[i + 3] = Math.round((luminance * data[i + 3]) / 255);
-    data[i] = 0;
-    data[i + 1] = 0;
-    data[i + 2] = 0;
-  }
-}
+export { luminanceToAlpha } from "./mask-alpha.js";
 
 /**
  * Paints one clipping-mask chain (Photoshop's Alt+⌘G).

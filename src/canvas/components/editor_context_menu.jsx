@@ -690,7 +690,7 @@ export default function EditorContextMenu({
             role="menuitem"
             data-testid="editor-menu-import-media"
             className={itemClass}
-            onClick={() => run(() => onImportMedia())}
+            onClick={() => run(() => onImportMedia(engine.toDocPoint?.(x, y) ?? null))}
           >
             <span>{t("editor.menu.importMedia")}</span>
           </button>

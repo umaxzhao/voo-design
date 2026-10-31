@@ -21,10 +21,22 @@ export default function buildEditorLayerTree(model) {
   /** Flat doc index by id — the handlers the parent passed are index-based. */
   const docIndexOf = new Map(objects.map((object, index) => [object.id, index]));
   const panelObjects = objects;
+  const byId = new Map(objects.map(object => [object.id, object]));
+  const clipTargets = new Map();
+  for (const object of panelObjects) {
+    const base = byId.get(object.clipTo);
+    if (!base || base.id === object.id || (base.parentId ?? null) !== (object.parentId ?? null)) continue;
+    const seen = new Set([object.id]);
+    let current = base;
+    while (current && !seen.has(current.id)) {
+      seen.add(current.id); current = byId.get(current.clipTo);
+    }
+    if (!current) clipTargets.set(object.id, base.id);
+  }
   /** parentId → child nodes, in document (paint) order. */
   const childrenMap = new Map();
   for (const object of panelObjects) {
-    if (!object.parentId) continue;
+    if (!object.parentId || clipTargets.has(object.id)) continue;
     if (!childrenMap.has(object.parentId)) childrenMap.set(object.parentId, []);
     childrenMap.get(object.parentId).push(object);
   }
@@ -33,9 +45,10 @@ export default function buildEditorLayerTree(model) {
   /** clipTo target id → its clipped members, in document (paint) order. */
   const clipMap = new Map();
   for (const object of panelObjects) {
-    if (!object.clipTo) continue;
-    if (!clipMap.has(object.clipTo)) clipMap.set(object.clipTo, []);
-    clipMap.get(object.clipTo).push(object);
+    const baseId = clipTargets.get(object.id);
+    if (!baseId) continue;
+    if (!clipMap.has(baseId)) clipMap.set(baseId, []);
+    clipMap.get(baseId).push(object);
   }
   const activePage = canvasPages?.find(p => p.id === activeCanvasId);
   const activeCanvasTitleMatches = Boolean(query && activePage && activePage.title?.toLowerCase().includes(query));
@@ -51,7 +64,9 @@ export default function buildEditorLayerTree(model) {
     const label = describeNode(node, docIndexOf.get(node.id) ?? 0, labels);
     return label.toLowerCase().includes(query);
   };
-  const subtreeMatches = node => {
+  const subtreeMatches = (node, seen = new Set()) => {
+    if (seen.has(node.id)) return false;
+    seen.add(node.id);
     if (activeCanvasTitleMatches) return true;
     if (rowMatches(node)) return true;
     if (node.kind === "canvasInstance" && resolveCanvas) {
@@ -59,10 +74,10 @@ export default function buildEditorLayerTree(model) {
       if (sourceLayerRows(sourceDoc, (child, index) => describeNode(child, index, labels), query).length > 0) return true;
     }
     for (const kid of childrenMap.get(node.id) ?? []) {
-      if (subtreeMatches(kid)) return true;
+      if (subtreeMatches(kid, seen)) return true;
     }
     for (const member of clipMap.get(node.id) ?? []) {
-      if (subtreeMatches(member)) return true;
+      if (subtreeMatches(member, seen)) return true;
     }
     return false;
   };
@@ -75,11 +90,14 @@ export default function buildEditorLayerTree(model) {
   * the drag math runs on those alone.
   */
   const rows = [];
+  const displayedIds = new Set();
   let topPosition = 0;
   const pushRow = (node, depth, siblingPosition = -1) => {
+    if (displayedIds.has(node.id)) return;
     // A filtered-out row drops from both display and drag math; ancestors of
     // a match stay so the tree reads coherently.
     if (query && !subtreeMatches(node)) return;
+    displayedIds.add(node.id);
     rows.push({
       node,
       index: docIndexOf.get(node.id),
@@ -104,7 +122,7 @@ export default function buildEditorLayerTree(model) {
   * prunes the same list, so drag positions stay in sync with the rows on
   * screen.
   */
-  const dragUnits = units.filter(unit => !unit.clipTo && (!query || subtreeMatches(unit)));
+  const dragUnits = units.filter(unit => !clipTargets.has(unit.id) && (!query || subtreeMatches(unit)));
   for (let i = dragUnits.length - 1; i >= 0; i -= 1) pushRow(dragUnits[i], 0);
 
   /** The background pseudo-row matches when its label or shown colour does. */

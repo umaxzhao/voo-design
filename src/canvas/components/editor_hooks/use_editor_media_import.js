@@ -20,10 +20,12 @@ export function useEditorMediaImport({
   const [mediaImportBusy, setMediaImportBusy] = useState(false);
   const [mediaImportError, setMediaImportError] = useState(null);
   const mediaInputRef = useRef(null);
+  const pickerPointRef = useRef(null);
   const importMediaFiles = useCallback(
-    (files, { point = null, targetEngine = null } = {}) => {
+    (files, { point = pickerPointRef.current, targetEngine = null } = {}) => {
       const activeEngine = targetEngine || engine;
       if (!files?.length || !activeEngine || mediaImportBusy) return;
+      pickerPointRef.current = null;
       setMediaImportBusy(true);
       setMediaImportError(null);
       const previousTool = activeEngine.getTool();
@@ -56,7 +58,8 @@ export function useEditorMediaImport({
     [engine, mediaImportBusy, t, openVooDocument],
   );
 
-  const openMediaPicker = useCallback(() => {
+  const openMediaPicker = useCallback((point = null) => {
+    pickerPointRef.current = Number.isFinite(point?.x) && Number.isFinite(point?.y) ? point : null;
     const input = mediaInputRef.current;
     if (!input) return;
     if (typeof input.showPicker === "function") {

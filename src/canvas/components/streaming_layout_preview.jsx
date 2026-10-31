@@ -111,6 +111,7 @@ export default function StreamingLayoutPreview({
         const scratchContext = scratch.getContext("2d");
         if (!scratchContext) return;
         draw(scratchContext, {
+          artworkOnly: true,
           doc,
           viewport: { panX: 0, panY: 0, zoom: scale },
           dpr: 1,

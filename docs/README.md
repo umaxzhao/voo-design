@@ -28,6 +28,7 @@ Run `node scripts/verify-editor-release.mjs` on the exact clean commit being rel
 ## Audits (point-in-time records; check the date and re-verify before relying on them)
 | Document | Topic | Status |
 | :--- | :--- | :--- |
+| [audits/nested-objects-audit.md](audits/nested-objects-audit.md) | Nested Frame placement, masks, hit testing, deletion, clipboard and cold project reopening | Real-pointer, pixel and hierarchy coverage; use the exact release report for results |
 | [audits/image-editor-complete-audit.md](audits/image-editor-complete-audit.md) | Image tool, pixel, inspector, MCP, native storage and real-model acceptance matrix | Maintained coverage and explicit external/platform requirements; execution results belong to the exact revision report |
 | [audits/editor-closeout.md](audits/editor-closeout.md) | Mesh rendering, automatic image consent, touch page ordering and stretch layout | Coverage contracts and remaining limits; use the exact release report for execution results |
 | [audits/pending-workspace-integration.md](audits/pending-workspace-integration.md) | Preserved pending drafts, signature systems, nested constraints and bucket/variable regressions | Workspace integration; [verified release evidence](audits/pending-integration-release.json) |

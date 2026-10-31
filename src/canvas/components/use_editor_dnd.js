@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { isEditorImageFile } from "./editor_import_files.js";
 import { TOOL } from "../editor/editor_constants.js";
-import { importEditorImageBatch } from "./editor_image_batch.js";
+import { importEditorImageBatch, importEditorImageSource } from "./editor_image_batch.js";
 
 const WEB_IMAGE_TYPES = [
   "image/png",
@@ -189,35 +189,9 @@ export function useEditorDnd({
         event.stopPropagation();
         event.stopImmediatePropagation();
 
-        const insertAction = async () => {
-          if (source.kind === "svg") {
-            try {
-              return await engine.insertSvg(source.data);
-            } catch (err) {
-              console.warn(
-                "engine.insertSvg failed, falling back to raster:",
-                err,
-              );
-              const svgBlob = new Blob([source.data], {
-                type: "image/svg+xml;charset=utf-8",
-              });
-              return await engine.insertImage(svgBlob);
-            }
-          }
-          if (source.kind === "svg_file") {
-            try {
-              const svgText = await source.data.text();
-              return await engine.insertSvg(svgText);
-            } catch (err) {
-              console.warn(
-                "engine.insertSvg file failed, falling back to raster:",
-                err,
-              );
-              return await engine.insertImage(source.data);
-            }
-          }
-          return await engine.insertImage(source.data);
-        };
+        const insertAction = () => importEditorImageSource(engine, source.data, {
+          svg: source.kind === "svg",
+        });
 
         void insertAction()
           .then(() => {
@@ -290,25 +264,12 @@ export function useEditorDnd({
       const text = event.dataTransfer.getData("text/plain");
 
       if (text && isSvgString(text)) {
-        void (async () => {
-          try {
-            await engine?.insertSvg(text, point);
-            selectAfterInsertIfUnchanged(engine, previousTool);
-          } catch (err) {
-            console.warn(
-              "Failed to insert dropped SVG markup as vector, falling back:",
-              err,
-            );
-            const svgBlob = new Blob([text], {
-              type: "image/svg+xml;charset=utf-8",
-            });
-            await engine?.insertImage(svgBlob, point);
-            selectAfterInsertIfUnchanged(engine, previousTool);
-          }
-        })().catch((err) => {
-          console.warn("Failed to insert dropped SVG markup:", err);
-          onInsertError?.();
-        });
+        void importEditorImageSource(engine, text, { point, svg: true })
+          .then(() => selectAfterInsertIfUnchanged(engine, previousTool))
+          .catch(error => {
+            console.warn("Failed to insert dropped SVG markup:", error);
+            onInsertError?.();
+          });
         return;
       }
 
@@ -316,16 +277,15 @@ export function useEditorDnd({
       if (!imageUrl && html) {
         const svgInHtml = extractSvgFromHtml(html);
         if (svgInHtml) {
-          void (async () => {
-            try {
-              await engine?.insertSvg(svgInHtml, point);
-              selectAfterInsertIfUnchanged(engine, previousTool);
-            } catch {
-              // Ignore fallback
-            }
-          })();
+          void importEditorImageSource(engine, svgInHtml, { point, svg: true })
+            .then(() => selectAfterInsertIfUnchanged(engine, previousTool))
+            .catch(error => {
+              console.warn("Failed to insert SVG from dropped HTML:", error);
+              onInsertError?.();
+            });
           return;
         }
+
         const match = /<img[^>]+src=["']([^"']+)["']/i.exec(html);
         if (match) imageUrl = match[1];
       }
@@ -338,8 +298,7 @@ export function useEditorDnd({
       }
 
       if (imageUrl) {
-        void engine
-          ?.insertImage(imageUrl, point)
+        void importEditorImageSource(engine, imageUrl, { point })
           .then(() => {
             selectAfterInsertIfUnchanged(engine, previousTool);
           })

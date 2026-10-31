@@ -178,6 +178,7 @@ export async function flattenDocument(doc, imageUrls) {
   canvas.height = Math.max(1, Math.round((doc.height ?? 1) * scale));
   const ctx = canvas.getContext("2d");
   draw(ctx, {
+    artworkOnly: true,
     doc,
     viewport: { panX: 0, panY: 0, zoom: scale },
     dpr: 1,

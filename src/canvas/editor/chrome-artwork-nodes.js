@@ -1,3 +1,4 @@
+import { applyContainerMask } from "./render-container-mask.js";
 import { NODE_KIND, isGroupNode, isHiddenByGroup, isInsideBooleanGroup } from "./scene_model.js";
 import { isBoxOffscreen, nodeVisualAABB } from "./viewport_culling.js";
 import { drawNode } from "./render_nodes.js";
@@ -20,12 +21,18 @@ export function drawArtworkNodes(ctx, { doc, paintNodeIds, hiddenNodeId, visible
     const entry = entries[position];
     if (entry.container) {
       const isolated = new Set([...isolatedContainers, entry.container.id]);
-      drawContainerOpacity(ctx, entry.container, (target) => drawArtworkNodes(target, {
-        doc, paintNodeIds, hiddenNodeId, visibleSet, culledIds, visibleRect, docVersion,
-        fullResolution, bitmapOf, maskOf, gpu, bypassAdjustments, selectionTransformBox,
-        videoFrameOf, stageCache: null, paintNodes: entry.nodes,
-        isolatedContainers: isolated, opacityPlan,
-      }), doc);
+      drawContainerOpacity(ctx, entry.container, (target) => {
+        drawArtworkNodes(target, {
+          doc, paintNodeIds, hiddenNodeId, visibleSet, culledIds, visibleRect, docVersion,
+          fullResolution, bitmapOf, maskOf, gpu, bypassAdjustments, selectionTransformBox,
+          videoFrameOf, stageCache: null, paintNodes: entry.nodes,
+          isolatedContainers: isolated, opacityPlan,
+        });
+        if (entry.container.clipTo) applyContainerMask(target, entry.container, {
+          doc, isolatedContainers: isolated, opacityPlan, frameClips: clips,
+          bitmapOf, maskOf, gpu, bypassAdjustments, docVersion,
+        });
+      }, doc);
       continue;
     }
     const node = containerPaintNode(entry.node, isolatedContainers);
