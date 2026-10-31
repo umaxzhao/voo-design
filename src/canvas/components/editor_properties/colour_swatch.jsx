@@ -125,13 +125,13 @@ export function Swatch({
       background: isImage && previewImage ? `url(${previewImage}) center / cover no-repeat` : valid ? value : NONE_PATTERN
     }} />
 
-      {open ? createPortal(<div ref={popRef} role="dialog" aria-label={ariaLabel} className="fixed z-[100]"
+      {open ? createPortal(<div ref={popRef} className="fixed z-[100]"
     // Parked off-screen for the first layout pass, then measured.
     style={pos ?? {
       left: -9999,
       top: 0
     }}>
-              <PopoverScopeContext.Provider value={owner}><FigmaColorPicker color={value || (isImage ? "transparent" : "#FFFFFF")} imageUrl={previewImage} allowMedia={allowMedia} onPaintChange={onPaintChange} imageScaleMode={imageScaleMode} imagePaint={imagePaint} initialType={fillTypeOf(value) === "texture" ? "texture" : isImage ? "image" : undefined} onChange={nextColor => onPick(nextColor)} onClose={() => {
+              <PopoverScopeContext.Provider value={owner}><FigmaColorPicker dialogLabel={ariaLabel} color={value || (isImage ? "transparent" : "#FFFFFF")} imageUrl={previewImage} allowMedia={allowMedia} onPaintChange={onPaintChange} imageScaleMode={imageScaleMode} imagePaint={imagePaint} initialType={fillTypeOf(value) === "texture" ? "texture" : isImage ? "image" : undefined} onChange={nextColor => onPick(nextColor)} onClose={() => {
           setOpen(false);
           buttonRef.current?.focus();
         }} opacity={opacity} onOpacityChange={onOpacityChange} onOpacityCommit={onOpacityCommit} blendMode={blendMode} onBlendModeChange={onBlendModeChange} /></PopoverScopeContext.Provider>

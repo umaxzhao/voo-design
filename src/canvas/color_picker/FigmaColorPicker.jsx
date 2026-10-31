@@ -55,7 +55,8 @@ export default function FigmaColorPicker({
   allowMedia = false,
   onPaintChange = null,
   imageScaleMode = "fill",
-  imagePaint = null
+  imagePaint = null,
+  dialogLabel = null
 }) {
   const {
     t
@@ -100,7 +101,7 @@ export default function FigmaColorPicker({
   const hasOpacity = primaryType === "gradient" || onOpacityChange !== null;
   const shownOpacity = primaryType === "gradient" ? currentSolidOpacity : opacity ?? 100;
   const imageSource = fillTypeOf(color) === "image" ? color : imageUrl && fillTypeOf(imageUrl) === "image" ? imageUrl : null;
-  return <div className="flex max-h-[calc(100dvh-1rem)] w-72 max-w-[calc(100vw-1rem)] flex-col gap-3 overflow-y-auto rounded-2xl bg-neutral-900 p-3.5 text-white shadow-menu box-border select-none">
+  return <div role={dialogLabel ? "dialog" : undefined} aria-label={dialogLabel ?? undefined} className="flex max-h-[calc(100dvh-1rem)] w-72 max-w-[calc(100vw-1rem)] flex-col gap-3 overflow-y-auto rounded-2xl bg-neutral-900 p-3.5 text-white shadow-menu box-border select-none">
       <PickerHeader showTypeTabs={showTypeTabs} activeType={primaryType} onSelectType={handleSelectPrimaryType} onClose={onClose} allowMedia={allowMedia} panelId={paintPanelId} />
 
       <div id={paintPanelId} role={showTypeTabs ? "tabpanel" : undefined} aria-labelledby={showTypeTabs ? `${paintPanelId}-${primaryType}` : undefined} className="flex flex-col gap-3">
@@ -159,6 +160,7 @@ FigmaColorPicker.propTypes = {
   onPaintChange: PropTypes.func,
   imageScaleMode: PropTypes.string,
   imagePaint: PropTypes.object,
+  dialogLabel: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   onClose: PropTypes.func,
   showTypeTabs: PropTypes.bool,

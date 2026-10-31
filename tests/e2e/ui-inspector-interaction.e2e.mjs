@@ -79,6 +79,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     const fillType = panel.getByRole("button", { name: "Fill", exact: true });
     const fillDialog = page.getByRole("dialog", { name: "Fill", exact: true });
     await fillType.click(); await fillDialog.waitFor();
+    assert.ok(await fillDialog.evaluate(element => parseFloat(getComputedStyle(element).borderRadius) >= 12), "the semantic fill dialog must be the rounded visual surface");
     await inViewport(fillDialog, "fill editor");
     await page.keyboard.press("Escape");
     await fillDialog.waitFor({ state: "detached" });
