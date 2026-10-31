@@ -12,6 +12,24 @@ import { createRoomId, roomUrl } from "../collab/room.js";
 /** How long a document-bound share link stays valid before it is re-minted. */
 export const ROOM_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+/**
+ * The link a guest should receive.
+ *
+ * A live session snapshot is the only place the room secret is available: its
+ * link already ends in the `#k=` fragment. Rebuilding the URL without that
+ * secret would hand out a link that cannot pass the HELLO proof gate, so the
+ * snapshot link wins and the plain URL is only the fallback for a session that
+ * has not published one (for example an older build).
+ */
+function sessionShareUrl(session, access) {
+  const snapshot = session?.getSnapshot?.();
+  if (!snapshot) return null;
+  if (snapshot.link) return snapshot.link;
+  return snapshot.roomId
+    ? roomUrl(snapshot.roomId, undefined, access ?? snapshot.access)
+    : null;
+}
+
 /** Starts a P2P room for the free-canvas editor and returns its link. */
 export async function shareWorkflow(access = "edit") {
   const { useDesignStore } = await import("../../store/design_store.js");
@@ -26,13 +44,19 @@ export async function shareWorkflow(access = "edit") {
   const session = getCollabSession();
   const joined = session?.getSnapshot?.();
   if (joined?.joinedViaLink && joined.roomId) {
-    return roomUrl(joined.roomId, undefined, joined.access);
+    return (
+      sessionShareUrl(session, joined.access) ??
+      roomUrl(joined.roomId, undefined, joined.access)
+    );
   }
 
   const roomId = createRoomId();
   const joinedRoomId = await startCollab(roomId, access);
   if (!joinedRoomId) return null;
-  return roomUrl(joinedRoomId, undefined, access);
+  return (
+    sessionShareUrl(session, access) ??
+    roomUrl(joinedRoomId, undefined, access)
+  );
 }
 
 /** Exports the current room state as a self-contained JSON snapshot. */
@@ -81,7 +105,9 @@ export function createShareActions(set, get) {
       const joined = session?.getSnapshot?.();
 
       if (joined?.joinedViaLink && joined.roomId) {
-        const url = roomUrl(joined.roomId, undefined, joined.access);
+        const url =
+          sessionShareUrl(session, joined.access) ??
+          roomUrl(joined.roomId, undefined, joined.access);
         set({ shareLoading: false, shareError: null, lastShareUrl: url });
         return url;
       }
@@ -113,7 +139,9 @@ export function createShareActions(set, get) {
         const joinedRoomId = await startCollab(roomId, access, { isCurrent });
         if (!isCurrent()) return null;
         if (!joinedRoomId) throw new Error("roomStartFailed");
-        const url = roomUrl(joinedRoomId, undefined, access);
+        const url =
+          sessionShareUrl(session, access) ??
+          roomUrl(joinedRoomId, undefined, access);
         set({ shareLoading: false, lastShareUrl: url });
         return url;
       } catch (error) {

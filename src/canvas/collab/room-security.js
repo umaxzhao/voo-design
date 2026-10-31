@@ -10,6 +10,19 @@ export function isProtectedWire(wire) {
   }
 }
 
+/** Edits a read-only viewer is never allowed to publish, even when connected. */
+const EDIT_TYPES = [MSG.DOC, MSG.STROKE];
+
+/** Whether a wire frame would change the shared document rather than read it. */
+export function isEditWire(wire) {
+  try {
+    const type = typeof wire === "string" ? JSON.parse(wire).t : null;
+    return EDIT_TYPES.includes(type);
+  } catch {
+    return false;
+  }
+}
+
 export async function proofFor(roomSecret, peerId) {
   if (!roomSecret) return undefined;
   const keyMaterial = await crypto.subtle.importKey(
