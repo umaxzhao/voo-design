@@ -2,6 +2,7 @@
  * Marquee mode, polygon lasso drafting, and wand tool options for editor selection API.
  */
 
+import { commitEditorAction } from "../undo-action-contracts.js";
 import { NODE_KIND, findNode, nodeRect } from "./scene_model.js";
 import { contourBounds } from "./mask_contour.js";
 import { clampContoursToRect } from "./pixel_selection.js";
@@ -35,6 +36,7 @@ export function createSelectionApiLasso(
     notify,
     cancelPolygonLasso,
     cancelMagneticLasso = () => false,
+    commitHistory,
   },
   api,
 ) {
@@ -162,7 +164,27 @@ export function createSelectionApiLasso(
       if (feather > 0 && getPixelSelection?.()) {
         api.featherPixelSelection?.(feather);
       }
+      if (commitHistory) {
+        commitEditorAction("editor.pointer.selection", () =>
+          commitHistory("editor.history.entry.lasso"),
+        );
+      }
       syncAnts();
+      requestRender();
+      notify();
+      return true;
+    },
+    /** Removes the most recently placed polygon vertex, or cancels when 1 remains. */
+    popPolygonVertex() {
+      const draft = getPolygonDraft();
+      if (!draft) return false;
+      if (draft.points.length <= 1) {
+        return cancelPolygonLasso();
+      }
+      draft.points.pop();
+      const last = draft.points[draft.points.length - 1];
+      draft.preview = last ? [last[0], last[1]] : null;
+      draft.isSnappedToStart = false;
       requestRender();
       notify();
       return true;

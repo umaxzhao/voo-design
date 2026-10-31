@@ -4,11 +4,11 @@ import { connect } from "../../electron/mcp_server/stdio_server.js";
 import { CLI_BRIDGE_CHANNEL as C } from "../../src/shared/cli_bridge_protocol.js";
 import { startEditorBrowserServer } from "./editor-browser-server.mjs";
 
-const EDITOR_BOOTSTRAP_TIMEOUT_MS = 60_000;
+const STARTUP_TIMEOUT_MS = 90_000;
 
 /** Isolated real editor + private MCP relay; never changes the user's open document. */
 export async function withEditorBrowser(run, pageOptions = {}) {
-  const { openDocument = true, mcpLink = true, ...browserOptions } = pageOptions;
+  const { openDocument = true, mcpLink = true, preparePage, ...browserOptions } = pageOptions;
   if (openDocument && !mcpLink) throw new Error("Document fixtures require the MCP link");
   const environment = await startEditorBrowserServer();
   const { origin, bridge } = environment;
@@ -31,8 +31,14 @@ export async function withEditorBrowser(run, pageOptions = {}) {
     });
     // Cold Vite transforms contend during parallel release runs. Keep this setup
     // allowance separate from the editor readiness and functional assertions.
-    await page.goto(`${origin}/?voo-test=1`, { timeout: EDITOR_BOOTSTRAP_TIMEOUT_MS });
-    await page.waitForLoadState("networkidle", { timeout: EDITOR_BOOTSTRAP_TIMEOUT_MS });
+    await preparePage?.(page);
+    const startupDeadline = Date.now() + STARTUP_TIMEOUT_MS;
+    const remainingStartupTime = () => Math.max(1, startupDeadline - Date.now());
+    await page.goto(`${origin}/?voo-test=1`, {
+      waitUntil: "domcontentloaded", timeout: remainingStartupTime(),
+    });
+    // Wait for actual React UI readiness, not optional images/fonts or idle traffic.
+    await page.getByTestId("editor-top-bar").waitFor({ timeout: remainingStartupTime() });
     // A welcome-only session deliberately has no engine. The MCP store-level
     // new_document command below opens the workspace before waiting for one.
     if (mcpLink) socket = await connect(bridge.port, bridge.token);
@@ -55,7 +61,7 @@ export async function withEditorBrowser(run, pageOptions = {}) {
         args: name === "voo_status" ? [] : [name, args] }));
     });
     if (mcpLink) {
-      const deadline = Date.now() + 20000;
+      const deadline = Math.min(startupDeadline, Date.now() + 20000);
       let status;
       while (Date.now() < deadline) {
         if (errors.length) throw new Error(`Editor failed during MCP startup: ${errors.join("\n")}`);

@@ -208,5 +208,42 @@ await withEditorBrowser(async ({ page }) => {
     assert.equal(await f.node("empty-folder"), null);
     return { resizedPenDuplicatedAtFullSize: true, typeOnPathSelectedInFrame: true, emptyGroupDeleted: true };
   });
+  await f.record("selected-group-autolayout-toggle-and-enter-key-pen-edit-in-browser", async () => {
+    const penNode = {
+      id: "pen-enter", name: "PenEnter", kind: "path", pen: true, closed: false, parentId: "host",
+      x: 100, y: 120, width: 100, height: 40, baseWidth: 100, baseHeight: 40,
+      stroke: "#0f766e", strokeWidth: 3, visible: true,
+      points: [{ x: 0, y: 20 }, { x: 100, y: 20 }],
+    };
+    await f.seed([
+      frame("host", 40, 40, 620, 420),
+      shape("card-group", "host", 80, 90, { kind: "group", width: 240, height: 120, fill: "transparent" }),
+      shape("chip-a", "card-group", 90, 100, { width: 60, height: 40 }),
+      shape("chip-b", "card-group", 170, 100, { width: 60, height: 40 }),
+      penNode,
+    ]);
+    await page.evaluate(() => window.__vooEditor.selectGroup("card-group"));
+    await f.focus();
+    await page.keyboard.press("Shift+A");
+    await f.settle();
+    const groupsAfterToggle = (await f.snapshot()).nodes.filter(n => n.kind === "group" && !n.isFrame);
+    assert.deepEqual(groupsAfterToggle.map(n => n.id), ["card-group"]);
+    assert.equal(Boolean((await f.node("card-group")).autoLayout), true);
+
+    await page.keyboard.press("Enter");
+    await f.settle();
+    assert.equal(await page.evaluate(() => window.__vooEditor.getIsolationGroupId()), "card-group");
+    await page.keyboard.press("Escape");
+    await f.settle();
+
+    await page.evaluate(() => window.__vooEditor.select("pen-enter"));
+    await f.focus();
+    await page.keyboard.press("Enter");
+    await f.settle();
+    assert.equal(await page.evaluate(() => window.__vooEditor.isEditing()), true);
+    await page.keyboard.press("Escape");
+    await f.settle();
+    return { groupAutoLayoutToggledInPlace: true, enterEnteredGroup: true, enterStartedPenEdit: true };
+  });
   f.finish();
 });

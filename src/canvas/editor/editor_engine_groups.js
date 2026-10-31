@@ -28,6 +28,7 @@ export function createEngineGroups({
   unitSelectionIds,
   selectionUnits,
   clickUnitOf,
+  getSelectedGroup,
   getIsolationGroupId,
   setIsolationGroupId,
 }) {
@@ -59,6 +60,15 @@ export function createEngineGroups({
   function selectedContainerIds() {
     const doc = getDoc();
     const containerIds = new Set();
+    const selectedGroup = getSelectedGroup?.();
+    if (
+      selectedGroup &&
+      isContainerNode(selectedGroup) &&
+      !selectedGroup.locked &&
+      !isLockedByGroup(doc, selectedGroup)
+    ) {
+      containerIds.add(selectedGroup.id);
+    }
     for (const id of selection.getIds()) {
       const node = findNode(doc, id);
       if (!node || node.locked || isLockedByGroup(doc, node)) continue;
@@ -89,6 +99,8 @@ export function createEngineGroups({
     );
     if (releasedIds.length > 0) {
       selectMany(releasedIds);
+    } else {
+      select?.(null);
     }
   }
 
@@ -229,15 +241,30 @@ export function createEngineGroups({
   function toggleAutoLayoutSelection() {
     const doc = getDoc();
     const ids = selection.getIds();
-    if (!ids || ids.length === 0) return;
+    const units = groupingRoots(
+      doc,
+      selectionUnits().map((node) => node.id),
+    );
+    const singleNode = ids?.length === 1 ? findNode(doc, ids[0]) : null;
+    const selectedGroup = getSelectedGroup?.();
+    const targetContainer =
+      singleNode && (singleNode.kind === NODE_KIND.GROUP || singleNode.isFrame)
+        ? singleNode
+        : selectedGroup &&
+            (selectedGroup.kind === NODE_KIND.GROUP || selectedGroup.isFrame)
+          ? findNode(doc, selectedGroup.id)
+          : units.length === 1 &&
+              (units[0].kind === NODE_KIND.GROUP || units[0].isFrame)
+            ? findNode(doc, units[0].id)
+            : null;
 
-    if (ids.length === 1) {
-      const node = findNode(doc, ids[0]);
-      if (!node) return;
-      if (node.kind === NODE_KIND.GROUP || node.isFrame) {
-        const nextLayout = node.autoLayout
-          ? null
-          : {
+    if (targetContainer) {
+      if (targetContainer.locked || isLockedByGroup(doc, targetContainer)) {
+        return;
+      }
+      const nextLayout = targetContainer.autoLayout
+        ? null
+        : {
             direction: "vertical",
             gap: 8,
             padding: 0,
@@ -246,17 +273,15 @@ export function createEngineGroups({
             widthMode: "fixed",
             heightMode: "hug",
           };
-        commitEditorDocument(
-          "editor.autolayout.toggle",
-          setDoc,
-          ops.updateNode(doc, node.id, { autoLayout: nextLayout }),
-        );
-        return;
-      }
+      commitEditorDocument(
+        "editor.autolayout.toggle",
+        setDoc,
+        ops.updateNode(doc, targetContainer.id, { autoLayout: nextLayout }),
+      );
+      return;
     }
 
-    const units = groupingRoots(getDoc(), selectionUnits().map(node => node.id));
-    if (units.length === 0) return;
+    if (!ids || ids.length === 0 || units.length === 0) return;
 
     const left = Math.min(...units.map((node) => node.x));
     const top = Math.min(...units.map((node) => node.y));
