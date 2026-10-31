@@ -2,6 +2,9 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
 最近一次完整核心验证提交：[92feeaa](https://github.com/umaxzhao/voo-design/commit/92feeaa82ef28dbe97cfcc324707ea3920a706fd)；91/91 项通过，当前线上为该构建。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+## 本轮：进入编辑器的品牌 Loading（验证中）
+- `platform.loading`：去紫色转圈，改为旋转 VOO 图标 + 中性细进度条；未知进度不虚构百分比，减少动态效果保留静态提示，任务阶段说明与取消继续可用。23 项定向单测及真实冷进入/320px 双主题/旋转与减少动效/画布绘制/撤销和延迟导出通过，完整门禁及正式验收待完成。[范围与证据](audits/design-editor-interaction-audit.md#brand-loading-feedback--2026-11-01)。
+
 ## 本轮：统一圆形色块（已完成声明范围）
 - `inspector.control-hierarchy` / `inspector.unified-fill`：预设、文档颜色、填充/描边、效果、工具栏、前背景、渐变色标、网格点及设计系统调色板统一圆形；原生颜色输入补圆形裁切/正方比例。32 项定向单测及完整属性面板浏览器场景通过；固定 `92feeaa` **91/91 发布步骤、87 组核心浏览器、4692 单测通过/4 跳过**，GitHub CI 通过；本地 13 个源码文件与修复一致，其他草稿保留。[PR #75](https://github.com/umaxzhao/voo-design/pull/75) 已合入 `455cb16` 且源码树一致，已部署 la2。正式入口及 83 个加载资源 SHA-256 一致，19 个预设/文档色块、填充描边、渐变/网格点、移动端、9 个原生令牌输入和设计调色板圆形通过；实际文档颜色选择/撤销和 Escape 焦点正常，零页面异常。证据 `/private/tmp/voo-license-regression/circular-swatches-{release,ci,primary-proof,main-tree-proof,production-proof}.json`。功能覆盖仍部分，原生系统对话框、其他浏览器和签名安装包未认证。[范围与证据](audits/design-editor-interaction-audit.md#circular-color-swatches--2026-11-01)。
 
