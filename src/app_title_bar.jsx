@@ -296,7 +296,7 @@ export default function AppTitleBar() {
           aria-label={t("welcome.settings.open")}
           title={t("titlebar.settingsTitle")}
           onClick={() => setSettingsOpen(true)}
-          className="welcome-settings-button fixed bottom-6 left-6 z-[60] flex min-h-12 min-w-12 cursor-pointer items-center gap-2 rounded-xl bg-black px-3 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-mint"
+          className="welcome-settings-button fixed bottom-3 left-6 z-[60] flex min-h-12 min-w-12 cursor-pointer items-center gap-2 rounded-xl bg-black px-3 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-mint"
         >
           <Bolt size={14} aria-hidden="true" />
           <span>{t("welcome.settings.open")}</span>

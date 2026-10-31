@@ -61,7 +61,7 @@ describe("title bar actions", () => {
       const settings = buttons(tree).filter(button => button.props["aria-label"] === "welcome.settings.open");
       expect(settings).toHaveLength(1);
       expect(settings[0].props.onClick.toString()).toContain("setSettingsOpen(true)");
-      expect(settings[0].props.className.includes("fixed bottom-6 left-6")).toBe(welcomeOpen);
+      expect(settings[0].props.className.includes("fixed bottom-3 left-6")).toBe(welcomeOpen);
       for (const event of ["voo:open-about", "voo:open-onboarding", "voo:editor-export", "voo:open-first-run"]) {
         expect(source("../../src/app_title_bar.jsx")).not.toContain(event);
       }

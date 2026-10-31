@@ -3,6 +3,7 @@
 ## Welcome settings entry — 2026-10-31
 
 - Capability: `workspace.settings-entry`; ownership: workspace; regression: `ui-home-settings`.
+- Follow-up: reduce the bottom gap from 24px to 12px; the existing browser scenario asserts the exact gap at 320/390/768/1440px. Final revision/results: `/private/tmp/voo-settings-lower-release.json`; no new capability or platform claim.
 - Change: remove the welcome sidebar version/status row and relocate its single global Settings entry from the title bar to the bottom-left. Reuse the existing drawer state, event and shortcut handlers; editor-mode settings retain their existing position.
 - Assertions: no version row or welcome title-bar Settings; at 320/390/768/1440px the entry remains in the bottom-left with a minimum 48px target. Existing drawer checks cover open/close, Escape, focus restore and bilingual settings.
 - Reproduction: `/private/tmp/voo-settings-before.log` records the old version row failing the new absence assertion. The dirty workspace's subsequent suite stopped at unrelated Generation type changes; it is not release evidence.

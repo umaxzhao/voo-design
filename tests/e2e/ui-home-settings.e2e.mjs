@@ -253,6 +253,8 @@ await withEditorBrowser(async ({ page, origin }) => {
     assert.ok(settingsRect && settingsRect.x < width / 2 && settingsRect.y > 800,
       `Settings must stay in the bottom-left at ${width}px: ${JSON.stringify(settingsRect)}`);
     assert.ok(settingsRect.width >= 48 && settingsRect.height >= 48);
+    assert.ok(Math.abs(900 - settingsRect.y - settingsRect.height - 12) <= 1,
+      `Settings bottom gap must be 12px at ${width}px`);
     await page.screenshot({ path: `/private/tmp/voo-ui-home-${width}.png` });
     await actions("AuditHome.voo");
     const menu = page.locator("[data-welcome-file-menu]").first();
