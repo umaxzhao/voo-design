@@ -1,5 +1,9 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import {
+  getDefaultAntigravitySettingsPath,
+  prepareAntigravityAccountAuth,
+} from "./antigravity_settings.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -32,12 +36,15 @@ export function parseAntigravityModels(output) {
 }
 
 /** Query the installed CLI, which applies the current account's model access. */
-export async function discoverAntigravityModels(binPath, run = execFileAsync) {
-  const hasApiKey = Boolean(process.env.GEMINI_API_KEY);
+export async function discoverAntigravityModels(
+  binPath,
+  run = execFileAsync,
+  settingsPath = getDefaultAntigravitySettingsPath(),
+) {
+  await prepareAntigravityAccountAuth({ settingsPath });
   const args = [
     "--output-format",
     "json",
-    ...(!hasApiKey ? ["--settings", '{"modelProvider":""}'] : []),
     "models",
   ];
   const { stdout } = await run(binPath, args, {

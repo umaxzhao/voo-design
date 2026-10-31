@@ -5,6 +5,10 @@ import {
   addVooMcpServer,
   getDefaultMcpConfigPath,
 } from "./antigravity_mcp_config.js";
+import {
+  getDefaultAntigravitySettingsPath,
+  prepareAntigravityAccountAuth,
+} from "./antigravity_settings.js";
 
 const STDERR_TAIL_CHARS = 2000;
 
@@ -21,14 +25,12 @@ export const ANTIGRAVITY_MODEL_ALIASES = Object.freeze({
  */
 export function antigravityArgs({ model, effort } = {}) {
   const resolvedModel = (model && ANTIGRAVITY_MODEL_ALIASES[model]) || model;
-  const hasApiKey = Boolean(process.env.GEMINI_API_KEY);
   return [
     "--sandbox",
     "--input-format",
     "stream-json",
     "--output-format",
     "stream-json",
-    ...(!hasApiKey ? ["--settings", '{"modelProvider":""}'] : []),
     ...(resolvedModel ? ["--model", resolvedModel] : []),
     ...(effort !== undefined ? ["--effort", effort] : []),
   ];
@@ -93,6 +95,7 @@ export function createAntigravityAgentSession({
   onFinish,
   spawnProcess = spawn,
   configPath = getDefaultMcpConfigPath(),
+  settingsPath = getDefaultAntigravitySettingsPath(),
 }) {
   const id = randomUUID();
   let child = null;
@@ -166,6 +169,8 @@ export function createAntigravityAgentSession({
     }) {
       const targetCwd = projectPath || cwd || process.cwd();
       const input = antigravityInput(messages);
+
+      await prepareAntigravityAccountAuth({ settingsPath });
 
       // Register the live VOO canvas MCP server entry
       await addVooMcpServer({
