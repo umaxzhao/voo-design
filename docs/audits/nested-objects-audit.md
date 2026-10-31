@@ -308,6 +308,12 @@ Clean `e2e3e0b` passed 91/91 core steps, 87 browser suites and 4,678 units
 and independently passed 91/91, 87 suites and 4,684 units (four skipped), with
 GitHub CI passing. Reports: `size-label-release.json` and
 `size-label-release-integrated.json`. Subsequent mainline changes are documentation
-only; production receipts remain pending in `docs/quality-progress.md`.
+only; `size-label-main-source-proof.json` records application-source identity
+with main merge `326860d`. The verified build is deployed to la2. Production
+acceptance matched 83 actual loaded resources byte-for-byte and sampled the
+lower chip and absent upper chip for a pointer-selected child and a Frame.
+Document/selection were unchanged and there were no page errors. Evidence:
+`size-label-production-proof.json`, `size-production-child.png` and
+`size-production-frame.png` under `/private/tmp/voo-license-regression/`.
 No physical display scaling, signed native builds or every clipping/overlay
 combination is certified by these Chromium/unit scenarios.

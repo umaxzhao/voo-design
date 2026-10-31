@@ -3,13 +3,14 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-11-01。
-最近一次完整核心验证提交：[0a3ba24](https://github.com/umaxzhao/voo-design/commit/0a3ba248c8d2da6ef1a2699403097b8fd39a8210)；91/91 项通过。当前线上为该固定版本。
+最近一次完整核心验证提交：[457b149](https://github.com/umaxzhao/voo-design/commit/457b149d4c1da1ecb1073fa7b7c87be47276f92c)；91/91 项通过，当前线上为该构建。主线 326860d 应用源码一致，仅验收文档不同。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
-## 本轮：尺寸标签位于对象下方（验证中）
+## 本轮：尺寸标签位于对象下方（已完成声明范围）
 
 - `compositing.selection-size-label`：默认下方居中，底部空间不足才回退上方。修改前单测期望 y=66、实际 y=16 的失败保留于 `/private/tmp/voo-license-regression/size-label-before.log`；20 项相关单测及真实截图像素回归通过，覆盖 0.5/1/2×、旋转、Frame 和多选原策略，文档/选区不变。
-- 固定 `e2e3e0b` 完整门禁 91/91、87 浏览器、4678 单测通过/4 跳过（`size-label-release.json`）；GitHub CI 通过。整合固定 `457b149` 再次完成 91/91、87 浏览器、4684 单测通过/4 跳过（`size-label-release-integrated.json`），GitHub CI 通过；主线随后仅文档变动，线上实测待补录，不继承不同应用源码通过。[验收范围](audits/nested-objects-audit.md#selection-size-label-placement)。登记 75 能力，功能覆盖仍部分。
+- 固定 `e2e3e0b` 完整门禁 91/91、87 浏览器、4678 单测通过/4 跳过（`size-label-release.json`）；GitHub CI 通过。整合固定 `457b149` 再次完成 91/91、87 浏览器、4684 单测通过/4 跳过（`size-label-release-integrated.json`），GitHub CI 通过；主线随后仅文档变动，线上实测通过，不继承不同应用源码通过。[验收范围](audits/nested-objects-audit.md#selection-size-label-placement)。登记 75 能力，功能覆盖仍部分。
+- [PR #72](https://github.com/umaxzhao/voo-design/pull/72) 已合并 `326860d`（`size-label-main-source-proof.json`），已通过项目脚本部署 la2。正式页面实际点击对象、对象/Frame 下方标签像素、原上方标签消失、文档与选区不变及零页面异常通过；83 个实际加载资源与验证构建逐字节/SHA-256 一致。证据 `size-label-production-proof.json`，截图 `size-production-child.png` / `size-production-frame.png`，备份 `/srv/voo-run/editor-backups/457b149d4c1da1ecb1073fa7b7c87be47276f92c-20261031T185117Z`。
 
 ## 本轮：同一 Figma 文件与 OpenPencil 对照（已完成声明范围）
 
@@ -221,12 +222,12 @@
 ## 当前概况
 | 项目 | 状态 |
 | --- | --- |
-| 工程规范与模块登记 | 已落地：12 个模块、73 个公开能力分组 |
-| 核心发布校验 | 8af23f5：91/91 项通过，包含 87 组浏览器 |
-| 全量单元测试 | 4674 通过、4 跳过、0 失败（固定提交 8af23f5） |
-| GitHub Ubuntu 基础检查 | 固定提交 8af23f5 build 通过，原始 run 41227517178 |
-| 线上部署 | 8af23f5 已部署 la2，分享及相关全局浮层实测通过 |
-| 功能验收完整度 | 部分覆盖；73 个公开能力分组未穷尽所有入口、上下文和设备 |
+| 工程规范与模块登记 | 已落地：12 个模块、75 个公开能力分组 |
+| 核心发布校验 | 457b149：91/91 项通过，包含 87 组浏览器 |
+| 全量单元测试 | 4684 通过、4 跳过、0 失败（固定提交 457b149） |
+| GitHub Ubuntu 基础检查 | 固定提交 457b149 build 通过，原始 run 41230487157 |
+| 线上部署 | 457b149 已部署 la2，尺寸标签对象/Frame 真实像素通过 |
+| 功能验收完整度 | 部分覆盖；75 个公开能力分组未穷尽所有入口、上下文和设备 |
 | 核心门禁外的独立检查 | 本轮 21 组未运行，不继承历史通过 |
 
 ## 连续创作首轮（f9102cd，已完成声明范围）
@@ -255,7 +256,7 @@
 - [容器边界范围](audits/nested-objects-audit.md#container-command-boundaries)、[文字收尾范围](audits/continuous-creation-audit.md#text-placement-and-close-boundaries)记录复现、断言和剩余上下文；临时编辑恢复、取消时保留外部新增节点也已加入纯回归。
 
 ## 各模块进度
-下表按固定 8af23f5 完整门禁记录，套件数按主归属计一次。跨模块回归会关联执行，不能理解为功能覆盖率。
+下表按固定 457b149 完整门禁记录，套件数按主归属计一次。跨模块回归会关联执行，不能理解为功能覆盖率。
 
 | 模块 | 已通过核心套件 | 功能覆盖 | 仍需补齐的重点 |
 | --- | --- | --- | --- |
