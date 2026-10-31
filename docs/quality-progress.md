@@ -3,16 +3,21 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
-最近一次完整核心验证提交：[6008dfa](https://github.com/umaxzhao/voo-design/commit/6008dfa6fcd78e02abf14a27597fb0c1d584e770)，89/89 项通过。当前线上应用为合并补测后的 [9c5a063](https://github.com/umaxzhao/voo-design/commit/9c5a063e874aaa5346a1804171d414740463032a)。
+最近一次完整核心验证提交：[cb4d1c9](https://github.com/umaxzhao/voo-design/commit/cb4d1c9fbfdba8e87282a0af500fa0f1e8120d79)；89/89 项通过，当前线上部署为该固定版本。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
 
-## 本轮：统一填充面板（正在完成验证）
+## 本轮：统一填充面板（已完成声明范围）
 
-- 能力 `inspector.unified-fill`：一个色板统一纯色、渐变、图片和纹理；图片替换、适配方式、透明度与混合模式在同一浮层内完成，移除旧的分散入口。
-- 已复现并修复图片编辑空面板/缺失组件、隐藏与空填充栈回退、嵌套菜单误关闭、原生图片恢复后填充行消失及类型不同步。保留失败用例与日志，不沿用上轮通过状态。
-- 定向单测 48 项及真实填充核心路径通过；原始图片资源、替换后继续修图、撤销重做和 SVG/PNG 像素一致性已验证。最终完整门禁、响应式矩阵和线上固定版本证据待补录。
-- 当前公开登记为 63 个能力分组、85 组浏览器套件。范围与未验证情境见[统一填充验收](audits/panel-control-audit.md#unified-fill-editor)。
+- 代码版本 [`cb4d1c9`](https://github.com/umaxzhao/voo-design/commit/cb4d1c9fbfdba8e87282a0af500fa0f1e8120d79)；**89/89 发布步骤通过，85 组浏览器检查通过，单测 4567 通过、4 跳过、0 失败**。最终源码干净且验证期间未修改。证据：`/private/tmp/voo-unified-fill-release-final.json`。
+- `inspector.unified-fill`：点击填充色板，在同一浮层切换纯色、渐变（含网格）、图片和纹理；图片替换/适配方式、透明度和混合模式在此完成。移除旧的分散填充类型菜单、图片文件入口和面板内适配行。
+- 已实测真实图层与像素、图片失败重试、填充独立透明度/混合、纹理缩放/颜色、PNG/SVG 像素对照、隐藏/移除/撤销重做、关闭待解码图片后切换选区。原生图片类型往返保留原始资源；替换使用既有位图操作，随后修图与撤销均有效。
+- 320/390/768/1440px、深浅主题、中英文、模拟触屏和键盘切换均通过。浅色主题额外方形底层已修复；真正的对话框就是圆角视觉面板，保留圆角自动断言。截图：`/private/tmp/voo-unified-fill-inspector-final/`。
+- 已推送并通过 SSH 部署 la2；正式入口及 7 个直接/填充分块与验证构建逐字节一致。正式地址实际打开右侧面板，切换渐变、上传图片、修改纹理，验证真实像素、一次撤销/重做及 Escape 保留选区，无页面脚本错误。未调用付费模型。证据：`/private/tmp/voo-unified-fill-deployment-proof.json`、`/private/tmp/voo-unified-fill-production-result.log`。
+- 定向 48 项单测、完整右侧面板路径和本地 App 核心填充路径分别记录；主工作区保留其他并行草稿，只合并本轮相关文件；最终本地真实填充路径复核见 `/private/tmp/voo-unified-fill-primary-browser-final.log`。主工作区已有的 `impeccable-polish` 登记文件缺失在本轮登记更新前已记录，不把公开版本门禁通过冒记为整个本地草稿通过。合并备份：`/private/tmp/voo-unified-fill-primary-merge/`、`/private/tmp/voo-unified-fill-primary-rounded/`。
+- 先前版本的旧英文断言、新建就绪超时及补跑证据保留：`/private/tmp/voo-unified-fill-release.json`、`/private/tmp/voo-unified-fill-release-v2.json`、`/private/tmp/voo-unified-fill-release-recovered.json`；它们没有被伪装成最终固定提交的执行。
+- 额外发现待修：正式网站冷加载只有顶栏、首页尚未挂载时，点击 New 可能先于事件监听器而未创建文档。两次等待引擎超时；等待首页输入框就绪后，同一构建正常创建并通过填充实测。原始证据 `/private/tmp/voo-unified-fill-production-startup-attempt.log`、`/private/tmp/voo-unified-fill-production-startup-second-attempt.log`。这是未收口的启动上下文，不算作填充门禁证明已修复。
+- 功能覆盖仍有明确边界：实体设备、所有图片编解码/超大图片内存、克隆 ID 跨文档取消、穷尽多图片资源替换及原生 App 冷重启没有由本轮认证；不覆盖真实 `.fig` 导入审计已报告的缺陷。[详细验收](audits/panel-control-audit.md#unified-fill-editor)。
 
 ## 本轮：桌面 test.fig 导入性能与还原检查
 
@@ -110,12 +115,12 @@
 
 | 项目 | 状态 |
 | --- | --- |
-| 工程规范与模块登记 | 已落地：12 个模块、60 个能力分组 |
-| 核心发布校验 | a407ea5：完整单次 88/88 步通过，包含 84 组浏览器套件 |
-| 全量单元测试 | 4529 通过、4 跳过、0 失败；跳过项不算通过 |
-| GitHub Ubuntu 基础检查 | [a407ea5 PR build 已通过](https://github.com/umaxzhao/voo-design/actions/runs/41191124591/job/124507957957)：模块登记、设计检查、构建及单测；CI 部署跳过，已由项目脚本 SSH 部署 la2 |
-| 线上部署 | a407ea5 验证构建已部署；主分支合并 b708127 的源码树一致；8 个线上文件哈希与关于页许可读取通过 |
-| 功能验收完整度 | 部分覆盖；60 个能力分组未穷尽所有入口、上下文和设备 |
+| 工程规范与模块登记 | 已落地：12 个模块、63 个公开能力分组 |
+| 核心发布校验 | cb4d1c9：89/89 步通过，包含 85 组浏览器套件 |
+| 全量单元测试 | 4567 通过、4 跳过、0 失败；跳过项不算通过 |
+| GitHub Ubuntu 基础检查 | [本轮 CI 通过](https://github.com/umaxzhao/voo-design/actions/runs/41201433520)：模块登记、设计检查、构建和全量单测；CI 部署跳过，实际由 SSH 部署 la2 |
+| 线上部署 | cb4d1c9 已部署 la2，入口及填充模块字节一致；正式面板切换、真实像素和撤销重做通过 |
+| 功能验收完整度 | 部分覆盖；63 个公开能力分组未穷尽所有入口、上下文和设备 |
 | 核心门禁外的独立检查 | 21 组本轮未运行：18 组待复核，3 组需单独运行 |
 
 ## 连续创作首轮（f9102cd，已完成声明范围）

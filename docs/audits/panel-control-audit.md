@@ -285,7 +285,7 @@ Grouped into focused pull request batches of at most 5 files per batch:
 Capability: `inspector.unified-fill`, related to image placement and SVG rendering.
 One swatch opens Solid / Gradient / Image / Texture in the same editor. The old
 fill-only type menu, separate image file input and inline image-fit row are removed;
-stroke and effect colour pickers retain only their supported paint modes.
+media choices are exposed only for fill rows; this audit does not certify every pre-existing effect-colour context.
 
 Baseline `64e6ddd`: `unified-fill-picker.test.jsx` reproduced four failures: missing
 media tabs, an empty image editor, undefined image-fit control, and hidden/empty
@@ -295,10 +295,10 @@ and native picture type/undo state not following its underlying asset.
 
 | Context | Assertions / evidence | Status |
 | --- | --- | --- |
-| Actual inspector in Chromium | Mode drafts, mesh opening, real image decode/retry, shared alpha, centred fit, independent paints, hidden rows, removing/undo, selection-switch cancellation | Targeted pass; final fixed-revision release pending |
-| Bitmap resource ownership | Type round trips preserve the original asset, image replacement calls the existing bitmap operation, subsequent bitmap editing remains visible; undo/redo restore resources | Targeted pass in `unified-fill-native-cases.mjs`; final release pending |
-| Visible/export result | Real image and texture pixels; texture size/colour; decoded PNG/SVG selection pixel parity. Image sizing uses the authoritative SVG raster fallback; texture silhouettes keep native SVG patterns | Targeted pass; final release pending |
-| Responsive / input | Keyboard tabs, nested menu Escape, 320/390/768/1440px, English/Chinese, light/dark, emulated touch | Final matrix pending |
+| Actual inspector in Chromium | Mode drafts, mesh opening, real image decode/retry, shared alpha, centred fit, independent paints, hidden rows, removing/undo, selection-switch cancellation | Passed on `cb4d1c9`; 89/89 final release steps |
+| Bitmap resource ownership | Type round trips preserve the original asset, image replacement calls the existing bitmap operation, subsequent bitmap editing remains visible; undo/redo restore resources | Passed on `cb4d1c9` in `unified-fill-native-cases.mjs` |
+| Visible/export result | Real image and texture pixels; texture size/colour; decoded PNG/SVG selection pixel parity. Image sizing uses the authoritative SVG raster fallback; texture silhouettes keep native SVG patterns | Passed on `cb4d1c9` |
+| Responsive / input | Keyboard tabs, nested menu Escape, 320/390/768/1440px, English/Chinese, light/dark, emulated touch | Passed on `cb4d1c9`; final screenshots in `/private/tmp/voo-unified-fill-inspector-final/` |
 | Remaining | Physical devices, every image codec and large-image memory limit, cross-document cancellation with cloned IDs, exhaustive multi-image bitmap replacement and cold native-app restart | Not certified by these checks |
 
 Tests: `fill-paint-values.test.js`, `unified-fill-picker.test.jsx`, and the registered
@@ -306,3 +306,11 @@ Tests: `fill-paint-values.test.js`, `unified-fill-picker.test.jsx`, and the regi
 modules remain below 400 lines; picker state is held by one reducer and assets use
 the editor's shared bitmap replacement operation. Exact final revision and online
 evidence are maintained in [quality-progress.md](../quality-progress.md).
+
+Final public execution: `cb4d1c9fbfdba8e87282a0af500fa0f1e8120d79` completed all 89 release steps, including
+85 browser suites, 4567 unit passes and 4 skips on clean unchanged source.
+Final report: `/private/tmp/voo-unified-fill-release-final.json`. Production index/fill resources match the build;
+actual inspector switches, upload, texture pixels, undo/redo and Escape pass in a
+private production browser. Evidence: `/private/tmp/voo-unified-fill-deployment-proof.json`
+and `/private/tmp/voo-unified-fill-production-result.log`. The older recovered
+execution is retained separately and is not attributed to this final commit.
