@@ -7,48 +7,12 @@ import { StaticSection, SectionAddButton, fieldClass } from "./property_section.
 import FlatSelect from "../flat_select.jsx";
 import { IconDownload } from "../../icons.jsx";
 
-const FORMATS = [
-  { value: "image/png", labelKey: "editor.exportFormatPng", ext: "png" },
-  { value: "image/jpeg", labelKey: "editor.exportFormatJpeg", ext: "jpg" },
-  { value: "image/webp", labelKey: "editor.exportFormatWebp", ext: "webp" },
-];
-const SCALES = [1, 2, 3];
-const QUALITIES = [
-  { value: "0.6", labelKey: "editor.exportQualityLow" },
-  { value: "0.8", labelKey: "editor.exportQualityMedium" },
-  { value: "0.92", labelKey: "editor.exportQualityHigh" },
-];
-const MAX_PRESETS = 4;
+import {
+  FORMATS, SCALES, QUALITIES, MAX_PRESETS,
+  createExportPreset, normalizeExportPresets, updateExportPresets,
+} from "./export-presets.js";
 
-let presetSeq = 0;
-const makePreset = (patch = {}) => ({
-  id: `preset-${++presetSeq}`,
-  type: "image/png",
-  scale: 1,
-  suffix: "",
-  ...patch,
-});
-
-const FORMAT_VALUES = new Set(FORMATS.map((format) => format.value));
-
-/** Node-stored export presets survive selection changes; bad rows are ignored. */
-export function normalizeExportPresets(raw) {
-  if (!Array.isArray(raw) || raw.length === 0) return [];
-  const rows = raw
-    .slice(0, MAX_PRESETS)
-    .filter((row) => row && typeof row === "object" && !Array.isArray(row))
-    .map((row) => ({
-      id: typeof row.id === "string" && row.id ? row.id : `preset-${++presetSeq}`,
-      type: FORMAT_VALUES.has(row.type) ? row.type : "image/png",
-      scale: SCALES.includes(Number(row.scale)) ? Number(row.scale) : 1,
-      suffix: typeof row.suffix === "string" ? row.suffix.slice(0, 32) : "",
-      ...(row.transparent === false ? { transparent: false } : {}),
-      ...(row.type !== "image/png" && row.quality != null
-        ? { quality: String(row.quality) }
-        : {}),
-    }));
-  return rows;
-}
+export { normalizeExportPresets } from "./export-presets.js";
 
 function download(dataUrl, filename) {
   const anchor = document.createElement("a");
@@ -68,13 +32,8 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
 
   if (!engine?.exportSelectionPng) return null;
 
-  const persist = (next, coalesced = false) => {
-    if (!object?.id) return;
-    const update = coalesced
-      ? engine?.updateNodeCoalesced ?? engine?.updateNode
-      : engine?.updateNode ?? engine?.updateNodeCoalesced;
-    update?.(object.id, { exportPresets: next });
-  };
+  const persist = (next, coalesced = false) =>
+    updateExportPresets(engine, object?.id, next, coalesced);
 
   const ids = selectedNodes.length
     ? selectedNodes.map((node) => node.id)
@@ -117,7 +76,7 @@ export default function ExportSection({ object, selectedNodes = [], engine }) {
         presets.length < MAX_PRESETS ? (
           <SectionAddButton
             label={t("editor.props.addExportSettings")}
-            onClick={() => persist([...presets, makePreset()])}
+            onClick={() => persist([...presets, createExportPreset()])}
           />
         ) : null
       }

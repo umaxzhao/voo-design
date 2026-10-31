@@ -54,14 +54,18 @@ await withEditorBrowser(async ({ page, tool }) => {
     await seed();
     const exportFormat = panel.getByRole("button", { name: "Format", exact: true });
     const exportAction = panel.getByRole("button", { name: "Export", exact: true });
-    const addExport = panel.getByRole("button", { name: "Add export settings", exact: true });
+    const addExport = async () => {
+      await panel.getByTestId("properties-add-menu").getByRole("button").first().click();
+      await panel.getByTestId("properties-add-export").click();
+    };
     for (const id of ["audit-rect", "audit-frame", "audit-text", "audit-image"]) {
       await select([id]);
       assert.equal(await exportFormat.count(), 0, `${id} must not invent an export preset`);
+      assert.equal(await panel.getByRole("button", { name: "Add export settings", exact: true }).count(), 0, "the entire unconfigured export section is hidden");
       assert.equal(await exportAction.count(), 0);
     }
     await select(["audit-rect"]);
-    await addExport.click();
+    await addExport();
     await exportFormat.waitFor();
     const configured = (await node()).exportPresets;
     assert.equal(configured.length, 1);

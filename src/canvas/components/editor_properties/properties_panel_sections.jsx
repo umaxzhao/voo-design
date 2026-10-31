@@ -29,6 +29,7 @@ import InstanceSection from "./instance_section.jsx";
 import FrameSlotSection from "./frame_slot_section.jsx";
 import { normalizeStyles } from "../../editor/scene_styles.js";
 import { resolveExtras } from "./panel_extras.js";
+import { buildPanelAddItems } from "./panel-add-items.js";
 import {
   isRegionNode,
   supportsColour,
@@ -130,12 +131,9 @@ export default function PropertiesPanelSections({
   const slotEligible = !isWarpTool && (object.isFrame || object.kind === "frame" || object.kind === "group");
   const hasSlots = Array.isArray(object.slot) ? object.slot.length > 0 : Boolean(object.slot);
   const showSlot = slotEligible && (hasSlots || isMainComponent || revealed("slot"));
-  const addItems = [
-    slotEligible && !showSlot && { key: "slot", label: t("editor.props.componentSlot"), onSelect: () => reveal("slot") },
-    eligible.variables && !show("variables") && { key: "variables", label: t("editor.variables.title"), onSelect: () => reveal("variables") },
-    eligible.styles && !show("styles") && { key: "styles", label: t("styles.title"), onSelect: () => reveal("styles") },
-    showRepeatArray && !show("modifiers") && { key: "modifiers", label: t("editor.props.modifiers"), onSelect: () => reveal("modifiers") },
-  ].filter(Boolean);
+  const addItems = buildPanelAddItems({
+    slotEligible, showSlot, eligible, show, showRepeatArray, reveal, t, object, engine,
+  });
   return (
     <>
       {isWarpTool && tool === TOOL.PUPPET_WARP ? (
@@ -353,7 +351,7 @@ export default function PropertiesPanelSections({
       {!isWarpTool ? (
         <SelectionColorsSection selectedNodes={selectedNodes} engine={engine} />
       ) : null}
-      {eligible.export ? (
+      {show("export") ? (
         <ExportSection object={object} selectedNodes={selectedNodes} engine={engine} />
       ) : null}
       {showRepeatArray ? <ModifiersSection object={object} engine={engine} t={t} revealed={revealed("modifiers")} /> : null}

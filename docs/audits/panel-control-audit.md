@@ -319,15 +319,16 @@ execution is retained separately and is not attributed to this final commit.
 
 Capability: `inspector.export-opt-in`; the document's `exportPresets` is the
 single source of truth. Absent, invalid and explicitly empty lists must not
-synthesize a PNG row. The existing plus action enables export, and removing the
-last row hides its controls and action. Explicit saved configurations remain.
+synthesize a PNG row or reveal an export section. The existing bottom Add menu
+enables export and creates its first preset. Removing the last row hides the
+entire section and restores the Add-menu entry. Explicit saved configurations remain.
 
 Baseline `1dd3dac`: six regression assertions failed because normalization always
 created a default preset. Retained log: `/private/tmp/voo-export-opt-in-baseline.log`.
 
 | Context | Assertions | Status |
 | --- | --- | --- |
-| Actual inspector | Rectangle, Frame, text and image start without export controls; add/remove and reselection follow each layer | Targeted Chromium pass; final gate pending |
+| Actual inspector | Rectangle, Frame, text and image start without the entire export section; bottom Add-menu enable, remove and reselection follow each layer | Targeted Chromium pass; final gate pending |
 | History | Undo/redo adding and removing the last preset immediately restores/hides the real controls | Targeted Chromium pass; final gate pending |
 | Active export | Explicit add retains PNG 2x dimensions and JPEG/WebP file signatures/quality | Targeted Chromium pass; final gate pending |
 | Normalization | Missing, empty and invalid presets remain empty; existing settings retain formats/scales/suffixes | Unit pass; final gate pending |
