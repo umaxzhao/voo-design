@@ -10,8 +10,8 @@ import {
   findNode,
   groupDescendants,
   isContainerNode,
+  isLockedByGroup,
   NODE_KIND,
-  topLevelGroupOf,
 } from "./scene_model.js";
 import { combinedBounds, nodeAABB } from "./scene_geometry.js";
 import { isFrameNode } from "./prototype_model.js";
@@ -52,20 +52,26 @@ export function createEngineGroups({
         units.map((node) => node.id),
       ),
     );
+    select?.(folder.id);
   }
 
-  function ungroupSelection() {
+  function selectedContainerIds() {
     const doc = getDoc();
     const containerIds = new Set();
     for (const id of selection.getIds()) {
       const node = findNode(doc, id);
-      if (!node) continue;
-      if (node.kind === NODE_KIND.GROUP || node.kind === NODE_KIND.BOOLEAN) {
-        containerIds.add(node.id);
-      }
-      const top = topLevelGroupOf(doc, node);
-      if (top) containerIds.add(top.id);
+      if (!node || node.locked || isLockedByGroup(doc, node)) continue;
+      // Loose Frame children are independent objects, not an implicit request
+      // to dissolve their outermost Frame. Honor the current selection unit.
+      const unit = isContainerNode(node) ? node : clickUnitOf(node);
+      if (isContainerNode(unit) && !unit.locked && !isLockedByGroup(doc, unit)) containerIds.add(unit.id);
     }
+    return containerIds;
+  }
+
+  function ungroupSelection() {
+    const doc = getDoc();
+    const containerIds = selectedContainerIds();
     if (containerIds.size === 0) return;
     const releasedIds = doc.nodes
       .filter(
@@ -230,14 +236,14 @@ export function createEngineGroups({
         const nextLayout = node.autoLayout
           ? null
           : {
-              direction: "vertical",
-              gap: 8,
-              padding: 0,
-              alignItems: "start",
-              justifyContent: "start",
-              widthMode: "fixed",
-              heightMode: "hug",
-            };
+            direction: "vertical",
+            gap: 8,
+            padding: 0,
+            alignItems: "start",
+            justifyContent: "start",
+            widthMode: "fixed",
+            heightMode: "hug",
+          };
         commitEditorDocument(
           "editor.autolayout.toggle",
           setDoc,
@@ -292,12 +298,7 @@ export function createEngineGroups({
         .getIds()
         .some((id) => Boolean(findNode(getDoc(), id)?.clipTo)),
     canGroupSelection: () => selectionUnits().length >= 2,
-    canUngroupSelection: () =>
-      selection.getIds().some((id) => {
-        const doc = getDoc();
-        const node = findNode(doc, id);
-        return Boolean(node && topLevelGroupOf(doc, node));
-      }),
+    canUngroupSelection: () => selectedContainerIds().size > 0,
     enterGroup,
     exitGroup,
     moveIntoGroup,

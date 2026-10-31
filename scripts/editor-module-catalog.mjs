@@ -59,12 +59,13 @@ export const EDITOR_MODULES = [
     paths: [
       "src/canvas/editor/editor_pointer*", "src/canvas/editor/*hit-test*", "src/canvas/editor/selection*",
       "src/canvas/editor/transform*", "src/canvas/*shortcut*",
+      "src/canvas/editor/drawing-gesture-*", "src/canvas/editor/editor-pointer-*",
     ],
     related: ["canvas","layers","text","vectors","inspector"],
-    features: ["selection.hit-testing","selection.transforms","selection.cancel","selection.shortcuts"],
+    features: ["selection.hit-testing","selection.transforms","selection.cancel","selection.shortcuts","selection.continuous-creation"],
     suites: [
       "frame-child-pointer", "canvas-double-click", "text-box-geometry", "editor-shortcut-lifecycle",
-      "hook-lifecycle",
+      "hook-lifecycle", "continuous-creation",
     ],
     remaining: [
       "Physical stylus pressure, OS shortcut interception and all multi-touch sequences need device-specific checks.",
@@ -77,6 +78,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/editor_layer*", "src/canvas/components/use*layer*", "src/canvas/editor/*node*",
       "src/canvas/editor/*frame*", "src/canvas/editor/*reparent*", "src/canvas/editor/*duplicate*",
       "src/canvas/editor/*paste*", "src/canvas/editor/*clipboard*",
+      "src/canvas/editor/doc_ops_groups.js", "src/canvas/editor/editor_engine_groups.js",
       "src/canvas/components/editor_image_batch.js", "src/canvas/components/use_editor_dnd.js",
     ],
     related: ["selection","compositing","layout","documents"],
@@ -126,7 +128,7 @@ export const EDITOR_MODULES = [
     id: "text",
     title: "Text editing and typography",
     paths: [
-      "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/components/editor_text*",
+      "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js", "src/canvas/components/editor_text*",
       "src/canvas/components/editor_properties/text*",
     ],
     related: ["selection","layout","compositing","documents"],
@@ -181,7 +183,7 @@ export const EDITOR_MODULES = [
     paths: [
       "src/canvas/components/editor_properties/*", "src/canvas/components/*context*",
       "src/canvas/components/*taskbar*", "src/canvas/components/*toolbar*",
-      "src/canvas/components/flat_select*", "src/canvas/components/settings*", "src/canvas/use_i18n.js",
+      "src/canvas/components/editor_pie_menu.jsx", "src/canvas/components/flat_select*", "src/canvas/components/settings*", "src/canvas/use_i18n.js",
       "src/shared/i18n*", "src/shared/i18n/*", "src/canvas/*layout.css", "src/canvas/*panels.css",
     ],
     related: ["selection","layers","text","images","layout"],

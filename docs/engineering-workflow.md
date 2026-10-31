@@ -25,12 +25,12 @@ The release verifier imports this catalog; do not create another suite list.
 | `inspector` | Fields, menus, toolbar, responsive UI and i18n | Commit/cancel, selection changes, focus and async locale |
 | `platform` | Agent, runtime, loading, native integration and collaboration | Auth, process ownership, reconnect and unmount |
 
-The initial inventory contains 48 capability groups, not a census of every
+The initial inventory contains 50 capability groups, not a census of every
 button or parameter. All groups remain **partial** until specific acceptance
 rows cover their declared entry points and contexts. Registration is not
 execution, and execution is not exhaustive functional coverage.
 
-The existing core release contains 76 browser suites. Another 21 standalone
+The existing core release contains 78 browser suites. Another 21 standalone
 suites are explicitly listed in `ADDITIONAL_BROWSER_CHECKS`: 18 need fixture,
 assertion and service-requirement review; `canvas_fps`, `image-electron` and
 `image-network` run separately for hardware, native-host and network/model

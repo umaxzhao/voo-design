@@ -2,6 +2,10 @@
 
 ## 1.0.0
 
+- Verify a continuous real-UI creation session from New through drawing, typing, grouping, path editing, image placement, masking, undo/redo and cold ZIP reopening. Register it in the core release gate with explicit platform/performance limits.
+- Make named shape shortcuts choose their own tool while preserving radial pointer choices. Keep new groups in their shared Frame, select the new movement unit and ungroup only the intended unlocked container.
+- Roll back cancelled shape, arrow and text drafts without altering existing history/redo; share pointer keyboard/listener cleanup in a focused module. Give newly drawn text contrasting initial ink on solid Frame surfaces while preserving explicit and programmatic colors.
+
 - Account for every existing browser suite: retain 76 core release checks and explicitly list 21 standalone/unreviewed checks with reasons. Reject newly unclassified suites and keep separate checks out of core pass totals.
 
 - Restore temporary-directory environment aliases correctly in bridge disposal tests, including platforms where TMPDIR is initially absent; retain the required Linux CI test gate.
