@@ -3,19 +3,28 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
-最近一次完整核心验证提交：[aec2782](https://github.com/umaxzhao/voo-design/commit/aec278290c69990105c36b13cdd05420f7e5d24e)；90/90 项通过。本轮只发布测试/登记/文档，不重新部署产品；后续 main 的提示词更新仅单独复核，不继承该完整执行。
+最近一次完整核心验证提交：[9cd70af](https://github.com/umaxzhao/voo-design/commit/9cd70afd10df836c269b5597b5558a114e463640)；90/90 项通过（含启动夹具重试）。当前线上为合入 Agent 改动并完成定向复核的 e28b511；不继承前版本完整执行。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
 
-## 本轮：文字排版可读性与 Lucide 图标（最终门禁待完成）
+## 本轮：文字排版可读性与 Lucide 图标（已完成声明范围）
 
-- `inspector.typography-clarity` / `text.typography`：参考 Figma 常用文字属性分组，明确显示字体、字重、字号、行高、字距、格式和对齐标签；保留 px/% 单位。文本框自动/固定宽度放在常用区，方向、大小写、段落、基线及路径文字保留在一个高级入口。
-- 新增排版控件使用 Lucide，字号 `ALargeSmall`、行高 `MoveVertical`、字距 `MoveHorizontal`、段落 `Pilcrow`、基线 `Baseline`，并使用文字对齐、斜体、下划线图标；真实 SVG 尺寸和缩放后的描边验证为 16px / 1.5px。
-- 创建文字和编辑文字共用基础控件，移除重复的字号预设按钮，字号输入保留原有范围；`text_section.jsx` 从 536 行缩为 67 行，工具面板缩为 73 行，共享模块均不超过 400 行。
-- 初始缺失可见标签/标准图标的两项失败见 `/private/tmp/voo-typography-baseline.log`；实测还发现窄屏全局规则将 11px 标签压为 10px，已仅在文字控件内保持 11px，并让窄屏字段纵向排列、触摸控件保持 48px。
-- 定向单测 28 项通过；真实字号/行高/字距几何变化、取消与一次撤销重做、字重/装饰/对齐、自动换行、所有现有高级属性、字体选择、多选及真实指针文字创建通过。16 组主题/语言/视口实测通过，证据 `/private/tmp/voo-typography-only-v5.log`、`/private/tmp/voo-typography-only/`。完整固定提交及线上证据待补录。
-- 完整检查额外复现了子菜单把 Window 事件目标传给 `Node.contains` 的异常（`/private/tmp/voo-typography-release-final.json`）。已补 Node 类型判断；窗口 resize/scroll 关闭菜单、子菜单内部滚动不关闭，以及图片置入/剪贴板流程复核通过。
-- 不认证全部系统字体、实体 IME/触屏/触控笔、字体变量轴和新增高级文本能力；没有添加无实现的按钮。[验收范围](audits/panel-control-audit.md#typography-clarity)。
+- `inspector.typography-clarity` / `text.typography`：参考 [Figma 文字属性分组](https://help.figma.com/hc/en-us/articles/360039956634-Explore-text-properties)，直接显示字体、字重、字号、行高、字距、格式和对齐标签，明确 px/% 单位。文本框自动/固定宽度放在常用区；方向、大小写、段落、基线与路径文字保留在一个高级入口。
+- 新增图标统一使用 [Lucide](https://lucide.dev/icons)：`ALargeSmall` / `MoveVertical` / `MoveHorizontal` / `Pilcrow` / `Baseline`，配合文字对齐、斜体、下划线与曲线路径图标。实际可见 SVG（含下拉箭头）验证为 16px / 1.5px CSS 描边。
+- 创建和编辑文字共用基础控件，移除重复的字号预设按钮，输入保留原有范围；`text_section.jsx` 536→67 行、工具面板 247→73 行，3 个共享模块分别 139/136/106 行，没有新增依赖和字体资源。
+- 固定版本 [`9cd70af`](https://github.com/umaxzhao/voo-design/commit/9cd70afd10df836c269b5597b5558a114e463640)：**90/90 发布步骤通过，86 组浏览器检查通过，单测 4587 通过、4 跳过、0 失败**，源码干净且验证期间未修改；启动夹具临时缓存清理断言失败后在同一提交重试并补齐，其余浏览器使用较低并发，保留原失败，不是单次命令退出 0 的声明。证据 `/private/tmp/voo-typography-release-recovered.json`。
+- 实测字号/行高/字距改变真实文字边界，输入取消与一次撤销重做、字重/装饰/对齐、自动换行、高级属性、现有字体选择和多选均通过；实际指针创建文字使用面板里的字号/字重/间距，撤销重做正常。
+- 320/390/768/1440px × 深浅主题 × 中英文的 16 个布局上下文通过；仅在文字控件内覆盖窄屏 11px→10px 的旧压缩规则，字段窄屏纵向排列、触摸控件 48px。截图 `/private/tmp/voo-typography-inspector-recovered/typography-*.png`；优化前截图 `/private/tmp/voo-typography-before.png`。机械扫描无发现，不代表完整无障碍认证。
+- 发布前再合入远程 Agent Frame 图标、单组建议回归及增量设计提示词改动；集成版本 [`e28b511`](https://github.com/umaxzhao/voo-design/commit/e28b5110896851246e12ffbfc0571284851f1265) 重新构建、设计/模块检查、全量单测 4597 通过/4 跳过及文字面板、Agent 选区、Agent 建议三组实际浏览器复核通过（`/private/tmp/voo-typography-merged-checks.json`），不把前一版本的 90 项冒记为合并后的完整执行。
+- 该集成版本已推送并通过 SSH 部署 la2；正式入口及 6 个相关资源与验证构建逐字节一致。实际中文生产面板确认标签、11 个 16px/1.5px 图标、字号几何、字重、自动换行、段落和撤销，无页面脚本错误。证据 `/private/tmp/voo-typography-production-result.log`、`/private/tmp/voo-typography-deployment-proof.json`，截图 `/private/tmp/voo-typography-production-panel.png`。未调用付费服务。
+- GitHub 检查 [41214813845](https://github.com/umaxzhao/voo-design/actions/runs/41214813845) 查询时仍在运行，未记为 CI 通过；上述上线使用项目 SSH 脚本，备份 `la2:/srv/voo-run/editor-backups/e28b5110896851246e12ffbfc0571284851f1265-20261031T152656Z`。
+- 完整检查还复现并修复了 Window 滚动/缩放目标被误传给 `Node.contains` 的菜单异常（旧失败 `/private/tmp/voo-typography-release-final.json`）。实际窗口 resize/scroll、安全保留子菜单内部滚动、图片置入/剪贴板以及生产菜单 resize 关闭路径均通过。
+- 本地 App 仅三方合入本轮文件，保留其他草稿；定向 29 项单测及中文真实控件操作通过（`/private/tmp/voo-typography-primary-unit-final.log`、`/private/tmp/voo-typography-primary-browser.log`）。不把公开版本的完整门禁冒记为全部私人草稿已通过。备份 `/private/tmp/voo-typography-primary/`、`/private/tmp/voo-typography-primary-contracts-corrected/`。
+- 原始标签/图标两项失败保留在 `/private/tmp/voo-typography-baseline.log`；`60a289c` 的旧文字工具契约失败保留在 `/private/tmp/voo-typography-release.json`，更新断言后重新完整执行，没有把失败或部分执行算作通过。
+- `4d94489` 的后续填充检查暴露了新增文字用例未还原测试场景，证据保留在 `/private/tmp/voo-typography-release-integrated.json`；补回场景后整段面板检查通过（`/private/tmp/voo-typography-isolation.log`），随后重新完整执行最终版本。
+- 启动夹具原失败在 `/private/tmp/voo-typography-release-complete.json`，同提交串行重试与浏览器补跑记录在恢复报告及 `.log`；临时缓存清理的首次间歇失败没有冒记为通过。
+- 发布前已合入远程 Frame 标题选择、蒙版对齐和社区模板翻译修复；前一个 `00dc8e7` 仅部分执行（`/private/tmp/voo-typography-release-verified.json`），没有当成最终集成提交的通过记录。
+- 未认证所有系统字体、实体 IME/触屏/触控笔、OS 级缩放和变量字体轴；未增加不受支持的文字能力。上轮首页冷加载 New 时序和 `.fig` 导入问题仍独立待修。[验收范围](audits/panel-control-audit.md#typography-clarity)。
 
 ## 本轮：Agent 引导提示词重复（已完成声明范围）
 
@@ -163,12 +172,12 @@
 
 | 项目 | 状态 |
 | --- | --- |
-| 工程规范与模块登记 | 已落地：12 个模块、65 个公开能力分组 |
-| 核心发布校验 | aec2782：90/90 步通过，包含 86 组浏览器套件；后续提示词整合只跑相关复核 |
-| 全量单元测试 | 4590 通过、4 跳过、0 失败；跳过项不算通过 |
-| GitHub Ubuntu 基础检查 | [bfbf91d CI build](https://github.com/umaxzhao/voo-design/actions/runs/41210654826/job/124564730088) 通过；CI deploy 跳过，SSH 部署另有证据 |
-| 线上部署 | bfbf91d 上轮已部署并核对；本轮未部署，当前正式单组建议独立复核，不与后续重建混称同版 |
-| 功能验收完整度 | 部分覆盖；65 个公开能力分组未穷尽所有入口、上下文和设备 |
+| 工程规范与模块登记 | 已落地：12 个模块、66 个公开能力分组 |
+| 核心发布校验 | 9cd70af：90/90 步通过，包含 86 组浏览器套件 |
+| 全量单元测试 | 4587 通过、4 跳过、0 失败；跳过项不算通过 |
+| GitHub Ubuntu 基础检查 | 本轮 CI 按实际状态另记；本机完整门禁和线上实测已通过，不继承历史版本 CI |
+| 线上部署 | e28b511 已部署 la2，入口及文字模块字节一致；中文实际排版操作与撤销通过 |
+| 功能验收完整度 | 部分覆盖；66 个公开能力分组未穷尽所有入口、上下文和设备 |
 | 核心门禁外的独立检查 | 建议 1 组本轮显式通过；其余 20 组本轮未运行，不继承历史通过 |
 
 ## 连续创作首轮（f9102cd，已完成声明范围）

@@ -357,13 +357,13 @@ Text-box sizing is visible, while all less frequent options have one disclosure.
 
 | Context | Registered assertions | Status |
 | --- | --- | --- |
-| Labels/icons | Explicit visible captions; 16px icons and actual 1.5px stroke after scaling | Targeted Chromium pass; final gate pending |
-| Real text | Size/line-height/tracking alter actual bounds; cancel and one-step undo/redo; weight/decoration/alignment | Targeted Chromium pass; final gate pending |
-| Advanced | Box width wraps actual text; direction/case/paragraph/baseline/path offset retain writes and undo | Targeted Chromium pass; final gate pending |
-| Shared creation | Same basic controls, actual pointer creates text with selected size/weight/spacing; one-step undo/redo | Targeted Chromium pass; final gate pending |
-| Font/multi | Existing font picker applies a real family; mixed numeric fields update both layers and undo each original value | Targeted Chromium pass; final gate pending |
-| Layout | 320/390/768/1440px, both themes and languages; numeric space and readable captions; 48px narrow controls | Targeted Chromium pass; final gate pending |
-| Window menu events | Reproduced non-Node Window target crash in `image-file-clipboard`; guard preserves inner scrolling and dismisses safely on resize/scroll | Targeted Chromium pass; final gate pending |
+| Labels/icons | Explicit visible captions; 16px icons and actual 1.5px stroke after scaling | Passed on `9cd70af` |
+| Real text | Size/line-height/tracking alter actual bounds; cancel and one-step undo/redo; weight/decoration/alignment | Passed on `9cd70af` |
+| Advanced | Box width wraps actual text; direction/case/paragraph/baseline/path offset retain writes and undo | Passed on `9cd70af` |
+| Shared creation | Same basic controls, actual pointer creates text with selected size/weight/spacing; one-step undo/redo | Passed on `9cd70af` |
+| Font/multi | Existing font picker applies a real family; mixed numeric fields update both layers and undo each original value | Passed on `9cd70af` |
+| Layout | 320/390/768/1440px, both themes and languages; numeric space and readable captions; 48px narrow controls | Passed on `9cd70af` |
+| Window menu events | Reproduced non-Node Window target crash in `image-file-clipboard`; guard preserves inner scrolling and dismisses safely on resize/scroll | Passed on `9cd70af` |
 | Remaining | Physical IME/touch/stylus, every installed font and variable-font axis, OS-level scaling | Not certified |
 
 Evidence: `text_section_compact.test.jsx`, `tools_text_pen_shape.test.jsx`,
@@ -373,3 +373,17 @@ Before screenshots: `/private/tmp/voo-typography-before.png`; targeted after
 matrix: `/private/tmp/voo-typography-only/`. The two baseline regressions are in
 `/private/tmp/voo-typography-baseline.log`. Mechanical typography scan returned
 no findings; it does not certify every contrast or accessibility context.
+
+Final execution `9cd70afd10df836c269b5597b5558a114e463640`: all 90 release steps, including 86 browser suites,
+4587 unit passes and 4 skips on clean unchanged source. Report:
+`/private/tmp/voo-typography-release-recovered.json`. All 16 viewport/theme/locale contexts have retained screenshots.
+This is a same-source recovery after a private startup-cache teardown assertion,
+not a single first-pass invocation: the original failure remains in
+`/private/tmp/voo-typography-release-complete.json`; startup was rechecked serially
+and remaining browser suites completed at reduced concurrency.
+A later integrated revision `e28b5110896851246e12ffbfc0571284851f1265` preserves incoming Agent refinements and separately passes a new build, design/module validation, full unit run and the inspector/Agent-context/Agent-suggestions browser suites. It does not inherit the earlier revision's full 90-check execution. Public resources match this integrated build; the actual Chinese production panel
+passes captions, 16px/1.5px SVG metrics, size geometry, weight, text wrapping,
+paragraph updates and undo without page errors. Production evidence:
+`/private/tmp/voo-typography-production-result.log` and
+`/private/tmp/voo-typography-deployment-proof.json`. Earlier failed execution
+remains separate and is not attributed to the final revision.
