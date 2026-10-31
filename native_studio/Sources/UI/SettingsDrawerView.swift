@@ -3,9 +3,10 @@
 //  native_studio
 //
 //  Native "Settings & Preferences" modal for VOO Design, replicating the web
-//  settings drawer (web_settings.png): a dimmed scrim, a 1040×760 rounded-24
-//  dialog, a 208pt sidebar with four tabs and a scroll-free content pane for
-//  General / AI Assistant / AI Providers / Shortcuts.
+//  settings drawer (docs/refs/web_20261031/web_settings.png): a dimmed scrim, a
+//  1040×760 rounded-24 dialog, a 208pt sidebar with five tabs and a scrolling
+//  card-based content pane for General / AI Assistant / Design Systems /
+//  AI Providers / Shortcuts.
 //
 //  Everything is custom-drawn with AppKit / CoreGraphics. A single real
 //  NSTextField provides the collaborator-name editing; every other control is
@@ -21,10 +22,11 @@ import Foundation
 
 // MARK: - Settings Tab
 
-/// The four sections of the settings drawer.
+/// The five sections of the settings drawer (web `SETTINGS_TABS` order).
 public enum SettingsTab: String, CaseIterable, Sendable {
     case general
     case aiAssistant
+    case designSystems
     case aiProviders
     case shortcuts
 
@@ -61,6 +63,14 @@ private enum SettingsPalette {
     static let pressed = NSColor(white: 1.0, alpha: 0.12)
     static let activeRow = NSColor(white: 1.0, alpha: 0.08)
 
+    // Card-based General tab (web `SettingsSection` cards, `Switch`, inputs)
+    static let cardFill = NSColor(hex: "#171717")
+    static let inputFill = NSColor(white: 1.0, alpha: 0.06)
+    static let outlineButtonFill = NSColor(white: 1.0, alpha: 0.03)
+    static let switchTrackOff = NSColor(white: 1.0, alpha: 0.15)
+    static let switchTrackOn = NSColor(white: 1.0, alpha: 0.80)
+    static let switchKnob = NSColor(hex: "#171717")
+
     // Accents
     static let mint = NSColor(hex: "#a7ffd4")
     static let mintBright = NSColor(hex: "#b2ffd6")
@@ -96,13 +106,31 @@ private enum SettingsMetrics {
     static let headingHeight: CGFloat = 16
     static let headingGap: CGFloat = 20
 
-    static let tabPadding: CGFloat = 12
-    static let tabGap: CGFloat = 8
-    static let tabHeight: CGFloat = 48
-    static let tabRadius: CGFloat = 12
+    static let tabPadding: CGFloat = 8
+    static let tabGap: CGFloat = 4
+    static let tabHeight: CGFloat = 40
+    static let tabRadius: CGFloat = 8
     static let tabIconSize: CGFloat = 15
     static let tabIconInset: CGFloat = 12
     static let tabLabelGap: CGFloat = 8
+
+    // General tab content pane (web: content `p-4`, section cards `rounded-xl p-3`,
+    // card stack `gap-4`, cards `gap-2`, form fields `gap-1.5`).
+    static let contentInset: CGFloat = 16
+    static let cardGap: CGFloat = 16
+    static let sectionCardRadius: CGFloat = 12
+    static let sectionCardPadding: CGFloat = 12
+    static let sectionTitleHeight: CGFloat = 16
+    static let sectionRowGap: CGFloat = 8
+    static let generalInputHeight: CGFloat = 36
+    static let generalInputRadius: CGFloat = 12
+    static let fieldLabelGap: CGFloat = 6
+    static let switchWidth: CGFloat = 28
+    static let switchHeight: CGFloat = 16
+    static let switchKnobSize: CGFloat = 12
+    static let rowHeight: CGFloat = 40
+    static let workspaceRowHeight: CGFloat = 44
+    static let smallActionHeight: CGFloat = 28
 
     static let cardRadius: CGFloat = 16
     static let sectionGap: CGFloat = 16
@@ -170,26 +198,48 @@ private struct SettingsCopy {
     let closeHelp: String
     let tabTitles: [String]
 
-    let profileLabel: String
+    // General → Profile card (web settings_profile.jsx).
+    let profileTitle: String
     let guestName: String
     let guestBadge: String
+    let continueWithGoogle: String
+    let continueWithGitHub: String
+    let oauthNote: String
+    let orLabel: String
+    let emailLabel: String
+    let emailPlaceholder: String
+    let passwordLabel: String
+    let passwordPlaceholder: String
+    let signInLabel: String
+    let noAccountPrefix: String
+    let signUpLabel: String
     let nameFieldLabel: String
     let namePlaceholder: String
 
-    let workspaceLabel: String
-    let activeWorkspace: String
+    // General → Appearance card (web AppearanceSettingsSection + AutoSaveRow).
+    let appearanceTitle: String
+    let lightInterfaceLabel: String
+    let lightInterfaceHint: String
+    let autoSaveDraftsLabel: String
+    let autoSaveDraftsHint: String
+
+    // General → Canvas card (web CanvasSettingsSection; native keeps workspace
+    // and language rows here so no existing control is lost).
+    let canvasTitle: String
+    let showRulersLabel: String
+    let rulersHint: String
+    let workspaceTitle: String
     let workspaceBadge: String
-    let workspaceName: String
     let changeDirectory: String
     let rescan: String
-
-    let languageLabel: String
+    let languageTitle: String
+    let languageHint: String
     let chineseLabel: String
     let englishLabel: String
 
-    // Canvas (web `settings.canvas.*`, persisted `voo.editor.showRulers`).
-    let canvasLabel: String
-    let showRulersLabel: String
+    // Design Systems tab (native empty state; no design-system model yet).
+    let designSystemsEmptyTitle: String
+    let designSystemsEmptyHint: String
 
     let agentSectionLabel: String
     let agents: [SettingsAgentCopy]
@@ -228,23 +278,41 @@ private struct SettingsCopy {
         modalTitle: "SETTINGS & PREFERENCES",
         closeLabel: "Close",
         closeHelp: "Close settings (Esc)",
-        tabTitles: ["General", "AI Assistant", "AI Providers", "Shortcuts"],
-        profileLabel: "PROFILE",
+        tabTitles: ["General", "AI Assistant", "Design Systems", "AI Providers", "Shortcuts"],
+        profileTitle: "Profile",
         guestName: "Guest",
         guestBadge: "Local guest profile",
+        continueWithGoogle: "Continue with Google",
+        continueWithGitHub: "Continue with GitHub",
+        oauthNote: "Google and GitHub sign-in are not enabled in Voo Cloud yet.",
+        orLabel: "or",
+        emailLabel: "Email",
+        emailPlaceholder: "name@example.com",
+        passwordLabel: "Password",
+        passwordPlaceholder: "Min. 6 characters",
+        signInLabel: "Sign In",
+        noAccountPrefix: "No account?",
+        signUpLabel: "Sign up",
         nameFieldLabel: "Display name",
         namePlaceholder: "Your name",
-        workspaceLabel: "PROJECT WORKSPACE",
-        activeWorkspace: "ACTIVE WORKSPACE",
+        appearanceTitle: "Appearance",
+        lightInterfaceLabel: "Light interface",
+        lightInterfaceHint: "Switch the panels and chrome to a light theme. The canvas keeps its own colors.",
+        autoSaveDraftsLabel: "Auto-save edit drafts",
+        autoSaveDraftsHint: "Keep an additional local recovery copy while editing, so you can restore changes after a crash.",
+        canvasTitle: "Canvas",
+        showRulersLabel: "Show rulers",
+        rulersHint: "Hidden by default. You can also toggle rulers with Shift+R (⇧R).",
+        workspaceTitle: "Project Workspace",
         workspaceBadge: "[macOS Native]",
-        workspaceName: "Browser Workspace",
         changeDirectory: "Change Directory",
         rescan: "Rescan",
-        languageLabel: "LANGUAGE",
+        languageTitle: "Language",
+        languageHint: "Select the interface language for the canvas editor.",
         chineseLabel: "简体中文",
         englishLabel: "English",
-        canvasLabel: "CANVAS",
-        showRulersLabel: "Show rulers",
+        designSystemsEmptyTitle: "No design systems yet",
+        designSystemsEmptyHint: "Saved component libraries and token sets will appear here.",
         agentSectionLabel: "LOCAL AGENT",
         agents: [
             SettingsAgentCopy(
@@ -310,23 +378,41 @@ private struct SettingsCopy {
         modalTitle: "设置与偏好",
         closeLabel: "关闭",
         closeHelp: "关闭设置 (Esc)",
-        tabTitles: ["常规偏好", "AI 助手", "AI 供应商", "快捷键速查"],
-        profileLabel: "个人资料",
+        tabTitles: ["常规偏好", "AI 助手", "设计系统", "AI 供应商", "快捷键速查"],
+        profileTitle: "个人资料",
         guestName: "访客",
         guestBadge: "本地访客资料",
+        continueWithGoogle: "通过Google登录",
+        continueWithGitHub: "通过GitHub登录",
+        oauthNote: "Google 和 GitHub 登录尚未在 Voo Cloud 后台启用。",
+        orLabel: "或",
+        emailLabel: "邮箱",
+        emailPlaceholder: "name@example.com",
+        passwordLabel: "密码",
+        passwordPlaceholder: "至少6位",
+        signInLabel: "登录",
+        noAccountPrefix: "还没有账号？",
+        signUpLabel: "注册",
         nameFieldLabel: "显示名称",
         namePlaceholder: "你的昵称",
-        workspaceLabel: "项目工作区",
-        activeWorkspace: "当前工作区",
+        appearanceTitle: "外观",
+        lightInterfaceLabel: "浅色界面",
+        lightInterfaceHint: "将面板和界面切换为浅色；画布保持自身颜色。",
+        autoSaveDraftsLabel: "自动保存编辑草稿",
+        autoSaveDraftsHint: "编辑时额外保留一份本地恢复副本，便于在意外退出后还原改动。",
+        canvasTitle: "画布",
+        showRulersLabel: "显示标尺",
+        rulersHint: "默认隐藏。也可按 Shift+R（⇧R）切换标尺。",
+        workspaceTitle: "项目工作区",
         workspaceBadge: "[macOS 原生]",
-        workspaceName: "Browser Workspace",
         changeDirectory: "更换目录",
         rescan: "重新扫描",
-        languageLabel: "语言",
+        languageTitle: "语言",
+        languageHint: "选择画布编辑器的界面显示语言。",
         chineseLabel: "简体中文",
         englishLabel: "English",
-        canvasLabel: "画布",
-        showRulersLabel: "显示标尺",
+        designSystemsEmptyTitle: "暂无设计系统",
+        designSystemsEmptyHint: "已保存的组件库与 Token 集将显示在这里。",
         agentSectionLabel: "本地智能体",
         agents: [
             SettingsAgentCopy(
@@ -410,6 +496,7 @@ private enum SettingsGlyph {
     case codex
     case antigravity
     case lock
+    case palette
 
     func draw(in rect: CGRect, color: NSColor, strokeWidth: CGFloat = 1.7) {
         switch self {
@@ -437,6 +524,22 @@ private enum SettingsGlyph {
             Self.drawAntigravityMark(in: rect, color: color, strokeWidth: strokeWidth)
         case .lock:
             VooIconFactory.drawLock(in: rect, color: color, strokeWidth: strokeWidth)
+        case .palette:
+            Self.drawPalette(in: rect, color: color, strokeWidth: strokeWidth)
+        }
+    }
+
+    /// Painter's-palette glyph (web `IconPalette`) used by the Design Systems tab.
+    private static func drawPalette(in rect: CGRect, color: NSColor, strokeWidth: CGFloat) {
+        withCanvas(rect) { ctx in
+            strokeStyle(ctx, color, strokeWidth)
+            ctx.strokeEllipse(in: CGRect(x: 3.4, y: 4.4, width: 17.2, height: 15.2))
+            ctx.setFillColor(color.cgColor)
+            for point in [CGPoint(x: 8.6, y: 9.4), CGPoint(x: 12.0, y: 7.4), CGPoint(x: 15.4, y: 9.4)] {
+                ctx.fillEllipse(in: CGRect(x: point.x - 1.4, y: point.y - 1.4,
+                                           width: 2.8, height: 2.8))
+            }
+            ctx.fillEllipse(in: CGRect(x: 15.0, y: 14.0, width: 3.4, height: 3.4))
         }
     }
 
@@ -719,6 +822,10 @@ public final class SettingsDrawerView: NSView {
     public static let agentProviderDefaultsKey = "voo.agent.llmProvider"
     /// Mirrors the web canvas ruler preference (`voo.editor.showRulers`), default off.
     public static let showRulersDefaultsKey = "voo.editor.showRulers"
+    /// Mirrors the web editor theme preference (`voo.editor.theme`, "light"/"dark").
+    public static let editorThemeDefaultsKey = "voo.editor.theme"
+    /// Mirrors the web auto-save-drafts preference (`voo.editor.autoSaveDrafts`).
+    public static let autoSaveDraftsDefaultsKey = "voo.editor.autoSaveDrafts"
 
     public static let preferredModalSize = NSSize(
         width: SettingsMetrics.modalWidth,
@@ -743,6 +850,10 @@ public final class SettingsDrawerView: NSView {
     public var onLanguageChange: ((String) -> Void)?
     /// Invoked after the "Show rulers" switch is toggled (already persisted).
     public var onToggleRulers: ((Bool) -> Void)?
+    /// Invoked after the "Light interface" switch is toggled (already persisted).
+    public var onToggleLightInterface: ((Bool) -> Void)?
+    /// Invoked after the "Auto-save edit drafts" switch is toggled (already persisted).
+    public var onToggleAutoSaveDrafts: ((Bool) -> Void)?
 
     // MARK: Public state
 
@@ -783,12 +894,19 @@ public final class SettingsDrawerView: NSView {
         case agentSegment(Int)
         case onboarding
         case showRulers
+        case lightInterface
+        case autoSaveDrafts
     }
 
     private var languageCode: String = "en"
     private var copy: SettingsCopy = .english
     private var selectedAgentIndex: Int = 0
     private var showsRulers: Bool = false
+    private var lightInterface: Bool = false
+    private var autoSaveDrafts: Bool = false
+    /// Vertical scroll of the tab content pane (0 = top, positive = content
+    /// moved up to reveal lower sections).
+    private var contentScrollOffset: CGFloat = 0
     private var hoveredControl: ControlID?
     private var pressedControl: ControlID?
     private var scrimPress = false
@@ -818,7 +936,7 @@ public final class SettingsDrawerView: NSView {
         field.focusRingType = .none
         field.isEditable = true
         field.isSelectable = true
-        field.font = ThemeFonts.mono(size: 12)
+        field.font = ThemeFonts.system(size: 12)
         field.textColor = SettingsPalette.textSecondary
         field.usesSingleLineMode = true
         field.lineBreakMode = .byTruncatingTail
@@ -865,16 +983,25 @@ public final class SettingsDrawerView: NSView {
             selectedAgentIndex = Self.agentIndex(forProvider: storedAgent)
         }
         showsRulers = UserDefaults.standard.bool(forKey: SettingsDrawerView.showRulersDefaultsKey)
-        // Live-sync with ⇧R / the zoom-bar toggle (both persist the same key).
+        lightInterface = UserDefaults.standard.string(forKey: SettingsDrawerView.editorThemeDefaultsKey) == "light"
+        autoSaveDrafts = UserDefaults.standard.bool(forKey: SettingsDrawerView.autoSaveDraftsDefaultsKey)
+        // Live-sync with ⇧R / the zoom-bar toggle and with the web settings keys
+        // (all of them persist to UserDefaults).
         defaultsObserver = NotificationCenter.default.addObserver(
             forName: UserDefaults.didChangeNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
             guard let self else { return }
-            let next = UserDefaults.standard.bool(forKey: SettingsDrawerView.showRulersDefaultsKey)
-            guard next != self.showsRulers else { return }
-            self.showsRulers = next
+            let nextRulers = UserDefaults.standard.bool(forKey: SettingsDrawerView.showRulersDefaultsKey)
+            let nextLight = UserDefaults.standard.string(forKey: SettingsDrawerView.editorThemeDefaultsKey) == "light"
+            let nextAutoSave = UserDefaults.standard.bool(forKey: SettingsDrawerView.autoSaveDraftsDefaultsKey)
+            guard nextRulers != self.showsRulers
+                || nextLight != self.lightInterface
+                || nextAutoSave != self.autoSaveDrafts else { return }
+            self.showsRulers = nextRulers
+            self.lightInterface = nextLight
+            self.autoSaveDrafts = nextAutoSave
             self.refreshProxyLabels()
             self.needsDisplay = true
         }
@@ -945,9 +1072,11 @@ public final class SettingsDrawerView: NSView {
         if let storedAgent = UserDefaults.standard.string(forKey: SettingsDrawerView.agentProviderDefaultsKey) {
             selectedAgentIndex = Self.agentIndex(forProvider: storedAgent)
         }
-        // Re-read the ruler pref so an ⇧R / zoom-bar toggle made while the drawer
-        // was closed shows up immediately (web live-syncs the same setting).
+        // Re-read the editor prefs so an ⇧R / zoom-bar toggle or a theme change
+        // made while the drawer was closed shows up immediately.
         showsRulers = UserDefaults.standard.bool(forKey: SettingsDrawerView.showRulersDefaultsKey)
+        lightInterface = UserDefaults.standard.string(forKey: SettingsDrawerView.editorThemeDefaultsKey) == "light"
+        autoSaveDrafts = UserDefaults.standard.bool(forKey: SettingsDrawerView.autoSaveDraftsDefaultsKey)
         refreshProxyLabels()
 
         hoveredControl = nil
@@ -992,6 +1121,7 @@ public final class SettingsDrawerView: NSView {
             window?.makeFirstResponder(self)
         }
         activeTab = tab
+        contentScrollOffset = 0
         hoveredControl = nil
         pressedControl = nil
         updateAccessibilityElementFrames()
@@ -1013,6 +1143,8 @@ public final class SettingsDrawerView: NSView {
             return .general
         case "aiassistant", "assistant", "ai_assistant", "agent", "ai-assistant":
             return .aiAssistant
+        case "designsystems", "design-systems", "design_systems", "design":
+            return .designSystems
         case "aiproviders", "providers", "ai_providers", "ai-providers":
             return .aiProviders
         case "shortcuts", "shortcut", "keys":
@@ -1053,7 +1185,7 @@ public final class SettingsDrawerView: NSView {
         nameField.placeholderAttributedString = NSAttributedString(
             string: copy.namePlaceholder,
             attributes: [
-                .font: ThemeFonts.mono(size: 12),
+                .font: ThemeFonts.system(size: 12),
                 .foregroundColor: SettingsPalette.textMuted
             ]
         )
@@ -1081,6 +1213,12 @@ public final class SettingsDrawerView: NSView {
         proxies[.showRulers]?.setAccessibilityLabel(copy.showRulersLabel)
         proxies[.showRulers]?.setAccessibilityValue(showsRulers ? 1 : 0)
         proxies[.showRulers]?.toolTip = copy.showRulersLabel
+        proxies[.lightInterface]?.setAccessibilityLabel(copy.lightInterfaceLabel)
+        proxies[.lightInterface]?.setAccessibilityValue(lightInterface ? 1 : 0)
+        proxies[.lightInterface]?.toolTip = copy.lightInterfaceHint
+        proxies[.autoSaveDrafts]?.setAccessibilityLabel(copy.autoSaveDraftsLabel)
+        proxies[.autoSaveDrafts]?.setAccessibilityValue(autoSaveDrafts ? 1 : 0)
+        proxies[.autoSaveDrafts]?.toolTip = copy.autoSaveDraftsHint
 
         for (index, agent) in copy.agents.enumerated() {
             proxies[.agent(index)]?.setAccessibilityLabel(agent.title)
@@ -1133,26 +1271,48 @@ public final class SettingsDrawerView: NSView {
         let heading: CGRect
         let stackTop: CGFloat
 
-        // General
+        // Scrollable content pane + heading used by the card-based tabs.
+        let pane: CGRect
+        let generalHeading: CGRect
+        let maxContentScroll: CGFloat
+
+        // General — card-based sections (web settings_general.jsx order).
         let profileCard: CGRect
-        let profileLabel: CGRect
+        let appearanceCard: CGRect
+        let canvasCard: CGRect
         let profileAvatar: CGRect
         let profileName: CGRect
         let profileSubtitle: CGRect
+        let oauthGoogle: CGRect
+        let oauthGitHub: CGRect
+        let oauthNote: CGRect
+        let orRow: CGRect
+        let emailLabel: CGRect
+        let emailInput: CGRect
+        let passwordLabel: CGRect
+        let passwordInput: CGRect
+        let signInButton: CGRect
+        let noAccountRow: CGRect
         let nameLabel: CGRect
         let nameInput: CGRect
-        let workspaceLabel: CGRect
-        let workspaceCard: CGRect
-        let workspaceChip: CGRect
-        let workspacePath: CGRect
+        let appearanceLightRow: CGRect
+        let appearanceLightSwitch: CGRect
+        let appearanceAutoSaveRow: CGRect
+        let appearanceAutoSaveSwitch: CGRect
+        let canvasShowRulersRow: CGRect
+        let canvasShowRulersSwitch: CGRect
+        let canvasWorkspaceRow: CGRect
+        let canvasLanguageRow: CGRect
         let changeDirectory: CGRect
         let rescan: CGRect
-        let languageLabel: CGRect
         let languageChinese: CGRect
         let languageEnglish: CGRect
-        let canvasLabel: CGRect
-        let canvasRow: CGRect
-        let canvasSwitch: CGRect
+
+        // Design Systems — empty-state card.
+        let designSystemsCard: CGRect
+        let designSystemsIcon: CGRect
+        let designSystemsTitle: CGRect
+        let designSystemsHint: CGRect
 
         // AI Assistant
         let agentSectionLabel: CGRect
@@ -1241,90 +1401,190 @@ public final class SettingsDrawerView: NSView {
             tabTop -= SettingsMetrics.tabHeight + SettingsMetrics.tabGap
         }
 
-        let contentX = sidebar.maxX + SettingsMetrics.contentPadding
-        let contentWidth = modal.maxX - SettingsMetrics.contentPadding - contentX - 1
+        // Content pane: web drawer main is `p-4` and scrolls (all section cards
+        // live inside it). Coordinates are unscrolled; drawing/hit-testing apply
+        // `contentScrollOffset` so the same rects serve both.
+        let contentX = sidebar.maxX + SettingsMetrics.contentInset
+        let contentWidth = modal.maxX - SettingsMetrics.contentInset - contentX - 1
+        let pane = CGRect(
+            x: sidebar.maxX,
+            y: innerY,
+            width: modal.maxX - sidebar.maxX,
+            height: header.minY - innerY
+        )
+        let generalHeading = rect(
+            top: header.minY - SettingsMetrics.contentInset,
+            height: SettingsMetrics.headingHeight,
+            x: contentX,
+            width: contentWidth
+        )
+        // Legacy headings for the non-card tabs (AI Assistant / Providers /
+        // Shortcuts) keep their previous rhythm.
         let headingTop = header.minY - SettingsMetrics.contentPadding
         let heading = rect(top: headingTop - 3, height: SettingsMetrics.headingHeight,
                            x: contentX, width: contentWidth)
         let stackTop = headingTop - SettingsMetrics.headingHeight - SettingsMetrics.headingGap
 
-        // MARK: General layout
-        let profileCard = rect(top: stackTop, height: SettingsMetrics.profileCardHeight,
+        // MARK: General layout — card-based sections (web cards: `p-3`, `gap-2`)
+        let cardInnerX = contentX + SettingsMetrics.sectionCardPadding
+        let cardInnerWidth = contentWidth - SettingsMetrics.sectionCardPadding * 2
+        let cardInnerRight = cardInnerX + cardInnerWidth
+        let profileTop = generalHeading.minY - SettingsMetrics.cardGap
+        let profileCard = rect(top: profileTop, height: 446,
                                x: contentX, width: contentWidth)
-        let cardTop = profileCard.maxY
-        let profileLabel = rect(top: cardTop - 16, height: 14, x: contentX + 16, width: contentWidth - 32)
-        let profileAvatar = rect(top: cardTop - 42, height: SettingsMetrics.avatarSize,
-                                 x: contentX + 16, width: SettingsMetrics.avatarSize)
-        let profileName = rect(top: cardTop - 47, height: 16,
-                               x: profileAvatar.maxX + 12,
-                               width: max(contentWidth - 32 - 52, 120))
-        let profileSubtitle = rect(top: cardTop - 63, height: 14,
-                                   x: profileName.minX, width: profileName.width)
-        let nameLabel = rect(top: cardTop - 98, height: 15, x: contentX + 16, width: contentWidth - 32)
-        let nameInput = rect(top: cardTop - 119, height: SettingsMetrics.inputHeight,
-                             x: contentX + 16, width: contentWidth - 32)
 
+        // Profile card rows, top edges (measured from web_settings.png).
+        let profileInnerTop = profileCard.maxY - SettingsMetrics.sectionCardPadding
+        let profileTitleTop = profileInnerTop
+        let profileRow1Top = profileTitleTop - SettingsMetrics.sectionTitleHeight
+            - SettingsMetrics.sectionRowGap
+        let profileAvatar = rect(top: profileRow1Top, height: SettingsMetrics.avatarSize,
+                                 x: cardInnerX, width: SettingsMetrics.avatarSize)
+        let profileName = rect(top: profileAvatar.maxY - 4, height: 16,
+                               x: profileAvatar.maxX + 12,
+                               width: cardInnerWidth - SettingsMetrics.avatarSize - 12)
+        let profileSubtitle = rect(top: profileName.minY, height: 16,
+                                   x: profileName.minX, width: profileName.width)
+        let oauthGap: CGFloat = 8
+        let oauthTop = profileAvatar.minY - oauthGap
+        let oauthButtonWidth = (cardInnerWidth - oauthGap) / 2
+        let oauthGoogle = rect(top: oauthTop, height: SettingsMetrics.generalInputHeight,
+                               x: cardInnerX, width: oauthButtonWidth)
+        let oauthGitHub = rect(top: oauthTop, height: SettingsMetrics.generalInputHeight,
+                               x: oauthGoogle.maxX + oauthGap, width: oauthButtonWidth)
+        let oauthNote = rect(top: oauthGoogle.minY - oauthGap, height: 16,
+                             x: cardInnerX, width: cardInnerWidth)
+        let orRow = rect(top: oauthNote.minY - oauthGap, height: 16,
+                         x: cardInnerX, width: cardInnerWidth)
+        let emailLabel = rect(top: orRow.minY - oauthGap, height: 16,
+                              x: cardInnerX, width: cardInnerWidth)
+        let emailInput = rect(top: emailLabel.minY - SettingsMetrics.fieldLabelGap,
+                              height: SettingsMetrics.generalInputHeight,
+                              x: cardInnerX, width: cardInnerWidth)
+        let passwordLabel = rect(top: emailInput.minY - oauthGap, height: 16,
+                                 x: cardInnerX, width: cardInnerWidth)
+        let passwordInput = rect(top: passwordLabel.minY - SettingsMetrics.fieldLabelGap,
+                                 height: SettingsMetrics.generalInputHeight,
+                                 x: cardInnerX, width: cardInnerWidth)
+        let signInButton = rect(top: passwordInput.minY - oauthGap,
+                                height: SettingsMetrics.generalInputHeight,
+                                x: cardInnerX, width: cardInnerWidth)
+        let noAccountRow = rect(top: signInButton.minY - oauthGap, height: 16,
+                                x: cardInnerX, width: cardInnerWidth)
+        let nameLabel = rect(top: noAccountRow.minY - oauthGap, height: 16,
+                             x: cardInnerX, width: cardInnerWidth)
+        let nameInput = rect(top: nameLabel.minY - SettingsMetrics.fieldLabelGap,
+                             height: SettingsMetrics.generalInputHeight,
+                             x: cardInnerX, width: cardInnerWidth)
+
+        // Appearance card: two 40pt settings rows with a 28×16 switch each.
+        let appearanceCard = rect(top: profileCard.minY - SettingsMetrics.cardGap,
+                                  height: 136, x: contentX, width: contentWidth)
+        let appearanceInnerTop = appearanceCard.maxY - SettingsMetrics.sectionCardPadding
+        let appearanceRow1Top = appearanceInnerTop - SettingsMetrics.sectionTitleHeight
+            - SettingsMetrics.sectionRowGap
+        let appearanceLightRow = rect(top: appearanceRow1Top, height: SettingsMetrics.rowHeight,
+                                      x: cardInnerX, width: cardInnerWidth)
+        let appearanceAutoSaveRow = rect(
+            top: appearanceLightRow.minY - SettingsMetrics.sectionRowGap,
+            height: SettingsMetrics.rowHeight,
+            x: cardInnerX, width: cardInnerWidth
+        )
+        func switchRect(in row: CGRect) -> CGRect {
+            CGRect(
+                x: cardInnerRight - SettingsMetrics.switchWidth,
+                y: row.midY - SettingsMetrics.switchHeight / 2,
+                width: SettingsMetrics.switchWidth,
+                height: SettingsMetrics.switchHeight
+            )
+        }
+        let appearanceLightSwitch = switchRect(in: appearanceLightRow)
+        let appearanceAutoSaveSwitch = switchRect(in: appearanceAutoSaveRow)
+
+        // Canvas card: Show rulers + Project Workspace + Language rows.
+        let canvasCard = rect(top: appearanceCard.minY - SettingsMetrics.cardGap,
+                              height: 188, x: contentX, width: contentWidth)
+        let canvasInnerTop = canvasCard.maxY - SettingsMetrics.sectionCardPadding
+        let canvasShowRulersRow = rect(
+            top: canvasInnerTop - SettingsMetrics.sectionTitleHeight - SettingsMetrics.sectionRowGap,
+            height: SettingsMetrics.rowHeight,
+            x: cardInnerX, width: cardInnerWidth
+        )
+        let canvasShowRulersSwitch = switchRect(in: canvasShowRulersRow)
+        let canvasWorkspaceRow = rect(
+            top: canvasShowRulersRow.minY - SettingsMetrics.sectionRowGap,
+            height: SettingsMetrics.workspaceRowHeight,
+            x: cardInnerX, width: cardInnerWidth
+        )
+        let canvasLanguageRow = rect(
+            top: canvasWorkspaceRow.minY - SettingsMetrics.sectionRowGap,
+            height: SettingsMetrics.rowHeight,
+            x: cardInnerX, width: cardInnerWidth
+        )
+
+        // Workspace row controls (right aligned).
+        let smallFont = ThemeFonts.system(size: 11)
+        let changeTextSize = settingsTextSize(copy.changeDirectory, font: smallFont)
+        let rescanTextSize = settingsTextSize(copy.rescan, font: smallFont)
+        let changeWidth = ceil(changeTextSize.width) + 13 + 6 + 20
+        let rescanWidth = ceil(rescanTextSize.width) + 13 + 6 + 20
+        let actionsY = canvasWorkspaceRow.midY - SettingsMetrics.smallActionHeight / 2
+        let rescan = CGRect(
+            x: cardInnerRight - rescanWidth, y: actionsY,
+            width: rescanWidth, height: SettingsMetrics.smallActionHeight
+        )
+        let changeDirectory = CGRect(
+            x: rescan.minX - 8 - changeWidth, y: actionsY,
+            width: changeWidth, height: SettingsMetrics.smallActionHeight
+        )
+
+        // Language row: two 28pt pills, right aligned.
+        let languageGap: CGFloat = 4
+        let chineseWidth = ceil(settingsTextSize(copy.chineseLabel, font: ThemeFonts.system(size: 12)).width) + 20
+        let englishWidth = ceil(settingsTextSize(copy.englishLabel, font: ThemeFonts.system(size: 12)).width) + 20
+        let languageY = canvasLanguageRow.midY - SettingsMetrics.smallActionHeight / 2
+        let languageEnglish = CGRect(
+            x: cardInnerRight - englishWidth, y: languageY,
+            width: englishWidth, height: SettingsMetrics.smallActionHeight
+        )
+        let languageChinese = CGRect(
+            x: languageEnglish.minX - languageGap - chineseWidth, y: languageY,
+            width: chineseWidth, height: SettingsMetrics.smallActionHeight
+        )
+
+        // Design Systems tab: one empty-state card that comfortably fits. The
+        // 24+12+16+6+16 content block is vertically centred inside the 180pt card.
+        let designSystemsCard = rect(top: generalHeading.minY - SettingsMetrics.cardGap,
+                                     height: 180, x: contentX, width: contentWidth)
+        let designSystemsIcon = CGRect(
+            x: designSystemsCard.midX - 12, y: designSystemsCard.maxY - 53 - 24,
+            width: 24, height: 24
+        )
+        let designSystemsTitle = CGRect(
+            x: designSystemsCard.minX + 24, y: designSystemsIcon.minY - 12 - 16,
+            width: designSystemsCard.width - 48, height: 16
+        )
+        let designSystemsHint = CGRect(
+            x: designSystemsCard.minX + 24, y: designSystemsTitle.minY - 6 - 16,
+            width: designSystemsCard.width - 48, height: 16
+        )
+
+        // Scroll range: when fully scrolled the last card's bottom padding sits on
+        // the pane bottom (the web scroll container includes its own p-4 padding).
+        let contentBottomEdge: CGFloat
+        switch activeTab {
+        case .general:
+            contentBottomEdge = canvasCard.minY - SettingsMetrics.contentInset
+        case .designSystems:
+            contentBottomEdge = designSystemsCard.minY - SettingsMetrics.contentInset
+        default:
+            contentBottomEdge = pane.minY
+        }
+        let maxContentScroll = max(0, pane.minY - contentBottomEdge)
+
+        // Shared column used by the legacy AI Assistant / Providers / Shortcuts tabs.
         let sectionX = contentX + SettingsMetrics.sectionPadding
         let sectionWidth = contentWidth - SettingsMetrics.sectionPadding * 2
-        let workspaceTop = profileCard.minY - SettingsMetrics.sectionGap
-        let workspaceLabel = rect(top: workspaceTop - 16, height: 14, x: sectionX, width: sectionWidth)
-        let workspaceCard = rect(
-            top: workspaceTop - 16 - 14 - 16,
-            height: SettingsMetrics.workspaceCardHeight,
-            x: sectionX,
-            width: sectionWidth
-        )
-        let chipTextSize = settingsTextSize(copy.workspaceBadge, font: ThemeFonts.mono(size: 10, weight: .medium))
-        let chipWidth = ceil(chipTextSize.width) + 14
-        // Badge centre matches the "Active Workspace" label row centre
-        // (folder icon spans 14…29 from the card top → centre 21.5).
-        let workspaceChip = rect(
-            top: workspaceCard.maxY - 12.5,
-            height: 18,
-            x: workspaceCard.maxX - SettingsMetrics.workspaceCardPadding - chipWidth,
-            width: chipWidth
-        )
-        let workspacePath = rect(
-            top: workspaceCard.maxY - SettingsMetrics.workspaceCardPadding - 17 - 8,
-            height: 18,
-            x: workspaceCard.minX + SettingsMetrics.workspaceCardPadding,
-            width: workspaceCard.width - SettingsMetrics.workspaceCardPadding * 2
-        )
-        let changeTextSize = settingsTextSize(copy.changeDirectory, font: ThemeFonts.mono(size: 12, weight: .medium))
-        let rescanTextSize = settingsTextSize(copy.rescan, font: ThemeFonts.mono(size: 12, weight: .medium))
-        let changeWidth = ceil(changeTextSize.width) + 45
-        let rescanWidth = ceil(rescanTextSize.width) + 45
-        let actionsTop = workspaceCard.minY - 12 - 4
-        let changeDirectory = rect(top: actionsTop, height: SettingsMetrics.buttonHeight,
-                                   x: sectionX, width: changeWidth)
-        let rescan = rect(top: actionsTop, height: SettingsMetrics.buttonHeight,
-                          x: changeDirectory.maxX + 8, width: rescanWidth)
-
-        let languageTop = changeDirectory.minY - SettingsMetrics.sectionGap - 16
-        let languageLabel = rect(top: languageTop - 16, height: 14, x: sectionX, width: sectionWidth)
-        let segmentsTop = languageTop - 16 - 14 - 16
-        let languageGap: CGFloat = 8
-        let segmentWidth = (sectionWidth - languageGap) / 2
-        let languageChinese = rect(top: segmentsTop, height: SettingsMetrics.languageHeight,
-                                   x: sectionX, width: segmentWidth)
-        let languageEnglish = rect(top: segmentsTop, height: SettingsMetrics.languageHeight,
-                                   x: sectionX + segmentWidth + languageGap, width: segmentWidth)
-
-        // Canvas: compact section label + one 28pt toggle row (UI_SPEC §9 content
-        // rhythm: section label 48pt below the previous content, then 16pt gap).
-        let segmentsBottom = segmentsTop - SettingsMetrics.languageHeight
-        let canvasSectionTop = segmentsBottom - SettingsMetrics.sectionGap - 16
-        let canvasLabel = rect(top: canvasSectionTop - 16, height: 14, x: sectionX, width: sectionWidth)
-        let canvasRowTop = canvasSectionTop - 16 - 14 - 16
-        let canvasRow = rect(top: canvasRowTop, height: 28, x: sectionX, width: sectionWidth)
-        let canvasSwitchWidth: CGFloat = 32
-        let canvasSwitchHeight: CGFloat = 20
-        let canvasSwitch = rect(
-            top: canvasRowTop - (28 - canvasSwitchHeight) / 2,
-            height: canvasSwitchHeight,
-            x: canvasRow.maxX - canvasSwitchWidth,
-            width: canvasSwitchWidth
-        )
 
         // MARK: AI Assistant layout
         let agentSectionLabel = rect(top: stackTop, height: 14, x: sectionX, width: sectionWidth)
@@ -1405,25 +1665,43 @@ public final class SettingsDrawerView: NSView {
             contentWidth: contentWidth,
             heading: heading,
             stackTop: stackTop,
+            pane: pane,
+            generalHeading: generalHeading,
+            maxContentScroll: maxContentScroll,
             profileCard: profileCard,
-            profileLabel: profileLabel,
+            appearanceCard: appearanceCard,
+            canvasCard: canvasCard,
             profileAvatar: profileAvatar,
             profileName: profileName,
             profileSubtitle: profileSubtitle,
+            oauthGoogle: oauthGoogle,
+            oauthGitHub: oauthGitHub,
+            oauthNote: oauthNote,
+            orRow: orRow,
+            emailLabel: emailLabel,
+            emailInput: emailInput,
+            passwordLabel: passwordLabel,
+            passwordInput: passwordInput,
+            signInButton: signInButton,
+            noAccountRow: noAccountRow,
             nameLabel: nameLabel,
             nameInput: nameInput,
-            workspaceLabel: workspaceLabel,
-            workspaceCard: workspaceCard,
-            workspaceChip: workspaceChip,
-            workspacePath: workspacePath,
+            appearanceLightRow: appearanceLightRow,
+            appearanceLightSwitch: appearanceLightSwitch,
+            appearanceAutoSaveRow: appearanceAutoSaveRow,
+            appearanceAutoSaveSwitch: appearanceAutoSaveSwitch,
+            canvasShowRulersRow: canvasShowRulersRow,
+            canvasShowRulersSwitch: canvasShowRulersSwitch,
+            canvasWorkspaceRow: canvasWorkspaceRow,
+            canvasLanguageRow: canvasLanguageRow,
             changeDirectory: changeDirectory,
             rescan: rescan,
-            languageLabel: languageLabel,
             languageChinese: languageChinese,
             languageEnglish: languageEnglish,
-            canvasLabel: canvasLabel,
-            canvasRow: canvasRow,
-            canvasSwitch: canvasSwitch,
+            designSystemsCard: designSystemsCard,
+            designSystemsIcon: designSystemsIcon,
+            designSystemsTitle: designSystemsTitle,
+            designSystemsHint: designSystemsHint,
             agentSectionLabel: agentSectionLabel,
             agentCards: agentCards,
             defaultAgentLabel: defaultAgentLabel,
@@ -1446,12 +1724,15 @@ public final class SettingsDrawerView: NSView {
             (.close, "Settings.Close"),
             (.tab(.general), "Settings.Tab.General"),
             (.tab(.aiAssistant), "Settings.Tab.AIAssistant"),
+            (.tab(.designSystems), "Settings.Tab.DesignSystems"),
             (.tab(.aiProviders), "Settings.Tab.AIProviders"),
             (.tab(.shortcuts), "Settings.Tab.Shortcuts"),
             (.language("zh"), "Settings.Language.zh"),
             (.language("en"), "Settings.Language.en"),
             (.workspaceChange, "Settings.Workspace.ChangeDirectory"),
             (.rescan, "Settings.Workspace.Rescan"),
+            (.lightInterface, "Settings.Appearance.LightInterface"),
+            (.autoSaveDrafts, "Settings.Appearance.AutoSaveDrafts"),
             (.agent(0), "Settings.Agent.Claude"),
             (.agent(1), "Settings.Agent.Codex"),
             (.agent(2), "Settings.Agent.Antigravity"),
@@ -1477,8 +1758,10 @@ public final class SettingsDrawerView: NSView {
             addSubview(proxy)
             proxies[control] = proxy
         }
-        // The rulers control is a switch, not a button.
-        proxies[.showRulers]?.setAccessibilityRole(.checkBox)
+        // The toggle rows expose a switch/checkbox role, not a button.
+        for control in [ControlID.showRulers, .lightInterface, .autoSaveDrafts] {
+            proxies[control]?.setAccessibilityRole(.checkBox)
+        }
     }
 
     private func activeControlRects(_ layout: SettingsLayout) -> [(ControlID, CGRect)] {
@@ -1486,30 +1769,41 @@ public final class SettingsDrawerView: NSView {
             (.close, layout.close),
             (.tab(.general), layout.tabRows[0]),
             (.tab(.aiAssistant), layout.tabRows[1]),
-            (.tab(.aiProviders), layout.tabRows[2]),
-            (.tab(.shortcuts), layout.tabRows[3])
+            (.tab(.designSystems), layout.tabRows[2]),
+            (.tab(.aiProviders), layout.tabRows[3]),
+            (.tab(.shortcuts), layout.tabRows[4])
         ]
+
+        // Content controls scroll with the pane; clip them to its visible area
+        // so partially scrolled rows never capture clicks in the header.
+        let pane = layout.pane
+        let offset = contentScrollOffset
+        func visible(_ rect: CGRect) -> CGRect {
+            rect.offsetBy(dx: 0, dy: offset).intersection(pane)
+        }
 
         switch activeTab {
         case .general:
-            rects.append((.language("zh"), layout.languageChinese))
-            rects.append((.language("en"), layout.languageEnglish))
-            rects.append((.workspaceChange, layout.changeDirectory))
-            rects.append((.rescan, layout.rescan))
-            rects.append((.showRulers, layout.canvasRow))
+            rects.append((.language("zh"), visible(layout.languageChinese)))
+            rects.append((.language("en"), visible(layout.languageEnglish)))
+            rects.append((.workspaceChange, visible(layout.changeDirectory)))
+            rects.append((.rescan, visible(layout.rescan)))
+            rects.append((.showRulers, visible(layout.canvasShowRulersRow)))
+            rects.append((.lightInterface, visible(layout.appearanceLightRow)))
+            rects.append((.autoSaveDrafts, visible(layout.appearanceAutoSaveRow)))
         case .aiAssistant:
             for (index, rect) in layout.agentCards.enumerated() {
-                rects.append((.agent(index), rect))
+                rects.append((.agent(index), visible(rect)))
             }
             for (index, rect) in layout.agentSegments.enumerated() {
-                rects.append((.agentSegment(index), rect))
+                rects.append((.agentSegment(index), visible(rect)))
             }
         case .aiProviders:
-            rects.append((.onboarding, layout.onboardingButton))
-        case .shortcuts:
+            rects.append((.onboarding, visible(layout.onboardingButton)))
+        case .shortcuts, .designSystems:
             break
         }
-        return rects
+        return rects.filter { !$0.1.isNull && $0.1.width > 0 && $0.1.height > 0 }
     }
 
     private func updateAccessibilityElementFrames() {
@@ -1526,12 +1820,16 @@ public final class SettingsDrawerView: NSView {
             proxy.isHidden = false
         }
 
-        nameField.isHidden = activeTab != .general
-        if activeTab == .general {
+        let inputFrame = layout.nameInput.offsetBy(dx: 0, dy: contentScrollOffset)
+        // The NSTextField is a subview and is not affected by the CoreGraphics
+        // pane clip, so only show it while its input row is fully visible.
+        let inputVisible = activeTab == .general && layout.pane.contains(inputFrame)
+        nameField.isHidden = !inputVisible
+        if inputVisible {
             nameField.frame = CGRect(
-                x: layout.nameInput.minX + 12,
-                y: layout.nameInput.midY - 6,
-                width: layout.nameInput.width - 24,
+                x: inputFrame.minX + 12,
+                y: inputFrame.midY - 6,
+                width: inputFrame.width - 24,
                 height: 18
             )
         }
@@ -1542,6 +1840,7 @@ public final class SettingsDrawerView: NSView {
         case .close: return "Settings.Close"
         case .tab(.general): return "Settings.Tab.General"
         case .tab(.aiAssistant): return "Settings.Tab.AIAssistant"
+        case .tab(.designSystems): return "Settings.Tab.DesignSystems"
         case .tab(.aiProviders): return "Settings.Tab.AIProviders"
         case .tab(.shortcuts): return "Settings.Tab.Shortcuts"
         case .language("zh"): return "Settings.Language.zh"
@@ -1565,6 +1864,10 @@ public final class SettingsDrawerView: NSView {
 
     public override func layout() {
         super.layout()
+        let maxScroll = computeLayout().maxContentScroll
+        if contentScrollOffset > maxScroll {
+            contentScrollOffset = max(0, maxScroll)
+        }
         syncBlurBackdrop()
         updateAccessibilityElementFrames()
         needsDisplay = true
@@ -1619,7 +1922,11 @@ public final class SettingsDrawerView: NSView {
             addCursorRect(rect, cursor: .pointingHand)
         }
         if activeTab == .general {
-            addCursorRect(layout.nameInput, cursor: .iBeam)
+            let input = layout.nameInput.offsetBy(dx: 0, dy: contentScrollOffset)
+                .intersection(layout.pane)
+            if !input.isNull && !input.isEmpty {
+                addCursorRect(input, cursor: .iBeam)
+            }
         }
     }
 
@@ -1633,9 +1940,10 @@ public final class SettingsDrawerView: NSView {
 
         if layout.modal.contains(point) {
             scrimPress = false
+            let input = layout.nameInput.offsetBy(dx: 0, dy: contentScrollOffset)
             if activeTab == .general,
                !nameField.isHidden,
-               layout.nameInput.contains(point),
+               input.contains(point),
                !nameField.frame.contains(point) {
                 window?.makeFirstResponder(nameField)
                 pressedControl = nil
@@ -1688,7 +1996,27 @@ public final class SettingsDrawerView: NSView {
     }
 
     public override func scrollWheel(with event: NSEvent) {
-        // Swallow scrolling so the editor underneath never scrolls.
+        // Scroll the tab content pane only; never the editor underneath.
+        let layout = computeLayout()
+        guard layout.maxContentScroll > 0 else { return }
+        let point = convert(event.locationInWindow, from: nil)
+        guard layout.pane.contains(point) else { return }
+        let delta = event.hasPreciseScrollingDeltas
+            ? event.scrollingDeltaY
+            : event.scrollingDeltaY * 8.0
+        setContentScrollOffset(contentScrollOffset - delta)
+    }
+
+    private func setContentScrollOffset(_ value: CGFloat) {
+        let layout = computeLayout()
+        let clamped = min(max(value, 0), layout.maxContentScroll)
+        guard clamped != contentScrollOffset else { return }
+        contentScrollOffset = clamped
+        hoveredControl = nil
+        pressedControl = nil
+        updateAccessibilityElementFrames()
+        window?.invalidateCursorRects(for: self)
+        needsDisplay = true
     }
 
     public override func keyDown(with event: NSEvent) {
@@ -1730,6 +2058,10 @@ public final class SettingsDrawerView: NSView {
             onOpenOnboarding?()
         case .showRulers:
             toggleShowRulers()
+        case .lightInterface:
+            toggleLightInterface()
+        case .autoSaveDrafts:
+            toggleAutoSaveDrafts()
         }
     }
 
@@ -1740,6 +2072,27 @@ public final class SettingsDrawerView: NSView {
         UserDefaults.standard.set(showsRulers, forKey: SettingsDrawerView.showRulersDefaultsKey)
         refreshProxyLabels()
         onToggleRulers?(showsRulers)
+        needsDisplay = true
+    }
+
+    /// Flips the editor theme preference (web `voo.editor.theme`: "light"/"dark").
+    private func toggleLightInterface() {
+        lightInterface.toggle()
+        UserDefaults.standard.set(
+            lightInterface ? "light" : "dark",
+            forKey: SettingsDrawerView.editorThemeDefaultsKey
+        )
+        refreshProxyLabels()
+        onToggleLightInterface?(lightInterface)
+        needsDisplay = true
+    }
+
+    /// Flips the auto-save-drafts preference (web `voo.editor.autoSaveDrafts`).
+    private func toggleAutoSaveDrafts() {
+        autoSaveDrafts.toggle()
+        UserDefaults.standard.set(autoSaveDrafts, forKey: SettingsDrawerView.autoSaveDraftsDefaultsKey)
+        refreshProxyLabels()
+        onToggleAutoSaveDrafts?(autoSaveDrafts)
         needsDisplay = true
     }
 
@@ -1813,7 +2166,7 @@ public final class SettingsDrawerView: NSView {
             height: 1
         ))
 
-        let titleFont = ThemeFonts.mono(size: 12, weight: .medium)
+        let titleFont = ThemeFonts.system(size: 12, weight: .medium)
         settingsDrawText(
             copy.modalTitle,
             in: layout.title,
@@ -1838,7 +2191,7 @@ public final class SettingsDrawerView: NSView {
     private func drawSidebar(ctx: CGContext, layout: SettingsLayout) {
         settingsFillRounded(layout.sidebar, radius: 0, color: SettingsPalette.sidebarBackground)
 
-        let tabFont = ThemeFonts.mono(size: 11)
+        let tabFont = ThemeFonts.system(size: 12)
         for (index, tab) in SettingsTab.allCases.enumerated() {
             guard layout.tabRows.indices.contains(index) else { continue }
             let row = layout.tabRows[index]
@@ -1855,9 +2208,10 @@ public final class SettingsDrawerView: NSView {
                 settingsFillRounded(row, radius: SettingsMetrics.tabRadius, color: SettingsPalette.hoverSoft)
             }
 
+            // Web: active `text-neutral-100`, idle `text-neutral-400`, hover `neutral-200`.
             let tint = isActive
-                ? SettingsPalette.textSecondary
-                : (isHovered ? SettingsPalette.textTertiary : SettingsPalette.textMuted)
+                ? SettingsPalette.textPrimary
+                : (isHovered ? SettingsPalette.textSecondary : SettingsPalette.textMuted)
             let iconRect = CGRect(
                 x: row.minX + SettingsMetrics.tabIconInset,
                 y: row.midY - SettingsMetrics.tabIconSize / 2,
@@ -1867,7 +2221,11 @@ public final class SettingsDrawerView: NSView {
             switch tab {
             case .general:
                 SettingsGlyph.sliders.draw(in: iconRect, color: tint, strokeWidth: 1.7)
-            case .aiAssistant, .aiProviders:
+            case .aiAssistant:
+                SettingsGlyph.sparkle.draw(in: iconRect, color: tint, strokeWidth: 1.7)
+            case .designSystems:
+                SettingsGlyph.palette.draw(in: iconRect, color: tint, strokeWidth: 1.6)
+            case .aiProviders:
                 SettingsGlyph.sparkle.draw(in: iconRect, color: tint, strokeWidth: 1.7)
             case .shortcuts:
                 SettingsGlyph.keyboard.draw(in: iconRect, color: tint, strokeWidth: 1.6)
@@ -1890,23 +2248,43 @@ public final class SettingsDrawerView: NSView {
     }
 
     private func drawContent(ctx: CGContext, layout: SettingsLayout) {
-        // Content pane background is the dialog fill; the heading is shared.
-        let headings: [SettingsTab: String] = [
-            .general: copy.tabTitles[0],
-            .aiAssistant: copy.tabTitles[1],
-            .aiProviders: copy.tabTitles[2],
-            .shortcuts: copy.tabTitles[3]
-        ]
+        // Web drawer main (`p-4`) scrolls; heading + cards live inside the pane,
+        // so clip to it and apply the content scroll offset before drawing.
+        ctx.saveGState()
+        ctx.clip(to: layout.pane)
+        ctx.translateBy(x: 0, y: contentScrollOffset)
+
+        let headingText: String
+        let headingRect: CGRect
+        switch activeTab {
+        case .general:
+            headingText = copy.tabTitles[0]
+            headingRect = layout.generalHeading
+        case .designSystems:
+            headingText = copy.tabTitles[2]
+            headingRect = layout.generalHeading
+        case .aiAssistant:
+            headingText = copy.tabTitles[1]
+            headingRect = layout.heading
+        case .aiProviders:
+            headingText = copy.tabTitles[3]
+            headingRect = layout.heading
+        case .shortcuts:
+            headingText = copy.tabTitles[4]
+            headingRect = layout.heading
+        }
         settingsDrawText(
-            headings[activeTab] ?? copy.tabTitles[0],
-            in: layout.heading,
-            font: ThemeFonts.mono(size: 12),
+            headingText,
+            in: headingRect,
+            font: ThemeFonts.system(size: 12, weight: .medium),
             color: SettingsPalette.textSecondary
         )
 
         switch activeTab {
         case .general:
             drawGeneral(ctx: ctx, layout: layout)
+        case .designSystems:
+            drawDesignSystems(ctx: ctx, layout: layout)
         case .aiAssistant:
             drawAIAssistant(ctx: ctx, layout: layout)
         case .aiProviders:
@@ -1914,182 +2292,434 @@ public final class SettingsDrawerView: NSView {
         case .shortcuts:
             drawShortcuts(ctx: ctx, layout: layout)
         }
+
+        ctx.restoreGState()
     }
 
-    // MARK: General Tab
+    // MARK: General Tab (card-based, web settings_general.jsx)
 
     private func drawGeneral(ctx: CGContext, layout: SettingsLayout) {
-        // Profile card.
-        settingsFillRounded(layout.profileCard, radius: SettingsMetrics.cardRadius, color: SettingsPalette.card)
-        drawSectionLabel(
-            copy.profileLabel,
-            in: layout.profileLabel,
-            showsHint: true
-        )
+        drawCard(layout.profileCard)
+        drawCardTitle(copy.profileTitle, card: layout.profileCard, showsHint: true)
+
         drawAvatar(in: layout.profileAvatar)
         let displayName = nameField.stringValue.isEmpty ? copy.guestName : nameField.stringValue
         settingsDrawText(
             displayName,
             in: layout.profileName,
-            font: ThemeFonts.mono(size: 12, weight: .semibold),
+            font: ThemeFonts.system(size: 12, weight: .medium),
             color: SettingsPalette.textSecondary,
             truncating: true
         )
         settingsDrawText(
             copy.guestBadge,
             in: layout.profileSubtitle,
-            font: ThemeFonts.mono(size: 10),
-            color: SettingsPalette.textFaint,
+            font: ThemeFonts.system(size: 12),
+            color: SettingsPalette.textMuted,
             truncating: true
         )
+
+        drawOutlineButton(layout.oauthGoogle, title: copy.continueWithGoogle, monogram: "G")
+        drawOutlineButton(layout.oauthGitHub, title: copy.continueWithGitHub, monogram: "GH")
         settingsDrawText(
-            copy.nameFieldLabel,
-            in: layout.nameLabel,
-            font: ThemeFonts.mono(size: 10, weight: .medium),
-            color: SettingsPalette.textFaint,
-            kern: 0.4
+            copy.oauthNote,
+            in: layout.oauthNote,
+            font: ThemeFonts.system(size: 12),
+            color: SettingsPalette.textMuted
         )
 
-        settingsFillRounded(layout.nameInput, radius: SettingsMetrics.inputRadius, color: SettingsPalette.input)
+        drawOrDivider(layout.orRow, ctx: ctx)
+
+        drawFieldLabel(copy.emailLabel, in: layout.emailLabel)
+        drawInput(layout.emailInput, placeholder: copy.emailPlaceholder)
+        drawFieldLabel(copy.passwordLabel, in: layout.passwordLabel)
+        drawInput(layout.passwordInput, placeholder: copy.passwordPlaceholder)
+        drawMintButton(layout.signInButton, title: copy.signInLabel)
+        drawNoAccountRow(layout.noAccountRow)
+
+        drawFieldLabel(copy.nameFieldLabel, in: layout.nameLabel)
+        settingsFillRounded(
+            layout.nameInput,
+            radius: SettingsMetrics.generalInputRadius,
+            color: SettingsPalette.inputFill
+        )
         if nameFieldEditing || nameField.currentEditor() != nil {
             settingsStrokeRounded(
                 layout.nameInput.insetBy(dx: 0.5, dy: 0.5),
-                radius: SettingsMetrics.inputRadius,
+                radius: SettingsMetrics.generalInputRadius,
                 color: SettingsPalette.mint.withAlphaComponent(0.65),
                 lineWidth: 1.0
             )
         }
 
-        // Project workspace.
-        drawSectionLabel(copy.workspaceLabel, in: layout.workspaceLabel, showsHint: true)
+        // Appearance card.
+        drawCard(layout.appearanceCard)
+        drawCardTitle(copy.appearanceTitle, card: layout.appearanceCard, showsHint: true)
+        drawToggleRow(
+            layout.appearanceLightRow,
+            switchRect: layout.appearanceLightSwitch,
+            title: copy.lightInterfaceLabel,
+            hint: copy.lightInterfaceHint,
+            isOn: lightInterface,
+            control: .lightInterface
+        )
+        drawToggleRow(
+            layout.appearanceAutoSaveRow,
+            switchRect: layout.appearanceAutoSaveSwitch,
+            title: copy.autoSaveDraftsLabel,
+            hint: copy.autoSaveDraftsHint,
+            isOn: autoSaveDrafts,
+            control: .autoSaveDrafts
+        )
 
-        settingsFillRounded(
-            layout.workspaceCard,
-            radius: SettingsMetrics.workspaceCardRadius,
-            color: SettingsPalette.hoverSoft
+        // Canvas card: Show rulers, then the existing workspace + language rows.
+        drawCard(layout.canvasCard)
+        drawCardTitle(copy.canvasTitle, card: layout.canvasCard, showsHint: true)
+        drawToggleRow(
+            layout.canvasShowRulersRow,
+            switchRect: layout.canvasShowRulersSwitch,
+            title: copy.showRulersLabel,
+            hint: copy.rulersHint,
+            isOn: showsRulers,
+            control: .showRulers
         )
-        settingsStrokeRounded(
-            layout.workspaceCard.insetBy(dx: 0.5, dy: 0.5),
-            radius: SettingsMetrics.workspaceCardRadius,
-            color: SettingsPalette.hairline,
-            lineWidth: 1.0
-        )
+        drawWorkspaceRow(layout)
+        drawLanguageRow(layout)
+    }
 
-        let folderRect = CGRect(
-            x: layout.workspaceCard.minX + SettingsMetrics.workspaceCardPadding,
-            y: layout.workspaceCard.maxY - SettingsMetrics.workspaceCardPadding - 15,
-            width: 15,
-            height: 15
-        )
-        SettingsGlyph.folder.draw(in: folderRect, color: SettingsPalette.mint, strokeWidth: 1.7)
-        settingsDrawText(
-            copy.activeWorkspace,
-            in: CGRect(
-                x: folderRect.maxX + 8,
-                y: folderRect.minY - 1,
-                width: max(layout.workspaceChip.minX - folderRect.maxX - 20, 40),
-                height: 17
-            ),
-            font: ThemeFonts.mono(size: 10, weight: .medium),
+    private func drawDesignSystems(ctx: CGContext, layout: SettingsLayout) {
+        drawCard(layout.designSystemsCard)
+        SettingsGlyph.palette.draw(
+            in: layout.designSystemsIcon,
             color: SettingsPalette.textMuted,
-            truncating: true,
-            kern: 0.4
+            strokeWidth: 1.6
         )
-        settingsFillRounded(layout.workspaceChip, radius: 9, color: SettingsPalette.hover)
-        let wsConfig = WorkspaceManager.shared.getWorkspaceConfig()
-        // Web shows the storage-driver platform badge (`settings.workspace.badgeDesktop`,
-        // e.g. "[macOS Native]"), not a custom/default workspace label.
         settingsDrawText(
-            copy.workspaceBadge,
-            in: layout.workspaceChip,
-            font: ThemeFonts.mono(size: 10, weight: .medium),
-            color: SettingsPalette.textStrong,
+            copy.designSystemsEmptyTitle,
+            in: layout.designSystemsTitle,
+            font: ThemeFonts.system(size: 12, weight: .semibold),
+            color: SettingsPalette.textSecondary,
             alignment: .center
         )
         settingsDrawText(
-            wsConfig.path,
-            in: layout.workspacePath,
-            font: ThemeFonts.mono(size: 12),
-            color: SettingsPalette.textSecondary,
-            truncating: true
+            copy.designSystemsEmptyHint,
+            in: layout.designSystemsHint,
+            font: ThemeFonts.system(size: 11),
+            color: SettingsPalette.textMuted,
+            alignment: .center
         )
-
-        drawActionButton(
-            layout.changeDirectory,
-            title: copy.changeDirectory,
-            glyph: .folderOpen,
-            control: .workspaceChange
-        )
-        drawActionButton(
-            layout.rescan,
-            title: copy.rescan,
-            glyph: .refresh,
-            control: .rescan
-        )
-
-        // Language.
-        drawSectionLabel(copy.languageLabel, in: layout.languageLabel, showsHint: true)
-        drawLanguageSegment(
-            layout.languageChinese,
-            title: copy.chineseLabel,
-            isSelected: languageCode == "zh",
-            control: .language("zh")
-        )
-        drawLanguageSegment(
-            layout.languageEnglish,
-            title: copy.englishLabel,
-            isSelected: languageCode == "en",
-            control: .language("en")
-        )
-
-        // Canvas — one "Show rulers" toggle row (web settings.canvas.showRulers).
-        drawSectionLabel(copy.canvasLabel, in: layout.canvasLabel, showsHint: false)
-        drawShowRulersRow(layout.canvasRow, switchRect: layout.canvasSwitch)
     }
 
-    private func drawShowRulersRow(_ row: CGRect, switchRect: CGRect) {
-        let isHovered = hoveredControl == .showRulers
-        let isPressed = pressedControl == .showRulers
-        if isHovered || isPressed {
+    /// Rounded section card on the dialog background (web `rounded-xl bg-neutral-900 p-3`).
+    private func drawCard(_ rect: CGRect) {
+        settingsFillRounded(rect, radius: SettingsMetrics.sectionCardRadius, color: SettingsPalette.cardFill)
+    }
+
+    private func drawCardTitle(_ title: String, card: CGRect, showsHint: Bool) {
+        let font = ThemeFonts.system(size: 12, weight: .medium)
+        let rect = CGRect(
+            x: card.minX + SettingsMetrics.sectionCardPadding,
+            y: card.maxY - SettingsMetrics.sectionCardPadding - SettingsMetrics.sectionTitleHeight,
+            width: card.width - SettingsMetrics.sectionCardPadding * 2,
+            height: SettingsMetrics.sectionTitleHeight
+        )
+        settingsDrawText(title, in: rect, font: font, color: SettingsPalette.textMuted)
+        if showsHint {
+            let width = ceil(settingsTextSize(title, font: font).width)
+            drawHintBadge(center: CGPoint(x: rect.minX + width + 12, y: rect.midY))
+        }
+    }
+
+    private func drawFieldLabel(_ title: String, in rect: CGRect) {
+        settingsDrawText(title, in: rect, font: ThemeFonts.system(size: 12), color: SettingsPalette.textMuted)
+    }
+
+    private func drawInput(_ rect: CGRect, placeholder: String) {
+        settingsFillRounded(rect, radius: SettingsMetrics.generalInputRadius, color: SettingsPalette.inputFill)
+        settingsDrawText(
+            placeholder,
+            in: CGRect(x: rect.minX + 12, y: rect.minY, width: rect.width - 24, height: rect.height),
+            font: ThemeFonts.system(size: 12),
+            color: SettingsPalette.textMuted,
+            truncating: true
+        )
+    }
+
+    private func drawOutlineButton(_ rect: CGRect, title: String, monogram: String) {
+        settingsFillRounded(
+            rect,
+            radius: SettingsMetrics.generalInputRadius,
+            color: SettingsPalette.outlineButtonFill
+        )
+        settingsStrokeRounded(
+            rect.insetBy(dx: 0.5, dy: 0.5),
+            radius: SettingsMetrics.generalInputRadius,
+            color: SettingsPalette.divider,
+            lineWidth: 1.0
+        )
+        let monogramFont = ThemeFonts.system(size: 11, weight: .semibold)
+        let titleFont = ThemeFonts.system(size: 12)
+        let monogramWidth = ceil(settingsTextSize(monogram, font: monogramFont).width)
+        let titleWidth = ceil(settingsTextSize(title, font: titleFont).width)
+        let gap: CGFloat = 8
+        let startX = rect.midX - (monogramWidth + gap + titleWidth) / 2
+        settingsDrawText(
+            monogram,
+            in: CGRect(x: startX, y: rect.minY, width: monogramWidth + 2, height: rect.height),
+            font: monogramFont,
+            color: SettingsPalette.textSecondary
+        )
+        settingsDrawText(
+            title,
+            in: CGRect(x: startX + monogramWidth + gap, y: rect.minY,
+                       width: titleWidth + 2, height: rect.height),
+            font: titleFont,
+            color: SettingsPalette.textSecondary
+        )
+    }
+
+    private func drawMintButton(_ rect: CGRect, title: String) {
+        settingsFillRounded(rect, radius: SettingsMetrics.generalInputRadius, color: SettingsPalette.mint)
+        settingsDrawText(
+            title,
+            in: rect,
+            font: ThemeFonts.system(size: 12, weight: .semibold),
+            color: SettingsPalette.mintText,
+            alignment: .center
+        )
+    }
+
+    private func drawOrDivider(_ rect: CGRect, ctx: CGContext) {
+        let labelFont = ThemeFonts.system(size: 12)
+        let labelWidth = ceil(settingsTextSize(copy.orLabel, font: labelFont).width) + 16
+        let centerX = rect.midX
+        let midY = rect.midY
+        ctx.setFillColor(SettingsPalette.divider.cgColor)
+        let leftWidth = max(centerX - labelWidth / 2 - rect.minX, 0)
+        if leftWidth > 0 {
+            ctx.fill(CGRect(x: rect.minX, y: midY, width: leftWidth, height: 1))
+        }
+        let rightStart = centerX + labelWidth / 2
+        let rightWidth = max(rect.maxX - rightStart, 0)
+        if rightWidth > 0 {
+            ctx.fill(CGRect(x: rightStart, y: midY, width: rightWidth, height: 1))
+        }
+        settingsDrawText(
+            copy.orLabel,
+            in: CGRect(x: centerX - labelWidth / 2, y: rect.minY, width: labelWidth, height: rect.height),
+            font: labelFont,
+            color: SettingsPalette.textMuted,
+            alignment: .center
+        )
+    }
+
+    private func drawNoAccountRow(_ rect: CGRect) {
+        let mutedFont = ThemeFonts.system(size: 12)
+        let linkFont = ThemeFonts.system(size: 12, weight: .medium)
+        let prefixWidth = ceil(settingsTextSize(copy.noAccountPrefix, font: mutedFont).width)
+        let linkWidth = ceil(settingsTextSize(copy.signUpLabel, font: linkFont).width)
+        let gap: CGFloat = 4
+        let startX = rect.midX - (prefixWidth + gap + linkWidth) / 2
+        settingsDrawText(
+            copy.noAccountPrefix,
+            in: CGRect(x: startX, y: rect.minY, width: prefixWidth + 2, height: rect.height),
+            font: mutedFont,
+            color: SettingsPalette.textMuted
+        )
+        settingsDrawText(
+            copy.signUpLabel,
+            in: CGRect(x: startX + prefixWidth + gap, y: rect.minY,
+                       width: linkWidth + 2, height: rect.height),
+            font: linkFont,
+            color: SettingsPalette.textSecondary
+        )
+    }
+
+    private func drawToggleRow(
+        _ row: CGRect,
+        switchRect: CGRect,
+        title: String,
+        hint: String,
+        isOn: Bool,
+        control: ControlID
+    ) {
+        let hovered = hoveredControl == control
+        let pressed = pressedControl == control
+        if hovered || pressed {
             settingsFillRounded(
                 row,
                 radius: 8,
-                color: isPressed ? SettingsPalette.hover : SettingsPalette.hoverSoft
+                color: pressed ? SettingsPalette.hover : SettingsPalette.hoverSoft
             )
         }
+        let textWidth = max(row.width - switchRect.width - 16, 80)
         settingsDrawText(
-            copy.showRulersLabel,
-            in: CGRect(
-                x: row.minX,
-                y: row.minY,
-                width: max(row.width - switchRect.width - 12, 60),
-                height: row.height
-            ),
-            font: ThemeFonts.mono(size: 12),
-            color: isHovered ? SettingsPalette.textPrimary : SettingsPalette.textSecondary
+            title,
+            in: CGRect(x: row.minX, y: row.maxY - 4 - 16, width: textWidth, height: 16),
+            font: ThemeFonts.system(size: 12),
+            color: hovered ? SettingsPalette.textPrimary : SettingsPalette.textSecondary
         )
-        drawSwitch(in: switchRect)
+        settingsDrawText(
+            hint,
+            in: CGRect(x: row.minX, y: row.maxY - 36, width: textWidth, height: 16),
+            font: ThemeFonts.system(size: 12),
+            color: SettingsPalette.textMuted,
+            truncating: true
+        )
+        drawSwitch(in: switchRect, isOn: isOn)
     }
 
-    /// Square-ish web `Switch` (white/80 on, white/15 off, dark knob), sized to
-    /// the settings 20pt control height.
-    private func drawSwitch(in rect: CGRect) {
+    /// Web `Switch`: 28×16 track (white/80 on, white/15 off), 12pt neutral-900 knob.
+    private func drawSwitch(in rect: CGRect, isOn: Bool) {
         settingsFillRounded(
             rect,
             radius: rect.height / 2,
-            color: NSColor(white: 1.0, alpha: showsRulers ? 0.80 : 0.15)
+            color: isOn ? SettingsPalette.switchTrackOn : SettingsPalette.switchTrackOff
         )
-        let knobSize: CGFloat = 14
-        let inset: CGFloat = 3
+        let knobSize = SettingsMetrics.switchKnobSize
+        let inset: CGFloat = 2
         let knob = CGRect(
-            x: showsRulers ? rect.maxX - inset - knobSize : rect.minX + inset,
+            x: isOn ? rect.maxX - inset - knobSize : rect.minX + inset,
             y: rect.midY - knobSize / 2,
             width: knobSize,
             height: knobSize
         )
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-        ctx.setFillColor(SettingsPalette.sidebarBackground.cgColor)
+        ctx.setFillColor(SettingsPalette.switchKnob.cgColor)
         ctx.fillEllipse(in: knob)
+    }
+
+    private func drawWorkspaceRow(_ layout: SettingsLayout) {
+        let row = layout.canvasWorkspaceRow
+        let titleFont = ThemeFonts.system(size: 12)
+        let titleRect = CGRect(x: row.minX, y: row.maxY - 6 - 16, width: 220, height: 16)
+        settingsDrawText(copy.workspaceTitle, in: titleRect, font: titleFont,
+                         color: SettingsPalette.textSecondary)
+        let titleWidth = ceil(settingsTextSize(copy.workspaceTitle, font: titleFont).width)
+        drawInlineBadge(
+            copy.workspaceBadge,
+            x: titleRect.minX + titleWidth + 8,
+            centerY: titleRect.midY
+        )
+        let path = WorkspaceManager.shared.getWorkspaceConfig().path
+        settingsDrawText(
+            path,
+            in: CGRect(x: row.minX, y: row.maxY - 38,
+                       width: max(layout.changeDirectory.minX - row.minX - 12, 80), height: 16),
+            font: ThemeFonts.system(size: 12),
+            color: SettingsPalette.textFaint,
+            truncating: true
+        )
+        drawSmallActionButton(
+            layout.changeDirectory,
+            title: copy.changeDirectory,
+            glyph: .folderOpen,
+            control: .workspaceChange
+        )
+        drawSmallActionButton(
+            layout.rescan,
+            title: copy.rescan,
+            glyph: .refresh,
+            control: .rescan
+        )
+    }
+
+    private func drawLanguageRow(_ layout: SettingsLayout) {
+        let row = layout.canvasLanguageRow
+        settingsDrawText(
+            copy.languageTitle,
+            in: CGRect(x: row.minX, y: row.maxY - 4 - 16, width: 200, height: 16),
+            font: ThemeFonts.system(size: 12),
+            color: SettingsPalette.textSecondary
+        )
+        settingsDrawText(
+            copy.languageHint,
+            in: CGRect(x: row.minX, y: row.maxY - 36,
+                       width: max(layout.languageChinese.minX - row.minX - 12, 80), height: 16),
+            font: ThemeFonts.system(size: 12),
+            color: SettingsPalette.textMuted,
+            truncating: true
+        )
+        drawLanguagePill(
+            layout.languageChinese,
+            title: copy.chineseLabel,
+            isSelected: languageCode == "zh",
+            control: .language("zh")
+        )
+        drawLanguagePill(
+            layout.languageEnglish,
+            title: copy.englishLabel,
+            isSelected: languageCode == "en",
+            control: .language("en")
+        )
+    }
+
+    private func drawLanguagePill(_ rect: CGRect, title: String, isSelected: Bool, control: ControlID) {
+        let hovered = hoveredControl == control
+        let pressed = pressedControl == control
+        let fill: NSColor
+        if isSelected {
+            fill = SettingsPalette.pressed
+        } else if pressed {
+            fill = SettingsPalette.hover
+        } else if hovered {
+            fill = SettingsPalette.hover
+        } else {
+            fill = SettingsPalette.hoverSoft
+        }
+        settingsFillRounded(rect, radius: 8, color: fill)
+        settingsDrawText(
+            title,
+            in: rect,
+            font: ThemeFonts.system(size: 12, weight: isSelected ? .medium : .regular),
+            color: isSelected ? SettingsPalette.textPrimary
+                : (hovered ? SettingsPalette.textSecondary : SettingsPalette.textMuted),
+            alignment: .center
+        )
+    }
+
+    private func drawSmallActionButton(
+        _ rect: CGRect,
+        title: String,
+        glyph: SettingsGlyph,
+        control: ControlID
+    ) {
+        let hovered = hoveredControl == control
+        let pressed = pressedControl == control
+        let fill = pressed
+            ? SettingsPalette.pressed
+            : (hovered ? SettingsPalette.hover : SettingsPalette.hoverSoft)
+        settingsFillRounded(rect, radius: 8, color: fill)
+        settingsStrokeRounded(
+            rect.insetBy(dx: 0.5, dy: 0.5),
+            radius: 8,
+            color: SettingsPalette.divider,
+            lineWidth: 1.0
+        )
+        let iconRect = CGRect(x: rect.minX + 10, y: rect.midY - 6.5, width: 13, height: 13)
+        glyph.draw(
+            in: iconRect,
+            color: hovered ? SettingsPalette.textSecondary : SettingsPalette.textMuted,
+            strokeWidth: 1.6
+        )
+        settingsDrawText(
+            title,
+            in: CGRect(x: iconRect.maxX + 6, y: rect.minY,
+                       width: rect.width - 10 - 13 - 6 - 8, height: rect.height),
+            font: ThemeFonts.system(size: 11),
+            color: hovered ? SettingsPalette.textPrimary : SettingsPalette.textSecondary,
+            truncating: true
+        )
+    }
+
+    private func drawInlineBadge(_ text: String, x: CGFloat, centerY: CGFloat) {
+        let font = ThemeFonts.system(size: 9, weight: .medium)
+        let width = ceil(settingsTextSize(text, font: font).width) + 10
+        let rect = CGRect(x: x, y: centerY - 7, width: width, height: 14)
+        // Web platform badge: rounded-full, bg-white/[0.08], neutral-300 text.
+        settingsFillRounded(rect, radius: rect.height / 2, color: SettingsPalette.hover)
+        settingsDrawText(text, in: rect, font: font, color: SettingsPalette.textStrong,
+                         alignment: .center)
     }
 
     private func drawAvatar(in rect: CGRect) {

@@ -160,6 +160,7 @@ public class InspectorView: NSView {
     private var propertiesLineHeight: CGFloat = 1.2
     private var propertiesLetterSpacing: CGFloat = 0
     private var panelHeightConstraint: NSLayoutConstraint?
+    private var cardHeightConstraint: NSLayoutConstraint?
 
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -208,6 +209,11 @@ public class InspectorView: NSView {
         propertiesScrollView.wantsLayer = true
         propertiesScrollView.layer?.cornerRadius = 0
         propertiesScrollView.layer?.masksToBounds = true
+        // The CLIP view is what actually clips a scroll document; without a layer
+        // mask on it, layer-backed drawing (and the snapshot harness) paints the
+        // document outside the card.
+        propertiesScrollView.contentView.wantsLayer = true
+        propertiesScrollView.contentView.layer?.masksToBounds = true
         propertiesCard.addSubview(propertiesScrollView)
 
         propertiesScrollView.documentView = propertiesPanel
@@ -233,6 +239,12 @@ public class InspectorView: NSView {
         propertiesCard.addSubview(transformPanel)
         propertiesCard.addSubview(appearancePanel)
 
+        // The web inspector is content-driven (~704pt for a shape at 1440x900):
+        // the card height follows the panel's measured content height, capped by
+        // the space available so the card always stays inside the editor shell.
+        let cardHeight = propertiesCard.heightAnchor.constraint(equalToConstant: 368)
+        cardHeightConstraint = cardHeight
+
         // Layout Constraints:
         // Layers Panel: Floating on the left
         // Properties Card: Floating on the right
@@ -251,7 +263,7 @@ public class InspectorView: NSView {
             propertiesCard.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             propertiesCard.centerYAnchor.constraint(equalTo: centerYAnchor),
             propertiesCard.widthAnchor.constraint(equalToConstant: 288),
-            propertiesCard.heightAnchor.constraint(equalToConstant: 368),
+            cardHeight,
 
             // Scroll box = the card's padded content box: full width (the panel
             // carries the 12pt side padding itself) but stopped 12pt above the
@@ -489,6 +501,11 @@ public class InspectorView: NSView {
     /// legacy panels in sync for backward compatibility / test coverage).
     public func configureProperties(with node: VOONode?) {
         propertiesPanel.configure(with: node)
+        // Every selection change resets the inspector to its first section (web
+        // keeps the card at the top); AppKit otherwise keeps the previous scroll
+        // offset and the card can look like it opens mid-section.
+        propertiesScrollView.contentView.scroll(to: .zero)
+        propertiesScrollView.reflectScrolledClipView(propertiesScrollView.contentView)
         transformPanel.configure(with: node)
         appearancePanel.configure(with: node)
         panelHeightConstraint?.constant = propertiesPanel.contentHeight
@@ -538,6 +555,37 @@ public class InspectorView: NSView {
         guard arePropertiesVisible != visible else { return }
         arePropertiesVisible = visible
         propertiesCard.isHidden = !visible
+    }
+
+    public override func layout() {
+        super.layout()
+        syncPropertiesCardHeight()
+    }
+
+    /// Card height = measured content height + the card's 12pt bottom inset, capped
+    /// by the available shell height (the scroll view then scrolls the overflow).
+    private func syncPropertiesCardHeight() {
+        guard bounds.height > 0 else { return }
+        let content = max(propertiesPanel.contentHeight, 240)
+        // Web caps the card at ~704pt (max-h-75vh); never taller than the shell.
+        let maxAvailable = max(240, min(bounds.height - 32, 712))
+        let wanted = min(content + 12, maxAvailable)
+        if let constraint = cardHeightConstraint, abs(constraint.constant - wanted) > 0.5 {
+            constraint.constant = wanted
+            // Apply outside the current layout pass, then re-anchor the document to
+            // its first section so the card never opens scrolled mid-panel.
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.needsLayout = true
+                self.layoutSubtreeIfNeeded()
+                self.propertiesScrollView.contentView.scroll(to: .zero)
+                self.propertiesScrollView.reflectScrolledClipView(self.propertiesScrollView.contentView)
+            }
+        }
+        if let constraint = panelHeightConstraint, abs(constraint.constant - content) > 0.5 {
+            constraint.constant = content
+            propertiesPanel.needsLayout = true
+        }
     }
 
     public override func hitTest(_ point: NSPoint) -> NSView? {

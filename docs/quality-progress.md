@@ -10,6 +10,23 @@
 最近一次完整核心验证提交：[26de3f9](https://github.com/umaxzhao/voo-design/commit/26de3f948f17fdc9b9167ef25affaa5c487eec0c)。
 以下最新结果仅属于该提交，不代表其他未验证版本。
 
+
+## 本轮：逐元素流式创作（已完成声明范围）
+
+- 合入提交 `dac68a5` 的 [GitHub Ubuntu CI](https://github.com/umaxzhao/voo-design/actions/runs/41188844041) 已通过模块登记、设计检查、构建和全量单测；CI 部署作业跳过，正式部署由本机 SSH 到 la2 完成并核对。
+- 已推送并部署应用提交 [`d0b9ec5`](https://github.com/umaxzhao/voo-design/commit/d0b9ec5a9df445e073c689597ff890350d500856)；登记发布检查 **88/88**（页面加载超时后串行补跑），含 **84 组浏览器**，单测 **4521 通过、4 跳过、0 失败**。证据：`/private/tmp/voo-authoring-release-recovered.json`。跳过和未运行的上下文不算通过。
+- `platform.streaming-authoring`：内置 HTML、外部 `stream_layout` 和批量 `build_layout` 共用原生落图与 VOO 紫色鼠标。鼠标定位、携带轮廓、放置元素和下一步跟随实际文档操作；快照合并、稳定图层 ID、动画预算与减弱动态效果避免重复播放和长时间收尾。
+- 推送前合入远程认证/归档提交 `dac68a5`；网页源码、公共资源、构建脚本和配置与上述固定版本逐项一致，新增桌面认证 4 项定向单测通过。原生签名 App 没有据此被标记为通过；证据：`/private/tmp/voo-authoring-final-integration-proof.json`。
+- 真实 SSE 在响应结束前已出现原生图层与红色像素；最终蓝色像素、紫色鼠标、一次撤销/重做均通过。取消后不继续插入，批量取消保留原文档与重做；外部清除保留已有作品。同项目切页与跨文档迟到消息被拒绝；初始化冲突不能结束另一轮生成的历史批次。
+- 整合期间一并收口：旧鼠标反馈契约、DeepSeek 首次引导文案/卡片断言、新 `resize_document` 文档与真实操作用例、设计系统默认项/展开路径、文件监听固定延时，对称安全区的竖屏/横屏/鼠标断言，以及八类设计类型的高级入口、桌面/触屏窄屏布局和键盘选择。
+- 线上入口及 7 个直接/流式模块资源与验证构建逐字节一致。正式地址实际点击 Agent 发送，验证两块图形分阶段出现、真实红/蓝像素、一次撤销和无脚本错误；模型响应使用受控离线夹具，没有调用付费服务。证据：`/private/tmp/voo-authoring-deployment-proof.json`、`/private/tmp/voo-authoring-production-result.log`。
+- 本地主工作区仅合并本轮模块，保留并发草稿、额外能力登记、旧备份和原有辅助工作树；镜像后专项通过。同步复核中误带的三处旧样式已按备份恢复。详细记录：`/private/tmp/voo-authoring-primary-final-merge/`。主工作区的其他任务源码不属于这次干净发布证据。
+- 功能覆盖仍为部分：付费模型设计质量、独立原生客户端/签名安装包、实体设备、所有工具的逐手势动画，以及用户与 Agent 并发编辑仍需分别验收。[验收范围](audits/editor-closeout.md#streamed-native-authoring)。
+
+
+此记录只认证远程公开版本；本地其他任务仍在进行。下方旧轮次/表格数字保留其历史范围，公开版最终证据以上方固定提交及在线字节核对为准。
+
+
 ## 本轮：AI 生成文本按内容自适应尺寸
 
 - 已修复 `build_layout` 将普通 AI 生成文本强制设为占位宽度的问题。现在文本默认按内容自然测宽；只有显式传入 `textSizing: "fixed"` 才按给定宽度换行。流式 HTML 中已测出的文本换行宽度仍保留。
@@ -247,3 +264,17 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 
 验证：`./build.sh` 通过（binary 4.64 MB ≤ 5 MB，bundle 9.96 MB ≤ 35 MB）；`./tests/run_tests.sh` **377/377 通过**；新增 `scripts/native-parity-check.py` 逐区域输出包围盒差值，当前实测：工具轨 `dx+1 dy0 dw-1`、LAYERS 面板 `dx-2 dy-1 dw0 dh+1`、页码胶囊 `dx-1 dy0`（单位：Web 像素）。证据截图：`native_studio/docs/screenshots/w_dashboard.png`、`w_editor.png`。
 未覆盖：标题栏在编辑器态仍为「保存/打开」而非 Web 的「Import/Export + 浏览器按钮」（功能语义不同，已列为后续对齐项）；属性面板在当前 Web 截图中未出现（无选区），其 288×368 尺寸沿用旧证据。
+
+## 原生界面 1:1 对照优化（第三轮：选区/属性面板/设置/首启状态）— 2026-10-31
+
+继续用实时 Web 构建（vite dev + Playwright，1440×900）补齐上一轮未覆盖的状态：新增参考图 `native_studio/docs/refs/web_20261031/{web_selection,web_agent_panel,web_settings,web_onboarding}.png`。
+
+- **首启工作台**：实时构建在未选类型时展示 **8 个大图标类型磁贴**（Landing page / Mobile app / Web app / Poster / Slides / Storyboard / Dashboard / Something else…，磁贴 76×(preview+36)、r12、gap8、选中白 10% 底、线框预览按类型绘制），选中后**折叠为 6/8 个 h32 紧凑胶囊**并整体上移 36pt。原生已按此双态实现（此前恒为胶囊）。
+- **属性面板**：整体重构为 Web 检查器结构——`Design | Code` 分段头 + 图层身份行（`HELLO VOO` + `TEXT`）、TRANSFORM（9 点锚点 56×56、X/Y、W/链接/H、R/S/旋转、圆角）、CONSTRAINTS（图示 + 水平/垂直下拉）、APPEARANCE（不透明度/混合）、TEXT/FRAME SIZE 块、FILL、STROKE（第二行位置/端点/连接/线宽/虚线）、EFFECTS；卡片宽度保持 288（Web 实测 286–290），高度改为内容驱动并限制在 `min(shell−32, 712)`。
+- **修复的两个真实缺陷**：① 属性卡片内容会画到卡片外（上层 `NSScrollView` 的 **clip view 未做 layer mask**，layer-backed 绘制与截图都绕过裁剪）——在 `contentView.layer.masksToBounds` + `scrollToVisible` 禁用后修复；② 卡片高度变化后 AppKit 会把文档滚到中间，导致面板「从中间开始」——高度变更与选中变化后统一回到首段。
+- **选中浮动条（Island Bar）**：按 Web 实测重建为「填充/描边圆点 · 水平居中 · 水平分布 · 左对齐 │ 上移 · 下移 │ 复制 · 锁定 · 显隐 · 删除 │ ✦」，图标按钮 28×28、分隔线 1×16 white/15，自然宽度 ≈408（与截图的 ~408 一致）；旧的 Ask-AI 输入条与 Vectorize/Boolean/Style Transfer 胶囊保留在代码中但隐藏。
+- **设置面板**：按 Web 重做为 5 页签（General / AI Assistant / **Design Systems** / AI Providers / Shortcuts，侧栏行高 40、gap4、r8、12pt 无衬线）+ 卡片栈：Profile（头像 40、Google/GitHub 按钮、OAuth 提示、or 分隔、Email/Password 输入、薄荷 Sign In、Sign up、Display name 可编辑）、Appearance（Light interface / Auto-save edit drafts，28×16 开关）、Canvas（Show rulers + 工作区 + 语言）；内容区可滚动且命中区域随滚动偏移。
+- 新增 `scripts/native-parity-check.py` 已复跑：工具轨 `dx+1 dy0 dw-1`、LAYERS `dx-2 dy-1 dh+1`、页码胶囊 `dx-1 dy0`。
+
+验证：`./build.sh`（binary 4.79 MB ≤ 5 MB，bundle 10.12 MB ≤ 35 MB，冷启动 ~0.15s）；`./tests/run_tests.sh` **377/377 通过**（同步更新了属性卡/滚动区高度、Island Bar 9 个按钮与 28pt、glyph 26 项、仪表盘首启磁贴等断言）。截图：`native_studio/docs/screenshots/y_dashboard.png`、`y_editor.png`、`y_selected.png`、`y_settings.png`。
+未覆盖：CONSTRAINTS 下拉与 FILL/STROKE 的「+ / 眼睛 / −」目前为展示层（模型无对应字段）；Light interface 与 Auto-save 仅持久化 Web 同名键，原生暂无浅色主题/恢复副本引擎；编辑器标题栏仍是「打开/保存」语义而非 Import/Export。

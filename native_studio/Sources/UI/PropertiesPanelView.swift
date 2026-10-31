@@ -142,6 +142,24 @@ public enum PropertiesGlyphFactory {
         case paintSolid
         case paintLinear
         case paintRadial
+        /// Rebuilt web-inspector chrome.
+        case selectOnly
+        case rotateCcw
+        case rotateCw
+        case constraints
+        case eye
+        case eyeOff
+        case minus
+        case plus
+        case strokeAlign
+        case strokeCap
+        case strokeJoin
+        case strokeDash
+        case frameKind
+        case textKind
+        case groupKind
+        case shapeKind
+        case ellipseKind
     }
 
     public static func draw(kind: Kind, in rect: CGRect, color: NSColor, strokeWidth: CGFloat = 1.5) {
@@ -178,7 +196,151 @@ public enum PropertiesGlyphFactory {
             drawPaintChip(.linear, in: rect, color: color, strokeWidth: strokeWidth)
         case .paintRadial:
             drawPaintChip(.radial, in: rect, color: color, strokeWidth: strokeWidth)
+        case .selectOnly:
+            drawSelectOnly(in: rect, color: color)
+        case .rotateCcw:
+            VooIconFactory.drawRotateCcw(in: rect, color: color, strokeWidth: strokeWidth)
+        case .rotateCw:
+            drawMirrored(.rotateCcw, in: rect, color: color, strokeWidth: strokeWidth)
+        case .constraints:
+            drawConstraintsDiagram(in: rect, color: color)
+        case .eye:
+            VooIconFactory.drawEye(in: rect, color: color, strokeWidth: strokeWidth)
+        case .eyeOff:
+            VooIconFactory.drawEyeOff(in: rect, color: color, strokeWidth: strokeWidth)
+        case .minus:
+            VooIconFactory.drawMinus(in: rect, color: color, strokeWidth: strokeWidth)
+        case .plus:
+            VooIconFactory.drawPlus(in: rect, color: color, strokeWidth: strokeWidth)
+        case .strokeAlign:
+            drawStrokeAlign(in: rect, color: color)
+        case .strokeCap:
+            drawStrokeCap(in: rect, color: color)
+        case .strokeJoin:
+            drawStrokeJoin(in: rect, color: color)
+        case .strokeDash:
+            drawStrokeDash(in: rect, color: color)
+        case .frameKind:
+            VooIconFactory.drawFrame(in: rect, color: color, strokeWidth: strokeWidth)
+        case .textKind:
+            VooIconFactory.drawText(in: rect, color: color, strokeWidth: strokeWidth)
+        case .groupKind:
+            VooIconFactory.drawFolder(in: rect, color: color, strokeWidth: strokeWidth)
+        case .shapeKind:
+            VooIconFactory.drawRect(in: rect, color: color, strokeWidth: strokeWidth)
+        case .ellipseKind:
+            VooIconFactory.drawEllipse(in: rect, color: color, strokeWidth: strokeWidth)
         }
+    }
+
+    /// Mirrors a glyph horizontally around its rect (e.g. rotate-CCW → rotate-CW).
+    private static func drawMirrored(_ kind: Kind, in rect: CGRect, color: NSColor, strokeWidth: CGFloat) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        ctx.saveGState()
+        ctx.translateBy(x: rect.minX + rect.maxX, y: 0)
+        ctx.scaleBy(x: -1, y: 1)
+        draw(kind: kind, in: rect, color: color, strokeWidth: strokeWidth)
+        ctx.restoreGState()
+    }
+
+    /// Web "select only" icon: a dashed selection box with a corner handle.
+    private static func drawSelectOnly(in rect: CGRect, color: NSColor) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        let box = rect.insetBy(dx: rect.width * 0.14, dy: rect.height * 0.14)
+        ctx.saveGState()
+        ctx.setStrokeColor(color.cgColor)
+        ctx.setLineWidth(1.0)
+        ctx.setLineDash(phase: 0, lengths: [2.4, 1.8])
+        ctx.stroke(box)
+        ctx.setLineDash(phase: 0, lengths: [])
+        let handle = CGRect(x: box.minX - 0.5, y: box.minY - 0.5,
+                            width: max(2.0, rect.width * 0.22),
+                            height: max(2.0, rect.width * 0.22))
+        ctx.setFillColor(color.cgColor)
+        ctx.fill(handle)
+        ctx.restoreGState()
+    }
+
+    /// Web constraints diagram: brackets around a dashed cross.
+    private static func drawConstraintsDiagram(in rect: CGRect, color: NSColor) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        let r = rect.insetBy(dx: rect.width * 0.12, dy: rect.height * 0.12)
+        let arm = r.width * 0.30
+        ctx.saveGState()
+        ctx.setStrokeColor(color.cgColor)
+        ctx.setLineWidth(1.0)
+        for (cx, cy, dx, dy) in [
+            (r.minX, r.minY, 1.0, 1.0),
+            (r.maxX, r.minY, -1.0, 1.0),
+            (r.minX, r.maxY, 1.0, -1.0),
+            (r.maxX, r.maxY, -1.0, -1.0)
+        ] {
+            ctx.move(to: CGPoint(x: cx + dx * arm, y: cy))
+            ctx.addLine(to: CGPoint(x: cx, y: cy))
+            ctx.addLine(to: CGPoint(x: cx, y: cy + dy * arm))
+        }
+        ctx.strokePath()
+        ctx.setLineDash(phase: 0, lengths: [2.0, 1.8])
+        ctx.move(to: CGPoint(x: r.midX, y: r.minY + 2))
+        ctx.addLine(to: CGPoint(x: r.midX, y: r.maxY - 2))
+        ctx.move(to: CGPoint(x: r.minX + 2, y: r.midY))
+        ctx.addLine(to: CGPoint(x: r.maxX - 2, y: r.midY))
+        ctx.strokePath()
+        ctx.restoreGState()
+    }
+
+    private static func drawStrokeAlign(in rect: CGRect, color: NSColor) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        let r = rect.insetBy(dx: rect.width * 0.18, dy: rect.height * 0.24)
+        ctx.saveGState()
+        ctx.setStrokeColor(color.cgColor)
+        ctx.setLineWidth(1.0)
+        ctx.stroke(r)
+        ctx.setLineWidth(2.0)
+        ctx.move(to: CGPoint(x: r.minX + 2, y: r.midY))
+        ctx.addLine(to: CGPoint(x: r.maxX - 2, y: r.midY))
+        ctx.strokePath()
+        ctx.restoreGState()
+    }
+
+    private static func drawStrokeCap(in rect: CGRect, color: NSColor) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        let r = rect.insetBy(dx: rect.width * 0.20, dy: rect.height * 0.30)
+        ctx.saveGState()
+        ctx.setStrokeColor(color.cgColor)
+        ctx.setLineWidth(1.6)
+        ctx.setLineCap(.round)
+        ctx.move(to: CGPoint(x: r.minX, y: r.midY))
+        ctx.addLine(to: CGPoint(x: r.maxX, y: r.midY))
+        ctx.strokePath()
+        ctx.restoreGState()
+    }
+
+    private static func drawStrokeJoin(in rect: CGRect, color: NSColor) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        let r = rect.insetBy(dx: rect.width * 0.20, dy: rect.height * 0.24)
+        ctx.saveGState()
+        ctx.setStrokeColor(color.cgColor)
+        ctx.setLineWidth(1.6)
+        ctx.setLineJoin(.round)
+        ctx.move(to: CGPoint(x: r.minX, y: r.maxY))
+        ctx.addLine(to: CGPoint(x: r.midX, y: r.minY))
+        ctx.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+        ctx.strokePath()
+        ctx.restoreGState()
+    }
+
+    private static func drawStrokeDash(in rect: CGRect, color: NSColor) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        let r = rect.insetBy(dx: rect.width * 0.18, dy: rect.height * 0.34)
+        ctx.saveGState()
+        ctx.setStrokeColor(color.cgColor)
+        ctx.setLineWidth(1.2)
+        ctx.setLineDash(phase: 0, lengths: [3.0, 2.0])
+        ctx.move(to: CGPoint(x: r.minX, y: r.midY))
+        ctx.addLine(to: CGPoint(x: r.maxX, y: r.midY))
+        ctx.strokePath()
+        ctx.restoreGState()
     }
 
     /// Paint-type chips: a 13pt rounded square previewing the paint kind — solid
@@ -617,7 +779,7 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
     public override func draw(_ dirtyRect: NSRect) {
         let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
                                 xRadius: 8, yRadius: 8)
-        (isHovered || isEditing ? NSColor(hex: "2d2d2d") : NSColor(hex: "262626")).setFill()
+        (isHovered || isEditing ? NSColor(hex: "1f1f1f") : NSColor(hex: "171717")).setFill()
         path.fill()
         NSColor(white: 1.0, alpha: 0.05).setStroke()
         path.lineWidth = 1
@@ -784,7 +946,7 @@ public final class PropertiesHexPill: NSView, NSTextFieldDelegate {
     public override func draw(_ dirtyRect: NSRect) {
         let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
                                 xRadius: 8, yRadius: 8)
-        (isHovered || isEditing ? NSColor(hex: "292929") : NSColor(hex: "222222")).setFill()
+        (isHovered || isEditing ? NSColor(hex: "1f1f1f") : NSColor(hex: "171717")).setFill()
         path.fill()
         NSColor(white: 1.0, alpha: 0.05).setStroke()
         path.lineWidth = 1
@@ -1040,7 +1202,7 @@ public final class PropertiesBlendModeButton: NSButton {
     public override func draw(_ dirtyRect: NSRect) {
         let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
                                 xRadius: 8, yRadius: 8)
-        (isHovered ? NSColor(hex: "2d2d2d") : NSColor(hex: "262626")).setFill()
+        (isHovered ? NSColor(hex: "1f1f1f") : NSColor(hex: "171717")).setFill()
         path.fill()
         NSColor(white: 1.0, alpha: 0.05).setStroke()
         path.lineWidth = 1
@@ -1677,12 +1839,70 @@ public final class PropertiesFlippedContainerView: NSView {
     public override var isFlipped: Bool { true }
 }
 
+// MARK: - Colour Swatch Button (FILL / STROKE rows, web 20×20 swatch)
+
+public final class PropertiesColorSwatchButton: NSButton {
+    /// Current colour shown in the swatch.
+    public var swatchHex: String = "#D4D4D4" {
+        didSet { if oldValue != swatchHex { needsDisplay = true } }
+    }
+    /// Checkerboard-less "no paint" face (dark placeholder).
+    public var showsNoneFace: Bool = false {
+        didSet { needsDisplay = true }
+    }
+    public var onPick: (() -> Void)?
+
+    public init(hex: String = "#D4D4D4") {
+        self.swatchHex = hex
+        super.init(frame: .zero)
+        isBordered = false
+        focusRingType = .none
+        title = ""
+        target = self
+        action = #selector(handleClick)
+        setAccessibilityRole(.button)
+        setAccessibilityLabel("Colour swatch")
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        isBordered = false
+        focusRingType = .none
+        title = ""
+        target = self
+        action = #selector(handleClick)
+        setAccessibilityRole(.button)
+    }
+
+    @objc private func handleClick() { onPick?() }
+
+    public override func draw(_ dirtyRect: NSRect) {
+        let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
+        let path = NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6)
+        if showsNoneFace {
+            NSColor(white: 0.16, alpha: 1).setFill()
+            path.fill()
+        } else {
+            (NSColor(hexString: swatchHex) ?? .white).setFill()
+            path.fill()
+        }
+        NSColor(white: 1.0, alpha: 0.24).setStroke()
+        path.lineWidth = 1
+        path.stroke()
+    }
+}
+
 // MARK: - Properties Panel View (The Web-Parity Card Content)
 
 public final class PropertiesPanelView: NSView {
     /// Full scrollable document height. The visible web card is only 368pt tall
     /// (header + COLOR + SHAPE); TRANSFORM / APPEARANCE live below the fold.
     public static let preferredContentHeight: CGFloat = 520
+
+    /// AppKit scrolls a document view to reveal a subview being edited/laid out.
+    /// The inspector card must always open at its first section, so block that:
+    /// the host controls the scroll position explicitly.
+    public override func scrollToVisible(_ rect: NSRect) -> Bool { false }
 
     // Public API -------------------------------------------------------------
     public var onFillChange: ((String) -> Void)?
@@ -1843,8 +2063,78 @@ public final class PropertiesPanelView: NSView {
     public let innerShadowXPill = PropertiesNumberPill(label: "X")
     public let innerShadowYPill = PropertiesNumberPill(label: "Y")
 
+    // MARK: Rebuilt web-inspector chrome (Design|Code header → EFFECTS)
+
+    // Header
+    public let headerTabs = PropertiesSegmentedControl(segments: [
+        .init(title: "Design", value: "design"),
+        .init(title: "Code", value: "code")
+    ])
+    private let identityName = NSTextField(labelWithString: "")
+    private let identityKind = NSTextField(labelWithString: "")
+    private let selectOnlyButton = PropertiesIconButton(kind: .selectOnly, style: .plain)
+
+    // TRANSFORM extras
+    public let sPill = PropertiesNumberPill(label: "S")
+    private let rotateCcwButton = PropertiesIconButton(kind: .rotateCcw, style: .plain)
+    private let rotateCwButton = PropertiesIconButton(kind: .rotateCw, style: .plain)
+
+    // CONSTRAINTS
+    private let constraintsLabel = NSTextField(labelWithString: "")
+    private let constraintsDiagramButton = PropertiesIconButton(kind: .constraints, style: .plain)
+    private let hConstraintLabel = NSTextField(labelWithString: "")
+    private let vConstraintLabel = NSTextField(labelWithString: "")
+    public let hConstraintDropdown = PropertiesBlendModeButton()
+    public let vConstraintDropdown = PropertiesBlendModeButton()
+
+    // FILL row
+    private let fillLabel = NSTextField(labelWithString: "")
+    private let fillAddButton = PropertiesIconButton(kind: .plus, style: .plain)
+    private let fillRowEye = PropertiesIconButton(kind: .eye, style: .plain)
+    private let fillRowSwatch = PropertiesColorSwatchButton()
+    private let fillRowHex = NSTextField(labelWithString: "")
+    private let fillRowPercent = NSTextField(labelWithString: "")
+    private let fillRowToggle = PropertiesIconButton(kind: .eye, style: .plain)
+    private let fillRowRemove = PropertiesIconButton(kind: .minus, style: .plain)
+
+    // STROKE rows
+    private let strokeLabel = NSTextField(labelWithString: "")
+    private let strokeAddButton = PropertiesIconButton(kind: .plus, style: .plain)
+    private let strokeRowEye = PropertiesIconButton(kind: .eye, style: .plain)
+    private let strokeRowSwatch = PropertiesColorSwatchButton(hex: "#FFFFFF")
+    private let strokeRowHex = NSTextField(labelWithString: "")
+    private let strokeRowPercent = NSTextField(labelWithString: "")
+    private let strokeRowToggle = PropertiesIconButton(kind: .eye, style: .plain)
+    private let strokeRowRemove = PropertiesIconButton(kind: .minus, style: .plain)
+    private let strokeAlignButton = PropertiesIconButton(kind: .strokeAlign, style: .plain)
+    private let strokeCapButton = PropertiesIconButton(kind: .strokeCap, style: .plain)
+    private let strokeJoinButton = PropertiesIconButton(kind: .strokeJoin, style: .plain)
+    private let strokeDashButton = PropertiesIconButton(kind: .strokeDash, style: .plain)
+
+    // FRAME block (frame selections)
+    private let frameBlock = PropertiesFlippedContainerView()
+    private let frameSizeLabel = NSTextField(labelWithString: "")
+    private let frameSizeValue = NSTextField(labelWithString: "")
+    private let backgroundColorLabel = NSTextField(labelWithString: "")
+    private var framePresetSwatches: [PropertiesColorSwatchButton] = []
+    private let frameCustomSwatch = PropertiesColorSwatchButton()
+    private let frameHexField = NSTextField(labelWithString: "")
+    private let effectsAddButton = PropertiesIconButton(kind: .plus, style: .plain)
+
+    // Rebuilt-layout bookkeeping (surfaces drawn in `draw(_:)`).
+    private var fillRowRect: CGRect = .zero
+    private var strokeRow1Rect: CGRect = .zero
+    private var strokeRow2Rect: CGRect = .zero
+    private var frameSizeRowRect: CGRect = .zero
+    private var frameColorRowRect: CGRect = .zero
+    private var anchorSurfaceRect: CGRect = .zero
+    private var diagramSurfaceRect: CGRect = .zero
+    private var identityGlyphRect: CGRect = .zero
+    private var identityKindGlyph: PropertiesGlyphFactory.Kind = .shapeKind
+    private var showsFrameBlock = false
+
     // State ------------------------------------------------------------------
-    private var dividerYs: [CGFloat] = [PropertiesPanelMetrics.headerDividerY]
+    private var dividerYs: [CGFloat] = []
     private var showsShape = true
     private var showsText = false
     private var currentX: CGFloat = 0
@@ -1910,7 +2200,8 @@ public final class PropertiesPanelView: NSView {
                              color: NSColor(hex: "a3a3a3"), kern: 0.55)
         addSubview(headerLabel)
 
-        settingsButton.iconPadding = 4
+        settingsButton.iconKind = .transfer
+        settingsButton.iconPadding = 5
         settingsButton.showsHoverBackground = true
         settingsButton.setAccessibilityIdentifier("Inspector.Properties.Settings")
         settingsButton.setAccessibilityLabel("Properties settings")
@@ -2407,6 +2698,240 @@ public final class PropertiesPanelView: NSView {
         innerShadowYPill.onValueChanged = { [weak self] y in self?.applyInnerShadow(y: y) }
         effectsContainer.addSubview(innerShadowYPill)
 
+        // ------------------------------------------------------------------
+        // Rebuilt web-inspector chrome: Design|Code header, identity row,
+        // TRANSFORM / CONSTRAINTS / APPEARANCE / TEXT / FILL / STROKE / EFFECTS.
+        // The old COLOR-wheel controls stay in the tree (public API + tests) but
+        // are no longer laid out; the FILL/STROKE rows are the visible editors.
+        // ------------------------------------------------------------------
+
+        headerTabs.setAccessibilityIdentifier("Inspector.Properties.HeaderTabs")
+        headerTabs.setAccessibilityLabel("Design or code")
+        headerTabs.select(index: 0)
+        addSubview(headerTabs)
+
+        applyAttributedLabel(identityName, text: "FILL", size: 11, weight: .semibold,
+                             color: NSColor.white, kern: 0.2)
+        identityName.lineBreakMode = .byTruncatingTail
+        addSubview(identityName)
+        applyAttributedLabel(identityKind, text: "RECTANGLE", size: 9, weight: .medium,
+                             color: NSColor(hex: "737373"), kern: 1.1)
+        addSubview(identityKind)
+
+        selectOnlyButton.iconPadding = 3.5
+        selectOnlyButton.iconColor = NSColor(hex: "a3a3a3")
+        selectOnlyButton.setAccessibilityIdentifier("Inspector.Properties.SelectOnly")
+        selectOnlyButton.setAccessibilityLabel("Select only")
+        selectOnlyButton.target = self
+        selectOnlyButton.action = #selector(didClickSelectOnly)
+        addSubview(selectOnlyButton)
+
+        // TRANSFORM extras -------------------------------------------------
+        sPill.labelText = "S"
+        sPill.minimumValue = -10_000
+        sPill.maximumValue = 10_000
+        sPill.roundsToInteger = false
+        sPill.setAccessibilityIdentifier("Inspector.Properties.Scale")
+        sPill.setAccessibilityLabel("Transform S")
+        transformContainer.addSubview(sPill)
+
+        rotateCcwButton.iconPadding = 7
+        rotateCcwButton.iconColor = NSColor(hex: "a3a3a3")
+        rotateCcwButton.setAccessibilityIdentifier("Inspector.Properties.RotateCCW")
+        rotateCcwButton.setAccessibilityLabel("Rotate 90 degrees counter-clockwise")
+        rotateCcwButton.target = self
+        rotateCcwButton.action = #selector(didClickRotateCCW)
+        transformContainer.addSubview(rotateCcwButton)
+
+        rotateCwButton.iconPadding = 7
+        rotateCwButton.iconColor = NSColor(hex: "a3a3a3")
+        rotateCwButton.setAccessibilityIdentifier("Inspector.Properties.RotateCW")
+        rotateCwButton.setAccessibilityLabel("Rotate 90 degrees clockwise")
+        rotateCwButton.target = self
+        rotateCwButton.action = #selector(didClickRotateCW)
+        transformContainer.addSubview(rotateCwButton)
+
+        // CONSTRAINTS -------------------------------------------------------
+        applyAttributedLabel(constraintsLabel, text: "CONSTRAINTS", size: 9, weight: .medium,
+                             color: NSColor(hex: "a3a3a3"), kern: 1.26)
+        addSubview(constraintsLabel)
+
+        constraintsDiagramButton.iconPadding = 8
+        constraintsDiagramButton.iconColor = NSColor(hex: "a3a3a3")
+        constraintsDiagramButton.showsHoverBackground = true
+        constraintsDiagramButton.setAccessibilityIdentifier("Inspector.Properties.ConstraintsDiagram")
+        constraintsDiagramButton.setAccessibilityLabel("Constraints")
+        addSubview(constraintsDiagramButton)
+
+        applyAttributedLabel(hConstraintLabel, text: "HORIZONTAL", size: 9, weight: .medium,
+                             color: NSColor(hex: "a3a3a3"), kern: 0.9)
+        hConstraintLabel.alignment = .right
+        addSubview(hConstraintLabel)
+        applyAttributedLabel(vConstraintLabel, text: "VERTICAL", size: 9, weight: .medium,
+                             color: NSColor(hex: "a3a3a3"), kern: 0.9)
+        vConstraintLabel.alignment = .right
+        addSubview(vConstraintLabel)
+
+        hConstraintDropdown.setItems([("Left", "left"), ("Center", "center"),
+                                      ("Right", "right"), ("Scale", "scale")])
+        hConstraintDropdown.placeholderTitle = "Left"
+        hConstraintDropdown.select(value: "left")
+        hConstraintDropdown.setAccessibilityIdentifier("Inspector.Properties.HorizontalConstraint")
+        hConstraintDropdown.setAccessibilityLabel("Horizontal constraint")
+        addSubview(hConstraintDropdown)
+
+        vConstraintDropdown.setItems([("Top", "top"), ("Middle", "middle"),
+                                      ("Bottom", "bottom"), ("Scale", "scale")])
+        vConstraintDropdown.placeholderTitle = "Top"
+        vConstraintDropdown.select(value: "top")
+        vConstraintDropdown.setAccessibilityIdentifier("Inspector.Properties.VerticalConstraint")
+        vConstraintDropdown.setAccessibilityLabel("Vertical constraint")
+        addSubview(vConstraintDropdown)
+
+        // FILL --------------------------------------------------------------
+        applyAttributedLabel(fillLabel, text: "FILL", size: 9, weight: .medium,
+                             color: NSColor(hex: "a3a3a3"), kern: 1.26)
+        addSubview(fillLabel)
+
+        fillAddButton.iconPadding = 4
+        fillAddButton.iconColor = NSColor(hex: "a3a3a3")
+        fillAddButton.setAccessibilityIdentifier("Inspector.Properties.FillAdd")
+        fillAddButton.setAccessibilityLabel("Add fill")
+        addSubview(fillAddButton)
+
+        fillRowEye.iconPadding = 3
+        fillRowEye.iconColor = NSColor(hex: "a3a3a3")
+        fillRowEye.setAccessibilityIdentifier("Inspector.Properties.FillVisible")
+        fillRowEye.setAccessibilityLabel("Fill visible")
+        addSubview(fillRowEye)
+
+        fillRowSwatch.onPick = { [weak self] in self?.presentColorPanel() }
+        addSubview(fillRowSwatch)
+
+        applyMonoLabel(fillRowHex, size: 11, color: NSColor(hex: "e5e5e5"))
+        addSubview(fillRowHex)
+        applyMonoLabel(fillRowPercent, size: 10, color: NSColor(hex: "a3a3a3"))
+        fillRowPercent.alignment = .right
+        addSubview(fillRowPercent)
+
+        fillRowToggle.iconPadding = 3
+        fillRowToggle.iconColor = NSColor(hex: "a3a3a3")
+        fillRowToggle.setAccessibilityIdentifier("Inspector.Properties.FillEye")
+        fillRowToggle.setAccessibilityLabel("Toggle fill visibility")
+        addSubview(fillRowToggle)
+
+        fillRowRemove.iconPadding = 4
+        fillRowRemove.iconColor = NSColor(hex: "a3a3a3")
+        fillRowRemove.setAccessibilityIdentifier("Inspector.Properties.FillRemove")
+        fillRowRemove.setAccessibilityLabel("Remove fill")
+        addSubview(fillRowRemove)
+
+        // STROKE ------------------------------------------------------------
+        applyAttributedLabel(strokeLabel, text: "STROKE", size: 9, weight: .medium,
+                             color: NSColor(hex: "a3a3a3"), kern: 1.26)
+        addSubview(strokeLabel)
+
+        strokeAddButton.iconPadding = 4
+        strokeAddButton.iconColor = NSColor(hex: "a3a3a3")
+        strokeAddButton.setAccessibilityIdentifier("Inspector.Properties.StrokeAdd")
+        strokeAddButton.setAccessibilityLabel("Add stroke")
+        addSubview(strokeAddButton)
+
+        strokeRowEye.iconPadding = 3
+        strokeRowEye.iconColor = NSColor(hex: "a3a3a3")
+        addSubview(strokeRowEye)
+
+        strokeRowSwatch.onPick = { [weak self] in self?.presentStrokeColorPanel() }
+        addSubview(strokeRowSwatch)
+
+        applyMonoLabel(strokeRowHex, size: 11, color: NSColor(hex: "e5e5e5"))
+        addSubview(strokeRowHex)
+        applyMonoLabel(strokeRowPercent, size: 10, color: NSColor(hex: "a3a3a3"))
+        strokeRowPercent.alignment = .right
+        addSubview(strokeRowPercent)
+
+        strokeRowToggle.iconPadding = 3
+        strokeRowToggle.iconColor = NSColor(hex: "a3a3a3")
+        addSubview(strokeRowToggle)
+
+        strokeRowRemove.iconPadding = 4
+        strokeRowRemove.iconColor = NSColor(hex: "a3a3a3")
+        addSubview(strokeRowRemove)
+
+        strokeAlignButton.iconPadding = 4
+        strokeAlignButton.iconColor = NSColor(hex: "a3a3a3")
+        strokeAlignButton.setAccessibilityIdentifier("Inspector.Properties.StrokeAlign")
+        strokeAlignButton.target = self
+        strokeAlignButton.action = #selector(didClickStrokeAlign)
+        addSubview(strokeAlignButton)
+
+        strokeCapButton.iconPadding = 4
+        strokeCapButton.iconColor = NSColor(hex: "a3a3a3")
+        strokeCapButton.setAccessibilityIdentifier("Inspector.Properties.StrokeCap")
+        strokeCapButton.target = self
+        strokeCapButton.action = #selector(didClickStrokeCap)
+        addSubview(strokeCapButton)
+
+        strokeJoinButton.iconPadding = 4
+        strokeJoinButton.iconColor = NSColor(hex: "a3a3a3")
+        strokeJoinButton.setAccessibilityIdentifier("Inspector.Properties.StrokeJoin")
+        strokeJoinButton.target = self
+        strokeJoinButton.action = #selector(didClickStrokeJoin)
+        addSubview(strokeJoinButton)
+
+        strokeDashButton.iconPadding = 4
+        strokeDashButton.iconColor = NSColor(hex: "a3a3a3")
+        strokeDashButton.setAccessibilityIdentifier("Inspector.Properties.StrokeDash")
+        strokeDashButton.target = self
+        strokeDashButton.action = #selector(didClickStrokeDash)
+        addSubview(strokeDashButton)
+
+        // FRAME block (frame selections) -------------------------------------
+        frameBlock.isHidden = true
+        addSubview(frameBlock)
+        applyAttributedLabel(frameSizeLabel, text: "FRAME SIZE", size: 9, weight: .medium,
+                             color: NSColor(hex: "a3a3a3"), kern: 1.26)
+        frameBlock.addSubview(frameSizeLabel)
+        applyMonoLabel(frameSizeValue, size: 11, color: NSColor.white)
+        frameBlock.addSubview(frameSizeValue)
+        applyAttributedLabel(backgroundColorLabel, text: "BACKGROUND COLOR", size: 9, weight: .medium,
+                             color: NSColor(hex: "a3a3a3"), kern: 1.26)
+        frameBlock.addSubview(backgroundColorLabel)
+        let backgroundPresets = ["#FFFFFF", "#F5F5F5", "#D4D4D4", "#A3A3A3", "#525252", "#171717"]
+        for hex in backgroundPresets {
+            let swatch = PropertiesColorSwatchButton(hex: hex)
+            swatch.setAccessibilityLabel("Background " + hex)
+            swatch.onPick = { [weak self] in
+                self?.applyFill(hex: hex, notify: true)
+            }
+            framePresetSwatches.append(swatch)
+            frameBlock.addSubview(swatch)
+        }
+        frameCustomSwatch.onPick = { [weak self] in self?.presentColorPanel() }
+        frameBlock.addSubview(frameCustomSwatch)
+        applyMonoLabel(frameHexField, size: 11, color: NSColor(hex: "e5e5e5"))
+        frameBlock.addSubview(frameHexField)
+
+        // Hide the previous COLOR-wheel controls (kept for API/tests).
+        headerLabel.isHidden = true
+        colorLabel.isHidden = true
+        wheel.isHidden = true
+        fillSwatch.isHidden = true
+        swapButton.isHidden = true
+        hexPill.isHidden = true
+        eyedropperButton.isHidden = true
+        shapeLabel.isHidden = true
+        fillModeControl.isHidden = true
+        fillHexPill.isHidden = true
+        strokeHexPill.isHidden = true
+        strokeCapControl.isHidden = true
+        strokeJoinControl.isHidden = true
+        strokeAlignControl.isHidden = true
+        strokeDashControl.isHidden = true
+        dashLengthPill.isHidden = true
+        dashGapPill.isHidden = true
+        strokeMiterLimitPill.isHidden = true
+
         applyEmptyState()
     }
 
@@ -2433,6 +2958,18 @@ public final class PropertiesPanelView: NSView {
         typographyButton.setAccessibilityValue("\(currentFontWeight), \(currentTextAlign), \(currentLineHeight), \(currentLetterSpacing)")
     }
 
+    /// Styles a plain mono label (value text inside the rebuilt FILL/STROKE rows).
+    private func applyMonoLabel(_ label: NSTextField, size: CGFloat, color: NSColor) {
+        label.font = ThemeFonts.mono(size: size, weight: .regular)
+        label.textColor = color
+        label.isBordered = false
+        label.drawsBackground = false
+        label.isEditable = false
+        label.isSelectable = false
+        label.lineBreakMode = .byTruncatingTail
+        label.cell?.usesSingleLineMode = true
+    }
+
     private func applyAttributedLabel(_ label: NSTextField, text: String, size: CGFloat,
                                       weight: NSFont.Weight, color: NSColor, kern: CGFloat) {
         // The web card is `font-mono`, so every uppercase group title is mono too.
@@ -2453,14 +2990,7 @@ public final class PropertiesPanelView: NSView {
         (PropertiesColorMath.englishBlendModeName($0.rawValue), $0.rawValue)
     }
 
-    /// Inter (bundled, the web default) plus the bundled mono face; remaining
-    /// entries resolve from installed system fonts exactly as the web stack does.
-    /// The web build's bundled OFL faces (plus Inter / Intel One Mono) and a system
-    /// fallback, so text authored in the browser is fully editable natively.
-    private static let fontFamilies = [
-        "Inter", "Playfair Display", "Bitter", "Archivo Black", "Caveat",
-        "ZCOOL KuaiLe", "Intel One Mono", "Helvetica Neue"
-    ]
+    private static let fontFamilies = ["Inter", "Helvetica Neue", "SF Pro Text", "Arial", "Georgia", "Menlo"]
     private static let fontFamilyItems: [(title: String, value: String)] = fontFamilies.map { ($0, $0) }
 
     // MARK: Configure
@@ -2627,6 +3157,11 @@ public final class PropertiesPanelView: NSView {
 
         showsShape = isShapeLike(node.kind)
         showsText = node.kind == .text
+        showsFrameBlock = (node.kind == .frame)
+        updateIdentityRow(for: node)
+        updatePaintRows()
+        radiusPill.suffix = "px"
+        radiusPill.valueAlignment = .right
         applySectionVisibility()
         needsLayout = true
         layoutSubtreeIfNeeded()
@@ -2637,6 +3172,12 @@ public final class PropertiesPanelView: NSView {
         alphaValue = 0.5
         showsShape = false
         showsText = false
+        showsFrameBlock = false
+        identityName.stringValue = "LAYER"
+        identityKind.stringValue = "—"
+        frameSizeValue.stringValue = ""
+        frameHexField.stringValue = ""
+        applySectionVisibility()
         currentX = 0; currentY = 0; currentW = 0; currentH = 0; currentR = 0; currentCornerRadius = 0
         currentCornerRadii = CornerRadii(uniform: 0)
         isAspectLocked = false
@@ -2733,10 +3274,53 @@ public final class PropertiesPanelView: NSView {
         }
     }
 
+    /// Identity row: kind glyph + CAPS layer name + kind label.
+    private func updateIdentityRow(for node: VOONode) {
+        let name = node.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        identityName.stringValue = (name.isEmpty ? "LAYER" : name).uppercased()
+        let kind: String
+        switch node.kind {
+        case .frame: kind = "FRAME"
+        case .text: kind = "TEXT"
+        case .group: kind = "GROUP"
+        case .ellipse: kind = "ELLIPSE"
+        case .rect: kind = "RECTANGLE"
+        case .path: kind = "PATH"
+        case .boolean: kind = "BOOLEAN"
+        default: kind = "LAYER"
+        }
+        identityKind.stringValue = kind
+        switch node.kind {
+        case .frame: identityKindGlyph = .frameKind
+        case .text: identityKindGlyph = .textKind
+        case .group, .boolean: identityKindGlyph = .groupKind
+        case .ellipse: identityKindGlyph = .ellipseKind
+        default: identityKindGlyph = .shapeKind
+        }
+        needsDisplay = true
+    }
+
     private func applySectionVisibility() {
-        shapeLabel.isHidden = !showsShape
+        shapeLabel.isHidden = true            // superseded by the rebuilt chrome
         radiusPill.isHidden = !showsShape
         textContainer.isHidden = !showsText
+        frameBlock.isHidden = !showsFrameBlock
+    }
+
+    /// Feeds the rebuilt FILL / STROKE rows (swatch, hex, percent) from state.
+    private func updatePaintRows() {
+        let isGradient = currentFillMode != "solid"
+        let solidFill = PropertiesColorMath.normalizeHex(currentSolidHex) ?? "#FFFFFF"
+        fillRowSwatch.swatchHex = solidFill
+        fillRowHex.stringValue = isGradient ? "Gradient" : solidFill
+        fillRowPercent.stringValue = "100 %"
+        let stroke = PropertiesColorMath.normalizeHex(currentStrokeHex) ?? "#FFFFFF"
+        strokeRowSwatch.swatchHex = stroke
+        strokeRowHex.stringValue = stroke
+        strokeRowPercent.stringValue = "100 %"
+        frameCustomSwatch.swatchHex = solidFill
+        frameHexField.stringValue = solidFill
+        frameSizeValue.stringValue = "\(Int(round(currentW))) × \(Int(round(currentH)))"
     }
 
     // MARK: Edits (internal state + node mirror + callbacks)
@@ -2745,6 +3329,7 @@ public final class PropertiesPanelView: NSView {
         let normalized = PropertiesColorMath.normalizeHex(hex) ?? currentFillHex
         currentFillHex = normalized
         currentSolidHex = normalized
+        updatePaintRows()
         fillSwatch.fillHex = normalized
         hexPill.setHex(normalized)
         fillHexPill.setHex(normalized)
@@ -2846,6 +3431,7 @@ public final class PropertiesPanelView: NSView {
     private func applyStroke(hex: String, notify: Bool) {
         let normalized = PropertiesColorMath.normalizeHex(hex) ?? currentStrokeHex
         currentStrokeHex = normalized
+        updatePaintRows()
         strokeHexPill.setHex(normalized)
         fillSwatch.strokeHex = normalized
         if var node = node {
@@ -3208,252 +3794,358 @@ public final class PropertiesPanelView: NSView {
         }
     }
 
+    // MARK: Rebuilt-chrome actions
+
+    @objc private func didClickSelectOnly() {
+        // Web "selection only" hint — nothing to toggle in the native model yet.
+    }
+
+    /// Rotates the selected node by ±90° through the normal geometry callback.
+    private func rotateSelection(by degrees: CGFloat) {
+        var next = (currentR + degrees).truncatingRemainder(dividingBy: 360)
+        if next < 0 { next += 360 }
+        currentR = next
+        rPill.setValue(currentR)
+        if var node = node {
+            node.rotation = currentR
+            self.node = node
+        }
+        onGeometryChange?(currentX, currentY, currentW, currentH, currentR, currentCornerRadius)
+    }
+
+    @objc private func didClickRotateCCW() { rotateSelection(by: -90) }
+    @objc private func didClickRotateCW() { rotateSelection(by: 90) }
+
+    @objc private func didClickStrokeAlign() {
+        presentStrokeMenu(options: [("Center", "center"), ("Inside", "inside"), ("Outside", "outside")],
+                          current: currentStrokeAlign,
+                          in: strokeAlignButton) { [weak self] value in
+            self?.currentStrokeAlign = value
+            self?.onStrokeAlignChange?(value)
+        }
+    }
+
+    @objc private func didClickStrokeCap() {
+        presentStrokeMenu(options: [("Butt", "butt"), ("Round", "round"), ("Square", "square")],
+                          current: currentStrokeCap,
+                          in: strokeCapButton) { [weak self] value in
+            self?.currentStrokeCap = value
+            self?.onStrokeCapChange?(value)
+        }
+    }
+
+    @objc private func didClickStrokeJoin() {
+        presentStrokeMenu(options: [("Miter", "miter"), ("Round", "round"), ("Bevel", "bevel")],
+                          current: currentStrokeJoin,
+                          in: strokeJoinButton) { [weak self] value in
+            self?.currentStrokeJoin = value
+            self?.onStrokeJoinChange?(value)
+        }
+    }
+
+    @objc private func didClickStrokeDash() {
+        let current = (currentStrokeDash?.isEmpty == false) ? "dashed" : "solid"
+        presentStrokeMenu(options: [("Solid", "solid"), ("Dash", "dashed")],
+                          current: current,
+                          in: strokeDashButton) { [weak self] value in
+            guard let self = self else { return }
+            let dash: [CGFloat]? = value == "dashed" ? [4, 4] : nil
+            self.currentStrokeDash = dash
+            self.onStrokeDashChange?(dash)
+        }
+    }
+
+    private var strokeMenuCallback: ((String) -> Void)?
+
+    private func presentStrokeMenu(options: [(String, String)],
+                                   current: String,
+                                   in anchorView: NSView,
+                                   onPick: @escaping (String) -> Void) {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        strokeMenuCallback = onPick
+        for (label, value) in options {
+            let item = NSMenuItem(title: label, action: #selector(handleStrokeMenuPick(_:)), keyEquivalent: "")
+            item.representedObject = value
+            item.state = value == current ? .on : .off
+            item.target = self
+            menu.addItem(item)
+        }
+        menu.popUp(positioning: nil,
+                   at: NSPoint(x: 0, y: anchorView.bounds.height + 4),
+                   in: anchorView)
+    }
+
+    @objc private func handleStrokeMenuPick(_ sender: NSMenuItem) {
+        guard let value = sender.representedObject as? String else { return }
+        strokeMenuCallback?(value)
+        strokeMenuCallback = nil
+        needsDisplay = true
+    }
+
+    /// Colour panel target for the STROKE swatch (the FILL swatch keeps the
+    /// existing `presentColorPanel` path).
+    private func presentStrokeColorPanel() {
+        let panel = NSColorPanel.shared
+        panel.setTarget(self)
+        panel.setAction(#selector(strokeColorPanelDidChange(_:)))
+        panel.color = NSColor(hex: currentStrokeHex)
+        panel.orderFront(nil)
+    }
+
+    @objc private func strokeColorPanelDidChange(_ sender: NSColorPanel) {
+        applyStroke(hex: PropertiesColorMath.hexString(from: sender.color), notify: true)
+    }
+
     // MARK: Layout
+
+    /// Vertical rhythm of the rebuilt web inspector: 28pt fields, 9pt section
+    /// labels, 12pt above/below every 1px divider.
+    private enum Row {
+        static let inset: CGFloat = 12
+        static let gap: CGFloat = 8
+        static let rowH: CGFloat = 28
+        static let labelH: CGFloat = 11
+        static let sectionGap: CGFloat = 7
+        static let fieldRadius: CGFloat = 8
+        static let surfaceHex = "171717"
+    }
 
     public override func layout() {
         super.layout()
         let width = bounds.width > 0 ? bounds.width : PropertiesPanelMetrics.width
-        let contentRight = width - PropertiesPanelMetrics.contentInset
-        let contentWidth = max(contentRight - PropertiesPanelMetrics.contentInset, 0)
-        let inset = PropertiesPanelMetrics.contentInset
-        dividerYs = [PropertiesPanelMetrics.headerDividerY]
+        let inset = Row.inset
+        let contentRight = width - inset
+        let contentWidth = max(contentRight - inset, 0)
+        dividerYs = []
+        fillRowRect = .zero
+        strokeRow1Rect = .zero
+        strokeRow2Rect = .zero
+        frameSizeRowRect = .zero
+        frameColorRowRect = .zero
 
-        // Sections share one rhythm: 12pt above and 12pt below every divider.
-        func closeSection(at contentBottom: CGFloat) -> CGFloat {
-            let dividerY = contentBottom + PropertiesPanelMetrics.sectionGap
+        /// Closes a section: divider 12pt below the content, next section 12pt after.
+        func closeSection(_ bottom: CGFloat) -> CGFloat {
+            let dividerY = bottom + Row.sectionGap
             dividerYs.append(dividerY)
-            return dividerY + PropertiesPanelMetrics.sectionGap
+            return dividerY + Row.sectionGap
         }
 
-        // Header
-        headerLabel.frame = CGRect(x: inset + 8,
-                                   y: PropertiesPanelMetrics.headerTitleTop,
-                                   width: 190,
-                                   height: PropertiesPanelMetrics.headerTitleHeight)
-        let headerIcon = PropertiesPanelMetrics.headerIconSize
-        let headerIconY = PropertiesPanelMetrics.headerTitleTop
-            + (PropertiesPanelMetrics.headerTitleHeight - headerIcon) / 2
-        transferButton.frame = CGRect(x: contentRight - 8 - headerIcon, y: headerIconY,
-                                      width: headerIcon, height: headerIcon)
-        settingsButton.frame = CGRect(x: contentRight - 8 - headerIcon - 4 - headerIcon,
-                                      y: headerIconY, width: headerIcon, height: headerIcon)
+        var y: CGFloat = 12
 
-        // COLOR section
-        colorLabel.frame = CGRect(x: inset, y: PropertiesPanelMetrics.headerDividerY + 8,
-                                  width: 100, height: PropertiesPanelMetrics.sectionLabelHeight)
-        // The inline Solid/Linear/Radial bar is hidden (paint type lives in the
-        // fill row menu now), so COLOR starts right below its label: label bottom
-        // 66 + 6 = 72 for the 140pt wheel.
-        fillModeControl.isHidden = true
-        fillModeControl.frame = .zero
+        // MARK: Header (Design | Code + settings)
+        headerTabs.frame = CGRect(x: inset, y: y, width: max(contentWidth - 36, 0), height: Row.rowH)
+        settingsButton.frame = CGRect(x: contentRight - 24, y: y + 2, width: 24, height: 24)
 
-        var cursorY: CGFloat = 72
+        // MARK: Layer identity row
+        let identityY = y + 28 + 12
+        identityGlyphRect = CGRect(x: inset, y: identityY + 2, width: 14, height: 14)
+        identityName.frame = CGRect(x: inset + 22, y: identityY - 1, width: 112, height: 17)
+        identityKind.frame = CGRect(x: inset + 140, y: identityY + 3,
+                                    width: max(contentRight - 20 - 8 - (inset + 140), 0), height: 12)
+        selectOnlyButton.frame = CGRect(x: contentRight - 20, y: identityY, width: 20, height: 20)
+        y = closeSection(identityY + 20)
 
-        if currentFillMode == "solid" {
-            wheel.isHidden = false
-            fillSwatch.isHidden = false
-            swapButton.isHidden = false
-            hexPill.isHidden = false
-            eyedropperButton.isHidden = false
+        // MARK: TRANSFORM
+        transformLabel.frame = CGRect(x: inset, y: y, width: 160, height: Row.labelH)
+        let transformTop = y + Row.labelH + 6
+        anchorSurfaceRect = CGRect(x: inset, y: transformTop, width: 56, height: 56)
+        anchorGrid.frame = anchorSurfaceRect
 
-            gradientStopsBar.isHidden = true
-            gradientAnglePill.isHidden = true
-            gradientStopHexPill.isHidden = true
-            gradientStopOpacityPill.isHidden = true
+        let colX: CGFloat = 56 + 12                       // column next to the anchor grid
+        let colW = max(contentWidth - colX, 0)
+        let halfW = (colW - Row.gap) / 2
+        let wWidth = halfW - 10
+        let hX = colX + wWidth + 24
+        let hWidth = max(contentWidth - hX, 0)
 
-            let wheelSide = PropertiesPanelMetrics.wheelDiameter
-            wheel.frame = CGRect(x: round((width - wheelSide) / 2), y: cursorY, width: wheelSide, height: wheelSide)
-            cursorY += wheelSide + 10
+        transformContainer.frame = CGRect(x: inset, y: transformTop,
+                                          width: contentWidth, height: 124)
+        xPill.frame = CGRect(x: colX, y: 0, width: halfW, height: Row.rowH)
+        yPill.frame = CGRect(x: colX + halfW + Row.gap, y: 0, width: halfW, height: Row.rowH)
 
-            // Fill row (web: [paint type] [swatch] … [hex] [opacity]).
-            paintTypeButton.frame = CGRect(x: inset, y: cursorY + 3, width: 24, height: 24)
-            fillSwatch.frame = CGRect(x: inset + 30, y: cursorY, width: 30, height: 30)
-            swapButton.frame = CGRect(x: inset + 66, y: cursorY + 7, width: 16, height: 16)
-            hexPill.frame = CGRect(x: contentRight - 30 - 6 - 70, y: cursorY + 3, width: 70, height: 24)
-            eyedropperButton.frame = CGRect(x: contentRight - 30, y: cursorY, width: 30, height: 30)
-            cursorY += 30
+        wPill.frame = CGRect(x: colX, y: 32, width: wWidth, height: Row.rowH)
+        lockRatioButton.frame = CGRect(x: colX + wWidth + 4, y: 36, width: 16, height: 20)
+        hPill.frame = CGRect(x: hX, y: 32, width: hWidth, height: Row.rowH)
+
+        rPill.frame = CGRect(x: 0, y: 64, width: 96, height: Row.rowH)
+        sPill.frame = CGRect(x: 100, y: 64, width: 96, height: Row.rowH)
+        rotateCcwButton.frame = CGRect(x: 204, y: 64, width: 28, height: Row.rowH)
+        rotateCwButton.frame = CGRect(x: 236, y: 64, width: 28, height: Row.rowH)
+
+        radiusPill.frame = CGRect(x: inset, y: transformTop + 96,
+                                  width: max(contentWidth - 28, 0), height: Row.rowH)
+        crLinkButton.frame = CGRect(x: contentWidth - 20, y: 100, width: 20, height: 20)
+
+        var transformBottom = transformTop + 96 + Row.rowH
+        if isCornerRadiiLinked {
+            crPill.isHidden = true
+            tlPill.isHidden = true; trPill.isHidden = true; brPill.isHidden = true; blPill.isHidden = true
+            radiusPill.isHidden = !showsShape
         } else {
-            wheel.isHidden = true
-            fillSwatch.isHidden = true
-            swapButton.isHidden = true
-            hexPill.isHidden = true
-            eyedropperButton.isHidden = true
+            radiusPill.isHidden = true
+            crPill.isHidden = true
+            tlPill.isHidden = false; trPill.isHidden = false; brPill.isHidden = false; blPill.isHidden = false
+            let radiiHalf = (contentWidth - Row.gap) / 2
+            tlPill.frame = CGRect(x: 0, y: 132, width: radiiHalf, height: Row.rowH)
+            trPill.frame = CGRect(x: radiiHalf + Row.gap, y: 132, width: radiiHalf, height: Row.rowH)
+            blPill.frame = CGRect(x: 0, y: 164, width: radiiHalf, height: Row.rowH)
+            brPill.frame = CGRect(x: radiiHalf + Row.gap, y: 164, width: radiiHalf, height: Row.rowH)
+            transformContainer.frame = CGRect(x: inset, y: transformTop,
+                                              width: contentWidth, height: 196)
+            transformBottom = transformTop + 196
+        }
+        y = closeSection(max(transformBottom, transformTop + 56))
 
+        // MARK: CONSTRAINTS
+        constraintsLabel.frame = CGRect(x: inset, y: y, width: 160, height: Row.labelH)
+        let constraintTop = y + Row.labelH + 6
+        diagramSurfaceRect = CGRect(x: inset, y: constraintTop, width: 56, height: 56)
+        constraintsDiagramButton.frame = diagramSurfaceRect
+        let ddX = colX + 82
+        let ddW = max(contentRight - ddX, 0)
+        hConstraintLabel.frame = CGRect(x: colX, y: constraintTop + 9, width: 78, height: 10)
+        hConstraintDropdown.frame = CGRect(x: ddX, y: constraintTop, width: ddW, height: Row.rowH)
+        vConstraintLabel.frame = CGRect(x: colX, y: constraintTop + 45, width: 78, height: 10)
+        vConstraintDropdown.frame = CGRect(x: ddX, y: constraintTop + 36, width: ddW, height: Row.rowH)
+        y = closeSection(constraintTop + 64)
+
+        // MARK: APPEARANCE
+        appearanceLabel.frame = CGRect(x: inset, y: y, width: 160, height: Row.labelH)
+        let appearanceTop = y + Row.labelH + 6
+        opacityPill.frame = CGRect(x: inset, y: appearanceTop, width: 124, height: Row.rowH)
+        blendButton.frame = CGRect(x: inset + 132, y: appearanceTop,
+                                   width: max(contentWidth - 132, 0), height: Row.rowH)
+        y = closeSection(appearanceTop + Row.rowH)
+
+        // MARK: TEXT (text layers) / FRAME block (frames)
+        textContainer.isHidden = !showsText
+        frameBlock.isHidden = !showsFrameBlock
+        if showsText {
+            let textHeight: CGFloat = 11 + 6 + Row.rowH + 4 + Row.rowH + 4 + Row.rowH
+            textContainer.frame = CGRect(x: inset, y: y, width: contentWidth, height: textHeight)
+            textLabel.frame = CGRect(x: 0, y: 0, width: 160, height: Row.labelH)
+            fontFamilyPill.frame = CGRect(x: 0, y: 17, width: 130, height: Row.rowH)
+            fontSizePill.frame = CGRect(x: 136, y: 17, width: 60, height: Row.rowH)
+            typographyButton.frame = CGRect(x: 202, y: 17, width: 24, height: Row.rowH)
+            fontWeightDropdown.frame = CGRect(x: 0, y: 49, width: 130, height: Row.rowH)
+            alignSegmentedControl.frame = CGRect(x: 136, y: 49,
+                                                 width: max(contentWidth - 136, 0), height: Row.rowH)
+            lineHeightPill.frame = CGRect(x: 0, y: 81, width: 64, height: Row.rowH)
+            letterSpacingPill.frame = CGRect(x: 70, y: 81, width: 64, height: Row.rowH)
+            italicButton.frame = CGRect(x: 140, y: 81, width: 28, height: Row.rowH)
+            underlineButton.frame = CGRect(x: 172, y: 81, width: 28, height: Row.rowH)
+            y = closeSection(y + textHeight)
+        } else if showsFrameBlock {
+            let blockHeight: CGFloat = 11 + 17 + 28 + 12 + 11 + 17 + 20 + 8 + 28
+            frameBlock.frame = CGRect(x: inset, y: y, width: contentWidth, height: blockHeight)
+            frameSizeLabel.frame = CGRect(x: 0, y: 0, width: 160, height: Row.labelH)
+            frameSizeRowRect = CGRect(x: inset, y: y + 17, width: contentWidth, height: Row.rowH)
+            frameSizeValue.frame = CGRect(x: 10, y: 17 + 6, width: max(contentWidth - 20, 0), height: 16)
+            backgroundColorLabel.frame = CGRect(x: 0, y: 17 + 28 + 12, width: 200, height: Row.labelH)
+            let presetsY: CGFloat = 17 + 28 + 12 + 17
+            for (index, swatch) in framePresetSwatches.enumerated() {
+                swatch.frame = CGRect(x: CGFloat(index) * 28, y: presetsY, width: 20, height: 20)
+            }
+            let colorRowY = presetsY + 20 + 8
+            frameColorRowRect = CGRect(x: inset, y: y + colorRowY, width: contentWidth, height: Row.rowH)
+            frameCustomSwatch.frame = CGRect(x: 8, y: colorRowY + 4, width: 20, height: 20)
+            frameHexField.frame = CGRect(x: 36, y: colorRowY + 6, width: 140, height: 16)
+            y = closeSection(y + colorRowY + Row.rowH)
+        }
+
+        // MARK: FILL
+        fillLabel.frame = CGRect(x: inset, y: y, width: 160, height: Row.labelH)
+        paintTypeButton.frame = CGRect(x: contentRight - 56, y: y - 5, width: 20, height: 20)
+        fillAddButton.frame = CGRect(x: contentRight - 28, y: y - 8, width: 24, height: 24)
+        let fillTop = y + Row.labelH + 6
+        fillRowRect = CGRect(x: inset, y: fillTop, width: contentWidth, height: 32)
+        fillRowEye.frame = CGRect(x: inset + 8, y: fillTop + 6, width: 20, height: 20)
+        fillRowSwatch.frame = CGRect(x: inset + 36, y: fillTop + 6, width: 20, height: 20)
+        fillRowHex.frame = CGRect(x: inset + 64, y: fillTop + 9, width: 84, height: 16)
+        fillRowPercent.frame = CGRect(x: inset + 150, y: fillTop + 10, width: 44, height: 12)
+        fillRowToggle.frame = CGRect(x: inset + 202, y: fillTop + 6, width: 20, height: 20)
+        fillRowRemove.frame = CGRect(x: inset + 232, y: fillTop + 6, width: 20, height: 20)
+        var fillBottom = fillTop + 32
+
+        if currentFillMode != "solid" {
             gradientStopsBar.isHidden = false
             gradientStopHexPill.isHidden = false
             gradientStopOpacityPill.isHidden = false
-
-            paintTypeButton.frame = CGRect(x: inset, y: cursorY, width: 24, height: 24)
-            gradientStopsBar.frame = CGRect(x: inset + 30, y: cursorY,
-                                            width: max(contentWidth - 30, 0), height: 24)
-            cursorY += 28
-
-            let stopRowY = cursorY
+            gradientAnglePill.isHidden = (currentFillMode != "linear")
+            gradientStopsBar.frame = CGRect(x: inset, y: fillBottom + 6,
+                                            width: contentWidth, height: 24)
+            let stopRowY = fillBottom + 6 + 30
             gradientStopHexPill.frame = CGRect(x: inset, y: stopRowY, width: 100, height: 24)
             gradientStopOpacityPill.frame = CGRect(x: inset + 106, y: stopRowY, width: 56, height: 24)
-
             if currentFillMode == "linear" {
-                gradientAnglePill.isHidden = false
                 gradientAnglePill.frame = CGRect(x: contentRight - 56, y: stopRowY, width: 56, height: 24)
             } else {
-                gradientAnglePill.isHidden = true
                 gradientAnglePill.frame = .zero
             }
-            cursorY += 24
+            fillBottom = stopRowY + 24
         }
+        y = closeSection(fillBottom)
 
-        cursorY = closeSection(at: cursorY)
+        // MARK: STROKE
+        strokeLabel.frame = CGRect(x: inset, y: y, width: 160, height: Row.labelH)
+        strokeAddButton.frame = CGRect(x: contentRight - 28, y: y - 8, width: 24, height: 24)
+        let strokeTop = y + Row.labelH + 6
+        strokeRow1Rect = CGRect(x: inset, y: strokeTop, width: contentWidth, height: 32)
+        strokeRowEye.frame = CGRect(x: inset + 8, y: strokeTop + 6, width: 20, height: 20)
+        strokeRowSwatch.frame = CGRect(x: inset + 36, y: strokeTop + 6, width: 20, height: 20)
+        strokeRowHex.frame = CGRect(x: inset + 64, y: strokeTop + 9, width: 84, height: 16)
+        strokeRowPercent.frame = CGRect(x: inset + 150, y: strokeTop + 10, width: 44, height: 12)
+        strokeRowToggle.frame = CGRect(x: inset + 202, y: strokeTop + 6, width: 20, height: 20)
+        strokeRowRemove.frame = CGRect(x: inset + 232, y: strokeTop + 6, width: 20, height: 20)
 
-        // SHAPE / TEXT section
-        if showsShape {
-            shapeLabel.isHidden = false
-            radiusPill.isHidden = false
-            textContainer.isHidden = true
-
-            shapeLabel.frame = CGRect(x: inset, y: cursorY,
-                                      width: 100, height: PropertiesPanelMetrics.sectionLabelHeight)
-            cursorY += 16
-            radiusPill.frame = CGRect(x: inset, y: cursorY, width: 108, height: 26)
-            cursorY += 26
-            cursorY = closeSection(at: cursorY)
-        } else if showsText {
-            shapeLabel.isHidden = true
-            radiusPill.isHidden = true
-            textContainer.isHidden = false
-
-            let textContainerH: CGFloat = 110
-            textContainer.frame = CGRect(x: inset, y: cursorY, width: contentWidth, height: textContainerH)
-            textLabel.frame = CGRect(x: 0, y: 0, width: 100, height: PropertiesPanelMetrics.sectionLabelHeight)
-
-            fontFamilyPill.frame = CGRect(x: 0, y: 16, width: 130, height: 26)
-            fontSizePill.frame = CGRect(x: 136, y: 16, width: 50, height: 26)
-            typographyButton.frame = CGRect(x: contentWidth - 24, y: 16, width: 24, height: 26)
-
-            weightMarker.frame = CGRect(x: contentWidth - 24, y: 16, width: 1, height: 1)
-            alignMarker.frame = CGRect(x: contentWidth - 24, y: 16, width: 1, height: 1)
-            lineHeightMarker.frame = CGRect(x: contentWidth - 24, y: 16, width: 1, height: 1)
-            letterSpacingMarker.frame = CGRect(x: contentWidth - 24, y: 16, width: 1, height: 1)
-
-            fontWeightDropdown.frame = CGRect(x: 0, y: 48, width: 110, height: 24)
-            alignSegmentedControl.frame = CGRect(x: 116, y: 48, width: contentWidth - 116, height: 24)
-
-            lineHeightPill.frame = CGRect(x: 0, y: 78, width: 50, height: 24)
-            letterSpacingPill.frame = CGRect(x: 56, y: 78, width: 50, height: 24)
-            italicButton.frame = CGRect(x: contentWidth - 52, y: 78, width: 24, height: 24)
-            underlineButton.frame = CGRect(x: contentWidth - 24, y: 78, width: 24, height: 24)
-
-            cursorY += textContainerH
-            cursorY = closeSection(at: cursorY)
+        let strokeRow2Top = strokeTop + 32 + 4
+        strokeRow2Rect = CGRect(x: inset, y: strokeRow2Top, width: contentWidth, height: Row.rowH)
+        strokeAlignButton.frame = CGRect(x: inset + 6, y: strokeRow2Top + 4, width: 20, height: 20)
+        strokeCapButton.frame = CGRect(x: inset + 32, y: strokeRow2Top + 4, width: 20, height: 20)
+        strokeJoinButton.frame = CGRect(x: inset + 58, y: strokeRow2Top + 4, width: 20, height: 20)
+        strokeWidthPill.labelText = ""
+        strokeWidthPill.frame = CGRect(x: inset + 88, y: strokeRow2Top, width: 120, height: Row.rowH)
+        strokeDashButton.frame = CGRect(x: contentRight - 28, y: strokeRow2Top + 4, width: 20, height: 20)
+        var strokeBottom = strokeRow2Top + Row.rowH
+        let isDashed = (currentStrokeDash != nil && currentStrokeDash!.isEmpty == false)
+        if isDashed {
+            let dashY = strokeBottom + 4
+            dashLengthPill.isHidden = false
+            dashGapPill.isHidden = false
+            strokeMiterLimitPill.isHidden = false
+            dashLengthPill.frame = CGRect(x: inset, y: dashY, width: 70, height: Row.rowH)
+            dashGapPill.frame = CGRect(x: inset + 76, y: dashY, width: 70, height: Row.rowH)
+            strokeMiterLimitPill.frame = CGRect(x: inset + 152, y: dashY, width: 70, height: Row.rowH)
+            strokeBottom = dashY + Row.rowH
         } else {
-            shapeLabel.isHidden = true
-            radiusPill.isHidden = true
-            textContainer.isHidden = true
+            dashLengthPill.isHidden = true
+            dashGapPill.isHidden = true
+            strokeMiterLimitPill.isHidden = true
         }
+        y = closeSection(strokeBottom)
 
-        // TRANSFORM section
-        transformLabel.frame = CGRect(x: inset, y: cursorY,
-                                      width: 120, height: PropertiesPanelMetrics.sectionLabelHeight)
-        anchorGrid.frame = CGRect(x: contentRight - 26, y: cursorY - 3, width: 26, height: 20)
-        cursorY += 16
+        // MARK: EFFECTS
+        effectsLabel.frame = CGRect(x: 0, y: 0, width: 160, height: Row.labelH)
+        effectsAddButton.frame = CGRect(x: contentRight - 28, y: y - 8, width: 24, height: 24)
+        blurCheckbox.frame = CGRect(x: 0, y: 17, width: 120, height: 20)
+        blurPill.frame = CGRect(x: contentWidth - 60, y: 17, width: 60, height: 24)
+        dropShadowCheckbox.frame = CGRect(x: 0, y: 47, width: 110, height: 20)
+        dropShadowHexPill.frame = CGRect(x: 116, y: 46, width: 64, height: 22)
+        dropShadowOpacityPill.frame = CGRect(x: contentWidth - 48, y: 46, width: 48, height: 22)
+        dropShadowBlurPill.frame = CGRect(x: 0, y: 73, width: 50, height: 22)
+        dropShadowXPill.frame = CGRect(x: 56, y: 73, width: 50, height: 22)
+        dropShadowYPill.frame = CGRect(x: 112, y: 73, width: 50, height: 22)
+        innerShadowCheckbox.frame = CGRect(x: 0, y: 103, width: 110, height: 20)
+        innerShadowHexPill.frame = CGRect(x: 116, y: 102, width: 64, height: 22)
+        innerShadowOpacityPill.frame = CGRect(x: contentWidth - 48, y: 102, width: 48, height: 22)
+        innerShadowBlurPill.frame = CGRect(x: 0, y: 129, width: 50, height: 22)
+        innerShadowXPill.frame = CGRect(x: 56, y: 129, width: 50, height: 22)
+        innerShadowYPill.frame = CGRect(x: 112, y: 129, width: 50, height: 22)
+        effectsContainer.frame = CGRect(x: inset, y: y, width: contentWidth, height: 129 + 22 + 10)
+        y += 129 + 22 + 10
 
-        let transformH: CGFloat = isCornerRadiiLinked ? 60 : 92
-        transformContainer.frame = CGRect(x: inset, y: cursorY, width: contentWidth, height: transformH)
-
-        // X · Y · W · [ratio lock] · H: four equal 26pt pills with 4pt gaps and a
-        // real 16pt slot for the lock (it used to be drawn on top of W and H).
-        let fieldGap: CGFloat = 4
-        let lockSlot: CGFloat = 16
-        let col = (contentWidth - lockSlot - fieldGap * 4) / 4
-        xPill.frame = CGRect(x: 0, y: 0, width: col, height: 26)
-        yPill.frame = CGRect(x: col + fieldGap, y: 0, width: col, height: 26)
-        wPill.frame = CGRect(x: (col + fieldGap) * 2, y: 0, width: col, height: 26)
-        lockRatioButton.frame = CGRect(x: (col + fieldGap) * 3, y: 3, width: lockSlot, height: 20)
-        hPill.frame = CGRect(x: (col + fieldGap) * 3 + lockSlot + fieldGap, y: 0, width: col, height: 26)
-
-        // R · [link] · CR (or TL/TR/BR/BL when unlinked) on the second row.
-        let radiiX: CGFloat = 124
-        rPill.frame = CGRect(x: 0, y: 30, width: 100, height: 26)
-        crLinkButton.frame = CGRect(x: 104, y: 33, width: 16, height: 20)
-
-        if isCornerRadiiLinked {
-            crPill.isHidden = false
-            tlPill.isHidden = true; trPill.isHidden = true; brPill.isHidden = true; blPill.isHidden = true
-            crPill.frame = CGRect(x: radiiX, y: 30, width: contentWidth - radiiX, height: 26)
-        } else {
-            crPill.isHidden = true
-            tlPill.isHidden = false; trPill.isHidden = false; brPill.isHidden = false; blPill.isHidden = false
-            let half = (contentWidth - radiiX - fieldGap) / 2
-            tlPill.frame = CGRect(x: radiiX, y: 30, width: half, height: 26)
-            trPill.frame = CGRect(x: radiiX + half + fieldGap, y: 30, width: half, height: 26)
-
-            blPill.frame = CGRect(x: radiiX, y: 60, width: half, height: 26)
-            brPill.frame = CGRect(x: radiiX + half + fieldGap, y: 60, width: half, height: 26)
-        }
-
-        cursorY += transformH
-        cursorY = closeSection(at: cursorY)
-
-        // APPEARANCE section
-        appearanceLabel.frame = CGRect(x: inset, y: cursorY,
-                                       width: 140, height: PropertiesPanelMetrics.sectionLabelHeight)
-        cursorY += 16
-
-        fillHexPill.frame = CGRect(x: inset, y: cursorY, width: 110, height: 24)
-        strokeHexPill.frame = CGRect(x: contentRight - 110, y: cursorY, width: 110, height: 24)
-        cursorY += 28
-
-        strokeWidthPill.frame = CGRect(x: inset, y: cursorY, width: 50, height: 24)
-        strokeCapControl.frame = CGRect(x: inset + 56, y: cursorY + 1, width: 84, height: 22)
-        strokeJoinControl.frame = CGRect(x: contentRight - 84, y: cursorY + 1, width: 84, height: 22)
-        cursorY += 28
-
-        strokeDashControl.frame = CGRect(x: inset, y: cursorY, width: 110, height: 22)
-        strokeAlignControl.frame = CGRect(x: contentRight - 110, y: cursorY, width: 110, height: 22)
-        cursorY += 26
-
-        let isDashedOrCustom = (currentStrokeDash != nil && !currentStrokeDash!.isEmpty)
-        dashLengthPill.isHidden = !isDashedOrCustom
-        dashGapPill.isHidden = !isDashedOrCustom
-        strokeMiterLimitPill.isHidden = !isDashedOrCustom
-        if isDashedOrCustom {
-            dashLengthPill.frame = CGRect(x: inset, y: cursorY, width: 60, height: 24)
-            dashGapPill.frame = CGRect(x: inset + 66, y: cursorY, width: 60, height: 24)
-            strokeMiterLimitPill.frame = CGRect(x: contentRight - 60, y: cursorY, width: 60, height: 24)
-            cursorY += 28
-        }
-
-        opacityPill.frame = CGRect(x: inset, y: cursorY, width: 54, height: 24)
-        blendButton.frame = CGRect(x: inset + 60, y: cursorY, width: contentWidth - 60, height: 24)
-        cursorY += 24
-
-        cursorY = closeSection(at: cursorY)
-
-        // EFFECTS section
-        effectsContainer.frame = CGRect(x: inset, y: cursorY, width: contentWidth, height: 160)
-        effectsLabel.frame = CGRect(x: 0, y: 0, width: 100, height: PropertiesPanelMetrics.sectionLabelHeight)
-
-        blurCheckbox.frame = CGRect(x: 0, y: 16, width: 120, height: 20)
-        blurPill.frame = CGRect(x: contentWidth - 60, y: 14, width: 60, height: 24)
-
-        dropShadowCheckbox.frame = CGRect(x: 0, y: 46, width: 110, height: 20)
-        dropShadowHexPill.frame = CGRect(x: 116, y: 45, width: 64, height: 22)
-        dropShadowOpacityPill.frame = CGRect(x: contentWidth - 48, y: 45, width: 48, height: 22)
-
-        dropShadowBlurPill.frame = CGRect(x: 0, y: 72, width: 50, height: 22)
-        dropShadowXPill.frame = CGRect(x: 56, y: 72, width: 50, height: 22)
-        dropShadowYPill.frame = CGRect(x: 112, y: 72, width: 50, height: 22)
-
-        innerShadowCheckbox.frame = CGRect(x: 0, y: 102, width: 110, height: 20)
-        innerShadowHexPill.frame = CGRect(x: 116, y: 101, width: 64, height: 22)
-        innerShadowOpacityPill.frame = CGRect(x: contentWidth - 48, y: 101, width: 48, height: 22)
-
-        innerShadowBlurPill.frame = CGRect(x: 0, y: 128, width: 50, height: 22)
-        innerShadowXPill.frame = CGRect(x: 56, y: 128, width: 50, height: 22)
-        innerShadowYPill.frame = CGRect(x: 112, y: 128, width: 50, height: 22)
-
-        cursorY += 164
-        contentHeight = node == nil ? PropertiesPanelView.preferredContentHeight : max(PropertiesPanelView.preferredContentHeight, cursorY)
-
+        contentHeight = y + 4
         needsDisplay = true
     }
 
@@ -3461,18 +4153,59 @@ public final class PropertiesPanelView: NSView {
         return contentHeight
     }
 
-    // MARK: Drawing (section dividers)
+    // MARK: Drawing (row surfaces, dividers, identity glyph)
 
     public override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+
+        // Field surfaces for the read-only rows of the rebuilt inspector chrome.
+        let surfaces: [CGRect] = [fillRowRect, strokeRow1Rect, strokeRow2Rect,
+                                  frameSizeRowRect, frameColorRowRect]
+        ctx.setFillColor(NSColor(hex: Row.surfaceHex).cgColor)
+        for rect in surfaces where rect.height > 0 {
+            ctx.addPath(CGPath(roundedRect: rect,
+                               cornerWidth: Row.fieldRadius,
+                               cornerHeight: Row.fieldRadius,
+                               transform: nil))
+            ctx.fillPath()
+        }
+
+        // White/6 surfaces behind the anchor grid and the constraints diagram.
+        ctx.setFillColor(NSColor(white: 1.0, alpha: 0.06).cgColor)
+        for rect in [anchorSurfaceRect, diagramSurfaceRect] where rect.height > 0 {
+            ctx.addPath(CGPath(roundedRect: rect, cornerWidth: 10, cornerHeight: 10, transform: nil))
+            ctx.fillPath()
+        }
+
+        // Hairline separators inside the FILL / STROKE rows.
         ctx.setLineWidth(1)
-        let inset = PropertiesPanelMetrics.dividerInset
+        ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.06).cgColor)
+        for row in [fillRowRect, strokeRow1Rect] where row.height > 0 {
+            for offset in [150.0, 198.0, 227.0] {
+                let x = round(row.minX + offset) + 0.5
+                ctx.strokeLineSegments(between: [
+                    CGPoint(x: x, y: row.minY + 5),
+                    CGPoint(x: x, y: row.maxY - 5)
+                ])
+            }
+        }
+
+        // 1px white/8 rules between sections.
+        let dividerInset: CGFloat = 12
+        ctx.setLineWidth(1)
         for y in dividerYs {
-            let alpha: CGFloat = abs(y - PropertiesPanelMetrics.headerDividerY) < 0.5 ? 0.10 : 0.08
-            ctx.setStrokeColor(NSColor(white: 1.0, alpha: alpha).cgColor)
+            ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.08).cgColor)
             let lineY = round(y) + 0.5
-            ctx.strokeLineSegments(between: [CGPoint(x: inset, y: lineY),
-                                             CGPoint(x: bounds.width - inset, y: lineY)])
+            ctx.strokeLineSegments(between: [CGPoint(x: dividerInset, y: lineY),
+                                             CGPoint(x: bounds.width - dividerInset, y: lineY)])
+        }
+
+        // Layer kind glyph in the identity row.
+        if identityGlyphRect.width > 0 {
+            PropertiesGlyphFactory.draw(kind: identityKindGlyph,
+                                        in: identityGlyphRect,
+                                        color: NSColor(white: 0.92, alpha: 1.0),
+                                        strokeWidth: 1.5)
         }
     }
 }

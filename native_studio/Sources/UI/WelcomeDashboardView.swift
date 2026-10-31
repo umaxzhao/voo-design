@@ -93,6 +93,19 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         static let textMuted = NSColor(hex: "#a3a3a3")
         static let textFaint = NSColor(hex: "#737373")
         static let sendArrowDisabled = NSColor(white: 0.47, alpha: 1.0)
+        // First-run design-type tiles: sampled from the live build's wireframe previews.
+        static let tileHover = NSColor(white: 1.0, alpha: 0.05)
+        static let previewCanvas = NSColor(hex: "#262626")
+        static let previewBar = NSColor(hex: "#5c5c5c")
+        static let previewBlock = NSColor(hex: "#4d4d4d")
+        static let previewBlockAlt = NSColor(hex: "#525252")
+        static let previewMid = NSColor(hex: "#737373")
+        static let previewDim = NSColor(hex: "#404040")
+        static let previewLight = NSColor(hex: "#d4d4d4")
+        static let previewBright = NSColor(hex: "#adadad")
+        static let previewLine = NSColor(hex: "#6b6b6b")
+        static let previewMuted = NSColor(hex: "#7d7d7d")
+        static let previewScreen = NSColor(hex: "#171717")
         static let mint = ThemeTokens.colorMint
         static let purple = NSColor(hex: ThemeTokens.accentPurple)
         static let gold = NSColor(hex: "#fbbf24")
@@ -188,10 +201,12 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         }
     }
 
-    /// Web `AI_GEN_TYPES` order (welcome_constants.js): the preset pills above the
-    /// composer are generation-type selectors, not file filters.
+    /// Web `AI_GEN_TYPES` order (welcome_constants.js): the design-type selectors are
+    /// generation presets, not file filters. First run renders them as the large
+    /// wireframe tiles; once a type is picked the row collapses to the compact pills.
     private static let presets: [String] = [
-        "Landing page", "Mobile app", "Web app", "Slides", "Dashboard", "Something else..."
+        "Landing page", "Mobile app", "Web app", "Poster",
+        "Slides", "Storyboard", "Dashboard", "Something else..."
     ]
 
     private static let templates: [TemplateItem] = [
@@ -226,8 +241,11 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
     // MARK: - State
 
     private var activeTab: Tab = .recents
-    /// Currently selected generation preset (mirrors web `activePill`, default "landing").
+    /// Currently highlighted generation preset (mirrors web `activePill`, default "landing").
     private var activePreset: String = "Landing page"
+    /// `nil` => first-run state (large type tiles). Once the user picks a type the
+    /// row collapses to the compact pills for the rest of the session (web parity).
+    private var selectedDesignKind: String?
     private var usesGridView = true
     private var sortsByName = false
     private var searchQuery: String = ""
@@ -275,6 +293,8 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         var settingsButton = CGRect.zero
         var heading = CGRect.zero
         var presetPills: [CGRect] = []
+        var designTiles: [CGRect] = []
+        var showsTiles = false
         var promptCard = CGRect.zero
         var promptFieldRect = CGRect.zero
         var promptPlus = CGRect.zero
@@ -592,11 +612,7 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
                 key: "preset.\(preset)",
                 label: "Design \(preset)",
                 accessibilityID: "Dashboard.Filter.\(preset.replacingOccurrences(of: " ", with: "").replacingOccurrences(of: ".", with: ""))"
-            ) { [weak self] in
-                guard let self = self else { return }
-                self.activePreset = preset
-                self.needsDisplay = true
-            }
+            ) { [weak self] in self?.selectDesignKind(preset) }
             presetTargets[preset] = target
         }
 
@@ -757,6 +773,28 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         needsDisplay = true
     }
 
+    /// Picks a design type: highlights it and collapses the first-run tile row to the
+    /// compact pill row for the rest of the session (web parity).
+    private func selectDesignKind(_ kind: String) {
+        activePreset = kind
+        selectedDesignKind = kind
+        rebuildMetrics()
+        needsDisplay = true
+    }
+
+    /// Tile label: 11pt medium for every type; the highlighted one is painted white
+    /// (measured: "Landing page" is 72px wide in both states, so the size does not grow).
+    private static let typeTileLabelFont = ThemeFonts.system(size: 11, weight: .medium)
+
+    /// Wireframe preview box for a design type (web `TypePreview` intrinsic sizes).
+    private static func previewSize(for kind: String) -> CGSize {
+        switch kind {
+        case "Mobile app": return CGSize(width: 18, height: 32)
+        case "Poster": return CGSize(width: 24, height: 32)
+        default: return CGSize(width: 48, height: 28)
+        }
+    }
+
     // MARK: - Layout
 
     public override func layout() {
@@ -830,33 +868,83 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         // Heading: web `text-[15px] font-medium`, centred (glyph bbox y83..97).
         m.heading = CGRect(x: contentX, y: 34, width: contentWidth, height: 22)
 
-        // Generation-type pills: h32, gap 8, centred on the main column.
-        let pillFont = ThemeFonts.system(size: 12, weight: .medium)
-        func presetPillWidths(_ sidePadding: CGFloat) -> [CGFloat] {
-            // px-3.5 + icon 14 + gap-1.5 + label + px-3.5
-            Self.presets.map { sidePadding + 14 + 6 + textWidth($0, font: pillFont) + sidePadding }
-        }
-        let pillGap: CGFloat = 8
-        var pillWidths = presetPillWidths(14)
-        let naturalPillTotal = pillWidths.reduce(0, +) + pillGap * CGFloat(max(Self.presets.count - 1, 0))
-        if naturalPillTotal > max(m.main.width - 40, 120) {
-            // Narrow window: tighten the horizontal padding like the web's flex-wrap
-            // layout would (one row, smaller gutters).
-            pillWidths = presetPillWidths(8)
-        }
-        let totalPills = pillWidths.reduce(0, +) + pillGap * CGFloat(max(Self.presets.count - 1, 0))
-        var pillX = mainCenterX - totalPills / 2
+        // Web first run shows the design types as large wireframe tiles (h64 for the
+        // 48x28 previews, h68 for the 32pt-tall mobile/poster previews); once a kind is
+        // picked the row collapses to compact h32 pills and every block below moves up
+        // by 36pt (measured composer rim 217 → 181 in the live build).
+        let showsTypeTiles = activeTab == .recents && selectedDesignKind == nil
+        m.showsTiles = showsTypeTiles
+        m.designTiles = []
         m.presetPills = []
-        for pillWidth in pillWidths {
-            m.presetPills.append(CGRect(x: pillX, y: 86, width: pillWidth, height: 32))
-            pillX += pillWidth + pillGap
+        var typeRowShift: CGFloat = 0
+        if showsTypeTiles {
+            typeRowShift = 36
+            // Tile content is centred on this row axis (measured window y167).
+            let tileRowCenterY: CGFloat = 121
+            func tileLayout(_ sidePadding: CGFloat, _ minWidth: CGFloat, _ gap: CGFloat) -> ([CGFloat], CGFloat) {
+                let widths = Self.presets.map {
+                    max(minWidth, textWidth($0, font: Self.typeTileLabelFont) + sidePadding * 2)
+                }
+                let total = widths.reduce(0, +) + gap * CGFloat(max(Self.presets.count - 1, 0))
+                return (widths, total)
+            }
+            // Web markup is `flex flex-wrap gap-1.5 px-2.5` with `min-w-[4.75rem]`;
+            // narrow windows tighten the gutters (single row, like the compact pills).
+            let availableTileWidth = max(m.main.width - 32, 200)
+            var (tileWidths, totalTiles) = tileLayout(10, 76, 8)
+            var tileGap: CGFloat = 8
+            if totalTiles > availableTileWidth {
+                (tileWidths, totalTiles) = tileLayout(8, 68, 4)
+                tileGap = 4
+            }
+            if totalTiles > availableTileWidth {
+                (tileWidths, totalTiles) = tileLayout(5, 58, 2)
+                tileGap = 2
+            }
+            var tileX = mainCenterX - totalTiles / 2
+            for (index, kind) in Self.presets.enumerated() {
+                let tileHeight = Self.previewSize(for: kind).height + 36
+                m.designTiles.append(CGRect(
+                    x: tileX,
+                    y: tileRowCenterY - tileHeight / 2,
+                    width: tileWidths[index],
+                    height: tileHeight
+                ))
+                tileX += tileWidths[index] + tileGap
+            }
+        } else {
+            // Compact pills: h32, gap 8, centred on the main column.
+            let pillFont = ThemeFonts.system(size: 12, weight: .medium)
+            func presetPillWidths(_ sidePadding: CGFloat) -> [CGFloat] {
+                // px-3.5 + icon 14 + gap-1.5 + label + px-3.5
+                Self.presets.map { sidePadding + 14 + 6 + textWidth($0, font: pillFont) + sidePadding }
+            }
+            let pillGap: CGFloat = 8
+            var pillWidths = presetPillWidths(14)
+            let naturalPillTotal = pillWidths.reduce(0, +) + pillGap * CGFloat(max(Self.presets.count - 1, 0))
+            if naturalPillTotal > max(m.main.width - 40, 120) {
+                // Narrow window: tighten the horizontal padding like the web's flex-wrap
+                // layout would (one row, smaller gutters).
+                pillWidths = presetPillWidths(8)
+            }
+            let totalPills = pillWidths.reduce(0, +) + pillGap * CGFloat(max(Self.presets.count - 1, 0))
+            var pillX = mainCenterX - totalPills / 2
+            for pillWidth in pillWidths {
+                m.presetPills.append(CGRect(x: pillX, y: 86, width: pillWidth, height: 32))
+                pillX += pillWidth + pillGap
+            }
         }
 
         // Composer: web `max-w-3xl` (768) incl. the 1px rim; measured card 766x141,
         // radius rounded-2xl (16), px-4 pt-4, bottom row px-3 py-2. Clamped to the
         // main column so narrow windows never overlap the sidebar.
         let promptCardWidth = min(766, max(m.main.width - 48, 260))
-        m.promptCard = CGRect(x: mainCenterX - promptCardWidth / 2, y: 136, width: promptCardWidth, height: 141)
+        m.promptCard = CGRect(
+            x: mainCenterX - promptCardWidth / 2,
+            y: 136 + typeRowShift,
+            width: promptCardWidth,
+            height: 141
+        )
         m.promptFieldRect = CGRect(
             x: m.promptCard.minX + 16,
             y: m.promptCard.minY + 19,
@@ -887,11 +975,16 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         let importGap: CGFloat = 12
         let importWidth = max((contentWidth - importGap * 2) / 3, 0)
         m.importCards = (0..<3).map { index in
-            CGRect(x: contentX + CGFloat(index) * (importWidth + importGap), y: 310, width: importWidth, height: 48)
+            CGRect(
+                x: contentX + CGFloat(index) * (importWidth + importGap),
+                y: 310 + typeRowShift,
+                width: importWidth,
+                height: 48
+            )
         }
 
         // Results header (Recents count + sort chip + grid/list toggle).
-        let headerTop: CGFloat = activeTab == .recents ? 398 : 88
+        let headerTop: CGFloat = activeTab == .recents ? 398 + typeRowShift : 88
         m.headerTitle = CGRect(x: contentX, y: headerTop + 6, width: 200, height: 16)
         m.headerBadge = CGRect(x: contentX + 60, y: headerTop + 2, width: 25, height: 22)
         m.viewToggle = CGRect(x: contentRight - 46, y: headerTop, width: 46, height: 28)
@@ -900,7 +993,7 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         m.listToggle = CGRect(x: m.viewToggle.minX + 23, y: headerTop + 4, width: 21, height: 21)
 
         // Project cards layout (grid + list variants).
-        let cardsTop: CGFloat = activeTab == .recents ? 442 : 138
+        let cardsTop: CGFloat = activeTab == .recents ? 442 + typeRowShift : 138
         let cardWidth: CGFloat = 220
         let cardHeight: CGFloat = 190
         let cardGap: CGFloat = 16
@@ -922,7 +1015,7 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             CGRect(x: contentX, y: cardsTop + CGFloat(index) * (listRowHeight + 8), width: contentWidth, height: listRowHeight)
         }
         m.emptyBox = CGRect(x: contentX, y: 138, width: contentWidth, height: 205)
-        m.recentsEmptyBox = CGRect(x: contentX, y: 442, width: contentWidth, height: 205)
+        m.recentsEmptyBox = CGRect(x: contentX, y: 442 + typeRowShift, width: contentWidth, height: 205)
 
         // Template grid.
         let gridTop: CGFloat = 88
@@ -1023,11 +1116,16 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         searchTargets["toolbar.new"]?.frame = .zero
         searchTargets["toolbar.new"]?.isHidden = true
 
-        // Generation-type pills (only on the Recents tab, above the composer).
+        // Design-type selectors (tiles on first run, compact pills afterwards; only
+        // on the Recents tab, above the composer).
         let showRecentsChrome = activeTab == .recents
         for (index, preset) in Self.presets.enumerated() {
             let target = presetTargets[preset]
-            target?.frame = m.presetPills.indices.contains(index) ? m.presetPills[index] : .zero
+            if m.showsTiles {
+                target?.frame = m.designTiles.indices.contains(index) ? m.designTiles[index] : .zero
+            } else {
+                target?.frame = m.presetPills.indices.contains(index) ? m.presetPills[index] : .zero
+            }
             target?.isHidden = !showRecentsChrome
         }
 
@@ -1294,7 +1392,11 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
 
     private func drawRecents(ctx: CGContext, metrics m: Metrics) {
         drawHeading(metrics: m)
-        drawPresetPills(metrics: m)
+        if m.showsTiles {
+            drawDesignTiles(metrics: m)
+        } else {
+            drawPresetPills(metrics: m)
+        }
         drawPromptCard(ctx: ctx, metrics: m)
         drawImportCards(ctx: ctx, metrics: m)
         drawContentHeader(count: filteredProjects().count, metrics: m)
@@ -1338,6 +1440,102 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             color: Palette.textPrimary,
             alignment: .center
         )
+    }
+
+    /// First-run design-type tiles (web `WelcomePromptTypes` tiles state): a rounded-12
+    /// box with a wireframe preview and an 11pt label (12pt + white when highlighted).
+    private func drawDesignTiles(metrics m: Metrics) {
+        for (index, kind) in Self.presets.enumerated() {
+            guard m.designTiles.indices.contains(index) else { continue }
+            let rect = m.designTiles[index]
+            let isActive = kind == activePreset
+            let isHovered = hoveredKey == "preset.\(kind)"
+            if isActive {
+                fillRounded(rect, radius: 12, color: Palette.pillFillActive)
+            } else if isHovered {
+                fillRounded(rect, radius: 12, color: Palette.tileHover)
+            }
+            let preview = Self.previewSize(for: kind)
+            let contentHeight = preview.height + 4 + 16
+            let contentTop = rect.midY - contentHeight / 2
+            drawDesignPreview(
+                kind,
+                in: CGRect(
+                    x: rect.midX - preview.width / 2,
+                    y: contentTop,
+                    width: preview.width,
+                    height: preview.height
+                )
+            )
+            drawText(
+                kind,
+                x: rect.minX,
+                top: contentTop + preview.height + 4,
+                width: rect.width,
+                height: 16,
+                font: Self.typeTileLabelFont,
+                color: isActive ? Palette.textBright : Palette.textMuted,
+                alignment: .center
+            )
+        }
+    }
+
+    /// Mini wireframe thumbnail for one design type, sampled from the live build
+    /// (`welcome_prompt_types.jsx` TypePreview, 48x28 canvas / 18x32 phone / 24x32 poster).
+    private func drawDesignPreview(_ kind: String, in rect: CGRect) {
+        func bar(_ x: CGFloat, _ y: CGFloat, _ width: CGFloat, _ height: CGFloat, _ color: NSColor, _ radius: CGFloat = 2) {
+            fillRounded(
+                CGRect(x: rect.minX + x, y: rect.minY + y, width: width, height: height),
+                radius: radius,
+                color: color
+            )
+        }
+        switch kind {
+        case "Mobile app":
+            fillRounded(rect, radius: 5, color: Palette.previewLight)
+            let screen = rect.insetBy(dx: 2, dy: 2)
+            fillRounded(screen, radius: 3, color: Palette.previewScreen)
+            fillRounded(
+                CGRect(x: screen.minX + 2, y: screen.minY + 8, width: max(screen.width - 4, 2), height: 8),
+                radius: 2,
+                color: Palette.previewBlockAlt
+            )
+            fillRounded(
+                CGRect(x: screen.minX + 3, y: screen.minY + 18, width: max(screen.width - 6, 2), height: 4),
+                radius: 2,
+                color: Palette.previewLine
+            )
+        case "Poster":
+            fillRounded(rect, radius: 5, color: Palette.previewCanvas)
+            bar(5, 4, 10, 4, Palette.previewLight)
+            bar(5, 24, 14, 4, Palette.previewMuted)
+        case "Slides":
+            fillRounded(rect, radius: 5, color: Palette.previewCanvas)
+            bar(5, 3, 11, 4, Palette.previewLight)
+        case "Storyboard":
+            fillRounded(CGRect(x: rect.minX, y: rect.minY, width: 14, height: rect.height), radius: 3, color: Palette.previewBlockAlt)
+            fillRounded(CGRect(x: rect.minX + 17, y: rect.minY, width: 14, height: rect.height), radius: 3, color: Palette.previewMid)
+            bar(17, 4, 14, 12, Palette.previewDim)
+            fillRounded(CGRect(x: rect.minX + 33, y: rect.minY, width: 15, height: rect.height), radius: 3, color: Palette.previewBlockAlt)
+            bar(33, 8, 15, 8, Palette.previewBright)
+        case "Dashboard":
+            fillRounded(rect, radius: 5, color: Palette.previewCanvas)
+            bar(15, 4, 14, 8, Palette.previewMid)
+            bar(31, 4, 13, 8, Palette.previewBlockAlt)
+            bar(15, 14, 29, 10, Palette.previewDim)
+        case "Landing page":
+            fillRounded(rect, radius: 5, color: Palette.previewCanvas)
+            bar(4, 4, 7, 20, Palette.previewBlockAlt)
+            bar(15, 10, 29, 8, Palette.previewBar, 4)
+            bar(16, 20, 11, 4, Palette.previewBlock)
+            bar(31, 20, 12, 4, Palette.previewBlockAlt)
+        default:
+            // Web app and "Something else..." share the default TypePreview (no left rail).
+            fillRounded(rect, radius: 5, color: Palette.previewCanvas)
+            bar(4, 10, 40, 8, Palette.previewBar, 4)
+            bar(5, 20, 17, 4, Palette.previewBlock)
+            bar(26, 20, 17, 4, Palette.previewBlockAlt)
+        }
     }
 
     /// Generation-type preset pills (web `WelcomePromptTypes`): h32, radius-xl, gap 8,
@@ -1387,6 +1585,10 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
             drawVooIcon(rect) { r in VooIconFactory.drawPresentation(in: r, color: color, strokeWidth: 1.5) }
         case "Dashboard":
             drawDashboardGlyph(in: rect, color: color)
+        case "Poster":
+            drawPosterGlyph(in: rect, color: color)
+        case "Storyboard":
+            drawStoryboardGlyph(in: rect, color: color)
         default:
             drawVooIcon(rect) { r in VooIconFactory.drawImage(in: r, color: color, strokeWidth: 1.5) }
         }
@@ -2224,6 +2426,30 @@ public class WelcomeDashboardView: NSView, NSTextFieldDelegate {
         strokeGlyphRect(CGRect(x: 10, y: 3, width: 12, height: 18), in: rect, color: color, lineWidth: lineWidth, radius: 2)
         strokeGlyphLine(from: CGPoint(x: 6, y: 5), to: CGPoint(x: 6, y: 19), in: rect, color: color, lineWidth: lineWidth)
         strokeGlyphLine(from: CGPoint(x: 2, y: 7), to: CGPoint(x: 2, y: 17), in: rect, color: color, lineWidth: lineWidth)
+    }
+
+    /// Portrait card glyph for the "Poster" preset pill.
+    private func drawPosterGlyph(in rect: CGRect, color: NSColor) {
+        let lineWidth = max(1.2, rect.width / 16)
+        let card = CGRect(x: rect.midX - 5, y: rect.minY + 1, width: 10, height: rect.height - 2)
+        strokeRounded(card, radius: 2, color: color, lineWidth: lineWidth)
+        fillRounded(CGRect(x: card.minX + 2, y: card.minY + 3, width: 6, height: 2), radius: 1, color: color)
+        fillRounded(CGRect(x: card.minX + 2, y: card.maxY - 5, width: 4, height: 2), radius: 1, color: color)
+    }
+
+    /// Three storyboard columns for the "Storyboard" preset pill.
+    private func drawStoryboardGlyph(in rect: CGRect, color: NSColor) {
+        let lineWidth = max(1.1, rect.width / 18)
+        let columnWidth = (rect.width - 2) / 3 - 1
+        for index in 0..<3 {
+            let column = CGRect(
+                x: rect.minX + CGFloat(index) * (columnWidth + 1),
+                y: rect.minY + 1,
+                width: columnWidth,
+                height: rect.height - 2
+            )
+            strokeRounded(column, radius: 1.5, color: color, lineWidth: lineWidth)
+        }
     }
 
     /// Lucide `app-window` (web "Web app" preset).

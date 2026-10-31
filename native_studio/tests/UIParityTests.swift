@@ -568,15 +568,17 @@ public class UIParityTests {
             var received: [EditorChromeGlyph] = []
             island.onGlyphAction = { received.append($0) }
 
-            try TestAssertions.assertEqual(island.glyphButtons.count, 8)
-            try TestAssertions.assertEqual(island.glyphButtons[0].accessibilityIdentifier(), "Editor.IslandBar.Select")
-            try TestAssertions.assertEqual(island.glyphButtons[6].accessibilityIdentifier(), "Editor.IslandBar.Delete")
-            try TestAssertions.assertEqual(island.glyphButtons[7].accessibilityIdentifier(), "Editor.IslandBar.Component")
+            // Web order: fill/stroke swatches · align-centre · distribute · align-left
+            // │ up · down │ copy · lock · eye · trash │ sparkle.
+            try TestAssertions.assertEqual(island.glyphButtons.count, 9)
+            try TestAssertions.assertEqual(island.glyphButtons[0].accessibilityIdentifier(), "Editor.IslandBar.AlignCenterH")
+            try TestAssertions.assertEqual(island.glyphButtons[5].accessibilityIdentifier(), "Editor.IslandBar.Duplicate")
+            try TestAssertions.assertEqual(island.glyphButtons[8].accessibilityIdentifier(), "Editor.IslandBar.Delete")
 
-            island.glyphButtons[6].performClick(nil)
+            island.glyphButtons[8].performClick(nil)
             island.glyphButtons[1].performClick(nil)
             island.glyphButtons[7].performClick(nil)
-            try TestAssertions.assertEqual(received, [.trash, .rotate, .diamond])
+            try TestAssertions.assertEqual(received, [.trash, .distributeH, .eye])
         }
 
         registry.register(tier: 1, feature: "UIParity-EditorChrome", name: "test_UIParity_ContextIsland_PromptSendAndQuickActionCallbacks") {
@@ -613,11 +615,13 @@ public class UIParityTests {
 
         registry.register(tier: 1, feature: "UIParity-EditorChrome", name: "test_UIParity_EditorChromeGlyphs_CoverageAndRender") {
             // Every chrome glyph must be present in the catalogue...
-            try TestAssertions.assertEqual(EditorChromeGlyph.allCases.count, 20)
+            try TestAssertions.assertEqual(EditorChromeGlyph.allCases.count, 26)
             let expected: [EditorChromeGlyph] = [
                 .page, .chevronDown, .undo, .redo, .grid, .magnet, .plus, .minus,
                 .marquee, .rotate, .flipVertical, .flipHorizontal, .copy, .lock,
-                .trash, .diamond, .sparkle, .arrowUp, .eye, .more
+                .trash, .diamond, .sparkle, .arrowUp, .eye, .more,
+                .alignCenterH, .distributeH, .alignLeftH, .arrowDown,
+                .fillSwatch, .strokeSwatch
             ]
             try TestAssertions.assertEqual(Set(EditorChromeGlyph.allCases), Set(expected))
 
@@ -3227,7 +3231,7 @@ public class UIParityTests {
 
         registry.register(tier: 1, feature: "UIParity-Spacing", name: "test_UIParity_Spacing_ContextIsland_MetricsAndControlHeights") {
             try TestAssertions.assertApproxEqual(ContextIslandBar.preferredHeight, 32, accuracy: 1.5, "UI_SPEC §6 island height")
-            try TestAssertions.assertApproxEqual(ContextIslandBar.glyphButtonSize, 24, accuracy: 1.5)
+            try TestAssertions.assertApproxEqual(ContextIslandBar.glyphButtonSize, 28, accuracy: 1.5)
             try TestAssertions.assertApproxEqual(ContextIslandBar.chipHeight, 24, accuracy: 1.5)
 
             let island = ContextIslandBar(frame: NSRect(x: 0, y: 0, width: 900, height: ContextIslandBar.preferredHeight))
@@ -3235,9 +3239,9 @@ public class UIParityTests {
             island.layoutSubtreeIfNeeded()
             try TestAssertions.assertApproxEqual(island.preferredSize.height, 32, accuracy: 1.5)
 
-            try TestAssertions.assertEqual(island.glyphButtons.count, 8)
+            try TestAssertions.assertEqual(island.glyphButtons.count, 9)
             for (index, button) in island.glyphButtons.enumerated() {
-                try assertFrameSize(button, width: 24, height: 24, "Island glyph \(index)")
+                try assertFrameSize(button, width: 28, height: 28, "Island glyph \(index)")
             }
             try TestAssertions.assertApproxEqual(island.promptButton.frame.height, 24, accuracy: 1.5, "Island prompt pill height")
             try TestAssertions.assertApproxEqual(island.sparkleButton.frame.height, 24, accuracy: 1.5, "Island sparkle height")
@@ -3270,8 +3274,10 @@ public class UIParityTests {
             try TestAssertions.assertApproxEqual(inspector.layersPanel.frame.minX, 16, accuracy: 1.5, "Layers card leading margin")
             try TestAssertions.assertApproxEqual(inspector.layersPanel.frame.midY, inspector.bounds.midY, accuracy: 1.5, "Layers card vertically centred")
 
-            // Web properties card: md:w-72 = 288, max-h-75vh, 368pt visible content.
-            try assertFrameSize(inspector.propertiesCard, width: 288, height: 368, "UI_SPEC §5 properties card")
+            // Web properties card: md:w-72 = 288 and a content-driven height
+            // (capped by the inspector bounds), so only the width is fixed.
+            try TestAssertions.assertApproxEqual(inspector.propertiesCard.frame.width, 288, accuracy: 1.5, "Properties card width")
+            try TestAssertions.assertTrue(inspector.propertiesCard.frame.height > 300, "Properties card grows with its sections")
             try TestAssertions.assertApproxEqual(
                 inspector.propertiesCard.frame.maxX,
                 inspector.bounds.width - 16,
@@ -3280,8 +3286,14 @@ public class UIParityTests {
             )
             try TestAssertions.assertApproxEqual(inspector.propertiesCard.frame.midY, inspector.bounds.midY, accuracy: 1.5, "Properties card vertically centred")
 
-            // The properties card keeps a 12pt bottom inset (web p-3), so the scroll box is 356 tall.
-            try assertFrameSize(inspector.propertiesScrollView, width: 288, height: 356, "Properties scroll view fills the card content box")
+            // The properties card keeps a 12pt bottom inset (web p-3).
+            try TestAssertions.assertApproxEqual(inspector.propertiesScrollView.frame.width, 288, accuracy: 1.5, "Properties scroll view width")
+            try TestAssertions.assertApproxEqual(
+                inspector.propertiesScrollView.frame.height,
+                inspector.propertiesCard.frame.height - 12,
+                accuracy: 1.5,
+                "Properties scroll view stops 12pt above the card bottom"
+            )
         }
 
         registry.register(tier: 1, feature: "UIParity-Spacing", name: "test_UIParity_Spacing_Inspector_PropertiesDocumentHeight") {
@@ -3297,11 +3309,15 @@ public class UIParityTests {
             guard let document = inspector.propertiesScrollView.documentView else {
                 throw TestFailure(message: "Properties scroll view has no document view", file: #file, line: #line)
             }
-            try TestAssertions.assertApproxEqual(
-                document.frame.height,
-                PropertiesPanelView.preferredContentHeight,
-                accuracy: 1.5,
-                "Properties document height"
+            // The document height is the measured content height; it must at least
+            // cover the legacy 520pt floor and never be shorter than the clip box.
+            try TestAssertions.assertTrue(
+                document.frame.height >= PropertiesPanelView.preferredContentHeight - 1.5,
+                "Properties document height covers the content floor (actual \(document.frame.height))"
+            )
+            try TestAssertions.assertTrue(
+                document.frame.height >= inspector.propertiesScrollView.contentView.bounds.height - 1.5,
+                "Properties document fills the visible clip box"
             )
         }
 
