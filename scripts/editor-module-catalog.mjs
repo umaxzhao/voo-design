@@ -118,7 +118,7 @@ export const EDITOR_MODULES = [
       "src/canvas/codegen/*", "tests/unit/pen-midpoint-insertion.test.js",
     ],
     related: ["selection","compositing","documents","inspector"],
-    features: ["vectors.path-edit","vectors.midpoint-insertion","vectors.booleans","vectors.stroke","vectors.format-losses"],
+    features: ["vectors.path-edit","vectors.midpoint-insertion","vectors.modifier-bend","vectors.booleans","vectors.stroke","vectors.format-losses"],
     suites: ["pen-midpoint-insertion","boolean-stroke-export","boolean-resize","destructive-boolean","image-svg-parity"],
     remaining: [
       "Arbitrary third-party paths/fonts and every format round-trip loss require corpus expansion.",

@@ -104,3 +104,9 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - 复现：旧实现的 5 个定向断言失败；修复后 25 项相关单测及真实鼠标加点、预览、单步撤销/重做验证通过。
 - 完整发布的精确提交与逐项结果记录在 `/tmp/voo-midpoint-release.json`；须核对 `revision` 和 `complete`，不得沿用上方历史提交的通过状态。
 - 仍未验证：实体笔/触摸、签名 Electron 安装包、多轮廓交叉路径、冷重开和像素级导出对比。功能覆盖仍为部分。
+
+## Cmd/Ctrl 拖拽路径曲线 — 2026-10-31
+
+- 能力：`vectors.modifier-bend`。路径编辑时按住 Cmd（macOS）或 Ctrl 并拖动边缘，复用 Bend 操作调整曲线，不增加锚点；普通点按和锚点拖动保留原行为。
+- 回归：`tests/e2e/pen-midpoint-insertion.e2e.mjs` 已通过，覆盖真实浏览器修饰键与鼠标拖拽、锚点数量、单步撤销/重做；相关矢量单测 60 项通过。
+- 仍未验证：操作系统对 Cmd 的拦截、实体笔/触摸和像素/导出一致性。

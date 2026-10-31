@@ -78,7 +78,13 @@ export function createTransformPointerGestures(ctx) {
     const point = api.toDocPoint(event.clientX, event.clientY);
     if (api.isEditing?.()) {
       const subTool = api.getPenSubTool?.() ?? "move";
-      if (subTool === "lasso" || subTool === "bend" || subTool === "cut") {
+      if (
+        subTool === "lasso" ||
+        subTool === "bend" ||
+        subTool === "cut" ||
+        event.metaKey ||
+        event.ctrlKey
+      ) {
         penEditPress(event);
         return;
       }
