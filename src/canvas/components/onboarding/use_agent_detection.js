@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useLocalService } from "../agent-panel/use_local_service.js";
+import { localServiceDiscovery } from "../agent-panel/local-service-discovery.js";
 import { resolveCliTransport } from "../agent-panel/local_cli_bridge.js";
 import { CLI_TRANSPORT } from "../../../shared/cli-agents.js";
 import { DETECTION_PHASE } from "./agent_status_model.js";
 
-const CHECKING = Object.freeze({ phase: DETECTION_PHASE.CHECKING });
 const UNAVAILABLE = Object.freeze({ phase: DETECTION_PHASE.UNAVAILABLE });
 
 /**
@@ -29,17 +30,10 @@ export async function detectLocalClis(resolveTransport = resolveCliTransport) {
   }
 }
 
-/** Runs the detection once each time the dialog opens; "checking" until it answers. */
+/** Reuse the same live detection as the welcome and agent model menus. */
 export function useAgentDetection(open) {
-  const [detection, setDetection] = useState(CHECKING);
-  const [probe, setProbe] = useState(0);
-  const refresh = () => setProbe((value) => value + 1);
-  useEffect(() => {
-    if (!open) return undefined;
-    let active = true;
-    setDetection(CHECKING);
-    detectLocalClis().then((next) => { if (active) setDetection(next); });
-    return () => { active = false; };
-  }, [open, probe]);
-  return { ...detection, refresh };
+  const service = useLocalService();
+  useEffect(() => { if (open) void localServiceDiscovery.refresh(); }, [open]);
+  return { ...service, transport: service.available ? CLI_TRANSPORT.RUNNABLE : CLI_TRANSPORT.NONE,
+    showLocal: service.native || service.available, refresh: localServiceDiscovery.refresh };
 }

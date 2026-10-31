@@ -87,8 +87,8 @@ export default function App() {
     const handleOpenBrowser = () => setBrowserDrawerOpen(true);
     window.addEventListener("voo:open-agent-panel", handleOpenAgent);
     window.addEventListener("voo:agent-prompt", handleOpenAgent);
-    window.addEventListener("voo:open-onboarding", handleOpenOnboarding);
     window.addEventListener("voo:open-browser", handleOpenBrowser);
+    window.addEventListener("voo:open-onboarding", handleOpenOnboarding);
 
     let unsubscribeMenu = null;
     if (window.electronAPI?.onMenuAction) {

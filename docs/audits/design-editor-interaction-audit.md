@@ -200,3 +200,33 @@ Scope remains partial: physical pen/touch input, signed Electron packages,
 self-overlapping multi-contour imports, cold project reopen and render/export
 pixel comparisons are not certified by this targeted scenario. Bend/cut tools
 retain their own segment projections; this change restricts anchor insertion.
+
+
+## Browser drawer visibility — 2026-10-31
+
+Capability: `platform.browser-drawer`. The local browser feature from `ae4c11e`
+and `e35b167` is integrated without their unrelated collaboration bootstrap.
+The drawer now portals above the editor, follows the measured title-bar bottom,
+and clamps its width to the viewport. The active toggle uses the VOO mint fill
+and a black, plain window icon. Navigation controls wrap instead of overflowing.
+The original large drawer is split into its view, controller and overlay hook;
+visible controls/status labels support both languages and failed script calls
+surface their errors. Escape closes the drawer, or cancels active picking first.
+
+`tests/e2e/browser-drawer.e2e.mjs` reproduced the toolbar being covered before
+the fix. It checks foreground hit testing, computed active colors, 1440/390px
+bounds, Escape, close and reopen. Existing import and title-bar unit checks are
+retained, with the browser button explicitly included in action assertions.
+An isolated Electron smoke run at `/tmp/voo-browser-native-check.mjs` uses the
+real webview and address bar, loads a controlled blank guest, checks reachable
+chrome and close/reopen, and captures `/tmp/voo-browser-native-preview.png`.
+The release loading regression caught the eager HTML parser pulling fonts and
+scene variables into the welcome screen; conversion now loads only on import.
+`editor-loading.e2e.mjs` retains that regression.
+The clean release report `/tmp/voo-browser-release.json` records the exact source
+revision and gate results; native evidence is a development-runtime check, not
+certification of signed installers or every external website.
+
+Remaining contexts: third-party iframe embedding policies, authenticated sites,
+all DOM extraction/remote-navigation combinations, touch resizing, Windows/Linux
+native webview composition, and signed packaging are not certified here.

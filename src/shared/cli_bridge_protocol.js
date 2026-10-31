@@ -16,6 +16,8 @@
 
 /** Loopback port the bridge binds and the page dials unless overridden. */
 export const CLI_BRIDGE_DEFAULT_PORT = 4179;
+export const CLI_BRIDGE_SERVICE_ID = "voo-cli-bridge";
+export const CLI_BRIDGE_PROTOCOL_VERSION = "1.0.0";
 
 /** Native agent admission must agree in the renderer and every CLI host. */
 export const NATIVE_AGENT_CLI_IDS = Object.freeze([
@@ -36,6 +38,7 @@ export const CLI_BRIDGE_CHANNEL = Object.freeze({
   DSH_STATUS: "voo:dsh-connector-status",
   DSH_INSTALL: "voo:dsh-connector-install",
   MCP_REGISTER_CANVAS: "voo:mcp-register-canvas",
+  MCP_CANVAS_CONTEXT: "voo:mcp-canvas-context",
   MCP_TOOL_RESULT: "voo:mcp-tool-result",
   MCP_CALL: "voo:mcp-call",
   MCP_STATUS: "voo:mcp-status",

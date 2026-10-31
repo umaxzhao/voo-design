@@ -9,12 +9,70 @@ import { reparentMovedRoots } from "./reparent-moved-roots.js";
 import { rollbackMoveGesture } from "./move-gesture-transaction.js";
 import { isPointerHandoff } from "./pointer-gesture-handoff.js";
 import { rollbackDrawingGesture } from "./drawing-gesture-transaction.js";
+import { finishTextPlacement } from "./text-placement-transaction.js";
 
 export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
   function finishGesture(event, finished) {
     if (!finished) return;
     if (event?.type === "pointercancel" && rollbackDrawingGesture(api, finished)) return;
-    if (event?.type === "pointercancel" && !isPointerHandoff(event) && rollbackMoveGesture(api, finished)) return;
+    if (event?.type === "pointercancel" && !isPointerHandoff(event)) {
+      if (
+        finished.kind === "gradientStop" ||
+        finished.kind === "gradientEndpoint" ||
+        finished.kind === "gradientLine"
+      ) {
+        api.setGradientAdjusting?.(false);
+      }
+      if (rollbackMoveGesture(api, finished)) return;
+      if (
+        finished.kind === "penEdit" ||
+        finished.kind === "penBend" ||
+        finished.kind === "penLasso"
+      ) {
+        api.cancelEditDrag?.();
+        return;
+      }
+      if (finished.kind === "marquee") {
+        api.setMarquee(null);
+        return;
+      }
+      if (finished.kind === "pixelMarquee" || finished.kind === "pixelLasso") {
+        if (finished.previousSelection) {
+          api.combinePixelSelection?.(
+            null,
+            finished.previousSelection,
+            "replace",
+          );
+        } else {
+          api.clearPixelSelection?.();
+        }
+        return;
+      }
+      if (
+        finished.kind === "selectionMove" ||
+        finished.kind === "selectionOutlineMove"
+      ) {
+        if (finished.moved && finished.base) {
+          api.movePixelSelectionPreview?.(0, 0, finished.base);
+        }
+        return;
+      }
+      if (
+        finished.kind === "move" ||
+        finished.kind === "resize" ||
+        finished.kind === "rotate" ||
+        finished.kind === "cornerRadius" ||
+        finished.kind === "endpoint" ||
+        finished.kind === "gradientStop" ||
+        finished.kind === "gradientEndpoint" ||
+        finished.kind === "gradientLine" ||
+        finished.kind === "perspectiveCorner" ||
+        finished.kind === "meshPoint" ||
+        finished.kind === "puppetPin"
+      ) {
+        return;
+      }
+    }
 
     if (
       finished.kind === "gradientStop" ||
@@ -131,9 +189,17 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
       finished.kind === "perspectiveCorner" ||
       finished.kind === "meshPoint" ||
       finished.kind === "puppetPin" ||
-      finished.kind === "endpoint"
+      finished.kind === "resize" ||
+      finished.kind === "rotate" ||
+      finished.kind === "cornerRadius" ||
+      finished.kind === "endpoint" ||
+      finished.kind === "gradientStop" ||
+      finished.kind === "gradientEndpoint" ||
+      finished.kind === "gradientLine"
     ) {
-      commitEditorAction("editor.pointer.transform", () => api.commit());
+      if (finished.moved) {
+        commitEditorAction("editor.pointer.transform", () => api.commit());
+      }
       return;
     }
 
@@ -149,8 +215,10 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
           endpoints[1].y - endpoints[0].y,
         ) < 4;
       if (tooShort) {
-        api.removeNode(finished.id);
-        api.select(null);
+        if (!rollbackDrawingGesture(api, finished)) {
+          api.removeNode(finished.id);
+          api.select(null);
+        }
       } else {
         api.select(finished.id);
         commitEditorAction("editor.pointer.draw", () => api.commit());
@@ -163,6 +231,8 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
         commitEditorAction("editor.pointer.draw", () =>
           api.commit("editor.history.entry.region"),
         );
+      } else {
+        rollbackDrawingGesture(api, finished);
       }
       return;
     }
@@ -201,8 +271,15 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
     }
 
     if (finished.kind === "pixelMarquee" || finished.kind === "pixelLasso") {
+      if (
+        !finished.moved &&
+        !finished.previousSelection &&
+        !api.getPixelSelection?.()
+      ) {
+        return;
+      }
       const feather = api.getSelectionFeather?.() ?? 0;
-      if (feather > 0) {
+      if (feather > 0 && api.getPixelSelection?.()) {
         api.featherPixelSelection?.(feather);
       }
       commitEditorAction("editor.pointer.selection", () =>
@@ -221,8 +298,10 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
         .nodes.find((candidate) => candidate.id === finished.id);
       const tooSmall = !node || node.width < 4 || node.height < 4;
       if (tooSmall) {
-        api.removeNode(finished.id);
-        api.select(null);
+        if (!rollbackDrawingGesture(api, finished)) {
+          api.removeNode(finished.id);
+          api.select(null);
+        }
       } else {
         api.select(finished.id);
         commitEditorAction("editor.pointer.draw", () => api.commit());
@@ -231,10 +310,7 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
     }
 
     if (finished.kind === "text") {
-      api.setTextDraftRect?.(null);
-      api.select(finished.id);
-      api.setTool(TOOL.SELECT);
-      api.beginTextEdit(finished.id);
+      finishTextPlacement(api, finished);
       return;
     }
 

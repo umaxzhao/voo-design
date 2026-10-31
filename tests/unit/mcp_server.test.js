@@ -120,9 +120,31 @@ describe("MCP stdio", () => {
           { type: "image", data: "YWJj", mimeType: "image/png" },
         ]);
       }
-      expect((await s.request("tools/call", { name: "voo_status" })).result.content[0].text).toBe('{"canvasConnected":true}');
+      expect(JSON.parse((await s.request("tools/call", { name: "voo_status" })).result.content[0].text)).toMatchObject({ canvasConnected: true });
       expect((await s.request("tools/call", { name: "undo" })).result).toMatchObject({ isError: true, content: [{ text: "failed" }] });
       expect((await s.request("tools/call", { name: "create_frame" })).result.content[0].text).toContain("No VOO canvas is connected");
+    } finally { await s.close(); }
+  });
+  it("offers a read-only preview link alongside the captured image", async () => {
+    const previewUrl = `http://127.0.0.1:4179/preview/${"a".repeat(48)}`;
+    const s = stdio(async name => name === "voo_status"
+      ? { canvasConnected: true, previewUrl }
+      : { dataUrl: "data:image/png;base64,YWJj", width: 20, previewUrl });
+    try {
+      const result = (await s.request("tools/call", { name: "capture_canvas" })).result;
+      expect(result.content).toContainEqual(expect.objectContaining({ type: "image", mimeType: "image/png" }));
+      expect(result.content).toContainEqual(expect.objectContaining({ type: "resource_link", uri: previewUrl }));
+    } finally { await s.close(); }
+  });
+  it("retains PNG and preview URL text for legacy MCP clients without unsupported resource-link content", async () => {
+    const previewUrl = `http://127.0.0.1:4179/preview/${"b".repeat(48)}`;
+    const s = stdio(async () => ({ dataUrl: "data:image/png;base64,YWJj", previewUrl }));
+    try {
+      await s.request("initialize", { protocolVersion: "2025-03-26" });
+      const result = (await s.request("tools/call", { name: "capture_canvas" })).result;
+      expect(result.content.some(item => item.type === "resource_link")).toBe(false);
+      expect(result.content.some(item => item.type === "image")).toBe(true);
+      expect(result.content[0].text).toContain(previewUrl);
     } finally { await s.close(); }
   });
   it("lists and reads canvas resources with binary blobs and error handling", async () => {
@@ -214,7 +236,7 @@ describe("MCP relay", () => {
         if (frame.type === "event") void page.invoke(C.MCP_TOOL_RESULT, [{ id: frame.payload.id, ok: true, value: { id: "frame" } }]);
       });
       expect((await s.request("tools/call", { name: "create_frame" })).result.content[0].text).toBe('{"id":"frame"}');
-      expect((await s.request("tools/call", { name: "voo_status" })).result.content[0].text).toBe('{"canvasConnected":true}');
+      expect(JSON.parse((await s.request("tools/call", { name: "voo_status" })).result.content[0].text)).toMatchObject({ canvasConnected: true });
     } finally {
       await s.close();
       await bridge.close();

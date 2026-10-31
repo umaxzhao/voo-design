@@ -2,6 +2,19 @@
 
 ## 1.0.0
 
+- Discover the local CLI service before exposing browser-only local model choices, share reconnect state across menus/onboarding/settings, retain API settings and route empty catalogs to provider setup.
+- Return source-bound, read-only live preview links from MCP status and canvas capture. View the same design in a browser without registering another editor; expire links on source disconnect or document switch.
+
+- Scale resized Pen path points/handles in `expandPenNodeBounds`, `duplicateSelected`, and `expandStrokeToPathNode`; guard zero-drag Pen anchor/bend clicks from pushing empty history commits; restore pre-drag Pen points on mid-drag `Escape` without exiting the edit session; and transform rotated/flipped Pen sub-tool `bend`/`cutAt` coordinates through `toNodeLocal`.
+- Deduplicate selected ancestors, preserve shared container `parentId`, and release cross-container/orphaned `clipTo` references in `combineNodes` and `destructiveBoolean`; inherit `parentId` and fix `selection.selectNodes` in `typeOnSelectedPath` / `attachTextToPath` / `detachTextFromPath`; delete/cut empty selected ordinary groups; restore replaced pixel selections on `cancelPolygonLasso`; apply feathering on `closePolygonLasso`; and extend `Escape` / `pointercancel` rollback to `region`, `regionFree`, `pixelMarquee`, `pixelLasso`, `selectionMove`, `gradient*`, and warp handle drags.
+- Keep converted line/arrow Bezier paths out of primitive endpoint grips and array-only selection rendering; retain full browser exception stacks and explicitly exercise chrome repaint after conversion.
+- Commit open Pen drafts via `finishPen` when switching tools, roll back `< 4px` shape/arrow clicks via `rollbackDrawingGesture` without spurious delete commits or lost redo, and extend `Escape`/cancel rollback and zero-drag guards to `resize`, `rotate`, `cornerRadius`, and `endpoint` handle gestures.
+- Deduplicate selected ancestors and move clipped followers in `layoutSelection`, nudge selected Group units (including Auto Layout groups) as a container, expand Pen bounds when nudging anchors, and keep Layer panel row picking, `unitSelectionIds`, and folder duplication consistent across Boolean layers, Frames, and ordinary folders.
+
+- Preserve complete ancestry when ungrouping multiple nested containers, group only selected subtree roots and retain the nearest shared parent for cross-Frame grouping. Release clipping followers when their mask container is dissolved.
+- Share the live pointer and text-overlay placement transaction: abandoned empty text and unchanged edits preserve redo, no-argument tool closure commits typed content once and unchanged overlays actually close. Preserve intervening document edits when cancelling an owned draft.
+- Add container-command and text-creation boundary browser checks with explicit seeded/API entry scopes, hierarchy/pixel/history assertions and remaining device/concurrency limits.
+
 - Verify a continuous real-UI creation session from New through drawing, typing, grouping, path editing, image placement, masking, undo/redo and cold ZIP reopening. Register it in the core release gate with explicit platform/performance limits.
 - Make named shape shortcuts choose their own tool while preserving radial pointer choices. Keep new groups in their shared Frame, select the new movement unit and ungroup only the intended unlocked container.
 - Roll back cancelled shape, arrow and text drafts without altering existing history/redo; share pointer keyboard/listener cleanup in a focused module. Give newly drawn text contrasting initial ink on solid Frame surfaces while preserving explicit and programmatic colors.

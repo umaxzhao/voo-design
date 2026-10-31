@@ -141,7 +141,8 @@ nested under the design's top-level frame. These are VOO path nodes, so their
 anchors remain editable with `get_path_nodes` and `edit_path_nodes`. This is
 also the direct route for combining a generated illustration, editable text
 and shapes into one movable composition.
-`voo_status` reports `{canvasConnected: boolean}`. PNG data URLs returned by
+`voo_status` reports `canvasConnected` and, while connected, the source `documentId`,
+`previewSession` and loopback-only `previewUrl`. PNG data URLs returned by
 `capture_canvas` and `export_layers` become MCP image content alongside the
 remaining JSON metadata. Tool failures return MCP `isError` content.
 
@@ -156,6 +157,41 @@ The server exposes live canvas state as standard MCP resources for context-aware
 
 Agents can read these directly (e.g. `resources/read`) to inspect the document without executing mutating tool calls.
 
+## Read-only live preview
+
+After generation, `capture_canvas` returns the PNG plus a `previewUrl` and MCP
+`resource_link` when both the host and renderer support document binding.
+`voo_status` also returns this link. Legacy renderers keep their tools without
+an unbound preview link; pre-June-2025 MCP clients receive PNG and URL text
+without unsupported resource-link content. Open it in a browser or a
+host's supported side pane; it displays the original connected canvas, with
+pan/zoom and live screenshots every 1.5 seconds while visible. It neither opens
+an editor nor registers another writable tool target. Local services and the
+source editor must remain running. The view is read-only and is not a hosted
+snapshot or another editable document.
+
+The random capability link expires when that source disconnects, a different
+editor registers, or the document changes. Old views clear their image on
+expiry; they do not follow a different design. Links grant screenshots only,
+contain no bridge authentication token, use no-store/referrer protection and
+stay on loopback. Do not publish them as externally shareable URLs.
+
+Web model pickers, first-run cards and settings share one local-service
+lifecycle. An identity-checked `/health` probe precedes capability RPC; an absent,
+blocked or unresponsive service hides local-only choices. Focus, visibility,
+network recovery and bounded periodic checks rediscover the service. Saved API
+providers and model selection are preserved; detection never runs a prompt.
+A browser may require local-network permission. Denial is recoverable
+unavailability, not proof that the App is uninstalled. Released 1.0 bridges remain discoverable through their legacy health version
+plus a valid CLI capability response. Restart an older desktop bridge with this
+release to expose the new preview endpoints.
+
+A standard MCP resource link does not guarantee a particular client's right
+pane. This release verifies Chromium browser viewing, not automatic MCP Apps
+rendering inside every Codex/DeepSeek client. Clients without an embedded view
+can open the URL in their local browser. A remote/cloud client cannot access
+another machine's loopback address.
+
 ## Embedded Component Mode (`?embed=1`)
 
 To embed Design Editor inside an IDE webview (VS Code / Cursor), iframe, or external tool pane:
@@ -164,7 +200,11 @@ To embed Design Editor inside an IDE webview (VS Code / Cursor), iframe, or exte
 - In embed mode:
   - Outer app chrome (title bar, prompts, release banners) is hidden, giving full viewport to the canvas.
   - An untitled canvas is automatically initialized so the editor is immediately interactive.
+  This is a separate editable browser document, not a mirror of the App.
   - The MCP loopback bridge link is automatically enabled without requiring manual `localStorage` toggles.
+
+For viewing generated work, prefer the read-only `previewUrl`; `?embed=1` is
+a writable editor and can replace the current tool target.
 
 Example prompt: “Check voo_status, create a 1440 × 900 landing page frame with a
 headline and three feature cards, then capture_canvas so I can review it.”

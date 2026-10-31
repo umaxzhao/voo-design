@@ -9,13 +9,15 @@ const RETRY_MAX_MS = 60000;
  * expected state, so retries are silent and back off from 5s to 60s; a
  * successful connection resets the delay.
  */
-export function startCanvasMcpLink({ url, executeTool, retryBaseMs = RETRY_BASE_MS, retryMaxMs = RETRY_MAX_MS }) {
+export function startCanvasMcpLink({ url, executeTool, retryBaseMs = RETRY_BASE_MS, retryMaxMs = RETRY_MAX_MS, getContext = () => ({}), subscribeContext = () => () => {} }) {
   if (typeof WebSocket === "undefined") return () => {};
   const bridgeUrl = url || import.meta.env?.VITE_CLI_BRIDGE_URL || "ws://127.0.0.1:4179";
   let socket;
   let timer;
   let stopped = false;
   let nextId = 0;
+  let sendContext = () => {};
+  const stopContext = subscribeContext(() => sendContext());
   let delay = retryBaseMs;
   function retry() {
     clearTimeout(timer);
@@ -33,9 +35,10 @@ export function startCanvasMcpLink({ url, executeTool, retryBaseMs = RETRY_BASE_
         ws.send(JSON.stringify({ type: "invoke", id: `page_${++nextId}`, channel, args }));
       }
     };
+    sendContext = () => invoke(C.MCP_CANVAS_CONTEXT, [getContext()]);
     ws.addEventListener("open", () => {
       delay = retryBaseMs;
-      invoke(C.MCP_REGISTER_CANVAS, []);
+      invoke(C.MCP_REGISTER_CANVAS, [getContext()]);
     });
     ws.addEventListener("message", async (event) => {
       let frame;
@@ -84,5 +87,5 @@ export function startCanvasMcpLink({ url, executeTool, retryBaseMs = RETRY_BASE_
     ws.addEventListener("error", () => {});
   }
   connect();
-  return () => { stopped = true; clearTimeout(timer); socket?.close(); };
+  return () => { stopped = true; stopContext(); clearTimeout(timer); socket?.close(); };
 }

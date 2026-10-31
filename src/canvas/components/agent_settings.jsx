@@ -4,6 +4,7 @@ import { useI18n } from "../use_i18n.js";
 import AgentAssistantSettings from "./agent_assistant_settings.jsx";
 import AgentMcpSettings from "./agent_mcp_settings.jsx";
 import AgentModelsSettings from "./agent_models_settings.jsx";
+import { useLocalService } from "./agent-panel/use_local_service.js";
 import SettingsSection from "./settings_section.jsx";
 import SettingsTabStrip, { SettingsTabPanel } from "./settings_tab_strip.jsx";
 
@@ -54,7 +55,10 @@ AgentTabContent.propTypes = {
 export default function AgentSettings({ onOpenProviders, onOpenWizard }) {
   const { t } = useI18n();
   const [tab, setTab] = useState(DEFAULT_AGENT_TAB);
-  const tabs = AGENT_TABS.map(({ id, labelKey }) => ({
+  const service = useLocalService();
+  const visibleTabs = AGENT_TABS.filter(item => item.id !== AGENT_TAB.CLI || service.native || service.available);
+  const selectedTab = visibleTabs.some(item => item.id === tab) ? tab : DEFAULT_AGENT_TAB;
+  const tabs = visibleTabs.map(({ id, labelKey }) => ({
     id,
     label: t(labelKey),
     testId: `agent-settings-tab-${id}`,
@@ -64,14 +68,14 @@ export default function AgentSettings({ onOpenProviders, onOpenWizard }) {
     <div className="flex flex-col gap-3">
       <SettingsTabStrip
         tabs={tabs}
-        selectedId={tab}
+        selectedId={selectedTab}
         onSelect={setTab}
         label={t("settings.tabAssistant")}
         idPrefix={AGENT_TAB_PREFIX}
         columnsClass="grid-cols-2 sm:grid-cols-4"
       />
-      <SettingsTabPanel idPrefix={AGENT_TAB_PREFIX} selectedId={tab} testId="agent-settings-panel">
-        <AgentTabContent tab={tab} onOpenProviders={onOpenProviders} onOpenWizard={onOpenWizard} />
+      <SettingsTabPanel idPrefix={AGENT_TAB_PREFIX} selectedId={selectedTab} testId="agent-settings-panel">
+        <AgentTabContent tab={selectedTab} onOpenProviders={onOpenProviders} onOpenWizard={onOpenWizard} />
       </SettingsTabPanel>
     </div>
   );

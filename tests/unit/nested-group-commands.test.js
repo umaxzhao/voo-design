@@ -47,4 +47,36 @@ describe("group commands inside Frames", () => {
     const f = fixture([{ ...frame("folder"), isFrame: false, locked: true }, rect("a", "folder")], ["folder"]);
     f.api.ungroupSelection(); expect(f.setDoc).not.toHaveBeenCalled();
   });
+  it("does not offer grouping for one Frame plus its already-contained selected leaf", () => {
+    const f = fixture([frame("frame"), rect("a", "frame")], ["frame", "a"]);
+    expect(f.api.canGroupSelection()).toBe(false); f.api.groupSelection();
+    expect(f.setDoc).not.toHaveBeenCalled();
+  });
+  it("uses selected subtree roots for an Auto Layout wrapper's initial bounds", () => {
+    const f = fixture([frame("frame"), { ...rect("a", "frame"), x: 900 }, { ...rect("loose", null), x: 550 }], ["frame", "a", "loose"]);
+    f.api.toggleAutoLayoutSelection();
+    const wrapper = f.doc().nodes.find(node => node.autoLayout);
+    expect(wrapper.width).toBe(590);
+    expect(f.doc().nodes.find(node => node.id === "a").parentId).toBe("frame");
+  });
+  it("does not double-move a selected descendant when aligning its parent Frame", () => {
+    const f = fixture([
+      { ...frame("frame"), x: 100, y: 40, width: 200, height: 150 },
+      { ...rect("child", "frame"), x: 130, y: 60 },
+      { ...rect("peer", null), x: 10, y: 60 },
+    ], ["frame", "child", "peer"]);
+    f.api.layoutSelection((nodes) => nodes.map((n) => ({ id: n.id, patch: { x: 10, y: n.y } })), "left");
+    expect(f.doc().nodes.find((n) => n.id === "frame").x).toBe(10);
+    expect(f.doc().nodes.find((n) => n.id === "child").x).toBe(40);
+  });
+  it("moves clipped followers together with their mask base during layout alignment", () => {
+    const f = fixture([
+      { ...rect("base", null), x: 120, y: 50, maskBase: true },
+      { ...rect("clipped", null), x: 135, y: 65, clipTo: "base" },
+      { ...rect("peer", null), x: 20, y: 50 },
+    ], ["base", "peer"]);
+    f.api.layoutSelection((nodes) => nodes.map((n) => ({ id: n.id, patch: { x: 20, y: n.y } })), "left");
+    expect(f.doc().nodes.find((n) => n.id === "base").x).toBe(20);
+    expect(f.doc().nodes.find((n) => n.id === "clipped").x).toBe(35);
+  });
 });

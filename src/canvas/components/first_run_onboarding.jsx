@@ -14,7 +14,7 @@ import { useAgentDetection } from "./onboarding/use_agent_detection.js";
 import FirstRunWorkspace from "./first_run_workspace.jsx";
 import { CLOUD_PROVIDER_PRESETS, VOO_CLOUD_PROVIDER } from "./onboarding/cloud_provider_presets.js";
 import { CLI_AGENTS, isDeepSeekHarnessAgent } from "../../shared/cli-agents.js";
-import { AGENT_STATUS, cliAgentStatus } from "./onboarding/agent_status_model.js";
+import { AGENT_STATUS, cliAgentStatus, visibleCloudProviderPresets } from "./onboarding/agent_status_model.js";
 import DeepSeekConnectorInline from "./onboarding/deepseek_connector_inline.jsx";
 import VooCloudLoginInline from "./onboarding/voo_cloud_login_inline.jsx";
 import { useUserStore } from "../store/user_store.js";
@@ -47,14 +47,14 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
   const isNarrow = useIsNarrow();
   const isVooCloud = provider === VOO_CLOUD_PROVIDER.id;
   const isApiProvider = !isVooCloud && (provider === "custom" || Boolean(cloudPreset));
+  const detection = useAgentDetection(open && !isNarrow);
   const cloudCards = [
     { ...VOO_CLOUD_PROVIDER, configured: vooCloudSignedIn },
-    ...CLOUD_PROVIDER_PRESETS.map(preset => ({ ...preset,
+    ...visibleCloudProviderPresets(CLOUD_PROVIDER_PRESETS, detection, customGroups).map(preset => ({ ...preset,
       configured: customGroups.some(group => group.cliId === preset.customProviderId && group.models.length > 0),
     })),
   ];
-  const detection = useAgentDetection(open && !isNarrow);
-  const selectedCli = isNarrow
+  const selectedCli = isNarrow || !detection.showLocal
     ? null
     : CLI_AGENTS.find((agent) => agent.id === provider) ?? null;
   const selectedCliStatus = selectedCli ? detection.statuses?.[selectedCli.id] ?? null : null;
@@ -117,7 +117,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
             {name === "provider" ? (
               <div className="flex flex-col gap-3">
                 <AgentCardGrid t={t} label={t("firstRun.provider.label")} selected={provider} detection={detection}
-                  showCliAgents={!isNarrow}
+                  showCliAgents={!isNarrow && detection.showLocal}
                   cloudProviders={cloudCards}
                   customConfigured={customGroups.some(group => group.models.length > 0)}
                   onSelect={(id) => {
@@ -183,7 +183,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
                     groups={cloudPreset ? customGroups.filter(group => group.cliId === cloudPreset.customProviderId) : customGroups} selectedModel={customModel}
                     onSelectModel={selectCustomModel} onConfigured={refreshCustom} />
                 )}
-                {!isNarrow && provider !== "" && !isApiProvider && !isDeepSeekHarness && (
+                {!isNarrow && detection.showLocal && provider !== "" && !isApiProvider && !isDeepSeekHarness && (
                   <button type="button" onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("voo:open-onboarding")); }}
                     className={`w-fit rounded-lg bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-neutral-100 hover:bg-white/[0.14] transition-colors ${focusClass}`}>{t("firstRun.provider.guide")}</button>
                 )}

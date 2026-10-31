@@ -78,3 +78,68 @@ of this suite alongside related module regressions.
   memory and long-duration interaction workloads remain separate checks.
 - The 21 standalone checks in the catalog retain their separate/not-run status;
   this new core suite does not silently close those gaps.
+
+## Text placement and close boundaries
+
+Capability: `text.placement-transactions`. The follow-up
+`text-creation-boundaries.e2e.mjs` exercises six scenarios with actual pointer
+text placement, typing, Escape, toolbar clicks and double-click existing text.
+Its last scenario explicitly uses the public engine tool-switch API, not a
+claimed physical click. Controlled scenes include a genuine undo future so
+no-op edits must preserve redo rather than merely leave the same node count.
+
+Confirmed failures were abandoned empty text creating a history entry,
+untouched text edits truncating redo and the live pointer completion path
+omitting the placement callback exercised by the old helper-only unit test.
+The placement helper now owns both the live dispatcher and compatibility
+helper. Empty drafts roll back, populated edits commit once, and unchanged
+edits still notify the view so their textarea actually closes without a
+spurious document change.
+
+Assertions include document equality, unchanged history/redo for empty and
+no-change sessions, DOM overlay disappearance, temporary text restored to its
+original value, one-step typed-text undo/redo and no-argument tool API closure.
+`text_placement_history.test.js` now exercises the actual finish dispatcher;
+its direct annotation checks separately verify unchanged updates, no-argument
+commits, deliberate emptying and returning to the original content.
+
+`drawing-cancellation.test.js` additionally verifies preservation of an
+intervening sibling edit, release of a child of a cancelled Frame,
+sub-threshold (`< 4px`) shape/arrow clicks and `region` / `regionFree` drafts
+rolling back via `rollbackDrawingGesture` without pushing a spurious delete
+commit, wiping the redo stack, or clearing the prior selection, plus
+`cancelPolygonLasso` restoring the replaced pixel selection and
+`closePolygonLasso` applying `selectionFeather`. `editor-module-audit-regressions.test.js`
+and `text-creation-boundaries.e2e.mjs` also verify that switching away from the
+Pen tool commits an open multi-anchor pen draft (`finishPen`) and clears draft
+state, that `Escape` during active `resize`/`rotate`/`cornerRadius`/`endpoint`
+and `penEdit` anchor drags unwinds the pointer gesture first and restores
+geometry, selection, and redo (while keeping the Pen edit session open), that
+0-movement handle and Pen anchor/bend clicks do not commit duplicate history
+entries, and that `expandPenNodeBounds`, `bend`, and `cutAt` preserve resized
+and rotated Pen geometry. These unit cases are pure domain tests alongside the
+9-scene Chromium suite in `text-creation-boundaries.e2e.mjs`.
+
+Remaining: true OS IME composition, cross-client concurrent history, async
+same-node style changes and native-window teardown still need their own
+acceptance. Closing an untouched nonempty existing text preserves history;
+intentionally emptying existing text remains an undoable deletion.
+
+## Converted line/arrow representation boundary
+
+The full gate exposed a latent render failure in `canvas-double-click` while
+closing/repainting converted strokes. A parallel reproduction retained the
+browser stack: `absolutePathEndpoints` -> `drawSelection` -> workspace chrome.
+Converted lines/arrows keep their style flags, but their pen anchors are
+objects rather than primitive `[x, y]` pairs. Primitive endpoint chrome and
+dragging must reject pen/object-point data, or rendering can throw and endpoint
+movement can replace the wrong point representation.
+
+`path-endpoint-representation.test.js` retained three failing-before cases and
+a valid primitive case. The existing browser suite now explicitly paints
+chrome on converted strokes before finishing/undoing. Browser fixtures retain
+error stacks instead of only the exception message. This is part of
+`vectors.path-edit` and its related selection suite, not a new feature or a
+claim of complete vector coverage. The first full-gate runtime import omission
+and this second gate failure remain recorded in the progress evidence; neither
+failed revision was deployed.

@@ -1,5 +1,7 @@
 /** Extended deferred English dictionary. */
+import browser from "./browser-en.js";
 export default {
+  ...browser,
   "firstRun.vooCloud.title": "Sign in to VOO Cloud",
   "firstRun.vooCloud.hint": "One account for Agent, images and video",
   "firstRun.vooCloud.ready": "Ready",

@@ -77,18 +77,29 @@ await withEditorBrowser(
     await page.getByTestId("more-retouch").click();
     await page.getByTestId("more-retouch-apply").waitFor();
     await page.getByTestId("editor-taskbar-more").click();
+    const zoomBar = page.getByTestId("editor-bottom-toolbar");
+    const zoomBounds = await zoomBar.boundingBox();
     checks.push(
       "default New retains its root document, real image click exposes one toolbar and the actual portrait-retouch controls",
     );
 
     const before = await bars.boundingBox();
+    await page.screenshot({ path: "/private/tmp/voo-bottom-toolbar-parking.png" });
+    assert.ok(
+      before.y + before.height <= zoomBounds.y - 6,
+      `The docked contextual toolbar must stay above the canvas zoom controls: ${JSON.stringify({ before, zoomBounds })}`,
+    );
+    assert.ok(
+      Math.abs(before.x + before.width / 2 - zoomBounds.x - zoomBounds.width / 2) < 1,
+      "The contextual and zoom toolbars must share a center line",
+    );
     await page.mouse.move(center.x, center.y);
     await page.mouse.down();
     await page.mouse.move(center.x + 15, center.y + 10, { steps: 3 });
     await settle();
     const duringDrag = await bars.boundingBox();
-    assert.ok(Math.abs(duringDrag.x - before.x - 15) < 1);
-    assert.ok(Math.abs(duringDrag.y - before.y - 10) < 1);
+    assert.ok(Math.abs(duringDrag.x - before.x) < 1);
+    assert.ok(Math.abs(duringDrag.y - before.y) < 1);
     await page.mouse.move(center.x + 30, center.y + 20, { steps: 3 });
     await page.mouse.up();
     await settle();
@@ -101,12 +112,12 @@ await withEditorBrowser(
     );
     const moved = await bars.boundingBox();
     assert.ok(
-      Math.abs(moved.x - before.x - 30) < 1,
-      "Object movement must move its contextual bar horizontally",
+      Math.abs(moved.x - before.x) < 1,
+      "Object movement must not move the docked contextual bar",
     );
     assert.ok(
-      Math.abs(moved.y - before.y - 20) < 1,
-      "Object movement must move its contextual bar vertically",
+      Math.abs(moved.y - before.y) < 1,
+      "Object movement must not move the docked contextual bar",
     );
     await page.evaluate(() => {
       const store = window.__rootToolbarStore;
@@ -121,8 +132,8 @@ await withEditorBrowser(
     });
     await settle();
     const panned = await bars.boundingBox();
-    assert.ok(Math.abs(panned.x - moved.x - 20) < 1);
-    assert.ok(Math.abs(panned.y - moved.y - 15) < 1);
+    assert.ok(Math.abs(panned.x - moved.x) < 1);
+    assert.ok(Math.abs(panned.y - moved.y) < 1);
     await page.evaluate(() => {
       const store = window.__rootToolbarStore;
       store.setState({
@@ -130,12 +141,11 @@ await withEditorBrowser(
       });
     });
     await settle();
-    const zoomed = await bars.boundingBox(),
-      lower = await point(430, 370);
-    assert.ok(Math.abs(zoomed.x + zoomed.width / 2 - lower.x) < 1);
-    assert.ok(Math.abs(zoomed.y - lower.y - 6) < 2);
+    const zoomed = await bars.boundingBox();
+    assert.ok(Math.abs(zoomed.x - moved.x) < 1);
+    assert.ok(Math.abs(zoomed.y - moved.y) < 1);
     checks.push(
-      "the single bar tracks object geometry, shared-camera pan and zoom rather than the whole page bounds",
+      "the docked toolbar stays above zoom controls while object geometry, camera pan and zoom change",
     );
 
     await page.evaluate(async () => {
@@ -211,10 +221,8 @@ await withEditorBrowser(
       e.selectExactly([image.id]);
     });
     await settle();
-    const anchored = await bars.boundingBox(),
-      frameBottom = await point(400, 400);
-    assert.ok(Math.abs(anchored.x + anchored.width / 2 - frameBottom.x) < 1);
-    assert.ok(Math.abs(anchored.y - frameBottom.y - 6) < 2);
+    const anchored = await bars.boundingBox();
+    assert.ok(anchored.y + anchored.height <= zoomBounds.y - 6);
     await page.evaluate(() => {
       const e = window.__vooEditor,
         image = e.getNode(window.__rootToolbarImage);
@@ -231,12 +239,12 @@ await withEditorBrowser(
     );
     await settle();
     const frameMoved = await bars.boundingBox();
-    assert.ok(Math.abs(frameMoved.x - anchored.x - 16) < 1);
-    assert.ok(Math.abs(frameMoved.y - anchored.y - 12) < 1);
+    assert.ok(Math.abs(frameMoved.x - anchored.x) < 1);
+    assert.ok(Math.abs(frameMoved.y - anchored.y) < 1);
     checks.push(
-      "nested artwork keeps its bar below the Frame; child movement leaves it anchored and Frame movement carries it along",
+      "nested artwork in a root canvas keeps its bar above zoom controls during child and Frame movement",
     );
-    // A low viewport edge must never push the toolbar back into the artwork.
+    // A low viewport edge keeps the docked toolbar in the zoom-control zone.
     await page.setViewportSize({ width: 1440, height: 600 });
     await page.evaluate(() => {
       const store = window.__rootToolbarStore;
@@ -246,16 +254,32 @@ await withEditorBrowser(
     });
     await settle();
     const lowBar = await bars.boundingBox(),
+      lowZoom = await zoomBar.boundingBox(),
       lowFrameBottom = await point(420, 415);
     assert.ok(
       lowFrameBottom.y > 600,
       "Exercise a frame extending below the viewport",
     );
     assert.ok(
-      Math.abs(lowBar.y - lowFrameBottom.y - 6) < 2,
-      "The toolbar must remain below the frame even outside the viewport",
+      lowBar.y + lowBar.height <= lowZoom.y - 6,
+      "The toolbar must remain above zoom controls even when the frame extends below the viewport",
     );
-    checks.push("a short viewport never pushes the toolbar up over the Frame");
+    checks.push("a short viewport retains the docked toolbar above zoom controls");
+    for (const width of [390, 768]) {
+      await page.setViewportSize({ width, height: 844 });
+      await settle();
+      const narrowBar = await bars.boundingBox();
+      const narrowZoom = await zoomBar.boundingBox();
+      assert.ok(
+        narrowBar.y + narrowBar.height <= narrowZoom.y + 1,
+        `The root contextual bar must stay above zoom controls at ${width}px: ${JSON.stringify({ narrowBar, narrowZoom })}`,
+      );
+      assert.ok(
+        Math.abs(narrowBar.x + narrowBar.width / 2 - width / 2) < 1,
+        `The root contextual bar must stay centered at ${width}px`,
+      );
+      checks.push(`${width}px root canvas keeps contextual actions above zoom controls`);
+    }
     console.log(JSON.stringify({ passed: checks }, null, 2));
   },
   { openDocument: false },

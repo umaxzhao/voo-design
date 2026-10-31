@@ -1,0 +1,102 @@
+[
+  {
+    "covered": false,
+    "label": "Design1",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": false,
+    "label": "Close project",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": false,
+    "label": "Add project",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": false,
+    "label": "Import project file (⌘O / Ctrl+O)",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": false,
+    "label": "New",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": false,
+    "label": "Web Browser",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": false,
+    "label": "Settings",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": true,
+    "label": "Show/hide comments",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": true,
+    "label": "Background Color",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": true,
+    "label": "Foreground Color",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": true,
+    "label": "Switch colors (X)",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": true,
+    "label": "Eyedropper",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": true,
+    "label": "Fonts: system-ui",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": true,
+    "label": "Font weight",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": true,
+    "label": "Align left",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": true,
+    "label": "Align center",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": true,
+    "label": "Align right",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": true,
+    "label": "Font size",
+    "tag": "INPUT"
+  },
+  {
+    "covered": true,
+    "label": "Italic",
+    "tag": "BUTTON"
+  },
+  {
+    "covered": true,
+    "label": "Underline",
+    "tag": "BUTTON"
+  }
+]

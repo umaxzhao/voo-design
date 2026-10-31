@@ -12,6 +12,7 @@ import { moveAffectedIds } from "./doc_ops_move.js";
 import { extremeOrder, moveNodeToExtreme } from "./doc_ops_groups_helpers.js";
 import { reorderLayerBatch } from "./reorder-layer-batch.js";
 import { isFrameSelectionBoundary } from "./frame-selection-unit.js";
+import { groupingRoots, sharedGroupParent } from "./group-structure.js";
 
 export { extremeOrder, moveNodeToExtreme };
 
@@ -141,23 +142,24 @@ export function moveIntoGroup(doc, id, groupId) {
  * The result takes the stacking position of the bottom-most member in the stack.
  */
 export function combineNodes(doc, ids, operation) {
-  const chosen = new Set(ids ?? []);
-  const members = doc.nodes.filter((node) => chosen.has(node.id));
-  if (members.length === 1 && members[0].kind === NODE_KIND.BOOLEAN) {
+  const rawChosen = new Set(ids ?? []);
+  const rawMembers = doc.nodes.filter((node) => rawChosen.has(node.id));
+  if (rawMembers.length === 1 && rawMembers[0].kind === NODE_KIND.BOOLEAN) {
     return {
       doc: withNodes(
         doc,
         doc.nodes.map((node) =>
-          node.id === members[0].id ? { ...node, operation } : node,
+          node.id === rawMembers[0].id ? { ...node, operation } : node,
         ),
       ),
-      id: members[0].id,
+      id: rawMembers[0].id,
     };
   }
+  const members = groupingRoots(doc, ids);
+  const chosen = new Set(members.map((node) => node.id));
   if (!canCombine(members)) return { doc, id: null };
 
-  const [bottomMost] = members;
-  const parentId = bottomMost?.parentId ?? null;
+  const parentId = sharedGroupParent(doc, members);
   const combined = createBooleanNode(members, operation, parentId);
 
   let bottomIndex = doc.nodes.length;
@@ -165,9 +167,14 @@ export function combineNodes(doc, ids, operation) {
     if (chosen.has(node.id) && index < bottomIndex) bottomIndex = index;
   });
 
-  const nodes = doc.nodes.map((node) =>
-    chosen.has(node.id) ? { ...node, parentId: combined.id } : node,
-  );
+  const nodes = doc.nodes.map((node) => {
+    let next = chosen.has(node.id) ? { ...node, parentId: combined.id } : node;
+    if (next.clipTo && chosen.has(next.id) !== chosen.has(next.clipTo)) {
+      next = { ...next };
+      delete next.clipTo;
+    }
+    return next;
+  });
   nodes.splice(bottomIndex, 0, combined);
 
   return {
@@ -186,11 +193,10 @@ export function combineNodes(doc, ids, operation) {
  * index means nothing to the renderers.
  */
 export function insertGroup(doc, groupNode, childIds) {
-  const chosen = new Set(childIds);
-  const members = doc.nodes.filter(node => chosen.has(node.id));
+  const members = groupingRoots(doc, childIds);
   if (!members.length) return doc;
-  const parents = new Set(members.map(node => node.parentId ?? null));
-  const folder = { ...groupNode, parentId: groupNode.parentId ?? (parents.size === 1 ? [...parents][0] : null) };
+  const chosen = new Set(members.map(node => node.id));
+  const folder = { ...groupNode, parentId: groupNode.parentId ?? sharedGroupParent(doc, members) };
   let bottomIndex = doc.nodes.length;
   doc.nodes.forEach((node, index) => {
     if (chosen.has(node.id) && index < bottomIndex) bottomIndex = index;
@@ -207,7 +213,8 @@ export function insertGroup(doc, groupNode, childIds) {
  * and lose only the `parentId` — ungrouping never changes what covers what.
  */
 export function ungroupNodes(doc, groupIds) {
-  const gone = new Set(groupIds);
+  const requested = new Set(groupIds);
+  const gone = new Set(doc.nodes.filter(node => requested.has(node.id) && isContainerNode(node)).map(node => node.id));
   const dissolvable = (node) =>
     (isGroupNode(node) || node.kind === NODE_KIND.BOOLEAN) && gone.has(node.id);
   if (!doc.nodes.some(dissolvable)) {
@@ -220,16 +227,26 @@ export function ungroupNodes(doc, groupIds) {
       .filter((node) => gone.has(node.id))
       .map((node) => [node.id, node.parentId ?? null]),
   );
+  const survivingParent = id => {
+    const visited = new Set();
+    while (parentMap.has(id)) {
+      if (visited.has(id)) return null;
+      visited.add(id); id = parentMap.get(id);
+    }
+    return id;
+  };
 
   return withNodes(
     doc,
     doc.nodes
       .filter((node) => !dissolvable(node))
-      .map((node) =>
-        node.parentId && gone.has(node.parentId)
-          ? { ...node, parentId: parentMap.get(node.parentId) ?? null }
-          : node,
-      ),
+      .map((node) => {
+        let next = node.parentId && gone.has(node.parentId)
+          ? { ...node, parentId: survivingParent(node.parentId) ?? null } : node;
+        // Dissolving a mask container also releases followers of that missing base.
+        if (gone.has(node.clipTo)) { next = { ...next }; delete next.clipTo; }
+        return next;
+      }),
   );
 }
 

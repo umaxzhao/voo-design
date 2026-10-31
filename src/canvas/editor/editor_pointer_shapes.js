@@ -15,7 +15,12 @@ import { normaliseRect } from "./scene_geometry.js";
 import { TOOL } from "./editor_constants.js";
 import { editorSnapOptions, snapNodeBounds } from "./scene_snapping.js";
 import { commitEditorAction } from "../undo-action-contracts.js";
-import { drawingRollbackState, selectDrawingDraft } from "./drawing-gesture-transaction.js";
+import {
+  drawingRollbackState,
+  rollbackDrawingGesture,
+  selectDrawingDraft,
+} from "./drawing-gesture-transaction.js";
+import { finishTextPlacement } from "./text-placement-transaction.js";
 
 /**
  * One text-tool drag step, in document space.
@@ -143,8 +148,10 @@ export function createShapesPointerGestures({
         endpoints[1].y - endpoints[0].y,
       ) < 4;
     if (tooShort) {
-      api.removeNode(finished.id);
-      api.select(null);
+      if (!rollbackDrawingGesture(api, finished)) {
+        api.removeNode(finished.id);
+        api.select(null);
+      }
     } else {
       api.select(finished.id);
       commitEditorAction("editor.pointer.draw", () => api.commit());
@@ -263,13 +270,14 @@ export function createShapesPointerGestures({
       .nodes.find((candidate) => candidate.id === finished.id);
     const tooSmall = !node || node.width < 4 || node.height < 4;
     if (tooSmall) {
-      api.removeNode(finished.id);
-      api.select(null);
+      if (!rollbackDrawingGesture(api, finished)) {
+        api.removeNode(finished.id);
+        api.select(null);
+      }
     } else {
       api.select(finished.id);
       commitEditorAction("editor.pointer.draw", () => api.commit());
     }
-    api.setTool(TOOL.SELECT);
   }
 
   function startPolyShape(event) {
@@ -332,14 +340,7 @@ export function createShapesPointerGestures({
   }
 
   function finishText(event, finished) {
-    api.setTextDraftRect?.(null);
-    api.select(finished.id);
-    api.setTool(TOOL.SELECT);
-    // Defer the placement snapshot until content exists, so undo never
-    // resurrects an empty box between placing and typing.
-    api.beginTextEdit(finished.id, {
-      commitPlacement: () => commitEditorAction("editor.pointer.draw", () => api.commit()),
-    });
+    finishTextPlacement(api, finished);
   }
 
   return {

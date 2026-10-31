@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { CLI_TRANSPORT } from "../../../shared/cli-agents.js";
 import { cliTransport, getLocalCliBridge } from "./local_cli_bridge.js";
+import { useLocalService } from "./use_local_service.js";
 import { availableModelGroups } from "./model_catalog.js";
 import {
   modelCatalogRevision,
@@ -8,8 +9,9 @@ import {
   subscribeModelCatalog,
 } from "./model_discovery.js";
 
-/** Both pickers subscribe to one catalog; mounting never dials a local socket. */
+/** Both pickers share one capability-filtered catalog and discovery lifecycle. */
 export function useModelGroups() {
+  const service = useLocalService();
   useSyncExternalStore(
     subscribeModelCatalog,
     modelCatalogRevision,
@@ -30,6 +32,9 @@ export function useModelGroups() {
       window.clearInterval(timer);
       window.removeEventListener("focus", refresh);
     };
-  }, []);
-  return availableModelGroups();
+  }, [service.available, service.native]);
+  return availableModelGroups().filter(group =>
+    !["claude", "codex", "antigravity"].includes(group.cliId) || service.native ||
+      (service.available && service.statuses?.[group.cliId]?.installed === true),
+  );
 }

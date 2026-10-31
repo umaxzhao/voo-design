@@ -63,6 +63,8 @@ export function createAnnotations({
 
   let editingTextId = null;
   let commitTextPlacement = null;
+  let cancelTextPlacement = null;
+  let originalText = null;
   let editingRegionId = null;
 
   /**
@@ -169,8 +171,10 @@ export function createAnnotations({
     );
   }
 
-  function beginTextEdit(id, { commitPlacement = null } = {}) {
+  function beginTextEdit(id, { commitPlacement = null, cancelPlacement = null } = {}) {
     commitTextPlacement = commitPlacement;
+    cancelTextPlacement = cancelPlacement;
+    originalText = findNode(getDoc(), id)?.text ?? "";
     editingTextId = id;
     requestRender();
     notify();
@@ -181,50 +185,44 @@ export function createAnnotations({
     if (!id) return;
     const node = findNode(getDoc(), id);
     if (!node) return;
+    if (node.text === text) return;
     setDoc(ops.updateNode(getDoc(), id, { text }), { commit: false });
   }
 
   function endTextEdit(text) {
     const id = editingTextId;
     const commitPlacement = commitTextPlacement;
+    const cancelPlacement = cancelTextPlacement;
+    const before = originalText;
     commitTextPlacement = null;
+    cancelTextPlacement = null;
+    originalText = null;
     editingTextId = null;
     if (!id) return;
     const node = findNode(getDoc(), id);
     if (!node) return;
-    // An emptied text box is a cancelled one — leave nothing behind.
-    if (text !== undefined && !text.trim()) {
-      commitEditorDocument(
-        "editor.annotation.change",
-        setDoc,
-        ops.removeNode(getDoc(), id),
-      );
-      select(null);
-      return;
+    const value = text ?? node.text ?? "";
+    if (!commitPlacement && value === before && value.trim()) {
+      // Closing the DOM overlay is still a UI state change, even without a
+      // document commit. Otherwise it stays mounted until the next action.
+      requestRender(); notify(); return;
     }
-    if (commitPlacement && String(text ?? node.text ?? "").trim()) {
-      if (text !== undefined) {
-        setDoc(ops.updateNode(getDoc(), id, { text }), { commit: false });
+    if (!value.trim()) {
+      if (commitPlacement) {
+        if (cancelPlacement) cancelPlacement();
+        else { setDoc(ops.removeNode(getDoc(), id), { commit: false }); select(null); }
+      } else {
+        commitEditorDocument("editor.annotation.change", setDoc, ops.removeNode(getDoc(), id));
+        select(null);
       }
-      commitPlacement();
       return;
     }
-    if (text !== undefined) {
-      commitEditorDocument(
-        "editor.annotation.change",
-        setDoc,
-        ops.updateNode(getDoc(), id, { text }),
-      );
-    } else if (!String(node.text ?? "").trim()) {
-      // A close without an editor value (tool switch, editor teardown) that
-      // nobody ever typed into — the click-open of the text tool — is a
-      // cancelled gesture too: an invisible 0×0 empty layer is a leak.
-      commitEditorDocument(
-        "editor.annotation.change",
-        setDoc,
-        ops.removeNode(getDoc(), id),
-      );
-      select(null);
+    const next = value === node.text ? getDoc() : ops.updateNode(getDoc(), id, { text: value });
+    if (commitPlacement) {
+      setDoc(next, { commit: false });
+      commitPlacement();
+    } else {
+      commitEditorDocument("editor.annotation.change", setDoc, next);
     }
   }
 

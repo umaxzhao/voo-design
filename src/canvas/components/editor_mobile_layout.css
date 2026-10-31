@@ -232,37 +232,34 @@
     transform: none;
   }
 
+[data-testid="design-editor"].editor-narrow {
+    --editor-mobile-zoom-bottom: calc(3.5rem + 3.25rem);
+  }
+
+  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"],
+  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="true"] {
+    --editor-mobile-zoom-bottom: calc(45% + 0.25rem);
+  }
+
   [data-testid="design-editor"].editor-narrow .viewport-tools {
-    bottom: calc(3.5rem + 3.25rem);
+    bottom: var(--editor-mobile-zoom-bottom);
     left: 50%;
     right: auto;
     transform: translateX(-50%);
   }
 
-  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"] .viewport-tools,
-  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="true"] .viewport-tools,
-  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"][data-mobile-properties-expanded="true"] .viewport-tools {
-    bottom: calc(45% + 0.25rem);
-  }
-
   [data-testid="design-editor"].editor-narrow [data-testid="editor-contextual-taskbar"] {
-    position: fixed !important;
+    position: absolute !important;
     top: auto !important;
     right: auto !important;
-    bottom: calc(3.5rem + 3.25rem + 3rem) !important;
-    left: 50vw !important;
+    bottom: calc(var(--editor-mobile-zoom-bottom) + 3.25rem + 0.5rem) !important;
+    left: 50% !important;
     width: max-content;
     max-width: calc(100vw - 1.5rem) !important;
     box-sizing: border-box;
     overflow: hidden;
     transform: translateX(-50%) !important;
     touch-action: pan-x;
-  }
-
-  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"] [data-testid="editor-contextual-taskbar"],
-  [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="true"] [data-testid="editor-contextual-taskbar"],
-  [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"][data-mobile-properties-expanded="true"] [data-testid="editor-contextual-taskbar"] {
-    bottom: calc(45% + 3.25rem) !important;
   }
 
   [data-testid="design-editor"].editor-narrow [data-testid^="editor-taskbar-"][data-testid$="-actions"] {

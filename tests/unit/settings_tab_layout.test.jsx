@@ -8,7 +8,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 // Keeps the first useState of AgentSettings (the selected tab) across renders so a key press
 // can be followed by a re-render without a DOM. Later useState calls are the real thing.
-const harness = vi.hoisted(() => ({ tracking: false, calls: 0, tab: undefined }));
+const harness = vi.hoisted(() => ({ tracking: false, calls: 0, tab: undefined, native: true }));
+vi.mock("../../src/canvas/components/agent-panel/use_local_service.js", () => ({
+  useLocalService: () => ({ native: harness.native, available: false }),
+}));
 vi.mock("react", async (original) => {
   const actual = await original();
   return {
@@ -80,6 +83,11 @@ describe("settings tab layout", () => {
   beforeAll(() => loadLocale("en"));
 
   describe("Agent settings", () => {
+    it("hides Local CLI in a browser without a service", () => {
+      harness.native = false;
+      try { expect(renderAgent()).not.toContain('data-testid="agent-settings-tab-cli"'); }
+      finally { harness.native = true; }
+    });
     it("renders a tablist with four tabs in order and Assistant selected by default", () => {
       harness.tab = undefined;
       const html = renderAgent();

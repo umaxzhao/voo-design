@@ -10,6 +10,11 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   page.on("pageerror", error => errors.push(String(error)));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
+  // This production-artifact suite owns no CLI service. Keep it isolated
+  // from an App running on the developer's machine, including legacy hosts.
+  await page.route("**/health", route => route.fulfill({
+    json: { ok: false }, headers: { "access-control-allow-origin": "*" },
+  }));
   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/?voo-test=1`, { waitUntil: "networkidle" });
   assert.equal(await page.getByTestId("welcome-prompt-heading").innerText(), "What would you like to design?");
   await page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true }).click();

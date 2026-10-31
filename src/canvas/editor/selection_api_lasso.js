@@ -12,6 +12,7 @@ export function createSelectionApiLasso(
     getDoc,
     getPixelSelection,
     clearPixelSelection,
+    getSelectionFeather,
     getPolygonDraft,
     setPolygonDraft,
     getMarqueeMode,
@@ -65,6 +66,7 @@ export function createSelectionApiLasso(
         [[[point.x, point.y]]],
         nodeRect(node),
       );
+      const previousSelection = getPixelSelection();
       setPolygonDraft({
         nodeId: hostId,
         points: start,
@@ -72,7 +74,8 @@ export function createSelectionApiLasso(
         mode,
         // Snapshot the base now; later clicks must not re-read the live
         // selection, or an add drag would keep combining against itself.
-        baseSelection: mode === "replace" ? null : getPixelSelection(),
+        baseSelection: mode === "replace" ? null : previousSelection,
+        previousSelection,
       });
       if (mode === "replace") clearPixelSelection();
       requestRender();
@@ -155,6 +158,10 @@ export function createSelectionApiLasso(
         selection,
         draft.mode ?? "replace",
       );
+      const feather = getSelectionFeather?.() ?? 0;
+      if (feather > 0 && getPixelSelection?.()) {
+        api.featherPixelSelection?.(feather);
+      }
       syncAnts();
       requestRender();
       notify();

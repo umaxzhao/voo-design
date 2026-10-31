@@ -190,6 +190,7 @@ function toolContent(name, value) {
 
 /** Newline-delimited JSON-RPC; injected tools keep tests independent of sockets. */
 export function createMcpStdioServer({ input, output, callTool, listTools = buildMcpTools }) {
+  let clientProtocolVersion = "2025-06-18";
   const bridge = callTool ? null : createBridgeClient();
   const invoke = callTool || bridge.call;
   const lines = createInterface({ input, crlfDelay: Infinity });
@@ -204,8 +205,10 @@ export function createMcpStdioServer({ input, output, callTool, listTools = buil
     const { id, method, params = {} } = frame;
     try {
       switch (method) {
-        case "initialize": return send(id, { protocolVersion: params.protocolVersion || "2025-06-18",
-          capabilities: { tools: {}, resources: {} }, serverInfo: { name: "voo", version: "1.0.0" } });
+        case "initialize":
+          clientProtocolVersion = params.protocolVersion || "2025-06-18";
+          return send(id, { protocolVersion: clientProtocolVersion,
+            capabilities: { tools: {}, resources: {} }, serverInfo: { name: "voo", version: "1.0.0" } });
         case "ping": return send(id, {});
         case "tools/list": return send(id, { tools: await listTools() });
         case "resources/list": return send(id, { resources: VOO_RESOURCES });
@@ -257,7 +260,18 @@ export function createMcpStdioServer({ input, output, callTool, listTools = buil
             if (typeof params.name !== "string") throw new Error("Tool name is required");
             if (!(await listTools()).some((tool) => tool.name === params.name)) throw new Error(`Unknown tool: ${params.name}`);
             const value = await invoke(params.name, params.arguments ?? {});
-            return send(id, { content: toolContent(params.name, value) });
+            const content = toolContent(params.name, value);
+            // Capture is already the shared post-generation verification step.
+            // Offer the same live source without creating another editor.
+            if (["capture_canvas", "voo_status"].includes(params.name) &&
+                /^\d{4}-\d{2}-\d{2}$/.test(clientProtocolVersion) && clientProtocolVersion >= "2025-06-18") {
+              const status = value;
+              if (typeof status?.previewUrl === "string" && /^http:\/\/127\.0\.0\.1:\d+\/preview\/[a-f0-9]{48}$/.test(status.previewUrl)) {
+                content.push({ type: "resource_link", uri: status.previewUrl, name: "VOO Live Preview",
+                  mimeType: "text/html", description: "Read-only live view of this source canvas. Open beside the conversation when supported." });
+              }
+            }
+            return send(id, { content });
           } catch (error) {
             const text = error.message === "mcp.noCanvas"
               ? "No VOO canvas is connected. Open VOO Design (npm run dev / desktop) with the bridge enabled."

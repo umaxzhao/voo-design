@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./canvas/components/editor_mobile_layout.css";
 import CanvasTabBar from "./canvas/components/canvas_tab_bar.jsx";
-import { Bolt, Download, FolderOpen, MoreHorizontal, Globe } from "lucide-react";
+import { Bolt, Download, FolderOpen, MoreHorizontal, PanelsTopLeft } from "lucide-react";
 import { useDesignStore } from "./store/design_store.js";
 import { useI18n } from "./canvas/use_i18n.js";
 import CollabAvatars from "./canvas/components/collab_avatars.jsx";
@@ -195,17 +195,18 @@ export default function AppTitleBar() {
           <button
             type="button"
             data-testid="titlebar-browser-button"
+            aria-pressed={browserDrawerOpen}
             aria-label={t("titlebar.browser")}
             title={t("titlebar.browser")}
             onClick={() => setBrowserDrawerOpen(!browserDrawerOpen)}
             className={`flex size-7 cursor-pointer items-center justify-center rounded-lg transition-colors ${
               browserDrawerOpen
-                ? "bg-emerald-500/25 text-emerald-300 ring-1 ring-emerald-400/40"
+                ? "bg-[#b2ffd6] text-black"
                 : "text-white/60 hover:bg-white/10 hover:text-white"
             }`}
             style={{ WebkitAppRegion: "no-drag" }}
           >
-            <Globe size={15} aria-hidden="true" />
+            <PanelsTopLeft size={16} strokeWidth={1.75} aria-hidden="true" />
           </button>
           <div ref={moreRef} className="app-title-mobile-more relative hidden">
             <button

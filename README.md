@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="public/voo-mark.svg" width="96" height="96" alt="VOO Design" />
+  <img src="build/icon.png" width="96" height="96" alt="VOO Design" />
 </p>
 
 <h1 align="center">VOO Design</h1>
 
 <p align="center">
-  <strong>An agent-driven design editor for the future</strong><br />
-  <sub>Design with an AI agent that works directly on the canvas. Vector, pixel and layout editing in one document. Runs on the desktop (Electron) and in the browser.</sub>
+  <strong>Your ideas. One shared canvas.</strong><br />
+  <sub>Design with an agent. Refine every layer. An open-source editor for vector, image and layout design on desktop and web.</sub>
 </p>
 
 <p align="center">
@@ -16,11 +16,37 @@
   <img src="https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 5" />
 </p>
 
-![VOO Design dashboard](docs/screenshots/dashboard.jpg)
+![VOO Design — a music interface, a racing poster, an analytics dashboard and a typography poster created as editable canvas designs](docs/screenshots/cover.png)
 
-**VOO Design** is a design editor built around an AI agent. The agent works directly on the document: it reads the layer tree, applies transactional edits, and places generated images on the canvas, while you keep direct control of vector shapes, pixel layers, text, masks and filters in the same file. Local AI tools (background removal, upscaling, inpainting) run on your machine, and local CLI coding agents (Claude Code, Codex, OpenCode, Antigravity, DeepSeek Harness) can operate the canvas through a sandboxed tool interface.
+<p align="center">
+  <a href="https://voo.run/editor/">Try the web editor</a> ·
+  <a href="https://github.com/umaxzhao/voo-design/releases">Desktop releases</a> ·
+  <a href="docs/examples/README.md">Open the example designs</a> ·
+  <a href="docs/mcp-server.md">Connect your agent</a>
+</p>
 
-![VOO Design editor](docs/screenshots/editor.jpg)
+**VOO Design** brings hands-on editing and AI agents into the same document. Start with a blank canvas, an imported file or a prompt. Your agent can read the layer tree, build layouts and edit the canvas through undoable operations; you can select and refine the resulting text, shapes and images directly.
+
+- **One canvas for different kinds of work.** Compose interfaces, brand graphics and presentations with vector paths, text, images, masks, filters and Auto Layout.
+- **Agents work on the design itself.** Use a configured model provider, connect a local CLI agent, or drive the canvas from an external MCP client.
+- **Keep a portable source file.** Save editable projects as `.voo`, import existing work and export images, documents or handoff code.
+- **Choose desktop or web.** Electron adds native files, workspace folders and direct local CLI sessions. The browser editor can reach local CLIs through the loopback bridge.
+
+## Made with VOO
+
+Four designs, one editor: a music discovery interface, an F1-inspired racing poster, a business dashboard and an editorial typography study. These previews are actual canvas exports. The source files retain editable text, vector shapes and layer structure; they are visual design examples rather than running applications.
+
+| Music discovery | F1 · Racing poster |
+| --- | --- |
+| ![Dark music discovery interface with lime accents and gradient album artwork](docs/screenshots/showcase-music.png) | ![Red open-wheel racing car and telemetry-inspired Monaco poster concept](docs/screenshots/showcase-f1.png) |
+| [Open editable music interface](docs/examples/music-discovery.voo) | [Open editable racing poster](docs/examples/f1-grand-prix.voo) |
+
+| PULSE · Product dashboard | FORM · Brand & typography |
+| --- | --- |
+| ![PULSE — a green analytics dashboard with metrics and a revenue chart](docs/screenshots/showcase-dashboard.png) | ![FORM — orange and black editorial typography poster](docs/screenshots/showcase-poster.png) |
+| [Open editable dashboard](docs/examples/pulse-dashboard.voo) | [Open editable poster](docs/examples/form-poster.voo) |
+
+Download a source file and open it with **Open File** in VOO. See the [example guide](docs/examples/README.md) for dimensions and editing notes.
 
 ---
 

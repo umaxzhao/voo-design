@@ -264,8 +264,12 @@ export function isEndpointEditable(node) {
   return (
     node?.kind === NODE_KIND.PATH &&
     (node.arrow === true || node.line === true) &&
+    // Converted lines retain their style flags, but Bezier anchors are objects
+    // and must use pen editing, never the array-only primitive endpoint path.
+    node.pen !== true &&
     Array.isArray(node.points) &&
     node.points.length === 2 &&
+    node.points.every(Array.isArray) &&
     !node.closed &&
     !node.rotation &&
     !node.shear

@@ -6,6 +6,9 @@ if (typeof globalThis.Element === "undefined") {
   globalThis.Element = class Element {};
 }
 
+vi.mock("../../src/canvas/components/agent-panel/use_local_service.js", () => ({
+  useLocalService: () => ({ native: true, available: false, phase: "checking", statuses: null }),
+}));
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";

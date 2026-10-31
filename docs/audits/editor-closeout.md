@@ -94,3 +94,36 @@ geometry-only assertions. These checks do not authorize or make paid provider
 requests, submit authentication forms, or certify native Electron dialogs.
 Uncommitted DeepSeek connector/plugin changes in the primary workspace are
 preserved separately and are outside this verified commit.
+
+## Local services and source-bound preview
+
+Owning capabilities: `platform.local-service-discovery`, `platform.live-preview`.
+The failing baseline `local-service.e2e.mjs` exposed eight CLI model options with
+no reachable service. Discovery is now shared across welcome, agent menus,
+first-run cards and settings. Missing services hide local-only controls;
+installed CLI capability results filter web model groups. API configurations
+and selected model IDs are never overwritten by probes. Empty catalogs route
+to existing provider settings rather than a blank menu or a CLI-only wizard.
+
+| Acceptance axis | Recorded scope |
+| --- | --- |
+| Entry points and visible result | `local-service.e2e.mjs`: real HTTP identity and WebSocket capability RPC, absent/present/disconnect/recovery, released-bridge compatibility, installed-only choices, settings CLI visibility and preserved selection. `agent-model-catalog` retains native account catalog and synchronized welcome/agent choices. |
+| Authoritative document | Discovery never registers a writable canvas. `canvas-live-preview.e2e.mjs` uses a second browser context, confirms unchanged relay target, compares actual red/green image pixels after tool mutation and exercises zoom/fit. |
+| Failure and cancellation | Unit checks cover denied/timeout/wrong-service probes, coalesced refresh, unsubscribe cancellation, forged context sender, legacy-renderer document binding, legacy MCP content negotiation and document-switch races. HTTP checks cover expired links, cross-site read restrictions, no-store/CSP and DNS rebinding. |
+| History and persistence | Viewer/discovery perform no document mutations, so they create no history. Selected model persistence is read back after disconnect. Editable document save/reopen remains owned by existing suites. |
+| Platform limits | Real local Chromium and controlled CLI capabilities; no paid prompts. Browser local-network permission UI, signed packaged App, native installers and automatic right-pane behavior of external Codex/DeepSeek clients are not certified. Remote/cloud viewers cannot reach a user's loopback URL. |
+
+Execution belongs to the clean release revision/report linked from
+[quality-progress.md](../quality-progress.md). A browser view is a live read-only
+screenshot, not a replicated editable document or a universal MCP Apps UI.
+
+Execution for the merged application revision `23d961ca7bc6a526447e821488290f76bd295693`:
+87/87 release steps, 83 browser suites and 4496 unit passes / 4 skips. Report:
+`/private/tmp/voo-local-service-final-release-v4.json`. The compiled-resource
+fixture now explicitly isolates local service discovery from a developer's
+running App; the titlebar New scenario waits for a new document identity rather
+than treating a still-mounted old editor as completion. Source was clean and
+unchanged throughout this final gate. GitHub Ubuntu basic checks passed in
+run `41176262001`; deployment was performed separately over SSH to `la2`.
+The public index and its five direct asset references match the verified build;
+production provider setup, local-CLI hiding and New passed without JS errors.

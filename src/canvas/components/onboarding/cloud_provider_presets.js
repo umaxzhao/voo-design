@@ -22,8 +22,10 @@ export const VOO_CLOUD_PROVIDER = Object.freeze({
  * the form needs; it stays editable. The hint explains the offline case: the
  * bridge only answers while the Harness desktop app is running.
  */
+export const DSH_MODEL_PROVIDER_ID = "deepseek-harness-models";
+
 export const DSH_MODEL_PROVIDER_PRESET = Object.freeze({
-  id: "deepseek-harness-models",
+  id: DSH_MODEL_PROVIDER_ID,
   customProviderId: "custom:onboarding-deepseek-harness",
   labelKey: "firstRun.provider.deepseekHarnessModels",
   baseUrl: "http://127.0.0.1:4399/v1",

@@ -39,3 +39,41 @@ Every new browser suite also checks parent existence, unique IDs and absence of 
 ## Verification boundary
 
 The fixtures use isolated Chromium canvases and generated local images. They do not modify the user's open document or call paid generation providers. File pickers and browser clipboard operations are real; the file-drop event is injected with real File bytes, not a Finder/Explorer operating-system drag. This audit does not certify every native desktop host, physical touch device, font installation or arbitrary third-party imported document.
+
+## Container command boundaries
+
+Capability: `layers.container-boundaries`. The maintained release evidence is
+in `docs/quality-progress.md`; this section declares scope, not a historical
+pass inherited by newer source.
+
+| Operation | Confirmed previous failure | Regression |
+| --- | --- | --- |
+| Ungroup selected nested containers | Children inherited an ancestor ID that was removed in the same command | Resolve the complete dissolved ancestry; real shortcut, valid parent chain, visible pixels and full undo/redo |
+| Group a Frame together with its selected descendant | The descendant was detached from the Frame | Deduplicate selected roots in the common domain operation; keep Frame subtree and initial wrapper bounds intact |
+| Group children of different nested Frames | The folder escaped to document root despite a shared outer Frame | Find their nearest surviving common parent; assert ownership, both colors and history |
+| Ungroup a clipping-mask container | Followers retained a missing `clipTo` base | Release that reference; assert actual clipped/unclipped pixels and one-step restoration |
+| Align/distribute selected containers and mask bases | Selected descendants inside a selected Frame moved twice, and clipped followers (`clipTo`) were left behind | Deduplicate `selectionUnits` via `groupingRoots` and move units via `moveAffectedIds`; assert single-delta child coordinates, mask-follower alignment, pixels and one-step undo/redo |
+| Arrow-key nudge on selected Auto Layout groups | `nudgeSelection` moved only leaf children so Auto Layout immediately snapped them back to the unmoved group origin | Move `[selectedGroup]` when a group unit is selected; assert group + child coordinates and one-step undo/redo |
+| Layer row selection and group duplication | Clicking a Boolean row called `selectGroup` (no-op), `unitSelectionIds` omitted nested Frames inside a Group, and Layer-panel folder duplication cleared `selectedGroupId` | Distinguish ordinary folders (`isFolderSelectionRow`) from Frames and Boolean layers, share `groupArtworkIds`, and select ordinary folders via `selectGroup` before duplicating |
+| Boolean combine, destructive boolean, text-on-path, resized pen duplication & empty group deletion | `combineNodes` and `destructiveBoolean` dropped `parentId` to root and left cross-container/dangling `clipTo` or emptied folders; `typeOnSelectedPath` omitted `parentId` and called non-existent `selection.setIds`; `duplicateSelected` and `expandStrokeToPathNode` lost resized Pen scale; `deleteSelected`/`cutSelected` ignored empty selected groups | Deduplicate via `groupingRoots`, resolve `sharedGroupParent`, release invalid `clipTo`, prune empty groups, inherit `parentId` + call `selectNodes`, scale `points`/handles by `width / baseWidth`, and include `selectedUnitIds()` on delete/cut |
+
+`container-command-boundaries.e2e.mjs` uses controlled seeded documents and
+initial selections, then actual keyboard, alignment, and layer-panel actions.
+It does not claim that seeded selections were produced by physical modifier
+clicks. Its eight scenes check state, hierarchy, pixels and complete undo/redo.
+The earlier continuous creation suite separately verifies mouse multiselection
+and group dragging.
+
+Pure regressions in `container-command-boundaries.test.js`,
+`nested-group-commands.test.js`, and `editor-module-audit-regressions.test.js`
+check the same structural and selection invariants, including Auto Layout
+group nudging, nested Frame unit selection, and group duplication. An
+initial hypothesis that cross-Frame paint ordering alone hid content was not
+confirmed in Chromium; no stack-order rewrite was made on that assumption.
+
+Remaining: translucent/transformed container flattening, arbitrary imported
+hierarchies, mixed-owner masks during grouping, every isolation mode and
+physical touch/stylus commands need additional acceptance. Dissolving a mask
+base deliberately releases its followers; it does not flatten a replacement
+mask image. Cold persistence of these four command-specific scenes is not
+separately exhausted by this suite; portable nesting has its own release check.

@@ -90,7 +90,9 @@ export function createEngineToolsController({
       annotations.api.endRegionLabelEdit?.();
     }
     if (![TOOL.PEN, TOOL.CURVATURE_PEN, TOOL.FREE_PEN].includes(targetTool)) {
-      if (penTools.api.getDraft?.()) penTools.api.commitDraftPath?.();
+      if (penTools.api.getDraft?.()) {
+        (penTools.api.finishPen ?? penTools.api.commitDraftPath)?.();
+      }
       if (penTools.api.getEdit?.()) penTools.api.endEdit?.();
     }
     if (

@@ -130,7 +130,6 @@ export async function importHtmlSnippetToCanvas({
     } catch {
       // Font loader may be absent in pure headless/unit environments
     }
-
     const combinedNodes = [...existingNodes, ...newNodes];
     const nextDoc = {
       ...currentDoc,

@@ -83,6 +83,8 @@ export function createPointerMoveDispatcher({
         dragShape(event);
         break;
       case "gradientStop": {
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         const nextFill = dragGradientStop(
           gesture,
           api.toDocPoint(event.clientX, event.clientY),
@@ -91,6 +93,8 @@ export function createPointerMoveDispatcher({
         break;
       }
       case "gradientEndpoint": {
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         const nextFill = dragGradientEndpoint(
           gesture,
           api.toDocPoint(event.clientX, event.clientY),
@@ -100,6 +104,8 @@ export function createPointerMoveDispatcher({
         break;
       }
       case "gradientLine": {
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         const nextFill = dragGradientLine(
           gesture,
           api.toDocPoint(event.clientX, event.clientY),
@@ -222,12 +228,18 @@ export function createPointerMoveDispatcher({
         extendFreeRegion(event);
         break;
       case "perspectiveCorner":
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         dragPerspectiveCorner(event, gesture);
         break;
       case "meshPoint":
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         dragMeshPoint(event, gesture);
         break;
       case "puppetPin":
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         dragPuppetPin(event, gesture);
         break;
       case "cornerRadius": {
@@ -251,6 +263,8 @@ export function createPointerMoveDispatcher({
         }[gesture.handle];
 
         const adjustSingleCorner = event.altKey || gesture.isIndependent;
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         if (adjustSingleCorner && cornerKey) {
           const currentRadii = resolveCornerRadii(
             node.cornerRadius,
@@ -297,6 +311,8 @@ export function createPointerMoveDispatcher({
           .getDocument()
           .nodes.find((candidate) => candidate.id === gesture.id);
         if (node) {
+          captureMoveRollback(api, gesture);
+          gesture.moved = true;
           api.updateNode(
             gesture.id,
             movePathEndpoint(node, gesture.index, point),
@@ -306,9 +322,13 @@ export function createPointerMoveDispatcher({
         break;
       }
       case "resize":
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         dragResize(event);
         break;
       case "rotate":
+        captureMoveRollback(api, gesture);
+        gesture.moved = true;
         dragRotate(event);
         break;
       case "cropMove":

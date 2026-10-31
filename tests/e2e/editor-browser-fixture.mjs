@@ -18,7 +18,7 @@ export async function withEditorBrowser(run, pageOptions = {}) {
     if (mcpLink) await page.addInitScript(() => localStorage.setItem("voo.mcpLink", "on"));
     const errors = [];
     const startupMessages = [];
-    page.on("pageerror", (error) => errors.push(String(error)));
+    page.on("pageerror", (error) => errors.push(error.stack ?? String(error)));
     page.on("console", (message) => {
       if (message.type() === "error" && startupMessages.length < 8) startupMessages.push(message.text());
       // Development React reports contract violations through console.error,
@@ -71,7 +71,7 @@ export async function withEditorBrowser(run, pageOptions = {}) {
       await page.waitForFunction(() => document.querySelector('[data-testid="design-editor"] [data-open-guard]')
         ?.getAttribute("data-open-guard") === "off");
     }
-    await run({ page, tool, origin, errors, reloadModule: environment.reloadModule });
+    await run({ page, tool, origin, bridge, errors, reloadModule: environment.reloadModule });
     if (errors.length) throw new Error(`Editor errors: ${errors.join("\n")}`);
   } finally {
     try { socket?.close(); await browser?.close(); }

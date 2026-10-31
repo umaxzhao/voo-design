@@ -36,7 +36,7 @@ export function buildMcpTools() {
   // Add voo_status tool
   tools.push({
     name: "voo_status",
-    description: "Get the connection status of the VOO canvas.",
+    description: "Get VOO connection status and a read-only live previewUrl for the same canvas/document. After creating a design, return this URL to the user so compatible clients can open it beside the conversation. Links expire when the source canvas/document changes.",
     inputSchema: {
       type: "object",
       properties: {},

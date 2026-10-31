@@ -297,7 +297,7 @@ describe("CLI Bridge Protocol & Dual-Channel Transport", () => {
           res.on("end", () => resolve(JSON.parse(data)));
         }).on("error", reject);
       });
-      expect(health).toEqual({ ok: true, version: "1.0.0" });
+      expect(health).toEqual({ ok: true, version: "1.0.0", service: "voo-cli-bridge" });
 
       // 2. Connect client web bridge
       const TokenAuthorizedWebSocket = function (url) {

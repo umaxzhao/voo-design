@@ -11,6 +11,7 @@ await withEditorBrowser(
       page.waitForFunction(
         () =>
           window.__vooEditor &&
+          !window.__vooStore?.welcomeOpen &&
           document
             .querySelector('[data-testid="design-editor"] [data-open-guard]')
             ?.getAttribute("data-open-guard") === "off",
@@ -95,7 +96,11 @@ await withEditorBrowser(
     );
     await bar.getByRole("button", { name: "VOO Design", exact: true }).click();
     await home.waitFor();
+    const previousDocumentId = await page.evaluate(() => window.__vooStore.activeDocumentId);
     await bar.getByRole("button", { name: "New", exact: true }).click();
+    // The old editor remains mounted while the new project is being created.
+    // Wait for document identity, not an old engine that already passes ready().
+    await page.waitForFunction(id => window.__vooStore.activeDocumentId !== id, previousDocumentId);
     await ready();
     assert.match(
       await page.evaluate(() => window.__vooStore.fileName),

@@ -59,7 +59,8 @@ export const EDITOR_MODULES = [
     paths: [
       "src/canvas/editor/editor_pointer*", "src/canvas/editor/*hit-test*", "src/canvas/editor/selection*",
       "src/canvas/editor/transform*", "src/canvas/*shortcut*",
-      "src/canvas/editor/drawing-gesture-*", "src/canvas/editor/editor-pointer-*",
+      "src/canvas/editor/drawing-gesture-*", "src/canvas/editor/move-gesture-*", "src/canvas/editor/editor-pointer-*",
+      "src/canvas/editor/editor_engine_tools.js", "tests/unit/editor-module-audit-regressions.test.js",
     ],
     related: ["canvas","layers","text","vectors","inspector"],
     features: ["selection.hit-testing","selection.transforms","selection.cancel","selection.shortcuts","selection.continuous-creation"],
@@ -76,16 +77,17 @@ export const EDITOR_MODULES = [
     title: "Layers, Frames and ownership",
     paths: [
       "src/canvas/components/editor_layer*", "src/canvas/components/use*layer*", "src/canvas/editor/*node*",
+      "src/canvas/editor/layer_selection.js", "src/canvas/components/image_editor.jsx",
       "src/canvas/editor/*frame*", "src/canvas/editor/*reparent*", "src/canvas/editor/*duplicate*",
       "src/canvas/editor/*paste*", "src/canvas/editor/*clipboard*",
-      "src/canvas/editor/doc_ops_groups.js", "src/canvas/editor/editor_engine_groups.js",
+      "src/canvas/editor/group-structure.js", "src/canvas/editor/doc_ops_groups.js", "src/canvas/editor/editor_engine_groups.js",
       "src/canvas/components/editor_image_batch.js", "src/canvas/components/use_editor_dnd.js",
     ],
     related: ["selection","compositing","layout","documents"],
-    features: ["layers.nesting","layers.placement","layers.reparent","layers.duplicate-delete-lock"],
+    features: ["layers.nesting","layers.placement","layers.reparent","layers.duplicate-delete-lock","layers.container-boundaries"],
     suites: [
       "editor-layers-composition", "image-layer-window", "frame-alt-duplicate", "frame-reparent-contracts",
-      "nested-placement", "nested-object-lifecycle",
+      "nested-placement", "nested-object-lifecycle", "container-command-boundaries",
     ],
     remaining: [
       "Browser File drops are injected DataTransfer events, not Finder/Explorer drag certification.",
@@ -113,7 +115,7 @@ export const EDITOR_MODULES = [
     id: "vectors",
     title: "Shapes, paths and Boolean geometry",
     paths: [
-      "src/canvas/editor/*boolean*", "src/canvas/editor/*path*", "src/canvas/editor/*pen*",
+      "src/canvas/editor/shape_geometry.js", "src/canvas/editor/*boolean*", "src/canvas/editor/*path*", "src/canvas/editor/*pen*",
       "src/canvas/editor/*svg*", "src/canvas/editor/editor_export*", "src/canvas/figma/*", "src/canvas/pen/*",
       "src/canvas/codegen/*", "tests/unit/pen-midpoint-insertion.test.js",
     ],
@@ -128,12 +130,12 @@ export const EDITOR_MODULES = [
     id: "text",
     title: "Text editing and typography",
     paths: [
-      "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js", "src/canvas/components/editor_text*",
+      "src/canvas/editor/editor_annotations.js", "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js", "src/canvas/components/editor_text*",
       "src/canvas/components/editor_properties/text*",
     ],
     related: ["selection","layout","compositing","documents"],
-    features: ["text.edit","text.box-sizing","text.typography","text.font-loading"],
-    suites: ["agent-paint-text"],
+    features: ["text.edit","text.box-sizing","text.typography","text.font-loading","text.placement-transactions"],
+    suites: ["agent-paint-text", "text-creation-boundaries"],
     remaining: [
       "Physical IME composition, installed-font differences, RTL and arbitrary variable fonts need dedicated acceptance.",
     ],
@@ -204,17 +206,17 @@ export const EDITOR_MODULES = [
     paths: [
       "src/canvas/agent/*", "src/canvas/mcp/*", "src/canvas/collab/*", "src/canvas/comments/*",
       "src/canvas/components/agent-panel/*", "src/canvas/components/onboarding/*", "electron/*", "plugins/*",
-      "src/shared/providers/*",
+      "src/shared/providers/*", "src/canvas/components/browser_drawer/*", "tests/unit/browser_drawer_import.test.js",
     ],
     related: ["workspace","documents","inspector","images"],
     features: [
       "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
-      "platform.native-collaboration",
+      "platform.native-collaboration", "platform.browser-drawer", "platform.local-service-discovery", "platform.live-preview",
     ],
     suites: [
-      "editor-fixture-startup", "pending-integration", "agent-model-catalog", "editor-loading",
+      "editor-fixture-startup", "browser-drawer", "pending-integration", "agent-model-catalog", "editor-loading",
       "editor-optional-loading", "comments-loading", "comments-lifecycle", "editor-refactor",
-      "editor-context", "editor-page-composition",
+      "editor-context", "editor-page-composition", "local-service", "canvas-live-preview",
     ],
     remaining: [
       "Paid endpoints, authenticated external clients, signed installers and skipped collaboration cases require separate evidence and cannot inherit an offline pass.",

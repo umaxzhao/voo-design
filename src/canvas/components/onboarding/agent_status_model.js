@@ -1,4 +1,5 @@
-import { CLI_TRANSPORT, isCliAgentConnected, isDeepSeekHarnessAgent } from "../../../shared/cli-agents.js";
+import { CLI_AGENTS, CLI_TRANSPORT, isCliAgentConnected, isDeepSeekHarnessAgent } from "../../../shared/cli-agents.js";
+import { DSH_MODEL_PROVIDER_ID } from "./cloud_provider_presets.js";
 
 /** What a first-run agent card says about its platform. */
 export const AGENT_STATUS = Object.freeze({
@@ -64,6 +65,17 @@ export function cliAgentStatus(agent, detection) {
   return isCliAgentConnected(agent, status, detection.transport ?? CLI_TRANSPORT.NONE)
     ? AGENT_STATUS.CONNECTED
     : AGENT_STATUS.NOT_SIGNED_IN;
+}
+
+/** Hide the optional local model shortcut when its Harness connector is ready. */
+export function visibleCloudProviderPresets(presets, detection, customGroups = []) {
+  const availablePresets = presets.filter(preset => preset.id !== DSH_MODEL_PROVIDER_ID ||
+    detection.showLocal !== false || customGroups.some(group => group.cliId === preset.customProviderId && group.models.length > 0));
+  const harness = CLI_AGENTS.find(isDeepSeekHarnessAgent);
+  if (!harness || cliAgentStatus(harness, detection) !== AGENT_STATUS.CONNECTED) {
+    return availablePresets;
+  }
+  return availablePresets.filter((preset) => preset.id !== DSH_MODEL_PROVIDER_ID);
 }
 
 /** The custom-model card reports provider settings, not a CLI. */

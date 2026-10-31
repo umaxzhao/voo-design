@@ -1,5 +1,7 @@
 /** Extended deferred Chinese dictionary. */
+import browser from "./browser-zh.js";
 export default {
+  ...browser,
   "firstRun.vooCloud.title": "登录 VOO Cloud",
   "firstRun.vooCloud.hint": "一个账号运行 Agent、生图与生视频",
   "firstRun.vooCloud.ready": "已就绪",

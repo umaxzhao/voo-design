@@ -28,6 +28,7 @@ import {
 } from "./path_boolean_engine.js";
 import { layoutTextOnPath } from "./text_on_path.js";
 import { newId } from "./scene_model_core.js";
+import { groupingRoots, sharedGroupParent } from "./group-structure.js";
 
 export function createEngineNodeOps({
   getDoc, cache,
@@ -222,13 +223,26 @@ export function createEngineNodeOps({
 
     if (!result) return false;
 
-    const bottomIndex = Math.min(...selectedNodes.map((n) => doc.nodes.indexOf(n)));
-    let nextNodes = doc.nodes.filter((n) => !selectedIds.includes(n.id));
-    nextNodes.splice(bottomIndex, 0, result);
+    const parentId = sharedGroupParent(doc, selectedNodes);
+    const consumedSet = new Set(selectedIds);
+    const cleanedResult = { ...result, parentId };
+    if (cleanedResult.clipTo && consumedSet.has(cleanedResult.clipTo)) {
+      delete cleanedResult.clipTo;
+    }
 
-    const nextDoc = { ...doc, nodes: nextNodes };
+    const bottomIndex = Math.min(...selectedNodes.map((n) => doc.nodes.indexOf(n)));
+    const nextNodes = doc.nodes
+      .filter((n) => !consumedSet.has(n.id))
+      .map((n) => {
+        if (!consumedSet.has(n.clipTo)) return n;
+        const { clipTo, ...released } = n;
+        return released;
+      });
+    nextNodes.splice(bottomIndex, 0, cleanedResult);
+
+    const nextDoc = ops.pruneEmptyGroups({ ...doc, nodes: nextNodes });
     commitEditorDocument(`editor.boolean.${op}`, setDoc, nextDoc);
-    selection?.selectNodes?.([result.id]);
+    selection?.selectNodes?.([cleanedResult.id]);
     requestRender?.();
     notify?.();
     return true;
@@ -272,6 +286,7 @@ export function createEngineNodeOps({
       fontFamily: "Inter, sans-serif",
       fontWeight: "normal",
       fill: "#ffffff",
+      parentId: pathNode.parentId ?? null,
       textPath,
     };
 
@@ -287,7 +302,7 @@ export function createEngineNodeOps({
 
     const nextDoc = { ...doc, nodes: nextNodes };
     commitEditorDocument("editor.textOnPath.create", setDoc, nextDoc);
-    selection?.setIds?.([textNode.id]);
+    (selection?.selectNodes ?? selection?.setIds)?.([textNode.id]);
     requestRender?.();
     notify?.();
     return true;
@@ -339,7 +354,7 @@ export function createEngineNodeOps({
     const nextNodes = doc.nodes.map((n) => (n.id === textNode.id ? updatedText : n));
     const nextDoc = { ...doc, nodes: nextNodes };
     commitEditorDocument("editor.textOnPath.attach", setDoc, nextDoc);
-    selection?.setIds?.([textNode.id]);
+    (selection?.selectNodes ?? selection?.setIds)?.([textNode.id]);
     requestRender?.();
     notify?.();
     return true;
@@ -357,7 +372,7 @@ export function createEngineNodeOps({
     const nextNodes = doc.nodes.map((n) => (n.id === textNode.id ? rest : n));
     const nextDoc = { ...doc, nodes: nextNodes };
     commitEditorDocument("editor.textOnPath.detach", setDoc, nextDoc);
-    selection?.setIds?.([textNode.id]);
+    (selection?.selectNodes ?? selection?.setIds)?.([textNode.id]);
     requestRender?.();
     notify?.();
     return true;

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { openAgentModelSettings } from "./model-settings.js";
 import PropTypes from "prop-types";
 import { Check } from "lucide-react";
 import { ProviderLogo } from "../provider_icons.jsx";
@@ -71,7 +72,7 @@ export default function AgentModelMenu({
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
     const options = [
-      ...menuRef.current.querySelectorAll('[role="menuitemradio"]'),
+      ...menuRef.current.querySelectorAll('[role="menuitemradio"], [role="menuitem"]'),
     ];
     const index = options.indexOf(document.activeElement);
     const next =
@@ -95,6 +96,15 @@ export default function AgentModelMenu({
       style={{ maxHeight }}
       className="absolute inset-x-0 bottom-full z-20 mb-2 flex flex-col gap-2 overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#171717] p-2.5 shadow-panel"
     >
+      {!groups.some(group => group.models.length) && (
+        <div className="flex flex-col gap-2 p-2">
+          <p className="text-xs text-neutral-400">{t("settings.agent.noModelsConnected")}</p>
+          <button type="button" role="menuitem" onClick={() => { onClose(); openAgentModelSettings(); }}
+            className="min-h-12 rounded-xl bg-white/[0.08] px-3 text-left text-xs text-neutral-200 focus-visible:outline focus-visible:outline-1 focus-visible:outline-white/40">
+            {t("agent.connection.configureApi")}
+          </button>
+        </div>
+      )}
       {groups.map((group) => (
         <div
           key={group.cliId}
