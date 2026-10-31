@@ -8,6 +8,7 @@ import ImageSizeNotice from "./canvas/components/image_size_notice.jsx";
 import CrashRecoveryPrompt from "./canvas/components/crash_recovery_prompt.jsx";
 import LoadingModal from "./canvas/components/loading_modal.jsx";
 const CanvasAgentPanel = lazy(() => import("./canvas/components/canvas_agent_panel.jsx"));
+const BrowserDrawer = lazy(() => import("./canvas/components/browser_drawer/browser_drawer.jsx"));
 import OnboardingGuide from "./canvas/components/onboarding/OnboardingGuide.jsx";
 import FirstRunOnboarding from "./canvas/components/first_run_onboarding.jsx";
 import { shouldShowFirstRun } from "./canvas/components/first_run_state.js";
@@ -30,6 +31,8 @@ export default function App() {
   // The AI panel state is managed in design_store for hybrid agent coordination
   const agentOpen = useDesignStore((s) => s.agentPanelOpen);
   const setAgentOpen = useDesignStore((s) => s.setAgentPanelOpen);
+  const browserDrawerOpen = useDesignStore((s) => s.browserDrawerOpen);
+  const setBrowserDrawerOpen = useDesignStore((s) => s.setBrowserDrawerOpen);
   // Workspace/agent configuration remains available through voo:open-onboarding.
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [firstRunReopened, setFirstRunReopened] = useState(false);
@@ -53,6 +56,25 @@ export default function App() {
     }
   }, []);
 
+  // When opened with a collaboration room in URL (e.g. ?r=xxxx or /r/xxxx),
+  // open the workspace canvas and auto-join the peer-to-peer session
+  useEffect(() => {
+    const checkAndJoinRoom = async () => {
+      const { roomIdFromLocation } = await import("./canvas/collab/room.js");
+      const roomId = roomIdFromLocation();
+      if (!roomId) return;
+
+      const store = useDesignStore.getState();
+      if (!store.activeDocumentId) {
+        store.newVooProject({ label: "Shared Design" });
+      }
+
+      const { autoJoinFromLocation } = await import("./canvas/collab/use_collab.js");
+      await autoJoinFromLocation();
+    };
+    void checkAndJoinRoom();
+  }, []);
+
   // Listen for Electron native menu actions and Agent panel trigger events
   useEffect(() => {
     const handleOpenAgent = () => setAgentOpen(true);
@@ -62,9 +84,11 @@ export default function App() {
     };
     window.addEventListener("voo:open-first-run", handleOpenFirstRun);
     const handleOpenOnboarding = () => setOnboardingOpen(true);
+    const handleOpenBrowser = () => setBrowserDrawerOpen(true);
     window.addEventListener("voo:open-agent-panel", handleOpenAgent);
     window.addEventListener("voo:agent-prompt", handleOpenAgent);
     window.addEventListener("voo:open-onboarding", handleOpenOnboarding);
+    window.addEventListener("voo:open-browser", handleOpenBrowser);
 
     let unsubscribeMenu = null;
     if (window.electronAPI?.onMenuAction) {
@@ -111,6 +135,7 @@ export default function App() {
       window.removeEventListener("voo:open-agent-panel", handleOpenAgent);
       window.removeEventListener("voo:agent-prompt", handleOpenAgent);
       window.removeEventListener("voo:open-onboarding", handleOpenOnboarding);
+      window.removeEventListener("voo:open-browser", handleOpenBrowser);
       if (unsubscribeMenu) unsubscribeMenu();
     };
   }, [firstRunOpen]);
@@ -210,6 +235,13 @@ export default function App() {
         open={onboardingOpen}
         onClose={() => setOnboardingOpen(false)}
       />
+      {/* Embedded Web Browser & Element Import Drawer */}
+      <Suspense fallback={null}>
+        <BrowserDrawer
+          open={browserDrawerOpen}
+          onClose={() => setBrowserDrawerOpen(false)}
+        />
+      </Suspense>
     </main>
   );
 }

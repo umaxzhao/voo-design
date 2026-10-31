@@ -122,6 +122,7 @@ export const useDesignStore = create((set, get) => {
 
   // Agent Panel & Hybrid Architecture State
   agentPanelOpen: false,
+  browserDrawerOpen: false,
   pendingAgentIntent: null,
   // One-shot handoff from the welcome composer: prompt + frame + style + model +
   // references. The agent panel claims it exactly once (see pending_agent_intent).
@@ -546,6 +547,8 @@ export const useDesignStore = create((set, get) => {
     set({ agentPanelOpen: Boolean(agentPanelOpen) }),
   setAgentOpen: (agentOpen) =>
     set({ agentPanelOpen: Boolean(agentOpen) }),
+  setBrowserDrawerOpen: (browserDrawerOpen) =>
+    set({ browserDrawerOpen: Boolean(browserDrawerOpen) }),
   dispatchAgentIntent: ({
     prompt = "",
     action = "custom",
