@@ -4,7 +4,7 @@
 
 更新时间：2026-11-01。
 本轮浏览器右侧停靠与 Agent 互斥已完成声明范围：固定源码提交 [04aa32b](https://github.com/umaxzhao/voo-design/commit/04aa32bd3ceb7e15f3f4ff09bb72be66288ffd6c) 通过 90/90 核心发布步骤（86 组浏览器、4604 项单测通过、4 项跳过），构建与设计检查通过。桌面浏览器与编辑器左右并排，窄屏从右侧展开；Browser 和 Agent 的公共打开入口互相关闭对方，关闭不自动重开另一面板。当前本地布局修复也已真实浏览器验证。原始证据 `/private/tmp/voo-browser-right-release.json`，线上资源和交互证据入口 `/private/tmp/voo-panel-exclusion-deployment.json`；功能覆盖保持部分，不继承为后续代码或其他平台通过。
-最近一次完整核心验证提交：[215d501](https://github.com/umaxzhao/voo-design/commit/215d501534e696f35c1d1ab41c0e170c26eb8c9f)；90/90 项通过（全量构建、设计规则、4601 项单测、86 组核心浏览器套件全部 0 失败）。证据 `/private/tmp/voo-release-round5.json`。
+最近一次完整核心验证提交：[dd69368](https://github.com/umaxzhao/voo-design/commit/dd6936840b8cb5ee34062e81774ea528b959769a)；91/91 步骤、87 核心浏览器套件通过，单测 4615 通过 / 4 跳过。后续 3dfad79 / 47471c9 的集成验证及当前 6d8cef7 线上证据分别记录，不继承完整执行。
 本任务分支的 90/90 结果只属于固定源码 04aa32b；随后合入的远程导入、采样和编辑器修复不继承该结果，合入当前主分支后在固定提交 47471c9d15d44dbfe957a9c7813a6d39915c183e 上重新构建、检查设计规则，4637 项单测通过、4 项跳过，浏览器切换、新建文件和首页设置三组浏览器检查通过；证据另记 `/private/tmp/voo-browser-right-integration.json`，不是新的全量门禁声明。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
@@ -94,7 +94,7 @@
 - 已推送并通过 SSH 部署 la2，线上入口及 6 个相关资源与验证构建逐字节一致。隔离正式浏览器复核默认整个分组隐藏、添加后实际下载 160×100 PNG、移除后隐藏及撤销重做，无页面脚本错误。截图 `/private/tmp/voo-export-opt-in-default.png`、`/private/tmp/voo-export-opt-in-removed.png`；证据 `/private/tmp/voo-export-opt-in-deployment-proof.json`、`/private/tmp/voo-export-opt-in-production-result.log`。
 - 本地 App 工作区仅三方合入本任务源文件及回归测试，保留其他草稿；定向单测 18 项和真实本地添加/下载/移除/撤销重做通过（`/private/tmp/voo-export-opt-in-primary-browser.log`），不把独立干净版本的完整门禁冒记成全部私人草稿已通过。备份 `/private/tmp/voo-export-opt-in-primary/`、`/private/tmp/voo-export-opt-in-primary-final/`。
 - 原始缺陷保留 6 个配置失败和 2 个分组显示失败（`/private/tmp/voo-export-opt-in-baseline.log`、`/private/tmp/voo-export-opt-in-section-baseline.log`）。第一次未结束门禁为补齐整个分组隐藏而停止；`6ff7ef2` 的门禁因旧默认显示断言失败，修正后重新完整执行，未把先前部分执行算通过。
-- 未认证原生系统下载界面、实体触屏、原生项目冷启动重开及所有历史文档。上轮首页冷加载 New 事件时序问题和 `.fig` 导入问题仍未修复，不归入本轮通过。[详细范围](audits/panel-control-audit.md#opt-in-layer-export)。
+- 未认证原生系统下载界面、实体触屏、原生项目冷启动重开及所有历史文档。该轮未修复首页冷加载 New 和 `.fig` 导入问题，不归入该轮通过；后续整改见下方 Figma 记录。[详细范围](audits/panel-control-audit.md#opt-in-layer-export)。
 
 ## 本轮：统一填充面板（已完成声明范围）
 
@@ -105,17 +105,19 @@
 - 已推送并通过 SSH 部署 la2；正式入口及 7 个直接/填充分块与验证构建逐字节一致。正式地址实际打开右侧面板，切换渐变、上传图片、修改纹理，验证真实像素、一次撤销/重做及 Escape 保留选区，无页面脚本错误。未调用付费模型。证据：`/private/tmp/voo-unified-fill-deployment-proof.json`、`/private/tmp/voo-unified-fill-production-result.log`。
 - 定向 48 项单测、完整右侧面板路径和本地 App 核心填充路径分别记录；主工作区保留其他并行草稿，只合并本轮相关文件；最终本地真实填充路径复核见 `/private/tmp/voo-unified-fill-primary-browser-final.log`。主工作区已有的 `impeccable-polish` 登记文件缺失在本轮登记更新前已记录，不把公开版本门禁通过冒记为整个本地草稿通过。合并备份：`/private/tmp/voo-unified-fill-primary-merge/`、`/private/tmp/voo-unified-fill-primary-rounded/`。
 - 先前版本的旧英文断言、新建就绪超时及补跑证据保留：`/private/tmp/voo-unified-fill-release.json`、`/private/tmp/voo-unified-fill-release-v2.json`、`/private/tmp/voo-unified-fill-release-recovered.json`；它们没有被伪装成最终固定提交的执行。
-- 额外发现待修：正式网站冷加载只有顶栏、首页尚未挂载时，点击 New 可能先于事件监听器而未创建文档。两次等待引擎超时；等待首页输入框就绪后，同一构建正常创建并通过填充实测。原始证据 `/private/tmp/voo-unified-fill-production-startup-attempt.log`、`/private/tmp/voo-unified-fill-production-startup-second-attempt.log`。这是未收口的启动上下文，不算作填充门禁证明已修复。
+- 额外发现待修：正式网站冷加载只有顶栏、首页尚未挂载时，点击 New 可能先于事件监听器而未创建文档。两次等待引擎超时；等待首页输入框就绪后，同一构建正常创建并通过填充实测。原始证据 `/private/tmp/voo-unified-fill-production-startup-attempt.log`、`/private/tmp/voo-unified-fill-production-startup-second-attempt.log`。这是该轮未收口的启动上下文；后续 New 修复已由下方 Figma 整改中的确定性回归与完整门禁认证，原始失败仍保留。
 - 功能覆盖仍有明确边界：实体设备、所有图片编解码/超大图片内存、克隆 ID 跨文档取消、穷尽多图片资源替换及原生 App 冷重启没有由本轮认证；不覆盖真实 `.fig` 导入审计已报告的缺陷。[详细验收](audits/panel-control-audit.md#unified-fill-editor)。
 
-## 本轮：桌面 test.fig 导入整改（验证中）
+## 本轮：桌面 test.fig 导入整改（已发布，保真与性能仍部分）
 
-- 延续只读 241.86 MiB 实际文件测试；本轮补齐原生锁定、约束、自动布局、独立圆角、描边参数、溢出裁切、父级仿射变换及有效图片裁切。4 集合 / 5 变量保留模式值，移除 9 个误生矩形；56,422 层无重复 ID / 悬空父级，478 图片哈希一致。未上传原稿或商业截图。
-- 新增 `vectors.native-fig-properties` / `compositing.mask-cache` 及真实文件选择器像素回归，专项通过裁切/填充/旋转/溢出/两组蒙版、约束重排、撤销重做、二进制保存冷重开；复用不可变绘制文档和多蒙版缓存，处理图片异步解码失效。
-- 两次同脚本 Metal 生产测量：加载 21.19 → 19.20 秒，六次真实滚轮中位 623.5 → 276 毫秒；平移/缩放回调约 2.02/0.69 → 4.31/1.62 次每秒。共享机器单轮样本，前测导入与属性分析重叠；仍有明显停顿，**大文档性能未通过**。
-- 首轮固定 `ea90962` 全量单测 4,608 通过 / 4 跳过；发布浏览器在 37/91 步因冷启动 New 请求丢失停止，未记作通过。已用阻延欢迎页懒加载稳定复现，并补齐一次请求回放、实际工作区重名检查、原文件字节不变回归；最终组合提交重新执行完整门禁中。当前 12 模块 / 69 能力 / 87 浏览器套件。
-- 富文本、多重阴影、活动组件关系、变量绑定、所有字体/画板、非均匀文字缩放及签名 Electron 尚未完整还原或验收；圆角平滑仅保存元数据，子层 grow/stretch 待补。`native_studio` 排除。
-- [逐属性、性能与边界](audits/figma-import-audit.md#native-property-and-compositor-remediation--2026-10-31)。私有原始证据保存在本地 `voo-fig-opt-*` 目录；历史审计保留，未声称全部属性正确还原。
+- 补齐原生锁定、约束、自动布局、独立圆角、描边参数、溢出/图片裁切及父级变换；4 集合 / 5 变量保留模式值，移除 9 个误生矩形。实际文件导入 56,422 层无重复 ID / 悬空父级，478 图片哈希一致；原稿 SHA-256 未变。
+- `vectors.native-fig-properties` / `compositing.mask-cache`：独立图片填充不串用裁切；不可变绘制文档、多组蒙版缓存及异步图片失效得到回归。真实生成 `.fig` 选择器用例通过像素、约束重排、撤销/重做、二进制保存冷重开。
+- 串行 Metal 生产复测同一 241.86 MiB 文件：加载 **20.28 → 12.69 秒**，六次滚轮中位 **638 → 199 毫秒**；平移/缩放回调 1.95/0.95 → 5.54/1.78 次每秒。共享机器单轮样本，仍明显卡顿，**大文档性能验收未通过**；未宣称还原百分比。
+- 固定 `dd69368` **91/91** 发布步骤通过，含 **87 核心浏览器**及 **4615 单测通过 / 4 跳过**。原 ea90962 在 37/91 步的 New 竞态失败保留；冷启动请求回放、重名检查、原文件字节不变及连续创作在最终完整门禁通过。当前登记 12 模块 / 70 能力 / 87 核心浏览器，功能覆盖仍部分。
+- 保留远端改动：`3dfad79` 八项追加集成（含19单测）通过；Browser 更新的 `47471c9` 全量单测4637通过 / 4跳过及三组浏览器通过，源码与 `6d8cef7` 仅差文档。没有把旧完整门禁冒记为最新集成的完整执行。
+- [线上预览](https://voo.run/editor/) 当前 `6d8cef7`：入口与8个关键资源哈希一致，正式站合成 `.fig` 裁切/填充/旋转/溢出/蒙版、变量、约束和撤销像素通过，无脚本错误。选择器超时、早期引擎像素和并行部署版本不一致的尝试均留存；最终仅认证首页/文档就绪后的 DOM 输入路径，未认证原生 FSA 系统选择器。
+- 富文本、多重阴影、活动组件/变量绑定、所有字体/画板、非均匀文字缩放、子层 grow/stretch 及签名 Electron 仍未完整还原或验收；圆角平滑仅元数据。21项独立检查未运行，`native_studio` 排除。
+- [逐属性、性能与固定版本证据](audits/figma-import-audit.md#published-verification--2026-11-01)。完整私有日志、截图、原始失败及哈希清单存于本地 `figma-import-optimization/` 制品目录，未上传原稿或商业截图。
 
 ## 本轮：Impeccable 整改与右键菜单（已发布）
 
