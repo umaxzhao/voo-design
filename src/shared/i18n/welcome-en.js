@@ -193,4 +193,6 @@ export default {
   "welcome.prompt.designSystemOverridesStyle": "Colour and type come from the selected design system",
   "welcome.menu.sortAndView": "Sort & view",
   "welcome.menu.import": "Import & open",
+  "welcome.prompt.recreatePrompt": "Recreate the design in the attached reference images as editable elements. Match the layout, typography, colors, and spacing.",
+  "welcome.prompt.attachmentReadError": "Could not add an attachment. Use PNG, JPG, WebP or GIF images up to 10 MB.",
 };

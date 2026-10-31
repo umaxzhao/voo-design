@@ -3,9 +3,8 @@ import fs from "node:fs";
 vi.mock("../../src/canvas/store/layout_action_helpers.js", () => ({ resolveLayoutImages: vi.fn(async () => []) }));
 vi.mock("../../src/canvas/editor/html_import.js", () => ({ htmlToDocument: vi.fn(() => ({ doc: { id: "html-doc" }, pendingImages: [] })) }));
 vi.mock("../../src/canvas/components/dispatch_to_agent.js", () => ({ dispatchToAgent: vi.fn() }));
-import { dispatchToAgent } from "../../src/canvas/components/dispatch_to_agent.js";
 import { htmlToDocument } from "../../src/canvas/editor/html_import.js";
-import { HTML_IMPORT_ACCEPT, SCREENSHOT_ACCEPT, importWelcomeHtml, recreateWelcomeScreenshot } from "../../src/canvas/components/welcome_home_actions.js";
+import { HTML_IMPORT_ACCEPT, SCREENSHOT_ACCEPT, importWelcomeHtml, openWelcomeBrowser } from "../../src/canvas/components/welcome_home_actions.js";
 import { handleExportShortcut } from "../../src/canvas/editor/export_shortcut.js";
 const read = (path) => fs.readFileSync(new URL(`../../src/${path}`, import.meta.url), "utf8");
 globalThis.CustomEvent ??= class extends Event { constructor(type, options) { super(type); this.detail = options?.detail; } };
@@ -22,48 +21,22 @@ describe("welcome home actions", () => {
     await expect(importWelcomeHtml({ text: async () => "bad" }, store)).rejects.toThrow();
     expect(store.setWelcomeOpen).not.toHaveBeenCalled();
   });
-  it("uses dedicated HTML and screenshot pickers, leaving Figma on the project picker", () => {
+  it("opens the browser panel through its shared command", () => {
+    const dispatchEvent = vi.fn();
+    vi.stubGlobal("window", { dispatchEvent });
+    try {
+      openWelcomeBrowser();
+      expect(dispatchEvent.mock.calls[0][0].type).toBe("voo:open-browser");
+    } finally { vi.unstubAllGlobals(); }
+  });
+  it("uses the screenshot attachment picker and leaves Figma on the project picker", () => {
     const source = read("canvas/components/welcome_dashboard.jsx");
     expect(HTML_IMPORT_ACCEPT).toBe(".html,.htm,text/html");
     for (const ext of [".png", ".jpg", ".jpeg", ".webp", ".gif"]) expect(SCREENSHOT_ACCEPT).toContain(ext);
-    for (const [action, ref] of [["importBrowser", "htmlInputRef"], ["recreateScreenshot", "screenshotInputRef"], ["importFigma", "fileInputRef"]]) {
-      const button = source.slice(0, source.indexOf(`t("welcome.actions.${action}")`)).split("<button").at(-1);
-      expect(button).toContain(`${ref}.current?.click()`);
-      expect(button).not.toContain("handleCreateNew");
-    }
+    expect(source).toContain("onClick={openWelcomeBrowser}");
+    expect(source).toContain("await handleAttachmentsSelected(files)");
+    expect(source).not.toContain("recreateWelcomeScreenshot");
     expect(source).toContain('accept=".voo,.zip,.psd,.fig,.pen,.svg,application/json"');
-  });
-  it("waits for the target editor, inserts the screenshot, then sends a recreation prompt", async () => {
-    const insertImage = vi.fn(async () => ({ id: "reference" }));
-    const state = { editingNodeId: "new", welcomeOpen: false, editorBridges: {} };
-    const createDesign = vi.fn(); const dispatch = vi.fn();
-    const wait = vi.fn(async () => { state.editorBridges.new = { ready: true, engine: { insertImage } }; });
-    const file = { name: "screen.png" };
-    await recreateWelcomeScreenshot(file, { createDesign, getStore: () => state, dispatch, wait });
-    expect(createDesign).toHaveBeenCalledWith(expect.objectContaining({ width: 1440, height: 900 }));
-    expect(wait).toHaveBeenCalledOnce();
-    expect(insertImage).toHaveBeenCalledWith(file);
-    expect(dispatch).toHaveBeenCalledOnce();
-    expect(dispatch.mock.calls[0][0]).toMatchObject({ intent: "recreate", autoSend: true, context: { targetNodeId: "new", screenshotNodeId: "reference" } });
-  });
-  it("queues recreate after welcome closes and the editing node becomes available", async () => {
-    const insertImage = vi.fn(async () => ({ id: "ref" }));
-    const state = { welcomeOpen: true, editingNodeId: null };
-    const wait = vi.fn(async () => {
-      if (wait.mock.calls.length === 1) state.editingNodeId = "new";
-      else { state.welcomeOpen = false; state.editorBridges = { new: { ready: true, engine: { insertImage } } }; }
-    });
-    await recreateWelcomeScreenshot({}, { createDesign: vi.fn(), getStore: () => state, wait });
-    expect(wait).toHaveBeenCalledTimes(2);
-    expect(insertImage).toHaveBeenCalledOnce();
-    expect(dispatchToAgent).toHaveBeenCalledWith(expect.objectContaining({ intent: "recreate", context: expect.objectContaining({ targetNodeId: "new" }) }));
-  });
-  it("throws on timeout and aborts when a different editor is selected", async () => {
-    await expect(recreateWelcomeScreenshot({}, { createDesign: vi.fn(), getStore: () => ({ welcomeOpen: true }), wait: vi.fn() })).rejects.toThrow("Screenshot editor did not become ready");
-    let calls = 0;
-    const dispatch = vi.fn();
-    await recreateWelcomeScreenshot({}, { createDesign: vi.fn(), getStore: () => ({ editingNodeId: ++calls === 1 ? "new" : "other" }), dispatch });
-    expect(dispatch).not.toHaveBeenCalled();
   });
   it("validates the provider, creates the design, then hands one generation intent to the panel", () => {
     const source = read("canvas/components/welcome_dashboard.jsx");

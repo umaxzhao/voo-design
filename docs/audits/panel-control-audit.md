@@ -278,3 +278,12 @@ Grouped into focused pull request batches of at most 5 files per batch:
   3. `src/canvas/components/editor_properties/colour_stroke_section.jsx` (Ensure all stroke alignment tooltips use i18n keys)
   4. `src/locales/zh-CN.json` / `src/locales/en-US.json` (Register corresponding localized dictionary keys)
 - **Objective:** Complete 100% i18n coverage across all properties panel controls per Spec `WB-02` criterion 3.
+
+## Welcome import and image references — 2026-10-31
+
+- Capability: `workspace.import-references`; suites: `welcome-import-references`, related `browser-drawer`, `pending-integration` and `ui-home-settings`.
+- Both desktop import cards and the compact welcome menu use the browser panel command. Screenshot selection appends a reference, preserves the brief and focuses the composer; it never creates a document or starts generation by itself.
+- Welcome and editor Agent composers share picker/clipboard attachment processing. Image-only submit uses localized recreation guidance. Images are passed as model visual references and remain outside canvas artwork; retries retain the request's references.
+- Regression: `welcome-import-references` uses a real Chromium clipboard image and text paste, verifies preview/removal and deferred creation, and intercepts the editor Agent HTTP request to assert a PNG data URL. No external model is called. `prompt-attachments.test.js` covers concurrent limits, duplicate clipboard representations, failed files, reset/unmount and ordinary text paste.
+- Precise release revision and execution: `/private/tmp/voo-welcome-import-release.json`; targeted browser log: `/private/tmp/voo-welcome-reference-clean.log`. Existing baseline failures remain separate; inspect receipts before claiming release success.
+- Remaining contexts: physical OS screenshot clipboard variants, signed Electron installers, other operating systems and live model quality. Document undo/save are unaffected by attaching references; generated result history remains owned by the existing Agent operation.
