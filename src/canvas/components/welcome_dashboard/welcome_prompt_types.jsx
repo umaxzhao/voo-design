@@ -95,7 +95,7 @@ export default function WelcomePromptTypes({ t, activePill, onSelectPill }) {
   return (
     <>
       <div
-        className="welcome-prompt-type-options mb-4 flex flex-wrap items-center justify-center gap-1.5"
+        className="welcome-prompt-type-options mb-3 flex flex-wrap items-center justify-center gap-1"
         role="radiogroup"
         aria-label={t("welcome.prompt.generationTypeLabel")}
       >
@@ -112,8 +112,8 @@ export default function WelcomePromptTypes({ t, activePill, onSelectPill }) {
               onClick={() => onSelectPill?.(typeItem.id)}
               className={`flex min-w-[4.75rem] flex-col items-center gap-1 rounded-xl px-2.5 py-2 text-[11px] font-medium transition-colors cursor-pointer select-none ${
                 isSelected
-                  ? "bg-white/10 text-white"
-                  : "bg-transparent text-neutral-400 hover:bg-white/[0.05] hover:text-neutral-200"
+                  ? "bg-white/[0.09] text-white"
+                  : "bg-transparent text-neutral-500 hover:bg-white/[0.045] hover:text-neutral-200"
               }`}
             >
               <TypePreview type={typeItem.preview} />

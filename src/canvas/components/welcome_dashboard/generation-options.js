@@ -5,6 +5,7 @@ import { AI_GEN_TYPES } from "./welcome_constants.js";
 /** Picker metadata must not initialize design-system validators or font catalogs. */
 export const DEFAULT_STYLE_ID = "auto";
 export const DEFAULT_DESIGN_SYSTEM_ID = "auto";
+export const AUTO_SIZE_ID = "auto";
 /** Curated signature systems offered by the welcome composer. */
 export const SIGNATURE_DESIGN_SYSTEM_IDS = Object.freeze(["axiom", "void-os", "bloom"]);
 export const MAX_REFERENCE_IMAGES = 4;

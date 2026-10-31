@@ -180,6 +180,7 @@ export default {
   "welcome.prompt.styleAutoHint": "Pick a style kit from the prompt automatically",
   "welcome.prompt.modelLabel": "Model",
   "welcome.prompt.sizeLabel": "Canvas size",
+  "welcome.prompt.sizeAuto": "Auto",
   "welcome.prompt.sizePreset": "Preset",
   "welcome.prompt.attachments": "References and attachments",
   "welcome.prompt.addAttachment": "Add reference image or project file",
