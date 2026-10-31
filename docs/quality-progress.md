@@ -7,6 +7,11 @@
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
 
+## 本轮：Agent 引导提示词重复（本地修复，回归验证中）
+
+- 本地 `AgentPanelView` 在滚动区和输入框前各挂载一次建议组件；修改前浏览器明确得到 2 组（`agent-suggestions-duplicate-before.log`），仅移除后者，保留国际化、进度文案、附件及移动端草稿。原文件备份 `/private/tmp/voo-license-regression/agent-suggestions-primary-backup/`。
+- 本地 380/760px、Frame 三条按钮各出现一次、点击填入/重复点击幂等、草稿保留/焦点/解绑通过，相关单测 14 项通过；发布基线增强浏览器回归及 25 项定向单测通过。日志 `agent-suggestions-duplicate-after.log`、`agent-suggestions-published-regression.log`、`agent-suggestions-published-unit.log` 同目录。GitHub 产品源码原本只有一处，本轮只提交回归/登记/文档；当前正式构建 `bfbf91d` 的 7 文件字节与单组 Frame 建议已复核通过（`agent-suggestions-production-proof.json`），未重新部署未变化的产品。完整测试登记验证另行补录。[验收](audits/nested-objects-audit.md#single-agent-suggestion-group)。
+
 ## 本轮：Agent 选中 Frame 的图标（已验证并部署）
 
 - `platform.agent-contracts`：单选 Frame 时，上下文标签复用画布的 Frame 图标；普通图层/编组和多选保留 Layers，旧 artboard 上下文也使用 Frame。未改变上下文数据、提示词或选择逻辑。

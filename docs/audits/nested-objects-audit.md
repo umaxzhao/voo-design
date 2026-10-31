@@ -143,3 +143,26 @@ explicit `agent-selection-context`. Production entry/direct/Agent assets
 no document mutation or page errors. Evidence: `agent-frame-release.json`,
 `agent-frame-icon-committed.log` and `agent-frame-production-proof.json` in
 `/private/tmp/voo-license-regression/`. Signed native installation remains untested.
+
+
+## Single Agent suggestion group
+
+Capability: `platform.agent-contracts`. The private App workspace had two
+`AgentSelectionSuggestions` instances, one inside the conversation scroll
+region and an extra one before the composer. Only the extra local instance
+was removed; other uncommitted localization, attachments and mobile changes
+were preserved. Public product source already had one instance and was not
+changed in this task. No document mutation or persistence migration is involved.
+
+`agent-suggestions.e2e.mjs` now asserts exactly one group with three buttons,
+and one instance of each Frame label at 380px and 760px. Existing checks retain
+actual clicks, selection-type changes, input focus, draft preservation,
+idempotent repeated picks, detach and no automatic sending. Before the local
+repair the explicit count was two; afterward both local and public-baseline
+fixtures passed. Relevant units: 14 local, 25 public-baseline including module
+plans. Exact release evidence is maintained in `docs/quality-progress.md`.
+Production still uses `bfbf91d`; all seven previously verified assets match,
+with a single Frame suggestion group and no document mutation or script errors.
+Raw logs are `/private/tmp/voo-license-regression/agent-suggestions-*`.
+The local repair is not a clean-release certification of other private drafts,
+native signed installation or physical touch devices.
