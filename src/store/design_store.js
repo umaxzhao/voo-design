@@ -109,6 +109,7 @@ export const useDesignStore = create((set, get) => {
   streamingPreview: null,
   streamingPreviewNodeId: null,
   welcomeOpen: true,
+  welcomeActionsReady: false,
   // Label of the document being opened, or null. While set, the whole app sits
   // behind a loading overlay so a half-imported document never shows.
   documentLoading: null,

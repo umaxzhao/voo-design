@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CommandPoolError, runCommandPool } from "../../scripts/release-command-pool.mjs";
+import { CommandPoolError, releaseBrowserConcurrency, runCommandPool } from "../../scripts/release-command-pool.mjs";
 
 const command = (code, ...args) => [process.execPath, ["--input-type=module", "-e", code, "--", ...args]];
 const childPrelude = `
@@ -24,6 +24,15 @@ async function exists(name) {
 `;
 
 describe("release command pool", () => {
+  it("keeps three browser suites as the default schedule", () => {
+    expect(releaseBrowserConcurrency(undefined)).toBe(3);
+  });
+  it.each(["1", "2", "3"])("accepts an explicit bounded schedule %s", value => {
+    expect(releaseBrowserConcurrency(value)).toBe(Number(value));
+  });
+  it.each(["", "0", "4", "1.5", "invalid", "Infinity", "NaN"])("rejects invalid schedule %s", value => {
+    expect(() => releaseBrowserConcurrency(value)).toThrow(RangeError);
+  });
   it("runs three real commands concurrently, keeps the bound and returns ordered complete logs", async () => {
     const directory = await mkdtemp(join(tmpdir(), "voo-release-pool-"));
     try {
