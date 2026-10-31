@@ -40,6 +40,61 @@ await withEditorBrowser(async ({ page }) => {
     window.__identityUpdateCount = 0;
     session.setIdentity = (identity) => { window.__identityUpdateCount++; return update(identity); };
   });
+  // Exercise real copy/access actions on a loopback page without joining a public room.
+  const signalingSockets = [];
+  let signalOpened;
+  const signalingReady = new Promise(resolve => { signalOpened = resolve; });
+  await page.route("https://voo.run/editor/collab-config.json", route => route.fulfill({
+    json: {}, headers: { "access-control-allow-origin": "*" },
+  }));
+  await page.routeWebSocket("wss://voo.run/collab", socket => {
+    signalingSockets.push(socket.url());
+    signalOpened();
+    socket.onMessage(() => {});
+  });
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: async text => { window.__copiedShareLink = text; } },
+    });
+  });
+  await page.getByTestId("editor-top-bar").getByRole("button", { name: "Share", exact: true }).click();
+  const linkDialog = page.getByRole("dialog", { name: "Share", exact: true });
+  const linkField = linkDialog.getByRole("textbox", { name: "Project link", exact: true });
+  let previousLink;
+  for (const access of ["edit", "view"]) {
+    if (access === "view") await linkDialog.getByRole("button", { name: "View only", exact: true }).click();
+    await linkDialog.getByRole("button", { name: /^(Copy|Copied)$/ }).click();
+    await page.waitForFunction(access => {
+      const link = document.querySelector('[role="dialog"] input[readonly]')?.value;
+      if (!link) return false;
+      return new URL(link).searchParams.get("access") === (access === "view" ? "view" : null);
+    }, access);
+    const link = new URL(await linkField.inputValue());
+    assert.equal(link.origin, "https://voo.run", "Share on loopback must hand recipients the public app");
+    assert.equal(link.pathname, "/editor/");
+    assert.match(link.searchParams.get("r"), /^[a-z2-9]{20}$/);
+    assert.match(link.hash, /^#k=[A-Za-z0-9_-]{22}$/);
+    assert.equal(await page.evaluate(() => window.__copiedShareLink), link.href, "Displayed and copied links are identical");
+    if (previousLink) {
+      assert.equal(link.searchParams.get("r"), previousLink.searchParams.get("r"));
+      assert.equal(link.hash, previousLink.hash, "Changing permission preserves the room secret");
+    }
+    previousLink = link;
+  }
+  await page.waitForFunction(() => document.querySelector('[role="dialog"] input[readonly]')?.value.includes("https://voo.run/"));
+  let signalingTimer;
+  try {
+    await Promise.race([signalingReady, new Promise((_, reject) => {
+      signalingTimer = setTimeout(() => reject(new Error("Hosted signaling socket did not open")), 15000);
+    })]);
+  } finally { clearTimeout(signalingTimer); }
+  assert.ok(signalingSockets.length > 0, "Local host uses the same hosted signaling endpoint as its recipients");
+  await linkDialog.getByRole("button", { name: "Stop sharing", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await linkDialog.waitFor({ state: "detached" });
+  await page.evaluate(() => { delete navigator.clipboard; });
+
   const beforeOverlays = await page.evaluate(() => ({ doc: window.__vooEditor.getDocument(), selected: window.__vooEditor.getSelectedIds() }));
   for (const width of [1600, 1280, 900]) {
     await page.setViewportSize({ width, height: 1000 });

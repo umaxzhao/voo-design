@@ -2,6 +2,9 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
 最近一次完整核心验证提交：[44e0714](https://github.com/umaxzhao/voo-design/commit/44e07147f7b7f29cc876284ab3900fee76a13e1a)；91/91 项通过，当前线上为该构建。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+## 本轮：正式分享链接（验证中）
+- `platform.native-collaboration`：分享链接统一 `https://voo.run/editor/?r=...`，本地/桌面/扩展/预览均不泄漏私有域名；默认信令共用正式服务，保留显式本地测试覆盖。72 项定向单测及真实复制/只读切换/密钥保留浏览器回归通过，完整门禁与正式验收待完成。[范围与证据](audits/design-editor-interaction-audit.md#canonical-share-links--2026-11-01)。
+
 ## 本轮：进入编辑器的品牌 Loading（已完成声明范围）
 - `platform.loading`：去紫色转圈，改为旋转 VOO 图标 + 中性细进度条；未知进度不虚构百分比，减少动态效果保留静态提示，任务阶段说明与取消继续可用。23 项定向单测及真实冷进入/320px 双主题/旋转与减少动效/画布绘制/撤销和延迟导出通过，固定 `44e0714` 重新完整运行 **91/91 发布步骤、87 组核心浏览器、4704 单测通过/4 跳过**，GitHub CI 通过。首轮临时缓存清理断言失败原始报告保留，单独复查及同版本完整重跑通过，不拼接结果。本地仅应用本轮补丁并保留顶栏既有草稿；[PR #76](https://github.com/umaxzhao/voo-design/pull/76) 合入 `005f8e2` 且源码树一致。已部署 la2，正式入口及 83 个加载资源 SHA-256 一致；真实阻断编辑器 chunk 后的品牌 Loading、旋转/减少动效/窄屏及完成后的指针绘制、红色像素、撤销重做通过，零页面异常。证据 `/private/tmp/voo-license-regression/loading-brand-{release,release-initial,ci,primary-proof,main-tree-proof,production-proof}.json`。功能覆盖仍部分，不认证签名桌面安装包和实体移动设备。[范围与证据](audits/design-editor-interaction-audit.md#brand-loading-feedback--2026-11-01)。
 
@@ -99,7 +102,6 @@
 ## 本轮：Agent 选中 Frame 的图标（已验证并部署）
 - `platform.agent-contracts`：单选 Frame 时，上下文标签复用画布的 Frame 图标；普通图层/编组和多选保留 Layers，旧 artboard 上下文也使用 Frame。未改变上下文数据、提示词或选择逻辑。
 - 修改前真实浏览器 SVG 断言失败，证据 `/private/tmp/voo-license-regression/agent-frame-icon-before.log`。新增类型渲染断言及真实选区切换回归；9 项定向单测及真实 Agent 选区切换/提交/解绑/清空/跨文档回归通过（`agent-frame-icon-unit.log`、`agent-frame-icon-committed.log` 同目录）。[验收边界](audits/nested-objects-audit.md#agent-selection-context-icon)。
-
 - 精确干净版本 `bfbf91d040eebc3e1254f03c017fcc8f44677b6a`：**90/90 发布步骤通过、86 组核心浏览器通过，单测 4590 通过、4 跳过、0 失败**；验证期间源码未变化。证据 `/private/tmp/voo-license-regression/agent-frame-release.json`、同名 `.log`。独立 `agent-selection-context` 显式执行，不计入核心 86 组；其余 20 组独立检查本轮未运行，覆盖仍为部分。
 - [PR #70](https://github.com/umaxzhao/voo-design/pull/70) 合并为 `ffaf9406e5f07191d036473704219044896d6f64`，源码树与验证提交一致；[精确提交 GitHub build](https://github.com/umaxzhao/voo-design/actions/runs/41210654826/job/124564730088) 通过，CI deploy 跳过，使用项目脚本 SSH 部署 la2。备份 `la2:/srv/voo-run/editor-backups/bfbf91d040eebc3e1254f03c017fcc8f44677b6a-20261031T144458Z`。
 - 正式地址入口、5 个直接资源及 Agent 分块共 7 文件 HTTP 200、字节一致。隔离浏览器实际打开 Agent，验证子层 Layers → Frame 图标 → 多选 Layers → Frame 图标、解绑及文档不变，无页面脚本错误；没有发送模型请求。证据 `agent-frame-production-proof.json`、`agent-frame-production.png` 同目录。
@@ -109,7 +111,6 @@
 - `selection.frame-title-selection`：标题原本是普通 div，外层画板在捕获阶段误接管指针。已改为原生按钮，使用现有交互控件排除规则和 `engine.selectExactly`，没有新增独立选择逻辑。
 - 新增真实浏览器回归：标题文字/图标在 0.5/1/2 倍缩放下选择正确 Frame；从子图层或多选切换正确；文档、画板布局和相机不变；键盘 Enter 可操作。原失败记录与修复后结果：`/private/tmp/voo-license-regression/frame-label-before.log`、`frame-label-after.log`。
 - 注册更新为 65 个能力分组、86 组核心浏览器套件。嵌套 Frame 继续沿用现有外层标签显示策略；未扩展拖拽、隐藏或锁定策略。18 项相关单测、四组真实浏览器（标题、子层命中、负坐标和导航）与设计/模块检查通过；证据 `frame-label-unit.log`、`frame-label-related.json` 同目录。完整发布和线上证据见下，不继承历史通过。详见 [标题命中验收](audits/nested-objects-audit.md#frame-title-pointer-selection)。
-
 - 固定干净版本 `befffb37071baf1aa4c0cd3abf83452b092f650d`：**90/90 发布步骤通过、86 组浏览器套件通过，单测 4585 通过、4 跳过、0 失败**。登记 12 模块、65 能力分组，selection 为 7/7，功能覆盖仍为部分。证据 `/private/tmp/voo-license-regression/frame-title-release-published.json`、同名 `.log`；源码验证期间未修改。
 - [PR #69](https://github.com/umaxzhao/voo-design/pull/69) 合并为 `49d85d8bd709b961c5f6be64ea5cd5dfad050f69`，源码树一致；[精确版本 GitHub build](https://github.com/umaxzhao/voo-design/actions/runs/41208362370/job/124558496923) 通过，CI deploy 跳过，实际使用项目脚本 SSH 部署 la2。备份 `la2:/srv/voo-run/editor-backups/befffb37071baf1aa4c0cd3abf83452b092f650d-20261031T142314Z`。
 - [正式页面](https://voo.run/editor/) 入口及 5 个直接资源共 6 文件 HTTP 200、字节哈希一致；隔离真实浏览器标题文字/图标点击、Enter、选中状态及文档不变通过，无页面脚本错误。证据 `frame-title-production-proof.json`、`frame-title-production.png` 同目录；只使用临时文档，未改用户项目。
@@ -336,7 +337,6 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - 定向检查：网页端 1440/390px 的点击命中、颜色、关闭重开通过；21 项相关单测通过。隔离 Electron 原生 webview 的地址栏导航、可见性、关闭重开及截图检查通过。
 - 精确发布版本和完整门禁结果见 `/tmp/voo-browser-release.json` 的 `revision`、`complete` 与逐项结果；不能继承历史版本的通过状态。
 - 未覆盖：所有第三方网页与登录态、全部网页提取组合、触摸调整宽度、其他桌面操作系统与签名安装包。
-
 - 发布检查曾发现网页导入解析器提前加载字体与变量模块；已改为实际导入时才加载，并由原有 `editor-loading` 回归保留验证。
 
 ## Onboarding: connected Harness hides duplicate model setup — 2026-10-31
