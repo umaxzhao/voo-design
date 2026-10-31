@@ -253,3 +253,29 @@ and save/publish once from the input event. Opening the popover refreshes both
 state and ref. The browser regression preserves the live session callback and
 asserts two inputs produce exactly two publications, the latest field value,
 no page errors and unchanged document/selection; it does not stub publishing out.
+
+
+### Release attempt history
+
+`ui-global-interaction` 检查桌面 1600/1280/900px 分享、320px 嵌套分享、跨弹窗点击/关闭/焦点/选区与文档不变，及三个真实弹窗在变换/裁切宿主下的 9 点命中；设计/模块/格式与 20 项相关单测通过。证据 `global-overlay-after-final.log`、`global-overlay-unit-final.log` 同目录。登记 70 能力、87 浏览器；本地补丁保留其他草稿，备份 `global-overlay-primary-backup/`。首次完整门禁 `439c9d9` 中顶栏旧 Hook 模拟缺少 `useId`，4 项失败（`global-overlay-release.json`）；补齐模拟后重新完整执行，不以单项补跑替代。后续 `3ebb891` 单测 4601 通过/4 跳过，默认并发的导入就绪超时（`global-overlay-release-final.json`），未改断言独立复查通过（`global-overlay-import-recheck.log`）；发布调度新增 1–3 显式选项，默认仍 3、记录实际并发，准备重新完整执行。串行 `13185d6` 单测 4627 通过/4 跳过，在连续创作冷重开等待 filechooser 时失败（`global-overlay-release-serial.json`）；独立复查通过，且不含本轮改动的 `24085cc` 也复现早点击丢事件（`global-overlay-baseline-import.log`）。新增 `workspace.file-actions-ready`，首页监听器注册后才启用顶栏导入/新建；受控延迟回归修改前失败、修改后真实选择器/快照通过（`global-overlay-welcome-ready-before/after.log`），43 项相关单测通过。`c780441` 的 Figma 冷重开检查读到了节点数 0 的占位引擎而失败（`global-overlay-release-complete.json`）；探针确认导入绑定后同样像素全部正确（`global-overlay-figma-engine-probe.log`），仅补文档绑定/guard 前提，不改变像素断言。`9133105` 在第 76 步触发分享身份更新循环（`global-overlay-release-verified.json`）；批量真实输入确定性复现重复发布（`global-overlay-identity-before.log`）。将保存/发布移出可重放的 React updater，保留连续输入字段合并并要求每次输入只发布一次。最终完整门禁与线上结果待补录。
+
+The `51d2542` complete attempt later failed the pending-surface focus assertion
+in `editor-optional-loading` (`global-overlay-release-published.json`). The
+unchanged integration recheck passed (`global-overlay-optional-recheck.log`);
+the failed attempt is not a complete pass. Integration `9ba77dd` retained
+mainline queued New semantics but two SSR assertions still expected New to be
+disabled. Both local and CI failures are retained. `9d0a1d2` corrects those
+expectations while retaining Import readiness, early queued New and all actual
+file-picker assertions; its fresh uninterrupted core run passed 91/91 steps,
+4,654 units with four skipped, and all 87 browser suites.
+
+Final `8af23f5` also includes mainline Frame-fit and reparent changes and registers
+their unit ownership. Its GitHub build/unit job and fresh uninterrupted
+91/91 core run passed (4,674 units, four skipped; all 87 browser suites).
+`global-overlay-release-final-integration.json` records that exact clean revision.
+Main merge `4e8f506` has the identical source tree. The project script deployed
+the verified build to la2; the isolated production check compared 97 actual
+entry/loaded resources byte-for-byte and sampled real desktop/narrow Share,
+Settings, Commands and Export surfaces, inputs, Escape and unchanged document
+and selection with no page errors (`global-overlay-production-proof.json`).
+This is separate evidence from `9d0a1d2`, not an inherited pass.
