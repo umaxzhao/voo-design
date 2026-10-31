@@ -14,6 +14,7 @@
 - 创建文字和编辑文字共用基础控件，移除重复的字号预设按钮，字号输入保留原有范围；`text_section.jsx` 从 536 行缩为 67 行，工具面板缩为 73 行，共享模块均不超过 400 行。
 - 初始缺失可见标签/标准图标的两项失败见 `/private/tmp/voo-typography-baseline.log`；实测还发现窄屏全局规则将 11px 标签压为 10px，已仅在文字控件内保持 11px，并让窄屏字段纵向排列、触摸控件保持 48px。
 - 定向单测 28 项通过；真实字号/行高/字距几何变化、取消与一次撤销重做、字重/装饰/对齐、自动换行、所有现有高级属性、字体选择、多选及真实指针文字创建通过。16 组主题/语言/视口实测通过，证据 `/private/tmp/voo-typography-only-v5.log`、`/private/tmp/voo-typography-only/`。完整固定提交及线上证据待补录。
+- 完整检查额外复现了子菜单把 Window 事件目标传给 `Node.contains` 的异常（`/private/tmp/voo-typography-release-final.json`）。已补 Node 类型判断；窗口 resize/scroll 关闭菜单、子菜单内部滚动不关闭，以及图片置入/剪贴板流程复核通过。
 - 不认证全部系统字体、实体 IME/触屏/触控笔、字体变量轴和新增高级文本能力；没有添加无实现的按钮。[验收范围](audits/panel-control-audit.md#typography-clarity)。
 
 ## 本轮：Frame 标题点击选中（验证中）

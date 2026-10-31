@@ -363,6 +363,7 @@ Text-box sizing is visible, while all less frequent options have one disclosure.
 | Shared creation | Same basic controls, actual pointer creates text with selected size/weight/spacing; one-step undo/redo | Targeted Chromium pass; final gate pending |
 | Font/multi | Existing font picker applies a real family; mixed numeric fields update both layers and undo each original value | Targeted Chromium pass; final gate pending |
 | Layout | 320/390/768/1440px, both themes and languages; numeric space and readable captions; 48px narrow controls | Targeted Chromium pass; final gate pending |
+| Window menu events | Reproduced non-Node Window target crash in `image-file-clipboard`; guard preserves inner scrolling and dismisses safely on resize/scroll | Targeted Chromium pass; final gate pending |
 | Remaining | Physical IME/touch/stylus, every installed font and variable-font axis, OS-level scaling | Not certified |
 
 Evidence: `text_section_compact.test.jsx`, `tools_text_pen_shape.test.jsx`,

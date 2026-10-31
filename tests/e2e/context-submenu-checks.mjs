@@ -109,6 +109,18 @@ export async function checkContextSubmenus(page) {
   await open();
   await page.getByTestId("editor-menu-copy-export-submenu").click();
   await page.getByTestId("editor-menu-copy-export-options").waitFor();
+  // Scrolling inside a portal must keep it open; Window targets must close it
+  // without reaching Node.contains, which rejects non-Node EventTargets.
+  await page.getByTestId("editor-menu-copy-export-options").evaluate(element => element.dispatchEvent(new Event("scroll", { bubbles: true })));
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
+  assert.equal(await page.getByTestId("editor-menu-copy-export-options").isVisible(), true);
+  for (const type of ["resize", "scroll"]) {
+    await page.evaluate(type => window.dispatchEvent(new Event(type)), type);
+    await page.getByTestId("editor-menu-copy-export-options").waitFor({ state: "detached", timeout: 5000 });
+    await open();
+    await page.getByTestId("editor-menu-copy-export-submenu").click();
+    await page.getByTestId("editor-menu-copy-export-options").waitFor();
+  }
   await page.screenshot({ path: "/tmp/voo-context-menu-fixed.png" });
   await page.mouse.click(8, 870);
   assert.equal(await root.count(), 0);
