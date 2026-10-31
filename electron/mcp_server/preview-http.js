@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { PREVIEW_COPY } from "./preview-copy.js";
 import { renderPreviewPage } from "./preview-page.js";
 
 /** Capability links grant screenshots only, never tool invocation or CLI access. */
@@ -13,7 +14,8 @@ export async function handlePreviewRequest(request, response, relay) {
   if (request.method !== "GET") { response.writeHead(405); response.end(); return true; }
   if (!relay?.getStatus || relay.getStatus().previewSession !== match[1]) {
     response.writeHead(410, { "Content-Type": "text/plain; charset=utf-8" });
-    response.end("Preview expired. Request a new link from VOO.");
+    const locale = /^zh(?:-|,|;|$)/i.test(request.headers["accept-language"] ?? "") ? "zh" : "en";
+    response.end(PREVIEW_COPY[locale].gone);
     return true;
   }
   if (!match[2]) {

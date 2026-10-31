@@ -27,7 +27,9 @@ describe("Loopback preview HTTP boundary", () => {
       expect((await fetch(previewUrl, { method: "POST" })).status).toBe(405);
       const missing = new URL(previewUrl);
       missing.pathname = `/preview/${"0".repeat(48)}`;
-      expect((await fetch(missing)).status).toBe(410);
+      const expired = await fetch(missing, { headers: { "accept-language": "zh-CN" } });
+      expect(expired.status).toBe(410);
+      expect(await expired.text()).toContain("原画布已关闭");
       const rebound = await new Promise((resolve, reject) => {
         http.get(previewUrl, { headers: { host: "attacker.example" } }, response => {
           response.resume(); resolve(response.statusCode);
