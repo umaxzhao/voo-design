@@ -64,6 +64,111 @@ describe("Agent selection context", () => {
       name: 'Name\n"quoted"',
     });
   });
+  it("captures live fill, stroke, radius, typography and auto-layout for a delta edit", () => {
+    const card = {
+      id: "card",
+      name: "Card",
+      kind: "rect",
+      parentId: "frame",
+      x: 20,
+      y: 30,
+      width: 240,
+      height: 160,
+      fill: "#111827",
+      stroke: "#ffffff",
+      strokeWidth: 2,
+      cornerRadius: 12,
+      autoLayout: {
+        direction: "vertical",
+        gap: 12,
+        padding: { top: 16, right: 16, bottom: 16, left: 16 },
+        alignItems: "start",
+      },
+    };
+    const heading = {
+      id: "heading",
+      name: "Heading",
+      kind: "text",
+      parentId: "card",
+      text: "Hover me",
+      width: 200,
+      height: 40,
+      fill: "#ffffff",
+      fontSize: 28,
+      fontWeight: 700,
+      fontFamily: "Inter",
+    };
+    const engine = {
+      getSelectedIds: () => ["card", "heading"],
+      getNode: (id) => ({ frame, card, heading })[id],
+    };
+    const context = readSelectionContext(engine, scope);
+    expect(context.selection[0]).toMatchObject({
+      nodeId: "card",
+      fill: "#111827",
+      stroke: "#ffffff",
+      strokeWidth: 2,
+      cornerRadius: 12,
+      autoLayout: {
+        direction: "vertical",
+        gap: 12,
+        padding: { top: 16, right: 16, bottom: 16, left: 16 },
+      },
+    });
+    // Only the layout structure the delta tools accept is carried over.
+    expect(context.selection[0].autoLayout).not.toHaveProperty("alignItems");
+    expect(context.selection[1]).toMatchObject({
+      nodeId: "heading",
+      fill: "#ffffff",
+      fontSize: 28,
+      fontWeight: 700,
+      fontFamily: "Inter",
+      frameId: "frame",
+    });
+  });
+  it("omits style fields the node does not carry", () => {
+    const context = readSelectionContext(engine(["shape"]), scope);
+    for (const key of [
+      "fill",
+      "stroke",
+      "strokeWidth",
+      "cornerRadius",
+      "autoLayout",
+      "fontSize",
+      "fontWeight",
+      "fontFamily",
+    ]) {
+      expect(context.selection[0], key).not.toHaveProperty(key);
+    }
+    expect(readSelectionContext(engine(["title"]), scope).selection[0]).not.toHaveProperty("fill");
+  });
+  it("tells the model the snapshot is enough to apply delta tools directly", () => {
+    const card = {
+      id: "card",
+      name: "Card",
+      kind: "rect",
+      parentId: "frame",
+      width: 240,
+      height: 160,
+      fill: "#111827",
+      cornerRadius: 12,
+    };
+    const message = promptWithSelection("Make this card rounder", {
+      ...readSelectionContext({ getSelectedIds: () => ["card"], getNode: (id) => ({ frame, card })[id] }, scope),
+    });
+    for (const tool of [
+      "mutate_layer_style",
+      "mutate_layer_layout",
+      "mutate_layer_text",
+      "batch_mutate_layers",
+    ]) {
+      expect(message, tool).toContain(tool);
+    }
+    expect(message).toContain("without spending an extra round trip on inspect_layer_tree");
+    expect(message).toContain("already carries each target's size, colour, text, typography and auto-layout");
+    expect(message).toContain("snapshot at send time");
+    expect(message).toContain("Make this card rounder");
+  });
   it("distinguishes documents but not selection order and localizes multi-selection labels", () => {
     const first = readSelectionContext(engine(["title", "shape"]), scope);
     const reversed = readSelectionContext(engine(["shape", "title"]), scope);
