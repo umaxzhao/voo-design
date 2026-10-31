@@ -370,7 +370,13 @@ export function createTransformPointerGestures(ctx) {
       }
     }
 
-    let hit = api.nodeAtPoint(point);
+    const hitStack = event.metaKey && event.altKey
+      ? api.nodesAtPoint?.(point) ?? []
+      : [];
+    const currentStackIndex = hitStack.findIndex(node => api.isSelected(node.id));
+    const hit = hitStack.length > 1
+      ? hitStack[(currentStackIndex + 1 + hitStack.length) % hitStack.length]
+      : api.nodeAtPoint(point);
 
     if (hit) {
       const altTargetLocked =
@@ -379,7 +385,7 @@ export function createTransformPointerGestures(ctx) {
           ?.lockPosition === true;
       const target = hit;
       let duplicateOnMove = false;
-      if (event.altKey && !altTargetLocked) {
+      if (event.altKey && !event.metaKey && !altTargetLocked) {
         const currentSelected = api.getSelectedNodes?.() ?? [];
         const isHitInMultiSelection =
           currentSelected.length > 1 &&

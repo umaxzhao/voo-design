@@ -1,6 +1,6 @@
 import { isGroupNode, isBooleanNode, describeNode } from "../editor/scene_model.js";
 import { OperationIcon } from "./editor_properties/combine_section.jsx";
-import { IconFrame, IconFolder } from "../icons.jsx";
+import { IconFrame, IconFolder, IconLayoutGrid } from "../icons.jsx";
 import EditorLayerThumb, { MaskThumb } from "./editor_layer_thumb.jsx";
 import LayerAssetReload from "./editor_layer_asset_reload.jsx";
 import { layerPanelModelType } from "./editor_layers_contract.js";
@@ -49,6 +49,8 @@ export default function EditorLayerThumbnail({
       >
         {isBoolean ? <OperationIcon
           operation={object.operation ?? "union"}
+        /> : object.section ? <IconLayoutGrid
+          size={13}
         /> : object.frame || object.isFrame || object.containerType === "frame" ? <IconFrame
           size={13}
         /> : <IconFolder

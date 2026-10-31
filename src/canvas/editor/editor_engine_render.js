@@ -32,6 +32,7 @@ export function renderEngineStage({
   healingMode,
   selectedPuppetPinId,
   hoveredNodeId,
+  designIssues = [],
   marqueeRect,
   textDraftRect,
   gradientAdjusting,
@@ -158,6 +159,10 @@ export function renderEngineStage({
     paintNodeIds: mixedLayerMode ? new Set() : null,
     selectionRect: selRect,
     selectionNode: hideSelection ? null : selNode,
+    hoveredNode: hoveredNodeId && tool === TOOL.SELECT && findNode(doc, hoveredNodeId)
+      ? getEffectiveNode(findNode(doc, hoveredNodeId))
+      : null,
+    designIssues,
     warpTool: tool,
     selectedPuppetPin: selectedPuppetPinId,
     selectionSet:

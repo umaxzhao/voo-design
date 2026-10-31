@@ -58,6 +58,7 @@ export { SkipForward as IconSkipForward } from "lucide-react";
 export { Repeat as IconRepeat } from "lucide-react";
 export { HelpCircle as IconHelpCircle } from "lucide-react";
 export { Info as IconInfo } from "lucide-react";
+export { TriangleAlert as IconAlertTriangle } from "lucide-react";
 export { ExternalLink as IconExternalLink } from "lucide-react";
 export { Frame as IconFrame } from "lucide-react";
 export { Component as IconComponent } from "lucide-react";
