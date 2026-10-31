@@ -183,7 +183,7 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
                     groups={cloudPreset ? customGroups.filter(group => group.cliId === cloudPreset.customProviderId) : customGroups} selectedModel={customModel}
                     onSelectModel={selectCustomModel} onConfigured={refreshCustom} />
                 )}
-                {!isNarrow && provider !== "" && !isApiProvider && !isDeepSeekHarness && (
+                {!isNarrow && detection.showLocal && provider !== "" && !isApiProvider && !isDeepSeekHarness && (
                   <button type="button" onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("voo:open-onboarding")); }}
                     className={`w-fit rounded-lg bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-neutral-100 hover:bg-white/[0.14] transition-colors ${focusClass}`}>{t("firstRun.provider.guide")}</button>
                 )}

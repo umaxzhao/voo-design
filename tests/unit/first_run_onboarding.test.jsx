@@ -215,6 +215,12 @@ describe("first-run interactions", () => {
     click(el => el.type === "button" && el.props.children === "Open Agent setup guide (CLI detection and connection test)");
     expect(listener).toHaveBeenCalledOnce(); expect(onClose).toHaveBeenCalled();
   });
+  it("hides local setup when the service disconnects after selecting a CLI", () => {
+    pick("codex");
+    localService.native = false; localService.available = false; draw();
+    const buttons = elements(tree).filter(el => el.type === "button").map(el => el.props.children);
+    expect(buttons).not.toContain("Open Agent setup guide (CLI detection and connection test)");
+  });
   it("shows the DeepSeek plugin panel instead of the generic connection panel", () => {
     pick("codex");
     expect(elements(tree).filter(el => el.type === "p").map(el => el.props.children)).toContain("Agent connection");
