@@ -85,11 +85,12 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/*paste*", "src/canvas/editor/*clipboard*",
       "src/canvas/editor/group-structure.js", "src/canvas/editor/doc_ops_groups.js", "src/canvas/editor/editor_engine_groups.js",
       "src/canvas/components/editor_image_batch.js", "src/canvas/components/use_editor_dnd.js",
+      "src/shared/settings.js", "tests/unit/editor_layers_width.test.js",
     ],
     related: ["selection","compositing","layout","documents"],
-    features: ["layers.nesting","layers.placement","layers.reparent","layers.duplicate-delete-lock","layers.container-boundaries"],
+    features: ["layers.nesting","layers.placement","layers.reparent","layers.duplicate-delete-lock","layers.container-boundaries","layers.panel-width"],
     suites: [
-      "editor-layers-composition", "image-layer-window", "frame-alt-duplicate", "frame-reparent-contracts",
+      "editor-layers-composition", "layers-panel-width", "image-layer-window", "frame-alt-duplicate", "frame-reparent-contracts",
       "nested-placement", "nested-object-lifecycle", "container-command-boundaries",
     ],
     remaining: [

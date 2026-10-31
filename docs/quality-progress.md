@@ -3,6 +3,7 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
+本轮图层面板调宽：`layers.panel-width`，通过贴边拖拽增加长图层名显示区域；支持宽度限制、键盘、Escape 回滚、双击重置及本地记忆，窄屏保留自动布局。24 项定向单测和真实鼠标回归已在当前工作区通过；正式干净提交的精确版本、执行结果及发布阻断以 `/private/tmp/voo-layers-width-release.json` 为准，详见 [面板验收](audits/panel-control-audit.md#layers-panel-width--2026-10-31)。功能覆盖保持部分，不能沿用历史发布状态。
 本轮首页导入与参考图：`workspace.import-references`。从浏览器导入打开右侧面板；截图选择仅加入输入框；首页及编辑器 Agent 支持粘贴图片，保留普通文字粘贴、附件移除、并发数量限制及异步取消。新增第 84 组核心浏览器套件，总计 58 个能力分组。精确版本及执行结果以 `/private/tmp/voo-welcome-import-release.json` 为准；详见 [面板验收](audits/panel-control-audit.md#welcome-import-and-image-references--2026-10-31)。此前发布通过状态不得沿用。
 首页 Settings 底部间距微调：从 24px 减至 12px（向下移动 12px），保持左侧位置与点击区域；沿用 `workspace.settings-entry`，在既有首页套件检查四个宽度的精确底边间距。本轮精确提交及执行结果见 `/private/tmp/voo-settings-lower-release.json`，此前基线发布阻断不能视为已解决。
 本轮首页设置入口调整：已移除侧栏版本号，将首页 Settings 移至左下角；能力 `workspace.settings-entry`。本次相关 17 项单测和 320/390/768/1440px 首页浏览器专项通过。完整门禁因基线既有的 10 项 Agent 工具清单/首次引导失败而阻断（已在修改前提交 `e2d3517` 复现，`/private/tmp/voo-settings-baseline.log`），本轮尚未推送或部署。精确最终 revision 与逐项执行结果见 `/private/tmp/voo-settings-release.json`，不得继承历史通过结果。详细范围见 [面板审查](audits/panel-control-audit.md#welcome-settings-entry--2026-10-31)。
