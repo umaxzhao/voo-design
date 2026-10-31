@@ -25,6 +25,26 @@ export function readSelectionContext(engine, { documentId, pageId } = {}) {
       width: node.width,
       height: node.height,
       ...(typeof node.text === "string" && { text: node.text.slice(0, 1000) }),
+      // Live style/typography/layout snapshot: the model can apply a delta
+      // without spending a round trip on inspect_layer_tree.
+      ...(typeof node.fill === "string" && { fill: node.fill }),
+      ...(typeof node.stroke === "string" && {
+        stroke: node.stroke,
+        strokeWidth: node.strokeWidth,
+      }),
+      ...(typeof node.cornerRadius === "number" && {
+        cornerRadius: node.cornerRadius,
+      }),
+      ...(node.autoLayout && {
+        autoLayout: {
+          direction: node.autoLayout.direction,
+          gap: node.autoLayout.gap,
+          padding: node.autoLayout.padding,
+        },
+      }),
+      ...(node.fontSize != null && { fontSize: node.fontSize }),
+      ...(node.fontWeight != null && { fontWeight: node.fontWeight }),
+      ...(node.fontFamily != null && { fontFamily: node.fontFamily }),
     };
   });
   return {
@@ -70,5 +90,5 @@ export function promptWithSelection(text, context) {
       pageId: context.pageId,
       selection,
     },
-  )}\nUse these IDs to inspect the targets before editing. The request below determines what to change.\n\n${text}`;
+  )}\nUse these IDs to call the mutation tools directly: the snapshot above already carries each target's size, colour, text, typography and auto-layout, so apply a delta with mutate_layer_style / mutate_layer_layout / mutate_layer_text (or batch_mutate_layers for several at once) without spending an extra round trip on inspect_layer_tree. The request below determines what to change.\n\n${text}`;
 }

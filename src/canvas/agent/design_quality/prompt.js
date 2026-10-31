@@ -35,6 +35,7 @@ export function buildDesignQualityPrompt({ userText, kit, designSystem, sceneKin
     "3. ALWAYS use Auto Layout wherever applicable: All UI containers, navigation bars, header rows, card content, button groups, metadata badges, lists, and column grids MUST be built using nested Auto Layout frames (direction: 'horizontal' | 'vertical', with explicit 4-multiple gap, padding, alignItems, and justifyContent). Use fixed/hug frame sizing and layoutWidth/layoutHeight: 'hug' or 'fill' on children so layers dynamically reflow when text or content changes. Reserve absolute positioning strictly for free-form artwork or floating overlays.",
     "4. Avoid hand-drawn path illustrations; use simple shapes or image placeholders.",
     "5. After the complete screen is built, capture_canvas once and inspect_layout, review the image and reported issues, then fix overlap/overflow/alignment/type/contrast mistakes before replying.",
+    "6. Surgical delta edits: For follow-up edits, refinements or modifications to an existing design, DO NOT rebuild the screen from scratch with build_layout. First inspect existing layers with inspect_layer_tree to find target layer IDs, then apply targeted delta updates using mutate_layer_style, mutate_layer_layout, mutate_layer_text, or batch_mutate_layers to preserve the rest of the canvas.",
     "",
     "[Visual hierarchy]",
     "One focal element at >=2x the area of its peers; supporting elements stay small.",
@@ -59,6 +60,7 @@ export function buildDesignQualityPrompt({ userText, kit, designSystem, sceneKin
     "Precise type: 2 families max, strong scale contrast, tabular numbers, aligned baselines, generous 48-80px whitespace.",
     "Real-feeling content everywhere: realistic names (\"Amara Kessie\"), amounts ($48,230), dates (\"Mar 14, 09:41\"), avatar initials (AK), tiny charts (sparklines, donuts, bar rows), status dots/pills.",
     "Polish: 1px hairlines instead of heavy borders, soft layered shadows on the 1-2 elevated modules only, consistent icon style, deliberate asymmetry.",
+    "Layered depth: elevate key cards with soft multi-stop shadows (e.g. 0 12px 32px rgba(0,0,0,0.18)) and 1px hairline borders; use frosted translucent surfaces (rgba(255,255,255,0.06) on dark) for floating bars and headers rather than flat opaque grey.",
     "",
     exemplars.length
       ? "[Exemplar recipes — follow the nearest one]\n" + exemplars.map((e, i) => (e.structureOnly || designSystem)

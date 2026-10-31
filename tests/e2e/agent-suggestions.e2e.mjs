@@ -49,6 +49,9 @@ try {
   await input.waitFor();
   assert.equal(await suggestions.count(), 0);
   await page.evaluate(() => window.selectSuggestionFixture(["image"]));
+  await suggestions.first().waitFor();
+  assert.equal(await suggestions.count(), 1, "Selection suggestions have one home");
+  assert.equal(await suggestions.getByRole("button").count(), 3);
   await suggestions
     .getByRole("button", { name: "参考生图", exact: true })
     .click();
@@ -64,6 +67,9 @@ try {
   );
   await input.fill("保留蓝色");
   await page.evaluate(() => window.selectSuggestionFixture(["frame"]));
+  await suggestions.getByRole("button", { name: "重构设计", exact: true }).waitFor();
+  assert.equal(await suggestions.count(), 1, "Frame suggestions appear once");
+  assert.equal(await page.getByRole("button", { name: "重构设计", exact: true }).count(), 1);
   await suggestions
     .getByRole("button", { name: "重构设计", exact: true })
     .click();
@@ -91,6 +97,16 @@ try {
     box.x >= 0 && box.x + box.width <= 380,
     "Suggestions fit narrow panels",
   );
+  for (const width of [380, 760]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.evaluate(() => window.selectSuggestionFixture(["frame"]));
+    await suggestions.getByRole("button", { name: "重构设计", exact: true }).waitFor();
+    assert.equal(await suggestions.count(), 1, `One suggestion group at ${width}px`);
+    assert.equal(await suggestions.getByRole("button").count(), 3);
+    for (const name of ["重构设计", "优化布局", "调整配色"]) {
+      assert.equal(await page.getByRole("button", { name, exact: true }).count(), 1);
+    }
+  }
   await page.getByTestId("agent-context-detach").click();
   await suggestions.waitFor({ state: "detached" });
   assert.equal(await input.inputValue(), draft);

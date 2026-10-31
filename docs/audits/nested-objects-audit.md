@@ -104,5 +104,74 @@ new default control is introduced.
 | Original failure | `/private/tmp/voo-license-regression/frame-label-before.log`: actual title span hit, `editor-page` pointer capture, empty selection |
 | Verification boundary | Selection-only change; no content mutation/save format to migrate. Header dragging, touch/stylus and hidden/locked Frame policies are not expanded by this repair |
 
-Final clean revision and full release/production evidence are recorded in
-`docs/quality-progress.md`; passing this fixture does not certify all platforms.
+Clean revision `befffb37071baf1aa4c0cd3abf83452b092f650d` passed all 90 release
+steps (86 browser suites; 4,585 unit assertions passed, four skipped).
+Merge `49d85d8bd709b961c5f6be64ea5cd5dfad050f69` has the identical source tree.
+The deployed production entry and five direct assets match the verified build;
+an isolated production browser passed real name/icon clicks and Enter without
+document mutation or page errors. Evidence: `/private/tmp/voo-license-regression/`
+`frame-title-release-published.json` and `frame-title-production-proof.json`.
+Earlier incomplete/failed runs and the known cold-start New timing failure are
+retained in `docs/quality-progress.md`; passing this fixture does not certify
+physical devices, signed desktop cold starts or all private workspace drafts.
+
+
+## Agent selection context icon
+
+Capability: `platform.agent-contracts`. A single selected Frame now uses the
+same `IconFrame` as its canvas label. The chip previously always rendered
+Layers despite the existing normalized `kind: "frame"` descriptor. Selection
+snapshots, prompt payloads, chip labels and detach behavior are unchanged.
+Ordinary groups/layers and multiple selections retain Layers. Legacy artboard
+contexts use the Frame icon too; no new control or user-visible copy is added.
+
+`agent_selection_context.test.js` checks rendered SVG identity for Frame,
+artboard, ordinary group/layer and a multiple selection containing a Frame.
+`agent-selection-context.e2e.mjs` uses a real editor to switch child → Frame →
+child → multiple, checking actual chip SVGs, text, prompt preservation,
+submitted target IDs, detach, deselect and document switching. The original
+Frame SVG assertion fails before the fix (`agent-frame-icon-before.log`).
+This standalone suite is run explicitly; its other standalone classification
+and the 86-suite core inventory remain unchanged. Release evidence and exact
+revision are recorded in `docs/quality-progress.md`; signed native installs,
+physical input devices and all imported node variants are not certified.
+
+Verified clean revision: `bfbf91d040eebc3e1254f03c017fcc8f44677b6a`; all 90
+core steps passed (4,590 units passed, four skipped; 86 browser suites), plus
+explicit `agent-selection-context`. Production entry/direct/Agent assets
+(seven files) match the build; real Agent chip switching and detach pass with
+no document mutation or page errors. Evidence: `agent-frame-release.json`,
+`agent-frame-icon-committed.log` and `agent-frame-production-proof.json` in
+`/private/tmp/voo-license-regression/`. Signed native installation remains untested.
+
+
+## Single Agent suggestion group
+
+Capability: `platform.agent-contracts`. The private App workspace had two
+`AgentSelectionSuggestions` instances, one inside the conversation scroll
+region and an extra one before the composer. Only the extra local instance
+was removed; other uncommitted localization, attachments and mobile changes
+were preserved. Public product source already had one instance and was not
+changed in this task. No document mutation or persistence migration is involved.
+
+`agent-suggestions.e2e.mjs` now asserts exactly one group with three buttons,
+and one instance of each Frame label at 380px and 760px. Existing checks retain
+actual clicks, selection-type changes, input focus, draft preservation,
+idempotent repeated picks, detach and no automatic sending. Before the local
+repair the explicit count was two; afterward both local and public-baseline
+fixtures passed. Relevant units: 14 local, 25 public-baseline including module
+plans. Exact release evidence is maintained in `docs/quality-progress.md`.
+Production still uses `bfbf91d`; all seven previously verified assets match,
+with a single Frame suggestion group and no document mutation or script errors.
+Raw logs are `/private/tmp/voo-license-regression/agent-suggestions-*`.
+The local repair is not a clean-release certification of other private drafts,
+native signed installation or physical touch devices.
+
+Clean `aec278290c69990105c36b13cdd05420f7e5d24e` passed 90/90 core steps,
+4,590 units (four skipped), 86 core browser suites, and the explicit suggestion
+suite. After preserving upstream prompt commit `0274622`, integrated `3d98a78`
+passed 51 related units and the suggestion browser suite; it does not inherit
+the prior complete run. This task publishes regression/ownership/docs only.
+The later rebuilt entry differs from current production; the failed comparison
+is retained, not reported as byte identity. Current live single-row UI evidence
+is recorded separately in `agent-suggestions-live-ui-proof.json`.
