@@ -124,6 +124,8 @@ export default {
   "common.loading": "Loading…",
   "common.close": "Close",
   "common.apply": "Apply",
+  "common.search": "Search",
+  "common.noResults": "No results",
   "dialog.loadFailed": "Could not load this panel. Reload the app and try again.",
   "error.jimengModelControlMissing":
     "Could not find the Dreamina image-model control.",
