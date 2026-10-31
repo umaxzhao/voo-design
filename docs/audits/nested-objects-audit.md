@@ -303,6 +303,11 @@ The initial expanded browser check incorrectly assumed multi-selection already
 had a size chip. Its failure is retained in `size-label-browser.log`; the
 existing renderer was confirmed to draw only multi-selection outlines/handles.
 The corrected scope preserves that behaviour (`size-label-browser-final.log`).
-Core release and production receipts are pending in `docs/quality-progress.md`.
+Clean `e2e3e0b` passed 91/91 core steps, 87 browser suites and 4,678 units
+(four skipped). Integrated `457b149` preserves mainline rendering optimizations
+and independently passed 91/91, 87 suites and 4,684 units (four skipped), with
+GitHub CI passing. Reports: `size-label-release.json` and
+`size-label-release-integrated.json`. Subsequent mainline changes are documentation
+only; production receipts remain pending in `docs/quality-progress.md`.
 No physical display scaling, signed native builds or every clipping/overlay
 combination is certified by these Chromium/unit scenarios.
