@@ -50,6 +50,9 @@ export function presetToDocumentSystem(system) {
     builtIn: true,
     nameKey: system.labelKey,
     descriptionKey: system.descriptionKey,
+    coverImage: system.coverImage,
+    sourceName: system.sourceName,
+    sourceUrl: system.sourceUrl,
     designTokens,
     // A getter, not a snapshot: the brief follows the UI locale at the moment
     // it is shown in the editor or applied to a document.

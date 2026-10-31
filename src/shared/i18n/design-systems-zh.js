@@ -8,6 +8,7 @@ export default {
   "designSystems.listTitle": "设计系统",
   "designSystems.listHint":
     "选择一个设计系统用于当前页面或进行编辑。内置系统为只读，可复制后自定义。",
+  "designSystems.reference": "DesignMD 风格参考 · {source}",
   "designSystems.listLabel": "可用的设计系统",
   "designSystems.builtIn": "内置",
   "designSystems.custom": "自定义",

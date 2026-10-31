@@ -1,5 +1,17 @@
 /** User-facing copy for the workflow and editor experience. */
 export default {
+  "designSystem.stripe": "Stripe 金融科技",
+  "designSystem.stripeDescription": "清晰轻盈的金融产品界面",
+  "designSystem.linear": "Linear 暗色产品",
+  "designSystem.linearDescription": "克制的深色产品工作空间",
+  "designSystem.vercel": "Vercel 开发者平台",
+  "designSystem.vercelDescription": "黑白简洁的开发者界面",
+  "designSystem.anthropic": "Anthropic 暖色编辑",
+  "designSystem.anthropicDescription": "温暖安静的研究内容风格",
+  "designSystem.notion": "Notion 工作空间",
+  "designSystem.notionDescription": "轻量友好的协作空间",
+  "designSystem.figma": "Figma 创作协作",
+  "designSystem.figmaDescription": "开放明快的创意协作风格",
   "designSystem.label": "设计系统",
   "designSystem.auto": "自动选择",
   "designSystem.studio": "通用产品",

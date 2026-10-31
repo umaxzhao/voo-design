@@ -1,5 +1,17 @@
 /** User-facing copy for the workflow and editor experience. */
 export default {
+  "designSystem.stripe": "Stripe",
+  "designSystem.stripeDescription": "Clear financial product interfaces",
+  "designSystem.linear": "Linear",
+  "designSystem.linearDescription": "Quiet dark product workspace",
+  "designSystem.vercel": "Vercel",
+  "designSystem.vercelDescription": "Monochrome developer platform",
+  "designSystem.anthropic": "Anthropic",
+  "designSystem.anthropicDescription": "Warm editorial research",
+  "designSystem.notion": "Notion",
+  "designSystem.notionDescription": "Calm collaborative workspace",
+  "designSystem.figma": "Figma",
+  "designSystem.figmaDescription": "Open creative collaboration",
   "designSystem.label": "Design system",
   "designSystem.auto": "Automatic",
   "designSystem.studio": "Studio",
