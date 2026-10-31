@@ -2,12 +2,13 @@ import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import fs from "node:fs";
 
-const state = vi.hoisted(() => ({ welcomeOpen: false, setWelcomeOpen: vi.fn() }));
+const state = vi.hoisted(() => ({ welcomeOpen: false, welcomeActionsReady: false, setWelcomeOpen: vi.fn() }));
 vi.mock("react", async (original) => ({
   ...await original(),
   useState: (initial) => [initial, vi.fn()],
   useEffect: () => {},
   useRef: (current) => ({ current }),
+  useId: () => "titlebar-popover-scope",
 }));
 vi.mock("../../src/store/design_store.js", () => ({ useDesignStore: (selector) => selector(state) }));
 vi.mock("../../src/canvas/use_i18n.js", () => ({ useI18n: () => ({ t: (key) => key }) }));
@@ -29,6 +30,23 @@ function visibleText(node) {
 const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
 describe("title bar actions", () => {
+  it.each([false, true])("gates welcome import while queued New remains available (readiness=%s)", ready => {
+    state.welcomeOpen = true;
+    state.welcomeActionsReady = ready;
+    vi.stubGlobal("window", {});
+    try {
+      const actions = buttons(AppTitleBar());
+      expect(actions.find(button => button.props.title === "titlebar.openTitle").props.disabled).toBe(!ready);
+      expect(Boolean(actions.find(button => button.props.title === "welcome.header.new").props.disabled)).toBe(false);
+      state.welcomeOpen = false;
+      const editing = buttons(AppTitleBar());
+      expect(editing.find(button => button.props.title === "titlebar.openTitle").props.disabled).toBe(false);
+    } finally {
+      state.welcomeOpen = false;
+      state.welcomeActionsReady = false;
+      vi.unstubAllGlobals();
+    }
+  });
   it.each([
     [true, 3, ["titlebar.openTitle", "welcome.header.new", "titlebar.browser"], ["voo:welcome-menu-action", "voo:welcome-new"]],
     [false, 4, ["titlebar.openTitle", "titlebar.snapshotTitle", "titlebar.browser", "titlebar.prefsTitle"], ["voo:file-open", "voo:file-export-snapshot"]],

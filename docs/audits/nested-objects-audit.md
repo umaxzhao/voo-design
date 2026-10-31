@@ -175,3 +175,107 @@ the prior complete run. This task publishes regression/ownership/docs only.
 The later rebuilt entry differs from current production; the failed comparison
 is retained, not reported as byte identity. Current live single-row UI evidence
 is recorded separately in `agent-suggestions-live-ui-proof.json`.
+
+
+## Global overlay stacking
+
+Capability: `inspector.global-overlay-stacking`; shared with workspace title
+menus and platform sharing. A real share popover was partially covered by the
+editor's root z-50 stacking context. Its left-side pointer samples hit
+`editor-pages` instead of the share surface (`global-overlay-before.log`).
+
+The title bar owns a z-60 layer above editor content. Sharing uses a body portal
+at z-100, anchored to its trigger with viewport bounds and internal scrolling.
+Nested mobile sharing retains the existing popover ownership context so input
+inside its portal does not dismiss the parent menu. Global modal content uses
+body portals at z-110 or its existing higher layer; pending lazy surfaces also
+escape editor transforms and clipping. Portal content retains server-rendered
+semantics when there is no browser body.
+
+| Surface group | Review and acceptance |
+| --- | --- |
+| Share | Real title-bar trigger, 1600/1280/900px, docked Agent, nine pointer samples, identity input and Escape; 320x568 nested More → Share stays inside viewport and remains open while typing |
+| Title menus | Common title layer plus existing body workflow-menu portal; narrow More keyboard/focus and pointer hits retained |
+| Shortcuts, icon insertion, SVG | Previously inline fixed dialogs now portal to body; real components mounted under a deliberately transformed 40px clipped host remain fully hittable, with dialog semantics retained in SSR |
+| Lazy pending UI | Real suspended component's modal placeholder uses the same global portal and passes pointer samples outside its clipped host |
+| Settings, image export, commands | Existing body portals retained; real UI entry, pointer sampling, layered Escape, focus return and existing export state checks pass in `ui-global-interaction` |
+| Code export, variables, presentation export/viewer, font/menu pickers | Existing body portals reviewed in source; not all individual controls newly interaction-certified by this task |
+| First-run, setup, recovery, About | Native top-layer dialog or application-level modal reviewed; existing individual suites retained, not counted as new exhaustive runtime coverage |
+| Page-owned comments, retouch/download, prototype and exit prompt | Intentionally scoped to the page; not converted to unrelated application-wide dialogs |
+
+`ui-global-interaction.e2e.mjs` asserts actual `elementFromPoint` hits across
+surfaces and unchanged document/selection. The isolated modal harness tests
+component placement, not every production opening command. No share-room
+creation, snapshot upload, paid model, user document or collaboration session
+is started by these checks. Exact clean revision, release and production
+receipts are recorded in `docs/quality-progress.md`. Physical touch/stylus,
+signed native installs, all popover combinations and every service state remain
+outside this acceptance; a source audit alone is not a runtime pass.
+
+
+### Welcome action readiness found during overlay acceptance
+
+Capability: `workspace.file-actions-ready`. The cold-reopen import button was
+clickable before the lazy welcome page registered its file input listeners.
+The unmodified `24085cc` baseline reproduces the lost filechooser event too.
+The welcome page now marks its UI-only readiness after its existing action
+effects mount, and clears readiness on unmount. Desktop and narrow title-bar
+Import waits for that signal; New retains the mainline queued, idempotent
+request so an early click creates one document after dashboard registration.
+This flag is not document content or a new user setting.
+
+`titlebar-file-actions` holds the welcome module request, verifies Import is disabled and New remains enabled
+before registration, then releases it and retains the actual file
+picker, cancellation, portable snapshot import/export and New assertions.
+The original `continuous-creation` archive, geometry, bitmap pixels and undo
+checks are retained. Raw before/after and baseline logs are under
+`/private/tmp/voo-license-regression/global-overlay-*`. Earlier 15-second import
+readiness and cold filechooser failures remain separate evidence, not passed
+results. This repair does not certify every slow-device/native startup path.
+
+The incoming Figma fidelity fixture initially sampled a zero-node placeholder
+engine after a cold reopen. The diagnostic preserves that failure and shows
+the exact expected pixels once the imported document binds. Its picker helper
+now waits for the imported document marker and the normal open guard to turn
+off before exporting pixels; it does not wait for pixel values to match or
+change any pixel assertions. Evidence: `global-overlay-figma-engine-probe.log`.
+
+
+### Share identity update replay
+
+The real share input exposed an existing side effect inside a functional React
+state updater: saving and publishing identity from that updater fed external
+collaboration-store updates back into rendering. React replay could repeatedly
+publish or hit maximum update depth. Two real input events batched before paint
+reproduce excess publications in `global-overlay-identity-before.log`.
+Identity edits now merge through a current ref, enqueue a plain state value,
+and save/publish once from the input event. Opening the popover refreshes both
+state and ref. The browser regression preserves the live session callback and
+asserts two inputs produce exactly two publications, the latest field value,
+no page errors and unchanged document/selection; it does not stub publishing out.
+
+
+### Release attempt history
+
+`ui-global-interaction` 检查桌面 1600/1280/900px 分享、320px 嵌套分享、跨弹窗点击/关闭/焦点/选区与文档不变，及三个真实弹窗在变换/裁切宿主下的 9 点命中；设计/模块/格式与 20 项相关单测通过。证据 `global-overlay-after-final.log`、`global-overlay-unit-final.log` 同目录。登记 70 能力、87 浏览器；本地补丁保留其他草稿，备份 `global-overlay-primary-backup/`。首次完整门禁 `439c9d9` 中顶栏旧 Hook 模拟缺少 `useId`，4 项失败（`global-overlay-release.json`）；补齐模拟后重新完整执行，不以单项补跑替代。后续 `3ebb891` 单测 4601 通过/4 跳过，默认并发的导入就绪超时（`global-overlay-release-final.json`），未改断言独立复查通过（`global-overlay-import-recheck.log`）；发布调度新增 1–3 显式选项，默认仍 3、记录实际并发，准备重新完整执行。串行 `13185d6` 单测 4627 通过/4 跳过，在连续创作冷重开等待 filechooser 时失败（`global-overlay-release-serial.json`）；独立复查通过，且不含本轮改动的 `24085cc` 也复现早点击丢事件（`global-overlay-baseline-import.log`）。新增 `workspace.file-actions-ready`，首页监听器注册后才启用顶栏导入/新建；受控延迟回归修改前失败、修改后真实选择器/快照通过（`global-overlay-welcome-ready-before/after.log`），43 项相关单测通过。`c780441` 的 Figma 冷重开检查读到了节点数 0 的占位引擎而失败（`global-overlay-release-complete.json`）；探针确认导入绑定后同样像素全部正确（`global-overlay-figma-engine-probe.log`），仅补文档绑定/guard 前提，不改变像素断言。`9133105` 在第 76 步触发分享身份更新循环（`global-overlay-release-verified.json`）；批量真实输入确定性复现重复发布（`global-overlay-identity-before.log`）。将保存/发布移出可重放的 React updater，保留连续输入字段合并并要求每次输入只发布一次。最终完整门禁与线上结果待补录。
+
+The `51d2542` complete attempt later failed the pending-surface focus assertion
+in `editor-optional-loading` (`global-overlay-release-published.json`). The
+unchanged integration recheck passed (`global-overlay-optional-recheck.log`);
+the failed attempt is not a complete pass. Integration `9ba77dd` retained
+mainline queued New semantics but two SSR assertions still expected New to be
+disabled. Both local and CI failures are retained. `9d0a1d2` corrects those
+expectations while retaining Import readiness, early queued New and all actual
+file-picker assertions; its fresh uninterrupted core run passed 91/91 steps,
+4,654 units with four skipped, and all 87 browser suites.
+
+Final `8af23f5` also includes mainline Frame-fit and reparent changes and registers
+their unit ownership. Its GitHub build/unit job and fresh uninterrupted
+91/91 core run passed (4,674 units, four skipped; all 87 browser suites).
+`global-overlay-release-final-integration.json` records that exact clean revision.
+Main merge `4e8f506` has the identical source tree. The project script deployed
+the verified build to la2; the isolated production check compared 97 actual
+entry/loaded resources byte-for-byte and sampled real desktop/narrow Share,
+Settings, Commands and Export surfaces, inputs, Escape and unchanged document
+and selection with no page errors (`global-overlay-production-proof.json`).
+This is separate evidence from `9d0a1d2`, not an inherited pass.

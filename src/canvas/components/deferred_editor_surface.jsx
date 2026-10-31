@@ -1,4 +1,5 @@
 import PropTypes from "prop-types";
+import GlobalOverlayPortal from "./global_overlay_portal.jsx";
 import { Suspense, useLayoutEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
@@ -49,7 +50,7 @@ function PendingSurface({ onClose, position }) {
       data-testid="editor-surface-loading"
       className="flex items-center justify-center rounded-xl border border-white/10 bg-neutral-950 p-3 text-neutral-300 shadow-pop outline-none"
       style={menu ? {
-        position: "fixed", zIndex: 50,
+        position: "fixed", zIndex: 100,
         left: `clamp(8px, ${position.x}px, calc(100vw - 48px))`,
         top: `clamp(8px, ${position.y}px, calc(100vh - 48px))`,
       } : undefined}
@@ -57,11 +58,12 @@ function PendingSurface({ onClose, position }) {
       <Loader2 size={16} className="animate-spin" aria-hidden="true" />
     </div>
   );
-  return menu ? spinner : (
-    <div data-modal-overlay className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+  const overlay = menu ? spinner : (
+    <div data-modal-overlay className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40">
       {spinner}
     </div>
   );
+  return <GlobalOverlayPortal>{overlay}</GlobalOverlayPortal>;
 }
 
 const positionType = PropTypes.shape({ x: PropTypes.number.isRequired, y: PropTypes.number.isRequired });
