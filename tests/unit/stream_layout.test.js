@@ -106,6 +106,12 @@ describe("Streaming Layout Channel", () => {
     expect((await streamLayout({ html: "<div>New document</div>" })).status).toBe("streaming");
   });
 
+  it("binds a continued stream to its original canvas inside the same project", async () => {
+    const editor = canvasId => ({ getDocument: () => ({ canvasId, width: 600, height: 400, nodes: [] }), setDoc: vi.fn() });
+    await streamLayout({ html: "<div>Original canvas</div>" }, { editor: editor("canvas-a") });
+    await expect(streamLayout({ final: true }, { editor: editor("canvas-b") })).rejects.toMatchObject({ name: "AbortError" });
+  });
+
   describe("Draft File Watcher", () => {
     let tmpDir;
 

@@ -106,6 +106,27 @@ await withEditorBrowser(async ({ page, tool }) => {
     assert.deepEqual(await page.evaluate(() => window.__vooEditor.getDocument().nodes.map(node => node.id)), [preserved]);
     await seed();
 
+    // Switching pages inside one project must not retarget an active writer.
+    await tool("stream_layout", { html: first });
+    const originalPage = await page.evaluate(async () => {
+      const { useDesignStore } = await import("/src/store/design_store.js");
+      const state = useDesignStore.getState();
+      const id = state.editingNodeId;
+      state.addEditorPage({ label: "Other canvas", width: 600, height: 400 });
+      return id;
+    });
+    await page.waitForFunction(previous => window.__vooEditor.getDocument().canvasId !== previous, originalPage);
+    const otherCanvas = await page.evaluate(() => JSON.stringify(window.__vooEditor.getDocument()));
+    await assert.rejects(tool("stream_layout", { final: true }), /Stream canvas changed/);
+    assert.equal(await page.evaluate(() => JSON.stringify(window.__vooEditor.getDocument())), otherCanvas);
+    await page.evaluate(async id => (await import("/src/store/design_store.js")).useDesignStore.getState().focusEditorPage(id), originalPage);
+    await page.waitForFunction(previous => window.__vooEditor.getDocument().canvasId === previous, originalPage);
+    await assert.rejects(tool("stream_layout", { final: true }), /clear before restarting/);
+    await tool("stream_layout", { clear: true });
+    assert.ok(await page.evaluate(() => window.__vooEditor.getDocument().nodes.some(node => node.fill?.toLowerCase() === "#ff0000")));
+    await tool("undo");
+    assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().nodes.length), 0);
+
     // An external stream remains bound to its original document even when a
     // stale writer sends a final event after the user switches projects.
     await tool("stream_layout", { html: first });

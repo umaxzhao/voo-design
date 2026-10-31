@@ -2,7 +2,7 @@
 let session = null;
 let starting = null;
 let epoch = 0;
-let expiredSession = null;
+let invalidatedCanvasId = null;
 
 export function canStreamNatively(editor) {
   return typeof globalThis.document?.createElement === "function"
@@ -11,7 +11,7 @@ export function canStreamNatively(editor) {
 
 export async function clearNativeLayoutStream() {
   epoch += 1;
-  expiredSession = null;
+  invalidatedCanvasId = null;
   const current = session;
   if (!current) return;
   current.clearing = true;
@@ -42,13 +42,14 @@ async function openSession(editor, targetId, store, signal) {
   const projectId = store.getState().activeDocumentId;
   const doc = editor.getDocument?.() ?? editor.getDoc?.();
   const canvasId = doc.canvasId;
+  const pageId = store.getState().editingNodeId;
   if (session && session.editor === editor && session.canvasId === canvasId && session.targetId === targetId && session.projectId === projectId) return session;
-  if (session) await clearNativeLayoutStream();
+  if (session) throw new DOMException("Stream target changed; clear before restarting", "AbortError");
   const sessionEpoch = epoch;
   const { CanvasStreamer } = await import("./html_pipeline/incremental.js");
   signal?.throwIfAborted();
   if (epoch !== sessionEpoch) throw new DOMException("Stream cleared", "AbortError");
-  if (store.getState().activeDocumentId !== projectId) throw new DOMException("Stream document changed", "AbortError");
+  if (store.getState().activeDocumentId !== projectId || store.getState().editingNodeId !== pageId) throw new DOMException("Stream document or canvas changed", "AbortError");
   const target = doc.nodes?.find(node => node.id === targetId);
   if (target && !(target.isFrame || target.frame || target.kind === "group")) throw new Error("stream_layout target must be a frame");
   if (targetId && !target && targetId !== canvasId && targetId !== store.getState().editingNodeId) throw new Error("stream_layout target is not the active canvas");
@@ -61,12 +62,15 @@ async function openSession(editor, targetId, store, signal) {
   const streamer = new CanvasStreamer({ editor, frame, signal: controller.signal, targetFrameId: target?.id, commitName: "AI: Stream layout" });
   const current = { editor, canvasId, projectId, targetId, targetFrameId: target?.id, streamer, controller, signal, abort, store };
   controller.signal.addEventListener("abort", () => {
-    if (!current.clearing) void streamer.flush().catch(error => {
-      if (error.name !== "AbortError") console.error("[stream_layout]", error);
-    }).finally(() => closeSession(current));
+    if (!current.clearing) {
+      invalidatedCanvasId = canvasId;
+      void streamer.flush().catch(error => {
+        if (error.name !== "AbortError") console.error("[stream_layout]", error);
+      }).finally(() => { if (!current.clearing) closeSession(current); });
+    }
   }, { once: true });
   current.unsubscribe = store.subscribe?.(state => {
-    if (state.activeDocumentId !== projectId) controller.abort();
+    if (state.activeDocumentId !== projectId || state.editingNodeId !== pageId) controller.abort();
   });
   session = current;
   try { streamer.start(); }
@@ -75,7 +79,7 @@ async function openSession(editor, targetId, store, signal) {
 }
 
 export async function streamNativeLayout(content, { editor, targetId, store, signal, final }) {
-  if (expiredSession?.editor === editor) throw new Error("stream_layout session expired; clear before restarting");
+  if (invalidatedCanvasId && (editor.getDocument?.() ?? editor.getDoc?.())?.canvasId === invalidatedCanvasId) throw new Error("stream_layout session ended; clear before restarting");
   // Resolve the shared constructor once even when file-watcher chunks arrive
   // during dynamic import. Snapshots themselves coalesce in CanvasStreamer.
   if (!starting) starting = openSession(editor, targetId, store, signal);
@@ -90,10 +94,10 @@ export async function streamNativeLayout(content, { editor, targetId, store, sig
   clearTimeout(current.idleTimer);
   // A disconnected writer must not leave the history transaction muted forever.
   current.idleTimer = setTimeout(() => {
-    expiredSession = current;
+    invalidatedCanvasId = current.canvasId;
     void current.streamer.flush().catch(error => {
       if (error.name !== "AbortError") console.error("[stream_layout]", error);
-    }).finally(() => closeSession(current));
+    }).finally(() => { if (!current.clearing) closeSession(current); });
   }, 60000);
   current.idleTimer.unref?.();
   try {
@@ -107,7 +111,7 @@ export async function streamNativeLayout(content, { editor, targetId, store, sig
     return { status: final ? "committed" : "streaming", final: Boolean(final), length: content.length, preview: false, nodeCount: current.streamer.previous.size };
   } catch (error) {
     current.controller.abort();
-    closeSession(current);
+    if (!current.clearing) closeSession(current);
     throw error;
   }
 }

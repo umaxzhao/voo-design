@@ -47,6 +47,7 @@ export const STREAM_LAYOUT_SCHEMA = {
 let streamBuffer = "";
 let currentTargetId = null;
 let streamDocumentId = null;
+let streamCanvasId = null;
 
 export function getStreamBuffer() {
   return streamBuffer;
@@ -56,6 +57,7 @@ export function resetStreamBuffer() {
   streamBuffer = "";
   currentTargetId = null;
   streamDocumentId = null;
+  streamCanvasId = null;
 }
 
 /**
@@ -79,6 +81,12 @@ export async function streamLayout(args = {}, context = {}) {
   if (streamDocumentId && streamDocumentId !== documentId) {
     throw new DOMException("Stream document changed; clear the previous stream before restarting", "AbortError");
   }
+  const editor = context.editor || (typeof window !== "undefined" ? window.__vooEditor : null);
+  const canvasId = (editor?.getDocument?.() ?? editor?.getDoc?.())?.canvasId;
+  if (streamCanvasId && canvasId && streamCanvasId !== canvasId) {
+    throw new DOMException("Stream canvas changed; clear the previous stream before restarting", "AbortError");
+  }
+  if (canvasId) streamCanvasId = canvasId;
   if (typeof args.chunk === "string" || typeof args.html === "string") streamDocumentId = documentId;
 
   if (typeof args.chunk === "string") {
@@ -94,7 +102,6 @@ export async function streamLayout(args = {}, context = {}) {
   const content = streamBuffer;
   const isFinal = Boolean(args.final);
 
-  const editor = context.editor || (typeof window !== "undefined" ? window.__vooEditor : null);
   if (content && canStreamNatively(editor)) {
     store.getState().setStreamingPreview?.(null);
     try {
