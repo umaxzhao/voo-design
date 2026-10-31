@@ -110,6 +110,50 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(html).not.toContain("社区");
   });
 
+  it("stores a bilingual description for every community template", () => {
+    for (const template of COMMUNITY_TEMPLATES) {
+      expect(template.description, template.id).toBeTypeOf("object");
+      expect(typeof template.description.en, template.id).toBe("string");
+      expect(typeof template.description.zh, template.id).toBe("string");
+      expect(template.description.en.trim().length, template.id).toBeGreaterThan(20);
+      expect(template.description.zh.trim().length, template.id).toBeGreaterThan(10);
+      expect(template.description.en, template.id).toMatch(/[A-Za-z]/);
+      expect(template.description.zh, template.id).toMatch(/[\u4e00-\u9fff]/);
+      // A new template without a dictionary title would silently ship its raw
+      // English data title in Chinese; require a real translated key.
+      const titleKey = `welcome.community.template.${template.id}`;
+      expect(t(titleKey), template.id).not.toBe(titleKey);
+    }
+  });
+
+  it("renders English template cards without Chinese copy", async () => {
+    await loadLocale("en");
+    const html = renderToStaticMarkup(<CommunityTemplatesView />);
+    // Every card description comes from the `en` value: no Chinese may leak.
+    expect(html).not.toMatch(/[\u4e00-\u9fff]/);
+    for (const template of COMMUNITY_TEMPLATES) {
+      expect(html, template.id).toContain(template.description.en);
+    }
+    // The three newer templates resolve through their English dictionary titles.
+    for (const id of ["axiom-product-landing", "void-os-observability", "bloom-mobile-launch"]) {
+      expect(html, id).toContain(t(`welcome.community.template.${id}`));
+    }
+    expect(html).not.toContain("AXIOM — Avant-garde Product Landing");
+  });
+
+  it("renders Chinese template cards with Chinese copy and localized titles", async () => {
+    await loadLocale("zh");
+    const html = renderToStaticMarkup(<CommunityTemplatesView />);
+    for (const template of COMMUNITY_TEMPLATES) {
+      expect(html, template.id).toContain(template.description.zh);
+      expect(html, template.id).toContain(t(`welcome.community.template.${template.id}`));
+    }
+    // No untranslated English data titles may leak when a Chinese title exists.
+    expect(html).not.toContain("AXIOM — Avant-garde Product Landing");
+    expect(html).not.toContain("VOID OS — Observability Console");
+    expect(html).not.toContain("BLOOM — Soft-pop Mobile Launch");
+  });
+
   it("instantiating a community template produces a valid .voo file and registers in workspace", async () => {
     const template = COMMUNITY_TEMPLATES[0]; // SaaS Analytics
     const doc = template.createDoc();
