@@ -624,7 +624,10 @@ describe("Challenger 1: R-Tree Spatial Index & Viewport Extreme Stress Harness",
           delete globalThis.window.CanvasKitInit;
         }
       }
-    });
+      // 1,000 frames plus a fresh Skia host import can exceed the 5s default
+      // under parallel suite load; the assertions here are call counts, not
+      // wall-clock budgets, so allow a generous timeout.
+    }, 30000);
   });
 
   // =========================================================================

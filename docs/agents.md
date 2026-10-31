@@ -25,6 +25,7 @@ kept in sync with undo/redo:
 | `place_image` | Places an image on the canvas. |
 | `capture_canvas` | Captures the current canvas. |
 | `new_document` | Creates a new blank design document. |
+| `resize_document` | Resizes the active document to the given width and height in pixels. |
 | `find_empty_space` | Finds non-overlapping coordinates (x, y) on the canvas for a new frame or screen. |
 
 ### Layer Inspection & Mutation

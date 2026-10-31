@@ -122,12 +122,14 @@ describe("Streaming Layout Channel", () => {
       fs.writeFileSync(draftFile, "<div>Initial Draft</div>");
       watcher.triggerManually("voo-draft.html");
 
-      await new Promise((resolve) => setTimeout(resolve, 60));
-
-      expect(sendToCanvas).toHaveBeenCalledWith(
-        E.STREAM_LAYOUT_UPDATE,
-        expect.objectContaining({ html: "<div>Initial Draft</div>", file: "voo-draft.html" })
-      );
+      // Poll instead of sleeping a fixed 60ms: the debounced notification can
+      // arrive late when the suite runs under parallel load.
+      await vi.waitFor(() => {
+        expect(sendToCanvas).toHaveBeenCalledWith(
+          E.STREAM_LAYOUT_UPDATE,
+          expect.objectContaining({ html: "<div>Initial Draft</div>", file: "voo-draft.html" })
+        );
+      }, { timeout: 5000, interval: 20 });
 
       watcher.close();
     });

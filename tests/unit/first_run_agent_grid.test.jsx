@@ -96,7 +96,7 @@ describe("agent card grid", () => {
     expect(row1Ids).toEqual(["codex", "claude", "antigravity", "deepseek-harness"]);
 
     const row2Ids = [...parts[2].matchAll(/data-testid="first-run-agent-card-([a-z0-9-]+)"/g)].map(match => match[1]);
-    expect(row2Ids).toEqual(["dashscope", "volcengine", "deepseek-harness-models", "custom"]);
+    expect(row2Ids).toEqual(["dashscope", "volcengine", "deepseek", "deepseek-harness-models", "custom"]);
 
     expect(html).toContain("Alibaba Cloud");
     expect(html).toContain("Volcengine");
@@ -126,6 +126,7 @@ describe("agent card grid", () => {
     expect(apiCards).toEqual([
       'data-testid="first-run-agent-card-dashscope"',
       'data-testid="first-run-agent-card-volcengine"',
+      'data-testid="first-run-agent-card-deepseek"',
       'data-testid="first-run-agent-card-deepseek-harness-models"',
       'data-testid="first-run-agent-card-custom"',
     ]);
@@ -164,6 +165,16 @@ describe("agent card grid", () => {
     expect(html).toContain("未检测到");
     expect(html).toContain("去配置");
     expect(html).not.toContain("firstRun.");
+  });
+  it.each(["en", "zh"])("resolves a non-empty label for every cloud provider card in %s", async (locale) => {
+    await loadLocale(locale);
+    const html = render(done({}), { cloudProviders: CLOUD_PROVIDER_PRESETS });
+    // An unresolved key renders as its raw `firstRun.*` identifier.
+    expect(html).not.toContain("firstRun.");
+    for (const preset of CLOUD_PROVIDER_PRESETS) {
+      expect(t(preset.labelKey)).not.toBe(preset.labelKey);
+      expect(html).toContain(`>${t(preset.labelKey)}<`);
+    }
   });
   it("offers only platforms that can run as a native agent", () => {
     expect(selectableCliAgents().map((entry) => entry.id)).toEqual(["codex", "claude", "antigravity", "deepseek-harness"]);

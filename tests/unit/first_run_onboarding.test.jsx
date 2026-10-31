@@ -169,7 +169,7 @@ describe("first-run interactions", () => {
     localService.native = false; localService.available = false; draw();
     const grid = elements(tree).find(el => el.type === AgentCardGrid);
     expect(grid.props.showCliAgents).toBe(false);
-    expect(grid.props.cloudProviders.map(card => card.id)).toEqual(["vooCloud", "dashscope", "volcengine"]);
+    expect(grid.props.cloudProviders.map(card => card.id)).toEqual(["vooCloud", "dashscope", "volcengine", "deepseek"]);
   });
   it("renders the provider step and persists the chosen provider", () => {
     expect(step()).toBe("provider");
@@ -245,7 +245,7 @@ describe("first-run interactions", () => {
   it("offers the DeepSeek Harness model card and prefills the local bridge form", () => {
     const grid = elements(tree).find(el => el.type === AgentCardGrid);
     expect(grid.props.cloudProviders.map(card => card.id))
-      .toEqual(["vooCloud", "dashscope", "volcengine", "deepseek-harness-models"]);
+      .toEqual(["vooCloud", "dashscope", "volcengine", "deepseek", "deepseek-harness-models"]);
     const previousModel = getSetting(AGENT_SETTING.MODEL);
     pick("deepseek-harness-models");
     expect(inline().props.preset.id).toBe("deepseek-harness-models");
