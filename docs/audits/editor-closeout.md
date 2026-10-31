@@ -107,7 +107,7 @@ to existing provider settings rather than a blank menu or a CLI-only wizard.
 
 | Acceptance axis | Recorded scope |
 | --- | --- |
-| Entry points and visible result | `local-service.e2e.mjs`: real HTTP identity and WebSocket capability RPC, absent/present/disconnect/recovery, installed-only choices, settings CLI visibility and preserved selection. `agent-model-catalog` retains native account catalog and synchronized welcome/agent choices. |
+| Entry points and visible result | `local-service.e2e.mjs`: real HTTP identity and WebSocket capability RPC, absent/present/disconnect/recovery, released-bridge compatibility, installed-only choices, settings CLI visibility and preserved selection. `agent-model-catalog` retains native account catalog and synchronized welcome/agent choices. |
 | Authoritative document | Discovery never registers a writable canvas. `canvas-live-preview.e2e.mjs` uses a second browser context, confirms unchanged relay target, compares actual red/green image pixels after tool mutation and exercises zoom/fit. |
 | Failure and cancellation | Unit checks cover denied/timeout/wrong-service probes, coalesced refresh, unsubscribe cancellation, forged context sender and document-switch races. HTTP checks cover expired links, cross-site read restrictions, no-store/CSP and DNS rebinding. |
 | History and persistence | Viewer/discovery perform no document mutations, so they create no history. Selected model persistence is read back after disconnect. Editable document save/reopen remains owned by existing suites. |

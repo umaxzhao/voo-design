@@ -17,6 +17,7 @@
 /** Loopback port the bridge binds and the page dials unless overridden. */
 export const CLI_BRIDGE_DEFAULT_PORT = 4179;
 export const CLI_BRIDGE_SERVICE_ID = "voo-cli-bridge";
+export const CLI_BRIDGE_PROTOCOL_VERSION = "1.0.0";
 
 /** Native agent admission must agree in the renderer and every CLI host. */
 export const NATIVE_AGENT_CLI_IDS = Object.freeze([

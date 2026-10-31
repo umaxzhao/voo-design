@@ -179,8 +179,9 @@ blocked or unresponsive service hides local-only choices. Focus, visibility,
 network recovery and bounded periodic checks rediscover the service. Saved API
 providers and model selection are preserved; detection never runs a prompt.
 A browser may require local-network permission. Denial is recoverable
-unavailability, not proof that the App is uninstalled. Restart an older desktop
-bridge with this release to expose its service identity and preview endpoints.
+unavailability, not proof that the App is uninstalled. Released 1.0 bridges remain discoverable through their legacy health version
+plus a valid CLI capability response. Restart an older desktop bridge with this
+release to expose the new preview endpoints.
 
 A standard MCP resource link does not guarantee a particular client's right
 pane. This release verifies Chromium browser viewing, not automatic MCP Apps

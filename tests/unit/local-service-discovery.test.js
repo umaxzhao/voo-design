@@ -9,6 +9,15 @@ describe("Local service discovery", () => {
     expect(fetchImpl.mock.calls[0][1]).toMatchObject({ credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer" });
     expect(await probeLocalService({ fetchImpl: async () => response({ ok: true, service: "voo-cli-bridge" }) })).toBe(true);
   });
+  it("keeps the released 1.0 bridge discoverable but rejects other services and versions", async () => {
+    expect(await probeLocalService({ fetchImpl: async () => response({ ok: true, version: "1.0.0" }) })).toBe(true);
+    expect(await probeLocalService({ fetchImpl: async () => response({ ok: true, version: "1.0.0", service: "other-app" }) })).toBe(false);
+    expect(await probeLocalService({ fetchImpl: async () => response({ ok: true, version: "unknown" }) })).toBe(false);
+    const discovery = createLocalServiceDiscovery({ probe: async () => true, native: () => false,
+      resolveBridge: async () => ({ checkAll: async () => ({ models: ["unrelated"] }) }) });
+    await discovery.refresh();
+    expect(discovery.getSnapshot().available).toBe(false);
+  });
   it("bounds a hung health request and handles browser permission refusal", async () => {
     expect(await probeLocalService({ fetchImpl: async () => { throw new TypeError("denied"); } })).toBe(false);
     expect(await probeLocalService({ timeoutMs: 5, fetchImpl: (_url, { signal }) => new Promise((_resolve, reject) => signal.addEventListener("abort", () => reject(new Error("aborted")))) })).toBe(false);

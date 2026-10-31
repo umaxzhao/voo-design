@@ -12,7 +12,7 @@ import { startDraftStreamWatcher } from "./draft_stream_watcher.js";
 import http from "node:http";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { WebSocketServer } from "ws";
-import { CLI_BRIDGE_DEFAULT_PORT, CLI_BRIDGE_SERVICE_ID } from "../src/shared/cli_bridge_protocol.js";
+import { CLI_BRIDGE_DEFAULT_PORT, CLI_BRIDGE_SERVICE_ID, CLI_BRIDGE_PROTOCOL_VERSION } from "../src/shared/cli_bridge_protocol.js";
 import { writeBridgeToken } from "../src/shared/cli_bridge_token.js";
 import { createWsIpcAdapter } from "./ws_ipc_adapter.js";
 import { registerLocalCliIpc } from "./local_backend_bridge.js";
@@ -97,7 +97,7 @@ export async function startCliBridgeServer({
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
       });
-      response.end(JSON.stringify({ ok: true, version: "1.0.0", service: CLI_BRIDGE_SERVICE_ID }));
+      response.end(JSON.stringify({ ok: true, version: CLI_BRIDGE_PROTOCOL_VERSION, service: CLI_BRIDGE_SERVICE_ID }));
       return;
     }
 

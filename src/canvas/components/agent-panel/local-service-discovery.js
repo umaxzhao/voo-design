@@ -1,5 +1,5 @@
-import { CLI_BRIDGE_SERVICE_ID } from "../../../shared/cli_bridge_protocol.js";
-import { CLI_TRANSPORT } from "../../../shared/cli-agents.js";
+import { CLI_BRIDGE_SERVICE_ID, CLI_BRIDGE_PROTOCOL_VERSION, NATIVE_AGENT_CLI_IDS } from "../../../shared/cli_bridge_protocol.js";
+import { CLI_TRANSPORT, DEEPSEEK_HARNESS_ID } from "../../../shared/cli-agents.js";
 import { CLI_BRIDGE_URL, LOCAL_CLI_STATE_EVENT, ensureLocalCliBridge, resolveCliTransport } from "./local_cli_bridge.js";
 
 const PROBE_TIMEOUT_MS = 1200;
@@ -19,7 +19,10 @@ export async function probeLocalService({ url = CLI_BRIDGE_URL, fetchImpl = glob
     const result = await fetchImpl(health.href, { signal: controller.signal, cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer" });
     if (!result.ok) return false;
     const data = await result.json();
-    return data?.ok === true && data.service === CLI_BRIDGE_SERVICE_ID;
+    // Released 1.0 hosts predate service identity; capability RPC below is
+    // still mandatory, so an unrelated health page cannot expose local models.
+    const legacy = data?.service === undefined && data?.version === CLI_BRIDGE_PROTOCOL_VERSION;
+    return data?.ok === true && (data.service === CLI_BRIDGE_SERVICE_ID || legacy);
   } catch {
     // Refusal, browser local-network denial and timeout all mean unavailable,
     // never "not installed". The next focus/online probe can recover.
@@ -58,7 +61,10 @@ export function createLocalServiceDiscovery({
           if (generation !== currentGeneration) return snapshot;
           const bridge = await getBridge();
           const statuses = await bridge?.checkAll?.();
-          if (statuses && typeof statuses === "object" && !Array.isArray(statuses)) {
+          const knownAgents = [...NATIVE_AGENT_CLI_IDS, DEEPSEEK_HARNESS_ID];
+          const hasCapabilities = statuses && typeof statuses === "object" && !Array.isArray(statuses) &&
+            knownAgents.some(id => typeof statuses[id]?.installed === "boolean");
+          if (hasCapabilities) {
             next = { available: true, native: next.native, phase: "done", statuses };
           }
         }

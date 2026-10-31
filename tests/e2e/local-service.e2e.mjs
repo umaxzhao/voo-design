@@ -8,7 +8,10 @@ await withEditorBrowser(async ({ page, bridge }) => {
   ipc.handle(C.CHECK_ALL, () => ({ claude: { installed: true, authenticated: true }, codex: { installed: false } }));
   ipc.handle(C.CONNECT, () => ({ ok: true, installed: false }));
   let available = false;
-  await page.route("**/health", route => available ? route.continue() : route.abort());
+  let legacy = false;
+  await page.route("**/health", route => !available ? route.abort() : legacy
+    ? route.fulfill({ json: { ok: true, version: "1.0.0" }, headers: { "access-control-allow-origin": "*" } })
+    : route.continue());
   await page.reload();
   await page.waitForLoadState("networkidle");
   await page.evaluate(async () => {
@@ -72,6 +75,13 @@ await withEditorBrowser(async ({ page, bridge }) => {
   await trigger.click();
   await page.getByRole("option", { name: "Sonnet 5.5", exact: true }).waitFor();
   await page.keyboard.press("Escape");
+  legacy = true;
+  const recoveredLegacy = await page.evaluate(async () => {
+    const { resetWebCliBridge } = await import("/src/canvas/components/agent-panel/local_cli_bridge.js");
+    resetWebCliBridge();
+    return (await window.__localDiscovery.refresh()).available;
+  });
+  assert.equal(recoveredLegacy, true, "Released bridge remains usable without the new health identity");
   await page.screenshot({ path: "/private/tmp/voo-local-service.png" });
   console.log("Local service: absent, discovered, installed-only, disconnected, recovered; no prompt generation");
 }, { openDocument: false, mcpLink: false });
