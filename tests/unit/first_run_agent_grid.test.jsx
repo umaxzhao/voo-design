@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import AgentCardGrid, { selectableCliAgents } from "../../src/canvas/components/onboarding/agent_card_grid.jsx";
-import { AGENT_STATUS, DETECTION_PHASE, cliAgentStatus, customAgentStatus } from "../../src/canvas/components/onboarding/agent_status_model.js";
+import { AGENT_STATUS, DETECTION_PHASE, cliAgentStatus, customAgentStatus, visibleCloudProviderPresets } from "../../src/canvas/components/onboarding/agent_status_model.js";
 import { detectLocalClis } from "../../src/canvas/components/onboarding/use_agent_detection.js";
 import { CLI_AGENTS, CLI_TRANSPORT } from "../../src/shared/cli-agents.js";
 import { loadLocale, t } from "../../src/shared/i18n.js";
@@ -37,6 +37,33 @@ describe("agent status mapping", () => {
   it("maps custom model to configure or configured", () => {
     expect(customAgentStatus(false)).toBe(AGENT_STATUS.CONFIGURE);
     expect(customAgentStatus(true)).toBe(AGENT_STATUS.CONFIGURED);
+  });
+});
+
+describe("DeepSeek Harness model-card visibility", () => {
+  it("hides its duplicate model setup after the Harness app and plugin connect", () => {
+    const detection = done({
+      "deepseek-harness": {
+        status: "ready",
+        installed: true,
+        authenticated: true,
+        ready: true,
+      },
+    });
+
+    const visible = visibleCloudProviderPresets(CLOUD_PROVIDER_PRESETS, detection);
+    expect(visible).toEqual(
+      CLOUD_PROVIDER_PRESETS.filter(({ id }) => id !== "deepseek-harness-models"),
+    );
+    expect(visible.map(({ id }) => id)).not.toContain("deepseek-harness-models");
+  });
+
+  it.each([
+    ["checking", { phase: DETECTION_PHASE.CHECKING }],
+    ["app installed but plugin missing", done({ "deepseek-harness": { installed: true, authenticated: false } })],
+  ])("keeps the model setup visible while %s", (_label, detection) => {
+    expect(visibleCloudProviderPresets(CLOUD_PROVIDER_PRESETS, detection))
+      .toEqual(CLOUD_PROVIDER_PRESETS);
   });
 });
 

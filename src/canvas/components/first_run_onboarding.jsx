@@ -14,7 +14,7 @@ import { useAgentDetection } from "./onboarding/use_agent_detection.js";
 import FirstRunWorkspace from "./first_run_workspace.jsx";
 import { CLOUD_PROVIDER_PRESETS, VOO_CLOUD_PROVIDER } from "./onboarding/cloud_provider_presets.js";
 import { CLI_AGENTS, isDeepSeekHarnessAgent } from "../../shared/cli-agents.js";
-import { AGENT_STATUS, cliAgentStatus } from "./onboarding/agent_status_model.js";
+import { AGENT_STATUS, cliAgentStatus, visibleCloudProviderPresets } from "./onboarding/agent_status_model.js";
 import DeepSeekConnectorInline from "./onboarding/deepseek_connector_inline.jsx";
 import VooCloudLoginInline from "./onboarding/voo_cloud_login_inline.jsx";
 import { useUserStore } from "../store/user_store.js";
@@ -47,13 +47,13 @@ export default function FirstRunOnboarding({ open, reopened = false, onClose, on
   const isNarrow = useIsNarrow();
   const isVooCloud = provider === VOO_CLOUD_PROVIDER.id;
   const isApiProvider = !isVooCloud && (provider === "custom" || Boolean(cloudPreset));
+  const detection = useAgentDetection(open && !isNarrow);
   const cloudCards = [
     { ...VOO_CLOUD_PROVIDER, configured: vooCloudSignedIn },
-    ...CLOUD_PROVIDER_PRESETS.map(preset => ({ ...preset,
+    ...visibleCloudProviderPresets(CLOUD_PROVIDER_PRESETS, detection).map(preset => ({ ...preset,
       configured: customGroups.some(group => group.cliId === preset.customProviderId && group.models.length > 0),
     })),
   ];
-  const detection = useAgentDetection(open && !isNarrow);
   const selectedCli = isNarrow
     ? null
     : CLI_AGENTS.find((agent) => agent.id === provider) ?? null;
