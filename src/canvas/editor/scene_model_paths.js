@@ -524,6 +524,8 @@ export function breakPenPointsAtAnchor(points, anchorIndex) {
       ...unclosed.slice(0, idx),
       { ...unclosed[idx], close: false },
     ];
+    reordered[0] = { ...reordered[0], in: null };
+    reordered[reordered.length - 1] = { ...reordered[reordered.length - 1], out: null };
     return { kind: "open", points: reordered };
   }
 
@@ -534,6 +536,8 @@ export function breakPenPointsAtAnchor(points, anchorIndex) {
 
   const pathA = points.slice(0, anchorIndex + 1).map((p) => ({ ...p, close: false }));
   const pathB = points.slice(anchorIndex).map((p) => ({ ...p, close: false }));
+  pathA[pathA.length - 1] = { ...pathA[pathA.length - 1], out: null };
+  pathB[0] = { ...pathB[0], in: null };
   return { kind: "split", paths: [pathA, pathB] };
 }
 

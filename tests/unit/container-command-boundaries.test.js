@@ -72,6 +72,7 @@ describe("container command boundaries", () => {
     expect(get(doc, "folder-b")).toBeUndefined();
     expect(get(doc, "follower").clipTo).toBeUndefined();
     expect(selection.getIds()).toEqual([result.id]);
+    expect(doc.nodes.map((n) => n.id)).toEqual(["frame-a", result.id, "follower"]);
   });
   it("selects the created/attached text node and inherits parentId in typeOnSelectedPath & attachTextToPath", () => {
     let doc = document([
