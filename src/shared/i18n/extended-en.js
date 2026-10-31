@@ -1,5 +1,7 @@
 /** Extended deferred English dictionary. */
+import browser from "./browser-en.js";
 export default {
+  ...browser,
   "firstRun.vooCloud.title": "Sign in to VOO Cloud",
   "firstRun.vooCloud.hint": "One account for Agent, images and video",
   "firstRun.vooCloud.ready": "Ready",
@@ -2289,6 +2291,13 @@ export default {
   "editor.mobile.panels.collapseLayers": "Collapse layers panel",
   "editor.mobile.panels.collapseProperties": "Collapse properties panel",
   "titlebar.more": "More actions",
+  "titlebar.browser": "Web Browser",
+  "browser.title": "Embedded Web Browser",
+  "browser.importPage": "Import Page",
+  "browser.pickElement": "Pick Element",
+  "browser.pickingHint": "Click any element in the webpage to import into canvas (ESC to cancel)",
+  "browser.captureImage": "Capture Viewport Screenshot",
+  "browser.urlPlaceholder": "Enter URL or search (e.g. https://example.com)...",
   "pageSwitcher.untitled": "Untitled page",
   "pageSwitcher.close": "Delete page",
   "pageSwitcher.add": "New page",

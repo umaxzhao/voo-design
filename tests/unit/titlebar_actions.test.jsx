@@ -30,8 +30,8 @@ const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8")
 
 describe("title bar actions", () => {
   it.each([
-    [true, 3, ["titlebar.openTitle", "welcome.header.new", "titlebar.settingsTitle"], ["voo:welcome-menu-action", "voo:welcome-new"]],
-    [false, 3, ["titlebar.openTitle", "titlebar.snapshotTitle", "titlebar.prefsTitle"], ["voo:file-open", "voo:file-export-snapshot"]],
+    [true, 4, ["titlebar.openTitle", "welcome.header.new", "titlebar.browser", "titlebar.settingsTitle"], ["voo:welcome-menu-action", "voo:welcome-new"]],
+    [false, 4, ["titlebar.openTitle", "titlebar.snapshotTitle", "titlebar.browser", "titlebar.prefsTitle"], ["voo:file-open", "voo:file-export-snapshot"]],
   ])("offers open plus new/export and settings on the right (welcome=%s)", (welcomeOpen, count, titles, events) => {
     state.welcomeOpen = welcomeOpen;
     const dispatchEvent = vi.fn();
@@ -58,7 +58,7 @@ describe("title bar actions", () => {
       if (welcomeOpen) expect(dispatchEvent.mock.calls[0][0].detail).toEqual({ action: "open-file" });
       actions[1].props.onClick();
       expect(dispatchEvent.mock.calls.map(([event]) => event.type)).toEqual(events);
-      expect(actions[2].props.onClick.toString()).toContain("setSettingsOpen(true)");
+      expect(actions[3].props.onClick.toString()).toContain("setSettingsOpen(true)");
       for (const event of ["voo:open-about", "voo:open-onboarding", "voo:editor-export", "voo:open-first-run"]) {
         expect(source("../../src/app_title_bar.jsx")).not.toContain(event);
       }

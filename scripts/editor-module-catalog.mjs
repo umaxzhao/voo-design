@@ -204,15 +204,15 @@ export const EDITOR_MODULES = [
     paths: [
       "src/canvas/agent/*", "src/canvas/mcp/*", "src/canvas/collab/*", "src/canvas/comments/*",
       "src/canvas/components/agent-panel/*", "src/canvas/components/onboarding/*", "electron/*", "plugins/*",
-      "src/shared/providers/*",
+      "src/shared/providers/*", "src/canvas/components/browser_drawer/*", "tests/unit/browser_drawer_import.test.js",
     ],
     related: ["workspace","documents","inspector","images"],
     features: [
       "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
-      "platform.native-collaboration",
+      "platform.native-collaboration", "platform.browser-drawer",
     ],
     suites: [
-      "editor-fixture-startup", "pending-integration", "agent-model-catalog", "editor-loading",
+      "editor-fixture-startup", "browser-drawer", "pending-integration", "agent-model-catalog", "editor-loading",
       "editor-optional-loading", "comments-loading", "comments-lifecycle", "editor-refactor",
       "editor-context", "editor-page-composition",
     ],

@@ -1,5 +1,7 @@
 /** Extended deferred Chinese dictionary. */
+import browser from "./browser-zh.js";
 export default {
+  ...browser,
   "firstRun.vooCloud.title": "登录 VOO Cloud",
   "firstRun.vooCloud.hint": "一个账号运行 Agent、生图与生视频",
   "firstRun.vooCloud.ready": "已就绪",
@@ -2216,6 +2218,13 @@ export default {
   "editor.mobile.panels.collapseLayers": "收起图层面板",
   "editor.mobile.panels.collapseProperties": "收起属性面板",
   "titlebar.more": "更多操作",
+  "titlebar.browser": "内置浏览器",
+  "browser.title": "内置网页浏览器",
+  "browser.importPage": "导入整页",
+  "browser.pickElement": "选取元素",
+  "browser.pickingHint": "点击网页中的任意元素即可导入画布（ESC 退出）",
+  "browser.captureImage": "截图置入画布",
+  "browser.urlPlaceholder": "输入网址或搜索内容 (例: https://example.com)...",
   "pageSwitcher.untitled": "未命名页面",
   "pageSwitcher.close": "删除页面",
   "pageSwitcher.add": "新建页面",
