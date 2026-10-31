@@ -6,6 +6,7 @@ import ToolCallCard from "../tool_call_card.jsx";
 import AgentModelLabel from "./agent_model_label.jsx";
 import AgentModelMenu from "./agent_model_menu.jsx";
 import AgentContextChip from "./agent_context_chip.jsx";
+import PromptImageAttachments from "../prompt_image_attachments.jsx";
 import AgentSelectionSuggestions, { appendSuggestion } from "./agent_selection_suggestions.jsx";
 
 /** Starter prompts shown on an empty conversation; each fills the composer. */
@@ -51,7 +52,7 @@ export default function AgentPanelView({
   isEmpty, setInput, transcript, directions, directionChoice, busy,
   pipelineProgress, streamingText, candidates, keepCandidate,
   activeContext, setActiveContext, cancelled, lastRequest, send,
-  error, configError, onSubmit, input, onKeyDown, turnRef
+  error, configError, onSubmit, input, onKeyDown, turnRef, references
 }) {
   const composerRef = useRef(null);
   const modelTriggerRef = useRef(null);
@@ -226,9 +227,9 @@ export default function AgentPanelView({
       {!busy && lastRequest && (
         <div className="mx-4 mb-2 flex gap-2 text-[12px]">
           <button type="button" className="rounded-lg px-3 py-2 text-neutral-300 hover:bg-white/10"
-            onClick={() => send(lastRequest.text, lastRequest.context, undefined, lastRequest.generation)}>{t("agent.panel.retry")}</button>
+            onClick={() => send(lastRequest.text, lastRequest.context, undefined, lastRequest.generation, lastRequest.attachments)}>{t("agent.panel.retry")}</button>
           {cancelled && <button type="button" className="rounded-lg px-3 py-2 text-neutral-300 hover:bg-white/10"
-            onClick={() => send(`${lastRequest.text}\n\n${t("agent.panel.resumePrompt")}`, lastRequest.context, lastRequest, lastRequest.generation)}>{t("agent.panel.resume")}</button>}
+            onClick={() => send(`${lastRequest.text}\n\n${t("agent.panel.resumePrompt")}`, lastRequest.context, lastRequest, lastRequest.generation, lastRequest.attachments)}>{t("agent.panel.resume")}</button>}
         </div>
       )}
       {error && (
@@ -245,7 +246,8 @@ export default function AgentPanelView({
           )}
         </div>
       )}
-      <form ref={composerRef} onSubmit={onSubmit} className="prompt-composer agent-composer relative mx-3 shrink-0 mb-3 rounded-2xl p-3">
+      <form ref={composerRef} onSubmit={onSubmit} onPaste={references?.onPaste} className="prompt-composer agent-composer relative mx-3 shrink-0 mb-3 rounded-2xl p-3">
+        {references && <PromptImageAttachments references={references} t={t} />}
         <AgentContextChip context={activeContext} onDetach={() => setActiveContext(null)} t={t} />
         {modelMenuOpen && (
           <AgentModelMenu currentModel={currentModel} groups={modelGroups}
@@ -294,7 +296,7 @@ export default function AgentPanelView({
           )}
           <button
             type="submit"
-            disabled={busy || !input.trim()}
+            disabled={busy || references?.isReading || (!input.trim() && !references?.attachments.length)}
             aria-label={t("agent.panel.send")}
             title={t("agent.panel.send")}
             className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#E5B2FF] text-black transition-colors hover:bg-[#eed0ff] disabled:opacity-40"
@@ -308,6 +310,7 @@ export default function AgentPanelView({
 }
 
 AgentPanelView.propTypes = {
+  references: PropTypes.object,
   t: PropTypes.func.isRequired,
   activeTitle: PropTypes.string,
   historyOpen: PropTypes.bool,
