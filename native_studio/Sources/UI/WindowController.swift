@@ -3985,8 +3985,9 @@ public class MainContentView: NSView {
         return union
     }
 
-    /// Places the island bar 6pt below the selection's outer frame, centred on it,
-    /// flipping above when it would leave the stage, clamped 8pt inside the viewport.
+    /// Places the island bar 8pt below the selection's outer frame (web `top: calc(100% + 8px)`),
+    /// centred horizontally on it, flipping above when it would collide with the bottom zoom bar,
+    /// clamped inside the viewport.
     public func updateIslandBarPosition() {
         guard !islandBar.isHidden else { return }
         guard let docRect = islandAnchorDocRect() else { return }
@@ -3995,19 +3996,22 @@ public class MainContentView: NSView {
         let size = islandBar.intrinsicContentSize
         let barSize = CGSize(width: max(size.width, 120), height: ContextIslandBar.preferredHeight)
         let bounds = stage.bounds
-        let gap: CGFloat = 6
+        let gap: CGFloat = 8
         let inset: CGFloat = 8
+        let bottomLimit: CGFloat = 56.0 // Above bottom zoom bar (12 + 32 + 12 air)
 
         var x = stageRect.midX - barSize.width / 2
         x = min(max(x, inset), max(bounds.width - barSize.width - inset, inset))
 
-        var y = stageRect.maxY + gap
-        if y + barSize.height > bounds.height - inset {
-            let above = stageRect.minY - gap - barSize.height
-            if above >= inset {
+        // In non-flipped AppKit coords, below the selection is minY - gap - height.
+        var y = stageRect.minY - gap - barSize.height
+        if y < bottomLimit {
+            // Flip above the selection if it would collide with the bottom zoom bar
+            let above = stageRect.maxY + gap
+            if above + barSize.height <= bounds.height - inset {
                 y = above
             } else {
-                y = max(bounds.height - barSize.height - inset, inset)
+                y = max(bottomLimit, inset)
             }
         }
         y = min(max(y, inset), max(bounds.height - barSize.height - inset, inset))
