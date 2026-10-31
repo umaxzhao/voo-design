@@ -127,18 +127,17 @@ describe("Streaming Layout Channel", () => {
         debounceMs: 20,
       });
 
-      const draftFile = path.join(tmpDir, "voo-draft.html");
-      fs.writeFileSync(draftFile, "<div>Initial Draft</div>");
-      watcher.triggerManually("voo-draft.html");
-
-      await new Promise((resolve) => setTimeout(resolve, 60));
-
-      expect(sendToCanvas).toHaveBeenCalledWith(
-        E.STREAM_LAYOUT_UPDATE,
-        expect.objectContaining({ html: "<div>Initial Draft</div>", file: "voo-draft.html" })
-      );
-
-      watcher.close();
+      try {
+        const draftFile = path.join(tmpDir, "voo-draft.html");
+        fs.writeFileSync(draftFile, "<div>Initial Draft</div>");
+        watcher.triggerManually("voo-draft.html");
+        // Real filesystem callbacks can reset the debounce after the manual
+        // trigger. Assert delivery, not an unrealistically fixed 60ms deadline.
+        await vi.waitFor(() => expect(sendToCanvas).toHaveBeenCalledWith(
+          E.STREAM_LAYOUT_UPDATE,
+          expect.objectContaining({ html: "<div>Initial Draft</div>", file: "voo-draft.html" })
+        ), { timeout: 2000, interval: 20 });
+      } finally { watcher.close(); }
     });
 
     it("parses final marker from draft file and passes final: true to executeTool", () => {
