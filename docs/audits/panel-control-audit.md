@@ -1,5 +1,15 @@
 # Panel Control Audit Report (WB-02)
 
+## Welcome settings entry — 2026-10-31
+
+- Capability: `workspace.settings-entry`; ownership: workspace; regression: `ui-home-settings`.
+- Change: remove the welcome sidebar version/status row and relocate its single global Settings entry from the title bar to the bottom-left. Reuse the existing drawer state, event and shortcut handlers; editor-mode settings retain their existing position.
+- Assertions: no version row or welcome title-bar Settings; at 320/390/768/1440px the entry remains in the bottom-left with a minimum 48px target. Existing drawer checks cover open/close, Escape, focus restore and bilingual settings.
+- Reproduction: `/private/tmp/voo-settings-before.log` records the old version row failing the new absence assertion. The dirty workspace's subsequent suite stopped at unrelated Generation type changes; it is not release evidence.
+- Targeted verification: 17 related unit assertions and the complete `ui-home-settings` browser scenario pass, including 320/390/768/1440px screenshots and settings focus restoration.
+- Release blocker: 10 existing failures in Agent schema/documentation and first-run provider/i18n checks also fail on parent baseline `e2d3517` (`/private/tmp/voo-settings-baseline.log`). No push or deployment is claimed. Exact clean revision and final execution results: `/private/tmp/voo-settings-release.json`; initial gate: `/private/tmp/voo-settings-release-initial.json`.
+- Coverage remains partial: physical touch, signed Electron installers and other operating systems are unverified. The change does not mutate document state, history or persistence.
+
 **Specification:** `WB-02` (Workbench / Design Editor Panel Control Audit)  
 **Date:** 2026-10-24  
 **Scope:** Left Panel, Right Panel, Top Toolbar/Subbar, Bottom Bar/Contextual Taskbar  

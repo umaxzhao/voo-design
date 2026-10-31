@@ -30,9 +30,9 @@ const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8")
 
 describe("title bar actions", () => {
   it.each([
-    [true, 4, ["titlebar.openTitle", "welcome.header.new", "titlebar.browser", "titlebar.settingsTitle"], ["voo:welcome-menu-action", "voo:welcome-new"]],
+    [true, 3, ["titlebar.openTitle", "welcome.header.new", "titlebar.browser"], ["voo:welcome-menu-action", "voo:welcome-new"]],
     [false, 4, ["titlebar.openTitle", "titlebar.snapshotTitle", "titlebar.browser", "titlebar.prefsTitle"], ["voo:file-open", "voo:file-export-snapshot"]],
-  ])("offers open plus new/export and settings on the right (welcome=%s)", (welcomeOpen, count, titles, events) => {
+  ])("places welcome settings in the bottom-left and keeps editor settings on the right (welcome=%s)", (welcomeOpen, count, titles, events) => {
     state.welcomeOpen = welcomeOpen;
     const dispatchEvent = vi.fn();
     vi.stubGlobal("window", { dispatchEvent });
@@ -58,7 +58,10 @@ describe("title bar actions", () => {
       if (welcomeOpen) expect(dispatchEvent.mock.calls[0][0].detail).toEqual({ action: "open-file" });
       actions[1].props.onClick();
       expect(dispatchEvent.mock.calls.map(([event]) => event.type)).toEqual(events);
-      expect(actions[3].props.onClick.toString()).toContain("setSettingsOpen(true)");
+      const settings = buttons(tree).filter(button => button.props["aria-label"] === "welcome.settings.open");
+      expect(settings).toHaveLength(1);
+      expect(settings[0].props.onClick.toString()).toContain("setSettingsOpen(true)");
+      expect(settings[0].props.className.includes("fixed bottom-6 left-6")).toBe(welcomeOpen);
       for (const event of ["voo:open-about", "voo:open-onboarding", "voo:editor-export", "voo:open-first-run"]) {
         expect(source("../../src/app_title_bar.jsx")).not.toContain(event);
       }

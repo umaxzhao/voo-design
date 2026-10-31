@@ -290,13 +290,6 @@ export function WelcomeSidebar({
         </div>
       </div>
 
-      {/* Sidebar Footer Status */}
-      <div className="welcome-sidebar-footer px-2 pt-4">
-        <div className="flex items-center justify-between text-[11px] text-neutral-500 font-mono">
-          <span>VOO Design 1.0</span>
-          <span className="size-1.5 rounded-full bg-mint" />
-        </div>
-      </div>
     </aside>
   );
 }

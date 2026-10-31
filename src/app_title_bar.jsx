@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./canvas/components/editor_mobile_layout.css";
+import "./welcome_settings.css";
 import CanvasTabBar from "./canvas/components/canvas_tab_bar.jsx";
 import { Bolt, Download, FolderOpen, Globe, MoreHorizontal } from "lucide-react";
 import { useDesignStore } from "./store/design_store.js";
@@ -271,21 +272,36 @@ export default function AppTitleBar() {
               </div>
             ) : null}
           </div>
-          <button
-            type="button"
-            aria-label={t("welcome.settings.open")}
-            title={t(
-              welcomeOpen ? "titlebar.settingsTitle" : "titlebar.prefsTitle",
-            )}
-            onClick={() => setSettingsOpen(true)}
-            // 28px hit area; -m-1 keeps the layout footprint at 20px.
-            className="-m-1 flex size-7 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-white"
-            style={{ WebkitAppRegion: "no-drag" }}
-          >
-            <Bolt size={14} aria-hidden="true" />
-          </button>
+          {!welcomeOpen && (
+            <button
+              type="button"
+              aria-label={t("welcome.settings.open")}
+              title={t(
+                welcomeOpen ? "titlebar.settingsTitle" : "titlebar.prefsTitle",
+              )}
+              onClick={() => setSettingsOpen(true)}
+              // 28px hit area; -m-1 keeps the layout footprint at 20px.
+              className="-m-1 flex size-7 cursor-pointer items-center justify-center text-white/55 transition-opacity hover:text-white"
+              style={{ WebkitAppRegion: "no-drag" }}
+            >
+              <Bolt size={14} aria-hidden="true" />
+            </button>
+          )}
         </div>
       </header>
+
+      {welcomeOpen && (
+        <button
+          type="button"
+          aria-label={t("welcome.settings.open")}
+          title={t("titlebar.settingsTitle")}
+          onClick={() => setSettingsOpen(true)}
+          className="welcome-settings-button fixed bottom-6 left-6 z-[60] flex min-h-12 min-w-12 cursor-pointer items-center gap-2 rounded-xl bg-black px-3 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-mint"
+        >
+          <Bolt size={14} aria-hidden="true" />
+          <span>{t("welcome.settings.open")}</span>
+        </button>
+      )}
 
       {/* Settings Modal Drawer */}
       <SettingsDrawer
