@@ -59,9 +59,9 @@ await withEditorBrowser(async ({ page, errors }) => {
     await chooser.setFiles(file);
     await page.waitForFunction(() => window.__vooEditor && window.__vooStore?.fileName?.includes("NativeFigma"));
     await page.getByTestId("loading-modal").waitFor({ state: "detached" });
-    // File-name publication precedes React's engine binding; sample the imported document.
-    await page.waitForFunction(() =>
-      window.__vooEditor?.getDocument().nodes.some(node => node.name === "Native 2") &&
+    // The modal can detach before the new engine publishes the reopened scene.
+    // Wait for the actual imported document, retaining every exact pixel check.
+    await page.waitForFunction(() => window.__vooEditor?.getDocument().nodes.some(node => node.name === "Native 2") &&
       document.querySelector('[data-testid="design-editor"] [data-open-guard]')?.getAttribute("data-open-guard") === "off");
   };
   await pick({ name: "NativeFigma.fig", mimeType: "application/octet-stream", buffer: Buffer.from(bytes) });

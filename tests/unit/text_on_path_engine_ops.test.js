@@ -163,4 +163,60 @@ describe("Text on Path engine operations", () => {
     expect(textNode.textPath).toBeUndefined();
     expect(textNode.text).toBe("Freed Text");
   });
+
+  it("applies node rotation to anchors and handles when creating text on path", () => {
+    let doc = {
+      nodes: [
+        {
+          id: "path-rot",
+          kind: NODE_KIND.PATH,
+          x: 100,
+          y: 100,
+          width: 200,
+          height: 200,
+          rotation: 90,
+          points: [
+            { x: 0, y: 100, out: [50, 0] },
+            { x: 200, y: 100, in: [-50, 0] },
+          ],
+        },
+      ],
+    };
+
+    let selectedIds = ["path-rot"];
+    const selection = {
+      getIds: () => selectedIds,
+      setIds: (ids) => {
+        selectedIds = ids;
+      },
+    };
+
+    const ops = createEngineNodeOps({
+      getDoc: () => doc,
+      setDoc: (next) => {
+        doc = next;
+      },
+      selection,
+      requestRender: vi.fn(),
+      notify: vi.fn(),
+    });
+
+    const success = ops.typeOnSelectedPath();
+    expect(success).toBe(true);
+    const textNode = doc.nodes.find((n) => n.kind === NODE_KIND.TEXT);
+    expect(textNode).toBeDefined();
+    expect(textNode.textPath).toBeDefined();
+
+    // Center is (200, 200). Local (0, 100) -> (-100, 0) rotated 90° -> (0, -100) + center = (200, 100)
+    expect(Math.round(textNode.textPath.points[0].x)).toBe(200);
+    expect(Math.round(textNode.textPath.points[0].y)).toBe(100);
+
+    // Local (200, 100) -> (100, 0) rotated 90° -> (0, 100) + center = (200, 300)
+    expect(Math.round(textNode.textPath.points[1].x)).toBe(200);
+    expect(Math.round(textNode.textPath.points[1].y)).toBe(300);
+
+    // Handle out: [50, 0] rotated 90° becomes [0, 50]
+    expect(Math.round(textNode.textPath.points[0].out[0])).toBe(0);
+    expect(Math.round(textNode.textPath.points[0].out[1])).toBe(50);
+  });
 });

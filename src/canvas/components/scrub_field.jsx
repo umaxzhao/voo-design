@@ -54,11 +54,13 @@ export default function ScrubField({
 
   return (
     <div
+      data-inspector-control={bare ? "bare-field" : "field"}
       className={`${containerClass} ${showRange ? "relative overflow-hidden" : ""}`}
     >
       {prefix ? (
         <EditorTooltip title={ariaLabel || scrubHint} side="left" delay={250}>
           <span
+            data-inspector-part="label"
             aria-hidden="true"
             tabIndex={-1}
             {...(disabled ? {} : scrub)}
@@ -83,6 +85,7 @@ export default function ScrubField({
       />
       {suffix ? (
         <span
+          data-inspector-part="unit"
           aria-hidden="true"
           title={ariaLabel || scrubHint}
           {...(disabled ? {} : scrub)}

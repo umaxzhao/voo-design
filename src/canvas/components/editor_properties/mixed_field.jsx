@@ -43,12 +43,13 @@ export default function MixedField({
 
   return (
     <div
+      data-inspector-control={bare ? "bare-field" : "field"}
       className={`flex min-w-0 items-center rounded-xl bg-[#222222] px-2 py-1.5 text-[11px] font-mono text-neutral-400 ${
         bare ? "flex-1" : ""
       }`}
       title={editable ? t("editor.props.mixedValuesEditable") : t("editor.props.mixedValues")}
     >
-      <span className="inline-flex shrink-0 items-center pr-1 text-[10px] font-mono uppercase tracking-wide text-neutral-400">
+      <span data-inspector-part="label" className="inline-flex shrink-0 items-center pr-1 text-[10px] font-mono uppercase tracking-wide text-neutral-400">
         {label}
       </span>
       {editable ? (

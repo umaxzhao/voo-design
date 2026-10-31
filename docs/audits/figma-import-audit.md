@@ -157,41 +157,102 @@ configurations, 604 stroke alignments and 15 non-outlined dash configurations. T
 not pixel parity for every real-file combination. Corner smoothing is metadata
 only; outlined paths already bake their stroke/corner geometry into fills.
 
-### Measured large-file improvement, still below acceptance
+### Final sequential measurements, still below performance acceptance
 
-Both complete local production runs used Chromium/Metal on Apple M4 Pro,
+Both complete production runs were serialized after this task's unit/browser
+workers and metadata diagnostics finished: before `b20bb5b`, after
+`3dfad79396e229cf9a0e888f52842f49b31c3e1a`. Chromium used Apple M4 Pro Metal,
 1440 × 1000, DPR 1, fresh profiles, the identical read-only `test.fig`, external
-network blocked and the same picker/camera/wheel script. The before build is
-`b20bb5b`; the after build is `6bb6ac4` plus this remediation. Upstream changes
-between those bases concern inspector typography and Agent UI. These are single
-runs on a shared development machine, not portable performance guarantees.
+network blocked and the same picker/camera/wheel script. The homepage was ready
+before opening the file; import timing starts at file input change. The final
+build includes the recorded upstream changes; results do not isolate each fix's
+causal contribution. This remains one pair on a shared development machine,
+not a portable performance guarantee. OS load averages are retained in receipts.
 
 | Measurement | Before | After |
 | --- | ---: | ---: |
-| Loading ended | 21.19 s | 19.20 s |
-| Pan rAF cadence | 2.02 callbacks/s | 4.31 callbacks/s |
-| Zoom rAF cadence | 0.69 callbacks/s | 1.62 callbacks/s |
-| Six wheel samples, median | 623.5 ms | 276 ms |
-| Wheel sample range | 562–3,068 ms | 207–1,314 ms |
-| Longest import main-thread task | 3.777 s | 3.773 s |
+| Loading ended | 20.28 s | 12.69 s |
+| Pan rAF cadence | 1.95 callbacks/s | 5.54 callbacks/s |
+| Zoom rAF cadence | 0.95 callbacks/s | 1.78 callbacks/s |
+| Six wheel samples, median | 638 ms | 199 ms |
+| Wheel sample range | 578–2,902 ms | 178–1,003 ms |
+| Longest import main-thread task | 3.745 s | 1.882 s |
 
-These are callback timings, not GPU FPS. Only seven/three before and fourteen/
-five after pan/zoom intervals were recorded. The remaining pauses are failures;
-this optimization does not certify smooth navigation or fix long import tasks.
-Before-run import overlapped the private metadata diagnostic; camera/wheel
-samples completed after the unit workers had exited. No cross-run averages or
-restoration percentage are claimed.
+These are callback timings, not GPU FPS. Only seven/three before and seventeen/
+six after pan/zoom intervals were recorded. Pauses remain failures: large-scene
+navigation is not certified smooth. Both runs completed without page script
+errors; each stored 478 assets. The original file's size and SHA-256 still match.
+Earlier exploratory measurements overlapped a private diagnostic and remain
+archived separately; they are not averaged into this comparison.
 
-Evidence: private `/tmp/voo-fig-opt-before/`, `/tmp/voo-fig-opt-after/`,
+Evidence: private `/tmp/voo-fig-opt-before-controlled/`,
+`/tmp/voo-fig-opt-after-controlled/`, `/tmp/voo-fig-controlled-comparison.json`,
 `/tmp/voo-fig-opt-properties/`, baseline failing regression log
-`/tmp/voo-fig-optimization-baseline.log` and picker regression log
-`/tmp/voo-fig-browser-fidelity.log`. An initial unprivileged full unit run had
-41 failures including denied loopback listeners, watcher notifications and a
-25 ms performance threshold; it is retained, not represented as a pass.
-Final committed-source release evidence is recorded in `quality-progress.md`.
+`/tmp/voo-fig-optimization-baseline.log` and independent multi-fill crop
+red/green logs. The initial sandbox full-unit failures remain recorded.
 
 Still unverified/incomplete: signed Electron, every page at readable scale,
 source fonts, nonuniform text affine scaling, arbitrary reflection combinations,
 rich text/strike-through/vertical alignment, complete shadow stacks, live
 component links, variable bindings/aliases, prototype/export/grid metadata and
-child grow/stretch sizing. `native_studio` remains excluded.
+child grow/stretch sizing. Corner smoothing is metadata only.
+`native_studio` remains excluded.
+
+### Cold-start New regression discovered by the release gate
+
+The `ea90962` gate passed 4,608 unit assertions (four skipped), then stopped
+at 37/91 recorded steps after `continuous-creation` timed out creating its
+first document. An isolated repeat passed, so the first failure was retained
+as an intermittent startup failure, not discarded as a pass.
+
+Holding the lazy welcome module before its listener subscribes deterministically
+reproduces a lost New request. The title bar now retains one pending intent
+until the existing dashboard creation handler subscribes. Desktop and overflow
+entries share that request operation; the actual workspace creation path stays
+shared with presets. Fresh workspace and recent-file names are checked before
+writing, so an early request cannot replace an existing Design1.voo based on
+an unloaded/filtered dashboard list. A registered title-bar browser scenario
+seeds Design1.voo, clicks New while the dashboard is blocked, verifies exactly
+one Design2.voo and compares the original bytes. Unit coverage retains latest
+naming, one-time replay and listener cleanup. No extra default UI is added.
+
+Behavior owner: `workspace.cold-start-new`. The final gate is rerun on the
+committed combined source, including upstream i18n/vector/text fixes. The
+initial aborted/incomplete reports remain separate evidence.
+
+### Published verification — 2026-11-01
+
+- Clean unchanged source `dd6936840b8cb5ee34062e81774ea528b959769a` passed all
+  **91/91** release steps: module registration, production build, design lint,
+  4,615 unit assertions (four skipped) and 87 core browser suites. Exact evidence:
+  `/tmp/voo-fig-opt-release-combined.json` and its `.log`. This is a new complete
+  execution after the recorded `ea90962` failure; earlier runs were not relabeled.
+- `3dfad79` separately passed eight integration steps, including 19 bitmap/
+  document-reference unit assertions and Figma import, image history, project
+  round-trip and deterministic cold-New browser scenarios. Evidence:
+  `/tmp/voo-fig-integrated-checks.json`. Its production build was deployed using
+  `scripts/deploy-editor.sh`; the SSH backup and successful preflight are retained.
+- A parallel Browser-dock release subsequently published `6d8cef7`, containing
+  all this task's Figma/editor changes unchanged plus the right-dock/exclusion
+  behavior. It was preserved. That feature's integration receipt belongs to
+  `47471c9`: build/lint, 4,637 full-unit passes (four skipped) and three browser
+  suites. `47471c9..6d8cef7` changes documentation only; neither integration
+  inherits `dd69368`'s complete 91-step execution.
+- Current canonical HTML and eight critical resources match the actual
+  `6d8cef7` deployment byte-for-byte. Independent production Chromium imports
+  the generated native archive and passes crop/cover/independent image fills,
+  rotation, overflow, two-mask pixels, cached-pass equality, typed variables,
+  constraint-aware resize and undo/redo, with no page script errors.
+  Evidence: `/tmp/voo-fig-deployment-proof.json`,
+  `/tmp/voo-fig-production-fidelity.json` and `.png`. This specifically tests
+  the DOM input path after homepage/document readiness, not the native FSA or
+  operating-system chooser.
+- Production attempts before the final pass are retained: an unobserved file
+  chooser, an early-engine pixel mismatch, and an HTML revision mismatch during
+  parallel publication. The final run explicitly checks actual HTML, imported
+  node identity and open-guard completion before the unchanged pixel assertions.
+- Persistent private bundle: `figma-import-optimization/` in the current Codex
+  visualization artifacts folder, including original receipts and SHA-256
+  manifest. No private `.fig`, decoded design or commercial screenshot is
+  committed. Twenty-one separately registered checks and native/paid-service
+  contexts are not certified by this release; functional coverage stays partial.

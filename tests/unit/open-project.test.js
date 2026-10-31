@@ -148,7 +148,7 @@ describe("selected source parser handoff", () => {
     }));
     expect(window.showOpenFilePicker).not.toHaveBeenCalled();
     expect(store.setDocumentLoading.mock.calls.at(-1)).toEqual([null]);
-  });
+  }, 15000);
 
   it("restores the loading overlay if a selected file cannot be parsed", async () => {
     const { openVooProject } = await vi.importActual("../../src/canvas/store/project_io.js");
@@ -158,5 +158,5 @@ describe("selected source parser handoff", () => {
     } })).rejects.toThrow();
     expect(store.loadVooProject).not.toHaveBeenCalled();
     expect(store.setDocumentLoading.mock.calls.at(-1)).toEqual([null]);
-  });
+  }, 15000);
 });

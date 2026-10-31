@@ -23,7 +23,7 @@ function renderLayers() {
 describe("opacity icon and blend mode surface", () => {
   it("renders the layers opacity value without an icon", () => {
     const html = renderLayers();
-    const opacityField = html.match(/<div class="[^"]*layers-opacity-control[^"]*">([\s\S]*?)<\/div>/)?.[1];
+    const opacityField = html.match(/<div[^>]*class="[^"]*layers-opacity-control[^"]*"[^>]*>([\s\S]*?)<\/div>/)?.[1];
 
     expect(opacityField).toContain("100");
     expect(opacityField).toContain("%");

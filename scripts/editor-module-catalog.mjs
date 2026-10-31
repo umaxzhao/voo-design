@@ -4,13 +4,14 @@ export const EDITOR_MODULES = [
     id: "workspace",
     title: "Workspace and resources",
     paths: [
-      "tests/unit/titlebar_actions.test.jsx", "src/app_title_bar.jsx", "src/welcome_settings.css",
+      "src/app_title_bar.jsx", "src/welcome_settings.css",
+      "tests/unit/titlebar_actions.test.jsx", "tests/unit/welcome_header_actions.test.js",
       "src/canvas/components/welcome*", "src/canvas/components/welcome_dashboard/*",
       "src/canvas/components/editor*resources*", "src/canvas/components/editor_layers_assets*",
       "src/canvas/components/titlebar*",
     ],
     related: ["documents","inspector","platform"],
-    features: ["workspace.file-actions-ready","workspace.projects","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry"],
+    features: ["workspace.file-actions-ready","workspace.projects","workspace.cold-start-new","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry"],
     suites: [
       "project-picker", "titlebar-file-actions", "welcome-model-menu", "welcome-draft-trash",
       "ui-home-settings", "welcome-covers", "editor-resources", "editor-resources-built",
@@ -21,7 +22,7 @@ export const EDITOR_MODULES = [
     id: "documents",
     title: "Documents, persistence and history",
     paths: [
-      "src/store/design_store.js", "src/canvas/store/*", "src/storage/*", "src/services/*", "src/canvas/editor/editor_history*",
+      "src/canvas/store/*", "src/storage/*", "src/services/*", "src/canvas/editor/editor_history*",
       "src/canvas/editor/editor_engine_history*", "src/canvas/undo*",
     ],
     related: ["workspace","layers","images","platform"],
@@ -86,6 +87,7 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/doc_ops_groups_helpers.js", "src/canvas/editor/reorder-layer-batch.js",
       "src/canvas/components/editor_image_batch.js", "src/canvas/components/use_editor_dnd.js",
       "tests/unit/batch-layer-reorder.test.js", "tests/unit/layer-hierarchy-stack.test.js",
+      "tests/unit/container-command-boundaries.test.js",
     ],
     related: ["selection","compositing","layout","documents"],
     features: ["layers.nesting","layers.placement","layers.reparent","layers.duplicate-delete-lock","layers.container-boundaries"],
@@ -125,7 +127,7 @@ export const EDITOR_MODULES = [
       "tests/unit/figma/*",
       "src/canvas/editor/shape_geometry.js", "src/canvas/editor/*boolean*", "src/canvas/editor/*path*", "src/canvas/editor/*pen*",
       "src/canvas/editor/*svg*", "src/canvas/editor/editor_export*", "src/canvas/figma/*", "src/canvas/pen/*",
-      "src/canvas/codegen/*", "tests/unit/pen-midpoint-insertion.test.js",
+      "src/canvas/codegen/*", "tests/unit/pen-midpoint-insertion.test.js", "tests/unit/pen_curve_math.test.js",
     ],
     related: ["selection","compositing","documents","inspector"],
     features: ["vectors.path-edit","vectors.midpoint-insertion","vectors.booleans","vectors.stroke","vectors.format-losses","vectors.native-fig-properties"],
@@ -139,7 +141,7 @@ export const EDITOR_MODULES = [
     title: "Text editing and typography",
     paths: [
       "src/canvas/editor/editor_annotations.js", "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js", "src/canvas/components/editor_text*",
-      "src/canvas/components/editor_properties/text*", "tests/unit/text_section_compact.test.jsx", "tests/unit/tools_text_pen_shape.test.jsx", "tests/unit/affinity_tool_properties_panel.test.jsx",
+      "src/canvas/components/editor_properties/text*", "tests/unit/text_section_compact.test.jsx", "tests/unit/tools_text_pen_shape.test.jsx", "tests/unit/affinity_tool_properties_panel.test.jsx", "tests/unit/text_on_path_engine_ops.test.js",
     ],
     related: ["selection","layout","compositing","documents","platform"],
     features: ["text.edit","text.box-sizing","text.typography","text.font-loading","text.placement-transactions"],
@@ -191,8 +193,9 @@ export const EDITOR_MODULES = [
     id: "inspector",
     title: "Inspector, menus and shared UI",
     paths: [
+      "tests/e2e/inspector-control-cases.mjs", "src/canvas/components/scrub_field.jsx",
       "tests/e2e/typography-inspector-cases.mjs", "tests/e2e/context-submenu-checks.mjs",
-      "tests/unit/export_presets.test.js", "tests/unit/right_panel_phase1.test.jsx", "tests/unit/properties_panel_restructure.test.jsx",
+      "tests/unit/opacity_icon_blend_bg.test.jsx", "tests/unit/export_presets.test.js", "tests/unit/right_panel_phase1.test.jsx", "tests/unit/properties_panel_restructure.test.jsx",
       "src/canvas/components/anchored_global_popover.jsx", "src/canvas/components/global_overlay_portal.jsx", "src/canvas/components/deferred_editor_surface.jsx",
       "src/canvas/components/shortcut_reference_modal.jsx", "src/canvas/components/editor_icon_picker_modal.jsx", "src/canvas/components/SvgEditModal.jsx",
       "tests/e2e/global-overlay-harness.jsx", "tests/unit/global-overlay-portals.test.jsx",
@@ -203,7 +206,7 @@ export const EDITOR_MODULES = [
       "src/shared/i18n*", "src/shared/i18n/*", "src/canvas/*layout.css", "src/canvas/*panels.css",
     ],
     related: ["selection","layers","text","images","layout"],
-    features: ["inspector.typography-clarity", "inspector.export-opt-in", "inspector.unified-fill", "inspector.impeccable-polish", "inspector.context-submenus",
+    features: ["inspector.control-hierarchy", "inspector.typography-clarity", "inspector.export-opt-in", "inspector.unified-fill", "inspector.impeccable-polish", "inspector.context-submenus",
       "inspector.global-overlay-stacking", "inspector.field-commit", "inspector.menu-focus", "inspector.responsive", "inspector.locale-lifecycle",
     ],
     suites: ["impeccable-polish",
@@ -219,6 +222,7 @@ export const EDITOR_MODULES = [
     title: "Agent, runtime and platform integration",
     paths: [
       "scripts/release-command-pool.mjs", "scripts/verify-editor-release.mjs", "tests/unit/release-command-pool.test.js",
+      "src/store/design_store.js", "src/store/editor-panel-actions.js", "tests/unit/editor-panel-actions.test.js",
       "scripts/generate-third-party-notices.mjs", "scripts/bundled-third-party-notices.mjs",
       "scripts/license-texts/*", "scripts/verify-package.mjs", "NOTICE",
       "tests/e2e/editor-browser-server.mjs", "tests/e2e/editor-browser-fixture.mjs",
@@ -234,7 +238,7 @@ export const EDITOR_MODULES = [
     related: ["workspace","documents","inspector","images","text"],
     features: [
       "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
-      "platform.native-collaboration", "platform.browser-drawer", "platform.local-service-discovery", "platform.live-preview",
+      "platform.native-collaboration", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
     ],
     suites: [

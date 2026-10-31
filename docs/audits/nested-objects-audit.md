@@ -220,11 +220,12 @@ clickable before the lazy welcome page registered its file input listeners.
 The unmodified `24085cc` baseline reproduces the lost filechooser event too.
 The welcome page now marks its UI-only readiness after its existing action
 effects mount, and clears readiness on unmount. Desktop and narrow title-bar
-Import/New wait for that signal; editing/export actions remain available.
+Import waits for that signal; New retains the mainline queued, idempotent
+request so an early click creates one document after dashboard registration.
 This flag is not document content or a new user setting.
 
-`titlebar-file-actions` holds the welcome module request, verifies both buttons
-are disabled before registration, then releases it and retains the actual file
+`titlebar-file-actions` holds the welcome module request, verifies Import is disabled and New remains enabled
+before registration, then releases it and retains the actual file
 picker, cancellation, portable snapshot import/export and New assertions.
 The original `continuous-creation` archive, geometry, bitmap pixels and undo
 checks are retained. Raw before/after and baseline logs are under
