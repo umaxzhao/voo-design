@@ -132,18 +132,18 @@ await withEditorBrowser(async ({ page, origin }) => {
 
   // Advanced generation remains behind its existing trigger; nested Escape leaves it open.
   await home.getByRole("button", { name: "Recents", exact: true }).click();
-  await home.getByRole("button", { name: "Generation type", exact: true }).click();
-  const advanced = page.getByRole("dialog", { name: "Generation type", exact: true });
+  await home.getByRole("button", { name: "Generation settings", exact: true }).click();
+  const advanced = page.getByRole("dialog", { name: "Generation settings", exact: true });
   await advanced.waitFor();
-  await advanced.locator('button[aria-haspopup="listbox"]').first().click();
-  await page.getByRole("listbox", { name: "Generation type", exact: true }).waitFor();
+  await advanced.getByRole("button", { name: "Style", exact: true }).click();
+  await page.getByRole("listbox", { name: "Style", exact: true }).waitFor();
   await page.keyboard.press("Escape");
-  await page.getByRole("listbox", { name: "Generation type", exact: true }).waitFor({ state: "detached" });
+  await page.getByRole("listbox", { name: "Style", exact: true }).waitFor({ state: "detached" });
   assert.ok(await advanced.isVisible());
   await page.keyboard.press("Escape");
   await advanced.waitFor({ state: "detached" });
   checks.push("advanced generation opens through one entry and nested selects own the first Escape");
-  await home.getByRole("button", { name: "Generation type", exact: true }).click();
+  await home.getByRole("button", { name: "Generation settings", exact: true }).click();
   await advanced.waitFor();
   const touch = await page.context().newCDPSession(page);
   await touch.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
