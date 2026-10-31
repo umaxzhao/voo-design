@@ -19,7 +19,7 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   await select("audit-rect");
   const x = panel.getByRole("spinbutton", { name: "X", exact: true });
   const field = x.locator("..");
-  assert.equal((await styles(field)).radius, 6, "Numeric fields should no longer look like capsules");
+  assert.equal((await styles(field)).radius, 12, "Numeric fields keep the original large corner radius");
   assert.equal((await styles(field)).height, 32);
   assert.ok((await styles(panel)).radius >= 16, "Keep the large floating panel rounded");
   const original = await page.evaluate(() => window.__vooEditor.getNode("audit-rect"));
@@ -32,7 +32,7 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   const dropdown = panel.getByRole("button", { name: "Blend mode", exact: true });
   const dropdownStyle = await styles(dropdown);
   assert.equal(dropdownStyle.height, 32);
-  assert.equal(dropdownStyle.radius, 6);
+  assert.equal(dropdownStyle.radius, 12);
   assert.notEqual(dropdownStyle.background, (await styles(field)).background, "A dropdown has a distinct surface");
   assert.equal(dropdownStyle.borderWidth, "1px");
   await dropdown.focus(); await dropdown.press("ArrowDown");
@@ -42,15 +42,17 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   assert.equal(await dropdown.evaluate(el => el === document.activeElement), true);
   const rotate = panel.getByRole("button", { name: /Rotate 90/ });
   assert.equal((await styles(rotate)).background, "rgba(0, 0, 0, 0)", "Commands stay visually lighter than inputs");
+  assert.equal((await styles(rotate)).radius, 12);
   await rotate.click(); await tool("undo"); await settle();
   assert.equal(await page.evaluate(() => window.__vooEditor.getNode("audit-rect").rotation), original.rotation);
   await select("audit-frame");
   const horizontal = panel.getByRole("button", { name: "Horizontal", exact: true });
   const strip = horizontal.locator("..");
-  assert.equal((await styles(strip)).radius, 8);
+  assert.equal((await styles(strip)).radius, 12);
   await horizontal.click(); await settle();
   assert.equal(await horizontal.getAttribute("aria-pressed"), "true");
-  assert.equal((await styles(panel.getByRole("spinbutton", { name: "W", exact: true }).locator("../.."))).radius, 6);
+  assert.equal((await styles(panel.getByRole("spinbutton", { name: "W", exact: true }).locator("../.."))).radius, 12);
+  assert.equal((await styles(horizontal)).radius, 12);
   const inactive = panel.getByRole("button", { name: "Vertical", exact: true });
   assert.notEqual((await styles(horizontal)).background, (await styles(inactive)).background);
   await tool("undo"); await settle();
@@ -70,7 +72,7 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
       if (await toggle.isVisible() && await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
       await settle();
       await x.scrollIntoViewIfNeeded();
-      assert.equal((await styles(field)).radius, 6);
+      assert.equal((await styles(field)).radius, 12);
       assert.equal((await styles(field)).height, width < 768 ? 48 : 32);
       assert.ok((await styles(x)).fontSize >= 11, "Readable numeric values at every width");
       const anchorOverlaps = await panel.locator("[data-transform-position]").evaluate(el => {
