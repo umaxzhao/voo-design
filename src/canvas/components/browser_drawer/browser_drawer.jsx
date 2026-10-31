@@ -20,13 +20,10 @@ import { useI18n } from "../../use_i18n.js";
 import { importHtmlSnippetToCanvas } from "./browser_import_helpers.js";
 import { INJECTED_PICKER_CODE } from "./browser_picker_script.js";
 
-const DEFAULT_HOME_URL = "https://news.ycombinator.com";
+const DEFAULT_HOME_URL = "https://www.awwwards.com";
 
 const PRESET_SITES = [
-  { name: "Hacker News", url: "https://news.ycombinator.com", desc: "Clean HTML structure & typography" },
-  { name: "VOO Official", url: "https://voo.run", desc: "Vector & 3D Web Editor" },
-  { name: "Wikipedia", url: "https://en.wikipedia.org/wiki/Formula_One", desc: "Structured encyclopedic content" },
-  { name: "Tailwind UI", url: "https://tailwindui.com", desc: "Modern component design" },
+  { name: "Awwwards", url: "https://www.awwwards.com", desc: "Website Awards & Design Inspiration" },
 ];
 
 export default function BrowserDrawer({ open, onClose }) {
@@ -267,17 +264,28 @@ export default function BrowserDrawer({ open, onClose }) {
         setImportStatus(null);
       }
     };
+    const onConsoleMessage = (e) => {
+      const msg = e.message || "";
+      if (msg.startsWith("__VOO_PICK__:")) {
+        try {
+          const payload = JSON.parse(msg.slice("__VOO_PICK__:".length));
+          window.postMessage(payload, "*");
+        } catch {}
+      }
+    };
 
     wv.addEventListener("did-start-loading", onStart);
     wv.addEventListener("did-stop-loading", onStop);
     wv.addEventListener("did-navigate", onNavigate);
     wv.addEventListener("ipc-message", onIpcMessage);
+    wv.addEventListener("console-message", onConsoleMessage);
 
     return () => {
       wv.removeEventListener("did-start-loading", onStart);
       wv.removeEventListener("did-stop-loading", onStop);
       wv.removeEventListener("did-navigate", onNavigate);
       wv.removeEventListener("ipc-message", onIpcMessage);
+      wv.removeEventListener("console-message", onConsoleMessage);
     };
   }, [injectPickerScript]);
 

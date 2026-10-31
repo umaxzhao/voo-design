@@ -200,6 +200,9 @@ export const INJECTED_PICKER_CODE = `
   }
 
   function notifyHost(payload) {
+    try {
+      console.log('__VOO_PICK__:' + JSON.stringify(payload));
+    } catch {}
     if (window.parent && window.parent !== window) {
       window.parent.postMessage(payload, '*');
     }

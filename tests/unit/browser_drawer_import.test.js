@@ -13,16 +13,19 @@ describe("Browser Drawer HTML Import & Helpers", () => {
     delete globalThis.window.__vooEditor;
   });
 
-  it("exports injected picker code containing element picker functions", () => {
+  it("exports injected picker code containing element picker functions and style serializing", () => {
     expect(INJECTED_PICKER_CODE).toContain("__vooStartPicker");
     expect(INJECTED_PICKER_CODE).toContain("__vooStopPicker");
     expect(INJECTED_PICKER_CODE).toContain("__vooExtractFullPage");
     expect(INJECTED_PICKER_CODE).toContain("__voo_picker_overlay__");
+    expect(INJECTED_PICKER_CODE).toContain("serializeNodeWithStyles");
+    expect(INJECTED_PICKER_CODE).toContain("ESSENTIAL_CSS_PROPS");
   });
 
   it("handles empty or blank HTML gracefully without crashing", async () => {
     const res1 = await importHtmlSnippetToCanvas({ html: "" });
     expect(res1.success).toBe(false);
+    expect(res1.error).toContain("No HTML content");
 
     const res2 = await importHtmlSnippetToCanvas({ html: "   " });
     expect(res2.success).toBe(false);
@@ -48,13 +51,13 @@ describe("Browser Drawer HTML Import & Helpers", () => {
       }),
     };
 
-    window.__vooEditor = mockEditor;
+    globalThis.window.__vooEditor = mockEditor;
 
     const sampleHtml = `
       <div style="display: flex; flex-direction: column; width: 360px; height: 180px; background-color: #1e1e24; border-radius: 8px; padding: 16px;">
-        <h2 style="font-size: 20px; font-weight: bold; color: #ffffff; margin-bottom: 8px;">Card Title</h2>
-        <p style="font-size: 14px; color: #9ca3af;">This is an imported card description from the web.</p>
-        <button style="margin-top: 12px; background-color: #3b82f6; color: #ffffff; padding: 6px 12px; border-radius: 4px; border: none;">Action</button>
+        <h2 style="font-size: 20px; font-weight: bold; color: #ffffff; margin-bottom: 8px;">Awwwards Site Winner</h2>
+        <p style="font-size: 14px; color: #9ca3af;">Creative design with fluid grid and interactions.</p>
+        <button style="margin-top: 12px; background-color: #3b82f6; color: #ffffff; padding: 6px 12px; border-radius: 4px; border: none;">Explore</button>
       </div>
     `;
 
@@ -62,7 +65,7 @@ describe("Browser Drawer HTML Import & Helpers", () => {
       html: sampleHtml,
       width: 360,
       height: 180,
-      title: "Pricing Card",
+      title: "Awwwards Hero Card",
     });
 
     expect(result.success).toBe(true);
@@ -76,10 +79,49 @@ describe("Browser Drawer HTML Import & Helpers", () => {
     expect(importedRoots.length).toBeGreaterThan(0);
     for (const root of importedRoots) {
       expect(root.x).toBeGreaterThanOrEqual(580);
+      expect(root.name).toContain("Awwwards Hero Card");
     }
 
     // Verify selection is invoked on new root
     expect(selectedIds).toBeDefined();
     expect(selectedIds?.length).toBeGreaterThan(0);
+  });
+
+  it("handles complex HTML with images, SVGs and nested flexbox", async () => {
+    let committedDoc = null;
+    const mockEditor = {
+      getDocument: vi.fn(() => ({
+        width: 1440,
+        height: 900,
+        nodes: [],
+      })),
+      setDoc: vi.fn((doc) => {
+        committedDoc = doc;
+      }),
+      selectExactly: vi.fn(),
+    };
+
+    globalThis.window.__vooEditor = mockEditor;
+
+    const complexHtml = `
+      <section style="display: flex; gap: 20px; width: 800px; height: 400px; background: #0f1015; padding: 24px;">
+        <div style="flex: 1; display: flex; flex-direction: column;">
+          <h1 style="color: #ffffff; font-size: 32px;">Modern Portfolio</h1>
+          <p style="color: #888888; font-size: 16px;">Designed for high performance.</p>
+        </div>
+        <img src="https://images.unsplash.com/photo-1518770660439-4636190af475" style="width: 300px; height: 200px; border-radius: 12px;" />
+      </section>
+    `;
+
+    const result = await importHtmlSnippetToCanvas({
+      html: complexHtml,
+      width: 800,
+      height: 400,
+      title: "Portfolio Section",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.count).toBeGreaterThan(1);
+    expect(committedDoc.nodes.length).toBeGreaterThan(1);
   });
 });
