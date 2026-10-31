@@ -46,10 +46,11 @@ describe("mobile interaction experience polish", () => {
 
   it("ensures mobile CSS docks tools above panels even when only one panel is expanded", () => {
     const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
-    expect(css).toContain('[data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"] .viewport-tools');
-    expect(css).toContain('[data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="true"] .viewport-tools');
-    expect(css).toContain('[data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"] [data-testid="editor-contextual-taskbar"]');
-    expect(css).toContain('[data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="true"] [data-testid="editor-contextual-taskbar"]');
+    expect(css).toContain('--editor-mobile-zoom-bottom: calc(45% + 0.25rem)');
+    expect(css).toContain('bottom: var(--editor-mobile-zoom-bottom)');
+    expect(css).toContain('bottom: calc(var(--editor-mobile-zoom-bottom) + 3.25rem + 0.5rem) !important');
+    expect(css).toContain('[data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"]');
+    expect(css).toContain('[data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="true"]');
     expect(css).toContain('[data-testid="editor-more-menu"] button[role="menuitem"]');
   });
 

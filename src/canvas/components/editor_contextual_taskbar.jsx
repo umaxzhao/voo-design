@@ -85,6 +85,7 @@ function EditorContextualTaskBar({
   onApplyPreset,
   getBitmap,
   docRect = null,
+  docked = false,
   onCreateComponent,
   onDetachInstance,
   onDispatch
@@ -113,7 +114,7 @@ function EditorContextualTaskBar({
   const pen = [TOOL.PEN, TOOL.CURVATURE_PEN, TOOL.FREE_PEN].includes(tool) || Boolean(engine?.penEdit);
   const selectionTool = tool === TOOL.MARQUEE || tool === TOOL.LASSO;
   const active = Boolean(node || count || hasSelection || transforming || pen || selectionTool);
-  const mobilePortal = useMobileQuickbarPortal(barRef, active);
+  const mobilePortal = useMobileQuickbarPortal(barRef, active, docked);
   const type = count > 1 ? "multi" : node?.isFrame || ["frame", "artboard"].includes(node?.kind) || node?.type === "imageEditor" ? "frame" : node?.kind === "group" ? "group" : node?.kind === "image" ? "image" : node?.kind === "text" ? "text" : "shape";
   const label = key => t(`editor.taskbar.${key}`);
   const edit = patch => {
@@ -136,7 +137,7 @@ function EditorContextualTaskBar({
     };
   }, []);
   useLayoutEffect(() => {
-    if (!docRect || !active) return;
+    if (!docRect || !active || docked) return;
     const place = () => {
       const bar = barRef.current;
       const parent = bar?.offsetParent?.getBoundingClientRect();
@@ -162,7 +163,7 @@ function EditorContextualTaskBar({
       observer?.disconnect();
       window.removeEventListener("resize", place);
     };
-  }, [docRect, active, selectionKey, aiInputOpen, type, mobilePortal]);
+  }, [docRect, active, docked, selectionKey, aiInputOpen, type, mobilePortal]);
   if (!active) return null;
   const action = (id, icon, onClick, extra = {}) => <Action key={id} id={id} label={label(id)} icon={icon} onClick={onClick} {...extra} />;
   const booleanActions = engine?.canCombineSelection?.() ? <EditorTaskbarActionMenu key={`boolean-${selectionKey}`} id="boolean" label={label("boolean")} icon={<OperationIcon operation="union" />}>{BOOLEAN_OPERATIONS.map(op => <Action key={op} id={`boolean-${op}`} label={t(`editor.props.combine.${op}`)} icon={<OperationIcon operation={op} />} onClick={() => engine?.combineSelected?.(op)} />)}</EditorTaskbarActionMenu> : null;
@@ -185,13 +186,17 @@ function EditorContextualTaskBar({
       if (hasSelection) onRepaint?.(prompt);
       dispatch(prompt, context);
     }} />}</>;
-  const toolbar = <nav ref={barRef} data-testid="editor-contextual-taskbar" aria-label={label("ariaLabel")} style={docRect ? {
+  const toolbar = <nav ref={barRef} data-testid="editor-contextual-taskbar" aria-label={label("ariaLabel")} style={docked ? {
+    left: "50%",
+    bottom: "3.25rem",
+    maxWidth: "calc(100vw - 16px)"
+  } : docRect ? {
     left: position?.left ?? docRect.x + docRect.width / 2,
     top: position?.top ?? docRect.y + docRect.height + EDITOR_PAGE_TOOLBAR_GAP,
     maxWidth: "calc(100vw - 16px)"
   } : {
     maxWidth: "calc(100vw - 16px)"
-  }} className={`pointer-events-auto z-20 flex items-center gap-0.5 rounded-full bg-neutral-900/95 border border-white/10 px-2 py-1 shadow-pop backdrop-blur-md whitespace-nowrap text-[11px] text-neutral-200 select-none ${docRect ? "absolute -translate-x-1/2" : "relative"}`}>
+  }} className={`pointer-events-auto z-40 flex items-center gap-0.5 rounded-full bg-neutral-900/95 border border-white/10 px-2 py-1 shadow-pop backdrop-blur-md whitespace-nowrap text-[11px] text-neutral-200 select-none ${docked ? "absolute bottom-[3.25rem] left-1/2 -translate-x-1/2" : docRect ? "absolute -translate-x-1/2" : "relative"}`}>
     <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto" data-testid={`editor-taskbar-${type}-actions`}>
     {transforming ? <>{action("applyTransform", <IconCheck size={14} strokeWidth={1.5} />, () => engine?.applySelectionTransform?.())}{action("cancelTransform", <IconClose size={14} strokeWidth={1.5} />, () => engine?.cancelSelectionTransform?.())}</> : pen ? <>{action("finishPath", <IconCheck size={14} strokeWidth={1.5} />, () => finishPenPathEditing(engine), { label: t("editor.pen.closeEdit") })}</> : hasSelection ? <>{action("transform", <IconCrop size={14} strokeWidth={1.5} />, () => engine?.beginSelectionTransform?.())}{action("invert", <IconSwap size={14} strokeWidth={1.5} />, () => engine?.invertPixelSelection?.())}{action("deselect", <IconClose size={14} strokeWidth={1.5} />, () => clearActivePixelSelection(engine))}<Divider />{ai}</> : <>
       {!node && !count && selectionTool ? <>{action("marquee", <IconCrop size={14} strokeWidth={1.5} />, () => engine?.setTool?.(TOOL.MARQUEE))}{action("lasso", <IconUnlink size={14} strokeWidth={1.5} />, () => engine?.setTool?.(TOOL.LASSO))}</> : <>

@@ -10,12 +10,14 @@ const subscribe = (listener) => {
   return () => media.removeEventListener("change", listener);
 };
 
-/** Camera transforms establish a fixed containing block; dock outside them. */
-export function useMobileQuickbarPortal(barRef, active) {
+/** Keep mobile and docked taskbars in the same overlay as the zoom controls. */
+export function useMobileQuickbarPortal(barRef, active, docked = false) {
   const mobile = useSyncExternalStore(subscribe, mobileSnapshot, serverSnapshot);
   const [target, setTarget] = useState(null);
   usePortalMeasureEffect(() => {
-    setTarget(mobile && active ? barRef.current?.closest('[data-testid="design-editor"]') : null);
-  }, [mobile, active, barRef]);
+    const editor = barRef.current?.closest('[data-testid="design-editor"]');
+    const zoomOverlay = editor?.querySelector('[data-testid="editor-zoom-position"]');
+    setTarget((mobile || docked) && active ? zoomOverlay ?? editor : null);
+  }, [mobile, active, barRef, docked]);
   return target;
 }
