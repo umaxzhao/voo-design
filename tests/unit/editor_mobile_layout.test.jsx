@@ -59,7 +59,8 @@ describe("mobile editor layout", () => {
 
   it("docks the bottom toolbar above the bottom panels only on narrow screens", () => {
     const css = readFileSync("src/canvas/components/editor_mobile_layout.css", "utf8");
-    expect(css).toContain("bottom: calc(45% + 3.25rem)");
+    expect(css).toContain("--editor-mobile-zoom-bottom: calc(45% + 0.25rem)");
+    expect(css).toContain("bottom: var(--editor-mobile-zoom-bottom)");
     expect(css).toContain('[data-testid="design-editor"].editor-narrow .viewport-tools');
   });
 
