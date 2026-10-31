@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
 import { useDesignStore } from "../../../store/design_store.js";
-import { addRecentFile, removeRecentFile } from "../../store/recent_files.js";
+import { addRecentFile, removeRecentFile, getRecentFiles } from "../../store/recent_files.js";
 import { saveDraftBytes } from "../../store/draft_store.js";
 import { findDraftEntry } from "../../store/draft-entry.js";
 import { createDocument, CANVAS_TYPE } from "../../editor/scene_doc_factory.js";
 import { encodeVooBinary } from "../../store/voo_binary.js";
 import { workspaceStorage, guessCategory } from "../../../services/workspace_storage.js";
-import { WELCOME_NEW_EVENT } from "./welcome_events.js";
+import { subscribeWelcomeNew } from "./welcome_events.js";
 import {
   VOO_FILE_FORMAT,
   VOO_FILE_VERSION,
@@ -36,7 +36,7 @@ export function useWelcomeCreate({
 
     // Keep generated filenames whitespace-free without changing preset labels.
     const baseName = baseLabel.replace(/\s+/gu, "");
-    const existingNames = new Set(fileList.map((f) => f.name));
+    const existingNames = new Set([...fileList, ...getRecentFiles()].map((f) => f.name));
     let uniqueName = `${baseName}.voo`;
     let counter = 1;
     while (existingNames.has(uniqueName)) {
@@ -56,6 +56,13 @@ export function useWelcomeCreate({
     const bytes = encodeVooBinary(vooFile);
 
     try {
+      // A queued cold-start request can precede the dashboard's file scan.
+      // Reserve names from the actual workspace before writing, not a filtered UI list.
+      for (const file of await workspaceStorage.scanFiles()) existingNames.add(file.name);
+      while (existingNames.has(uniqueName)) {
+        counter += 1;
+        uniqueName = preset ? `${baseName}${counter}.voo` : `Design${counter}.voo`;
+      }
       const saved = await workspaceStorage.writeFileBytes(uniqueName, bytes, { category });
       addRecentFile({
         name: saved?.name || uniqueName,
@@ -156,11 +163,7 @@ export function useWelcomeCreate({
   // A ref keeps the listener pointing at the latest closure (fresh fileList).
   const createNewRef = useRef(handleCreateNew);
   createNewRef.current = handleCreateNew;
-  useEffect(() => {
-    const onWelcomeNew = () => createNewRef.current();
-    window.addEventListener(WELCOME_NEW_EVENT, onWelcomeNew);
-    return () => window.removeEventListener(WELCOME_NEW_EVENT, onWelcomeNew);
-  }, []);
+  useEffect(() => subscribeWelcomeNew(() => createNewRef.current()), []);
 
   return { handleCreateNew, handleUseTemplate };
 }

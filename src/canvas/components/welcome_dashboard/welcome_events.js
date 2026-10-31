@@ -10,3 +10,22 @@ export const WELCOME_MENU_ACTION_EVENT = "voo:welcome-menu-action";
 
 /** Current welcome folders shared with the mobile project picker. */
 export const WELCOME_FOLDERS_EVENT = "voo:welcome-folders";
+
+// The title bar mounts before the lazy dashboard. Retain one early New intent
+// until its owner subscribes, without duplicating the workspace creation path.
+const pendingNew = new WeakSet();
+
+export function requestWelcomeNew(target = window) {
+  pendingNew.add(target);
+  target.dispatchEvent(new CustomEvent(WELCOME_NEW_EVENT));
+}
+
+export function subscribeWelcomeNew(create, target = window) {
+  const receive = () => {
+    pendingNew.delete(target);
+    return create();
+  };
+  target.addEventListener(WELCOME_NEW_EVENT, receive);
+  if (pendingNew.has(target)) receive();
+  return () => target.removeEventListener(WELCOME_NEW_EVENT, receive);
+}

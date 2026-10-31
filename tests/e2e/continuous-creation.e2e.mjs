@@ -202,7 +202,9 @@ await withEditorBrowser(async ({ page }) => {
   await f.step("cold-reopen-retains-created-text-paths-frames-and-mask", async () => {
     assert.ok(archive && expected);
     await page.evaluate(() => { delete window.showOpenFilePicker; });
-    const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.getByRole("button", { name: /^Import project file/ }).click()]);
+    const importButton = page.getByRole("button", { name: /^Import project file/ });
+    await importButton.waitFor({ state: "visible" });
+    const [chooser] = await Promise.all([page.waitForEvent("filechooser"), importButton.click()]);
     await chooser.setFiles({ name: "ContinuousCreation.zip", mimeType: "application/zip", buffer: archive });
     await page.waitForFunction(id => window.__vooEditor?.getNode(id) && window.__vooEditor.getNodeBitmap(window.__vooEditor.getNode(id)), imageId);
     await f.settle(); assert.deepEqual(projection((await f.snapshot()).nodes), expected);

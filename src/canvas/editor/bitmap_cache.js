@@ -301,6 +301,8 @@ export function createBitmapCache({
       urlByKey.clear();
       for (const image of bitmaps.values()) onEvict?.(image);
       bitmaps.clear();
+      // Diagnostics must not report bytes retained by the disposed cache.
+      totalBytes = 0;
       pending.clear();
     },
   };

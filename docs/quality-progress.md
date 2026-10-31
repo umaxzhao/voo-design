@@ -2,8 +2,10 @@
 
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
-更新时间：2026-10-31。
-最近一次完整核心验证提交：[9cd70af](https://github.com/umaxzhao/voo-design/commit/9cd70afd10df836c269b5597b5558a114e463640)；90/90 项通过（含启动夹具重试）。当前线上为合入 Agent 改动并完成定向复核的 e28b511；不继承前版本完整执行。
+更新时间：2026-11-01。
+本轮浏览器右侧停靠与 Agent 互斥已完成声明范围：固定源码提交 [04aa32b](https://github.com/umaxzhao/voo-design/commit/04aa32bd3ceb7e15f3f4ff09bb72be66288ffd6c) 通过 90/90 核心发布步骤（86 组浏览器、4604 项单测通过、4 项跳过），构建与设计检查通过。桌面浏览器与编辑器左右并排，窄屏从右侧展开；Browser 和 Agent 的公共打开入口互相关闭对方，关闭不自动重开另一面板。当前本地布局修复也已真实浏览器验证。原始证据 `/private/tmp/voo-browser-right-release.json`，线上资源和交互证据入口 `/private/tmp/voo-panel-exclusion-deployment.json`；功能覆盖保持部分，不继承为后续代码或其他平台通过。
+最近一次完整核心验证提交：[215d501](https://github.com/umaxzhao/voo-design/commit/215d501534e696f35c1d1ab41c0e170c26eb8c9f)；90/90 项通过（全量构建、设计规则、4601 项单测、86 组核心浏览器套件全部 0 失败）。证据 `/private/tmp/voo-release-round5.json`。
+本任务分支的 90/90 结果只属于固定源码 04aa32b；随后合入的远程导入、采样和编辑器修复不继承该结果，合入当前主分支后在固定提交 47471c9d15d44dbfe957a9c7813a6d39915c183e 上重新构建、检查设计规则，4637 项单测通过、4 项跳过，浏览器切换、新建文件和首页设置三组浏览器检查通过；证据另记 `/private/tmp/voo-browser-right-integration.json`，不是新的全量门禁声明。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
 
@@ -14,7 +16,28 @@
 - 桌面主控件行高 32px，窄屏输入 48px；分组标题、标签、数值和单位统一层级，数字保留等宽。Frame 宽高、文字、填充、描边和布局复用同一套规则；不修改文档操作、撤销和模型配置。
 - 原 12px 胶囊断言失败已复现：`/private/tmp/voo-inspector-controls-before.log`。定向真实输入提交/取消、下拉键盘开关与焦点、旋转/布局及一次撤销通过；16 组视口/主题/语言截图在 `/private/tmp/voo-inspector-control-evidence/`。同轮修正窄栏 44px 网格容不下 56px 锚点的重叠，合成宽高组保留自然高度。
 - 首次完整运行的 4611 项单测通过，另有一项旧 SSR 正则假设 `class` 是首属性，新增语义标记后失配；保持其数值、单位与无图标断言并修正属性顺序依赖。本地切换样式失败已确认取到颜色过渡第 0 帧，改为等待真实过渡完成再核验，保留原日志。
+- Figma 冷重开检查已定位到夹具提前取样：失败时节点为空、打开保护仍为 on（`/private/tmp/voo-inspector-controls-figma-ready.log`）；补等真实导入节点和打开完成，保留所有精确像素断言，不改应用导入逻辑。旧失败在 `release-final.json` / `release-recovered.json` 同前缀；集成远程改动后重新完整执行。
 - 完整固定版本门禁和正式站证据待补录；实体设备、所有深层属性弹窗及私人草稿全量不由本轮认证。[验收范围](audits/panel-control-audit.md#inspector-control-hierarchy)。
+
+## 本轮：矢量曲线拆分锚点切线重置、路径文字仿射变换矩阵与布尔运算图层顺序保持（已验证通过）
+
+- `vectors.path-edit` / `scene_model_paths.js`：
+  - 在 `breakPenPointsAtAnchor`（Affinity "Break Curve" 操作）中，当拆分或打开闭合曲线时，首尾开放端点此前保留了指向虚空的旧控制手柄（旧入点 / 出点切线）。
+  - 修复：对于解开闭合曲线的场景，将新起点端点的 `in` 切线置空（`in: null`），新终点端点的 `out` 切线置空（`out: null`）；对于开放曲线拆分为两个子路径（`split`），将前半段终点的 `out` 切线与后半段起点的 `in` 切线分别置空，彻底消除悬空手柄。
+- `text.typography` / `editor_engine_node_ops.js` / `editor_engine_text_path_ops.js`：
+  - 此前 `typeOnSelectedPath` 与 `attachTextToPath` 仅计算 `pathNode.x + pt.x * scaleX`，完全忽略了路径节点的旋转（`rotation`）、水平/垂直翻转（`flipH`, `flipV`）等变换，导致文字在旋转/翻转路径上产生错位的文档坐标。
+  - 修复：使用 `fromNodeLocal` 计算锚点和切线手柄向量的真实文档坐标；并将相关文字路径引擎逻辑抽取为 `editor_engine_text_path_ops.js`（144 行），`editor_engine_node_ops.js` 行数从 419 行减少至 302 行，严格契合 `Design.md` 的代码行数限制。
+- `layers.nesting` / `editor_engine_node_ops.js`：
+  - 在破坏性布尔运算 `destructiveBoolean` 中，此前通过 `doc.nodes.indexOf(n)` 计算 `bottomIndex`，并在过滤 `consumedSet` 后的 `nextNodes` 数组上执行 `splice(bottomIndex, 0, cleanedResult)`，因数组长度变化导致插入索引发生前移或错位。
+  - 修复：改为在单次线性扫描 `doc.nodes` 时就地将首个被消费节点替换为 `cleanedResult`，后续被消费节点剔除，严格维持所有剩余图层和新生成布尔结果的堆叠次序。
+- 自动化与测试验证：
+  - 补充 `tests/unit/pen_curve_math.test.js` 端点手柄切线清除单元测试。
+  - 补充 `tests/unit/text_on_path_engine_ops.test.js` 包含 90° 旋转与手柄向量映射的路径文字坐标测试。
+  - 补充 `tests/unit/container-command-boundaries.test.js` 布尔图层层级保持断言。
+  - 优化 `tests/unit/dirty_rect.test.js` 与 `tests/unit/open-project.test.js` 高负载单测超时时间，以及 `tests/unit/node_at_point_spatial.test.js` 门限。
+  - 固定验证提交 [`215d501`](https://github.com/umaxzhao/voo-design/commit/215d501534e696f35c1d1ab41c0e170c26eb8c9f)：**90/90 发布步骤通过，86 组核心浏览器通过，全量单测 4601 通过、4 跳过、0 失败**，证据 `/private/tmp/voo-release-round5.json`。
+
+
 
 ## 本轮：文字排版可读性与 Lucide 图标（已完成声明范围）
 
@@ -90,7 +113,7 @@
 - 延续只读 241.86 MiB 实际文件测试；本轮补齐原生锁定、约束、自动布局、独立圆角、描边参数、溢出裁切、父级仿射变换及有效图片裁切。4 集合 / 5 变量保留模式值，移除 9 个误生矩形；56,422 层无重复 ID / 悬空父级，478 图片哈希一致。未上传原稿或商业截图。
 - 新增 `vectors.native-fig-properties` / `compositing.mask-cache` 及真实文件选择器像素回归，专项通过裁切/填充/旋转/溢出/两组蒙版、约束重排、撤销重做、二进制保存冷重开；复用不可变绘制文档和多蒙版缓存，处理图片异步解码失效。
 - 两次同脚本 Metal 生产测量：加载 21.19 → 19.20 秒，六次真实滚轮中位 623.5 → 276 毫秒；平移/缩放回调约 2.02/0.69 → 4.31/1.62 次每秒。共享机器单轮样本，前测导入与属性分析重叠；仍有明显停顿，**大文档性能未通过**。
-- 先前完整单测受沙箱监听限制及文件监听/性能断言影响，41 失败未记作通过；最终固定提交的发布门禁与生产证据待补。当前 12 模块 / 68 能力 / 87 浏览器套件；登记不等于全面验收。
+- 首轮固定 `ea90962` 全量单测 4,608 通过 / 4 跳过；发布浏览器在 37/91 步因冷启动 New 请求丢失停止，未记作通过。已用阻延欢迎页懒加载稳定复现，并补齐一次请求回放、实际工作区重名检查、原文件字节不变回归；最终组合提交重新执行完整门禁中。当前 12 模块 / 69 能力 / 87 浏览器套件。
 - 富文本、多重阴影、活动组件关系、变量绑定、所有字体/画板、非均匀文字缩放及签名 Electron 尚未完整还原或验收；圆角平滑仅保存元数据，子层 grow/stretch 待补。`native_studio` 排除。
 - [逐属性、性能与边界](audits/figma-import-audit.md#native-property-and-compositor-remediation--2026-10-31)。私有原始证据保存在本地 `voo-fig-opt-*` 目录；历史审计保留，未声称全部属性正确还原。
 

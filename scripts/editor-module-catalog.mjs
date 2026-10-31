@@ -5,12 +5,13 @@ export const EDITOR_MODULES = [
     title: "Workspace and resources",
     paths: [
       "src/app_title_bar.jsx", "src/welcome_settings.css",
+      "tests/unit/titlebar_actions.test.jsx", "tests/unit/welcome_header_actions.test.js",
       "src/canvas/components/welcome*", "src/canvas/components/welcome_dashboard/*",
       "src/canvas/components/editor*resources*", "src/canvas/components/editor_layers_assets*",
       "src/canvas/components/titlebar*",
     ],
     related: ["documents","inspector","platform"],
-    features: ["workspace.projects","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry"],
+    features: ["workspace.projects","workspace.cold-start-new","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry"],
     suites: [
       "project-picker", "titlebar-file-actions", "welcome-model-menu", "welcome-draft-trash",
       "ui-home-settings", "welcome-covers", "editor-resources", "editor-resources-built",
@@ -86,6 +87,7 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/doc_ops_groups_helpers.js", "src/canvas/editor/reorder-layer-batch.js",
       "src/canvas/components/editor_image_batch.js", "src/canvas/components/use_editor_dnd.js",
       "tests/unit/batch-layer-reorder.test.js", "tests/unit/layer-hierarchy-stack.test.js",
+      "tests/unit/container-command-boundaries.test.js",
     ],
     related: ["selection","compositing","layout","documents"],
     features: ["layers.nesting","layers.placement","layers.reparent","layers.duplicate-delete-lock","layers.container-boundaries"],
@@ -125,7 +127,7 @@ export const EDITOR_MODULES = [
       "tests/unit/figma/*",
       "src/canvas/editor/shape_geometry.js", "src/canvas/editor/*boolean*", "src/canvas/editor/*path*", "src/canvas/editor/*pen*",
       "src/canvas/editor/*svg*", "src/canvas/editor/editor_export*", "src/canvas/figma/*", "src/canvas/pen/*",
-      "src/canvas/codegen/*", "tests/unit/pen-midpoint-insertion.test.js",
+      "src/canvas/codegen/*", "tests/unit/pen-midpoint-insertion.test.js", "tests/unit/pen_curve_math.test.js",
     ],
     related: ["selection","compositing","documents","inspector"],
     features: ["vectors.path-edit","vectors.midpoint-insertion","vectors.booleans","vectors.stroke","vectors.format-losses","vectors.native-fig-properties"],
@@ -139,7 +141,7 @@ export const EDITOR_MODULES = [
     title: "Text editing and typography",
     paths: [
       "src/canvas/editor/editor_annotations.js", "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js", "src/canvas/components/editor_text*",
-      "src/canvas/components/editor_properties/text*", "tests/unit/text_section_compact.test.jsx", "tests/unit/tools_text_pen_shape.test.jsx", "tests/unit/affinity_tool_properties_panel.test.jsx",
+      "src/canvas/components/editor_properties/text*", "tests/unit/text_section_compact.test.jsx", "tests/unit/tools_text_pen_shape.test.jsx", "tests/unit/affinity_tool_properties_panel.test.jsx", "tests/unit/text_on_path_engine_ops.test.js",
     ],
     related: ["selection","layout","compositing","documents","platform"],
     features: ["text.edit","text.box-sizing","text.typography","text.font-loading","text.placement-transactions"],
@@ -216,6 +218,7 @@ export const EDITOR_MODULES = [
     id: "platform",
     title: "Agent, runtime and platform integration",
     paths: [
+      "src/store/design_store.js", "src/store/editor-panel-actions.js", "tests/unit/editor-panel-actions.test.js",
       "scripts/generate-third-party-notices.mjs", "scripts/bundled-third-party-notices.mjs",
       "scripts/license-texts/*", "scripts/verify-package.mjs", "NOTICE",
       "tests/e2e/editor-browser-server.mjs", "tests/e2e/editor-browser-fixture.mjs",
@@ -230,7 +233,7 @@ export const EDITOR_MODULES = [
     related: ["workspace","documents","inspector","images","text"],
     features: [
       "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
-      "platform.native-collaboration", "platform.browser-drawer", "platform.local-service-discovery", "platform.live-preview",
+      "platform.native-collaboration", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
     ],
     suites: [
