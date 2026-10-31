@@ -52,9 +52,16 @@ by this entry. Recovering the original import record remains open.
 
 Targeted tests: 33 passed in the isolated checkout before full release
 verification; evidence `/private/tmp/voo-license-regression/isolated-after.log`.
-Final clean revision, release results and deployment evidence are maintained
-in `../quality-progress.md`; do not treat these targeted checks as full-platform
-or signed-installer acceptance.
+Application revision `1f3266e604f740c0d7463e6c2f1c9d7f73ae2b29` passed the
+build/design/catalog gates and 4,529 unit tests (four skipped) with Vitest capped
+at two workers. Earlier uncapped performance timing failures remain recorded.
+The full release run stopped at 26/88 steps: 20 browser groups passed, two
+failed on cache cleanup/navigation startup, and 62 were not run. The two failed
+groups passed standalone sequential rechecks, without changing the full run's
+incomplete status. The built legal-asset browser assertion passed on this
+revision. No signed installer or deployment is certified; main is not updated
+by this draft branch. See `../quality-progress.md` and
+`/private/tmp/voo-license-regression/release-capped.json`.
 
 ## Remaining historical review
 
@@ -71,6 +78,7 @@ Current official reference terms:
 For a legal review, collect the accepted terms/version, authorization, analysis
 dates, application versions, extracted artifacts, access method, distribution
 history and applicable jurisdiction. Assess any interoperability/statutory
-exception separately. No new proprietary application extraction was performed
+exception separately. An upstream project license alone does not establish
+that all underlying proprietary-format rights have been cleared. No new proprietary application extraction was performed
 in this repair, and no claim is made that adding notices cures historical
 service-term issues or establishes ownership of third-party material.

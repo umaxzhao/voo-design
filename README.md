@@ -250,4 +250,6 @@ The editor is React on top of a document store, rendered through a Skia/CanvasKi
 
 ---
 
-[Documentation](docs/README.md) · [Contributing](docs/contributing.md) · [MIT License](LICENSE)
+[Documentation](docs/README.md) · [Contributing](docs/contributing.md) · [MIT License](LICENSE) · [Third-party notices](NOTICE)
+
+VOO-authored code is licensed under MIT. Bundled third-party material retains its respective licenses; see [NOTICE](NOTICE).
