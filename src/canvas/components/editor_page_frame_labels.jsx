@@ -12,7 +12,8 @@ export default function EditorPageFrameLabels({ page }) {
   return canvasFrameLabels.map((frame) => {
     const frameRect = docToScreenRect(frame, viewport);
     return (
-      <div
+      <button
+        type="button"
         key={frame.id}
         ref={(element) => {
           if (element) canvasFrameLabelRefs.current.set(frame.id, element);
@@ -20,7 +21,8 @@ export default function EditorPageFrameLabels({ page }) {
         }}
         data-testid="editor-canvas-frame-label"
         data-frame-id={frame.id}
-        className={`pointer-events-auto absolute z-40 ${FRAME_TITLE_HIT_AREA} flex max-w-[70%] cursor-pointer items-center gap-1.5 text-[11px] font-mono leading-none ${selectedIds.includes(frame.id) ? "text-[#a7ffd4]" : "text-neutral-400"}`}
+        aria-pressed={selectedIds.includes(frame.id)}
+        className={`pointer-events-auto absolute z-40 ${FRAME_TITLE_HIT_AREA} flex max-w-[70%] cursor-pointer items-center gap-1.5 text-left text-[11px] font-mono leading-none ${selectedIds.includes(frame.id) ? "text-[#a7ffd4]" : "text-neutral-400"}`}
         onPointerDown={(event) => {
           event.stopPropagation();
         }}
@@ -43,7 +45,7 @@ export default function EditorPageFrameLabels({ page }) {
         <span className="truncate">
           {frame.name || t("editor.prototype.untitledFrame")}
         </span>
-      </div>
+      </button>
     );
   });
 }

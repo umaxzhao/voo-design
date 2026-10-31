@@ -58,15 +58,16 @@ export const EDITOR_MODULES = [
     id: "selection",
     title: "Selection and transforms",
     paths: [
+      "src/canvas/components/editor_page_frame_labels.jsx",
       "src/canvas/editor/editor_pointer*", "src/canvas/editor/*hit-test*", "src/canvas/editor/selection*",
       "src/canvas/editor/transform*", "src/canvas/*shortcut*",
       "src/canvas/editor/drawing-gesture-*", "src/canvas/editor/move-gesture-*", "src/canvas/editor/editor-pointer-*",
       "src/canvas/editor/editor_engine_tools.js", "src/canvas/editor/editor_transform_api.js", "src/canvas/editor/editor_engine_assembly.js", "tests/unit/editor-module-audit-regressions.test.js",
     ],
     related: ["canvas","layers","text","vectors","inspector"],
-    features: ["selection.hit-testing","selection.transforms","selection.cancel","selection.shortcuts","selection.continuous-creation"],
+    features: ["selection.hit-testing","selection.transforms","selection.cancel","selection.shortcuts","selection.continuous-creation","selection.frame-title-selection"],
     suites: [
-      "frame-child-pointer", "canvas-double-click", "text-box-geometry", "editor-shortcut-lifecycle",
+      "frame-child-pointer", "frame-label-selection", "canvas-double-click", "text-box-geometry", "editor-shortcut-lifecycle",
       "hook-lifecycle", "continuous-creation",
     ],
     remaining: [
