@@ -1,6 +1,7 @@
 import {
   DASHSCOPE_COMPATIBLE_BASE_URL,
   VOLCENGINE_DEFAULT_BASE_URL,
+  DEEPSEEK_DEFAULT_BASE_URL,
   PROVIDER_ID,
 } from "../../../shared/providers.js";
 
@@ -43,6 +44,12 @@ export const CLOUD_PROVIDER_PRESETS = Object.freeze([
     customProviderId: "custom:onboarding-volcengine",
     labelKey: "firstRun.provider.volcengine",
     baseUrl: VOLCENGINE_DEFAULT_BASE_URL,
+  },
+  {
+    id: PROVIDER_ID.DEEPSEEK,
+    customProviderId: "custom:onboarding-deepseek",
+    labelKey: "firstRun.provider.deepseek",
+    baseUrl: DEEPSEEK_DEFAULT_BASE_URL,
   },
   DSH_MODEL_PROVIDER_PRESET,
 ]);
