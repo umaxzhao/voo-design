@@ -4,9 +4,19 @@
   /* viewport-fit=cover: keep the frame clear of the notch and home indicator. */
   padding:
     calc(4px + env(safe-area-inset-top, 0px))
-    calc(4px + env(safe-area-inset-right, 0px))
+    calc(
+      4px + max(
+        env(safe-area-inset-left, 0px),
+        env(safe-area-inset-right, 0px)
+      )
+    )
     calc(4px + env(safe-area-inset-bottom, 0px))
-    calc(4px + env(safe-area-inset-left, 0px));
+    calc(
+      4px + max(
+        env(safe-area-inset-left, 0px),
+        env(safe-area-inset-right, 0px)
+      )
+    );
 }
 
 @media (hover: none) and (pointer: coarse) {
