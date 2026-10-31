@@ -147,8 +147,9 @@ export function drawNode(
       const painted = { ...node, fill: paint.fill, fillOpacity: paint.opacity ?? 1,
         fillHidden: false, strokeHidden: true, imageId: paint.imageId ?? node.imageId,
         imageScaleMode: paint.imageScaleMode ?? node.imageScaleMode,
-        imageTransform: paint.imageTransform ?? node.imageTransform,
-        imageTileScale: paint.imageTileScale ?? node.imageTileScale };
+        // Each fill owns its sampling; a cover fill must not inherit another crop.
+        imageTransform: paint.imageTransform,
+        imageTileScale: paint.imageTileScale };
 
       paintOne(targetCtx, painted);
       targetCtx.restore();

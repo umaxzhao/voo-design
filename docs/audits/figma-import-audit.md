@@ -144,15 +144,16 @@ the specific losses below, not the remaining acceptance gaps above.
   invalidate cached mask results; videos bypass this static bitmap cache.
 - New registered `figma-import-fidelity` imports a real generated Kiwi archive
   through the file picker and asserts crop/cover/rotation/overflow/mask pixels,
-  unchanged second-pass bitmap reuse, constraint-aware frame resizing, undo,
+  independent multi-image fill transforms, unchanged second-pass bitmap reuse,
+  constraint-aware frame resizing, undo,
   redo and binary save/cold reopening. No private document is a committed test.
 
 Private source/output matching retains separate denominators for flattened
 or structural records. Checked original outputs include 1,291 Auto Layout
 containers, 13,223 non-default constraints, 188 locked artwork nodes (the nine
 other locked records are variables), 3,145 disabled clips, 3,591 native Groups,
-162 image-bearing nodes with active manual crops, 604 stroke alignments and
-15 non-outlined dash configurations. These checks establish mapped values,
+162 image-bearing nodes with active manual crops, 109 non-outlined corner
+configurations, 604 stroke alignments and 15 non-outlined dash configurations. These checks establish mapped values,
 not pixel parity for every real-file combination. Corner smoothing is metadata
 only; outlined paths already bake their stroke/corner geometry into fills.
 

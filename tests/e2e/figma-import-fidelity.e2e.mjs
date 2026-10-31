@@ -36,6 +36,9 @@ await withEditorBrowser(async ({ page, errors }) => {
     record(5, "RECTANGLE", 1, { name: "Manual crop", transform: { m02: 400, m12: 40 },
       fillPaints: [{ ...imagePaint, imageScaleMode: "STRETCH", transform: { m00: .25, m01: 0, m02: .25, m10: 0, m11: 1, m12: 0 } }] }),
     record(6, "RECTANGLE", 1, { name: "Cover", transform: { m02: 460, m12: 40 }, fillPaints: [{ ...imagePaint, imageScaleMode: "FILL" }] }),
+    record(15, "RECTANGLE", 1, { name: "Independent image paints", parentIndex: { guid: guid(1), position: "!" }, transform: { m02: 520, m12: 40 },
+      fillPaints: [{ ...imagePaint, opacity: 0, imageScaleMode: "STRETCH", transform: { m00: .25, m01: 0, m02: .25, m10: 0, m11: 1, m12: 0 } },
+        { ...imagePaint, imageScaleMode: "FILL" }] }),
     record(7, "FRAME", 1, { name: "Layout", size: { x: 100, y: 50 }, transform: { m02: 600, m12: 40 },
       stackMode: "HORIZONTAL", stackHorizontalPadding: 10, stackVerticalPadding: 8, stackSpacing: 12 }),
     record(8, "RECTANGLE", 7, { size: { x: 20, y: 20 }, transform: { m02: 10, m12: 8 }, fillPaints: color(0, 1, 0) }),
@@ -64,7 +67,7 @@ await withEditorBrowser(async ({ page, errors }) => {
     const ctx = canvas.getContext("2d");
     const pixel = (x, y) => [...ctx.getImageData(x, y, 1, 1).data];
     return { pixels: { overflow: pixel(210, 60), rotation: pixel(290, 60), crop: pixel(420, 60),
-      coverLeft: pixel(470, 60), coverRight: pixel(490, 60), maskA: pixel(120, 180), outsideA: pixel(160, 180), maskB: pixel(220, 180) },
+      coverLeft: pixel(470, 60), coverRight: pixel(490, 60), independentCover: pixel(550, 60), maskA: pixel(120, 180), outsideA: pixel(160, 180), maskB: pixel(220, 180) },
       frame: doc.nodes.find(n => n.name === "Native 2"), layout: doc.nodes.find(n => n.name === "Layout"),
       variables: doc.variablesV2, ids: doc.nodes.map(n => n.id) };
   });
@@ -74,6 +77,7 @@ await withEditorBrowser(async ({ page, errors }) => {
   assert.deepEqual(before.pixels.crop, [0, 255, 0, 255]);
   assert.deepEqual(before.pixels.coverLeft, [0, 255, 0, 255]);
   assert.deepEqual(before.pixels.coverRight, [0, 0, 255, 255]);
+  assert.deepEqual(before.pixels.independentCover, [0, 0, 255, 255]);
   assert.deepEqual(before.pixels.maskA, [0, 0, 255, 255]);
   assert.equal(before.pixels.outsideA[3], 0);
   assert.deepEqual(before.pixels.maskB, [0, 255, 0, 255]);
