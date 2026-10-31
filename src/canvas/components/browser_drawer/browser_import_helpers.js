@@ -3,7 +3,6 @@
  * and inserts them into the active document with non-overlapping layout.
  */
 
-import { incrementalHtmlToDocument } from "../../editor/html_import.js";
 import { useDesignStore } from "../../../store/design_store.js";
 
 function getActiveEditor() {
@@ -69,6 +68,8 @@ export async function importHtmlSnippetToCanvas({
   }
 
   try {
+    // Keep fonts and scene engines deferred until an actual import operation.
+    const { incrementalHtmlToDocument } = await import("../../editor/html_import.js");
     const parsed = incrementalHtmlToDocument(html, {
       width: Math.max(100, Math.min(3840, width)),
       height: Math.max(100, Math.min(8192, height)),
@@ -112,6 +113,22 @@ export async function importHtmlSnippetToCanvas({
     // Assign meaningful name to the topmost container
     if (rootNodes.length === 1) {
       rootNodes[0].name = `Web: ${title}`;
+    }
+
+    // Automatically trigger font loading for any custom WebFonts referenced in the imported text nodes
+    try {
+      const { ensureFontLoaded } = await import("../../editor/font_loader.js");
+      const fontFamilies = new Set();
+      for (const node of newNodes) {
+        if (node.kind === "text" && node.fontFamily) {
+          fontFamilies.add(node.fontFamily);
+        }
+      }
+      for (const family of fontFamilies) {
+        void ensureFontLoaded(family);
+      }
+    } catch {
+      // Font loader may be absent in pure headless/unit environments
     }
 
     const combinedNodes = [...existingNodes, ...newNodes];
