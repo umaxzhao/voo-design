@@ -83,7 +83,7 @@ await withEditorBrowser(async ({ page }) => {
     const style = getComputedStyle(document.querySelector(".app-root-frame"));
     return [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft].map(parseFloat);
   });
-  assert.deepEqual(await padding(), [16, 14, 12, 10], "safe-area protection does not depend on a coarse pointer");
+  assert.deepEqual(await padding(), [16, 14, 12, 14], "safe-area protection does not depend on a coarse pointer");
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 0, bottom: 0, left: 0 } });
   await settle(page);
   assert.deepEqual(await padding(), [4, 4, 4, 4]);
@@ -171,17 +171,17 @@ await withEditorBrowser(async ({ page }) => {
   });
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 20, right: 8, bottom: 16, left: 12 } });
   await settle(page);
-  assert.deepEqual(await padding(), [24, 12, 20, 16]);
+  assert.deepEqual(await padding(), [24, 16, 20, 16]);
   await page.setViewportSize({ width: 844, height: 390 });
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 20, bottom: 12, left: 36 } });
   await settle(page);
-  assert.deepEqual(await padding(), [4, 24, 16, 40], "landscape phones retain nonzero safe insets above the narrow breakpoint");
+  assert.deepEqual(await padding(), [4, 40, 16, 40], "landscape phones retain nonzero safe insets above the narrow breakpoint");
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.setViewportSize({ width: 390, height: 844 });
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 0, bottom: 0, left: 0 } });
   await settle(page);
   assert.deepEqual(await padding(), [4, 4, 4, 4]);
-  checks.push("actual safe-area env values protect all edges in portrait and landscape and fall back to 4px");
+  checks.push("actual safe-area env values protect portrait/landscape with symmetric horizontal margins and fall back to 4px");
 
   const select = page.getByTestId("editor-select-tool");
   await select.scrollIntoViewIfNeeded();

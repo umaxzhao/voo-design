@@ -212,11 +212,11 @@ await withEditorBrowser(async ({ page, tool }) => {
   await settlePanels(page);
   assert.deepEqual(await page.locator(".app-root-frame").evaluate(element => {
     const s = getComputedStyle(element); return [s.paddingTop, s.paddingRight, s.paddingBottom, s.paddingLeft].map(parseFloat);
-  }), [16, 14, 12, 10]);
+  }), [16, 14, 12, 14]);
   await assertReachable(page.getByTestId("editor-zoom-percent"), "safe-area zoom");
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 0, bottom: 0, left: 0 } });
   await session.detach();
-  checks.push("safe-area changes preserve all four physical insets and reachable navigation");
+  checks.push("safe-area changes preserve physical insets with symmetric horizontal margins and reachable navigation");
 }, { viewport: { width: 1440, height: 1000 }, hasTouch: true });
 
 console.log(JSON.stringify({ passed: checks }, null, 2));
