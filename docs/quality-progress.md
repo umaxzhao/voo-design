@@ -3,21 +3,29 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-11-01。
-本轮浏览器右侧停靠与 Agent 互斥已完成声明范围：固定源码提交 [04aa32b](https://github.com/umaxzhao/voo-design/commit/04aa32bd3ceb7e15f3f4ff09bb72be66288ffd6c) 通过 90/90 核心发布步骤（86 组浏览器、4604 项单测通过、4 项跳过），构建与设计检查通过。桌面浏览器与编辑器左右并排，窄屏从右侧展开；Browser 和 Agent 的公共打开入口互相关闭对方，关闭不自动重开另一面板。当前本地布局修复也已真实浏览器验证。原始证据 `/private/tmp/voo-browser-right-release.json`，线上资源和交互证据入口 `/private/tmp/voo-panel-exclusion-deployment.json`；功能覆盖保持部分，不继承为后续代码或其他平台通过。
-最近一次完整核心验证提交：[dd69368](https://github.com/umaxzhao/voo-design/commit/dd6936840b8cb5ee34062e81774ea528b959769a)；91/91 步骤、87 核心浏览器套件通过，单测 4615 通过 / 4 跳过。后续 3dfad79 / 47471c9 的集成验证及当前 6d8cef7 线上证据分别记录，不继承完整执行。
-本任务分支的 90/90 结果只属于固定源码 04aa32b；随后合入的远程导入、采样和编辑器修复不继承该结果，合入当前主分支后在固定提交 47471c9d15d44dbfe957a9c7813a6d39915c183e 上重新构建、检查设计规则，4637 项单测通过、4 项跳过，浏览器切换、新建文件和首页设置三组浏览器检查通过；证据另记 `/private/tmp/voo-browser-right-integration.json`，不是新的全量门禁声明。
+最近一次完整核心验证提交：[7e6a77a](https://github.com/umaxzhao/voo-design/commit/7e6a77a3d0836b7eecceeefddf3be3f94afb11c0)；91/91 项通过。当前线上 `7e6a77a`；集成版本单列验证，不继承不同版本结果。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
 
 
-## 本轮：右侧属性控件层级（验证中）
+## 本轮：右侧属性控件层级（已完成声明范围）
 
-- 仅 `inspector.control-hierarchy`：保留大面板圆角、顶部页签及其他界面。右栏数值/颜色输入改为 6px 圆角填充矩形，下拉采用细描边，切换成组并显示选中块，操作按钮保持轻背景。共享组件只增加语义标记，视觉规则限定在右侧属性面板内。
-- 桌面主控件行高 32px，窄屏输入 48px；分组标题、标签、数值和单位统一层级，数字保留等宽。Frame 宽高、文字、填充、描边和布局复用同一套规则；不修改文档操作、撤销和模型配置。
-- 原 12px 胶囊断言失败已复现：`/private/tmp/voo-inspector-controls-before.log`。定向真实输入提交/取消、下拉键盘开关与焦点、旋转/布局及一次撤销通过；16 组视口/主题/语言截图在 `/private/tmp/voo-inspector-control-evidence/`。同轮修正窄栏 44px 网格容不下 56px 锚点的重叠，合成宽高组保留自然高度。
-- 首次完整运行的 4611 项单测通过，另有一项旧 SSR 正则假设 `class` 是首属性，新增语义标记后失配；保持其数值、单位与无图标断言并修正属性顺序依赖。本地切换样式失败已确认取到颜色过渡第 0 帧，改为等待真实过渡完成再核验，保留原日志。
-- Figma 冷重开检查已定位到夹具提前取样：失败时节点为空、打开保护仍为 on（`/private/tmp/voo-inspector-controls-figma-ready.log`）；补等真实导入节点和打开完成，保留所有精确像素断言，不改应用导入逻辑。旧失败在 `release-final.json` / `release-recovered.json` 同前缀；集成远程改动后重新完整执行。
-- 完整固定版本门禁和正式站证据待补录；实体设备、所有深层属性弹窗及私人草稿全量不由本轮认证。[验收范围](audits/panel-control-audit.md#inspector-control-hierarchy)。
+- 按用户确认仅调整 `inspector.control-hierarchy`：大面板圆角、顶部页签、首页、外框、Agent 和工具栏视觉保持原样。规则限定在 `editor-properties-panel` 内，共享组件只增加语义标记，不改变其他位置的控件外观和文档操作。
+- 输入/颜色行采用 6px 圆角填充矩形；下拉为轻描边，切换项成组显示选中块，操作按钮使用轻背景。桌面主控件行高 32px、窄屏输入 48px；标题 11px，标签/数值/单位分层，数值保留等宽。Frame 宽高和文字/描边/布局共用规则。
+- 干净固定版本 [`7e6a77a`](https://github.com/umaxzhao/voo-design/commit/7e6a77a3d0836b7eecceeefddf3be3f94afb11c0)：**91/91 项执行通过，87 组浏览器通过，单测 4637 通过/4 跳过/0 失败**。用原发布脚本派生的临时运行器将浏览器并发从 3 降为 2，其余命令、断言与源码不变检查保持一致。证据 `/private/tmp/voo-inspector-controls-release-integrated.json`、同名 `.log`。之前的部分执行与失败独立保留，没有当成该固定版本通过。
+- 真实输入提交/取消、下拉键盘开关与焦点、旋转、Frame 布局及一次撤销通过；已有文字创建、字号/行距/字距、混合选区、填充/描边与拖动调值回归均由注册套件执行。16 组视口/主题/语言截图 `/private/tmp/voo-inspector-control-evidence/`；窄栏的锚点不与坐标字段重叠，合成宽高组保留自然高度。
+- 已推送并通过 SSH la2 部署 `7e6a77a`；正式入口及 9 个直接/控件资源与验证构建逐字节一致。正式中文 Frame 控件几何、输入修改/撤销、键盘下拉、布局选中反馈和文字字号/撤销实际通过，无页面脚本错误，未调用付费服务。证据 `/private/tmp/voo-inspector-controls-deployment-proof.json`、`/private/tmp/voo-inspector-controls-production-result.log`；截图 `/private/tmp/voo-inspector-controls-production-panel.png`。
+- 发布前合入同期新增的三份文档更新（`98678cf`）；产品源码、脚本及测试与完整验证的 `7e6a77a` 逐字相同，构建仍绑定该固定提交。
+- GitHub 检查 [本次运行](https://github.com/umaxzhao/voo-design/actions/runs/41223418888) 查询时为 `in_progress` / `尚未结束`；不继承历史 CI。上述部署由项目 SSH 脚本完成。
+- 本地 App 只三方合入本轮补丁，保留其他草稿；30 项定向单测及 16 组真实浏览器检查通过（`/private/tmp/voo-inspector-controls-primary-unit.log`、`/private/tmp/voo-inspector-controls-primary-browser-final.log`）。备份 `/private/tmp/voo-inspector-controls-primary/`；未认证整个私人草稿。
+- 原 12px 胶囊复现在 `/private/tmp/voo-inspector-controls-before.log`；首次完整运行的旧 SSR 正则属性顺序失败保留在 `/private/tmp/voo-inspector-controls-release.json`。原本地选中颜色失败证明采样于过渡第 0 帧，日志 `primary-browser-v2.log` 同前缀；检查现在等待真实过渡完成，没有放宽数值、单位、状态或撤销断言。Figma 冷重开旧失败（`release-final.json` / `release-recovered.json`）已定位为节点为空且 guard=on 的提前采样（`figma-ready.log`），只补夹具的真实导入节点/打开完成等待，所有精确像素断言保留；未改应用导入逻辑。
+- 功能覆盖仍为部分；实体触屏/IME/触控笔、所有高级独立浮层和所有历史项目不由本轮认证。[验收范围](audits/panel-control-audit.md#inspector-control-hierarchy)。
+
+## 浏览器右侧停靠与 Agent 互斥（历史固定版本记录）
+
+浏览器右侧停靠与 Agent 互斥已完成声明范围：固定源码提交 [04aa32b](https://github.com/umaxzhao/voo-design/commit/04aa32bd3ceb7e15f3f4ff09bb72be66288ffd6c) 通过 90/90 核心发布步骤（86 组浏览器、4604 项单测通过、4 项跳过），构建与设计检查通过。桌面浏览器与编辑器左右并排，窄屏从右侧展开；Browser 和 Agent 的公共打开入口互相关闭对方，关闭不自动重开另一面板。当前本地布局修复也已真实浏览器验证。原始证据 `/private/tmp/voo-browser-right-release.json`，线上资源和交互证据入口 `/private/tmp/voo-panel-exclusion-deployment.json`；功能覆盖保持部分，不继承为后续代码或其他平台通过。
+
+该浏览器任务分支的 90/90 结果只属于固定源码 04aa32b；随后合入的远程导入、采样和编辑器修复不继承该结果，合入当前主分支后在固定提交 47471c9d15d44dbfe957a9c7813a6d39915c183e 上重新构建、检查设计规则，4637 项单测通过、4 项跳过，浏览器切换、新建文件和首页设置三组浏览器检查通过；证据另记 `/private/tmp/voo-browser-right-integration.json`，不是新的全量门禁声明。
 
 ## 本轮：矢量曲线拆分锚点切线重置、路径文字仿射变换矩阵与布尔运算图层顺序保持（已验证通过）
 
@@ -206,12 +214,12 @@
 
 | 项目 | 状态 |
 | --- | --- |
-| 工程规范与模块登记 | 已落地：12 个模块、66 个公开能力分组 |
-| 核心发布校验 | 9cd70af：90/90 步通过，包含 86 组浏览器套件 |
-| 全量单元测试 | 4587 通过、4 跳过、0 失败；跳过项不算通过 |
+| 工程规范与模块登记 | 已落地：12 个模块、71 个公开能力分组 |
+| 核心发布校验 | 7e6a77a：91/91 项通过，包含 87 组浏览器 |
+| 全量单元测试 | 4637 通过、4 跳过、0 失败（固定提交 7e6a77a） |
 | GitHub Ubuntu 基础检查 | 本轮 CI 按实际状态另记；本机完整门禁和线上实测已通过，不继承历史版本 CI |
-| 线上部署 | e28b511 已部署 la2，入口及文字模块字节一致；中文实际排版操作与撤销通过 |
-| 功能验收完整度 | 部分覆盖；66 个公开能力分组未穷尽所有入口、上下文和设备 |
+| 线上部署 | 7e6a77a 已部署 la2，控件资源与构建一致；中文 Frame/文字操作和撤销通过 |
+| 功能验收完整度 | 部分覆盖；71 个公开能力分组未穷尽所有入口、上下文和设备 |
 | 核心门禁外的独立检查 | 建议 1 组本轮显式通过；其余 20 组本轮未运行，不继承历史通过 |
 
 ## 连续创作首轮（f9102cd，已完成声明范围）

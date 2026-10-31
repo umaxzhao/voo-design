@@ -396,11 +396,11 @@ Layers, the welcome page, Agent or toolbar. Large panel radii remain unchanged.
 
 | Context | Assertions | Status |
 | --- | --- | --- |
-| Numeric fields | 6px field radius, 32px desktop row, explicit label/value/unit roles; actual typed commit/cancel and undo | Targeted Chromium pass |
-| Dropdown | Distinct outlined surface, real keyboard open/Escape and focus retention | Targeted Chromium pass |
-| Switch/command | Grouped Frame layout modes and lighter rotate command keep actual operations and one-step undo | Targeted Chromium pass |
-| Responsive | 320/390/768/1440px, light/dark, English/Chinese; 48px narrow inputs, no anchor/field overlap | Targeted Chromium pass |
-| Existing editing | Typography creation/editing, mixed selection, fill/stroke and scrub interactions | Final gate pending |
+| Numeric fields | 6px field radius, 32px desktop row, explicit label/value/unit roles; actual typed commit/cancel and undo | Passed on `7e6a77a` |
+| Dropdown | Distinct outlined surface, real keyboard open/Escape and focus retention | Passed on `7e6a77a` |
+| Switch/command | Grouped Frame layout modes and lighter rotate command keep actual operations and one-step undo | Passed on `7e6a77a` |
+| Responsive | 320/390/768/1440px, light/dark, English/Chinese; 48px narrow inputs, no anchor/field overlap | Passed on `7e6a77a` |
+| Existing editing | Typography creation/editing, mixed selection, fill/stroke and scrub interactions | Passed on `7e6a77a` |
 | Remaining | Physical touch/IME/stylus, all advanced portaled dialogs, private workspace as a whole | Not certified |
 
 Baseline `/private/tmp/voo-inspector-controls-before.log` fails the old 12px
@@ -408,7 +408,7 @@ capsule against the new geometry requirement. Targeted checks and screenshots:
 `/private/tmp/voo-inspector-controls-after-v2.log` and
 `/private/tmp/voo-inspector-control-evidence/`. Registered helper
 `tests/e2e/inspector-control-cases.mjs` runs inside the existing UI inspector suite.
-Final clean revision and production evidence will be recorded after execution.
+Clean fixed revision `7e6a77a3d0836b7eecceeefddf3be3f94afb11c0`: all 91 steps, 87 browser suites, 4637 unit passes/4 skips. Report `/private/tmp/voo-inspector-controls-release-integrated.json`. Earlier Figma cold-reopen sampling ran before the imported document was ready (empty nodes and open guard on); the fixture now waits for the actual scene while retaining exact pixel assertions. This does not claim an application import fix. Browser concurrency alone was reduced to 2. Production revision `7e6a77a3d0836b7eecceeefddf3be3f94afb11c0` separately matches the build and passes actual Chinese Frame/typography controls and undo; evidence `/private/tmp/voo-inspector-controls-production-result.log` and `/private/tmp/voo-inspector-controls-deployment-proof.json`. Distinct integrated revisions do not inherit a historical complete run.
 
 ## Exclusive Browser and Agent panels — 2026-10-31
 
