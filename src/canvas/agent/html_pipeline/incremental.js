@@ -12,6 +12,7 @@ export class CanvasStreamer {
   }
   start() {
     this.release = acquireAuthoring(this.editor);
+    this.started = true;
     try {
       this.restores = [];
       this.editor.beginBatch?.();
@@ -93,6 +94,7 @@ export class CanvasStreamer {
     this.finished = true;
     this.authoring.finish();
     this.renderer.dispose();
+    if (!this.started) return;
     for (const restore of (this.restores || []).reverse()) restore();
     this.editor.endBatch?.();
     this.release?.();

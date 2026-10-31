@@ -65,6 +65,18 @@ describe("native streaming authoring", () => {
     expect(create).toHaveBeenCalledTimes(1);
     streamer.finish();
   });
+  it("does not end another generation's batch when its own start is rejected", () => {
+    const editor = { beginBatch: vi.fn(), endBatch: vi.fn(), commit: vi.fn() };
+    const renderer = { dispose: vi.fn() };
+    const first = new CanvasStreamer({ editor, frame: {}, renderer, create: () => "first" });
+    const rejected = new CanvasStreamer({ editor, frame: {}, renderer, create: () => "second" });
+    first.start();
+    expect(() => rejected.start()).toThrow("already active");
+    rejected.finish();
+    expect(editor.endBatch).not.toHaveBeenCalled();
+    first.finish();
+    expect(editor.endBatch).toHaveBeenCalledOnce();
+  });
   it("restores history and releases the canvas when initial frame creation fails", () => {
     const editor = { beginBatch: vi.fn(), endBatch: vi.fn(), commit: vi.fn() };
     const commit = editor.commit;
