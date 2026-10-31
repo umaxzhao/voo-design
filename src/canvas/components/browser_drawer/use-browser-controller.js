@@ -13,9 +13,6 @@ export function useBrowserController(open) {
   const [importStatus, setImportStatus] = useState(null); // { type: 'success'|'error'|'info', message }
   const [showCustomHtml, setShowCustomHtml] = useState(false);
   const [customHtml, setCustomHtml] = useState("");
-  const [drawerWidth, setDrawerWidth] = useState(560);
-  const isResizingRef = useRef(false);
-
   const webviewRef = useRef(null);
   const iframeRef = useRef(null);
   const isElectron =
@@ -44,12 +41,29 @@ export function useBrowserController(open) {
     setUrl(clean);
     setInputUrl(clean);
     setIsPicking(false);
+    setIsLoading(true);
   }, []);
+
+  const handleFrameLoad = useCallback(() => setIsLoading(false), []);
+  const handleFrameError = useCallback(() => {
+    setIsLoading(false);
+    setImportStatus({ type: "error", message: t("browser.loadError") });
+  }, [t]);
+
+  useEffect(() => {
+    if (open) setIsLoading(true);
+  }, [open]);
 
   const handleUrlSubmit = (e) => {
     e.preventDefault();
     navigateTo(inputUrl);
   };
+
+  const reload = useCallback(() => {
+    setIsLoading(true);
+    if (webviewRef.current) webviewRef.current.reload();
+    else if (iframeRef.current) iframeRef.current.src = url;
+  }, [url]);
 
   // Inject picker helper script into webview or iframe
   const injectPickerScript = useCallback(() => {
@@ -304,6 +318,12 @@ export function useBrowserController(open) {
       setIsLoading(false);
       injectPickerScript();
     };
+    const onFail = (event) => {
+      setIsLoading(false);
+      if (event.errorCode !== -3) {
+        setImportStatus({ type: "error", message: t("browser.loadError") });
+      }
+    };
     const onNavigate = (e) => {
       setInputUrl(e.url);
       setUrl(e.url);
@@ -331,6 +351,7 @@ export function useBrowserController(open) {
 
     wv.addEventListener("did-start-loading", onStart);
     wv.addEventListener("did-stop-loading", onStop);
+    wv.addEventListener("did-fail-load", onFail);
     wv.addEventListener("did-navigate", onNavigate);
     wv.addEventListener("ipc-message", onIpcMessage);
     wv.addEventListener("console-message", onConsoleMessage);
@@ -338,32 +359,12 @@ export function useBrowserController(open) {
     return () => {
       wv.removeEventListener("did-start-loading", onStart);
       wv.removeEventListener("did-stop-loading", onStop);
+      wv.removeEventListener("did-fail-load", onFail);
       wv.removeEventListener("did-navigate", onNavigate);
       wv.removeEventListener("ipc-message", onIpcMessage);
       wv.removeEventListener("console-message", onConsoleMessage);
     };
-  }, [injectPickerScript, open, reportError]);
-
-  // Drawer width resize handler
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (!isResizingRef.current) return;
-      const newWidth = Math.max(
-        380,
-        Math.min(1080, window.innerWidth - e.clientX),
-      );
-      setDrawerWidth(newWidth);
-    };
-    const handleMouseUp = () => {
-      isResizingRef.current = false;
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, []);
+  }, [injectPickerScript, open, reportError, t]);
 
   return {
     t,
@@ -378,13 +379,14 @@ export function useBrowserController(open) {
     setShowCustomHtml,
     customHtml,
     setCustomHtml,
-    drawerWidth,
-    isResizingRef,
     webviewRef,
     iframeRef,
     isElectron,
     navigateTo,
+    handleFrameLoad,
+    handleFrameError,
     handleUrlSubmit,
+    reload,
     handleStartPick,
     handleStopPick,
     handleImportFullPage,

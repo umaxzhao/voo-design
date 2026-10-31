@@ -1,18 +1,18 @@
 /** Embedded browser labels. */
 export default {
-  "browser.resize": "拖动调整浏览器宽度",
   "browser.back": "后退",
   "browser.forward": "前进",
   "browser.refresh": "刷新",
-  "browser.home": "首页",
   "browser.navigate": "前往",
+  "browser.actions": "浏览器工具",
+  "browser.loading": "正在加载网页",
+  "browser.loadError": "网页加载失败。",
   "browser.cancelPick": "取消选取（ESC）",
   "browser.picking": "选取中…",
   "browser.customHtml": "粘贴并导入 HTML",
   "browser.external": "在默认浏览器中打开",
   "browser.close": "关闭浏览器",
   "browser.cancel": "取消",
-  "browser.quick": "快捷：",
   "browser.htmlTitle": "导入 HTML / 组件",
   "browser.htmlPlaceholder": "粘贴 HTML 或 SVG 代码以导入画布…",
   "browser.convert": "转换为画布图层",
@@ -30,5 +30,4 @@ export default {
   "browser.element": "网页元素",
   "browser.elementDone": "已将元素“{title}”导入画布",
   "browser.operationFailed": "浏览器操作失败",
-  "browser.awwwards": "获奖网站与设计灵感",
 };

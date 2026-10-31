@@ -1,18 +1,18 @@
 /** Embedded browser labels. */
 export default {
-  "browser.resize": "Drag to resize browser",
   "browser.back": "Back",
   "browser.forward": "Forward",
   "browser.refresh": "Refresh",
-  "browser.home": "Home",
   "browser.navigate": "Navigate",
+  "browser.actions": "Browser tools",
+  "browser.loading": "Loading page",
+  "browser.loadError": "The page could not be loaded.",
   "browser.cancelPick": "Cancel Picking (ESC)",
   "browser.picking": "Picking...",
   "browser.customHtml": "Paste & Import Custom HTML",
   "browser.external": "Open in default browser",
   "browser.close": "Close Browser",
   "browser.cancel": "Cancel",
-  "browser.quick": "Quick:",
   "browser.htmlTitle": "Direct HTML / Component Import",
   "browser.htmlPlaceholder":
     "Paste HTML or SVG code here to import directly into canvas...",
@@ -32,5 +32,4 @@ export default {
   "browser.element": "Web Element",
   "browser.elementDone": 'Imported element "{title}" to canvas!',
   "browser.operationFailed": "Browser operation failed.",
-  "browser.awwwards": "Website Awards & Design Inspiration",
 };
