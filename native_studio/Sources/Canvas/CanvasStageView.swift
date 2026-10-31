@@ -866,7 +866,6 @@ public class CanvasStageView: NSView {
     private static let frameLabelTopOffset: CGFloat = 20.0
     private static let frameLabelIconSize: CGFloat = 12.0
     private static let frameLabelIconGap: CGFloat = 6.0
-    private static let frameLabelChevronSize: CGFloat = 10.0
 
     /// Node whose text is currently being edited in the inline overlay. The web
     /// editor hides the edited layer while its textarea is up, otherwise the
@@ -936,8 +935,10 @@ public class CanvasStageView: NSView {
     }
 
     /// Draws a frame title label exactly like the web editor: 12px grid glyph,
-    /// 6px gap, 11px mono text at 20 screen-px above the frame's top edge, plus a
-    /// small chevron. `active` frames use the mint title colour, others neutral-400.
+    /// 6px gap, 11px mono text at 20 screen-px above the frame's top edge.
+    /// `active` frames use the mint title colour, others neutral-400. The
+    /// current web frame label has no chevron after the name (only the page pill
+    /// in the bottom-left does).
     private func drawFrameLabel(_ title: String, frameRect: CGRect, active: Bool, in ctx: CGContext) {
         let safeZoom = max(zoom, 0.0001)
         var text = title
@@ -951,7 +952,7 @@ public class CanvasStageView: NSView {
         var ascent: CGFloat = 0
         var descent: CGFloat = 0
         var leading: CGFloat = 0
-        let textWidth = CGFloat(CTLineGetTypographicBounds(line, &ascent, &descent, &leading))
+        _ = CTLineGetTypographicBounds(line, &ascent, &descent, &leading)
 
         // CSS half-leading: leading is split above and below the ascent/descent box.
         let lineHeight = Self.frameLabelLineHeight / safeZoom
@@ -970,15 +971,6 @@ public class CanvasStageView: NSView {
         ctx.textPosition = CGPoint(x: textX, y: baseline)
         CTLineDraw(line, ctx)
         ctx.restoreGState()
-
-        let chevronSize = Self.frameLabelChevronSize / safeZoom
-        let chevronRect = CGRect(
-            x: textX + textWidth + 4.0 / safeZoom,
-            y: iconCenter - chevronSize / 2.0,
-            width: chevronSize,
-            height: chevronSize
-        )
-        VooIconFactory.drawChevronDown(in: chevronRect, color: color, strokeWidth: 1.5)
     }
 
     /// 1px screen-space frame outline: mint for the focused/selected frame,
@@ -996,12 +988,79 @@ public class CanvasStageView: NSView {
         ctx.stroke(CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY))
     }
 
+    /// Stage dot grid (always on in the web editor's free-page stage, independent
+    /// of `showGrid`, which is the layout-grid toggle):
+    /// `radial-gradient(rgba(255,255,255,0.14) 1.2px, transparent 1.2px)`,
+    /// `backgroundSize: 20 * zoom`, `backgroundPosition: panX, panY`.
+    ///
+    /// The tile origin is the camera pan (phase), and the CSS gradient places the
+    /// dot at the tile centre, so dot centres sit at `phase + step/2 + k*step`.
+    /// The dot radius stays 1.2 SCREEN px; only the pitch scales with the zoom.
+    private func drawStageDotGrid(in ctx: CGContext) {
+        let step = ThemeTokens.dotGridSpacing * zoom
+        // Extreme zoom-out would make the pitch sub-pixel and the dot pass
+        // arbitrarily large; the pattern is not discernible there, so skip it.
+        guard step >= 3.0 else { return }
+
+        let clipRect: CGRect
+        if showRulers {
+            let thickness = ThemeTokens.rulerTrackThickness
+            clipRect = CGRect(
+                x: thickness,
+                y: 0,
+                width: max(0, bounds.width - thickness),
+                height: max(0, bounds.height - thickness)
+            )
+        } else {
+            clipRect = bounds
+        }
+        guard clipRect.width > 0, clipRect.height > 0 else { return }
+
+        let phaseX = Self.positiveRemainder(panOffset.x, step)
+        let phaseY = Self.positiveRemainder(panOffset.y, step)
+        let radius = ThemeTokens.dotGridRadius
+        let dotDiameter = radius * 2.0
+
+        let path = CGMutablePath()
+        var x = phaseX + step / 2.0
+        while x - radius < clipRect.maxX {
+            var y = phaseY + step / 2.0
+            while y - radius < clipRect.maxY {
+                if x + radius > clipRect.minX, y + radius > clipRect.minY {
+                    path.addEllipse(in: CGRect(x: x - radius, y: y - radius, width: dotDiameter, height: dotDiameter))
+                }
+                y += step
+            }
+            x += step
+        }
+        guard !path.isEmpty else { return }
+
+        ctx.saveGState()
+        ctx.clip(to: clipRect)
+        ctx.setFillColor(NSColor(white: 1.0, alpha: ThemeTokens.dotGridAlpha).cgColor)
+        ctx.addPath(path)
+        ctx.fillPath()
+        ctx.restoreGState()
+    }
+
+    /// Positive remainder (`0 <= result < modulus`), used to phase the dot tile
+    /// from a negative camera pan without mirroring the pattern.
+    private static func positiveRemainder(_ value: CGFloat, _ modulus: CGFloat) -> CGFloat {
+        guard modulus > 0 else { return 0 }
+        let remainder = value.truncatingRemainder(dividingBy: modulus)
+        return remainder < 0 ? remainder + modulus : remainder
+    }
+
     public override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
-        // 1. Stage Background (web editor workspace ground #1c1c1c)
+        // 1. Stage Background (web editor workspace ground #525252)
         ctx.setFillColor(ThemeTokens.colorStageStudio.cgColor)
         ctx.fill(bounds)
+
+        // 1.1 Stage dot grid: always on in the web free-page stage, under the
+        // artboards. `showGrid` keeps its own meaning (layout grid lines).
+        drawStageDotGrid(in: ctx)
 
         let rulerOffset = showRulers ? ThemeTokens.rulerTrackThickness : 0.0
         let originX = rulerOffset + panOffset.x
@@ -1061,14 +1120,15 @@ public class CanvasStageView: NSView {
             ctx.fillPath()
         }
 
-        // 2.1 Frame labels. The page label is only drawn when no frame node owns
-        // the canvas, otherwise that node draws its own "Design 1" label.
+        // 2.1 Frame labels. Default is muted grey (web `text-neutral-400`); mint
+        // only when that frame is focused/selected. The page label is only drawn
+        // when no frame node owns the canvas, otherwise that node draws its own.
         if hasPage {
             if pageFrameNode == nil {
-                drawFrameLabel(document.title, frameRect: pageRect, active: true, in: ctx)
+                drawFrameLabel(document.title, frameRect: pageRect, active: false, in: ctx)
             }
             for frameNode in document.nodes where frameNode.kind == .frame && frameNode.style.visible {
-                let active = selectedNodeIds.contains(frameNode.id) || frameNode.id == pageFrameNode?.id
+                let active = selectedNodeIds.contains(frameNode.id)
                 drawFrameLabel(
                     frameNode.name,
                     frameRect: Self.docRect(of: frameNode),
@@ -1078,7 +1138,8 @@ public class CanvasStageView: NSView {
             }
         }
 
-        // 2.2 Canvas chrome: W×H readout (gestures only) + add-canvas button.
+        // 2.2 Canvas chrome: W×H readout (gestures only); the add-canvas circle
+        // only appears on multi-page documents (see drawCanvasChrome).
         if hasPage {
             drawCanvasChrome(pageRect: pageRect, canvas: canvas, in: ctx)
         }
@@ -1246,8 +1307,9 @@ public class CanvasStageView: NSView {
     }
 
     /// Canvas chrome that floats outside the page: the W×H readout (only during
-    /// a live transform/creation gesture in the web editor) and the add-canvas
-    /// circle (36px, 48px right of the page, #2a2a2a/80 ground, white/80 plus).
+    /// a live transform/creation gesture in the web editor) and, for multi-page
+    /// documents only, the add-canvas circle (36px, 48px right of the page,
+    /// #2a2a2a/80 ground, white/80 plus).
     private func drawCanvasChrome(pageRect: CGRect, canvas: CanvasFrame, in ctx: CGContext) {
         let safeZoom = max(zoom, 0.0001)
 
@@ -1279,21 +1341,30 @@ public class CanvasStageView: NSView {
             )
         }
 
-        let addBtnRect = CGRect(
-            x: pageRect.maxX + 48.0 / safeZoom,
-            y: pageRect.midY - 18.0 / safeZoom,
-            width: 36.0 / safeZoom,
-            height: 36.0 / safeZoom
-        )
-        ctx.setFillColor(NSColor(red: 0.165, green: 0.165, blue: 0.165, alpha: 0.80).cgColor)
-        ctx.fillEllipse(in: addBtnRect)
-        let plusRect = CGRect(
-            x: addBtnRect.midX - 9.0 / safeZoom,
-            y: addBtnRect.midY - 9.0 / safeZoom,
-            width: 18.0 / safeZoom,
-            height: 18.0 / safeZoom
-        )
-        VooIconFactory.drawPlus(in: plusRect, color: NSColor(white: 0.80, alpha: 1.0), strokeWidth: 1.5)
+        // Add-canvas affordance: the web editor only renders the "+" circle
+        // beside the last artboard on a multi-page/free canvas. The native
+        // editor is single-page, so the code path stays but is hidden unless the
+        // document actually carries more than one visible frame.
+        let visibleFrameCount = document.nodes.reduce(0) { count, node in
+            count + ((node.kind == .frame && node.style.visible) ? 1 : 0)
+        }
+        if visibleFrameCount > 1 {
+            let addBtnRect = CGRect(
+                x: pageRect.maxX + 48.0 / safeZoom,
+                y: pageRect.midY - 18.0 / safeZoom,
+                width: 36.0 / safeZoom,
+                height: 36.0 / safeZoom
+            )
+            ctx.setFillColor(NSColor(red: 0.165, green: 0.165, blue: 0.165, alpha: 0.80).cgColor)
+            ctx.fillEllipse(in: addBtnRect)
+            let plusRect = CGRect(
+                x: addBtnRect.midX - 9.0 / safeZoom,
+                y: addBtnRect.midY - 9.0 / safeZoom,
+                width: 18.0 / safeZoom,
+                height: 18.0 / safeZoom
+            )
+            VooIconFactory.drawPlus(in: plusRect, color: NSColor(white: 0.80, alpha: 1.0), strokeWidth: 1.5)
+        }
     }
 
     /// Draws one node after applying its container clips: the enclosing frame

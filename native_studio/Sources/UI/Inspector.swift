@@ -238,12 +238,13 @@ public class InspectorView: NSView {
         // Properties Card: Floating on the right
         NSLayoutConstraint.activate([
             // Left Floating Card (web: md:w-64 = 256, p12, rounded-3xl, centred).
-            // 244pt = header(50) + pills(28) + 8 + three 32pt rows + 2*4 spacing
-            // + footer gap(8+10) + 24pt toolbar + 12pt card padding.
+            // Verified against the current web build at 1:1: the LAYERS card is
+            // 256×236 (border box x22..277 / y352..587). 236 = header 50 + controls
+            // 45 + two 32pt rows + 4 gap + footer 45 + p12 + 1px border.
             layersPanel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             layersPanel.centerYAnchor.constraint(equalTo: centerYAnchor),
             layersPanel.widthAnchor.constraint(equalToConstant: 256),
-            layersPanel.heightAnchor.constraint(equalToConstant: 244),
+            layersPanel.heightAnchor.constraint(equalToConstant: 236),
 
             // Right Floating Card (web: md:w-72 = 288, p12, rounded-3xl, centred;
             // the fixed 368pt visible height scrolls to the rest of the sections).

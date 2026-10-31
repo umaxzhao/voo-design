@@ -176,6 +176,14 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             self.refreshWorkspaceFiles()
             self.showChromeToast("工作区已重新扫描")
         }
+        // Dashboard "Settings" floating button + "Configure provider" (web parity).
+        view.welcomeDashboard.onOpenSettings = { [weak self] in
+            self?.mainContentView.showSettings(tab: "general")
+        }
+        // The web title bar opens an embedded browser drawer; native has no drawer yet.
+        view.titleBar.onBrowserTapped = { [weak self] in
+            self?.showChromeToast("内嵌浏览器抽屉在原生版本尚未接入")
+        }
         view.welcomeDashboard.onEmptyTrash = { [weak self] in
             guard let self = self else { return }
             let alert = NSAlert()
@@ -321,8 +329,21 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         view.bottomZoomBar.onGridToggle = { [weak self] enabled in
             self?.mainContentView.canvasStageView.showGrid = enabled
         }
+        // Web `editor_zoom.jsx`: "Rulers and guides live inside this one bar", so the
+        // middle control toggles rulers; snapping moved behind the "..." menu.
         view.bottomZoomBar.onVisibilityToggle = { [weak self] enabled in
+            guard let self = self else { return }
+            self.mainContentView.canvasStageView.showRulers = enabled
+            UserDefaults.standard.set(enabled, forKey: SettingsDrawerView.showRulersDefaultsKey)
+            self.mainContentView.updateIslandBarPosition()
+        }
+        view.bottomZoomBar.onSnapToggle = { [weak self] enabled in
             self?.mainContentView.canvasStageView.isSnappingEnabled = enabled
+        }
+        view.addArtboardButton.onAddArtboard = { [weak self] in
+            guard let self = self else { return }
+            self.newPageAction(nil)
+            self.showChromeToast("已新建画板")
         }
         view.islandBar.onAskAI = { [weak self] prompt in
             self?.setAgentPanelOpen(true)
@@ -785,7 +806,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     public func toggleSnappingAction(_ sender: Any?) {
         let stage = mainContentView.canvasStageView
         stage.isSnappingEnabled.toggle()
-        mainContentView.bottomZoomBar.setVisibilityEnabled(stage.isSnappingEnabled)
+        mainContentView.bottomZoomBar.setSnapToGridEnabled(stage.isSnappingEnabled)
         showChromeToast(stage.isSnappingEnabled ? "磁性吸附已开启" : "磁性吸附已关闭")
     }
 
@@ -977,13 +998,15 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     // MARK: - StudioMenuActions Implementation
 
     public func newDocument(_ sender: Any?) {
+        // Web `newVooProject` → `promoteFixedPageToFrame("Frame")`: a 1200x800 frame
+        // named "Frame" whose background child carries the page colour.
         var doc = VOODocument()
         doc.title = "Design 1"
         doc.canvas = CanvasFrame(x: 0, y: 0, width: 1200, height: 800, backgroundColor: "#171717")
         let artboard = VOONode(
             id: "design_1",
             kind: .frame,
-            name: "Design 1",
+            name: "Frame",
             x: 0,
             y: 0,
             width: 1200,
@@ -992,6 +1015,9 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             // seen on screen is the 1px selection border drawn by the stage.
             style: LayerStyle(fill: "#171717", stroke: "none", strokeWidth: 1.0)
         )
+        // The web layer list also shows a "Background" child carrying the page colour;
+        // the frame fill already paints that surface, so no extra node is inserted
+        // (a child would paint over the frame and change the artboard colour).
         doc.nodes = [artboard]
         mainContentView.canvasStageView.document = doc
         mainContentView.canvasStageView.clearSelection()
@@ -3131,9 +3157,12 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                 activeIndex = 0
                 activePageNodeId = frameNodes.first?.id
             }
+            // Web `page_switcher` labels the pill with the DOCUMENT name
+            // ("Design1 1/1"), not the frame name, which stays "Frame".
             let currentPage = frameNodes[activeIndex]
+            let pillName = doc.title.isEmpty ? currentPage.name : doc.title
             mainContentView.pageSwitcher.update(
-                pageName: currentPage.name,
+                pageName: pillName,
                 pageIndex: activeIndex + 1,
                 pageCount: frameNodes.count
             )
@@ -3396,6 +3425,8 @@ public class MainContentView: NSView {
     public let pageSwitcher = PageSwitcherPillView()
     public let bottomZoomBar = StudioBottomZoomBar()
     public let aiButton = VooAIFloatingButton()
+    /// Small "add artboard" affordance above the page pill (web `editor_free_page`).
+    public let addArtboardButton = EditorAddArtboardButton()
     public let islandBar = ContextIslandBar()
     public let agentPanel = AgentPanelView()
     public let onboardingGuide = OnboardingGuideView()
@@ -3477,7 +3508,7 @@ public class MainContentView: NSView {
         editorShell.addSubview(inspector)
 
         // 2.5 Bottom floating chrome (web parity): page pill, zoom bar, island bar, AI FAB
-        for chromeView in [pageSwitcher, bottomZoomBar, islandBar, aiButton] as [NSView] {
+        for chromeView in [pageSwitcher, bottomZoomBar, islandBar, aiButton, addArtboardButton] as [NSView] {
             chromeView.translatesAutoresizingMaskIntoConstraints = false
             editorShell.addSubview(chromeView)
         }
@@ -3511,20 +3542,21 @@ public class MainContentView: NSView {
         editorShell.addSubview(welcomeDashboard)
 
         // Layout Constraints
-        editorTrailingToRoot = editorShell.trailingAnchor.constraint(equalTo: trailingAnchor, constant: 0)
+        editorTrailingToRoot = editorShell.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4)
         editorTrailingToPanel = editorShell.trailingAnchor.constraint(equalTo: agentPanel.leadingAnchor, constant: 0)
         NSLayoutConstraint.activate([
-            // TitleBar: Top, Leading, Trailing, Height = 40
-            titleBar.topAnchor.constraint(equalTo: topAnchor),
-            titleBar.leadingAnchor.constraint(equalTo: leadingAnchor),
-            titleBar.trailingAnchor.constraint(equalTo: trailingAnchor),
+            // App frame inset: web `.app-root-frame` pads 4px around the title bar and
+            // the editor shell (`shell` border box sits at x4/y44 inside a 1440x900 window).
+            titleBar.topAnchor.constraint(equalTo: topAnchor, constant: 4),
+            titleBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
+            titleBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
             titleBar.heightAnchor.constraint(equalToConstant: ThemeTokens.titleBarHeight),
 
-            // EditorShell Container: Inset below TitleBar with 14px corner radius and refined 1px mint border
+            // EditorShell Container: 2px mint border, 16 radius, 4px frame inset.
             editorShell.topAnchor.constraint(equalTo: titleBar.bottomAnchor, constant: 0),
-            editorShell.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 0),
+            editorShell.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
             editorTrailingToRoot,
-            editorShell.bottomAnchor.constraint(equalTo: bottomAnchor, constant: 0),
+            editorShell.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
 
             // AI agent panel: right column outside the editor shell
             agentPanel.topAnchor.constraint(equalTo: titleBar.bottomAnchor, constant: 0),
@@ -3543,6 +3575,12 @@ public class MainContentView: NSView {
             settingsDrawer.leadingAnchor.constraint(equalTo: editorShell.leadingAnchor),
             settingsDrawer.trailingAnchor.constraint(equalTo: editorShell.trailingAnchor),
             settingsDrawer.bottomAnchor.constraint(equalTo: editorShell.bottomAnchor),
+
+            // Bottom-left "add artboard" button sits just above the page pill
+            addArtboardButton.leadingAnchor.constraint(equalTo: editorShell.leadingAnchor, constant: 14),
+            addArtboardButton.bottomAnchor.constraint(equalTo: pageSwitcher.topAnchor, constant: -8),
+            addArtboardButton.widthAnchor.constraint(equalToConstant: EditorAddArtboardButton.preferredSize),
+            addArtboardButton.heightAnchor.constraint(equalToConstant: EditorAddArtboardButton.preferredSize),
 
             // Bottom-left page switcher
             pageSwitcher.leadingAnchor.constraint(equalTo: editorShell.leadingAnchor, constant: 16),
@@ -3617,6 +3655,7 @@ public class MainContentView: NSView {
     public func refreshChromeVisibility() {
         let dashboard = isWelcomeOpen
         pageSwitcher.isHidden = dashboard
+        addArtboardButton.isHidden = dashboard
         bottomZoomBar.isHidden = dashboard
         islandBar.isHidden = dashboard || !sessionHasSelection || isAgentPanelOpen
         aiButton.isHidden = dashboard || isAgentPanelOpen

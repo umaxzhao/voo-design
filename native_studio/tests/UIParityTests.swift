@@ -221,7 +221,8 @@ public class UIParityTests {
             try TestAssertions.assertEqual(bar.state.documentTitle, "Moon.voo", "Dashboard mode must not lose the loaded project title")
             try TestAssertions.assertTrue(bar.saveButton.isHidden, "Save is editor-only")
             try TestAssertions.assertTrue(bar.openButton.isHidden, "Open is editor-only")
-            try TestAssertions.assertFalse(bar.tabCloseButton.isHidden)
+            // Web dashboard mode has no document tab pill (brand + "+" only).
+            try TestAssertions.assertTrue(bar.tabCloseButton.isHidden)
             try TestAssertions.assertFalse(bar.tabPlusButton.isHidden)
             try TestAssertions.assertFalse(bar.settingsButton.isHidden)
 
@@ -612,11 +613,11 @@ public class UIParityTests {
 
         registry.register(tier: 1, feature: "UIParity-EditorChrome", name: "test_UIParity_EditorChromeGlyphs_CoverageAndRender") {
             // Every chrome glyph must be present in the catalogue...
-            try TestAssertions.assertEqual(EditorChromeGlyph.allCases.count, 18)
+            try TestAssertions.assertEqual(EditorChromeGlyph.allCases.count, 20)
             let expected: [EditorChromeGlyph] = [
                 .page, .chevronDown, .undo, .redo, .grid, .magnet, .plus, .minus,
                 .marquee, .rotate, .flipVertical, .flipHorizontal, .copy, .lock,
-                .trash, .diamond, .sparkle, .arrowUp
+                .trash, .diamond, .sparkle, .arrowUp, .eye, .more
             ]
             try TestAssertions.assertEqual(Set(EditorChromeGlyph.allCases), Set(expected))
 
@@ -3116,11 +3117,12 @@ public class UIParityTests {
             let bar = makeTitleBar(width: 1440)
             try TestAssertions.assertApproxEqual(bar.frame.height, 40, accuracy: 1.5, "Title bar height is 40")
 
-            // UI_SPEC §1: brand h28, close 16, plus 24, settings 20, save/open h28.
+            // Web `app_title_bar.jsx`: brand h28, close 16, plus 24, settings gear 28x28
+            // (rounded-lg hit area), save/open h28.
             try TestAssertions.assertApproxEqual(bar.brandLogoButton.frame.height, 28, accuracy: 1.5, "Brand button height")
             try assertFrameSize(bar.tabCloseButton, width: 16, height: 16, "Tab close")
             try assertFrameSize(bar.tabPlusButton, width: 24, height: 24, "Tab plus")
-            try assertFrameSize(bar.settingsButton, width: 20, height: 20, "Settings bolt")
+            try assertFrameSize(bar.settingsButton, width: 28, height: 28, "Settings gear")
             try TestAssertions.assertApproxEqual(bar.saveButton.frame.height, 28, accuracy: 1.5, "Save button height")
             try TestAssertions.assertApproxEqual(bar.openButton.frame.height, 28, accuracy: 1.5, "Open button height")
 
@@ -3264,7 +3266,7 @@ public class UIParityTests {
             inspector.layoutSubtreeIfNeeded()
 
             // Web layers card: md:w-64 (256) with 3 rows at h32 need a 244pt list box.
-            try assertFrameSize(inspector.layersPanel, width: 256, height: 244, "UI_SPEC §4 layers card")
+            try assertFrameSize(inspector.layersPanel, width: 256, height: 236, "UI_SPEC §4 layers card")
             try TestAssertions.assertApproxEqual(inspector.layersPanel.frame.minX, 16, accuracy: 1.5, "Layers card leading margin")
             try TestAssertions.assertApproxEqual(inspector.layersPanel.frame.midY, inspector.bounds.midY, accuracy: 1.5, "Layers card vertically centred")
 
@@ -3307,8 +3309,8 @@ public class UIParityTests {
             let panel = LayersPanelView(frame: NSRect(x: 0, y: 0, width: 256, height: 238))
             panel.layoutSubtreeIfNeeded()
 
-            try assertFrameSize(try requireButton(panel, id: "Layers.Search"), width: 21, height: 21, "Layers search button")
-            try assertFrameSize(try requireButton(panel, id: "Layers.Sort"), width: 21, height: 21, "Layers sort button")
+            try assertFrameSize(try requireButton(panel, id: "Layers.Search"), width: 28, height: 28, "Layers search button")
+            try assertFrameSize(try requireButton(panel, id: "Layers.Sort"), width: 28, height: 28, "Layers sort button")
             try TestAssertions.assertApproxEqual(
                 try requireView(panel, id: "Layers.Opacity").frame.height,
                 28,

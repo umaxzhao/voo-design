@@ -40,8 +40,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         let controller = WindowController()
         self.windowController = controller
 
-        if ProcessInfo.processInfo.environment["VOO_EMPTY_DOCUMENT"] != "1" {
+        // Start on a blank "Design 1" (web parity) so launching never builds and
+        // then discards demo artwork. The demo scene stays available for snapshot
+        // automation through VOO_DEMO_PROJECT=1.
+        if ProcessInfo.processInfo.environment["VOO_DEMO_PROJECT"] == "1" {
             controller.loadDemoProject()
+        } else {
+            controller.newDocument(nil)
         }
 
         // By default, open the Welcome Dashboard (工作台) first, matching VOO Design!

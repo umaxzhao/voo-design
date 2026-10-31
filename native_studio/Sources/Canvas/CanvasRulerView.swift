@@ -93,7 +93,8 @@ public class CanvasRulerView: NSView {
 
         let b = bounds
 
-        // 1. Track ground: web `bg-[#1c1c1c]/95` over the #1c1c1c stage.
+        // 1. Track ground: the current web rulers overlay the #525252 stage
+        // with the same ground; only separators/ticks distinguish the strip.
         ctx.setFillColor(ThemeTokens.colorRulerBackground.cgColor)
         ctx.fill(b)
 

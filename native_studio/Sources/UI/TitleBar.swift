@@ -121,8 +121,20 @@ public final class DarkTitleTextField: NSTextField, NSTextFieldDelegate {
     }
 
     public override var intrinsicContentSize: NSSize {
-        let textWidth = (stringValue as NSString).size(withAttributes: [.font: font ?? ThemeFonts.system(size: 12, weight: .medium)]).width + 8
-        return NSSize(width: max(60, min(220, ceil(textWidth))), height: 22)
+        // Web `CanvasTabBar`: the tab is content-sized (`max-w-[240px]`), the
+        // label carries `tracking-[.3px]`, and padding left 12 / right 6 lives
+        // on the pill drawn by `AppTitleBar`. So the field asks for exactly the
+        // rendered label advance — no extra 8pt and no 60pt minimum, both of
+        // which made the native pill read wider than the web's.
+        let measuredFont = font ?? ThemeFonts.system(size: 12, weight: .medium)
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: measuredFont,
+            .kern: 0.3
+        ]
+        let textWidth = (stringValue as NSString).size(withAttributes: attributes).width
+        // 200 = web tab `max-w-[240px]` minus 12 left + 6 gap + 16 close + 6 right.
+        // The 24pt floor only guards an empty/in-progress title while editing.
+        return NSSize(width: max(24, min(200, ceil(textWidth))), height: 22)
     }
 
     public func controlTextDidEndEditing(_ obj: Notification) {
@@ -136,6 +148,21 @@ public final class DarkTitleTextField: NSTextField, NSTextFieldDelegate {
 
 public final class DarkActionButton: NSButton {
     public var isWhitePill: Bool = false
+
+    /// Optional leading glyph for web icon+label actions (nil = text-only pill).
+    public var leadingGlyph: VooIconName? {
+        didSet { needsDisplay = true }
+    }
+
+    /// Glyph box side (web uses a 16pt icon in `h-7` actions).
+    public var leadingGlyphSize: CGFloat = 16.0 {
+        didSet { needsDisplay = true }
+    }
+
+    /// Gap between the leading glyph and the label.
+    public var leadingGlyphGap: CGFloat = 6.0 {
+        didSet { needsDisplay = true }
+    }
 
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -171,44 +198,61 @@ public final class DarkActionButton: NSButton {
     }
 
     public override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds, xRadius: ThemeTokens.radiusXl, yRadius: ThemeTokens.radiusXl)
+        // Web `app-title-desktop-action` is `h-7 rounded-lg` => 28pt tall, radius 8
+        // (was ThemeTokens.radiusXl = 12, which read rounder/wider than the web).
+        let radius: CGFloat = 8.0
+        let path = NSBezierPath(roundedRect: bounds, xRadius: radius, yRadius: radius)
 
+        let labelColor: NSColor
         if isWhitePill {
             let bg = isHighlighted ? NSColor(white: 0.90, alpha: 1.0) : NSColor.white
             bg.setFill()
             path.fill()
-
-            if !title.isEmpty {
-                let pStyle = NSMutableParagraphStyle()
-                pStyle.alignment = .center
-                let attrs: [NSAttributedString.Key: Any] = [
-                    .font: font ?? ThemeFonts.system(size: 12, weight: .medium),
-                    .foregroundColor: NSColor.black,
-                    .paragraphStyle: pStyle
-                ]
-                let str = NSAttributedString(string: title, attributes: attrs)
-                let strSize = str.size()
-                let strRect = NSRect(x: 0, y: (bounds.height - strSize.height) / 2, width: bounds.width, height: strSize.height)
-                str.draw(in: strRect)
-            }
+            labelColor = .black
         } else {
             let bg = isHighlighted ? NSColor(white: 1.0, alpha: 0.12) : NSColor.clear
             bg.setFill()
             path.fill()
+            labelColor = isHighlighted ? NSColor.white : NSColor(white: 0.64, alpha: 1.0)
+        }
 
-            if !title.isEmpty {
-                let pStyle = NSMutableParagraphStyle()
-                pStyle.alignment = .center
-                let attrs: [NSAttributedString.Key: Any] = [
-                    .font: font ?? ThemeFonts.system(size: 12, weight: .medium),
-                    .foregroundColor: isHighlighted ? NSColor.white : NSColor(white: 0.64, alpha: 1.0),
-                    .paragraphStyle: pStyle
-                ]
-                let str = NSAttributedString(string: title, attributes: attrs)
-                let strSize = str.size()
-                let strRect = NSRect(x: 0, y: (bounds.height - strSize.height) / 2, width: bounds.width, height: strSize.height)
-                str.draw(in: strRect)
-            }
+        guard !title.isEmpty || leadingGlyph != nil else { return }
+
+        let pStyle = NSMutableParagraphStyle()
+        pStyle.alignment = .left
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: font ?? ThemeFonts.system(size: 12, weight: .medium),
+            .foregroundColor: labelColor,
+            .paragraphStyle: pStyle
+        ]
+        let str = NSAttributedString(string: title, attributes: attrs)
+        let strSize = str.size()
+
+        // Web icon+label action: glyph 16, 6pt gap, then the label; the whole
+        // group is centred inside the pill so px2.5/px3 padding reads evenly.
+        let glyphSide = leadingGlyph != nil ? leadingGlyphSize : 0.0
+        let glyphGap = leadingGlyph != nil ? leadingGlyphGap : 0.0
+        let contentWidth = glyphSide + glyphGap + strSize.width
+        let contentX = (bounds.width - contentWidth) / 2.0
+
+        if let glyph = leadingGlyph {
+            let glyphRect = NSRect(
+                x: contentX,
+                y: (bounds.height - glyphSide) / 2.0,
+                width: glyphSide,
+                height: glyphSide
+            )
+            VooIconFactory.draw(glyph, in: glyphRect, color: labelColor, strokeWidth: 1.5)
+        }
+
+        if !title.isEmpty {
+            let strRect = NSRect(
+                x: contentX + glyphSide + glyphGap,
+                y: (bounds.height - strSize.height) / 2.0,
+                width: strSize.width + 1.0,
+                height: strSize.height
+            )
+            str.draw(in: strRect)
         }
     }
 }
@@ -263,6 +307,7 @@ public final class TitleBarIconButton: NSButton {
         case close
         case plus
         case settings
+        case browser
     }
 
     public let glyph: Glyph
@@ -276,7 +321,7 @@ public final class TitleBarIconButton: NSButton {
         switch glyph {
         case .close: side = 16.0
         case .plus: side = 24.0
-        case .settings: side = 20.0
+        case .settings, .browser: side = 28.0
         }
         super.init(frame: NSRect(x: 0, y: 0, width: side, height: side))
         self.title = ""
@@ -347,11 +392,54 @@ public final class TitleBarIconButton: NSButton {
             ctx.addLine(to: CGPoint(x: center.x, y: center.y + s))
             ctx.strokePath()
 
+        case .browser:
+            // Web editor cluster: 28×28 rounded-lg globe button (web source uses
+            // lucide `Globe` at 16pt, 1.75 stroke), idle white/60, hover white on
+            // the same white/8 wash as the gear.
+            if hovered {
+                let wash = CGPath(roundedRect: bounds, cornerWidth: 8, cornerHeight: 8, transform: nil)
+                ctx.setFillColor(NSColor(white: 1.0, alpha: 0.08).cgColor)
+                ctx.addPath(wash)
+                ctx.fillPath()
+            }
+            let globeSide: CGFloat = 16.0
+            let globeRect = CGRect(
+                x: center.x - globeSide / 2.0,
+                y: center.y - globeSide / 2.0,
+                width: globeSide,
+                height: globeSide
+            )
+            VooIconFactory.draw(
+                .globe,
+                in: globeRect,
+                color: NSColor(white: hovered ? 1.0 : 0.60, alpha: 1.0),
+                strokeWidth: 1.5
+            )
+
         case .settings:
-            // Web uses Lucide's Bolt (an alias of zap) at 14pt inside a 20pt button.
-            let glyphSize: CGFloat = 14.0
-            let glyphRect = CGRect(x: center.x - glyphSize / 2.0, y: center.y - glyphSize / 2.0, width: glyphSize, height: glyphSize)
-            VooIconFactory.drawZap(in: glyphRect, color: NSColor(white: hovered ? 1.0 : 0.55, alpha: 1.0), strokeWidth: 1.5)
+            // Live web title bar (web_20261031): a 28×28 rounded-lg hit area with
+            // the Lucide `settings` gear (≈16pt box, 1.5 stroke). Idle white/55,
+            // hover white on a white/8 wash. (The Oct-23 capture showed a gear too;
+            // the bolt this used to draw was from the old web build.)
+            if hovered {
+                let wash = CGPath(roundedRect: bounds, cornerWidth: 8, cornerHeight: 8, transform: nil)
+                ctx.setFillColor(NSColor(white: 1.0, alpha: 0.08).cgColor)
+                ctx.addPath(wash)
+                ctx.fillPath()
+            }
+            let gearSide: CGFloat = 16.0
+            let gearRect = CGRect(
+                x: center.x - gearSide / 2.0,
+                y: center.y - gearSide / 2.0,
+                width: gearSide,
+                height: gearSide
+            )
+            VooIconFactory.draw(
+                .settings,
+                in: gearRect,
+                color: NSColor(white: hovered ? 1.0 : 0.60, alpha: 1.0),
+                strokeWidth: 1.5
+            )
         }
     }
 }
@@ -375,6 +463,17 @@ public class AppTitleBar: NSView {
     public let tabCloseButton = TitleBarIconButton(glyph: .close)
     public let tabPlusButton = TitleBarIconButton(glyph: .plus)
     public let settingsButton = TitleBarIconButton(glyph: .settings)
+    /// Editor-only browser (globe) button that sits just left of the settings gear.
+    public let browserButton = TitleBarIconButton(glyph: .browser)
+
+    /// Dashboard-only "Import" ghost pill (calls the open-document action).
+    public let dashboardImportButton = DarkActionButton()
+    /// Dashboard-only white "New" pill (calls the new-project action).
+    public let dashboardNewButton = DarkActionButton()
+
+    /// Invoked when the editor browser button is pressed. The native app has no
+    /// browser drawer yet, so the host decides what to do (currently a toast).
+    public var onBrowserTapped: (() -> Void)?
 
     // State & Delegation
     public weak var delegate: AppTitleBarDelegate?
@@ -386,8 +485,8 @@ public class AppTitleBar: NSView {
         }
     }
 
-    /// Dashboard mode keeps the brand + tab pill + plus button but hides the
-    /// editor-only save/open affordances (web dashboard shows only a settings bolt).
+    /// Dashboard mode follows the live web dashboard title bar: brand + the round
+    /// "+" (no document tab pill), and Import / white New / settings on the right.
     public var isDashboardMode: Bool = false {
         didSet {
             updateDashboardMode()
@@ -479,12 +578,16 @@ public class AppTitleBar: NSView {
         openButton.translatesAutoresizingMaskIntoConstraints = false
         openButton.isWhitePill = false
         openButton.title = "打开"
+        // Web editor action is icon+label: 16pt glyph + 6pt gap inside px2.5.
+        openButton.leadingGlyph = .folderOpen
+        openButton.leadingGlyphSize = 16.0
+        openButton.leadingGlyphGap = 6.0
         openButton.target = self
         openButton.action = #selector(handleOpenClicked)
         openButton.setAccessibilityIdentifier("title_bar_open_button")
         addSubview(openButton)
 
-        // 6. Settings bolt
+        // 6. Settings gear
         settingsButton.translatesAutoresizingMaskIntoConstraints = false
         settingsButton.setAccessibilityIdentifier("title_bar_settings_button")
         settingsButton.setAccessibilityRole(.button)
@@ -494,6 +597,39 @@ public class AppTitleBar: NSView {
             self.delegate?.titleBarDidRequestSettings(self)
         }
         addSubview(settingsButton)
+
+        // 7. Editor browser (globe) button, just left of the gear.
+        browserButton.translatesAutoresizingMaskIntoConstraints = false
+        browserButton.setAccessibilityIdentifier("title_bar_browser_button")
+        browserButton.setAccessibilityRole(.button)
+        browserButton.setAccessibilityLabel("Browser")
+        browserButton.onClick = { [weak self] in
+            self?.onBrowserTapped?()
+        }
+        addSubview(browserButton)
+
+        // 8. Dashboard-only Import (ghost) + New (white) actions.
+        dashboardImportButton.translatesAutoresizingMaskIntoConstraints = false
+        dashboardImportButton.isWhitePill = false
+        dashboardImportButton.title = "导入"
+        dashboardImportButton.target = self
+        dashboardImportButton.action = #selector(handleOpenClicked)
+        dashboardImportButton.setAccessibilityIdentifier("title_bar_import_button")
+        dashboardImportButton.setAccessibilityRole(.button)
+        dashboardImportButton.setAccessibilityLabel("Import document")
+        dashboardImportButton.isHidden = true
+        addSubview(dashboardImportButton)
+
+        dashboardNewButton.translatesAutoresizingMaskIntoConstraints = false
+        dashboardNewButton.isWhitePill = true
+        dashboardNewButton.title = "新建"
+        dashboardNewButton.target = self
+        dashboardNewButton.action = #selector(handleDashboardNewClicked)
+        dashboardNewButton.setAccessibilityIdentifier("title_bar_new_button")
+        dashboardNewButton.setAccessibilityRole(.button)
+        dashboardNewButton.setAccessibilityLabel("New document")
+        dashboardNewButton.isHidden = true
+        addSubview(dashboardNewButton)
 
         // Backward Compatible Action Buttons (Kept for automated test suites)
         undoButton.translatesAutoresizingMaskIntoConstraints = false
@@ -523,16 +659,24 @@ public class AppTitleBar: NSView {
         exportButton.isHidden = true
         addSubview(exportButton)
 
-        // Spec metrics (web title bar): brand h28 / icon20 / text12 medium,
-        // tab pill h28 with pl12/pr6/gap6, close 16, plus 24, right buttons h28
-        // with 6x12 padding and radius 12, settings bolt 20, right inset 16.
-        // Web measurement: brand button 108.7 x 28; keep the same footprint so the
-        // tab pill lands at the same absolute offset (allowing for native fonts).
-        let brandWidth: CGFloat = 109.0
+        // Live web metrics (capture web_20261031): brand 105x28 r8; tab pill h28
+        // capsule with pl12/pr6/gap6; close 16; plus 24; action pills h28 r8 with
+        // px2.5/px3 (grey action carries a 16pt leading glyph); browser globe
+        // 28x28; settings 28x28; 16pt trailing inset. Dashboard swaps the action
+        // pair for Import (ghost) / New (white) and drops the tab pill.
+        // The brand keeps the web's 105pt footprint so the tab pill lands at the
+        // same offset from the brand (native SF is ~2.5pt wider than web Inter).
+        let brandWidth: CGFloat = 105.0
         let actionFont = ThemeFonts.system(size: 12, weight: .medium)
         let saveTextWidth = ceil(("保存" as NSString).size(withAttributes: [.font: actionFont]).width)
         let openTextWidth = ceil(("打开" as NSString).size(withAttributes: [.font: actionFont]).width)
-        let actionHorizontalPadding: CGFloat = 12.0
+        let importTextWidth = ceil(("导入" as NSString).size(withAttributes: [.font: actionFont]).width)
+        let newTextWidth = ceil(("新建" as NSString).size(withAttributes: [.font: actionFont]).width)
+        // Web: grey action `px-2.5` => 10, white primary action `px-3` => 12.
+        let openHorizontalPadding: CGFloat = 10.0
+        let saveHorizontalPadding: CGFloat = 12.0
+        let openGlyphWidth: CGFloat = 16.0
+        let openGlyphGap: CGFloat = 6.0
 
         NSLayoutConstraint.activate([
             // Brand Logo button: traffic-light inset; 28pt tall with 6pt inner padding.
@@ -542,10 +686,11 @@ public class AppTitleBar: NSView {
             brandLogoButton.heightAnchor.constraint(equalToConstant: 28),
 
             // Tab title: brand gap 8 + tab wrapper leading 12 + pill padding-left 12.
-            docTitleField.leadingAnchor.constraint(equalTo: brandLogoButton.trailingAnchor, constant: 34),
+            docTitleField.leadingAnchor.constraint(equalTo: brandLogoButton.trailingAnchor, constant: 32),
             docTitleField.centerYAnchor.constraint(equalTo: centerYAnchor),
             docTitleField.heightAnchor.constraint(equalToConstant: 24),
-            docTitleField.widthAnchor.constraint(lessThanOrEqualToConstant: 220),
+            // 200 = web tab `max-w-[240px]` minus the pill's pl12/pr6/gap6/close16.
+            docTitleField.widthAnchor.constraint(lessThanOrEqualToConstant: 200),
 
             // Close (X) inside the tab pill: 16x16, 6pt after the title.
             tabCloseButton.leadingAnchor.constraint(equalTo: docTitleField.trailingAnchor, constant: 6),
@@ -559,21 +704,51 @@ public class AppTitleBar: NSView {
             tabPlusButton.widthAnchor.constraint(equalToConstant: 24),
             tabPlusButton.heightAnchor.constraint(equalToConstant: 24),
 
-            // Right side controls: settings bolt, open, save (right to left), 16pt inset.
+            // Right side controls, left to right: [ghost action] [white primary
+            // action] [browser globe] [settings gear], 16pt trailing inset.
+            // Web editor cluster: Import ... Export ... globe ... gear, with 8pt
+            // gaps and 4pt between the globe and the gear.
             settingsButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             settingsButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            settingsButton.widthAnchor.constraint(equalToConstant: 20),
-            settingsButton.heightAnchor.constraint(equalToConstant: 20),
+            settingsButton.widthAnchor.constraint(equalToConstant: 28),
+            settingsButton.heightAnchor.constraint(equalToConstant: 28),
 
-            openButton.trailingAnchor.constraint(equalTo: settingsButton.leadingAnchor, constant: -8),
+            browserButton.trailingAnchor.constraint(equalTo: settingsButton.leadingAnchor, constant: -4),
+            browserButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            browserButton.widthAnchor.constraint(equalToConstant: 28),
+            browserButton.heightAnchor.constraint(equalToConstant: 28),
+
+            // White primary action sits between the globe and the ghost action,
+            // exactly like the web's Import (grey) / Export (white) order.
+            saveButton.trailingAnchor.constraint(equalTo: browserButton.leadingAnchor, constant: -8),
+            saveButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            saveButton.widthAnchor.constraint(equalToConstant: ceil(saveTextWidth + saveHorizontalPadding * 2)),
+            saveButton.heightAnchor.constraint(equalToConstant: 28),
+
+            openButton.trailingAnchor.constraint(equalTo: saveButton.leadingAnchor, constant: -8),
             openButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            openButton.widthAnchor.constraint(equalToConstant: ceil(openTextWidth + actionHorizontalPadding * 2)),
+            openButton.widthAnchor.constraint(
+                equalToConstant: ceil(
+                    openHorizontalPadding * 2 + openGlyphWidth + openGlyphGap + openTextWidth
+                )
+            ),
             openButton.heightAnchor.constraint(equalToConstant: 28),
 
-            saveButton.trailingAnchor.constraint(equalTo: openButton.leadingAnchor, constant: -8),
-            saveButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            saveButton.widthAnchor.constraint(equalToConstant: ceil(saveTextWidth + actionHorizontalPadding * 2)),
-            saveButton.heightAnchor.constraint(equalToConstant: 28),
+            // Dashboard-only pair sits directly left of the gear (the web dashboard
+            // has no browser button between the action pills and the right icon).
+            dashboardNewButton.trailingAnchor.constraint(equalTo: settingsButton.leadingAnchor, constant: -8),
+            dashboardNewButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            dashboardNewButton.widthAnchor.constraint(
+                equalToConstant: ceil(newTextWidth + saveHorizontalPadding * 2)
+            ),
+            dashboardNewButton.heightAnchor.constraint(equalToConstant: 28),
+
+            dashboardImportButton.trailingAnchor.constraint(equalTo: dashboardNewButton.leadingAnchor, constant: -8),
+            dashboardImportButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            dashboardImportButton.widthAnchor.constraint(
+                equalToConstant: ceil(importTextWidth + openHorizontalPadding * 2)
+            ),
+            dashboardImportButton.heightAnchor.constraint(equalToConstant: 28),
 
             // Invisible anchors for compatibility tests
             exportButton.trailingAnchor.constraint(equalTo: saveButton.leadingAnchor),
@@ -624,16 +799,25 @@ public class AppTitleBar: NSView {
                 .paragraphStyle: style
             ]
         )
+        // `attributedStringValue` does not fire the `stringValue` observer, so the
+        // content-sized tab pill would keep the previous width until something
+        // else invalidated it.
+        docTitleField.invalidateIntrinsicContentSize()
+        needsDisplay = true
     }
 
     private func updateDashboardMode() {
-        // The web dashboard keeps the brand, the document tab and the "+" button;
-        // the save/open editor affordances only appear in the editor.
+        // Live web dashboard title bar: brand + the round "+" (no document tab
+        // pill), and Import (ghost) / New (white) / settings on the right.
         saveButton.isHidden = isDashboardMode
         openButton.isHidden = isDashboardMode
+        browserButton.isHidden = isDashboardMode
+        dashboardImportButton.isHidden = !isDashboardMode
+        dashboardNewButton.isHidden = !isDashboardMode
         settingsButton.isHidden = false
-        docTitleField.isHidden = false
-        tabCloseButton.isHidden = false
+        docTitleField.isHidden = isDashboardMode
+        tabCloseButton.isHidden = isDashboardMode
+        tabPlusButton.isHidden = false
         // Show a generic "Untitled" tab while browsing the dashboard, exactly like
         // the web app (the loaded project is not "active" until the editor opens).
         if isDashboardMode {
@@ -716,9 +900,10 @@ public class AppTitleBar: NSView {
         }
 
         // 4. Floating document tab pill: h28, radius full, pl12 / pr6.
+        //    The web dashboard has no tab pill (only brand + the round "+").
         let tabLeft = docTitleField.frame.minX - 12
         let tabRight = tabCloseButton.frame.maxX + 6
-        if tabRight > tabLeft {
+        if !isDashboardMode, tabRight > tabLeft {
             let pillRect = CGRect(x: tabLeft, y: bounds.midY - 14, width: tabRight - tabLeft, height: 28)
             let pillPath = CGPath(roundedRect: pillRect, cornerWidth: 14, cornerHeight: 14, transform: nil)
             ctx.setFillColor(NSColor(white: 0.16, alpha: 0.75).cgColor)
@@ -740,6 +925,11 @@ public class AppTitleBar: NSView {
 
     @objc private func handleOpenClicked() {
         delegate?.titleBarDidRequestOpenDocument(self)
+    }
+
+    /// Dashboard white "New" pill: same action as the round "+" tab button.
+    @objc private func handleDashboardNewClicked() {
+        delegate?.titleBarDidRequestNewProject(self)
     }
 
     @objc private func handleUndoClicked() {

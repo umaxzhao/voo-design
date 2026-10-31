@@ -231,3 +231,19 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - Enlarged the main App Icon from 128px to 192px. Removed the three marked blank bands, mapped to 256px / 112px / 80px in the source composition; the main cover is now 1800 × 1896. The screenshot moves up by 448px and stays 1600 × 1000.
 - Product title, subtitle, center alignment, dark gradient and corner treatment are retained. The fixed 1280 × 640 social preview also gets a larger 128px icon.
 - Scope: artwork source/exports, example guide and this record only. Exact measured gaps, final revision and export evidence: `/private/tmp/voo-showcase/product-ui/marked-gaps-publication.json`. Functional product coverage remains unchanged and partial.
+
+## 原生界面按「实时 Web 截图」1:1 对照优化 — 2026-10-31（第二轮）
+
+背景：此前的参考图是 10-23 的旧构建，与今天的 Web 界面已明显不同（例如舞台底色、侧栏结构、标题栏动作、缩放条内容）。本轮改用**实时构建**作为唯一对照源：`npm run dev`（vite，1440×900）+ Playwright 截取 `native_studio/docs/refs/web_20261031/{web_dashboard,web_editor,web_selected,web_agent,web_settings}.png`，并用 DOM 探针（`/tmp/webprobe-*.json`）读取精确计算样式与包围盒。
+
+- **舞台**：底色由 #1c1c1c 改回 **#525252**（旧值来自过期参考），并按 `background-image: radial-gradient(rgba(255,255,255,.14) 1.2px, transparent 1.2px)` + `backgroundSize = 20×zoom` 实现**点阵网格**（随缩放/平移）；画板填充 #171717；聚焦画板描边为 `#b2ffd6 @60%`；画板标签默认灰色、选中才变米白，并去掉 Web 没有的 chevron 与 add-canvas “+”。
+- **LAYERS**：新增 `Layers | Assets` 分段标签（搜索/排序图标移到其右侧），控制行改为**左混合模式 / 右不透明度**（与 Web 的 `flex-row-reverse` 一致），卡片 256×236，行结构重做为缩略图块（矩形填充/椭圆圆点/文本 “T”）、16pt 层级缩进、选中态 #262626 + 1px `#a7ffd4` 内描边、Background 行右侧 `#525252` 十六进制；Assets 页为空态。
+- **标题栏（编辑器态）**：动作胶囊 radius 12→8，打开按钮内边距 12→10，文档 Tab 药丸宽度/内边距贴近 Web（“Design 1” 92 vs Web 87，因字体宽度差异），右侧图标由闪电改为 **Lucide `settings` 齿轮 28×28**；`applyDocumentTitle` 会刷新固有宽度（此前药丸宽度会停在上一个标题）。
+- **缩放条**：按 Web 顺序重建为 `撤销 · 重做 │ − 58% + │ 眼睛 │ ⋯`，补 3 条 1×14 黑色分隔线（此前是白色/8，在浅色药丸上不可见），网格与磁性吸附移入 ⋯ 菜单；页码胶囊补上 Web 的向上 chevron，并在其上方新增 28×28「新建画板」按钮。
+- **欢迎工作台**：整体改为今日 Web 结构——侧栏搜索/Recents/Drafts/Starred/Trash/分隔线/**PROJECTS**（含 +）/分隔线/TEMPLATES（**Community Templates**、Shortcuts & Guide）/底部悬浮 **Settings** 按钮；主列新增居中标题 “What would you like to design?”，6 个带 14pt 图标的生成类型胶囊（选中态白边，不是薄荷色），居中 766×141 的 composer（conic 薄荷→紫 1px 边框 + 光晕，含 “1x / Configure provider / 发送”），3 张导入卡片与新的 Recents 头部；文案字体改用 Web 的 `--font-ui`（无衬线），等宽仅用于计数/尺寸。
+- **字体**：补齐 Web 打包的其余 OFL 字族（Bitter / Playfair Display / Archivo Black / Caveat / ZCOOL KuaiLe，含许可），`TextStyleResolver` 支持 CSS 字族栈与变量字体字重实例（此前粗体回落为 Regular），属性面板字体菜单同步为 Web 可用字族。
+- **应用外框**：窗口四周补 4pt 内边距（Web `.app-root-frame`），编辑壳位于 x4/y44、16 圆角、2px `#b2ffd6` 边框，与 Web 边框盒一致。
+- **新文档**：画板命名改为 Web 的 “Frame”，1200×800 @58%。
+
+验证：`./build.sh` 通过（binary 4.64 MB ≤ 5 MB，bundle 9.96 MB ≤ 35 MB）；`./tests/run_tests.sh` **377/377 通过**；新增 `scripts/native-parity-check.py` 逐区域输出包围盒差值，当前实测：工具轨 `dx+1 dy0 dw-1`、LAYERS 面板 `dx-2 dy-1 dw0 dh+1`、页码胶囊 `dx-1 dy0`（单位：Web 像素）。证据截图：`native_studio/docs/screenshots/w_dashboard.png`、`w_editor.png`。
+未覆盖：标题栏在编辑器态仍为「保存/打开」而非 Web 的「Import/Export + 浏览器按钮」（功能语义不同，已列为后续对齐项）；属性面板在当前 Web 截图中未出现（无选区），其 288×368 尺寸沿用旧证据。

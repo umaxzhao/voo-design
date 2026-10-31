@@ -2455,7 +2455,12 @@ public final class PropertiesPanelView: NSView {
 
     /// Inter (bundled, the web default) plus the bundled mono face; remaining
     /// entries resolve from installed system fonts exactly as the web stack does.
-    private static let fontFamilies = ["Inter", "Intel One Mono", "Helvetica Neue", "SF Pro Text", "Arial", "Georgia"]
+    /// The web build's bundled OFL faces (plus Inter / Intel One Mono) and a system
+    /// fallback, so text authored in the browser is fully editable natively.
+    private static let fontFamilies = [
+        "Inter", "Playfair Display", "Bitter", "Archivo Black", "Caveat",
+        "ZCOOL KuaiLe", "Intel One Mono", "Helvetica Neue"
+    ]
     private static let fontFamilyItems: [(title: String, value: String)] = fontFamilies.map { ($0, $0) }
 
     // MARK: Configure

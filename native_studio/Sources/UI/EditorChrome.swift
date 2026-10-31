@@ -36,6 +36,10 @@ public enum EditorChromeAccessibility {
     public static let zoomBarZoomIn = "Editor.ZoomBar.ZoomIn"
     public static let zoomBarZoomOut = "Editor.ZoomBar.ZoomOut"
     public static let zoomBarZoomReset = "Editor.ZoomBar.ZoomReset"
+    public static let zoomBarMore = "Editor.ZoomBar.More"
+
+    // Bottom-left artboard control
+    public static let addArtboard = "Editor.AddArtboard"
 
     // AI floating button
     public static let aiAssistantButton = "Editor.AIAssistantButton"
@@ -75,6 +79,10 @@ public enum EditorChromeGlyph: String, CaseIterable, Sendable {
     case magnet
     case plus
     case minus
+    /// Web bar visibility toggle (Lucide `eye`).
+    case eye
+    /// Web bar overflow menu trigger (Lucide `more-horizontal`).
+    case more
 
     // Selection island (drawn light on dark chrome)
     case marquee
@@ -110,6 +118,17 @@ public enum EditorChromeGlyph: String, CaseIterable, Sendable {
             VooIconFactory.drawPlus(in: rect, color: color, strokeWidth: strokeWidth)
         case .minus:
             VooIconFactory.drawMinus(in: rect, color: color, strokeWidth: strokeWidth)
+        case .eye:
+            VooIconFactory.draw(.eye, in: rect, color: color, strokeWidth: strokeWidth)
+        case .more:
+            // Lucide `more-horizontal`: three filled 2.6pt dots on the 24-unit grid.
+            EditorChromeGlyph.withFlippedCanvas(rect) { ctx in
+                EditorChromeGlyph.applyStrokeStyle(ctx, color: color, strokeWidth: strokeWidth)
+                ctx.setFillColor(color.cgColor)
+                for centerX in [5.0, 12.0, 19.0] as [CGFloat] {
+                    ctx.fillEllipse(in: CGRect(x: centerX - 1.3, y: 10.7, width: 2.6, height: 2.6))
+                }
+            }
         case .marquee:
             VooIconFactory.drawMarquee(in: rect, color: color, strokeWidth: strokeWidth)
         case .rotate:
@@ -845,7 +864,9 @@ public final class PageSwitcherPillView: NSView {
         }
     }
 
-    public var showsChevron: Bool = false {
+    /// Web `page_switcher.jsx`: the trigger always ends with a
+    /// `ChevronDown`/`ChevronUp size={12}` glyph — shown by default here.
+    public var showsChevron: Bool = true {
         didSet {
             invalidateIntrinsicContentSize()
             needsDisplay = true
@@ -1102,25 +1123,215 @@ public final class PageSwitcherPillView: NSView {
                 width: chevronSide,
                 height: chevronSide
             )
+            // The page menu opens upward, so the live web capture shows the
+            // trigger chevron pointing up (`ChevronUp` in page_switcher.jsx):
+            // mirror the shared chevron glyph about the icon's mid height.
+            ctx.saveGState()
+            ctx.translateBy(x: 0, y: chevronRect.midY * 2.0)
+            ctx.scaleBy(x: 1.0, y: -1.0)
             EditorChromeGlyph.chevronDown.draw(
                 in: chevronRect,
                 color: counterColor.withAlphaComponent(0.8),
                 strokeWidth: 1.8
             )
+            ctx.restoreGState()
         }
+    }
+}
+
+// MARK: - Add Artboard Button
+
+/// Bottom-left 28pt rounded square that sits above the page pill in the live web
+/// editor (28×28, radius 8, dark fill, ~14pt artboard glyph) and asks the host to
+/// add a new artboard. WindowController owns its placement/wiring.
+public final class EditorAddArtboardButton: NSButton {
+
+    // MARK: Metrics
+
+    public static let preferredSize: CGFloat = 28.0
+    public static let cornerRadius: CGFloat = 8.0
+
+    /// Drawn glyph side (the glyph box, not the button).
+    public var glyphSize: CGFloat = 14.0 {
+        didSet { needsDisplay = true }
+    }
+
+    // MARK: Callbacks
+
+    /// Invoked when the button is activated (click or accessibility press).
+    public var onAddArtboard: (() -> Void)?
+
+    // MARK: Styling
+
+    public var fillColor: NSColor = NSColor(white: 0.13, alpha: 1.0) {
+        didSet { needsDisplay = true }
+    }
+
+    public var hoverFillColor: NSColor = NSColor(white: 0.20, alpha: 1.0) {
+        didSet { needsDisplay = true }
+    }
+
+    public var pressedFillColor: NSColor = NSColor(white: 0.26, alpha: 1.0) {
+        didSet { needsDisplay = true }
+    }
+
+    public var glyphColor: NSColor = NSColor(white: 0.85, alpha: 1.0) {
+        didSet { needsDisplay = true }
+    }
+
+    public var hoverGlyphColor: NSColor = NSColor(white: 1.0, alpha: 1.0) {
+        didSet { needsDisplay = true }
+    }
+
+    public private(set) var isHovered: Bool = false {
+        didSet {
+            if oldValue != isHovered { needsDisplay = true }
+        }
+    }
+
+    /// NSButton's cell normally invalidates on state changes; this view draws
+    /// itself, so mirror the state changes into an explicit redraw.
+    public override var isHighlighted: Bool {
+        didSet {
+            if oldValue != isHighlighted { needsDisplay = true }
+        }
+    }
+
+    private var hoverTrackingArea: NSTrackingArea?
+
+    // MARK: Init
+
+    public override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        commonInit()
+    }
+
+    public required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        commonInit()
+    }
+
+    private func commonInit() {
+        title = ""
+        isBordered = false
+        focusRingType = .none
+        setButtonType(.momentaryChange)
+        target = self
+        action = #selector(handleClick)
+        setAccessibilityElement(true)
+        setAccessibilityRole(.button)
+        setAccessibilityIdentifier(EditorChromeAccessibility.addArtboard)
+        setAccessibilityLabel("Add artboard")
+        setAccessibilityHelp("Add a new artboard to the canvas")
+    }
+
+    /// Custom chrome is drawn in a bottom-left origin space.
+    public override var isFlipped: Bool { false }
+
+    public override var intrinsicContentSize: NSSize {
+        NSSize(width: EditorAddArtboardButton.preferredSize, height: EditorAddArtboardButton.preferredSize)
+    }
+
+    public override func accessibilityPerformPress() -> Bool {
+        onAddArtboard?()
+        return true
+    }
+
+    // MARK: Interaction
+
+    @objc private func handleClick() {
+        onAddArtboard?()
+    }
+
+    public override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let existing = hoverTrackingArea {
+            removeTrackingArea(existing)
+        }
+        let area = NSTrackingArea(
+            rect: .zero,
+            options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(area)
+        hoverTrackingArea = area
+    }
+
+    public override func resetCursorRects() {
+        addCursorRect(bounds, cursor: .pointingHand)
+    }
+
+    public override func mouseEntered(with event: NSEvent) {
+        super.mouseEntered(with: event)
+        isHovered = true
+    }
+
+    public override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        isHovered = false
+    }
+
+    // MARK: Drawing
+
+    public override func draw(_ dirtyRect: NSRect) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+
+        let fill: NSColor
+        if isHighlighted {
+            fill = pressedFillColor
+        } else if isHovered {
+            fill = hoverFillColor
+        } else {
+            fill = fillColor
+        }
+
+        let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
+        let path = CGPath(
+            roundedRect: rect,
+            cornerWidth: EditorAddArtboardButton.cornerRadius,
+            cornerHeight: EditorAddArtboardButton.cornerRadius,
+            transform: nil
+        )
+        ctx.setFillColor(fill.cgColor)
+        ctx.addPath(path)
+        ctx.fillPath()
+
+        let side = min(glyphSize, min(bounds.width, bounds.height))
+        let glyphRect = CGRect(
+            x: bounds.midX - side / 2.0,
+            y: bounds.midY - side / 2.0,
+            width: side,
+            height: side
+        )
+        // The live web glyph is two overlapping rounded artboard frames; the
+        // canonical VooIconFactory `copy` geometry is the closest shared mark.
+        VooIconFactory.draw(
+            .copy,
+            in: glyphRect,
+            color: isHovered ? hoverGlyphColor : glyphColor,
+            strokeWidth: 1.6
+        )
     }
 }
 
 // MARK: - Bottom Zoom Bar
 
-/// Bottom-center silver zoom cluster:
-/// undo · redo │ grid · snap │ + 58% −
+/// Bottom-center silver zoom cluster, matching the live web capture:
+/// undo · redo │ − 58% + │ eye │ ⋯
+///
+/// The web keeps the grid/snap controls inside the overflow (⋯) menu, so the
+/// grid button lives in this bar's hierarchy but is not part of the visible row;
+/// the ⋯ menu still drives it.
 public final class StudioBottomZoomBar: NSView {
 
     // MARK: Metrics
 
     public static let preferredHeight: CGFloat = 32.0
-    public static let preferredWidth: CGFloat = 232.0
+    /// 4 + 28×6 (undo/redo/zoomOut/zoomIn/eye/⋯) + 30 label + 3 separators
+    /// with 4pt spacing on each side + 4 = 233. The web's ~200pt bar uses 24pt
+    /// buttons; the native row keeps the 28pt buttons the tests assert.
+    public static let preferredWidth: CGFloat = 233.0
     public static let buttonSize: CGFloat = 28.0
     public static let horizontalPadding: CGFloat = 4.0
     public static let cornerRadius: CGFloat = 12.0
@@ -1131,6 +1342,7 @@ public final class StudioBottomZoomBar: NSView {
     public var onRedo: (() -> Void)?
     public var onGridToggle: ((Bool) -> Void)?
     public var onVisibilityToggle: ((Bool) -> Void)?
+    public var onSnapToggle: ((Bool) -> Void)?
     public var onZoomIn: (() -> Void)?
     public var onZoomOut: (() -> Void)?
     public var onZoomReset: (() -> Void)?
@@ -1139,14 +1351,19 @@ public final class StudioBottomZoomBar: NSView {
 
     public let undoButton: EditorChromeIconButton
     public let redoButton: EditorChromeIconButton
+    /// Hidden in the bar (web keeps grid/snap in the ⋯ menu) but kept live for
+    /// the host and for programmatic/host-driven toggles.
     public let gridButton: EditorChromeIconButton
     public let visibilityButton: EditorChromeIconButton
     public let zoomInButton: EditorChromeIconButton
     public let zoomOutButton: EditorChromeIconButton
     public let zoomLabelButton: EditorChromePillButton
+    /// Web overflow (⋯) trigger; opens the grid/snap menu.
+    public let moreButton: EditorChromeIconButton
 
     public let firstSeparator: EditorChromeSeparatorView
     public let secondSeparator: EditorChromeSeparatorView
+    public let thirdSeparator: EditorChromeSeparatorView
 
     // MARK: State
 
@@ -1156,6 +1373,8 @@ public final class StudioBottomZoomBar: NSView {
     public private(set) var canRedo: Bool = false
     public private(set) var isGridEnabled: Bool = false
     public private(set) var isVisibilityEnabled: Bool = true
+    /// Magnet/snap state, surfaced from the ⋯ menu (web keeps it there).
+    public private(set) var isSnapToGridEnabled: Bool = false
 
     // MARK: Init
 
@@ -1163,7 +1382,7 @@ public final class StudioBottomZoomBar: NSView {
         undoButton = EditorChromeIconButton(glyph: .undo, frame: .zero)
         redoButton = EditorChromeIconButton(glyph: .redo, frame: .zero)
         gridButton = EditorChromeIconButton(glyph: .grid, frame: .zero)
-        visibilityButton = EditorChromeIconButton(glyph: .magnet, frame: .zero)
+        visibilityButton = EditorChromeIconButton(glyph: .eye, frame: .zero)
         zoomInButton = EditorChromeIconButton(glyph: .plus, frame: .zero)
         zoomOutButton = EditorChromeIconButton(glyph: .minus, frame: .zero)
         zoomLabelButton = EditorChromePillButton(
@@ -1171,8 +1390,10 @@ public final class StudioBottomZoomBar: NSView {
             font: ThemeFonts.mono(size: 11.0, weight: .medium),
             frame: .zero
         )
+        moreButton = EditorChromeIconButton(glyph: .more, frame: .zero)
         firstSeparator = EditorChromeSeparatorView(frame: .zero)
         secondSeparator = EditorChromeSeparatorView(frame: .zero)
+        thirdSeparator = EditorChromeSeparatorView(frame: .zero)
         super.init(frame: frameRect)
         commonInit()
     }
@@ -1181,7 +1402,7 @@ public final class StudioBottomZoomBar: NSView {
         undoButton = EditorChromeIconButton(glyph: .undo, frame: .zero)
         redoButton = EditorChromeIconButton(glyph: .redo, frame: .zero)
         gridButton = EditorChromeIconButton(glyph: .grid, frame: .zero)
-        visibilityButton = EditorChromeIconButton(glyph: .magnet, frame: .zero)
+        visibilityButton = EditorChromeIconButton(glyph: .eye, frame: .zero)
         zoomInButton = EditorChromeIconButton(glyph: .plus, frame: .zero)
         zoomOutButton = EditorChromeIconButton(glyph: .minus, frame: .zero)
         zoomLabelButton = EditorChromePillButton(
@@ -1189,8 +1410,10 @@ public final class StudioBottomZoomBar: NSView {
             font: ThemeFonts.mono(size: 11.0, weight: .medium),
             frame: .zero
         )
+        moreButton = EditorChromeIconButton(glyph: .more, frame: .zero)
         firstSeparator = EditorChromeSeparatorView(frame: .zero)
         secondSeparator = EditorChromeSeparatorView(frame: .zero)
+        thirdSeparator = EditorChromeSeparatorView(frame: .zero)
         super.init(coder: coder)
         commonInit()
     }
@@ -1244,6 +1467,15 @@ public final class StudioBottomZoomBar: NSView {
             label: "Zoom out",
             help: "Zoom the canvas out"
         )
+        configureButton(
+            moreButton,
+            identifier: EditorChromeAccessibility.zoomBarMore,
+            label: "More options",
+            help: "Grid and snapping options"
+        )
+        // Web keeps grid/snap behind the ⋯ menu, so the grid button is not part of
+        // the visible row; it stays alive for the host and for the ⋯ menu.
+        gridButton.isHidden = true
 
         zoomLabelButton.setAccessibilityIdentifier(EditorChromeAccessibility.zoomBarZoomReset)
         zoomLabelButton.setAccessibilityRole(.button)
@@ -1263,11 +1495,18 @@ public final class StudioBottomZoomBar: NSView {
         visibilityButton.onClick = { [weak self] in self?.toggleVisibility() }
         zoomInButton.onClick = { [weak self] in self?.onZoomIn?() }
         zoomOutButton.onClick = { [weak self] in self?.onZoomOut?() }
+        moreButton.onClick = { [weak self] in self?.showMoreMenu() }
+
+        for separator in [firstSeparator, secondSeparator, thirdSeparator] {
+            // Web `bg-black/15` on the silver capsule (white/15 is invisible here).
+            separator.lineColor = NSColor.black.withAlphaComponent(0.15)
+            separator.setAccessibilityElement(false)
+        }
 
         for view in [
             undoButton, redoButton, gridButton, visibilityButton,
-            zoomInButton, zoomOutButton, zoomLabelButton,
-            firstSeparator, secondSeparator
+            zoomInButton, zoomOutButton, zoomLabelButton, moreButton,
+            firstSeparator, secondSeparator, thirdSeparator
         ] as [NSView] {
             view.translatesAutoresizingMaskIntoConstraints = true
             addSubview(view)
@@ -1319,6 +1558,11 @@ public final class StudioBottomZoomBar: NSView {
         refreshAppearance()
     }
 
+    public func setSnapToGridEnabled(_ enabled: Bool) {
+        guard isSnapToGridEnabled != enabled else { return }
+        isSnapToGridEnabled = enabled
+    }
+
     public var preferredSize: NSSize {
         NSSize(width: StudioBottomZoomBar.preferredWidth, height: StudioBottomZoomBar.preferredHeight)
     }
@@ -1341,10 +1585,56 @@ public final class StudioBottomZoomBar: NSView {
         onVisibilityToggle?(isVisibilityEnabled)
     }
 
+    private func toggleSnapToGrid() {
+        isSnapToGridEnabled.toggle()
+        onSnapToggle?(isSnapToGridEnabled)
+    }
+
     private func resetZoom() {
         zoom = 1.0
         refreshAppearance()
         onZoomReset?()
+    }
+
+    /// Web ⋯ menu: the grid toggle and the magnet/snap toggle live behind the
+    /// overflow trigger (they were inline buttons in the old native bar). The bar
+    /// keeps its existing grid callback, and the magnet gains a dedicated snap
+    /// callback so the eye button stays a pure visibility control.
+    private func showMoreMenu() {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+
+        let gridItem = NSMenuItem(
+            title: "网格",
+            action: #selector(toggleGridFromMenu(_:)),
+            keyEquivalent: ""
+        )
+        gridItem.target = self
+        gridItem.state = isGridEnabled ? .on : .off
+        menu.addItem(gridItem)
+
+        let snapItem = NSMenuItem(
+            title: "磁性吸附",
+            action: #selector(toggleSnapFromMenu(_:)),
+            keyEquivalent: ""
+        )
+        snapItem.target = self
+        snapItem.state = isSnapToGridEnabled ? .on : .off
+        menu.addItem(snapItem)
+
+        _ = menu.popUp(
+            positioning: nil,
+            at: NSPoint(x: moreButton.frame.minX, y: moreButton.frame.maxY + 4.0),
+            in: self
+        )
+    }
+
+    @objc private func toggleGridFromMenu(_ sender: NSMenuItem) {
+        toggleGrid()
+    }
+
+    @objc private func toggleSnapFromMenu(_ sender: NSMenuItem) {
+        toggleSnapToGrid()
     }
 
     private func refreshAppearance() {
@@ -1375,6 +1665,8 @@ public final class StudioBottomZoomBar: NSView {
 
     // MARK: Layout
 
+    /// Web row: undo · redo │ − 58% + │ eye │ ⋯
+    /// (buttons are adjacent like the web's `gap-0`; separators get 4pt air)
     public override func layout() {
         super.layout()
         let height = bounds.height
@@ -1382,16 +1674,34 @@ public final class StudioBottomZoomBar: NSView {
         let buttonY = (height - Self.buttonSize) / 2.0
         let separatorHeight: CGFloat = 14.0
         let separatorY = (height - separatorHeight) / 2.0
+        let separatorGap: CGFloat = 4.0
+        let side = Self.buttonSize
 
-        undoButton.frame = NSRect(x: originX + 4.0, y: buttonY, width: 28.0, height: 28.0)
-        redoButton.frame = NSRect(x: originX + 34.0, y: buttonY, width: 28.0, height: 28.0)
-        firstSeparator.frame = NSRect(x: originX + 64.0, y: separatorY, width: 1.0, height: separatorHeight)
-        gridButton.frame = NSRect(x: originX + 71.0, y: buttonY, width: 28.0, height: 28.0)
-        visibilityButton.frame = NSRect(x: originX + 101.0, y: buttonY, width: 28.0, height: 28.0)
-        secondSeparator.frame = NSRect(x: originX + 131.0, y: separatorY, width: 1.0, height: separatorHeight)
-        zoomInButton.frame = NSRect(x: originX + 138.0, y: buttonY, width: 28.0, height: 28.0)
-        zoomLabelButton.frame = NSRect(x: originX + 168.0, y: buttonY, width: 30.0, height: 28.0)
-        zoomOutButton.frame = NSRect(x: originX + 200.0, y: buttonY, width: 28.0, height: 28.0)
+        var x = originX + Self.horizontalPadding
+        undoButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
+        x += side
+        redoButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
+        x += side + separatorGap
+        firstSeparator.frame = NSRect(x: x, y: separatorY, width: 1.0, height: separatorHeight)
+        x += 1.0 + separatorGap
+        zoomOutButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
+        x += side
+        zoomLabelButton.frame = NSRect(x: x, y: buttonY, width: 30.0, height: side)
+        x += 30.0
+        zoomInButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
+        x += side + separatorGap
+        secondSeparator.frame = NSRect(x: x, y: separatorY, width: 1.0, height: separatorHeight)
+        x += 1.0 + separatorGap
+        visibilityButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
+        x += side + separatorGap
+        thirdSeparator.frame = NSRect(x: x, y: separatorY, width: 1.0, height: separatorHeight)
+        x += 1.0 + separatorGap
+        moreButton.frame = NSRect(x: x, y: buttonY, width: side, height: side)
+        x += side + Self.horizontalPadding
+
+        // Hidden from the row (web keeps it in the ⋯ menu) but still laid out so
+        // host code and parity checks see a real 28×28 button.
+        gridButton.frame = NSRect(x: originX, y: buttonY, width: side, height: side)
     }
 
     // MARK: Drawing

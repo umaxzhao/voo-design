@@ -54,28 +54,39 @@ public final class VectorIconButton: NSButton {
 private enum LayersPalette {
     static let cardFill = NSColor(white: 0.0, alpha: 0.95)
     static let cardBorder = NSColor(white: 1.0, alpha: 0.08)
-    static let divider = NSColor(white: 1.0, alpha: 0.10)
+    static let divider = NSColor(white: 1.0, alpha: 0.08)
 
     static let headerText = NSColor(hex: "#a3a3a3")   // neutral-400
     static let iconResting = NSColor(white: 0.62, alpha: 1.0)
     static let iconHover = NSColor(white: 0.95, alpha: 1.0)
     static let iconMuted = NSColor(white: 0.45, alpha: 1.0)
 
-    /// neutral-800: the web panel's field surface (`bg-neutral-800`) — the same
-    /// value the PROPERTIES pills use, so both floating cards share one token.
-    static let pillFill = NSColor(hex: "#262626")
-    static let pillFillHover = NSColor(hex: "#2d2d2d")
+    /// Web panel tab strip (`bg-white/[0.04]` + `bg-white/[0.12]` active pill).
+    static let tabStripFill = NSColor(white: 1.0, alpha: 0.04)
+    static let tabActiveFill = NSColor(white: 1.0, alpha: 0.12)
+    static let tabActiveText = NSColor(white: 1.0, alpha: 1.0)
+    static let tabInactiveText = NSColor(hex: "#a3a3a3")   // neutral-400
+
+    /// Web field surface (`bg-white/[0.06]` over the black/95 card ≈ #111111).
+    /// The old #262626 token read roughly twice as bright as the web pills.
+    static let pillFill = NSColor(white: 0.065, alpha: 1.0)
+    static let pillFillHover = NSColor(white: 0.12, alpha: 1.0)
     static let pillText = NSColor(white: 0.86, alpha: 1.0)
     static let pillTextMuted = NSColor(white: 0.38, alpha: 1.0)
     static let chevron = NSColor(white: 0.55, alpha: 1.0)
 
     static let rowHover = NSColor(white: 1.0, alpha: 0.08)
-    static let rowSelectedFill = ThemeTokens.colorMint.withAlphaComponent(0.10)
+    /// Web selected row: `bg-neutral-800` + `inset 0 0 0 1px #a7ffd4`.
+    static let rowSelectedFill = NSColor(hex: "#262626")
+    static let rowSelectedRing = NSColor(hex: "#a7ffd4")
     static let rowSelectedBorder = NSColor.clear
+    static let depthGuide = NSColor(white: 1.0, alpha: 0.10)
+    /// Web row name: `text-neutral-200`, neutral-500 when hidden. Selection is
+    /// signalled by the neutral-800 fill + mint ring, not by the text colour.
     static let rowName = NSColor(hex: "#e5e5e5")   // neutral-200
-    static let rowNameSelected = ThemeTokens.colorMint
-    static let rowNameMuted = NSColor(white: 0.45, alpha: 1.0)
-    static let hexText = NSColor(white: 0.42, alpha: 1.0)
+    static let rowNameSelected = NSColor(hex: "#e5e5e5")   // neutral-200
+    static let rowNameMuted = NSColor(hex: "#737373")   // neutral-500
+    static let hexText = NSColor(hex: "#a3a3a3")   // neutral-400
 
     static let checkboxBorder = NSColor(white: 1.0, alpha: 0.24)
     static let checkboxBorderHover = NSColor(white: 1.0, alpha: 0.42)
@@ -85,43 +96,69 @@ private enum LayersPalette {
 
     static let shapeOutline = NSColor(white: 1.0, alpha: 0.55)
     static let shapeOutlineSelected = ThemeTokens.colorMint
+    /// Layer thumbnail tile (web `bg-neutral-800` / `inset 0 0 0 1px rgb(255 255 255 / 25%)`).
+    static let thumbTileFill = NSColor(hex: "#262626")
+    static let thumbRing = NSColor(white: 1.0, alpha: 0.25)
+    static let thumbDotRing = NSColor(white: 1.0, alpha: 0.20)
+    static let kindGlyph = NSColor(hex: "#a3a3a3")   // neutral-400
+    static let assetsEmptyText = NSColor(hex: "#737373")   // neutral-500
 }
 
 private enum LayersMetrics {
     static let cornerRadius: CGFloat = 24
     static let contentInset: CGFloat = 12
-    static let headerInset: CGFloat = 20          // card padding 12 + header px 8
-    static let headerTitleTop: CGFloat = 16       // card padding 12 + header pt 4
+    /// Header row (web `px-1 pb-1.5 pt-1 mb-2`): tab strip + search/sort actions.
+    /// 17 = card padding 12 + pt-1 4 + the 1px border the web box counts in.
+    static let headerTop: CGFloat = 17
+    static let headerInset: CGFloat = 16          // card padding 12 + px-1 4
+    static let headerTitleTop: CGFloat = 16       // legacy header (now hidden)
     static let headerTitleHeight: CGFloat = 20
-    static let headerButtonSize: CGFloat = 21     // 13pt icon + p4
+    static let headerButtonSize: CGFloat = 28     // web actions h-7 w-7
     static let headerIconSize: CGFloat = 13
+    static let headerBottomGap: CGFloat = 14      // pb-1.5 6 + mb-2 8
+    static let tabStripHeight: CGFloat = 32       // tablist = h-7 tab + 2pt inset *2
+    static let tabSegmentHeight: CGFloat = 28
+    static let tabStripRadius: CGFloat = 12      // web tablist rounded-xl
+    static let tabSegmentRadius: CGFloat = 8
+    static let tabStripInset: CGFloat = 2         // tablist p-0.5
+    static let tabActionGap: CGFloat = 8          // header gap-2
+    /// Controls row (web `h-7 gap-2 mb-2 border-b pb-2`).
     static let pillHeight: CGFloat = 28
     static let pillRadius: CGFloat = 12
-    static let pillGap: CGFloat = 6
-    static let pillTop: CGFloat = 50
-    static let rowHeight: CGFloat = 32       // web: min-h-8 (h32, py6)
+    static let pillGap: CGFloat = 8
+    static let blendPillWidth: CGFloat = 144
+    static let opacityPillWidth: CGFloat = 80
+    static let controlBottomGap: CGFloat = 8
+    static let treeTopGap: CGFloat = 8
+    static let treeBottomGap: CGFloat = 8
+    static let footerTopGap: CGFloat = 8
+    static let dividerHeight: CGFloat = 1
+    static let rowHeight: CGFloat = 32       // web: min-h-8 (h32, py-1)
     static let rowSpacing: CGFloat = 4
     static let rowInset: CGFloat = 12
+    static let rowCornerRadius: CGFloat = 8  // web rounded-lg
     /// Disclosure slot: 28×28 hit area with a 12pt chevron (web `-mx-1.5 -my-1`).
+    /// The negative margin makes the visible box start 6pt before the row padding.
     static let disclosureSlot: CGFloat = 28
     static let disclosureGlyphSize: CGFloat = 12
-    /// Visibility slot: 20×20 with a 14pt eye, no box (web shows the eye at rest).
-    static let visibilitySlot: CGFloat = 20
-    static let visibilityGlyphSize: CGFloat = 14
-    static let checkboxLeading: CGFloat = 8   // row content starts here (before indent)
-    static let depthIndent: CGFloat = 14      // per nesting level (UI spec §4)
+    /// Visibility slot: 28×28 hit area with a 13pt eye (web `-mx-1.5 -my-1`).
+    static let visibilitySlot: CGFloat = 28
+    static let visibilityGlyphSize: CGFloat = 13
+    /// Width a slot contributes to the row flow after its -mx-1.5 margins.
+    static let slotFlowOverlap: CGFloat = 6
+    static let checkboxLeading: CGFloat = 2   // row padding 8 − negative margin 6
+    static let depthIndent: CGFloat = 16      // web `paddingLeft: 8 + depth*16`
     static let kindContainerSize: CGFloat = 28
+    static let kindThumbHeight: CGFloat = 20
+    static let kindThumbRadius: CGFloat = 6
     static let kindGlyphSize: CGFloat = 13    // web `TypeIcon size={13}`
-    static let rowContentGap: CGFloat = 8
+    static let swatchDotSize: CGFloat = 14    // web `h-3.5 w-3.5`
+    static let rowContentGap: CGFloat = 6
     static let footerButtonSize: CGFloat = 28 // web footer buttons h-7 w-7
     static let footerIconSize: CGFloat = 13   // web footer icons 13
     static let footerBottomInset: CGFloat = 12
     static let footerLeadingInset: CGFloat = 16   // card padding 12 + footer px 4
     static let footerSpacing: CGFloat = 4
-    /// Footer gap budget: 14pt total (7 above + 7 below the divider) so the 104pt
-    /// list still fits inside the verified 244pt card with 28pt footer buttons.
-    static let footerGapAboveDivider: CGFloat = 7
-    static let footerGapBelowDivider: CGFloat = 7
     static let iconGlyphSize: CGFloat = 14
 }
 
@@ -184,6 +221,177 @@ private enum LayersGlyphDrawing {
         case .circle:
             VooIconFactory.drawEllipse(in: rect, color: color, strokeWidth: strokeWidth)
         }
+    }
+}
+
+// MARK: - Panel tabs (web `editor_layers_header.jsx` tablist: Layers | Assets)
+
+/// One segment of the LAYERS card tab strip. Active segment paints the
+/// `bg-white/[0.12]` rounded pill and white label, inactive stays transparent
+/// with a neutral-400 label (hover lifts it to neutral-200).
+final class LayersTabButton: NSButton {
+    var segmentTitle: String = "" {
+        didSet { if oldValue != segmentTitle { needsDisplay = true } }
+    }
+    var isActive: Bool = false {
+        didSet { if oldValue != isActive { needsDisplay = true } }
+    }
+    var onSelect: (() -> Void)?
+
+    private var isHovered = false {
+        didSet { if oldValue != isHovered { needsDisplay = true } }
+    }
+
+    init(title: String) {
+        segmentTitle = title
+        super.init(frame: NSRect(x: 0, y: 0, width: 74, height: LayersMetrics.tabSegmentHeight))
+        isBordered = false
+        focusRingType = .none
+        self.title = ""
+        target = self
+        action = #selector(handleClick)
+        setAccessibilityRole(.radioButton)
+        setAccessibilityLabel(title)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    @objc private func handleClick() { onSelect?() }
+
+    /// Drawn in the same y-down design space as `VooIconFactory` (unflipped context).
+    override var isFlipped: Bool { false }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        trackingAreas.forEach { removeTrackingArea($0) }
+        addTrackingArea(NSTrackingArea(
+            rect: bounds,
+            options: [.mouseEnteredAndExited, .activeAlways],
+            owner: self,
+            userInfo: nil
+        ))
+    }
+
+    override func resetCursorRects() {
+        addCursorRect(bounds, cursor: .pointingHand)
+    }
+
+    override func mouseEntered(with event: NSEvent) { isHovered = true }
+    override func mouseExited(with event: NSEvent) { isHovered = false }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        if isActive {
+            let pill = bounds.insetBy(dx: 0.5, dy: 0.5)
+            ctx.setFillColor(LayersPalette.tabActiveFill.cgColor)
+            ctx.addPath(CGPath(roundedRect: pill,
+                               cornerWidth: LayersMetrics.tabSegmentRadius,
+                               cornerHeight: LayersMetrics.tabSegmentRadius,
+                               transform: nil))
+            ctx.fillPath()
+        }
+
+        let color: NSColor
+        if isActive {
+            color = LayersPalette.tabActiveText
+        } else if isHovered {
+            color = NSColor(hex: "#e5e5e5")   // neutral-200 hover
+        } else {
+            color = LayersPalette.tabInactiveText
+        }
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: ThemeFonts.mono(size: 10, weight: .regular),
+            .foregroundColor: color
+        ]
+        let title = segmentTitle as NSString
+        let size = title.size(withAttributes: attributes)
+        title.draw(
+            at: CGPoint(x: floor(bounds.midX - size.width / 2.0),
+                        y: floor(bounds.midY - size.height / 2.0)),
+            withAttributes: attributes
+        )
+    }
+}
+
+/// Two-segment tab strip that swaps the card body between the layer tree and
+/// the (native-only) empty Assets state.
+final class LayersTabStripView: NSView {
+    let layersTab = LayersTabButton(title: "Layers")
+    let assetsTab = LayersTabButton(title: "Assets")
+    var onSelectTab: ((Int) -> Void)?
+    private(set) var selectedIndex: Int = 0
+
+    init() {
+        super.init(frame: NSRect(x: 0, y: 0, width: 152, height: LayersMetrics.tabStripHeight))
+        wantsLayer = true
+        layersTab.translatesAutoresizingMaskIntoConstraints = false
+        assetsTab.translatesAutoresizingMaskIntoConstraints = false
+        layersTab.setAccessibilityIdentifier("Layers.Tab.Layers")
+        assetsTab.setAccessibilityIdentifier("Layers.Tab.Assets")
+        addSubview(layersTab)
+        addSubview(assetsTab)
+
+        let inset = LayersMetrics.tabStripInset
+        NSLayoutConstraint.activate([
+            layersTab.leadingAnchor.constraint(equalTo: leadingAnchor, constant: inset),
+            layersTab.topAnchor.constraint(equalTo: topAnchor, constant: inset),
+            layersTab.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -inset),
+            assetsTab.leadingAnchor.constraint(equalTo: layersTab.trailingAnchor),
+            assetsTab.topAnchor.constraint(equalTo: topAnchor, constant: inset),
+            assetsTab.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -inset),
+            assetsTab.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -inset),
+            assetsTab.widthAnchor.constraint(equalTo: layersTab.widthAnchor)
+        ])
+        layersTab.onSelect = { [weak self] in self?.select(index: 0) }
+        assetsTab.onSelect = { [weak self] in self?.select(index: 1) }
+        setSelectedIndex(0, notify: false)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    /// Drawn in the same y-down design space as `VooIconFactory` (unflipped context).
+    override var isFlipped: Bool { false }
+
+    func setSelectedIndex(_ index: Int, notify: Bool = true) {
+        let clamped = max(0, min(1, index))
+        selectedIndex = clamped
+        layersTab.isActive = clamped == 0
+        assetsTab.isActive = clamped == 1
+        layersTab.state = clamped == 0 ? .on : .off
+        assetsTab.state = clamped == 1 ? .on : .off
+        if notify { onSelectTab?(clamped) }
+    }
+
+    private func select(index: Int) {
+        guard index != selectedIndex else { return }
+        setSelectedIndex(index, notify: true)
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
+        ctx.setFillColor(LayersPalette.tabStripFill.cgColor)
+        ctx.addPath(CGPath(roundedRect: rect,
+                           cornerWidth: LayersMetrics.tabStripRadius,
+                           cornerHeight: LayersMetrics.tabStripRadius,
+                           transform: nil))
+        ctx.fillPath()
+    }
+}
+
+// MARK: - Hairline divider (web `border-b border-white/[0.08]`)
+
+final class LayersDividerView: NSView {
+    override var isFlipped: Bool { false }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        ctx.setFillColor(LayersPalette.divider.cgColor)
+        ctx.fill(CGRect(x: 0, y: 0, width: bounds.width, height: max(1.0, bounds.height)))
     }
 }
 
@@ -390,23 +598,11 @@ public final class LayersPillButton: NSButton {
 
         switch style {
         case .opacity:
-            // Leading contrast glyph (px10).
-            let glyphSide: CGFloat = 12.0
-            let glyphRect = CGRect(
-                x: 10.0,
-                y: floor((bounds.height - glyphSide) / 2.0),
-                width: glyphSide,
-                height: glyphSide
-            )
-            LayersGlyphDrawing.draw(
-                .contrast,
-                in: glyphRect,
-                color: isActive ? NSColor(white: 0.72, alpha: 1.0) : LayersPalette.pillTextMuted,
-                strokeWidth: 1.5
-            )
+            // Web ScrubField value pill: `100` on the left, muted `%` suffix on
+            // the right, no leading glyph.
             let value = titleText as NSString
             value.draw(
-                with: textRect(x: 34.0, width: 44.0),
+                with: textRect(x: 10.0, width: 44.0),
                 options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine],
                 attributes: [.font: font, .foregroundColor: textColor]
             )
@@ -652,7 +848,7 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
         titleField.isEditable = false
         titleField.isSelectable = false
         // Web row title: 11px mono medium with a leading-none line box.
-        titleField.font = ThemeFonts.mono(size: 11, weight: .medium)
+        titleField.font = ThemeFonts.mono(size: 11, weight: .regular)
         titleField.textColor = LayersPalette.rowName
         titleField.cell?.wraps = false
         titleField.cell?.isScrollable = true
@@ -661,7 +857,7 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
         addSubview(titleField)
 
         hexLabel.translatesAutoresizingMaskIntoConstraints = false
-        hexLabel.font = ThemeFonts.mono(size: 10, weight: .regular)
+        hexLabel.font = ThemeFonts.mono(size: 11, weight: .regular)
         hexLabel.textColor = LayersPalette.hexText
         hexLabel.alignment = .right
         hexLabel.isHidden = true
@@ -691,7 +887,10 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
             disclosureButton.widthAnchor.constraint(equalToConstant: LayersMetrics.disclosureSlot),
             disclosureButton.heightAnchor.constraint(equalToConstant: LayersMetrics.disclosureSlot),
 
-            visibilityButton.leadingAnchor.constraint(equalTo: disclosureButton.trailingAnchor),
+            visibilityButton.leadingAnchor.constraint(
+                equalTo: disclosureButton.trailingAnchor,
+                constant: -LayersMetrics.slotFlowOverlap
+            ),
             visibilityButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             visibilityButton.widthAnchor.constraint(equalToConstant: LayersMetrics.visibilitySlot),
             visibilityButton.heightAnchor.constraint(equalToConstant: LayersMetrics.visibilitySlot),
@@ -723,8 +922,10 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
         apply(rowDepth: depth)
         committedName = node.name
         titleField.stringValue = node.name
-        // Web row name: 11px mono medium; mint when selected, neutral-500 when hidden.
-        titleField.font = ThemeFonts.mono(size: 11, weight: .medium)
+        // Web row name: 11px mono (weight 400); the canvas background row uses
+        // font-medium. Colour: neutral-200, neutral-500 when hidden.
+        let isBackgroundRow = node.name == "Background"
+        titleField.font = ThemeFonts.mono(size: 11, weight: isBackgroundRow ? .medium : .regular)
         if isSelected {
             titleField.textColor = LayersPalette.rowNameSelected
         } else if !node.style.visible {
@@ -747,10 +948,12 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
         lockButton.isLocked = node.style.locked
         lockWidthConstraint?.constant = node.style.locked ? 14 : 0
 
-        let showsHex = node.name == "Background"
+        let showsHex = isBackgroundRow
         hexLabel.stringValue = showsHex ? node.fill : ""
         hexLabel.isHidden = !showsHex
-        hexWidthConstraint?.constant = showsHex ? 58 : 0
+        // 50pt keeps "#525252" (7 mono glyphs) unclipped while leaving the
+        // row name room to render in full next to the eye + colour dot.
+        hexWidthConstraint?.constant = showsHex ? 50 : 0
 
         isRowSelected = isSelected
         setAccessibilityIdentifier("Inspector.LayersTree.Row.\(node.name)")
@@ -780,12 +983,18 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
     public override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
         let rowRect = bounds.insetBy(dx: 0.5, dy: 0.5)
-        let rowPath = CGPath(roundedRect: rowRect, cornerWidth: 12, cornerHeight: 12, transform: nil)
+        let radius = LayersMetrics.rowCornerRadius
+        let rowPath = CGPath(roundedRect: rowRect, cornerWidth: radius, cornerHeight: radius, transform: nil)
 
         if isRowSelected {
             ctx.setFillColor(LayersPalette.rowSelectedFill.cgColor)
             ctx.addPath(rowPath)
             ctx.fillPath()
+            // Web selection: `shadow-[inset_0_0_0_1px_#a7ffd4]`.
+            ctx.setStrokeColor(LayersPalette.rowSelectedRing.cgColor)
+            ctx.setLineWidth(1.0)
+            ctx.addPath(rowPath)
+            ctx.strokePath()
         } else if isHovered {
             ctx.setFillColor(LayersPalette.rowHover.cgColor)
             ctx.addPath(rowPath)
@@ -793,79 +1002,135 @@ public class LayerRowCell: NSTableCellView, NSTextFieldDelegate {
         }
 
         guard let node = currentNode else { return }
-        // Kind glyph: 14pt glyph centred inside a 28×28 container.
-        let container = NSRect(
-            x: rowInset + LayersMetrics.disclosureSlot + LayersMetrics.visibilitySlot,
-            y: floor((bounds.height - LayersMetrics.kindContainerSize) / 2.0),
-            width: LayersMetrics.kindContainerSize,
-            height: LayersMetrics.kindContainerSize
-        )
-        // 13pt glyph inside the 28pt container; floor the origin so an odd glyph
-        // size still lands on whole pixels (13 in 28 would otherwise sit on ½pt).
-        let glyphRect = NSRect(
-            x: floor(container.midX - LayersMetrics.kindGlyphSize / 2.0),
-            y: floor(container.midY - LayersMetrics.kindGlyphSize / 2.0),
-            width: LayersMetrics.kindGlyphSize,
-            height: LayersMetrics.kindGlyphSize
-        )
-        drawKindGlyph(for: node, in: glyphRect)
+        drawDepthGuide(in: ctx)
+        drawThumbnail(for: node, in: ctx)
     }
 
-    private func drawKindGlyph(for node: VOONode, in rect: NSRect) {
-        let outline = isRowSelected ? LayersPalette.shapeOutlineSelected : LayersPalette.shapeOutline
-        let neutral = isRowSelected ? LayersPalette.shapeOutlineSelected : LayersPalette.iconMuted
+    /// Faint vertical guide for nested rows (web `border-l border-white/10` at
+    /// `left: 8 + (depth - 1) * 16`).
+    private func drawDepthGuide(in ctx: CGContext) {
+        guard rowDepth > 0 else { return }
+        let x = floor(8.0 + CGFloat(rowDepth - 1) * LayersMetrics.depthIndent) + 0.5
+        ctx.setStrokeColor(LayersPalette.depthGuide.cgColor)
+        ctx.setLineWidth(1.0)
+        ctx.move(to: CGPoint(x: x, y: 0))
+        ctx.addLine(to: CGPoint(x: x, y: bounds.height))
+        ctx.strokePath()
+    }
+
+    /// Leading preview tile in the row. Matches the web `EditorLayerThumb`:
+    /// 28×20 rounded tile for shapes / text, bare 13pt glyph for grouped kinds,
+    /// and a 14pt colour dot for the canvas background row.
+    private func drawThumbnail(for node: VOONode, in ctx: CGContext) {
+        let thumb = CGRect(
+            x: rowInset + LayersMetrics.disclosureSlot + LayersMetrics.visibilitySlot
+                - LayersMetrics.slotFlowOverlap,
+            y: floor((bounds.height - LayersMetrics.kindThumbHeight) / 2.0),
+            width: LayersMetrics.kindContainerSize,
+            height: LayersMetrics.kindThumbHeight
+        )
+        let fill = LayersShapeFill.color(from: node.fill)
+            ?? LayersShapeFill.color(from: node.stroke)
+        let opacity = max(0.05, min(1.0, node.style.opacity))
+
+        // Web canvas background row: bare 14pt colour dot, no kind glyph.
+        if node.name == "Background" {
+            drawSwatchDot(in: thumb, color: fill, opacity: opacity)
+            return
+        }
 
         switch node.kind {
         case .rect:
-            drawShapeGlyph(isCircle: false, fill: LayersShapeFill.color(from: node.fill), outline: outline, in: rect)
+            drawTile(in: thumb, fill: fill ?? LayersPalette.thumbTileFill, opacity: opacity)
+            drawTileRing(in: thumb)
         case .ellipse:
-            drawShapeGlyph(isCircle: true, fill: LayersShapeFill.color(from: node.fill), outline: outline, in: rect)
-        case .path:
-            LayersGlyphDrawing.draw(.penCurve, in: rect, color: neutral, strokeWidth: 1.4)
+            drawTile(in: thumb, fill: LayersPalette.thumbTileFill, opacity: 1.0)
+            drawSwatchDot(in: thumb, color: fill, opacity: opacity)
         case .text:
-            LayersGlyphDrawing.draw(.text, in: rect, color: neutral, strokeWidth: 1.7)
+            drawTile(in: thumb, fill: LayersPalette.thumbTileFill, opacity: 1.0)
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: ThemeFonts.mono(size: 11, weight: .medium),
+                .foregroundColor: LayersPalette.rowName
+            ]
+            let glyph = "T" as NSString
+            let size = glyph.size(withAttributes: attributes)
+            glyph.draw(
+                at: CGPoint(x: floor(thumb.midX - size.width / 2.0),
+                            y: floor(thumb.midY - size.height / 2.0)),
+                withAttributes: attributes
+            )
         case .group:
-            LayersGlyphDrawing.draw(.folder, in: rect, color: neutral, strokeWidth: 1.4)
+            drawKindGlyph(.folder, in: thumb)
         case .frame:
-            LayersGlyphDrawing.draw(.frame, in: rect, color: neutral, strokeWidth: 1.4)
+            drawKindGlyph(.frame, in: thumb)
         case .boolean:
-            LayersGlyphDrawing.draw(.diamond, in: rect, color: neutral, strokeWidth: 1.4)
+            drawKindGlyph(.diamond, in: thumb)
+        case .path:
+            drawKindGlyph(.penCurve, in: thumb)
         default:
-            LayersGlyphDrawing.draw(.diamond, in: rect, color: neutral, strokeWidth: 1.4)
+            drawKindGlyph(.diamond, in: thumb)
         }
     }
 
-    private func drawShapeGlyph(isCircle: Bool, fill: NSColor?, outline: NSColor, in rect: NSRect) {
+    private func drawTile(in rect: CGRect, fill: NSColor, opacity: CGFloat) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-        // 14pt optical box (`kindGlyphSize`) for every kind glyph: shrink by half
-        // the 1pt stroke so the inked square/circle is exactly 14×14 like the
-        // vector type icons (was 12×12, which read smaller than the rest).
-        let glyphRect = rect.insetBy(dx: 0.5, dy: 0.5)
         ctx.saveGState()
-        if let fill = fill {
-            ctx.setFillColor(fill.cgColor)
-            if isCircle {
-                ctx.fillEllipse(in: glyphRect)
-            } else {
-                ctx.addPath(CGPath(
-                    roundedRect: glyphRect,
-                    cornerWidth: 3, cornerHeight: 3, transform: nil
-                ))
-                ctx.fillPath()
-            }
-        }
-        ctx.setStrokeColor(outline.cgColor)
-        ctx.setLineWidth(1.0)
-        if isCircle {
-            ctx.strokeEllipse(in: glyphRect)
-        } else {
-            ctx.addPath(CGPath(
-                roundedRect: glyphRect,
-                cornerWidth: 3, cornerHeight: 3, transform: nil
-            ))
-            ctx.strokePath()
-        }
+        ctx.setFillColor(fill.withAlphaComponent(fill.alphaComponent * opacity).cgColor)
+        ctx.addPath(CGPath(
+            roundedRect: rect,
+            cornerWidth: LayersMetrics.kindThumbRadius,
+            cornerHeight: LayersMetrics.kindThumbRadius,
+            transform: nil
+        ))
+        ctx.fillPath()
         ctx.restoreGState()
+    }
+
+    /// Web thumbnail ring: `inset 0 0 0 1px rgb(255 255 255 / 25%)`.
+    private func drawTileRing(in rect: CGRect) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        ctx.setStrokeColor(LayersPalette.thumbRing.cgColor)
+        ctx.setLineWidth(1.0)
+        ctx.addPath(CGPath(
+            roundedRect: rect.insetBy(dx: 0.5, dy: 0.5),
+            cornerWidth: LayersMetrics.kindThumbRadius,
+            cornerHeight: LayersMetrics.kindThumbRadius,
+            transform: nil
+        ))
+        ctx.strokePath()
+    }
+
+    /// 14pt circle with a white/20 ring, centred in the row's thumbnail slot.
+    private func drawSwatchDot(in rect: CGRect, color: NSColor?, opacity: CGFloat) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        let side = LayersMetrics.swatchDotSize
+        let dot = CGRect(
+            x: floor(rect.midX - side / 2.0),
+            y: floor(rect.midY - side / 2.0),
+            width: side,
+            height: side
+        ).insetBy(dx: 0.5, dy: 0.5)
+        ctx.saveGState()
+        if let color = color {
+            ctx.setFillColor(color.withAlphaComponent(color.alphaComponent * opacity).cgColor)
+            ctx.fillEllipse(in: dot)
+        }
+        ctx.setStrokeColor(LayersPalette.thumbDotRing.cgColor)
+        ctx.setLineWidth(1.0)
+        ctx.strokeEllipse(in: dot)
+        ctx.restoreGState()
+    }
+
+    /// 13pt glyph centred in the 28×20 thumbnail slot (no tile background).
+    private func drawKindGlyph(_ glyph: LayersPanelGlyph, in rect: CGRect) {
+        let side = LayersMetrics.kindGlyphSize
+        let glyphRect = CGRect(
+            x: floor(rect.midX - side / 2.0),
+            y: floor(rect.midY - side / 2.0),
+            width: side,
+            height: side
+        )
+        LayersGlyphDrawing.draw(glyph, in: glyphRect, color: LayersPalette.kindGlyph, strokeWidth: 1.4)
     }
 
     // MARK: Hover
@@ -1004,6 +1269,8 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
 
     private let headerLabel = NSTextField(labelWithString: "LAYERS")
     private let countBadge = NSTextField(labelWithString: "0")
+    /// Web card header: `Layers | Assets` tab strip with the search/sort actions.
+    private let tabStrip = LayersTabStripView()
     private let searchButton = LayersIconButton(
         glyph: .search,
         tooltip: "Search layers",
@@ -1022,6 +1289,11 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
     /// auto-resizes itself to the clip height and the list cannot scroll).
     private let listContainer = LayersDocumentContainerView()
     private let tableView = LayersTableView()
+    /// Web `border-b border-white/[0.08]` hairlines above the tree and the footer.
+    private let controlsDivider = LayersDividerView()
+    private let footerDivider = LayersDividerView()
+    /// Native-only empty state for the Assets tab (no asset model yet).
+    private let assetsEmptyLabel = NSTextField(labelWithString: "No assets yet")
 
     private let addButton = LayersIconButton(
         glyph: .plus, tooltip: "Add layer", accessibilityLabel: "Add layer"
@@ -1094,8 +1366,9 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         layer?.shadowRadius = 18.0
         layer?.shadowOffset = CGSize(width: 0, height: -6)
 
-        // 1. Header "LAYERS" (11pt mono medium, trailing-wide tracking, muted).
-        //    The web card is `font-mono`, so the title must be monospaced too.
+        // 1. Header: the web card opens with the `Layers | Assets` tab strip and
+        //    keeps the search/sort actions on the same row (the old "LAYERS"
+        //    title is retired but retained as a hidden compatibility view).
         headerLabel.translatesAutoresizingMaskIntoConstraints = false
         headerLabel.attributedStringValue = NSAttributedString(
             string: "LAYERS",
@@ -1105,6 +1378,7 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
                 .kern: 0.55   // tracking-wider (0.05em @11px)
             ]
         )
+        headerLabel.isHidden = true
         addSubview(headerLabel)
 
         countBadge.translatesAutoresizingMaskIntoConstraints = false
@@ -1113,7 +1387,13 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         countBadge.isHidden = true
         addSubview(countBadge)
 
-        // 2. Header search / sort buttons (13pt icons in 21×21 p4 buttons).
+        tabStrip.translatesAutoresizingMaskIntoConstraints = false
+        tabStrip.onSelectTab = { [weak self] index in
+            self?.setAssetsTabActive(index == 1)
+        }
+        addSubview(tabStrip)
+
+        // 2. Header search / sort buttons (13pt icons in 28×28 web-size buttons).
         searchButton.translatesAutoresizingMaskIntoConstraints = false
         searchButton.iconSize = LayersMetrics.headerIconSize
         searchButton.setAccessibilityIdentifier("Layers.Search")
@@ -1185,11 +1465,25 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         tableView.onOptionMoveDown = { [weak self] in self?.moveSelectedRow(by: 1) }
 
         listContainer.autoresizingMask = []
-        listContainer.frame = NSRect(x: 0, y: 0, width: 248, height: 30)
+        listContainer.frame = NSRect(x: 0, y: 0, width: 228, height: 30)
         tableView.autoresizingMask = []
-        tableView.frame = NSRect(x: 0, y: 0, width: 248, height: 30)
+        tableView.frame = NSRect(x: 0, y: 0, width: 228, height: 30)
         listContainer.addSubview(tableView)
         scrollView.documentView = listContainer
+
+        // 4b. Hairlines (web `border-b border-white/[0.08]`) and the Assets empty state.
+        for divider in [controlsDivider, footerDivider] {
+            divider.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(divider)
+        }
+
+        assetsEmptyLabel.translatesAutoresizingMaskIntoConstraints = false
+        assetsEmptyLabel.font = ThemeFonts.mono(size: 11, weight: .regular)
+        assetsEmptyLabel.textColor = LayersPalette.assetsEmptyText
+        assetsEmptyLabel.alignment = .center
+        assetsEmptyLabel.isHidden = true
+        assetsEmptyLabel.setAccessibilityIdentifier("Layers.AssetsEmpty")
+        addSubview(assetsEmptyLabel)
 
         // 5. Footer toolbar. Web order (footer.jsx): [mask][adjustment][new layer]
         // on the left, trash right-aligned; 28×28 buttons with 13pt icons.
@@ -1216,50 +1510,85 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         // The group affordance only exists in the multi-select state on the web.
         groupButton.isHidden = true
 
-        // 6. Constraints.
+        // 6. Constraints. Vertical rhythm verified against the live web card
+        //    (252/256 × 236, p12): header 17..49, pills 63..91, hairline 99,
+        //    tree 108..176 (two 32pt rows + 4pt gap), hairline 187, footer 196..224.
         let footerSize = LayersMetrics.footerButtonSize
         let headerButtonSize = LayersMetrics.headerButtonSize
         NSLayoutConstraint.activate([
-            headerLabel.topAnchor.constraint(equalTo: topAnchor, constant: LayersMetrics.headerTitleTop),
-            headerLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.headerInset),
-            headerLabel.heightAnchor.constraint(equalToConstant: LayersMetrics.headerTitleHeight),
+            tabStrip.topAnchor.constraint(equalTo: topAnchor, constant: LayersMetrics.headerTop),
+            tabStrip.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.headerInset),
+            tabStrip.heightAnchor.constraint(equalToConstant: LayersMetrics.tabStripHeight),
 
             sortButton.trailingAnchor.constraint(equalTo: trailingAnchor,
-                                                 constant: -(LayersMetrics.contentInset + 8)),
-            sortButton.centerYAnchor.constraint(equalTo: headerLabel.centerYAnchor),
+                                                 constant: -(LayersMetrics.contentInset + 4)),
+            sortButton.centerYAnchor.constraint(equalTo: tabStrip.centerYAnchor),
             sortButton.widthAnchor.constraint(equalToConstant: headerButtonSize),
             sortButton.heightAnchor.constraint(equalToConstant: headerButtonSize),
 
             searchButton.trailingAnchor.constraint(equalTo: sortButton.leadingAnchor, constant: -4),
-            searchButton.centerYAnchor.constraint(equalTo: headerLabel.centerYAnchor),
+            searchButton.centerYAnchor.constraint(equalTo: tabStrip.centerYAnchor),
             searchButton.widthAnchor.constraint(equalToConstant: headerButtonSize),
             searchButton.heightAnchor.constraint(equalToConstant: headerButtonSize),
+
+            tabStrip.trailingAnchor.constraint(
+                equalTo: searchButton.leadingAnchor,
+                constant: -LayersMetrics.tabActionGap
+            ),
+
+            headerLabel.topAnchor.constraint(equalTo: topAnchor, constant: LayersMetrics.headerTitleTop),
+            headerLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.headerInset),
+            headerLabel.heightAnchor.constraint(equalToConstant: LayersMetrics.headerTitleHeight),
 
             countBadge.centerYAnchor.constraint(equalTo: headerLabel.centerYAnchor),
             countBadge.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
 
-            opacityPill.topAnchor.constraint(equalTo: topAnchor, constant: LayersMetrics.pillTop),
-            opacityPill.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.contentInset),
-            opacityPill.heightAnchor.constraint(equalToConstant: LayersMetrics.pillHeight),
-
-            blendPill.topAnchor.constraint(equalTo: opacityPill.topAnchor),
-            blendPill.leadingAnchor.constraint(equalTo: opacityPill.trailingAnchor, constant: LayersMetrics.pillGap),
-            blendPill.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -LayersMetrics.contentInset),
+            // Web controls row is `flex-row-reverse`: blend mode on the left
+            // (flex-1 ≈ 144pt at this card width) and opacity on the right (w-20).
+            blendPill.topAnchor.constraint(equalTo: tabStrip.bottomAnchor, constant: LayersMetrics.headerBottomGap),
+            blendPill.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.contentInset),
             blendPill.heightAnchor.constraint(equalToConstant: LayersMetrics.pillHeight),
-            blendPill.widthAnchor.constraint(equalTo: opacityPill.widthAnchor),
 
-            scrollView.topAnchor.constraint(equalTo: opacityPill.bottomAnchor, constant: 8),
+            opacityPill.topAnchor.constraint(equalTo: blendPill.topAnchor),
+            opacityPill.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -LayersMetrics.contentInset),
+            opacityPill.leadingAnchor.constraint(
+                equalTo: blendPill.trailingAnchor,
+                constant: LayersMetrics.pillGap
+            ),
+            opacityPill.heightAnchor.constraint(equalToConstant: LayersMetrics.pillHeight),
+            opacityPill.widthAnchor.constraint(equalToConstant: LayersMetrics.opacityPillWidth),
+
+            controlsDivider.topAnchor.constraint(equalTo: blendPill.bottomAnchor, constant: LayersMetrics.controlBottomGap),
+            controlsDivider.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.contentInset),
+            controlsDivider.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -LayersMetrics.contentInset),
+            controlsDivider.heightAnchor.constraint(equalToConstant: LayersMetrics.dividerHeight),
+
+            scrollView.topAnchor.constraint(equalTo: controlsDivider.bottomAnchor, constant: LayersMetrics.treeTopGap),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.rowInset),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -LayersMetrics.rowInset),
             scrollView.bottomAnchor.constraint(
-                lessThanOrEqualTo: maskButton.topAnchor,
-                constant: -(LayersMetrics.footerGapAboveDivider + LayersMetrics.footerGapBelowDivider)
+                lessThanOrEqualTo: footerDivider.topAnchor,
+                constant: -LayersMetrics.treeBottomGap
             ),
+
+            footerDivider.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.contentInset),
+            footerDivider.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -LayersMetrics.contentInset),
+            footerDivider.heightAnchor.constraint(equalToConstant: LayersMetrics.dividerHeight),
+
+            assetsEmptyLabel.topAnchor.constraint(equalTo: tabStrip.bottomAnchor, constant: LayersMetrics.headerBottomGap),
+            assetsEmptyLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.contentInset),
+            assetsEmptyLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -LayersMetrics.contentInset),
+            assetsEmptyLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -LayersMetrics.contentInset),
 
             maskButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: LayersMetrics.footerLeadingInset),
             maskButton.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -LayersMetrics.footerBottomInset),
             maskButton.widthAnchor.constraint(equalToConstant: footerSize),
             maskButton.heightAnchor.constraint(equalToConstant: footerSize),
+
+            footerDivider.bottomAnchor.constraint(
+                equalTo: maskButton.topAnchor,
+                constant: -LayersMetrics.footerTopGap
+            ),
 
             contrastButton.leadingAnchor.constraint(equalTo: maskButton.trailingAnchor, constant: LayersMetrics.footerSpacing),
             contrastButton.centerYAnchor.constraint(equalTo: maskButton.centerYAnchor),
@@ -1283,7 +1612,7 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         ])
 
         let heightConstraint = scrollView.heightAnchor.constraint(
-            equalToConstant: rowBlockHeight(3)
+            equalToConstant: rowBlockHeight(2)
         )
         heightConstraint.priority = .defaultHigh
         heightConstraint.isActive = true
@@ -1539,10 +1868,14 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         guard bounds.height > 0 else { return }
         let stride = LayersMetrics.rowHeight + LayersMetrics.rowSpacing
         let scrollTopFromTop = bounds.height - scrollView.frame.maxY
-        let footerTopFromTop = bounds.height - maskButton.frame.maxY
-        // 14 = 7pt above the divider + 7pt below it (the 28pt footer buttons grew,
-        // so the gap budget shrank to keep the verified 244pt card and 3 rows).
-        let available = max(0, footerTopFromTop - 14.0 - scrollTopFromTop)
+        // Tree bottom = footer buttons + footer pt-2 + hairline + tree gap (web
+        // `footer: mt-2 border-t pt-2`). In this unflipped view the footer sits at
+        // the bottom, so `maskButton.frame.maxY` is the highest footer y.
+        let treeBottomFromTop = bounds.height - maskButton.frame.maxY
+            - LayersMetrics.footerTopGap
+            - LayersMetrics.dividerHeight
+            - LayersMetrics.treeBottomGap
+        let available = max(0, treeBottomFromTop - scrollTopFromTop)
         let capacity = max(1, Int(floor((available + LayersMetrics.rowSpacing) / stride)))
         let count = max(1, visibleNodes.count)
         let wanted = rowBlockHeight(min(count, capacity))
@@ -1761,7 +2094,33 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
     /// are selected (native rows are single-select, so it stays hidden).
     private func updateFooterSelectionState() {
         let selectedCount = tableView.selectedRowIndexes.count
-        groupButton.isHidden = selectedCount <= 1
+        groupButton.isHidden = isAssetsTabActive || selectedCount <= 1
+    }
+
+    // MARK: Panel tabs
+
+    /// True while the card shows the (native-only, empty) Assets tab body.
+    private var isAssetsTabActive: Bool = false
+
+    /// Swaps the card body between the layer tree and the Assets empty state,
+    /// mirroring the web panel where the tab strip replaces controls/tree/footer.
+    private func setAssetsTabActive(_ active: Bool) {
+        guard isAssetsTabActive != active else { return }
+        isAssetsTabActive = active
+        opacityPill.isHidden = active
+        blendPill.isHidden = active
+        controlsDivider.isHidden = active
+        footerDivider.isHidden = active
+        scrollView.isHidden = active
+        maskButton.isHidden = active
+        contrastButton.isHidden = active
+        addButton.isHidden = active
+        groupButton.isHidden = active
+        deleteButton.isHidden = active
+        assetsEmptyLabel.isHidden = !active
+        updateFooterSelectionState()
+        needsLayout = true
+        needsDisplay = true
     }
 
     /// Re-configures the visible cells so the mint selected row follows the table
@@ -1851,14 +2210,5 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         ctx.setLineWidth(1.0)
         ctx.addPath(path)
         ctx.strokePath()
-
-        // Footer divider sits 7pt above the 28pt footer toolbar.
-        let dividerY = maskButton.frame.maxY + LayersMetrics.footerGapAboveDivider
-        ctx.setStrokeColor(LayersPalette.divider.cgColor)
-        ctx.setLineWidth(1.0)
-        ctx.strokeLineSegments(between: [
-            CGPoint(x: 12.0, y: dividerY),
-            CGPoint(x: max(12.0, bounds.width - 12.0), y: dividerY)
-        ])
     }
 }
