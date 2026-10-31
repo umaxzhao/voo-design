@@ -8,10 +8,16 @@ function fakeEditor() {
     nodes.set(node.id, node);
     return node;
   });
+  const addText = vi.fn(({ x, y }, text) => {
+    const node = { id: `node-${nodes.size}`, x, y, text };
+    nodes.set(node.id, node);
+    return node;
+  });
   return {
     nodes,
     addFrameAt: add,
     addRectAt: add,
+    addTextAt: addText,
     updateNode: vi.fn((id, patch) => Object.assign(nodes.get(id), patch)),
     commitEditorDocument: vi.fn(),
   };
@@ -19,6 +25,25 @@ function fakeEditor() {
 const geometry = { name: "HTML node", x: 0, y: 0, width: 200, height: 100 };
 
 describe("createLayoutNode", () => {
+  it("sizes generated text to its content unless fixed wrapping is requested", () => {
+    const editor = fakeEditor();
+    const autoId = createLayoutNode(editor, { ...geometry, type: "text", text: "Hairline 01" });
+    expect(editor.nodes.get(autoId)).toMatchObject({ text: "Hairline 01", boxWidth: 0 });
+
+    const wrappedId = createLayoutNode(editor, {
+      ...geometry, type: "text", text: "Long paragraph", textSizing: "fixed",
+    });
+    expect(editor.nodes.get(wrappedId)).toMatchObject({ text: "Long paragraph", boxWidth: geometry.width });
+  });
+
+  it("preserves measured wrap width from streamed HTML text", () => {
+    const editor = fakeEditor();
+    const id = createLayoutNode(editor, {
+      ...geometry, type: "text", text: "Paragraph", boxWidth: 88,
+    });
+    expect(editor.nodes.get(id).boxWidth).toBe(88);
+  });
+
   it.each(["horizontal", "vertical"])("creates a %s frame with HTML padding and reparents its child", direction => {
     const editor = fakeEditor();
     const padding = { top: 8, right: 12, bottom: 16, left: 20 };

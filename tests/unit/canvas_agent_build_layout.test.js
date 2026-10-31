@@ -45,6 +45,8 @@ describe("build_layout", () => {
     expect(schema.description).toContain("type=text for editable copy");
     expect(schema.description).toContain("path requires SVG d data");
     expect(schema.description).toContain("capture_canvas and inspect_layout");
+    expect(schema.description).toContain("Text defaults to auto sizing from its content");
+    expect(schema.parameters.$defs.node.properties.textSizing.enum).toEqual(["auto", "fixed"]);
     expect(schema.parameters.$defs.node.properties.children.items.$ref).toBe("#/$defs/node");
   });
 
@@ -104,10 +106,19 @@ describe("build_layout", () => {
     expect(resolved.nodes.find(item => item.id === absolute.id).x).toBe(absolute.x);
   });
 
-  it("measures text with final fonts, wrapping, line height and letter spacing", async () => {
-    await executeCanvasTool("build_layout", { nodes: [node("text", { text: "Hello\nWorld", fontSize: 30, fontFamily: "Inter", fontWeight: 700, lineHeight: 1.5, letterSpacing: 2, width: 200, height: 1 })] });
+  it("auto-sizes generated text to its content width", async () => {
+    await executeCanvasTool("build_layout", { nodes: [node("text", { text: "Hairline 01", fontSize: 16, width: 240, height: 80 })] });
+    expect(measured).toHaveBeenCalledWith(expect.objectContaining({ text: "Hairline 01", boxWidth: 0 }));
+    expect(doc.nodes[0].width).toBeGreaterThan(0);
+    expect(doc.nodes[0].width).toBeLessThan(240);
+    expect(doc.nodes[0].boxWidth).toBe(0);
+    expect(doc.nodes[0]).not.toHaveProperty("textSizing");
+  });
+
+  it("wraps generated text only when fixed sizing is explicit", async () => {
+    await executeCanvasTool("build_layout", { nodes: [node("text", { text: "Hello\nWorld", textSizing: "fixed", fontSize: 30, fontFamily: "Inter", fontWeight: 700, lineHeight: 1.5, letterSpacing: 2, width: 200, height: 1 })] });
     expect(measured).toHaveBeenCalledWith(expect.objectContaining({ text: "Hello\nWorld", fontSize: 30, fontWeight: 700, fontFamily: "Inter", boxWidth: 200, lineHeight: 1.5, letterSpacing: 2 }));
-    expect(doc.nodes[0]).toMatchObject({ width: 200, height: 90 });
+    expect(doc.nodes[0]).toMatchObject({ width: 200, height: 90, boxWidth: 200 });
   });
 
   it("adds to an existing parent using absolute coordinates", async () => {
@@ -129,6 +140,8 @@ describe("build_layout", () => {
     [{ nodes: [node("frame", { autoLayout: { wrap: "yes" } })] }, /autoLayout.wrap/],
     [{ nodes: [node("frame", { children: [node("rect", { layoutWidth: "stretch" })] })] }, /layoutWidth/],
     [{ nodes: [node("text", { fontSize: 0 })] }, /fontSize must be positive/],
+    [{ nodes: [node("rect", { textSizing: "fixed" })] }, /textSizing requires a text node/],
+    [{ nodes: [node("text", { textSizing: "shrink" })] }, /textSizing must be auto or fixed/],
     [{ nodes: [node("rect", { opacity: 2 })] }, /opacity/],
     [{ nodes: [node("rect", { shadow: { blur: "bad" } })] }, /shadow.blur/],
     [{ parentId: "missing", nodes: [node()] }, /parentId.*not found/],

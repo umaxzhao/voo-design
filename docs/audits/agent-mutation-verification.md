@@ -48,3 +48,20 @@ This follow-up does not certify the entire editor. Linear gradient, drop shadow,
 ## Publication
 
 The clean verified release `b985ebe` was deployed directly through SSH alias `la2` to https://voo.run/editor/. The previous release is retained at `/srv/voo-run/editor-backups/b985ebe-20261026T183946Z`. Uncommitted source files from concurrent tasks were excluded from the release.
+
+## AI-generated text sizing follow-up (2026-10-31)
+
+Capability: `platform.agent-generated-text-sizing`, related to `text.box-sizing`.
+The `build_layout` tool now measures generated text from its content by default,
+so placeholder layout widths do not become fixed wrapping boxes. A caller may
+set `textSizing: "fixed"` when the generated copy intentionally needs to wrap;
+measured positive widths from streamed HTML text remain preserved. The mode is
+validated and is not stored as a document property.
+
+Evidence: `tests/unit/canvas_tools_build_layout.test.js`,
+`tests/unit/canvas_agent_build_layout.test.js`, and the added real-editor
+scenario in `tests/e2e/build-layout-history.e2e.mjs` verify default natural
+width, explicit fixed wrapping, preservation of streamed HTML width, and actual
+document geometry. This covers the `build_layout` and streamed HTML creation
+paths in Chromium. Other external model clients and all generated design
+variants are not independently certified by this scenario.
