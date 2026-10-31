@@ -59,6 +59,9 @@ npm run test:module -- --module layers
 VOO_RELEASE_REPORT=/private/tmp/voo-release.json node scripts/verify-editor-release.mjs
 node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 
+# Optionally schedule browser suites sequentially on a busy host; default remains 3.
+# VOO_RELEASE_BROWSER_CONCURRENCY=1 uses the same suite list and assertions.
+
 # Reduce compiler/unit contention on a busy developer host; assertions stay unchanged.
 GOMAXPROCS=1 VITEST_MAX_FORKS=2 VITEST_MIN_FORKS=1 \
   VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1 \

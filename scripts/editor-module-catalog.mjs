@@ -214,6 +214,7 @@ export const EDITOR_MODULES = [
     id: "platform",
     title: "Agent, runtime and platform integration",
     paths: [
+      "scripts/release-command-pool.mjs", "scripts/verify-editor-release.mjs", "tests/unit/release-command-pool.test.js",
       "scripts/generate-third-party-notices.mjs", "scripts/bundled-third-party-notices.mjs",
       "scripts/license-texts/*", "scripts/verify-package.mjs", "NOTICE",
       "tests/e2e/editor-browser-server.mjs", "tests/e2e/editor-browser-fixture.mjs",
