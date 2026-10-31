@@ -28,6 +28,8 @@ Run `node scripts/verify-editor-release.mjs` on the exact clean commit being rel
 - [performance/](performance/): [local drag FPS](performance/canvas-fps-local-drag.md), [tile rendering](performance/canvas-fps-tiles.md), [WASM engine](performance/wasm-engine.md), [WASM bench](performance/wasm-engine-bench.md)
 
 ## Audits (point-in-time records; check the date and re-verify before relying on them)
+
+- [Code provenance and embedded licenses](audits/code-provenance.md): attribution fixes, distribution checks and unresolved historical questions.
 | Document | Topic | Status |
 | :--- | :--- | :--- |
 | [audits/continuous-creation-audit.md](audits/continuous-creation-audit.md) | One real UI creation session, shortcut/group/cancel/ink defects and cold ZIP reopening | Registered core check; desktop Chromium scope and remaining cases explicit |

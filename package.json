@@ -88,6 +88,7 @@
       "electron/**/*",
       "package.json",
       "LICENSE",
+      "NOTICE",
       "EULA.md",
       "src/shared/**/*.js",
       "src/content/**/*.js",
