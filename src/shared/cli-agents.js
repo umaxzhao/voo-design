@@ -1,4 +1,8 @@
-import { CODEX_MODELS, DEFAULT_CODEX_MODEL } from "./agent-defaults.js";
+import {
+  CLAUDE_MODELS,
+  CODEX_MODELS,
+  DEFAULT_CODEX_MODEL,
+} from "./agent-defaults.js";
 import { getSetting, setSetting } from "./settings.js";
 
 export const ANTIGRAVITY_OPT_IN_KEY = "voo.agent.experimental.antigravity";
@@ -30,20 +34,10 @@ export const CLI_AGENTS = [
     providerId: "claude-cli",
     displayName: "Claude Code",
     labelKey: "agent.connection.claude",
-    // Claude Code owns alias resolution, account availability, and provider
-    // restrictions. Claude Opus 5.5 has verified local firstParty evidence
-    // (claude-opus-5-5), while stable aliases (default, best, fable, opus,
-    // sonnet, haiku) remain delegated to the CLI for runtime resolution.
+    // Show one current pinned version per Claude family; legacy aliases still
+    // resolve for saved settings but are not offered as duplicate choices.
     defaultModel: "claude-opus-5-5",
-    models: [
-      { id: "default", labelKey: "agent.claudeModel.default" },
-      { id: "best", labelKey: "agent.claudeModel.best" },
-      { id: "claude-opus-5-5", labelKey: "agent.claudeModel.opus55" },
-      { id: "fable", labelKey: "agent.claudeModel.fable" },
-      { id: "opus", labelKey: "agent.claudeModel.opus" },
-      { id: "sonnet", labelKey: "agent.claudeModel.sonnet" },
-      { id: "haiku", labelKey: "agent.claudeModel.haiku" },
-    ],
+    models: CLAUDE_MODELS,
     installCmd: "npm install -g @anthropic-ai/claude-code",
     supported: true,
   },

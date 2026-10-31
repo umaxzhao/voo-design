@@ -23,36 +23,56 @@ export function getDefaultAntigravitySettingsPath() {
   );
 }
 
-/** Removes the API-key-only provider setting so agy can use account auth. */
+const VOO_MCP_PERMISSION = "mcp(voo/*)";
+
+/** Prepares account auth and permits only VOO's mediated canvas MCP tools. */
 export async function prepareAntigravityAccountAuth({
   settingsPath = getDefaultAntigravitySettingsPath(),
   hasApiKey = Boolean(process.env.GEMINI_API_KEY?.trim()),
 } = {}) {
-  if (hasApiKey) return { changed: false };
-
   let contents;
   try {
     contents = await readFile(settingsPath, "utf8");
   } catch (error) {
-    if (error.code === "ENOENT") return { changed: false };
-    throw error;
+    if (error.code !== "ENOENT") throw error;
+    contents = null;
   }
 
-  const settings = JSON.parse(contents);
+  const settings = contents === null ? {} : JSON.parse(contents);
   if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
     throw new TypeError("Antigravity settings must contain a JSON object");
   }
-  if (settings.modelProvider !== "gemini") return { changed: false };
-
-  const backupPath = `${settingsPath}.voo-backup`;
-  try {
-    await copyFile(settingsPath, backupPath, constants.COPYFILE_EXCL);
-  } catch (error) {
-    if (error.code !== "EEXIST") throw error;
+  const permissions = settings.permissions ?? {};
+  if (!permissions || typeof permissions !== "object" || Array.isArray(permissions)) {
+    throw new TypeError("Antigravity permissions must contain a JSON object");
+  }
+  const allow = permissions.allow ?? [];
+  if (!Array.isArray(allow) || allow.some((entry) => typeof entry !== "string")) {
+    throw new TypeError("Antigravity permissions.allow must be an array of strings");
   }
 
   const updatedSettings = { ...settings };
-  delete updatedSettings.modelProvider;
+  if (!hasApiKey && updatedSettings.modelProvider === "gemini") {
+    delete updatedSettings.modelProvider;
+  }
+  if (!allow.includes(VOO_MCP_PERMISSION)) {
+    updatedSettings.permissions = {
+      ...permissions,
+      allow: [...allow, VOO_MCP_PERMISSION],
+    };
+  }
+  const changed = JSON.stringify(updatedSettings) !== JSON.stringify(settings);
+  if (!changed) return { changed: false };
+
+  let backupPath;
+  if (contents !== null) {
+    backupPath = `${settingsPath}.voo-backup`;
+    try {
+      await copyFile(settingsPath, backupPath, constants.COPYFILE_EXCL);
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error;
+    }
+  }
 
   const directory = path.dirname(settingsPath);
   const temporaryPath = path.join(directory, `.settings.${randomUUID()}.tmp`);
@@ -68,5 +88,5 @@ export async function prepareAntigravityAccountAuth({
     throw error;
   }
 
-  return { changed: true, backupPath };
+  return { changed: true, ...(backupPath ? { backupPath } : {}) };
 }
