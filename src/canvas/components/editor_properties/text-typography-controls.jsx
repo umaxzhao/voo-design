@@ -10,7 +10,7 @@ export const TYPE_ICON_PROPS = { size: 16, strokeWidth: 1.5, absoluteStrokeWidth
 
 export function TextField({ label, children, className = "" }) {
   return (
-    <div role="group" aria-label={label} className={`flex min-w-0 flex-col gap-1 [&_input]:!text-[11px] [&_button]:!text-[11px] ${className}`}>
+    <div data-typography-field role="group" aria-label={label} className={`flex min-w-0 flex-col gap-1 [&_input]:!text-[11px] [&_button]:!text-[11px] ${className}`}>
       <span className="!text-[11px] font-medium leading-4 text-neutral-300 break-words">{label}</span>
       <div className="min-w-0 [&>div>button]:!min-h-8 max-md:[&>div>button]:!min-h-12 [&_svg]:size-4 [&_svg]:[stroke-width:2.25]">{children}</div>
     </div>
@@ -92,6 +92,7 @@ export function TextToggleButton({ active, onClick, label, children }) {
     <button
       type="button"
       onClick={onClick}
+      data-inspector-control="toggle"
       aria-pressed={active}
       aria-label={label}
       title={label}

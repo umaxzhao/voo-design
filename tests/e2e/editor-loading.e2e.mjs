@@ -23,8 +23,59 @@ await withEditorBrowser(async ({ page }) => {
     "Configuration and model menus must not request canvas execution, layout, variables or font catalogs");
   checks.push("first welcome screen defers the editor, canvas executors, scene engines, font catalogs and export builders");
 
-  // Use the actual title-bar action and persistent workspace creation path.
-  await page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true }).click();
+  // Hold the actual cold editor request so the loading surface is observable.
+  let releaseEditor;
+  const editorDownload = new Promise(resolve => { releaseEditor = resolve; });
+  let finishDownload;
+  const downloadFinished = new Promise(resolve => { finishDownload = resolve; });
+  await page.route(/\/image_editor\.jsx(?:\?|$)/, async route => {
+    await editorDownload;
+    await route.continue();
+    finishDownload();
+  });
+  try {
+    await page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true }).click();
+    const loading = page.getByTestId("loading-modal");
+    await loading.waitFor();
+    if (await loading.locator("[data-loading-brand]").count() !== 1) {
+      await page.screenshot({ path: "/private/tmp/voo-license-regression/loading-brand-before.png" });
+    }
+    assert.equal(await loading.locator("[data-loading-brand]").count(), 1,
+      "The editor loading surface uses the VOO brand icon instead of an accent ring");
+    const icon = loading.locator("[data-loading-brand]");
+    const progress = loading.getByRole("progressbar");
+    assert.equal(await progress.getAttribute("aria-valuenow"), null, "Unknown download progress must not invent a percentage");
+    const iconBox = await icon.boundingBox(), barBox = await progress.boundingBox();
+    assert.ok(barBox.y >= iconBox.y + iconBox.height + 20, "Progress sits below the brand with breathing room");
+    assert.equal(await icon.evaluate(el => getComputedStyle(el).animationName), "voo-loading-turn");
+    const transform = await icon.evaluate(el => getComputedStyle(el).transform);
+    await page.waitForFunction(before => getComputedStyle(document.querySelector("[data-loading-brand]")).transform !== before, transform);
+    await page.screenshot({ path: "/private/tmp/voo-license-regression/loading-brand-desktop.png" });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    assert.equal(await icon.evaluate(el => getComputedStyle(el).animationName), "none");
+    assert.equal(await progress.locator("div").evaluate(el => getComputedStyle(el).animationName), "none");
+    await page.setViewportSize({ width: 320, height: 700 });
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate(async theme => {
+        const { setEditorTheme } = await import("/src/canvas/use_editor_theme.js");
+        setEditorTheme(theme);
+      }, theme);
+      const geometry = await loading.evaluate(el => {
+        const box = el.getBoundingClientRect(), rgb = getComputedStyle(el).backgroundColor.match(/\d+/g).slice(0, 3).map(Number);
+        return { x: box.x, right: box.right, rgb };
+      });
+      assert.ok(geometry.x >= 0 && geometry.right <= 320, "Loading fits a narrow viewport");
+      assert.equal(new Set(geometry.rgb).size, 1, "The loading surface is neutral in both themes");
+      await page.screenshot({ path: `/private/tmp/voo-license-regression/loading-brand-${theme}-mobile.png` });
+    }
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    checks.push("cold editor loading uses the rotating VOO logo above a neutral honest progress bar; reduced motion and 320px themes remain usable");
+
+  } finally {
+    releaseEditor(); await downloadFinished; await page.unroute(/\/image_editor\.jsx(?:\?|$)/);
+  }
+  // Continue opening the same document created through the real title-bar action.
   await page.waitForFunction(() => window.__vooEditor?.getDocument()?.isCanvasRoot &&
     window.__vooEditor.getDocument().nodes.some(node => node.isFrame));
   await page.evaluate(async () => {

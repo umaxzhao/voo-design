@@ -290,6 +290,7 @@ export function renderEngineLayerPass({
   draw(ctx, {
     doc: pass.doc,
     artworkOnly: true,
+    cullOffscreen: true,
     viewport,
     dpr,
     pageBackground: false,

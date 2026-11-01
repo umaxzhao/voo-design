@@ -35,6 +35,15 @@ export class CommandPoolError extends Error {
   }
 }
 
+/** Scheduling may be reduced on busy hosts without changing tests or thresholds. */
+export function releaseBrowserConcurrency(value) {
+  const concurrency = value === undefined ? 3 : Number(value);
+  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 3) {
+    throw new RangeError("Release browser concurrency must be an integer from 1 to 3");
+  }
+  return concurrency;
+}
+
 /** Run a bounded pool; a failed process never starts another queued command. */
 export async function runCommandPool(commands, { concurrency = 3, onComplete = () => {} } = {}) {
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 3) {

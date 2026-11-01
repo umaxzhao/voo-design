@@ -240,6 +240,7 @@ export default function FlatSelect({
         type="button"
         {...triggerProps}
         aria-label={label}
+        data-inspector-control="select"
         aria-haspopup="listbox"
         aria-controls={open ? panelId : undefined}
         aria-expanded={open}

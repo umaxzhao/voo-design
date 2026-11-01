@@ -68,12 +68,12 @@ test("a hosted room shares the session link, which carries the room secret", asy
 
   const link = await actions.shareWorkflow("edit");
 
-  assert.match(link, new RegExp(`/r/${ROOM_ID}#k=${SECRET}$`));
+  assert.equal(link, `https://voo.run/editor/?r=${ROOM_ID}#k=${SECRET}`);
   assert.equal(roomSecretFromLink(link), SECRET);
   assert.equal(get().lastShareUrl, link);
 });
 
-test("a view grant keeps ?access=view before the #k secret", async () => {
+test("a view grant keeps access=view before the #k secret", async () => {
   const session = fakeSession();
   getCollabSession.mockReturnValue(session);
   startCollab.mockImplementation(async (roomId, access) => {
@@ -84,7 +84,7 @@ test("a view grant keeps ?access=view before the #k secret", async () => {
 
   const link = await actions.shareWorkflow("view");
 
-  assert.match(link, new RegExp(`/r/${ROOM_ID}\\?access=view#k=${SECRET}$`));
+  assert.equal(link, `https://voo.run/editor/?r=${ROOM_ID}&access=view#k=${SECRET}`);
   assert.equal(accessFromLink(link), "view");
   assert.equal(roomSecretFromLink(link), SECRET);
 });
@@ -96,7 +96,7 @@ test("re-sharing a room joined by link reuses its secret-bearing link", async ()
 
   const link = await actions.shareWorkflow("edit");
 
-  assert.match(link, new RegExp(`\\?access=view#k=${SECRET}$`));
+  assert.equal(link, `https://voo.run/editor/?r=${ROOM_ID}&access=view#k=${SECRET}`);
   assert.equal(startCollab.mock.calls.length, 0);
 });
 

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "vitest";
+import { test, vi } from "vitest";
 import { webcrypto } from "node:crypto";
 
 globalThis.crypto ??= webcrypto;
@@ -66,7 +66,8 @@ test("room secrets are 128-bit base64url values and round-trip in the fragment",
   const secret = createRoomSecret();
   const link = roomUrl(id, "https://voo.run", "view", secret);
   assert.match(secret, /^[A-Za-z0-9_-]{22}$/);
-  assert.match(link, /\?access=view#k=[A-Za-z0-9_-]{22}$/);
+  assert.equal(new URL(link).searchParams.get("access"), "view");
+  assert.match(link, /#k=[A-Za-z0-9_-]{22}$/);
   assert.equal(roomSecretFromLink(link), secret);
 });
 
@@ -84,6 +85,9 @@ test("a pasted link survives the mess chat apps add", () => {
   assert.equal(parseRoomId(`  https://voo.run/r/${id}?utm=x  `), id);
   assert.equal(parseRoomId(`/r/${id}`), id);
   assert.equal(parseRoomId(id), id);
+  assert.equal(parseRoomId(`https://voo.run/editor/?r=${id}#k=abcdefghijklmnopqrstuv`), id);
+  assert.equal(parseRoomId(`/editor/?room=${id}`), id);
+  assert.equal(parseRoomId("https://voo.run/editor/?r=SHORT"), null);
 });
 
 test("a link that is not a room is not mistaken for one", () => {
@@ -220,4 +224,24 @@ test("a peer that keeps talking is kept", () => {
   presence.touch("chatty");
   clock += PEER_TIMEOUT_MS - 1;
   assert.deepEqual(presence.sweep(), []);
+});
+
+
+test.each([
+  "http://localhost:5173", "http://127.0.0.1:5173", "http://[::1]:5173",
+  "http://192.168.1.5:5173", "voo://app", "chrome-extension://test",
+  "https://preview.example.com", "https://www.voo.run", "https://voo.run",
+])("room links use the published origin when created on %s", origin => {
+  const id = "23456789abcdefghjkmn";
+  const secret = "abcdefghijklmnopqrstuv";
+  vi.stubGlobal("location", { origin });
+  try {
+    for (const access of ["edit", "view"]) {
+      const expected = `https://voo.run/editor/?r=${id}${access === "view" ? "&access=view" : ""}#k=${secret}`;
+      assert.equal(roomUrl(id, undefined, access, secret), expected);
+      assert.equal(roomUrl(id, origin, access, secret), expected, "legacy origin argument cannot leak a private host");
+      assert.equal(parseRoomId(expected), id);
+      assert.equal(roomSecretFromLink(expected), secret);
+    }
+  } finally { vi.unstubAllGlobals(); }
 });

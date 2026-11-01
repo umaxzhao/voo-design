@@ -1,0 +1,41 @@
+.voo-loading {
+  --loading-track: rgb(255 255 255 / 0.12);
+  background: #171717;
+  color: #f5f5f5;
+}
+
+html[data-theme="light"] .voo-loading {
+  --loading-track: rgb(0 0 0 / 0.12);
+  background: #fafafa;
+  color: #171717;
+}
+
+.voo-loading-brand {
+  animation: voo-loading-turn 1.8s linear infinite;
+}
+
+.voo-loading-track { background: var(--loading-track); }
+
+.voo-loading-fill {
+  background: currentColor;
+  transform-origin: left center;
+  transition: transform 200ms ease-out;
+}
+
+.voo-loading-segment {
+  animation: voo-loading-travel 1.4s ease-in-out infinite;
+}
+
+@keyframes voo-loading-turn { to { transform: rotate(360deg); } }
+
+@keyframes voo-loading-travel {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+
+/* Keep progress legible without spatial motion when the user requests it. */
+@media (prefers-reduced-motion: reduce) {
+  .voo-loading-brand, .voo-loading-segment { animation: none; }
+  .voo-loading-fill { transition: none; }
+  .voo-loading-segment { transform: translateX(100%); }
+}

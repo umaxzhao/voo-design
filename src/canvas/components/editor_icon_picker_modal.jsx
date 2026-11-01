@@ -1,3 +1,4 @@
+import GlobalOverlayPortal from "./global_overlay_portal.jsx";
 import PropTypes from "prop-types";
 import { useId, useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
@@ -23,12 +24,12 @@ export default function EditorIconPickerModal({
 
   if (!open) return null;
 
-  return (
+  const surface = (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="icon-picker-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
@@ -120,6 +121,7 @@ export default function EditorIconPickerModal({
       </div>
     </div>
   );
+  return <GlobalOverlayPortal>{surface}</GlobalOverlayPortal>;
 }
 
 EditorIconPickerModal.propTypes = {

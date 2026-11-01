@@ -1,4 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import VooBrandLogo from "./canvas/components/voo_brand_logo.jsx";
+import { PopoverScopeContext, isOwnedPopoverTarget } from "./canvas/components/popover_scope.js";
+import React, { useEffect, useId, useRef, useState } from "react";
 import "./canvas/components/editor_mobile_layout.css";
 import "./welcome_settings.css";
 import CanvasTabBar from "./canvas/components/canvas_tab_bar.jsx";
@@ -19,26 +21,13 @@ export const APP_DISPLAY_NAME = "VOO Design";
 /** Space kept clear of the native macOS traffic lights (close/minimise/zoom). */
 const MAC_TRAFFIC_LIGHT_INSET_PX = 96;
 
-/** Canonical VOO brand hexagon logo with inscribed triangle & circle */
-export function VooBrandLogo({ className = "size-5 text-black" }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M21 6.25V16.75L11.5 22L2 16.75V6.25L11.5 1L21 6.25ZM11.5 22L21 6.25H2L11.5 22ZM11.5 6.66016C14.2777 6.66016 16.5294 8.82703 16.5294 11.5C16.5294 14.173 14.2777 16.3398 11.5 16.3398C8.72233 16.3398 6.47059 14.173 6.47059 11.5C6.47059 8.82703 8.72233 6.66016 11.5 6.66016Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
+export { VooBrandLogo };
 
 export default function AppTitleBar() {
   const isMac = window.electronAPI?.platform === "darwin";
   const welcomeOpen = useDesignStore((state) => state.welcomeOpen);
+  const welcomeActionsReady = useDesignStore((state) => state.welcomeActionsReady);
+  const welcomeActionsPending = welcomeOpen && !welcomeActionsReady;
   const setWelcomeOpen = useDesignStore((state) => state.setWelcomeOpen);
   const browserDrawerOpen = useDesignStore((state) => state.browserDrawerOpen);
   const setBrowserDrawerOpen = useDesignStore((state) => state.setBrowserDrawerOpen);
@@ -48,6 +37,7 @@ export default function AppTitleBar() {
   const [settingsTab, setSettingsTab] = useState("general");
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef(null);
+  const moreScope = useId();
   // Home is lazy and has no editor event listeners until a document is opened.
   const handleImport = () =>
     window.dispatchEvent(
@@ -66,7 +56,7 @@ export default function AppTitleBar() {
     if (!moreOpen) return undefined;
     moreRef.current?.querySelector('[role="menuitem"]')?.focus();
     const handlePointerDown = (event) => {
-      if (!moreRef.current?.contains(event.target)) setMoreOpen(false);
+      if (!moreRef.current?.contains(event.target) && !isOwnedPopoverTarget(event.target, moreScope)) setMoreOpen(false);
     };
     const handleKeyDown = (event) => {
       if (event.key !== "Escape") return;
@@ -81,7 +71,7 @@ export default function AppTitleBar() {
       document.removeEventListener("pointerdown", handlePointerDown, true);
       window.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [moreOpen]);
+  }, [moreOpen, moreScope]);
 
   useEffect(() => {
     const handleOpenSettings = (e) => {
@@ -112,7 +102,7 @@ export default function AppTitleBar() {
     <>
       <header
         data-testid="editor-top-bar"
-        className="app-title-bar flex h-[40px] shrink-0 items-center justify-between px-4 text-xs font-medium tracking-wide select-none border-b border-white/10"
+        className="app-title-bar relative z-[60] flex h-[40px] shrink-0 items-center justify-between px-4 text-xs font-medium tracking-wide select-none border-b border-white/10"
         style={{
           ...(isMac ? { paddingLeft: MAC_TRAFFIC_LIGHT_INSET_PX } : {}),
           WebkitAppRegion: "drag",
@@ -163,8 +153,9 @@ export default function AppTitleBar() {
             </>
           )}
           <button
-            className="app-title-desktop-action inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap leading-none cursor-pointer rounded-lg px-2.5 py-1 text-neutral-400 transition-colors hover:bg-white/10 hover:text-neutral-200 font-medium"
+            className="app-title-desktop-action disabled:cursor-wait disabled:opacity-40 inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap leading-none cursor-pointer rounded-lg px-2.5 py-1 text-neutral-400 transition-colors hover:bg-white/10 hover:text-neutral-200 font-medium"
             type="button"
+            disabled={welcomeActionsPending}
             onClick={handleImport}
             title={t("titlebar.openTitle")}
             aria-label={t("titlebar.openTitle")}
@@ -173,7 +164,7 @@ export default function AppTitleBar() {
           </button>
           {/* Documents autosave; the primary action exports a portable snapshot. */}
           <button
-            className="app-title-desktop-action inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap leading-none cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
+            className="app-title-desktop-action disabled:cursor-wait disabled:opacity-40 inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap leading-none cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
             type="button"
             onClick={handleNewOrExport}
             title={
@@ -222,6 +213,7 @@ export default function AppTitleBar() {
               <MoreHorizontal size={19} aria-hidden="true" />
             </button>
             {moreOpen ? (
+              <PopoverScopeContext.Provider value={moreScope}>
               <div
                 id="titlebar-more-menu"
                 role="menu"
@@ -234,6 +226,7 @@ export default function AppTitleBar() {
                 <button
                   type="button"
                   role="menuitem"
+                  disabled={welcomeActionsPending}
                   onClick={() => {
                     setMoreOpen(false);
                     handleImport();
@@ -263,6 +256,7 @@ export default function AppTitleBar() {
                   </div>
                 )}
               </div>
+              </PopoverScopeContext.Provider>
             ) : null}
           </div>
           {!welcomeOpen && (

@@ -15,11 +15,26 @@ import {
   buildSatin,
   buildStrokeRing,
 } from "./stroke_filter.js";
+import { isImagePaint } from "./render-paint-style.js";
 
 const effectBitmapCache = new WeakMap();
 
 function effectCacheKey(node, kind, effect) {
   return `${kind}|${node.version ?? ""}|${node.imageId ?? ""}|${node.maskId ?? ""}|${node.width}x${node.height}|${JSON.stringify(effect)}`;
+}
+
+function cacheEmptyEffect(node) {
+  // Font/image availability can change without replacing the immutable node.
+  return ["rect", "ellipse", "path", "group"].includes(node.kind) &&
+    !node.imageId && !node.src && !isImagePaint(node.fill) &&
+    !(node.fills ?? []).some(paint => paint.imageId || isImagePaint(paint.fill));
+}
+
+function rememberEffect(node, key, bitmap) {
+  let entries = effectBitmapCache.get(node);
+  if (!entries) { entries = new Map(); effectBitmapCache.set(node, entries); }
+  entries.clear();
+  entries.set(key, bitmap);
 }
 
 /** #rrggbb to [r, g, b] bytes. */
@@ -53,7 +68,9 @@ function paintAlphaMap(
   const height = node.height;
   if (!(width > 0) || !(height > 0)) return;
 
-  const cached = effectBitmapCache.get(node)?.get(cacheKey);
+  const entries = effectBitmapCache.get(node);
+  const cached = entries?.get(cacheKey);
+  if (entries?.has(cacheKey) && cached === null) return;
   if (cached) {
     ctx.save();
     ctx.globalCompositeOperation = "source-over";
@@ -78,7 +95,10 @@ function paintAlphaMap(
     alpha[i] = pixels.data[i * 4 + 3];
   }
   const map = buildMap(alpha, off.width, off.height);
-  if (!map) return;
+  if (!map) {
+    if (cacheEmptyEffect(node)) rememberEffect(node, cacheKey, null);
+    return;
+  }
 
   const mapCanvas = document.createElement("canvas");
   mapCanvas.width = off.width;
@@ -93,13 +113,7 @@ function paintAlphaMap(
     image.data[i * 4 + 3] = map[i];
   }
   mctx.putImageData(image, 0, 0);
-  let entries = effectBitmapCache.get(node);
-  if (!entries) {
-    entries = new Map();
-    effectBitmapCache.set(node, entries);
-  }
-  entries.clear();
-  entries.set(cacheKey, mapCanvas);
+  rememberEffect(node, cacheKey, mapCanvas);
 
   ctx.save();
   ctx.globalCompositeOperation = "source-over";

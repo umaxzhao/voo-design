@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { runInspectorControlCases } from "./inspector-control-cases.mjs";
 import { runTypographyCases } from "./typography-inspector-cases.mjs";
 import { runUnifiedFillCases } from "./unified-fill-picker-cases.mjs";
 
@@ -239,6 +240,8 @@ await withEditorBrowser(async ({ page, tool }) => {
 
     await runTypographyCases({ page, tool, mark, evidence });
     // Typography creation replaces the document; restore this suite's scene.
+    await seed();
+    await runInspectorControlCases({ page, tool, mark, evidence });
     await seed();
     await runUnifiedFillCases({ page, tool, mark });
 

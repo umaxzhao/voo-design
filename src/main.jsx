@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import "./index.css";
 import "./theme-light.css";
+import "./canvas/color_picker/native-color-swatches.css";
 import { applyEditorTheme, currentEditorTheme } from "./canvas/use_editor_theme.js";
 import {
   loadCriticalLocale,

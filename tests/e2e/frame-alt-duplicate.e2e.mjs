@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { checkDuplicatedFrameDrag } from "./duplicate-frame-drag-checks.mjs";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
 await withEditorBrowser(async ({ page }) => {
@@ -47,6 +48,7 @@ await withEditorBrowser(async ({ page }) => {
   assert.equal(await index(), clickIndex);
   checks.push("an Alt-click without movement creates neither a duplicate nor a history entry");
 
+  await checkDuplicatedFrameDrag(page, checks);
   await seed();
   const before = await snapshot(), beforeIndex = await index();
   const start = await begin();

@@ -59,6 +59,10 @@ await withEditorBrowser(async ({ page, errors }) => {
     await chooser.setFiles(file);
     await page.waitForFunction(() => window.__vooEditor && window.__vooStore?.fileName?.includes("NativeFigma"));
     await page.getByTestId("loading-modal").waitFor({ state: "detached" });
+    // The modal can detach before the new engine publishes the reopened scene.
+    // Wait for the actual imported document, retaining every exact pixel check.
+    await page.waitForFunction(() => window.__vooEditor?.getDocument().nodes.some(node => node.name === "Native 2") &&
+      document.querySelector('[data-testid="design-editor"] [data-open-guard]')?.getAttribute("data-open-guard") === "off");
   };
   await pick({ name: "NativeFigma.fig", mimeType: "application/octet-stream", buffer: Buffer.from(bytes) });
   const sample = () => page.evaluate(async () => {
@@ -99,6 +103,29 @@ await withEditorBrowser(async ({ page, errors }) => {
   });
   assert.equal(cache.canvases, 0, "An unchanged second layer pass must reuse its mask bitmaps");
   assert.equal(cache.samePixels, true);
+
+  const culling = await page.evaluate(() => {
+    const e = window.__vooEditor, doc = e.getDocument(), ids = doc.nodes.map(n => n.id);
+    const render = (canvas, width, height) => e.renderLayerPass(canvas, ids,
+      { viewport: { zoom: 1, panX: 0, panY: 0 }, stageWidth: width, stageHeight: height });
+    const full = document.createElement("canvas"), cropped = document.createElement("canvas");
+    render(full, doc.width, doc.height);
+    const ctx = cropped.getContext("2d"), drawImage = ctx.drawImage;
+    let offscreenImagePaints = 0;
+    ctx.drawImage = function (source, ...args) {
+      if (source.width === 40 && source.height === 10) offscreenImagePaints++;
+      return drawImage.call(this, source, ...args);
+    };
+    try {
+      render(cropped, 240, 120);
+      const expected = full.getContext("2d").getImageData(0, 0, 240, 120).data;
+      const actual = ctx.getImageData(0, 0, 240, 120).data;
+      return { offscreenImagePaints, samePixels: expected.every((value, i) => value === actual[i]) };
+    } finally { ctx.drawImage = drawImage; }
+  });
+  assert.equal(culling.samePixels, true, "Viewport culling must preserve every visible pixel, including Frame overflow");
+  // The two nearby fills remain inside the existing 240-world-pixel safety margin.
+  assert.equal(culling.offscreenImagePaints, 2, "A mixed layer pass must skip the distant image fill beyond the safety margin");
 
   await page.evaluate(id => window.__vooEditor.updateFrameNode(id, { width: 300 }), before.frame.id);
   assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().nodes.find(n => n.name === "Native 3").x), 280);

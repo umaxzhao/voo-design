@@ -50,7 +50,7 @@
 .app-root-frame
   .relative.flex:has(> .editor-shell .editor-narrow)
   > [data-testid="page-switcher"]
-  > button {
+  [data-page-switcher-trigger] {
   max-width: min(14rem, calc(100vw - 2rem));
 }
 

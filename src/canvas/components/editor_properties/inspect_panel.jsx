@@ -159,7 +159,7 @@ export default function InspectPanel({
             <span
               role="img"
               aria-label={t("editor.props.fill")}
-              className="block h-5 w-5 shrink-0 overflow-hidden rounded-md border border-white/10"
+              className="block h-5 w-5 shrink-0 overflow-hidden rounded-full border border-white/10"
               style={{
                 background: typeof fill === "string" &&
                   (HEX_COLOUR.test(fill) || fill.includes("-gradient"))

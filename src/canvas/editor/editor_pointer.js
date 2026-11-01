@@ -369,7 +369,7 @@ export function attachPointerHandlers({
 
   const onDoubleClick = (event) => {
     if (!onCanvasAfterCapture(event)) return;
-    handleEditorDoubleClick(event, { api });
+    handleEditorDoubleClick(event, { api, nodeHandleUnder });
   };
 
   const keyboard = createPointerKeyboard({

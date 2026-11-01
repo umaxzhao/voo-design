@@ -67,7 +67,7 @@ describe('one CSS pixel selection frame', () => {
 });
 
 describe('selection size label placement', () => {
- it('keeps the dimensions above the frame and within the visible stage', () => {
+ it('keeps the dimensions below the frame and within the visible stage', () => {
   const labels = [];
   const ctx = {
    canvas: { width: 400, height: 300 },
@@ -80,6 +80,31 @@ describe('selection size label placement', () => {
    { zoom: 1, panX: 0, panY: 0 }, true, { kind: 'rect', width: 60, height: 20 });
 
   expect(labels).toHaveLength(1);
-  expect(labels[0]).toEqual([4, 16, 110, 18, 2]);
+  expect(labels[0]).toEqual([4, 66, 110, 18, 2]);
+ });
+});
+
+
+describe('selection size label viewport policy', () => {
+ it.each([
+  { zoom: 0.5, dpr: 1, y: 40, height: 20, top: 36 },
+  { zoom: 2, dpr: 2, y: 40, height: 20, top: 126 },
+  { zoom: 1, dpr: 2, y: 1, height: 20, top: 27 },
+  { zoom: 1, dpr: 2, y: 260, height: 20, top: 236 },
+ ])('places readable chrome at $zoom zoom / $dpr DPR (y=$y)', ({ zoom, dpr, y, height, top }) => {
+  const labels = [];
+  const text = [];
+  const ctx = {
+   canvas: { width: 400 * dpr, height: 300 * dpr },
+   getTransform: () => ({ a: dpr }),
+   save() {}, restore() {}, strokeRect() {}, fillRect() {}, beginPath() {},
+   roundRect(...rect) { labels.push(rect); }, fill() {},
+   measureText: () => ({ width: 40 }), fillText(value) { text.push(value); },
+  };
+  drawSelection(ctx, { x: 100, y, width: 60, height },
+   { zoom, panX: 0, panY: 0 }, true, { kind: 'rect', width: 60, height });
+  expect(labels[0][1]).toBe(top);
+  expect(labels[0][3]).toBe(18);
+  expect(text).toEqual([`60 × ${height}`]);
  });
 });

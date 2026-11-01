@@ -157,44 +157,46 @@ configurations, 604 stroke alignments and 15 non-outlined dash configurations. T
 not pixel parity for every real-file combination. Corner smoothing is metadata
 only; outlined paths already bake their stroke/corner geometry into fills.
 
-### Measured large-file improvement, still below acceptance
+### Final sequential measurements, still below performance acceptance
 
-Both complete local production runs used Chromium/Metal on Apple M4 Pro,
+Both complete production runs were serialized after this task's unit/browser
+workers and metadata diagnostics finished: before `b20bb5b`, after
+`3dfad79396e229cf9a0e888f52842f49b31c3e1a`. Chromium used Apple M4 Pro Metal,
 1440 × 1000, DPR 1, fresh profiles, the identical read-only `test.fig`, external
-network blocked and the same picker/camera/wheel script. The before build is
-`b20bb5b`; the after build is `6bb6ac4` plus this remediation. Upstream changes
-between those bases concern inspector typography and Agent UI. These are single
-runs on a shared development machine, not portable performance guarantees.
+network blocked and the same picker/camera/wheel script. The homepage was ready
+before opening the file; import timing starts at file input change. The final
+build includes the recorded upstream changes; results do not isolate each fix's
+causal contribution. This remains one pair on a shared development machine,
+not a portable performance guarantee. OS load averages are retained in receipts.
 
 | Measurement | Before | After |
 | --- | ---: | ---: |
-| Loading ended | 21.19 s | 19.20 s |
-| Pan rAF cadence | 2.02 callbacks/s | 4.31 callbacks/s |
-| Zoom rAF cadence | 0.69 callbacks/s | 1.62 callbacks/s |
-| Six wheel samples, median | 623.5 ms | 276 ms |
-| Wheel sample range | 562–3,068 ms | 207–1,314 ms |
-| Longest import main-thread task | 3.777 s | 3.773 s |
+| Loading ended | 20.28 s | 12.69 s |
+| Pan rAF cadence | 1.95 callbacks/s | 5.54 callbacks/s |
+| Zoom rAF cadence | 0.95 callbacks/s | 1.78 callbacks/s |
+| Six wheel samples, median | 638 ms | 199 ms |
+| Wheel sample range | 578–2,902 ms | 178–1,003 ms |
+| Longest import main-thread task | 3.745 s | 1.882 s |
 
-These are callback timings, not GPU FPS. Only seven/three before and fourteen/
-five after pan/zoom intervals were recorded. The remaining pauses are failures;
-this optimization does not certify smooth navigation or fix long import tasks.
-Before-run import overlapped the private metadata diagnostic; camera/wheel
-samples completed after the unit workers had exited. No cross-run averages or
-restoration percentage are claimed.
+These are callback timings, not GPU FPS. Only seven/three before and seventeen/
+six after pan/zoom intervals were recorded. Pauses remain failures: large-scene
+navigation is not certified smooth. Both runs completed without page script
+errors; each stored 478 assets. The original file's size and SHA-256 still match.
+Earlier exploratory measurements overlapped a private diagnostic and remain
+archived separately; they are not averaged into this comparison.
 
-Evidence: private `/tmp/voo-fig-opt-before/`, `/tmp/voo-fig-opt-after/`,
+Evidence: private `/tmp/voo-fig-opt-before-controlled/`,
+`/tmp/voo-fig-opt-after-controlled/`, `/tmp/voo-fig-controlled-comparison.json`,
 `/tmp/voo-fig-opt-properties/`, baseline failing regression log
-`/tmp/voo-fig-optimization-baseline.log` and picker regression log
-`/tmp/voo-fig-browser-fidelity.log`. An initial unprivileged full unit run had
-41 failures including denied loopback listeners, watcher notifications and a
-25 ms performance threshold; it is retained, not represented as a pass.
-Final committed-source release evidence is recorded in `quality-progress.md`.
+`/tmp/voo-fig-optimization-baseline.log` and independent multi-fill crop
+red/green logs. The initial sandbox full-unit failures remain recorded.
 
 Still unverified/incomplete: signed Electron, every page at readable scale,
 source fonts, nonuniform text affine scaling, arbitrary reflection combinations,
 rich text/strike-through/vertical alignment, complete shadow stacks, live
 component links, variable bindings/aliases, prototype/export/grid metadata and
-child grow/stretch sizing. `native_studio` remains excluded.
+child grow/stretch sizing. Corner smoothing is metadata only.
+`native_studio` remains excluded.
 
 ### Cold-start New regression discovered by the release gate
 
@@ -217,3 +219,176 @@ naming, one-time replay and listener cleanup. No extra default UI is added.
 Behavior owner: `workspace.cold-start-new`. The final gate is rerun on the
 committed combined source, including upstream i18n/vector/text fixes. The
 initial aborted/incomplete reports remain separate evidence.
+
+### Published verification — 2026-11-01
+
+- Clean unchanged source `dd6936840b8cb5ee34062e81774ea528b959769a` passed all
+  **91/91** release steps: module registration, production build, design lint,
+  4,615 unit assertions (four skipped) and 87 core browser suites. Exact evidence:
+  `/tmp/voo-fig-opt-release-combined.json` and its `.log`. This is a new complete
+  execution after the recorded `ea90962` failure; earlier runs were not relabeled.
+- `3dfad79` separately passed eight integration steps, including 19 bitmap/
+  document-reference unit assertions and Figma import, image history, project
+  round-trip and deterministic cold-New browser scenarios. Evidence:
+  `/tmp/voo-fig-integrated-checks.json`. Its production build was deployed using
+  `scripts/deploy-editor.sh`; the SSH backup and successful preflight are retained.
+- A parallel Browser-dock release subsequently published `6d8cef7`, containing
+  all this task's Figma/editor changes unchanged plus the right-dock/exclusion
+  behavior. It was preserved. That feature's integration receipt belongs to
+  `47471c9`: build/lint, 4,637 full-unit passes (four skipped) and three browser
+  suites. `47471c9..6d8cef7` changes documentation only; neither integration
+  inherits `dd69368`'s complete 91-step execution.
+- Current canonical HTML and eight critical resources match the actual
+  `6d8cef7` deployment byte-for-byte. Independent production Chromium imports
+  the generated native archive and passes crop/cover/independent image fills,
+  rotation, overflow, two-mask pixels, cached-pass equality, typed variables,
+  constraint-aware resize and undo/redo, with no page script errors.
+  Evidence: `/tmp/voo-fig-deployment-proof.json`,
+  `/tmp/voo-fig-production-fidelity.json` and `.png`. This specifically tests
+  the DOM input path after homepage/document readiness, not the native FSA or
+  operating-system chooser.
+- Production attempts before the final pass are retained: an unobserved file
+  chooser, an early-engine pixel mismatch, and an HTML revision mismatch during
+  parallel publication. The final run explicitly checks actual HTML, imported
+  node identity and open-guard completion before the unchanged pixel assertions.
+- Persistent private bundle: `figma-import-optimization/` in the current Codex
+  visualization artifacts folder, including original receipts and SHA-256
+  manifest. No private `.fig`, decoded design or commercial screenshot is
+  committed. Twenty-one separately registered checks and native/paid-service
+  contexts are not certified by this release; functional coverage stays partial.
+
+### OpenPencil control and further rendering optimization — 2026-11-01
+
+Owner: `compositing.clip-run-culling`, with `canvas.performance`. The original
+253,604,553-byte `test.fig` stays read-only; no private fixture is committed.
+OpenPencil is independently installed at
+`/Volumes/TD/Projects/open-pencil-benchmark`, served at `http://127.0.0.1:5188/`.
+Its official source is unmodified. Both v0.16.0 (`ffe2fc5`) and master
+`e0defef2298957b7f36f19d6a7847a37f3e8ac44` build using the declared Bun 1.4.2.
+An earlier build with system Bun 1.3.12 failed; that is runtime mismatch evidence,
+not an upstream product defect. Local startup instructions are beside the clone.
+
+Both OpenPencil builds produce nonfinite default fit camera coordinates on this
+file. v0.16.0 additionally throws on a null gradient shader; its callback scores
+are invalid and discarded. Official master already guards that shader. Its
+control run manually restores finite camera coordinates without changing graph
+data, waits for the official navigation settlement hook, and verifies changing
+canvas screenshots with zero page script errors during camera/wheel sampling.
+Blocked online fonts remain console errors and 31 font faces are unavailable.
+
+Master preparation ends at 7.577 s in the settled run; its default viewport
+is still invalid, so this is not normal usable-view readiness. It initially stores
+24,025 nodes (20,992 descendants on the active page); other pages populate on
+first visit, taking 3.246/1.116/3.136 s and reaching 58,504 nodes. VOO eagerly
+imports all five pages, so initial readiness alone is not equal import work.
+Both retain 478 images, four variable collections and five variables. Different
+expanded node counts do not establish missing properties or visual parity.
+
+The camera control uses production builds, fresh Chromium 156/Metal on M4 Pro,
+1440x1000/DPR1, external network blocked, zoom 0.024, 10-second sinusoidal pan
+and zoom plus six real wheel inputs. UI remains visible: OpenPencil's artwork
+surface is 924x931 versus VOO's 1428x948. This is an observed application test,
+not a pure engine ranking. OpenPencil master records 1.175 pan / 0.734 zoom
+rAF callbacks/s, wheel median 667 ms; it is also visibly slow. These are callback
+cadences, never GPU FPS, and the manual-camera qualification is essential.
+
+VOO changes share equal ancestor Frame clips only for consecutive paints on
+one context, clear them around isolated containers/mask chains, restore the
+caller state on failures, and enable conservative offscreen culling for mixed
+layer passes. The existing 240-world-pixel safety margin is retained. Static
+vector empty-effect results are cached; image/text results retry for asynchronous
+resources. Immutable isolated container paints retain identity across camera
+passes and invalidate when their source node is replaced.
+
+Red regressions retain 200 clip operations for 200 sibling paints, three image
+fills including one beyond the safety margin, repeated empty-effect readback,
+and changing isolated paint identity. Green assertions require two clip runs,
+two nearby image fills, every visible RGBA byte unchanged, caller-clip cleanup,
+empty-vector reuse, image/text retries and edit invalidation. Existing native
+Figma crop/cover/rotation/overflow/mask/variables/undo/cold-reopen checks remain.
+Private evidence is under `/tmp/voo-open-pencil-comparison/`; red/green logs use
+`/tmp/voo-clip-*`, `/tmp/voo-container-paint-*` and `/tmp/voo-empty-effect-*`.
+The sequential VOO comparison uses baseline application `b965942` (all later
+`68c3790` changes are documentation) and the final performance patch. Initial
+readiness changes from 12.249 to 11.003 s; pan cadence from 3.306 to 6.020 and
+zoom from 0.960 to 1.776 callbacks/s. Three repeated full-pass diagnostics reduce
+effect pixel reads from 97 (2,098,764 pixels) to two (84,535 pixels) each. The
+intermediate clip-only trial (3.707/1.111 callbacks/s) is retained separately.
+These are single sequential shared-machine samples, not universal speedups;
+61/18 final pan/zoom intervals still show unacceptable stalls. Final fixed-
+revision release and production proof are recorded after verification below;
+no pending gate is counted as passed.
+
+Still partial: readable-scale fidelity across every page/font/property, signed
+Electron, other GPUs/input devices, all effect/mask combinations and sustained
+smooth large-scene navigation. `native_studio` remains excluded.
+
+
+The first clean combined revision `25bda7ab1c4f8f1f0e2e62af979fc4aac21e6a12`
+passed 91/91 release steps, all 87 core browser suites and 4,663 unit assertions
+(four skipped), with unchanged source. Evidence: `/tmp/voo-clip-release.json`
+and `.log`. Subsequent remote overlay/readiness changes are preserved in the
+integration commit and receive their own full gate; this receipt is not inherited.
+
+After that gate, a frozen baseline build `b965942` and the clean `25bda7a` build
+were measured sequentially without concurrent builds/tests. Baseline HTML SHA-256
+matches its recorded release. Both samples have no page script errors.
+
+| Measurement | Frozen baseline | Clean performance revision |
+| --- | ---: | ---: |
+| Loading ended / actual viewport ready | 11.167 s | 9.186 s |
+| Pan rAF cadence | 3.769 callbacks/s (38 intervals) | 6.954 callbacks/s (70 intervals) |
+| Zoom rAF cadence | 1.061 callbacks/s (11 intervals) | 2.046 callbacks/s (21 intervals) |
+| Six wheel waits, median | 315 ms | 184.5 ms |
+| Wheel range | 277-2,375 ms | 167-653 ms |
+
+This repeats the improvement seen in the earlier patch trials, but remains a
+single shared-machine pair with small samples, not a smoothness certification.
+Evidence: `/tmp/voo-open-pencil-comparison/voo-final-before/` and
+`voo-final-after/`. The unchanged source file SHA-256 was independently rechecked.
+
+
+Final integration `0a3ba248c8d2da6ef1a2699403097b8fd39a8210` preserves the new
+upstream global overlays/readiness and passes a fresh 91/91 release gate,
+87 core browser suites and 4,680 unit assertions (four skipped). Evidence:
+`/tmp/voo-clip-integrated-release.json` and `.log`; 21 additional suites and
+native/paid-service contexts remain unverified. Renderer source is unchanged
+from `25bda7a`; the direct-camera numbers above belong to that recorded revision.
+
+Direct camera mutation bypasses each app's gesture state machine, so the
+additional real-input control is reported separately. Twelve Space-drag steps
+and six Ctrl-wheel inputs confirm actual viewport changes, with zero page
+script errors. VOO uses live engine zoom and the screen artboard origin, not
+the stale initial `window.__vooStore` snapshot. An earlier VOO pointer attempt
+did not pan and is excluded; the final blank-canvas gesture preserves the exact
+document object. OpenPencil still requires finite manual camera recovery.
+
+| Real input wait, median | VOO integrated | OpenPencil master |
+| --- | ---: | ---: |
+| Twelve drag steps | 180 ms | 1,911.5 ms |
+| Six Ctrl-wheel inputs | 918 ms | 559 ms |
+
+These include automation plus two rAF waits, not hardware event latency or FPS.
+The apps apply different zoom factors per wheel event; the small shared-machine
+sample shows mixed results, not a universal ranking. VOO zoom remains slow.
+First-page isolated 1000x800 artwork comparison (three stable draws, zoom .024)
+finds 28 differing pixels / 800,000, maximum channel delta 36. This is unresolved,
+not a pixel-identical or all-property fidelity pass. Generated-fixture exact
+RGBA assertions are a separate, passing context. Evidence:
+`voo-real-gestures-background/`, `open-pencil-real-gestures/` and
+`isolated-artwork-pixel-comparison-final.json` in the private comparison folder.
+
+
+Published integration `0a3ba24` is pushed to GitHub main and deployed by
+`scripts/deploy-editor.sh` to https://voo.run/editor/. Canonical HTML and all
+critical assets selected by the independent verifier match the verified build
+byte-for-byte (HTTP 200). A separate production Chromium imports the generated
+native archive and passes crop/cover/rotation/overflow/two-mask pixels, unchanged
+mask reuse, offscreen-culling pixel equality, typed variables, constraints and
+undo/redo without page script errors. Evidence: `/tmp/voo-clip-deploy.log`,
+`/tmp/voo-clip-deployment-proof.json` and `/tmp/voo-clip-production-fidelity.json`.
+This is the DOM file-input path, not an OS/FSA chooser or signed Electron pass.
+The persistent private `open-pencil-comparison/` visualization bundle includes
+raw reports, scripts, screenshots and a SHA-256 manifest; no private design is
+published. Twenty-one additional checks, full readable-scale fidelity and
+smooth large-scene zoom remain unverified or incomplete.
