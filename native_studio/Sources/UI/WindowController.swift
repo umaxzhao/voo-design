@@ -18,8 +18,12 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     public let mainContentView: MainContentView
     public weak var delegate: StudioDelegate?
     public var commandManager = CommandManager()
+    var savedDocumentSnapshot: VOODocument?
+    public var documentReplacementDecision: (() -> Bool)?
+    public var agentRequestDispatcher: ((String) -> Void)?
     public var currentFileURL: URL?
     public let textEditingOverlay = TextEditingOverlay()
+    let nativeStatusBanner = NativeStatusBanner()
     private var keyEventMonitor: Any?
     private var keyUpEventMonitor: Any?
 
@@ -65,10 +69,15 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         self.studioWindow = actualWindow
         self.mainContentView = view
         super.init(window: actualWindow)
+        actualWindow.delegate = self
 
         // 4. Wire Delegates & Setup Event Monitoring
         view.titleBar.delegate = self
         view.toolRail.delegate = self
+        view.toolRail.onBrushSettingsRequested = { [weak view] button in
+            guard let view else { return }
+            NativeBrushSettings.shared.show(relativeTo: button, stage: view.canvasStageView)
+        }
         view.inspector.delegate = self
 
         // Wire CanvasStageView Events
@@ -120,19 +129,12 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             self?.openDocument(nil)
         }
         view.welcomeDashboard.onNewFile = { [weak self] in
-            self?.newDocument(nil)
-            self?.mainContentView.isWelcomeOpen = false
-            self?.syncChromeState()
+            guard let self, self.requestNewDocument() else { return }
+            self.mainContentView.isWelcomeOpen = false
+            self.syncChromeState()
         }
         view.welcomeDashboard.onPromptSubmit = { [weak self] prompt in
-            guard let self = self else { return }
-            self.mainContentView.isWelcomeOpen = false
-            self.newDocument(nil)
-            if !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                self.setAgentPanelOpen(true)
-                self.mainContentView.agentPanel.addUserMessage(prompt)
-                self.mainContentView.agentPanel.addAgentMessage("正在为「\(prompt)」准备工作区与画板。你可以在左侧 LAYERS 面板中继续调整，或直接告诉我要生成的布局。")
-            }
+            self?.submitWelcomePrompt(prompt)
         }
         view.welcomeDashboard.onImportAction = { kind in
             let alert = NSAlert()
@@ -186,7 +188,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         }
         // Live collaboration button (web parity)
         view.titleBar.onCollabTapped = { [weak self] in
-            self?.showChromeToast("实时协作：已生成协作分享链接")
+            self?.showChromeToast(NativeCopy.text(.collaborationUnavailable))
         }
         view.welcomeDashboard.onEmptyTrash = { [weak self] in
             guard let self = self else { return }
@@ -307,10 +309,10 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             self?.mainContentView.agentPanel.newConversation()
         }
         view.agentPanel.onSend = { [weak self] text in
-            self?.handleAgentPrompt(text)
+            self?.dispatchAgentPrompt(text)
         }
         view.agentPanel.onSuggestion = { [weak self] text in
-            self?.handleAgentPrompt(text)
+            self?.dispatchAgentPrompt(text)
         }
         view.pageSwitcher.onTap = { [weak self] in
             self?.showPageSwitcherMenu()
@@ -369,7 +371,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         view.islandBar.onAskAI = { [weak self] prompt in
             self?.setAgentPanelOpen(true)
             if !prompt.isEmpty {
-                self?.handleAgentPrompt(prompt)
+                self?.dispatchAgentPrompt(prompt)
             }
         }
         view.islandBar.onQuickAction = { [weak self] action in
@@ -852,7 +854,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         mainContentView.canvasStageView.zoomActual()
     }
     public func titleBarDidRequestNewProject(_ titleBar: AppTitleBar) {
-        newDocument(nil)
+        guard requestNewDocument() else { return }
         mainContentView.isWelcomeOpen = false
         setAgentPanelOpen(false)
     }
@@ -1117,49 +1119,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         showChromeToast("已恢复上次未保存的草稿")
     }
 
-    public func newDocument(_ sender: Any?) {
-        // Web `newVooProject` → `promoteFixedPageToFrame("Frame")`: a 1200x800 frame
-        // named "Frame" whose background child carries the page colour.
-        var doc = VOODocument()
-        doc.title = "Design 1"
-        doc.canvas = CanvasFrame(x: 0, y: 0, width: 1200, height: 800, backgroundColor: "#171717")
-        let artboard = VOONode(
-            id: "design_1",
-            kind: .frame,
-            name: "Frame",
-            x: 0,
-            y: 0,
-            width: 1200,
-            height: 800,
-            // Web `promoteFixedPageToFrame`: frame stroke stays null and the outline
-            // seen on screen is the 1px selection border drawn by the stage.
-            style: LayerStyle(fill: "#171717", stroke: "none", strokeWidth: 1.0)
-        )
-        // The web layer list also shows a "Background" child carrying the page colour;
-        // the frame fill already paints that surface, so no extra node is inserted
-        // (a child would paint over the frame and change the artboard colour).
-        doc.nodes = [artboard]
-        mainContentView.canvasStageView.document = doc
-        mainContentView.canvasStageView.clearSelection()
-        commandManager.clear()
-        currentFileURL = nil
-        mainContentView.titleBar.setDocumentTitle("Design 1")
-        mainContentView.inspector.layersPanel.configure(with: doc.nodes, selectedId: nil)
-        mainContentView.inspector.setPropertiesVisible(false)
-        mainContentView.canvasStageView.setPaintNode(id: nil, dataURL: nil)
-        // Match the web "Design 1" empty document: 1200x800 artboard at 58%.
-        let stage = mainContentView.canvasStageView
-        let targetZoom: CGFloat = 0.58
-        stage.zoom = targetZoom
-        let availW = max(0, stage.bounds.width - 80)
-        let availH = max(0, stage.bounds.height - 80)
-        stage.panOffset = CGPoint(
-            x: (availW - doc.canvas.width * targetZoom) / 2.0 + 40.0,
-            y: (availH - doc.canvas.height * targetZoom) / 2.0 + 40.0
-        )
-        syncChromeState()
-        DispatchQueue.main.async { [weak self] in self?.focusCanvas() }
-    }
+    public func newDocument(_ sender: Any?) { _ = requestNewDocument() }
 
     public func openDocument(_ sender: Any?) {
         DocumentIO.shared.promptOpenDocument(window: studioWindow) { [weak self] result in
@@ -1205,7 +1165,11 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     public func openDocumentFromURL(_ url: URL) {
         do {
             let doc = try DocumentIO.shared.loadDocument(from: url)
+            guard confirmDocumentReplacement() else { return }
+            mainContentView.isWelcomeOpen = false
             mainContentView.canvasStageView.document = doc
+            savedDocumentSnapshot = doc
+            mainContentView.inspector.layersPanel.searchQuery = ""
             mainContentView.canvasStageView.clearSelection()
             commandManager.clear()
             currentFileURL = url
@@ -1225,6 +1189,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         if let url = currentFileURL {
             do {
                 try DocumentIO.shared.saveDocument(mainContentView.canvasStageView.document, to: url)
+                savedDocumentSnapshot = mainContentView.canvasStageView.document
                 // The work is on disk now, so the recovery copy is no longer needed.
                 DraftAutosave.shared.flush(document: mainContentView.canvasStageView.document,
                                            currentFileURL: currentFileURL)
@@ -1250,7 +1215,9 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                 do {
                     try DocumentIO.shared.saveDocument(self.mainContentView.canvasStageView.document, to: url)
                     self.currentFileURL = url
-                    self.mainContentView.titleBar.setDocumentTitle((url.lastPathComponent as NSString).deletingPathExtension)
+                    self.savedDocumentSnapshot = self.mainContentView.canvasStageView.document
+                    self.mainContentView.titleBar.setDocumentTitle(
+                        (url.lastPathComponent as NSString).deletingPathExtension)
                 } catch {
                     let alert = NSAlert(error: error)
                     alert.runModal()
@@ -2817,16 +2784,16 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         let nodes = mainContentView.canvasStageView.document.nodes.filter { selection.contains($0.id) }
         setAgentPanelOpen(true)
         if nodes.isEmpty {
-            handleAgentPrompt("在画布上生成一套现代风格的 UI 界面卡片组件")
+            dispatchAgentPrompt("在画布上生成一套现代风格的 UI 界面卡片组件")
         } else if nodes.count == 1, let node = nodes.first {
             if node.kind == .text {
                 let currentText = node.text ?? node.name
-                handleAgentPrompt("为当前选中的文本「\(currentText)」生成 3 个更具吸引力的文案变体")
+                dispatchAgentPrompt("为当前选中的文本「\(currentText)」生成 3 个更具吸引力的文案变体")
             } else {
-                handleAgentPrompt("优化当前选中的「\(node.name)」样式与圆角布局，增强视觉层次")
+                dispatchAgentPrompt("优化当前选中的「\(node.name)」样式与圆角布局，增强视觉层次")
             }
         } else {
-            handleAgentPrompt("将当前选中的 \(nodes.count) 个图层进行整齐自适应排版与对齐")
+            dispatchAgentPrompt("将当前选中的 \(nodes.count) 个图层进行整齐自适应排版与对齐")
         }
     }
 
@@ -2901,12 +2868,8 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         mainContentView.canvasStageView.needsDisplay = true
         refreshAfterDocumentMutation()
 
-        // The web shape / artboard tool returns to the select tool after a draw.
-        if node.kind == .rect || node.kind == .ellipse || node.kind == .frame {
-            mainContentView.canvasStageView.activeTool = .move
-            mainContentView.toolRail.state.selectTool(.move)
-            mainContentView.toolRail.updateSelection()
-        }
+        // Continuous creation keeps the active tool until an explicit tool switch.
+
     }
 
     private func createTextNodeFromCanvas(at point: CGPoint) {
@@ -3274,7 +3237,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     /// Routes the agent panel prompt to either a locally installed CLI or the
     /// native full-featured `AIAgentClient` multi-turn tool loop.
-    private func handleAgentPrompt(_ text: String) {
+    func runNativeAgentPrompt(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         mainContentView.agentPanel.addUserMessage(trimmed)
@@ -3425,7 +3388,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     }
 
     private func showChromeToast(_ message: String) {
-        NSSound.beep()
+        nativeStatusBanner.show(message, in: mainContentView.editorShell)
         NSLog("[VOO Design Native] %@", message)
     }
 
@@ -3624,9 +3587,6 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     public func openEditor(project: String) {
         mainContentView.isWelcomeOpen = false
-        let title = (project as NSString).lastPathComponent.replacingOccurrences(of: ".voo", with: "")
-        mainContentView.titleBar.setDocumentTitle(title)
-        mainContentView.canvasStageView.document.title = title
 
         let fileManager = FileManager.default
         let wsPath = WorkspaceManager.shared.currentWorkspacePath
@@ -3645,15 +3605,8 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             }
         }
         if !loaded {
-            // Web parity: a project that is no longer on disk opens the same blank
-            // "Design 1" document as the New action instead of fabricated demo art.
-            if project.contains("Web app") {
-                loadWebAppProject()
-            } else {
-                newDocument(nil)
-                mainContentView.isWelcomeOpen = false
-                showChromeToast("找不到工程文件，已新建空白文档")
-            }
+            showChromeToast(NativeCopy.text(.missingFile))
+            return
         }
         mainContentView.canvasStageView.zoomFit()
         syncChromeState()
@@ -3919,7 +3872,9 @@ public class MainContentView: NSView {
             // p-1.5 + 44px tool buttons => 56pt tall; 11 native tools + gaps => 536pt).
             toolRail.topAnchor.constraint(equalTo: editorShell.topAnchor, constant: 14),
             toolRail.centerXAnchor.constraint(equalTo: editorShell.centerXAnchor),
-            toolRail.widthAnchor.constraint(equalToConstant: 589),
+            toolRail.widthAnchor.constraint(lessThanOrEqualToConstant: 589),
+            toolRail.widthAnchor.constraint(
+                lessThanOrEqualTo: editorShell.widthAnchor, constant: -24),
             toolRail.heightAnchor.constraint(equalToConstant: 56),
 
             // ContextToolbar: Floating centered pill below ToolRail
@@ -3935,6 +3890,9 @@ public class MainContentView: NSView {
             inspector.bottomAnchor.constraint(equalTo: editorShell.bottomAnchor)
         ])
 
+        let preferredRailWidth = toolRail.widthAnchor.constraint(equalToConstant: 589)
+        preferredRailWidth.priority = .defaultHigh
+        preferredRailWidth.isActive = true
         updatePresentation()
     }
 

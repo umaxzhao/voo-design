@@ -201,6 +201,7 @@ public final class CurveConversionEngine {
 // MARK: - Canvas Stage View (High Performance Interactive Studio Viewport)
 
 public class CanvasStageView: NSView {
+    public override var isFlipped: Bool { true }
     // Document State
     /// Last-known rect of every frame, used by `applyConstraints(frameId:)` to
     /// compute the resize delta of a frame after a host-driven resize.
@@ -365,6 +366,8 @@ public class CanvasStageView: NSView {
     public private(set) var isPainting: Bool = false
 
     /// Brush ink colour (hex). Default mint, mirrors the VOO editor accent.
+    public var brushOpacity: CGFloat = 1
+    public var shapeCreationStyle = LayerStyle(fill: "#D4D4D4", stroke: "#FFFFFF", strokeWidth: 1)
     public var brushColorHex: String = "#b2ffd6"
     /// Brush dab diameter in document points.
     public var brushDiameter: CGFloat = 24
@@ -964,6 +967,19 @@ public class CanvasStageView: NSView {
         var leading: CGFloat = 0
         _ = CTLineGetTypographicBounds(line, &ascent, &descent, &leading)
 
+        if isFlipped {
+            let labelY = frameRect.minY - Self.frameLabelTopOffset / safeZoom
+            let iconSize = Self.frameLabelIconSize / safeZoom
+            let iconRect = CGRect(x: frameRect.minX, y: labelY, width: iconSize, height: iconSize)
+            VooIconFactory.drawFrame(in: iconRect, color: color, strokeWidth: 1.5)
+            attributed.draw(
+                at: CGPoint(
+                    x: frameRect.minX + (Self.frameLabelIconSize + Self.frameLabelIconGap)
+                        / safeZoom,
+                    y: labelY))
+            return
+        }
+
         // CSS half-leading: leading is split above and below the ascent/descent box.
         let lineHeight = Self.frameLabelLineHeight / safeZoom
         let halfLeading = max((lineHeight - (ascent + descent)) / 2.0, 0.0)
@@ -1176,7 +1192,11 @@ public class CanvasStageView: NSView {
             let canvas = document.canvas
             ctx.saveGState()
             ctx.interpolationQuality = .high
-            ctx.draw(paintImage, in: CGRect(x: canvas.x, y: canvas.y, width: canvas.width, height: canvas.height))
+            ctx.saveGState()
+            ctx.translateBy(x: canvas.x, y: canvas.y + canvas.height)
+            ctx.scaleBy(x: 1, y: -1)
+            ctx.draw(paintImage, in: CGRect(x: 0, y: 0, width: canvas.width, height: canvas.height))
+            ctx.restoreGState()
             ctx.restoreGState()
         }
 
@@ -3586,7 +3606,11 @@ public class CanvasStageView: NSView {
         if let source = node.src, let image = Self.decodedImage(for: source) {
             ctx.saveGState()
             ctx.clip(to: rect)
-            ctx.draw(image, in: rect)
+            ctx.saveGState()
+            ctx.translateBy(x: rect.minX, y: rect.maxY)
+            ctx.scaleBy(x: 1, y: -1)
+            ctx.draw(image, in: CGRect(origin: .zero, size: rect.size))
+            ctx.restoreGState()
             ctx.restoreGState()
         } else {
             drawImagePlaceholder(in: ctx, rect: rect)
@@ -3876,7 +3900,7 @@ public class CanvasStageView: NSView {
             context.setBlendMode(.normal)
             let color = NSColor(hexString: brushColorHex) ?? ThemeTokens.colorMint
             let resolved = color.usingColorSpace(.sRGB) ?? color
-            context.setFillColor(resolved.cgColor)
+            context.setFillColor(resolved.withAlphaComponent(brushOpacity).cgColor)
         }
         context.fillEllipse(in: CGRect(
             x: center.x - radius,
@@ -4085,7 +4109,7 @@ public class CanvasStageView: NSView {
                         y: rect.origin.y,
                         width: rect.width,
                         height: rect.height,
-                        style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal")
+                        style: shapeCreationStyle
                     )
                 } else {
                     node = VOONode(
@@ -4095,7 +4119,7 @@ public class CanvasStageView: NSView {
                         y: rect.origin.y,
                         width: rect.width,
                         height: rect.height,
-                        style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal")
+                        style: shapeCreationStyle
                     )
                 }
             case .ellipse:
@@ -4106,7 +4130,7 @@ public class CanvasStageView: NSView {
                     y: rect.origin.y,
                     width: rect.width,
                     height: rect.height,
-                    style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal")
+                    style: shapeCreationStyle
                 )
             case .polygon:
                 let pts = ShapeGenerators.regularPolygonPoints(in: rect, sides: 6)
@@ -4120,7 +4144,7 @@ public class CanvasStageView: NSView {
                     y: rect.origin.y,
                     width: rect.width,
                     height: rect.height,
-                    style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal"),
+                    style: shapeCreationStyle,
                     points: anchors
                 )
             case .star:
@@ -4135,7 +4159,7 @@ public class CanvasStageView: NSView {
                     y: rect.origin.y,
                     width: rect.width,
                     height: rect.height,
-                    style: LayerStyle(fill: "#000000", stroke: "#000000", strokeWidth: 0, opacity: 1.0, blendMode: "normal"),
+                    style: shapeCreationStyle,
                     points: anchors
                 )
             case .line:
@@ -4385,6 +4409,7 @@ public class CanvasStageView: NSView {
 /// Bezier handle knobs connected by mint lines. The overlay is never
 /// hit-tested; `CanvasStageView` drives all anchor/handle gestures.
 public final class PathEditingOverlayView: NSView {
+    public override var isFlipped: Bool { true }
     public var zoom: CGFloat = 1.0 {
         didSet { if oldValue != zoom { needsDisplay = true } }
     }
@@ -4517,6 +4542,7 @@ public final class PathEditingOverlayView: NSView {
 /// (mint stroke, anchor dots and symmetric handle projections).
 /// It is never hit-tested, so all gestures continue to reach `CanvasStageView`.
 public final class CanvasCreationPreviewView: NSView {
+    public override var isFlipped: Bool { true }
     public var zoom: CGFloat = 1.0 {
         didSet { if oldValue != zoom { needsDisplay = true } }
     }

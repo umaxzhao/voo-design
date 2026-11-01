@@ -2081,6 +2081,9 @@ public final class PropertiesPanelView: NSView {
     // MARK: Rebuilt web-inspector chrome (Design|Code header → EFFECTS)
 
     // Header
+    private let codePanel = NativeCodePanel(frame: .zero)
+    private var designVisibility: [ObjectIdentifier: Bool] = [:]
+    public var onSwapPanels: (() -> Void)?
     public let headerTabs = PropertiesSegmentedControl(segments: [
         .init(title: "Design", value: "design"),
         .init(title: "Code", value: "code")
@@ -2221,7 +2224,7 @@ public final class PropertiesPanelView: NSView {
         settingsButton.iconPadding = 5
         settingsButton.showsHoverBackground = true
         settingsButton.setAccessibilityIdentifier("Inspector.Properties.Settings")
-        settingsButton.setAccessibilityLabel("Properties settings")
+        settingsButton.setAccessibilityLabel("Switch panels")
         settingsButton.target = self
         settingsButton.action = #selector(didClickSettings)
         addSubview(settingsButton)
@@ -2724,6 +2727,10 @@ public final class PropertiesPanelView: NSView {
 
         headerTabs.setAccessibilityIdentifier("Inspector.Properties.HeaderTabs")
         headerTabs.setAccessibilityLabel("Design or code")
+        codePanel.isHidden = true
+        addSubview(codePanel)
+        headerTabs.onSelectionChanged = { [weak self] _, value in self?.setCodeMode(value == "code")
+        }
         headerTabs.select(index: 0)
         addSubview(headerTabs)
 
@@ -3220,6 +3227,7 @@ public final class PropertiesPanelView: NSView {
         radiusPill.suffix = "px"
         radiusPill.valueAlignment = .right
         applySectionVisibility()
+        if headerTabs.selectedIndex == 1 { setCodeMode(true) }
         needsLayout = true
         layoutSubtreeIfNeeded()
         needsDisplay = true
@@ -3374,11 +3382,11 @@ public final class PropertiesPanelView: NSView {
         let solidFill = PropertiesColorMath.normalizeHex(currentSolidHex) ?? "#FFFFFF"
         fillRowSwatch.swatchHex = solidFill
         fillRowHex.stringValue = isGradient ? "Gradient" : solidFill
-        fillRowPercent.stringValue = "100 %"
+        fillRowPercent.stringValue = "\(Int(round((node?.style.fillOpacity ?? 1) * 100))) %"
         let stroke = PropertiesColorMath.normalizeHex(currentStrokeHex) ?? "#FFFFFF"
         strokeRowSwatch.swatchHex = stroke
         strokeRowHex.stringValue = stroke
-        strokeRowPercent.stringValue = "100 %"
+        strokeRowPercent.stringValue = "\(Int(round((node?.style.strokeOpacity ?? 1) * 100))) %"
         frameCustomSwatch.swatchHex = solidFill
         frameHexField.stringValue = solidFill
         frameSizeValue.stringValue = "\(Int(round(currentW))) × \(Int(round(currentH)))"
@@ -3826,15 +3834,22 @@ public final class PropertiesPanelView: NSView {
 
     private func presentColorPanel() {
         let panel = NSColorPanel.shared
+        // Seeding the shared panel must never deliver an edit to its old owner.
+        panel.setTarget(nil)
+        panel.setAction(nil)
+        panel.color = NSColor(hex: currentSolidHex)
         panel.setTarget(self)
         panel.setAction(#selector(colorPanelDidChange(_:)))
-        panel.color = NSColor(hex: currentSolidHex)
         panel.orderFront(nil)
     }
 
     @objc private func colorPanelDidChange(_ sender: NSColorPanel) {
         let hex = PropertiesColorMath.hexString(from: sender.color)
-        applyFill(hex: hex, notify: true)
+        if currentFillMode == "solid" {
+            applyFill(hex: hex, notify: true)
+        } else {
+            applyGradientStopHex(hex)
+        }
     }
 
     @objc private func didToggleFillVisible() {
@@ -3873,7 +3888,7 @@ public final class PropertiesPanelView: NSView {
     }
 
     @objc private func didClickSettings() {
-        presentColorPanel()
+        onSwapPanels?()
     }
 
     @objc private func didClickEyedropper() {
@@ -4005,8 +4020,44 @@ public final class PropertiesPanelView: NSView {
         static let surfaceHex = "171717"
     }
 
+    private func setCodeMode(_ enabled: Bool) {
+        if enabled {
+            if codePanel.isHidden {
+                designVisibility = Dictionary(
+                    uniqueKeysWithValues: subviews.map { (ObjectIdentifier($0), $0.isHidden) })
+            }
+            for view in subviews where view !== headerTabs && view !== codePanel {
+                view.isHidden = true
+            }
+            codePanel.isHidden = false
+            if let node {
+                codePanel.code.string = NativeInspectCode.snippet(for: node)
+            } else {
+                codePanel.code.string = NativeCopy.text(.codeEmpty)
+            }
+        } else if !codePanel.isHidden {
+            for view in subviews {
+                view.isHidden = designVisibility[ObjectIdentifier(view)] ?? view.isHidden
+            }
+            codePanel.isHidden = true
+            applySectionVisibility()
+        }
+        needsLayout = true
+    }
+
     public override func layout() {
         super.layout()
+        if headerTabs.selectedIndex == 1 {
+            for view in subviews where view !== headerTabs && view !== codePanel {
+                view.isHidden = true
+            }
+            codePanel.isHidden = false
+            headerTabs.frame = CGRect(x: 12, y: 12, width: max(bounds.width - 60, 0), height: 28)
+            codePanel.frame = CGRect(x: 12, y: 52, width: max(bounds.width - 24, 0), height: 400)
+            contentHeight = 464
+            return
+        }
+
         let width = bounds.width > 0 ? bounds.width : PropertiesPanelMetrics.width
         let inset = Row.inset
         let contentRight = width - inset

@@ -406,18 +406,12 @@ public final class InspectorBehaviourTests {
                 ("docs/examples/pulse-dashboard.voo", 75),
                 ("docs/examples/music-discovery.voo", 175)
             ]
-            let root = (ProcessInfo.processInfo.environment["PROJECT_ROOT"] ?? ".") as NSString
+            let root = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             for (relPath, minNodes) in samples {
-                let candidatePaths = [
-                    relPath,
-                    root.appendingPathComponent(relPath),
-                    (root.deletingLastPathComponent as NSString).appendingPathComponent(relPath),
-                    ("/Volumes/TD/Projects/voo_design" as NSString).appendingPathComponent(relPath)
-                ]
-                guard let found = candidatePaths.first(where: { FileManager.default.fileExists(atPath: $0) }) else {
-                    continue
-                }
-                let url = URL(fileURLWithPath: found)
+                let url = root.appendingPathComponent(relPath)
+                try TestAssertions.assertTrue(
+                    FileManager.default.fileExists(atPath: url.path), "Missing fixture: \(relPath)")
                 let doc = try DocumentIO.shared.loadDocument(from: url)
                 try TestAssertions.assertTrue(doc.nodes.count >= minNodes, "\(relPath) must decode at least \(minNodes) nodes (got \(doc.nodes.count))")
                 try TestAssertions.assertTrue(doc.canvas.width > 0, "\(relPath) canvas width > 0")
@@ -435,8 +429,11 @@ public final class InspectorBehaviourTests {
             controller.mainContentView.frame = NSRect(x: 0, y: 0, width: 1440, height: 900)
             controller.mainContentView.layoutSubtreeIfNeeded()
 
-            let sample = "/Volumes/TD/Projects/voo_design/docs/examples/f1-grand-prix.voo"
-            guard FileManager.default.fileExists(atPath: sample) else { return }
+            let sample = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent("docs/examples/f1-grand-prix.voo").path
+            try TestAssertions.assertTrue(
+                FileManager.default.fileExists(atPath: sample), "Missing F1 fixture")
 
             controller.openEditor(project: sample)
             try TestAssertions.assertFalse(controller.mainContentView.isWelcomeOpen, "Welcome dashboard must close")

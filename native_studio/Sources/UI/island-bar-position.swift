@@ -53,12 +53,14 @@ extension MainContentView {
       max(stageRect.midX - barSize.width / 2, inset),
       max(bounds.width - barSize.width - inset, inset))
 
-    // AppKit's stage is not flipped: below is toward decreasing y.
-    var y = stageRect.minY - gap - barSize.height
-    if y < bottomLimit {
-      let above = stageRect.maxY + gap
-      y = above + barSize.height <= bounds.height - inset ? above : bottomLimit
-    }
+        // The stage uses the document's top-left origin. The sibling chrome is
+        // converted through AppKit below, so its host can keep bottom-left coordinates.
+        let lowerBoundary = bounds.height - bottomLimit
+        var y = stageRect.maxY + gap
+        if y + barSize.height > lowerBoundary {
+            let above = stageRect.minY - gap - barSize.height
+            y = above >= inset ? above : lowerBoundary - barSize.height
+        }
     y = min(max(y, inset), max(bounds.height - barSize.height - inset, inset))
     // Convert through AppKit rather than assuming sibling coordinate systems.
     islandBar.frame = stage.convert(

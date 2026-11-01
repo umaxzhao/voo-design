@@ -378,7 +378,7 @@ public class UIParityTests {
             try TestAssertions.assertEqual(rail.state.activeTool, .shapes)
             try TestAssertions.assertEqual(rail.state.handleShortcutKey("t"), .text)
             try TestAssertions.assertEqual(rail.state.activeTool, .text)
-            try TestAssertions.assertEqual(rail.state.handleShortcutKey("a"), .artboard)
+            try TestAssertions.assertEqual(rail.state.handleShortcutKey("f"), .artboard)
             try TestAssertions.assertEqual(rail.state.activeTool, .artboard)
             try TestAssertions.assertNil(rail.state.handleShortcutKey("z"), "Unknown shortcut is ignored")
 
@@ -1558,7 +1558,7 @@ public class UIParityTests {
             try TestAssertions.assertPointApproxEqual(points[.middleLeft]!, CGPoint(x: 100, y: 100))
             try TestAssertions.assertPointApproxEqual(
                 points[.rotatePin]!,
-                CGPoint(x: 200, y: 150 + ThemeTokens.rotateStalkOffset)
+                CGPoint(x: 200, y: 50 - ThemeTokens.rotateStalkOffset)
             )
 
             // Zoom scales the rotation stalk offset in document space.
@@ -1566,7 +1566,7 @@ public class UIParityTests {
             let zoomedPoints = handles.handlePoints(for: target)
             try TestAssertions.assertPointApproxEqual(
                 zoomedPoints[.rotatePin]!,
-                CGPoint(x: 200, y: 150 + ThemeTokens.rotateStalkOffset / 2.0)
+                CGPoint(x: 200, y: 50 - ThemeTokens.rotateStalkOffset / 2.0)
             )
 
             // Empty / zero-size targets never crash and never hit a handle.
@@ -1581,7 +1581,7 @@ public class UIParityTests {
             handles.targetRect = target
             try TestAssertions.assertEqual(handles.hitTestHandle(at: CGPoint(x: 100, y: 50)), .topLeft)
             try TestAssertions.assertEqual(
-                handles.hitTestHandle(at: CGPoint(x: 200, y: 150 + ThemeTokens.rotateStalkOffset)),
+                handles.hitTestHandle(at: CGPoint(x: 200, y: 50 - ThemeTokens.rotateStalkOffset)),
                 .rotatePin,
                 "Rotation pin is hit-tested with priority"
             )
@@ -2681,7 +2681,7 @@ public class UIParityTests {
             try TestAssertions.assertEqual(TextStyleResolver.nsWeight(for: "semibold"), .semibold)
             try TestAssertions.assertEqual(TextStyleResolver.nsWeight(for: "semi-bold"), .semibold)
             try TestAssertions.assertEqual(TextStyleResolver.nsWeight(for: "Bold"), .bold)
-            try TestAssertions.assertEqual(TextStyleResolver.nsWeight(for: "black"), .heavy)
+            try TestAssertions.assertEqual(TextStyleResolver.nsWeight(for: "black"), .black)
             try TestAssertions.assertEqual(TextStyleResolver.nsWeight(for: "heavy"), .heavy)
             try TestAssertions.assertEqual(TextStyleResolver.nsWeight(for: "unknown-weight"), .regular)
 

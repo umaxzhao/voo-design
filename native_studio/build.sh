@@ -37,10 +37,10 @@ SDK_PATH="$(xcrun --show-sdk-path)"
 echo "--> Using macOS SDK: $SDK_PATH"
 
 # 4. Compile Mach-O 64-bit arm64 Binary via swiftc
-echo "--> Compiling with swiftc (-O, arm64-apple-macosx14.0)..."
+echo "--> Compiling with swiftc (-Osize, arm64-apple-macosx14.0)..."
 mkdir -p "$BUILD_DIR/ModuleCache"
 swiftc \
-  -O \
+  -Osize \
   -module-cache-path "$BUILD_DIR/ModuleCache" \
   -target arm64-apple-macosx14.0 \
   -sdk "$SDK_PATH" \

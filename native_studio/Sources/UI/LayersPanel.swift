@@ -1231,6 +1231,7 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
 
     // MARK: New public API (host wires these)
 
+    public var searchQuery: String = "" { didSet { rebuildVisibleRows() } }
     public var onSearchTapped: (() -> Void)?
     public var onSortTapped: (() -> Void)?
     public var onAddLayer: (() -> Void)?
@@ -1397,7 +1398,19 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
         searchButton.translatesAutoresizingMaskIntoConstraints = false
         searchButton.iconSize = LayersMetrics.headerIconSize
         searchButton.setAccessibilityIdentifier("Layers.Search")
-        searchButton.onClick = { [weak self] in self?.onSearchTapped?() }
+        searchButton.onClick = { [weak self] in
+            guard let self else { return }
+            if let onSearchTapped = self.onSearchTapped {
+                onSearchTapped()
+            } else {
+                NativeLayerSearch.shared.show(
+                    relativeTo: self.searchButton, query: self.searchQuery
+                ) {
+                    [weak self] query in
+                    self?.searchQuery = query
+                }
+            }
+        }
         addSubview(searchButton)
 
         sortButton.translatesAutoresizingMaskIntoConstraints = false
@@ -1632,6 +1645,21 @@ public class LayersPanelView: NSView, NSTableViewDataSource, NSTableViewDelegate
 
     /// Rebuilds the rendered rows from `nodes` minus the subtrees of collapsed ids.
     private func computeVisibleNodes() -> [VOONode] {
+        if !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            var included = Set(
+                nodes.filter { $0.name.localizedCaseInsensitiveContains(searchQuery) }.map(\.id))
+            let byId = Dictionary(
+                nodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            for id in Array(included) {
+                var cursor = byId[id]?.parentId
+                var visited = Set<String>()
+                while let parent = cursor, visited.insert(parent).inserted {
+                    included.insert(parent)
+                    cursor = byId[parent]?.parentId
+                }
+            }
+            return nodes.filter { included.contains($0.id) }
+        }
         guard !collapsedIds.isEmpty else { return nodes }
         var byId: [String: VOONode] = [:]
         for candidate in nodes { byId[candidate.id] = candidate }

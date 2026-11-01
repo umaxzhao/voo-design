@@ -90,10 +90,12 @@ public enum IslandAnchorTests {
     try TestAssertions.assertApproxEqual(
       actual.midX, stage.frame.minX + anchor.midX, accuracy: 0.01,
       "Chrome follows the Electron anchor centre")
-    try TestAssertions.assertApproxEqual(
-      actual.maxY, stage.frame.minY + anchor.minY - 8, accuracy: 0.01,
-      "Chrome stays eight points below the outer bounds")
-    try TestAssertions.assertEqual(
+        let expectedTop = stage.convert(
+            CGPoint(x: anchor.midX, y: anchor.maxY + 8), to: view.islandBar.superview)
+        try TestAssertions.assertApproxEqual(
+            actual.maxY, expectedTop.y, accuracy: 0.01,
+            "Chrome stays eight points below the outer bounds in the host coordinate system")
+        try TestAssertions.assertEqual(
       stage.document.nodes, nodes, "Chrome positioning never mutates artwork")
   }
 }

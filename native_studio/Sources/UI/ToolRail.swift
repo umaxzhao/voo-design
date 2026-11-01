@@ -25,26 +25,26 @@ public enum StudioToolType: String, CaseIterable, Sendable, Equatable {
     public var displayName: String {
         switch self {
         case .move: return "Select (Move)"
-        case .node: return "Frame (Crop)"
+        case .node: return "Edit nodes"
         case .pen: return "Pen"
         case .shapes: return "Shapes"
         case .brush: return "Brush"
         case .eraser: return "Eraser"
         case .text: return "Text"
-        case .artboard: return "3D / Artboard"
+        case .artboard: return "Frame"
         }
     }
 
     public var defaultShortcut: Character? {
         switch self {
         case .move: return "V"
-        case .node: return "F"
+        case .node: return "A"
         case .pen: return "P"
         case .shapes: return "R"
         case .brush: return "B"
         case .eraser: return "E"
         case .text: return "T"
-        case .artboard: return "A"
+        case .artboard: return "F"
         }
     }
 
@@ -145,8 +145,8 @@ public final class ToolRailState: @unchecked Sendable {
             activeTool = .move
             matched = .move
         case "f", "F":
-            activeTool = .node
-            matched = .node
+            activeTool = .artboard
+            matched = .artboard
         case "p", "P":
             activeTool = .pen
             let nextIndex = (penSubToolIndex + 1) % penSubTools.count
@@ -165,8 +165,8 @@ public final class ToolRailState: @unchecked Sendable {
             activeTool = .eraser
             matched = .eraser
         case "a", "A":
-            activeTool = .artboard
-            matched = .artboard
+            activeTool = .node
+            matched = .node
         default:
             return nil
         }
@@ -324,7 +324,7 @@ public final class ToolButton: NSButton {
         case .artboard:
             // Lucide `scan`: an artboard/frame boundary with corner brackets (a 3D
             // cube is the object tool's glyph, not the artboard's).
-            RailGlyphDrawing.draw(.artboard, in: glyphRect, color: iconColor)
+            VooIconFactory.drawFrame(in: glyphRect, color: iconColor)
         }
 
         // 3. Family chevron: web caret at the button's bottom-right. `NSButton` is
@@ -663,6 +663,7 @@ public final class ToolRailView: NSView {
     /// Web rail's trailing brand medallion; opens the AI agent panel.
     public let brandAvatarButton = ToolRailBrandAvatarButton(frame: NSRect(x: 0, y: 0, width: 44, height: 44))
     private let dividerView = ToolRailDividerView(frame: .zero)
+    public var onBrushSettingsRequested: ((NSView) -> Void)?
     public var onBrandAvatarTapped: (() -> Void)?
 
     // Direct accessors for tests & legacy compatibility
@@ -776,15 +777,18 @@ public final class ToolRailView: NSView {
 
     public override func layout() {
         super.layout()
+        let scale = min(1, bounds.width / 589)
         let count = CGFloat(ToolRailView.orderedEntries.count)
-        let toolRow = count * ToolRailView.buttonSize + (count - 1) * ToolRailView.itemGap
-        let trailingRow = ToolRailView.itemGap
+        let toolRow =
+            count * ToolRailView.buttonSize * scale + (count - 1) * ToolRailView.itemGap * scale
+        let trailingRow =
+            ToolRailView.itemGap
             + ToolRailView.dividerWidth
             + ToolRailView.itemGap
             + ToolRailView.avatarSize
-        let contentWidth = toolRow + trailingRow
-        var x = max(ToolRailView.horizontalPadding, (bounds.width - contentWidth) / 2.0)
-        let y = (bounds.height - ToolRailView.buttonSize) / 2.0
+        let contentWidth = toolRow + trailingRow * scale
+        var x = max(ToolRailView.horizontalPadding * scale, (bounds.width - contentWidth) / 2.0)
+        let y = (bounds.height - ToolRailView.buttonSize * scale) / 2.0
 
         for entry in ToolRailView.orderedEntries {
             let view: NSView
@@ -796,8 +800,10 @@ public final class ToolRailView: NSView {
                 guard let button = accessoryButtons[accessory] else { continue }
                 view = button
             }
-            view.frame = NSRect(x: ceil(x), y: y, width: ToolRailView.buttonSize, height: ToolRailView.buttonSize)
-            x += ToolRailView.buttonSize + ToolRailView.itemGap
+            view.frame = NSRect(
+                x: ceil(x), y: y, width: ToolRailView.buttonSize * scale,
+                height: ToolRailView.buttonSize * scale)
+            x += (ToolRailView.buttonSize + ToolRailView.itemGap) * scale
         }
 
         // 1×20 divider, centred vertically.
@@ -813,8 +819,8 @@ public final class ToolRailView: NSView {
         brandAvatarButton.frame = NSRect(
             x: ceil(x),
             y: y,
-            width: ToolRailView.avatarSize,
-            height: ToolRailView.avatarSize
+            width: ToolRailView.avatarSize * scale,
+            height: ToolRailView.avatarSize * scale
         )
     }
 
@@ -829,6 +835,10 @@ public final class ToolRailView: NSView {
     }
 
     public func showFlyout(for button: ToolButton) {
+        if button.toolType == .brush {
+            onBrushSettingsRequested?(button)
+            return
+        }
         let currentSub: String
         switch button.toolType {
         case .pen: currentSub = state.currentPenSubTool

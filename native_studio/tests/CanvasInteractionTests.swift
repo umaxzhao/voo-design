@@ -39,10 +39,10 @@ public class CanvasInteractionTests {
         registry.register(tier: 1, feature: "F43-CanvasWiring", name: "test_F43_KeyboardShortcutsDriveCanvasActiveTool") {
             let (controller, stage) = makeEditor()
             let cases: [(String, UInt16, StudioToolType)] = [
-                ("v", 9, .move), ("f", 3, .node), ("p", 35, .pen), ("r", 15, .shapes),
-                ("b", 11, .brush), ("e", 14, .eraser), ("t", 17, .text), ("a", 0, .artboard)
-            ]
-            for (chars, code, tool) in cases {
+                    ("v", 9, .move), ("f", 3, .artboard), ("p", 35, .pen), ("r", 15, .shapes),
+                    ("b", 11, .brush), ("e", 14, .eraser), ("t", 17, .text), ("a", 0, .node),
+                ]
+                for (chars, code, tool) in cases {
                 let handled = sendKey(controller, chars: chars, keyCode: code)
                 try TestAssertions.assertTrue(handled, "Shortcut \(chars) should be handled")
                 try TestAssertions.assertEqual(stage.activeTool, tool,
@@ -65,10 +65,11 @@ public class CanvasInteractionTests {
             try TestAssertions.assertEqual(rect.kind, .rect)
             try TestAssertions.assertTrue(rect.width > 100 && rect.height > 100, "Rect should follow the drag size")
             try TestAssertions.assertTrue(stage.selectedNodeIds.contains(rect.id), "New shape must be selected")
-            try TestAssertions.assertEqual(stage.activeTool, .move, "Shape tool returns to move tool")
+                try TestAssertions.assertEqual(
+                    stage.activeTool, .shapes, "Shape tool stays active for continuous creation")
 
-            controller.undoAction(nil)
-            try TestAssertions.assertEqual(stage.document.nodes.count, before, "Undo must remove the created shape")
+                controller.undoAction(nil)
+                try TestAssertions.assertEqual(stage.document.nodes.count, before, "Undo must remove the created shape")
         }
 
         registry.register(tier: 1, feature: "F43-CanvasWiring", name: "test_F43_ClickAndDragSelectAndMoveNode") {
@@ -314,9 +315,9 @@ public class CanvasInteractionTests {
     private static func sendMouse(_ stage: CanvasStageView, _ type: NSEvent.EventType, _ windowPoint: CGPoint) {
         guard let window = stage.window,
               let event = NSEvent.mouseEvent(with: type,
-                                             location: windowPoint,
-                                             modifierFlags: [],
-                                             timestamp: ProcessInfo.processInfo.systemUptime,
+                    location: stage.convert(windowPoint, to: nil),
+                    modifierFlags: [],
+                    timestamp: ProcessInfo.processInfo.systemUptime,
                                              windowNumber: window.windowNumber,
                                              context: nil,
                                              eventNumber: 0,

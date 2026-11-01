@@ -153,6 +153,9 @@ public class InspectorView: NSView {
     private var propertiesBlendMode = "source-over"
     private var propertiesX: CGFloat = 0
     private var propertiesY: CGFloat = 0
+    private var normalDockConstraints: [NSLayoutConstraint] = []
+    private var swappedDockConstraints: [NSLayoutConstraint] = []
+    public private(set) var panelsAreSwapped = false
     private var propertiesWidth: CGFloat = 0
     private var propertiesHeight: CGFloat = 0
     private var propertiesRotation: CGFloat = 0
@@ -252,19 +255,28 @@ public class InspectorView: NSView {
         // Layout Constraints:
         // Layers Panel: Floating on the left
         // Properties Card: Floating on the right
+        normalDockConstraints = [
+            layersPanel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            propertiesCard.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+        ]
+        swappedDockConstraints = [
+            layersPanel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            propertiesCard.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+        ]
+        NSLayoutConstraint.activate(normalDockConstraints)
+        layersPanel.onSortTapped = { [weak self] in self?.swapPanels() }
+        propertiesPanel.onSwapPanels = { [weak self] in self?.swapPanels() }
         NSLayoutConstraint.activate([
             // Left Floating Card (web: md:w-64 = 256, p12, rounded-3xl, centred).
             // Verified against the current web build at 1:1: the LAYERS card is
             // 256×236 (border box x22..277 / y352..587). 236 = header 50 + controls
             // 45 + two 32pt rows + 4 gap + footer 45 + p12 + 1px border.
-            layersPanel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             layersPanel.centerYAnchor.constraint(equalTo: centerYAnchor),
             layersPanel.widthAnchor.constraint(equalToConstant: 256),
             layersPanel.heightAnchor.constraint(equalToConstant: 236),
 
             // Right Floating Card (web: md:w-72 = 288, p12, rounded-3xl, centred;
             // the fixed 368pt visible height scrolls to the rest of the sections).
-            propertiesCard.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             propertiesCard.centerYAnchor.constraint(equalTo: centerYAnchor),
             propertiesCard.widthAnchor.constraint(equalToConstant: 288),
             cardHeight,
@@ -564,6 +576,15 @@ public class InspectorView: NSView {
         guard arePropertiesVisible != visible else { return }
         arePropertiesVisible = visible
         propertiesCard.isHidden = !visible
+    }
+
+    public func swapPanels() {
+        panelsAreSwapped.toggle()
+        NSLayoutConstraint.deactivate(
+            panelsAreSwapped ? normalDockConstraints : swappedDockConstraints)
+        NSLayoutConstraint.activate(
+            panelsAreSwapped ? swappedDockConstraints : normalDockConstraints)
+        needsLayout = true
     }
 
     public override func layout() {

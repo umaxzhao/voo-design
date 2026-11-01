@@ -220,19 +220,19 @@ public final class ExportEngine {
                 let size = node.fontSize ?? 16
                 let weight = node.fontWeight ?? "400"
                 let align = node.textAlign ?? "left"
-                let text = node.text ?? node.name
+                let text = ExportMarkup.escape(node.text ?? node.name)
                 html += """
-                    <div class="layer" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); color: \(node.style.fill); font-family: \(font); font-size: \(size)px; font-weight: \(weight); text-align: \(align); \(rot)">\(text)</div>
-                """
+                        <div class="layer" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); color: \(node.style.fill); font-family: \(font); font-size: \(size)px; font-weight: \(weight); text-align: \(align); \(rot)">\(text)</div>
+                    """
             case .ellipse:
                 html += """
                     <div class="layer" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); background-color: \(bg); border: \(border); border-radius: 50%; \(rot)"></div>
                 """
             case .image:
-                let src = node.text?.hasPrefix("data:") == true ? (node.text ?? "") : ""
+                let src = ExportMarkup.escape(node.src ?? "")
                 html += """
-                    <img class="layer" src="\(src)" alt="\(node.name)" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); border-radius: \(radius)px; object-fit: cover; \(rot)">
-                """
+                        <img class="layer" src="\(src)" alt="\(ExportMarkup.escape(node.name))" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); border-radius: \(radius)px; object-fit: cover; \(rot)">
+                    """
             default:
                 html += """
                     <div class="layer" style="left: \(left)px; top: \(top)px; width: \(width)px; height: \(height)px; opacity: \(opacity); background-color: \(bg); border: \(border); border-radius: \(radius)px; \(rot)"></div>
@@ -314,11 +314,24 @@ public final class ExportEngine {
             }
         }
 
-        let fillColor = NSColor(hex: node.style.fill)
+        let fillColor = NSColor(hexString: node.style.fill) ?? .clear
         let strokeColor = NSColor(hex: node.style.stroke)
 
+        // Gradient parsing and geometry are shared with the production stage.
+        if node.kind != .text && node.kind != .image,
+            let gradient = CanvasStageView.parseGradient(from: node.fill)
+        {
+            let path = CanvasStageView.shapePath(for: node, in: node.bounds)
+            CanvasStageView.drawGradientFill(
+                parsed: gradient, in: node.bounds, path: path, ctx: ctx)
+            ctx.restoreGState()
+            return
+        }
+
         switch node.kind {
-        case .rect, .frame, .group, .boolean:
+        case .group:
+            break
+        case .rect, .frame, .boolean:
             let rect = CGRect(x: node.x, y: node.y, width: node.width, height: node.height)
             let radius = node.cornerRadii?.tl ?? 0
             let path = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
@@ -411,7 +424,7 @@ public final class ExportEngine {
     }
 
     private func drawText(_ node: VOONode, in ctx: CGContext) {
-        let text = node.text ?? node.name
+        let text = ExportMarkup.escape(node.text ?? node.name)
         guard !text.isEmpty else { return }
         let fontSize = node.fontSize ?? 16
         let color = NSColor(hex: node.style.fill)

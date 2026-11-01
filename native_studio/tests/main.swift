@@ -18,6 +18,10 @@ M2_InspectorStudioTests.registerTests()
 WorkspaceManagerTests.registerTests()
 InspectorBehaviourTests.registerTests()
 IslandAnchorTests.registerTests()
+#if INTEGRATED
+    PortableParityTests.registerTests()
+    NativeWorkflowParityTests.registerTests()
+#endif
 // AIAgentTests.registerTests()
 
 let args = CommandLine.arguments

@@ -21,6 +21,7 @@ public enum RulerOrientation: Sendable, Equatable {
 // MARK: - Canvas Ruler View (High Performance CoreGraphics Vector Drawing)
 
 public class CanvasRulerView: NSView {
+    public override var isFlipped: Bool { true }
     public let orientation: RulerOrientation
 
     public var zoom: CGFloat = 1.0 {
