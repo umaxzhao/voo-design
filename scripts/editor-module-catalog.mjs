@@ -13,6 +13,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/page_switcher.jsx", "tests/unit/titlebar_actions.test.jsx", "tests/unit/welcome_header_actions.test.js",
       "tests/e2e/critical_flows.e2e.mjs",
       "tests/e2e/empty-canvas-checks.mjs",
+      "tests/unit/workspace-background.test.js",
     ],
     related: [
       "documents", "inspector", "platform",
@@ -43,6 +44,7 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/editor_engine_assembly.js",
       "src/canvas/editor/page_to_canvas_root.js", "tests/unit/page-to-canvas-root.test.js",
       "tests/unit/startup_tab_bar.test.jsx",
+      "tests/unit/pages_polish.test.js",
     ],
     related: [
       "workspace", "layers", "images", "platform", "compositing", "layout",

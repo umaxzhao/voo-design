@@ -170,7 +170,7 @@ describe("page list polish", () => {
       store.getState().loadVooProject({ vooData: { document: doc } });
       expect(store.getState().nodes).toHaveLength(1);
       expect(store.getState().nodes[0].data.editorDoc).toMatchObject({ isCanvasRoot: true, backgroundColor: "transparent" });
-      expect(store.getState().nodes[0].data.editorDoc.nodes[0]).toMatchObject({ isFrame: true, width: 300, height: 200 });
+      expect(store.getState().nodes[0].data.editorDoc).toMatchObject({ nodes: [], width: 300, height: 200 });
       expect(JSON.stringify(doc)).toBe(before);
       expect(store.getState().isDirty).toBe(false);
       expect(store.getState().editorPageCameras).toEqual({});

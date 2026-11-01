@@ -9,22 +9,31 @@ const frame = () => ({
   fills: [{ fill: "#9C5252", opacity: 1, visible: true }],
 });
 
+const canvasWithFrame = () => {
+  const page = frame();
+  return { width: page.width, height: page.height, isCanvasRoot: true, backgroundColor: "transparent", nodes: [
+    { id: "authored-frame", kind: "group", isFrame: true, x: 0, y: 0, width: page.width, height: page.height,
+      fill: page.backgroundColor, fills: page.fills },
+  ] };
+};
+
 beforeEach(() => useDesignStore.setState({
   activeDocumentId: null, openDocuments: [], editorPageDocumentReader: null,
 }));
 
 it("changes the workspace ground without changing frame paint", () => {
-  const doc = frame();
+  const doc = canvasWithFrame();
+  const before = structuredClone(doc);
   useDesignStore.getState().loadVooProject({ vooData: { document: doc } });
   useDesignStore.getState().setCanvasBackgroundColor("#737373");
   expect(useDesignStore.getState().canvasBackgroundColor).toBe("#737373");
   expect(useDesignStore.getState().nodes[0].data.editorDoc).toMatchObject({ isCanvasRoot: true, backgroundColor: "transparent" });
-  expect(useDesignStore.getState().nodes[0].data.editorDoc.nodes[0]).toMatchObject({ fill: "#9C5252", fills: doc.fills });
-  expect(doc.backgroundColor).toBe("#9C5252");
+  expect(useDesignStore.getState().nodes[0].data.editorDoc.nodes[0]).toMatchObject({ fill: "#9C5252", fills: doc.nodes[0].fills });
+  expect(doc).toEqual(before);
 });
 
 it("saves and reopens the workspace and frame colors independently", async () => {
-  useDesignStore.getState().loadVooProject({ vooData: { document: frame() } });
+  useDesignStore.getState().loadVooProject({ vooData: { document: canvasWithFrame() } });
   useDesignStore.getState().setCanvasBackgroundColor("#737373");
   const { vooFile } = await buildProjectVooFile({ store: useDesignStore.getState() });
   expect(vooFile.document.canvasBackgroundColor).toBe("#737373");
@@ -40,6 +49,13 @@ it("saves and reopens the workspace and frame colors independently", async () =>
 it("uses neutral gray for old projects without a workspace color", () => {
   useDesignStore.getState().loadVooProject({ vooData: { document: frame() } });
   expect(useDesignStore.getState().canvasBackgroundColor).toBe("#525252");
+});
+
+it("changes the workspace color without turning an empty painted page into a Frame", () => {
+  useDesignStore.getState().loadVooProject({ vooData: { document: frame() } });
+  useDesignStore.getState().setCanvasBackgroundColor("#737373");
+  expect(useDesignStore.getState().canvasBackgroundColor).toBe("#737373");
+  expect(useDesignStore.getState().nodes[0].data.editorDoc).toMatchObject({ isCanvasRoot: true, nodes: [], backgroundColor: "transparent" });
 });
 
 it("converts edited frame paints to visible scene fills", () => {

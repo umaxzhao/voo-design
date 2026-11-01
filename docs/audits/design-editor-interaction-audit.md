@@ -285,5 +285,8 @@ workspace chrome drew an unrelated page-edge outline on unbounded roots.
   These harness failures are kept separately from the original product failures.
 - Targeted checks passed; clean committed full gate and public production
   receipts remain pending. Raw evidence: `/tmp/voo-empty-canvas-*.{log,json}`.
+  The first full gate on `f9bf3204` retained four stale default-Frame assertions:
+  empty-page cases now require zero nodes; workspace-paint persistence uses an
+  explicit authored Frame and retains paint, reopen and nonmutation assertions.
   Actual OS dialogs, installed Electron, external services and other browser
   engines remain unverified. No desktop tag, installer or Release is issued.
