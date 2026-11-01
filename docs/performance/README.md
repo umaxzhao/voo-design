@@ -314,7 +314,48 @@ work. Current node mapping builds each full page before emitting its chunks.
    retained memory and cold load. Repeat warm/cold and reverse-order controls;
    preserve exact pixels, selection and one-step history before declaring gains.
 
-All rows above remain **unimplemented / browser performance unverified**.
+At the audited revision, all rows above were **unimplemented / browser performance unverified**.
+The source-bound implementation below supersedes only its explicitly listed work.
 No Figma parity, 60FPS, total-memory reduction or installer certification follows
 from these CPU probes. Extend the maintained audit with measured changes rather
 than turning these hypotheses into passed acceptance rows.
+
+## Layer models and subscribed import — implementation
+
+Scope: `layers.model-cache`, `vectors.import-subscriptions`. The first batch
+removes repeated layer-model work and unconsumed worker chunks; autosave,
+history pin scanning, precise-pass index reuse and global bitmap budgets remain
+separate pending work. No controls, dependencies or file format are added.
+
+- Immutable node arrays share topology through a WeakMap. Each mounted panel
+  retains one tree model. Selection and live page metadata are refreshed
+  independently; cache keys include node identity, page structure, disclosure,
+  query, labels and deferred translation values. Default/fallback page semantics
+  remain unchanged. Stable external-master resolvers bypass cached instance
+  searches so master updates cannot leave stale search results.
+- Search evaluates labels once and propagates positive matches toward ancestors,
+  covering child and clipping edges without path-dependent cycle misses. Inactive
+  pages retain their legacy detached/cyclic recovery; unmatched nodes skip the
+  needless ancestor sweep. This is not a flattened or truncated layer tree.
+- The client negotiates `emitChunks` from the actual `onChunk` function. Without
+  a consumer the worker omits node chunk messages but retains progress, page
+  headers, asset ACK/backpressure and COMPLETE. Direct legacy worker callers
+  without the option keep streaming. Complete-message aliases are not counted
+  as duplicate clones. ZIP validation and complete scene mapping remain intact.
+- Red evidence: unchanged node arrays create new topology; a 120-deep matching
+  search repeatedly reads names; unsubscribed worker imports still emit chunks.
+  `/tmp/voo-layer-import-red.log` retains five failures and two legacy passes.
+- Initial real-panel regression exposes selection-only page metadata as an
+  invalid cache dependency (two rebuilds). The cache now separates selected IDs
+  and ignores ineffective root disclosure while refreshing live page descriptors.
+  Original failure and diagnostic logs remain retained; the zero-rebuild
+  assertion is not weakened. Actual selection, scrolling, reorder/undo, rename,
+  search and variable-height rows pass in the updated browser case.
+- The real Figma picker case verifies ordinary imports emit zero node chunks;
+  a subscribed client still receives all ordered chunks and the complete scene.
+  Existing crop/cover/rotation/overflow/mask pixels, variables, constraints,
+  undo/redo and cold portable reopening retain their original assertions.
+
+Candidate checks and source-bound release measurements are recorded below
+when the full fixed-revision gate finishes; targeted passes do not certify
+all browser/native contexts. `native_studio` stays excluded.
