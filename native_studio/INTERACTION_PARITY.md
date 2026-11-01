@@ -1,3 +1,21 @@
+## 控件逐态复刻与启动阻塞修复 — 2026-11-01
+
+**本轮声明范围已修复并验证，整体 1:1 仍为部分。** 固定源码 [`97b6bee`](https://github.com/umaxzhao/voo-design/commit/97b6bee3d4a9ac039f3268dbfbbee4a99d6d343e)，以同字节 FORM 的 Number 图层及本地 Electron 为对照；未使用测试数替代完整视觉/功能覆盖。[截图、指纹与逐项证据](../docs/audits/native-parity/control-details/verification.json)。
+
+| 能力 | 复现与修正 | 验收及剩余 |
+| --- | --- | --- |
+| `platform.native-inspector` | 文字行重叠/截断、600显示Regular、外部字体显示Inter；文字对象变换低8px、样式按钮分离。修为带标题32px字段、125%行高、真实字重/字体名、共享样式轨道及文字→Paint→Appearance顺序。 | 文字Transform Y113/矩形121的独立断言；实机Number半粗/右对齐/125%与最终截图确认。文字宽度模式、高级排版及分区折叠未完成。 |
+| `platform.native-portability` | Web使用align，旧原生仅读textAlign，导入丢右对齐。现在align优先、兼容旧别名、编辑保存同步两字段。 | 真实FORM、冲突优先及legacy回归通过，600与1.25原始精度保留。 |
+| `platform.native-paints` | `effects:null`误判未知格式，正常文件Add被禁用。统一supportsNativeEffects能力判断，显式编辑可编码；已配置效果改紧凑折叠行。 | 真实FORM菜单Add Gaussian Blur、一次撤销、保存重开与恢复null通过；实机Add/Undo通过。未知schema仍拒绝覆写，其他效果类型未覆盖。 |
+| `platform.native-inspector` 工具菜单 | 旧系统箭头、双语/快捷键列、菜单选择不激活工具。Pen/Shapes菜单统一本地化、142px最小宽/26px行、独立caret/hover/pin/键盘及family激活。 | 6项新增回归；实机Ellipse菜单选择→真实拖绘Ellipse 1→一次撤销通过。其他family缺口保留，不宣称全部菜单一致。 |
+| `platform.native-chrome` | 底部条233px过宽、字重偏重、More白色、disabled重复降透明度。修为完整组合规格201×32，普通按钮24、guide按钮28、百分比36/10px regular、分隔线12。 | 组合几何/端点/禁用透明度及EyeOff绘制回归通过，最终实机截图复看。眼睛仍与标尺耦合，独立参考线可见性未完成。 |
+| `platform.native-workspace-watch` | 最终QA主线程实际停在WorkspaceManager.init→setupWatcher→open(O_EVTONLY)，窗口不响应。独立后台open、generation丢弃旧结果，串行管理source/FD和debounce；错误显式记录和回调。 | 注入A阻塞时B仍active且真实文件事件到主线程、释放不等待且迟返FD关闭一次、EACCES回调共3项通过。最终GUI能打开隔离示例并响应，主线程采样不再包含阻塞初始化。真实GUI默认O_EVTONLY目录事件本轮未认证。 |
+
+- **执行：465/465 原生集成断言（-Onone）、11/11 模块规划、生产构建与ad-hoc签名通过。** 12模块/88能力登记有效。生产二进制5,235,248 bytes（4.99MB），5MB门禁未放宽；运行QA与生产`__TEXT,__text`指纹一致。
+- 新文件严格格式检查通过，差分lint无新增诊断；本轮触及旧文件全量仍有1,204条历史诊断（基线1,280），不能称全绿。首轮并行收尾导致编译输入变化、legacy夹具遗漏align、新EyeOff未登记旧枚举清单等失败分别保留在`/tmp/voo-native-polish/`，修正后重新完整执行，未放宽断言容差。
+- 中间实机发现问题后追加null效果与8px/样式修正；最终启动检查另发现同步watcher阻塞，已修复。检查工具重新拉起会丢失命令行隔离变量，最终临时QA通过LSEnvironment固定目录/fixture；未将默认首页或中间构建截图当最终证据。
+- 自定义子面板截图桥接返回异常缩略图，菜单视觉仅按源码几何与可见控件/实际操作验收，未宣称最终菜单像素逐点一致。浅色、窄窗口、多选/原型、IME、VoiceOver及完整多文档仍未验收。
+
 ## 文件 Tab 与相邻标题栏细节校正 — 2026-11-01
 
 - **已完成本轮 Tab 声明范围，整体复刻仍为部分。** 固定源码 [`f02b764`](https://github.com/umaxzhao/voo-design/commit/f02b76427347fa587cf0a681ccdc709cf370c7bb)；模块 `platform.native-titlebar`。
