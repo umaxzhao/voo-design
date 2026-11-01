@@ -1,6 +1,6 @@
 # Native Figma text appearance
 
-Scope: `text.imported-appearance`, Figma mapping, text measurement and font
+Scope: `text.imported-appearance`, `compositing.custom-blend-viewport`, Figma mapping, text measurement and font
 loading, Canvas2D/SVG rendering and renderer admission. `native_studio` excluded.
 Execution receipts remain separate from functional coverage.
 
@@ -26,6 +26,35 @@ in native glyph streams. Canvas command construction ignores it, but an SVG
 Path2D string starting with Z paints nothing. The converter now omits only
 closes before the first MOVE; the browser fixture retains that native prefix.
 The failing real-glyph comparison is kept separately from final acceptance.
+
+## Performance investigation and blend repair
+
+The font-only source `bc97a0fa107e6809d4c852365711e0aa830b4865` passed all
+118 registered release steps (114 browser suites, 4912 units passed / 4 skipped,
+1475 design files). It is not the final performance certificate. Two fresh
+production orders retained 3897-node Page 1 and matching first-Frame geometry:
+real key medians were 774 -> 1244ms and 840 -> 1408ms. Canvas measurements fell
+2432 -> 274, but that reduction did not establish an input improvement. Keep
+the regression, raw samples and high shared-host load in the private evidence.
+
+A separate six-key CPU profile found pixel readback and custom blend arithmetic
+dominated the work. Native Path2D constructions stayed 381 -> 381 and 467 text
+cache records retained identity, ruling out repeated native-path parsing in
+that sample. The viewport fixture reproduced a 1102x910 readback starting at
+(-406,-190) for a 100x80 destination. Processing is now limited to the visible
+canvas intersection, with transparent-source arithmetic skipped and original
+dissolve coordinates retained. Device-space source placement and cached output
+replacement preserve transform, parent clip and opacity. Last exact preview
+tiles are bounded to 24 entries. Zero-alpha/vivid-light endpoints avoid NaN.
+
+The independent browser reference checks all nine modes under three viewport,
+clip/alpha configurations, cache reuse, offscreen rejection and actual keyboard
+edit/undo/redo. The readback-bound, dissolve-phase and vivid-light failures are
+retained. Both unit and browser repairs passed targeted checks; the combined
+source, including upstream error recovery 188e295b, needs a fresh full gate and
+new paired production measurements before publication. Prior script failures
+read unavailable page metadata and waited for an optional warm flag or a stale
+camera snapshot; they are harness failures, not accepted timing samples.
 
 ## Repair
 
@@ -75,5 +104,10 @@ face. Arbitrary rich-text edits/reflow, bitmap/rotated glyphs, every affine
 combination, every page at readable scale, all effect/stroke combinations,
 cross-driver rasterization and signed Electron remain unverified. No overall
 Figma restoration percentage or FPS parity is established by these cases.
+Two original text nodes also contain inline fill overrides different from the
+base paint. Those style rows are retained, but independently painted rich-text
+ranges are not repaired by this glyph-layout change. The real-glyph comparison
+normalizes origin, fill and stroke/shadow settings; it certifies glyph geometry
+in the sampled bounds, not complete page composition or inline paint fidelity.
 The original `.fig` must be imported again: older imports discarded glyph data
 and cannot recover it from an already-pruned saved document.

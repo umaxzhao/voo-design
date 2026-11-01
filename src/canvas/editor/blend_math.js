@@ -20,6 +20,7 @@ const n = (v) => (v > 1 ? 1 : v < 0 ? 0 : v);
 function over(dst, src, blended) {
   const a = n(src.a + dst.a * (1 - src.a));
   if (a <= 0) return { r: 0, g: 0, b: 0, a: 0 };
+  if (src.a === 0) return { r: dst.r, g: dst.g, b: dst.b, a };
   return {
     r: (blended.r * src.a + dst.r * dst.a * (1 - src.a)) / a,
     g: (blended.g * src.a + dst.g * dst.a * (1 - src.a)) / a,
@@ -44,8 +45,11 @@ function linearDodge(dst, src) {
 
 /** Vivid light: hard light with the roles of dodge/burn swapped per channel. */
 function vividLight(dst, src) {
-  const chan = (b, s) =>
-    s <= 0.5 ? n(1 - (1 - b) / (2 * s)) : n(b / (2 * (1 - s)));
+  const chan = (b, s) => {
+    // Burn/dodge endpoints have defined limits; avoid 0/0 contaminating alpha.
+    if (s <= 0.5) return b === 1 ? 1 : s === 0 ? 0 : n(1 - (1 - b) / (2 * s));
+    return b === 0 ? 0 : s === 1 ? 1 : n(b / (2 * (1 - s)));
+  };
   return {
     r: chan(dst.r, src.r),
     g: chan(dst.g, src.g),

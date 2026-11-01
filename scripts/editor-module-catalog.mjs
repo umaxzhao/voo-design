@@ -146,6 +146,8 @@ export const EDITOR_MODULES = [
     id: "compositing",
     title: "Masks, clipping and rendering",
     paths: [
+      "tests/e2e/custom-blend-viewport-checks.mjs", "tests/unit/custom-blend-viewport.test.js",
+      "src/canvas/editor/blend_math.js", "tests/unit/blend_math.test.js",
       "src/canvas/editor/clipping-chain-cache.js", "src/canvas/editor/layer-pass-document.js", "tests/e2e/selection-size-label-checks.mjs",
       "tests/unit/container_selection_chrome.test.js", "tests/unit/clipping-chain-cache.test.js", "tests/unit/layer-pass-document.test.js",
       "src/canvas/editor/chrome*", "src/canvas/editor/render*", "src/canvas/editor/skia*", "src/canvas/editor/*mask*", "src/canvas/editor/*opacity*",
@@ -158,6 +160,7 @@ export const EDITOR_MODULES = [
       "layers", "images", "vectors", "documents",
     ],
     features: [
+      "compositing.custom-blend-viewport",
       "compositing.selection-size-label", "compositing.mask-cache", "compositing.masks", "compositing.frame-clips", "compositing.alpha",
       "compositing.artwork-parity", "compositing.clip-run-culling", "compositing.effect-resources",
     ],
