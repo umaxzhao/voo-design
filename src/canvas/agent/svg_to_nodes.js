@@ -1268,7 +1268,9 @@ export function parseSvgToNodes(svgText, options = {}) {
           if (shapeNode) {
             const base = Array.isArray(shapeNode) ? shapeNode[0] : shapeNode;
             base.maskBase = true;
-            if (def.tag === "mask") {
+            if (def.tag === "clippath") {
+              base.fill = base.fill && base.fill !== "transparent" ? base.fill : "#ffffff";
+            } else if (def.tag === "mask") {
               base.maskType = def.attrs?.["mask-type"] || "luminance";
             }
             if (parentClipId) base.clipTo = parentClipId;

@@ -632,7 +632,7 @@ export function parseSvgStringToNodes(svgString) {
     if (def.tag === "clippath") {
       const clipBase = shapes[0];
       clipBase.maskBase = true;
-      clipBase.fill = "transparent";
+      clipBase.fill = clipBase.fill && clipBase.fill !== "transparent" ? clipBase.fill : "#ffffff";
       if (parentClipId) clipBase.clipTo = parentClipId;
       nodes.push(clipBase);
       return clipBase.id;
@@ -647,9 +647,12 @@ export function parseSvgStringToNodes(svgString) {
         nodes.push(maskBase);
         return maskBase.id;
       }
-      const booleanMask = createBooleanNode(shapes, "difference");
+      const booleanMask = createBooleanNode(shapes, "subtract");
       booleanMask.maskBase = true;
       booleanMask.maskType = def.attrs?.["mask-type"] || "luminance";
+      if (!booleanMask.fill || booleanMask.fill === "transparent") {
+        booleanMask.fill = "#ffffff";
+      }
       if (parentClipId) booleanMask.clipTo = parentClipId;
       nodes.push(booleanMask);
       return booleanMask.id;
