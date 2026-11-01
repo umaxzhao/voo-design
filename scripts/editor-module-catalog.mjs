@@ -322,6 +322,10 @@ export const EDITOR_MODULES = [
     title: "Agent, runtime and platform integration",
     paths: [
       "src/shared/app_error_boundary.jsx", "src/shared/app-error-boundary.module.css",
+      "src/canvas/use_window_controls.js", "src/canvas/components/desktop_window_controls.jsx",
+      "src/canvas/components/desktop-window-controls.module.css", "tests/unit/window-chrome.test.js",
+      "tests/e2e/desktop-window-native.e2e.mjs",
+      ".github/workflows/deploy-editor.yml",
       "tests/e2e/app-error-recovery-harness.jsx",
       "tests/unit/integration-conflict-regressions.test.jsx",
       "src/store/design_store.js", "src/store/editor-panel-actions.js", "tests/unit/editor-panel-actions.test.js",
@@ -355,6 +359,7 @@ export const EDITOR_MODULES = [
     ],
     features: [
       "platform.error-recovery",
+      "platform.desktop-window-chrome",
       "platform.agent-contracts", "platform.async-lifecycle", "platform.loading", "platform.native-collaboration", "platform.browser-drawer",
       "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview", "platform.streaming-authoring",
       "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle", "platform.desktop-release",
@@ -365,6 +370,7 @@ export const EDITOR_MODULES = [
     ],
     suites: [
       "app-error-recovery",
+      "desktop-window-controls",
       "editor-fixture-startup", "browser-drawer", "browser-import-frame-resizer", "browser-import-wysiwyg-parity", "browser-topbar-actions",
       "pending-integration", "agent-model-catalog", "editor-loading", "editor-optional-loading", "comments-loading", "comments-lifecycle",
       "editor-refactor", "editor-context", "editor-page-composition", "local-service", "canvas-live-preview", "agent-authoring",
@@ -380,6 +386,7 @@ export const ACCEPTANCE_AXES = ["entry-points","document-state","visible-result"
 export const RELEASE_BROWSER_SUITES = ["editor-fixture-startup", ...EDITOR_MODULES.flatMap(module => module.suites).filter(suite => suite !== "editor-fixture-startup")];
 // Independent checks remain classified debt, never implicit passes.
 export const ADDITIONAL_BROWSER_CHECKS = [
+  {"suite":"desktop-window-native","owner":"platform","kind":"native","reason":"Actual Linux Electron under X11/openbox: frameless geometry, hidden native menu, window buttons, trusted OS drag and dirty-close confirmation."},
   {"suite":"claude_agent","owner":"platform","kind":"external","reason":"Live integration requires an authenticated Claude Code CLI and a real model request; no paid preflight is run in offline audits."},
   {"suite":"codex_agent","owner":"platform","kind":"external","reason":"Live integration requires an authenticated Codex CLI and a real streamed model/tool request."},
   {"suite":"mcp_cli","owner":"platform","kind":"external","reason":"Live integration launches authenticated Claude/Codex to call MCP tools and create canvas content."},

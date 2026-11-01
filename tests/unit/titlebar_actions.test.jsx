@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({ welcomeOpen: false, welcomeActionsReady: false
 vi.mock("react", async (original) => ({
   ...await original(),
   useState: (initial) => [initial, vi.fn()],
+  useCallback: (callback) => callback,
   useEffect: () => {},
   useRef: (current) => ({ current }),
   useId: () => "titlebar-popover-scope",
