@@ -37,7 +37,8 @@ describe("mobile editor layout", () => {
     // Each mobile panel can collapse to a 3.5rem header independently.
     expect(css).toContain('[data-mobile-layers-expanded="false"] [data-testid="editor-layers-panel"]');
     expect(css).toContain('[data-mobile-properties-expanded="false"] [data-testid="editor-properties-panel"]');
-    expect(css).toContain("height: 3.5rem");
+    // A 48px target plus header padding needs a 72px collapsed dock.
+    expect(css).toContain("height: 4.5rem");
     expect(css).toContain('[data-testid="editor-layers-tabs"]');
     expect(css).toContain('data-testid="editor-layers-panel"');
     expect(css).toContain('data-testid="editor-properties-panel"');
