@@ -373,12 +373,17 @@
                 let railInWindow = content.toolRail.convert(content.toolRail.bounds, to: content)
                 try TestAssertions.assertTrue(
                     railInWindow.minX >= 0 && railInWindow.maxX <= content.bounds.width)
-                for button in content.toolRail.toolButtons.values {
-                    try TestAssertions.assertTrue(
-                        button.frame.minX >= 0
-                            && button.frame.maxX <= content.toolRail.bounds.width,
-                        "Tool remains inside rail")
+                for button in content.toolRail.toolButtons.values where !button.isHidden {
+                    try TestAssertions.assertApproxEqual(button.frame.width, 44)
                 }
+                content.toolRail.scrollTools(by: 1000)
+                let last = content.toolRail.healingButton!
+                let end = last.convert(last.bounds, to: content.toolRail)
+                try TestAssertions.assertTrue(end.maxX <= content.toolRail.bounds.width)
+                content.toolRail.scrollTools(by: -1000)
+                let first = content.toolRail.moveToolButton
+                try TestAssertions.assertTrue(
+                    first.convert(first.bounds, to: content.toolRail).minX >= 0)
             }
         }
         private static func descendants(_ root: NSView) -> [NSView] {

@@ -165,7 +165,7 @@ public enum PropertiesGlyphFactory {
         case strokeCap
         case strokeJoin
         case strokeDash
-        case typeSize, typeLineHeight, typeSpacing
+        case typeSize, typeLineHeight, typeSpacing, typeBoxWidth
         case frameKind
         case textKind
         case groupKind
@@ -225,7 +225,7 @@ public enum PropertiesGlyphFactory {
             VooIconFactory.drawPlus(in: rect, color: color, strokeWidth: strokeWidth)
         case .strokeInside, .strokeCenter, .strokeOutside, .strokeWidth, .cornerExpand, .sliders:
             NativeInspectorGlyph.draw(kind, in: rect, color: color)
-        case .typeSize, .typeLineHeight, .typeSpacing:
+        case .typeSize, .typeLineHeight, .typeSpacing, .typeBoxWidth:
             NativeTypographyLayout.drawMetricGlyph(kind, in: rect, color: color)
         case .flipH:
             VooIconFactory.draw(.flipH, in: rect, color: color, strokeWidth: strokeWidth)
@@ -1611,6 +1611,7 @@ public final class PropertiesTypographyMenuButton: NSButton {
 // MARK: - Properties Segmented Control
 
 public final class PropertiesSegmentedControl: NSView {
+    public var textPointSize: CGFloat = 10
     public var isTabBar = false {
         didSet {
             layer?.cornerRadius = isTabBar ? 16 : 12
@@ -1719,7 +1720,8 @@ public final class PropertiesSegmentedControl: NSView {
                 paragraphStyle.alignment = .center
                 let attrs: [NSAttributedString.Key: Any] = [
                     .font: ThemeFonts.mono(
-                        size: 10, weight: isTabBar ? .regular : (isSelected ? .medium : .regular)),
+                        size: textPointSize,
+                        weight: isTabBar ? .regular : (isSelected ? .medium : .regular)),
                     .foregroundColor: textColor,
                     .paragraphStyle: paragraphStyle
                 ]
@@ -2004,6 +2006,8 @@ public final class PropertiesPanelView: NSView {
     public var onOpacityChange: ((CGFloat) -> Void)?
     public var onBlendModeChange: ((String) -> Void)?
     public var onCornerRadiusChange: ((CGFloat) -> Void)?
+    public var onBoxWidthChange: ((CGFloat) -> Void)?
+    public var onBoxWidthInteraction: ((Bool) -> Void)?
     public var onFlipRequest: ((Bool) -> Void)?
     public var onGeometryChange: ((_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ r: CGFloat, _ cr: CGFloat?) -> Void)?
     /// Text-layer typography (only surfaced for `NodeKind.text` selections).
@@ -2083,6 +2087,11 @@ public final class PropertiesPanelView: NSView {
     private let letterSpacingMarker = NSView()
 
     // Visible Typography Controls (M2)
+    public let textWidthModeControl = PropertiesSegmentedControl(segments: [
+        .init(title: NativeCopy.text(.autoTextWidth), value: "auto"),
+        .init(title: NativeCopy.text(.fixedTextWidth), value: "fixed"),
+    ])
+    public let textBoxWidthPill = PropertiesNumberPill(label: "")
     public let fontWeightDropdown = PropertiesBlendModeButton()
     public let alignSegmentedControl = PropertiesSegmentedControl(segments: [
         .init(title: "", icon: .alignLeft, value: "left"),
@@ -2469,6 +2478,26 @@ public final class PropertiesPanelView: NSView {
             self?.applyFontSize(size)
         }
         textContainer.addSubview(fontSizePill)
+
+        textWidthModeControl.textPointSize = 11
+        textWidthModeControl.setAccessibilityIdentifier("Inspector.Properties.TextWidthMode")
+        textWidthModeControl.onSelectionChanged = { [weak self] _, value in
+            guard let self, let node = self.node else { return }
+            let previous = node.boxWidth ?? 0
+            let fallback = node.width != 0 ? node.width : 100
+            self.applyTextBoxWidth(
+                value == "auto" ? 0 : max(8, (previous > 0 ? previous : fallback).rounded()))
+        }
+        textContainer.addSubview(textWidthModeControl)
+        textBoxWidthPill.minimumValue = 8
+        textBoxWidthPill.maximumValue = 8192
+        textBoxWidthPill.suffix = "px"
+        textBoxWidthPill.leadingGlyph = .typeBoxWidth
+        textBoxWidthPill.setAccessibilityIdentifier("Inspector.Properties.TextBoxWidth")
+        textBoxWidthPill.setAccessibilityLabel(NativeCopy.text(.textBoxWidth))
+        textBoxWidthPill.onValueChanged = { [weak self] in self?.applyTextBoxWidth($0) }
+        textBoxWidthPill.onInteractionChanged = { [weak self] in self?.onBoxWidthInteraction?($0) }
+        textContainer.addSubview(textBoxWidthPill)
 
         // Accessibility markers for typography submenus
         configureFormatMarker(weightMarker, identifier: "Inspector.Properties.Weight", label: "Font weight")
@@ -3322,6 +3351,8 @@ public final class PropertiesPanelView: NSView {
         fontFamilyPill.placeholderTitle = currentFontFamily
         fontFamilyPill.select(value: currentFontFamily)
         fontSizePill.setValue(currentFontSize)
+        textWidthModeControl.select(value: (node.boxWidth ?? 0) > 0 ? "fixed" : "auto")
+        textBoxWidthPill.setValue(node.boxWidth ?? max(node.width, 8))
         typographyButton.currentWeight = currentFontWeight
         typographyButton.currentTextAlign = currentTextAlign
         typographyButton.currentLineHeight = currentLineHeight
@@ -3810,6 +3841,18 @@ public final class PropertiesPanelView: NSView {
         }
         onCornerRadiiChange?(radii)
         onCornerRadiusChange?(radii.tl)
+    }
+
+    private func applyTextBoxWidth(_ width: CGFloat) {
+        guard var node else { return }
+        node.boxWidth = width
+        self.node = node
+        textWidthModeControl.select(value: width > 0 ? "fixed" : "auto")
+        textBoxWidthPill.setValue(width > 0 ? width : max(node.width, 8))
+        onBoxWidthChange?(width)
+        needsLayout = true
+        layoutSubtreeIfNeeded()
+        onPresentationChange?()
     }
 
     private func applyFontFamily(_ family: String) {
@@ -4525,8 +4568,10 @@ public final class PropertiesPanelView: NSView {
                     size: fontSizePill, lineHeight: lineHeightPill,
                     letterSpacing: letterSpacingPill,
                     italic: italicButton, underline: underlineButton,
-                    styleGroup: typographyStyleGroup, alignment: alignSegmentedControl),
-                captions: typographyCaptions, width: contentWidth)
+                    styleGroup: typographyStyleGroup, alignment: alignSegmentedControl,
+                    widthMode: textWidthModeControl, boxWidth: textBoxWidthPill),
+                captions: typographyCaptions, width: contentWidth,
+                fixedWidth: (node?.boxWidth ?? 0) > 0)
             textContainer.frame = CGRect(x: inset, y: y, width: contentWidth, height: textHeight)
             y = closeSection(y + textHeight)
         } else if showsFrameBlock {

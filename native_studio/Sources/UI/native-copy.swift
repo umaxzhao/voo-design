@@ -3,6 +3,8 @@ import Foundation
 /// Native UI copy uses the same persisted locale as the settings drawer.
 enum NativeCopy {
     enum Key: String {
+        case guidesToggle, clearGuides
+        case editTextLayout, textBoxWidth, autoTextWidth, fixedTextWidth, invalidTextWidth
         case layersTab, assetsTab
         case constraintLeft, constraintRight, constraintTop, constraintBottom, constraintCenter,
             constraintScale, normalBlend
@@ -25,6 +27,10 @@ enum NativeCopy {
         return (chinese ? zh : en)[key] ?? en[key]!
     }
     private static let en: [Key: String] = [
+        .editTextLayout: "Edit text layout", .textBoxWidth: "Text box width",
+        .autoTextWidth: "Auto width", .fixedTextWidth: "Fixed width",
+        .invalidTextWidth: "Invalid text box width.",
+        .guidesToggle: "Show/hide guides", .clearGuides: "Clear all guides",
         .layersTab: "Layers", .assetsTab: "Assets",
         .constraintLeft: "Left", .constraintRight: "Right", .constraintTop: "Top",
         .constraintBottom: "Bottom",
@@ -59,6 +65,9 @@ enum NativeCopy {
         .unsupportedAccount: "Cloud sign-in is not available in the native editor yet.",
     ]
     private static let zh: [Key: String] = [
+        .editTextLayout: "编辑文字布局", .textBoxWidth: "文本框宽度",
+        .autoTextWidth: "自动宽度", .fixedTextWidth: "固定宽度", .invalidTextWidth: "文本框宽度无效。",
+        .guidesToggle: "显示/隐藏参考线", .clearGuides: "清除所有参考线",
         .layersTab: "图层", .assetsTab: "资源",
         .constraintLeft: "左", .constraintRight: "右", .constraintTop: "上", .constraintBottom: "下",
         .constraintCenter: "居中", .constraintScale: "缩放", .normalBlend: "正常",
