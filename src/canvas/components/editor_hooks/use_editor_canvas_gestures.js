@@ -4,6 +4,10 @@ import { TOOL } from "../../editor/editor_constants.js";
 import { dragArtboardPosition } from "../../editor/editor_artboard_positions.js";
 import { sendCollabCursor } from "../../collab/use_collab.js";
 import { shouldDragArtboardBody } from "../artboard-body-gesture.js";
+import {
+  resolveFreeDrawingStart,
+  calculateFreeDrawingBox,
+} from "../../editor/shape_snapping.js";
 
 /** Shared-stage pan/selection and artboard title/body pointer ownership. */
 const DRAWING_TOOLS = new Set([
@@ -90,14 +94,21 @@ export function useEditorCanvasGestures({
       if (targetEngine) {
         event.preventDefault();
         try { freeStageRef.current?.setPointerCapture?.(event.pointerId); } catch {}
-        const point = targetEngine.toDocPoint(event.clientX, event.clientY);
+        const { point, rawPoint } = resolveFreeDrawingStart({ targetEngine, event });
         const node = tool === TOOL.FRAME ? targetEngine.addFrameAt(point, { intoFrame: true })
           : tool === TOOL.RECT ? targetEngine.addRectAt(point, { intoFrame: true })
           : tool === TOOL.ELLIPSE ? targetEngine.addEllipseAt(point, { intoFrame: true })
           : tool === TOOL.TEXT ? targetEngine.addTextAt(point, "", { intoFrame: true }) : null;
         if (node) {
           targetEngine.select(node.id);
-          drawingGestureRef.current = { kind: tool, id: node.id, start: point, engine: targetEngine, pointerId: event.pointerId };
+          drawingGestureRef.current = {
+            kind: tool,
+            id: node.id,
+            start: point,
+            rawStart: rawPoint,
+            engine: targetEngine,
+            pointerId: event.pointerId,
+          };
         }
       }
       return;
@@ -141,13 +152,7 @@ export function useEditorCanvasGestures({
       handleCollabCursorMove(event);
       const drawing = drawingGestureRef.current;
       if (drawing && drawing.pointerId === event.pointerId) {
-        const point = drawing.engine.toDocPoint(event.clientX, event.clientY);
-        const box = {
-          x: Math.min(drawing.start.x, point.x),
-          y: Math.min(drawing.start.y, point.y),
-          width: Math.abs(point.x - drawing.start.x),
-          height: Math.abs(point.y - drawing.start.y),
-        };
+        const box = calculateFreeDrawingBox({ engine: drawing.engine, event, drawing });
         drawing.engine.updateNode(drawing.id, box, { commit: false });
         return;
       }

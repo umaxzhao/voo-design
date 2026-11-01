@@ -18,6 +18,7 @@ const SNAP_THRESHOLD_PX = SNAP_ACQUIRE_PX;
 /** Persisted settings keys that drive the snapping options below. */
 export const SNAP_SETTING_KEYS = Object.freeze({
   snapToGrid: "voo.editor.snapToGrid",
+  gridSize: "voo.editor.gridSize",
   showGuides: "voo.editor.showGuides",
 });
 
@@ -39,6 +40,13 @@ export function buildSnapOptions({
   activeSnap = false,
 } = {}) {
   const size = Number(grid?.size);
+  const settingSize = Number(getSetting(SNAP_SETTING_KEYS.gridSize));
+  const effectiveSize =
+    Number.isFinite(size) && size > 0
+      ? size
+      : Number.isFinite(settingSize) && settingSize > 0
+        ? settingSize
+        : DEFAULT_GRID_SNAP_SIZE;
   return {
     enabled: true,
     snapToObjects: true,
@@ -47,7 +55,7 @@ export function buildSnapOptions({
     activeSnap: activeSnap === true,
     grid: {
       type: grid?.type === "isometric" ? "isometric" : "rectangular",
-      size: Number.isFinite(size) && size > 0 ? size : DEFAULT_GRID_SNAP_SIZE,
+      size: effectiveSize,
     },
   };
 }
