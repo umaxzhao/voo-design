@@ -6,7 +6,7 @@
 - `canvas.zoom-preview`：真实 Ctrl+滚轮已复现一次缩放重复绘制隐藏测量画布 4 次。只保留可见画布绘制；重用有内存上限的画面预览，静止后恢复精确图像，取色立即刷新；编辑、图片、实时蒙版、字体、DPR/尺寸变化均使缓存失效，视频不冻结。
 - 命中区域世界边界只计算一次，去掉已被父级覆盖的子区域，保持负坐标、裁剪、空隙和 8px 点击范围；共享相机不在每个缩放事件重复刷新属性/Agent，活动文字编辑器继续实时更新。
 - 同一 test.fig 首轮实际输入等待中位数约 1222→83ms；停止后约 230ms 恢复精确画面，1000×800 首屏独立画面对比 0 像素差异。仅属记录的补丁试验，不是 GPU FPS、Figma 对等基准或全属性认证。
-- 真实缩放/精确像素/取色/编辑/撤销重做、高分屏负坐标和邻页命中、资源及生命周期定向回归通过；新增第 88 组核心浏览器登记，完整固定版本门禁和发布待本轮最终记录。[验收与证据](audits/design-editor-interaction-audit.md#canvas-zoom-efficiency--2026-11-01)。`native_studio` 排除。
+- 真实缩放/精确像素/取色/编辑/撤销重做、高分屏负坐标和邻页命中、资源及生命周期定向回归通过；新增第 88 组核心浏览器登记，首个固定版本 d3bec48 的完整检查在新增连续缩放用例发现一次额外精绘后停止，原始失败保留；已修复排队输入取消，并明确字体稳定/真实滚轮突发前提，严格重绘和像素断言不变，完整门禁重新运行。[验收与证据](audits/design-editor-interaction-audit.md#canvas-zoom-efficiency--2026-11-01)。`native_studio` 排除。
 ## 本轮：图层操作复查与多 Frame 拖动（已完成声明范围）
 - `selection.transforms` / `selection.frame-title-selection` / `selection.cancel` / `layers.duplicate-delete-lock`：旧版本 32 组图层及关联检查通过，但新增实际多选发现内容区误拖子层、标题清空多选、锁定子层时只移动外框三个缺口，均已修复并保留失败证据。新增 16 个实际交互上下文与 3 条单测；42 项定向单测通过，固定 `5cd112e` **91/91 发布步骤、87 组核心浏览器、4716 单测通过/4 跳过**，GitHub CI 通过。[PR #79](https://github.com/umaxzhao/voo-design/pull/79) 合入 `f7f782c` 且源码树一致。本地主应用仅三文件补丁、16 个隔离浏览器场景通过，其他草稿保留。已部署 la2，正式入口及 82 个加载资源 SHA-256 一致，线上六个真实多选拖动/锁定/取消场景通过，三种移动入口验证像素与一次撤销/重做，零页面异常。证据 `/private/tmp/voo-license-regression/multiframe-{release,ci,primary-proof,main-tree-proof,production-proof}.json`；功能覆盖仍部分，不认证全部蒙版/布局/锁定组合、实体输入设备或签名安装包。[范围与证据](audits/design-editor-interaction-audit.md#multi-frame-layer-operation-audit--2026-11-01)。
 ## 本轮：正式分享链接（已完成声明范围）

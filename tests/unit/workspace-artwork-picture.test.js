@@ -27,7 +27,7 @@ describe("bounded workspace zoom pictures", () => {
   it("reuses covered motion, debounces refinement, and paints the latest exact viewport", () => {
     const f = fixture(), picture = createArtworkPicture(f.canvas, f.engine);
     picture.paint(f.surface);
-    vi.advanceTimersByTime(160);
+    vi.advanceTimersByTime(176);
     expect(f.canvas.dataset.artworkWarm).toBe("true");
     const paints = f.engine.renderLayerPass.mock.calls.length;
     const next = { ...f.surface, viewport: { zoom: 1.1, panX: 110, panY: 66 } };
@@ -40,7 +40,7 @@ describe("bounded workspace zoom pictures", () => {
     picture.paint(latest);
     vi.advanceTimersByTime(100);
     expect(f.canvas.dataset.artworkState).toBe("preview");
-    vi.advanceTimersByTime(60);
+    vi.advanceTimersByTime(76);
     expect(f.canvas.dataset.artworkState).toBe("exact");
     expect(f.engine.renderLayerPass).toHaveBeenLastCalledWith(f.canvas, expect.any(Array), latest);
     picture.dispose();
@@ -48,7 +48,7 @@ describe("bounded workspace zoom pictures", () => {
 
   it("never reuses uncovered pixels, changed assets or a resized surface", () => {
     const f = fixture(), picture = createArtworkPicture(f.canvas, f.engine);
-    picture.paint(f.surface); vi.advanceTimersByTime(160);
+    picture.paint(f.surface); vi.advanceTimersByTime(176);
     picture.paint({ ...f.surface, viewport: { ...f.surface.viewport, zoom: .2 } });
     expect(f.canvas.dataset.artworkState).toBe("exact");
     f.invalidate(); picture.paint(f.surface);
@@ -60,7 +60,7 @@ describe("bounded workspace zoom pictures", () => {
 
   it("flushes readback synchronously and releases timers and picture allocations", () => {
     const f = fixture(), picture = createArtworkPicture(f.canvas, f.engine);
-    picture.paint(f.surface); vi.advanceTimersByTime(160);
+    picture.paint(f.surface); vi.advanceTimersByTime(176);
     const next = { ...f.surface, viewport: { ...f.surface.viewport, zoom: 1.04 } };
     picture.paint(next); picture.paint(next, true);
     expect(f.canvas.dataset.artworkState).toBe("exact");
@@ -83,8 +83,21 @@ describe("bounded workspace zoom pictures", () => {
     window.devicePixelRatio = 1.25;
     const f = fixture(), picture = createArtworkPicture(f.canvas, f.engine);
     f.surface.stageWidth = 1001;
-    picture.paint(f.surface); vi.advanceTimersByTime(160);
+    picture.paint(f.surface); vi.advanceTimersByTime(176);
     picture.paint({ ...f.surface, viewport: { ...f.surface.viewport, zoom: 1.04 } });
+    expect(f.canvas.dataset.artworkState).toBe("preview");
+    picture.dispose();
+  });
+
+  it("lets a new gesture cancel an elapsed quiet timer before its exact frame", () => {
+    const f = fixture(), picture = createArtworkPicture(f.canvas, f.engine);
+    picture.paint(f.surface); vi.advanceTimersByTime(176);
+    const count = f.engine.renderLayerPass.mock.calls.length;
+    picture.paint({ ...f.surface, viewport: { ...f.surface.viewport, zoom: 1.04 } });
+    vi.advanceTimersByTime(160);
+    picture.paint({ ...f.surface, viewport: { ...f.surface.viewport, zoom: 1.08 } });
+    vi.advanceTimersByTime(16);
+    expect(f.engine.renderLayerPass).toHaveBeenCalledTimes(count);
     expect(f.canvas.dataset.artworkState).toBe("preview");
     picture.dispose();
   });

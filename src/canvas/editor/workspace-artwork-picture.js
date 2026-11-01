@@ -2,13 +2,15 @@ const QUIET_MS = 160;
 const MARGIN = 160;
 const MAX_BYTES = 32 * 1024 * 1024;
 const MIN_NODES = 500;
+const requestFrame = callback => typeof requestAnimationFrame === "function" ? requestAnimationFrame(callback) : setTimeout(callback, 16);
+const cancelFrame = id => typeof cancelAnimationFrame === "function" ? cancelAnimationFrame(id) : clearTimeout(id);
 
 const sameSurface = (a, b) => a && a.stageWidth === b.stageWidth && a.stageHeight === b.stageHeight &&
   a.viewport.zoom === b.viewport.zoom && a.viewport.panX === b.viewport.panX && a.viewport.panY === b.viewport.panY;
 
 /** One bounded artwork-only picture; exact pixels always return after motion. */
 export function createArtworkPicture(canvas, engine) {
-  let picture, current, currentStamp, timer = 0, disposed = false, nodes, ids;
+  let picture, current, currentStamp, timer = 0, refinementFrame = 0, disposed = false, nodes, ids;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("ARTWORK_PICTURE_CONTEXT_UNAVAILABLE");
   const release = () => {
@@ -16,7 +18,11 @@ export function createArtworkPicture(canvas, engine) {
     picture = null;
     canvas.dataset.artworkWarm = "false";
   };
-  const cancel = () => { clearTimeout(timer); timer = 0; };
+  const cancel = () => {
+    clearTimeout(timer); timer = 0;
+    if (refinementFrame) cancelFrame(refinementFrame);
+    refinementFrame = 0;
+  };
   const stampOf = () => engine.getArtworkStamp?.() ?? null;
   const render = (target, surface) => {
     const next = engine.getDocument().nodes;
@@ -25,7 +31,14 @@ export function createArtworkPicture(canvas, engine) {
   };
   const schedule = (callback) => {
     cancel();
-    timer = setTimeout(() => { timer = 0; if (!disposed) callback(); }, QUIET_MS);
+    timer = setTimeout(() => {
+      timer = 0;
+      // Let already queued input cancel refinement before a costly exact pass.
+      refinementFrame = requestFrame(() => {
+        refinementFrame = 0;
+        if (!disposed) callback();
+      });
+    }, QUIET_MS);
   };
   const copy = (margin, surface, stamp) => {
     const dpr = window.devicePixelRatio || 1;

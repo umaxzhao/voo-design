@@ -42,15 +42,18 @@ await withEditorBrowser(async ({ page, errors }) => {
   assert.equal(await page.evaluate(() => window.__zoomProbe.invisiblePaints), 0,
     "Shared workspace zoom must not repaint the invisible measurement canvas");
 
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
   await page.waitForFunction(() => document.querySelector('[data-testid="editor-artwork-fallback"]')?.dataset.artworkWarm === "true");
   const before = await page.evaluate(() => window.__zoomProbe.artworkPaints);
   await page.keyboard.down("Control");
   try {
-    for (let i = 0; i < 4; i++) {
-      await page.mouse.wheel(0, -20);
-      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
-    }
+    // Queue a real wheel burst without automation-induced idle gaps between inputs.
+    await Promise.all(Array.from({ length: 4 }, () => page.mouse.wheel(0, -20)));
   } finally { await page.keyboard.up("Control"); }
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   assert.equal(await artwork.getAttribute("data-artwork-state"), "preview");
   assert.equal(await page.evaluate(() => window.__zoomProbe.artworkPaints), before,
     "Continuous covered zoom must reuse artwork instead of rasterizing the layer tree");

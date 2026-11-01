@@ -342,3 +342,14 @@ quality; no equivalent Figma execution has been measured or claimed.
   stays private and read-only. Full readable-scale property fidelity, every
   effect/driver/animation combination, signed Electron, native trackpad/stylus
   and physical frame presentation remain unverified. `native_studio` excluded.
+
+
+The first complete attempt on `d3bec48` passes 4,729 units (four skipped) but
+stops at the new zoom suite with one additional rasterization during its
+sequential wheel/RAF loop. `/tmp/voo-zoom-release.json` / `.log` preserve the
+incomplete run; it is not release evidence. Quiet work now waits for a cancelable
+animation frame so queued input can supersede it. A deterministic unit cancels
+an already elapsed quiet timer before its exact frame. The browser case waits
+for font readiness, queues the actual wheel burst without automation-created
+idle gaps, and retains the strict zero-extra-raster and exact-RGBA assertions.
+Targeted repeats pass; a fresh fixed-revision full gate is required below.
