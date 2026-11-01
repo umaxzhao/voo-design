@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
+import { checkSelectionSizeLabels } from "./selection-size-label-checks.mjs";
+
 const checks = [];
 const settle = page => page.evaluate(() => new Promise(resolve =>
   requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -93,5 +95,6 @@ await withEditorBrowser(async ({ page }) => {
   await settle(page);
   assert.deepEqual(await page.evaluate(() => window.__vooEditor.getSelectedIds()), ["label-frame-a"]);
   checks.push("The same title is keyboard operable through its native button semantics");
+  await checkSelectionSizeLabels(page);
 });
 console.log(JSON.stringify({ passed: checks }, null, 2));

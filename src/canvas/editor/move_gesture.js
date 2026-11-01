@@ -9,16 +9,13 @@ export function moveGestureIds(api, doc, base) {
   const selectedGroup = api.getSelectedGroup?.();
   const baseIds = selectedGroup ? [selectedGroup.id] : base.map((node) => node.id);
   const expanded = api.expandMoveSet?.(baseIds);
-  const locked = (id) =>
-    doc.nodes.find((node) => node.id === id)?.locked === true;
-  // A locked member cannot make a complete Group degrade into a partial move.
-  if (selectedGroup && (expanded ?? baseIds).some(locked)) return [];
-  const ids = expanded && !expanded.some(locked) ? expanded : baseIds;
-  return ids.some(
-    (id) => doc.nodes.find((node) => node.id === id)?.lockPosition === true,
-  )
-    ? []
-    : ids;
+  // Every selected subtree and clipping follower is an atomic move unit.
+  // Falling back to roots when a descendant is locked would shear the artwork.
+  const ids = expanded ?? baseIds;
+  return ids.some((id) => {
+    const node = doc.nodes.find((entry) => entry.id === id);
+    return node?.locked === true || node?.lockPosition === true;
+  }) ? [] : ids;
 }
 
 export function captureMoveGestureFrame(doc, ids) {

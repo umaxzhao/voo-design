@@ -14,6 +14,7 @@ import EditorMarqueeMenu from "./editor_marquee_menu.jsx";
 import EditorHealingMenu from "./editor_healing_menu.jsx";
 import EditorObject3dMenu from "./editor_object3d_menu.jsx";
 import EditorPenMenu from "./editor_pen_menu.jsx";
+import EditorEraserMenu from "./editor_eraser_menu.jsx";
 import EditorFillMenu from "./editor_fill_menu.jsx";
 import { TOOL } from "../editor/editor_constants.js";
 import { TOOL_SHORTCUTS } from "../editor/editor_shortcuts.js";
@@ -51,6 +52,9 @@ export default function EditorToolbar({
   variant = "design",
   /** Inserts a 3D object ("box" | "sphere" | "plane") into the frame. */
   onAddObject3d = null,
+  /** Cuts the background out of the selected layer (Eraser menu). */
+  onRemoveBackground = null,
+  removeBackgroundBusy = false,
 }) {
   const { t } = useI18n();
   const motionVariant = variant === "motion";
@@ -141,11 +145,22 @@ export default function EditorToolbar({
             </div>
 
             {/* 5. 橡皮擦工具 */}
-            {renderTool({
-              id: TOOL.ERASER,
-              icon: <IconEraser size={16} />,
-              label: t("editor.tool.eraser"),
-            })}
+            {onRemoveBackground ? (
+              <div className="relative flex items-center">
+                <EditorEraserMenu
+                  tool={tool}
+                  onTool={onTool}
+                  onRemoveBackground={onRemoveBackground}
+                  removeBackgroundBusy={removeBackgroundBusy}
+                />
+              </div>
+            ) : (
+              renderTool({
+                id: TOOL.ERASER,
+                icon: <IconEraser size={16} />,
+                label: t("editor.tool.eraser"),
+              })
+            )}
 
           </>
         ) : null}
@@ -212,6 +227,8 @@ EditorToolbar.propTypes = {
   onBrushMode: PropTypes.func,
   variant: PropTypes.oneOf(["design", "motion"]),
   onAddObject3d: PropTypes.func,
+  onRemoveBackground: PropTypes.func,
+  removeBackgroundBusy: PropTypes.bool,
 };
 
 export { EditorActions } from "./editor_actions.jsx";

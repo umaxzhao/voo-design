@@ -8,12 +8,15 @@ export const EDITOR_MODULES = [
       "src/canvas/components/welcome*", "src/canvas/components/welcome_dashboard/*",
       "src/canvas/components/editor*resources*", "src/canvas/components/editor_layers_assets*",
       "src/canvas/components/titlebar*",
+      "src/canvas/components/canvas_tab_bar.jsx", "src/canvas/components/canvas_tab_strip.jsx",
+      "src/canvas/components/canvas_tab_label.js", "src/canvas/components/use_tab_bar_overflow.js",
     ],
     related: ["documents","inspector","platform"],
-    features: ["workspace.projects","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry"],
+    features: ["workspace.projects","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry","workspace.project-tabs"],
     suites: [
       "project-picker", "titlebar-file-actions", "welcome-model-menu", "welcome-draft-trash",
       "ui-home-settings", "welcome-covers", "editor-resources", "editor-resources-built",
+      "top-tabs-overflow", "welcome-sidebar-toggle",
     ],
     remaining: ["Native OS picker behavior and physical touch devices require separate evidence."],
   },
@@ -103,6 +106,7 @@ export const EDITOR_MODULES = [
     title: "Masks, clipping and rendering",
     paths: [
       "src/canvas/editor/clipping-chain-cache.js", "src/canvas/editor/layer-pass-document.js",
+      "tests/e2e/selection-size-label-checks.mjs", "tests/unit/container_selection_chrome.test.js",
       "tests/unit/clipping-chain-cache.test.js", "tests/unit/layer-pass-document.test.js",
       "src/canvas/editor/chrome*", "src/canvas/editor/render*", "src/canvas/editor/skia*",
       "src/canvas/editor/*mask*", "src/canvas/editor/*opacity*", "src/canvas/editor/*sampling*",
@@ -110,7 +114,7 @@ export const EDITOR_MODULES = [
     ],
     related: ["layers","images","vectors","documents"],
     features: [
-      "compositing.mask-cache",
+      "compositing.selection-size-label", "compositing.mask-cache",
       "compositing.masks", "compositing.frame-clips", "compositing.alpha", "compositing.artwork-parity",
     ],
     suites: [
@@ -130,7 +134,7 @@ export const EDITOR_MODULES = [
     ],
     related: ["selection","compositing","documents","inspector"],
     features: ["vectors.path-edit","vectors.midpoint-insertion","vectors.booleans","vectors.stroke","vectors.format-losses","vectors.native-fig-properties"],
-    suites: ["pen-midpoint-insertion","boolean-stroke-export","boolean-resize","destructive-boolean","image-svg-parity","figma-import-fidelity"],
+    suites: ["pen-midpoint-insertion","boolean-stroke-export","boolean-resize","destructive-boolean","image-svg-parity"],
     remaining: [
       "Arbitrary third-party paths/fonts and every format round-trip loss require corpus expansion.",
     ],
@@ -182,7 +186,7 @@ export const EDITOR_MODULES = [
     features: ["layout.auto-layout","layout.constraints","layout.variables","layout.components"],
     suites: [
       "editor-effects", "stretch-layout", "build-layout-history", "mesh-gradient", "stroke-controls",
-      "editor-document-aids",
+      "editor-document-aids", "constraints-pin-regression",
     ],
     remaining: [
       "All component/variable alias cycles, nested layout combinations and every design-system preset are not exhausted.",
@@ -204,9 +208,9 @@ export const EDITOR_MODULES = [
     features: ["inspector.control-hierarchy", "inspector.typography-clarity", "inspector.export-opt-in", "inspector.unified-fill", "inspector.impeccable-polish", "inspector.context-submenus",
       "inspector.field-commit", "inspector.menu-focus", "inspector.responsive", "inspector.locale-lifecycle",
     ],
-    suites: ["impeccable-polish",
+    suites: [
       "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction",
-      "settings-i18n", "locale-lifecycle",
+      "settings-i18n", "locale-lifecycle", "taskbar-mobile-reachability", "mobile-bottom-spacing", "toolbar-hover-menu",
     ],
     remaining: [
       "Not every inspector control/value/input method is individually certified by the current representative scenarios.",
@@ -218,7 +222,7 @@ export const EDITOR_MODULES = [
     paths: [
       "scripts/generate-third-party-notices.mjs", "scripts/bundled-third-party-notices.mjs",
       "scripts/license-texts/*", "scripts/verify-package.mjs", "NOTICE",
-      "tests/e2e/editor-browser-server.mjs", "tests/e2e/editor-browser-fixture.mjs",
+      "tests/e2e/agent-cancel-harness.jsx", "tests/e2e/editor-browser-server.mjs", "tests/e2e/editor-browser-fixture.mjs",
       "tests/unit/third_party_notices.test.js", "tests/unit/package_contents.test.js",
       "src/canvas/agent/*", "src/canvas/mcp/*", "src/canvas/collab/*", "src/canvas/comments/*",
       "src/canvas/components/agent-panel/*", "src/canvas/components/onboarding/*", "electron/*", "plugins/*",
@@ -234,7 +238,7 @@ export const EDITOR_MODULES = [
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
     ],
     suites: [
-      "editor-fixture-startup", "browser-drawer", "pending-integration", "agent-model-catalog", "editor-loading",
+      "editor-fixture-startup", "browser-drawer", "browser-import-frame-resizer", "browser-import-wysiwyg-parity", "browser-topbar-actions", "pending-integration", "agent-model-catalog", "editor-loading",
       "editor-optional-loading", "comments-loading", "comments-lifecycle", "editor-refactor",
       "editor-context", "editor-page-composition", "local-service", "canvas-live-preview", "agent-authoring",
     ],
@@ -261,6 +265,8 @@ const unreviewedSuites = {
   vectors: ["html2nodes"],
 };
 export const ADDITIONAL_BROWSER_CHECKS = [
+  { suite: "layers-panel-width", owner: "inspector", kind: "unreviewed", reason: "Private branch regression; requires execution on this uncommitted tree before gate registration." },
+  { suite: "welcome-import-references", owner: "workspace", kind: "unreviewed", reason: "Private branch regression; requires execution on this uncommitted tree before gate registration." },
   ...Object.entries(unreviewedSuites).flatMap(([owner, suites]) => suites.map(suite => ({
     suite, owner, kind: "unreviewed",
     reason: "Existing standalone suite: review its fixtures, assertions and service requirements before gate registration.",

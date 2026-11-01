@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
+import { useBrowserDrawerWidth } from "./use-browser-drawer-width.js";
 import {
   ArrowLeft,
   ArrowRight,
@@ -45,14 +46,32 @@ export default function BrowserDrawerView({ model, onClose }) {
   } = model;
   const [toolsOpen, setToolsOpen] = useState(false);
   const toolsRef = useRef(null);
+  const {
+    width: drawerWidth,
+    isResizing,
+    handlePointerDown,
+    resetToDefault,
+    handleKeyDown,
+  } = useBrowserDrawerWidth();
 
   useEffect(() => {
     if (!toolsOpen) return undefined;
     const closeOnOutsidePointer = (event) => {
       if (!toolsRef.current?.contains(event.target)) setToolsOpen(false);
     };
+    const onKey = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        setToolsOpen(false);
+      }
+    };
     document.addEventListener("pointerdown", closeOnOutsidePointer, true);
-    return () => document.removeEventListener("pointerdown", closeOnOutsidePointer, true);
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer, true);
+      document.removeEventListener("keydown", onKey, true);
+    };
   }, [toolsOpen]);
 
   const runTool = (action) => {
@@ -65,8 +84,22 @@ export default function BrowserDrawerView({ model, onClose }) {
       data-testid="voo-browser-drawer"
       role="region"
       aria-label={t("browser.title")}
-      className="voo-browser-drawer flex min-h-0 min-w-0 shrink-0 flex-col border-l border-white/10 bg-neutral-950"
+      style={{ "--browser-drawer-width": `${drawerWidth}px` }}
+      className="voo-browser-drawer relative flex min-h-0 min-w-0 shrink-0 flex-col border-l border-white/10 bg-neutral-950"
     >
+      {/* Desktop Draggable Left Separator */}
+      <div
+        role="separator"
+        tabIndex={0}
+        aria-orientation="vertical"
+        aria-label="Resize browser drawer"
+        aria-valuenow={Math.round(drawerWidth)}
+        data-testid="browser-drawer-resizer"
+        onPointerDown={handlePointerDown}
+        onDoubleClick={resetToDefault}
+        onKeyDown={handleKeyDown}
+        className="browser-drawer-resizer absolute -left-1.5 top-0 bottom-0 z-30 hidden w-3 cursor-col-resize md:block hover:bg-[#a7ffd4]/30 active:bg-[#a7ffd4]/50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]"
+      />
       <div className="browser-drawer-toolbar flex h-12 shrink-0 items-center gap-1.5 border-b border-white/10 bg-neutral-950 px-2.5 text-xs">
         <div className="flex shrink-0 items-center gap-0.5">
           <button
@@ -128,29 +161,59 @@ export default function BrowserDrawerView({ model, onClose }) {
         </form>
 
         <div ref={toolsRef} className="relative flex shrink-0 items-center gap-1">
+          {/* Action 1: Pick Element */}
+          <button
+            type="button"
+            aria-label={isPicking ? t("browser.picking") : t("browser.pickElement")}
+            aria-pressed={isPicking}
+            title={isPicking ? t("browser.picking") : t("browser.pickElement")}
+            onClick={isPicking ? handleStopPick : handleStartPick}
+            className={`flex size-8 md:size-8 max-md:size-11 items-center justify-center rounded-lg transition-colors cursor-pointer ${
+              isPicking ? "bg-[#b2ffd6]/20 text-[#b2ffd6]" : "text-neutral-400 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <MousePointerClick size={15} />
+          </button>
+
+          {/* Action 2: Import Entire Page */}
+          <button
+            type="button"
+            aria-label={t("browser.importPage")}
+            title={t("browser.importPage")}
+            disabled={isLoading}
+            onClick={handleImportFullPage}
+            className="flex size-8 md:size-8 max-md:size-11 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white disabled:opacity-40 transition-colors cursor-pointer"
+          >
+            <Download size={15} />
+          </button>
+
+          {/* Action 3: Capture Viewport Screenshot */}
+          <button
+            type="button"
+            aria-label={t("browser.captureImage")}
+            title={t("browser.captureImage")}
+            onClick={handleCaptureViewport}
+            className="flex size-8 md:size-8 max-md:size-11 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+          >
+            <Camera size={15} />
+          </button>
+
+          {/* Secondary "..." Tools Menu */}
           <button
             type="button"
             aria-label={t("browser.actions")}
             aria-expanded={toolsOpen}
             title={t("browser.actions")}
             onClick={() => setToolsOpen((open) => !open)}
-            className={`flex size-8 items-center justify-center rounded-lg transition-colors ${toolsOpen ? "bg-white/10 text-white" : "text-neutral-400 hover:bg-white/10 hover:text-white"}`}
+            className={`flex size-8 md:size-8 max-md:size-11 items-center justify-center rounded-lg transition-colors cursor-pointer ${toolsOpen ? "bg-white/10 text-white" : "text-neutral-400 hover:bg-white/10 hover:text-white"}`}
           >
             <MoreHorizontal size={16} />
           </button>
           {toolsOpen && (
             <div role="menu" aria-label={t("browser.actions")} className="absolute right-0 top-full z-10 mt-2 flex w-52 flex-col rounded-xl border border-white/10 bg-neutral-900 p-1 shadow-panel">
-              <button type="button" role="menuitem" onClick={() => runTool(isPicking ? handleStopPick : handleStartPick)} className="flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-200 hover:bg-white/10">
-                <MousePointerClick size={14} className={isPicking ? "text-[#b2ffd6]" : "text-neutral-400"} />
-                <span>{isPicking ? t("browser.picking") : t("browser.pickElement")}</span>
-              </button>
               <button type="button" role="menuitem" onClick={() => runTool(handleImportFullPage)} disabled={isLoading} className="flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-200 hover:bg-white/10 disabled:opacity-40">
                 <Download size={14} className="text-neutral-400" />
                 <span>{t("browser.importPage")}</span>
-              </button>
-              <button type="button" role="menuitem" onClick={() => runTool(handleCaptureViewport)} className="flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-200 hover:bg-white/10">
-                <Camera size={14} className="text-neutral-400" />
-                <span>{t("browser.captureImage")}</span>
               </button>
               <button type="button" role="menuitem" onClick={() => runTool(() => setShowCustomHtml((previous) => !previous))} className="flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-200 hover:bg-white/10">
                 <Code size={14} className="text-neutral-400" />
@@ -258,6 +321,8 @@ export default function BrowserDrawerView({ model, onClose }) {
 
       {/* Main Browser View Area */}
       <div className="relative flex-1 min-h-0 bg-neutral-950">
+        {/* Transparent overlay during dragging to prevent iframe capturing mouse events */}
+        {isResizing && <div className="absolute inset-0 z-40 bg-transparent cursor-col-resize" />}
         {isElectron ? (
           <webview
             ref={webviewRef}

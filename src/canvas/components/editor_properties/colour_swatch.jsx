@@ -55,7 +55,10 @@ export function Swatch({
       const panel = button.closest("aside")?.getBoundingClientRect();
       const gap = 12;
       let left;
-      if (panel && panel.left >= box.width + gap + 8) {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        left = Math.max(8, Math.floor((window.innerWidth - box.width) / 2));
+      } else if (panel && panel.left >= box.width + gap + 8) {
         // The panel sits on the right of the screen: room is on its left.
         left = panel.left - box.width - gap;
       } else if (panel) {
@@ -121,7 +124,7 @@ export function Swatch({
         event.preventDefault();
         setOpen(true);
       }
-    }} className="relative block h-5 w-5 shrink-0 cursor-pointer overflow-hidden rounded-full border border-white/10 outline-none transition-colors hover:border-white/30 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40" style={{
+    }} className="relative flex h-5 w-5 [@media(pointer:coarse)]:h-8 [@media(pointer:coarse)]:w-8 shrink-0 cursor-pointer overflow-hidden rounded-full border border-white/10 outline-none transition-colors hover:border-white/30 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40" style={{
       background: isImage && previewImage ? `url(${previewImage}) center / cover no-repeat` : valid ? value : NONE_PATTERN
     }} />
 

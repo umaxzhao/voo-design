@@ -2,9 +2,33 @@
 
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
-更新时间：2026-10-31。
-最近一次完整核心验证提交：[b965942](https://github.com/umaxzhao/voo-design/commit/b965942e22bcfb408015acdba58f49d8d7c3cd8c)；91/91 项通过。当前线上为该固定版本。
+更新时间：2026-11-01。
+最近一次完整核心检查：[eab3bea](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78)；105/105 步通过，含 101 组核心浏览器、4781 单测通过/4 跳过，四个平台原生与最终草稿核验通过。线上已更新为该 CI 构建；本地脏工作区草稿仍不属于本版发布认证。
 以下结果只属于该固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+
+## 三平台 GitHub Beta（门禁与产物核验通过）
+
+- [Beta 下载与说明](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.1)：`1.0.0-beta.1`，Windows x64 setup/portable、Linux x64 AppImage、macOS Intel/Apple Silicon DMG/ZIP，共四个原生目标、七个载荷。公开状态以该 Release 页面为准，保持 prerelease，不标记稳定最新版。
+- 固定验证源码 [`eab3bea`](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78) 的 [完整 CI](https://github.com/umaxzhao/voo-design/actions/runs/41281003764) 全部成功：**105/105 步、101 组核心浏览器、4781 单测通过/4 跳过、1441 文件设计检查**；580 个测试文件通过/3 跳过。报告 `complete=true`，12 个模块、87 组能力的功能覆盖仍为 partial，11 组独立额外检查明确 not-run。Release 附带 `web-release-checks.json`，不以其他提交或脏工作区继承通过。
+- `platform.desktop-release`：四原生构建与打包应用冒烟均通过，收据的版本、架构、提交严格匹配；七个载荷、三份更新元数据、四份收据均已独立复核。组装器逐字节验证更新载荷 SHA-512/尺寸；最终草稿的 **21 项 SHA-256** 与 GitHub 实际资产摘要一致，包含说明和 Web 证据，安装包未经过二次修改。两种 Mac 架构的更新条目合并保留，Windows setup/portable 分开命名，Linux AppImage 使用 GNU `x86_64` 文件名而收据保留 Node `x64`。
+- `platform.desktop-close`：实际打包应用启动、指针绘图/撤销重做、原生工作区文件写读、取消脏退出后 bridge 存活、新进程与隔离 profile 从真实工作区文件卡片重开均有原生证据。原生 picker/确认选择由自动化驱动，不能当作外层安装向导或系统信任交互的人工验收。
+- 发布过程中修复了空签名变量、Windows ASAR 路径与间接依赖、Mac 中文资源、Vite 清理竞态、Linux 字体对照、离线模型菜单及冷菜单焦点。字体对照保留原 1% 门槛；三种快捷键格式均经真实浏览器检查。冷加载时背景恢复焦点的场景先稳定复现失败，再修复导航键/Tab；相关回归保留在 `editor-optional-loading.e2e.mjs`。没有跳过失败用例凑通过。
+- 历史失败保留为独立结果：[字体](https://github.com/umaxzhao/voo-design/actions/runs/41273421739)、[模型菜单](https://github.com/umaxzhao/voo-design/actions/runs/41273626256)、[快捷键](https://github.com/umaxzhao/voo-design/actions/runs/41275043454)、[AppImage 组装](https://github.com/umaxzhao/voo-design/actions/runs/41276919981)、[冷菜单焦点](https://github.com/umaxzhao/voo-design/actions/runs/41279268095)；失败或早期取消的候选没有冒记完整通过，也没有公开 Release。本轮完整通过后才创建并核验草稿。
+- 在线预览已由同一候选的 CI 静态产物通过项目脚本更新至 [voo.run/editor](https://voo.run/editor/)：入口及 12 项关键资源逐字节一致；四组实际线上交互通过，实际加载的 83 项 JS/CSS 均匹配，零页面异常。覆盖约束轴/撤销、390px Browser 分屏/48px 复制/撤销、文件卡片打开及旧分享重定向。证据 `/private/tmp/voo-beta-deployment-eab-proof.json`、`/private/tmp/voo-beta-production-eab-proof.json`；线上回滚备份 `la2:/srv/voo-run/editor-backups/eab3beaaff22a2ccc28780d9972bb2c58f4baa78-20261101T070133Z`。
+- 验收边界：**安装包未签名，Mac 未公证**；人工安装与系统信任流程、旧版升级、真实付费/CLI/模型服务及其他系统版本仍未认证。4 项跳过单测和 11 组独立检查没有计入通过。旧草稿备份、辅助工作树及主工作区无关未提交改动继续保留，未打入本版。[发布清单](release-checklist.md)、[签名/原生验收](code-signing.md)、[PR #81](https://github.com/umaxzhao/voo-design/pull/81)。
+
+## 本轮：Claude 自测问题单收口（已完成声明范围）
+
+- 逐项核对用户的 `78155ee` + 私人工作区清单；正式版和本地 App 分开验证，没有用一份通过结果覆盖另一份源码。
+- A1/A2：六条约束点击区独立、中心不串轴，真实中点点击/键盘/一次撤销通过；320/390/768px 鼠标与模拟触控下，普通导航、工具条、页签等控件达到 48px。约束图与画布精细手柄单独验收，不冒记为 48px 普通按钮。内部仍保留已确认的大圆角。
+- B1/B2：手机 Browser 与编辑器上下分屏；文件卡片单列，隐藏操作不再拦截主体点击，固定设置按钮下方保留滚动空间；实际打开文件、更多菜单与触控布局通过。
+- A3/A4/B3/B5/B6：保留 DeepSeek API 与 Harness 的独立入口、补齐本地翻译/文档契约；本地首页八种类型、风格、设计系统、候选数与尺寸统一收进一个高级入口，自动尺寸和附件保留，退役弹窗已备份后移出运行代码。本地两条不存在的套件登记已移除，另两份待审套件显式登记为未验证；正式版保留实际存在的两份检查。既有评论位置和首页隔离修复保留。
+- C：十份旧脚本改为自动启动隔离服务/文档、临时输出目录，纳入核心门禁；真实工具、取消/重试、文件往返、导出和像素要求保留。另修复字距能力探测污染 Canvas 状态的真实缺陷：标题像素差由 2.617% 降至 0，HTML 原 1% 门槛不变。
+- 固定源码 [`db4a184`](https://github.com/umaxzhao/voo-design/commit/db4a184b9bd712dbff87982ecd75a4b6a88ac826)：**103 项检查逐项通过，含 99 组浏览器、4717 项单测通过/4 跳过，构建和设计检查通过（1432 文件）**。这是同一干净提交上的恢复验证；完整命令曾因冷启动/MCP 注册超时失败，降低并发后补跑失败及未执行项，不宣称首次命令退出 0。原失败、重试链和源码未变校验均保留在 `/private/tmp/voo-claude-checklist-release-{complete,recovered,recovered-final}.json` 及 `voo-claude-main-tree-proof.json`。
+- 已推送并通过 SSH la2 部署；正式入口、12 个相关资源与构建逐字节一致，实际加载的 83 个 JS/CSS 资源 SHA-256 一致。线上真实约束点击/撤销、390px Browser 分屏、48px 复制/一次撤销、文件卡片中点打开、默认隐藏类型行通过，零页面异常。B4 的旧 `/r/...` 真实跳转保留房间与 `#k` 片段，`/editor` 不再暴露 8444 内部端口；没有加入真实房间。证据 `/private/tmp/voo-claude-{deployment-proof,production-proof}.json`、`voo-claude-deploy.log`。
+- 本地 App 只修相关草稿：**120 项定向单测、设计检查（1427 文件）、十份旧脚本（启动超时后补跑）、约束/手机目标/统一高级面板真实交互通过**；不是整个脏工作区的发布认证。证据 `/private/tmp/voo-claude-primary-proof.json`。38 份原始快照的哈希已核验，长期备份在 `/Volumes/TD/Projects/voo_design/.local-drafts/claude-checklist-2026-11-01.tar`，其余草稿保留。
+- N1–N3 未认证：原生 Swift/签名 Electron、实体 iOS/Android/WebKit、IME/软键盘、真实登录/付费服务、多机协作与硬件性能。私人通用 `ui-audit` 及自动截图基线没有冒记为正式门禁通过；注册执行通过仍不代表全部功能、所有状态均已覆盖。
+- [问题映射、失败与验收证据](audits/panel-control-audit.md#claude-checklist-closeout)。
 
 ## 本轮：右侧控件恢复品牌大圆角（已完成声明范围）
 

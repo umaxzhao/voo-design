@@ -6,6 +6,7 @@ import { useI18n } from "../use_i18n.js";
 import { toolFamilyIcon } from "./tool_family_icons.jsx";
 import { useTouchToolTarget, withTouchToolTarget } from "./editor_touch_tool_target.jsx";
 import { moveEditorMenuFocus } from "./editor_menu_navigation.js";
+import { useHoverMenu } from "./use_hover_menu.js";
 
 /**
  * Turns a tool family's items (see TOOL_FAMILIES) into dropdown entries. The
@@ -67,7 +68,10 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
     setOpen(true);
   };
 
+  const hover = useHoverMenu({ open, openMenu, close: () => setOpen(false) });
+
   const toggleMenu = () => {
+    if (hover.pin()) return;
     if (open) setOpen(false);
     else openMenu();
   };
@@ -83,6 +87,7 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
     }, 450);
   };
 
+  // A finger that moves beyond the slop is scrolling, not holding: cancel the long press.
   const onPointerMoveCapture = (event) => {
     if (!pointerStartRef.current || event.pointerType !== "touch") return;
     const dx = event.clientX - pointerStartRef.current.x;
@@ -157,7 +162,7 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
 
   // Keyboard users opening the menu land on its first item.
   useEffect(() => {
-    if (!open) return;
+    if (!open || hover.hoverOpenedRef.current) return;
     menuRef.current?.querySelector('[role="menuitem"]')?.focus();
   }, [open]);
 
@@ -171,6 +176,8 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
       onPointerUpCapture={clearLongPress}
       onPointerCancelCapture={clearLongPress}
       onClickCapture={onClickCapture}
+      onPointerEnter={hover.onPointerEnter}
+      onPointerLeave={hover.onPointerLeave}
     >
       {touchTarget ? withTouchToolTarget(children, { active, open, menuId, menuLabel }) : children}
       <button
@@ -210,8 +217,9 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
                     role="menuitem"
                     aria-current={item.active ? "true" : undefined}
                     data-testid={`editor-${menuId}-menu-${item.key}`}
+                    disabled={item.disabled}
                     onClick={() => chooseItem(item)}
-                    className={`editor-family-menu-item group flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] transition-all hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4] ${
+                    className={`editor-family-menu-item group flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] transition-all disabled:cursor-not-allowed disabled:opacity-40 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7ffd4] ${
                       item.active ? "bg-white/10 text-white" : "text-neutral-300"
                     }`}
                   >
@@ -239,6 +247,7 @@ EditorFamilyMenu.propTypes = {
       labelKey: PropTypes.string.isRequired,
       Icon: PropTypes.elementType.isRequired,
       active: PropTypes.bool,
+      disabled: PropTypes.bool,
       onChoose: PropTypes.func.isRequired,
     }),
   ).isRequired,

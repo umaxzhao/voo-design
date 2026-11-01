@@ -114,3 +114,22 @@
   filter: blur(12px);
   pointer-events: none;
 }
+
+/* Generation type icons (v3 dedicated styling) */
+.welcome-type-icon {
+  color: #707070;
+}
+
+.group:hover .welcome-type-icon,
+.group[aria-checked="true"] .welcome-type-icon {
+  color: #a3a3a3;
+}
+
+html[data-theme="light"] .welcome-type-icon {
+  color: #a6a6a6 !important;
+}
+
+html[data-theme="light"] .group:hover .welcome-type-icon,
+html[data-theme="light"] .group[aria-checked="true"] .welcome-type-icon {
+  color: #525252 !important;
+}

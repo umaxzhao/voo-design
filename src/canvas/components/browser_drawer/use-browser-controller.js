@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useI18n } from "../../use_i18n.js";
 import { importHtmlSnippetToCanvas } from "./browser_import_helpers.js";
+import { executeFullPageImport } from "./browser_fullpage_import.js";
 import { INJECTED_PICKER_CODE } from "./browser_picker_script.js";
 import { DEFAULT_HOME_URL } from "./browser-config.js";
 
@@ -138,38 +139,13 @@ export function useBrowserController(open) {
     setImportStatus({ type: "info", message: t("browser.extracting") });
 
     try {
-      let pageData = null;
-      if (isElectron && webviewRef.current) {
-        injectPickerScript();
-        pageData = await webviewRef.current.executeJavaScript(
-          "window.__vooExtractFullPage?.() || { html: document.body.innerHTML, width: window.innerWidth, height: document.body.scrollHeight, title: document.title }",
-        );
-      } else if (iframeRef.current?.contentDocument) {
-        const doc = iframeRef.current.contentDocument;
-        pageData = {
-          html: doc.body.innerHTML,
-          width: Math.max(1080, doc.documentElement.clientWidth || 1080),
-          height: Math.max(900, doc.body.scrollHeight || 900),
-          title: doc.title || t("browser.page"),
-        };
-      }
-
-      if (!pageData?.html) {
-        // Fallback: fetch directly
-        try {
-          const res = await fetch(url);
-          const raw = await res.text();
-          pageData = { html: raw, width: 1200, height: 900, title: url };
-        } catch {
-          throw new Error(t("browser.extractError"));
-        }
-      }
-
-      const result = await importHtmlSnippetToCanvas({
-        html: pageData.html,
-        width: pageData.width || 1200,
-        height: pageData.height || 900,
-        title: pageData.title || t("browser.page"),
+      const result = await executeFullPageImport({
+        isElectron,
+        webviewRef,
+        iframeRef,
+        injectPickerScript,
+        url,
+        t,
       });
 
       if (result.success) {
@@ -220,34 +196,32 @@ export function useBrowserController(open) {
         setIsLoading(true);
         const image = await webviewRef.current.capturePage();
         const dataUrl = image.toDataURL();
-        // Insert as an image node
-        const editor =
-          window.__vooEditor || Object.values(window.__vooEditors || {})[0];
-        if (editor) {
-          const size = image.getSize();
-          const doc = editor.getDocument();
-          const placementX = doc?.width ? doc.width + 80 : 80;
-          const newNode = {
-            id: `img-${Date.now()}`,
-            name: t("browser.snapshot", { host: new URL(url).hostname }),
-            kind: "image",
-            type: "node",
-            x: placementX,
-            y: 80,
-            width: size.width || 800,
-            height: size.height || 600,
-            imageSrc: dataUrl,
-          };
-          editor.setDoc(
-            { ...doc, nodes: [...(doc.nodes || []), newNode] },
-            { name: "Import Web Snapshot" },
-          );
-          editor.selectExactly?.([newNode.id]);
-          setImportStatus({
-            type: "success",
-            message: t("browser.snapshotDone"),
-          });
-        }
+        const title = t("browser.snapshot", { host: new URL(url).hostname });
+
+        const { prepareImportTargetProject } = await import("./browser_import_target.js");
+        const { editor, doc, placement } = await prepareImportTargetProject(title);
+
+        const size = image.getSize();
+        const newNode = {
+          id: `img-${Date.now()}`,
+          name: title,
+          kind: "image",
+          type: "node",
+          x: placement.x,
+          y: placement.y,
+          width: size.width || 800,
+          height: size.height || 600,
+          imageSrc: dataUrl,
+        };
+        editor.setDoc(
+          { ...doc, nodes: [...(doc.nodes || []), newNode] },
+          { name: "Import Web Snapshot" },
+        );
+        editor.selectExactly?.([newNode.id]);
+        setImportStatus({
+          type: "success",
+          message: t("browser.snapshotDone"),
+        });
       } catch (err) {
         setImportStatus({
           type: "error",

@@ -12,6 +12,26 @@ UI rules in `Design.md` supersede historical descriptions of default controls.
 
 ---
 
+## Current readiness review — 2026-11-01
+
+Configuration reviewed at `ed3db20`; this is not installer execution evidence.
+GitHub currently has no releases/tags or runs of `release.yml`. Repository Actions
+signing secrets are not configured (names only were inspected, never values).
+
+The Electron targets cover Windows x64 NSIS/Portable, macOS DMG/ZIP and Linux
+AppImage/DEB, but the current tag workflow builds and publishes only AppImage.
+macOS/Windows are optional manual jobs and upload Actions artifacts only. Those
+jobs omit the connector-resource preparation required by `extraResources`.
+Update manifests, blockmaps and checksums are not attached by this workflow.
+macOS Intel/Apple Silicon need explicit architecture coverage.
+
+Before a three-platform release: prepare connector resources on each native
+runner; build and inspect every intended package; exercise installation/launch,
+file roundtrip, local CLI/model access and updates; verify signing/notarization
+where configured; publish all required assets together after the jobs succeed.
+Unsigned prereleases can be clearly labeled; web-editor tests alone cannot
+certify packaged/native applications. This review creates no tag or Release.
+
 ## Pre-Release Phase
 
 ### Version & Metadata
