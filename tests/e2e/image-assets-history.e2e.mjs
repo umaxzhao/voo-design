@@ -7,6 +7,33 @@ await withEditorBrowser(async ({
 }) => {
   const audit = imageAudit(page, "asset-history");
   const source = () => page.evaluate(() => window.__vooEditor.exportNodePng(window.__vooEditor.getSelectedId()));
+  await audit.record("full-history-retains-image-pixels-through-keyboard-delete-undo-redo", async () => {
+    const node = await audit.seed();
+    const original = await audit.pixels(node.id);
+    const position = await page.evaluate(id => {
+      const e = window.__vooEditor;
+      for (let i = 0; i < 55; i += 1) e.updateNode(id, { x: 100 + i });
+      return { x: e.getNode(id).x, entries: e.getHistoryEntries().length };
+    }, node.id);
+    assert.equal(position.entries, 50);
+    assert.deepEqual(await audit.pixels(node.id), original);
+    await page.evaluate(id => {
+      document.activeElement?.blur();
+      window.__vooEditor.selectExactly([id]);
+    }, node.id);
+    await page.keyboard.press("Backspace");
+    await page.waitForFunction(id => !window.__vooEditor.getNode(id), node.id);
+    await page.keyboard.press("ControlOrMeta+z");
+    await page.waitForFunction(id => Boolean(window.__vooEditor.getNode(id)), node.id);
+    assert.equal(await page.evaluate(id => window.__vooEditor.getNode(id).x, node.id), position.x);
+    assert.deepEqual(await audit.pixels(node.id), original);
+    await page.keyboard.press("ControlOrMeta+Shift+z");
+    await page.waitForFunction(id => !window.__vooEditor.getNode(id), node.id);
+    await page.keyboard.press("ControlOrMeta+z");
+    await page.waitForFunction(id => Boolean(window.__vooEditor.getNode(id)), node.id);
+    assert.deepEqual(await audit.pixels(node.id), original);
+    return { historyCapacity: 50, geometryEdits: 55, keyboardDeleteUndoRedo: true, exactImagePixels: true };
+  });
   await audit.record("pending-insert-preserves-later-edit", async () => {
     await audit.seed();
     const url = await source();
