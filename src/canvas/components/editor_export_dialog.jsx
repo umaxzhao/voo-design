@@ -62,9 +62,9 @@ export const FORMATS = [
     mimeType: "application/pdf",
     description: "Export as PDF document",
   }),
-  Object.assign(["fig", "Figma (.fig)"], {
+  Object.assign(["fig", "editor.exportFigma"], {
     id: "fig",
-    label: "Figma (.fig)",
+    label: "editor.exportFigma",
     extension: "fig",
     mimeType: "application/octet-stream",
     description: "Export as Figma .fig file",

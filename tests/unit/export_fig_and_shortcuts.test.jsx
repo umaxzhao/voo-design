@@ -78,7 +78,7 @@ describe("Figma (.fig) export integration", () => {
       (f) => f.extension === "fig" || f.id === "fig" || f[0] === "fig",
     );
     expect(figFormat).toBeDefined();
-    expect(figFormat.label).toBe("Figma (.fig)");
+    expect(figFormat.label).toBe("editor.exportFigma");
     expect(figFormat.extension).toBe("fig");
     expect(figFormat.mimeType).toBe("application/octet-stream");
     expect(figFormat.description).toBe("Export as Figma .fig file");
@@ -86,7 +86,7 @@ describe("Figma (.fig) export integration", () => {
     // Supports [id, label] array destructuring for UI rendering
     const [id, label] = figFormat;
     expect(id).toBe("fig");
-    expect(label).toBe("Figma (.fig)");
+    expect(label).toBe("editor.exportFigma");
   });
 
   it("renders Figma (.fig) option in EditorExportDialog", () => {
@@ -105,7 +105,7 @@ describe("Figma (.fig) export integration", () => {
         onClose={() => {}}
       />,
     );
-    expect(html).toContain("Figma (.fig)");
+    expect(html).toContain("editor.exportFigma");
   });
 
   it("handles dimensions and filename for .fig format correctly", () => {
