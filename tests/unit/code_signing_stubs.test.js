@@ -43,7 +43,7 @@ describe('optional code signing', () => {
     expect(workflow.on.push.tags).toEqual(['v*']);
     expect(workflow.on.workflow_dispatch.inputs.create_draft.default).toBe(false);
     expect(workflow.permissions.contents).toBe('read');
-    expect(workflow.jobs.build.needs).toBe('checks');
+    expect(workflow.jobs.build.if).toBeUndefined();
     expect(workflow.jobs.build.strategy.matrix.include.map(target => `${target.platform}/${target.arch}`)).toEqual(['linux/x64', 'win/x64', 'mac/x64', 'mac/arm64']);
     expect(workflow.jobs.draft.needs).toEqual(['checks', 'build']);
     expect(workflow.jobs.draft.permissions.contents).toBe('write');
