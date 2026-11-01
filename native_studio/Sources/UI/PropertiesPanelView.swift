@@ -4306,7 +4306,8 @@ public final class PropertiesPanelView: NSView {
 
     public override func draw(_ dirtyRect: NSRect) {
         guard headerTabs.selectedIndex == 0,
-            let ctx = NSGraphicsContext.current?.cgContext else { return }
+            let ctx = NSGraphicsContext.current?.cgContext
+        else { return }
 
         // Field surfaces for the read-only rows of the rebuilt inspector chrome.
         let surfaces: [CGRect] = [fillRowRect, strokeRow1Rect, strokeRow2Rect,
