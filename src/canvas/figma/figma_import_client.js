@@ -74,7 +74,8 @@ export function importFigFile(bytes, callbacks = {}) {
 
     const owned = bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength;
     const buffer = owned ? bytes.buffer : bytes.slice().buffer;
-    const workerOptions = { chunkSize: chunkSize ?? options?.chunkSize, ...(options || {}) };
+    const workerOptions = { chunkSize: chunkSize ?? options?.chunkSize, ...(options || {}),
+      emitChunks: typeof onChunk === "function" };
 
     worker.postMessage({ bytes: buffer, options: workerOptions }, [buffer]);
   });

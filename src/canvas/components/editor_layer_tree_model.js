@@ -3,6 +3,8 @@ import { sourceLayerRows } from "./editor-instance-layer-model.js";
 import { isGroupExpandedInSearch } from "./editor_canvas_tree_nav.js";
 import { checkCanvasMatch } from "./editor_canvas_tree_model.js";
 import { buildVisibleTreeItems } from "./editor_canvas_tree_items.js";
+import { layerTopology } from "./editor_layer_topology.js";
+import { subtreeMatcher } from "./editor_layer_search.js";
 export default function buildEditorLayerTree(model) {
   const {
     objects,
@@ -18,38 +20,8 @@ export default function buildEditorLayerTree(model) {
     collapsedCanvasIds,
     collapsedGroupIdsByCanvas
   } = model;
-  /** Flat doc index by id — the handlers the parent passed are index-based. */
-  const docIndexOf = new Map(objects.map((object, index) => [object.id, index]));
   const panelObjects = objects;
-  const byId = new Map(objects.map(object => [object.id, object]));
-  const clipTargets = new Map();
-  for (const object of panelObjects) {
-    const base = byId.get(object.clipTo);
-    if (!base || base.id === object.id || (base.parentId ?? null) !== (object.parentId ?? null)) continue;
-    const seen = new Set([object.id]);
-    let current = base;
-    while (current && !seen.has(current.id)) {
-      seen.add(current.id); current = byId.get(current.clipTo);
-    }
-    if (!current) clipTargets.set(object.id, base.id);
-  }
-  /** parentId → child nodes, in document (paint) order. */
-  const childrenMap = new Map();
-  for (const object of panelObjects) {
-    if (!object.parentId || clipTargets.has(object.id)) continue;
-    if (!childrenMap.has(object.parentId)) childrenMap.set(object.parentId, []);
-    childrenMap.get(object.parentId).push(object);
-  }
-  /** Top-level rows: root nodes plus the folders, in document order. */
-  const units = panelObjects.filter(object => !object.parentId);
-  /** clipTo target id → its clipped members, in document (paint) order. */
-  const clipMap = new Map();
-  for (const object of panelObjects) {
-    const baseId = clipTargets.get(object.id);
-    if (!baseId) continue;
-    if (!clipMap.has(baseId)) clipMap.set(baseId, []);
-    clipMap.get(baseId).push(object);
-  }
+  const { docIndexOf, childrenMap, units, clipMap, clipTargets } = layerTopology(objects);
   const activePage = canvasPages?.find(p => p.id === activeCanvasId);
   const activeCanvasTitleMatches = Boolean(query && activePage && activePage.title?.toLowerCase().includes(query));
 
@@ -64,23 +36,16 @@ export default function buildEditorLayerTree(model) {
     const label = describeNode(node, docIndexOf.get(node.id) ?? 0, labels);
     return label.toLowerCase().includes(query);
   };
-  const subtreeMatches = (node, seen = new Set()) => {
-    if (seen.has(node.id)) return false;
-    seen.add(node.id);
-    if (activeCanvasTitleMatches) return true;
-    if (rowMatches(node)) return true;
-    if (node.kind === "canvasInstance" && resolveCanvas) {
-      const sourceDoc = resolveCanvas(node.sourceCanvasId);
-      if (sourceLayerRows(sourceDoc, (child, index) => describeNode(child, index, labels), query).length > 0) return true;
-    }
-    for (const kid of childrenMap.get(node.id) ?? []) {
-      if (subtreeMatches(kid, seen)) return true;
-    }
-    for (const member of clipMap.get(node.id) ?? []) {
-      if (subtreeMatches(member, seen)) return true;
-    }
-    return false;
-  };
+  const sourceMatches = new Map();
+  const subtreeMatches = !query || activeCanvasTitleMatches ? () => true :
+    subtreeMatcher(panelObjects, childrenMap, clipMap, node => {
+      if (rowMatches(node)) return true;
+      if (node.kind !== "canvasInstance" || !resolveCanvas) return false;
+      const source = resolveCanvas(node.sourceCanvasId);
+      if (!sourceMatches.has(source)) sourceMatches.set(source,
+        sourceLayerRows(source, (child, index) => describeNode(child, index, labels), query).length > 0);
+      return sourceMatches.get(source);
+    });
 
   /**
   * The rows on display, top first. A folder's members follow it indented
@@ -140,7 +105,12 @@ export default function buildEditorLayerTree(model) {
     nodes: objects,
     isFallback: true
   }];
-  const hasAnyMatch = !query || (!hasCanvasPages ? rows.length > 0 || backgroundMatches : canvasPages.some(p => p.id === activeCanvasId ? p.title?.toLowerCase().includes(query) || rows.length > 0 || backgroundMatches : checkCanvasMatch(p, query, labels).matchesSelf || checkCanvasMatch(p, query, labels).matchingLayersCount > 0));
+  const hasAnyMatch = !query || (!hasCanvasPages ? rows.length > 0 || backgroundMatches :
+    canvasPages.some(page => {
+      if (page.id === activeCanvasId) return page.title?.toLowerCase().includes(query) || rows.length > 0 || backgroundMatches;
+      const match = checkCanvasMatch(page, query, labels);
+      return match.matchesSelf || match.matchingLayersCount > 0;
+    }));
   /** Nothing matches: swap the list for the empty-state copy. */
   const listEmpty = Boolean(query) && !hasAnyMatch;
   const activeObject = activeIndex >= 0 ? objects[activeIndex] : null;

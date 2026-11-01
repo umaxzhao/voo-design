@@ -88,7 +88,8 @@ export const EDITOR_MODULES = [
     id: "layers",
     title: "Layers, Frames and ownership",
     paths: [
-      "src/canvas/components/editor_layer*", "src/canvas/components/use*layer*", "src/canvas/editor/*node*",
+      "src/canvas/components/editor_layer*", "src/canvas/components/use*layer*",
+      "src/canvas/components/editor_canvas_tree_model.js", "tests/unit/editor_layer_tree_cache.test.js", "src/canvas/editor/*node*",
       "src/canvas/editor/layer_selection.js", "src/canvas/components/image_editor.jsx",
       "src/canvas/editor/*frame*", "src/canvas/editor/*reparent*", "src/canvas/editor/*duplicate*",
       "src/canvas/editor/*paste*", "src/canvas/editor/*clipboard*",
@@ -101,7 +102,7 @@ export const EDITOR_MODULES = [
       "tests/unit/frame_fit_to_content.test.js", "tests/unit/reparent-moved-roots.test.js",
     ],
     related: ["selection","compositing","layout","documents"],
-    features: ["layers.nesting","layers.placement","layers.reparent","layers.duplicate-delete-lock","layers.container-boundaries"],
+    features: ["layers.model-cache","layers.nesting","layers.placement","layers.reparent","layers.duplicate-delete-lock","layers.container-boundaries"],
     suites: [
       "editor-layers-composition", "image-layer-window", "frame-alt-duplicate", "frame-reparent-contracts",
       "nested-placement", "nested-object-lifecycle", "container-command-boundaries",
@@ -139,13 +140,13 @@ export const EDITOR_MODULES = [
     id: "vectors",
     title: "Shapes, paths and Boolean geometry",
     paths: [
-      "tests/unit/figma/*",
+      "tests/unit/figma/*", "tests/unit/figma_worker_subscription.test.js",
       "src/canvas/editor/shape_geometry.js", "src/canvas/editor/*boolean*", "src/canvas/editor/*path*", "src/canvas/editor/*pen*",
       "src/canvas/editor/*svg*", "src/canvas/editor/editor_export*", "src/canvas/figma/*", "src/canvas/pen/*",
       "src/canvas/codegen/*", "tests/unit/pen-midpoint-insertion.test.js", "tests/unit/pen_curve_math.test.js",
     ],
     related: ["selection","compositing","documents","inspector"],
-    features: ["vectors.path-edit","vectors.midpoint-insertion","vectors.booleans","vectors.stroke","vectors.format-losses","vectors.native-fig-properties"],
+    features: ["vectors.import-subscriptions","vectors.path-edit","vectors.midpoint-insertion","vectors.booleans","vectors.stroke","vectors.format-losses","vectors.native-fig-properties"],
     suites: ["pen-midpoint-insertion","boolean-stroke-export","boolean-resize","destructive-boolean","image-svg-parity","figma-import-fidelity","html2nodes"],
     remaining: [
       "Arbitrary third-party paths/fonts and every format round-trip loss require corpus expansion.",
