@@ -6,7 +6,7 @@ beforeEach(() => vi.resetModules());
 afterEach(() => vi.useRealTimers());
 
 describe("agent model catalog", () => {
-  it("shares current versioned models and retains saved aliases", async () => {
+  it("shares one current version per model family", async () => {
     const { availableModelGroups } = await import(
       "../../src/canvas/components/agent-panel/model_catalog.js"
     );
@@ -17,8 +17,10 @@ describe("agent model catalog", () => {
         "claude:claude-sonnet-5-5",
         "claude:claude-haiku-5-5",
         "claude:claude-fable-5-1",
-        "claude:sonnet",
       ]),
+    );
+    expect(claude.models.map((model) => model.id)).not.toEqual(
+      expect.arrayContaining(["claude:sonnet", "claude:claude-opus-4-6"]),
     );
     expect(codex.models.map((model) => model.id)).toEqual(
       expect.arrayContaining([
@@ -27,6 +29,57 @@ describe("agent model catalog", () => {
         "codex:gpt-6-astra",
       ]),
     );
+    expect(codex.models.map((model) => model.id)).not.toEqual(
+      expect.arrayContaining(["codex:gpt-5.6-sol", "codex:gpt-6-sol"]),
+    );
+  });
+
+  it("filters old discovered versions while keeping current reasoning tiers", async () => {
+    const { refreshModelCatalog } = await import(
+      "../../src/canvas/components/agent-panel/model_discovery.js"
+    );
+    const { availableModelGroups } = await import(
+      "../../src/canvas/components/agent-panel/model_catalog.js"
+    );
+    await refreshModelCatalog({
+      connect: async () => ({
+        models: [
+          { id: "gpt-6-sol", label: "GPT-6 Sol" },
+          {
+            id: "gpt-6.1-sol",
+            label: "GPT-6.1 Sol",
+            supportedReasoningEfforts: ["minimal", "low", "medium", "high"],
+            defaultReasoningEffort: "medium",
+          },
+          { id: "gpt-5.6-terra", label: "GPT-5.6 Terra" },
+          { id: "gpt-6.1-terra", label: "GPT-6.1 Terra" },
+        ],
+      }),
+      checkStatus: async () => ({
+        models: [
+          { id: "gemini-3.7-flash-high", label: "Gemini 3.7 Flash (High)" },
+          { id: "gemini-3.8-flash-high", label: "Gemini 3.8 Flash (High)" },
+          { id: "gemini-3.8-flash-medium", label: "Gemini 3.8 Flash (Medium)" },
+          { id: "claude-3-7-sonnet", label: "Claude 3.7 Sonnet" },
+          { id: "claude-sonnet-5-5-high", label: "Claude Sonnet 5.5 (High)" },
+        ],
+      }),
+    });
+    const [claude, codex, antigravity] = availableModelGroups([]);
+    expect(codex.models.map(({ id }) => id)).toEqual([
+      "codex:gpt-6.1-sol",
+      "codex:gpt-6.1-terra",
+    ]);
+    expect(codex.models[0]).toMatchObject({
+      supportedReasoningEfforts: ["minimal", "low", "medium", "high"],
+      defaultReasoningEffort: "medium",
+    });
+    expect(antigravity.models.map(({ id }) => id)).toEqual([
+      "antigravity:gemini-3.8-flash-high",
+      "antigravity:gemini-3.8-flash-medium",
+      "antigravity:claude-sonnet-5-5-high",
+    ]);
+    expect(claude.models.map(({ id }) => id)).toContain("claude:claude-opus-5-5");
   });
 
   it("publishes discovered models to both consumers without changing settings", async () => {

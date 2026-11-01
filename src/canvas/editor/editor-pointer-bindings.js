@@ -1,3 +1,6 @@
+import { createFrameMoveEvent } from "./move-gesture-start.js";
+import { TOOL } from "./editor_constants.js";
+
 const CANCELLABLE_KINDS = new Set([
   "move",
   "resize",
@@ -23,6 +26,15 @@ const CANCELLABLE_KINDS = new Set([
   "penEdit",
   "penBend",
   "penLasso",
+  "pen",
+  "lasso",
+  "healing",
+  "cloneStamp",
+  "patchLasso",
+  "patchDrag",
+  "removeBrush",
+  "objectStroke",
+  "gradient",
 ]);
 const cancellable = gesture => CANCELLABLE_KINDS.has(gesture?.kind);
 
@@ -77,6 +89,12 @@ export function createPointerKeyboard({ stage, shared, getGesture, getLastPointe
 
 /** Bind and unbind exactly the same listeners, including cancelled/unmounted drafts. */
 export function bindPointerEvents({ stage, shared, api, hover, pan, keyboard, handlers }) {
+  const beginFrameMove = (frameId, event) => {
+    if (event.button !== 0 || api.getTool() !== TOOL.SELECT) return false;
+    handlers.onPointerDown(createFrameMoveEvent(stage, event, frameId));
+    return true;
+  };
+  if (api) api.beginFrameMove = beginFrameMove;
   const stageEvents = { pointerdown: handlers.onPointerDown, pointermove: handlers.onPointerMove,
     pointerup: handlers.onPointerUp, pointercancel: handlers.onPointerUp,
     pointerleave: handlers.onPointerLeave, auxclick: handlers.onAuxClick, dblclick: handlers.onDoubleClick };
@@ -88,6 +106,7 @@ export function bindPointerEvents({ stage, shared, api, hover, pan, keyboard, ha
   for (const [type, handler] of Object.entries(windowEvents)) window.addEventListener(type, handler);
   return () => {
     keyboard.onWindowBlur();
+    if (api?.beginFrameMove === beginFrameMove) delete api.beginFrameMove;
     if (api?.refreshBrushCursor === hover.refreshBrushCursor) delete api.refreshBrushCursor;
     if (api?.cancelActiveGesture === keyboard.cancelActiveGesture) delete api.cancelActiveGesture;
     if (!shared) stage.removeEventListener("wheel", pan.onWheel);

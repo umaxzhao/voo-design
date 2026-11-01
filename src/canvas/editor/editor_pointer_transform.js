@@ -24,10 +24,9 @@ import { TOOL } from "./editor_constants.js";
 import { createWarpPointerGestures } from "./editor_pointer_warp.js";
 import { createCropPointerGestures } from "./editor_pointer_crop.js";
 import { visibleSelectedNode } from "./editor_pointer_hit_test.js";
-import { captureMoveGestureFrame, moveGestureIds } from "./move_gesture.js";
+import { frameMoveId, startNodeMoveGesture } from "./move-gesture-start.js";
 import { editorSnapOptions, snapNodeBounds } from "./scene_snapping.js";
 import { rotationCursorForPoint } from "./editor-cursors.js";
-import { beginAltDuplicate } from "./move-gesture-transaction.js";
 import { resizeTextBox } from "./text-box-resize.js";
 
 export function scaleNodePoints(points, scaleX, scaleY) {
@@ -76,9 +75,20 @@ export function createTransformPointerGestures(ctx) {
 
   function startSelectDrag(event) {
     const point = api.toDocPoint(event.clientX, event.clientY);
+    if (frameMoveId(event)) {
+      api.endEdit?.();
+      startNodeMoveGesture({ api, event, point, setGesture });
+      return;
+    }
     if (api.isEditing?.()) {
       const subTool = api.getPenSubTool?.() ?? "move";
-      if (subTool === "lasso" || subTool === "bend" || subTool === "cut") {
+      if (
+        subTool === "lasso" ||
+        subTool === "bend" ||
+        subTool === "cut" ||
+        event.metaKey ||
+        event.ctrlKey
+      ) {
         penEditPress(event);
         return;
       }
@@ -370,70 +380,7 @@ export function createTransformPointerGestures(ctx) {
       }
     }
 
-    let hit = api.nodeAtPoint(point);
-
-    if (hit) {
-      const altTargetLocked =
-        event.altKey &&
-        api.getDocument().nodes.find((node) => node.id === hit.id)
-          ?.lockPosition === true;
-      const target = hit;
-      let duplicateOnMove = false;
-      if (event.altKey && !altTargetLocked) {
-        const currentSelected = api.getSelectedNodes?.() ?? [];
-        const isHitInMultiSelection =
-          currentSelected.length > 1 &&
-          currentSelected.some((n) => n.id === hit.id);
-
-        if (!isHitInMultiSelection && !api.isSelected(hit.id)) {
-          api.select(hit.id);
-        }
-        duplicateOnMove = true;
-      }
-
-      const deepSelect = Boolean(event.metaKey || event.ctrlKey);
-      if (event.shiftKey && !duplicateOnMove) {
-        if (deepSelect && typeof api.toggleExactly === "function") {
-          api.toggleExactly(target.id);
-        } else if (api.toggleSelect) {
-          api.toggleSelect(target.id);
-        } else if (api.toggleSelected) {
-          api.toggleSelected(target.id);
-        }
-        if (!api.isSelected(target.id)) return;
-      } else if (!api.isSelected(target.id)) {
-        if (deepSelect && typeof api.selectExactly === "function") {
-          api.selectExactly([target.id]);
-        } else {
-          api.select(target.id);
-        }
-      }
-
-      const moving = api.getSelectedNodes();
-      const base = moving.length > 0 ? moving : [{ ...hit, id: target.id }];
-      const docNow = api.getDocument();
-      const selectedGroup = api.getSelectedGroup?.();
-      const setIds = duplicateOnMove
-        ? ops.moveAffectedIds(docNow, selectedGroup ? [selectedGroup.id] : base.map(node => node.id))
-        : moveGestureIds(api, docNow, base);
-      if (setIds.length === 0) return;
-      const frame = captureMoveGestureFrame(docNow, setIds);
-
-      if (frame.origins.length > 0) {
-        setGesture({
-          kind: "move",
-          id: target.id,
-          origins: frame.origins,
-          start: point,
-          origin: { x: hit.x, y: hit.y },
-          lastX: point.x,
-          lastY: point.y,
-          moved: false,
-          duplicated: false,
-          beginDuplicate: duplicateOnMove ? gesture => beginAltDuplicate(api, gesture) : null,
-        });
-      }
-    } else {
+    if (!startNodeMoveGesture({ api, event, point, setGesture })) {
       if (!event.shiftKey) {
         api.select(null);
         api.clearPixelSelection?.();

@@ -163,6 +163,8 @@ await withEditorBrowser(async ({ page, tool, errors }) => {
   await page.evaluate(() => window.__vooEditor.endMaskEdit());
 
   await mount("export", id);
+  assert.equal(await host.getByRole("button", { name: "Export", exact: true }).count(), 0);
+  await host.getByRole("button", { name: "Add export settings", exact: true }).click();
   await host.getByRole("button", { name: "Export scale", exact: true }).click();
   await options().filter({ hasText: /^2x$/ }).click();
   const downloadReady = page.waitForEvent("download");

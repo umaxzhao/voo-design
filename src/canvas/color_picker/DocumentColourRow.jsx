@@ -35,7 +35,7 @@ export function DocumentColourRow({ onSelectColor }) {
               title={`${labelOf(item)} ${item.value}`}
               aria-label={t("editor.colorPicker.colorSwatch", { color: `${labelOf(item)} ${item.value}` })}
               style={{ backgroundColor: item.value }}
-              className="h-5 w-5 rounded-md border border-white/10 transition-transform hover:scale-110 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 active:scale-95"
+              className="h-5 w-5 rounded-full border border-white/10 transition-transform hover:scale-110 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 active:scale-95"
             />
           ))}
         </div>

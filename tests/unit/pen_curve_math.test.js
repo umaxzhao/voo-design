@@ -63,12 +63,12 @@ describe("Pen & Vector Curve Topology Mathematics", () => {
     expect(reOpened[reOpened.length - 1].close).toBe(false);
   });
 
-  it("breakPenPointsAtAnchor breaks open curve into two subpaths", () => {
+  it("breakPenPointsAtAnchor breaks open curve into two subpaths and clears endpoint handles", () => {
     const points = [
-      { x: 0, y: 0 },
-      { x: 50, y: 50 },
-      { x: 100, y: 0 },
-      { x: 150, y: 50 },
+      { x: 0, y: 0, out: [10, 0] },
+      { x: 50, y: 50, in: [-10, 0], out: [10, 0] },
+      { x: 100, y: 0, in: [-10, 0], out: [10, 0] },
+      { x: 150, y: 50, in: [-10, 0] },
     ];
     const split = breakPenPointsAtAnchor(points, 2);
     expect(split).toBeDefined();
@@ -77,7 +77,27 @@ describe("Pen & Vector Curve Topology Mathematics", () => {
     expect(subA.length).toBe(3);
     expect(subB.length).toBe(2);
     expect(subA[subA.length - 1].x).toBe(100);
+    expect(subA[subA.length - 1].out).toBeNull();
     expect(subB[0].x).toBe(100);
+    expect(subB[0].in).toBeNull();
+  });
+
+  it("breakPenPointsAtAnchor opens closed curve and clears open start/end handles", () => {
+    const closed = [
+      { x: 0, y: 0, in: [0, -10], out: [10, 0] },
+      { x: 50, y: 50, in: [-10, 0], out: [10, 0] },
+      { x: 100, y: 0, in: [-10, 0], out: [0, -10], close: true },
+    ];
+    const opened = breakPenPointsAtAnchor(closed, 1);
+    expect(opened).toBeDefined();
+    expect(opened.kind).toBe("open");
+    expect(opened.points.length).toBe(4);
+    // New start point must have in: null
+    expect(opened.points[0].in).toBeNull();
+    expect(opened.points[0].out).toEqual([10, 0]);
+    // New end point must have out: null
+    expect(opened.points[opened.points.length - 1].out).toBeNull();
+    expect(opened.points[opened.points.length - 1].close).toBe(false);
   });
 
   it("joinPenNodes joins open endpoints within tolerance", () => {

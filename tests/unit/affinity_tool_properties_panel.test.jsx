@@ -144,7 +144,7 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
     expect(html).not.toContain('role="toolbar"');
   });
 
-  it("renders dedicated typography properties (Font, Weight, Size pills, Alignment) when Text tool is active", () => {
+  it("renders the shared labelled typography controls when Text tool is active", () => {
     const html = renderToStaticMarkup(
       <EditorProperties
         tool={TOOL.TEXT}
@@ -169,12 +169,14 @@ describe("Affinity Parity: Dynamic Right Panel Tool Properties", () => {
 
     expect(html).toContain("editor.tool.text");
     expect(html).toContain("editor.props.textStyle");
-    expect(html).toContain("editor.props.fontFamily");
+    expect(html).toContain(">editor.props.font</span>");
     expect(html).toContain("editor.props.fontWeight");
     expect(html).toContain("editor.props.fontSize");
-    expect(html).toContain("32");
-    expect(html).toContain("48");
-    expect(html).toContain("64");
+    expect(html).toContain('value="32"');
+    expect(html).toContain('min="6"');
+    expect(html).toContain("editor.props.align.center");
+    expect(html).toContain("lucide-a-large-small");
+    expect(html).not.toMatch(/<button[^>]*>\s*(?:12|14|16|20|24|32|48|64)\s*<\/button>/);
   });
 
   it("renders shape geometry properties (Corner radius, Weight slider) when Rect tool is active", () => {

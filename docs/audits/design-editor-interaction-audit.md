@@ -201,7 +201,6 @@ self-overlapping multi-contour imports, cold project reopen and render/export
 pixel comparisons are not certified by this targeted scenario. Bend/cut tools
 retain their own segment projections; this change restricts anchor insertion.
 
-
 ## Browser drawer visibility — 2026-10-31
 
 Capability: `platform.browser-drawer`. The local browser feature from `ae4c11e`
@@ -230,3 +229,16 @@ certification of signed installers or every external website.
 Remaining contexts: third-party iframe embedding policies, authenticated sites,
 all DOM extraction/remote-navigation combinations, touch resizing, Windows/Linux
 native webview composition, and signed packaging are not certified here.
+
+## Modifier-drag path bending — 2026-10-31
+
+Capability: `vectors.modifier-bend`. While editing a pen path in Select or Pen,
+holding Cmd (macOS) or Ctrl (other platforms) and dragging a segment edge uses
+the existing Bend operation. It reshapes the segment handles without inserting
+an anchor; ordinary clicks and anchor drags retain their existing behavior.
+
+Evidence: `tests/e2e/pen-midpoint-insertion.e2e.mjs` uses Chromium pointer and
+keyboard events to verify Ctrl-drag changes the curve handles, preserves anchor
+count, and undoes/redoes as one document operation. The same suite retains
+midpoint insertion checks. This does not certify OS-level Cmd interception,
+physical stylus/touch input or pixel/export parity.

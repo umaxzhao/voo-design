@@ -180,7 +180,7 @@ export async function runAgentTurn({
         frame: variantFrame,
         styleKitId: styleId,
         designSystem,
-        editor, streamStep, config, signal,
+        editor, streamStep, config, signal: turnSignal,
         onProgress,
         visualReferences: sharedVisualReferences,
         chooseDirection: chooseDirection

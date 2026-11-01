@@ -189,7 +189,7 @@ export function GradientStopsBar({
               left: `${stop.position}%`,
               backgroundColor: stop.color,
             }}
-            className={`absolute top-1/2 h-4 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-md border ${
+            className={`absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border ${
               activeStopIndex === idx
                 ? "border-white ring-2 ring-white/40 z-10"
                 : "border-black/60"

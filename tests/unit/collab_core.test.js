@@ -66,7 +66,7 @@ test("room secrets are 128-bit base64url values and round-trip in the fragment",
   const secret = createRoomSecret();
   const link = roomUrl(id, "https://voo.run", "view", secret);
   assert.match(secret, /^[A-Za-z0-9_-]{22}$/);
-  assert.match(link, /\?access=view#k=[A-Za-z0-9_-]{22}$/);
+  assert.match(link, /[?&]access=view#k=[A-Za-z0-9_-]{22}$/);
   assert.equal(roomSecretFromLink(link), secret);
 });
 

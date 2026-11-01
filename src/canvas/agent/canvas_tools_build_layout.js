@@ -1,4 +1,5 @@
 /** Bulk creation uses the same editor creation and measurement pipeline as the individual tools. */
+import { acquireAuthoring, createAuthoringTimeline } from "./authoring-timeline.js";
 import { createShape, TOOL_ERROR } from "./canvas_tools.js";
 import { createFrame } from "./canvas_tools_layout.js";
 import { createPath } from "./canvas_tools_geometry.js";
@@ -216,15 +217,15 @@ function restoreBuildContext(editor, context) {
   } else if (Array.isArray(context.ids)) editor.selectExactly?.(context.ids);
 }
 
-export function buildLayout(args = {}) {
+function* buildLayoutSteps(args = {}, editor = typeof window !== "undefined" ? window.__vooEditor || Object.values(window.__vooEditors || {})[0] || null : null) {
   validate(args);
-  const editor = typeof window !== "undefined" ? window.__vooEditor : null;
   if (!editor) throw Object.assign(new Error(TOOL_ERROR.NO_EDITOR), { code: TOOL_ERROR.NO_EDITOR });
   if (args.parentId) {
     const parent = editor.getNode?.(args.parentId);
     if (!parent) invalid(`parentId '${args.parentId}' was not found`);
     if (!(parent.kind === "group" || parent.type === "frame" || parent.isFrame || parent.frame || parent.containerType === "frame")) invalid("parentId must reference a frame or group");
   }
+  const release = acquireAuthoring(editor);
   const created = [];
   const restores = [];
   const readDocument = () => editor.getDocument?.() ?? editor.getDoc?.();
@@ -249,16 +250,22 @@ export function buildLayout(args = {}) {
         editor[key] = () => {};
         restores.push(() => { editor[key] = original; });
       }
-      function create(nodes, parentId) {
+      function* create(nodes, parentId) {
         for (const node of nodes) {
           const { type, children } = node;
+          yield node;
           const id = createLayoutNode(editor, node, parentId);
           created.push({ id, name: node.name, type });
-          if (children?.length) create(children, id);
+          yield { ...node, id };
+          if (children?.length) yield* create(children, id);
         }
       }
-      if (!batched && typeof editor.mute === "function") editor.mute(() => create(args.nodes, args.parentId));
-      else create(args.nodes, args.parentId);
+      const sequence = create(args.nodes, args.parentId);
+      if (!batched && typeof editor.mute === "function") {
+        // Legacy history.mute is synchronous: preserve one undo entry instead
+        // of holding a synchronous mute scope across animation awaits.
+        editor.mute(() => { for (const operation of sequence) void operation; });
+      } else yield* sequence;
     } finally {
       for (const restore of restores.reverse()) restore();
       if (batched) editor.endBatch();
@@ -272,7 +279,7 @@ export function buildLayout(args = {}) {
   } catch (error) {
     // The whole tree was validated first, but host creation/measurement can
     // still fail mid-build. Never publish its partial nodes as a successful edit.
-    if (canRestoreDocument) {
+    if (canRestoreDocument && (!before.canvasId || readDocument()?.canvasId === before.canvasId)) {
       try {
         editor.setDoc(before, { commit: false });
         restoreBuildContext(editor, context);
@@ -281,6 +288,48 @@ export function buildLayout(args = {}) {
       }
     }
     throw error;
-  }
+  } finally { release(); }
   return { created, count: created.length };
+}
+
+
+/** Synchronous domain entry retained for nonvisual callers. */
+export function buildLayout(args = {}) {
+  const steps = buildLayoutSteps(args);
+  let step = steps.next();
+  while (!step.done) step = steps.next();
+  return step.value;
+}
+
+/** Agent entry presents the same validated operations between real paint frames. */
+export async function buildLayoutForAgent(args = {}, context = {}) {
+  const editor = context.editor ?? (typeof window !== "undefined" ? window.__vooEditor || Object.values(window.__vooEditors || {})[0] || null : null);
+  if (!editor) return buildLayout(args);
+  const timeline = createAuthoringTimeline(editor, { signal: context.signal });
+  const steps = buildLayoutSteps(args, editor);
+  const count = nodes => (nodes ?? []).reduce((total, node) => total + 1 + count(node.children), 0);
+  // Validation in the generator runs before walking potentially cyclic input.
+  let step;
+  try {
+    context.signal?.throwIfAborted();
+    step = steps.next();
+    timeline.begin(count(args.nodes));
+    while (!step.done) {
+      await timeline.before(step.value);
+      timeline.assertCurrent();
+      const applied = steps.next();
+      await timeline.after(applied.value);
+      timeline.assertCurrent();
+      step = steps.next();
+    }
+    return step.value;
+  } catch (error) {
+    // Throw into the transaction, including an abort during cursor travel, so
+    // all created layers roll back and helper commits are restored together.
+    if (step && !step.done) steps.throw(error);
+    throw error;
+  } finally {
+    steps.return();
+    timeline.finish();
+  }
 }

@@ -3,8 +3,37 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
 更新时间：2026-10-31。
-最近一次完整核心验证提交：[9cd70af](https://github.com/umaxzhao/voo-design/commit/9cd70afd10df836c269b5597b5558a114e463640)；90/90 项通过（含启动夹具重试）。当前线上为合入 Agent 改动并完成定向复核的 e28b511；不继承前版本完整执行。
+最近一次完整核心验证提交：[b965942](https://github.com/umaxzhao/voo-design/commit/b965942e22bcfb408015acdba58f49d8d7c3cd8c)；91/91 项通过。当前线上为该固定版本。
 以下结果只属于该固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+
+## 本轮：右侧控件恢复品牌大圆角（已完成声明范围）
+
+- 按用户反馈，右侧输入、下拉、切换组/选中项及操作按钮统一恢复 **12px** 品牌大圆角；共享 `--inspector-control-radius`，外层面板圆角保持原样。保留上一轮的填充/描边区别、选中反馈、字号与行高，不修改其他界面或文档操作。
+- 干净固定提交 [`b965942`](https://github.com/umaxzhao/voo-design/commit/b965942e22bcfb408015acdba58f49d8d7c3cd8c) 完成 **91/91 发布检查、87 组浏览器、单测 4637 通过/4 跳过/0 失败**。沿用原检查与浏览器并发 2，验证期间源码未修改。证据 `/private/tmp/voo-inspector-radius-release.json`、同名 `.log`，不继承上轮不同提交的通过。
+- 已有真实数值提交/取消、键盘下拉、布局/旋转及一次撤销通过；16 个视口/主题/语言上下文验证圆角与尺寸，截图 `/private/tmp/voo-inspector-radius-evidence/`。旧 6px 样式的差异复现保留在 `/private/tmp/voo-inspector-radius-before.log`。
+- 已推送并 SSH 部署 la2；入口和 9 个相关资源与验证构建逐字节一致。正式中文面板实际确认 12px 圆角、32px 桌面行高、Frame 输入/下拉/布局、文字与撤销，无脚本错误，未调用付费服务。证据 `/private/tmp/voo-inspector-radius-deployment-proof.json`、`/private/tmp/voo-inspector-radius-production-result.log`，截图 `/private/tmp/voo-inspector-radius-production-panel.png`。
+- 本地 App 只三方应用两个文件的圆角补丁并保留其他草稿；同一组 16 个浏览器上下文通过（`/private/tmp/voo-inspector-radius-primary-browser.log`），备份 `/private/tmp/voo-inspector-radius-primary/`。不认证整个私人工作区。
+- 功能覆盖仍为部分；实体触屏/IME/触控笔与全部高级独立浮层未由本轮认证。此前 6px 记录只属于其历史版本，当前规范以本轮用户确认的 12px 为准。
+
+## 本轮：首页生成类型图标重绘（未提交，叠加在未提交的类型选择器改动上）
+
+- `welcome_prompt_types.jsx`：8 个类型改为统一的 56×40 线稿 SVG，每个图标只有一处 `accent-mint` 重点，未选中时 60% 透明度，悬停或选中时 100%。浅色主题下强调色改为 `#171717`（`theme-light.css`，与 `.text-accent-mint` 的处理一致）。中文"Storyboard"改为"分镜"。
+- 修复的根因：旧图标用的是 `bg-mint/*`，但 Tailwind 里的颜色名是 `accent-mint`，薄荷绿点缀从未生成，所以界面上只有灰色块。
+- 已验证（本地工作区）：`welcome_prompt_types.test.jsx` 2 项通过（新增：8 个图标互不相同，且都带强调元素）；设计规则检查通过；真实编辑器中深色、浅色、390px 下 8 个 SVG 都正常渲染，强调色计算值分别为 `rgb(167,255,212)`、`rgb(23,23,23)`，透明度 0.6/1，没有页面错误。
+- 未提交原因：该文件属于未提交的"类型选择器铺在首页"改动（问题单 B3，有 11 项单测失败，与本次无关），单独提交会把这批改动一起带上。
+
+## 本轮：自动界面巡检 `ui-audit` 与全量测试问题单（新增检查，未提交；发现项未修复）
+
+- 新增 `tests/e2e/ui-audit.e2e.mjs`，覆盖 8 个状态：空、单选图形、单选文字、多选、右键菜单、工具选项菜单、首页、设置面板；每个状态跑 390/768/1440 宽度 × 深浅主题 × 中英文。
+  - 通用扫描 `ui-layout-scanner.mjs`：遮挡、超出窗口、页面横向溢出、文字截断、按钮缺少名称、窄屏点击区域 <44px。菜单或对话框打开时只检查浮层内的控件。
+  - 截图基线 `ui-screenshot-baseline.mjs`：英文 46 张，存于 `tests/e2e/ui-baselines/darwin/`。截图前等连续两帧一致，遮住随机头像；超过 0.05% 像素变化即失败，并输出差异图。`UPDATE_UI_BASELINES=1` 接受新外观。仅用 Node zlib，未新增依赖。
+  - 登记为 `ADDITIONAL_BROWSER_CHECKS` 的 `kind: "audit"`，不计入核心发布门禁。
+- 已验证（本地工作区，非干净提交）：基线连续 3 次运行最大差异 0.023%；注入回归可检出：顶栏右移 2px 变化 0.12%，判为失败；浮层盖住页签，判为遮挡。
+- 2026-11-01 全量测试，在本地工作区与干净 `78155ee` worktree 上对照：单测 4598 项中 19 项失败；浏览器套件 99 个中 83 个通过、14 个失败、2 个缺文件。问题单（含复现步骤和截图）：https://claude.ai/artifact/1WtgAkcFNgaPLgzfYVQV7s
+  - 已提交代码的问题：约束图居中按钮交叉（点"水平居中"实际设置成垂直居中）；390px 下 26 个控件小于 44px；首次启动出现未翻译的 `firstRun.provider.deepseek`；`docs/AGENTS.md` 缺 `resize_document`。
+  - 未提交改动带来的回归：390px 下内置浏览器盖住编辑器；手机首页点文件卡片打不开文件、Settings 压住卡片文字；首页类型选择改版导致 14 项测试失败；分享链接格式变化后测试未同步；模块清单登记了不存在的 `figma-import-fidelity`、`impeccable-polish`。
+  - 10 个独立套件跑不起来：写死了 `/workspace`、依赖固定端口，或没打开文档就等编辑器。
+- 未覆盖：Native 应用、付费或真实 AI 接口、实体触屏、组合操作的随机测试、非 macOS 的截图基线。测试期间 main 新增了 Native 提交 `7b95346`，Web 端相关文件未变化。
 
 ## 本轮：文字排版可读性与 Lucide 图标（已完成声明范围）
 

@@ -79,6 +79,25 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.deepEqual(await page.evaluate(() => window.__vooEditor.getDocument().nodes.map(node => node.id)), originalOrder);
   checks.push("a real row pointer drag reorders root layers without accidental clipping and undoes once");
 
+  await row("top").getByText("Top rectangle", { exact: true }).click();
+  await page.keyboard.press("]");
+  await settle();
+  const afterForward = await page.evaluate(() => window.__vooEditor.getDocument().nodes.map(node => node.id));
+  assert.deepEqual(afterForward, ["base", "folder", "red", "green", "bottom", "top"]);
+  await page.keyboard.press("[");
+  await settle();
+  const afterBackward = await page.evaluate(() => window.__vooEditor.getDocument().nodes.map(node => node.id));
+  assert.deepEqual(afterBackward, originalOrder);
+
+  await page.evaluate(() => {
+    window.__vooEditor.bringToFront(["folder"]);
+  });
+  const afterFolderFront = await page.evaluate(() => window.__vooEditor.getDocument().nodes.map(node => node.id));
+  assert.deepEqual(afterFolderFront.slice(-3), ["folder", "red", "green"]);
+  await tool("undo");
+  assert.deepEqual(await page.evaluate(() => window.__vooEditor.getDocument().nodes.map(node => node.id)), originalOrder);
+  checks.push("bracket shortcuts and bringToFront reorder layers and intact group blocks with single-step undo");
+
   await page.evaluate(async () => {
     const { mountLayerCompositionAudit } = await import("/tests/e2e/editor-layers-composition-harness.jsx");
     window.__layerComposition = mountLayerCompositionAudit();

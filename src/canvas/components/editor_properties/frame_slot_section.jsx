@@ -35,7 +35,7 @@ export default function FrameSlotSection({ object, editAndCommit }) {
   };
 
   return (
-    <StaticSection title={t("editor.props.componentSlot")} storageKey="frame-slot">
+    <StaticSection testId="frame-slot-section" title={t("editor.props.componentSlot")} storageKey="frame-slot">
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between px-1">
           <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-neutral-400">

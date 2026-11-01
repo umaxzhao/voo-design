@@ -145,6 +145,14 @@ export function handleDrawingShortcut(event, context) {
       engine.popDraftAnchor?.();
       return true;
     }
+    if (engine.getPolygonDraft?.()?.points?.length > 0) {
+      if (typeof engine.popPolygonVertex === "function") {
+        engine.popPolygonVertex();
+      } else {
+        engine.cancelPolygonLasso?.();
+      }
+      return true;
+    }
     if (
       engine.isEditing?.() &&
       (engine.getSelectedAnchorIndex?.() >= 0 ||

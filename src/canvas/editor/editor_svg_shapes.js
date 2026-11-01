@@ -11,6 +11,7 @@ import {
 } from "./stroke_style.js";
 import { arrowheadGeometry } from "./shape_geometry.js";
 import { arrowheadSize } from "./render_path_node.js";
+import { svgTexturePattern, texturePaintKey } from "./svg-texture-paints.js";
 
 export function isImagePaint(style) {
   return (
@@ -23,8 +24,16 @@ export function isImagePaint(style) {
 export function gradientDefs(nodes) {
   const defs = [];
   const ids = new Map();
+  const textures = new Map();
   nodes.forEach((node) => {
     if (typeof node.fill !== "string") return;
+    const textureKey = texturePaintKey(node.fill, node);
+    const textureId = `texture${textures.size}`;
+    const texturePattern = svgTexturePattern(node, textureId);
+    if (texturePattern) {
+      if (!textures.has(textureKey)) { textures.set(textureKey, textureId); defs.push(texturePattern); }
+      return;
+    }
     if (isMeshGradient(node.fill) && !ids.has(node.fill)) {
       const id = `mesh${ids.size}`;
       ids.set(node.fill, id);
@@ -98,12 +107,12 @@ export function gradientDefs(nodes) {
   });
   return {
     defs,
-    idOf: (fill) => (ids.has(fill) ? `url(#${ids.get(fill)})` : null),
+    idOf: (fill, node) => textures.has(texturePaintKey(fill, node)) ? `url(#${textures.get(texturePaintKey(fill, node))})` : ids.has(fill) ? `url(#${ids.get(fill)})` : null,
   };
 }
 
 export function shapeAttributes(node, idOf) {
-  const fill = idOf(node.fill) ?? escapeXml(node.fill ?? "none");
+  const fill = idOf(node.fill, node) ?? escapeXml(node.fill ?? "none");
   const parts = [`fill="${fill}"`];
   const isMultiContour =
     Array.isArray(node.points) &&

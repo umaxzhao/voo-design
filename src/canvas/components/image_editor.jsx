@@ -61,6 +61,7 @@ const SvgEditModal = lazy(() => import("./SvgEditModal.jsx"));
 const EditorIconPickerModal = lazy(() => import("./editor_icon_picker_modal.jsx"));
 import { DESIGN_SHORTCUT_GROUPS } from "../../shared/editor-shortcut-catalog.js";
 import useIsNarrow from "../use_is_narrow.js";
+import { useEditorWidth } from "./editor_hooks/use_editor_width.js";
 import "./editor_mobile_layout.css";
 import { getSetting, setSetting } from "../../shared/settings.js";
 import { loadEditorPanelLayout, saveEditorPanelLayout } from "./editor_panel_preferences.js";
@@ -103,6 +104,7 @@ import { useEditorMediaImport } from "./editor_hooks/use_editor_media_import.js"
 import { useEditorFeedback } from "./editor_hooks/use_editor_feedback.js";
 import { useEditorImageActions } from "./editor_hooks/use_editor_image_actions.js";
 import { useEditorApply } from "./editor_hooks/use_editor_apply.js";
+import { useCommentsHistorySwitch } from "./editor_hooks/use_comments_history_switch.js";
 import { useEditorDocumentAids } from "./editor_hooks/use_editor_document_aids.js";
 import { useEditorPaletteActions } from "./editor_hooks/use_editor_palette_actions.js";
 import { useEditorCanvasGestures } from "./editor_hooks/use_editor_canvas_gestures.js";
@@ -148,7 +150,7 @@ const SNAP_TO_GRID_SETTING = "voo.editor.snapToGrid";
 
 export default function ImageEditor({ agentVisible = false, visible = true }) {
   const { t } = useI18n();
-  const isNarrow = useIsNarrow();
+  const narrowViewport = useIsNarrow();
   const welcomeOpen = useDesignStore((state) => state.welcomeOpen);
 
   const nodeIds = useDesignStore((state) => state.editingNodeIds);
@@ -252,23 +254,9 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   const [swapPanels, setSwapPanels] = useState(
     () => loadEditorPanelLayout().swapped,
   );
-  // The panels' layout follows the editor's width (see editor_panel_layout).
-  // A callback ref: the editor renders nothing until a node is open, so a
-  // mount-time effect would find no element to measure.
-  const [editorWidth, setEditorWidth] = useState(0);
-  const editorRootObserverRef = useRef(null);
-  const editorRootRef = useCallback((root) => {
-    editorRootObserverRef.current?.disconnect();
-    editorRootObserverRef.current = null;
-    if (!root) return;
-    const measure = () => {
-      setEditorWidth(root.clientWidth);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(root);
-    editorRootObserverRef.current = observer;
-  }, []);
+  const { editorWidth, editorRootRef } = useEditorWidth();
+  // Docked assistants reduce the canvas independently of the window viewport.
+  const isNarrow = narrowViewport || (editorWidth > 0 && editorWidth <= 768);
   const [exitPrompt, setExitPrompt] = useState(false);
   /** Right-click menu position, or null when closed. */
   const [contextMenu, setContextMenu] = useState(null);
@@ -292,8 +280,6 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   /** Pie Menu state: active family and screen coordinates { family, position: { x, y } } */
   const [pieMenu, setPieMenu] = useState(null);
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
-
-
   const engine = enginesRef.current.get(focusedId)?.engine ?? null;
 
   /** The focused page's engine — the only document guides live in. */
@@ -311,6 +297,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     handleCreateComment, handleReplyComment, handleResolveComment, handleDeleteComment,
     findReplaceOpen, openFindReplace, closeFindReplace, focusFindMatch, applyFindReplaceDoc,
   } = useEditorDocumentAids({ focusedPageEngine, bump });
+  const switchHistory = useCommentsHistorySwitch({ commentsOpen, closeComments, setHistoryOpen });
 
   const beginInstanceCameraAdjustment = (instanceId) => {
     if (!EDITOR_BETA_ENABLED) return;
@@ -565,7 +552,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     stageWidth: editorWidth,
     swapped: swapPanels,
   });
-  const propertiesOpen = Boolean(
+  const propertiesOpen = commentsOpen || Boolean(
     !historyOpen &&
     (workbench.inspectorAlwaysOpen ||
       selected ||
@@ -883,7 +870,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       setSavedNotice,
       setExitPrompt,
       setExportOpen,
-      setHistoryOpen,
+      setHistoryOpen: switchHistory,
       resolveCanvas,
       onExportWarnings: (warnings) => setExportNotice(warnings || true),
     });
@@ -1279,9 +1266,11 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
       ref={editorRootRef}
       data-testid="design-editor"
       data-agent-open={agentVisible ? "true" : "false"}
+      data-comments-open={commentsOpen ? "true" : "false"}
       data-properties-open={propertiesOpen ? "true" : "false"}
       data-mobile-layers-expanded={mobileLayersExpanded ? "true" : "false"}
-      data-mobile-properties-expanded={mobilePropertiesExpanded ? "true" : "false"}
+      data-mobile-properties-expanded={(commentsOpen || mobilePropertiesExpanded) ? "true" : "false"}
+      inert={visible ? undefined : ""}
       aria-hidden={!visible}
       style={{ backgroundColor: canvasBackgroundColor }}
       className={`absolute bottom-0 left-0 right-0 top-0 z-50 flex flex-col overflow-hidden rounded-b-2xl ${isNarrow ? "editor-narrow" : ""} ${visible ? "" : "invisible pointer-events-none"}`}
@@ -1762,14 +1751,12 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           />
         ) : null}
 
-        {/* Comment pins, thread popovers and the thread list share the focused
-            page's document space. The root is pointer-events-none; only pins,
-            popovers, the panel and the placement layer take the pointer. */}
+        {/* Pins keep page coordinates; the list owns the shared inspector slot. */}
         {commentsVisible ? (
           <CameraPositionedOverlay
             component={EditorComments}
             layout={focusedLayout}
-            open={commentsOpen}
+            open={commentsOpen} launcherVisible={visible} swapSide={inspectorSwap}
             addMode={commentMode}
             comments={documentComments}
             zoom={cameraZoom}
@@ -1966,7 +1953,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           </p>
         ) : null}
 
-        {propertiesOpen && nestedNode && nestedEngine ? (
+        {!commentsOpen && propertiesOpen && nestedNode && nestedEngine ? (
           nestedNode.kind === "canvasInstance" ? (
             <PropertiesPanelShell
               testId="editor-properties-panel"
@@ -2032,7 +2019,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               onCommit={() => nestedEngine.commit("editor.history.entry.layer")}
             />
           )
-        ) : propertiesOpen && propertyObject?.kind === "canvasInstance" ? (
+        ) : !commentsOpen && propertiesOpen && propertyObject?.kind === "canvasInstance" ? (
           <PropertiesPanelShell
             testId="editor-properties-panel"
             swapSide={inspectorSwap}
@@ -2093,7 +2080,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               />
             </Suspense>
           </PropertiesPanelShell>
-        ) : propertiesOpen ? (
+        ) : !commentsOpen && propertiesOpen ? (
           <EditorProperties
             isMainComponent={(instanceCounts.get(doc?.canvasId) ?? 0) > 0}
             engine={engine}
@@ -2600,6 +2587,14 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             }
             onMutate={(patch) => {
               if (selectedGroup) {
+                if (
+                  selectedGroup.isFrame &&
+                  engine?.updateFrameNode &&
+                  ["x", "y", "width", "height"].some((key) => key in patch)
+                ) {
+                  engine.updateFrameNode(selectedGroup.id, patch, { commit: false });
+                  return;
+                }
                 engine?.updateNode(selectedGroup.id, patch, { commit: false });
                 return;
               }
@@ -2823,7 +2818,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           />
         ) : null}
 
-        {historyOpen ? (
+        {historyOpen && !commentsOpen ? (
           <Suspense fallback={null}>
             <EditorHistoryPanel
               canUndo={engine?.canUndo() ?? false}

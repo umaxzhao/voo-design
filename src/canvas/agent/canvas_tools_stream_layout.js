@@ -6,6 +6,7 @@
  * auto-closing tolerant HTML parsing, staggered animation, and animated agent cursor.
  */
 
+import { canStreamNatively, clearNativeLayoutStream, streamNativeLayout } from "./native-layout-stream.js";
 import { incrementalHtmlToDocument } from "../editor/html_import.js";
 import { useDesignStore } from "../../store/design_store.js";
 
@@ -45,6 +46,8 @@ export const STREAM_LAYOUT_SCHEMA = {
 
 let streamBuffer = "";
 let currentTargetId = null;
+let streamDocumentId = null;
+let streamCanvasId = null;
 
 export function getStreamBuffer() {
   return streamBuffer;
@@ -53,6 +56,8 @@ export function getStreamBuffer() {
 export function resetStreamBuffer() {
   streamBuffer = "";
   currentTargetId = null;
+  streamDocumentId = null;
+  streamCanvasId = null;
 }
 
 /**
@@ -66,10 +71,23 @@ export async function streamLayout(args = {}, context = {}) {
     : useDesignStore;
 
   if (args.clear) {
+    await clearNativeLayoutStream();
     resetStreamBuffer();
     store.getState().setStreamingPreview?.(null);
     return { status: "cleared" };
   }
+
+  const documentId = store.getState().activeDocumentId;
+  if (streamDocumentId && streamDocumentId !== documentId) {
+    throw new DOMException("Stream document changed; clear the previous stream before restarting", "AbortError");
+  }
+  const editor = context.editor || (typeof window !== "undefined" ? window.__vooEditor : null);
+  const canvasId = (editor?.getDocument?.() ?? editor?.getDoc?.())?.canvasId;
+  if (streamCanvasId && canvasId && streamCanvasId !== canvasId) {
+    throw new DOMException("Stream canvas changed; clear the previous stream before restarting", "AbortError");
+  }
+  if (canvasId) streamCanvasId = canvasId;
+  if (typeof args.chunk === "string" || typeof args.html === "string") streamDocumentId = documentId;
 
   if (typeof args.chunk === "string") {
     streamBuffer += args.chunk;
@@ -84,6 +102,13 @@ export async function streamLayout(args = {}, context = {}) {
   const content = streamBuffer;
   const isFinal = Boolean(args.final);
 
+  if (content && canStreamNatively(editor)) {
+    store.getState().setStreamingPreview?.(null);
+    try {
+      return await streamNativeLayout(content, { editor, targetId: currentTargetId, store, signal: context.signal, final: isFinal });
+    } finally { if (isFinal) resetStreamBuffer(); }
+  }
+
   if (!isFinal) {
     if (content) {
       store.getState().setStreamingPreview?.(content, currentTargetId);
@@ -97,7 +122,7 @@ export async function streamLayout(args = {}, context = {}) {
 
   // Final commit: parse accumulated layout and commit to editor
   return commitStreamedLayout(content, {
-    editor: context.editor || (typeof window !== "undefined" ? window.__vooEditor : null),
+    editor,
     targetNodeId: currentTargetId,
     store,
   });
@@ -151,8 +176,6 @@ export function commitStreamedLayout(content, { editor, targetNodeId, store = us
       }
       editor.requestRender?.();
     }
-  } catch (error) {
-    console.warn("[stream_layout] Commit parse error:", error);
   } finally {
     resetStreamBuffer();
     store.getState().setStreamingPreview?.(null);

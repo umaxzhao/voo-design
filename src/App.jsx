@@ -165,12 +165,12 @@ export default function App() {
               {editorActivated || needsEditor ? (
                 <Suspense fallback={
                   <div role="status" className="absolute inset-0 flex items-center justify-center">
-                    <LoadingModal label={t("editor.loading")} />
+                    <LoadingModal label={t("editor.loading")} showLabel={false} />
                   </div>
                 }>
                   <ImageEditor
                     key={activeDocumentId}
-                    visible={true}
+                    visible={!welcomeOpen}
                     agentVisible={agentOpen && !welcomeOpen}
                   />
                 </Suspense>
@@ -219,7 +219,7 @@ export default function App() {
           aria-live="polite"
           className="absolute inset-0 z-[80] flex items-center justify-center bg-black/70 backdrop-blur-sm"
         >
-          <LoadingModal label={documentLoading} />
+          <LoadingModal label={documentLoading} showLabel={false} />
         </div>
       ) : null}
       <FirstRunOnboarding

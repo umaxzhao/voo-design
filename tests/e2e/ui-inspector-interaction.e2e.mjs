@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { runInspectorControlCases } from "./inspector-control-cases.mjs";
+import { runTypographyCases } from "./typography-inspector-cases.mjs";
+import { runUnifiedFillCases } from "./unified-fill-picker-cases.mjs";
 
 const evidence = process.env.VOO_INSPECTOR_EVIDENCE_DIR ?? "/private/tmp/voo-ui-inspector";
 await mkdir(evidence, { recursive: true });
@@ -51,6 +54,42 @@ await withEditorBrowser(async ({ page, tool }) => {
 
   try {
     await seed();
+    const exportFormat = panel.getByRole("button", { name: "Format", exact: true });
+    const exportAction = panel.getByRole("button", { name: "Export", exact: true });
+    const addExport = async () => {
+      await panel.getByTestId("properties-add-menu").getByRole("button").first().click();
+      await panel.getByTestId("properties-add-export").click();
+    };
+    for (const id of ["audit-rect", "audit-frame", "audit-text", "audit-image"]) {
+      await select([id]);
+      assert.equal(await exportFormat.count(), 0, `${id} must not invent an export preset`);
+      assert.equal(await panel.getByRole("button", { name: "Add export settings", exact: true }).count(), 0, "the entire unconfigured export section is hidden");
+      assert.equal(await exportAction.count(), 0);
+    }
+    await select(["audit-rect"]);
+    await addExport();
+    await exportFormat.waitFor();
+    const configured = (await node()).exportPresets;
+    assert.equal(configured.length, 1);
+    assert.equal(await exportAction.count(), 1);
+    await tool("undo"); await settle();
+    assert.equal(await exportFormat.count(), 0, "undo adding export removes its controls");
+    await tool("redo"); await exportFormat.waitFor();
+    assert.deepEqual((await node()).exportPresets, configured);
+    await select(["audit-text"]);
+    assert.equal(await exportAction.count(), 0, "export configuration belongs to its layer");
+    await select(["audit-rect"]); await exportFormat.waitFor();
+    await panel.getByRole("button", { name: "Remove export settings", exact: true }).click();
+    await settle();
+    assert.deepEqual((await node()).exportPresets, []);
+    assert.equal(await exportAction.count(), 0);
+    await select(["audit-image"]); await select(["audit-rect"]);
+    assert.equal(await exportFormat.count(), 0, "removing the last preset stays empty after reselection");
+    await tool("undo"); await exportFormat.waitFor();
+    await tool("redo"); await settle();
+    assert.equal(await exportAction.count(), 0, "redo removing export hides it again");
+    mark("export is opt-in for shapes, Frames, text and images; add/remove persist per layer and undo/redo immediately follow document state");
+
     const x = panel.getByRole("spinbutton", { name: "X", exact: true });
     await x.fill("150"); await x.press("Enter");
     assert.equal((await node()).x, 150);
@@ -75,19 +114,22 @@ await withEditorBrowser(async ({ page, tool }) => {
     await tool("undo"); assert.equal((await node()).name, "Audit Rectangle");
     mark("inspector layer-name Escape cancels; Enter updates the actual layer and undoes once");
 
-    const fillType = panel.getByRole("button", { name: "Fill type", exact: true });
-    await fillType.click(); await page.getByRole("menu").waitFor();
-    await inViewport(page.getByRole("menu"), "paint menu");
+    const fillType = panel.getByRole("button", { name: "Fill", exact: true });
+    const fillDialog = page.getByRole("dialog", { name: "Fill", exact: true });
+    await fillType.click(); await fillDialog.waitFor();
+    assert.ok(await fillDialog.evaluate(element => parseFloat(getComputedStyle(element).borderRadius) >= 12), "the semantic fill dialog must be the rounded visual surface");
+    await inViewport(fillDialog, "fill editor");
     await page.keyboard.press("Escape");
-    await page.getByRole("menu").waitFor({ state: "hidden" });
-    assert.deepEqual(await selected(), ["audit-rect"], "closing paint menu must retain selection");
+    await fillDialog.waitFor({ state: "detached" });
+    assert.deepEqual(await selected(), ["audit-rect"], "closing the paint editor retains selection");
     await page.keyboard.press("Escape");
-    assert.deepEqual(await selected(), [], "Escape after the menu closes still clears canvas selection");
+    assert.deepEqual(await selected(), [], "Escape after the editor closes still clears canvas selection");
     await select(["audit-rect"]);
     await fillType.focus(); await fillType.press("ArrowDown");
-    await page.getByRole("menuitemradio", { name: "Solid", exact: true }).waitFor();
-    await page.keyboard.press("ArrowDown"); await page.keyboard.press("Enter");
+    await fillDialog.getByRole("tab", { name: "Solid", exact: true }).waitFor();
+    await page.keyboard.press("ArrowRight");
     assert.match((await node()).fill, /linear-gradient/);
+    await page.keyboard.press("Escape");
     await tool("undo"); assert.equal((await node()).fill, "#ff0000");
     await panel.getByRole("button", { name: "Fill visible", exact: true }).click();
     assert.equal((await node()).fills[0].visible, false);
@@ -196,7 +238,14 @@ await withEditorBrowser(async ({ page, tool }) => {
     await tool("undo"); assert.equal(Boolean((await node()).locked), false);
     mark("Layers selection, rename cancel/commit, hide and lock alter real nodes and each undo once");
 
-    for (const viewport of [{ width: 1440, height: 1000 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
+    await runTypographyCases({ page, tool, mark, evidence });
+    // Typography creation replaces the document; restore this suite's scene.
+    await seed();
+    await runInspectorControlCases({ page, tool, mark, evidence });
+    await seed();
+    await runUnifiedFillCases({ page, tool, mark });
+
+    for (const viewport of [{ width: 1440, height: 1000 }, { width: 768, height: 1024 }, { width: 390, height: 844 }, { width: 320, height: 640 }]) {
       await page.setViewportSize(viewport);
       for (const theme of ["dark", "light"]) {
         for (const locale of ["en", "zh"]) {
@@ -210,16 +259,16 @@ await withEditorBrowser(async ({ page, tool }) => {
           if (await toggle.isVisible() && await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
           await inViewport(panel, `${viewport.width}/${theme}/${locale} inspector`);
           await inViewport(layers, `${viewport.width}/${theme}/${locale} layers`);
-          const fill = panel.getByRole("button", { name: locale === "en" ? "Fill type" : "填充类型", exact: true });
+          const fill = panel.getByRole("button", { name: locale === "en" ? "Fill" : "填充", exact: true });
           await fill.click();
-          await inViewport(page.getByRole("menu"), `${viewport.width}/${theme}/${locale} paint menu`);
+          await inViewport(page.getByRole("dialog", { name: locale === "en" ? "Fill" : "填充", exact: true }), `${viewport.width}/${theme}/${locale} fill editor`);
           await page.screenshot({ path: `${evidence}/${viewport.width}-${theme}-${locale}.png` });
           await page.keyboard.press("Escape");
           assert.deepEqual(await selected(), ["audit-rect"]);
         }
       }
     }
-    mark("390/768/1440, light/dark and Chinese/English panels and paint menus remain on screen and retain selection after Escape");
+    mark("320/390/768/1440, light/dark and Chinese/English panels and fill editors remain on screen and retain selection after Escape");
     await writeFile(`${evidence}/result.json`, JSON.stringify({ passed: checks }, null, 2));
     console.log(JSON.stringify({ passed: checks, evidence }, null, 2));
   } catch (error) {

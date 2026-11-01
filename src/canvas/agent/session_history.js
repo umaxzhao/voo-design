@@ -53,3 +53,13 @@ export function upsertSession(sessions, session) {
 export function deleteSessionFromList(sessions, sessionId) {
   return sessions.filter((session) => session.id !== sessionId);
 }
+
+/** Rename one saved conversation without changing its transcript or order. */
+export function renameSessionInList(sessions, sessionId, title) {
+  const nextTitle = String(title ?? "").trim();
+  return sessions.map((session) =>
+    session.id === sessionId
+      ? { ...session, title: nextTitle, updatedAt: Date.now() }
+      : session,
+  );
+}

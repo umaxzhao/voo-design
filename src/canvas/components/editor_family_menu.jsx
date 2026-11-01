@@ -45,6 +45,7 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
   const menuRef = useRef(null);
   const chevronRef = useRef(null);
   const longPressTimerRef = useRef(null);
+  const pointerStartRef = useRef(null);
   const suppressToolClickRef = useRef(false);
   const lastPointerTypeRef = useRef(null);
   const menuLabel = t("editor.toolOptions");
@@ -74,6 +75,7 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
   const onPointerDownCapture = (event) => {
     lastPointerTypeRef.current = event.pointerType;
     if (event.pointerType !== "touch") return;
+    pointerStartRef.current = { x: event.clientX, y: event.clientY };
     window.clearTimeout(longPressTimerRef.current);
     longPressTimerRef.current = window.setTimeout(() => {
       suppressToolClickRef.current = true;
@@ -81,9 +83,19 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
     }, 450);
   };
 
+  const onPointerMoveCapture = (event) => {
+    if (!pointerStartRef.current || event.pointerType !== "touch") return;
+    const dx = event.clientX - pointerStartRef.current.x;
+    const dy = event.clientY - pointerStartRef.current.y;
+    if (Math.hypot(dx, dy) > 8) {
+      clearLongPress();
+    }
+  };
+
   const clearLongPress = () => {
     window.clearTimeout(longPressTimerRef.current);
     longPressTimerRef.current = null;
+    pointerStartRef.current = null;
   };
 
   const onClickCapture = (event) => {
@@ -155,6 +167,7 @@ export default function EditorFamilyMenu({ menuId, items, children }) {
       className="editor-toolbar-family relative flex h-11 w-11 shrink-0 items-center justify-center"
       data-testid={`editor-${menuId}-menu`}
       onPointerDownCapture={onPointerDownCapture}
+      onPointerMoveCapture={onPointerMoveCapture}
       onPointerUpCapture={clearLongPress}
       onPointerCancelCapture={clearLongPress}
       onClickCapture={onClickCapture}

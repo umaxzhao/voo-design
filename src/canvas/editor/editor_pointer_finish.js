@@ -32,6 +32,37 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
         api.cancelEditDrag?.();
         return;
       }
+      if (finished.kind === "pen") {
+        api.cancelPen?.();
+        return;
+      }
+      if (finished.kind === "lasso") {
+        api.cancelLasso?.();
+        return;
+      }
+      if (
+        finished.kind === "healing" ||
+        finished.kind === "cloneStamp" ||
+        finished.kind === "patchLasso" ||
+        finished.kind === "removeBrush"
+      ) {
+        api.setRemoveStroke?.(null);
+        return;
+      }
+      if (finished.kind === "patchDrag") {
+        api.setPatchDraft?.(
+          finished.patch
+            ? { ...finished.patch, offset: { dx: 0, dy: 0 } }
+            : null,
+        );
+        return;
+      }
+      if (
+        finished.kind === "objectStroke" ||
+        finished.kind === "gradient"
+      ) {
+        return;
+      }
       if (finished.kind === "marquee") {
         api.setMarquee(null);
         return;
@@ -369,7 +400,7 @@ export function createPointerFinishDispatcher({ api, setLastBrushPoint }) {
       !event?.shiftKey &&
       finished.id
     ) {
-      api.select(finished.id);
+      api.select(finished.clickTargetId ?? finished.id);
     }
 
     if (finished.kind === "move" && finished.moved) {

@@ -1,26 +1,14 @@
 /** Swatch and HexField controls for picking and editing colours. */
 
 import PropTypes from "prop-types";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import FigmaColorPicker from "../../color_picker/FigmaColorPicker.jsx";
-
-/** `<input type="color">` only accepts full 6-digit hex, not names or rgba(). */
-export const HEX_COLOUR = /^#(?:[0-9a-f]{6}|[0-9a-f]{8})$/i;
-
-/** The hatched "no paint" swatch face, the same idea as Figma's None. */
-export const NONE_PATTERN =
-  "repeating-conic-gradient(#3a3a3a 0% 25%, #232323 0% 50%) 0 0 / 8px 8px";
-
-/** Normalise a hex field's text: add the #, expand the 3-digit shorthand. */
-export function parseHex(text) {
-  let hex = String(text).trim().toLowerCase();
-  if (!hex.startsWith("#")) hex = `#${hex}`;
-  if (/^#[0-9a-f]{3}$/.test(hex)) {
-    hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
-  }
-  return HEX_COLOUR.test(hex) ? hex : null;
-}
+import { fillTypeOf } from "../../color_picker/texture-fill.js";
+import { PopoverScopeContext, isOwnedPopoverTarget } from "../popover_scope.js";
+import { HEX_COLOUR } from "./paint_hex_field.jsx";
+export { HEX_COLOUR, HexField, parseHex } from "./paint_hex_field.jsx";
+export const NONE_PATTERN = "repeating-conic-gradient(#3a3a3a 0% 25%, #232323 0% 50%) 0 0 / 8px 8px";
 
 /**
  * Figma's paint swatch: click it to open the colour picker popover.
@@ -41,14 +29,18 @@ export function Swatch({
   onOpacityCommit = undefined,
   blendMode = null,
   onBlendModeChange = null,
+  allowMedia = false,
+  onPaintChange = null,
+  imageScaleMode = "fill",
+  imagePaint = null
 }) {
   const [open, setOpen] = useState(false);
+  const owner = useId();
   const [pos, setPos] = useState(null);
   const buttonRef = useRef(null);
   const popRef = useRef(null);
-  const valid =
-    HEX_COLOUR.test(value ?? "") ||
-    (typeof value === "string" && value.includes("-gradient"));
+  const focused = useRef(false);
+  const valid = HEX_COLOUR.test(value ?? "") || typeof value === "string" && value.includes("-gradient");
 
   // Anchored beside the properties panel, on the side with room, vertically
   // centred on the swatch row (Figma style).
@@ -71,90 +63,88 @@ export function Swatch({
         left = panel.right + gap;
       } else {
         // No panel context — fall back to whichever side of the swatch fits.
-        left =
-          rect.left >= box.width + gap
-            ? rect.left - box.width - gap
-            : rect.right + gap;
+        left = rect.left >= box.width + gap ? rect.left - box.width - gap : rect.right + gap;
       }
       left = Math.max(8, Math.min(left, window.innerWidth - box.width - 8));
-      const top = Math.min(
-        Math.max(8, rect.top + rect.height / 2 - box.height / 2),
-        Math.max(8, window.innerHeight - box.height - 8),
-      );
-      setPos({ left, top });
+      const top = Math.min(Math.max(8, rect.top + rect.height / 2 - box.height / 2), Math.max(8, window.innerHeight - box.height - 8));
+      setPos({
+        left,
+        top
+      });
     };
     place();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(place);
+    if (popRef.current) observer?.observe(popRef.current);
+    if (!focused.current) {
+      popRef.current?.querySelector('[role="tab"][aria-selected="true"]')?.focus({
+        preventScroll: true
+      });
+      focused.current = true;
+    }
     window.addEventListener("resize", place);
     window.addEventListener("scroll", place, true);
     return () => {
+      observer?.disconnect();
+      focused.current = false;
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
-  }, [open]);
+  }, [open, owner]);
 
   // Outside clicks close — both the button and the portalled popover count
   // as inside.
   useLayoutEffect(() => {
     if (!open) return undefined;
-    const onDown = (event) => {
+    const onDown = event => {
       if (buttonRef.current?.contains(event.target)) return;
       if (popRef.current?.contains(event.target)) return;
+      if (isOwnedPopoverTarget(event.target, owner)) return;
       setOpen(false);
     };
+    const onKey = event => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+      buttonRef.current?.focus();
+    };
     document.addEventListener("pointerdown", onDown, true);
-    return () => document.removeEventListener("pointerdown", onDown, true);
-  }, [open]);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, owner]);
+  return <div className="relative block shrink-0">
+      <button ref={buttonRef} type="button" aria-label={ariaLabel} title={ariaLabel} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(o => !o)} onKeyDown={event => {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setOpen(true);
+      }
+    }} className="relative block h-5 w-5 shrink-0 cursor-pointer overflow-hidden rounded-full border border-white/10 outline-none transition-colors hover:border-white/30 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40" style={{
+      background: isImage && previewImage ? `url(${previewImage}) center / cover no-repeat` : valid ? value : NONE_PATTERN
+    }} />
 
-  return (
-    <div className="relative block shrink-0">
-      <button
-        ref={buttonRef}
-        type="button"
-        aria-label={ariaLabel}
-        title={ariaLabel}
-        onClick={() => setOpen((o) => !o)}
-        className="relative block h-5 w-5 shrink-0 cursor-pointer overflow-hidden rounded-md border border-white/10 outline-none transition-colors hover:border-white/30 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
-        style={{
-          background:
-            isImage && previewImage
-              ? `url(${previewImage}) center / cover no-repeat`
-              : valid
-                ? value
-                : NONE_PATTERN,
-        }}
-      />
-
-      {open
-        ? createPortal(
-            <div
-              ref={popRef}
-              className="fixed z-[100]"
-              // Parked off-screen for the first layout pass, then measured.
-              style={pos ?? { left: -9999, top: 0 }}
-            >
-              <FigmaColorPicker
-                color={value || "#FFFFFF"}
-                imageUrl={previewImage}
-                initialType={isImage ? "image" : undefined}
-                onChange={(nextColor) => onPick(nextColor)}
-                onClose={() => setOpen(false)}
-                opacity={opacity}
-                onOpacityChange={onOpacityChange}
-                onOpacityCommit={onOpacityCommit}
-                blendMode={blendMode}
-                onBlendModeChange={onBlendModeChange}
-              />
-            </div>,
-            document.body,
-          )
-        : null}
-    </div>
-  );
+      {open ? createPortal(<div ref={popRef} className="fixed z-[100]"
+    // Parked off-screen for the first layout pass, then measured.
+    style={pos ?? {
+      left: -9999,
+      top: 0
+    }}>
+              <PopoverScopeContext.Provider value={owner}><FigmaColorPicker dialogLabel={ariaLabel} color={value || (isImage ? "transparent" : "#FFFFFF")} imageUrl={previewImage} allowMedia={allowMedia} onPaintChange={onPaintChange} imageScaleMode={imageScaleMode} imagePaint={imagePaint} initialType={fillTypeOf(value) === "texture" ? "texture" : isImage ? "image" : undefined} onChange={nextColor => onPick(nextColor)} onClose={() => {
+          setOpen(false);
+          buttonRef.current?.focus();
+        }} opacity={opacity} onOpacityChange={onOpacityChange} onOpacityCommit={onOpacityCommit} blendMode={blendMode} onBlendModeChange={onBlendModeChange} /></PopoverScopeContext.Provider>
+            </div>, document.body) : null}
+    </div>;
 }
-
 Swatch.propTypes = {
   value: PropTypes.string,
   onPick: PropTypes.func.isRequired,
+  allowMedia: PropTypes.bool,
+  onPaintChange: PropTypes.func,
+  imageScaleMode: PropTypes.string,
+  imagePaint: PropTypes.object,
   ariaLabel: PropTypes.string.isRequired,
   previewImage: PropTypes.string,
   isImage: PropTypes.bool,
@@ -164,38 +154,5 @@ Swatch.propTypes = {
   onOpacityCommit: PropTypes.func,
   /** Blend mode shown inside the picker ("source-over" is Normal). */
   blendMode: PropTypes.string,
-  onBlendModeChange: PropTypes.func,
-};
-
-/**
- * Editable hex text, Figma-style: commits on blur or Enter, accepts `abc`,
- * `#abc` and `aabbcc` as well as the full `#aabbcc`. Invalid text snaps back
- * to the current colour (the keyed defaultValue re-renders it).
- */
-export function HexField({ value = null, onCommit, ariaLabel }) {
-  const valid = HEX_COLOUR.test(value ?? "");
-  return (
-    <input
-      key={valid ? value : "none"}
-      type="text"
-      defaultValue={valid ? value : ""}
-      placeholder="—"
-      spellCheck={false}
-      aria-label={ariaLabel}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") event.currentTarget.blur();
-      }}
-      onBlur={(event) => {
-        const hex = parseHex(event.target.value);
-        if (hex && hex !== value) onCommit(hex);
-      }}
-      className="min-w-0 flex-1 bg-transparent px-1 py-0.5 text-[11px] font-mono tabular-nums text-neutral-100 outline-none uppercase cursor-text placeholder:text-neutral-400"
-    />
-  );
-}
-
-HexField.propTypes = {
-  value: PropTypes.string,
-  onCommit: PropTypes.func.isRequired,
-  ariaLabel: PropTypes.string.isRequired,
+  onBlendModeChange: PropTypes.func
 };

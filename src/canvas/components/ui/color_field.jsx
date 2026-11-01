@@ -36,7 +36,7 @@ export function ColorSwatch({
       title={ariaLabel}
       disabled={disabled}
       onClick={onClick}
-      className={`relative h-5 w-5 shrink-0 cursor-pointer overflow-hidden rounded-md ring-1 ring-inset ring-white/15 outline-none transition-colors hover:ring-white/30 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
+      className={`relative h-5 w-5 shrink-0 cursor-pointer overflow-hidden rounded-full ring-1 ring-inset ring-white/15 outline-none transition-colors hover:ring-white/30 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
       style={{
         background: valid ? value : NONE_PATTERN,
       }}

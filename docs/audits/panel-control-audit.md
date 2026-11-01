@@ -297,3 +297,146 @@ Grouped into focused pull request batches of at most 5 files per batch:
 - Reproduction: `/private/tmp/voo-layer-width-before.log` fails because the old panel has no edge handle. Browser assertions cover actual mouse drag, expanded long-name area, fixed opposite edge, left/right docking, Arrow/Home keyboard changes, limits, Escape, reset, refresh/new-document persistence, viewport transitions and serialized document invariance.
 - Evidence: `/private/tmp/voo-layer-width-clean.log`, `/private/tmp/voo-layers-width-release.json` (exact revision and executed steps), `/private/tmp/voo-layers-width-long-name.png`. Earlier dirty-workspace execution is not clean release evidence.
 - Remaining contexts: physical touch/stylus resizing, signed Electron builds, other operating systems, every inspector/history combination and large-tree performance. These are unverified; chrome preferences do not require artwork undo or export parity.
+
+## Unified fill editor
+
+Capability: `inspector.unified-fill`, related to image placement and SVG rendering.
+One swatch opens Solid / Gradient / Image / Texture in the same editor. The old
+fill-only type menu, separate image file input and inline image-fit row are removed;
+media choices are exposed only for fill rows; this audit does not certify every pre-existing effect-colour context.
+
+Baseline `64e6ddd`: `unified-fill-picker.test.jsx` reproduced four failures: missing
+media tabs, an empty image editor, undefined image-fit control, and hidden/empty
+paint stacks reviving legacy fills. Real-browser checks additionally reproduced
+nested portal clicks closing the parent, native image restoration hiding its row,
+and native picture type/undo state not following its underlying asset.
+
+| Context | Assertions / evidence | Status |
+| --- | --- | --- |
+| Actual inspector in Chromium | Mode drafts, mesh opening, real image decode/retry, shared alpha, centred fit, independent paints, hidden rows, removing/undo, selection-switch cancellation | Passed on `cb4d1c9`; 89/89 final release steps |
+| Bitmap resource ownership | Type round trips preserve the original asset, image replacement calls the existing bitmap operation, subsequent bitmap editing remains visible; undo/redo restore resources | Passed on `cb4d1c9` in `unified-fill-native-cases.mjs` |
+| Visible/export result | Real image and texture pixels; texture size/colour; decoded PNG/SVG selection pixel parity. Image sizing uses the authoritative SVG raster fallback; texture silhouettes keep native SVG patterns | Passed on `cb4d1c9` |
+| Responsive / input | Keyboard tabs, nested menu Escape, 320/390/768/1440px, English/Chinese, light/dark, emulated touch | Passed on `cb4d1c9`; final screenshots in `/private/tmp/voo-unified-fill-inspector-final/` |
+| Remaining | Physical devices, every image codec and large-image memory limit, cross-document cancellation with cloned IDs, exhaustive multi-image bitmap replacement and cold native-app restart | Not certified by these checks |
+
+Tests: `fill-paint-values.test.js`, `unified-fill-picker.test.jsx`, and the registered
+`ui-inspector-interaction.e2e.mjs` with its two unified-fill helper modules. Source
+modules remain below 400 lines; picker state is held by one reducer and assets use
+the editor's shared bitmap replacement operation. Exact final revision and online
+evidence are maintained in [quality-progress.md](../quality-progress.md).
+
+Final public execution: `cb4d1c9fbfdba8e87282a0af500fa0f1e8120d79` completed all 89 release steps, including
+85 browser suites, 4567 unit passes and 4 skips on clean unchanged source.
+Final report: `/private/tmp/voo-unified-fill-release-final.json`. Production index/fill resources match the build;
+actual inspector switches, upload, texture pixels, undo/redo and Escape pass in a
+private production browser. Evidence: `/private/tmp/voo-unified-fill-deployment-proof.json`
+and `/private/tmp/voo-unified-fill-production-result.log`. The older recovered
+execution is retained separately and is not attributed to this final commit.
+
+## Opt-in layer export
+
+Capability: `inspector.export-opt-in`; the document's `exportPresets` is the
+single source of truth. Absent, invalid and explicitly empty lists must not
+synthesize a PNG row or reveal an export section. The existing bottom Add menu
+enables export and creates its first preset. Removing the last row hides the
+entire section and restores the Add-menu entry. Explicit saved configurations remain.
+
+Baseline `1dd3dac`: six regression assertions failed because normalization always
+created a default preset. Retained log: `/private/tmp/voo-export-opt-in-baseline.log`.
+
+| Context | Assertions | Status |
+| --- | --- | --- |
+| Actual inspector | Rectangle, Frame, text and image start without the entire export section; bottom Add-menu enable, remove and reselection follow each layer | Passed on `da86f56` |
+| History | Undo/redo adding and removing the last preset immediately restores/hides the real controls | Passed on `da86f56` |
+| Active export | Explicit add retains PNG 2x dimensions and JPEG/WebP file signatures/quality | Passed on `da86f56` |
+| Normalization | Missing, empty and invalid presets remain empty; existing settings retain formats/scales/suffixes | Passed on `da86f56` |
+| Remaining | Native OS download UI, physical touch devices and cold native-project reopen | Not certified by this change |
+
+Registered coverage: `export_presets.test.js`, `right_panel_phase1.test.jsx`,
+`ui-inspector-interaction.e2e.mjs` and `inspector-controls.e2e.mjs`.
+
+Final execution: `da86f56a14a4080265fb46b834b5df363056660c` completed all 89 release steps, including 85
+browser suites, 4574 unit passes and 4 skips on clean unchanged source.
+Evidence: `/private/tmp/voo-export-opt-in-release-verified.json`. Public resources match the build; the real production
+inspector hides the entire unconfigured section, enables it through Add, downloads
+a 160x100 PNG and hides it after removal; undo/redo pass without page errors.
+Production evidence: `/private/tmp/voo-export-opt-in-production-result.log` and
+`/private/tmp/voo-export-opt-in-deployment-proof.json`. Earlier incomplete/failed
+attempts are retained separately and are not attributed to the final revision.
+
+## Typography clarity
+
+Capabilities: `inspector.typography-clarity`, `text.typography`, `text.box-sizing`.
+Reference: [Figma type properties](https://help.figma.com/hc/en-us/articles/360039956634-Explore-text-properties).
+The existing VOO visual identity remains; the refinement adds visible metric
+captions, consistent units and Lucide icons rather than new unimplemented type
+features. Common settings share one implementation for editing and creation.
+Text-box sizing is visible, while all less frequent options have one disclosure.
+
+| Context | Registered assertions | Status |
+| --- | --- | --- |
+| Labels/icons | Explicit visible captions; 16px icons and actual 1.5px stroke after scaling | Passed on `9cd70af` |
+| Real text | Size/line-height/tracking alter actual bounds; cancel and one-step undo/redo; weight/decoration/alignment | Passed on `9cd70af` |
+| Advanced | Box width wraps actual text; direction/case/paragraph/baseline/path offset retain writes and undo | Passed on `9cd70af` |
+| Shared creation | Same basic controls, actual pointer creates text with selected size/weight/spacing; one-step undo/redo | Passed on `9cd70af` |
+| Font/multi | Existing font picker applies a real family; mixed numeric fields update both layers and undo each original value | Passed on `9cd70af` |
+| Layout | 320/390/768/1440px, both themes and languages; numeric space and readable captions; 48px narrow controls | Passed on `9cd70af` |
+| Window menu events | Reproduced non-Node Window target crash in `image-file-clipboard`; guard preserves inner scrolling and dismisses safely on resize/scroll | Passed on `9cd70af` |
+| Remaining | Physical IME/touch/stylus, every installed font and variable-font axis, OS-level scaling | Not certified |
+
+Evidence: `text_section_compact.test.jsx`, `tools_text_pen_shape.test.jsx`,
+`paragraph_spacing.test.jsx`, `text_case.test.jsx`; registered
+`ui-inspector-interaction.e2e.mjs` calls `typography-inspector-cases.mjs`.
+Before screenshots: `/private/tmp/voo-typography-before.png`; targeted after
+matrix: `/private/tmp/voo-typography-only/`. The two baseline regressions are in
+`/private/tmp/voo-typography-baseline.log`. Mechanical typography scan returned
+no findings; it does not certify every contrast or accessibility context.
+
+Final execution `9cd70afd10df836c269b5597b5558a114e463640`: all 90 release steps, including 86 browser suites,
+4587 unit passes and 4 skips on clean unchanged source. Report:
+`/private/tmp/voo-typography-release-recovered.json`. All 16 viewport/theme/locale contexts have retained screenshots.
+This is a same-source recovery after a private startup-cache teardown assertion,
+not a single first-pass invocation: the original failure remains in
+`/private/tmp/voo-typography-release-complete.json`; startup was rechecked serially
+and remaining browser suites completed at reduced concurrency.
+A later integrated revision `e28b5110896851246e12ffbfc0571284851f1265` preserves incoming Agent refinements and separately passes a new build, design/module validation, full unit run and the inspector/Agent-context/Agent-suggestions browser suites. It does not inherit the earlier revision's full 90-check execution. Public resources match this integrated build; the actual Chinese production panel
+passes captions, 16px/1.5px SVG metrics, size geometry, weight, text wrapping,
+paragraph updates and undo without page errors. Production evidence:
+`/private/tmp/voo-typography-production-result.log` and
+`/private/tmp/voo-typography-deployment-proof.json`. Earlier failed execution
+remains separate and is not attributed to the final revision.
+
+## Inspector control hierarchy
+
+Capability: `inspector.control-hierarchy`. Styling opts in only inside
+`editor-properties-panel`; shared field/dropdown markers have no effect in
+Layers, the welcome page, Agent or toolbar. Large panel radii remain unchanged.
+
+| Context | Assertions | Status |
+| --- | --- | --- |
+| Numeric fields | 6px field radius, 32px desktop row, explicit label/value/unit roles; actual typed commit/cancel and undo | Passed on `7e6a77a` |
+| Dropdown | Distinct outlined surface, real keyboard open/Escape and focus retention | Passed on `7e6a77a` |
+| Switch/command | Grouped Frame layout modes and lighter rotate command keep actual operations and one-step undo | Passed on `7e6a77a` |
+| Responsive | 320/390/768/1440px, light/dark, English/Chinese; 48px narrow inputs, no anchor/field overlap | Passed on `7e6a77a` |
+| Existing editing | Typography creation/editing, mixed selection, fill/stroke and scrub interactions | Passed on `7e6a77a` |
+| Remaining | Physical touch/IME/stylus, all advanced portaled dialogs, private workspace as a whole | Not certified |
+
+Baseline `/private/tmp/voo-inspector-controls-before.log` fails the old 12px
+capsule against the new geometry requirement. Targeted checks and screenshots:
+`/private/tmp/voo-inspector-controls-after-v2.log` and
+`/private/tmp/voo-inspector-control-evidence/`. Registered helper
+`tests/e2e/inspector-control-cases.mjs` runs inside the existing UI inspector suite.
+Clean fixed revision `7e6a77a3d0836b7eecceeefddf3be3f94afb11c0`: all 91 steps, 87 browser suites, 4637 unit passes/4 skips. Report `/private/tmp/voo-inspector-controls-release-integrated.json`. Earlier Figma cold-reopen sampling ran before the imported document was ready (empty nodes and open guard on); the fixture now waits for the actual scene while retaining exact pixel assertions. This does not claim an application import fix. Browser concurrency alone was reduced to 2. Production revision `7e6a77a3d0836b7eecceeefddf3be3f94afb11c0` separately matches the build and passes actual Chinese Frame/typography controls and undo; evidence `/private/tmp/voo-inspector-controls-production-result.log` and `/private/tmp/voo-inspector-controls-deployment-proof.json`. Distinct integrated revisions do not inherit a historical complete run.
+
+## Inspector large-radius follow-up
+
+Existing capability `inspector.control-hierarchy`: the user chose the original
+12px large control radius. Fields, dropdowns, segmented tracks/options and
+commands share one scoped CSS variable. Outer panels, dimensions, typography,
+fill/outline distinctions and existing commands remain unchanged.
+
+Baseline `/private/tmp/voo-inspector-radius-before.log` reproduces 6px versus
+12px. The existing inspector control browser helper verifies every control
+category, actual commit/cancel, dropdown keyboard/focus, rotation/layout undo,
+and 16 viewport/theme/locale contexts. Final revision `b965942e22bcfb408015acdba58f49d8d7c3cd8c`: all 91 release checks including 87 browser suites, 4637 unit passes/4 skips. Evidence `/private/tmp/voo-inspector-radius-release.json`. Production resources match the build; actual Chinese Frame and text controls, keyboard and undo pass without errors (`/private/tmp/voo-inspector-radius-production-result.log`). Physical devices and all advanced dialogs remain unverified.
+

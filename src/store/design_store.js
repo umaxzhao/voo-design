@@ -1,3 +1,4 @@
+import { createEditorPanelActions } from "./editor-panel-actions.js";
 import { WORKSPACE_BACKGROUND } from "../canvas/editor/render_canvas_base.js";
 import { forgetPageCamera, pageCameraCache } from "../canvas/page_camera.js";
 import { createCameraRafBatcher } from "../canvas/camera_raf.js";
@@ -108,6 +109,7 @@ export const useDesignStore = create((set, get) => {
   streamingPreview: null,
   streamingPreviewNodeId: null,
   welcomeOpen: true,
+  welcomeActionsReady: false,
   // Label of the document being opened, or null. While set, the whole app sits
   // behind a loading overlay so a half-imported document never shows.
   documentLoading: null,
@@ -542,46 +544,7 @@ export const useDesignStore = create((set, get) => {
     }
   },
 
-  // Agent Panel & Hybrid Architecture Actions
-  setAgentPanelOpen: (agentPanelOpen) =>
-    set({ agentPanelOpen: Boolean(agentPanelOpen) }),
-  setAgentOpen: (agentOpen) =>
-    set({ agentPanelOpen: Boolean(agentOpen) }),
-  setBrowserDrawerOpen: (browserDrawerOpen) =>
-    set({ browserDrawerOpen: Boolean(browserDrawerOpen) }),
-  dispatchAgentIntent: ({
-    prompt = "",
-    action = "custom",
-    node = null,
-  } = {}) => {
-    set({
-      agentPanelOpen: true,
-      pendingAgentIntent: {
-        prompt: (prompt || "").trim(),
-        action,
-        node,
-        timestamp: Date.now(),
-      },
-    });
-  },
-  dispatchToAgent: (payload) => {
-    const prompt = (payload?.prompt || payload?.intent || "").trim();
-    const action = payload?.tool || payload?.intent || "custom";
-    const node = payload?.context || null;
-    set({
-      agentPanelOpen: true,
-      pendingAgentIntent: {
-        prompt,
-        action,
-        node,
-        timestamp: Date.now(),
-      },
-    });
-  },
-  clearPendingAgentIntent: () => set({ pendingAgentIntent: null }),
-  setPendingGeneration: (pendingGeneration) =>
-    set({ agentPanelOpen: Boolean(pendingGeneration), pendingGeneration }),
-  clearPendingGeneration: () => set({ pendingGeneration: null }),
+  ...createEditorPanelActions(set),
   };
 });
 

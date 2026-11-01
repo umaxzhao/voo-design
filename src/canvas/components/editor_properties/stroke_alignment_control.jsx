@@ -73,6 +73,7 @@ export default function StrokeAlignmentControl({
   const { t } = useI18n();
   return (
     <div
+      data-inspector-control="segments"
       role="group"
       aria-label={t("editor.strokeStyle.align")}
       className={`flex h-7 shrink-0 items-center gap-0.5 rounded-lg bg-neutral-800 p-0.5 ${disabled ? "opacity-40" : ""}`}
@@ -83,6 +84,7 @@ export default function StrokeAlignmentControl({
           type="button"
           aria-label={t(label)}
           title={t(label)}
+          data-inspector-control="toggle"
           aria-pressed={value === alignment}
           disabled={disabled}
           onClick={() => onChange(alignment)}

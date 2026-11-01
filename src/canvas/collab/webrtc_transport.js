@@ -14,10 +14,7 @@
  * tiebreak both sides compute identically without another round trip.
  */
 
-import {
-  HOSTED_SIGNALING_URL,
-  SITE_HOSTNAMES,
-} from "../../shared/vps_origin.js";
+import { HOSTED_SIGNALING_URL } from "../../shared/vps_origin.js";
 
 import { MSG, decode, encode } from "./protocol.js";
 import { STATUS } from "./session.js";
@@ -84,23 +81,9 @@ export const BUFFER_LOW_WATER = 1024 * 1024;
  */
 export const NUM_CHANNELS = Number(globalThis.__VOO_COLLAB_CHANNELS__ ?? 8);
 
-/** Where the signalling socket lives; overridable for local development. */
+/** Public share links must meet on the same service; explicit local tests can override it. */
 export function signalingUrl() {
-  const configured = globalThis.__VOO_SIGNALING_URL__;
-  if (configured) return configured;
-  const origin = globalThis.location?.origin ?? "https://voo.run";
-  // WebSocket only accepts ws/wss. The desktop app runs under the custom
-  // `voo://app` scheme, which is not http(s) and has no signalling endpoint of
-  // its own — without this return the client would hand `new WebSocket` a
-  // `voo://app/collab` URL and the whole transport would fail to connect. Route
-  // any non-http origin to the hosted signalling server.
-  if (!/^https?:\/\//.test(origin)) return HOSTED_SIGNALING_URL;
-  // The site on voo.run is a serverless deployment and cannot hold a WebSocket,
-  // so the page's own origin has no /collab there either: use the VPS.
-  if (SITE_HOSTNAMES.includes(new URL(origin).hostname)) {
-    return HOSTED_SIGNALING_URL;
-  }
-  return `${origin.replace(/^http/, "ws")}/collab`;
+  return globalThis.__VOO_SIGNALING_URL__ || HOSTED_SIGNALING_URL;
 }
 
 /**

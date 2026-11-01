@@ -42,6 +42,11 @@ export function unwindEscape({
         return "edit";
       },
       () => {
+        if (!engine.getMagneticLassoDraft?.()) return null;
+        engine.cancelMagneticLasso?.();
+        return "magneticLasso";
+      },
+      () => {
         if (!engine.getPolygonDraft?.()) return null;
         engine.cancelPolygonLasso();
         return "polygonDraft";

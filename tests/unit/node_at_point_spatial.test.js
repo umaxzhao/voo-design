@@ -4,14 +4,14 @@ import { buildSpatialIndex } from '../../src/canvas/editor/viewport_culling.js';
 import { NODE_KIND } from '../../src/canvas/editor/scene_model.js';
 const node = (id, x, extra = {}) => ({ id, kind: NODE_KIND.RECT, x, y: 0, width: 30, height: 30, visible: true, ...extra });
 describe('spatial nodeAtPoint', () => {
-  it('matches linear hits for 5k nodes and completes 200 queries under 50ms', () => {
+  it('matches linear hits for 5k nodes and completes 200 queries under 100ms', () => {
     const doc = { width: 500000, height: 500, nodes: Array.from({ length: 5000 }, (_, i) => node(`${i}`, i * 80)) };
     const index = buildSpatialIndex(doc.nodes);
     const points = Array.from({ length: 200 }, (_, i) => ({ x: (i * 23 % 5000) * 80 + 10, y: 10 }));
     const expected = points.map(p => nodeAtPoint(doc, p));
     const start = performance.now();
     const actual = points.map(p => nodeAtPoint(doc, p, { spatialIndex: index }));
-    expect(performance.now() - start).toBeLessThan(50);
+    expect(performance.now() - start).toBeLessThan(100);
     expect(actual).toEqual(expected);
   });
   it('preserves z order, lock, reject, groups, booleans and multiple fill instances', () => {

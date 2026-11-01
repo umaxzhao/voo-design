@@ -160,6 +160,7 @@ export function createEngineSelectionController({
     clearPixelSelection,
     cancelPolygonLasso,
     cancelMagneticLasso: magneticLasso.cancel,
+    commitHistory: historyApi?.commit,
     trackTransform,
     replaceNodeBitmap,
   });

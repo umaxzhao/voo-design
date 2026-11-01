@@ -26,6 +26,7 @@ import {
   createSessionId,
   deleteSessionFromList,
   loadStoredSessions,
+  renameSessionInList,
   saveStoredSessions,
   upsertSession,
 } from "../agent/session_history.js";
@@ -36,14 +37,21 @@ import {
   getModelDisplayParts,
 } from "./agent-panel/model_catalog.js";
 import { useModelGroups } from "./agent-panel/use_model_groups.js";
+import { getDiscoveredModels } from "./agent-panel/model_discovery.js";
 import { useSelectionContext } from "./agent-panel/use_selection_context.js";
 import { contextLabel, promptWithSelection } from "./agent-panel/selection_context.js";
+import {
+  getCodexReasoningSettings,
+  setStoredCodexReasoningEffort,
+} from "../../shared/codex-reasoning.js";
 export { CLI_MODEL_GROUPS, getModelDisplayLabel, getModelDisplayParts };
 /** Chat panel beside the editor frame: text in, canvas changes out, saved history. */
 export default function CanvasAgentPanel({ onClose }) {
   const { t } = useI18n();
   const references = usePromptAttachments(t);
   const { attachments, clearAttachments } = references;
+  const modelGroups = useModelGroups();
+  const [, refreshReasoningPreference] = useState(0);
   const [sessions, setSessions] = useState(() => loadStoredSessions());
   // Bootstrap once without an effect that calls changing session handlers.
   const initialSessionRef = useRef(null);
@@ -62,6 +70,8 @@ export default function CanvasAgentPanel({ onClose }) {
   const [cancelled, setCancelled] = useState(false);
   const [lastRequest, setLastRequest] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [renamingSessionId, setRenamingSessionId] = useState(null);
+  const [renameDraft, setRenameDraft] = useState("");
   const [selectedModel, setSelectedModel] = useState(
     () => getSetting(AGENT_SETTING.MODEL) || DEFAULT_AGENT_MODEL,
   );
@@ -133,6 +143,15 @@ export default function CanvasAgentPanel({ onClose }) {
       if (next[0]) openSession(next[0]);
       else startNewSession();
     }
+  };
+  const renameSession = (sessionId, title) => {
+    if (turnRef.current) return;
+    const next = renameSessionInList(sessionsRef.current, sessionId, title);
+    sessionsRef.current = next;
+    setSessions(next);
+    saveStoredSessions(next);
+    setRenamingSessionId(null);
+    setRenameDraft("");
   };
   useEffect(() => {
     const onProgress = (event) => {
@@ -216,6 +235,13 @@ export default function CanvasAgentPanel({ onClose }) {
           if (referenceNote) promptWithContext += `\n${referenceNote}`;
         }
         const provider = await abortable(() => resolveAgentProvider(model), controller.signal);
+        if (model?.startsWith("codex:")) {
+          const codexModels = getDiscoveredModels("codex") ?? [];
+          const { reasoningEffort } = getCodexReasoningSettings(model, codexModels);
+          if (reasoningEffort) {
+            provider.config = { ...provider.config, reasoningEffort };
+          }
+        }
         const external = await abortable(() => externalMcpTools(), controller.signal);
         controller.signal.throwIfAborted();
         const reply = await runAgentTurn({
@@ -260,9 +286,11 @@ export default function CanvasAgentPanel({ onClose }) {
           { role: "assistant", content: reply },
         ];
         const messages = [...transcriptRef.current, replyItem];
+        const savedTitle = sessionsRef.current.find((session) => session.id === sessionId)?.title ?? "";
         setTranscript(messages);
         persist({
           id: sessionId,
+          title: savedTitle,
           messages,
           history: historyRef.current,
           createdAt: Date.now(),
@@ -367,7 +395,12 @@ export default function CanvasAgentPanel({ onClose }) {
   const isEmpty = transcript.length === 0 && !busy;
   const activeTitle = sessions.find((session) => session.id === activeId)?.title;
   const currentModel = selectedModel || getSetting(AGENT_SETTING.MODEL);
-  const modelGroups = useModelGroups();
+  const codexModels = modelGroups.find((group) => group.cliId === "codex")?.models ?? [];
+  const reasoningSettings = getCodexReasoningSettings(currentModel, codexModels);
+  const handleSelectReasoningEffort = async (effort) => {
+    await setStoredCodexReasoningEffort(currentModel, effort);
+    refreshReasoningPreference((revision) => revision + 1);
+  };
   return <AgentPanelView {...{
     t, activeTitle, historyOpen, setHistoryOpen, setModelMenuOpen,
     startNewSession, onClose, modelMenuOpen, modelGroups, currentModel,
@@ -375,7 +408,12 @@ export default function CanvasAgentPanel({ onClose }) {
     isEmpty, setInput, transcript, directions, directionChoice, busy,
     pipelineProgress, streamingText, candidates, keepCandidate,
     activeContext, setActiveContext, cancelled, lastRequest, send,
-    error, configError, onSubmit, input, onKeyDown, turnRef, references
+    error, configError, onSubmit, input, onKeyDown, turnRef, references,
+    renamingSessionId, renameDraft, setRenamingSessionId, setRenameDraft,
+    renameSession,
+    reasoningEfforts: reasoningSettings.reasoningEfforts,
+    reasoningEffort: reasoningSettings.reasoningEffort,
+    onSelectReasoningEffort: handleSelectReasoningEffort,
   }} />;
 }
 CanvasAgentPanel.propTypes = { onClose: PropTypes.func };

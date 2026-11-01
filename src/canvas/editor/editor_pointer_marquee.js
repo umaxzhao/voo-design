@@ -184,17 +184,21 @@ export function createMarqueePointerGestures({
       antiAlias,
       sampleSize: api.getWandSampleSize?.(),
     });
+    const mode = selectionModeOf(event);
     if (sel) {
       api.combinePixelSelection(
         api.getPixelSelection(),
         { ...sel, nodeId: host.id },
-        selectionModeOf(event),
+        mode,
       );
       const feather = api.getSelectionFeather?.() ?? 0;
       if (feather > 0) {
         api.featherPixelSelection?.(feather);
       }
-    } else {
+      commitEditorAction("editor.pointer.selection", () =>
+        api.commit?.("editor.history.entry.wand"),
+      );
+    } else if (mode === "replace") {
       api.clearPixelSelection();
     }
     setGesture(null);

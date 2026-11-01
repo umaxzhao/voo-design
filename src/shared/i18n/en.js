@@ -1,3 +1,4 @@
+import fillPicker from "./fill-picker-en.js";
 /**
  * English (en) dictionary. Complete aggregate dictionary.
  * 100% key parity with zh.js is maintained here.
@@ -33,6 +34,7 @@ import designSystemsEn from "./design-systems-en.js";
 import settingsUiEn from "./settings-ui-en.js";
 
 export default {
+  ...fillPicker,
   "agent.providers.hint": "Codex CLI · Claude Code CLI · Custom models",
   "agent.providers.customHint": "Add an OpenAI-compatible provider and text models in AI Providers.",
   "agent.mcp.title": "External MCP servers",
@@ -212,6 +214,12 @@ export default {
   "provider.status.verified": "Verified",
   "agent.connection.modifyApi": "Edit API Key",
   "agent.reasoning.label": "Reasoning effort",
+  "agent.panel.copy": "Copy response",
+  "agent.panel.copied": "Copied",
+  "agent.panel.copyFailed": "Could not copy",
+  "agent.history.rename": "Rename conversation",
+  "agent.history.saveName": "Save conversation name",
+  "agent.history.cancelRename": "Cancel rename",
   "agent.reasoning.default": "Default",
   "agent.reasoning.saving": "Saving…",
   "agent.reasoning.none": "None",

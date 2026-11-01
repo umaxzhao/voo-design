@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   createEmptySession,
   deleteSessionFromList,
+  renameSessionInList,
   upsertSession,
 } from "../../src/canvas/agent/session_history.js";
 
@@ -25,5 +26,23 @@ describe("agent session history", () => {
   it("deletes only the requested session", () => {
     const list = [createEmptySession("a"), createEmptySession("b")];
     expect(deleteSessionFromList(list, "a").map((s) => s.id)).toEqual(["b"]);
+  });
+
+  it("renames a session without changing the conversation data", () => {
+    const session = {
+      ...createEmptySession("a"),
+      title: "Old title",
+      messages: [{ role: "user", content: "Prompt" }],
+      history: [{ role: "user", content: "Prompt" }],
+    };
+    const other = createEmptySession("b");
+    const renamed = renameSessionInList([session, other], "a", "  New title  ");
+    expect(renamed[0]).toMatchObject({
+      id: "a",
+      title: "New title",
+      messages: session.messages,
+      history: session.history,
+    });
+    expect(renamed[1]).toBe(other);
   });
 });

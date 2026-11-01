@@ -242,7 +242,7 @@ export default function ProviderSettings({ activeProviderId = null }) {
                   {label}
                 </span>
                 <span
-                  className={`truncate text-[9px] ${statusClass}`}
+                  className={`truncate text-[11px] ${statusClass}`}
                   title={isError ? statusText : undefined}
                 >
                   {statusText}

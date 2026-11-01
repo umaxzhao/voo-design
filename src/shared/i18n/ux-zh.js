@@ -1,5 +1,15 @@
 /** User-facing copy for the workflow and editor experience. */
 export default {
+  "agent.authoring.reference": "正在准备视觉参考…",
+  "agent.authoring.directions": "正在探索设计方向…",
+  "agent.authoring.selection": "正在选择设计方向…",
+  "agent.authoring.generation": "正在逐步放置可编辑元素…",
+  "agent.authoring.critique": "正在检查整体设计…",
+  "agent.authoring.repair": "正在完善细节…",
+  "agent.authoring.images": "正在添加图片素材…",
+  "agent.authoring.cancelled": "已停止生成",
+  "agent.authoring.failed": "生成未能完成",
+
   "designSystem.stripe": "Stripe 金融科技",
   "designSystem.stripeDescription": "清晰轻盈的金融产品界面",
   "designSystem.linear": "Linear 暗色产品",

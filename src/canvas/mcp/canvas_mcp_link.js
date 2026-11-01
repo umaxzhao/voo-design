@@ -44,13 +44,16 @@ export function startCanvasMcpLink({ url, executeTool, retryBaseMs = RETRY_BASE_
       let frame;
       try { frame = JSON.parse(event.data); } catch { return; }
       if (frame.type === "event" && frame.channel === E.STREAM_LAYOUT_UPDATE && frame.payload) {
-        const { html, clear } = frame.payload;
+        const { html, clear, final } = frame.payload;
+        const stream = args => executeTool("stream_layout", args).catch(error => {
+          if (error.name !== "AbortError") console.error("[stream_layout]", error);
+        });
         if (clear || (typeof html === "string" && !html.trim())) {
-          void executeTool("stream_layout", { clear: true });
+          void stream({ clear: true });
         } else if (typeof html === "string") {
           const isFinal = /<!--\s*(?:voo:final|VOOFINISH)\s*-->/i.test(html);
           const cleaned = html.replace(/<!--\s*(?:voo:final|VOOFINISH)\s*-->/gi, "");
-          void executeTool("stream_layout", { html: cleaned, final: isFinal });
+          void stream({ html: cleaned, final: Boolean(final) || isFinal });
         }
         return;
       }

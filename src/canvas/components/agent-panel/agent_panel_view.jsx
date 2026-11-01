@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import PropTypes from "prop-types";
-import { ArrowUp, History, PanelLeft, Plus, X } from "lucide-react";
+import { ArrowUp, Check, History, PanelLeft, Pencil, Plus, X } from "lucide-react";
 import { VooBrandLogo } from "../../../app_title_bar.jsx";
 import ToolCallCard from "../tool_call_card.jsx";
 import AgentModelLabel from "./agent_model_label.jsx";
@@ -8,6 +8,8 @@ import AgentModelMenu from "./agent_model_menu.jsx";
 import AgentContextChip from "./agent_context_chip.jsx";
 import PromptImageAttachments from "../prompt_image_attachments.jsx";
 import AgentSelectionSuggestions, { appendSuggestion } from "./agent_selection_suggestions.jsx";
+import ReasoningEffortControl from "./reasoning_effort_control.jsx";
+import AssistantMessageCopy from "./assistant_message_copy.jsx";
 
 /** Starter prompts shown on an empty conversation; each fills the composer. */
 const SUGGESTION_KEYS = [
@@ -48,6 +50,9 @@ HeaderButton.propTypes = {
 export default function AgentPanelView({
   t, activeTitle, historyOpen, setHistoryOpen, setModelMenuOpen,
   startNewSession, onClose, modelMenuOpen, modelGroups, currentModel,
+  reasoningEfforts, reasoningEffort, onSelectReasoningEffort,
+  renamingSessionId, renameDraft, setRenamingSessionId, setRenameDraft,
+  renameSession,
   handleSelectModel, sessions, activeId, openSession, removeSession,
   isEmpty, setInput, transcript, directions, directionChoice, busy,
   pipelineProgress, streamingText, candidates, keepCandidate,
@@ -88,7 +93,7 @@ export default function AgentPanelView({
       {historyOpen && (
         <ul
           aria-label={t("agent.history.title")}
-          className="absolute inset-x-2 top-12 z-10 flex max-h-[60%] flex-col gap-0.5 overflow-y-auto rounded-2xl bg-[#171717] p-2 shadow-panel"
+          className="absolute inset-x-2 top-12 z-10 flex max-h-[60%] flex-col gap-0.5 overflow-y-auto rounded-2xl border border-white/[0.06] bg-[#171717] p-2 shadow-panel"
         >
           {sessions.length === 0 && (
             <li className="px-2.5 py-3 text-[12px] text-neutral-400">{t("agent.history.empty")}</li>
@@ -96,17 +101,55 @@ export default function AgentPanelView({
           {sessions.map((session) => {
             const isActive = session.id === activeId;
             return (
-              <li key={session.id} className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => openSession(session)}
-                  aria-current={isActive}
-                  className={`flex-1 truncate rounded-xl px-2.5 py-2 text-left text-[12px] transition-colors hover:bg-white/[0.06] ${
-                    isActive ? "bg-[#E5B2FF]/10 text-[#eed0ff]" : "text-neutral-300"
-                  }`}
-                >
-                  {session.title || t("agent.history.untitled")}
-                </button>
+              <li key={session.id} className="group flex items-center gap-1">
+                {renamingSessionId === session.id ? (
+                  <form
+                    className="flex min-w-0 flex-1 items-center gap-1"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      renameSession(session.id, renameDraft);
+                    }}
+                  >
+                    <input
+                      autoFocus
+                      value={renameDraft}
+                      onChange={(event) => setRenameDraft(event.target.value)}
+                      aria-label={t("agent.history.rename")}
+                      className="h-8 min-w-0 flex-1 rounded-lg bg-white/[0.06] px-2 text-[12px] text-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-[#E5B2FF]/50"
+                    />
+                    <button type="submit" aria-label={t("agent.history.saveName")} className="flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.08] hover:text-white">
+                      <Check size={14} aria-hidden="true" />
+                    </button>
+                    <button type="button" aria-label={t("agent.history.cancelRename")} onClick={() => setRenamingSessionId(null)} className="flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.08] hover:text-white">
+                      <X size={14} aria-hidden="true" />
+                    </button>
+                  </form>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => openSession(session)}
+                    aria-current={isActive}
+                    className={`flex-1 truncate rounded-xl px-2.5 py-2 text-left text-[12px] transition-colors hover:bg-white/[0.06] ${
+                      isActive ? "bg-[#E5B2FF]/10 text-[#eed0ff]" : "text-neutral-300"
+                    }`}
+                  >
+                    {session.title || t("agent.history.untitled")}
+                  </button>
+                )}
+                {renamingSessionId !== session.id && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRenamingSessionId(session.id);
+                      setRenameDraft(session.title || "");
+                    }}
+                    aria-label={t("agent.history.rename")}
+                    title={t("agent.history.rename")}
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-white/[0.08] hover:text-white focus-visible:text-white group-hover:text-neutral-400"
+                  >
+                    <Pencil size={13} aria-hidden="true" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => removeSession(session.id)}
@@ -176,11 +219,12 @@ export default function AgentPanelView({
                     </div>
                   )}
                   <div>{item.content}</div>
+                  {item.role === "assistant" && <AssistantMessageCopy content={item.content} t={t} />}
                 </li>
               ),
             )}
             {directions.length > 0 && (
-              <li className="flex flex-wrap gap-1.5" aria-label="Visual directions">
+              <li className="flex flex-wrap gap-1.5" aria-label={t("agent.authoring.directions")}>
                 {directions.map(direction => (
                   <button key={direction.id} type="button" title={`${direction.mood} — ${direction.layoutIdea}`} onClick={() => directionChoice.current?.(direction.id)} className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-neutral-200 hover:bg-white/10">
                     {direction.name}
@@ -191,7 +235,7 @@ export default function AgentPanelView({
             {busy && (
               <li className="flex items-center gap-2 text-[12px] text-neutral-400">
                 <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-[#E5B2FF]" aria-hidden="true" />
-                {pipelineProgress ? `${pipelineProgress.stage} · ${pipelineProgress.status}` : streamingText || t("agent.panel.busy")}
+                {pipelineProgress ? t(`agent.authoring.${pipelineProgress.status === "cancelled" || pipelineProgress.status === "failed" ? pipelineProgress.status : pipelineProgress.stage}`) : streamingText || t("agent.panel.busy")}
               </li>
             )}
           </ol>
@@ -261,7 +305,7 @@ export default function AgentPanelView({
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={onKeyDown}
           rows={3}
-          className="w-full resize-none bg-transparent text-xs leading-relaxed text-neutral-100 placeholder-neutral-400 focus:outline-none"
+          className="w-full resize-none bg-transparent text-xs max-sm:text-[16px] leading-relaxed text-neutral-100 placeholder-neutral-400 focus:outline-none"
         />
         <div className="flex items-center gap-2 pt-2">
           <span className="min-w-0 flex-1" aria-hidden="true" />
@@ -284,6 +328,12 @@ export default function AgentPanelView({
               <AgentModelLabel modelId={currentModel} size={12} />
             </button>
           )}
+          <ReasoningEffortControl
+            efforts={reasoningEfforts}
+            value={reasoningEffort}
+            onChange={onSelectReasoningEffort}
+            t={t}
+          />
           {busy && (
             <button
               type="button"
@@ -321,6 +371,14 @@ AgentPanelView.propTypes = {
   modelMenuOpen: PropTypes.bool,
   modelGroups: PropTypes.array.isRequired,
   currentModel: PropTypes.string,
+  reasoningEfforts: PropTypes.arrayOf(PropTypes.string),
+  reasoningEffort: PropTypes.string,
+  onSelectReasoningEffort: PropTypes.func,
+  renamingSessionId: PropTypes.string,
+  renameDraft: PropTypes.string,
+  setRenamingSessionId: PropTypes.func,
+  setRenameDraft: PropTypes.func,
+  renameSession: PropTypes.func,
   handleSelectModel: PropTypes.func.isRequired,
   sessions: PropTypes.array.isRequired,
   activeId: PropTypes.string,

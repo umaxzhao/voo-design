@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { useEffect, useState } from "react";
+import { useId } from "react";
 import { ColorSliderSurfaces } from "./ColorSliderSurfaces.jsx";
 import { ColorModelInputs } from "./ColorModelInputs.jsx";
 import { PickerOpacityField } from "./PickerOpacityField.jsx";
@@ -9,319 +9,158 @@ import { PickerHeader } from "./PickerHeader.jsx";
 import { GradientStopsBar } from "./GradientStopsBar.jsx";
 import { GradientAngleControl } from "./GradientAngleControl.jsx";
 import { SwatchGrid } from "./SwatchGrid.jsx";
-import { hexToHsv, hsvToHex } from "./color_math.js";
-import {
-  formatGradient,
-  isCssGradient,
-  parseGradient,
-  normalizeGradientAngle,
-} from "./gradient_fill.js";
+import ImageFillControls from "./ImageFillControls.jsx";
+import TextureFillControls from "./TextureFillControls.jsx";
+import { useFillPicker } from "./use_fill_picker.js";
+import { fillTypeOf } from "./texture-fill.js";
 import { useI18n } from "../use_i18n.js";
-
-const GRADIENT_SUB_TYPES = [
-  {
-    id: "linear",
-    labelKey: "editor.props.gradient.linear",
-    label: "Linear",
-    icon: "linear",
-  },
-  {
-    id: "radial",
-    labelKey: "editor.props.gradient.radial",
-    label: "Radial",
-    icon: "radial",
-  },
-  {
-    id: "angular",
-    labelKey: "editor.props.gradient.angular",
-    label: "Conic",
-    icon: "angular",
-  },
-  {
-    id: "diamond",
-    labelKey: "editor.props.gradient.diamond",
-    label: "Diamond",
-    icon: "diamond",
-  },
-];
-
+const GRADIENT_SUB_TYPES = [{
+  id: "linear",
+  labelKey: "editor.props.gradient.linear",
+  label: "Linear",
+  icon: "linear"
+}, {
+  id: "radial",
+  labelKey: "editor.props.gradient.radial",
+  label: "Radial",
+  icon: "radial"
+}, {
+  id: "angular",
+  labelKey: "editor.props.gradient.angular",
+  label: "Conic",
+  icon: "angular"
+}, {
+  id: "diamond",
+  labelKey: "editor.props.gradient.diamond",
+  label: "Diamond",
+  icon: "diamond"
+}, {
+  id: "mesh",
+  labelKey: "editor.fillPicker.mesh",
+  icon: "mesh"
+}];
 export default function FigmaColorPicker({
   color = "#FFFFFF",
   onChange,
   onClose,
   showTypeTabs = true,
-  // Kept for the hidden "image" fill tab (see PRIMARY_FILL_TYPES); the tab
-  // returns once the renderer supports image paints.
-  imageUrl: _imageUrl = null,
+  imageUrl = null,
   initialType = null,
   grayscaleOnly = false,
-  // Optional bindings to the row that opened the picker. When absent the
-  // matching control is not shown (e.g. effect colours have no blend mode).
   opacity = null,
   onOpacityChange = null,
-  onOpacityCommit = undefined,
+  onOpacityCommit,
   blendMode = null,
   onBlendModeChange = null,
+  allowMedia = false,
+  onPaintChange = null,
+  imageScaleMode = "fill",
+  imagePaint = null,
+  dialogLabel = null
 }) {
-  const { t } = useI18n();
-  const isGradient = isCssGradient(color);
-  const parsed = isGradient ? parseGradient(color) : null;
-  const initialGradientType = parsed ? parsed.type : "linear";
-  const initialPrimaryType = initialType ?? (isGradient ? "gradient" : "solid");
-
-  const [primaryType, setPrimaryType] = useState(initialPrimaryType);
-  const [gradientType, setGradientType] = useState(initialGradientType);
-  const [gradientStops, setGradientStops] = useState(
-    parsed?.stops ?? [
-      { color: "#FFFFFF", opacity: 100, position: 0 },
-      { color: "#000000", opacity: 100, position: 100 },
-    ],
-  );
-  const [activeStopIndex, setActiveStopIndex] = useState(0);
-  const [angle, setAngle] = useState(parsed?.angle ?? "135deg");
-  // Thread the geometry parsed from the live gradient string so that
-  // GradientStopsBar can embed it back into formatGradient without silently
-  // resetting the on-canvas gradient-line position to the default geometry.
-  const [geometry, setGeometry] = useState(parsed?.geometry ?? null);
-
-  const currentSolidHex = isGradient
-    ? (gradientStops[activeStopIndex]?.color ?? "#FFFFFF")
-    : color.slice(0, 7) || "#FFFFFF";
-  const currentSolidOpacity = isGradient
-    ? (gradientStops[activeStopIndex]?.opacity ?? 100)
-    : 100;
-
-  const [hsv, setHsv] = useState(() => hexToHsv(currentSolidHex));
-
-  useEffect(() => {
-    setHsv(hexToHsv(currentSolidHex));
-  }, [currentSolidHex]);
-
-  // When the upstream `color` prop changes (e.g. canvas drag updated the
-  // gradient line), re-sync local state from the new parsed value.
-  useEffect(() => {
-    if (!isCssGradient(color)) return;
-    const p = parseGradient(color);
-    if (!p) return;
-    setAngle(p.angle);
-    setGeometry(p.geometry ?? null);
-    setGradientStops(p.stops);
-  }, [color]);
-
-  const handleApplySolidColor = (hex) => {
-    if (primaryType === "solid") {
-      onChange(hex);
-    } else if (primaryType === "gradient") {
-      const nextStops = gradientStops.map((stop, idx) =>
-        idx === activeStopIndex ? { ...stop, color: hex } : stop,
-      );
-      setGradientStops(nextStops);
-      onChange(formatGradient(gradientType, angle, nextStops, geometry));
-    }
-  };
-
-  // Solid: the opacity is the fill/stroke opacity shared with the row field.
-  // Gradient: the opacity belongs to the active stop (existing behaviour).
+  const {
+    t
+  } = useI18n();
+  const paintPanelId = useId();
+  const {
+    primaryType,
+    gradientType,
+    gradientStops,
+    setGradientStops,
+    activeStopIndex,
+    setActiveStopIndex,
+    angle,
+    geometry,
+    currentSolidHex,
+    currentSolidOpacity,
+    hsv,
+    setHsv,
+    eyeDropperAvailable,
+    eyeDropperError,
+    handleApplySolidColor,
+    handleApplyOpacity,
+    handleSelectPrimaryType,
+    handleSelectGradientType,
+    handleAngleChange,
+    handleEyeDropper,
+    handleHsvChange,
+    handleImage,
+    handleImageScale,
+    applyGradient,
+    applyTexture
+  } = useFillPicker({
+    color,
+    initialType,
+    imageUrl,
+    imageScaleMode,
+    imagePaint,
+    onChange,
+    onPaintChange,
+    onOpacityChange
+  });
   const hasOpacity = primaryType === "gradient" || onOpacityChange !== null;
-  const shownOpacity = primaryType === "gradient" ? currentSolidOpacity : (opacity ?? 100);
-  const handleApplyOpacity = (op) => {
-    if (primaryType !== "gradient") {
-      onOpacityChange?.(op);
-    } else {
-      const nextStops = gradientStops.map((stop, idx) =>
-        idx === activeStopIndex ? { ...stop, opacity: op } : stop,
-      );
-      setGradientStops(nextStops);
-      onChange(formatGradient(gradientType, angle, nextStops, geometry));
-    }
-  };
+  const shownOpacity = primaryType === "gradient" ? currentSolidOpacity : opacity ?? 100;
+  const imageSource = fillTypeOf(color) === "image" ? color : imageUrl && fillTypeOf(imageUrl) === "image" ? imageUrl : null;
+  return <div role={dialogLabel ? "dialog" : undefined} aria-label={dialogLabel ?? undefined} className="flex max-h-[calc(100dvh-1rem)] w-72 max-w-[calc(100vw-1rem)] flex-col gap-3 overflow-y-auto rounded-2xl bg-neutral-900 p-3.5 text-white shadow-menu box-border select-none">
+      <PickerHeader showTypeTabs={showTypeTabs} activeType={primaryType} onSelectType={handleSelectPrimaryType} onClose={onClose} allowMedia={allowMedia} panelId={paintPanelId} />
 
-  const handleSelectPrimaryType = (nextType) => {
-    setPrimaryType(nextType);
-    if (nextType === "solid") {
-      onChange(gradientStops[activeStopIndex]?.color ?? "#FFFFFF");
-    } else if (nextType === "gradient") {
-      onChange(formatGradient(gradientType, angle, gradientStops, geometry));
-    }
-  };
-
-  const handleSelectGradientType = (nextGradType) => {
-    setGradientType(nextGradType);
-    onChange(formatGradient(nextGradType, angle, gradientStops, geometry));
-  };
-
-  const handleAngleChange = (rawVal, rotate = false) => {
-    const normalized = normalizeGradientAngle(rawVal);
-    if (!normalized) return;
-    const numericValue = Number.parseFloat(rawVal);
-    const nextValue = rotate
-      ? ((numericValue % 360) + 360) % 360
-      : Math.max(0, Math.min(360, numericValue));
-    const nextAngle = `${nextValue}deg`;
-    setAngle(nextAngle);
-    // An explicit angle edit invalidates custom endpoints; retain center and size.
-    const nextGeometry = geometry
-      ? {
-          ...geometry,
-          startX: undefined,
-          startY: undefined,
-          endX: undefined,
-          endY: undefined,
-        }
-      : geometry;
-    setGeometry(nextGeometry);
-    onChange(
-      formatGradient(gradientType, nextAngle, gradientStops, nextGeometry),
-    );
-  };
-
-  const handleHsvChange = (next) => {
-    setHsv(next);
-    handleApplySolidColor(hsvToHex(next.h, next.s, next.v));
-  };
-
-  const eyeDropperAvailable =
-    typeof window !== "undefined" && Boolean(window.EyeDropper);
-  const handleEyeDropper = async () => {
-    if (!eyeDropperAvailable) return;
-    try {
-      const eyeDropper = new window.EyeDropper();
-      const result = await eyeDropper.open();
-      if (result?.sRGBHex) {
-        handleApplySolidColor(result.sRGBHex.toUpperCase());
-      }
-    } catch {
-      // User canceled
-    }
-  };
-
-  return (
-    <div className="flex max-h-[calc(100vh-1rem)] w-72 flex-col gap-3 overflow-y-auto rounded-2xl bg-neutral-900 p-3.5 text-white shadow-menu backdrop-blur-xl font-mono box-border select-none">
-      <PickerHeader
-        showTypeTabs={showTypeTabs}
-        activeType={primaryType}
-        onSelectType={handleSelectPrimaryType}
-        onClose={onClose}
-      />
-
+      <div id={paintPanelId} role={showTypeTabs ? "tabpanel" : undefined} aria-labelledby={showTypeTabs ? `${paintPanelId}-${primaryType}` : undefined} className="flex flex-col gap-3">
       {/* Gradient Sub-Types Toolbar */}
-      {primaryType === "gradient" ? (
-        <div className="flex items-center gap-1 rounded-xl bg-neutral-800 p-1">
-          {GRADIENT_SUB_TYPES.map((t2) => {
-            const label = t2.labelKey ? t(t2.labelKey) : t2.label;
-            return (
-              <button
-                key={t2.id}
-                type="button"
-                onClick={() => handleSelectGradientType(t2.id)}
-                title={label}
-                className={`flex-1 py-1 text-center text-[10px] rounded-lg transition-colors ${
-                  gradientType === t2.id
-                    ? "bg-neutral-700 text-white font-medium"
-                    : "text-neutral-400 hover:text-neutral-200"
-                }`}
-              >
+      {primaryType === "gradient" ? <div className="flex items-center gap-1 rounded-xl bg-neutral-800 p-1">
+          {GRADIENT_SUB_TYPES.map(t2 => {
+          const label = t2.labelKey ? t(t2.labelKey) : t2.label;
+          return <button key={t2.id} type="button" onClick={() => handleSelectGradientType(t2.id)} title={label} className={`flex-1 py-1 text-center text-[10px] rounded-lg transition-colors ${gradientType === t2.id ? "bg-neutral-700 text-white font-medium" : "text-neutral-400 hover:text-neutral-200"}`}>
                 {label}
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
+              </button>;
+        })}
+        </div> : null}
 
       {/* Gradient angle field — only relevant for linear & angular (conic) */}
-      {primaryType === "gradient" &&
-      (gradientType === "linear" || gradientType === "angular") ? (
-        <GradientAngleControl angle={angle} onChange={handleAngleChange} />
-      ) : null}
+      {primaryType === "gradient" && (gradientType === "linear" || gradientType === "angular") ? <GradientAngleControl angle={angle} onChange={handleAngleChange} /> : null}
 
       {/* Gradient Stops Bar */}
-      {primaryType === "gradient" ? (
-        <GradientStopsBar
-          stops={gradientStops}
-          activeStopIndex={activeStopIndex}
-          onSelectStop={setActiveStopIndex}
-          onChangeStops={setGradientStops}
-          gradientType={gradientType}
-          angle={angle}
-          geometry={geometry}
-          onApplyGradient={onChange}
-        />
-      ) : null}
+      {primaryType === "gradient" && gradientType !== "mesh" ? <GradientStopsBar stops={gradientStops} activeStopIndex={activeStopIndex} onSelectStop={setActiveStopIndex} onChangeStops={setGradientStops} gradientType={gradientType} angle={angle} geometry={geometry} onApplyGradient={applyGradient} /> : null}
+
+      {primaryType === "gradient" && gradientType === "mesh" ? <div className="flex flex-wrap gap-2" role="group" aria-label={t("editor.fillPicker.meshPoints")}>
+        {gradientStops.map((stop, index) => <button key={`${geometry.points[index].x}:${geometry.points[index].y}`} type="button" aria-label={t("editor.fillPicker.meshPoint", {
+          n: index + 1
+        })} aria-pressed={activeStopIndex === index} onClick={() => setActiveStopIndex(index)} className={`size-8 rounded-full border ${activeStopIndex === index ? "border-white" : "border-white/20"}`} style={{
+          backgroundColor: stop.color
+        }} />)}
+      </div> : null}
+      {primaryType === "image" ? <ImageFillControls imageUrl={imageSource} scaleMode={imageSource ? imageScaleMode : "fill"} onChange={(fill, options) => handleImage(fill, imageSource ? imageScaleMode : "fill", options)} onScaleMode={handleImageScale} /> : null}
+      {primaryType === "texture" ? <TextureFillControls value={color} onChange={applyTexture} /> : null}
+      {eyeDropperError ? <p role="alert" className="text-[11px] text-neutral-200">{t("editor.fillPicker.pickFailed")}</p> : null}
 
       {/* Solid & Gradient Color Slider / SV Surfaces */}
-      {primaryType === "solid" || primaryType === "gradient" ? (
-        <>
-          <ColorSliderSurfaces
-            hsv={hsv}
-            setHsv={setHsv}
-            activeColorHex={currentSolidHex}
-            activeOpacity={shownOpacity}
-            showOpacity={hasOpacity}
-            onApplyColor={handleApplySolidColor}
-            onApplyOpacity={handleApplyOpacity}
-            onOpacityEnd={primaryType === "gradient" ? undefined : onOpacityCommit}
-            onEyeDropper={eyeDropperAvailable ? handleEyeDropper : null}
-            eyeDropperTitle={
-              eyeDropperAvailable
-                ? t("editor.colorPicker.eyedropper")
-                : t("editor.colorPicker.eyedropperUnavailable")
-            }
-          />
+      {primaryType === "solid" || primaryType === "gradient" ? <>
+          <ColorSliderSurfaces hsv={hsv} setHsv={setHsv} activeColorHex={currentSolidHex} activeOpacity={shownOpacity} showOpacity={hasOpacity} onApplyColor={handleApplySolidColor} onApplyOpacity={handleApplyOpacity} onOpacityEnd={primaryType === "gradient" ? undefined : onOpacityCommit} onEyeDropper={eyeDropperAvailable ? handleEyeDropper : null} eyeDropperTitle={eyeDropperAvailable ? t("editor.colorPicker.eyedropper") : t("editor.colorPicker.eyedropperUnavailable")} />
 
           <div className="flex items-center gap-1.5">
-            <ColorModelInputs
-              hex={currentSolidHex}
-              hsv={hsv}
-              onChangeHex={handleApplySolidColor}
-              onChangeHsv={handleHsvChange}
-            />
-            {hasOpacity ? (
-              <PickerOpacityField
-                value={shownOpacity}
-                onChange={handleApplyOpacity}
-                onCommit={primaryType === "gradient" ? undefined : onOpacityCommit}
-              />
-            ) : null}
+            <ColorModelInputs hex={currentSolidHex} hsv={hsv} onChangeHex={handleApplySolidColor} onChangeHsv={handleHsvChange} />
+            {hasOpacity ? <PickerOpacityField value={shownOpacity} onChange={handleApplyOpacity} onCommit={primaryType === "gradient" ? undefined : onOpacityCommit} /> : null}
           </div>
 
-          {onBlendModeChange ? (
-            <BlendModeSelect
-              value={blendMode ?? "source-over"}
-              onChange={onBlendModeChange}
-            />
-          ) : null}
 
-          <SwatchGrid
-            onSelectColor={handleApplySolidColor}
-            swatches={
-              grayscaleOnly
-                ? [
-                    "#000000",
-                    "#1A1A1A",
-                    "#333333",
-                    "#4D4D4D",
-                    "#666666",
-                    "#808080",
-                    "#999999",
-                    "#B3B3B3",
-                    "#CCCCCC",
-                    "#E6E6E6",
-                    "#F2F2F2",
-                    "#FFFFFF",
-                  ]
-                : undefined
-            }
-          />
+
+          <SwatchGrid onSelectColor={handleApplySolidColor} swatches={grayscaleOnly ? ["#000000", "#1A1A1A", "#333333", "#4D4D4D", "#666666", "#808080", "#999999", "#B3B3B3", "#CCCCCC", "#E6E6E6", "#F2F2F2", "#FFFFFF"] : undefined} />
 
           <DocumentColourRow onSelectColor={handleApplySolidColor} />
-        </>
-      ) : null}
-    </div>
-  );
+        </> : null}
+      {(primaryType === "image" || primaryType === "texture") && onOpacityChange ? <div className="flex items-center justify-between gap-2 text-[11px] text-neutral-200">
+        <span>{t("editor.props.opacity")}</span><PickerOpacityField value={opacity ?? 100} onChange={onOpacityChange} onCommit={onOpacityCommit} />
+      </div> : null}
+      {onBlendModeChange ? <BlendModeSelect value={blendMode ?? "source-over"} onChange={onBlendModeChange} /> : null}
+      </div>
+    </div>;
 }
-
 FigmaColorPicker.propTypes = {
   color: PropTypes.string,
+  allowMedia: PropTypes.bool,
+  onPaintChange: PropTypes.func,
+  imageScaleMode: PropTypes.string,
+  imagePaint: PropTypes.object,
+  dialogLabel: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   onClose: PropTypes.func,
   showTypeTabs: PropTypes.bool,
@@ -337,5 +176,5 @@ FigmaColorPicker.propTypes = {
   onOpacityCommit: PropTypes.func,
   /** Layer blend mode ("source-over" is Normal). */
   blendMode: PropTypes.string,
-  onBlendModeChange: PropTypes.func,
+  onBlendModeChange: PropTypes.func
 };

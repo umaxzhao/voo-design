@@ -42,6 +42,21 @@ function render(patch = {}) {
 }
 
 describe("compact text section", () => {
+  it("shows readable captions for the common type metrics and groups", () => {
+    const html = render();
+    for (const key of ["fontWeight", "fontSize", "lineHeight", "letterSpacing", "styleGroup", "alignment", "widthMode"]) {
+      expect(html).toContain(`>editor.props.${key}</span>`);
+    }
+    expect(html.indexOf(">editor.props.widthMode</span>")).toBeLessThan(html.indexOf("editor.props.moreTextOptions"));
+  });
+
+  it("uses Lucide typography and spacing icons instead of custom filled glyphs", () => {
+    const html = render();
+    for (const icon of ["a-large-small", "move-vertical", "move-horizontal", "baseline"]) {
+      expect(html).toContain(`lucide-${icon}`);
+    }
+  });
+
   it("folds advanced controls but keeps them mounted for assistive tech", () => {
     const html = render();
     expect(html).toContain("editor.props.moreTextOptions");
@@ -82,7 +97,7 @@ describe("compact text section", () => {
         reverse: false,
       },
     });
-    expect(html).toContain("editor.props.pathTextOffsetShort");
+    expect(html).toContain(">editor.props.pathTextOffset</span>");
     expect(html).toContain("editor.props.pathTextOutside");
   });
 });

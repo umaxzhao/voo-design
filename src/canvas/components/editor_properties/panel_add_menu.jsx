@@ -22,6 +22,7 @@ export default function PanelAddMenu({ items, defaultOpen = false }) {
       <button
         type="button"
         aria-expanded={open}
+        data-inspector-control="action"
         aria-haspopup="menu"
         aria-label={t("editor.panel.addMenu")}
         onClick={() => setOpen((value) => !value)}

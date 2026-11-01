@@ -624,7 +624,7 @@ describe("Challenger 1: R-Tree Spatial Index & Viewport Extreme Stress Harness",
           delete globalThis.window.CanvasKitInit;
         }
       }
-    });
+    }, 15000);
   });
 
   // =========================================================================

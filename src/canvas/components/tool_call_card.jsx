@@ -1,8 +1,20 @@
 import { useState } from "react";
 import PropTypes from "prop-types";
+import { Ban, Check, ChevronDown, ChevronRight, Circle, LoaderCircle, X } from "lucide-react";
 import { useI18n } from "../use_i18n.js";
 
-const STATUS_MARK = { in_progress: "…", completed: "✓", failed: "✗", cancelled: "■" };
+const STATUS_ICON = {
+  in_progress: LoaderCircle,
+  completed: Check,
+  failed: X,
+  cancelled: Ban,
+};
+const STATUS_CLASS = {
+  in_progress: "text-[#E5B2FF]",
+  completed: "text-mint",
+  failed: "text-rose-400",
+  cancelled: "text-neutral-500",
+};
 
 /** Error codes the assistant and its tools raise, mapped to message keys. */
 const KNOWN_ERRORS = new Set([
@@ -36,22 +48,25 @@ export default function ToolCallCard({ call }) {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const failed = call.status === "failed";
+  const StatusIcon = STATUS_ICON[call.status] ?? Circle;
 
   return (
     <div
-      className={`rounded-xl border px-3 py-2 text-[12px] ${
-        failed ? "border-transparent bg-rose-500/10 text-rose-400" : "border-white/[0.06] text-neutral-300"
+      className={`rounded-xl px-3 py-2 text-[12px] ${
+        failed ? "bg-rose-500/10 text-rose-400" : "bg-white/[0.035] text-neutral-300"
       }`}
     >
       <button
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded((value) => !value)}
-        className="flex w-full items-center gap-2 text-left"
+        className="flex w-full items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E5B2FF]/50"
       >
-        <span aria-hidden="true">{STATUS_MARK[call.status] ?? "○"}</span>
+        <span className={`flex size-4 shrink-0 items-center justify-center ${STATUS_CLASS[call.status] ?? "text-neutral-500"}`} aria-hidden="true">
+          <StatusIcon size={13} className={call.status === "in_progress" ? "animate-spin" : undefined} />
+        </span>
         <span className="flex-1 truncate">{call.name}</span>
-        <span aria-hidden="true">{expanded ? "▾" : "▸"}</span>
+        {expanded ? <ChevronDown size={13} className="shrink-0 text-neutral-500" aria-hidden="true" /> : <ChevronRight size={13} className="shrink-0 text-neutral-500" aria-hidden="true" />}
       </button>
       {call.statusLine && (
         <p className="mt-1 pl-5 text-[11px] text-neutral-400">{call.statusLine}</p>

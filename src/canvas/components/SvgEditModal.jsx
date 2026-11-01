@@ -1,3 +1,4 @@
+import GlobalOverlayPortal from "./global_overlay_portal.jsx";
 import PropTypes from "prop-types";
 import { memo, useEffect, useState, useRef, useCallback } from "react";
 import { IconClose, IconCode, IconCopy, IconCheck } from "../icons.jsx";
@@ -101,12 +102,12 @@ function SvgEditModal({
     });
   };
 
-  return (
+  const surface = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={t("editor.svgModal.title")}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
@@ -195,6 +196,7 @@ function SvgEditModal({
       </div>
     </div>
   );
+  return <GlobalOverlayPortal>{surface}</GlobalOverlayPortal>;
 }
 
 SvgEditModal.propTypes = {

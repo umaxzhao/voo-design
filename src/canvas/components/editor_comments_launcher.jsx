@@ -1,19 +1,24 @@
+import { createPortal } from "react-dom";
+import { useCommentLauncherHost } from "./comment_launcher_host.jsx";
 import PropTypes from "prop-types";
-import { MessageSquare } from "lucide-react";
+import { Loader2, MessageSquare } from "lucide-react";
 import { label } from "./comment_label.js";
 
-export default function EditorCommentsLauncher({ open, onOpen, unreadCount, openCount, t }) {
-  return <>
+export default function EditorCommentsLauncher({ open, onOpen, unreadCount, openCount, t, visible = true, busy = false }) {
+  const host = useCommentLauncherHost();
+  if (!host || !visible) return null;
+  return createPortal(<>
       {!open && onOpen ? (
         <button
           type="button"
           data-testid="editor-comments-toggle"
           onClick={onOpen}
+          aria-busy={busy}
           aria-label={label(t, "editor.comments.toggle", "Show/hide comments")}
           title={label(t, "editor.comments.toggle", "Show/hide comments")}
-          className="pointer-events-auto absolute bottom-14 left-3 z-30 flex h-7 items-center gap-1.5 rounded-lg bg-[#222222] px-2 text-[10px] leading-none text-neutral-300 shadow-pop outline-none transition-opacity hover:opacity-80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+          className="pointer-events-auto relative flex h-9 min-w-9 items-center justify-center gap-1.5 rounded-lg bg-[#222222] px-2 text-[10px] leading-none text-neutral-300 shadow-pop outline-none transition-opacity hover:opacity-80 focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
         >
-          <MessageSquare size={12} />
+          {busy ? <Loader2 size={12} className="animate-spin" aria-hidden="true" /> : <MessageSquare size={12} />}
           {unreadCount > 0 ? (
             <span
               data-testid="editor-comments-unread-count"
@@ -27,7 +32,7 @@ export default function EditorCommentsLauncher({ open, onOpen, unreadCount, open
         </button>
       ) : null}
 
-  </>;
+  </>, host);
 }
 EditorCommentsLauncher.propTypes = { open: PropTypes.bool, onOpen: PropTypes.func,
-  unreadCount: PropTypes.number, openCount: PropTypes.number, t: PropTypes.func };
+  unreadCount: PropTypes.number, openCount: PropTypes.number, t: PropTypes.func, visible: PropTypes.bool, busy: PropTypes.bool };

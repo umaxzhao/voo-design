@@ -1,3 +1,4 @@
+import { useWelcomeActionReadiness } from "./welcome_dashboard/use_welcome_action_readiness.js";
 import { SCREENSHOT_ACCEPT, openWelcomeBrowser } from "./welcome_home_actions.js";
 import { usePromptAttachments } from "./use_prompt_attachments.js";
 import React, { useEffect, useState, useRef } from "react";
@@ -60,7 +61,7 @@ export default function WelcomeDashboard() {
   const [modelId, setModelId] = useState(() => getSetting(AGENT_SETTING.MODEL) || DEFAULT_AGENT_MODEL);
   const [styleId, setStyleId] = useState(DEFAULT_STYLE_ID);
   const [designSystemId, setDesignSystemId] = useState(DEFAULT_DESIGN_SYSTEM_ID);
-  const [size, setSize] = useState({ width: AI_GEN_TYPES[0].width, height: AI_GEN_TYPES[0].height });
+  const [size, setSize] = useState(null);
   const references = usePromptAttachments(t);
   const { attachments, attachmentError, addFiles: handleAttachmentsSelected } = references;
   const [candidates, setCandidates] = useState(1);
@@ -158,8 +159,6 @@ export default function WelcomeDashboard() {
 
   const handleSelectPill = (pillId) => {
     setActivePill(pillId);
-    const preset = AI_GEN_TYPES.find((item) => item.id === pillId);
-    if (preset) setSize({ width: preset.width, height: preset.height });
   };
 
   const handleSelectDesignSystem = (nextId) => {
@@ -214,8 +213,8 @@ export default function WelcomeDashboard() {
       }
       await handleCreateNew({
         label: docLabel,
-        width: size.width,
-        height: size.height,
+        width: size?.width ?? activePreset.width,
+        height: size?.height ?? activePreset.height,
         type: activePreset.type,
         category: activePreset.category,
       });
@@ -280,6 +279,8 @@ export default function WelcomeDashboard() {
     handleDuplicate,
     handleMoveToTrash,
   };
+
+  useWelcomeActionReadiness();
 
   return (
     <div

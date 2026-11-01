@@ -98,6 +98,13 @@ describe("welcome generation intent", () => {
     expect(intent.referenceCount).toBe(0);
   });
 
+  it("resolves automatic canvas size from the currently selected design type", () => {
+    for (const preset of AI_GEN_TYPES) {
+      const intent = buildGenerationIntent({ preset, prompt: "design", size: null, t });
+      expect(intent.frame).toEqual({ width: preset.width, height: preset.height });
+    }
+  });
+
   it("keeps user reference images out of the document while describing their use", () => {
     expect(referenceImageContext([
       { kind: "image", name: "poster.png", dataUrl: "data:image/png;base64,xx" },

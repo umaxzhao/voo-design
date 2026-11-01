@@ -1,11 +1,3 @@
-import {
-  GalleryHorizontalEnd,
-  Smartphone,
-  AppWindow,
-  Presentation,
-  LayoutDashboard,
-  FilePlus2,
-} from "lucide-react";
 import { CANVAS_TYPE } from "../../editor/scene_doc_factory.js";
 
 // AI generation preset types for prompt composer
@@ -19,7 +11,7 @@ export const AI_GEN_TYPES = [
     height: 900,
     type: CANVAS_TYPE.DESIGN,
     category: "landing",
-    icon: GalleryHorizontalEnd,
+    preview: "landing",
   },
   {
     id: "mobile",
@@ -30,7 +22,7 @@ export const AI_GEN_TYPES = [
     height: 852,
     type: CANVAS_TYPE.DESIGN,
     category: "mobile",
-    icon: Smartphone,
+    preview: "mobile",
   },
   {
     id: "web",
@@ -41,7 +33,18 @@ export const AI_GEN_TYPES = [
     height: 900,
     type: CANVAS_TYPE.DESIGN,
     category: "web",
-    icon: AppWindow,
+    preview: "web",
+  },
+  {
+    id: "poster",
+    label: "welcome.pills.poster",
+    placeholder: "welcome.prompt.posterPlaceholder",
+    guidance: "welcome.guide.poster",
+    width: 1080,
+    height: 1350,
+    type: CANVAS_TYPE.DESIGN,
+    category: "poster",
+    preview: "poster",
   },
   {
     id: "slides",
@@ -52,7 +55,18 @@ export const AI_GEN_TYPES = [
     height: 1080,
     type: CANVAS_TYPE.DESIGN,
     category: "slides",
-    icon: Presentation,
+    preview: "slides",
+  },
+  {
+    id: "storyboard",
+    label: "welcome.pills.storyboard",
+    placeholder: "welcome.prompt.storyboardPlaceholder",
+    guidance: "welcome.guide.storyboard",
+    width: 1920,
+    height: 1080,
+    type: CANVAS_TYPE.DESIGN,
+    category: "storyboard",
+    preview: "storyboard",
   },
   {
     id: "dashboard",
@@ -63,7 +77,7 @@ export const AI_GEN_TYPES = [
     height: 960,
     type: CANVAS_TYPE.DESIGN,
     category: "dashboard",
-    icon: LayoutDashboard,
+    preview: "dashboard",
   },
   {
     id: "other",
@@ -74,7 +88,7 @@ export const AI_GEN_TYPES = [
     height: 800,
     type: CANVAS_TYPE.DESIGN,
     category: "other",
-    icon: FilePlus2,
+    preview: "other",
   },
 ];
 

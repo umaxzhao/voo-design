@@ -197,6 +197,28 @@
 }
 
 [data-testid="design-editor"].editor-narrow
+  [data-testid="editor-contextual-taskbar"] button,
+[data-testid="design-editor"].editor-narrow
+  [data-testid="editor-contextual-taskbar"] label {
+  position: relative;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+}
+
+[data-testid="design-editor"].editor-narrow
+  [data-testid="editor-contextual-taskbar"] button::before,
+[data-testid="design-editor"].editor-narrow
+  [data-testid="editor-contextual-taskbar"] label::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+}
+
+[data-testid="design-editor"].editor-narrow
   [data-testid="editor-toolbar"]
   button:not(.editor-toolbar-menu-trigger) {
   min-width: 2.75rem;

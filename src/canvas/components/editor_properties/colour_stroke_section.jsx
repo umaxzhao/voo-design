@@ -12,12 +12,7 @@ import StrokeAlignmentControl, { strokeAlignmentState } from "./stroke_alignment
 import StrokeStyleSection from "./stroke_style_section.jsx";
 import EditorTooltip from "../editor_tooltip.jsx";
 import ScrubField from "../scrub_field.jsx";
-import PaintTypeMenu from "./paint_type_menu.jsx";
-import {
-  formatGradient,
-  isCssGradient,
-  parseGradient,
-} from "../../color_picker/gradient_fill.js";
+import { isCssGradient } from "../../color_picker/gradient_fill.js";
 import { Swatch, HexField, HEX_COLOUR } from "./colour_swatch.jsx";
 import { opacityPatch } from "../../color_picker/opacity_patch.js";
 import {
@@ -39,40 +34,7 @@ export function StrokeSection({
   const stroke =
     typeof object.stroke === "string" ? object.stroke : "transparent";
   const isGradient = isCssGradient(stroke);
-  const parsedStrokeGradient = isGradient ? parseGradient(stroke) : null;
-  const strokeType =
-    parsedStrokeGradient && parsedStrokeGradient.type !== "solid"
-      ? parsedStrokeGradient.type
-      : "solid";
   const none = !HEX_COLOUR.test(stroke) && !isGradient;
-  const setStrokeType = (nextType) => {
-    if (nextType === "solid") {
-      editAndCommit({
-        stroke:
-          parsedStrokeGradient?.stops?.[0]?.color ??
-          (HEX_COLOUR.test(stroke) ? stroke : "#FFFFFF"),
-      });
-      return;
-    }
-    const stops = parsedStrokeGradient?.stops?.length
-      ? parsedStrokeGradient.stops
-      : [
-          {
-            color: HEX_COLOUR.test(stroke) ? stroke : "#FFFFFF",
-            opacity: strokeOpacity,
-            position: 0,
-          },
-          { color: "#FFFFFF", opacity: strokeOpacity, position: 100 },
-        ];
-    editAndCommit({
-      stroke: formatGradient(
-        nextType,
-        parsedStrokeGradient?.angle ?? "135deg",
-        stops,
-        parsedStrokeGradient?.geometry,
-      ),
-    });
-  };
   const strokeWidth = Number.isFinite(object.strokeWidth)
     ? object.strokeWidth
     : 1;
@@ -154,14 +116,8 @@ export function StrokeSection({
 
       {none ? null : (
         <>
-          {/* Row 1: Figma-style paint type + swatch + hex + opacity */}
+          {/* The swatch owns paint type and color editing, matching the fill row. */}
           <div className={sectionRowClass}>
-            <PaintTypeMenu
-              value={strokeType}
-              onChange={setStrokeType}
-              label={t("editor.props.strokeType")}
-              allowImage={false}
-            />
             <Swatch
               value={none ? null : stroke}
               onPick={(colour) => editAndCommit({ stroke: colour })}
