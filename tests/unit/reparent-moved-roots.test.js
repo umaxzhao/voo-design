@@ -176,3 +176,19 @@ describe("complete Group move capture", () => {
     },
   );
 });
+
+
+describe("atomic Frame and clipping moves", () => {
+  it.each(["locked", "lockPosition"])("rejects a multi-Frame move with a %s descendant", flag => {
+    const doc = document([frame("a"), node("child", "a", { [flag]: true }), frame("b", 400), node("peer", "b")]);
+    const api = { getSelectedGroup: () => null, expandMoveSet: ids => moveAffectedIds(doc, ids) };
+    expect(moveGestureIds(api, doc, [doc.nodes[0], doc.nodes[2]])).toEqual([]);
+    expect(moveGestureIds(api, doc, [doc.nodes[0]])).toEqual([]);
+  });
+
+  it("does not abandon a locked clipping follower when moving its selected base", () => {
+    const doc = document([node("base"), node("follower", null, { clipTo: "base", locked: true })]);
+    const api = { getSelectedGroup: () => null, expandMoveSet: ids => moveAffectedIds(doc, ids) };
+    expect(moveGestureIds(api, doc, [doc.nodes[0]])).toEqual([]);
+  });
+});

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { checkMultiFrameDrag } from "./multiframe-drag-checks.mjs";
 
 /** The shipped FORM example reproduces the user's overlapping Frame copies. */
 export async function checkDuplicatedFrameDrag(page, checks) {
@@ -141,4 +142,5 @@ export async function checkDuplicatedFrameDrag(page, checks) {
       delete window.__frameCopyAuditSession;
     });
   }
+  await checkMultiFrameDrag(page, checks);
 }
