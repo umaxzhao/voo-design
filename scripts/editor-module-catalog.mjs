@@ -74,6 +74,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/editor_hooks/use_editor_page_engine.js", "src/canvas/editor/free-artwork-hit-regions.js",
       "tests/unit/free-artwork-hit-regions.test.js", "src/canvas/editor/frame-canvas-labels.js", "tests/unit/frame-canvas-labels.test.js",
       "src/canvas/use_workspace_chrome.js", "tests/unit/workspace_selection_chrome.test.js",
+      "src/canvas/components/editor_artwork_fallback.jsx",
       "tests/unit/viewport_notifications.test.js", "tests/e2e/canvas_fps.e2e.mjs",
     ],
     related: [

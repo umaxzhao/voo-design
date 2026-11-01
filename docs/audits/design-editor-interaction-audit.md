@@ -303,3 +303,12 @@ removing one hierarchy level. The original failure is retained; target-engine
 readiness and exact selected image ID are asserted before real arrow/undo input.
 The full continuous-create/save/cold-reopen scenario then passed unchanged pixel,
 geometry and history checks.
+
+The `0a945ed6` full gate retained a cold-New drawing timeout. A diagnostic showed
+engine tool `rect` while the hit plane still cached `select`: tool notifications
+do not repaint the detached page engine. The artwork owner now refreshes its
+existing connection on React tool changes, without forcing exact repaint or
+replacing the picture cache. The native drawing test waits for actual open-guard
+completion and the full hit plane, then retains both real drags and keyboard
+undo assertions. The focused cold-start/import suite passed after this repair;
+that targeted pass is not a full-release certificate.

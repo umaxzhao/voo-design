@@ -93,7 +93,7 @@ export function attachFreeCanvasArtwork({
   observer.observe(stage);
   paint();
   return {
-    paint: () => paint(true),
+    paint: (forceExact = true) => paint(forceExact),
     dispose() {
       if (pendingFrame) cancelAnimationFrame(pendingFrame);
       unsubscribeEngine();

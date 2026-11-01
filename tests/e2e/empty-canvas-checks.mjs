@@ -20,10 +20,12 @@ export async function assertEmptyCanvas(page) {
 }
 
 export async function verifyEmptyCanvasDrawing(page) {
+  await page.waitForFunction(() => document.querySelector('[data-testid="design-editor"] [data-open-guard]')?.getAttribute("data-open-guard") === "off");
   await assertEmptyCanvas(page);
   const bounds = await page.getByTestId("editor-pages").boundingBox();
   const y = bounds.y + bounds.height / 2;
   await page.evaluate(() => window.__vooEditor.setTool("rect"));
+  await page.waitForFunction(() => document.querySelector("[data-free-canvas-hits]")?.style.clipPath === "none");
   for (const [index, offset] of [-180, 40].entries()) {
     const x = bounds.x + bounds.width / 2 + offset;
     await page.mouse.move(x, y - 60); await page.mouse.down();

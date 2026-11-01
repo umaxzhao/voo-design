@@ -7,13 +7,13 @@ const EditorMixedLayers = lazy(() => import("./editor_mixed_layers.jsx"));
 
 /** Keep each renderer's DOM canvas ownership unchanged in full and free modes. */
 export default function EditorPageArtwork({ page }) {
-  const { free, doc, mixedLayers, engine, resolveCanvas, selected,
+  const { free, doc, mixedLayers, engine, resolveCanvas, selected, tool,
     selectedInstanceChild, adjustingInstanceId, focused, onSelectInstanceChild,
     workspaceRendererReady, canvasRef, skiaCanvasRef, skiaPainting,
     skiaEnabled, skiaStatus } = page;
   return free ? (
     doc?.isCanvasRoot && !mixedLayers ? (
-      <EditorArtworkFallback engine={engine} opacity={doc.opacity ?? 1}
+      <EditorArtworkFallback engine={engine} opacity={doc.opacity ?? 1} tool={tool}
         includeFrame={!workspaceRendererReady}
         paintArtwork={!workspaceRendererReady || requiresWorkspaceCanvas2d(doc)} />
     ) : doc && mixedLayers ? (
