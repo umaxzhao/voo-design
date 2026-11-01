@@ -81,13 +81,26 @@ try {
     const brand = document.querySelector(".app-title-brand-row").getBoundingClientRect();
     const actions = document.querySelector(".app-title-actions").getBoundingClientRect();
     if (actions.left - brand.right < 16) throw new Error("Title bar must retain a real drag region");
-    return { x: Math.round((brand.right + actions.left) / 2), y: 20 };
+    const x = Math.round((brand.right + actions.left) / 2), y = 20;
+    const element = document.elementFromPoint(x, y);
+    return { x, y, hit: element?.tagName, region: getComputedStyle(element).getPropertyValue("-webkit-app-region") };
   });
+  assert.equal(drag.region, "drag");
+  proof.dragRegion = drag;
   const beforeDrag = (await windowState()).bounds;
-  await run("xdotool", ["mousemove", "--sync", String(beforeDrag.x + drag.x), String(beforeDrag.y + drag.y)]);
+  const nativeId = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getNativeWindowHandle().readUInt32LE());
+  await run("xdotool", ["windowactivate", "--sync", String(nativeId)]);
+  await run("xdotool", ["mousemove", "--sync", "--window", String(nativeId), String(drag.x), String(drag.y)]);
+  await new Promise(resolve => setTimeout(resolve, 150));
   await run("xdotool", ["mousedown", "1"]);
-  await run("xdotool", ["mousemove", "--sync", String(beforeDrag.x + drag.x + 80), String(beforeDrag.y + drag.y + 40)]);
+  // Let the real window manager take its native move grab before releasing it.
+  await new Promise(resolve => setTimeout(resolve, 150));
+  for (let step = 1; step <= 4; step++) {
+    await run("xdotool", ["mousemove", "--sync", String(beforeDrag.x + drag.x + step * 20), String(beforeDrag.y + drag.y + step * 10)]);
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
   await run("xdotool", ["mouseup", "1"]);
+  proof.pointer = (await run("xdotool", ["getmouselocation", "--shell"])).stdout;
   await waitState(state => state.bounds.x !== beforeDrag.x || state.bounds.y !== beforeDrag.y);
   proof.checks.push("trusted X11 pointer input drags the actual frameless window");
   const previousDocument = await page.evaluate(() => window.__vooStore.activeDocumentId);
