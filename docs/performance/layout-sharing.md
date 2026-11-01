@@ -19,6 +19,12 @@ and own-field presence match exactly, including signed zero. New or externally
 imported records are copied once and marked in a WeakSet before reuse. Real
 geometry changes still produce new records and descendant transforms.
 
+The text/layout measurement loop can now stop after one pass when neither
+text geometry nor layout changes the document. Previously every API edit
+performed at least two whole-page layout passes. A changed fill width still
+continues to remeasure wrapped text; changed font metrics still update hugging
+parents. Three convergence regressions cover these distinct cases.
+
 Sharing also exposed resource invalidation requirements. Effect projections
 now use actual decoded bitmap/matte identity, CPU pixel mutation counters,
 warp versions, renderer identity, font readiness and render-pass flags.
@@ -53,6 +59,18 @@ memoized. Tests mutate every JSON leaf and compare with structural equality.
 - The pure-serialization pilot without a compiled default matcher measured
   557.5ms actual-key median, without stable whole-operation improvement. All
   pilots, raw samples, CPU profiles and startup/format failures remain retained.
+- Candidate `d39511d` passed a clean 105/105 core gate (4810 units / four
+  skipped, 101 browser suites). Forward/reverse real keys improved
+  551.5->508.5ms and 539->519.5ms with exact pixels, but fifty synchronous API
+  edits regressed 1689.6->2474.2ms and 1681.8->2389.4ms. This was not deployed.
+  API CPU profiles placed ~478ms in the new identity comparison; the redundant
+  second layout pass also repeated scratch copying. The convergence fix needs
+  its own fresh full gate and measurements; the earlier pass is not inherited.
+  An identity-only early-exit pilot still took 2414.7ms for API setup: incoming
+  patch normalization also changes identity. Exact geometry comparison now
+  separates normalization from real layout changes; its pilot took 1214.7ms
+  for API setup and 489ms median for real keys. Neither pilot replaces the
+  final forward/reverse fixed-source measurements.
 - Extended bitmap/mask/readiness regressions reproduced a remaining background-
   blur stale alpha cache before its separate resource-aware projection fix.
 
@@ -61,6 +79,7 @@ memoized. Tests mutate every JSON leaf and compare with structural equality.
 | Context | Assertions | Current evidence |
 | --- | --- | --- |
 | Layout | Frozen inputs, one-time normalization, unchanged refs, changed descendants, text boxWidth, exact zero, legacy metadata, Boolean transforms. | Seven targeted units |
+| Convergence | One settled pass; changed fill width still remeasures wrapped height; forced font metrics retain exact hug sizing. | Three targeted units; original extra-pass assertion fails |
 | Serialization | Frozen/live/history inputs unchanged, detached output records, repeat-save layout identity. | Four targeted units; original red retained |
 | Defaults | Mutable values/filter arrays, missing/extra/undefined fields, every JSON leaf, property order/inheritance. | Four targeted units |
 | Effect resources | Projection lifecycle, fonts, bitmap/matte/warp readiness, renderer/pass flags, decoded source garbage collection, backdrop styles. | Fourteen targeted units |
@@ -78,6 +97,11 @@ geometry edits prepare history; eighteen subsequent arrow inputs and undo/redo
 are actual keyboard operations. These script waits are not GPU FPS or physical
 input-to-photon latency. Exact 1000x800 overview pixels do not certify every
 property/page/font. Private file/decoded scenes remain outside Git and production.
+
+All five decoded pages (56422 nodes) also matched the prior VOO reflow and
+serialized values before convergence changes, with one representative resize
+per page and unchanged inputs. This is value equivalence against VOO, not full
+Figma-property fidelity. Repeat it for the final source below.
 
 Final fixed source, release, comparisons and publication evidence will be
 recorded in the private `layout-sharing/` artifact and the progress entry.

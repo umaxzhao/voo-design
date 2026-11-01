@@ -201,6 +201,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/editor_properties/*constraint*",
       "src/canvas/components/editor_properties/*variant*", "src/canvas/design_systems/*",
       "tests/unit/auto-layout-sharing.test.js", "tests/e2e/auto-layout-sharing-checks.mjs",
+      "src/canvas/editor/editor_engine_init.js", "tests/unit/layout-measure-convergence.test.js",
     ],
     related: ["layers","text","inspector","documents","platform","compositing"],
     features: ["layout.reflow-sharing","layout.constraint-hit-targets","layout.auto-layout","layout.constraints","layout.variables","layout.components"],
