@@ -30,6 +30,14 @@ npm run dist:all
 # or: npx electron-builder --mac dmg
 ```
 
+Apple trust checks retain the actual exit code, timeout and public tool
+diagnostic. A known network loss or process timeout gets at most three attempts
+with a 90-second command deadline. Invalid/missing tickets and policy rejection
+still fail immediately. If the bundled notarizer already obtained acceptance
+but exhausted its staple network retries, only stapling is retried; credentials
+are not resubmitted. A passing receipt always requires successful real staple
+validation and Gatekeeper assessment after the retry.
+
 ## Windows (Authenticode)
 
 | Env var | Purpose |

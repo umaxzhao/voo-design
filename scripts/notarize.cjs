@@ -1,6 +1,6 @@
 const { createRequire } = require('node:module');
 const { join } = require('node:path');
-const { notarizationOptions, verifyMacSignature, verifyNotarizedApp } = require('./mac-signing.cjs');
+const { notarizationOptions, verifyMacSignature, verifyNotarizedApp, recoverNotaryStapling } = require('./mac-signing.cjs');
 
 function shouldNotarize(context, env = process.env) {
   return context.electronPlatformName === 'darwin' &&
@@ -29,7 +29,11 @@ async function afterSign(context) {
   const appPath = join(context.appOutDir, `${context.packager.appInfo.productFilename}.app`);
   const team = process.env.VOO_APPLE_TEAM_ID || process.env.APPLE_TEAM_ID;
   if (required) verifyMacSignature(appPath, team);
-  await notarize({ appPath, ...credentials });
+  try {
+    await notarize({ appPath, ...credentials });
+  } catch (error) {
+    recoverNotaryStapling(error, appPath);
+  }
   if (required) verifyNotarizedApp(appPath, team);
 }
 module.exports = afterSign;

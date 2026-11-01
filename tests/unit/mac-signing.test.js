@@ -6,7 +6,7 @@ import { parseMacReleaseEnvironment, redactMacDiagnostics, macSmokeEnvironment }
 import { prepareSigningEnv } from '../../scripts/signing-env.mjs';
 
 const require = createRequire(import.meta.url);
-const { notarizationOptions, verifyMacSignature, verifyNotarizedApp, signingSourceRevision, selectDeveloperIdIdentity } = require('../../scripts/mac-signing.cjs');
+const { notarizationOptions, verifyMacSignature, verifyNotarizedApp, signingSourceRevision, selectDeveloperIdIdentity, recoverNotaryStapling } = require('../../scripts/mac-signing.cjs');
 const api = { APPLE_API_KEY: '/fixture/key.p8', APPLE_API_KEY_ID: 'fixture-id', APPLE_API_ISSUER: 'fixture-issuer' };
 const trust = { developerId: true, expectedTeam: true, hardenedRuntime: true, stapled: true, gatekeeper: true };
 
@@ -16,7 +16,7 @@ function hookFixture(env, notarize = vi.fn(async () => {})) {
   const module = { exports: {} };
   const fakeRequire = name => {
     if (name === 'node:module') return { createRequire: () => () => ({ notarize }) };
-    if (name === './mac-signing.cjs') return { notarizationOptions, verifyMacSignature: verify, verifyNotarizedApp: verified };
+    if (name === './mac-signing.cjs') return { notarizationOptions, verifyMacSignature: verify, verifyNotarizedApp: verified, recoverNotaryStapling };
     return require(name);
   };
   fakeRequire.resolve = () => '/fixture/builder.js';
@@ -95,5 +95,46 @@ describe('reuse existing macOS signing configuration', () => {
     expect(() => verifyMacSignature('/fixture/App.app', 'TEAM123456', () => ({ status: 1 }))).toThrow('verification failed');
     expect(verifyNotarizedApp('/fixture/App.app', 'TEAM123456', runner(metadata))).toEqual(trust);
     expect(() => verifyNotarizedApp('/fixture/App.app', 'TEAM123456', (command, args) => command === 'xcrun' ? { status: 1 } : runner(metadata)(command, args))).toThrow('trust check failed');
+  });
+});
+
+describe('Apple ticket delivery failures remain fail-closed and diagnosable', () => {
+  const metadata = 'Authority=Developer ID Application: Fixture\nTeamIdentifier=TEAM123456\nCodeDirectory v=20500 flags=0x10000(runtime) hashes=1';
+  const valid = (command, args) => ({ status: 0, stderr: args[0] === '-dv' ? metadata : '' });
+  it('retries a timed-out ticket validation and still requires the real successful command', () => {
+    let calls = 0;
+    const wait = vi.fn();
+    const run = vi.fn((command, args) => command === 'xcrun' && calls++ === 0
+      ? { status: null, error: { code: 'ETIMEDOUT' } } : valid(command, args));
+    expect(verifyNotarizedApp('/fixture/App.app', 'TEAM123456', run, wait)).toEqual(trust);
+    expect(run.mock.calls.filter(([command]) => command === 'xcrun')).toHaveLength(2);
+    expect(run.mock.calls.find(([command]) => command === 'xcrun')[2].timeout).toBe(90000);
+    expect(wait).toHaveBeenCalledTimes(1);
+  });
+  it('never retries invalid tickets and includes the actual command failure', () => {
+    const wait = vi.fn();
+    const run = vi.fn((command, args) => command === 'xcrun'
+      ? { status: 65, stderr: 'Ticket signature is invalid' } : valid(command, args));
+    expect(() => verifyNotarizedApp('/fixture/App.app', 'TEAM123456', run, wait))
+      .toThrow('exit 65: Ticket signature is invalid');
+    expect(wait).not.toHaveBeenCalled();
+    expect(run.mock.calls.filter(([command]) => command === 'spctl')).toHaveLength(0);
+  });
+  it('bounds transient attempts and preserves the timeout diagnostic', () => {
+    const run = vi.fn((command, args) => command === 'xcrun'
+      ? { status: null, error: { code: 'ETIMEDOUT' } } : valid(command, args));
+    expect(() => verifyNotarizedApp('/fixture/App.app', 'TEAM123456', run, vi.fn())).toThrow('ETIMEDOUT');
+    expect(run.mock.calls.filter(([command]) => command === 'xcrun')).toHaveLength(3);
+  });
+  it('recovers only a known post-acceptance staple network failure without resubmitting credentials', () => {
+    const run = vi.fn(() => ({ status: 0 }));
+    const network = new Error('Failed to staple your application with code: 68\nNSURLErrorDomain Code=-1005 "The network connection was lost."');
+    recoverNotaryStapling(network, '/fixture/App.app', run, vi.fn());
+    expect(run).toHaveBeenCalledWith('xcrun', ['stapler', 'staple', '/fixture/App.app'], expect.any(Object));
+    expect(() => recoverNotaryStapling(new Error('Apple rejected submission'), '/fixture/App.app', run, vi.fn()))
+      .toThrow('Apple rejected submission');
+    expect(() => recoverNotaryStapling(new Error('Failed to staple your application with code: 68\nInvalid ticket'), '/fixture/App.app', run, vi.fn()))
+      .toThrow('Invalid ticket');
+    expect(run).toHaveBeenCalledTimes(1);
   });
 });

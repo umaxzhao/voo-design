@@ -1,5 +1,39 @@
 const { spawnSync } = require('node:child_process');
 
+const APPLE_TRUST_ATTEMPTS = 3;
+const APPLE_TRUST_TIMEOUT_MS = 90_000;
+const waitForAppleRetry = () => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 3_000);
+
+function isAppleNetworkFailure(text) {
+  return /ETIMEDOUT|NSURLErrorDomain Code=-(?:1001|1005)\b|The network connection was lost/i.test(text);
+}
+
+/** Only public staple/policy commands use this helper; never pass auth args.
+ * A retry still needs an actual zero exit. Invalid or missing tickets fail
+ * immediately; a network outage cannot produce a successful trust receipt. */
+function runAppleTrustCheck(command, args, run, wait) {
+  for (let attempt = 1; attempt <= APPLE_TRUST_ATTEMPTS; attempt += 1) {
+    const result = run(command, args, { encoding: 'utf8', timeout: APPLE_TRUST_TIMEOUT_MS });
+    if (!result.error && result.status === 0) return;
+    const diagnostic = [result.error?.code, result.signal, result.stdout, result.stderr]
+      .filter(Boolean).join('\n').trim().slice(-12_000);
+    if (attempt === APPLE_TRUST_ATTEMPTS || !isAppleNetworkFailure(diagnostic)) {
+      throw new Error(`macOS release trust check failed: ${command} (exit ${result.status}: ${diagnostic || 'no command diagnostic'}).`);
+    }
+    console.warn(`[voo-design] Apple trust service network failure; retry ${attempt}/${APPLE_TRUST_ATTEMPTS - 1}.`);
+    wait();
+  }
+}
+
+/** The locked notarize library reaches stapling only after Apple accepted the
+ * submission. Recover its explicit network-only staple failure without
+ * uploading again or replaying any authentication material. */
+function recoverNotaryStapling(error, appPath, run = spawnSync, wait = waitForAppleRetry) {
+  const diagnostic = String(error?.message ?? error);
+  if (!diagnostic.includes('Failed to staple your application') || !isAppleNetworkFailure(diagnostic)) throw error;
+  runAppleTrustCheck('xcrun', ['stapler', 'staple', appPath], run, wait);
+}
+
 const ROUTES = [
   { name: 'keychain', keys: ['APPLE_KEYCHAIN_PROFILE'], fields: ['keychainProfile'] },
   { name: 'api', keys: ['APPLE_API_KEY', 'APPLE_API_KEY_ID', 'APPLE_API_ISSUER'], fields: ['appleApiKey', 'appleApiKeyId', 'appleApiIssuer'] },
@@ -58,16 +92,15 @@ function verifyMacSignature(appPath, expectedTeamId, run = spawnSync) {
   return { developerId: true, expectedTeam: true, hardenedRuntime: true };
 }
 
-function verifyNotarizedApp(appPath, expectedTeamId, run = spawnSync) {
+function verifyNotarizedApp(appPath, expectedTeamId, run = spawnSync, wait = waitForAppleRetry) {
   const signature = verifyMacSignature(appPath, expectedTeamId, run);
   for (const [command, args] of [
     ['xcrun', ['stapler', 'validate', appPath]],
     ['spctl', ['--assess', '--type', 'execute', appPath]],
   ]) {
-    const result = run(command, args, { encoding: 'utf8', timeout: 45000 });
-    if (result.error || result.status !== 0) throw new Error(`macOS release trust check failed: ${command}.`);
+    runAppleTrustCheck(command, args, run, wait);
   }
   return { ...signature, stapled: true, gatekeeper: true };
 }
 
-module.exports = { notarizationOptions, verifyMacSignature, verifyNotarizedApp, signingSourceRevision, selectDeveloperIdIdentity };
+module.exports = { notarizationOptions, verifyMacSignature, verifyNotarizedApp, signingSourceRevision, selectDeveloperIdIdentity, recoverNotaryStapling };
