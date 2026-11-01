@@ -120,6 +120,8 @@ export function googleFontUrl(family, weightSpec) {
 
 /** family -> Promise<boolean>, so a family is only ever requested once. */
 const loadCache = new Map();
+let fontResourceVersion = 0;
+export const getFontResourceVersion = () => fontResourceVersion;
 
 /**
  * Loads the bundled family a stack references.
@@ -146,7 +148,10 @@ export function ensureFontLoaded(fontStack) {
     }
     const loadFont = () =>
       document.fonts.load(`32px "${family}"`).then(
-        (faces) => faces.length > 0,
+        (faces) => {
+          if (faces.length > 0) fontResourceVersion += 1;
+          return faces.length > 0;
+        },
         () => false,
       );
 

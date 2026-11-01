@@ -395,4 +395,6 @@ pages/effects and Figma parity remain outside this acceptance.
 
 The implementation caches history image/mask sets and updates
 reference counts as scenes enter or leave. See [acceptance and measurements](history-asset-retention.md).
-Autosave serialization, precise-pass index reuse and global bitmap budgets remain pending.
+Autosave scheduling, precise-pass index reuse and global bitmap budgets remain pending.
+
+The [layout and resource effect improvements](layout-sharing.md) retain unchanged nodes, stop settled passes and serialize without mutating live records.

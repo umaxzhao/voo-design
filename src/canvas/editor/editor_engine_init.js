@@ -20,6 +20,7 @@ import { ensureImagePyramid, measureText } from "./scene_renderer.js";
 import { getImageBlobMap } from "../store/db.js";
 import * as ops from "./doc_ops.js";
 import { reflowAutoLayout } from "./scene_auto_layout.js";
+import { sameAutoLayoutGeometry } from "./auto-layout-sharing.js";
 
 export function createEngineInitController({
   ctx,
@@ -86,9 +87,11 @@ export function createEngineInitController({
         changed = true;
         return { ...node, ...size };
       });
+      const previous = current;
       current = reflowAutoLayout(changed ? { ...current, nodes } : current);
       if (!hasLayout) break;
-      if (!changed && pass > 0) break;
+      // Stable geometry and text need no second whole-document layout pass.
+      if (!changed && (pass > 0 || sameAutoLayoutGeometry(previous.nodes, current.nodes))) break;
       force = false;
     }
     return current;

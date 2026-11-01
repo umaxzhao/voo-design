@@ -27,10 +27,12 @@ export const EDITOR_MODULES = [
       "src/canvas/store/*", "src/storage/*", "src/services/*", "src/canvas/editor/editor_history*",
       "src/canvas/editor/editor_engine_history*", "src/canvas/undo*",
       "src/canvas/editor/editor-history-asset-pins.js", "tests/unit/editor-history-asset-pins.test.js",
+      "src/canvas/editor/scene_model_serialization.js", "src/canvas/editor/scene-node-serialization.js", "tests/unit/scene-serialization-purity.test.js",
+      "src/canvas/editor/scene_model_core.js", "src/canvas/editor/default-value-matcher.js", "tests/unit/default-value-matcher.test.js",
     ],
     related: ["workspace","layers","images","platform"],
     features: [
-      "documents.autosave", "documents.import-export", "documents.undo-redo", "documents.portable-roundtrip", "documents.history-asset-pins",
+      "documents.autosave", "documents.import-export", "documents.undo-redo", "documents.portable-roundtrip", "documents.history-asset-pins", "documents.serialization-purity",
     ],
     suites: [
       "editor-session", "image-assets-history", "image-file-clipboard", "image-generated-workflow",
@@ -121,6 +123,8 @@ export const EDITOR_MODULES = [
       "tests/unit/clipping-chain-cache.test.js", "tests/unit/layer-pass-document.test.js",
       "tests/unit/frame-clip-run.test.js", "src/canvas/editor/editor_engine_render.js",
       "src/canvas/editor/node_effects.js", "tests/unit/empty-effect-cache.test.js", "tests/unit/container-opacity.test.js",
+      "src/canvas/editor/effect-source.js", "tests/unit/effect-paint-generation.test.js",
+      "tests/e2e/effect-resource-generation-checks.mjs",
       "src/canvas/editor/chrome*", "src/canvas/editor/render*", "src/canvas/editor/skia*",
       "src/canvas/editor/*mask*", "src/canvas/editor/*opacity*", "src/canvas/editor/*sampling*",
       "src/canvas/editor/*readback*", "src/canvas/editor/doc_ops_clipping.js",
@@ -129,6 +133,7 @@ export const EDITOR_MODULES = [
     features: [
       "compositing.selection-size-label", "compositing.mask-cache",
       "compositing.clip-run-culling",
+      "compositing.effect-resources",
       "compositing.masks", "compositing.frame-clips", "compositing.alpha", "compositing.artwork-parity",
     ],
     suites: [
@@ -195,9 +200,11 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/*component*", "src/canvas/components/editor_properties/*layout*",
       "src/canvas/components/editor_properties/*constraint*",
       "src/canvas/components/editor_properties/*variant*", "src/canvas/design_systems/*",
+      "tests/unit/auto-layout-sharing.test.js", "tests/e2e/auto-layout-sharing-checks.mjs",
+      "src/canvas/editor/editor_engine_init.js", "tests/unit/layout-measure-convergence.test.js",
     ],
-    related: ["layers","text","inspector","documents","platform"],
-    features: ["layout.constraint-hit-targets","layout.auto-layout","layout.constraints","layout.variables","layout.components"],
+    related: ["layers","text","inspector","documents","platform","compositing"],
+    features: ["layout.reflow-sharing","layout.constraint-hit-targets","layout.auto-layout","layout.constraints","layout.variables","layout.components"],
     suites: [
       "constraint-hit-targets", "editor-effects", "stretch-layout", "build-layout-history", "mesh-gradient", "stroke-controls",
       "editor-document-aids",

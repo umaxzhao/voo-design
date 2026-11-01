@@ -1,7 +1,7 @@
 import { designSystemFields } from "./design_tokens.js";
 import { getActiveDesignSystem } from '../agent/design_system/store.js';
 // Seam: Document serialization, deserialization, and display helpers.
-import { LEGACY_DOC_VERSION, normalizeBlendMode, normalizeCornerRadius, normalizeNodeTransform, isDefaultAdjustments, DOC_VERSION, NODE_KIND } from "./scene_model_core.js";
+import { LEGACY_DOC_VERSION, normalizeBlendMode, normalizeCornerRadius, normalizeNodeTransform, DOC_VERSION, NODE_KIND } from "./scene_model_core.js";
 import { normalizeAdjustments } from "./scene_model_adjustments.js";
 import { normalizeColorVariables } from "./scene_color_variables.js";
 import {
@@ -29,6 +29,7 @@ import { assertNotEvaluatedFrame } from "./scene-evaluated-frame.js";
 import * as canvasComposition from "./canvas-composition-model.js";
 
 import { normalizePathHardness } from "./scene_model_node_builders.js";
+import { serializeSceneNode } from "./scene-node-serialization.js";
 
 import { normalizeEffects, normalizeTextStyle } from "./scene_model_text_effects.js";
 import { normalizeRegionIntent, normalizeWarpControls, isRegionNode } from "./scene_model_groups.js";
@@ -88,20 +89,7 @@ export function serialiseDocument(doc) {
           return valid.length > 0 ? { modifiers: valid } : {};
         })()
       : {}),
-    nodes: doc.nodes.map((node) => {
-      const copy = canvasComposition.serializeCanvasNode(node);
-      // Image object URLs are session-only. Media may carry a durable URL;
-      // blob URLs still resolve through assetId after hydration.
-      if (copy.src?.startsWith("blob:")) delete copy.src;
-      // v2: don't persist a node's neutral adjustments — an unchanged layer
-      // carries no signal, and dropping the default per node is what shrinks
-      // the record. `deserialiseDocument` restores the default on read.
-      if (isDefaultAdjustments(copy.adjustments)) delete copy.adjustments;
-      if (copy.cornerRadius !== undefined) {
-        copy.cornerRadius = normalizeCornerRadius(copy.cornerRadius);
-      }
-      return copy;
-    }),
+    nodes: doc.nodes.map(serializeSceneNode),
   };
 }
 

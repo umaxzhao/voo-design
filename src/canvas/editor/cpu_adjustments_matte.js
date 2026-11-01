@@ -10,10 +10,13 @@ const bitmapVersions = new WeakMap();
 function bitmapVersion(bitmap) {
   return bitmapVersions.get(bitmap) ?? 0;
 }
+export { bitmapVersion as bitmapContentVersion };
 
 /** Drops the cached composite of a matte whose pixels changed in place. */
 export function invalidateMatteComposite(matte) {
+  if (!matte) return;
   compositeCache.delete(matte);
+  bitmapVersions.set(matte, bitmapVersion(matte) + 1);
 }
 
 /** Marks a bitmap canvas mutated in place so matte composites rebuild. */
