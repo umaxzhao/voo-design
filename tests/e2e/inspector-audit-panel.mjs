@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import BoundedNumberInput from "../../src/canvas/components/bounded_number_input.jsx";
+import React, { useEffect, useReducer, useState } from "react";
 import { createRoot } from "react-dom/client";
 import FigmaColorPicker from "../../src/canvas/color_picker/FigmaColorPicker.jsx";
 import VariantsSection from "../../src/canvas/components/editor_properties/variants_section.jsx";
@@ -54,4 +55,29 @@ export function mountAuditPanel(kind, id) {
   }
   window.__auditPanelRoot = createRoot(host);
   window.__auditPanelRoot.render(React.createElement(Panel));
+}
+
+/** Controlled publication harness for the real numeric field. */
+export function mountNumberCheckpoint() {
+  const host = document.createElement("div");
+  host.id = "number-checkpoint-host";
+  document.body.append(host);
+  const record = { value: 0, commits: [] };
+  window.__numberCheckpoint = record;
+  function Field() {
+    const [, refresh] = useReducer((version) => version + 1, 0);
+    return React.createElement(BoundedNumberInput, {
+      ariaLabel: "Checkpoint value", value: record.value, min: -360, max: 360,
+      onValueChange: (value) => { record.value = value; },
+      onCommit: () => {
+        record.commits.push(record.value);
+        // Model updates can coalesce before a subscribed panel renders.
+        // An immediate undo returns to the same prop as the previous render.
+        record.value = 0;
+        refresh();
+      },
+    });
+  }
+  window.__numberCheckpointRoot = createRoot(host);
+  window.__numberCheckpointRoot.render(React.createElement(Field));
 }

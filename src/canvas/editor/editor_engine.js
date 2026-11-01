@@ -23,6 +23,7 @@ import {
   releaseAdjustmentRenderer,
 } from "./gl_adjustments.js";
 import { createHistory } from "./editor_history.js";
+import { createDocumentSnapshotState } from "./document-snapshot-state.js";
 import { createSelection } from "./editor_selection.js";
 import { sampleRegionColours } from "./region_colours.js";
 import { attachPointerHandlers } from "./editor_pointer.js";
@@ -147,18 +148,9 @@ export function createEditor({
   );
   const getDoc = () => doc;
   const isDisposed = () => disposed;
-  // The document is replaced on every edit (setDoc), never mutated, so its
-  // serialised form is reused until the object changes. Dirty checks run on
-  // every view change, and serialising the whole page each time made zoom and
-  // pan expensive on large documents.
-  let snapshotCache = { doc: null, text: null };
-  const snapshotDoc = () => {
-    if (snapshotCache.doc !== doc) {
-      snapshotCache = { doc, text: JSON.stringify(serialiseDocument(doc)) };
-    }
-    return snapshotCache.text;
-  };
-  let appliedSnapshot = snapshotDoc();
+  const snapshots = createDocumentSnapshotState(getDoc);
+  const snapshotDoc = snapshots.serialize;
+  snapshots.setApplied(snapshotDoc());
 
   const viewportTools = createViewport({
     stage,
@@ -297,12 +289,11 @@ export function createEditor({
     getDoc,
     setDoc,
     snapshotDoc,
+    isDocumentDirty: snapshots.isDirty,
     snapshotState: historyState.snapshotState,
     restore: historyState.restore,
-    getAppliedSnapshot: () => appliedSnapshot,
-    setAppliedSnapshot: (next) => {
-      appliedSnapshot = next;
-    },
+    getAppliedSnapshot: snapshots.getApplied,
+    setAppliedSnapshot: snapshots.setApplied,
     incDocVersion: () => {
       docVersion += 1;
     },

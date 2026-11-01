@@ -19,6 +19,7 @@ export function createHistoryApi({
   restore,
   snapshotState,
   snapshotDoc = null,
+  isDocumentDirty = null,
   getSelectionTransform,
   transformsInFlight,
   getAppliedSnapshot,
@@ -46,7 +47,7 @@ export function createHistoryApi({
       paintTools.hasDirtyPaints() ||
       Boolean(getSelectionTransform()) ||
       transformsInFlight.size > 0 ||
-      (getAppliedSnapshot() !== null &&
+      (isDocumentDirty ? isDocumentDirty() : getAppliedSnapshot() !== null &&
         getAppliedSnapshot() !== currentDocSnapshot()),
     // Persistence queues report errors and remain usable. Callers that leave
     // the editor must also check this after flushing before discarding memory.
