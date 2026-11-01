@@ -1,9 +1,9 @@
 # 项目检查总进度
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
-最近一次完整核心验证提交：[c67a950](https://github.com/umaxzhao/voo-design/commit/c67a950c4f0456fcf627f46306fa19c48ebe3d8e)；91/91 项通过，当前线上为该构建。
+最近一次完整核心验证提交：[5cd112e](https://github.com/umaxzhao/voo-design/commit/5cd112efcd7597d36680eea3c9b8eba66a50d7b5)；91/91 项通过，当前线上为该构建。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
-## 本轮：图层操作复查与多 Frame 拖动（定向通过，等待完整发布验证）
-- `selection.transforms` / `selection.frame-title-selection` / `layers.duplicate-delete-lock`：固定 `c67a950` 的 32 组图层及关联浏览器检查通过，但新增真实图层列表多选复现内容区误选子层、标题清空多选两个缺口；多选 Frame 内锁定子层又复现只移动外框。公共命中解析保留显式选区，标题沿用选区，移动集合遇锁定成员不再退化为根节点。新增 16 个真实鼠标场景与 3 条单测；42 项定向单测、设计及模块检查通过，完整发布与部署结果待记录。旧单 Frame 修复及其 91/91 发布证据仍仅属于 `c67a950`，不继承为本轮通过。[范围与证据](audits/design-editor-interaction-audit.md#multi-frame-layer-operation-audit--2026-11-01)。
+## 本轮：图层操作复查与多 Frame 拖动（已完成声明范围）
+- `selection.transforms` / `selection.frame-title-selection` / `selection.cancel` / `layers.duplicate-delete-lock`：旧版本 32 组图层及关联检查通过，但新增实际多选发现内容区误拖子层、标题清空多选、锁定子层时只移动外框三个缺口，均已修复并保留失败证据。新增 16 个实际交互上下文与 3 条单测；42 项定向单测通过，固定 `5cd112e` **91/91 发布步骤、87 组核心浏览器、4716 单测通过/4 跳过**，GitHub CI 通过。[PR #79](https://github.com/umaxzhao/voo-design/pull/79) 合入 `f7f782c` 且源码树一致。本地主应用仅三文件补丁、16 个隔离浏览器场景通过，其他草稿保留。已部署 la2，正式入口及 82 个加载资源 SHA-256 一致，线上六个真实多选拖动/锁定/取消场景通过，三种移动入口验证像素与一次撤销/重做，零页面异常。证据 `/private/tmp/voo-license-regression/multiframe-{release,ci,primary-proof,main-tree-proof,production-proof}.json`；功能覆盖仍部分，不认证全部蒙版/布局/锁定组合、实体输入设备或签名安装包。[范围与证据](audits/design-editor-interaction-audit.md#multi-frame-layer-operation-audit--2026-11-01)。
 ## 本轮：正式分享链接（已完成声明范围）
 - `platform.native-collaboration`：分享链接统一 `https://voo.run/editor/?r=...`，本地/桌面/扩展/预览均不泄漏私有域名；默认信令共用正式服务，保留显式本地测试覆盖。72 项定向单测及真实复制/只读切换/密钥保留浏览器回归通过，固定 `56ef64f` **91/91 发布步骤、87 组核心浏览器、4713 单测通过/4 跳过**，GitHub CI 通过。[PR #77](https://github.com/umaxzhao/voo-design/pull/77) 合入 `9f37259` 且源码树一致，本地 18 组实际函数输出及默认信令通过，查询解析草稿保留。已部署 la2；正式入口及 85 个加载资源 SHA-256 一致，真实复制/只读打开（HTTP 200）/访客转发保持房间与密钥、文档不变和零页面异常通过。正式服务接受 localhost Origin 的 WebSocket 握手，未发送 JOIN；浏览器信令使用隔离 socket，不认证真实多人 P2P/TURN。证据 `/private/tmp/voo-license-regression/canonical-share-{release,ci,primary-proof,main-tree-proof,production-proof,signaling-handshake}.json`。[范围与证据](audits/design-editor-interaction-audit.md#canonical-share-links--2026-11-01)。
 
