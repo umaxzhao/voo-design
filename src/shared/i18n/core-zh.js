@@ -751,4 +751,5 @@ export default {
   "editor.canvasType.threeD": "3D",
   "editor.component.label": "元件",
   "editor.component.uses": "{count} 处引用",
+  "contextualAi.send": "发送给 AI 智能体",
 };
