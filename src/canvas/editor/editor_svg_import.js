@@ -639,6 +639,14 @@ export function parseSvgStringToNodes(svgString) {
     }
 
     if (def.tag === "mask") {
+      const parentClip = parentClipId ? nodes.find((n) => n.id === parentClipId) : null;
+      if (parentClip && shapes[0]?.kind === "rect") {
+        shapes[0].x = parentClip.x;
+        shapes[0].y = parentClip.y;
+        shapes[0].width = parentClip.width;
+        shapes[0].height = parentClip.height;
+        shapes[0].cornerRadius = parentClip.cornerRadius;
+      }
       if (shapes.length === 1) {
         const maskBase = shapes[0];
         maskBase.maskBase = true;

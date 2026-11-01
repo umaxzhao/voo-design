@@ -1272,6 +1272,16 @@ export function parseSvgToNodes(svgText, options = {}) {
               base.fill = base.fill && base.fill !== "transparent" ? base.fill : "#ffffff";
             } else if (def.tag === "mask") {
               base.maskType = def.attrs?.["mask-type"] || "luminance";
+              if (parentClipId) {
+                const parentNode = ctx.nodes?.find(n => n.name === parentClipId || n.id === parentClipId);
+                if (parentNode && base.kind === "rect") {
+                  base.x = parentNode.x;
+                  base.y = parentNode.y;
+                  base.width = parentNode.width;
+                  base.height = parentNode.height;
+                  base.cornerRadius = parentNode.cornerRadius;
+                }
+              }
             }
             if (parentClipId) base.clipTo = parentClipId;
             addNode(child.tag, child.attrs || {}, base);
