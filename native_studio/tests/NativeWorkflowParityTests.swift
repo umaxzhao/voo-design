@@ -7,6 +7,25 @@
             let registry = TestRegistry.shared
             registry.register(
                 tier: 3, feature: "Native-Inspector",
+                name: "test_DesignSelectionNotifiesHostAfterMeasuringConfiguredPaintRows"
+            ) {
+                let panel = PropertiesPanelView(frame: CGRect(x: 0, y: 0, width: 288, height: 800))
+                var measured: [CGFloat] = []
+                panel.onPresentationChange = { measured.append(panel.contentHeight) }
+                var node = VOONode(
+                    kind: .rect, style: LayerStyle(fill: "#FF0000", stroke: "none", strokeWidth: 0))
+                panel.configure(with: node)
+                node.style.stroke = "#191919"
+                node.style.strokeWidth = 2
+                panel.configure(with: node)
+                try TestAssertions.assertEqual(measured.count, 2)
+                try TestAssertions.assertTrue(
+                    measured[1] > measured[0],
+                    "Adding a visible stroke changes the measured card height")
+                try TestAssertions.assertApproxEqual(measured[1], panel.contentHeight)
+            }
+            registry.register(
+                tier: 3, feature: "Native-Inspector",
                 name: "test_CodeModeDoesNotPaintDesignRowSurfaces"
             ) {
                 let panel = PropertiesPanelView(frame: CGRect(x: 0, y: 0, width: 288, height: 800))

@@ -3240,6 +3240,9 @@ public final class PropertiesPanelView: NSView {
         needsLayout = true
         layoutSubtreeIfNeeded()
         needsDisplay = true
+        // The host card must resize after Design selection changes as well as
+        // Code mode changes; otherwise its first measured height stays stale.
+        onPresentationChange?()
     }
 
     private func applyEmptyState() {
