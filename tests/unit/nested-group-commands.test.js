@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { insertGroup } from "../../src/canvas/editor/doc_ops_groups.js";
 import { createEngineGroups } from "../../src/canvas/editor/editor_engine_groups.js";
 import { frameSelectionUnit } from "../../src/canvas/editor/frame-selection-unit.js";
+import { alignNodes } from "../../src/canvas/editor/align_ops.js";
 
 const frame = (id, parentId = null) => ({ id, kind: "group", isFrame: true, parentId,
   x: 0, y: 0, width: 500, height: 400, visible: true });
@@ -78,5 +79,35 @@ describe("group commands inside Frames", () => {
     f.api.layoutSelection((nodes) => nodes.map((n) => ({ id: n.id, patch: { x: 20, y: n.y } })), "left");
     expect(f.doc().nodes.find((n) => n.id === "base").x).toBe(20);
     expect(f.doc().nodes.find((n) => n.id === "clipped").x).toBe(35);
+  });
+  it("does not double-move a clipped follower when it is selected with its mask base", () => {
+    const f = fixture([
+      { ...rect("base", null), x: 120, y: 50, maskBase: true },
+      { ...rect("clipped", null), x: 135, y: 65, clipTo: "base" },
+      { ...rect("anchor", null), x: 500, y: 50 },
+    ], ["base", "clipped", "anchor"]);
+    f.api.layoutSelection(alignNodes, "right");
+    const nodes = f.doc().nodes;
+    const base = nodes.find((n) => n.id === "base");
+    const clipped = nodes.find((n) => n.id === "clipped");
+    const anchor = nodes.find((n) => n.id === "anchor");
+    // The clip base is the single layout unit: it aligns to the anchor's right
+    // edge (540) and its follower is carried exactly once, keeping offset 15.
+    expect(base.x).toBe(500);
+    expect(anchor.x).toBe(500);
+    expect(clipped.x).toBe(515);
+    expect(clipped.x - base.x).toBe(15);
+  });
+  it("still aligns a clipped follower on its own when its base is not selected", () => {
+    const f = fixture([
+      { ...rect("base", null), x: 120, y: 50, maskBase: true },
+      { ...rect("clipped", null), x: 135, y: 65, clipTo: "base" },
+      { ...rect("anchor", null), x: 500, y: 50 },
+    ], ["clipped", "anchor"]);
+    f.api.layoutSelection(alignNodes, "right");
+    const nodes = f.doc().nodes;
+    expect(nodes.find((n) => n.id === "clipped").x).toBe(500);
+    expect(nodes.find((n) => n.id === "anchor").x).toBe(500);
+    expect(nodes.find((n) => n.id === "base").x).toBe(120);
   });
 });
