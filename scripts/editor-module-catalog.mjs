@@ -17,6 +17,7 @@ export const EDITOR_MODULES = [
     suites: [
       "project-picker", "titlebar-file-actions", "welcome-model-menu", "welcome-draft-trash",
       "ui-home-settings", "welcome-covers", "editor-resources", "editor-resources-built",
+      "qa_flows",
     ],
     remaining: ["Native OS picker behavior and physical touch devices require separate evidence."],
   },
@@ -269,6 +270,7 @@ export const EDITOR_MODULES = [
       "src/shared/providers/*", "src/canvas/components/browser_drawer/*", "tests/unit/browser_drawer_import.test.js",
       "tests/unit/agent_selection_context.test.js",
       "tests/e2e/agent-suggestions.e2e.mjs", "tests/e2e/agent-suggestions-harness.jsx",
+      "tests/e2e/agent-selection-context.e2e.mjs",
       "tests/unit/canvas_agent_build_layout.test.js", "tests/unit/canvas_tools_build_layout.test.js",
     ],
     related: ["workspace","documents","inspector","images","text"],
@@ -282,6 +284,7 @@ export const EDITOR_MODULES = [
       "agent_cancel_polish", "agent_tools", "agent_pencil_tools", "editor-fixture-startup", "browser-drawer", "pending-integration", "agent-model-catalog", "editor-loading",
       "editor-optional-loading", "comments-loading", "comments-lifecycle", "editor-refactor",
       "editor-context", "editor-page-composition", "local-service", "canvas-live-preview", "agent-authoring",
+      "agent-selection-context", "agent-suggestions",
     ],
     remaining: [
       "Paid endpoints, authenticated external clients, signed installers and skipped collaboration cases require separate evidence and cannot inherit an offline pass.",
@@ -297,8 +300,8 @@ export const RELEASE_BROWSER_SUITES = ["editor-fixture-startup", ...EDITOR_MODUL
 
 // Standalone checks are visible debt, not implicit passes or silent omissions.
 const unreviewedSuites = {
-  platform: ["agent-selection-context", "agent-suggestions", "claude_agent", "codex_agent", "mcp_cli", "qa3_electron"],
-  workspace: ["critical_flows", "qa_flows"],
+  platform: ["claude_agent", "codex_agent", "mcp_cli", "qa3_electron"],
+  workspace: ["critical_flows"],
 };
 export const ADDITIONAL_BROWSER_CHECKS = [
   ...Object.entries(unreviewedSuites).flatMap(([owner, suites]) => suites.map(suite => ({

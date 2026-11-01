@@ -3,6 +3,9 @@
 最近一次完成的核心检查：[`c29ff4d`](https://github.com/umaxzhao/voo-design/commit/c29ff4dcea7dac199beb9b544ba702396f1eb845)；105/105 项完整发布门禁通过（101 组浏览器 E2E、全量单测 4,742 通过/4 跳过）。证据 `/private/tmp/voo-followup-release.json`。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 ## 本轮继续：扩展画布、图层与 Agent 相关检查（完成声明范围）
+- 继续审阅原 11 条独立检查中的 8 条 Agent/QA 脚本：`agent-selection-context`、`agent-suggestions`、`qa_flows` 已完成夹具与断言审阅并通过隔离 Chromium 实测，加入核心门禁；目录现为 87 项能力、104 组核心浏览器、8 项显式独立检查。全量固定提交门禁待本轮提交后执行，不能把隔离套件通过拼成完整发布通过。
+- 修复 `qa_flows` 自身的浏览器夹具：创建空白设计后再等待编辑器引擎、使用并清理系统临时截图目录、用引擎公开的图片插入 API 构建滤镜场景、查询现行 `effects-filter-stack` 与可编辑数值字段。最终独立实测覆盖形状创建/单选、图层切换时 X 值同步、滤镜字段与裁切边界、SVG 文件导入和渐变拖拽，全部通过；先前 3 次陈旧夹具/选择器失败日志不作为通过证据。
+- `claude_agent`、`codex_agent`、`mcp_cli` 会启动已认证 CLI 并调用真实模型，`qa3_electron` 依赖原生宿主，`critical_flows` 操作指定运行实例；这些 5 项仍未运行。`canvas_fps`、`image-electron`、`image-network` 继续按硬件、原生和联网模型环境单列。
 - 同步最新 `origin/main`（`ed3db20`），合并时保留画布缩放缓存、悬停工具菜单、移动端点击目标和上一轮交互修复；模块目录合并为 87 项能力、101 组核心浏览器套件，校验有效。
 - 选择/图层及关联模块计划实际执行 64 组浏览器套件，全部通过。额外覆盖工具悬停/触摸、Frame 标题与负坐标、遮罩与像素、自动布局、图层重排/锁定、Agent/MCP 编辑、撤销重做及保存重开；未发现新的功能失败。
 - 干净合并提交 `c29ff4dcea7dac199beb9b544ba702396f1eb845` 完整门禁 105/105 通过：构建、设计 lint、575 个单测文件（4,742 项通过、4 项跳过）及 101 组浏览器套件零失败。定向日志 `/private/tmp/voo-followup-selection-layers.log`，完整报告 `/private/tmp/voo-followup-release.json`。
