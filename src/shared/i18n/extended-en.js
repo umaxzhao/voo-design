@@ -2275,6 +2275,8 @@ export default {
   "canvasTabs.close": "Close project",
   "canvasTabs.new": "Add project",
   "canvasTabs.unsaved": "Unsaved changes (Ctrl+S / ⌘S to save)",
+  "canvasTabs.scrollLeft": "Scroll project tabs left",
+  "canvasTabs.scrollRight": "Scroll project tabs right",
   "loading.openingDocument": "Opening document…",
   "loading.importingFigma": "Importing Figma file…",
   "pageSwitcher.copySuffix": "Copy",

@@ -133,4 +133,21 @@ describe("mobile interaction experience polish", () => {
     const layerRow = readFileSync("src/canvas/components/editor_layer_row.jsx", "utf8");
     expect(layerRow).toContain("touch-pan-y");
   });
+
+  it("scales export modal and tab bar close buttons for touch and adapts autolayout inspector", () => {
+    const exportDialog = readFileSync("src/canvas/components/editor_export_dialog.jsx", "utf8");
+    expect(exportDialog).toContain("[@media(pointer:coarse)]:min-h-[44px]");
+
+    const tabBar = readFileSync("src/canvas/components/canvas_tab_bar.jsx", "utf8");
+    expect(tabBar).toContain("[@media(pointer:coarse)]:min-w-[40px]");
+    expect(tabBar).toContain("e.stopPropagation()");
+
+    const swatch = readFileSync("src/canvas/components/editor_properties/colour_swatch.jsx", "utf8");
+    expect(swatch).toContain("const isMobile = window.innerWidth <= 768");
+    expect(swatch).toContain("[@media(pointer:coarse)]:h-8");
+
+    const inspectorCss = readFileSync("src/canvas/components/editor_mobile_inspector.css", "utf8");
+    expect(inspectorCss).toContain("[data-autolayout-align-row]");
+    expect(inspectorCss).toContain("[data-autolayout-paired-padding]");
+  });
 });

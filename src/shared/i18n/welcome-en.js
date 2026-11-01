@@ -1,5 +1,7 @@
 /** User-facing copy for the welcome dashboard (recents, templates, shortcuts). */
 export default {
+  "welcome.prompt.settingsLabel": "Generation settings",
+  "welcome.sidebar.toggle": "Toggle navigation panel",
   "welcome.prompt.heading": "What would you like to design?",
   "welcome.cover.loading": "Loading cover",
   "welcome.cover.unavailable": "Cover unavailable",

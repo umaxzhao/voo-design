@@ -22,8 +22,8 @@
 
 [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="false"][data-mobile-properties-expanded="false"]
   > [data-open-guard] {
-  height: calc(100% - 3.5rem - var(--editor-mobile-panel-gap));
-  flex-basis: calc(100% - 3.5rem - var(--editor-mobile-panel-gap));
+  height: calc(100% - 4.5rem - var(--editor-mobile-panel-gap));
+  flex-basis: calc(100% - 4.5rem - var(--editor-mobile-panel-gap));
 }
 
 [data-testid="design-editor"].editor-narrow [data-testid="editor-layers-panel"],
@@ -70,7 +70,7 @@
   [data-testid="editor-properties-panel"],
 [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="false"]
   [data-testid="editor-history-panel"] {
-  height: 3.5rem;
+  height: 4.5rem;
   overflow: hidden;
 }
 
@@ -80,7 +80,7 @@
   [data-testid="editor-properties-panel"],
 [data-testid="design-editor"].editor-narrow[data-mobile-properties-expanded="false"]
   [data-testid="editor-history-panel"] {
-  top: calc(181.818% - 3.5rem);
+  top: calc(181.818% - 4.5rem);
 }
 
 [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="false"][data-mobile-properties-expanded="false"]
@@ -141,8 +141,12 @@
   transform: none;
 }
 
+/* Zoom cluster clears the collapsed Layers/Properties strips by one 12px
+   control gap. It is measured from the strips' top edge, so the safe-area
+   inset stays the strips' responsibility and this gap never changes on a
+   notched device. Expanded panels keep their own, larger offset below. */
 [data-testid="design-editor"].editor-narrow {
-  --editor-mobile-zoom-bottom: calc(3.5rem + 3.25rem);
+  --editor-mobile-zoom-bottom: 0.75rem;
 }
 
 [data-testid="design-editor"].editor-narrow[data-mobile-layers-expanded="true"],

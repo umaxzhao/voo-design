@@ -1,5 +1,7 @@
 /** 欢迎页（最近文件、模板、快捷键）的界面文案。 */
 export default {
+  "welcome.prompt.settingsLabel": "生成设置",
+  "welcome.sidebar.toggle": "切换导航面板",
   "welcome.prompt.heading": "今天想设计什么？",
   "welcome.cover.loading": "正在加载封面",
   "welcome.cover.unavailable": "暂无封面",

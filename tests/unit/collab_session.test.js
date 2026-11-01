@@ -50,7 +50,7 @@ test("starting a session puts you in your own roster", () => {
     state.peers.map((p) => p.peerId),
     ["me"],
   );
-  assert.ok(state.link.includes(`/r/${room}#k=`), state.link);
+  assert.ok(state.link.includes(`/editor/?r=${room}#k=`), state.link);
 });
 
 test("starting an already-live room reuses the same id, not a new one", () => {

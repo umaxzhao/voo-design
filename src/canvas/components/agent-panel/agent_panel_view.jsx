@@ -305,7 +305,7 @@ export default function AgentPanelView({
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={onKeyDown}
           rows={3}
-          className="w-full resize-none bg-transparent text-xs max-sm:text-[16px] leading-relaxed text-neutral-100 placeholder-neutral-400 focus:outline-none"
+          className="w-full resize-none bg-transparent text-xs max-sm:text-[15px] leading-relaxed text-neutral-100 placeholder-neutral-400 focus:outline-none"
         />
         <div className="flex items-center gap-2 pt-2">
           <span className="min-w-0 flex-1" aria-hidden="true" />

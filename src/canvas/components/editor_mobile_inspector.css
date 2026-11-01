@@ -63,4 +63,9 @@
   [data-testid="editor-properties-panel"] [data-transform-actions] {
     justify-content: center;
   }
+
+  [data-testid="editor-properties-panel"] [data-autolayout-align-row],
+  [data-testid="editor-properties-panel"] [data-autolayout-paired-padding] {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

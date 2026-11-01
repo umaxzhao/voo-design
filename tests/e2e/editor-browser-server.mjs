@@ -24,7 +24,9 @@ export async function startEditorBrowserServer() {
       if (server.listening) {
         await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
       }
-      await rm(cacheDir, { recursive: true, force: true });
+      // Vite may finish deleting an optimizer batch as its close promise settles.
+      // Node retries transient ENOTEMPTY/EBUSY races; permanent errors still reject.
+      await rm(cacheDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
       const errors = results.filter(result => result.status === "rejected").map(result => result.reason);
       if (errors.length) throw new AggregateError(errors, "Editor fixture server cleanup failed");
     })();
@@ -59,7 +61,7 @@ export async function startEditorBrowserServer() {
         acceptedPath: url, timestamp }] });
       return timestamp;
     };
-    return { origin, bridge, close, reloadModule };
+    return { origin, bridge, close, reloadModule, cacheDir };
   } catch (error) {
     try { await close(); }
     catch (cleanupError) { throw new AggregateError([error, cleanupError], "Editor fixture startup failed"); }

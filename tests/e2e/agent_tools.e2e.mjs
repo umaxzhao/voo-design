@@ -1,14 +1,8 @@
-// Real-app check of agent tools. Usage: start `npx vite --port 5199`, then
-// `node tests/e2e/agent_tools.e2e.mjs` (needs `playwright` resolvable).
-import { chromium } from "playwright";
-const URL = process.env.VOO_URL || "http://localhost:5199/?voo-test=1";
-const browser = await chromium.launch();
-const page = await browser.newPage();
-const errors = [];
-page.on("pageerror", (e) => errors.push(String(e)));
-await page.goto(URL);
-await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
-await page.waitForTimeout(1500);
+// Real editor tool contracts with isolated startup and deterministic model steps.
+import assert from "node:assert/strict";
+import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+
+await withEditorBrowser(async ({ page, errors }) => {
 const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
 const out = await page.evaluate(async (PNG) => {
   const { executeCanvasTool, CANVAS_TOOL_SCHEMAS } = await import("/src/canvas/agent/canvas_tools.js");
@@ -172,7 +166,7 @@ const out = await page.evaluate(async (PNG) => {
     && invalid.modeName.includes('Invalid argument "name"');
 
   const tree0 = await executeCanvasTool("inspect_layer_tree", {});
-  const count = (t) => JSON.stringify(t).match(/"id"/g)?.length ?? 0;
+  const count = (tree) => tree.totalCount;
   const before = count(await executeCanvasTool("inspect_layer_tree", {}));
   let step = 0;
   const streamStep = async () => step++ === 0
@@ -221,7 +215,6 @@ const out = await page.evaluate(async (PNG) => {
 }, PNG);
 console.log(JSON.stringify(out, null, 1));
 console.log("pageerrors", errors);
-await browser.close();
 const r2 = out.log.find((l) => l[0] === "r2-after")?.[2];
 const fails = out.log.filter((l) => l[1] === "ERR");
 if (!(r2?.fill === "#3366ff" && r2?.styleIds?.paintId)) fails.push("r2 binding/style missing");
@@ -236,4 +229,6 @@ if (!cancelUndoOk) fails.push("cancel undo failed");
 if (!failUndoOk) fails.push("fail undo failed");
 if (fails.length) console.log("invalid arg messages", out.invalid);
 console.log(fails.length ? "FAIL" : "PASS");
-process.exit(fails.length ? 1 : 0);
+assert.deepEqual(errors, []);
+assert.deepEqual(fails, []);
+});

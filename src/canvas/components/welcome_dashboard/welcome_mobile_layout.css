@@ -269,7 +269,7 @@
     border-radius: 0;
   }
 
-  .welcome-sidebar {
+  .welcome-dashboard:not([data-sidebar-expanded="true"]) .welcome-sidebar {
     display: none;
   }
 

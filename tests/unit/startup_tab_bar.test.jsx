@@ -12,20 +12,23 @@ vi.mock("../../src/canvas/use_i18n.js", () => ({ useI18n: () => ({ t: (key) => k
 import CanvasTabBar from "../../src/canvas/components/canvas_tab_bar.jsx";
 
 describe("title bar tabs at startup", () => {
-  it("renders no document tab on the welcome page, only the new-tab button", () => {
+  it("renders no project tab and no + on the workspace home", () => {
     useDesignStore.setState(useDesignStore.getInitialState(), true);
     const html = renderToStaticMarkup(<CanvasTabBar />);
     expect(html).not.toContain('role="tab"');
     expect(html).not.toContain("Untitled");
-    expect(html).toContain("canvasTabs.new");
+    // The dashboard owns the home screen; a second creation entry beside the
+    // logo would compete with it.
+    expect(html).not.toContain("canvasTabs.new");
   });
 
-  it("renders exactly one tab after New from welcome", () => {
+  it("renders exactly one tab and the + after New from welcome", () => {
     useDesignStore.setState(useDesignStore.getInitialState(), true);
     useDesignStore.getState().newVooProject();
     const html = renderToStaticMarkup(<CanvasTabBar />);
     expect(html.match(/role="tab"/g)).toHaveLength(1);
     expect(html).toContain("Design 1");
     expect(html).not.toContain("Untitled");
+    expect(html).toContain("canvasTabs.new");
   });
 });

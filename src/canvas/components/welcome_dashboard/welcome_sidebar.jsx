@@ -30,8 +30,27 @@ export function WelcomeSidebar({
   setFolderError,
   handleCreateFolder,
   handleDeleteFolder,
+  onClose,
 }) {
   const [folderMenu, setFolderMenu] = useState(null);
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.defaultPrevented) return;
+      if (e.key === "Escape") {
+        if (folderMenu) {
+          e.preventDefault();
+          setFolderMenu(null);
+        } else if (onClose) {
+          // Only close sidebar via Escape if no modal dialog is active
+          if (document.querySelector('[role="dialog"]')) return;
+          onClose();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [folderMenu, onClose]);
 
   useEffect(() => {
     if (!folderMenu) return undefined;
@@ -64,8 +83,8 @@ export function WelcomeSidebar({
       <div className="welcome-sidebar-content space-y-4">
 
         {/* Search lives in the sidebar, top-left, not in each page header */}
-        <div className="welcome-sidebar-search relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+        <div className="welcome-sidebar-search relative pl-10">
+          <Search size={13} className="absolute left-13 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input
             type="text"
             value={searchQuery}

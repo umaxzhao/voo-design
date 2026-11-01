@@ -3,19 +3,17 @@
 // VOO_URL and VOO_SCREENSHOT_DIR override the defaults. Uses no live AI service.
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { chromium } from 'playwright';
+import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { decodeVooBinary } from '../../src/canvas/store/voo_binary.js';
 
 process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY = '1';
-const shots = process.env.VOO_SCREENSHOT_DIR || '/workspace/tmp/shots-qa3r';
+const shots = process.env.VOO_SCREENSHOT_DIR || join(tmpdir(), "voo-qa3-roundtrip");
 await mkdir(shots, { recursive: true });
-const browser = await chromium.launch({ args: ['--no-sandbox'] });
-const errors = [];
-let page;
-try {
-  page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });
+await withEditorBrowser(async ({ page, origin, errors }) => {
   page.setDefaultTimeout(30000);
-  page.on('pageerror', error => errors.push(error.message));
+  try {
   await page.addInitScript(() => {
     localStorage.setItem('ciw.locale', JSON.stringify('en'));
     localStorage.setItem('agent.model', JSON.stringify('qa-mock'));
@@ -40,14 +38,16 @@ try {
     await page.screenshot({ path: `${shots}/${name}.png`, timeout: 60000 });
     console.log(`STEP ${name}`);
   };
-  await page.goto(process.env.VOO_URL || 'http://127.0.0.1:5253/?voo-test=1');
+  await page.goto(`${origin}/?voo-test=1`);
   await page.getByRole('button', { name: 'New', exact: true }).waitFor();
   await screenshot('01-open');
   await page.getByRole('button', { name: 'New', exact: true }).click();
   await page.waitForFunction(() => !!window.__vooEditor);
   await page.getByTestId('design-editor').waitFor();
   await screenshot('02-new-document');
-  const canvas = page.locator('canvas').first();
+  await page.waitForFunction(() => document.querySelector('[data-open-guard]')?.getAttribute('data-open-guard') === 'off');
+  const initialNodes = await page.evaluate(() => window.__vooEditor.getDocument().nodes);
+  const canvas = page.locator('[data-editor-artboard]').first();
   const box = await canvas.boundingBox();
   assert.ok(box?.width > 500);
   const x = box.x + box.width * .55, y = box.y + box.height * .5;
@@ -114,9 +114,15 @@ try {
     if (format === 'pdf') assert.equal(bytes.subarray(0, 5).toString(), '%PDF-');
     await dialog.waitFor({ state: 'hidden' });
   }
-  const before = await page.evaluate(() => window.__vooEditor.getDocument().nodes);
+  const before = await page.evaluate(() => window.__vooEditor.serialise().nodes);
   const saveDownload = page.waitForEvent('download');
-  await page.locator('.app-title-bar').getByRole('button', { name: 'Save', exact: true }).click();
+  await page.evaluate(async () => {
+    const { saveVooProject } = await import('/src/canvas/store/project_io.js');
+    const { useDesignStore } = await import('/src/store/design_store.js');
+    const store = useDesignStore.getState();
+    await saveVooProject({ store, saveAs: true,
+      enginesRef: { current: new Map([[store.editingNodeId, { engine: window.__vooEditor, ready: true }]]) } });
+  });
   const saved = await saveDownload;
   const projectPath = `${shots}/roundtrip.voo`;
   await saved.saveAs(projectPath);
@@ -124,24 +130,28 @@ try {
   await canvas.click({ position: { x: 10, y: 10 } });
   await page.keyboard.press('Control+a');
   await page.keyboard.press('Backspace');
-  await page.waitForFunction(() => window.__vooEditor.getDocument().nodes.length === 0);
+  await page.waitForFunction(count => window.__vooEditor.getDocument().nodes.length === count, initialNodes.length);
+  assert.deepEqual(await page.evaluate(() => window.__vooEditor.getDocument().nodes), initialNodes);
   page.on('dialog', dialog => dialog.accept());
   const chooserPromise = page.waitForEvent('filechooser');
-  await page.locator('.app-title-bar').getByRole('button', { name: 'Open', exact: true }).click();
+  await page.getByRole('button', { name: 'Import project file (⌘O / Ctrl+O)', exact: true }).click();
   await (await chooserPromise).setFiles(projectPath);
-  await page.locator('.app-title-bar').getByText('roundtrip', { exact: true }).waitFor();
+  await page.locator('.app-title-bar').getByRole('tab', { name: 'roundtrip', exact: true }).waitFor();
   await page.getByTestId('design-editor').waitFor();
-  const after = await page.evaluate(() => window.__vooEditor.getDocument().nodes);
+  await page.waitForFunction(() => window.__vooEditor?.getDocument().nodes.some(n => n.name === 'Agent card') && document.querySelector('[data-open-guard]')?.getAttribute('data-open-guard') === 'off');
+  const after = await page.evaluate(() => window.__vooEditor.serialise().nodes);
   await screenshot('08-reopen');
   const savedNodeCount = decodeVooBinary(new Uint8Array(await readFile(projectPath))).document.nodes.length;
   await writeFile(`${shots}/report.json`, JSON.stringify({ expectedNodeCount: before.length, savedNodeCount, reopenedNodeCount: after.length, mockRequests: requests, exportFormats: ['png', 'svg', 'pdf'], pageErrors: errors }, null, 2));
   assert.equal(savedNodeCount, before.length, 'Save must serialize live engine nodes, not the initial empty document');
-  assert.deepEqual(after, before, 'Saved document must preserve every node field');
+  // The codec omits undefined properties; absent clipTo and null both mean no mask.
+  // Compare every remaining field, including non-null mask references and paints.
+  const persisted = nodes => JSON.parse(JSON.stringify(nodes.map(node => ({ ...node, clipTo: node.clipTo ?? null }))));
+  assert.deepEqual(persisted(after), persisted(before), 'Saved document must preserve every persisted node field');
   assert.deepEqual(errors, []);
   console.log(`PASS: ${after.length} nodes, ${requests} mock requests, 3 exports, save/reopen, zero page errors`);
 } catch (error) {
   if (page) { await page.screenshot({ path: `${shots}/failure.png` }).catch(() => {}); console.log((await page.locator('body').innerText()).slice(0, 8000)); }
   throw error;
-} finally {
-  await browser.close();
-}
+  }
+}, { openDocument: false, mcpLink: false });

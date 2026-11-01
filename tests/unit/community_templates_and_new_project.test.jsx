@@ -189,7 +189,7 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(html).toContain("p-4 lg:p-8");
     expect(html).toContain("grid grid-cols-1 sm:grid-cols-3");
     expect(html).toContain("whitespace-nowrap");
-    expect(html).toContain('aria-haspopup="dialog"');
+    expect(html).toContain('role="radiogroup"');
     expect(html).toContain("prompt-composer relative");
     expect(html).toContain("min-w-0");
   });
@@ -215,21 +215,19 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(main[0]).toContain("overflow-y-auto");
   });
 
-  it("keeps generation settings behind one advanced entry", () => {
+  it("renders 8 design types directly on home with radiogroup and leaves other settings in dialog", () => {
     const html = renderToStaticMarkup(React.createElement(WelcomeDashboard));
-    expect(html).toContain('aria-label="生成类型"');
-    expect(html).toContain('aria-haspopup="dialog"');
-    expect(html).toContain('data-advanced-open="false"');
-    expect(html).not.toContain('role="radiogroup"');
-    expect(html).not.toContain('role="radio"');
+    expect(html).toContain('role="radiogroup"');
+    const radios = html.match(/role="radio"/g) ?? [];
+    expect(radios).toHaveLength(8);
   });
 
   it("AI_GEN_TYPES defines tailored dimensions, categories, and placeholders for AI generation", () => {
-    expect(AI_GEN_TYPES.length).toBe(6);
+    expect(AI_GEN_TYPES.length).toBe(8);
     expect(AI_GEN_TYPES.some((t) => t.id === "all")).toBe(false);
 
     const ids = AI_GEN_TYPES.map((t) => t.id);
-    expect(ids).toEqual(["landing", "mobile", "web", "slides", "dashboard", "other"]);
+    expect(ids).toEqual(["landing", "mobile", "web", "poster", "slides", "storyboard", "dashboard", "other"]);
 
     const mobile = AI_GEN_TYPES.find((t) => t.id === "mobile");
     expect(mobile.width).toBe(393);

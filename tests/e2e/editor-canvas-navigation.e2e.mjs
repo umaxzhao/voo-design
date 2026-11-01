@@ -126,12 +126,32 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.equal(await page.locator('[data-testid="editor-canvas-frame-label"]').count(), 1);
   assert.equal(await page.locator('[data-testid="editor-canvas-frame-icon"]').count(), 1);
   checks.push("only the outermost root frame shows a name label and frame icon");
-  await drag(await docPoint({ x: 140, y: 120 }), { x: 30, y: 20 });
+  // Direct dragging carries an explicitly selected Frame, so the independent
+  // child flow enters the child with a plain click first. That click must not
+  // add a history entry of its own.
+  const childPoint = await docPoint({ x: 140, y: 120 });
+  const beforeChildClickHistory = await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex());
+  await page.mouse.click(childPoint.x, childPoint.y);
+  await settled();
+  assert.deepEqual(await page.evaluate(() => window.__vooEditor.getSelectedIds()), ["frame-child"]);
+  assert.equal(await page.evaluate(() => window.__vooEditor.getCurrentHistoryIndex()), beforeChildClickHistory);
+  await drag(childPoint, { x: 30, y: 20 });
   assert.deepEqual(await page.evaluate(() => [window.__vooEditor.getNode("current-frame").x, window.__vooEditor.getNode("frame-child").x]), [80, 140]);
   assert.equal(await page.evaluate(() => window.__vooEditor.sampleColorAt({ x: 150, y: 130 })), "#ff0000");
   await tool("undo");
   assert.deepEqual(await page.evaluate(() => [window.__vooEditor.getNode("current-frame").x, window.__vooEditor.getNode("frame-child").x]), [80, 110]);
   checks.push("a child inside the current free-canvas Frame moves and repaints independently with one-step undo");
+
+  // The opposite direction: with the Frame selected, its own empty surface is
+  // the Frame's drag handle and moves the whole Frame (and its content) at once.
+  await page.evaluate(() => window.__vooEditor.selectExactly(["current-frame"]));
+  await settled();
+  const frameSurface = await docPoint({ x: 300, y: 240 });
+  await drag(frameSurface, { x: 30, y: 20 });
+  assert.deepEqual(await page.evaluate(() => [window.__vooEditor.getNode("current-frame").x, window.__vooEditor.getNode("frame-child").x]), [110, 140]);
+  await tool("undo");
+  assert.deepEqual(await page.evaluate(() => [window.__vooEditor.getNode("current-frame").x, window.__vooEditor.getNode("frame-child").x]), [80, 110]);
+  checks.push("dragging the selected Frame's empty surface moves the whole Frame with one-step undo");
 
   await page.evaluate(async () => {
     const e = window.__vooEditor;
@@ -178,10 +198,14 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.deepEqual(await camera(), beforeEdit);
   const stateBeforeWelcome = await page.evaluate(() => ({ nodes: window.__vooEditor.getDocument().nodes, selection: window.__vooEditor.getSelectedIds() }));
   await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(true));
-  const settings = page.getByRole("button", { name: "Generation type", exact: true });
-  await settings.focus(); await page.keyboard.press("Space");
-  await page.getByRole("dialog", { name: "Generation type", exact: true }).waitFor();
-  await page.keyboard.press("Escape");
+  const typeGroup = page.getByRole("radiogroup");
+  await typeGroup.waitFor();
+  const radios = typeGroup.getByRole("radio");
+  assert.equal(await radios.count(), 8, "Welcome home must have 8 generation type radio options");
+  const mobileRadio = radios.nth(1);
+  await mobileRadio.focus();
+  await page.keyboard.press("Space");
+  assert.equal(await mobileRadio.getAttribute("aria-checked"), "true", "Selected radio option must become checked");
   await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(false));
   await page.getByTestId("editor-toolbar").waitFor(); await settled();
   assert.deepEqual(await camera(), beforeEdit);

@@ -1,0 +1,110 @@
+/* Actual, separate targets: expanding icons with overlapping pseudo-elements
+   makes adjacent actions ambiguous and is unsuitable for compact toolbars. */
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  .app-title-bar {
+    min-height: 56px;
+  }
+
+  .app-title-brand-row > button,
+  .app-title-actions > button,
+  .app-title-mobile-more > button,
+  .canvas-tab-bar-mobile > button,
+  [data-page-switcher-trigger],
+  .voo-ai-fab,
+  [data-testid="editor-comments-toggle"],
+  [data-testid="editor-toolbar"] button:not(.editor-toolbar-menu-trigger),
+  [data-testid="editor-contextual-taskbar"] button,
+  [data-testid="editor-contextual-taskbar"] label,
+  [data-testid="editor-contextual-taskbar"] input[type="color"],
+  .editor-mobile-panel-toggle {
+    min-width: 48px !important;
+    min-height: 48px !important;
+  }
+
+  [data-testid="editor-panel-tabs"],
+  [data-testid="editor-layers-tabs"] {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  [data-testid="editor-panel-tabs"] > [aria-hidden="true"],
+  [data-testid="editor-layers-tabs"] > [aria-hidden="true"] {
+    display: none;
+  }
+
+  [data-testid="editor-panel-tabs"] [role="tab"],
+  [data-testid="editor-layers-tabs"] [role="tab"] {
+    flex: 1 0 48px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  [data-testid="editor-panel-tabs"] [aria-selected="true"],
+  [data-testid="editor-layers-tabs"] [aria-selected="true"] {
+    background: rgb(255 255 255 / 12%);
+  }
+
+  .welcome-prompt-root .prompt-composer button,
+  .welcome-prompt-controls-row button,
+  [data-testid="settings-drawer"] button,
+  [data-testid="settings-drawer"] input:not([type="checkbox"]):not([type="radio"]),
+  [data-testid="settings-drawer"] select {
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  /* Keep the switch's 28x16 track inside its full-size independent button. */
+  [data-testid="settings-drawer"] button[role="switch"] {
+    background: transparent;
+    align-items: center;
+  }
+
+  [data-testid="settings-drawer"] button[role="switch"]::before {
+    position: absolute;
+    top: 16px;
+    left: 10px;
+    width: 28px;
+    height: 16px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 15%);
+    content: "";
+  }
+
+  [data-testid="settings-drawer"] button[role="switch"][aria-checked="true"]::before {
+    background: rgb(255 255 255 / 80%);
+  }
+
+  [data-testid="settings-drawer"] button[role="switch"] > span {
+    position: absolute;
+    left: 10px;
+  }
+}
+
+/* Hidden actions cannot intercept the file body's first click. */
+.welcome-file-actions {
+  visibility: hidden;
+  pointer-events: none !important;
+}
+
+.welcome-file-actions button,
+.welcome-file-actions [data-welcome-file-menu] {
+  pointer-events: auto;
+}
+
+.group:hover .welcome-file-actions,
+.group:focus-within .welcome-file-actions {
+  visibility: visible;
+}
+
+@media (max-width: 768px), (hover: none) {
+  .welcome-file-actions {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .welcome-file-actions > button,
+  .welcome-file-actions > div > button {
+    min-width: 48px;
+    min-height: 48px;
+  }
+}
