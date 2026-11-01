@@ -4,6 +4,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { imageAudit } from "./image-audit-fixture.mjs";
+import { verifyExternalImageHistory, verifyNewExternalImage } from "./external-image-history-checks.mjs";
 const fixture = resolve("tests/fixtures/image-editor/generated-product.png");
 const directory = resolve(process.env.VOO_IMAGE_AUDIT_DIR ?? editorArtifactPath("voo-image-complete"));
 await mkdir(directory, {
@@ -245,5 +246,7 @@ await withEditorBrowser(async ({
       exactEditedPixels: true
     };
   });
+  await audit.record("cold-image-history-does-not-reingest-baseline", () => verifyExternalImageHistory(page, expected.id));
+  await audit.record("new-external-image-retains-history", () => verifyNewExternalImage(page, expected.id));
   audit.finish();
 });

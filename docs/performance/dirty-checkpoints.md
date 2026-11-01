@@ -164,3 +164,29 @@ real multiselection/MCP undo assertion remains unchanged.
 Publication receipts, deployed canonical bytes and actual production checks
 are recorded separately in private `dirty-checkpoints/`. Those receipts do not
 extend the above local coverage to signed Electron or physical devices.
+
+## Production follow-up: external image history
+
+The first bf96729 production run failed the full-history image redo assertion;
+an instrumented repeat reproduced it. Native pixels, zoom and selection had
+passed, but these runs remain incomplete. The saved source still contained an
+imported picture removed from the live engine. A later store tick treated it
+as a new external delivery, appended a new layer and truncated the redo branch.
+An actual cold portable-document reopen reproduced the same defect before the
+repair, without replacing the imported scene artificially.
+
+`documents.external-image-history` tracks image identities for one ready page
+activation. Initial and locally observed images, successful deliveries and
+concurrent already-present results cannot be re-ingested after deletion/undo.
+Pending deliveries retain their separate guard; failed/missing assets remain
+retryable and errors are still reported. New store-delivered images continue
+to appear exactly once. No independent UI/shortcut history path is introduced.
+
+Four new units cover baseline/local replacements, pending results, failure
+retry and independent page lifetimes. Actual cold image history checks retain
+50 entries, keyboard delete/undo/redo, node counts and exact source pixels;
+the same checks pass on a genuinely new store-delivered image. The initial
+full gate and performance measurements above remain fixed bf96729 evidence.
+The follow-up candidate requires another complete gate, new paired measurements
+and a fresh complete production receipt; neither failed production run is
+converted into a pass.
