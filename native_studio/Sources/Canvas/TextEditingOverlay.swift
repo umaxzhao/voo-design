@@ -47,6 +47,11 @@ public final class CanvasInlineTextView: NSTextView {
     public var onCommitRequested: (() -> Void)?
     /// Invoked when the user asks to cancel (Escape).
     public var onCancelRequested: (() -> Void)?
+    public var onTextChanged: (() -> Void)?
+    public override func didChangeText() {
+        super.didChangeText()
+        onTextChanged?()
+    }
 
     public override func keyDown(with event: NSEvent) {
         // Never hijack keys while an input method (Chinese/Japanese/Korean, etc.)
@@ -262,6 +267,7 @@ public final class TextEditingOverlay: NSView {
         editorTextView.onCancelRequested = { [weak self] in
             self?.endEditing(commit: false)
         }
+        editorTextView.onTextChanged = { [weak self] in self?.updateEditorFrame() }
 
         addSubview(editorTextView)
     }
@@ -406,7 +412,10 @@ public final class TextEditingOverlay: NSView {
         let zoom = stage.zoom
         let viewOrigin = stage.viewPoint(from: CGPoint(x: node.x, y: node.y))
 
-        let width = max(max(node.width, TextEditingOverlay.minimumEditorWidth) * zoom, 1.0)
+        let boxWidth = node.boxWidth ?? 0
+        let width = max(
+            (boxWidth > 0 ? boxWidth : max(node.width, TextEditingOverlay.minimumEditorWidth))
+                * zoom, 1.0)
         let nodeHeight = max(node.height * zoom, 1.0)
         let fontLineHeight = max(node.fontSize ?? 16.0, 1.0) * 1.4 * zoom
         let height = max(nodeHeight, fontLineHeight)
@@ -427,8 +436,11 @@ public final class TextEditingOverlay: NSView {
     }
 
     private func updateEditorFrame() {
-        guard let stage = attachedStage, let node = editingNode else { return }
-
+        guard let stage = attachedStage, var node = editingNode else { return }
+        if editorTextView.string != (node.text ?? "") {
+            node.text = editorTextView.string
+            NativeTextBoxLayout.resizeToContent(&node)
+        }
         let stageRect = Self.editorFrame(for: node, in: stage)
         editorFrameInStage = stageRect
 

@@ -44,8 +44,17 @@ enum NativePaintRenderer {
     }
 
     static func text(_ node: VOONode, rect: CGRect, opacity: CGFloat, context: CGContext) {
-        let text = node.text ?? node.name
+        var text = node.text ?? node.name
         guard !text.isEmpty else { return }
+        var rect = rect
+        var textNode = node
+        if (node.boxWidth ?? 0) > 0 {
+            let layout = NativeTextBoxLayout.layout(node)
+            text = layout.text
+            rect.size.width = layout.size.width
+            // Lines are already wrapped; clipping prevents a second independent layout.
+            textNode.boxWidth = 0
+        }
         let size = node.fontSize ?? 16
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: true)
@@ -61,7 +70,7 @@ enum NativePaintRenderer {
             context.setAlpha(opacity * paint.opacity)
             context.setBlendMode(CanvasStageView.cgBlendMode(for: paint.blendMode))
             var attributes = TextStyleResolver.resolvedAttributes(
-                for: node, color: color, size: size)
+                for: textNode, color: color, size: size)
             attributes[.strokeColor] = color
             attributes[.strokeWidth] = width / max(size, 1) * 100
             NSAttributedString(string: text, attributes: attributes).draw(
@@ -76,7 +85,7 @@ enum NativePaintRenderer {
             context.setAlpha(opacity * paint.opacity)
             context.setBlendMode(CanvasStageView.cgBlendMode(for: paint.blendMode))
             let attributes = TextStyleResolver.resolvedAttributes(
-                for: node, color: color, size: size)
+                for: textNode, color: color, size: size)
             NSAttributedString(string: text, attributes: attributes).draw(
                 with: rect, options: [.usesLineFragmentOrigin])
             context.restoreGState()

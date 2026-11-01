@@ -1570,8 +1570,8 @@ public final class StudioBottomZoomBar: NSView {
         configureButton(
             visibilityButton,
             identifier: EditorChromeAccessibility.zoomBarVisibility,
-            label: "Toggle visibility",
-            help: "Show or hide canvas overlays"
+            label: NativeCopy.text(.guidesToggle),
+            help: NativeCopy.text(.guidesToggle)
         )
         configureButton(
             zoomInButton,

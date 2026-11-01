@@ -25,6 +25,9 @@ IslandAnchorTests.registerTests()
     NativeInspectorVisualTests.registerTests()
     NativeTitleBarDetailTests.registerTests()
     NativeToolMenuParityTests.registerTests()
+    NativeToolRailResponsiveTests.registerTests()
+    NativeViewAidParityTests.registerTests()
+    NativeTextWidthTests.registerTests()
 #endif
 // AIAgentTests.registerTests()
 

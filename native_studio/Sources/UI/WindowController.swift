@@ -19,6 +19,9 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     public weak var delegate: StudioDelegate?
     public var commandManager = CommandManager()
     var savedDocumentSnapshot: VOODocument?
+    var nativeTextBoxEditing = false
+    var nativeTextBoxEditCommand: NativeTextBoxWidthCommand?
+    var nativeTextBoxPreviousRedo: [StudioCommand]?
     var nativePaintEditIds: Set<String>?
     var nativePaintEditCommand: NativePaintCommand?
     var nativePaintPreviousRedo: [StudioCommand]?
@@ -352,27 +355,12 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         view.bottomZoomBar.onZoomFit = { [weak self] in
             self?.mainContentView.canvasStageView.zoomFit()
         }
-        view.bottomZoomBar.onClearGuides = { [weak self] in
-            guard let self = self else { return }
-            self.mainContentView.canvasStageView.document.guides?.removeAll()
-            self.mainContentView.canvasStageView.needsDisplay = true
-            self.showChromeToast("参考线已清除")
-        }
-        // Web `editor_zoom.jsx`: "Rulers and guides live inside this one bar", so the
-        // middle control toggles rulers; snapping moved behind the "..." menu.
+        view.bottomZoomBar.onClearGuides = { [weak self] in self?.clearGuidesAction(nil) }
         view.bottomZoomBar.onVisibilityToggle = { [weak self] enabled in
-            guard let self = self else { return }
-            self.mainContentView.canvasStageView.showRulers = enabled
-            UserDefaults.standard.set(enabled, forKey: SettingsDrawerView.showRulersDefaultsKey)
-            self.mainContentView.bottomZoomBar.setRulersEnabled(enabled)
-            self.mainContentView.updateIslandBarPosition()
+            self?.setGuidesVisible(enabled)
         }
         view.bottomZoomBar.onToggleRulers = { [weak self] enabled in
-            guard let self = self else { return }
-            self.mainContentView.canvasStageView.showRulers = enabled
-            UserDefaults.standard.set(enabled, forKey: SettingsDrawerView.showRulersDefaultsKey)
-            self.mainContentView.bottomZoomBar.setVisibilityEnabled(enabled)
-            self.mainContentView.updateIslandBarPosition()
+            self?.setRulersVisible(enabled)
         }
         view.bottomZoomBar.onSnapToggle = { [weak self] enabled in
             self?.mainContentView.canvasStageView.isSnappingEnabled = enabled
@@ -619,9 +607,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         // and stays in sync with ⇧R / the zoom bar (web parity).
         view.settingsDrawer.onToggleRulers = { [weak self] show in
             guard let self = self else { return }
-            self.mainContentView.canvasStageView.showRulers = show
-            self.mainContentView.canvasStageView.needsDisplay = true
-            self.mainContentView.updateIslandBarPosition()
+            self.setRulersVisible(show)
         }
         view.settingsDrawer.onToggleLightInterface = { [weak self] isLight in
             guard let self = self else { return }
@@ -641,6 +627,8 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             forKey: SettingsDrawerView.showRulersDefaultsKey
         )
 
+        view.canvasStageView.showGuides = NativeViewAidPreferences.guidesVisible
+        view.bottomZoomBar.setVisibilityEnabled(view.canvasStageView.showGuides)
         setupKeyMonitoring()
     }
 
@@ -727,6 +715,8 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                 return false
             }
         }
+
+        if handleViewAidShortcut(event) { return true }
 
         // Command shortcuts (web / Figma parity): ⌘\ and ⌘J for Agent panel, ⌘] / ⌘[ for front / back
         if event.modifierFlags.contains(.command) && !event.modifierFlags.contains(.shift) && !event.modifierFlags.contains(.option) {
@@ -998,58 +988,29 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     public func inspectorDidChangeTextFormatting(id: String, fontWeight: String, textAlign: String,
                                                  lineHeight: CGFloat, letterSpacing: CGFloat) {
-        guard let node = mainContentView.canvasStageView.document.nodes.first(where: { $0.id == id }) else { return }
-        let oldWeight = node.fontWeight
-        let oldAlign = node.textAlign
-        let oldLineHeight = node.lineHeight
-        let oldSpacing = node.letterSpacing
-        guard oldWeight != fontWeight || oldAlign != textAlign ||
-              oldLineHeight != lineHeight || oldSpacing != letterSpacing else { return }
-        let cmd = BasicCommand(
-            name: "修改文本格式",
-            execute: { doc in
-                guard let i = doc.nodes.firstIndex(where: { $0.id == id }) else { return false }
-                doc.nodes[i].fontWeight = fontWeight
-                doc.nodes[i].textAlign = textAlign
-                doc.nodes[i].lineHeight = lineHeight
-                doc.nodes[i].letterSpacing = letterSpacing
-                return true
-            },
-            undo: { doc in
-                guard let i = doc.nodes.firstIndex(where: { $0.id == id }) else { return false }
-                doc.nodes[i].fontWeight = oldWeight
-                doc.nodes[i].textAlign = oldAlign
-                doc.nodes[i].lineHeight = oldLineHeight
-                doc.nodes[i].letterSpacing = oldSpacing
-                return true
-            }
-        )
-        _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
-        refreshAfterDocumentMutation()
+        let stage = mainContentView.canvasStageView
+        guard let old = stage.document.nodes.first(where: { $0.id == id }) else { return }
+        var next = old
+        next.fontWeight = fontWeight
+        next.textAlign = textAlign
+        next.lineHeight = lineHeight
+        next.letterSpacing = letterSpacing
+        NativeTextBoxLayout.resizeToContent(&next)
+        let command = NativeTextBoxWidthCommand(oldNode: old, newNode: next)
+        guard !command.isNoOp else { return }
+        if commandManager.execute(command, on: &stage.document) { refreshAfterDocumentMutation() }
     }
 
     public func inspectorDidChangeTextTypography(id: String, fontFamily: String, fontSize: CGFloat) {
-        guard let node = mainContentView.canvasStageView.document.nodes.first(where: { $0.id == id }) else { return }
-        let oldFamily = node.fontFamily
-        let oldSize = node.fontSize
-        guard oldFamily != fontFamily || oldSize != fontSize else { return }
-        let cmd = BasicCommand(
-            name: "修改字体",
-            execute: { doc in
-                guard let i = doc.nodes.firstIndex(where: { $0.id == id }) else { return false }
-                doc.nodes[i].fontFamily = fontFamily
-                doc.nodes[i].fontSize = fontSize
-                return true
-            },
-            undo: { doc in
-                guard let i = doc.nodes.firstIndex(where: { $0.id == id }) else { return false }
-                doc.nodes[i].fontFamily = oldFamily
-                doc.nodes[i].fontSize = oldSize
-                return true
-            }
-        )
-        _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
-        refreshAfterDocumentMutation()
+        let stage = mainContentView.canvasStageView
+        guard let old = stage.document.nodes.first(where: { $0.id == id }) else { return }
+        var next = old
+        next.fontFamily = fontFamily
+        next.fontSize = fontSize
+        NativeTextBoxLayout.resizeToContent(&next)
+        let command = NativeTextBoxWidthCommand(oldNode: old, newNode: next)
+        guard !command.isNoOp else { return }
+        if commandManager.execute(command, on: &stage.document) { refreshAfterDocumentMutation() }
     }
 
     public func inspectorDidToggleVisibility(id: String, visible: Bool) {
@@ -2068,13 +2029,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     }
 
     public func toggleRulersAction(_ sender: Any?) {
-        mainContentView.canvasStageView.showRulers.toggle()
-        // Persist + let the Settings drawer stay in sync (web `voo.editor.showRulers`).
-        UserDefaults.standard.set(
-            mainContentView.canvasStageView.showRulers,
-            forKey: SettingsDrawerView.showRulersDefaultsKey
-        )
-        mainContentView.updateIslandBarPosition()
+        setRulersVisible(!mainContentView.canvasStageView.showRulers)
     }
 
     func refreshAfterDocumentMutation() {
@@ -2961,24 +2916,15 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     }
 
     private func commitTextEditing(_ text: String) {
-        guard let node = textEditingOverlay.editingNode else { return }
-        let newText = text
-        let cmd = BasicCommand(
-            name: "编辑文本",
-            execute: { doc in
-                guard let i = doc.nodes.firstIndex(where: { $0.id == node.id }) else { return false }
-                doc.nodes[i].text = newText
-                doc.nodes[i].name = newText.isEmpty ? "Text" : String(newText.prefix(24))
-                return true
-            },
-            undo: { doc in
-                guard let i = doc.nodes.firstIndex(where: { $0.id == node.id }) else { return false }
-                doc.nodes[i].text = node.text
-                doc.nodes[i].name = node.name
-                return true
-            }
-        )
-        _ = commandManager.execute(cmd, on: &mainContentView.canvasStageView.document)
+        guard let old = textEditingOverlay.editingNode else { return }
+        var next = old
+        next.text = text
+        next.name = text.isEmpty ? NativeCopy.text(.textKind) : String(text.prefix(24))
+        NativeTextBoxLayout.resizeToContent(&next)
+        let command = NativeTextBoxWidthCommand(oldNode: old, newNode: next)
+        if !command.isNoOp {
+            _ = commandManager.execute(command, on: &mainContentView.canvasStageView.document)
+        }
         textEditingOverlay.isHidden = true
         refreshAfterDocumentMutation()
     }
@@ -3594,7 +3540,8 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             canRedo: commandManager.canRedo
         )
         mainContentView.bottomZoomBar.setRulersEnabled(mainContentView.canvasStageView.showRulers)
-        mainContentView.bottomZoomBar.setVisibilityEnabled(mainContentView.canvasStageView.showRulers)
+        mainContentView.bottomZoomBar.setVisibilityEnabled(
+            mainContentView.canvasStageView.showGuides)
         mainContentView.bottomZoomBar.setGridEnabled(mainContentView.canvasStageView.showGrid)
         mainContentView.bottomZoomBar.setSnapToGridEnabled(mainContentView.canvasStageView.isSnappingEnabled)
         let hasSelection = !mainContentView.canvasStageView.selectedNodeIds.isEmpty
@@ -3735,6 +3682,7 @@ public class MainContentView: NSView {
     public var sessionHasSelection: Bool = false
     private var editorTrailingToRoot: NSLayoutConstraint!
     private var editorTrailingToPanel: NSLayoutConstraint!
+    private var toolRailPlacement: NativeToolRailPlacement?
 
     public var isWelcomeOpen: Bool = true {
         didSet {
@@ -3777,6 +3725,11 @@ public class MainContentView: NSView {
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupHierarchy()
+    }
+
+    public override func layout() {
+        super.layout()
+        toolRailPlacement?.update()
     }
 
     private func setupHierarchy() {
@@ -3921,8 +3874,6 @@ public class MainContentView: NSView {
 
             // ToolRail: Floating centered pill at top of editorShell (web `top-[14px]`,
             // Twelve 44pt tools, 4pt gaps, 6pt padding and the 1pt border).
-            toolRail.topAnchor.constraint(equalTo: editorShell.topAnchor, constant: 16),
-            toolRail.centerXAnchor.constraint(equalTo: editorShell.centerXAnchor),
             toolRail.widthAnchor.constraint(lessThanOrEqualToConstant: ToolRailView.preferredWidth),
             toolRail.widthAnchor.constraint(
                 lessThanOrEqualTo: editorShell.widthAnchor, constant: -16),
@@ -3946,6 +3897,7 @@ public class MainContentView: NSView {
             equalToConstant: ToolRailView.preferredWidth)
         preferredRailWidth.priority = .defaultHigh
         preferredRailWidth.isActive = true
+        toolRailPlacement = NativeToolRailPlacement(rail: toolRail, shell: editorShell)
         updatePresentation()
     }
 

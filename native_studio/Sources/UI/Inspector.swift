@@ -23,6 +23,7 @@ public protocol InspectorDelegate: AnyObject {
     func inspectorDidChangeNodeStrokeStyle(id: String, strokeCap: String?, strokeJoin: String?, strokeMiterLimit: CGFloat?, strokeDash: [CGFloat]?, strokeAlign: String?)
     func inspectorDidChangeTextTypography(id: String, fontFamily: String, fontSize: CGFloat)
     func inspectorDidChangeTextFormatting(id: String, fontWeight: String, textAlign: String, lineHeight: CGFloat, letterSpacing: CGFloat)
+    func inspectorTextBoxInteractionChanged(active: Bool)
     func inspectorDidChangeTextDecoration(id: String, italic: Bool?, underline: Bool?, boxWidth: CGFloat?)
     func inspectorDidChangeEffects(id: String, effects: LayerEffects)
     func inspectorDidMutatePaint(id: String, mutation: NativePaintMutation)
@@ -45,6 +46,7 @@ public extension InspectorDelegate {
     func inspectorDidChangeNodeStrokeStyle(id: String, strokeCap: String?, strokeJoin: String?, strokeMiterLimit: CGFloat?, strokeDash: [CGFloat]?, strokeAlign: String?) {}
     func inspectorDidChangeTextTypography(id: String, fontFamily: String, fontSize: CGFloat) {}
     func inspectorDidChangeTextFormatting(id: String, fontWeight: String, textAlign: String, lineHeight: CGFloat, letterSpacing: CGFloat) {}
+    func inspectorTextBoxInteractionChanged(active: Bool) {}
     func inspectorDidChangeTextDecoration(id: String, italic: Bool?, underline: Bool?, boxWidth: CGFloat?) {}
     func inspectorDidChangeEffects(id: String, effects: LayerEffects) {}
     func inspectorDidMutatePaint(id: String, mutation: NativePaintMutation) {}
@@ -468,6 +470,12 @@ public class InspectorView: NSView {
         propertiesPanel.onStrokeDashChange = { [weak self] dash in self?.forwardPropertiesStrokeStyle(strokeDash: dash) }
         propertiesPanel.onStrokeAlignChange = { [weak self] align in self?.forwardPropertiesStrokeStyle(strokeAlign: align) }
 
+        propertiesPanel.onBoxWidthChange = { [weak self] _ in
+            self?.forwardPropertiesTextDecoration()
+        }
+        propertiesPanel.onBoxWidthInteraction = { [weak self] in
+            self?.delegate?.inspectorTextBoxInteractionChanged(active: $0)
+        }
         propertiesPanel.onItalicChange = { [weak self] it in self?.forwardPropertiesTextDecoration(italic: it) }
         propertiesPanel.onUnderlineChange = { [weak self] un in self?.forwardPropertiesTextDecoration(underline: un) }
 

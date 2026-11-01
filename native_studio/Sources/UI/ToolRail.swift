@@ -730,6 +730,9 @@ public final class ToolRailView: NSView {
 
     public let state: ToolRailState
     let familyMenuHover = NativeToolMenuHover()
+    private let overflowViewport = NSView()
+    private(set) var toolScrollOffset: CGFloat = 0
+    private var lastLayoutWidth: CGFloat = 0
     public weak var delegate: StudioDelegate?
 
     public private(set) var toolButtons: [StudioToolType: ToolButton] = [:]
@@ -862,14 +865,23 @@ public final class ToolRailView: NSView {
 
     public override func layout() {
         super.layout()
-        let scale = min(1, bounds.width / ToolRailView.preferredWidth)
-        let count = CGFloat(ToolRailView.orderedEntries.count)
-        let toolRow =
-            count * ToolRailView.buttonSize * scale + (count - 1) * ToolRailView.itemGap * scale
-        let contentWidth = toolRow
-        var x = max(ToolRailView.horizontalPadding * scale, (bounds.width - contentWidth) / 2.0)
-        let y = (bounds.height - ToolRailView.buttonSize * scale) / 2.0
-
+        let overflowing = bounds.width < ToolRailView.preferredWidth
+        if lastLayoutWidth > 0 && lastLayoutWidth != bounds.width {
+            familyMenuHover.cancel()
+            ToolFlyoutPopover.shared.close()
+        }
+        lastLayoutWidth = bounds.width
+        if overflowing {
+            if overflowViewport.superview == nil { addSubview(overflowViewport) }
+            overflowViewport.wantsLayer = true
+            overflowViewport.layer?.masksToBounds = true
+            overflowViewport.layer?.cornerRadius = max(0, (bounds.height - 2) / 2)
+            overflowViewport.frame = bounds.insetBy(dx: 1, dy: 1)
+        }
+        let parent: NSView = overflowing ? overflowViewport : self
+        let border: CGFloat = overflowing ? 1 : 0
+        var x = ToolRailView.horizontalPadding - border
+        let y = (bounds.height - ToolRailView.buttonSize) / 2 - border
         for entry in ToolRailView.orderedEntries {
             let view: NSView
             switch entry {
@@ -880,11 +892,37 @@ public final class ToolRailView: NSView {
                 guard let button = accessoryButtons[accessory] else { continue }
                 view = button
             }
-            view.frame = NSRect(
-                x: ceil(x), y: y, width: ToolRailView.buttonSize * scale,
-                height: ToolRailView.buttonSize * scale)
-            x += (ToolRailView.buttonSize + ToolRailView.itemGap) * scale
+            if view.superview !== parent { parent.addSubview(view) }
+            // The Web row scrolls horizontally; it never scales its tool targets.
+            view.frame = CGRect(
+                x: x, y: y,
+                width: ToolRailView.buttonSize, height: ToolRailView.buttonSize)
+            x += ToolRailView.buttonSize + ToolRailView.itemGap
         }
+        toolScrollOffset = min(toolScrollOffset, max(0, ToolRailView.preferredWidth - bounds.width))
+        if overflowing {
+            overflowViewport.setBoundsOrigin(CGPoint(x: toolScrollOffset, y: 0))
+        } else {
+            toolScrollOffset = 0
+            overflowViewport.removeFromSuperview()
+        }
+    }
+
+    public override func scrollWheel(with event: NSEvent) {
+        guard bounds.width < ToolRailView.preferredWidth else {
+            super.scrollWheel(with: event)
+            return
+        }
+        let delta = event.scrollingDeltaX == 0 ? event.scrollingDeltaY : event.scrollingDeltaX
+        scrollTools(by: -delta * (event.hasPreciseScrollingDeltas ? 1 : 10))
+    }
+
+    func scrollTools(by delta: CGFloat) {
+        let limit = max(0, ToolRailView.preferredWidth - bounds.width)
+        toolScrollOffset = max(0, min(limit, toolScrollOffset + delta))
+        overflowViewport.setBoundsOrigin(CGPoint(x: toolScrollOffset, y: 0))
+        familyMenuHover.cancel()
+        ToolFlyoutPopover.shared.close()
     }
 
     @objc private func toolButtonClicked(_ sender: ToolButton) {
