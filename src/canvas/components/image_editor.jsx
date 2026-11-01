@@ -2289,7 +2289,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
                 void selectSubject();
               },
               onInvertSelection: () => {
-                if (selected?.id) void engine?.invertMask?.(selected.id);
+                void engine?.invertPixelSelection?.();
               },
               onClearSelection: () => {
                 engine?.clearPixelSelection?.();
