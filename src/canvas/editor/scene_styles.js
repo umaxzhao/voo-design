@@ -46,6 +46,8 @@
  * pick up the persisted style values.
  */
 
+import { TEXT_LINE_HEIGHT_BOUNDS } from "./scene_model_core.js";
+
 const STYLE_TYPES = Object.freeze(["paint", "text", "effect"]);
 
 /** Style type -> `node.styleIds` key. */
@@ -203,9 +205,7 @@ function normalizeStyleValue(type, rawValue) {
     const letterSpacing = finiteNumber(rawValue.letterSpacing);
     if (letterSpacing !== null) value.letterSpacing = clamp(letterSpacing, -10, 40);
     const lineHeight = finiteNumber(rawValue.lineHeight);
-    if (lineHeight !== null && lineHeight > 0) {
-      value.lineHeight = clamp(lineHeight, 0.8, 3);
-    }
+    if (lineHeight !== null && lineHeight > 0) value.lineHeight = clamp(lineHeight, TEXT_LINE_HEIGHT_BOUNDS.min, TEXT_LINE_HEIGHT_BOUNDS.max);
     const baselineShift = finiteNumber(rawValue.baselineShift);
     if (baselineShift !== null) {
       value.baselineShift = clamp(baselineShift, -100, 100);

@@ -3,9 +3,11 @@ import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { verifyAutoLayoutSharing } from "./auto-layout-sharing-checks.mjs";
 import { verifyEffectResourceGenerations } from "./effect-resource-generation-checks.mjs";
 import { verifyDocumentDirtyState } from "./document-dirty-state-checks.mjs";
+import { verifyCustomBlendViewport } from "./custom-blend-viewport-checks.mjs";
 
 await withEditorBrowser(async ({ page, tool }) => {
   const checks = [];
+  checks.push(await verifyCustomBlendViewport(page));
   checks.push(await verifyDocumentDirtyState(page, tool));
   checks.push(await verifyAutoLayoutSharing(page, tool));
   checks.push(await verifyEffectResourceGenerations(page));

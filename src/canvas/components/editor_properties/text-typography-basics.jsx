@@ -73,7 +73,7 @@ export default function TypographyBasics({
             label={t("editor.props.lineHeight")}
             icon={MoveVertical}
             unit="%"
-            step={5}
+            step={1}
             min={Math.round(TEXT_LINE_HEIGHT_BOUNDS.min * 100)}
             max={Math.round(TEXT_LINE_HEIGHT_BOUNDS.max * 100)}
             mixed={mixed("lineHeight")}

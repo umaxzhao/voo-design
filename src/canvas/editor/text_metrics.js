@@ -15,6 +15,7 @@
 import { LINE_HEIGHT_RATIO } from "./scene_model_core.js";
 import { textLines } from "./scene_model_groups.js";
 import { TextLayoutCache } from "./text_layout_cache.js";
+import { importedTextCache } from "./imported-text-cache.js";
 
 /** The canvas font string for a text node: style and weight precede size. */
 export function textFont(node) {
@@ -302,6 +303,8 @@ function splitParagraph(paragraph, fragmented) {
  * must match what drawTextNode paints.
  */
 export function measureText(ctx, node) {
+  const cache = importedTextCache(node);
+  if (cache) return { width: node.width, height: node.height };
   ctx.save();
   ctx.font = textFont(node);
   const letterSpacing = node.letterSpacing ?? 0;

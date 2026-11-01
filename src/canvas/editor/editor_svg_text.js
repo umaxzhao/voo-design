@@ -6,6 +6,7 @@ import { textLines } from "./scene_model.js";
 import { layoutTextLines, textLineHeight } from "./text_metrics.js";
 import { escapeXml, number, svgNodeTransform } from "./editor_svg_xml.js";
 import { textOnPathToSvg } from "./text_on_path.js";
+import { importedTextCache } from "./imported-text-cache.js";
 
 /** The lines a text node exports: wrap when a metric source is available. */
 function svgTextLines(node, measureCtx) {
@@ -26,7 +27,9 @@ function textTransformAttr(node) {
 export function textElement(node, measureCtx, idOf = () => null) {
   // A CSS url(data:image/svg+xml,...) is not an SVG paint server. Resolve
   // fill and stroke through the same local definitions used by vector shapes.
-  const fill = idOf(node.fill, node) ?? node.fill ?? "#000000";
+  const cache = importedTextCache(node);
+  const paintBox = cache ? { ...node, x: 0, y: 0, width: cache.width, height: cache.height } : node;
+  const fill = idOf(node.fill, paintBox) ?? node.fill ?? "#000000";
   const stroke = idOf(node.stroke) ?? node.stroke;
   if (node.textPath) {
     const svg = textOnPathToSvg({ ...node, fill, stroke }, measureCtx);
@@ -52,6 +55,13 @@ export function textElement(node, measureCtx, idOf = () => null) {
   const filterPart = shadow
     ? ` style="filter:drop-shadow(${number(shadow.offsetX ?? 0)}px ${number(shadow.offsetY ?? 0)}px ${number(shadow.blur ?? 0)}px ${escapeXml(shadow.color ?? "#000000")})"`
     : "";
+  if (cache) {
+    const placement = `translate(${number(node.x)} ${number(node.y)}) scale(${node.width / cache.width} ${node.height / cache.height})`;
+    const opacity = node.opacity != null && node.opacity < 1 ? ` opacity="${number(node.opacity)}"` : "";
+    const fillOpacity = node.fillOpacity != null ? ` fill-opacity="${number(node.fillOpacity)}"` : "";
+    const strokeOpacity = node.strokeOpacity != null ? ` stroke-opacity="${number(node.strokeOpacity)}"` : "";
+    return `<g${textTransformAttr(node)}><path d="${escapeXml(cache.path)}" transform="${placement}" fill="${escapeXml(fill)}"${opacity}${fillOpacity}${strokeOpacity}${strokeParts}${filterPart}><title>${escapeXml(node.text)}</title></path></g>`;
+  }
   const styleParts = [
     spacing ? ` letter-spacing="${number(spacing)}"` : "",
     node.italic ? ' font-style="italic"' : "",
