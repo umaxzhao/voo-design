@@ -34,11 +34,14 @@ jobs:
           VITEST_MIN_FORKS: '1'
           VOO_RELEASE_BROWSER_CONCURRENCY: '2'
           VOO_RELEASE_REPORT: ${{ runner.temp }}/desktop-web-release.json
+          VOO_BROWSER_EVIDENCE_DIR: ${{ runner.temp }}/desktop-browser-evidence
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: web-gate-evidence
-          path: ${{ runner.temp }}/desktop-web-release.json
+          path: |
+            ${{ runner.temp }}/desktop-web-release.json
+            ${{ runner.temp }}/desktop-browser-evidence/**
           if-no-files-found: error
   build:
     timeout-minutes: 45

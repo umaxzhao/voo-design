@@ -1,3 +1,4 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { CLI_BRIDGE_CHANNEL as C } from "../../src/shared/cli_bridge_protocol.js";
@@ -82,6 +83,6 @@ await withEditorBrowser(async ({ page, bridge }) => {
     return (await window.__localDiscovery.refresh()).available;
   });
   assert.equal(recoveredLegacy, true, "Released bridge remains usable without the new health identity");
-  await page.screenshot({ path: "/private/tmp/voo-local-service.png" });
+  await page.screenshot({ path: editorArtifactPath("voo-local-service.png") });
   console.log("Local service: absent, discovered, installed-only, disconnected, recovered; no prompt generation");
 }, { openDocument: false, mcpLink: false });

@@ -255,6 +255,7 @@ export const EDITOR_MODULES = [
       "scripts/generate-third-party-notices.mjs", "scripts/bundled-third-party-notices.mjs",
       "scripts/license-texts/*", "scripts/verify-package.mjs", "NOTICE",
       "tests/e2e/agent-cancel-harness.jsx", "tests/e2e/editor-browser-server.mjs", "tests/e2e/editor-browser-fixture.mjs",
+      "tests/e2e/editor-test-artifacts.mjs", "tests/unit/editor-test-artifacts.test.js",
       "tests/unit/third_party_notices.test.js", "tests/unit/package_contents.test.js",
       "src/canvas/components/collab_avatars.jsx",
       "src/canvas/agent/*", "src/canvas/mcp/*", "src/canvas/collab/*", "src/canvas/comments/*",

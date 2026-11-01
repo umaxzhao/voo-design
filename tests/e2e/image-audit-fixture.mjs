@@ -1,9 +1,10 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 
 /** Isolated image fixtures use real pixels and the production editor, never user files. */
 export function imageAudit(page, name) {
-  const directory = process.env.VOO_IMAGE_AUDIT_DIR ?? "/private/tmp/voo-image-complete";
+  const directory = process.env.VOO_IMAGE_AUDIT_DIR ?? editorArtifactPath("voo-image-complete");
   const results = [];
   const record = async (id, run) => {
     const started = Date.now();

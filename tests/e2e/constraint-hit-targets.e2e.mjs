@@ -1,3 +1,4 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { seedResponsiveDocument } from "./ui-responsive-editor-helpers.mjs";
@@ -31,6 +32,6 @@ await withEditorBrowser(async ({ page, tool }) => {
   await horizontal.focus();
   await horizontal.press("Enter");
   assert.equal(await page.evaluate(() => window.__vooEditor.getNode("responsive-target").constraints.horizontal), "center");
-  await page.screenshot({ path: "/private/tmp/voo-constraint-targets.png" });
+  await page.screenshot({ path: editorArtifactPath("voo-constraint-targets.png") });
   console.log("Constraint pins: six real midpoint hits, independent axes, one-step undo and keyboard passed.");
 });

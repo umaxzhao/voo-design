@@ -1,3 +1,4 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
@@ -46,7 +47,7 @@ await withEditorBrowser(async ({ page, errors }) => {
     background: "rgb(178, 255, 214)",
     icon: "rgb(0, 0, 0)",
   });
-  await page.screenshot({ path: "/private/tmp/voo-browser-split.png" });
+  await page.screenshot({ path: editorArtifactPath("voo-browser-split.png") });
   await page.setViewportSize({ width: 390, height: 800 });
   const mobileEditorBounds = await editor.boundingBox();
   const mobileBrowserBounds = await drawer.boundingBox();
@@ -58,7 +59,7 @@ await withEditorBrowser(async ({ page, errors }) => {
   assert.ok(mobileBrowserBounds.x + mobileBrowserBounds.width <= 390);
   await page.getByRole("button", { name: /Browser tools|浏览器工具/i }).click();
   await page.getByRole("menuitem", { name: /Open in default browser|在默认浏览器中打开/i }).waitFor();
-  await page.screenshot({ path: "/private/tmp/voo-browser-split-mobile.png" });
+  await page.screenshot({ path: editorArtifactPath("voo-browser-split-mobile.png") });
   await page.keyboard.press("Escape");
   await drawer.waitFor({ state: "detached" });
   assert.equal(await trigger.getAttribute("aria-pressed"), "false");

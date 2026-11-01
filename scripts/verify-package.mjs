@@ -4,6 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export const normalizeArchiveEntry = entry => entry.replaceAll('\\', '/').replace(/^\/+/, '');
+export const archiveEntryPath = (entry, nativePath = path) => nativePath.join(...normalizeArchiveEntry(entry).split('/'));
 
 function verifyRuntimeDependencies(archive, files) {
   const queue = ['package.json'];
@@ -12,7 +13,7 @@ function verifyRuntimeDependencies(archive, files) {
     const manifestPath = queue.pop();
     if (visited.has(manifestPath)) continue;
     visited.add(manifestPath);
-    const manifest = JSON.parse(extractFile(archive, manifestPath).toString());
+    const manifest = JSON.parse(extractFile(archive, archiveEntryPath(manifestPath)).toString());
     for (const name of Object.keys(manifest.dependencies || {})) {
       if (manifest.optionalDependencies?.[name]) continue;
       const segments = path.posix.dirname(manifestPath).split('/').filter(segment => segment !== '.');
@@ -44,7 +45,7 @@ export function verifyPackage(appDir) {
   for (const file of required) {
     if (!files.has(file)) throw new Error(`Missing runtime asset: ${file}`);
   }
-  const notices = JSON.parse(extractFile(archive, 'dist/THIRD_PARTY_NOTICES.json').toString());
+  const notices = JSON.parse(extractFile(archive, archiveEntryPath('dist/THIRD_PARTY_NOTICES.json')).toString());
   for (const [name, license, marker] of [
     ['openpencil-figma-schema', 'MIT', 'Copyright (c) 2026 Danila Poyarkov'],
     ['opendesign-layout-guidance', 'Apache-2.0', 'END OF TERMS AND CONDITIONS'],

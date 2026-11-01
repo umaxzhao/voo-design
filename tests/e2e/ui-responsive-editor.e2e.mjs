@@ -1,3 +1,4 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { assertPanelLayout, assertReachable, boxOf, camera, openBothPanels, seedResponsiveDocument, settled, settlePanels, touch } from "./ui-responsive-editor-helpers.mjs";
@@ -37,7 +38,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     await page.setViewportSize({ width, height }); await settlePanels(page);
     await openBothPanels(page, false); await assertPanelLayout(page);
     await assertReachable(page.getByTestId("editor-contextual-taskbar"), `mouse quickbar ${width}`);
-    await page.screenshot({ path: `/private/tmp/voo-ui-responsive-mouse-${width}-verified.png` });
+    await page.screenshot({ path: editorArtifactPath(`voo-ui-responsive-mouse-${width}-verified.png`) });
     checks.push(`${width}px fine-pointer viewport uses separate responsive panels instead of overlapping desktop inspectors`);
   }
 });
@@ -86,10 +87,10 @@ await withEditorBrowser(async ({ page, tool }) => {
       await settled(page);
       const after = await boxOf(quickbar);
       assert.ok(Math.abs(after.x - before.x) < 1 && Math.abs(after.y - before.y) < 1, JSON.stringify({ before, after }));
-      await page.screenshot({ path: `/private/tmp/voo-ui-responsive-${width}-verified.png` });
+      await page.screenshot({ path: editorArtifactPath(`voo-ui-responsive-${width}-verified.png`) });
     } else {
       await assertPanelLayout(page);
-      await page.screenshot({ path: "/private/tmp/voo-ui-responsive-landscape-verified.png" });
+      await page.screenshot({ path: editorArtifactPath("voo-ui-responsive-landscape-verified.png") });
     }
     const bottom = page.getByTestId("editor-bottom-toolbar");
     for (const control of await bottom.locator(":scope > button:visible, :scope > div > button:visible").all()) {
@@ -194,7 +195,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     await assertReachable(option, "first model after Home");
     await page.keyboard.press("Escape");
     assert.equal(await pill.evaluate(element => document.activeElement === element), true);
-    await page.screenshot({ path: `/private/tmp/voo-ui-agent-${width}-verified.png` });
+    await page.screenshot({ path: editorArtifactPath(`voo-ui-agent-${width}-verified.png`) });
     const close = page.locator('aside section header button').last();
     if (width > 768) {
       assert.equal(await page.getByTestId("editor-layers-panel").isVisible(), false);
