@@ -195,3 +195,25 @@ source fonts, nonuniform text affine scaling, arbitrary reflection combinations,
 rich text/strike-through/vertical alignment, complete shadow stacks, live
 component links, variable bindings/aliases, prototype/export/grid metadata and
 child grow/stretch sizing. `native_studio` remains excluded.
+
+### Cold-start New regression discovered by the release gate
+
+The `ea90962` gate passed 4,608 unit assertions (four skipped), then stopped
+at 37/91 recorded steps after `continuous-creation` timed out creating its
+first document. An isolated repeat passed, so the first failure was retained
+as an intermittent startup failure, not discarded as a pass.
+
+Holding the lazy welcome module before its listener subscribes deterministically
+reproduces a lost New request. The title bar now retains one pending intent
+until the existing dashboard creation handler subscribes. Desktop and overflow
+entries share that request operation; the actual workspace creation path stays
+shared with presets. Fresh workspace and recent-file names are checked before
+writing, so an early request cannot replace an existing Design1.voo based on
+an unloaded/filtered dashboard list. A registered title-bar browser scenario
+seeds Design1.voo, clicks New while the dashboard is blocked, verifies exactly
+one Design2.voo and compares the original bytes. Unit coverage retains latest
+naming, one-time replay and listener cleanup. No extra default UI is added.
+
+Behavior owner: `workspace.cold-start-new`. The final gate is rerun on the
+committed combined source, including upstream i18n/vector/text fixes. The
+initial aborted/incomplete reports remain separate evidence.

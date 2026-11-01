@@ -200,3 +200,88 @@ export function verifyEditorHistoryInvariants({
 
   return true;
 }
+
+/**
+ * Validates structural references between layers in a design document.
+ *
+ * Catches the reference bugs that only surface later as missing artwork or a
+ * detached mask: a `parentId`/`clipTo` pointing at a layer that no longer
+ * exists, or a `parentId` chain that closes into a cycle (infinite ancestor
+ * walks hang selection, rendering and orphan cleanup).
+ *
+ * @param {{ nodes?: unknown }} doc
+ * @param {{ throwIfInvalid?: boolean }} [options]
+ * @returns {{ valid: boolean, errors: string[] }}
+ */
+export function validateDocumentReferences(doc, { throwIfInvalid = false } = {}) {
+  const errors = [];
+
+  if (!doc || typeof doc !== "object" || Array.isArray(doc)) {
+    const err = `[EditorSnapshotContractError:references] Document must be an object, got ${Array.isArray(doc) ? "array" : typeof doc}`;
+    if (throwIfInvalid) {
+      throw new EditorSnapshotContractError(err, { domain: "references", errors: [err] });
+    }
+    return { valid: false, errors: [err] };
+  }
+
+  const nodes = doc.nodes;
+  if (!Array.isArray(nodes)) {
+    const err = "[EditorSnapshotContractError:references] doc.nodes must be an Array";
+    if (throwIfInvalid) {
+      throw new EditorSnapshotContractError(err, { domain: "references", errors: [err] });
+    }
+    return { valid: false, errors: [err] };
+  }
+
+  const byId = new Map();
+  for (const node of nodes) {
+    if (!node || typeof node !== "object" || typeof node.id !== "string" || !node.id) {
+      errors.push("[references] every node needs a non-empty string id");
+      continue;
+    }
+    if (byId.has(node.id)) {
+      errors.push(`[references] duplicate node id "${node.id}"`);
+      continue;
+    }
+    byId.set(node.id, node);
+  }
+
+  for (const node of byId.values()) {
+    if (node.parentId != null && !byId.has(node.parentId)) {
+      errors.push(`[references] node "${node.id}" parentId "${node.parentId}" does not exist`);
+    }
+    if (node.clipTo != null && !byId.has(node.clipTo)) {
+      errors.push(`[references] node "${node.id}" clipTo "${node.clipTo}" does not exist`);
+    }
+  }
+
+  // Walk each parent chain once with a local visited set: revisiting a node
+  // means the chain closes on itself instead of reaching a root.
+  for (const node of byId.values()) {
+    const walk = new Set([node.id]);
+    const chain = [node.id];
+    let current = node;
+    let cyclic = false;
+    while (current.parentId != null && byId.has(current.parentId)) {
+      const parent = byId.get(current.parentId);
+      if (walk.has(parent.id)) {
+        chain.push(parent.id);
+        cyclic = true;
+        break;
+      }
+      walk.add(parent.id);
+      chain.push(parent.id);
+      current = parent;
+    }
+    if (cyclic) errors.push(`[references] node "${node.id}" parentId chain is cyclic: ${chain.join(" → ")}`);
+  }
+
+  const valid = errors.length === 0;
+  if (!valid && throwIfInvalid) {
+    throw new EditorSnapshotContractError(
+      `[EditorSnapshotContractError:references] Document references violate the contract: ${errors.join("; ")}`,
+      { domain: "references", errors },
+    );
+  }
+  return { valid, errors };
+}
