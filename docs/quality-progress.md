@@ -1,27 +1,18 @@
 # 项目检查总进度
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
-最近一次完成的核心检查：[`a1690c5`](https://github.com/umaxzhao/voo-design/commit/a1690c5696419b2b87ec5e655bf48c66505bf1e6)；108/108 项完整发布门禁通过（104 组浏览器 E2E、全量单测 4,742 通过/4 跳过）。串行复核报告 `/private/tmp/voo-followup-qa-release-serial.json`，并发首轮记录 `/private/tmp/voo-followup-qa-release.json`。
+最近一次完整核心验证：[ba1a1cd](https://github.com/umaxzhao/voo-design/commit/ba1a1cd9f22bbb643d7ce3aef6658f8d4c56a2a9)；105/105 步通过，含 101 组核心浏览器、4813 单测通过/4 跳过，设计检查 1445 文件通过。本轮为 Web 源码验证；原生包验收属于下方各自固定版本。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
-## 本轮继续：扩展画布、图层与 Agent 相关检查（完成声明范围）
-- 继续审阅原 11 条独立检查中的 8 条 Agent/QA 脚本：`agent-selection-context`、`agent-suggestions`、`qa_flows` 已完成夹具与断言审阅并通过隔离 Chromium 实测，加入核心门禁；目录现为 87 项能力、104 组核心浏览器、8 项显式独立检查。全量固定提交门禁待本轮提交后执行，不能把隔离套件通过拼成完整发布通过。
-- 修复 `qa_flows` 自身的浏览器夹具：创建空白设计后再等待编辑器引擎、使用并清理系统临时截图目录、用引擎公开的图片插入 API 构建滤镜场景、查询现行 `effects-filter-stack` 与可编辑数值字段。最终独立实测覆盖形状创建/单选、图层切换时 X 值同步、滤镜字段与裁切边界、SVG 文件导入和渐变拖拽，全部通过；先前 3 次陈旧夹具/选择器失败日志不作为通过证据。
-- `claude_agent`、`codex_agent`、`mcp_cli` 会启动已认证 CLI 并调用真实模型，`qa3_electron` 依赖原生宿主，`critical_flows` 操作指定运行实例；这些 5 项仍未运行。`canvas_fps`、`image-electron`、`image-network` 继续按硬件、原生和联网模型环境单列。
-- 同步并合入最新 `origin/main`（`84130c8`）后，在固定、干净提交 `a1690c5696419b2b87ec5e655bf48c66505bf1e6` 上以串行浏览器模式完成 108/108 门禁：构建、设计 lint、575 个单测文件（4,742 通过、4 跳过）及 104 组浏览器 E2E 全通过。报告 `/private/tmp/voo-followup-qa-release-serial.json`。首轮并发运行在 `image-inspector-core` Frame rotation 等待处超时；隔离单跑和本次串行整轮均通过，首轮失败报告保留，不与串行结果拼接。功能覆盖仍为部分，8 条独立环境检查未运行。
-- 同步最新 `origin/main`（`ed3db20`），合并时保留画布缩放缓存、悬停工具菜单、移动端点击目标和上一轮交互修复；模块目录合并为 87 项能力、101 组核心浏览器套件，校验有效。
-- 选择/图层及关联模块计划实际执行 64 组浏览器套件，全部通过。额外覆盖工具悬停/触摸、Frame 标题与负坐标、遮罩与像素、自动布局、图层重排/锁定、Agent/MCP 编辑、撤销重做及保存重开；未发现新的功能失败。
-- 干净合并提交 `c29ff4dcea7dac199beb9b544ba702396f1eb845` 完整门禁 105/105 通过：构建、设计 lint、575 个单测文件（4,742 项通过、4 项跳过）及 101 组浏览器套件零失败。定向日志 `/private/tmp/voo-followup-selection-layers.log`，完整报告 `/private/tmp/voo-followup-release.json`。
-- 11 个独立上下文仍未运行：8 个 Agent/QA 专项夹具待审，另有硬件 FPS、Electron 原生、联网模型检查。它们不计为本轮通过；物理触控笔、多点触控及 GPU/设备性能仍需专用环境验收。完整边界见[审查记录](audits/design-editor-interaction-audit.md#extended-canvas-layer-and-agent-review--2026-11-01)。
-## 本轮：画布与图层提交复查（已完成声明范围）
-- 复查分支 `ee5b9dd` 的重叠选择、悬停描边、Section、Agent 分组和设计检查，并同步最新主线 `c666a88` 的多 Frame 交互。发现五项能力缺少模块登记、Ctrl+Alt 重叠选择缺少回归、大文档 lint 两两比较及设计问题文案没有中文；修复和边界见[审查记录](audits/design-editor-interaction-audit.md#canvas-and-layer-feature-follow-up--2026-11-01)。
-- 模块目录现在登记 81 项能力，校验通过且变更路径无未映射项。补齐 Meta+Option / Ctrl+Alt 选择回归；20,000 个稀疏图层耗时 38.7ms（旧实现约 4.3s）；设计检查面板补齐中英文文案。
-- 代码验证：定向 46 项通过；全量 570 单测文件通过（4,722 项通过、4 项跳过）；设计规范 lint 1,434 个文件 clean；生产构建成功。选择/图层模块聚合 53 组浏览器检查通过，包含调整图层缩放/平移截图采样修正与完整多 Frame 拖动套件；原像素阈值未放宽。干净提交 `26f71ebf16d83c017c5ad116a08ad5b4a3dcec34` 的完整发布门禁 **91/91 步骤通过**，包括构建、设计 lint、全量单测及核心浏览器验证；报告 `/private/tmp/voo-canvas-layer-audit-release.json`。功能覆盖仍标记为部分，不能推断未登记模块或硬件上下文均已认证。相关证据另见 `/tmp/selection-layer-final.log`、`/tmp/frame-adjustment-pan-fix.log`、`/tmp/frame-alt-duplicate-current.log` 与[审查记录](audits/design-editor-interaction-audit.md#canvas-and-layer-feature-follow-up--2026-11-01)。
-## 三平台 GitHub Release 就绪检查（待完成）
 
-- 2026-11-01，只读核对源码 `ed3db20` 的发布配置与 GitHub 记录：版本仍为 `1.0.0`；当前 Release、版本标签和 `release.yml` 运行记录均为 0。仓库没有配置 Actions 签名 secrets；仅查配置名称，未读取任何密钥或证书。
-- 已配置 Electron 目标：Windows x64 NSIS/Portable、macOS DMG/ZIP、Linux AppImage/DEB。这是构建配置，不是三个系统已安装、启动并验收的证明；macOS Intel/Apple Silicon 尚需明确分别构建。
-- 发布流程缺口：标签仅自动构建/发布 Linux AppImage；Mac/Windows 仅手动开启、只上传 Actions artifacts；未统一上传更新元数据/blockmaps/校验和。桌面作业还缺少 `build-connector-resource.mjs` 预构建步骤，不能复用开发机残留资源。
-- 先补齐原生 runner 构建与安装包检查，再验证启动、创建/保存/重开、模型下载、本地 CLI、签名/公证及更新。可以准备三平台预发布；目前不能宣布三平台正式版已就绪。本轮未创建 tag 或 Release，也未把 Web 测试继承为安装包通过。
-- [发布清单](release-checklist.md)。本条为发布流程审计，不修改应用；后续源码不继承旧固定提交的通过结果。
+## 三平台 GitHub Beta（门禁与产物核验通过）
+
+- [Beta 下载与说明](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.1)：`1.0.0-beta.1`，Windows x64 setup/portable、Linux x64 AppImage、macOS Intel/Apple Silicon DMG/ZIP，共四个原生目标、七个载荷。公开状态以该 Release 页面为准，保持 prerelease，不标记稳定最新版。
+- 固定验证源码 [`eab3bea`](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78) 的 [完整 CI](https://github.com/umaxzhao/voo-design/actions/runs/41281003764) 全部成功：**105/105 步、101 组核心浏览器、4781 单测通过/4 跳过、1441 文件设计检查**；580 个测试文件通过/3 跳过。报告 `complete=true`，12 个模块、87 组能力的功能覆盖仍为 partial，11 组独立额外检查明确 not-run。Release 附带 `web-release-checks.json`，不以其他提交或脏工作区继承通过。
+- `platform.desktop-release`：四原生构建与打包应用冒烟均通过，收据的版本、架构、提交严格匹配；七个载荷、三份更新元数据、四份收据均已独立复核。组装器逐字节验证更新载荷 SHA-512/尺寸；最终草稿的 **21 项 SHA-256** 与 GitHub 实际资产摘要一致，包含说明和 Web 证据，安装包未经过二次修改。两种 Mac 架构的更新条目合并保留，Windows setup/portable 分开命名，Linux AppImage 使用 GNU `x86_64` 文件名而收据保留 Node `x64`。
+- `platform.desktop-close`：实际打包应用启动、指针绘图/撤销重做、原生工作区文件写读、取消脏退出后 bridge 存活、新进程与隔离 profile 从真实工作区文件卡片重开均有原生证据。原生 picker/确认选择由自动化驱动，不能当作外层安装向导或系统信任交互的人工验收。
+- 发布过程中修复了空签名变量、Windows ASAR 路径与间接依赖、Mac 中文资源、Vite 清理竞态、Linux 字体对照、离线模型菜单及冷菜单焦点。字体对照保留原 1% 门槛；三种快捷键格式均经真实浏览器检查。冷加载时背景恢复焦点的场景先稳定复现失败，再修复导航键/Tab；相关回归保留在 `editor-optional-loading.e2e.mjs`。没有跳过失败用例凑通过。
+- 历史失败保留为独立结果：[字体](https://github.com/umaxzhao/voo-design/actions/runs/41273421739)、[模型菜单](https://github.com/umaxzhao/voo-design/actions/runs/41273626256)、[快捷键](https://github.com/umaxzhao/voo-design/actions/runs/41275043454)、[AppImage 组装](https://github.com/umaxzhao/voo-design/actions/runs/41276919981)、[冷菜单焦点](https://github.com/umaxzhao/voo-design/actions/runs/41279268095)；失败或早期取消的候选没有冒记完整通过，也没有公开 Release。本轮完整通过后才创建并核验草稿。
+- 在线预览已由同一候选的 CI 静态产物通过项目脚本更新至 [voo.run/editor](https://voo.run/editor/)：入口及 12 项关键资源逐字节一致；四组实际线上交互通过，实际加载的 83 项 JS/CSS 均匹配，零页面异常。覆盖约束轴/撤销、390px Browser 分屏/48px 复制/撤销、文件卡片打开及旧分享重定向。证据 `/private/tmp/voo-beta-deployment-eab-proof.json`、`/private/tmp/voo-beta-production-eab-proof.json`；线上回滚备份 `la2:/srv/voo-run/editor-backups/eab3beaaff22a2ccc28780d9972bb2c58f4baa78-20261101T070133Z`。
+- 验收边界：**安装包未签名，Mac 未公证**；人工安装与系统信任流程、旧版升级、真实付费/CLI/模型服务及其他系统版本仍未认证。4 项跳过单测和 11 组独立检查没有计入通过。旧草稿备份、辅助工作树及主工作区无关未提交改动继续保留，未打入本版。[发布清单](release-checklist.md)、[签名/原生验收](code-signing.md)、[PR #81](https://github.com/umaxzhao/voo-design/pull/81)。
 
 ## 本轮：顶部工具栏鼠标悬停自动展开二级菜单与橡皮擦添加移除背景（已验证通过）
 
@@ -43,7 +34,7 @@
 - `canvas.zoom-preview`：移除自由画布隐藏测量面的重复重绘；连续缩放复用有内存上限的图像，静止后精绘，取色立即刷新；图片/实时蒙版/字体/文档/尺寸/DPR 变化失效，视频不冻结。缓存世界命中边界及 Frame 祖先，减少共享相机对属性/Agent 的通知，活动文字编辑继续实时更新。 原始 d3bec48/6ababe5 失败、签名 Electron/实体输入及所有效果/GPU/动画组合的未验范围保留在下方审查链接；`native_studio` 排除。
 - 同一只读 test.fig（241.86MiB、首屏 17499 层），主线父版本 db4a184 与 cf9e00d 生产构建顺序实测：未优化两次 Ctrl+滚轮等待中位数 1713.5/1808ms，优化后 82.5ms；后者同一组六次输入不重复计样。脚本收尾精绘等待 237ms，所测 1000×800/zoom .024 独立画面 0 像素差异；相机实变、文档不变、零页面异常。共享主机负载变化已记录并补反向对照；不是 GPU FPS、独立硬件或 Figma 对等基准。
 - 固定 cf9e00d **104/104 完整发布步骤、100 核心浏览器、4731 单测通过/4 跳过**，无拼接补跑；真实模块延迟 35s 的启动/创建/像素/撤销回归也通过。已推送并部署 la2；正式入口及 8 个直接/关键资源逐字节一致，线上原生 Figma 像素/蒙版/约束，以及真实缩放复用/精确 RGBA/取色/编辑/撤销重做通过，零页面异常。随后只合入文档，应用和测试与固定版本相同。
-- 后续性能审查（df5bdb8，未实施）：历史 cf9 浏览器采样显示图层模型/精绘剩余开销；当前源码与同文件解码数据的小测确认整页 JSON 约 41MiB、50 历史资源重复扫描、绘制副本丢失空间索引，另有无消费者的导入分块传输。优先图层拓扑/搜索缓存及按订阅发送导入块，再做保存/历史与精绘；[证据、优先级和待验收上下文](performance/README.md#next-performance-work--2026-11-01)。原发布结果与失败范围仍见[交互审查](audits/design-editor-interaction-audit.md#canvas-zoom-efficiency--2026-11-01)；本轮只追加审查，不继承为新性能通过。
+- 后续性能优化（本轮范围已验证）：`layers.model-cache` 复用拓扑/面板模型，实时刷新选区并正确处理折叠、延迟翻译、外部母版搜索；`vectors.import-subscriptions` 普通导入不发无消费者节点块，订阅/旧协议保留完整场景和资产 ACK。固定 ac9f18e 全新 105/105 发布步骤、101 浏览器、4752 单测通过/4 跳过；同 test.fig 实际图层点击中位等待 113.5→56.5ms、平移 157→150ms、缩放 84→66ms，普通导入 72 个/56422 节点的多余消息→0，所有 56422 图层及 478 图片完整，所测 1000×800 区域 0 像素差异；共享主机脚本等待不是 FPS。正式候选资源/订阅模式/实际选区零重建/像素与撤销通过；首次直推受新 PR/build 规则拒绝、部署提前启动的顺序保留在证据中，按门禁补齐同步，不冒记旧 CI。私有 `layer-import-optimization/` 保存原始失败、全门禁、正反数据及发布/GitHub证明。[实现范围和剩余待验](performance/README.md#layer-models-and-subscribed-import--implementation)。本轮 `documents.history-asset-pins` 已完成固定 9f00367 全新 105/105 门禁、101 浏览器、4761 单测通过/4 跳过：弱缓存资源集合、增删来源引用计数、旧 JSON 仅缓存 ID 且解析文档可 GC 回收；真实缓存超预算/分支淘汰及满历史图片键盘删除、撤销重做和精确像素通过。首候选内存复核中止、随后 Vite 冷服务清理竞态失败均保留；修正并强化 8 轮并发启动断言后全新验证，没有拼接通过。Node 新场景扫描约 8.2→0.24ms；实际 test.fig 按键等待正向 557.5→535.5ms、反向 547.5→551.5ms，**没有稳定整体提速证据**；两组同一视口 0 像素差异、56422 节点/478 资产完整、原文件哈希不变。绘制效果像素读回仍是后续热点。发布/PR/生产收据归入私有 `history-asset-retention/`，[范围、失败与测量](performance/history-asset-retention.md)。本轮 `layout.reflow-sharing` / `compositing.effect-resources` / `documents.serialization-purity` 已完成声明范围：几何未变节点复用、真实图片/蒙版/字体失效、序列化不改活节点、稳定布局提前收敛。固定 ba1a1cd 全新 105/105 步、101 浏览器、4813 单测通过/4 跳过，11 组独立检查未运行；静态编辑零追加读回、18 个资源分支冷像素及真实方向键/Agent/历史通过。d39511d 虽过门禁但 API 编辑回退，未部署；新增收敛回归并重新全验，没有继承旧候选通过。最终同 test.fig 五十次 API 编辑正向 1661.1→1269.1ms、反向 1647→1253.9ms（约降 24%）；实际按键均值改善 8–9%，但中位数 540.5→508.5ms、523.5→528.5ms，**没有稳定中位提速证据**。两组 1000×800 画面 0 像素差异，全部五页 56422 节点布局/序列化值与旧版一致，478 资产完整且原文件哈希不变。完整门禁、回退原型、正反原始数据及独立发布/线上验收收据归入私有 `layout-sharing/`，[范围、失败和剩余待验](performance/layout-sharing.md)。自动保存调度、精绘索引与全局内存预算仍待实施，`native_studio` 排除。
 ## 本轮：Claude 自测问题单收口（已完成声明范围）
 
 - 逐项核对用户的 `78155ee` + 私人工作区清单；正式版和本地 App 分开验证，没有用一份通过结果覆盖另一份源码。

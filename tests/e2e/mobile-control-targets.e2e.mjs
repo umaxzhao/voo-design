@@ -1,3 +1,4 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { seedResponsiveDocument, settlePanels } from "./ui-responsive-editor-helpers.mjs";
@@ -35,7 +36,7 @@ for (const hasTouch of [false, true]) {
       assert.ok(checked >= 20, `target coverage unexpectedly empty: ${checked}`);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     }
-    await page.screenshot({ path: `/private/tmp/voo-mobile-targets-${hasTouch}.png` });
+    await page.screenshot({ path: editorArtifactPath(`voo-mobile-targets-${hasTouch}.png`) });
     console.log(`320/390/768px ordinary navigation/toolbar/panel targets: 48px, touch=${hasTouch}`);
   }, { viewport: { width: 390, height: 900 }, hasTouch });
 }

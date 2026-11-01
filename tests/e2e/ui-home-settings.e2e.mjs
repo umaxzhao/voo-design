@@ -1,3 +1,4 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
@@ -280,7 +281,7 @@ await withEditorBrowser(async ({ page, origin }) => {
     assert.ok(settingsRect.width >= 48 && settingsRect.height >= 48);
     assert.ok(Math.abs(900 - settingsRect.y - settingsRect.height - 12) <= 1,
       `Settings bottom gap must be 12px at ${width}px`);
-    await page.screenshot({ path: `/private/tmp/voo-ui-home-${width}.png` });
+    await page.screenshot({ path: editorArtifactPath(`voo-ui-home-${width}.png`) });
     await actions("AuditHome.voo");
     const menu = page.locator("[data-welcome-file-menu]").first();
     await expectViewport(menu, width);
@@ -291,7 +292,7 @@ await withEditorBrowser(async ({ page, origin }) => {
     await expectViewport(drawer, width);
     assert.ok(await drawer.locator("main").evaluate((element) => { element.scrollTop = element.scrollHeight; return element.scrollTop > 0; }));
     await drawer.locator("main").evaluate((element) => { element.scrollTop = 0; });
-    await page.screenshot({ path: `/private/tmp/voo-ui-settings-${width}.png` });
+    await page.screenshot({ path: editorArtifactPath(`voo-ui-settings-${width}.png`) });
     await page.keyboard.press("Escape");
     await drawer.waitFor({ state: "detached" });
   }
@@ -307,7 +308,7 @@ await withEditorBrowser(async ({ page, origin }) => {
     await page.setViewportSize({ width, height: 900 });
     await settle(page);
     await expectViewport(nativeDialog, width);
-    await page.screenshot({ path: `/private/tmp/voo-ui-onboarding-${width}.png` });
+    await page.screenshot({ path: editorArtifactPath(`voo-ui-onboarding-${width}.png`) });
   }
   await onboarding.getByTestId("first-run-next").click();
   await page.locator('[data-testid="first-run-onboarding"][data-step="workspace"]').waitFor();
@@ -316,7 +317,7 @@ await withEditorBrowser(async ({ page, origin }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await settle(page);
   await expectViewport(nativeDialog, 390);
-  await page.screenshot({ path: "/private/tmp/voo-ui-onboarding-workspace-390.png" });
+  await page.screenshot({ path: editorArtifactPath("voo-ui-onboarding-workspace-390.png") });
   await onboarding.getByRole("button", { name: "Back", exact: true }).click();
   await page.locator('[data-testid="first-run-onboarding"][data-step="provider"]').waitFor();
   await onboarding.getByRole("button", { name: "中文", exact: true }).click();

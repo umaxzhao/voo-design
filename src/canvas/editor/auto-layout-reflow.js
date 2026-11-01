@@ -1,5 +1,6 @@
 import { reconcileBooleanDocument } from "./boolean-node-reconcile.js";
 import { normalizeAutoLayout, nonNegative, clampDimension, distributionOffsets } from "./auto-layout-values.js";
+import { shareAutoLayoutNodes } from "./auto-layout-sharing.js";
 
 // Wrap comparisons tolerate floating point accumulation without wrapping early.
 const EPSILON = 1e-6;
@@ -390,5 +391,7 @@ export function reflowAutoLayout(doc) {
   for (const node of nodes) {
     if (node.kind === "group" && !hasGroupAncestor(node)) arrangeGroup(node);
   }
-  return reconcileBooleanDocument(doc, { ...doc, nodes }, { inheritChildren: true });
+  const shared = shareAutoLayoutNodes(doc.nodes, nodes);
+  const next = reconcileBooleanDocument(doc, { ...doc, nodes: shared }, { inheritChildren: true });
+  return next.nodes === doc.nodes ? doc : next;
 }

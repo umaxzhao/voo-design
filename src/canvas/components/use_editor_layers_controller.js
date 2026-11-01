@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useI18n } from "../use_i18n.js";
 import { editorLayerLabels } from "./editor_layer_labels.js";
 import useEditorLayersState from "./use_editor_layers_state.js";
-import buildEditorLayerTree from "./editor_layer_tree_model.js";
+import { createLayerTreeCache } from "./editor_layer_tree_cache.js";
 import useEditorLayerInteractions from "./use_editor_layer_interactions.js";
 export default function useEditorLayersController(props) {
   const {
@@ -10,7 +10,9 @@ export default function useEditorLayersController(props) {
   } = useI18n();
   const labels = editorLayerLabels(t);
   const state = useEditorLayersState(props);
-  const tree = buildEditorLayerTree({
+  const treeCache = useRef(null);
+  if (!treeCache.current) treeCache.current = createLayerTreeCache();
+  const tree = treeCache.current({
     ...props,
     ...state,
     labels,

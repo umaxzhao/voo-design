@@ -65,6 +65,24 @@ await withEditorBrowser(async ({ page, errors }) => {
       document.querySelector('[data-testid="design-editor"] [data-open-guard]')?.getAttribute("data-open-guard") === "off");
   };
   await pick({ name: "NativeFigma.fig", mimeType: "application/octet-stream", buffer: Buffer.from(bytes) });
+  const workerImport = await page.evaluate(() => window.__figmaWorkerImports);
+  assert.ok(workerImport.length > 0);
+  assert.equal(workerImport[0].emitChunks, false);
+  assert.equal(workerImport[0].chunks, 0, "Ordinary file import must not clone unconsumed node chunks");
+  assert.equal(workerImport[0].complete, 1);
+  const streamed = await page.evaluate(async bytes => {
+    const { importFigFile } = await import("/src/canvas/figma/figma_import_client.js");
+    const chunks = [];
+    const result = await importFigFile(new Uint8Array(bytes), { chunkSize: 3,
+      onChunk: chunk => chunks.push(chunk), onAsset: () => {} });
+    return { chunks: chunks.length, first: chunks[0]?.isFirstScreen,
+      streamedNodes: chunks.flatMap(chunk => chunk.nodes),
+      completeNodes: result.vooFile.document.pages.flatMap(page => page.sceneDoc.nodes) };
+  }, [...bytes]);
+  assert.ok(streamed.chunks > 1);
+  assert.equal(streamed.first, true);
+  assert.deepEqual(streamed.streamedNodes, streamed.completeNodes);
+  assert.equal(await page.evaluate(() => window.__figmaWorkerImports.at(-1).emitChunks), true);
   const sample = () => page.evaluate(async () => {
     const e = window.__vooEditor, doc = e.getDocument();
     const canvas = await e.exportPngCanvasAsync();
@@ -148,4 +166,25 @@ await withEditorBrowser(async ({ page, errors }) => {
   assert.deepEqual(reopened.variables, before.variables);
   assert.deepEqual(errors, []);
   console.log("Native Figma picker import: crop/cover/rotation/overflow/mask pixels, mask reuse, editable constraints, undo/redo and cold binary reopening passed.");
-}, { openDocument: false, mcpLink: false });
+}, { openDocument: false, mcpLink: false, preparePage: async page => {
+  await page.addInitScript(() => {
+    const NativeWorker = window.Worker;
+    window.__figmaWorkerImports = [];
+    window.Worker = class extends NativeWorker {
+      constructor(url, options) {
+        super(url, options);
+        if (!String(url).includes("figma_import_worker")) return;
+        const record = this.importRecord = { chunks: 0, complete: 0 };
+        window.__figmaWorkerImports.push(record);
+        this.addEventListener("message", event => {
+          if (event.data?.type === "CHUNK_NODES") record.chunks++;
+          if (event.data?.type === "COMPLETE") record.complete++;
+        });
+      }
+      postMessage(message, ...rest) {
+        if (message?.bytes && this.importRecord) this.importRecord.emitChunks = message.options.emitChunks;
+        return super.postMessage(message, ...rest);
+      }
+    };
+  });
+} });

@@ -1,6 +1,7 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
-import { assertPanelLayout, assertReachable, boxOf, camera, openBothPanels, seedResponsiveDocument, settled, settlePanels, touch } from "./ui-responsive-editor-helpers.mjs";
+import { assertPanelLayout, assertReachable, boxOf, camera, openBothPanels, prepareResponsiveModels, seedResponsiveDocument, settled, settlePanels, touch } from "./ui-responsive-editor-helpers.mjs";
 
 const checks = [];
 const families = ["select", "marquee", "brush", "pen", "shapes", "fill", "healing"];
@@ -37,10 +38,22 @@ await withEditorBrowser(async ({ page, tool }) => {
     await page.setViewportSize({ width, height }); await settlePanels(page);
     await openBothPanels(page, false); await assertPanelLayout(page);
     await assertReachable(page.getByTestId("editor-contextual-taskbar"), `mouse quickbar ${width}`);
-    await page.screenshot({ path: `/private/tmp/voo-ui-responsive-mouse-${width}-verified.png` });
+    await page.screenshot({ path: editorArtifactPath(`voo-ui-responsive-mouse-${width}-verified.png`) });
     checks.push(`${width}px fine-pointer viewport uses separate responsive panels instead of overlapping desktop inspectors`);
   }
-});
+  await page.locator(".voo-ai-fab").click();
+  await page.getByTestId("agent-composer-model-pill").click();
+  const emptyMenu = page.getByTestId("agent-model-menu");
+  await emptyMenu.waitFor();
+  assert.equal(await emptyMenu.getByRole("menuitemradio").count(), 0);
+  const configure = emptyMenu.getByRole("menuitem");
+  await assertReachable(configure, "empty catalog configuration entry");
+  await page.keyboard.press("Home");
+  assert.equal(await configure.evaluate(element => document.activeElement === element), true);
+  await configure.click();
+  await page.getByTestId("settings-drawer").waitFor();
+  checks.push("without a local CLI or API, the real empty picker offers a reachable keyboard-accessible configuration entry");
+}, { preparePage: page => prepareResponsiveModels(page, false) });
 
 await withEditorBrowser(async ({ page, tool }) => {
   await seedResponsiveDocument(page);
@@ -86,10 +99,10 @@ await withEditorBrowser(async ({ page, tool }) => {
       await settled(page);
       const after = await boxOf(quickbar);
       assert.ok(Math.abs(after.x - before.x) < 1 && Math.abs(after.y - before.y) < 1, JSON.stringify({ before, after }));
-      await page.screenshot({ path: `/private/tmp/voo-ui-responsive-${width}-verified.png` });
+      await page.screenshot({ path: editorArtifactPath(`voo-ui-responsive-${width}-verified.png`) });
     } else {
       await assertPanelLayout(page);
-      await page.screenshot({ path: "/private/tmp/voo-ui-responsive-landscape-verified.png" });
+      await page.screenshot({ path: editorArtifactPath("voo-ui-responsive-landscape-verified.png") });
     }
     const bottom = page.getByTestId("editor-bottom-toolbar");
     for (const control of await bottom.locator(":scope > button:visible, :scope > div > button:visible").all()) {
@@ -189,12 +202,15 @@ await withEditorBrowser(async ({ page, tool }) => {
     await settled(page);
     const finalFrame = await assertReachable(menu, `agent model menu ${width}`);
     assert.ok(Math.abs(firstFrame.y - finalFrame.y) < 1, JSON.stringify({ firstFrame, finalFrame }));
+    await page.keyboard.press("End");
+    await assertReachable(menu.getByRole("menuitemradio").last(), "last configured model after End");
     await page.keyboard.press("Home");
     const option = menu.getByRole("menuitemradio").first();
+    assert.equal(await menu.getByRole("menuitemradio").count(), 32);
     await assertReachable(option, "first model after Home");
     await page.keyboard.press("Escape");
     assert.equal(await pill.evaluate(element => document.activeElement === element), true);
-    await page.screenshot({ path: `/private/tmp/voo-ui-agent-${width}-verified.png` });
+    await page.screenshot({ path: editorArtifactPath(`voo-ui-agent-${width}-verified.png`) });
     const close = page.locator('aside section header button').last();
     if (width > 768) {
       assert.equal(await page.getByTestId("editor-layers-panel").isVisible(), false);
@@ -217,6 +233,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   await session.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 0, bottom: 0, left: 0 } });
   await session.detach();
   checks.push("safe-area changes preserve physical insets with symmetric horizontal margins and reachable navigation");
-}, { viewport: { width: 1440, height: 1000 }, hasTouch: true });
+}, { viewport: { width: 1440, height: 1000 }, hasTouch: true,
+  preparePage: page => prepareResponsiveModels(page, true) });
 
 console.log(JSON.stringify({ passed: checks }, null, 2));

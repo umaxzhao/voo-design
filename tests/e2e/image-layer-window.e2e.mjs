@@ -42,6 +42,29 @@ await withEditorBrowser(async ({
       mountedRows: await list.locator("[data-layer-row-id]").count()
     };
   });
+  await audit.record("selection-reuses-layer-model", async () => {
+    await page.evaluate(async () => {
+      const { ensureCurrentLocale } = await import("/src/shared/i18n.js");
+      await ensureCurrentLocale();
+      await document.fonts.ready;
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      window.__layerCacheDocument = window.__vooEditor.getDocument();
+    });
+    const before = await page.evaluate(() => ({ builds: window.__vooTestLayerTreeBuilds,
+      renders: window.__vooTestLayerPanelRenders }));
+    assert.ok(before.builds > 0 && before.renders > 0);
+    for (const id of ["large-1999", "large-1998"]) {
+      await page.evaluate(id => window.__vooEditor.selectExactly([id]), id);
+      await page.waitForFunction(id => document.querySelector("[data-layers-list]")
+        ?.getAttribute("aria-activedescendant") === `layer-row-${id}`, id);
+    }
+    assert.equal(await page.evaluate(() => window.__vooTestLayerTreeBuilds), before.builds,
+      "Selection must reuse the tree while real rows and controls update");
+    assert.ok(await page.evaluate(() => window.__vooTestLayerPanelRenders) > before.renders);
+    assert.equal(await page.evaluate(() => window.__layerCacheDocument === window.__vooEditor.getDocument()), true);
+    await page.evaluate(() => window.__vooEditor.selectExactly([]));
+    return { modelBuildsDuringSelection: 0, liveSelection: true, unchangedDocument: true };
+  });
   await audit.record("scroll-to-final-row", async () => {
     await list.evaluate(element => {
       element.scrollTop = element.scrollHeight;

@@ -1,10 +1,11 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { mkdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 import { imageAudit } from "./image-audit-fixture.mjs";
 const fixture = resolve("tests/fixtures/image-editor/generated-product.png");
-const directory = resolve(process.env.VOO_IMAGE_AUDIT_DIR ?? "/private/tmp/voo-image-complete");
+const directory = resolve(process.env.VOO_IMAGE_AUDIT_DIR ?? editorArtifactPath("voo-image-complete"));
 await mkdir(directory, {
   recursive: true
 });

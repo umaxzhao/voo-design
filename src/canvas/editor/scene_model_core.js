@@ -12,6 +12,7 @@
  */
 
 import { DOC_VERSION, NODE_KIND, DEFAULT_BLEND_MODE, newId, createDefaultAdjustments, getBaseDefaults, createDocument, createImageNode } from "./scene_doc_factory.js";
+import { createDefaultValueMatcher } from "./default-value-matcher.js";
 
 export { DOC_VERSION, NODE_KIND, DEFAULT_BLEND_MODE, newId, createDefaultAdjustments, getBaseDefaults, createDocument, createImageNode };
 
@@ -284,6 +285,7 @@ export function hasBlendModes(doc) {
 // factory above still returns a FRESH object each call for any caller that stores
 // or mutates it.
 export const DEFAULT_ADJUSTMENTS = createDefaultAdjustments();
+const matchesDefaultAdjustments = createDefaultValueMatcher(DEFAULT_ADJUSTMENTS);
 
 /**
  * Whether `adj` is the neutral baseline (equal to the shared default).
@@ -300,7 +302,7 @@ export const DEFAULT_ADJUSTMENTS = createDefaultAdjustments();
 export function isDefaultAdjustments(adj) {
   if (adj === DEFAULT_ADJUSTMENTS) return true;
   if (!adj || typeof adj !== "object") return false;
-  return deepEqual(adj, DEFAULT_ADJUSTMENTS);
+  return matchesDefaultAdjustments(adj);
 }
 
 /** Structural equality of two JSON-like values, ignoring property order. */

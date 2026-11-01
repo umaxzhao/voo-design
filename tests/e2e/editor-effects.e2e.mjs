@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { verifyAutoLayoutSharing } from "./auto-layout-sharing-checks.mjs";
+import { verifyEffectResourceGenerations } from "./effect-resource-generation-checks.mjs";
 
 await withEditorBrowser(async ({ page, tool }) => {
   const checks = [];
+  checks.push(await verifyAutoLayoutSharing(page, tool));
+  checks.push(await verifyEffectResourceGenerations(page));
   const textEffects = await page.evaluate(async () => {
     const { verifySkiaTextEffects } = await import("/tests/e2e/skia-text-effects.mjs");
     return verifySkiaTextEffects();

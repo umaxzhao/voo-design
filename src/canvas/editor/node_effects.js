@@ -15,19 +15,12 @@ import {
   buildSatin,
   buildStrokeRing,
 } from "./stroke_filter.js";
-import { isImagePaint } from "./render-paint-style.js";
+import { isStaticEffectSource } from "./effect-source.js";
 
 const effectBitmapCache = new WeakMap();
 
 function effectCacheKey(node, kind, effect) {
   return `${kind}|${node.version ?? ""}|${node.imageId ?? ""}|${node.maskId ?? ""}|${node.width}x${node.height}|${JSON.stringify(effect)}`;
-}
-
-function cacheEmptyEffect(node) {
-  // Font/image availability can change without replacing the immutable node.
-  return ["rect", "ellipse", "path", "group"].includes(node.kind) &&
-    !node.imageId && !node.src && !isImagePaint(node.fill) &&
-    !(node.fills ?? []).some(paint => paint.imageId || isImagePaint(paint.fill));
 }
 
 function rememberEffect(node, key, bitmap) {
@@ -96,7 +89,7 @@ function paintAlphaMap(
   }
   const map = buildMap(alpha, off.width, off.height);
   if (!map) {
-    if (cacheEmptyEffect(node)) rememberEffect(node, cacheKey, null);
+    if (isStaticEffectSource(node)) rememberEffect(node, cacheKey, null);
     return;
   }
 

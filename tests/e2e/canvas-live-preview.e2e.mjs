@@ -1,3 +1,4 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
@@ -33,7 +34,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     await viewer.locator("main").focus();
     await viewer.keyboard.press("0");
     assert.equal(await image.getAttribute("style"), transform);
-    await viewer.screenshot({ path: "/private/tmp/voo-canvas-live-preview.png" });
+    await viewer.screenshot({ path: editorArtifactPath("voo-canvas-live-preview.png") });
     await tool("new_document", { width: 600, height: 400, name: "NextDocument", force: true });
     await viewer.waitForFunction(() => !document.querySelector("img").hasAttribute("src"));
     const expired = await viewer.request.get(`${before.previewUrl}/snapshot`);
