@@ -288,3 +288,57 @@ native webview composition, and signed packaging are not certified here.
 - Targeted 42 units, all 16 new isolated interactions and complete registered `frame-alt-duplicate` suite pass (`multiframe-units.log`, `multiframe-regression-fixed.log`, `multiframe-targeted-browser-final.log`). Clean `5cd112efcd7597d36680eea3c9b8eba66a50d7b5` passed all 91 release steps, 87 core browser suites and 4716 units (4 skipped), plus GitHub CI run 41256893117 (`multiframe-release.json`, `multiframe-ci.json`). PR #79 merged as `f7f782c` with the identical tree (`multiframe-main-tree-proof.json`). Only three source patches were applied to the local application; exact file hashes and 16 isolated mouse interactions pass while other drafts remain (`multiframe-primary-proof.json`, `multiframe-primary-browser.log`). The la2 deployment matched the canonical entry and 82 loaded script/style resources. Six real production multi-selection cases pass: body/title/edge complete subtree movement and color samples with one-step undo/redo; full/position locked child refusal; Escape cancellation with unchanged document/history/selection. No page errors (`multiframe-production-proof.json`). Screenshots `multiframe-production-{body,title,edge,locked,lockPosition,cancel}.png`; backup `/srv/voo-run/editor-backups/5cd112efcd7597d36680eea3c9b8eba66a50d7b5-20261101T003214Z`. Raw receipts are under `/private/tmp/voo-license-regression/`.
 - The first combined browser run reached the existing 50-entry history cap (`multiframe-targeted-browser.log`); the new scenarios now run after the preceding FORM audit restores its original session. Each audit retains its own capture/restore boundary; no history or scene assertion is weakened.
 - Scope remains partial: synthetic fixtures do not certify every locked ancestry/layout/mask combination, every deep selection modifier, physical touch/stylus or signed Electron installers. The previous release's FORM duplication, cold save/reopen, hierarchy, group/ungroup, ordering, deletion and visibility evidence remains tied to its actual revision; passing old suites did not discover the new multi-Frame contexts.
+
+
+## Canvas zoom efficiency — 2026-11-01
+
+Capability: `canvas.zoom-preview`, related `canvas.camera`,
+`compositing.frame-clips`, image/font/matte lifecycle and selection hit testing.
+The user prioritizes reducing real zoom stalls toward Figma's interaction
+quality; no equivalent Figma execution has been measured or claimed.
+
+- Reproduction: generated 600-layer free workspace, actual Ctrl-wheel input.
+  A single zoom redraws the invisible measurement surface four times
+  (`/tmp/voo-zoom-red-browser.log`). Source `c85224c` production build on the
+  unchanged Desktop `test.fig` records six Ctrl-wheel waits with median
+  1,222 ms, using the live engine zoom and artboard origin rather than the
+  stale initial `window.__vooStore` snapshot. CPU samples show repeated painting.
+- Free non-mixed pages stop painting their detached measurement surface.
+  Explicit readback temporarily paints it and flushes the visible preview.
+  Standalone/mixed rendering and export retain their authoritative paths.
+- One bounded artwork picture per surface reuses covered camera changes;
+  missing coverage, edits, resource changes, resize or DPR changes force exact
+  painting. After 160 ms quiet the latest viewport is repainted exactly.
+  Overscan is warmed separately, capped at 32 MiB retained per surface.
+  Its center copies authoritative pixels, never approximated settled content.
+  Video refuses a reusable stamp. Disposal cancels refinement and frees buffers.
+- Stamps include immutable document identity, font epoch, adjustment bypass,
+  actual decoded/paint bitmap identities and texture versions, and live mattes
+  even before a persisted mask ID exists. The initial missing-matte regression
+  is retained in `/tmp/voo-zoom-matte-red.log`; its correction is independently
+  checked. Frame label topology reuses immutable ancestry across camera ticks.
+- Hit regions cache world-space clipped bounds and omit only descendants
+  already contained by a contributing ancestor rectangle. Positive camera
+  transforms preserve that union and eight CSS-pixel padding. Overflow,
+  negative coordinates, hidden/clipped branches, cycles and inter-page gaps
+  retain their semantics. Shared-camera UI publication waits for settle while
+  active DOM text/region editing keeps immediate notifications.
+- Registered `canvas-zoom-preview` uses real Ctrl-wheel, verifies no invisible
+  painting or layer-tree rasterization during covered motion, exact settled
+  RGBA versus direct painting, synchronous sample flush, immutable document
+  through camera gestures, style invalidation and one-step undo/redo.
+  `frame-surface-camera` retains real DPR2 screenshot pixels, negative media,
+  direct selection, neighbouring-page focus and resize. Unit checks cover
+  bitmap/font/matte versions, memory limits, fractional DPR1.25, timer cleanup,
+  viewport notification ownership and exact hit-region unions.
+- Interim private production-build trials on the same file progress from
+  1,222 ms to 166 ms, 117 ms and 83 ms median Ctrl-wheel waits; final trial
+  settles exact content after about 230 ms. Three stable isolated first-page
+  renders at 1000x800/zoom .024 compare with zero changed pixels. These are
+  six-event shared-machine waits including automation plus two rAFs, not GPU
+  FPS or universal speedups. Fixed committed-source and production receipts
+  are recorded after the complete gate; no interim result certifies later code.
+- Evidence: `/tmp/voo-zoom-performance/`, `/tmp/voo-zoom-*.log`. Original fixture
+  stays private and read-only. Full readable-scale property fidelity, every
+  effect/driver/animation combination, signed Electron, native trackpad/stylus
+  and physical frame presentation remain unverified. `native_studio` excluded.

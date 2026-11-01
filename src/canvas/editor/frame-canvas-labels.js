@@ -1,9 +1,13 @@
+const labels = new WeakMap();
+
 /** Returns only frames that do not live inside another frame on a canvas root. */
 export function visibleCanvasFrameLabels(doc) {
   if (!doc?.isCanvasRoot || !Array.isArray(doc.nodes)) return [];
+  const cached = labels.get(doc.nodes);
+  if (cached?.length === doc.nodes.length) return cached.frames;
 
   const nodesById = new Map(doc.nodes.map((node) => [node.id, node]));
-  return doc.nodes.filter((node) => {
+  const frames = doc.nodes.filter((node) => {
     if (!node?.isFrame) return false;
 
     const visited = new Set([node.id]);
@@ -19,4 +23,6 @@ export function visibleCanvasFrameLabels(doc) {
     }
     return true;
   });
+  labels.set(doc.nodes, { length: doc.nodes.length, frames });
+  return frames;
 }

@@ -2,6 +2,11 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
 最近一次完整核心验证提交：[5cd112e](https://github.com/umaxzhao/voo-design/commit/5cd112efcd7597d36680eea3c9b8eba66a50d7b5)；91/91 项通过，当前线上为该构建。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+## 本轮：画布缩放效率（验证中）
+- `canvas.zoom-preview`：真实 Ctrl+滚轮已复现一次缩放重复绘制隐藏测量画布 4 次。只保留可见画布绘制；重用有内存上限的画面预览，静止后恢复精确图像，取色立即刷新；编辑、图片、实时蒙版、字体、DPR/尺寸变化均使缓存失效，视频不冻结。
+- 命中区域世界边界只计算一次，去掉已被父级覆盖的子区域，保持负坐标、裁剪、空隙和 8px 点击范围；共享相机不在每个缩放事件重复刷新属性/Agent，活动文字编辑器继续实时更新。
+- 同一 test.fig 首轮实际输入等待中位数约 1222→83ms；停止后约 230ms 恢复精确画面，1000×800 首屏独立画面对比 0 像素差异。仅属记录的补丁试验，不是 GPU FPS、Figma 对等基准或全属性认证。
+- 真实缩放/精确像素/取色/编辑/撤销重做、高分屏负坐标和邻页命中、资源及生命周期定向回归通过；新增第 88 组核心浏览器登记，完整固定版本门禁和发布待本轮最终记录。[验收与证据](audits/design-editor-interaction-audit.md#canvas-zoom-efficiency--2026-11-01)。`native_studio` 排除。
 ## 本轮：图层操作复查与多 Frame 拖动（已完成声明范围）
 - `selection.transforms` / `selection.frame-title-selection` / `selection.cancel` / `layers.duplicate-delete-lock`：旧版本 32 组图层及关联检查通过，但新增实际多选发现内容区误拖子层、标题清空多选、锁定子层时只移动外框三个缺口，均已修复并保留失败证据。新增 16 个实际交互上下文与 3 条单测；42 项定向单测通过，固定 `5cd112e` **91/91 发布步骤、87 组核心浏览器、4716 单测通过/4 跳过**，GitHub CI 通过。[PR #79](https://github.com/umaxzhao/voo-design/pull/79) 合入 `f7f782c` 且源码树一致。本地主应用仅三文件补丁、16 个隔离浏览器场景通过，其他草稿保留。已部署 la2，正式入口及 82 个加载资源 SHA-256 一致，线上六个真实多选拖动/锁定/取消场景通过，三种移动入口验证像素与一次撤销/重做，零页面异常。证据 `/private/tmp/voo-license-regression/multiframe-{release,ci,primary-proof,main-tree-proof,production-proof}.json`；功能覆盖仍部分，不认证全部蒙版/布局/锁定组合、实体输入设备或签名安装包。[范围与证据](audits/design-editor-interaction-audit.md#multi-frame-layer-operation-audit--2026-11-01)。
 ## 本轮：正式分享链接（已完成声明范围）
@@ -24,12 +29,8 @@
 - `compositing.selection-size-label`：默认下方居中，底部空间不足才回退上方。修改前单测期望 y=66、实际 y=16 的失败保留于 `/private/tmp/voo-license-regression/size-label-before.log`；20 项相关单测及真实截图像素回归通过，覆盖 0.5/1/2×、旋转、Frame 和多选原策略，文档/选区不变。
 - 固定 `e2e3e0b` 完整门禁 91/91、87 浏览器、4678 单测通过/4 跳过（`size-label-release.json`）；GitHub CI 通过。整合固定 `457b149` 再次完成 91/91、87 浏览器、4684 单测通过/4 跳过（`size-label-release-integrated.json`），GitHub CI 通过；主线随后仅文档变动，线上实测通过，不继承不同应用源码通过。[验收范围](audits/nested-objects-audit.md#selection-size-label-placement)。登记 75 能力，功能覆盖仍部分。
 - [PR #72](https://github.com/umaxzhao/voo-design/pull/72) 已合并 `326860d`（`size-label-main-source-proof.json`），已通过项目脚本部署 la2。正式页面实际点击对象、对象/Frame 下方标签像素、原上方标签消失、文档与选区不变及零页面异常通过；83 个实际加载资源与验证构建逐字节/SHA-256 一致。证据 `size-label-production-proof.json`，截图 `size-production-child.png` / `size-production-frame.png`，备份 `/srv/voo-run/editor-backups/457b149d4c1da1ecb1073fa7b7c87be47276f92c-20261031T185117Z`。
-## 本轮：同一 Figma 文件与 OpenPencil 对照（已完成声明范围）
-- OpenPencil 已独立部署在 `/Volumes/TD/Projects/open-pencil-benchmark`，本机预览 `http://127.0.0.1:5188/`；官方源码未改，正式版和 master 均按要求使用 Bun 1.4.2 构建。默认缩放 NaN、正式版空渐变异常及字体缺失已单独记录；异常回调分数不当作性能通过。
-- master 手动恢复有限相机、不改图层后，等待官方稳定信号，仍约 1.175/0.734 次每秒平移/缩放回调。加载提示结束约 7.577 秒，但默认视图无效且采用按页延迟展开，不能直接与 VOO 全页导入耗时等同；两者均保留 478 张图片、4 个变量集合及 5 个变量。不是所有属性或平台的还原认证。
-- VOO 已复现并修复连续子层重复 Frame 裁剪、混合画布未启用屏幕外剔除，以及静态空效果反复像素读取。保留 240 世界像素安全边距，图片/文字重试、源节点替换失效及调用者裁剪恢复；无新增 UI 或依赖。
-- 合入浮层/新建更新后的 `0a3ba24` 干净源码已重新完成 **91/91 发布步骤、87 组核心浏览器、4680 单测通过/4 跳过**；原 `25bda7a` 的独立完整门禁另保留。首屏相机微基准平移/缩放约快 1.85/1.93 倍；真实空白画布拖动确认视图改变且文档不变，等待中位数 VOO/OpenPencil 为 180/1911.5ms，Ctrl+滚轮为 918/559ms，后者 OpenPencil 更快。手势/缩放因子不同，不作全面排名。证据 `/tmp/voo-clip-integrated-release.json`、`/tmp/voo-open-pencil-comparison/`；首屏独立画面仍有 28/800000 像素差异，未认证所有属性或完全一致。已推送并经项目脚本部署；正式入口及关键资源与验证构建逐字节一致，正式 native Figma 导入/可见像素/蒙版/剔除/约束/撤销通过，无页面异常。证据 `/tmp/voo-clip-deployment-proof.json`、`/tmp/voo-clip-production-fidelity.json`；私有报告在当前可视化目录 `open-pencil-comparison/`，不含公开设计文件。
-- [详细范围、对照方法与未验证项](audits/figma-import-audit.md#openpencil-control-and-further-rendering-optimization--2026-11-01)。`native_studio` 排除，卡顿和全部属性还原仍为部分完成。
+## 历史：同一 Figma 文件与 OpenPencil 对照（已完成声明范围）
+- `0a3ba24` 完整 91/91、87 浏览器、4680 单测通过/4 跳过并部署；独立官方 OpenPencil 在 Projects/5188，本机恢复有限相机后测试，字体不齐且按页展开。真实拖动中位数 VOO/OpenPencil 180/1911.5ms，Ctrl+滚轮 918/559ms，两者各有优劣；相机微基准不作总排名。首屏仍有 28/800000 像素差异，所有属性及原生平台未认证。[完整方法、历史失败与发布证据](audits/figma-import-audit.md#openpencil-control-and-further-rendering-optimization--2026-11-01)，私有目录 `open-pencil-comparison/`。
 ## 本轮：分享与页面外浮层遮挡（已完成声明范围）
 - `inspector.global-overlay-stacking`：已复现分享框被 `editor-pages` 覆盖。顶栏统一层级；分享使用 body 锚定浮层，窄屏限制位置和滚动高度；快捷键、图标、SVG 与懒加载占位共用全局 Portal。[逐类验收与原始失败](audits/nested-objects-audit.md#global-overlay-stacking)。
 - 回归覆盖 1600/1280/900px 分享、320px 嵌套分享、裁切/变换宿主下的实际弹窗九点命中、输入与 Escape，以及文档和选区不变。本地主工作区增量修复及浏览器复查通过，其他草稿保留。
@@ -140,16 +141,8 @@
 - 额外发现待修：正式网站冷加载只有顶栏、首页尚未挂载时，点击 New 可能先于事件监听器而未创建文档。两次等待引擎超时；等待首页输入框就绪后，同一构建正常创建并通过填充实测。原始证据 `/private/tmp/voo-unified-fill-production-startup-attempt.log`、`/private/tmp/voo-unified-fill-production-startup-second-attempt.log`。这是该轮未收口的启动上下文；后续 New 修复已由下方 Figma 整改中的确定性回归与完整门禁认证，原始失败仍保留。
 - 功能覆盖仍有明确边界：实体设备、所有图片编解码/超大图片内存、克隆 ID 跨文档取消、穷尽多图片资源替换及原生 App 冷重启没有由本轮认证；不覆盖真实 `.fig` 导入审计已报告的缺陷。[详细验收](audits/panel-control-audit.md#unified-fill-editor)。
 
-## 本轮：桌面 test.fig 导入整改（已发布，保真与性能仍部分）
-- 补齐原生锁定、约束、自动布局、独立圆角、描边参数、溢出/图片裁切及父级变换；4 集合 / 5 变量保留模式值，移除 9 个误生矩形。实际文件导入 56,422 层无重复 ID / 悬空父级，478 图片哈希一致；原稿 SHA-256 未变。
-- `vectors.native-fig-properties` / `compositing.mask-cache`：独立图片填充不串用裁切；不可变绘制文档、多组蒙版缓存及异步图片失效得到回归。真实生成 `.fig` 选择器用例通过像素、约束重排、撤销/重做、二进制保存冷重开。
-- 串行 Metal 生产复测同一 241.86 MiB 文件：加载 **20.28 → 12.69 秒**，六次滚轮中位 **638 → 199 毫秒**；平移/缩放回调 1.95/0.95 → 5.54/1.78 次每秒。共享机器单轮样本，仍明显卡顿，**大文档性能验收未通过**；未宣称还原百分比。
-- 固定 `dd69368` **91/91** 发布步骤通过，含 **87 核心浏览器**及 **4615 单测通过 / 4 跳过**。原 ea90962 在 37/91 步的 New 竞态失败保留；冷启动请求回放、重名检查、原文件字节不变及连续创作在最终完整门禁通过。当前登记 12 模块 / 70 能力 / 87 核心浏览器，功能覆盖仍部分。
-- 保留远端改动：`3dfad79` 八项追加集成（含19单测）通过；Browser 更新的 `47471c9` 全量单测4637通过 / 4跳过及三组浏览器通过，源码与 `6d8cef7` 仅差文档。没有把旧完整门禁冒记为最新集成的完整执行。
-- [线上预览](https://voo.run/editor/) 当前 `6d8cef7`：入口与8个关键资源哈希一致，正式站合成 `.fig` 裁切/填充/旋转/溢出/蒙版、变量、约束和撤销像素通过，无脚本错误。选择器超时、早期引擎像素和并行部署版本不一致的尝试均留存；最终仅认证首页/文档就绪后的 DOM 输入路径，未认证原生 FSA 系统选择器。
-- 富文本、多重阴影、活动组件/变量绑定、所有字体/画板、非均匀文字缩放、子层 grow/stretch 及签名 Electron 仍未完整还原或验收；圆角平滑仅元数据。21项独立检查未运行，`native_studio` 排除。
-- [逐属性、性能与固定版本证据](audits/figma-import-audit.md#published-verification--2026-11-01)。完整私有日志、截图、原始失败及哈希清单存于本地 `figma-import-optimization/` 制品目录，未上传原稿或商业截图。
-
+## 历史：桌面 test.fig 导入整改（已发布，保真与性能仍部分）
+- 原生属性/图片采样/蒙版缓存修复、冷首页 New 排队及命名保护在固定 `dd69368` 完成 91/91、87 浏览器、4615 单测通过/4 跳过；后续 `3dfad79` 定向集成、`6d8cef7` 发布及正式 Figma 导入/像素/撤销证据独立保存，不继承跨版本通过。受控原文件加载 20.28→12.69s、平移 1.95→5.54、缩放 .95→1.78 回调/秒，仍卡且不是 GPU FPS；所有字体、页面、属性及原生 Electron 未全部认证。[完整范围与证据](audits/figma-import-audit.md)，私有 `figma-import-optimization/`；原文件保持不变。
 ## 本轮：Impeccable 整改与右键菜单（已发布）
 - 常用剪切、复制、删除和编组保留在主菜单；选择相同、属性、层级、蒙版、组件、复制/导出、路径使用一级子菜单。保留既有命令、快捷键和撤销逻辑，支持鼠标移入、方向键、Escape、屏幕边缘翻转和浮层避让。
 - 同轮完成隐藏编辑器焦点隔离、实际画布宽度适配、窄鼠标欢迎导航收纳、空 Slot 按需显示、说明文字层级与对比度；保留 VOO 字体与密集数值控件。
