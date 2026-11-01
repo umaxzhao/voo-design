@@ -59,6 +59,7 @@ try {
   await page.screenshot({ path: "/private/tmp/voo-error-recovery-desktop.png" });
   await page.evaluate(() => document.documentElement.dataset.theme = "light");
   assert.equal(await recovery.evaluate(element => getComputedStyle(element.parentElement).backgroundColor), "rgb(250, 250, 250)");
+  assert.equal(await recovery.getByRole("button", { name: "显示详情" }).evaluate(element => getComputedStyle(element).color), "rgb(38, 38, 38)");
   await page.screenshot({ path: "/private/tmp/voo-error-recovery-light.png" });
   checks.push("Desktop, tablet, mobile long diagnostics fit; mobile target and light theme verified");
   const navigation = page.waitForEvent("load");

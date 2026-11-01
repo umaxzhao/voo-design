@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { AppErrorBoundary } from "../../src/shared/app_error_boundary.jsx";
 import { loadLocale } from "../../src/shared/i18n.js";
 import "../../src/index.css";
+import "../../src/theme-light.css";
 
 function BrokenEditor() {
   throw new Error(`Recovery fixture: ${"long-diagnostic/".repeat(80)}`);
