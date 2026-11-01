@@ -56,3 +56,14 @@ cache retained complete parsed documents. The GC regression fails on that
 candidate and passes after storing ID sets only. Its partial release/log are
 retained as `voo-history-pins-release-initial.*`; they are not release success
 evidence. The corrected candidate requires a fresh complete gate.
+
+The corrected candidate's first release attempt passed 4,761 units/four skips,
+but the existing cold-fixture cache-removal assertion failed. A standalone
+four-server repetition reproduced the late optimizer write on round six.
+Vite 5 captures optimizer cancellation before awaiting dependency scanning;
+a scan can create another optimizer after that capture. Test-server teardown
+now drains close again before cache removal, using the public close API.
+Ten repeated four-server rounds retain exact cache/port ownership checks.
+The registered startup suite repeats eight rounds; no functional timeout or
+assertion is relaxed. Preserve `release-startup-failure.*` and fixture red/fixed
+logs. A new clean source revision must complete the entire release gate.

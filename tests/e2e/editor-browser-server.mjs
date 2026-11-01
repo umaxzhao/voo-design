@@ -19,7 +19,13 @@ export async function startEditorBrowserServer() {
   const close = () => {
     if (closing) return closing;
     closing = (async () => {
-      const results = await Promise.allSettled([vite?.close(), bridge?.close()]);
+      const closeVite = async () => {
+        await vite?.close();
+        // Vite 5's first close captures optimizer cancellation before awaiting
+        // its scan. That scan can create an optimizer afterward; drain it too.
+        await vite?.close();
+      };
+      const results = await Promise.allSettled([closeVite(), bridge?.close()]);
       server.closeAllConnections();
       if (server.listening) {
         await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
