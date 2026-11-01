@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { assertEmptyCanvas, verifyEmptyCanvasImports, verifyEmptyCanvasDrawing } from "./empty-canvas-checks.mjs";
 
 // Hold the lazy dashboard so New is clicked before its effect can subscribe.
 let releaseWelcome;
@@ -23,6 +24,8 @@ await withEditorBrowser(async ({ page, errors }) => {
   await page.waitForFunction(() => window.__vooEditor && !window.__vooStore.welcomeOpen, null, { timeout: 30000 });
   assert.equal(await page.evaluate(() => window.__vooStore.openDocuments.length), 1);
   assert.equal(await page.evaluate(() => window.__vooStore.fileName), "Design2.voo");
+  await assertEmptyCanvas(page);
+  await verifyEmptyCanvasDrawing(page);
   const retained = await page.evaluate(async id => {
     const { workspaceStorage } = await import("/src/services/workspace_storage.js");
     return [...await workspaceStorage.readFileBytes(id)];
@@ -107,6 +110,7 @@ await withEditorBrowser(
       buffer: Buffer.from(serialized),
     });
     await ready();
+    await assertEmptyCanvas(page);
     assert.equal(
       await page.evaluate(() => window.__vooStore.fileName),
       "TitlebarAudit.voo",
@@ -153,6 +157,7 @@ await withEditorBrowser(
       await page.evaluate(() => window.__vooEditor.getDocument().width),
       640,
     );
+    await assertEmptyCanvas(page);
     await bar.getByRole("button", { name: "VOO Design", exact: true }).click();
     await home.waitFor();
     const previousDocumentId = await page.evaluate(() => window.__vooStore.activeDocumentId);
@@ -165,6 +170,8 @@ await withEditorBrowser(
       await page.evaluate(() => window.__vooStore.fileName),
       /^Design/,
     );
+    await assertEmptyCanvas(page);
+    await verifyEmptyCanvasImports(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: "/tmp/voo-titlebar-narrow.png" });
     assert.equal(

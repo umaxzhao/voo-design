@@ -254,3 +254,71 @@ physical stylus/touch input or pixel/export parity.
 - Coverage remains partial: browser Chromium only; native crash/restart, actual draft recovery, clipboard denial, screen-reader hardware and other browsers are not certified. This change does not diagnose or fix the exception that originally triggered the user's screenshot.
 
 - Current-main integration evidence: clean source `c1a30ae771527efc12765f75d01f3e32f2f4a4db` independently passed 119/119 steps, 4902 unit assertions (4 skipped) and 115 core browser suites with browser concurrency 1; nine standalone checks remain not-run. `/private/tmp/voo-error-recovery-integration-serial.json` and its `.log` retain the complete execution. The earlier parallel integration failure in `canvas-zoom-preview` is preserved in `/private/tmp/voo-error-recovery-integration-release.json`; its unchanged standalone assertions passed in `/private/tmp/voo-error-recovery-zoom-retry.log`. No zoom implementation or assertion was changed. Post-gate receipts change documentation only.
+
+## Empty canvas initialization — 2026-11-02
+
+Capability: `documents.empty-canvas`; shared store initialization, native page
+promotion and workspace chrome. Baseline `f8f5b14b` automatically promoted empty
+bounded pages into a Frame. The pre-open default page was also bounded, and the
+workspace chrome drew an unrelated page-edge outline on unbounded roots.
+
+- Empty legacy pages now become transparent unbounded roots with zero layers;
+  New, initial standby state and native file loading share that operation.
+- Nonempty legacy pages still promote their surface and retain ownership/paints.
+  Explicit Frames, including empty ones saved by the user, remain unchanged.
+  Previously saved default Frames cannot be distinguished from user Frames and
+  are not heuristically deleted.
+- Root chrome forwards real selection overlays but does not draw page bounds;
+  bounded documents retain their page border. No UI controls or dependencies added.
+- Original failures are retained: two empty-migration unit assertions, initial
+  standby-state assertion, and root-outline assertion; actual browser cold New
+  showed one layer, and the subsequent outline test found 3684 painted pixels.
+- Targeted native picker checks cover cold New, empty single-page import,
+  empty paged import, missing-scene fallback, existing empty root, ZIP export/
+  reopen, later New, explicit existing Frame, and nonempty legacy ownership.
+  Empty cases assert zero real layers/selection/Frame labels and zero overlay
+  alpha pixels. Pixel assertions wait two animation frames, not a mocked renderer.
+- An initial chained-import fixture hit the browser-native file-system picker
+  unsupported by Playwright's filechooser event; use the actual Home import
+  route. Versionless scene fixtures were rejected by native deserialization;
+  valid v2 fixtures now include scene version/type/ID and await the target engine.
+  These harness failures are kept separately from the original product failures.
+- Exact clean source `308b2ab2e985b062f98a6ad28add91848e0f3e4e` passed **121/121** release steps, 117 core browser suites, 4962 units / 4 historical skips, 607 unit files / 3 skipped, build and 1481-file design lint. Twenty-nine task JS/JSX files passed semicolon/final-newline formatting checks. No functional assertions were skipped for this change. Ten standalone checks remain not-run locally; functional coverage remains partial.
+- The same verified production artifact was deployed with the project script and a server rollback backup. Canonical HTML plus 7 entry/critical resources match local SHA-256. Real online New and native import checks passed with zero layers/selection/Frame labels/overlay pixels; explicit Frame and legacy content remain. 77 actually loaded distinct JS/CSS assets match the verified build, with zero page errors.
+- [PR #93](https://github.com/umaxzhao/voo-design/pull/93), [source CI](https://github.com/umaxzhao/voo-design/actions/runs/41348044318). Raw gate, original failures, scripts and production byte receipts: `/tmp/voo-empty-canvas-*` and local artifact directory `/Users/tt/.codex/visualizations/2026/10/26/01a175a0-cb5b-7133-9850-c4a861a4b01d/empty-canvas/`. Later documentation receipts do not change this application/test source.
+  The first full gate on `f9bf3204` retained four stale default-Frame assertions:
+  empty-page cases now require zero nodes; workspace-paint persistence uses an
+  explicit authored Frame and retains paint, reopen and nonmutation assertions.
+  The next gate on `3dafd02f` passed units but retained an actual drawing failure:
+  artwork-only hit regions left empty-space drags routed to background panning.
+  Creation tools now receive the full pointer plane; Select/Hand retain their
+  existing artwork/background routing. Unmodified `qa_flows` pointer assertions
+  pass after repair. Frame-dependent browser cases author a Frame explicitly,
+  rather than requiring New to supply one; no selection/paint assertions are removed.
+  Actual OS dialogs, installed Electron, external services and other browser
+  engines remain unverified. No desktop tag, installer or Release is issued.
+
+Cold-reopen selection in the continuous-creation fixture now clicks the actual
+layer-name button: a row-center click fell into the thumbnail/name gap after
+removing one hierarchy level. The original failure is retained; target-engine
+readiness and exact selected image ID are asserted before real arrow/undo input.
+The full continuous-create/save/cold-reopen scenario then passed unchanged pixel,
+geometry and history checks.
+
+The `0a945ed6` full gate retained a cold-New drawing timeout. A diagnostic showed
+engine tool `rect` while the hit plane still cached `select`: tool notifications
+do not repaint the detached page engine. Refreshing through React alone still
+raced immediate input in the `3300b000` gate. Final routing subscribes to tool
+transitions synchronously, before deferred UI notification; subscribers are
+removed by both artwork teardown and engine disposal. Ordinary selection and
+Hand keep their previous artwork/background routing and picture caching.
+
+A second pointer diagnostic found an unbounded root still admitted the old
+artboard-body drag handler. Roots can no longer start that gesture; explicit
+bounded artboards retain it. The unchanged QA pointer scenario, cold-New native
+file scenario, and complete creation/save/cold-reopen flow all passed together
+at three-browser concurrency after these repairs. Units assert synchronous
+notification, unchanged-mode deduplication, unsubscribe/disposal, invalid
+subscriptions, and both empty/populated root gesture ownership. The final gate above
+certifies only its recorded source; preceding failed reports remain retained
+rather than rewritten as passes.

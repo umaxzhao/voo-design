@@ -1,3 +1,4 @@
+import { createAuthoredFrame } from "./authored-frame-fixture.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
@@ -22,12 +23,13 @@ async function prepare(page, { canvasRoot = false, harness = true } = {}) {
   await page.addInitScript(() => performance.setResourceTimingBufferSize(10000));
   await page.reload({ waitUntil: "networkidle" });
   await page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true }).click();
-  await page.waitForFunction(() => window.__vooEditor?.getDocument()?.nodes.some(node => node.isFrame));
+  await page.waitForFunction(() => window.__vooEditor?.getDocument()?.isCanvasRoot);
+  if (canvasRoot) await createAuthoredFrame(page);
   await page.evaluate(async (canvasRoot) => {
     const e = window.__vooEditor;
     const initial = e.getDocument();
     const frame = canvasRoot ? initial.nodes.find(node => node.isFrame) : null;
-    if (canvasRoot && (!initial.isCanvasRoot || !frame)) throw new Error("Real New must create a canvas root containing a Frame");
+    if (canvasRoot && (!initial.isCanvasRoot || !frame)) throw new Error("The authored fixture must retain a canvas root containing a Frame");
     const nodes = frame ? [{ ...frame, x: 0, y: 0, width: 400, height: 300, clipContent: true,
       fill: "#ffffff", fills: [{ fill: "#ffffff", opacity: 1, visible: true }], fillOpacity: 1, fillHidden: false }] : [];
     e.setDoc({ ...initial, width: canvasRoot ? initial.width : 400, height: canvasRoot ? initial.height : 300, isCanvasRoot: canvasRoot,
@@ -196,7 +198,7 @@ await withEditorBrowser(async ({ page }) => {
     window.__rasterUiStore = useDesignStore;
     const doc = window.__vooEditor.getDocument();
     if (!doc.isCanvasRoot || !doc.nodes.find(node => node.id === window.__rasterNodes.frame)?.isFrame) {
-      throw new Error("The real UI scenario must retain its default canvas root and Frame");
+      throw new Error("The real UI scenario must retain its authored canvas root and Frame");
     }
     if (doc.nodes.filter(node => node.parentId === window.__rasterNodes.frame && node.kind === "image").length !== 2) {
       throw new Error("Both images must be children of the real Frame");
@@ -252,7 +254,7 @@ await withEditorBrowser(async ({ page }) => {
   const hex = visible.candidatePixel.slice(1);
   assert.deepEqual(displayed, [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16), 255],
     "The candidate's actual displayed pixel must match its changed image, not only the engine sample");
-  checks.push("default New canvas root with a real Frame supports pointer-selected image Retouch/Apply and automatically displays the persisted candidate while preserving source and sibling pixels");
+  checks.push("New canvas root with an authored Frame supports pointer-selected image Retouch/Apply and automatically displays the persisted candidate while preserving source and sibling pixels");
 }, { openDocument: false, mcpLink: false });
 
 console.log(JSON.stringify({ passed: checks }, null, 2));

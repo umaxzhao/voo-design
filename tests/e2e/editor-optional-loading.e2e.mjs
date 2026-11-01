@@ -1,3 +1,4 @@
+import { createAuthoredFrame } from "./authored-frame-fixture.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
@@ -58,6 +59,7 @@ for (const platform of ["linux", "darwin", "win32"]) {
 
     await page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true }).click();
     await page.waitForFunction(() => window.__vooEditor?.getDocument()?.isCanvasRoot);
+    await createAuthoredFrame(page);
     await page.waitForLoadState("networkidle");
     for (const module of ["editor_context_menu", "shortcut_reference_modal", "SvgEditModal", "editor_command_palette", "editor_find_replace"]) {
       assert.equal([...requests].some(url => url.includes(`/components/${module}.jsx`)), false, `${module} must not load before its first activation`);
