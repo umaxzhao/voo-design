@@ -6,7 +6,7 @@ import { parseMacReleaseEnvironment, redactMacDiagnostics, macSmokeEnvironment }
 import { prepareSigningEnv } from '../../scripts/signing-env.mjs';
 
 const require = createRequire(import.meta.url);
-const { notarizationOptions, verifyMacSignature, verifyNotarizedApp } = require('../../scripts/mac-signing.cjs');
+const { notarizationOptions, verifyMacSignature, verifyNotarizedApp, signingSourceRevision, selectDeveloperIdIdentity } = require('../../scripts/mac-signing.cjs');
 const api = { APPLE_API_KEY: '/fixture/key.p8', APPLE_API_KEY_ID: 'fixture-id', APPLE_API_ISSUER: 'fixture-issuer' };
 const trust = { developerId: true, expectedTeam: true, hardenedRuntime: true, stapled: true, gatekeeper: true };
 
@@ -25,6 +25,18 @@ function hookFixture(env, notarize = vi.fn(async () => {})) {
 }
 
 describe('reuse existing macOS signing configuration', () => {
+  it('uses the builder identity format without losing the expected team qualifier', () => {
+    const listing = '1) fixture "Developer ID Application: Example (TEAM123456)"';
+    expect(selectDeveloperIdIdentity(listing)).toEqual({ name: 'Example (TEAM123456)', teamId: 'TEAM123456' });
+    expect(() => selectDeveloperIdIdentity(listing, 'OTHERTEAM')).toThrow('exactly one');
+    expect(() => selectDeveloperIdIdentity(listing + listing)).toThrow('exactly one');
+    expect(() => selectDeveloperIdIdentity('Apple Development: Example')).toThrow('exactly one');
+  });
+  it('rejects dirty/untracked source before loading any signing configuration', () => {
+    expect(() => signingSourceRevision(() => ({ status: 0, stdout: '?? draft.jsx' }))).toThrow('clean source');
+    expect(() => signingSourceRevision(() => ({ status: 1, stdout: '' }))).toThrow('clean source');
+    expect(signingSourceRevision((command, args) => ({ status: 0, stdout: args[0] === 'status' ? '' : 'a'.repeat(40) }))).toBe('a'.repeat(40));
+  });
   it('accepts App Store Connect credentials with an explicitly requested existing keychain signer', () => {
     const hook = require('../../scripts/notarize.cjs');
     expect(hook.shouldNotarize({ electronPlatformName: 'darwin' }, { ...api, VOO_MAC_SIGNING_REQUIRED: '1' })).toBe(true);

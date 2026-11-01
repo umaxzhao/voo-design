@@ -6,6 +6,24 @@ const ROUTES = [
   { name: 'apple-id', keys: ['APPLE_ID', 'APPLE_APP_SPECIFIC_PASSWORD', 'APPLE_TEAM_ID'], fields: ['appleId', 'appleIdPassword', 'teamId'] },
 ];
 
+function signingSourceRevision(run = spawnSync) {
+  const status = run('git', ['status', '--porcelain'], { encoding: 'utf8' });
+  if (status.error || status.status !== 0 || status.stdout.trim()) throw new Error('Signed release requires a clean source checkout.');
+  const head = run('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' });
+  const revision = head.stdout?.trim();
+  if (head.error || head.status !== 0 || !/^[a-f0-9]{40}$/.test(revision ?? '')) throw new Error('Cannot identify signed application source.');
+  return revision;
+}
+
+function selectDeveloperIdIdentity(output, expectedTeamId) {
+  const identities = [...output.matchAll(/"Developer ID Application: ([^"]+ \(([A-Z0-9]+)\))"/g)]
+    .filter(match => !expectedTeamId || match[2] === expectedTeamId);
+  if (identities.length !== 1) throw new Error('Select exactly one existing Developer ID Application identity using VOO_APPLE_TEAM_ID.');
+  // Builder chooses the Developer ID certificate type itself and explicitly
+  // rejects a CSC_NAME containing that type prefix. Keep the team qualifier.
+  return { name: identities[0][1], teamId: identities[0][2] };
+}
+
 /** Select exactly one existing credential route; never read credential files. */
 function notarizationOptions(env, required = false) {
   const active = ROUTES.filter(route => {
@@ -52,4 +70,4 @@ function verifyNotarizedApp(appPath, expectedTeamId, run = spawnSync) {
   return { ...signature, stapled: true, gatekeeper: true };
 }
 
-module.exports = { notarizationOptions, verifyMacSignature, verifyNotarizedApp };
+module.exports = { notarizationOptions, verifyMacSignature, verifyNotarizedApp, signingSourceRevision, selectDeveloperIdIdentity };

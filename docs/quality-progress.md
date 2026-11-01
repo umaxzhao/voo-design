@@ -7,6 +7,7 @@
 ## 本轮：复用 VOO-Run 的 Mac 签名（接入与真实构建验证中）
 - `platform.macos-signing`：用户已明确授权构建工具内部使用原有本机发布配置；本机存在有效 Developer ID Application，已安装旧 VOO 的公开签名验证通过。Apple 公证认证实际通过，未输出、复制或提交凭据值，没有导出证书或修改钥匙串权限。
 - 已稳定复现旧 Design hook 拒绝“已有钥匙串身份 + App Store Connect API”这一输入，补齐 API/现有 profile 路由、显式签名要求、预检与失败阻断。签名前后分别检查 Developer ID/期望团队/Hardened Runtime 和公证票据/Gatekeeper；只有真实原生冒烟也通过后才写成功证明。新增环境载入只处理明确指定文件和 Apple 字段，诊断脱敏。
+- 定向 36 项测试与设计检查通过。`adcf1de` 的第一次真实打包在签名前被 electron-builder 拒绝：身份名称带有构建器禁止的证书类型前缀；失败日志保留在 `/private/tmp/voo-beta2-mac-arm64-signed.log`，没有成功签名收据或发布。已增加身份格式回归和干净源码前置检查，随后重新固定提交构建，不把该失败当作签包通过。
 - 新候选为 `1.0.0-beta.2`；Beta1 公布的包不覆盖、不改标为已签名。两个架构的签名收据与原生收据必须匹配候选提交才能通过 `--require-mac-signing` 组装。当前尚未完成新候选签名构建、完整门禁和公开发布，不能继承 Beta1 或最新 Web 的通过记录。
 - GitHub CLI 原登录刷新要求本人二次验证，已保留 GitHub Confirm access 页面；等待用户完成，期间继续本地实现与验证。VOO-Run 工作区的其他草稿与未推提交未修改。
 

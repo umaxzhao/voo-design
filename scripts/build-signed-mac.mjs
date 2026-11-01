@@ -6,16 +6,16 @@ import { loadMacReleaseEnvironment, redactMacDiagnostics, macSmokeEnvironment } 
 import { desktopReleasePlan } from './desktop-release-plan.mjs';
 
 const require = createRequire(import.meta.url);
-const { notarizationOptions, verifyNotarizedApp } = require('./mac-signing.cjs');
+const { notarizationOptions, verifyNotarizedApp, signingSourceRevision, selectDeveloperIdIdentity } = require('./mac-signing.cjs');
 const [arch = process.arch] = process.argv.slice(2);
 if (process.platform !== 'darwin' || process.arch !== arch) throw new Error('Signed release requires its native macOS architecture.');
 if (!process.env.npm_execpath) throw new Error('Run through npm run release:mac-signed.');
+const revision = signingSourceRevision();
 const env = await loadMacReleaseEnvironment(process.env.VOO_RELEASE_CREDENTIALS_FILE);
 env.VOO_MAC_SIGNING_REQUIRED = '1';
 // A cross-repository runner's GITHUB_SHA identifies its workflow, not the
 // checked-out app. Receipts must always describe the source actually built.
-env.GITHUB_SHA = spawnSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout?.trim();
-if (!/^[a-f0-9]{40}$/.test(env.GITHUB_SHA ?? '')) throw new Error('Cannot identify signed application source.');
+env.GITHUB_SHA = revision;
 const credentials = notarizationOptions(env, true);
 
 function run(command, args, timeout = 45_000, childEnv = env) {
@@ -30,11 +30,9 @@ function run(command, args, timeout = 45_000, childEnv = env) {
 }
 
 const identities = run('security', ['find-identity', '-v', '-p', 'codesigning']).stdout;
-const available = [...identities.matchAll(/"(Developer ID Application:[^"]+ \(([A-Z0-9]+)\))"/g)];
-const matches = available.filter(match => !env.VOO_APPLE_TEAM_ID || match[2] === env.VOO_APPLE_TEAM_ID);
-if (matches.length !== 1) throw new Error('Select exactly one existing Developer ID Application identity using VOO_APPLE_TEAM_ID.');
-env.CSC_NAME = matches[0][1];
-env.VOO_APPLE_TEAM_ID = matches[0][2];
+const identity = selectDeveloperIdIdentity(identities, env.VOO_APPLE_TEAM_ID);
+env.CSC_NAME = identity.name;
+env.VOO_APPLE_TEAM_ID = identity.teamId;
 if (env.APPLE_TEAM_ID && env.APPLE_TEAM_ID !== env.VOO_APPLE_TEAM_ID) throw new Error('Configured Apple team differs from the existing signing identity.');
 
 let authArgs;
