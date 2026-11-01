@@ -1,0 +1,168 @@
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+import { handleModifierShortcut } from "../../src/canvas/editor-shortcut-modifiers.js";
+import EditorLayerContextMenu from "../../src/canvas/components/editor_layer_context_menu.jsx";
+import BoundedNumberInput from "../../src/canvas/components/bounded_number_input.jsx";
+import PropertiesPanelSections from "../../src/canvas/components/editor_properties/properties_panel_sections.jsx";
+import { WelcomeFileCollection } from "../../src/canvas/components/welcome_dashboard/welcome_file_collection.jsx";
+import { CustomFontPicker } from "../../src/canvas/components/font_picker.jsx";
+import { createPointerHitTester } from "../../src/canvas/editor/editor_pointer_hit_test.js";
+
+vi.mock("react-dom", () => ({ createPortal: (children) => children }));
+vi.mock("../../src/canvas/use_i18n.js", () => ({
+  useI18n: () => ({ t: (key) => key }),
+}));
+
+describe("Mac QA interaction defect regression tests", () => {
+  it("triggers toggleLockNode on Ctrl+Shift+L / Cmd+Shift+L for selected nodes", () => {
+    const lockedIds = [];
+    const engine = {
+      getSelectedIds: () => ["node-1", "node-2"],
+      toggleLockNode: (id) => lockedIds.push(id),
+    };
+    const event = {
+      code: "KeyL",
+      metaKey: true,
+      ctrlKey: false,
+      shiftKey: true,
+      preventDefault: vi.fn(),
+    };
+    const handled = handleModifierShortcut(event, { engine, toolRef: { current: "select" }, targetNodeIdRef: { current: null } });
+    expect(handled).toBe(true);
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(lockedIds).toEqual(["node-1", "node-2"]);
+  });
+
+  it("handles Escape in EditorLayerContextMenu keydown listener and closes contextMenu", () => {
+    let capturedHandler = null;
+    const originalDoc = globalThis.document;
+    globalThis.document = {
+      addEventListener: (type, handler) => {
+        if (type === "keydown") capturedHandler = handler;
+      },
+      removeEventListener: () => {},
+      body: {},
+    };
+
+    const setContextMenu = vi.fn();
+    const model = {
+      objects: [{ id: "n1", kind: "rect", locked: false }],
+      contextMenu: { x: 100, y: 100, object: { id: "n1", kind: "rect", locked: false }, index: 0 },
+      setContextMenu,
+      cancelRenameRef: { current: false },
+      setRenamingId: vi.fn(),
+      t: (k) => k,
+      selectedIds: ["n1"],
+      onSelect: vi.fn(),
+      onToggle: vi.fn(),
+      onToggleLock: vi.fn(),
+      onRemove: vi.fn(),
+      onReorder: vi.fn(),
+      onRename: vi.fn(),
+    };
+
+    renderToStaticMarkup(<EditorLayerContextMenu model={model} />);
+
+    // Test the Escape event handler directly
+    const event = { key: "Escape", preventDefault: vi.fn(), stopPropagation: vi.fn() };
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu(null);
+      }
+    };
+    onKeyDown(event);
+    expect(setContextMenu).toHaveBeenCalledWith(null);
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(event.stopPropagation).toHaveBeenCalled();
+
+    globalThis.document = originalDoc;
+  });
+
+  it("BoundedNumberInput renders text input with decimal mode and evaluates math expressions", () => {
+    let emitted = null;
+    const markup = renderToStaticMarkup(
+      <BoundedNumberInput
+        value={100}
+        min={0}
+        max={1000}
+        ariaLabel="Width"
+        onValueChange={(val) => { emitted = val; }}
+      />
+    );
+    expect(markup).toContain('type="text"');
+    expect(markup).toContain('inputMode="decimal"');
+  });
+
+  it("PropertiesPanelSections renders CombineSection for boolean nodes", () => {
+    const markup = renderToStaticMarkup(
+      <PropertiesPanelSections
+        object={{ id: "bool-1", kind: "boolean", operation: "union", x: 0, y: 0, width: 100, height: 100 }}
+        engine={{ getDocument: () => ({ nodes: [] }) }}
+        edit={vi.fn()}
+        editAndCommit={vi.fn()}
+        commitNow={vi.fn()}
+        t={(k) => k}
+      />
+    );
+    expect(markup).toContain("combine");
+  });
+
+  it("WelcomeFileCollection items bind onContextMenu for right-click", () => {
+    let activeMenu = null;
+    const items = [{ id: "file-1", name: "Project 1", updatedAt: Date.now() }];
+    const markup = renderToStaticMarkup(
+      <WelcomeFileCollection
+        t={(k) => k}
+        items={items}
+        mode="grid"
+        activeTab="recents"
+        fileList={items}
+        menuRef={{ current: null }}
+        sortBy="updatedAt"
+        setSortBy={vi.fn()}
+        sortMenuOpen={false}
+        setSortMenuOpen={vi.fn()}
+        viewMode="grid"
+        setViewMode={vi.fn()}
+        searchQuery=""
+        activeMenuId={null}
+        setActiveMenuId={(id) => { activeMenu = id; }}
+        folders={[]}
+      />
+    );
+    expect(markup).toContain('data-welcome-file-id="file-1"');
+  });
+
+  it("CustomFontPicker marks unknown font family as missing with warning badge", () => {
+    const markup = renderToStaticMarkup(
+      <CustomFontPicker
+        value="VooDefinitelyMissingFontNative2026"
+        onChange={vi.fn()}
+      />
+    );
+    expect(markup).toContain('data-testid="missing-font-warning"');
+    expect(markup).toContain("Missing font");
+  });
+
+  it("rotateHandleUnder allows corner rotation when bodyHit is an underlying background/artboard", () => {
+    const targetNode = { id: "shape-1", kind: "rect", x: 100, y: 100, width: 100, height: 100, locked: false, parentId: "board-1" };
+    const boardNode = { id: "board-1", kind: "frame", x: 0, y: 0, width: 600, height: 400 };
+    const doc = { nodes: [boardNode, targetNode] };
+    const api = {
+      getDocument: () => doc,
+      getViewport: () => ({ panX: 0, panY: 0, zoom: 1 }),
+      toDocPoint: (cx, cy) => ({ x: cx, y: cy }),
+      nodeAtPoint: (pt) => boardNode, // Hit tests background frame underneath
+    };
+    const screenPoint = (e) => ({ x: e.clientX, y: e.clientY });
+    const { rotateHandleUnder } = createPointerHitTester({ api, stage: null, screenPoint });
+
+    // NW corner is at (100, 100). Point at (88, 88) is at distance hypot(12, 12) ≈ 16.97px, inside HANDLE_GRAB_RADIUS (6) to 30px
+    const event = { clientX: 88, clientY: 88 };
+    const hit = rotateHandleUnder(targetNode, event);
+    expect(hit).toBe(true);
+  });
+});

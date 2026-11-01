@@ -8,6 +8,7 @@ import {
   nodeAABB,
   nodeCorners,
   rectCornerRadiusHandles,
+  rotationHandleGeometry,
   selectionHandlePoints,
 } from "./scene_geometry.js";
 import { isCssGradient, parseGradient } from "../color_picker/gradient_fill.js";
@@ -230,6 +231,31 @@ export function drawSelection(
 
   if (withHandles) {
     screenHandles.forEach((point) => paintHandle(ctx, point, strokeColor));
+
+    // Render rotation handle stem and grip knob matching rotationHandleGeometry
+    if (node) {
+      const geom = rotationHandleGeometry(node, viewport.zoom);
+      if (geom?.base && geom?.grip) {
+        const baseScreen = docToScreenPoint(geom.base, viewport);
+        const gripScreen = docToScreenPoint(geom.grip, viewport);
+        ctx.beginPath();
+        ctx.moveTo(baseScreen.x, baseScreen.y);
+        ctx.lineTo(gripScreen.x, gripScreen.y);
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = FRAME_WIDTH;
+        ctx.stroke();
+
+        ctx.beginPath();
+        if (typeof ctx.arc === "function") {
+          ctx.arc(gripScreen.x, gripScreen.y, 4, 0, Math.PI * 2);
+        }
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = FRAME_WIDTH;
+        ctx.stroke();
+      }
+    }
 
     // The size chip belongs to the transform box, so it rides the same frame:
     // it appears exactly when the handles that resize the node do.

@@ -581,6 +581,7 @@ export function createEditor({
       ctrl.selectionController.getSelectedId?.(),
     commitEditorDocument: (options) =>
       ctrl.documentController.commitEditorDocument?.(options),
+    commit: (name) => ctrl.historyApi.commit?.(name),
     zoomToFit: () => viewportTools.zoomToFit?.(),
     zoomToHundred: () => viewportTools.zoomToHundred?.(),
     zoomIn: () => viewportTools.zoomIn?.(),

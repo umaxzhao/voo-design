@@ -4,6 +4,25 @@ import { createEditorGestureTransaction } from "../../shared/editor-gesture-tran
 
 const NUMBER_INPUT_GESTURE_KEY = "bounded-number-input";
 
+function evaluateMathExpression(str) {
+  if (typeof str !== "string") return NaN;
+  const trimmed = str.trim();
+  if (!trimmed) return NaN;
+  if (/^[+-]?\d+(?:\.\d+)?$/.test(trimmed)) {
+    return Number(trimmed);
+  }
+  if (!/^[0-9+\-*/().\s]+$/.test(trimmed)) {
+    return NaN;
+  }
+  try {
+    const fn = new Function(`"use strict"; return (${trimmed});`);
+    const val = fn();
+    return typeof val === "number" && Number.isFinite(val) ? val : NaN;
+  } catch {
+    return NaN;
+  }
+}
+
 /** Number input that validates on commit without blocking multi-digit typing. */
 export default function BoundedNumberInput({
   value,
@@ -56,7 +75,7 @@ export default function BoundedNumberInput({
   };
 
   const normalize = (rawValue) => {
-    const parsed = Number(rawValue);
+    const parsed = evaluateMathExpression(String(rawValue));
     const safeValue = Number.isFinite(parsed) ? parsed : value;
     return Math.min(max, Math.max(min, roundToPrecision(safeValue)));
   };
@@ -86,10 +105,8 @@ export default function BoundedNumberInput({
 
   return (
     <input
-      type="number"
-      min={min}
-      max={max}
-      step={step}
+      type="text"
+      inputMode="decimal"
       value={draft}
       ref={inputRef}
       aria-label={ariaLabel}
@@ -105,7 +122,7 @@ export default function BoundedNumberInput({
         const nextDraft = event.target.value;
         draftRef.current = nextDraft;
         setDraft(nextDraft);
-        const parsed = Number(nextDraft);
+        const parsed = evaluateMathExpression(nextDraft);
         if (
           nextDraft !== "" &&
           Number.isFinite(parsed) &&
@@ -138,17 +155,14 @@ export default function BoundedNumberInput({
           event.currentTarget.blur();
           return;
         }
-        // Plain arrows are the native number-input behaviour; Shift coarsens
-        // to ±10×step, mirroring the scrub modifier.
-        if (
-          event.shiftKey &&
-          (event.key === "ArrowUp" || event.key === "ArrowDown")
-        ) {
+        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
           event.preventDefault();
+          const stepMultiplier = event.shiftKey ? 10 : 1;
           const direction = event.key === "ArrowUp" ? 1 : -1;
+          const currentVal = normalize(draftRef.current);
           const nextValue = Math.min(
             max,
-            Math.max(min, roundToPrecision(normalize(draftRef.current) + direction * 10 * step)),
+            Math.max(min, roundToPrecision(currentVal + direction * stepMultiplier * step)),
           );
           const nextDraft = String(nextValue);
           draftRef.current = nextDraft;
@@ -159,11 +173,6 @@ export default function BoundedNumberInput({
       }}
       onKeyUp={(event) => {
         event.stopPropagation();
-        // Plain arrow keys drive the native number input; commit when the
-        // keypress lands so keyboard edits snap history too.
-        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-          commit();
-        }
       }}
     />
   );

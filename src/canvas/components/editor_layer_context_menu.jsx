@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { canConvertToPath, convertShapeToPathNode } from "../editor/scene_model.js";
 import { layerPanelModelType } from "./editor_layers_contract.js";
@@ -23,6 +24,19 @@ export default function EditorLayerContextMenu({
     selectedIds,
     onRemove
   } = model;
+
+  useEffect(() => {
+    if (!contextMenu) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        setContextMenu(null);
+      }
+    };
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
+  }, [contextMenu, setContextMenu]);
   return <>      {contextMenu ? createPortal(<>
       <div
         className="fixed inset-0 z-50"

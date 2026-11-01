@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { IconChevronDown } from "../icons.jsx";
 import { ensureFontLoaded } from "../editor/font_loader.js";
 import { GOOGLE_FONT_INDEX } from "../editor/google_fonts_index.js";
+import { isFigmaFontAvailable } from "../figma/figma-text.js";
 import { useI18n } from "../use_i18n.js";
 
 /**
@@ -500,6 +501,16 @@ export function CustomFontPicker({ value, onChange, defaultOpen = false, initial
     value?.split(",")[0]?.replace(/['"]/g, "") ||
     "Inter";
 
+  const isMissing = useMemo(() => {
+    if (!currentFont) return false;
+    const clean = currentFont.trim().replace(/^['"]|['"]$/g, "");
+    if (/^(sans-serif|serif|monospace|cursive|fantasy|system-ui)$/i.test(clean)) return false;
+    if (isFigmaFontAvailable(clean)) return false;
+    if (SYSTEM_FONTS_CATALOG.some((f) => f.name.toLowerCase() === clean.toLowerCase() || f.stack === value)) return false;
+    if (GOOGLE_FONTS_CATALOG.some((f) => f.family.toLowerCase() === clean.toLowerCase())) return false;
+    return true;
+  }, [currentFont, value]);
+
   // Memoised so the preview list and the preload effect share one stable
   // reference per search term (a fresh array every render would re-run the
   // preload on each keystroke).
@@ -544,15 +555,25 @@ export function CustomFontPicker({ value, onChange, defaultOpen = false, initial
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={`${t("editor.fontPicker.title")}: ${currentFont}`}
-        title={`${t("editor.fontPicker.title")}: ${currentFont}`}
+        title={isMissing ? `${currentFont} (Missing font)` : `${t("editor.fontPicker.title")}: ${currentFont}`}
         className="flex w-full items-center justify-between rounded-xl bg-[#222222] pl-3 pr-2 py-1.5 text-[11px] font-mono text-neutral-100 outline-none transition-all hover:bg-[#282828] focus:ring-1 focus:ring-white/20"
       >
-        <span
-          className="truncate pr-2 font-medium"
-          style={{ fontFamily: value }}
-        >
-          {currentFont}
-        </span>
+        <div className="flex items-center gap-1.5 min-w-0 pr-2">
+          <span
+            className="truncate font-medium"
+            style={{ fontFamily: value }}
+          >
+            {currentFont}
+          </span>
+          {isMissing ? (
+            <span
+              data-testid="missing-font-warning"
+              className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-sans text-amber-300"
+            >
+              Missing font
+            </span>
+          ) : null}
+        </div>
         <IconChevronDown size={13} className="shrink-0 text-neutral-400" />
       </button>
 

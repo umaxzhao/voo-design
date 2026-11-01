@@ -74,7 +74,7 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/transform*", "src/canvas/*shortcut*",
       "src/shared/editor-shortcut-catalog.js",
       "src/canvas/editor/drawing-gesture-*", "src/canvas/editor/move-gesture-*", "src/canvas/editor/editor-pointer-*",
-      "src/canvas/editor/editor_engine_tools.js", "src/canvas/editor/editor_transform_api.js", "src/canvas/editor/editor_engine_assembly.js", "tests/unit/editor-module-audit-regressions.test.js",
+      "src/canvas/editor/editor_engine_tools.js", "src/canvas/editor/editor_transform_api.js", "src/canvas/editor/editor_engine_assembly.js", "src/canvas/editor/editor_engine.js", "tests/unit/editor-module-audit-regressions.test.js", "tests/unit/mac_qa_interaction_fixes.test.jsx",
     ],
     related: ["canvas","layers","text","vectors","inspector"],
     features: ["selection.hit-testing","selection.transforms","selection.cancel","selection.shortcuts","selection.continuous-creation","selection.frame-title-selection"],
@@ -154,7 +154,7 @@ export const EDITOR_MODULES = [
     title: "Text editing and typography",
     paths: [
       "src/canvas/editor/editor_annotations.js", "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js", "src/canvas/components/editor_text*",
-      "src/canvas/components/editor_properties/text*", "tests/unit/text_section_compact.test.jsx", "tests/unit/tools_text_pen_shape.test.jsx", "tests/unit/affinity_tool_properties_panel.test.jsx", "tests/unit/text_on_path_engine_ops.test.js",
+      "src/canvas/components/editor_properties/text*", "src/canvas/components/font_picker.jsx", "tests/unit/text_section_compact.test.jsx", "tests/unit/tools_text_pen_shape.test.jsx", "tests/unit/affinity_tool_properties_panel.test.jsx", "tests/unit/text_on_path_engine_ops.test.js",
     ],
     related: ["selection","layout","compositing","documents","platform"],
     features: ["text.edit","text.box-sizing","text.typography","text.font-loading","text.placement-transactions"],
@@ -206,7 +206,7 @@ export const EDITOR_MODULES = [
     id: "inspector",
     title: "Inspector, menus and shared UI",
     paths: [
-      "src/canvas/components/scrub_field.jsx", "tests/e2e/inspector-control-cases.mjs", "tests/e2e/typography-inspector-cases.mjs", "tests/e2e/context-submenu-checks.mjs",
+      "src/canvas/components/scrub_field.jsx", "src/canvas/components/bounded_number_input.jsx", "tests/e2e/inspector-control-cases.mjs", "tests/e2e/typography-inspector-cases.mjs", "tests/e2e/context-submenu-checks.mjs",
       "tests/unit/export_presets.test.js", "tests/unit/right_panel_phase1.test.jsx", "tests/unit/properties_panel_restructure.test.jsx",
       "src/canvas/components/editor_export_dialog.jsx", "tests/unit/export_dialog.test.jsx",
       "src/canvas/components/editor_hooks/use_editor_palette_actions.js", "tests/unit/bottom_bar_ruler_more.test.jsx",

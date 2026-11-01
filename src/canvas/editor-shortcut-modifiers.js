@@ -85,6 +85,16 @@ export function handleModifierShortcut(event, context) {
           onDuplicateCanvas();
         }
         return true;
+      case "KeyL":
+        if (event.shiftKey) {
+          event.preventDefault();
+          const ids = engine.getSelectedIds?.() ?? (engine.getSelected?.() ? [engine.getSelected().id] : []);
+          for (const id of ids) {
+            engine.toggleLockNode?.(id);
+          }
+          return true;
+        }
+        break;
       case "KeyA":
         event.preventDefault();
         engine.selectAll();

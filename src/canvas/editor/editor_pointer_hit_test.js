@@ -204,7 +204,14 @@ export function createPointerHitTester({ api, stage: _stage, screenPoint }) {
     // Invisible corner rings must not capture a visible neighboring layer's
     // body at small zoom levels. The explicit grip above keeps its priority.
     const bodyHit = api.nodeAtPoint?.(docPt);
-    if (bodyHit && bodyHit.id !== node.id) return false;
+    if (bodyHit && bodyHit.id !== node.id) {
+      const doc = api.getDocument?.();
+      const nodeIndex = doc?.nodes?.findIndex((n) => n.id === node.id) ?? -1;
+      const hitIndex = doc?.nodes?.findIndex((n) => n.id === bodyHit.id) ?? -1;
+      if (hitIndex > nodeIndex && bodyHit.id !== node.parentId) {
+        return false;
+      }
+    }
 
     // 2. 4 corner handles rotation ring outside node bounds
     const cornerHandles = ["nw", "ne", "se", "sw"];
