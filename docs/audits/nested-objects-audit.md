@@ -175,3 +175,220 @@ the prior complete run. This task publishes regression/ownership/docs only.
 The later rebuilt entry differs from current production; the failed comparison
 is retained, not reported as byte identity. Current live single-row UI evidence
 is recorded separately in `agent-suggestions-live-ui-proof.json`.
+
+
+## Global overlay stacking
+
+Capability: `inspector.global-overlay-stacking`; shared with workspace title
+menus and platform sharing. A real share popover was partially covered by the
+editor's root z-50 stacking context. Its left-side pointer samples hit
+`editor-pages` instead of the share surface (`global-overlay-before.log`).
+
+The title bar owns a z-60 layer above editor content. Sharing uses a body portal
+at z-100, anchored to its trigger with viewport bounds and internal scrolling.
+Nested mobile sharing retains the existing popover ownership context so input
+inside its portal does not dismiss the parent menu. Global modal content uses
+body portals at z-110 or its existing higher layer; pending lazy surfaces also
+escape editor transforms and clipping. Portal content retains server-rendered
+semantics when there is no browser body.
+
+| Surface group | Review and acceptance |
+| --- | --- |
+| Share | Real title-bar trigger, 1600/1280/900px, docked Agent, nine pointer samples, identity input and Escape; 320x568 nested More → Share stays inside viewport and remains open while typing |
+| Title menus | Common title layer plus existing body workflow-menu portal; narrow More keyboard/focus and pointer hits retained |
+| Shortcuts, icon insertion, SVG | Previously inline fixed dialogs now portal to body; real components mounted under a deliberately transformed 40px clipped host remain fully hittable, with dialog semantics retained in SSR |
+| Lazy pending UI | Real suspended component's modal placeholder uses the same global portal and passes pointer samples outside its clipped host |
+| Settings, image export, commands | Existing body portals retained; real UI entry, pointer sampling, layered Escape, focus return and existing export state checks pass in `ui-global-interaction` |
+| Code export, variables, presentation export/viewer, font/menu pickers | Existing body portals reviewed in source; not all individual controls newly interaction-certified by this task |
+| First-run, setup, recovery, About | Native top-layer dialog or application-level modal reviewed; existing individual suites retained, not counted as new exhaustive runtime coverage |
+| Page-owned comments, retouch/download, prototype and exit prompt | Intentionally scoped to the page; not converted to unrelated application-wide dialogs |
+
+`ui-global-interaction.e2e.mjs` asserts actual `elementFromPoint` hits across
+surfaces and unchanged document/selection. The isolated modal harness tests
+component placement, not every production opening command. No share-room
+creation, snapshot upload, paid model, user document or collaboration session
+is started by these checks. Exact clean revision, release and production
+receipts are recorded in `docs/quality-progress.md`. Physical touch/stylus,
+signed native installs, all popover combinations and every service state remain
+outside this acceptance; a source audit alone is not a runtime pass.
+
+
+### Welcome action readiness found during overlay acceptance
+
+Capability: `workspace.file-actions-ready`. The cold-reopen import button was
+clickable before the lazy welcome page registered its file input listeners.
+The unmodified `24085cc` baseline reproduces the lost filechooser event too.
+The welcome page now marks its UI-only readiness after its existing action
+effects mount, and clears readiness on unmount. Desktop and narrow title-bar
+Import waits for that signal; New retains the mainline queued, idempotent
+request so an early click creates one document after dashboard registration.
+This flag is not document content or a new user setting.
+
+`titlebar-file-actions` holds the welcome module request, verifies Import is disabled and New remains enabled
+before registration, then releases it and retains the actual file
+picker, cancellation, portable snapshot import/export and New assertions.
+The original `continuous-creation` archive, geometry, bitmap pixels and undo
+checks are retained. Raw before/after and baseline logs are under
+`/private/tmp/voo-license-regression/global-overlay-*`. Earlier 15-second import
+readiness and cold filechooser failures remain separate evidence, not passed
+results. This repair does not certify every slow-device/native startup path.
+
+The incoming Figma fidelity fixture initially sampled a zero-node placeholder
+engine after a cold reopen. The diagnostic preserves that failure and shows
+the exact expected pixels once the imported document binds. Its picker helper
+now waits for the imported document marker and the normal open guard to turn
+off before exporting pixels; it does not wait for pixel values to match or
+change any pixel assertions. Evidence: `global-overlay-figma-engine-probe.log`.
+
+
+### Share identity update replay
+
+The real share input exposed an existing side effect inside a functional React
+state updater: saving and publishing identity from that updater fed external
+collaboration-store updates back into rendering. React replay could repeatedly
+publish or hit maximum update depth. Two real input events batched before paint
+reproduce excess publications in `global-overlay-identity-before.log`.
+Identity edits now merge through a current ref, enqueue a plain state value,
+and save/publish once from the input event. Opening the popover refreshes both
+state and ref. The browser regression preserves the live session callback and
+asserts two inputs produce exactly two publications, the latest field value,
+no page errors and unchanged document/selection; it does not stub publishing out.
+
+
+### Release attempt history
+
+`ui-global-interaction` 检查桌面 1600/1280/900px 分享、320px 嵌套分享、跨弹窗点击/关闭/焦点/选区与文档不变，及三个真实弹窗在变换/裁切宿主下的 9 点命中；设计/模块/格式与 20 项相关单测通过。证据 `global-overlay-after-final.log`、`global-overlay-unit-final.log` 同目录。登记 70 能力、87 浏览器；本地补丁保留其他草稿，备份 `global-overlay-primary-backup/`。首次完整门禁 `439c9d9` 中顶栏旧 Hook 模拟缺少 `useId`，4 项失败（`global-overlay-release.json`）；补齐模拟后重新完整执行，不以单项补跑替代。后续 `3ebb891` 单测 4601 通过/4 跳过，默认并发的导入就绪超时（`global-overlay-release-final.json`），未改断言独立复查通过（`global-overlay-import-recheck.log`）；发布调度新增 1–3 显式选项，默认仍 3、记录实际并发，准备重新完整执行。串行 `13185d6` 单测 4627 通过/4 跳过，在连续创作冷重开等待 filechooser 时失败（`global-overlay-release-serial.json`）；独立复查通过，且不含本轮改动的 `24085cc` 也复现早点击丢事件（`global-overlay-baseline-import.log`）。新增 `workspace.file-actions-ready`，首页监听器注册后才启用顶栏导入/新建；受控延迟回归修改前失败、修改后真实选择器/快照通过（`global-overlay-welcome-ready-before/after.log`），43 项相关单测通过。`c780441` 的 Figma 冷重开检查读到了节点数 0 的占位引擎而失败（`global-overlay-release-complete.json`）；探针确认导入绑定后同样像素全部正确（`global-overlay-figma-engine-probe.log`），仅补文档绑定/guard 前提，不改变像素断言。`9133105` 在第 76 步触发分享身份更新循环（`global-overlay-release-verified.json`）；批量真实输入确定性复现重复发布（`global-overlay-identity-before.log`）。将保存/发布移出可重放的 React updater，保留连续输入字段合并并要求每次输入只发布一次。最终完整门禁与线上结果待补录。
+
+The `51d2542` complete attempt later failed the pending-surface focus assertion
+in `editor-optional-loading` (`global-overlay-release-published.json`). The
+unchanged integration recheck passed (`global-overlay-optional-recheck.log`);
+the failed attempt is not a complete pass. Integration `9ba77dd` retained
+mainline queued New semantics but two SSR assertions still expected New to be
+disabled. Both local and CI failures are retained. `9d0a1d2` corrects those
+expectations while retaining Import readiness, early queued New and all actual
+file-picker assertions; its fresh uninterrupted core run passed 91/91 steps,
+4,654 units with four skipped, and all 87 browser suites.
+
+Final `8af23f5` also includes mainline Frame-fit and reparent changes and registers
+their unit ownership. Its GitHub build/unit job and fresh uninterrupted
+91/91 core run passed (4,674 units, four skipped; all 87 browser suites).
+`global-overlay-release-final-integration.json` records that exact clean revision.
+Main merge `4e8f506` has the identical source tree. The project script deployed
+the verified build to la2; the isolated production check compared 97 actual
+entry/loaded resources byte-for-byte and sampled real desktop/narrow Share,
+Settings, Commands and Export surfaces, inputs, Escape and unchanged document
+and selection with no page errors (`global-overlay-production-proof.json`).
+This is separate evidence from `9d0a1d2`, not an inherited pass.
+
+
+## Selection size label placement
+
+Capability: `compositing.selection-size-label`. The existing selection renderer
+preferred the upper side even when the lower side was unobstructed. The size
+chip now prefers the lower centre with the existing six-CSS-pixel gap; it falls
+back above only when the stage bottom cannot accommodate its 18px height and
+four-pixel margin. Existing horizontal and vertical clamping remain unchanged.
+The numeric label, colours, handles and underlying document operations are unchanged.
+
+| Context | Evidence |
+| --- | --- |
+| Reproduction | `size-label-before.log`: expected lower y=66, actual upper y=16 |
+| Zoom, DPR and edges | `container_selection_chrome.test.js`: 0.5/1/2x, DPR 1/2, top edge and bottom fallback; 18px screen height and original dimension text |
+| Real pointer selection | Existing `frame-label-selection` suite clicks the child in an actual editor before sampling chrome |
+| Visible object, rotation and Frame | `selection-size-label-checks.mjs` reads actual screenshot pixels below the selected bounds and asserts the upper badge is absent at 0.5/1/2x and 30 degrees |
+| Multi-selection | Preserves the existing no-size-chip policy; no unrelated new badge is introduced |
+| Document and selection | Exact document and selected IDs retained after each visible-chrome check; this presentation path adds no document/history command |
+
+The initial expanded browser check incorrectly assumed multi-selection already
+had a size chip. Its failure is retained in `size-label-browser.log`; the
+existing renderer was confirmed to draw only multi-selection outlines/handles.
+The corrected scope preserves that behaviour (`size-label-browser-final.log`).
+Clean `e2e3e0b` passed 91/91 core steps, 87 browser suites and 4,678 units
+(four skipped). Integrated `457b149` preserves mainline rendering optimizations
+and independently passed 91/91, 87 suites and 4,684 units (four skipped), with
+GitHub CI passing. Reports: `size-label-release.json` and
+`size-label-release-integrated.json`. Subsequent mainline changes are documentation
+only; `size-label-main-source-proof.json` records application-source identity
+with main merge `326860d`. The verified build is deployed to la2. Production
+acceptance matched 83 actual loaded resources byte-for-byte and sampled the
+lower chip and absent upper chip for a pointer-selected child and a Frame.
+Document/selection were unchanged and there were no page errors. Evidence:
+`size-label-production-proof.json`, `size-production-child.png` and
+`size-production-frame.png` under `/private/tmp/voo-license-regression/`.
+No physical display scaling, signed native builds or every clipping/overlay
+combination is certified by these Chromium/unit scenarios.
+
+
+## Comments shared right panel
+
+Capability: `inspector.comments-panel-slot`; comments keep their existing
+focused-document operations and deferred surface. The launcher is portalled
+into the page-navigation row's stable host, immediately after the page name.
+The host subscription follows unmount/remount; inactive editors cannot publish
+a launcher. No second comment state or document mutation path is introduced.
+
+Comments, cold loading and retry/error states use `PropertiesPanelShell` with
+the property header omitted. The original property/instance/history render
+branches yield while Comments owns the rail. Closing restores their existing
+state, and the existing History event switches from Comments into History.
+Compact canvases use the existing inspector shelf at readable full width,
+with layers hidden only while Comments is open and 48px touch controls.
+
+| Context | Acceptance |
+| --- | --- |
+| Position reproduction | `comments-panel-before.log` fails the original above-navigation launcher position |
+| Single panel | SSR asserts one aside and no inner card; cold/warm browser assertions require one `editor-properties-panel` containing comment content and no hidden property W control |
+| Desktop/compact | 1600/900/390px launcher adjacency, rail bounds, mobile touch close and original document/selection preservation |
+| Mode replacement | Close restores properties/previous History; History's registered command replaces Comments without a second panel |
+| Launcher lifecycle | Browser drawer unmounts the page host; returning produces exactly one launcher |
+| Comment operations | Existing draft/thread/mode/panel Escape sequence, seen state, camera pins, draft/reply retention, create/reply and one-step undo, cold cancellation/unmount and error/retry remain exercised |
+
+Before-fix source and local App backups are retained in
+`/private/tmp/voo-license-regression/comments-panel-primary-backup/`.
+Initial responsive fixtures lacked a touch context and queried hidden mobile
+fields without `includeHidden`; those failed logs are retained separately from
+`comments-panel-switching.log`. The initial SSR fixture expected an untranslated
+key although the existing label helper intentionally falls back to `Comments`;
+that failure remains in `comments-panel-unit-final.log`, with corrected 57-unit
+results in `comments-panel-unit-verified.log`. No product assertion was relaxed.
+Exact committed release, local App and production evidence are maintained in
+`docs/quality-progress.md`; not every native install, physical device, canvas
+type, panel placement or keyboard/service combination is certified here.
+
+
+The first clean `826e9fd` core attempt passed 4,686 units (four skipped) but
+stopped at `pages_dnd` because its direct-child button selector no longer
+matched the navigation row. `comments-panel-release.json` preserves this failed
+attempt. The suite now uses the explicit page-trigger marker, retaining all
+rename, mouse/touch reorder, cancellation, focus, safe-area and tool-hit assertions;
+its separate passing run is `comments-panel-pages.log`.
+The final targeted 58 units (`comments-panel-unit-sides.log`) and comment suite
+(`comments-panel-sides.log`) also cover the saved left/right inspector side and
+page-menu dismissal when opening Comments. Full fixed-revision release results
+are still pending; these independent runs are not a stitched release pass.
+
+
+Clean `daea9ce` independently passed 91/91 release steps, all 87 browser suites
+and 4,687 unit tests (four skipped), recorded in `comments-panel-release-fixed.json`.
+A subsequent standalone-placement loading check exposed a remaining second
+inspector in the pending facade (`comments-panel-mode-only-before.log`). Only
+an explicitly open list now owns the rail; standalone loading uses its existing
+launcher for progress, and failures retain retry/close outside the inspector.
+Sixty related units and the actual palette-triggered cold mode/cancel/late-load
+scenario pass in `comments-panel-mode-unit-final.log` and
+`comments-panel-mode-browser.log`. Its final complete gate is recorded separately.
+The extra focus-null exploratory fixture never entered its intended state and
+timed out (`comments-panel-unfocused-before.log`); it was removed from the
+registered suite, and is neither a product regression nor a passing acceptance.
+
+
+Final clean `12b9aba` passed a fresh uninterrupted 91/91 core run, all 87 browser
+suites and 4,689 units (four skipped), with matching GitHub CI success. Evidence:
+`comments-panel-release-final.json` and `comments-panel-final-ci.json`.
+Main had the identical tree before the documentation receipt. The project script
+deployed that verified build to la2. Production matched 87 entry/loaded script
+and style resources byte-for-byte, and passed launcher adjacency, both cold
+activation paths, one rail and nine-point hit tests, draft cancellation,
+previous-history restore, mobile touch close and unchanged document/selection
+with no page errors (`comments-panel-production-proof.json`). No comment was
+posted, room joined or existing user project changed by these isolated checks.

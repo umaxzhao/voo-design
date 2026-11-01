@@ -129,7 +129,7 @@
     z-index: 60;
   }
 
-  [data-testid="page-switcher"] > button {
+  [data-testid="page-switcher"] [data-page-switcher-trigger] {
     max-width: min(9rem, 34vw);
     min-height: 2.75rem;
     padding-inline: 0.625rem;

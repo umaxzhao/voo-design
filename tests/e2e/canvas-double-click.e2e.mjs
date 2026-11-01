@@ -186,5 +186,58 @@ await withEditorBrowser(async ({ page }) => {
   await doubleClick({ x: 160, y: 220 });
   assert.equal(await editId(), null);
   checks.push("locked text and hidden paths cannot be edited through the canvas");
+
+  // Frame fit-to-content on resize handle double-click
+  const fitFrame = { id: "fit-frame", kind: "group", isFrame: true, x: 50, y: 50, width: 400, height: 300, fill: "#222222" };
+  const fitChild = { id: "fit-child", parentId: "fit-frame", kind: "rect", x: 100, y: 100, width: 200, height: 120, fill: "#ff0000" };
+  await reset([fitFrame, fitChild]);
+  await page.evaluate(() => window.__vooEditor.selectExactly(["fit-frame"]));
+  await settle();
+
+  // Double click SE handle of fit-frame at (450, 350)
+  await doubleClick({ x: 450, y: 350 });
+  const fitted = await node("fit-frame");
+  assert.equal(fitted.x, 100, "Fitted frame x must match child AABB");
+  assert.equal(fitted.y, 100, "Fitted frame y must match child AABB");
+  assert.equal(fitted.width, 200, "Fitted frame width must match child AABB");
+  assert.equal(fitted.height, 120, "Fitted frame height must match child AABB");
+
+  const childAfter = await node("fit-child");
+  assert.equal(childAfter.x, 100, "Child absolute x must remain unchanged");
+  assert.equal(childAfter.y, 100, "Child absolute y must remain unchanged");
+  assert.equal(childAfter.width, 200, "Child width must remain unchanged");
+  assert.equal(childAfter.height, 120, "Child height must remain unchanged");
+
+  // Verify single undo step
+  await page.evaluate(() => window.__vooEditor.undo());
+  await settle();
+  const undone = await node("fit-frame");
+  assert.equal(undone.x, 50, "Undo must restore frame original x");
+  assert.equal(undone.y, 50, "Undo must restore frame original y");
+  assert.equal(undone.width, 400, "Undo must restore frame original width");
+  assert.equal(undone.height, 300, "Undo must restore frame original height");
+
+  // Verify redo
+  await page.evaluate(() => window.__vooEditor.redo());
+  await settle();
+  const redone = await node("fit-frame");
+  assert.equal(redone.x, 100, "Redo must reapply frame fitted x");
+  assert.equal(redone.y, 100, "Redo must reapply frame fitted y");
+  assert.equal(redone.width, 200, "Redo must reapply frame fitted width");
+  assert.equal(redone.height, 120, "Redo must reapply frame fitted height");
+
+  // Empty frame double-click handle must be no-op
+  const emptyFrame = { id: "empty-frame", kind: "group", isFrame: true, x: 80, y: 80, width: 300, height: 200, fill: "#333333" };
+  await reset([emptyFrame]);
+  await page.evaluate(() => window.__vooEditor.selectExactly(["empty-frame"]));
+  await settle();
+  await doubleClick({ x: 380, y: 280 }); // SE handle of empty frame
+  const emptyAfter = await node("empty-frame");
+  assert.equal(emptyAfter.x, 80);
+  assert.equal(emptyAfter.y, 80);
+  assert.equal(emptyAfter.width, 300);
+  assert.equal(emptyAfter.height, 200);
+
+  checks.push("frame fit-to-content: double click resize handle fits children AABB, preserves child absolute coordinates, exactly one undo/redo step, empty frame no-op");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });

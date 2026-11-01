@@ -124,7 +124,7 @@ export default function FigmaColorPicker({
       {primaryType === "gradient" && gradientType === "mesh" ? <div className="flex flex-wrap gap-2" role="group" aria-label={t("editor.fillPicker.meshPoints")}>
         {gradientStops.map((stop, index) => <button key={`${geometry.points[index].x}:${geometry.points[index].y}`} type="button" aria-label={t("editor.fillPicker.meshPoint", {
           n: index + 1
-        })} aria-pressed={activeStopIndex === index} onClick={() => setActiveStopIndex(index)} className={`size-8 rounded-lg border ${activeStopIndex === index ? "border-white" : "border-white/20"}`} style={{
+        })} aria-pressed={activeStopIndex === index} onClick={() => setActiveStopIndex(index)} className={`size-8 rounded-full border ${activeStopIndex === index ? "border-white" : "border-white/20"}`} style={{
           backgroundColor: stop.color
         }} />)}
       </div> : null}

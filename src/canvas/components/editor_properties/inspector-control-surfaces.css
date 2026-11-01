@@ -1,6 +1,7 @@
 /* Only the right inspector opts in. Shared controls elsewhere retain their skin. */
 [data-testid="editor-properties-panel"] {
   --inspector-control-height: 32px;
+  --inspector-control-radius: 12px;
   --inspector-field-surface: #262626;
   --inspector-select-surface: #171717;
   --inspector-track-surface: #171717;
@@ -28,7 +29,7 @@ html[data-theme="light"] [data-testid="editor-properties-panel"] {
   box-sizing: border-box;
   height: var(--inspector-control-height) !important;
   min-height: var(--inspector-control-height) !important;
-  border-radius: 6px !important;
+  border-radius: var(--inspector-control-radius) !important;
   padding-block: 0 !important;
   font-size: 11px !important;
   text-transform: none !important;
@@ -83,7 +84,7 @@ html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspe
   height: auto;
   min-height: var(--inspector-control-height);
   gap: 2px;
-  border-radius: 8px;
+  border-radius: var(--inspector-control-radius);
   padding: 2px;
   background-color: var(--inspector-track-surface) !important;
 }
@@ -91,7 +92,7 @@ html[data-theme="light"] [data-testid="editor-properties-panel"] :is([data-inspe
 [data-testid="editor-properties-panel"] [data-inspector-control="toggle"] {
   height: calc(var(--inspector-control-height) - 4px);
   min-height: calc(var(--inspector-control-height) - 4px);
-  border-radius: 6px;
+  border-radius: var(--inspector-control-radius);
 }
 
 [data-testid="editor-properties-panel"] [data-inspector-control="toggle"][aria-pressed="true"],
@@ -110,7 +111,7 @@ html[data-theme="light"] [data-testid="editor-properties-panel"] [data-inspector
   height: var(--inspector-control-height);
   min-height: var(--inspector-control-height);
   border: 1px solid var(--inspector-control-border);
-  border-radius: 6px;
+  border-radius: var(--inspector-control-radius);
 }
 
 [data-testid="editor-properties-panel"] :is([data-inspector-control="action"], [data-transform-actions] button),

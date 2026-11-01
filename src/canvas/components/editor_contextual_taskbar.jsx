@@ -239,7 +239,7 @@ function EditorContextualTaskBar({
             })}
       </>}
       {type === "shape" && <>
-        {["fill", "stroke"].map(paint => <EditorTooltip key={paint} title={label(paint)}><label className={`${BUTTON} relative`}><span className={`h-3.5 w-3.5 rounded-md border ${paint === "stroke" ? "border-2 border-white" : "border-white/40"}`} style={{
+        {["fill", "stroke"].map(paint => <EditorTooltip key={paint} title={label(paint)}><label className={`${BUTTON} relative`}><span className={`h-3.5 w-3.5 rounded-full border ${paint === "stroke" ? "border-2 border-white" : "border-white/40"}`} style={{
                   background: paint === "fill" && typeof node?.fill === "string" ? node.fill : undefined
                 }} /><input type="color" data-testid={`editor-taskbar-${paint}`} aria-label={label(paint)} value={/^#[0-9a-f]{6}$/i.test(node?.[paint]) ? node[paint] : "#ffffff"} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" onChange={event => edit({
                   [paint]: event.target.value,

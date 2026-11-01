@@ -1,3 +1,4 @@
+import GlobalOverlayPortal from "./global_overlay_portal.jsx";
 import PropTypes from "prop-types";
 import { memo, useEffect } from "react";
 import { IconClose } from "../icons.jsx";
@@ -26,7 +27,7 @@ function ShortcutReferenceModal({
   titleKey,
   groups,
   closeLabelKey = "editor.cancel",
-  overlayClassName = "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm",
+  overlayClassName = "fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm",
   panelClassName = "relative z-10 w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-3xl border border-white/10 bg-[#181818] p-6 shadow-panel font-mono text-neutral-200",
 }) {
   const { t } = useI18n();
@@ -45,7 +46,7 @@ function ShortcutReferenceModal({
 
   if (!isOpen) return null;
 
-  return (
+  const surface = (
     <div
       role="dialog"
       aria-modal="true"
@@ -105,6 +106,7 @@ function ShortcutReferenceModal({
       </div>
     </div>
   );
+  return <GlobalOverlayPortal>{surface}</GlobalOverlayPortal>;
 }
 
 ShortcutReferenceModal.propTypes = {

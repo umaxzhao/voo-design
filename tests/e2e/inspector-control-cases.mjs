@@ -19,10 +19,48 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   await select("audit-rect");
   const x = panel.getByRole("spinbutton", { name: "X", exact: true });
   const field = x.locator("..");
-  assert.equal((await styles(field)).radius, 6, "Numeric fields should no longer look like capsules");
+  assert.equal((await styles(field)).radius, 12, "Numeric fields keep the original large corner radius");
   assert.equal((await styles(field)).height, 32);
   assert.ok((await styles(panel)).radius >= 16, "Keep the large floating panel rounded");
   const original = await page.evaluate(() => window.__vooEditor.getNode("audit-rect"));
+  assert.equal(await panel.getByRole("button", { name: "Stroke type", exact: true }).count(), 0,
+    "Stroke uses the swatch as its only paint editor, matching Fill");
+  const stroke = panel.getByRole("button", { name: "Stroke", exact: true });
+  await stroke.click();
+  const strokeDialog = page.getByRole("dialog", { name: "Stroke", exact: true });
+  await strokeDialog.waitFor();
+  const assertCircles = async (locator, label) => {
+    const shapes = await locator.evaluateAll(elements => elements.map(el => {
+      const box = el.getBoundingClientRect(), style = getComputedStyle(el);
+      const radius = style.borderTopLeftRadius.endsWith("%")
+        ? box.width * parseFloat(style.borderTopLeftRadius) / 100
+        : parseFloat(style.borderTopLeftRadius);
+      return { width: box.width, height: box.height, radius };
+    }));
+    assert.ok(shapes.length > 0, `${label} must exist`);
+    assert.ok(shapes.every(shape => Math.abs(shape.width - shape.height) < 0.5 && shape.radius >= shape.width / 2),
+      `${label} must use circular color chips: ${JSON.stringify(shapes)}`);
+  };
+  await assertCircles(strokeDialog.locator('button[style*="background-color"]'), "Picker presets and document colors");
+  await assertCircles(panel.getByRole("button", { name: "Fill", exact: true }), "Fill swatch");
+  await assertCircles(stroke, "Stroke swatch");
+
+  await strokeDialog.getByRole("tab", { name: "Gradient", exact: true }).click();
+  await settle();
+  const linearStroke = await page.evaluate(() => window.__vooEditor.getNode("audit-rect").stroke);
+  assert.match(linearStroke, /^linear-gradient/);
+  await assertCircles(strokeDialog.locator("[data-stop-handle]"), "Gradient stop swatches");
+  await strokeDialog.getByRole("button", { name: "Mesh", exact: true }).click();
+  await assertCircles(strokeDialog.getByRole("group", { name: "Gradient points", exact: true }).getByRole("button"), "Mesh point swatches");
+  await page.keyboard.press("Escape");
+  await strokeDialog.waitFor({ state: "detached" });
+  assert.equal(await stroke.evaluate(el => el === document.activeElement), true);
+  await tool("undo"); await settle();
+  assert.equal(await page.evaluate(() => window.__vooEditor.getNode("audit-rect").stroke), linearStroke);
+  await tool("undo"); await settle();
+  assert.equal(await page.evaluate(() => window.__vooEditor.getNode("audit-rect").stroke), original.stroke);
+  mark("presets, fill/stroke chips, gradient stops and mesh points are circles; gradient/mesh edits undo individually and Escape restores focus");
+
   await x.fill(String(original.x + 20)); await x.press("Enter"); await settle();
   assert.equal(await page.evaluate(() => window.__vooEditor.getNode("audit-rect").x), original.x + 20);
   await tool("undo"); await settle();
@@ -32,7 +70,7 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   const dropdown = panel.getByRole("button", { name: "Blend mode", exact: true });
   const dropdownStyle = await styles(dropdown);
   assert.equal(dropdownStyle.height, 32);
-  assert.equal(dropdownStyle.radius, 6);
+  assert.equal(dropdownStyle.radius, 12);
   assert.notEqual(dropdownStyle.background, (await styles(field)).background, "A dropdown has a distinct surface");
   assert.equal(dropdownStyle.borderWidth, "1px");
   await dropdown.focus(); await dropdown.press("ArrowDown");
@@ -42,15 +80,17 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
   assert.equal(await dropdown.evaluate(el => el === document.activeElement), true);
   const rotate = panel.getByRole("button", { name: /Rotate 90/ });
   assert.equal((await styles(rotate)).background, "rgba(0, 0, 0, 0)", "Commands stay visually lighter than inputs");
+  assert.equal((await styles(rotate)).radius, 12);
   await rotate.click(); await tool("undo"); await settle();
   assert.equal(await page.evaluate(() => window.__vooEditor.getNode("audit-rect").rotation), original.rotation);
   await select("audit-frame");
   const horizontal = panel.getByRole("button", { name: "Horizontal", exact: true });
   const strip = horizontal.locator("..");
-  assert.equal((await styles(strip)).radius, 8);
+  assert.equal((await styles(strip)).radius, 12);
   await horizontal.click(); await settle();
   assert.equal(await horizontal.getAttribute("aria-pressed"), "true");
-  assert.equal((await styles(panel.getByRole("spinbutton", { name: "W", exact: true }).locator("../.."))).radius, 6);
+  assert.equal((await styles(panel.getByRole("spinbutton", { name: "W", exact: true }).locator("../.."))).radius, 12);
+  assert.equal((await styles(horizontal)).radius, 12);
   const inactive = panel.getByRole("button", { name: "Vertical", exact: true });
   assert.notEqual((await styles(horizontal)).background, (await styles(inactive)).background);
   await tool("undo"); await settle();
@@ -70,7 +110,7 @@ export async function runInspectorControlCases({ page, tool, mark, evidence }) {
       if (await toggle.isVisible() && await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
       await settle();
       await x.scrollIntoViewIfNeeded();
-      assert.equal((await styles(field)).radius, 6);
+      assert.equal((await styles(field)).radius, 12);
       assert.equal((await styles(field)).height, width < 768 ? 48 : 32);
       assert.ok((await styles(x)).fontSize >= 11, "Readable numeric values at every width");
       const anchorOverlaps = await panel.locator("[data-transform-position]").evaluate(el => {

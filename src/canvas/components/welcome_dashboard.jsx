@@ -1,5 +1,6 @@
 import { SCREENSHOT_ACCEPT, openWelcomeBrowser } from "./welcome_home_actions.js";
 import { usePromptAttachments } from "./use_prompt_attachments.js";
+import { useWelcomeActionReadiness } from "./welcome_dashboard/use_welcome_action_readiness.js";
 import React, { useEffect, useState, useRef } from "react";
 import { Search, Trash2, X } from "lucide-react";
 import { useDesignStore } from "../../store/design_store.js";
@@ -280,6 +281,8 @@ export default function WelcomeDashboard() {
     handleDuplicate,
     handleMoveToTrash,
   };
+
+  useWelcomeActionReadiness();
 
   return (
     <div

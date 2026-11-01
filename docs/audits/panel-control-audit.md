@@ -408,6 +408,9 @@ remains separate and is not attributed to the final revision.
 
 ## Inspector control hierarchy
 
+The 6px radius recorded for that historical revision is superseded by the
+user-approved 12px large-radius follow-up below.
+
 Capability: `inspector.control-hierarchy`. Styling opts in only inside
 `editor-properties-panel`; shared field/dropdown markers have no effect in
 Layers, the welcome page, Agent or toolbar. Large panel radii remain unchanged.
@@ -441,3 +444,15 @@ Clean fixed revision `7e6a77a3d0836b7eecceeefddf3be3f94afb11c0`: all 91 steps, 8
 Final right-dock validation: clean unchanged source `04aa32bd3ceb7e15f3f4ff09bb72be66288ffd6c` passed all 90 registered release steps, including 86 browser suites and 4604 unit assertions (4 skipped). Exact receipt: `/private/tmp/voo-browser-right-release.json`. Desktop and 390px right-overlay geometry, both exclusion directions, and the original workspace placement repair were verified; physical-device/native scopes remain unverified. Deployment evidence is recorded separately in `/private/tmp/voo-panel-exclusion-deployment.json`.
 
 Current-main integration was verified separately on `47471c9d15d44dbfe957a9c7813a6d39915c183e`: build, design lint, all 4637 unit assertions (4 skipped), and browser-drawer / titlebar-file-actions / ui-home-settings passed. The earlier 90-step report remains tied to 04aa32b and is not inherited by remote changes. Critical Browser/App/panel-action source files are byte-identical to that validated revision. The obsolete branch-only test-path runner error is retained in the integration receipt and initial log, then corrected to the registered home suite. Evidence: `/private/tmp/voo-browser-right-integration.json`.
+
+## Inspector large-radius follow-up
+
+Existing capability `inspector.control-hierarchy`: the user chose the original
+12px large control radius. Fields, dropdowns, segmented tracks/options and
+commands share one scoped CSS variable. Outer panels, dimensions, typography,
+fill/outline distinctions and existing commands remain unchanged.
+
+Baseline `/private/tmp/voo-inspector-radius-before.log` reproduces 6px versus
+12px. The existing inspector control browser helper verifies every control
+category, actual commit/cancel, dropdown keyboard/focus, rotation/layout undo,
+and 16 viewport/theme/locale contexts. Final revision `b965942e22bcfb408015acdba58f49d8d7c3cd8c`: all 91 release checks including 87 browser suites, 4637 unit passes/4 skips. Evidence `/private/tmp/voo-inspector-radius-release.json`. Production resources match the build; actual Chinese Frame and text controls, keyboard and undo pass without errors (`/private/tmp/voo-inspector-radius-production-result.log`). Physical devices and all advanced dialogs remain unverified.
