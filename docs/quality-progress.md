@@ -3,7 +3,7 @@
 ## 错误恢复页视觉统一（2026-11-02）
 
 - `platform.error-recovery`：使用现有 VOO 标志、共享按钮和中性色阶，去掉独立渐变、警告卡片与蓝色按钮；复制诊断收进详情区，保留恢复及诊断行为。
-- 实际 Chromium 已检查中英文、展开/收起、复制与反馈、真实重新加载、键盘焦点、1440/768/390px 长错误信息和浅色主题。日志 `/private/tmp/voo-error-recovery-browser-fixed.log`。完整干净版本门禁及最终提交证据待下述验证完成后记录，不能继承历史通过。
+- 实际 Chromium 已检查中英文、展开/收起、复制与反馈、真实重新加载、键盘焦点、1440/768/390px 长错误信息和浅色主题。日志 `/private/tmp/voo-error-recovery-browser-settled.log`。干净提交 `a7abc5b60cbd82e848d08aece1fc4b85af9aec62` 完整门禁 106/106 通过：4851 项单测通过、4 项跳过，102 组登记浏览器回归完成。报告 `/private/tmp/voo-error-recovery-release-verified.json`；11 组独立检查未运行，不能视为通过。
 - 功能覆盖仍部分；不认证原生崩溃、草稿实际恢复、剪贴板拒绝或其他浏览器，也未定位截图所触发的业务异常。[范围](audits/design-editor-interaction-audit.md#error-recovery-visual-integration--2026-11-02)。
 
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
