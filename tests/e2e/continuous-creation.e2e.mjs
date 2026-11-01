@@ -46,7 +46,8 @@ await withEditorBrowser(async ({ page }) => {
     await f.click({ x: 700, y: 500 }); await f.tool("f", "frame");
     await f.drag({ x: 80, y: 80 }, { x: 700, y: 500 });
     [frame] = await addedSince(before);
-    assert.equal(frame.isFrame, true); assert.equal(frame.parentId, before.nodes[0].id);
+    assert.equal(before.nodes.length, 0);
+    assert.equal(frame.isFrame, true); assert.equal(frame.parentId ?? null, null);
   });
   await f.step("rectangle-then-ellipse-through-real-tools", async () => {
     let before = await f.snapshot();
@@ -158,7 +159,7 @@ await withEditorBrowser(async ({ page }) => {
     await f.drag({ x: 650, y: 450 }, { x: 670, y: 465 });
     const moved = await f.node(frame.id), dx = moved.x - frame.x, dy = moved.y - frame.y;
     assert.ok(dx > 0 && dy > 0);
-    for (const node of before.nodes.filter(n => n.id !== before.nodes[0].id)) {
+    for (const node of before.nodes.filter(n => n.id !== frame.id)) {
       const current = await f.node(node.id);
       assert.equal(current.x, node.x + dx); assert.equal(current.y, node.y + dy);
     }
@@ -206,10 +207,12 @@ await withEditorBrowser(async ({ page }) => {
     await importButton.waitFor({ state: "visible" });
     const [chooser] = await Promise.all([page.waitForEvent("filechooser"), importButton.click()]);
     await chooser.setFiles({ name: "ContinuousCreation.zip", mimeType: "application/zip", buffer: archive });
-    await page.waitForFunction(id => window.__vooEditor?.getNode(id) && window.__vooEditor.getNodeBitmap(window.__vooEditor.getNode(id)), imageId);
+    await page.waitForFunction(id => window.__vooEditor?.getNode(id) && window.__vooEditor.getNodeBitmap(window.__vooEditor.getNode(id)) &&
+      document.querySelector('[data-testid="design-editor"] [data-open-guard]')?.getAttribute("data-open-guard") === "off", imageId);
     await f.settle(); assert.deepEqual(projection((await f.snapshot()).nodes), expected);
     assert.deepEqual(await artwork(page, frameId), painted);
     await f.layer(imageId); const before = await f.snapshot();
+    assert.deepEqual(await f.selected(), [imageId]);
     await page.keyboard.press("ArrowRight"); await f.settle(); assert.notDeepEqual(await f.snapshot(), before);
     await f.key("z"); await f.settle(); assert.deepEqual(await f.snapshot(), before);
   });

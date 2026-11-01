@@ -13,6 +13,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/page_switcher.jsx", "tests/unit/titlebar_actions.test.jsx", "tests/unit/welcome_header_actions.test.js",
       "tests/e2e/critical_flows.e2e.mjs",
       "tests/e2e/empty-canvas-checks.mjs",
+      "tests/e2e/authored-frame-fixture.mjs",
       "tests/unit/workspace-background.test.js",
     ],
     related: [
@@ -94,6 +95,7 @@ export const EDITOR_MODULES = [
     title: "Selection and transforms",
     paths: [
       "tests/unit/legacy-tool-shortcuts.test.js",
+      "tests/e2e/creation-session-fixture.mjs",
       "src/canvas/components/editor_page_frame_labels.jsx", "src/canvas/editor/editor_pointer*", "src/canvas/editor/*hit-test*",
       "src/canvas/editor/selection*", "src/canvas/editor/transform*", "src/canvas/*shortcut*", "src/canvas/editor/drawing-gesture-*",
       "src/canvas/editor/move-gesture-*", "src/canvas/editor/editor-pointer-*", "src/canvas/editor/editor_engine_tools.js",

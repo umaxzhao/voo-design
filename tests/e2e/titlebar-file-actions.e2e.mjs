@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
-import { assertEmptyCanvas, verifyEmptyCanvasImports } from "./empty-canvas-checks.mjs";
+import { assertEmptyCanvas, verifyEmptyCanvasImports, verifyEmptyCanvasDrawing } from "./empty-canvas-checks.mjs";
 
 // Hold the lazy dashboard so New is clicked before its effect can subscribe.
 let releaseWelcome;
@@ -25,6 +25,7 @@ await withEditorBrowser(async ({ page, errors }) => {
   assert.equal(await page.evaluate(() => window.__vooStore.openDocuments.length), 1);
   assert.equal(await page.evaluate(() => window.__vooStore.fileName), "Design2.voo");
   await assertEmptyCanvas(page);
+  await verifyEmptyCanvasDrawing(page);
   const retained = await page.evaluate(async id => {
     const { workspaceStorage } = await import("/src/services/workspace_storage.js");
     return [...await workspaceStorage.readFileBytes(id)];

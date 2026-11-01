@@ -19,6 +19,26 @@ export async function assertEmptyCanvas(page) {
   assert.equal(chromePixels, 0, "An empty canvas must not paint a synthetic page outline");
 }
 
+export async function verifyEmptyCanvasDrawing(page) {
+  await assertEmptyCanvas(page);
+  const bounds = await page.getByTestId("editor-pages").boundingBox();
+  const y = bounds.y + bounds.height / 2;
+  await page.evaluate(() => window.__vooEditor.setTool("rect"));
+  for (const [index, offset] of [-180, 40].entries()) {
+    const x = bounds.x + bounds.width / 2 + offset;
+    await page.mouse.move(x, y - 60); await page.mouse.down();
+    await page.mouse.move(x + 100, y + 20, { steps: 6 }); await page.mouse.up();
+    await page.waitForFunction(count => window.__vooEditor.getDocument().nodes.length === count, index + 1);
+  }
+  assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().nodes.every(node => node.kind === "rect" && !node.parentId)), true);
+  for (const count of [1, 0]) {
+    await page.keyboard.press("ControlOrMeta+z");
+    await page.waitForFunction(count => window.__vooEditor.getDocument().nodes.length === count, count);
+  }
+  await page.evaluate(() => window.__vooEditor.setTool("select"));
+  await assertEmptyCanvas(page);
+}
+
 async function importDocument(page, name, document) {
   const scene = value => ({ version: 2, canvasType: "design", canvasId: name, ...value });
   const serialized = document.pages ? { ...document, pages: document.pages.map(item => ({ ...item,

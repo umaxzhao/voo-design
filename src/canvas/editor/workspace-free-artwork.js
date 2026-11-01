@@ -1,5 +1,6 @@
 import { artworkHitPath } from "./free-artwork-hit-regions.js";
 import { createArtworkPicture } from "./workspace-artwork-picture.js";
+import { TOOL } from "./editor_constants.js";
 
 /** A free document keeps world coordinates; only its raster window follows the camera. */
 export function freeCanvasSurface(page, workspace, zoom) {
@@ -56,9 +57,13 @@ export function attachFreeCanvasArtwork({
     });
     Object.assign(hits.style, style);
     const doc = engine.getDocument();
-    const pathKey = JSON.stringify(surface);
+    const tool = engine.getTool?.() ?? TOOL.SELECT;
+    const pathKey = JSON.stringify([surface, tool]);
     if (previousDoc !== doc || previousPathKey !== pathKey) {
-      hits.style.clipPath = artworkHitPath(doc, surface);
+      // Creation tools need the whole workspace, including an empty canvas.
+      // Select/Hand keep artwork hit regions so background panning is preserved.
+      hits.style.clipPath = tool !== TOOL.SELECT && tool !== TOOL.HAND
+        ? "none" : artworkHitPath(doc, surface);
       previousDoc = doc;
       previousPathKey = pathKey;
     }

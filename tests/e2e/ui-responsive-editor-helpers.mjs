@@ -1,3 +1,4 @@
+import { createAuthoredFrame } from "./authored-frame-fixture.mjs";
 import assert from "node:assert/strict";
 
 /** Catalog layout must not depend on CLIs installed on the test host. No API
@@ -25,6 +26,7 @@ export async function settlePanels(page) {
 }
 
 export async function seedResponsiveDocument(page) {
+  await createAuthoredFrame(page);
   await page.evaluate(async () => {
     const { useDesignStore } = await import("/src/store/design_store.js");
     const engine = window.__vooEditor, doc = engine.getDocument();

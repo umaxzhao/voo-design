@@ -288,5 +288,18 @@ workspace chrome drew an unrelated page-edge outline on unbounded roots.
   The first full gate on `f9bf3204` retained four stale default-Frame assertions:
   empty-page cases now require zero nodes; workspace-paint persistence uses an
   explicit authored Frame and retains paint, reopen and nonmutation assertions.
+  The next gate on `3dafd02f` passed units but retained an actual drawing failure:
+  artwork-only hit regions left empty-space drags routed to background panning.
+  Creation tools now receive the full pointer plane; Select/Hand retain their
+  existing artwork/background routing. Unmodified `qa_flows` pointer assertions
+  pass after repair. Frame-dependent browser cases author a Frame explicitly,
+  rather than requiring New to supply one; no selection/paint assertions are removed.
   Actual OS dialogs, installed Electron, external services and other browser
   engines remain unverified. No desktop tag, installer or Release is issued.
+
+Cold-reopen selection in the continuous-creation fixture now clicks the actual
+layer-name button: a row-center click fell into the thumbnail/name gap after
+removing one hierarchy level. The original failure is retained; target-engine
+readiness and exact selected image ID are asserted before real arrow/undo input.
+The full continuous-create/save/cold-reopen scenario then passed unchanged pixel,
+geometry and history checks.
