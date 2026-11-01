@@ -2,7 +2,7 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from 'playwright';
-import { createServer } from 'vite';
+import { startEditorBrowserServer } from './editor-browser-server.mjs';
 import postcss from 'postcss';
 import tailwind from 'tailwindcss';
 import { readFile, readdir, mkdir, writeFile } from 'node:fs/promises';
@@ -14,14 +14,13 @@ const fixtureDir = new URL('../fixtures/html2nodes/', import.meta.url);
 const fixtures = await Promise.all((await readdir(fixtureDir)).filter(n => n.endsWith('.html')).sort().map(async name => ({ name: name.replace('.html', ''), html: await readFile(new URL(name, fixtureDir), 'utf8') })));
 const css = (await postcss([tailwind({ content: fixtures.map(f => ({ raw: f.html, extension: 'html' })), corePlugins: { preflight: false } })]).process('@tailwind base; @tailwind utilities;', { from: undefined })).css;
 const reset = '*{box-sizing:border-box}body{margin:0}main{font:16px Arial}';
-const server = await createServer({ server: { port: 0, host: '127.0.0.1' }, logLevel: 'error' });
-await server.listen();
+const server = await startEditorBrowserServer();
 let browser;
 const report = [];
 try {
   browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
   const page = await browser.newPage({ viewport: { width: 320, height: 200 }, deviceScaleFactor: 1 });
-  await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/tests/fixtures/html2nodes/flex.html`);
+  await page.goto(`${server.origin}/tests/fixtures/html2nodes/flex.html`);
   for (const fixture of fixtures) {
     const result = await page.evaluate(async ({ html, css, reset }) => {
       const { htmlToDocument } = await import('/src/canvas/editor/html_import.js');
