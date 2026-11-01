@@ -26,13 +26,17 @@ export function createHistoryAssetPins() {
     }
   }
 
-  function parseLegacy(snapshot) {
+  function legacyAssets(snapshot) {
     if (legacySnapshots.has(snapshot)) return legacySnapshots.get(snapshot);
     try {
-      return JSON.parse(snapshot);
+      const raw = JSON.parse(snapshot);
+      const nodes = (raw?.doc ?? raw)?.nodes;
+      // Cache IDs only: retaining parsed legacy documents would duplicate the
+      // entire JSON history in memory just to protect a small set of assets.
+      return Array.isArray(nodes) ? assetsFor(nodes) : new Set();
     } catch {
       // Preserve the existing history reader's handling of malformed legacy entries.
-      return null;
+      return new Set();
     }
   }
 
@@ -47,20 +51,19 @@ export function createHistoryAssetPins() {
     };
     retain(doc);
     for (const snapshot of snapshots) {
-      let raw = snapshot;
       if (typeof snapshot === "string") {
-        raw = parseLegacy(snapshot);
-        nextLegacy.set(snapshot, raw);
-      }
-      retain(raw?.doc ?? raw);
+        const ids = legacyAssets(snapshot);
+        nextLegacy.set(snapshot, ids);
+        nextSources.set(snapshot, ids);
+      } else retain(snapshot?.doc ?? snapshot);
     }
     // Count each distinct node array once, including future redo entries and
     // the live uncommitted scene. Drop strong references when history drops it.
-    for (const [nodes, ids] of retainedSources) {
-      if (nextSources.get(nodes) !== ids) updateReferences(ids, -1);
+    for (const [source, ids] of retainedSources) {
+      if (nextSources.get(source) !== ids) updateReferences(ids, -1);
     }
-    for (const [nodes, ids] of nextSources) {
-      if (retainedSources.get(nodes) !== ids) updateReferences(ids, 1);
+    for (const [source, ids] of nextSources) {
+      if (retainedSources.get(source) !== ids) updateReferences(ids, 1);
     }
     retainedSources = nextSources;
     legacySnapshots = nextLegacy;

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createHistory, MAX_HISTORY } from "../../src/canvas/editor/editor_history.js";
 import { createEngineHistoryState } from "../../src/canvas/editor/editor_engine_history_state.js";
 import { createBitmapCache } from "../../src/canvas/editor/bitmap_cache.js";
+import { execFileSync } from "node:child_process";
 
 function fixture(nodes = []) {
   let doc = { nodes };
@@ -25,6 +26,25 @@ function fixture(nodes = []) {
 }
 
 describe("history asset retention and scan cost", () => {
+  it("retains legacy IDs without keeping their parsed documents alive", () => {
+    const moduleUrl = new URL("../../src/canvas/editor/editor-history-asset-pins.js", import.meta.url).href;
+    const run = `
+      import assert from 'node:assert/strict';
+      import {createHistoryAssetPins} from ${JSON.stringify(moduleUrl)};
+      const collect = createHistoryAssetPins();
+      const parse = JSON.parse;
+      let parsed;
+      JSON.parse = text => { const value = parse(text); parsed = new WeakRef(value); return value; };
+      const legacy = '{"doc":{"nodes":[{"imageId":"image","maskId":"mask"}]}}';
+      assert.deepEqual(collect(null, [legacy]), new Set(['image', 'mask']));
+      JSON.parse = parse;
+      for (let i = 0; i < 8; i++) { await new Promise(setImmediate); global.gc(); }
+      assert.equal(parsed.deref(), undefined, 'Legacy parsed documents must be reclaimable');
+      assert.deepEqual(collect(null, [legacy]), new Set(['image', 'mask']));
+    `;
+    expect(() => execFileSync(process.execPath, ["--expose-gc", "--input-type=module", "-e", run], { timeout: 10000 })).not.toThrow();
+  });
+
   it("does not reread unchanged historical nodes on repeated refresh or selection", () => {
     const read = vi.fn(() => "shared-image");
     const nodes = [{ get imageId() { return read(); }, maskId: "shared-mask" }];

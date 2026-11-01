@@ -11,7 +11,8 @@ Its active source map covers the live uncommitted scene and all history entries,
 including redo. Reference counts change only when those sources enter or leave.
 Dropped history/session sources lose their strong references on the next refresh;
 the weak cache does not keep discarded arrays alive. Legacy JSON parsing is
-cached only for strings still present in the current history. Malformed entries
+cached as ID sets only for strings still present in the current history. Parsed
+legacy documents remain reclaimable, verified in an exposed-GC subprocess. Malformed entries
 retain the existing ignore behavior. Bitmap byte budgets and their eviction
 policy are unchanged; pinned assets may intentionally exceed that budget.
 
@@ -26,7 +27,7 @@ policy are unchanged; pinned assets may intentionally exceed that budget.
 | Remaining contexts | Native interrupted writes, signed installers, physical input, every legacy snapshot and total application memory remain unverified. `native_studio` excluded. | Unverified |
 
 Red log: `voo-history-pins-red.log` (two failures, four behavior passes).
-Targeted units: eight new checks plus five structural-sharing and five bitmap
+Targeted units: nine new checks plus five structural-sharing and five bitmap
 cache checks. Real editor log: `voo-history-pins-browser.log` (three contexts).
 Execution is separate from exhaustive functional coverage.
 
@@ -48,3 +49,10 @@ Actual-file production input measurements and the fixed release revision are
 recorded after the candidate gate. Do not infer them from the Node probe.
 Private evidence belongs in the `history-asset-retention/` visualization artifact;
 the original Figma file, decoded nodes and screenshots are not committed.
+
+The first fixed candidate `645f84d` passed 4,760 units/four skips and began
+browser checks, then was intentionally stopped after review found its legacy
+cache retained complete parsed documents. The GC regression fails on that
+candidate and passes after storing ID sets only. Its partial release/log are
+retained as `voo-history-pins-release-initial.*`; they are not release success
+evidence. The corrected candidate requires a fresh complete gate.
