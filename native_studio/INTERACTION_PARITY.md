@@ -35,7 +35,7 @@
 最终应用源码：[`d5720aa`](https://github.com/umaxzhao/voo-design/commit/d5720aac5669970c2b311def4e9f6cb8ac6c38dc)。
 [完整机器记录及指纹](../docs/audits/native-parity/repair/verification.json)：同源码 **412/412** 集成检查（`-Onone`）、模块规划 **11/11**、登记检查通过；生产构建（`-Osize`）及 ad-hoc 签名通过，二进制 **5,082,720 bytes**。
 新增 Swift 文件严格 lint 通过；差分规则/消息数量未增加。旧文件全量 lint 仍失败（3,163 条诊断，基线 3,346），不记为全量通过。
-优化测试的中间运行曾因渐变描边断言失败（410/411）；[原始失败](../docs/audits/native-parity/repair/gradient-stroke-before.log) 保留。最终集成检查未宣称为优化测试运行，生产构建与真实 App 操作另列。
+优化测试的中间运行曾因渐变描边断言失败（410/411）；[原始失败](../docs/audits/native-parity/repair/gradient-stroke-before.txt) 保留。最终集成检查未宣称为优化测试运行，生产构建与真实 App 操作另列。
 
 | 最终 FORM（86%） | 最终 Code（已清理背景） |
 | --- | --- |

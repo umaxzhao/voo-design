@@ -178,11 +178,11 @@
       "sha256": "dfd5f7c02f44f588a12c7b7777155b4d93eb5387db801e60880405fea77247bd"
     },
     {
-      "path": "docs/audits/native-parity/repair/catalog-tests-final.log",
+      "path": "docs/audits/native-parity/repair/catalog-tests-final.txt",
       "sha256": "3fe911aeb373c36f52fb61f23c4451cef3b5b574c2e628eb69505d75bee0ed09"
     },
     {
-      "path": "docs/audits/native-parity/repair/catalog-tests.log",
+      "path": "docs/audits/native-parity/repair/catalog-tests.txt",
       "sha256": "525c96b229e8391038c2e257588fda4980e6a64f120b12d2a39a837de740361a"
     },
     {
@@ -218,7 +218,7 @@
       "sha256": "aeced70dcdfd55ebbaec5040bc89a9b45987c6fa1a1df3c346648f684ebb329e"
     },
     {
-      "path": "docs/audits/native-parity/repair/gradient-stroke-before.log",
+      "path": "docs/audits/native-parity/repair/gradient-stroke-before.txt",
       "sha256": "b185b5320e768cb4b9918ed57987be3d47dd2ab99d4e31c3d4456ca96790f596"
     },
     {
@@ -230,19 +230,19 @@
       "sha256": "ece4640572491fe181abc3bae4223b8df6c755b9313a116c85888f2667214a76"
     },
     {
-      "path": "docs/audits/native-parity/repair/model-check.log",
+      "path": "docs/audits/native-parity/repair/model-check.txt",
       "sha256": "507bbbbc2d891f0ddd248262acf1d5479a3f8fbbdc462ec4781c0cee58f6cf4c"
     },
     {
-      "path": "docs/audits/native-parity/repair/native-tests-final.log",
+      "path": "docs/audits/native-parity/repair/native-tests-final.txt",
       "sha256": "c4adccf9d62580fc6d8acbbe13325e8d70611e9e9c695f1392223c4c23756655"
     },
     {
-      "path": "docs/audits/native-parity/repair/paint-after.log",
+      "path": "docs/audits/native-parity/repair/paint-after.txt",
       "sha256": "13d0d99112e481c6b67a959e12d34dafaac244802bbcfa5edff85a381d58f02a"
     },
     {
-      "path": "docs/audits/native-parity/repair/paint-before.log",
+      "path": "docs/audits/native-parity/repair/paint-before.txt",
       "sha256": "47e439dce597eeb31d9bb69ee5e0a46ca8dd72fbc93f00f8b96ab67d16db1d4a"
     },
     {
@@ -250,7 +250,7 @@
       "sha256": "bfba580ea50abeca5822a86c8aee0c25dc1c1cfbdd910cde6d2c2b98b5422cf9"
     },
     {
-      "path": "docs/audits/native-parity/repair/production-build-final.log",
+      "path": "docs/audits/native-parity/repair/production-build-final.txt",
       "sha256": "3ba9f0c26ec89e191a77b5146475e90af4fb9fac965cf426d2c0714fd91ebc9a"
     },
     {
@@ -262,7 +262,7 @@
       "sha256": "b9017c86b8dce9d18cd94bea6c3e662e639e05da62f641b3d7b5e0615d27e461"
     },
     {
-      "path": "docs/audits/native-parity/repair/ui-launch-final.log",
+      "path": "docs/audits/native-parity/repair/ui-launch-final.txt",
       "sha256": "fdc5d07c4cf953d461ecf8e0b2c11c04f24ff7db65b1fa29f94f0b052f2b86cc"
     },
     {
