@@ -18,8 +18,12 @@ try {
   await page.getByRole('button', { name: 'New', exact: true }).click();
   await page.waitForFunction(() => !!window.__vooEditor);
   assert.ok(await page.evaluate(() => !!window.electronAPI), 'Desktop preload must be available');
-  const canvas = page.locator('canvas').first();
+  await page.waitForFunction(() => document.querySelector('[data-testid="design-editor"] [data-open-guard]')
+    ?.getAttribute('data-open-guard') === 'off', null, { timeout: 60000 });
+  const canvas = page.locator('[data-testid="editor-pages"] canvas').first();
+  await canvas.waitFor({ state: 'visible', timeout: 20000 });
   const box = await canvas.boundingBox();
+  assert.ok(box && box.width > 0 && box.height > 0, 'Visible editor canvas must have nonzero bounds');
   await page.keyboard.press('r');
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();

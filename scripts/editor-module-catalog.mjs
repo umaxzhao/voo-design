@@ -11,6 +11,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/welcome*", "src/canvas/components/welcome_dashboard/*",
       "src/canvas/components/editor*resources*", "src/canvas/components/editor_layers_assets*",
       "src/canvas/components/titlebar*",
+      "tests/e2e/critical_flows.e2e.mjs",
     ],
     related: ["documents","inspector","platform"],
     features: ["workspace.touch-file-open", "workspace.file-actions-ready","workspace.projects","workspace.cold-start-new","workspace.covers","workspace.assets","workspace.templates","workspace.settings-entry"],
@@ -286,6 +287,7 @@ export const EDITOR_MODULES = [
       "tests/e2e/agent-suggestions.e2e.mjs", "tests/e2e/agent-suggestions-harness.jsx",
       "tests/e2e/agent-selection-context.e2e.mjs",
       "tests/unit/canvas_agent_build_layout.test.js", "tests/unit/canvas_tools_build_layout.test.js",
+      "scripts/editor-check-plans.mjs", "tests/e2e/qa3_electron.e2e.mjs", "tests/e2e/image-electron.e2e.mjs",
     ],
     related: ["workspace","documents","inspector","images","text"],
     features: [
@@ -314,15 +316,12 @@ export const RELEASE_BROWSER_SUITES = ["editor-fixture-startup", ...EDITOR_MODUL
   .flatMap(module => module.suites).filter(suite => suite !== "editor-fixture-startup")];
 
 // Standalone checks are visible debt, not implicit passes or silent omissions.
-const unreviewedSuites = {
-  platform: ["claude_agent", "codex_agent", "mcp_cli", "qa3_electron"],
-  workspace: ["critical_flows"],
-};
 export const ADDITIONAL_BROWSER_CHECKS = [
-  ...Object.entries(unreviewedSuites).flatMap(([owner, suites]) => suites.map(suite => ({
-    suite, owner, kind: "unreviewed",
-    reason: "Existing standalone suite: review its fixtures, assertions and service requirements before gate registration.",
-  }))),
+  { suite: "claude_agent", owner: "platform", kind: "external", reason: "Live integration requires an authenticated Claude Code CLI and a real model request; no paid preflight is run in offline audits." },
+  { suite: "codex_agent", owner: "platform", kind: "external", reason: "Live integration requires an authenticated Codex CLI and a real streamed model/tool request." },
+  { suite: "mcp_cli", owner: "platform", kind: "external", reason: "Live integration launches authenticated Claude/Codex to call MCP tools and create canvas content." },
+  { suite: "critical_flows", owner: "workspace", kind: "local", reason: "Isolated localhost browser path covering load, create, draw/select, undo/redo, ZIP export, draft restore and local signaling share." },
+  { suite: "qa3_electron", owner: "platform", kind: "native", reason: "Isolated Electron smoke covering preload, document creation and pointer drawing." },
   { suite: "canvas_fps", owner: "canvas", kind: "hardware", reason: "Hardware/scene-specific FPS gate; preserve environment and scene sizes." },
   { suite: "image-electron", owner: "platform", kind: "native", reason: "Separate isolated Electron and native filesystem acceptance." },
   { suite: "image-network", owner: "images", kind: "network", reason: "Separate real model downloads, inference and network acceptance." },

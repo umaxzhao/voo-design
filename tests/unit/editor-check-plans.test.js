@@ -39,6 +39,12 @@ describe("module ownership and conservative check planning", () => {
     expect(() => validateModuleCatalog(catalog, () => true, { additionalChecks: [{ ...additionalChecks[0], reason: "" }] })).toThrow("Invalid standalone");
     expect(() => validateModuleCatalog(catalog, () => true, { additionalChecks: [{ ...additionalChecks[0], suite: "nested-placement" }] })).toThrow("Duplicate standalone");
   });
+  it("classifies reviewed local and authenticated external checks", () => {
+    expect(ADDITIONAL_BROWSER_CHECKS.find(check => check.suite === "critical_flows").kind).toBe("local");
+    expect(ADDITIONAL_BROWSER_CHECKS.filter(check => check.kind === "external").map(check => check.suite))
+      .toEqual(["claude_agent", "codex_agent", "mcp_cli"]);
+    expect(ADDITIONAL_BROWSER_CHECKS.find(check => check.suite === "qa3_electron").kind).toBe("native");
+  });
   it("broadens unowned executable paths to the complete gate instead of skipping them", () => {
     expect(modulesForChanges(["src/layers/drag.js"], catalog)).toMatchObject({ ids: ["layers"], unmapped: [] });
     expect(modulesForChanges(["src/new-tool.js"], catalog)).toMatchObject({ ids: ["layers", "masks"], fullReleaseRequired: true });

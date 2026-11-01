@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { _electron as electron } from "playwright";
 import { startEditorBrowserServer } from "./editor-browser-server.mjs";
@@ -187,5 +187,14 @@ try {
     });
     await closed;
   }
-  await server.close();
+  try {
+    await server.close();
+  } finally {
+    await rm(profile, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 200,
+    });
+  }
 }
