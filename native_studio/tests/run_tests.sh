@@ -30,6 +30,9 @@ TEST_FILES=(
   "$DIR/NativeInspectorVisualTests.swift"
   "$DIR/NativeTitleBarDetailTests.swift"
   "$DIR/NativeToolMenuParityTests.swift"
+  "$DIR/NativeToolRailResponsiveTests.swift"
+  "$DIR/NativeViewAidParityTests.swift"
+  "$DIR/NativeTextWidthTests.swift"
   # "$DIR/AIAgentTests.swift"
   "$DIR/main.swift"
 )

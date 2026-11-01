@@ -449,6 +449,8 @@ public class CanvasStageView: NSView {
     /// True while the node tool is editing the anchors of a selected path.
     public var isPathEditing: Bool { pathEditingNodeId != nil }
 
+    public var showGuides: Bool = true { didSet { needsDisplay = true } }
+
     public var showRulers: Bool = false {
         didSet {
             horizontalRuler.isHidden = !showRulers
@@ -626,9 +628,8 @@ public class CanvasStageView: NSView {
             transformHandles.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -thickness)
         ])
 
-        // Add Floating Contextual Taskbar
+        // The retired legacy bar stays detached; the root island owns selection actions.
         contextualTaskbar.isHidden = true
-        addSubview(contextualTaskbar)
 
         // Add Floating Bottom Tools Pill
         bottomToolsPill.translatesAutoresizingMaskIntoConstraints = false
@@ -1218,9 +1219,8 @@ public class CanvasStageView: NSView {
             ctx.restoreGState()
         }
 
-        // 4. Persistent ruler guide lines (web: mint #a7ffd4 at 45% idle) only
-        // when rulers are active.
-        if showRulers, let guides = document.guides {
+        // 4. Guide visibility is independent of ruler tracks (Electron parity).
+        if showGuides, let guides = document.guides {
             ctx.setStrokeColor(NSColor(hex: ThemeTokens.accentMint).withAlphaComponent(0.45).cgColor)
             ctx.setLineWidth(1.0 / zoom)
             for g in guides {
@@ -2280,7 +2280,7 @@ public class CanvasStageView: NSView {
                     if isSnapped { break }
                 }
             }
-            if !isSnapped, let userGuides = document.guides {
+            if !isSnapped, showGuides, let userGuides = document.guides {
                 for g in userGuides where g.axis == "v" {
                     if abs(candidate.x - g.position) <= docThreshold {
                         snapped.x = g.position
@@ -2321,7 +2321,7 @@ public class CanvasStageView: NSView {
                     if isSnapped { break }
                 }
             }
-            if !isSnapped, let userGuides = document.guides {
+            if !isSnapped, showGuides, let userGuides = document.guides {
                 for g in userGuides where g.axis == "h" {
                     if abs(candidate.y - g.position) <= docThreshold {
                         snapped.y = g.position

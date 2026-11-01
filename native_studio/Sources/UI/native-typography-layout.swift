@@ -3,7 +3,7 @@ import AppKit
 /// Mirrors TypographyBasics: captions belong to each group, not a compact unlabeled grid.
 enum NativeTypographyLayout {
     enum Caption: String, CaseIterable {
-        case font, weight, size, lineHeight, letterSpacing, style, alignment
+        case font, weight, size, lineHeight, letterSpacing, style, alignment, widthMode, boxWidth
         var title: String {
             let chinese =
                 (UserDefaults.standard.string(forKey: SettingsDrawerView.languageDefaultsKey)
@@ -23,6 +23,9 @@ enum NativeTypographyLayout {
             case (.style, false): return "Style"
             case (.alignment, true): return "对齐"
             case (.alignment, false): return "Alignment"
+            case (.widthMode, true): return "文本框"
+            case (.widthMode, false): return "Text box"
+            case (.boxWidth, _): return NativeCopy.text(.textBoxWidth)
             }
         }
     }
@@ -80,6 +83,8 @@ enum NativeTypographyLayout {
                 context.move(to: CGPoint(x: x + 1, y: 10))
                 context.addLine(to: CGPoint(x: x + width - 1, y: 10))
             }
+        } else if kind == .typeBoxWidth {
+            context.stroke(CGRect(x: 2, y: 5, width: 12, height: 6))
         } else {
             if kind == .typeSpacing {
                 context.translateBy(x: 16, y: 0)
@@ -108,6 +113,8 @@ enum NativeTypographyLayout {
         var underline: NSView
         var styleGroup: NSView
         var alignment: NSView
+        var widthMode: NSView
+        var boxWidth: NSView
     }
 
     static func makeCaptions(in container: NSView) -> [Caption: NSTextField] {
@@ -123,7 +130,9 @@ enum NativeTypographyLayout {
             })
     }
 
-    static func layout(_ controls: Controls, captions: [Caption: NSTextField], width: CGFloat)
+    static func layout(
+        _ controls: Controls, captions: [Caption: NSTextField], width: CGFloat, fixedWidth: Bool
+    )
         -> CGFloat
     {
         controls.heading.frame = CGRect(x: 2, y: 0, width: width - 4, height: 16)
@@ -176,7 +185,14 @@ enum NativeTypographyLayout {
         controls.alignment.frame = CGRect(
             x: styleWidth + 12, y: top + rowStep * 3 + 20, width: width - styleWidth - 12,
             height: 32)
-        return top + rowStep * 3 + 52
+        let modeTop = top + rowStep * 4
+        captions[.widthMode]?.frame = CGRect(x: 0, y: modeTop, width: width, height: 16)
+        controls.widthMode.frame = CGRect(x: 0, y: modeTop + 20, width: width, height: 32)
+        captions[.boxWidth]?.isHidden = !fixedWidth
+        controls.boxWidth.isHidden = !fixedWidth
+        captions[.boxWidth]?.frame = CGRect(x: 0, y: modeTop + 64, width: width, height: 16)
+        controls.boxWidth.frame = CGRect(x: 0, y: modeTop + 84, width: width, height: 32)
+        return modeTop + (fixedWidth ? 116 : 52)
     }
 }
 

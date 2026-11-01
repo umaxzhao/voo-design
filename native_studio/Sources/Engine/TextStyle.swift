@@ -120,7 +120,7 @@ public enum TextStyleResolver {
         let style = NSMutableParagraphStyle()
         style.alignment = alignment(for: node.textAlign)
         style.lineHeightMultiple = max(CGFloat(node.lineHeight ?? 1.2), 0.8)
-        style.lineBreakMode = .byWordWrapping
+        style.lineBreakMode = (node.boxWidth ?? 0) > 0 ? .byWordWrapping : .byClipping
         return style
     }
 
