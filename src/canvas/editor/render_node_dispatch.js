@@ -33,8 +33,9 @@ import {
   drawGlassOverlay,
 } from "./render_figma_effects.js";
 import { additionalStrokePaints, primaryStrokePaint } from "./stroke-paint-passes.js";
-import { needsStyleIsolation, drawIsolatedStyle, isolatedStyleNode } from "./render-isolated-style.js";
+import { needsStyleIsolation, drawIsolatedStyle, isolatedStyleNode, backdropStyleNode } from "./render-isolated-style.js";
 import { imagePaintMatrix } from "./image-paint-layout.js";
+import { effectSourceGeneration } from "./effect-source.js";
 
 export function drawNode(
   ctx,
@@ -48,9 +49,13 @@ export function drawNode(
   if (!node.visible) return;
   if (needsStyleIsolation(node, renderState)) {
     drawIsolatedStyle(ctx, node, context => drawNode(context,
-      isolatedStyleNode(node), bitmapOf, maskOf, gpu,
+      isolatedStyleNode(node, effectSourceGeneration(node, bitmapOf, maskOf, gpu?.renderer), Boolean(gpu?.fullResolution), Boolean(bypassAdjustments)), bitmapOf, maskOf, gpu,
       bypassAdjustments, { ...renderState, isolatedStyle: true }));
     return;
+  }
+  if (!renderState?.isolatedStyle && (node.backgroundBlur > 0 || node.effects?.glass?.enabled)) {
+    node = backdropStyleNode(node, effectSourceGeneration(node, bitmapOf, maskOf, gpu?.renderer),
+      Boolean(gpu?.fullResolution), Boolean(bypassAdjustments));
   }
   const effects = node.effects;
   const hasShadow = Boolean(effects?.shadow?.enabled);

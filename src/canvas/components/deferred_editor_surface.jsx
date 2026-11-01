@@ -23,6 +23,9 @@ function PendingSurface({ onClose, position }) {
         closeRef.current();
       } else if (["ArrowUp", "ArrowDown", "Home", "End", "Tab"].includes(event.key)) {
         event.preventDefault();
+        // A late browser/default focus restore can run after mount. Navigation
+        // must reclaim the pending surface instead of trapping focus behind it.
+        element?.focus({ preventScroll: true });
       }
     };
     const pointerDown = (event) => {

@@ -1,5 +1,6 @@
 import { wasmEngineEnabled, loadEditorWasmIndex } from '../../engine-wasm/editor-index.js';
 import { validateDesignTokens } from "./design_tokens.js";
+import { createArtworkReadApi } from "./workspace-artwork-stamp.js";
 import { documentRenderListener } from "./render_notifications.js";
 import { releaseStagePictureCache, cancelStagePictureRefinement } from "./stage_picture_cache.js";
 import { TOOL } from "./editor_constants.js";
@@ -164,6 +165,7 @@ export function createEditor({
     notify: () => notify(),
     requestRender: () => requestRender(),
     getFitInsets,
+    cameraPublishedExternally: cameraMode === "shared",
     hasDomOverlay: () => Boolean(ctrl?.annotations?.getEditingTextId?.() ||
       ctrl?.annotations?.getEditingRegionId?.()),
   });
@@ -369,7 +371,7 @@ export function createEditor({
     return cachedSpatialIndex;
   }
 
-  function render() {
+  function render({ readback = false } = {}) {
     const evaluatedDoc = getDoc();
     const videoIds = new Set();
     for (const node of evaluatedDoc.nodes) {
@@ -444,7 +446,7 @@ export function createEditor({
     previewDirty = null;
     previewViewport = null;
     previewCanRepaint = true;
-    for (const listener of renderListeners) listener();
+    for (const listener of renderListeners) listener({ readback });
   }
 
   function requestRender() {
@@ -777,7 +779,7 @@ export function createEditor({
       const wasPaintingEnabled = stagePaintingEnabled;
       stagePaintingEnabled = true;
       try {
-        render();
+        render({ readback: true });
         // The free workspace owns a detached measurement canvas; its readback
         // must exclude selection handles, hover controls, guides and grids.
         // Keep the full surface so spatial effects retain their neighbourhood.
@@ -843,12 +845,10 @@ export function createEditor({
 
     // Node reads
     getEffectiveNode,
-    getNodeBitmap: (node) =>
-      node ? (cache.get(node)) : undefined,
-    getNodeMask: (node) =>
-      node
-        ? ctrl.maskTools.maskSourceOf(node) || cache.getMask(node)
-        : undefined,
+    ...createArtworkReadApi({ getDocument: getDoc, getBitmap: node => cache.get(node),
+      getPaintBitmap: node => ctrl.paintTools.bitmapSourceOf(node),
+      getMask: node => ctrl.maskTools.maskSourceOf(node) || cache.getMask(node),
+      getBypass: () => bypassAdjustments }),
     getAdjustmentLayerFailure: (nodeId) => adjustmentLayerFailure(doc, nodeId),
     getHost: () => hostAdapter,
   };

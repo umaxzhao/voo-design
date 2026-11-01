@@ -5,9 +5,15 @@ import { prepareAppImageCompression, shouldOptimizeAppImage } from './appimage-c
 
 export function prepareSigningEnv(env = process.env, warn = console.warn) {
   const prepared = { ...env };
+  // Actions supplies missing secrets as empty strings. electron-builder treats
+  // an empty CSC_LINK as the working directory, rather than an absent cert.
+  for (const key of ['CSC_LINK', 'CSC_KEY_PASSWORD', 'WIN_CSC_LINK', 'WIN_CSC_KEY_PASSWORD',
+    'APPLE_ID', 'APPLE_APP_SPECIFIC_PASSWORD', 'APPLE_TEAM_ID']) {
+    if (prepared[key] === '') delete prepared[key];
+  }
   // A Windows certificate must not enable macOS keychain discovery.
-  if (!env.CSC_LINK) prepared.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
-  if (!env.CSC_LINK && !env.WIN_CSC_LINK) {
+  if (!prepared.CSC_LINK) prepared.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
+  if (!prepared.CSC_LINK && !prepared.WIN_CSC_LINK) {
     warn('[voo-design] Code signing skipped: CSC_LINK / WIN_CSC_LINK not set. Building unsigned. See docs/code-signing.md.');
   }
   return prepared;

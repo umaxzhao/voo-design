@@ -1,3 +1,4 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
@@ -160,6 +161,6 @@ await withEditorBrowser(async ({
     assert.equal((await doc()).height, 240);
   });
   assert.equal(visited.size + Object.keys(blocked).length, advertised.length, "Every advertised MCP tool needs a result or an explicit blocker");
-  await writeFile(`${process.env.VOO_IMAGE_AUDIT_DIR ?? "/private/tmp/voo-image-complete"}/agent-blockers.json`, JSON.stringify(blocked, null, 2));
+  await writeFile(`${process.env.VOO_IMAGE_AUDIT_DIR ?? editorArtifactPath("voo-image-complete")}/agent-blockers.json`, JSON.stringify(blocked, null, 2));
   audit.finish();
 });

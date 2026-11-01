@@ -26,6 +26,7 @@ fi
 # Slim web builds intentionally omit weights. Check the separately published
 # assets before replacing the entry point; never turn a release into a model 404.
 bash scripts/deploy-editor-models.sh --check
+bash scripts/deploy-editor-sharing.sh
 
 BACKUP_PATH="/srv/voo-run/editor-backups/${REVISION}-$(date -u +%Y%m%dT%H%M%SZ)"
 SSH_OPTIONS="ssh -o ControlMaster=no -o BatchMode=yes -o ConnectTimeout=12"

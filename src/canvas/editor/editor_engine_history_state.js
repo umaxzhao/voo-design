@@ -17,6 +17,7 @@ import {
 } from "./scene_model.js";
 import { validateEditorDocumentSnapshot } from "../../shared/editor-document-contract.js";
 import { TOOL } from "./editor_constants.js";
+import { createHistoryAssetPins } from "./editor-history-asset-pins.js";
 
 export const HISTORY_TOOL_NAMES = {
   [TOOL.SELECT]: "editor.history.entry.transform",
@@ -45,24 +46,6 @@ export const HISTORY_TOOL_NAMES = {
   [TOOL.GRADIENT]: "editor.history.entry.gradient",
 };
 
-function collectAssetIds(candidate, ids) {
-  for (const node of candidate?.nodes ?? []) {
-    if (node.imageId) ids.add(node.imageId);
-    if (node.maskId) ids.add(node.maskId);
-  }
-}
-
-function parseSnapshot(snapshot) {
-  if (!snapshot) return null;
-  if (typeof snapshot === "object") return snapshot;
-  if (typeof snapshot !== "string") return null;
-  try {
-    return JSON.parse(snapshot);
-  } catch {
-    return null;
-  }
-}
-
 export function createEngineHistoryState({
   getDoc,
   setDoc,
@@ -84,6 +67,7 @@ export function createEngineHistoryState({
 }) {
   const contourSnapshotIds = new WeakMap();
   const contourSnapshots = new Map();
+  const collectPinnedAssets = createHistoryAssetPins();
   let nextContourSnapshotId = 1;
 
   function snapshotState() {
@@ -115,16 +99,7 @@ export function createEngineHistoryState({
   }
 
   function refreshBitmapCachePins() {
-    const ids = new Set();
-    collectAssetIds(getDoc(), ids);
-    // Object snapshots are cheap to walk; pin every history-referenced asset so
-    // undo/redo never races LRU eviction. Dropped entries fall out of the union.
-    for (const snapshot of history.getSnapshots()) {
-      const raw = parseSnapshot(snapshot);
-      if (!raw) continue;
-      collectAssetIds(raw?.doc ?? raw, ids);
-    }
-    cache.setPinnedKeys(ids);
+    cache.setPinnedKeys(collectPinnedAssets(getDoc(), history.getSnapshots()));
   }
 
   function restore(snapshot, options = {}) {

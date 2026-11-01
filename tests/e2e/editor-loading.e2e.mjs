@@ -1,3 +1,4 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
@@ -38,19 +39,25 @@ await withEditorBrowser(async ({ page }) => {
     const loading = page.getByTestId("loading-modal");
     await loading.waitFor();
     if (await loading.locator("[data-loading-brand]").count() !== 1) {
-      await page.screenshot({ path: "/private/tmp/voo-license-regression/loading-brand-before.png" });
+      await page.screenshot({ path: editorArtifactPath("voo-license-regression/loading-brand-before.png") });
     }
     assert.equal(await loading.locator("[data-loading-brand]").count(), 1,
       "The editor loading surface uses the VOO brand icon instead of an accent ring");
     const icon = loading.locator("[data-loading-brand]");
     const progress = loading.getByRole("progressbar");
     assert.equal(await progress.getAttribute("aria-valuenow"), null, "Unknown download progress must not invent a percentage");
-    const iconBox = await icon.boundingBox(), barBox = await progress.boundingBox();
-    assert.ok(barBox.y >= iconBox.y + iconBox.height + 20, "Progress sits below the brand with breathing room");
+    // A rotating span's viewport rectangle includes its transparent corners.
+    // Layout spacing must not depend on which animation frame was sampled.
+    const brandGap = await loading.evaluate(element => {
+      const brand = element.querySelector("[data-loading-brand]");
+      const track = element.querySelector('[role="progressbar"]');
+      return track.offsetTop - brand.offsetTop - brand.offsetHeight;
+    });
+    assert.ok(brandGap >= 20, "Progress sits below the brand with breathing room");
     assert.equal(await icon.evaluate(el => getComputedStyle(el).animationName), "voo-loading-turn");
     const transform = await icon.evaluate(el => getComputedStyle(el).transform);
     await page.waitForFunction(before => getComputedStyle(document.querySelector("[data-loading-brand]")).transform !== before, transform);
-    await page.screenshot({ path: "/private/tmp/voo-license-regression/loading-brand-desktop.png" });
+    await page.screenshot({ path: editorArtifactPath("voo-license-regression/loading-brand-desktop.png") });
     await page.emulateMedia({ reducedMotion: "reduce" });
     assert.equal(await icon.evaluate(el => getComputedStyle(el).animationName), "none");
     assert.equal(await progress.locator("div").evaluate(el => getComputedStyle(el).animationName), "none");
@@ -66,7 +73,7 @@ await withEditorBrowser(async ({ page }) => {
       });
       assert.ok(geometry.x >= 0 && geometry.right <= 320, "Loading fits a narrow viewport");
       assert.equal(new Set(geometry.rgb).size, 1, "The loading surface is neutral in both themes");
-      await page.screenshot({ path: `/private/tmp/voo-license-regression/loading-brand-${theme}-mobile.png` });
+      await page.screenshot({ path: editorArtifactPath(`voo-license-regression/loading-brand-${theme}-mobile.png`) });
     }
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.setViewportSize({ width: 1440, height: 1000 });

@@ -1,3 +1,4 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
@@ -84,7 +85,7 @@ await withEditorBrowser(
     );
 
     const before = await bars.boundingBox();
-    await page.screenshot({ path: "/private/tmp/voo-bottom-toolbar-parking.png" });
+    await page.screenshot({ path: editorArtifactPath("voo-bottom-toolbar-parking.png") });
     assert.ok(
       before.y + before.height <= zoomBounds.y - 6,
       `The docked contextual toolbar must stay above the canvas zoom controls: ${JSON.stringify({ before, zoomBounds })}`,

@@ -190,7 +190,7 @@ export function WelcomeFileCollection({
                   <WelcomeFileCover item={item} />
 
                   {/* Top action overlay: Star & More menu button */}
-                  <div className="pointer-events-auto absolute bottom-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity z-10">
+                  <div className="welcome-file-actions pointer-events-auto absolute bottom-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity z-10">
                     {/* Star button */}
                     {!isTrash && (
                       <button

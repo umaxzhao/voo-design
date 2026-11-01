@@ -1,6 +1,14 @@
 # Changelog
 
+## 1.0.0-beta.1
+
+- Prepare native Windows x64, Linux x64, macOS Intel and Apple Silicon release jobs with connector resources, packaged startup/file roundtrip checks, merged update manifests and SHA-256 checksums. Assemble draft prereleases only after every target succeeds; unsigned packages and remaining installer/update acceptance are disclosed.
+- Confirm unsaved native-window/application closure before disposing the local CLI bridge; cancelling preserves the live session. Retain native Chinese resources on macOS and inspect transitive updater dependencies in the shipped ASAR.
+
 ## 1.0.0
+
+- Repair independent constraint-diagram hit targets, 48px compact navigation and command targets, mobile Browser split layout and file-card opening/Settings clearance. Restore ten self-starting browser regressions without fixed ports or workspace paths.
+- Preserve Canvas text state during letter-spacing capability detection so imported headings retain their browser line layout. Keep legacy room share URLs through scoped nginx redirects with configuration rollback.
 
 - Present streamed HTML and bulk Agent layouts as native element-by-element authoring with a VOO-purple cursor, carried placement outlines and bounded paint pacing. Share this path with external MCP/App streams; retain stable layer IDs, one-step undo, cancel rollback and document-bound continuation guards. Respect reduced motion and remove decorative scanner/skeleton effects.
 

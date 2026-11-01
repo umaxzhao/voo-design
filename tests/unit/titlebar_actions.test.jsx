@@ -1,6 +1,7 @@
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import fs from "node:fs";
+import { createRequire } from "node:module";
 
 const state = vi.hoisted(() => ({ welcomeOpen: false, welcomeActionsReady: false, setWelcomeOpen: vi.fn() }));
 vi.mock("react", async (original) => ({
@@ -120,8 +121,16 @@ describe("title bar actions", () => {
     expect(settings).toContain('t("titlebar.cliWizard")');
     expect(settings).toContain('new CustomEvent("voo:open-onboarding")');
     const main = source("../../electron/main.cjs");
-    expect(main).toContain('dispatchMenuAction("help:onboarding")');
-    expect(main).toContain('dispatchMenuAction("help:about")');
+    expect(main).toContain('require("./native-menu.cjs")');
+    const buildMenu = createRequire(import.meta.url)("../../electron/native-menu.cjs");
+    let template;
+    const dispatchMenuAction = vi.fn();
+    buildMenu({ app: { name: "VOO Design", getLocale: () => "en" }, platform: "win32", dispatchMenuAction,
+      Menu: { buildFromTemplate: value => { template = value; return value; }, setApplicationMenu() {} } });
+    const help = template.find(item => item.label === "Help").submenu;
+    help.find(item => item.label === "Agent / CLI Setup Wizard").click();
+    help.find(item => item.label === "About VOO Design").click();
+    expect(dispatchMenuAction.mock.calls).toEqual([["help:onboarding"], ["help:about"]]);
     expect(source("../../src/App.jsx")).toMatch(/case "help:onboarding":\s*window.dispatchEvent\(new CustomEvent\("voo:open-onboarding"\)\)/);
   });
 });
