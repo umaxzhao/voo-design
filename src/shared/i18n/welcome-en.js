@@ -124,6 +124,7 @@ export default {
   "welcome.recents.remove": "Remove from recents",
   "welcome.edited": "Edited ",
   "welcome.prompt.generationTypeLabel": "Generation type",
+  "welcome.prompt.settingsLabel": "Generation settings",
   "welcome.prompt.placeholder": "Design anything...",
   "welcome.prompt.landingPlaceholder": "Describe your landing page (e.g. dark tech AI product homepage with hero and feature bento grid)...",
   "welcome.prompt.mobilePlaceholder": "Describe your mobile app (e.g. iOS 18 fintech wallet with card stack and quick actions)...",
