@@ -12,6 +12,7 @@ export const EDITOR_MODULES = [
       "tests/unit/webrtc_transport_coverage.test.js", "tests/unit/collab_session.test.js", "tests/unit/collab_share_secret.test.js", "src/App.jsx",
       "src/canvas/components/page_switcher.jsx", "tests/unit/titlebar_actions.test.jsx", "tests/unit/welcome_header_actions.test.js",
       "tests/e2e/critical_flows.e2e.mjs",
+      "tests/e2e/empty-canvas-checks.mjs",
     ],
     related: [
       "documents", "inspector", "platform",
@@ -40,6 +41,8 @@ export const EDITOR_MODULES = [
       "tests/e2e/document-dirty-state-checks.mjs", "src/canvas/editor/external-image-ingestion.js", "tests/unit/external-image-ingestion.test.js",
       "tests/e2e/external-image-history-checks.mjs", "tests/unit/scene-model-lint.test.js", "src/canvas/editor/editor_engine.js",
       "src/canvas/editor/editor_engine_assembly.js",
+      "src/canvas/editor/page_to_canvas_root.js", "tests/unit/page-to-canvas-root.test.js",
+      "tests/unit/startup_tab_bar.test.jsx",
     ],
     related: [
       "workspace", "layers", "images", "platform", "compositing", "layout",
@@ -47,6 +50,7 @@ export const EDITOR_MODULES = [
     features: [
       "documents.autosave", "documents.import-export", "documents.undo-redo", "documents.portable-roundtrip", "documents.history-asset-pins",
       "documents.serialization-purity", "documents.dirty-checkpoints", "documents.external-image-history",
+      "documents.empty-canvas",
     ],
     suites: [
       "editor-session", "image-assets-history", "image-file-clipboard", "image-generated-workflow", "nested-project-roundtrip", "pages_dnd",
@@ -66,6 +70,7 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/workspace-artwork-stamp.js", "tests/unit/workspace-artwork-picture.test.js", "tests/unit/workspace-artwork-stamp.test.js",
       "src/canvas/components/editor_hooks/use_editor_page_engine.js", "src/canvas/editor/free-artwork-hit-regions.js",
       "tests/unit/free-artwork-hit-regions.test.js", "src/canvas/editor/frame-canvas-labels.js", "tests/unit/frame-canvas-labels.test.js",
+      "src/canvas/use_workspace_chrome.js", "tests/unit/workspace_selection_chrome.test.js",
       "tests/unit/viewport_notifications.test.js", "tests/e2e/canvas_fps.e2e.mjs",
     ],
     related: [

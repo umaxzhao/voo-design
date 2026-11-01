@@ -254,3 +254,36 @@ physical stylus/touch input or pixel/export parity.
 - Coverage remains partial: browser Chromium only; native crash/restart, actual draft recovery, clipboard denial, screen-reader hardware and other browsers are not certified. This change does not diagnose or fix the exception that originally triggered the user's screenshot.
 
 - Current-main integration evidence: clean source `c1a30ae771527efc12765f75d01f3e32f2f4a4db` independently passed 119/119 steps, 4902 unit assertions (4 skipped) and 115 core browser suites with browser concurrency 1; nine standalone checks remain not-run. `/private/tmp/voo-error-recovery-integration-serial.json` and its `.log` retain the complete execution. The earlier parallel integration failure in `canvas-zoom-preview` is preserved in `/private/tmp/voo-error-recovery-integration-release.json`; its unchanged standalone assertions passed in `/private/tmp/voo-error-recovery-zoom-retry.log`. No zoom implementation or assertion was changed. Post-gate receipts change documentation only.
+
+## Empty canvas initialization — 2026-11-02
+
+Capability: `documents.empty-canvas`; shared store initialization, native page
+promotion and workspace chrome. Baseline `f8f5b14b` automatically promoted empty
+bounded pages into a Frame. The pre-open default page was also bounded, and the
+workspace chrome drew an unrelated page-edge outline on unbounded roots.
+
+- Empty legacy pages now become transparent unbounded roots with zero layers;
+  New, initial standby state and native file loading share that operation.
+- Nonempty legacy pages still promote their surface and retain ownership/paints.
+  Explicit Frames, including empty ones saved by the user, remain unchanged.
+  Previously saved default Frames cannot be distinguished from user Frames and
+  are not heuristically deleted.
+- Root chrome forwards real selection overlays but does not draw page bounds;
+  bounded documents retain their page border. No UI controls or dependencies added.
+- Original failures are retained: two empty-migration unit assertions, initial
+  standby-state assertion, and root-outline assertion; actual browser cold New
+  showed one layer, and the subsequent outline test found 3684 painted pixels.
+- Targeted native picker checks cover cold New, empty single-page import,
+  empty paged import, missing-scene fallback, existing empty root, ZIP export/
+  reopen, later New, explicit existing Frame, and nonempty legacy ownership.
+  Empty cases assert zero real layers/selection/Frame labels and zero overlay
+  alpha pixels. Pixel assertions wait two animation frames, not a mocked renderer.
+- An initial chained-import fixture hit the browser-native file-system picker
+  unsupported by Playwright's filechooser event; use the actual Home import
+  route. Versionless scene fixtures were rejected by native deserialization;
+  valid v2 fixtures now include scene version/type/ID and await the target engine.
+  These harness failures are kept separately from the original product failures.
+- Targeted checks passed; clean committed full gate and public production
+  receipts remain pending. Raw evidence: `/tmp/voo-empty-canvas-*.{log,json}`.
+  Actual OS dialogs, installed Electron, external services and other browser
+  engines remain unverified. No desktop tag, installer or Release is issued.
