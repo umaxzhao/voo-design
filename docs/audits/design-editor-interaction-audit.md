@@ -405,3 +405,12 @@ edit/undo/redo pass with no page errors. `voo-zoom-deployment-proof.json`,
 bind production and subsequent documentation-only merges to the verified code.
 Private evidence is in the visualization directory `canvas-zoom-optimization/`;
 no commercial design/file is committed or uploaded to production for testing.
+
+
+## Extended canvas, layer and Agent review — 2026-11-01
+
+- Baseline: synchronized branch `codex/canvas-layer-tool-polish` with `origin/main` at `ed3db20`, preserving the latest canvas zoom preview, toolbar hover menus, mobile control targets and the prior overlap-selection, Frame and lint fixes. Conflicts were limited to the module inventory, its expected-count test, and audit ledgers; both sides' ownership/features and historical evidence were retained.
+- Registration: the merged catalog validates 12 modules, 87 capability groups, 101 core browser suites and 11 explicit standalone checks. No changed source path is unmapped. The catalog continues to label overall functional coverage partial.
+- Executed `node scripts/editor-checks.mjs --module selection,layers --run --json` on the merged source: 64 planned suites passed, zero failed (`/private/tmp/voo-followup-selection-layers.log`). This includes related canvas, compositing, layout, inspector, documents, workspace and platform contexts. Actual scenarios cover pointer and keyboard/touch entry, pixels, hierarchy, masks, Auto Layout, Agent/MCP edits, history and save/reopen. This is the registered related-module plan, not a hardware or exhaustive combination test.
+- Full clean verification on `c29ff4dcea7dac199beb9b544ba702396f1eb845`: 105/105 release steps passed, including build, design lint, 575 unit files (4,742 passed; 4 skipped) and 101 browser suites (`/private/tmp/voo-followup-release.json`). No additional functional defect reproduced in this scope.
+- Eleven separately classified checks remain not run: eight Agent/QA suites whose fixture, assertion and service requirements still need review; `canvas_fps` requires hardware; `image-electron` requires native Electron; `image-network` requires real model/network access. Physical stylus, full multi-touch sequences, all GPU/driver combinations and hardware FPS are not certified by this browser run.

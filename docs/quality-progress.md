@@ -1,7 +1,12 @@
 # 项目检查总进度
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
-最近一次完成的核心检查：[2cb69e5](https://github.com/umaxzhao/voo-design/commit/2cb69e5c1754de27e5553c38a42fa8d2e43f2884)；104 项全量门禁逐项通过（含全量单测 4721 通过/4 跳过、100 组浏览器 E2E 套件零失败）。证据 `/private/tmp/voo-release-toolbar.json`。
+最近一次完成的核心检查：[`c29ff4d`](https://github.com/umaxzhao/voo-design/commit/c29ff4dcea7dac199beb9b544ba702396f1eb845)；105/105 项完整发布门禁通过（101 组浏览器 E2E、全量单测 4,742 通过/4 跳过）。证据 `/private/tmp/voo-followup-release.json`。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+## 本轮继续：扩展画布、图层与 Agent 相关检查（完成声明范围）
+- 同步最新 `origin/main`（`ed3db20`），合并时保留画布缩放缓存、悬停工具菜单、移动端点击目标和上一轮交互修复；模块目录合并为 87 项能力、101 组核心浏览器套件，校验有效。
+- 选择/图层及关联模块计划实际执行 64 组浏览器套件，全部通过。额外覆盖工具悬停/触摸、Frame 标题与负坐标、遮罩与像素、自动布局、图层重排/锁定、Agent/MCP 编辑、撤销重做及保存重开；未发现新的功能失败。
+- 干净合并提交 `c29ff4dcea7dac199beb9b544ba702396f1eb845` 完整门禁 105/105 通过：构建、设计 lint、575 个单测文件（4,742 项通过、4 项跳过）及 101 组浏览器套件零失败。定向日志 `/private/tmp/voo-followup-selection-layers.log`，完整报告 `/private/tmp/voo-followup-release.json`。
+- 11 个独立上下文仍未运行：8 个 Agent/QA 专项夹具待审，另有硬件 FPS、Electron 原生、联网模型检查。它们不计为本轮通过；物理触控笔、多点触控及 GPU/设备性能仍需专用环境验收。完整边界见[审查记录](audits/design-editor-interaction-audit.md#extended-canvas-layer-and-agent-review--2026-11-01)。
 ## 本轮：画布与图层提交复查（已完成声明范围）
 - 复查分支 `ee5b9dd` 的重叠选择、悬停描边、Section、Agent 分组和设计检查，并同步最新主线 `c666a88` 的多 Frame 交互。发现五项能力缺少模块登记、Ctrl+Alt 重叠选择缺少回归、大文档 lint 两两比较及设计问题文案没有中文；修复和边界见[审查记录](audits/design-editor-interaction-audit.md#canvas-and-layer-feature-follow-up--2026-11-01)。
 - 模块目录现在登记 81 项能力，校验通过且变更路径无未映射项。补齐 Meta+Option / Ctrl+Alt 选择回归；20,000 个稀疏图层耗时 38.7ms（旧实现约 4.3s）；设计检查面板补齐中英文文案。
