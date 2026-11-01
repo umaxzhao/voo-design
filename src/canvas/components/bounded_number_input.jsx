@@ -38,10 +38,14 @@ export default function BoundedNumberInput({
       const nextDraft = String(value);
       committedValueRef.current = value;
       emittedValueRef.current = value;
-      draftRef.current = nextDraft;
-      setDraft(nextDraft);
+      if (draftRef.current !== nextDraft) {
+        draftRef.current = nextDraft;
+        setDraft(nextDraft);
+      }
     }
-  }, [value]);
+    // Commit and immediate undo can publish the same value as the last render.
+    // Reconcile every unfocused render, while preserving focused typing drafts.
+  });
 
   // Integer fields keep the original `Math.round`; decimal fields opt in with
   // `precision` so line-height/letter-spacing can be typed instead of only

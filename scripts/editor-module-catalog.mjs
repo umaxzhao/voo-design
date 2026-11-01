@@ -29,10 +29,14 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/editor-history-asset-pins.js", "tests/unit/editor-history-asset-pins.test.js",
       "src/canvas/editor/scene_model_serialization.js", "src/canvas/editor/scene-node-serialization.js", "tests/unit/scene-serialization-purity.test.js",
       "src/canvas/editor/scene_model_core.js", "src/canvas/editor/default-value-matcher.js", "tests/unit/default-value-matcher.test.js",
+      "src/canvas/editor/document-snapshot-state.js", "tests/unit/document-snapshot-state.test.js", "tests/e2e/document-dirty-state-checks.mjs",
+      "tests/unit/scene-model-lint.test.js",
+      "src/canvas/editor/editor_engine.js", "src/canvas/editor/editor_engine_assembly.js",
     ],
-    related: ["workspace","layers","images","platform"],
+    related: ["workspace","layers","images","platform","compositing","layout"],
     features: [
       "documents.autosave", "documents.import-export", "documents.undo-redo", "documents.portable-roundtrip", "documents.history-asset-pins", "documents.serialization-purity",
+      "documents.dirty-checkpoints",
     ],
     suites: [
       "editor-session", "image-assets-history", "image-file-clipboard", "image-generated-workflow",
@@ -222,6 +226,7 @@ export const EDITOR_MODULES = [
       "tests/unit/comments_panel_slot.test.jsx", "src/canvas/components/editor_mobile_navigation.css",
       "src/canvas/components/comment_view_types.js", "src/canvas/components/comment_launcher_host.jsx", "src/canvas/components/editor_comment*",
       "tests/e2e/inspector-control-cases.mjs", "src/canvas/components/scrub_field.jsx",
+      "tests/e2e/number-input-checkpoint-checks.mjs", "tests/e2e/inspector-audit-panel.mjs", "src/canvas/components/bounded_number_input.jsx",
       "src/canvas/components/ui/color_field.jsx", "src/canvas/components/inspector_primitives.jsx",
       "src/canvas/components/design_system_cards.jsx",
       "tests/e2e/typography-inspector-cases.mjs", "tests/e2e/context-submenu-checks.mjs",
