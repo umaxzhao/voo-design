@@ -3315,11 +3315,13 @@ public class UIParityTests {
             // Collapsed, unconfigured sections do not impose the old fixed floor.
             // Keep the content measured and ensure the clip view never truncates it.
             try TestAssertions.assertApproxEqual(
-                document.frame.height, max(inspector.propertiesPanel.contentHeight, 240), accuracy: 1.5,
+                document.frame.height, max(inspector.propertiesPanel.contentHeight, 240),
+                accuracy: 1.5,
                 "Properties document tracks measured content after collapsing empty sections"
             )
             try TestAssertions.assertTrue(
-                document.frame.height >= inspector.propertiesScrollView.contentView.bounds.height - 1.5,
+                document.frame.height >= inspector.propertiesScrollView.contentView.bounds.height
+                    - 1.5,
                 "Properties document fills the visible clip box"
             )
         }
