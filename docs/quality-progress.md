@@ -2,7 +2,7 @@
 
 ## 本轮：Linux v1.0.0-beta.2 缺陷与补充清单集中修复与分支合入（源码完成，未推送未发布）
 
-- **协调与合入分支**：`merge/consolidate-all-branches`（基于 commit `739a8e24`，未 push，未部署）。
+- **协调与合入分支**：`merge/consolidate-all-branches`（基于 commit `0ec0adf8`，未 push，未部署）。
 - **并行执行模式**：使用 Orca orchestration 在多个独立 child worktree 中启动子 Agent 针对各个独立模块进行修复与回归测试，协调者逐一审查、运行测试并合并入主分支。同时并发调度 Mac Electron 原生测试 Agent 执行全量复测与截图核验。
 - **修复项与模块验证**：
   1. `worker-psd-import` (PSD 位图水合与持久化)：`psd_to_voo.js` 与 `project_io.js` 对 PSD 导入产出的图层位图 assets 建立与 images 统一的水合映射，修复重新打开与存盘位图占位问题。定向单测 `tests/unit/psd_pipeline_reopen.test.js` (5/5 通过)。
@@ -39,12 +39,21 @@
   16. `worker-polygon-star-grid-snap` (Polygon 与 Star 新建几何包围盒网格精确吸附，commit `739a8e24`)：
      - `src/canvas/editor/shape_geometry.js`: 实现 `fitPointsToBox`，将规则多边形（`regularPolygonPoints`）与星形（`starPoints`）顶点坐标严格平移并缩放贴合目标 frame，消除内接椭圆导致的几何尺寸收缩（如正六边形 0.866 宽度缩水问题）；极值点做 1e-12 精度对齐；重构 `withPolyParams` 避免边数/内径拖动时尺寸漂移；
      - 定向单测 `tests/unit/snap_grid_shape_drawing.test.js` (17/17 通过)，证实 8px 与 32px 网格下新建多边形/星形几何包围盒严格整除网格。
-- **Mac Electron 原生复测证据（revision 739a8e24 终态确认）**：
-  - 运行 `npm run electron:dev` 与原生 Electron 43.4.0（完整测试报告记录于 `~/Desktop/voo-mac-retest/REPORT.md`，新增 739a8e24 专属章节与配套截图在 `~/Desktop/voo-mac-retest/shots/`）。
-  - **Polygon / Star 网格几何吸附全量通过**：证实 32px 网格下拖拽 `(97,97) -> (223,191)` 创建后，Polygon 六边形与 Star 五角星的几何包围盒 `[geomX, geomY, geomW, geomH]` 严格为 `[96, 96, 128, 96]`，各项模 32 严格为 0；Arrow 与 Line 世界端点严格对齐 `(96,96)` 与 `(224,192)`，1px 描边产生的 0.5px 外扩符合预期。
-  - **首页项目封面缩略图动态生成全量通过（全新隔离 profile 与工作区）**：使用全新隔离 profile 与独立工作区目录，准备 3 个无内嵌预览的真实矢量 `.voo` 项目与 1 个空工程；首次加载与冷启动下，3 个带视觉矢量项目均成功生成并渲染有效 PNG 缩略图（`data:image/png`，`complete=true`，`naturalWidth > 0`，实测包含 53-142 种独立像素颜色），空工程正确回退为 `.lucide-file-image` 占位图标。
-  - **前序 58dd1516 验证项保持稳定**：旋转手柄 20 组全量通过、SVG 指定四类特征通过、草稿自动恢复、多选拖入 Frame、叠层 Esc 优先级、macOS 原生平台标识。
-  - **边界与限制明确保留**：标题栏 Open/Save 与 layout-1.fig 依用户指令暂不处理；真实付费/API/流式生成等外部云端服务场景未认证。
+- **Mac Electron 原生复测证据（revision 0ec0adf8 终态确认）**：
+  - 运行 `npm run electron:dev` 与原生 Electron 43.8.0，使用 Ning 真实 profile 的独立只读副本（`/Users/tt/Desktop/voo-mac-retest/ning-profile-copy`），对应真实工作区 `/Users/tt/Documents/VOO/Projects`；详细记录见 `~/Desktop/voo-mac-retest/REPORT.md`，配套 15 张新截图与机器证据在 `~/Desktop/voo-mac-retest/`。
+  - **原项目封面全量通过并澄清历史误判**：
+    - 6 个真实工程全部成功渲染封面（`Createtwoeditabledesi.voo` 175节点、`F1 Grand Prix Poster.voo` 131节点、`FORM — Design Culture.voo` 14节点、`PULSE — Analytics Dashboard.voo` 75节点、`SaaSAnalytics&CloudMetricDashboard.voo` 78节点、`NBA-Land-UI.voo` 9979节点），均产生有效 PNG data URL，包含 304~8,757 种独立 RGBA 颜色；
+    - 澄清历史误判：此前报告中“原来 13 个项目封面缺失”的根本原因是按修改时间倒序排列的前 13 个文件均为 0 节点空草稿（`Design1.voo` ~ `Design13.voo`），空文件按规范正确回退为 `.lucide-file-image` 占位图标，真实工程封面从未丢失。
+  - **Agent 真实生成验证（302.ai / DeepSeek）**：
+    - 成功建立真实服务调用（302.ai / deepseek-chat 响应 200，严守红线未泄露凭据）；
+    - 成功生成 11 个节点，包含 5 个 Auto Layout 容器（Profile Card、Identity Row、Avatar、Name Stack、Follow Button）、1 个 `user-plus` 矢量图标与极简文案；
+    - 发现质量边界：模型参数传 `lineHeight: 24`，引擎作为字号倍率处理导致卡片高度被撑至 972px 产生纵向空隙，且后续交互触发 `Failed to fetch`，结构已验证但视觉与收尾流程未完全认证。
+  - **6 秒自动保存机制代码调研与现状确认**：
+    - 明确不存在“等 6 秒自动写回原物理 .voo 文件”的代码逻辑；
+    - `useEditorAutosave`（防抖 600ms）仅针对崩溃恢复草稿写入内存与 IndexedDB `crashDraft`，不碰磁盘；`useDraftAutosave`（防抖 1500ms）仅针对未存盘文件（`!store.filePath`）写入草稿箱；物理 `.voo` 文件严格仅在显式手动 Save（`saveProject` -> `writeFileBytes`）时写盘；
+    - 确认设计哲学契约：*"The workspace is never written: manual Save stays the only way to create a real .voo file."*，自动保存是灾难恢复隔离机制，不应静默覆盖用户的原始工程文件。
+  - **前序 739a8e24 / 58dd1516 验证项保持稳定**：形状网格吸附全量通过、旋转手柄全量通过、SVG 指定四类特征通过、多选拖入 Frame 与叠层 Esc 优先级通过。
+  - **边界与限制明确保留**：标题栏 Open/Save 与 layout-1.fig 依指令跳过；真实云端生成链路在行高倍率与收尾上仍待优化。
 - **Linux QA 交付材料同步 (18:30 检查点)**：
   - 最新 DOCX v4 (`/Users/tt/Desktop/voo-linux-qa/VOO_Design_Linux_QA_2026-11-01.docx`) 及补充包 ZIP v3 (`/Users/tt/Desktop/voo-linux-qa/supplement-v3/`) 已完整存档并对账。
   - 原 34 组补测已收口，确认 Linux QA 测试基线为 GitHub Release v1.0.0-beta.2 固定包；新确认的“自动恢复草稿丢失最新画布内容”、“多选拖入Frame重挂”、“叠层 Esc 优先级”均已在本分支完全定位并提供源码与单元测试覆盖。
