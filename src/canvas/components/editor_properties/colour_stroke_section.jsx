@@ -93,6 +93,7 @@ export function StrokeSection({
     <StaticSection
       title={t("editor.props.strokeLabel")}
       storageKey="stroke"
+      emptyState={none && !bindings?.styleName}
       extra={
         <SectionAddButton
           label={t("editor.props.addStroke")}
