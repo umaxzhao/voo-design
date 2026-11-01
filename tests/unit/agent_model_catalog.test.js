@@ -98,8 +98,12 @@ describe("agent model catalog", () => {
     const bridge = {
       connect: vi.fn(async () => ({
         models: [
-          { id: "next-model", label: "Next model" },
-          { id: "next-model", label: "Next model" },
+          {
+            id: "next-model",
+            label: "Next model",
+            supportedReasoningEfforts: ["low", "medium", "high"],
+            defaultReasoningEffort: "medium",
+          },
           { id: "hidden-model", hidden: true },
           { id: "claude/next-model", label: "Routed model" },
         ],
@@ -119,7 +123,12 @@ describe("agent model catalog", () => {
     const custom = { cliId: "api", models: [{ id: "api:custom" }] };
     const groups = availableModelGroups([custom]);
     expect(groups[1].models).toEqual([
-      { id: "codex:next-model", label: "Next model" },
+      {
+        id: "codex:next-model",
+        label: "Next model",
+        supportedReasoningEfforts: ["low", "medium", "high"],
+        defaultReasoningEffort: "medium",
+      },
       { id: "codex:claude/next-model", label: "Routed model" },
     ]);
     expect(groups[2].models[0].id).toBe("antigravity:next-gemini");

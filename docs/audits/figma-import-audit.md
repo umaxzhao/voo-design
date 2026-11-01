@@ -117,3 +117,81 @@ Different GPU/cache/run contexts must not be averaged into one FPS result.
   preserve layout/component semantics; then complete stroke/text/effect
   fields and source-font high-resolution comparisons. No deployment is
   required for this audit-only documentation update.
+
+## Native property and compositor remediation — 2026-10-31
+
+Status: targeted native import regressions repaired; full source fidelity and
+large-document responsiveness remain partial. This section supersedes only
+the specific losses below, not the remaining acceptance gaps above.
+
+### Implementation and verified scope
+
+- Native `frameMaskDisabled`, lock state, axis constraints, independent corner
+  values, stroke alignment/caps/joins/dashes, underline and Auto Layout intent
+  are mapped. Parent affine matrices compose once into world coordinates.
+  Native `FRAME + resizeToFit` becomes a non-clipping Group. Authored positions
+  are retained on import; layout changes use the existing reflow operations.
+- Four variable collections and five variables in the actual fixture retain
+  typed per-mode values; their nine former rectangle layers disappear. The
+  result has 56,422 layers, 478 streamed image assets with matching SHA-1 keys,
+  no duplicate layer IDs and no dangling parent IDs.
+- Image cover/contain/tile and active native manual-crop transforms use the
+  shared image-paint renderer. The earlier 223-transform loss count included
+  inactive transforms on FILL paints: these must not override FILL behavior.
+  This distinction follows [Figma ImagePaint](https://developers.figma.com/docs/plugins/api/Paint/).
+- Immutable render-pass documents and bounded multi-mask caches survive camera
+  changes. Hidden previews, changed paint scope and newly decoded image paints
+  invalidate cached mask results; videos bypass this static bitmap cache.
+- New registered `figma-import-fidelity` imports a real generated Kiwi archive
+  through the file picker and asserts crop/cover/rotation/overflow/mask pixels,
+  independent multi-image fill transforms, unchanged second-pass bitmap reuse,
+  constraint-aware frame resizing, undo,
+  redo and binary save/cold reopening. No private document is a committed test.
+
+Private source/output matching retains separate denominators for flattened
+or structural records. Checked original outputs include 1,291 Auto Layout
+containers, 13,223 non-default constraints, 188 locked artwork nodes (the nine
+other locked records are variables), 3,145 disabled clips, 3,591 native Groups,
+162 image-bearing nodes with active manual crops, 109 non-outlined corner
+configurations, 604 stroke alignments and 15 non-outlined dash configurations. These checks establish mapped values,
+not pixel parity for every real-file combination. Corner smoothing is metadata
+only; outlined paths already bake their stroke/corner geometry into fills.
+
+### Measured large-file improvement, still below acceptance
+
+Both complete local production runs used Chromium/Metal on Apple M4 Pro,
+1440 × 1000, DPR 1, fresh profiles, the identical read-only `test.fig`, external
+network blocked and the same picker/camera/wheel script. The before build is
+`b20bb5b`; the after build is `6bb6ac4` plus this remediation. Upstream changes
+between those bases concern inspector typography and Agent UI. These are single
+runs on a shared development machine, not portable performance guarantees.
+
+| Measurement | Before | After |
+| --- | ---: | ---: |
+| Loading ended | 21.19 s | 19.20 s |
+| Pan rAF cadence | 2.02 callbacks/s | 4.31 callbacks/s |
+| Zoom rAF cadence | 0.69 callbacks/s | 1.62 callbacks/s |
+| Six wheel samples, median | 623.5 ms | 276 ms |
+| Wheel sample range | 562–3,068 ms | 207–1,314 ms |
+| Longest import main-thread task | 3.777 s | 3.773 s |
+
+These are callback timings, not GPU FPS. Only seven/three before and fourteen/
+five after pan/zoom intervals were recorded. The remaining pauses are failures;
+this optimization does not certify smooth navigation or fix long import tasks.
+Before-run import overlapped the private metadata diagnostic; camera/wheel
+samples completed after the unit workers had exited. No cross-run averages or
+restoration percentage are claimed.
+
+Evidence: private `/tmp/voo-fig-opt-before/`, `/tmp/voo-fig-opt-after/`,
+`/tmp/voo-fig-opt-properties/`, baseline failing regression log
+`/tmp/voo-fig-optimization-baseline.log` and picker regression log
+`/tmp/voo-fig-browser-fidelity.log`. An initial unprivileged full unit run had
+41 failures including denied loopback listeners, watcher notifications and a
+25 ms performance threshold; it is retained, not represented as a pass.
+Final committed-source release evidence is recorded in `quality-progress.md`.
+
+Still unverified/incomplete: signed Electron, every page at readable scale,
+source fonts, nonuniform text affine scaling, arbitrary reflection combinations,
+rich text/strike-through/vertical alignment, complete shadow stacks, live
+component links, variable bindings/aliases, prototype/export/grid metadata and
+child grow/stretch sizing. `native_studio` remains excluded.
