@@ -287,6 +287,16 @@ describe("Community Templates and New Project Workbench Experience", () => {
     const ids = AI_GEN_TYPES.map((t) => t.id);
     expect(ids).toEqual(["landing", "mobile", "web", "poster", "slides", "storyboard", "dashboard", "other"]);
 
+    const poster = AI_GEN_TYPES.find((t) => t.id === "poster");
+    expect(poster.width).toBe(1080);
+    expect(poster.height).toBe(1350);
+    expect(poster.placeholder).toBe("welcome.prompt.posterPlaceholder");
+
+    const storyboard = AI_GEN_TYPES.find((t) => t.id === "storyboard");
+    expect(storyboard.width).toBe(1920);
+    expect(storyboard.height).toBe(1080);
+    expect(storyboard.placeholder).toBe("welcome.prompt.storyboardPlaceholder");
+
     expect(AI_GEN_TYPES.find(type => type.id === "poster")).toMatchObject({ width: 1080, height: 1350, category: "poster", placeholder: "welcome.prompt.posterPlaceholder" });
     expect(AI_GEN_TYPES.find(type => type.id === "storyboard")).toMatchObject({ width: 1920, height: 1080, category: "storyboard", placeholder: "welcome.prompt.storyboardPlaceholder" });
     const mobile = AI_GEN_TYPES.find((t) => t.id === "mobile");

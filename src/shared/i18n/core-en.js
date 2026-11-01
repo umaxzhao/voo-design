@@ -59,6 +59,7 @@ export default {
   "firstRun.provider.dashscope": "Alibaba Cloud",
   "firstRun.provider.deepseek": "DeepSeek",
   "firstRun.provider.volcengine": "Volcengine",
+  "firstRun.provider.deepseek": "DeepSeek",
   "firstRun.provider.antigravity": "Antigravity",
   "firstRun.provider.deepseek-harness": "DeepSeek Harness",
   "firstRun.provider.deepseekHarnessModels": "DeepSeek Harness models",
