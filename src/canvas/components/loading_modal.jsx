@@ -21,7 +21,7 @@ export default function LoadingModal({
   return (
     <div
       data-testid="loading-modal"
-      className={`voo-loading flex max-w-full flex-col items-center gap-6 rounded-3xl px-8 py-8 ${className}`}
+      className={`voo-loading flex max-w-full flex-col items-center gap-8 rounded-3xl px-8 py-8 ${className}`}
     >
       <span data-loading-brand aria-hidden="true" className="voo-loading-brand block size-12">
         <VooBrandLogo className="block size-full" />

@@ -43,18 +43,8 @@ function sanitizeInvertedClipping(nodes) {
  * and a node can never swap across the region plane's boundary.
  */
 export function reorderNode(doc, id, direction) {
-  const index = doc.nodes.findIndex((node) => node.id === id);
-  if (index < 0) return doc;
-  const target = index + direction;
-  if (target < 0 || target >= doc.nodes.length) return doc;
-  if (doc.nodes[target].locked) return doc;
-  if (isRegionNode(doc.nodes[index]) !== isRegionNode(doc.nodes[target])) {
-    return doc;
-  }
-
-  const nodes = [...doc.nodes];
-  [nodes[index], nodes[target]] = [nodes[target], nodes[index]];
-  return withNodes(doc, sanitizeInvertedClipping(nodes));
+  // Single-target and selection entry points share subtree, mask and lock rules.
+  return reorderNodes(doc, [id], direction);
 }
 
 /** Move selected siblings one step as a stable batch, without swapping them. */

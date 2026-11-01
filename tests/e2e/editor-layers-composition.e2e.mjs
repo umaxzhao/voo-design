@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { checkLayerOrderContracts } from "./layer-order-contract-checks.mjs";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
 await withEditorBrowser(async ({ page, tool }) => {
@@ -117,5 +118,6 @@ await withEditorBrowser(async ({ page, tool }) => {
   assert.deepEqual(await page.evaluate(() => window.__layerComposition.focusEvents), ["second", "first"]);
   await page.evaluate(() => window.__layerComposition.close());
   checks.push("inactive-canvas rows focus their own real engine and subsequent layer edits stay on that canvas");
+  await checkLayerOrderContracts(page, checks);
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });
