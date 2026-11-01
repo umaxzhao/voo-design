@@ -2084,6 +2084,7 @@ public final class PropertiesPanelView: NSView {
     private let codePanel = NativeCodePanel(frame: .zero)
     private var designVisibility: [ObjectIdentifier: Bool] = [:]
     public var onSwapPanels: (() -> Void)?
+    public var onPresentationChange: (() -> Void)?
     public let headerTabs = PropertiesSegmentedControl(segments: [
         .init(title: "Design", value: "design"),
         .init(title: "Code", value: "code")
@@ -4043,6 +4044,9 @@ public final class PropertiesPanelView: NSView {
             applySectionVisibility()
         }
         needsLayout = true
+        needsDisplay = true
+        layoutSubtreeIfNeeded()
+        onPresentationChange?()
     }
 
     public override func layout() {
@@ -4301,7 +4305,8 @@ public final class PropertiesPanelView: NSView {
     // MARK: Drawing (row surfaces, dividers, identity glyph)
 
     public override func draw(_ dirtyRect: NSRect) {
-        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        guard headerTabs.selectedIndex == 0,
+            let ctx = NSGraphicsContext.current?.cgContext else { return }
 
         // Field surfaces for the read-only rows of the rebuilt inspector chrome.
         let surfaces: [CGRect] = [fillRowRect, strokeRow1Rect, strokeRow2Rect,

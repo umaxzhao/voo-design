@@ -1175,6 +1175,8 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             currentFileURL = url
             mainContentView.titleBar.setDocumentTitle((url.lastPathComponent as NSString).deletingPathExtension)
             mainContentView.inspector.layersPanel.configure(with: doc.nodes, selectedId: nil)
+            // The editor was hidden on Welcome; fit only after its viewport exists.
+            mainContentView.layoutSubtreeIfNeeded()
             mainContentView.canvasStageView.zoomToFit()
             refreshPaintLayerFromDocument()
             focusCanvas()

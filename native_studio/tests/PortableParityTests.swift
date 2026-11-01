@@ -157,10 +157,14 @@
                 try FileManager.default.createDirectory(
                     at: directory, withIntermediateDirectories: true)
                 defer { try? FileManager.default.removeItem(at: directory) }
-                let bytes = Data(
-                    base64Encoded:
-                        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg=="
-                )!
+                let context = CGContext(
+                    data: nil, width: 2, height: 2, bitsPerComponent: 8,
+                    bytesPerRow: 8, space: CGColorSpaceCreateDeviceRGB(),
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+                context.setFillColor(NSColor.red.cgColor)
+                context.fill(CGRect(x: 0, y: 0, width: 2, height: 2))
+                let bytes = NSBitmapImageRep(cgImage: context.makeImage()!)
+                    .representation(using: .png, properties: [:])!
                 var node = VOONode(id: "image", kind: .image, x: 0, y: 0, width: 40, height: 40)
                 node.imageId = "asset"
                 let document = VOODocument(nodes: [node])
@@ -175,6 +179,12 @@
                 try DocumentIO.shared.saveDocument(loaded, to: savedURL)
                 let restored = try DocumentIO.shared.loadDocument(from: savedURL)
                 try TestAssertions.assertEqual(restored.nodes[0].src, loaded.nodes[0].src)
+                let raster = NSBitmapImageRep(
+                    cgImage: try ExportEngine.shared.renderImage(document: restored, scale: 1))
+                let pixel = raster.colorAt(x: 20, y: 20)!.usingColorSpace(.deviceRGB)!
+                try TestAssertions.assertTrue(
+                    pixel.redComponent > 0.95 && pixel.greenComponent < 0.05,
+                    "Reopened binary image paints real red pixels")
                 try TestAssertions.assertTrue(
                     ExportEngine.shared.exportHTML(document: restored).contains(
                         "src=\"data:image/png;base64,"))

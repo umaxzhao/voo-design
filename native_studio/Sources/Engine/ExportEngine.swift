@@ -315,15 +315,18 @@ public final class ExportEngine {
         }
 
         let fillColor = NSColor(hexString: node.style.fill) ?? .clear
-        let strokeColor = NSColor(hex: node.style.stroke)
+        let strokeColor = NSColor(hexString: node.style.stroke) ?? .clear
 
         // Gradient parsing and geometry are shared with the production stage.
-        if node.kind != .text && node.kind != .image,
+        if node.kind != .text && node.kind != .image && node.kind != .group,
             let gradient = CanvasStageView.parseGradient(from: node.fill)
         {
             let path = CanvasStageView.shapePath(for: node, in: node.bounds)
             CanvasStageView.drawGradientFill(
                 parsed: gradient, in: node.bounds, path: path, ctx: ctx)
+            if node.kind != .frame {
+                CanvasStageView.drawStroke(for: node, path: path, in: node.bounds, ctx: ctx)
+            }
             ctx.restoreGState()
             return
         }

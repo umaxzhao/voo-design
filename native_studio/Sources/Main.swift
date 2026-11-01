@@ -62,16 +62,16 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             controller.restoreDraftIfAvailable()
         }
 
-        // Exercise the normal file operation in deterministic rendering audits.
-        if let path = ProcessInfo.processInfo.environment["VOO_SNAPSHOT_DOCUMENT"] {
-            controller.openDocumentFromURL(URL(fileURLWithPath: path))
-        }
-
         NSLog("[VOO Design Native] controller.window = %@", String(describing: controller.window))
         controller.showWindow(nil)
         if let window = controller.window {
             window.makeKeyAndOrderFront(nil)
             window.layoutIfNeeded()
+        }
+
+        // Exercise the normal file operation in deterministic rendering audits.
+        if let path = ProcessInfo.processInfo.environment["VOO_SNAPSHOT_DOCUMENT"] {
+            controller.openDocumentFromURL(URL(fileURLWithPath: path))
         }
 
         if ProcessInfo.processInfo.environment["VOO_HEADLESS"] != "1" {

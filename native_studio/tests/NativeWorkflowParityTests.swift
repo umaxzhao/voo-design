@@ -6,12 +6,32 @@
         public static func registerTests() {
             let registry = TestRegistry.shared
             registry.register(
+                tier: 3, feature: "Native-Inspector",
+                name: "test_CodeModeDoesNotPaintDesignRowSurfaces"
+            ) {
+                let panel = PropertiesPanelView(frame: CGRect(x: 0, y: 0, width: 288, height: 800))
+                panel.configure(with: VOONode(kind: .rect))
+                panel.layoutSubtreeIfNeeded()
+                panel.headerTabs.select(value: "code", notify: true)
+                panel.layoutSubtreeIfNeeded()
+                let bitmap = panel.bitmapImageRepForCachingDisplay(in: panel.bounds)!
+                panel.cacheDisplay(in: panel.bounds, to: bitmap)
+                let scale = CGFloat(bitmap.pixelsHigh) / panel.bounds.height
+                for y in stride(from: 480, through: 700, by: 16) {
+                    let pixel = bitmap.colorAt(x: Int(30 * scale), y: Int(CGFloat(y) * scale))!
+                    try TestAssertions.assertTrue(
+                        pixel.alphaComponent < 0.01,
+                        "Code mode must not draw old Design row backgrounds")
+                }
+            }
+            registry.register(
                 tier: 3, feature: "Native-Lifecycle",
                 name: "test_MenuOpenLeavesWelcomeOnlyAfterSuccessfulLoad"
             ) {
                 let controller = WindowController()
                 controller.newDocument(nil)
                 controller.mainContentView.isWelcomeOpen = true
+                controller.mainContentView.frame.size = NSSize(width: 1440, height: 900)
                 let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(
                     UUID().uuidString + ".voo")
                 defer { try? FileManager.default.removeItem(at: url) }
@@ -19,6 +39,11 @@
                     title: "Opened", nodes: [VOONode(id: "opened", kind: .rect)])
                 try DocumentIO.shared.saveDocument(document, to: url)
                 controller.openDocumentFromURL(url)
+                let stage = controller.mainContentView.canvasStageView
+                let origin = stage.viewPoint(from: .zero)
+                try TestAssertions.assertTrue(
+                    origin.x >= 0 && origin.y >= 0,
+                    "Opening from Welcome fits only after editor layout")
                 try TestAssertions.assertFalse(controller.mainContentView.isWelcomeOpen)
                 try TestAssertions.assertEqual(
                     controller.mainContentView.canvasStageView.document.nodes.first?.id, "opened")
@@ -74,8 +99,9 @@
                 let gradient = VOONode(
                     id: "gradient", kind: .rect, x: 0, y: 0, width: 64, height: 64,
                     style: LayerStyle(
-                        fill: "linear-gradient(180deg, #FFFFFF 0%, #000000 100%)", stroke: "none",
-                        strokeWidth: 0))
+                        fill: "linear-gradient(180deg, #FFFFFF 0%, #000000 100%)",
+                        stroke: "#00FF00",
+                        strokeWidth: 8))
                 let document = VOODocument(
                     canvas: CanvasFrame(width: 64, height: 64, backgroundColor: "#FFFFFF"),
                     nodes: [gradient])
@@ -94,6 +120,10 @@
                 let exportedColor = exported.colorAt(x: 32, y: 32)!.usingColorSpace(.deviceRGB)!
                 try TestAssertions.assertApproxEqual(
                     stageColor.redComponent, exportedColor.redComponent, accuracy: 0.04)
+                let edge = exported.colorAt(x: 2, y: 32)!.usingColorSpace(.deviceRGB)!
+                try TestAssertions.assertTrue(
+                    edge.greenComponent > 0.9 && edge.redComponent < 0.1,
+                    "Gradient export retains the solid outline")
                 try TestAssertions.assertTrue(stage.isFlipped)
                 try TestAssertions.assertTrue(
                     stage.viewPoint(from: CGPoint(x: 0, y: 10)).y

@@ -266,6 +266,7 @@ public class InspectorView: NSView {
         NSLayoutConstraint.activate(normalDockConstraints)
         layersPanel.onSortTapped = { [weak self] in self?.swapPanels() }
         propertiesPanel.onSwapPanels = { [weak self] in self?.swapPanels() }
+        propertiesPanel.onPresentationChange = { [weak self] in self?.needsLayout = true }
         NSLayoutConstraint.activate([
             // Left Floating Card (web: md:w-64 = 256, p12, rounded-3xl, centred).
             // Verified against the current web build at 1:1: the LAYERS card is
