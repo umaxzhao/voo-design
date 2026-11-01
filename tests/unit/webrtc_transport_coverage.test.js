@@ -226,7 +226,7 @@ test("resolveIceServers: returns the default STUN list, honours a config overrid
   }
 });
 
-test("signalingUrl: derives a ws url from the page origin and honours overrides", () => {
+test("signalingUrl: shares the hosted service across origins and honours explicit overrides", () => {
   const urlKey = "__VOO_SIGNALING_URL__";
   const locationKey = "location";
   const previousUrl = globalThis[urlKey];
@@ -243,8 +243,8 @@ test("signalingUrl: derives a ws url from the page origin and honours overrides"
     vi.stubGlobal(locationKey, { origin: "http://localhost:5173" });
     assert.equal(
       signalingUrl(),
-      "ws://localhost:5173/collab",
-      "http origin is swapped to ws",
+      HOSTED_SIGNALING_URL,
+      "local hosts meet recipients on the published sharing service",
     );
 
     vi.stubGlobal(locationKey, { origin: "https://voo.run" });
@@ -264,8 +264,8 @@ test("signalingUrl: derives a ws url from the page origin and honours overrides"
     vi.stubGlobal(locationKey, { origin: "https://staging.example.com" });
     assert.equal(
       signalingUrl(),
-      "wss://staging.example.com/collab",
-      "another https origin is swapped to wss and keeps its own /collab",
+      HOSTED_SIGNALING_URL,
+      "preview hosts meet recipients on the same published service",
     );
 
     // The desktop app runs under the custom `voo://app` scheme: a non-http
