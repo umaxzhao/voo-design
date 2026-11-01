@@ -2,8 +2,8 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
 最近一次完整核心验证提交：[5cd112e](https://github.com/umaxzhao/voo-design/commit/5cd112efcd7597d36680eea3c9b8eba66a50d7b5)；91/91 项通过，当前线上为该构建。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
-## 本轮：蒙版与锁定容器的相对排序（定向通过，等待完整验证）
-- `layers.nesting` / `layers.container-boundaries`：新增真实列表多选、快捷键和单节点接口复现蒙版块重复上移、锁定 Frame 内子层仍可排序、单节点排序拆散 Frame 三个缺口。统一相对排序单位去重及祖先锁定，单节点入口复用批量逻辑；34 项定向单测与 10 个新增浏览器上下文通过，完整发布及部署证据待记录。本轮仅验证相对排序，不扩大为所有绝对位置拖排、置顶/置底或 Agent 数字索引均通过。[范围与证据](audits/design-editor-interaction-audit.md#relative-layer-order-audit--2026-11-01)。
+## 本轮：相对排序与 Loading 旋转间距（定向通过，等待完整验证）
+- `layers.nesting` / `layers.container-boundaries`：新增真实列表多选、快捷键和单节点接口复现蒙版块重复上移、锁定 Frame 内子层仍可排序、单节点排序拆散 Frame 三个缺口。统一相对排序单位去重及祖先锁定，单节点入口复用批量逻辑；34 项定向单测与 10 个新增浏览器上下文通过，首次完整门禁单测通过，但发现 Loading 旋转到 45° 时进度条间距仅 14.06px；增加留白并保留原 20px 断言，新增八个角度回归，准备重新完整验证。部署证据待记录。本轮仅验证相对排序，不扩大为所有绝对位置拖排、置顶/置底或 Agent 数字索引均通过。[范围与证据](audits/design-editor-interaction-audit.md#relative-layer-order-audit--2026-11-01)。
 ## 本轮：图层操作复查与多 Frame 拖动（已完成声明范围）
 - `selection.transforms` / `selection.frame-title-selection` / `selection.cancel` / `layers.duplicate-delete-lock`：旧版本 32 组图层及关联检查通过，但新增实际多选发现内容区误拖子层、标题清空多选、锁定子层时只移动外框三个缺口，均已修复并保留失败证据。新增 16 个实际交互上下文与 3 条单测；42 项定向单测通过，固定 `5cd112e` **91/91 发布步骤、87 组核心浏览器、4716 单测通过/4 跳过**，GitHub CI 通过。[PR #79](https://github.com/umaxzhao/voo-design/pull/79) 合入 `f7f782c` 且源码树一致。本地主应用仅三文件补丁、16 个隔离浏览器场景通过，其他草稿保留。已部署 la2，正式入口及 82 个加载资源 SHA-256 一致，线上六个真实多选拖动/锁定/取消场景通过，三种移动入口验证像素与一次撤销/重做，零页面异常。证据 `/private/tmp/voo-license-regression/multiframe-{release,ci,primary-proof,main-tree-proof,production-proof}.json`；功能覆盖仍部分，不认证全部蒙版/布局/锁定组合、实体输入设备或签名安装包。[范围与证据](audits/design-editor-interaction-audit.md#multi-frame-layer-operation-audit--2026-11-01)。
 ## 本轮：正式分享链接（已完成声明范围）
