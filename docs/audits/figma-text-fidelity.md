@@ -56,6 +56,25 @@ new paired production measurements before publication. Prior script failures
 read unavailable page metadata and waited for an optional warm flag or a stale
 camera snapshot; they are harness failures, not accepted timing samples.
 
+## Real-engine leading normalization follow-up
+
+The combined source 97023817 passed its registered 119-step gate (115 browser
+suites, 4916 units passed / 4 skipped, 1476 design files). A separate actual
+four-page engine audit still failed: all 756 outline records were present, but
+only 677 were valid after loading. Exactly 79 records changed only signature
+field 7: native 0.75 leading was clamped to 0.8 (77 on Page 1, two on Internal
+Only Canvas). The 677 valid records showed no unintended geometry scaling.
+That real-file failure is retained; a mapped cache count or isolated glyph
+comparison does not certify that the live editor continues to use it.
+
+Text nodes, named styles and the percentage field now share the same positive
+1%-300% leading bounds and 1% editing step. Native 75% leading survives style
+application and portable normalization. The native browser fixture now uses
+0.75 instead of 1.2; two failing unit assertions were retained before repair.
+The final source also includes upstream hosted repair/runtime fixes be4426e2,
+so its 120-step gate, live four-page cache audit and timing receipts must be
+recorded afresh. No historical gate is inherited by that changed source.
+
 ## Repair
 
 Keep the node editable, its source family and native text/style records, plus

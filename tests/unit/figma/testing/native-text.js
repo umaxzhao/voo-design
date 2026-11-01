@@ -16,7 +16,7 @@ export function mixedNativeText() {
       { guid: guid(1), type: "TEXT", name: "Mixed sizes", parentIndex: { guid: guid(0), position: "!" },
         transform: { m00: 1, m01: 0, m10: 0, m11: 1, m02: 0, m12: 0 }, size: { x: 258, y: 126 },
         fontSize: 64, fontName: { family: "Unavailable Test Face", style: "Regular", postscript: "" },
-        lineHeight: { value: 1.2, units: "RAW" }, textAutoResize: "WIDTH_AND_HEIGHT",
+        lineHeight: { value: 0.75, units: "RAW" }, textAutoResize: "WIDTH_AND_HEIGHT",
         fillPaints: [{ type: "SOLID", color: { r: 1, g: 0, b: 0, a: 1 }, visible: true }],
         textData: { characters: "A\nB", characterStyleIDs: [5, 5, 0], styleOverrideTable: [{ styleID: 5, fontSize: 36 }] },
         derivedTextData: { layoutSize: { x: 258, y: 126 }, glyphs: [

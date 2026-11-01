@@ -200,6 +200,7 @@ export const EDITOR_MODULES = [
     id: "text",
     title: "Text editing and typography",
     paths: [
+      "src/canvas/editor/scene_model_core.js", "src/canvas/editor/scene_styles.js",
       "tests/e2e/native-text-fidelity-checks.mjs", "tests/unit/figma/figma-text-fidelity.test.js", "tests/unit/figma/testing/native-text.js",
       "src/canvas/editor/editor_annotations.js", "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js",
       "src/canvas/components/editor_text*", "src/canvas/components/editor_properties/text*", "tests/unit/text_section_compact.test.jsx",

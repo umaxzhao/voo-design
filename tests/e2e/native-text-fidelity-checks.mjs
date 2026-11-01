@@ -36,12 +36,14 @@ export async function verifyNativeTextFidelity(page) {
       const e = window.__vooEditor, node = e.getDocument().nodes.find(node => node.name === "Mixed sizes");
       e.selectExactly([node.id]); document.activeElement?.blur();
       return { id: node.id, kind: node.kind, text: node.text, width: node.width, height: node.height,
+        lineHeight: node.lineHeight,
         measures: window.__nativeMeasures, originalFontFaces: (await document.fonts.load('64px "Unavailable Test Face"')).length };
     });
     assert.equal(initial.kind, "text");
     assert.equal(initial.text, "A\nB");
     assert.equal(initial.width, 258);
     assert.equal(initial.height, 126);
+    assert.equal(initial.lineHeight, 0.75, "Native condensed-font leading must survive engine normalization");
     assert.equal(initial.measures, 0);
     assert.equal(initial.originalFontFaces, 0);
     const original = await pixels();

@@ -8,6 +8,7 @@ import { textElement } from "../../../src/canvas/editor/editor_svg_text.js";
 import { requiresCanvas2dMediaFallback } from "../../../src/canvas/editor/skia_scene_adapter.js";
 import { expandInstances } from "../../../src/canvas/figma/figma-instances.js";
 import { paintImportedText } from "../../../src/canvas/editor/render-imported-text.js";
+import { normalizeStyles } from "../../../src/canvas/editor/scene_styles.js";
 
 const node = () => figmaMessageToPages(mixedNativeText()).pages[0].nodes[0];
 const context = () => ({ save() {}, restore() {}, measureText: vi.fn(() => ({ width: 999 })) });
@@ -45,6 +46,18 @@ describe("native Figma typography fidelity", () => {
     const text = node();
     const restored = deserialiseDocument(serialiseDocument({ ...createDocument(400, 200), nodes: [text] }));
     expect(restored.nodes[0].figmaText).toEqual(text.figmaText);
+    expect(restored.nodes[0].lineHeight).toBe(0.75);
+    const ctx = context();
+    expect(measureText(ctx, restored.nodes[0])).toEqual({ width: 258, height: 126 });
+    expect(ctx.measureText).not.toHaveBeenCalled();
+  });
+
+  it("preserves condensed font leading in named text styles", () => {
+    const styles = normalizeStyles({ text: [{ id: "knockout", name: "Condensed", value: { lineHeight: 0.75 } }] });
+    expect(styles.text[0].value.lineHeight).toBe(0.75);
+    const text = { ...node(), styleIds: { textId: "knockout" } };
+    const restored = deserialiseDocument(serialiseDocument({ ...createDocument(400, 200), styles, nodes: [text] }));
+    expect(restored.nodes[0].lineHeight).toBe(0.75);
     const ctx = context();
     expect(measureText(ctx, restored.nodes[0])).toEqual({ width: 258, height: 126 });
     expect(ctx.measureText).not.toHaveBeenCalled();
