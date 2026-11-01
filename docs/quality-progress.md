@@ -1,7 +1,24 @@
 # 项目检查总进度
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
-最近一次完整核心验证：[cf9e00d](https://github.com/umaxzhao/voo-design/commit/cf9e00d48905752fe14fb79ff16bd1280fb0c2bd)；104/104 项通过，含 100 组核心浏览器、4731 项单测通过/4 跳过，当前线上为该固定构建。
+最近一次完成的核心检查：[2cb69e5](https://github.com/umaxzhao/voo-design/commit/2cb69e5c1754de27e5553c38a42fa8d2e43f2884)；104 项全量门禁逐项通过（含全量单测 4721 通过/4 跳过、100 组浏览器 E2E 套件零失败）。证据 `/private/tmp/voo-release-toolbar.json`。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+
+## 本轮：顶部工具栏鼠标悬停自动展开二级菜单与橡皮擦添加移除背景（已验证通过）
+
+- `selection.toolbar-hover-menu` / `use_hover_menu.js` / `editor_family_menu.jsx` / `editor_select_menu.jsx`：
+  - 顶部工具栏带二级菜单的所有工具（Select、Marquee、Brush、Eraser、Pen、Shape、Fill、Healing）支持鼠标悬停自动展开（hover open 延迟 120ms，hover close 延迟 220ms，移动平滑自然且无需额外点击）；
+  - 点击 Chevron 箭头保持锁定状态（pinned），不会随鼠标移开而收起，按 Escape 或点击外部关闭；
+  - 触摸和触控笔保持原有的长按或点击 Chevron 逻辑，完全避免触屏误触；
+  - 键盘 Tab 导航与无障碍语义保持完整，悬停展开不夺取用户焦点。
+- `editor_eraser_menu.jsx` / `editor_toolbar.jsx` / `image_editor.jsx`：
+  - 橡皮擦工具升级为带二级下拉菜单的组合工具，下拉项包含“橡皮擦”与“一键抠图”（移除背景）；
+  - 点击“移除背景”直接调用已有且经完整验证的本地 AI 抠图逻辑 `removeBackground`，抠图进行时禁用该选项防重复触发；未选择图层时安全保留原有友好提示且不改变文档。
+- 门禁与回归验证：
+  - 新增单测 `tests/unit/toolbar_hover_menu.test.js`（5 项测试），覆盖悬停展开、移开自动关闭、快速回移防抖、点击锁定与触控过滤；
+  - 新增端到端浏览器测试 `tests/e2e/toolbar-hover-menu.e2e.mjs`，在真实浏览器中完整验证鼠标悬停展开/离开关闭、橡皮菜单项交互、无选区安全保护及 Chevron 锁定；
+  - 更新 `tests/unit/editor-check-plans.test.js` 与 `tests/e2e/pages_dnd.e2e.mjs` 中的全套 family 列表校验；
+  - 固定干净版本 [`2cb69e5`](https://github.com/umaxzhao/voo-design/commit/2cb69e5c1754de27e5553c38a42fa8d2e43f2884)：**104/104 项全量发布门禁通过，构建与设计规则通过（1434 文件），单测 4721 通过、4 跳过、0 失败，100 组浏览器 E2E 套件全部通过，零失败**。证据 `/private/tmp/voo-release-toolbar.json`。
+
 ## 本轮：画布缩放效率（已完成声明范围）
 - `canvas.zoom-preview`：移除自由画布隐藏测量面的重复重绘；连续缩放复用有内存上限的图像，静止后精绘，取色立即刷新；图片/实时蒙版/字体/文档/尺寸/DPR 变化失效，视频不冻结。缓存世界命中边界及 Frame 祖先，减少共享相机对属性/Agent 的通知，活动文字编辑继续实时更新。
 - 同一只读 test.fig（241.86MiB、首屏 17499 层），主线父版本 db4a184 与 cf9e00d 生产构建顺序实测：未优化两次 Ctrl+滚轮等待中位数 1713.5/1808ms，优化后 82.5ms；后者同一组六次输入不重复计样。脚本收尾精绘等待 237ms，所测 1000×800/zoom .024 独立画面 0 像素差异；相机实变、文档不变、零页面异常。共享主机负载变化已记录并补反向对照；不是 GPU FPS、独立硬件或 Figma 对等基准。

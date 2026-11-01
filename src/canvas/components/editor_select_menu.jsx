@@ -14,6 +14,7 @@ import { useI18n } from "../use_i18n.js";
 import EditorTooltip from "./editor_tooltip.jsx";
 import { touchToolAttributes, useTouchToolTarget } from "./editor_touch_tool_target.jsx";
 import { moveEditorMenuFocus } from "./editor_menu_navigation.js";
+import { useHoverMenu } from "./use_hover_menu.js";
 
 const toolButtonClass = (active) =>
   `flex h-11 w-11 shrink-0 items-center justify-center rounded-full p-0 transition-all focus-visible:ring-2 focus-visible:ring-[#a7ffd4] focus-visible:ring-offset-1 focus-visible:ring-offset-neutral-900 ${
@@ -114,7 +115,10 @@ export default function EditorSelectMenu({ tool, onTool }) {
     setOpen(true);
   };
 
+  const hover = useHoverMenu({ open, openMenu, close: () => setOpen(false) });
+
   const toggleMenu = () => {
+    if (hover.pin()) return;
     if (open) setOpen(false);
     else openMenu();
   };
@@ -196,7 +200,7 @@ export default function EditorSelectMenu({ tool, onTool }) {
 
   // Keyboard users opening the menu land on its first item.
   useEffect(() => {
-    if (!open) return;
+    if (!open || hover.hoverOpenedRef.current) return;
     menuRef.current?.querySelector('[role="menuitem"]')?.focus();
   }, [open]);
 
@@ -209,6 +213,8 @@ export default function EditorSelectMenu({ tool, onTool }) {
       onPointerUpCapture={clearLongPress}
       onPointerCancelCapture={clearLongPress}
       onClickCapture={onClickCapture}
+      onPointerEnter={hover.onPointerEnter}
+      onPointerLeave={hover.onPointerLeave}
     >
       <EditorTooltip
         title={touchTarget && isSelectFamily ? `${selectLabel} · ${menuLabel}` : selectLabel}

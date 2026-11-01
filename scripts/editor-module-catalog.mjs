@@ -72,13 +72,13 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/editor_pointer*", "src/canvas/editor/*hit-test*", "src/canvas/editor/selection*",
       "src/canvas/editor/transform*", "src/canvas/*shortcut*",
       "src/canvas/editor/drawing-gesture-*", "src/canvas/editor/move-gesture-*", "src/canvas/editor/editor-pointer-*",
-      "src/canvas/editor/editor_engine_tools.js", "src/canvas/editor/editor_transform_api.js", "src/canvas/editor/editor_engine_assembly.js", "tests/unit/editor-module-audit-regressions.test.js",
+      "src/canvas/components/editor_family_menu.jsx", "src/canvas/components/editor_select_menu.jsx", "src/canvas/components/editor_eraser_menu.jsx", "src/canvas/components/use_hover_menu.js", "tests/unit/toolbar_hover_menu.test.js", "src/canvas/editor/editor_engine_tools.js", "src/canvas/editor/editor_transform_api.js", "src/canvas/editor/editor_engine_assembly.js", "tests/unit/editor-module-audit-regressions.test.js",
     ],
     related: ["canvas","layers","text","vectors","inspector"],
-    features: ["selection.hit-testing","selection.transforms","selection.cancel","selection.shortcuts","selection.continuous-creation","selection.frame-title-selection"],
+    features: ["selection.hit-testing","selection.transforms","selection.cancel","selection.shortcuts","selection.continuous-creation","selection.frame-title-selection","selection.toolbar-hover-menu"],
     suites: [
       "frame-child-pointer", "frame-label-selection", "canvas-double-click", "text-box-geometry", "editor-shortcut-lifecycle",
-      "hook-lifecycle", "continuous-creation",
+      "hook-lifecycle", "continuous-creation", "toolbar-hover-menu",
     ],
     remaining: [
       "Physical stylus pressure, OS shortcut interception and all multi-touch sequences need device-specific checks.",
