@@ -1,4 +1,6 @@
 // Run with: flock /tmp/voo-e2e.lock node tests/e2e/html2nodes.e2e.mjs
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
 import postcss from 'postcss';
@@ -6,7 +8,7 @@ import tailwind from 'tailwindcss';
 import { readFile, readdir, mkdir, writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
-const output = process.env.HTML2NODES_SHOTS ?? '/workspace/tmp/shots-html2nodes';
+const output = process.env.HTML2NODES_SHOTS ?? join(tmpdir(), "voo-html2nodes");
 await mkdir(output, { recursive: true });
 const fixtureDir = new URL('../fixtures/html2nodes/', import.meta.url);
 const fixtures = await Promise.all((await readdir(fixtureDir)).filter(n => n.endsWith('.html')).sort().map(async name => ({ name: name.replace('.html', ''), html: await readFile(new URL(name, fixtureDir), 'utf8') })));

@@ -2,6 +2,9 @@
 
 ## 1.0.0
 
+- Repair independent constraint-diagram hit targets, 48px compact navigation and command targets, mobile Browser split layout and file-card opening/Settings clearance. Restore ten self-starting browser regressions without fixed ports or workspace paths.
+- Preserve Canvas text state during letter-spacing capability detection so imported headings retain their browser line layout. Keep legacy room share URLs through scoped nginx redirects with configuration rollback.
+
 - Present streamed HTML and bulk Agent layouts as native element-by-element authoring with a VOO-purple cursor, carried placement outlines and bounded paint pacing. Share this path with external MCP/App streams; retain stable layer IDs, one-step undo, cancel rollback and document-bound continuation guards. Respect reduced motion and remove decorative scanner/skeleton effects.
 
 - Discover the local CLI service before exposing browser-only local model choices, share reconnect state across menus/onboarding/settings, retain API settings and route empty catalogs to provider setup.

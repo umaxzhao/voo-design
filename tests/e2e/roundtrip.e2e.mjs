@@ -1,18 +1,19 @@
 // Start npm run dev -- --host 127.0.0.1 --port 5253, then:
 // flock /tmp/voo-e2e.lock node tests/e2e/roundtrip.e2e.mjs
-import { chromium } from 'playwright';
+import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY = '1';
 const phase = process.env.ROUNDTRIP_PHASE || 'after';
-const shots = process.env.ROUNDTRIP_SHOTS_DIR || '/workspace/tmp/shots-roundtrip';
+const shots = process.env.ROUNDTRIP_SHOTS_DIR || join(tmpdir(), "voo-roundtrip");
 const root = new URL('../fixtures/roundtrip/', import.meta.url);
 await mkdir(shots,{recursive:true});
-const browser = await chromium.launch({args:['--no-sandbox']});
-process.once('SIGINT', async () => { await browser.close(); process.exit(130); });
 const rows = [];
-try {
+await withEditorBrowser(async ({ page: initialPage, origin }) => {
+ const browser = initialPage.context().browser();
  let page;
  const freshPage = async () => {
   if (page) await page.context().close();
@@ -45,7 +46,7 @@ try {
   });
   await page.addInitScript(()=>{localStorage.setItem('ciw.locale',JSON.stringify('en'));window.showSaveFilePicker=undefined;window.showOpenFilePicker=undefined;});
  };
- const start = async () => {await page.goto(process.env.VOO_URL || 'http://127.0.0.1:5253/?voo-test=1',{waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'New',exact:true}).waitFor();};
+ const start = async () => {await page.goto(`${origin}/?voo-test=1`,{waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'New',exact:true}).waitFor();};
  const deadline = promise => { let timer; return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('operation exceeded 120 seconds')),120000);})]).finally(()=>clearTimeout(timer)); };
  const open = async (name,bytes,allowEmpty=false) => {
   console.log('OPEN',name);
@@ -74,7 +75,13 @@ try {
  const save = async (name) => {
   await page.evaluate(async name=>{const {useDesignStore}=await import('/src/store/design_store.js');useDesignStore.setState({fileName:name,filePath:null,fileHandle:null});},name);
   const download=page.waitForEvent('download');
-  await page.locator('.app-title-bar').getByRole('button',{name:'Save',exact:true}).click();
+  await page.evaluate(async () => {
+   const { saveVooProject } = await import('/src/canvas/store/project_io.js');
+   const { useDesignStore } = await import('/src/store/design_store.js');
+   const store = useDesignStore.getState();
+   await saveVooProject({ store, saveAs: true,
+    enginesRef: { current: new Map([[store.editingNodeId, { engine: window.__vooEditor, ready: true }]]) } });
+  });
   const file=await download;
   const path=`${shots}/${phase}-${name}`;
   await file.saveAs(path);
@@ -108,8 +115,8 @@ try {
   } catch(error) {row.error=error.message;await page.screenshot({path:`${shots}/${phase}-${name}-failure.png`,timeout:15000}).catch(()=>{});}
   console.log(JSON.stringify(row));
  }
-} finally {await browser.close();}
+}, { openDocument: false, mcpLink: false });
 await writeFile(`${shots}/${phase}-report.json`,JSON.stringify(rows,null,2));
 const table=['| Fixture | Nodes | Native tree | Native pixel Δ % | Original tree | Original pixel Δ % | Error |','|---|---:|---|---:|---|---:|---|',...rows.map(r=>`| ${r.fixture} | ${r.nodes??'-'} → ${r.reopenedNodes??'-'} | ${r.native?.tree??'-'} | ${r.native?.pixel??'-'} | ${r.original?.tree??'-'} | ${r.original?.pixel??'-'} | ${(r.error||'').replaceAll('\n',' ').replaceAll('|','/')} |`)];
-await writeFile(`${process.env.ROUNDTRIP_REPORT_DIR || "/workspace/tmp"}/roundtrip-${phase}.md`,table.join('\n')+'\n');
+await writeFile(`${process.env.ROUNDTRIP_REPORT_DIR || shots}/roundtrip-${phase}.md`,table.join('\n')+'\n');
 if(phase==='after')assert.ok(rows.length > 0 && rows.every(r=>!r.error&&r.native?.tree&&r.native.pixel===0),'All native round trips must preserve nodes and pixels; see report');

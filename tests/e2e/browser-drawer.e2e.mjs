@@ -50,10 +50,12 @@ await withEditorBrowser(async ({ page, errors }) => {
   await page.setViewportSize({ width: 390, height: 800 });
   const mobileEditorBounds = await editor.boundingBox();
   const mobileBrowserBounds = await drawer.boundingBox();
-  assert.ok(mobileBrowserBounds.x > mobileEditorBounds.x, "narrow Browser must enter from the right");
-  assert.ok(Math.abs(mobileBrowserBounds.y - mobileEditorBounds.y) <= 1);
+  assert.ok(mobileEditorBounds.height >= 200, "keep usable canvas space above the browser");
+  assert.ok(mobileBrowserBounds.height >= 200, "keep usable preview space below the canvas");
+  assert.ok(mobileBrowserBounds.y >= mobileEditorBounds.y + mobileEditorBounds.height - 1,
+    "mobile browser must not cover the editor");
+  assert.ok(Math.abs(mobileBrowserBounds.x - mobileEditorBounds.x) <= 1);
   assert.ok(mobileBrowserBounds.x + mobileBrowserBounds.width <= 390);
-  assert.ok(mobileBrowserBounds.height >= mobileEditorBounds.height - 1);
   await page.getByRole("button", { name: /Browser tools|浏览器工具/i }).click();
   await page.getByRole("menuitem", { name: /Open in default browser|在默认浏览器中打开/i }).waitFor();
   await page.screenshot({ path: "/private/tmp/voo-browser-split-mobile.png" });
@@ -68,6 +70,6 @@ await withEditorBrowser(async ({ page, errors }) => {
   await drawer.waitFor({ state: "detached" });
   assert.deepEqual(errors, []);
   console.log(
-    "Browser split pane: desktop side-by-side, mobile right overlay, page rendering, tools menu and Escape passed.",
+    "Browser split pane: desktop side-by-side, mobile vertical split, page rendering, tools menu and Escape passed.",
   );
 });
