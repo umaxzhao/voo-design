@@ -393,9 +393,21 @@ export const useDesignStore = create((set, get) => {
   loadVooProject: ({ vooData, filePath = null, fileName = "Untitled.voo", fileHandle = null, figSource = null }) => {
     const doc = vooData?.document;
     if (!doc) return;
+    const incomingImages = {
+      ...get().images,
+      ...(vooData?.images || {}),
+      ...(vooData?.assets || {}),
+    };
     get().beginDocument();
     cameraBatcher.flush();
-    set({ figSource, canvasBackgroundColor: doc.canvasBackgroundColor ?? WORKSPACE_BACKGROUND, editorPageCameras: {}, pendingArtboardFitId: null, editorPageSession: get().editorPageSession + 1 });
+    set({
+      figSource,
+      images: incomingImages,
+      canvasBackgroundColor: doc.canvasBackgroundColor ?? WORKSPACE_BACKGROUND,
+      editorPageCameras: {},
+      pendingArtboardFitId: null,
+      editorPageSession: get().editorPageSession + 1,
+    });
 
     if (Array.isArray(doc.pages) && doc.pages.length > 0) {
       const nextNodes = doc.pages.map((page, idx) => ({

@@ -154,5 +154,6 @@ export function psdBytesToVooFile(bytes) {
     version: 1,
     document: doc,
     images,
+    assets: images,
   };
 }

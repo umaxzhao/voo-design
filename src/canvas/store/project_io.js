@@ -52,9 +52,10 @@ import {
 } from "../../../electron/voo_format.js";
 import { flushEditorPendingWrites } from "../components/editor_hooks/editor-autosave.js";
 
-export async function readRequiredAsset(id) {
+export async function readRequiredAsset(id, store = null) {
   // Check memory store first
-  const memoryImage = useDesignStore.getState?.()?.images?.[id];
+  const memoryImage =
+    store?.images?.[id] ?? useDesignStore.getState?.()?.images?.[id];
   if (typeof memoryImage === "string" && memoryImage.startsWith("data:")) {
     return memoryImage;
   }
@@ -87,12 +88,12 @@ export async function readRequiredAsset(id) {
  * IndexedDB. This resolves each id the document mentions so the `.voo` file carries
  * everything it needs to be reopened elsewhere.
  */
-export async function collectDocumentAssets(document, kind = "design") {
+export async function collectDocumentAssets(document, kind = "design", store = null) {
   const ids = imageIdsOfDocument(document, kind);
   const assets = {};
   for (const id of ids) {
     try {
-      assets[id] = await readRequiredAsset(id);
+      assets[id] = await readRequiredAsset(id, store);
     } catch (err) {
       console.warn(`[VOO] Asset ${id} missing or unreadable during package:`, err);
     }
@@ -101,8 +102,8 @@ export async function collectDocumentAssets(document, kind = "design") {
 }
 
 /** Backward-compatible alias for collectDocumentAssets. */
-export async function collectDocumentImages(document, kind = "design") {
-  return collectDocumentAssets(document, kind);
+export async function collectDocumentImages(document, kind = "design", store = null) {
+  return collectDocumentAssets(document, kind, store);
 }
 
 /**
@@ -115,29 +116,32 @@ export async function buildVooFile({
   kind = null,
   preview = null,
   version = null,
+  store = null,
 }) {
   const effectiveKind = kind ?? document?.kind ?? null;
   const effectiveVersion = version ?? (effectiveKind ? 2 : 1);
 
   if (effectiveVersion === 1) {
-    const images = await collectDocumentAssets(document, "design");
+    const images = await collectDocumentAssets(document, "design", store);
     return {
       format: VOO_FILE_FORMAT,
       version: 1,
       document,
       images,
+      assets: images,
       ...(preview ? { preview } : {}),
     };
   }
 
   const assetsKind = effectiveKind ?? "design";
-  const assets = await collectDocumentAssets(document, assetsKind);
+  const assets = await collectDocumentAssets(document, assetsKind, store);
   return {
     format: VOO_FILE_FORMAT,
     version: VOO_FILE_VERSION,
     kind: assetsKind,
     document,
     assets,
+    images: assets,
     ...(preview ? { preview } : {}),
   };
 }
@@ -150,7 +154,10 @@ export async function buildVooFile({
 export async function hydrateVooImages(vooFile, publication) {
   const files = Array.isArray(vooFile) ? vooFile : [vooFile];
   for (const file of files) {
-    const assets = file?.assets ?? file?.images ?? {};
+    const assets = {
+      ...(file?.images ?? {}),
+      ...(file?.assets ?? {}),
+    };
     for (const id of imageIdsOfDocument(file?.document, file?.kind)) {
       if (!Object.hasOwn(assets, id)) {
         console.warn(`[VOO] Warning: asset ${id} not found in .voo package`);
@@ -159,9 +166,11 @@ export async function hydrateVooImages(vooFile, publication) {
   }
   const assetsById = new Map();
   for (const file of files) {
-    for (const [id, dataUrl] of Object.entries(
-      file?.assets ?? file?.images ?? {},
-    )) {
+    const allAssets = {
+      ...(file?.images ?? {}),
+      ...(file?.assets ?? {}),
+    };
+    for (const [id, dataUrl] of Object.entries(allAssets)) {
       if (typeof dataUrl !== "string" || !dataUrl.startsWith("data:")) {
         continue;
       }
@@ -369,6 +378,7 @@ export async function buildProjectVooFile({
     preview: primaryPreview,
     kind: "design",
     version: 2,
+    store,
   });
 
   return {
@@ -610,7 +620,26 @@ async function openBinaryDesignSource({ store, bytes, sourceName, sourcePath, ha
     onAsset: /\.fig$/i.test(sourceName) ? onAsset : undefined,
   });
   flushImageBlobs();
-  if (Object.keys(vooFile.assets ?? {}).length > 0) await hydrateVooImages(vooFile);
+  if (vooFile) {
+    if (!vooFile.assets && vooFile.images) {
+      vooFile.assets = vooFile.images;
+    }
+    if (!vooFile.images && vooFile.assets) {
+      vooFile.images = vooFile.assets;
+    }
+  }
+  const fileAssets = {
+    ...(vooFile?.images ?? {}),
+    ...(vooFile?.assets ?? {}),
+  };
+  if (Object.keys(fileAssets).length > 0) {
+    await hydrateVooImages(vooFile);
+    if (store && typeof store.putImageState === "function") {
+      for (const [id, dataUrl] of Object.entries(fileAssets)) {
+        store.putImageState(id, dataUrl);
+      }
+    }
+  }
   // A PSD keeps its name and location, so saving writes it back in place.
   // A Figma file saves as a copy: its name gets a "(VOO)" suffix and no filePath,
   // so saving asks for a location and never overwrites the source.
