@@ -1,97 +1,63 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { CANVAS_TOOL_SCHEMAS } from "../../src/canvas/agent/canvas_tools.js";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { CANVAS_TOOL_NAMES, CANVAS_TOOL_SCHEMAS } from "../../src/canvas/agent/canvas_tools.js";
 import { runAgentTurn, SYSTEM_PROMPT } from "../../src/canvas/agent/canvas_agent.js";
 import { isCliAgentModel, streamCliStep } from "../../src/canvas/agent/cli_agent_step.js";
 import { findPersonaById, formatPersonaPrompt } from "../../src/shared/agent_persona.js";
 
-const ALL_TOOL_NAMES = [
-  "build_layout",
-  "stream_layout",
-  "set_code_connect",
-  "create_shape",
-  "lint_design",
+/** Core tools the agent's documented workflow depends on; a rename here must be deliberate. */
+const CORE_TOOL_NAMES = [
+  "inspect_layer_tree",
   "inspect_layout",
-  "export_code",
-  "generate_vector",
-  "vectorize_image",
-  "edit_image",
-  "stock_image",
-  "create_icon",
-  "find_empty_space",
-  "delete_layers",
-  "duplicate_layer",
-  "fork_frame",
-  "select_layers",
-  "group_layers",
-  "reorder_layer",
-  "rename_layer",
+  "lint_design",
+  "create_frame",
+  "create_shape",
+  "create_path",
   "mutate_layer_layout",
   "mutate_layer_style",
   "mutate_layer_text",
   "mutate_auto_layout",
   "batch_mutate_layers",
-  "inspect_layer_tree",
-  "describe_selection",
-  "generate_image",
-  "generate_image_web",
-  "create_component",
-  "create_component_variant",
-  "create_component_variants_batch",
-  "create_component_variant_matrix",
-  "list_component_variants",
-  "list_instance_variant_properties",
-  "set_instance_variant",
-  "create_instance",
-  "list_styles",
-  "create_style",
-  "apply_style",
-  "list_variables",
-  "bind_variable",
-  "set_instance_override",
-  "reset_instance_overrides",
-  "swap_instance",
-  "create_variable_collection",
-  "add_variable_mode",
-  "create_variable",
-  "set_variable_value",
-  "set_active_mode",
-  "set_frame_slot",
-  "get_frame_slot",
-  "create_path",
-  "place_image",
-  "capture_canvas",
-  "set_text_range_style",
-  "get_path_nodes",
-  "edit_path_nodes",
-  "align_layers",
-  "distribute_layers",
-  "create_frame",
-  "ungroup_layers",
-  "find_layers",
-  "undo",
-  "redo",
-  "update_plan",
-  "get_plan",
-  "boolean_combine",
-  "set_constraints",
-  "export_layers",
+  "set_code_connect",
   "new_document",
   "resize_document",
-  "create_comment",
-  "delete_comment",
-  "list_comments",
-  "reply_comment",
-  "resolve_comment",
+  "capture_canvas",
 ];
+
+/** Prompt words that are protocol/status vocabulary rather than tool names. */
+const PROMPT_NON_TOOL_WORDS = new Set(["in_progress"]);
 
 describe("CANVAS_TOOL_SCHEMAS completeness", () => {
   it("exposes every canvas tool the agent is told to use", () => {
     const names = CANVAS_TOOL_SCHEMAS.map((schema) => schema.function.name);
-    for (const name of ALL_TOOL_NAMES) {
-      expect(names).toContain(name);
+    // CANVAS_TOOL_NAMES is derived from the schemas: one source of truth, and a
+    // registered tool can never be forgotten by a hand-maintained list again.
+    expect([...CANVAS_TOOL_NAMES]).toEqual(names);
+    expect(CANVAS_TOOL_NAMES.length).toBeGreaterThan(0);
+    expect(new Set(CANVAS_TOOL_NAMES).size).toBe(names.length);
+    for (const name of CORE_TOOL_NAMES) {
+      expect(CANVAS_TOOL_NAMES, `registry is missing core tool ${name}`).toContain(name);
     }
-    expect(new Set(names).size).toBe(names.length);
-    expect([...names].sort()).toEqual([...ALL_TOOL_NAMES].sort());
+  });
+
+  it("documents every registered tool in docs/agents.md", () => {
+    const catalog = readFileSync(resolve(process.cwd(), "docs/agents.md"), "utf8");
+    for (const name of CANVAS_TOOL_NAMES) {
+      expect(catalog, `Missing \`${name}\` from docs/agents.md`).toContain(`\`${name}\``);
+    }
+  });
+
+  it("keeps the system prompt free of tool names the registry does not expose", () => {
+    const mentioned = new Set(
+      [...SYSTEM_PROMPT.matchAll(/\b([a-z][a-z0-9]*(?:_[a-z0-9]+)+)\b/g)]
+        .map((match) => match[1])
+        .filter((token) => !PROMPT_NON_TOOL_WORDS.has(token)),
+    );
+    expect(mentioned.size).toBeGreaterThan(0);
+    for (const token of mentioned) {
+      expect(CANVAS_TOOL_NAMES, `system prompt references unknown tool ${token}`).toContain(token);
+    }
   });
 });
 
