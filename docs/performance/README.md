@@ -314,7 +314,79 @@ work. Current node mapping builds each full page before emitting its chunks.
    retained memory and cold load. Repeat warm/cold and reverse-order controls;
    preserve exact pixels, selection and one-step history before declaring gains.
 
-All rows above remain **unimplemented / browser performance unverified**.
+At the audited revision, all rows above were **unimplemented / browser performance unverified**.
+The source-bound implementation below supersedes only its explicitly listed work.
 No Figma parity, 60FPS, total-memory reduction or installer certification follows
 from these CPU probes. Extend the maintained audit with measured changes rather
 than turning these hypotheses into passed acceptance rows.
+
+## Layer models and subscribed import — implementation
+
+Scope: `layers.model-cache`, `vectors.import-subscriptions`. The first batch
+removes repeated layer-model work and unconsumed worker chunks; autosave,
+history pin scanning, precise-pass index reuse and global bitmap budgets remain
+separate pending work. No controls, dependencies or file format are added.
+
+- Immutable node arrays share topology through a WeakMap. Each mounted panel
+  retains one tree model. Selection and live page metadata are refreshed
+  independently; cache keys include node identity, page structure, disclosure,
+  query, labels and deferred translation values. Default/fallback page semantics
+  remain unchanged. Stable external-master resolvers bypass cached instance
+  searches so master updates cannot leave stale search results.
+- Search evaluates labels once and propagates positive matches toward ancestors,
+  covering child and clipping edges without path-dependent cycle misses. Inactive
+  pages retain their legacy detached/cyclic recovery; unmatched nodes skip the
+  needless ancestor sweep. This is not a flattened or truncated layer tree.
+- The client negotiates `emitChunks` from the actual `onChunk` function. Without
+  a consumer the worker omits node chunk messages but retains progress, page
+  headers, asset ACK/backpressure and COMPLETE. Direct legacy worker callers
+  without the option keep streaming. Complete-message aliases are not counted
+  as duplicate clones. ZIP validation and complete scene mapping remain intact.
+- Red evidence: unchanged node arrays create new topology; a 120-deep matching
+  search repeatedly reads names; unsubscribed worker imports still emit chunks.
+  `/tmp/voo-layer-import-red.log` retains five failures and two legacy passes.
+- Initial real-panel regression exposes selection-only page metadata as an
+  invalid cache dependency (two rebuilds). The cache now separates selected IDs
+  and ignores ineffective root disclosure while refreshing live page descriptors.
+  Original failure and diagnostic logs remain retained; the zero-rebuild
+  assertion is not weakened. Actual selection, scrolling, reorder/undo, rename,
+  search and variable-height rows pass in the updated browser case.
+- The real Figma picker case verifies ordinary imports emit zero node chunks;
+  a subscribed client still receives all ordered chunks and the complete scene.
+  Existing crop/cover/rotation/overflow/mask pixels, variables, constraints,
+  undo/redo and cold portable reopening retain their original assertions.
+
+Fixed `ac9f18e635286848c08a0271cb25bca21e03ee94` completes a fresh
+105/105 release steps: 101 core browser suites, 4,752 unit passes/four skips,
+build/design/module checks; eleven additional checks remain not-run.
+`voo-layer-import-release.json` binds every result to that clean revision.
+
+Same-file production control `84130c8` versus `ac9f18e`, M4 Pro/Chromium 156,
+1440x1000/DPR1: eight real layer-label clicks have median waits 113.5→56.5ms.
+The panel renders 16 times in each run; the new tree builds zero times during
+those selections. Twelve pan moves measure 157→150ms and six Ctrl-wheel
+steps 84→66ms. Interactive loading is 10.133→9.657s; do not call this a large
+cold-load gain. Initial one-minute host loads are 7.76/7.26. These are shared
+host/automation plus two-rAF waits, not GPU FPS or universal speedups.
+
+Unconsumed node messages fall from 72 (56,422 nodes) to zero. Both results
+retain 56,422 mapped layers and 478 assets/247,642,346 transferred asset bytes.
+The original file hash remains `ddf80a00291c5c79ebc30c9b71c7c4180a74ca80311a170ed16f2aeed006b2c2`.
+Stable isolated 1000x800/zoom .024 artwork has zero pixel/channel differences;
+real selection/camera operations retain document identity and no page errors.
+
+Node probes retain equal row/item signatures for empty/matching/missing
+queries. Missing search is 199→51ms and a warm selection-model hit about .012ms.
+The uncached empty rebuild sample is 54→71ms, so no generic first-build gain
+is claimed; raw samples remain retained. These CPU probes are not UI latency.
+
+The fixed candidate is deployed and production-generated native Figma pixels,
+mask/variable/constraint/history checks, both worker subscription modes, actual
+selection with zero model builds, and zoom/exact-readback/undo pass. Eight
+entry/critical assets match the verified build. Direct main push was rejected
+by newly required PR/build rules; deployment had started before its result
+was confirmed. Preserve that ordering and finish required CI/PR synchronization;
+source/main and final deployment receipts are recorded independently.
+Private `layer-import-optimization/` retains gate, benchmark, production and
+GitHub evidence. `native_studio`, signed installers, physical input, all fonts/
+pages/effects and Figma parity remain outside this acceptance.
