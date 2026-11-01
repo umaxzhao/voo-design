@@ -887,15 +887,23 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
    */
   const runTool = useCallback(
     (next) => {
-      if (!engine) return;
-      if (next === TOOL.SELECT_REGION && engine.getPixelSelection?.()?.bounds) {
-        if (engine.beginSelectionTransform?.()) {
+      let targetEngine = engine;
+      if (!focusedId && nodeIds?.length > 0) {
+        const primaryId = nodeIds[0];
+        focusEditorPage(primaryId);
+        targetEngine = enginesRef.current.get(primaryId)?.engine ?? null;
+      } else if (focusedId && !targetEngine) {
+        targetEngine = enginesRef.current.get(focusedId)?.engine ?? null;
+      }
+      if (!targetEngine) return;
+      if (next === TOOL.SELECT_REGION && targetEngine.getPixelSelection?.()?.bounds) {
+        if (targetEngine.beginSelectionTransform?.()) {
           return;
         }
       }
-      engine.setTool(next);
+      targetEngine.setTool(next);
     },
-    [engine],
+    [engine, enginesRef, focusEditorPage, focusedId, nodeIds],
   );
 
   /**
@@ -1114,7 +1122,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
   } = useEditorCanvasGestures({
     multi, visible, freeStageRef, spaceRef, panGestureRef, enginesRef,
     layoutById, cameraZoom, tool, focusedId, focusEditorPage,
-    handleFocusCanvas, setCanvasBackgroundSelected,
+    handleFocusCanvas, setCanvasBackgroundSelected, nodeIds,
   });
   // Ref populated by ToolPropertiesSection so the X shortcut can swap colours.
   const swapColorsRef = useRef(null);
