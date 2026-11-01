@@ -2,10 +2,10 @@
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
 最近一次完整核心验证提交：[5cd112e](https://github.com/umaxzhao/voo-design/commit/5cd112efcd7597d36680eea3c9b8eba66a50d7b5)；91/91 项通过，当前线上为该构建。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
-## 本轮：画布与图层提交复查（进行中）
+## 本轮：画布与图层提交复查（已完成声明范围）
 - 复查分支 `ee5b9dd` 的重叠选择、悬停描边、Section、Agent 分组和设计检查，并同步最新主线 `c666a88` 的多 Frame 交互。发现五项能力缺少模块登记、Ctrl+Alt 重叠选择缺少回归、大文档 lint 两两比较及设计问题文案没有中文；修复和边界见[审查记录](audits/design-editor-interaction-audit.md#canvas-and-layer-feature-follow-up--2026-11-01)。
 - 模块目录现在登记 81 项能力，校验通过且变更路径无未映射项。补齐 Meta+Option / Ctrl+Alt 选择回归；20,000 个稀疏图层耗时 38.7ms（旧实现约 4.3s）；设计检查面板补齐中英文文案。
-- 代码验证：定向 46 项通过；全量 570 单测文件通过（4,722 项通过、4 项跳过）；设计规范 lint 1,434 个文件 clean；生产构建成功。选择/图层模块聚合 53 组浏览器检查通过，包含调整图层缩放/平移截图采样修正与完整多 Frame 拖动套件；原像素阈值未放宽。证据 `/tmp/selection-layer-final.log`、`/tmp/frame-adjustment-pan-fix.log`、`/tmp/frame-alt-duplicate-current.log`。本轮最终 clean release gate 尚未执行，不能视作发布验证。
+- 代码验证：定向 46 项通过；全量 570 单测文件通过（4,722 项通过、4 项跳过）；设计规范 lint 1,434 个文件 clean；生产构建成功。选择/图层模块聚合 53 组浏览器检查通过，包含调整图层缩放/平移截图采样修正与完整多 Frame 拖动套件；原像素阈值未放宽。干净提交 `26f71ebf16d83c017c5ad116a08ad5b4a3dcec34` 的完整发布门禁 **91/91 步骤通过**，包括构建、设计 lint、全量单测及核心浏览器验证；报告 `/private/tmp/voo-canvas-layer-audit-release.json`。功能覆盖仍标记为部分，不能推断未登记模块或硬件上下文均已认证。相关证据另见 `/tmp/selection-layer-final.log`、`/tmp/frame-adjustment-pan-fix.log`、`/tmp/frame-alt-duplicate-current.log` 与[审查记录](audits/design-editor-interaction-audit.md#canvas-and-layer-feature-follow-up--2026-11-01)。
 ## 本轮：图层操作复查与多 Frame 拖动（已完成声明范围）
 - `selection.transforms` / `selection.frame-title-selection` / `selection.cancel` / `layers.duplicate-delete-lock`：旧版本 32 组图层及关联检查通过，但新增实际多选发现内容区误拖子层、标题清空多选、锁定子层时只移动外框三个缺口，均已修复并保留失败证据。新增 16 个实际交互上下文与 3 条单测；42 项定向单测通过，固定 `5cd112e` **91/91 发布步骤、87 组核心浏览器、4716 单测通过/4 跳过**，GitHub CI 通过。[PR #79](https://github.com/umaxzhao/voo-design/pull/79) 合入 `f7f782c` 且源码树一致。本地主应用仅三文件补丁、16 个隔离浏览器场景通过，其他草稿保留。已部署 la2，正式入口及 82 个加载资源 SHA-256 一致，线上六个真实多选拖动/锁定/取消场景通过，三种移动入口验证像素与一次撤销/重做，零页面异常。证据 `/private/tmp/voo-license-regression/multiframe-{release,ci,primary-proof,main-tree-proof,production-proof}.json`；功能覆盖仍部分，不认证全部蒙版/布局/锁定组合、实体输入设备或签名安装包。[范围与证据](audits/design-editor-interaction-audit.md#multi-frame-layer-operation-audit--2026-11-01)。
 ## 本轮：正式分享链接（已完成声明范围）
