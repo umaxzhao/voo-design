@@ -12,9 +12,7 @@ function AiRepairDownloadDialog({ state, onDownload, onCancel }) {
   const failed = state.phase === "failed" || state.phase === "runFailed";
   const dialogRef = useRef(null);
   const titleId = useId();
-  useModalFocus({ open: true, dialogRef, onClose: () => {
-    if (!downloading && !running) onCancel();
-  } });
+  useModalFocus({ open: true, dialogRef, onClose: onCancel });
   const detail = downloading
     ? t(`${copy}.downloading`, { percent: state.progress ?? 0 })
     : running
@@ -57,15 +55,13 @@ function AiRepairDownloadDialog({ state, onDownload, onCancel }) {
           </div>
         ) : null}
         <div className="mt-4 flex justify-end gap-2">
-          {!downloading && !running ? (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="rounded-xl px-3 py-1.5 text-[10px] text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-neutral-100"
-            >
-              {t("editor.cancel")}
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-xl px-3 py-1.5 text-[10px] text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-neutral-100"
+          >
+            {t("editor.cancel")}
+          </button>
           {!downloading && !running ? (
             <button
               type="button"

@@ -39,6 +39,7 @@ Electron. No test edits the user's current document, workspace or OS Trash.
 | Tool menu choices | `image-toolbar-complete`, `drawing-retouch` | Every option in seven real tool-family menus. Brush/eraser/blur/sharpen/smudge/dodge/burn/sponge, spot/clone/patch, shapes and pen variants assert pixels or created artwork and undo. Selection-only menu checks are not counted as drawing checks. |
 | Pixel selections and deformation | `image-selections-warp` | Rectangle/ellipse/lasso/polygon/magnetic, wand, inversion/clear, perspective/distort/puppet handles, eyedropper, grab-hand camera and crop cancellation. Model prompt focus and Escape do not claim inference. |
 | Local AI tools | `image-network` | Real model download, foreground removal with alpha change and undo, a straight object-selection scribble, AI repair with changed pixels and undo, all three upscale choices with actual ONNX execution; network-offline reloading verifies persistent browser bytes and SHA-256. Interpolation fallback cannot pass an AI inference assertion. |
+| AI repair responsiveness | `healing-responsiveness`, `ai-repair-*.test.js`, `image-network` AI case | The offline browser uses a deliberately CPU-bound Worker fixture, not neural weights: pointer strokes, heartbeat, running Cancel/Escape, source deletion and one-step undo. The opt-in network case separately runs actual LaMa INT8 weights, checks changed pixels/undo and a heartbeat gap below 250ms. GPU hardware inference remains separate evidence. |
 | Tonal adjustments, filters and styles | `image-adjustments-complete` | All 43 adjustment kinds, 11 layer styles and 23 ordered live filters change real exported pixels; undo restores the original; scalar/style redo paints again. These are engine outcome tests, not every possible slider value. |
 | Style alpha and text | `image-layer-alpha` | Seven inner styles preserve transparent holes and apply layer opacity once; text bevel renders glyph edges, responds to size, and undoes. |
 | Inspector fields | `image-inspector-core`, `ui-inspector-interaction`, `inspector-controls` | Actual image/rectangle/Frame X/Y/W/H/rotation/shear/radius edits, flips, Enter/blur/Escape, mixed selection, color/text/variants, variables, filter ordering and export controls. |
@@ -61,6 +62,22 @@ is separate. `AI_SELECT` remains an object-selection alias, not an extra drawing
 engine. The enumerated tool IDs and real menu submodes are different inventories.
 
 ## Defects repaired by this audit
+
+- AI repair compiled and ran ONNX on the UI thread, with no running dialog for
+  cached weights and no cancellation while busy. Inference now belongs to a
+  bounded dedicated Worker, released on cancellation, timeout or idle. Source
+  identity prevents late results from overwriting a newer edit or deleted image.
+  GPU adapter/FP16 support is checked before choosing weights; an exposed API
+  alone cannot select the GPU model. The runtime copy/package checks include
+  ORT's asyncify assets. Model downloads accept AbortSignal and cache one
+  canonical entry per storage tier while still reading legacy aliases.
+  The actual hosted run then exposed a second boundary: nginx returned `.mjs`
+  and `.wasm` as generic binary data. A scoped `/editor/ort/` location supplies
+  JavaScript/WASM MIME types, returns 404 for missing modules and revalidates
+  unversioned runtime assets. Deployment verifies all six HTTP responses and a
+  missing-module 404 before publishing the new HTML entry point.
+- Reactivating the healing toolbar reset the chosen mode to AI Repair; it now
+  preserves the user's selected Spot/Patch/Clone/AI mode.
 
 - Consecutive W/H/X/Y confirmations used the inspector's previous paint snapshot
   and could overwrite earlier edits. Geometry now reads the engine's current
@@ -122,6 +139,12 @@ independent delivery and local-cache paths.
 
 ## Explicit remaining evidence requirements
 
+- The AI repair regression establishes worker isolation and actual Chromium
+  INT8/WASM inference, not WebGPU inference on every GPU or native installer
+  behavior. The separate ordinary Patch solver has a recorded ~867ms main-thread
+  gap on a 2048px fixture; it is not the user's confirmed AI repair path and is
+  not fixed or certified by this change. Large-image preprocessing/encoding and
+  memory on low-end devices remain performance contexts to measure separately.
 - Codex built-in generation and its local editing workflow are verified using
   the retained photo. VOO's external paid generation/edit/vector endpoints still
   require their actual configured service; the built-in result does not certify
