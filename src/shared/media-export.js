@@ -13,6 +13,10 @@ const FORMATS = Object.freeze({
     extension: "pptx",
     mime: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   },
+  fig: {
+    extension: "fig",
+    mime: "application/octet-stream",
+  },
 });
 
 export function mediaExportFormat(format) {
@@ -26,7 +30,7 @@ export function mediaExportFilename(name, format) {
   const basename = String(name || "export")
     .split(/[\\/]/)
     .pop();
-  return `${basename.replace(/\.(?:png|jpe?g|webp|svg|psd|pdf|html|glb|pptx)$/i, "")}.${extension}`;
+  return `${basename.replace(/\.(?:png|jpe?g|webp|svg|psd|pdf|html|glb|pptx|fig)$/i, "")}.${extension}`;
 }
 
 export function bytesToDataUrl(bytes, mime) {

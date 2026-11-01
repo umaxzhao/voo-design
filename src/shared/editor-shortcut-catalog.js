@@ -106,6 +106,7 @@ export const DESIGN_SHORTCUT_GROUPS = Object.freeze([
       Object.freeze({ key: "⌥⌘'", labelKey: "editor.snapping.toGrid" }),
       Object.freeze({ key: "⌥⌘M", labelKey: "editor.comments.toggle" }),
       Object.freeze({ key: "⌥⌘⇧M", labelKey: "editor.comments.toggleAddMode" }),
+      Object.freeze({ key: "⌥⌘A", labelKey: "agent.panel.open" }),
       Object.freeze({ key: "\\", labelKey: "editor.compareOriginal" }),
       Object.freeze({ key: "Space + Drag", labelKey: "editor.panCanvas" }),
       Object.freeze({ key: "⌘/ / ?", labelKey: "editor.shortcuts.title" }),

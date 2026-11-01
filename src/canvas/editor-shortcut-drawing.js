@@ -31,6 +31,14 @@ export function handleDrawingShortcut(event, context) {
   }
 
   if (event.code === "Backslash" || event.key === "\\") {
+    if ((event.metaKey || event.ctrlKey) && event.altKey) {
+      event.preventDefault();
+      if (context.onToggleAgent) context.onToggleAgent();
+      else if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("voo:toggle-agent-panel"));
+      }
+      return true;
+    }
     if (event.metaKey || event.ctrlKey) {
       event.preventDefault();
       const fg = engine.getColor?.() || "#000000";

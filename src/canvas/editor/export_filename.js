@@ -15,13 +15,13 @@ export function exportFilename(name, format, scale = 1) {
     .replace(/[<>:"/\\|?*\u0000-\u001f\u007f-\u009f]/g, "_")
     .trim()
     .replace(/[. ]+$/g, "")
-    .replace(/\.(?:png|jpe?g|webp|svg|psd|pdf)$/i, "")
+    .replace(/\.(?:png|jpe?g|webp|svg|psd|pdf|fig)$/i, "")
     .replace(/[. ]+$/g, "");
   if (!stem) stem = "Untitled";
   // Windows reserves device names even when followed by another extension.
   if (/^(?:con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(stem))
     stem = `_${stem}`;
-  const usesScale = format !== "svg" && format !== "psd";
+  const usesScale = format !== "svg" && format !== "psd" && format !== "fig";
   const suffix = `${usesScale && Number.isFinite(scale) && scale > 1 ? `@${scale}x` : ""}.${extension}`;
   const budget = 120 - new TextEncoder().encode(suffix).length;
   let truncated = "";
