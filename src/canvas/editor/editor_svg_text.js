@@ -59,7 +59,8 @@ export function textElement(node, measureCtx, idOf = () => null) {
     const placement = `translate(${number(node.x)} ${number(node.y)}) scale(${node.width / cache.width} ${node.height / cache.height})`;
     const opacity = node.opacity != null && node.opacity < 1 ? ` opacity="${number(node.opacity)}"` : "";
     const fillOpacity = node.fillOpacity != null ? ` fill-opacity="${number(node.fillOpacity)}"` : "";
-    return `<g${textTransformAttr(node)}><path d="${escapeXml(cache.path)}" transform="${placement}" fill="${escapeXml(fill)}"${opacity}${fillOpacity}${strokeParts}${filterPart}><title>${escapeXml(node.text)}</title></path></g>`;
+    const strokeOpacity = node.strokeOpacity != null ? ` stroke-opacity="${number(node.strokeOpacity)}"` : "";
+    return `<g${textTransformAttr(node)}><path d="${escapeXml(cache.path)}" transform="${placement}" fill="${escapeXml(fill)}"${opacity}${fillOpacity}${strokeOpacity}${strokeParts}${filterPart}><title>${escapeXml(node.text)}</title></path></g>`;
   }
   const styleParts = [
     spacing ? ` letter-spacing="${number(spacing)}"` : "",

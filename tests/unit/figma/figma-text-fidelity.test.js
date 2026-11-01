@@ -70,6 +70,8 @@ describe("native Figma typography fidelity", () => {
     const text = node();
     expect(textElement(text)).toContain(`<path d="${text.figmaText.path}"`);
     expect(textElement(text)).toContain("<title>A\nB</title>");
+    expect(textElement({ ...text, stroke: "#000000", strokeWidth: 2, strokeOpacity: 0.25 }))
+      .toContain('stroke-opacity="0.25"');
     expect(requiresCanvas2dMediaFallback({ nodes: [text] })).toBe(true);
     expect(requiresCanvas2dMediaFallback({ nodes: [{ ...text, text: "Changed" }] })).toBe(false);
   });
