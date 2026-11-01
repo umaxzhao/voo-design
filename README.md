@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://voo.run/editor/">Open the editor</a> ·
-  <a href="https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.1">Download desktop Beta</a> ·
+  <a href="https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.2">Download desktop Beta</a> ·
   <a href="#connect-your-agent">Connect your agent</a> ·
   <a href="docs/examples/README.md">Explore the examples</a>
 </p>
@@ -18,8 +18,9 @@
 **VOO Design** is an independent app. Claude Code and Codex can operate the same editable canvas through MCP.
 
 Desktop Beta downloads cover Windows x64, Linux x64 and macOS Intel/Apple Silicon.
-Builds are unsigned and macOS packages are not notarized. See the release notes for checksums,
-verified scenarios and remaining installer, upgrade and service limitations.
+Beta2 macOS packages (macOS 12+) are Developer ID signed and notarized on both architectures;
+Windows packages remain unsigned. See the release notes for checksums, verified scenarios
+and remaining manual installer, upgrade and service limitations.
 
 ## Design your way
 

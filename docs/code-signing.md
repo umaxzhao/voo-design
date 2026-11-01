@@ -1,9 +1,21 @@
 # Code signing (commercial builds)
 
 VOO Design ships unsigned AppImages by default on Linux CI/dev boxes. macOS and
-Windows notarization/signing are **optional hooks** wired through
+Windows signing are **optional hooks** wired through
 `electron-builder` environment variables. **Never commit certificates, `.p12`,
 `.pfx`, provisioning profiles, or passwords to this repository.**
+
+## Verified Beta2 release
+
+[Beta2](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.2),
+source `ae85951133f38d2fe3b15e39cd7f58015c073238`, contains signed and notarized
+Intel/Apple Silicon Mac packages (bundle minimum macOS 12.0). The
+[signing run](https://github.com/umaxzhao/voo-run/actions/runs/41314779042)
+verified both actual DMG and ZIP app contents, expected Developer ID team,
+Hardened Runtime, stapling, Gatekeeper and original ASAR bytes. Matching
+sanitized trust/native receipts ship with the Release. Windows packages remain
+unsigned; manual installer/system dialogs and older-version upgrades remain
+unverified. See [quality-progress.md](quality-progress.md) for exact scope.
 
 ## macOS (Developer ID)
 
