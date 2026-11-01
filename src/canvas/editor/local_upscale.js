@@ -16,16 +16,31 @@
 import { createCanvas, canvasToBlob, upscaleWithCanvas } from "./upscale-canvas.js";
 export { canvasToBlob, upscaleWithCanvas } from "./upscale-canvas.js";
 import { isLocalUpscaleSupported } from "./ai_capabilities.js";
-import { loadOrtRuntime } from "./ort_runtime.js";
 import { UPSCALE_MODEL_CACHE } from "./model_cache_names.js";
 import {
-  loadModelAssetBytes,
   isModelAssetCached,
   deleteModelAsset,
 } from "./model_asset_loader.js";
 import { applyBoxBlur, applySharpen } from "./spatial_filter.js";
 import { blendTileInto, planTiles, tileInputRgba } from "./upscale_tiling.js";
 import { resolveUpscaleModel } from "./upscale_models.js";
+import {
+  checkShouldStop,
+  createSessionWithTimeout,
+  DEFAULT_COMPILE_TIMEOUT_MS,
+  describeUpscaleBackend,
+  releaseLocalUpscale,
+  loadModelBytes,
+  getSession,
+} from "./upscale_compile.js";
+export {
+  checkShouldStop,
+  createSessionWithTimeout,
+  DEFAULT_COMPILE_TIMEOUT_MS,
+  describeUpscaleBackend,
+  releaseLocalUpscale,
+  getSession,
+} from "./upscale_compile.js";
 
 const MODEL_CACHE = UPSCALE_MODEL_CACHE;
 
@@ -73,15 +88,7 @@ function tileSizeFor(scale) {
   return tileSize;
 }
 
-let sessionPromise = null;
-let activeBackend = null;
-let loadedModelId = null;
-
 export { isLocalUpscaleSupported };
-
-export function describeUpscaleBackend() {
-  return activeBackend;
-}
 
 export async function isUpscaleModelCached(model) {
   const target = model ?? resolveUpscaleModel(2);
@@ -94,12 +101,6 @@ export async function isUpscaleModelCached(model) {
 }
 
 export { UPSCALE_MODELS, resolveUpscaleModel } from "./upscale_models.js";
-
-export function releaseLocalUpscale() {
-  sessionPromise = null;
-  loadedModelId = null;
-  activeBackend = null;
-}
 
 /**
  * Fetches the model into Cache Storage and reports progress. This is the same
@@ -115,56 +116,13 @@ export async function downloadUpscaleModel({ model, onProgress } = {}) {
 
 export async function deleteUpscaleModel(model) {
   const target = model ?? resolveUpscaleModel(2);
-  if (loadedModelId === target.id) releaseLocalUpscale();
+  releaseLocalUpscale();
   const filename = target.filename || (target.url ? target.url.split("/").pop() : "realesrgan-compact-2x.onnx");
   return await deleteModelAsset({
     filename,
     fallbackUrl: target.url,
     cacheName: MODEL_CACHE,
   });
-}
-
-async function loadModelBytes(model, onProgress) {
-  const filename = model.filename || (model.url ? model.url.split("/").pop() : "realesrgan-compact-2x.onnx");
-  return await loadModelAssetBytes({
-    filename,
-    fallbackUrl: model.url,
-    cacheName: MODEL_CACHE,
-    onProgress,
-  });
-}
-
-async function getSession(model, onProgress) {
-  if (loadedModelId && loadedModelId !== model.id) releaseLocalUpscale();
-  if (sessionPromise) return sessionPromise;
-  sessionPromise = (async () => {
-    const ort = await loadOrtRuntime(onProgress);
-    const bytes = await loadModelBytes(model, onProgress);
-    onProgress?.({ phase: "compiling" });
-
-    const providers =
-      typeof navigator === "object" && navigator.gpu
-        ? ["webgpu", "wasm"]
-        : ["wasm"];
-    for (const provider of providers) {
-      try {
-        const session = await ort.InferenceSession.create(bytes, {
-          executionProviders: [provider],
-          graphOptimizationLevel: "all",
-        });
-        activeBackend = provider;
-        loadedModelId = model.id;
-        return { ort, session };
-      } catch (error) {
-        console.warn(`upscale: ${provider} provider unavailable`, error);
-      }
-    }
-    throw new Error("upscaleNoBackend");
-  })().catch((error) => {
-    sessionPromise = null;
-    throw error;
-  });
-  return sessionPromise;
 }
 
 /**
@@ -219,7 +177,7 @@ export async function runTiledUpscale(bitmap, { ort, session, width, height, sca
   let tileRgba = null;
 
   for (let index = 0; index < tiles.length; index += 1) {
-    if (shouldStop?.()) {
+    if (checkShouldStop(shouldStop)) {
       throw new Error("stopped");
     }
     const rect = tiles[index];
@@ -240,6 +198,9 @@ export async function runTiledUpscale(bitmap, { ort, session, width, height, sca
 
     const tensor = new ort.Tensor("float32", planar, [1, 3, rect.height, rect.width]);
     const output = await session.run({ [session.inputNames[0]]: tensor });
+    if (checkShouldStop(shouldStop)) {
+      throw new Error("stopped");
+    }
     const outTensor = output[session.outputNames[0]];
     const outH = outTensor.dims[2];
     const outW = outTensor.dims[3];
@@ -284,8 +245,10 @@ export async function runTiledUpscale(bitmap, { ort, session, width, height, sca
     for (let i = 3; i < target.length; i += RGBA) target[i] = 255;
   }
 
+  if (checkShouldStop(shouldStop)) throw new Error("stopped");
   outCtx.putImageData(outImageData, 0, 0);
   onProgress?.({ phase: "encoding" });
+  if (checkShouldStop(shouldStop)) throw new Error("stopped");
   return await canvasToBlob(outCanvas, "image/png");
 }
 
@@ -302,8 +265,8 @@ export async function runTiledUpscale(bitmap, { ort, session, width, height, sca
  * @param {(state: object) => void} [options.onProgress] Progress reporting callback
  * @returns {Promise<Blob>} Upscaled PNG blob
  */
-export async function runLocalUpscale(bitmap, { scale = 2, modelId = null, model: customModel = null, onProgress, denoise = false, shouldStop } = {}) {
-  if (shouldStop?.()) {
+export async function runLocalUpscale(bitmap, { scale = 2, modelId = null, model: customModel = null, onProgress, denoise = false, shouldStop, compileTimeoutMs } = {}) {
+  if (checkShouldStop(shouldStop)) {
     throw new Error("stopped");
   }
   const width = bitmap.naturalWidth ?? bitmap.width;
@@ -312,10 +275,10 @@ export async function runLocalUpscale(bitmap, { scale = 2, modelId = null, model
 
   let handle;
   try {
-    handle = await getSession(model, onProgress);
+    handle = await getSession(model, onProgress, { shouldStop, compileTimeoutMs });
   } catch (error) {
-    if (shouldStop?.()) {
-      throw new Error("stopped");
+    if (checkShouldStop(shouldStop) || error?.message === "stopped") {
+      throw error?.message === "stopped" ? error : new Error("stopped");
     }
     // The one and only reason to fall back: there is no usable model. Image
     // size is not a factor any more — the tiled runner bounds its own memory.
@@ -324,10 +287,17 @@ export async function runLocalUpscale(bitmap, { scale = 2, modelId = null, model
       error,
     );
     onProgress?.({ phase: "fallback" });
-    return await canvasToBlob(upscaleWithCanvas(bitmap, scale), "image/png");
+    if (checkShouldStop(shouldStop)) {
+      throw new Error("stopped");
+    }
+    const fallbackCanvas = upscaleWithCanvas(bitmap, scale);
+    if (checkShouldStop(shouldStop)) {
+      throw new Error("stopped");
+    }
+    return await canvasToBlob(fallbackCanvas, "image/png");
   }
 
-  if (shouldStop?.()) {
+  if (checkShouldStop(shouldStop)) {
     throw new Error("stopped");
   }
   onProgress?.({ phase: "running" });
@@ -345,21 +315,25 @@ export async function runLocalUpscale(bitmap, { scale = 2, modelId = null, model
       onProgress,
       shouldStop,
     });
+    if (checkShouldStop(shouldStop)) {
+      throw new Error("stopped");
+    }
     if (!model.nativeScale || model.nativeScale === model.scale) return result;
     // One native 4x model supplies both outputs; 2x retains learned detail, then resamples.
     const predicted = await createImageBitmap(result);
     try {
-      if (shouldStop?.()) throw new Error("stopped");
+      if (checkShouldStop(shouldStop)) throw new Error("stopped");
       const canvas = createCanvas(width * model.scale, height * model.scale);
       const context = canvas.getContext("2d");
       if (!context) throw new Error("canvasUnsupported");
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = "high";
       context.drawImage(predicted, 0, 0, canvas.width, canvas.height);
+      if (checkShouldStop(shouldStop)) throw new Error("stopped");
       return await canvasToBlob(canvas, "image/png");
     } finally { predicted.close(); }
   } catch (error) {
-    if (shouldStop?.() || error?.message === "stopped") {
+    if (checkShouldStop(shouldStop) || error?.message === "stopped") {
       throw error?.message === "stopped" ? error : new Error("stopped");
     }
     const failure = new Error("upscaleModelRunFailed");
