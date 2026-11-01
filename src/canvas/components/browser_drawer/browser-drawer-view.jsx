@@ -130,6 +130,26 @@ export default function BrowserDrawerView({ model, onClose }) {
         <div ref={toolsRef} className="relative flex shrink-0 items-center gap-1">
           <button
             type="button"
+            onClick={() => runTool(isPicking ? handleStopPick : handleStartPick)}
+            aria-label={isPicking ? t("browser.picking") : t("browser.pickElement")}
+            aria-pressed={isPicking}
+            title={isPicking ? t("browser.picking") : t("browser.pickElement")}
+            className={`flex size-8 items-center justify-center rounded-lg transition-colors ${isPicking ? "bg-[#b2ffd6] text-black" : "text-neutral-400 hover:bg-white/10 hover:text-white"}`}
+          >
+            <MousePointerClick size={15} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => runTool(handleImportFullPage)}
+            disabled={isLoading}
+            aria-label={t("browser.importPage")}
+            title={t("browser.importPage")}
+            className="flex size-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-40"
+          >
+            <Download size={15} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
             aria-label={t("browser.actions")}
             aria-expanded={toolsOpen}
             title={t("browser.actions")}
@@ -140,14 +160,6 @@ export default function BrowserDrawerView({ model, onClose }) {
           </button>
           {toolsOpen && (
             <div role="menu" aria-label={t("browser.actions")} className="absolute right-0 top-full z-10 mt-2 flex w-52 flex-col rounded-xl border border-white/10 bg-neutral-900 p-1 shadow-panel">
-              <button type="button" role="menuitem" onClick={() => runTool(isPicking ? handleStopPick : handleStartPick)} className="flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-200 hover:bg-white/10">
-                <MousePointerClick size={14} className={isPicking ? "text-[#b2ffd6]" : "text-neutral-400"} />
-                <span>{isPicking ? t("browser.picking") : t("browser.pickElement")}</span>
-              </button>
-              <button type="button" role="menuitem" onClick={() => runTool(handleImportFullPage)} disabled={isLoading} className="flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-200 hover:bg-white/10 disabled:opacity-40">
-                <Download size={14} className="text-neutral-400" />
-                <span>{t("browser.importPage")}</span>
-              </button>
               <button type="button" role="menuitem" onClick={() => runTool(handleCaptureViewport)} className="flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-200 hover:bg-white/10">
                 <Camera size={14} className="text-neutral-400" />
                 <span>{t("browser.captureImage")}</span>

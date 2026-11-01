@@ -187,7 +187,7 @@ export default function CollabAvatars({
         <div
           role="dialog"
           aria-label={t("collab.share")}
-          className="absolute right-0 top-full z-50 mt-2 w-[300px] rounded-2xl border border-white/10 bg-neutral-900 p-3.5 shadow-panel"
+          className="absolute right-0 top-full z-[70] mt-2 w-[300px] rounded-2xl border border-white/10 bg-neutral-900 p-3.5 shadow-panel"
         >
           <div className="mb-2.5 flex items-center gap-1.5">
             <span className="text-[12px] font-medium text-neutral-100">

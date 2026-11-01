@@ -195,3 +195,22 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 - The cover uses a real editing screenshot, the UI colors `#B2FFD6` → `#E5B2FF`, and Intel One Mono Regular (400). A relative-path HTML composition is retained beside the PNG.
 - All three product UI screenshots retain their original 1600 × 1000 content with 24px transparent outer corners. Pixel comparison found zero changes outside the four corner regions; screenshot-state evidence remains tied to its original captured production entry.
 - Exact publication revision, disclosure/link/image checks and layout/typography evidence: `/private/tmp/voo-showcase/product-ui/redesign-publication.json`. No application deployment is required for this documentation and artwork update.
+
+## Inspector empty stroke spacing — 2026-10-31
+
+- Scope: right inspector only. An empty Stroke section now uses equal 12px vertical insets around its header; populated strokes and style-bound empty strokes retain the existing section rhythm. The `inspector` module remains partial.
+- Reproduction and focused evidence: `tests/e2e/inspector-controls.e2e.mjs` first failed with measured top/bottom gaps of 7px/20px, then passed after the change. The complete `inspector-controls` browser scenario passed all 14 assertions on worktree `e8d1c07` plus this uncommitted task diff. `npm run check:modules` and `npm run lint:design` passed.
+- Broader validation did not pass: full units finished with 543 test files passing, 4 failing, 3 skipped (10 failed assertions); failures include watcher resource pressure, bridge listener setup and onboarding expectations. The related inspector module run also stopped at the unrelated `hook-lifecycle` payment-provider assertion (`stripe` vs expected `studio`). These are recorded as failed, not certified by the focused pass.
+- Release evidence: no clean release report, commit, push or deployment was produced for this task. The current source snapshot is based on `e8d1c07`; browser/device variants and full release certification remain unverified.
+
+## Collaboration share dialog visibility — 2026-10-31
+
+- Scope: title-bar collaboration invite panel. The dialog rendered in the DOM but shared the editor root's `z-index: 50`; the later-painted editor covered it. Raising only the dialog to `z-index: 70` makes it the top hit target while leaving the higher settings/loading overlays above it.
+- Reproduction: `tests/e2e/titlebar-file-actions.e2e.mjs` now opens a real document, clicks Share, checks the dialog bounds and hit-tests its center. Before the fix the topmost assertion failed; after the fix the full title-bar browser scenario passed. `collab_avatars` and `titlebar_actions` unit suites passed (11 tests), as did `check:modules` and `lint:design`.
+- Functional scope remains partial: this verifies the invite panel is visible and topmost, not real two-device signaling or remote editing. No clean full-release report, commit, push or deployment was produced. The current source base is `d1ac12b` plus uncommitted worktree changes; prior uncommitted inspector spacing changes are preserved separately.
+
+## Browser toolbar common actions — 2026-10-31
+
+- Scope: browser drawer toolbar. “Pick Element” and “Import Page” moved from the More menu to icon buttons immediately left of More; the menu keeps screenshot capture, custom HTML import and external-browser opening.
+- Reproduction: `tests/e2e/browser-drawer.e2e.mjs` failed because no direct Pick Element button existed. After the change, the browser-drawer scenario passed on desktop and 390px mobile, including direct action presence, removal from the menu, page rendering, and closing the menu/drawer.
+- `npm run check:modules` and `npm run lint:design` remain the required checks for this UI scope; broader product coverage remains partial. This task is based on `e2d3517` plus uncommitted worktree changes and has no clean release report, commit, push or deployment.

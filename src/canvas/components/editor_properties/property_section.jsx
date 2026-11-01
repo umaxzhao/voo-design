@@ -19,10 +19,13 @@ export const sectionTitleClass =
 // previous group's last row and the next group's header (12px on each side).
 const sectionRhythmClass =
   "border-t border-white/10 pb-3 pt-1.5 first:border-t-0 first:pt-0";
+const emptySectionRhythmClass = "border-t border-white/10 py-3";
 
 /** The header row shared by static and collapsible sections. */
 export const sectionHeaderClass =
   "flex min-w-0 items-center justify-between gap-2 px-1 pb-2 select-none";
+const emptySectionHeaderClass =
+  "flex min-w-0 items-center justify-between gap-2 px-1 select-none";
 
 /** The child wrapper shared by every section, so all rows share one inset. */
 export const sectionBodyClass = "space-y-2 px-0.5";
@@ -187,15 +190,19 @@ export function StaticSection({
   testId = undefined,
   hideHeader = false,
   bodyClassName = sectionBodyClass,
+  emptyState = false,
 }) {
   // Core property groups are always open: the panel is a scannable list like
   // Figma's, not a set of drawers. Empty groups show an explicit action row
   // instead of hiding their body behind a chevron.
   void storageKey;
   return (
-    <div className={sectionRhythmClass} data-testid={testId}>
+    <div
+      className={emptyState ? emptySectionRhythmClass : sectionRhythmClass}
+      data-testid={testId}
+    >
       {hideHeader ? null : (
-        <div className={sectionHeaderClass}>
+        <div className={emptyState ? emptySectionHeaderClass : sectionHeaderClass}>
           <div className={`flex min-w-0 items-center gap-1.5 ${sectionTitleClass}`}>
             <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
           </div>
@@ -212,4 +219,5 @@ StaticSection.propTypes = {
   children: PropTypes.node,
   extra: PropTypes.node,
   storageKey: PropTypes.string,
+  emptyState: PropTypes.bool,
 };

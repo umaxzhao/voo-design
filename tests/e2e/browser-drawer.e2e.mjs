@@ -20,6 +20,16 @@ await withEditorBrowser(async ({ page, errors }) => {
   await page.frameLocator('[data-testid="voo-browser-drawer"] iframe')
     .getByText("Browser preview fixture")
     .waitFor();
+  assert.equal(
+    await drawer.getByRole("button", { name: /Pick Element|选取元素/i }).count(),
+    1,
+    "element picking should be directly available beside the browser menu",
+  );
+  assert.equal(
+    await drawer.getByRole("button", { name: /Import Page|导入整页/i }).count(),
+    1,
+    "full-page import should be directly available beside the browser menu",
+  );
   assert.equal(await trigger.getAttribute("aria-pressed"), "true");
   await page.waitForFunction(
     () =>
@@ -43,6 +53,9 @@ await withEditorBrowser(async ({ page, errors }) => {
   assert.equal(mobileBrowserBounds.x, mobileEditorBounds.x);
   assert.ok(mobileBrowserBounds.x + mobileBrowserBounds.width <= 390);
   await page.getByRole("button", { name: /Browser tools|浏览器工具/i }).click();
+  const toolsMenu = drawer.getByRole("menu", { name: /Browser tools|浏览器工具/i });
+  assert.equal(await toolsMenu.getByRole("menuitem", { name: /Pick Element|选取元素/i }).count(), 0);
+  assert.equal(await toolsMenu.getByRole("menuitem", { name: /Import Page|导入整页/i }).count(), 0);
   await page.getByRole("menuitem", { name: /Open in default browser|在默认浏览器中打开/i }).waitFor();
   await page.screenshot({ path: "/private/tmp/voo-browser-split-mobile.png" });
   await page.keyboard.press("Escape");

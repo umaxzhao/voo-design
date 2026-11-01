@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import FigmaColorPicker from "../../src/canvas/color_picker/FigmaColorPicker.jsx";
 import VariantsSection from "../../src/canvas/components/editor_properties/variants_section.jsx";
 import TextSection from "../../src/canvas/components/editor_properties/text_section.jsx";
+import ColourSection from "../../src/canvas/components/editor_properties/colour_section.jsx";
 import LiveFilterStack from "../../src/canvas/components/editor_properties/live_filter_stack.jsx";
 import ExportSection from "../../src/canvas/components/editor_properties/export_section.jsx";
 import AffinityAdjustmentSection from "../../src/canvas/components/editor_properties/affinity_adjustment_section.jsx";
@@ -34,6 +35,7 @@ export function mountAuditPanel(kind, id) {
     if (kind === "colour") return React.createElement(FigmaColorPicker, { color: object.fill, onChange: (fill) => edit({ fill }), blendMode: object.blendMode ?? "source-over", onBlendModeChange: (blendMode) => edit({ blendMode }) });
     if (kind === "variants") return React.createElement(VariantsSection, { engine: editor, node: object });
     if (kind === "text") return React.createElement(TextSection, props);
+    if (kind === "paint") return React.createElement("div", null, React.createElement(ColourSection, { ...props, showFill: true, showStroke: true }));
     if (kind === "filters") return React.createElement(LiveFilterStack, props);
     if (kind === "adjustment") return React.createElement(AffinityAdjustmentSection, { ...props, adjustments: normalizeAdjustments(object.adjustments) });
     if (kind === "export") return React.createElement(ExportSection, props);

@@ -68,6 +68,21 @@ await withEditorBrowser(
       await page.evaluate(() => window.__vooStore.fileName),
       "TitlebarAudit.voo",
     );
+    const shareTrigger = bar.getByRole("button", { name: "Share", exact: true });
+    await shareTrigger.click();
+    const shareDialog = bar.getByRole("dialog", { name: "Share", exact: true });
+    await shareDialog.waitFor({ state: "visible" });
+    const shareBounds = await shareDialog.boundingBox();
+    assert.ok(shareBounds, "the share dialog should have a visible box");
+    const shareDialogIsTopmost = await page.evaluate(({ x, y }) => {
+      const hit = document.elementFromPoint(x, y);
+      return Boolean(hit?.closest('[role="dialog"][aria-label="Share"]'));
+    }, {
+      x: shareBounds.x + shareBounds.width / 2,
+      y: shareBounds.y + shareBounds.height / 2,
+    });
+    assert.equal(shareDialogIsTopmost, true, "the canvas must not cover the share dialog");
+    await shareTrigger.click();
     const [download] = await Promise.all([
       page.waitForEvent("download"),
       bar

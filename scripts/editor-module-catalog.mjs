@@ -187,6 +187,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/*taskbar*", "src/canvas/components/*toolbar*",
       "src/canvas/components/editor_pie_menu.jsx", "src/canvas/components/flat_select*", "src/canvas/components/settings*", "src/canvas/use_i18n.js",
       "src/shared/i18n*", "src/shared/i18n/*", "src/canvas/*layout.css", "src/canvas/*panels.css",
+      "tests/e2e/inspector-audit-panel.mjs",
     ],
     related: ["selection","layers","text","images","layout"],
     features: [
