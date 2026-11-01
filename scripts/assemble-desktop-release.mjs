@@ -22,7 +22,7 @@ async function walk(directory) {
 }
 
 /** Require passing native smoke evidence before assembling release payloads. */
-export async function assembleDesktopRelease({ inputDir, outputDir, version, revision }) {
+export async function assembleDesktopRelease({ inputDir, outputDir, version, revision, requireMacSigning = false }) {
   assert.match(revision, /^[0-9a-f]{40}$/);
   const channel = releaseChannel(version);
   const files = await walk(inputDir);
@@ -40,6 +40,18 @@ export async function assembleDesktopRelease({ inputDir, outputDir, version, rev
     assert.deepEqual(report.errors, []);
     evidence.push(report);
     assets.set(`checks-${name}`, Buffer.from(JSON.stringify(report, null, 2)));
+    if (target.platform === 'mac' && (requireMacSigning || report.signing)) {
+      const signingName = `signing-mac-${target.arch}.json`;
+      const signedFiles = files.filter(file => path.basename(file) === signingName);
+      assert.equal(signedFiles.length, 1, `Expected one macOS signing receipt for ${target.arch}`);
+      const signed = JSON.parse(await readFile(signedFiles[0], 'utf8'));
+      for (const [key, expected] of Object.entries({ version, revision, platform: 'mac', arch: target.arch })) assert.equal(signed[key], expected);
+      for (const key of ['developerId', 'expectedTeam', 'hardenedRuntime', 'stapled', 'gatekeeper']) {
+        assert.equal(signed[key], true, `macOS signing receipt failed: ${key}`);
+        assert.equal(report.signing?.[key], true, `Native receipt lacks macOS trust evidence: ${key}`);
+      }
+      assets.set(signingName, Buffer.from(JSON.stringify(signed, null, 2)));
+    }
   }
   for (const file of files) {
     const name = path.basename(file);
@@ -95,7 +107,9 @@ export async function assembleDesktopRelease({ inputDir, outputDir, version, rev
   const notes = `# VOO Design ${version}\n\nDraft desktop prerelease built from ${revision}.\n\n` +
     "Downloads: Windows x64 setup/portable, macOS Intel and Apple Silicon DMG/ZIP, Linux x64 AppImage.\n\n" +
     "All four native runner checks passed: packaged startup, real pointer drawing/undo, native filesystem roundtrip and reopening the physical project in a fresh process/profile.\n\n" +
-    "Signing/notarization is not certified by these smoke checks. Without configured CI signing credentials, preview builds are unsigned/not notarized and OS trust prompts may block installation.\n\n" +
+    (requireMacSigning
+      ? "Both macOS architectures passed separate Developer ID, expected-team, Hardened Runtime, stapling and Gatekeeper checks. Windows Authenticode signing is not certified.\n\n"
+      : "Signing/notarization is not certified by these smoke checks. Without configured CI signing credentials, preview builds are unsigned/not notarized and OS trust prompts may block installation.\n\n") +
     "Still unverified: interactive installer UX, live paid/CLI/model services, and upgrading from an older installed version. This is not a stable release or a complete product certification.\n\n" +
     "Verify downloads with SHA256SUMS.txt. Update manifests and every generated blockmap are included.\n";
   await writeFile(path.join(outputDir, "RELEASE-NOTES.md"), notes);
@@ -105,5 +119,5 @@ export async function assembleDesktopRelease({ inputDir, outputDir, version, rev
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const pkg = JSON.parse(await readFile("package.json", "utf8"));
   console.log(await assembleDesktopRelease({ inputDir: process.argv[2], outputDir: process.argv[3],
-    version: pkg.version, revision: process.env.GITHUB_SHA }));
+    version: pkg.version, revision: process.env.GITHUB_SHA, requireMacSigning: process.argv.includes('--require-mac-signing') }));
 }

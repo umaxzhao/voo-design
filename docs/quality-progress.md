@@ -4,6 +4,12 @@
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 ## 本轮：相对排序与 Loading 旋转间距（已完成声明范围）
 - 修复蒙版多选重复调序、锁定 Frame 子层仍可调序、单节点接口拆散 Frame 三个缺口；Loading 补足旋转留白，保留原 20px 要求并新增八角度检查。保留最新主线全部已发布功能，固定 `00b3f98` **105/105 完整发布步骤、101 组核心浏览器、4825 单测通过/4 跳过及 CI 通过**，未拼接旧报告。新增 12 条单测与 10 个排序上下文，本地主应用三个任务文件一致、十场景及 Loading 完整套件通过，其他草稿保留。已部署 [Web 预览](https://voo.run/editor/)，入口及实际加载的 82 项 JS/CSS SHA-256 一致，六个线上排序场景、八个旋转角度、实际像素及一次撤销/重做通过，零页面异常。最小代表性旋转间距 22.06px。[PR #80](https://github.com/umaxzhao/voo-design/pull/80) 汇总修复与验收记录；证据 `/private/tmp/voo-license-regression/layer-order-{release,ci,primary-proof,production-proof}.json`。功能覆盖仍部分；绝对位置拖排、置顶/置底和原生包不由这十个新上下文认证，本轮未重发安装包。[范围与证据](audits/design-editor-interaction-audit.md#relative-layer-order-audit--2026-11-01)。
+## 本轮：复用 VOO-Run 的 Mac 签名（接入与真实构建验证中）
+- `platform.macos-signing`：用户已明确授权构建工具内部使用原有本机发布配置；本机存在有效 Developer ID Application，已安装旧 VOO 的公开签名验证通过。Apple 公证认证实际通过，未输出、复制或提交凭据值，没有导出证书或修改钥匙串权限。
+- 已稳定复现旧 Design hook 拒绝“已有钥匙串身份 + App Store Connect API”这一输入，补齐 API/现有 profile 路由、显式签名要求、预检与失败阻断。签名前后分别检查 Developer ID/期望团队/Hardened Runtime 和公证票据/Gatekeeper；只有真实原生冒烟也通过后才写成功证明。新增环境载入只处理明确指定文件和 Apple 字段，诊断脱敏。
+- 新候选为 `1.0.0-beta.2`；Beta1 公布的包不覆盖、不改标为已签名。两个架构的签名收据与原生收据必须匹配候选提交才能通过 `--require-mac-signing` 组装。当前尚未完成新候选签名构建、完整门禁和公开发布，不能继承 Beta1 或最新 Web 的通过记录。
+- GitHub CLI 原登录刷新要求本人二次验证，已保留 GitHub Confirm access 页面；等待用户完成，期间继续本地实现与验证。VOO-Run 工作区的其他草稿与未推提交未修改。
+
 ## 三平台 GitHub Beta（门禁与产物核验通过）
 - [Beta 下载与说明](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.1)：`1.0.0-beta.1`，Windows x64 setup/portable、Linux x64 AppImage、macOS Intel/Apple Silicon DMG/ZIP，共四个原生目标、七个载荷。公开状态以该 Release 页面为准，保持 prerelease，不标记稳定最新版。
 - 固定验证源码 [`eab3bea`](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78) 的 [完整 CI](https://github.com/umaxzhao/voo-design/actions/runs/41281003764) 全部成功：**105/105 步、101 组核心浏览器、4781 单测通过/4 跳过、1441 文件设计检查**；580 个测试文件通过/3 跳过。报告 `complete=true`，12 个模块、87 组能力的功能覆盖仍为 partial，11 组独立额外检查明确 not-run。Release 附带 `web-release-checks.json`，不以其他提交或脏工作区继承通过。
