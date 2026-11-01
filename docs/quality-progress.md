@@ -426,3 +426,10 @@ node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
 > 首页 Settings 底部间距微调：从 24px 减至 12px（向下移动 12px），保持左侧位置与点击区域；沿用 `workspace.settings-entry`，在既有首页套件检查四个宽度的精确底边间距。本轮精确提交及执行结果见 `/private/tmp/voo-settings-lower-release.json`，此前基线发布阻断不能视为已解决。
 
 > 本轮首页设置入口调整：已移除侧栏版本号，将首页 Settings 移至左下角；能力 `workspace.settings-entry`。本次相关 17 项单测和 320/390/768/1440px 首页浏览器专项通过。完整门禁因基线既有的 10 项 Agent 工具清单/首次引导失败而阻断（已在修改前提交 `e2d3517` 复现，`/private/tmp/voo-settings-baseline.log`），本轮尚未推送或部署。精确最终 revision 与逐项执行结果见 `/private/tmp/voo-settings-release.json`，不得继承历史通过结果。详细范围见 [面板审查](audits/panel-control-audit.md#welcome-settings-entry--2026-10-31)。
+
+## 继续收口独立测试与完整门禁 — 2026-11-01
+- 在隔离 worktree 同步至最新主线后，修正过期的关键路径夹具：属性面板改用当前 `data-testid`、项目导出检查 ZIP、草稿恢复等待真实 `voo:draft-updated` 事件和编辑器开放标记、分享使用当前 `?r=…#k=…` 格式并强制 loopback 信令。`critical_flows` 7/7 通过；不再连接线上协作服务。
+- `qa3_electron` 通过：preload、创建文档、真实指针绘制与 0 页面错误；`image-electron` 5/5 通过：真实像素/撤销、文件写入和重开、目录移动重命名、废纸篓恢复、随包模型 IPC。修复了 Electron 临时 profile 清理竞态和绘制 smoke 的编辑器加载竞态。
+- 独立硬件 FPS 在本机 Chromium/GPU 环境通过：1k 节点平移/缩放/拖动 60/60/60 FPS；5k 为 59.5/60/57.0；20k 为 54.6/57.0/36.0，均高于 30 FPS 门槛，像素一致性与手势恢复断言通过。`image-network` 8/8 通过：公共图库署名、抠图、对象选择、修复、3 种超分、离线模型缓存；推理在本机完成，无设计内容上传或付费推理请求。
+- 外部 Agent 检查已审阅，但 `claude_agent`、`codex_agent`、`mcp_cli` 仍需真实登录客户端并请求模型；为避免触发付费调用，这三项明确保持 not-run。目录记录 12 个模块、95 个能力组、104 个核心浏览器套件、8 个独立检查：3 个 external、2 个 native、1 个 local、1 个 hardware、1 个 network。
+- 完整发布证据绑定干净提交 `e759d5b0cb56fa638756fce832f579d6b4dd06d8`：`/private/tmp/voo-canvas-layer-release.json`。108/108 步骤通过，包含 104 个浏览器套件、586 个单测文件通过（4,820 条通过、4 条跳过）、生产构建与设计 lint；`node scripts/editor-checks.mjs --evidence … --json` 确认 `releaseComplete: true`。产品功能覆盖仍为 partial；外部 CLI、实体设备、签名安装包等不从本次报告推断为通过。
