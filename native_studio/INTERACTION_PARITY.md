@@ -1,3 +1,12 @@
+## 文件 Tab 与相邻标题栏细节校正 — 2026-11-01
+
+- **已完成本轮 Tab 声明范围，整体复刻仍为部分。** 固定源码 [`f02b764`](https://github.com/umaxzhao/voo-design/commit/f02b76427347fa587cf0a681ccdc709cf370c7bb)；模块 `platform.native-titlebar`。
+- 复现同一 `form-reference` 标题比 Electron 高 4px（原生白字 y=15–23，Electron y=19–27）；修复后实机为 y=19–27。清除 NSTextField 默认 alignment insets 带来的 2px 外扩，文字绘制、编辑、背景、关闭按钮使用一致几何。
+- 对齐 28px Tab、160px 含左 padding 的标签上限、200px 含未保存圆点的最大宽度、28px 关闭命中区/12px glyph、24px 新建圆底/14px glyph、字号与 tracking、背景 RGBA，以及 Bolt 图标与右侧按钮组 4px 偏移。`.voo` 后缀只在显示时移除，原始标题与大小写保留。
+- 未保存圆点接到真实保存快照状态；修改、Undo/Redo、保存后清除由集成检查覆盖。1920×990 现场确认中文长标题截断、Temporary title 按 Escape 恢复原名、白色画布预设出现圆点及 Command-Z 恢复灰色/移除圆点。截图和像素记录见[本轮证据](../docs/audits/native-parity/tab-details/verification.json)。
+- **执行：449/449 原生登记断言、11/11 模块规划、生产构建/ad-hoc 签名通过**；可执行文件 5,122,608 bytes。生产与实机 QA 的 `__TEXT,__text` 指纹一致。首次运行 443/449，保留 4 个旧 oracle 冲突及 2 个实际宽度失败；更新规格断言并修复真实外扩后全量重跑，无放宽宽度容差。
+- 新文件严格格式/lint 通过，改动文件差分 lint 无新增诊断；旧文件全量仍有 920 条历史诊断，不能称全绿。注册断言不等于端到端工作流覆盖。Electron 对照来自当前本地工作区；活动 Tab 横向位置和底层渐变不同，不声称背景像素逐点相等。完整多文档、浅色、窄窗口、IME/VoiceOver 及其余面板交互继续未验收。
+
 # Electron → 原生版功能与界面差异审计
 
 审查日期：2026-11-01。**判定：未达到 1:1 复刻要求，当前为部分实现。**

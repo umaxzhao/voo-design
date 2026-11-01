@@ -1,0 +1,21 @@
+{
+  "base": "7c730c931dc04f2cb384f8a096d74df210b59443",
+  "revision": "7c730c931dc04f2cb384f8a096d74df210b59443",
+  "baselineDiagnostics": 933,
+  "currentDiagnostics": 920,
+  "additionalDiagnostics": [],
+  "newFiles": [
+    {
+      "path": "native_studio/Sources/UI/native-document-tab.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    },
+    {
+      "path": "native_studio/tests/NativeTitleBarDetailTests.swift",
+      "exitCode": 0,
+      "diagnostics": ""
+    }
+  ],
+  "fullTouchedLegacyLint": "failed",
+  "differentialExecution": "passed"
+}
