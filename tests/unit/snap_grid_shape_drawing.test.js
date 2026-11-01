@@ -4,7 +4,13 @@ import { createDocument, createRectNode } from "../../src/canvas/editor/scene_mo
 import { TOOL } from "../../src/canvas/editor/editor_constants.js";
 import { createDrawingShapesApi } from "../../src/canvas/editor/drawing_api_shapes.js";
 import { createShapesPointerGestures } from "../../src/canvas/editor/editor_pointer_shapes.js";
-import { absolutePathEndpoints } from "../../src/canvas/editor/shape_geometry.js";
+import {
+  absolutePathEndpoints,
+  fitPointsToBox,
+  regularPolygonPoints,
+  starPoints,
+  withPolyParams,
+} from "../../src/canvas/editor/shape_geometry.js";
 import {
   isSnapToGridActive,
   getShapeGridSize,
@@ -19,6 +25,7 @@ function createShapeDrawingFixture({
   tool = TOOL.RECT,
   snappingEnabled = true,
   grid = null,
+  strokeWidth = 1,
 } = {}) {
   let doc = createDocument(1200, 800);
   let gesture = null;
@@ -41,7 +48,7 @@ function createShapeDrawingFixture({
     getSelectedId: () => selectedId,
     getColor: () => "#3b82f6",
     getShapeStrokeColor: () => "#1e40af",
-    getStrokeWidth: () => 1,
+    getStrokeWidth: () => strokeWidth,
     getShapeStrokeDash: () => "solid",
     getShapeOpacity: () => 1,
     getSnappingEnabled: () => snappingEnabled,
@@ -245,19 +252,76 @@ describe("Shape drawing with Snap to Grid enabled", () => {
 
   it("snaps polygon and star gesture origins and drag bounds to grid", () => {
     for (const tool of [TOOL.POLYGON, TOOL.STAR]) {
-      const fixture = createShapeDrawingFixture({ tool });
-      const { shapes, getGesture, getDoc } = fixture;
-
+      const { shapes, getGesture, getDoc } = createShapeDrawingFixture({ tool });
       shapes.startPolyShape({ clientX: 124, clientY: 87 });
-      const gesture = getGesture();
-      expect(gesture.start).toEqual({ x: 128, y: 88 });
+      expect(getGesture().start).toEqual({ x: 128, y: 88 });
 
       shapes.dragShape({ clientX: 357, clientY: 240 });
-      const node = getDoc().nodes.find((n) => n.id === gesture.id);
-      expect(node).toBeDefined();
-      expect(node.kind).toBe("path");
-      expect(node.poly).toBe(true);
+      const node = getDoc().nodes.find((n) => n.id === getGesture().id);
+      expect(node?.kind).toBe("path");
+      expect(node?.poly).toBe(true);
+
+      const sw = node.strokeWidth ?? 0;
+      const geom = [node.x + sw / 2, node.y + sw / 2, node.width - sw, node.height - sw];
+      geom.forEach((val) => expect(val % 8).toBe(0));
+      expect(geom).toEqual([128, 88, 232, 152]);
     }
+  });
+
+  it("aligns polygon and star geometric bounding box to 8px and 32px grid multiples with and without stroke", () => {
+    for (const gridSize of [8, 32]) {
+      setSetting("voo.editor.gridSize", gridSize);
+      for (const tool of [TOOL.POLYGON, TOOL.STAR]) {
+        for (const strokeWidth of [0, 2]) {
+          const { shapes, getGesture, getDoc } = createShapeDrawingFixture({ tool, strokeWidth });
+          shapes.startPolyShape({ clientX: 124, clientY: 87 });
+          shapes.dragShape({ clientX: 357, clientY: 240 });
+
+          const node = getDoc().nodes.find((n) => n.id === getGesture().id);
+          const geom = [
+            node.x + strokeWidth / 2,
+            node.y + strokeWidth / 2,
+            node.width - strokeWidth,
+            node.height - strokeWidth,
+          ];
+          geom.forEach((v) => {
+            expect(v % gridSize).toBe(0);
+            expect(Number.isInteger(v / gridSize)).toBe(true);
+          });
+          if (strokeWidth === 0) {
+            expect([node.x, node.y, node.width, node.height]).toEqual(geom);
+          }
+        }
+      }
+    }
+  });
+
+  it("fitPointsToBox scales point bounds exactly to box edges without shrinking", () => {
+    const box = { x: 128, y: 88, width: 232, height: 152 };
+    const getExtent = (pts) => {
+      const xs = pts.map(([x]) => x);
+      const ys = pts.map(([, y]) => y);
+      return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+    };
+    for (const sides of [3, 4, 5, 6, 8]) {
+      expect(getExtent(regularPolygonPoints(box, sides))).toEqual([128, 88, 360, 240]);
+    }
+    for (const spikes of [3, 4, 5, 7]) {
+      expect(getExtent(starPoints(box, spikes, 0.382))).toEqual([128, 88, 360, 240]);
+    }
+  });
+
+  it("ensures withPolyParams preserves geometric frame dimensions during parameter edits", () => {
+    const { shapes, getGesture, getDoc } = createShapeDrawingFixture({ tool: TOOL.POLYGON, strokeWidth: 2 });
+    shapes.startPolyShape({ clientX: 124, clientY: 87 });
+    shapes.dragShape({ clientX: 357, clientY: 240 });
+
+    const node = getDoc().nodes.find((n) => n.id === getGesture().id);
+    const geomBox = (n) => [n.x + 1, n.y + 1, n.width - 2, n.height - 2];
+    const initialGeom = geomBox(node);
+
+    expect(geomBox(withPolyParams(node, { sides: 5 }))).toEqual(initialGeom);
+    expect(geomBox(withPolyParams(node, { polyKind: "star", spikes: 5 }))).toEqual(initialGeom);
   });
 
   it("snaps arrow endpoints in document space to grid lines", () => {
