@@ -66,6 +66,7 @@ const STORAGE_KEYS = [
   "voo.editor.showRulers",
   "voo.editor.showGuides",
   "voo.editor.snapToGrid",
+  "voo.editor.gridSize",
   "voo.editor.panelLayout",
   "voo.editor.layersWidth",
   "voo.editor.panelSections",
