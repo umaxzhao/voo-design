@@ -33,6 +33,7 @@ jobs:
         run: |
           node tests/e2e/html2nodes.e2e.mjs
           node tests/e2e/ui-responsive-editor.e2e.mjs
+          node tests/e2e/editor-optional-loading.e2e.mjs
         env:
           VOO_BROWSER_EVIDENCE_DIR: ${{ runner.temp }}/desktop-browser-evidence
       - run: node scripts/verify-editor-release.mjs
