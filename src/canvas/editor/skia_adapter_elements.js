@@ -219,6 +219,12 @@ export function elementFor(node, index, offsetX, offsetY, resolveImageUrl, doc) 
 
   if (node.kind === NODE_KIND.TEXT) {
     const boxWidth = node.boxWidth ?? 0;
+    const fontSize = node.fontSize ?? 32;
+    const rawLineHeight = node.lineHeight ?? 1.2;
+    const lineHeightRatio =
+      rawLineHeight > 3 && fontSize > 0
+        ? rawLineHeight / fontSize
+        : rawLineHeight;
     return {
       ...base,
       // A fixed box's scene bounds are the wrap column, even before the
@@ -250,7 +256,7 @@ export function elementFor(node, index, offsetX, offsetY, resolveImageUrl, doc) 
             ? 400
             : Number(node.fontWeight) || 400,
       // The document stores a multiplier; CanvasKit expects document pixels.
-      lineHeight: (node.lineHeight ?? 1.2) * (node.fontSize ?? 32),
+      lineHeight: lineHeightRatio * fontSize,
       letterSpacing: node.letterSpacing,
       // Point text hugs the glyphs, matching how the editor measures it; a
       // fixed text box (boxWidth > 0) lays out to its wrap column instead —

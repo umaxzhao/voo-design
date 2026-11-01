@@ -34,7 +34,9 @@ export function textFont(node) {
 
 /** Line box height in doc px; legacy nodes keep the original 1.25 ratio. */
 export function textLineHeight(node) {
-  return node.fontSize * (node.lineHeight ?? LINE_HEIGHT_RATIO);
+  const lh = node.lineHeight ?? LINE_HEIGHT_RATIO;
+  const ratio = lh > 3 && node.fontSize > 0 ? lh / node.fontSize : lh;
+  return node.fontSize * ratio;
 }
 
 /**
