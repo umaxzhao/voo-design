@@ -2,8 +2,8 @@
 
 ## 本轮：Linux v1.0.0-beta.2 缺陷与补充清单集中修复与分支合入（源码完成，未推送未发布）
 
-- **协调与合入分支**：`merge/consolidate-all-branches`（基于 commit `776b4a93`，未 push，未部署）。
-- **并行执行模式**：使用 Orca orchestration 在 8 个独立 child worktree 中启动子 Agent 针对各个独立模块进行修复与回归测试，协调者逐一审查、运行测试并合并入主分支。
+- **协调与合入分支**：`merge/consolidate-all-branches`（基于 commit `e4532fb1`，未 push，未部署）。
+- **并行执行模式**：使用 Orca orchestration 在多个独立 child worktree 中启动子 Agent 针对各个独立模块进行修复与回归测试，协调者逐一审查、运行测试并合并入主分支。同时并发调度 Mac Electron 原生测试 Agent 执行全量复测与截图核验。
 - **修复项与模块验证**：
   1. `worker-psd-import` (PSD 位图水合与持久化)：`psd_to_voo.js` 与 `project_io.js` 对 PSD 导入产出的图层位图 assets 建立与 images 统一的水合映射，修复重新打开与存盘位图占位问题。定向单测 `tests/unit/psd_pipeline_reopen.test.js` (5/5 通过)。
   2. `worker-provider-storage` (API 凭据与内置服务商配置)：`electron/main.cjs` 与 `electron/preload.cjs` 建立 Electron `safeStorage` IPC 加密信道，`credential_store.js` 写入后立即读回校验并回退 localStorage；`provider_client.js` 为内置 API 返回安全默认配置对象，防止解引用 `.configured` 报错。定向单测 `tests/unit/safe_storage_credentials.test.js` (8/8 通过)。
@@ -13,12 +13,25 @@
      - `saveEditorDrafts` 接收 live engine 传入的 `entries` 并持久化到 `nodes` 和 `crashDraft`，解决崩溃恢复丢失最新画布内容问题。
      - 定向单测 `tests/unit/selection_and_component_actions.test.js` (7/7 通过)。
   4. `worker-frame-tool-pan` (Frame 工具移动根画板解绑与 Hand 工具平移)：Frame 拖拽新建逻辑与根画板移动解耦；空画布点击在单画板模式下不清除 `focusedId`，保证 Hand 工具可在空白处自如平移。定向单测 `tests/unit/frame_creation_and_hand_pan.test.js` (9/9 通过)。
-  5. `worker-export-fig-shortcuts` (Figma .fig 导出与快捷键冲突)：接入 `serializeVooToFig` 到右上角导出对话框；`editor-shortcut-modifiers.js` 清理 `Ctrl+]` 直接调用 `engine.bringToFront()`，避免被画笔缩放劫持；Agent 面板快捷键 `Ctrl+J`/`Ctrl+\` 冲突消解。定向单测 `tests/unit/export_fig_and_shortcuts.test.jsx` (15/15 通过)。
+  5. `worker-export-fig-shortcuts` (Figma .fig 导出与快捷键冲突)：接入 `serializeVooToFig` 到右上角导出对话框；`editor-shortcut-modifiers.js` 清理 `Ctrl+]` 直接调用 `engine.bringToFront()`，避免被画笔缩放劫持；Agent 面板快捷键 `Ctrl+J`/`Ctrl+\` 冲突消解（主快捷键保持 `⌥⌘A`，Ctrl+J/Ctrl+\ 保留画布原生功能）。定向单测 `tests/unit/export_fig_and_shortcuts.test.jsx` (15/15 通过)。
   6. `worker-locale-theme-contrast` (语言持久化、错误键与高对比度)：`setLocale` 写入 `localStorage.setItem("ciw.locale", locale)`；i18n 补全 `editor.openFailed`；`src/theme-light.css` 与 `design/tokens.cjs` 将浅色薄荷绿 `#a7ffd4` 重映射为高对比度 `#0d7647` (对比度 >= 4.5:1)，并将半透明白字映射为深色中性字。定向单测 `tests/unit/locale_and_theme_contrast.test.js` (10/10 通过)。
   7. `worker-upscale-cancel-timeout` (2X 本地超分模型编译取消与超时保护)：新建 `src/canvas/editor/upscale_compile.js`，实现 `createSessionWithTimeout` (20s 超时) 及轮询 `shouldStop` / AbortSignal 即时取消，在 `raster-image-actions.js` 中捕获取消时不弹出错误提示条。定向单测 `tests/unit/local_upscale_cancel_timeout.test.js` (13/13 通过)。
-  8. `worker-svg-import-defs` (复杂 SVG 渐变、clipPath、mask、text 导入保真)：在 `editor_svg_import.js` 与 `svg_to_nodes.js` 构建 `defsMap` 索引，解析 `linearGradient`/`radialGradient` 生成标准 CSS 渐变，将 `clipPath`/`mask` 实例化为剪裁遮罩节点，并解析 `<text>`/`<tspan>`。`graphic-1.svg` 导入不再退化为黑块。定向单测 `tests/unit/svg_to_nodes.test.js` (40/40), `tests/unit/svg_defs_import.test.js` (6/6 通过)。
+  8. `worker-svg-import-defs` 与 `svg-mask-fidelity` (复杂 SVG 渐变、clipPath、mask、text 导入保真与透明蒙版修复)：在 `editor_svg_import.js` 与 `svg_to_nodes.js` 构建 `defsMap` 索引，解析 `linearGradient`/`radialGradient` 生成标准 CSS 渐变；将 `clipBase.fill` 修正为 `#ffffff` 保持 alpha = 1.0 以供 `destination-in` 剪裁合成，并将复合遮罩布尔操作修正为 `subtract`。定向单测 `tests/unit/svg_to_nodes.test.js` (40/40), `tests/unit/svg_defs_import.test.js` (6/6 通过)。
   9. `layer-panel-multiselect-reparent` (图层面板多选移入 Frame)：实测并补充全链路集成单测 `tests/unit/layer_panel_multiselect_reparent.test.js` (3/3 通过)，确认 `useLayerDrag` -> `useEditorLayerInteractions` -> `engine.moveIntoGroup(ids)` 一次性迁移多个选中根对象进有效 Frame，并支持单步 Undo/Redo。
-- **全量回归验证**：运行完整测试套件 `npx vitest run`：**603 个测试文件全部通过，4,977 项测试全部通过（0 失败，4 项跳过）**。
+  10. `worker-overlay-esc-stack` (浮层 Esc 优先级与右键菜单关闭)：`use-browser-overlay.js` 移除 document capture 阶段监听，增加 `hasTopOverlay` 判定，让顶层命令面板、对话框和菜单先接收 Escape；`editor_context_menu.jsx` 移除对 focus 在菜单内的限制，任意焦点下按 Escape 均可正常关闭右键菜单。定向单测 `tests/unit/overlay_esc_stack.test.jsx` (10/10 通过)。
+  11. `worker-platform-badge-linux` (工作区环境平台动态适配)：`use_window_controls.js` 新增多维度系统平台探测 `getDetectedPlatform` (支持 Electron `process.platform` / `globalThis.vooDesktop` / `globalThis.electronAPI` / `navigator.userAgentData.platform` / `navigator.platform`)；`settings_general.jsx` 动态渲染 `[macOS 原生]`、`[Linux 原生]`、`[Windows 原生]`、`[浏览器挂载]`，并补充中英文字典与 fallback。定向单测 `tests/unit/workspace_platform_badge.test.js` (18/18 通过), `tests/unit/settings_workspace.test.js` (8/8 通过)。
+  12. `worker-close-project-tab` (多文档标签关闭穿透与最后标签重置)：`canvas_tab_strip.jsx` 关闭按钮增加 `e.stopPropagation()`，杜绝关闭触发文档切换；`design_store.js` 在关闭最后一个文档时彻底清空 `nodes`、`edges`、`images`、`figSource`、活跃状态并切换为 `welcomeOpen: true` 首页。定向单测 `tests/unit/close_project_tab.test.jsx` (5/5 通过)。
+  13. `worker-snap-grid-drawing` (新建形状与向量网格对齐吸附)：新建 `src/canvas/editor/shape_snapping.js`，在矩形、椭圆、Frame、多边形、星形、箭头、线条的创建拖拽手势中，对起点坐标、终点坐标与宽高尺寸按 `gridSize` 进行量化吸附 (`Math.round(coord / size) * size`)，持久化 `voo.editor.gridSize`。定向单测 `tests/unit/snap_grid_shape_drawing.test.js` (14/14 通过)。
+- **Mac Electron 原生复测证据**：
+  - 运行 `npm run electron:dev` 与 Playwright 自动化驱动原生窗口（测试报告记录于 `~/Desktop/voo-mac-retest/REPORT.md`，配套 27 组现场截图在 `~/Desktop/voo-mac-retest/shots/`）。
+  - 证实 PSD 真实位图水合显示、反选 UI 回调生效、普通设计页创建组件无报错、macOS safeStorage 凭据加密读回重启保留、Frame 拖拽不位移根画板、Hand 平移正常、.fig 真实导出落盘 30KB 文件、冷重启语言保留为中文、Light 主题文字对比度达到 4.5:1、2X 超分模型编译 358ms 内即时取消且无异常弹窗。
+  - 对复测中发现的 SVG 剪裁 alpha 丢失和新建形状吸附缺漏，已在本轮完成二次攻坚并补充像素比对断言通过。
+- **Linux QA 交付材料同步 (18:30 检查点)**：
+  - 最新 DOCX v4 (`/Users/tt/Desktop/voo-linux-qa/VOO_Design_Linux_QA_2026-11-01.docx`) 及补充包 ZIP v3 (`/Users/tt/Desktop/voo-linux-qa/supplement-v3/`) 已完整存档并对账。
+  - 原 34 组补测已收口，确认 Linux QA 测试基线为 GitHub Release v1.0.0-beta.2 固定包；新确认的“自动恢复草稿丢失最新画布内容”、“多选拖入Frame重挂”、“叠层 Esc 优先级”均已在本分支完全定位并提供源码与单元测试覆盖。
+- **模块所有权与验收登记**：
+  - 更新 `scripts/editor-module-catalog.mjs`，将所有新增模块源码及 5 个新增单元测试套件完整注册到 `workspace`、`canvas`、`inspector` 及 `platform` 模块。
+  - `node scripts/editor-checks.mjs --check` 校验通过（12 模块、73 能力、99 浏览器套件、24 附加检查项有效注册，0 个未映射文件）。
 - **约束声明**：严格遵守不 push 到远端、不运行部署脚本、不触碰 Codex `nba-font-fidelity` 分支与任务。
 
 ## 本轮：Figma 风格 Frame Selection 快捷键（源码完成，未发布）
