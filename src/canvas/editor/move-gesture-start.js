@@ -34,17 +34,20 @@ export function startNodeMoveGesture({ api, event, point, setGesture }) {
   const doc = api.getDocument();
   if (forcedId && (!isFrameSelectionBoundary(actualHit) || actualHit.visible === false ||
       actualHit.locked || actualHit.lockPosition || isLockedByGroup(doc, actualHit))) return true;
-  if (forcedId) api.selectExactly([actualHit.id]);
-  const selected = api.getSelected?.();
+  if (forcedId && !api.isSelected(actualHit.id)) api.selectExactly([actualHit.id]);
   let hit = actualHit;
-  // A click may enter a child, while a drag keeps the explicitly selected Frame.
-  if (!forcedId && !event.ctrlKey && !event.metaKey && !event.shiftKey &&
-      isFrameSelectionBoundary(selected) && !selected.locked && !selected.lockPosition &&
-      (api.getSelectedIds?.().length ?? 1) === 1) {
+  // A drag carries the explicit selection even when its primary is another Frame.
+  // Plain release still enters the original child; deep selection bypasses promotion.
+  if (!forcedId && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+    const selectedIds = new Set(api.getSelectedIds?.() ?? []);
     const byId = new Map(doc.nodes.map(node => [node.id, node]));
     const seen = new Set();
     for (let node = actualHit; node && !seen.has(node.id); node = byId.get(node.parentId)) {
-      if (node.id === selected.id) { hit = selected; break; }
+      if (selectedIds.has(node.id) && isFrameSelectionBoundary(node) &&
+          !node.locked && !node.lockPosition && !isLockedByGroup(doc, node)) {
+        hit = node;
+        break;
+      }
       seen.add(node.id);
     }
   }

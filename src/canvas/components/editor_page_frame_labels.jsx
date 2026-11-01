@@ -26,12 +26,12 @@ export default function EditorPageFrameLabels({ page }) {
         onPointerDown={(event) => {
           event.stopPropagation();
           if (event.button !== 0) return;
-          page.engine?.selectExactly?.([frame.id]);
+          if (!page.engine?.isSelected?.(frame.id)) page.engine?.selectExactly?.([frame.id]);
           if (!page.readOnly) page.engine?.beginFrameMove?.(frame.id, event);
         }}
         onClick={(event) => {
           event.stopPropagation();
-          page.engine?.selectExactly?.([frame.id]);
+          if (!page.engine?.isSelected?.(frame.id)) page.engine?.selectExactly?.([frame.id]);
         }}
         style={{
           left: frameRect.x,
