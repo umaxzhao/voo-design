@@ -124,15 +124,30 @@ await withEditorBrowser(async ({ page, tool }) => {
   await tool("undo"); assert.equal(await sample(75, 75), "#ff0000");
   checks.push("legacy page opens as a free canvas frame with visible paint and children moving together, undoing once");
   await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(true));
-  assert.equal(await page.getByRole("radiogroup").count(), 1);
-  const mobileRadio = page.getByRole("radio", { name: /Mobile app|移动应用/i });
-  await mobileRadio.click();
-  assert.equal(await mobileRadio.getAttribute("aria-checked"), "true");
-  checks.push("generation type is selected directly via radio and updates active preset");
-
-  // Open advanced settings for design system & style
-  const contextTrigger = page.locator('button[aria-haspopup="menu"][title*="reference"], button[aria-haspopup="menu"][aria-label*="reference"], button[aria-haspopup="menu"][title*="参考图"], button[aria-haspopup="menu"][aria-label*="参考图"]').first();
-  checks.push("welcome composer exposes context and advanced options");
+  assert.equal(await page.getByRole("radiogroup").count(), 0);
+  assert.equal(await page.getByRole("dialog", {name:"Generation settings",exact:true}).count(), 0);
+  await page.getByRole("button", {name:"Generation settings",exact:true}).click();
+  const settings = page.getByRole("dialog", {name:"Generation settings",exact:true});
+  const picker = settings.getByRole("radiogroup", { name: "Generation type", exact: true });
+  const types = picker.getByRole("radio");
+  assert.equal(await types.count(), 8);
+  await picker.getByRole("radio", { name: "Mobile app", exact: true }).click();
+  assert.equal(await picker.getByRole("radio", { name: "Mobile app", exact: true }).getAttribute("aria-checked"), "true");
+  assert.equal(await settings.getByRole("button", { name: "Generation type", exact: true }).count(), 0);
+  assert.match(await settings.getByRole("button", {name:"Canvas size",exact:true}).innerText(), /393.*852/);
+  checks.push("generation type has one advanced menu, all eight choices and working preset dimensions");
+  await settings.getByRole("button", {name:"Design system",exact:true}).click();
+  const options = page.locator('[role="listbox"]:visible').last().getByRole("option");
+  assert.deepEqual(await options.allTextContents(), ["Automatic", "AXIOM", "VOID OS", "BLOOM"]);
+  await options.filter({hasText:/^AXIOM$/}).click();
+  assert.equal(await settings.getByRole("button", {name:"Style",exact:true}).isDisabled(), true);
+  await settings.getByRole("button", {name:"Design system",exact:true}).click();
+  await page.locator('[role="listbox"]:visible').getByRole("option", {name:"Automatic",exact:true}).click();
+  assert.equal(await settings.getByRole("button", {name:"Style",exact:true}).isEnabled(), true);
+  checks.push("welcome design-system picker exposes three signature contracts and owns style choice");
+  await page.keyboard.press("Escape");
+  assert.equal(await settings.count(), 0);
+  assert.equal(await page.getByRole("radiogroup").count(), 0);
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });
 
@@ -141,14 +156,45 @@ await withEditorBrowser(async ({ page }) => {
   const checks = [];
   await page.evaluate(async () => (await import("/src/store/design_store.js")).useDesignStore.getState().setWelcomeOpen(true));
   const root = page.locator(".welcome-prompt-root");
+  const settings = page.getByRole("dialog", { name: "Generation settings", exact: true });
+  const trigger = page.getByRole("button", { name: "Generation settings", exact: true });
   assert.equal(await page.evaluate(() => matchMedia("(hover: none) and (pointer: coarse)").matches), true);
-  assert.equal(await page.getByRole("radiogroup").count(), 1);
-  const radios = page.getByRole("radio");
-  assert.equal(await radios.count(), 8);
-
-  const mobileRadio = page.getByRole("radio", { name: /Mobile app|移动应用/i });
-  await mobileRadio.tap();
-  assert.equal(await mobileRadio.getAttribute("aria-checked"), "true");
-  checks.push("390px touch viewport selects generation types directly via radio buttons and updates Mobile dimensions");
+  assert.equal(await root.getAttribute("data-advanced-open"), "false");
+  assert.equal(await root.getAttribute("data-mobile-options-open"), null);
+  assert.equal(await page.getByRole("radiogroup").count(), 0);
+  await trigger.tap();
+  await settings.waitFor({ state: "visible" });
+  // Visibility does not imply that React's positioning effect has replaced
+  // the initial offscreen coordinates. Measure only the positioned panel.
+  await page.waitForFunction(() => {
+    const panel = document.querySelector(".welcome-composer-settings");
+    return panel && panel.style.left !== "-9999px";
+  });
+  const panelBox = await settings.boundingBox();
+  assert.ok(panelBox.x >= 15 && panelBox.x + panelBox.width <= 375,
+    `Mobile settings keep horizontal gutters: ${JSON.stringify(panelBox)}`);
+  const picker = settings.getByRole("radiogroup", { name: "Generation type", exact: true });
+  const types = picker.getByRole("radio");
+  assert.deepEqual(await types.allTextContents(), ["Landing page", "Mobile app", "Web app", "Poster", "Slides", "Storyboard", "Dashboard", "Something else..."]);
+  for (const label of await types.allTextContents()) {
+    const choice = picker.getByRole("radio", { name: label.trim(), exact: true });
+    await choice.tap();
+    assert.equal(await choice.getAttribute("aria-checked"), "true");
+  }
+  await types.filter({ hasText: /^Mobile app$/ }).tap();
+  assert.equal(await types.filter({ hasText: /^Mobile app$/ }).getAttribute("aria-checked"), "true");
+  assert.match(await settings.getByRole("button", { name: "Canvas size", exact: true }).innerText(), /393.*852/);
+  assert.equal(await settings.getByRole("button", { name: "Generation type", exact: true }).count(), 0);
+  checks.push("390px touch viewport selects all eight generation types through the advanced menu and updates Mobile dimensions");
+  await page.keyboard.press("Escape");
+  assert.equal(await settings.count(), 0);
+  assert.equal(await root.getAttribute("data-advanced-open"), "false");
+  assert.equal(await page.getByRole("radiogroup").count(), 0);
+  await trigger.tap();
+  await settings.waitFor();
+  assert.equal(await settings.getByRole("radio", { name: "Mobile app", exact: true }).getAttribute("aria-checked"), "true");
+  await page.keyboard.press("Escape");
+  assert.equal(await page.getByRole("dialog", { name: "Generation settings", exact: true }).count(), 0);
+  checks.push("closing and reopening mobile settings retains the selected type without a duplicate dropdown");
   console.log(JSON.stringify({ passed: checks }, null, 2));
 }, { viewport: { width: 390, height: 844 }, hasTouch: true });

@@ -51,7 +51,8 @@ import {
 import { useDesignStore } from "../../src/store/design_store.js";
 import { encodeVooBinary } from "../../src/canvas/store/voo_binary.js";
 import { addRecentFile, getRecentFiles } from "../../src/canvas/store/recent_files.js";
-import { loadLocale } from "../../src/shared/i18n.js";
+import { loadLocale, t } from "../../src/shared/i18n.js";
+import WelcomePromptSettings from "../../src/canvas/components/welcome_dashboard/welcome_prompt_settings.jsx";
 
 describe("Community Templates and New Project Workbench Experience", () => {
   beforeEach(async () => {
@@ -233,7 +234,7 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(html).toContain("p-4 lg:p-8");
     expect(html).toContain("grid grid-cols-1 sm:grid-cols-3");
     expect(html).toContain("whitespace-nowrap");
-    expect(html).toContain('role="radiogroup"');
+    expect(html).toContain('aria-haspopup="dialog"');
     expect(html).toContain("prompt-composer relative");
     expect(html).toContain("min-w-0");
   });
@@ -259,11 +260,24 @@ describe("Community Templates and New Project Workbench Experience", () => {
     expect(main[0]).toContain("overflow-y-auto");
   });
 
-  it("renders 8 design types directly on home with radiogroup and leaves other settings in dialog", () => {
+  it("keeps generation settings behind one advanced entry", () => {
     const html = renderToStaticMarkup(React.createElement(WelcomeDashboard));
-    expect(html).toContain('role="radiogroup"');
-    const radios = html.match(/role="radio"/g) ?? [];
-    expect(radios).toHaveLength(8);
+    expect(html).toContain('aria-label="生成设置"');
+    expect(html).toContain('aria-haspopup="dialog"');
+    expect(html).toContain('data-advanced-open="false"');
+    expect(html).not.toContain('role="radiogroup"');
+    expect(html).not.toContain('role="radio"');
+    expect(html).not.toContain('role="dialog"');
+    for (const label of ["风格", "设计系统", "候选数量", "画布尺寸"]) {
+      expect(html).not.toContain(`aria-label="${label}"`);
+    }
+    const advancedHtml = renderToStaticMarkup(React.createElement(WelcomePromptSettings, {
+      t, panelRef: { current: null }, activePill: "mobile", onSelectPill: () => {}, designSystemId: "auto",
+      styleOptions: [], designSystemOptions: [], candidates: 1,
+      currentSize: { width: 393, height: 852 }, sizeOptions: [],
+    }));
+    expect(advancedHtml).toContain('role="radiogroup" aria-label="生成类型"');
+    expect(advancedHtml.match(/role="radio"/g)).toHaveLength(8);
   });
 
   it("AI_GEN_TYPES defines tailored dimensions, categories, and placeholders for AI generation", () => {
@@ -273,6 +287,18 @@ describe("Community Templates and New Project Workbench Experience", () => {
     const ids = AI_GEN_TYPES.map((t) => t.id);
     expect(ids).toEqual(["landing", "mobile", "web", "poster", "slides", "storyboard", "dashboard", "other"]);
 
+    const poster = AI_GEN_TYPES.find((t) => t.id === "poster");
+    expect(poster.width).toBe(1080);
+    expect(poster.height).toBe(1350);
+    expect(poster.placeholder).toBe("welcome.prompt.posterPlaceholder");
+
+    const storyboard = AI_GEN_TYPES.find((t) => t.id === "storyboard");
+    expect(storyboard.width).toBe(1920);
+    expect(storyboard.height).toBe(1080);
+    expect(storyboard.placeholder).toBe("welcome.prompt.storyboardPlaceholder");
+
+    expect(AI_GEN_TYPES.find(type => type.id === "poster")).toMatchObject({ width: 1080, height: 1350, category: "poster", placeholder: "welcome.prompt.posterPlaceholder" });
+    expect(AI_GEN_TYPES.find(type => type.id === "storyboard")).toMatchObject({ width: 1920, height: 1080, category: "storyboard", placeholder: "welcome.prompt.storyboardPlaceholder" });
     const mobile = AI_GEN_TYPES.find((t) => t.id === "mobile");
     expect(mobile.width).toBe(393);
     expect(mobile.height).toBe(852);

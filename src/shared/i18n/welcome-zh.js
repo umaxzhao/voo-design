@@ -127,6 +127,7 @@ export default {
   "welcome.recents.remove": "从最近列表移除",
   "welcome.edited": "编辑于 ",
   "welcome.prompt.generationTypeLabel": "生成类型",
+  "welcome.prompt.settingsLabel": "生成设置",
   "welcome.prompt.placeholder": "设计任何东西…",
   "welcome.prompt.landingPlaceholder": "描述你的落地页需求（例如：深色科技风格 AI 产品官网，包含 Hero 与特性矩阵）…",
   "welcome.prompt.mobilePlaceholder": "描述你的移动端应用需求（例如：iOS 18 现代金融钱包，带卡片层叠与快捷操作）…",

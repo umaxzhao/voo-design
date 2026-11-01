@@ -1,532 +1,84 @@
 # 项目检查总进度
 
-这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
-
-更新时间：2026-11-01。
-最近一次完整核心检查：[eab3bea](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78)；105/105 步通过，含 101 组核心浏览器、4781 单测通过/4 跳过，四个平台原生与最终草稿核验通过。线上已更新为该 CI 构建；本地脏工作区草稿仍不属于本版发布认证。
-以下结果只属于该固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
-
-## 三平台 GitHub Beta（门禁与产物核验通过）
-
-- [Beta 下载与说明](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.1)：`1.0.0-beta.1`，Windows x64 setup/portable、Linux x64 AppImage、macOS Intel/Apple Silicon DMG/ZIP，共四个原生目标、七个载荷。公开状态以该 Release 页面为准，保持 prerelease，不标记稳定最新版。
-- 固定验证源码 [`eab3bea`](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78) 的 [完整 CI](https://github.com/umaxzhao/voo-design/actions/runs/41281003764) 全部成功：**105/105 步、101 组核心浏览器、4781 单测通过/4 跳过、1441 文件设计检查**；580 个测试文件通过/3 跳过。报告 `complete=true`，12 个模块、87 组能力的功能覆盖仍为 partial，11 组独立额外检查明确 not-run。Release 附带 `web-release-checks.json`，不以其他提交或脏工作区继承通过。
-- `platform.desktop-release`：四原生构建与打包应用冒烟均通过，收据的版本、架构、提交严格匹配；七个载荷、三份更新元数据、四份收据均已独立复核。组装器逐字节验证更新载荷 SHA-512/尺寸；最终草稿的 **21 项 SHA-256** 与 GitHub 实际资产摘要一致，包含说明和 Web 证据，安装包未经过二次修改。两种 Mac 架构的更新条目合并保留，Windows setup/portable 分开命名，Linux AppImage 使用 GNU `x86_64` 文件名而收据保留 Node `x64`。
-- `platform.desktop-close`：实际打包应用启动、指针绘图/撤销重做、原生工作区文件写读、取消脏退出后 bridge 存活、新进程与隔离 profile 从真实工作区文件卡片重开均有原生证据。原生 picker/确认选择由自动化驱动，不能当作外层安装向导或系统信任交互的人工验收。
-- 发布过程中修复了空签名变量、Windows ASAR 路径与间接依赖、Mac 中文资源、Vite 清理竞态、Linux 字体对照、离线模型菜单及冷菜单焦点。字体对照保留原 1% 门槛；三种快捷键格式均经真实浏览器检查。冷加载时背景恢复焦点的场景先稳定复现失败，再修复导航键/Tab；相关回归保留在 `editor-optional-loading.e2e.mjs`。没有跳过失败用例凑通过。
-- 历史失败保留为独立结果：[字体](https://github.com/umaxzhao/voo-design/actions/runs/41273421739)、[模型菜单](https://github.com/umaxzhao/voo-design/actions/runs/41273626256)、[快捷键](https://github.com/umaxzhao/voo-design/actions/runs/41275043454)、[AppImage 组装](https://github.com/umaxzhao/voo-design/actions/runs/41276919981)、[冷菜单焦点](https://github.com/umaxzhao/voo-design/actions/runs/41279268095)；失败或早期取消的候选没有冒记完整通过，也没有公开 Release。本轮完整通过后才创建并核验草稿。
-- 在线预览已由同一候选的 CI 静态产物通过项目脚本更新至 [voo.run/editor](https://voo.run/editor/)：入口及 12 项关键资源逐字节一致；四组实际线上交互通过，实际加载的 83 项 JS/CSS 均匹配，零页面异常。覆盖约束轴/撤销、390px Browser 分屏/48px 复制/撤销、文件卡片打开及旧分享重定向。证据 `/private/tmp/voo-beta-deployment-eab-proof.json`、`/private/tmp/voo-beta-production-eab-proof.json`；线上回滚备份 `la2:/srv/voo-run/editor-backups/eab3beaaff22a2ccc28780d9972bb2c58f4baa78-20261101T070133Z`。
-- 验收边界：**安装包未签名，Mac 未公证**；人工安装与系统信任流程、旧版升级、真实付费/CLI/模型服务及其他系统版本仍未认证。4 项跳过单测和 11 组独立检查没有计入通过。旧草稿备份、辅助工作树及主工作区无关未提交改动继续保留，未打入本版。[发布清单](release-checklist.md)、[签名/原生验收](code-signing.md)、[PR #81](https://github.com/umaxzhao/voo-design/pull/81)。
-
-## 本轮：Claude 自测问题单收口（已完成声明范围）
-
-- 逐项核对用户的 `78155ee` + 私人工作区清单；正式版和本地 App 分开验证，没有用一份通过结果覆盖另一份源码。
-- A1/A2：六条约束点击区独立、中心不串轴，真实中点点击/键盘/一次撤销通过；320/390/768px 鼠标与模拟触控下，普通导航、工具条、页签等控件达到 48px。约束图与画布精细手柄单独验收，不冒记为 48px 普通按钮。内部仍保留已确认的大圆角。
-- B1/B2：手机 Browser 与编辑器上下分屏；文件卡片单列，隐藏操作不再拦截主体点击，固定设置按钮下方保留滚动空间；实际打开文件、更多菜单与触控布局通过。
-- A3/A4/B3/B5/B6：保留 DeepSeek API 与 Harness 的独立入口、补齐本地翻译/文档契约；本地首页八种类型、风格、设计系统、候选数与尺寸统一收进一个高级入口，自动尺寸和附件保留，退役弹窗已备份后移出运行代码。本地两条不存在的套件登记已移除，另两份待审套件显式登记为未验证；正式版保留实际存在的两份检查。既有评论位置和首页隔离修复保留。
-- C：十份旧脚本改为自动启动隔离服务/文档、临时输出目录，纳入核心门禁；真实工具、取消/重试、文件往返、导出和像素要求保留。另修复字距能力探测污染 Canvas 状态的真实缺陷：标题像素差由 2.617% 降至 0，HTML 原 1% 门槛不变。
-- 固定源码 [`db4a184`](https://github.com/umaxzhao/voo-design/commit/db4a184b9bd712dbff87982ecd75a4b6a88ac826)：**103 项检查逐项通过，含 99 组浏览器、4717 项单测通过/4 跳过，构建和设计检查通过（1432 文件）**。这是同一干净提交上的恢复验证；完整命令曾因冷启动/MCP 注册超时失败，降低并发后补跑失败及未执行项，不宣称首次命令退出 0。原失败、重试链和源码未变校验均保留在 `/private/tmp/voo-claude-checklist-release-{complete,recovered,recovered-final}.json` 及 `voo-claude-main-tree-proof.json`。
-- 已推送并通过 SSH la2 部署；正式入口、12 个相关资源与构建逐字节一致，实际加载的 83 个 JS/CSS 资源 SHA-256 一致。线上真实约束点击/撤销、390px Browser 分屏、48px 复制/一次撤销、文件卡片中点打开、默认隐藏类型行通过，零页面异常。B4 的旧 `/r/...` 真实跳转保留房间与 `#k` 片段，`/editor` 不再暴露 8444 内部端口；没有加入真实房间。证据 `/private/tmp/voo-claude-{deployment-proof,production-proof}.json`、`voo-claude-deploy.log`。
-- 本地 App 只修相关草稿：**120 项定向单测、设计检查（1427 文件）、十份旧脚本（启动超时后补跑）、约束/手机目标/统一高级面板真实交互通过**；不是整个脏工作区的发布认证。证据 `/private/tmp/voo-claude-primary-proof.json`。38 份原始快照的哈希已核验，长期备份在 `/Volumes/TD/Projects/voo_design/.local-drafts/claude-checklist-2026-11-01.tar`，其余草稿保留。
-- N1–N3 未认证：原生 Swift/签名 Electron、实体 iOS/Android/WebKit、IME/软键盘、真实登录/付费服务、多机协作与硬件性能。私人通用 `ui-audit` 及自动截图基线没有冒记为正式门禁通过；注册执行通过仍不代表全部功能、所有状态均已覆盖。
-- [问题映射、失败与验收证据](audits/panel-control-audit.md#claude-checklist-closeout)。
-
-## 本轮：右侧控件恢复品牌大圆角（已完成声明范围）
-
-- 按用户反馈，右侧输入、下拉、切换组/选中项及操作按钮统一恢复 **12px** 品牌大圆角；共享 `--inspector-control-radius`，外层面板圆角保持原样。保留上一轮的填充/描边区别、选中反馈、字号与行高，不修改其他界面或文档操作。
-- 干净固定提交 [`b965942`](https://github.com/umaxzhao/voo-design/commit/b965942e22bcfb408015acdba58f49d8d7c3cd8c) 完成 **91/91 发布检查、87 组浏览器、单测 4637 通过/4 跳过/0 失败**。沿用原检查与浏览器并发 2，验证期间源码未修改。证据 `/private/tmp/voo-inspector-radius-release.json`、同名 `.log`，不继承上轮不同提交的通过。
-- 已有真实数值提交/取消、键盘下拉、布局/旋转及一次撤销通过；16 个视口/主题/语言上下文验证圆角与尺寸，截图 `/private/tmp/voo-inspector-radius-evidence/`。旧 6px 样式的差异复现保留在 `/private/tmp/voo-inspector-radius-before.log`。
-- 已推送并 SSH 部署 la2；入口和 9 个相关资源与验证构建逐字节一致。正式中文面板实际确认 12px 圆角、32px 桌面行高、Frame 输入/下拉/布局、文字与撤销，无脚本错误，未调用付费服务。证据 `/private/tmp/voo-inspector-radius-deployment-proof.json`、`/private/tmp/voo-inspector-radius-production-result.log`，截图 `/private/tmp/voo-inspector-radius-production-panel.png`。
-- 本地 App 只三方应用两个文件的圆角补丁并保留其他草稿；同一组 16 个浏览器上下文通过（`/private/tmp/voo-inspector-radius-primary-browser.log`），备份 `/private/tmp/voo-inspector-radius-primary/`。不认证整个私人工作区。
-- 功能覆盖仍为部分；实体触屏/IME/触控笔与全部高级独立浮层未由本轮认证。此前 6px 记录只属于其历史版本，当前规范以本轮用户确认的 12px 为准。
-
-## 本轮：首页生成类型图标重绘（未提交，叠加在未提交的类型选择器改动上）
-
-- `welcome_prompt_types.jsx`：8 个类型改为统一的 56×40 线稿 SVG，每个图标只有一处 `accent-mint` 重点，未选中时 60% 透明度，悬停或选中时 100%。浅色主题下强调色改为 `#171717`（`theme-light.css`，与 `.text-accent-mint` 的处理一致）。中文"Storyboard"改为"分镜"。
-- 修复的根因：旧图标用的是 `bg-mint/*`，但 Tailwind 里的颜色名是 `accent-mint`，薄荷绿点缀从未生成，所以界面上只有灰色块。
-- 已验证（本地工作区）：`welcome_prompt_types.test.jsx` 2 项通过（新增：8 个图标互不相同，且都带强调元素）；设计规则检查通过；真实编辑器中深色、浅色、390px 下 8 个 SVG 都正常渲染，强调色计算值分别为 `rgb(167,255,212)`、`rgb(23,23,23)`，透明度 0.6/1，没有页面错误。
-- 未提交原因：该文件属于未提交的"类型选择器铺在首页"改动（问题单 B3，有 11 项单测失败，与本次无关），单独提交会把这批改动一起带上。
-
-## 本轮：自动界面巡检 `ui-audit` 与全量测试问题单（新增检查，未提交；发现项未修复）
-
-- 新增 `tests/e2e/ui-audit.e2e.mjs`，覆盖 8 个状态：空、单选图形、单选文字、多选、右键菜单、工具选项菜单、首页、设置面板；每个状态跑 390/768/1440 宽度 × 深浅主题 × 中英文。
-  - 通用扫描 `ui-layout-scanner.mjs`：遮挡、超出窗口、页面横向溢出、文字截断、按钮缺少名称、窄屏点击区域 <44px。菜单或对话框打开时只检查浮层内的控件。
-  - 截图基线 `ui-screenshot-baseline.mjs`：英文 46 张，存于 `tests/e2e/ui-baselines/darwin/`。截图前等连续两帧一致，遮住随机头像；超过 0.05% 像素变化即失败，并输出差异图。`UPDATE_UI_BASELINES=1` 接受新外观。仅用 Node zlib，未新增依赖。
-  - 登记为 `ADDITIONAL_BROWSER_CHECKS` 的 `kind: "audit"`，不计入核心发布门禁。
-- 已验证（本地工作区，非干净提交）：基线连续 3 次运行最大差异 0.023%；注入回归可检出：顶栏右移 2px 变化 0.12%，判为失败；浮层盖住页签，判为遮挡。
-- 2026-11-01 全量测试，在本地工作区与干净 `78155ee` worktree 上对照：单测 4598 项中 19 项失败；浏览器套件 99 个中 83 个通过、14 个失败、2 个缺文件。问题单（含复现步骤和截图）：https://claude.ai/artifact/1WtgAkcFNgaPLgzfYVQV7s
-  - 已提交代码的问题：约束图居中按钮交叉（点"水平居中"实际设置成垂直居中）；390px 下 26 个控件小于 44px；首次启动出现未翻译的 `firstRun.provider.deepseek`；`docs/AGENTS.md` 缺 `resize_document`。
-  - 未提交改动带来的回归：390px 下内置浏览器盖住编辑器；手机首页点文件卡片打不开文件、Settings 压住卡片文字；首页类型选择改版导致 14 项测试失败；分享链接格式变化后测试未同步；模块清单登记了不存在的 `figma-import-fidelity`、`impeccable-polish`。
-  - 10 个独立套件跑不起来：写死了 `/workspace`、依赖固定端口，或没打开文档就等编辑器。
-- 未覆盖：Native 应用、付费或真实 AI 接口、实体触屏、组合操作的随机测试、非 macOS 的截图基线。测试期间 main 新增了 Native 提交 `7b95346`，Web 端相关文件未变化。
-
-## 本轮：文字排版可读性与 Lucide 图标（已完成声明范围）
-
-- `inspector.typography-clarity` / `text.typography`：参考 [Figma 文字属性分组](https://help.figma.com/hc/en-us/articles/360039956634-Explore-text-properties)，直接显示字体、字重、字号、行高、字距、格式和对齐标签，明确 px/% 单位。文本框自动/固定宽度放在常用区；方向、大小写、段落、基线与路径文字保留在一个高级入口。
-- 新增图标统一使用 [Lucide](https://lucide.dev/icons)：`ALargeSmall` / `MoveVertical` / `MoveHorizontal` / `Pilcrow` / `Baseline`，配合文字对齐、斜体、下划线与曲线路径图标。实际可见 SVG（含下拉箭头）验证为 16px / 1.5px CSS 描边。
-- 创建和编辑文字共用基础控件，移除重复的字号预设按钮，输入保留原有范围；`text_section.jsx` 536→67 行、工具面板 247→73 行，3 个共享模块分别 139/136/106 行，没有新增依赖和字体资源。
-- 固定版本 [`9cd70af`](https://github.com/umaxzhao/voo-design/commit/9cd70afd10df836c269b5597b5558a114e463640)：**90/90 发布步骤通过，86 组浏览器检查通过，单测 4587 通过、4 跳过、0 失败**，源码干净且验证期间未修改；启动夹具临时缓存清理断言失败后在同一提交重试并补齐，其余浏览器使用较低并发，保留原失败，不是单次命令退出 0 的声明。证据 `/private/tmp/voo-typography-release-recovered.json`。
-- 实测字号/行高/字距改变真实文字边界，输入取消与一次撤销重做、字重/装饰/对齐、自动换行、高级属性、现有字体选择和多选均通过；实际指针创建文字使用面板里的字号/字重/间距，撤销重做正常。
-- 320/390/768/1440px × 深浅主题 × 中英文的 16 个布局上下文通过；仅在文字控件内覆盖窄屏 11px→10px 的旧压缩规则，字段窄屏纵向排列、触摸控件 48px。截图 `/private/tmp/voo-typography-inspector-recovered/typography-*.png`；优化前截图 `/private/tmp/voo-typography-before.png`。机械扫描无发现，不代表完整无障碍认证。
-- 发布前再合入远程 Agent Frame 图标、单组建议回归及增量设计提示词改动；集成版本 [`e28b511`](https://github.com/umaxzhao/voo-design/commit/e28b5110896851246e12ffbfc0571284851f1265) 重新构建、设计/模块检查、全量单测 4597 通过/4 跳过及文字面板、Agent 选区、Agent 建议三组实际浏览器复核通过（`/private/tmp/voo-typography-merged-checks.json`），不把前一版本的 90 项冒记为合并后的完整执行。
-- 该集成版本已推送并通过 SSH 部署 la2；正式入口及 6 个相关资源与验证构建逐字节一致。实际中文生产面板确认标签、11 个 16px/1.5px 图标、字号几何、字重、自动换行、段落和撤销，无页面脚本错误。证据 `/private/tmp/voo-typography-production-result.log`、`/private/tmp/voo-typography-deployment-proof.json`，截图 `/private/tmp/voo-typography-production-panel.png`。未调用付费服务。
-- GitHub 检查 [41214813845](https://github.com/umaxzhao/voo-design/actions/runs/41214813845) 查询时仍在运行，未记为 CI 通过；上述上线使用项目 SSH 脚本，备份 `la2:/srv/voo-run/editor-backups/e28b5110896851246e12ffbfc0571284851f1265-20261031T152656Z`。
-- 完整检查还复现并修复了 Window 滚动/缩放目标被误传给 `Node.contains` 的菜单异常（旧失败 `/private/tmp/voo-typography-release-final.json`）。实际窗口 resize/scroll、安全保留子菜单内部滚动、图片置入/剪贴板以及生产菜单 resize 关闭路径均通过。
-- 本地 App 仅三方合入本轮文件，保留其他草稿；定向 29 项单测及中文真实控件操作通过（`/private/tmp/voo-typography-primary-unit-final.log`、`/private/tmp/voo-typography-primary-browser.log`）。不把公开版本的完整门禁冒记为全部私人草稿已通过。备份 `/private/tmp/voo-typography-primary/`、`/private/tmp/voo-typography-primary-contracts-corrected/`。
-- 原始标签/图标两项失败保留在 `/private/tmp/voo-typography-baseline.log`；`60a289c` 的旧文字工具契约失败保留在 `/private/tmp/voo-typography-release.json`，更新断言后重新完整执行，没有把失败或部分执行算作通过。
-- `4d94489` 的后续填充检查暴露了新增文字用例未还原测试场景，证据保留在 `/private/tmp/voo-typography-release-integrated.json`；补回场景后整段面板检查通过（`/private/tmp/voo-typography-isolation.log`），随后重新完整执行最终版本。
-- 启动夹具原失败在 `/private/tmp/voo-typography-release-complete.json`，同提交串行重试与浏览器补跑记录在恢复报告及 `.log`；临时缓存清理的首次间歇失败没有冒记为通过。
-- 发布前已合入远程 Frame 标题选择、蒙版对齐和社区模板翻译修复；前一个 `00dc8e7` 仅部分执行（`/private/tmp/voo-typography-release-verified.json`），没有当成最终集成提交的通过记录。
-- 未认证所有系统字体、实体 IME/触屏/触控笔、OS 级缩放和变量字体轴；未增加不受支持的文字能力。上轮首页冷加载 New 时序和 `.fig` 导入问题仍独立待修。[验收范围](audits/panel-control-audit.md#typography-clarity)。
-
-## 本轮：图层导出按需显示（已完成声明范围）
-
-- `inspector.export-opt-in`：没有导出配置时，整个导出分组默认隐藏。用户从底部“添加 → 导出”启用后才显示标题、格式、倍率、透明背景和导出按钮；移除最后一条配置后整个分组消失，添加菜单恢复入口。没有新增勾选开关，保留用户已明确保存的配置。
-- 导出可用性、两个添加入口及文档写入共用 `export-presets.js`；面板直接读取文档，消除未选中时补回 PNG、删除后重选复活、撤销重做显示旧配置的问题。新增/删除各为一个撤销步骤，字段连续输入保留合并行为。
-- 固定代码版本 [`da86f56`](https://github.com/umaxzhao/voo-design/commit/da86f56a14a4080265fb46b834b5df363056660c)：**89/89 发布步骤通过，85 组浏览器检查通过，单测 4574 通过、4 跳过、0 失败**。验证期间源码干净且未修改。证据 `/private/tmp/voo-export-opt-in-release-verified.json`。
-- 实际 Chromium 面板覆盖图形、Frame、文字、图片的默认隐藏；从添加菜单启用、最后一项移除、切换图层、一次撤销重做；主动配置后 PNG 2x 尺寸、JPEG/WebP 文件签名及质量设置通过。该套件另执行既有的双语、深浅主题和 320–1440px 面板布局检查；导出配置的具体操作路径使用英文桌面 Chromium。没有调用生成服务。
-- 已推送并通过 SSH 部署 la2，线上入口及 6 个相关资源与验证构建逐字节一致。隔离正式浏览器复核默认整个分组隐藏、添加后实际下载 160×100 PNG、移除后隐藏及撤销重做，无页面脚本错误。截图 `/private/tmp/voo-export-opt-in-default.png`、`/private/tmp/voo-export-opt-in-removed.png`；证据 `/private/tmp/voo-export-opt-in-deployment-proof.json`、`/private/tmp/voo-export-opt-in-production-result.log`。
-- 本地 App 工作区仅三方合入本任务源文件及回归测试，保留其他草稿；定向单测 18 项和真实本地添加/下载/移除/撤销重做通过（`/private/tmp/voo-export-opt-in-primary-browser.log`），不把独立干净版本的完整门禁冒记成全部私人草稿已通过。备份 `/private/tmp/voo-export-opt-in-primary/`、`/private/tmp/voo-export-opt-in-primary-final/`。
-- 原始缺陷保留 6 个配置失败和 2 个分组显示失败（`/private/tmp/voo-export-opt-in-baseline.log`、`/private/tmp/voo-export-opt-in-section-baseline.log`）。第一次未结束门禁为补齐整个分组隐藏而停止；`6ff7ef2` 的门禁因旧默认显示断言失败，修正后重新完整执行，未把先前部分执行算通过。
-- 未认证原生系统下载界面、实体触屏、原生项目冷启动重开及所有历史文档。上轮首页冷加载 New 事件时序问题和 `.fig` 导入问题仍未修复，不归入本轮通过。[详细范围](audits/panel-control-audit.md#opt-in-layer-export)。
-
-## 本轮：统一填充面板（已完成声明范围）
-
-- 代码版本 [`cb4d1c9`](https://github.com/umaxzhao/voo-design/commit/cb4d1c9fbfdba8e87282a0af500fa0f1e8120d79)；**89/89 发布步骤通过，85 组浏览器检查通过，单测 4567 通过、4 跳过、0 失败**。最终源码干净且验证期间未修改。证据：`/private/tmp/voo-unified-fill-release-final.json`。
-- `inspector.unified-fill`：点击填充色板，在同一浮层切换纯色、渐变（含网格）、图片和纹理；图片替换/适配方式、透明度和混合模式在此完成。移除旧的分散填充类型菜单、图片文件入口和面板内适配行。
-- 已实测真实图层与像素、图片失败重试、填充独立透明度/混合、纹理缩放/颜色、PNG/SVG 像素对照、隐藏/移除/撤销重做、关闭待解码图片后切换选区。原生图片类型往返保留原始资源；替换使用既有位图操作，随后修图与撤销均有效。
-- 320/390/768/1440px、深浅主题、中英文、模拟触屏和键盘切换均通过。浅色主题额外方形底层已修复；真正的对话框就是圆角视觉面板，保留圆角自动断言。截图：`/private/tmp/voo-unified-fill-inspector-final/`。
-- 已推送并通过 SSH 部署 la2；正式入口及 7 个直接/填充分块与验证构建逐字节一致。正式地址实际打开右侧面板，切换渐变、上传图片、修改纹理，验证真实像素、一次撤销/重做及 Escape 保留选区，无页面脚本错误。未调用付费模型。证据：`/private/tmp/voo-unified-fill-deployment-proof.json`、`/private/tmp/voo-unified-fill-production-result.log`。
-- 定向 48 项单测、完整右侧面板路径和本地 App 核心填充路径分别记录；主工作区保留其他并行草稿，只合并本轮相关文件；最终本地真实填充路径复核见 `/private/tmp/voo-unified-fill-primary-browser-final.log`。主工作区已有的 `impeccable-polish` 登记文件缺失在本轮登记更新前已记录，不把公开版本门禁通过冒记为整个本地草稿通过。合并备份：`/private/tmp/voo-unified-fill-primary-merge/`、`/private/tmp/voo-unified-fill-primary-rounded/`。
-- 先前版本的旧英文断言、新建就绪超时及补跑证据保留：`/private/tmp/voo-unified-fill-release.json`、`/private/tmp/voo-unified-fill-release-v2.json`、`/private/tmp/voo-unified-fill-release-recovered.json`；它们没有被伪装成最终固定提交的执行。
-- 额外发现待修：正式网站冷加载只有顶栏、首页尚未挂载时，点击 New 可能先于事件监听器而未创建文档。两次等待引擎超时；等待首页输入框就绪后，同一构建正常创建并通过填充实测。原始证据 `/private/tmp/voo-unified-fill-production-startup-attempt.log`、`/private/tmp/voo-unified-fill-production-startup-second-attempt.log`。这是未收口的启动上下文，不算作填充门禁证明已修复。
-- 功能覆盖仍有明确边界：实体设备、所有图片编解码/超大图片内存、克隆 ID 跨文档取消、穷尽多图片资源替换及原生 App 冷重启没有由本轮认证；不覆盖真实 `.fig` 导入审计已报告的缺陷。[详细验收](audits/panel-control-audit.md#unified-fill-editor)。
-
-## 本轮：逐元素流式创作（已完成声明范围）
-
-- 合入提交 `dac68a5` 的 [GitHub Ubuntu CI](https://github.com/umaxzhao/voo-design/actions/runs/41188844041) 已通过模块登记、设计检查、构建和全量单测；CI 部署作业跳过，正式部署由本机 SSH 到 la2 完成并核对。
-- 已推送并部署应用提交 [`d0b9ec5`](https://github.com/umaxzhao/voo-design/commit/d0b9ec5a9df445e073c689597ff890350d500856)；登记发布检查 **88/88**（页面加载超时后串行补跑），含 **84 组浏览器**，单测 **4521 通过、4 跳过、0 失败**。证据：`/private/tmp/voo-authoring-release-recovered.json`。跳过和未运行的上下文不算通过。
-- `platform.streaming-authoring`：内置 HTML、外部 `stream_layout` 和批量 `build_layout` 共用原生落图与 VOO 紫色鼠标。鼠标定位、携带轮廓、放置元素和下一步跟随实际文档操作；快照合并、稳定图层 ID、动画预算与减弱动态效果避免重复播放和长时间收尾。
-- 推送前合入远程认证/归档提交 `dac68a5`；网页源码、公共资源、构建脚本和配置与上述固定版本逐项一致，新增桌面认证 4 项定向单测通过。原生签名 App 没有据此被标记为通过；证据：`/private/tmp/voo-authoring-final-integration-proof.json`。
-- 真实 SSE 在响应结束前已出现原生图层与红色像素；最终蓝色像素、紫色鼠标、一次撤销/重做均通过。取消后不继续插入，批量取消保留原文档与重做；外部清除保留已有作品。同项目切页与跨文档迟到消息被拒绝；初始化冲突不能结束另一轮生成的历史批次。
-- 整合期间一并收口：旧鼠标反馈契约、DeepSeek 首次引导文案/卡片断言、新 `resize_document` 文档与真实操作用例、设计系统默认项/展开路径、文件监听固定延时，对称安全区的竖屏/横屏/鼠标断言，以及八类设计类型的高级入口、桌面/触屏窄屏布局和键盘选择。
-- 线上入口及 7 个直接/流式模块资源与验证构建逐字节一致。正式地址实际点击 Agent 发送，验证两块图形分阶段出现、真实红/蓝像素、一次撤销和无脚本错误；模型响应使用受控离线夹具，没有调用付费服务。证据：`/private/tmp/voo-authoring-deployment-proof.json`、`/private/tmp/voo-authoring-production-result.log`。
-- 本地主工作区仅合并本轮模块，保留并发草稿、额外能力登记、旧备份和原有辅助工作树；镜像后专项通过。同步复核中误带的三处旧样式已按备份恢复。详细记录：`/private/tmp/voo-authoring-primary-final-merge/`。主工作区的其他任务源码不属于这次干净发布证据。
-- 功能覆盖仍为部分：付费模型设计质量、独立原生客户端/签名安装包、实体设备、所有工具的逐手势动画，以及用户与 Agent 并发编辑仍需分别验收。[验收范围](audits/editor-closeout.md#streamed-native-authoring)。
-
-## 本轮：许可分发、浏览器启动与缓存回收（已验证并部署）
-
-- 归属 `platform.browser-fixture-lifecycle`，登记共享浏览器服务/页面夹具所有权；沿用 `editor-fixture-startup`，当前为 60 个能力分组、84 组浏览器套件。
-- 保留原先全量运行中的缓存 `ENOTEMPTY` 与加载超时证据；新增可控图片请求，在原有 load 等待下稳定复现 30 秒超时。改用单一冷启动预算内的 DOM/真实界面就绪与 MCP 验证，缓存删除采用 Node 有限重试，持续错误不吞掉。
-- 回归同时检查非关键图片未结束时的真实文档可操作性、四个冷服务的并发关闭/缓存删除/端口释放，以及三个真实编辑器的 MCP 隔离。原产品交互断言、性能阈值与发布并发数不变。
-- 定向验证通过：慢资源与并发生命周期回归、33 项相关单测，以及并发数为 3 的工具栏/Frame 指针/许可产物三组检查。原 30 秒超时失败及修复后证据保留于 `/private/tmp/voo-license-regression/fixture-pending-before.log`、`fixture-pending-after.log`、`fixture-unit.log`、`fixture-parallel-recheck.json`。
-- 精确干净提交 `a407ea58d446b6f4f73d6ecd430cb37d4548d17b` 完成 88/88 发布步骤：构建、设计规则、模块登记、4,529 项单测通过（4 项跳过）和全部 84 组浏览器套件通过。Vitest 上限为两个 worker，浏览器仍为三个并发，未放宽断言或性能阈值。证据 `/private/tmp/voo-license-regression/release-fixture-fixed.json`；此前失败记录不覆盖或抹去。
-- [PR #68](https://github.com/umaxzhao/voo-design/pull/68) 已合并为 `b708127f0732635d0cb1dbf2d0212ec49ceacd6f`，完整源码树与验证提交一致；[GitHub build](https://github.com/umaxzhao/voo-design/actions/runs/41191124591/job/124507957957) 通过，CI 的 deploy 跳过，已按项目脚本完成 SSH 部署。
-- 已部署至 [voo.run/editor](https://voo.run/editor/)。线上入口、所有入口引用资源、NOTICE 与第三方许可 JSON 共 8 个文件均 HTTP 200、字节哈希与验证构建相同；隔离真实浏览器打开“关于”，读取两项完整许可证并正常关闭。证据 `/private/tmp/voo-license-regression/production-attribution-proof.json`；备份 `la2:/srv/voo-run/editor-backups/a407ea58d446b6f4f73d6ecd430cb37d4548d17b-20261031T101615Z`。
-- 历史授权、OpenDesign 原始导入版本、专有格式底层权利及签名安装包仍未由本轮认证；功能覆盖保持部分。详见 [夹具生命周期](audits/editor-closeout.md#browser-fixture-lifecycle)与[来源审查](audits/code-provenance.md)。
-
-## 上轮：内嵌第三方内容许可分发修复（当时阻断，已由本轮闭环）
-
-- 新增 `platform.third-party-attribution`，归属 platform；网页产物检查复用 workspace 的 `editor-resources-built`，单测所有权在模块目录登记。合并并行流式创作后，能力总数更新为 59，核心浏览器套件为 84 组。
-- 已纠正此前同名项目误链：Schema 正确上游为 `open-pencil/open-pencil@f5bd2425b6491be58b43c398ac1343e4d8249fe6`，605 个定义及顺序完全一致，68,800 字节数据保持不变。保留该版本完整 MIT 与原版权行、OpenDesign 根 skills 许可参考的完整 Apache-2.0、既有署名及改动说明。
-- 新增根 NOTICE，内嵌组件进入第三方许可 JSON；网页和 ASAR 均检查 NOTICE 与完整许可。缺失场景修改前已失败复现；独立临时检出中定向 33 项单测通过。证据 `/private/tmp/voo-license-regression/`。
-- 精确应用提交 `1f3266e604f740c0d7463e6c2f1c9d7f73ae2b29`：构建、设计规则、模块登记通过；全量单测 4,529 通过、4 跳过，Vitest worker 上限为 2，未修改阈值。此前默认并行下两个限时用例分别失败，日志均保留，不作为硬件性能认证。
-- 完整发布门禁在 26/88 步中断：浏览器 22 组已执行，20 组通过、2 组失败，62 组未执行。失败分别为 Vite 缓存清理 `ENOTEMPTY` 和页面启动超时；这两组随后单独顺序复查均通过，但不将其替换为完整门禁通过。本轮许可产物浏览器检查已在该精确提交通过。
-- 证据：`/private/tmp/voo-license-regression/release-capped.json`、`release-capped.log`、`toolbar-recheck.log`、`frame-recheck.log`；原始失败与基线复现记录同目录保留。当时以 `codex/embedded-license-attribution` 草稿修复分支交付，未推送 main 或部署；该发布阻断已在本轮固定提交完成闭环。
-- OpenDesign 原始导入版本与历史服务条款适用仍未解决，见 [来源审查](audits/code-provenance.md)。上游开源许可也不自动证明专有格式所涉全部权利已经清理，未宣称全仓原创或全面合规。
-
-## 本轮：Pen / Figma 来源与许可定向审查（初步结论，来源信息已更正）
-
-- 审查对象：`d892ab5df47368a5f4b9996b18e5e3f7e4701949`，不将用户自有 `voo-canvas-core` 列为来源疑点。本轮只做审查记录，不更改实现或授权声明。
-- 对 1,585 个已跟踪 JS/JSX/MJS/CJS/TS/Swift/Rust 产品代码文件，与保留的 Pen 编译片段做连续 40 token 精确比对，并筛查 1,593 条长度 80–1,000 字符的参考文本；均无命中。相关提取文件路径与特征标识搜索也未发现产品引用。证据和文件 SHA-256：`/private/tmp/voo-provenance-scan.json`。这不排除改写、翻译或不可用原件的复用，不能作为完全原创或合规认证。
-- 待补齐：`src/canvas/figma/figma-schema-data.js` 明确声明从 OpenPencil 原样转载；该数据由 `figma-schema.js` 加载用于 `.fig` 导出。注释指向不存在的 `NOTICE`，且仅保留节选许可、未锁定上游提交；当时依据错误链接得到的同名项目版权信息不适用于本 Schema；正确上游与版权已在后续修复中核实。`scripts/generate-third-party-notices.mjs` 只遍历声明依赖，不能覆盖此内嵌数据。上游原路径当前返回 404，尚未完成逐字节来源验证。
-- 待确认：`src/canvas/layout_skills_data.js:229,247` 标记改编/借鉴 OpenDesign；已核对上游技能与 `12d970eacc8971150e3c76470d2a9afe16dc2ed1` 的 Apache-2.0 许可，未发现项目对该来源的完整许可/版本记录。需确定实际采用内容、原版本、是否存在适用的独立许可，再按实际许可补足声明；不能仅凭改编注释认定侵权。
-- 历史提取材料与服务条款单独待复核：当前 [Figma Terms §2.2](https://www.figma.com/legal/tos/) 与 [Pen EULA §3](https://www.pen.dev/eula) 均包含逆向限制。实际适用条款版本、授权和法定例外尚未确认。取消 Git 跟踪不清除历史分发或解决该问题。原 `/tmp/apps`、`/tmp/figma_web` 完整提取树当前不可用。
-- `.fig` 回归样本具有合成生成脚本与原创声明，不因格式为 `.fig` 就认定来自 Figma 产品源码；本轮未认证所有素材/字体/依赖或全仓库来源。执行范围仅来源比对、引用与许可文本检查、文档差异检查及项目设计/模块规范检查；未进行产品功能回归或部署。
-
-## 本轮：内部协作目录仅保留本地
-
-- 基线 `6b2cd97`：取消跟踪 `.agents/`、`.claude/`、`native_studio/.agents/` 共 524 个文件，并添加精确的目录忽略规则。修改前逐文件核验内容与基线一致；取消跟踪后再次核验本地保留。证据：`/private/tmp/voo-internal-directories-evidence.json`。
-- 保留源码、测试、设计检查、打包资源、公开技术文档与许可证；产品中的 `.claude/local` 指向用户环境，不依赖仓库本地启动配置。`native_studio/UI_SPEC.md` 的历史截图引用是本地参考，随内部资料保留本地。
-- 本轮仅调整仓库发布范围；执行索引/忽略规则/本地文件完整性检查、差异格式检查、设计规则与模块登记检查，不代表应用功能回归或合规审查已完成。未改写历史，未重新部署应用。
-
-## 本轮：分析资料仅保留本地
-
-- 基线 `eafce32e48788749838e839e8bbb273e5c32b32d`：取消跟踪 `analysis/` 的 123 个文件；原有忽略规则保持不变，本地文件逐字节核验完整保留。证据：`/private/tmp/voo-analysis-untrack-evidence.json`。
-- 检查索引无该目录、忽略规则生效、暂存差异格式、设计规则和模块登记；未修改应用代码，未运行应用功能回归或重新部署。自动模块计划将这些历史分析路径归入全模块兜底，不代表本轮改动了应用行为。
-- 来源审查保持未完成：分析资料包含提取的 Pen 编译代码片段与 Figma 翻译数据；产品源码的相关路径及特征标识搜索未发现引用，尚不能据此证明实现完全独立。取消跟踪不清除 Git 历史，也不构成合规认证。
-
-## 本轮：内部协作目录仅保留本地
-
-- 基线 `6b2cd97`：取消跟踪 `.agents/`、`.claude/`、`native_studio/.agents/` 共 524 个文件，并添加精确的目录忽略规则。修改前逐文件核验内容与基线一致；取消跟踪后再次核验本地保留。证据：`/private/tmp/voo-internal-directories-evidence.json`。
-- 保留源码、测试、设计检查、打包资源、公开技术文档与许可证；产品中的 `.claude/local` 指向用户环境，不依赖仓库本地启动配置。`native_studio/UI_SPEC.md` 的历史截图引用是本地参考，随内部资料保留本地。
-- 本轮仅调整仓库发布范围；执行索引/忽略规则/本地文件完整性检查、差异格式检查、设计规则与模块登记检查，不代表应用功能回归或合规审查已完成。未改写历史，未重新部署应用。
-
-## 本轮：分析资料仅保留本地
-
-- 基线 `eafce32e48788749838e839e8bbb273e5c32b32d`：取消跟踪 `analysis/` 的 123 个文件；原有忽略规则保持不变，本地文件逐字节核验完整保留。证据：`/private/tmp/voo-analysis-untrack-evidence.json`。
-- 检查索引无该目录、忽略规则生效、暂存差异格式、设计规则和模块登记；未修改应用代码，未运行应用功能回归或重新部署。自动模块计划将这些历史分析路径归入全模块兜底，不代表本轮改动了应用行为。
-- 来源审查保持未完成：分析资料包含提取的 Pen 编译代码片段与 Figma 翻译数据；产品源码的相关路径及特征标识搜索未发现引用，尚不能据此证明实现完全独立。取消跟踪不清除 Git 历史，也不构成合规认证。
-
-## 本轮：AI 生成文本按内容自适应尺寸
-
-- 已修复 `build_layout` 将普通 AI 生成文本强制设为占位宽度的问题。现在文本默认按内容自然测宽；只有显式传入 `textSizing: "fixed"` 才按给定宽度换行。流式 HTML 中已测出的文本换行宽度仍保留。
-- 新增能力 `platform.agent-generated-text-sizing`，关联 `text.box-sizing`；登记总数更新为 56 个能力分组，核心门禁仍为 83 组浏览器套件。
-- 验收覆盖 `build_layout` 默认尺寸、固定换行、流式 HTML 文本宽度、真实画布测量和原有单步撤销/重做。定向 37 项单测及真实编辑器场景通过；完整证据见 `/private/tmp/voo-text-sizing-release-merged.json`。
-- 合并最新远程改动后的干净提交 `26de3f9` 完成 87/87 发布步骤：构建、设计检查、4501 项单测通过、4 项跳过，以及 83 组浏览器套件通过。`image-inspector-core` 首次运行超时，独立重跑及最终完整门禁均通过；同步进入的移动工具栏回归也通过。
-- 已推送至 GitHub 主分支并部署到 la2，入口为 [voo.run/editor](https://voo.run/editor/)。线上 `index.html` 和包含文本尺寸规则的 `canvas_tools` 分块均返回 HTTP 200，字节及 SHA-256 与构建一致；隔离线上浏览器完成首次引导并进入项目工作台。证据：`/private/tmp/voo-text-sizing-deployment-proof.json`；备份：`/srv/voo-run/editor-backups/5601167-20261031T071032Z`。
-- 该证据确认的是 Chromium 中 `build_layout` 与流式 HTML 文本路径。其他外部模型客户端、各模型设计变体和设备/平台特定生成路径仍未逐一覆盖，功能覆盖保持“部分”。
-
-## 上轮：本地服务发现与同源画布预览
-
-- 已完成声明范围：应用提交 `23d961c` 通过 87/87 步（83 组浏览器）；证据 `/private/tmp/voo-local-service-final-release-v4.json`。
-- 新增 `platform.local-service-discovery`、`platform.live-preview`，当前登记 55 个能力分组、83 组核心浏览器套件。
-- 已验证服务缺失/发现/断开/恢复、旧版 1.0 桥接兼容、网页只展示已安装 CLI、设置页与引导隐藏本地入口、保留 API 与模型选择、空目录进入 API 设置；断线后也不会残留本地向导入口。
-- 只读预览通过独立浏览器读取原画布红/绿图形真实像素，验证更新、缩放、保持生成目标与文档切换失效。缺少文档身份的旧渲染器不暴露预览；旧 MCP 协议保留图片和文本 URL。过期响应支持中英文。
-- 已推送并部署 la2，线上首页和 5 个引用资源与验证构建字节一致；线上配置入口、CLI 隐藏和真实新建操作通过。证据 `/private/tmp/voo-local-service-deployment-proof.json`，截图 `/private/tmp/voo-local-service-production.png`。
-- 本机旧版 Electron 桥接通过网页冷启动自动发现与只读安装状态 RPC；新增预览服务需 App 重启载入更新代码。主工作区仅增量同步本轮源码，其余草稿和旧工作树保留，不作为干净发布依据。
-- [验收范围](audits/editor-closeout.md#local-services-and-source-bound-preview)：不把浏览器通过当成所有客户端自动右侧面板、签名 App 安装包或本地网络权限弹窗已验证。
-
-## 当前概况
-
-| 项目 | 状态 |
-| --- | --- |
-| 工程规范与模块登记 | 已落地：12 个模块、60 个能力分组 |
-| 核心发布校验 | a407ea5：完整单次 88/88 步通过，包含 84 组浏览器套件 |
-| 全量单元测试 | 4529 通过、4 跳过、0 失败；跳过项不算通过 |
-| GitHub Ubuntu 基础检查 | [a407ea5 PR build 已通过](https://github.com/umaxzhao/voo-design/actions/runs/41191124591/job/124507957957)：模块登记、设计检查、构建及单测；CI 部署跳过，已由项目脚本 SSH 部署 la2 |
-| 线上部署 | a407ea5 验证构建已部署；主分支合并 b708127 的源码树一致；8 个线上文件哈希与关于页许可读取通过 |
-| 功能验收完整度 | 部分覆盖；60 个能力分组未穷尽所有入口、上下文和设备 |
-| 核心门禁外的独立检查 | 21 组本轮未运行：18 组待复核，3 组需单独运行 |
-
-## 连续创作首轮（f9102cd，已完成声明范围）
-
-- 已复现并修复：R/O 切换失效、分组脱离 Frame、分组后移动单位错误、解组误拆祖先 Frame、Esc 取消后仍创建对象，以及白色 Frame 中新建白字不可见。
-- 同一份文档通过真实 UI 完成绘制、文字、属性修改、分组移动/解组、路径编辑、置入/蒙版、撤销重做、保存和新浏览器重开；11 个场景通过。纯回归新增 18 项；同步路径中点修复后，全量单测 4428 通过、4 跳过。
-- 新增 `selection.continuous-creation`，核心门禁 82/82 通过（78 组浏览器，包含同步进入的路径中点检查）；实际验证提交为 f9102cd，声明范围之外仍为部分覆盖。
-- 线上发布版本与构建资源哈希一致；本地主工作区仅同步本轮 10 个源码文件，11 场景复查通过，其他未提交草稿保留，未将其整体当作干净发布版本。
-- [验收范围与剩余边界](audits/continuous-creation-audit.md)：实际图像/文字像素、层级、历史和冷重开；实体设备、复杂组合和硬件性能仍单独验证。
-
-## 继续检查：容器命令、手势回滚、选区单位、文字收尾与路径表示（已完成声明范围）
-
-- 新增两组核心浏览器套件，当前登记为 60 个能力分组、84 组浏览器、88 个发布步骤；先后在 `caf386a`（84/84）、`bfd7e5b`（85/85）、`a94365e`（85/85，证据：`/private/tmp/voo-release-round2.json`）与本批 `f7f4f59`（87/87，证据：`/private/tmp/voo-release-round3.json`，合入最新 `origin/main` 后为 `9c8be5c`，29 项新增单测与 19 项浏览器专项复核全过）完成隔离副本全量门禁验证；原工作区未提交的外部改动保留，未混入发布依据。
-- 已复现并修复 29 类问题：多层解组孤儿节点、父子同时分组拆散子树、跨 Frame 分组跳过共同父级、解组蒙版后失效引用、放弃空文字清空重做、未修改文字清空重做、实际文字收尾遗漏提交回调、转换为钢笔路径后的线条/箭头仍进入旧端点分支、钢笔草稿切换工具未提交且残留预览、`< 4px` 形状/箭头点击误写删除历史并清空重做与原选区、`resize`/`rotate`/`cornerRadius`/`endpoint` 变换手柄 `Escape`/取消不回滚且零位移误提交、对齐选中 Frame+子图层双倍位移且遗漏剪切蒙版跟随层、方向键微调 Auto Layout 编组回弹与钢笔锚点越界未扩框、图层面板点击布尔层失效及图层面板复制编组丢失编组选区单位、缩放后的钢笔路径在锚点越界扩框/复制/展开轮廓时缩回 `baseWidth`、钢笔编辑零位移点击锚点/弯曲段误写历史且中途 `Escape` 直接退出编辑会话、旋转/翻转路径下钢笔弯曲与剪刀子工具坐标未逆变换且开放路径剪断未重算边界与图层顺序、布尔组合与破坏性布尔丢失共享父容器及遗留失效 `clipTo`/空编组、路径排字 `typeOnSelectedPath`/`attachTextToPath` 丢失 `parentId` 且调用不存在的 `selection.setIds`、空普通编组无法通过 `Backspace`/剪切删除或 `Escape` 取消选中或 `Cmd+Shift+G` 解组、多子节点普通编组按 `Shift+A`（`toggleAutoLayoutSelection`）误套外层编组而非原地切换 Auto Layout、Frame 内创建/分离组件（`extractComponent`/`detachInstance`）丢失 `parentId`/残留外部引用/未缩放路径锚点、选中钢笔路径或普通编组按 `Enter` 因判定 `kind === "pen"` 与调用不存在的 `startEdit` 或忽略 `getSelectedGroup()` 而失效、多边形套索按 `Backspace` 误删宿主图层而非回退顶点（`popPolygonVertex`）且闭合与魔棒选区遗漏历史提交、磁性套索按 `Escape` 未回退、曲率钢笔按 `Backspace`（`popDraftAnchor`）残留旧平滑控制柄、以及 `region`/`pixelMarquee`/`selectionMove`/`gradient*`/形变控制点/`pen`/`lasso`/`healing`/`cloneStamp`/`patch*`/`removeBrush`/`objectStroke` 取消未回滚。
-- 门禁过程还捕获并修复了 `titlebar-file-actions.e2e.mjs` 在已有后台编辑器实例时未等待首页遮罩（`welcomeOpen`）关闭即读取文件名的竞态。
-- 定向浏览器扩展至 19 个场景（`container-command-boundaries` 9 项、`text-creation-boundaries` 10 项），覆盖键盘命令、对齐/蒙版跟随、Auto Layout 方向键微调与原地切换、图层面板布尔点击与编组复制、缩放钢笔复制与路径排字及空编组删除、`Enter` 进入编组与钢笔编辑、钢笔切换工具收尾、曲率钢笔 `Backspace` 重算控制柄、钢笔锚点零位移与中途 `Escape` 回滚、`< 4px` 形状点击与 `Escape` 缩放回滚及完整撤销重做。
-- [容器边界范围](audits/nested-objects-audit.md#container-command-boundaries)、[文字收尾范围](audits/continuous-creation-audit.md#text-placement-and-close-boundaries)记录复现、断言和剩余上下文；临时编辑恢复、取消时保留外部新增节点也已加入纯回归。
-
-## 各模块进度
-
-套件数按主归属计一次。跨模块回归会关联执行，不能将下表理解为功能覆盖率。
-
-| 模块 | 已通过核心套件 | 功能覆盖 | 仍需补齐的重点 |
-| --- | --- | --- | --- |
-| 工作台与资源 `workspace` | 8/8 | 部分 | 原生文件选择器、实体触屏、独立流程脚本复核 |
-| 文档与存储 `documents` | 6/6 | 部分 | 原生写入中断/恢复、旧版本文档、独立往返脚本 |
-| 画布与相机 `canvas` | 6/6 | 部分 | 硬件 FPS、内存、固定场景规模下的性能基准 |
-| 选择与变换 `selection` | 6/6 | 部分 | 实体压感笔、系统快捷键、多指触摸组合 |
-| 图层与 Frame `layers` | 7/7 | 部分 | Finder/Explorer 原生拖放；更多异常层级与组合 |
-| 蒙版与合成 `compositing` | 6/6 | 部分 | 更多混合/蒙版/效果组合、显卡差异、独立像素脚本 |
-| 矢量与形状 `vectors` | 5/5 | 部分 | 扩充第三方路径和格式往返样本、HTML 转节点脚本 |
-| 文字 `text` | 2/2 | 部分 | 实体输入法、字体安装差异、RTL、可变字体；另有关联选择/排版检查 |
-| 图片与修图 `images` | 12/12 | 部分 | 独立模型/网络检查、硬件内存/FPS；本轮排除视频 |
-| 布局与设计系统 `layout` | 6/6 | 部分 | 组件/变量 alias、嵌套布局组合、设计系统预设细查 |
-| 属性面板与共享 UI `inspector` | 6/6 | 部分 | 每个控件、输入方式与参数组合的逐项验收 |
-| Agent 与平台 `platform` | 14/14 | 部分 | 本轮许可与共享夹具场景通过；真实外部服务、原生安装包与其他平台上下文仍待核验 |
-
-## 21 组独立检查的待办
-
-“待复核”表示需要先确认夹具、断言与服务要求，再决定纳入核心门禁或单独执行；
-不能推断它们已通过、已失败或已经失效。
-
-| 状态 | 脚本名称（位于 `tests/e2e/`） |
-| --- | --- |
-| 待复核：Agent / 平台，9 组 | `agent-selection-context`、`agent-suggestions`、`agent_cancel_polish`、`agent_pencil_tools`、`agent_tools`、`claude_agent`、`codex_agent`、`mcp_cli`、`qa3_electron` |
-| 待复核：工作台，2 组 | `critical_flows`、`qa_flows` |
-| 待复核：共享 UI，2 组 | `command_palette`、`design_tokens` |
-| 待复核：文档，3 组 | `multi_document_tabs`、`qa3_roundtrip`、`roundtrip` |
-| 待复核：合成，1 组 | `ed04_pixel_consistency` |
-| 待复核：矢量，1 组 | `html2nodes` |
-| 单独运行：硬件性能 | `canvas_fps`，记录硬件、渲染后端、场景与规模 |
-| 单独运行：原生环境 | `image-electron`，使用隔离的 Electron 数据和文件目录 |
-| 单独运行：网络/模型 | `image-network`，验证真实下载、推理和缓存 |
-
-## 后续收口清单
-
-- [x] 统一模块/能力 ID、关联回归与测试归属。
-- [x] 新增未登记浏览器套件会触发门禁失败。
-- [x] 区分检查执行结果、功能覆盖、旧提交证据与未提交改动。
-- [x] GitHub 基础门禁落地，并修复实际 Ubuntu 运行暴露的临时目录测试隔离问题。
-- [ ] 复核上面的 18 组独立脚本，逐项记录保留、修复和执行结果。
-- [ ] 将 53 个能力分组细化为入口、上下文、状态、像素、撤销、保存重开和取消/失败验收行。
-- [x] 新增一条不重置场景的真实 UI 连续创作回归，关闭本轮 6 个已复现缺陷。
-- [x] 继续扩展画布、图层、右侧面板的组合操作与控件级验收，涵盖 `< 4px` 形状/箭头取消回滚、变换手柄 `Escape`/零位移回滚、钢笔草稿切换收尾、对齐/蒙版跟随、Auto Layout 编组方向键微调及混合层级选择。
-- [ ] 继续补充剩余高级绘图工具（曲线/自由钢笔复杂路径、套索/魔棒取消）与属性面板逐控件级组合验收。
-- [ ] 单独记录性能、原生环境、网络/模型及外部服务的当前证据；保留未验证边界。
-- [ ] 按模块拆分存量大文件、核查公共接口和死代码；每批保留行为回归与实际包体积证据。
-
-## 专项证据与维护方式
-
-- [模块清单](../scripts/editor-module-catalog.mjs)：机器使用的职责、能力 ID、套件和剩余项。
-- [工程流程](engineering-workflow.md)：验收行模板、代码边界、检查命令和交付规则。
-- [连续创作验收](audits/continuous-creation-audit.md)：真实 UI 的跨模块流程、已复现缺陷、取消/重开和剩余边界。
-- [画布与嵌套对象](audits/nested-objects-audit.md)：置入、Frame、蒙版、命中、复制删除与重开。
-- [图片编辑器验收](audits/image-editor-complete-audit.md)：工具、像素、原生环境与模型边界。
-- [性能证据索引](performance/README.md)：区分 CPU、GPU、FPS 与历史测量。
-
-每轮更新：先更新受影响模块的状态和剩余项，再填入准确提交、运行环境和原始报告位置。
-修复关闭前补上回归用例；只有实际完成并有证据的项才能勾选。
-
-最近完整报告：`/private/tmp/voo-release-round2.json`（a94365e，85/85，隔离源码前后均干净）；上一批报告为 `/private/tmp/voo-release.json`（bfd7e5b，85/85），历史基线报告为 `/private/tmp/voo-deeper-release.json`（ebab451，85/85）。
-线上资源证据：`/private/tmp/voo-deeper-deployment-proof.json`；新场景结果：
-`/private/tmp/voo-deeper-production/`；笔触与路径额外结果：`/private/tmp/voo-deeper-production-{brush,vector}.log`。
-执行条件：`/private/tmp/voo-deeper-execution-context.json`，单测使用
-`VITEST_MAX_FORKS=2 VITEST_MIN_FORKS=1 VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1`。
-前期失败和混杂工作区的报告另行保留；不能沿用其通过项作为最终证据。临时文件可能被清理，
-需要长期保存时移入交付证据目录。重新生成和核对的命令：
-
-```bash
-VOO_RELEASE_REPORT=/private/tmp/voo-release.json node scripts/verify-editor-release.mjs
-node scripts/editor-checks.mjs --evidence /private/tmp/voo-release.json --json
-```
-
-
-## 路径固定中点加点 — 2026-10-31
-
-- 能力：`vectors.midpoint-insertion`，详细边界见 [交互审查](audits/design-editor-interaction-audit.md#fixed-midpoint-insertion--2026-10-31)。
-- 复现：旧实现的 5 个定向断言失败；修复后 25 项相关单测及真实鼠标加点、预览、单步撤销/重做验证通过。
-- 完整发布的精确提交与逐项结果记录在 `/tmp/voo-midpoint-release.json`；须核对 `revision` 和 `complete`，不得沿用上方历史提交的通过状态。
-- 仍未验证：实体笔/触摸、签名 Electron 安装包、多轮廓交叉路径、冷重开和像素级导出对比。功能覆盖仍为部分。
-
-
-## 浏览器遮挡与选中样式 — 2026-10-31
-
-- 能力：`platform.browser-drawer`；详见 [交互审查](audits/design-editor-interaction-audit.md#browser-drawer-visibility--2026-10-31)。
-- 已复现原浏览器工具栏被编辑器覆盖；修复浮层层级、窗口边界和标题栏定位，选中按钮使用 VOO 绿底与黑色窗口图标。
-- 定向检查：网页端 1440/390px 的点击命中、颜色、关闭重开通过；21 项相关单测通过。隔离 Electron 原生 webview 的地址栏导航、可见性、关闭重开及截图检查通过。
-- 精确发布版本和完整门禁结果见 `/tmp/voo-browser-release.json` 的 `revision`、`complete` 与逐项结果；不能继承历史版本的通过状态。
-- 未覆盖：所有第三方网页与登录态、全部网页提取组合、触摸调整宽度、其他桌面操作系统与签名安装包。
-
-- 发布检查曾发现网页导入解析器提前加载字体与变量模块；已改为实际导入时才加载，并由原有 `editor-loading` 回归保留验证。
-
-## Onboarding: connected Harness hides duplicate model setup — 2026-10-31
-
-- Harness 的 VOO 插件认证成功后，Agent 设置中的本地模型桥接卡片自动隐藏；连接尚未完成时保留入口。
-- `tests/unit/first_run_agent_grid.test.jsx` 覆盖已连接、检测中和插件未连接状态；配合 `tests/unit/first_run_onboarding.test.jsx`，定向 58 项通过。
-
-## 原生界面字体对齐 Intel One Mono — 2026-10-31
-
-- 能力：`platform.native-typography`。原生壳此前用 `NSFont.monospacedSystemFont`（SF Mono），与 Web 的 `--font-mono: "Intel One Mono"` 字宽不同（12pt 下 7.418 vs 7.368），导致标题栏/图层/属性/Island Bar 的文字与省略号位置略有偏差。
-- 实现：把 Web 同一套 OFL 字体打进 `native_studio/Resources/Fonts`（Intel One Mono regular/medium/bold + Inter），`build.sh` 随包复制到 `Contents/Resources/Fonts`，`Info.plist` 声明 `ATSApplicationFontsPath=Fonts`，并在 `VooMonoTypeface.registerBundledFonts()` 内按 PostScript 名（`IntelOneMono-*`）注册、按 CSS 权重规则（≥600 用 bold、≥500 用 medium）解析；缺失时回退 SF Mono，不影响无字体资源的构建（如测试二进制，可用 `VOO_FONT_DIR` 指向源目录）。
-- 顺带对齐画布文字：`TextStyleResolver.resolveFamily` 支持 CSS 字族栈（`"'Inter', system-ui, sans-serif"`），新文本节点默认 Inter 现在真实命中打包字体，内联编辑器与画布渲染共用同一解析路径。
-- 验证：`./build.sh` 通过（binary 4.57 MB ≤ 5 MB，bundle 7.31 MB ≤ 35 MB）；`./tests/run_tests.sh` **377/377 通过**（含新字体的真实度量）；应用日志 `bundled typeface Intel One Mono: ready (4 face file(s))`；截图 `native_studio/docs/screenshots/v5_font_editor.png`、`v5_font_text.png`。
-- 未覆盖：只打包了 Web 字体清单中的 Inter 与 Intel One Mono，其余 12 个可选字族（Roboto/Montserrat/Noto Sans SC 等）仍回退系统字体；实体设备上的字重合成与中文渲染未单独验收。
-
-## Impeccable 界面审查 — 2026-10-31
-
-- [完整报告与证据](audits/impeccable-review.md)：layout、typeset、distill、polish、critique；按用户要求排除 `native_studio`。
-- 审查源码 `23d961ca7bc6a526447e821488290f76bd295693`；归档前 `6c91f83` 仅有后续文档变化。两份独立评估，主观评分25/40，不是功能覆盖率。
-- 静态扫描302个界面文件、10组范围、0提示；独立浏览器实际取证发现跨状态焦点、受限画布遮挡、窄鼠标窗口导航、空Slot和说明文字可读性问题。
-- P1：欢迎覆盖层后的隐藏编辑器仍可聚焦；900px窗口打开Agent后图层/属性面板重叠64px。均仅登记，尚未修复。
-- 保留黑色面板、薄荷绿/紫色品牌、11–12px专业数值密度；不机械删除已确认的绿紫发光边框。
-- 本轮实际查看代表页面与中英文字面；未验收真实触摸、Electron壳、真实账户/支付/模型和完整导入导出。服务与标签已清理。
-- 关键截图与焦点记录保存在 `docs/audits/impeccable-evidence/`；其他原始证据位于 `/tmp/voo-impeccable-a/`、`/tmp/voo-impeccable-b/`。本轮没有UI实现改动。
-
-## GitHub introduction and four editable examples — 2026-10-31
-
-- Scope: README, artwork and example documents only; no application behavior or module capability changed. Product module coverage remains partial and historical execution results above are not inherited.
-- The header now uses the existing App Icon. The cover uses canvas exports of the selected music interface, F1 poster, PULSE dashboard and FORM poster. ROAM is excluded from this publication.
-- Local cleanup moved 20 old files to recoverable workspace trash; the user restored the music and F1 projects, and the active library was checked to contain exactly the four selected projects. Cleanup stopped after that selection.
-- Verification: native container decoding, unique layer IDs and parent references, retained editable text, PNG dimensions, local documentation links and light/dark presentation checks. Exact publication revision and execution receipts: `/private/tmp/voo-showcase/evidence.json`.
-- This is documentation/example validation, not a new product release or a full functional audit. No application deployment is required; signed installers, external services and other platforms remain outside this check.
-
-## Product screenshots and agent-driven slogan — 2026-10-31
-
-- Scope: documentation and repository artwork only; no application source, module capabilities or original example documents changed.
-- Added three real 1600 × 1000 web screenshots: workspace with four project covers, optional Agent setup, and music design with the headline selected and the text inspector visible. Capture used an isolated browser profile and did not modify the user's project library.
-- Captured production entry: `assets/index-D9WDURy-.js`; capture receipt: `/private/tmp/voo-showcase/product-ui/capture.json`. This documents the live interface at capture time, not proof that every later revision or platform was tested.
-- README, cover and social preview use “An AI agent-driven design editor.” Functional module coverage remains unchanged and partial; the final publication revision and document/image checks are recorded in `/private/tmp/voo-showcase/product-ui/publication.json`.
-
-- Introduction now leads with standalone use and Claude Code plugin / Codex MCP integration, with connection commands matched to the existing connector guide. A separate review of public-tree wording is recorded outside the repository at `/private/tmp/voo-showcase/product-ui/published-wording-audit.json`; no source or historical research files were changed.
-
-## Repository introduction: hierarchy, brand and rounded screenshots — 2026-10-31
-
-- Scope: README, artwork, example guide and this progress record only. No application source or native example documents changed; functional module coverage remains partial.
-- Simplified the default introduction to product positioning, standalone / MCP workflows and three core capabilities. Product tour, four-design gallery, connector commands and technical reference remain accessible through native GitHub disclosure sections.
-- The cover uses a real editing screenshot, the UI colors `#B2FFD6` → `#E5B2FF`, and Intel One Mono Regular (400). A relative-path HTML composition is retained beside the PNG.
-- All three product UI screenshots retain their original 1600 × 1000 content with 24px transparent outer corners. Pixel comparison found zero changes outside the four corner regions; screenshot-state evidence remains tied to its original captured production entry.
-- Exact publication revision, disclosure/link/image checks and layout/typography evidence: `/private/tmp/voo-showcase/product-ui/redesign-publication.json`. No application deployment is required for this documentation and artwork update.
-
-## Visible product screenshots and darker artwork — 2026-10-31
-
-- Restored the workspace, setup and editing screenshots and all four design examples to the default README view. Only connector installation and the technical reference remain collapsed.
-- The cover and social image now use darker green/purple tones (`#173D30` → `#352448`) and the slogan “AI agent-driven design editor.” Intel One Mono Regular and rounded screenshot edges are retained.
-- Scope remains documentation and artwork only. Exact publication revision and visibility/link/layout checks: `/private/tmp/voo-showcase/product-ui/visible-showcase-publication.json`; functional product coverage remains unchanged and partial.
-
-## Centered cover identity — 2026-10-31
-
-- Scope: cover HTML composition and cover/social PNGs only, plus this record. Product screenshots, default README visibility and application behavior remain unchanged.
-- Centered the App Icon, product name, slogan and subtitle. Icon size is now 128px on the main cover and 96px on the social image. Removed the corner platform label; dark green/purple, regular Intel One typography and rounded editor screenshot are retained.
-- Center geometry, typography, image dimensions and exact publication revision: `/private/tmp/voo-showcase/product-ui/centered-cover-publication.json`. Functional module coverage remains unchanged and partial.
-
-## Cover typography and whitespace — 2026-10-31
-
-- Increased the main cover from 1800 × 1400 to 1800 × 1720. Product name grows from 30px to 40px and the slogan from 60px to 76px; larger vertical gaps separate icon, name, title, subtitle and canvas.
-- The main editor screenshot remains 1600 × 1000. The 1280 × 640 social layout retains its aspect ratio with more header space and a proportionally smaller preview. Center alignment, regular Intel One typography, dark gradient and corner treatment remain.
-- Scope: artwork source/exports and documentation only. Exact publication revision, measured spacing and typography checks: `/private/tmp/voo-showcase/product-ui/spacious-cover-publication.json`. Functional product coverage remains unchanged and partial.
-
-## Double-height cover introduction — 2026-10-31
-
-- Doubled the main Logo / slogan introduction region from 624px to 1248px. The full cover is now 1800 × 2344; the editor screenshot remains 1600 × 1000 and moves down intact. Icon and screenshot dimensions are unchanged; title sizes follow the final hierarchy.
-- Increased top padding and vertical gaps; the social preview retains its fixed 1280 × 640 aspect ratio with the updated title hierarchy. Product screenshots and the README display structure remain unchanged.
-- Scope: cover composition/export, example guide and this record only. Exact geometry, final publication revision and export checks: `/private/tmp/voo-showcase/product-ui/double-header-publication.json`. Functional application coverage remains unchanged and partial.
-
-- Final cover hierarchy: standalone App Icon → “VOO Design” main title → “AI Agent Driven Design Editor” subtitle. Removed the small duplicate product name under the icon and the App / CLI explanation from the artwork; those product capabilities remain in README text.
-
-## Cover proportions from marked reference — 2026-10-31
-
-- Enlarged the main App Icon from 128px to 192px. Removed the three marked blank bands, mapped to 256px / 112px / 80px in the source composition; the main cover is now 1800 × 1896. The screenshot moves up by 448px and stays 1600 × 1000.
-- Product title, subtitle, center alignment, dark gradient and corner treatment are retained. The fixed 1280 × 640 social preview also gets a larger 128px icon.
-- Scope: artwork source/exports, example guide and this record only. Exact measured gaps, final revision and export evidence: `/private/tmp/voo-showcase/product-ui/marked-gaps-publication.json`. Functional product coverage remains unchanged and partial.
-
-## Native README identity and editor screenshot — 2026-10-31
-
-- Replaced the composited header image with a centered 128px App Icon, native product heading and native “AI Agent Driven Design Editor” subtitle. A separate editing screenshot follows immediately.
-- Moved the editor screenshot from the product tour to the header, preserving one visible instance each of editor, workspace and onboarding. The four design previews remain visible; only installation and technical reference are folded.
-- Existing artwork and application source remain unchanged. Native GitHub Markdown structure, image/link checks and final revision: `/private/tmp/voo-showcase/product-ui/native-header-publication.json`. Functional product coverage remains unchanged and partial.
-
-## 工作台设置专项的历史阻断记录（本轮已整合收口）
-
-以下是整合前的记录，当前状态以上方固定发布证据为准。
-
-> 首页 Settings 底部间距微调：从 24px 减至 12px（向下移动 12px），保持左侧位置与点击区域；沿用 `workspace.settings-entry`，在既有首页套件检查四个宽度的精确底边间距。本轮精确提交及执行结果见 `/private/tmp/voo-settings-lower-release.json`，此前基线发布阻断不能视为已解决。
-
-> 本轮首页设置入口调整：已移除侧栏版本号，将首页 Settings 移至左下角；能力 `workspace.settings-entry`。本次相关 17 项单测和 320/390/768/1440px 首页浏览器专项通过。完整门禁因基线既有的 10 项 Agent 工具清单/首次引导失败而阻断（已在修改前提交 `e2d3517` 复现，`/private/tmp/voo-settings-baseline.log`），本轮尚未推送或部署。精确最终 revision 与逐项执行结果见 `/private/tmp/voo-settings-release.json`，不得继承历史通过结果。详细范围见 [面板审查](audits/panel-control-audit.md#welcome-settings-entry--2026-10-31)。
-
-## 原生界面优化（第五轮：Agent 面板 1:1 + 草稿自动保存）— 2026-10-31
-
-用实时 Web 构建重新截取 Agent 面板（`native_studio/docs/refs/web_20261031/web_agent_open.png`，注：仓库里旧的 `web_agent.png` 是 10-23 的过期构建，已确认不可用），并补齐设置中「Auto-save edit drafts」原先只有开关没有行为的缺口。
-
-- **Agent 面板按截图重建**：头部只保留「Untitled」与 3 个 32×32 图标（历史 / 新建 / 收起），移除原生的紫色头像与「● Flash ACTIVE」徽章；问候语改为 system 15pt 单行；三个建议胶囊改为 system 12pt、h38、r12、`#0F0F0F` 无描边、铺满 332pt 内容宽；提示段改为 system 12pt neutral-500 两行；composer 保持 340×130 / r16 / `#171717` / white-8 描边，并新增**模型胶囊**（✳ + "Opus 5.5"，h24、r8、white/5，`AgentPanelView.modelLabel` 可外部设置），发送键 32×32（空态紫 42%、有内容变白底黑箭头）；对话区用户消息右侧白/8 气泡，Agent 消息左侧无气泡正文、仅每轮首条显示 40pt 头像，工具/CLI 行仍为等宽 11.5。面板几何对齐实测值：顶部 56（内容区顶 +12）、右 16、宽 364。
-- **草稿自动保存（崩溃恢复）**：新增 `Sources/Engine/DraftAutosave.swift`——按设置里的 `voo.editor.autoSaveDrafts` 开关，在编辑时以 3s 去抖把归一化 `.voo` 快照写入 `Application Support/VOO Design/Drafts/`；下次启动若草稿比对应磁盘文件更新（或文件根本不存在），自动恢复并提示「已恢复上次未保存的草稿」；保存成功后清理对应草稿；测试通过 `VOO_DRAFT_DIR` 重定向到临时目录，不触碰真实用户目录。该开关此前只持久化键值，现在有真实行为。
-
-验证：`./build.sh` 通过（binary 4.85 MB ≤ 5 MB，bundle 10.17 MB ≤ 35 MB）；`./tests/run_tests.sh` **384/384 通过**（新增草稿开关/写盘/恢复/丢弃断言）。截图：`native_studio/docs/screenshots/z_agent.png`（2x retina 抓取）。
-仍未覆盖：Light interface 仍无浅色主题实现；标题栏仍为「打开/保存」语义；约束不处理旋转后的钉扎。
-
-## 原生界面优化（第六轮：标题栏双态完全对齐 Web 1:1 + 页码胶囊宽度微调）— 2026-10-31
-
-基于当前实时 Web 截图对比（`web_titlebar_right.png` 与 `web_dashboard_titlebar_right.png`），将标题栏在编辑器态与工作台态的双态结构完全对齐 Web 真实渲染：
-
-- **编辑器态标题栏（右侧）**：
-  - 新增协作分享按钮 `[+]`（22×22 圆形胶囊，悬浮加深）以及 1×16 分隔线（`bg-white/10`），点击触发原生协作分享逻辑（`titleBar.onCollabTapped`）；
-  - 移除「打开」按钮上不属于 Web 桌面版的文件夹图标（Web 桌面端为纯文字按钮）；
-  - 保持 `[+] [|] 打开 保存 浏览器 齿轮` 的精确顺序与边距（按钮高 28，齿轮距右侧 16pt，间距 8pt/4pt）。
-- **工作台态标题栏（右侧）**：
-  - 隐藏设置齿轮（因为 Web 工作台的设置入口是在左下角浮动按钮 `fixed bottom-3 left-6`）；
-  - 保持 `导入`（ghost 按钮）、`新建`（白底黑字药丸）以及浏览器 Globe 按钮（右对齐距右边缘 16pt）；
-  - 状态切换时动态切换 Trailing 约束，无缝自适应。
-- **页码胶囊（PageSwitcherPillView）宽度与字体微调**：
-  - 字体从等宽字体改为与 Web 一致的系统比例无衬线字体（Inter / system sans 12pt regular），解决由于等宽字体导致胶囊偏宽 18px 的视觉偏差；
-  - 重新跑 `scripts/native-parity-check.py` 实测结果：
-    - 工具轨 (ToolRail): `dx=+1, dy=+0, dw=-1, dh=+0`
-    - 图层卡片 (Layers): `dx=-2, dy=-1, dw=+0, dh=+1`
-    - 页码胶囊 (PagePill): `dx=+0, dy=+0, dw=-2, dh=+0`（与 Web 仅相差 2px，高度位置完全重合）
-    - 属性卡片 (Properties Card): Web `(1131, 119, 286, 731)` vs 原生 `(1133, 115, 286, 735)` -> 宽度 286 完全一致，高度仅相差 4px
-    - Agent 面板: 均为 `(1050, 40, 385, 850)` 空间重合
-- **缩放条 ⋯ 更多菜单完全对齐 Web**：
-  - 补全「自适应画板 (Fit to Screen) ⇧1」、「显示标尺 (Rulers)」、「清除所有参考线 (Clear Guides)」、「网格 (Grid) ⌃'」、「磁性吸附 (Snap to Grid)」完整项；
-  - 真实联动画布 `zoomFit`、`showRulers` 状态持久化与 `guides.removeAll()`。
-
-验证：`./build.sh` 通过（binary 4.92 MB ≤ 5 MB，bundle 10.25 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **386/386 通过**（新增缩放条更多菜单及标题栏协作与工作台布局测试）。截图：`native_studio/docs/screenshots/z_editor.png`、`native_studio/docs/screenshots/z_dashboard.png`。
-仍未覆盖：Light interface 仍无浅色主题实现；约束不处理旋转后的钉扎。
-
-## 原生界面优化（第七轮：图层层级快捷键与菜单 1:1 对齐）— 2026-10-31
-
-- **图层排序快捷键对齐 Web & Figma 工业标准**：
-  - `[`：下移一层（Send Backward / `sendBackwardAction`）；
-  - `]`：上移一层（Bring Forward / `bringForwardAction`）；
-  - `⌘[`：置底（Send to Back / `sendToBackAction`）；
-  - `⌘]`：置顶（Bring to Front / `bringToFrontAction`）；
-  - `⌘J` / `⌘\`：切换显示/隐藏右侧 AI Agent 面板。
-- **全方位打通三处操作入口**：
-  - 菜单栏「图层与几何 (Geometry)」子菜单；
-  - 画布右键上下文菜单（Context Menu）；
-  - 全局键盘事件监听器 `handleKeyDown`（输入框处于编辑聚焦状态时自动规避，仅在非编辑时生效）。
-- **新增回归测试**：`test_LayerOrdering_StepAndJumpActionsAndShortcuts`，验证单步与跳跃重排的正确性与撤销链完整性。
-
-验证：`./build.sh` 通过（binary 4.92 MB ≤ 5 MB，bundle 10.25 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **387/387 通过**。
-仍未覆盖：Light interface 仍无浅色主题实现；约束不处理旋转后的钉扎。
-
-## 原生界面优化（第八轮：旋转画板约束联动与多层级嵌套自适应）— 2026-10-31
-
-- **旋转画板（Rotated Frame）约束空间投影**：
-  - 支持画板带有任意旋转角（`rotation != 0`）时的子节点自动约束计算；
-  - 核心算法：将画布全局绝对坐标通过逆变换矩阵投影至画板自身的局部正交坐标系（沿画板旋转后的宽高向量轴 $(\cos\theta, \sin\theta)$ 与 $(-\sin\theta, \cos\theta)$），在局部空间完成与未旋转画板完全等价的 `left/center/right/scale` 和 `top/middle/bottom/scale` 钉扎计算，再通过正变换投影回画布空间；
-  - 彻底消除了旋转画板拉伸时子节点沿未旋转绝对轴跑偏的问题。
-- **嵌套画板（Nested Frames）递归级联重排**：
-  - 当子画板因外层画板的 `scale` 约束发生尺寸变化时，自动递归调用 `applyConstraints(frameId:)` 重新排列其内部子图层。
-- **新增回归测试**：`test_Constraints_RotatedFramePinsAlongLocalAxes`，精准验证 90° 旋转画板拉伸时右侧钉扎子节点沿局部轴正确定位（共 388 项测试，100% 通过）。
-
-验证：`./build.sh` 通过（binary 4.94 MB ≤ 5 MB，bundle 10.26 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **388/388 通过**。
-
-## 原生界面优化（第九轮：浅色界面主题架构与设置联动）— 2026-10-31
-
-- **浅色主题协调器（ThemeManager）实现**：
-  - 新增 `native_studio/Sources/UI/ThemeManager.swift`，与 Web `use_editor_theme.js` 与 `theme-light.css` 保持严格规范对齐（持久化键 `voo.editor.theme`，支持 `dark` / `light` 双向切换）；
-  - 遵循 Web 设计哲学：“It is deliberately scoped to the app chrome: the document canvas keeps its own background/checkerboard”；画布保持自身真实渲染与设计稿色彩，界面外框与顶栏根据主题无缝切换；
-  - 浅色模式下：窗口底色自动切换为 `#f5f5f5`，编辑外框背景切换为 `#f5f5f5`，标题栏自动绘制 `#fafafa` 平铺背景与浅色底边描边 `rgba(0,0,0,0.1)`；
-  - 深色模式下：完全保留既有的 `#000000` / `#171717` 与薄荷到纯黑的标志性渐变顶栏，386+ 测试基线 100% 字节无损。
-- **设置面板开关真实联动**：
-  - `WindowController` 接入 `settingsDrawer.onToggleLightInterface`，设置中点击“Light interface”开关立即广播并触发各视图片段重绘。
-- **新增回归测试**：`test_ThemeManager_LightAndDarkSwitchingAndWindowBackground`，验证浅色/深色模式切换、持久化、以及窗口背景色在 `#171717` 与 `#f5f5f5` 间的精准切换。
-
-验证：`./build.sh` 通过（binary 4.94 MB ≤ 5 MB，bundle 10.27 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **389/389 通过**。
-
-## 原生界面优化（第十轮：AI 智能体模型名动态联动与多 Provider 适配）— 2026-10-31
-
-- **AI 侧栏模型胶囊动态联动**：
-  - `WindowController` 增加 `syncAgentModelLabel()`，自动监听 `SettingsDrawerView.onAgentChange` 与 `UserDefaults` 中的 `voo.agent.llmProvider` 配置；
-  - 动态为不同 Provider 映射最精准的友好模型标签：
-    - Claude Code $\to$ `Opus 5.5`（与 Web 截图默认模型标签完全对齐）
-    - OpenAI Codex $\to$ `GPT-5`
-    - Google Antigravity $\to$ `Gemini 3.8`
-    - DeepSeek Harness $\to$ `DeepSeek V3`
-    - OpenCode $\to$ `OpenCode`
-    - 用户自定义 `voo.agent.model` 时自动优先采用自定义模型名；
-  - 设置中切换 Provider 时立即实时刷新 Agent 侧栏输入框内的胶囊标签。
-- **新增回归测试**：`test_AgentPanel_ModelLabelSyncWithProvider`，验证默认映射、各提供商切换、以及自定义模型配置优先级的完整流转。
-
-验证：`./build.sh` 通过（binary 4.95 MB ≤ 5 MB，bundle 10.27 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **390/390 通过**。
-
-## 原生界面优化（第十一轮：选区浮动条方位逻辑精准对齐与遮挡消除）— 2026-10-31
-
-- **选区浮动条（Island Bar）垂直空间拓扑修复**：
-  - 彻底根治了此前因为非翻转坐标系方向误判，导致选择条被错误推到选区上方、并遮挡文本图层顶部控标的缺陷；
-  - 严格对标 Web `top: calc(100% + 8px)` 的几何物理定义：默认置于选区底边缘下方 8pt (`minY - gap - height`)，居中显示；
-  - 空间边缘检测：当选区靠近画布底部、会导致浮动条与底部缩放控制栏（Zoom Bar，顶部位于 $y=56$）发生碰撞重叠时，自适应向上翻转（Flip Above）至选区顶边上方；
-  - 截屏复核：选区图层、文字手柄与下方 8pt 处的新版 12 键浮动条层次分明，零遮挡、零边缘冲突。
-
-验证：`./build.sh` 通过（binary 4.95 MB ≤ 5 MB，bundle 10.27 MB ≤ 35 MB，冷启动 0.31~0.5s）；`./tests/run_tests.sh` **390/390 通过**。截图：`native_studio/docs/screenshots/z_selected.png`。
-
-## 原生界面优化（第十二轮：全格式真实 .voo 解析、工作台真实封面、自由画布平移、工具轨顺序与画笔绘制重构）— 2026-11-01
-
-针对用户真机运行反馈的四项核心缺陷进行全链路深度修复：
-
-1. **彻底解决 .voo 打开报错（“The data couldn't be read because it is missing”）**：
-   - 根因定位：Swift 自动合成的 `Codable` 在面对 Web 导出的真实工程文件时，因缺少 `id`、`title`、`canvas` 或 `style` 嵌套字典而抛出 `keyNotFound`，被系统弹出该错误；
-   - 解决方案：在 `DocumentModel.swift` 中为 `VOODocument`、`VOONode`、`PenAnchor` 实现健壮的容错解码器（`FlexibleNumber` / `FlexibleBool` / `FlexibleString`），支持展平属性与嵌套 `style` 互通、字符串数值与浮点数自适应转换、缺失属性赋予安全默认值；实测验证 Web 导出的 4 个真实复杂工程文件（131 节点的 `f1-grand-prix.voo` 等）全量无损秒开！
-2. **工作台卡片真实封面提取与展示**：
-   - 根因定位：此前代码硬编码调用 `drawThumbnailWireframe` 绘制 3 根灰色占位柱，未解析工程文件的封面；
-   - 解决方案：在 `WelcomeDashboardView` 中增加极速二进制预览解析器，直接从 `.voo` 容器切片提取 `assetIndex["__preview"]` 的 PNG 图像数据并做 `NSCache` 缓存；在非翻转坐标系下进行纵向反转校正后做高保真 `aspectFill` 渲染，彻底替换假骨架柱！
-3. **工具轨图标顺序与类别严格对齐 Web**：
-   - 工具轨顺序修正为：`选择 (Select)` $\to$ `抓手 (Hand)` $\to$ `画板 (Frame)` $\to$ `裁切 (Crop)` $\to$ `选区 (Marquee)` $\to$ `画笔 (Brush)` $\to$ `橡皮 (Eraser)` $\to$ `文字 (Text)` $\to$ `钢笔 (Pen)` $\to$ `形状 (Shapes)` $\to$ `魔棒 (Wand)`，消除了画板与裁切颠倒、钢笔插在文字前等历史排布偏差。
-4. **画布自由平移手势支持（Web 1:1 自由画布手势）**：
-   - 点击空白灰色舞台背景直接拖拽平移画布（此前误判为矩形框选导致用户无法拖动背景）；
-   - 增加鼠标中键（滚轮按压）拖拽平移支持（`otherMouseDown/Dragged/Up`）；
-   - 保持空格键与抓手工具平移无缝可用。
-5. **画笔工具自由绘制与图层提交重构**：
-   - 修复画笔图层位图缓存与提交复用逻辑，避免单次绘制后清空位图或生成重复图层，在 `stampPaint` 增加即时 `context.flush()`，确保即画即显、持久保存。
-6. **新增回归测试**：
-   - `test_WebExamples_RealVooFilesDecodeAndLoadCleanly`：验证 4 款真实复杂 Web 工程文件（含 191 个贝塞尔路径点）解码；
-   - `test_WindowController_OpenRealVooFileDirectlyLoadsSceneAndSetsTitle`：验证端到端从工作台打开真实 .voo 文件进入画布并切换视图。
-
-验证：`./build.sh` 通过（binary 4.97 MB ≤ 5 MB，bundle 10.29 MB ≤ 35 MB，冷启动 0.20~0.50s）；`./tests/run_tests.sh` **392/392 通过**。真机截图：`native_studio/docs/screenshots/z_dashboard_with_covers.png`。
+这里是唯一持续维护的进度入口。更新时间：2026-11-02。
+
+## 当前结论
+
+**全分支整合正在验收，尚未认证整个项目或所有平台。**
+历史分支已进入整合候选，但合并冲突曾覆盖已通过的行为，不能以 Git
+祖先关系代替功能验收。本轮不创建标签、草稿 Release 或公开版本。
+
+- 候选基线：`965bbd889bc121860564d2b82f25df5b4c7e78dd`。
+- 原生继续复刻截止：`90577a75ef434140a323df957a43bf0f147602f0`，
+  包含窗口宽度与主队列时序修复 `2a4c98c`。
+- 原始 21 个工作树清单、4 份未提交快照、合并冲突与执行日志：
+  `/private/tmp/voo-branch-integration-20261101/`。快照提交均保留在历史中。
+- 其他任务后来新增的主工作区改动与旧 stash 保留，不静默覆盖或丢弃。
+- 当前独立验收副本：`/private/tmp/voo-consolidation-acceptance-20261102`。
+  两个先前验收目录被并行清理任务删除；清理现已由用户暂停。
+
+## 本轮恢复与检查
+
+| 模块 | 修复或保留范围 | 当前执行状态 |
+| --- | --- | --- |
+| workspace | 首页一个高级入口、自动尺寸、冷启动新建、Browser 手机上下分屏与单一导入入口 | 定向通过；完整浏览器待跑 |
+| platform | Agent 重命名、图片附件共用状态、仅向当前编辑器写入、协作 URL 规范化 | 定向通过；真实服务不计通过 |
+| layers / selection | 画布交互修复与设计问题面板保留 | 完整浏览器待跑 |
+| layout / text / inspector | 3 份旧审计转正常回归，约束、斜体、快捷键不再使用预期失败 | 12 项通过 |
+| platform.native | 生产窗口压缩优先级、FIFO 主队列与窄窗口工具栏 | 本副本 -Onone 集成 485/485 通过；不认证安装器 |
+| inventory | 12 模块、115 组能力、114 核心浏览器、9 独立检查完整登记 | 登记检查通过；不是执行通过 |
+
+本候选工作副本：定向 **10 文件 / 68 项通过**，设计 **1474 文件通过**，
+模块登记通过、构建通过，原生集成 485/485 通过。它们是脏副本定向结果，**不是固定提交发布认证**。
+日志：`isolated-targeted.log`、`isolated-build.log`（上述证据目录）。
+
+合并回归先复现再修复：独立用例 3 项失败 → 3 项通过；旧审计中
+4 项预期失败实际已修好，改成正常断言，另同步 Skia 真实像素行高语义。
+先前失败日志保留，不通过删断言、调宽像素阈值或跳过用例凑通过。
+
+## 文档复核后的剩余任务
+
+以下为剩余上下文或专项工作，不把旧报告里已实现的功能再记为缺失。
+`.pen` 写出、Mesh Gradient、Agent 样式/文字扩展已在代码中接入。
+
+1. **整合门禁**：在干净固定提交执行全部单测、设计、构建和 114 组
+   核心浏览器；修复真实失败后再走普通 PR 合入 main、SSH la2 预览。
+2. **真实外部服务**：独立的 Claude/Codex/MCP CLI、付费图片与模型服务、
+   登录后的扩展流程需另验。无费用夹具或 Codex 自带生成不能证明项目 API 可用。
+3. **原生/设备**：Swift 应用仍是部分对齐；签名 Electron 安装、升级、
+   实体 IME/触摸/笔、WebKit、其他 OS 不能由 Chromium 或 Swift 单测认证。
+4. **性能**：大型 `.fig` 的真实文件缩放/字体属性保真、全局缓存内存预算、
+   多场景硬件 FPS 仍需专项。继续按实际依赖边界拆大文件；源码拆分不等于包体下降。
+5. **组合覆盖**：蒙版、效果、文字/布局、变量与资源在多重嵌套、取消、
+   撤销、重开及导出中的完整交叉组合尚未穷尽。
+6. **独立检查**：3 组外部 CLI；`critical_flows` 本地夹具；2 组 native；
+   `canvas_fps` 硬件；`image-network` 网络模型；`ui-audit` 基线待审。
+   未执行的项目必须保留 not-run，不能归入核心通过。
+7. **来源与维护**：OpenDesign 原始导入来源版本仍需补齐；历史分析资料、
+   草稿备份和其他任务工作树只核对来源，不因本轮合并擅自删除。
+
+详细能力归属：[工程验收流程](engineering-workflow.md)、
+[模块目录](../scripts/editor-module-catalog.mjs)、[审计索引](README.md)。
+
+## 已发布版本与后续发布规则
+
+当前已发布桌面版为 [Beta2](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.2)，
+固定源码 [`ae85951`](https://github.com/umaxzhao/voo-design/commit/ae85951133f38d2fe3b15e39cd7f58015c073238)。
+[Web/四平台打包门禁](https://github.com/umaxzhao/voo-design/actions/runs/41314772574)
+与 [Mac 签名](https://github.com/umaxzhao/voo-run/actions/runs/41314779042) 分开通过。
+Mac Intel/Apple Silicon 已签名、公证；Windows 未签名。
+这份历史验证不证明本轮整合代码或人工安装升级通过。
+
+**仅在用户再次明确允许时发版。** 普通提交、PR 与 Web 预览不创建 Release。
+未来面向用户的下载入口只列安装包；自动更新必需元数据可保留，CI 报告与
+签名收据放 CI 证据，不混入用户下载列表。本轮不修改已发布 Beta2。
+
+## 历史记录
+
+- [界面、审计和发布旧记录](quality-history-ui.md)
+- [交互、原生与介绍页面旧记录](quality-history-native.md)
+- [原生专项与仍未完成范围](../native_studio/INTERACTION_PARITY.md)
+- [签名和发布清单](release-checklist.md)
+
+历史记录保留原提交、失败和限制；其中“本轮”“未提交”“当前”只属于
+当时版本。后续每轮只更新本入口当前状态，并记录精确提交与证据。

@@ -50,4 +50,8 @@ Run `node scripts/verify-editor-release.mjs` on the exact clean commit being rel
 | [audits/benchmark-parity-audit.md](audits/benchmark-parity-audit.md), [audits/benchmark-parity-matrix.md](audits/benchmark-parity-matrix.md) | Benchmark parity | Historical |
 | [audits/qa3-round3.md](audits/qa3-round3.md) | QA round 3 | Historical |
 
+Historical 2026-10-26 effect reports imported from the retained audit branches: [constraints](audits/historical-effects-constraints.md), [panel](audits/historical-effects-panel.md), [tools](audits/historical-effects-tools.md). Their old defect labels are historical; converted regressions belong to the normal unit gate.
+
 Known bug write-ups: [bugs/](bugs/).
+
+Archived progress: [UI and audit history](quality-history-ui.md), [interaction and native history](quality-history-native.md). Current status remains [quality-progress.md](quality-progress.md).

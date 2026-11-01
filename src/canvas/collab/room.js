@@ -157,15 +157,14 @@ export function parseRoomId(input) {
   if (!text) return null;
   if (isValidRoomId(text)) return text;
 
-  // Check URL query parameter: ?r=abcdefgh or ?room=abcdefgh
+  // Public editor links carry their room in the query; legacy /r/ paths remain valid.
   try {
-    const url = new URL(text.startsWith("/") ? `https://voo.run${text}` : text);
-    const fromQuery = url.searchParams.get("r") ?? url.searchParams.get("room");
-    if (fromQuery && isValidRoomId(fromQuery.trim())) {
-      return fromQuery.trim();
-    }
-  } catch {
-    // Not a full URL, continue to pathname extraction
+    const url = new URL(text, CANONICAL_ORIGIN);
+    const queryRoom = url.searchParams.get("r") ?? url.searchParams.get("room");
+    if (queryRoom && isValidRoomId(queryRoom.trim())) return queryRoom.trim();
+  } catch (error) {
+    if (!(error instanceof TypeError)) throw error;
+    // Malformed URLs may still be legacy room paths handled below.
   }
 
   // `voo://r/abcdefgh` is the deep link the desktop app is launched with. The
@@ -191,10 +190,8 @@ export function deepLinkUrl(roomId) {
 /** The room this page was opened into, or null for an ordinary editor load. */
 export function roomIdFromLocation(location = globalThis.location) {
   if (!location) return null;
-  // Two shapes, because two things produce them: `/r/<id>` is the link people
-  // share, and `?r=<id>` is what the landing page falls back to when the
-  // desktop app did not take the deep link — the editor lives under /editor/,
-  // so it cannot keep the room in its path.
+  // Current public links open /editor/?r=<id>; retain legacy /r/<id> paths
+  // and the desktop deep-link handoff for existing invitations.
   const fromPath = parseRoomId(location.pathname ?? "");
   if (fromPath) return fromPath;
   try {

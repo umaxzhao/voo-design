@@ -217,7 +217,7 @@ function restoreBuildContext(editor, context) {
   } else if (Array.isArray(context.ids)) editor.selectExactly?.(context.ids);
 }
 
-function* buildLayoutSteps(args = {}, editor = typeof window !== "undefined" ? window.__vooEditor || Object.values(window.__vooEditors || {})[0] || null : null) {
+function* buildLayoutSteps(args = {}, editor = typeof window !== "undefined" ? window.__vooEditor : null) {
   validate(args);
   if (!editor) throw Object.assign(new Error(TOOL_ERROR.NO_EDITOR), { code: TOOL_ERROR.NO_EDITOR });
   if (args.parentId) {
@@ -303,7 +303,7 @@ export function buildLayout(args = {}) {
 
 /** Agent entry presents the same validated operations between real paint frames. */
 export async function buildLayoutForAgent(args = {}, context = {}) {
-  const editor = context.editor ?? (typeof window !== "undefined" ? window.__vooEditor || Object.values(window.__vooEditors || {})[0] || null : null);
+  const editor = context.editor ?? (typeof window !== "undefined" ? window.__vooEditor : null);
   if (!editor) return buildLayout(args);
   const timeline = createAuthoringTimeline(editor, { signal: context.signal });
   const steps = buildLayoutSteps(args, editor);

@@ -1,3 +1,21 @@
+## 参考线、文字宽度与窄工具栏 — 2026-11-02
+
+**声明范围通过，整体 1:1 未通过。** 固定源码 [`2a4c98c`](https://github.com/umaxzhao/voo-design/commit/2a4c98c18e7d3621c1565e3dfe90395dddfd886f)；[执行/指纹/截图记录](../docs/audits/native-parity/continuation/verification.json)。本轮只更新原生版，原工作区草稿及已有测试文档编辑保留。
+
+| 能力 | 修复与回归 | 覆盖边界 |
+| --- | --- | --- |
+| `platform.native-view-aids` | Eye只切参考线；Shift+R只切标尺，Cmd/Ctrl+分号切参考线、Option组合清除并一次撤销。隐藏参考线不参与吸附，切视图不污染文档/history/pan。 | 5项回归；稍早同轮生产构建实机确认独立可见性，非最终全UI视觉认证。 |
+| `platform.native-text-box` | 自动/固定模式、8–8192宽度输入及拖动事务；共享测量/绘制/编辑换行，内容变化更新边界。样式/宽度撤销恢复完整节点，归零拖动保留旧Redo。 | 5项回归；稍早实机Number182×37→Auto109×37→Fixed80×73两行并撤销恢复。普通文字按Electron保持x/y；AutoLayout父重排未覆盖。极窄单字溢出与Web相同，非强裁切。 |
+| `platform.native-responsive-toolbar` | 44px目标/4px间隔、裁剪视口、滚轮滚动；编辑区≤768左8/top8，其余居中/top16。放低宿主水平抗压与preferred宽度优先级。 | 10项工具栏/布局回归含真实studioWindow最小窗口；最终实机960×600打开Agent不再撑至986，垂直滚轮到末端。CUA水平滚动未移动，不登记通过。 |
+
+修复中完整执行发现两次AppKit布局循环：首先是隐藏ContextualTaskbar重复重建NSStackView，增加状态去重/异步合并；其次是宿主layout内修改工具栏约束，改主队列合并更新并只初始化一次协调器。仅移除已退役隐藏taskbar不能修复第二循环，失败A/B保留。旧工作流“全部工具必须同时处于窄视口”断言改为真实44px目标与滚动端点；保留画笔重入断言。异步菜单等待改FIFO主队列哨兵且超时显式失败，没有放宽动作断言。
+
+执行：**485/485 -Onone、485/485 -Osize/WMO、11/11模块规划**；12模块/91能力登记有效。最终生产二进制4,930,032 bytes，ad-hoc签名及5MiB门禁通过。生产与最终QA代码段SHA相同。新增Swift严格格式/lint零诊断；旧触及文件全量lint仍1,542条（基线1,555），零新增，不能称lint全绿。初次构建/测试误并行共享ModuleCache失败后改为顺序执行，最终完整重跑，原始失败日志保留。
+
+构建增加WMO且保留-Osize/资源/大小门禁。同一5d8c1ca源码A/B为5,235,248→4,890,720 bytes，19资源与Info.plist哈希一致、签名有效；候选465/465非沙箱检查通过，初次沙箱460/465的Metal/剪贴板服务拒绝不计通过。该6.58%是固定旧源码比较，不冒充本轮新增功能前后差值。
+
+仍未验收：窄窗口左右卡片挤占画布，其他工具家族/系统效果菜单、浅色、完整多选/原型；复杂CJK标点、ZWJ/组合字/连字/RTL/负字距、IME与VoiceOver。导入lineHeight<0.8仍被原生钳制，非1倍编辑kern缩放、导入boxWidth>8192和AutoLayout父重排未覆盖；键盘Tab自动滚动和GUI默认O_EVTONLY监听事件未验证。不得由本轮登记断言推导完整功能/像素一致。
+
 ## 控件逐态复刻与启动阻塞修复 — 2026-11-01
 
 **本轮声明范围已修复并验证，整体 1:1 仍为部分。** 固定源码 [`97b6bee`](https://github.com/umaxzhao/voo-design/commit/97b6bee3d4a9ac039f3268dbfbbee4a99d6d343e)，以同字节 FORM 的 Number 图层及本地 Electron 为对照；未使用测试数替代完整视觉/功能覆盖。[截图、指纹与逐项证据](../docs/audits/native-parity/control-details/verification.json)。

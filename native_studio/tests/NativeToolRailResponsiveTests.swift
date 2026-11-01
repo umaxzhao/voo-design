@@ -67,7 +67,7 @@
                 for open in [false, true, false] {
                     content.setAgentPanelOpen(open)
                     content.layoutSubtreeIfNeeded()
-                    RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.01))
+                    try drainMainQueue()
                     content.layoutSubtreeIfNeeded()
                     content.toolRail.layoutSubtreeIfNeeded()
                     let rail = content.toolRail
@@ -76,7 +76,8 @@
                     try TestAssertions.assertTrue(
                         frame.maxX <= (open ? content.agentPanel.frame.minX : 956))
                     let shell = rail.superview!
-                    let topInset = shell.isFlipped ? rail.frame.minY : shell.bounds.maxY - rail.frame.maxY
+                    let topInset =
+                        shell.isFlipped ? rail.frame.minY : shell.bounds.maxY - rail.frame.maxY
                     try TestAssertions.assertApproxEqual(topInset, open ? 8 : 16)
                     if open {
                         try TestAssertions.assertApproxEqual(rail.frame.minX, 8)
@@ -127,7 +128,7 @@
                 try TestAssertions.assertEqual(
                     taskbarButtons(bar).map(ObjectIdentifier.init), original,
                     "No NSStackView structure may change inside the calling layout pass")
-                drainMainQueue()
+                try drainMainQueue()
                 let glyphs = taskbarButtons(bar).map { String(describing: $0.glyph) }
                 try TestAssertions.assertTrue(glyphs.contains("unlock"))
                 try TestAssertions.assertTrue(glyphs.contains("eyeOff"))
@@ -152,7 +153,7 @@
                 bar.update(selectedNodes: [node])
                 node.style.locked = false
                 bar.update(selectedNodes: [node])
-                drainMainQueue()
+                try drainMainQueue()
                 try TestAssertions.assertEqual(
                     taskbarButtons(bar).map(ObjectIdentifier.init), original)
             }
@@ -165,7 +166,7 @@
                 let group = VOONode(id: "group", kind: .group, x: 0, y: 0, width: 20, height: 20)
                 bar.update(selectedNodes: [rect], isPathEditing: true)
                 try TestAssertions.assertEqual(bar.currentMode, .pathEditing)
-                drainMainQueue()
+                try drainMainQueue()
                 try TestAssertions.assertTrue(
                     taskbarButtons(bar).contains {
                         if case .finishPath = $0.glyph { return true }
@@ -173,19 +174,145 @@
                     })
                 bar.update(selectedNodes: [rect, group])
                 try TestAssertions.assertEqual(bar.currentMode, .multiSelection)
-                drainMainQueue()
+                try drainMainQueue()
                 let ungroup = taskbarButtons(bar).first {
                     if case .ungroup = $0.glyph { return true }
                     return false
                 }!
                 try TestAssertions.assertTrue(ungroup.isEnabled)
                 bar.update(selectedNodes: [rect, rect])
-                drainMainQueue()
+                try drainMainQueue()
                 let disabledUngroup = taskbarButtons(bar).first {
                     if case .ungroup = $0.glyph { return true }
                     return false
                 }!
                 try TestAssertions.assertFalse(disabledUngroup.isEnabled)
+            }
+            registry.register(
+                tier: 3, feature: "Native-ToolRail",
+                name: "test_AttachedWindowLayoutSettlesAcrossWelcomeAgentAndResizeCycles"
+            ) {
+                let window = NSWindow(
+                    contentRect: CGRect(x: 0, y: 0, width: 960, height: 600),
+                    styleMask: [.titled, .resizable], backing: .buffered, defer: false)
+                window.isReleasedWhenClosed = false
+                let content = MainContentView(frame: CGRect(x: 0, y: 0, width: 960, height: 600))
+                window.contentView = content
+                defer {
+                    window.contentView = nil
+                    window.close()
+                }
+                let stage = content.canvasStageView
+                let node = VOONode(
+                    id: "layout-regression", kind: .rect,
+                    x: 0, y: 0, width: 20, height: 20)
+                stage.document.nodes.append(node)
+                stage.selectedNodeIds = [node.id]
+                content.sessionHasSelection = true
+                content.islandBar.update(selectionLabel: "Layout regression")
+                let first = content.toolRail.moveToolButton
+                for width in [CGFloat(960), 1152, 960] {
+                    window.setContentSize(CGSize(width: width, height: 600))
+                    for welcome in [false, true, false] {
+                        content.isWelcomeOpen = welcome
+                        for agent in [false, true, false] {
+                            content.setAgentPanelOpen(agent)
+                            for _ in 0..<3 {
+                                content.needsLayout = true
+                                window.layoutIfNeeded()
+                                try drainMainQueue()
+                                window.layoutIfNeeded()
+                            }
+                            try TestAssertions.assertNil(
+                                stage.contextualTaskbar.superview,
+                                "The retired taskbar must not participate in window layout")
+                            try TestAssertions.assertTrue(content.islandBar.superview != nil)
+                            try TestAssertions.assertEqual(
+                                content.islandBar.isHidden, welcome || agent)
+                            if !welcome && !agent {
+                                try TestAssertions.assertTrue(content.islandBar.frame.width > 0)
+                            }
+                            try TestAssertions.assertTrue(content.toolRail.moveToolButton === first)
+                            try TestAssertions.assertApproxEqual(first.frame.width, 44)
+                            let rail = content.toolRail
+                            let constraints = rail.superview!.constraints.filter {
+                                $0.isActive && ($0.firstItem as? NSView) === rail
+                                    && [.top, .centerX, .leading].contains($0.firstAttribute)
+                            }
+                            try TestAssertions.assertEqual(
+                                constraints.count, 2,
+                                "One placement owns exactly a top and one horizontal constraint")
+                        }
+                    }
+                }
+            }
+            registry.register(
+                tier: 3, feature: "Native-ToolRail",
+                name: "test_ProductionWindowStaysAtMinimumSizeWhenAgentOpensAndCloses"
+            ) {
+                let controller = WindowController()
+                let window = controller.studioWindow
+                let content = controller.mainContentView
+                let target = CGSize(width: 960, height: 600)
+                defer {
+                    // This fixture owns a fresh controller and never edits a document.
+                    // Detach its delegate during cleanup so failures cannot open a discard alert.
+                    window.orderOut(nil)
+                    window.delegate = nil
+                    window.close()
+                }
+                try TestAssertions.assertEqual(window.minSize, target)
+                try TestAssertions.assertTrue(window.styleMask.contains(.fullSizeContentView))
+                try TestAssertions.assertTrue(window.styleMask.contains(.resizable))
+                content.isWelcomeOpen = false
+                window.orderFront(nil)
+                window.setFrame(CGRect(origin: window.frame.origin, size: target), display: true)
+                try settleWindow(window)
+                try TestAssertions.assertEqual(window.frame.size, target)
+                for open in [true, false, true, false] {
+                    content.setAgentPanelOpen(open)
+                    try settleWindow(window)
+                    try TestAssertions.assertEqual(
+                        window.frame.size, target,
+                        "Opening Agent must not increase the production window minimum to 986pt")
+                    let rail = content.toolRail
+                    try TestAssertions.assertApproxEqual(rail.moveToolButton.frame.width, 44)
+                    if open {
+                        try TestAssertions.assertTrue(
+                            rail.bounds.width < 586,
+                            "The real window must exercise toolbar overflow rather than grow")
+                        rail.scrollTools(by: 1000)
+                        try TestAssertions.assertTrue(rail.toolScrollOffset > 0)
+                        let last = rail.healingButton!
+                        let visible = last.convert(last.bounds, to: rail)
+                        try TestAssertions.assertTrue(
+                            visible.minX >= 0 && visible.maxX <= rail.bounds.width)
+                        window.setFrame(
+                            CGRect(
+                                origin: window.frame.origin,
+                                size: CGSize(width: 1024, height: 600)), display: true)
+                        try settleWindow(window)
+                        window.setFrame(
+                            CGRect(origin: window.frame.origin, size: target), display: true)
+                        try settleWindow(window)
+                        try TestAssertions.assertEqual(
+                            window.frame.size, target,
+                            "The production window can resize back to 960pt while Agent is open")
+                    } else {
+                        try TestAssertions.assertApproxEqual(rail.toolScrollOffset, 0)
+                        try TestAssertions.assertApproxEqual(rail.bounds.width, 586)
+                    }
+                }
+                try TestAssertions.assertFalse(controller.hasUnsavedChanges)
+            }
+        }
+
+        private static func settleWindow(_ window: NSWindow) throws {
+            for _ in 0..<3 {
+                window.contentView?.needsLayout = true
+                window.layoutIfNeeded()
+                try drainMainQueue()
+                window.layoutIfNeeded()
             }
         }
 
@@ -194,8 +321,19 @@
             return stack.arrangedSubviews.compactMap { $0 as? TaskbarIconButton }
         }
 
-        private static func drainMainQueue() {
-            RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.01))
+        private static func drainMainQueue() throws {
+            let checkpoint = DispatchSemaphore(value: 0)
+            // FIFO ordering proves that all earlier queued presentation work ran;
+            // a fixed sleep does not establish that prerequisite under load.
+            DispatchQueue.main.async { checkpoint.signal() }
+            let deadline = Date(timeIntervalSinceNow: 2)
+            while Date() < deadline {
+                if checkpoint.wait(timeout: .now()) == .success { return }
+                RunLoop.main.run(mode: .default, before: Date(timeIntervalSinceNow: 0.01))
+            }
+            throw TestFailure(
+                message: "The main queue did not reach its FIFO checkpoint",
+                file: #file, line: #line)
         }
 
         private static func makeRail(width: CGFloat) -> ToolRailView {

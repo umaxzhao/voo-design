@@ -1,5 +1,8 @@
 # Tools area effect audit
 
+> Historical audit from 2026-10-26, imported during worktree integration. Defect labels below describe that revision. Tests now run as normal regressions in `tests/unit/legacy-*.test.js`; current execution evidence belongs to `docs/quality-progress.md`.
+
+
 ## Result
 
 This is a partial audit. The audit test verifies the keyboard routing table and family-menu router only. It does **not** establish that a selected tool changes the document or renders the expected result. No feature-effect defect was reproduced in this run; most requested effects remain unverified and are not counted as OK.

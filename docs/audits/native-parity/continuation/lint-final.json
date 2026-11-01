@@ -1,0 +1,124 @@
+{
+  "base": "5d8c1ca",
+  "configuration": {
+    "indentation": {
+      "spaces": 4
+    }
+  },
+  "legacy": [
+    {
+      "path": "native_studio/Sources/Canvas/CanvasStageView.swift",
+      "before": 421,
+      "after": 421,
+      "additional": []
+    },
+    {
+      "path": "native_studio/Sources/Canvas/TextEditingOverlay.swift",
+      "before": 15,
+      "after": 15,
+      "additional": []
+    },
+    {
+      "path": "native_studio/Sources/Engine/TextStyle.swift",
+      "before": 16,
+      "after": 16,
+      "additional": []
+    },
+    {
+      "path": "native_studio/Sources/Engine/native-paint-renderer.swift",
+      "before": 0,
+      "after": 0,
+      "additional": []
+    },
+    {
+      "path": "native_studio/Sources/UI/ContextualTaskbarView.swift",
+      "before": 25,
+      "after": 23,
+      "additional": []
+    },
+    {
+      "path": "native_studio/Sources/UI/EditorChrome.swift",
+      "before": 81,
+      "after": 81,
+      "additional": []
+    },
+    {
+      "path": "native_studio/Sources/UI/Inspector.swift",
+      "before": 83,
+      "after": 83,
+      "additional": []
+    },
+    {
+      "path": "native_studio/Sources/UI/PropertiesPanelView.swift",
+      "before": 461,
+      "after": 461,
+      "additional": []
+    },
+    {
+      "path": "native_studio/Sources/UI/ToolRail.swift",
+      "before": 39,
+      "after": 39,
+      "additional": []
+    },
+    {
+      "path": "native_studio/Sources/UI/WindowController.swift",
+      "before": 403,
+      "after": 392,
+      "additional": []
+    },
+    {
+      "path": "native_studio/Sources/UI/native-copy.swift",
+      "before": 0,
+      "after": 0,
+      "additional": []
+    },
+    {
+      "path": "native_studio/Sources/UI/native-typography-layout.swift",
+      "before": 0,
+      "after": 0,
+      "additional": []
+    },
+    {
+      "path": "native_studio/tests/NativeWorkflowParityTests.swift",
+      "before": 0,
+      "after": 0,
+      "additional": []
+    },
+    {
+      "path": "native_studio/tests/main.swift",
+      "before": 11,
+      "after": 11,
+      "additional": []
+    }
+  ],
+  "newFiles": [
+    {
+      "path": "native_studio/Sources/Engine/native-text-box-layout.swift",
+      "diagnostics": []
+    },
+    {
+      "path": "native_studio/Sources/UI/native-text-layout-actions.swift",
+      "diagnostics": []
+    },
+    {
+      "path": "native_studio/Sources/UI/native-tool-rail-placement.swift",
+      "diagnostics": []
+    },
+    {
+      "path": "native_studio/Sources/UI/native-view-aid-actions.swift",
+      "diagnostics": []
+    },
+    {
+      "path": "native_studio/tests/NativeTextWidthTests.swift",
+      "diagnostics": []
+    },
+    {
+      "path": "native_studio/tests/NativeToolRailResponsiveTests.swift",
+      "diagnostics": []
+    },
+    {
+      "path": "native_studio/tests/NativeViewAidParityTests.swift",
+      "diagnostics": []
+    }
+  ]
+}

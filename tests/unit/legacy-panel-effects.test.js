@@ -27,7 +27,7 @@ describe("right properties panel document effects", () => {
     expect(next.nodes[0].constraints).toEqual({ horizontal: "right", vertical: "bottom" });
   });
 
-  it.fails("reflows right/bottom constrained children when the canvas size drag grows the page", () => {
+  it("reflows right/bottom constrained children when the canvas size drag grows the page", () => {
     const doc = constrainedDocument();
     const resized = resizeDocumentEdges(doc, { right: true, bottom: true }, 100, 50);
 
@@ -66,12 +66,12 @@ describe("right properties panel document effects", () => {
       fontFamily: "Inter",
       fontSize: 18,
       fontWeight: 700,
-      lineHeight: 1.4,
+      lineHeight: 25.2,
       letterSpacing: 1,
     });
   });
 
-  it.fails("passes the panel italic field through the Skia text render input", () => {
+  it("passes the panel italic field through the Skia text render input", () => {
     const element = elementFor({
       id: "italic",
       kind: "text",

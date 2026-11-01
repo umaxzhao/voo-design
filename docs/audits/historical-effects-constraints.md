@@ -1,5 +1,8 @@
 # Constraints and resize effect audit
 
+> Historical audit from 2026-10-26, imported during worktree integration. Defect labels below describe that revision. Tests now run as normal regressions in `tests/unit/legacy-*.test.js`; current execution evidence belongs to `docs/quality-progress.md`.
+
+
 ## Summary
 
 The panel width/height edit path for a focused page with constrained top-level children explicitly runs `reflowConstraints`; the pure constraint math also returns the expected right/bottom geometry. Two other page resize entry points do not run that pass: the public `setDocumentSize` engine operation (also used by canvas presets) and the canvas edge drag (`resizeDocumentEdges`). Both defects are retained as expected-failure audit assertions.

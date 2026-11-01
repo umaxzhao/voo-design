@@ -211,10 +211,6 @@ export default function BrowserDrawerView({ model, onClose }) {
           </button>
           {toolsOpen && (
             <div role="menu" aria-label={t("browser.actions")} className="absolute right-0 top-full z-10 mt-2 flex w-52 flex-col rounded-xl border border-white/10 bg-neutral-900 p-1 shadow-panel">
-              <button type="button" role="menuitem" onClick={() => runTool(handleImportFullPage)} disabled={isLoading} className="flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-200 hover:bg-white/10 disabled:opacity-40">
-                <Download size={14} className="text-neutral-400" />
-                <span>{t("browser.importPage")}</span>
-              </button>
               <button type="button" role="menuitem" onClick={() => runTool(() => setShowCustomHtml((previous) => !previous))} className="flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-left text-neutral-200 hover:bg-white/10">
                 <Code size={14} className="text-neutral-400" />
                 <span>{t("browser.customHtml")}</span>

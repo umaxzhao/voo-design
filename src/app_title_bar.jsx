@@ -10,7 +10,7 @@ import { useI18n } from "./canvas/use_i18n.js";
 import CollabAvatars from "./canvas/components/collab_avatars.jsx";
 import SettingsDrawer from "./canvas/components/settings_drawer.jsx";
 import {
-  WELCOME_NEW_EVENT,
+  requestWelcomeNew,
   WELCOME_MENU_ACTION_EVENT,
 } from "./canvas/components/welcome_dashboard/welcome_events.js";
 import { moveEditorMenuFocus } from "./canvas/components/editor_menu_navigation.js";
@@ -46,6 +46,11 @@ export default function AppTitleBar() {
         { detail: welcomeOpen ? { action: "open-file" } : undefined },
       ),
     );
+
+  const handleNewOrExport = () => {
+    if (welcomeOpen) requestWelcomeNew();
+    else window.dispatchEvent(new CustomEvent("voo:file-export-snapshot"));
+  };
 
   useEffect(() => {
     if (!moreOpen) return undefined;
@@ -161,14 +166,7 @@ export default function AppTitleBar() {
           <button
             className="app-title-desktop-action disabled:cursor-wait disabled:opacity-40 inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap leading-none cursor-pointer rounded-lg bg-white px-3 py-1 font-medium text-black transition-opacity hover:opacity-90"
             type="button"
-            disabled={welcomeActionsPending}
-            onClick={() =>
-              window.dispatchEvent(
-                new CustomEvent(
-                  welcomeOpen ? WELCOME_NEW_EVENT : "voo:file-export-snapshot",
-                ),
-              )
-            }
+            onClick={handleNewOrExport}
             title={
               welcomeOpen
                 ? t("welcome.header.new")
@@ -244,13 +242,7 @@ export default function AppTitleBar() {
                   disabled={welcomeActionsPending}
                   onClick={() => {
                     setMoreOpen(false);
-                    window.dispatchEvent(
-                      new CustomEvent(
-                        welcomeOpen
-                          ? WELCOME_NEW_EVENT
-                          : "voo:file-export-snapshot",
-                      ),
-                    );
+                    handleNewOrExport();
                   }}
                   className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-neutral-200 hover:bg-white/10"
                 >
