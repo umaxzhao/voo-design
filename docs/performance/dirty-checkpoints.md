@@ -1,7 +1,8 @@
 # Incremental document dirty checkpoints
 
 Scope: `documents.dirty-checkpoints`, shared engine/history UI, keyboard and
-Agent entry points. Baseline main `8c270d0`. `native_studio` remains excluded.
+Agent entry points. Verified source `ba834ccee348abbea025111b9e86ce53820b5b8c`,
+against baseline main `8c270d0`. `native_studio` remains excluded.
 No controls, dependencies or persisted-format changes.
 
 ## Cause and implementation
@@ -43,7 +44,8 @@ snapshot path; this batch does not remove every possible serialization.
 | Saved equality | Undo by reference, manually restored values, count/order, metadata, transient blob/default adjustments and actual adjustments. | Targeted units passed |
 | Compatibility | Unknown/legacy/null/empty baseline, generic history fallback, pixel/transform flags. | Targeted units passed |
 | Actual editor | Zero full snapshots across isolated edits; real arrow/undo/redo, actual MCP styles, save marker, capture/restore session. | Targeted browser passed |
-| Full release / production | A new clean fixed revision, complete release and independent deployment/interaction receipts. | Pending fixed evidence |
+| Full release | Clean ba834cc: 105/105 steps, 101 core browsers, 4819 units passed / four skipped, design lint 1446 files. | Passed; eleven standalone checks not run |
+| Production | Independent canonical bytes and real interaction receipts in private dirty-checkpoints/. | Separate post-publication evidence; not inherited from the core gate |
 | Remaining | Direct mutation of immutable engine nodes, every legacy format, asynchronous native writes, signed Electron and physical devices. | Not certified |
 
 Six new units are registered with documents ownership. The helper runs inside
@@ -72,3 +74,37 @@ Candidate 85361f3 stopped at full-unit step 4: the public model-export guard
 needed the intentional one-argument `serializeDocumentFields` addition.
 All previous names/arity checks remain; no failure is skipped or weakened.
 The corrected committed candidate requires a fresh complete release.
+
+## Final fixed-source comparison
+
+Four fresh production sessions, before/after/after-reverse/before-reverse, with
+a uniform ten-second pause before each. Both versions use the same CPU sampling,
+real file chooser, API setup and actual eighteen arrow inputs. Original imported
+baselines are clean and contain 43137170 characters; these are valid saved
+checkpoints, not an empty unsaved sentinel. Shared host loads are retained.
+
+| Observation | Forward before -> after | Reverse before -> after |
+| --- | --- | --- |
+| Actual key median | 579 -> 278ms | 582.5 -> 260ms |
+| Actual key mean | 593.8 -> 279.0ms | 616.0 -> 266.2ms |
+| Fifty synchronous API setup edits | 1292.3 -> 1372.8ms | 1422.1 -> 1451.1ms |
+| Same 1000x800 viewport difference | 0 pixels | 0 pixels |
+
+Key medians improve 52.0/55.4%. API setup is 6.2/2.0% slower in these runs;
+this batch does not establish a batch-edit speedup or eliminate layout cost.
+The host was shared and highly loaded; script waits are not physical input
+latency, GPU FPS or a Figma comparison. All raw samples/outliers remain retained.
+
+Both pairs preserve selected IDs, positions, fifty-entry history and actual
+keyboard undo/redo. All five decoded pages / 56422 nodes match old VOO layout,
+canonical serialized values and exact serialized JSON, including one resize per
+page; inputs remain unchanged. Import retains all 478 assets and 247642346
+asset bytes. Original file SHA-256 remains
+`ddf80a00291c5c79ebc30c9b71c7c4180a74ca80311a170ed16f2aeed006b2c2`.
+This is regression equivalence, not complete original Figma fidelity.
+
+Private dirty-checkpoints/ retains failed source/export registration attempts,
+pilots, full clean release, raw paired profiles/pixels, exact script/source
+receipts and independent GitHub/deployment/production checks. Only the corrected
+full release is complete; no earlier failure is relabeled or stitched into it.
+Later documentation commits do not change the application or registered tests.
