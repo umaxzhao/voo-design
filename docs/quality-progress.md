@@ -3,6 +3,14 @@
 最近一次完成的核心检查：[2cb69e5](https://github.com/umaxzhao/voo-design/commit/2cb69e5c1754de27e5553c38a42fa8d2e43f2884)；104 项全量门禁逐项通过（含全量单测 4721 通过/4 跳过、100 组浏览器 E2E 套件零失败）。证据 `/private/tmp/voo-release-toolbar.json`。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
+## 三平台 GitHub Release 就绪检查（待完成）
+
+- 2026-11-01，只读核对源码 `ed3db20` 的发布配置与 GitHub 记录：版本仍为 `1.0.0`；当前 Release、版本标签和 `release.yml` 运行记录均为 0。仓库没有配置 Actions 签名 secrets；仅查配置名称，未读取任何密钥或证书。
+- 已配置 Electron 目标：Windows x64 NSIS/Portable、macOS DMG/ZIP、Linux AppImage/DEB。这是构建配置，不是三个系统已安装、启动并验收的证明；macOS Intel/Apple Silicon 尚需明确分别构建。
+- 发布流程缺口：标签仅自动构建/发布 Linux AppImage；Mac/Windows 仅手动开启、只上传 Actions artifacts；未统一上传更新元数据/blockmaps/校验和。桌面作业还缺少 `build-connector-resource.mjs` 预构建步骤，不能复用开发机残留资源。
+- 先补齐原生 runner 构建与安装包检查，再验证启动、创建/保存/重开、模型下载、本地 CLI、签名/公证及更新。可以准备三平台预发布；目前不能宣布三平台正式版已就绪。本轮未创建 tag 或 Release，也未把 Web 测试继承为安装包通过。
+- [发布清单](release-checklist.md)。本条为发布流程审计，不修改应用；后续源码不继承旧固定提交的通过结果。
+
 ## 本轮：顶部工具栏鼠标悬停自动展开二级菜单与橡皮擦添加移除背景（已验证通过）
 
 - `selection.toolbar-hover-menu` / `use_hover_menu.js` / `editor_family_menu.jsx` / `editor_select_menu.jsx`：
