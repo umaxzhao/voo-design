@@ -1,15 +1,25 @@
 # 项目检查总进度
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
-最近一次完整核心验证：[00b3f98](https://github.com/umaxzhao/voo-design/commit/00b3f982120efac466e3c24f18beccc19f6b5243)；105/105 步通过，101 组核心浏览器、4825 单测通过/4 跳过，设计检查 1445 文件通过。线上 Web 预览已部署同一构建；原生安装包仍按各自 Release 固定提交验收。
+最近一次完整核心验证：[`2782d88`](https://github.com/umaxzhao/voo-design/commit/2782d88f809099b4b876e52af0aa8a54ae18c448)；105/105 步通过，101 组核心浏览器、4835 单测通过/4 跳过，设计检查 1447 文件通过。正式发布与独立线上验收记录于本轮证据；原生安装包仍按各自 Release 固定提交验收。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
+## 本轮：增量脏状态、数值同步与图片历史（已通过本地完整验收）
+- `documents.dirty-checkpoints`：普通编辑比较变化节点，真实 1002 节点场景整页序列化由九次降到零次；保存/会话保留精确旧格式，未知基线保守回退。手动还原、真实键盘、MCP、独立像素/变换脏标记及会话回归通过。
+- `inspector.field-commit`：提交与立即撤销合并发布后，失焦数值框同步回模型，保留输入草稿、Enter/Escape/blur 与实际多选撤销。原失败门禁独立保留。
+- `documents.external-image-history`：首次及诊断公共生产验收的图片重做失败保持失败；已定位旧图片被后台误当新交付重新插入并截断重做分支。新增页面激活级图片记忆，保留失败重试、并发去重和新结果正常交付；修复前冷重开稳定失败，修复后基线与真实新交付图片的 50 条历史、实际删除/撤销/重做、精确像素和节点数均通过。
+- 固定 `2782d88` 重新完成 **105/105 步、101 核心浏览器、4835 单测通过/4 跳过、1447 文件设计检查**。登记 92 能力，功能覆盖仍部分；11 组独立检查 not-run。同构建本地静态生产验收也已完整通过，正式域名收据另记。
+- 原始只读 `test.fig` 的全新正反序按键中位数：540.5→277.5ms（降低 48.7%）；596.0→274.5ms（降低 53.9%）；50 次同步 API 准备变化 +1.8%/+1.2%。两组视口零像素差异，五页 56422 节点布局/精确 JSON、478 资产及原文件摘要保留。共享主机计时不等同物理延迟、FPS 或 Figma 排名；全部 Figma 属性、签名 Electron、打开中交付与解码中取消未认证。[范围、失败与收据](performance/dirty-checkpoints.md#final-production-repair-acceptance)。
 ## 本轮：相对排序与 Loading 旋转间距（已完成声明范围）
 - 修复蒙版多选重复调序、锁定 Frame 子层仍可调序、单节点接口拆散 Frame 三个缺口；Loading 补足旋转留白，保留原 20px 要求并新增八角度检查。保留最新主线全部已发布功能，固定 `00b3f98` **105/105 完整发布步骤、101 组核心浏览器、4825 单测通过/4 跳过及 CI 通过**，未拼接旧报告。新增 12 条单测与 10 个排序上下文，本地主应用三个任务文件一致、十场景及 Loading 完整套件通过，其他草稿保留。已部署 [Web 预览](https://voo.run/editor/)，入口及实际加载的 82 项 JS/CSS SHA-256 一致，六个线上排序场景、八个旋转角度、实际像素及一次撤销/重做通过，零页面异常。最小代表性旋转间距 22.06px。[PR #80](https://github.com/umaxzhao/voo-design/pull/80) 汇总修复与验收记录；证据 `/private/tmp/voo-license-regression/layer-order-{release,ci,primary-proof,production-proof}.json`。功能覆盖仍部分；绝对位置拖排、置顶/置底和原生包不由这十个新上下文认证，本轮未重发安装包。[范围与证据](audits/design-editor-interaction-audit.md#relative-layer-order-audit--2026-11-01)。
-## 本轮：复用 VOO-Run 的 Mac 签名（接入与真实构建验证中）
-- `platform.macos-signing`：用户已明确授权构建工具内部使用原有本机发布配置；本机存在有效 Developer ID Application，已安装旧 VOO 的公开签名验证通过。Apple 公证认证实际通过，未输出、复制或提交凭据值，没有导出证书或修改钥匙串权限。
-- 已稳定复现旧 Design hook 拒绝“已有钥匙串身份 + App Store Connect API”这一输入，补齐 API/现有 profile 路由、显式签名要求、预检与失败阻断。签名前后分别检查 Developer ID/期望团队/Hardened Runtime 和公证票据/Gatekeeper；只有真实原生冒烟也通过后才写成功证明。新增环境载入只处理明确指定文件和 Apple 字段，诊断脱敏。
-- 定向 36 项测试与设计检查通过。`adcf1de` 的第一次真实打包在签名前被 electron-builder 拒绝：身份名称带有构建器禁止的证书类型前缀；失败日志保留在 `/private/tmp/voo-beta2-mac-arm64-signed.log`，没有成功签名收据或发布。已增加身份格式回归和干净源码前置检查，随后重新固定提交构建，不把该失败当作签包通过。
-- 新候选为 `1.0.0-beta.2`；Beta1 公布的包不覆盖、不改标为已签名。两个架构的签名收据与原生收据必须匹配候选提交才能通过 `--require-mac-signing` 组装。当前尚未完成新候选签名构建、完整门禁和公开发布，不能继承 Beta1 或最新 Web 的通过记录。
-- GitHub CLI 原登录刷新要求本人二次验证，已保留 GitHub Confirm access 页面；等待用户完成，期间继续本地实现与验证。VOO-Run 工作区的其他草稿与未推提交未修改。
+## 本轮：复用 VOO-Run 的 Mac 签名（候选门禁通过，签名发布未完成）
+- `platform.macos-signing`：用户明确授权构建工具内部复用现有发布配置。没有输出或提交凭据值、导出本机证书、修改本机钥匙串权限；诊断脱敏，原生冒烟进程移除签名配置。只有明确要求签名的构建才启用该路径，普通预览行为保持原样。
+- 固定候选 [`a5f9f63`](https://github.com/umaxzhao/voo-design/commit/a5f9f631c5f11e222770ef6713679bc4a4f55991)，版本 `1.0.0-beta.2`：[完整门禁](https://github.com/umaxzhao/voo-design/actions/runs/41305156097) **105/105 步、101 组核心浏览器、4837 单测通过/4 跳过、1445 文件设计检查通过**。JSON 已独立核对 `complete=true`、全部步骤退出码、精确套件清单与提交；12 模块/91 能力仍为 partial，11 组额外检查为 not-run。证据 `/private/tmp/voo-beta2-web-proof.json` 和 `/private/tmp/voo-beta2-ci-downloads/web-evidence/desktop-web-release.json`。
+- 普通原生构建的四个目标均通过；已下载并核对 Windows/Linux 的三项原生收据、实际载荷 SHA-512/尺寸与 GitHub ZIP 摘要。尚未认证 Windows Authenticode、外层安装向导、旧版升级或真实付费/CLI 服务。
+- Apple Silicon 在本机及原有 CI 签名仓库都完成真实 Developer ID、期望团队、Hardened Runtime、公证票据、Gatekeeper 和三项打包应用操作；DMG/ZIP 包内应用均单独验证信任、ASAR 一致和更新哈希。CI 收据已下载：`/private/tmp/voo-beta2-ci-downloads/input/mac-arm64/evidence/`；本机证据在 `/private/tmp/voo-signed-beta2-adcf1de/release/evidence/`。
+- [VOO-Run PR #2](https://github.com/umaxzhao/voo-run/pull/2) 已通过用户明确批准的普通 PR 流程合并，仅增加独立手动签名工作流，凭据留在原仓库。原 Run 的 extension 17 项过期登记错误在未修改 main 复现，Vercel 未识别提交账号；两者没有冒记通过，也没有绕过分支保护或更改其门槛。本机 Run 的七个未推提交与其他草稿保持原样。
+- [签名任务](https://github.com/umaxzhao/voo-run/actions/runs/41307054320)：ARM64 已通过；Intel 前两次在 Apple CloudKit 票据下载处报 `NSURLError -1005` / stapler 68，均保留失败且没有成功收据。第三次仅重跑 Intel，未放宽任何签名检查。两个架构的签名/原生收据必须匹配固定候选才允许 `--require-mac-signing` 组装。
+- 早期 `adcf1de` 因 electron-builder 不接受带证书类型前缀的身份名称而失败；`a5f9f63` 修正构建器名称并保留真实签名团队验证。失败日志 `/private/tmp/voo-beta2-mac-arm64-signed.log` 没有被当成通过。
+- GitHub CLI 本人二次验证已完成，现有权限未扩大；私有产物下载恢复。Design [PR #85](https://github.com/umaxzhao/voo-design/pull/85) 集成时保留随后主线的图片历史和 dirty-check 性能修复，能力登记合并为 93；这些较新代码不继承固定候选的完整门禁。线上已有更新版本，不能用旧候选 Web 覆盖它。
+- **Beta2 尚未组装、公开发布或替换 Beta1**。Intel 成功及全部发布资产核验前保持未完成；[Beta1](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.1) 仍按原有未签名声明，不覆盖已有下载。
 
 ## 三平台 GitHub Beta（门禁与产物核验通过）
 - [Beta 下载与说明](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.1)：`1.0.0-beta.1`，Windows x64 setup/portable、Linux x64 AppImage、macOS Intel/Apple Silicon DMG/ZIP，共四个原生目标、七个载荷。公开状态以该 Release 页面为准，保持 prerelease，不标记稳定最新版。
@@ -38,7 +48,6 @@
 - `canvas.zoom-preview`：移除自由画布隐藏测量面的重复重绘；连续缩放复用有内存上限的图像，静止后精绘，取色立即刷新；图片/实时蒙版/字体/文档/尺寸/DPR 变化失效，视频不冻结。缓存世界命中边界及 Frame 祖先，减少共享相机对属性/Agent 的通知，活动文字编辑继续实时更新。 原始 d3bec48/6ababe5 失败、签名 Electron/实体输入及所有效果/GPU/动画组合的未验范围保留在下方审查链接；`native_studio` 排除。
 - 同一只读 test.fig（241.86MiB、首屏 17499 层），主线父版本 db4a184 与 cf9e00d 生产构建顺序实测：未优化两次 Ctrl+滚轮等待中位数 1713.5/1808ms，优化后 82.5ms；后者同一组六次输入不重复计样。脚本收尾精绘等待 237ms，所测 1000×800/zoom .024 独立画面 0 像素差异；相机实变、文档不变、零页面异常。共享主机负载变化已记录并补反向对照；不是 GPU FPS、独立硬件或 Figma 对等基准。
 - 固定 cf9e00d **104/104 完整发布步骤、100 核心浏览器、4731 单测通过/4 跳过**，无拼接补跑；真实模块延迟 35s 的启动/创建/像素/撤销回归也通过。已推送并部署 la2；正式入口及 8 个直接/关键资源逐字节一致，线上原生 Figma 像素/蒙版/约束，以及真实缩放复用/精确 RGBA/取色/编辑/撤销重做通过，零页面异常。随后只合入文档，应用和测试与固定版本相同。
-- 后续性能优化（本轮范围已验证）：`layers.model-cache` 复用拓扑/面板模型，实时刷新选区并正确处理折叠、延迟翻译、外部母版搜索；`vectors.import-subscriptions` 普通导入不发无消费者节点块，订阅/旧协议保留完整场景和资产 ACK。固定 ac9f18e 全新 105/105 发布步骤、101 浏览器、4752 单测通过/4 跳过；同 test.fig 实际图层点击中位等待 113.5→56.5ms、平移 157→150ms、缩放 84→66ms，普通导入 72 个/56422 节点的多余消息→0，所有 56422 图层及 478 图片完整，所测 1000×800 区域 0 像素差异；共享主机脚本等待不是 FPS。正式候选资源/订阅模式/实际选区零重建/像素与撤销通过；首次直推受新 PR/build 规则拒绝、部署提前启动的顺序保留在证据中，按门禁补齐同步，不冒记旧 CI。私有 `layer-import-optimization/` 保存原始失败、全门禁、正反数据及发布/GitHub证明。[实现范围和剩余待验](performance/README.md#layer-models-and-subscribed-import--implementation)。本轮 `documents.history-asset-pins` 已完成固定 9f00367 全新 105/105 门禁、101 浏览器、4761 单测通过/4 跳过：弱缓存资源集合、增删来源引用计数、旧 JSON 仅缓存 ID 且解析文档可 GC 回收；真实缓存超预算/分支淘汰及满历史图片键盘删除、撤销重做和精确像素通过。首候选内存复核中止、随后 Vite 冷服务清理竞态失败均保留；修正并强化 8 轮并发启动断言后全新验证，没有拼接通过。Node 新场景扫描约 8.2→0.24ms；实际 test.fig 按键等待正向 557.5→535.5ms、反向 547.5→551.5ms，**没有稳定整体提速证据**；两组同一视口 0 像素差异、56422 节点/478 资产完整、原文件哈希不变。绘制效果像素读回仍是后续热点。发布/PR/生产收据归入私有 `history-asset-retention/`，[范围、失败与测量](performance/history-asset-retention.md)。本轮 `layout.reflow-sharing` / `compositing.effect-resources` / `documents.serialization-purity` 已完成声明范围：几何未变节点复用、真实图片/蒙版/字体失效、序列化不改活节点、稳定布局提前收敛。固定 ba1a1cd 全新 105/105 步、101 浏览器、4813 单测通过/4 跳过，11 组独立检查未运行；静态编辑零追加读回、18 个资源分支冷像素及真实方向键/Agent/历史通过。d39511d 虽过门禁但 API 编辑回退，未部署；新增收敛回归并重新全验，没有继承旧候选通过。最终同 test.fig 五十次 API 编辑正向 1661.1→1269.1ms、反向 1647→1253.9ms（约降 24%）；实际按键均值改善 8–9%，但中位数 540.5→508.5ms、523.5→528.5ms，**没有稳定中位提速证据**。两组 1000×800 画面 0 像素差异，全部五页 56422 节点布局/序列化值与旧版一致，478 资产完整且原文件哈希不变。完整门禁、回退原型、正反原始数据及独立发布/线上验收收据归入私有 `layout-sharing/`，[范围、失败和剩余待验](performance/layout-sharing.md)。自动保存调度、精绘索引与全局内存预算仍待实施，`native_studio` 排除。
 ## 本轮：Claude 自测问题单收口（已完成声明范围）
 - 逐项核对用户的 `78155ee` + 私人工作区清单；正式版和本地 App 分开验证，没有用一份通过结果覆盖另一份源码。
 - A1/A2：六条约束点击区独立、中心不串轴，真实中点点击/键盘/一次撤销通过；320/390/768px 鼠标与模拟触控下，普通导航、工具条、页签等控件达到 48px。约束图与画布精细手柄单独验收，不冒记为 48px 普通按钮。内部仍保留已确认的大圆角。

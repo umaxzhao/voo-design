@@ -73,6 +73,7 @@ const expectedPublicApi = {
     "normalizeBooleanNode": 1,
     "normalizeNodeName": 1,
     "serialiseDocument": 1,
+    "serializeDocumentFields": 1,
     "supportsColour": 1,
   },
   "paths": {

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useDesignStore } from "../../../store/design_store.js";
 import { useEditorEngine } from "../../use_editor_engine.js";
 import { useSkiaPage } from "../../use_skia_page.js";
-import { collectExternalImageLayers } from "../../editor_open_state.js";
+import { createExternalImageTracker } from "../../editor/external-image-ingestion.js";
 import { TOOL } from "../../editor/editor_constants.js";
 import { effectivePage } from "../../editor/scene_model.js";
 import { getCanvasType } from "../../editor/canvas-composition-model.js";
@@ -86,11 +86,6 @@ export function useEditorPageEngine({ props, refs, free, t }) {
     skiaRendererEnabled() &&
     !requiresCanvas2dMediaFallback(doc);
 
-  // Asset ids handed to the engine but not yet in its document. Decoding is
-  // async, so without this a second store tick would see the same layer still
-  // missing and add it a second time.
-  const ingestingRef = useRef(new Set());
-
   /**
    * Folds pictures the store ingests *after* this page opened into the live
    * document.
@@ -105,7 +100,10 @@ export function useEditorPageEngine({ props, refs, free, t }) {
    */
   useEffect(() => {
     if (!ready || !engine) return undefined;
-    const ingesting = ingestingRef.current;
+    // Scope both successful and pending deliveries to this page activation.
+    // A saved snapshot may still carry a picture the user just deleted/undid.
+    const tracker = createExternalImageTracker(engine.getDocument().nodes);
+    const ingesting = new Set();
     const settle = (layers) => {
       for (const layer of layers) ingesting.delete(layer.imageId);
     };
@@ -115,15 +113,17 @@ export function useEditorPageEngine({ props, refs, free, t }) {
       const knownLayers = (live?.nodes ?? [])
         .filter((layer) => layer.imageId)
         .map((layer) => ({ id: layer.id, imageId: layer.imageId }));
-      const layers = collectExternalImageLayers(
+      const layers = tracker.collect(
         node?.data?.editorDoc,
-        [...knownLayers, ...ingesting],
+        knownLayers,
+        ingesting,
         state.images,
       );
       if (layers.length === 0) return;
       for (const layer of layers) ingesting.add(layer.imageId);
       engine.appendImageLayers(layers).then(
         (receipt) => {
+          tracker.accept(receipt);
           settle(layers);
           // A layer that could not be decoded is reported instead of vanishing:
           // the editor would otherwise show a document missing a picture the
