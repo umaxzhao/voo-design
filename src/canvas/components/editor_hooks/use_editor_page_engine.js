@@ -9,13 +9,12 @@ import { getCanvasType } from "../../editor/canvas-composition-model.js";
 import { confirmCanvasDelete } from "../../editor/doc_ops_canvas.js";
 import { skiaRendererEnabled } from "../../editor/renderer_flag.js";
 import { requiresCanvas2dMediaFallback } from "../../editor/skia_scene_adapter.js";
-import { requiresWorkspaceCanvas2d } from "../../editor/workspace-artwork-routing.js";
 import { buildEditorSource } from "../editor_page_source.js";
 
 /** Keep engine activation, notifications, ingestion and renderer ownership together. */
 export function useEditorPageEngine({ props, refs, free, t }) {
   const { nodeId, snapshot, readOnly, active, onChange, onBeforeDispose,
-    onGeneratedOutput, getFitInsets, workspaceRendererReady, onDeleteCanvas,
+    onGeneratedOutput, getFitInsets, onDeleteCanvas,
     onEngine, sharedZoom } = props;
   const { canvasRef, stageRef, skiaCanvasRef } = refs;
   // Held in a ref so the dispose callback can read the latest readiness
@@ -69,11 +68,11 @@ export function useEditorPageEngine({ props, refs, free, t }) {
 
   useEffect(() => {
     if (!engine?.setStagePaintingEnabled) return undefined;
-    // Shared GPU artwork and workspace chrome already paint this frame.
-    // Keep a 2D stage for fallback/media and read pixels lazily for sampling.
-    engine.setStagePaintingEnabled(!free || !workspaceRendererReady || mixedLayers || requiresWorkspaceCanvas2d(doc));
+    // Free pages paint through their visible workspace compositor. The detached
+    // measurement canvas is drawn only when an explicit pixel readback needs it.
+    engine.setStagePaintingEnabled(!free || mixedLayers);
     return () => engine.setStagePaintingEnabled(true);
-  }, [engine, free, workspaceRendererReady, mixedLayers, doc]);
+  }, [engine, free, mixedLayers]);
 
   useEffect(() => {
     if (!engine) return undefined;

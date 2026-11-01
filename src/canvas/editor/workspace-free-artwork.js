@@ -1,7 +1,5 @@
-import { nodeAABB } from "./scene_geometry.js";
-import { isHiddenByGroup } from "./scene_model.js";
-import { createFrameClipContext } from "./frame-clip-context.js";
-import { createHitRegionCache } from "./hit-region-path.js";
+import { artworkHitPath } from "./free-artwork-hit-regions.js";
+import { createArtworkPicture } from "./workspace-artwork-picture.js";
 
 /** A free document keeps world coordinates; only its raster window follows the camera. */
 export function freeCanvasSurface(page, workspace, zoom) {
@@ -19,46 +17,6 @@ export function freeCanvasSurface(page, workspace, zoom) {
     }
   };
 }
-function artworkHitPath(doc, surface, cachedPath) {
-  const {
-    zoom,
-    panX,
-    panY
-  } = surface.viewport;
-  let clips;
-  return cachedPath(doc.nodes, JSON.stringify(surface), node => {
-    if (node.visible === false || isHiddenByGroup(doc, node)) return null;
-    const box = nodeAABB(node);
-    if (![box?.x, box?.y, box?.width, box?.height].every(Number.isFinite)) return null;
-    let left = box.x,
-      top = box.y,
-      right = box.x + box.width,
-      bottom = box.y + box.height;
-    clips ??= createFrameClipContext(doc.nodes);
-    for (const ancestor of clips.framesOf(node)) {
-      const clip = nodeAABB(ancestor);
-      left = Math.max(left, clip.x);
-      top = Math.max(top, clip.y);
-      right = Math.min(right, clip.x + clip.width);
-      bottom = Math.min(bottom, clip.y + clip.height);
-    }
-    if (right <= left || bottom <= top) return null;
-    // Match the existing screen-space handle reach without giving a focused
-    // document an opaque hit plane over every neighbouring document.
-    left = left * zoom + panX - 8;
-    top = top * zoom + panY - 8;
-    right = right * zoom + panX + 8;
-    bottom = bottom * zoom + panY + 8;
-    if (right < 0 || bottom < 0 || left > surface.stageWidth || top > surface.stageHeight) return null;
-    return {
-      left,
-      top,
-      right,
-      bottom
-    };
-  });
-}
-
 /** The transparent surface also routes signed-coordinate hits to the unchanged stage origin. */
 export function attachFreeCanvasArtwork({
   canvas,
@@ -81,9 +39,10 @@ export function attachFreeCanvasArtwork({
   stage.insertBefore(hits, canvas);
   let pendingFrame = 0;
   let previousDoc, previousPathKey;
-  const cachedPath = createHitRegionCache();
-  const paint = () => {
-    const surface = freeCanvasSurface(stage.getBoundingClientRect(), workspace.getBoundingClientRect(), engine.getViewport().zoom);
+  const picture = paintArtwork ? createArtworkPicture(canvas, engine) : null;
+  const paint = (forceExact = false) => {
+    const zoom = store.getState?.().editorCamera?.zoom ?? engine.getViewport().zoom;
+    const surface = freeCanvasSurface(stage.getBoundingClientRect(), workspace.getBoundingClientRect(), zoom);
     const style = {
       left: `${surface.left}px`,
       top: `${surface.top}px`,
@@ -99,12 +58,12 @@ export function attachFreeCanvasArtwork({
     const doc = engine.getDocument();
     const pathKey = JSON.stringify(surface);
     if (previousDoc !== doc || previousPathKey !== pathKey) {
-      hits.style.clipPath = artworkHitPath(doc, surface, cachedPath);
+      hits.style.clipPath = artworkHitPath(doc, surface);
       previousDoc = doc;
       previousPathKey = pathKey;
     }
     if (paintArtwork) {
-      engine.renderLayerPass(canvas, doc.nodes.map(node => node.id), surface);
+      picture.paint(surface, forceExact);
     } else if (canvas.width || canvas.height) {
       // React can retain this canvas when a decoded-media document returns to
       // native vectors. Its previous bitmap must not cover the shared GPU pass.
@@ -120,21 +79,22 @@ export function attachFreeCanvasArtwork({
       paint();
     });
   };
-  const unsubscribeEngine = engine.subscribeRender(paint);
+  const unsubscribeEngine = engine.subscribeRender(event => paint(event?.readback === true));
   const unsubscribeStore = store.subscribe((state, previous) => {
     if (state.editorCamera !== previous.editorCamera) schedulePaint();
   });
-  const observer = new ResizeObserver(paint);
+  const observer = new ResizeObserver(schedulePaint);
   observer.observe(workspace);
   observer.observe(stage);
   paint();
   return {
-    paint,
+    paint: () => paint(true),
     dispose() {
       if (pendingFrame) cancelAnimationFrame(pendingFrame);
       unsubscribeEngine();
       unsubscribeStore();
       observer.disconnect();
+      picture?.dispose();
       hits.remove();
       for (const [index, key] of styleKeys.entries()) canvas.style[key] = originalStyles[index];
     }

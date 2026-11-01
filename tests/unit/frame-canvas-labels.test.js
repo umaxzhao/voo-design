@@ -28,4 +28,12 @@ describe("visible canvas frame labels", () => {
       }),
     ).toEqual([]);
   });
+
+  it("reuses unchanged ancestry across zoom frames and invalidates structural edits", () => {
+    const nodes = [{ id: "outer", isFrame: true }, { id: "inner", isFrame: true, parentId: "outer" }];
+    const labels = visibleCanvasFrameLabels({ isCanvasRoot: true, nodes });
+    expect(visibleCanvasFrameLabels({ isCanvasRoot: true, nodes })).toBe(labels);
+    expect(visibleCanvasFrameLabels({ isCanvasRoot: true, nodes: [nodes[0], { ...nodes[1], parentId: null }] }))
+      .toEqual([nodes[0], { ...nodes[1], parentId: null }]);
+  });
 });
