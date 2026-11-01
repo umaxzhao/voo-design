@@ -1,29 +1,48 @@
 import { useCallback, useEffect, useState } from "react";
 
-export function isMacPlatform() {
-  if (typeof globalThis.vooDesktop?.platform === "string") {
-    return globalThis.vooDesktop.platform === "darwin";
+export function getDetectedPlatform() {
+  const desktopPlatform =
+    (typeof globalThis.vooDesktop?.platform === "string" && globalThis.vooDesktop.platform) ||
+    (typeof globalThis.electronAPI?.platform === "string" && globalThis.electronAPI.platform);
+
+  if (desktopPlatform) {
+    if (desktopPlatform === "darwin") return "mac";
+    if (desktopPlatform === "win32") return "windows";
+    if (desktopPlatform === "linux") return "linux";
+    return desktopPlatform;
   }
+
   if (typeof navigator !== "undefined") {
     const dataPlatform = navigator.userAgentData?.platform?.toLowerCase() || "";
-    if (dataPlatform.includes("mac")) return true;
+    if (dataPlatform.includes("mac")) return "mac";
+    if (dataPlatform.includes("win")) return "windows";
+    if (dataPlatform.includes("linux")) return "linux";
+
     const navStr = `${navigator.platform || ""} ${navigator.userAgent || ""}`.toLowerCase();
-    return navStr.includes("mac") || navStr.includes("iphone") || navStr.includes("ipad");
+    if (navStr.includes("mac") || navStr.includes("iphone") || navStr.includes("ipad")) return "mac";
+    if (navStr.includes("win")) return "windows";
+    if (navStr.includes("linux") || navStr.includes("x11")) return "linux";
   }
-  return false;
+
+  if (typeof process !== "undefined" && typeof process.platform === "string") {
+    if (process.platform === "darwin") return "mac";
+    if (process.platform === "win32") return "windows";
+    if (process.platform === "linux") return "linux";
+  }
+
+  return "unknown";
+}
+
+export function isMacPlatform() {
+  return getDetectedPlatform() === "mac";
 }
 
 export function isWindowsPlatform() {
-  if (typeof globalThis.vooDesktop?.platform === "string") {
-    return globalThis.vooDesktop.platform === "win32";
-  }
-  if (typeof navigator !== "undefined") {
-    const dataPlatform = navigator.userAgentData?.platform?.toLowerCase() || "";
-    if (dataPlatform.includes("win")) return true;
-    const navStr = `${navigator.platform || ""} ${navigator.userAgent || ""}`.toLowerCase();
-    return navStr.includes("win");
-  }
-  return false;
+  return getDetectedPlatform() === "windows";
+}
+
+export function isLinuxPlatform() {
+  return getDetectedPlatform() === "linux";
 }
 
 /**
@@ -42,6 +61,7 @@ export function useWindowControls() {
   const [maximized, setMaximized] = useState(false);
   const isMac = isMacPlatform();
   const isWindows = isWindowsPlatform();
+  const isLinux = isLinuxPlatform();
 
   useEffect(() => {
     if (!bridge) return undefined;
@@ -79,6 +99,7 @@ export function useWindowControls() {
     supported: Boolean(bridge?.supported),
     isMac,
     isWindows,
+    isLinux,
     maximized,
     minimize,
     toggleMaximize,

@@ -11,6 +11,11 @@ import {
   ElectronWorkspaceDriver,
 } from "../../services/workspace_storage.js";
 import { useShowRulers } from "../use_show_rulers.js";
+import {
+  isLinuxPlatform,
+  isWindowsPlatform,
+} from "../use_window_controls.js";
+import { t as defaultTranslate } from "../../shared/i18n.js";
 import SettingsSection from "./settings_section.jsx";
 import SettingsRow from "./settings_row.jsx";
 import ProfileSection from "./settings_profile.jsx";
@@ -22,6 +27,35 @@ import {
   updateEditorSetting,
   useEditorSetting,
 } from "../use_editor_setting.js";
+
+export function getWorkspacePlatformBadge(type, t = defaultTranslate) {
+  if (type === "electron") {
+    if (isLinuxPlatform()) {
+      const val = t("settings.workspace.badgeDesktopLinux");
+      return val && val !== "settings.workspace.badgeDesktopLinux" ? val : "[Linux 原生]";
+    }
+    if (isWindowsPlatform()) {
+      const val = t("settings.workspace.badgeDesktopWin");
+      return val && val !== "settings.workspace.badgeDesktopWin" ? val : "[Windows 原生]";
+    }
+    const valMac = t("settings.workspace.badgeDesktopMac");
+    if (valMac && valMac !== "settings.workspace.badgeDesktopMac") {
+      return valMac;
+    }
+    const val = t("settings.workspace.badgeDesktop");
+    return val && val !== "settings.workspace.badgeDesktop" ? val : "[macOS 原生]";
+  }
+  if (type === "web-fsa") {
+    const val = t("settings.workspace.badgeFsa");
+    return val && val !== "settings.workspace.badgeFsa" ? val : "[浏览器挂载]";
+  }
+  const val = t("settings.workspace.badgeVirtual");
+  return val && val !== "settings.workspace.badgeVirtual" ? val : "[虚拟工作区]";
+}
+
+export function getPlatformBadge(type, t) {
+  return getWorkspacePlatformBadge(type, t);
+}
 
 export function WorkspaceSettingsSection() {
   const { t } = useI18n();
@@ -135,18 +169,7 @@ export function WorkspaceSettingsSection() {
 
   const isElectron = config.type === "electron" || ElectronWorkspaceDriver.isAvailable();
 
-  const getPlatformBadge = (type) => {
-    if (type === "electron") {
-      const val = t("settings.workspace.badgeDesktop");
-      return val && val !== "settings.workspace.badgeDesktop" ? val : "[macOS 原生]";
-    }
-    if (type === "web-fsa") {
-      const val = t("settings.workspace.badgeFsa");
-      return val && val !== "settings.workspace.badgeFsa" ? val : "[浏览器挂载]";
-    }
-    const val = t("settings.workspace.badgeVirtual");
-    return val && val !== "settings.workspace.badgeVirtual" ? val : "[虚拟工作区]";
-  };
+  const getPlatformBadge = (type) => getWorkspacePlatformBadge(type, t);
 
   return (
     <SettingsSection
