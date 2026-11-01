@@ -2,11 +2,11 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runCommandPool } from "./release-command-pool.mjs";
+import { releaseBrowserConcurrency, runCommandPool } from "./release-command-pool.mjs";
 import { ADDITIONAL_BROWSER_CHECKS, RELEASE_BROWSER_SUITES } from "./editor-module-catalog.mjs";
 import { summarizeModuleEvidence } from "./editor-check-plans.mjs";
 
-const BROWSER_CONCURRENCY = 3;
+const BROWSER_CONCURRENCY = releaseBrowserConcurrency(process.env.VOO_RELEASE_BROWSER_CONCURRENCY);
 // The startup gate launches three browsers itself; finish it before the pool.
 const PREREQUISITE_COUNT = 5;
 
