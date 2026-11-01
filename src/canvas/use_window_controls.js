@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function isMacPlatform() {
   if (typeof globalThis.vooDesktop?.platform === "string") {
@@ -40,20 +40,23 @@ export function isWindowsPlatform() {
 export function useWindowControls() {
   const bridge = globalThis.vooDesktop?.windowControls ?? null;
   const [maximized, setMaximized] = useState(false);
+  const revision = useRef(0);
   const isMac = isMacPlatform();
   const isWindows = isWindowsPlatform();
 
   useEffect(() => {
     if (!bridge) return undefined;
     let live = true;
-    // `isMaximized` may resolve after the subscription delivers a newer value;
-    // the flag keeps the slower, older answer from overwriting it.
-    bridge.isMaximized?.().then((value) => {
-      if (live) setMaximized((current) => current || Boolean(value));
+    const stop = bridge.onMaximizedChange?.((value) => {
+      if (!live) return;
+      revision.current++;
+      setMaximized(Boolean(value));
     });
-    const stop = bridge.onMaximizedChange?.((value) =>
-      setMaximized(Boolean(value)),
-    );
+    // A compositor change outranks an older asynchronous query, including false.
+    const requestedAt = revision.current;
+    Promise.resolve(bridge.isMaximized?.()).then((value) => {
+      if (live && revision.current === requestedAt) setMaximized(Boolean(value));
+    }).catch(error => console.error("Could not read native window state", error));
     return () => {
       live = false;
       stop?.();
@@ -65,8 +68,9 @@ export function useWindowControls() {
   }, [bridge]);
 
   const toggleMaximize = useCallback(async () => {
+    const requestedAt = revision.current;
     const result = await bridge?.toggleMaximize?.();
-    if (result && typeof result.maximized === "boolean") {
+    if (revision.current === requestedAt && typeof result?.maximized === "boolean") {
       setMaximized(result.maximized);
     }
   }, [bridge]);
@@ -76,7 +80,7 @@ export function useWindowControls() {
   }, [bridge]);
 
   return {
-    supported: Boolean(bridge?.supported),
+    supported: Boolean(bridge?.supported && ["linux", "win32"].includes(globalThis.vooDesktop?.platform)),
     isMac,
     isWindows,
     maximized,

@@ -25,14 +25,14 @@ The release verifier imports this catalog; do not create another suite list.
 | `inspector` | Fields, menus, toolbar, responsive UI and i18n | Commit/cancel, selection changes, focus and async locale |
 | `platform` | Agent, runtime, loading, native integration and collaboration | Auth, process ownership, reconnect and unmount |
 
-The current inventory contains 117 capability groups, not a census of every
+The current inventory contains 118 capability groups, not a census of every
 button or parameter. All groups remain **partial** until specific acceptance
 rows cover their declared entry points and contexts. Registration is not
 execution, and execution is not exhaustive functional coverage.
 
-The current core release registers 116 browser suites. Nine standalone checks
+The current core release registers 117 browser suites. Ten standalone checks
 are explicitly classified in `ADDITIONAL_BROWSER_CHECKS`: three external CLI
-integrations, one local fixture, two native-host checks, hardware FPS, network
+integrations, one local fixture, three native-host checks, hardware FPS, network
 image/model acceptance, and one unreviewed screenshot audit. They appear as
 **not-run** until separately executed. Registration is not execution. A new
 top-level `.e2e.mjs` file without core registration or explicit standalone

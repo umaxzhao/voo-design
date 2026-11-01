@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
+const { windowChromeOptions, attachWindowChrome, registerWindowControls } = require("./window-chrome.cjs");
 
 let mainWindow = null;
 const closeGuard = require("./close-guard.cjs").createCloseGuard({ app, dialog, getWindow: () => mainWindow });
@@ -14,8 +15,7 @@ function createMainWindow() {
     minHeight: 700,
     backgroundColor: "#000000",
     show: isDev,
-    titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
-    trafficLightPosition: { x: 14, y: 14 },
+    ...windowChromeOptions(process.platform),
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -78,6 +78,7 @@ function createMainWindow() {
   });
 
   require("./native-menu.cjs")({ app, Menu, dispatchMenuAction, platform: process.platform });
+  attachWindowChrome(mainWindow, process.platform);
 }
 
 function dispatchMenuAction(action) {
@@ -88,6 +89,7 @@ function dispatchMenuAction(action) {
 
 
 ipcMain.handle("app:version", () => app.getVersion());
+registerWindowControls({ ipcMain, getWindow: () => mainWindow });
 
 // IPC Handlers
 ipcMain.handle("dialog:openFile", async (_, options = {}) => {

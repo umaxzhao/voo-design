@@ -34,6 +34,25 @@ jobs:
       - run: npm run lint:design
       - run: npm run build
       - run: npm test
+      - name: Install Linux window-test tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends openbox xvfb xdotool
+      - name: Verify actual Linux desktop chrome
+        env:
+          VOO_WINDOW_ARTIFACT_DIR: ${{ runner.temp }}/voo-window-evidence
+        run: |
+          xvfb-run -a -s '-screen 0 1600x1000x24' bash -c '
+            openbox > "$VOO_WINDOW_ARTIFACT_DIR-openbox.log" 2>&1 &
+            wm_pid=$!
+            trap "kill $wm_pid" EXIT
+            node tests/e2e/desktop-window-native.e2e.mjs
+          '
+      - name: Upload Linux window-test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-window-evidence
+          path: ${{ runner.temp }}/voo-window-evidence/
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         with:
           name: editor-dist

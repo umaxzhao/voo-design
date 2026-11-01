@@ -1,0 +1,34 @@
+.controls {
+  display: flex;
+  align-self: stretch;
+  flex: 0 0 auto;
+  margin-left: 8px;
+  border-left: 1px solid rgb(255 255 255 / 10%);
+  -webkit-app-region: no-drag;
+}
+
+.button {
+  display: flex;
+  width: 48px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.75;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.button:hover,
+.button:focus-visible {
+  background: rgb(255 255 255 / 10%);
+  opacity: 1;
+}
+
+.button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -3px;
+}
