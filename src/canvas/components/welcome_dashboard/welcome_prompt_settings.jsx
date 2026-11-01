@@ -1,8 +1,9 @@
 import React from "react";
 import PropTypes from "prop-types";
 import WelcomePromptTypes from "./welcome_prompt_types.jsx";
+import { AI_GEN_TYPES } from "./welcome_constants.js";
 import FlatSelect from "../flat_select.jsx";
-import { DEFAULT_STYLE_ID, DEFAULT_DESIGN_SYSTEM_ID } from "./generation-options.js";
+import { AUTO_SIZE_ID, DEFAULT_STYLE_ID, DEFAULT_DESIGN_SYSTEM_ID } from "./generation-options.js";
 
 /** One secondary home for every advanced generation option. */
 export default function WelcomePromptSettings({
@@ -23,6 +24,8 @@ export default function WelcomePromptSettings({
   sizeOptions,
   onSelectSize
 }) {
+  const automaticSize = AI_GEN_TYPES.find(preset => preset.id === activePill) ?? AI_GEN_TYPES[0];
+  const automaticSizeLabel = `${t("welcome.prompt.sizeAuto")} · ${automaticSize.width} × ${automaticSize.height}`;
   return <div ref={panelRef} role="dialog" aria-label={t("welcome.prompt.settingsLabel")} className="welcome-composer-settings fixed z-[250] w-80 max-w-[calc(100vw-1rem)] max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-2xl border border-white/10 bg-[#171717] p-3 shadow-panel" style={panelPos ?? {
     left: -9999,
     top: 0
@@ -55,16 +58,20 @@ export default function WelcomePromptSettings({
         }))} className="welcome-composer-select w-full min-w-0" triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs" panelClassName="!z-[400]" portal />
             </ComposerField>
             <ComposerField label={t("welcome.prompt.sizeLabel")}>
-              <FlatSelect value={`${currentSize.width}x${currentSize.height}`} onChange={value => {
+              <FlatSelect value={currentSize ? `${currentSize.width}x${currentSize.height}` : AUTO_SIZE_ID} onChange={value => {
+          if (value === AUTO_SIZE_ID) {
+            onSelectSize?.(null);
+            return;
+          }
           const option = sizeOptions?.find(item => `${item.width}x${item.height}` === value);
           if (option) onSelectSize?.({
             width: option.width,
             height: option.height
           });
-        }} label={t("welcome.prompt.sizeLabel")} options={(sizeOptions ?? []).map(option => ({
+        }} label={t("welcome.prompt.sizeLabel")} options={[{ value: AUTO_SIZE_ID, label: automaticSizeLabel }, ...(sizeOptions ?? []).map(option => ({
           value: `${option.width}x${option.height}`,
           label: `${option.width} × ${option.height}`
-        }))} className="welcome-composer-select w-full min-w-0" triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs" panelClassName="!z-[400]" portal />
+        }))]} className="welcome-composer-select w-full min-w-0" triggerClassName="!h-9 !w-full !rounded-xl !border !border-white/10 !bg-[#202020] !px-2 !text-xs" panelClassName="!z-[400]" portal />
             </ComposerField>
               </div>
               </div>;
@@ -99,7 +106,7 @@ WelcomePromptSettings.propTypes = {
   currentSize: PropTypes.shape({
     width: PropTypes.number,
     height: PropTypes.number
-  }).isRequired,
+  }),
   sizeOptions: PropTypes.array,
   onSelectSize: PropTypes.func
 };

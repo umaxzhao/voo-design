@@ -56,10 +56,7 @@ export function WelcomePromptComposer({
   const panelRef = useRef(null);
   const settingsTriggerRef = useRef(null);
   const activePreset = AI_GEN_TYPES.find(preset => preset.id === activePill) ?? AI_GEN_TYPES[0];
-  const currentSize = size ?? {
-    width: activePreset.width,
-    height: activePreset.height
-  };
+  const currentSize = size;
   useEffect(() => {
     if (!advancedOpen) return undefined;
     const onPointerDown = event => {
