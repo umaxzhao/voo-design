@@ -51,8 +51,8 @@ The independent browser reference checks all nine modes under three viewport,
 clip/alpha configurations, cache reuse, offscreen rejection and actual keyboard
 edit/undo/redo. The readback-bound, dissolve-phase and vivid-light failures are
 retained. Both unit and browser repairs passed targeted checks; the combined
-source, including upstream error recovery 188e295b, needs a fresh full gate and
-new paired production measurements before publication. Prior script failures
+source now has fresh full-gate and paired production receipts below;
+older stage results do not certify the final composition. Prior script failures
 read unavailable page metadata and waited for an optional warm flag or a stale
 camera snapshot; they are harness failures, not accepted timing samples.
 
@@ -71,9 +71,9 @@ Text nodes, named styles and the percentage field now share the same positive
 1%-300% leading bounds and 1% editing step. Native 75% leading survives style
 application and portable normalization. The native browser fixture now uses
 0.75 instead of 1.2; two failing unit assertions were retained before repair.
-The final source also includes upstream hosted repair/runtime fixes be4426e2,
-so its 120-step gate, live four-page cache audit and timing receipts must be
-recorded afresh. No historical gate is inherited by that changed source.
+The final source also includes upstream hosted repair/runtime fixes be4426e2
+and desktop window chrome 196b6960. Its 121-step gate, live four-page cache audit
+and timing receipts were recorded afresh; no historical gate is inherited.
 
 ## Repair
 
@@ -98,18 +98,73 @@ SVG paths preserve appearance, not editable SVG text. Native `.voo` retains
 both editable content and the cache. This does not embed or redistribute a
 commercial font, and cannot invent glyphs omitted from the source file.
 
+## Final committed acceptance — 2026-11-02
+
+Fixed application/test source `3d71b6d2dda95278810c575cceae390252538e1a`:
+**121/121 steps**, 117 core browser suites, 4953 units passed / 4 skipped,
+606 unit files passed / 3 skipped, 1481 design files and production build passed.
+All assertions remained enabled. The clean source stayed unchanged throughout.
+Ten standalone checks are not-run in this local gate; its functional coverage
+remains partial. The same source's [CI](https://github.com/umaxzhao/voo-design/actions/runs/41341540741)
+passed, including the separately executed actual Linux window job. Formatting
+checks covered all 24 task JavaScript/JSX files without changing application code.
+A first ad hoc format invocation incorrectly prohibited existing trailing commas;
+that configuration failure is retained separately, not treated as a product defect.
+
+Actual native file selection followed by API page activation loaded all four
+production pages (12 / 3897 / 70 / 886 nodes). All **756/757** text caches were
+valid in the live engine, with zero rescaled native boxes and zero page errors.
+This certifies the loaded caches, not pointer interaction with the page switcher.
+All 20 mixed-size cases plus one sample per nine outlined families produced
+29 isolated comparisons with **zero RGBA differences** against independent
+native glyph command construction. Origin/paint normalization limits still apply.
+
+Two fresh production orders compare baseline `196b6960` to this exact source on
+the same 3897-node Page 1, first Frame/camera, 1440x1000 viewport, DPR 1,
+Chromium 156/Metal, Apple M4 Pro. Real keyboard edits and Ctrl-wheel inputs
+include driver round trips and two frames; these are not physical latency/FPS.
+
+| Order | Edit median ms before → after | Zoom median ms before → after | Import interactive ms before → after |
+| --- | --- | --- | --- |
+| Forward | 717 → 509.5 | 150 → 196.5 | 1996.7 → 2018.4 |
+| Reverse | 720 → 463.5 | 150.5 → 151.5 | 1951.9 → 2011.8 |
+
+Edit samples improve 29%-36%; import is not faster. **Zoom is unresolved**:
+one order is approximately flat and the other is 31% slower. Keep that adverse
+result; no zoom improvement or Figma parity is claimed. Canvas measurements fell
+2436/2432 → 10, baseline M measurements 729/727 → 2. Shared-host load, API setup
+and original corrected glyph geometry are recorded in raw receipts.
+
+The verified production artifact was deployed via `scripts/deploy-editor.sh`
+with build reuse and a server rollback backup. [Canonical preview](https://voo.run/editor/)
+HTML plus seven entry/critical assets matched local SHA-256; the real online
+native-font and blend keyboard/undo/redo checks loaded **76 distinct JS/CSS**
+assets, all byte-identical, with zero page errors. Production cold portable
+reopen was not run; that case passed in the unmodified registered local suite.
+No desktop installer, tag or Release was issued; existing desktop binaries are
+not certified updated by this Web deployment.
+
+[Compact receipt](figma-text-fidelity-evidence.json),
+[PR #89](https://github.com/umaxzhao/voo-design/pull/89).
+Raw logs/scripts, retained failures, sample screenshots, full gate JSON and
+publication hashes are archived locally under
+`/Users/tt/.codex/visualizations/2026/10/26/01a175a0-cb5b-7133-9850-c4a861a4b01d/nba-font-fidelity/`.
+The archive excludes original FIG/V8 source payloads; its SHA-256 manifest
+indexes the preserved evidence. Later documentation-only commits do not change
+this accepted application/test source.
+
 ## Acceptance rows
 
 | Context | Assertions | Evidence/status |
 | --- | --- | --- |
 | Original units | RAW ratio, mixed-size native appearance, layout without replacement metrics, portable restoration. | Four failed assertions retained; original editable-layout assertion passed. |
 | Original browser | Real native import, missing font and original 258x126 layout. | Failed: replacement layout width 43 instead of 258. |
-| Unit repair | RAW ratio, exact outlines, no replacement metrics, edit invalidation, portable cache, malformed data, SVG/Skia routing, instance overrides and one parsed path. | Targeted checks recorded separately. |
-| Real browser | Native triangle glyphs at 36/64px, no installed face, zero replacement measurements, exact Canvas/SVG pixels, recolor/content edit, real keyboard undo/redo, cold `.voo` reopen. | Targeted browser passed; full committed gate pending. |
-| Actual NBA mapping | Four pages retain geometry/assets; 756/757 text layers now carry original glyph appearance. | 350 assets / 258136898 bytes retained. |
+| Unit repair | RAW ratio, exact outlines, no replacement metrics, edit invalidation, portable cache, malformed data, SVG/Skia routing, instance overrides and one parsed path. | Targeted and final 121-step gate passed on the recorded source. |
+| Real browser | Native triangle glyphs at 36/64px, no installed face, zero replacement measurements, exact Canvas/SVG pixels, recolor/content edit, real keyboard undo/redo, cold `.voo` reopen. | Passed in the final committed full gate; public native scenario also passed. |
+| Actual NBA mapping | Four pages retain geometry/assets; 756/757 text layers now carry original glyph appearance. | 350 assets / 258136898 bytes retained; all 756 caches valid in the actual four-page engine. |
 | Source omission | One SFProText Semibold `9:41` clock has no glyph data, fill or stroke outline in the original. | Fallback remains; exact reconstruction not certified. |
-| Performance | Actual large Page 1 import, text metrics, input/camera work in fresh production browsers before/after. | Pending fixed-source measurement. |
-| Publication | Exact source, PR checks, canonical bytes and public interaction. | Separate post-publication receipt required. |
+| Performance | Actual large Page 1 import, text metrics, input/camera work in fresh production browsers before/after. | Final paired medians above; edit improved, import/zoom not certified improved. |
+| Publication | Exact source, PR checks, canonical bytes and public interaction. | Canonical bytes and 76 actually loaded assets match; online text/blend interactions passed. |
 
 The first synthetic archive omitted required Kiwi fields; those fixture errors
 are retained separately and are not application failures. A chained-picker
