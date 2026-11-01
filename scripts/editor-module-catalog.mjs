@@ -226,6 +226,7 @@ export const EDITOR_MODULES = [
       "tests/unit/comments_panel_slot.test.jsx", "src/canvas/components/editor_mobile_navigation.css",
       "src/canvas/components/comment_view_types.js", "src/canvas/components/comment_launcher_host.jsx", "src/canvas/components/editor_comment*",
       "tests/e2e/inspector-control-cases.mjs", "src/canvas/components/scrub_field.jsx",
+      "tests/e2e/number-input-checkpoint-checks.mjs", "tests/e2e/inspector-audit-panel.mjs", "src/canvas/components/bounded_number_input.jsx",
       "src/canvas/components/ui/color_field.jsx", "src/canvas/components/inspector_primitives.jsx",
       "src/canvas/components/design_system_cards.jsx",
       "tests/e2e/typography-inspector-cases.mjs", "tests/e2e/context-submenu-checks.mjs",

@@ -116,3 +116,16 @@ fixes. Preserve them in the combined candidate. The ba834cc results above are
 pre-integration evidence only; rerun the entire clean gate and fresh paired
 performance against 0f096fa before publication. No earlier result certifies
 the changed combined source.
+
+The first combined gate on 817d9b3 stopped at inspector step 84: actual
+multi-selection rotation undo restored both model values but left the field
+display stale. Isolated repeats passed on both 817d9b3 and main 0f096fa; those
+repeats do not erase the original incomplete gate. A controlled real-field
+publication harness then reproduced the same display gap deterministically:
+commit and immediate undo publish the original value before the panel renders.
+The effect previously observed only value changes. Reconcile every unfocused
+render without overwriting a focused draft; retain Enter, Escape and blur
+assertions plus the original real-engine/MCP undo scenario. This is part of
+`inspector.field-commit`; add explicit field and harness ownership. The failing
+harness and corrected targeted inspector run are retained. The updated combined
+source requires another complete clean gate and fresh measurements.

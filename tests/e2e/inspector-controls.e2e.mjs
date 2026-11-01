@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+import { verifyNumberInputCheckpoint } from "./number-input-checkpoint-checks.mjs";
 
 await withEditorBrowser(async ({ page, tool, errors }) => {
-  const checks = [];
+  await verifyNumberInputCheckpoint(page);
+  const checks = ["numeric field reconciles a coalesced commit/undo and retains focused typing, Escape and blur semantics"];
   const mount = async (kind, id) => {
     await page.evaluate(async ({ kind, id }) => {
       const { mountAuditPanel } = await import("/tests/e2e/inspector-audit-panel.mjs");
