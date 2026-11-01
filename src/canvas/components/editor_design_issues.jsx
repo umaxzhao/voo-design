@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { lintDesign } from "../agent/design_quality/lint.js";
 import { useI18n } from "../use_i18n.js";
 import { IconAlertTriangle, IconChevronDown, IconChevronRight } from "../icons.jsx";
@@ -92,10 +93,10 @@ export default function EditorDesignIssues({ objects, engine }) {
       </button> : null}
     </div>
     {open && issues ? <div className="mt-1 max-h-48 space-y-1 overflow-y-auto">
-      {issues.length === 0 ? <p className="px-2 py-2 text-[10px] text-neutral-500">{t("editor.designIssues.clean")}</p> : issues.map((issue, index) => {
+      {issues.length === 0 ? <p className="px-2 py-2 text-[10px] text-neutral-500">{t("editor.designIssues.clean")}</p> : issues.map((issue) => {
         const copy = getLocalizedIssueCopy(issue, t);
         return <article
-          key={`${issue.rule}-${issue.nodeIds.join("-")}-${index}`}
+          key={`${issue.rule}-${issue.nodeIds.join("-")}-${issue.message}`}
           className="rounded-lg bg-white/[0.035] px-2 py-1.5"
         >
           <p className="text-[10px] leading-relaxed text-neutral-300">{copy.message}</p>
@@ -112,3 +113,8 @@ export default function EditorDesignIssues({ objects, engine }) {
       })}</div> : null}
   </section>;
 }
+
+EditorDesignIssues.propTypes = {
+  objects: PropTypes.arrayOf(PropTypes.object).isRequired,
+  engine: PropTypes.object,
+};
