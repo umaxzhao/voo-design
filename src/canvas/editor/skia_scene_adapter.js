@@ -1,6 +1,6 @@
 import { containerOpacity } from "./container-opacity.js";
 import { frameSceneFills } from "./frame-fills.js";
-import { isPlainRectList } from './render_plain_rects.js';
+import { isPlainRectList } from "./render_plain_rects.js";
 /**
  * Our editor document, expressed as the scene the Skia renderer draws.
  *
@@ -14,6 +14,7 @@ import { toSkiaBlendMode, strokeOf } from "./skia_adapter_paint.js";
 import { isBoxOffscreen } from "./viewport_culling.js";
 import { hasUnsupportedBooleanSources } from "./unsupported-boolean-sources.js";
 import { isMeshGradient } from "../color_picker/mesh_gradient.js";
+import { importedTextCache } from "./imported-text-cache.js";
 
 /** Where a page sits in world space when several are laid out at once. */
 export const PAGE_GAP = 80;
@@ -43,6 +44,8 @@ function requiresNodeFallback(node) {
   // The scene adapter cannot express painted alpha/luminance mask chains
   // or per-paint blends. Use the compositor that preserves their pixels.
   node.maskBase || node.clipTo || Array.isArray(node.fills) ||
+  // The adapter cannot express native glyph outlines as editable Skia text.
+  importedTextCache(node) ||
   // Mesh fills use Skia image paints. Glyph and stroke image paints have
   // no equivalent adapter representation, so retain the 2D silhouette.
   node.kind === "text" && isMeshGradient(node.fill) || isMeshGradient(node.stroke) || hasUnsupportedBooleanSources(node) || node.fillHidden || node.strokeHidden || Array.isArray(node.strokes) && node.strokes.some(stroke => stroke?.visible !== false && stroke?.strokeWidth > 0) ||

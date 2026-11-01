@@ -1,6 +1,7 @@
 // Text node typography layout, decorations, and warped text rendering.
 
 import { readNodeTransform } from "./scene_state_contract.js";
+import { paintImportedText } from "./render-imported-text.js";
 import {
   getTextLayout,
   textFont,
@@ -22,6 +23,7 @@ import {
 } from "./render_warp_geometry.js";
 
 export function paintTextBody(ctx, node) {
+  if (paintImportedText(ctx, node)) return;
   if (node.textPath && (node.textPath.points?.length || node.textPath.anchors?.length)) {
     paintTextOnPath(ctx, node);
     return;

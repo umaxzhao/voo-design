@@ -197,15 +197,17 @@ export const EDITOR_MODULES = [
     id: "text",
     title: "Text editing and typography",
     paths: [
+      "tests/e2e/native-text-fidelity-checks.mjs", "tests/unit/figma/figma-text-fidelity.test.js", "tests/unit/figma/testing/native-text.js",
       "src/canvas/editor/editor_annotations.js", "src/canvas/editor/*text*", "src/canvas/editor/*font*", "src/canvas/editor/drawing_api_shapes.js",
       "src/canvas/components/editor_text*", "src/canvas/components/editor_properties/text*", "tests/unit/text_section_compact.test.jsx",
       "tests/unit/tools_text_pen_shape.test.jsx", "tests/unit/affinity_tool_properties_panel.test.jsx", "tests/unit/text_on_path_engine_ops.test.js",
       "tests/unit/text-spacing-probe.test.js",
     ],
     related: [
-      "selection", "layout", "compositing", "documents", "platform",
+      "selection", "layout", "compositing", "documents", "platform", "vectors",
     ],
     features: [
+      "text.imported-appearance",
       "text.edit", "text.box-sizing", "text.typography", "text.font-loading", "text.placement-transactions", "text.spacing-probe",
     ],
     suites: [

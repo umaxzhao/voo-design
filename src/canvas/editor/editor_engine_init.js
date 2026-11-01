@@ -21,6 +21,7 @@ import { getImageBlobMap } from "../store/db.js";
 import * as ops from "./doc_ops.js";
 import { reflowAutoLayout } from "./scene_auto_layout.js";
 import { sameAutoLayoutGeometry } from "./auto-layout-sharing.js";
+import { importedTextCache } from "./imported-text-cache.js";
 
 export function createEngineInitController({
   ctx,
@@ -104,6 +105,7 @@ export function createEngineInitController({
   function queueFontLoads(next) {
     for (const node of next.nodes) {
       if (node.kind !== NODE_KIND.TEXT || !node.fontFamily) continue;
+      if (importedTextCache(node)) continue;
       if (fontLoadRequests.has(node.fontFamily)) continue;
       const wait = ensureFontLoaded(node.fontFamily);
       if (!wait) continue;

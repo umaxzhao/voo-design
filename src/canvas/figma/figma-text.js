@@ -53,6 +53,7 @@ function lineHeightRatio(lineHeight, fontSize) {
   const value = Number(lineHeight.value);
   if (!Number.isFinite(value) || value <= 0) return LINE_HEIGHT_RATIO;
   if (lineHeight.units === "PERCENT") return value / 100;
+  if (lineHeight.units === "RAW") return value;
   return fontSize > 0 ? value / fontSize : LINE_HEIGHT_RATIO;
 }
 
