@@ -1,6 +1,6 @@
 // Run with: flock /tmp/voo-e2e.lock node tests/e2e/html2nodes.e2e.mjs
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname } from "node:path";
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import { chromium } from 'playwright';
 import { startEditorBrowserServer } from './editor-browser-server.mjs';
 import postcss from 'postcss';
@@ -8,7 +8,7 @@ import tailwind from 'tailwindcss';
 import { readFile, readdir, mkdir, writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
-const output = process.env.HTML2NODES_SHOTS ?? join(tmpdir(), "voo-html2nodes");
+const output = process.env.HTML2NODES_SHOTS ?? dirname(editorArtifactPath("html2nodes/report.json"));
 await mkdir(output, { recursive: true });
 const fixtureDir = new URL('../fixtures/html2nodes/', import.meta.url);
 const fixtures = await Promise.all((await readdir(fixtureDir)).filter(n => n.endsWith('.html')).sort().map(async name => ({ name: name.replace('.html', ''), html: await readFile(new URL(name, fixtureDir), 'utf8') })));
@@ -25,6 +25,7 @@ try {
     const result = await page.evaluate(async ({ html, css, reset }) => {
       const { htmlToDocument } = await import('/src/canvas/editor/html_import.js');
       const { drawNode } = await import('/src/canvas/editor/render_node_dispatch.js');
+      const { getTextLayout, textFont } = await import('/src/canvas/editor/text_metrics.js');
       document.body.innerHTML = `<style>${reset}${css}</style>${html}`;
       await document.fonts.ready;
       await Promise.all([...document.images].map(image => image.decode()));
@@ -37,7 +38,11 @@ try {
       const ctx = canvas.getContext('2d'); ctx.fillStyle = doc.backgroundColor; ctx.fillRect(0, 0, 320, 200);
       for (const node of doc.nodes) drawNode(ctx, node, n => bitmaps.get(n.id));
       window.__html2nodesCanvas = canvas;
-      return { nodes: doc.nodes, warnings, native: canvas.toDataURL() };
+      const typography = doc.nodes.filter(node => node.kind === 'text').map(node => ({
+        text: node.text, x: node.x, y: node.y, width: node.width, height: node.height,
+        font: textFont(node), layout: getTextLayout(ctx, node),
+      }));
+      return { nodes: doc.nodes, warnings, typography, native: canvas.toDataURL() };
     }, { ...fixture, css, reset });
     const htmlShot = `${output}/${fixture.name}-html.png`;
     await page.screenshot({ path: htmlShot });
@@ -60,6 +65,7 @@ try {
       return { diffPercent: different / (320*200) * 100, meanChannelErrorPercent: absolute / (320*200*3*255) * 100, image: reference.toDataURL() };
     }, `data:image/png;base64,${(await readFile(htmlShot)).toString('base64')}`);
     await writeFile(`${output}/${fixture.name}-diff.png`, Buffer.from(diff.image.split(',')[1], 'base64'));
+    await writeFile(`${output}/${fixture.name}-layout.json`, JSON.stringify(result.typography, null, 2));
     const row = { fixture: fixture.name, nodes: result.nodes.length, diffPercent: +diff.diffPercent.toFixed(3), meanChannelErrorPercent: +diff.meanChannelErrorPercent.toFixed(3), warnings: result.warnings };
     report.push(row); console.log(JSON.stringify(row));
     assert(result.nodes.length > 0);
