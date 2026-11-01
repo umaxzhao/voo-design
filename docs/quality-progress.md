@@ -7,6 +7,19 @@
 - 命中区域世界边界只计算一次，去掉已被父级覆盖的子区域，保持负坐标、裁剪、空隙和 8px 点击范围；共享相机不在每个缩放事件重复刷新属性/Agent，活动文字编辑器继续实时更新。
 - 同一 test.fig 首轮实际输入等待中位数约 1222→83ms；停止后约 230ms 恢复精确画面，1000×800 首屏独立画面对比 0 像素差异。仅属记录的补丁试验，不是 GPU FPS、Figma 对等基准或全属性认证。
 - 真实缩放/精确像素/取色/编辑/撤销重做、高分屏负坐标和邻页命中、资源及生命周期定向回归通过；新增第 88 组核心浏览器登记，首个固定版本 d3bec48 的完整检查在新增连续缩放用例发现一次额外精绘后停止，原始失败保留；已修复排队输入取消，并明确字体稳定/真实滚轮突发前提，严格重绘和像素断言不变，6ababe5 重跑通过 4,730 单测及严格缩放用例，但布局夹具新建文档的默认 30s 启动等待超时；相同源码隔离业务断言全部通过。实际引擎模块延迟 35s 已复现旧夹具问题；只给独立文档启动阶段匹配已有 90s 预算，保留业务断言与失败报告，完整门禁待重新运行。[验收与证据](audits/design-editor-interaction-audit.md#canvas-zoom-efficiency--2026-11-01)。`native_studio` 排除。
+
+## 本轮：Claude 自测问题单收口（验证中）
+
+- 来源为用户提供的 2026-11-01 清单，基于 `78155ee` 与私人未提交工作区。先快进到 `c85224c` 逐项核对；不把旧提交、私人草稿和正式版混为一份通过结果。
+- A1：约束图的 19×2px 热区实测失败；修正为独立透明点击区，六条轴/边真实中点点击、互不串轴、一次撤销与键盘通过。A2：320/390/768px 的鼠标及触控 Chromium 导航/主工具/快捷条/面板页签达到 48px；画布精细手柄、约束示意图不冒记为 48px 普通控件。
+- B1/B2：手机浏览器恢复上下分屏；文件卡片恢复单列，隐藏操作不拦截卡片主体，末尾保留设置按钮空间。真实文件中点打开、更多菜单、首页/设置与触控/鼠标缩放布局套件已通过。
+- A3/A4/B5：当前正式源码已具备翻译、五张 API 卡契约、`resize_document` 文档以及两份测试文件，128 项原有定向单测通过。B3：正式版本仍为一个高级入口；私人工作区的另一版首页未合入，不宣称私人草稿也通过。B6：保留既有评论面板位置和首页隔离修复，以当前完整门禁复核。
+- B4：新旧 URL 解析已覆盖，但实测线上 `/r/...` 返回 404；补入可回滚的 nginx 兼容规则，部署时再核验旧链接及片段密钥保留。
+- C：十份旧浏览器套件已去除固定端口/`/workspace` 依赖，改用隔离夹具或自启动服务、临时输出目录。修复过时选择器、树总数和初始 Frame 的断言，保留像素/导出/撤销要求；登记纳入核心门禁，最终完整执行待记录。
+- 新发现：HTML 导入标题被字距能力探测污染后意外换行，原 1% 像素门槛失败。改为保存/还原 Canvas 状态；五份 HTML 样本均回到门槛内，标题文字像素差由 2.617% 降至 0，新增空 getter 回归单测。
+- N1–N3 仍是独立验收：原生 Swift/签名 Electron、实体 iOS/Android、IME/软键盘、真实登录/付费服务、真实多机协作与硬件性能。本轮没有执行它们。Claude 私人的通用巡检/截图基线尚未合入正式仓库；不得拿自动创建基准当作视觉通过。
+- 详细问题映射与证据见 [问题单收口记录](audits/panel-control-audit.md#claude-checklist-closeout)。当前没有宣布完整门禁或线上部署完成。
+
 ## 本轮：图层操作复查与多 Frame 拖动（已完成声明范围）
 - `selection.transforms` / `selection.frame-title-selection` / `selection.cancel` / `layers.duplicate-delete-lock`：旧版本 32 组图层及关联检查通过，但新增实际多选发现内容区误拖子层、标题清空多选、锁定子层时只移动外框三个缺口，均已修复并保留失败证据。新增 16 个实际交互上下文与 3 条单测；42 项定向单测通过，固定 `5cd112e` **91/91 发布步骤、87 组核心浏览器、4716 单测通过/4 跳过**，GitHub CI 通过。[PR #79](https://github.com/umaxzhao/voo-design/pull/79) 合入 `f7f782c` 且源码树一致。本地主应用仅三文件补丁、16 个隔离浏览器场景通过，其他草稿保留。已部署 la2，正式入口及 82 个加载资源 SHA-256 一致，线上六个真实多选拖动/锁定/取消场景通过，三种移动入口验证像素与一次撤销/重做，零页面异常。证据 `/private/tmp/voo-license-regression/multiframe-{release,ci,primary-proof,main-tree-proof,production-proof}.json`；功能覆盖仍部分，不认证全部蒙版/布局/锁定组合、实体输入设备或签名安装包。[范围与证据](audits/design-editor-interaction-audit.md#multi-frame-layer-operation-audit--2026-11-01)。
 ## 本轮：正式分享链接（已完成声明范围）
@@ -78,7 +91,6 @@
   - 补充 `tests/unit/container-command-boundaries.test.js` 布尔图层层级保持断言。
   - 优化 `tests/unit/dirty_rect.test.js` 与 `tests/unit/open-project.test.js` 高负载单测超时时间，以及 `tests/unit/node_at_point_spatial.test.js` 门限。
   - 固定验证提交 [`215d501`](https://github.com/umaxzhao/voo-design/commit/215d501534e696f35c1d1ab41c0e170c26eb8c9f)：**90/90 发布步骤通过，86 组核心浏览器通过，全量单测 4601 通过、4 跳过、0 失败**，证据 `/private/tmp/voo-release-round5.json`。
-
 
 ## 本轮：文字排版可读性与 Lucide 图标（已完成声明范围）
 - `inspector.typography-clarity` / `text.typography`：参考 [Figma 文字属性分组](https://help.figma.com/hc/en-us/articles/360039956634-Explore-text-properties)，直接显示字体、字重、字号、行高、字距、格式和对齐标签，明确 px/% 单位。文本框自动/固定宽度放在常用区；方向、大小写、段落、基线与路径文字保留在一个高级入口。

@@ -1,85 +1,9 @@
 // Browser pixel gate for ED-04's GL spatial filters.
 // Run with: node tests/e2e/ed04_pixel_consistency.e2e.mjs
-import { spawn } from "node:child_process";
-import { createServer as createTcpServer } from "node:net";
-import { fileURLToPath } from "node:url";
+import assert from "node:assert/strict";
+import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 
-const ROOT = fileURLToPath(new URL("../../", import.meta.url));
-const GL_UNAVAILABLE = "WebGL2 spatial filter path unavailable";
-
-async function reachable(url) {
-  try {
-    return (await fetch(url, { signal: AbortSignal.timeout(1000) })).ok;
-  } catch {
-    return false;
-  }
-}
-
-async function reserveUrl() {
-  const server = createTcpServer();
-  await new Promise((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", resolve);
-  });
-  const port = server.address().port;
-  await new Promise((resolve, reject) =>
-    server.close(error => error ? reject(error) : resolve()),
-  );
-  return `http://127.0.0.1:${port}/?voo-test=1`;
-}
-
-async function startVite(url) {
-  const child = spawn(
-    process.platform === "win32" ? "npx.cmd" : "npx",
-    ["vite", "--host", "127.0.0.1", "--port", new URL(url).port, "--strictPort"],
-    { cwd: ROOT, detached: true, stdio: ["ignore", "ignore", "pipe"] },
-  );
-  child.on("error", () => {});
-  child.stderr?.on("data", chunk => process.stderr.write(chunk));
-  const deadline = Date.now() + 60000;
-  while (Date.now() < deadline && child.exitCode === null) {
-    if (await reachable(url)) return child;
-    await new Promise(resolve => setTimeout(resolve, 300));
-  }
-  stopProcess(child);
-  throw new Error(`Vite did not start at ${url}`);
-}
-
-function stopProcess(child) {
-  if (!child) return;
-  try {
-    process.kill(-child.pid, "SIGTERM");
-  } catch {
-    try { child.kill("SIGTERM"); } catch { /* Already stopped. */ }
-  }
-}
-
-let child = null;
-let browser = null;
-let exitCode = 1;
-try {
-  let chromium;
-  try {
-    ({ chromium } = await import("playwright"));
-  } catch {
-    throw new Error("Playwright is unavailable; install it and Chromium to run this test.");
-  }
-
-  const explicitUrl = process.env.VOO_URL;
-  let url = explicitUrl && await reachable(explicitUrl) ? explicitUrl : null;
-  if (!url) {
-    url = explicitUrl || await reserveUrl();
-    child = await startVite(url);
-  }
-
-  browser = await chromium.launch({
-    headless: true,
-    args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
-  });
-  const page = await browser.newPage();
-  await page.goto(url, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => Boolean(window.__vooEditor), null, { timeout: 60000 });
-
+await withEditorBrowser(async ({ page }) => {
   const result = await page.evaluate(async () => {
     const width = 64;
     const height = 64;
@@ -168,20 +92,9 @@ try {
     return { differences };
   });
 
-  if (result.unavailable) {
-    process.stderr.write(`${GL_UNAVAILABLE}\n`);
-    exitCode = 2;
-  } else {
-    for (const difference of result.differences) {
-      process.stdout.write(`${difference.filter}: max channel delta ${difference.maxChannelDelta}\n`);
-    }
-    exitCode = result.differences.some(difference => difference.maxChannelDelta > 3) ? 1 : 0;
+  assert.ok(!result.unavailable, "WebGL2 spatial filter path unavailable");
+  for (const difference of result.differences) {
+    console.log(`${difference.filter}: max channel delta ${difference.maxChannelDelta}`);
+    assert.ok(difference.maxChannelDelta <= 3, `${difference.filter} exceeds the original 3-level parity limit`);
   }
-} catch (error) {
-  process.stderr.write(`${error?.stack || error}\n`);
-  exitCode = 1;
-} finally {
-  await browser?.close().catch(() => {});
-  stopProcess(child);
-  process.exitCode = exitCode;
-}
+}, { openDocument: false, mcpLink: false });
