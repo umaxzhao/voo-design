@@ -6,11 +6,44 @@ rules, use [engineering-workflow.md](engineering-workflow.md) and run
 `node scripts/verify-editor-release.mjs` on the exact clean revision. Current
 UI rules in `Design.md` supersede historical descriptions of default controls.
 
-**Version**: 1.0.0  
+**Version**: 1.0.0-beta.1
 **Target Branch**: main  
 **Release Artifacts**: AppImage (Linux), DMG (macOS), NSIS (Windows)
 
 ---
+
+## Desktop prerelease implementation — 2026-11-01
+
+Candidate version: `1.0.0-beta.1`. Initial audit at `ed3db20` found no tags,
+releases, release-workflow runs or configured signing secrets. Only secret
+names were inspected, never values. Historical checked boxes remain historical.
+
+The new workflow builds Windows x64 setup/portable, Linux x64 AppImage and Mac
+Intel/Apple Silicon DMG/ZIP on four native runners. Run with `create_draft=true`
+to assemble a draft only after the full Web gate and every native job succeed. It checks ASAR runtime
+assets/transitive dependencies, connector resources, locale resources, packaged
+startup, real pointer drawing/history, native workspace I/O, cancellation of
+dirty quit while retaining the bridge, and fresh-process project opening.
+The native OS picker/confirmation choices are automated, not manually tested.
+
+The assembly step requires four matching-version/commit smoke receipts,
+checks every update payload hash/size, merges both Mac metadata files and adds
+checksums. Native screenshots/receipts and the Web gate report/browser evidence are retained as CI artifacts. Unsigned
+previews and remaining trust/installer/service/upgrade contexts are disclosed.
+No workflow automatically publishes a stable release or overwrites an existing
+one. Current execution/revision is maintained in [quality-progress.md](quality-progress.md).
+
+Verified candidate: [`eab3bea`](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78).
+[The complete run](https://github.com/umaxzhao/voo-design/actions/runs/41281003764)
+passed 105/105 steps, 101 core browser suites, 4,781 unit tests (4 skipped), design
+checks and all four native targets. The reviewed draft contains seven payloads,
+three update manifests and four matching receipts. Its 21 checksummed assets,
+including release notes and the full Web report, match GitHub's server digests.
+The [Beta page](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.1)
+is the authority for publication status. Packages remain unsigned/not notarized;
+manual installation, OS trust, older-version upgrades and live services remain
+unverified. Eleven additional suites remain not-run; coverage remains partial.
+Documentation-only follow-ups do not change the recorded binary source revision.
 
 ## Pre-Release Phase
 

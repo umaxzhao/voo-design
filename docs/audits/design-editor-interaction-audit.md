@@ -28,9 +28,7 @@
 - 修复方向：区分“写入工作区文件”和“恢复草稿”，所有项目变更都进入可等待的持久化队列；
   用稳定项目 ID 匹配恢复记录。不能只延长等待时间或删除脏标记。
 - 验收：新项目、浏览器工作区、本地授权目录、已有路径项目均在修改后重开恢复一致。
-
 ### F06 · P0 · 关闭前没有可靠刷新最后一笔修改
-
 - 代码确认：草稿调度延迟 1500ms，卸载清理只 `cancel()`；标签关闭直接进入
   `closeDocument`，没有等待这条调度队列完成。
 - 影响：即使其他自动保存条件满足，修改后立即关闭仍有丢失窗口。
@@ -292,6 +290,8 @@ native webview composition, and signed packaging are not certified here.
 - Clean `7056abef00556ee0b53612eb6ef49c68279b75cd` subsequently passed the complete 91-step gate at two-browser concurrency: all 87 core browser suites and 4728 units (4 skipped), plus CI run 41262363765 (`layer-order-release-preintegration.json` / `.log`). The prior busy-host `new_document` startup timeout is retained in `layer-order-release-contention.json` / `.log`; the complete destructive-Boolean suite passed unchanged before the successful full run (`layer-order-startup-recheck.log`). No assertion/timeout was relaxed and no partial runs were stitched.
 - Before publishing, main advanced to `89c124f` with separately verified interface/checklist work and 99 registered core browser suites. Integrate that work without reverting product changes or dropping checks. Resolve Loading-test overlap by retaining both the eight rotating viewport-bound checks and main's independent untransformed layout-gap check. Quality progress retains both task records; only blank lines are compacted to the file-size limit. The integrated 103-step release must pass before merge/deployment; the older 91-step success is not its certificate.
 - Clean `6605aa859c6ac429b39f07eb6bf4bdab6c70ddfa` completed 103/103 steps in one fresh run: 99 core browser suites, 4729 units passed / 4 skipped, and CI run 41263346237. Preserve that exact result as `layer-order-release-prezoom.json` / `.log`. At the final publication guard, main had advanced to `732b1b9` with already-published zoom optimization and its extra core suite. Integrate those changes rather than deploy an older runtime over them. Shared audit/progress records are retained; the final 104-step gate is pending, and neither prior complete version certifies it.
+
+- User interruption ended the `43f0c6d` run before a complete result; its saved partial report is not a 104-step pass. On resume, stop a newly started old-baseline run once current main is found at `8c270d0` with additional published toolbar, desktop release, layer/history and layout/effect work. Preserve all of that source and every registered check; only the progress-document conflict needs resolution. The final catalog now requires 105 steps / 101 core browser suites. Earlier successful 91/103-step reports remain bound to their own commits. GitHub CLI authentication expired; the existing connected GitHub account is the repository owner with explicit admin/push permission, so publication can continue through the connector without reading or requesting a token.
 
 ## Canvas zoom efficiency — 2026-11-01
 

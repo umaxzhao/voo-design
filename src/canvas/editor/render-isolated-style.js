@@ -1,18 +1,31 @@
 import { paintedNodeBounds } from "./painted-node-bounds.js";
 import { isCustomBlendMode } from "./blend_math.js";
+import { isStaticEffectSource } from "./effect-source.js";
 const INNER_STYLES = ["innerShadow", "innerGlow", "satin", "gradientOverlay", "fill", "stroke", "bevel"];
 const paintNodes = new WeakMap();
-export function isolatedStyleNode(node) {
-  let paint = paintNodes.get(node);
-  if (!paint) {
-    paint = {
+function projectedStyleNode(node, generation, fullResolution, bypassAdjustments, isolated) {
+  const fixedSource = isStaticEffectSource(node);
+  // Source generations track fonts, decoded bitmap identities and live pixels.
+  // Callers without a tracked source must retry resource-dependent silhouettes.
+  const tracked = fixedSource || typeof generation === "string";
+  const key = `${fixedSource ? "static" : generation}|${fullResolution ? 1 : 0}|${bypassAdjustments ? 1 : 0}|${isolated ? 1 : 0}`;
+  let cached = tracked ? paintNodes.get(node) : null;
+  if (!cached || cached.key !== key) {
+    cached = { key, paint: {
       ...node,
-      opacity: 1,
-      blendMode: "source-over"
-    };
-    paintNodes.set(node, paint);
+      ...(isolated ? { opacity: 1, blendMode: "source-over" } : {}),
+    } };
+    // Keep one current projection per immutable node, never a version history.
+    if (tracked) paintNodes.set(node, cached);
   }
-  return paint;
+  return cached.paint;
+}
+export function isolatedStyleNode(node, generation = null, fullResolution = false, bypassAdjustments = false) {
+  return projectedStyleNode(node, generation, fullResolution, bypassAdjustments, true);
+}
+/** Backdrop effects cannot isolate the body, but still need resource-aware alpha caches. */
+export function backdropStyleNode(node, generation, fullResolution = false, bypassAdjustments = false) {
+  return projectedStyleNode(node, generation, fullResolution, bypassAdjustments, false);
 }
 export function needsStyleIsolation(node, state) {
   return !state?.isolatedStyle && !isCustomBlendMode(node.blendMode) && !(node.backgroundBlur > 0) && !node.effects?.glass?.enabled && INNER_STYLES.some(kind => node.effects?.[kind]?.enabled);
@@ -24,7 +37,7 @@ export function drawIsolatedStyle(ctx, node, paint) {
   const bounds = paintedNodeBounds(node);
   const points = [[bounds.x, bounds.y], [bounds.x + bounds.width, bounds.y], [bounds.x, bounds.y + bounds.height], [bounds.x + bounds.width, bounds.y + bounds.height]].map(([x, y]) => ({
     x: matrix.a * x + matrix.c * y + matrix.e,
-    y: matrix.b * x + matrix.d * y + matrix.f
+    y: matrix.b * x + matrix.d * y + matrix.f,
   }));
   const left = Math.max(0, Math.floor(Math.min(...points.map(p => p.x))));
   const top = Math.max(0, Math.floor(Math.min(...points.map(p => p.y))));

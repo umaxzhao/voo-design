@@ -1,5 +1,19 @@
 import assert from "node:assert/strict";
 
+/** Catalog layout must not depend on CLIs installed on the test host. No API
+ * credentials or generation are needed to exercise the actual picker UI. */
+export async function prepareResponsiveModels(page, configured) {
+  await page.route("**/health", route => route.abort());
+  await page.addInitScript(configured => {
+    localStorage.setItem("voo.custom_providers", JSON.stringify(configured ? [{
+      id: "responsive-api", name: "Responsive API", baseUrl: "https://responsive.invalid/v1",
+      models: Array.from({ length: 32 }, (_, index) => ({
+        id: `layout-${index + 1}`, label: `Layout Model ${index + 1}`,
+      })),
+    }] : []));
+  }, configured);
+}
+
 export const settled = page => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 
 export async function settlePanels(page) {

@@ -111,14 +111,33 @@ Base64 is encoding, not encryption: keep the complete encoded value in the
 secret store. Electron-builder imports it into temporary signing storage; no
 manual decoding or repository certificate file is needed. Do not echo it.
 
-The real workflow is [release.yml](../.github/workflows/release.yml). Version
-tags (`v*`) always build Linux AppImage, upload an Actions artifact, and attach
-it to a GitHub Release using the scoped `GITHUB_TOKEN`. Manual dispatch can
-also enable `build_mac` and/or `build_win`. Those optional jobs run on native
-runners and receive certificate/Apple secrets through conditional environment
-expressions; absent secrets are empty strings and yield unsigned builds.
-Desktop installers are uploaded as Actions artifacts. Manual dispatch does not
-create a release. Runner availability and the repository's Actions quota apply.
+The workflow is [release.yml](../.github/workflows/release.yml). Tag pushes and
+manual dispatch build Windows x64, Linux x64, macOS Intel and Apple Silicon on
+four native runners. `create_draft=true` on a manual run (or a version tag)
+assembles a **draft prerelease** only after checks, packaging inspection and
+native smoke succeed on all four targets. No job automatically publishes it.
+
+Every target runs `npm run release:build -- <platform> <arch>`, including
+Electron-mode assets and connector preparation, then `release:smoke`. macOS
+uses its native `en`/`zh_CN` framework language identifiers. Missing required
+transitive dependencies or connector resources fail package inspection.
+
+Each job uploads installers, generated update metadata/blockmaps and its
+native evidence. The draft job merges both Mac architectures without replacing
+either update payload, verifies SHA-512 references and writes SHA256SUMS.txt.
+Its release-write permission is separate from read-only build jobs. Existing
+releases are never overwritten. Desktop artifact names contain no spaces;
+Windows setup and portable executables have distinct names.
+
+Absent signing secrets produce unsigned previews, explicitly disclosed in the
+release notes. This smoke checks packaged startup, trusted pointer drawing and
+undo/redo, actual filesystem IPC, cancellation of dirty quit without losing
+the bridge, and physical project reopening in a fresh process/profile. The OS
+picker/confirmation results are automated; interactive installer UX, OS trust,
+real authenticated services and old-version updating need separate acceptance.
+
+Native runner labels are pinned using the [GitHub runner reference](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job).
+Beta metadata uses an explicit publish channel, following the [electron-builder channel guidance](https://www.electron.build/v26/docs/tutorials/release-using-channels/).
 
 ## Smoke checklist
 

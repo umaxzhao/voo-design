@@ -1,3 +1,4 @@
+import { subtreeMatcher } from "./editor_layer_search.js";
 import {
   describeNode,
   isGroupNode,
@@ -65,22 +66,9 @@ export function buildInactiveCanvasRows(
 
   const normalizedQuery = (query || "").trim().toLowerCase();
 
-  const subtreeMatches = (node, seen = new Set()) => {
-    if (!normalizedQuery) return true;
-    if (seen.has(node.id)) return false;
-    seen.add(node.id);
-
-    const label = describeNode(node, docIndexOf.get(node.id) ?? 0, labels);
-    if (label.toLowerCase().includes(normalizedQuery)) return true;
-
-    for (const child of childrenMap.get(node.id) ?? []) {
-      if (subtreeMatches(child, seen)) return true;
-    }
-    for (const member of clipMap.get(node.id) ?? []) {
-      if (subtreeMatches(member, seen)) return true;
-    }
-    return false;
-  };
+  const subtreeMatches = !normalizedQuery ? () => true :
+    subtreeMatcher(nodes, childrenMap, clipMap, node =>
+      describeNode(node, docIndexOf.get(node.id) ?? 0, labels).toLowerCase().includes(normalizedQuery));
 
   const rows = [];
   const visited = new Set();
@@ -139,6 +127,7 @@ export function buildInactiveCanvasRows(
   // Fallback sweep: recover any cyclic or detached nodes so 100% of nodes are accounted for
   for (let i = nodes.length - 1; i >= 0; i -= 1) {
     const node = nodes[i];
+    if (normalizedQuery && !subtreeMatches(node)) continue;
     if (!visited.has(node.id) && !hasVisitedAncestor(node)) {
       pushRow(node, 0);
     }

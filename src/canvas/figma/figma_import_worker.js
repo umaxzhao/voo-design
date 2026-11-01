@@ -46,7 +46,9 @@ self.onmessage = async (event) => {
         imageAcknowledgements.set(assetId, resolve);
         self.postMessage({ type: "IMAGE_ASSET", assetId, buffer }, [buffer]);
       }),
-      onChunk: ({ pageId, nodes, isFirstScreen }) => {
+      // Old direct worker callers keep streaming; negotiated clients skip
+      // cross-thread node clones when nobody consumes incremental scenes.
+      onChunk: options.emitChunks === false ? null : ({ pageId, nodes, isFirstScreen }) => {
         self.postMessage({
           type: "CHUNK_NODES",
           pageId,
