@@ -23,6 +23,7 @@ try {
   const config = { ...pkg.build, publish: pkg.build.publish.map(provider => ({
     ...provider, channel: releaseChannel(pkg.version), releaseType: "draft",
   })) };
+  if (platform === 'mac' && process.env.VOO_MAC_SIGNING_REQUIRED === '1') config.forceCodeSigning = true;
   const configPath = path.join(configDir, "electron-builder.json");
   await writeFile(configPath, JSON.stringify(config));
   run(["scripts/signing-env.mjs", `--${platform}`, ...plan.targets, `--${arch}`,

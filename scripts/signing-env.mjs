@@ -8,12 +8,19 @@ export function prepareSigningEnv(env = process.env, warn = console.warn) {
   // Actions supplies missing secrets as empty strings. electron-builder treats
   // an empty CSC_LINK as the working directory, rather than an absent cert.
   for (const key of ['CSC_LINK', 'CSC_KEY_PASSWORD', 'WIN_CSC_LINK', 'WIN_CSC_KEY_PASSWORD',
-    'APPLE_ID', 'APPLE_APP_SPECIFIC_PASSWORD', 'APPLE_TEAM_ID']) {
+    'APPLE_ID', 'APPLE_APP_SPECIFIC_PASSWORD', 'APPLE_TEAM_ID',
+    'APPLE_API_KEY', 'APPLE_API_KEY_ID', 'APPLE_API_ISSUER',
+    'APPLE_KEYCHAIN_PROFILE', 'APPLE_KEYCHAIN', 'CSC_NAME']) {
     if (prepared[key] === '') delete prepared[key];
   }
-  // A Windows certificate must not enable macOS keychain discovery.
-  if (!prepared.CSC_LINK) prepared.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
-  if (!prepared.CSC_LINK && !prepared.WIN_CSC_LINK) {
+  const requiredMac = prepared.VOO_MAC_SIGNING_REQUIRED === '1';
+  if (requiredMac && prepared.CSC_IDENTITY_AUTO_DISCOVERY === 'false') {
+    throw new Error('Required macOS signing conflicts with disabled identity discovery.');
+  }
+  // Only an explicit signed-release request enables the existing local signer.
+  // Windows certificates and Apple credentials alone must not enable discovery.
+  if (!prepared.CSC_LINK) prepared.CSC_IDENTITY_AUTO_DISCOVERY = requiredMac ? 'true' : 'false';
+  if (!prepared.CSC_LINK && !prepared.WIN_CSC_LINK && !requiredMac) {
     warn('[voo-design] Code signing skipped: CSC_LINK / WIN_CSC_LINK not set. Building unsigned. See docs/code-signing.md.');
   }
   return prepared;

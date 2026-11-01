@@ -6,11 +6,41 @@ rules, use [engineering-workflow.md](engineering-workflow.md) and run
 `node scripts/verify-editor-release.mjs` on the exact clean revision. Current
 UI rules in `Design.md` supersede historical descriptions of default controls.
 
-**Version**: 1.0.0-beta.1
+**Version**: 1.0.0-beta.2
 **Target Branch**: main  
 **Release Artifacts**: AppImage (Linux), DMG (macOS), NSIS (Windows)
 
 ---
+
+## Signed Beta2 publication — 2026-11-01
+
+[Beta2](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.2)
+is public as a prerelease, not the latest stable release. Its immutable source is
+[`ae85951`](https://github.com/umaxzhao/voo-design/commit/ae85951133f38d2fe3b15e39cd7f58015c073238).
+The [complete release gate](https://github.com/umaxzhao/voo-design/actions/runs/41314772574)
+passed 105/105 steps, 101 core browser suites, 4,851 unit tests (4 skipped),
+1,447 design files and four native packaged-app targets. Eleven standalone
+suites remain not-run; functional coverage remains partial (12 modules/93 groups).
+
+The [separate signing gate](https://github.com/umaxzhao/voo-run/actions/runs/41314779042)
+passed for Intel and Apple Silicon using the existing approved signing store.
+Actual DMG and ZIP app contents passed Developer ID/team, Hardened Runtime,
+notarization, stapling, Gatekeeper and original ASAR checks. Both bundles declare
+macOS 12+. Windows setup/portable PE certificate tables are absent: unsigned.
+
+All seven anonymous public installer URLs return HTTP 200 with expected sizes.
+Twenty-four asset SHA-256 entries match GitHub's server digests, including three
+update manifests, four native receipts and two signing receipts. Small metadata
+files were also downloaded and hashed. The large payloads were verified before
+upload; the public check did not download every large payload again. The same
+source Web build is deployed to [the editor](https://voo.run/editor/); four actual
+production groups pass with 83 loaded JS/CSS hashes matching and zero page errors.
+
+Manual installation/system prompts, old-version upgrade, live paid/CLI/model
+services and other OS versions remain unverified. This is not an exhaustive
+product certification. Fixed-revision evidence and local receipts are indexed in
+[quality-progress.md](quality-progress.md). Documentation follow-ups do not
+change the binary source. Beta1 below remains a separate historical release.
 
 ## Desktop prerelease implementation — 2026-11-01
 

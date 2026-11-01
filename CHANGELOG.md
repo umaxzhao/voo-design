@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.0-beta.2
+
+- Preserve Apple trust-command diagnostics and bound transient ticket-delivery retries; invalid tickets, rejected submissions and failed Gatekeeper assessments still block release.
+
+- Reuse an existing Developer ID identity and App Store Connect or Keychain-profile notarization credentials through an explicitly supplied release configuration. Never export certificates or publish credential values.
+- Require successful Apple authentication, the expected Developer ID team, Hardened Runtime, stapling, Gatekeeper assessment and native packaged-app smoke before recording a signed macOS release. Preserve the published beta.1 artifacts.
+
 ## 1.0.0-beta.1
 
 - Prepare native Windows x64, Linux x64, macOS Intel and Apple Silicon release jobs with connector resources, packaged startup/file roundtrip checks, merged update manifests and SHA-256 checksums. Assemble draft prereleases only after every target succeeds; unsigned packages and remaining installer/update acceptance are disclosed.

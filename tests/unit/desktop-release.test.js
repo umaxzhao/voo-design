@@ -87,4 +87,25 @@ describe("desktop release acceptance", () => {
     await rm(path.join(options.inputDir, `win-x64/VOO-Design-${version}-win-x64-portable.exe`));
     await expect(assembleDesktopRelease(options)).rejects.toThrow("Missing installer");
   });
+  it('refuses a signed release when a Mac target has only an unsigned smoke receipt', async () => {
+    const options = await fixture();
+    await expect(assembleDesktopRelease({ ...options, requireMacSigning: true })).rejects.toThrow('signing receipt');
+  });
+  it('checks both architecture trust receipts and rejects a stale signing pass', async () => {
+    const options = await fixture();
+    const trust = { developerId: true, expectedTeam: true, hardenedRuntime: true, stapled: true, gatekeeper: true };
+    for (const arch of ['x64', 'arm64']) {
+      const directory = path.join(options.inputDir, `mac-${arch}`);
+      const file = path.join(directory, `mac-${arch}.json`);
+      const report = JSON.parse(await readFile(file, 'utf8'));
+      await writeFile(file, JSON.stringify({ ...report, signing: trust }));
+      await writeFile(path.join(directory, `signing-mac-${arch}.json`), JSON.stringify({ version, revision, platform: 'mac', arch, ...trust }));
+    }
+    await assembleDesktopRelease({ ...options, requireMacSigning: true });
+    expect(await readFile(path.join(options.outputDir, 'RELEASE-NOTES.md'), 'utf8')).toContain('Both macOS architectures passed');
+    const stale = path.join(options.inputDir, 'mac-arm64/signing-mac-arm64.json');
+    const receipt = JSON.parse(await readFile(stale, 'utf8'));
+    await writeFile(stale, JSON.stringify({ ...receipt, revision: 'b'.repeat(40) }));
+    await expect(assembleDesktopRelease({ ...options, outputDir: options.outputDir + '-stale', requireMacSigning: true })).rejects.toThrow();
+  });
 });

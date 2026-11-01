@@ -1,9 +1,21 @@
 # Code signing (commercial builds)
 
 VOO Design ships unsigned AppImages by default on Linux CI/dev boxes. macOS and
-Windows notarization/signing are **optional hooks** wired through
+Windows signing are **optional hooks** wired through
 `electron-builder` environment variables. **Never commit certificates, `.p12`,
 `.pfx`, provisioning profiles, or passwords to this repository.**
+
+## Verified Beta2 release
+
+[Beta2](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.2),
+source `ae85951133f38d2fe3b15e39cd7f58015c073238`, contains signed and notarized
+Intel/Apple Silicon Mac packages (bundle minimum macOS 12.0). The
+[signing run](https://github.com/umaxzhao/voo-run/actions/runs/41314779042)
+verified both actual DMG and ZIP app contents, expected Developer ID team,
+Hardened Runtime, stapling, Gatekeeper and original ASAR bytes. Matching
+sanitized trust/native receipts ship with the Release. Windows packages remain
+unsigned; manual installer/system dialogs and older-version upgrades remain
+unverified. See [quality-progress.md](quality-progress.md) for exact scope.
 
 ## macOS (Developer ID)
 
@@ -29,6 +41,14 @@ export APPLE_TEAM_ID="XXXXXXXXXX"
 npm run dist:all
 # or: npx electron-builder --mac dmg
 ```
+
+Apple trust checks retain the actual exit code, timeout and public tool
+diagnostic. A known network loss or process timeout gets at most three attempts
+with a 90-second command deadline. Invalid/missing tickets and policy rejection
+still fail immediately. If the bundled notarizer already obtained acceptance
+but exhausted its staple network retries, only stapling is retried; credentials
+are not resubmitted. A passing receipt always requires successful real staple
+validation and Gatekeeper assessment after the retry.
 
 ## Windows (Authenticode)
 
@@ -59,38 +79,64 @@ AppImage and `.deb` targets are typically **unsigned**. Distribution stores
 
 See also: [release-checklist.md](./release-checklist.md).
 
-## Signing stubs and skip behavior
+## Unsigned previews and required signed builds
 
-All packaging scripts (`dist`, `dist:all`, `dist:dir`, `electron:build`) invoke
-`scripts/signing-env.mjs` in the same process environment as electron-builder.
-Without `CSC_LINK`, it sets `CSC_IDENTITY_AUTO_DISCOVERY=false`, preventing
-macOS keychain discovery. Without either certificate variable it prints an
-unsigned-build warning. `WIN_CSC_LINK` takes precedence over `CSC_LINK` for
-Windows; `CSC_LINK` / `CSC_KEY_PASSWORD` are also electron-builder's Windows
-fallback. Empty secrets count as absent. No certificate files are generated.
+The normal packaging wrapper retains explicit unsigned preview behavior when
+certificate variables are absent. Empty Actions secrets count as absent.
+A Windows certificate or Apple credentials alone never enables Mac identity
+discovery. An explicitly requested signed Mac build sets
+`VOO_MAC_SIGNING_REQUIRED=1` and `forceCodeSigning=true`; missing identity,
+credentials, notarization tools or trust verification fails the build.
 
-`build.mac.notarize=false` disables electron-builder's automatic notarization
-so the `afterSign` hook owns the credential check and avoids duplicate submissions.
-The hook only submits macOS apps when `CSC_LINK` and all three Apple credentials
-are present. Partial Apple credentials skip notarization safely. It uses the
-bundled `@electron/notarize`; if that module is unavailable it warns and skips.
-With complete credentials, signing or Apple submission failures fail the build;
-inspect the result before distributing. Hardened Runtime and inherited
-entitlements remain configured for signed builds.
+The `afterSign` hook supports exactly one authentication route:
 
-For platform-specific builds using the same preparation:
+- Existing `APPLE_KEYCHAIN_PROFILE`, optionally with `APPLE_KEYCHAIN`.
+- `APPLE_API_KEY` (existing private-key path), `APPLE_API_KEY_ID` and
+  `APPLE_API_ISSUER`, matching VOO-Run's App Store Connect route.
+- `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID`.
+
+`build.mac.notarize=false` prevents duplicate submissions: this hook owns
+notarization and uses the already locked `@electron/notarize` dependency.
+Required builds check the expected Developer ID team and Hardened Runtime
+before submission, then validate the stapled app and Gatekeeper assessment.
+No private key or certificate is exported or imported by this local route.
+
+## Reuse an existing release configuration
+
+Only supply a credential configuration file after its owner explicitly
+permits the build tool to use it. The wrapper never searches for `.env` or
+loads a repository configuration by default. It loads only allowlisted Apple
+authentication fields, preserves exported values, resolves relative key paths
+against the configuration directory, never evaluates shell expressions and
+redacts credential values from child diagnostics. Unrelated provider keys
+are not passed to the build. The private-key file is read by Apple's normal
+authentication tool, not copied into source, packages or evidence.
 
 ```bash
-npm run build
-node scripts/signing-env.mjs --mac dmg --publish never
-# or on Windows:
-node scripts/signing-env.mjs --win nsis --publish never
+VOO_RELEASE_CREDENTIALS_FILE=/path/to/approved/voo-run/.env \
+  npm run release:mac-signed -- arm64
 ```
 
-Direct `npx electron-builder` bypasses the wrapper's discovery guard. Prefer the
-commands above for unsigned development. `CSC_IDENTITY_AUTO_DISCOVERY=false`
-controls local identity discovery, not explicit certificate imports; there is
-no separate project skip flag. To build unsigned, omit both certificate vars.
+Run the x64 target on an Intel Mac runner. The native-architecture guard stays
+in place; an arm64 build is not an Intel pass. `VOO_APPLE_TEAM_ID` selects the
+expected existing identity if several are available. The wrapper preflights
+Apple authentication without logging history contents, retains DMG and ZIP,
+runs actual packaged smoke and records separate sanitized signing evidence.
+Cross-repository runners record the checked-out app commit, not the signing
+workflow repository's commit.
+
+A signed release must assemble with the additional guard:
+
+```bash
+GITHUB_SHA=<verified-app-commit> node scripts/assemble-desktop-release.mjs \
+  desktop-artifacts release-ready --require-mac-signing
+```
+
+Both matching-commit/architecture Mac trust receipts and the corresponding
+native smoke evidence are mandatory. A stale, partial or unsigned receipt
+fails; old unsigned Beta1 remains unchanged. This gate certifies the app's
+signature, stapling and Gatekeeper assessment, not manual installer interaction
+or upgrades from an older installation.
 
 ## GitHub Actions secrets and releases
 

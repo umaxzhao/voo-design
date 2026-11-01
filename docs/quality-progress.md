@@ -1,6 +1,6 @@
 # 项目检查总进度
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
-最近一次完整核心验证：[`2782d88`](https://github.com/umaxzhao/voo-design/commit/2782d88f809099b4b876e52af0aa8a54ae18c448)；105/105 步通过，101 组核心浏览器、4835 单测通过/4 跳过，设计检查 1447 文件通过。正式发布与独立线上验收记录于本轮证据；原生安装包仍按各自 Release 固定提交验收。
+最近一次完整核心验证：[`ae85951`](https://github.com/umaxzhao/voo-design/commit/ae85951133f38d2fe3b15e39cd7f58015c073238)；105/105 步通过，101 组核心浏览器、4851 单测通过/4 跳过，设计检查 1447 文件通过。Beta2 已公开，四个原生目标通过；Mac 双架构签名、公证及实际 DMG/ZIP 包内核验通过。文档后续提交不改变安装包的固定源码。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 ## 本轮：增量脏状态、数值同步与图片历史（已通过本地完整验收）
 - `documents.dirty-checkpoints`：普通编辑比较变化节点，真实 1002 节点场景整页序列化由九次降到零次；保存/会话保留精确旧格式，未知基线保守回退。手动还原、真实键盘、MCP、独立像素/变换脏标记及会话回归通过。
@@ -10,6 +10,17 @@
 - 原始只读 `test.fig` 的全新正反序按键中位数：540.5→277.5ms（降低 48.7%）；596.0→274.5ms（降低 53.9%）；50 次同步 API 准备变化 +1.8%/+1.2%。两组视口零像素差异，五页 56422 节点布局/精确 JSON、478 资产及原文件摘要保留。共享主机计时不等同物理延迟、FPS 或 Figma 排名；全部 Figma 属性、签名 Electron、打开中交付与解码中取消未认证。[范围、失败与收据](performance/dirty-checkpoints.md#final-production-repair-acceptance)。
 ## 本轮：相对排序与 Loading 旋转间距（已完成声明范围）
 - 修复蒙版多选重复调序、锁定 Frame 子层仍可调序、单节点接口拆散 Frame 三个缺口；Loading 补足旋转留白，保留原 20px 要求并新增八角度检查。保留最新主线全部已发布功能，固定 `00b3f98` **105/105 完整发布步骤、101 组核心浏览器、4825 单测通过/4 跳过及 CI 通过**，未拼接旧报告。新增 12 条单测与 10 个排序上下文，本地主应用三个任务文件一致、十场景及 Loading 完整套件通过，其他草稿保留。已部署 [Web 预览](https://voo.run/editor/)，入口及实际加载的 82 项 JS/CSS SHA-256 一致，六个线上排序场景、八个旋转角度、实际像素及一次撤销/重做通过，零页面异常。最小代表性旋转间距 22.06px。[PR #80](https://github.com/umaxzhao/voo-design/pull/80) 汇总修复与验收记录；证据 `/private/tmp/voo-license-regression/layer-order-{release,ci,primary-proof,production-proof}.json`。功能覆盖仍部分；绝对位置拖排、置顶/置底和原生包不由这十个新上下文认证，本轮未重发安装包。[范围与证据](audits/design-editor-interaction-audit.md#relative-layer-order-audit--2026-11-01)。
+## 本轮：Beta2 签名发布（已完成声明范围）
+- [Beta2 下载](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.2) 已于 `2026-11-01T15:00:23Z` 公开，保持 prerelease，未标记稳定最新版。固定源码 [`ae85951`](https://github.com/umaxzhao/voo-design/commit/ae85951133f38d2fe3b15e39cd7f58015c073238)，保留主线图片历史与增量 dirty-check 修复；[PR #85](https://github.com/umaxzhao/voo-design/pull/85)。Beta1 原资产与未签名声明保持原样。
+- [同提交完整发布门禁](https://github.com/umaxzhao/voo-design/actions/runs/41314772574) **105/105 步、101 组核心浏览器、4851 单测通过/4 跳过、589 测试文件通过/3 跳过、1447 文件设计检查通过**。独立核对报告 `complete=true`、每步退出码和精确提交；12 模块/93 能力功能覆盖仍 partial，11 组额外检查 not-run，没有计入通过。
+- `platform.macos-signing`：[原签名仓库门禁](https://github.com/umaxzhao/voo-run/actions/runs/41314779042) Intel 与 Apple Silicon 均成功。两架构真实 Developer ID、期望团队、Hardened Runtime、公证票据与 Gatekeeper 通过；分别验证实际 DMG 和 ZIP 包内应用的信任、ASAR 原字节与更新哈希/尺寸。实际包声明最低 macOS 12.0，不代表所有 macOS 版本已实测。
+- 四个原生目标均完成实际打包应用指针绘图/撤销重做、工作区物理文件写读、取消脏退出且 bridge 保留、新进程与隔离 profile 从真实文件卡片重开。原生选择器由自动化驱动；外层安装向导、人工系统信任流程、旧版升级、真实付费/CLI/模型服务及其他系统版本仍未认证。
+- 草稿与公开资产均核验：**7 个安装包、24 项 SHA-256、3 份更新清单、4 份原生收据、2 份 Mac 签名收据**。24 项摘要均匹配 GitHub 实际服务器摘要；公开下载匿名 HEAD 全部 HTTP 200 且尺寸一致，小型说明/证据/清单另下载校验实际字节。大安装包已在 CI 下载后核验并上传，公开核验没有重复下载全部大包。Windows setup/portable 的实际 PE 证书表均为空，明确为未签名。
+- 同一源码的 [CI 静态构建](https://github.com/umaxzhao/voo-design/actions/runs/41314736015) 通过项目脚本部署到 [voo.run/editor](https://voo.run/editor/)。入口及 5 个直接资源字节一致；线上真实四组交互通过，实际加载 83 项 JS/CSS 哈希全部一致、零页面异常。覆盖约束轴及撤销、390px Browser 分屏/48px 复制/撤销、文件卡片与高级入口、旧分享跳转；没有加入真实分享房间或调用付费服务。备份 `la2:/srv/voo-run/editor-backups/ae85951133f38d2fe3b15e39cd7f58015c073238-20261101T145523Z`。
+- 证据目录 `/private/tmp/voo-beta2-integrated-ae85951/`：`web-evidence/desktop-web-release.json`、`draft-verification/draft-proof.json`、`voo-beta-public-proof.json`、`windows-signature-presence.json`、`inspection/metadata.json`、`deployment-proof.json`、`production-proof.json`。Release 附带长期可下载的完整 Web 报告、原生/签名收据、包内检查、说明与校验和。
+- 用户明确授权内部复用 VOO-Run 原发布配置；凭据留在原仓库/临时 CI 钥匙串，没有输出或提交值、导出本机证书或修改本机钥匙串权限。[VOO-Run PR #2](https://github.com/umaxzhao/voo-run/pull/2) 按用户批准的普通 PR 流程合并，没有绕过分支保护；原 Run 的 extension 17 项过期登记与 Vercel 账号错误仍是独立未解决问题，本机七个未推提交和其他草稿保留。
+- 历史失败仍保留：早期 `adcf1de` 身份名称前缀错误由 `a5f9f63` 修正；集成 `7ff95b4` 的 Intel 三次票据/包内验证失败见 [原运行](https://github.com/umaxzhao/voo-run/actions/runs/41312291453)。新增四条先失败回归后，公开信任命令保留退出码/超时/诊断、90 秒限制和最多三次已知网络重试；无效票据/策略拒绝立即失败，不重放凭据提交。最终 AE 全套门禁独立重跑，没有继承旧候选成功。发布标签触发的重复普通构建 `41318979898` 已取消，保留先前完整成功门禁与已核验签名包。
+
 ## 三平台 GitHub Beta（门禁与产物核验通过）
 - [Beta 下载与说明](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.1)：`1.0.0-beta.1`，Windows x64 setup/portable、Linux x64 AppImage、macOS Intel/Apple Silicon DMG/ZIP，共四个原生目标、七个载荷。公开状态以该 Release 页面为准，保持 prerelease，不标记稳定最新版。
 - 固定验证源码 [`eab3bea`](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78) 的 [完整 CI](https://github.com/umaxzhao/voo-design/actions/runs/41281003764) 全部成功：**105/105 步、101 组核心浏览器、4781 单测通过/4 跳过、1441 文件设计检查**；580 个测试文件通过/3 跳过。报告 `complete=true`，12 个模块、87 组能力的功能覆盖仍为 partial，11 组独立额外检查明确 not-run。Release 附带 `web-release-checks.json`，不以其他提交或脏工作区继承通过。

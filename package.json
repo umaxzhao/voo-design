@@ -1,7 +1,7 @@
 {
   "name": "voo-design",
   "productName": "VOO Design",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "license": "MIT",
   "description": "Professional Vector, Motion & 3D Design Editor",
   "main": "electron/main.cjs",
@@ -43,6 +43,7 @@
     "verify:package": "node scripts/verify-package.mjs",
     "analyze:editor": "node scripts/analyze-editor-bundle.mjs",
     "release:build": "node scripts/build-desktop-release.mjs",
+    "release:mac-signed": "node scripts/build-signed-mac.mjs",
     "release:smoke": "node scripts/smoke-desktop-release.mjs"
   },
   "dependencies": {
