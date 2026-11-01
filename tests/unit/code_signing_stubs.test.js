@@ -9,6 +9,12 @@ const hook = require('../../scripts/notarize.cjs');
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
 
 describe('optional code signing', () => {
+  it('removes empty Actions secrets so the working directory cannot become a certificate path', () => {
+    const input = { CSC_LINK: '', CSC_KEY_PASSWORD: '', WIN_CSC_LINK: '', APPLE_ID: '' };
+    const result = prepareSigningEnv(input, vi.fn());
+    expect(result).toEqual({ CSC_IDENTITY_AUTO_DISCOVERY: 'false' });
+    expect(input.CSC_LINK).toBe('');
+  });
   it('warns and disables discovery without modifying the input environment', () => {
     const warn = vi.fn();
     const env = {};

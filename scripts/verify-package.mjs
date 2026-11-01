@@ -3,6 +3,8 @@ import { readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+export const normalizeArchiveEntry = entry => entry.replaceAll('\\', '/').replace(/^\/+/, '');
+
 function verifyRuntimeDependencies(archive, files) {
   const queue = ['package.json'];
   const visited = new Set();
@@ -31,7 +33,7 @@ export function verifyPackage(appDir) {
   const mac = appDir.endsWith('.app');
   const resources = path.join(appDir, mac ? 'Contents/Resources' : 'resources');
   const archive = path.join(resources, 'app.asar');
-  const files = new Set(listPackage(archive).map(name => name.replace(/^\//, '')));
+  const files = new Set(listPackage(archive).map(normalizeArchiveEntry));
   const required = [
     'electron/main.cjs', 'electron/preload.cjs', 'dist/index.html',
     'dist/canvaskit.js', 'dist/canvaskit.wasm', 'dist/EULA.md',

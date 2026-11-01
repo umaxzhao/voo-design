@@ -5,7 +5,7 @@ import path from 'node:path';
 import { finished } from 'node:stream/promises';
 import { afterEach, describe, expect, it } from 'vitest';
 import { generateBundledNotices } from '../../scripts/bundled-third-party-notices.mjs';
-import { verifyPackage } from '../../scripts/verify-package.mjs';
+import { verifyPackage, normalizeArchiveEntry } from '../../scripts/verify-package.mjs';
 
 const roots = [];
 async function fixture({ omit, extra, runtimeDependencies, missingEmbeddedNotice = false, locales = ['en-US', 'zh-CN'] } = {}) {
@@ -52,6 +52,11 @@ async function fixture({ omit, extra, runtimeDependencies, missingEmbeddedNotice
 afterEach(async () => { await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true }))); });
 
 describe('shipped package inspection', () => {
+  it('normalizes native Windows and POSIX ASAR listings before enforcing the same required files', () => {
+    expect(normalizeArchiveEntry('\\electron\\main.cjs')).toBe('electron/main.cjs');
+    expect(normalizeArchiveEntry('/electron/main.cjs')).toBe('electron/main.cjs');
+    expect(normalizeArchiveEntry('\\node_modules\\ws\\package.json')).toBe('node_modules/ws/package.json');
+  });
   it('accepts runtime assets, production dependencies, and font licenses', async () => {
     expect(verifyPackage(await fixture()).locales).toEqual(['en-US.pak', 'zh-CN.pak']);
   });
