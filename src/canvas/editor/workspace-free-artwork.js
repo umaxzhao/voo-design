@@ -85,6 +85,7 @@ export function attachFreeCanvasArtwork({
     });
   };
   const unsubscribeEngine = engine.subscribeRender(event => paint(event?.readback === true));
+  const unsubscribeTool = engine.subscribeTool?.(() => paint()) ?? (() => {});
   const unsubscribeStore = store.subscribe((state, previous) => {
     if (state.editorCamera !== previous.editorCamera) schedulePaint();
   });
@@ -93,10 +94,11 @@ export function attachFreeCanvasArtwork({
   observer.observe(stage);
   paint();
   return {
-    paint: (forceExact = true) => paint(forceExact),
+    paint: () => paint(true),
     dispose() {
       if (pendingFrame) cancelAnimationFrame(pendingFrame);
       unsubscribeEngine();
+      unsubscribeTool();
       unsubscribeStore();
       observer.disconnect();
       picture?.dispose();

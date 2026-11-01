@@ -306,9 +306,18 @@ geometry and history checks.
 
 The `0a945ed6` full gate retained a cold-New drawing timeout. A diagnostic showed
 engine tool `rect` while the hit plane still cached `select`: tool notifications
-do not repaint the detached page engine. The artwork owner now refreshes its
-existing connection on React tool changes, without forcing exact repaint or
-replacing the picture cache. The native drawing test waits for actual open-guard
-completion and the full hit plane, then retains both real drags and keyboard
-undo assertions. The focused cold-start/import suite passed after this repair;
-that targeted pass is not a full-release certificate.
+do not repaint the detached page engine. Refreshing through React alone still
+raced immediate input in the `3300b000` gate. Final routing subscribes to tool
+transitions synchronously, before deferred UI notification; subscribers are
+removed by both artwork teardown and engine disposal. Ordinary selection and
+Hand keep their previous artwork/background routing and picture caching.
+
+A second pointer diagnostic found an unbounded root still admitted the old
+artboard-body drag handler. Roots can no longer start that gesture; explicit
+bounded artboards retain it. The unchanged QA pointer scenario, cold-New native
+file scenario, and complete creation/save/cold-reopen flow all passed together
+at three-browser concurrency after these repairs. Units assert synchronous
+notification, unchanged-mode deduplication, unsubscribe/disposal, invalid
+subscriptions, and both empty/populated root gesture ownership. The registered
+full gate must certify the final committed source afresh; preceding failed
+reports remain retained rather than rewritten as passes.
