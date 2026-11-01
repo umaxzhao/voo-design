@@ -7,7 +7,12 @@ import BoundedNumberInput from "../../src/canvas/components/bounded_number_input
 import PropertiesPanelSections from "../../src/canvas/components/editor_properties/properties_panel_sections.jsx";
 import { WelcomeFileCollection } from "../../src/canvas/components/welcome_dashboard/welcome_file_collection.jsx";
 import { CustomFontPicker } from "../../src/canvas/components/font_picker.jsx";
-import { createPointerHitTester } from "../../src/canvas/editor/editor_pointer_hit_test.js";
+import { createPointerHitTester, hasHandleUnder } from "../../src/canvas/editor/editor_pointer_hit_test.js";
+import { attachPointerHandlers } from "../../src/canvas/editor/editor_pointer.js";
+
+if (typeof globalThis.window === "undefined") {
+  globalThis.window = new EventTarget();
+}
 
 vi.mock("react-dom", () => ({ createPortal: (children) => children }));
 vi.mock("../../src/canvas/use_i18n.js", () => ({
@@ -164,5 +169,120 @@ describe("Mac QA interaction defect regression tests", () => {
     const event = { clientX: 88, clientY: 88 };
     const hit = rotateHandleUnder(targetNode, event);
     expect(hit).toBe(true);
+  });
+
+  describe("hasHandleUnder hit testing and routing", () => {
+    it("detects single selection top rotation grip and corner rotation rings", () => {
+      const node = { id: "box-1", kind: "rect", x: 100, y: 100, width: 200, height: 100, locked: false };
+      const doc = { nodes: [node] };
+      const api = {
+        getDocument: () => doc,
+        getSelected: () => node,
+        getSelectedNodes: () => [node],
+        getSelectedIds: () => ["box-1"],
+        getViewport: () => ({ panX: 0, panY: 0, zoom: 1 }),
+        toDocPoint: (x, y) => ({ x, y }),
+        nodeAtPoint: () => null,
+        getTool: () => "select",
+      };
+      const screenPoint = (e) => ({ x: e.clientX, y: e.clientY });
+      const hitTester = createPointerHitTester({ api, stage: null, screenPoint });
+
+      // 1. Top grip is at center X (200), Y is 100 - (20 + 7) = 73
+      const topGripHit = hitTester.hasHandleUnder({ clientX: 200, clientY: 73 });
+      expect(topGripHit).toBe(true);
+
+      // 2. Corner rotation proximity at NW corner (100, 100) -> (88, 88)
+      const cornerRotHit = hitTester.hasHandleUnder({ clientX: 88, clientY: 88 });
+      expect(cornerRotHit).toBe(true);
+
+      // 3. Resize handle at SE corner (300, 200)
+      const resizeHit = hitTester.hasHandleUnder({ clientX: 300, clientY: 200 });
+      expect(resizeHit).toBe(true);
+
+      // 4. Far away point returns false
+      const farHit = hitTester.hasHandleUnder({ clientX: 500, clientY: 500 });
+      expect(farHit).toBe(false);
+
+      // 5. Standalone exported hasHandleUnder works as well
+      expect(hasHandleUnder({ clientX: 200, clientY: 73 }, hitTester)).toBe(true);
+    });
+
+    it("detects multi-selection multiHandle and corner rotation proximity", () => {
+      const node1 = { id: "n1", kind: "rect", x: 100, y: 100, width: 100, height: 100, locked: false };
+      const node2 = { id: "n2", kind: "rect", x: 250, y: 100, width: 100, height: 100, locked: false };
+      // Combined bounds: x: 100, y: 100, width: 250, height: 100 (right = 350, bottom = 200)
+      const doc = { nodes: [node1, node2] };
+      const api = {
+        getDocument: () => doc,
+        getSelected: () => null,
+        getSelectedNodes: () => [node1, node2],
+        getSelectedIds: () => ["n1", "n2"],
+        getViewport: () => ({ panX: 0, panY: 0, zoom: 1 }),
+        toDocPoint: (x, y) => ({ x, y }),
+        nodeAtPoint: () => null,
+        getTool: () => "select",
+      };
+      const screenPoint = (e) => ({ x: e.clientX, y: e.clientY });
+      const hitTester = createPointerHitTester({ api, stage: null, screenPoint });
+
+      // MultiHandle resize handle at SE corner (350, 200)
+      expect(hitTester.hasHandleUnder({ clientX: 350, clientY: 200 })).toBe(true);
+
+      // Multi-selection corner rotation proximity at NW corner (88, 88)
+      expect(hitTester.hasHandleUnder({ clientX: 88, clientY: 88 })).toBe(true);
+
+      // Far away
+      expect(hitTester.hasHandleUnder({ clientX: 600, clientY: 600 })).toBe(false);
+    });
+
+    it("handles CROP tool handles and rejects non-SELECT / non-CROP tools", () => {
+      const cropRect = { x: 50, y: 50, width: 200, height: 150 };
+      let currentTool = "crop";
+      const api = {
+        getCropRect: () => cropRect,
+        getTool: () => currentTool,
+        getViewport: () => ({ panX: 0, panY: 0, zoom: 1 }),
+        toDocPoint: (x, y) => ({ x, y }),
+      };
+      const screenPoint = (e) => ({ x: e.clientX, y: e.clientY });
+      const hitTester = createPointerHitTester({ api, stage: null, screenPoint });
+
+      // Corner of crop rect (50, 50)
+      expect(hitTester.hasHandleUnder({ clientX: 50, clientY: 50 })).toBe(true);
+      // Empty area
+      expect(hitTester.hasHandleUnder({ clientX: 500, clientY: 500 })).toBe(false);
+
+      // In HAND or BRUSH tool, hasHandleUnder returns false
+      currentTool = "hand";
+      expect(hitTester.hasHandleUnder({ clientX: 50, clientY: 50 })).toBe(false);
+    });
+
+    it("attaches api.hasHandleUnder in attachPointerHandlers and cleans it up on unbind", () => {
+      const listeners = {};
+      const stage = {
+        clientWidth: 800,
+        clientHeight: 600,
+        getBoundingClientRect: () => ({ left: 0, top: 0, width: 800, height: 600 }),
+        addEventListener: (type, handler) => { listeners[type] = handler; },
+        removeEventListener: (type) => { delete listeners[type]; },
+        style: {},
+      };
+      const canvas = {};
+      const api = {
+        getViewport: () => ({ panX: 0, panY: 0, zoom: 1 }),
+        getTool: () => "select",
+        toDocPoint: (x, y) => ({ x, y }),
+        getSelected: () => null,
+        getSelectedNodes: () => [],
+        getSelectedIds: () => [],
+      };
+
+      const unbind = attachPointerHandlers({ stage, canvas, api, cameraMode: "page" });
+      expect(typeof api.hasHandleUnder).toBe("function");
+
+      unbind();
+      expect(api.hasHandleUnder).toBeUndefined();
+    });
   });
 });

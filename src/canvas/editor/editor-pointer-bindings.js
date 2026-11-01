@@ -88,7 +88,7 @@ export function createPointerKeyboard({ stage, shared, getGesture, getLastPointe
 }
 
 /** Bind and unbind exactly the same listeners, including cancelled/unmounted drafts. */
-export function bindPointerEvents({ stage, shared, api, hover, pan, keyboard, handlers }) {
+export function bindPointerEvents({ stage, shared, api, hover, pan, keyboard, hitTest, handlers }) {
   const beginFrameMove = (frameId, event) => {
     if (event.button !== 0 || api.getTool() !== TOOL.SELECT) return false;
     handlers.onPointerDown(createFrameMoveEvent(stage, event, frameId));
@@ -107,7 +107,8 @@ export function bindPointerEvents({ stage, shared, api, hover, pan, keyboard, ha
   return () => {
     keyboard.onWindowBlur();
     if (api?.beginFrameMove === beginFrameMove) delete api.beginFrameMove;
-    if (api?.refreshBrushCursor === hover.refreshBrushCursor) delete api.refreshBrushCursor;
+    if (api?.refreshBrushCursor === hover?.refreshBrushCursor) delete api.refreshBrushCursor;
+    if (api?.hasHandleUnder === hitTest?.hasHandleUnder) delete api.hasHandleUnder;
     if (api?.cancelActiveGesture === keyboard.cancelActiveGesture) delete api.cancelActiveGesture;
     if (!shared) stage.removeEventListener("wheel", pan.onWheel);
     for (const [type, handler] of Object.entries(stageEvents)) stage.removeEventListener(type, handler);

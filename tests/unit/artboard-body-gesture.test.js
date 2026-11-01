@@ -49,4 +49,20 @@ describe("artboard body gesture routing", () => {
     expect(shouldDragArtboardBody(makeEngine({ visible: false }), 150, 100)).toBe(true);
     expect(shouldDragArtboardBody(null, 150, 100)).toBe(false);
   });
+
+  it("prevents dragging artboard body when engine reports a handle under the pointer", () => {
+    const engine = makeEngine({ selectedIds: ["rect"] });
+    engine.hasHandleUnder = vi.fn(({ clientX, clientY }) => clientX === 200 && clientY === 50);
+
+    expect(shouldDragArtboardBody(engine, 200, 50)).toBe(false);
+    expect(engine.hasHandleUnder).toHaveBeenCalledWith({ clientX: 200, clientY: 50 });
+    expect(engine.nodeAtPoint).not.toHaveBeenCalled();
+  });
+
+  it("permits dragging empty frame body when hasHandleUnder returns false", () => {
+    const engine = makeEngine();
+    engine.hasHandleUnder = vi.fn(() => false);
+    expect(shouldDragArtboardBody(engine, 500, 400)).toBe(true);
+    expect(engine.hasHandleUnder).toHaveBeenCalledWith({ clientX: 500, clientY: 400 });
+  });
 });

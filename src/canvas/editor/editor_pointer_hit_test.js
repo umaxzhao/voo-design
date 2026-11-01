@@ -6,6 +6,7 @@ import { orderedCandidates } from "./hit_test_candidates.js";
 import * as ops from "./doc_ops.js";
 import { NODE_KIND } from "./scene_model.js";
 import {
+  combinedBounds,
   handleAtPoint,
   handleFromPoints,
   handlePoints,
@@ -20,9 +21,13 @@ import {
   docToScreenPoint,
   docToScreenRect,
 } from "./scene_renderer.js";
+import { TOOL } from "./editor_constants.js";
 
 export function visibleSelectedNode(api) {
-  const selected = api.getSelected();
+  const selected =
+    (api?.getSelected ? api.getSelected() : null) ??
+    api?.getSelectedNodes?.()?.[0] ??
+    null;
   if (!selected) return null;
   const hasEvaluatedState =
     selected.timing ||
@@ -34,7 +39,17 @@ export function visibleSelectedNode(api) {
   return api.getEffectiveNode?.(frameNode ?? selected) ?? frameNode ?? selected;
 }
 
-export function createPointerHitTester({ api, stage: _stage, screenPoint }) {
+export function createPointerHitTester({
+  api,
+  stage: _stage,
+  screenPoint = (event) => {
+    if (_stage?.getBoundingClientRect) {
+      const rect = _stage.getBoundingClientRect();
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+    return { x: event.clientX ?? 0, y: event.clientY ?? 0 };
+  },
+}) {
   /**
    * The corner-radius handle under the pointer, or null.
    */
@@ -55,37 +70,18 @@ export function createPointerHitTester({ api, stage: _stage, screenPoint }) {
     const targetNode = api.getEffectiveNode ? api.getEffectiveNode(node) : node;
     const pt = api.toDocPoint(event.clientX, event.clientY);
     if (
-      (Array.isArray(targetNode.perspectiveQuad) &&
-        targetNode.perspectiveQuad.length === 4) ||
-      (Array.isArray(targetNode.perspectiveCorners) &&
-        targetNode.perspectiveCorners.length === 4) ||
-      (targetNode.warpMesh &&
-        Array.isArray(targetNode.warpMesh.points) &&
-        targetNode.warpMesh.points.length > 0)
+      (Array.isArray(targetNode.perspectiveQuad) && targetNode.perspectiveQuad.length === 4) ||
+      (Array.isArray(targetNode.perspectiveCorners) && targetNode.perspectiveCorners.length === 4) ||
+      (targetNode.warpMesh && Array.isArray(targetNode.warpMesh.points) && targetNode.warpMesh.points.length > 0)
     ) {
       const aabb = nodeAABB(targetNode);
-      return (
-        pt.x >= aabb.x &&
-        pt.x <= aabb.x + aabb.width &&
-        pt.y >= aabb.y &&
-        pt.y <= aabb.y + aabb.height
-      );
+      return pt.x >= aabb.x && pt.x <= aabb.x + aabb.width && pt.y >= aabb.y && pt.y <= aabb.y + aabb.height;
     }
     const local = toNodeLocal(targetNode, pt);
-    const minLocalX = targetNode.effectiveLocal?.x ?? 0;
-    const minLocalY = targetNode.effectiveLocal?.y ?? 0;
-    const maxLocalX = targetNode.effectiveLocal
-      ? targetNode.effectiveLocal.x + targetNode.effectiveLocal.width
-      : targetNode.width;
-    const maxLocalY = targetNode.effectiveLocal
-      ? targetNode.effectiveLocal.y + targetNode.effectiveLocal.height
-      : targetNode.height;
-    return (
-      local.x >= minLocalX &&
-      local.x <= maxLocalX &&
-      local.y >= minLocalY &&
-      local.y <= maxLocalY
-    );
+    const minX = targetNode.effectiveLocal?.x ?? 0, minY = targetNode.effectiveLocal?.y ?? 0;
+    const maxX = targetNode.effectiveLocal ? minX + targetNode.effectiveLocal.width : targetNode.width;
+    const maxY = targetNode.effectiveLocal ? minY + targetNode.effectiveLocal.height : targetNode.height;
+    return local.x >= minX && local.x <= maxX && local.y >= minY && local.y <= maxY;
   };
 
   /** The handle under the pointer for a rect in document space, or null. */
@@ -102,36 +98,23 @@ export function createPointerHitTester({ api, stage: _stage, screenPoint }) {
    * keep working, and the extra slop makes the thin crop border easy to grab.
    */
   const cropHandleUnder = (rect, event) => {
-    const viewport = api.getViewport();
-    const screenRect = docToScreenRect(rect, viewport);
+    const screenRect = docToScreenRect(rect, api.getViewport());
     const cursor = screenPoint(event);
     const corner = handleAtPoint(screenRect, cursor, HANDLE_GRAB_RADIUS);
     if (corner) return corner;
     const tol = HANDLE_GRAB_RADIUS + 6;
-    const nearX =
-      cursor.x >= screenRect.x - tol &&
-      cursor.x <= screenRect.x + screenRect.width + tol;
-    const nearY =
-      cursor.y >= screenRect.y - tol &&
-      cursor.y <= screenRect.y + screenRect.height + tol;
+    const nearX = cursor.x >= screenRect.x - tol && cursor.x <= screenRect.x + screenRect.width + tol;
+    const nearY = cursor.y >= screenRect.y - tol && cursor.y <= screenRect.y + screenRect.height + tol;
     const candidates = [];
     if (nearY) {
       candidates.push({ handle: "w", distance: Math.abs(cursor.x - screenRect.x) });
-      candidates.push({
-        handle: "e",
-        distance: Math.abs(cursor.x - (screenRect.x + screenRect.width)),
-      });
+      candidates.push({ handle: "e", distance: Math.abs(cursor.x - (screenRect.x + screenRect.width)) });
     }
     if (nearX) {
       candidates.push({ handle: "n", distance: Math.abs(cursor.y - screenRect.y) });
-      candidates.push({
-        handle: "s",
-        distance: Math.abs(cursor.y - (screenRect.y + screenRect.height)),
-      });
+      candidates.push({ handle: "s", distance: Math.abs(cursor.y - (screenRect.y + screenRect.height)) });
     }
-    const best = candidates
-      .filter((entry) => entry.distance <= tol)
-      .sort((a, b) => a.distance - b.distance)[0];
+    const best = candidates.filter((e) => e.distance <= tol).sort((a, b) => a.distance - b.distance)[0];
     return best?.handle ?? null;
   };
 
@@ -184,20 +167,10 @@ export function createPointerHitTester({ api, stage: _stage, screenPoint }) {
     // Inside bounds is drag/select, not corner rotation
     const docPt = api.toDocPoint(event.clientX, event.clientY);
     const local = toNodeLocal(targetNode, docPt);
-    const minLocalX = targetNode.effectiveLocal?.x ?? 0;
-    const minLocalY = targetNode.effectiveLocal?.y ?? 0;
-    const maxLocalX = targetNode.effectiveLocal
-      ? targetNode.effectiveLocal.x + targetNode.effectiveLocal.width
-      : targetNode.width;
-    const maxLocalY = targetNode.effectiveLocal
-      ? targetNode.effectiveLocal.y + targetNode.effectiveLocal.height
-      : targetNode.height;
-    if (
-      local.x >= minLocalX &&
-      local.x <= maxLocalX &&
-      local.y >= minLocalY &&
-      local.y <= maxLocalY
-    ) {
+    const minLocalX = targetNode.effectiveLocal?.x ?? 0, minLocalY = targetNode.effectiveLocal?.y ?? 0;
+    const maxLocalX = targetNode.effectiveLocal ? minLocalX + targetNode.effectiveLocal.width : targetNode.width;
+    const maxLocalY = targetNode.effectiveLocal ? minLocalY + targetNode.effectiveLocal.height : targetNode.height;
+    if (local.x >= minLocalX && local.x <= maxLocalX && local.y >= minLocalY && local.y <= maxLocalY) {
       return false;
     }
 
@@ -208,94 +181,50 @@ export function createPointerHitTester({ api, stage: _stage, screenPoint }) {
       const doc = api.getDocument?.();
       const nodeIndex = doc?.nodes?.findIndex((n) => n.id === node.id) ?? -1;
       const hitIndex = doc?.nodes?.findIndex((n) => n.id === bodyHit.id) ?? -1;
-      if (hitIndex > nodeIndex && bodyHit.id !== node.parentId) {
-        return false;
-      }
+      if (hitIndex > nodeIndex && bodyHit.id !== node.parentId) return false;
     }
 
     // 2. 4 corner handles rotation ring outside node bounds
     const cornerHandles = ["nw", "ne", "se", "sw"];
     const onScreenCorners = selectionHandlePoints(targetNode)
       .filter((p) => cornerHandles.includes(p.handle))
-      .map((point) => ({
-        handle: point.handle,
-        ...docToScreenPoint(point, viewport),
-      }));
+      .map((point) => ({ handle: point.handle, ...docToScreenPoint(point, viewport) }));
 
     for (const corner of onScreenCorners) {
-      const dx = cursorPt.x - corner.x;
-      const dy = cursorPt.y - corner.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist > HANDLE_GRAB_RADIUS && dist <= HANDLE_GRAB_RADIUS + 24) {
-        return true;
-      }
+      const dist = Math.hypot(cursorPt.x - corner.x, cursorPt.y - corner.y);
+      if (dist > HANDLE_GRAB_RADIUS && dist <= HANDLE_GRAB_RADIUS + 24) return true;
     }
     return false;
   };
 
   /**
    * The topmost image node under a document-space point.
-   *
-   * Uses the document's R-tree spatial index when one is available, so a
-   * 10k-node page costs a point query plus the few overlapping images instead
-   * of a scan of every node. Candidates are still tested topmost-first, and
-   * each one is confirmed with the exact local-space bounds test the linear
-   * scan used, so results are identical with and without the index.
    */
   const imageAt = (doc, point) => {
-    const index =
-      (typeof api.getSpatialIndex === "function" && api.getSpatialIndex()) ||
-      doc.spatialIndex ||
-      doc._spatialIndex;
+    const isMatchingImage = (node) => {
+      if (node.visible === false || node.locked || node.lockImagePixels || node.kind !== NODE_KIND.IMAGE) return false;
+      const local = toNodeLocal(node, point);
+      if (local.x >= 0 && local.x <= node.width && local.y >= 0 && local.y <= node.height) {
+        return !(node.paint === true && !api.isPaintOpaqueAt(node, point));
+      }
+      return false;
+    };
 
+    const index = (typeof api.getSpatialIndex === "function" && api.getSpatialIndex()) || doc.spatialIndex || doc._spatialIndex;
     if (index?.pointQuery) {
       const zoom = api.getViewport?.()?.zoom ?? 1;
       const slop = Math.max(1, 24 / Math.max(0.1, zoom));
       const candidates = index.pointQuery(point, slop);
       if (candidates.length === 0) return null;
       for (const node of orderedCandidates(doc.nodes, candidates)) {
-        if (
-          node.visible === false ||
-          node.locked ||
-          node.lockImagePixels ||
-          node.kind !== NODE_KIND.IMAGE
-        ) {
-          continue;
-        }
-        const local = toNodeLocal(node, point);
-        if (
-          local.x >= 0 &&
-          local.x <= node.width &&
-          local.y >= 0 &&
-          local.y <= node.height
-        ) {
-          if (node.paint === true && !api.isPaintOpaqueAt(node, point)) continue;
-          return node;
-        }
+        if (isMatchingImage(node)) return node;
       }
       return null;
     }
 
     for (let index = doc.nodes.length - 1; index >= 0; index -= 1) {
       const node = doc.nodes[index];
-      if (
-        node.visible === false ||
-        node.locked ||
-        node.lockImagePixels ||
-        node.kind !== NODE_KIND.IMAGE
-      ) {
-        continue;
-      }
-      const local = toNodeLocal(node, point);
-      if (
-        local.x >= 0 &&
-        local.x <= node.width &&
-        local.y >= 0 &&
-        local.y <= node.height
-      ) {
-        if (node.paint === true && !api.isPaintOpaqueAt(node, point)) continue;
-        return node;
-      }
+      if (isMatchingImage(node)) return node;
     }
     return null;
   };
@@ -331,6 +260,90 @@ export function createPointerHitTester({ api, stage: _stage, screenPoint }) {
     return false;
   };
 
+  /**
+   * Whether the pointer is over any selection handle, rotation affordance,
+   * or crop handle for the active tool.
+   */
+  const hasHandleUnder = (event) => {
+    if (!event || event.clientX == null || event.clientY == null) return false;
+    const tool = typeof api?.getTool === "function" ? api.getTool() : TOOL.SELECT;
+    if (tool !== TOOL.SELECT && tool !== TOOL.CROP) return false;
+
+    if (tool === TOOL.CROP) {
+      const crop = api?.getCropRect?.();
+      return Boolean(crop && cropHandleUnder(crop, event));
+    }
+
+    let multiNodes = [];
+    if (typeof api?.getSelectedNodes === "function") {
+      multiNodes = (api.getSelectedNodes() ?? []).filter((n) => !n.locked && !n.lockPosition);
+    } else if (typeof api?.getSelectedIds === "function") {
+      const ids = api.getSelectedIds() ?? [];
+      if (ids.length > 1) {
+        if (typeof api.getNode === "function") {
+          multiNodes = ids.map((id) => api.getNode(id)).filter((n) => n && !n.locked && !n.lockPosition);
+        } else if (typeof api.getDocument === "function") {
+          const docNodes = api.getDocument()?.nodes ?? [];
+          const idSet = new Set(ids);
+          multiNodes = docNodes.filter((n) => idSet.has(n.id) && !n.locked && !n.lockPosition);
+        }
+      }
+    }
+
+    if (multiNodes.length > 1) {
+      const combined = combinedBounds(multiNodes.map((node) => nodeAABB(node)));
+      if (combined) {
+        const viewport = api.getViewport ? api.getViewport() : { panX: 0, panY: 0, zoom: 1 };
+        const screenHandles = handlePoints(combined).map((pt) => ({
+          handle: pt.handle,
+          ...docToScreenPoint(pt, viewport),
+        }));
+        const multiHandle = handleFromPoints(screenHandles, screenPoint(event), HANDLE_GRAB_RADIUS);
+        if (multiHandle) return true;
+
+        const cornerHandles = ["nw", "ne", "se", "sw"];
+        const screenCorners = screenHandles.filter((p) => cornerHandles.includes(p.handle));
+        const margin = 3 / (viewport?.zoom || 1);
+        const point = api.toDocPoint(event.clientX, event.clientY);
+        const isInsideCombined =
+          point.x >= combined.x - margin &&
+          point.x <= combined.x + combined.width + margin &&
+          point.y >= combined.y - margin &&
+          point.y <= combined.y + combined.height + margin;
+
+        const bodyHit = api.nodeAtPoint?.(point);
+        const doc = api.getDocument?.();
+        const hitIndex = doc?.nodes?.findIndex((n) => n.id === bodyHit?.id) ?? -1;
+        const maxMultiIndex = doc?.nodes
+          ? Math.max(...multiNodes.map((n) => doc.nodes.findIndex((docNode) => docNode.id === n.id)))
+          : -1;
+        const isOverForegroundOtherNode =
+          bodyHit &&
+          !multiNodes.some((n) => n.id === bodyHit.id || bodyHit.id === n.parentId) &&
+          hitIndex > maxMultiIndex;
+
+        if (!isInsideCombined && !isOverForegroundOtherNode) {
+          const cursorPt = screenPoint(event);
+          const isNearCorner = screenCorners.some((corner) => {
+            const dist = Math.hypot(cursorPt.x - corner.x, cursorPt.y - corner.y);
+            return dist > HANDLE_GRAB_RADIUS + 2 && dist <= HANDLE_GRAB_RADIUS + 24;
+          });
+          if (isNearCorner) return true;
+        }
+      }
+      return false;
+    }
+
+    const selected = visibleSelectedNode(api);
+    if (selected && !selected.locked && selected.kind !== NODE_KIND.ADJUSTMENT) {
+      if (nodeHandleUnder(selected, event)) return true;
+      if (rotateHandleUnder(selected, event)) return true;
+      if (selected.kind === NODE_KIND.RECT && rectRadiusHandleUnder(selected, event)) return true;
+    }
+
+    return false;
+  };
+
   return {
     rectRadiusHandleUnder,
     nodeRectContains,
@@ -340,5 +353,14 @@ export function createPointerHitTester({ api, stage: _stage, screenPoint }) {
     rotateHandleUnder,
     imageAt,
     pointInContours,
+    hasHandleUnder,
   };
+}
+
+export function hasHandleUnder(event, hitTesterOrOptions) {
+  if (typeof hitTesterOrOptions?.hasHandleUnder === "function") {
+    return hitTesterOrOptions.hasHandleUnder(event);
+  }
+  const hitTester = createPointerHitTester(hitTesterOrOptions || {});
+  return hitTester.hasHandleUnder(event);
 }

@@ -237,6 +237,29 @@ describe("Frame tool creation and Hand tool pan", () => {
       expect(createdNode).toMatchObject({ width: 200, height: 150 });
     });
 
+    it("guards onFreePointerDown from panning when targetEngine hasHandleUnder is true", () => {
+      const panGestureRef = { current: null };
+      const freeStageRef = mockFreeStage();
+      const engine = createMockEngine();
+      engine.hasHandleUnder = vi.fn(({ clientX, clientY }) => clientX === 120 && clientY === 80);
+
+      const gestures = useEditorCanvasGestures({
+        multi: true, visible: true, freeStageRef, spaceRef: { current: false },
+        panGestureRef, enginesRef: { current: new Map([["page-1", { engine, ready: true }]]) },
+        layoutById: new Map(), cameraZoom: 1, tool: TOOL.SELECT, focusedId: "page-1",
+        focusEditorPage: vi.fn(), handleFocusCanvas: vi.fn(),
+        setCanvasBackgroundSelected: vi.fn(), nodeIds: ["page-1"],
+      });
+
+      gestures.onFreePointerDown({
+        button: 0, clientX: 120, clientY: 80, pointerId: 1,
+        target: { closest: () => null }, preventDefault: vi.fn(), stopPropagation: vi.fn(),
+      });
+
+      expect(engine.hasHandleUnder).toHaveBeenCalledWith({ clientX: 120, clientY: 80 });
+      expect(panGestureRef.current).toBeNull();
+    });
+
     it("clicking empty canvas with single page does not deselect active page", () => {
       const panGestureRef = { current: { pointerId: 1, moved: false, button: 0, panTrigger: false } };
       const focusEditorPage = vi.fn();

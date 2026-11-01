@@ -86,11 +86,15 @@ export function useEditorCanvasGestures({
       document.activeElement.blur();
     }
 
+    const targetId = focusedId || (nodeIds.length > 0 ? nodeIds[0] : null);
+    const targetEngine = targetId ? enginesRef.current?.get(targetId)?.engine : null;
+    if (!isPanTrigger && targetEngine?.hasHandleUnder?.({ clientX: event.clientX, clientY: event.clientY })) {
+      return;
+    }
+
     // Drawing tools on the free canvas (outside artboards) draw on the primary/focused engine
     if (!isPanTrigger && isDrawingTool(tool)) {
-      const targetId = focusedId || (nodeIds.length > 0 ? nodeIds[0] : null);
       if (targetId && !focusedId) focusEditorPage(targetId);
-      const targetEngine = targetId ? enginesRef.current?.get(targetId)?.engine : null;
       if (targetEngine) {
         event.preventDefault();
         try { freeStageRef.current?.setPointerCapture?.(event.pointerId); } catch {}
@@ -102,12 +106,8 @@ export function useEditorCanvasGestures({
         if (node) {
           targetEngine.select(node.id);
           drawingGestureRef.current = {
-            kind: tool,
-            id: node.id,
-            start: point,
-            rawStart: rawPoint,
-            engine: targetEngine,
-            pointerId: event.pointerId,
+            kind: tool, id: node.id, start: point, rawStart: rawPoint,
+            engine: targetEngine, pointerId: event.pointerId,
           };
         }
       }
@@ -123,14 +123,9 @@ export function useEditorCanvasGestures({
     if (stage) stage.style.cursor = "grabbing";
 
     panGestureRef.current = {
-      pointerId: event.pointerId,
-      lastX: event.clientX,
-      lastY: event.clientY,
-      startX: event.clientX,
-      startY: event.clientY,
-      moved: false,
-      button: event.button,
-      panTrigger: isPanTrigger,
+      pointerId: event.pointerId, lastX: event.clientX, lastY: event.clientY,
+      startX: event.clientX, startY: event.clientY, moved: false,
+      button: event.button, panTrigger: isPanTrigger,
     };
   }, [enginesRef, focusedId, focusEditorPage, freeStageRef, nodeIds, panGestureRef, spaceRef, tool]);
   const lastCollabCursorSentRef = useRef(0);
