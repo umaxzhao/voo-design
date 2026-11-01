@@ -13,9 +13,9 @@ describe("module ownership and conservative check planning", () => {
   it("retains all existing release suites exactly once and keeps startup first", () => {
     const discoveredSuites = readdirSync("tests/e2e").filter(path => path.endsWith(".e2e.mjs")).map(path => path.slice(0, -8));
     expect(validateModuleCatalog(EDITOR_MODULES, path => existsSync(path), { discoveredSuites,
-      additionalChecks: ADDITIONAL_BROWSER_CHECKS })).toEqual({ modules: 12, features: 109, browserSuites: 111, additionalChecks: 12 });
+      additionalChecks: ADDITIONAL_BROWSER_CHECKS })).toEqual({ modules: 12, features: 114, browserSuites: 114, additionalChecks: 9 });
     expect(RELEASE_BROWSER_SUITES[0]).toBe("editor-fixture-startup");
-    expect(new Set(RELEASE_BROWSER_SUITES).size).toBe(111);
+    expect(new Set(RELEASE_BROWSER_SUITES).size).toBe(114);
     const release = readFileSync("scripts/verify-editor-release.mjs", "utf8");
     expect(release).toContain("...RELEASE_BROWSER_SUITES");
     expect(release).toContain('"scripts/editor-checks.mjs", "--check"');
@@ -38,6 +38,12 @@ describe("module ownership and conservative check planning", () => {
     expect(validateModuleCatalog(catalog, () => true, { discoveredSuites: ["forgotten-test"], additionalChecks }).additionalChecks).toBe(1);
     expect(() => validateModuleCatalog(catalog, () => true, { additionalChecks: [{ ...additionalChecks[0], reason: "" }] })).toThrow("Invalid standalone");
     expect(() => validateModuleCatalog(catalog, () => true, { additionalChecks: [{ ...additionalChecks[0], suite: "nested-placement" }] })).toThrow("Duplicate standalone");
+  });
+  it("classifies reviewed local and authenticated external checks", () => {
+    expect(ADDITIONAL_BROWSER_CHECKS.find(check => check.suite === "critical_flows").kind).toBe("local");
+    expect(ADDITIONAL_BROWSER_CHECKS.filter(check => check.kind === "external").map(check => check.suite))
+      .toEqual(["claude_agent", "codex_agent", "mcp_cli"]);
+    expect(ADDITIONAL_BROWSER_CHECKS.find(check => check.suite === "qa3_electron").kind).toBe("native");
   });
   it("broadens unowned executable paths to the complete gate instead of skipping them", () => {
     expect(modulesForChanges(["src/layers/drag.js"], catalog)).toMatchObject({ ids: ["layers"], unmapped: [] });

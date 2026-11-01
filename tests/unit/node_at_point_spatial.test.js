@@ -24,4 +24,14 @@ describe('spatial nodeAtPoint', () => {
     const reordered = { ...doc, nodes: [...nodes].reverse() };
     expect(nodeAtPoint(reordered, { x: 10, y: 10 }, { spatialIndex })).toBe(nodeAtPoint(reordered, { x: 10, y: 10 }));
   });
+
+  it('returns the selectable overlap stack from top to bottom and honors reject filters', () => {
+    const nodes = [node('back', 0), node('middle', 0), node('top', 0)];
+    const doc = { width: 100, height: 100, nodes };
+    const spatialIndex = buildSpatialIndex(nodes);
+    expect(nodeAtPoint(doc, { x: 10, y: 10 }, { all: true, spatialIndex }).map(item => item.id))
+      .toEqual(['top', 'middle', 'back']);
+    expect(nodeAtPoint(doc, { x: 10, y: 10 }, { all: true, spatialIndex, reject: item => item.id === 'top' }).map(item => item.id))
+      .toEqual(['middle', 'back']);
+  });
 });

@@ -20,9 +20,16 @@ export function createFrameMoveEvent(stage, event, frameId) {
 /** Start one shared move/Alt-duplicate transaction; return false only for empty space. */
 export function startNodeMoveGesture({ api, event, point, setGesture }) {
   const forcedId = frameMoveId(event);
+  const deepSelect = Boolean(event.metaKey || event.ctrlKey);
+  const hitStack = !forcedId && deepSelect && event.altKey
+    ? api.nodesAtPoint?.(point) ?? []
+    : [];
+  const selectedStackIndex = hitStack.findIndex(node => api.isSelected(node.id));
   const actualHit = forcedId
     ? api.getDocument().nodes.find(node => node.id === forcedId)
-    : api.nodeAtPoint(point);
+    : hitStack.length > 1
+      ? hitStack[(selectedStackIndex + 1 + hitStack.length) % hitStack.length]
+      : api.nodeAtPoint(point);
   if (!actualHit) return Boolean(forcedId);
   const doc = api.getDocument();
   if (forcedId && (!isFrameSelectionBoundary(actualHit) || actualHit.visible === false ||
@@ -50,7 +57,7 @@ export function startNodeMoveGesture({ api, event, point, setGesture }) {
       ?.lockPosition === true;
   const target = hit;
   let duplicateOnMove = false;
-  if (event.altKey && !altTargetLocked) {
+  if (event.altKey && !deepSelect && !altTargetLocked) {
     const currentSelected = api.getSelectedNodes?.() ?? [];
     const isHitInMultiSelection =
       currentSelected.length > 1 &&
@@ -62,9 +69,9 @@ export function startNodeMoveGesture({ api, event, point, setGesture }) {
     duplicateOnMove = true;
   }
 
-  const deepSelect = !forcedId && Boolean(event.metaKey || event.ctrlKey);
+  const canDeepSelect = !forcedId && deepSelect;
   if (!forcedId && event.shiftKey && !duplicateOnMove) {
-    if (deepSelect && typeof api.toggleExactly === "function") {
+    if (canDeepSelect && typeof api.toggleExactly === "function") {
       api.toggleExactly(target.id);
     } else if (api.toggleSelect) {
       api.toggleSelect(target.id);
@@ -73,7 +80,7 @@ export function startNodeMoveGesture({ api, event, point, setGesture }) {
     }
     if (!api.isSelected(target.id)) return true;
   } else if (!api.isSelected(target.id)) {
-    if (deepSelect && typeof api.selectExactly === "function") {
+    if (canDeepSelect && typeof api.selectExactly === "function") {
       api.selectExactly([target.id]);
     } else {
       api.select(target.id);

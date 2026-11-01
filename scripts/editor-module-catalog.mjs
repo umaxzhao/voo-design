@@ -11,6 +11,7 @@ export const EDITOR_MODULES = [
       "src/canvas/components/welcome*", "src/canvas/components/welcome_dashboard/*", "src/canvas/components/editor*resources*",
       "src/canvas/components/editor_layers_assets*", "src/canvas/components/titlebar*", "src/canvas/components/canvas_tab_bar.jsx",
       "src/canvas/components/canvas_tab_strip.jsx", "src/canvas/components/canvas_tab_label.js", "src/canvas/components/use_tab_bar_overflow.js",
+      "tests/e2e/critical_flows.e2e.mjs",
     ],
     related: [
       "documents", "inspector", "platform",
@@ -21,7 +22,7 @@ export const EDITOR_MODULES = [
     ],
     suites: [
       "project-picker", "titlebar-file-actions", "welcome-model-menu", "welcome-draft-trash", "ui-home-settings", "welcome-import-references",
-      "welcome-covers", "editor-resources", "editor-resources-built", "top-tabs-overflow", "welcome-sidebar-toggle",
+      "welcome-covers", "editor-resources", "editor-resources-built", "top-tabs-overflow", "welcome-sidebar-toggle", "qa_flows",
     ],
     remaining: [
       "Native OS picker behavior and physical touch devices require separate evidence.",
@@ -65,7 +66,7 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/workspace-artwork-stamp.js", "tests/unit/workspace-artwork-picture.test.js", "tests/unit/workspace-artwork-stamp.test.js",
       "src/canvas/components/editor_hooks/use_editor_page_engine.js", "src/canvas/editor/free-artwork-hit-regions.js",
       "tests/unit/free-artwork-hit-regions.test.js", "src/canvas/editor/frame-canvas-labels.js", "tests/unit/frame-canvas-labels.test.js",
-      "tests/unit/viewport_notifications.test.js",
+      "tests/unit/viewport_notifications.test.js", "tests/e2e/canvas_fps.e2e.mjs",
     ],
     related: [
       "selection", "layers", "compositing", "platform",
@@ -90,14 +91,16 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/move-gesture-*", "src/canvas/editor/editor-pointer-*", "src/canvas/components/editor_family_menu.jsx",
       "src/canvas/components/editor_select_menu.jsx", "src/canvas/components/editor_eraser_menu.jsx", "src/canvas/components/use_hover_menu.js",
       "tests/unit/toolbar_hover_menu.test.js", "src/canvas/editor/editor_engine_tools.js", "src/canvas/editor/editor_transform_api.js",
-      "src/canvas/editor/editor_engine_assembly.js", "tests/unit/editor-module-audit-regressions.test.js",
+      "src/canvas/editor/editor_engine_assembly.js", "tests/unit/editor-module-audit-regressions.test.js", "tests/unit/move-gesture-start.test.js",
+      "src/canvas/editor/chrome_design_issues.js", "tests/unit/node_at_point_spatial.test.js", "scripts/editor-module-catalog.mjs",
+      "tests/unit/editor-check-plans.test.js",
     ],
     related: [
       "canvas", "layers", "text", "vectors", "inspector",
     ],
     features: [
       "selection.hit-testing", "selection.transforms", "selection.cancel", "selection.shortcuts", "selection.continuous-creation",
-      "selection.frame-title-selection", "selection.toolbar-hover-menu",
+      "selection.frame-title-selection", "selection.toolbar-hover-menu", "selection.overlap-cycling", "selection.hover-outline",
     ],
     suites: [
       "frame-child-pointer", "frame-label-selection", "canvas-double-click", "text-box-geometry", "editor-shortcut-lifecycle", "hook-lifecycle",
@@ -120,14 +123,15 @@ export const EDITOR_MODULES = [
       "tests/unit/editor_layers_width.test.js", "tests/unit/batch-layer-reorder.test.js", "tests/unit/layer-hierarchy-stack.test.js",
       "tests/unit/layer-order-contracts.test.js", "tests/e2e/layer-order-contract-checks.mjs", "tests/unit/container-command-boundaries.test.js",
       "tests/e2e/duplicate-frame-drag-checks.mjs", "tests/e2e/multiframe-drag-checks.mjs", "tests/unit/frame_fit_to_content.test.js",
-      "tests/unit/reparent-moved-roots.test.js",
+      "tests/unit/reparent-moved-roots.test.js", "src/canvas/editor/chrome_sections.js", "tests/unit/nested-group-commands.test.js",
+      "src/canvas/editor/editor_engine.js", "src/canvas/editor/scene_model_groups.js",
     ],
     related: [
       "selection", "compositing", "layout", "documents",
     ],
     features: [
       "layers.model-cache", "layers.nesting", "layers.placement", "layers.reparent", "layers.duplicate-delete-lock", "layers.container-boundaries",
-      "layers.panel-width",
+      "layers.panel-width", "layers.section-container",
     ],
     suites: [
       "editor-layers-composition", "layers-panel-width", "image-layer-window", "frame-alt-duplicate", "frame-reparent-contracts", "nested-placement",
@@ -277,7 +281,8 @@ export const EDITOR_MODULES = [
       "tests/unit/unified-fill-picker.test.jsx", "tests/unit/fill-paint-values.test.js", "src/canvas/components/editor_properties/*",
       "src/canvas/components/*context*", "src/canvas/components/*taskbar*", "src/canvas/components/*toolbar*",
       "src/canvas/components/editor_pie_menu.jsx", "src/canvas/components/flat_select*", "src/canvas/components/settings*", "src/canvas/use_i18n.js",
-      "src/shared/i18n*", "src/shared/i18n/*", "src/canvas/*layout.css", "src/canvas/*panels.css",
+      "src/shared/i18n*", "src/shared/i18n/*", "src/canvas/*layout.css", "src/canvas/*panels.css", "src/canvas/components/editor_design_issues.jsx",
+      "src/shared/i18n/extended-en.js", "src/shared/i18n/extended-zh.js", "src/canvas/icons.jsx",
     ],
     related: [
       "selection", "layers", "text", "images", "layout",
@@ -286,6 +291,7 @@ export const EDITOR_MODULES = [
       "inspector.mobile-targets", "inspector.comments-panel-slot", "inspector.control-hierarchy", "inspector.typography-clarity",
       "inspector.export-opt-in", "inspector.unified-fill", "inspector.impeccable-polish", "inspector.context-submenus",
       "inspector.global-overlay-stacking", "inspector.field-commit", "inspector.menu-focus", "inspector.responsive", "inspector.locale-lifecycle",
+      "inspector.design-issue-review",
     ],
     suites: [
       "impeccable-polish", "mobile-control-targets", "command_palette", "design_tokens", "inspector-controls", "ui-inspector-interaction",
@@ -321,7 +327,9 @@ export const EDITOR_MODULES = [
       "src/canvas/collab/*", "src/canvas/comments/*", "src/canvas/components/agent-panel/*", "src/canvas/components/onboarding/*", "electron/*",
       "plugins/*", "src/shared/providers/*", "src/canvas/components/browser_drawer/*", "tests/unit/browser_drawer_import.test.js",
       "tests/unit/agent_selection_context.test.js", "tests/e2e/agent-suggestions.e2e.mjs", "tests/e2e/agent-suggestions-harness.jsx",
-      "tests/unit/canvas_agent_build_layout.test.js", "tests/unit/canvas_tools_build_layout.test.js",
+      "tests/unit/canvas_agent_build_layout.test.js", "tests/unit/canvas_tools_build_layout.test.js", "tests/unit/design_quality_lint.test.js",
+      "tests/e2e/agent-selection-context.e2e.mjs", "scripts/editor-check-plans.mjs", "tests/e2e/qa3_electron.e2e.mjs",
+      "tests/e2e/image-electron.e2e.mjs",
     ],
     related: [
       "workspace", "documents", "inspector", "images", "text",
@@ -333,13 +341,13 @@ export const EDITOR_MODULES = [
       "platform.native-portability", "platform.native-lifecycle", "platform.native-rendering", "platform.native-agent-entry",
       "platform.native-inspector", "platform.native-island-anchor", "platform.native-collaboration", "platform.browser-drawer",
       "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview", "platform.streaming-authoring",
-      "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
+      "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle", "platform.agent-section",
     ],
     suites: [
       "agent_cancel_polish", "agent_tools", "agent_pencil_tools", "editor-fixture-startup", "browser-drawer", "pending-integration",
       "agent-model-catalog", "editor-loading", "editor-optional-loading", "comments-loading", "comments-lifecycle", "editor-refactor",
       "editor-context", "editor-page-composition", "local-service", "canvas-live-preview", "agent-authoring", "browser-import-frame-resizer",
-      "browser-import-wysiwyg-parity", "browser-topbar-actions",
+      "browser-import-wysiwyg-parity", "browser-topbar-actions", "agent-selection-context", "agent-suggestions",
     ],
     remaining: [
       "Desktop release acceptance runs separately on four native CI targets; browser passes do not certify installers, signatures or upgrades.",
@@ -351,14 +359,11 @@ export const ACCEPTANCE_AXES = ["entry-points","document-state","visible-result"
 export const RELEASE_BROWSER_SUITES = ["editor-fixture-startup", ...EDITOR_MODULES.flatMap(module => module.suites).filter(suite => suite !== "editor-fixture-startup")];
 // Independent checks remain classified debt, never implicit passes.
 export const ADDITIONAL_BROWSER_CHECKS = [
-  {"suite":"agent-selection-context","owner":"platform","kind":"unreviewed","reason":"Existing standalone suite: review its fixtures, assertions and service requirements before gate registration."},
-  {"suite":"agent-suggestions","owner":"platform","kind":"unreviewed","reason":"Existing standalone suite: review its fixtures, assertions and service requirements before gate registration."},
-  {"suite":"claude_agent","owner":"platform","kind":"unreviewed","reason":"Existing standalone suite: review its fixtures, assertions and service requirements before gate registration."},
-  {"suite":"codex_agent","owner":"platform","kind":"unreviewed","reason":"Existing standalone suite: review its fixtures, assertions and service requirements before gate registration."},
-  {"suite":"mcp_cli","owner":"platform","kind":"unreviewed","reason":"Existing standalone suite: review its fixtures, assertions and service requirements before gate registration."},
-  {"suite":"qa3_electron","owner":"platform","kind":"unreviewed","reason":"Existing standalone suite: review its fixtures, assertions and service requirements before gate registration."},
-  {"suite":"critical_flows","owner":"workspace","kind":"unreviewed","reason":"Existing standalone suite: review its fixtures, assertions and service requirements before gate registration."},
-  {"suite":"qa_flows","owner":"workspace","kind":"unreviewed","reason":"Existing standalone suite: review its fixtures, assertions and service requirements before gate registration."},
+  {"suite":"claude_agent","owner":"platform","kind":"external","reason":"Live integration requires an authenticated Claude Code CLI and a real model request; no paid preflight is run in offline audits."},
+  {"suite":"codex_agent","owner":"platform","kind":"external","reason":"Live integration requires an authenticated Codex CLI and a real streamed model/tool request."},
+  {"suite":"mcp_cli","owner":"platform","kind":"external","reason":"Live integration launches authenticated Claude/Codex to call MCP tools and create canvas content."},
+  {"suite":"qa3_electron","owner":"platform","kind":"native","reason":"Isolated Electron smoke covering preload, document creation and pointer drawing."},
+  {"suite":"critical_flows","owner":"workspace","kind":"local","reason":"Isolated localhost browser path covering load, create, draw/select, undo/redo, ZIP export, draft restore and local signaling share."},
   {"suite":"canvas_fps","owner":"canvas","kind":"hardware","reason":"Hardware/scene-specific FPS gate; preserve environment and scene sizes."},
   {"suite":"image-electron","owner":"platform","kind":"native","reason":"Separate isolated Electron and native filesystem acceptance."},
   {"suite":"image-network","owner":"images","kind":"network","reason":"Separate real model downloads, inference and network acceptance."},

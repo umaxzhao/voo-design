@@ -57,7 +57,7 @@ await withEditorBrowser(async ({ page }) => {
   assert.deepEqual(initial.samples, Array(4).fill("#dddddd"));
   passed.push("global adjustments affect negative, positive, right-overflow and bottom-overflow pixels equally");
 
-  for (const camera of [{ zoom: 0.5, panX: 500, panY: 250 }, { zoom: 1.5, panX: 350, panY: 200 }]) {
+  for (const camera of [{ zoom: 0.5, panX: 500, panY: 250 }, { zoom: 1.5, panX: 550, panY: 200 }]) {
     await page.evaluate(async camera => {
       const { useDesignStore } = await import("/src/store/design_store.js");
       useDesignStore.setState({ editorCamera: camera });
