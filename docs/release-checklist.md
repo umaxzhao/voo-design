@@ -20,7 +20,7 @@ names were inspected, never values. Historical checked boxes remain historical.
 
 The new workflow builds Windows x64 setup/portable, Linux x64 AppImage and Mac
 Intel/Apple Silicon DMG/ZIP on four native runners. Run with `create_draft=true`
-to assemble a draft after every native job succeeds. It checks ASAR runtime
+to assemble a draft only after the full Web gate and every native job succeed. It checks ASAR runtime
 assets/transitive dependencies, connector resources, locale resources, packaged
 startup, real pointer drawing/history, native workspace I/O, cancellation of
 dirty quit while retaining the bridge, and fresh-process project opening.
@@ -28,7 +28,7 @@ The native OS picker/confirmation choices are automated, not manually tested.
 
 The assembly step requires four matching-version/commit smoke receipts,
 checks every update payload hash/size, merges both Mac metadata files and adds
-checksums. Native screenshots/receipts are retained as CI artifacts. Unsigned
+checksums. Native screenshots/receipts and the Web gate report/browser evidence are retained as CI artifacts. Unsigned
 previews and remaining trust/installer/service/upgrade contexts are disclosed.
 No workflow automatically publishes a stable release or overwrites an existing
 one. Current execution/revision is maintained in [quality-progress.md](quality-progress.md).

@@ -27,9 +27,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      # Surface font/layout regressions early, retaining the same pixel threshold
-      # as the complete gate below and its diagnostic screenshots on failure.
-      - run: node tests/e2e/html2nodes.e2e.mjs
+      # Fail early on Linux raster differences and host-installed CLI assumptions.
+      # The complete gate below retains these same assertions and evidence.
+      - name: Check Linux text and offline menu parity
+        run: |
+          node tests/e2e/html2nodes.e2e.mjs
+          node tests/e2e/ui-responsive-editor.e2e.mjs
         env:
           VOO_BROWSER_EVIDENCE_DIR: ${{ runner.temp }}/desktop-browser-evidence
       - run: node scripts/verify-editor-release.mjs

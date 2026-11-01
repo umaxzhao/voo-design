@@ -81,8 +81,9 @@ Offline module/release checks do not grant consent to paid generation.
 
 GitHub PR/main checks validate the catalog, design rules, build and unit tests.
 The deployment job requires those checks and runs only on `main`, never a PR.
-The complete browser gate remains the clean local release verifier; GitHub's
-basic gate is not a substitute for that browser or native/hardware evidence.
+The desktop Release workflow runs the same complete verifier on its clean
+candidate revision plus four native packaged-app jobs. GitHub's basic PR/main
+gate is not a substitute for those browser or native/hardware results.
 Use `.github/pull_request_template.md` to record the same scope and limits.
 
 ## Acceptance rows

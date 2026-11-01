@@ -3,14 +3,14 @@
 最近一次完整核心验证：[ac9f18e](https://github.com/umaxzhao/voo-design/commit/ac9f18e635286848c08a0271cb25bca21e03ee94)；105/105 步，含 101 组核心浏览器、4752 单测通过/4 跳过。线上固定构建为该版本；GitHub 同步按 PR 与必需 build 门禁执行，合入及源码一致证明独立保存。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
-## 三平台 GitHub 预发布（实现与验收中）
+## 三平台 GitHub 预发布（完整门禁运行中）
 
-- 候选 `1.0.0-beta.1`：Windows x64 setup/portable、Linux x64 AppImage、macOS Intel/Apple Silicon DMG/ZIP，四个原生 runner；完整 Web 门禁与四个平台的实际打包、ASAR/依赖/connector 检查及原生冒烟并行执行，全部成功后才组装草稿。没有自动公开发布步骤。
-- `platform.desktop-release`：安装包命名无空格，setup/portable 不再覆盖；合并两种 Mac 架构更新文件，逐个核验更新载荷 SHA-512/尺寸，附 SHA256SUMS 与对应提交的四份原生检查记录。缺失/旧提交/损坏/遗漏架构会阻止组装。
-- 实际首包复现 Mac 中文语言资源被剔除，以及共享 node_modules 导致 updater 间接依赖漏包。改为平台语言标识、递归运行依赖检查，并用独立 npm ci 验证；Mac 包内容已通过。共享工作树首包失败记录保留，不作为验收通过。
-- `platform.desktop-close`：真实脏文档关闭被阻止却无原生选择。补共享关闭/退出确认，默认继续编辑，明确放弃才退出；取消确认发生在 CLI 服务清理之前。主入口菜单提取后 401→246 行，既有菜单行为保留，所有新增模块低于 400 行。
-- 本地 60 项定向检查、设计检查通过，独立依赖安装生成的 Mac arm64 包内容和实际绘图/原生 I/O/退出取消/新进程文件卡片重开通过；这是未提交快照的诊断证据，不是四平台固定提交验收。全量单测首轮被沙箱 EPERM 阻止，放开本地监听后旧阶段 4746 通过/4 跳过。退出修复和真实菜单断言补齐后，本地新一轮全量单测 4752 通过/4 跳过。首个 CI 候选 `b758659` 因旧菜单源码位置断言失败，已保留 [失败运行](https://github.com/umaxzhao/voo-design/actions/runs/41270179543) 并改为实际菜单点击验证；不继承该失败版本。当前 [PR #81](https://github.com/umaxzhao/voo-design/pull/81) 按主分支保护规则等待新一轮固定提交 CI。尚未创建 Release/tag，不把 Web 通过继承为三平台安装包通过。
-- 签名 secrets 未配置；草稿将明确未签名/未公证及尚未验收的交互安装、真实服务与旧版更新。证据暂存 `/private/tmp/voo-desktop-*`；[发布清单](release-checklist.md)、[签名/原生验收](code-signing.md)。
+- 候选 `1.0.0-beta.1`：Windows x64 setup/portable、Linux x64 AppImage、macOS Intel/Apple Silicon DMG/ZIP，共四个原生 runner、七个安装载荷。完整 Web 门禁及四个平台全部成功后，才合并更新元数据、核验 SHA-512/尺寸、生成 SHA256SUMS 和草稿；工作流不自动公开稳定版，也不覆盖已有 Release。
+- `platform.desktop-release`：修复 Windows setup/portable 同名覆盖、Mac 中文语言资源被剔除、ASAR 的 Windows 路径分隔符与间接运行依赖漏检；独立 npm ci 和真实原生包检查替代共享工作区打包结论。每份原生收据必须匹配候选版本、架构和提交。
+- `platform.desktop-close`：共享窗口关闭/应用退出确认，默认继续编辑，只有明确放弃才退出；取消确认发生在 CLI 服务清理之前。主入口菜单提取后 401→246 行，既有菜单实际点击回归保留；本轮新模块均低于 400 行。
+- 固定候选 [`d5bee51`](https://github.com/umaxzhao/voo-design/commit/d5bee513262c12b03cb45b3b7182ed6e8531fd1e) 已正常合入主线图层性能改动；[该轮 Release 运行](https://github.com/umaxzhao/voo-design/actions/runs/41273626256) 四原生通过、4772 项单测通过/4 跳过，但完整门禁只执行 88/105 步，第 86 步响应式菜单失败，其余未执行项不算通过，草稿未创建。该用例依赖宿主已安装 CLI 提供模型；干净 CI 正常显示空目录。新增独立的无服务配置入口与 32 项 API 长列表场景，强制隔离本地服务，不发送生成请求；本地真实浏览器、24 项相关单测、设计检查通过。下一固定候选将重新运行全部门禁，见 [PR #81](https://github.com/umaxzhao/voo-design/pull/81)，不继承旧版本通过。
+- 已保留失败：初轮 [`b758659`](https://github.com/umaxzhao/voo-design/actions/runs/41270179543) 的旧菜单源码位置断言，改为实际菜单点击；后续空签名 secret 被当作证书路径、Windows ASAR 提取路径、Vite optimizer 退出后的缓存删除竞态均有修复与回归。`4101979` 四原生任务通过，但完整 Web 在第 58 步 HTML 文字像素对照失败，故没有草稿；[`540e60d` 的 CI 截图](https://github.com/umaxzhao/voo-design/actions/runs/41273421739) 复现 4.688% 差异并保留原图/画布/差异图/测量值。文字几何相同，屏幕 LCD 子像素与透明 Canvas 灰度抗锯齿不同；测试统一灰度模式，原 1% 门槛和所有节点/颜色断言保留，Linux 预检已通过。本地 30 项相关单测、设计检查与浏览器像素对照通过，不冒记为完整候选通过。
+- 验收边界：实际打包应用的启动、指针绘图/撤销重做、原生文件写读、取消脏退出后 bridge 存活、新进程/隔离 profile 通过真实工作区文件卡片重开；不是人工运行外层安装器。未配置签名 secrets，未认证签名/公证、系统信任交互、旧版升级及真实付费/CLI/模型服务；4 项单测跳过与 11 组独立额外检查仍需按记录单独验收。[发布清单](release-checklist.md)、[签名/原生验收](code-signing.md)。
 
 ## 本轮：顶部工具栏鼠标悬停自动展开二级菜单与橡皮擦添加移除背景（已验证通过）
 
