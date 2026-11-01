@@ -90,12 +90,51 @@ function mergeToolCalls(calls, deltas) {
 }
 
 /**
+ * Reorders any interleaved user messages after assistant tool_calls so all
+ * corresponding tool responses immediately follow the assistant message.
+ */
+export function normalizeToolMessageOrder(messages) {
+  if (!Array.isArray(messages)) return messages;
+  const hasMultiTool = messages.some((m) => m?.role === "assistant" && Array.isArray(m.tool_calls) && m.tool_calls.length > 1);
+  if (!hasMultiTool) return messages;
+  const result = [];
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    result.push(msg);
+    if (msg?.role === "assistant" && Array.isArray(msg.tool_calls) && msg.tool_calls.length > 1) {
+      const toolIds = new Set(msg.tool_calls.map((c) => c.id));
+      const tools = [];
+      const others = [];
+      let j = i + 1;
+      while (j < messages.length && (messages[j]?.role === "tool" || messages[j]?.role === "user")) {
+        if (messages[j]?.role === "tool" && toolIds.has(messages[j]?.tool_call_id)) {
+          tools.push(messages[j]);
+        } else {
+          others.push(messages[j]);
+        }
+        if (tools.length === toolIds.size) {
+          j++;
+          break;
+        }
+        j++;
+      }
+      if (tools.length > 0) {
+        result.push(...tools, ...others);
+        i = j - 1;
+      }
+    }
+  }
+  return result;
+}
+
+/**
  * Strips or converts image_url blocks in messages if the model does not support vision.
  */
 export function sanitizeMessagesForModel(messages, model) {
   if (!Array.isArray(messages)) return messages;
-  if (supportsVision(model)) return messages;
-  return messages.map((msg) => {
+  const ordered = normalizeToolMessageOrder(messages);
+  if (supportsVision(model)) return ordered;
+  return ordered.map((msg) => {
     if (!msg || !Array.isArray(msg.content)) return msg;
     const sanitizedContent = [];
     for (const part of msg.content) {

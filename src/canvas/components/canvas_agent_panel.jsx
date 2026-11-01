@@ -29,6 +29,39 @@ import { addRecentFile, getRecentFiles } from "../store/recent_files.js";
 import { buildProjectVooFile } from "../store/project_io.js";
 import { encodeVooBinary } from "../store/voo_binary.js";
 export { CLI_MODEL_GROUPS, getModelDisplayLabel, getModelDisplayParts };
+
+async function persistGenerationIfHasLayers(generationIntent) {
+  const store = useDesignStore.getState();
+  if (store.filePath) return;
+  const editor = typeof window !== "undefined" ? window.__vooEditor : null;
+  const currentDoc = editor?.getDocument?.() ?? editor?.getDoc?.() ?? store.nodes?.[0]?.data?.editorDoc;
+  const nodes = currentDoc?.nodes ?? [];
+  const hasLayers = nodes.length > 1 || (nodes.length === 1 && (!nodes[0]?.isCanvasRoot && (!nodes[0]?.isFrame || (nodes[0]?.children?.length ?? 0) > 0)));
+  if (!hasLayers) return;
+  try {
+    const baseLabel = generationIntent?.label || store.fileName?.replace(/\.voo$/i, "") || "Design 1";
+    const baseName = baseLabel.replace(/\s+/gu, "").replace(/\.voo$/i, "") || "Design";
+    let existingNames = new Set();
+    try {
+      const [scanned, recents] = await Promise.all([workspaceStorage.scanFiles().catch(() => []), Promise.resolve(getRecentFiles())]);
+      existingNames = new Set([...scanned, ...recents].map((f) => f.name));
+    } catch {}
+    let uniqueName = `${baseName}.voo`, counter = 1;
+    while (existingNames.has(uniqueName)) uniqueName = `${baseName}${++counter}.voo`;
+    const category = generationIntent?.category || guessCategory(uniqueName);
+    const enginesMap = new Map();
+    if (editor && store.editingNodeId) enginesMap.set(store.editingNodeId, { engine: editor, ready: true });
+    const { vooFile, primaryPreview } = await buildProjectVooFile({ store, enginesRef: { current: enginesMap } });
+    const bytes = encodeVooBinary(vooFile);
+    const saved = await workspaceStorage.writeFileBytes(uniqueName, bytes, { category });
+    const savedPath = saved?.path || null, savedName = saved?.name || uniqueName;
+    store.setFilePath?.(savedPath); store.setFileName?.(savedName); store.setIsDirty?.(false);
+    addRecentFile({ name: savedName, path: savedPath, category, preview: primaryPreview, isDraft: false });
+  } catch (persistErr) {
+    console.warn("[VOO] Failed to persist generated project:", persistErr);
+  }
+}
+
 /** Chat panel beside the editor frame: text in, canvas changes out, saved history. */
 export default function CanvasAgentPanel({ onClose }) {
   const { t } = useI18n();
@@ -233,37 +266,7 @@ export default function CanvasAgentPanel({ onClose }) {
           onToolEvent: updateToolItem,
         });
         controller.signal.throwIfAborted();
-        if (generationIntent) {
-          const store = useDesignStore.getState();
-          const editor = typeof window !== "undefined" ? window.__vooEditor : null;
-          const currentDoc = editor?.getDocument?.() ?? editor?.getDoc?.() ?? store.nodes?.[0]?.data?.editorDoc;
-          const nodes = currentDoc?.nodes ?? [];
-          const hasLayers = nodes.length > 1 || (nodes.length === 1 && (!nodes[0]?.isCanvasRoot && !nodes[0]?.isFrame));
-          if (hasLayers) {
-            try {
-              const baseLabel = generationIntent?.label || store.fileName?.replace(/\.voo$/i, "") || "Design 1";
-              const baseName = baseLabel.replace(/\s+/gu, "").replace(/\.voo$/i, "") || "Design";
-              let existingNames = new Set();
-              try {
-                const [scanned, recents] = await Promise.all([workspaceStorage.scanFiles().catch(() => []), Promise.resolve(getRecentFiles())]);
-                existingNames = new Set([...scanned, ...recents].map((f) => f.name));
-              } catch {}
-              let uniqueName = `${baseName}.voo`, counter = 1;
-              while (existingNames.has(uniqueName)) uniqueName = `${baseName}${++counter}.voo`;
-              const category = generationIntent?.category || guessCategory(uniqueName);
-              const enginesMap = new Map();
-              if (editor && store.editingNodeId) enginesMap.set(store.editingNodeId, { engine: editor, ready: true });
-              const { vooFile, primaryPreview } = await buildProjectVooFile({ store, enginesRef: { current: enginesMap } });
-              const bytes = encodeVooBinary(vooFile);
-              const saved = await workspaceStorage.writeFileBytes(uniqueName, bytes, { category });
-              const savedPath = saved?.path || null, savedName = saved?.name || uniqueName;
-              store.setFilePath?.(savedPath); store.setFileName?.(savedName); store.setIsDirty?.(false);
-              addRecentFile({ name: savedName, path: savedPath, category, preview: primaryPreview, isDraft: false });
-            } catch (persistErr) {
-              console.warn("[VOO] Failed to persist generated project:", persistErr);
-            }
-          }
-        }
+        if (generationIntent) await persistGenerationIfHasLayers(generationIntent);
         const replyItem = { kind: "text", role: "assistant", content: reply };
         historyRef.current = [
           ...historyRef.current,
@@ -281,6 +284,7 @@ export default function CanvasAgentPanel({ onClose }) {
           createdAt: Date.now(),
         });
       } catch (caught) {
+        if (generationIntent) await persistGenerationIfHasLayers(generationIntent);
         if (!controller.signal.aborted) {
           const code = caught?.code ?? caught?.message;
           const wantsConfig =

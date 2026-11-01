@@ -100,6 +100,7 @@ export function normalisePenAnchor(anchor, originX = 0, originY = 0) {
     in: offset(anchor.in),
     out: offset(anchor.out),
     close: Boolean(anchor.close),
+    ...(anchor.moveTo ? { moveTo: true } : {}),
   };
 }
 
@@ -158,7 +159,7 @@ export function penAnchorsBounds(anchors, strokeWidth = 1) {
     minY = Math.min(minY, pt.y);
     maxY = Math.max(maxY, pt.y);
 
-    if (i > 0) {
+    if (i > 0 && !pt.moveTo) {
       const from = anchors[i - 1];
       const to = pt;
       if (from.out || to.in) {

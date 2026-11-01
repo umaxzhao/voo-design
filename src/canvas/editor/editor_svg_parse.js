@@ -139,7 +139,8 @@ export function parseSvgPath(d) {
         const y = requireNum();
         cur = { x, y };
         start = { x, y };
-        anchors.push({ x, y });
+        const isSubsequent = anchors.length > 0;
+        anchors.push({ x, y, ...(isSubsequent ? { moveTo: true } : {}) });
         cmd = "L";
         lastControl = null;
         break;
@@ -151,7 +152,8 @@ export function parseSvgPath(d) {
         const y = cur ? cur.y + dy : dy;
         cur = { x, y };
         start = { x, y };
-        anchors.push({ x, y });
+        const isSubsequent = anchors.length > 0;
+        anchors.push({ x, y, ...(isSubsequent ? { moveTo: true } : {}) });
         cmd = "l";
         lastControl = null;
         break;

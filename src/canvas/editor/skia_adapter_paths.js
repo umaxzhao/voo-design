@@ -73,6 +73,7 @@ function buildPathData(node) {
       while (i < points.length) {
         const from = points[i - 1];
         const to = points[i];
+        if (to.moveTo) break;
         if (from.out || to.in) {
           const [c1x, c1y] = P(from, from.out);
           const [c2x, c2y] = P(to, to.in);

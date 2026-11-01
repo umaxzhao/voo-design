@@ -268,6 +268,7 @@ export async function runAgentTurn({
           function: { name: call.name, arguments: call.arguments },
         })),
       });
+      const followUp = [];
       for (const call of toolCalls) {
         if (turnSignal.aborted) {
           throw new DOMException("Aborted", "AbortError");
@@ -318,20 +319,13 @@ export async function runAgentTurn({
             : (lintSummary ? { ...(result ?? {}), lint: lintSummary } : result));
           messages.push({ role: "tool", tool_call_id: call.id, content });
           if (hasImage) {
-            if (modelSupportsVision) {
-              messages.push({
-                role: "user",
-                content: [
-                  { type: "text", text: `PNG capture returned by ${call.name}; review it visually.` },
-                  { type: "image_url", image_url: { url: dataUrl } },
-                ],
-              });
-            } else {
-              messages.push({
-                role: "user",
-                content: "Canvas captured. Review the lint summary above.",
-              });
-            }
+            followUp.push(modelSupportsVision ? {
+              role: "user",
+              content: [
+                { type: "text", text: `PNG capture returned by ${call.name}; review it visually.` },
+                { type: "image_url", image_url: { url: dataUrl } },
+              ],
+            } : { role: "user", content: "Canvas captured. Review the lint summary above." });
           }
           onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "completed", result });
         } catch (error) {
@@ -345,6 +339,7 @@ export async function runAgentTurn({
           onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "failed", error: code });
         }
       }
+      for (const msg of followUp) messages.push(msg);
     }
     throw Object.assign(new Error(AGENT_ERROR.STEP_LIMIT), { code: AGENT_ERROR.STEP_LIMIT });
   };

@@ -324,6 +324,7 @@ export function tessellateNodeToWorldPolygons(node) {
     let i = contourStart;
     const subAnchors = [];
     while (i < anchors.length) {
+      if (i > contourStart && anchors[i].moveTo) break;
       subAnchors.push(anchors[i]);
       if (anchors[i].close) {
         i += 1;

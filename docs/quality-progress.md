@@ -2,7 +2,7 @@
 
 ## 本轮：Linux v1.0.0-beta.2 缺陷与补充清单集中修复与分支合入（源码完成，未推送未发布）
 
-- **协调与合入分支**：`merge/consolidate-all-branches`（基于 commit `0ec0adf8`，未 push，未部署）。
+- **协调与合入分支**：`merge/consolidate-all-branches`（基于 commit `4a5cfe98`，未 push，未部署）。
 - **并行执行模式**：使用 Orca orchestration 在多个独立 child worktree 中启动子 Agent 针对各个独立模块进行修复与回归测试，协调者逐一审查、运行测试并合并入主分支。同时并发调度 Mac Electron 原生测试 Agent 执行全量复测与截图核验。
 - **修复项与模块验证**：
   1. `worker-psd-import` (PSD 位图水合与持久化)：`psd_to_voo.js` 与 `project_io.js` 对 PSD 导入产出的图层位图 assets 建立与 images 统一的水合映射，修复重新打开与存盘位图占位问题。定向单测 `tests/unit/psd_pipeline_reopen.test.js` (5/5 通过)。
@@ -39,7 +39,30 @@
   16. `worker-polygon-star-grid-snap` (Polygon 与 Star 新建几何包围盒网格精确吸附，commit `739a8e24`)：
      - `src/canvas/editor/shape_geometry.js`: 实现 `fitPointsToBox`，将规则多边形（`regularPolygonPoints`）与星形（`starPoints`）顶点坐标严格平移并缩放贴合目标 frame，消除内接椭圆导致的几何尺寸收缩（如正六边形 0.866 宽度缩水问题）；极值点做 1e-12 精度对齐；重构 `withPolyParams` 避免边数/内径拖动时尺寸漂移；
      - 定向单测 `tests/unit/snap_grid_shape_drawing.test.js` (17/17 通过)，证实 8px 与 32px 网格下新建多边形/星形几何包围盒严格整除网格。
-- **Mac Electron 原生复测证据（revision 0ec0adf8 终态确认）**：
+  17. `worker-layout-lineheight-icons` (结构化布局行高契约归一与 Lucide 图标原生接入，commit `307455f9`)：
+     - `src/canvas/agent/canvas_tools_build_layout.js`: 将 `lineHeight > 3` 且 `fontSize > 0` 统一归一化为字号倍率 `lineHeight / fontSize`；将 Lucide 矢量图标原生转换为图层并写入 `icon: iconName` 元数据；对 LLM 常见的 `layout` ("none"|"horizontal"|"vertical")、`id` 与 `backgroundColor` 做容错宽容；
+     - `src/canvas/editor/text_metrics.js` 与 `src/canvas/editor/skia_adapter_elements.js`: 防御性处理像素行高，防止字号乘大像素值产生数百像素超大行间距；
+     - `src/canvas/agent/html_pipeline/lucide.js`: 导出并注册 `user-plus` 等 Lucide 图标；
+     - 定向单测 `tests/unit/build_layout_line_height_and_icons.test.js` (16/16 通过)。
+  18. `worker-agent-stream-and-empty-voo` (文本模型视觉门禁与空工程防范，commit `fe1879e2`)：
+     - `src/canvas/agent/canvas_agent.js` 与 `chat_stream.js`: 新增 `sanitizeMessagesForModel`，对非多模态文本模型（如 `deepseek-chat`）强制过滤 `image_url`，避免发送多模态负载导致上游连接断开；
+     - `src/canvas/components/welcome_dashboard/use_welcome_prompt_submit.js`: 生成任务仅在内存中通过 `store.newVooProject(...)` 与 `store.setPendingGeneration(...)` 初始化草稿，移除过早磁盘写盘，杜绝 218 字节空白 `.voo` 僵尸文件；
+     - 定向单测 `tests/unit/agent_vision_and_empty_project.test.js` (14/14 通过)，`tests/unit/canvas_agent_image_passthrough.test.js` (4/4 通过)。
+  19. `worker-tool-order-and-lucide-paths` (工具调用协议连续性、Lucide 多子路径隔离与生成文件持久化)：
+     - `src/canvas/agent/canvas_agent.js` 与 `chat_stream.js`: 解决并发多工具调用时工具响应连续性断裂问题，确保同一轮 assistant 下所有 `role: "tool"` 响应先于任何后续 `role: "user"` 消息发送；在 `chat_stream.js` 增加 `normalizeToolMessageOrder` 防御性消息规范化，彻底杜绝 `net::ERR_FAILED` / `Failed to fetch`；
+     - `src/canvas/editor/editor_svg_parse.js`、`scene_model_paths.js`、`render_pen_node.js`、`skia_adapter_paths.js`、`editor_svg_shapes.js`、`pen-write-document.js`、`path-boolean-geometry.js`、`path-boolean-reconstruction.js`: 完整支持 SVG 复杂路径中后续 `M`/`m` 命令的 `moveTo: true` 多轮廓切分，Skia 与 Canvas2D 在遇 `to.moveTo` 时自动断开轮廓，消除 Lucide 图标（如 `user-plus`）身体、头部与加号之间的多余对角连接线；
+     - `src/canvas/components/canvas_agent_panel.jsx`: 抽取 `persistGenerationIfHasLayers`，确保欢迎页生成在包含有效图层时可靠持久化正式 `.voo` 项目，并在发生非致命后置校验错误时也能兜底写盘；
+     - 定向单测 `tests/unit/agent_tool_order_and_lucide_paths.test.js` (6/6 通过)。
+- **Mac Electron 原生复测证据（revision 67a03457 终态确认）**：
+  - 运行 `npm run electron:dev` 与原生 Electron 43.8.0，使用 Ning 真实 profile 独立副本（`/Users/tt/Desktop/voo-mac-retest/ning-67a03457-profile`）及专用工程目录 `67a03457-workspace/`；详细记录见 `~/Desktop/voo-mac-retest/REPORT.md`，配套证据文件 `67a03457-*` 与截图在 `~/Desktop/voo-mac-retest/shots/`。
+  - **行高契约与紧凑卡片原生全面通过**：Profile Card 真实生成尺寸为 320×160（hug 自适应为 320×152），文本 16px 字号 / 24px 行高归一为倍率 1.5，文本高度严格为 24px，彻底消除 972px 异常拉伸；`build_layout` 宽容 `layout`/`id`/`backgroundColor`，无 `agentInvalidArgs` 报错。
+  - **文本模型视觉门禁与多轮真实编辑通过**：文本模型成功门禁，彻底剔除 `image_url` 负载；第二轮（slate/blue 批量改色与间距）及第三轮（提升对比度与 blue-600）连续成功，无 `Failed to fetch`，Agent 自检 90/100。
+  - **新建生成空工程防范通过，正式文件写盘待收尾**：两次有效生成 prompt 均未提前向磁盘写入 218 字节空白 `.voo` 文件，有效生成前及失败时专用目录均保持干净；但两次生成由于工具链收尾请求失败未能顺利完成最终正式写盘。
+  - **精准定位新根因**：
+    1. 工具调用连续性被打断：assistant 一次声明 `capture_canvas` 与 `inspect_layout` 两项工具调用时，代码在两个 `role: "tool"` 响应之间插入了 `role: "user"`（"Canvas captured..."），破坏了 OpenAI 规范中多工具调用的响应连续性，导致收尾请求报 `net::ERR_FAILED`；
+    2. Lucide 多子路径连线失真：`build_layout` 对含多个独立子路径的 Lucide 图标（如 `user-plus` 的圆圈头部、身体、加号）在点阵或路径合并时未切分子路径，产生多余斜向连线；
+  - **SVG 与几何吸附全部保持通过**：SVG 指定特征（圆角 clip、mask、径向渐变、文字）通过，7 种形状（Rect、Ellipse、Frame、Polygon、Star、Arrow、Line）的 32px 网格吸附全部真实指针通过。
+- **Mac Electron 原生复测证据（revision 0ec0adf8 历史记录保留）**：
   - 运行 `npm run electron:dev` 与原生 Electron 43.8.0，使用 Ning 真实 profile 的独立只读副本（`/Users/tt/Desktop/voo-mac-retest/ning-profile-copy`），对应真实工作区 `/Users/tt/Documents/VOO/Projects`；详细记录见 `~/Desktop/voo-mac-retest/REPORT.md`，配套 15 张新截图与机器证据在 `~/Desktop/voo-mac-retest/`。
   - **原项目封面全量通过并澄清历史误判**：
     - 6 个真实工程全部成功渲染封面（`Createtwoeditabledesi.voo` 175节点、`F1 Grand Prix Poster.voo` 131节点、`FORM — Design Culture.voo` 14节点、`PULSE — Analytics Dashboard.voo` 75节点、`SaaSAnalytics&CloudMetricDashboard.voo` 78节点、`NBA-Land-UI.voo` 9979节点），均产生有效 PNG data URL，包含 304~8,757 种独立 RGBA 颜色；

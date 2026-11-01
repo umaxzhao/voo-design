@@ -177,6 +177,7 @@ export function pathData(node) {
     while (i < points.length) {
       const from = points[i - 1];
       const to = points[i];
+      if (to.moveTo) break;
       if (from.out || to.in) {
         commands.push(
           `C${at(from, from.out)} ${at(to, to.in)} ${at(to)}`,
