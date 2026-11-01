@@ -6,6 +6,37 @@
         public static func registerTests() {
             let registry = TestRegistry.shared
             registry.register(
+                tier: 3, feature: "Native-Titlebar",
+                name: "test_TabDirtyIndicatorFollowsDocumentMutationAndUndo"
+            ) {
+                let controller = WindowController(contentView: MainContentView())
+                let stage = controller.mainContentView.canvasStageView
+                controller.savedDocumentSnapshot = stage.document
+                controller.syncChromeState()
+                try TestAssertions.assertFalse(controller.mainContentView.titleBar.state.isDirty)
+                let color =
+                    stage.document.workspaceBackgroundColor == "#FFFFFF" ? "#262626" : "#FFFFFF"
+                try TestAssertions.assertTrue(controller.applyCanvasBackground(color))
+                try TestAssertions.assertTrue(controller.mainContentView.titleBar.state.isDirty)
+                _ = controller.commandManager.undo(on: &stage.document)
+                controller.syncChromeState()
+                try TestAssertions.assertFalse(controller.mainContentView.titleBar.state.isDirty)
+                let file = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("voo-tab-save-\(UUID().uuidString).voo")
+                controller.currentFileURL = file
+                try TestAssertions.assertTrue(controller.applyCanvasBackground(color))
+                controller.saveDocument(nil)
+                try TestAssertions.assertTrue(FileManager.default.fileExists(atPath: file.path))
+                try TestAssertions.assertFalse(controller.mainContentView.titleBar.state.isDirty)
+                _ = controller.commandManager.undo(on: &stage.document)
+                controller.syncChromeState()
+                try TestAssertions.assertTrue(controller.mainContentView.titleBar.state.isDirty)
+                _ = controller.commandManager.redo(on: &stage.document)
+                controller.syncChromeState()
+                try TestAssertions.assertFalse(controller.mainContentView.titleBar.state.isDirty)
+                try FileManager.default.removeItem(at: file)
+            }
+            registry.register(
                 tier: 3, feature: "Native-Inspector",
                 name: "test_FormLayerCardShowsAllRowsAndCanvasBackgroundWithoutScrolling"
             ) {

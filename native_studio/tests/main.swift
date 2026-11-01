@@ -23,6 +23,7 @@ IslandAnchorTests.registerTests()
     NativeWorkflowParityTests.registerTests()
     NativePaintParityTests.registerTests()
     NativeInspectorVisualTests.registerTests()
+    NativeTitleBarDetailTests.registerTests()
 #endif
 // AIAgentTests.registerTests()
 

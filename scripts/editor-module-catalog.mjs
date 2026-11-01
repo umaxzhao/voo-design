@@ -238,7 +238,7 @@ export const EDITOR_MODULES = [
     title: "Agent, runtime and platform integration",
     paths: [
       "native_studio/Sources/*", "native_studio/tests/*", "native_studio/build.sh",
-      "native_studio/tests/NativeInspectorVisualTests.swift", "native_studio/tests/NativeWorkflowParityTests.swift",
+      "native_studio/tests/NativeTitleBarDetailTests.swift", "native_studio/tests/NativeInspectorVisualTests.swift", "native_studio/tests/NativeWorkflowParityTests.swift",
       "native_studio/Sources/UI/WindowController.swift", "native_studio/tests/main.swift", "native_studio/tests/run_tests.sh",
       "src/main.jsx",
       "tests/unit/collab_core.test.js", "tests/unit/webrtc_transport_coverage.test.js",
@@ -261,7 +261,7 @@ export const EDITOR_MODULES = [
     ],
     related: ["workspace","documents","inspector","images","text"],
     features: [
-      "platform.native-chrome", "platform.native-paints", "platform.native-portability", "platform.native-lifecycle", "platform.native-rendering", "platform.native-agent-entry", "platform.native-inspector", "platform.native-island-anchor", "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
+      "platform.native-titlebar", "platform.native-chrome", "platform.native-paints", "platform.native-portability", "platform.native-lifecycle", "platform.native-rendering", "platform.native-agent-entry", "platform.native-inspector", "platform.native-island-anchor", "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
       "platform.native-collaboration", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
     ],

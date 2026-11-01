@@ -26,6 +26,7 @@ TEST_FILES=(
   "$DIR/NativeWorkflowParityTests.swift"
   "$DIR/NativePaintParityTests.swift"
   "$DIR/NativeInspectorVisualTests.swift"
+  "$DIR/NativeTitleBarDetailTests.swift"
   # "$DIR/AIAgentTests.swift"
   "$DIR/main.swift"
 )

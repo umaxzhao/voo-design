@@ -1234,6 +1234,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
             do {
                 try DocumentIO.shared.saveDocument(mainContentView.canvasStageView.document, to: url)
                 savedDocumentSnapshot = mainContentView.canvasStageView.document
+                syncChromeState()
                 // The work is on disk now, so the recovery copy is no longer needed.
                 DraftAutosave.shared.flush(document: mainContentView.canvasStageView.document,
                                            currentFileURL: currentFileURL)
@@ -1260,6 +1261,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
                     try DocumentIO.shared.saveDocument(self.mainContentView.canvasStageView.document, to: url)
                     self.currentFileURL = url
                     self.savedDocumentSnapshot = self.mainContentView.canvasStageView.document
+                    self.syncChromeState()
                     self.mainContentView.titleBar.setDocumentTitle(
                         (url.lastPathComponent as NSString).deletingPathExtension)
                 } catch {
@@ -3583,6 +3585,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
 
     /// Keeps every chrome surface in sync after document / dashboard transitions.
     public func syncChromeState() {
+        mainContentView.titleBar.setDocumentDirty(hasUnsavedChanges)
         mainContentView.inspector.configureCanvas(
             document: mainContentView.canvasStageView.document)
         mainContentView.bottomZoomBar.update(

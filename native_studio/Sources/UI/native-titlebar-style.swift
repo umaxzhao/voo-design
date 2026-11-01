@@ -5,6 +5,43 @@ enum NativeTitleBarStyle {
     enum Key { case importDocument, exportDocument, newDocument, share, guest }
 
     static var actionFont: NSFont { ThemeFonts.system(size: 11, weight: .medium) }
+    static let actionTracking: CGFloat = 11 * 0.025
+
+    /// Lucide Bolt: the web preferences icon is a hexagonal nut, not Settings.
+    static func drawSettingsBolt(in rect: CGRect, color: NSColor) {
+        VooIconFactory.withCanonicalCanvas(in: rect, color: color, strokeWidth: 2) { context in
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: 21, y: 16))
+            path.addLine(to: CGPoint(x: 21, y: 8))
+            path.addArc(
+                center: CGPoint(x: 19, y: 8), radius: 2,
+                startAngle: 0, endAngle: -.pi / 3, clockwise: true)
+            path.addLine(to: CGPoint(x: 13, y: 4 - sqrt(3)))
+            path.addArc(
+                center: CGPoint(x: 12, y: 4), radius: 2,
+                startAngle: -.pi / 3, endAngle: -.pi * 2 / 3, clockwise: true)
+            path.addLine(to: CGPoint(x: 4, y: 8 - sqrt(3)))
+            path.addArc(
+                center: CGPoint(x: 5, y: 8), radius: 2,
+                startAngle: -.pi * 2 / 3, endAngle: -.pi, clockwise: true)
+            path.addLine(to: CGPoint(x: 3, y: 16))
+            path.addArc(
+                center: CGPoint(x: 5, y: 16), radius: 2,
+                startAngle: .pi, endAngle: .pi * 2 / 3, clockwise: true)
+            path.addLine(to: CGPoint(x: 11, y: 20 + sqrt(3)))
+            path.addArc(
+                center: CGPoint(x: 12, y: 20), radius: 2,
+                startAngle: .pi * 2 / 3, endAngle: .pi / 3, clockwise: true)
+            path.addLine(to: CGPoint(x: 20, y: 16 + sqrt(3)))
+            path.addArc(
+                center: CGPoint(x: 19, y: 16), radius: 2,
+                startAngle: .pi / 3, endAngle: 0, clockwise: true)
+            path.closeSubpath()
+            context.addPath(path)
+            context.addEllipse(in: CGRect(x: 8, y: 8, width: 8, height: 8))
+            context.strokePath()
+        }
+    }
 
     static func text(_ key: Key) -> String {
         let chinese =

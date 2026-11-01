@@ -79,6 +79,8 @@ public extension AppTitleBarDelegate {
 
 public final class DarkTitleTextField: NSTextField, NSTextFieldDelegate {
     public var onTitleCommit: ((String) -> Void)?
+    private var editingStartTitle: String?
+    private var editingWasCancelled = false
 
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -91,6 +93,7 @@ public final class DarkTitleTextField: NSTextField, NSTextFieldDelegate {
     }
 
     private func configure() {
+        cell = NativeDocumentTitleCell(textCell: "")
         isEditable = false
         isSelectable = true
         isBezeled = false
@@ -108,7 +111,7 @@ public final class DarkTitleTextField: NSTextField, NSTextFieldDelegate {
 
     public override func mouseDown(with event: NSEvent) {
         if !isEditable {
-            isEditable = true
+            beginTitleEditing()
             selectText(nil)
         }
         super.mouseDown(with: event)
@@ -120,34 +123,71 @@ public final class DarkTitleTextField: NSTextField, NSTextFieldDelegate {
         }
     }
 
+    // The custom cell has no bezel or text padding. NSTextField's inherited
+    // alignment insets otherwise enlarge its actual frame beyond the CSS cap.
+    public override var alignmentRectInsets: NSEdgeInsets {
+        NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
+    }
+
     public override var intrinsicContentSize: NSSize {
-        // Web `CanvasTabBar`: the tab is content-sized (`max-w-[240px]`), the
-        // label carries `tracking-[.3px]`, and padding left 12 / right 6 lives
-        // on the pill drawn by `AppTitleBar`. So the field asks for exactly the
-        // rendered label advance — no extra 8pt and no 60pt minimum, both of
-        // which made the native pill read wider than the web's.
-        let measuredFont = font ?? ThemeFonts.system(size: 12, weight: .medium)
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: measuredFont,
-            .kern: 0.3
-        ]
-        let textWidth = (stringValue as NSString).size(withAttributes: attributes).width
-        // 200 = web tab `max-w-[240px]` minus 12 left + 6 gap + 16 close + 6 right.
-        // The 24pt floor only guards an empty/in-progress title while editing.
-        return NSSize(width: max(24, min(200, ceil(textWidth))), height: 22)
+        NSSize(
+            width: NativeDocumentTabMetrics.textWidth(stringValue),
+            height: NativeDocumentTabMetrics.height)
+    }
+
+    func beginTitleEditing() {
+        guard !isEditable else { return }
+        editingStartTitle = stringValue
+        editingWasCancelled = false
+        isEditable = true
+    }
+
+    public func control(
+        _ control: NSControl, textView: NSTextView,
+        doCommandBy commandSelector: Selector
+    ) -> Bool {
+        switch commandSelector {
+        case NSSelectorFromString("cancelOperation:"):
+            editingWasCancelled = true
+            if let title = editingStartTitle { stringValue = title }
+        case NSSelectorFromString("insertNewline:"):
+            break
+        default:
+            return false
+        }
+        window?.makeFirstResponder(nil)
+        // A detached field has no field editor to send an end-edit notification.
+        if isEditable { finishTitleEditing() }
+        return true
     }
 
     public func controlTextDidEndEditing(_ obj: Notification) {
-        isEditable = false
-        invalidateIntrinsicContentSize()
-        onTitleCommit?(stringValue)
+        finishTitleEditing()
     }
+
+    private func finishTitleEditing() {
+        guard isEditable else { return }
+        isEditable = false
+        let originalTitle = editingStartTitle
+        editingStartTitle = nil
+        if editingWasCancelled {
+            // Resigning the field editor may publish its draft after Escape.
+            // Restore the original value after that end-edit notification.
+            if let originalTitle { stringValue = originalTitle }
+        } else {
+            onTitleCommit?(stringValue)
+        }
+        invalidateIntrinsicContentSize()
+        editingWasCancelled = false
+    }
+
 }
 
 // MARK: - Dark Action Button (Undo, Redo, Export, Save, Open)
 
 public final class DarkActionButton: NSButton {
     public var isWhitePill: Bool = false
+    public var letterSpacing: CGFloat = 0
 
     /// Optional leading glyph for web icon+label actions (nil = text-only pill).
     public var leadingGlyph: VooIconName? {
@@ -223,6 +263,7 @@ public final class DarkActionButton: NSButton {
         let attrs: [NSAttributedString.Key: Any] = [
             .font: font ?? ThemeFonts.system(size: 12, weight: .medium),
             .foregroundColor: labelColor,
+            .kern: letterSpacing,
             .paragraphStyle: pStyle
         ]
         let str = NSAttributedString(string: title, attributes: attrs)
@@ -320,7 +361,7 @@ public final class TitleBarIconButton: NSButton {
         self.glyph = glyph
         let side: CGFloat
         switch glyph {
-        case .close: side = 16.0
+        case .close: side = NativeDocumentTabMetrics.closeHitSize
         case .collab: side = 46.0
         case .plus: side = 24.0
         case .settings, .browser: side = 28.0
@@ -364,38 +405,26 @@ public final class TitleBarIconButton: NSButton {
 
         switch glyph {
         case .close:
-            // Web: size-4 rounded-full button, X icon 12, white/50.
             if hovered {
-                ctx.setFillColor(NSColor(white: 1.0, alpha: 0.18).cgColor)
-                ctx.fillEllipse(in: bounds)
+                ctx.setFillColor(NSColor(white: 1, alpha: 0.20).cgColor)
+                ctx.fillEllipse(in: CGRect(x: center.x - 8, y: center.y - 8, width: 16, height: 16))
             }
-            ctx.setStrokeColor(NSColor(white: hovered ? 1.0 : 0.55, alpha: 1.0).cgColor)
-            ctx.setLineWidth(1.7)
-            ctx.setLineCap(.round)
-            let s: CGFloat = 4.3
-            ctx.move(to: CGPoint(x: center.x - s, y: center.y - s))
-            ctx.addLine(to: CGPoint(x: center.x + s, y: center.y + s))
-            ctx.move(to: CGPoint(x: center.x - s, y: center.y + s))
-            ctx.addLine(to: CGPoint(x: center.x + s, y: center.y - s))
-            ctx.strokePath()
+            VooIconFactory.draw(
+                .close,
+                in: CGRect(x: center.x - 6, y: center.y - 6, width: 12, height: 12),
+                color: NSColor(white: hovered ? 1 : 0.5, alpha: 1), strokeWidth: 2.2)
 
         case .collab:
             NativeTitleBarStyle.drawGuestShare(in: bounds, hovered: hovered, context: ctx)
 
         case .plus:
-            // Web: size-6 rounded-full bg-neutral-800/50, Plus icon 14.
-            let circle = bounds.insetBy(dx: 1, dy: 1)
-            ctx.setFillColor(NSColor(white: 1.0, alpha: hovered ? 0.14 : 0.08).cgColor)
-            ctx.fillEllipse(in: circle)
-            ctx.setStrokeColor(NSColor(white: hovered ? 1.0 : 0.92, alpha: 1.0).cgColor)
-            ctx.setLineWidth(1.8)
-            ctx.setLineCap(.round)
-            let s: CGFloat = 5.2
-            ctx.move(to: CGPoint(x: center.x - s, y: center.y))
-            ctx.addLine(to: CGPoint(x: center.x + s, y: center.y))
-            ctx.move(to: CGPoint(x: center.x, y: center.y - s))
-            ctx.addLine(to: CGPoint(x: center.x, y: center.y + s))
-            ctx.strokePath()
+            ctx.setFillColor(
+                NSColor(hex: "262626").withAlphaComponent(hovered ? 0.75 : 0.50).cgColor)
+            ctx.fillEllipse(in: bounds)
+            VooIconFactory.draw(
+                .plus,
+                in: CGRect(x: center.x - 7, y: center.y - 7, width: 14, height: 14),
+                color: .white, strokeWidth: 2.2)
 
         case .browser:
             // Web editor cluster: 28×28 rounded-lg globe button (web source uses
@@ -418,33 +447,14 @@ public final class TitleBarIconButton: NSButton {
                 .globe,
                 in: globeRect,
                 color: NSColor(white: hovered ? 1.0 : 0.60, alpha: 1.0),
-                strokeWidth: 1.5
+                strokeWidth: 1.75
             )
 
         case .settings:
-            // Live web title bar (web_20261031): a 28×28 rounded-lg hit area with
-            // the Lucide `settings` gear (≈16pt box, 1.5 stroke). Idle white/55,
-            // hover white on a white/8 wash. (The Oct-23 capture showed a gear too;
-            // the bolt this used to draw was from the old web build.)
-            if hovered {
-                let wash = CGPath(roundedRect: bounds, cornerWidth: 8, cornerHeight: 8, transform: nil)
-                ctx.setFillColor(NSColor(white: 1.0, alpha: 0.08).cgColor)
-                ctx.addPath(wash)
-                ctx.fillPath()
-            }
-            let gearSide: CGFloat = 16.0
-            let gearRect = CGRect(
-                x: center.x - gearSide / 2.0,
-                y: center.y - gearSide / 2.0,
-                width: gearSide,
-                height: gearSide
-            )
-            VooIconFactory.draw(
-                .settings,
-                in: gearRect,
-                color: NSColor(white: hovered ? 1.0 : 0.60, alpha: 1.0),
-                strokeWidth: 1.5
-            )
+            NativeTitleBarStyle.drawSettingsBolt(
+                in: CGRect(x: center.x - 7, y: center.y - 7, width: 14, height: 14),
+                color: NSColor(white: hovered ? 1 : 0.55, alpha: 1))
+
         }
     }
 }
@@ -504,6 +514,7 @@ public class AppTitleBar: NSView {
 
     private var browserTrailingToSettings: NSLayoutConstraint?
     private var browserTrailingToBar: NSLayoutConstraint?
+    private var closeLeadingToTitle: NSLayoutConstraint?
 
     private var isBrandHovered: Bool = false {
         didSet {
@@ -546,13 +557,14 @@ public class AppTitleBar: NSView {
 
         // 2. Document Title inside the floating tab pill
         docTitleField.translatesAutoresizingMaskIntoConstraints = false
-        applyDocumentTitle(state.documentTitle)
+        applyDocumentTitle(state.displayTitle)
         docTitleField.setAccessibilityIdentifier(AccessibilityCatalog.docTitle)
         docTitleField.setAccessibilityRole(.textField)
         docTitleField.setAccessibilityLabel("Document Title")
         docTitleField.onTitleCommit = { [weak self] newTitle in
             guard let self = self else { return }
             self.state.documentTitle = newTitle
+            self.applyDocumentTitle(self.state.displayTitle)
             self.delegate?.titleBar(self, didChangeTitle: newTitle)
         }
         addSubview(docTitleField)
@@ -606,6 +618,7 @@ public class AppTitleBar: NSView {
         openButton.isWhitePill = false
         openButton.title = NativeTitleBarStyle.text(.importDocument)
         openButton.font = NativeTitleBarStyle.actionFont
+        openButton.letterSpacing = NativeTitleBarStyle.actionTracking
         openButton.leadingGlyph = nil
         openButton.target = self
         openButton.action = #selector(handleOpenClicked)
@@ -653,6 +666,7 @@ public class AppTitleBar: NSView {
         dashboardImportButton.isWhitePill = false
         dashboardImportButton.title = NativeTitleBarStyle.text(.importDocument)
         dashboardImportButton.font = NativeTitleBarStyle.actionFont
+        dashboardImportButton.letterSpacing = NativeTitleBarStyle.actionTracking
         dashboardImportButton.target = self
         dashboardImportButton.action = #selector(handleOpenClicked)
         dashboardImportButton.setAccessibilityIdentifier("title_bar_import_button")
@@ -665,6 +679,7 @@ public class AppTitleBar: NSView {
         dashboardNewButton.isWhitePill = true
         dashboardNewButton.title = NativeTitleBarStyle.text(.newDocument)
         dashboardNewButton.font = NativeTitleBarStyle.actionFont
+        dashboardNewButton.letterSpacing = NativeTitleBarStyle.actionTracking
         dashboardNewButton.target = self
         dashboardNewButton.action = #selector(handleDashboardNewClicked)
         dashboardNewButton.setAccessibilityIdentifier("title_bar_new_button")
@@ -695,6 +710,7 @@ public class AppTitleBar: NSView {
         exportButton.translatesAutoresizingMaskIntoConstraints = false
         exportButton.title = NativeTitleBarStyle.text(.exportDocument)
         exportButton.font = NativeTitleBarStyle.actionFont
+        exportButton.letterSpacing = NativeTitleBarStyle.actionTracking
         exportButton.isWhitePill = true
         exportButton.target = self
         exportButton.action = #selector(handleExportClicked)
@@ -713,15 +729,18 @@ public class AppTitleBar: NSView {
         // same offset from the brand (native SF is ~2.5pt wider than web Inter).
         let brandWidth: CGFloat = 105.0
         let actionFont = NativeTitleBarStyle.actionFont
+        let actionAttributes: [NSAttributedString.Key: Any] = [
+            .font: actionFont, .kern: NativeTitleBarStyle.actionTracking,
+        ]
         let exportTextWidth = ceil(
-            (exportButton.title as NSString).size(withAttributes: [.font: actionFont]).width)
+            (exportButton.title as NSString).size(withAttributes: actionAttributes).width)
         let openTextWidth = ceil(
-            (openButton.title as NSString).size(withAttributes: [.font: actionFont]).width)
+            (openButton.title as NSString).size(withAttributes: actionAttributes).width)
         let importTextWidth = ceil(
-            (dashboardImportButton.title as NSString).size(withAttributes: [.font: actionFont])
+            (dashboardImportButton.title as NSString).size(withAttributes: actionAttributes)
                 .width)
         let newTextWidth = ceil(
-            (dashboardNewButton.title as NSString).size(withAttributes: [.font: actionFont]).width)
+            (dashboardNewButton.title as NSString).size(withAttributes: actionAttributes).width)
         // Web: grey action `px-2.5` => 10, white primary action `px-3` => 12.
         let openHorizontalPadding: CGFloat = 10.0
         let saveHorizontalPadding: CGFloat = 12.0
@@ -730,6 +749,9 @@ public class AppTitleBar: NSView {
         let browserToBar = browserButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16)
         browserTrailingToSettings = browserToSettings
         browserTrailingToBar = browserToBar
+        let closeLeading = tabCloseButton.leadingAnchor.constraint(
+            equalTo: docTitleField.trailingAnchor)
+        closeLeadingToTitle = closeLeading
 
         NSLayoutConstraint.activate([
             // Brand Logo button: traffic-light inset; 28pt tall with 6pt inner padding.
@@ -741,18 +763,22 @@ public class AppTitleBar: NSView {
             // Tab title: brand gap 8 + tab wrapper leading 12 + pill padding-left 12.
             docTitleField.leadingAnchor.constraint(equalTo: brandLogoButton.trailingAnchor, constant: 32),
             docTitleField.centerYAnchor.constraint(equalTo: centerYAnchor),
-            docTitleField.heightAnchor.constraint(equalToConstant: 24),
-            // 200 = web tab `max-w-[240px]` minus the pill's pl12/pr6/gap6/close16.
-            docTitleField.widthAnchor.constraint(lessThanOrEqualToConstant: 200),
+            docTitleField.heightAnchor.constraint(equalToConstant: NativeDocumentTabMetrics.height),
+            docTitleField.widthAnchor.constraint(
+                lessThanOrEqualToConstant: NativeDocumentTabMetrics.maximumTextWidth),
 
-            // Close (X) inside the tab pill: 16x16, 6pt after the title.
-            tabCloseButton.leadingAnchor.constraint(equalTo: docTitleField.trailingAnchor, constant: 6),
+            // The web close target is 28pt; its negative margin cancels the gap.
+            closeLeading,
             tabCloseButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            tabCloseButton.widthAnchor.constraint(equalToConstant: 16),
-            tabCloseButton.heightAnchor.constraint(equalToConstant: 16),
+            tabCloseButton.widthAnchor.constraint(
+                equalToConstant: NativeDocumentTabMetrics.closeHitSize),
+            tabCloseButton.heightAnchor.constraint(
+                equalToConstant: NativeDocumentTabMetrics.closeHitSize),
 
-            // New tab (+) circle after the pill: 24x24, 6pt pill padding + 6pt gap.
-            tabPlusButton.leadingAnchor.constraint(equalTo: tabCloseButton.trailingAnchor, constant: 12),
+            // Creation stays outside the tab with the web strip's 4pt gap.
+            tabPlusButton.leadingAnchor.constraint(
+                equalTo: tabCloseButton.trailingAnchor, constant: NativeDocumentTabMetrics.newTabGap
+            ),
             tabPlusButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             tabPlusButton.widthAnchor.constraint(equalToConstant: 24),
             tabPlusButton.heightAnchor.constraint(equalToConstant: 24),
@@ -761,7 +787,7 @@ public class AppTitleBar: NSView {
             // action] [browser globe] [settings gear], 16pt trailing inset.
             // Web editor cluster: Import ... Export ... globe ... gear, with 8pt
             // gaps and 4pt between the globe and the gear.
-            settingsButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            settingsButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
             settingsButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             settingsButton.widthAnchor.constraint(equalToConstant: 28),
             settingsButton.heightAnchor.constraint(equalToConstant: 28),
@@ -849,16 +875,16 @@ public class AppTitleBar: NSView {
         if isBrandHovered { isBrandHovered = false }
     }
 
-    /// Applies the tab title with the web's 12/500 type and 0.3 tracking.
+    /// One attributed title drives both text measurement and cell drawing.
     private func applyDocumentTitle(_ title: String) {
         let style = NSMutableParagraphStyle()
         style.lineBreakMode = .byTruncatingTail
         docTitleField.attributedStringValue = NSAttributedString(
             string: title,
             attributes: [
-                .font: ThemeFonts.system(size: 12, weight: .medium),
-                .foregroundColor: NSColor(white: 1.0, alpha: 0.92),
-                .kern: 0.3,
+                .font: NativeDocumentTabMetrics.font,
+                .foregroundColor: NSColor.white,
+                .kern: NativeDocumentTabMetrics.tracking,
                 .paragraphStyle: style
             ]
         )
@@ -866,6 +892,7 @@ public class AppTitleBar: NSView {
         // content-sized tab pill would keep the previous width until something
         // else invalidated it.
         docTitleField.invalidateIntrinsicContentSize()
+        needsLayout = true
         needsDisplay = true
     }
 
@@ -893,7 +920,7 @@ public class AppTitleBar: NSView {
         } else {
             browserTrailingToBar?.isActive = false
             browserTrailingToSettings?.isActive = true
-            applyDocumentTitle(state.documentTitle)
+            applyDocumentTitle(state.displayTitle)
         }
         needsDisplay = true
     }
@@ -964,7 +991,7 @@ public class AppTitleBar: NSView {
                 attributes: [
                     .font: brandFont,
                     .foregroundColor: NSColor.black,
-                    .kern: -0.2
+                    .kern: -0.3,
                 ]
             )
             let brandNameSize = brandName.size()
@@ -976,15 +1003,45 @@ public class AppTitleBar: NSView {
 
         // 4. Floating document tab pill: h28, radius full, pl12 / pr6.
         //    The web dashboard has no tab pill (only brand + the round "+").
-        let tabLeft = docTitleField.frame.minX - 12
-        let tabRight = tabCloseButton.frame.maxX + 6
-        if !isDashboardMode, tabRight > tabLeft {
-            let pillRect = CGRect(x: tabLeft, y: bounds.midY - 14, width: tabRight - tabLeft, height: 28)
-            let pillPath = CGPath(roundedRect: pillRect, cornerWidth: 14, cornerHeight: 14, transform: nil)
-            ctx.setFillColor(NSColor(white: 0.16, alpha: 0.75).cgColor)
-            ctx.addPath(pillPath)
+        if !isDashboardMode {
+            let pillRect = documentTabFrame
+            ctx.setFillColor(NSColor(hex: "262626").withAlphaComponent(0.75).cgColor)
+            ctx.addPath(
+                CGPath(roundedRect: pillRect, cornerWidth: 14, cornerHeight: 14, transform: nil))
             ctx.fillPath()
+            if state.isDirty {
+                ctx.setFillColor(NSColor(hex: "fbbf24").cgColor)
+                ctx.fillEllipse(in: documentDirtyMarkFrame)
+            }
         }
+    }
+
+    var documentTabFrame: CGRect {
+        NativeDocumentTabMetrics.pillFrame(
+            label: convert(docTitleField.bounds, from: docTitleField),
+            close: convert(tabCloseButton.bounds, from: tabCloseButton))
+    }
+
+    var documentDirtyMarkFrame: CGRect {
+        let label = convert(docTitleField.bounds, from: docTitleField)
+        return CGRect(
+            x: label.maxX + NativeDocumentTabMetrics.itemGap,
+            y: label.midY - NativeDocumentTabMetrics.dirtySize / 2,
+            width: NativeDocumentTabMetrics.dirtySize, height: NativeDocumentTabMetrics.dirtySize)
+    }
+
+    public func setDocumentDirty(_ dirty: Bool) {
+        guard state.isDirty != dirty else { return }
+        state.isDirty = dirty
+        updateDocumentTabLayout()
+    }
+
+    private func updateDocumentTabLayout() {
+        closeLeadingToTitle?.constant =
+            state.isDirty
+            ? NativeDocumentTabMetrics.dirtySize + NativeDocumentTabMetrics.itemGap : 0
+        needsLayout = true
+        needsDisplay = true
     }
 
     // MARK: - Actions
@@ -1026,13 +1083,14 @@ public class AppTitleBar: NSView {
     /// and the visible tab field stay in sync, regardless of dashboard mode.
     public func setDocumentTitle(_ title: String) {
         state.documentTitle = title
-        applyDocumentTitle(isDashboardMode ? "Untitled" : title)
+        applyDocumentTitle(isDashboardMode ? "Untitled" : state.displayTitle)
         needsDisplay = true
     }
 
     public func sync(with newState: AppTitleBarState) {
         self.state = newState
-        applyDocumentTitle(isDashboardMode ? "Untitled" : newState.documentTitle)
+        applyDocumentTitle(isDashboardMode ? "Untitled" : newState.displayTitle)
+        updateDocumentTabLayout()
         zoomIndicator.stringValue = newState.formattedZoom
         undoButton.isEnabled = newState.canUndo
         redoButton.isEnabled = newState.canRedo

@@ -196,8 +196,8 @@ public class UIParityTests {
         ) {
             let bar = makeTitleBar()
             try TestAssertions.assertEqual(
-                bar.docTitleField.stringValue, "Untitled.voo",
-                "Default tab title must be Untitled.voo")
+                bar.docTitleField.stringValue, "Untitled",
+                "The tab displays the filename without its .voo extension")
             try TestAssertions.assertEqual(bar.state.documentTitle, "Untitled.voo")
             try TestAssertions.assertEqual(
                 bar.docTitleField.accessibilityIdentifier(), AccessibilityCatalog.docTitle)
@@ -215,7 +215,7 @@ public class UIParityTests {
         ) {
             let bar = makeTitleBar()
             bar.setDocumentTitle("Landing.voo")
-            try TestAssertions.assertEqual(bar.docTitleField.stringValue, "Landing.voo")
+            try TestAssertions.assertEqual(bar.docTitleField.stringValue, "Landing")
             try TestAssertions.assertEqual(bar.state.documentTitle, "Landing.voo")
             try TestAssertions.assertEqual(
                 bar.state.displayTitle, "Landing", "The tab pill strips the .voo extension")
@@ -228,7 +228,7 @@ public class UIParityTests {
         ) {
             let bar = makeTitleBar()
             bar.setDocumentTitle("Moon.voo")
-            try TestAssertions.assertEqual(bar.docTitleField.stringValue, "Moon.voo")
+            try TestAssertions.assertEqual(bar.docTitleField.stringValue, "Moon")
             try TestAssertions.assertFalse(bar.exportButton.isHidden)
             try TestAssertions.assertFalse(bar.openButton.isHidden)
 
@@ -256,7 +256,7 @@ public class UIParityTests {
             try TestAssertions.assertEqual(bar.state.documentTitle, "NewProject.voo")
 
             bar.isDashboardMode = false
-            try TestAssertions.assertEqual(bar.docTitleField.stringValue, "NewProject.voo")
+            try TestAssertions.assertEqual(bar.docTitleField.stringValue, "NewProject")
             try TestAssertions.assertFalse(bar.exportButton.isHidden)
             try TestAssertions.assertFalse(bar.openButton.isHidden)
         }
@@ -3273,10 +3273,10 @@ public class UIParityTests {
             let bar = makeTitleBar(width: 1440)
             try TestAssertions.assertApproxEqual(bar.frame.height, 40, accuracy: 1.5, "Title bar height is 40")
 
-            // Web `app_title_bar.jsx`: brand h28, close 16, plus 24, settings gear 28x28
-            // (rounded-lg hit area), save/open h28.
+            // Web: close has a 28pt hit area around its 12pt glyph; the creation
+            // circle is 24pt and the settings Bolt has a 28pt hit area.
             try TestAssertions.assertApproxEqual(bar.brandLogoButton.frame.height, 28, accuracy: 1.5, "Brand button height")
-            try assertFrameSize(bar.tabCloseButton, width: 16, height: 16, "Tab close")
+            try assertFrameSize(bar.tabCloseButton, width: 28, height: 28, "Tab close hit area")
             try assertFrameSize(bar.tabPlusButton, width: 24, height: 24, "Tab plus")
             try assertFrameSize(bar.settingsButton, width: 28, height: 28, "Settings gear")
             try TestAssertions.assertApproxEqual(
@@ -3291,7 +3291,7 @@ public class UIParityTests {
                 try TestAssertions.assertApproxEqual(control.frame.midY, midY, accuracy: 1.5, "Control vertically centred")
             }
 
-            // Outer margins: traffic-light inset on the left, 16pt right inset.
+            // The settings negative margin extends its hit area 4pt beyond the 16pt content inset.
             try TestAssertions.assertApproxEqual(
                 bar.brandLogoButton.frame.minX,
                 ThemeTokens.macTrafficLightInset,
@@ -3300,9 +3300,9 @@ public class UIParityTests {
             )
             try TestAssertions.assertApproxEqual(
                 bar.settingsButton.frame.maxX,
-                bar.bounds.width - 16,
+                bar.bounds.width - 12,
                 accuracy: 1.5,
-                "Settings keeps the 16pt trailing margin"
+                "Settings hit area matches the web negative margin"
             )
         }
 
