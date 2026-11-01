@@ -1,22 +1,15 @@
 # Design editor interaction audit
-
 审查日期：2026-10-26。审查对象：当前本地设计编辑器，不是静态截图。
-
 ## 方法与边界
-
 使用 `design:design-critique` 检查操作与面板的一致性，使用 `webapp-testing`
 的“观察 → 操作 → 验证”流程执行页面测试，使用 `engineering:code-review`
 追踪渲染、历史和持久化路径。浏览器操作使用当前环境要求的 CUA 接口。
-
 结论分为“页面复现”“代码确认”“回归测试”。代码确认不等于已经完成所有浏览器、
 格式和异常条件的实测。本次覆盖桌面 1280×720 和窄屏 390×844；未执行真实手机触屏、
 软键盘、长时间压力测试、所有媒体格式及断网/存储满额测试。
-
 审查期间共享工作区有并行的面板与智能体配置改动。本轮保留这些改动，提交只包含
 本轮的图片绘制、多 Frame 恢复、回归测试和本报告。
-
 ## 本轮已修复
-
 | ID | 问题与证据 | 修复与验收 |
 | --- | --- | --- |
 | F01 | 页面复现：导入 WebP 后图层缩略图正常，画布只有选框；控制台 `Workspace Skia draw failed / Failed to fetch`。图片缓存中的已解码资源与 GPU 再次获取 URL 是两条路径。 | 图片使用已有 Canvas2D 合成器直接绘制已解码资源，避免再次获取临时 URL。实测导入后可见，Frame 底色正常。 |
@@ -24,14 +17,10 @@
 | F03 | 代码确认：兼容内容必须订阅引擎绘制事件，否则 React 未更新时会再次出现“选框移动、内容不动”，资源解码完成也可能不刷新。 | 内容层每次从实时文档获取节点；测试覆盖实时移动、节点撤销删除、订阅释放。页面验证图片拖动、撤销、尺寸输入、隐藏与显示。 |
 | F04 | 页面复现：项目有两个 Frame，重开后仅显示一个，页码仍为 2/2。加载路径把 `editingNodeIds` 设为仅包含当前页。 | 恢复所有保存的 Frame，当前焦点独立保留；页面检查两个 Frame 均存在，测试检查页序与焦点。 |
 | F19 | 页面复现：新建文字时输入框能显示，按 Escape 结束编辑后文字消失。代码确认 GPU font manager 在未注册字体时返回空段落，当前 host 没有字体注册调用。 | 文字与图片一样使用现有浏览器字体合成路径，避免编辑测量与最终画面使用两套字体。加入文字路由回归；GPU 字体加载与排版一致性仍需独立完善。 |
-
 主要实现：`workspace-artwork-routing.js`、`editor_artwork_fallback.jsx`、
 `use_skia_page.js`、`editor_page.jsx`、`design_store.js`。
-
 ## 待修复：数据可靠性优先
-
 ### F05 · P0 · 自动保存没有覆盖所有项目
-
 - 证据：页面测试导入并移动图片后，刷新重开测试项目，图片未恢复。
 - 代码确认：`use_draft_autosave.js` 对存在 `filePath` 的项目取消调度；
   `writeDraftSnapshot` 同样跳过；`findDraftEntry` 只匹配无路径且同名的最近条目。
@@ -39,17 +28,13 @@
 - 修复方向：区分“写入工作区文件”和“恢复草稿”，所有项目变更都进入可等待的持久化队列；
   用稳定项目 ID 匹配恢复记录。不能只延长等待时间或删除脏标记。
 - 验收：新项目、浏览器工作区、本地授权目录、已有路径项目均在修改后重开恢复一致。
-
 ### F06 · P0 · 关闭前没有可靠刷新最后一笔修改
-
 - 代码确认：草稿调度延迟 1500ms，卸载清理只 `cancel()`；标签关闭直接进入
   `closeDocument`，没有等待这条调度队列完成。
 - 影响：即使其他自动保存条件满足，修改后立即关闭仍有丢失窗口。
 - 修复方向：事务与项目绑定；关闭、切换和退出先 flush，失败保留项目并给出重试。
 - 验收：输入最后一个字符后立即关闭、重新打开，最后一笔仍在；写入失败时不丢弃内存状态。
-
 ### F07 · P1 · Frame 位置、整体背景与对象历史没有统一
-
 - 代码确认：`setEditorArtboardLayout`、`moveEditorArtboard` 直接更新 store，
   没有生成引擎历史；位置修改不统一设置 `isDirty`。
 - 自动草稿 revision 只包含 `engineVersion` 与工作区颜色，独立的 Frame 位移未纳入。
@@ -289,6 +274,24 @@ native webview composition, and signed packaging are not certified here.
 - The first combined browser run reached the existing 50-entry history cap (`multiframe-targeted-browser.log`); the new scenarios now run after the preceding FORM audit restores its original session. Each audit retains its own capture/restore boundary; no history or scene assertion is weakened.
 - Scope remains partial: synthetic fixtures do not certify every locked ancestry/layout/mask combination, every deep selection modifier, physical touch/stylus or signed Electron installers. The previous release's FORM duplication, cold save/reopen, hierarchy, group/ungroup, ordering, deletion and visibility evidence remains tied to its actual revision; passing old suites did not discover the new multi-Frame contexts.
 
+
+## Relative layer order audit — 2026-11-01
+
+- Capabilities: `layers.nesting`, `layers.container-boundaries`, `selection.shortcuts`. Baseline `c666a886f3a934cea14db462e012138c8d119e5c` has three reproduced defects: actual Layers mask-base/follower multiselect plus `]` moves the same stack unit twice (green appears above the yellow layer); a locked Frame's selected child still responds to the relative-order shortcut (red replaces blue); public `reorderNode` moves a Frame header alone and leaves its child outside the contiguous subtree. Raw state and actual pixel probes: `/private/tmp/voo-license-regression/layer-order-before-proof.json`, `layer-order-before.log`. The new browser regression fails expected `[one,base,clip,two]` vs actual `[one,two,base,clip]` on old code (`layer-order-regression-before.log`).
+- Normalize selected clipping chains to their base before ancestor filtering and stack-order traversal. Each unit moves once regardless of click order. Moving and adjacent blocks honor full ancestor locks. The single-node relative API delegates to the same batch operation, retaining subtree/clip references and one history boundary. Position locks are not redefined as ordering locks. No new UI, dependencies, document schema or export changes.
+- Ownership: `layer-order-contracts.test.js` adds 12 cases; `layer-order-contract-checks.mjs` runs inside registered `editor-layers-composition`. Ten browser contexts: mask forward/backward × both click orders; locked Group/Frame ancestor × forward/backward; single-node Frame relative API × forward/backward. Tree selection and shortcuts use actual UI; locked ordinary Group children use public exact selection, and single-node API checks are explicitly engine calls rather than claimed pointer/Agent tests. Assert complete node order and unchanged per-node geometry/references, two exact visible colors as applicable, selected IDs, valid hierarchy, one complete undo/redo or no history for locked refusals. Capture/restore the fixture session.
+- Targeted 34 units and all ten new browser contexts pass (`layer-order-units.log`, `layer-order-regression-after.log`). Complete layer composition and Loading suites also pass against current main. Final clean `00b3f982120efac466e3c24f18beccc19f6b5243` completes all 105 release steps in one run: 101 core browser suites, 4825 unit passes / 4 skipped, design/module/build checks, and same-head GitHub CI run 41301142997. `layer-order-release.json` / `.log` and `layer-order-ci.json` are the current evidence; older successful, failed and interrupted reports remain separate, not stitched.
+- Coverage remains partial. Absolute indexed reorder (`reorderNodeTo`), drag-to-index, move-to-root/into-Group, extreme front/back commands, all clipping chains/ancestor mixes, cold reopen specifically after each relative reorder, physical devices and signed installers are not certified by these ten contexts. Existing full-gate suites retain their own recorded assertions; this audit does not equate their execution with exhaustive functional coverage.
+
+- The first full gate on `b4a076652d5f46013c444a9bf3f3375359397a08` passed all units but failed the existing Loading 20px breathing-room assertion (`layer-order-release-initial.json` / `.log`). Deterministic pause at 45° reproduces an actual 14.0589px gap (`loading-gap-regression-before.log`): rotating the 48px brand enlarges its bounds, reducing the 24px flow gap. Increase the shared flow gap to 32px, retaining the original 20px visible requirement; add eight evenly spaced animation phases with all original rotation/reduced-motion/mobile/drawing/history assertions intact. This is an additional `platform.loading` product defect, not a weakened assertion or an inherited pass. The initial worktree dependency-startup failure is separately retained as `loading-gap-worktree-dependency.log` and is not defect evidence.
+
+- Clean `7056abef00556ee0b53612eb6ef49c68279b75cd` subsequently passed the complete 91-step gate at two-browser concurrency: all 87 core browser suites and 4728 units (4 skipped), plus CI run 41262363765 (`layer-order-release-preintegration.json` / `.log`). The prior busy-host `new_document` startup timeout is retained in `layer-order-release-contention.json` / `.log`; the complete destructive-Boolean suite passed unchanged before the successful full run (`layer-order-startup-recheck.log`). No assertion/timeout was relaxed and no partial runs were stitched.
+- Before publishing, main advanced to `89c124f` with separately verified interface/checklist work and 99 registered core browser suites. Integrate that work without reverting product changes or dropping checks. Resolve Loading-test overlap by retaining both the eight rotating viewport-bound checks and main's independent untransformed layout-gap check. Quality progress retains both task records; only blank lines are compacted to the file-size limit. The integrated 103-step release must pass before merge/deployment; the older 91-step success is not its certificate.
+- Clean `6605aa859c6ac429b39f07eb6bf4bdab6c70ddfa` completed 103/103 steps in one fresh run: 99 core browser suites, 4729 units passed / 4 skipped, and CI run 41263346237. Preserve that exact result as `layer-order-release-prezoom.json` / `.log`. At the final publication guard, main had advanced to `732b1b9` with already-published zoom optimization and its extra core suite. Integrate those changes rather than deploy an older runtime over them. Shared audit/progress records are retained; the final 104-step gate is pending, and neither prior complete version certifies it.
+
+- User interruption ended the `43f0c6d` run before a complete result; its saved partial report is not a 104-step pass. On resume, stop a newly started old-baseline run once current main is found at `8c270d0` with additional published toolbar, desktop release, layer/history and layout/effect work. Preserve all of that source and every registered check; only the progress-document conflict needs resolution. The final catalog now requires 105 steps / 101 core browser suites. Earlier successful 91/103-step reports remain bound to their own commits. GitHub CLI authentication expired; the existing connected GitHub account is the repository owner with explicit admin/push permission, so publication can continue through the connector without reading or requesting a token.
+
+- Final publication evidence for `00b3f98`: only the three task-source patches were applied to the primary application; complete file hashes match and its ten isolated ordering contexts plus complete Loading/eight-angle/layout-gap suite pass (`layer-order-primary-proof.json` and related logs). Other local drafts remain; this does not certify the whole dirty application or a signed installer. The validated build is deployed to la2 and canonical `https://voo.run/editor/`: entry plus all 82 loaded script/style resources match SHA-256, six actual ordering cases pass with unchanged node fields/selection, actual color samples and one-step undo/redo, eight rotating Loading phases retain at least 20px (minimum representative 22.0589px), with no page errors (`layer-order-production-proof.json`). Screenshots: `layer-order-production-{loading,mask-1,mask--1,locked-frame-1,locked-frame--1,single-frame-api-1,single-frame-api--1}.png`. Rollback backup `/srv/voo-run/editor-backups/00b3f982120efac466e3c24f18beccc19f6b5243-20261101T112646Z`. PR #80 carries only this task's changes relative to current main. The final receipt commit changes documentation only; runtime/test parity is recorded separately in `layer-order-main-tree-proof.json`. No existing user document, paid provider, real collaboration room or native Release artifact was modified.
 
 ## Canvas zoom efficiency — 2026-11-01
 

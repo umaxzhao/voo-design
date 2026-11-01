@@ -46,6 +46,21 @@ await withEditorBrowser(async ({ page }) => {
     const icon = loading.locator("[data-loading-brand]");
     const progress = loading.getByRole("progressbar");
     assert.equal(await progress.getAttribute("aria-valuenow"), null, "Unknown download progress must not invent a percentage");
+    // Pause at representative angles: a rotating square grows its visible bounds.
+    // Keep the original minimum gap at every phase rather than sampling near 0°.
+    for (const angle of [0, 45, 90, 135, 180, 225, 270, 315]) {
+      await icon.evaluate((el, angle) => {
+        const animation = el.getAnimations()[0];
+        animation.pause(); animation.currentTime = Number(animation.effect.getTiming().duration) * angle / 360;
+      }, angle);
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const brandBox = await icon.boundingBox(), trackBox = await progress.boundingBox();
+      assert.ok(trackBox.y >= brandBox.y + brandBox.height + 20,
+        `Progress retains 20px breathing room at ${angle} degrees; actual gap=${trackBox.y - brandBox.y - brandBox.height}`);
+    }
+    await icon.evaluate(el => el.getAnimations()[0].play());
+    const iconBox = await icon.boundingBox(), barBox = await progress.boundingBox();
+    assert.ok(barBox.y >= iconBox.y + iconBox.height + 20, "Progress sits below the brand with breathing room");
     // A rotating span's viewport rectangle includes its transparent corners.
     // Layout spacing must not depend on which animation frame was sampled.
     const brandGap = await loading.evaluate(element => {

@@ -108,3 +108,11 @@ pilots, full clean release, raw paired profiles/pixels, exact script/source
 receipts and independent GitHub/deployment/production checks. Only the corrected
 full release is complete; no earlier failure is relabeled or stitched into it.
 Later documentation commits do not change the application or registered tests.
+
+## Published-main integration
+
+Remote 0f096fa contains separately verified layer-order and loading-clearance
+fixes. Preserve them in the combined candidate. The ba834cc results above are
+pre-integration evidence only; rerun the entire clean gate and fresh paired
+performance against 0f096fa before publication. No earlier result certifies
+the changed combined source.
