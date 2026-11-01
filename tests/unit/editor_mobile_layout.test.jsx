@@ -34,7 +34,7 @@ describe("mobile editor layout", () => {
     expect(css).toContain("--editor-mobile-panel-gap: 0.375rem");
     expect(css).toContain("border-radius: 1rem");
     expect(css).toContain("transition: width 180ms ease, left 180ms ease, opacity 180ms ease");
-    // Each mobile panel can collapse to a 3.5rem header independently.
+    // Each mobile panel can collapse to a 4.5rem header independently.
     expect(css).toContain('[data-mobile-layers-expanded="false"] [data-testid="editor-layers-panel"]');
     expect(css).toContain('[data-mobile-properties-expanded="false"] [data-testid="editor-properties-panel"]');
     // A 48px target plus header padding needs a 72px collapsed dock.

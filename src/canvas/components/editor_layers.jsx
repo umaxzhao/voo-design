@@ -167,10 +167,10 @@ export default function EditorLayers({
       maxHeight: `calc(100% - ${bottomInset + 80}px)`
     } : undefined}
   >
-    <EditorLayersResize panelRef={panelRef} swapped={swapSide} t={t} />
     <EditorLayersHeader
       model={model}
     />
+    <EditorLayersResize panelRef={panelRef} swapped={swapSide} t={t} />
     {panelTab === "assets" ? <EditorLayersAssets
       model={model}
     /> : <>

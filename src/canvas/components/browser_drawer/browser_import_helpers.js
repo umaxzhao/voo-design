@@ -5,7 +5,7 @@
 
 import { useDesignStore } from "../../../store/design_store.js";
 
-function getActiveEditor() {
+export function getActiveEditor() {
   if (typeof window === "undefined") return null;
   return window.__vooEditor || Object.values(window.__vooEditors || {})[0] || null;
 }
@@ -13,7 +13,7 @@ function getActiveEditor() {
 /**
  * Calculates a non-overlapping coordinate (x, y) to place newly imported content.
  */
-function findSafePlacement(doc, width = 800) {
+export function findSafePlacement(doc, width = 800) {
   if (!doc?.nodes || doc.nodes.length === 0) {
     return { x: 80, y: 80 };
   }
@@ -48,24 +48,15 @@ export async function importHtmlSnippetToCanvas({
   width = 1080,
   height = 900,
   title = "Imported Web Element",
+  isFullPage = false,
+  backgroundColor = null,
 }) {
   if (!html || typeof html !== "string" || !html.trim()) {
     return { success: false, error: "No HTML content provided to import." };
   }
 
-  let editor = getActiveEditor();
-
-  // If no document is open, create a new untitled document first
-  if (!editor) {
-    const store = useDesignStore.getState();
-    await store.newVooProject({ label: title });
-    // Allow React lifecycle and Skia canvas engine to mount
-    await new Promise((r) => setTimeout(r, 120));
-    editor = getActiveEditor();
-    if (!editor) {
-      return { success: false, error: "Canvas editor could not be initialized." };
-    }
-  }
+  const { prepareImportTargetProject } = await import("./browser_import_target.js");
+  const { editor, doc: currentDoc, placement } = await prepareImportTargetProject(title);
 
   try {
     // Keep fonts and scene engines deferred until an actual import operation.
@@ -79,13 +70,7 @@ export async function importHtmlSnippetToCanvas({
       return { success: false, error: "HTML parser generated 0 canvas nodes." };
     }
 
-    const currentDoc = editor.getDocument?.() ?? editor.getDoc?.();
-    if (!currentDoc) {
-      return { success: false, error: "Cannot access current canvas document." };
-    }
-
     const existingNodes = currentDoc.nodes || [];
-    const placement = findSafePlacement(currentDoc, width);
 
     // Identify the root imported node (or create an enclosing frame if multiple roots)
     const newNodes = parsed.doc.nodes;
@@ -110,9 +95,38 @@ export async function importHtmlSnippetToCanvas({
       node.y = Math.round((node.y || 0) + deltaY);
     }
 
-    // Assign meaningful name to the topmost container
-    if (rootNodes.length === 1) {
-      rootNodes[0].name = `Web: ${title}`;
+    let finalNodes = newNodes;
+    let selectedRootIds = [];
+
+    if (isFullPage) {
+      // Must be enclosed in a top-level Frame (isFrame: true) with the page's exact width and scrollHeight
+      const { createGroupNode } = await import("../../editor/scene_model_groups.js");
+      const frameNode = {
+        ...createGroupNode({
+          x: placement.x,
+          y: placement.y,
+          width: Math.round(width),
+          height: Math.round(height),
+          parentId: null,
+        }),
+        isFrame: true,
+        name: title,
+        clipTo: true,
+        ...(backgroundColor ? { fill: backgroundColor } : {}),
+      };
+
+      // Reparent all previous root nodes into this Frame
+      for (const n of rootNodes) {
+        n.parentId = frameNode.id;
+      }
+      finalNodes = [frameNode, ...newNodes];
+      selectedRootIds = [frameNode.id];
+    } else {
+      // Assign meaningful name to the topmost container
+      if (rootNodes.length === 1) {
+        rootNodes[0].name = `Web: ${title}`;
+      }
+      selectedRootIds = rootNodes.map((n) => n.id);
     }
 
     // Automatically trigger font loading for any custom WebFonts referenced in the imported text nodes
@@ -130,7 +144,7 @@ export async function importHtmlSnippetToCanvas({
     } catch {
       // Font loader may be absent in pure headless/unit environments
     }
-    const combinedNodes = [...existingNodes, ...newNodes];
+    const combinedNodes = [...existingNodes, ...finalNodes];
     const nextDoc = {
       ...currentDoc,
       nodes: combinedNodes,
@@ -143,15 +157,14 @@ export async function importHtmlSnippetToCanvas({
     }
 
     // Select the imported root layer(s)
-    const rootIds = rootNodes.map((n) => n.id);
-    if (rootIds.length > 0 && typeof editor.selectExactly === "function") {
-      editor.selectExactly(rootIds);
+    if (selectedRootIds.length > 0 && typeof editor.selectExactly === "function") {
+      editor.selectExactly(selectedRootIds);
     }
 
     return {
       success: true,
-      count: newNodes.length,
-      rootId: rootIds[0],
+      count: finalNodes.length,
+      rootId: selectedRootIds[0],
       title,
     };
   } catch (err) {

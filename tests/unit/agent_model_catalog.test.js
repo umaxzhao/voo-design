@@ -45,7 +45,12 @@ describe("agent model catalog", () => {
       connect: async () => ({
         models: [
           { id: "gpt-6-sol", label: "GPT-6 Sol" },
-          { id: "gpt-6.1-sol", label: "GPT-6.1 Sol" },
+          {
+            id: "gpt-6.1-sol",
+            label: "GPT-6.1 Sol",
+            supportedReasoningEfforts: ["minimal", "low", "medium", "high"],
+            defaultReasoningEffort: "medium",
+          },
           { id: "gpt-5.6-terra", label: "GPT-5.6 Terra" },
           { id: "gpt-6.1-terra", label: "GPT-6.1 Terra" },
         ],
@@ -65,6 +70,10 @@ describe("agent model catalog", () => {
       "codex:gpt-6.1-sol",
       "codex:gpt-6.1-terra",
     ]);
+    expect(codex.models[0]).toMatchObject({
+      supportedReasoningEfforts: ["minimal", "low", "medium", "high"],
+      defaultReasoningEffort: "medium",
+    });
     expect(antigravity.models.map(({ id }) => id)).toEqual([
       "antigravity:gemini-3.8-flash-high",
       "antigravity:gemini-3.8-flash-medium",

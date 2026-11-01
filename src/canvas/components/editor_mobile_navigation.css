@@ -5,6 +5,10 @@
     top: 5rem !important;
     bottom: auto !important;
   }
+
+  .app-root-frame .relative.flex > [data-testid="page-switcher"].absolute {
+    flex-direction: column-reverse;
+  }
 }
 
 /* A short touch viewport cannot fit an assistant plus two desktop inspectors. */

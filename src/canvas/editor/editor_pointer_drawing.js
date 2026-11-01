@@ -295,6 +295,10 @@ export function createDrawingPointerGestures(ctx) {
       api.cutAt(point);
       return;
     }
+    if (mod && api.bendDown(point)) {
+      setGesture({ kind: "penBend" });
+      return;
+    }
     if (api.editDown(point, { convert: event.altKey })) {
       setGesture({ kind: "penEdit" });
     } else if (!mod && !event.altKey) api.endEdit();

@@ -123,7 +123,7 @@ export default function EditorLayerRow({
           selectedIds,
           activeIndex,
           isBackgroundSelected
-        }) ? "shadow-[inset_0_0_0_1px_#a7ffd4]" : ""}` : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"} ${draggable ? "touch-none cursor-default" : ""}`}
+        }) ? "shadow-[inset_0_0_0_1px_#a7ffd4]" : ""}` : "bg-transparent text-neutral-300 hover:bg-white/[0.08]"} ${draggable ? (dragId ? "touch-none " : "touch-pan-y ") + "cursor-default" : ""}`}
         style={{
           boxShadow: rowSelected && overId !== object.id ? "inset 0 0 0 1px #a7ffd4" : undefined,
           paddingLeft: 8 + depth * 16,

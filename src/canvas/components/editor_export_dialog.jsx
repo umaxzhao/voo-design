@@ -183,7 +183,7 @@ export default function EditorExportDialog({
                 type="button"
                 aria-pressed={format === id}
                 onClick={() => onFormat(id)}
-                className={`flex min-h-8 items-center justify-between rounded-lg px-3 py-2 text-left text-[11px] outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${format === id ? "bg-white/[0.12] text-white" : "text-neutral-300 hover:bg-white/[0.06]"}`}
+                className={`flex min-h-8 [@media(pointer:coarse)]:min-h-[44px] items-center justify-between rounded-lg px-3 py-2 text-left text-[11px] outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${format === id ? "bg-white/[0.12] text-white" : "text-neutral-300 hover:bg-white/[0.06]"}`}
               >
                 <span>{t(label)}</span>
                 {format === id && (
@@ -221,7 +221,7 @@ export default function EditorExportDialog({
                   type="button"
                   aria-pressed={scale === value}
                   onClick={() => onScale(value)}
-                  className={`min-h-8 rounded-lg px-3 text-[11px] outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${scale === value ? "bg-white/[0.12] text-white" : "text-neutral-400 hover:bg-white/[0.06]"}`}
+                  className={`min-h-8 [@media(pointer:coarse)]:min-h-[44px] rounded-lg px-3 text-[11px] outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${scale === value ? "bg-white/[0.12] text-white" : "text-neutral-400 hover:bg-white/[0.06]"}`}
                 >
                   {value}×
                 </button>
@@ -260,7 +260,7 @@ export default function EditorExportDialog({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-8 flex-1 rounded-lg px-3 text-[11px] text-neutral-300 hover:bg-white/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+            className="min-h-8 [@media(pointer:coarse)]:min-h-[44px] flex-1 rounded-lg px-3 text-[11px] text-neutral-300 hover:bg-white/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
           >
             {t("editor.cancel")}
           </button>
@@ -268,7 +268,7 @@ export default function EditorExportDialog({
             type="button"
             disabled={busy || (!dimensions && exportRange !== "slices")}
             onClick={() => onExport({ transparent: format !== "jpeg" && transparent })}
-            className="min-h-8 flex-1 rounded-lg bg-white px-3 text-[11px] font-semibold text-black hover:bg-neutral-200 transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
+            className="min-h-8 [@media(pointer:coarse)]:min-h-[44px] flex-1 rounded-lg bg-white px-3 text-[11px] font-semibold text-black hover:bg-neutral-200 transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40"
           >
             {exportRange === "slices"
               ? t("editor.exportSlicesAction", { count: slicesCount })

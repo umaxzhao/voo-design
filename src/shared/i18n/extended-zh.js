@@ -2202,6 +2202,8 @@ export default {
   "canvasTabs.close": "关闭项目",
   "canvasTabs.new": "添加项目",
   "canvasTabs.unsaved": "未保存更改 (Ctrl+S / ⌘S 保存)",
+  "canvasTabs.scrollLeft": "向左滚动项目标签",
+  "canvasTabs.scrollRight": "向右滚动项目标签",
   "loading.openingDocument": "正在打开文件…",
   "loading.importingFigma": "正在导入 Figma 文件…",
   "pageSwitcher.copySuffix": "副本",

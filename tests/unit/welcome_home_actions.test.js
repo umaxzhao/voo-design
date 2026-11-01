@@ -7,6 +7,14 @@ import { htmlToDocument } from "../../src/canvas/editor/html_import.js";
 import { HTML_IMPORT_ACCEPT, SCREENSHOT_ACCEPT, importWelcomeHtml, openWelcomeBrowser } from "../../src/canvas/components/welcome_home_actions.js";
 import { handleExportShortcut } from "../../src/canvas/editor/export_shortcut.js";
 const read = (path) => fs.readFileSync(new URL(`../../src/${path}`, import.meta.url), "utf8");
+// The welcome dashboard was split into focused modules; assertions about its
+// behaviour read the dashboard entry plus every module it is composed from.
+const readWelcomeDashboard = () => [
+  "canvas/components/welcome_dashboard.jsx",
+  ...fs.readdirSync(new URL("../../src/canvas/components/welcome_dashboard/", import.meta.url))
+    .filter((name) => /\.(jsx?|js)$/.test(name))
+    .map((name) => `canvas/components/welcome_dashboard/${name}`),
+].map(read).join("\n");
 globalThis.CustomEvent ??= class extends Event { constructor(type, options) { super(type); this.detail = options?.detail; } };
 
 describe("welcome home actions", () => {
@@ -30,7 +38,7 @@ describe("welcome home actions", () => {
     } finally { vi.unstubAllGlobals(); }
   });
   it("uses the screenshot attachment picker and leaves Figma on the project picker", () => {
-    const source = read("canvas/components/welcome_dashboard.jsx");
+    const source = readWelcomeDashboard();
     expect(HTML_IMPORT_ACCEPT).toBe(".html,.htm,text/html");
     for (const ext of [".png", ".jpg", ".jpeg", ".webp", ".gif"]) expect(SCREENSHOT_ACCEPT).toContain(ext);
     expect(source).toContain("onClick={openWelcomeBrowser}");
@@ -39,8 +47,8 @@ describe("welcome home actions", () => {
     expect(source).toContain('accept=".voo,.zip,.psd,.fig,.pen,.svg,application/json"');
   });
   it("validates the provider, creates the design, then hands one generation intent to the panel", () => {
-    const source = read("canvas/components/welcome_dashboard.jsx");
-    const handler = source.slice(source.indexOf("const handlePromptSubmit"), source.indexOf("const handleOpenLocal"));
+    const source = readWelcomeDashboard();
+    const handler = source.slice(source.indexOf("const handlePromptSubmit"), source.indexOf("return { handlePromptSubmit }"));
     expect(handler).toContain("buildGenerationIntent({");
     expect(handler).toContain("await resolveAgentProvider(intent.modelId)");
     expect(handler.indexOf("await resolveAgentProvider")).toBeLessThan(handler.indexOf("await handleCreateNew"));

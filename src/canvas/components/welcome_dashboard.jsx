@@ -1,8 +1,5 @@
-import { SCREENSHOT_ACCEPT, openWelcomeBrowser } from "./welcome_home_actions.js";
-import { usePromptAttachments } from "./use_prompt_attachments.js";
-import { useWelcomeActionReadiness } from "./welcome_dashboard/use_welcome_action_readiness.js";
 import React, { useEffect, useState, useRef } from "react";
-import { Search, Trash2, X } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useDesignStore } from "../../store/design_store.js";
 import { useI18n } from "../use_i18n.js";
 import { getSetting, setSetting } from "../../shared/settings.js";
@@ -13,9 +10,6 @@ import { useModelGroups } from "./agent-panel/use_model_groups.js";
 import {
   DEFAULT_DESIGN_SYSTEM_ID,
   DEFAULT_STYLE_ID,
-  designSystemOptions,
-  sizeOptions,
-  styleOptions,
 } from "./welcome_dashboard/generation-options.js";
 import CommunityTemplatesView from "./community_templates_view.jsx";
 import { AI_GEN_TYPES, CATEGORY_PILLS } from "./welcome_dashboard/welcome_constants.js";
@@ -25,9 +19,15 @@ import { useWelcomeFolders } from "./welcome_dashboard/use_welcome_folders.js";
 import { useWelcomeCreate } from "./welcome_dashboard/use_welcome_create.js";
 import { useWelcomeOpen } from "./welcome_dashboard/use_welcome_open.js";
 import { useWelcomeFileActions } from "./welcome_dashboard/use_welcome_file_actions.js";
+import { useWelcomeActionReadiness } from "./welcome_dashboard/use_welcome_action_readiness.js";
+import { usePromptAttachments } from "./use_prompt_attachments.js";
+import { useWelcomeSidebarState } from "./welcome_dashboard/use_welcome_sidebar_state.js";
+import { useWelcomeMobileActions } from "./welcome_dashboard/use_welcome_mobile_actions.js";
+import { useWelcomePromptSubmit } from "./welcome_dashboard/use_welcome_prompt_submit.js";
+import { WelcomeCollapsibleSidebar } from "./welcome_dashboard/welcome_collapsible_sidebar.jsx";
+import { WelcomeHiddenInputs } from "./welcome_dashboard/welcome_hidden_inputs.jsx";
+import { WelcomeRecentsTab } from "./welcome_dashboard/welcome_recents_tab.jsx";
 import { WelcomeOpenNotice } from "./welcome_dashboard/welcome_open_notice.jsx";
-import { WelcomeSidebar } from "./welcome_dashboard/welcome_sidebar.jsx";
-import { WelcomePromptComposer } from "./welcome_dashboard/welcome_prompt_composer.jsx";
 import { WelcomeFileCollection } from "./welcome_dashboard/welcome_file_collection.jsx";
 import {
   WelcomeDropOverlay,
@@ -35,33 +35,31 @@ import {
   WelcomeRenameModal,
   WelcomeEmptyTrashModal,
 } from "./welcome_dashboard/welcome_dialogs_and_shortcuts.jsx";
+import { prepareCommunityTemplate } from "./community-template-selection.js";
+import { WELCOME_FOLDERS_EVENT } from "./welcome_dashboard/welcome_events.js";
 
 export { AI_GEN_TYPES, CATEGORY_PILLS };
-import { prepareCommunityTemplate } from "./community-template-selection.js";
-import {
-  WELCOME_FOLDERS_EVENT,
-  WELCOME_MENU_ACTION_EVENT,
-} from "./welcome_dashboard/welcome_events.js";
 
 export default function WelcomeDashboard() {
   const { t, locale } = useI18n();
   const modelGroups = useModelGroups();
 
-  // Navigation tabs: "recents" | "drafts" | "starred" | "trash" | "design-systems" | "shortcuts"
   const [activeTab, setActiveTab] = useState("recents");
   const [activeFolder, setActiveFolder] = useState(null);
   const [activePill, setActivePill] = useState("landing");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("updatedAt"); // "updatedAt" | "oldest" | "nameAsc" | "nameDesc"
+  const [sortBy, setSortBy] = useState("updatedAt");
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
-  const [viewMode, setViewMode] = useState("grid"); // "grid" | "list"
+  const [viewMode, setViewMode] = useState("grid");
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const { expanded: sidebarExpanded, isNarrow: sidebarIsNarrow, toggle: toggleSidebar, close: closeSidebar } = useWelcomeSidebarState();
+  const sidebarToggleRef = useRef(null);
 
   const [promptText, setPromptText] = useState("");
   const [modelId, setModelId] = useState(() => getSetting(AGENT_SETTING.MODEL) || DEFAULT_AGENT_MODEL);
   const [styleId, setStyleId] = useState(DEFAULT_STYLE_ID);
   const [designSystemId, setDesignSystemId] = useState(DEFAULT_DESIGN_SYSTEM_ID);
-  const [size, setSize] = useState({ width: AI_GEN_TYPES[0].width, height: AI_GEN_TYPES[0].height });
+  const [size, setSize] = useState(null);
   const references = usePromptAttachments(t);
   const { attachments, attachmentError, addFiles: handleAttachmentsSelected } = references;
   const [candidates, setCandidates] = useState(1);
@@ -105,40 +103,15 @@ export default function WelcomeDashboard() {
     setWelcomeOpen,
   });
 
-  useEffect(() => {
-    const handleMobileMenuAction = (event) => {
-      const { action, value } = event.detail ?? {};
-      if (action === "tab") {
-        setActiveTab(value);
-        setActiveFolder(null);
-        setMobileSearchOpen(false);
-      } else if (action === "folder") {
-        setActiveTab("recents");
-        setActiveFolder(value);
-        setMobileSearchOpen(false);
-      } else if (action === "search") {
-        setActiveTab("recents");
-        setActiveFolder(null);
-        setMobileSearchOpen(true);
-      } else if (action === "open-file" || action === "import-figma") {
-        fileInputRef.current?.click();
-      } else if (action === "import-browser") {
-        openWelcomeBrowser();
-      } else if (action === "recreate-screenshot") {
-        screenshotInputRef.current?.click();
-      } else if (action === "sort") {
-        setSortBy(value);
-      } else if (action === "view") {
-        setViewMode(value);
-      }
-    };
-    window.addEventListener(WELCOME_MENU_ACTION_EVENT, handleMobileMenuAction);
-    return () =>
-      window.removeEventListener(
-        WELCOME_MENU_ACTION_EVENT,
-        handleMobileMenuAction,
-      );
-  }, []);
+  useWelcomeMobileActions({
+    setActiveTab,
+    setActiveFolder,
+    setMobileSearchOpen,
+    fileInputRef,
+    screenshotInputRef,
+    setSortBy,
+    setViewMode,
+  });
 
   useEffect(() => {
     if (mobileSearchOpen) mobileSearchRef.current?.focus();
@@ -157,11 +130,7 @@ export default function WelcomeDashboard() {
     setActiveTab("recents");
   };
 
-  const handleSelectPill = (pillId) => {
-    setActivePill(pillId);
-    const preset = AI_GEN_TYPES.find((item) => item.id === pillId);
-    if (preset) setSize({ width: preset.width, height: preset.height });
-  };
+  const handleSelectPill = (pillId) => setActivePill(pillId);
 
   const handleSelectDesignSystem = (nextId) => {
     setDesignSystemId(nextId);
@@ -176,59 +145,25 @@ export default function WelcomeDashboard() {
 
   const openAgentSettings = openAgentModelSettings;
 
-  const handlePromptSubmit = async (event) => {
-    event?.preventDefault();
-    if (submitting || references.isReading) return;
-    const activePreset = AI_GEN_TYPES.find((item) => item.id === activePill) || AI_GEN_TYPES[0];
-    const userPrompt = promptText.trim() || (attachments.some(item => item.kind === "image") ? t("welcome.prompt.recreatePrompt") : "");
-    const docLabel = userPrompt ? userPrompt.slice(0, 24) : t(activePreset.label);
-
-    setSubmitting(true);
-    setConfigNotice("");
-    try {
-      const { buildGenerationIntent } = userPrompt ? await import("./welcome_dashboard/generation_intent.js") : {};
-      const intent = userPrompt
-        ? buildGenerationIntent({
-            preset: activePreset,
-            prompt: userPrompt,
-            styleId,
-            designSystemId,
-            modelId,
-            size,
-            attachments,
-            candidates,
-            locale,
-            t,
-          })
-        : null;
-      if (intent) {
-        // Validate the provider BEFORE creating a document, so a misconfigured
-        // agent does not leave an empty project behind.
-        try {
-          const { resolveAgentProvider } = await import("../agent/agent_provider.js");
-          await resolveAgentProvider(intent.modelId);
-        } catch {
-          setConfigNotice(t("welcome.prompt.configNeeded"));
-          openAgentSettings();
-          return;
-        }
-      }
-      await handleCreateNew({
-        label: docLabel,
-        width: size.width,
-        height: size.height,
-        type: activePreset.type,
-        category: activePreset.category,
-      });
-      if (intent) {
-        useDesignStore.getState().setPendingGeneration(intent);
-        setPromptText("");
-        references.clearAttachments();
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const { handlePromptSubmit } = useWelcomePromptSubmit({
+    promptText,
+    setPromptText,
+    activePill,
+    attachments,
+    references,
+    submitting,
+    setSubmitting,
+    setConfigNotice,
+    styleId,
+    designSystemId,
+    modelId,
+    size,
+    candidates,
+    locale,
+    t,
+    openAgentSettings,
+    handleCreateNew,
+  });
 
   const { handleOpenLocal: openLocalProject, handleOpenRecent, handleDrop, openNotice } = useWelcomeOpen({
     setWelcomeOpen,
@@ -288,59 +223,37 @@ export default function WelcomeDashboard() {
     <div
       data-active-tab={activeTab}
       data-mobile-search-open={mobileSearchOpen ? "true" : "false"}
+      data-sidebar-expanded={sidebarExpanded ? "true" : "false"}
       className="welcome-dashboard relative flex flex-col lg:flex-row h-full w-full select-none bg-black text-neutral-100 overflow-hidden rounded-3xl"
       onDragOver={(e) => {
         e.preventDefault();
         setIsDragOver(true);
       }}
       onDragLeave={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) {
-          setIsDragOver(false);
-        }
+        if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false);
       }}
       onPaste={(event) => {
         if (event.target.closest(".prompt-composer textarea")) return references.onPaste(event);
       }}
       onDrop={handleDrop}
     >
-      {/* Hidden file input for file selection */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".voo,.zip,.psd,.fig,.pen,.svg,application/json"
-        className="hidden"
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          if (file) await handleOpenLocal(file);
-        }}
-      />
-
-      <input ref={screenshotInputRef} type="file" accept={SCREENSHOT_ACCEPT} className="hidden"
-        onChange={async (event) => {
-          const files = Array.from(event.target.files ?? []);
-          event.target.value = "";
-          await handleAttachmentsSelected(files);
-          screenshotInputRef.current?.closest(".welcome-dashboard")?.querySelector(".prompt-composer textarea")?.focus();
-        }} />
-
-      <input
-        ref={attachmentInputRef}
-        type="file"
-        multiple
-        accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp,.voo,.pen,.fig,.svg"
-        className="hidden"
-        onChange={async (event) => {
-          const files = Array.from(event.target.files ?? []);
-          event.target.value = "";
-          if (files?.length) await handleAttachmentsSelected(files);
-        }}
+      <WelcomeHiddenInputs
+        fileInputRef={fileInputRef}
+        screenshotInputRef={screenshotInputRef}
+        attachmentInputRef={attachmentInputRef}
+        handleOpenLocal={handleOpenLocal}
+        handleAttachmentsSelected={handleAttachmentsSelected}
       />
 
       <WelcomeDropOverlay t={t} isDragOver={isDragOver} />
 
-      <WelcomeSidebar
+      <WelcomeCollapsibleSidebar
         t={t}
+        sidebarToggleRef={sidebarToggleRef}
+        sidebarExpanded={sidebarExpanded}
+        sidebarIsNarrow={sidebarIsNarrow}
+        toggleSidebar={toggleSidebar}
+        closeSidebar={closeSidebar}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         activeTab={activeTab}
@@ -360,155 +273,61 @@ export default function WelcomeDashboard() {
 
       {/* Main Workspace */}
       <main className="welcome-main flex-1 flex flex-col min-w-0 min-h-0 bg-neutral-950 overflow-y-auto">
-        {/* Top Header Strip with Search, View Mode, Sort and Actions */}
-        {activeTab !== "recents" && <header className="flex h-14 shrink-0 items-center justify-between px-8 bg-neutral-950/60 backdrop-blur-md sticky top-0 z-20 gap-4">
-          {/* Right: Controls & Actions */}
-          <div className="ml-auto flex items-center gap-2.5 shrink-0">
-            {/* Trash specific action: Empty trash */}
-            {activeTab === "trash" && fileList.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setConfirmEmptyTrashOpen(true)}
-                className="flex items-center gap-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 px-3 py-1.5 text-xs font-medium text-neutral-200 transition-colors cursor-pointer"
-              >
-                <Trash2 size={13} />
-                <span>{t("welcome.actions.emptyTrash")}</span>
-              </button>
-            )}
-          </div>
-        </header>}
+        {activeTab !== "recents" && (
+          <header className="flex h-14 shrink-0 items-center justify-between px-8 bg-neutral-950/60 backdrop-blur-md sticky top-0 z-20 gap-4">
+            <div className="ml-auto flex items-center gap-2.5 shrink-0">
+              {activeTab === "trash" && fileList.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmEmptyTrashOpen(true)}
+                  className="flex items-center gap-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 px-3 py-1.5 text-xs font-medium text-neutral-200 transition-colors cursor-pointer"
+                >
+                  <Trash2 size={13} />
+                  <span>{t("welcome.actions.emptyTrash")}</span>
+                </button>
+              )}
+            </div>
+          </header>
+        )}
 
         <WelcomeOpenNotice t={t} notice={openNotice} />
 
         {/* =================== TAB 1: RECENTS =================== */}
         {activeTab === "recents" && (
-          <div className="welcome-home-content flex-1 p-4 lg:p-8 max-w-6xl w-full mx-auto space-y-8">
-            <h1 className="text-center text-[15px] font-medium text-neutral-100" data-testid="welcome-prompt-heading">{t("welcome.prompt.heading")}</h1>
-            <WelcomePromptComposer
-              t={t}
-              activePill={activePill}
-              onSelectPill={handleSelectPill}
-              promptText={promptText}
-              setPromptText={setPromptText}
-              modelGroups={modelGroups}
-              selectedModel={modelId}
-              onSelectModel={handleSelectModel}
-              styleId={styleId}
-              styleOptions={styleOptions()}
-              onSelectStyle={setStyleId}
-              designSystemId={designSystemId}
-              designSystemOptions={designSystemOptions(t)}
-              onSelectDesignSystem={handleSelectDesignSystem}
-              size={size}
-              sizeOptions={sizeOptions()}
-              onSelectSize={setSize}
-              candidates={candidates}
-              onSelectCandidates={setCandidates}
-              attachments={attachments}
-              onAddAttachments={() => attachmentInputRef.current?.click()}
-              onRemoveAttachment={(target) =>
-                references.removeAttachment(target)
-              }
-              submitting={submitting || references.isReading}
-              configNeeded={Boolean(configNotice)}
-              onOpenSettings={openAgentSettings}
-              onSubmit={handlePromptSubmit}
-            />
-
-            {(configNotice || attachmentError) && (
-              <div className="mx-auto -mt-4 flex max-w-3xl flex-wrap items-center gap-2 rounded-xl bg-amber-500/10 px-3 py-2 text-[11px] text-amber-300">
-                <span className="min-w-0 flex-1">{configNotice || attachmentError}</span>
-                {configNotice && (
-                  <button
-                    type="button"
-                    onClick={openAgentSettings}
-                    className="shrink-0 rounded-lg bg-amber-500/15 px-2.5 py-1 text-amber-200 transition-colors hover:bg-amber-500/25"
-                  >
-                    {t("welcome.prompt.openSettings")}
-                  </button>
-                )}
-              </div>
-            )}
-
-            {mobileSearchOpen && (
-              <div className="welcome-mobile-search relative">
-                <Search
-                  size={15}
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
-                />
-                <input
-                  ref={mobileSearchRef}
-                  type="search"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder={t("welcome.search.placeholder")}
-                  aria-label={t("welcome.search.placeholder")}
-                  className="h-11 w-full rounded-xl border border-white/10 bg-neutral-900 pl-10 pr-11 text-xs text-neutral-100 placeholder:text-neutral-400 outline-none focus:border-white/20"
-                />
-                <button
-                  type="button"
-                  aria-label={t("welcome.dialog.cancel")}
-                  onClick={() => {
-                    setMobileSearchOpen(false);
-                    setSearchQuery("");
-                  }}
-                  className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white"
-                >
-                  <X size={14} aria-hidden="true" />
-                </button>
-              </div>
-            )}
-
-            {/* Quick Action Cards (Import Figma / Browser / Recreate) */}
-            <div className="welcome-quick-imports grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex min-w-0 items-center justify-center gap-2.5 rounded-2xl bg-neutral-800/70 hover:bg-neutral-700/70 p-4 text-xs font-medium text-neutral-300 hover:text-white transition-all cursor-pointer group"
-              >
-                <svg className="size-4 text-neutral-400 group-hover:text-neutral-200 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                  <path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H12v7H8.5A3.5 3.5 0 0 1 5 5.5z" />
-                  <path d="M12 2h3.5a3.5 3.5 0 1 1 0 7H12V2z" />
-                  <path d="M12 12.5a3.5 3.5 0 1 1 7 0 3.5 3.5 0 1 1-7 0z" />
-                  <path d="M5 19.5A3.5 3.5 0 0 1 8.5 16H12v3.5a3.5 3.5 0 1 1-7 0z" />
-                  <path d="M5 12.5A3.5 3.5 0 0 1 8.5 9H12v7H8.5A3.5 3.5 0 0 1 5 12.5z" />
-                </svg>
-                <span className="whitespace-nowrap">{t("welcome.actions.importFigma")}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={openWelcomeBrowser}
-                className="flex min-w-0 items-center justify-center gap-2.5 rounded-2xl bg-neutral-800/70 hover:bg-neutral-700/70 p-4 text-xs font-medium text-neutral-300 hover:text-white transition-all cursor-pointer group"
-              >
-                <svg className="size-4 text-neutral-400 group-hover:text-neutral-200 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="2" y1="12" x2="22" y2="12" />
-                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                </svg>
-                <span className="whitespace-nowrap">{t("welcome.actions.importBrowser")}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => screenshotInputRef.current?.click()}
-                className="flex min-w-0 items-center justify-center gap-2.5 rounded-2xl bg-neutral-800/70 hover:bg-neutral-700/70 p-4 text-xs font-medium text-neutral-300 hover:text-white transition-all cursor-pointer group"
-              >
-                <svg className="size-4 text-neutral-400 group-hover:text-neutral-200 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
-                <span className="whitespace-nowrap">{t("welcome.actions.recreateScreenshot")}</span>
-              </button>
-            </div>
-
-            {/* Recents Section Header & File List */}
-            <div className="welcome-home-projects space-y-4 pt-2">
-              <WelcomeFileCollection {...sharedCollectionProps} tabType="recents" />
-            </div>
-          </div>
+          <WelcomeRecentsTab
+            t={t}
+            activePill={activePill}
+            handleSelectPill={handleSelectPill}
+            promptText={promptText}
+            setPromptText={setPromptText}
+            modelGroups={modelGroups}
+            modelId={modelId}
+            handleSelectModel={handleSelectModel}
+            styleId={styleId}
+            setStyleId={setStyleId}
+            designSystemId={designSystemId}
+            handleSelectDesignSystem={handleSelectDesignSystem}
+            size={size}
+            setSize={setSize}
+            candidates={candidates}
+            setCandidates={setCandidates}
+            attachments={attachments}
+            attachmentError={attachmentError}
+            attachmentInputRef={attachmentInputRef}
+            fileInputRef={fileInputRef}
+            screenshotInputRef={screenshotInputRef}
+            references={references}
+            submitting={submitting || references.isReading}
+            configNotice={configNotice}
+            openAgentSettings={openAgentSettings}
+            handlePromptSubmit={handlePromptSubmit}
+            mobileSearchOpen={mobileSearchOpen}
+            mobileSearchRef={mobileSearchRef}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            setMobileSearchOpen={setMobileSearchOpen}
+            sharedCollectionProps={sharedCollectionProps}
+          />
         )}
 
         {/* =================== TAB 2: DRAFTS =================== */}

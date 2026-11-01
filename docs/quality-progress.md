@@ -177,6 +177,27 @@
   - 补充 `tests/unit/container-command-boundaries.test.js` 布尔图层层级保持断言。
   - 优化 `tests/unit/dirty_rect.test.js` 与 `tests/unit/open-project.test.js` 高负载单测超时时间，以及 `tests/unit/node_at_point_spatial.test.js` 门限。
   - 固定验证提交 [`215d501`](https://github.com/umaxzhao/voo-design/commit/215d501534e696f35c1d1ab41c0e170c26eb8c9f)：**90/90 发布步骤通过，86 组核心浏览器通过，全量单测 4601 通过、4 跳过、0 失败**，证据 `/private/tmp/voo-release-round5.json`。
+
+## 本轮：首页生成类型图标重绘（未提交，叠加在未提交的类型选择器改动上）
+
+- `welcome_prompt_types.jsx`：8 个类型改为统一的 56×40 线稿 SVG，每个图标只有一处 `accent-mint` 重点，未选中时 60% 透明度，悬停或选中时 100%。浅色主题下强调色改为 `#171717`（`theme-light.css`，与 `.text-accent-mint` 的处理一致）。中文"Storyboard"改为"分镜"。
+- 修复的根因：旧图标用的是 `bg-mint/*`，但 Tailwind 里的颜色名是 `accent-mint`，薄荷绿点缀从未生成，所以界面上只有灰色块。
+- 已验证（本地工作区）：`welcome_prompt_types.test.jsx` 2 项通过（新增：8 个图标互不相同，且都带强调元素）；设计规则检查通过；真实编辑器中深色、浅色、390px 下 8 个 SVG 都正常渲染，强调色计算值分别为 `rgb(167,255,212)`、`rgb(23,23,23)`，透明度 0.6/1，没有页面错误。
+- 未提交原因：该文件属于未提交的"类型选择器铺在首页"改动（问题单 B3，有 11 项单测失败，与本次无关），单独提交会把这批改动一起带上。
+
+## 本轮：自动界面巡检 `ui-audit` 与全量测试问题单（新增检查，未提交；发现项未修复）
+
+- 新增 `tests/e2e/ui-audit.e2e.mjs`，覆盖 8 个状态：空、单选图形、单选文字、多选、右键菜单、工具选项菜单、首页、设置面板；每个状态跑 390/768/1440 宽度 × 深浅主题 × 中英文。
+  - 通用扫描 `ui-layout-scanner.mjs`：遮挡、超出窗口、页面横向溢出、文字截断、按钮缺少名称、窄屏点击区域 <44px。菜单或对话框打开时只检查浮层内的控件。
+  - 截图基线 `ui-screenshot-baseline.mjs`：英文 46 张，存于 `tests/e2e/ui-baselines/darwin/`。截图前等连续两帧一致，遮住随机头像；超过 0.05% 像素变化即失败，并输出差异图。`UPDATE_UI_BASELINES=1` 接受新外观。仅用 Node zlib，未新增依赖。
+  - 登记为 `ADDITIONAL_BROWSER_CHECKS` 的 `kind: "audit"`，不计入核心发布门禁。
+- 已验证（本地工作区，非干净提交）：基线连续 3 次运行最大差异 0.023%；注入回归可检出：顶栏右移 2px 变化 0.12%，判为失败；浮层盖住页签，判为遮挡。
+- 2026-11-01 全量测试，在本地工作区与干净 `78155ee` worktree 上对照：单测 4598 项中 19 项失败；浏览器套件 99 个中 83 个通过、14 个失败、2 个缺文件。问题单（含复现步骤和截图）：https://claude.ai/artifact/1WtgAkcFNgaPLgzfYVQV7s
+  - 已提交代码的问题：约束图居中按钮交叉（点"水平居中"实际设置成垂直居中）；390px 下 26 个控件小于 44px；首次启动出现未翻译的 `firstRun.provider.deepseek`；`docs/AGENTS.md` 缺 `resize_document`。
+  - 未提交改动带来的回归：390px 下内置浏览器盖住编辑器；手机首页点文件卡片打不开文件、Settings 压住卡片文字；首页类型选择改版导致 14 项测试失败；分享链接格式变化后测试未同步；模块清单登记了不存在的 `figma-import-fidelity`、`impeccable-polish`。
+  - 10 个独立套件跑不起来：写死了 `/workspace`、依赖固定端口，或没打开文档就等编辑器。
+- 未覆盖：Native 应用、付费或真实 AI 接口、实体触屏、组合操作的随机测试、非 macOS 的截图基线。测试期间 main 新增了 Native 提交 `7b95346`，Web 端相关文件未变化。
+
 ## 本轮：文字排版可读性与 Lucide 图标（已完成声明范围）
 - `inspector.typography-clarity` / `text.typography`：参考 [Figma 文字属性分组](https://help.figma.com/hc/en-us/articles/360039956634-Explore-text-properties)，直接显示字体、字重、字号、行高、字距、格式和对齐标签，明确 px/% 单位。文本框自动/固定宽度放在常用区；方向、大小写、段落、基线与路径文字保留在一个高级入口。
 - 新增图标统一使用 [Lucide](https://lucide.dev/icons)：`ALargeSmall` / `MoveVertical` / `MoveHorizontal` / `Pilcrow` / `Baseline`，配合文字对齐、斜体、下划线与曲线路径图标。实际可见 SVG（含下拉箭头）验证为 16px / 1.5px CSS 描边。

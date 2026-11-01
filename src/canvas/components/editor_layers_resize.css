@@ -7,16 +7,16 @@
   position: absolute;
   top: 1rem;
   bottom: 1rem;
-  right: -0.25rem;
+  right: 0;
   z-index: 1;
-  width: 0.5rem;
+  width: 0.375rem;
   cursor: col-resize;
   touch-action: none;
   border-radius: 0.25rem;
   outline-offset: 0.125rem;
 }
 .editor-layers-resize[data-side="left"] {
-  left: -0.25rem;
+  left: 0;
   right: auto;
 }
 .editor-layers-resize:hover,

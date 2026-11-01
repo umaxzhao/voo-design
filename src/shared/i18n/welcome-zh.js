@@ -1,5 +1,7 @@
 /** 欢迎页（最近文件、模板、快捷键）的界面文案。 */
 export default {
+  "welcome.prompt.settingsLabel": "生成设置",
+  "welcome.sidebar.toggle": "切换导航面板",
   "welcome.prompt.heading": "今天想设计什么？",
   "welcome.cover.loading": "正在加载封面",
   "welcome.cover.unavailable": "暂无封面",
@@ -140,7 +142,7 @@ export default {
   "welcome.pills.web": "Web 应用",
   "welcome.pills.poster": "海报",
   "welcome.pills.slides": "幻灯片",
-  "welcome.pills.storyboard": "Storyboard",
+  "welcome.pills.storyboard": "分镜",
   "welcome.pills.dashboard": "数据看板",
   "welcome.pills.other": "其他创意…",
   "welcome.templates.webApp": "Web 应用 / SaaS 起始页",
@@ -180,6 +182,7 @@ export default {
   "welcome.prompt.styleAutoHint": "按提示词自动选择一套风格 kit",
   "welcome.prompt.modelLabel": "模型",
   "welcome.prompt.sizeLabel": "画布尺寸",
+  "welcome.prompt.sizeAuto": "自动",
   "welcome.prompt.sizePreset": "该类型默认",
   "welcome.prompt.attachments": "参考图与附件",
   "welcome.prompt.addAttachment": "添加参考图或工程文件",

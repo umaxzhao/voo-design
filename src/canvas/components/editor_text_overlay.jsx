@@ -83,6 +83,7 @@ export default function EditorTextOverlay({
         </div>
       ) : null}
       <textarea
+        data-canvas-text-overlay="true"
         aria-label={node.name || "Text"}
         aria-description={missingFont ? t("textEdit.missingFont", { family }) : undefined}
         ref={ref}

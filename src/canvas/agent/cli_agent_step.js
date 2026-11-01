@@ -28,6 +28,7 @@ export async function streamCliStep({ config, messages, tools, signal, onText })
   const toolCalls = [];
   for await (const chunk of streamCodexCompletion({
     model: config.model,
+    reasoningEffort: config.reasoningEffort,
     messages,
     tools: tools ?? CANVAS_TOOL_SCHEMAS,
     reasoningEffort: config.reasoningEffort,

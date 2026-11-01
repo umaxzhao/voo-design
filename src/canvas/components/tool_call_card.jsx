@@ -9,6 +9,12 @@ const STATUS_ICON = {
   failed: X,
   cancelled: Ban,
 };
+const STATUS_CLASS = {
+  in_progress: "text-[#E5B2FF]",
+  completed: "text-mint",
+  failed: "text-rose-400",
+  cancelled: "text-neutral-500",
+};
 
 /** Error codes the assistant and its tools raise, mapped to message keys. */
 const KNOWN_ERRORS = new Set([
@@ -43,23 +49,24 @@ export default function ToolCallCard({ call }) {
   const [expanded, setExpanded] = useState(false);
   const failed = call.status === "failed";
   const StatusIcon = STATUS_ICON[call.status] ?? Circle;
-  const ExpandIcon = expanded ? ChevronDown : ChevronRight;
 
   return (
     <div
       className={`rounded-xl px-3 py-2 text-[12px] ${
-        failed ? "bg-rose-500/10 text-rose-300" : "bg-white/[0.04] text-neutral-300"
+        failed ? "bg-rose-500/10 text-rose-400" : "bg-white/[0.035] text-neutral-300"
       }`}
     >
       <button
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded((value) => !value)}
-        className="flex w-full items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E5B2FF]"
+        className="flex w-full items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E5B2FF]/50"
       >
-        <StatusIcon size={14} className={call.status === "in_progress" ? "animate-spin" : ""} aria-hidden="true" />
+        <span className={`flex size-4 shrink-0 items-center justify-center ${STATUS_CLASS[call.status] ?? "text-neutral-500"}`} aria-hidden="true">
+          <StatusIcon size={13} className={call.status === "in_progress" ? "animate-spin" : undefined} />
+        </span>
         <span className="flex-1 truncate">{call.name}</span>
-        <ExpandIcon size={13} aria-hidden="true" />
+        {expanded ? <ChevronDown size={13} className="shrink-0 text-neutral-500" aria-hidden="true" /> : <ChevronRight size={13} className="shrink-0 text-neutral-500" aria-hidden="true" />}
       </button>
       {call.statusLine && (
         <p className="mt-1 pl-5 text-[11px] text-neutral-400">{call.statusLine}</p>

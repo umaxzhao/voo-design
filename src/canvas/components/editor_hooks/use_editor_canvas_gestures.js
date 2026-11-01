@@ -76,6 +76,10 @@ export function useEditorCanvasGestures({
       return;
     }
 
+    if (document.activeElement?.hasAttribute?.("data-canvas-text-overlay")) {
+      document.activeElement.blur();
+    }
+
     // Middle-button drag, space+drag, or drag on empty canvas: start panning camera
     event.preventDefault();
     if (isPanTrigger) {

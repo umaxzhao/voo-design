@@ -272,7 +272,7 @@ describe("Community Templates and New Project Workbench Experience", () => {
       expect(html).not.toContain(`aria-label="${label}"`);
     }
     const advancedHtml = renderToStaticMarkup(React.createElement(WelcomePromptSettings, {
-      t, panelRef: { current: null }, activePill: "mobile", designSystemId: "auto",
+      t, panelRef: { current: null }, activePill: "mobile", onSelectPill: () => {}, designSystemId: "auto",
       styleOptions: [], designSystemOptions: [], candidates: 1,
       currentSize: { width: 393, height: 852 }, sizeOptions: [],
     }));

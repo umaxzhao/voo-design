@@ -32,7 +32,9 @@ function updateModels(cliId, entries) {
       if (
         typeof entry.defaultReasoningEffort === "string" &&
         model.supportedReasoningEfforts.includes(entry.defaultReasoningEffort)
-      ) model.defaultReasoningEffort = entry.defaultReasoningEffort;
+      ) {
+        model.defaultReasoningEffort = entry.defaultReasoningEffort;
+      }
     }
     models.set(id, model);
   }
