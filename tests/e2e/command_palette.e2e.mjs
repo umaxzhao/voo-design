@@ -1,31 +1,19 @@
-// Start Vite, then run: node tests/e2e/command_palette.e2e.mjs
+// Starts its own editor: node tests/e2e/command_palette.e2e.mjs
 // Optional: VOO_URL, VOO_SCREENSHOT_DIR. Images stay outside the repository.
 import assert from "node:assert/strict";
-import { chromium } from "playwright";
-
-process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY = "1";
-const browser = await chromium.launch({
-  headless: true,
-  args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
-});
-try {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-  page.setDefaultTimeout(60000);
-  const errors = [];
-  page.on("pageerror", error => errors.push(error.message));
-  await page.goto(process.env.VOO_URL || "http://127.0.0.1:5247/?voo-test=1");
-  await page.evaluate(async () => {
-    const { useDesignStore } = await import("/src/store/design_store.js");
-    useDesignStore.getState().setWelcomeOpen(false);
-  });
-  await page.waitForFunction(() => !!window.__vooEditor);
-  await page.getByTestId("design-editor").waitFor();
-  await page.waitForTimeout(1500);
+import { mkdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+const output = process.env.VOO_SCREENSHOT_DIR || join(tmpdir(), "voo-command-palette");
+await mkdir(output, { recursive: true });
+await withEditorBrowser(async ({ page, errors }) => {
+  page.setDefaultTimeout(30000);
   const palette = page.getByTestId("command-palette");
   const input = palette.getByRole("combobox");
   const rows = palette.getByRole("option");
   const shortcuts = page.getByRole("dialog", { name: "Keyboard Shortcuts", exact: true });
-  const screenshot = name => page.screenshot({ path: `${process.env.VOO_SCREENSHOT_DIR || "/workspace/tmp"}/cmdk-${name}.png`, timeout: 60000 });
+  const screenshot = name => page.screenshot({ path: `${output}/cmdk-${name}.png`, timeout: 60000 });
 
   await page.keyboard.press("Control+k");
   await palette.waitFor();
@@ -84,6 +72,4 @@ try {
   await screenshot("palette-zh");
   assert.deepEqual(errors, []);
   console.log("Verified keyboard toggles, menu entry, ranking, Enter execution, recents, locale and placement.");
-} finally {
-  await browser.close();
-}
+});

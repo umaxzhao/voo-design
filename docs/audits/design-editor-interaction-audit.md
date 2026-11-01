@@ -299,3 +299,109 @@ native webview composition, and signed packaging are not certified here.
 - Finding: the design-issue panel displayed English lint messages in Chinese. Rule messages and fixes now use both shipped dictionaries, with type-size and contrast interpolation and a translated fallback for unknown rules.
 - Verification: after syncing the latest Multi-Frame changes, 570 unit files passed (4 skipped; 4,722 tests passed); design lint passed for 1,434 files; production build succeeded. The first related browser plan exposed a bad screenshot sample in `frame-adjustment-space.e2e.mjs`: at 1.5× zoom a negative-coordinate sample landed behind the left panel, so the screenshot read panel shading. The camera pan now keeps all samples in the visible canvas; exact pixel assertions remain unchanged. The full selection/layer plan then passed 53 browser suites (`/tmp/selection-layer-final.log`), and the focused Multi-Frame suite passed (`/tmp/frame-alt-duplicate-current.log`). Unit tests cover Meta+Option and Ctrl+Alt; hardware FPS and dense-overlap performance remain unverified.
 - Clean release verification: committed revision `26f71ebf16d83c017c5ad116a08ad5b4a3dcec34` completed all 91 registered release steps with zero failed steps, including build, design lint, unit suite and core browser suites (`/private/tmp/voo-canvas-layer-audit-release.json`). This is execution evidence for that revision; aggregate feature coverage remains partial, and unregistered hardware/service contexts are not certified.
+
+## Canvas zoom efficiency — 2026-11-01
+
+Capability: `canvas.zoom-preview`, related `canvas.camera`,
+`compositing.frame-clips`, image/font/matte lifecycle and selection hit testing.
+The user prioritizes reducing real zoom stalls toward Figma's interaction
+quality; no equivalent Figma execution has been measured or claimed.
+
+- Reproduction: generated 600-layer free workspace, actual Ctrl-wheel input.
+  A single zoom redraws the invisible measurement surface four times
+  (`/tmp/voo-zoom-red-browser.log`). Source `c85224c` production build on the
+  unchanged Desktop `test.fig` records six Ctrl-wheel waits with median
+  1,222 ms, using the live engine zoom and artboard origin rather than the
+  stale initial `window.__vooStore` snapshot. CPU samples show repeated painting.
+- Free non-mixed pages stop painting their detached measurement surface.
+  Explicit readback temporarily paints it and flushes the visible preview.
+  Standalone/mixed rendering and export retain their authoritative paths.
+- One bounded artwork picture per surface reuses covered camera changes;
+  missing coverage, edits, resource changes, resize or DPR changes force exact
+  painting. After 160 ms quiet the latest viewport is repainted exactly.
+  Overscan is warmed separately, capped at 32 MiB retained per surface.
+  Its center copies authoritative pixels, never approximated settled content.
+  Video refuses a reusable stamp. Disposal cancels refinement and frees buffers.
+- Stamps include immutable document identity, font epoch, adjustment bypass,
+  actual decoded/paint bitmap identities and texture versions, and live mattes
+  even before a persisted mask ID exists. The initial missing-matte regression
+  is retained in `/tmp/voo-zoom-matte-red.log`; its correction is independently
+  checked. Frame label topology reuses immutable ancestry across camera ticks.
+- Hit regions cache world-space clipped bounds and omit only descendants
+  already contained by a contributing ancestor rectangle. Positive camera
+  transforms preserve that union and eight CSS-pixel padding. Overflow,
+  negative coordinates, hidden/clipped branches, cycles and inter-page gaps
+  retain their semantics. Shared-camera UI publication waits for settle while
+  active DOM text/region editing keeps immediate notifications.
+- Registered `canvas-zoom-preview` uses real Ctrl-wheel, verifies no invisible
+  painting or layer-tree rasterization during covered motion, exact settled
+  RGBA versus direct painting, synchronous sample flush, immutable document
+  through camera gestures, style invalidation and one-step undo/redo.
+  `frame-surface-camera` retains real DPR2 screenshot pixels, negative media,
+  direct selection, neighbouring-page focus and resize. Unit checks cover
+  bitmap/font/matte versions, memory limits, fractional DPR1.25, timer cleanup,
+  viewport notification ownership and exact hit-region unions.
+- Interim private production-build trials on the same file progress from
+  1,222 ms to 166 ms, 117 ms and 83 ms median Ctrl-wheel waits; final trial
+  settles exact content after about 230 ms. Three stable isolated first-page
+  renders at 1000x800/zoom .024 compare with zero changed pixels. These are
+  six-event shared-machine waits including automation plus two rAFs, not GPU
+  FPS or universal speedups. Fixed committed-source and production receipts
+  are recorded after the complete gate; no interim result certifies later code.
+- Evidence: `/tmp/voo-zoom-performance/`, `/tmp/voo-zoom-*.log`. Original fixture
+  stays private and read-only. Full readable-scale property fidelity, every
+  effect/driver/animation combination, signed Electron, native trackpad/stylus
+  and physical frame presentation remain unverified. `native_studio` excluded.
+
+
+The first complete attempt on `d3bec48` passes 4,729 units (four skipped) but
+stops at the new zoom suite with one additional rasterization during its
+sequential wheel/RAF loop. `/tmp/voo-zoom-release.json` / `.log` preserve the
+incomplete run; it is not release evidence. Quiet work now waits for a cancelable
+animation frame so queued input can supersede it. A deterministic unit cancels
+an already elapsed quiet timer before its exact frame. The browser case waits
+for font readiness, queues the actual wheel burst without automation-created
+idle gaps, and retains the strict zero-extra-raster and exact-RGBA assertions.
+Targeted repeats pass; a fresh fixed-revision full gate is required below.
+
+The second frozen run (`6ababe5`) passes 4,730 units (four skipped), including
+the strict zoom suite, but stops at step 69: the layout fixture's default 30s
+engine-readiness timeout expires before any business assertion. Its unchanged
+isolated rerun passes all layout/history assertions. Host load was about 52.
+`voo-zoom-final-release.json` preserves the incomplete 70-result attempt.
+A real engine-module request held for 35s reproduces the same setup failure
+(`voo-zoom-workspace-delay-red.log`). Workspace setup now gets its own bounded
+90s phase, matching welcome setup; business/pixel assertions keep their original
+timeouts. The startup suite retains this real delayed-import/create/pixel/undo
+scenario. Application source remains identical to `6ababe5`; a fresh full gate
+is required. No historical or isolated pass completes either failed report.
+
+Final acceptance: `cf9e00d48905752fe14fb79ff16bd1280fb0c2bd` completes
+104/104 steps in one fresh run: 100 core browser suites, 4,731 unit passes,
+four skips, build/design/module checks. `voo-zoom-integrated-release.json`
+and `.log` retain the exact revision and all results. The delayed real engine
+import, creation, actual red pixel and single undo pass. Neither failed run is
+stitched into this result. Eleven additional checks remain explicitly not-run.
+
+Production-build control is the merged main parent `db4a184`; only eight
+zoom-related application files differ. The same unchanged 241.86MiB file has
+17,499 first-page layers. Run order is baseline, optimized, baseline again:
+six real Ctrl-wheel waits per run have medians 1,713.5 / 82.5 / 1,808ms.
+The optimized sample is reused for reverse comparison, not a second run.
+Recorded initial one-minute host loads are 71.79 / 51.43 / 39.36; the reverse
+baseline is slower despite its lower load. Shared-host waits include automation
+and two rAFs, are overview-only, and do not establish hardware FPS or Figma parity.
+The script's remaining exact-refinement wait is 237ms after profiling/camera
+readback. Three stable isolated 1000x800 renders at zoom .024 have zero pixel
+or channel differences. Real cameras change, document identity stays fixed,
+and both control/optimized runs have no page errors. Original file SHA-256 is
+`ddf80a00291c5c79ebc30c9b71c7c4180a74ca80311a170ed16f2aeed006b2c2`.
+
+The fixed build is pushed and deployed to la2. Canonical HTML plus eight direct
+or critical assets match bytes/SHA-256; production native-Figma fixture pixels,
+mask cache, constraints/history and actual zoom preview/exact-RGBA/readback/
+edit/undo/redo pass with no page errors. `voo-zoom-deployment-proof.json`,
+`voo-zoom-production-fidelity.json` and `voo-zoom-published-tree-proof.json`
+bind production and subsequent documentation-only merges to the verified code.
+Private evidence is in the visualization directory `canvas-zoom-optimization/`;
+no commercial design/file is committed or uploaded to production for testing.

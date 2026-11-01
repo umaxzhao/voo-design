@@ -2863,6 +2863,8 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
             variant={workbench.toolbar === "motion" ? "motion" : "design"}
             tool={tool}
             onTool={runTool}
+            onRemoveBackground={() => void removeBackground()}
+            removeBackgroundBusy={maskBusy}
             selectedNode={engine?.getSelected()}
             selectedNodes={engine?.getSelectedNodes?.() ?? []}
             snapping={snappingEnabled}

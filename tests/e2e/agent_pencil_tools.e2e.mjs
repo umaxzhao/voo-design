@@ -1,14 +1,9 @@
 // Real-app check of Pencil-style agent tools (plan, frame, align, distribute, find, ungroup, undo).
-// Usage: start `npx vite --port 5199`, then `node tests/e2e/agent_pencil_tools.e2e.mjs`.
-import { chromium } from "playwright";
-const URL = process.env.VOO_URL || "http://localhost:5199/?voo-test=1";
-const browser = await chromium.launch();
-const page = await browser.newPage();
-const errors = [];
-page.on("pageerror", (e) => errors.push(String(e)));
-await page.goto(URL);
-await page.waitForFunction(() => !!window.__vooEditor, null, { timeout: 60000 });
-await page.waitForTimeout(1500);
+// Starts an isolated editor automatically; uses no external model service.
+import assert from "node:assert/strict";
+import { withEditorBrowser } from "./editor-browser-fixture.mjs";
+
+await withEditorBrowser(async ({ page, errors }) => {
 const out = await page.evaluate(async () => {
   const { executeCanvasTool } = await import("/src/canvas/agent/canvas_tools.js");
   const log = [];
@@ -35,9 +30,13 @@ const out = await page.evaluate(async () => {
   await run("update_plan", { steps: [{ id: "1", title: "frame", status: "done" }, { id: "2", title: "cards", status: "done" }] });
   return { log, frameId: id(frame), ys, found: found?.layers?.length ?? found?.length, before, after };
 });
-await browser.close();
 const failed = out.log.filter((l) => l[1] === "ERR");
 const aligned = new Set(out.ys).size === 1;
 console.log(JSON.stringify({ ...out, aligned, errors }, null, 2));
-if (failed.length || !aligned || !out.frameId) { console.error("FAIL", failed); process.exit(1); }
+assert.deepEqual(failed, []);
+assert.ok(aligned && out.frameId);
+assert.equal(out.before, out.after);
+assert.ok(out.found > 0);
 console.log("PASS");
+
+});

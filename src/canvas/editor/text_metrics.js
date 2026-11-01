@@ -52,11 +52,18 @@ function respectsLetterSpacing(ctx) {
     supported = false;
     if ("letterSpacing" in ctx) {
       const previous = ctx.letterSpacing;
-      ctx.letterSpacing = "0px";
-      const tight = ctx.measureText("MM").width;
-      ctx.letterSpacing = "8px";
-      supported = ctx.measureText("MM").width > tight;
-      ctx.letterSpacing = previous;
+      ctx.save();
+      try {
+        ctx.letterSpacing = "0px";
+        const tight = ctx.measureText("MM").width;
+        ctx.letterSpacing = "8px";
+        supported = ctx.measureText("MM").width > tight;
+      } finally {
+        // Some browser contexts expose an empty getter for valid spacing.
+        // Assigning that empty string is ignored, leaving the 8px probe active.
+        ctx.restore();
+        if (previous) ctx.letterSpacing = previous;
+      }
     }
     letterSpacingSupport.set(ctx, supported);
   }

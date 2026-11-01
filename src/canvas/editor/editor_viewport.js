@@ -60,6 +60,7 @@ export function createViewport({
   requestRender,
   getFitInsets = null,
   hasDomOverlay = () => false,
+  cameraPublishedExternally = false,
 }) {
   let viewport = { zoom: 1, panX: 0, panY: 0 };
   let settleTimer = 0;
@@ -93,7 +94,7 @@ export function createViewport({
     // Plain 2D artwork and selection chrome follow the camera on canvas.
     // Publish inspector/layer UI when motion settles; DOM/mixed documents
     // retain live notifications so their overlays track every camera change.
-    if (hasDomOverlay() || !getDoc().nodes || !isTileDocument(getDoc().nodes)) notify();
+    if (hasDomOverlay() || (!cameraPublishedExternally && (!getDoc().nodes || !isTileDocument(getDoc().nodes)))) notify();
   }
 
   /** One axis of the fit area: the stage span less both insets. */

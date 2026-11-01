@@ -199,7 +199,7 @@ await withEditorBrowser(async ({ page }) => {
     const box = buttons[0]?.getBoundingClientRect();
     return { id: root.getAttribute("data-testid"), count: buttons.length, width: box?.width, height: box?.height };
   }));
-  assert.deepEqual(families.map(family => family.id).sort(), ["brush", "fill", "healing", "marquee", "pen", "select", "shapes"].map(id => `editor-${id}-menu`));
+  assert.deepEqual(families.map(family => family.id).sort(), ["brush", "eraser", "fill", "healing", "marquee", "pen", "select", "shapes"].map(id => `editor-${id}-menu`));
   for (const family of families) assert.deepEqual([family.count, family.width, family.height], [1, 48, 48], family.id);
   await brush.tap();
   assert.equal(await page.evaluate(() => window.__vooEditor.getTool()), "brush");

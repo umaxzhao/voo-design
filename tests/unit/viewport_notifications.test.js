@@ -81,3 +81,22 @@ it("keeps an active DOM text editor positioned during camera changes", () => {
     viewport.dispose();
   } finally { vi.useRealTimers(); }
 });
+
+it("does not republish shared camera changes to the inspector and Agent on every tick", () => {
+  vi.useFakeTimers();
+  try {
+    const notify = vi.fn(), requestRender = vi.fn();
+    let editing = false;
+    const viewport = createViewport({ stage: {}, getDoc: () => ({ nodes: [{ kind: "image", imageId: "asset" }] }),
+      cameraPublishedExternally: true, notify, requestRender, hasDomOverlay: () => editing });
+    viewport.setViewport({ zoom: 1.1, panX: 0, panY: 0 });
+    expect(requestRender).toHaveBeenCalledTimes(1);
+    expect(notify).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(416);
+    expect(notify).toHaveBeenCalledTimes(1);
+    editing = true;
+    viewport.setViewport({ zoom: 1.2, panX: 0, panY: 0 });
+    expect(notify).toHaveBeenCalledTimes(2);
+    viewport.dispose();
+  } finally { vi.useRealTimers(); }
+});

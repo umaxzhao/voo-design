@@ -22,6 +22,7 @@ await withEditorBrowser(
           }),
         });
     const menu = async (action) => {
+      await card().hover();
       await card().getByTitle("More actions", { exact: true }).click();
       await page.getByRole("menuitem", { name: action, exact: true }).click();
     };

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:net";
 import { access } from "node:fs/promises";
+import { setTimeout as delay } from "node:timers/promises";
 import { WebSocket } from "ws";
 import { startEditorBrowserServer } from "./editor-browser-server.mjs";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
@@ -40,6 +41,26 @@ try {
   });
   checks.push("real editor and MCP become usable while a noncritical image still holds the load event open");
 } finally { releaseImage(); }
+
+// A cold workspace is a separate lazy phase. Exceed Playwright's default
+// setup timeout deliberately; this is not a production performance budget.
+let delayedWorkspace = false;
+await withEditorBrowser(async ({ page, tool }) => {
+  assert.equal(delayedWorkspace, true);
+  const before = await page.evaluate(() => window.__vooEditor.getDocument().nodes.length);
+  await tool("build_layout", { nodes: [{ type: "rect", name: "Cold workspace rectangle", x: 20, y: 20,
+    width: 40, height: 40, fill: "#ff0000" }] });
+  assert.equal(await page.evaluate(() => window.__vooEditor.sampleColorAt({ x: 30, y: 30 })), "#ff0000");
+  await tool("undo");
+  assert.equal(await page.evaluate(() => window.__vooEditor.getDocument().nodes.length), before);
+}, { preparePage: async page => {
+  await page.route("**/src/canvas/editor/editor_engine.js*", async route => {
+    delayedWorkspace = true;
+    await delay(35000);
+    await route.continue();
+  });
+} });
+checks.push("a real lazy workspace delayed beyond 30 seconds still opens, paints an MCP-created layer and undoes once");
 
 async function canBind(port) {
   const server = createServer();
