@@ -226,7 +226,7 @@ export function handleModifierShortcut(event, context) {
         event.preventDefault();
         if (event.altKey) {
           if (event.shiftKey) engine.releaseClippingMask();
-          else engine.createClippingMask();
+          else engine.frameSelection?.();
         } else if (event.shiftKey) engine.ungroupSelection();
         else engine.groupSelection();
         return true;

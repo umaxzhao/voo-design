@@ -1,3 +1,5 @@
+import { isFrameSelectionBoundary } from "./frame-selection-unit.js";
+
 const labels = new WeakMap();
 
 /** Returns only frames that do not live inside another frame on a canvas root. */
@@ -8,7 +10,7 @@ export function visibleCanvasFrameLabels(doc) {
 
   const nodesById = new Map(doc.nodes.map((node) => [node.id, node]));
   const frames = doc.nodes.filter((node) => {
-    if (!node?.isFrame) return false;
+    if (!isFrameSelectionBoundary(node)) return false;
 
     const visited = new Set([node.id]);
     let ancestorId = node.parentId;
@@ -18,7 +20,7 @@ export function visibleCanvasFrameLabels(doc) {
 
       const ancestor = nodesById.get(ancestorId);
       if (!ancestor) break;
-      if (ancestor.isFrame) return false;
+      if (isFrameSelectionBoundary(ancestor)) return false;
       ancestorId = ancestor.parentId;
     }
     return true;

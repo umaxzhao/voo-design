@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { extractComponent, detachInstance } from "../../src/canvas/editor/component_extract.js";
-import { combineNodes, insertGroup, ungroupNodes } from "../../src/canvas/editor/doc_ops_groups.js";
+import { combineNodes, insertGroup, ungroupNodes, moveIntoGroup } from "../../src/canvas/editor/doc_ops_groups.js";
 import { createEngineNodesController } from "../../src/canvas/editor/editor_engine_nodes.js";
 import { createEngineNodeOps } from "../../src/canvas/editor/editor_engine_node_ops.js";
 import { createSelection } from "../../src/canvas/editor/editor_selection.js";
@@ -12,6 +12,32 @@ const document = nodes => ({ width: 800, height: 600, nodes });
 const get = (doc, id) => doc.nodes.find(node => node.id === id);
 
 describe("container command boundaries", () => {
+  it("moves selected roots in paint order without flattening their selected children", () => {
+    const doc = document([group("target", null, { isFrame: true }), rect("existing", "target"),
+      group("source"), rect("child", "source"), rect("loose")]);
+    const next = moveIntoGroup(doc, ["loose", "child", "source"], "target");
+    expect(next.nodes.map(node => node.id)).toEqual(["target", "existing", "source", "child", "loose"]);
+    expect(get(next, "child").parentId).toBe("source");
+    for (const id of ["source", "loose"]) {
+      expect(get(next, id)).toEqual({ ...get(doc, id), parentId: "target" });
+    }
+  });
+  it("accepts a mixed selection with one member already inside the target", () => {
+    const doc = document([group("target"), rect("inside", "target"), rect("outside")]);
+    const next = moveIntoGroup(doc, ["inside", "outside"], "target");
+    expect(get(next, "inside")).toBe(get(doc, "inside"));
+    expect(get(next, "outside").parentId).toBe("target");
+  });
+  it("refuses the whole batch if any selected root would create a cycle", () => {
+    const doc = document([group("source"), group("target", "source"), rect("loose")]);
+    expect(moveIntoGroup(doc, ["loose", "source"], "target")).toBe(doc);
+  });
+  it("refuses the whole batch when a source or target has a locked ancestor", () => {
+    const doc = document([group("locked", null, { locked: true }), rect("child", "locked"),
+      group("nested-target", "locked"), group("target"), rect("loose")]);
+    expect(moveIntoGroup(doc, ["loose", "child"], "target")).toBe(doc);
+    expect(moveIntoGroup(doc, ["loose"], "nested-target")).toBe(doc);
+  });
   it("resolves through every simultaneously dissolved ancestor", () => {
     const doc = document([group("frame", null, { isFrame: true }), group("a", "frame"), group("b", "a"), rect("leaf", "b")]);
     const next = ungroupNodes(doc, ["a", "b"]);

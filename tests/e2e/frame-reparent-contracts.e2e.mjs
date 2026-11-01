@@ -175,5 +175,45 @@ await withEditorBrowser(async ({ page }) => {
   await historyRoundTrip(before);
   checks.push("dropping into Auto Layout immediately joins its flow, paints at its computed position and undoes/redoes once");
 
+  for (const nested of [false, true]) {
+    await seed([...(nested ? [frame("outer-panel", 0, 0, { width: 800, height: 550 })] : []),
+      frame("target", 20, 20, { width: 700, height: 500, parentId: nested ? "outer-panel" : null }),
+      rect("first", nested ? "outer-panel" : null, 60, 60, { name: "First selected" }),
+      rect("second", nested ? "outer-panel" : null, 180, 60, { name: "Second selected" })], []);
+    const selectionPanel = page.getByTestId("editor-layers-panel");
+    await selectionPanel.locator("#layer-row-first").getByText("First selected", { exact: true }).click();
+    await selectionPanel.locator("#layer-row-second").getByText("Second selected", { exact: true }).click({ modifiers: ["Meta"] });
+    await settled();
+    before = await snapshot();
+    const panel = page.getByTestId("editor-layers-panel");
+    assert.deepEqual(new Set(before.ids), new Set(["first", "second"]), `both tree rows selected before nested=${nested} drag`);
+    const sourceRow = await panel.locator("#layer-row-first").boundingBox();
+    const targetRow = await panel.locator("#layer-row-target > div").first().boundingBox();
+    if (nested) {
+      await page.mouse.move(sourceRow.x + sourceRow.width - 40, sourceRow.y + sourceRow.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(targetRow.x + targetRow.width - 40, targetRow.y + targetRow.height / 2, { steps: 10 });
+      await page.keyboard.press("Escape"); await page.mouse.up(); await settled();
+      assert.deepEqual((await snapshot()).doc, before.doc, "Escape cancels a multi-selection reparent without changing the document");
+      await selectionPanel.locator("#layer-row-first").getByText("First selected", { exact: true }).click();
+      await selectionPanel.locator("#layer-row-second").getByText("Second selected", { exact: true }).click({ modifiers: ["Meta"] });
+      await settled();
+    }
+    await page.mouse.move(sourceRow.x + sourceRow.width - 40, sourceRow.y + sourceRow.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(targetRow.x + targetRow.width - 40, targetRow.y + targetRow.height / 2, { steps: 10 });
+    await settled(); await page.mouse.up(); await settled();
+    assert.equal(await parent("first"), "target");
+    assert.equal(await parent("second"), "target", "a selected row drag carries every selected root into the Frame");
+    const moved = await snapshot();
+    for (const id of ["first", "second"]) {
+      const original = before.doc.nodes.find(node => node.id === id);
+      const actual = moved.doc.nodes.find(node => node.id === id);
+      assert.deepEqual([actual.x, actual.y, actual.width, actual.height], [original.x, original.y, original.width, original.height]);
+    }
+    assert.deepEqual(new Set(moved.ids), new Set(["first", "second"]));
+    await historyRoundTrip(before);
+    checks.push(`real layer-panel multi-selection drag into ${nested ? "nested" : "root"} Frame preserves geometry and selection and undoes/redoes once`);
+  }
   console.log(JSON.stringify({ passed: checks }, null, 2));
 });

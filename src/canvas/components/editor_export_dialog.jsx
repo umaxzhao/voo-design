@@ -14,6 +14,7 @@ const FORMATS = [
   ["jpeg", "editor.exportJpeg"],
   ["webp", "editor.exportWebp"],
   ["svg", "editor.exportSvg"],
+  ["fig", "editor.exportFigma"],
   ["psd", "editor.exportPsd"],
   ["pdf", "editor.exportPdf"],
 ];
@@ -27,7 +28,7 @@ export function designExportDimensions({ width, height, format, scale }) {
     height <= 0
   )
     return null;
-  const factor = ["svg", "psd", "pdf"].includes(format)
+  const factor = ["svg", "fig", "psd", "pdf"].includes(format)
     ? 1
     : scale;
   if (!Number.isFinite(factor) || factor <= 0) return null;
@@ -132,7 +133,7 @@ export default function EditorExportDialog({
         <h2 id="design-export-title" className="text-xs text-neutral-200">
           {t("editor.exportTitle")}
         </h2>
-        {onExportRange ? (
+        {onExportRange && format !== "fig" ? (
           <div
             className="flex gap-1 rounded-xl bg-white/[0.04] p-0.5 text-[11px]"
             role="radiogroup"
@@ -213,7 +214,7 @@ export default function EditorExportDialog({
               />
             </div>
           )}
-          {!["svg", "psd"].includes(format) && (
+          {!["svg", "fig", "psd"].includes(format) && (
             <div className="flex gap-2" role="group" aria-label={t("editor.exportScale")}>
               {[1, 2, 3].map((value) => (
                 <button

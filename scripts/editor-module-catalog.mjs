@@ -25,6 +25,9 @@ export const EDITOR_MODULES = [
     title: "Documents, persistence and history",
     paths: [
       "src/canvas/store/*", "src/storage/*", "src/services/*", "src/canvas/editor/editor_history*",
+      "src/shared/media-export.js", "src/canvas/editor/export_filename.js",
+      "src/canvas/components/editor_hooks/use_editor_apply.js", "src/canvas/components/image_editor.jsx",
+      "tests/unit/save_formats.test.js", "tests/unit/export_filename.test.js", "tests/unit/voo_file_save.test.js",
       "src/canvas/editor/editor_engine_history*", "src/canvas/undo*",
     ],
     related: ["workspace","layers","images","platform"],
@@ -51,7 +54,7 @@ export const EDITOR_MODULES = [
     features: ["canvas.camera","canvas.world-coordinates","canvas.snapping","canvas.performance"],
     suites: [
       "editor-canvas-navigation", "editor-snapping", "frame-negative-space", "frame-surface-camera",
-      "frame-adjustment-space", "root-contextual-toolbar",
+      "frame-adjustment-space", "root-contextual-toolbar", "canvas-zoom-preview",
     ],
     remaining: [
       "Hardware FPS/memory gates run separately; passing geometry tests does not establish performance parity.",
@@ -62,8 +65,11 @@ export const EDITOR_MODULES = [
     title: "Selection and transforms",
     paths: [
       "src/canvas/components/editor_page_frame_labels.jsx",
+      "src/canvas/editor/frame-canvas-labels.js",
+      "tests/unit/frame-canvas-labels.test.js",
       "src/canvas/editor/editor_pointer*", "src/canvas/editor/*hit-test*", "src/canvas/editor/selection*",
       "src/canvas/editor/transform*", "src/canvas/*shortcut*",
+      "src/shared/editor-shortcut-catalog.js",
       "src/canvas/editor/drawing-gesture-*", "src/canvas/editor/move-gesture-*", "src/canvas/editor/editor-pointer-*",
       "src/canvas/editor/editor_engine_tools.js", "src/canvas/editor/editor_transform_api.js", "src/canvas/editor/editor_engine_assembly.js", "tests/unit/editor-module-audit-regressions.test.js",
     ],
@@ -90,9 +96,10 @@ export const EDITOR_MODULES = [
       "src/canvas/components/editor_image_batch.js", "src/canvas/components/use_editor_dnd.js",
       "tests/unit/batch-layer-reorder.test.js", "tests/unit/layer-hierarchy-stack.test.js",
       "tests/unit/container-command-boundaries.test.js",
+      "tests/unit/nested-group-commands.test.js",
     ],
     related: ["selection","compositing","layout","documents"],
-    features: ["layers.nesting","layers.placement","layers.reparent","layers.duplicate-delete-lock","layers.container-boundaries"],
+    features: ["layers.nesting","layers.placement","layers.reparent","layers.duplicate-delete-lock","layers.container-boundaries","layers.frame-selection"],
     suites: [
       "editor-layers-composition", "image-layer-window", "frame-alt-duplicate", "frame-reparent-contracts",
       "nested-placement", "nested-object-lifecycle", "container-command-boundaries",
@@ -134,7 +141,7 @@ export const EDITOR_MODULES = [
     ],
     related: ["selection","compositing","documents","inspector"],
     features: ["vectors.path-edit","vectors.midpoint-insertion","vectors.booleans","vectors.stroke","vectors.format-losses","vectors.native-fig-properties"],
-    suites: ["pen-midpoint-insertion","boolean-stroke-export","boolean-resize","destructive-boolean","image-svg-parity"],
+    suites: ["pen-midpoint-insertion","boolean-stroke-export","boolean-resize","destructive-boolean","image-svg-parity","figma-import-fidelity"],
     remaining: [
       "Arbitrary third-party paths/fonts and every format round-trip loss require corpus expansion.",
     ],
@@ -186,7 +193,7 @@ export const EDITOR_MODULES = [
     features: ["layout.auto-layout","layout.constraints","layout.variables","layout.components"],
     suites: [
       "editor-effects", "stretch-layout", "build-layout-history", "mesh-gradient", "stroke-controls",
-      "editor-document-aids", "constraints-pin-regression",
+      "editor-document-aids", "constraints-pin-regression", "constraint-hit-targets",
     ],
     remaining: [
       "All component/variable alias cycles, nested layout combinations and every design-system preset are not exhausted.",
@@ -198,6 +205,8 @@ export const EDITOR_MODULES = [
     paths: [
       "src/canvas/components/scrub_field.jsx", "tests/e2e/inspector-control-cases.mjs", "tests/e2e/typography-inspector-cases.mjs", "tests/e2e/context-submenu-checks.mjs",
       "tests/unit/export_presets.test.js", "tests/unit/right_panel_phase1.test.jsx", "tests/unit/properties_panel_restructure.test.jsx",
+      "src/canvas/components/editor_export_dialog.jsx", "tests/unit/export_dialog.test.jsx",
+      "src/canvas/components/editor_hooks/use_editor_palette_actions.js", "tests/unit/bottom_bar_ruler_more.test.jsx",
       "src/canvas/color_picker/*", "src/canvas/components/popover_scope.js", "tests/e2e/unified-fill-*.mjs", "tests/unit/unified-fill-picker.test.jsx", "tests/unit/fill-paint-values.test.js",
       "src/canvas/components/editor_properties/*", "src/canvas/components/*context*",
       "src/canvas/components/*taskbar*", "src/canvas/components/*toolbar*",
@@ -212,6 +221,7 @@ export const EDITOR_MODULES = [
     suites: [
       "inspector-controls", "ui-inspector-interaction", "ui-responsive-editor", "ui-global-interaction",
       "settings-i18n", "locale-lifecycle", "taskbar-mobile-reachability", "mobile-bottom-spacing", "toolbar-hover-menu",
+      "impeccable-polish", "mobile-control-targets",
     ],
     remaining: [
       "Not every inspector control/value/input method is individually certified by the current representative scenarios.",

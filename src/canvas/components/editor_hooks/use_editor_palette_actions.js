@@ -123,6 +123,12 @@ export function useEditorPaletteActions({
         run: () => setExportOpen(true),
       },
       {
+        id: "export-snapshot",
+        labelKey: "titlebar.snapshotTitle",
+        label: "Export project snapshot",
+        run: () => window.dispatchEvent(new CustomEvent("voo:file-export-snapshot")),
+      },
+      {
         id: "shortcuts",
         labelKey: "editor.shortcuts.title",
         label: "Keyboard shortcuts",

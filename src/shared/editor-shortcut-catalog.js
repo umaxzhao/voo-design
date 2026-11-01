@@ -68,7 +68,7 @@ export const DESIGN_SHORTCUT_GROUPS = Object.freeze([
       Object.freeze({ key: "⇧⌘O", labelKey: "editor.menu.convertToPath" }),
       Object.freeze({ key: "⌘G", labelKey: "editor.menu.group" }),
       Object.freeze({ key: "⇧⌘G", labelKey: "editor.menu.ungroup" }),
-      Object.freeze({ key: "⌥⌘G", labelKey: "editor.menu.createClipMask" }),
+      Object.freeze({ key: "⌥⌘G", labelKey: "editor.menu.frameSelection" }),
       Object.freeze({ key: "⇧⌥⌘G", labelKey: "editor.menu.releaseClipMask" }),
       Object.freeze({ key: "]", labelKey: "editor.shortcut.bringForward" }),
       Object.freeze({ key: "[", labelKey: "editor.shortcut.sendBackward" }),

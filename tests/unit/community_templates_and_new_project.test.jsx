@@ -51,7 +51,7 @@ import {
 import { useDesignStore } from "../../src/store/design_store.js";
 import { encodeVooBinary } from "../../src/canvas/store/voo_binary.js";
 import { addRecentFile, getRecentFiles } from "../../src/canvas/store/recent_files.js";
-import { loadLocale } from "../../src/shared/i18n.js";
+import { t, loadLocale } from "../../src/shared/i18n.js";
 
 describe("Community Templates and New Project Workbench Experience", () => {
   beforeEach(async () => {

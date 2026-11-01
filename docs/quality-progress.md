@@ -1,8 +1,47 @@
 # 项目检查总进度
 
+## 本轮：Figma 风格 Frame Selection 快捷键（源码完成，未发布）
+
+- 新能力 `layers.frame-selection`：Mac `⌥⌘G` / Windows `Ctrl+Alt+G` 将一个或多个所选对象包入透明 Frame；使用旋转/斜切后的几何边界，保留绝对坐标、已有子树和最近公共父级，一次提交并选中新 Frame。空选与继承锁定不修改文档。
+- 右键菜单、快捷键及可发现的 `frame_selection` 共用引擎操作；同步快捷键目录、中文/英文标签和命令撤销元数据。创建剪贴蒙版保留菜单/命令入口，释放蒙版保留 `⇧⌥⌘G`。曾尝试迁移到 `⌥⌘M`，真实回归发现该键已属于评论功能，已撤回该迁移，避免抢占现有快捷键。
+- 修复前真实浏览器断言失败：`Alt+Cmd/Ctrl+G` 未产生 Frame；定向单测 37/37 通过。`container-command-boundaries.e2e.mjs` 实测两平台修饰键、单对象右键菜单、共用命令、层级/几何、真实像素和一次撤销/重做；日志 `/tmp/voo-frame-shortcut-browser-final.log`，定向单测日志 `/tmp/voo-frame-shortcut-targeted.log`。
+- 完整单测本轮执行 4,881 通过、6 失败、4 跳过（最后新增的子树持久化断言另在定向测试中通过）。6 个失败仍来自模板 `t is not defined` 与上轮导出改变后的标题栏旧断言；日志 `/tmp/voo-frame-shortcut-all-units.log`。本轮没有将完整门禁记为通过，尚未推送、部署或更新已安装 Release。
+- 证据基线仍为 `965bbd889bc121860564d2b82f25df5b4c7e78dd` 加未提交改动；工作区另有其他界面修改，已保留。尚未覆盖真实 Windows 桌面、输入法/触摸、大型文档快捷键性能及 Auto Layout 父级下包 Frame 的视觉结果。
+- 最终引擎分组模块 blob `4c36e5865af71170a8978b9d1cf88e77246b67ce`，快捷键路由 blob `33135318401cd83df04bb3f0b6f6ea088b88b6e8`。最终 Web/Electron 渲染构建、73 能力/99 套件登记检查、设计检查（1474 文件）及差异检查通过；最终浏览器日志记录本套件全部 11 个命名场景通过。本结果只覆盖所列源码与环境。
+
+## 本轮：真实 NBA-Land 文件的 Frame 名称遮挡定位
+
+- 已查看 `/Applications/VOO Design.app` 中打开的 `NBA-Land-UI`，实际确认大量名称遮挡。插件连接的是另一个崩溃的 Electron 开发实例，不能用其连接状态代表安装版文件；本轮改用安装版 UI 打开文件验证。
+- 从 UI 确认原文件路径后读取：9,979 节点，仅 1 节点有 `parentId`，导致 5,644 个顶层 Frame 标签；原有名称筛选修复在该文件上仍返回 5,644，不能解决缺失父级。文档含 `document.nodes` 与 `document.pages[0].sceneDoc.nodes` 两份页面状态，修复必须同步两份。
+- 生成独立 `NBA-Land-UI-fixed.voo`，将散落节点归入已有、完整包围全部对象的根 Frame；对两份页面均验证只剩 1 个顶层 Frame 标签、9,979 节点与 149 素材完整保留，逐节点确认除父级外的几何、文字、样式等字段完全一致。原始文件与未保存标签不覆盖。本轮是具体文件修复，不是 Release 更新，也未推断内部卡片层级。
+- 修复副本：`/Users/tt/.codex/visualizations/2026/10/29/01a18867-f709-7993-9c45-2791f4978234/frame-repair/NBA-Land-UI-fixed.voo`。
+- 实机结果：已通过安装版原生 Open 对话框加载上述副本；当前标签 `NBA-Land-UI-fixed`，AX 只有一个画布 Frame 名称，截图实际显示完整 UI、密集灰色标签消失、图层面板子对象缩进归属正确。已关闭本轮中间诊断副本标签，原始未保存项目仍保留。名称筛选单测 4/4 通过；本轮未更改程序源码、未更新 Release。
+
+## 本轮：图层面板多选移入 Frame（源码修复，未发布）
+
+- `layers.reparent`：已用真实鼠标复现多选拖入 Frame 只移动一个对象；修复为在拖拽开始时记录整组选中 ID，由共用 `moveIntoGroup` 一次提交。目标检测支持展开的嵌套 Frame；已有选中子孙随根节点移动，保持位置、层级与堆叠顺序。整批预检锁定祖先和循环引用。
+- 定向单测 38/38 通过；`frame-reparent-contracts.e2e.mjs` 覆盖根级/嵌套目标、实际多选点击、位置与选择保持及一次撤销/重做；`editor-layers-composition.e2e.mjs` 图层点击、搜索、改名、显示锁定、排序及跨画布回归通过。详细范围见 [嵌套对象审查](audits/nested-objects-audit.md#layer-panel-batch-reparent--2026-11-02)。
+- Web/Electron 渲染构建、模块登记和设计检查通过。完整单测执行：4879 通过、6 失败、4 跳过；失败来自社区模板 `t is not defined`（3 项）及前轮导出入口改变后仍要求旧行为的标题栏断言（3 项）。原始日志 `/tmp/voo-layers-all-units.log`。完整发布门禁未通过，没有提交、推送或部署；已安装 Release 尚未更新。
+- 证据源码基线 `965bbd889bc121860564d2b82f25df5b4c7e78dd` 加本轮未提交改动；拖拽 hook / 交互 handler / 文档操作 blob 分别为 `008f2641b838822781f8b672878a705f80ed813f` / `1b3c27564199beaf47f1073342537bf684450357` / `47c781e3362a8d799c093dce2b5d4e1e2dbc1724`。没有沿用历史 Release 通过状态。
+
+## 本轮：Release 画布嵌套 Frame 标签遮挡内容（修复待发布）
+
+- 复现：画布根 Frame 使用旧式 `frame: true` 标记时，标签筛选器只认 `isFrame`，因此漏掉外层容器，误显示其内部 Frame 名称。复现输入得到错误标签 `nested`；已改为调用编辑器共用的 `isFrameSelectionBoundary`，同时识别 `isFrame`、`frame`、`containerType` 和 `kind`。
+- 回归：Frame 标签单测加入混合标记和三层嵌套；浏览器套件使用旧式外层 Frame，并继续验证点击名称/图标、0.5x/1x/2x 下选中行为。单测 **4/4** 和浏览器 `frame-label-selection.e2e.mjs` **6 项场景通过**，源码基线为 `965bbd889bc121860564d2b82f25df5b4c7e78dd` 加本轮改动。
+- 模块归属 `selection`。将已存在的 `canvas-zoom-preview`、`constraint-hit-targets`、`figma-import-fidelity`、`impeccable-polish`、`mobile-control-targets` 登记到对应模块，`node scripts/editor-checks.mjs --check` 通过：**12 模块、72 能力、99 浏览器套件**。本轮计划覆盖 99 套件、12 模块，要求完整 Release 门禁。门禁未通过：`welcome-model-menu` 独立复跑稳定失败（8 个类型项仍可见，预期 0）；`titlebar-file-actions` 中 New 按钮禁用超时，后续复跑时隔离目录消失导致导入失败，未取得有效复验。不能将完整门禁记为通过。
+- Web 生产构建、Electron 渲染构建和设计检查通过（1473 个文件）。尚未执行原生安装包构建、推送或部署；已安装 Release 尚未被更新，不能认定用户截图场景已在 Release 修复。
+
+## 本轮：右上角导出增加 Figma 文件格式（未部署）
+
+- 右上角导出面板现有 PNG/JPEG/WebP/SVG/PSD/PDF 选项，新增 `Figma 文件（.fig）`。Figma 使用原生文档序列化器，不走栅格图片导出；只显示与文件格式相关的选项，不展示倍率、透明背景或位图范围设置。
+- 右上角按钮之前导出的是 `.zip` 项目快照，现在会打开格式面板；项目快照保留在命令面板的独立命令中。
+- Electron 和浏览器均使用 `.fig` 保存筛选器/下载名；通过现有格式损失确认。导出后保留当前 `.voo` 文件名、路径和 dirty 状态。Figma 字节实测可解析为原生文件。
+- 验证：导出相关单测 **53/53**；真实浏览器 `image-export-formats.e2e.mjs` 从右上角导出入口验证 PNG/JPEG/WebP/SVG/Figma/PSD/PDF 七种格式全通过，`.fig` 下载后由原生解析器重新读取；Web 与 Electron 渲染构建、模块登记检查及设计检查（1473 文件）通过。完整模块门禁仍受上一轮已记录的 `welcome-model-menu` 稳定失败和 `titlebar-file-actions` 复验隔离问题阻断，未把完整门禁记为通过。
+- 尚未执行原生安装包构建、推送或部署；已安装的 Release 版本不会自动包含此改动。
+
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。
 
-更新时间：2026-11-01。
+更新时间：2026-11-02。
 最近一次完整核心检查：[eab3bea](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78)；105/105 步通过，含 101 组核心浏览器、4781 单测通过/4 跳过，四个平台原生与最终草稿核验通过。线上已更新为该 CI 构建；本地脏工作区草稿仍不属于本版发布认证。
 以下结果只属于该固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 

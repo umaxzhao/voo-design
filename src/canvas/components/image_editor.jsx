@@ -846,6 +846,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     newVooDocument,
     handleSaveAndExit,
     exportImage,
+    exportProjectFormat,
     cancelExport,
     dirtyIds,
   } = useEditorApply({
@@ -1906,7 +1907,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
           <Suspense fallback={null}>
             <EditorExportDialog
               doc={exportDocument}
-              exportName={exportTargetName(pageTitle(), exportRange, exportDocument?.nodes, selectedIds)}
+              exportName={exportTargetName(pageTitle(), exportFormat === "fig" ? "frame" : exportRange, exportDocument?.nodes, selectedIds)}
               format={exportFormat}
               quality={exportQuality}
               scale={exportScale}
@@ -1920,12 +1921,15 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
               }
               selectionBounds={exportSelectionBounds}
               exportRange={exportRange}
-              onExportRange={setExportRange}
+              onExportRange={exportFormat === "fig" ? null : setExportRange}
               busy={busy}
               onFormat={setExportFormat}
               onQuality={setExportQuality}
               onScale={setExportScale}
-              onExport={(options) => void exportImage(options)}
+              onExport={(options) => {
+                if (exportFormat === "fig") void exportProjectFormat("fig");
+                else void exportImage(options);
+              }}
               onClose={cancelExport}
             />
           </Suspense>

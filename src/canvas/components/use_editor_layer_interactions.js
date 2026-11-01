@@ -99,18 +99,21 @@ export default function useEditorLayerInteractions(model) {
   } = useLayerDrag({
     listRef,
     nodes: dragUnits,
-    onDrop: (id, target, clipIntoId, scope) => {
+    objects,
+    selectedIds,
+    selectedGroupId,
+    onDrop: (id, target, clipIntoId, scope, ids = [id]) => {
       const dragged = objects.find(object => object.id === id);
       if (clipIntoId) {
         // Dropped on a row: a folder takes the layer in as a member, any
         // other layer clips it (Photoshop's two drag gestures, told apart by
         // the drop target). Re-dropping a member onto its own folder is a
         // no-op so the tree is never broken.
-        if (dragged?.parentId && dragged.parentId === clipIntoId) return;
         const targetNode = objects.find(object => object.id === clipIntoId);
         if (targetNode && isContainerNode(targetNode)) {
-          onMoveIntoGroup?.(id, clipIntoId);
+          onMoveIntoGroup?.(ids.length > 1 ? ids : id, clipIntoId);
         } else {
+          if (dragged?.parentId === clipIntoId) return;
           onClipInto?.(id, clipIntoId);
         }
         return;

@@ -6,6 +6,7 @@ describe("export filenames", () => {
     ["Design", "png", 1, "Design.png"],
     ["Design", "svg", 2, "Design.svg"],
     ["Design", "psd", 2, "Design.psd"],
+    ["Design.voo", "fig", 3, "Design.fig"],
     ["Design", "png", 2, "Design@2x.png"],
     ["Design", "pdf", 2, "Design@2x.pdf"],
     ["Frame", "jpeg", 2, "Frame@2x.jpg"],

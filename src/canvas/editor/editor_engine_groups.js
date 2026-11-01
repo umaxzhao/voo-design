@@ -32,9 +32,11 @@ export function createEngineGroups({
   getIsolationGroupId,
   setIsolationGroupId,
 }) {
-  function groupSelection({ section = false, name } = {}) {
-    const units = groupingRoots(getDoc(), selectionUnits().map(node => node.id));
-    if (units.length < 2) return;
+  function groupSelection({ section = false, frame = false, name } = {}) {
+    const doc = getDoc();
+    const units = groupingRoots(doc, selectionUnits().map(node => node.id));
+    if (units.length < (frame ? 1 : 2)) return;
+    if (frame && units.some(node => node.locked || isLockedByGroup(doc, node))) return;
     const left = Math.min(...units.map((node) => node.x));
     const top = Math.min(...units.map((node) => node.y));
     const right = Math.max(...units.map((node) => node.x + node.width));
@@ -47,6 +49,13 @@ export function createEngineGroups({
       section,
       name,
     });
+    if (frame) {
+      // Fit transformed geometry and preserve visible overflow such as shadows.
+      Object.assign(folder, combinedBounds(units.map(node => nodeAABB(node))), {
+        isFrame: true, frame: true, containerType: "frame",
+        fill: "transparent", strokeWidth: 0, strokeHidden: true, clipContent: false,
+      });
+    }
     commitEditorDocument(
       "editor.group.change",
       setDoc,
@@ -322,6 +331,12 @@ export function createEngineGroups({
 
   return {
     groupSelection,
+    frameSelection: () => groupSelection({ frame: true }),
+    canFrameSelection: () => {
+      const doc = getDoc();
+      const units = groupingRoots(doc, selectionUnits().map(node => node.id));
+      return units.length > 0 && !units.some(node => node.locked || isLockedByGroup(doc, node));
+    },
     createSection,
     ungroupSelection,
     toggleAutoLayoutSelection,

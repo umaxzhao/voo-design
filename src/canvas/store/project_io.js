@@ -429,35 +429,36 @@ export async function saveVooProject({
   enginesRef = null,
   snapshotsRef = null,
   saveAs = false,
+  formatOverride = null,
   pageTitle = null,
 } = {}) {
   const { vooFile, pages, primaryDoc, primaryPage, focusedEngine, primaryPreview } =
     await buildProjectVooFile({ store, enginesRef, snapshotsRef });
 
-  // The file name decides the format: a `.svg` or `.psd` document saves back as itself.
-  const format = saveFormatOf(store.fileName);
+  const format = formatOverride ?? saveFormatOf(store.fileName);
+  if (!SAVE_FORMATS[format]) throw new Error("unsupported-save-format");
   const losses = formatSaveLosses(format, { pageCount: pages.length, sceneDoc: primaryDoc });
   if (losses.length > 0 && !confirmSaveLosses(losses)) return { canceled: true };
-  const fileBytes = await encodeForFormat(format, {
-    vooFile,
-    engine: focusedEngine,
-    sceneDoc: primaryDoc,
-    figSource: store.figSource,
-    pageName: primaryPage?.label,
-    fileName: store.fileName,
-  });
-
   const rawSuggestedName =
     store.fileName ||
     (pageTitle
       ? `${pageTitle()}.voo`
       : `${primaryPage?.label || "Untitled"}.voo`);
   const finalSuggestedName = replaceDocumentExtension(rawSuggestedName, SAVE_FORMATS[format].extension);
+  const fileBytes = await encodeForFormat(format, {
+    vooFile,
+    engine: focusedEngine,
+    sceneDoc: primaryDoc,
+    figSource: store.figSource,
+    pageName: primaryPage?.label,
+    fileName: finalSuggestedName,
+  });
+  const preserveWorkingDocument = formatOverride !== null;
 
   // 1. Electron Desktop
   if (window.electronAPI?.saveFileDialog && window.electronAPI?.writeFileBytes) {
     let targetPath = store.filePath;
-    if (saveAs || !targetPath) {
+    if (saveAs || preserveWorkingDocument || !targetPath) {
       const defaultPath = await resolveWorkspaceDefaultSavePath(finalSuggestedName);
       targetPath = await window.electronAPI.saveFileDialog({
         defaultPath,
@@ -467,11 +468,13 @@ export async function saveVooProject({
     }
     await window.electronAPI.writeFileBytes(targetPath, fileBytes);
     const fileName = targetPath.split(/[/\\]/).pop();
-    store.setFilePath?.(targetPath);
-    store.setFileName?.(fileName);
-    store.setIsDirty?.(false);
+    if (!preserveWorkingDocument) {
+      store.setFilePath?.(targetPath);
+      store.setFileName?.(fileName);
+      store.setIsDirty?.(false);
+    }
 
-    if (enginesRef?.current) {
+    if (!preserveWorkingDocument && enginesRef?.current) {
       for (const entry of enginesRef.current.values()) {
         entry?.engine?.markApplied?.();
       }
@@ -486,7 +489,7 @@ export async function saveVooProject({
     typeof window.showSaveFilePicker === "function"
   ) {
     let handle = store.fileHandle;
-    if (saveAs || !handle) {
+    if (saveAs || preserveWorkingDocument || !handle) {
       try {
         const pickerOptions = {
           suggestedName: finalSuggestedName,
@@ -513,11 +516,13 @@ export async function saveVooProject({
       await writable.write(fileBytes);
       await writable.close();
 
-      store.setFileHandle?.(handle);
-      store.setFileName?.(handle.name);
-      store.setIsDirty?.(false);
+      if (!preserveWorkingDocument) {
+        store.setFileHandle?.(handle);
+        store.setFileName?.(handle.name);
+        store.setIsDirty?.(false);
+      }
 
-      if (enginesRef?.current) {
+      if (!preserveWorkingDocument && enginesRef?.current) {
         for (const entry of enginesRef.current.values()) {
           entry?.engine?.markApplied?.();
         }
@@ -538,9 +543,11 @@ export async function saveVooProject({
   document.body.removeChild(anchor);
   URL.revokeObjectURL(url);
 
-  store.setFileName?.(finalSuggestedName);
-  store.setIsDirty?.(false);
-  if (enginesRef?.current) {
+  if (!preserveWorkingDocument) {
+    store.setFileName?.(finalSuggestedName);
+    store.setIsDirty?.(false);
+  }
+  if (!preserveWorkingDocument && enginesRef?.current) {
     for (const entry of enginesRef.current.values()) {
       entry?.engine?.markApplied?.();
     }

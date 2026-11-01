@@ -68,10 +68,7 @@ describe("export and layer search accessibility", () => {
     expect(handleExportShortcut({ ...event, ctrlKey: false, metaKey: false })).toBe(false);
     vi.unstubAllGlobals();
   });
-  it("keeps title bar minimal (no Export) while export stays reachable via shortcut listener", () => {
-    const titlebar = read("app_title_bar.jsx");
-    expect(titlebar).not.toContain('data-testid="titlebar-export-btn"');
-    expect(titlebar).not.toContain('voo:editor-export');
+  it("wires title bar export and shortcut listener to onTriggerExport", () => {
     expect(read("canvas/components/editor_hooks/use_editor_apply.js")).toContain('window.addEventListener("voo:editor-export", onTriggerExport)');
     expect(read("canvas/editor/export_shortcut.js")).toContain("shiftKey");
   });

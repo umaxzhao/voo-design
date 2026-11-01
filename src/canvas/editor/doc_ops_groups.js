@@ -5,6 +5,7 @@ import {
   isContainerNode,
   isGroupNode,
   isRegionNode,
+  isLockedByGroup,
   NODE_KIND,
 } from "./scene_model.js";
 import { groupBlockInsertIndex, withNodes } from "./doc_ops_nodes.js";
@@ -94,8 +95,21 @@ export function reorderNodeTo(doc, id, targetIndex) {
  * — joins the group's block, so its stacking position sits inside the group
  * instead of jumping to the top of the document. Refuses when the target is
  * the node's own descendant, either side is locked, or the node is a region.
+ * An array of IDs moves selected roots as one document transaction.
  */
 export function moveIntoGroup(doc, id, groupId) {
+  if (Array.isArray(id)) {
+    const roots = groupingRoots(doc, id);
+    const target = doc.nodes.find(candidate => candidate.id === groupId);
+    // Validate the complete transaction before moving anything. Selected
+    // descendants travel with their root instead of being flattened.
+    if (
+      !isContainerNode(target) || target.locked || isLockedByGroup(doc, target) ||
+      roots.some(node => node.locked || isLockedByGroup(doc, node) || isRegionNode(node)) ||
+      moveAffectedIds(doc, roots.map(node => node.id)).includes(groupId)
+    ) return doc;
+    return roots.reduce((next, node) => moveIntoGroup(next, node.id, groupId), doc);
+  }
   const node = doc.nodes.find((candidate) => candidate.id === id);
   const group = doc.nodes.find((candidate) => candidate.id === groupId);
   if (
@@ -103,6 +117,8 @@ export function moveIntoGroup(doc, id, groupId) {
     !isContainerNode(group) ||
     group.locked ||
     node.locked ||
+    isLockedByGroup(doc, group) ||
+    isLockedByGroup(doc, node) ||
     node.parentId === groupId ||
     isRegionNode(node)
   ) {
