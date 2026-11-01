@@ -6,7 +6,7 @@ extension VOONode {
         case id, parentId, kind, name, x, y, width, height, rotation, shear, isFrame,
             nativePathCoordinates
         case style, cornerRadii, cornerRadius, lockRatio, points
-        case text, fontSize, fontFamily, fontWeight, textAlign, lineHeight, letterSpacing
+        case text, fontSize, fontFamily, fontWeight, align, textAlign, lineHeight, letterSpacing
         case italic, underline, boxWidth, booleanOperation, clipTo, maskId
         case fillVariableId, strokeVariableId, adjustments, effects, src, imageId, paint, childIds,
             constraints
@@ -131,7 +131,11 @@ extension VOONode {
         self.fontFamily = try? container.decodeIfPresent(String.self, forKey: .fontFamily)
         self.fontWeight = try? container.decodeIfPresent(FlexibleString.self, forKey: .fontWeight)?
             .stringValue
-        self.textAlign = try? container.decodeIfPresent(String.self, forKey: .textAlign)
+        // Web documents use `align`; `textAlign` is the legacy native alias.
+        // Decode the Web field first so a stale native alias cannot override it.
+        self.textAlign =
+            try container.decodeIfPresent(String.self, forKey: .align)
+            ?? container.decodeIfPresent(String.self, forKey: .textAlign)
         self.lineHeight =
             (try? container.decode(FlexibleNumber.self, forKey: .lineHeight))?.cgFloatValue
         self.letterSpacing =
@@ -226,6 +230,8 @@ extension VOONode {
         try container.encodeIfPresent(fontSize, forKey: .fontSize)
         try container.encodeIfPresent(fontFamily, forKey: .fontFamily)
         try container.encodeIfPresent(fontWeight, forKey: .fontWeight)
+        // Keep both consumers in sync after an inspector edit or native reopen.
+        try container.encodeIfPresent(textAlign, forKey: .align)
         try container.encodeIfPresent(textAlign, forKey: .textAlign)
         try container.encodeIfPresent(lineHeight, forKey: .lineHeight)
         try container.encodeIfPresent(letterSpacing, forKey: .letterSpacing)

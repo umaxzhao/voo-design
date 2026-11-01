@@ -196,6 +196,10 @@
             }
             registry.register(
                 tier: 3, feature: "Native-Effects",
+                name: "test_FormNullEffectsAllowAddUndoAndSaveReopen"
+            ) { try NativeEffectsImportRegression.verifyFormNullEffects() }
+            registry.register(
+                tier: 3, feature: "Native-Effects",
                 name: "test_EffectsAddMenuCommitsToDocumentAndRetainsUnknownMetadata"
             ) {
                 let controller = WindowController()
@@ -214,7 +218,8 @@
                 panel.makeEffectsMenu().performActionForItem(at: 0)
                 let changed = stage.document.nodes.first { $0.id == node.id }!
                 try TestAssertions.assertTrue(changed.effects?.gaussianBlur?.enabled == true)
-                try TestAssertions.assertFalse(panel.blurCheckbox.isHidden)
+                try TestAssertions.assertFalse(
+                    panel.blurPill.isHidden, "Adding an effect opens its parameter editor")
                 try TestAssertions.assertTrue(panel.dropShadowCheckbox.isHidden)
                 try TestAssertions.assertEqual(controller.commandManager.undoCount, 1)
                 let output = try JSONDecoder().decode(
@@ -244,6 +249,7 @@
                     $0.accessibilityIdentifier() == "Inspector.Properties.EffectsAdd"
                 }
                 try TestAssertions.assertNotNil(button)
+                try TestAssertions.assertFalse(node.supportsNativeEffects)
                 try TestAssertions.assertFalse(button!.isEnabled)
                 controller.inspectorDidChangeEffects(
                     id: node.id, effects: LayerEffects(gaussianBlur: BlurEffect()))

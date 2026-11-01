@@ -71,7 +71,7 @@ extension WindowController {
         guard let node = stage.document.nodes.first(where: { $0.id == id }), node.effects != effects
         else { return }
         // An unsupported effect-list schema cannot be replaced by native controls.
-        guard node.portableProperties["effects"] == nil || node.effects != nil else {
+        guard node.supportsNativeEffects else {
             refreshAfterDocumentMutation()
             showChromeToast(NativeCopy.text(.unsupportedEffects))
             return

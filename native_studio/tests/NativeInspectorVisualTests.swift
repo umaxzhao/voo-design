@@ -7,6 +7,98 @@
             let registry = TestRegistry.shared
             registry.register(
                 tier: 3, feature: "Native-Inspector",
+                name: "test_TextInspectorKeepsNumericWeightAndPercentLineHeight"
+            ) {
+                let panel = PropertiesPanelView(frame: CGRect(x: 0, y: 0, width: 288, height: 1400))
+                var node = VOONode(kind: .text)
+                node.fontWeight = "600"
+                node.fontFamily = "Archivo Black"
+                node.textAlign = "right"
+                node.lineHeight = 1.25
+                panel.configure(with: node)
+                let family = try requireView(panel, id: "Inspector.Properties.FontFamily")
+                try TestAssertions.assertEqual(
+                    family.accessibilityValue() as? String, "Archivo Black")
+                try TestAssertions.assertEqual(panel.fontWeightDropdown.selectedValue, "600")
+                try TestAssertions.assertEqual(
+                    panel.alignSegmentedControl.segments[panel.alignSegmentedControl.selectedIndex]
+                        .value, "right")
+                try TestAssertions.assertEqual(
+                    panel.lineHeightPill.accessibilityValue() as? String, "125%")
+                let field = panel.lineHeightPill.subviews.compactMap { $0 as? NSTextField }.first {
+                    $0.target != nil
+                }!
+                var change: CGFloat?
+                panel.onLineHeightChange = { change = $0 }
+                field.stringValue = "135"
+                panel.lineHeightPill.controlTextDidEndEditing(
+                    Notification(name: NSControl.textDidEndEditingNotification))
+                try TestAssertions.assertApproxEqual(change!, 1.35)
+            }
+            registry.register(
+                tier: 3, feature: "Native-Inspector",
+                name: "test_TextInspectorGroupsDoNotOverlapAndPrecedePaintAppearance"
+            ) {
+                let panel = PropertiesPanelView(frame: CGRect(x: 0, y: 0, width: 288, height: 1400))
+                panel.configure(with: VOONode(kind: .text))
+                let x = try requireView(panel, id: "Transform X")
+                try TestAssertions.assertApproxEqual(x.convert(x.bounds, to: panel).minY, 113)
+                let styles = try requireView(panel, id: "Inspector.Properties.TextStyleGroup")
+                try TestAssertions.assertTrue(panel.italicButton.superview === styles)
+                try TestAssertions.assertTrue(panel.underlineButton.superview === styles)
+                try TestAssertions.assertApproxEqual(styles.frame.height, 32)
+                try TestAssertions.assertApproxEqual(panel.italicButton.frame.height, 28)
+                try TestAssertions.assertTrue(panel.italicButton.usesTransparentInactiveSurface)
+                let family = try requireView(panel, id: "Inspector.Properties.FontFamily")
+                let weight = try requireView(panel, id: "Inspector.Properties.VisibleWeight")
+                let size = try requireView(panel, id: "Inspector.Properties.FontSize")
+                let spacing = try requireView(
+                    panel, id: "Inspector.Properties.VisibleLetterSpacing")
+                let alignment = try requireView(panel, id: "Inspector.Properties.VisibleAlign")
+                try TestAssertions.assertTrue(family.frame.maxY < weight.frame.minY)
+                try TestAssertions.assertTrue(weight.frame.maxY < spacing.frame.minY)
+                try TestAssertions.assertTrue(spacing.frame.maxY < alignment.frame.minY)
+                try TestAssertions.assertApproxEqual(weight.frame.minY, size.frame.minY)
+                try TestAssertions.assertApproxEqual(family.frame.width, 258)
+                let appearance = try requireView(panel, id: "Inspector.Properties.Opacity")
+                let fill = try requireView(panel, id: "Inspector.Properties.FillOpacity")
+                try TestAssertions.assertTrue(
+                    family.convert(family.bounds, to: panel).minY < fill.frame.minY)
+                try TestAssertions.assertTrue(fill.frame.maxY < appearance.frame.minY)
+            }
+            registry.register(
+                tier: 3, feature: "Native-Inspector",
+                name: "test_ConfiguredEffectsOpenOnlyTheirOwnControlsAndCommitRowActions"
+            ) {
+                let panel = makePanel()
+                var node = panel.node!
+                node.effects = LayerEffects(gaussianBlur: BlurEffect(enabled: true, radius: 8))
+                panel.configure(with: node)
+                try TestAssertions.assertTrue(panel.blurPill.isHidden)
+                let opener =
+                    try requireView(panel, id: "Inspector.Properties.Effect.gaussianBlur.Open")
+                    as! NSButton
+                opener.performClick(nil)
+                try TestAssertions.assertFalse(panel.blurPill.isHidden)
+                try TestAssertions.assertTrue(panel.dropShadowBlurPill.isHidden)
+                var commits = 0
+                panel.onEffectsChange = { _ in commits += 1 }
+                let toggle =
+                    try requireView(panel, id: "Inspector.Properties.Effect.gaussianBlur.Visible")
+                    as! NSButton
+                toggle.performClick(nil)
+                try TestAssertions.assertFalse(panel.currentEffects.gaussianBlur!.enabled)
+                try TestAssertions.assertApproxEqual(
+                    CGFloat(panel.currentEffects.gaussianBlur!.radius), 8)
+                let remove =
+                    try requireView(panel, id: "Inspector.Properties.Effect.gaussianBlur.Remove")
+                    as! NSButton
+                remove.performClick(nil)
+                try TestAssertions.assertTrue(panel.currentEffects.gaussianBlur == nil)
+                try TestAssertions.assertEqual(commits, 2)
+            }
+            registry.register(
+                tier: 3, feature: "Native-Inspector",
                 name: "test_DefaultInspectorRowsMatchMeasuredElectronScreenshot"
             ) {
                 let panel = makePanel()

@@ -12,6 +12,9 @@ import Foundation
 public final class WorkspaceManagerTests {
     public static func registerTests() {
         let registry = TestRegistry.shared
+        #if INTEGRATED
+            WorkspaceWatcherRegression.registerTests(registry)
+        #endif
 
         // 1. Workspace Configuration & Defaults
         registry.register(tier: 1, feature: "Workspace-Config", name: "test_WorkspaceManager_DefaultDirectoryAndConfig") {

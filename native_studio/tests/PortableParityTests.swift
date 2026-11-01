@@ -7,6 +7,62 @@
             let registry = TestRegistry.shared
             registry.register(
                 tier: 2, feature: "Native-Portability",
+                name: "test_FormTextImportPreservesWebAlignmentAndTypographyPrecision"
+            ) {
+                let root = URL(fileURLWithPath: #filePath)
+                    .deletingLastPathComponent().deletingLastPathComponent()
+                    .deletingLastPathComponent()
+                let document = try DocumentIO.shared.loadDocument(
+                    from: root.appendingPathComponent("docs/examples/form-poster.voo"))
+                guard let number = document.nodes.first(where: { $0.name == "Number" }),
+                    let edition = document.nodes.first(where: { $0.name == "Edition" })
+                else {
+                    throw TestFailure(
+                        message: "FORM text fixtures missing", file: #file, line: #line)
+                }
+                try TestAssertions.assertEqual(number.textAlign, "right")
+                try TestAssertions.assertEqual(edition.textAlign, "right")
+                try TestAssertions.assertEqual(number.fontWeight, "600")
+                try TestAssertions.assertApproxEqual(number.lineHeight ?? 0, 1.25)
+                try TestAssertions.assertEqual(
+                    TextStyleResolver.paragraphStyle(for: number).alignment, .right)
+            }
+            registry.register(
+                tier: 2, feature: "Native-Portability",
+                name: "test_WebAlignmentWinsLegacyAliasAndEditsKeepBothSerializedFieldsInSync"
+            ) {
+                let payload = ##"""
+                    {"nodes":[{"kind":"text","align":"right","textAlign":"left",
+                      "fontWeight":600,"lineHeight":1.25,"letterSpacing":0.25,
+                      "paragraphSpacing":17,"baselineShift":3}]}
+                    """##
+                var document = try VOODocument.deserialize(from: Data(payload.utf8))
+                try TestAssertions.assertEqual(document.nodes[0].textAlign, "right")
+                try TestAssertions.assertNil(document.nodes[0].portableProperties["align"])
+                document.nodes[0].textAlign = "center"
+                let serialized = try document.serializeToJSON()
+                let output = try JSONDecoder().decode(PortableJSONValue.self, from: serialized)
+                let node = output.object!["nodes"]!.array![0].object!
+                try TestAssertions.assertEqual(node["align"], .string("center"))
+                try TestAssertions.assertEqual(node["textAlign"], .string("center"))
+                try TestAssertions.assertEqual(node["lineHeight"], .number(1.25))
+                try TestAssertions.assertEqual(node["paragraphSpacing"], .number(17))
+                try TestAssertions.assertEqual(node["baselineShift"], .number(3))
+                let restored = try VOODocument.deserialize(from: serialized).nodes[0]
+                try TestAssertions.assertEqual(restored.textAlign, "center")
+                try TestAssertions.assertEqual(restored.fontWeight, "600")
+                try TestAssertions.assertApproxEqual(restored.letterSpacing ?? 0, 0.25)
+            }
+            registry.register(
+                tier: 2, feature: "Native-Portability",
+                name: "test_LegacyNativeTextAlignmentStillLoadsWithoutWebAlias"
+            ) {
+                let payload = ##"{"nodes":[{"kind":"text","textAlign":"center"}]}"##
+                let node = try VOODocument.deserialize(from: Data(payload.utf8)).nodes[0]
+                try TestAssertions.assertEqual(node.textAlign, "center")
+            }
+            registry.register(
+                tier: 2, feature: "Native-Portability",
                 name: "test_PortableEnvelopePreservesPagesPaintsAndUnknownProperties"
             ) {
                 let payload = ##"""

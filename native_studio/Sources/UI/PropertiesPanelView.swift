@@ -165,6 +165,7 @@ public enum PropertiesGlyphFactory {
         case strokeCap
         case strokeJoin
         case strokeDash
+        case typeSize, typeLineHeight, typeSpacing
         case frameKind
         case textKind
         case groupKind
@@ -224,6 +225,8 @@ public enum PropertiesGlyphFactory {
             VooIconFactory.drawPlus(in: rect, color: color, strokeWidth: strokeWidth)
         case .strokeInside, .strokeCenter, .strokeOutside, .strokeWidth, .cornerExpand, .sliders:
             NativeInspectorGlyph.draw(kind, in: rect, color: color)
+        case .typeSize, .typeLineHeight, .typeSpacing:
+            NativeTypographyLayout.drawMetricGlyph(kind, in: rect, color: color)
         case .flipH:
             VooIconFactory.draw(.flipH, in: rect, color: color, strokeWidth: strokeWidth)
         case .flipV:
@@ -659,6 +662,7 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
     public var suffix: String = "" {
         didSet { updateDisplay() }
     }
+    public var displayMultiplier: CGFloat = 1 { didSet { updateDisplay() } }
     public var isBare = false { didSet { needsDisplay = true } }
     public var roundsToInteger: Bool = true
     public var minimumValue: CGFloat = -100_000
@@ -746,12 +750,13 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
     }
 
     private func formatted(_ raw: CGFloat) -> String {
-        PropertiesColorMath.formatNumber(raw, integer: roundsToInteger) + suffix
+        PropertiesColorMath.formatNumber(raw * displayMultiplier, integer: roundsToInteger) + suffix
     }
 
     private func updateDisplay() {
         guard !isEditing else { return }
-        valueField.stringValue = PropertiesColorMath.formatNumber(value, integer: roundsToInteger)
+        valueField.stringValue = PropertiesColorMath.formatNumber(
+            value * displayMultiplier, integer: roundsToInteger)
         suffixField.stringValue = suffix
         suffixField.isHidden = suffix.isEmpty
         needsLayout = true
@@ -767,7 +772,10 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
         clean = clean.replacingOccurrences(of: ",", with: ".")
         clean = clean.replacingOccurrences(of: "°", with: "")
         clean = clean.replacingOccurrences(of: "%", with: "")
-        return Double(clean).flatMap { $0.isFinite ? CGFloat($0) : nil }
+        guard displayMultiplier.isFinite && displayMultiplier > 0 else {
+            preconditionFailure("Invalid numeric display multiplier")
+        }
+        return Double(clean).flatMap { $0.isFinite ? CGFloat($0) / displayMultiplier : nil }
     }
 
     // MARK: Layout
@@ -887,7 +895,8 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
         isEditing = true
         valueField.isEditable = true
         valueField.isSelectable = true
-        valueField.stringValue = PropertiesColorMath.formatNumber(value, integer: roundsToInteger)
+        valueField.stringValue = PropertiesColorMath.formatNumber(
+            value * displayMultiplier, integer: roundsToInteger)
         if let window = window {
             window.makeFirstResponder(valueField)
             valueField.currentEditor()?.selectAll(nil)
@@ -1136,6 +1145,9 @@ public final class PropertiesIconButton: NSButton {
     /// Draws a round white/8 hover wash (header icon buttons per UI spec p4 radius-full).
     public var showsHoverBackground: Bool = false
     public var showsOutline: Bool = false
+    public var showsToggleSurface = false
+    public var usesTransparentInactiveSurface = false
+    public var isToggleActive = false { didSet { needsDisplay = true } }
 
     private var isHovered = false
 
@@ -1158,6 +1170,10 @@ public final class PropertiesIconButton: NSButton {
     }
 
     public override func draw(_ dirtyRect: NSRect) {
+        if showsToggleSurface && (isToggleActive || !usesTransparentInactiveSurface) {
+            NSColor(hex: isToggleActive ? "404040" : "262626").setFill()
+            NSBezierPath(roundedRect: bounds, xRadius: 12, yRadius: 12).fill()
+        }
         if showsOutline {
             let outline = NSBezierPath(
                 roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 12, yRadius: 12)
@@ -1182,7 +1198,10 @@ public final class PropertiesIconButton: NSButton {
             bg.fill()
         }
         let inset: CGFloat = iconPadding >= 0 ? iconPadding : (buttonStyle == .circular ? 8 : 0.5)
-        let iconRect = bounds.insetBy(dx: inset, dy: inset)
+        let iconRect =
+            showsToggleSurface
+            ? CGRect(x: bounds.midX - 8, y: bounds.midY - 8, width: 16, height: 16)
+            : bounds.insetBy(dx: inset, dy: inset)
         let color = isHovered ? NSColor(hex: "e5e5e5") : iconColor
         PropertiesGlyphFactory.draw(kind: iconKind, in: iconRect, color: color, strokeWidth: 1.5)
     }
@@ -2052,6 +2071,8 @@ public final class PropertiesPanelView: NSView {
     // TEXT (text layers only — occupies the SHAPE slot) -----------------------
     private let textContainer = PropertiesFlippedContainerView()
     private let textLabel = NSTextField(labelWithString: "")
+    private let typographyStyleGroup = NativeTypographyStyleGroup()
+    private var typographyCaptions: [NativeTypographyLayout.Caption: NSTextField] = [:]
     private let fontFamilyPill = PropertiesBlendModeButton()
     private let fontSizePill = PropertiesNumberPill(label: "")
     private let typographyButton = PropertiesTypographyMenuButton()
@@ -2067,7 +2088,6 @@ public final class PropertiesPanelView: NSView {
         .init(title: "", icon: .alignLeft, value: "left"),
         .init(title: "", icon: .alignCenter, value: "center"),
         .init(title: "", icon: .alignRight, value: "right"),
-        .init(title: "", icon: .alignJustify, value: "justify")
     ])
     public let lineHeightPill = PropertiesNumberPill(label: "LH")
     public let letterSpacingPill = PropertiesNumberPill(label: "LS")
@@ -2125,6 +2145,8 @@ public final class PropertiesPanelView: NSView {
 
     // EFFECTS ----------------------------------------------------------------
     public let effectsContainer = PropertiesFlippedContainerView()
+    var configuredEffectRows: [String: NativeEffectStackRow] = [:]
+    var expandedNativeEffect: String?
     private let effectsLabel = NSTextField(labelWithString: "")
     public let blurCheckbox = NSButton(checkboxWithTitle: "Gaussian Blur", target: nil, action: nil)
     public let blurPill = PropertiesNumberPill(label: "R")
@@ -2422,6 +2444,9 @@ public final class PropertiesPanelView: NSView {
         applyAttributedLabel(textLabel, text: "TEXT", size: 10, weight: .medium,
                              color: NSColor(hex: "a3a3a3"), kern: 1.4)
         textContainer.addSubview(textLabel)
+        typographyCaptions = NativeTypographyLayout.makeCaptions(in: textContainer)
+        typographyStyleGroup.setAccessibilityIdentifier("Inspector.Properties.TextStyleGroup")
+        textContainer.addSubview(typographyStyleGroup)
 
         fontFamilyPill.placeholderTitle = "Inter"
         fontFamilyPill.setItems(PropertiesPanelView.fontFamilyItems)
@@ -2433,9 +2458,11 @@ public final class PropertiesPanelView: NSView {
         textContainer.addSubview(fontFamilyPill)
 
         fontSizePill.minimumValue = 8
-        fontSizePill.maximumValue = 200
+        fontSizePill.maximumValue = 288
         fontSizePill.scrubUnitsPerPoint = 1.0
-        fontSizePill.valueAlignment = .center
+        fontSizePill.valueAlignment = .left
+        fontSizePill.suffix = "px"
+        fontSizePill.leadingGlyph = .typeSize
         fontSizePill.setAccessibilityIdentifier("Inspector.Properties.FontSize")
         fontSizePill.setAccessibilityLabel("Font size")
         fontSizePill.onValueChanged = { [weak self] size in
@@ -2462,15 +2489,7 @@ public final class PropertiesPanelView: NSView {
 
         // Visible Typography Controls (M2)
         fontWeightDropdown.placeholderTitle = "Regular"
-        fontWeightDropdown.setItems([
-            ("Regular", "regular"),
-            ("Medium", "medium"),
-            ("Semibold", "semibold"),
-            ("Bold", "bold"),
-            ("Black", "black"),
-            ("Light", "light"),
-            ("Thin", "thin")
-        ])
+        fontWeightDropdown.setItems(NativeTypographyLayout.weightOptions)
         fontWeightDropdown.setAccessibilityIdentifier("Inspector.Properties.VisibleWeight")
         fontWeightDropdown.setAccessibilityLabel("Font weight")
         fontWeightDropdown.onValueChange = { [weak self] weight in self?.applyFontWeight(weight) }
@@ -2481,6 +2500,13 @@ public final class PropertiesPanelView: NSView {
         alignSegmentedControl.onSelectionChanged = { [weak self] _, align in self?.applyTextAlign(align) }
         textContainer.addSubview(alignSegmentedControl)
 
+        lineHeightPill.displayMultiplier = 100
+        lineHeightPill.suffix = "%"
+        lineHeightPill.labelText = ""
+        lineHeightPill.leadingGlyph = .typeLineHeight
+        letterSpacingPill.labelText = ""
+        letterSpacingPill.leadingGlyph = .typeSpacing
+        letterSpacingPill.suffix = "px"
         lineHeightPill.minimumValue = 0.5
         lineHeightPill.maximumValue = 4.0
         lineHeightPill.roundsToInteger = false
@@ -2499,19 +2525,23 @@ public final class PropertiesPanelView: NSView {
         letterSpacingPill.onValueChanged = { [weak self] ls in self?.applyLetterSpacing(ls) }
         textContainer.addSubview(letterSpacingPill)
 
+        italicButton.showsToggleSurface = true
+        italicButton.usesTransparentInactiveSurface = true
         italicButton.iconPadding = 5.5      // 24pt slot -> 13pt glyph
         italicButton.setAccessibilityIdentifier("Inspector.Properties.Italic")
         italicButton.setAccessibilityLabel("Italic")
         italicButton.target = self
         italicButton.action = #selector(didClickItalic)
-        textContainer.addSubview(italicButton)
+        typographyStyleGroup.addSubview(italicButton)
 
+        underlineButton.showsToggleSurface = true
+        underlineButton.usesTransparentInactiveSurface = true
         underlineButton.iconPadding = 5.5   // 24pt slot -> 13pt glyph
         underlineButton.setAccessibilityIdentifier("Inspector.Properties.Underline")
         underlineButton.setAccessibilityLabel("Underline")
         underlineButton.target = self
         underlineButton.action = #selector(didClickUnderline)
-        textContainer.addSubview(underlineButton)
+        typographyStyleGroup.addSubview(underlineButton)
 
         // TRANSFORM
         applyAttributedLabel(transformLabel, text: "TRANSFORM", size: 10, weight: .medium,
@@ -2722,6 +2752,20 @@ public final class PropertiesPanelView: NSView {
         effectsAddButton.target = self
         effectsAddButton.action = #selector(didClickAddEffect)
         effectsContainer.addSubview(effectsAddButton)
+        for key in ["gaussianBlur", "shadow", "innerShadow"] {
+            let row = NativeEffectStackRow(key: key)
+            row.onOpen = { [weak self] in
+                guard let self else { return }
+                self.expandedNativeEffect = self.expandedNativeEffect == key ? nil : key
+                self.needsLayout = true
+                self.layoutSubtreeIfNeeded()
+                self.onPresentationChange?()
+            }
+            row.onToggle = { [weak self] in self?.changeEffectRow(key, remove: false) }
+            row.onRemove = { [weak self] in self?.changeEffectRow(key, remove: true) }
+            configuredEffectRows[key] = row
+            effectsContainer.addSubview(row)
+        }
 
         blurCheckbox.setAccessibilityIdentifier("Inspector.Properties.BlurCheckbox")
         blurCheckbox.target = self
@@ -3149,6 +3193,7 @@ public final class PropertiesPanelView: NSView {
     // MARK: Configure
 
     public func configure(with node: VOONode?) {
+        if self.node?.id != node?.id { expandedNativeEffect = nil }
         self.node = node
         guard let node = node else {
             applyEmptyState()
@@ -3265,7 +3310,7 @@ public final class PropertiesPanelView: NSView {
 
         // Typography
         currentFontFamily = node.fontFamily ?? "Inter"
-        currentFontSize = min(max(node.fontSize ?? 16, 8), 200)
+        currentFontSize = min(max(node.fontSize ?? 16, 8), 288)
         currentFontWeight = node.fontWeight ?? "regular"
         currentTextAlign = node.textAlign ?? "left"
         currentLineHeight = node.lineHeight ?? 1.2
@@ -3273,6 +3318,8 @@ public final class PropertiesPanelView: NSView {
         isItalic = node.italic ?? false
         isUnderline = node.underline ?? false
 
+        // Imported fonts can be outside the local picker presets; still display the authored family.
+        fontFamilyPill.placeholderTitle = currentFontFamily
         fontFamilyPill.select(value: currentFontFamily)
         fontSizePill.setValue(currentFontSize)
         typographyButton.currentWeight = currentFontWeight
@@ -3280,12 +3327,14 @@ public final class PropertiesPanelView: NSView {
         typographyButton.currentLineHeight = currentLineHeight
         typographyButton.currentLetterSpacing = currentLetterSpacing
 
-        fontWeightDropdown.select(value: currentFontWeight)
+        fontWeightDropdown.select(value: NativeTypographyLayout.weightValue(currentFontWeight))
         alignSegmentedControl.select(value: currentTextAlign)
         lineHeightPill.setValue(currentLineHeight)
         letterSpacingPill.setValue(currentLetterSpacing)
-        italicButton.iconColor = isItalic ? NSColor(hex: "a7ffd4") : NSColor(hex: "737373")
-        underlineButton.iconColor = isUnderline ? NSColor(hex: "a7ffd4") : NSColor(hex: "737373")
+        italicButton.isToggleActive = isItalic
+        italicButton.iconColor = NSColor(hex: isItalic ? "e5e5e5" : "a3a3a3")
+        underlineButton.isToggleActive = isUnderline
+        underlineButton.iconColor = NSColor(hex: isUnderline ? "e5e5e5" : "a3a3a3")
         updateFormatMarkers()
 
         // Effects
@@ -3405,7 +3454,7 @@ public final class PropertiesPanelView: NSView {
         typographyButton.currentTextAlign = currentTextAlign
         typographyButton.currentLineHeight = currentLineHeight
         typographyButton.currentLetterSpacing = currentLetterSpacing
-        fontWeightDropdown.select(value: currentFontWeight)
+        fontWeightDropdown.select(value: NativeTypographyLayout.weightValue(currentFontWeight))
         alignSegmentedControl.select(value: currentTextAlign)
         lineHeightPill.setValue(currentLineHeight)
         letterSpacingPill.setValue(currentLetterSpacing)
@@ -3773,7 +3822,7 @@ public final class PropertiesPanelView: NSView {
     }
 
     private func applyFontSize(_ size: CGFloat) {
-        currentFontSize = min(max(size, 8), 200)
+        currentFontSize = min(max(size, 8), 288)
         if var node = node {
             node.fontSize = currentFontSize
             self.node = node
@@ -3784,7 +3833,7 @@ public final class PropertiesPanelView: NSView {
     private func applyFontWeight(_ weight: String) {
         currentFontWeight = weight
         typographyButton.currentWeight = weight
-        fontWeightDropdown.select(value: weight)
+        fontWeightDropdown.select(value: NativeTypographyLayout.weightValue(weight))
         if var node = node {
             node.fontWeight = weight
             self.node = node
@@ -3831,7 +3880,8 @@ public final class PropertiesPanelView: NSView {
 
     @objc private func didClickItalic() {
         isItalic.toggle()
-        italicButton.iconColor = isItalic ? NSColor(hex: "a7ffd4") : NSColor(hex: "737373")
+        italicButton.isToggleActive = isItalic
+        italicButton.iconColor = NSColor(hex: isItalic ? "e5e5e5" : "a3a3a3")
         if var node = node {
             node.italic = isItalic
             self.node = node
@@ -3841,7 +3891,8 @@ public final class PropertiesPanelView: NSView {
 
     @objc private func didClickUnderline() {
         isUnderline.toggle()
-        underlineButton.iconColor = isUnderline ? NSColor(hex: "a7ffd4") : NSColor(hex: "737373")
+        underlineButton.isToggleActive = isUnderline
+        underlineButton.iconColor = NSColor(hex: isUnderline ? "e5e5e5" : "a3a3a3")
         if var node = node {
             node.underline = isUnderline
             self.node = node
@@ -4040,8 +4091,39 @@ public final class PropertiesPanelView: NSView {
         return menu
     }
 
+    private func changeEffectRow(_ key: String, remove: Bool) {
+        switch key {
+        case "gaussianBlur":
+            if remove {
+                currentEffects.gaussianBlur = nil
+            } else {
+                currentEffects.gaussianBlur?.enabled.toggle()
+            }
+            blurCheckbox.state = currentEffects.gaussianBlur?.enabled == true ? .on : .off
+        case "shadow":
+            if remove {
+                currentEffects.shadow = nil
+            } else {
+                currentEffects.shadow?.enabled.toggle()
+            }
+            dropShadowCheckbox.state = currentEffects.shadow?.enabled == true ? .on : .off
+        case "innerShadow":
+            if remove {
+                currentEffects.innerShadow = nil
+            } else {
+                currentEffects.innerShadow?.enabled.toggle()
+            }
+            innerShadowCheckbox.state = currentEffects.innerShadow?.enabled == true ? .on : .off
+        default: preconditionFailure("Unknown effect row")
+        }
+        if remove && expandedNativeEffect == key { expandedNativeEffect = nil }
+        applyEffects()
+    }
+
     @objc private func didPickEffect(_ item: NSMenuItem) {
-        switch item.representedObject as? String {
+        let key = item.representedObject as? String
+        expandedNativeEffect = key
+        switch key {
         case "gaussianBlur":
             currentEffects.gaussianBlur =
                 currentEffects.gaussianBlur == nil ? BlurEffect(enabled: true, radius: 10) : nil
@@ -4135,6 +4217,9 @@ public final class PropertiesPanelView: NSView {
         }
         applyMonoLabel(hConstraintLabel, size: 10, color: NSColor(hex: "737373"))
         applyMonoLabel(vConstraintLabel, size: 10, color: NSColor(hex: "737373"))
+        textLabel.stringValue = NativeTypographyLayout.sectionTitle
+        fontWeightDropdown.setItems(NativeTypographyLayout.weightOptions)
+        fontWeightDropdown.select(value: NativeTypographyLayout.weightValue(currentFontWeight))
         hConstraintLabel.stringValue = NativeCopy.text(.horizontalTitle)
         vConstraintLabel.stringValue = NativeCopy.text(.verticalTitle)
         hConstraintDropdown.setItems([
@@ -4336,7 +4421,8 @@ public final class PropertiesPanelView: NSView {
             x: inset + 28 + nameWidth, y: identityY + 3,
             width: max(contentWidth - nameWidth - 56, 0), height: 12)
         selectOnlyButton.frame = CGRect(x: contentRight - 20, y: identityY, width: 20, height: 20)
-        y = identityY + 32
+        // The measured text header is one 8pt interval shorter than the shape header.
+        y = identityY + (showsText ? 24 : 32)
 
         // MARK: TRANSFORM
         transformLabel.frame = CGRect(x: inset + 2, y: y, width: 160, height: Row.labelH)
@@ -4378,6 +4464,7 @@ public final class PropertiesPanelView: NSView {
             x: inset, y: transformTop + 122,
             width: max(contentWidth - 32, 0), height: Row.rowH)
         crLinkButton.frame = CGRect(x: contentWidth - 24, y: 126, width: 24, height: 24)
+        crLinkButton.isHidden = !showsShape
 
         var transformBottom = transformTop + (showsShape ? 154 : 114)
         if isCornerRadiiLinked {
@@ -4415,31 +4502,32 @@ public final class PropertiesPanelView: NSView {
             x: ddX, y: constraintTop + 40, width: ddW, height: Row.rowH)
         y = closeSection(constraintTop + 72)
 
-        // MARK: APPEARANCE
-        appearanceLabel.frame = CGRect(x: inset + 2, y: y, width: 160, height: Row.labelH)
-        let appearanceTop = y + Row.labelH + 8
-        opacityPill.frame = CGRect(x: inset, y: appearanceTop, width: 124, height: Row.rowH)
-        blendButton.frame = CGRect(x: inset + 132, y: appearanceTop,
-                                   width: max(contentWidth - 132, 0), height: Row.rowH)
-        y = closeSection(appearanceTop + Row.rowH)
+        func layoutAppearance(at top: CGFloat) -> CGFloat {
+            appearanceLabel.frame = CGRect(x: inset + 2, y: top, width: 160, height: Row.labelH)
+            let appearanceTop = top + Row.labelH + 8
+            opacityPill.frame = CGRect(x: inset, y: appearanceTop, width: 124, height: Row.rowH)
+            blendButton.frame = CGRect(
+                x: inset + 132, y: appearanceTop,
+                width: max(contentWidth - 132, 0), height: Row.rowH)
+            return closeSection(appearanceTop + Row.rowH)
+
+        }
+        if !showsText { y = layoutAppearance(at: y) }
 
         // MARK: TEXT (text layers) / FRAME block (frames)
         textContainer.isHidden = !showsText
         frameBlock.isHidden = !showsFrameBlock
         if showsText {
-            let textHeight: CGFloat = 11 + 6 + Row.rowH + 4 + Row.rowH + 4 + Row.rowH
+            typographyButton.isHidden = true
+            let textHeight = NativeTypographyLayout.layout(
+                .init(
+                    heading: textLabel, family: fontFamilyPill, weight: fontWeightDropdown,
+                    size: fontSizePill, lineHeight: lineHeightPill,
+                    letterSpacing: letterSpacingPill,
+                    italic: italicButton, underline: underlineButton,
+                    styleGroup: typographyStyleGroup, alignment: alignSegmentedControl),
+                captions: typographyCaptions, width: contentWidth)
             textContainer.frame = CGRect(x: inset, y: y, width: contentWidth, height: textHeight)
-            textLabel.frame = CGRect(x: 0, y: 0, width: 160, height: Row.labelH)
-            fontFamilyPill.frame = CGRect(x: 0, y: 17, width: 130, height: Row.rowH)
-            fontSizePill.frame = CGRect(x: 136, y: 17, width: 60, height: Row.rowH)
-            typographyButton.frame = CGRect(x: 202, y: 17, width: 24, height: Row.rowH)
-            fontWeightDropdown.frame = CGRect(x: 0, y: 49, width: 130, height: Row.rowH)
-            alignSegmentedControl.frame = CGRect(x: 136, y: 49,
-                                                 width: max(contentWidth - 136, 0), height: Row.rowH)
-            lineHeightPill.frame = CGRect(x: 0, y: 81, width: 64, height: Row.rowH)
-            letterSpacingPill.frame = CGRect(x: 70, y: 81, width: 64, height: Row.rowH)
-            italicButton.frame = CGRect(x: 140, y: 81, width: 28, height: Row.rowH)
-            underlineButton.frame = CGRect(x: 172, y: 81, width: 28, height: Row.rowH)
             y = closeSection(y + textHeight)
         } else if showsFrameBlock {
             let blockHeight: CGFloat = 11 + 17 + 28 + 12 + 11 + 17 + 20 + 8 + 28
@@ -4555,12 +4643,13 @@ public final class PropertiesPanelView: NSView {
             strokeMiterLimitPill.isHidden = true
         }
         y = closeSection(strokeBottom)
+        if showsText { y = layoutAppearance(at: y) }
 
         // MARK: EFFECTS
         effectsLabel.frame = CGRect(x: 2, y: 0, width: 160, height: Row.labelH)
         effectsAddButton.frame = CGRect(x: contentWidth - 24, y: -8, width: 24, height: 24)
         effectsAddButton.iconPadding = 6
-        let supported = node?.portableProperties["effects"] == nil || node?.effects != nil
+        let supported = node?.supportsNativeEffects ?? true
         effectsAddButton.isEnabled = supported
         effectsAddButton.toolTip = NativeCopy.text(supported ? .addEffect : .unsupportedEffects)
         let effectHeight = NativeEffectsLayout.layout(self, width: contentWidth)

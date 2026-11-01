@@ -1,11 +1,20 @@
 import Foundation
 
 extension VOONode {
+    /// JSON null is the Web editor's empty effect stack, not an unknown schema.
+    public var supportsNativeEffects: Bool {
+        guard let original = portableProperties["effects"] else { return true }
+        if original == .null { return true }
+        return original.object != nil && effects != nil
+    }
+
     /// Preserve unsupported effect kinds and extension fields while merging only
     /// the native properties that were actually changed by an explicit edit.
     func portableEffects() throws -> PortableJSONValue? {
         guard let effects else { return portableProperties["effects"] }
-        guard let original = portableProperties["effects"] else { return try .encoded(effects) }
+        guard let original = portableProperties["effects"], original != .null else {
+            return try .encoded(effects)
+        }
         guard var result = original.object else {
             throw EncodingError.invalidValue(
                 effects,

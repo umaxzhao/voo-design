@@ -765,11 +765,11 @@ public class UIParityTests {
 
         registry.register(tier: 1, feature: "UIParity-EditorChrome", name: "test_UIParity_EditorChromeGlyphs_CoverageAndRender") {
             // Every chrome glyph must be present in the catalogue...
-            try TestAssertions.assertEqual(EditorChromeGlyph.allCases.count, 26)
+            try TestAssertions.assertEqual(EditorChromeGlyph.allCases.count, 27)
             let expected: [EditorChromeGlyph] = [
                 .page, .chevronDown, .undo, .redo, .grid, .magnet, .plus, .minus,
                 .marquee, .rotate, .flipVertical, .flipHorizontal, .copy, .lock,
-                .trash, .diamond, .sparkle, .arrowUp, .eye, .more,
+                .trash, .diamond, .sparkle, .arrowUp, .eye, .eyeOff, .more,
                 .alignCenterH, .distributeH, .alignLeftH, .arrowDown,
                 .fillSwatch, .strokeSwatch
             ]
@@ -2682,7 +2682,7 @@ public class UIParityTests {
                   var rawNodes = object["nodes"] as? [[String: Any]] else {
                 throw TestFailure(message: "Serialized document has no nodes array", file: #file, line: #line)
             }
-            for key in ["fontWeight", "textAlign", "lineHeight", "letterSpacing"] {
+            for key in ["fontWeight", "align", "textAlign", "lineHeight", "letterSpacing"] {
                 rawNodes[0].removeValue(forKey: key)
             }
             object["nodes"] = rawNodes
@@ -3374,8 +3374,12 @@ public class UIParityTests {
         }
 
         registry.register(tier: 1, feature: "UIParity-Spacing", name: "test_UIParity_Spacing_ZoomBar_MetricsAndButtonFrames") {
-            try TestAssertions.assertApproxEqual(StudioBottomZoomBar.preferredWidth, 232, accuracy: 1.5, "UI_SPEC §6 zoom bar width")
-            try TestAssertions.assertApproxEqual(StudioBottomZoomBar.preferredHeight, 32, accuracy: 1.5, "UI_SPEC §6 zoom bar height")
+            try TestAssertions.assertApproxEqual(
+                StudioBottomZoomBar.preferredWidth, 201, accuracy: 1.5,
+                "Electron editor_zoom.jsx zoom bar width")
+            try TestAssertions.assertApproxEqual(
+                StudioBottomZoomBar.preferredHeight, 32, accuracy: 1.5,
+                "Electron editor_zoom.jsx zoom bar height")
 
             let bar = StudioBottomZoomBar(frame: NSRect(
                 x: 0,
@@ -3384,20 +3388,35 @@ public class UIParityTests {
                 height: StudioBottomZoomBar.preferredHeight
             ))
             bar.layoutSubtreeIfNeeded()
-            try assertFrameSize(bar, width: 232, height: 32, "Zoom bar")
+            try assertFrameSize(bar, width: 201, height: 32, "Zoom bar")
 
+            try TestAssertions.assertApproxEqual(
+                bar.undoButton.disabledIconOpacity * bar.undoButton.iconColor.alphaComponent, 0.3,
+                accuracy: 0.001)
+            try TestAssertions.assertTrue(
+                bar.moreButton.iconColor.isEqual(NSColor.black),
+                "More glyph stays black on the silver bar")
+            try TestAssertions.assertApproxEqual(
+                bar.moreButton.frame.maxX + 4, bar.bounds.width, accuracy: 0.01)
             let iconButtons = [bar.undoButton, bar.redoButton, bar.gridButton,
-                               bar.visibilityButton, bar.zoomInButton, bar.zoomOutButton]
+                bar.zoomInButton, bar.zoomOutButton,
+            ]
             for button in iconButtons {
-                try assertFrameSize(button, width: 28, height: 28, "Zoom bar icon")
+                try assertFrameSize(button, width: 24, height: 24, "Zoom bar icon")
                 try TestAssertions.assertApproxEqual(button.frame.midY, bar.bounds.midY, accuracy: 1.5, "Icon vertically centred")
             }
-            // The zoom readout is the text pill: 28pt tall, 30pt wide in the current
-            // source (UI_SPEC lists 28x28 for icon buttons only).
-            try TestAssertions.assertApproxEqual(bar.zoomLabelButton.frame.height, 28, accuracy: 1.5, "Zoom label height")
-            try TestAssertions.assertApproxEqual(bar.zoomLabelButton.frame.width, 30, accuracy: 1.5, "Zoom label width")
-            try TestAssertions.assertApproxEqual(bar.firstSeparator.frame.height, 14, accuracy: 1.5)
-            try TestAssertions.assertApproxEqual(bar.secondSeparator.frame.height, 14, accuracy: 1.5)
+            try assertFrameSize(
+                bar.visibilityButton, width: 28, height: 28, "Composed guide control")
+            bar.setVisibilityEnabled(false)
+            try TestAssertions.assertEqual(bar.visibilityButton.glyph, .eyeOff)
+            // Electron uses a 36pt minimum readout with 24pt controls.
+            try TestAssertions.assertApproxEqual(
+                bar.zoomLabelButton.frame.height, 24, accuracy: 1.5, "Zoom label height")
+            try TestAssertions.assertApproxEqual(
+                bar.zoomLabelButton.frame.width, 36, accuracy: 1.5, "Zoom label width")
+            try TestAssertions.assertApproxEqual(bar.firstSeparator.frame.height, 12, accuracy: 1.5)
+            try TestAssertions.assertApproxEqual(
+                bar.secondSeparator.frame.height, 12, accuracy: 1.5)
         }
 
         registry.register(tier: 1, feature: "UIParity-Spacing", name: "test_UIParity_Spacing_ContextIsland_MetricsAndControlHeights") {

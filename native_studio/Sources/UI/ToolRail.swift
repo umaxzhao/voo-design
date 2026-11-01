@@ -195,6 +195,8 @@ public final class ToolButton: NSButton {
         }
     }
     public var onTriggerFlyout: ((ToolButton) -> Void)?
+    public private(set) var menuTrigger: NSButton?
+    var onHoverChanged: ((Bool) -> Void)?
     private var isHovered = false
 
     public var isToolActive: Bool = false {
@@ -256,11 +258,31 @@ public final class ToolButton: NSButton {
     public override func mouseEntered(with event: NSEvent) {
         isHovered = true
         needsDisplay = true
+        onHoverChanged?(true)
     }
 
     public override func mouseExited(with event: NSEvent) {
         isHovered = false
         needsDisplay = true
+        onHoverChanged?(false)
+    }
+
+    func installMenuTrigger(onClick: @escaping () -> Void) {
+        let trigger = NativeToolMenuTrigger(identifier: toolType.accessibilityIdentifier + ".Menu")
+        trigger.onTrigger = onClick
+        addSubview(trigger)
+        menuTrigger = trigger
+        needsLayout = true
+    }
+
+    func setMenuExpanded(_ expanded: Bool) {
+        (menuTrigger as? NativeToolMenuTrigger)?.expanded = expanded
+    }
+
+    public override func layout() {
+        super.layout()
+        let y = isFlipped ? bounds.maxY - 14 : bounds.minY
+        menuTrigger?.frame = CGRect(x: bounds.midX - 7, y: y, width: 14, height: 14)
     }
 
     public override var isHighlighted: Bool {
@@ -308,7 +330,7 @@ public final class ToolButton: NSButton {
             // grid at 16pt, so draw the crop geometry the rail actually shows.
             RailGlyphDrawing.draw(.crop, in: glyphRect, color: iconColor)
         case .pen:
-            let sub = toolRailState?.penSubTool ?? .pen
+            let sub = isToolActive ? (toolRailState?.penSubTool ?? .pen) : .pen
             switch sub {
             case .pen:
                 VooIconFactory.drawPen(in: glyphRect, color: iconColor)
@@ -318,7 +340,7 @@ public final class ToolButton: NSButton {
                 VooIconFactory.drawPencil(in: glyphRect, color: iconColor)
             }
         case .shapes:
-            let sub = toolRailState?.shapeSubTool ?? .rect
+            let sub = isToolActive ? (toolRailState?.shapeSubTool ?? .rect) : .rect
             switch sub {
             case .rect:
                 VooIconFactory.drawRect(in: glyphRect, color: iconColor)
@@ -355,7 +377,7 @@ public final class ToolButton: NSButton {
         }
 
         // Family menus occupy a centred 14pt target along the bottom edge.
-        if hasSubtools {
+        if hasSubtools && menuTrigger == nil {
             let chevronColor: NSColor =
                 isToolActive
                 ? NSColor(white: 0, alpha: 0.65)
@@ -707,6 +729,7 @@ public final class ToolRailView: NSView {
     }
 
     public let state: ToolRailState
+    let familyMenuHover = NativeToolMenuHover()
     public weak var delegate: StudioDelegate?
 
     public private(set) var toolButtons: [StudioToolType: ToolButton] = [:]
@@ -799,6 +822,16 @@ public final class ToolRailView: NSView {
                 btn.onTriggerFlyout = { [weak self] button in
                     self?.showFlyout(for: button)
                 }
+                if tool == .pen || tool == .shapes {
+                    btn.installMenuTrigger { [weak self, weak btn] in
+                        guard let self, let btn else { return }
+                        self.toggleFamilyMenu(for: btn)
+                    }
+                    btn.onHoverChanged = { [weak self, weak btn] entered in
+                        guard let self, let btn else { return }
+                        self.handleFamilyHover(for: btn, entered: entered)
+                    }
+                }
                 addSubview(btn)
                 toolButtons[tool] = btn
             case .accessory(let accessory):
@@ -855,9 +888,13 @@ public final class ToolRailView: NSView {
     }
 
     @objc private func toolButtonClicked(_ sender: ToolButton) {
-        // Select always resets accessory modes through the shared domain action.
-        if sender.toolType != .move && state.activeTool == sender.toolType && sender.hasSubtools {
-            showFlyout(for: sender)
+        familyMenuHover.cancel()
+        ToolFlyoutPopover.shared.close()
+        // The main button chooses the family's default; the caret opens its menu.
+        if sender.toolType == .pen { state.selectPenSubTool(.pen) }
+        if sender.toolType == .shapes { state.selectShapeSubTool(.rect) }
+        if sender.toolType == .brush && state.activeTool == .brush {
+            onBrushSettingsRequested?(sender)
             return
         }
         state.selectTool(sender.toolType)
@@ -865,15 +902,46 @@ public final class ToolRailView: NSView {
         delegate?.didSelectTool(sender.toolType)
     }
 
-    public func showFlyout(for button: ToolButton) {
+    func toggleFamilyMenu(for button: ToolButton) {
+        familyMenuHover.cancel()
+        let menu = ToolFlyoutPopover.shared
+        if menu.isOpen && menu.currentTool == button.toolType {
+            if menu.isHoverOpened { menu.pin() } else { menu.close() }
+        } else {
+            showFlyout(for: button)
+        }
+    }
+
+    func handleFamilyHover(for button: ToolButton, entered: Bool) {
+        let menu = ToolFlyoutPopover.shared
+        familyMenuHover.cancel()
+        if entered {
+            guard !menu.isOpen || menu.currentTool != button.toolType else { return }
+            familyMenuHover.schedule(after: NativeToolMenuHover.openDelay) {
+                [weak self, weak button] in
+                guard let self, let button else { return }
+                self.showFlyout(for: button, openedByHover: true)
+            }
+        } else if menu.isHoverOpened && menu.currentTool == button.toolType {
+            scheduleFamilyMenuClose()
+        }
+    }
+
+    private func scheduleFamilyMenuClose() {
+        familyMenuHover.schedule(after: NativeToolMenuHover.closeDelay) {
+            ToolFlyoutPopover.shared.close()
+        }
+    }
+
+    public func showFlyout(for button: ToolButton, openedByHover: Bool = false) {
         if button.toolType == .brush {
             onBrushSettingsRequested?(button)
             return
         }
         let currentSub: String
         switch button.toolType {
-        case .pen: currentSub = state.currentPenSubTool
-        case .shapes: currentSub = state.shapeSubTool.rawValue
+        case .pen: currentSub = state.activeTool == .pen ? state.currentPenSubTool : ""
+        case .shapes: currentSub = state.activeTool == .shapes ? state.shapeSubTool.rawValue : ""
         case .brush: currentSub = state.selectionSubTool.rawValue
         default: currentSub = ""
         }
@@ -881,12 +949,16 @@ public final class ToolRailView: NSView {
         ToolFlyoutPopover.shared.onPenSubToolSelected = { [weak self] sub in
             guard let self = self else { return }
             self.state.selectPenSubTool(sub)
-            self.toolButtons[.pen]?.needsDisplay = true
+            self.state.selectTool(.pen)
+            self.updateSelection()
+            self.delegate?.didSelectTool(.pen)
         }
         ToolFlyoutPopover.shared.onShapeSubToolSelected = { [weak self] sub in
             guard let self = self else { return }
             self.state.selectShapeSubTool(sub)
-            self.toolButtons[.shapes]?.needsDisplay = true
+            self.state.selectTool(.shapes)
+            self.updateSelection()
+            self.delegate?.didSelectTool(.shapes)
         }
         ToolFlyoutPopover.shared.onSelectionSubToolSelected = { [weak self] sub in
             guard let self = self else { return }
@@ -894,12 +966,36 @@ public final class ToolRailView: NSView {
             self.toolButtons[.brush]?.needsDisplay = true
         }
 
-        ToolFlyoutPopover.shared.show(for: button.toolType, relativeTo: button, currentSelection: currentSub)
+        let menu = ToolFlyoutPopover.shared
+        menu.onClosed = { [weak self] in
+            guard let self else { return }
+            self.familyMenuHover.cancel()
+            for button in self.toolButtons.values { button.setMenuExpanded(false) }
+        }
+        menu.onPointerEntered = { [weak self] in self?.familyMenuHover.cancel() }
+        menu.onPointerExited = { [weak self] in
+            if menu.isHoverOpened { self?.scheduleFamilyMenuClose() }
+        }
+        menu.show(
+            for: button.toolType, relativeTo: button, currentSelection: currentSub,
+            openedByHover: openedByHover)
+        button.setMenuExpanded(menu.isOpen)
     }
 
     public func updateSelection() {
         for (tool, btn) in toolButtons {
             btn.isToolActive = (tool == state.activeTool)
+            let sub: String?
+            switch tool {
+            case .pen: sub = btn.isToolActive ? state.currentPenSubTool : "pen"
+            case .shapes: sub = btn.isToolActive ? state.shapeSubTool.rawValue : "rect"
+            default: sub = nil
+            }
+            if let sub {
+                let title = NativeToolMenuModel.title(sub)
+                btn.setAccessibilityLabel(title)
+                btn.toolTip = title
+            }
             btn.needsDisplay = true
         }
     }
