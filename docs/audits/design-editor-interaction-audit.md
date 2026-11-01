@@ -365,3 +365,33 @@ A real engine-module request held for 35s reproduces the same setup failure
 timeouts. The startup suite retains this real delayed-import/create/pixel/undo
 scenario. Application source remains identical to `6ababe5`; a fresh full gate
 is required. No historical or isolated pass completes either failed report.
+
+Final acceptance: `cf9e00d48905752fe14fb79ff16bd1280fb0c2bd` completes
+104/104 steps in one fresh run: 100 core browser suites, 4,731 unit passes,
+four skips, build/design/module checks. `voo-zoom-integrated-release.json`
+and `.log` retain the exact revision and all results. The delayed real engine
+import, creation, actual red pixel and single undo pass. Neither failed run is
+stitched into this result. Eleven additional checks remain explicitly not-run.
+
+Production-build control is the merged main parent `db4a184`; only eight
+zoom-related application files differ. The same unchanged 241.86MiB file has
+17,499 first-page layers. Run order is baseline, optimized, baseline again:
+six real Ctrl-wheel waits per run have medians 1,713.5 / 82.5 / 1,808ms.
+The optimized sample is reused for reverse comparison, not a second run.
+Recorded initial one-minute host loads are 71.79 / 51.43 / 39.36; the reverse
+baseline is slower despite its lower load. Shared-host waits include automation
+and two rAFs, are overview-only, and do not establish hardware FPS or Figma parity.
+The script's remaining exact-refinement wait is 237ms after profiling/camera
+readback. Three stable isolated 1000x800 renders at zoom .024 have zero pixel
+or channel differences. Real cameras change, document identity stays fixed,
+and both control/optimized runs have no page errors. Original file SHA-256 is
+`ddf80a00291c5c79ebc30c9b71c7c4180a74ca80311a170ed16f2aeed006b2c2`.
+
+The fixed build is pushed and deployed to la2. Canonical HTML plus eight direct
+or critical assets match bytes/SHA-256; production native-Figma fixture pixels,
+mask cache, constraints/history and actual zoom preview/exact-RGBA/readback/
+edit/undo/redo pass with no page errors. `voo-zoom-deployment-proof.json`,
+`voo-zoom-production-fidelity.json` and `voo-zoom-published-tree-proof.json`
+bind production and subsequent documentation-only merges to the verified code.
+Private evidence is in the visualization directory `canvas-zoom-optimization/`;
+no commercial design/file is committed or uploaded to production for testing.

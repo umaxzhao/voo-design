@@ -1,13 +1,12 @@
 # 项目检查总进度
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
-最近一次完成的核心检查：[db4a184](https://github.com/umaxzhao/voo-design/commit/db4a184b9bd712dbff87982ecd75a4b6a88ac826)；103 项逐项通过（含同版本启动超时后补跑），当前线上为该构建。
+最近一次完整核心验证：[cf9e00d](https://github.com/umaxzhao/voo-design/commit/cf9e00d48905752fe14fb79ff16bd1280fb0c2bd)；104/104 项通过，含 100 组核心浏览器、4731 项单测通过/4 跳过，当前线上为该固定构建。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
-## 本轮：画布缩放效率（验证中）
-- `canvas.zoom-preview`：真实 Ctrl+滚轮已复现一次缩放重复绘制隐藏测量画布 4 次。只保留可见画布绘制；重用有内存上限的画面预览，静止后恢复精确图像，取色立即刷新；编辑、图片、实时蒙版、字体、DPR/尺寸变化均使缓存失效，视频不冻结。
-- 命中区域世界边界只计算一次，去掉已被父级覆盖的子区域，保持负坐标、裁剪、空隙和 8px 点击范围；共享相机不在每个缩放事件重复刷新属性/Agent，活动文字编辑器继续实时更新。
-- 同一 test.fig 首轮实际输入等待中位数约 1222→83ms；停止后约 230ms 恢复精确画面，1000×800 首屏独立画面对比 0 像素差异。仅属记录的补丁试验，不是 GPU FPS、Figma 对等基准或全属性认证。
-- 真实缩放/精确像素/取色/编辑/撤销重做、高分屏负坐标和邻页命中、资源及生命周期定向回归通过；新增第 88 组核心浏览器登记，首个固定版本 d3bec48 的完整检查在新增连续缩放用例发现一次额外精绘后停止，原始失败保留；已修复排队输入取消，并明确字体稳定/真实滚轮突发前提，严格重绘和像素断言不变，6ababe5 重跑通过 4,730 单测及严格缩放用例，但布局夹具新建文档的默认 30s 启动等待超时；相同源码隔离业务断言全部通过。实际引擎模块延迟 35s 已复现旧夹具问题；只给独立文档启动阶段匹配已有 90s 预算，保留业务断言与失败报告，完整门禁待重新运行。[验收与证据](audits/design-editor-interaction-audit.md#canvas-zoom-efficiency--2026-11-01)。`native_studio` 排除。
-
+## 本轮：画布缩放效率（已完成声明范围）
+- `canvas.zoom-preview`：移除自由画布隐藏测量面的重复重绘；连续缩放复用有内存上限的图像，静止后精绘，取色立即刷新；图片/实时蒙版/字体/文档/尺寸/DPR 变化失效，视频不冻结。缓存世界命中边界及 Frame 祖先，减少共享相机对属性/Agent 的通知，活动文字编辑继续实时更新。
+- 同一只读 test.fig（241.86MiB、首屏 17499 层），主线父版本 db4a184 与 cf9e00d 生产构建顺序实测：未优化两次 Ctrl+滚轮等待中位数 1713.5/1808ms，优化后 82.5ms；后者同一组六次输入不重复计样。脚本收尾精绘等待 237ms，所测 1000×800/zoom .024 独立画面 0 像素差异；相机实变、文档不变、零页面异常。共享主机负载变化已记录并补反向对照；不是 GPU FPS、独立硬件或 Figma 对等基准。
+- 固定 cf9e00d **104/104 完整发布步骤、100 核心浏览器、4731 单测通过/4 跳过**，无拼接补跑；真实模块延迟 35s 的启动/创建/像素/撤销回归也通过。已推送并部署 la2；正式入口及 8 个直接/关键资源逐字节一致，线上原生 Figma 像素/蒙版/约束，以及真实缩放复用/精确 RGBA/取色/编辑/撤销重做通过，零页面异常。随后只合入文档，应用和测试与固定版本相同。
+- d3bec48 连续缩放额外重绘和 6ababe5 夹具默认 30s 启动超时两次原始失败分别保留；排队精绘可取消，文档启动使用独立 90s 预算，业务断言不变。私有 `canvas-zoom-optimization/` 保存完整报告、CPU 栈、原文件哈希、负载和像素对照。[范围与证据](audits/design-editor-interaction-audit.md#canvas-zoom-efficiency--2026-11-01)。全属性、实体触控板/IME、签名 Electron、所有效果/GPU/动画组合仍未认证；`native_studio` 排除。
 ## 本轮：Claude 自测问题单收口（已完成声明范围）
 
 - 逐项核对用户的 `78155ee` + 私人工作区清单；正式版和本地 App 分开验证，没有用一份通过结果覆盖另一份源码。
@@ -20,21 +19,16 @@
 - 本地 App 只修相关草稿：**120 项定向单测、设计检查（1427 文件）、十份旧脚本（启动超时后补跑）、约束/手机目标/统一高级面板真实交互通过**；不是整个脏工作区的发布认证。证据 `/private/tmp/voo-claude-primary-proof.json`。38 份原始快照的哈希已核验，长期备份在 `/Volumes/TD/Projects/voo_design/.local-drafts/claude-checklist-2026-11-01.tar`，其余草稿保留。
 - N1–N3 未认证：原生 Swift/签名 Electron、实体 iOS/Android/WebKit、IME/软键盘、真实登录/付费服务、多机协作与硬件性能。私人通用 `ui-audit` 及自动截图基线没有冒记为正式门禁通过；注册执行通过仍不代表全部功能、所有状态均已覆盖。
 - [问题映射、失败与验收证据](audits/panel-control-audit.md#claude-checklist-closeout)。
-
 ## 本轮：图层操作复查与多 Frame 拖动（已完成声明范围）
 - `selection.transforms` / `selection.frame-title-selection` / `selection.cancel` / `layers.duplicate-delete-lock`：旧版本 32 组图层及关联检查通过，但新增实际多选发现内容区误拖子层、标题清空多选、锁定子层时只移动外框三个缺口，均已修复并保留失败证据。新增 16 个实际交互上下文与 3 条单测；42 项定向单测通过，固定 `5cd112e` **91/91 发布步骤、87 组核心浏览器、4716 单测通过/4 跳过**，GitHub CI 通过。[PR #79](https://github.com/umaxzhao/voo-design/pull/79) 合入 `f7f782c` 且源码树一致。本地主应用仅三文件补丁、16 个隔离浏览器场景通过，其他草稿保留。已部署 la2，正式入口及 82 个加载资源 SHA-256 一致，线上六个真实多选拖动/锁定/取消场景通过，三种移动入口验证像素与一次撤销/重做，零页面异常。证据 `/private/tmp/voo-license-regression/multiframe-{release,ci,primary-proof,main-tree-proof,production-proof}.json`；功能覆盖仍部分，不认证全部蒙版/布局/锁定组合、实体输入设备或签名安装包。[范围与证据](audits/design-editor-interaction-audit.md#multi-frame-layer-operation-audit--2026-11-01)。
 ## 本轮：正式分享链接（已完成声明范围）
 - `platform.native-collaboration`：分享链接统一 `https://voo.run/editor/?r=...`，本地/桌面/扩展/预览均不泄漏私有域名；默认信令共用正式服务，保留显式本地测试覆盖。72 项定向单测及真实复制/只读切换/密钥保留浏览器回归通过，固定 `56ef64f` **91/91 发布步骤、87 组核心浏览器、4713 单测通过/4 跳过**，GitHub CI 通过。[PR #77](https://github.com/umaxzhao/voo-design/pull/77) 合入 `9f37259` 且源码树一致，本地 18 组实际函数输出及默认信令通过，查询解析草稿保留。已部署 la2；正式入口及 85 个加载资源 SHA-256 一致，真实复制/只读打开（HTTP 200）/访客转发保持房间与密钥、文档不变和零页面异常通过。正式服务接受 localhost Origin 的 WebSocket 握手，未发送 JOIN；浏览器信令使用隔离 socket，不认证真实多人 P2P/TURN。证据 `/private/tmp/voo-license-regression/canonical-share-{release,ci,primary-proof,main-tree-proof,production-proof,signaling-handshake}.json`。[范围与证据](audits/design-editor-interaction-audit.md#canonical-share-links--2026-11-01)。
-
 ## 本轮：进入编辑器的品牌 Loading（已完成声明范围）
 - `platform.loading`：去紫色转圈，改为旋转 VOO 图标 + 中性细进度条；未知进度不虚构百分比，减少动态效果保留静态提示，任务阶段说明与取消继续可用。23 项定向单测及真实冷进入/320px 双主题/旋转与减少动效/画布绘制/撤销和延迟导出通过，固定 `44e0714` 重新完整运行 **91/91 发布步骤、87 组核心浏览器、4704 单测通过/4 跳过**，GitHub CI 通过。首轮临时缓存清理断言失败原始报告保留，单独复查及同版本完整重跑通过，不拼接结果。本地仅应用本轮补丁并保留顶栏既有草稿；[PR #76](https://github.com/umaxzhao/voo-design/pull/76) 合入 `005f8e2` 且源码树一致。已部署 la2，正式入口及 83 个加载资源 SHA-256 一致；真实阻断编辑器 chunk 后的品牌 Loading、旋转/减少动效/窄屏及完成后的指针绘制、红色像素、撤销重做通过，零页面异常。证据 `/private/tmp/voo-license-regression/loading-brand-{release,release-initial,ci,primary-proof,main-tree-proof,production-proof}.json`。功能覆盖仍部分，不认证签名桌面安装包和实体移动设备。[范围与证据](audits/design-editor-interaction-audit.md#brand-loading-feedback--2026-11-01)。
-
 ## 本轮：统一圆形色块（已完成声明范围）
 - `inspector.control-hierarchy` / `inspector.unified-fill`：预设、文档颜色、填充/描边、效果、工具栏、前背景、渐变色标、网格点及设计系统调色板统一圆形；原生颜色输入补圆形裁切/正方比例。32 项定向单测及完整属性面板浏览器场景通过；固定 `92feeaa` **91/91 发布步骤、87 组核心浏览器、4692 单测通过/4 跳过**，GitHub CI 通过；本地 13 个源码文件与修复一致，其他草稿保留。[PR #75](https://github.com/umaxzhao/voo-design/pull/75) 已合入 `455cb16` 且源码树一致，已部署 la2。正式入口及 83 个加载资源 SHA-256 一致，19 个预设/文档色块、填充描边、渐变/网格点、移动端、9 个原生令牌输入和设计调色板圆形通过；实际文档颜色选择/撤销和 Escape 焦点正常，零页面异常。证据 `/private/tmp/voo-license-regression/circular-swatches-{release,ci,primary-proof,main-tree-proof,production-proof}.json`。功能覆盖仍部分，原生系统对话框、其他浏览器和签名安装包未认证。[范围与证据](audits/design-editor-interaction-audit.md#circular-color-swatches--2026-11-01)。
-
 ## 本轮：描边颜色行简化（已完成声明范围）
 - `inspector.control-hierarchy`：去掉描边色块左侧重复的填充类型图标，统一从色块进入纯色/渐变编辑。已保留修复前失败、修复后单测与真实渐变切换/Escape 焦点/一次撤销回归；固定 `62a41ee` 完成 **91/91 发布步骤、87 组核心浏览器、4691 单测通过/4 跳过**，GitHub CI 通过；本地源码补丁与该组件完全一致，其他草稿保留。已合并 [PR #74](https://github.com/umaxzhao/voo-design/pull/74) 并部署 la2，正式页面 83 个入口/加载资源 SHA-256 一致，描边色块渐变/Escape/键盘撤销和零页面异常通过。证据 `/private/tmp/voo-license-regression/stroke-row-icon-{release,production-proof,primary-proof,ci}.json`。功能覆盖仍部分，不认证签名桌面安装包或实体触屏。[范围与证据](audits/design-editor-interaction-audit.md#stroke-paint-row--2026-11-01)。
-
 ## 本轮：评论复用右侧面板（已完成声明范围）
 - `inspector.comments-panel-slot`：入口放到页面名称右侧；评论列表、加载和错误状态复用属性面板外壳，关闭恢复原面板，历史可互相替换，左右交换布局受尊重。紧凑画布用原面板区域并恢复原折叠状态；仅放置评论时加载进度显示在原按钮，不额外生成侧栏。
 - 固定 [`12b9aba`](https://github.com/umaxzhao/voo-design/commit/12b9abae4f72e987fd14230791ad4de9df37cae1) **91/91 发布步骤、87 组浏览器、4689 单测通过/4 跳过**，GitHub CI 通过。60 项定向单测及 1600/900/390px、触摸、左右换位、历史恢复、入口重挂载、原评论操作和独立模式冷加载均通过；本地 App 最小补丁与最终浏览器复查通过，其他草稿保留。[验收与原始失败](audits/nested-objects-audit.md#comments-shared-right-panel)。证据目录 `/private/tmp/voo-license-regression/`，`comments-panel-release-final.json` / `comments-panel-final-ci.json` / `comments-panel-primary-mode-final.log`。登记 76 能力，覆盖仍部分。
