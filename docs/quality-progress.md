@@ -2,7 +2,7 @@
 
 ## 本轮：Linux v1.0.0-beta.2 缺陷与补充清单集中修复与分支合入（源码完成，未推送未发布）
 
-- **协调与合入分支**：`merge/consolidate-all-branches`（基于 commit `58dd1516`，未 push，未部署）。
+- **协调与合入分支**：`merge/consolidate-all-branches`（基于 commit `739a8e24`，未 push，未部署）。
 - **并行执行模式**：使用 Orca orchestration 在多个独立 child worktree 中启动子 Agent 针对各个独立模块进行修复与回归测试，协调者逐一审查、运行测试并合并入主分支。同时并发调度 Mac Electron 原生测试 Agent 执行全量复测与截图核验。
 - **修复项与模块验证**：
   1. `worker-psd-import` (PSD 位图水合与持久化)：`psd_to_voo.js` 与 `project_io.js` 对 PSD 导入产出的图层位图 assets 建立与 images 统一的水合映射，修复重新打开与存盘位图占位问题。定向单测 `tests/unit/psd_pipeline_reopen.test.js` (5/5 通过)。
@@ -36,13 +36,15 @@
      - `editor_pointer_hit_test.js`: 实现并暴露 `hasHandleUnder(event)`，统一覆盖单选/多选手柄、顶部旋转 Grip、四角旋转光环 (Corner Ring)、圆角半径手柄与裁切手柄；
      - `editor_pointer.js` / `use_editor_canvas_gestures.js`: 完善 `api.hasHandleUnder` 绑定与卸载生命周期，并防止画板外缘手柄误触发自由平移；
      - 定向单测 `tests/unit/artboard-body-gesture.test.js` (12/12), `tests/unit/frame_tool_creation_pan.test.js` (10/10), `tests/unit/mac_qa_interaction_fixes.test.jsx` (11/11 通过)。
-- **Mac Electron 原生复测证据（revision 58dd1516 终态确认）**：
-  - 运行 `npm run electron:dev` 与 Playwright 自动化驱动原生窗口（完整测试报告记录于 `~/Desktop/voo-mac-retest/REPORT.md`，新增 58dd1516 专属章节与配套 85 张现场截图在 `~/Desktop/voo-mac-retest/shots/`）。
-  - **旋转手柄 20 组全量通过**：证实 Rectangle/Ellipse/Polygon/Star 四类形状的顶部 grip 与 NW/NE/SE/SW 四角外侧旋转手柄拖拽后均产生有效非零旋转角（`abs(rotation)>1`），手柄不再被画板手势劫持。
-  - **SVG 指定四类特征通过**：圆角 clip 采样为 0、mask 复合孔洞为 0、径向渐变单通道差 ≤1、文字 Design 1 保留 text 节点并可读。
-  - **tdot 新发现全部通过**：独占 profile 冷启动草稿自动恢复（Restore draft 恢复同一 UUID 与尺寸矩形）、多选拖入 Frame（两矩形 parentId 均变目标 Frame，支持单步撤销重做）、叠层 Esc 优先级（先关命令面板、后关底层 Browser）、macOS 平台标识（显示 `[macOS 原生]`）。
-  - **旧报告重点交互修复通过**：图层行右键菜单 Esc 即时关闭、Ctrl+Shift+L 锁定/解锁、Combine 检查器显示、200+50 表达式提交后 W=250、首页卡片右键菜单弹出与关闭、Missing font 警示标识。
-  - **边界与限制明确保留**：严格最终包围盒网格条件在 Polygon/Star 因路径收紧失败，Arrow/Line 含描边外框因 1px 描边扩张 0.5px 但几何端点 `(96,96)/(224,192)` 完全吸附；原项目封面与 Design7 恢复仍受限于旧测试夹具与缺少独立异色参考；真实付费/API/流式生成等服务场景未认证。
+  16. `worker-polygon-star-grid-snap` (Polygon 与 Star 新建几何包围盒网格精确吸附，commit `739a8e24`)：
+     - `src/canvas/editor/shape_geometry.js`: 实现 `fitPointsToBox`，将规则多边形（`regularPolygonPoints`）与星形（`starPoints`）顶点坐标严格平移并缩放贴合目标 frame，消除内接椭圆导致的几何尺寸收缩（如正六边形 0.866 宽度缩水问题）；极值点做 1e-12 精度对齐；重构 `withPolyParams` 避免边数/内径拖动时尺寸漂移；
+     - 定向单测 `tests/unit/snap_grid_shape_drawing.test.js` (17/17 通过)，证实 8px 与 32px 网格下新建多边形/星形几何包围盒严格整除网格。
+- **Mac Electron 原生复测证据（revision 739a8e24 终态确认）**：
+  - 运行 `npm run electron:dev` 与原生 Electron 43.4.0（完整测试报告记录于 `~/Desktop/voo-mac-retest/REPORT.md`，新增 739a8e24 专属章节与配套截图在 `~/Desktop/voo-mac-retest/shots/`）。
+  - **Polygon / Star 网格几何吸附全量通过**：证实 32px 网格下拖拽 `(97,97) -> (223,191)` 创建后，Polygon 六边形与 Star 五角星的几何包围盒 `[geomX, geomY, geomW, geomH]` 严格为 `[96, 96, 128, 96]`，各项模 32 严格为 0；Arrow 与 Line 世界端点严格对齐 `(96,96)` 与 `(224,192)`，1px 描边产生的 0.5px 外扩符合预期。
+  - **首页项目封面缩略图动态生成全量通过（全新隔离 profile 与工作区）**：使用全新隔离 profile 与独立工作区目录，准备 3 个无内嵌预览的真实矢量 `.voo` 项目与 1 个空工程；首次加载与冷启动下，3 个带视觉矢量项目均成功生成并渲染有效 PNG 缩略图（`data:image/png`，`complete=true`，`naturalWidth > 0`，实测包含 53-142 种独立像素颜色），空工程正确回退为 `.lucide-file-image` 占位图标。
+  - **前序 58dd1516 验证项保持稳定**：旋转手柄 20 组全量通过、SVG 指定四类特征通过、草稿自动恢复、多选拖入 Frame、叠层 Esc 优先级、macOS 原生平台标识。
+  - **边界与限制明确保留**：标题栏 Open/Save 与 layout-1.fig 依用户指令暂不处理；真实付费/API/流式生成等外部云端服务场景未认证。
 - **Linux QA 交付材料同步 (18:30 检查点)**：
   - 最新 DOCX v4 (`/Users/tt/Desktop/voo-linux-qa/VOO_Design_Linux_QA_2026-11-01.docx`) 及补充包 ZIP v3 (`/Users/tt/Desktop/voo-linux-qa/supplement-v3/`) 已完整存档并对账。
   - 原 34 组补测已收口，确认 Linux QA 测试基线为 GitHub Release v1.0.0-beta.2 固定包；新确认的“自动恢复草稿丢失最新画布内容”、“多选拖入Frame重挂”、“叠层 Esc 优先级”均已在本分支完全定位并提供源码与单元测试覆盖。
