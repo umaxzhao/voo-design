@@ -383,10 +383,16 @@ is claimed; raw samples remain retained. These CPU probes are not UI latency.
 The fixed candidate is deployed and production-generated native Figma pixels,
 mask/variable/constraint/history checks, both worker subscription modes, actual
 selection with zero model builds, and zoom/exact-readback/undo pass. Eight
-entry/critical assets match the verified build. Direct main push was rejected
-by newly required PR/build rules; deployment had started before its result
-was confirmed. Preserve that ordering and finish required CI/PR synchronization;
-source/main and final deployment receipts are recorded independently.
+entry/critical assets match the verified build. The initial direct-main push
+was rejected after deployment had started. PR #82 then passed required build,
+merged as `b550177`, and was redeployed with identical verified application
+sources; initial/final publication receipts preserve that ordering.
 Private `layer-import-optimization/` retains gate, benchmark, production and
 GitHub evidence. `native_studio`, signed installers, physical input, all fonts/
 pages/effects and Figma parity remain outside this acceptance.
+
+## History asset retention
+
+The next isolated implementation caches history image/mask sets and updates
+reference counts as scenes enter or leave. See [acceptance and measurements](history-asset-retention.md).
+Autosave serialization, precise-pass index reuse and global bitmap budgets remain pending.
