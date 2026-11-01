@@ -64,7 +64,9 @@ export async function assembleDesktopRelease({ inputDir, outputDir, version, rev
     }
   }
   for (const target of DESKTOP_RELEASE_TARGETS) {
-    const prefix = `VOO-Design-${version}-${target.platform}-${target.arch}`;
+    // AppImage uses the GNU architecture name; Node and smoke receipts use x64.
+    const artifactArch = target.platform === "linux" && target.arch === "x64" ? "x86_64" : target.arch;
+    const prefix = `VOO-Design-${version}-${target.platform}-${artifactArch}`;
     const suffixes = target.platform === "linux" ? [".AppImage"] : target.platform === "mac"
       ? [".dmg", ".zip"] : ["-setup.exe", "-portable.exe"];
     for (const suffix of suffixes) assert.ok(assets.has(prefix + suffix), `Missing installer: ${prefix + suffix}`);

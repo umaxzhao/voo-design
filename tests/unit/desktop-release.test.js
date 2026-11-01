@@ -21,7 +21,9 @@ async function fixture() {
     const directory = path.join(inputDir, `${target.platform}-${target.arch}`); await mkdir(directory);
     const report = { ...target, version, revision, packaged: true, checks: ["pointer", "filesystem", "cold-open"], errors: [] };
     await writeFile(path.join(directory, `${target.platform}-${target.arch}.json`), JSON.stringify(report));
-    const prefix = `VOO-Design-${version}-${target.platform}-${target.arch}`;
+    // electron-builder's AppImage target uses the GNU CPU name in filenames.
+    const artifactArch = target.platform === "linux" ? "x86_64" : target.arch;
+    const prefix = `VOO-Design-${version}-${target.platform}-${artifactArch}`;
     const suffixes = target.platform === "mac" ? [".dmg", ".zip"] : target.platform === "win" ? ["-setup.exe", "-portable.exe"] : [".AppImage"];
     const entries = [];
     for (const suffix of suffixes) {
@@ -51,6 +53,9 @@ describe("desktop release acceptance", () => {
   it("merges both Mac update payloads without clobbering either architecture and verifies every checksum", async () => {
     const options = await fixture(); const result = await assembleDesktopRelease(options);
     expect(result.platforms).toHaveLength(4);
+    expect(result.platforms).toContain("linux/x64");
+    const linux = yaml.load(await readFile(path.join(options.outputDir, "beta-linux.yml"), "utf8"));
+    expect(linux.files[0].url).toBe(`VOO-Design-${version}-linux-x86_64.AppImage`);
     const metadata = yaml.load(await readFile(path.join(options.outputDir, "beta-mac.yml"), "utf8"));
     expect(metadata.files).toHaveLength(4);
     expect(metadata.path).toContain("-mac-x64.zip");
@@ -74,7 +79,7 @@ describe("desktop release acceptance", () => {
   });
   it("rejects corrupt update payloads", async () => {
     const options = await fixture();
-    await writeFile(path.join(options.inputDir, `linux-x64/VOO-Design-${version}-linux-x64.AppImage`), "corrupt");
+    await writeFile(path.join(options.inputDir, `linux-x64/VOO-Design-${version}-linux-x86_64.AppImage`), "corrupt");
     await expect(assembleDesktopRelease(options)).rejects.toThrow("Corrupt update payload");
   });
   it("rejects missing installer formats even when every smoke report exists", async () => {
