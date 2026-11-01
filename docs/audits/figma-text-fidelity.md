@@ -21,6 +21,12 @@ wrapping. The initial baseline was 025058c7. During this task, upstream merged
 the consolidation branch in e14ba19f. This repair was synchronized onto that
 main revision; earlier targeted results do not certify the updated source.
 
+Independent real-glyph pixel comparison also caught a redundant leading CLOSE
+in native glyph streams. Canvas command construction ignores it, but an SVG
+Path2D string starting with Z paints nothing. The converter now omits only
+closes before the first MOVE; the browser fixture retains that native prefix.
+The failing real-glyph comparison is kept separately from final acceptance.
+
 ## Repair
 
 Keep the node editable, its source family and native text/style records, plus

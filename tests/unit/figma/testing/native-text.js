@@ -1,7 +1,7 @@
 export function mixedNativeText() {
   const bytes = [];
   const view = new DataView(new ArrayBuffer(4));
-  for (const [command, ...values] of [[1, 0, 0], [2, 0.5, 1], [2, 1, 0], [0]]) {
+  for (const [command, ...values] of [[0], [1, 0, 0], [2, 0.5, 1], [2, 1, 0], [0]]) {
     bytes.push(command);
     for (const value of values) {
       view.setFloat32(0, value, true);
