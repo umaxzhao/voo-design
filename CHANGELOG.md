@@ -14,6 +14,8 @@
 
 ## 1.0.0
 
+- Move AI Repair inference into a cancellable Worker, preserve healing mode and prevent stale image writes. Probe real GPU support, retain compatible local inference and require valid hosted ORT module/WASM MIME responses before publishing the editor entry point.
+
 - Repair independent constraint-diagram hit targets, 48px compact navigation and command targets, mobile Browser split layout and file-card opening/Settings clearance. Restore ten self-starting browser regressions without fixed ports or workspace paths.
 - Preserve Canvas text state during letter-spacing capability detection so imported headings retain their browser line layout. Keep legacy room share URLs through scoped nginx redirects with configuration rollback.
 

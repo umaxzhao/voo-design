@@ -71,6 +71,11 @@ engine. The enumerated tool IDs and real menu submodes are different inventories
   alone cannot select the GPU model. The runtime copy/package checks include
   ORT's asyncify assets. Model downloads accept AbortSignal and cache one
   canonical entry per storage tier while still reading legacy aliases.
+  The actual hosted run then exposed a second boundary: nginx returned `.mjs`
+  and `.wasm` as generic binary data. A scoped `/editor/ort/` location supplies
+  JavaScript/WASM MIME types, returns 404 for missing modules and revalidates
+  unversioned runtime assets. Deployment verifies all six HTTP responses and a
+  missing-module 404 before publishing the new HTML entry point.
 - Reactivating the healing toolbar reset the chosen mode to AI Repair; it now
   preserves the user's selected Spot/Patch/Clone/AI mode.
 

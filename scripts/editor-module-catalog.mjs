@@ -224,6 +224,8 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/*repair*", "src/canvas/raster/*",
       "src/canvas/editor/model_asset_loader.js", "tests/unit/model_asset_loader.test.js",
       "tests/unit/ai-repair-worker-client.test.js", "tests/unit/ai-repair-tool.test.js", "tests/unit/ai-repair-backend.test.js", "tests/unit/healing-tool-menu.test.jsx",
+      "scripts/deploy-editor.sh", "scripts/deploy-editor-runtime.sh", "scripts/nginx-editor-runtime.conf",
+      "scripts/verify-editor-runtime.mjs", "tests/unit/editor-runtime.test.js",
       "src/canvas/components/ai_repair_download_dialog.jsx", "tests/unit/ai_repair_download_dialog.test.jsx",
     ],
     related: [
