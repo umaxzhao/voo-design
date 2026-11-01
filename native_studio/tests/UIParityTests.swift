@@ -3312,11 +3312,11 @@ public class UIParityTests {
             guard let document = inspector.propertiesScrollView.documentView else {
                 throw TestFailure(message: "Properties scroll view has no document view", file: #file, line: #line)
             }
-            // The document height is the measured content height; it must at least
-            // cover the legacy 520pt floor and never be shorter than the clip box.
-            try TestAssertions.assertTrue(
-                document.frame.height >= PropertiesPanelView.preferredContentHeight - 1.5,
-                "Properties document height covers the content floor (actual \(document.frame.height))"
+            // Collapsed, unconfigured sections do not impose the old fixed floor.
+            // Keep the content measured and ensure the clip view never truncates it.
+            try TestAssertions.assertApproxEqual(
+                document.frame.height, max(inspector.propertiesPanel.contentHeight, 240), accuracy: 1.5,
+                "Properties document tracks measured content after collapsing empty sections"
             )
             try TestAssertions.assertTrue(
                 document.frame.height >= inspector.propertiesScrollView.contentView.bounds.height - 1.5,
