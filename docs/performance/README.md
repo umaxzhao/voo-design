@@ -393,6 +393,6 @@ pages/effects and Figma parity remain outside this acceptance.
 
 ## History asset retention
 
-The next isolated implementation caches history image/mask sets and updates
+The implementation caches history image/mask sets and updates
 reference counts as scenes enter or leave. See [acceptance and measurements](history-asset-retention.md).
 Autosave serialization, precise-pass index reuse and global bitmap budgets remain pending.
