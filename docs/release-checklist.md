@@ -33,6 +33,18 @@ previews and remaining trust/installer/service/upgrade contexts are disclosed.
 No workflow automatically publishes a stable release or overwrites an existing
 one. Current execution/revision is maintained in [quality-progress.md](quality-progress.md).
 
+Verified candidate: [`eab3bea`](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78).
+[The complete run](https://github.com/umaxzhao/voo-design/actions/runs/41281003764)
+passed 105/105 steps, 101 core browser suites, 4,781 unit tests (4 skipped), design
+checks and all four native targets. The reviewed draft contains seven payloads,
+three update manifests and four matching receipts. Its 21 checksummed assets,
+including release notes and the full Web report, match GitHub's server digests.
+The [Beta page](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.1)
+is the authority for publication status. Packages remain unsigned/not notarized;
+manual installation, OS trust, older-version upgrades and live services remain
+unverified. Eleven additional suites remain not-run; coverage remains partial.
+Documentation-only follow-ups do not change the recorded binary source revision.
+
 ## Pre-Release Phase
 
 ### Version & Metadata
