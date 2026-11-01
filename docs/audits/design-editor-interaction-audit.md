@@ -242,3 +242,15 @@ keyboard events to verify Ctrl-drag changes the curve handles, preserves anchor
 count, and undoes/redoes as one document operation. The same suite retains
 midpoint insertion checks. This does not certify OS-level Cmd interception,
 physical stylus/touch input or pixel/export parity.
+
+## Error recovery visual integration — 2026-11-02
+
+- Capability: `platform.error-recovery`; application-level React boundary only.
+- Preserve existing localized recovery wording and error capture. Use the canonical VOO mark and shared buttons, neutral page surface, and one details entry. Copy diagnostics lives inside the collapsed details area. Explicit copy-button naming keeps its live feedback accessible.
+- Entry/state assertions: a real child render exception reaches the actual boundary; two default actions; details toggle and sanitized clipboard report; actual reload navigation resets disclosure. Chinese and English are exercised.
+- Visible/context assertions: 1440px, 768px and 390px layouts; long diagnostics do not cause horizontal page overflow; mobile actions are at least 48px high; keyboard focus is visible; light surface follows the theme. No document edits or history operations occur.
+- Evidence: `tests/e2e/app-error-recovery.e2e.mjs`, mounted through `app-error-recovery-harness.jsx`. Targeted execution passed; screenshots `/private/tmp/voo-error-recovery-{desktop,390-details,light}.png`, log `/private/tmp/voo-error-recovery-browser-settled.log`. Clean revision `a7abc5b60cbd82e848d08aece1fc4b85af9aec62` passed all 106 release steps, including 4851 unit assertions (4 skipped) and 102 registered browser suites; `/private/tmp/voo-error-recovery-release-verified.json`. Eleven additional checks remain not-run. The subsequent receipt changes documentation only.
+- Baseline reproduction: `/private/tmp/voo-error-recovery-baseline.log` fails the default-action assertion (3 versus 2). Earlier sandbox-limited and incomplete attempts remain recorded separately; `/private/tmp/voo-error-recovery-release-final.json` retains the unsettled theme-color failure and cancelled in-flight image suite. Waiting for the shared button color transition preserves the exact color assertion.
+- Coverage remains partial: browser Chromium only; native crash/restart, actual draft recovery, clipboard denial, screen-reader hardware and other browsers are not certified. This change does not diagnose or fix the exception that originally triggered the user's screenshot.
+
+- Current-main integration evidence: clean source `c1a30ae771527efc12765f75d01f3e32f2f4a4db` independently passed 119/119 steps, 4902 unit assertions (4 skipped) and 115 core browser suites with browser concurrency 1; nine standalone checks remain not-run. `/private/tmp/voo-error-recovery-integration-serial.json` and its `.log` retain the complete execution. The earlier parallel integration failure in `canvas-zoom-preview` is preserved in `/private/tmp/voo-error-recovery-integration-release.json`; its unchanged standalone assertions passed in `/private/tmp/voo-error-recovery-zoom-retry.log`. No zoom implementation or assertion was changed. Post-gate receipts change documentation only.
