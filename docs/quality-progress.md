@@ -1,11 +1,13 @@
 # 项目检查总进度
 
-## 空文件默认 Frame（2026-11-02，最终验证中）
+## 空文件默认 Frame（2026-11-02）
 
 - `documents.empty-canvas`：空文件、新建和载入前默认页面统一为空的无限画布，不自动增加 Frame；同时去掉根画布的绿色边界线。已有空 Frame、有内容的旧文件及其图层关系保留。
 - 修复前真实冷启动为 1 个图层，单测和 3684 像素的页面边框失败均保留。真实导入、ZIP 重开、后续新建、显式 Frame 和旧内容迁移的针对性检查通过；空画布实际为零图层、零选中、零 Frame 标题及零边框像素。
 - 删除默认 Frame 后还暴露了空白区域拖动变成平移的问题；已让创建工具接收整个工作区，Select/Hand 保留原路由。真实连续绘制、撤销，以及完整创建/保存/冷重开检查通过；依赖 Frame 的夹具改为显式创建，不删除原功能断言。
-- 完整固定源码门禁和线上验收待完成，不沿用上一轮字体版的通过。未发布桌面安装包。[详细范围](audits/design-editor-interaction-audit.md#empty-canvas-initialization--2026-11-02)。
+- 固定干净源码 [`308b2ab2`](https://github.com/umaxzhao/voo-design/commit/308b2ab2e985b062f98a6ad28add91848e0f3e4e) **121/121 步完整门禁通过**：117 核心浏览器、4962 单测通过/4 历史跳过、607 文件通过/3 跳过、1481 文件设计检查、构建及 29 文件格式检查通过；10 独立检查本地未执行，功能覆盖仍部分。
+- 已用同一验收构建更新[网页预览](https://voo.run/editor/)，保留回滚备份；正式 HTML、7 个入口/关键资源及实际加载的 77 个不同 JS/CSS 字节一致。线上新建、四类空文件、保留原有 Frame 和旧内容检查通过，零页面异常。[PR #93](https://github.com/umaxzhao/voo-design/pull/93)、[CI](https://github.com/umaxzhao/voo-design/actions/runs/41348044318)。
+- 原始失败、旧默认 Frame 断言冲突及两次夹具错误均保留。旧文件中已经保存的 Frame 不按名称/是否为空猜测删除；本轮未发布桌面安装包。[详细范围](audits/design-editor-interaction-audit.md#empty-canvas-initialization--2026-11-02)。
 
 ## NBA 文件字号、缺失字体外观与性能（2026-11-02）
 

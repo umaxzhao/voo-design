@@ -283,8 +283,9 @@ workspace chrome drew an unrelated page-edge outline on unbounded roots.
   route. Versionless scene fixtures were rejected by native deserialization;
   valid v2 fixtures now include scene version/type/ID and await the target engine.
   These harness failures are kept separately from the original product failures.
-- Targeted checks passed; clean committed full gate and public production
-  receipts remain pending. Raw evidence: `/tmp/voo-empty-canvas-*.{log,json}`.
+- Exact clean source `308b2ab2e985b062f98a6ad28add91848e0f3e4e` passed **121/121** release steps, 117 core browser suites, 4962 units / 4 historical skips, 607 unit files / 3 skipped, build and 1481-file design lint. Twenty-nine task JS/JSX files passed semicolon/final-newline formatting checks. No functional assertions were skipped for this change. Ten standalone checks remain not-run locally; functional coverage remains partial.
+- The same verified production artifact was deployed with the project script and a server rollback backup. Canonical HTML plus 7 entry/critical resources match local SHA-256. Real online New and native import checks passed with zero layers/selection/Frame labels/overlay pixels; explicit Frame and legacy content remain. 77 actually loaded distinct JS/CSS assets match the verified build, with zero page errors.
+- [PR #93](https://github.com/umaxzhao/voo-design/pull/93), [source CI](https://github.com/umaxzhao/voo-design/actions/runs/41348044318). Raw gate, original failures, scripts and production byte receipts: `/tmp/voo-empty-canvas-*` and local artifact directory `/Users/tt/.codex/visualizations/2026/10/26/01a175a0-cb5b-7133-9850-c4a861a4b01d/empty-canvas/`. Later documentation receipts do not change this application/test source.
   The first full gate on `f9bf3204` retained four stale default-Frame assertions:
   empty-page cases now require zero nodes; workspace-paint persistence uses an
   explicit authored Frame and retains paint, reopen and nonmutation assertions.
@@ -318,6 +319,6 @@ bounded artboards retain it. The unchanged QA pointer scenario, cold-New native
 file scenario, and complete creation/save/cold-reopen flow all passed together
 at three-browser concurrency after these repairs. Units assert synchronous
 notification, unchanged-mode deduplication, unsubscribe/disposal, invalid
-subscriptions, and both empty/populated root gesture ownership. The registered
-full gate must certify the final committed source afresh; preceding failed
-reports remain retained rather than rewritten as passes.
+subscriptions, and both empty/populated root gesture ownership. The final gate above
+certifies only its recorded source; preceding failed reports remain retained
+rather than rewritten as passes.
