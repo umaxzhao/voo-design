@@ -181,7 +181,7 @@ export const EDITOR_MODULES = [
     ],
     features: [
       "vectors.import-subscriptions", "vectors.path-edit", "vectors.midpoint-insertion", "vectors.booleans", "vectors.stroke",
-      "vectors.format-losses", "vectors.native-fig-properties",
+      "vectors.format-losses", "vectors.native-fig-properties", "vectors.modifier-bend",
     ],
     suites: [
       "pen-midpoint-insertion", "boolean-stroke-export", "boolean-resize", "destructive-boolean", "image-svg-parity", "figma-import-fidelity",
