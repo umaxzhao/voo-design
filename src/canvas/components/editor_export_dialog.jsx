@@ -9,14 +9,67 @@ import { CAPABILITY, isCapabilitySupported } from "../platform_capabilities.js";
 import { useExportDialogKeyboard } from "./editor_hooks/use_export_dialog_keyboard.js";
 import ScrubField from "./scrub_field.jsx";
 
-const FORMATS = [
-  ["png", "editor.exportPng"],
-  ["jpeg", "editor.exportJpeg"],
-  ["webp", "editor.exportWebp"],
-  ["svg", "editor.exportSvg"],
-  ["fig", "editor.exportFigma"],
-  ["psd", "editor.exportPsd"],
-  ["pdf", "editor.exportPdf"],
+export async function serializeVooToFig(doc, options = {}) {
+  const { buildFigContainer } = await import("../figma/voo-to-fig.js");
+  const { createFigmaExportTemplate } = await import("../figma/figma-schema.js");
+  const { serializeFigArchive } = await import("../figma/fig-file.js");
+  const template = await createFigmaExportTemplate();
+  const name = options.name || doc?.name || "Page 1";
+  const container = buildFigContainer(doc, template, { pageName: name });
+  return serializeFigArchive(container, { name });
+}
+
+export const FORMATS = [
+  Object.assign(["png", "editor.exportPng"], {
+    id: "png",
+    label: "editor.exportPng",
+    extension: "png",
+    mimeType: "image/png",
+    description: "Export as PNG image",
+  }),
+  Object.assign(["jpeg", "editor.exportJpeg"], {
+    id: "jpeg",
+    label: "editor.exportJpeg",
+    extension: "jpg",
+    mimeType: "image/jpeg",
+    description: "Export as JPEG image",
+  }),
+  Object.assign(["webp", "editor.exportWebp"], {
+    id: "webp",
+    label: "editor.exportWebp",
+    extension: "webp",
+    mimeType: "image/webp",
+    description: "Export as WebP image",
+  }),
+  Object.assign(["svg", "editor.exportSvg"], {
+    id: "svg",
+    label: "editor.exportSvg",
+    extension: "svg",
+    mimeType: "image/svg+xml",
+    description: "Export as SVG vector",
+  }),
+  Object.assign(["psd", "editor.exportPsd"], {
+    id: "psd",
+    label: "editor.exportPsd",
+    extension: "psd",
+    mimeType: "image/vnd.adobe.photoshop",
+    description: "Export as Photoshop PSD file",
+  }),
+  Object.assign(["pdf", "editor.exportPdf"], {
+    id: "pdf",
+    label: "editor.exportPdf",
+    extension: "pdf",
+    mimeType: "application/pdf",
+    description: "Export as PDF document",
+  }),
+  Object.assign(["fig", "Figma (.fig)"], {
+    id: "fig",
+    label: "Figma (.fig)",
+    extension: "fig",
+    mimeType: "application/octet-stream",
+    description: "Export as Figma .fig file",
+    serializer: serializeVooToFig,
+  }),
 ];
 
 /** Mirrors exportEditorImage: raster scales; vector and web formats keep document size. */
@@ -186,7 +239,7 @@ export default function EditorExportDialog({
                 onClick={() => onFormat(id)}
                 className={`flex min-h-8 [@media(pointer:coarse)]:min-h-[44px] items-center justify-between rounded-lg px-3 py-2 text-left text-[11px] outline-none focus-visible:ring-1 focus-visible:ring-[#a7ffd4]/40 ${format === id ? "bg-white/[0.12] text-white" : "text-neutral-300 hover:bg-white/[0.06]"}`}
               >
-                <span>{t(label)}</span>
+                <span>{typeof label === "string" && label.startsWith("editor.") ? t(label) : (t(label) || label)}</span>
                 {format === id && (
                   <span aria-hidden="true" className="text-neutral-200">
                     ✓

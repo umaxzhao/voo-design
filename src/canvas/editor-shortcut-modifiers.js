@@ -1,9 +1,9 @@
-import { TOOL, bracketBrushAdjustment } from './editor/editor_constants.js';
+import { TOOL } from './editor/editor_constants.js';
 import { getNodeWarpTool } from './editor/perspective_geometry.js';
 import { executeEditorCommand } from './editor/command_table.js';
 /** Return true when this ordered shortcut stage owns the event. */
 export function handleModifierShortcut(event, context) {
-  const { engine, toolRef, targetNodeIdRef, onSaveAs, onSave, onApply, onOpen, onDuplicateCanvas, onZoomToHundred, onTool, onNew, onZoomStep, onZoomToFit } = context;
+  const { engine, toolRef, targetNodeIdRef, onSaveAs, onSave, onApply, onOpen, onDuplicateCanvas, onZoomToHundred, onTool, onNew, onZoomStep, onZoomToFit, onToggleAgent } = context;
   if (event.metaKey || event.ctrlKey) {
     switch (event.code) {
       case "KeyU":
@@ -127,6 +127,14 @@ export function handleModifierShortcut(event, context) {
         return true;
       }
       case "KeyJ":
+        if (event.altKey) {
+          event.preventDefault();
+          if (onToggleAgent) onToggleAgent();
+          else if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("voo:toggle-agent-panel"));
+          }
+          return true;
+        }
         event.preventDefault();
         if (engine.getPixelSelection?.()) {
           void executeEditorCommand("layer_via_copy", engine, {
@@ -140,70 +148,14 @@ export function handleModifierShortcut(event, context) {
         }
         engine.duplicateSelected();
         return true;
-      case "BracketRight": {
+      case "BracketRight":
         event.preventDefault();
-        const edit = engine.getMaskEdit?.();
-        const brushArmed =
-          toolRef.current === TOOL.BRUSH ||
-          toolRef.current === TOOL.ERASER ||
-          toolRef.current === TOOL.HEALING;
-        if (edit || brushArmed) {
-          const adjustment = bracketBrushAdjustment({
-            maskEditActive: Boolean(edit),
-            brushTool: brushArmed,
-            shiftKey: event.shiftKey,
-            grow: true,
-          });
-          if (adjustment) {
-            if (adjustment.target === "mask") {
-              engine.setMaskBrushSize(edit.size + adjustment.delta);
-            } else if (adjustment.target === "hardness") {
-              engine.setBrushHardness(
-                engine.getBrushHardness() + adjustment.delta,
-              );
-            } else {
-              engine.setBrushWidth(
-                engine.getBrushWidth() + adjustment.delta,
-              );
-            }
-            return true;
-          }
-        }
-        engine.bringToFront();
+        engine.bringToFront?.();
         return true;
-      }
-      case "BracketLeft": {
+      case "BracketLeft":
         event.preventDefault();
-        const edit = engine.getMaskEdit?.();
-        const brushArmed =
-          toolRef.current === TOOL.BRUSH ||
-          toolRef.current === TOOL.ERASER ||
-          toolRef.current === TOOL.HEALING;
-        if (edit || brushArmed) {
-          const adjustment = bracketBrushAdjustment({
-            maskEditActive: Boolean(edit),
-            brushTool: brushArmed,
-            shiftKey: event.shiftKey,
-            grow: false,
-          });
-          if (adjustment) {
-            if (adjustment.target === "mask") {
-              engine.setMaskBrushSize(edit.size + adjustment.delta);
-            } else if (adjustment.target === "hardness") {
-              engine.setBrushHardness(
-                engine.getBrushHardness() + adjustment.delta,
-              );
-            } else {
-              engine.setBrushWidth(
-                engine.getBrushWidth() + adjustment.delta,
-              );
-            }
-            return true;
-          }
-        }
-        engine.sendToBack();
+        engine.sendToBack?.();
         return true;
-      }
       case "Digit0":
         event.preventDefault();
         if (onZoomToHundred) onZoomToHundred();

@@ -1160,6 +1160,7 @@ export default function ImageEditor({ agentVisible = false, visible = true }) {
     onToggleSnapToGrid: toggleSnapToGrid,
     onToggleComments: toggleCommentsPanel,
     onToggleCommentMode: toggleCommentMode,
+    onToggleAgent: () => window.dispatchEvent(new CustomEvent("voo:toggle-agent-panel")),
     onToggleCommandPalette: toggleCommandPalette,
     onOpenFindReplace: openFindReplace,
     selectedGuideId,
