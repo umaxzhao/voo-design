@@ -398,3 +398,12 @@ edit/undo/redo pass with no page errors. `voo-zoom-deployment-proof.json`,
 bind production and subsequent documentation-only merges to the verified code.
 Private evidence is in the visualization directory `canvas-zoom-optimization/`;
 no commercial design/file is committed or uploaded to production for testing.
+
+## Error recovery visual integration — 2026-11-02
+
+- Capability: `platform.error-recovery`; application-level React boundary only.
+- Preserve existing localized recovery wording and error capture. Use the canonical VOO mark and shared buttons, neutral page surface, and one details entry. Copy diagnostics lives inside the collapsed details area. Explicit copy-button naming keeps its live feedback accessible.
+- Entry/state assertions: a real child render exception reaches the actual boundary; two default actions; details toggle and sanitized clipboard report; actual reload navigation resets disclosure. Chinese and English are exercised.
+- Visible/context assertions: 1440px, 768px and 390px layouts; long diagnostics do not cause horizontal page overflow; mobile actions are at least 48px high; keyboard focus is visible; light surface follows the theme. No document edits or history operations occur.
+- Evidence: `tests/e2e/app-error-recovery.e2e.mjs`, mounted through `app-error-recovery-harness.jsx`. Targeted execution passed; screenshots `/private/tmp/voo-error-recovery-{desktop,390-details,light}.png`, log `/private/tmp/voo-error-recovery-browser-fixed.log`. Complete clean-revision evidence will be recorded after release verification.
+- Coverage remains partial: browser Chromium only; native crash/restart, actual draft recovery, clipboard denial, screen-reader hardware and other browsers are not certified. This change does not diagnose or fix the exception that originally triggered the user's screenshot.

@@ -270,6 +270,8 @@ export const EDITOR_MODULES = [
       "scripts/notarize.cjs", "scripts/signing-env.mjs", "tests/unit/mac-signing.test.js",
       "tests/unit/desktop-release.test.js", "tests/unit/code_signing_stubs.test.js",
       "tests/unit/native-close-guard.test.js", "tests/unit/electron_cli_bridge.test.js",
+      "src/shared/app_error_boundary.jsx", "src/shared/app-error-boundary.module.css",
+      "tests/e2e/app-error-recovery-harness.jsx",
       "src/store/design_store.js", "src/store/editor-panel-actions.js", "tests/unit/editor-panel-actions.test.js",
       "scripts/generate-third-party-notices.mjs", "scripts/bundled-third-party-notices.mjs",
       "scripts/license-texts/*", "scripts/verify-package.mjs", "NOTICE",
@@ -286,12 +288,12 @@ export const EDITOR_MODULES = [
     ],
     related: ["workspace","documents","inspector","images","text"],
     features: [
-      "platform.agent-contracts", "platform.async-lifecycle", "platform.loading", "platform.desktop-release", "platform.desktop-close", "platform.macos-signing",
+      "platform.agent-contracts", "platform.async-lifecycle", "platform.loading", "platform.error-recovery", "platform.desktop-release", "platform.desktop-close", "platform.macos-signing",
       "platform.native-collaboration", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
     ],
     suites: [
-      "agent_cancel_polish", "agent_tools", "agent_pencil_tools", "editor-fixture-startup", "browser-drawer", "pending-integration", "agent-model-catalog", "editor-loading",
+      "agent_cancel_polish", "agent_tools", "agent_pencil_tools", "app-error-recovery", "editor-fixture-startup", "browser-drawer", "pending-integration", "agent-model-catalog", "editor-loading",
       "editor-optional-loading", "comments-loading", "comments-lifecycle", "editor-refactor",
       "editor-context", "editor-page-composition", "local-service", "canvas-live-preview", "agent-authoring",
     ],
