@@ -1,3 +1,4 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
@@ -56,7 +57,7 @@ await withEditorBrowser(async ({ page, tool }) => {
     const firstId = await page.evaluate(() => window.__vooEditor.getDocument().nodes.find(node => node.fill?.toLowerCase() === "#ff0000").id);
     assert.deepEqual((await page.evaluate(() => window.__authoringHarness.authoringPixels())).first, [255, 0, 0]);
     assert.ok(await page.evaluate(() => window.__authoringHarness.cursorPixels()) > 20, "the authoring cursor must paint VOO purple pixels");
-    await page.screenshot({ path: "/private/tmp/voo-authoring-in-progress.png" });
+    await page.screenshot({ path: editorArtifactPath("voo-authoring-in-progress.png") });
     chunk(last); output.end("data: [DONE]\n\n");
     await page.waitForFunction(() => window.__authoring.done);
     assert.equal(await page.evaluate(() => window.__authoring.error), null);

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0-beta.1
+
+- Prepare native Windows x64, Linux x64, macOS Intel and Apple Silicon release jobs with connector resources, packaged startup/file roundtrip checks, merged update manifests and SHA-256 checksums. Assemble draft prereleases only after every target succeeds; unsigned packages and remaining installer/update acceptance are disclosed.
+- Confirm unsaved native-window/application closure before disposing the local CLI bridge; cancelling preserves the live session. Retain native Chinese resources on macOS and inspect transitive updater dependencies in the shipped ASAR.
+
 ## 1.0.0
 
 - Repair independent constraint-diagram hit targets, 48px compact navigation and command targets, mobile Browser split layout and file-card opening/Settings clearance. Restore ten self-starting browser regressions without fixed ports or workspace paths.

@@ -1,15 +1,18 @@
 # 项目检查总进度
 这里是持续维护的总入口。每轮检查或修复后更新本文件，不再新增一份同类日期报告。更新时间：2026-11-01。
-最近一次完整核心验证：[9f00367](https://github.com/umaxzhao/voo-design/commit/9f00367baa9f939341eee8f8d3591bd79bf5f8ca)；全新 105/105 步，含 101 组核心浏览器、4761 单测通过/4 跳过。线上发布、合入及源码一致性由本轮私有 `history-asset-retention/` 独立收据确认，不继承上一版线上通过。
+最近一次完整核心验证：[eab3bea](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78)；105/105 步通过，含 101 组核心浏览器、4781 单测通过/4 跳过，设计检查 1441 文件通过。四个平台原生包与最终草稿产物核验通过，验收边界见下方。
 以下结果只属于各自固定提交和已记录的验收上下文，不代表后续或本地其他草稿均已验证。
 
-## 三平台 GitHub Release 就绪检查（待完成）
+## 三平台 GitHub Beta（门禁与产物核验通过）
 
-- 2026-11-01，只读核对源码 `ed3db20` 的发布配置与 GitHub 记录：版本仍为 `1.0.0`；当前 Release、版本标签和 `release.yml` 运行记录均为 0。仓库没有配置 Actions 签名 secrets；仅查配置名称，未读取任何密钥或证书。
-- 已配置 Electron 目标：Windows x64 NSIS/Portable、macOS DMG/ZIP、Linux AppImage/DEB。这是构建配置，不是三个系统已安装、启动并验收的证明；macOS Intel/Apple Silicon 尚需明确分别构建。
-- 发布流程缺口：标签仅自动构建/发布 Linux AppImage；Mac/Windows 仅手动开启、只上传 Actions artifacts；未统一上传更新元数据/blockmaps/校验和。桌面作业还缺少 `build-connector-resource.mjs` 预构建步骤，不能复用开发机残留资源。
-- 先补齐原生 runner 构建与安装包检查，再验证启动、创建/保存/重开、模型下载、本地 CLI、签名/公证及更新。可以准备三平台预发布；目前不能宣布三平台正式版已就绪。本轮未创建 tag 或 Release，也未把 Web 测试继承为安装包通过。
-- [发布清单](release-checklist.md)。本条为发布流程审计，不修改应用；后续源码不继承旧固定提交的通过结果。
+- [Beta 下载与说明](https://github.com/umaxzhao/voo-design/releases/tag/v1.0.0-beta.1)：`1.0.0-beta.1`，Windows x64 setup/portable、Linux x64 AppImage、macOS Intel/Apple Silicon DMG/ZIP，共四个原生目标、七个载荷。公开状态以该 Release 页面为准，保持 prerelease，不标记稳定最新版。
+- 固定验证源码 [`eab3bea`](https://github.com/umaxzhao/voo-design/commit/eab3beaaff22a2ccc28780d9972bb2c58f4baa78) 的 [完整 CI](https://github.com/umaxzhao/voo-design/actions/runs/41281003764) 全部成功：**105/105 步、101 组核心浏览器、4781 单测通过/4 跳过、1441 文件设计检查**；580 个测试文件通过/3 跳过。报告 `complete=true`，12 个模块、87 组能力的功能覆盖仍为 partial，11 组独立额外检查明确 not-run。Release 附带 `web-release-checks.json`，不以其他提交或脏工作区继承通过。
+- `platform.desktop-release`：四原生构建与打包应用冒烟均通过，收据的版本、架构、提交严格匹配；七个载荷、三份更新元数据、四份收据均已独立复核。组装器逐字节验证更新载荷 SHA-512/尺寸；最终草稿的 **21 项 SHA-256** 与 GitHub 实际资产摘要一致，包含说明和 Web 证据，安装包未经过二次修改。两种 Mac 架构的更新条目合并保留，Windows setup/portable 分开命名，Linux AppImage 使用 GNU `x86_64` 文件名而收据保留 Node `x64`。
+- `platform.desktop-close`：实际打包应用启动、指针绘图/撤销重做、原生工作区文件写读、取消脏退出后 bridge 存活、新进程与隔离 profile 从真实工作区文件卡片重开均有原生证据。原生 picker/确认选择由自动化驱动，不能当作外层安装向导或系统信任交互的人工验收。
+- 发布过程中修复了空签名变量、Windows ASAR 路径与间接依赖、Mac 中文资源、Vite 清理竞态、Linux 字体对照、离线模型菜单及冷菜单焦点。字体对照保留原 1% 门槛；三种快捷键格式均经真实浏览器检查。冷加载时背景恢复焦点的场景先稳定复现失败，再修复导航键/Tab；相关回归保留在 `editor-optional-loading.e2e.mjs`。没有跳过失败用例凑通过。
+- 历史失败保留为独立结果：[字体](https://github.com/umaxzhao/voo-design/actions/runs/41273421739)、[模型菜单](https://github.com/umaxzhao/voo-design/actions/runs/41273626256)、[快捷键](https://github.com/umaxzhao/voo-design/actions/runs/41275043454)、[AppImage 组装](https://github.com/umaxzhao/voo-design/actions/runs/41276919981)、[冷菜单焦点](https://github.com/umaxzhao/voo-design/actions/runs/41279268095)；失败或早期取消的候选没有冒记完整通过，也没有公开 Release。本轮完整通过后才创建并核验草稿。
+- 在线预览已由同一候选的 CI 静态产物通过项目脚本更新至 [voo.run/editor](https://voo.run/editor/)：入口及 12 项关键资源逐字节一致；四组实际线上交互通过，实际加载的 83 项 JS/CSS 均匹配，零页面异常。覆盖约束轴/撤销、390px Browser 分屏/48px 复制/撤销、文件卡片打开及旧分享重定向。证据 `/private/tmp/voo-beta-deployment-eab-proof.json`、`/private/tmp/voo-beta-production-eab-proof.json`；线上回滚备份 `la2:/srv/voo-run/editor-backups/eab3beaaff22a2ccc28780d9972bb2c58f4baa78-20261101T070133Z`。
+- 验收边界：**安装包未签名，Mac 未公证**；人工安装与系统信任流程、旧版升级、真实付费/CLI/模型服务及其他系统版本仍未认证。4 项跳过单测和 11 组独立检查没有计入通过。旧草稿备份、辅助工作树及主工作区无关未提交改动继续保留，未打入本版。[发布清单](release-checklist.md)、[签名/原生验收](code-signing.md)、[PR #81](https://github.com/umaxzhao/voo-design/pull/81)。
 
 ## 本轮：顶部工具栏鼠标悬停自动展开二级菜单与橡皮擦添加移除背景（已验证通过）
 

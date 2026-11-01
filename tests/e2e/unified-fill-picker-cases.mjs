@@ -1,11 +1,8 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { runNativeFillCases } from "./unified-fill-native-cases.mjs";
 /** Exercise the shipped inspector and compositor, not a second copy of its callbacks. */
-export async function runUnifiedFillCases({
-  page,
-  tool,
-  mark
-}) {
+export async function runUnifiedFillCases({ page, tool, mark }) {
   const original = await page.evaluate(() => ({
     doc: window.__vooEditor.getDocument(),
     ids: window.__vooEditor.getSelectedIds()
@@ -383,7 +380,7 @@ export async function runUnifiedFillCases({
       dialogs: [...document.querySelectorAll('[role="dialog"]')].map(element => element.getAttribute("aria-label"))
     }))));
     await page.screenshot({
-      path: "/private/tmp/voo-unified-fill-failure.png"
+      path: editorArtifactPath("voo-unified-fill-failure.png")
     });
     throw error;
   } finally {

@@ -156,6 +156,8 @@ describe("Adversarial Challenger: Electron Headless Boot & IPC Contracts", () =>
       constructor() {
         this.sent = [];
       }
+      on() {}
+      async executeJavaScript() { return false; }
       send(channel, ...args) {
         this.sent.push({ channel, args });
         const list = ipcRendererListeners.get(channel) || [];

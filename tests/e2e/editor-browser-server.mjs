@@ -21,8 +21,9 @@ export async function startEditorBrowserServer() {
     closing = (async () => {
       const closeVite = async () => {
         await vite?.close();
-        // Vite 5's first close captures optimizer cancellation before awaiting
-        // its scan. That scan can create an optimizer afterward; drain it too.
+        // In pinned Vite 5, close captures the optimizer cancellation before
+        // awaiting its entry scan. That scan can create a late optimizer batch.
+        // A second idempotent public close cancels that batch before cache removal.
         await vite?.close();
       };
       const results = await Promise.allSettled([closeVite(), bridge?.close()]);

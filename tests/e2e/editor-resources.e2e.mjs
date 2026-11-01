@@ -1,3 +1,4 @@
+import { editorArtifactPath } from "./editor-test-artifacts.mjs";
 import assert from "node:assert/strict";
 import { withEditorBrowser } from "./editor-browser-fixture.mjs";
 await withEditorBrowser(async ({ page, tool }) => {
@@ -67,7 +68,7 @@ await withEditorBrowser(async ({ page, tool }) => {
   await page.waitForFunction(()=>document.querySelector('[data-testid="design-editor"] [data-open-guard]')?.getAttribute('data-open-guard')==='off');
   await page.getByTestId('editor-layers-tab-assets').click();
   await image.waitFor();
-  await page.screenshot({path:'/private/tmp/voo-resources-desktop.png'});
+  await page.screenshot({path:editorArtifactPath('voo-resources-desktop.png')});
   await resources.locator('input[type=file]').setInputFiles({name:'Broken.voo',mimeType:'application/octet-stream',buffer:Buffer.from('{}')});
   await resources.getByRole('alert').waitFor();
   await resources.getByRole('button',{name:/^Move resource to trash: Green-/}).click();
@@ -98,6 +99,6 @@ await withEditorBrowser(async ({page})=>{
     });
     assert.ok(geometry.left>=0 && geometry.right<=geometry.width,JSON.stringify(geometry));
     assert.equal(geometry.overflow,false);
-    await page.screenshot({path:`/private/tmp/voo-resources-${width}.png`});
+    await page.screenshot({path:editorArtifactPath(`voo-resources-${width}.png`)});
   }
 },{viewport:{width:390,height:900},hasTouch:true});

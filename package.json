@@ -1,7 +1,7 @@
 {
   "name": "voo-design",
   "productName": "VOO Design",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.1",
   "license": "MIT",
   "description": "Professional Vector, Motion & 3D Design Editor",
   "main": "electron/main.cjs",
@@ -41,7 +41,9 @@
     "smoke:packaged": "node scripts/smoke-packaged.mjs",
     "bench:wasm-engine": "node scripts/bench-wasm-engine.mjs",
     "verify:package": "node scripts/verify-package.mjs",
-    "analyze:editor": "node scripts/analyze-editor-bundle.mjs"
+    "analyze:editor": "node scripts/analyze-editor-bundle.mjs",
+    "release:build": "node scripts/build-desktop-release.mjs",
+    "release:smoke": "node scripts/smoke-desktop-release.mjs"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
@@ -114,7 +116,7 @@
       }
     ],
     "asar": true,
-    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "artifactName": "VOO-Design-${version}-${os}-${arch}.${ext}",
     "mac": {
       "category": "public.app-category.graphics-design",
       "icon": "build/icon.icns",
@@ -126,7 +128,11 @@
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
-      "notarize": false
+      "notarize": false,
+      "electronLanguages": [
+        "en",
+        "zh_CN"
+      ]
     },
     "dmg": {
       "contents": [
@@ -163,7 +169,8 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "artifactName": "VOO-Design-${version}-${os}-${arch}-setup.${ext}"
     },
     "linux": {
       "icon": "build/icon.png",
@@ -192,6 +199,9 @@
     "compression": "maximum",
     "appImage": {
       "compression": "xz"
+    },
+    "portable": {
+      "artifactName": "VOO-Design-${version}-${os}-${arch}-portable.${ext}"
     }
   },
   "allowScripts": {
