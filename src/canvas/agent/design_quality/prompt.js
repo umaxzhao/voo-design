@@ -65,7 +65,9 @@ export function buildDesignQualityPrompt({ userText, kit, designSystem, sceneKin
         ? `${i + 1}. (${e.kit}; structure only, restyle with the active kit) ${e.structure}`
         : `${i + 1}. (${e.kit}) ${e.description}`).join("\n")
       : "",
-    sceneGuidePromptBlock(sceneKind),
+    // An explicit scene kind wins; otherwise the user's own words activate a
+    // guide through the alias matcher (no match injects nothing).
+    sceneGuidePromptBlock(sceneKind || userText),
   ];
   if (designSystem) {
     kitInstructions.splice(1, 10, designSystemPromptBlock(designSystem));
