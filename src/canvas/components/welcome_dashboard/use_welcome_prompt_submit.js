@@ -66,17 +66,27 @@ export function useWelcomePromptSubmit({
           return;
         }
       }
-      await handleCreateNew({
-        label: docLabel,
-        width: size?.width ?? activePreset.width,
-        height: size?.height ?? activePreset.height,
-        type: activePreset.type,
-        category: activePreset.category,
-      });
       if (intent) {
-        useDesignStore.getState().setPendingGeneration(intent);
+        intent.label = docLabel;
+        intent.category = activePreset.category;
+        const store = useDesignStore.getState();
+        store.newVooProject({
+          label: docLabel,
+          width: size?.width ?? activePreset.width,
+          height: size?.height ?? activePreset.height,
+          canvasType: activePreset.type,
+        });
+        store.setPendingGeneration(intent);
         setPromptText("");
         references.clearAttachments();
+      } else {
+        await handleCreateNew({
+          label: docLabel,
+          width: size?.width ?? activePreset.width,
+          height: size?.height ?? activePreset.height,
+          type: activePreset.type,
+          category: activePreset.category,
+        });
       }
     } finally {
       setSubmitting(false);

@@ -5,87 +5,38 @@ import { AGENT_DEFAULTS } from "./canvas_tools.js";
 import { runHtmlPipeline, shouldUseHtmlPipeline } from './html_pipeline/pipeline.js';
 import { getActiveDesignSystem, setActiveDesignSystem } from './design_system/store.js';
 import { fromStyleKit } from './design_system/from_style_kit.js';
-/**
- * Minimal agent loop: the model talks, calls canvas tools, and sees their
- * results until it stops asking for tools. Nothing here builds a workflow.
- */
-
 import { streamChatTurn } from "./chat_stream.js";
 import { STYLE_KITS, buildDesignQualityPrompt, lintDesign, pickStyleKit } from "./design_quality/index.js";
 import { buildDocumentDesignContext } from "../editor/design_tokens.js";
 import { closeCodexSession } from "../components/agent-panel/codex_transport.js";
 import { abortable } from "./abortable.js";
 import { isCliAgentModel } from "./cli_agent_step.js";
+import { supportsVision } from "../../shared/providers.js";
 
 export const AGENT_ERROR = Object.freeze({
   STEP_LIMIT: "agentStepLimit",
   NO_CANVAS_CONTENT: "agentNoCanvasContent",
 });
 
-export const SYSTEM_PROMPT =
-  "You are a design agent inside a free-form design canvas (like Pencil/Figma). You change the " +
-  "document only by calling tools; every tool's schema documents its arguments.\n\n" +
-  "Workflow:\n" +
-  "0. Plan: for any task needing more than ~3 edits, call update_plan with short steps first, " +
-  "mark exactly one step in_progress while you work, and mark steps done as you finish them.\n" +
-  "1. Inspect first: inspect_layer_tree / describe_selection / find_layers (by name or kind) before editing; " +
-  "list_styles and list_variables before creating new ones.\n" +
-  "You may return multiple tool calls in a single step; all will execute. " +
-  "Use build_layout to efficiently create many layers or a whole tree in one call.\n" +
-  "2. Structure: create_frame for containers (optionally with horizontal/vertical auto layout, gap, " +
-  "padding); create_shape for rect/ellipse/text; create_path for vector art (SVG d); place_image for " +
-  "raster at exact geometry when provided by the user. For one poster or composed page, create one " +
-  "top-level Frame and nest its artwork and editable text layers under that Frame.\n" +
-  "3. Arrange: align_layers and distribute_layers instead of hand-computing coordinates. For responsive UI, " +
-  "use frame Auto Layout direction, wrap, per-side padding, item/line gaps, alignment, distribution and " +
-  "fixed/hug sizing; set child layoutWidth/layoutHeight to fixed/hug/fill and layoutPosition to flow/absolute. " +
-  "Use no Auto Layout for free-form posters. Use mutate_auto_layout for frames; mutate_layer_layout/style/text " +
-  "or batch_mutate_layers for edits; " +
-  "group_layers/ungroup_layers, reorder_layer, rename_layer (name every layer meaningfully).\n" +
-  "4. Reuse: create_component then create_instance; set_instance_override, reset_instance_overrides, " +
-  "swap_instance for variants. Design tokens: create_variable_collection, add_variable_mode, " +
-  "create_variable, set_variable_value, set_active_mode, bind_variable; styles via create_style/apply_style; " +
-  "set_text_range_style for rich text; get_path_nodes/edit_path_nodes for vector edits.\n" +
-  "5. Scene ops: boolean_combine merges shapes (union/subtract/intersect/exclude); set_constraints " +
-  "(left/right/center/scale, top/bottom/center/scale) so children follow frame resizes; export_layers " +
-  "rasterizes layers to base64 PNG for verification or handoff.\n" +
-  "6. Verify: After multi-step edits check inspect_layer_tree or capture_canvas (PNG returned to you), " +
-  "and call inspect_layout for a machine-readable problem list (clipped/overflow/overlap/contrast). " +
-  "If a step went wrong, use undo (and redo) rather than piling on fixes.\n" +
-  "Design quality: plan first. Default to auto-layout frames for UI and composed layouts; pass layout " +
-  "horizontal or vertical explicitly. Reserve layout: \"none\" for posters, free-form art, or intentional " +
-  "absolute placement. For UI, use nested Auto Layout frames for navigation/toolbars, card content, form " +
-  "controls, repeated list rows and button groups; keep children in flow and use absolute placement only " +
-  "for intentional overlays. Use spacing scale 4/8/12/16/24/32/48/64; establish typography hierarchy (display, " +
-  "heading, body, caption), consistent radius and clear contrast. Create color tokens/variables before use " +
-  "and bind them. Keep initial token setup small, then build the layout before expanding the palette. " +
-  "For a poster/layout brief, create visible canvas layers in this turn; plans and variables alone do not " +
-  "complete it. After multi-step writes, require capture_canvas, review alignment, clipping and hierarchy, " +
-  "then fix and capture again. On tool failure inspect the error, correct arguments and retry once; report " +
-  "unresolved failures.\n" +
-  "7. Design quality: honor the Design quality block below — one style kit, tokens first, " +
-  "clear hierarchy, no AI-template smells. For UI generation use Lucide icons, never emoji as icons. " +
-  "Artwork: use generate_vector for original logo/illustration, vectorize_image to trace flat raster " +
-  "marks, edit_image for background removal/replacement and stock_image for photography. For external " +
-  "MCP clients without vector generation, use build_layout path nodes with SVG d data to create editable " +
-  "vectors inside the composed Frame. For HTML generation use Tailwind utility classes for layout and styling. Use short copy for on-canvas " +
-  "UI text: prefer concise labels, headlines and body text; avoid chatty paragraphs. " +
-  "When the user asks for code, call export_code (html | react | css) and report the file name plus warnings.\n" +
-  "Keep replies short.";
+export const SYSTEM_PROMPT = `You are a design agent inside a free-form design canvas (like Pencil/Figma). You change the document only by calling tools; every tool's schema documents its arguments.
+
+Workflow:
+0. Plan: for any task needing more than ~3 edits, call update_plan with short steps first, mark exactly one step in_progress while you work, and mark steps done as you finish them.
+1. Inspect first: inspect_layer_tree / describe_selection / find_layers (by name or kind) before editing; list_styles and list_variables before creating new ones.
+You may return multiple tool calls in a single step; all will execute. Use build_layout to efficiently create many layers or a whole tree in one call.
+2. Structure: create_frame for containers (optionally with horizontal/vertical auto layout, gap, padding); create_shape for rect/ellipse/text; create_path for vector art (SVG d); place_image for raster at exact geometry when provided by the user. For one poster or composed page, create one top-level Frame and nest its artwork and editable text layers under that Frame.
+3. Arrange: align_layers and distribute_layers instead of hand-computing coordinates. For responsive UI, use frame Auto Layout direction, wrap, per-side padding, item/line gaps, alignment, distribution and fixed/hug sizing; set child layoutWidth/layoutHeight to fixed/hug/fill and layoutPosition to flow/absolute. Use no Auto Layout for free-form posters. Use mutate_auto_layout for frames; mutate_layer_layout/style/text or batch_mutate_layers for edits; group_layers/ungroup_layers, reorder_layer, rename_layer (name every layer meaningfully).
+4. Reuse: create_component then create_instance; set_instance_override, reset_instance_overrides, swap_instance for variants. Design tokens: create_variable_collection, add_variable_mode, create_variable, set_variable_value, set_active_mode, bind_variable; styles via create_style/apply_style; set_text_range_style for rich text; get_path_nodes/edit_path_nodes for vector edits.
+5. Scene ops: boolean_combine merges shapes (union/subtract/intersect/exclude); set_constraints (left/right/center/scale, top/bottom/center/scale) so children follow frame resizes; export_layers rasterizes layers to base64 PNG for verification or handoff.
+6. Verify: After multi-step edits check inspect_layer_tree or capture_canvas (PNG returned to you), and call inspect_layout for a machine-readable problem list (clipped/overflow/overlap/contrast). If a step went wrong, use undo (and redo) rather than piling on fixes.
+Design quality: plan first. Default to auto-layout frames for UI and composed layouts; pass layout horizontal or vertical explicitly. Reserve layout: "none" for posters, free-form art, or intentional absolute placement. For UI, use nested Auto Layout frames for navigation/toolbars, card content, form controls, repeated list rows and button groups; keep children in flow and use absolute placement only for intentional overlays. Use spacing scale 4/8/12/16/24/32/48/64; establish typography hierarchy (display, heading, body, caption), consistent radius and clear contrast. Create color tokens/variables before use and bind them. Keep initial token setup small, then build the layout before expanding the palette. For a poster/layout brief, create visible canvas layers in this turn; plans and variables alone do not complete it. After multi-step writes, require capture_canvas, review alignment, clipping and hierarchy, then fix and capture again. On tool failure inspect the error, correct arguments and retry once; report unresolved failures.
+7. Design quality: honor the Design quality block below — one style kit, tokens first, clear hierarchy, no AI-template smells. For UI generation use Lucide icons, never emoji as icons. Artwork: use generate_vector for original logo/illustration, vectorize_image to trace flat raster marks, edit_image for background removal/replacement and stock_image for photography. For external MCP clients without vector generation, use build_layout path nodes with SVG d data to create editable vectors inside the composed Frame. For HTML generation use Tailwind utility classes for layout and styling. Use short copy for on-canvas UI text: prefer concise labels, headlines and body text; avoid chatty paragraphs. When the user asks for code, call export_code (html | react | css) and report the file name plus warnings.
+Keep replies short.`;
 
 const READ_ONLY_TOOLS = new Set([
-  "lint_design",
-  "inspect_layout",
-  "export_code",
-  "describe_selection",
-  "inspect_layer_tree",
-  "select_layers",
-  "list_styles",
-  "list_variables",
-  "capture_canvas",
-  "find_layers",
-  "get_plan",
-  "update_plan",
+  "lint_design", "inspect_layout", "export_code", "describe_selection",
+  "inspect_layer_tree", "select_layers", "list_styles", "list_variables",
+  "capture_canvas", "find_layers", "get_plan", "update_plan",
 ]);
 
 function activeEditor() {
@@ -130,27 +81,10 @@ function suppressPerCallCommits(editor) {
  * are suppressed and a single `AI: Agent turn` entry is committed at the end.
  */
 export async function runAgentTurn({
-  config,
-  history,
-  userText,
-  tools,
-  executeTool,
-  signal,
-  onText,
-  onToolEvent,
-  maxSteps = AGENT_DEFAULTS.maxSteps,
-  styleNote = "",
-  styleId = null,
-  sceneKind = null,
-  designSystem = null,
-  streamStep = streamChatTurn,
-  htmlPipeline = true,
-  onProgress,
-  chooseDirection,
-  onVariant,
-  variantCount = 1,
-  frame,
-  visualReferences = [],
+  config, history, userText, tools, executeTool, signal, onText, onToolEvent,
+  maxSteps = AGENT_DEFAULTS.maxSteps, styleNote = "", styleId = null, sceneKind = null,
+  designSystem = null, streamStep = streamChatTurn, htmlPipeline = true, onProgress,
+  chooseDirection, onVariant, variantCount = 1, frame, visualReferences = [],
 }) {
   const base = styleNote.trim() ? `${SYSTEM_PROMPT}\n\nStyle notes from the user: ${styleNote.trim()}` : SYSTEM_PROMPT;
   let qualityOff = globalThis.__VOO_DESIGN_QUALITY_OFF__ === true;
@@ -206,6 +140,7 @@ export async function runAgentTurn({
       .join(", ")}). Compare them, keep the best one and delete the others.`;
   }
   const before = documentFingerprint(editor);
+  const modelSupportsVision = supportsVision(config?.model);
   const explicitKit = styleId ? STYLE_KITS[styleId] : null;
   const kit = explicitKit && explicitKit.id ? explicitKit : pickStyleKit(userText);
   let activeDesignSystem = null;
@@ -219,7 +154,7 @@ export async function runAgentTurn({
   const designPrompt = qualityOff ? base : `${base}\n\n${buildDesignQualityPrompt({ userText, kit, designSystem: activeDesignSystem, sceneKind })}`;
   const system = designPrompt + documentContext;
   const referenceImages = visualReferences.filter((image) => typeof image?.dataUrl === "string" && image.dataUrl.startsWith("data:image/"));
-  const userContent = referenceImages.length
+  const userContent = referenceImages.length && modelSupportsVision
     ? [
         { type: "text", text: `${userText}\nUse the attached images as visual references; keep the final design editable.` },
         ...referenceImages.map((image) => ({ type: "image_url", image_url: { url: image.dataUrl } })),
@@ -230,15 +165,9 @@ export async function runAgentTurn({
     ...history,
     { role: "user", content: userContent },
   ];
-  let mutated = false;
-  let writesSinceCapture = 0;
-  let verificationNudged = false;
-  let retryNudged = false;
-  let failurePending = false;
-  let canvasCreated = false;
-  let creationNudged = false;
-  let lintReport = null;
-  let lintNudged = false;
+  let mutated = false, writesSinceCapture = 0, verificationNudged = false;
+  let retryNudged = false, failurePending = false, canvasCreated = false;
+  let creationNudged = false, lintReport = null, lintNudged = false;
   const creationTools = new Set([
     "build_layout", "create_frame", "create_shape", "create_path", "place_image",
     "generate_image", "generate_image_web", "generate_vector", "vectorize_image",
@@ -389,13 +318,20 @@ export async function runAgentTurn({
             : (lintSummary ? { ...(result ?? {}), lint: lintSummary } : result));
           messages.push({ role: "tool", tool_call_id: call.id, content });
           if (hasImage) {
-            messages.push({
-              role: "user",
-              content: [
-                { type: "text", text: `PNG capture returned by ${call.name}; review it visually.` },
-                { type: "image_url", image_url: { url: dataUrl } },
-              ],
-            });
+            if (modelSupportsVision) {
+              messages.push({
+                role: "user",
+                content: [
+                  { type: "text", text: `PNG capture returned by ${call.name}; review it visually.` },
+                  { type: "image_url", image_url: { url: dataUrl } },
+                ],
+              });
+            } else {
+              messages.push({
+                role: "user",
+                content: "Canvas captured. Review the lint summary above.",
+              });
+            }
           }
           onToolEvent?.({ id: call.id, name: call.name, arguments: args, status: "completed", result });
         } catch (error) {
