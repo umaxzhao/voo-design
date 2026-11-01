@@ -3,7 +3,7 @@ set -euo pipefail
 
 TARGET="${VOO_DEPLOY_TARGET:-la2}"
 REMOTE_PATH="/srv/voo-run/current/web/public/editor/models"
-SSH_OPTIONS="ssh -o BatchMode=yes -o ConnectTimeout=12"
+SSH_OPTIONS="ssh -o ControlMaster=no -o BatchMode=yes -o ConnectTimeout=12"
 # These are the background-removal and LaMa weights served by this installation.
 # Small verified upscalers are bundled for desktop and cached on first use on the web.
 REQUIRED_MODELS=(rmbg-1.4-fp16.onnx lama_512_fp16.onnx lama_512_int8.onnx realesr-general-x4v3.onnx realesr-animevideov3.onnx)

@@ -28,7 +28,7 @@ fi
 bash scripts/deploy-editor-models.sh --check
 
 BACKUP_PATH="/srv/voo-run/editor-backups/${REVISION}-$(date -u +%Y%m%dT%H%M%SZ)"
-SSH_OPTIONS="ssh -o BatchMode=yes -o ConnectTimeout=12"
+SSH_OPTIONS="ssh -o ControlMaster=no -o BatchMode=yes -o ConnectTimeout=12"
 
 # Hard-link the old release before rsync's atomic per-file replacements.
 # Keep old hashed chunks so open tabs can still load their lazy modules.

@@ -10,12 +10,22 @@ export function verifyPackage(appDir) {
   const required = [
     'electron/main.cjs', 'electron/preload.cjs', 'dist/index.html',
     'dist/canvaskit.js', 'dist/canvaskit.wasm', 'dist/EULA.md',
-    'dist/LICENSE', 'dist/THIRD_PARTY_NOTICES.json',
+    'dist/LICENSE', 'dist/THIRD_PARTY_NOTICES.json', 'dist/NOTICE', 'NOTICE',
     ...['wasm', 'mjs', 'jsep.wasm', 'jsep.mjs'].map(ext => `dist/ort/ort-wasm-simd-threaded.${ext}`),
     ...['inter', 'zcool-kuaile', 'intel-one-mono-regular'].map(font => `dist/fonts/${font}.woff2`),
   ];
   for (const file of required) {
     if (!files.has(file)) throw new Error(`Missing runtime asset: ${file}`);
+  }
+  const notices = JSON.parse(extractFile(archive, 'dist/THIRD_PARTY_NOTICES.json').toString());
+  for (const [name, license, marker] of [
+    ['openpencil-figma-schema', 'MIT', 'Copyright (c) 2026 Danila Poyarkov'],
+    ['opendesign-layout-guidance', 'Apache-2.0', 'END OF TERMS AND CONDITIONS'],
+  ]) {
+    const notice = notices.find(entry => entry.name === name);
+    if (notice?.license !== license || !notice.licenseText?.includes(marker)) {
+      throw new Error(`Missing embedded component license: ${name}`);
+    }
   }
   const wasm = [...files].filter(file => file.endsWith('.wasm'));
   const engineWasm = wasm.filter(file => /^dist\/assets\/voo_engine_bg-[\w-]+\.wasm$/.test(file));

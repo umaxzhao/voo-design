@@ -1,0 +1,38 @@
+VOO Design — embedded third-party material
+
+The VOO source license does not replace the licenses of third-party material.
+Complete component licenses are in scripts/license-texts/ in the source tree
+and THIRD_PARTY_NOTICES.json in the web build and desktop application.
+
+OpenPencil Figma/Kiwi schema
+--------------------------
+Copyright (c) 2026 Danila Poyarkov
+Existing attribution retained: OpenPencil contributors.
+License: MIT; full text: scripts/license-texts/openpencil.txt.
+Source: https://github.com/open-pencil/open-pencil
+Verified revision: f5bd2425b6491be58b43c398ac1343e4d8249fe6
+Source path: packages/kiwi/src/fig/schema/fig.kiwi
+Source SHA-256: a19357c862e572e4f9c7bb20ef52615650a8e3599f7fad616689016633cfc029
+Bundled binary SHA-256: 8df57261637ee079f4802d32cd97b5fb3cee40234cea6876abfb8d2adcbe6f74
+Scope: src/canvas/figma/figma-schema-data.js.
+All 605 definitions, field types, tags, array flags and ordering match this
+upstream schema. VOO stores it as deflate/base64 data; its export adapter adds
+nodeChangeOrder in memory. No upstream decoder is included in this entry.
+The previous comment incorrectly linked a different project,
+ZSeven-W/openpencil; this revision corrects that attribution.
+
+OpenDesign design guidance
+--------------------------
+Attribution: OpenDesign contributors (nexu-io/open-design).
+License: Apache-2.0; full text: scripts/license-texts/opendesign.txt.
+Reference: https://github.com/nexu-io/open-design/tree/12d970eacc8971150e3c76470d2a9afe16dc2ed1/skills
+Reviewed revision: 12d970eacc8971150e3c76470d2a9afe16dc2ed1.
+Scope: the adapted guidance identified in src/canvas/layout_skills_data.js.
+VOO condensed the guidance into presets and added its own dimensions,
+examples and constraints. The review revision identifies the public license
+reference; the original import revision was not recorded and is not claimed
+as recovered. A root NOTICE was not present at the reviewed upstream revision.
+No unrelated third-party templates from that repository are claimed here.
+
+These notices preserve attribution; they do not certify historical service
+terms compliance or grant rights to third-party trademarks or other material.

@@ -16,6 +16,16 @@ try {
     json: { ok: false }, headers: { "access-control-allow-origin": "*" },
   }));
   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/?voo-test=1`, { waitUntil: "networkidle" });
+  const noticesResponse = await page.request.get(new URL("THIRD_PARTY_NOTICES.json", page.url()).href);
+  assert.equal(noticesResponse.status(), 200);
+  const notices = await noticesResponse.json();
+  for (const [name, marker] of [
+    ["openpencil-figma-schema", "Copyright (c) 2026 Danila Poyarkov"],
+    ["opendesign-layout-guidance", "END OF TERMS AND CONDITIONS"],
+  ]) assert.ok(notices.find(entry => entry.name === name)?.licenseText.includes(marker), name);
+  const attribution = await page.request.get(new URL("NOTICE", page.url()).href);
+  assert.equal(attribution.status(), 200);
+  assert.match(await attribution.text(), /f5bd2425b6491be58b43c398ac1343e4d8249fe6/);
   assert.equal(await page.getByTestId("welcome-prompt-heading").innerText(), "What would you like to design?");
   await page.getByTestId("editor-top-bar").getByRole("button", { name: "New", exact: true }).click();
   await page.getByTestId("design-editor").waitFor();
