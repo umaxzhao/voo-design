@@ -260,7 +260,7 @@ export const EDITOR_MODULES = [
     ],
     related: ["workspace","documents","inspector","images","text"],
     features: [
-      "platform.native-portability", "platform.native-lifecycle", "platform.native-rendering", "platform.native-agent-entry", "platform.native-inspector", "platform.native-island-anchor", "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
+      "platform.native-paints", "platform.native-portability", "platform.native-lifecycle", "platform.native-rendering", "platform.native-agent-entry", "platform.native-inspector", "platform.native-island-anchor", "platform.agent-contracts", "platform.async-lifecycle", "platform.loading",
       "platform.native-collaboration", "platform.browser-drawer", "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview",
       "platform.streaming-authoring", "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle",
     ],

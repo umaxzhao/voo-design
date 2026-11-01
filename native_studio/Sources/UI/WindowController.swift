@@ -19,6 +19,9 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
     public weak var delegate: StudioDelegate?
     public var commandManager = CommandManager()
     var savedDocumentSnapshot: VOODocument?
+    var nativePaintEditIds: Set<String>?
+    var nativePaintEditCommand: NativePaintCommand?
+    var nativePaintPreviousRedo: [StudioCommand]?
     public var documentReplacementDecision: (() -> Bool)?
     public var agentRequestDispatcher: ((String) -> Void)?
     public var currentFileURL: URL?
@@ -52,6 +55,8 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         actualWindow.backgroundColor = ThemeTokens.colorPanel
         actualWindow.acceptsMouseMovedEvents = true
         actualWindow.minSize = NSSize(width: 960, height: 600)
+        // The web canvas and raster exports compose CSS colours in sRGB.
+        actualWindow.colorSpace = .sRGB
         if window == nil {
             actualWindow.center()
         }
@@ -2033,7 +2038,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         mainContentView.updateIslandBarPosition()
     }
 
-    private func refreshAfterDocumentMutation() {
+    func refreshAfterDocumentMutation() {
         let nodes = mainContentView.canvasStageView.document.nodes
         let selectedIds = mainContentView.canvasStageView.selectedNodeIds
         mainContentView.inspector.layersPanel.configure(with: nodes, selectedId: selectedIds.first)
@@ -3389,7 +3394,7 @@ public class WindowController: NSWindowController, AppTitleBarDelegate, StudioDe
         mainContentView.canvasStageView.needsDisplay = true
     }
 
-    private func showChromeToast(_ message: String) {
+    func showChromeToast(_ message: String) {
         nativeStatusBanner.show(message, in: mainContentView.editorShell)
         NSLog("[VOO Design Native] %@", message)
     }

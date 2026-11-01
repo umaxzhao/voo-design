@@ -662,6 +662,7 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
         didSet { needsDisplay = true; needsLayout = true }
     }
     public var onValueChanged: ((CGFloat) -> Void)?
+    public var onInteractionChanged: ((Bool) -> Void)?
 
     public private(set) var value: CGFloat = 0
 
@@ -671,6 +672,8 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
     private var isHovered = false
     private var dragStartPoint = NSPoint.zero
     private var dragStartValue: CGFloat = 0
+    private var editingStartValue: CGFloat = 0
+    private var cancelledEditing = false
     private var didDrag = false
 
     public init(label: String, suffix: String = "") {
@@ -747,7 +750,7 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
         clean = clean.replacingOccurrences(of: ",", with: ".")
         clean = clean.replacingOccurrences(of: "°", with: "")
         clean = clean.replacingOccurrences(of: "%", with: "")
-        return Double(clean).map { CGFloat($0) }
+        return Double(clean).flatMap { $0.isFinite ? CGFloat($0) : nil }
     }
 
     // MARK: Layout
@@ -832,6 +835,7 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
     }
 
     public override func mouseDown(with event: NSEvent) {
+        onInteractionChanged?(true)
         dragStartPoint = event.locationInWindow
         dragStartValue = value
         didDrag = false
@@ -849,12 +853,15 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
     }
 
     public override func mouseUp(with event: NSEvent) {
+        onInteractionChanged?(false)
         if !didDrag && !isEditing {
             beginEditing()
         }
     }
 
     private func beginEditing() {
+        editingStartValue = value
+        cancelledEditing = false
         isEditing = true
         valueField.isEditable = true
         valueField.isSelectable = true
@@ -872,7 +879,7 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
 
     public func controlTextDidEndEditing(_ obj: Notification) {
         isEditing = false
-        if let parsed = parse(valueField.stringValue) {
+        if !cancelledEditing, let parsed = parse(valueField.stringValue) {
             value = clamped(parsed)
             onValueChanged?(value)
         }
@@ -881,6 +888,20 @@ public final class PropertiesNumberPill: NSView, NSTextFieldDelegate {
         valueField.isSelectable = false
         needsDisplay = true
     }
+    public func control(
+        _ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector
+    ) -> Bool {
+        guard commandSelector == NSSelectorFromString("cancelOperation:") else { return false }
+        cancelledEditing = true
+        value = editingStartValue
+        isEditing = false
+        window?.makeFirstResponder(nil)
+        valueField.isEditable = false
+        valueField.isSelectable = false
+        updateDisplay()
+        return true
+    }
+
 }
 
 // MARK: - Compact Capsule Hex Field (click to edit)
@@ -1943,6 +1964,8 @@ public final class PropertiesPanelView: NSView {
     public var onItalicChange: ((Bool) -> Void)?
     public var onUnderlineChange: ((Bool) -> Void)?
     public var onEffectsChange: ((LayerEffects) -> Void)?
+    public var onPaintMutation: ((NativePaintMutation) -> Void)?
+    public var onPaintInteraction: ((Bool) -> Void)?
     public var onAnchorChanged: ((TransformAnchor3x3) -> Void)?
     /// Auto-layout constraints (horizontal, vertical): left|center|right|scale /
     /// top|middle|bottom|scale.
@@ -2109,20 +2132,18 @@ public final class PropertiesPanelView: NSView {
     // FILL row
     private let fillLabel = NSTextField(labelWithString: "")
     private let fillAddButton = PropertiesIconButton(kind: .plus, style: .plain)
-    private let fillRowEye = PropertiesIconButton(kind: .eye, style: .plain)
     private let fillRowSwatch = PropertiesColorSwatchButton()
     private let fillRowHex = NSTextField(labelWithString: "")
-    private let fillRowPercent = NSTextField(labelWithString: "")
+    public let fillOpacityPill = PropertiesNumberPill(label: "", suffix: "%")
     private let fillRowToggle = PropertiesIconButton(kind: .eye, style: .plain)
     private let fillRowRemove = PropertiesIconButton(kind: .minus, style: .plain)
 
     // STROKE rows
     private let strokeLabel = NSTextField(labelWithString: "")
     private let strokeAddButton = PropertiesIconButton(kind: .plus, style: .plain)
-    private let strokeRowEye = PropertiesIconButton(kind: .eye, style: .plain)
     private let strokeRowSwatch = PropertiesColorSwatchButton(hex: "#FFFFFF")
     private let strokeRowHex = NSTextField(labelWithString: "")
-    private let strokeRowPercent = NSTextField(labelWithString: "")
+    public let strokeOpacityPill = PropertiesNumberPill(label: "", suffix: "%")
     private let strokeRowToggle = PropertiesIconButton(kind: .eye, style: .plain)
     private let strokeRowRemove = PropertiesIconButton(kind: .minus, style: .plain)
     private let strokeAlignButton = PropertiesIconButton(kind: .strokeAlign, style: .plain)
@@ -2647,6 +2668,11 @@ public final class PropertiesPanelView: NSView {
         applyAttributedLabel(effectsLabel, text: "EFFECTS", size: 10, weight: .medium,
                              color: NSColor(hex: "a3a3a3"), kern: 1.4)
         effectsContainer.addSubview(effectsLabel)
+        effectsAddButton.setAccessibilityIdentifier("Inspector.Properties.EffectsAdd")
+        effectsAddButton.setAccessibilityLabel(NativeCopy.text(.addEffect))
+        effectsAddButton.target = self
+        effectsAddButton.action = #selector(didClickAddEffect)
+        effectsContainer.addSubview(effectsAddButton)
 
         blurCheckbox.setAccessibilityIdentifier("Inspector.Properties.BlurCheckbox")
         blurCheckbox.target = self
@@ -2833,23 +2859,15 @@ public final class PropertiesPanelView: NSView {
         fillAddButton.iconPadding = 4
         fillAddButton.iconColor = NSColor(hex: "a3a3a3")
         fillAddButton.setAccessibilityIdentifier("Inspector.Properties.FillAdd")
-        fillAddButton.setAccessibilityLabel("Add fill")
+        fillAddButton.setAccessibilityLabel(NativeCopy.text(.addFill))
         addSubview(fillAddButton)
-
-        fillRowEye.iconPadding = 3
-        fillRowEye.iconColor = NSColor(hex: "a3a3a3")
-        fillRowEye.setAccessibilityIdentifier("Inspector.Properties.FillVisible")
-        fillRowEye.setAccessibilityLabel("Fill visible")
-        addSubview(fillRowEye)
 
         fillRowSwatch.onPick = { [weak self] in self?.presentColorPanel() }
         addSubview(fillRowSwatch)
 
         applyMonoLabel(fillRowHex, size: 11, color: NSColor(hex: "e5e5e5"))
         addSubview(fillRowHex)
-        applyMonoLabel(fillRowPercent, size: 10, color: NSColor(hex: "a3a3a3"))
-        fillRowPercent.alignment = .right
-        addSubview(fillRowPercent)
+        configurePaintOpacity(fillOpacityPill, channel: .fill)
 
         fillRowToggle.iconPadding = 3
         fillRowToggle.iconColor = NSColor(hex: "a3a3a3")
@@ -2865,14 +2883,10 @@ public final class PropertiesPanelView: NSView {
         fillRowRemove.action = #selector(didRemoveFill)
         addSubview(fillRowRemove)
 
-        fillRowEye.target = self
-        fillRowEye.action = #selector(didToggleFillVisible)
         fillRowToggle.target = self
         fillRowToggle.action = #selector(didToggleFillVisible)
-        // The model carries a single fill paint, so an extra-paint "+" would be a
-        // dead control; the web's add-fill affordance is not offered natively.
-        fillAddButton.isHidden = true
-
+        fillAddButton.target = self
+        fillAddButton.action = #selector(didAddFill)
         // STROKE ------------------------------------------------------------
         applyAttributedLabel(strokeLabel, text: "STROKE", size: 9, weight: .medium,
                              color: NSColor(hex: "a3a3a3"), kern: 1.26)
@@ -2881,21 +2895,15 @@ public final class PropertiesPanelView: NSView {
         strokeAddButton.iconPadding = 4
         strokeAddButton.iconColor = NSColor(hex: "a3a3a3")
         strokeAddButton.setAccessibilityIdentifier("Inspector.Properties.StrokeAdd")
-        strokeAddButton.setAccessibilityLabel("Add stroke")
+        strokeAddButton.setAccessibilityLabel(NativeCopy.text(.addStroke))
         addSubview(strokeAddButton)
-
-        strokeRowEye.iconPadding = 3
-        strokeRowEye.iconColor = NSColor(hex: "a3a3a3")
-        addSubview(strokeRowEye)
 
         strokeRowSwatch.onPick = { [weak self] in self?.presentStrokeColorPanel() }
         addSubview(strokeRowSwatch)
 
         applyMonoLabel(strokeRowHex, size: 11, color: NSColor(hex: "e5e5e5"))
         addSubview(strokeRowHex)
-        applyMonoLabel(strokeRowPercent, size: 10, color: NSColor(hex: "a3a3a3"))
-        strokeRowPercent.alignment = .right
-        addSubview(strokeRowPercent)
+        configurePaintOpacity(strokeOpacityPill, channel: .stroke)
 
         strokeRowToggle.iconPadding = 3
         strokeRowToggle.iconColor = NSColor(hex: "a3a3a3")
@@ -2913,8 +2921,8 @@ public final class PropertiesPanelView: NSView {
         strokeRowToggle.action = #selector(didToggleStrokeVisible)
         strokeRowToggle.setAccessibilityIdentifier("Inspector.Properties.StrokeVisible")
         strokeRowToggle.setAccessibilityLabel("Stroke visible")
-        // Single-paint model: the web's extra-paint "+" is not offered natively.
-        strokeAddButton.isHidden = true
+        strokeAddButton.target = self
+        strokeAddButton.action = #selector(didAddStroke)
 
         strokeAlignButton.iconPadding = 4
         strokeAlignButton.iconColor = NSColor(hex: "a3a3a3")
@@ -3383,11 +3391,29 @@ public final class PropertiesPanelView: NSView {
         let solidFill = PropertiesColorMath.normalizeHex(currentSolidHex) ?? "#FFFFFF"
         fillRowSwatch.swatchHex = solidFill
         fillRowHex.stringValue = isGradient ? "Gradient" : solidFill
-        fillRowPercent.stringValue = "\(Int(round((node?.style.fillOpacity ?? 1) * 100))) %"
+        fillOpacityPill.setValue(round((node?.nativePaints(.fill).first?.opacity ?? 1) * 100))
         let stroke = PropertiesColorMath.normalizeHex(currentStrokeHex) ?? "#FFFFFF"
         strokeRowSwatch.swatchHex = stroke
         strokeRowHex.stringValue = stroke
-        strokeRowPercent.stringValue = "\(Int(round((node?.style.strokeOpacity ?? 1) * 100))) %"
+        strokeOpacityPill.setValue(round((node?.style.strokeOpacity ?? 1) * 100))
+        let fillPaint = node?.nativePaints(.fill).first
+        let hasFill =
+            fillPaint.map { paint in
+                PropertiesColorMath.isVisiblePaint(paint.value(.fill) ?? "transparent")
+                    || paint.properties["imageId"] != nil
+            } ?? false
+        fillAddButton.isHidden = hasFill
+        let hasStroke =
+            PropertiesColorMath.isVisiblePaint(
+                node?.nativePaints(.stroke).first?.value(.stroke) ?? "none")
+            && currentStrokeWidth > 0
+        strokeAddButton.isHidden = hasStroke
+        fillRowToggle.iconKind = fillPaint?.isVisible == false ? .eyeOff : .eye
+        strokeRowToggle.iconKind =
+            node?.portableProperties["strokeHidden"] == .bool(true) ? .eyeOff : .eye
+        fillRowSwatch.alphaValue = fillPaint?.isVisible == false ? 0.4 : 1
+        strokeRowSwatch.alphaValue =
+            node?.portableProperties["strokeHidden"] == .bool(true) ? 0.4 : 1
         frameCustomSwatch.swatchHex = solidFill
         frameHexField.stringValue = solidFill
         frameSizeValue.stringValue = "\(Int(round(currentW))) × \(Int(round(currentH)))"
@@ -3796,6 +3822,9 @@ public final class PropertiesPanelView: NSView {
             self.node = node
         }
         onEffectsChange?(currentEffects)
+        needsLayout = true
+        layoutSubtreeIfNeeded()
+        onPresentationChange?()
     }
 
     private func applyGeometry(x: CGFloat? = nil, y: CGFloat? = nil, width: CGFloat? = nil,
@@ -3853,32 +3882,93 @@ public final class PropertiesPanelView: NSView {
         }
     }
 
+    private func configurePaintOpacity(_ pill: PropertiesNumberPill, channel: NativePaintChannel) {
+        pill.minimumValue = 0
+        pill.maximumValue = 100
+        pill.valueAlignment = .right
+        pill.scrubUnitsPerPoint = 0.5
+        pill.setAccessibilityIdentifier(
+            "Inspector.Properties." + channel.rawValue.capitalized + "Opacity")
+        pill.setAccessibilityLabel(
+            NativeCopy.text(channel == .fill ? .fillOpacity : .strokeOpacity))
+        pill.onValueChanged = { [weak self] value in
+            self?.sendPaintMutation(.opacity(channel, 0, value / 100))
+        }
+        pill.onInteractionChanged = { [weak self] active in self?.onPaintInteraction?(active) }
+        addSubview(pill)
+    }
+
+    private func sendPaintMutation(_ mutation: NativePaintMutation) {
+        guard var edited = node else { return }
+        do { try edited.applyPaintMutation(mutation) } catch {
+            NSAlert(error: error).runModal()
+            return
+        }
+        configure(with: edited)
+        onPaintMutation?(mutation)
+    }
+
     @objc private func didToggleFillVisible() {
-        if PropertiesColorMath.isVisiblePaint(currentFillHex) {
-            lastVisibleFill = currentFillHex
-            applyFill(hex: "none", notify: true)
-        } else {
-            applyFill(hex: lastVisibleFill, notify: true)
-        }
+        guard let paint = node?.nativePaints(.fill).first else { return }
+        sendPaintMutation(.visibility(.fill, 0, !paint.isVisible))
     }
-
-    @objc private func didRemoveFill() {
-        if PropertiesColorMath.isVisiblePaint(currentFillHex) { lastVisibleFill = currentFillHex }
-        applyFill(hex: "none", notify: true)
-    }
-
+    @objc private func didRemoveFill() { sendPaintMutation(.remove(.fill, 0)) }
     @objc private func didToggleStrokeVisible() {
-        if PropertiesColorMath.isVisiblePaint(currentStrokeHex) {
-            lastVisibleStroke = currentStrokeHex
-            applyStroke(hex: "none", notify: true)
-        } else {
-            applyStroke(hex: lastVisibleStroke, notify: true)
-        }
+        guard let paint = node?.nativePaints(.stroke).first else { return }
+        sendPaintMutation(.visibility(.stroke, 0, !paint.isVisible))
+    }
+    @objc private func didRemoveStroke() { sendPaintMutation(.remove(.stroke, 0)) }
+    @objc private func didAddFill() {
+        sendPaintMutation(
+            .insert(.fill, 0, NativePaint(properties: ["fill": .string(lastVisibleFill)])))
+    }
+    @objc private func didAddStroke() {
+        sendPaintMutation(
+            .insert(
+                .stroke, 0,
+                NativePaint(properties: [
+                    "stroke": .string(lastVisibleStroke), "strokeWidth": .number(1),
+                ])))
     }
 
-    @objc private func didRemoveStroke() {
-        if PropertiesColorMath.isVisiblePaint(currentStrokeHex) { lastVisibleStroke = currentStrokeHex }
-        applyStroke(hex: "none", notify: true)
+    @objc private func didClickAddEffect() {
+        makeEffectsMenu().popUp(
+            positioning: nil, at: NSPoint(x: 0, y: effectsAddButton.bounds.maxY),
+            in: effectsAddButton)
+    }
+
+    func makeEffectsMenu() -> NSMenu {
+        let menu = NSMenu()
+        let options: [(String, NativeCopy.Key, Bool)] = [
+            ("gaussianBlur", .blurEffect, currentEffects.gaussianBlur != nil),
+            ("shadow", .shadowEffect, currentEffects.shadow != nil),
+            ("innerShadow", .innerShadowEffect, currentEffects.innerShadow != nil),
+        ]
+        for (key, label, exists) in options {
+            let title =
+                (exists ? NativeCopy.text(.removeEffect) + " " : "") + NativeCopy.text(label)
+            let item = NSMenuItem(
+                title: title, action: #selector(didPickEffect(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = key
+            menu.addItem(item)
+        }
+        return menu
+    }
+
+    @objc private func didPickEffect(_ item: NSMenuItem) {
+        switch item.representedObject as? String {
+        case "gaussianBlur":
+            currentEffects.gaussianBlur =
+                currentEffects.gaussianBlur == nil ? BlurEffect(enabled: true, radius: 10) : nil
+        case "shadow":
+            currentEffects.shadow = currentEffects.shadow == nil ? DropShadowEffect() : nil
+        case "innerShadow":
+            currentEffects.innerShadow =
+                currentEffects.innerShadow == nil ? InnerShadowEffect() : nil
+        default: preconditionFailure("Unknown effect menu item")
+        }
+        applyEffects()
     }
 
     @objc private func didClickSwap() {
@@ -4209,15 +4299,25 @@ public final class PropertiesPanelView: NSView {
         fillAddButton.frame = CGRect(x: contentRight - 28, y: y - 8, width: 24, height: 24)
         let fillTop = y + Row.labelH + 6
         fillRowRect = CGRect(x: inset, y: fillTop, width: contentWidth, height: 32)
-        fillRowEye.frame = CGRect(x: inset + 8, y: fillTop + 6, width: 20, height: 20)
-        fillRowSwatch.frame = CGRect(x: inset + 36, y: fillTop + 6, width: 20, height: 20)
-        fillRowHex.frame = CGRect(x: inset + 64, y: fillTop + 9, width: 84, height: 16)
-        fillRowPercent.frame = CGRect(x: inset + 150, y: fillTop + 10, width: 44, height: 12)
+        fillRowSwatch.frame = CGRect(x: inset + 8, y: fillTop + 6, width: 20, height: 20)
+        fillRowHex.frame = CGRect(x: inset + 36, y: fillTop + 9, width: 112, height: 16)
+        fillOpacityPill.frame = CGRect(x: inset + 150, y: fillTop + 4, width: 44, height: 24)
         fillRowToggle.frame = CGRect(x: inset + 202, y: fillTop + 6, width: 20, height: 20)
         fillRowRemove.frame = CGRect(x: inset + 232, y: fillTop + 6, width: 20, height: 20)
-        var fillBottom = fillTop + 32
+        let primaryFill = node?.nativePaints(.fill).first
+        let hasFill =
+            primaryFill.map { paint in
+                PropertiesColorMath.isVisiblePaint(paint.value(.fill) ?? "transparent")
+                    || paint.properties["imageId"] != nil
+            } ?? false
+        fillAddButton.isHidden = hasFill
+        for view in [fillRowSwatch, fillRowHex, fillOpacityPill, fillRowToggle, fillRowRemove]
+            as [NSView]
+        { view.isHidden = !hasFill }
+        if !hasFill { fillRowRect = .zero }
+        var fillBottom = hasFill ? fillTop + 32 : fillTop
 
-        if currentFillMode != "solid" {
+        if hasFill && currentFillMode != "solid" {
             gradientStopsBar.isHidden = false
             gradientStopHexPill.isHidden = false
             gradientStopOpacityPill.isHidden = false
@@ -4241,10 +4341,9 @@ public final class PropertiesPanelView: NSView {
         strokeAddButton.frame = CGRect(x: contentRight - 28, y: y - 8, width: 24, height: 24)
         let strokeTop = y + Row.labelH + 6
         strokeRow1Rect = CGRect(x: inset, y: strokeTop, width: contentWidth, height: 32)
-        strokeRowEye.frame = CGRect(x: inset + 8, y: strokeTop + 6, width: 20, height: 20)
-        strokeRowSwatch.frame = CGRect(x: inset + 36, y: strokeTop + 6, width: 20, height: 20)
-        strokeRowHex.frame = CGRect(x: inset + 64, y: strokeTop + 9, width: 84, height: 16)
-        strokeRowPercent.frame = CGRect(x: inset + 150, y: strokeTop + 10, width: 44, height: 12)
+        strokeRowSwatch.frame = CGRect(x: inset + 8, y: strokeTop + 6, width: 20, height: 20)
+        strokeRowHex.frame = CGRect(x: inset + 36, y: strokeTop + 9, width: 112, height: 16)
+        strokeOpacityPill.frame = CGRect(x: inset + 150, y: strokeTop + 4, width: 44, height: 24)
         strokeRowToggle.frame = CGRect(x: inset + 202, y: strokeTop + 6, width: 20, height: 20)
         strokeRowRemove.frame = CGRect(x: inset + 232, y: strokeTop + 6, width: 20, height: 20)
 
@@ -4256,9 +4355,22 @@ public final class PropertiesPanelView: NSView {
         strokeWidthPill.labelText = ""
         strokeWidthPill.frame = CGRect(x: inset + 88, y: strokeRow2Top, width: 120, height: Row.rowH)
         strokeDashButton.frame = CGRect(x: contentRight - 28, y: strokeRow2Top + 4, width: 20, height: 20)
-        var strokeBottom = strokeRow2Top + Row.rowH
+        let hasStroke =
+            PropertiesColorMath.isVisiblePaint(
+                node?.nativePaints(.stroke).first?.value(.stroke) ?? "none")
+            && currentStrokeWidth > 0
+        for view in [
+            strokeRowSwatch, strokeRowHex, strokeOpacityPill, strokeRowToggle, strokeRowRemove,
+            strokeAlignButton, strokeCapButton, strokeJoinButton, strokeWidthPill, strokeDashButton,
+        ] as [NSView] { view.isHidden = !hasStroke }
+        strokeAddButton.isHidden = hasStroke
+        if !hasStroke {
+            strokeRow1Rect = .zero
+            strokeRow2Rect = .zero
+        }
+        var strokeBottom = hasStroke ? strokeRow2Top + Row.rowH : strokeTop
         let isDashed = (currentStrokeDash != nil && currentStrokeDash!.isEmpty == false)
-        if isDashed {
+        if hasStroke && isDashed {
             let dashY = strokeBottom + 4
             dashLengthPill.isHidden = false
             dashGapPill.isHidden = false
@@ -4276,23 +4388,13 @@ public final class PropertiesPanelView: NSView {
 
         // MARK: EFFECTS
         effectsLabel.frame = CGRect(x: 0, y: 0, width: 160, height: Row.labelH)
-        effectsAddButton.frame = CGRect(x: contentRight - 28, y: y - 8, width: 24, height: 24)
-        blurCheckbox.frame = CGRect(x: 0, y: 17, width: 120, height: 20)
-        blurPill.frame = CGRect(x: contentWidth - 60, y: 17, width: 60, height: 24)
-        dropShadowCheckbox.frame = CGRect(x: 0, y: 47, width: 110, height: 20)
-        dropShadowHexPill.frame = CGRect(x: 116, y: 46, width: 64, height: 22)
-        dropShadowOpacityPill.frame = CGRect(x: contentWidth - 48, y: 46, width: 48, height: 22)
-        dropShadowBlurPill.frame = CGRect(x: 0, y: 73, width: 50, height: 22)
-        dropShadowXPill.frame = CGRect(x: 56, y: 73, width: 50, height: 22)
-        dropShadowYPill.frame = CGRect(x: 112, y: 73, width: 50, height: 22)
-        innerShadowCheckbox.frame = CGRect(x: 0, y: 103, width: 110, height: 20)
-        innerShadowHexPill.frame = CGRect(x: 116, y: 102, width: 64, height: 22)
-        innerShadowOpacityPill.frame = CGRect(x: contentWidth - 48, y: 102, width: 48, height: 22)
-        innerShadowBlurPill.frame = CGRect(x: 0, y: 129, width: 50, height: 22)
-        innerShadowXPill.frame = CGRect(x: 56, y: 129, width: 50, height: 22)
-        innerShadowYPill.frame = CGRect(x: 112, y: 129, width: 50, height: 22)
-        effectsContainer.frame = CGRect(x: inset, y: y, width: contentWidth, height: 129 + 22 + 10)
-        y += 129 + 22 + 10
+        effectsAddButton.frame = CGRect(x: contentWidth - 24, y: -8, width: 24, height: 24)
+        let supported = node?.portableProperties["effects"] == nil || node?.effects != nil
+        effectsAddButton.isEnabled = supported
+        effectsAddButton.toolTip = NativeCopy.text(supported ? .addEffect : .unsupportedEffects)
+        let effectHeight = NativeEffectsLayout.layout(self, width: contentWidth)
+        effectsContainer.frame = CGRect(x: inset, y: y, width: contentWidth, height: effectHeight)
+        y += effectHeight
 
         contentHeight = y + 4
         needsDisplay = true

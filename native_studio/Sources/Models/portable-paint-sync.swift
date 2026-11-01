@@ -10,12 +10,7 @@ extension VOONode {
                 opacity: style.fillOpacity, updateOpacity: previous.fillOpacity != style.fillOpacity
             )
         }
-        if previous.stroke != style.stroke || previous.strokeOpacity != style.strokeOpacity {
-            updatePrimaryPaint(
-                key: "strokes", valueKey: "stroke", value: style.stroke,
-                opacity: style.strokeOpacity,
-                updateOpacity: previous.strokeOpacity != style.strokeOpacity)
-        }
+
     }
 
     private mutating func updatePrimaryPaint(

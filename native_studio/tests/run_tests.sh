@@ -10,6 +10,7 @@ mkdir -p "$BUILD_DIR"
 
 TEST_FILES=(
   "$DIR/TestHarness.swift"
+  "$DIR/BitmapSampling.swift"
   "$DIR/Tier1_FeatureCoverageTests.swift"
   "$DIR/Tier2_BoundaryCornerTests.swift"
   "$DIR/Tier3_CrossFeatureTests.swift"
@@ -23,6 +24,7 @@ TEST_FILES=(
   "$DIR/IslandAnchorTests.swift"
   "$DIR/PortableParityTests.swift"
   "$DIR/NativeWorkflowParityTests.swift"
+  "$DIR/NativePaintParityTests.swift"
   # "$DIR/AIAgentTests.swift"
   "$DIR/main.swift"
 )

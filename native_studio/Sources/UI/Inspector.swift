@@ -25,6 +25,8 @@ public protocol InspectorDelegate: AnyObject {
     func inspectorDidChangeTextFormatting(id: String, fontWeight: String, textAlign: String, lineHeight: CGFloat, letterSpacing: CGFloat)
     func inspectorDidChangeTextDecoration(id: String, italic: Bool?, underline: Bool?, boxWidth: CGFloat?)
     func inspectorDidChangeEffects(id: String, effects: LayerEffects)
+    func inspectorDidMutatePaint(id: String, mutation: NativePaintMutation)
+    func inspectorPaintInteractionChanged(active: Bool)
     func inspectorDidToggleVisibility(id: String, visible: Bool)
     func inspectorDidToggleLock(id: String, locked: Bool)
     /// Figma-style constraints changed for a layer:
@@ -44,6 +46,8 @@ public extension InspectorDelegate {
     func inspectorDidChangeTextFormatting(id: String, fontWeight: String, textAlign: String, lineHeight: CGFloat, letterSpacing: CGFloat) {}
     func inspectorDidChangeTextDecoration(id: String, italic: Bool?, underline: Bool?, boxWidth: CGFloat?) {}
     func inspectorDidChangeEffects(id: String, effects: LayerEffects) {}
+    func inspectorDidMutatePaint(id: String, mutation: NativePaintMutation) {}
+    func inspectorPaintInteractionChanged(active: Bool) {}
     func inspectorDidToggleVisibility(id: String, visible: Bool) {}
     func inspectorDidToggleLock(id: String, locked: Bool) {}
     func inspectorDidChangeConstraints(id: String, horizontal: String, vertical: String) {}
@@ -451,6 +455,13 @@ public class InspectorView: NSView {
             self.delegate?.inspectorDidChangeConstraints(id: id, horizontal: horizontal, vertical: vertical)
         }
 
+        propertiesPanel.onPaintMutation = { [weak self] mutation in
+            guard let self, let id = self.layersPanel.selectedNodeId else { return }
+            self.delegate?.inspectorDidMutatePaint(id: id, mutation: mutation)
+        }
+        propertiesPanel.onPaintInteraction = { [weak self] active in
+            self?.delegate?.inspectorPaintInteractionChanged(active: active)
+        }
         propertiesPanel.onEffectsChange = { [weak self] effects in
             guard let self = self, let id = self.layersPanel.selectedNodeId else { return }
             self.delegate?.inspectorDidChangeEffects(id: id, effects: effects)

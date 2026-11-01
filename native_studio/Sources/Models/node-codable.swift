@@ -151,7 +151,11 @@ extension VOONode {
             LayerAdjustments.self, forKey: .adjustments)
         self.effects = try? container.decodeIfPresent(LayerEffects.self, forKey: .effects)
         // Preserve unsupported web effect/adjustment representations verbatim.
-        if effects == nil, let value = raw["effects"] { portableProperties["effects"] = value }
+        if let value = raw["effects"],
+            try effects.map({ try PortableJSONValue.encoded($0) }) != value
+        {
+            portableProperties["effects"] = value
+        }
         if adjustments == nil, let value = raw["adjustments"] {
             portableProperties["adjustments"] = value
         }
@@ -161,6 +165,14 @@ extension VOONode {
         self.childIds = try? container.decodeIfPresent([String].self, forKey: .childIds)
         self.constraints = try? container.decodeIfPresent(
             NodeConstraints.self, forKey: .constraints)
+        if let fills = raw["fills"]?.array {
+            if fills.isEmpty {
+                self.style.fill = "transparent"
+            } else if let primary = fills.first?.object {
+                self.style.fill = primary["fill"]?.string ?? self.style.fill
+                self.style.fillOpacity = CGFloat(primary["opacity"]?.nativeNumber ?? 1)
+            }
+        }
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -226,7 +238,7 @@ extension VOONode {
         try container.encodeIfPresent(fillVariableId, forKey: .fillVariableId)
         try container.encodeIfPresent(strokeVariableId, forKey: .strokeVariableId)
         try container.encodeIfPresent(adjustments, forKey: .adjustments)
-        try container.encodeIfPresent(effects, forKey: .effects)
+        try container.encodeIfPresent(portableEffects(), forKey: .effects)
         try container.encodeIfPresent(src, forKey: .src)
         try container.encodeIfPresent(imageId, forKey: .imageId)
         try container.encodeIfPresent(paint, forKey: .paint)

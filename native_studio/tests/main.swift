@@ -21,6 +21,7 @@ IslandAnchorTests.registerTests()
 #if INTEGRATED
     PortableParityTests.registerTests()
     NativeWorkflowParityTests.registerTests()
+    NativePaintParityTests.registerTests()
 #endif
 // AIAgentTests.registerTests()
 

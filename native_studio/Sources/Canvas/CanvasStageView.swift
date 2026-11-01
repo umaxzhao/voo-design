@@ -1689,7 +1689,8 @@ public class CanvasStageView: NSView {
     public static func drawStroke(for node: VOONode, path: CGPath, in rect: CGRect, ctx: CGContext) {
         guard node.style.strokeWidth > 0, let strokeColor = NSColor(hexString: node.style.stroke) else { return }
         let strokeAlpha = node.style.strokeOpacity ?? 1.0
-        ctx.setStrokeColor(strokeColor.withAlphaComponent(strokeAlpha).cgColor)
+        ctx.setStrokeColor(
+            strokeColor.withAlphaComponent(strokeColor.alphaComponent * strokeAlpha).cgColor)
         applyStrokeStyle(style: node.style, to: ctx)
 
         let align = node.style.strokeAlign ?? "center"
@@ -1724,7 +1725,7 @@ public class CanvasStageView: NSView {
         let paddedRect = rect.insetBy(dx: -pad, dy: -pad)
         guard paddedRect.width > 0, paddedRect.height > 0 else { return }
 
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
         let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
         guard let offscreen = CGContext(
             data: nil,
@@ -1756,7 +1757,9 @@ public class CanvasStageView: NSView {
         }
     }
 
-    private func drawNodeContents(_ node: VOONode, in ctx: CGContext, rect: CGRect) {
+    private func drawNodeContents(
+        _ node: VOONode, in ctx: CGContext, rect: CGRect, paintOpacity: CGFloat = 1
+    ) {
         let path = Self.shapePath(for: node, in: rect)
 
         // Drop shadow
@@ -1774,14 +1777,8 @@ public class CanvasStageView: NSView {
         // them); frames keep their fill but their outline is stage chrome.
         let isPureContainer = node.kind == .group
         if !isPureContainer, node.kind != .text, node.kind != .image {
-            if let gradient = Self.parseGradient(from: node.style.fill) {
-                Self.drawGradientFill(parsed: gradient, in: rect, path: path, ctx: ctx)
-            } else if let fillColor = NSColor(hexString: node.style.fill) {
-                let fillAlpha = node.style.fillOpacity ?? 1.0
-                ctx.setFillColor(fillColor.withAlphaComponent(fillAlpha).cgColor)
-                ctx.addPath(path)
-                ctx.fillPath()
-            }
+            NativePaintRenderer.fills(
+                node, path: path, rect: rect, opacity: paintOpacity, context: ctx)
         }
 
         // Inner shadow
@@ -1809,28 +1806,13 @@ public class CanvasStageView: NSView {
         // Stroke. Frames use the stage's 1px outline (selected mint / idle
         // white-10) instead of a model stroke, and groups have no paint at all.
         if !isPureContainer, node.kind != .text, node.kind != .image, node.kind != .frame {
-            Self.drawStroke(for: node, path: path, in: rect, ctx: ctx)
+            NativePaintRenderer.strokes(
+                node, path: path, rect: rect, opacity: paintOpacity, context: ctx)
         }
 
         // Text rendering if text node
-        if node.kind == .text, let text = node.text {
-            let fontSize = node.fontSize ?? 16.0
-            let color = NSColor(hexString: node.style.fill) ?? NSColor.white
-            let attrs = TextStyleResolver.resolvedAttributes(for: node, color: color, size: fontSize)
-            // Web paints the text stroke underneath the fill; AppKit's negative
-            // strokeWidth percentage is stroke-only, same paint order.
-            let hasStroke = node.style.strokeWidth > 0 && !node.style.stroke.isEmpty &&
-                node.style.stroke.lowercased() != "none" &&
-                node.style.stroke != "transparent"
-            if hasStroke, let strokeColor = NSColor(hexString: node.style.stroke) {
-                var strokeAttrs = attrs
-                strokeAttrs[.strokeColor] = strokeColor.withAlphaComponent(node.style.strokeOpacity ?? 1.0)
-                strokeAttrs[.strokeWidth] = -(node.style.strokeWidth / max(fontSize, 1.0)) * 100.0
-                NSAttributedString(string: text, attributes: strokeAttrs)
-                    .draw(with: rect, options: [.usesLineFragmentOrigin])
-            }
-            NSAttributedString(string: text, attributes: attrs)
-                .draw(with: rect, options: [.usesLineFragmentOrigin])
+        if node.kind == .text {
+            NativePaintRenderer.text(node, rect: rect, opacity: paintOpacity, context: ctx)
         }
 
         // Image rendering for image nodes
@@ -1876,7 +1858,7 @@ public class CanvasStageView: NSView {
         if let gBlur = node.effects?.gaussianBlur, gBlur.enabled, gBlur.radius > 0 {
             renderNodeWithGaussianBlur(node: node, in: ctx, rect: rect, blurRadius: gBlur.radius)
         } else {
-            drawNodeContents(node, in: ctx, rect: rect)
+            drawNodeContents(node, in: ctx, rect: rect, paintOpacity: effectiveOpacity(for: node))
         }
 
         ctx.restoreGState()

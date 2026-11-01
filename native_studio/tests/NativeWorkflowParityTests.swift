@@ -113,14 +113,14 @@
                 for view in stage.subviews { view.isHidden = true }
                 let bitmap = stage.bitmapImageRepForCachingDisplay(in: stage.bounds)!
                 stage.cacheDisplay(in: stage.bounds, to: bitmap)
-                let stageColor = bitmap.colorAt(x: bitmap.pixelsWide / 2, y: bitmap.pixelsHigh / 2)!
-                    .usingColorSpace(.deviceRGB)!
+                let stageColor = TestBitmapSampling.color(
+                    bitmap, x: bitmap.pixelsWide / 2, y: bitmap.pixelsHigh / 2)
                 let exported = NSBitmapImageRep(
                     cgImage: try ExportEngine.shared.renderImage(document: document, scale: 1))
-                let exportedColor = exported.colorAt(x: 32, y: 32)!.usingColorSpace(.deviceRGB)!
+                let exportedColor = TestBitmapSampling.color(exported, x: 32, y: 32)
                 try TestAssertions.assertApproxEqual(
                     stageColor.redComponent, exportedColor.redComponent, accuracy: 0.04)
-                let edge = exported.colorAt(x: 2, y: 32)!.usingColorSpace(.deviceRGB)!
+                let edge = TestBitmapSampling.color(exported, x: 2, y: 32)
                 try TestAssertions.assertTrue(
                     edge.greenComponent > 0.9 && edge.redComponent < 0.1,
                     "Gradient export retains the solid outline")

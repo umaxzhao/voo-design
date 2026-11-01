@@ -181,7 +181,7 @@
                 try TestAssertions.assertEqual(restored.nodes[0].src, loaded.nodes[0].src)
                 let raster = NSBitmapImageRep(
                     cgImage: try ExportEngine.shared.renderImage(document: restored, scale: 1))
-                let pixel = raster.colorAt(x: 20, y: 20)!.usingColorSpace(.deviceRGB)!
+                let pixel = TestBitmapSampling.color(raster, x: 20, y: 20)
                 try TestAssertions.assertTrue(
                     pixel.redComponent > 0.95 && pixel.greenComponent < 0.05,
                     "Reopened binary image paints real red pixels")

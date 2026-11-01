@@ -7,6 +7,9 @@ enum NativeCopy {
         case collaborationUnavailable, brushSize, brushOpacity, brushColor
         case status, unsupportedImport, importTitle, searchLayers, noResults
         case codeEmpty, assetsEmpty, unsupportedAccount
+        case editPaint, editEffects, paintEditFailed, unsupportedEffects, addEffect, removeEffect
+        case blurEffect, shadowEffect, innerShadowEffect, fillOpacity, strokeOpacity, addFill,
+            addStroke
     }
     static func text(_ key: Key) -> String {
         let chinese =
@@ -15,6 +18,13 @@ enum NativeCopy {
         return (chinese ? zh : en)[key] ?? en[key]!
     }
     private static let en: [Key: String] = [
+        .addFill: "Add fill", .addStroke: "Add stroke",
+        .editPaint: "Edit paint", .editEffects: "Edit effects",
+        .paintEditFailed: "Paint edit failed: ",
+        .unsupportedEffects: "This effect format is preserved but cannot be edited here yet.",
+        .addEffect: "Add effect", .removeEffect: "Remove", .blurEffect: "Gaussian Blur",
+        .shadowEffect: "Drop Shadow", .innerShadowEffect: "Inner Shadow",
+        .fillOpacity: "Fill opacity", .strokeOpacity: "Stroke opacity",
         .unsavedTitle: "Save changes before continuing?",
         .unsavedBody: "Your current document has unsaved changes. Save it to keep your work.",
         .save: "Save", .cancel: "Cancel", .discard: "Discard Changes",
@@ -29,6 +39,11 @@ enum NativeCopy {
         .unsupportedAccount: "Cloud sign-in is not available in the native editor yet.",
     ]
     private static let zh: [Key: String] = [
+        .addFill: "添加填充", .addStroke: "添加描边",
+        .editPaint: "编辑绘制层", .editEffects: "编辑效果", .paintEditFailed: "绘制层编辑失败：",
+        .unsupportedEffects: "此效果格式已保留，暂不支持在这里编辑。", .addEffect: "添加效果",
+        .removeEffect: "移除", .blurEffect: "高斯模糊", .shadowEffect: "投影", .innerShadowEffect: "内阴影",
+        .fillOpacity: "填充不透明度", .strokeOpacity: "描边不透明度",
         .unsavedTitle: "继续前保存更改？", .unsavedBody: "当前文档有未保存的更改。请先保存，以保留工作内容。",
         .save: "保存", .cancel: "取消", .discard: "放弃更改", .missingFile: "未找到工程文件，已保留当前文档。",
         .collaborationUnavailable: "原生编辑器尚未接入实时协作。", .brushSize: "大小", .brushOpacity: "不透明度",
