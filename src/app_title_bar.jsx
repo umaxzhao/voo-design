@@ -14,6 +14,8 @@ import {
   WELCOME_MENU_ACTION_EVENT,
 } from "./canvas/components/welcome_dashboard/welcome_events.js";
 import { moveEditorMenuFocus } from "./canvas/components/editor_menu_navigation.js";
+import { useWindowControls } from "./canvas/use_window_controls.js";
+import DesktopWindowControls from "./canvas/components/desktop_window_controls.jsx";
 
 /** Brand name shown in the title bar. A product name, not translatable copy. */
 export const APP_DISPLAY_NAME = "VOO Design";
@@ -25,6 +27,7 @@ export { VooBrandLogo };
 
 export default function AppTitleBar() {
   const isMac = window.electronAPI?.platform === "darwin";
+  const windowControls = useWindowControls();
   const welcomeOpen = useDesignStore((state) => state.welcomeOpen);
   const welcomeActionsReady = useDesignStore((state) => state.welcomeActionsReady);
   const welcomeActionsPending = welcomeOpen && !welcomeActionsReady;
@@ -105,6 +108,7 @@ export default function AppTitleBar() {
         className="app-title-bar relative z-[60] flex h-[40px] shrink-0 items-center justify-between px-4 text-xs font-medium tracking-wide select-none border-b border-white/10"
         style={{
           ...(isMac ? { paddingLeft: MAC_TRAFFIC_LIGHT_INSET_PX } : {}),
+          ...(windowControls.supported ? { paddingRight: 0, columnGap: 16 } : {}),
           WebkitAppRegion: "drag",
           background:
             "linear-gradient(-90deg, rgb(0, 0, 0) 70.123%, rgb(178, 255, 214) 89.855%)",
@@ -137,7 +141,7 @@ export default function AppTitleBar() {
 
         <div
           data-testid="editor-top-bar-actions"
-          className="app-title-actions flex shrink-0 flex-nowrap items-center gap-2 text-neutral-300 text-[11px]"
+          className="app-title-actions flex h-full shrink-0 flex-nowrap items-center gap-2 text-neutral-300 text-[11px]"
           style={{ WebkitAppRegion: "no-drag" }}
         >
           {/* Presence and share live beside the file actions, only while a document is open. */}
@@ -275,6 +279,7 @@ export default function AppTitleBar() {
               <Bolt size={14} aria-hidden="true" />
             </button>
           )}
+          <DesktopWindowControls controls={windowControls} />
         </div>
       </header>
 

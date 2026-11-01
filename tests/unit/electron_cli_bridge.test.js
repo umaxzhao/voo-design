@@ -16,6 +16,7 @@ function boot(startCliBridgeServer, env = {}, dirty = false) {
     quit: vi.fn(),
   };
   const window = { once() {}, on() {}, loadURL() {}, isDestroyed: () => false,
+    setAutoHideMenuBar() {}, setMenuBarVisibility() {},
     webContents: { on() {}, executeJavaScript: vi.fn(async () => dirty) } };
   const dialog = { showMessageBox: vi.fn(async () => ({ response: 0 })) };
   const BrowserWindow = vi.fn(function () { return window; });
@@ -34,7 +35,7 @@ function boot(startCliBridgeServer, env = {}, dirty = false) {
       if (id === "node:path") return path;
       if (id === "node:fs") return fs;
       if (id === "./packaged_smoke.cjs") return () => {};
-      if (id === "./native-menu.cjs" || id === "./close-guard.cjs") return nativeRequire(`../../electron/${id.slice(2)}`);
+      if (["./native-menu.cjs", "./close-guard.cjs", "./window-chrome.cjs"].includes(id)) return nativeRequire(`../../electron/${id.slice(2)}`);
       if (id === "./client-models.cjs") return nativeRequire("../../electron/client-models.cjs");
       return { registerWorkspaceIpc() {}, setupUpdater() {} };
     },
