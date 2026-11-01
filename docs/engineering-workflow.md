@@ -25,7 +25,7 @@ The release verifier imports this catalog; do not create another suite list.
 | `inspector` | Fields, menus, toolbar, responsive UI and i18n | Commit/cancel, selection changes, focus and async locale |
 | `platform` | Agent, runtime, loading, native integration and collaboration | Auth, process ownership, reconnect and unmount |
 
-The current inventory contains 90 capability groups, not a census of every
+The current inventory contains 91 capability groups, not a census of every
 button or parameter. All groups remain **partial** until specific acceptance
 rows cover their declared entry points and contexts. Registration is not
 execution, and execution is not exhaustive functional coverage.

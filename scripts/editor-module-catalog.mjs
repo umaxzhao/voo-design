@@ -29,10 +29,13 @@ export const EDITOR_MODULES = [
       "src/canvas/editor/editor-history-asset-pins.js", "tests/unit/editor-history-asset-pins.test.js",
       "src/canvas/editor/scene_model_serialization.js", "src/canvas/editor/scene-node-serialization.js", "tests/unit/scene-serialization-purity.test.js",
       "src/canvas/editor/scene_model_core.js", "src/canvas/editor/default-value-matcher.js", "tests/unit/default-value-matcher.test.js",
+      "src/canvas/editor/document-snapshot-state.js", "tests/unit/document-snapshot-state.test.js", "tests/e2e/document-dirty-state-checks.mjs",
+      "src/canvas/editor/editor_engine.js", "src/canvas/editor/editor_engine_assembly.js",
     ],
-    related: ["workspace","layers","images","platform"],
+    related: ["workspace","layers","images","platform","compositing","layout"],
     features: [
       "documents.autosave", "documents.import-export", "documents.undo-redo", "documents.portable-roundtrip", "documents.history-asset-pins", "documents.serialization-purity",
+      "documents.dirty-checkpoints",
     ],
     suites: [
       "editor-session", "image-assets-history", "image-file-clipboard", "image-generated-workflow",

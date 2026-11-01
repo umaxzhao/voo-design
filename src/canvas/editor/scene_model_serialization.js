@@ -50,7 +50,7 @@ export function findNode(doc, id) {
  * `src` object URL dies with the session, so persisting either would bloat the
  * record and still not survive a reload.
  */
-export function serialiseDocument(doc) {
+export function serializeDocumentFields(doc) {
   assertNotEvaluatedFrame(doc);
   const colorVariables = normalizeColorVariables(doc.colorVariables);
   const comments = serializeComments(doc);
@@ -89,8 +89,11 @@ export function serialiseDocument(doc) {
           return valid.length > 0 ? { modifiers: valid } : {};
         })()
       : {}),
-    nodes: doc.nodes.map(serializeSceneNode),
   };
+}
+
+export function serialiseDocument(doc) {
+  return { ...serializeDocumentFields(doc), nodes: doc.nodes.map(serializeSceneNode) };
 }
 
 /**

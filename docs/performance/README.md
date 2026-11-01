@@ -397,4 +397,4 @@ The implementation caches history image/mask sets and updates
 reference counts as scenes enter or leave. See [acceptance and measurements](history-asset-retention.md).
 Autosave scheduling, precise-pass index reuse and global bitmap budgets remain pending.
 
-The [layout and resource effect improvements](layout-sharing.md) retain unchanged nodes, stop settled passes and serialize without mutating live records.
+The [layout/effect improvements](layout-sharing.md) retain unchanged nodes and stop settled passes; [dirty checkpoints](dirty-checkpoints.md) target remaining full-page edit serialization.
