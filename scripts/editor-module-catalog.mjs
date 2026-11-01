@@ -310,6 +310,8 @@ export const EDITOR_MODULES = [
     id: "platform",
     title: "Agent, runtime and platform integration",
     paths: [
+      "src/shared/app_error_boundary.jsx", "src/shared/app-error-boundary.module.css",
+      "tests/e2e/app-error-recovery-harness.jsx",
       "tests/unit/integration-conflict-regressions.test.jsx",
       "src/store/design_store.js", "src/store/editor-panel-actions.js", "tests/unit/editor-panel-actions.test.js",
       "scripts/generate-third-party-notices.mjs", "scripts/bundled-third-party-notices.mjs", "scripts/license-texts/*", "scripts/verify-package.mjs",
@@ -341,6 +343,7 @@ export const EDITOR_MODULES = [
       "workspace", "documents", "inspector", "images", "text",
     ],
     features: [
+      "platform.error-recovery",
       "platform.agent-contracts", "platform.async-lifecycle", "platform.loading", "platform.native-collaboration", "platform.browser-drawer",
       "platform.side-panel-exclusivity", "platform.local-service-discovery", "platform.live-preview", "platform.streaming-authoring",
       "platform.agent-generated-text-sizing", "platform.third-party-attribution", "platform.browser-fixture-lifecycle", "platform.desktop-release",
@@ -350,6 +353,7 @@ export const EDITOR_MODULES = [
       "platform.native-agent-entry", "platform.native-inspector", "platform.native-island-anchor", "platform.agent-section",
     ],
     suites: [
+      "app-error-recovery",
       "editor-fixture-startup", "browser-drawer", "browser-import-frame-resizer", "browser-import-wysiwyg-parity", "browser-topbar-actions",
       "pending-integration", "agent-model-catalog", "editor-loading", "editor-optional-loading", "comments-loading", "comments-lifecycle",
       "editor-refactor", "editor-context", "editor-page-composition", "local-service", "canvas-live-preview", "agent-authoring",
